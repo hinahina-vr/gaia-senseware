@@ -20,6 +20,9 @@
   const sourceCode = document.querySelector("#source-code");
   const sourceTitle = document.querySelector("#source-title");
   const sourceFile = document.querySelector("#source-file");
+  const introLayer = document.querySelector("#intro-layer");
+  const introEnter = document.querySelector("#intro-enter");
+  const introButton = document.querySelector("#intro-button");
 
   const TRAIL_COUNT = 16;
   const MODE_COUNT = 10;
@@ -687,6 +690,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   let hiddenAt = 0;
   let hiddenDuration = 0;
   let sourceIsOpen = false;
+  let introIsOpen = false;
+  let introRestoreFocus = false;
+  let introCloseTimer = 0;
   let autoEnabled = false;
   let nextAutoAt = performance.now() + AUTO_INTERVAL;
   let modeFromIndex = 0;
@@ -925,7 +931,68 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     }
   };
 
+  const hasSeenIntro = () => {
+    try {
+      return window.sessionStorage.getItem("gaia-senseware-intro") === "seen";
+    } catch {
+      return false;
+    }
+  };
+
+  const rememberIntro = () => {
+    try {
+      window.sessionStorage.setItem("gaia-senseware-intro", "seen");
+    } catch {
+      // The installation remains usable when storage is unavailable.
+    }
+  };
+
+  const openIntro = ({ restoreFocusOnClose = true } = {}) => {
+    if (introIsOpen) {
+      return;
+    }
+    if (sourceIsOpen) {
+      closeSource({ restoreFocus: false });
+    }
+    window.clearTimeout(introCloseTimer);
+    introIsOpen = true;
+    introRestoreFocus = restoreFocusOnClose;
+    introLayer.hidden = false;
+    introLayer.inert = false;
+    introLayer.setAttribute("aria-hidden", "false");
+    introLayer.classList.remove("is-closing");
+    experience.classList.add("intro-open");
+    requestAnimationFrame(() => introEnter.focus({ preventScroll: true }));
+  };
+
+  const closeIntro = ({ remember = true, restoreFocus = introRestoreFocus } = {}) => {
+    if (!introIsOpen) {
+      return;
+    }
+    introIsOpen = false;
+    if (remember) {
+      rememberIntro();
+    }
+    introLayer.classList.add("is-closing");
+    introLayer.setAttribute("aria-hidden", "true");
+    introLayer.inert = true;
+    experience.classList.remove("intro-open");
+    nextAutoAt = performance.now() + AUTO_INTERVAL;
+
+    if (restoreFocus) {
+      introButton.focus({ preventScroll: true });
+    }
+
+    const closeDelay = reducedMotion ? 0 : 520;
+    introCloseTimer = window.setTimeout(() => {
+      if (!introIsOpen) {
+        introLayer.hidden = true;
+      }
+    }, closeDelay);
+  };
+
   sourcePanel.inert = true;
+  introLayer.inert = true;
   sourceButton.addEventListener("click", () => {
     if (sourceIsOpen) {
       closeSource();
@@ -935,8 +1002,11 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   });
   sourceClose.addEventListener("click", () => closeSource());
   sourceScrim.addEventListener("click", () => closeSource());
+  introButton.addEventListener("click", () => openIntro());
+  introEnter.addEventListener("click", () => closeIntro());
   window.addEventListener("hashchange", () => {
     if (window.location.hash === "#source") {
+      closeIntro({ remember: false, restoreFocus: false });
       openSource({ updateHash: false });
     } else {
       closeSource({ restoreFocus: false, updateHash: false });
@@ -944,6 +1014,15 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   });
 
   document.addEventListener("keydown", (event) => {
+    if (introIsOpen) {
+      if (event.key === "Escape") {
+        closeIntro();
+      } else if (event.key === "Tab") {
+        event.preventDefault();
+        introEnter.focus({ preventScroll: true });
+      }
+      return;
+    }
     if (event.key === "Escape" && sourceIsOpen) {
       closeSource();
       return;
@@ -957,6 +1036,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       selectMode(modeToIndex + 1);
     } else if (event.key.toLowerCase() === "c") {
       openSource();
+    } else if (event.key.toLowerCase() === "i") {
+      openIntro();
     } else if (/^[1-9]$/.test(event.key)) {
       selectMode(Number(event.key) - 1);
     } else if (event.key === "0") {
@@ -985,7 +1066,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   const render = (now) => {
     resize();
 
-    if (autoEnabled && !sourceIsOpen && now >= nextAutoAt) {
+    if (autoEnabled && !sourceIsOpen && !introIsOpen && now >= nextAutoAt) {
       selectMode(modeToIndex + 1, { resetAutoTimer: false });
       nextAutoAt = now + AUTO_INTERVAL;
     }
@@ -1074,5 +1155,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
   if (window.location.hash === "#source") {
     openSource({ updateHash: false });
+  } else if (!hasSeenIntro()) {
+    openIntro({ restoreFocusOnClose: false });
   }
 })();

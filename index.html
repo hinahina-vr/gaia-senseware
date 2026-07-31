@@ -9,8 +9,8 @@
       content="地球を操作するのではなく、地球から応答を受け取る。10の生命圏を巡るWebGL2インタラクティブ・インスタレーション。"
     />
     <title>GAIA SENSEWARE — 地球を聴く、10の窓</title>
-    <link rel="stylesheet" href="./styles.css?v=gaia-2" />
-    <script src="./app.js?v=gaia-2" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=gaia-3" />
+    <script src="./app.js?v=gaia-3" defer></script>
   </head>
   <body>
     <main class="experience">
@@ -20,6 +20,64 @@
       >
         お使いのブラウザはCanvasに対応していません。
       </canvas>
+
+      <section
+        class="intro-layer"
+        id="intro-layer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="intro-title"
+        aria-describedby="intro-lead"
+        aria-hidden="true"
+        hidden
+      >
+        <img
+          class="intro-visual"
+          src="./assets/concept/concept-01-earth-as-partner.png"
+          alt=""
+        />
+        <div class="intro-shell">
+          <div class="intro-heading">
+            <p class="intro-kicker">
+              <span class="intro-dot" aria-hidden="true"></span>
+              Interactive planetary installation
+            </p>
+            <p class="intro-chapter" aria-hidden="true">00 / 10</p>
+          </div>
+
+          <h2 id="intro-title">地球を聴く、<br />10の窓</h2>
+          <p class="intro-lead" id="intro-lead">
+            地球は、操作する対象ではない。触れるたびに応答を返し、
+            私たちと未来をつくる共創者である。
+          </p>
+
+          <div class="intro-steps" aria-label="体験方法">
+            <article>
+              <span>01</span>
+              <strong>触れる</strong>
+              <p>画面を指やマウスでなぞり、地球からの応答を待つ。</p>
+            </article>
+            <article>
+              <span>02</span>
+              <strong>巡る</strong>
+              <p>下部の番号から、異なる10の生命システムを旅する。</p>
+            </article>
+            <article>
+              <span>03</span>
+              <strong>共創する</strong>
+              <p>九つの窓に残した軌跡が、最後の未来地球へ集まる。</p>
+            </article>
+          </div>
+
+          <div class="intro-footer">
+            <button class="intro-enter" id="intro-enter" type="button">
+              <span>地球に触れる</span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <p>マウス・タッチ対応 ／ 音声なし ／ 所要時間 約2分</p>
+          </div>
+        </div>
+      </section>
 
       <header class="masthead">
         <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Planetary interface</p>
@@ -66,6 +124,17 @@
       </nav>
 
       <div class="actions">
+        <button
+          class="intro-button"
+          id="intro-button"
+          type="button"
+          aria-haspopup="dialog"
+          aria-controls="intro-layer"
+          title="Concept and guide"
+        >
+          <span class="action-icon intro-icon" aria-hidden="true">i</span>
+          <span class="button-label">Intro</span>
+        </button>
         <button
           class="auto-button"
           id="auto-button"
