@@ -13,8 +13,8 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='24' fill='%2393f4d5'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="./styles.css?v=gaia-4" />
-    <script src="./app.js?v=gaia-4" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=gaia-5" />
+    <script src="./app.js?v=gaia-5" defer></script>
   </head>
   <body>
     <main class="experience">
@@ -131,6 +131,11 @@
           <span id="japan-map-status">4 PLATE CONTACT ZONE / EARTH RHYTHM ACTIVE</span>
         </div>
 
+        <p class="japan-map-note" aria-hidden="true">
+          ACTUAL COASTLINE / OPENSTREETMAP<br />
+          GREEN: LISTENING NODE&nbsp;&nbsp; ORANGE: RECENT M2.5+
+        </p>
+
         <div class="japan-instruction" aria-hidden="true">
           <span>DRAG</span>
           <p>移動する</p>
@@ -193,6 +198,16 @@
           <p class="mode-description" id="mode-description">
             指先の問いかけが、惑星を巡る一呼吸として返ってくる。
           </p>
+          <button
+            class="concept-button"
+            id="concept-open"
+            type="button"
+            aria-expanded="false"
+            aria-controls="concept-panel"
+          >
+            <span>この窓の意味を読む</span>
+            <span aria-hidden="true">↗</span>
+          </button>
         </div>
       </article>
 
@@ -260,10 +275,67 @@
         class="source-scrim"
         id="source-scrim"
         type="button"
-        aria-label="コード表示を閉じる"
+        aria-label="パネルを閉じる"
         aria-hidden="true"
         tabindex="-1"
       ></button>
+
+      <aside
+        class="concept-panel"
+        id="concept-panel"
+        aria-label="選択中の演出のコンセプト解説"
+        aria-hidden="true"
+      >
+        <header class="concept-header">
+          <div>
+            <p class="concept-kicker">CURATORIAL NOTE <span id="concept-number">01 / 10</span></p>
+            <h2 id="concept-title">地球の一呼吸</h2>
+            <p class="concept-title-en" id="concept-title-en">Breathing Earth</p>
+          </div>
+          <button class="concept-close" id="concept-close" type="button" aria-label="解説を閉じる">
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <div class="concept-scroll" id="concept-scroll" tabindex="0">
+          <p class="concept-lead" id="concept-lead"></p>
+
+          <section class="concept-section">
+            <p class="concept-label">01 / WHAT YOU ARE SEEING</p>
+            <h3>何を見ているのか</h3>
+            <p id="concept-seeing"></p>
+          </section>
+
+          <section class="concept-section">
+            <p class="concept-label">02 / TOUCH AS PARTICIPATION</p>
+            <h3>触れることの意味</h3>
+            <p id="concept-touch"></p>
+          </section>
+
+          <section class="concept-section">
+            <p class="concept-label">03 / CO-CREATION CONTEXT</p>
+            <h3>共創地球論との接続</h3>
+            <p id="concept-context"></p>
+          </section>
+
+          <blockquote class="concept-question">
+            <p>THIS WINDOW ASKS</p>
+            <strong id="concept-question"></strong>
+          </blockquote>
+        </div>
+
+        <footer class="concept-footer">
+          <button id="concept-previous" type="button" aria-label="前の演出の解説">
+            <span aria-hidden="true">←</span>
+            <span>PREVIOUS</span>
+          </button>
+          <span id="concept-position">01 / 10</span>
+          <button id="concept-next" type="button" aria-label="次の演出の解説">
+            <span>NEXT</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </footer>
+      </aside>
 
       <aside
         class="source-panel"

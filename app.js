@@ -9,6 +9,21 @@
   const modeTitle = document.querySelector("#mode-title");
   const modeTitleJa = document.querySelector("#mode-title-ja");
   const modeDescription = document.querySelector("#mode-description");
+  const conceptOpen = document.querySelector("#concept-open");
+  const conceptPanel = document.querySelector("#concept-panel");
+  const conceptClose = document.querySelector("#concept-close");
+  const conceptNumber = document.querySelector("#concept-number");
+  const conceptTitle = document.querySelector("#concept-title");
+  const conceptTitleEn = document.querySelector("#concept-title-en");
+  const conceptLead = document.querySelector("#concept-lead");
+  const conceptSeeing = document.querySelector("#concept-seeing");
+  const conceptTouch = document.querySelector("#concept-touch");
+  const conceptContext = document.querySelector("#concept-context");
+  const conceptQuestion = document.querySelector("#concept-question");
+  const conceptScroll = document.querySelector("#concept-scroll");
+  const conceptPosition = document.querySelector("#concept-position");
+  const conceptPrevious = document.querySelector("#concept-previous");
+  const conceptNext = document.querySelector("#concept-next");
   const previousModeButton = document.querySelector("#previous-mode");
   const nextModeButton = document.querySelector("#next-mode");
   const autoButton = document.querySelector("#auto-button");
@@ -38,6 +53,7 @@
   const AUTO_INTERVAL = 18000;
   const MAP_TILE_SIZE = 256;
   const JAPAN_ZOOM = 5;
+  const JAPAN_MOBILE_ZOOM = 4;
   const USGS_WEEK_FEED =
     "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson";
   const JAPAN_DATA_BOUNDS = {
@@ -458,6 +474,119 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     },
   ];
 
+  const modeConcepts = {
+    "breathing-earth": {
+      lead:
+        "地球を、背景に置かれた青い球ではなく、無数の循環を重ねながら応答する一つの生命的システムとして捉え直すための入口です。",
+      seeing:
+        "画面中央の膜は、海・大気・岩石・生物圏を分ける境界であると同時に、それらを結ぶ呼吸面です。一定に見える周期の内側には、ゆらぎ、脈動、遅れて現れる波が重なっています。地球の安定とは停止ではなく、変化を受け止めながら均衡をつくり直す動的な状態だという見方を、ひとつの呼吸として可視化しています。",
+      touch:
+        "指先は命令を入力するコントローラーではなく、地球へ問いを差し出す感覚器です。触れた場所だけが光るのではなく、波が移動し、少し遅れて別の場所から返るように設計しました。自分の行為と結果のあいだに距離や時間差があることを、身体で感じるためです。",
+      context:
+        "共創地球論が示すのは、人間だけが主体で、自然が受動的な資源だという構図からの転換です。この窓では、地球にも固有の時間、限界、応答の仕方があると考えます。持続可能性とは地球を完全に管理することではなく、その反応を聴き、自分たちの行為を調整し続ける関係の技法です。",
+      question: "あなたは地球を操作したいですか。それとも、まず応答を聴けますか。",
+    },
+    "blue-circulation": {
+      lead:
+        "海は風景ではなく、熱・水・炭素・生命を地球規模で運び、気候の急激な偏りを和らげる巨大な循環器です。",
+      seeing:
+        "幾層もの青い流線は、海流、上空の風、水蒸気、熱輸送を一つの連続した流体として表現しています。流れは同じ方向へ揃わず、渦をつくり、ぶつかり、遠く離れた場所へ影響を運びます。目の前の水面だけで完結しない海の働きを、惑星の血流のような運動へ置き換えました。",
+      touch:
+        "触れると局所的な圧力差が生まれ、周囲の流れがそれをすぐ消去せず、迂回しながらゆっくり均していきます。ひとつの介入が流域や海域を越えて伝わること、そして環境への働きかけには見えない下流が存在することを示すインタラクションです。",
+      context:
+        "共創地球論では、地球のシステムは部分ごとに切り離せず、循環の連鎖として理解する必要があります。水不足、海洋温暖化、豪雨、漁業、都市の消費は別々の問題ではありません。循環を止めず、負荷を一か所へ押しつけず、流れ全体の回復力を高める設計こそが、自然とテクノロジーの共創になります。",
+      question: "あなたの暮らしから流れ出たものは、どの海、どの未来へ届くでしょう。",
+    },
+    "forest-cloud-engine": {
+      lead:
+        "森を木の集合としてではなく、土壌・菌類・植物・大気が共同で気候をつくる生きたインフラとして読み替える窓です。",
+      seeing:
+        "下層の細い網は菌糸と根、中央の柱は幹、上層の粒子は樹冠から立ち上る水蒸気を示します。地下の交換と地上の蒸散は連続しており、森は水を蓄えるだけでなく、雲や雨の条件そのものに関わります。見えにくい相互扶助が、地域の気候を支える装置として働いている様子です。",
+      touch:
+        "触れた場所から光が一本だけ伸びるのではなく、地下と上空の複数の層へ分岐します。木を一本の所有物として扱う視線から、関係網の一部として触れる感覚へ移るためです。強く速くなぞるほど応答が複雑になり、単純な制御では全体を読めないことも表します。",
+      context:
+        "共創地球論の『エッセンシャル・ワーカーとしての自然』という視点に立てば、森の価値は木材や吸収量だけでは測れません。菌類、昆虫、微生物、植物が担う無償の仕事を認識し、人間の技術や経済をその働きを壊さない形へ組み替えることが重要です。保全とは静止画を保存することではなく、関係が更新され続ける条件を守ることです。",
+      question: "森が提供する見えない仕事に、私たちはどう報いることができるでしょう。",
+    },
+    "pollination-protocol": {
+      lead:
+        "花と虫の出会いを、生物同士が長い時間をかけて互いを変え合ってきた『共進化の通信規約』として描きます。",
+      seeing:
+        "花弁のパターンと移動する光点は、植物と送粉者が交換する色、匂い、蜜、花粉の信号です。どちらか一方だけでは次の形は生まれず、異なる存在が接触した場所でだけ色彩が増えます。生命の多様性が、孤立した強者ではなく、うまく噛み合う関係から生まれることを示しています。",
+      touch:
+        "指の軌跡は、出会いを強制する線ではなく、偶然が起こりやすい『場』を一時的につくります。触れ続けても全画面を同じ模様にはできません。相手の自由と差異を残したまま、接触の条件だけを整えることが、共創における人間の役割だと考えたからです。",
+      context:
+        "共創地球論では、進化や革新を単独の主体の成果ではなく、複数種の相互作用として捉えます。農業や都市のテクノロジーも、送粉者を代替して終わるのではなく、生息地、季節、農薬、移動経路まで含む関係を再設計する必要があります。効率だけではなく、出会いの余白を残すことが未来の生産性を支えます。",
+      question: "違いを消さずに、出会いが生まれる条件をどう設計しますか。",
+    },
+    "nothing-is-waste": {
+      lead:
+        "自然界では、ある生命の終わりや排出物が、別の生命の材料へ変換されます。『廃棄』を終点ではなく途中の状態として見る窓です。",
+      seeing:
+        "回転する破片は、落葉、死骸、排泄物、鉱物、有機物を抽象化したものです。それらは消えることなく、細かく分解され、円環の別の層へ渡され、新しい構造に組み込まれます。美しい循環だけでなく、分解に必要な時間と、変換を担う無数の生物の仕事も、遅い運動として残しています。",
+      touch:
+        "触れると破片の経路が変わり、別の循環へ接続されますが、瞬時に無害化されるわけではありません。人間の技術ができるのは、ごみを魔法のように消すことではなく、素材を次の利用者へ渡せる形に整え、循環から漏れ出す量を減らすことだという表現です。",
+      context:
+        "共創地球論の循環的な世界観では、人間も分解者、修復者、媒介者として生態系の仕事に参加できます。製品の設計、回収、修理、再利用を別工程に分断せず、誕生から次の誕生までを一つの物語として考える。循環経済は標語ではなく、誰がどの変換を担うかを具体化する社会設計です。",
+      question: "あなたが捨てたものの『次の利用者』を、設計段階で想像できますか。",
+    },
+    "anthropocene-scar": {
+      lead:
+        "人間活動が地球の地層や循環に刻む圧力を直視しつつ、罪悪感だけで終わらず、別の秩序へ編み直す余地を探ります。",
+      seeing:
+        "直線的な格子は道路、採掘、物流、行政区分、データセンターなど、人間が効率のために敷いたシステムです。その下を流れる有機的な線は、水や生命の地形です。二つが衝突した場所には赤い傷が残り、過去の選択が現在の風景へ蓄積していることを表します。",
+      touch:
+        "指で触れても傷は消えません。その周囲に別の流れが生まれ、硬い格子の一部が生態的なパターンへほどけていきます。修復とは過去をなかったことにする演出ではなく、残された条件を引き受けながら、次の選択肢を増やす継続的な行為だと位置づけています。",
+      context:
+        "『人類世』という言葉は、人類全員を同じ加害者にするためではなく、地球規模の影響力と責任の偏りを可視化するために使えます。共創地球論の観点では、テクノロジーを捨てるか推進するかの二択ではありません。誰のための効率か、どの生命へ負荷が移るかを問い直し、人工システムを地球の循環へ接続し直すことが課題です。",
+      question: "消せない傷跡を、次の共創の入口へ変えるには何が必要でしょう。",
+    },
+    "rhythm-of-disaster": {
+      lead:
+        "火山、地震、洪水、山火事のような変動を、単なる異常ではなく、地球が長期的に形を更新するリズムとして考える窓です。",
+      seeing:
+        "地層を横切る断層と周期的な衝撃波は、蓄積されたエネルギーの解放を表します。波が過ぎたあとには、小さな緑の点が異なる場所から芽生えます。攪乱が常に善だと言うのではなく、破壊と再生が同じ時間軸には収まらず、生態系が変化を材料に多様性を組み直す場面を描いています。",
+      touch:
+        "触れると新しい衝撃が加わりますが、その色は時間とともに災いの橙から再生の緑へ移ります。重要なのは、衝撃を楽しむことではなく、自分の介入もまた誰かにとっての攪乱になり得ると知ることです。触れたあとの変化まで待つことで、短期の反応だけで判断しない態度を促します。",
+      context:
+        "共創地球論は、変動を完全に排除する文明から、変動を観測し、被害を減らし、回復の余地を残す文明への転換を問いかけます。ただし自然災害と人為的な環境破壊を同一視してはいけません。地球のリズムを理解することは、予測技術、防災、土地利用、地域の記憶を結び、弱い立場へ被害を集中させないための共創です。",
+      question: "変化を止められないとき、私たちは何を守り、何を変えるべきでしょう。",
+    },
+    "three-ecologies": {
+      lead:
+        "環境の問題を、自然だけでなく、社会の関係と一人ひとりの感覚まで含む三つの生態系として捉える窓です。",
+      seeing:
+        "緑は生態環境、青は社会的な制度や共同体、紫は精神や知覚の領域を示します。三つの波は異なる速度で広がり、重なる部分だけが白く明るくなります。どれか一層だけを改善しても、他の層とのずれが残れば全体は安定しないという構造を、干渉する波として表現しました。",
+      touch:
+        "ひとつの層へ触れた振動は、遅れて別の層を揺らします。自然保護の情報が制度を変え、制度の変化が安心感や価値観を変え、価値観が消費や投票を通じて再び環境へ返る。その循環に鑑賞者自身も含まれていることを、画面全体に残る余韻で示します。",
+      context:
+        "共創地球論にとって持続可能性は、二酸化炭素の数値だけでは完結しません。孤立、格差、疲労、想像力の枯渇が進めば、環境を守る社会的な力も失われます。生態・社会・精神を別部門にせず、互いを回復させる政策、地域活動、メディア、教育を組み合わせることが、長く続く変化の条件になります。",
+      question: "環境・社会・心のうち、あなたの暮らしで最初に響かせるべき層はどこですか。",
+    },
+    "earth-organ": {
+      lead:
+        "都市、通信網、エネルギー設備を自然の反対物ではなく、地球の代謝へ参加し得る『新しい器官』として問い直します。",
+      seeing:
+        "規則的な都市格子のあいだを、血管や菌糸に似た柔らかな回路が伸びています。集中していた光は、時間とともに地域の小さな節点へ分散します。人工物を緑色に塗る表現ではなく、資源を集め、使い、捨てる一方向の装置が、循環し、修復し、周囲へ応答する器官へ変わる過程です。",
+      touch:
+        "触れた場所では硬いグリッドと有機的な流れが接続され、エネルギーが別の節点へ渡ります。操作の中心を一つ増やすのではなく、地域ごとに判断と回復力を分配する振る舞いです。テクノロジーの価値を、速度や規模だけでなく、周囲の生命をどれだけ生かすかで測り直します。",
+      context:
+        "共創地球論では、人間の技術も地球が生み出した物質と知性の延長にあります。だから人工か自然かを分けるだけでは足りません。建築、AI、電力網、交通が、水・熱・生物・地域文化の循環を感知し、それらの再生へ働くなら、都市は寄生的な装置から共生的な器官へ近づけます。問われるのは技術の有無ではなく、その代謝の設計です。",
+      question: "あなたの街のテクノロジーは、何を吸い上げ、何を地域へ返していますか。",
+    },
+    "senseware-2050": {
+      lead:
+        "九つの窓で残した触覚の記憶を束ね、正解を予言するのではなく、この鑑賞者と地球が共につくった一時的な未来像を立ち上げます。",
+      seeing:
+        "中央の球体には、これまで触れた各モードの強さが九つの節点として再配置されます。線の密度、光の偏り、呼吸の大きさはセッションごとに異なります。未来を完成済みの設計図として表示するのではなく、過去の関わり方が可能性の分布を変える、生成途中の地球として描いています。",
+      touch:
+        "最後のタッチは作品を完成させる署名ではありません。九つの記憶へ新しい波を重ね、全体をもう一度揺らします。鑑賞者は外から未来を選ぶ消費者ではなく、すでにその内部で影響を与えている参加者です。同時に、画面は思い通りには固定できず、人間以外の応答が未来に残ります。",
+      context:
+        "共創地球論が開く2050年は、単一の技術解決によって到達する場所ではありません。自然の働きを聴くこと、循環をつなぎ直すこと、社会と心を同時にケアすること、攪乱に備えること。それらを複数の主体が更新し続けるプロセスです。この窓は、テクノロジーを地球サイズの感覚器＝センスウェアとして使えるかを問いかけます。",
+      question: "未来を予測するだけでなく、応答を聴きながら共につくる準備はできていますか。",
+    },
+  };
+
   const gl = canvas.getContext("webgl2", {
     alpha: false,
     antialias: false,
@@ -722,6 +851,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   let hiddenAt = 0;
   let hiddenDuration = 0;
   let sourceIsOpen = false;
+  let conceptIsOpen = false;
   let introIsOpen = false;
   let introRestoreFocus = false;
   let introCloseTimer = 0;
@@ -766,8 +896,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   };
 
   const resetJapanView = () => {
-    const center = lonLatToWorld(137.4, 36.5, JAPAN_ZOOM);
-    japanView.zoom = JAPAN_ZOOM;
+    const nextZoom = window.innerWidth <= 720 ? JAPAN_MOBILE_ZOOM : JAPAN_ZOOM;
+    const center = lonLatToWorld(136.4, 36.2, nextZoom);
+    japanView.zoom = nextZoom;
     japanView.centerX = center.x;
     japanView.centerY = center.y;
     japanTilesDirty = true;
@@ -976,21 +1107,6 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       }
     }
 
-    ctx.beginPath();
-    nodePoints.forEach((node, index) => {
-      if (index === 0) {
-        ctx.moveTo(node.x, node.y);
-      } else {
-        ctx.lineTo(node.x, node.y);
-      }
-    });
-    ctx.strokeStyle = "rgba(117, 239, 207, 0.16)";
-    ctx.lineWidth = 0.8;
-    ctx.setLineDash([2, 7]);
-    ctx.lineDashOffset = -(now / 95);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
     nodePoints.forEach((node, index) => {
       if (
         node.x < -40 ||
@@ -1014,7 +1130,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       ctx.stroke();
       ctx.fillStyle = "rgba(207, 249, 238, 0.52)";
       ctx.font = '7px Consolas, "Courier New", monospace';
-      ctx.fillText(node.name, node.x + 10, node.y - 7);
+      if (japanView.zoom >= JAPAN_ZOOM || index % 2 === 0) {
+        ctx.fillText(node.name, node.x + 10, node.y - 7);
+      }
     });
 
     const pulseLifetime = reducedMotion ? 6500 : 4200;
@@ -1332,6 +1450,22 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     sourceFile.textContent = `${formatModeNumber(modeToIndex)}-${mode.id}.frag`;
   };
 
+  const renderConcept = () => {
+    const mode = modes[modeToIndex];
+    const concept = modeConcepts[mode.id];
+    const position = `${formatModeNumber(modeToIndex)} / ${MODE_COUNT}`;
+
+    conceptNumber.textContent = position;
+    conceptPosition.textContent = position;
+    conceptTitle.textContent = mode.titleJa;
+    conceptTitleEn.textContent = mode.title;
+    conceptLead.textContent = concept.lead;
+    conceptSeeing.textContent = concept.seeing;
+    conceptTouch.textContent = concept.touch;
+    conceptContext.textContent = concept.context;
+    conceptQuestion.textContent = concept.question;
+  };
+
   const updateModeInterface = () => {
     const mode = modes[modeToIndex];
     modeNumber.textContent = formatModeNumber(modeToIndex);
@@ -1347,6 +1481,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     });
 
     renderSource();
+    renderConcept();
   };
 
   const selectMode = (index, { resetAutoTimer = true } = {}) => {
@@ -1365,6 +1500,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       nextAutoAt = transitionStartedAt + AUTO_INTERVAL;
     }
     updateModeInterface();
+    if (conceptIsOpen) {
+      conceptScroll.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+    }
   };
 
   modes.forEach((mode, index) => {
@@ -1532,6 +1670,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     if (japanIsOpen) {
       closeJapan({ restoreFocus: false, updateHash: false });
     }
+    if (conceptIsOpen) {
+      closeConcept({ restoreFocus: false, updateHash: false });
+    }
     sourceIsOpen = true;
     experience.classList.add("source-open");
     sourceButton.setAttribute("aria-expanded", "true");
@@ -1564,6 +1705,64 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     }
   };
 
+  const updateConceptHash = (isOpen) => {
+    const nextHash = isOpen ? "#concept" : "";
+    if (window.location.hash === nextHash) {
+      return;
+    }
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}${nextHash}`,
+    );
+  };
+
+  const openConcept = ({ updateHash = true } = {}) => {
+    if (conceptIsOpen) {
+      return;
+    }
+    if (sourceIsOpen) {
+      closeSource({ restoreFocus: false, updateHash: false });
+    }
+    if (japanIsOpen) {
+      closeJapan({ restoreFocus: false, updateHash: false });
+    }
+    if (introIsOpen) {
+      closeIntro({ restoreFocus: false });
+    }
+
+    conceptIsOpen = true;
+    experience.classList.add("concept-open");
+    conceptOpen.setAttribute("aria-expanded", "true");
+    conceptPanel.setAttribute("aria-hidden", "false");
+    sourceScrim.setAttribute("aria-hidden", "false");
+    conceptPanel.inert = false;
+    renderConcept();
+    conceptScroll.scrollTop = 0;
+    if (updateHash) {
+      updateConceptHash(true);
+    }
+    requestAnimationFrame(() => conceptClose.focus({ preventScroll: true }));
+  };
+
+  const closeConcept = ({ restoreFocus = true, updateHash = true } = {}) => {
+    if (!conceptIsOpen) {
+      return;
+    }
+    conceptIsOpen = false;
+    experience.classList.remove("concept-open");
+    conceptOpen.setAttribute("aria-expanded", "false");
+    conceptPanel.setAttribute("aria-hidden", "true");
+    sourceScrim.setAttribute("aria-hidden", "true");
+    conceptPanel.inert = true;
+    if (updateHash) {
+      updateConceptHash(false);
+    }
+    if (restoreFocus) {
+      conceptOpen.focus({ preventScroll: true });
+    }
+  };
+
   const updateJapanHash = (isOpen) => {
     const nextHash = isOpen ? "#japan" : "";
     if (window.location.hash === nextHash) {
@@ -1581,6 +1780,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     nextModeButton.disabled = disabled;
     autoButton.disabled = disabled;
     sourceButton.disabled = disabled;
+    conceptOpen.disabled = disabled;
     resetButton.disabled = disabled;
     modeButtons.forEach((button) => {
       button.disabled = disabled;
@@ -1596,6 +1796,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     }
     if (sourceIsOpen) {
       closeSource({ restoreFocus: false, updateHash: false });
+    }
+    if (conceptIsOpen) {
+      closeConcept({ restoreFocus: false, updateHash: false });
     }
     if (introIsOpen) {
       closeIntro({ restoreFocus: false });
@@ -1682,6 +1885,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     if (sourceIsOpen) {
       closeSource({ restoreFocus: false });
     }
+    if (conceptIsOpen) {
+      closeConcept({ restoreFocus: false });
+    }
     if (japanIsOpen) {
       closeJapan({ restoreFocus: false });
     }
@@ -1723,6 +1929,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   };
 
   sourcePanel.inert = true;
+  conceptPanel.inert = true;
   introLayer.inert = true;
   japanLayer.inert = true;
   japanButton.addEventListener("click", () => {
@@ -1741,7 +1948,23 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     }
   });
   sourceClose.addEventListener("click", () => closeSource());
-  sourceScrim.addEventListener("click", () => closeSource());
+  sourceScrim.addEventListener("click", () => {
+    if (conceptIsOpen) {
+      closeConcept();
+    } else {
+      closeSource();
+    }
+  });
+  conceptOpen.addEventListener("click", () => {
+    if (conceptIsOpen) {
+      closeConcept();
+    } else {
+      openConcept();
+    }
+  });
+  conceptClose.addEventListener("click", () => closeConcept());
+  conceptPrevious.addEventListener("click", () => selectMode(modeToIndex - 1));
+  conceptNext.addEventListener("click", () => selectMode(modeToIndex + 1));
   introButton.addEventListener("click", () => openIntro());
   introEnter.addEventListener("click", () => closeIntro());
   introJapan.addEventListener("click", () => {
@@ -1752,13 +1975,21 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     if (window.location.hash === "#source") {
       closeIntro({ remember: false, restoreFocus: false });
       closeJapan({ restoreFocus: false, updateHash: false });
+      closeConcept({ restoreFocus: false, updateHash: false });
       openSource({ updateHash: false });
+    } else if (window.location.hash === "#concept") {
+      closeIntro({ remember: false, restoreFocus: false });
+      closeJapan({ restoreFocus: false, updateHash: false });
+      closeSource({ restoreFocus: false, updateHash: false });
+      openConcept({ updateHash: false });
     } else if (window.location.hash === "#japan") {
       closeIntro({ remember: false, restoreFocus: false });
       closeSource({ restoreFocus: false, updateHash: false });
+      closeConcept({ restoreFocus: false, updateHash: false });
       openJapan({ updateHash: false, restoreFocusOnClose: false });
     } else {
       closeSource({ restoreFocus: false, updateHash: false });
+      closeConcept({ restoreFocus: false, updateHash: false });
       closeJapan({ restoreFocus: false, updateHash: false });
     }
   });
@@ -1790,7 +2021,11 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       closeSource();
       return;
     }
-    if (sourceIsOpen || event.ctrlKey || event.metaKey || event.altKey) {
+    if (event.key === "Escape" && conceptIsOpen) {
+      closeConcept();
+      return;
+    }
+    if (sourceIsOpen || conceptIsOpen || event.ctrlKey || event.metaKey || event.altKey) {
       return;
     }
     if (event.key === "ArrowLeft") {
@@ -1799,6 +2034,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       selectMode(modeToIndex + 1);
     } else if (event.key.toLowerCase() === "c") {
       openSource();
+    } else if (event.key.toLowerCase() === "n") {
+      openConcept();
     } else if (event.key.toLowerCase() === "i") {
       openIntro();
     } else if (event.key.toLowerCase() === "j") {
@@ -1825,6 +2062,10 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       canvas.width = width;
       canvas.height = height;
     }
+    const desiredJapanZoom = window.innerWidth <= 720 ? JAPAN_MOBILE_ZOOM : JAPAN_ZOOM;
+    if (japanView.zoom !== desiredJapanZoom) {
+      resetJapanView();
+    }
     gl.viewport(0, 0, width, height);
   };
 
@@ -1838,6 +2079,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     if (
       autoEnabled &&
       !sourceIsOpen &&
+      !conceptIsOpen &&
       !introIsOpen &&
       !japanIsOpen &&
       now >= nextAutoAt
@@ -1931,6 +2173,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
   if (window.location.hash === "#source") {
     openSource({ updateHash: false });
+  } else if (window.location.hash === "#concept") {
+    openConcept({ updateHash: false });
   } else if (window.location.hash === "#japan") {
     openJapan({ updateHash: false, restoreFocusOnClose: false });
   } else if (!hasSeenIntro()) {
