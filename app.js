@@ -74,6 +74,11 @@
   const MAP_TILE_SIZE = 256;
   const JAPAN_ZOOM = 5;
   const JAPAN_MOBILE_ZOOM = 4;
+  const EARTH_RADIUS_KM = 6371;
+  const P_WAVE_SPEED_KM_S = 7;
+  const S_WAVE_SPEED_KM_S = 4;
+  const JAPAN_WAVE_VISUAL_LIMIT_KM = 2500;
+  const JAPAN_HISTORY_CARD_DELAY = 8000;
   const USGS_WEEK_FEED =
     "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson";
   const JMA_HISTORY_DATA = "./data/jma-intensity-history.json";
@@ -949,6 +954,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   let japanHistoryUpdatedAt = null;
   let selectedJapanPoi = null;
   let japanWaveReplay = null;
+  let japanPoiRevealTimer = 0;
   let japanDeepLinkHandled = false;
   let autoEnabled = false;
   let nextAutoAt = performance.now() + AUTO_INTERVAL;
@@ -1111,6 +1117,78 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   const getIntensityShortLabel = (intensityCode) =>
     intensityCode === "7" ? "7" : intensityCode === "D" ? "6+" : "6-";
 
+  const toRadians = (degrees) => (degrees * Math.PI) / 180;
+  const toDegrees = (radians) => (radians * 180) / Math.PI;
+  const getSurfaceDistanceKm = (lonA, latA, lonB, latB) => {
+    const latitudeA = toRadians(latA);
+    const latitudeB = toRadians(latB);
+    const latitudeDelta = latitudeB - latitudeA;
+    const longitudeDelta = toRadians(lonB - lonA);
+    const haversine =
+      Math.sin(latitudeDelta / 2) ** 2 +
+      Math.cos(latitudeA) * Math.cos(latitudeB) * Math.sin(longitudeDelta / 2) ** 2;
+    return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(haversine)));
+  };
+  const getDestinationLonLat = (lon, lat, bearingDegrees, distanceKm) => {
+    const angularDistance = distanceKm / EARTH_RADIUS_KM;
+    const bearing = toRadians(bearingDegrees);
+    const latitude = toRadians(lat);
+    const longitude = toRadians(lon);
+    const destinationLatitude = Math.asin(
+      Math.sin(latitude) * Math.cos(angularDistance) +
+        Math.cos(latitude) * Math.sin(angularDistance) * Math.cos(bearing),
+    );
+    const destinationLongitude =
+      longitude +
+      Math.atan2(
+        Math.sin(bearing) * Math.sin(angularDistance) * Math.cos(latitude),
+        Math.cos(angularDistance) - Math.sin(latitude) * Math.sin(destinationLatitude),
+      );
+    return {
+      lon: ((toDegrees(destinationLongitude) + 540) % 360) - 180,
+      lat: toDegrees(destinationLatitude),
+    };
+  };
+  const getSurfaceWaveRadiusKm = (travelDistanceKm, depthKm) =>
+    Math.sqrt(Math.max(0, travelDistanceKm ** 2 - depthKm ** 2));
+  const drawGeodesicWaveRing = (
+    ctx,
+    event,
+    radiusKm,
+    left,
+    top,
+    strokeStyle,
+    lineWidth,
+  ) => {
+    if (radiusKm <= 0 || radiusKm > JAPAN_WAVE_VISUAL_LIMIT_KM) {
+      return null;
+    }
+    let labelPoint = null;
+    ctx.beginPath();
+    for (let bearing = 0; bearing <= 360; bearing += 5) {
+      const destination = getDestinationLonLat(
+        event.longitude,
+        event.latitude,
+        bearing,
+        radiusKm,
+      );
+      const point = japanWorldToScreen(destination.lon, destination.lat, left, top);
+      if (bearing === 0) {
+        ctx.moveTo(point.x, point.y);
+      } else {
+        ctx.lineTo(point.x, point.y);
+      }
+      if (bearing === 75) {
+        labelPoint = point;
+      }
+    }
+    ctx.closePath();
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+    return labelPoint;
+  };
+
   const renderJapanHistoryReplay = (ctx, rect, left, top, now) => {
     if (japanDataLayer !== "history" || japanWaveReplay?.kind !== "history") {
       return;
@@ -1118,42 +1196,63 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
     const event = japanWaveReplay.event;
     const source = japanWorldToScreen(event.longitude, event.latitude, left, top);
-    const maximumRadius = Math.hypot(rect.width, rect.height) * 1.08;
-    const age = reducedMotion ? 7000 : Math.max(0, now - japanWaveReplay.bornAt);
-    const pProgress = clamp(age / 4200, 0, 1);
-    const sProgress = clamp(age / 6600, 0, 1);
-    const pRadius = maximumRadius * pProgress;
-    const sRadius = maximumRadius * sProgress;
-    const pAlpha = pProgress < 1 ? 0.58 * (1 - pProgress * 0.62) : 0.08;
-    const sAlpha = sProgress < 1 ? 0.82 * (1 - sProgress * 0.55) : 0.12;
+    const elapsedSeconds = reducedMotion
+      ? Number.POSITIVE_INFINITY
+      : Math.max(0, now - japanWaveReplay.bornAt) / 1000;
+    const pTravelDistanceKm = elapsedSeconds * P_WAVE_SPEED_KM_S;
+    const sTravelDistanceKm = elapsedSeconds * S_WAVE_SPEED_KM_S;
+    const pSurfaceRadiusKm = getSurfaceWaveRadiusKm(pTravelDistanceKm, event.depthKm);
+    const sSurfaceRadiusKm = getSurfaceWaveRadiusKm(sTravelDistanceKm, event.depthKm);
 
-    if (pRadius > 2) {
-      ctx.beginPath();
-      ctx.arc(source.x, source.y, pRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(121, 222, 255, ${pAlpha})`;
-      ctx.lineWidth = 1.3;
-      ctx.stroke();
-      if (pProgress < 0.92) {
-        ctx.fillStyle = `rgba(174, 235, 255, ${Math.max(0.18, pAlpha)})`;
+    if (!reducedMotion) {
+      const pLabelPoint = drawGeodesicWaveRing(
+        ctx,
+        event,
+        pSurfaceRadiusKm,
+        left,
+        top,
+        "rgba(121, 222, 255, 0.64)",
+        1.3,
+      );
+      if (pLabelPoint) {
+        ctx.fillStyle = "rgba(174, 235, 255, 0.88)";
         ctx.font = '7px Consolas, "Courier New", monospace';
-        ctx.fillText("P / FIRST ARRIVAL", source.x + pRadius + 6, source.y - 5);
+        ctx.fillText("P / 7.0 KM/S", pLabelPoint.x + 6, pLabelPoint.y - 5);
+      }
+
+      const sLabelPoint = drawGeodesicWaveRing(
+        ctx,
+        event,
+        sSurfaceRadiusKm,
+        left,
+        top,
+        "rgba(255, 126, 97, 0.82)",
+        1.8,
+      );
+      if (sLabelPoint) {
+        ctx.fillStyle = "rgba(255, 184, 139, 0.92)";
+        ctx.font = '7px Consolas, "Courier New", monospace';
+        ctx.fillText("S / 4.0 KM/S", sLabelPoint.x + 6, sLabelPoint.y + 11);
       }
     }
 
-    if (sRadius > 2) {
-      ctx.beginPath();
-      ctx.arc(source.x, source.y, sRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(255, 126, 97, ${sAlpha})`;
-      ctx.lineWidth = 1.8;
-      ctx.stroke();
-      if (sProgress < 0.94) {
-        ctx.fillStyle = `rgba(255, 184, 139, ${Math.max(0.2, sAlpha)})`;
-        ctx.font = '7px Consolas, "Courier New", monospace';
-        ctx.fillText("S / INTENSITY REVEAL", source.x + sRadius + 6, source.y + 11);
-      }
-    }
+    const sourcePulse = reducedMotion ? 4 : 4 + Math.sin(now * 0.012) * 1.5;
+    ctx.beginPath();
+    ctx.arc(source.x, source.y, sourcePulse, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 240, 209, 0.95)";
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 240, 209, 0.82)";
+    ctx.font = '7px Consolas, "Courier New", monospace';
+    ctx.fillText(
+      reducedMotion
+        ? `SOURCE / DEPTH ${event.depthKm} KM / STATIC`
+        : `SOURCE / DEPTH ${event.depthKm} KM / T+${Math.floor(elapsedSeconds)}S`,
+      source.x + 9,
+      source.y + 15,
+    );
 
     const occupiedLabelCells = new Set();
+    let arrivedCount = 0;
     for (const observation of event.observations) {
       const point = japanWorldToScreen(
         observation.longitude,
@@ -1161,10 +1260,17 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         left,
         top,
       );
-      const distance = Math.hypot(point.x - source.x, point.y - source.y);
-      if (distance > sRadius + 5) {
+      const surfaceDistanceKm = getSurfaceDistanceKm(
+        event.longitude,
+        event.latitude,
+        observation.longitude,
+        observation.latitude,
+      );
+      const hypocentralDistanceKm = Math.hypot(surfaceDistanceKm, event.depthKm);
+      if (!reducedMotion && sTravelDistanceKm < hypocentralDistanceKm) {
         continue;
       }
+      arrivedCount += 1;
       if (
         point.x < -24 ||
         point.x > rect.width + 24 ||
@@ -1174,7 +1280,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         continue;
       }
 
-      const arrival = clamp((sRadius + 9 - distance) / 28, 0.12, 1);
+      const arrival = reducedMotion
+        ? 1
+        : clamp((sTravelDistanceKm - hypocentralDistanceKm) / 24, 0.12, 1);
       const pointRadius = observation.intensityCode === "7" ? 5.2 : observation.intensityCode === "D" ? 4 : 3.2;
       ctx.beginPath();
       ctx.arc(point.x, point.y, pointRadius + (1 - arrival) * 7, 0, Math.PI * 2);
@@ -1194,6 +1302,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         ctx.fillText(getIntensityShortLabel(observation.intensityCode), point.x + 7, point.y - 5);
       }
     }
+    japanWaveReplay.arrivedCount = arrivedCount;
   };
 
   const renderJapanOverlay = (now) => {
@@ -1515,7 +1624,16 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
           0,
         );
         if (selectedJapanPoi?.type === "history") {
-          return `JMA OBSERVED INTENSITY / ${selectedJapanPoi.event.observations.length} SITES / P→S QUALITATIVE REPLAY`;
+          const siteCount = selectedJapanPoi.event.observations.length;
+          if (reducedMotion) {
+            return `JMA OBSERVED INTENSITY / ${siteCount} SITES / STATIC ACCESSIBLE VIEW`;
+          }
+          const elapsedSeconds = japanWaveReplay
+            ? Math.max(0, performance.now() - japanWaveReplay.bornAt) / 1000
+            : 0;
+          return `REAL TIME T+${Math.floor(elapsedSeconds)}S / P 7.0 KM/S / S 4.0 KM/S / ${
+            japanWaveReplay?.arrivedCount || 0
+          }/${siteCount} SITES`;
         }
         return `JMA HISTORY / ${japanHistoryEvents.length} EVENTS / ${observationCount} INTENSITY 6-7 SITES`;
       }
@@ -1604,7 +1722,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     if (japanDataLayer === "history") {
       japanObservationKicker.textContent = "JMA HISTORY / SHINDO 6-JAKU+";
       japanObservationCopy.textContent =
-        "地震を選ぶとP波・S波の順に波が走り、震度6弱以上を観測した各地点が立ち上がる。";
+        "地震を選ぶとP波7 km/s・S波4 km/sを1秒=1秒で再生し、S波の計算到達時に実測震度地点が立ち上がる。";
     } else {
       japanObservationKicker.textContent = "USGS LIVE / M2.5+ / 7 DAYS";
       japanObservationCopy.textContent =
@@ -1630,6 +1748,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   };
 
   const closeJapanPoi = ({ restoreFocus = false } = {}) => {
+    window.clearTimeout(japanPoiRevealTimer);
+    japanPoiRevealTimer = 0;
     if (!selectedJapanPoi) {
       return;
     }
@@ -1664,29 +1784,53 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     japanPoiCard.style.top = `${top}px`;
   };
 
-  const openJapanPoi = (poi, clientX, clientY) => {
-    selectedJapanPoi = poi;
+  const showJapanPoiCard = (clientX, clientY, { focusClose = true } = {}) => {
     japanPoiCard.hidden = false;
     japanPoiCard.setAttribute("aria-hidden", "false");
     japanLayer.classList.add("japan-poi-open");
+    requestAnimationFrame(() => {
+      positionJapanPoiCard(clientX, clientY);
+      if (focusClose) {
+        japanPoiClose.focus({ preventScroll: true });
+      }
+    });
+  };
+
+  const openJapanPoi = (poi, clientX, clientY) => {
+    window.clearTimeout(japanPoiRevealTimer);
+    japanPoiRevealTimer = 0;
+    selectedJapanPoi = poi;
+    japanPoiCard.hidden = true;
+    japanPoiCard.setAttribute("aria-hidden", "true");
+    japanLayer.classList.remove("japan-poi-open");
 
     if (poi.type === "history") {
       const event = poi.event;
-      japanPoiType.textContent = "JMA HISTORY / OBSERVED INTENSITY";
+      japanPoiType.textContent = "JMA HISTORY / REAL-TIME REPRESENTATIVE MODEL";
       japanPoiTitle.textContent = `${String(event.occurredAt).slice(0, 4)} ${getJmaEventTitle(event)}`;
       japanPoiMeta.textContent = `${formatJapanEventTime(event.occurredAt)} / M${event.magnitude.toFixed(
         1,
-      )} / DEPTH ${event.depthKm} KM / 最大震度 ${getMaximumIntensityText(event)}`;
+      )} / DEPTH ${event.depthKm} KM / 最大震度 ${getMaximumIntensityText(
+        event,
+      )} / P 7.0・S 4.0 KM/S`;
       japanPoiDescription.textContent =
         `気象庁の震度データベースから、この地震で震度6弱・6強・7を実際に観測した${event.observations.length}地点を収録しています。色は黄=6弱、橙=6強、赤紫=7です。震度はマグニチュードから推定した値ではありません。`;
       japanPoiRelation.textContent =
-        "震源から水色のPリングが先行し、橙のSリングが後を追います。各地の実測震度点はSリングの通過に合わせて現れます。ただし速度構造・地質・正確な到達時刻は計算せず、P波が先・S波が後という順序を身体で読むための時間圧縮表現です。";
+        "気象庁の一般向け解説に基づく代表速度P波7 km/s・S波4 km/sを、1秒=1秒で再生しています。震央から観測点までの地表距離と震源深さから直線的な震源距離を求め、S波の計算到達時に実測震度点を表示します。実際の速度は地質・深さ・経路で変わるため、これは観測到達時刻や緊急地震速報の予測ではありません。";
       japanWaveReplay = {
         kind: "history",
         event,
         bornAt: performance.now(),
+        arrivedCount: 0,
       };
       japanMapStatus.textContent = getJapanObservationStatus();
+      const revealDelay = reducedMotion ? 0 : JAPAN_HISTORY_CARD_DELAY;
+      japanPoiRevealTimer = window.setTimeout(() => {
+        japanPoiRevealTimer = 0;
+        if (japanIsOpen && selectedJapanPoi === poi) {
+          showJapanPoiCard(clientX, clientY, { focusClose: reducedMotion });
+        }
+      }, revealDelay);
     } else if (poi.type === "earthquake") {
       const event = poi.event;
       japanPoiType.textContent = "USGS OBSERVATION / EARTH SIGNAL";
@@ -1699,6 +1843,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       japanPoiRelation.textContent =
         "LIVEレイヤーは『いま地球がどこで動いているか』を読む入口です。このフィードには各地の震度を重ねていないため、P/S波や揺れの広がりは再生しません。観測されていない意味を足さないことも、センスウェアの設計に含めています。";
       japanWaveReplay = null;
+      showJapanPoiCard(clientX, clientY);
     } else {
       const node = poi.node;
       japanPoiType.textContent = "CURATED LISTENING NODE / ARTISTIC POI";
@@ -1707,12 +1852,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       japanPoiDescription.textContent = node.description;
       japanPoiRelation.textContent = node.relation;
       japanWaveReplay = null;
+      showJapanPoiCard(clientX, clientY);
     }
-
-    requestAnimationFrame(() => {
-      positionJapanPoiCard(clientX, clientY);
-      japanPoiClose.focus({ preventScroll: true });
-    });
   };
 
   const findJapanPoiAt = (clientX, clientY) => {
