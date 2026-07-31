@@ -254,9 +254,16 @@ button {
 
 .intro-footer {
   display: flex;
-  gap: 20px;
-  align-items: center;
+  flex-direction: column;
+  gap: 11px;
+  align-items: flex-start;
   margin-top: 26px;
+}
+
+.intro-choices {
+  display: flex;
+  gap: 10px;
+  width: min(460px, 100%);
 }
 
 .intro-enter {
@@ -264,8 +271,9 @@ button {
   gap: 34px;
   align-items: center;
   justify-content: space-between;
-  min-width: 210px;
+  min-width: 0;
   min-height: 50px;
+  flex: 1;
   padding: 0 18px 0 21px;
   border: 1px solid rgba(183, 255, 234, 0.72);
   border-radius: 999px;
@@ -293,6 +301,12 @@ button {
   transform: translateY(-1px);
 }
 
+.intro-enter-secondary {
+  color: rgba(234, 250, 246, 0.88);
+  background: rgba(9, 24, 25, 0.52);
+  box-shadow: inset 0 0 0 1px rgba(183, 255, 234, 0.03);
+}
+
 .intro-footer p {
   margin: 0;
   color: rgba(224, 238, 244, 0.43);
@@ -300,6 +314,295 @@ button {
   font-size: 8px;
   letter-spacing: 0.12em;
   line-height: 1.65;
+}
+
+.japan-layer {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  overflow: hidden;
+  color: #f4fffb;
+  background: #02090c;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 520ms ease,
+    visibility 0ms step-start;
+}
+
+.japan-layer[hidden] {
+  display: none;
+}
+
+.japan-layer.is-closing {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 420ms ease,
+    visibility 420ms step-end;
+}
+
+.japan-map {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 58% 46%, rgba(43, 119, 114, 0.18), transparent 36%),
+    linear-gradient(135deg, #02080b, #041116 58%, #02070a);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.japan-map.is-dragging {
+  cursor: grabbing;
+}
+
+.japan-tiles {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  opacity: 0.54;
+}
+
+.japan-tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  pointer-events: none;
+  user-select: none;
+  filter: grayscale(1) invert(1) sepia(0.28) hue-rotate(112deg) saturate(1.65)
+    brightness(0.52) contrast(1.26);
+  transition: opacity 240ms ease;
+}
+
+.japan-tile:not(.is-loaded) {
+  opacity: 0;
+}
+
+.japan-overlay {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.japan-map-shade {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(1, 7, 10, 0.94), rgba(1, 7, 10, 0.26) 42%, transparent 70%),
+    linear-gradient(180deg, rgba(1, 5, 8, 0.44), transparent 36%, rgba(1, 5, 8, 0.64)),
+    radial-gradient(circle at center, transparent 43%, rgba(0, 3, 6, 0.5));
+}
+
+.japan-map-shade::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.17;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 3px,
+    rgba(187, 255, 239, 0.035) 4px
+  );
+}
+
+.japan-heading {
+  position: absolute;
+  z-index: 3;
+  top: max(42px, env(safe-area-inset-top));
+  left: max(46px, env(safe-area-inset-left));
+  width: min(520px, 44vw);
+  pointer-events: none;
+}
+
+.japan-kicker {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 18px;
+  color: rgba(203, 240, 232, 0.55);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.japan-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #93f4d5;
+  box-shadow: 0 0 18px rgba(92, 255, 206, 0.8);
+  animation: live-pulse 2.4s ease-in-out infinite;
+}
+
+.japan-heading h2 {
+  margin: 0;
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: clamp(46px, 6vw, 82px);
+  font-weight: 500;
+  letter-spacing: -0.075em;
+  line-height: 1;
+}
+
+.japan-heading > p:last-child {
+  max-width: 470px;
+  margin: 22px 0 0;
+  color: rgba(225, 244, 239, 0.64);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  line-height: 2;
+}
+
+.japan-observation {
+  position: absolute;
+  z-index: 3;
+  bottom: max(46px, calc(env(safe-area-inset-bottom) + 30px));
+  left: max(46px, env(safe-area-inset-left));
+  width: min(480px, 42vw);
+  pointer-events: none;
+}
+
+.japan-observation p,
+.japan-observation strong,
+.japan-observation span {
+  display: block;
+}
+
+.japan-observation p {
+  margin: 0 0 10px;
+  color: #90e9ce;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+}
+
+.japan-observation strong {
+  color: rgba(242, 255, 251, 0.88);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: 0.11em;
+  line-height: 1.8;
+}
+
+.japan-observation span {
+  margin-top: 13px;
+  color: rgba(194, 231, 222, 0.35);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  letter-spacing: 0.15em;
+}
+
+.japan-instruction {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  right: max(35px, env(safe-area-inset-right));
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 7px 12px;
+  align-items: baseline;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.japan-instruction span {
+  color: #94ead1;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  letter-spacing: 0.17em;
+}
+
+.japan-instruction p {
+  margin: 0;
+  color: rgba(227, 246, 241, 0.48);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+.japan-close {
+  position: absolute;
+  z-index: 3;
+  top: max(38px, env(safe-area-inset-top));
+  right: max(34px, env(safe-area-inset-right));
+  display: inline-flex;
+  gap: 13px;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 17px;
+  border: 1px solid rgba(192, 244, 230, 0.22);
+  border-radius: 999px;
+  color: rgba(237, 253, 248, 0.72);
+  background: rgba(2, 11, 14, 0.46);
+  backdrop-filter: blur(13px);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.japan-close:hover,
+.japan-close:focus-visible {
+  color: #fff;
+  border-color: rgba(192, 244, 230, 0.52);
+  background: rgba(17, 47, 45, 0.64);
+  outline: none;
+}
+
+.japan-credits {
+  position: absolute;
+  z-index: 3;
+  right: max(34px, env(safe-area-inset-right));
+  bottom: max(77px, calc(env(safe-area-inset-bottom) + 64px));
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.japan-credits a {
+  color: rgba(224, 243, 238, 0.45);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
+.japan-credits a:hover,
+.japan-credits a:focus-visible {
+  color: #fff;
+  outline: none;
+}
+
+.japan-open .masthead,
+.japan-open .status,
+.japan-open .guide,
+.japan-open .mode-caption,
+.japan-open .mode-nav {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.japan-open .auto-button,
+.japan-open .source-button,
+.japan-open .reset-button {
+  display: none;
 }
 
 .experience::before {
@@ -606,6 +909,7 @@ h1 {
   align-items: center;
 }
 
+.japan-button,
 .intro-button,
 .auto-button,
 .source-button,
@@ -633,6 +937,8 @@ h1 {
     box-shadow 180ms ease;
 }
 
+.japan-button:hover,
+.japan-button:focus-visible,
 .intro-button:hover,
 .intro-button:focus-visible,
 .auto-button:hover,
@@ -654,6 +960,13 @@ h1 {
   box-shadow: 0 0 22px rgba(var(--accent-rgb), 0.08);
 }
 
+.japan-button[aria-pressed="true"] {
+  color: #fff;
+  border-color: rgba(141, 242, 211, 0.42);
+  background: rgba(83, 219, 178, 0.12);
+  box-shadow: 0 0 24px rgba(66, 234, 184, 0.1);
+}
+
 .action-icon {
   display: inline-grid;
   min-width: 13px;
@@ -661,6 +974,13 @@ h1 {
   font-weight: 400;
   line-height: 1;
   place-items: center;
+}
+
+.japan-icon {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
 }
 
 .intro-icon {
@@ -1006,13 +1326,95 @@ h1 {
   }
 
   .intro-enter {
-    min-width: 190px;
+    min-width: 0;
     min-height: 46px;
+    padding-inline: 14px;
     font-size: 10px;
+  }
+
+  .intro-choices {
+    width: 100%;
+  }
+
+  .intro-enter-secondary {
+    font-size: 9px;
   }
 
   .intro-footer p {
     font-size: 7px;
+  }
+
+  .japan-map-shade {
+    background:
+      linear-gradient(180deg, rgba(1, 7, 10, 0.84), rgba(1, 7, 10, 0.14) 42%, rgba(1, 5, 8, 0.72)),
+      radial-gradient(circle at center, transparent 38%, rgba(0, 3, 6, 0.5));
+  }
+
+  .japan-heading {
+    top: max(82px, calc(env(safe-area-inset-top) + 64px));
+    right: max(20px, env(safe-area-inset-right));
+    left: max(20px, env(safe-area-inset-left));
+    width: auto;
+  }
+
+  .japan-kicker {
+    margin-bottom: 13px;
+    font-size: 7px;
+    letter-spacing: 0.19em;
+  }
+
+  .japan-heading h2 {
+    font-size: clamp(42px, 14vw, 58px);
+  }
+
+  .japan-heading > p:last-child {
+    max-width: 330px;
+    margin-top: 16px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    line-height: 1.8;
+  }
+
+  .japan-observation {
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(96px, calc(env(safe-area-inset-bottom) + 80px));
+    left: max(20px, env(safe-area-inset-left));
+    width: auto;
+  }
+
+  .japan-observation strong {
+    max-width: 310px;
+    font-size: 10px;
+    line-height: 1.7;
+  }
+
+  .japan-observation span {
+    margin-top: 9px;
+    font-size: 6px;
+  }
+
+  .japan-instruction {
+    display: none;
+  }
+
+  .japan-close {
+    top: auto;
+    right: auto;
+    bottom: max(21px, calc(env(safe-area-inset-bottom) + 10px));
+    left: max(20px, env(safe-area-inset-left));
+    min-height: 38px;
+  }
+
+  .japan-credits {
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(29px, calc(env(safe-area-inset-bottom) + 18px));
+    flex-direction: column;
+    gap: 3px;
+    align-items: flex-end;
+  }
+
+  .japan-credits a {
+    font-size: 6px;
   }
 
   .masthead {
@@ -1101,6 +1503,7 @@ h1 {
     gap: 5px;
   }
 
+  .japan-button,
   .intro-button,
   .auto-button,
   .source-button,
@@ -1215,6 +1618,49 @@ h1 {
     min-height: 40px;
   }
 
+  .japan-heading {
+    top: max(24px, env(safe-area-inset-top));
+    left: max(28px, env(safe-area-inset-left));
+    width: min(390px, 45vw);
+  }
+
+  .japan-kicker {
+    margin-bottom: 9px;
+  }
+
+  .japan-heading h2 {
+    font-size: 39px;
+  }
+
+  .japan-heading > p:last-child {
+    margin-top: 10px;
+    font-size: 8px;
+    line-height: 1.65;
+  }
+
+  .japan-observation {
+    bottom: max(24px, calc(env(safe-area-inset-bottom) + 14px));
+    left: max(28px, env(safe-area-inset-left));
+  }
+
+  .japan-observation strong {
+    font-size: 10px;
+  }
+
+  .japan-close {
+    top: max(20px, env(safe-area-inset-top));
+    right: max(20px, env(safe-area-inset-right));
+    bottom: auto;
+    left: auto;
+  }
+
+  .japan-credits {
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(19px, env(safe-area-inset-bottom));
+    flex-direction: row;
+    gap: 10px;
+  }
+
   .title-ja,
   .mode-description,
   .status {
@@ -1241,9 +1687,13 @@ h1 {
 
   .intro-layer,
   .intro-enter,
+  .japan-layer,
+  .japan-tile,
+  .japan-close,
   .guide,
   .mode-button,
   .mode-arrow,
+  .japan-button,
   .intro-button,
   .auto-button,
   .source-button,
