@@ -24,6 +24,7 @@
   const conceptPosition = document.querySelector("#concept-position");
   const conceptPrevious = document.querySelector("#concept-previous");
   const conceptNext = document.querySelector("#concept-next");
+  const conceptModeList = document.querySelector("#concept-mode-list");
   const previousModeButton = document.querySelector("#previous-mode");
   const nextModeButton = document.querySelector("#next-mode");
   const autoButton = document.querySelector("#auto-button");
@@ -46,6 +47,25 @@
   const japanOverlay = document.querySelector("#japan-overlay");
   const japanMapStatus = document.querySelector("#japan-map-status");
   const japanClose = document.querySelector("#japan-close");
+  const japanDataButton = document.querySelector("#japan-data-button");
+  const japanDataPanel = document.querySelector("#japan-data-panel");
+  const japanDataClose = document.querySelector("#japan-data-close");
+  const japanDataScrim = document.querySelector("#japan-data-scrim");
+  const japanDataState = document.querySelector("#japan-data-state");
+  const japanDataUpdated = document.querySelector("#japan-data-updated");
+  const japanHistoryState = document.querySelector("#japan-history-state");
+  const japanHistoryUpdated = document.querySelector("#japan-history-updated");
+  const japanObservationKicker = document.querySelector("#japan-observation-kicker");
+  const japanObservationCopy = document.querySelector("#japan-observation-copy");
+  const japanHistoryLayerButton = document.querySelector("#japan-history-layer");
+  const japanLiveLayerButton = document.querySelector("#japan-live-layer");
+  const japanPoiCard = document.querySelector("#japan-poi-card");
+  const japanPoiClose = document.querySelector("#japan-poi-close");
+  const japanPoiType = document.querySelector("#japan-poi-type");
+  const japanPoiTitle = document.querySelector("#japan-poi-title");
+  const japanPoiMeta = document.querySelector("#japan-poi-meta");
+  const japanPoiDescription = document.querySelector("#japan-poi-description");
+  const japanPoiRelation = document.querySelector("#japan-poi-relation");
 
   const TRAIL_COUNT = 16;
   const MODE_COUNT = 10;
@@ -56,6 +76,7 @@
   const JAPAN_MOBILE_ZOOM = 4;
   const USGS_WEEK_FEED =
     "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson";
+  const JMA_HISTORY_DATA = "./data/jma-intensity-history.json";
   const JAPAN_DATA_BOUNDS = {
     west: 122,
     east: 154,
@@ -67,14 +88,72 @@
   const japanContext = japanOverlay.getContext("2d");
 
   const JAPAN_NODES = [
-    { name: "NAHA", lon: 127.68, lat: 26.21 },
-    { name: "YAKUSHIMA", lon: 130.52, lat: 30.36 },
-    { name: "ASO", lon: 131.1, lat: 32.88 },
-    { name: "NOTO", lon: 136.9, lat: 37.3 },
-    { name: "TOKYO", lon: 139.69, lat: 35.68 },
-    { name: "SENDAI", lon: 140.87, lat: 38.27 },
-    { name: "NEMURO", lon: 145.58, lat: 43.33 },
+    {
+      name: "NAHA",
+      nameJa: "那覇・南西諸島",
+      lon: 127.68,
+      lat: 26.21,
+      description: "亜熱帯の島々では、海流、サンゴ礁、台風、観光都市の営みが近い距離で重なります。海を境界ではなく、島々を結ぶ循環として読むための地点です。",
+      relation: "02 青い循環系 × 08 三つの生態系 — 海の変化と地域社会の変化を一つの関係として考える。",
+    },
+    {
+      name: "YAKUSHIMA",
+      nameJa: "屋久島",
+      lon: 130.52,
+      lat: 30.36,
+      description: "高い山地、豊かな雨、古い森林、海まで続く水の流れが、短い距離の中でつながる島です。森が気候と水循環を支える働きを聴く地点として置いています。",
+      relation: "03 森の気候装置 — 森林を木材の集合ではなく、水と雲をつくる生きたインフラとして捉える。",
+    },
+    {
+      name: "ASO",
+      nameJa: "阿蘇",
+      lon: 131.1,
+      lat: 32.88,
+      description: "火山活動が生んだ地形の上に、草原、農業、湧水、集落の営みが重なる地域です。大地の変動を消すのではなく、恵みとリスクの両方を引き受ける場所として選びました。",
+      relation: "07 災いと恵み — 変動する地球に文明の側がどう同期し、回復の余地を残すかを問う。",
+    },
+    {
+      name: "NOTO",
+      nameJa: "能登",
+      lon: 136.9,
+      lat: 37.3,
+      description: "里山と里海、農漁業、祭礼、集落の知恵が相互に支え合ってきた半島です。自然環境だけでなく、暮らしと記憶を含めて再生を考える地点です。",
+      relation: "05 すべては次の資源 × 08 三つの生態系 — 資源循環、共同体、心の回復を切り離さない。",
+    },
+    {
+      name: "TOKYO",
+      nameJa: "東京",
+      lon: 139.69,
+      lat: 35.68,
+      description: "食料、電力、水、情報、廃棄物が巨大な規模で集中・通過する都市です。都市を自然の外部ではなく、地球の代謝に責任を持つ人工的な器官として考える地点です。",
+      relation: "06 人類世の傷跡 × 09 人工物の共生化 — 都市の効率を、周囲へ何を返すかという尺度で測り直す。",
+    },
+    {
+      name: "SENDAI",
+      nameJa: "仙台・三陸沿岸",
+      lon: 140.87,
+      lat: 38.27,
+      description: "海、川、平野、都市が接する沿岸域です。災害の記憶、防災、土地利用、生態系の回復を、別々の課題ではなく重なる時間として読む地点です。",
+      relation: "07 災いと恵み × 08 三つの生態系 — 観測技術と地域の記憶を結び、被害を弱い立場へ集中させない。",
+    },
+    {
+      name: "NEMURO",
+      nameJa: "根室・道東",
+      lon: 145.58,
+      lat: 43.33,
+      description: "寒流、湿原、漁業、渡り鳥など、国境を越える流れが地域の暮らしを形づくる場所です。地図上の端ではなく、海と生物の循環が交差する入口として置いています。",
+      relation: "02 青い循環系 × 04 共進化プロトコル — 海流と生物移動がつくる、領域を越えた相互依存を読む。",
+    },
   ];
+
+  const JMA_EVENT_TITLES = {
+    20110311144618: "東北地方太平洋沖地震",
+    20160416012505: "熊本地震",
+    20180906030759: "北海道胆振東部地震",
+    20240101161022: "能登半島地震",
+    20240417231448: "豊後水道の地震",
+    20240808164255: "日向灘の地震",
+  };
 
   const modes = [
     {
@@ -839,9 +918,11 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   const modeMemory = new Float32Array(MODE_COUNT);
   const trailData = new Float32Array(TRAIL_COUNT * 4);
   const modeButtons = [];
+  const conceptModeButtons = [];
   const japanTileElements = new Map();
   const japanPulses = [];
   let japanEarthquakes = [];
+  let japanHistoryEvents = [];
   let trailCursor = 0;
   let previousTrailX = -10;
   let previousTrailY = -10;
@@ -856,11 +937,19 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   let introRestoreFocus = false;
   let introCloseTimer = 0;
   let japanIsOpen = false;
+  let japanDataIsOpen = false;
   let japanRestoreFocus = true;
   let japanCloseTimer = 0;
   let japanTilesDirty = true;
   let japanTileErrors = 0;
   let japanEarthquakeDataState = "idle";
+  let japanHistoryDataState = "idle";
+  let japanDataLayer = "history";
+  let japanDataUpdatedAt = null;
+  let japanHistoryUpdatedAt = null;
+  let selectedJapanPoi = null;
+  let japanWaveReplay = null;
+  let japanDeepLinkHandled = false;
   let autoEnabled = false;
   let nextAutoAt = performance.now() + AUTO_INTERVAL;
   let modeFromIndex = 0;
@@ -1007,6 +1096,106 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     };
   };
 
+  const getJmaEventTitle = (event) => JMA_EVENT_TITLES[event.id] || event.name;
+  const getMaximumIntensityText = (event) =>
+    String(event.maximumIntensity || "—").normalize("NFKC");
+  const getIntensityColor = (intensityCode, alpha = 1) => {
+    if (intensityCode === "7") {
+      return `rgba(255, 80, 121, ${alpha})`;
+    }
+    if (intensityCode === "D") {
+      return `rgba(255, 141, 72, ${alpha})`;
+    }
+    return `rgba(255, 209, 102, ${alpha})`;
+  };
+  const getIntensityShortLabel = (intensityCode) =>
+    intensityCode === "7" ? "7" : intensityCode === "D" ? "6+" : "6-";
+
+  const renderJapanHistoryReplay = (ctx, rect, left, top, now) => {
+    if (japanDataLayer !== "history" || japanWaveReplay?.kind !== "history") {
+      return;
+    }
+
+    const event = japanWaveReplay.event;
+    const source = japanWorldToScreen(event.longitude, event.latitude, left, top);
+    const maximumRadius = Math.hypot(rect.width, rect.height) * 1.08;
+    const age = reducedMotion ? 7000 : Math.max(0, now - japanWaveReplay.bornAt);
+    const pProgress = clamp(age / 4200, 0, 1);
+    const sProgress = clamp(age / 6600, 0, 1);
+    const pRadius = maximumRadius * pProgress;
+    const sRadius = maximumRadius * sProgress;
+    const pAlpha = pProgress < 1 ? 0.58 * (1 - pProgress * 0.62) : 0.08;
+    const sAlpha = sProgress < 1 ? 0.82 * (1 - sProgress * 0.55) : 0.12;
+
+    if (pRadius > 2) {
+      ctx.beginPath();
+      ctx.arc(source.x, source.y, pRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(121, 222, 255, ${pAlpha})`;
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+      if (pProgress < 0.92) {
+        ctx.fillStyle = `rgba(174, 235, 255, ${Math.max(0.18, pAlpha)})`;
+        ctx.font = '7px Consolas, "Courier New", monospace';
+        ctx.fillText("P / FIRST ARRIVAL", source.x + pRadius + 6, source.y - 5);
+      }
+    }
+
+    if (sRadius > 2) {
+      ctx.beginPath();
+      ctx.arc(source.x, source.y, sRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255, 126, 97, ${sAlpha})`;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      if (sProgress < 0.94) {
+        ctx.fillStyle = `rgba(255, 184, 139, ${Math.max(0.2, sAlpha)})`;
+        ctx.font = '7px Consolas, "Courier New", monospace';
+        ctx.fillText("S / INTENSITY REVEAL", source.x + sRadius + 6, source.y + 11);
+      }
+    }
+
+    const occupiedLabelCells = new Set();
+    for (const observation of event.observations) {
+      const point = japanWorldToScreen(
+        observation.longitude,
+        observation.latitude,
+        left,
+        top,
+      );
+      const distance = Math.hypot(point.x - source.x, point.y - source.y);
+      if (distance > sRadius + 5) {
+        continue;
+      }
+      if (
+        point.x < -24 ||
+        point.x > rect.width + 24 ||
+        point.y < -24 ||
+        point.y > rect.height + 24
+      ) {
+        continue;
+      }
+
+      const arrival = clamp((sRadius + 9 - distance) / 28, 0.12, 1);
+      const pointRadius = observation.intensityCode === "7" ? 5.2 : observation.intensityCode === "D" ? 4 : 3.2;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, pointRadius + (1 - arrival) * 7, 0, Math.PI * 2);
+      ctx.fillStyle = getIntensityColor(observation.intensityCode, 0.32 + arrival * 0.58);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, pointRadius + 5 + (1 - arrival) * 8, 0, Math.PI * 2);
+      ctx.strokeStyle = getIntensityColor(observation.intensityCode, 0.12 + arrival * 0.28);
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+
+      const cell = `${Math.round(point.x / 58)}:${Math.round(point.y / 30)}`;
+      if (observation.intensityCode === "7" || !occupiedLabelCells.has(cell)) {
+        occupiedLabelCells.add(cell);
+        ctx.fillStyle = getIntensityColor(observation.intensityCode, 0.9);
+        ctx.font = '7px Consolas, "Courier New", monospace';
+        ctx.fillText(getIntensityShortLabel(observation.intensityCode), point.x + 7, point.y - 5);
+      }
+    }
+  };
+
   const renderJapanOverlay = (now) => {
     if (!japanIsOpen || !japanContext) {
       return;
@@ -1069,42 +1258,80 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       ctx.fillText(vector.label, vector.x + 7, vector.y - 7);
     }
 
-    const strongestEarthquake = japanEarthquakes.reduce(
-      (strongest, event) =>
-        !strongest || event.magnitude > strongest.magnitude ? event : strongest,
-      null,
-    );
+    renderJapanHistoryReplay(ctx, rect, left, top, now);
 
-    for (const [index, event] of japanEarthquakes.entries()) {
-      const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
-      if (
-        point.x < -30 ||
-        point.x > rect.width + 30 ||
-        point.y < -30 ||
-        point.y > rect.height + 30
-      ) {
-        continue;
+    if (japanDataLayer === "live") {
+      const strongestEarthquake = japanEarthquakes.reduce(
+        (strongest, event) =>
+          !strongest || event.magnitude > strongest.magnitude ? event : strongest,
+        null,
+      );
+
+      for (const [index, event] of japanEarthquakes.entries()) {
+        const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
+        if (
+          point.x < -30 ||
+          point.x > rect.width + 30 ||
+          point.y < -30 ||
+          point.y > rect.height + 30
+        ) {
+          continue;
+        }
+
+        const radius = 2.4 + clamp(event.magnitude - 2.5, 0, 4.5) * 1.35;
+        const depthOpacity = 0.56 - clamp(event.depthKm / 650, 0, 1) * 0.28;
+        const phase = reducedMotion ? 0.5 : 0.5 + Math.sin(now * 0.001 + index) * 0.5;
+
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 174, 112, ${depthOpacity})`;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius + 4 + phase * 3, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 166, 101, ${0.12 + phase * 0.1})`;
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+
+        if (event === strongestEarthquake && event.magnitude >= 5.5) {
+          ctx.fillStyle = "rgba(255, 204, 166, 0.62)";
+          ctx.font = '7px Consolas, "Courier New", monospace';
+          ctx.fillText(`M${event.magnitude.toFixed(1)}`, point.x + radius + 5, point.y - 5);
+        }
       }
+    } else {
+      japanHistoryEvents.forEach((event, index) => {
+        const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
+        if (
+          point.x < -34 ||
+          point.x > rect.width + 34 ||
+          point.y < -34 ||
+          point.y > rect.height + 34
+        ) {
+          return;
+        }
 
-      const radius = 2.4 + clamp(event.magnitude - 2.5, 0, 4.5) * 1.35;
-      const depthOpacity = 0.56 - clamp(event.depthKm / 650, 0, 1) * 0.28;
-      const phase = reducedMotion ? 0.5 : 0.5 + Math.sin(now * 0.001 + index) * 0.5;
-
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 174, 112, ${depthOpacity})`;
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, radius + 4 + phase * 3, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(255, 166, 101, ${0.12 + phase * 0.1})`;
-      ctx.lineWidth = 0.7;
-      ctx.stroke();
-
-      if (event === strongestEarthquake && event.magnitude >= 5.5) {
-        ctx.fillStyle = "rgba(255, 204, 166, 0.62)";
+        const isSelected = selectedJapanPoi?.type === "history" && selectedJapanPoi.event.id === event.id;
+        const phase = reducedMotion ? 0.4 : 0.5 + Math.sin(now * 0.0012 + index * 0.9) * 0.5;
+        const maximumIntensity = getMaximumIntensityText(event);
+        const radius = maximumIntensity === "7" ? 6.2 : 5;
+        const colorCode = maximumIntensity === "7" ? "7" : "C";
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = getIntensityColor(colorCode, isSelected ? 1 : 0.82);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius + 5 + phase * (isSelected ? 8 : 4), 0, Math.PI * 2);
+        ctx.strokeStyle = getIntensityColor(colorCode, isSelected ? 0.62 : 0.24);
+        ctx.lineWidth = isSelected ? 1.5 : 0.8;
+        ctx.stroke();
+        ctx.fillStyle = getIntensityColor(colorCode, isSelected ? 1 : 0.72);
         ctx.font = '7px Consolas, "Courier New", monospace';
-        ctx.fillText(`M${event.magnitude.toFixed(1)}`, point.x + radius + 5, point.y - 5);
-      }
+        ctx.fillText(
+          `${String(event.occurredAt).slice(0, 4)} / ${maximumIntensity}`,
+          point.x + radius + 6,
+          point.y - 6,
+        );
+      });
     }
 
     nodePoints.forEach((node, index) => {
@@ -1171,7 +1398,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       if (disturbanceAlpha > 0.01) {
         ctx.beginPath();
         ctx.arc(x, y, disturbanceRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255, 139, 94, ${disturbanceAlpha})`;
+        ctx.strokeStyle = `rgba(126, 221, 255, ${disturbanceAlpha})`;
         ctx.lineWidth = 1.4;
         ctx.stroke();
       }
@@ -1198,9 +1425,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       if (!latestPulse) {
         japanMapStatus.textContent = getJapanObservationStatus();
       } else if (now - latestPulse.bornAt < pulseLifetime * 0.24) {
-        japanMapStatus.textContent = "DISTURBANCE RECEIVED / LISTENING TO THE EARTH";
+        japanMapStatus.textContent = "QUESTION SENT / CONNECTING TO A LISTENING NODE";
       } else {
-        japanMapStatus.textContent = "REGENERATION WAVE / SYNCHRONIZING WITH EARTH RHYTHM";
+        japanMapStatus.textContent = "CO-CREATION SIGNAL / RELATION TRACE ACTIVE";
       }
     }
 
@@ -1278,6 +1505,25 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     if (japanTileErrors > 0) {
       return "MAP NETWORK OFFLINE / INTERACTION SIGNAL ACTIVE";
     }
+    if (japanDataLayer === "history") {
+      if (japanHistoryDataState === "loading") {
+        return "JMA HISTORY / LOADING OBSERVED INTENSITY";
+      }
+      if (japanHistoryDataState === "ready") {
+        const observationCount = japanHistoryEvents.reduce(
+          (total, event) => total + event.observations.length,
+          0,
+        );
+        if (selectedJapanPoi?.type === "history") {
+          return `JMA OBSERVED INTENSITY / ${selectedJapanPoi.event.observations.length} SITES / P→S QUALITATIVE REPLAY`;
+        }
+        return `JMA HISTORY / ${japanHistoryEvents.length} EVENTS / ${observationCount} INTENSITY 6-7 SITES`;
+      }
+      if (japanHistoryDataState === "offline") {
+        return "JMA HISTORY OFFLINE / ARTISTIC POI REMAIN AVAILABLE";
+      }
+      return "JMA HISTORY / STANDBY";
+    }
     if (japanEarthquakeDataState === "loading") {
       return "USGS WEEK FEED / RECEIVING OBSERVATIONS";
     }
@@ -1291,6 +1537,219 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return "SEISMIC DATA OFFLINE / INTERACTION SIGNAL ACTIVE";
     }
     return "4 PLATE CONTACT ZONE / EARTH RHYTHM ACTIVE";
+  };
+
+  const formatJapanDataTime = (value) => {
+    if (!value) {
+      return "UPDATED —";
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "UPDATED —";
+    }
+    return `UPDATED ${new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Tokyo",
+      timeZoneName: "short",
+    }).format(date)}`;
+  };
+
+  const updateJapanDataInterface = () => {
+    if (japanHistoryDataState === "loading") {
+      japanHistoryState.textContent = "LOADING / 気象庁の同梱履歴を確認中";
+    } else if (japanHistoryDataState === "ready") {
+      const observationCount = japanHistoryEvents.reduce(
+        (total, event) => total + event.observations.length,
+        0,
+      );
+      japanHistoryState.textContent = `BUNDLED / 代表${japanHistoryEvents.length}地震・震度6弱以上 ${observationCount}地点`;
+    } else if (japanHistoryDataState === "offline") {
+      japanHistoryState.textContent = "OFFLINE / 気象庁履歴データを読み込めませんでした";
+    } else {
+      japanHistoryState.textContent = "STANDBY / 日本モードを開くと読み込みます";
+    }
+    japanHistoryUpdated.textContent = japanHistoryUpdatedAt
+      ? `BUNDLED ${formatJapanDataTime(japanHistoryUpdatedAt).replace("UPDATED ", "")}`
+      : "BUNDLED SNAPSHOT —";
+
+    if (japanEarthquakeDataState === "loading") {
+      japanDataState.textContent = "RECEIVING / USGS 7日間 M2.5+ フィードを取得中";
+    } else if (japanEarthquakeDataState === "live") {
+      japanDataState.textContent = `LIVE / USGS観測 ${japanEarthquakes.length}件を表示`;
+    } else if (japanEarthquakeDataState === "snapshot") {
+      japanDataState.textContent = `SNAPSHOT / 同梱観測 ${japanEarthquakes.length}件を表示`;
+    } else if (japanEarthquakeDataState === "offline") {
+      japanDataState.textContent = "OFFLINE / 地震観測は現在表示していません";
+    } else {
+      japanDataState.textContent = "STANDBY / 日本モードを開くと取得します";
+    }
+    japanDataUpdated.textContent = formatJapanDataTime(japanDataUpdatedAt);
+  };
+
+  const setJapanDataLayer = (layer) => {
+    japanDataLayer = layer === "live" ? "live" : "history";
+    japanHistoryLayerButton.setAttribute(
+      "aria-pressed",
+      japanDataLayer === "history" ? "true" : "false",
+    );
+    japanLiveLayerButton.setAttribute(
+      "aria-pressed",
+      japanDataLayer === "live" ? "true" : "false",
+    );
+    closeJapanPoi();
+    if (japanDataLayer === "history") {
+      japanObservationKicker.textContent = "JMA HISTORY / SHINDO 6-JAKU+";
+      japanObservationCopy.textContent =
+        "地震を選ぶとP波・S波の順に波が走り、震度6弱以上を観測した各地点が立ち上がる。";
+    } else {
+      japanObservationKicker.textContent = "USGS LIVE / M2.5+ / 7 DAYS";
+      japanObservationCopy.textContent =
+        "直近7日間の震源を表示。点を選ぶと、位置・規模・深さ・発生時刻を読むことができる。";
+    }
+    japanMapStatus.textContent = getJapanObservationStatus();
+  };
+
+  const formatJapanEventTime = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return String(value).replace("T", " ").replace("+09:00", " JST");
+    }
+    return new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Tokyo",
+      timeZoneName: "short",
+    }).format(date);
+  };
+
+  const closeJapanPoi = ({ restoreFocus = false } = {}) => {
+    if (!selectedJapanPoi) {
+      return;
+    }
+    selectedJapanPoi = null;
+    japanWaveReplay = null;
+    japanPoiCard.hidden = true;
+    japanPoiCard.setAttribute("aria-hidden", "true");
+    japanLayer.classList.remove("japan-poi-open");
+    if (restoreFocus) {
+      japanMap.focus({ preventScroll: true });
+    }
+  };
+
+  const positionJapanPoiCard = (clientX, clientY) => {
+    if (window.innerWidth <= 720) {
+      japanPoiCard.style.removeProperty("left");
+      japanPoiCard.style.removeProperty("top");
+      return;
+    }
+    const layerRect = japanLayer.getBoundingClientRect();
+    const cardWidth = Math.min(370, layerRect.width - 40);
+    const cardHeight = Math.min(japanPoiCard.offsetHeight || 330, layerRect.height - 40);
+    const localX = clientX - layerRect.left;
+    const localY = clientY - layerRect.top;
+    const left = clamp(
+      localX + 22 + cardWidth > layerRect.width ? localX - cardWidth - 22 : localX + 22,
+      20,
+      layerRect.width - cardWidth - 20,
+    );
+    const top = clamp(localY - 70, 20, layerRect.height - cardHeight - 20);
+    japanPoiCard.style.left = `${left}px`;
+    japanPoiCard.style.top = `${top}px`;
+  };
+
+  const openJapanPoi = (poi, clientX, clientY) => {
+    selectedJapanPoi = poi;
+    japanPoiCard.hidden = false;
+    japanPoiCard.setAttribute("aria-hidden", "false");
+    japanLayer.classList.add("japan-poi-open");
+
+    if (poi.type === "history") {
+      const event = poi.event;
+      japanPoiType.textContent = "JMA HISTORY / OBSERVED INTENSITY";
+      japanPoiTitle.textContent = `${String(event.occurredAt).slice(0, 4)} ${getJmaEventTitle(event)}`;
+      japanPoiMeta.textContent = `${formatJapanEventTime(event.occurredAt)} / M${event.magnitude.toFixed(
+        1,
+      )} / DEPTH ${event.depthKm} KM / 最大震度 ${getMaximumIntensityText(event)}`;
+      japanPoiDescription.textContent =
+        `気象庁の震度データベースから、この地震で震度6弱・6強・7を実際に観測した${event.observations.length}地点を収録しています。色は黄=6弱、橙=6強、赤紫=7です。震度はマグニチュードから推定した値ではありません。`;
+      japanPoiRelation.textContent =
+        "震源から水色のPリングが先行し、橙のSリングが後を追います。各地の実測震度点はSリングの通過に合わせて現れます。ただし速度構造・地質・正確な到達時刻は計算せず、P波が先・S波が後という順序を身体で読むための時間圧縮表現です。";
+      japanWaveReplay = {
+        kind: "history",
+        event,
+        bornAt: performance.now(),
+      };
+      japanMapStatus.textContent = getJapanObservationStatus();
+    } else if (poi.type === "earthquake") {
+      const event = poi.event;
+      japanPoiType.textContent = "USGS OBSERVATION / EARTH SIGNAL";
+      japanPoiTitle.textContent = `M${event.magnitude.toFixed(1)} / ${event.place}`;
+      japanPoiMeta.textContent = `${formatJapanEventTime(event.time)} / DEPTH ${Math.round(
+        event.depthKm,
+      )} KM`;
+      japanPoiDescription.textContent =
+        "橙の点はUSGS GeoJSONから取得した震源の観測値です。円の大きさはマグニチュード、濃さは深さを手がかりにした表示ですが、揺れの強さや被害範囲を示すものではありません。";
+      japanPoiRelation.textContent =
+        "LIVEレイヤーは『いま地球がどこで動いているか』を読む入口です。このフィードには各地の震度を重ねていないため、P/S波や揺れの広がりは再生しません。観測されていない意味を足さないことも、センスウェアの設計に含めています。";
+      japanWaveReplay = null;
+    } else {
+      const node = poi.node;
+      japanPoiType.textContent = "CURATED LISTENING NODE / ARTISTIC POI";
+      japanPoiTitle.textContent = node.nameJa;
+      japanPoiMeta.textContent = `${node.name} / ${node.lat.toFixed(2)}°N ${node.lon.toFixed(2)}°E`;
+      japanPoiDescription.textContent = node.description;
+      japanPoiRelation.textContent = node.relation;
+      japanWaveReplay = null;
+    }
+
+    requestAnimationFrame(() => {
+      positionJapanPoiCard(clientX, clientY);
+      japanPoiClose.focus({ preventScroll: true });
+    });
+  };
+
+  const findJapanPoiAt = (clientX, clientY) => {
+    const { rect, left, top } = getJapanViewport();
+    const localX = clientX - rect.left;
+    const localY = clientY - rect.top;
+    let closest = null;
+
+    if (japanDataLayer === "history") {
+      japanHistoryEvents.forEach((event, index) => {
+        const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
+        const distance = Math.hypot(localX - point.x, localY - point.y);
+        if (distance <= 25 && (!closest || distance < closest.distance)) {
+          closest = { type: "history", event, index, distance };
+        }
+      });
+    } else {
+      japanEarthquakes.forEach((event, index) => {
+        const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
+        const distance = Math.hypot(localX - point.x, localY - point.y);
+        if (distance <= 19 && (!closest || distance < closest.distance)) {
+          closest = { type: "earthquake", event, index, distance };
+        }
+      });
+    }
+
+    if (!closest) {
+      JAPAN_NODES.forEach((node, index) => {
+        const point = japanWorldToScreen(node.lon, node.lat, left, top);
+        const distance = Math.hypot(localX - point.x, localY - point.y);
+        if (distance <= 18 && (!closest || distance < closest.distance)) {
+          closest = { type: "node", node, index, distance };
+        }
+      });
+    }
+
+    return closest;
   };
 
   const fetchJsonWithTimeout = async (url, timeout = 6500) => {
@@ -1310,6 +1769,59 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     }
   };
 
+  const maybeOpenJapanEventFromUrl = () => {
+    if (japanDeepLinkHandled || !japanIsOpen || japanHistoryDataState !== "ready") {
+      return;
+    }
+    const eventId = new URLSearchParams(window.location.search).get("event");
+    const event = japanHistoryEvents.find((candidate) => candidate.id === eventId);
+    if (!event) {
+      return;
+    }
+    japanDeepLinkHandled = true;
+    setJapanDataLayer("history");
+    requestAnimationFrame(() => {
+      const { rect, left, top } = getJapanViewport();
+      const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
+      openJapanPoi(
+        { type: "history", event },
+        rect.left + clamp(point.x, 24, rect.width - 24),
+        rect.top + clamp(point.y, 24, rect.height - 24),
+      );
+    });
+  };
+
+  const loadJapanHistory = async () => {
+    if (japanHistoryDataState === "loading" || japanHistoryDataState === "ready") {
+      maybeOpenJapanEventFromUrl();
+      return;
+    }
+    japanHistoryDataState = "loading";
+    updateJapanDataInterface();
+    japanMapStatus.textContent = getJapanObservationStatus();
+    try {
+      const data = await fetchJsonWithTimeout(JMA_HISTORY_DATA, 3500);
+      if (!Array.isArray(data.events)) {
+        throw new Error("Invalid JMA history payload");
+      }
+      japanHistoryEvents = data.events.filter(
+        (event) =>
+          Number.isFinite(event.longitude) &&
+          Number.isFinite(event.latitude) &&
+          Array.isArray(event.observations),
+      );
+      japanHistoryUpdatedAt = data.retrievedAt || null;
+      japanHistoryDataState = "ready";
+    } catch {
+      japanHistoryEvents = [];
+      japanHistoryUpdatedAt = null;
+      japanHistoryDataState = "offline";
+    }
+    updateJapanDataInterface();
+    japanMapStatus.textContent = getJapanObservationStatus();
+    maybeOpenJapanEventFromUrl();
+  };
+
   const loadJapanEarthquakes = async () => {
     if (
       japanEarthquakeDataState === "loading" ||
@@ -1320,6 +1832,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     }
 
     japanEarthquakeDataState = "loading";
+    japanDataUpdatedAt = null;
+    updateJapanDataInterface();
     if (japanTileErrors === 0) {
       japanMapStatus.textContent = getJapanObservationStatus();
     }
@@ -1339,6 +1853,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         .sort((first, second) => Date.parse(second.time) - Date.parse(first.time))
         .slice(0, 40);
       japanEarthquakeDataState = "live";
+      japanDataUpdatedAt = data.metadata?.generated || Date.now();
     } catch {
       try {
         const fallback = await fetchJsonWithTimeout(
@@ -1355,11 +1870,15 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
               japanCoordinateIsVisible(event.longitude, event.latitude),
           );
         japanEarthquakeDataState = "snapshot";
+        japanDataUpdatedAt = fallback.retrievedAt || null;
       } catch {
         japanEarthquakes = [];
         japanEarthquakeDataState = "offline";
+        japanDataUpdatedAt = null;
       }
     }
+
+    updateJapanDataInterface();
 
     if (japanPulses.length === 0 || japanTileErrors > 0) {
       japanMapStatus.textContent = getJapanObservationStatus();
@@ -1479,6 +1998,9 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     modeButtons.forEach((button, index) => {
       button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
     });
+    conceptModeButtons.forEach((button, index) => {
+      button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
+    });
 
     renderSource();
     renderConcept();
@@ -1515,6 +2037,22 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     button.addEventListener("click", () => selectMode(index));
     modeButtons.push(button);
     modeList.append(button);
+
+    const conceptButton = document.createElement("button");
+    conceptButton.className = "concept-mode-button";
+    conceptButton.type = "button";
+    conceptButton.textContent = formatModeNumber(index);
+    conceptButton.setAttribute(
+      "aria-label",
+      `${formatModeNumber(index)} ${mode.titleJa}の解説を読む`,
+    );
+    conceptButton.setAttribute("aria-current", index === 0 ? "true" : "false");
+    conceptButton.addEventListener("click", () => {
+      selectMode(index);
+      conceptScroll.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+    });
+    conceptModeButtons.push(conceptButton);
+    conceptModeList.append(conceptButton);
   });
 
   previousModeButton.addEventListener("click", () => selectMode(modeToIndex - 1));
@@ -1584,7 +2122,13 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       japanMap.releasePointerCapture(event.pointerId);
     }
     if (createPulse && !japanView.dragged) {
-      addJapanPulse(event.clientX, event.clientY);
+      const poi = findJapanPoiAt(event.clientX, event.clientY);
+      if (poi) {
+        openJapanPoi(poi, event.clientX, event.clientY);
+      } else {
+        closeJapanPoi();
+        addJapanPulse(event.clientX, event.clientY);
+      }
     }
     japanView.pointerId = null;
     japanView.dragged = false;
@@ -1787,6 +2331,36 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     });
   };
 
+  const openJapanData = () => {
+    if (!japanIsOpen || japanDataIsOpen) {
+      return;
+    }
+    japanDataIsOpen = true;
+    japanDataPanel.inert = false;
+    japanDataPanel.setAttribute("aria-hidden", "false");
+    japanDataScrim.setAttribute("aria-hidden", "false");
+    japanDataScrim.tabIndex = 0;
+    japanDataButton.setAttribute("aria-expanded", "true");
+    japanLayer.classList.add("japan-data-open");
+    requestAnimationFrame(() => japanDataClose.focus({ preventScroll: true }));
+  };
+
+  const closeJapanData = ({ restoreFocus = true } = {}) => {
+    if (!japanDataIsOpen) {
+      return;
+    }
+    japanDataIsOpen = false;
+    japanDataPanel.inert = true;
+    japanDataPanel.setAttribute("aria-hidden", "true");
+    japanDataScrim.setAttribute("aria-hidden", "true");
+    japanDataScrim.tabIndex = -1;
+    japanDataButton.setAttribute("aria-expanded", "false");
+    japanLayer.classList.remove("japan-data-open");
+    if (restoreFocus) {
+      japanDataButton.focus({ preventScroll: true });
+    }
+  };
+
   const openJapan = ({
     updateHash = true,
     restoreFocusOnClose = true,
@@ -1817,6 +2391,10 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     setEarthControlsDisabled(true);
     japanTilesDirty = true;
     nextAutoAt = performance.now() + AUTO_INTERVAL;
+    const requestedDataLayer = new URLSearchParams(window.location.search).get("layer");
+    setJapanDataLayer(requestedDataLayer === "live" ? "live" : japanDataLayer);
+    updateJapanDataInterface();
+    void loadJapanHistory();
     void loadJapanEarthquakes();
 
     if (updateHash) {
@@ -1825,7 +2403,11 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
     requestAnimationFrame(() => {
       renderJapanTiles();
-      japanClose.focus({ preventScroll: true });
+      if (new URLSearchParams(window.location.search).get("panel") === "data") {
+        openJapanData();
+      } else {
+        japanClose.focus({ preventScroll: true });
+      }
     });
   };
 
@@ -1837,6 +2419,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return;
     }
 
+    closeJapanData({ restoreFocus: false });
+    closeJapanPoi();
     japanIsOpen = false;
     japanLayer.classList.add("is-closing");
     japanLayer.setAttribute("aria-hidden", "true");
@@ -1932,6 +2516,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   conceptPanel.inert = true;
   introLayer.inert = true;
   japanLayer.inert = true;
+  japanDataPanel.inert = true;
   japanButton.addEventListener("click", () => {
     if (japanIsOpen) {
       closeJapan();
@@ -1940,6 +2525,12 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     }
   });
   japanClose.addEventListener("click", () => closeJapan());
+  japanDataButton.addEventListener("click", openJapanData);
+  japanDataClose.addEventListener("click", () => closeJapanData());
+  japanDataScrim.addEventListener("click", () => closeJapanData());
+  japanPoiClose.addEventListener("click", () => closeJapanPoi({ restoreFocus: true }));
+  japanHistoryLayerButton.addEventListener("click", () => setJapanDataLayer("history"));
+  japanLiveLayerButton.addEventListener("click", () => setJapanDataLayer("live"));
   sourceButton.addEventListener("click", () => {
     if (sourceIsOpen) {
       closeSource();
@@ -2012,7 +2603,11 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return;
     }
     if (japanIsOpen) {
-      if (event.key === "Escape" || event.key.toLowerCase() === "j") {
+      if (event.key === "Escape" && japanDataIsOpen) {
+        closeJapanData();
+      } else if (event.key === "Escape" && selectedJapanPoi) {
+        closeJapanPoi({ restoreFocus: true });
+      } else if (event.key === "Escape" || event.key.toLowerCase() === "j") {
         closeJapan();
       }
       return;
@@ -2166,6 +2761,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
   clearSession();
   resetJapanView();
+  setJapanDataLayer("history");
+  updateJapanDataInterface();
   updateModeInterface();
   updateAutoInterface();
   resize();

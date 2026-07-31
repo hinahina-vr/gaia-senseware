@@ -454,7 +454,7 @@ button {
   line-height: 1;
 }
 
-.japan-heading > p:last-child {
+.japan-heading #japan-description {
   max-width: 470px;
   margin: 22px 0 0;
   color: rgba(225, 244, 239, 0.64);
@@ -463,6 +463,52 @@ button {
   font-weight: 500;
   letter-spacing: 0.11em;
   line-height: 2;
+}
+
+.japan-data-button {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  width: min(390px, 100%);
+  min-height: 42px;
+  margin-top: 22px;
+  padding: 0 14px;
+  border: 1px solid rgba(144, 233, 206, 0.22);
+  border-radius: 2px;
+  color: rgba(224, 250, 242, 0.68);
+  background: rgba(3, 18, 20, 0.5);
+  backdrop-filter: blur(13px);
+  cursor: pointer;
+  pointer-events: auto;
+  text-align: left;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.japan-data-button span:first-child,
+.japan-data-button span:last-child {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.japan-data-button span:nth-child(2) {
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.japan-data-button:hover,
+.japan-data-button:focus-visible,
+.japan-data-button[aria-expanded="true"] {
+  color: #fff;
+  border-color: rgba(144, 233, 206, 0.52);
+  background: rgba(23, 62, 57, 0.62);
+  outline: none;
 }
 
 .japan-observation {
@@ -487,6 +533,58 @@ button {
   line-height: 1.8;
   pointer-events: none;
   text-align: right;
+}
+
+.japan-layer-switch {
+  position: absolute;
+  z-index: 3;
+  right: max(34px, env(safe-area-inset-right));
+  bottom: max(112px, calc(env(safe-area-inset-bottom) + 98px));
+  display: grid;
+  grid-template-columns: repeat(2, minmax(116px, 1fr));
+  padding: 3px;
+  border: 1px solid rgba(192, 244, 230, 0.17);
+  border-radius: 3px;
+  background: rgba(2, 11, 14, 0.58);
+  backdrop-filter: blur(14px);
+}
+
+.japan-layer-switch button {
+  display: grid;
+  gap: 3px;
+  min-height: 46px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 2px;
+  color: rgba(218, 241, 235, 0.42);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.japan-layer-switch span {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 6px;
+  letter-spacing: 0.17em;
+}
+
+.japan-layer-switch strong {
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+}
+
+.japan-layer-switch button:hover,
+.japan-layer-switch button:focus-visible,
+.japan-layer-switch button[aria-pressed="true"] {
+  color: rgba(247, 255, 252, 0.94);
+  background: rgba(102, 229, 195, 0.11);
+  outline: none;
+}
+
+.japan-layer-switch button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px rgba(128, 240, 210, 0.2);
 }
 
 .japan-observation p,
@@ -603,6 +701,345 @@ button {
 .japan-credits a:focus-visible {
   color: #fff;
   outline: none;
+}
+
+.japan-poi-card {
+  position: absolute;
+  z-index: 4;
+  width: min(370px, calc(100vw - 40px));
+  max-height: min(600px, calc(100dvh - 40px));
+  padding: 25px 27px 27px;
+  overflow: auto;
+  border: 1px solid rgba(184, 248, 231, 0.25);
+  border-radius: 4px;
+  color: rgba(241, 255, 250, 0.9);
+  background:
+    radial-gradient(circle at 100% 0, rgba(94, 238, 195, 0.1), transparent 34%),
+    rgba(2, 12, 15, 0.94);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(22px);
+}
+
+.japan-poi-card[hidden] {
+  display: none;
+}
+
+.japan-poi-card > button {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(184, 248, 231, 0.18);
+  border-radius: 50%;
+  color: rgba(235, 255, 249, 0.66);
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  place-items: center;
+}
+
+.japan-poi-card > button:hover,
+.japan-poi-card > button:focus-visible {
+  color: #fff;
+  border-color: rgba(184, 248, 231, 0.5);
+  outline: none;
+}
+
+.japan-poi-type,
+.japan-poi-meta,
+.japan-poi-relation span {
+  font-family: Consolas, "Courier New", monospace;
+  text-transform: uppercase;
+}
+
+.japan-poi-type {
+  margin: 0 42px 12px 0;
+  color: #8de8cc;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.japan-poi-card h3 {
+  margin: 0;
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 21px;
+  font-weight: 560;
+  letter-spacing: -0.025em;
+  line-height: 1.4;
+}
+
+.japan-poi-meta {
+  margin: 10px 0 0;
+  color: rgba(207, 239, 231, 0.43);
+  font-size: 7px;
+  letter-spacing: 0.1em;
+  line-height: 1.7;
+}
+
+.japan-poi-description {
+  margin: 20px 0 0;
+  color: rgba(229, 247, 242, 0.68);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.055em;
+  line-height: 1.95;
+}
+
+.japan-poi-relation {
+  margin-top: 19px;
+  padding: 16px 17px 17px;
+  border: 1px solid rgba(135, 238, 209, 0.15);
+  background: rgba(96, 221, 186, 0.055);
+}
+
+.japan-poi-relation span {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(132, 236, 207, 0.62);
+  font-size: 6px;
+  letter-spacing: 0.18em;
+}
+
+.japan-poi-relation strong {
+  display: block;
+  color: rgba(240, 253, 249, 0.82);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 10px;
+  font-weight: 560;
+  letter-spacing: 0.055em;
+  line-height: 1.9;
+}
+
+.japan-data-scrim {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  border: 0;
+  opacity: 0;
+  visibility: hidden;
+  background: rgba(0, 5, 7, 0.62);
+  backdrop-filter: blur(3px);
+  cursor: default;
+  transition:
+    opacity 260ms ease,
+    visibility 260ms step-end;
+}
+
+.japan-data-panel {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  right: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(620px, 49vw);
+  height: 100%;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  border-left: 1px solid rgba(149, 239, 214, 0.2);
+  background:
+    radial-gradient(circle at 92% 5%, rgba(95, 230, 193, 0.1), transparent 26%),
+    rgba(2, 10, 13, 0.97);
+  box-shadow: -28px 0 80px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(26px);
+  transform: translateX(102%);
+  visibility: hidden;
+  transition:
+    transform 340ms cubic-bezier(0.22, 0.8, 0.24, 1),
+    visibility 340ms step-end;
+}
+
+.japan-data-open .japan-data-scrim,
+.japan-data-scrim[aria-hidden="false"] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 260ms ease,
+    visibility 0ms step-start;
+}
+
+.japan-data-open .japan-data-panel,
+.japan-data-panel[aria-hidden="false"] {
+  transform: translateX(0);
+  visibility: visible;
+  transition:
+    transform 340ms cubic-bezier(0.22, 0.8, 0.24, 1),
+    visibility 0ms step-start;
+}
+
+.japan-data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-height: 118px;
+  padding: 25px 23px 22px 30px;
+  border-bottom: 1px solid rgba(181, 242, 225, 0.12);
+}
+
+.japan-data-header p {
+  margin: 0 0 9px;
+  color: rgba(137, 235, 207, 0.67);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.japan-data-header h2 {
+  margin: 0;
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 24px;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+}
+
+.japan-data-header button {
+  display: grid;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(181, 242, 225, 0.18);
+  border-radius: 50%;
+  color: rgba(240, 255, 250, 0.7);
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  place-items: center;
+}
+
+.japan-data-header button:hover,
+.japan-data-header button:focus-visible {
+  color: #fff;
+  border-color: rgba(181, 242, 225, 0.52);
+  outline: none;
+}
+
+.japan-data-scroll {
+  min-height: 0;
+  padding: 29px 34px 58px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(126, 231, 201, 0.25) transparent;
+}
+
+.japan-data-lead {
+  margin: 0;
+  padding-bottom: 27px;
+  border-bottom: 1px solid rgba(181, 242, 225, 0.11);
+  color: rgba(235, 251, 247, 0.76);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 12px;
+  font-weight: 560;
+  letter-spacing: 0.065em;
+  line-height: 2;
+}
+
+.japan-data-live {
+  display: grid;
+  gap: 6px;
+  margin-top: 25px;
+  padding: 17px 19px;
+  border: 1px solid rgba(137, 235, 207, 0.16);
+  background: rgba(92, 213, 179, 0.05);
+}
+
+.japan-data-live p,
+.japan-data-live span,
+.japan-data-index {
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.japan-data-live p {
+  margin: 0 0 5px;
+  color: rgba(131, 232, 204, 0.7);
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.japan-data-live strong {
+  color: rgba(240, 255, 250, 0.82);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 10px;
+  font-weight: 580;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+}
+
+.japan-data-live span {
+  margin-bottom: 5px;
+  color: rgba(201, 235, 226, 0.38);
+  font-size: 6px;
+  letter-spacing: 0.11em;
+}
+
+.japan-data-section {
+  padding: 29px 0 0;
+}
+
+.japan-data-index {
+  margin: 0 0 9px;
+  color: rgba(127, 232, 202, 0.62);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.japan-data-section h3 {
+  margin: 0 0 11px;
+  color: rgba(244, 255, 251, 0.9);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 15px;
+  font-weight: 620;
+  letter-spacing: 0.06em;
+}
+
+.japan-data-section > p:last-of-type {
+  margin: 0;
+  color: rgba(222, 242, 236, 0.64);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.055em;
+  line-height: 2.05;
+}
+
+.japan-data-section a {
+  display: inline-block;
+  margin-top: 13px;
+  color: rgba(143, 236, 210, 0.7);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
+.japan-data-section a:hover,
+.japan-data-section a:focus-visible {
+  color: #fff;
+  outline: none;
+}
+
+.japan-data-artwork {
+  margin-top: 28px;
+  padding: 22px 23px 24px;
+  border: 1px solid rgba(255, 192, 129, 0.16);
+  background: rgba(255, 160, 92, 0.045);
+}
+
+.japan-data-caution {
+  margin: 30px 0 0;
+  padding-top: 19px;
+  border-top: 1px solid rgba(181, 242, 225, 0.1);
+  color: rgba(219, 237, 232, 0.43);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  line-height: 1.9;
 }
 
 .japan-open .masthead,
@@ -1420,7 +1857,7 @@ h1 {
     font-size: clamp(42px, 14vw, 58px);
   }
 
-  .japan-heading > p:last-child {
+  .japan-heading #japan-description {
     max-width: 330px;
     margin-top: 16px;
     font-size: 9px;
@@ -1428,11 +1865,35 @@ h1 {
     line-height: 1.8;
   }
 
+  .japan-data-button {
+    grid-template-columns: auto 1fr auto;
+    width: min(310px, 100%);
+    min-height: 36px;
+    margin-top: 13px;
+    padding-inline: 11px;
+  }
+
+  .japan-data-button span:nth-child(2) {
+    font-size: 7px;
+  }
+
   .japan-observation {
     right: max(20px, env(safe-area-inset-right));
-    bottom: max(96px, calc(env(safe-area-inset-bottom) + 80px));
+    bottom: max(158px, calc(env(safe-area-inset-bottom) + 142px));
     left: max(20px, env(safe-area-inset-left));
     width: auto;
+  }
+
+  .japan-layer-switch {
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(89px, calc(env(safe-area-inset-bottom) + 74px));
+    left: max(20px, env(safe-area-inset-left));
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .japan-layer-switch button {
+    min-height: 42px;
+    padding-block: 5px;
   }
 
   .japan-observation strong {
@@ -1468,6 +1929,64 @@ h1 {
 
   .japan-credits a {
     font-size: 6px;
+  }
+
+  .japan-poi-card {
+    top: auto !important;
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(84px, calc(env(safe-area-inset-bottom) + 70px));
+    left: max(20px, env(safe-area-inset-left)) !important;
+    width: auto;
+    max-height: min(50dvh, 480px);
+    padding: 22px 22px 23px;
+    border-radius: 13px;
+  }
+
+  .japan-poi-card h3 {
+    font-size: 18px;
+  }
+
+  .japan-poi-description,
+  .japan-poi-relation strong {
+    font-size: 9px;
+    line-height: 1.85;
+  }
+
+  .japan-poi-open .japan-observation,
+  .japan-poi-open .japan-layer-switch {
+    opacity: 0.12;
+    pointer-events: none;
+  }
+
+  .japan-data-panel {
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    height: min(86dvh, 800px);
+    padding-top: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid rgba(149, 239, 214, 0.2);
+    border-left: 0;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(102%);
+  }
+
+  .japan-data-open .japan-data-panel,
+  .japan-data-panel[aria-hidden="false"] {
+    transform: translateY(0);
+  }
+
+  .japan-data-header {
+    min-height: 96px;
+    padding: 20px 18px 17px 22px;
+  }
+
+  .japan-data-header h2 {
+    font-size: 21px;
+  }
+
+  .japan-data-scroll {
+    padding: 23px 22px 45px;
   }
 
   .masthead {
@@ -1590,7 +2109,7 @@ h1 {
   top: 0;
   right: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   width: min(610px, 46vw);
   height: 100%;
   padding-top: env(safe-area-inset-top);
@@ -1606,6 +2125,37 @@ h1 {
   transition:
     transform 360ms cubic-bezier(0.22, 0.8, 0.24, 1),
     visibility 360ms step-end;
+}
+
+.concept-mode-list {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  padding: 10px 25px;
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.12);
+  background: rgba(1, 4, 9, 0.28);
+}
+
+.concept-mode-button {
+  min-width: 0;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: rgba(231, 238, 252, 0.34);
+  background: transparent;
+  cursor: pointer;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+}
+
+.concept-mode-button:hover,
+.concept-mode-button:focus-visible,
+.concept-mode-button[aria-current="true"] {
+  color: #fff;
+  border-color: rgba(var(--accent-rgb), 0.25);
+  background: rgba(var(--accent-rgb), 0.09);
+  outline: none;
 }
 
 .concept-open .concept-panel,
@@ -1843,6 +2393,16 @@ h1 {
     font-size: 27px;
   }
 
+  .concept-mode-list {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3px;
+    padding: 8px 20px;
+  }
+
+  .concept-mode-button {
+    height: 25px;
+  }
+
   .concept-scroll {
     padding: 23px 22px 44px;
   }
@@ -1989,7 +2549,7 @@ h1 {
     font-size: 39px;
   }
 
-  .japan-heading > p:last-child {
+  .japan-heading #japan-description {
     margin-top: 10px;
     font-size: 8px;
     line-height: 1.65;

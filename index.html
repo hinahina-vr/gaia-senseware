@@ -13,8 +13,8 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='24' fill='%2393f4d5'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="./styles.css?v=gaia-5" />
-    <script src="./app.js?v=gaia-5" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=gaia-6" />
+    <script src="./app.js?v=gaia-6" defer></script>
   </head>
   <body>
     <main class="experience">
@@ -106,7 +106,7 @@
           id="japan-map"
           role="application"
           tabindex="0"
-          aria-label="ドラッグで移動し、触れると波紋が広がる日本地図"
+          aria-label="ドラッグで移動し、過去の地震や地域の点を選んで解説を読む日本地図"
         >
           <div class="japan-tiles" id="japan-tiles" aria-hidden="true"></div>
           <canvas class="japan-overlay" id="japan-overlay" aria-hidden="true"></canvas>
@@ -123,25 +123,67 @@
             四つのプレートが出会い、水・火・生命・文化が更新を続ける列島。
             変動を消すのではなく、そのリズムと共存する知恵を聴く。
           </p>
+          <button
+            class="japan-data-button"
+            id="japan-data-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="japan-data-panel"
+          >
+            <span>DATA / METHOD</span>
+            <span>オープンデータについて読む</span>
+            <span aria-hidden="true">↗</span>
+          </button>
         </header>
 
         <div class="japan-observation" aria-live="polite">
-          <p>EARTH SENSORIUM / LOCAL NODE</p>
-          <strong>触れた地点の「攪乱」は列島を伝わり、やがて再生の波へ変わる。</strong>
-          <span id="japan-map-status">4 PLATE CONTACT ZONE / EARTH RHYTHM ACTIVE</span>
+          <p id="japan-observation-kicker">JMA HISTORY / SHINDO 6-JAKU+</p>
+          <strong id="japan-observation-copy">地震を選ぶと波が走り、震度6弱以上を観測した各地点が立ち上がる。</strong>
+          <span id="japan-map-status">JMA HISTORY / LOADING OBSERVATIONS</span>
         </div>
 
         <p class="japan-map-note" aria-hidden="true">
           ACTUAL COASTLINE / OPENSTREETMAP<br />
-          GREEN: LISTENING NODE&nbsp;&nbsp; ORANGE: RECENT M2.5+
+          HISTORY: JMA INTENSITY&nbsp;&nbsp; LIVE: USGS M2.5+
         </p>
+
+        <div class="japan-layer-switch" aria-label="表示する地震データを選ぶ">
+          <button id="japan-history-layer" type="button" aria-pressed="true">
+            <span>HISTORY</span>
+            <strong>震度6弱+</strong>
+          </button>
+          <button id="japan-live-layer" type="button" aria-pressed="false">
+            <span>LIVE</span>
+            <strong>7日間 M2.5+</strong>
+          </button>
+        </div>
 
         <div class="japan-instruction" aria-hidden="true">
           <span>DRAG</span>
           <p>移動する</p>
           <span>TOUCH</span>
-          <p>波紋を残す</p>
+          <p>共創の問いを送る</p>
+          <span>POI</span>
+          <p>点を押して読む</p>
         </div>
+
+        <article
+          class="japan-poi-card"
+          id="japan-poi-card"
+          aria-live="polite"
+          aria-hidden="true"
+          hidden
+        >
+          <button id="japan-poi-close" type="button" aria-label="地点の説明を閉じる">×</button>
+          <p class="japan-poi-type" id="japan-poi-type">CURATED LISTENING NODE</p>
+          <h3 id="japan-poi-title"></h3>
+          <p class="japan-poi-meta" id="japan-poi-meta"></p>
+          <p class="japan-poi-description" id="japan-poi-description"></p>
+          <div class="japan-poi-relation">
+            <span>表現との関係</span>
+            <strong id="japan-poi-relation"></strong>
+          </div>
+        </article>
 
         <button class="japan-close" id="japan-close" type="button">
           <span aria-hidden="true">←</span>
@@ -149,6 +191,13 @@
         </button>
 
         <div class="japan-credits">
+          <a
+            href="https://www.data.jma.go.jp/eqdb/data/shindo/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Historical intensity: JMA
+          </a>
           <a
             href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php"
             target="_blank"
@@ -165,6 +214,120 @@
             © OpenStreetMap contributors / ODbL
           </a>
         </div>
+
+        <button
+          class="japan-data-scrim"
+          id="japan-data-scrim"
+          type="button"
+          aria-label="データ説明を閉じる"
+          aria-hidden="true"
+          tabindex="-1"
+        ></button>
+
+        <aside
+          class="japan-data-panel"
+          id="japan-data-panel"
+          aria-label="日本モードで使用しているオープンデータと表現方法"
+          aria-hidden="true"
+        >
+          <header class="japan-data-header">
+            <div>
+              <p>OPEN DATA / METHOD</p>
+              <h2>観測と演出を分けて読む</h2>
+            </div>
+            <button id="japan-data-close" type="button" aria-label="データ説明を閉じる">
+              <span aria-hidden="true">×</span>
+            </button>
+          </header>
+
+          <div class="japan-data-scroll" tabindex="0">
+            <p class="japan-data-lead">
+              この画面は、公開された地理・地震観測と、作品独自の解釈的な演出を重ねています。
+              どこまでが観測事実で、どこからが問いを生むための表現なのかを、ここに明記します。
+            </p>
+
+            <section class="japan-data-live" aria-live="polite">
+              <p>CURRENT DATA STATE</p>
+              <strong id="japan-history-state">JMA履歴データを確認しています</strong>
+              <span id="japan-history-updated">BUNDLED SNAPSHOT —</span>
+              <strong id="japan-data-state">USGSライブ観測を確認しています</strong>
+              <span id="japan-data-updated">UPDATED —</span>
+            </section>
+
+            <section class="japan-data-section">
+              <p class="japan-data-index">01 / BASE MAP</p>
+              <h3>OpenStreetMap</h3>
+              <p>
+                海岸線、道路、地名などの基図には、世界中の参加者が共同編集するOpenStreetMapの
+                ラスタータイルを使用しています。表示している日本列島の輪郭は作品が描いた模式図ではなく、
+                OpenStreetMapの地理データです。
+              </p>
+              <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+                © OpenStreetMap contributors / ODbL ↗
+              </a>
+            </section>
+
+            <section class="japan-data-section">
+              <p class="japan-data-index">02 / HISTORICAL INTENSITY</p>
+              <h3>気象庁 震度データベース検索</h3>
+              <p>
+                試作では、最大震度6弱以上を観測した地震から、2011年東北地方太平洋沖地震、
+                2016年熊本地震、2018年北海道胆振東部地震、2024年能登半島・豊後水道・日向灘の
+                代表6件を同梱しています。イベントを選ぶと、その地震で震度6弱・6強・7を
+                観測した全地点を表示します。震度はマグニチュードからの推定ではありません。
+              </p>
+              <a
+                href="https://www.data.jma.go.jp/eqdb/data/shindo/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                気象庁 震度データベース検索 ↗
+              </a>
+            </section>
+
+            <section class="japan-data-section">
+              <p class="japan-data-index">03 / LIVE SEISMIC OBSERVATIONS</p>
+              <h3>USGS Earthquake Hazards Program</h3>
+              <p>
+                USGSのGeoJSON Summary Feedから「直近7日間・M2.5以上」を取得し、
+                東経122〜154度・北緯20〜48度の範囲へ絞り込み、最大40件を表示します。
+                LIVEレイヤーの橙色の円がこの観測データで、位置、マグニチュード、深さ、発生時刻を描画に利用しています。
+              </p>
+              <a
+                href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                USGS GeoJSON Summary Feed ↗
+              </a>
+            </section>
+
+            <section class="japan-data-section">
+              <p class="japan-data-index">04 / FALLBACK</p>
+              <h3>通信できない場合</h3>
+              <p>
+                USGSへ接続できない場合は、取得日時を記録した同梱スナップショットへ切り替えます。
+                それも読めない場合は地震点を非表示にします。現在がLIVE、SNAPSHOT、OFFLINEの
+                どれかは上のデータ状態と地図左下のステータスに表示します。
+              </p>
+            </section>
+
+            <section class="japan-data-section japan-data-artwork">
+              <p class="japan-data-index">05 / ARTISTIC LAYER</p>
+              <h3>実測データではないもの</h3>
+              <p>
+                緑の「LISTENING NODE」、四方向からのプレート矢印、走査光、空白地点へのタッチで生まれる
+                共創シグナルは作品独自の演出です。地震選択時のP/S二重リングも到達順を示す定性的な
+                時間圧縮表現で、速度構造や揺れを計算するシミュレーションではありません。
+              </p>
+            </section>
+
+            <p class="japan-data-caution">
+              この作品は防災判断や緊急情報の代替ではありません。実際の災害情報は、
+              気象庁・自治体などの公式発表を確認してください。
+            </p>
+          </div>
+        </aside>
       </section>
 
       <header class="masthead">
@@ -296,6 +459,12 @@
             <span aria-hidden="true">×</span>
           </button>
         </header>
+
+        <nav
+          class="concept-mode-list"
+          id="concept-mode-list"
+          aria-label="解説する演出を選ぶ"
+        ></nav>
 
         <div class="concept-scroll" id="concept-scroll" tabindex="0">
           <p class="concept-lead" id="concept-lead"></p>
