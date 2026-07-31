@@ -3,3 +3,6 @@ desktop*.png
 mobile*.png
 gaia-*.png
 qa-*.png
+
+# Cloudflare Wrangler local cache
+.wrangler/
