@@ -13,8 +13,8 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='24' fill='%2393f4d5'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="./styles.css?v=gaia-8" />
-    <script src="./app.js?v=gaia-8" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=gaia-10" />
+    <script src="./app.js?v=gaia-10" defer></script>
   </head>
   <body>
     <main class="experience">
@@ -81,11 +81,11 @@
               </button>
               <button
                 class="intro-enter intro-enter-secondary"
-                id="intro-japan"
-                type="button"
-              >
-                <span>日本列島を聴く</span>
-                <span aria-hidden="true">→</span>
+              id="intro-japan"
+              type="button"
+            >
+              <span>地図で地球と日本を聴く</span>
+              <span aria-hidden="true">→</span>
               </button>
             </div>
             <p>マウス・タッチ対応 ／ 音声なし ／ 所要時間 約2分</p>
@@ -106,7 +106,7 @@
           id="japan-map"
           role="application"
           tabindex="0"
-          aria-label="ドラッグで移動し、過去の地震や地域の点を選んで解説を読む日本地図"
+          aria-label="地球と日本を切り替え、ドラッグで移動して地震や地域の点を読む地図"
         >
           <div class="japan-tiles" id="japan-tiles" aria-hidden="true"></div>
           <canvas class="japan-overlay" id="japan-overlay" aria-hidden="true"></canvas>
@@ -116,7 +116,7 @@
         <header class="japan-heading">
           <p class="japan-kicker">
             <span class="japan-live-dot" aria-hidden="true"></span>
-            Local lens / Open map
+            <span id="map-scope-kicker">Local lens / Open map</span>
           </p>
           <h2 id="japan-title">列島を聴く</h2>
           <p id="japan-description">
@@ -136,25 +136,51 @@
           </button>
         </header>
 
+        <nav class="map-scope-switch" aria-label="表示する地図の範囲を選ぶ">
+          <p>MAP SCALE</p>
+          <div>
+            <button id="earth-map-scope" type="button" aria-pressed="false">
+              <span>EARTH</span>
+              <strong>世界地図</strong>
+            </button>
+            <button id="japan-map-scope" type="button" aria-pressed="true">
+              <span>JAPAN</span>
+              <strong>日本地図</strong>
+            </button>
+          </div>
+        </nav>
+
         <div class="japan-observation" aria-live="polite">
           <p id="japan-observation-kicker">JMA HISTORY / SHINDO 6-JAKU+</p>
           <strong id="japan-observation-copy">地震を選ぶと波が走り、震度6弱以上を観測した各地点が立ち上がる。</strong>
           <span id="japan-map-status">JMA HISTORY / LOADING OBSERVATIONS</span>
         </div>
 
-        <p class="japan-map-note" aria-hidden="true">
+        <p class="japan-map-note" id="map-scope-note" aria-hidden="true">
           ACTUAL COASTLINE / OPENSTREETMAP<br />
           HISTORY: JMA INTENSITY&nbsp;&nbsp; LIVE: USGS M2.5+
         </p>
 
+        <section class="map-mode-bank" aria-label="地球と日本の地図に共通する10の演出を切り替える">
+          <div class="map-mode-bank-heading">
+            <p>INSTALLATION BANK / 01—10</p>
+            <div>
+              <span id="japan-mode-number">01</span>
+              <strong id="japan-mode-title">地球の一呼吸</strong>
+            </div>
+          </div>
+          <p class="map-mode-bank-guide">EARTHとJAPANで共通。番号を押すと地図上の光が変わります</p>
+          <div class="map-mode-list" id="japan-mode-list"></div>
+        </section>
+
         <div class="japan-layer-switch" aria-label="表示する地震データを選ぶ">
           <button id="japan-history-layer" type="button" aria-pressed="true">
             <span>HISTORY</span>
-            <strong>震度6弱+</strong>
+            <strong id="history-layer-label">震度6弱+</strong>
           </button>
           <button id="japan-live-layer" type="button" aria-pressed="false">
             <span>LIVE</span>
-            <strong>7日間 M2.5+</strong>
+            <strong id="live-layer-label">日本周辺 7日間</strong>
           </button>
         </div>
 
@@ -187,7 +213,7 @@
 
         <button class="japan-close" id="japan-close" type="button">
           <span aria-hidden="true">←</span>
-          <span>地球へ戻る</span>
+          <span>抽象表現へ戻る</span>
         </button>
 
         <div class="japan-credits">
@@ -227,7 +253,7 @@
         <aside
           class="japan-data-panel"
           id="japan-data-panel"
-          aria-label="日本モードで使用しているオープンデータと表現方法"
+          aria-label="地球・日本地図で使用しているオープンデータと表現方法"
           aria-hidden="true"
         >
           <header class="japan-data-header">
@@ -243,7 +269,7 @@
           <div class="japan-data-scroll" tabindex="0">
             <p class="japan-data-lead">
               <strong>使っている公開データは3つです。</strong>
-              日本地図はOpenStreetMap、過去の震度は気象庁、直近の震源はUSGSです。
+              世界・日本地図はOpenStreetMap、過去の震度は気象庁、直近の震源はUSGSです。
               波の輪は計算、緑の点や矢印は作品の演出です。
             </p>
 
@@ -257,9 +283,9 @@
 
             <section class="japan-data-section">
               <p class="japan-data-index">01 / 公開データ</p>
-              <h3>日本地図 — OpenStreetMap</h3>
+              <h3>世界・日本地図 — OpenStreetMap</h3>
               <p>
-                <strong>画面では：</strong>背景に見える日本列島、海岸線、道路、地名です。<br />
+                <strong>画面では：</strong>EARTHとJAPANの背景に見える海岸線、道路、地名です。<br />
                 <strong>使ったもの：</strong>世界中の参加者が共同編集する地図タイルです。
                 日本の形を作品側で描いたものではありません。
               </p>
@@ -290,8 +316,8 @@
               <h3>直近7日間の震源 — USGS</h3>
               <p>
                 <strong>画面では：</strong>「LIVE」に切り替えたときの橙色の円です。<br />
-                <strong>使った値：</strong>日本周辺で直近7日間に発生したM2.5以上の地震の位置・日時・規模・深さです。
-                最大40件を表示します。このデータには日本の「震度」は含まれていないため、LIVEでは震度を描きません。
+                <strong>使った値：</strong>世界で直近7日間に発生したM2.5以上の地震の位置・日時・規模・深さです。
+                EARTHでは世界全体、JAPANでは日本周辺を最大40件まで表示します。このデータには日本の「震度」は含まれていないため、LIVEでは震度を描きません。
                 通信できないときだけ、取得日時を記録した保存データへ切り替えます。
               </p>
               <a
@@ -400,10 +426,10 @@
           type="button"
           aria-pressed="false"
           aria-controls="japan-layer"
-          title="Japan lens"
+          title="Earth / Japan map"
         >
-          <span class="action-icon japan-icon" aria-hidden="true">JP</span>
-          <span class="button-label">Japan</span>
+          <span class="action-icon japan-icon" aria-hidden="true">MAP</span>
+          <span class="button-label">Map</span>
         </button>
         <button
           class="intro-button"

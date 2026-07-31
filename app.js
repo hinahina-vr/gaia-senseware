@@ -46,6 +46,15 @@
   const japanTiles = document.querySelector("#japan-tiles");
   const japanOverlay = document.querySelector("#japan-overlay");
   const japanMapStatus = document.querySelector("#japan-map-status");
+  const mapScopeKicker = document.querySelector("#map-scope-kicker");
+  const mapScopeNote = document.querySelector("#map-scope-note");
+  const japanTitle = document.querySelector("#japan-title");
+  const japanDescription = document.querySelector("#japan-description");
+  const earthMapScopeButton = document.querySelector("#earth-map-scope");
+  const japanMapScopeButton = document.querySelector("#japan-map-scope");
+  const japanModeList = document.querySelector("#japan-mode-list");
+  const japanModeNumber = document.querySelector("#japan-mode-number");
+  const japanModeTitle = document.querySelector("#japan-mode-title");
   const japanClose = document.querySelector("#japan-close");
   const japanDataButton = document.querySelector("#japan-data-button");
   const japanDataPanel = document.querySelector("#japan-data-panel");
@@ -59,6 +68,8 @@
   const japanObservationCopy = document.querySelector("#japan-observation-copy");
   const japanHistoryLayerButton = document.querySelector("#japan-history-layer");
   const japanLiveLayerButton = document.querySelector("#japan-live-layer");
+  const historyLayerLabel = document.querySelector("#history-layer-label");
+  const liveLayerLabel = document.querySelector("#live-layer-label");
   const japanPoiCard = document.querySelector("#japan-poi-card");
   const japanPoiClose = document.querySelector("#japan-poi-close");
   const japanPoiType = document.querySelector("#japan-poi-type");
@@ -74,6 +85,8 @@
   const MAP_TILE_SIZE = 256;
   const JAPAN_ZOOM = 5;
   const JAPAN_MOBILE_ZOOM = 4;
+  const EARTH_ZOOM = 2;
+  const EARTH_MOBILE_ZOOM = 1;
   const EARTH_RADIUS_KM = 6371;
   const P_WAVE_SPEED_KM_S = 7;
   const S_WAVE_SPEED_KM_S = 4;
@@ -148,6 +161,65 @@
       lat: 43.33,
       description: "寒流、湿原、漁業、渡り鳥など、国境を越える流れが地域の暮らしを形づくる場所です。地図上の端ではなく、海と生物の循環が交差する入口として置いています。",
       relation: "02 青い循環系 × 04 共進化プロトコル — 海流と生物移動がつくる、領域を越えた相互依存を読む。",
+    },
+  ];
+
+  const EARTH_NODES = [
+    {
+      name: "AMAZON",
+      nameJa: "アマゾン流域",
+      lon: -60,
+      lat: -3,
+      description: "森林、大気、水循環、生物多様性、人間の暮らしが大陸規模で結ばれる場所です。遠く離れた消費と土地利用も、この循環へ参加しています。",
+      relation: "03 森の気候装置 × 06 人類世の傷跡 — 森を資源の在庫ではなく、惑星の循環器官として読む。",
+    },
+    {
+      name: "ARCTIC",
+      nameJa: "北極圏",
+      lon: 20,
+      lat: 74,
+      description: "氷、海、熱、大気の変化が地球全体へ連鎖する地域です。人の少ない遠隔地も、都市の選択と切り離されていません。",
+      relation: "01 地球の一呼吸 × 08 三つの生態系 — 遠隔地の変化を自分たちの時間へ接続する。",
+    },
+    {
+      name: "SAHEL",
+      nameJa: "サヘル",
+      lon: 15,
+      lat: 15,
+      description: "乾燥、降雨、農牧業、移動、地域社会の知恵がせめぎ合う帯状の地域です。環境変化を自然だけの問題にしないための地点です。",
+      relation: "07 災いと恵み × 08 三つの生態系 — 生態・社会・心の回復を同じ地図で考える。",
+    },
+    {
+      name: "HIMALAYA",
+      nameJa: "ヒマラヤ水系",
+      lon: 85,
+      lat: 28,
+      description: "氷河と雪解け水が国境を越えて巨大な河川と生活圏を支えます。上流と下流を別々の世界として扱えない地点です。",
+      relation: "02 青い循環系 — 水を所有物ではなく、地域を越えて巡る関係として読む。",
+    },
+    {
+      name: "CORAL SEA",
+      nameJa: "サンゴ海",
+      lon: 150,
+      lat: -18,
+      description: "海水温、生態系、沿岸文化が相互に応答する海域です。小さな生物の変化が社会の未来を映す感覚器になります。",
+      relation: "04 共進化プロトコル × 10 センスウェア2050 — 生物の応答を未来の意思決定へつなぐ。",
+    },
+    {
+      name: "ANDES",
+      nameJa: "アンデス",
+      lon: -70,
+      lat: -22,
+      description: "鉱物資源、高地の水、生態系、都市のテクノロジーが長い供給網で結ばれる地域です。人工物の起源を遡る地点です。",
+      relation: "05 すべては次の資源 × 09 人工物の共生化 — 技術を採掘から廃棄までの循環で捉え直す。",
+    },
+    {
+      name: "SOUTHERN OCEAN",
+      nameJa: "南大洋",
+      lon: 30,
+      lat: -55,
+      description: "熱と炭素を運ぶ海流が、見えないところで地球の気候を支えています。空白に見える海を働く主体として読む地点です。",
+      relation: "01 地球の一呼吸 × 02 青い循環系 — 海の巨大な時間と人間の判断を同期させる。",
     },
   ];
 
@@ -924,6 +996,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   const trailData = new Float32Array(TRAIL_COUNT * 4);
   const modeButtons = [];
   const conceptModeButtons = [];
+  const japanModeButtons = [];
   const japanTileElements = new Map();
   const japanPulses = [];
   let japanEarthquakes = [];
@@ -950,6 +1023,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   let japanEarthquakeDataState = "idle";
   let japanHistoryDataState = "idle";
   let japanDataLayer = "history";
+  let mapScope = "japan";
   let japanDataUpdatedAt = null;
   let japanHistoryUpdatedAt = null;
   let selectedJapanPoi = null;
@@ -991,13 +1065,26 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   };
 
   const resetJapanView = () => {
-    const nextZoom = window.innerWidth <= 720 ? JAPAN_MOBILE_ZOOM : JAPAN_ZOOM;
-    const center = lonLatToWorld(136.4, 36.2, nextZoom);
+    const isMobile = window.innerWidth <= 720;
+    const nextZoom =
+      mapScope === "earth"
+        ? isMobile
+          ? EARTH_MOBILE_ZOOM
+          : EARTH_ZOOM
+        : isMobile
+          ? JAPAN_MOBILE_ZOOM
+          : JAPAN_ZOOM;
+    const center =
+      mapScope === "earth"
+        ? lonLatToWorld(15, 18, nextZoom)
+        : lonLatToWorld(136.4, 36.2, nextZoom);
     japanView.zoom = nextZoom;
     japanView.centerX = center.x;
     japanView.centerY = center.y;
     japanTilesDirty = true;
   };
+
+  const getActiveMapNodes = () => (mapScope === "earth" ? EARTH_NODES : JAPAN_NODES);
 
   const getJapanViewport = () => {
     const rect = japanMap.getBoundingClientRect();
@@ -1305,6 +1392,182 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     japanWaveReplay.arrivedCount = arrivedCount;
   };
 
+  const renderMapInstallationEffect = (ctx, rect, nodePoints, now) => {
+    const time = reducedMotion ? 1.8 : now / 1000;
+    const rgb = modes[modeToIndex].rgb;
+    const center = { x: rect.width * 0.54, y: rect.height * 0.5 };
+    const minimumSide = Math.min(rect.width, rect.height);
+    const stroke = (alpha) => `rgba(${rgb}, ${alpha})`;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (modeToIndex === 0) {
+      const breath = 0.5 + Math.sin(time * 0.9) * 0.5;
+      for (let ring = 0; ring < 4; ring += 1) {
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, minimumSide * (0.09 + ring * 0.11 + breath * 0.018), 0, Math.PI * 2);
+        ctx.strokeStyle = stroke(0.08 + (3 - ring) * 0.022);
+        ctx.lineWidth = ring === 0 ? 1.4 : 0.7;
+        ctx.stroke();
+      }
+    } else if (modeToIndex === 1) {
+      for (let lane = 0; lane < 7; lane += 1) {
+        ctx.beginPath();
+        for (let step = 0; step <= 28; step += 1) {
+          const x = (step / 28) * rect.width;
+          const y =
+            rect.height * (0.18 + lane * 0.105) +
+            Math.sin(step * 0.72 + lane * 1.3 - time * 0.8) * (12 + lane * 1.5);
+          if (step === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = stroke(0.055 + (lane % 2) * 0.035);
+        ctx.lineWidth = lane % 2 === 0 ? 1.2 : 0.6;
+        ctx.stroke();
+      }
+    } else if (modeToIndex === 2) {
+      const canopyY = rect.height * 0.24;
+      nodePoints.forEach((node, index) => {
+        ctx.beginPath();
+        ctx.moveTo(node.x, node.y);
+        ctx.quadraticCurveTo(
+          node.x + Math.sin(index * 2.1) * 42,
+          (node.y + canopyY) * 0.5,
+          center.x + (index - (nodePoints.length - 1) / 2) * 32,
+          canopyY,
+        );
+        ctx.strokeStyle = stroke(0.09);
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 13 + Math.sin(time + index) * 3, 0, Math.PI * 2);
+        ctx.strokeStyle = stroke(0.11);
+        ctx.stroke();
+      });
+    } else if (modeToIndex === 3) {
+      for (let particle = 0; particle < 28; particle += 1) {
+        const phase = time * (0.12 + (particle % 5) * 0.018) + particle * 0.71;
+        const x = center.x + Math.sin(phase * 1.7) * rect.width * 0.38;
+        const y = center.y + Math.cos(phase * 1.3) * rect.height * 0.34;
+        const radius = 1.2 + (particle % 3) * 0.7;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = stroke(0.16 + (particle % 4) * 0.025);
+        ctx.fill();
+      }
+    } else if (modeToIndex === 4) {
+      ctx.beginPath();
+      for (let step = 0; step <= 180; step += 1) {
+        const angle = step * 0.15 + time * 0.16;
+        const radius = 4 + step * (minimumSide * 0.00165);
+        const x = center.x + Math.cos(angle) * radius;
+        const y = center.y + Math.sin(angle) * radius * 0.7;
+        if (step === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = stroke(0.15);
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+    } else if (modeToIndex === 5) {
+      ctx.strokeStyle = stroke(0.055);
+      ctx.lineWidth = 0.6;
+      for (let x = 0; x < rect.width; x += 48) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, rect.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < rect.height; y += 48) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(rect.width, y);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.moveTo(rect.width * 0.18, rect.height);
+      ctx.bezierCurveTo(
+        rect.width * 0.34,
+        rect.height * 0.65,
+        rect.width * 0.7,
+        rect.height * 0.45,
+        rect.width * 0.82,
+        0,
+      );
+      ctx.strokeStyle = stroke(0.22);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (modeToIndex === 6) {
+      const origin = nodePoints[3] || center;
+      const phase = (time * 34) % (minimumSide * 0.42);
+      for (let ring = 0; ring < 5; ring += 1) {
+        const radius = (phase + ring * minimumSide * 0.09) % (minimumSide * 0.46);
+        ctx.beginPath();
+        ctx.arc(origin.x, origin.y, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = stroke(0.16 * (1 - radius / (minimumSide * 0.5)));
+        ctx.lineWidth = ring === 0 ? 1.6 : 0.8;
+        ctx.stroke();
+      }
+    } else if (modeToIndex === 7) {
+      const layers = [
+        { x: -0.08, y: 0.02, scale: 0.34 },
+        { x: 0.08, y: -0.05, scale: 0.27 },
+        { x: 0, y: 0.08, scale: 0.2 },
+      ];
+      layers.forEach((layer, index) => {
+        ctx.beginPath();
+        ctx.ellipse(
+          center.x + rect.width * layer.x,
+          center.y + rect.height * layer.y,
+          rect.width * layer.scale,
+          rect.height * layer.scale * 0.62,
+          Math.sin(time * 0.12 + index) * 0.14,
+          0,
+          Math.PI * 2,
+        );
+        ctx.strokeStyle = stroke(0.09 + index * 0.035);
+        ctx.lineWidth = 1.1;
+        ctx.stroke();
+      });
+    } else if (modeToIndex === 8) {
+      nodePoints.forEach((node, index) => {
+        const next = nodePoints[(index + 1) % nodePoints.length];
+        if (next) {
+          ctx.beginPath();
+          ctx.moveTo(node.x, node.y);
+          ctx.lineTo(next.x, next.y);
+          ctx.strokeStyle = stroke(0.1);
+          ctx.lineWidth = 0.7;
+          ctx.stroke();
+        }
+        ctx.strokeStyle = stroke(0.2);
+        ctx.strokeRect(node.x - 5, node.y - 5, 10, 10);
+      });
+    } else {
+      const radarAngle = time * 0.38;
+      ctx.beginPath();
+      ctx.moveTo(center.x, center.y);
+      ctx.lineTo(
+        center.x + Math.cos(radarAngle) * minimumSide * 0.48,
+        center.y + Math.sin(radarAngle) * minimumSide * 0.48,
+      );
+      ctx.strokeStyle = stroke(0.24);
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      for (let ring = 1; ring <= 4; ring += 1) {
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, minimumSide * ring * 0.1, 0, Math.PI * 2);
+        ctx.strokeStyle = stroke(0.06 + ring * 0.012);
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  };
+
   const renderJapanOverlay = (now) => {
     if (!japanIsOpen || !japanContext) {
       return;
@@ -1320,7 +1583,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, rect.width, rect.height);
 
-    const nodePoints = JAPAN_NODES.map((node) => ({
+    const nodePoints = getActiveMapNodes().map((node) => ({
       ...node,
       ...japanWorldToScreen(node.lon, node.lat, left, top),
     }));
@@ -1329,16 +1592,17 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    const plateCenter = { x: rect.width * 0.6, y: rect.height * 0.52 };
-    const plateVectors = [
-      { label: "CONTINENTAL", x: rect.width * 0.08, y: rect.height * 0.63 },
-      { label: "NORTHERN", x: rect.width * 0.58, y: rect.height * 0.08 },
-      { label: "PACIFIC", x: rect.width * 0.94, y: rect.height * 0.35 },
-      { label: "PHILIPPINE SEA", x: rect.width * 0.76, y: rect.height * 0.92 },
-    ];
+    if (mapScope === "japan") {
+      const plateCenter = { x: rect.width * 0.6, y: rect.height * 0.52 };
+      const plateVectors = [
+        { label: "CONTINENTAL", x: rect.width * 0.08, y: rect.height * 0.63 },
+        { label: "NORTHERN", x: rect.width * 0.58, y: rect.height * 0.08 },
+        { label: "PACIFIC", x: rect.width * 0.94, y: rect.height * 0.35 },
+        { label: "PHILIPPINE SEA", x: rect.width * 0.76, y: rect.height * 0.92 },
+      ];
 
-    ctx.font = '6px Consolas, "Courier New", monospace';
-    for (const vector of plateVectors) {
+      ctx.font = '6px Consolas, "Courier New", monospace';
+      for (const vector of plateVectors) {
       const directionX = plateCenter.x - vector.x;
       const directionY = plateCenter.y - vector.y;
       const length = Math.max(1, Math.hypot(directionX, directionY));
@@ -1364,19 +1628,23 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       ctx.fillStyle = "rgba(136, 246, 216, 0.17)";
       ctx.fill();
       ctx.fillStyle = "rgba(196, 244, 232, 0.24)";
-      ctx.fillText(vector.label, vector.x + 7, vector.y - 7);
+        ctx.fillText(vector.label, vector.x + 7, vector.y - 7);
+      }
     }
+
+    renderMapInstallationEffect(ctx, rect, nodePoints, now);
 
     renderJapanHistoryReplay(ctx, rect, left, top, now);
 
     if (japanDataLayer === "live") {
-      const strongestEarthquake = japanEarthquakes.reduce(
+      const visibleEarthquakes = getVisibleEarthquakes();
+      const strongestEarthquake = visibleEarthquakes.reduce(
         (strongest, event) =>
           !strongest || event.magnitude > strongest.magnitude ? event : strongest,
         null,
       );
 
-      for (const [index, event] of japanEarthquakes.entries()) {
+      for (const [index, event] of visibleEarthquakes.entries()) {
         const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
         if (
           point.x < -30 ||
@@ -1466,7 +1734,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       ctx.stroke();
       ctx.fillStyle = "rgba(207, 249, 238, 0.52)";
       ctx.font = '7px Consolas, "Courier New", monospace';
-      if (japanView.zoom >= JAPAN_ZOOM || index % 2 === 0) {
+      if (mapScope === "earth" || japanView.zoom >= JAPAN_ZOOM || index % 2 === 0) {
         ctx.fillText(node.name, node.x + 10, node.y - 7);
       }
     });
@@ -1559,7 +1827,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     let nearestNodeIndex = 0;
     let nearestNodeDistance = Number.POSITIVE_INFINITY;
 
-    JAPAN_NODES.forEach((node, index) => {
+    getActiveMapNodes().forEach((node, index) => {
       const nodeWorld = lonLatToWorld(node.lon, node.lat);
       const distance = Math.hypot(worldX - nodeWorld.x, worldY - nodeWorld.y);
       if (distance < nearestNodeDistance) {
@@ -1584,6 +1852,15 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     longitude <= JAPAN_DATA_BOUNDS.east &&
     latitude >= JAPAN_DATA_BOUNDS.south &&
     latitude <= JAPAN_DATA_BOUNDS.north;
+
+  const getVisibleEarthquakes = () => {
+    if (mapScope === "earth") {
+      return japanEarthquakes.slice(0, 320);
+    }
+    return japanEarthquakes
+      .filter((event) => japanCoordinateIsVisible(event.longitude, event.latitude))
+      .slice(0, 40);
+  };
 
   const normalizeJapanEarthquake = (event) => {
     if (event.geometry?.coordinates && event.properties) {
@@ -1646,10 +1923,10 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return "USGS WEEK FEED / RECEIVING OBSERVATIONS";
     }
     if (japanEarthquakeDataState === "live") {
-      return `USGS WEEK FEED / ${japanEarthquakes.length} OBSERVATIONS / M2.5+`;
+      return `USGS WEEK FEED / ${getVisibleEarthquakes().length} OBSERVATIONS / M2.5+`;
     }
     if (japanEarthquakeDataState === "snapshot") {
-      return `USGS SNAPSHOT / ${japanEarthquakes.length} OBSERVATIONS / M2.5+`;
+      return `USGS SNAPSHOT / ${getVisibleEarthquakes().length} OBSERVATIONS / M2.5+`;
     }
     if (japanEarthquakeDataState === "offline") {
       return "SEISMIC DATA OFFLINE / INTERACTION SIGNAL ACTIVE";
@@ -1688,7 +1965,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     } else if (japanHistoryDataState === "offline") {
       japanHistoryState.textContent = "過去の震度：読み込めませんでした";
     } else {
-      japanHistoryState.textContent = "過去の震度：日本モードを開くと読み込みます";
+      japanHistoryState.textContent = "過去の震度：地図を開くと読み込みます";
     }
     japanHistoryUpdated.textContent = japanHistoryUpdatedAt
       ? `保存データ作成日：${formatJapanDataTime(japanHistoryUpdatedAt).replace("UPDATED ", "")}`
@@ -1703,7 +1980,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     } else if (japanEarthquakeDataState === "offline") {
       japanDataState.textContent = "直近の震源：現在表示できません";
     } else {
-      japanDataState.textContent = "直近の震源：日本モードを開くと取得します";
+      japanDataState.textContent = "直近の震源：地図を開くと取得します";
     }
     japanDataUpdated.textContent = japanDataUpdatedAt
       ? `取得日時：${formatJapanDataTime(japanDataUpdatedAt).replace("UPDATED ", "")}`
@@ -1724,13 +2001,52 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     if (japanDataLayer === "history") {
       japanObservationKicker.textContent = "JMA HISTORY / SHINDO 6-JAKU+";
       japanObservationCopy.textContent =
-        "地震を選ぶとP波7 km/s・S波4 km/sを1秒=1秒で再生し、S波の計算到達時に実測震度地点が立ち上がる。";
+        mapScope === "earth"
+          ? "世界地図の中で、日本の代表6地震と震度6弱以上の実測地点を読む。地震を選ぶと実時間のP波・S波を再生する。"
+          : "地震を選ぶとP波7 km/s・S波4 km/sを1秒=1秒で再生し、S波の計算到達時に実測震度地点が立ち上がる。";
     } else {
       japanObservationKicker.textContent = "USGS LIVE / M2.5+ / 7 DAYS";
       japanObservationCopy.textContent =
-        "直近7日間の震源を表示。点を選ぶと、位置・規模・深さ・発生時刻を読むことができる。";
+        mapScope === "earth"
+          ? "世界で直近7日間に観測されたM2.5以上の震源を表示。点を押すと位置・規模・深さ・発生時刻を読める。"
+          : "日本周辺で直近7日間に観測されたM2.5以上の震源を表示。点を押すと位置・規模・深さ・発生時刻を読める。";
     }
     japanMapStatus.textContent = getJapanObservationStatus();
+  };
+
+  const setMapScope = (scope, { resetLayer = true } = {}) => {
+    mapScope = scope === "earth" ? "earth" : "japan";
+    const isEarth = mapScope === "earth";
+    earthMapScopeButton.setAttribute("aria-pressed", isEarth ? "true" : "false");
+    japanMapScopeButton.setAttribute("aria-pressed", isEarth ? "false" : "true");
+    japanLayer.dataset.mapScope = mapScope;
+    mapScopeKicker.textContent = isEarth
+      ? "Planetary lens / Open map"
+      : "Local lens / Open map";
+    japanTitle.textContent = isEarth ? "地球を聴く" : "列島を聴く";
+    japanDescription.textContent = isEarth
+      ? "ひとつの惑星を、国境ではなく水・熱・生命・地殻の循環として読む。世界の震源と地域の声を同じ地図で聴く。"
+      : "四つのプレートが出会い、水・火・生命・文化が更新を続ける列島。変動を消すのではなく、そのリズムと共存する知恵を聴く。";
+    mapScopeNote.innerHTML = isEarth
+      ? "WORLD COASTLINE / OPENSTREETMAP<br />LIVE: GLOBAL USGS M2.5+"
+      : "ACTUAL COASTLINE / OPENSTREETMAP<br />HISTORY: JMA INTENSITY&nbsp;&nbsp; LIVE: USGS M2.5+";
+    japanMap.setAttribute(
+      "aria-label",
+      isEarth
+        ? "ドラッグで移動し、世界の地震や地域の点を選んで解説を読む世界地図"
+        : "ドラッグで移動し、過去の地震や地域の点を選んで解説を読む日本地図",
+    );
+    historyLayerLabel.textContent = isEarth ? "日本の震度6弱+" : "震度6弱+";
+    liveLayerLabel.textContent = isEarth ? "世界 7日間" : "日本周辺 7日間";
+    closeJapanPoi();
+    japanPulses.length = 0;
+    resetJapanView();
+    if (resetLayer) {
+      setJapanDataLayer(isEarth ? "live" : "history");
+    } else {
+      setJapanDataLayer(japanDataLayer);
+    }
+    updateJapanDataInterface();
   };
 
   const formatJapanEventTime = (value) => {
@@ -1873,7 +2189,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         }
       });
     } else {
-      japanEarthquakes.forEach((event, index) => {
+      getVisibleEarthquakes().forEach((event, index) => {
         const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
         const distance = Math.hypot(localX - point.x, localY - point.y);
         if (distance <= 19 && (!closest || distance < closest.distance)) {
@@ -1883,7 +2199,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     }
 
     if (!closest) {
-      JAPAN_NODES.forEach((node, index) => {
+      getActiveMapNodes().forEach((node, index) => {
         const point = japanWorldToScreen(node.lon, node.lat, left, top);
         const distance = Math.hypot(localX - point.x, localY - point.y);
         if (distance <= 18 && (!closest || distance < closest.distance)) {
@@ -1922,6 +2238,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return;
     }
     japanDeepLinkHandled = true;
+    setMapScope("japan", { resetLayer: false });
     setJapanDataLayer("history");
     requestAnimationFrame(() => {
       const { rect, left, top } = getJapanViewport();
@@ -1990,11 +2307,10 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
             Number.isFinite(event.longitude) &&
             Number.isFinite(event.latitude) &&
             Number.isFinite(event.magnitude) &&
-            event.magnitude >= 2.5 &&
-            japanCoordinateIsVisible(event.longitude, event.latitude),
+            event.magnitude >= 2.5,
         )
         .sort((first, second) => Date.parse(second.time) - Date.parse(first.time))
-        .slice(0, 40);
+        .slice(0, 320);
       japanEarthquakeDataState = "live";
       japanDataUpdatedAt = data.metadata?.generated || Date.now();
     } catch {
@@ -2009,8 +2325,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
             (event) =>
               Number.isFinite(event.longitude) &&
               Number.isFinite(event.latitude) &&
-              Number.isFinite(event.magnitude) &&
-              japanCoordinateIsVisible(event.longitude, event.latitude),
+              Number.isFinite(event.magnitude),
           );
         japanEarthquakeDataState = "snapshot";
         japanDataUpdatedAt = fallback.retrievedAt || null;
@@ -2136,12 +2451,19 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     modeDescription.textContent = mode.description;
     experience.style.setProperty("--accent", mode.accent);
     experience.style.setProperty("--accent-rgb", mode.rgb);
+    japanLayer.style.setProperty("--map-accent", mode.accent);
+    japanLayer.style.setProperty("--map-accent-rgb", mode.rgb);
+    japanModeNumber.textContent = formatModeNumber(modeToIndex);
+    japanModeTitle.textContent = mode.titleJa;
     document.querySelector('meta[name="theme-color"]').setAttribute("content", "#03070d");
 
     modeButtons.forEach((button, index) => {
       button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
     });
     conceptModeButtons.forEach((button, index) => {
+      button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
+    });
+    japanModeButtons.forEach((button, index) => {
       button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
     });
 
@@ -2196,6 +2518,19 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     });
     conceptModeButtons.push(conceptButton);
     conceptModeList.append(conceptButton);
+
+    const japanModeButton = document.createElement("button");
+    japanModeButton.className = "map-mode-button";
+    japanModeButton.type = "button";
+    japanModeButton.textContent = formatModeNumber(index);
+    japanModeButton.setAttribute(
+      "aria-label",
+      `${formatModeNumber(index)} ${mode.titleJa}の地図演出へ切り替える`,
+    );
+    japanModeButton.setAttribute("aria-current", index === 0 ? "true" : "false");
+    japanModeButton.addEventListener("click", () => selectMode(index));
+    japanModeButtons.push(japanModeButton);
+    japanModeList.append(japanModeButton);
   });
 
   previousModeButton.addEventListener("click", () => selectMode(modeToIndex - 1));
@@ -2529,13 +2864,24 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     japanLayer.setAttribute("aria-hidden", "false");
     japanLayer.classList.remove("is-closing");
     japanButton.setAttribute("aria-pressed", "true");
-    japanButton.title = "Return to Earth systems";
+    japanButton.title = "Close map";
     experience.classList.add("japan-open");
     setEarthControlsDisabled(true);
     japanTilesDirty = true;
     nextAutoAt = performance.now() + AUTO_INTERVAL;
-    const requestedDataLayer = new URLSearchParams(window.location.search).get("layer");
-    setJapanDataLayer(requestedDataLayer === "live" ? "live" : japanDataLayer);
+    const mapParameters = new URLSearchParams(window.location.search);
+    const requestedScope = mapParameters.get("scope");
+    const requestedDataLayer = mapParameters.get("layer");
+    const requestedMode = Number(mapParameters.get("mode"));
+    if (Number.isInteger(requestedMode) && requestedMode >= 1 && requestedMode <= MODE_COUNT) {
+      selectMode(requestedMode - 1);
+    }
+    setMapScope(
+      requestedScope === "earth" || requestedScope === "japan" ? requestedScope : mapScope,
+    );
+    if (requestedDataLayer === "history" || requestedDataLayer === "live") {
+      setJapanDataLayer(requestedDataLayer);
+    }
     updateJapanDataInterface();
     void loadJapanHistory();
     void loadJapanEarthquakes();
@@ -2569,7 +2915,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     japanLayer.setAttribute("aria-hidden", "true");
     japanLayer.inert = true;
     japanButton.setAttribute("aria-pressed", "false");
-    japanButton.title = "Japan lens";
+    japanButton.title = "Earth / Japan map";
     experience.classList.remove("japan-open");
     setEarthControlsDisabled(false);
     nextAutoAt = performance.now() + AUTO_INTERVAL;
@@ -2672,6 +3018,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   japanDataClose.addEventListener("click", () => closeJapanData());
   japanDataScrim.addEventListener("click", () => closeJapanData());
   japanPoiClose.addEventListener("click", () => closeJapanPoi({ restoreFocus: true }));
+  earthMapScopeButton.addEventListener("click", () => setMapScope("earth"));
+  japanMapScopeButton.addEventListener("click", () => setMapScope("japan"));
   japanHistoryLayerButton.addEventListener("click", () => setJapanDataLayer("history"));
   japanLiveLayerButton.addEventListener("click", () => setJapanDataLayer("live"));
   sourceButton.addEventListener("click", () => {
@@ -2752,6 +3100,10 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         closeJapanPoi({ restoreFocus: true });
       } else if (event.key === "Escape" || event.key.toLowerCase() === "j") {
         closeJapan();
+      } else if (/^[1-9]$/.test(event.key)) {
+        selectMode(Number(event.key) - 1);
+      } else if (event.key === "0") {
+        selectMode(9);
       }
       return;
     }
@@ -2800,8 +3152,16 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       canvas.width = width;
       canvas.height = height;
     }
-    const desiredJapanZoom = window.innerWidth <= 720 ? JAPAN_MOBILE_ZOOM : JAPAN_ZOOM;
-    if (japanView.zoom !== desiredJapanZoom) {
+    const isMobileMap = window.innerWidth <= 720;
+    const desiredMapZoom =
+      mapScope === "earth"
+        ? isMobileMap
+          ? EARTH_MOBILE_ZOOM
+          : EARTH_ZOOM
+        : isMobileMap
+          ? JAPAN_MOBILE_ZOOM
+          : JAPAN_ZOOM;
+    if (japanView.zoom !== desiredMapZoom) {
       resetJapanView();
     }
     gl.viewport(0, 0, width, height);
@@ -2903,9 +3263,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   window.addEventListener("resize", resize, { passive: true });
 
   clearSession();
-  resetJapanView();
-  setJapanDataLayer("history");
-  updateJapanDataInterface();
+  setMapScope("japan");
   updateModeInterface();
   updateAutoInterface();
   resize();

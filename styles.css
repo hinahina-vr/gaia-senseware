@@ -317,6 +317,8 @@ button {
 }
 
 .japan-layer {
+  --map-accent: #8ed8ff;
+  --map-accent-rgb: 142, 216, 255;
   position: absolute;
   z-index: 4;
   inset: 0;
@@ -533,6 +535,156 @@ button {
   line-height: 1.8;
   pointer-events: none;
   text-align: right;
+}
+
+.map-scope-switch {
+  position: absolute;
+  z-index: 4;
+  top: max(30px, env(safe-area-inset-top));
+  left: 50%;
+  width: min(292px, 29vw);
+  padding: 5px;
+  border: 1px solid rgba(192, 244, 230, 0.2);
+  border-radius: 4px;
+  background: rgba(2, 11, 14, 0.7);
+  backdrop-filter: blur(16px);
+  transform: translateX(-50%);
+}
+
+.map-scope-switch > p {
+  margin: 2px 7px 5px;
+  color: rgba(203, 240, 232, 0.46);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.map-scope-switch > div {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3px;
+}
+
+.map-scope-switch button {
+  display: grid;
+  gap: 3px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 2px;
+  color: rgba(218, 241, 235, 0.42);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.map-scope-switch button span {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  letter-spacing: 0.16em;
+}
+
+.map-scope-switch button strong {
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 9px;
+  font-weight: 620;
+  letter-spacing: 0.06em;
+}
+
+.map-scope-switch button:hover,
+.map-scope-switch button:focus-visible,
+.map-scope-switch button[aria-pressed="true"] {
+  color: #fff;
+  background: rgba(var(--map-accent-rgb), 0.12);
+  outline: none;
+}
+
+.map-scope-switch button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px rgba(var(--map-accent-rgb), 0.3);
+}
+
+.map-mode-bank {
+  position: absolute;
+  z-index: 4;
+  top: max(148px, calc(env(safe-area-inset-top) + 126px));
+  right: max(34px, env(safe-area-inset-right));
+  width: 292px;
+  padding: 14px;
+  border: 1px solid rgba(var(--map-accent-rgb), 0.22);
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(var(--map-accent-rgb), 0.1), transparent 54%),
+    rgba(2, 11, 14, 0.72);
+  backdrop-filter: blur(16px);
+}
+
+.map-mode-bank-heading > p {
+  margin: 0 0 9px;
+  color: rgba(var(--map-accent-rgb), 0.72);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+}
+
+.map-mode-bank-heading > div {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.map-mode-bank-heading span {
+  color: var(--map-accent);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 15px;
+}
+
+.map-mode-bank-heading strong {
+  color: rgba(247, 255, 252, 0.93);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+}
+
+.map-mode-bank-guide {
+  margin: 7px 0 11px;
+  color: rgba(222, 242, 236, 0.5);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+.map-mode-list {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.map-mode-button {
+  height: 31px;
+  padding: 0;
+  border: 1px solid rgba(var(--map-accent-rgb), 0.12);
+  border-radius: 2px;
+  color: rgba(225, 246, 240, 0.42);
+  background: rgba(0, 4, 7, 0.3);
+  cursor: pointer;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 8px;
+}
+
+.map-mode-button:hover,
+.map-mode-button:focus-visible,
+.map-mode-button[aria-current="true"] {
+  color: #fff;
+  border-color: rgba(var(--map-accent-rgb), 0.48);
+  background: rgba(var(--map-accent-rgb), 0.16);
+  outline: none;
+}
+
+.map-mode-button[aria-current="true"] {
+  box-shadow: 0 0 18px rgba(var(--map-accent-rgb), 0.12);
 }
 
 .japan-layer-switch {
@@ -1075,7 +1227,9 @@ button {
 
 .japan-open .auto-button,
 .japan-open .source-button,
-.japan-open .reset-button {
+.japan-open .reset-button,
+.japan-open .japan-button,
+.japan-open .intro-button {
   display: none;
 }
 
@@ -1857,13 +2011,70 @@ h1 {
   }
 
   .japan-map-note {
-    top: max(23px, env(safe-area-inset-top));
+    display: none;
+  }
+
+  .map-scope-switch {
+    top: max(16px, env(safe-area-inset-top));
     right: max(20px, env(safe-area-inset-right));
+    left: max(20px, env(safe-area-inset-left));
+    width: auto;
+    transform: none;
+  }
+
+  .map-scope-switch > p {
+    margin-bottom: 3px;
+  }
+
+  .map-scope-switch button {
+    min-height: 34px;
+    padding-block: 4px;
+  }
+
+  .map-mode-bank {
+    top: auto;
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(145px, calc(env(safe-area-inset-bottom) + 130px));
+    left: max(20px, env(safe-area-inset-left));
+    width: auto;
+    padding: 10px 11px 11px;
+  }
+
+  .map-mode-bank-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .map-mode-bank-heading > p {
+    margin-bottom: 7px;
     font-size: 6px;
   }
 
+  .map-mode-bank-heading strong {
+    font-size: 10px;
+  }
+
+  .map-mode-bank-heading span {
+    font-size: 11px;
+  }
+
+  .map-mode-bank-guide {
+    display: none;
+  }
+
+  .map-mode-list {
+    grid-template-columns: repeat(10, 1fr);
+    gap: 3px;
+  }
+
+  .map-mode-button {
+    height: 27px;
+    font-size: 7px;
+  }
+
   .japan-heading {
-    top: max(82px, calc(env(safe-area-inset-top) + 64px));
+    top: max(102px, calc(env(safe-area-inset-top) + 84px));
     right: max(20px, env(safe-area-inset-right));
     left: max(20px, env(safe-area-inset-left));
     width: auto;
@@ -1901,7 +2112,7 @@ h1 {
 
   .japan-observation {
     right: max(20px, env(safe-area-inset-right));
-    bottom: max(158px, calc(env(safe-area-inset-bottom) + 142px));
+    bottom: max(248px, calc(env(safe-area-inset-bottom) + 232px));
     left: max(20px, env(safe-area-inset-left));
     width: auto;
   }
@@ -1975,7 +2186,8 @@ h1 {
   }
 
   .japan-poi-open .japan-observation,
-  .japan-poi-open .japan-layer-switch {
+  .japan-poi-open .japan-layer-switch,
+  .japan-poi-open .map-mode-bank {
     opacity: 0.12;
     pointer-events: none;
   }
@@ -2555,6 +2767,29 @@ h1 {
 
   .intro-enter {
     min-height: 40px;
+  }
+
+  .map-scope-switch {
+    top: max(20px, env(safe-area-inset-top));
+    right: max(170px, calc(env(safe-area-inset-right) + 150px));
+    left: auto;
+    width: 240px;
+    transform: none;
+  }
+
+  .map-mode-bank {
+    top: max(90px, calc(env(safe-area-inset-top) + 70px));
+    right: max(20px, env(safe-area-inset-right));
+    bottom: auto;
+    left: auto;
+    width: 280px;
+  }
+
+  .japan-layer-switch {
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(62px, calc(env(safe-area-inset-bottom) + 48px));
+    left: auto;
+    width: 280px;
   }
 
   .japan-heading {
