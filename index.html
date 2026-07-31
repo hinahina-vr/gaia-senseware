@@ -13,8 +13,8 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='24' fill='%2393f4d5'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="./styles.css?v=gaia-10" />
-    <script src="./app.js?v=gaia-10" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=gaia-11" />
+    <script src="./app.js?v=gaia-11" defer></script>
   </head>
   <body>
     <main class="experience">
@@ -258,8 +258,8 @@
         >
           <header class="japan-data-header">
             <div>
-              <p>DATA GUIDE</p>
-              <h2>何のデータを、どこに使ったか</h2>
+              <p>OPEN DATA LEDGER</p>
+              <h2>データの諸元と実物を見る</h2>
             </div>
             <button id="japan-data-close" type="button" aria-label="データ説明を閉じる">
               <span aria-hidden="true">×</span>
@@ -268,8 +268,9 @@
 
           <div class="japan-data-scroll" tabindex="0">
             <p class="japan-data-lead">
-              <strong>使っている公開データは3つです。</strong>
-              世界・日本地図はOpenStreetMap、過去の震度は気象庁、直近の震源はUSGSです。
+              <strong>公開データを、出典だけでなく中身まで開示します。</strong>
+              各カードで形式・範囲・件数・主要項目・取得条件を確認できます。
+              「先頭10行」を開くと、作品が実際に読み込んだデータの冒頭だけを表示します。
               波の輪は計算、緑の点や矢印は作品の演出です。
             </p>
 
@@ -289,9 +290,31 @@
                 <strong>使ったもの：</strong>世界中の参加者が共同編集する地図タイルです。
                 日本の形を作品側で描いたものではありません。
               </p>
-              <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
-                © OpenStreetMap contributors / ODbL ↗
-              </a>
+              <dl class="data-specs" aria-label="OpenStreetMapデータ諸元">
+                <div><dt>形式</dt><dd>XYZ PNG地図タイル</dd></div>
+                <div><dt>座標系</dt><dd>Web Mercator / EPSG:3857</dd></div>
+                <div><dt>範囲</dt><dd>世界全域／表示領域のみ取得</dd></div>
+                <div><dt>ズーム</dt><dd id="osm-data-zoom">EARTH z2 / JAPAN z5</dd></div>
+                <div><dt>現在の取得</dt><dd id="osm-data-count">地図を開くと算出</dd></div>
+                <div><dt>帰属・ライセンス</dt><dd>© contributors / ODbL</dd></div>
+              </dl>
+              <div class="data-source-links" aria-label="OpenStreetMap関連リンク">
+                <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+                  データ元・著作権とライセンス ↗
+                </a>
+                <a href="https://operations.osmfoundation.org/policies/tiles/" target="_blank" rel="noopener noreferrer">
+                  公式タイル利用ポリシー ↗
+                </a>
+              </div>
+              <details class="data-preview">
+                <summary>
+                  <span>RAW PREVIEW</span>
+                  現在表示タイルの先頭10件
+                  <em>10 LINES ONLY</em>
+                </summary>
+                <p id="osm-preview-meta">画像タイルには行がないため、要求URLを1件＝1行で表示します。</p>
+                <pre><code id="osm-data-preview">地図を開くとタイルURLを表示します。</code></pre>
+              </details>
             </section>
 
             <section class="japan-data-section">
@@ -302,13 +325,31 @@
                 <strong>使った値：</strong>地震の日時・震源・規模・深さと、各観測点の震度です。
                 代表6地震、震度6弱以上の273地点を保存して使っています。色付きの震度は推定ではなく実測値です。
               </p>
-              <a
-                href="https://www.data.jma.go.jp/eqdb/data/shindo/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                気象庁 震度データベース検索 ↗
-              </a>
+              <dl class="data-specs" aria-label="気象庁震度データ諸元">
+                <div><dt>形式</dt><dd>正規化JSON／同梱スナップショット</dd></div>
+                <div><dt>抽出条件</dt><dd>代表6地震・震度6弱／6強／7</dd></div>
+                <div><dt>収録件数</dt><dd id="jma-data-count">読み込み前</dd></div>
+                <div><dt>期間</dt><dd>2011–2024年</dd></div>
+                <div><dt>主要項目</dt><dd>日時、震源、M、深さ、観測点、震度</dd></div>
+                <div><dt>保存日時</dt><dd id="jma-data-retrieved">—</dd></div>
+              </dl>
+              <div class="data-source-links" aria-label="気象庁データ関連リンク">
+                <a href="https://www.data.jma.go.jp/eqdb/data/shindo/" target="_blank" rel="noopener noreferrer">
+                  データ元：気象庁 震度データベース検索 ↗
+                </a>
+                <a href="./data/jma-intensity-history.json" target="_blank" rel="noopener noreferrer">
+                  作品で使用中のJSONを開く ↗
+                </a>
+              </div>
+              <details class="data-preview">
+                <summary>
+                  <span>RAW PREVIEW</span>
+                  使用JSONの先頭10行
+                  <em>10 LINES ONLY</em>
+                </summary>
+                <p id="jma-preview-meta">読み込み後、加工せずJSON文字列化した冒頭を表示します。</p>
+                <pre><code id="jma-data-preview">読み込み待機中…</code></pre>
+              </details>
             </section>
 
             <section class="japan-data-section">
@@ -320,13 +361,34 @@
                 EARTHでは世界全体、JAPANでは日本周辺を最大40件まで表示します。このデータには日本の「震度」は含まれていないため、LIVEでは震度を描きません。
                 通信できないときだけ、取得日時を記録した保存データへ切り替えます。
               </p>
-              <a
-                href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                USGS GeoJSON Summary Feed ↗
-              </a>
+              <dl class="data-specs" aria-label="USGS地震データ諸元">
+                <div><dt>形式</dt><dd>GeoJSON FeatureCollection</dd></div>
+                <div><dt>抽出条件</dt><dd>直近7日間・M2.5以上</dd></div>
+                <div><dt>収録件数</dt><dd id="usgs-data-count">読み込み前</dd></div>
+                <div><dt>表示範囲</dt><dd id="usgs-data-scope">EARTH 世界／JAPAN 日本周辺</dd></div>
+                <div><dt>主要項目</dt><dd>時刻、緯度経度、M、深さ、地名</dd></div>
+                <div><dt>取得日時</dt><dd id="usgs-data-retrieved">—</dd></div>
+              </dl>
+              <div class="data-source-links" aria-label="USGSデータ関連リンク">
+                <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php" target="_blank" rel="noopener noreferrer">
+                  データ元・GeoJSON仕様 ↗
+                </a>
+                <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson" target="_blank" rel="noopener noreferrer">
+                  使用中のM2.5+週間フィード ↗
+                </a>
+                <a href="./data/japan-earthquakes-fallback.json" target="_blank" rel="noopener noreferrer">
+                  オフライン用保存JSON ↗
+                </a>
+              </div>
+              <details class="data-preview">
+                <summary>
+                  <span>RAW PREVIEW</span>
+                  取得JSONの先頭10行
+                  <em>10 LINES ONLY</em>
+                </summary>
+                <p id="usgs-preview-meta">LIVE取得時はUSGS GeoJSON、失敗時は保存JSONの冒頭を表示します。</p>
+                <pre><code id="usgs-data-preview">読み込み待機中…</code></pre>
+              </details>
             </section>
 
             <section class="japan-data-section japan-data-calculation">

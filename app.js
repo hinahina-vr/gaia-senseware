@@ -64,6 +64,19 @@
   const japanDataUpdated = document.querySelector("#japan-data-updated");
   const japanHistoryState = document.querySelector("#japan-history-state");
   const japanHistoryUpdated = document.querySelector("#japan-history-updated");
+  const osmDataZoom = document.querySelector("#osm-data-zoom");
+  const osmDataCount = document.querySelector("#osm-data-count");
+  const osmDataPreview = document.querySelector("#osm-data-preview");
+  const osmPreviewMeta = document.querySelector("#osm-preview-meta");
+  const jmaDataCount = document.querySelector("#jma-data-count");
+  const jmaDataRetrieved = document.querySelector("#jma-data-retrieved");
+  const jmaDataPreview = document.querySelector("#jma-data-preview");
+  const jmaPreviewMeta = document.querySelector("#jma-preview-meta");
+  const usgsDataCount = document.querySelector("#usgs-data-count");
+  const usgsDataScope = document.querySelector("#usgs-data-scope");
+  const usgsDataRetrieved = document.querySelector("#usgs-data-retrieved");
+  const usgsDataPreview = document.querySelector("#usgs-data-preview");
+  const usgsPreviewMeta = document.querySelector("#usgs-preview-meta");
   const japanObservationKicker = document.querySelector("#japan-observation-kicker");
   const japanObservationCopy = document.querySelector("#japan-observation-copy");
   const japanHistoryLayerButton = document.querySelector("#japan-history-layer");
@@ -1051,6 +1064,25 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
   const formatModeNumber = (index) => String(index + 1).padStart(2, "0");
+  const formatPreviewLines = (lines) =>
+    lines
+      .slice(0, 10)
+      .map((line, index) => `${String(index + 1).padStart(2, "0")} │ ${line}`)
+      .join("\n");
+
+  const setJsonDataPreview = (previewElement, metaElement, data, sourceLabel) => {
+    const serialized = JSON.stringify(data, null, 2);
+    const lines = serialized.split(/\r?\n/);
+    const shownCount = Math.min(10, lines.length);
+    previewElement.textContent = formatPreviewLines(lines);
+    metaElement.textContent = `${sourceLabel} / 全${lines.length.toLocaleString("ja-JP")}行中 1–${shownCount}行 / 10行で打ち切り`;
+  };
+
+  const setDataPreviewError = (previewElement, metaElement, message) => {
+    previewElement.textContent = `01 │ ${message}`;
+    metaElement.textContent = "データを取得できなかったため、プレビューはありません。";
+  };
+
   const lonLatToWorld = (lon, lat, zoom = japanView.zoom) => {
     const worldSize = MAP_TILE_SIZE * 2 ** zoom;
     const latitude = clamp(lat, -85.0511, 85.0511);
@@ -1114,12 +1146,15 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       Math.floor((top + rect.height - 1) / MAP_TILE_SIZE),
     );
     const visibleKeys = new Set();
+    const visibleTileUrls = [];
 
     for (let tileY = minimumY; tileY <= maximumY; tileY += 1) {
       for (let tileX = minimumX; tileX <= maximumX; tileX += 1) {
         const wrappedX = ((tileX % tileCount) + tileCount) % tileCount;
         const key = `${japanView.zoom}/${tileX}/${tileY}`;
+        const tileUrl = `https://tile.openstreetmap.org/${japanView.zoom}/${wrappedX}/${tileY}.png`;
         visibleKeys.add(key);
+        visibleTileUrls.push(tileUrl);
 
         let tile = japanTileElements.get(key);
         if (!tile) {
@@ -1128,7 +1163,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
           tile.alt = "";
           tile.draggable = false;
           tile.decoding = "async";
-          tile.src = `https://tile.openstreetmap.org/${japanView.zoom}/${wrappedX}/${tileY}.png`;
+          tile.src = tileUrl;
           tile.addEventListener(
             "load",
             () => {
@@ -1154,6 +1189,14 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         }px, 0)`;
       }
     }
+
+    osmDataZoom.textContent = `${mapScope.toUpperCase()} z${japanView.zoom} / EPSG:3857`;
+    osmDataCount.textContent = `${visibleTileUrls.length}タイル（現在の画面）`;
+    osmDataPreview.textContent = formatPreviewLines(visibleTileUrls);
+    osmPreviewMeta.textContent = `現在の表示領域 / 全${visibleTileUrls.length}件中 1–${Math.min(
+      10,
+      visibleTileUrls.length,
+    )}件 / 画像タイルのため要求URLを1件＝1行で表示`;
 
     for (const [key, tile] of japanTileElements) {
       if (!visibleKeys.has(key)) {
@@ -1970,6 +2013,22 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     japanHistoryUpdated.textContent = japanHistoryUpdatedAt
       ? `保存データ作成日：${formatJapanDataTime(japanHistoryUpdatedAt).replace("UPDATED ", "")}`
       : "保存データ作成日：—";
+    if (japanHistoryDataState === "ready") {
+      const observationCount = japanHistoryEvents.reduce(
+        (total, event) => total + event.observations.length,
+        0,
+      );
+      jmaDataCount.textContent = `${japanHistoryEvents.length}地震 / ${observationCount}観測地点`;
+    } else if (japanHistoryDataState === "loading") {
+      jmaDataCount.textContent = "読み込み中";
+    } else if (japanHistoryDataState === "offline") {
+      jmaDataCount.textContent = "取得失敗";
+    } else {
+      jmaDataCount.textContent = "読み込み前";
+    }
+    jmaDataRetrieved.textContent = japanHistoryUpdatedAt
+      ? formatJapanDataTime(japanHistoryUpdatedAt).replace("UPDATED ", "")
+      : "—";
 
     if (japanEarthquakeDataState === "loading") {
       japanDataState.textContent = "直近の震源：USGSから取得中";
@@ -1985,6 +2044,24 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     japanDataUpdated.textContent = japanDataUpdatedAt
       ? `取得日時：${formatJapanDataTime(japanDataUpdatedAt).replace("UPDATED ", "")}`
       : "取得日時：—";
+    usgsDataScope.textContent =
+      mapScope === "earth" ? "EARTH 世界全域" : "JAPAN 122–154°E / 20–48°N";
+    if (
+      japanEarthquakeDataState === "live" ||
+      japanEarthquakeDataState === "snapshot"
+    ) {
+      const sourceLabel = japanEarthquakeDataState === "live" ? "LIVE" : "保存JSON";
+      usgsDataCount.textContent = `${japanEarthquakes.length}件取得 / ${getVisibleEarthquakes().length}件表示（${sourceLabel}）`;
+    } else if (japanEarthquakeDataState === "loading") {
+      usgsDataCount.textContent = "読み込み中";
+    } else if (japanEarthquakeDataState === "offline") {
+      usgsDataCount.textContent = "取得失敗";
+    } else {
+      usgsDataCount.textContent = "読み込み前";
+    }
+    usgsDataRetrieved.textContent = japanDataUpdatedAt
+      ? formatJapanDataTime(japanDataUpdatedAt).replace("UPDATED ", "")
+      : "—";
   };
 
   const setJapanDataLayer = (layer) => {
@@ -2264,6 +2341,12 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       if (!Array.isArray(data.events)) {
         throw new Error("Invalid JMA history payload");
       }
+      setJsonDataPreview(
+        jmaDataPreview,
+        jmaPreviewMeta,
+        data,
+        "data/jma-intensity-history.json",
+      );
       japanHistoryEvents = data.events.filter(
         (event) =>
           Number.isFinite(event.longitude) &&
@@ -2276,6 +2359,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       japanHistoryEvents = [];
       japanHistoryUpdatedAt = null;
       japanHistoryDataState = "offline";
+      setDataPreviewError(jmaDataPreview, jmaPreviewMeta, "JMA JSON LOAD FAILED");
     }
     updateJapanDataInterface();
     japanMapStatus.textContent = getJapanObservationStatus();
@@ -2300,6 +2384,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
     try {
       const data = await fetchJsonWithTimeout(USGS_WEEK_FEED);
+      setJsonDataPreview(usgsDataPreview, usgsPreviewMeta, data, "USGS LIVE GeoJSON");
       japanEarthquakes = data.features
         .map(normalizeJapanEarthquake)
         .filter(
@@ -2319,6 +2404,12 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
           "./data/japan-earthquakes-fallback.json",
           2800,
         );
+        setJsonDataPreview(
+          usgsDataPreview,
+          usgsPreviewMeta,
+          fallback,
+          "data/japan-earthquakes-fallback.json",
+        );
         japanEarthquakes = fallback.events
           .map(normalizeJapanEarthquake)
           .filter(
@@ -2333,6 +2424,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         japanEarthquakes = [];
         japanEarthquakeDataState = "offline";
         japanDataUpdatedAt = null;
+        setDataPreviewError(usgsDataPreview, usgsPreviewMeta, "USGS DATA LOAD FAILED");
       }
     }
 

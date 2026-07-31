@@ -81,6 +81,9 @@ EARTHでは世界全体、JAPANでは日本周辺の最大40件を表示しま�
 - 代表6地震について、震度6弱・6強・7を観測した273地点を収録
 - 地震観測: USGS Earthquake Hazards Programの週間GeoJSONフィード
 - USGS取得失敗時は取得日時を記録した同梱JSONへフォールバック
+- 地図内の `OPEN DATA` から、3データセットの形式・範囲・件数・主要項目・取得日時を確認可能
+- 気象庁・USGSの実データはJSON先頭10行、OpenStreetMapは現在のタイル要求URL先頭10件をプレビュー可能
+- 各データカードから公式配布元、仕様、作品で使用中のJSONへ直接移動可能
 - Pointer Eventsによるマウス・タッチ入力
 - React、Three.js、jQuery、CDN、外部フォントなどの外部依存なし
 - ビルド処理なし
