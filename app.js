@@ -1678,34 +1678,36 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
   const updateJapanDataInterface = () => {
     if (japanHistoryDataState === "loading") {
-      japanHistoryState.textContent = "LOADING / 気象庁の同梱履歴を確認中";
+      japanHistoryState.textContent = "過去の震度：気象庁データを読み込み中";
     } else if (japanHistoryDataState === "ready") {
       const observationCount = japanHistoryEvents.reduce(
         (total, event) => total + event.observations.length,
         0,
       );
-      japanHistoryState.textContent = `BUNDLED / 代表${japanHistoryEvents.length}地震・震度6弱以上 ${observationCount}地点`;
+      japanHistoryState.textContent = `過去の震度：読み込み済み（代表${japanHistoryEvents.length}地震・${observationCount}地点）`;
     } else if (japanHistoryDataState === "offline") {
-      japanHistoryState.textContent = "OFFLINE / 気象庁履歴データを読み込めませんでした";
+      japanHistoryState.textContent = "過去の震度：読み込めませんでした";
     } else {
-      japanHistoryState.textContent = "STANDBY / 日本モードを開くと読み込みます";
+      japanHistoryState.textContent = "過去の震度：日本モードを開くと読み込みます";
     }
     japanHistoryUpdated.textContent = japanHistoryUpdatedAt
-      ? `BUNDLED ${formatJapanDataTime(japanHistoryUpdatedAt).replace("UPDATED ", "")}`
-      : "BUNDLED SNAPSHOT —";
+      ? `保存データ作成日：${formatJapanDataTime(japanHistoryUpdatedAt).replace("UPDATED ", "")}`
+      : "保存データ作成日：—";
 
     if (japanEarthquakeDataState === "loading") {
-      japanDataState.textContent = "RECEIVING / USGS 7日間 M2.5+ フィードを取得中";
+      japanDataState.textContent = "直近の震源：USGSから取得中";
     } else if (japanEarthquakeDataState === "live") {
-      japanDataState.textContent = `LIVE / USGS観測 ${japanEarthquakes.length}件を表示`;
+      japanDataState.textContent = `直近の震源：USGSから取得済み（${japanEarthquakes.length}件）`;
     } else if (japanEarthquakeDataState === "snapshot") {
-      japanDataState.textContent = `SNAPSHOT / 同梱観測 ${japanEarthquakes.length}件を表示`;
+      japanDataState.textContent = `直近の震源：保存データを表示中（${japanEarthquakes.length}件）`;
     } else if (japanEarthquakeDataState === "offline") {
-      japanDataState.textContent = "OFFLINE / 地震観測は現在表示していません";
+      japanDataState.textContent = "直近の震源：現在表示できません";
     } else {
-      japanDataState.textContent = "STANDBY / 日本モードを開くと取得します";
+      japanDataState.textContent = "直近の震源：日本モードを開くと取得します";
     }
-    japanDataUpdated.textContent = formatJapanDataTime(japanDataUpdatedAt);
+    japanDataUpdated.textContent = japanDataUpdatedAt
+      ? `取得日時：${formatJapanDataTime(japanDataUpdatedAt).replace("UPDATED ", "")}`
+      : "取得日時：—";
   };
 
   const setJapanDataLayer = (layer) => {

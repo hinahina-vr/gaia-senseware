@@ -13,8 +13,8 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='24' fill='%2393f4d5'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="./styles.css?v=gaia-7" />
-    <script src="./app.js?v=gaia-7" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=gaia-8" />
+    <script src="./app.js?v=gaia-8" defer></script>
   </head>
   <body>
     <main class="experience">
@@ -131,7 +131,7 @@
             aria-controls="japan-data-panel"
           >
             <span>DATA / METHOD</span>
-            <span>オープンデータについて読む</span>
+            <span>データの出典と見方</span>
             <span aria-hidden="true">↗</span>
           </button>
         </header>
@@ -232,8 +232,8 @@
         >
           <header class="japan-data-header">
             <div>
-              <p>OPEN DATA / METHOD</p>
-              <h2>観測と演出を分けて読む</h2>
+              <p>DATA GUIDE</p>
+              <h2>何のデータを、どこに使ったか</h2>
             </div>
             <button id="japan-data-close" type="button" aria-label="データ説明を閉じる">
               <span aria-hidden="true">×</span>
@@ -242,25 +242,26 @@
 
           <div class="japan-data-scroll" tabindex="0">
             <p class="japan-data-lead">
-              この画面は、公開された地理・地震観測と、作品独自の解釈的な演出を重ねています。
-              どこまでが観測事実で、どこからが問いを生むための表現なのかを、ここに明記します。
+              <strong>使っている公開データは3つです。</strong>
+              日本地図はOpenStreetMap、過去の震度は気象庁、直近の震源はUSGSです。
+              波の輪は計算、緑の点や矢印は作品の演出です。
             </p>
 
             <section class="japan-data-live" aria-live="polite">
-              <p>CURRENT DATA STATE</p>
-              <strong id="japan-history-state">JMA履歴データを確認しています</strong>
-              <span id="japan-history-updated">BUNDLED SNAPSHOT —</span>
-              <strong id="japan-data-state">USGSライブ観測を確認しています</strong>
-              <span id="japan-data-updated">UPDATED —</span>
+              <p>いまの読み込み状態</p>
+              <strong id="japan-history-state">過去の震度：読み込み前</strong>
+              <span id="japan-history-updated">保存データ作成日：—</span>
+              <strong id="japan-data-state">直近の震源：読み込み前</strong>
+              <span id="japan-data-updated">取得日時：—</span>
             </section>
 
             <section class="japan-data-section">
-              <p class="japan-data-index">01 / BASE MAP</p>
-              <h3>OpenStreetMap</h3>
+              <p class="japan-data-index">01 / 公開データ</p>
+              <h3>日本地図 — OpenStreetMap</h3>
               <p>
-                海岸線、道路、地名などの基図には、世界中の参加者が共同編集するOpenStreetMapの
-                ラスタータイルを使用しています。表示している日本列島の輪郭は作品が描いた模式図ではなく、
-                OpenStreetMapの地理データです。
+                <strong>画面では：</strong>背景に見える日本列島、海岸線、道路、地名です。<br />
+                <strong>使ったもの：</strong>世界中の参加者が共同編集する地図タイルです。
+                日本の形を作品側で描いたものではありません。
               </p>
               <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
                 © OpenStreetMap contributors / ODbL ↗
@@ -268,13 +269,12 @@
             </section>
 
             <section class="japan-data-section">
-              <p class="japan-data-index">02 / HISTORICAL INTENSITY</p>
-              <h3>気象庁 震度データベース検索</h3>
+              <p class="japan-data-index">02 / 公開データ</p>
+              <h3>過去の強い揺れ — 気象庁</h3>
               <p>
-                試作では、最大震度6弱以上を観測した地震から、2011年東北地方太平洋沖地震、
-                2016年熊本地震、2018年北海道胆振東部地震、2024年能登半島・豊後水道・日向灘の
-                代表6件を同梱しています。イベントを選ぶと、その地震で震度6弱・6強・7を
-                観測した全地点を表示します。震度はマグニチュードからの推定ではありません。
+                <strong>画面では：</strong>「HISTORY」の地震と、選択後に現れる黄・橙・赤紫の点です。<br />
+                <strong>使った値：</strong>地震の日時・震源・規模・深さと、各観測点の震度です。
+                代表6地震、震度6弱以上の273地点を保存して使っています。色付きの震度は推定ではなく実測値です。
               </p>
               <a
                 href="https://www.data.jma.go.jp/eqdb/data/shindo/"
@@ -286,12 +286,13 @@
             </section>
 
             <section class="japan-data-section">
-              <p class="japan-data-index">03 / LIVE SEISMIC OBSERVATIONS</p>
-              <h3>USGS Earthquake Hazards Program</h3>
+              <p class="japan-data-index">03 / 公開データ</p>
+              <h3>直近7日間の震源 — USGS</h3>
               <p>
-                USGSのGeoJSON Summary Feedから「直近7日間・M2.5以上」を取得し、
-                東経122〜154度・北緯20〜48度の範囲へ絞り込み、最大40件を表示します。
-                LIVEレイヤーの橙色の円がこの観測データで、位置、マグニチュード、深さ、発生時刻を描画に利用しています。
+                <strong>画面では：</strong>「LIVE」に切り替えたときの橙色の円です。<br />
+                <strong>使った値：</strong>日本周辺で直近7日間に発生したM2.5以上の地震の位置・日時・規模・深さです。
+                最大40件を表示します。このデータには日本の「震度」は含まれていないため、LIVEでは震度を描きません。
+                通信できないときだけ、取得日時を記録した保存データへ切り替えます。
               </p>
               <a
                 href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php"
@@ -302,24 +303,14 @@
               </a>
             </section>
 
-            <section class="japan-data-section">
-              <p class="japan-data-index">04 / FALLBACK</p>
-              <h3>通信できない場合</h3>
+            <section class="japan-data-section japan-data-calculation">
+              <p class="japan-data-index">04 / 計算した表現</p>
+              <h3>P波・S波の輪</h3>
               <p>
-                USGSへ接続できない場合は、取得日時を記録した同梱スナップショットへ切り替えます。
-                それも読めない場合は地震点を非表示にします。現在がLIVE、SNAPSHOT、OFFLINEの
-                どれかは上のデータ状態と地図左下のステータスに表示します。
-              </p>
-            </section>
-
-            <section class="japan-data-section japan-data-artwork">
-              <p class="japan-data-index">05 / ARTISTIC LAYER</p>
-              <h3>実測データではないもの</h3>
-              <p>
-                緑の「LISTENING NODE」、四方向からのプレート矢印、走査光、空白地点へのタッチで生まれる
-                共創シグナルは作品独自の演出です。地震選択時のP/S二重リングは、気象庁の一般向け解説にある
-                代表速度P波7 km/s・S波4 km/sを1秒=1秒で再生する計算モデルです。震央からの地表距離と震源深さを
-                用いますが、地域ごとの速度構造・地質・観測到達時刻を再現する精密シミュレーションではありません。
+                <strong>画面では：</strong>地震を選ぶと広がる水色と橙色の輪です。<br />
+                <strong>計算方法：</strong>P波7 km/s、S波4 km/sの代表速度を1秒=1秒で再生しています。
+                S波が各観測点へ計算上到達したとき、気象庁の実測震度を表示します。
+                輪の到達時刻自体は観測値ではなく、地質の違いを省略した作品内の計算です。
               </p>
               <a
                 href="https://www.jma.go.jp/jma/kishou/know/jishin/eew/shikumi/shikumi.html"
@@ -328,6 +319,16 @@
               >
                 気象庁 緊急地震速報のしくみ ↗
               </a>
+            </section>
+
+            <section class="japan-data-section japan-data-artwork">
+              <p class="japan-data-index">05 / 作品の演出</p>
+              <h3>緑の点・矢印・走査光</h3>
+              <p>
+                <strong>画面では：</strong>緑の「LISTENING NODE」、四方向からの矢印、地図を横切る光、
+                空白を触ったときの「共創シグナル」です。<br />
+                これらは観測データではありません。自然・地域・人間の関係を考える入口として、作品が加えた表現です。
+              </p>
             </section>
 
             <p class="japan-data-caution">
