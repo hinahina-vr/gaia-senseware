@@ -1,0 +1,5 @@
+# Local visual QA captures
+desktop*.png
+mobile*.png
+gaia-*.png
+qa-*.png
