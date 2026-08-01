@@ -103,7 +103,9 @@ python -m http.server 8080
 ## ファイル構成
 
 - `index.html` — 作品の構造とアクセシビリティ情報
-- `styles.css` — 展示UI、レスポンシブレイアウト、解説・コードパネル
-- `app.js` — WebGL2描画、10種のGLSL、作品解説、遷移、入力とセッション記憶
+- `styles.css` — 展示UI、地図、レスポンシブレイアウト、解説・コードパネル
+- `data-ledger.css` — オープンデータ諸元・リンク・10行プレビュー専用スタイル
+- `data-ledger.js` — データ台帳のDOM管理、件数表示、プレビュー整形
+- `app.js` — WebGL2描画、10種のGLSL、地図描画、遷移、入力とセッション記憶
 - `data/jma-intensity-history.json` — 気象庁の代表6地震・震度6弱以上の観測地点
 - `scripts/build-jma-history.mjs` — 気象庁公開データから同梱JSONを再生成するスクリプト

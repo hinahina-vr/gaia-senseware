@@ -1189,154 +1189,6 @@ button {
   outline: none;
 }
 
-.data-specs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  margin: 20px 0 0;
-  border: 1px solid rgba(137, 235, 207, 0.13);
-  background: rgba(137, 235, 207, 0.1);
-}
-
-.data-specs div {
-  min-width: 0;
-  padding: 12px 14px 13px;
-  background: rgba(2, 10, 13, 0.96);
-}
-
-.data-specs dt,
-.data-specs dd {
-  margin: 0;
-}
-
-.data-specs dt {
-  margin-bottom: 5px;
-  color: rgba(128, 229, 201, 0.54);
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.data-specs dd {
-  overflow-wrap: anywhere;
-  color: rgba(235, 250, 246, 0.78);
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
-  font-size: 10px;
-  font-weight: 560;
-  letter-spacing: 0.035em;
-  line-height: 1.65;
-}
-
-.data-source-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 17px;
-  margin-top: 15px;
-}
-
-.japan-data-section .data-source-links a {
-  margin-top: 0;
-}
-
-.data-preview {
-  margin-top: 17px;
-  border: 1px solid rgba(137, 235, 207, 0.14);
-  background: rgba(0, 4, 6, 0.46);
-}
-
-.data-preview summary {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  gap: 9px;
-  align-items: center;
-  min-height: 45px;
-  padding: 10px 13px;
-  color: rgba(234, 250, 246, 0.78);
-  cursor: pointer;
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.045em;
-  list-style: none;
-}
-
-.data-preview summary::-webkit-details-marker {
-  display: none;
-}
-
-.data-preview summary::after {
-  grid-column: 4;
-  grid-row: 1;
-  color: rgba(146, 237, 211, 0.7);
-  content: "+";
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 14px;
-}
-
-.data-preview[open] summary::after {
-  content: "−";
-}
-
-.data-preview summary:focus-visible {
-  outline: 1px solid rgba(146, 237, 211, 0.52);
-  outline-offset: -1px;
-}
-
-.data-preview summary span {
-  padding: 4px 6px;
-  color: rgba(149, 239, 214, 0.77);
-  border: 1px solid rgba(149, 239, 214, 0.18);
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 7px;
-  letter-spacing: 0.13em;
-}
-
-.data-preview summary em {
-  grid-column: 3;
-  grid-row: 1;
-  color: rgba(190, 222, 213, 0.34);
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 7px;
-  font-style: normal;
-  letter-spacing: 0.1em;
-}
-
-.data-preview > p {
-  margin: 0;
-  padding: 10px 13px;
-  border-top: 1px solid rgba(137, 235, 207, 0.09);
-  color: rgba(203, 232, 224, 0.44);
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
-  font-size: 9px;
-  letter-spacing: 0.025em;
-  line-height: 1.65;
-}
-
-.data-preview pre {
-  max-width: 100%;
-  margin: 0;
-  padding: 13px 14px 15px;
-  overflow: auto;
-  border-top: 1px solid rgba(137, 235, 207, 0.08);
-  color: rgba(218, 246, 238, 0.76);
-  background:
-    linear-gradient(90deg, rgba(83, 219, 178, 0.045), transparent 42%),
-    rgba(0, 3, 5, 0.72);
-  font-family: Consolas, "SFMono-Regular", "Courier New", monospace;
-  font-size: 9px;
-  line-height: 1.75;
-  scrollbar-color: rgba(126, 231, 201, 0.22) transparent;
-}
-
-.data-preview code {
-  display: block;
-  width: max-content;
-  min-width: 100%;
-  white-space: pre;
-}
-
 .japan-data-calculation,
 .japan-data-artwork {
   margin-top: 28px;
@@ -2371,23 +2223,6 @@ h1 {
     padding: 23px 22px 45px;
   }
 
-  .data-preview summary {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 8px;
-  }
-
-  .data-preview summary em {
-    display: none;
-  }
-
-  .data-preview summary::after {
-    grid-column: 3;
-  }
-
-  .data-preview pre {
-    font-size: 8px;
-  }
-
   .masthead {
     top: max(21px, env(safe-area-inset-top));
     left: max(20px, env(safe-area-inset-left));
@@ -2882,10 +2717,6 @@ h1 {
 }
 
 @media (max-width: 430px) {
-  .data-specs {
-    grid-template-columns: 1fr;
-  }
-
   .mode-button {
     width: 26px;
     height: 26px;
