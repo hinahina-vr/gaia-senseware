@@ -170,3 +170,186 @@
     grid-template-columns: 1fr;
   }
 }
+.data-kind-legend {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin: 16px 0;
+}
+
+.data-kind-legend > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(184, 227, 219, 0.14);
+  border-radius: 3px;
+  color: rgba(231, 250, 246, 0.8);
+  background: rgba(0, 8, 10, 0.32);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.data-kind-legend small {
+  color: rgba(218, 238, 234, 0.46);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.data-kind-legend [data-kind="SOURCE"] {
+  border-color: rgba(92, 218, 255, 0.28);
+}
+
+.data-kind-legend [data-kind="DERIVED"] {
+  border-color: rgba(255, 197, 101, 0.28);
+}
+
+.data-kind-legend [data-kind="SCENARIO"] {
+  border-color: rgba(222, 137, 255, 0.3);
+}
+
+.data-ledger-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.data-ledger-card::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: rgba(92, 218, 255, 0.66);
+  content: "";
+}
+
+.data-ledger-card[data-kind="DERIVED"]::before {
+  background: rgba(255, 197, 101, 0.72);
+}
+
+.data-ledger-card[data-kind="SCENARIO"]::before {
+  background: rgba(222, 137, 255, 0.72);
+}
+
+.data-ledger-organisation {
+  margin: -3px 0 12px !important;
+  color: rgba(165, 232, 214, 0.62) !important;
+  font-family: Consolas, "Courier New", monospace !important;
+  font-size: 7px !important;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.statistics-disclosure {
+  margin: 18px 0 22px;
+  padding: 20px 22px;
+  border: 1px solid rgba(255, 197, 101, 0.22);
+  background: linear-gradient(135deg, rgba(255, 197, 101, 0.055), rgba(222, 137, 255, 0.035));
+}
+
+.statistics-disclosure > p:not(.japan-data-index) {
+  color: rgba(222, 239, 234, 0.68);
+  font-size: 10px;
+  line-height: 1.85;
+}
+
+.statistics-method-card {
+  margin-top: 15px;
+  padding: 14px 15px 15px;
+  border-left: 2px solid rgba(255, 197, 101, 0.58);
+  background: rgba(0, 7, 10, 0.38);
+}
+
+.statistics-method-card h4 {
+  margin: 5px 0 9px;
+  color: rgba(239, 250, 246, 0.92);
+  font-size: 12px;
+}
+
+.statistics-method-id,
+.statistics-formula {
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.statistics-method-id {
+  margin: 0;
+  color: rgba(255, 207, 126, 0.72);
+  font-size: 7px;
+  letter-spacing: 0.12em;
+}
+
+.statistics-formula {
+  display: block;
+  overflow-x: auto;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(178, 244, 225, 0.84);
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.statistics-plain {
+  margin: 0;
+  color: rgba(235, 247, 243, 0.78);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 11px;
+  line-height: 1.85;
+}
+
+.statistics-plain-limit {
+  margin: 9px 0 0;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 197, 101, 0.34);
+  color: rgba(255, 221, 165, 0.68);
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 9px;
+  line-height: 1.7;
+}
+
+.statistics-technical {
+  margin-top: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.statistics-technical summary {
+  padding: 11px 0 2px;
+  color: rgba(171, 235, 219, 0.64);
+  cursor: pointer;
+  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.statistics-technical summary:hover,
+.statistics-technical summary:focus-visible {
+  color: rgba(237, 255, 250, 0.94);
+}
+
+.statistics-technical-target {
+  margin: 10px 0 7px;
+  color: rgba(207, 229, 223, 0.5);
+  font-size: 8px;
+}
+
+.statistics-specs {
+  margin-top: 11px;
+}
+
+.statistics-empty,
+.statistics-policy-note {
+  margin: 13px 0 0;
+  color: rgba(214, 232, 227, 0.55) !important;
+  font-size: 9px !important;
+}
+
+@media (max-width: 520px) {
+  .data-kind-legend {
+    grid-template-columns: 1fr;
+  }
+}
