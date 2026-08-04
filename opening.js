@@ -1,0 +1,488 @@
+(() => {
+  "use strict";
+
+  const opening = document.querySelector("#gaia-opening");
+  const skipButton = document.querySelector("#gaia-opening-skip");
+  const preloadPanel = document.querySelector("#gaia-opening-preload");
+  const preloadPercent = document.querySelector("#gaia-preload-percent");
+  const preloadBar = document.querySelector("#gaia-preload-bar");
+  const preloadStatus = document.querySelector("#gaia-preload-status");
+  const soundGate = document.querySelector("#gaia-opening-sound-gate");
+  const soundOnButton = document.querySelector("#gaia-opening-sound-on");
+  const soundOffButton = document.querySelector("#gaia-opening-sound-off");
+  const particleCanvas = document.querySelector("#gaia-opening-particles");
+  const openingVolume = document.querySelector("#gaia-opening-volume");
+  const openingVolumeValue = document.querySelector("#gaia-opening-volume-value");
+  const audioDock = document.querySelector("#gaia-audio-dock");
+  const audioToggle = document.querySelector("#gaia-audio-toggle");
+  const audioToggleIcon = document.querySelector("#gaia-audio-toggle-icon");
+  const audioVolume = document.querySelector("#gaia-audio-volume");
+  const audioVolumeValue = document.querySelector("#gaia-audio-volume-value");
+  const finalMenu = document.querySelector("#gaia-opening-final-menu");
+  const finalStoryButton = document.querySelector("#gaia-opening-route-story");
+  const finalOtherButton = document.querySelector("#gaia-opening-route-other");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const directDestination = ["#earth", "#japan", "#data", "#source", "#concept"].includes(
+    window.location.hash,
+  );
+
+  const syncAudioControls = (state = window.GaiaOpeningAudio?.getState?.()) => {
+    const volume = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
+    const isMuted = state?.muted ?? true;
+    if (openingVolume instanceof HTMLInputElement) openingVolume.value = String(volume);
+    if (audioVolume instanceof HTMLInputElement) audioVolume.value = String(volume);
+    if (openingVolumeValue) openingVolumeValue.textContent = `${volume}%`;
+    if (audioVolumeValue) audioVolumeValue.textContent = `${volume}%`;
+    if (audioDock) audioDock.dataset.muted = String(isMuted);
+    if (audioToggle) {
+      audioToggle.setAttribute("aria-pressed", String(isMuted));
+      audioToggle.setAttribute("aria-label", isMuted ? "BGMを再生" : "BGMを消音");
+    }
+    if (audioToggleIcon) audioToggleIcon.dataset.muted = String(isMuted);
+  };
+
+  const revealAudioDock = () => {
+    if (!audioDock) return;
+    audioDock.hidden = false;
+    requestAnimationFrame(() => audioDock.classList.add("is-visible"));
+  };
+
+  const setVolumeFromInput = (input) => {
+    if (!(input instanceof HTMLInputElement)) return;
+    window.GaiaOpeningAudio?.setVolume?.(Number(input.value) / 100);
+  };
+
+  openingVolume?.addEventListener("input", () => setVolumeFromInput(openingVolume));
+  audioVolume?.addEventListener("input", () => setVolumeFromInput(audioVolume));
+  audioToggle?.addEventListener("click", async () => {
+    await window.GaiaOpeningAudio?.toggleMuted?.();
+    syncAudioControls();
+  });
+  window.addEventListener("gaia:audio-state", (event) => syncAudioControls(event.detail));
+  syncAudioControls();
+
+  if (!opening) {
+    revealAudioDock();
+    return;
+  }
+  if (reducedMotion || directDestination) {
+    opening.hidden = true;
+    revealAudioDock();
+    return;
+  }
+
+  document.body.classList.add("gaia-opening-active");
+
+  const OPENING_TIME_SCALE = 1.7;
+  const openingMs = (value) => Math.round(value * OPENING_TIME_SCALE);
+  const OPENING_DURATION = openingMs(14500);
+  const EXIT_DURATION = openingMs(1080);
+  const OPENING_ART = [
+    "./assets/characters/minamo-expression-sheet-07-alpha.png",
+    "./assets/characters/sora-expression-sheet-07-alpha.png",
+    "./assets/visuals-07/opening-keyvisual-v1.webp",
+    "./assets/visuals-07/open-data-archive-bg-v1.png",
+  ];
+  const OPENING_ASSET_COUNT = OPENING_ART.length + 1;
+  const focusTargets = Array.from(opening.querySelectorAll("[data-opening-focus]"));
+  focusTargets.forEach((target) => target.classList.add("is-opening-focus-pending"));
+  const textTimers = [];
+  let finishTimer = 0;
+  let exitTimer = 0;
+  let finished = false;
+  let openingStarted = false;
+  let soundChoiceResolved = false;
+  let preloadReady = false;
+  let settledPreloads = 0;
+  const preloadStartedAt = performance.now();
+
+  const schedule = [
+    [260, 650],
+    [620, 850],
+    [2450, 520],
+    [2720, 650],
+    [3370, 650],
+    [5150, 520],
+    [5420, 680],
+    [6070, 680],
+    [8050, 700],
+    [8240, 520],
+    [8460, 520],
+    [8680, 520],
+    [8900, 520],
+    [10950, 650],
+    [11500, 750],
+    [12300, 850],
+  ].map(([delay, duration]) => [openingMs(delay), openingMs(duration)]);
+
+  const createOpeningParticles = (canvas) => {
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return { start() {}, stop() {} };
+    }
+
+    const context = canvas.getContext("2d", { alpha: true });
+    if (!context) return { start() {}, stop() {} };
+
+    let width = 0;
+    let height = 0;
+    let ratio = 1;
+    let frame = 0;
+    let running = false;
+    let lastTime = 0;
+    let motes = [];
+    let streams = [];
+    let glows = [];
+
+    const random = (min, max) => min + Math.random() * (max - min);
+
+    const makeMote = (fromBottom = false) => ({
+      x: random(-40, width + 40),
+      y: fromBottom ? height + random(0, 100) : random(-30, height + 30),
+      radius: random(0.45, 1.75),
+      vx: random(0.018, 0.085),
+      vy: random(-0.105, -0.025),
+      phase: random(0, Math.PI * 2),
+      pulse: random(0.0007, 0.0018),
+      alpha: random(0.18, 0.6),
+      hueOffset: random(-18, 22),
+    });
+
+    const makeStream = (fromBottom = false) => ({
+      x: random(-width * 0.08, width * 1.08),
+      y: fromBottom ? height + random(20, 160) : random(0, height),
+      speed: random(0.035, 0.11),
+      drift: random(0.012, 0.055),
+      width: random(0.55, 1.3),
+      length: Math.round(random(12, 28)),
+      phase: random(0, Math.PI * 2),
+      amplitude: random(7, 24),
+      frequency: random(0.00035, 0.0008),
+      hueOffset: random(-10, 28),
+      trail: [],
+    });
+
+    const rebuild = () => {
+      const compact = width < 720;
+      const area = Math.max(1, (width * height) / 150000);
+      const moteCount = Math.min(compact ? 34 : 76, Math.max(compact ? 22 : 42, Math.round(area * 10)));
+      const streamCount = compact ? 4 : 8;
+      motes = Array.from({ length: moteCount }, () => makeMote());
+      streams = Array.from({ length: streamCount }, () => makeStream());
+      glows = Array.from({ length: compact ? 2 : 4 }, (_, index) => ({
+        x: width * random(0.08, 0.92),
+        y: height * random(0.12, 0.88),
+        radius: Math.max(width, height) * random(0.11, 0.24),
+        phase: index * 1.7 + random(0, 1),
+        drift: random(0.00008, 0.0002),
+      }));
+    };
+
+    const resize = () => {
+      width = Math.max(1, window.innerWidth);
+      height = Math.max(1, window.innerHeight);
+      ratio = Math.min(window.devicePixelRatio || 1, 1.6);
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      rebuild();
+    };
+
+    const draw = (time) => {
+      if (!running) return;
+      const delta = Math.min(34, Math.max(0, time - (lastTime || time)));
+      lastTime = time;
+      const hue = 181 + Math.sin(time * 0.00016) * 12;
+
+      context.clearRect(0, 0, width, height);
+      context.save();
+      context.globalCompositeOperation = "lighter";
+
+      glows.forEach((glow) => {
+        const x = glow.x + Math.sin(time * glow.drift + glow.phase) * width * 0.055;
+        const y = glow.y + Math.cos(time * glow.drift * 0.74 + glow.phase) * height * 0.045;
+        const pulse = 0.86 + Math.sin(time * 0.00042 + glow.phase) * 0.14;
+        const radius = glow.radius * pulse;
+        const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+        gradient.addColorStop(0, `hsla(${hue + 8}, 74%, 73%, 0.042)`);
+        gradient.addColorStop(0.42, `hsla(${hue}, 72%, 58%, 0.018)`);
+        gradient.addColorStop(1, `hsla(${hue - 8}, 70%, 40%, 0)`);
+        context.fillStyle = gradient;
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.fill();
+      });
+
+      motes.forEach((mote, index) => {
+        mote.x += mote.vx * delta;
+        mote.y += mote.vy * delta;
+        if (mote.y < -24 || mote.x > width + 30) Object.assign(mote, makeMote(true), { x: random(-40, width * 0.82) });
+        const pulse = 0.52 + Math.sin(time * mote.pulse + mote.phase) * 0.48;
+        const alpha = mote.alpha * (0.36 + pulse * 0.64);
+        const radius = mote.radius * (0.75 + pulse * 0.55);
+        context.shadowColor = `hsla(${hue + mote.hueOffset}, 92%, 82%, ${alpha})`;
+        context.shadowBlur = radius * 7;
+        context.fillStyle = `hsla(${hue + mote.hueOffset}, 86%, ${index % 7 === 0 ? 92 : 76}%, ${alpha})`;
+        context.beginPath();
+        context.arc(mote.x, mote.y, radius, 0, Math.PI * 2);
+        context.fill();
+      });
+
+      context.shadowBlur = 0;
+      streams.forEach((stream) => {
+        stream.y -= stream.speed * delta;
+        stream.x += stream.drift * delta;
+        const wave = Math.sin(time * stream.frequency + stream.phase) * stream.amplitude;
+        stream.trail.push({ x: stream.x + wave, y: stream.y });
+        if (stream.trail.length > stream.length) stream.trail.shift();
+        if (stream.y < -80 || stream.x > width + 100) Object.assign(stream, makeStream(true));
+        if (stream.trail.length < 3) return;
+
+        const gradient = context.createLinearGradient(
+          stream.trail[0].x,
+          stream.trail[0].y,
+          stream.trail[stream.trail.length - 1].x,
+          stream.trail[stream.trail.length - 1].y,
+        );
+        gradient.addColorStop(0, `hsla(${hue + stream.hueOffset}, 86%, 70%, 0)`);
+        gradient.addColorStop(0.62, `hsla(${hue + stream.hueOffset}, 88%, 76%, 0.12)`);
+        gradient.addColorStop(1, `hsla(${hue + stream.hueOffset}, 96%, 92%, 0.42)`);
+        context.strokeStyle = gradient;
+        context.lineWidth = stream.width;
+        context.beginPath();
+        context.moveTo(stream.trail[0].x, stream.trail[0].y);
+        for (let index = 1; index < stream.trail.length; index += 1) {
+          const previous = stream.trail[index - 1];
+          const current = stream.trail[index];
+          context.quadraticCurveTo(
+            previous.x,
+            previous.y,
+            (previous.x + current.x) * 0.5,
+            (previous.y + current.y) * 0.5,
+          );
+        }
+        context.stroke();
+      });
+
+      context.restore();
+      frame = requestAnimationFrame(draw);
+    };
+
+    return {
+      start() {
+        if (running) return;
+        running = true;
+        resize();
+        window.addEventListener("resize", resize, { passive: true });
+        frame = requestAnimationFrame(draw);
+      },
+      stop() {
+        running = false;
+        cancelAnimationFrame(frame);
+        window.removeEventListener("resize", resize);
+        context.clearRect(0, 0, width, height);
+      },
+    };
+  };
+
+  const particleSystem = window.GaiaParticles?.create?.(particleCanvas, {
+    variant: "opening",
+    intensity: 1,
+  }) || createOpeningParticles(particleCanvas);
+  particleSystem.start();
+
+  const updatePreload = (message = "") => {
+    const total = OPENING_ASSET_COUNT;
+    const percentage = Math.round((settledPreloads / total) * 100);
+    if (preloadPercent) preloadPercent.textContent = String(percentage);
+    if (preloadBar) preloadBar.style.transform = `scaleX(${percentage / 100})`;
+    if (preloadStatus) {
+      preloadStatus.textContent = message || `オープニングの光・人物・音を準備しています　${settledPreloads} / ${total}`;
+    }
+  };
+
+  const preloadOpeningArt = (source) => new Promise((resolve) => {
+    const artwork = new Image();
+    let settled = false;
+    const complete = () => {
+      if (settled) return;
+      settled = true;
+      settledPreloads += 1;
+      updatePreload();
+      resolve();
+    };
+    const settle = () => {
+      if (typeof artwork.decode !== "function") {
+        complete();
+        return;
+      }
+      artwork.decode().catch(() => {}).finally(complete);
+    };
+    artwork.onload = settle;
+    artwork.onerror = complete;
+    artwork.src = new URL(source, document.baseURI).href;
+  });
+
+  const preloadOpeningAudio = async () => {
+    try {
+      await window.GaiaOpeningAudio?.preload();
+    } finally {
+      settledPreloads += 1;
+      updatePreload();
+    }
+  };
+
+  const revealFocusText = (target, delay, duration) => {
+    target.style.setProperty("--opening-focus-duration", `${duration}ms`);
+    textTimers.push(window.setTimeout(() => {
+      if (finished) return;
+      target.classList.remove("is-opening-focus-pending");
+    }, delay));
+  };
+
+  const settleFocusText = () => {
+    textTimers.forEach((timer) => window.clearTimeout(timer));
+    focusTargets.forEach((target) => target.classList.remove("is-opening-focus-pending"));
+  };
+
+  const finish = (destination = "menu") => {
+    if (finished) return;
+    if (typeof destination !== "string") destination = "menu";
+    finished = true;
+    window.clearTimeout(finishTimer);
+    settleFocusText();
+    if (destination === "story") {
+      history.replaceState(null, "", `${window.location.pathname}${window.location.search}#story`);
+    }
+    // Remove the choice cards as one completed unit. Leaving them mounted while
+    // the opening dissolves can expose their borders after the copy has faded.
+    finalMenu?.classList.remove("is-visible");
+    // Open the destination behind the final frame first. The opening then
+    // dissolves away while the menu cards run their own glint reveal.
+    window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
+    opening.classList.add("is-leaving");
+    exitTimer = window.setTimeout(() => {
+      opening.hidden = true;
+      opening.classList.remove("is-active", "is-leaving");
+      document.body.classList.remove("gaia-opening-active");
+      particleSystem.stop();
+      if (destination === "story") {
+        requestAnimationFrame(() => {
+          window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
+            detail: { index: 0, source: "opening" },
+          }));
+        });
+      }
+    }, EXIT_DURATION);
+  };
+
+  const showFinalMenu = () => {
+    if (finished || !(finalMenu instanceof HTMLElement)) return;
+    finalMenu.hidden = false;
+    opening.classList.add("is-menu-ready");
+    requestAnimationFrame(() => {
+      finalMenu.classList.add("is-visible");
+      finalStoryButton?.focus({ preventScroll: true });
+    });
+  };
+
+  const skipToFinalMenu = () => {
+    if (finished || opening.classList.contains("is-menu-ready")) return;
+    window.clearTimeout(finishTimer);
+    settleFocusText();
+    opening.classList.add("is-skipping-to-menu");
+    showFinalMenu();
+  };
+
+  const start = () => {
+    if (openingStarted || !soundChoiceResolved || !preloadReady) return;
+    openingStarted = true;
+    opening.hidden = false;
+    opening.classList.add("is-preloaded");
+    window.setTimeout(() => {
+      if (preloadPanel) preloadPanel.hidden = true;
+      opening.classList.remove("is-preloading");
+    }, 380);
+    void opening.offsetWidth;
+    opening.classList.add("is-active");
+    focusTargets.forEach((target, index) => {
+      const [delay, duration] = schedule[index] || [index * 120, 520];
+      revealFocusText(target, delay, duration);
+    });
+    finishTimer = window.setTimeout(showFinalMenu, OPENING_DURATION);
+
+  };
+
+  const tryStart = () => {
+    if (!soundChoiceResolved || !preloadReady || openingStarted) return;
+    requestAnimationFrame(start);
+  };
+
+  const chooseSound = async (enabled) => {
+    if (soundChoiceResolved) return;
+    soundChoiceResolved = true;
+    opening.classList.remove("is-awaiting-sound");
+    soundGate?.classList.add("is-decided");
+
+    const selectedVolume = Number(openingVolume?.value ?? 10) / 100;
+    window.GaiaOpeningAudio?.setVolume?.(selectedVolume);
+
+    if (enabled) {
+      try {
+        await window.GaiaOpeningAudio?.start(selectedVolume);
+      } catch {
+        // Audio is optional. Continue silently if the browser refuses playback.
+      }
+    } else {
+      await window.GaiaOpeningAudio?.setMuted?.(true);
+    }
+
+    syncAudioControls();
+    revealAudioDock();
+    void window.GaiaOpeningAudio?.preloadTrack?.("story");
+
+    window.setTimeout(() => {
+      if (soundGate) soundGate.hidden = true;
+    }, 390);
+    tryStart();
+  };
+
+  skipButton?.addEventListener("click", skipToFinalMenu);
+  finalStoryButton?.addEventListener("click", () => finish("story"));
+  finalOtherButton?.addEventListener("click", () => finish("menu"));
+  soundOnButton?.addEventListener("click", () => chooseSound(true));
+  soundOffButton?.addEventListener("click", () => chooseSound(false));
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !opening.hidden && !opening.classList.contains("is-preloading")) skipToFinalMenu();
+  });
+  window.addEventListener("pagehide", () => {
+    window.clearTimeout(finishTimer);
+    window.clearTimeout(exitTimer);
+    textTimers.forEach((timer) => window.clearTimeout(timer));
+    particleSystem.stop();
+    window.GaiaOpeningAudio?.stop(0.05);
+  });
+
+  requestAnimationFrame(() => soundOnButton?.focus({ preventScroll: true }));
+
+  updatePreload();
+  Promise.race([
+    Promise.all([...OPENING_ART.map(preloadOpeningArt), preloadOpeningAudio()]),
+    new Promise((resolve) => window.setTimeout(() => resolve("timeout"), 5000)),
+  ]).then((result) => {
+    const elapsed = performance.now() - preloadStartedAt;
+    const minimumDisplay = Math.max(0, 520 - elapsed);
+    if (result === "timeout") {
+      if (preloadBar) preloadBar.style.transform = "scaleX(1)";
+      if (preloadPercent) preloadPercent.textContent = "100";
+      if (preloadStatus) preloadStatus.textContent = "準備できた素材からオープニングを開始します";
+    } else {
+      updatePreload("準備ができました。オープニングを開始します");
+    }
+    window.setTimeout(() => {
+      preloadReady = true;
+      tryStart();
+    }, minimumDisplay + 160);
+  });
+})();

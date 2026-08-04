@@ -285,8 +285,8 @@ export const enrichSnapshotWithStatistics = (snapshot) => {
         period: "2026–2050",
         unit: "ppm / 95% prediction interval",
         resolution: "年次表示・回帰学習は月次120標本",
-        transformation: `y_hat(t)=y_bar+beta1(t-t_bar)。beta1=${serializableModel.slopePpmYear} ppm/年、R²=${serializableModel.rSquared}。95%予測区間を残差標準誤差から算出`,
-        caveat: "説明変数が時間だけの単回帰。政策・排出シナリオ・炭素循環の構造変化を含まず、気候モデルによる予測ではない。",
+        transformation: `直近120か月を一本の傾向線にまとめました。年あたりの増加は${serializableModel.slopePpmYear} ppm、当てはまりの指標R²は${serializableModel.rSquared}です。予想には幅も添えます。`,
+        caveat: "時間の流れだけを使った単純な計算です。政策や排出量の変化は含まないため、気候モデルによる未来予測ではありません。",
         preview: forecastRows.slice(0, 10),
       });
     }
@@ -311,8 +311,8 @@ export const enrichSnapshotWithStatistics = (snapshot) => {
       period: `${grid.frames[0].date}–${grid.frames.at(-1).date}`,
       unit: "approx. ppm XCO₂",
       resolution: `${grid.resolutionDegrees}°格子 / k=8 / 距離指数p=2`,
-      transformation: "欠測セルごとに球面上で近い観測8セルを探し、距離の2乗の逆数を重みにした加重平均で補完。経度は日付変更線を循環させる。",
-      caveat: "局所的な滑らかさを仮定する展示用補完。GOSAT観測や公式Level 3値ではない。補完セルは低彩度・斜線で区別し、ホールドアウトRMSEを併記する。",
+      transformation: "測れなかったマスは、地球上で近い8地点から補いました。近い地点ほど強く、遠い地点ほど弱く参考にします。",
+      caveat: "周囲がなめらかに変化すると仮定した展示用の推定です。衛星の観測値ではないため、斜線とDERIVED表示で区別します。",
       preview: auditRows.slice(0, 10),
     });
     const decodedDataset = breathing.datasets.find(
@@ -320,48 +320,48 @@ export const enrichSnapshotWithStatistics = (snapshot) => {
     );
     if (decodedDataset) {
       decodedDataset.transformation =
-        "各格子中心の色を公式スケールへ照合。読めないセルは観測値を上書きせず、別DERIVED層で8近傍IDW補完する。";
+        "地図の各マスの色をCO₂濃度へ変換しました。色を読めないマスは、近くの8地点から補い、斜線で区別します。";
       decodedDataset.caveat =
-        "HDF5数値本体ではなく公式閲覧画像から復元した近似値。補完前の観測セル数と補完セル数は統計監査データに保存する。";
+        "元の数値ファイルではなく、公式の閲覧画像から読み取った近似値です。観測から読めたマスと、計算で補ったマスの数を分けて保存しています。";
     }
     const noaaDataset = breathing.datasets.find((dataset) => dataset.id === "noaa-co2");
     if (noaaDataset) {
       noaaDataset.transformation =
-        "球体版では呼吸と長期増加へ使用。地図版では1958–2009の濃度水準と、直近120か月OLSトレンド投影の学習データに使用。";
+        "季節ごとの上下を球体の呼吸に、長期の増加を光の強さに使います。直近120か月は、未来の仮定をつくる計算にも使います。";
     }
     breathing.statisticalMethods = [
       {
         id: "SPATIAL_IDW",
-        plainTitle: "近くの観測から、空白をそっとつなぐ",
-        plainExplanation: "人工衛星が測れなかった場所は、近くにある8つの観測値を手がかりに色をつけました。近い場所の値ほど、強く参考にしています。",
+        plainTitle: "値がないマスを、近くの8地点から計算する",
+        plainExplanation: "人工衛星の値がないマスは、近くにある8地点を使って計算しました。距離が近い地点の値ほど、強く反映しています。",
         plainLimit: "斜線の場所は、実際に測った値ではありません。周囲から計算した値です。",
         target: "GOSAT 2.5° XCO₂欠測セル",
         formula: "x_hat(s) = Σ[d_i^-2 x_i] / Σ[d_i^-2]",
-        rule: "近い観測8セル。経度は±180°で循環。観測セルは上書きしない。",
-        validation: "各時点から最大128観測セルを隠す決定的ホールドアウトでRMSE/MAEを算出。",
-        display: "補完セルは低い不透明度と斜線。タップ時にIMPUTEDと誤差指標を表示。",
+        rule: "近い8地点を使います。日付変更線の左右も隣り合う場所として扱い、観測値は書き換えません。",
+        validation: "測れているマスを一部隠して計算し、元の値との差をRMSEとMAEという誤差で確かめました。",
+        display: "補ったマスは薄い色と斜線にし、タップするとIMPUTEDと誤差を表示します。",
       },
       {
         id: "TEMPORAL_LINEAR",
-        plainTitle: "二つの時点のあいだを、なめらかにつなぐ",
-        plainExplanation: "観測した月と次に観測した月のあいだは、二つの値をまっすぐ結んで変化を描きました。",
+        plainTitle: "記録がある二つの月を、直線でつなぐ",
+        plainExplanation: "記録がある月と次の月のあいだは、二つの数字を直線で結び、途中の値を計算しました。",
         plainLimit: "途中の変化を実際に観測したわけではありません。急な変化は表せない方法です。",
         target: "収録したGOSAT時点の間",
         formula: "x_hat(t) = (1-a)x_t0 + a x_t1",
-        rule: "前後2時点が存在する区間だけ線形内挿。観測期間外への外挿には使わない。",
-        validation: "内挿であり観測ではないため、画面ではDERIVEDと表示。",
-        display: "大きな時点表示とDATA TRANSFORMで内挿区間を開示。",
+        rule: "観測された前後二つの時点がある区間だけを、直線でつなぎます。観測期間の外へは延ばしません。",
+        validation: "途中を実際に測った値ではないため、画面ではDERIVEDと表示します。",
+        display: "大きな年月表示とデータ変換欄で、計算中の区間を示します。",
       },
       {
         id: "OLS_TREND_PROJECTION",
-        plainTitle: "これまでの増え方が続いたら、未来はどう見える？",
+        plainTitle: "最近10年と同じ増え方が続いた場合を計算する",
         plainExplanation: "直近10年分のCO₂を一本の傾向線にまとめ、その線を2050年まで伸ばしました。未来の数字には、ぶれの幅も添えています。",
         plainLimit: "これは未来を言い当てる予言ではありません。今までと同じ増え方が続いた場合の『もしも』です。",
         target: "2026–2050 CO₂トレンド投影",
         formula: "y_hat(t) = y_bar + beta_1(t - t_bar)",
-        rule: "NOAA季節調整済み月平均の直近120か月を最小二乗法で学習。",
-        validation: "R²、残差標準誤差、95%予測区間を表示。構造変化はモデル外。",
-        display: "SCENARIOとして中央推定と95% PIを表示し、気候モデル予測とは呼ばない。",
+        rule: "NOAAの季節変化を除いた月平均から、直近120か月の増え方を一本の直線にします。",
+        validation: "線の当てはまりと誤差を計算し、中心の値だけでなく95%の予想幅も表示します。",
+        display: "SCENARIOとして表示し、政策などを含む気候モデルの予測とは呼びません。",
       },
     ];
   }
@@ -381,15 +381,15 @@ export const enrichSnapshotWithStatistics = (snapshot) => {
       period: "同梱スナップショット時点",
       unit: "% municipal waste recycled",
       resolution: `${waste.imputed.length} imputed / ${waste.observed.length} observed countries`,
-      transformation: "公式値がない選択国について、代表座標から近い公式値保有5か国の再資源化率中央値を割り当てる。中央値は極端値の影響を抑えるため採用。",
-      caveat: "制度・定義・所得などを説明変数に含めない展示用推定。公式値ではなく、国別順位・政策評価には使用不可。破線で区別する。",
+      transformation: "公式値がない国は、地理的に近く公式値がある5か国を探し、その中央の値を置きました。極端に大きい値や小さい値へ引っぱられにくい方法です。",
+      caveat: "近い国でも制度や暮らしは違います。公式値ではないため破線で示し、国の順位や政策評価には使いません。",
       preview: waste.imputed.slice(0, 10),
     });
     wasteMode.statisticalMethods = [
       {
         id: "GEOGRAPHIC_KNN_MEDIAN",
-        plainTitle: "値のない地域を、近くの5か国から考える",
-        plainExplanation: "公式データが見つからない地域は、地理的に近い5か国を参考にし、その真ん中の値を置きました。",
+        plainTitle: "公式値がない地域を、近い5か国から計算する",
+        plainExplanation: "公式データがない地域は、地理的に近い5か国の数字を並べ、中央の値を仮に置きました。",
         plainLimit: "近い国でも制度や暮らしは違います。破線の円は公式値ではなく、比較のための仮の値です。",
         target: "UN SDG 12.5.1の未収録14地域",
         formula: "x_hat(c) = median(x of 5 geographically nearest observed countries)",

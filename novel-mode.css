@@ -1,0 +1,2073 @@
+.novel-layer {
+  --novel-cyan: 154, 245, 224;
+  --novel-font: var(--font-ja);
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+  overflow: hidden;
+  color: #f4fffb;
+  background-color: #02050b;
+  background-image:
+    linear-gradient(180deg, rgba(1, 7, 15, 0.02) 0%, rgba(1, 7, 15, 0.06) 58%, rgba(1, 7, 15, 0.26) 100%),
+    url("./assets/visuals-07/zushi-campus-story-bg-v2.webp");
+  background-position: center, center;
+  background-size: cover, cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 260ms ease, visibility 260ms step-end;
+}
+
+/* E.V.E.S. — Epistemological Variant Evolution System */
+.novel-eves-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.novel-eves-button span {
+  color: #c9b8ff;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.novel-eves-button b {
+  min-width: 42px;
+  color: #8fe8da;
+  font: 600 9px/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.08em;
+}
+
+.novel-eves-panel[hidden] {
+  display: none;
+}
+
+.novel-eves-panel {
+  position: fixed;
+  z-index: 96;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(123, 106, 207, 0.18), transparent 34%),
+    rgba(1, 7, 16, 0.74);
+  backdrop-filter: blur(18px) saturate(1.16);
+}
+
+.novel-eves-shell {
+  position: relative;
+  width: min(1180px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border: 1px solid rgba(173, 205, 221, 0.28);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(17, 35, 53, 0.96), rgba(8, 16, 31, 0.96) 52%, rgba(21, 18, 44, 0.96)),
+    #08101f;
+  box-shadow: 0 36px 110px rgba(0, 0, 0, 0.58), inset 0 1px rgba(255, 255, 255, 0.06);
+  color: #edf7f7;
+}
+
+.novel-eves-shell::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -1px;
+  left: 7%;
+  width: 30%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #90e6d7 42%, #c8b5ff 72%, transparent);
+  box-shadow: 0 0 18px #8bd8d0;
+}
+
+.novel-eves-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  padding: 28px 32px 24px;
+  border-bottom: 1px solid rgba(177, 212, 224, 0.14);
+}
+
+.novel-eves-header span,
+.novel-eves-status span,
+.novel-eves-history header span,
+.novel-eves-history li > span {
+  color: #88d7ca;
+  font: 700 10px/1.4 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.16em;
+}
+
+.novel-eves-header h2 {
+  margin: 7px 0 5px;
+  font: 500 clamp(21px, 2.3vw, 34px)/1.15 var(--font-serif-jp, serif);
+  letter-spacing: 0.025em;
+}
+
+.novel-eves-header p {
+  max-width: 720px;
+  margin: 0;
+  color: rgba(230, 241, 246, 0.66);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.novel-eves-close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(183, 211, 226, 0.22);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(239, 247, 251, 0.72);
+  font-size: 20px;
+}
+
+.novel-eves-status {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 32px 0;
+}
+
+.novel-eves-status strong {
+  font: 500 16px/1.4 var(--font-serif-jp, serif);
+}
+
+.novel-eves-graph {
+  overflow-x: auto;
+  padding: 6px 20px 0;
+  scrollbar-color: rgba(145, 221, 211, 0.36) transparent;
+}
+
+.novel-eves-graph svg {
+  display: block;
+  width: 100%;
+  min-width: 860px;
+  height: auto;
+}
+
+.eves-edge path {
+  fill: none;
+  stroke: rgba(171, 202, 217, 0.18);
+  stroke-width: 1.4;
+  transition: stroke 220ms ease, stroke-width 220ms ease;
+}
+
+.eves-edge text {
+  fill: rgba(212, 225, 234, 0.34);
+  font: 600 9px/1 var(--font-sans-jp, sans-serif);
+  letter-spacing: 0.08em;
+}
+
+.eves-edge.is-active path {
+  stroke: #91e9da;
+  stroke-width: 2.6;
+  filter: url(#eves-glow);
+  stroke-dasharray: 7 7;
+  animation: eves-route-flow 1.4s linear infinite;
+}
+
+.eves-edge.is-active text {
+  fill: #d8faf5;
+}
+
+@keyframes eves-route-flow {
+  to { stroke-dashoffset: -28; }
+}
+
+.eves-node rect {
+  fill: rgba(4, 13, 26, 0.82);
+  stroke: rgba(164, 199, 216, 0.22);
+  stroke-width: 1;
+}
+
+.eves-node-eyebrow {
+  fill: rgba(156, 190, 208, 0.44);
+  font: 700 7px/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.12em;
+}
+
+.eves-node-label {
+  fill: rgba(227, 239, 245, 0.5);
+  font: 500 12px/1 var(--font-serif-jp, serif);
+}
+
+.eves-node-order {
+  fill: #7dd9cc;
+  font: 700 8px/1 var(--font-mono, ui-monospace, monospace);
+}
+
+.eves-node.is-visited rect {
+  fill: rgba(21, 54, 65, 0.76);
+  stroke: rgba(130, 222, 208, 0.64);
+}
+
+.eves-node.is-visited .eves-node-label { fill: #edfafa; }
+.eves-node.is-visited .eves-node-eyebrow { fill: #8fe2d4; }
+
+.eves-node.is-current rect {
+  fill: rgba(64, 48, 100, 0.84);
+  stroke: #c6afff;
+  stroke-width: 2;
+  filter: url(#eves-glow);
+}
+
+.novel-eves-history {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.72fr) 1.8fr;
+  gap: 24px;
+  margin: 0 32px;
+  padding: 22px 0;
+  border-top: 1px solid rgba(176, 210, 224, 0.13);
+}
+
+.novel-eves-history h3 {
+  margin: 7px 0 0;
+  font: 500 17px/1.5 var(--font-serif-jp, serif);
+}
+
+.novel-eves-history ol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.novel-eves-history li {
+  display: grid;
+  gap: 5px;
+  min-height: 82px;
+  padding: 14px 16px;
+  border: 1px solid rgba(168, 202, 217, 0.15);
+  border-radius: 9px;
+  background: rgba(2, 10, 21, 0.46);
+}
+
+.novel-eves-history li strong {
+  font: 500 14px/1.45 var(--font-serif-jp, serif);
+}
+
+.novel-eves-history li small {
+  color: rgba(216, 230, 238, 0.52);
+  font-size: 10px;
+}
+
+.novel-eves-history li.is-empty {
+  grid-column: 1 / -1;
+  border-style: dashed;
+}
+
+.novel-eves-footer {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 32px 24px;
+  border-top: 1px solid rgba(176, 210, 224, 0.13);
+}
+
+.novel-eves-footer button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid rgba(139, 224, 210, 0.38);
+  border-radius: 99px;
+  background: rgba(108, 206, 193, 0.08);
+  color: #e9fbf8;
+  font: 600 13px/1 var(--font-sans-jp, sans-serif);
+}
+
+.novel-eves-footer button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.novel-eves-footer p {
+  margin: 0;
+  color: rgba(216, 230, 238, 0.5);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.novel-choices button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px 20px;
+  padding: 17px 24px;
+  text-align: left;
+}
+
+.novel-choices button > span {
+  grid-column: 1 / -1;
+  color: #9ddfd5;
+  font: 700 9px/1.2 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.16em;
+}
+
+.novel-choices button > strong {
+  color: #f0f7fa;
+  font: 500 clamp(17px, 1.35vw, 22px)/1.4 var(--font-serif-jp, serif);
+}
+
+.novel-choices button > small {
+  color: rgba(214, 230, 237, 0.46);
+  font: 600 9px/1.2 var(--font-sans-jp, sans-serif);
+  letter-spacing: 0.08em;
+}
+
+.novel-choices button:hover,
+.novel-choices button:focus-visible {
+  border-color: rgba(153, 235, 221, 0.78);
+  background: linear-gradient(90deg, rgba(35, 89, 91, 0.78), rgba(44, 35, 79, 0.72));
+  box-shadow: 0 0 0 1px rgba(151, 229, 218, 0.2), 0 0 34px rgba(104, 209, 195, 0.18), 0 20px 52px rgba(0, 0, 0, 0.36);
+}
+
+@media (max-width: 760px) {
+  .novel-eves-panel { padding: 10px; }
+  .novel-eves-shell { width: calc(100vw - 20px); max-height: calc(100vh - 20px); border-radius: 12px; }
+  .novel-eves-header { padding: 20px; }
+  .novel-eves-header p { font-size: 11px; }
+  .novel-eves-status { padding: 14px 20px 0; }
+  .novel-eves-history { grid-template-columns: 1fr; margin: 0 20px; }
+  .novel-eves-history ol { grid-template-columns: 1fr; }
+  .novel-eves-footer { align-items: stretch; flex-direction: column; padding: 16px 20px 20px; }
+  .novel-eves-footer button { width: 100%; }
+  .novel-eves-button span { display: none; }
+  .novel-eves-button b { min-width: 34px; }
+}
+
+/*
+ * Centered visual-novel say screen
+ * Keep the stage, bust-up portrait, and dialogue window on one visual axis.
+ */
+.novel-layer {
+  --novel-say-width: min(1040px, calc(100vw - 72px));
+  --novel-say-height: clamp(194px, 23vh, 252px);
+  --novel-say-bottom: clamp(28px, 4vh, 48px);
+}
+
+.novel-runtime::before {
+  background:
+    radial-gradient(ellipse 48% 58% at 50% 38%, transparent 0 52%, rgba(1, 5, 14, 0.13) 78%, rgba(1, 4, 12, 0.28) 100%),
+    linear-gradient(180deg, transparent 0 46%, rgba(1, 4, 12, 0.18) 62%, rgba(1, 4, 12, 0.78) 100%);
+}
+
+.novel-cast {
+  z-index: 4;
+}
+
+.novel-character,
+.novel-character--sora,
+.novel-character--minamo {
+  right: auto;
+  bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) - 14px);
+  left: 50%;
+  width: clamp(430px, 38vw, 610px);
+  height: clamp(430px, 58vh, 630px);
+  aspect-ratio: auto;
+  overflow: hidden;
+  opacity: 0;
+  filter: saturate(0.8) brightness(0.72);
+  transform: translate3d(-50%, 22px, 0) scale(0.975);
+  transform-origin: 50% 100%;
+}
+
+.novel-character .novel-character-portrait,
+.novel-character--sora .novel-character-portrait,
+.novel-character--minamo .novel-character-portrait {
+  inset: 0;
+  background-position: 50% 0;
+  background-size: 100% auto;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 90%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0 90%, transparent 100%);
+  -webkit-mask-composite: initial;
+  mask-composite: initial;
+}
+
+.novel-cast[data-speaker="sora"] .novel-character--sora,
+.novel-cast[data-speaker="minamo"] .novel-character--minamo {
+  z-index: 2;
+  opacity: 1;
+  filter: saturate(1.03) brightness(1.06);
+  transform: translate3d(-50%, 0, 0) scale(1);
+}
+
+.novel-cast[data-speaker="sora"] .novel-character--minamo,
+.novel-cast[data-speaker="minamo"] .novel-character--sora,
+.novel-cast[data-speaker="choice"] .novel-character,
+.novel-cast:not([data-speaker="sora"]):not([data-speaker="minamo"]) .novel-character {
+  opacity: 0;
+  transform: translate3d(-50%, 16px, 0) scale(0.98);
+}
+
+.novel-dialogue {
+  z-index: 7;
+  right: auto;
+  bottom: var(--novel-say-bottom);
+  left: 50%;
+  width: var(--novel-say-width);
+  min-height: var(--novel-say-height);
+  height: var(--novel-say-height);
+  padding: clamp(54px, 6.5vh, 70px) clamp(38px, 5vw, 76px) 34px;
+  overflow: visible;
+  border: 1px solid rgba(222, 239, 249, 0.25);
+  border-radius: 10px;
+  background:
+    linear-gradient(110deg, rgba(var(--accent-rgb), 0.08), transparent 46%),
+    linear-gradient(180deg, rgba(8, 20, 34, 0.9), rgba(2, 8, 18, 0.96));
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.48),
+    inset 0 1px rgba(255, 255, 255, 0.07),
+    0 0 36px rgba(var(--novel-cyan), 0.06);
+  backdrop-filter: blur(22px) saturate(0.94);
+  transform: translateX(-50%);
+}
+
+.novel-dialogue::before {
+  top: -1px;
+  right: 28px;
+  left: 28px;
+  width: auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--novel-cyan), 0.9) 18%, rgba(239, 249, 255, 0.62) 50%, rgba(var(--novel-cyan), 0.38) 82%, transparent);
+  box-shadow: 0 0 16px rgba(var(--novel-cyan), 0.34);
+}
+
+.novel-dialogue:focus-visible {
+  border-color: rgba(var(--novel-cyan), 0.58);
+  outline: 2px solid rgba(var(--novel-cyan), 0.16);
+  outline-offset: 4px;
+}
+
+.novel-speaker {
+  top: -24px;
+  left: clamp(28px, 4vw, 54px);
+  min-width: clamp(160px, 14vw, 230px);
+  min-height: 48px;
+  padding: 0 28px;
+  border-color: rgba(var(--novel-cyan), 0.46);
+  border-radius: 999px;
+  background: linear-gradient(110deg, rgba(var(--accent-rgb), 0.28), rgba(4, 13, 25, 0.97) 76%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.36), 0 0 24px rgba(var(--novel-cyan), 0.1);
+  font-size: clamp(17px, 1.35vw, 22px);
+  text-align: center;
+  justify-content: center;
+}
+
+.novel-speaker:empty {
+  display: none;
+}
+
+.novel-text {
+  width: 100%;
+  max-width: 52em;
+  margin-inline: auto;
+  font-size: clamp(20px, 1.55vw, 27px);
+  line-height: 1.72;
+  letter-spacing: 0.025em;
+  text-align: left;
+}
+
+.novel-continue {
+  right: 26px;
+  bottom: 18px;
+}
+
+.novel-signal-caption {
+  top: clamp(82px, 10vh, 118px);
+  left: 50%;
+  max-width: min(560px, 70vw);
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.novel-topbar nav {
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+.novel-footer {
+  right: auto;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  left: max(24px, env(safe-area-inset-left));
+  width: auto;
+}
+
+@media (max-width: 720px) {
+  .novel-layer {
+    --novel-say-width: calc(100vw - 24px);
+    --novel-say-height: clamp(220px, 32vh, 276px);
+    --novel-say-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .novel-character,
+  .novel-character--sora,
+  .novel-character--minamo {
+    right: auto;
+    bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) - 10px);
+    left: 50%;
+    width: min(96vw, 470px);
+    height: clamp(330px, 49vh, 470px);
+    transform: translate3d(-50%, 18px, 0) scale(0.98);
+  }
+
+  .novel-cast[data-speaker="sora"] .novel-character--sora,
+  .novel-cast[data-speaker="minamo"] .novel-character--minamo {
+    transform: translate3d(-50%, 0, 0) scale(1);
+  }
+
+  .novel-dialogue {
+    right: auto;
+    bottom: var(--novel-say-bottom);
+    left: 50%;
+    min-height: var(--novel-say-height);
+    height: var(--novel-say-height);
+    padding: 52px 22px 30px;
+    border-radius: 8px;
+    transform: translateX(-50%);
+  }
+
+  .novel-dialogue::before {
+    top: -1px;
+    right: 18px;
+    left: 18px;
+  }
+
+  .novel-speaker {
+    top: -20px;
+    left: 20px;
+    min-width: 136px;
+    min-height: 40px;
+    padding: 0 18px;
+    font-size: 15px;
+  }
+
+  .novel-text {
+    font-size: clamp(17px, 4.7vw, 21px);
+    line-height: 1.65;
+  }
+
+  .novel-signal-caption {
+    top: 62px;
+    left: 50%;
+    max-width: calc(100vw - 64px);
+    transform: translateX(-50%);
+  }
+}
+
+.novel-layer:has(.novel-runtime:not([hidden])) {
+  background-position: center, center;
+  background-size: cover, cover;
+}
+
+.novel-layer[hidden] {
+  display: none;
+}
+
+.novel-layer.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 420ms ease, visibility 0ms step-start;
+}
+
+.novel-particles {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 520ms ease;
+}
+
+.novel-layer.is-open .novel-particles { opacity: 0.72; }
+
+.novel-veil { z-index: 1; }
+.novel-scanlines { z-index: 2; }
+
+body.novel-open .experience > .masthead,
+body.novel-open .experience > .status,
+body.novel-open .experience > .guide,
+body.novel-open .experience > .mode-caption,
+body.novel-open .experience > .signal-console-main,
+body.novel-open .experience > .mode-nav,
+body.novel-open .experience > .actions,
+body.novel-open .japan-heading,
+body.novel-open .map-scope-switch,
+body.novel-open .japan-observation,
+body.novel-open .signal-console-map,
+body.novel-open .map-mode-bank,
+body.novel-open .japan-layer-switch,
+body.novel-open .japan-instruction,
+body.novel-open .japan-poi-card,
+body.novel-open .japan-close,
+body.novel-open .japan-credits {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.novel-veil,
+.novel-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.novel-veil {
+  background:
+    radial-gradient(circle at 72% 40%, transparent 0 23%, rgba(1, 5, 9, 0.16) 58%),
+    linear-gradient(180deg, rgba(1, 5, 9, 0.22), rgba(1, 6, 10, 0.08) 36%, rgba(1, 5, 9, 0.78)),
+    linear-gradient(90deg, rgba(1, 5, 9, 0.7), transparent 46%, rgba(1, 5, 9, 0.16));
+  backdrop-filter: saturate(0.9);
+}
+
+.novel-scanlines {
+  opacity: 0.24;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 3px,
+    rgba(216, 255, 245, 0.045) 4px
+  );
+  mix-blend-mode: soft-light;
+}
+
+.novel-topbar {
+  position: absolute;
+  z-index: 4;
+  top: max(24px, env(safe-area-inset-top));
+  right: max(28px, env(safe-area-inset-right));
+  left: max(28px, env(safe-area-inset-left));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.novel-topbar > div {
+  display: grid;
+  gap: 6px;
+  color: rgba(220, 249, 242, 0.56);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.novel-topbar > div strong {
+  color: rgba(238, 255, 250, 0.88);
+  font-family: var(--novel-font);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.novel-topbar nav {
+  display: flex;
+  gap: 7px;
+  pointer-events: auto;
+}
+
+.novel-topbar button,
+.novel-title-actions button,
+.novel-choices button,
+.novel-log-panel button {
+  border: 1px solid rgba(var(--novel-cyan), 0.22);
+  color: rgba(236, 255, 250, 0.7);
+  background: rgba(2, 13, 17, 0.64);
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  font-family: var(--novel-font);
+  letter-spacing: 0.08em;
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.novel-topbar button {
+  min-width: 70px;
+  height: 42px;
+  padding: 0 15px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.novel-topbar #novel-close-button {
+  min-width: 34px;
+  padding: 0;
+  font-size: 17px;
+}
+
+.novel-topbar button:hover,
+.novel-topbar button:focus-visible,
+.novel-topbar button.is-active,
+.novel-title-actions button:hover,
+.novel-title-actions button:focus-visible,
+.novel-choices button:hover,
+.novel-choices button:focus-visible,
+.novel-log-panel button:hover,
+.novel-log-panel button:focus-visible {
+  color: #fff;
+  border-color: rgba(var(--novel-cyan), 0.62);
+  background: rgba(var(--accent-rgb), 0.16);
+  outline: none;
+}
+
+.novel-progress {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(208, 255, 244, 0.08);
+}
+
+.novel-progress i {
+  display: block;
+  width: 2%;
+  height: 100%;
+  background: rgb(var(--novel-cyan));
+  box-shadow: 0 0 16px rgba(var(--novel-cyan), 0.8);
+  transition: width 500ms ease;
+}
+
+.novel-title-screen {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: clamp(32px, 8vw, 130px);
+  width: min(760px, 74vw);
+  transform: translateY(-46%);
+}
+
+.novel-title-cast {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.novel-title-cast[hidden] {
+  display: none;
+}
+
+.novel-title-cast::after {
+  position: absolute;
+  right: 1vw;
+  bottom: -5vh;
+  width: min(52vw, 920px);
+  height: 18vh;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(119, 219, 244, 0.18), rgba(24, 73, 105, 0.05) 46%, transparent 74%);
+  filter: blur(18px);
+  content: "";
+}
+
+.novel-title-character {
+  position: absolute;
+  bottom: -1.5vh;
+  margin: 0;
+  transform-origin: 50% 100%;
+  filter:
+    drop-shadow(0 30px 22px rgba(3, 17, 31, 0.42))
+    drop-shadow(-5px -2px 10px rgba(217, 249, 255, 0.2));
+}
+
+.novel-title-character img {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+
+.novel-title-character--mizuha {
+  z-index: 1;
+  right: clamp(270px, 22vw, 450px);
+  width: clamp(320px, 23vw, 470px);
+  opacity: 0.96;
+  transform: translateY(1.5%) rotate(-0.35deg);
+}
+
+.novel-title-character--amane {
+  z-index: 2;
+  right: clamp(24px, 5vw, 110px);
+  width: clamp(292px, 20vw, 410px);
+  transform: translateY(2.5%) rotate(0.3deg);
+}
+
+.novel-layer.is-open .novel-title-character--mizuha {
+  animation: novel-title-cast-arrive 900ms cubic-bezier(0.2, 0.75, 0.2, 1) 140ms both;
+}
+
+.novel-layer.is-open .novel-title-character--amane {
+  animation: novel-title-cast-arrive 900ms cubic-bezier(0.2, 0.75, 0.2, 1) 260ms both;
+}
+
+@keyframes novel-title-cast-arrive {
+  from {
+    opacity: 0;
+    translate: 26px 18px;
+    filter: blur(8px) drop-shadow(0 30px 22px rgba(3, 17, 31, 0.2));
+  }
+}
+
+@media (max-width: 1180px) {
+  .novel-title-screen {
+    width: min(620px, 62vw);
+  }
+
+  .novel-title-cast {
+    opacity: 0.72;
+  }
+
+  .novel-title-character--mizuha {
+    right: 19vw;
+    width: clamp(300px, 34vw, 400px);
+  }
+
+  .novel-title-character--amane {
+    right: -2vw;
+    width: clamp(270px, 31vw, 360px);
+  }
+}
+
+@media (max-width: 720px) {
+  .novel-title-cast {
+    opacity: 0.34;
+  }
+
+  .novel-title-character--mizuha {
+    right: 15vw;
+    bottom: 5vh;
+    width: min(66vw, 360px);
+  }
+
+  .novel-title-character--amane {
+    right: -17vw;
+    bottom: 4vh;
+    width: min(62vw, 330px);
+  }
+}
+
+.novel-title-screen[hidden],
+.novel-runtime[hidden],
+.novel-chapter-card[hidden],
+.novel-dialogue[hidden],
+.novel-log-panel[hidden] {
+  display: none;
+}
+
+.novel-title-screen > p:first-of-type {
+  margin: 0 0 22px;
+  color: rgba(var(--novel-cyan), 0.68);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.27em;
+}
+
+.novel-title-screen h2 {
+  max-width: 720px;
+  margin: 0;
+  font-family: var(--novel-font);
+  font-size: clamp(42px, 6.7vw, 96px);
+  font-weight: 500;
+  letter-spacing: -0.08em;
+  line-height: 1.12;
+  text-shadow: 0 3px 40px rgba(0, 0, 0, 0.8);
+}
+
+.novel-title-sub {
+  margin: 22px 0 0;
+  color: rgba(235, 252, 247, 0.7);
+  font-family: var(--novel-font);
+  font-size: 12px;
+  letter-spacing: 0.13em;
+}
+
+.novel-title-note {
+  max-width: 600px;
+  margin: 34px 0 0;
+  padding-left: 18px;
+  border-left: 1px solid rgba(var(--novel-cyan), 0.34);
+  color: rgba(223, 241, 236, 0.52);
+  font-family: var(--novel-font);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  line-height: 2;
+}
+
+.novel-title-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 34px;
+}
+
+.novel-title-actions button {
+  min-height: 46px;
+  padding: 0 22px;
+  border-radius: 2px;
+  font-family: var(--novel-font);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.novel-title-orbit {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 68%;
+  width: min(44vw, 590px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(var(--novel-cyan), 0.12);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: novel-orbit-drift 18s linear infinite;
+}
+
+.novel-title-orbit::before,
+.novel-title-orbit::after,
+.novel-title-orbit i {
+  position: absolute;
+  border: 1px solid rgba(var(--novel-cyan), 0.1);
+  border-radius: 50%;
+  content: "";
+}
+
+.novel-title-orbit::before { inset: 15%; }
+.novel-title-orbit::after { inset: 32%; }
+.novel-title-orbit i:nth-child(1) { inset: -6% 32%; }
+.novel-title-orbit i:nth-child(2) { inset: 28% -8%; }
+.novel-title-orbit i:nth-child(3) { inset: 44%; background: rgba(var(--accent-rgb), 0.26); box-shadow: 0 0 90px rgba(var(--accent-rgb), 0.32); }
+
+.novel-runtime {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+}
+
+.novel-runtime::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(3, 12, 23, 0.2) 0%, rgba(3, 12, 23, 0.24) 58%, rgba(3, 12, 23, 0.46) 100%),
+    rgba(4, 15, 29, 0.06);
+  backdrop-filter: blur(2px) saturate(0.9);
+}
+
+.novel-cast {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.novel-character {
+  position: absolute;
+  bottom: clamp(-64px, -3vh, -26px);
+  width: clamp(840px, 82vw, 1260px);
+  aspect-ratio: 1;
+  margin: 0;
+  opacity: 0;
+  filter: saturate(0.78) brightness(0.62);
+  transform: translateY(28px) scale(0.94);
+  transform-origin: 50% 100%;
+  transition:
+    opacity 420ms ease,
+    filter 420ms ease,
+    transform 520ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.novel-character--sora {
+  right: auto;
+  left: clamp(-170px, -7vw, -76px);
+}
+
+.novel-character--minamo {
+  right: clamp(-350px, -17vw, -130px);
+}
+
+.novel-character-portrait {
+  position: absolute;
+  inset: 0;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  background-size: 200% 200%;
+  filter: drop-shadow(0 30px 46px rgba(0, 0, 0, 0.48));
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0, #000 8%, #000 92%, transparent 100%),
+    linear-gradient(to bottom, #000 0, #000 88%, transparent 100%);
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 8%, #000 92%, transparent 100%),
+    linear-gradient(to bottom, #000 0, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+.novel-character--sora .novel-character-portrait {
+  background-image: url("./assets/characters/amane-calm-07-v2.png");
+  background-position: 50% 100%;
+  background-size: contain;
+}
+
+.novel-character--minamo .novel-character-portrait {
+  background-image: url("./assets/characters/mizuha-calm-07-v2.png");
+  background-position: 50% 100%;
+  background-size: contain;
+}
+
+.novel-character[data-expression="teasing"] .novel-character-portrait,
+.novel-character[data-expression="startled"] .novel-character-portrait {
+  background-position: 100% 0;
+}
+
+.novel-character[data-expression="worried"] .novel-character-portrait,
+.novel-character[data-expression="exasperated"] .novel-character-portrait {
+  background-position: 0 100%;
+}
+
+.novel-character[data-expression="sad"] .novel-character-portrait,
+.novel-character[data-expression="soft"] .novel-character-portrait {
+  background-position: 100% 100%;
+}
+
+/* Both characters use full-resolution standalone sprites. */
+.novel-character--sora[data-expression="calm"] .novel-character-portrait {
+  background-image: url("./assets/characters/amane-calm-07-v2.png");
+}
+
+.novel-character--sora[data-expression="teasing"] .novel-character-portrait,
+.novel-character--sora[data-expression="startled"] .novel-character-portrait {
+  background-image: url("./assets/characters/amane-startled-07-v2.png");
+}
+
+.novel-character--sora[data-expression="worried"] .novel-character-portrait,
+.novel-character--sora[data-expression="exasperated"] .novel-character-portrait {
+  background-image: url("./assets/characters/amane-exasperated-07-v2.png");
+}
+
+.novel-character--sora[data-expression="sad"] .novel-character-portrait,
+.novel-character--sora[data-expression="soft"] .novel-character-portrait {
+  background-image: url("./assets/characters/amane-soft-07-v2.png");
+}
+
+.novel-character--sora .novel-character-portrait {
+  background-position: 50% 100%;
+  background-size: contain;
+}
+
+.novel-character--minamo[data-expression="calm"] .novel-character-portrait {
+  background-image: url("./assets/characters/mizuha-calm-07-v2.png");
+}
+
+.novel-character--minamo[data-expression="teasing"] .novel-character-portrait,
+.novel-character--minamo[data-expression="startled"] .novel-character-portrait {
+  background-image: url("./assets/characters/mizuha-teasing-07-v2.png");
+}
+
+.novel-character--minamo[data-expression="worried"] .novel-character-portrait,
+.novel-character--minamo[data-expression="exasperated"] .novel-character-portrait {
+  background-image: url("./assets/characters/mizuha-worried-07-v2.png");
+}
+
+.novel-character--minamo[data-expression="sad"] .novel-character-portrait,
+.novel-character--minamo[data-expression="soft"] .novel-character-portrait {
+  background-image: url("./assets/characters/mizuha-sad-07-v2.png");
+}
+
+.novel-character--minamo .novel-character-portrait {
+  background-position: 50% 100%;
+  background-size: contain;
+}
+
+.novel-character.is-changing .novel-character-portrait {
+  animation: novel-expression-in 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.novel-cast[data-speaker="sora"] .novel-character--sora,
+.novel-cast[data-speaker="minamo"] .novel-character--minamo {
+  z-index: 2;
+  opacity: 0.98;
+  filter: saturate(1.03) brightness(1.06);
+  transform: translateY(0) scale(1.025);
+}
+
+.novel-cast[data-speaker="sora"] .novel-character--minamo,
+.novel-cast[data-speaker="minamo"] .novel-character--sora {
+  z-index: 1;
+  opacity: 0.2;
+  filter: saturate(0.72) brightness(0.58) blur(0.4px);
+}
+
+.novel-cast[data-speaker="choice"] .novel-character {
+  opacity: 0.16;
+  filter: saturate(0.62) brightness(0.52);
+}
+
+.novel-character figcaption {
+  display: none;
+}
+
+.novel-character figcaption b {
+  color: rgba(242, 255, 252, 0.9);
+  font: 700 9px/1 Consolas, monospace;
+  letter-spacing: 0.22em;
+}
+
+.novel-character figcaption span {
+  color: rgba(227, 246, 241, 0.56);
+  font: 600 7px/1.6 var(--novel-font);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.novel-cast[data-speaker="sora"] .novel-character--sora figcaption,
+.novel-cast[data-speaker="minamo"] .novel-character--minamo figcaption {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.novel-dialogue {
+  position: absolute;
+  z-index: 5;
+  right: clamp(28px, 4vw, 72px);
+  bottom: clamp(26px, 3.8vh, 48px);
+  left: clamp(28px, 4vw, 72px);
+  min-height: clamp(210px, 24vh, 272px);
+  padding: 58px clamp(34px, 4vw, 66px) 38px;
+  border: 1px solid rgba(var(--novel-cyan), 0.24);
+  background:
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.055), transparent 44%),
+    rgba(2, 11, 20, 0.9);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.46), inset 0 1px rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(26px) saturate(0.92);
+  cursor: pointer;
+}
+
+.novel-dialogue::before {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: clamp(160px, 18vw, 320px);
+  height: 3px;
+  content: "";
+  background: rgb(var(--novel-cyan));
+  box-shadow: 0 0 18px rgba(var(--novel-cyan), 0.55);
+}
+
+.novel-dialogue:focus-visible {
+  border-color: rgba(var(--novel-cyan), 0.54);
+  outline: none;
+}
+
+.novel-speaker {
+  position: absolute;
+  top: -23px;
+  left: clamp(24px, 3vw, 46px);
+  display: flex;
+  align-items: center;
+  min-width: clamp(170px, 17vw, 260px);
+  min-height: 46px;
+  margin: 0;
+  padding: 0 26px;
+  border: 1px solid rgba(var(--novel-cyan), 0.48);
+  background: linear-gradient(100deg, rgba(var(--accent-rgb), 0.28), rgba(3, 16, 25, 0.96) 72%);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34), 0 0 24px rgba(var(--novel-cyan), 0.08);
+  color: rgba(248, 255, 253, 0.98);
+  font-family: var(--novel-font);
+  font-size: clamp(16px, 1.25vw, 20px);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.novel-text {
+  width: min(100%, 74em);
+  max-width: none;
+  margin: 0;
+  color: rgba(247, 255, 252, 0.91);
+  font-family: var(--novel-font);
+  font-size: clamp(21px, 1.62vw, 29px);
+  font-feature-settings: "palt" 1;
+  font-kerning: normal;
+  font-weight: 500;
+  letter-spacing: 0.035em;
+  line-height: 1.82;
+  line-break: strict;
+  overflow-wrap: normal;
+  word-break: normal;
+  word-break: auto-phrase;
+  text-wrap: pretty;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.78);
+}
+
+.novel-text.is-revealing {
+  will-change: contents, opacity;
+  animation: novel-text-scramble-in 180ms ease-out both;
+}
+
+.novel-cursor {
+  display: inline-block;
+  margin-left: 3px;
+  color: rgba(var(--novel-cyan), 0.75);
+  animation: novel-cursor-blink 680ms steps(1) infinite;
+}
+
+.novel-continue {
+  position: absolute;
+  right: 28px;
+  bottom: 20px;
+  color: rgba(var(--novel-cyan), 0.72);
+  font-size: 16px;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.novel-continue.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  animation: novel-continue 1.2s ease-in-out infinite;
+}
+
+.novel-avatar {
+  position: absolute;
+  z-index: 2;
+  top: 46%;
+  right: clamp(80px, 13vw, 220px);
+  width: clamp(150px, 20vw, 300px);
+  aspect-ratio: 1;
+  transform: translateY(-55%);
+  opacity: 0.72;
+  transition: opacity 400ms ease, transform 500ms ease;
+}
+
+.novel-avatar[hidden] {
+  display: none;
+}
+
+.novel-avatar-rings,
+.novel-avatar-rings i,
+.novel-avatar-core {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.novel-avatar-rings { inset: 0; animation: novel-rings-spin 14s linear infinite; }
+.novel-avatar-rings::before,
+.novel-avatar-rings::after,
+.novel-avatar-rings i { border: 1px solid rgba(var(--novel-cyan), 0.2); content: ""; }
+.novel-avatar-rings::before { position: absolute; inset: 7%; border-radius: 50%; }
+.novel-avatar-rings::after { position: absolute; inset: 24%; border-radius: 50%; }
+.novel-avatar-rings i:nth-child(1) { inset: 0 34%; }
+.novel-avatar-rings i:nth-child(2) { inset: 31% -4%; }
+.novel-avatar-rings i:nth-child(3) { inset: 13%; border-style: dashed; }
+
+.novel-avatar-core {
+  inset: 34%;
+  display: grid;
+  border: 1px solid rgba(var(--novel-cyan), 0.44);
+  background: rgba(var(--accent-rgb), 0.24);
+  box-shadow: 0 0 70px rgba(var(--accent-rgb), 0.34), inset 0 0 34px rgba(var(--novel-cyan), 0.16);
+  place-items: center;
+}
+
+.novel-avatar-core span {
+  color: rgba(244, 255, 252, 0.92);
+  font-family: Georgia, serif;
+  font-size: clamp(26px, 3vw, 48px);
+  text-shadow: 0 0 24px rgba(var(--novel-cyan), 0.8);
+}
+
+.novel-avatar[data-speaker="narrator"] { opacity: 0.26; transform: translateY(-55%) scale(0.82); }
+.novel-avatar[data-speaker="sora"] { --novel-cyan: 188, 218, 255; }
+.novel-avatar[data-speaker="minamo"] { --novel-cyan: 143, 255, 221; }
+.novel-avatar[data-speaker="aoi"] { --novel-cyan: 255, 204, 147; }
+.novel-avatar[data-speaker="earth"] { --novel-cyan: 175, 223, 255; transform: translateY(-55%) scale(1.18); }
+.novel-avatar[data-speaker="choice"] { --novel-cyan: 220, 191, 255; }
+
+.novel-signal-caption {
+  position: absolute;
+  z-index: 4;
+  top: clamp(100px, 15vh, 170px);
+  left: clamp(28px, 8vw, 130px);
+  display: grid;
+  gap: 9px;
+  max-width: 390px;
+  pointer-events: none;
+}
+
+.novel-signal-caption span {
+  width: max-content;
+  padding: 5px 8px;
+  border: 1px solid rgba(var(--novel-cyan), 0.24);
+  color: rgba(var(--novel-cyan), 0.8);
+  background: rgba(1, 10, 14, 0.44);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.novel-signal-caption span[data-kind="DERIVED"] { color: #f7c98b; border-color: rgba(247, 201, 139, 0.34); }
+.novel-signal-caption span[data-kind="SCENARIO"] { color: #d7b9ff; border-color: rgba(215, 185, 255, 0.34); }
+
+.novel-signal-caption strong {
+  color: rgba(232, 248, 244, 0.52);
+  font-family: var(--novel-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1.8;
+}
+
+.novel-choices {
+  position: absolute;
+  z-index: 8;
+  top: 47%;
+  left: 50%;
+  display: grid;
+  gap: 10px;
+  width: min(760px, calc(100vw - 56px));
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) translateY(8px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.novel-choices.is-visible {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
+.novel-choices button {
+  min-height: 64px;
+  padding: 17px 26px;
+  border-radius: 2px;
+  color: rgba(245, 255, 252, 0.8);
+  font-family: var(--novel-font);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-align: left;
+}
+
+.novel-choices button::before {
+  margin-right: 13px;
+  color: rgba(var(--novel-cyan), 0.7);
+  content: "◇";
+}
+
+.novel-footer {
+  position: absolute;
+  z-index: 6;
+  right: clamp(28px, 8vw, 130px);
+  bottom: max(25px, env(safe-area-inset-bottom));
+  left: clamp(28px, 8vw, 130px);
+  display: flex;
+  justify-content: space-between;
+  color: rgba(214, 240, 233, 0.36);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  pointer-events: none;
+}
+
+.novel-chapter-card {
+  position: absolute;
+  z-index: 10;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  gap: 22px;
+  width: min(1040px, calc(100vw - 48px));
+  min-height: 280px;
+  padding: 52px 48px;
+  overflow: hidden;
+  border: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(1, 14, 23, 0.58) 0%, rgba(1, 14, 23, 0.3) 34%, rgba(1, 14, 23, 0.08) 58%, transparent 76%);
+  transform: translate(-50%, -50%);
+  text-align: center;
+  animation: novel-chapter-in 1.45s ease both;
+  isolation: isolate;
+}
+
+.novel-chapter-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: clamp(210px, 26vw, 360px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(var(--novel-cyan), 0.2);
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle, transparent 0 34px, rgba(var(--novel-cyan), 0.11) 35px 36px),
+    radial-gradient(circle, rgba(var(--novel-cyan), 0.12), transparent 64%);
+  box-shadow:
+    0 0 42px rgba(var(--novel-cyan), 0.08),
+    inset 0 0 42px rgba(var(--novel-cyan), 0.05);
+  transform: translate(-50%, -50%);
+  opacity: 0.72;
+  animation: novel-chapter-orbit 5s linear infinite;
+}
+
+.novel-chapter-card::after {
+  content: "";
+  position: absolute;
+  right: 8%;
+  bottom: 38px;
+  left: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--novel-cyan), 0.16) 14%, rgba(var(--novel-cyan), 0.76) 50%, rgba(var(--novel-cyan), 0.16) 86%, transparent);
+  box-shadow: 0 0 14px rgba(var(--novel-cyan), 0.28);
+  transform: scaleX(0);
+  animation: novel-chapter-beam 1.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.novel-chapter-card span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: min(620px, 76vw);
+  color: rgba(var(--novel-cyan), 0.67);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+}
+
+.novel-chapter-card span::before,
+.novel-chapter-card span::after {
+  content: "";
+  width: clamp(38px, 10vw, 126px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--novel-cyan), 0.55));
+}
+
+.novel-chapter-card span::after {
+  transform: scaleX(-1);
+}
+
+.novel-chapter-card strong {
+  position: relative;
+  max-width: min(820px, 84vw);
+  padding: 4px 30px 16px;
+  font-family: var(--novel-font);
+  font-size: clamp(30px, 4.2vw, 58px);
+  font-weight: 500;
+  line-height: 1.32;
+  letter-spacing: 0.075em;
+  text-wrap: balance;
+  text-shadow:
+    0 2px 24px rgba(0, 7, 14, 0.82),
+    0 0 20px rgba(var(--novel-cyan), 0.12);
+}
+
+.novel-chapter-card strong::after {
+  content: "◇";
+  position: absolute;
+  bottom: -29px;
+  left: 50%;
+  color: rgba(var(--novel-cyan), 0.82);
+  font-family: Georgia, serif;
+  font-size: 11px;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(var(--novel-cyan), 0.65);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.novel-log-panel {
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  right: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  width: min(560px, 92vw);
+  height: 100%;
+  border-left: 1px solid rgba(var(--novel-cyan), 0.22);
+  background: rgba(1, 9, 13, 0.96);
+  box-shadow: -30px 0 80px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(24px);
+}
+
+.novel-log-panel header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 34px 32px 24px;
+  border-bottom: 1px solid rgba(var(--novel-cyan), 0.12);
+}
+
+.novel-log-panel header div { display: grid; gap: 7px; }
+.novel-log-panel header span { color: rgba(var(--novel-cyan), 0.58); font: 700 7px/1 Consolas, monospace; letter-spacing: 0.2em; }
+.novel-log-panel header strong { font: 600 18px/1.4 var(--novel-font); letter-spacing: 0.04em; }
+.novel-log-panel header button { width: 34px; height: 34px; border-radius: 50%; font-size: 16px; }
+
+#novel-log-content {
+  padding: 26px 32px 70px;
+  overflow: auto;
+}
+
+#novel-log-content article {
+  padding: 0 0 22px 18px;
+  border-left: 1px solid rgba(var(--novel-cyan), 0.18);
+}
+
+#novel-log-content article[data-kind="DERIVED"] { border-color: rgba(247, 201, 139, 0.4); }
+#novel-log-content article[data-kind="SCENARIO"] { border-color: rgba(215, 185, 255, 0.4); }
+#novel-log-content article p:first-child { margin: 0 0 7px; color: rgba(var(--novel-cyan), 0.58); font: 700 7px/1.4 Consolas, monospace; letter-spacing: 0.13em; }
+#novel-log-content article p:last-child { margin: 0; color: rgba(235, 249, 245, 0.7); font: 500 14px/1.9 var(--novel-font); }
+
+.japan-story-button {
+  margin-top: 8px;
+}
+
+.story-icon {
+  font-family: Georgia, serif;
+}
+
+@keyframes novel-cursor-blink { 50% { opacity: 0; } }
+@keyframes novel-text-scramble-in {
+  0% { opacity: 0.45; }
+  100% { opacity: 1; }
+}
+@keyframes novel-continue { 50% { transform: translateY(4px); } }
+@keyframes novel-expression-in {
+  0% { opacity: 0.38; transform: translateY(5px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes novel-orbit-drift { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes novel-rings-spin { to { transform: rotate(360deg); } }
+@keyframes novel-chapter-in {
+  0% { opacity: 0; filter: blur(7px); transform: translate(-50%, calc(-50% + 8px)) scale(0.985); }
+  24%, 76% { opacity: 1; filter: blur(0); transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; filter: blur(4px); transform: translate(-50%, calc(-50% - 5px)) scale(1.008); }
+}
+
+@keyframes novel-chapter-orbit {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes novel-chapter-beam {
+  0%, 10% { opacity: 0; transform: scaleX(0); }
+  32%, 74% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(0.2); }
+}
+
+@media (max-width: 720px) {
+  .novel-topbar {
+    top: max(14px, env(safe-area-inset-top));
+    right: 14px;
+    left: 14px;
+  }
+
+  .novel-topbar > div span { display: none; }
+  .novel-topbar > div strong { max-width: 150px; font-size: 11px; line-height: 1.5; }
+  .novel-topbar nav { gap: 4px; }
+  .novel-topbar button { min-width: 48px; height: 38px; padding: 0 9px; font-size: 9px; }
+  .novel-topbar #novel-restart-button { display: none; }
+  .novel-topbar #novel-close-button { min-width: 32px; }
+
+  .novel-title-screen {
+    top: 46%;
+    left: 20px;
+    width: calc(100vw - 40px);
+  }
+
+  .novel-title-screen > p:first-of-type { margin-bottom: 16px; font-size: 7px; }
+  .novel-title-screen h2 { font-size: clamp(36px, 12.5vw, 58px); line-height: 1.2; }
+  .novel-title-sub { margin-top: 18px; font-size: 10px; line-height: 1.8; }
+  .novel-title-note { margin-top: 24px; font-size: 9px; line-height: 1.8; }
+  .novel-title-actions { display: grid; margin-top: 24px; }
+  .novel-title-actions button { min-height: 44px; }
+  .novel-title-orbit { top: 35%; left: 72%; width: 88vw; opacity: 0.64; }
+
+  .novel-signal-caption {
+    top: 72px;
+    left: 18px;
+    max-width: calc(100vw - 170px);
+    gap: 5px;
+  }
+
+  .novel-signal-caption strong { font-size: 10px; line-height: 1.6; }
+  .novel-avatar { top: 34%; right: 12px; width: 150px; opacity: 0.54; }
+
+  .novel-character {
+    bottom: 150px;
+    width: min(158vw, 640px);
+  }
+
+  .novel-character--sora {
+    right: auto;
+    left: -12px;
+  }
+
+  .novel-character--minamo {
+    right: -250px;
+    left: auto;
+  }
+
+  .novel-cast[data-speaker="sora"] .novel-character--minamo,
+  .novel-cast[data-speaker="minamo"] .novel-character--sora,
+  .novel-cast:not([data-speaker="sora"]):not([data-speaker="minamo"]) .novel-character {
+    opacity: 0;
+  }
+
+  .novel-character figcaption {
+    right: 14%;
+    bottom: 3%;
+  }
+
+  .novel-character figcaption span { display: none; }
+
+  .novel-dialogue {
+    right: 12px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    left: 12px;
+    min-height: 212px;
+    padding: 50px 20px 28px;
+  }
+
+  .novel-speaker {
+    top: -19px;
+    left: 18px;
+    min-width: 154px;
+    min-height: 40px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+
+  .novel-text { font-size: clamp(17px, 4.6vw, 20px); line-height: 1.82; }
+  .novel-choices { top: 42%; width: calc(100vw - 28px); gap: 8px; }
+  .novel-choices button { min-height: 56px; padding: 14px 17px; font-size: 14px; line-height: 1.55; }
+
+  .novel-footer {
+    right: 18px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    left: 18px;
+    font-size: 9px;
+  }
+
+  .novel-footer span:last-child { display: none; }
+  .novel-chapter-card {
+    width: calc(100vw - 20px);
+    min-height: 230px;
+    padding: 38px 18px;
+  }
+
+  .novel-chapter-card strong {
+    max-width: 92vw;
+    padding-inline: 8px;
+    font-size: clamp(26px, 8.2vw, 38px);
+  }
+  .novel-log-panel { width: 100%; }
+  .novel-log-panel header { padding: 24px 20px 18px; }
+  #novel-log-content { padding: 22px 20px 60px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-layer,
+  .novel-progress i,
+  .novel-choices,
+  .novel-continue,
+  .novel-avatar,
+  .novel-character,
+  .novel-character figcaption {
+    transition-duration: 0.01ms;
+  }
+
+  .novel-title-orbit,
+  .novel-avatar-rings,
+  .novel-cursor,
+  .novel-text,
+  .novel-character-portrait,
+  .novel-continue,
+  .novel-chapter-card,
+  .novel-chapter-card::before,
+  .novel-chapter-card::after {
+    animation: none;
+  }
+}
+
+/*
+ * Story runtime skin
+ * The dialogue HUD follows the visual hierarchy used by the user's
+ * zen-quest-map dream runtime: stage first, speaker second, controls last.
+ */
+.novel-layer {
+  --novel-dialogue-right: clamp(30px, 4vw, 64px);
+  --novel-dialogue-bottom: clamp(28px, 4vh, 48px);
+}
+
+.novel-scanlines {
+  display: none;
+}
+
+.novel-veil {
+  background:
+    linear-gradient(180deg, rgba(1, 7, 15, 0.01) 0%, rgba(1, 7, 15, 0.02) 54%, rgba(1, 6, 14, 0.26) 72%, rgba(1, 5, 13, 0.64) 100%),
+    linear-gradient(90deg, rgba(1, 7, 15, 0.08), transparent 24%, transparent 76%, rgba(1, 7, 15, 0.06));
+  backdrop-filter: saturate(1.06);
+}
+
+.novel-runtime::before {
+  background:
+    radial-gradient(ellipse 38% 64% at 50% 48%, rgba(123, 179, 213, 0.13), transparent 74%),
+    linear-gradient(180deg, transparent 0 58%, rgba(1, 4, 12, 0.16) 76%, rgba(1, 4, 12, 0.48) 100%);
+  backdrop-filter: none;
+}
+
+.novel-cast {
+  z-index: 4;
+}
+
+.novel-character {
+  right: auto;
+  bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) - 12px);
+  left: 50%;
+  width: clamp(640px, 52vw, 900px);
+  height: clamp(520px, 62vh, 700px);
+  aspect-ratio: auto;
+  overflow: hidden;
+  opacity: 0;
+  filter: saturate(0.78) brightness(0.7);
+  transform: translate3d(-50%, 22px, 0) scale(0.97);
+}
+
+.novel-character--sora,
+.novel-character--minamo {
+  right: auto;
+  left: 50%;
+}
+
+.novel-character.novel-character--sora .novel-character-portrait,
+.novel-character.novel-character--minamo .novel-character-portrait {
+  background-position: 50% 0;
+  background-size: auto 230%;
+}
+
+.novel-character-portrait::after {
+  background: linear-gradient(180deg, transparent 0 82%, rgba(2, 7, 17, 0.25) 91%, rgba(2, 7, 17, 0.9) 100%);
+}
+
+.novel-cast[data-speaker="sora"] .novel-character--sora,
+.novel-cast[data-speaker="minamo"] .novel-character--minamo {
+  opacity: 1;
+  filter: saturate(1.02) brightness(1.04);
+  transform: translate3d(-50%, 0, 0) scale(1);
+}
+
+.novel-cast[data-speaker="sora"] .novel-character--minamo,
+.novel-cast[data-speaker="minamo"] .novel-character--sora,
+.novel-cast[data-speaker="choice"] .novel-character,
+.novel-cast:not([data-speaker="sora"]):not([data-speaker="minamo"]) .novel-character {
+  opacity: 0;
+}
+
+.novel-dialogue {
+  right: auto;
+  bottom: var(--novel-say-bottom);
+  left: 50%;
+  width: var(--novel-say-width);
+  min-height: 0;
+  height: var(--novel-say-height);
+  padding: clamp(46px, 5vh, 62px) var(--novel-dialogue-right) clamp(28px, 3.6vh, 42px);
+  overflow: visible;
+  border: 1px solid rgba(210, 235, 248, 0.22);
+  background:
+    linear-gradient(180deg, rgba(7, 18, 31, 0.62), rgba(2, 8, 19, 0.74)),
+    radial-gradient(ellipse 70% 110% at 50% 100%, rgba(var(--accent-rgb), 0.09), transparent 72%);
+  box-shadow: 0 20px 58px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.045);
+  backdrop-filter: blur(18px) saturate(1.04);
+  transform: translateX(-50%);
+  z-index: 7;
+}
+
+.novel-dialogue::before {
+  top: 27px;
+  right: 28px;
+  left: 28px;
+  width: auto;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--novel-cyan), 0.9), rgba(239, 249, 255, 0.24) 44%, transparent);
+  box-shadow: 0 0 14px rgba(151, 192, 224, 0.18);
+}
+
+.novel-dialogue:focus-visible {
+  outline: 1px solid rgba(var(--novel-cyan), 0.42);
+  outline-offset: -8px;
+}
+
+.novel-speaker {
+  top: -24px;
+  left: clamp(24px, 3.5vw, 54px);
+  min-width: clamp(170px, 15vw, 260px);
+  min-height: clamp(42px, 5vh, 54px);
+  padding: 0 clamp(22px, 2vw, 34px);
+  border: 1px solid rgba(239, 249, 255, 0.36);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(19, 28, 43, 0.93), rgba(5, 10, 21, 0.82)),
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.1), transparent 58%);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3), inset 0 1px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  font-size: clamp(18px, 1.5vw, 25px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.novel-speaker:empty {
+  display: none;
+}
+
+.novel-text {
+  width: min(100%, 52em);
+  margin-inline: auto;
+  font-size: clamp(22px, 1.75vw, 31px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.58;
+  text-align: left;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.88);
+}
+
+.novel-text .novel-glyph {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(3px);
+  transform: translate3d(0.12em, 0.08em, 0);
+  will-change: opacity, filter, transform;
+}
+
+.novel-text.is-revealing .novel-glyph {
+  animation: novel-glyph-flow 280ms ease-out var(--novel-glyph-delay) forwards;
+}
+
+@keyframes novel-glyph-flow {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.novel-continue {
+  right: 28px;
+  bottom: 18px;
+  font-size: 13px;
+}
+
+.novel-cast[data-speaker="sora"] + .novel-avatar,
+.novel-cast[data-speaker="minamo"] + .novel-avatar {
+  opacity: 0;
+}
+
+.novel-signal-caption {
+  top: clamp(80px, 10vh, 118px);
+  left: 50%;
+  gap: 7px;
+  max-width: min(460px, 46vw);
+  opacity: 0.72;
+  transform: translateX(-50%);
+}
+
+.novel-signal-caption span {
+  border: 0;
+  border-left: 2px solid currentColor;
+  background: rgba(1, 7, 16, 0.38);
+  font-size: 8px;
+}
+
+.novel-signal-caption strong {
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.novel-topbar {
+  top: max(20px, env(safe-area-inset-top));
+  right: max(24px, env(safe-area-inset-right));
+  left: max(24px, env(safe-area-inset-left));
+}
+
+.novel-topbar nav {
+  position: fixed;
+  z-index: 12;
+  right: var(--novel-dialogue-right);
+  bottom: max(14px, calc(var(--novel-dialogue-bottom) * 0.36));
+  gap: 2px;
+}
+
+.novel-topbar button {
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  border-color: transparent;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  color: rgba(237, 245, 255, 0.62);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.novel-topbar button:hover,
+.novel-topbar button:focus-visible,
+.novel-topbar button.is-active {
+  color: #fff;
+  border-color: rgba(237, 245, 255, 0.22);
+  background: rgba(237, 245, 255, 0.06);
+  text-shadow: 0 0 16px rgba(157, 198, 232, 0.42);
+}
+
+.novel-topbar #novel-close-button {
+  position: fixed;
+  top: max(76px, calc(env(safe-area-inset-top) + 62px));
+  right: max(20px, env(safe-area-inset-right));
+  min-width: 38px;
+  border-color: rgba(237, 245, 255, 0.12);
+  border-radius: 50%;
+  background: rgba(2, 8, 18, 0.44);
+}
+
+.novel-footer {
+  right: auto;
+  bottom: max(18px, calc(var(--novel-dialogue-bottom) * 0.42));
+  left: 50%;
+  width: min(320px, 23vw);
+  font-size: 8px;
+  transform: translateX(-50%);
+}
+
+.novel-footer span:last-child {
+  display: none;
+}
+
+.novel-choices {
+  top: 45%;
+  width: min(920px, calc(100vw - 72px));
+  gap: 16px;
+}
+
+.novel-choices button {
+  min-height: 82px;
+  border-color: rgba(239, 249, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(5, 11, 24, 0.78);
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.36);
+  font-size: clamp(17px, 1.4vw, 22px);
+}
+
+@media (max-width: 720px) {
+  .novel-layer {
+    --novel-say-width: calc(100vw - 24px);
+    --novel-say-height: clamp(176px, 26vh, 224px);
+    --novel-say-bottom: max(14px, env(safe-area-inset-bottom));
+    --novel-dialogue-right: 20px;
+    --novel-dialogue-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  .novel-character {
+    bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) - 8px);
+    left: 50%;
+    width: min(118vw, 560px);
+    height: min(56vh, 500px);
+    transform: translate3d(-50%, 16px, 0) scale(0.98);
+  }
+
+  .novel-character--sora,
+  .novel-character--minamo {
+    right: auto;
+    left: 50%;
+  }
+
+  .novel-cast[data-speaker="sora"] .novel-character--sora,
+  .novel-cast[data-speaker="minamo"] .novel-character--minamo {
+    transform: translate3d(-50%, 0, 0) scale(1);
+  }
+
+  .novel-dialogue {
+    bottom: var(--novel-say-bottom);
+    left: 50%;
+    width: var(--novel-say-width);
+    min-height: 0;
+    height: var(--novel-say-height);
+    padding: 44px 20px 30px;
+    transform: translateX(-50%);
+  }
+
+  .novel-dialogue::before {
+    top: 24px;
+    right: 20px;
+    left: 20px;
+  }
+
+  .novel-speaker {
+    top: -20px;
+    left: 20px;
+    min-width: 142px;
+    min-height: 40px;
+    padding: 0 20px;
+    font-size: 15px;
+  }
+
+  .novel-text {
+    font-size: clamp(18px, 4.9vw, 22px);
+    line-height: 1.62;
+  }
+
+  .novel-signal-caption {
+    top: 68px;
+    left: 50%;
+    max-width: calc(100vw - 100px);
+    transform: translateX(-50%);
+  }
+
+  .novel-avatar {
+    top: 35%;
+    right: 12px;
+  }
+
+  .novel-topbar nav {
+    right: 14px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .novel-topbar button {
+    height: 34px;
+    padding: 0 8px;
+    font-size: 8px;
+  }
+
+  .novel-footer {
+    display: none;
+  }
+
+  .novel-choices {
+    top: 40%;
+    width: calc(100vw - 28px);
+    gap: 10px;
+  }
+
+  .novel-choices button {
+    min-height: 62px;
+    padding: 14px 18px;
+    font-size: 15px;
+  }
+}

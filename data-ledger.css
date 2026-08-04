@@ -31,7 +31,7 @@
 .data-specs dd {
   overflow-wrap: anywhere;
   color: rgba(235, 250, 246, 0.78);
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: var(--font-ja);
   font-size: 10px;
   font-weight: 560;
   letter-spacing: 0.035em;
@@ -64,7 +64,7 @@
   padding: 10px 13px;
   color: rgba(234, 250, 246, 0.78);
   cursor: pointer;
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: var(--font-ja);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.045em;
@@ -117,7 +117,7 @@
   padding: 10px 13px;
   border-top: 1px solid rgba(137, 235, 207, 0.09);
   color: rgba(203, 232, 224, 0.44);
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: var(--font-ja);
   font-size: 9px;
   letter-spacing: 0.025em;
   line-height: 1.65;
@@ -194,7 +194,7 @@
 
 .data-kind-legend small {
   color: rgba(218, 238, 234, 0.46);
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: var(--font-ja);
   font-size: 7px;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -297,7 +297,7 @@
 .statistics-plain {
   margin: 0;
   color: rgba(235, 247, 243, 0.78);
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: var(--font-ja);
   font-size: 11px;
   line-height: 1.85;
 }
@@ -307,7 +307,7 @@
   padding-left: 10px;
   border-left: 1px solid rgba(255, 197, 101, 0.34);
   color: rgba(255, 221, 165, 0.68);
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: var(--font-ja);
   font-size: 9px;
   line-height: 1.7;
 }
@@ -321,7 +321,7 @@
   padding: 11px 0 2px;
   color: rgba(171, 235, 219, 0.64);
   cursor: pointer;
-  font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: var(--font-ja);
   font-size: 9px;
   letter-spacing: 0.06em;
 }

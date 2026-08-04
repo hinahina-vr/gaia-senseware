@@ -19,7 +19,7 @@
 
   const previewText = (rows) => {
     const values = Array.isArray(rows) ? rows : [];
-    if (!values.length) return "01 │ このスナップショットにプレビュー行はありません。";
+    if (!values.length) return "01 │ このデータには表示できるプレビュー行がありません。";
     return values
       .slice(0, PREVIEW_LINE_LIMIT)
       .map((row, index) => `${String(index + 1).padStart(2, "0")} │ ${JSON.stringify(row)}`)
@@ -51,22 +51,22 @@
     const organisation = element("p", "data-ledger-organisation", dataset.organisation);
     const explanation = element("p");
     explanation.append(
-      element("strong", "", "画面への変換："),
-      document.createTextNode(dataset.transformation || "加工なし"),
+      element("strong", "", "画面での見せ方："),
+      document.createTextNode(dataset.transformation || "元の値をそのまま表示しています。"),
     );
 
     const specs = element("dl", "data-specs");
     specs.append(
       createSpec("提供機関", dataset.organisation),
-      createSpec("取得日時", displayDate(dataset.retrievedAt)),
-      createSpec("期間", dataset.period),
-      createSpec("単位", dataset.unit),
-      createSpec("空間・時間解像度", dataset.resolution),
-      createSpec("注意事項", dataset.caveat),
+      createSpec("作品へ保存した日", displayDate(dataset.retrievedAt)),
+      createSpec("データの期間", dataset.period),
+      createSpec("数値の単位", dataset.unit),
+      createSpec("データの細かさ", dataset.resolution),
+      createSpec("この数字で分からないこと", dataset.caveat),
     );
 
     const links = element("div", "data-source-links");
-    const sourceLink = element("a", "", "データ元・公式説明 ↗");
+    const sourceLink = element("a", "", "提供元の公式ページを開く ↗");
     sourceLink.href = dataset.url;
     sourceLink.target = "_blank";
     sourceLink.rel = "noopener noreferrer";
@@ -76,13 +76,13 @@
     const summary = element("summary");
     summary.append(
       element("span", "", "RAW PREVIEW"),
-      document.createTextNode(" 作品に同梱した先頭10行 "),
+      document.createTextNode(" 作品内データの先頭10行 "),
       element("em", "", "10 LINES ONLY"),
     );
     const meta = element(
       "p",
       "",
-      `${dataset.id} / ${Math.min(PREVIEW_LINE_LIMIT, dataset.preview?.length || 0)}行を表示 / JSONスナップショット`,
+      `${dataset.id} / 最初の${Math.min(PREVIEW_LINE_LIMIT, dataset.preview?.length || 0)}行 / 作品内に保存したJSON`,
     );
     const pre = element("pre");
     pre.append(element("code", "", previewText(dataset.preview)));
@@ -96,7 +96,7 @@
     const heading = element(
       "p",
       "statistics-method-id",
-      `${String(index + 1).padStart(2, "0")} / HOW IT WAS DRAWN`,
+      `${String(index + 1).padStart(2, "0")} / 計算した値の説明`,
     );
     const title = element("h4", "", method.plainTitle || method.target);
     const explanation = element(
@@ -106,7 +106,7 @@
     );
     const limit = element("p", "statistics-plain-limit", method.plainLimit || method.validation);
     const technical = element("details", "statistics-technical");
-    const technicalSummary = element("summary", "", "くわしい計算を見る");
+    const technicalSummary = element("summary", "", "数式と確認方法を見る");
     const technicalTarget = element(
       "p",
       "statistics-technical-target",
@@ -115,9 +115,9 @@
     const formula = element("code", "statistics-formula", method.formula);
     const details = element("dl", "data-specs statistics-specs");
     details.append(
-      createSpec("どう計算したか", method.rule),
-      createSpec("どう確かめたか", method.validation),
-      createSpec("画面での見分け方", method.display),
+      createSpec("計算のしかた", method.rule),
+      createSpec("確かめ方", method.validation),
+      createSpec("観測値との見分け方", method.display),
     );
     technical.append(technicalSummary, technicalTarget, formula, details);
     article.append(heading, title, explanation, limit, technical);
@@ -147,11 +147,11 @@
         elements.state.textContent = "同梱スナップショット：読み込み失敗";
         return;
       }
-      elements.title.textContent = `${String(modeNumber).padStart(2, "0")} ${mode.titleJa || mode.id} — この光の出どころ`;
+      elements.title.textContent = `${String(modeNumber).padStart(2, "0")} ${mode.titleJa || mode.id} — この画面で使っているデータ`;
       elements.question.textContent = mode.question;
       elements.act.textContent = `ACT ${mode.act.number} / ${mode.act.title} — ${mode.act.en}`;
-      elements.state.textContent = `${mode.datasets.length}種類のデータ / 作品内に保存済み`;
-      elements.updated.textContent = `取得日時：${displayDate(generatedAt)}`;
+      elements.state.textContent = `${mode.datasets.length}種類のデータを使用 / 作品内に保存済み`;
+      elements.updated.textContent = `スナップショット作成日：${displayDate(generatedAt)}`;
       const statisticalMethods = mode.statisticalMethods || [];
       elements.statistics.hidden = false;
       elements.statisticsMethods.replaceChildren(
@@ -161,7 +161,7 @@
               element(
                 "p",
                 "statistics-empty",
-                "この展示では、空白を計算で埋めたり、未来の値を予測したりしていません。記録がない場所は、そのまま残しています。",
+                "この演出では欠けた値を補ったり、未来を予測したりしていません。記録のない場所は、分からないまま残しています。",
               ),
             ]),
       );

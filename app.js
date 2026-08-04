@@ -1,6 +1,71 @@
 (() => {
   "use strict";
 
+  // Keep the highlight independent from each button's own pseudo-elements.
+  // A single fixed layer also covers buttons created later by mode renderers.
+  const buttonGlint = document.createElement("span");
+  buttonGlint.className = "gaia-global-button-glint";
+  buttonGlint.setAttribute("aria-hidden", "true");
+  document.body.append(buttonGlint);
+
+  const triggerButtonGlint = (button) => {
+    if (!(button instanceof HTMLButtonElement) || button.disabled) {
+      return;
+    }
+
+    const bounds = button.getBoundingClientRect();
+    if (bounds.width < 2 || bounds.height < 2) {
+      return;
+    }
+
+    const buttonStyle = getComputedStyle(button);
+    const colorVariables = [
+      "--button-accent-rgb",
+      "--intro-rgb",
+      "--path-rgb",
+      "--novel-rgb",
+      "--space-rgb",
+      "--space-accent-rgb",
+      "--gx-rgb",
+      "--accent-rgb",
+    ];
+    const glintColor = colorVariables
+      .map((property) => buttonStyle.getPropertyValue(property).trim())
+      .find(Boolean) || "174, 231, 255";
+
+    buttonGlint.style.left = `${bounds.left}px`;
+    buttonGlint.style.top = `${bounds.top}px`;
+    buttonGlint.style.width = `${bounds.width}px`;
+    buttonGlint.style.height = `${bounds.height}px`;
+    buttonGlint.style.borderRadius = buttonStyle.borderRadius;
+    buttonGlint.style.setProperty("--gaia-button-glint-rgb", glintColor);
+
+    buttonGlint.classList.remove("is-active");
+    void buttonGlint.offsetWidth;
+    buttonGlint.classList.add("is-active");
+  };
+
+  document.addEventListener("pointerover", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("button") : null;
+    if (!button || (event.relatedTarget instanceof Node && button.contains(event.relatedTarget))) {
+      return;
+    }
+    triggerButtonGlint(button);
+  });
+
+  document.addEventListener("focusin", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("button") : null;
+    if (button) {
+      triggerButtonGlint(button);
+    }
+  });
+
+  buttonGlint.addEventListener("animationend", (event) => {
+    if (event.animationName === "gaia-button-glint-frame") {
+      buttonGlint.classList.remove("is-active");
+    }
+  });
+
   const canvas = document.querySelector("#gaia-canvas");
   const experience = document.querySelector(".experience");
   const errorPanel = document.querySelector("#error-panel");
@@ -42,15 +107,26 @@
   const signalTimeInputs = Array.from(document.querySelectorAll("[data-signal-time]"));
   const mapSignalEncodingLegend = document.querySelector("[data-signal-encoding-legend]");
   const introLayer = document.querySelector("#intro-layer");
+  const openingLayer = document.querySelector("#gaia-opening");
+  const introPathStage = document.querySelector("#intro-path-stage");
+  const introSenseStage = document.querySelector("#intro-sense-stage");
+  const introPathGrid = document.querySelector("#intro-path-grid");
+  const introPathButtons = Array.from(document.querySelectorAll("[data-intro-path]"));
+  const introVisuals = Array.from(document.querySelectorAll("[data-intro-visual]"));
+  const introPathBack = document.querySelector("#intro-path-back");
+  const introPathKicker = document.querySelector("#intro-path-kicker");
+  const introSenseTitle = document.querySelector("#intro-sense-title");
+  const introSenseLead = document.querySelector("#intro-sense-lead");
+  const introSelectionPrompt = document.querySelector("#intro-selection-prompt");
+  const introPathNote = document.querySelector("#intro-path-note");
   const introModeList = document.querySelector("#intro-mode-list");
+  const introSelectionPreview = document.querySelector(".intro-selection-preview");
   const introSelectionNumber = document.querySelector("#intro-selection-number");
   const introSelectionTitle = document.querySelector("#intro-selection-title");
   const introSelectionCopy = document.querySelector("#intro-selection-copy");
   const introArchitectureJump = document.querySelector("#intro-architecture-jump");
   const introArchitectureBack = document.querySelector("#intro-architecture-back");
-  const architectureExhibit = document.querySelector("#architecture-exhibit");
-  const introEnter = document.querySelector("#intro-enter");
-  const introJapan = document.querySelector("#intro-japan");
+  const introOpenDataExhibit = document.querySelector("#intro-open-data-exhibit");
   const introButton = document.querySelector("#intro-button");
   const japanButton = document.querySelector("#japan-button");
   const japanLayer = document.querySelector("#japan-layer");
@@ -76,6 +152,10 @@
   const japanHistoryUpdated = document.querySelector("#japan-history-updated");
   const japanObservationKicker = document.querySelector("#japan-observation-kicker");
   const japanObservationCopy = document.querySelector("#japan-observation-copy");
+  const mapGuideTitle = document.querySelector("#map-guide-title");
+  const mapGuideSubject = document.querySelector("#map-guide-subject");
+  const mapGuideReading = document.querySelector("#map-guide-reading");
+  const mapGuideAction = document.querySelector("#map-guide-action");
   const co2TimelineDisplay = document.querySelector("#co2-timeline-display");
   const co2TimelinePhase = document.querySelector("#co2-timeline-phase");
   const co2TimelineYear = document.querySelector("#co2-timeline-year");
@@ -113,12 +193,77 @@
   const JAPAN_MOBILE_ZOOM = 4;
   const EARTH_ZOOM = 2;
   const EARTH_MOBILE_ZOOM = 1;
+  const EARTH_INITIAL_CENTER_LONGITUDE = 138;
   const EARTH_RADIUS_KM = 6371;
   const P_WAVE_SPEED_KM_S = 7;
   const S_WAVE_SPEED_KM_S = 4;
   const JAPAN_WAVE_VISUAL_LIMIT_KM = 2500;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-22";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-31";
+  const NATURAL_EARTH_LAND_DATA = "./data/natural-earth-50m-land.geojson?v=gaia-27";
+
+  const MAP_READING_GUIDES = [
+    {
+      title: "CO₂は、いつから増えたのか？",
+      subject: "大気中のCO₂濃度が、1958年から現在、そして2050年の試算までどう変わるかを見る地図です。",
+      reading: "地図の色がCO₂濃度です。斜線は観測がない場所を周辺8地点から補った印。2026年以降は実測ではなく試算です。",
+      action: "年表示を動かすかマスを押すと、その時点の濃度と、実測・補完・試算の区分を確認できます。",
+    },
+    {
+      title: "風と海は、どこへ運ぶのか？",
+      subject: "海流・風・海面水温を一枚に重ねた、世界の循環図です。",
+      reading: "青い光は海流の速さ、シアンの線は同じ流れが14日続いた場合の移動距離、白い矢印は風です。",
+      action: "青い点を押すと動きが止まり、その地点の流速・方向・水温を読めます。",
+    },
+    {
+      title: "森が多い場所では、雨も多いのか？",
+      subject: "森の多い場所と雨の多い場所を、同じ世界地図で見比べます。森林が雨を起こすと断定する図ではありません。",
+      reading: "緑が濃い場所は森林、黄・茶・灰は草地・農地・都市などです。水色の光は31地点の平均降水量で、大きいほど雨が多い場所です。",
+      action: "水色の地点を押すと、場所の名前・年間降水量・周辺の森林率・データの年が表示されます。森と雨の重なりを自分で確かめられます。",
+    },
+    {
+      title: "花と虫は、どこで出会ったのか？",
+      subject: "ミツバチが観察された場所と、文献に記録された花との関係を重ねた地図です。",
+      reading: "黄色い点はGBIFの観察記録、花と虫を結ぶ線はGloBIの関係記録です。点と線は別の資料から来ています。",
+      action: "点を押すと、生きもの・観察場所・記録日と、どの資料に基づくかを読めます。",
+    },
+    {
+      title: "捨てたものは、どこへ行くのか？",
+      subject: "国ごとの廃棄物と再資源化率を、現在値・補完値・仮想案に分けた地図です。",
+      reading: "実線は国連の記録、内側の破線は近い5か国から補った値、外側の破線は観客が動かす仮想案です。",
+      action: "スライダーを動かすと仮想案だけが変化します。現状の記録とは混ざりません。",
+    },
+    {
+      title: "都市の光の下に、何が隠れているのか？",
+      subject: "国ごとの温室効果ガス排出量と、人工衛星が見た夜の明かりを比較する地図です。",
+      reading: "赤い円が排出量、白い光が夜間光です。夜の明るさを、排出量そのものとして扱ってはいません。",
+      action: "地図を長押しすると白い光だけが薄れ、環境負荷の層と見比べられます。",
+    },
+    {
+      title: "地震は、世界をどう伝わるのか？",
+      subject: "USGSが記録した世界のM7.5以上の地震（2000〜2026）を表示します。日本では、気象庁の震度6弱以上の観測点まで詳しく重ねています。",
+      reading: "世界の点は震源の位置・規模・深さ、日本の細かな点は実際に観測された震度です。二つの輪はP波とS波の到達目安で、速さは簡略化した地殻モデルです。",
+      action: "海外の震源を押すと発生時刻・深さ・マグニチュードを、日本の地震を選ぶと波の到達後に各地の震度を読めます。",
+    },
+    {
+      title: "自然・暮らし・記憶は、どこで重なるのか？",
+      subject: "森林、都市で暮らす人の割合、文化と記憶の場所を三つの層で見る地図です。",
+      reading: "緑は森林、青は都市人口、紫は各地域から選んだ世界遺産です。文化の価値を件数で順位づけはしていません。",
+      action: "時点を動かすと三つの層が順に現れ、最後に重なります。点を押すと出典と意味を読めます。",
+    },
+    {
+      title: "自然の力を、どこで分かち合えるか？",
+      subject: "自然エネルギーの条件と、各国の現在の再生可能電力比率を分けて見る地図です。",
+      reading: "黄色は31地点の日差しと風、緑は国全体の再生可能電力比率。二地点を結ぶ破線だけが展示上の仮想案です。",
+      action: "二地点を選ぶと、地域を結ぶ分散型ネットワークのシナリオが生まれます。",
+    },
+    {
+      title: "九つの信号を、どう受け取るか？",
+      subject: "01〜09の信号を一つの画面へ戻し、互いに矛盾する変化もそのまま残す地図です。",
+      reading: "単位の違うデータは合計せず、色・線・点として並べます。架空の『地球健康度』にはまとめません。",
+      action: "地図に触れると九つの信号が順に応答し、観客の軌跡が最後のレイヤーとして残ります。",
+    },
+  ];
   const JMA_HISTORY_DATA = "./data/jma-intensity-history.json";
   const JAPAN_DATA_BOUNDS = {
     west: 122,
@@ -128,6 +273,16 @@
   };
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const runSceneTransition = (swapScene, tone = "default", event = null) => {
+    const hasPointerOrigin = Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY) &&
+      (event.clientX !== 0 || event.clientY !== 0);
+    const transition = window.GaiaSceneTransition;
+    if (!transition) return Promise.resolve(swapScene());
+    return transition.run(swapScene, {
+      tone,
+      origin: hasPointerOrigin ? { x: event.clientX, y: event.clientY } : undefined,
+    });
+  };
   const MAP_POI_HIT_RADII = {
     fine: { history: 34, earthquake: 30, node: 32 },
     coarse: { history: 46, earthquake: 42, node: 44 },
@@ -135,844 +290,31 @@
   const japanContext = japanOverlay.getContext("2d");
   const gosatHeatmapCanvas = document.createElement("canvas");
   const gosatHeatmapContext = gosatHeatmapCanvas.getContext("2d");
+  const referenceWorldCanvas = document.createElement("canvas");
+  const referenceWorldContext = referenceWorldCanvas.getContext("2d");
   let gosatHeatmapCacheKey = "";
+  let referenceWorldCacheKey = "";
   const gosatImputedIndexCache = new WeakMap();
 
-  const JAPAN_NODES = [
-    {
-      name: "NAHA",
-      nameJa: "那覇・南西諸島",
-      lon: 127.68,
-      lat: 26.21,
-      description: "亜熱帯の島々では、海流、サンゴ礁、台風、観光都市の営みが近い距離で重なります。海を境界ではなく、島々を結ぶ循環として読むための地点です。",
-      relation: "02 青い循環系 × 08 三つの生態系 — 海の変化と地域社会の変化を一つの関係として考える。",
-    },
-    {
-      name: "YAKUSHIMA",
-      nameJa: "屋久島",
-      lon: 130.52,
-      lat: 30.36,
-      description: "高い山地、豊かな雨、古い森林、海まで続く水の流れが、短い距離の中でつながる島です。森が気候と水循環を支える働きを聴く地点として置いています。",
-      relation: "03 森の気候装置 — 森林を木材の集合ではなく、水と雲をつくる生きたインフラとして捉える。",
-    },
-    {
-      name: "ASO",
-      nameJa: "阿蘇",
-      lon: 131.1,
-      lat: 32.88,
-      description: "火山活動が生んだ地形の上に、草原、農業、湧水、集落の営みが重なる地域です。大地の変動を消すのではなく、恵みとリスクの両方を引き受ける場所として選びました。",
-      relation: "07 災いと恵み — 変動する地球に文明の側がどう同期し、回復の余地を残すかを問う。",
-    },
-    {
-      name: "NOTO",
-      nameJa: "能登",
-      lon: 136.9,
-      lat: 37.3,
-      description: "里山と里海、農漁業、祭礼、集落の知恵が相互に支え合ってきた半島です。自然環境だけでなく、暮らしと記憶を含めて再生を考える地点です。",
-      relation: "05 すべては次の資源 × 08 三つの生態系 — 資源循環、共同体、心の回復を切り離さない。",
-    },
-    {
-      name: "TOKYO",
-      nameJa: "東京",
-      lon: 139.69,
-      lat: 35.68,
-      description: "食料、電力、水、情報、廃棄物が巨大な規模で集中・通過する都市です。都市を自然の外部ではなく、地球の代謝に責任を持つ人工的な器官として考える地点です。",
-      relation: "06 人類世の傷跡 × 09 人工物の共生化 — 都市の効率を、周囲へ何を返すかという尺度で測り直す。",
-    },
-    {
-      name: "SENDAI",
-      nameJa: "仙台・三陸沿岸",
-      lon: 140.87,
-      lat: 38.27,
-      description: "海、川、平野、都市が接する沿岸域です。災害の記憶、防災、土地利用、生態系の回復を、別々の課題ではなく重なる時間として読む地点です。",
-      relation: "07 災いと恵み × 08 三つの生態系 — 観測技術と地域の記憶を結び、被害を弱い立場へ集中させない。",
-    },
-    {
-      name: "NEMURO",
-      nameJa: "根室・道東",
-      lon: 145.58,
-      lat: 43.33,
-      description: "寒流、湿原、漁業、渡り鳥など、国境を越える流れが地域の暮らしを形づくる場所です。地図上の端ではなく、海と生物の循環が交差する入口として置いています。",
-      relation: "02 青い循環系 × 04 共進化プロトコル — 海流と生物移動がつくる、領域を越えた相互依存を読む。",
-    },
-  ];
-
-  const JMA_CO2_SITES = Object.freeze([
-    {
-      id: "ryori",
-      title: "綾里 CO₂観測所",
-      shortTitle: "綾里",
-      lon: 141.82,
-      lat: 39.03,
-      valueKey: "ryoriPpm",
-      flagKey: "ryoriFlag",
-      note: "岩手県大船渡市。1987年から続く気象庁の大気CO₂観測地点です。",
-    },
-    {
-      id: "minamitorishima",
-      title: "南鳥島 CO₂観測所",
-      shortTitle: "南鳥島",
-      lon: 153.98,
-      lat: 24.28,
-      valueKey: "minamitorishimaPpm",
-      flagKey: "minamitorishimaFlag",
-      note: "日本の最東端にある海洋上の観測地点。1993年からの年平均値を表示します。",
-    },
-    {
-      id: "yonagunijima",
-      title: "与那国島 CO₂観測所",
-      shortTitle: "与那国島",
-      lon: 123.02,
-      lat: 24.47,
-      valueKey: "yonagunijimaPpm",
-      flagKey: "yonagunijimaFlag",
-      observationEnded: 2024,
-      note: "日本の最西端に近い観測地点。観測は2024年3月末で終了したため、最新年は直近の有効値を表示します。",
-    },
-  ]);
-
-  const EARTH_NODES = [
-    {
-      name: "AMAZON",
-      nameJa: "アマゾン流域",
-      lon: -60,
-      lat: -3,
-      description: "森林、大気、水循環、生物多様性、人間の暮らしが大陸規模で結ばれる場所です。遠く離れた消費と土地利用も、この循環へ参加しています。",
-      relation: "03 森の気候装置 × 06 人類世の傷跡 — 森を資源の在庫ではなく、惑星の循環器官として読む。",
-    },
-    {
-      name: "ARCTIC",
-      nameJa: "北極圏",
-      lon: 20,
-      lat: 74,
-      description: "氷、海、熱、大気の変化が地球全体へ連鎖する地域です。人の少ない遠隔地も、都市の選択と切り離されていません。",
-      relation: "01 地球の一呼吸 × 08 三つの生態系 — 遠隔地の変化を自分たちの時間へ接続する。",
-    },
-    {
-      name: "SAHEL",
-      nameJa: "サヘル",
-      lon: 15,
-      lat: 15,
-      description: "乾燥、降雨、農牧業、移動、地域社会の知恵がせめぎ合う帯状の地域です。環境変化を自然だけの問題にしないための地点です。",
-      relation: "07 災いと恵み × 08 三つの生態系 — 生態・社会・心の回復を同じ地図で考える。",
-    },
-    {
-      name: "HIMALAYA",
-      nameJa: "ヒマラヤ水系",
-      lon: 85,
-      lat: 28,
-      description: "氷河と雪解け水が国境を越えて巨大な河川と生活圏を支えます。上流と下流を別々の世界として扱えない地点です。",
-      relation: "02 青い循環系 — 水を所有物ではなく、地域を越えて巡る関係として読む。",
-    },
-    {
-      name: "CORAL SEA",
-      nameJa: "サンゴ海",
-      lon: 150,
-      lat: -18,
-      description: "海水温、生態系、沿岸文化が相互に応答する海域です。小さな生物の変化が社会の未来を映す感覚器になります。",
-      relation: "04 共進化プロトコル × 10 センスウェア2050 — 生物の応答を未来の意思決定へつなぐ。",
-    },
-    {
-      name: "ANDES",
-      nameJa: "アンデス",
-      lon: -70,
-      lat: -22,
-      description: "鉱物資源、高地の水、生態系、都市のテクノロジーが長い供給網で結ばれる地域です。人工物の起源を遡る地点です。",
-      relation: "05 すべては次の資源 × 09 人工物の共生化 — 技術を採掘から廃棄までの循環で捉え直す。",
-    },
-    {
-      name: "SOUTHERN OCEAN",
-      nameJa: "南大洋",
-      lon: 30,
-      lat: -55,
-      description: "熱と炭素を運ぶ海流が、見えないところで地球の気候を支えています。空白に見える海を働く主体として読む地点です。",
-      relation: "01 地球の一呼吸 × 02 青い循環系 — 海の巨大な時間と人間の判断を同期させる。",
-    },
-  ];
-
-  // A deliberately simplified planetary model. It stays visible when the
-  // optional OpenStreetMap detail tiles cannot be loaded.
-  const SIMPLE_WORLD_LANDMASSES = [
-    {
-      label: "NORTH AMERICA",
-      labelAt: [-106, 48],
-      points: [
-        [-168, 72], [-150, 70], [-136, 60], [-128, 52], [-124, 42],
-        [-117, 32], [-106, 24], [-97, 18], [-86, 20], [-81, 26],
-        [-82, 31], [-75, 38], [-66, 45], [-60, 53], [-67, 59],
-        [-79, 63], [-91, 70], [-108, 73], [-127, 72], [-148, 76],
-      ],
-    },
-    {
-      label: "SOUTH AMERICA",
-      labelAt: [-60, -20],
-      points: [
-        [-81, 12], [-70, 10], [-60, 7], [-50, 2], [-45, -10],
-        [-40, -23], [-48, -29], [-52, -41], [-66, -55], [-74, -50],
-        [-76, -35], [-80, -20], [-78, -5],
-      ],
-    },
-    {
-      label: "EURASIA",
-      labelAt: [73, 49],
-      points: [
-        [-11, 36], [-10, 44], [1, 51], [12, 57], [26, 60],
-        [41, 69], [61, 72], [82, 72], [103, 77], [126, 72],
-        [150, 61], [171, 60], [179, 52], [169, 45], [151, 42],
-        [144, 35], [135, 34], [125, 25], [115, 20], [105, 8],
-        [98, 5], [92, 20], [80, 22], [70, 27], [60, 24],
-        [52, 30], [44, 28], [36, 36], [25, 40], [15, 36],
-        [6, 43], [-4, 42],
-      ],
-    },
-    {
-      label: "AFRICA",
-      labelAt: [20, 5],
-      points: [
-        [-17, 37], [0, 35], [15, 33], [32, 30], [42, 12],
-        [50, 2], [44, -12], [35, -25], [28, -34], [18, -35],
-        [10, -28], [2, -10], [-8, 5], [-16, 20],
-      ],
-    },
-    {
-      label: "AUSTRALIA",
-      labelAt: [134, -25],
-      points: [
-        [112, -11], [130, -10], [145, -18], [153, -28],
-        [146, -39], [132, -43], [116, -35], [110, -22],
-      ],
-    },
-    {
-      label: "GREENLAND",
-      labelAt: [-41, 72],
-      points: [
-        [-55, 83], [-25, 80], [-18, 70], [-35, 60], [-52, 64], [-62, 74],
-      ],
-    },
-    {
-      label: "ANTARCTICA",
-      labelAt: [28, -76],
-      points: [
-        [-180, -70], [-145, -72], [-110, -73], [-70, -70], [-30, -75],
-        [10, -72], [48, -68], [88, -70], [128, -66], [162, -71],
-        [180, -70], [180, -84], [-180, -84],
-      ],
-    },
-  ];
-
-  const SIMPLE_WORLD_ISLAND_LINES = [
-    [[130, 31], [133, 33], [136, 35], [139, 37], [141, 41], [145, 44]],
-    [[166, -35], [173, -41], [178, -46]],
-    [[-9, 51], [-4, 55], [0, 58]],
-    [[47, -13], [49, -20], [46, -25]],
-  ];
-
-  const JMA_EVENT_TITLES = {
-    20110311144618: "東北地方太平洋沖地震",
-    20160416012505: "熊本地震",
-    20180906030759: "北海道胆振東部地震",
-    20240101161022: "能登半島地震",
-    20240417231448: "豊後水道の地震",
-    20240808164255: "日向灘の地震",
-  };
-
-  const INTRO_MODE_CHOICES = [
-    {
-      label: "空気",
-      cue: "CO₂と気温",
-      code: "AIR",
-      copy: "季節とともに上下する呼吸と、少しずつ積み重なるCO₂を見る。",
-    },
-    {
-      label: "海",
-      cue: "海流と風",
-      code: "OCEAN",
-      copy: "国境を越えて熱と水を運ぶ、海と風の大きな循環をたどる。",
-    },
-    {
-      label: "森",
-      cue: "森林と雨",
-      code: "FOREST",
-      copy: "森と雨が重なる場所から、気候を支える働きを感じる。",
-    },
-    {
-      label: "生きもの",
-      cue: "花と昆虫",
-      code: "LIFE",
-      copy: "一つの生命だけでは生まれない、花と昆虫の出会いの網を見る。",
-    },
-    {
-      label: "ごみ",
-      cue: "資源の行方",
-      code: "WASTE",
-      copy: "捨てたものがどこへ行き、次の資源へ渡せるかを考える。",
-    },
-    {
-      label: "都市",
-      cue: "光と排出",
-      code: "CITY",
-      copy: "夜の明るさの下に隠れた、人間の活動と環境への負担を見る。",
-    },
-    {
-      label: "地震",
-      cue: "地球の揺れ",
-      code: "QUAKE",
-      copy: "地球から届く波と、各地に残された揺れの記憶を聴く。",
-    },
-    {
-      label: "暮らし",
-      cue: "三つの生態系",
-      code: "ECOLOGIES",
-      copy: "自然、社会、大切な記憶を、切り離さずに重ねて見る。",
-    },
-    {
-      label: "エネルギー",
-      cue: "太陽と風",
-      code: "ENERGY",
-      copy: "自然から受け取れる力と、いまの電力の使い方を見比べる。",
-    },
-    {
-      label: "すべて",
-      cue: "九つの信号",
-      code: "ALL SIGNALS",
-      copy: "異なる地球の声を、一つの点数にまとめず同時に聴く。",
-    },
-  ];
-
-  const modes = [
-    {
-      id: "breathing-earth",
-      title: "Breathing Earth",
-      titleJa: "地球の一呼吸",
-      description: "季節ごとに上下する呼吸と、元へ戻らず蓄積するCO₂。その二つの時間を同じ大気から聴く。",
-      accent: "#8ed8ff",
-      rgb: "142, 216, 255",
-      source: `
-vec3 modeBreathingEarth(vec2 p, float t, vec2 response, float memory) {
-  float radius = length(p);
-  float angle = atan(p.y, p.x);
-  float breath = 0.5 + 0.5 * sin(t * 0.52);
-  float membrane = lineGlow(radius - (0.48 + breath * 0.07), 0.024);
-  float innerPulse = lineGlow(
-    radius - fract(t * 0.12 + response.y * 0.08) * 1.05,
-    0.025
-  );
-  float meridian = lineGlow(
-    sin(angle * 7.0 + radius * 3.0 - t * 0.18),
-    0.032
-  ) * smoothstep(0.68, 0.12, radius);
-  float livingVein = lineGlow(
-    sin(p.x * 7.2 + p.y * 2.4 + fbm(p * 2.1) * 3.0 - t * 0.24),
-    0.038
-  );
-  float reply = response.x * (0.65 + breath * 0.35);
-  float density = membrane * 0.74 + innerPulse * 0.24
-    + meridian * 0.24 + livingVein * 0.16 + reply;
-  vec3 background = baseGradient(p, vec3(0.02, 0.11, 0.18));
-  vec3 cool = mix(vec3(0.16, 0.48, 0.68), vec3(0.58, 0.9, 1.0), breath);
-  return background + cool * density
-    + vec3(0.48, 0.7, 1.0) * response.y * 0.28
-    + vec3(0.1, 0.36, 0.44) * memory * membrane * 0.18;
-}
-`.trim(),
-    },
-    {
-      id: "blue-circulation",
-      title: "Blue Circulation",
-      titleJa: "青い循環系",
-      description: "観測された海流が水・熱・生命をどこまで運ぶか、14日間の移流として読む。",
-      accent: "#63e3ff",
-      rgb: "99, 227, 255",
-      source: `
-vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
-  vec2 q = rot(-0.22) * p;
-  float drift = fbm(q * 1.45 + vec2(t * 0.035, -t * 0.02));
-  q += vec2(drift - 0.5, noise(q * 2.2 + t * 0.04) - 0.5) * 0.22;
-  q += uVelocity * response.x * 0.045;
-  float currentA = lineGlow(
-    sin(q.y * 7.0 + q.x * 1.7 + drift * 3.2 - t * 0.46),
-    0.035
-  );
-  float currentB = lineGlow(
-    sin(q.y * 12.0 - q.x * 2.4 - drift * 2.0 + t * 0.28),
-    0.022
-  );
-  vec2 gyrePoint = vec2(sin(t * 0.13) * 0.34, cos(t * 0.11) * 0.2);
-  float gyre = lineGlow(
-    sin(length(q - gyrePoint) * 17.0 - t * 0.8),
-    0.034
-  ) * exp(-length(q - gyrePoint) * 0.72);
-  float density = currentA * 0.55 + currentB * 0.32 + gyre * 0.42
-    + response.x * 0.78 + response.y * 0.24;
-  vec3 background = baseGradient(p, vec3(0.0, 0.12, 0.2));
-  vec3 water = mix(vec3(0.02, 0.3, 0.48), vec3(0.45, 0.95, 1.0), drift);
-  return background + water * density
-    + vec3(0.15, 0.46, 0.7) * memory * currentA * 0.22;
-}
-`.trim(),
-    },
-    {
-      id: "forest-cloud-engine",
-      title: "Forest Cloud Engine",
-      titleJa: "森の気候装置",
-      description: "菌糸・樹冠・水蒸気が連続し、森が空をつくる見えない仕事を可視化する。",
-      accent: "#7ff0b5",
-      rgb: "127, 240, 181",
-      source: `
-vec3 modeForestCloudEngine(vec2 p, float t, vec2 response, float memory) {
-  float climate = fbm(p * vec2(1.4, 1.0) + vec2(t * 0.018, -t * 0.026));
-  float lane = abs(fract((p.x + climate * 0.08) * 7.0) - 0.5);
-  float trunkMask = smoothstep(-0.9, -0.16, p.y)
-    * (1.0 - smoothstep(0.18, 0.68, p.y));
-  float trunks = lineGlow(lane, 0.044) * trunkMask;
-  float branches = lineGlow(
-    sin(p.x * 11.0 + abs(p.y) * 8.0 + climate * 3.0 - t * 0.1),
-    0.032
-  ) * smoothstep(-0.15, 0.58, p.y);
-  float canopy = smoothstep(
-    0.5,
-    0.78,
-    fbm(p * vec2(3.2, 2.1) + vec2(0.0, t * 0.025))
-      + smoothstep(-0.1, 0.68, p.y) * 0.22
-  );
-  float roots = lineGlow(
-    sin(p.x * 14.0 - p.y * 5.0 + climate * 4.0),
-    0.025
-  ) * (1.0 - smoothstep(-0.72, -0.04, p.y));
-  float cloud = smoothstep(
-    0.62,
-    0.84,
-    fbm(p * vec2(1.7, 3.0) + vec2(t * 0.03, -t * 0.015))
-  ) * smoothstep(0.05, 0.85, p.y);
-  float density = trunks * 0.5 + branches * 0.3 + canopy * 0.34
-    + roots * 0.25 + cloud * 0.32 + response.x * 0.64;
-  vec3 background = baseGradient(p, vec3(0.015, 0.12, 0.085));
-  vec3 forest = mix(vec3(0.06, 0.34, 0.18), vec3(0.46, 0.96, 0.66), canopy);
-  return background + forest * density
-    + vec3(0.42, 0.8, 0.9) * cloud * (0.15 + memory * 0.18)
-    + vec3(0.66, 1.0, 0.78) * response.y * 0.2;
-}
-`.trim(),
-    },
-    {
-      id: "pollination-protocol",
-      title: "Pollination Protocol",
-      titleJa: "共進化プロトコル",
-      description: "異なる二者が出会った場所だけに、新しい色と次世代の形が生まれる。",
-      accent: "#ffd270",
-      rgb: "255, 210, 112",
-      source: `
-vec3 modePollinationProtocol(vec2 p, float t, vec2 response, float memory) {
-  vec2 q = rot(0.13 * sin(t * 0.13)) * p;
-  vec2 cellId = floor(q * 2.7);
-  vec2 cell = fract(q * 2.7) - 0.5;
-  float seed = hash21(cellId + 17.3);
-  float angle = atan(cell.y, cell.x);
-  float petalRadius = 0.16 + cos(angle * (5.0 + floor(seed * 3.0))) * 0.055;
-  float flowers = lineGlow(length(cell) - petalRadius, 0.025)
-    * smoothstep(0.25, 0.62, seed);
-  float pollen = 0.0;
-  for (int i = 0; i < 6; i++) {
-    float fi = float(i);
-    vec2 insect = vec2(
-      sin(t * (0.23 + fi * 0.017) + fi * 2.4),
-      cos(t * (0.19 + fi * 0.013) + fi * 1.7)
-    ) * vec2(0.72, 0.54);
-    insect += (hash22(vec2(fi, 9.2)) - 0.5) * 0.22;
-    pollen += exp(-dot(p - insect, p - insect) * 230.0);
+  const appContent = window.GaiaAppContent;
+  if (!appContent) {
+    throw new Error("app-content.js must load before app.js");
   }
-  float meeting = flowers * (pollen * 2.0 + response.x * 1.4);
-  float density = flowers * 0.45 + pollen * 0.52 + meeting
-    + response.y * 0.25;
-  vec3 background = baseGradient(p, vec3(0.12, 0.055, 0.08));
-  vec3 petal = mix(vec3(1.0, 0.34, 0.5), vec3(1.0, 0.82, 0.28), seed);
-  return background + petal * density
-    + vec3(0.8, 0.95, 0.48) * meeting * (0.35 + memory * 0.25);
-}
-`.trim(),
-    },
-    {
-      id: "nothing-is-waste",
-      title: "Nothing Is Waste",
-      titleJa: "すべては次の資源",
-      description: "破片は消えず、分解・変換・再生の回路を巡って別の生命へ受け渡される。",
-      accent: "#b4ef6d",
-      rgb: "180, 239, 109",
-      source: `
-vec3 modeNothingIsWaste(vec2 p, float t, vec2 response, float memory) {
-  float radius = length(p);
-  float angle = atan(p.y, p.x);
-  float spiral = lineGlow(
-    sin(angle * 3.0 - radius * 8.0 + t * 0.48),
-    0.036
-  ) * smoothstep(1.2, 0.12, radius);
-  float cycleA = lineGlow(radius - 0.34 - sin(angle * 3.0 + t * 0.3) * 0.06, 0.025);
-  float cycleB = lineGlow(radius - 0.68 - cos(angle * 4.0 - t * 0.24) * 0.05, 0.021);
-  vec2 movingGrid = p * 7.0 + vec2(t * 0.18, -t * 0.13);
-  vec2 fragmentCell = fract(movingGrid) - 0.5;
-  float fragmentSeed = hash21(floor(movingGrid));
-  float fragments = exp(
-    -pow(abs(fragmentCell.x) / 0.25, 4.0)
-    -pow(abs(fragmentCell.y) / 0.09, 2.0)
-  ) * smoothstep(0.55, 0.9, fragmentSeed);
-  float transformed = response.x * (0.6 + cycleA + cycleB);
-  float density = spiral * 0.36 + cycleA * 0.52 + cycleB * 0.34
-    + fragments * 0.24 + transformed + response.y * 0.18;
-  vec3 background = baseGradient(p, vec3(0.08, 0.11, 0.035));
-  vec3 cycleColor = mix(vec3(0.24, 0.58, 0.16), vec3(0.88, 0.94, 0.35), radius);
-  return background + cycleColor * density
-    + vec3(0.35, 1.0, 0.68) * memory * spiral * 0.2;
-}
-`.trim(),
-    },
-    {
-      id: "anthropocene-scar",
-      title: "Anthropocene Scar",
-      titleJa: "人類世の傷跡",
-      description: "生きた場へ刻まれる直線的な圧力と、それを別の秩序へ編み直す余地を描く。",
-      accent: "#ff8a67",
-      rgb: "255, 138, 103",
-      source: `
-vec3 modeAnthropoceneScar(vec2 p, float t, vec2 response, float memory) {
-  float organicNoise = fbm(p * 1.8 + vec2(t * 0.018, -t * 0.014));
-  float organic = lineGlow(
-    sin(p.x * 5.3 + p.y * 2.1 + organicNoise * 4.0 - t * 0.18),
-    0.045
-  );
-  float gridX = lineGlow(sin(p.x * 19.0 + uVelocity.x * 0.2), 0.02);
-  float gridY = lineGlow(sin(p.y * 15.0 + uVelocity.y * 0.2), 0.02);
-  float grid = gridX + gridY;
-  float scarA = lineGlow(
-    p.y - sin(p.x * 3.8 + t * 0.11) * 0.12
-      - (organicNoise - 0.5) * 0.32,
-    0.026
-  );
-  float scarB = lineGlow(
-    p.x + p.y * 0.42 - sin(p.y * 6.0 - t * 0.17) * 0.06,
-    0.019
-  );
-  float rigidity = 0.28 + memory * 0.62;
-  float healing = response.x * (0.8 + organic * 0.4);
-  vec3 background = baseGradient(p, vec3(0.12, 0.045, 0.025));
-  vec3 color = background
-    + vec3(0.9, 0.24, 0.12) * (scarA * 0.7 + scarB * 0.44)
-    + vec3(0.68, 0.46, 0.22) * grid * rigidity * 0.3
-    + vec3(0.1, 0.48, 0.5) * organic * (0.18 + healing * 0.7);
-  return color + vec3(0.55, 0.9, 0.78) * response.y * 0.2;
-}
-`.trim(),
-    },
-    {
-      id: "rhythm-of-disaster",
-      title: "Message from Earth",
-      titleJa: "地球からのメッセージ",
-      description: "震度6弱以上の記録を選び、P波・S波の近似到達と各地の実測震度を同じ時間で読む。",
-      accent: "#ffb45f",
-      rgb: "255, 180, 95",
-      source: `
-vec3 modeRhythmOfDisaster(vec2 p, float t, vec2 response, float memory) {
-  float terrain = fbm(p * 1.55 + vec2(4.2, t * 0.014));
-  float strata = lineGlow(
-    sin((p.y + terrain * 0.14) * 18.0 + p.x * 1.8),
-    0.04
-  );
-  float fault = lineGlow(
-    p.y - sin(p.x * 4.1 + terrain * 5.0) * 0.16,
-    0.022
-  );
-  float waves = 0.0;
-  float regrowth = 0.0;
-  for (int i = 0; i < 3; i++) {
-    float fi = float(i);
-    vec2 origin = (hash22(vec2(fi, 14.7)) - 0.5) * vec2(1.45, 0.9);
-    float phase = fract(t * (0.055 + fi * 0.006) + fi * 0.31);
-    float distanceToWave = length(p - origin);
-    waves += lineGlow(distanceToWave - phase * 1.25, 0.025)
-      * (1.0 - phase);
-    regrowth += exp(-distanceToWave * 3.8)
-      * smoothstep(0.22, 0.68, phase)
-      * (1.0 - smoothstep(0.7, 1.0, phase));
-  }
-  float seedlings = smoothstep(
-    0.58,
-    0.78,
-    noise(p * 13.0 + terrain * 2.0)
-  ) * (fault + regrowth);
-  float density = fault * 0.58 + waves * 0.72 + seedlings * 0.44
-    + response.y * 0.5;
-  vec3 background = baseGradient(p, vec3(0.11, 0.05, 0.025));
-  return background
-    + vec3(0.48, 0.2, 0.08) * strata * 0.24
-    + vec3(1.0, 0.38, 0.13) * (fault * 0.68 + waves * 0.56)
-    + vec3(0.32, 0.88, 0.44) * regrowth * 0.22
-    + vec3(0.56, 1.0, 0.58) * seedlings * (0.52 + memory * 0.32)
-    + vec3(1.0, 0.58, 0.18) * density * 0.08
-    + vec3(1.0, 0.78, 0.28) * response.x * 0.45;
-}
-`.trim(),
-    },
-    {
-      id: "three-ecologies",
-      title: "Three Ecologies",
-      titleJa: "三つの生態系",
-      description: "生態・社会・精神の三層が異なる速度で呼吸し、遅れて互いを書き換える。",
-      accent: "#c7a2ff",
-      rgb: "199, 162, 255",
-      source: `
-vec3 modeThreeEcologies(vec2 p, float t, vec2 response, float memory) {
-  vec2 ecoCenter = vec2(-0.32, 0.08) + vec2(sin(t * 0.12), cos(t * 0.1)) * 0.06;
-  vec2 socialCenter = vec2(0.3, 0.13) + vec2(cos(t * 0.09), sin(t * 0.14)) * 0.07;
-  vec2 mindCenter = vec2(0.0, -0.31) + vec2(sin(t * 0.07), cos(t * 0.08)) * 0.055;
-  float ecoRadius = length(p - ecoCenter);
-  float socialRadius = length(p - socialCenter);
-  float mindRadius = length(p - mindCenter);
-  float eco = lineGlow(sin(ecoRadius * 18.0 - t * 0.42), 0.035)
-    * exp(-ecoRadius * 0.68);
-  float social = lineGlow(sin(socialRadius * 15.0 + t * 0.31), 0.038)
-    * exp(-socialRadius * 0.72);
-  float mind = lineGlow(sin(mindRadius * 20.0 - t * 0.2), 0.03)
-    * exp(-mindRadius * 0.7);
-  float overlap = min(1.0, eco * social + social * mind + mind * eco);
-  float dialogue = response.x * (eco + social + mind + 0.2);
-  vec3 background = baseGradient(p, vec3(0.055, 0.045, 0.12));
-  vec3 color = background
-    + vec3(0.25, 0.9, 0.62) * eco * 0.43
-    + vec3(0.24, 0.58, 1.0) * social * 0.42
-    + vec3(0.82, 0.44, 1.0) * mind * 0.42;
-  return color + vec3(0.86, 0.95, 1.0) * overlap * (0.34 + memory * 0.25)
-    + vec3(0.74, 0.6, 1.0) * dialogue * 0.36 + response.y * 0.08;
-}
-`.trim(),
-    },
-    {
-      id: "earth-organ",
-      title: "Earth Organ",
-      titleJa: "人工物の共生化",
-      description: "都市回路を地球の血管へ変え、集中したエネルギーを地域の細胞へ戻していく。",
-      accent: "#75f3d1",
-      rgb: "117, 243, 209",
-      source: `
-vec3 modeEarthOrgan(vec2 p, float t, vec2 response, float memory) {
-  vec2 q = rot(-0.08) * p;
-  float tissue = fbm(q * 1.8 + vec2(t * 0.016, -t * 0.012));
-  float gridX = lineGlow(sin(q.x * 17.0 + tissue * 2.0), 0.024);
-  float gridY = lineGlow(sin(q.y * 13.0 - tissue * 2.4), 0.024);
-  float city = (gridX + gridY) * 0.34;
-  float vesselA = lineGlow(
-    sin(q.x * 6.0 + q.y * 2.4 + tissue * 4.0 - t * 0.16),
-    0.038
-  );
-  float vesselB = lineGlow(
-    sin(q.y * 8.0 - q.x * 1.7 - tissue * 3.0 + t * 0.11),
-    0.033
-  );
-  float nodes = 0.0;
-  for (int i = 0; i < 7; i++) {
-    float fi = float(i);
-    vec2 node = (hash22(vec2(fi, 31.2)) - 0.5) * vec2(1.55, 1.0);
-    float pulse = 0.65 + 0.35 * sin(t * 0.8 + fi * 1.4);
-    nodes += exp(-dot(p - node, p - node) * 120.0) * pulse;
-  }
-  float organicization = 0.22 + memory * 0.58 + response.x * 0.55;
-  vec3 background = baseGradient(p, vec3(0.015, 0.105, 0.095));
-  vec3 color = background
-    + vec3(0.15, 0.58, 0.68) * city * (1.0 - organicization * 0.35)
-    + vec3(0.32, 0.98, 0.72) * (vesselA + vesselB) * organicization * 0.48
-    + vec3(0.78, 1.0, 0.86) * nodes * (0.24 + organicization * 0.26);
-  return color + vec3(0.34, 0.86, 1.0) * response.y * 0.26;
-}
-`.trim(),
-    },
-    {
-      id: "senseware-2050",
-      title: "Unfinished Gaia Senseware",
-      titleJa: "未完の地球センスウェア",
-      description: "九つの信号と観客の軌跡を、矛盾を消さない未完の神経網として結ぶ。",
-      accent: "#c8f7ff",
-      rgb: "200, 247, 255",
-      source: `
-vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
-  float radius = length(p);
-  float sphereMask = smoothstep(0.82, 0.7, radius);
-  float horizon = lineGlow(radius - 0.75, 0.024);
-  float latitude = lineGlow(
-    sin(p.y * 12.0 + sin(p.x * 2.0) * 1.2 - t * 0.12),
-    0.04
-  ) * sphereMask;
-  float longitude = lineGlow(
-    sin(atan(p.y, p.x) * 8.0 + radius * 2.0 + t * 0.1),
-    0.04
-  ) * sphereMask;
-  float nodes = 0.0;
-  float links = 0.0;
-  for (int i = 0; i < 9; i++) {
-    float fi = float(i);
-    float contribution = uModeMemory[i];
-    vec2 node = (hash22(vec2(fi, 72.4)) - 0.5) * vec2(1.18, 0.92);
-    node *= 0.82;
-    nodes += exp(-dot(p - node, p - node) * 150.0)
-      * (0.28 + contribution * 1.35);
-    links += lineGlow(sdSegment(p, node, node * -0.18), 0.014)
-      * (0.045 + contribution);
-  }
-  float thought = fbm(p * 2.4 + vec2(t * 0.018, -t * 0.014));
-  float atmosphere = smoothstep(0.58, 0.82, thought) * sphereMask;
-  float sharedPulse = exp(-abs(radius - 0.46 - sin(t * 0.28) * 0.025) * 22.0)
-    * sphereMask;
-  vec3 background = baseGradient(p, vec3(0.035, 0.1, 0.16));
-  vec3 color = background
-    + vec3(0.26, 0.72, 0.9) * (latitude + longitude) * 0.34
-    + vec3(0.72, 0.98, 1.0) * nodes * 0.72
-    + vec3(0.42, 0.92, 0.72) * links * 0.3
-    + vec3(0.42, 0.7, 1.0) * sharedPulse * (0.09 + response.x * 0.22)
-    + vec3(0.22, 0.54, 0.68) * atmosphere * (0.12 + memory * 0.24);
-  return color + vec3(0.8, 0.95, 1.0) * horizon * 0.38
-    + vec3(0.7, 0.88, 1.0) * response.x * 0.5
-    + vec3(0.9, 0.72, 1.0) * response.y * 0.22;
-}
-`.trim(),
-    },
-  ];
-
-  const modeConcepts = {
-    "breathing-earth": {
-      lead:
-        "地球を、背景に置かれた青い球ではなく、無数の循環を重ねながら応答する一つの生命的システムとして捉え直すための入口です。",
-      seeing:
-        "世界地図の時間は、1958年から2050年へ進みます。色の濃い場所は、衛星が見たCO₂。斜線の場所は、衛星が見られなかった空白を、近くの観測から補ったものです。未来に入ると、これまでの増え方が続いた場合の「もしも」へ変わります。画面の言葉と模様を見れば、実際に測った場所と、計算した場所を見分けられます。",
-      touch:
-        "指先は命令を入力するコントローラーではなく、地球へ問いを差し出す感覚器です。触れた場所だけが光るのではなく、波が移動し、少し遅れて別の場所から返るように設計しました。自分の行為と結果のあいだに距離や時間差があることを、身体で感じるためです。",
-      context:
-        "共創地球論が示すのは、人間だけが主体で、自然が受動的な資源だという構図からの転換です。この感覚器では、地球にも固有の時間、限界、応答の仕方があると考えます。持続可能性とは地球を完全に管理することではなく、その反応を聴き、自分たちの行為を調整し続ける関係の技法です。",
-      question: "あなたは地球を操作したいですか。それとも、まず応答を聴けますか。",
-    },
-    "blue-circulation": {
-      lead:
-        "海は風景ではなく、熱・水・炭素・生命を地球規模で運び、気候の急激な偏りを和らげる巨大な循環器です。",
-      seeing:
-        "世界地図の青い色はNOAA CoastWatchの海面流速、シアンの線は同じu/vベクトルを保った場合の14日間の局所移流、白い矢印はNASA POWERの年平均風です。大きなDAY表示が進むほど、各観測点から水塊が実距離スケールで運ばれます。海流と風を同じ値に混ぜず、観測時点と計算上の経過時間も分けて表示します。",
-      touch:
-        "青い観測点を押すと自動再生が止まり、その地点の東西・南北流速、合成速度、表示中の日数で進む計算距離を読めます。スライダーで任意の日へ戻り、同じ速さでも方向によって到達先が変わることを比較できます。線は予報ではなく、観測ベクトルを一定と仮定した思考実験です。",
-      context:
-        "共創地球論では、地球のシステムは部分ごとに切り離せず、循環の連鎖として理解する必要があります。水不足、海洋温暖化、豪雨、漁業、都市の消費は別々の問題ではありません。循環を止めず、負荷を一か所へ押しつけず、流れ全体の回復力を高める設計こそが、自然とテクノロジーの共創になります。",
-      question: "あなたの暮らしから流れ出たものは、どの海、どの未来へ届くでしょう。",
-    },
-    "forest-cloud-engine": {
-      lead:
-        "森を木の集合としてではなく、土壌・菌類・植物・大気が共同で気候をつくる生きたインフラとして読み替える感覚器です。",
-      seeing:
-        "下層の細い網は菌糸と根、中央の柱は幹、上層の粒子は樹冠から立ち上る水蒸気を示します。地下の交換と地上の蒸散は連続しており、森は水を蓄えるだけでなく、雲や雨の条件そのものに関わります。見えにくい相互扶助が、地域の気候を支える装置として働いている様子です。",
-      touch:
-        "触れた場所から光が一本だけ伸びるのではなく、地下と上空の複数の層へ分岐します。木を一本の所有物として扱う視線から、関係網の一部として触れる感覚へ移るためです。強く速くなぞるほど応答が複雑になり、単純な制御では全体を読めないことも表します。",
-      context:
-        "共創地球論の『エッセンシャル・ワーカーとしての自然』という視点に立てば、森の価値は木材や吸収量だけでは測れません。菌類、昆虫、微生物、植物が担う無償の仕事を認識し、人間の技術や経済をその働きを壊さない形へ組み替えることが重要です。保全とは静止画を保存することではなく、関係が更新され続ける条件を守ることです。",
-      question: "森が提供する見えない仕事に、私たちはどう報いることができるでしょう。",
-    },
-    "pollination-protocol": {
-      lead:
-        "花と虫の出会いを、生物同士が長い時間をかけて互いを変え合ってきた『共進化の通信規約』として描きます。",
-      seeing:
-        "花弁のパターンと移動する光点は、植物と送粉者が交換する色、匂い、蜜、花粉の信号です。どちらか一方だけでは次の形は生まれず、異なる存在が接触した場所でだけ色彩が増えます。生命の多様性が、孤立した強者ではなく、うまく噛み合う関係から生まれることを示しています。",
-      touch:
-        "指の軌跡は、出会いを強制する線ではなく、偶然が起こりやすい『場』を一時的につくります。触れ続けても全画面を同じ模様にはできません。相手の自由と差異を残したまま、接触の条件だけを整えることが、共創における人間の役割だと考えたからです。",
-      context:
-        "共創地球論では、進化や革新を単独の主体の成果ではなく、複数種の相互作用として捉えます。農業や都市のテクノロジーも、送粉者を代替して終わるのではなく、生息地、季節、農薬、移動経路まで含む関係を再設計する必要があります。効率だけではなく、出会いの余白を残すことが未来の生産性を支えます。",
-      question: "違いを消さずに、出会いが生まれる条件をどう設計しますか。",
-    },
-    "nothing-is-waste": {
-      lead:
-        "自然界では、ある生命の終わりや排出物が、別の生命の材料へ変換されます。『廃棄』を終点ではなく途中の状態として見る感覚器です。",
-      seeing:
-        "回転する破片は、落葉、死骸、排泄物、鉱物、有機物を抽象化したものです。それらは消えることなく、細かく分解され、円環の別の層へ渡され、新しい構造に組み込まれます。美しい循環だけでなく、分解に必要な時間と、変換を担う無数の生物の仕事も、遅い運動として残しています。",
-      touch:
-        "触れると破片の経路が変わり、別の循環へ接続されますが、瞬時に無害化されるわけではありません。人間の技術ができるのは、ごみを魔法のように消すことではなく、素材を次の利用者へ渡せる形に整え、循環から漏れ出す量を減らすことだという表現です。",
-      context:
-        "共創地球論の循環的な世界観では、人間も分解者、修復者、媒介者として生態系の仕事に参加できます。製品の設計、回収、修理、再利用を別工程に分断せず、誕生から次の誕生までを一つの物語として考える。循環経済は標語ではなく、誰がどの変換を担うかを具体化する社会設計です。",
-      question: "あなたが捨てたものの『次の利用者』を、設計段階で想像できますか。",
-    },
-    "anthropocene-scar": {
-      lead:
-        "人間活動が地球の地層や循環に刻む圧力を直視しつつ、罪悪感だけで終わらず、別の秩序へ編み直す余地を探ります。",
-      seeing:
-        "直線的な格子は道路、採掘、物流、行政区分、データセンターなど、人間が効率のために敷いたシステムです。その下を流れる有機的な線は、水や生命の地形です。二つが衝突した場所には赤い傷が残り、過去の選択が現在の風景へ蓄積していることを表します。",
-      touch:
-        "指で触れても傷は消えません。その周囲に別の流れが生まれ、硬い格子の一部が生態的なパターンへほどけていきます。修復とは過去をなかったことにする演出ではなく、残された条件を引き受けながら、次の選択肢を増やす継続的な行為だと位置づけています。",
-      context:
-        "『人類世』という言葉は、人類全員を同じ加害者にするためではなく、地球規模の影響力と責任の偏りを可視化するために使えます。共創地球論の観点では、テクノロジーを捨てるか推進するかの二択ではありません。誰のための効率か、どの生命へ負荷が移るかを問い直し、人工システムを地球の循環へ接続し直すことが課題です。",
-      question: "消せない傷跡を、次の共創の入口へ変えるには何が必要でしょう。",
-    },
-    "rhythm-of-disaster": {
-      lead:
-        "地震を抽象的な波紋ではなく、発生時刻・震源・P波とS波の到達・各地の実測震度を伴う『地球からのメッセージ』として読む感覚器です。",
-      seeing:
-        "気象庁の震度データベースから、震度6弱以上を観測した代表地震と観測点を同梱しています。地震を選ぶと、震源距離を使った均質地殻の近似でP波7 km/s・S波4 km/sの輪が1秒=1秒で広がり、S波の計算到達後に気象庁の実測震度が現れます。波の到達は作品内計算、色付きの震度は観測値です。",
-      touch:
-        "観客は地震を発生させるのではなく、過去の一件を選び、その波が各地へ届く時間を待ちます。すぐに全地点を点灯させないのは、震源からの距離と時間差、そして同じ地震でも地域ごとに異なる揺れがあることを身体的に理解するためです。",
-      context:
-        "共創地球論の『地球の変動リズムと同期しうる文明設計』に接続します。変動を完全に排除するのではなく、観測技術、防災、土地利用、地域の記憶を結び、被害を弱い立場へ集中させない社会を考えます。作品は防災情報の代替ではなく、モデルの限界も同じ画面に開示します。",
-      question: "変化を止められないとき、私たちは何を守り、何を変えるべきでしょう。",
-    },
-    "three-ecologies": {
-      lead:
-        "環境の問題を、自然だけでなく、社会の関係と一人ひとりの感覚まで含む三つの生態系として捉える感覚器です。",
-      seeing:
-        "緑は生態環境、青は社会的な制度や共同体、紫は精神や知覚の領域を示します。三つの波は異なる速度で広がり、重なる部分だけが白く明るくなります。どれか一層だけを改善しても、他の層とのずれが残れば全体は安定しないという構造を、干渉する波として表現しました。",
-      touch:
-        "ひとつの層へ触れた振動は、遅れて別の層を揺らします。自然保護の情報が制度を変え、制度の変化が安心感や価値観を変え、価値観が消費や投票を通じて再び環境へ返る。その循環に鑑賞者自身も含まれていることを、画面全体に残る余韻で示します。",
-      context:
-        "共創地球論にとって持続可能性は、二酸化炭素の数値だけでは完結しません。孤立、格差、疲労、想像力の枯渇が進めば、環境を守る社会的な力も失われます。生態・社会・精神を別部門にせず、互いを回復させる政策、地域活動、メディア、教育を組み合わせることが、長く続く変化の条件になります。",
-      question: "環境・社会・心のうち、あなたの暮らしで最初に響かせるべき層はどこですか。",
-    },
-    "earth-organ": {
-      lead:
-        "都市、通信網、エネルギー設備を自然の反対物ではなく、地球の代謝へ参加し得る『新しい器官』として問い直します。",
-      seeing:
-        "規則的な都市格子のあいだを、血管や菌糸に似た柔らかな回路が伸びています。集中していた光は、時間とともに地域の小さな節点へ分散します。人工物を緑色に塗る表現ではなく、資源を集め、使い、捨てる一方向の装置が、循環し、修復し、周囲へ応答する器官へ変わる過程です。",
-      touch:
-        "触れた場所では硬いグリッドと有機的な流れが接続され、エネルギーが別の節点へ渡ります。操作の中心を一つ増やすのではなく、地域ごとに判断と回復力を分配する振る舞いです。テクノロジーの価値を、速度や規模だけでなく、周囲の生命をどれだけ生かすかで測り直します。",
-      context:
-        "共創地球論では、人間の技術も地球が生み出した物質と知性の延長にあります。だから人工か自然かを分けるだけでは足りません。建築、AI、電力網、交通が、水・熱・生物・地域文化の循環を感知し、それらの再生へ働くなら、都市は寄生的な装置から共生的な器官へ近づけます。問われるのは技術の有無ではなく、その代謝の設計です。",
-      question: "あなたの街のテクノロジーは、何を吸い上げ、何を地域へ返していますか。",
-    },
-    "senseware-2050": {
-      lead:
-        "九つの公開データ信号と観客の軌跡を束ねながら、正解や総合点を出さない『未完の地球センスウェア』です。",
-      seeing:
-        "CO₂、気温、海流、風、森林、降水、生物間相互作用、廃棄物、排出量、地震、都市・文化、再生可能エネルギーという異なる単位の信号を九本の枝に保ちます。単位も意味も違う値を平均して『地球健康度70点』にはせず、強い信号と矛盾する信号が同時に残る神経網として描きます。",
-      touch:
-        "最後のタッチは作品を完成させる署名ではありません。九つの記憶へ新しい波を重ね、全体をもう一度揺らします。鑑賞者は外から未来を選ぶ消費者ではなく、すでにその内部で影響を与えている参加者です。同時に、画面は思い通りには固定できず、人間以外の応答が未来に残ります。",
-      context:
-        "レジュメ『地球大の感覚神経系を獲得した人類 〜未完の「地球センスウエア」創生にむけて』を作品全体の結論に置いています。観測網や公開データは地球を支配するダッシュボードではなく、人間社会が応答の仕方を学ぶための感覚神経系です。技術の完成ではなく、関係を更新し続ける余白を未完として残します。",
-      question: "未来を予測するだけでなく、応答を聴きながら共につくる準備はできていますか。",
-    },
-  };
-
-  const modeDataNarratives = Object.freeze({
-    "breathing-earth": "データの読み方：色の濃いマスは衛星地図から読んだ値、斜線のマスは近くの8地点から補った値です。昔は全球の衛星地図がないため、当時のCO₂記録と後年の地図を組み合わせました。未来は、直近10年の増え方がそのまま続いた場合の「もしも」です。どれも実測と同じに見せず、詳しい計算はOPEN DATAに分けています。",
-    "blue-circulation": "データ実装：NOAA CoastWatchの日別海流u/vから合成流速を計算し、0〜1.5 m/sの固定色尺度で観測点周辺だけを着色します。DAY 0〜14の線は、そのu/vが変わらないと仮定した実距離スケールのDERIVED局所移流で、予報ではありません。NASA POWERの年平均風は白矢印の別レイヤーです。OSCAR配信が取得時にタイムアウトしたため代替データを使ったことも台帳に記録します。",
-    "forest-cloud-engine": "データ実装：NASA GIBSのMODIS IGBP 2023全球土地被覆ラスターに、世界31地点のNASA POWER年平均降水を重ねます。土地被覆は全球画像、降水は点の実データなので、降水の点間を補間しません。水色と地表色の重なりは問いを生む入口であり、因果関係の証明ではありません。",
-    "pollination-protocol": "データ実装：世界31か国から最大2件ずつ抽出したGBIFのApis mellifera観察記録を地理点として順に強調します。GloBIのpollinates記録は文献上の関係一覧として件数だけを併記し、座標のない関係をGBIF地点へ偽って接続しません。国別抽出は分布密度ではなく展示用GLOBAL SAMPLEです。",
-    "nothing-is-waste": "データの読み方：実線の円は国連に報告された17地域の値です。数字が見つからなかった14地域は、近くの5か国を参考にした仮の値を破線で示します。さらに外側の破線は、観客が動かす未来の「もしも」です。公式値、補った値、観客の選択を、三つの違う線として見せます。",
-    "anthropocene-scar": "データ実装：World Bankで配信されるEDGAR由来の国別GHG排出量を赤い対数環、NASA GIBSのVIIRS全球夜間光を白いラスターとして重ねます。長押しで白だけを剥がせますが、夜間光を排出量へ変換したとは扱いません。",
-    "rhythm-of-disaster": "データ実装：USGS FDSNの2000年以降M7.5以上を全球で年代順に走査します。Magnitudeを震度へ変換せず、日本の代表6地震を選んだときだけ気象庁の震度6弱以上の実測地点とP/S代表速度モデルを開きます。",
-    "three-ecologies": "データ実装：NASA MODISの全球土地被覆を生態、World Bankの国別都市人口比率を社会、UNESCO世界遺産の全球キュレーションを文化・記憶として三層に保ちます。どの分類・件数・比率も精神生態の点数にはせず、異なる意味のまま重ねます。",
-    "earth-organ": "データ実装：世界31地点のNASA POWER太陽放射と風速を自然条件として外周へ、同じ国のWorld Bank再エネ電力比率を内側へ分離表示します。点データと国別値を混ぜず、二地点を結ぶ破線だけが観客のSCENARIOです。",
-    "senseware-2050": "データ実装：01〜09を48秒で一本ずつ走査し、選択中の枝と観客が各モードへ残した一時的な接触記憶を重ねます。異なる単位の実数値はここで再集計せず、枝を平均した総合点も作りません。観客の軌跡も評価値ではない別の信号です。",
-  });
-
-  const lectureResumeLinks = Object.freeze({
-    "breathing-earth": "レジュメ接続：05_なぜ風はなぜ吹くのか？〜宇宙船地球号の「循環系」を理解する_レジュメ.pdf",
-    "blue-circulation": "レジュメ接続：05_なぜ風はなぜ吹くのか？〜宇宙船地球号の「循環系」を理解する_レジュメ.pdf",
-    "forest-cloud-engine": "レジュメ接続：01_森は地球の気候安定装置_レジュメ.pdf",
-    "pollination-protocol": "レジュメ接続：06_１億年前のドローン革命〜「花と昆虫の共進化」_レジュメ.pdf",
-    "nothing-is-waste": "レジュメ接続：02_自然界にはゴミもうんちも存在しない_レジュメ.pdf",
-    "anthropocene-scar": "レジュメ接続：04_人類世3.0〜産業革命以降「ガリバー化」した人類_レジュメ.pdf",
-    "rhythm-of-disaster": "レジュメ接続：06_地球の変動リズムと同期しうる文明設計_レジュメ.pdf",
-    "three-ecologies": "レジュメ接続：01_３つのエコロジー；生態学的次元、社会的次元、精神的次元_レジュメ.pdf",
-    "earth-organ": "レジュメ接続：06_地球の変動リズムと同期しうる文明設計_レジュメ.pdf",
-    "senseware-2050": "レジュメ接続：01_地球大の感覚神経系を獲得した人類 〜未完の「地球センスウエア」創生にむけて_レジュメ.pdf",
-  });
-
+  const {
+    JAPAN_NODES,
+    JMA_CO2_SITES,
+    EARTH_NODES,
+    SIMPLE_WORLD_LANDMASSES,
+    SIMPLE_WORLD_ISLAND_LINES,
+    JMA_EVENT_TITLES,
+    INTRO_PATHS,
+    INTRO_MODE_CHOICES,
+    SPACE_MODE_CHOICES,
+    modes,
+    modeConcepts,
+    modeDataNarratives,
+    lectureResumeLinks,
+  } = appContent;
   const gl = canvas.getContext("webgl2", {
     alpha: false,
     antialias: false,
@@ -1248,13 +590,20 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   let sourceIsOpen = false;
   let conceptIsOpen = false;
   let introIsOpen = false;
+  let introStage = "path";
+  let introSelectedPath = null;
   let introRestoreFocus = false;
   let introCloseTimer = 0;
+  let introRevealGeneration = 0;
+  let introScrambleGeneration = 0;
+  const introRevealTimers = new Set();
   let japanIsOpen = false;
   let japanDataIsOpen = false;
   let japanRestoreFocus = true;
   let japanCloseTimer = 0;
   let japanTilesDirty = true;
+  let lastJapanOverlayRenderAt = -Infinity;
+  let lastBackgroundRenderAt = -Infinity;
   let japanTileErrors = 0;
   let japanEarthquakeDataState = "idle";
   let japanHistoryDataState = "idle";
@@ -1267,6 +616,10 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   let gaiaSnapshot = null;
   let gaiaSnapshotError = null;
   let gaiaModeById = new Map();
+  let naturalEarthLandState = "loading";
+  let naturalEarthLandError = null;
+  let naturalEarthLandRings = [];
+  const naturalEarthPathCache = new Map();
   let signalTimePosition = 100;
   let co2TimelineStartedAt = performance.now();
   let co2TimelinePausedUntil = 0;
@@ -1293,18 +646,30 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     zoom: JAPAN_ZOOM,
     centerX: 0,
     centerY: 0,
+    earthZoom: 1,
+    earthOffsetX: 0,
+    earthOffsetY: 0,
     pointerId: null,
+    pointers: new Map(),
     startX: 0,
     startY: 0,
     lastX: 0,
     lastY: 0,
     dragged: false,
+    gesture: false,
+    pinchDistance: 0,
+    pinchCenterX: 0,
+    pinchCenterY: 0,
     pressStartedAt: 0,
     width: 0,
     height: 0,
+    earthProjection: null,
   };
 
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+  const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
+  const earthLongitudeToMapX = (longitude) =>
+    wrapLongitude(longitude - EARTH_INITIAL_CENTER_LONGITUDE) + 180;
   const formatModeNumber = (index) => String(index + 1).padStart(2, "0");
   const lonLatToWorld = (lon, lat, zoom = japanView.zoom) => {
     const worldSize = MAP_TILE_SIZE * 2 ** zoom;
@@ -1319,6 +684,66 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     };
   };
 
+  const getEarthProjection = (rect) => {
+    const baseScale = Math.max(
+      0.1,
+      Math.max(rect.width / 360, rect.height / 180),
+    );
+    const zoom = clamp(japanView.earthZoom, 1, 8);
+    const scale = baseScale * zoom;
+    const width = 360 * scale;
+    const height = 180 * scale;
+    // Use a cover scale so the 2:1 world projection always fills viewports
+    // with a different aspect ratio. The unavoidable excess is cropped and
+    // becomes the available drag range instead of appearing as letterboxing.
+    const maximumOffsetX = Math.abs(width - rect.width) / 2;
+    const maximumOffsetY = Math.abs(height - rect.height) / 2;
+    japanView.earthZoom = zoom;
+    japanView.earthOffsetX = clamp(
+      japanView.earthOffsetX,
+      -maximumOffsetX,
+      maximumOffsetX,
+    );
+    japanView.earthOffsetY = clamp(
+      japanView.earthOffsetY,
+      -maximumOffsetY,
+      maximumOffsetY,
+    );
+    return {
+      scale,
+      width,
+      height,
+      originX: (rect.width - width) / 2 + japanView.earthOffsetX,
+      originY: (rect.height - height) / 2 + japanView.earthOffsetY,
+    };
+  };
+
+  const setEarthZoom = (nextZoom, clientX, clientY) => {
+    const rect = japanMap.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+
+    const current = getEarthProjection(rect);
+    const anchorX = clamp(clientX - rect.left, 0, rect.width);
+    const anchorY = clamp(clientY - rect.top, 0, rect.height);
+    const mapX = (anchorX - current.originX) / current.scale;
+    const mapY = (anchorY - current.originY) / current.scale;
+
+    japanView.earthZoom = clamp(nextZoom, 1, 8);
+    const baseScale = Math.max(
+      0.1,
+      Math.max(rect.width / 360, rect.height / 180),
+    );
+    const nextScale = baseScale * japanView.earthZoom;
+    const nextWidth = 360 * nextScale;
+    const nextHeight = 180 * nextScale;
+    japanView.earthOffsetX =
+      anchorX - mapX * nextScale - (rect.width - nextWidth) / 2;
+    japanView.earthOffsetY =
+      anchorY - mapY * nextScale - (rect.height - nextHeight) / 2;
+    japanView.earthProjection = getEarthProjection(rect);
+    japanTilesDirty = true;
+  };
+
   const resetJapanView = () => {
     const isMobile = window.innerWidth <= 720;
     const nextZoom = isMobile ? EARTH_MOBILE_ZOOM : EARTH_ZOOM;
@@ -1326,6 +751,10 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     japanView.zoom = nextZoom;
     japanView.centerX = center.x;
     japanView.centerY = center.y;
+    japanView.earthZoom = 1;
+    japanView.earthOffsetX = 0;
+    japanView.earthOffsetY = 0;
+    japanView.earthProjection = null;
     japanTilesDirty = true;
   };
 
@@ -1333,6 +762,10 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
   const getJapanViewport = () => {
     const rect = japanMap.getBoundingClientRect();
+    if (mapScope === "earth") {
+      japanView.earthProjection = getEarthProjection(rect);
+      return { rect, left: 0, top: 0 };
+    }
     return {
       rect,
       left: japanView.centerX - rect.width / 2,
@@ -1349,6 +782,16 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     if (rect.width < 1 || rect.height < 1) {
       return;
     }
+
+    if (mapScope === "earth") {
+      japanTiles.hidden = true;
+      for (const tile of japanTileElements.values()) tile.remove();
+      japanTileElements.clear();
+      dataLedger.updateOsm({ scope: mapScope, zoom: japanView.zoom, urls: [] });
+      japanTilesDirty = false;
+      return;
+    }
+    japanTiles.hidden = false;
 
     const tileCount = 2 ** japanView.zoom;
     const minimumX = Math.floor(left / MAP_TILE_SIZE);
@@ -1420,9 +863,15 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   };
 
   const resizeJapanOverlay = (rect) => {
-    const ratio = Math.min(window.devicePixelRatio || 1, coarsePointer ? 1.25 : 1.6);
-    const width = Math.max(1, Math.floor(rect.width * ratio));
-    const height = Math.max(1, Math.floor(rect.height * ratio));
+    const ratioCap = coarsePointer ? 1 : 1.2;
+    const nativeRatio = Math.min(window.devicePixelRatio || 1, ratioCap);
+    const rawWidth = Math.max(1, rect.width * nativeRatio);
+    const rawHeight = Math.max(1, rect.height * nativeRatio);
+    const maxPixels = coarsePointer ? 650000 : 1600000;
+    const pixelScale = Math.min(1, Math.sqrt(maxPixels / (rawWidth * rawHeight)));
+    const width = Math.max(1, Math.floor(rawWidth * pixelScale));
+    const height = Math.max(1, Math.floor(rawHeight * pixelScale));
+    const ratio = width / Math.max(1, rect.width);
 
     if (japanOverlay.width !== width || japanOverlay.height !== height) {
       japanOverlay.width = width;
@@ -1436,6 +885,13 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   };
 
   const japanWorldToScreen = (lon, lat, left, top) => {
+    if (mapScope === "earth") {
+      const projection = japanView.earthProjection || getEarthProjection(japanMap.getBoundingClientRect());
+      return {
+        x: projection.originX + earthLongitudeToMapX(clamp(lon, -180, 180)) * projection.scale,
+        y: projection.originY + (90 - clamp(lat, -90, 90)) * projection.scale,
+      };
+    }
     const world = lonLatToWorld(lon, lat);
     return {
       x: world.x - left,
@@ -1443,7 +899,207 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     };
   };
 
-  const renderSimplifiedWorldModel = (ctx, rect, left, top) => {
+  const getNaturalEarthLandPath = (zoom) => {
+    if (naturalEarthLandState !== "ready" || typeof Path2D === "undefined") {
+      return null;
+    }
+
+    if (naturalEarthPathCache.has(zoom)) {
+      return naturalEarthPathCache.get(zoom);
+    }
+
+    const path = new Path2D();
+    for (const ring of naturalEarthLandRings) {
+      if (ring.length < 3) continue;
+      ring.forEach(([longitude, latitude], pointIndex) => {
+        const world = lonLatToWorld(longitude, latitude, zoom);
+        if (pointIndex === 0) path.moveTo(world.x, world.y);
+        else path.lineTo(world.x, world.y);
+      });
+      path.closePath();
+    }
+    naturalEarthPathCache.set(zoom, path);
+    return path;
+  };
+
+  const getNaturalEarthGeographicPath = () => {
+    const cacheKey = "earth-geographic";
+    if (naturalEarthLandState !== "ready" || typeof Path2D === "undefined") return null;
+    if (naturalEarthPathCache.has(cacheKey)) return naturalEarthPathCache.get(cacheKey);
+    const path = new Path2D();
+    for (const ring of naturalEarthLandRings) {
+      if (ring.length < 3) continue;
+      ring.forEach(([longitude, latitude], pointIndex) => {
+        const x = longitude + 180;
+        const y = 90 - latitude;
+        if (pointIndex === 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
+      });
+      path.closePath();
+    }
+    naturalEarthPathCache.set(cacheKey, path);
+    return path;
+  };
+
+  const renderReferenceLand = (ctx, repeatOffset, left, top) => {
+    const referencePath = getNaturalEarthLandPath(japanView.zoom);
+    if (referencePath) {
+      ctx.save();
+      ctx.translate(repeatOffset - left, -top);
+      ctx.fillStyle = "rgba(29, 86, 84, 0.2)";
+      ctx.fill(referencePath, "evenodd");
+      ctx.strokeStyle = "rgba(135, 244, 216, 0.56)";
+      ctx.lineWidth = japanView.zoom >= 2 ? 1.05 : 0.78;
+      ctx.stroke(referencePath);
+      ctx.restore();
+      return true;
+    }
+
+    for (const landmass of SIMPLE_WORLD_LANDMASSES) {
+      ctx.beginPath();
+      landmass.points.forEach(([longitude, latitude], pointIndex) => {
+        const world = lonLatToWorld(longitude, latitude);
+        const x = world.x - left + repeatOffset;
+        const y = world.y - top;
+        if (pointIndex === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = "rgba(29, 86, 84, 0.2)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(135, 244, 216, 0.52)";
+      ctx.lineWidth = japanView.zoom >= 2 ? 1.15 : 0.9;
+      ctx.stroke();
+    }
+
+    for (const islandLine of SIMPLE_WORLD_ISLAND_LINES) {
+      ctx.beginPath();
+      islandLine.forEach(([longitude, latitude], pointIndex) => {
+        const world = lonLatToWorld(longitude, latitude);
+        const x = world.x - left + repeatOffset;
+        const y = world.y - top;
+        if (pointIndex === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "rgba(151, 247, 220, 0.58)";
+      ctx.lineWidth = japanView.zoom >= 2 ? 1.05 : 0.8;
+      ctx.stroke();
+    }
+    return false;
+  };
+
+  const updateMapBasisNote = () => {
+    if (naturalEarthLandState === "ready") {
+      mapScopeNote.innerHTML =
+        mapScope === "earth"
+          ? "BASEMAP / NATURAL EARTH 1:50m<br />LOCAL GEOJSON · WGS84 GEOGRAPHIC · ONE WORLD"
+          : "BASEMAP / NATURAL EARTH 1:50m<br />LOCAL GEOJSON · WGS84 → WEB MERCATOR";
+      return;
+    }
+    if (naturalEarthLandState === "error") {
+      mapScopeNote.innerHTML =
+        "BASEMAP / EMBEDDED FALLBACK<br />NATURAL EARTH FILE COULD NOT LOAD";
+      return;
+    }
+    mapScopeNote.innerHTML = "BASEMAP / NATURAL EARTH 1:50m<br />LOCAL VECTOR LOADING";
+  };
+
+  const renderReferenceWorldModel = (ctx, rect, left, top) => {
+    if (mapScope === "earth") {
+      const projection = japanView.earthProjection || getEarthProjection(rect);
+      const { originX, originY, width, height, scale } = projection;
+      const geographicPath = getNaturalEarthGeographicPath();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(originX, originY, width, height);
+      ctx.clip();
+      ctx.fillStyle = "rgba(7, 25, 43, 0.46)";
+      ctx.fillRect(originX, originY, width, height);
+
+      ctx.setLineDash([2, 9]);
+      ctx.lineWidth = 0.55;
+      ctx.strokeStyle = "rgba(135, 224, 211, 0.105)";
+      for (let longitude = -180; longitude <= 180; longitude += 30) {
+        const x = originX + earthLongitudeToMapX(longitude) * scale;
+        ctx.beginPath();
+        ctx.moveTo(x, originY);
+        ctx.lineTo(x, originY + height);
+        ctx.stroke();
+      }
+      for (let latitude = -90; latitude <= 90; latitude += 30) {
+        const y = originY + (90 - latitude) * scale;
+        ctx.beginPath();
+        ctx.moveTo(originX, y);
+        ctx.lineTo(originX + width, y);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      if (geographicPath) {
+        for (const repeat of [-360, 0, 360]) {
+          ctx.save();
+          ctx.translate(
+            originX + (repeat - EARTH_INITIAL_CENTER_LONGITUDE) * scale,
+            originY,
+          );
+          ctx.scale(scale, scale);
+          ctx.fillStyle = "rgba(29, 86, 84, 0.28)";
+          ctx.fill(geographicPath, "evenodd");
+          ctx.strokeStyle = "rgba(135, 244, 216, 0.68)";
+          ctx.lineWidth = 1.05 / scale;
+          ctx.stroke(geographicPath);
+          ctx.restore();
+        }
+      } else {
+        for (const repeat of [-360, 0, 360]) {
+          for (const landmass of SIMPLE_WORLD_LANDMASSES) {
+            ctx.beginPath();
+            landmass.points.forEach(([longitude, latitude], pointIndex) => {
+              const x =
+                originX +
+                (longitude + 180 - EARTH_INITIAL_CENTER_LONGITUDE + repeat) * scale;
+              const y = originY + (90 - latitude) * scale;
+              if (pointIndex === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            ctx.fillStyle = "rgba(29, 86, 84, 0.24)";
+            ctx.fill();
+            ctx.strokeStyle = "rgba(135, 244, 216, 0.58)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+
+      if (rect.width >= 760) {
+        for (const landmass of SIMPLE_WORLD_LANDMASSES) {
+          const labelX = originX + earthLongitudeToMapX(landmass.labelAt[0]) * scale;
+          const labelY = originY + (90 - landmass.labelAt[1]) * scale;
+          ctx.fillStyle = "rgba(187, 240, 226, 0.34)";
+          ctx.font = '6px Consolas, "Courier New", monospace';
+          ctx.textAlign = "center";
+          ctx.fillText(landmass.label, labelX, labelY);
+        }
+      }
+
+      const equatorY = originY + 90 * scale;
+      ctx.setLineDash([8, 12]);
+      ctx.strokeStyle = "rgba(164, 244, 221, 0.22)";
+      ctx.beginPath();
+      ctx.moveTo(originX, equatorY);
+      ctx.lineTo(originX + width, equatorY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(135, 244, 216, 0.3)";
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(originX, originY, width, height);
+      ctx.textAlign = "start";
+      ctx.restore();
+      return;
+    }
+
     const worldSize = MAP_TILE_SIZE * 2 ** japanView.zoom;
     const firstRepeat = Math.floor(left / worldSize) - 1;
     const lastRepeat = Math.ceil((left + rect.width) / worldSize) + 1;
@@ -1479,23 +1135,10 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
     for (let repeat = firstRepeat; repeat <= lastRepeat; repeat += 1) {
       const repeatOffset = repeat * worldSize;
-      for (const landmass of SIMPLE_WORLD_LANDMASSES) {
-        ctx.beginPath();
-        landmass.points.forEach(([longitude, latitude], pointIndex) => {
-          const world = lonLatToWorld(longitude, latitude);
-          const x = world.x - left + repeatOffset;
-          const y = world.y - top;
-          if (pointIndex === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.closePath();
-        ctx.fillStyle = "rgba(29, 86, 84, 0.2)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(135, 244, 216, 0.52)";
-        ctx.lineWidth = japanView.zoom >= 2 ? 1.15 : 0.9;
-        ctx.stroke();
+      renderReferenceLand(ctx, repeatOffset, left, top);
 
-        if (japanView.zoom >= 2 && rect.width >= 760) {
+      if (japanView.zoom >= 2 && rect.width >= 760) {
+        for (const landmass of SIMPLE_WORLD_LANDMASSES) {
           const labelWorld = lonLatToWorld(...landmass.labelAt);
           const labelX = labelWorld.x - left + repeatOffset;
           const labelY = labelWorld.y - top;
@@ -1506,20 +1149,6 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
             ctx.fillText(landmass.label, labelX, labelY);
           }
         }
-      }
-
-      for (const islandLine of SIMPLE_WORLD_ISLAND_LINES) {
-        ctx.beginPath();
-        islandLine.forEach(([longitude, latitude], pointIndex) => {
-          const world = lonLatToWorld(longitude, latitude);
-          const x = world.x - left + repeatOffset;
-          const y = world.y - top;
-          if (pointIndex === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.strokeStyle = "rgba(151, 247, 220, 0.58)";
-        ctx.lineWidth = japanView.zoom >= 2 ? 1.05 : 0.8;
-        ctx.stroke();
       }
 
       ctx.strokeStyle = "rgba(135, 224, 211, 0.16)";
@@ -1540,7 +1169,54 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     ctx.restore();
   };
 
+  const renderCachedReferenceWorldModel = (ctx, rect, left, top) => {
+    if (!referenceWorldContext) {
+      renderReferenceWorldModel(ctx, rect, left, top);
+      return;
+    }
+
+    const width = Math.max(1, Math.ceil(rect.width));
+    const height = Math.max(1, Math.ceil(rect.height));
+    const projection = mapScope === "earth"
+      ? japanView.earthProjection || getEarthProjection(rect)
+      : null;
+    const cacheKey = [
+      mapScope,
+      naturalEarthLandState,
+      naturalEarthLandRings.length,
+      width,
+      height,
+      japanView.zoom,
+      Math.round(left),
+      Math.round(top),
+      projection ? Math.round(projection.scale * 1000) : 0,
+      projection ? Math.round(projection.originX) : 0,
+      projection ? Math.round(projection.originY) : 0,
+    ].join("/");
+
+    if (cacheKey !== referenceWorldCacheKey) {
+      if (referenceWorldCanvas.width !== width || referenceWorldCanvas.height !== height) {
+        referenceWorldCanvas.width = width;
+        referenceWorldCanvas.height = height;
+      }
+      referenceWorldContext.setTransform(1, 0, 0, 1, 0, 0);
+      referenceWorldContext.clearRect(0, 0, width, height);
+      renderReferenceWorldModel(referenceWorldContext, { width, height }, left, top);
+      referenceWorldCacheKey = cacheKey;
+    }
+
+    ctx.drawImage(referenceWorldCanvas, 0, 0, rect.width, rect.height);
+  };
+
   const japanScreenToLonLat = (x, y, left, top) => {
+    if (mapScope === "earth") {
+      const projection = japanView.earthProjection || getEarthProjection(japanMap.getBoundingClientRect());
+      const mapLongitude = (x - projection.originX) / projection.scale - 180;
+      return {
+        lon: wrapLongitude(mapLongitude + EARTH_INITIAL_CENTER_LONGITUDE),
+        lat: clamp(90 - (y - projection.originY) / projection.scale, -90, 90),
+      };
+    }
     const worldSize = MAP_TILE_SIZE * 2 ** japanView.zoom;
     const worldX = left + x;
     const worldY = top + y;
@@ -1760,6 +1436,67 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
   nightLightsImage.src = "./assets/data/viirs-night-lights-2016.png";
   const landCoverImage = new Image();
   landCoverImage.src = "./assets/data/modis-land-cover-2023.png";
+  const geographicRasterCache = new WeakMap();
+
+  const getGeographicRaster = (image) => {
+    if (!image.complete || !image.naturalWidth) return null;
+    const aspectRatio = image.naturalWidth / image.naturalHeight;
+    if (aspectRatio > 1.5) return image;
+
+    const cached = geographicRasterCache.get(image);
+    if (
+      cached?.sourceWidth === image.naturalWidth &&
+      cached?.sourceHeight === image.naturalHeight
+    ) {
+      return cached.canvas;
+    }
+
+    // The local NASA land-cover and night-light snapshots are square Web
+    // Mercator rasters. Convert each one only once to the same geographic
+    // 2:1 projection used by the vector coastline, then reuse that canvas.
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(2, image.naturalWidth * 2);
+    canvas.height = Math.max(1, image.naturalHeight);
+    const rasterContext = canvas.getContext("2d");
+    if (!rasterContext) return image;
+
+    const latitudeLimit = 85.05112878;
+    const latitudeBands = Math.min(720, canvas.height);
+    const mercatorY = (latitude) => {
+      const radians = clamp(latitude, -latitudeLimit, latitudeLimit) * Math.PI / 180;
+      return (
+        1 - Math.log(Math.tan(Math.PI / 4 + radians / 2)) / Math.PI
+      ) / 2;
+    };
+
+    for (let index = 0; index < latitudeBands; index += 1) {
+      const latitudeTop = latitudeLimit - (index / latitudeBands) * latitudeLimit * 2;
+      const latitudeBottom = latitudeLimit - ((index + 1) / latitudeBands) * latitudeLimit * 2;
+      const sourceTop = mercatorY(latitudeTop) * image.naturalHeight;
+      const sourceBottom = mercatorY(latitudeBottom) * image.naturalHeight;
+      const targetTop = ((90 - latitudeTop) / 180) * canvas.height;
+      const targetBottom = ((90 - latitudeBottom) / 180) * canvas.height;
+
+      rasterContext.drawImage(
+        image,
+        0,
+        sourceTop,
+        image.naturalWidth,
+        Math.max(0.001, sourceBottom - sourceTop),
+        0,
+        targetTop,
+        canvas.width,
+        Math.max(0.001, targetBottom - targetTop + 0.5),
+      );
+    }
+
+    geographicRasterCache.set(image, {
+      canvas,
+      sourceWidth: image.naturalWidth,
+      sourceHeight: image.naturalHeight,
+    });
+    return canvas;
+  };
 
   const drawVectorArrow = (ctx, x, y, u, v, color, scale = 34) => {
     const speed = Math.hypot(u, v);
@@ -1911,7 +1648,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         yearLabel: formatTimelineDate(decimalYear),
         dateLabel: formatTimelineDate(decimalYear),
         methodLabel: "昔の濃度記録 × 最初の衛星地図",
-        warning: "この時代には全球を測った地図がありません。昔の濃度記録と、後年の衛星地図を組み合わせた再現です。",
+        warning: "この時代には世界全体を測った地図がありません。昔の濃度記録と、後年の衛星地図を組み合わせた再現です。",
         decimalYear,
         referencePpm,
         frameA: firstFrame,
@@ -2072,7 +1809,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       dateLabel: `${sourceDate} UTC`,
       methodLabel: "NOAA u/v × CONSTANT-VECTOR LOCAL ADVECTION",
       warning:
-        "単一日の海流ベクトルを一定とした局所移流。14日後の海況予測や漂流予報ではありません。",
+        "一日の海流が同じ速さと向きで続くと仮定した移動距離です。14日後の海況や漂流を予報するものではありません。",
       horizonHours,
       meanSpeedMs,
       maximumSpeedMs,
@@ -2109,7 +1846,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
           ["水色円 / 降水", `${row.name} ${row.precipitationMmDay?.toFixed(2) || "—"} mm/day`],
           ["粒子 / 水蒸気", "降水量で密度を正規化したDERIVED"],
           ["背景 / 土地被覆", "MODIS IGBP 2023 global rendered raster"],
-          ["範囲 / 標本", `${rows.length}地点。全球グリッドではない`],
+          ["範囲 / 標本", `${rows.length}地点。世界全体を埋めた地図ではない`],
         ],
       };
     }
@@ -2183,7 +1920,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         legend: [
           ["赤い環 / 排出", `${row.country} ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e`],
           ["白画像 / 夜間光", "NASA VIIRS 2016 rendered radiance"],
-          ["長押し / 比較", "全球の白い可視面だけを一時的に剥がす"],
+          ["長押し / 比較", "世界の白い夜間光だけを一時的に薄くする"],
           ["重要 / 非同一", "夜間光を排出量へ変換しない"],
         ],
       };
@@ -2234,7 +1971,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
           ["地表色 / 生態", "MODIS IGBP 2023 global land cover"],
           ["青 / 社会", `${signals.social?.length || 0} country urban values`],
           ["紫 / 記憶", `${signals.culture?.length || 0} UNESCO global sample`],
-          ["非数値 / 精神", "件数を精神生態の得点にしない"],
+          ["非数値 / 記憶", "文化財の件数で心の豊かさを点数にしない"],
         ],
       };
     }
@@ -2272,11 +2009,11 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         yearLabel: `SIGNAL ${String(index + 1).padStart(2, "0")}`,
         valueLabel: mode.titleJa,
         methodLabel: "NINE BRANCHES / NO AGGREGATE EARTH SCORE",
-        timeLabel: "感覚信号 / AUTO 01→09",
+        timeLabel: "表示データ / AUTO 01→09",
         selectedIndex: index,
         selected: mode,
         legend: [
-          ["枝 / 各信号", "異なる単位を別々に保持"],
+          ["枝 / 各データ", "単位が違うため別々に表示"],
           ["明るさ / 接触", "観客の軌跡による一時的な記憶"],
           ["中心 / 未完", "矛盾を平均せず並置"],
           ["総合点 / なし", "地球健康度へ換算しない"],
@@ -2369,7 +2106,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       heatmap.clearRect(0, 0, width, height);
       heatmap.globalCompositeOperation = "source-over";
       const resolution = grid.resolutionDegrees || 2.5;
-      const longitudeCopies = mapScope === "earth" ? [-360, 0, 360] : [0];
+      const longitudeCopies = [0];
       heatmap.beginPath();
       for (let row = 0; row < grid.height; row += 1) {
         const north = 90 - row * resolution;
@@ -2445,7 +2182,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
             ? "DERIVED / 二つの時点のあいだ"
             : "SOURCE / 衛星地図から読み取った値";
     const relation = timeline.kind === "reconstruction"
-      ? "この時代には全球を測った衛星地図がないため、昔のCO₂記録へ、後年の衛星地図の模様を重ねて再現しました。実測の世界地図ではありません。"
+      ? "この時代には世界全体を測った衛星地図がないため、昔のCO₂記録へ、後年の衛星地図の模様を重ねて再現しました。実測の世界地図ではありません。"
       : timeline.kind === "scenario"
         ? `直近10年の増え方を一本の線にまとめ、そのまま未来へ伸ばしました。予想のぶれ幅は${timeline.lower95Ppm.toFixed(1)}〜${timeline.upper95Ppm.toFixed(1)} ppmです。未来を言い当てる数字ではありません。`
         : spatiallyImputed
@@ -2488,11 +2225,11 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
           kind: "current-vector",
           lon: row.lon,
           lat: row.lat,
-          title: "海面流ベクトル / 局所移流",
+          title: "海流の速さ・向き / 計算上の移動",
           meta: `${state?.dateLabel || row.time} / ${speed.toFixed(2)} m/s / u ${row.uMs.toFixed(2)} / v ${row.vMs.toFixed(2)}`,
-          description: `青い色はこの地点の合成流速です。表示中の${((state?.horizonHours || 0) / 24).toFixed(1)}日では、同じ速度と方向が続くと約${distanceKm.toFixed(1)} km進みます。`,
+          description: `この地点の海流は、東西と南北の速さを合わせて表示しています。同じ流れが${((state?.horizonHours || 0) / 24).toFixed(1)}日続くと、計算上は約${distanceKm.toFixed(1)} km進みます。`,
           relation:
-            "SOURCEはNOAA CoastWatchのu/v。シアンの線と距離は一定ベクトルから計算したDERIVEDで、海況予測・漂流予報ではありません。OSCAR取得不能時の代替も台帳へ明記しています。",
+            "青い点はNOAA CoastWatchの記録です。シアンの線と距離は、その速さと向きが変わらないと仮定して計算しました。航海や漂流の予報には使えません。",
         };
       });
     }
@@ -2503,8 +2240,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         lat: row.lat,
         title: `${row.name}の降水気候値`,
         meta: `${row.precipitationMmDay?.toFixed(2) || "—"} mm/day / NASA POWER CLIMATOLOGY`,
-        description: "年平均降水量を円の大きさと上昇粒子の密度へ変換しています。選択中の地点だけを強調します。",
-        relation: `SOURCE / GLOBAL SAMPLE。${signals.precipitation?.length || 0}地点の一つで、全球を補間した値ではありません。MODIS全球土地被覆との重なりから因果関係は主張しません。`,
+        description: "この地点の平均的な雨の量を、円の大きさと粒子の数で示しています。",
+        relation: `NASA POWERから選んだ${signals.precipitation?.length || 0}地点の一つです。世界中のすき間を埋めた地図ではありません。森林との重なりは見られますが、原因・結果までは分かりません。`,
       }));
     }
     if (signalMode.id === "pollination-protocol") {
@@ -2514,8 +2251,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         lat: row.lat,
         title: row.species,
         meta: `${row.eventDate?.slice(0, 10) || "date unknown"} / GBIF ${row.key}`,
-        description: `${row.country || "地域不明"}で記録された生物観察です。黄色い点と選択輪は、この観察記録だけを表します。`,
-        relation: "SOURCE / GBIF。GloBIの送粉関係は文献上の別データであり、この観察地点で対象植物との関係が記録されたとは扱いません。",
+        description: `${row.country || "地域不明"}で、実際にこの生物が記録された場所です。`,
+        relation: "この点はGBIFの観察記録です。花と送粉者の関係はGloBIという別の資料なので、この場所で送粉が起きたとは限りません。",
       }));
     }
     if (signalMode.id === "nothing-is-waste") {
@@ -2532,8 +2269,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
             ? `この地域には公式の数字がありませんでした。そこで、近くの5か国（${row.donorIso3?.join(" / ") || "—"}）を参考にし、真ん中の値を置いています。破線は「計算で補った値」の印です。`
             : "国連に報告された、この国の最新値です。実線の円が実際の統計、外側の破線は観客が動かす「もしも」です。",
           relation: imputed
-            ? "近い国でも、ごみの制度や暮らし方は違います。この数字は公式値でも順位でもなく、データの空白について考えるための仮の目安です。"
-            : "円の場所は、この国を代表する目印で、処理施設の位置ではありません。残りのごみが焼却か埋立かも、ここでは勝手に決めていません。",
+            ? "近い国でも、ごみの制度や暮らし方は違います。この数字は公式統計ではなく、空白を仮に補った目安です。"
+            : "円は国の目印で、ごみ処理施設の位置ではありません。この資料だけでは、残りのごみが焼却か埋立かも分かりません。",
         };
       });
     }
@@ -2545,8 +2282,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         lat: row.lat,
         title: `${row.country}の温室効果ガス排出量`,
         meta: `${row.year} / ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e / excl. LULUCF`,
-        description: "国別値を国の代表座標へ置き、排出量を対数半径の赤い環へ変換しています。",
-        relation: "SOURCE / COUNTRY VALUE。白いNASA VIIRS夜間光とは別データです。代表座標を排出源と見なさず、夜間光から排出量を推定しません。",
+        description: "国全体の排出量が多いほど、赤い円が大きくなります。国どうしの差が大きいため、対数という縮尺で見やすくしています。",
+        relation: "赤い円は国全体の値です。点の場所が排出源という意味ではありません。白い夜間光とも別のデータです。",
       }));
     }
     if (signalMode.id === "rhythm-of-disaster") {
@@ -2557,16 +2294,16 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         kind: "sequence-poi",
         title: row.name,
         meta: `${String(row.occurredAt).slice(0, 10)} / M${row.magnitude.toFixed(1)} / DEPTH ${row.depthKm?.toFixed(0) || "—"} km`,
-        description: "USGS FDSNから取得した2000年以降M7.5以上の震源です。全球で年代順に走査します。",
-        relation: "SOURCE。Magnitudeと気象庁震度は別尺度です。日本の詳細記録でだけ、観測震度とP/S代表速度モデルを表示します。",
+        description: "USGSが記録した、2000年以降のM7.5以上の地震です。データは作品内に保存しています。",
+        relation: "マグニチュードは地震の規模、震度は各地の揺れです。日本の代表例だけ、実測震度とP波・S波が届く目安を表示します。",
       }));
     }
     if (signalMode.id === "three-ecologies") {
       const stage = getMapSequenceState(signalMode)?.selectedIndex ?? 3;
       return [
-        ...(stage === 0 || stage === 3 ? (signals.ecological || []).map((row) => ({ ...row, kind: "sequence-poi", title: `${row.country} / FOREST`, meta: `ECOLOGICAL / ${row.year} / ${row.forestPercent.toFixed(1)}%`, description: "国土に占める森林面積率を緑の面積へ変換した生態レイヤーです。", relation: "SOURCE / COUNTRY VALUE。森林の質や生物多様性を得点化しません。" })) : []),
-        ...(stage === 1 || stage === 3 ? (signals.social || []).map((row) => ({ ...row, kind: "sequence-poi", title: `${row.country} / URBAN`, meta: `SOCIAL / ${row.year} / ${row.urbanPercent.toFixed(1)}%`, description: "都市人口比率を青い環へ変換した社会レイヤーです。", relation: "SOURCE / COUNTRY VALUE。幸福度や社会の優劣を表しません。" })) : []),
-        ...(stage === 2 || stage === 3 ? (signals.culture || []).map((row) => ({ ...row, kind: "sequence-poi", title: row.name, meta: `CULTURE / ${row.category} / ${row.region}`, description: "UNESCO世界遺産から各大地域へ広がるよう選んだ文化・記憶レイヤーです。", relation: "SOURCE / GLOBAL SAMPLE。全件ではなく、件数を心の価値へ数値化しません。" })) : []),
+        ...(stage === 0 || stage === 3 ? (signals.ecological || []).map((row) => ({ ...row, kind: "sequence-poi", title: `${row.country} / FOREST`, meta: `ECOLOGICAL / ${row.year} / ${row.forestPercent.toFixed(1)}%`, description: "国土のうち森林が占める割合を、緑の大きさで示しています。", relation: "国全体の数字です。森の質や生きものの豊かさまでは分かりません。" })) : []),
+        ...(stage === 1 || stage === 3 ? (signals.social || []).map((row) => ({ ...row, kind: "sequence-poi", title: `${row.country} / URBAN`, meta: `SOCIAL / ${row.year} / ${row.urbanPercent.toFixed(1)}%`, description: "人口のうち都市で暮らす人の割合を、青い円で示しています。", relation: "国全体の数字です。幸福度や暮らしやすさを表すものではありません。" })) : []),
+        ...(stage === 2 || stage === 3 ? (signals.culture || []).map((row) => ({ ...row, kind: "sequence-poi", title: row.name, meta: `CULTURE / ${row.category} / ${row.region}`, description: "各地域から選んだUNESCO世界遺産の一つです。", relation: "展示用に選んだ例で、全世界遺産の一覧ではありません。点の数で文化の価値を比べることもできません。" })) : []),
       ];
     }
     if (signalMode.id === "earth-organ") {
@@ -2576,8 +2313,8 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         lat: row.lat,
         title: `${row.name}の自然エネルギー条件`,
         meta: `SOLAR ${row.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day / WIND ${row.windSpeedMs?.toFixed(2) || "—"} m/s`,
-        description: "NASA POWERの気候値で、設備容量・土地利用・系統制約を含まない自然条件です。",
-        relation: `SOURCE / GLOBAL SAMPLE。${signals.potential?.length || 0}地点の一つです。現在の同国電源構成とは別レイヤーで、二地点を選んだ破線だけがSCENARIOです。`,
+        description: "NASA POWERがまとめた、この場所の日差しと風の平均的な値です。発電設備や土地、費用は含みません。",
+        relation: `${signals.potential?.length || 0}地点から選んだ一つです。内側の円は国全体の現在の電力統計です。二地点を結ぶ破線だけが、この展示で作る試算です。`,
       }));
     }
     return [];
@@ -2593,8 +2330,23 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     const stroke = (alpha) => `rgba(${rgb}, ${alpha})`;
     const pointFor = (row) => japanWorldToScreen(row.lon, row.lat, left, top);
     const visible = (point, margin = 45) => point.x > -margin && point.x < rect.width + margin && point.y > -margin && point.y < rect.height + margin;
-    const drawGlobalMercatorRaster = (image, alpha) => {
+    const drawGlobalRaster = (image, alpha) => {
       if (!image.complete || !image.naturalWidth) return;
+      if (mapScope === "earth") {
+        const projection = japanView.earthProjection || getEarthProjection(rect);
+        const geographicRaster = getGeographicRaster(image);
+        if (!geographicRaster) return;
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(
+          geographicRaster,
+          projection.originX,
+          projection.originY,
+          projection.width,
+          projection.height,
+        );
+        ctx.globalAlpha = 1;
+        return;
+      }
       const northWest = pointFor({ lon: -180, lat: 85.0511 });
       const southEast = pointFor({ lon: 180, lat: -85.0511 });
       const worldWidth = southEast.x - northWest.x;
@@ -2616,7 +2368,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       ctx.textAlign = "left";
     } else if (signalMode.id === "blue-circulation") {
       const state = getBlueCirculationState(signalMode);
-      const longitudeCopies = mapScope === "earth" ? [-360, 0, 360] : [0];
+      const longitudeCopies = [0];
       const pulse = reducedMotion ? 0.72 : 0.66 + Math.sin(time * 3.1) * 0.22;
 
       for (const row of state?.currents || []) {
@@ -2676,7 +2428,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       }
     } else if (signalMode.id === "forest-cloud-engine") {
       const sequence = getMapSequenceState(signalMode);
-      drawGlobalMercatorRaster(landCoverImage, 0.34);
+      drawGlobalRaster(landCoverImage, 0.34);
       (signalMode.signals.precipitation || []).forEach((row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
@@ -2755,7 +2507,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     } else if (signalMode.id === "anthropocene-scar") {
       const sequence = getMapSequenceState(signalMode);
       const emission = sequence?.selected;
-      drawGlobalMercatorRaster(nightLightsImage, now < anthropocenePeelUntil ? 0.04 : 0.5);
+      drawGlobalRaster(nightLightsImage, now < anthropocenePeelUntil ? 0.04 : 0.5);
       (signalMode.signals.emissions || []).forEach((row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
@@ -2798,7 +2550,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       ctx.fillText("USGS GLOBAL M7.5+ / JMA DETAIL KEEPS OBSERVED INTENSITY", 22, rect.height - 26);
     } else if (signalMode.id === "three-ecologies") {
       const stage = getMapSequenceState(signalMode)?.selectedIndex ?? 3;
-      if (stage === 0 || stage === 3) drawGlobalMercatorRaster(landCoverImage, 0.42);
+      if (stage === 0 || stage === 3) drawGlobalRaster(landCoverImage, 0.42);
       getModeDataPois().forEach((row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
@@ -2913,7 +2665,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    renderSimplifiedWorldModel(ctx, rect, left, top);
+    renderCachedReferenceWorldModel(ctx, rect, left, top);
 
     if (mapScope === "japan" && modeToIndex === 6) {
       const plateCenter = { x: rect.width * 0.6, y: rect.height * 0.52 };
@@ -3310,13 +3062,13 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     });
 
     if (japanEarthquakeDataState === "loading") {
-      japanDataState.textContent = "全球の震源：同梱スナップショットを読み込み中";
+      japanDataState.textContent = "世界の震源：作品内データを読み込み中";
     } else if (japanEarthquakeDataState === "snapshot") {
-      japanDataState.textContent = `全球の震源：保存データを表示中（M7.5以上・${japanEarthquakes.length}件）`;
+      japanDataState.textContent = `世界の震源：保存データを表示中（M7.5以上・${japanEarthquakes.length}件）`;
     } else if (japanEarthquakeDataState === "offline") {
-      japanDataState.textContent = "全球の震源：同梱データを読み込めませんでした";
+      japanDataState.textContent = "世界の震源：作品内データを読み込めませんでした";
     } else {
-      japanDataState.textContent = "全球の震源：地図を開くと同梱データを読み込みます";
+      japanDataState.textContent = "世界の震源：地図を開くと作品内データを読み込みます";
     }
     japanDataUpdated.textContent = japanDataUpdatedAt
       ? `保存データ作成日：${earthquakeTimestamp}`
@@ -3332,24 +3084,34 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 
   const updateMapObservationNarrative = () => {
     const signalMode = gaiaModeById.get(modes[modeToIndex].id);
+    const guide = MAP_READING_GUIDES[modeToIndex];
+    if (guide) {
+      mapGuideTitle.textContent = guide.title || modes[modeToIndex].titleJa;
+      mapGuideSubject.textContent =
+        modeToIndex === 6 && japanDataLayer === "snapshot"
+          ? "作品内に保存した、2000〜2026年の世界のM7.5以上の地震を読む地図です。"
+          : guide.subject;
+      mapGuideReading.textContent = guide.reading;
+      mapGuideAction.textContent = guide.action;
+    }
     if (modeToIndex !== 6) {
       if (signalMode?.id === "breathing-earth") {
         japanObservationKicker.textContent = "CO₂ TIMELINE / 1958 → 2050 / 60 SEC LOOP";
         japanObservationCopy.textContent =
-          "濃い色は衛星が見た値、斜線は近くの観測から補った値。未来は、これまでの増え方が続いた場合の「もしも」。地図を押すと、その色の出どころが読める。";
+          "色はCO₂濃度です。斜線のマスは近くの8地点から計算しました。2026年以降は、最近10年と同じ増え方が続いた場合の試算です。マスを押すと詳しい数字が出ます。";
       } else if (signalMode?.id === "blue-circulation") {
         japanObservationKicker.textContent = "OCEAN TRANSPORT / DAY 0 → 14 / 45 SEC LOOP";
         japanObservationCopy.textContent =
-          "青は海流速度、シアン線はu/vを一定とした実距離の局所移流、白は別データの年平均風。観測点を押すと停止して値を読める。";
+          "青は海流の速さ、シアンの線は同じ流れが続いた場合の移動距離です。白い矢印は風です。青い点を押すと動きが止まり、詳しい数字が出ます。";
       } else if (signalMode) {
         const narratives = {
-          "forest-cloud-engine": ["LAND COVER × RAIN / GLOBAL RASTER + 31 SITES", "地表色はMODIS全球土地被覆、水色はNASA POWER地点降水。全球ラスターと点サンプルを分け、降水を補間しない。"],
-          "pollination-protocol": ["POLLINATION EVIDENCE / GLOBAL SAMPLE / 48 SEC LOOP", "黄点は31か国から最大2件ずつ抽出したGBIF観察地点。GloBIの文献関係とは地理的に接続しない。"],
-          "nothing-is-waste": ["WASTE DATA / MEASURED, FILLED, IMAGINED", "実線は国連の公式値、破線は近い5か国から補った値。外側の破線は、あなたが動かす未来の「もしも」。"],
-          "anthropocene-scar": ["ANTHROPOCENE / GLOBAL COUNTRY GHG / 48 SEC LOOP", "赤はEDGAR由来の国別GHG、白はNASA VIIRS全球夜間光。二つを同じ量として扱わない。"],
-          "three-ecologies": ["THREE ECOLOGIES / GLOBAL LAYERS / 48 SEC LOOP", "MODIS全球土地被覆・国別都市人口比率・UNESCO全球サンプルを、異なる意味のまま順に開いて重ねる。"],
-          "earth-organ": ["ENERGY CONDITIONS / 31 GLOBAL SITES / 48 SEC LOOP", "黄は地点別の太陽・風、緑は同国の再エネ電力比率。二地点の破線だけを仮想接続とする。"],
-          "senseware-2050": ["UNFINISHED SENSEWARE / 9 SIGNALS / 48 SEC LOOP", "九つの異なる信号を一本ずつ聴く。単位の違いと矛盾を平均せず、地球健康度の総合点を作らない。"],
+          "forest-cloud-engine": ["LAND COVER × RAIN / GLOBAL RASTER + 31 SITES", "背景は土地の種類、水色は31地点の平均的な雨の量です。地点と地点のあいだには値を入れていません。"],
+          "pollination-protocol": ["POLLINATION EVIDENCE / GLOBAL SAMPLE / 48 SEC LOOP", "黄色い点はGBIFに登録されたミツバチの観察場所です。花と虫の関係を示す線は、別の文献資料から来ています。"],
+          "nothing-is-waste": ["WASTE DATA / MEASURED, FILLED, IMAGINED", "実線は国連の記録、内側の破線は近い5か国から計算した値、外側の破線は自分で動かせる試算です。"],
+          "anthropocene-scar": ["ANTHROPOCENE / GLOBAL COUNTRY GHG / 48 SEC LOOP", "赤い円は国ごとの温室効果ガス排出量、白は人工衛星が見た夜の明かりです。二つは別々のデータです。"],
+          "three-ecologies": ["THREE ECOLOGIES / GLOBAL LAYERS / 48 SEC LOOP", "森林、都市人口、各地域から選んだ世界遺産を順番に表示し、最後に三つを重ねます。"],
+          "earth-organ": ["ENERGY CONDITIONS / 31 GLOBAL SITES / 48 SEC LOOP", "黄色は地点ごとの日差しと風、緑はその国の再生可能電力の割合です。二地点を結ぶ破線は展示上の試算です。"],
+          "senseware-2050": ["UNFINISHED SENSEWARE / 9 SIGNALS / 48 SEC LOOP", "九つのデータを順番に表示します。単位が違うため、合計や平均にはしていません。"],
         };
         const [kicker, copy] = narratives[signalMode.id] || [
           `ACT ${signalMode.act.number} / ${signalMode.act.en}`,
@@ -3363,11 +3125,11 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     if (japanDataLayer === "history") {
       japanObservationKicker.textContent = "JMA HISTORY / SHINDO 6-JAKU+";
       japanObservationCopy.textContent =
-        "世界地図の中で、日本の代表6地震と震度6弱以上の実測地点を読む。地震を選ぶと実時間のP波・S波を再生する。";
+        "日本の代表6地震と、震度6弱以上を記録した地点を表示します。地震を選ぶと、P波とS波が届く目安を再生します。";
     } else {
       japanObservationKicker.textContent = "USGS SNAPSHOT / M7.5+ / 2000–2026";
       japanObservationCopy.textContent =
-        "同梱したUSGSの全球M7.5以上の震源を表示。閲覧中はAPIへ接続せず、点を押すと位置・規模・深さ・発生時刻を読める。";
+        "作品内に保存したUSGSの世界のM7.5以上を表示します。閲覧中はAPIへ接続せず、点を押すと位置・規模・深さ・発生時刻を読めます。";
     }
   };
 
@@ -3390,14 +3152,13 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     mapScope = "earth";
     japanLayer.dataset.mapScope = mapScope;
     mapScopeKicker.textContent = "Planetary lens / Open map";
-    japanTitle.textContent = "地球を聴く";
+    japanTitle.textContent = "世界のデータを見る";
     japanDescription.textContent =
-      "ひとつの惑星を、国境ではなく水・熱・生命・地殻の循環として読む。世界の公開データを、地球が発する異なる信号として聴く。";
-    mapScopeNote.innerHTML =
-      "PLANETARY BASE / LOCAL VECTOR MODEL<br />DETAIL: OPENSTREETMAP WHEN AVAILABLE";
+      "水、熱、生きもの、大地の動きは国境で止まりません。世界の観測記録を一枚の地図に重ねています。";
+    updateMapBasisNote();
     japanMap.setAttribute(
       "aria-label",
-      "ドラッグで移動し、世界の公開データ信号を選んで解説を読む世界地図",
+      "世界の観測地図。ドラッグで移動、ホイールまたはピンチで拡大縮小し、地点を押すとデータの解説を読めます",
     );
     historyLayerLabel.textContent = "日本の震度6弱+";
     liveLayerLabel.textContent = "世界 M7.5+";
@@ -3880,7 +3641,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return {
         output: `${co2.year}-${String(co2.month).padStart(2, "0")}`,
         value: `${co2.averagePpm.toFixed(2)} ppm / ΔT ${temperature?.anomalyC?.toFixed(2) ?? "—"} ℃`,
-        note: "NOAAの季節成分が全球フレームの収縮、長期基準値が線の強さ、NASA気温偏差が背景色です。地図の時系列モデルとは別に保持しています。",
+        note: "球体の動きはCO₂の季節変化、明るさは長期的な増加、背景色はNASAがまとめた気温の変化です。",
         temporal: true,
       };
     }
@@ -3889,7 +3650,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return {
         output: `${state?.dateLabel || "SNAPSHOT"} / DAY ${((state?.horizonHours || 0) / 24).toFixed(1)}`,
         value: `MEAN ${state?.meanSpeedMs.toFixed(2) || "—"} m/s / ${state?.vectorCount || 0} VECTORS`,
-        note: `${state?.warning || "海流を読み込んでいます。"} 青=海流、白=年平均風。`,
+        note: `${state?.warning || "海流を読み込んでいます。"} 青は海流の速さ、白い矢印は別データの年平均風です。`,
         temporal: true,
       };
     }
@@ -3899,7 +3660,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return {
         output: state?.phaseLabel || "GLOBAL SAMPLE",
         value: `PRECIP ${rain?.precipitationMmDay?.toFixed(2) ?? "—"} mm/day / MODIS LAND COVER 2023`,
-        note: "全球の土地被覆ラスターへ、層化した31地点の降水を重ねます。降水は点間を補間せず、重なりから因果関係を主張しません。",
+        note: "土地の種類を示す背景に、31地点の雨の量を重ねています。地点の間には値を入れていません。",
         temporal: true,
       };
     }
@@ -3909,7 +3670,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return {
         output: state?.phaseLabel || "GBIF RECORD",
         value: `${signals.interactions?.length || 0} RELATIONS / ${signals.occurrences?.length || 0} OCCURRENCES`,
-        note: occurrence ? `${occurrence.species} / ${occurrence.country || "country unknown"}。観察地点と文献関係の場所は結びません。` : "記録を読み込んでいます。",
+        note: occurrence ? `${occurrence.species} / ${occurrence.country || "地域不明"}。黄色い点は観察場所です。送粉関係の線は別の資料から来ています。` : "記録を読み込んでいます。",
         temporal: true,
       };
     }
@@ -3931,7 +3692,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return {
         output: state?.phaseLabel || "COUNTRY VALUE",
         value: `${emission?.country || "—"} / ${emission?.emissionsMtCo2e?.toFixed(1) || "—"} Mt CO₂e`,
-        note: "赤い国別GHGと白い全球VIIRS夜間光は別レイヤーです。長押しで夜間光だけを剥がし、同じ量として扱いません。",
+        note: "赤い円は国ごとの排出量、白は夜の明かりです。長押しすると白だけが薄くなります。",
         temporal: true,
       };
     }
@@ -3941,7 +3702,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return {
         output: state?.phaseLabel || "USGS GLOBAL HISTORY",
         value: event ? `M${event.magnitude.toFixed(1)} / DEPTH ${event.depthKm?.toFixed(0) || "—"} km` : "NO EVENT",
-        note: "2000年以降M7.5以上を全球走査。Magnitudeを震度へ変換せず、日本の詳細記録だけが実測震度とP/S代表速度を持ちます。",
+        note: "2000年以降のM7.5以上を年代順に表示します。日本の代表例では、実測震度とP波・S波が届く目安も見られます。",
         temporal: true,
       };
     }
@@ -3950,7 +3711,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return {
         output: state?.phaseLabel || "THREE LAYERS",
         value: state?.selected?.name || "ECOLOGICAL / SOCIAL / MEMORY",
-        note: "生態・社会・文化を順に見た後、別レイヤーのまま重ねます。精神生態の総合点は作りません。",
+        note: "森林、都市人口、世界遺産を順番に表示し、最後に三つを重ねます。",
         temporal: true,
       };
     }
@@ -3961,7 +3722,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
       return {
         output: state?.phaseLabel || potential?.name || "REGION",
         value: `${potential?.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day / CURRENT ${current?.renewablePercent?.toFixed(1) || "—"}%`,
-        note: "外側は自然条件の潜在量、内側は現在の供給比率。二地点の接続はSCENARIOです。",
+        note: "外側は日差しと風、内側は現在の再生可能電力の割合です。二地点を結ぶ破線は、この展示で作る試算です。",
         temporal: true,
       };
     }
@@ -3969,7 +3730,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     return {
       output: state?.phaseLabel || "NO TOTAL SCORE",
       value: "9 SIGNALS + AUDIENCE TRACES",
-      note: `${state?.selected?.titleJa || "九つの信号"}を選択中。矛盾する単位を平均せず、九本の枝として残します。`,
+      note: `${state?.selected?.titleJa || "九つのデータ"}を表示中。単位が違うため、平均せず九本の枝として並べています。`,
       temporal: true,
     };
   };
@@ -4098,7 +3859,7 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         } else if (isCirculationTimeline) {
           setEncodingLabel("heatmap", "色 / 海流速度");
           setEncodingLabel("nodata", "暗部 / 未補間");
-          setEncodingLabel("estimate", "線 / 局所移流");
+          setEncodingLabel("estimate", "線 / 計算上の移動距離");
           setEncodingLabel("resolution", "白矢印 / 風");
           setEncodingValue("heatmap", `0–1.5 m/s FIXED · MAX ${timelineState.maximumSpeedMs.toFixed(2)}`);
           setEncodingValue("nodata", "観測点間と陸域を値で埋めない");
@@ -4357,6 +4118,46 @@ drawAudienceMemory(audienceTraces);
     }
   };
 
+  const loadNaturalEarthLand = async () => {
+    try {
+      naturalEarthLandState = "loading";
+      naturalEarthLandError = null;
+      updateMapBasisNote();
+      const response = await fetch(NATURAL_EARTH_LAND_DATA, { cache: "force-cache" });
+      if (!response.ok) throw new Error(`Natural Earth land ${response.status}`);
+      const geojson = await response.json();
+      const rings = [];
+
+      for (const feature of geojson.features || []) {
+        const { geometry } = feature;
+        if (!geometry) continue;
+        const polygons = geometry.type === "Polygon"
+          ? [geometry.coordinates]
+          : geometry.type === "MultiPolygon"
+            ? geometry.coordinates
+            : [];
+        for (const polygon of polygons) {
+          for (const ring of polygon) {
+            if (Array.isArray(ring) && ring.length >= 3) rings.push(ring);
+          }
+        }
+      }
+
+      if (rings.length < 1000) {
+        throw new Error(`Natural Earth geometry incomplete (${rings.length} rings)`);
+      }
+      naturalEarthLandRings = rings;
+      naturalEarthPathCache.clear();
+      naturalEarthLandState = "ready";
+      updateMapBasisNote();
+    } catch (error) {
+      console.error(error);
+      naturalEarthLandError = error instanceof Error ? error.message : String(error);
+      naturalEarthLandState = "error";
+      updateMapBasisNote();
+    }
+  };
+
   sourceTabs.forEach((button) => {
     button.addEventListener("click", () => {
       activeSourceTab = button.dataset.sourceTab;
@@ -4398,18 +4199,228 @@ drawAudienceMemory(audienceTraces);
     conceptQuestion.textContent = concept.question;
   };
 
-  const updateIntroSelection = () => {
-    const choice = INTRO_MODE_CHOICES[modeToIndex];
+  const clearIntroPanelReveal = () => {
+    introRevealGeneration += 1;
+    introRevealTimers.forEach((timer) => window.clearTimeout(timer));
+    introRevealTimers.clear();
+    [...introPathButtons, ...introModeButtons].forEach((panel) => {
+      panel.classList.remove("is-awaiting-reveal", "is-depth-arriving");
+    });
+  };
+
+  const setIntroVisual = (key = "default") => {
+    const selectedKey = introVisuals.some((visual) => visual.dataset.introVisual === key)
+      ? key
+      : "default";
+    introLayer.dataset.preview = selectedKey;
+    introVisuals.forEach((visual) => {
+      visual.classList.toggle("is-active", visual.dataset.introVisual === selectedKey);
+    });
+  };
+
+  const revealIntroPanels = (stageElement) => {
+    clearIntroPanelReveal();
+    const generation = introRevealGeneration;
+    const panels = Array.from(
+      stageElement.querySelectorAll(".intro-path-card, .intro-mode-choice"),
+    );
+    if (reducedMotion || panels.length === 0) return;
+
+    panels.forEach((panel) => panel.classList.add("is-awaiting-reveal"));
+    requestAnimationFrame(() => {
+      panels.forEach((panel, index) => {
+        const jitter = index ? (index * 11) % 17 : 0;
+        const timer = window.setTimeout(() => {
+          introRevealTimers.delete(timer);
+          if (generation !== introRevealGeneration || !panel.isConnected) return;
+          panel.classList.remove("is-awaiting-reveal");
+          panel.classList.add("is-depth-arriving");
+          const cleanupTimer = window.setTimeout(() => {
+            introRevealTimers.delete(cleanupTimer);
+            if (panel.isConnected) panel.classList.remove("is-depth-arriving");
+          }, 820);
+          introRevealTimers.add(cleanupTimer);
+        }, 80 + index * 52 + jitter);
+        introRevealTimers.add(timer);
+      });
+    });
+  };
+
+  const animateIntroStage = (stageElement, { revealPanels = true } = {}) => {
+    stageElement.classList.remove("is-entering");
+    if (revealPanels) {
+      revealIntroPanels(stageElement);
+    } else {
+      clearIntroPanelReveal();
+    }
+    if (reducedMotion) return;
+    void stageElement.offsetWidth;
+    stageElement.classList.add("is-entering");
+  };
+
+  const showIntroStage = (stage, { focus = true, revealPanels = true } = {}) => {
+    introStage = stage;
+    const showingPath = stage === "path";
+    introPathStage.hidden = !showingPath;
+    introSenseStage.hidden = showingPath;
+    introLayer.scrollTop = 0;
+    setIntroVisual(showingPath ? "default" : introSelectedPath);
+    const visibleStage = showingPath ? introPathStage : introSenseStage;
+    animateIntroStage(visibleStage, { revealPanels });
+    if (!focus) return;
+    requestAnimationFrame(() => {
+      const target = showingPath
+        ? introPathButtons[0]
+        : introModeButtons[modeToIndex] || introPathBack;
+      target?.focus({ preventScroll: true });
+      if (showingPath) setIntroVisual("default");
+    });
+  };
+
+  const selectIntroPath = (path) => {
+    const pathConfig = INTRO_PATHS[path];
+    if (!pathConfig) return;
+    introSelectedPath = path;
+    introLayer.dataset.path = path;
+    setIntroVisual(path);
+    introPathButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.introPath === path));
+    });
+    introPathKicker.textContent = pathConfig.kicker;
+    introSenseTitle.innerHTML = pathConfig.title;
+    introSenseLead.textContent = pathConfig.lead;
+    introSelectionPrompt.textContent = pathConfig.prompt;
+    introPathNote.textContent = pathConfig.note;
+    updateIntroSelection();
+    showIntroStage("sense");
+  };
+
+  const enterIntroSelection = (event = null) => {
+    const selectedPath = introSelectedPath;
+    if (!INTRO_PATHS[selectedPath]) return;
+    runSceneTransition(() => {
+      if (selectedPath === "abstract") {
+        closeIntro();
+        return;
+      }
+      if (selectedPath === "map") {
+        closeIntro({ restoreFocus: false });
+        openJapan({ respectUrlMode: false });
+        return;
+      }
+      if (selectedPath === "space") {
+        closeIntro({ restoreFocus: false });
+        window.dispatchEvent(new CustomEvent("gaia:space-open-at-mode", {
+          detail: { index: modeToIndex },
+        }));
+        return;
+      }
+      closeIntro({ restoreFocus: false });
+      window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
+        detail: { index: modeToIndex },
+      }));
+    }, selectedPath, event);
+  };
+
+  const INTRO_SCRAMBLE_ALPHABET = Array.from(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/:.-+◇○△□",
+  );
+
+  const revealIntroText = (target, finalText, duration, delay, generation) => {
+    const characters = Array.from(finalText);
+    const startedAt = performance.now() + delay;
+
+    const draw = (now) => {
+      if (generation !== introScrambleGeneration) return;
+      if (now < startedAt) {
+        requestAnimationFrame(draw);
+        return;
+      }
+
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = 1 - (1 - progress) ** 3;
+      const settledCount = Math.floor(characters.length * eased);
+      target.textContent = characters
+        .map((character, index) => {
+          if (
+            index < settledCount ||
+            /[\s、。・「」『』（）()／/:：—–-]/u.test(character)
+          ) {
+            return character;
+          }
+          return INTRO_SCRAMBLE_ALPHABET[
+            Math.floor(Math.random() * INTRO_SCRAMBLE_ALPHABET.length)
+          ];
+        })
+        .join("");
+      target.classList.remove("is-intro-scramble-pending");
+
+      if (progress < 1) {
+        requestAnimationFrame(draw);
+      } else {
+        target.textContent = finalText;
+        if (target === introSelectionCopy) {
+          introSelectionPreview.setAttribute("aria-busy", "false");
+        }
+      }
+    };
+
+    requestAnimationFrame(draw);
+  };
+
+  const animateIntroSelectionText = (number, title, copy) => {
+    introScrambleGeneration += 1;
+    const generation = introScrambleGeneration;
+
+    introSelectionPreview.classList.remove("is-decoding");
+    if (reducedMotion) {
+      introSelectionNumber.classList.remove("is-intro-scramble-pending");
+      introSelectionTitle.classList.remove("is-intro-scramble-pending");
+      introSelectionCopy.classList.remove("is-intro-scramble-pending");
+      introSelectionNumber.textContent = number;
+      introSelectionTitle.textContent = title;
+      introSelectionCopy.textContent = copy;
+      introSelectionPreview.setAttribute("aria-busy", "false");
+      return;
+    }
+
+    void introSelectionPreview.offsetWidth;
+    introSelectionNumber.classList.add("is-intro-scramble-pending");
+    introSelectionTitle.classList.add("is-intro-scramble-pending");
+    introSelectionCopy.classList.add("is-intro-scramble-pending");
+    introSelectionPreview.classList.add("is-decoding");
+    introSelectionPreview.setAttribute("aria-busy", "true");
+    revealIntroText(introSelectionNumber, number, 280, 0, generation);
+    revealIntroText(introSelectionTitle, title, 440, 35, generation);
+    revealIntroText(introSelectionCopy, copy, 680, 90, generation);
+  };
+
+  const updateIntroSelection = (previewIndex = modeToIndex) => {
+    const normalizedIndex = (previewIndex + MODE_COUNT) % MODE_COUNT;
+    const choices = introSelectedPath === "space" ? SPACE_MODE_CHOICES : INTRO_MODE_CHOICES;
+    const choice = choices[normalizedIndex];
     if (!choice) return;
 
-    introSelectionNumber.textContent = `${formatModeNumber(modeToIndex)} / ${choice.code}`;
-    introSelectionTitle.textContent = `${choice.label}の声`;
-    introSelectionCopy.textContent = choice.copy;
-    introEnter.firstElementChild.textContent = `${choice.label}を光で見る`;
-    introJapan.firstElementChild.textContent = `${choice.label}を世界地図で見る`;
+    animateIntroSelectionText(
+      `${formatModeNumber(normalizedIndex)} / ${choice.code}`,
+      `${choice.label}の声`,
+      choice.copy,
+    );
+    introPathBack.hidden = false;
     introModeButtons.forEach((button, index) => {
-      button.setAttribute("aria-selected", index === modeToIndex ? "true" : "false");
-      button.tabIndex = index === modeToIndex ? 0 : -1;
+      const option = choices[index];
+      const label = button.querySelector("strong");
+      const cue = button.querySelector("small");
+      if (option && label && cue) {
+        label.textContent = option.label;
+        cue.textContent = option.cue;
+        button.setAttribute(
+          "aria-label",
+          `${formatModeNumber(index)} ${option.label}、${option.cue}`,
+        );
+      }
+      button.setAttribute("aria-selected", index === normalizedIndex ? "true" : "false");
+      button.tabIndex = index === normalizedIndex ? 0 : -1;
     });
   };
 
@@ -4482,12 +4493,20 @@ drawAudienceMemory(audienceTraces);
     }
   };
 
+  window.addEventListener("gaia:select-mode", (event) => {
+    const requestedIndex = Number(event.detail?.index);
+    if (Number.isInteger(requestedIndex) && requestedIndex >= 0 && requestedIndex < MODE_COUNT) {
+      selectMode(requestedIndex);
+    }
+  });
+
   modes.forEach((mode, index) => {
     const introChoice = INTRO_MODE_CHOICES[index];
     const introModeButton = document.createElement("button");
     const introModeNumber = document.createElement("span");
     const introModeLabel = document.createElement("strong");
     const introModeCue = document.createElement("small");
+    const introModeReveal = document.createElement("span");
     introModeButton.className = "intro-mode-choice";
     introModeButton.type = "button";
     introModeButton.setAttribute("role", "option");
@@ -4497,13 +4516,21 @@ drawAudienceMemory(audienceTraces);
       `${formatModeNumber(index)} ${introChoice.label}、${introChoice.cue}`,
     );
     introModeButton.tabIndex = index === modeToIndex ? 0 : -1;
+    introModeReveal.className = "intro-card-reveal-fx";
+    introModeReveal.setAttribute("aria-hidden", "true");
     introModeNumber.textContent = formatModeNumber(index);
     introModeLabel.textContent = introChoice.label;
     introModeCue.textContent = introChoice.cue;
-    introModeButton.append(introModeNumber, introModeLabel, introModeCue);
-    introModeButton.addEventListener("click", () => {
+    introModeButton.append(introModeReveal, introModeNumber, introModeLabel, introModeCue);
+    const previewIntroMode = () => {
+      updateIntroSelection(index);
+    };
+    introModeButton.addEventListener("pointerenter", previewIntroMode);
+    introModeButton.addEventListener("focus", previewIntroMode);
+    introModeButton.addEventListener("click", (event) => {
       selectMode(index);
-      updateIntroSelection();
+      updateIntroSelection(index);
+      enterIntroSelection(event);
     });
     introModeButtons.push(introModeButton);
     introModeList.append(introModeButton);
@@ -4548,6 +4575,35 @@ drawAudienceMemory(audienceTraces);
     japanModeList.append(japanModeButton);
   });
 
+  introPathButtons.forEach((button) => {
+    button.setAttribute("aria-pressed", "false");
+    const previewPath = () => setIntroVisual(button.dataset.introPath);
+    button.addEventListener("pointerenter", previewPath);
+    button.addEventListener("focus", previewPath);
+    button.addEventListener("click", (event) => {
+      const path = button.dataset.introPath;
+      if (path === "novel") {
+        runSceneTransition(() => {
+          closeIntro({ restoreFocus: false });
+          window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
+            detail: { index: 0, source: "entrance" },
+          }));
+        }, path, event);
+        return;
+      }
+      runSceneTransition(() => selectIntroPath(path), path, event);
+    });
+  });
+
+  introPathGrid?.addEventListener("pointerleave", () => {
+    if (introStage === "path") setIntroVisual("default");
+  });
+  introPathGrid?.addEventListener("focusout", (event) => {
+    if (introStage === "path" && !introPathGrid.contains(event.relatedTarget)) {
+      setIntroVisual("default");
+    }
+  });
+
   previousModeButton.addEventListener("click", () => selectMode(modeToIndex - 1));
   nextModeButton.addEventListener("click", () => selectMode(modeToIndex + 1));
 
@@ -4566,25 +4622,69 @@ drawAudienceMemory(audienceTraces);
   resetButton.addEventListener("click", clearSession);
 
   japanMap.addEventListener("pointerdown", (event) => {
-    if (!japanIsOpen || japanView.pointerId !== null) {
+    if (!japanIsOpen) {
       return;
     }
     event.preventDefault();
-    japanView.pointerId = event.pointerId;
-    japanView.startX = event.clientX;
-    japanView.startY = event.clientY;
-    japanView.lastX = event.clientX;
-    japanView.lastY = event.clientY;
-    japanView.dragged = false;
-    japanView.pressStartedAt = performance.now();
     japanMap.setPointerCapture(event.pointerId);
+    japanView.pointers.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    if (japanView.pointerId === null) {
+      japanView.pointerId = event.pointerId;
+      japanView.startX = event.clientX;
+      japanView.startY = event.clientY;
+      japanView.lastX = event.clientX;
+      japanView.lastY = event.clientY;
+      japanView.dragged = false;
+      japanView.gesture = false;
+      japanView.pressStartedAt = performance.now();
+    }
+
+    if (mapScope === "earth" && japanView.pointers.size === 2) {
+      const [first, second] = [...japanView.pointers.values()];
+      japanView.pinchDistance = Math.hypot(second.x - first.x, second.y - first.y);
+      japanView.pinchCenterX = (first.x + second.x) / 2;
+      japanView.pinchCenterY = (first.y + second.y) / 2;
+      japanView.dragged = true;
+      japanView.gesture = true;
+      japanMap.classList.add("is-dragging");
+    }
   });
 
   japanMap.addEventListener("pointermove", (event) => {
-    if (!japanIsOpen || japanView.pointerId !== event.pointerId) {
+    if (!japanIsOpen || !japanView.pointers.has(event.pointerId)) {
       return;
     }
     event.preventDefault();
+    japanView.pointers.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    if (mapScope === "earth" && japanView.pointers.size >= 2) {
+      const [first, second] = [...japanView.pointers.values()];
+      const distance = Math.max(1, Math.hypot(second.x - first.x, second.y - first.y));
+      const centerX = (first.x + second.x) / 2;
+      const centerY = (first.y + second.y) / 2;
+      japanView.earthOffsetX += centerX - japanView.pinchCenterX;
+      japanView.earthOffsetY += centerY - japanView.pinchCenterY;
+      setEarthZoom(
+        japanView.earthZoom * (distance / Math.max(1, japanView.pinchDistance)),
+        centerX,
+        centerY,
+      );
+      japanView.pinchDistance = distance;
+      japanView.pinchCenterX = centerX;
+      japanView.pinchCenterY = centerY;
+      japanView.gesture = true;
+      closeJapanPoi();
+      return;
+    }
+
+    if (japanView.pointerId !== event.pointerId) return;
     const deltaX = event.clientX - japanView.lastX;
     const deltaY = event.clientY - japanView.lastY;
     const totalDistance = Math.hypot(
@@ -4598,10 +4698,17 @@ drawAudienceMemory(audienceTraces);
     }
 
     if (japanView.dragged) {
-      const worldSize = MAP_TILE_SIZE * 2 ** japanView.zoom;
-      japanView.centerX = clamp(japanView.centerX - deltaX, 0, worldSize);
-      japanView.centerY = clamp(japanView.centerY - deltaY, 0, worldSize);
+      if (mapScope === "earth") {
+        japanView.earthOffsetX += deltaX;
+        japanView.earthOffsetY += deltaY;
+        japanView.earthProjection = getEarthProjection(japanMap.getBoundingClientRect());
+      } else {
+        const worldSize = MAP_TILE_SIZE * 2 ** japanView.zoom;
+        japanView.centerX = clamp(japanView.centerX - deltaX, 0, worldSize);
+        japanView.centerY = clamp(japanView.centerY - deltaY, 0, worldSize);
+      }
       japanTilesDirty = true;
+      closeJapanPoi();
     }
 
     japanView.lastX = event.clientX;
@@ -4609,27 +4716,51 @@ drawAudienceMemory(audienceTraces);
   });
 
   const releaseJapanPointer = (event, createPulse) => {
-    if (japanView.pointerId !== event.pointerId) {
+    if (!japanView.pointers.has(event.pointerId)) {
       return;
     }
     if (japanMap.hasPointerCapture(event.pointerId)) {
       japanMap.releasePointerCapture(event.pointerId);
     }
-    const pressDuration = performance.now() - japanView.pressStartedAt;
-    if (createPulse && !japanView.dragged && modeToIndex === 5 && pressDuration >= 650) {
-      anthropocenePeelUntil = performance.now() + 6000;
-      japanMapStatus.textContent = "NIGHT LIGHT PEELED / EMISSIONS LAYER REMAINS";
-    } else if (createPulse && !japanView.dragged) {
-      const poi = findJapanPoiAt(event.clientX, event.clientY, event.pointerType);
-      if (poi) {
-        openJapanPoi(poi, event.clientX, event.clientY);
-      } else {
-        closeJapanPoi();
-        addJapanPulse(event.clientX, event.clientY);
+    const isPrimaryPointer = japanView.pointerId === event.pointerId;
+    if (isPrimaryPointer) {
+      const pressDuration = performance.now() - japanView.pressStartedAt;
+      if (
+        createPulse &&
+        !japanView.dragged &&
+        !japanView.gesture &&
+        modeToIndex === 5 &&
+        pressDuration >= 650
+      ) {
+        anthropocenePeelUntil = performance.now() + 6000;
+        japanMapStatus.textContent = "NIGHT LIGHT PEELED / EMISSIONS LAYER REMAINS";
+      } else if (createPulse && !japanView.dragged && !japanView.gesture) {
+        const poi = findJapanPoiAt(event.clientX, event.clientY, event.pointerType);
+        if (poi) {
+          openJapanPoi(poi, event.clientX, event.clientY);
+        } else {
+          closeJapanPoi();
+          addJapanPulse(event.clientX, event.clientY);
+        }
       }
     }
+    japanView.pointers.delete(event.pointerId);
+
+    if (japanView.pointers.size > 0) {
+      const [pointerId, point] = japanView.pointers.entries().next().value;
+      japanView.pointerId = pointerId;
+      japanView.startX = point.x;
+      japanView.startY = point.y;
+      japanView.lastX = point.x;
+      japanView.lastY = point.y;
+      japanView.dragged = true;
+      return;
+    }
+
     japanView.pointerId = null;
     japanView.dragged = false;
+    japanView.gesture = false;
+    japanView.pinchDistance = 0;
     japanMap.classList.remove("is-dragging");
   };
 
@@ -4638,16 +4769,41 @@ drawAudienceMemory(audienceTraces);
     releaseJapanPointer(event, false),
   );
 
+  japanMap.addEventListener(
+    "wheel",
+    (event) => {
+      if (!japanIsOpen || mapScope !== "earth") return;
+      event.preventDefault();
+      const delta = clamp(event.deltaY, -240, 240);
+      const factor = Math.exp(-delta * (event.ctrlKey ? 0.006 : 0.0024));
+      setEarthZoom(japanView.earthZoom * factor, event.clientX, event.clientY);
+      closeJapanPoi();
+    },
+    { passive: false },
+  );
+
   japanMap.addEventListener("keydown", (event) => {
     const movement = event.shiftKey ? 110 : 46;
     if (event.key === "ArrowLeft") {
-      japanView.centerX -= movement;
+      if (mapScope === "earth") japanView.earthOffsetX += movement;
+      else japanView.centerX -= movement;
     } else if (event.key === "ArrowRight") {
-      japanView.centerX += movement;
+      if (mapScope === "earth") japanView.earthOffsetX -= movement;
+      else japanView.centerX += movement;
     } else if (event.key === "ArrowUp") {
-      japanView.centerY -= movement;
+      if (mapScope === "earth") japanView.earthOffsetY += movement;
+      else japanView.centerY -= movement;
     } else if (event.key === "ArrowDown") {
-      japanView.centerY += movement;
+      if (mapScope === "earth") japanView.earthOffsetY -= movement;
+      else japanView.centerY += movement;
+    } else if ((event.key === "+" || event.key === "=") && mapScope === "earth") {
+      const rect = japanMap.getBoundingClientRect();
+      setEarthZoom(japanView.earthZoom * 1.35, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    } else if ((event.key === "-" || event.key === "_") && mapScope === "earth") {
+      const rect = japanMap.getBoundingClientRect();
+      setEarthZoom(japanView.earthZoom / 1.35, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    } else if (event.key === "0" && mapScope === "earth") {
+      resetJapanView();
     } else if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       const rect = japanMap.getBoundingClientRect();
@@ -4657,6 +4813,9 @@ drawAudienceMemory(audienceTraces);
       return;
     }
     event.preventDefault();
+    if (mapScope === "earth") {
+      japanView.earthProjection = getEarthProjection(japanMap.getBoundingClientRect());
+    }
     japanTilesDirty = true;
   });
 
@@ -4989,11 +5148,15 @@ drawAudienceMemory(audienceTraces);
     introLayer.setAttribute("aria-hidden", "false");
     introLayer.classList.remove("is-closing");
     experience.classList.add("intro-open");
-    introLayer.scrollTop = 0;
+    introSelectedPath = null;
+    delete introLayer.dataset.path;
+    setIntroVisual();
+    introPathButtons.forEach((button) => button.setAttribute("aria-pressed", "false"));
     updateIntroSelection();
-    requestAnimationFrame(() =>
-      (introModeButtons[modeToIndex] || introEnter).focus({ preventScroll: true }),
-    );
+    // During the opening dissolve the next screen is already visible behind it.
+    // Present complete cards there instead of exposing staggered empty frames.
+    const enteringFromOpening = document.body.classList.contains("gaia-opening-active");
+    showIntroStage("path", { revealPanels: !enteringFromOpening });
   };
 
   const closeIntro = ({ restoreFocus = introRestoreFocus } = {}) => {
@@ -5001,6 +5164,7 @@ drawAudienceMemory(audienceTraces);
       return;
     }
     introIsOpen = false;
+    clearIntroPanelReveal();
     introLayer.classList.add("is-closing");
     introLayer.setAttribute("aria-hidden", "true");
     introLayer.inert = true;
@@ -5019,19 +5183,43 @@ drawAudienceMemory(audienceTraces);
     }, closeDelay);
   };
 
+  window.addEventListener("gaia:novel-open", () => {
+    if (introIsOpen) closeIntro({ restoreFocus: false });
+    if (sourceIsOpen) closeSource({ restoreFocus: false });
+    if (conceptIsOpen) closeConcept({ restoreFocus: false });
+    if (autoEnabled) {
+      autoEnabled = false;
+      updateAutoInterface();
+    }
+  });
+
+  window.addEventListener("gaia:opening-complete", () => {
+    const hasDirectDestination =
+      ["#source", "#concept", "#earth", "#japan", "#data", "#story"].includes(
+        window.location.hash,
+      ) || new URLSearchParams(window.location.search).has("space");
+    if (hasDirectDestination) return;
+    openIntro({ restoreFocusOnClose: false });
+  }, { once: true });
+
+  window.addEventListener("gaia:return-to-intro", () => {
+    openIntro({ restoreFocusOnClose: false });
+  });
+
   sourcePanel.inert = true;
   conceptPanel.inert = true;
   introLayer.inert = true;
   japanLayer.inert = true;
   japanDataPanel.inert = true;
   japanButton.addEventListener("click", () => {
-    if (japanIsOpen) {
-      closeJapan();
-    } else {
-      openJapan();
-    }
+    runSceneTransition(
+      () => japanIsOpen ? closeJapan() : openJapan(),
+      japanIsOpen ? "abstract" : "map",
+    );
   });
-  japanClose.addEventListener("click", () => closeJapan());
+  japanClose.addEventListener("click", (event) => {
+    runSceneTransition(() => openIntro(), "map", event);
+  });
   japanDataButton.addEventListener("click", openJapanData);
   japanDataClose.addEventListener("click", () => closeJapanData());
   japanDataScrim.addEventListener("click", () => closeJapanData());
@@ -5063,22 +5251,30 @@ drawAudienceMemory(audienceTraces);
   conceptClose.addEventListener("click", () => closeConcept());
   conceptPrevious.addEventListener("click", () => selectMode(modeToIndex - 1));
   conceptNext.addEventListener("click", () => selectMode(modeToIndex + 1));
-  introButton.addEventListener("click", () => openIntro());
-  introEnter.addEventListener("click", () => closeIntro());
+  introButton.addEventListener("click", (event) => {
+    if (window.GaiaSceneTransition?.running) {
+      openIntro();
+      return;
+    }
+    runSceneTransition(() => openIntro(), "abstract", event);
+  });
+  introPathBack.addEventListener("click", (event) => {
+    runSceneTransition(
+      () => showIntroStage("path"),
+      introSelectedPath || "default",
+      event,
+    );
+  });
   introArchitectureJump.addEventListener("click", () => {
-    architectureExhibit.scrollIntoView({
+    introOpenDataExhibit.scrollIntoView({
       behavior: reducedMotion ? "auto" : "smooth",
       block: "start",
     });
-    introArchitectureBack.focus({ preventScroll: true });
+    introOpenDataExhibit.focus({ preventScroll: true });
   });
   introArchitectureBack.addEventListener("click", () => {
     introLayer.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
-    (introModeButtons[modeToIndex] || introEnter).focus({ preventScroll: true });
-  });
-  introJapan.addEventListener("click", () => {
-    closeIntro({ restoreFocus: false });
-    openJapan({ respectUrlMode: false });
+    showIntroStage("path");
   });
   window.addEventListener("hashchange", () => {
     if (window.location.hash === "#source") {
@@ -5111,27 +5307,24 @@ drawAudienceMemory(audienceTraces);
   document.addEventListener("keydown", (event) => {
     if (introIsOpen) {
       if (event.key === "Escape") {
-        closeIntro();
+        if (introStage === "sense") showIntroStage("path");
+        else closeIntro();
       } else if (
         ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) &&
-        introModeButtons.includes(document.activeElement)
+        (introStage === "path" ? introPathButtons : introModeButtons).includes(document.activeElement)
       ) {
         event.preventDefault();
-        const currentIndex = introModeButtons.indexOf(document.activeElement);
+        const activeButtons = introStage === "path" ? introPathButtons : introModeButtons;
+        const currentIndex = activeButtons.indexOf(document.activeElement);
         const direction = event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
-        const nextIndex = (currentIndex + direction + MODE_COUNT) % MODE_COUNT;
-        selectMode(nextIndex);
-        updateIntroSelection();
-        introModeButtons[nextIndex].focus({ preventScroll: true });
+        const nextIndex = (currentIndex + direction + activeButtons.length) % activeButtons.length;
+        activeButtons[nextIndex].focus({ preventScroll: true });
       } else if (event.key === "Tab") {
         event.preventDefault();
-        const targets = [
-          ...introModeButtons,
-          introEnter,
-          introJapan,
-          introArchitectureJump,
-          introArchitectureBack,
-        ];
+        const targets = (introStage === "path"
+          ? [...introPathButtons, introArchitectureJump, introArchitectureBack]
+          : [...introModeButtons, introPathBack]
+        ).filter((element) => !element.hidden && element.getClientRects().length > 0);
         const currentIndex = targets.indexOf(document.activeElement);
         const direction = event.shiftKey ? -1 : 1;
         const nextIndex =
@@ -5210,6 +5403,15 @@ drawAudienceMemory(audienceTraces);
   };
 
   const render = (now) => {
+    if (japanIsOpen) {
+      const mapFrameInterval = reducedMotion ? 1000 / 15 : coarsePointer ? 1000 / 24 : 1000 / 30;
+      if (now - lastJapanOverlayRenderAt < mapFrameInterval) {
+        animationFrame = requestAnimationFrame(render);
+        return;
+      }
+      lastJapanOverlayRenderAt = now;
+    }
+
     resize();
     updateCo2TimelineAnimation(now);
     if (japanIsOpen) {
@@ -5227,6 +5429,15 @@ drawAudienceMemory(audienceTraces);
     ) {
       selectMode(modeToIndex + 1, { resetAutoTimer: false });
       nextAutoAt = now + AUTO_INTERVAL;
+    }
+
+    if (japanIsOpen) {
+      const backgroundFrameInterval = reducedMotion ? 1000 : 200;
+      if (now - lastBackgroundRenderAt < backgroundFrameInterval) {
+        animationFrame = requestAnimationFrame(render);
+        return;
+      }
+      lastBackgroundRenderAt = now;
     }
 
     const elapsed = Math.max(0, (now - startTime - hiddenDuration) / 1000);
@@ -5316,6 +5527,7 @@ drawAudienceMemory(audienceTraces);
   resize();
   startRendering();
   loadGaiaSignals();
+  loadNaturalEarthLand();
 
   if (window.location.hash === "#source") {
     openSource({ updateHash: false });
@@ -5328,7 +5540,7 @@ drawAudienceMemory(audienceTraces);
   ) {
     openJapan({ updateHash: false, restoreFocusOnClose: false });
     if (window.location.hash === "#data") openJapanData();
-  } else {
+  } else if (!openingLayer || openingLayer.hidden) {
     openIntro({ restoreFocusOnClose: false });
   }
 })();
