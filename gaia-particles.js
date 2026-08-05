@@ -20,83 +20,56 @@
     let frame = 0;
     let running = false;
     let lastTime = 0;
-    let streaks = [];
     let motes = [];
-    let stars = [];
-    let filaments = [];
     let pointerX = 0.5;
     let pointerY = 0.5;
 
     const random = (min, max) => min + Math.random() * (max - min);
     const pickHue = () => palette[Math.floor(Math.random() * palette.length)];
+    const riseZones = variant === "story"
+      ? [
+          { x: 0.08, spread: 0.07, hue: 188 },
+          { x: 0.26, spread: 0.1, hue: 218 },
+          { x: 0.76, spread: 0.11, hue: 286 },
+          { x: 0.94, spread: 0.05, hue: 202 },
+        ]
+      : [
+          { x: 0.07, spread: 0.07, hue: 188 },
+          { x: 0.24, spread: 0.1, hue: 218 },
+          { x: 0.58, spread: 0.12, hue: 286 },
+          { x: 0.88, spread: 0.07, hue: 202 },
+        ];
 
-    const makeStreak = (entering = false) => {
-      const angle = random(-1.18, -0.77);
-      const speed = random(22, 58) * (variant === "story" ? 0.78 : 1);
+    const makeMote = (entering = false) => {
+      const zone = riseZones[Math.floor(Math.random() * riseZones.length)];
+      const depth = random(0.18, 1);
+      const radius = random(34, variant === "story" ? 108 : 96) * (0.68 + depth * 0.5);
       return {
-        x: entering ? random(-width * 0.18, width * 0.62) : random(-width * 0.12, width * 1.08),
-        y: entering ? height + random(20, height * 0.34) : random(-height * 0.1, height * 1.18),
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        length: random(width < 720 ? 62 : 105, width < 720 ? 180 : 330),
-        width: random(0.7, 1.75),
-        hue: pickHue(),
-        alpha: random(0.2, 0.5) * intensity,
-        pulse: random(0.00045, 0.0011),
+        baseX: (zone.x + random(-zone.spread, zone.spread)) * width,
+        y: entering ? height + random(radius * 0.6, height * 0.18 + radius) : random(height * 0.06, height * 1.12),
+        vy: -random(16, variant === "story" ? 38 : 34) * (0.7 + depth * 0.42),
+        radius,
+        aspect: random(0.78, 1.08),
+        sway: random(10, 38) * (0.72 + depth * 0.42),
+        curl: random(0.64, 1.28),
+        drift: random(0.1, 0.24),
+        depth,
+        hue: Math.random() < 0.76 ? zone.hue + random(-8, 8) : pickHue(),
+        alpha: random(0.15, variant === "story" ? 0.31 : 0.28) * intensity,
         phase: random(0, Math.PI * 2),
+        lobes: Array.from({ length: Math.random() < 0.6 ? 4 : 3 }, (_, index) => ({
+          x: index === 0 ? 0 : random(-0.48, 0.48),
+          y: index === 0 ? 0 : random(-0.34, 0.34),
+          scale: index === 0 ? random(0.78, 1) : random(0.42, 0.72),
+        })),
       };
     };
-
-    const makeMote = (entering = false) => ({
-      x: entering ? random(-30, width * 0.8) : random(-20, width + 20),
-      y: entering ? height + random(0, 80) : random(-20, height + 20),
-      vx: random(1.1, variant === "story" ? 3.8 : 5.8),
-      vy: random(variant === "story" ? -5.2 : -8.2, -1.8),
-      radius: random(variant === "story" ? 0.5 : 0.35, variant === "story" ? 2.25 : 1.35),
-      depth: random(0.18, 1),
-      hue: pickHue(),
-      alpha: random(0.1, variant === "story" ? 0.4 : 0.48) * intensity,
-      pulse: random(0.0007, 0.002),
-      phase: random(0, Math.PI * 2),
-    });
-
-    const makeStar = (entering = false) => ({
-      x: entering ? random(0, width) : random(width * 0.04, width * 0.96),
-      y: entering ? height + random(20, 140) : random(height * 0.04, height * 0.96),
-      vx: random(2, 7),
-      vy: random(-7, -2),
-      radius: random(1.5, width < 720 ? 3.2 : 4.6),
-      hue: pickHue(),
-      alpha: random(0.18, 0.62) * intensity,
-      pulse: random(0.0008, 0.0017),
-      phase: random(0, Math.PI * 2),
-    });
-
-    const makeFilament = () => ({
-      x: random(-width * 0.12, width * 0.92),
-      y: random(height * 0.08, height * 0.92),
-      span: random(width * 0.16, width * 0.34),
-      lift: random(height * 0.04, height * 0.14) * (Math.random() > 0.5 ? 1 : -1),
-      drift: random(1.4, 4.4),
-      hue: pickHue(),
-      alpha: random(0.035, 0.11) * intensity,
-      phase: random(0, Math.PI * 2),
-      pulse: random(0.00016, 0.00034),
-      depth: random(0.25, 0.8),
-    });
 
     const rebuild = () => {
       const compact = width < 720;
       const motionFactor = REDUCED_MOTION ? 0.45 : 1;
-      const streakCount = Math.round((compact ? 6 : variant === "story" ? 7 : 12) * intensity * motionFactor);
-      const moteCount = Math.round((compact ? 22 : variant === "story" ? 58 : 52) * intensity * motionFactor);
-      const starCount = Math.round((compact ? 4 : variant === "story" ? 6 : 8) * intensity * motionFactor);
-      streaks = Array.from({ length: Math.max(3, streakCount) }, () => makeStreak());
-      motes = Array.from({ length: Math.max(10, moteCount) }, () => makeMote());
-      stars = Array.from({ length: Math.max(3, starCount) }, () => makeStar());
-      filaments = variant === "story"
-        ? Array.from({ length: compact ? 3 : 7 }, () => makeFilament())
-        : [];
+      const moteCount = Math.round((compact ? 6 : variant === "story" ? 10 : 8) * intensity * motionFactor);
+      motes = Array.from({ length: Math.max(5, moteCount) }, () => makeMote());
     };
 
     const onPointerMove = (event) => {
@@ -115,32 +88,6 @@
       rebuild();
     };
 
-    const drawStar = (star, pulse) => {
-      const radius = star.radius * (0.55 + pulse * 0.8);
-      const alpha = star.alpha * (0.28 + pulse * 0.72);
-      context.save();
-      context.translate(star.x, star.y);
-      context.strokeStyle = `hsla(${star.hue}, 88%, 88%, ${alpha})`;
-      context.shadowColor = `hsla(${star.hue}, 96%, 82%, ${alpha})`;
-      context.shadowBlur = radius * 5;
-      context.lineWidth = 0.65;
-      context.beginPath();
-      context.moveTo(-radius * 2.2, 0);
-      context.lineTo(radius * 2.2, 0);
-      context.moveTo(0, -radius * 2.2);
-      context.lineTo(0, radius * 2.2);
-      context.stroke();
-      context.rotate(Math.PI / 4);
-      context.globalAlpha = 0.48;
-      context.beginPath();
-      context.moveTo(-radius, 0);
-      context.lineTo(radius, 0);
-      context.moveTo(0, -radius);
-      context.lineTo(0, radius);
-      context.stroke();
-      context.restore();
-    };
-
     const draw = (time) => {
       if (!running) return;
       const deltaSeconds = Math.min(0.034, Math.max(0, (time - (lastTime || time)) / 1000));
@@ -149,88 +96,56 @@
       context.save();
       context.globalCompositeOperation = "lighter";
 
-      if (variant === "story") {
-        filaments.forEach((filament) => {
-          filament.x += filament.drift * deltaSeconds;
-          if (filament.x > width + filament.span) Object.assign(filament, makeFilament(), { x: -filament.span });
-          const pulse = 0.5 + Math.sin(time * filament.pulse + filament.phase) * 0.5;
-          const parallaxX = (pointerX - 0.5) * 24 * filament.depth;
-          const parallaxY = (pointerY - 0.5) * 16 * filament.depth;
-          const x = filament.x + parallaxX;
-          const y = filament.y + parallaxY;
-          const gradient = context.createLinearGradient(x, y, x + filament.span, y);
-          gradient.addColorStop(0, `hsla(${filament.hue}, 80%, 76%, 0)`);
-          gradient.addColorStop(0.5, `hsla(${filament.hue}, 82%, 82%, ${filament.alpha * (0.42 + pulse * 0.58)})`);
-          gradient.addColorStop(1, `hsla(${filament.hue}, 80%, 76%, 0)`);
-          context.strokeStyle = gradient;
-          context.lineWidth = 0.7 + filament.depth * 0.7;
-          context.setLineDash([1, 8 + filament.depth * 8]);
-          context.lineDashOffset = -time * 0.006 * filament.drift;
-          context.beginPath();
-          context.moveTo(x, y);
-          context.bezierCurveTo(
-            x + filament.span * 0.28,
-            y + filament.lift,
-            x + filament.span * 0.68,
-            y - filament.lift * 0.72,
-            x + filament.span,
-            y
-          );
-          context.stroke();
-        });
-        context.setLineDash([]);
-      }
-
-      streaks.forEach((streak) => {
-        streak.x += streak.vx * deltaSeconds;
-        streak.y += streak.vy * deltaSeconds;
-        const magnitude = Math.hypot(streak.vx, streak.vy) || 1;
-        const dx = streak.vx / magnitude;
-        const dy = streak.vy / magnitude;
-        const tailX = streak.x - dx * streak.length;
-        const tailY = streak.y - dy * streak.length;
-        const pulse = 0.58 + Math.sin(time * streak.pulse + streak.phase) * 0.42;
-        const gradient = context.createLinearGradient(tailX, tailY, streak.x, streak.y);
-        gradient.addColorStop(0, `hsla(${streak.hue}, 86%, 67%, 0)`);
-        gradient.addColorStop(0.58, `hsla(${streak.hue}, 90%, 72%, ${streak.alpha * pulse * 0.36})`);
-        gradient.addColorStop(0.82, `hsla(${streak.hue}, 92%, 78%, ${streak.alpha * pulse * 0.72})`);
-        gradient.addColorStop(1, `hsla(${streak.hue}, 96%, 91%, ${streak.alpha * pulse})`);
-        context.strokeStyle = gradient;
-        context.lineWidth = streak.width;
-        context.shadowColor = `hsla(${streak.hue}, 92%, 74%, ${streak.alpha * pulse})`;
-        context.shadowBlur = streak.width * 8;
-        context.beginPath();
-        context.moveTo(tailX, tailY);
-        context.lineTo(streak.x, streak.y);
-        context.stroke();
-        if (streak.y < -streak.length || streak.x > width + streak.length) {
-          Object.assign(streak, makeStreak(true));
-        }
-      });
-
-      context.shadowBlur = 0;
       motes.forEach((mote) => {
-        mote.x += mote.vx * deltaSeconds;
         mote.y += mote.vy * deltaSeconds;
-        if (mote.y < -24 || mote.x > width + 24) Object.assign(mote, makeMote(true));
-        const pulse = 0.5 + Math.sin(time * mote.pulse + mote.phase) * 0.5;
-        const radius = mote.radius * (0.7 + pulse * 0.55) * (0.7 + mote.depth * 0.55);
-        const alpha = mote.alpha * (0.32 + pulse * 0.68);
-        const parallaxX = variant === "story" ? (pointerX - 0.5) * 34 * mote.depth : 0;
-        const parallaxY = variant === "story" ? (pointerY - 0.5) * 24 * mote.depth : 0;
-        context.fillStyle = `hsla(${mote.hue}, 88%, 88%, ${alpha})`;
-        context.shadowColor = `hsla(${mote.hue}, 96%, 82%, ${alpha})`;
-        context.shadowBlur = radius * (variant === "story" ? 11 : 7);
-        context.beginPath();
-        context.arc(mote.x + parallaxX, mote.y + parallaxY, radius, 0, Math.PI * 2);
-        context.fill();
-      });
+        mote.phase += mote.drift * deltaSeconds;
+        if (mote.y < -mote.radius * 2.4) {
+          Object.assign(mote, makeMote(true));
+          return;
+        }
+        const wave = time * 0.00022 * mote.curl + mote.phase;
+        const x = mote.baseX
+          + Math.sin(wave) * mote.sway
+          + Math.sin(wave * 1.73 + mote.depth * 5.3) * mote.sway * 0.22;
+        const lowerFade = Math.min(1, Math.max(0, (height + mote.radius - mote.y) / (height * 0.14)));
+        const upperFade = Math.min(1, Math.max(0, (mote.y + mote.radius * 1.6) / (height * 0.2)));
+        const travel = Math.min(1, Math.max(0, 1 - mote.y / Math.max(1, height)));
+        const pulse = 0.8 + Math.sin(time * 0.00058 + mote.phase) * 0.2;
+        const alpha = mote.alpha * lowerFade * upperFade * pulse;
+        const parallaxX = variant === "story" ? (pointerX - 0.5) * 22 * mote.depth : 0;
+        const parallaxY = variant === "story" ? (pointerY - 0.5) * 14 * mote.depth : 0;
+        const puffRadius = mote.radius * (0.72 + travel * 0.48) * pulse;
 
-      stars.forEach((star) => {
-        star.x += star.vx * deltaSeconds;
-        star.y += star.vy * deltaSeconds;
-        if (star.y < -30 || star.x > width + 30) Object.assign(star, makeStar(true));
-        drawStar(star, 0.5 + Math.sin(time * star.pulse + star.phase) * 0.5);
+        context.save();
+        context.translate(x + parallaxX, mote.y + parallaxY);
+        context.rotate(Math.sin(wave * 0.61) * 0.045);
+        context.scale(1, mote.aspect);
+        context.shadowColor = `hsla(${mote.hue}, 98%, 86%, ${alpha * 0.68})`;
+        context.shadowBlur = puffRadius * 0.58;
+
+        mote.lobes.forEach((lobe, index) => {
+          const lobeRadius = puffRadius * lobe.scale;
+          const lobeX = lobe.x * puffRadius;
+          const lobeY = lobe.y * puffRadius;
+          const glow = context.createRadialGradient(
+            lobeX - lobeRadius * 0.14,
+            lobeY - lobeRadius * 0.18,
+            0,
+            lobeX,
+            lobeY,
+            lobeRadius,
+          );
+          const lobeAlpha = alpha * (index === 0 ? 1 : 0.64);
+          glow.addColorStop(0, `hsla(${mote.hue}, 100%, 96%, ${lobeAlpha})`);
+          glow.addColorStop(0.28, `hsla(${mote.hue}, 98%, 86%, ${lobeAlpha * 0.72})`);
+          glow.addColorStop(0.68, `hsla(${mote.hue}, 92%, 72%, ${lobeAlpha * 0.24})`);
+          glow.addColorStop(1, `hsla(${mote.hue}, 86%, 62%, 0)`);
+          context.fillStyle = glow;
+          context.beginPath();
+          context.arc(lobeX, lobeY, lobeRadius, 0, Math.PI * 2);
+          context.fill();
+        });
+        context.restore();
       });
 
       context.restore();

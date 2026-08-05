@@ -9,7 +9,7 @@
   background-color: #02050b;
   background-image:
     linear-gradient(180deg, rgba(1, 7, 15, 0.02) 0%, rgba(1, 7, 15, 0.06) 58%, rgba(1, 7, 15, 0.26) 100%),
-    url("./assets/visuals-07/zushi-campus-story-bg-v2.webp");
+    url("./assets/visuals-07/zushi-campus-story-bg-v4.webp");
   background-position: center, center;
   background-size: cover, cover;
   background-repeat: no-repeat;
@@ -557,6 +557,276 @@
   }
 }
 
+/* Clickable provenance card for the story signal label. */
+.novel-signal-caption {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  pointer-events: auto !important;
+  cursor: pointer;
+  transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease;
+}
+
+.novel-signal-caption small {
+  width: max-content;
+  color: rgba(202, 235, 249, 0.54);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.novel-signal-caption:hover,
+.novel-signal-caption[aria-expanded="true"] {
+  opacity: 1;
+  filter: brightness(1.12);
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.novel-signal-caption:hover small,
+.novel-signal-caption[aria-expanded="true"] small {
+  color: rgba(221, 248, 255, 0.9);
+  transform: translateX(3px);
+}
+
+.novel-signal-caption:focus-visible {
+  border-radius: 4px;
+  outline: 1px solid rgba(var(--novel-cyan), 0.55);
+  outline-offset: 7px;
+  opacity: 1;
+}
+
+.novel-source-panel {
+  position: absolute;
+  z-index: 14;
+  top: clamp(150px, 18vh, 190px);
+  left: 50%;
+  width: min(580px, calc(100vw - 48px));
+  max-height: min(500px, calc(100vh - 250px));
+  overflow: auto;
+  border: 1px solid rgba(174, 224, 248, 0.34);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(12, 50, 91, 0.7), rgba(3, 19, 48, 0.78) 58%, rgba(2, 11, 31, 0.84)),
+    radial-gradient(circle at 14% 0%, rgba(118, 202, 238, 0.15), transparent 42%);
+  box-shadow:
+    0 28px 90px rgba(0, 5, 24, 0.46),
+    inset 0 1px rgba(230, 248, 255, 0.16),
+    0 0 34px rgba(78, 177, 225, 0.08);
+  -webkit-backdrop-filter: blur(24px) saturate(1.26);
+  backdrop-filter: blur(24px) saturate(1.26);
+  color: rgba(239, 249, 255, 0.92);
+  transform: translateX(-50%);
+  animation: novel-source-panel-in 220ms ease-out both;
+}
+
+.novel-source-panel[hidden] {
+  display: none;
+}
+
+.novel-source-panel::before {
+  position: absolute;
+  top: 0;
+  right: 18%;
+  left: 18%;
+  height: 1px;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(220, 247, 255, 0.8), transparent);
+  box-shadow: 0 0 15px rgba(137, 215, 244, 0.36);
+}
+
+.novel-source-panel header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid rgba(166, 213, 238, 0.14);
+}
+
+.novel-source-panel header > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.novel-source-panel header p {
+  margin: 0;
+  color: rgba(205, 231, 244, 0.6);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  letter-spacing: 0.13em;
+}
+
+.novel-source-kind {
+  padding: 5px 8px;
+  border: 1px solid rgba(143, 231, 215, 0.4);
+  color: #9bead8;
+  background: rgba(4, 31, 45, 0.54);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.novel-source-kind[data-kind="DERIVED"] {
+  border-color: rgba(247, 201, 139, 0.4);
+  color: #f7c98b;
+}
+
+.novel-source-kind[data-kind="SCENARIO"] {
+  border-color: rgba(215, 185, 255, 0.42);
+  color: #d7b9ff;
+}
+
+.novel-source-panel header button {
+  display: grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(184, 226, 246, 0.24);
+  border-radius: 50%;
+  background: rgba(2, 15, 35, 0.42);
+  color: rgba(235, 249, 255, 0.84);
+  font-size: 19px;
+  line-height: 1;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.novel-source-panel header button:hover,
+.novel-source-panel header button:focus-visible {
+  border-color: rgba(203, 242, 255, 0.62);
+  background: rgba(24, 72, 105, 0.54);
+  outline: none;
+  transform: rotate(7deg);
+}
+
+.novel-source-panel-body {
+  padding: 22px 24px 24px;
+}
+
+.novel-source-panel-body h3 {
+  margin: 0 0 12px;
+  color: rgba(248, 253, 255, 0.98);
+  font-family: var(--novel-font);
+  font-size: clamp(17px, 1.35vw, 21px);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1.6;
+  text-shadow: 0 2px 15px rgba(0, 5, 20, 0.8);
+}
+
+.novel-source-panel-body > p {
+  margin: 0;
+  color: rgba(225, 240, 248, 0.76);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.novel-source-panel dl {
+  display: grid;
+  gap: 1px;
+  margin: 18px 0;
+  overflow: hidden;
+  border: 1px solid rgba(154, 209, 236, 0.14);
+  border-radius: 7px;
+  background: rgba(144, 205, 234, 0.12);
+}
+
+.novel-source-panel dl > div {
+  display: grid;
+  grid-template-columns: 108px 1fr;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(2, 16, 39, 0.55);
+}
+
+.novel-source-panel dt,
+.novel-source-panel dd {
+  margin: 0;
+  line-height: 1.65;
+}
+
+.novel-source-panel dt {
+  color: rgba(159, 218, 241, 0.66);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.novel-source-panel dd {
+  color: rgba(234, 246, 251, 0.84);
+  font-size: 12px;
+}
+
+.novel-source-panel-body .novel-source-fiction-note {
+  padding-left: 12px;
+  border-left: 2px solid rgba(178, 132, 220, 0.5);
+  color: rgba(218, 208, 234, 0.64);
+  font-size: 10px;
+  line-height: 1.8;
+}
+
+@keyframes novel-source-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-source-panel {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .novel-signal-caption small {
+    display: none;
+  }
+
+  .novel-source-panel {
+    top: 128px;
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 164px);
+    border-radius: 10px;
+  }
+
+  .novel-source-panel header {
+    gap: 12px;
+    padding: 17px 16px 14px;
+  }
+
+  .novel-source-panel header > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .novel-source-panel-body {
+    padding: 17px 16px 20px;
+  }
+
+  .novel-source-panel dl > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 11px 12px;
+  }
+}
+
 .novel-layer:has(.novel-runtime:not([hidden])) {
   background-position: center, center;
   background-size: cover, cover;
@@ -584,7 +854,7 @@
   transition: opacity 520ms ease;
 }
 
-.novel-layer.is-open .novel-particles { opacity: 0.72; }
+.novel-layer.is-open .novel-particles { opacity: 0.48; }
 
 .novel-veil { z-index: 1; }
 .novel-scanlines { z-index: 2; }
@@ -1605,7 +1875,7 @@ body.novel-open .japan-credits {
     gap: 5px;
   }
 
-  .novel-signal-caption strong { font-size: 10px; line-height: 1.6; }
+  .novel-signal-caption strong { padding-inline: 12px; font-size: 10px; line-height: 1.6; }
   .novel-avatar { top: 34%; right: 12px; width: 150px; opacity: 0.54; }
 
   .novel-character {
@@ -1789,24 +2059,80 @@ body.novel-open .japan-credits {
   height: var(--novel-say-height);
   padding: clamp(46px, 5vh, 62px) var(--novel-dialogue-right) clamp(28px, 3.6vh, 42px);
   overflow: visible;
-  border: 1px solid rgba(210, 235, 248, 0.22);
+  isolation: isolate;
+  border: 1px solid rgba(174, 224, 248, 0.34);
   background:
-    linear-gradient(180deg, rgba(7, 18, 31, 0.62), rgba(2, 8, 19, 0.74)),
-    radial-gradient(ellipse 70% 110% at 50% 100%, rgba(var(--accent-rgb), 0.09), transparent 72%);
-  box-shadow: 0 20px 58px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.045);
-  backdrop-filter: blur(18px) saturate(1.04);
+    radial-gradient(ellipse 82% 150% at 6% -8%, rgba(74, 153, 211, 0.15) 0%, rgba(30, 89, 151, 0.055) 48%, transparent 72%),
+    linear-gradient(135deg, rgba(7, 42, 88, 0.4) 0%, rgba(4, 25, 60, 0.33) 50%, rgba(2, 13, 39, 0.46) 100%);
+  box-shadow:
+    0 22px 64px rgba(0, 5, 24, 0.28),
+    inset 0 1px rgba(224, 244, 255, 0.18),
+    inset 0 -1px rgba(99, 171, 220, 0.06),
+    0 0 34px rgba(72, 158, 218, 0.07);
+  -webkit-backdrop-filter: blur(15px) saturate(1.34);
+  backdrop-filter: blur(15px) saturate(1.34);
   transform: translateX(-50%);
   z-index: 7;
 }
 
 .novel-dialogue::before {
+  z-index: 2;
   top: 27px;
   right: 28px;
   left: 28px;
   width: auto;
   height: 1px;
-  background: linear-gradient(90deg, rgba(var(--novel-cyan), 0.9), rgba(239, 249, 255, 0.24) 44%, transparent);
-  box-shadow: 0 0 14px rgba(151, 192, 224, 0.18);
+  background: linear-gradient(90deg, rgba(var(--novel-cyan), 0.92), rgba(239, 249, 255, 0.42) 38%, rgba(129, 194, 232, 0.12) 72%, transparent);
+  box-shadow: 0 0 16px rgba(151, 206, 236, 0.24);
+}
+
+.novel-dialogue::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 9px 1px at 14% 13%, rgba(231, 250, 255, 0.9), transparent 80%),
+    radial-gradient(ellipse 1px 9px at 14% 13%, rgba(231, 250, 255, 0.82), transparent 80%),
+    radial-gradient(ellipse 7px 1px at 87% 34%, rgba(190, 231, 255, 0.78), transparent 80%),
+    radial-gradient(ellipse 1px 7px at 87% 34%, rgba(190, 231, 255, 0.7), transparent 80%),
+    radial-gradient(ellipse 5px 1px at 70% 80%, rgba(224, 247, 255, 0.68), transparent 80%),
+    radial-gradient(ellipse 1px 5px at 70% 80%, rgba(224, 247, 255, 0.62), transparent 80%),
+    linear-gradient(112deg, transparent 12%, rgba(210, 239, 255, 0.035) 25%, rgba(226, 247, 255, 0.12) 35%, transparent 48%);
+  mix-blend-mode: screen;
+  opacity: 0.78;
+  transform: translateZ(0);
+  animation: novel-glass-shimmer 7s ease-in-out infinite;
+}
+
+.novel-dialogue > * {
+  position: relative;
+  z-index: 1;
+}
+
+.novel-dialogue > .novel-speaker,
+.novel-dialogue > .novel-continue {
+  position: absolute;
+}
+
+@keyframes novel-glass-shimmer {
+  0%, 100% {
+    opacity: 0.58;
+    filter: brightness(0.92);
+  }
+  48% {
+    opacity: 0.9;
+    filter: brightness(1.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-dialogue::after {
+    animation: none;
+    opacity: 0.68;
+  }
 }
 
 .novel-dialogue:focus-visible {
@@ -1815,21 +2141,39 @@ body.novel-open .japan-credits {
 }
 
 .novel-speaker {
-  top: -24px;
-  left: clamp(24px, 3.5vw, 54px);
-  min-width: clamp(170px, 15vw, 260px);
-  min-height: clamp(42px, 5vh, 54px);
-  padding: 0 clamp(22px, 2vw, 34px);
-  border: 1px solid rgba(239, 249, 255, 0.36);
-  border-radius: 999px;
+  top: -14px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: clamp(220px, 22vw, 320px);
+  min-height: clamp(38px, 4vh, 42px);
+  padding: 0 clamp(14px, 1.2vw, 20px);
+  border: 0;
+  border-top: 1px solid rgba(205, 239, 255, 0.42);
+  border-left: 1px solid rgba(var(--novel-cyan), 0.68);
+  border-radius: 0 14px 0 0;
   background:
-    linear-gradient(180deg, rgba(19, 28, 43, 0.93), rgba(5, 10, 21, 0.82)),
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.1), transparent 58%);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3), inset 0 1px rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  font-size: clamp(18px, 1.5vw, 25px);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+    linear-gradient(112deg, rgba(18, 71, 116, 0.34), rgba(5, 32, 70, 0.26) 72%, rgba(3, 22, 52, 0.08));
+  box-shadow:
+    inset 0 1px rgba(241, 252, 255, 0.1),
+    8px 10px 28px rgba(0, 12, 35, 0.12);
+  -webkit-backdrop-filter: blur(11px) saturate(1.14);
+  backdrop-filter: blur(11px) saturate(1.14);
+  color: rgba(245, 252, 255, 0.94);
+  font-size: clamp(15px, 1vw, 18px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-shadow: 0 2px 12px rgba(0, 8, 27, 0.7);
+}
+
+.novel-speaker::before {
+  display: none;
+}
+
+.novel-speaker::after {
+  display: none;
 }
 
 .novel-speaker:empty {
@@ -1847,23 +2191,41 @@ body.novel-open .japan-credits {
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.88);
 }
 
-.novel-text .novel-glyph {
-  display: inline-block;
-  opacity: 0;
-  filter: blur(3px);
-  transform: translate3d(0.12em, 0.08em, 0);
-  will-change: opacity, filter, transform;
+.novel-text.is-preparing {
+  visibility: hidden;
 }
 
-.novel-text.is-revealing .novel-glyph {
-  animation: novel-glyph-flow 280ms ease-out var(--novel-glyph-delay) forwards;
+.novel-line {
+  position: relative;
+  display: block;
+  width: 100%;
+  white-space: nowrap;
 }
 
-@keyframes novel-glyph-flow {
+.novel-line-layout {
+  visibility: hidden;
+}
+
+.novel-line-reveal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: nowrap;
+  clip-path: inset(-0.15em 100% -0.15em 0);
+  will-change: clip-path;
+}
+
+.novel-text.is-revealing .novel-line-reveal {
+  animation: novel-line-reveal var(--novel-line-duration) steps(var(--novel-line-steps), end) var(--novel-line-delay) both;
+}
+
+.novel-text.is-revealed .novel-line-reveal {
+  clip-path: inset(-0.15em 0 -0.15em 0);
+}
+
+@keyframes novel-line-reveal {
   to {
-    opacity: 1;
-    filter: blur(0);
-    transform: translate3d(0, 0, 0);
+    clip-path: inset(-0.15em 0 -0.15em 0);
   }
 }
 
@@ -1879,24 +2241,187 @@ body.novel-open .japan-credits {
 }
 
 .novel-signal-caption {
-  top: clamp(80px, 10vh, 118px);
+  top: clamp(28px, 4.5vh, 48px);
   left: 50%;
-  gap: 7px;
-  max-width: min(460px, 46vw);
-  opacity: 0.72;
+  isolation: isolate;
+  gap: 6px;
+  width: min(640px, 60vw);
+  max-width: calc(100vw - 180px);
+  padding: 11px 60px 10px;
+  overflow: visible;
+  background: radial-gradient(ellipse 62% 115% at 50% 50%, rgba(5, 31, 64, 0.2), transparent 72%);
+  opacity: 0.94;
   transform: translateX(-50%);
 }
 
+.novel-signal-caption::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  content: "";
+  border-top: 1px solid rgba(164, 230, 246, 0.34);
+  border-bottom: 1px solid rgba(112, 195, 224, 0.16);
+  background: linear-gradient(90deg, transparent, rgba(5, 31, 64, 0.14) 22%, rgba(13, 55, 92, 0.2) 50%, rgba(5, 31, 64, 0.14) 78%, transparent);
+  box-shadow: inset 0 1px rgba(231, 250, 255, 0.04);
+  opacity: 0.7;
+  transform: scaleX(1);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.novel-signal-caption::after {
+  position: absolute;
+  z-index: 2;
+  top: -6px;
+  left: 10%;
+  content: "✦";
+  color: rgba(225, 250, 255, 0.94);
+  font-family: Georgia, serif;
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0;
+  text-shadow:
+    0 0 7px rgba(209, 246, 255, 0.95),
+    0 0 18px rgba(96, 206, 239, 0.82);
+  pointer-events: none;
+}
+
+.novel-signal-caption > * {
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+}
+
 .novel-signal-caption span {
-  border: 0;
+  border: 1px solid rgba(var(--novel-cyan), 0.24);
   border-left: 2px solid currentColor;
-  background: rgba(1, 7, 16, 0.38);
+  background: rgba(2, 19, 40, 0.54);
+  box-shadow: inset 0 1px rgba(225, 249, 255, 0.06), 0 0 18px rgba(var(--novel-cyan), 0.06);
   font-size: 8px;
 }
 
 .novel-signal-caption strong {
+  box-sizing: border-box;
+  padding-inline: clamp(16px, 1.8vw, 26px);
+  color: rgba(231, 248, 252, 0.78);
   font-size: 11px;
+  letter-spacing: 0.12em;
   line-height: 1.55;
+  text-shadow: 0 2px 15px rgba(0, 8, 26, 0.84), 0 0 18px rgba(151, 222, 241, 0.12);
+}
+
+.novel-signal-caption small {
+  color: rgba(193, 228, 242, 0.62);
+}
+
+.novel-signal-caption:focus-visible {
+  outline: none;
+}
+
+.novel-signal-caption:focus-visible::before,
+.novel-signal-caption:hover::before,
+.novel-signal-caption[aria-expanded="true"]::before {
+  border-top-color: rgba(198, 242, 252, 0.6);
+  opacity: 1;
+}
+
+.novel-signal-caption.is-signal-reveal::before {
+  animation: novel-signal-lines-in 960ms cubic-bezier(0.16, 0.72, 0.22, 1) both;
+}
+
+.novel-signal-caption.is-signal-reveal::after {
+  animation: novel-signal-glint 1.05s cubic-bezier(0.2, 0.66, 0.3, 1) both;
+}
+
+.novel-signal-caption.is-signal-reveal span {
+  animation: novel-signal-badge-in 520ms 150ms ease-out both;
+}
+
+.novel-signal-caption.is-signal-reveal strong {
+  animation: novel-signal-title-in 720ms 270ms cubic-bezier(0.16, 0.72, 0.22, 1) both;
+}
+
+.novel-signal-caption.is-signal-reveal small {
+  animation: novel-signal-detail-in 420ms 620ms ease-out both;
+}
+
+@keyframes novel-signal-lines-in {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.02);
+  }
+  28% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes novel-signal-glint {
+  0% {
+    left: 10%;
+    opacity: 0;
+    transform: scale(0.55) rotate(0deg);
+  }
+  18%, 78% {
+    opacity: 1;
+  }
+  100% {
+    left: 88%;
+    opacity: 0;
+    transform: scale(1.12) rotate(90deg);
+  }
+}
+
+@keyframes novel-signal-badge-in {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translateY(5px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes novel-signal-title-in {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+    letter-spacing: 0.22em;
+    clip-path: inset(0 50% 0 50%);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    letter-spacing: 0.12em;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes novel-signal-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-signal-caption.is-signal-reveal::before,
+  .novel-signal-caption.is-signal-reveal::after,
+  .novel-signal-caption.is-signal-reveal span,
+  .novel-signal-caption.is-signal-reveal strong,
+  .novel-signal-caption.is-signal-reveal small {
+    animation: none;
+  }
 }
 
 .novel-topbar {
@@ -2019,12 +2544,13 @@ body.novel-open .japan-credits {
   }
 
   .novel-speaker {
-    top: -20px;
-    left: 20px;
-    min-width: 142px;
-    min-height: 40px;
-    padding: 0 20px;
-    font-size: 15px;
+    top: -12px;
+    left: 0;
+    min-width: clamp(184px, 58vw, 260px);
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 0 11px 0 0;
+    font-size: 13px;
   }
 
   .novel-text {
@@ -2033,11 +2559,15 @@ body.novel-open .japan-credits {
   }
 
   .novel-signal-caption {
-    top: 68px;
+    top: 18px;
     left: 50%;
-    max-width: calc(100vw - 100px);
+    width: calc(100vw - 88px);
+    max-width: calc(100vw - 88px);
+    padding: 9px 20px 8px;
     transform: translateX(-50%);
   }
+
+  .novel-signal-caption strong { padding-inline: 12px; }
 
   .novel-avatar {
     top: 35%;
@@ -2159,5 +2689,574 @@ body.novel-open .japan-credits {
     padding: 9px 11px;
     font-size: 11px;
     line-height: 1.7;
+  }
+}
+
+/* Keep the story's guide and location visible behind the integrated GX panel. */
+body.gx-story-open .novel-topbar nav,
+body.gx-story-open .novel-footer,
+body.gx-story-open .novel-chapter-card {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.gx-story-open .novel-topbar > div {
+  opacity: 0.52;
+}
+
+body.gx-story-open .novel-cast {
+  z-index: 5;
+}
+
+body.gx-story-open .novel-character,
+body.gx-story-open .novel-character--sora,
+body.gx-story-open .novel-character--minamo {
+  top: auto;
+  right: clamp(-92px, -3vw, -36px);
+  bottom: clamp(-70px, -5vh, -32px);
+  left: auto;
+  width: clamp(560px, 41vw, 790px);
+  height: min(94vh, 900px);
+  opacity: 0;
+  filter: saturate(0.86) brightness(0.9);
+  transform: translate3d(28px, 12px, 0) scale(0.98);
+  transform-origin: 72% 100%;
+  transition:
+    opacity 440ms ease,
+    filter 440ms ease,
+    transform 520ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+body.gx-story-open .novel-character .novel-character-portrait,
+body.gx-story-open .novel-character.novel-character--sora .novel-character-portrait,
+body.gx-story-open .novel-character.novel-character--minamo .novel-character-portrait {
+  background-position: 50% 100%;
+  background-size: contain;
+  filter:
+    drop-shadow(0 28px 38px rgba(0, 13, 28, 0.24))
+    drop-shadow(0 0 26px rgba(155, 221, 231, 0.08));
+  -webkit-mask-image: linear-gradient(180deg, #000 0 86%, rgba(0, 0, 0, 0.84) 93%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0 86%, rgba(0, 0, 0, 0.84) 93%, transparent 100%);
+}
+
+body.gx-story-open .novel-cast[data-speaker="sora"] .novel-character--sora,
+body.gx-story-open .novel-cast[data-speaker="minamo"] .novel-character--minamo {
+  z-index: 2;
+  opacity: 0.96;
+  filter: saturate(0.98) brightness(1.04);
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+body.gx-story-open .novel-cast[data-speaker="sora"] .novel-character--minamo,
+body.gx-story-open .novel-cast[data-speaker="minamo"] .novel-character--sora {
+  opacity: 0;
+  transform: translate3d(46px, 14px, 0) scale(0.96);
+}
+
+@media (max-width: 900px) {
+  body.gx-story-open .novel-character,
+  body.gx-story-open .novel-character--sora,
+  body.gx-story-open .novel-character--minamo {
+    top: 52px;
+    right: -15vw;
+    bottom: auto;
+    width: min(72vw, 560px);
+    height: min(58vh, 540px);
+    transform: translate3d(22px, 0, 0) scale(0.98);
+  }
+
+  body.gx-story-open .novel-character .novel-character-portrait,
+  body.gx-story-open .novel-character.novel-character--sora .novel-character-portrait,
+  body.gx-story-open .novel-character.novel-character--minamo .novel-character-portrait {
+    opacity: 0.82;
+    -webkit-mask-image:
+      linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.65) 24%, #000 58%, #000 100%),
+      linear-gradient(180deg, #000 0 70%, transparent 100%);
+    mask-image:
+      linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.65) 24%, #000 58%, #000 100%),
+      linear-gradient(180deg, #000 0 70%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+
+  body.gx-story-open .novel-cast[data-speaker="sora"] .novel-character--sora,
+  body.gx-story-open .novel-cast[data-speaker="minamo"] .novel-character--minamo {
+    opacity: 0.28;
+    filter: saturate(0.78) brightness(1.08);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (max-width: 560px) {
+  body.gx-story-open .novel-character,
+  body.gx-story-open .novel-character--sora,
+  body.gx-story-open .novel-character--minamo {
+    top: 72px;
+    right: -18vw;
+    width: 92vw;
+    height: 52vh;
+  }
+
+  body.gx-story-open .novel-cast[data-speaker="sora"] .novel-character--sora,
+  body.gx-story-open .novel-cast[data-speaker="minamo"] .novel-character--minamo {
+    opacity: 0.32;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.gx-story-open .novel-character,
+  body.gx-story-open .novel-character--sora,
+  body.gx-story-open .novel-character--minamo {
+    transition: opacity 180ms ease;
+    transform: none;
+  }
+}
+
+/* During THE FIRST GX the two guides remain together: Amane reads the record,
+   while Mizuha responds to the change it describes. */
+@media (min-width: 901px) {
+  body.gx-story-open .novel-cast .novel-character--sora,
+  body.gx-story-open .novel-cast .novel-character--minamo {
+    top: auto;
+    left: auto;
+    width: clamp(340px, 23vw, 470px);
+    height: min(77vh, 760px);
+    opacity: 0.78 !important;
+    filter: saturate(0.88) brightness(0.96) !important;
+    transform: translate3d(0, 10px, 0) scale(0.985) !important;
+  }
+
+  body.gx-story-open .novel-cast .novel-character--sora {
+    z-index: 1;
+    right: clamp(205px, 13vw, 280px);
+    bottom: clamp(-74px, -5vh, -40px);
+  }
+
+  body.gx-story-open .novel-cast .novel-character--minamo {
+    z-index: 2;
+    right: clamp(-52px, -2vw, -20px);
+    bottom: clamp(-62px, -4vh, -34px);
+  }
+
+  body.gx-story-open .novel-cast[data-gx-speaker="sora"] .novel-character--sora,
+  body.gx-story-open .novel-cast[data-gx-speaker="minamo"] .novel-character--minamo {
+    z-index: 3;
+    opacity: 1 !important;
+    filter: saturate(1) brightness(1.04) !important;
+    transform: translate3d(0, 0, 0) scale(1) !important;
+  }
+
+  body.gx-story-open .novel-cast[data-gx-speaker="sora"] .novel-character--minamo,
+  body.gx-story-open .novel-cast[data-gx-speaker="minamo"] .novel-character--sora {
+    opacity: 0.9 !important;
+    filter: saturate(0.9) brightness(0.97) !important;
+  }
+}
+
+/* GX story dialogue: one active guide and one nearby bubble at a time. */
+body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--sora,
+body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--minamo {
+  top: auto;
+  bottom: clamp(-82px, -6vh, -48px);
+  width: clamp(600px, 43vw, 820px);
+  height: min(96vh, 980px);
+  visibility: hidden;
+  opacity: 0 !important;
+  filter: saturate(0.88) brightness(0.94) !important;
+  transform: translate3d(0, 16px, 0) scale(0.965) !important;
+  transition:
+    opacity 360ms ease,
+    filter 420ms ease,
+    transform 480ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    visibility 0s linear 420ms;
+}
+
+body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--sora {
+  right: clamp(-78px, -3vw, -18px);
+  left: auto;
+}
+
+body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--minamo {
+  right: clamp(-78px, -3vw, -18px);
+  left: auto;
+}
+
+body.gx-story-open .novel-cast[data-gx-speaker="sora"] .novel-character--sora,
+body.gx-story-open .novel-cast[data-gx-speaker="minamo"] .novel-character--minamo {
+  z-index: 4;
+  visibility: visible;
+  opacity: 1 !important;
+  filter: saturate(1.02) brightness(1.05) !important;
+  transform: translate3d(0, 0, 0) scale(1) !important;
+  transition-delay: 0s;
+}
+
+body.gx-story-open .novel-cast[data-gx-speaker="sora"] .novel-character--minamo,
+body.gx-story-open .novel-cast[data-gx-speaker="minamo"] .novel-character--sora {
+  visibility: hidden;
+  opacity: 0 !important;
+}
+
+body.gx-story-open .novel-character .novel-character-portrait,
+body.gx-story-open .novel-character.novel-character--sora .novel-character-portrait,
+body.gx-story-open .novel-character.novel-character--minamo .novel-character-portrait {
+  opacity: 1;
+  background-position: 50% 100%;
+  background-size: contain;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 90%, rgba(0, 0, 0, 0.9) 95%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0 90%, rgba(0, 0, 0, 0.9) 95%, transparent 100%);
+}
+
+@media (max-width: 900px) {
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--sora,
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--minamo {
+    top: auto;
+    bottom: -54px;
+    width: min(92vw, 680px);
+    height: min(80vh, 760px);
+  }
+
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--sora {
+    right: -14vw;
+    left: auto;
+  }
+
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--minamo {
+    right: -14vw;
+    left: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--sora,
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--minamo {
+    bottom: -42px;
+    width: min(112vw, 620px);
+    height: 70vh;
+  }
+}
+
+/* Keep the persistent audio control and the novel close action on one line. */
+/* The central scene caption no longer needs a boxed provenance badge. */
+.novel-signal-caption > #novel-data-kind {
+  display: none;
+}
+
+.novel-signal-caption {
+  gap: 4px;
+}
+
+body.novel-open .gaia-audio-dock {
+  top: max(18px, env(safe-area-inset-top));
+  right: max(72px, calc(env(safe-area-inset-right) + 72px));
+}
+
+body.novel-open .novel-topbar #novel-close-button {
+  z-index: 521;
+  top: max(18px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  padding: 0;
+}
+
+@media (max-width: 720px) {
+  body.novel-open .gaia-audio-dock {
+    top: max(12px, env(safe-area-inset-top));
+    right: max(66px, calc(env(safe-area-inset-right) + 66px));
+  }
+
+  body.novel-open .novel-topbar #novel-close-button {
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+  }
+}
+
+/* Sakuya is an absent presence, not a flower icon. Konohanasakuya is carried
+   through the brief act of blooming, a volcanic ridge, and five dissolving
+   membranes of memory rather than a literal corolla. */
+.novel-sakuya-thought {
+  position: absolute;
+  inset: -12%;
+  display: none;
+  pointer-events: none;
+  transform-origin: 50% 52%;
+}
+
+.novel-sakuya-thought svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.novel-avatar[data-speaker="sakuya"] {
+  --novel-cyan: 255, 215, 231;
+  top: 43%;
+  right: clamp(72px, 11vw, 190px);
+  width: clamp(180px, 22vw, 310px);
+  opacity: 0.92;
+  filter:
+    drop-shadow(0 0 11px rgba(255, 246, 224, 0.42))
+    drop-shadow(0 0 34px rgba(255, 176, 215, 0.19))
+    drop-shadow(0 0 68px rgba(121, 224, 255, 0.16));
+  animation: novel-sakuya-float 8s ease-in-out infinite;
+}
+
+/* Chapter context is a transition cue, not a persistent HUD. */
+.novel-topbar > div {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-9px) scale(0.985);
+}
+
+.novel-layer.is-chapter-transition .novel-topbar > div {
+  visibility: visible;
+  animation: novel-context-transition 4.93s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes novel-context-transition {
+  0% {
+    opacity: 0;
+    filter: blur(7px);
+    transform: translateY(-9px) scale(0.985);
+  }
+  9%, 82% {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(-5px) scale(1.01);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-layer.is-chapter-transition .novel-topbar > div {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+.novel-avatar[data-speaker="sakuya"] .novel-avatar-rings,
+.novel-avatar[data-speaker="sakuya"] .novel-avatar-core {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.novel-avatar[data-speaker="sakuya"] .novel-sakuya-thought {
+  display: block;
+}
+
+.novel-sakuya-aura {
+  transform-origin: 120px 120px;
+  animation: novel-sakuya-aura 5.6s ease-in-out infinite;
+}
+
+.novel-sakuya-traces {
+  stroke-width: 0.72;
+  opacity: 0.46;
+  transform-origin: 120px 120px;
+  animation: novel-sakuya-veil 13s ease-in-out infinite alternate;
+}
+
+.novel-sakuya-traces path:nth-child(2) { opacity: 0.62; }
+.novel-sakuya-traces path:nth-child(3) { opacity: 0.38; }
+
+.novel-sakuya-echo {
+  stroke-width: 0.62;
+  opacity: 0.2;
+  transform-origin: 120px 120px;
+  animation: novel-sakuya-echo 7.4s ease-in-out infinite;
+}
+
+.novel-sakuya-fragments {
+  stroke-width: 0.66;
+  stroke-opacity: 0.48;
+  opacity: 0.66;
+  transform-origin: 120px 120px;
+  animation: novel-sakuya-memory-shift 6.2s ease-in-out infinite;
+}
+
+.novel-sakuya-fragments path:nth-child(2),
+.novel-sakuya-fragments path:nth-child(5) { opacity: 0.58; }
+
+.novel-sakuya-fragments path:nth-child(3) { opacity: 0.38; }
+.novel-sakuya-fragments path:nth-child(4) { opacity: 0.72; }
+
+.novel-sakuya-core {
+  transform-origin: 120px 120px;
+  animation: novel-sakuya-core 4.8s ease-in-out infinite;
+}
+
+.novel-sakuya-axis {
+  stroke-width: 0.68;
+  opacity: 0.68;
+}
+
+.novel-sakuya-motes circle {
+  opacity: 0.24;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: novel-sakuya-mote 4.6s ease-in-out infinite;
+}
+
+.novel-sakuya-motes circle:nth-child(2n) { animation-delay: -1.7s; }
+.novel-sakuya-motes circle:nth-child(3n) { animation-delay: -3.1s; }
+
+.novel-sakuya-drift {
+  opacity: 0.38;
+  transform-origin: 120px 120px;
+  animation: novel-sakuya-drift 9s ease-in-out infinite alternate;
+}
+
+@keyframes novel-sakuya-float {
+  0%, 100% { transform: translateY(-55%) rotate(-1deg) scale(0.98); }
+  50% { transform: translateY(calc(-55% - 7px)) rotate(1.2deg) scale(1.015); }
+}
+
+@keyframes novel-sakuya-aura {
+  0%, 100% { opacity: 0.52; transform: scale(0.88); }
+  50% { opacity: 0.92; transform: scale(1.08); }
+}
+
+@keyframes novel-sakuya-veil {
+  0% { opacity: 0.28; transform: rotate(-5deg) scale(0.95); }
+  48% { opacity: 0.55; }
+  100% { opacity: 0.36; transform: rotate(7deg) scale(1.04); }
+}
+
+@keyframes novel-sakuya-echo {
+  0%, 100% { opacity: 0.1; transform: rotate(-3deg) scale(0.97); }
+  50% { opacity: 0.27; transform: rotate(4deg) scale(1.1); }
+}
+
+@keyframes novel-sakuya-memory-shift {
+  0%, 100% { opacity: 0.48; transform: translate(-2px, 3px) scale(0.98); }
+  50% { opacity: 0.74; transform: translate(2px, -3px) scale(1.015); }
+}
+
+@keyframes novel-sakuya-core {
+  0%, 100% { opacity: 0.7; transform: translateY(2px) scale(0.9); }
+  42% { opacity: 1; transform: translateY(-2px) scale(1.08); }
+  58% { opacity: 0.88; transform: translateY(0) scale(1); }
+}
+
+@keyframes novel-sakuya-mote {
+  0%, 100% { opacity: 0.16; transform: translate(0, 2px) scale(0.7); }
+  48% { opacity: 0.9; transform: translate(1px, -3px) scale(1.24); }
+}
+
+@keyframes novel-sakuya-drift {
+  0% { opacity: 0.18; transform: translate(-2px, 4px) rotate(-2deg); }
+  100% { opacity: 0.48; transform: translate(5px, -8px) rotate(4deg); }
+}
+
+@media (max-width: 720px) {
+  .novel-avatar[data-speaker="sakuya"] {
+    top: 36%;
+    right: clamp(56px, 18vw, 120px);
+    width: clamp(168px, 39vw, 214px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-avatar[data-speaker="sakuya"],
+  .novel-sakuya-aura,
+  .novel-sakuya-traces,
+  .novel-sakuya-echo,
+  .novel-sakuya-fragments,
+  .novel-sakuya-core,
+  .novel-sakuya-motes circle,
+  .novel-sakuya-drift {
+    animation: none;
+  }
+}
+
+/* Visual-novel conversation framing: favor the face and upper body over a
+   character-sheet view. GX has its own two-guide composition and is excluded. */
+body:not(.gx-story-open) .novel-character,
+body:not(.gx-story-open) .novel-character--sora,
+body:not(.gx-story-open) .novel-character--minamo {
+  top: clamp(38px, 7vh, 84px);
+  bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) - 28px);
+  height: auto;
+}
+
+body:not(.gx-story-open) .novel-character.novel-character--sora .novel-character-portrait,
+body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-character-portrait {
+  background-position: 50% 0;
+  background-size: auto clamp(960px, 190vh, 2100px);
+}
+
+/* E.V.E.S. route choices must stay readable over bright sky and architecture. */
+.novel-choices button {
+  border-color: rgba(142, 235, 220, 0.58);
+  background:
+    linear-gradient(100deg, rgba(2, 18, 31, 0.94), rgba(3, 24, 36, 0.86) 58%, rgba(5, 30, 40, 0.76)),
+    rgba(2, 14, 25, 0.88);
+  box-shadow:
+    0 18px 48px rgba(0, 10, 20, 0.42),
+    inset 0 1px rgba(238, 255, 252, 0.09),
+    inset 3px 0 rgba(var(--novel-cyan), 0.16);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08) brightness(0.72);
+  backdrop-filter: blur(18px) saturate(1.08) brightness(0.72);
+}
+
+.novel-choices button::before {
+  color: rgba(164, 255, 237, 0.96);
+  text-shadow: 0 0 14px rgba(112, 238, 218, 0.5);
+}
+
+.novel-choices button > span {
+  color: rgba(151, 247, 226, 0.94);
+  font-size: clamp(10px, 0.66vw, 12px);
+  text-shadow: 0 1px 7px rgba(0, 6, 14, 0.92);
+}
+
+.novel-choices button > strong {
+  color: rgba(249, 255, 253, 0.99);
+  font-weight: 600;
+  text-shadow: 0 2px 10px rgba(0, 5, 12, 0.96);
+}
+
+.novel-choices button > small {
+  color: rgba(226, 247, 244, 0.8);
+  font-size: clamp(10px, 0.68vw, 12px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 7px rgba(0, 5, 12, 0.95);
+}
+
+.novel-choices button:hover,
+.novel-choices button:focus-visible {
+  border-color: rgba(177, 255, 239, 0.88);
+  background:
+    linear-gradient(100deg, rgba(5, 35, 46, 0.96), rgba(8, 49, 57, 0.9) 58%, rgba(12, 54, 61, 0.82)),
+    rgba(3, 24, 34, 0.92);
+}
+
+@media (max-width: 720px) {
+  body:not(.gx-story-open) .novel-character,
+  body:not(.gx-story-open) .novel-character--sora,
+  body:not(.gx-story-open) .novel-character--minamo {
+    top: clamp(70px, 11vh, 104px);
+    bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) - 22px);
+    height: auto;
+  }
+
+  body:not(.gx-story-open) .novel-character.novel-character--sora .novel-character-portrait,
+  body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-character-portrait {
+    background-size: auto clamp(840px, 186vh, 1420px);
   }
 }

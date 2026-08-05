@@ -4,12 +4,16 @@
   const layer = document.querySelector("#gx-layer");
   const canvas = document.querySelector("#gx-canvas");
   const openButton = document.querySelector("#intro-gx-feature");
+  const storyBackdrop = document.querySelector("#gx-story-backdrop");
   if (!layer || !canvas || !openButton) return;
 
-  const context = canvas.getContext("2d", { alpha: false });
+  const context = canvas.getContext("2d", { alpha: true });
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const CYANOBACTERIA_TARGET_CELLS = 28;
   const ERA_TRANSITION_MS = reducedMotion ? 120 : 1900;
+  const STORY_LINE_HOLD_MS = 4600;
+  const TITLE_TRANSITION_SWAP_MS = 280;
+  const TITLE_TRANSITION_MS = 940;
   const PHASE = Object.freeze({
     HADEAN: 0,
     ARCHEAN: 1,
@@ -20,6 +24,16 @@
     ANTHROPOCENE: 6,
     GX: 7,
   });
+  const GX_CHAPTER_TITLES = Object.freeze([
+    "THE FIRST GX",
+    "THE SECOND GX",
+    "THE THIRD GX",
+    "THE FOURTH GX",
+    "THE FIFTH GX",
+    "THE SIXTH GX",
+    "THE SEVENTH GX",
+    "THE UNWRITTEN GX",
+  ]);
   const ERA_YEARS_BEFORE_PRESENT = {
     hadean: 4_600_000_000,
     "archean-life": 4_000_000_000,
@@ -33,9 +47,12 @@
   const numberFormatter = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 0 });
   const elements = {
     close: layer.querySelector("#gx-close"),
+    exhibitTitle: layer.querySelector("#gx-title"),
     loading: layer.querySelector("#gx-loading"),
     timePanel: layer.querySelector(".gx-time"),
+    timeKicker: layer.querySelector(".gx-time-kicker"),
     time: layer.querySelector("#gx-time-value"),
+    timeSuffix: layer.querySelector(".gx-time-number small"),
     timeContext: layer.querySelector("#gx-time-context"),
     kind: layer.querySelector("#gx-kind"),
     index: layer.querySelector("#gx-phase-index"),
@@ -46,10 +63,13 @@
     effect: layer.querySelector("#gx-effect"),
     next: layer.querySelector("#gx-next"),
     eraProgress: layer.querySelector("#gx-era-progress"),
+    eraProgressLabel: layer.querySelector("#gx-era-progress-label"),
     eraProgressValue: layer.querySelector("#gx-era-progress-value"),
     eraProgressBar: layer.querySelector("#gx-era-progress-bar"),
     eraProgressCopy: layer.querySelector("#gx-era-progress-copy"),
     eraTransition: layer.querySelector("#gx-era-transition"),
+    eraTransitionLabel: layer.querySelector("#gx-era-transition-label"),
+    eraTransitionTitle: layer.querySelector("#gx-era-transition-title"),
     restart: layer.querySelector("#gx-restart"),
     data: layer.querySelector("#gx-data"),
     dataPanel: layer.querySelector("#gx-data-panel"),
@@ -58,6 +78,9 @@
     dataDate: layer.querySelector("#gx-data-date"),
     sourceList: layer.querySelector("#gx-source-list"),
     nav: layer.querySelector("#gx-phase-nav"),
+    storyDialogue: document.querySelector("#gx-story-dialogue"),
+    storyBubbleFirst: document.querySelector("#gx-story-bubble-first"),
+    storyBubbleSecond: document.querySelector("#gx-story-bubble-second"),
   };
 
   const FALLBACK = {
@@ -76,6 +99,41 @@
     sources: [],
   };
 
+  const STORY_CONVERSATIONS = [
+    [
+      { speaker: "minamo", name: "ミズハ / FEEL", expression: "calm", text: "ええ、ジルコンですわ。岩石より古い結晶が、水の気配を残していますの。" },
+      { speaker: "sora", name: "アマネ / MEASURE", expression: "soft", text: "可能性としてね。記録の外まで言い切るのは、やめてね。" },
+    ],
+    [
+      { speaker: "minamo", name: "ミズハ / FEEL", expression: "teasing", text: "小さな生命が海の景色を変え、やがて大気まで作り替える。大仕事ですわ。" },
+      { speaker: "sora", name: "アマネ / MEASURE", expression: "calm", text: "積み重なると、大気まで変わる。やってんね。" },
+    ],
+    [
+      { speaker: "sora", name: "アマネ / MEASURE", expression: "calm", text: "酸素が鉄と結びついて、赤い層になった。おるなあ。" },
+      { speaker: "minamo", name: "ミズハ / FEEL", expression: "teasing", text: "ええ。生命の呼吸が、地球の色として残ったんですの。" },
+    ],
+    [
+      { speaker: "minamo", name: "ミズハ / FEEL", expression: "soft", text: "森が受け取った光は、炭素の時間へ姿を変え、地中へ渡されますの。" },
+      { speaker: "sora", name: "アマネ / MEASURE", expression: "calm", text: "固定された時間が、石炭層に残る。あるんだ。" },
+    ],
+    [
+      { speaker: "sora", name: "アマネ / MEASURE", expression: "worried", text: "薄い境界に、急激な変化が刻まれてる。" },
+      { speaker: "minamo", name: "ミズハ / FEEL", expression: "worried", text: "ええ。一日の出来事が、次の生命の世界を開いてしまいました。" },
+    ],
+    [
+      { speaker: "minamo", name: "ミズハ / FEEL", expression: "calm", text: "氷も花粉も、気候の往復を別々の方法で覚えていますの。" },
+      { speaker: "sora", name: "アマネ / MEASURE", expression: "soft", text: "重ねると、変化の幅が見える。記録、ちゃんとおるなあ。" },
+    ],
+    [
+      { speaker: "sora", name: "アマネ / MEASURE", expression: "worried", text: "都市の材料まで、未来の地層に残り始めてる。やってんね。" },
+      { speaker: "minamo", name: "ミズハ / FEEL", expression: "worried", text: "ええ。ほいじゃ、何を残すかは今から選び直せますわ。" },
+    ],
+    [
+      { speaker: "minamo", name: "ミズハ / FEEL", expression: "soft", text: "次の地層は、まだ執筆途中ですのね。余韻です。" },
+      { speaker: "sora", name: "アマネ / MEASURE", expression: "soft", text: "ええ。まだ途中。観測して、選び直せるね。" },
+    ],
+  ];
+
   const themes = [
     { top: [15, 8, 9], bottom: [34, 19, 18], glow: [244, 153, 91] },
     { top: [2, 16, 22], bottom: [4, 43, 43], glow: [102, 236, 190] },
@@ -85,6 +143,65 @@
     { top: [17, 54, 72], bottom: [5, 31, 48], glow: [179, 226, 240] },
     { top: [12, 17, 22], bottom: [38, 26, 23], glow: [241, 128, 70] },
     { top: [2, 8, 18], bottom: [4, 20, 38], glow: [109, 197, 222] },
+  ];
+
+  const INTERACTION_STAGES = [
+    {
+      label: "HADEAN / ZIRCON RECORDS",
+      pending: "地球をなぞり、8つの水の記憶を見つけてください。",
+      complete: "水の記憶がそろいました。最初の生命へ移ります。",
+      transition: "HADEAN → ARCHEAN",
+      title: "水の記憶から、最初の生命へ。",
+    },
+    {
+      label: "CYANOBACTERIA / OCEAN COVERAGE",
+      pending: "地球の海をなぞり、生命で満たしてください。",
+      complete: "海が生命で満ちました。酸素が次の時代をひらきます。",
+      transition: "ARCHEAN → PROTEROZOIC",
+      title: "生命の酸素が、岩石の色を変える。",
+    },
+    {
+      label: "OXYGEN / IRON OXIDATION",
+      pending: "海をなぞり、溶けている鉄を酸化させてください。",
+      complete: "鉄の酸化が完了しました。陸上の生命圏へ移ります。",
+      transition: "PROTEROZOIC → PALEOZOIC",
+      title: "蓄積した酸素が、陸上の生命圏をひらく。",
+    },
+    {
+      label: "CARBON / BURIAL RECORD",
+      pending: "湿地をなぞり、8つの炭素層を地中へ埋めてください。",
+      complete: "炭素が地中へ渡されました。次の生命圏へ移ります。",
+      transition: "PALEOZOIC → MESOZOIC",
+      title: "埋められた炭素の上に、新しい生命圏が広がる。",
+    },
+    {
+      label: "K–PG / GLOBAL BOUNDARY",
+      pending: "地球の4地点へ触れ、同じ境界時刻を結んでください。",
+      complete: "境界が地球を一周しました。次の時代へ移ります。",
+      transition: "MESOZOIC → CENOZOIC",
+      title: "ひとつの境界を越え、生命の配置が変わる。",
+    },
+    {
+      label: "CLIMATE / MULTI-PROXY ARCHIVE",
+      pending: "地球を上下になぞり、9つの気候記録を重ねてください。",
+      complete: "異なる記録がひとつの気候史を描きました。",
+      transition: "CENOZOIC → ANTHROPOCENE",
+      title: "気候の記録が、人間の時代へつながる。",
+    },
+    {
+      label: "ANTHROPOCENE / SIGNAL DENSITY",
+      pending: "都市をなぞり、人間活動の痕跡を地層へ重ねてください。",
+      complete: "人間の痕跡が地層へ刻まれました。未来へ移ります。",
+      transition: "ANTHROPOCENE → GX",
+      title: "刻んだ痕跡から、選び直す未来へ。",
+    },
+    {
+      label: "GAIA / MUTUAL RESONANCE",
+      pending: "地球へ大きな円を描き、共鳴を100%まで高めてください。",
+      complete: "地球と人間の共鳴が、次の物語へつながります。",
+      transition: "GX → STORY",
+      title: "未完の未来を、物語へ持ち帰る。",
+    },
   ];
 
   let exhibit = FALLBACK;
@@ -109,7 +226,12 @@
   let gaiaSpinVelocity = 0;
   let transcendence = 0;
   let gaiaOrbitPhase = 0;
+  let gaiaDragGlow = 0;
+  let gaiaGlowX = 0.6;
+  let gaiaGlowY = 0.5;
   let eraTransitionTimer = 0;
+  let storyLineTimer = 0;
+  let titleTransitionTimer = 0;
   let eraTransitionPending = false;
   let eraCounterFrame = 0;
   let displayedYears = ERA_YEARS_BEFORE_PRESENT.hadean;
@@ -161,10 +283,8 @@
       button.type = "button";
       button.textContent = `${index + 1}: ${phase.title}`;
       button.setAttribute("aria-label", `${index + 1}章 ${phase.title}`);
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        setPhase(index);
-      });
+      button.disabled = true;
+      button.tabIndex = -1;
       elements.nav.append(button);
     });
   };
@@ -222,6 +342,9 @@
     gaiaSpinVelocity = 0;
     transcendence = 0;
     gaiaOrbitPhase = 0;
+    gaiaDragGlow = 0;
+    gaiaGlowX = 0.6;
+    gaiaGlowY = 0.5;
     gaiaTrails.length = 0;
     seedWorld();
     setPhase(0);
@@ -230,22 +353,46 @@
   const cyanobacteriaProgress = () => clamp(cyanobacteriaCells.size / CYANOBACTERIA_TARGET_CELLS, 0, 1);
 
   const updateCyanobacteriaProgress = () => {
-    const progress = cyanobacteriaProgress();
+    return cyanobacteriaProgress();
+  };
+
+  const interactionProgress = () => {
+    if (phaseIndex === PHASE.HADEAN) return clamp(lights.length / 8, 0, 1);
+    if (phaseIndex === PHASE.ARCHEAN) return updateCyanobacteriaProgress();
+    if (phaseIndex === PHASE.PROTEROZOIC) return ironCompaction;
+    if (phaseIndex === PHASE.PALEOZOIC) return clamp(coalLayers.length / 8, 0, 1);
+    if (phaseIndex === PHASE.MESOZOIC) return clamp(impactRings.length / 4, 0, 1);
+    if (phaseIndex === PHASE.CENOZOIC) return clamp(climateRecords.length / 9, 0, 1);
+    if (phaseIndex === PHASE.ANTHROPOCENE) return clamp(atmosphericCarbon / 100, 0, 1);
+    if (phaseIndex === PHASE.GX) return transcendence;
+    return 0;
+  };
+
+  const updateInteractionProgress = () => {
+    const stage = INTERACTION_STAGES[phaseIndex] || INTERACTION_STAGES[0];
+    const progress = interactionProgress();
     const percentage = Math.round(progress * 100);
+    elements.eraProgress.hidden = false;
+    elements.eraProgressLabel.textContent = stage.label;
     elements.eraProgressValue.textContent = `${percentage}%`;
     elements.eraProgressBar.style.width = `${percentage}%`;
     elements.eraProgressCopy.textContent = progress >= 1
-      ? "海が生命で満ちました。酸素が鉄と結びつき、次の時代が始まります。"
-      : `地球の海をなぞり、残り${Math.max(0, 100 - percentage)}%を生命で満たしてください。`;
+      ? stage.complete
+      : `${stage.pending}　残り${Math.max(0, 100 - percentage)}%。`;
     return progress;
   };
 
   const beginEraTransition = () => {
-    if (eraTransitionPending || phaseIndex !== PHASE.ARCHEAN) return;
+    if (eraTransitionPending) return;
+    const completedPhase = phaseIndex;
+    const stage = INTERACTION_STAGES[completedPhase] || INTERACTION_STAGES[0];
+    const isFinalPhase = completedPhase === exhibit.phases.length - 1;
     eraTransitionPending = true;
     pointer.active = false;
-    elements.effect.textContent = "海を満たした生命が酸素を放ち、溶けていた鉄を赤い鉱物へ変えています。";
-    elements.eraProgressCopy.textContent = "充足完了。生命の活動が、地球そのものを次の時代へ押し進めます。";
+    elements.eraTransitionLabel.textContent = stage.transition;
+    elements.eraTransitionTitle.textContent = stage.title;
+    elements.effect.textContent = stage.complete;
+    elements.eraProgressCopy.textContent = stage.complete;
     layer.classList.add("is-era-transitioning");
     elements.eraTransition.classList.add("is-visible");
     elements.eraTransition.setAttribute("aria-hidden", "false");
@@ -255,7 +402,9 @@
       elements.eraTransition.classList.remove("is-visible");
       elements.eraTransition.setAttribute("aria-hidden", "true");
       eraTransitionPending = false;
-      setPhase(PHASE.PROTEROZOIC);
+      if (!isOpen || phaseIndex !== completedPhase) return;
+      if (isFinalPhase) closeGX();
+      else setPhase(completedPhase + 1);
     }, ERA_TRANSITION_MS);
   };
 
@@ -307,16 +456,14 @@
     displayedYears = Math.max(0, Math.round(years));
     const formatted = numberFormatter.format(displayedYears);
     elements.time.textContent = formatted;
+    elements.timeKicker.textContent = displayedYears === 0 ? "現在" : "現在からさかのぼる";
+    elements.timeSuffix.textContent = "年前";
     elements.timePanel.dataset.counter = formatted;
     elements.timePanel.setAttribute(
       "aria-label",
-      displayedYears === 0 ? "現在" : `現在まで、あと${formatted}年`,
+      displayedYears === 0 ? "現在" : `${formatted}年前`,
     );
-    if (phase) {
-      elements.timeContext.textContent = displayedYears === 0
-        ? `${phase.time} / 地球誕生から現在まで`
-        : `${phase.time} / 現在からの差`;
-    }
+    if (phase) elements.timeContext.textContent = phase.time;
   };
 
   const animateEraCounter = (targetYears, phase, shouldAnimate) => {
@@ -348,25 +495,131 @@
     eraCounterFrame = requestAnimationFrame(tick);
   };
 
+  const updateStoryConversation = () => {
+    const dialogue = elements.storyDialogue;
+    const bubbles = [elements.storyBubbleFirst, elements.storyBubbleSecond];
+    const cast = document.querySelector(".novel-cast");
+    const show = returnTo === "novel" && isOpen && dialogue && bubbles.every(Boolean);
+
+    window.clearTimeout(storyLineTimer);
+    storyLineTimer = 0;
+
+    if (!show) {
+      dialogue?.classList.remove("is-visible");
+      if (dialogue) dialogue.hidden = true;
+      cast?.removeAttribute("data-gx-speaker");
+      return;
+    }
+
+    const conversation = STORY_CONVERSATIONS[phaseIndex] || STORY_CONVERSATIONS[0];
+    const scheduledPhase = phaseIndex;
+
+    const showLine = (lineIndex) => {
+      const activeLine = conversation[lineIndex] || conversation[0];
+      bubbles.forEach((bubble, index) => {
+        const line = conversation[index];
+        if (!line) {
+          bubble.hidden = true;
+          return;
+        }
+        bubble.dataset.speaker = line.speaker;
+        bubble.querySelector(".gx-story-bubble-speaker").textContent = line.name;
+        bubble.querySelector("p").textContent = line.text;
+        bubble.hidden = index !== lineIndex;
+      });
+
+      const figure = document.querySelector(`#novel-character-${activeLine.speaker}`);
+      if (figure) figure.dataset.expression = activeLine.expression;
+      cast?.setAttribute("data-gx-speaker", activeLine.speaker);
+      dialogue.dataset.speaker = activeLine.speaker;
+      dialogue.dataset.phase = String(phaseIndex);
+
+      const activePortrait = document.querySelector(
+        `#novel-character-${activeLine.speaker} .novel-character-portrait`,
+      );
+      const activeImage = activePortrait ? getComputedStyle(activePortrait).backgroundImage : "";
+      if (activeImage && activeImage !== "none") {
+        layer.style.setProperty("--gx-story-character-image", activeImage);
+        layer.dataset.guideSpeaker = activeLine.speaker;
+      }
+
+      dialogue.hidden = false;
+      dialogue.classList.remove("is-visible");
+      if (reducedMotion) {
+        dialogue.classList.add("is-visible");
+      } else {
+        void dialogue.offsetWidth;
+        requestAnimationFrame(() => dialogue.classList.add("is-visible"));
+      }
+
+      if (lineIndex + 1 < conversation.length) {
+        storyLineTimer = window.setTimeout(() => {
+          if (isOpen && returnTo === "novel" && phaseIndex === scheduledPhase) {
+            showLine(lineIndex + 1);
+          }
+        }, STORY_LINE_HOLD_MS);
+      }
+    };
+
+    showLine(0);
+  };
+
+  const renderChapterTitle = (nextTitle) => {
+    const title = elements.exhibitTitle;
+    const previousTitle = title.dataset.chapterTitle || title.textContent.trim();
+    window.clearTimeout(titleTransitionTimer);
+    titleTransitionTimer = 0;
+    title.dataset.chapterTitle = nextTitle;
+    title.setAttribute("aria-label", nextTitle);
+
+    if (reducedMotion || !previousTitle || previousTitle === nextTitle) {
+      title.classList.remove("is-changing", "is-leaving", "is-entering");
+      title.textContent = nextTitle;
+      return;
+    }
+
+    title.textContent = previousTitle;
+    title.classList.remove("is-changing", "is-leaving", "is-entering");
+    void title.offsetWidth;
+    title.classList.add("is-changing", "is-leaving");
+    titleTransitionTimer = window.setTimeout(() => {
+      if (title.dataset.chapterTitle !== nextTitle) return;
+      title.textContent = nextTitle;
+      title.classList.remove("is-leaving");
+      title.classList.add("is-entering");
+      void title.offsetWidth;
+      titleTransitionTimer = window.setTimeout(() => {
+        titleTransitionTimer = 0;
+        if (title.dataset.chapterTitle !== nextTitle) return;
+        title.classList.remove("is-changing", "is-entering");
+        title.textContent = nextTitle;
+      }, TITLE_TRANSITION_MS - TITLE_TRANSITION_SWAP_MS);
+    }, TITLE_TRANSITION_SWAP_MS);
+  };
+
   const setPhase = (index) => {
     previousPhaseIndex = phaseIndex;
     phaseIndex = (index + exhibit.phases.length) % exhibit.phases.length;
     if (phaseIndex === PHASE.PROTEROZOIC && previousPhaseIndex !== PHASE.PROTEROZOIC) prepareIronTransition();
     const phase = exhibit.phases[phaseIndex];
+    const chapterTitle = GX_CHAPTER_TITLES[phaseIndex] || `THE ${phaseIndex + 1}TH GX`;
     gestureCount = 0;
     const targetYears = ERA_YEARS_BEFORE_PRESENT[phase.id] ?? 0;
     animateEraCounter(targetYears, phase, phaseIndex > previousPhaseIndex);
     elements.kind.textContent = phase.kind;
     elements.kind.dataset.kind = phase.kind;
+    renderChapterTitle(chapterTitle);
+    elements.close.setAttribute(
+      "aria-label",
+      `${chapterTitle}を閉じて${returnTo === "novel" ? "ストーリー" : "入口"}へ戻る`,
+    );
     elements.index.textContent = phase.index;
     elements.title.textContent = phase.title;
     elements.copy.textContent = phase.copy;
     elements.strataMarker.textContent = phase.marker || "—";
     elements.guide.textContent = phase.guide;
-    const isCyanobacteriaEra = phaseIndex === PHASE.ARCHEAN;
-    elements.eraProgress.hidden = !isCyanobacteriaEra;
-    elements.next.hidden = isCyanobacteriaEra;
-    if (isCyanobacteriaEra) updateCyanobacteriaProgress();
+    elements.close.hidden = true;
+    elements.next.hidden = true;
     if (phaseIndex === PHASE.HADEAN) {
       elements.effect.textContent = "地球へ触れると、最初期の環境を伝えるジルコンの光が残ります。岩石より古い結晶が、当時すでに水があった可能性を示します。";
     } else if (phaseIndex === PHASE.ARCHEAN) {
@@ -394,19 +647,18 @@
     } else {
       elements.effect.textContent = "画面へ触れると、この時代に対応した変化が生まれます。";
     }
-    const isFinalPhase = phaseIndex === exhibit.phases.length - 1;
-    elements.next.textContent = isFinalPhase
-      ? `${returnTo === "novel" ? "ストーリーへ戻る" : "入口へ戻る"}　→`
-      : `${phase.action}　→`;
+    updateInteractionProgress();
     [...elements.nav.children].forEach((button, buttonIndex) => {
       button.classList.toggle("is-active", buttonIndex === phaseIndex);
       button.setAttribute("aria-current", buttonIndex === phaseIndex ? "step" : "false");
     });
     layer.dataset.phase = phase.id;
+    updateStoryConversation();
     seedWorld();
   };
 
   const addInteraction = (normalizedX, normalizedY, motion = 0) => {
+    if (eraTransitionPending) return false;
     const x = clamp(normalizedX, 0, 1);
     const y = clamp(normalizedY, 0, 1);
     if (!isPointOnPlanet(x, y, 2)) return false;
@@ -416,7 +668,6 @@
       if (lights.length > 28) lights.shift();
       elements.effect.textContent = `ジルコンの記録 ${lights.length}点。約44億年前の結晶は、初期の地表に液体の水があった可能性を伝えます。`;
     } else if (phaseIndex === PHASE.ARCHEAN) {
-      if (eraTransitionPending) return false;
       for (let index = 0; index < 7; index += 1) {
         const colonyPoint = constrainPointToPlanet(x + random(-0.035, 0.035), y + random(-0.025, 0.025), 12);
         const bubblePoint = constrainPointToPlanet(x + random(-0.025, 0.025), y + random(-0.018, 0.018), 8);
@@ -428,9 +679,8 @@
       const cellX = Math.floor(x * 20);
       const cellY = Math.floor(y * 14);
       cyanobacteriaCells.add(`${cellX}:${cellY}`);
-      const progress = updateCyanobacteriaProgress();
+      const progress = cyanobacteriaProgress();
       elements.effect.textContent = `海の充足率 ${Math.round(progress * 100)}%。光合成で生まれた酸素は、次の時代へ持ち越されます。`;
-      if (progress >= 1) beginEraTransition();
     } else if (phaseIndex === PHASE.PROTEROZOIC) {
       ironCompaction = clamp(ironCompaction + 0.14, 0, 1);
       oxygenReleased = Math.max(0, oxygenReleased - 4);
@@ -475,91 +725,303 @@
       if (nodes.length > 18) nodes.shift();
       gaiaSpinVelocity = clamp(gaiaSpinVelocity + 0.008 + motion * 0.18, 0, 0.16);
       transcendence = clamp(transcendence + 0.028 + motion * 0.45, 0, 1);
+      gaiaGlowX = x;
+      gaiaGlowY = y;
+      gaiaDragGlow = clamp(gaiaDragGlow + 0.16 + motion * 5.5, 0, 1);
       const level = Math.max(1, Math.ceil(transcendence * 5));
       elements.effect.textContent = `共鳴 ${Math.round(transcendence * 100)}% / 次元層 ${level}。${nodes.length}個の人間の光が地球の軌道へ入り、ともに回転しています。`;
     }
+    const progress = updateInteractionProgress();
+    if (progress >= 1) beginEraTransition();
     return true;
   };
 
   const drawBackground = (time) => {
     const theme = themes[phaseIndex];
     const gradient = context.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, rgb(theme.top));
-    gradient.addColorStop(1, rgb(theme.bottom));
+    if (returnTo === "novel") {
+      const storyTop = theme.top.map((value, index) => Math.round(mix(value, [7, 34, 49][index], 0.8)));
+      const storyBottom = theme.bottom.map((value, index) => Math.round(mix(value, [2, 15, 27][index], 0.82)));
+      gradient.addColorStop(0, rgb(storyTop, 0.58));
+      gradient.addColorStop(1, rgb(storyBottom, 0.72));
+    } else {
+      gradient.addColorStop(0, rgb(theme.top));
+      gradient.addColorStop(1, rgb(theme.bottom));
+    }
     context.fillStyle = gradient;
     context.fillRect(0, 0, width, height);
 
-    const glowX = width * (0.74 + Math.sin(time * 0.00008) * 0.015);
+    const glowX = width * ((returnTo === "novel" ? 0.69 : 0.74) + Math.sin(time * 0.00008) * 0.015);
     const glowY = height * 0.42;
     const radial = context.createRadialGradient(glowX, glowY, 0, glowX, glowY, Math.max(width, height) * 0.52);
-    radial.addColorStop(0, rgb(theme.glow, phaseIndex === PHASE.ANTHROPOCENE ? 0.22 : 0.28));
-    radial.addColorStop(0.4, rgb(theme.glow, 0.08));
+    radial.addColorStop(0, rgb(theme.glow, returnTo === "novel" ? 0.16 : phaseIndex === PHASE.ANTHROPOCENE ? 0.22 : 0.28));
+    radial.addColorStop(0.4, rgb(theme.glow, returnTo === "novel" ? 0.05 : 0.08));
     radial.addColorStop(1, rgb(theme.glow, 0));
     context.fillStyle = radial;
     context.fillRect(0, 0, width, height);
   };
 
-  const drawAncientContinents = (centerX, centerY, radius, time) => {
-    const drift = Math.sin(time * 0.00007) * radius * 0.008;
-    const landFill = phaseIndex === PHASE.PROTEROZOIC
-      ? `rgba(${Math.round(mix(92, 143, ironCompaction))},${Math.round(mix(79, 70, ironCompaction))},${Math.round(mix(61, 45, ironCompaction))},.92)`
-      : phaseIndex === PHASE.GX
-        ? `rgba(38,112,129,${0.075 + transcendence * 0.045})`
-      : phaseIndex <= PHASE.ARCHEAN
-      ? "rgba(72,78,67,.88)"
-      : phaseIndex === PHASE.MESOZOIC
-        ? "rgba(91,82,67,.9)"
-        : phaseIndex === PHASE.ANTHROPOCENE
-          ? "rgba(91,96,92,.9)"
-        : "rgba(58,104,82,.88)";
-    const coast = phaseIndex === PHASE.PROTEROZOIC
-      ? "rgba(205,139,101,.46)"
-      : phaseIndex === PHASE.GX
-        ? `rgba(205,246,248,${0.34 + transcendence * 0.22})`
-        : "rgba(165,232,194,.42)";
-    context.fillStyle = landFill;
-    context.strokeStyle = coast;
-    context.lineWidth = phaseIndex === PHASE.GX ? Math.max(0.8, radius * 0.0032) : Math.max(1, radius * 0.006);
+  const CONTINENT_LAYOUTS = {
+    proto: [
+      { x: -0.48, y: -0.27, rx: 0.27, ry: 0.2, rotation: -0.3, seed: 1.1 },
+      { x: 0.25, y: -0.34, rx: 0.35, ry: 0.2, rotation: 0.22, seed: 2.7 },
+      { x: 0.05, y: 0.38, rx: 0.33, ry: 0.18, rotation: -0.08, seed: 4.4 },
+      { x: -0.61, y: 0.2, rx: 0.105, ry: 0.07, rotation: 0.38, seed: 6.2, minor: true },
+      { x: 0.58, y: 0.16, rx: 0.13, ry: 0.075, rotation: -0.26, seed: 7.8, minor: true },
+      { x: 0.42, y: 0.48, rx: 0.08, ry: 0.05, rotation: 0.18, seed: 9.3, minor: true },
+      { x: -0.13, y: -0.02, rx: 0.065, ry: 0.04, rotation: -0.5, seed: 10.9, minor: true },
+    ],
+    proterozoic: [
+      { x: -0.34, y: -0.18, rx: 0.43, ry: 0.3, rotation: -0.12, seed: 1.9 },
+      { x: 0.41, y: -0.25, rx: 0.27, ry: 0.24, rotation: 0.35, seed: 3.6 },
+      { x: 0.12, y: 0.47, rx: 0.38, ry: 0.16, rotation: 0.06, seed: 5.7 },
+      { x: 0.59, y: 0.28, rx: 0.09, ry: 0.055, rotation: -0.2, seed: 8.1, minor: true },
+      { x: -0.65, y: 0.32, rx: 0.08, ry: 0.06, rotation: 0.24, seed: 9.7, minor: true },
+    ],
+    pangaea: [
+      { x: -0.03, y: -0.05, rx: 0.56, ry: 0.53, rotation: -0.22, seed: 2.2 },
+      { x: 0.55, y: -0.48, rx: 0.115, ry: 0.075, rotation: 0.5, seed: 5.4, minor: true },
+      { x: -0.61, y: 0.42, rx: 0.1, ry: 0.065, rotation: -0.3, seed: 7.3, minor: true },
+      { x: 0.55, y: 0.48, rx: 0.075, ry: 0.05, rotation: 0.12, seed: 9.2, minor: true },
+    ],
+    split: [
+      { x: -0.4, y: -0.3, rx: 0.29, ry: 0.25, rotation: -0.24, seed: 1.4 },
+      { x: 0.31, y: -0.37, rx: 0.34, ry: 0.2, rotation: 0.16, seed: 2.9 },
+      { x: -0.2, y: 0.35, rx: 0.2, ry: 0.28, rotation: -0.2, seed: 4.8 },
+      { x: 0.36, y: 0.26, rx: 0.21, ry: 0.24, rotation: 0.28, seed: 6.5 },
+      { x: 0.58, y: 0.53, rx: 0.13, ry: 0.08, rotation: -0.18, seed: 8.7, minor: true },
+      { x: -0.63, y: 0.16, rx: 0.08, ry: 0.055, rotation: 0.45, seed: 10.4, minor: true },
+    ],
+    modern: [
+      { x: -0.43, y: -0.3, rx: 0.27, ry: 0.22, rotation: -0.28, seed: 1.2 },
+      { x: -0.27, y: 0.28, rx: 0.145, ry: 0.3, rotation: -0.25, seed: 2.8 },
+      { x: 0.27, y: -0.32, rx: 0.37, ry: 0.18, rotation: 0.08, seed: 4.3 },
+      { x: 0.15, y: 0.13, rx: 0.17, ry: 0.245, rotation: -0.08, seed: 5.9 },
+      { x: 0.53, y: 0.42, rx: 0.145, ry: 0.095, rotation: -0.2, seed: 7.6 },
+      { x: -0.13, y: -0.59, rx: 0.065, ry: 0.11, rotation: 0.18, seed: 9.1, minor: true },
+      { x: 0, y: 0.69, rx: 0.36, ry: 0.07, rotation: 0, seed: 10.8, minor: true },
+    ],
+  };
 
-    context.beginPath();
-    context.moveTo(centerX - radius * 0.72 + drift, centerY - radius * 0.22);
-    context.bezierCurveTo(centerX - radius * 0.57, centerY - radius * 0.62, centerX - radius * 0.16, centerY - radius * 0.57, centerX - radius * 0.08, centerY - radius * 0.32);
-    context.bezierCurveTo(centerX - radius * 0.2, centerY - radius * 0.12, centerX - radius * 0.07, centerY + radius * 0.02, centerX - radius * 0.33, centerY + radius * 0.12);
-    context.bezierCurveTo(centerX - radius * 0.62, centerY + radius * 0.08, centerX - radius * 0.76, centerY - radius * 0.02, centerX - radius * 0.72 + drift, centerY - radius * 0.22);
-    context.closePath();
-    context.fill();
-    context.stroke();
-
-    context.beginPath();
-    context.moveTo(centerX + radius * 0.12 - drift, centerY - radius * 0.56);
-    context.bezierCurveTo(centerX + radius * 0.5, centerY - radius * 0.65, centerX + radius * 0.76, centerY - radius * 0.36, centerX + radius * 0.68, centerY - radius * 0.06);
-    context.bezierCurveTo(centerX + radius * 0.58, centerY + radius * 0.08, centerX + radius * 0.3, centerY + radius * 0.02, centerX + radius * 0.22, centerY - radius * 0.17);
-    context.bezierCurveTo(centerX + radius * 0.03, centerY - radius * 0.3, centerX + radius * 0.02, centerY - radius * 0.48, centerX + radius * 0.12 - drift, centerY - radius * 0.56);
-    context.closePath();
-    context.fill();
-    context.stroke();
-
-    context.beginPath();
-    context.moveTo(centerX - radius * 0.16, centerY + radius * 0.32);
-    context.bezierCurveTo(centerX + radius * 0.08, centerY + radius * 0.13, centerX + radius * 0.51, centerY + radius * 0.24, centerX + radius * 0.55, centerY + radius * 0.51);
-    context.bezierCurveTo(centerX + radius * 0.34, centerY + radius * 0.75, centerX - radius * 0.08, centerY + radius * 0.72, centerX - radius * 0.29, centerY + radius * 0.53);
-    context.closePath();
-    context.fill();
-    context.stroke();
-
-    context.fillStyle = phaseIndex <= PHASE.PROTEROZOIC
-      ? "rgba(116,88,65,.55)"
-      : phaseIndex === PHASE.GX
-        ? `rgba(205,255,240,${0.09 + transcendence * 0.12})`
-        : "rgba(187,213,166,.2)";
-    for (let index = 0; index < 12; index += 1) {
-      const angle = index * 2.17;
-      const x = centerX + Math.cos(angle) * radius * (0.22 + (index % 4) * 0.12);
-      const y = centerY + Math.sin(angle * 1.19) * radius * 0.42;
-      context.beginPath();
-      context.arc(x, y, radius * 0.018, 0, Math.PI * 2);
-      context.fill();
+  const buildCoastPath = (originX, originY, rx, ry, rotation, seed, minor = false) => {
+    const path = new Path2D();
+    const pointCount = minor ? 22 : 42;
+    const points = [];
+    const cosine = Math.cos(rotation);
+    const sine = Math.sin(rotation);
+    for (let index = 0; index < pointCount; index += 1) {
+      const angle = (index / pointCount) * Math.PI * 2;
+      const coastNoise = Math.sin(angle * 3 + seed) * 0.095
+        + Math.sin(angle * 5 - seed * 0.73) * 0.065
+        + Math.sin(angle * 8 + seed * 1.37) * 0.038
+        + Math.sin(angle * 13 - seed * 0.41) * 0.018;
+      const localX = Math.cos(angle) * rx * (1 + coastNoise);
+      const localY = Math.sin(angle) * ry * (1 + coastNoise * 0.82 + Math.sin(angle * 2 + seed) * 0.035);
+      points.push({
+        x: originX + localX * cosine - localY * sine,
+        y: originY + localX * sine + localY * cosine,
+      });
     }
+    const first = points[0];
+    const last = points[points.length - 1];
+    path.moveTo((first.x + last.x) / 2, (first.y + last.y) / 2);
+    points.forEach((point, index) => {
+      const next = points[(index + 1) % points.length];
+      path.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2);
+    });
+    path.closePath();
+    return path;
+  };
+
+  const continentPalette = () => {
+    if (phaseIndex === PHASE.PROTEROZOIC) {
+      return {
+        low: `rgba(${Math.round(mix(89, 145, ironCompaction))},${Math.round(mix(94, 70, ironCompaction))},${Math.round(mix(82, 54, ironCompaction))},.11)`,
+        high: `rgba(${Math.round(mix(173, 218, ironCompaction))},${Math.round(mix(149, 111, ironCompaction))},${Math.round(mix(113, 72, ironCompaction))},.34)`,
+        coast: "rgba(255,190,151,.5)", contour: "rgba(255,215,184,.052)", ridge: "rgba(255,226,198,.13)",
+        glow: "rgba(255,174,135,.23)", glass: "rgba(255,221,193,.1)", edge: "rgba(255,238,220,.18)",
+      };
+    }
+    if (phaseIndex <= PHASE.ARCHEAN) {
+      return {
+        low: "rgba(78,117,111,.1)", high: "rgba(190,211,170,.31)", coast: "rgba(205,244,226,.49)",
+        contour: "rgba(235,251,231,.048)", ridge: "rgba(247,230,185,.12)", glow: "rgba(176,244,224,.22)",
+        glass: "rgba(229,250,224,.095)", edge: "rgba(238,255,247,.17)",
+      };
+    }
+    if (phaseIndex === PHASE.MESOZOIC) {
+      return {
+        low: "rgba(75,122,111,.1)", high: "rgba(191,211,158,.31)", coast: "rgba(203,250,222,.48)",
+        contour: "rgba(230,249,218,.045)", ridge: "rgba(246,237,191,.11)", glow: "rgba(175,245,221,.21)",
+        glass: "rgba(229,248,218,.09)", edge: "rgba(239,255,246,.16)",
+      };
+    }
+    if (phaseIndex === PHASE.ANTHROPOCENE) {
+      return {
+        low: "rgba(80,118,121,.09)", high: "rgba(187,207,190,.28)", coast: "rgba(205,244,231,.46)",
+        contour: "rgba(229,247,238,.042)", ridge: "rgba(240,242,213,.1)", glow: "rgba(167,232,224,.19)",
+        glass: "rgba(224,243,234,.08)", edge: "rgba(237,253,249,.15)",
+      };
+    }
+    return {
+      low: "rgba(58,132,125,.11)", high: "rgba(171,226,192,.33)", coast: "rgba(190,255,232,.5)",
+      contour: "rgba(222,255,239,.048)", ridge: "rgba(239,249,203,.12)", glow: "rgba(153,248,220,.22)",
+      glass: "rgba(219,255,235,.095)", edge: "rgba(232,255,248,.17)",
+    };
+  };
+
+  const drawLandRelief = (shape, palette, radius) => {
+    if (shape.minor) return;
+    context.save();
+    context.clip(shape.path);
+    context.translate(shape.x, shape.y);
+    context.rotate(shape.rotation);
+
+    context.globalCompositeOperation = "screen";
+    const innerLight = context.createRadialGradient(
+      -shape.rx * 0.4,
+      -shape.ry * 0.42,
+      0,
+      0,
+      0,
+      Math.max(shape.rx, shape.ry) * 1.35,
+    );
+    innerLight.addColorStop(0, palette.glow);
+    innerLight.addColorStop(0.42, palette.glass);
+    innerLight.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = innerLight;
+    context.fillRect(-shape.rx * 1.3, -shape.ry * 1.4, shape.rx * 2.6, shape.ry * 2.8);
+
+    context.strokeStyle = palette.contour;
+    context.lineWidth = Math.max(1, radius * 0.0045);
+    context.shadowColor = palette.glow;
+    context.shadowBlur = radius * 0.012;
+    for (let band = -1; band <= 1; band += 1) {
+      context.beginPath();
+      for (let point = 0; point <= 20; point += 1) {
+        const amount = point / 20;
+        const x = mix(-shape.rx * 1.08, shape.rx * 1.08, amount);
+        const y = band * shape.ry * 0.26
+          + Math.sin(amount * Math.PI * 1.7 + shape.seed + band * 0.82) * shape.ry * 0.11;
+        if (point === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      context.stroke();
+    }
+
+    context.shadowBlur = radius * 0.009;
+    context.strokeStyle = palette.ridge;
+    context.lineWidth = Math.max(0.8, radius * 0.0026);
+    context.beginPath();
+    for (let point = 0; point <= 14; point += 1) {
+      const amount = point / 14;
+      const x = mix(-shape.rx * 0.72, shape.rx * 0.72, amount);
+      const y = Math.sin(amount * Math.PI * 1.65 + shape.seed * 1.6) * shape.ry * 0.17
+        + Math.sin(amount * Math.PI * 4 + shape.seed) * shape.ry * 0.025;
+      if (point === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    }
+    context.stroke();
+    context.restore();
+  };
+
+  const drawAncientContinents = (centerX, centerY, radius, time) => {
+    const layout = phaseIndex <= PHASE.ARCHEAN
+      ? CONTINENT_LAYOUTS.proto
+      : phaseIndex === PHASE.PROTEROZOIC
+        ? CONTINENT_LAYOUTS.proterozoic
+        : phaseIndex === PHASE.PALEOZOIC
+          ? CONTINENT_LAYOUTS.pangaea
+          : phaseIndex === PHASE.MESOZOIC
+            ? CONTINENT_LAYOUTS.split
+            : CONTINENT_LAYOUTS.modern;
+    const palette = continentPalette();
+
+    layout.forEach((spec, index) => {
+      const drift = Math.sin(time * 0.000025 + spec.seed) * radius * (spec.minor ? 0.002 : 0.004);
+      const shape = {
+        ...spec,
+        x: centerX + spec.x * radius + drift,
+        y: centerY + spec.y * radius,
+        rx: spec.rx * radius,
+        ry: spec.ry * radius,
+      };
+      shape.path = buildCoastPath(shape.x, shape.y, shape.rx, shape.ry, shape.rotation, shape.seed, shape.minor);
+      const land = context.createLinearGradient(
+        shape.x - shape.rx * 0.65,
+        shape.y + shape.ry,
+        shape.x + shape.rx * 0.35,
+        shape.y - shape.ry,
+      );
+      land.addColorStop(0, palette.low);
+      land.addColorStop(0.58, palette.high);
+      land.addColorStop(1, palette.low);
+
+      context.save();
+      context.shadowColor = palette.glow;
+      context.shadowBlur = spec.minor ? radius * 0.012 : radius * 0.035;
+      context.fillStyle = land;
+      context.fill(shape.path);
+      context.restore();
+
+      context.save();
+      context.clip(shape.path);
+      context.globalCompositeOperation = "screen";
+      const refraction = context.createLinearGradient(
+        shape.x - shape.rx,
+        shape.y - shape.ry,
+        shape.x + shape.rx,
+        shape.y + shape.ry,
+      );
+      refraction.addColorStop(0, "rgba(255,255,255,0)");
+      refraction.addColorStop(0.34, palette.glass);
+      refraction.addColorStop(0.5, "rgba(255,255,255,0)");
+      refraction.addColorStop(0.78, palette.glass);
+      refraction.addColorStop(1, "rgba(255,255,255,0)");
+      context.fillStyle = refraction;
+      context.fillRect(shape.x - shape.rx * 1.2, shape.y - shape.ry * 1.2, shape.rx * 2.4, shape.ry * 2.4);
+      context.restore();
+
+      drawLandRelief(shape, palette, radius);
+
+      context.save();
+      context.globalCompositeOperation = "screen";
+      context.shadowColor = palette.glow;
+      context.shadowBlur = spec.minor ? radius * 0.015 : radius * 0.028;
+      context.strokeStyle = palette.coast;
+      context.lineWidth = Math.max(0.8, radius * (spec.minor ? 0.0024 : 0.0032));
+      context.stroke(shape.path);
+      context.restore();
+
+      context.strokeStyle = palette.edge;
+      context.lineWidth = Math.max(0.45, radius * 0.00135);
+      context.stroke(shape.path);
+
+      if (!spec.minor && index % 2 === 0) {
+        const islandAngle = spec.rotation + 1.35;
+        const islandX = shape.x + Math.cos(islandAngle) * shape.rx * 1.12;
+        const islandY = shape.y + Math.sin(islandAngle) * shape.ry * 1.18;
+        const islandPath = buildCoastPath(
+          islandX,
+          islandY,
+          radius * 0.035,
+          radius * 0.018,
+          islandAngle + 0.3,
+          spec.seed + 12.4,
+          true,
+        );
+        context.save();
+        context.globalCompositeOperation = "screen";
+        context.shadowColor = palette.glow;
+        context.shadowBlur = radius * 0.018;
+        context.fillStyle = palette.high;
+        context.fill(islandPath);
+        context.strokeStyle = palette.coast;
+        context.lineWidth = Math.max(0.55, radius * 0.0019);
+        context.stroke(islandPath);
+        context.restore();
+      }
+    });
   };
 
   const drawAtmosphere = (centerX, centerY, radius, time) => {
@@ -589,14 +1051,24 @@
 
   const getPlanetGeometry = () => {
     const baseRadius = Math.min(width, height) * 0.34;
+    if (returnTo === "novel") {
+      const storyRadius = Math.min(width, height) * (phaseIndex === PHASE.GX ? 0.39 : 0.37);
+      const travel = phaseIndex === PHASE.GX ? 0.003 + transcendence * 0.004 : 0;
+      return {
+        centerX: width * (0.69 + Math.sin(gaiaOrbitPhase) * travel),
+        centerY: height * (0.5 + Math.cos(gaiaOrbitPhase * 1.31) * travel),
+        radius: storyRadius * (phaseIndex === PHASE.GX ? 0.98 + transcendence * 0.03 : 1),
+      };
+    }
     if (phaseIndex !== PHASE.GX) {
       return { centerX: width * 0.76, centerY: height * 0.48, radius: baseRadius };
     }
-    const travel = 0.004 + transcendence * 0.008;
+    const featuredRadius = Math.min(width, height) * 0.39;
+    const travel = 0.003 + transcendence * 0.005;
     return {
-      centerX: width * (0.72 + Math.sin(gaiaOrbitPhase) * travel),
-      centerY: height * (0.49 + Math.cos(gaiaOrbitPhase * 1.31) * travel),
-      radius: baseRadius * (0.9 + transcendence * 0.045 + Math.sin(gaiaOrbitPhase * 2.1) * 0.006),
+      centerX: width * (0.6 + Math.sin(gaiaOrbitPhase) * travel),
+      centerY: height * (0.5 + Math.cos(gaiaOrbitPhase * 1.31) * travel),
+      radius: featuredRadius * (0.98 + transcendence * 0.035 + Math.sin(gaiaOrbitPhase * 2.1) * 0.005),
     };
   };
 
@@ -637,6 +1109,8 @@
 
   const drawGaiaRitual = (delta, time) => {
     if (phaseIndex !== PHASE.GX) return;
+    gaiaDragGlow *= Math.pow(pointer.active ? 0.955 : 0.89, delta);
+    if (gaiaDragGlow < 0.003) gaiaDragGlow = 0;
     gaiaSpinVelocity *= Math.pow(0.982, delta);
     gaiaSpinVelocity = Math.max(0.0008 + transcendence * 0.001, gaiaSpinVelocity);
     gaiaRotation += gaiaSpinVelocity * delta;
@@ -739,17 +1213,39 @@
     context.fillStyle = ocean;
     context.fillRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
 
+    if (phaseIndex === PHASE.GX && gaiaDragGlow > 0.002) {
+      const lightX = mix(centerX, gaiaGlowX * width, 0.78);
+      const lightY = mix(centerY, gaiaGlowY * height, 0.78);
+      const innerGlow = context.createRadialGradient(
+        lightX,
+        lightY,
+        radius * 0.015,
+        lightX,
+        lightY,
+        radius * (0.56 + gaiaDragGlow * 0.24),
+      );
+      innerGlow.addColorStop(0, `rgba(255,255,238,${0.22 + gaiaDragGlow * 0.5})`);
+      innerGlow.addColorStop(0.16, `rgba(183,255,238,${0.13 + gaiaDragGlow * 0.33})`);
+      innerGlow.addColorStop(0.48, `rgba(103,215,255,${0.05 + gaiaDragGlow * 0.18})`);
+      innerGlow.addColorStop(1, "rgba(78,174,236,0)");
+      context.save();
+      context.globalCompositeOperation = "screen";
+      context.fillStyle = innerGlow;
+      context.fillRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
+      context.restore();
+    }
+
     context.lineWidth = 1;
-    const surfaceLines = phaseIndex === PHASE.GX ? 7 : 18;
+    const surfaceLines = phaseIndex === PHASE.GX ? 7 : 10;
     for (let index = 0; index < surfaceLines; index += 1) {
       const denominator = Math.max(1, surfaceLines - 1);
       const y = centerY - radius + (index / denominator) * radius * 2;
       const drift = Math.sin(time * 0.0003 + index * 1.7) * radius * (phaseIndex === PHASE.GX ? 0.012 : 0.025);
       context.strokeStyle = phaseIndex === PHASE.PROTEROZOIC
-        ? `rgba(211, 137, 96, ${(0.035 + index * 0.002) * ironCompaction})`
+        ? `rgba(236, 164, 126, ${(0.018 + index * 0.0012) * ironCompaction})`
         : phaseIndex === PHASE.GX
           ? `rgba(186,224,241,${0.026 + index * 0.001})`
-        : `rgba(171, 244, 230, ${0.055 + index * 0.003})`;
+        : `rgba(193, 251, 242, ${0.022 + index * 0.0015})`;
       context.beginPath();
       context.moveTo(centerX - radius, y);
       context.bezierCurveTo(centerX - radius * 0.35, y + drift, centerX + radius * 0.35, y - drift, centerX + radius, y);
@@ -804,6 +1300,31 @@
     context.beginPath();
     context.arc(centerX, centerY, radius, 0, Math.PI * 2);
     context.stroke();
+
+    if (phaseIndex === PHASE.GX && gaiaDragGlow > 0.002) {
+      const angle = Math.atan2(gaiaGlowY * height - centerY, gaiaGlowX * width - centerX);
+      const pulse = 0.94 + Math.sin(time * 0.012) * 0.06;
+      const strength = gaiaDragGlow * pulse;
+      const arcSpan = 0.42 + strength * 0.86;
+      context.save();
+      context.globalCompositeOperation = "screen";
+      context.lineCap = "round";
+      context.shadowColor = `rgba(185,255,240,${0.55 + strength * 0.38})`;
+      context.shadowBlur = radius * (0.018 + strength * 0.055);
+      context.strokeStyle = `rgba(217,255,244,${0.22 + strength * 0.7})`;
+      context.lineWidth = 1.4 + strength * 3.4;
+      context.beginPath();
+      context.arc(centerX, centerY, radius + 0.8, angle - arcSpan, angle + arcSpan);
+      context.stroke();
+
+      context.shadowBlur = radius * (0.035 + strength * 0.07);
+      context.strokeStyle = `rgba(126,222,255,${0.08 + strength * 0.34})`;
+      context.lineWidth = 2 + strength * 4.6;
+      context.beginPath();
+      context.arc(centerX, centerY, radius + radius * 0.012, angle - arcSpan * 0.72, angle + arcSpan * 0.72);
+      context.stroke();
+      context.restore();
+    }
   };
 
   const drawOceanLines = (time) => {
@@ -1369,6 +1890,7 @@
     const delta = clamp((time - previousTime) / 16.67 || 1, 0.2, 3);
     previousTime = time;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    context.clearRect(0, 0, width, height);
     drawBackground(time);
     drawOceanLines(time);
     drawGaiaRitual(delta, time);
@@ -1399,30 +1921,63 @@
     elements.dataClose.focus({ preventScroll: true });
   };
 
+  const syncStoryGuidePortrait = () => {
+    const cast = document.querySelector(".novel-cast");
+    const speaker = cast?.dataset.speaker;
+    const portrait = speaker
+      ? cast.querySelector(`.novel-character--${speaker} .novel-character-portrait`)
+      : null;
+    const image = portrait ? getComputedStyle(portrait).backgroundImage : "";
+    if (image && image !== "none") {
+      layer.style.setProperty("--gx-story-character-image", image);
+      layer.dataset.guideSpeaker = speaker;
+    } else {
+      layer.style.removeProperty("--gx-story-character-image");
+      delete layer.dataset.guideSpeaker;
+    }
+  };
+
   const openGX = async (options = {}) => {
     if (isOpen) return;
     previousFocus = document.activeElement;
     returnTo = options.returnTo === "novel" ? "novel" : "intro";
+    layer.dataset.returnTo = returnTo;
+    if (returnTo === "novel") syncStoryGuidePortrait();
+    elements.close.textContent = returnTo === "novel" ? "ストーリーへ戻る" : "戻る";
     isOpen = true;
+    if (storyBackdrop) {
+      storyBackdrop.hidden = returnTo !== "novel";
+      storyBackdrop.classList.remove("is-open");
+    }
     layer.hidden = false;
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("gx-open");
+    document.body.classList.toggle("gx-story-open", returnTo === "novel");
     setUnderlayHidden(true);
     resize();
-    requestAnimationFrame(() => layer.classList.add("is-open"));
+    requestAnimationFrame(() => {
+      layer.classList.add("is-open");
+      if (returnTo === "novel") storyBackdrop?.classList.add("is-open");
+    });
     await loadExhibit();
     setPhase(options.phase ?? 0);
     previousTime = performance.now();
     cancelAnimationFrame(animationFrame);
     animationFrame = requestAnimationFrame(animate);
-    elements.close.focus({ preventScroll: true });
+    canvas.focus({ preventScroll: true });
   };
 
   const closeGX = () => {
     if (!isOpen) return;
     closeDataPanel();
     window.clearTimeout(eraTransitionTimer);
+    window.clearTimeout(storyLineTimer);
+    window.clearTimeout(titleTransitionTimer);
     eraTransitionTimer = 0;
+    storyLineTimer = 0;
+    titleTransitionTimer = 0;
+    elements.exhibitTitle.classList.remove("is-changing", "is-leaving", "is-entering");
+    elements.exhibitTitle.textContent = elements.exhibitTitle.dataset.chapterTitle || "THE FIRST GX";
     eraTransitionPending = false;
     layer.classList.remove("is-era-transitioning");
     elements.eraTransition.classList.remove("is-visible");
@@ -1432,11 +1987,22 @@
     cancelAnimationFrame(eraCounterFrame);
     eraCounterFrame = 0;
     layer.classList.remove("is-open");
+    storyBackdrop?.classList.remove("is-open");
     layer.setAttribute("aria-hidden", "true");
     document.body.classList.remove("gx-open");
+    document.body.classList.remove("gx-story-open");
+    elements.storyDialogue?.classList.remove("is-visible");
+    if (elements.storyDialogue) elements.storyDialogue.hidden = true;
+    document.querySelector(".novel-cast")?.removeAttribute("data-gx-speaker");
     setUnderlayHidden(false);
     window.setTimeout(() => {
-      if (!isOpen) layer.hidden = true;
+      if (!isOpen) {
+        layer.hidden = true;
+        delete layer.dataset.returnTo;
+        delete layer.dataset.guideSpeaker;
+        layer.style.removeProperty("--gx-story-character-image");
+      }
+      if (storyBackdrop && !storyBackdrop.classList.contains("is-open")) storyBackdrop.hidden = true;
     }, reducedMotion ? 0 : 340);
     if (returnTo === "novel") {
       window.dispatchEvent(new CustomEvent("gaia:gx-return-to-novel"));
@@ -1458,6 +2024,7 @@
     openGX({ returnTo: "intro" });
   });
   elements.close.addEventListener("click", closeGX);
+  storyBackdrop?.addEventListener("click", closeGX);
   elements.next.addEventListener("click", () => {
     if (phaseIndex === exhibit.phases.length - 1) closeGX();
     else setPhase(phaseIndex + 1);
@@ -1500,13 +2067,6 @@
       event.preventDefault();
       if (elements.dataPanel.classList.contains("is-open")) closeDataPanel();
       else closeGX();
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      if (phaseIndex === exhibit.phases.length - 1) closeGX();
-      else setPhase(phaseIndex + 1);
-    } else if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      setPhase(phaseIndex - 1);
     }
   });
 

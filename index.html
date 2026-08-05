@@ -19,13 +19,13 @@
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="stylesheet" href="./styles.css?v=gaia-122" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-50" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-114" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-132" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-114" />
-    <link rel="stylesheet" href="./gx-mode.css?v=gx-11" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-140" />
+    <link rel="stylesheet" href="./gx-mode.css?v=gx-33" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
-    <script src="./gaia-particles.js?v=gaia-03" defer></script>
+    <script src="./gaia-particles.js?v=gaia-19" defer></script>
     <script src="./opening-audio.js?v=gaia-09" defer></script>
     <script src="./ui-sound.js?v=gaia-01" defer></script>
     <script src="./opening.js?v=gaia-111" defer></script>
@@ -34,82 +34,17 @@
     <script src="./scene-transition.js?v=gaia-65" defer></script>
     <script src="./app-content.js?v=gaia-101" defer></script>
     <script src="./app.js?v=gaia-106" defer></script>
-    <script src="./gx-mode.js?v=gx-09" defer></script>
-    <script src="./novel-mode.js?v=gaia-107" defer></script>
+  <script src="./gx-mode.js?v=gx-29" defer></script>
+    <script src="./novel-mode.js?v=gaia-117" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-97" defer></script>
   <link rel="stylesheet" href="./map-ui-grid-polish.css?v=1">
   <link rel="stylesheet" href="./map-ui-grid-v2.css?v=2">
-  <style id="opening-choice-under-question-style">
-    .opening-choice-copy-group {
-      justify-content: flex-start !important;
-    }
-
-    .opening-choice-under-question {
-      position: relative !important;
-      inset: auto !important;
-      margin: clamp(18px, 2.2vh, 28px) 0 0 !important;
-      transform: none !important;
-      align-self: flex-start !important;
-    }
-  </style>
-  <script id="opening-choice-under-question-script">
-    (() => {
-      const normalize = (value) => (value || "").replace(/\s+/g, "").trim();
-      const findSmallestTextNode = (text) => {
-        const target = normalize(text);
-        return [...document.querySelectorAll("h1,h2,h3,h4,p,span,div,a,button")]
-          .filter((element) => normalize(element.textContent) === target)
-          .sort((a, b) => a.childElementCount - b.childElementCount)[0] || null;
-      };
-      const commonAncestor = (left, right) => {
-        const ancestors = new Set();
-        for (let node = left; node; node = node.parentElement) ancestors.add(node);
-        for (let node = right; node; node = node.parentElement) {
-          if (ancestors.has(node)) return node;
-        }
-        return null;
-      };
-      const placeChoices = () => {
-        const question = [...document.querySelectorAll("h1,h2,h3,h4,p,div")]
-          .filter((element) => {
-            const text = normalize(element.textContent);
-            return text.includes("人間と地球は") && text.includes("どんな次の関係を選べるだろう");
-          })
-          .sort((a, b) => a.textContent.length - b.textContent.length)[0];
-        const storyTitle = findSmallestTextNode("物語を始める");
-        const exploreTitle = findSmallestTextNode("自由に観測する");
-        if (!question || !storyTitle || !exploreTitle) return false;
-
-        let choices = commonAncestor(storyTitle, exploreTitle);
-        if (!choices || choices === document.body || choices.contains(question)) return false;
-
-        const copyGroup = question.parentElement;
-        if (!copyGroup) return false;
-        copyGroup.classList.add("opening-choice-copy-group");
-        choices.classList.add("opening-choice-under-question");
-        question.insertAdjacentElement("afterend", choices);
-        return true;
-      };
-
-      const start = () => {
-        if (placeChoices()) return;
-        const observer = new MutationObserver(() => {
-          if (placeChoices()) observer.disconnect();
-        });
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-        window.setTimeout(() => observer.disconnect(), 8000);
-      };
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", start, { once: true });
-      } else {
-        start();
-      }
-    })();
-  </script>
 </head>
   <body>
     <main class="experience">
+      <div class="gx-story-backdrop" id="gx-story-backdrop" aria-hidden="true" hidden></div>
+
       <section
         class="gaia-opening is-preloading is-awaiting-sound"
         id="gaia-opening"
@@ -133,11 +68,11 @@
         >
           <div class="gaia-opening-sound-card">
             <p>PROLOGUE / SOUND</p>
-            <h2 id="gaia-opening-sound-title"><span>この物語に、</span><span>音をつけますか。</span></h2>
-            <p id="gaia-opening-sound-copy">音量にご注意ください。</p>
+            <h2 id="gaia-opening-sound-title"><span>音とともに、</span><span>物語へ。</span></h2>
+            <p id="gaia-opening-sound-copy">静かな音から、世界がひらきます。</p>
             <div class="gaia-opening-volume-choice">
               <label for="gaia-opening-volume">
-                <span>BGM音量</span>
+                <span>音の大きさ</span>
                 <output id="gaia-opening-volume-value" for="gaia-opening-volume">10%</output>
               </label>
               <input
@@ -159,7 +94,7 @@
                     <path d="M18.75 5.75c1.7 1.55 2.75 3.6 2.75 6.25s-1.05 4.7-2.75 6.25" />
                   </svg>
                 </span>
-                <span class="gaia-opening-sound-label">音あり</span>
+                <span class="gaia-opening-sound-label">音と進む</span>
               </button>
               <button id="gaia-opening-sound-off" type="button">
                 <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
@@ -168,7 +103,7 @@
                     <path d="m16.25 8.25 5.5 7.5M21.75 8.25l-5.5 7.5" />
                   </svg>
                 </span>
-                <span class="gaia-opening-sound-label">音なし</span>
+                <span class="gaia-opening-sound-label">静かに進む</span>
               </button>
             </div>
           </div>
@@ -245,25 +180,36 @@
             <div class="gaia-vn-final-shade"></div>
             <div class="gaia-vn-final-copy">
               <p>GAIA TRANSFORMATION / INTERACTIVE DATA FICTION</p>
-              <h1 data-opening-focus>GAIA SENSEWARE GX</h1>
-              <strong data-opening-focus>人間と地球は、どんな次の関係を選べるだろう。</strong>
+              <h1 data-opening-focus>GAIA SENSEWARE</h1>
+              <div class="gaia-vn-final-choice">
+                <strong data-opening-focus>人間と地球は、どんな次の関係を選べるだろう。</strong>
+                <nav class="gaia-opening-final-menu" id="gaia-opening-final-menu" aria-label="体験の入口" hidden>
+                  <button class="gaia-opening-route gaia-opening-route--story" id="gaia-opening-route-story" type="button">
+                    <small>MAIN STORY <em>RECOMMENDED</em></small>
+                    <strong>物語を始める</strong>
+                    <span>プロローグの続き・第1章へ</span>
+                    <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
+                      <path d="M8 14c9-2.4 17-.2 24 5.8v32c-7-5.8-15-8.2-24-5.8Z" />
+                      <path d="M56 14c-9-2.4-17-.2-24 5.8v32c7-5.8 15-8.2 24-5.8Z" />
+                      <path d="M32 20v32M14 22c4.7-.2 9 1 13 3.5M50 22c-4.7-.2-9 1-13 3.5" />
+                    </svg>
+                  </button>
+                  <button class="gaia-opening-route gaia-opening-route--other" id="gaia-opening-route-other" type="button">
+                    <small>FREE EXPLORATION</small>
+                    <strong>自由に観測する</strong>
+                    <span>光・地図・宇宙を選ぶ</span>
+                    <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
+                      <circle cx="32" cy="32" r="23" />
+                      <circle cx="32" cy="32" r="3.2" />
+                      <path d="m42 20-6.5 15.5L20 42l6.5-15.5ZM32 5v5M32 54v5M5 32h5M54 32h5" />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
               <span data-opening-focus>公開データという地球の信号に触れ、物語の続きを共創する。</span>
             </div>
           </section>
         </div>
-
-        <nav class="gaia-opening-final-menu" id="gaia-opening-final-menu" aria-label="体験の入口" hidden>
-          <button class="gaia-opening-route gaia-opening-route--story" id="gaia-opening-route-story" type="button">
-            <small>MAIN STORY <em>RECOMMENDED</em></small>
-            <strong>物語を始める</strong>
-            <span>プロローグの続き・第1章へ <b aria-hidden="true">→</b></span>
-          </button>
-          <button class="gaia-opening-route gaia-opening-route--other" id="gaia-opening-route-other" type="button">
-            <small>FREE EXPLORATION</small>
-            <strong>自由に観測する</strong>
-            <span>光・地図・宇宙を選ぶ <b aria-hidden="true">→</b></span>
-          </button>
-        </nav>
 
         <div class="gaia-opening-hud" aria-hidden="true">
           <p><span>GS</span> LISTENING TO THE PLANET</p>
@@ -1256,7 +1202,7 @@
         aria-hidden="true"
         hidden
       >
-        <canvas class="gx-canvas" id="gx-canvas" aria-label="太古の海から現在まで、生命と地球が互いを変えた歴史へ触れる展示"></canvas>
+        <canvas class="gx-canvas" id="gx-canvas" tabindex="-1" aria-label="太古の海から現在まで、生命と地球が互いを変えた歴史へ触れる展示"></canvas>
         <div class="gx-color-field" aria-hidden="true"></div>
         <div class="gx-noise" aria-hidden="true"></div>
         <div class="gx-vignette" aria-hidden="true"></div>
@@ -1267,13 +1213,13 @@
           <p id="gx-subtitle">GX = 人間と地球が、ともに変わるための転換</p>
         </header>
 
-        <button class="gx-close" id="gx-close" type="button">戻る</button>
+        <button class="gx-close" id="gx-close" type="button" hidden>戻る</button>
 
         <div class="gx-time" data-counter="4,600,000,000" aria-label="現在まで、あと46億年">
-          <span class="gx-time-kicker">現在まで、あと</span>
+          <span class="gx-time-kicker">現在からさかのぼる</span>
           <strong class="gx-time-number">
             <span id="gx-time-value">4,600,000,000</span>
-            <small>年</small>
+            <small>年前</small>
           </strong>
           <span class="gx-time-context" id="gx-time-context">約46–40億年前 / 冥王代</span>
         </div>
@@ -1297,13 +1243,13 @@
           <nav class="gx-phase-nav" id="gx-phase-nav" aria-label="THE FIRST GXの章を選ぶ"></nav>
           <div class="gx-era-progress" id="gx-era-progress" hidden aria-live="polite">
             <div class="gx-era-progress__head">
-              <span>CYANOBACTERIA / OCEAN COVERAGE</span>
+              <span id="gx-era-progress-label">CYANOBACTERIA / OCEAN COVERAGE</span>
               <strong id="gx-era-progress-value">0%</strong>
             </div>
             <div class="gx-era-progress__track" aria-hidden="true"><i id="gx-era-progress-bar"></i></div>
             <p id="gx-era-progress-copy">地球の海を生命で満たしてください。</p>
           </div>
-          <button class="gx-next" id="gx-next" type="button">海へ光を置く　→</button>
+          <button class="gx-next" id="gx-next" type="button" hidden>海へ光を置く　→</button>
           <div class="gx-secondary-controls">
             <button id="gx-restart" type="button">最初から</button>
             <button id="gx-data" type="button" aria-expanded="false" aria-controls="gx-data-panel">OPEN DATA / 諸元</button>
@@ -1311,8 +1257,8 @@
         </div>
 
         <div class="gx-era-transition" id="gx-era-transition" aria-hidden="true">
-          <span>ARCHEAN → PROTEROZOIC</span>
-          <strong>生命の酸素が、岩石の色を変える。</strong>
+          <span id="gx-era-transition-label">ARCHEAN → PROTEROZOIC</span>
+          <strong id="gx-era-transition-title">生命の酸素が、岩石の色を変える。</strong>
           <i aria-hidden="true"></i>
         </div>
 
@@ -1334,6 +1280,23 @@
           <div><i aria-hidden="true"></i><p>DEEP TIME RECORDS / LOADING</p></div>
         </div>
       </section>
+
+      <aside
+        class="gx-story-dialogue"
+        id="gx-story-dialogue"
+        aria-label="ミズハとアマネの会話"
+        aria-live="polite"
+        hidden
+      >
+        <article class="gx-story-bubble" id="gx-story-bubble-first">
+          <span class="gx-story-bubble-speaker"></span>
+          <p></p>
+        </article>
+        <article class="gx-story-bubble" id="gx-story-bubble-second">
+          <span class="gx-story-bubble-speaker"></span>
+          <p></p>
+        </article>
+      </aside>
 
       <section
         class="novel-layer"
@@ -1415,12 +1378,136 @@
           <div class="novel-avatar" id="novel-avatar" data-speaker="narrator" aria-hidden="true">
             <div class="novel-avatar-rings"><i></i><i></i><i></i></div>
             <div class="novel-avatar-core"><span id="novel-avatar-glyph">◌</span></div>
+            <div class="novel-sakuya-thought">
+              <svg viewBox="0 0 240 240" focusable="false" aria-hidden="true">
+                <defs>
+                  <radialGradient id="sakuya-aura" cx="49%" cy="48%" r="58%">
+                    <stop offset="0" stop-color="#fff9ec" stop-opacity=".92" />
+                    <stop offset=".18" stop-color="#ffd9e5" stop-opacity=".48" />
+                    <stop offset=".52" stop-color="#c5efff" stop-opacity=".17" />
+                    <stop offset="1" stop-color="#bdefff" stop-opacity="0" />
+                  </radialGradient>
+                  <linearGradient id="sakuya-membrane" x1=".1" y1=".04" x2=".9" y2=".96">
+                    <stop offset="0" stop-color="#fffef7" stop-opacity=".82" />
+                    <stop offset=".46" stop-color="#ffdbe7" stop-opacity=".42" />
+                    <stop offset="1" stop-color="#aeeaff" stop-opacity=".08" />
+                  </linearGradient>
+                  <linearGradient id="sakuya-trace" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#ffedf5" stop-opacity="0" />
+                    <stop offset=".45" stop-color="#fff8e4" stop-opacity=".58" />
+                    <stop offset="1" stop-color="#a8ebff" stop-opacity="0" />
+                  </linearGradient>
+                  <linearGradient id="sakuya-ember" x1=".5" y1="0" x2=".5" y2="1">
+                    <stop offset="0" stop-color="#fff" stop-opacity=".94" />
+                    <stop offset=".44" stop-color="#ffe6bd" stop-opacity=".86" />
+                    <stop offset="1" stop-color="#ffb9d3" stop-opacity=".12" />
+                  </linearGradient>
+                  <filter id="sakuya-soft-light" x="-80%" y="-80%" width="260%" height="260%">
+                    <feGaussianBlur stdDeviation="7" />
+                  </filter>
+                  <filter id="sakuya-presence-light" x="-60%" y="-60%" width="220%" height="220%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation=".8" result="soft" />
+                    <feMerge><feMergeNode in="soft" /><feMergeNode in="SourceGraphic" /></feMerge>
+                  </filter>
+                </defs>
+
+                <ellipse class="novel-sakuya-aura" cx="120" cy="121" rx="75" ry="94" fill="url(#sakuya-aura)" />
+
+                <g class="novel-sakuya-traces" fill="none" stroke="url(#sakuya-trace)" stroke-linecap="round">
+                  <path d="M31 154C59 140 82 116 102 82c8-14 14-28 18-43 4 15 10 29 18 43 19 34 43 58 71 72" />
+                  <path d="M40 181c31 10 67 8 94-4 33-15 55-43 63-75" />
+                  <path d="M61 67c3 34 17 62 43 83 25 20 57 27 84 18" />
+                  <path d="M84 204c19-23 29-48 32-75 3-30-2-59 8-87" />
+                </g>
+
+                <g class="novel-sakuya-echo" fill="none" stroke="#fff7ef" stroke-linecap="round">
+                  <ellipse cx="120" cy="121" rx="48" ry="70" transform="rotate(-14 120 121)" />
+                  <path d="M71 119c19-31 54-49 87-38 19 7 34 23 43 44" />
+                  <path d="M61 151c30 24 72 31 105 13 13-7 23-18 31-31" />
+                </g>
+
+                <g class="novel-sakuya-fragments" fill="url(#sakuya-membrane)" stroke="#fffdf7" filter="url(#sakuya-presence-light)">
+                  <path d="M112 91c-4-17-3-34 5-49l12-22c-1 19 5 34 1 49-3 11-9 20-18 22Z" />
+                  <path d="M88 112c-15-7-30-5-43 4l-15 12c17-2 29 5 42 5 10 0 15-7 16-21Z" />
+                  <path d="M151 93c12-9 27-12 43-7l18 7c-17 3-26 14-39 17-10 2-18-3-22-17Z" />
+                  <path d="M93 147c-11 9-17 23-16 39l2 23c7-16 18-23 23-36 4-10 1-19-9-26Z" />
+                  <path d="M151 148c15 5 25 15 31 30l7 19c-11-12-24-14-33-23-7-7-8-16-5-26Z" />
+                </g>
+
+                <g class="novel-sakuya-core">
+                  <path d="M120 111c-8-11-8-22-1-33 7 10 11 20 6 31-1 3-3 5-5 7-1-2-1-3 0-5Z" fill="url(#sakuya-ember)" filter="url(#sakuya-soft-light)" />
+                  <path d="M120 111c-4-7-3-14 1-21 4 7 5 13 2 19l-3 5Z" fill="#fff9e7" fill-opacity=".9" />
+                  <circle cx="120" cy="116" r="3.6" fill="#fff" />
+                </g>
+
+                <g class="novel-sakuya-axis" fill="none" stroke="url(#sakuya-ember)" stroke-linecap="round">
+                  <path d="M120 113c-2-17 1-31 8-45" />
+                  <path d="M57 158c22-3 38-12 49-28 6-8 10-14 14-14 5 0 9 7 15 15 12 15 29 24 50 27" />
+                  <path d="M73 170c28-8 59-8 93 0" />
+                </g>
+
+                <g class="novel-sakuya-motes" fill="#fffbed">
+                  <circle cx="52" cy="93" r="1.5" /><circle cx="76" cy="190" r="1.8" />
+                  <circle cx="177" cy="57" r="1.3" /><circle cx="201" cy="143" r="1.6" />
+                  <circle cx="154" cy="202" r="1.1" /><circle cx="43" cy="151" r=".9" />
+                  <circle cx="146" cy="65" r=".8" /><circle cx="94" cy="75" r="1" />
+                </g>
+
+                <g class="novel-sakuya-drift" fill="url(#sakuya-membrane)" stroke="#fff" stroke-opacity=".38">
+                  <path d="M183 75c9-5 17-2 21 5-5 8-13 11-22 7-3-4-2-8 1-12Z" />
+                  <path d="M52 164c7-4 14-1 17 5-5 7-11 9-18 5-2-3-2-7 1-10Z" />
+                  <path d="M168 188c5-3 10-1 12 3-3 5-8 7-13 4-2-2-1-5 1-7Z" />
+                </g>
+              </svg>
+            </div>
           </div>
 
-          <div class="novel-signal-caption" aria-hidden="true">
+          <button
+            class="novel-signal-caption"
+            id="novel-source-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="novel-source-panel"
+            aria-label="この場面の内容説明を開く"
+          >
             <span id="novel-data-kind">SOURCE</span>
             <strong id="novel-signal-title">公開データは、地球が発している信号である。</strong>
-          </div>
+            <small aria-hidden="true">DETAIL +</small>
+          </button>
+
+          <aside
+            class="novel-source-panel"
+            id="novel-source-panel"
+            role="dialog"
+            aria-labelledby="novel-source-panel-title"
+            aria-hidden="true"
+            hidden
+          >
+            <header>
+              <div>
+                <span class="novel-source-kind" id="novel-source-panel-kind" data-kind="SOURCE">SOURCE</span>
+                <p>SCENE NOTES / この場面で扱う内容</p>
+              </div>
+              <button id="novel-source-close" type="button" aria-label="内容説明を閉じる">×</button>
+            </header>
+            <div class="novel-source-panel-body">
+              <h3 id="novel-source-panel-title">公開データは、地球が発している信号である。</h3>
+              <p id="novel-source-panel-description"></p>
+              <dl>
+                <div>
+                  <dt>この場面で読むこと</dt>
+                  <dd id="novel-source-panel-rule"></dd>
+                </div>
+                <div>
+                  <dt>関連する記録</dt>
+                  <dd id="novel-source-panel-location"></dd>
+                </div>
+              </dl>
+              <p class="novel-source-fiction-note" id="novel-source-panel-note">
+                場面の台詞と登場人物はフィクションです。現象や公開記録についての説明とは分けて読んでください。
+              </p>
+            </div>
+          </aside>
 
           <article class="novel-dialogue" id="novel-dialogue" tabindex="0" aria-label="クリックまたはスペースキーで物語を進める">
             <p class="novel-speaker" id="novel-speaker"></p>
@@ -1811,7 +1898,6 @@
         <p class="error-panel">この作品の表示にはJavaScriptが必要です。</p>
       </noscript>
     </main>
-  <script src="./source-links.js?v=1"></script>
   <style>
     /* The story ending is intentionally quiet, but it must never become a dead end. */
     #story-ending-exit {
@@ -1945,7 +2031,6 @@
       }
     })();
   </script>
-<script src="./eves-polish.js?v=3"></script>
   <script src="./map-ui-grid-polish.js?v=1"></script>
   <script src="./map-ui-grid-v2.js?v=2"></script>
   <script>
@@ -2056,1102 +2141,6 @@
     }
   })();
 </script>
-<!-- Guaranteed atmosphere overlay: independent from page-specific render loops. -->
-<style id="gs-atmosphere-v2-style">
-  #gs-atmosphere-v2 {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
-    overflow: hidden;
-    pointer-events: none;
-    opacity: 1;
-    transition: opacity .65s ease;
-    contain: strict;
-  }
-
-  #gs-atmosphere-v2 canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  #gs-atmosphere-stars {
-    opacity: .68;
-    mix-blend-mode: screen;
-  }
-
-  #gs-atmosphere-motes {
-    opacity: .72;
-    mix-blend-mode: screen;
-    filter: saturate(1.12);
-  }
-
-  #gs-atmosphere-streams {
-    opacity: .62;
-    mix-blend-mode: screen;
-    filter: blur(.15px);
-  }
-
-  #gs-atmosphere-v2[data-quiet="true"] {
-    opacity: .2;
-  }
-
-  @media (max-width: 720px) {
-    #gs-atmosphere-stars { opacity: .54; }
-    #gs-atmosphere-motes { opacity: .58; }
-    #gs-atmosphere-streams { opacity: .45; }
-  }
-</style>
-<script id="gs-atmosphere-v2-script">
-(() => {
-  if (document.getElementById('gs-atmosphere-v2')) return;
-
-  const root = document.createElement('div');
-  root.id = 'gs-atmosphere-v2';
-  root.setAttribute('aria-hidden', 'true');
-  root.dataset.particleLayers = 'light-motes stars flow-lines';
-
-  const layerNames = ['stars', 'motes', 'streams'];
-  const canvases = {};
-  const contexts = {};
-  layerNames.forEach((name) => {
-    const canvas = document.createElement('canvas');
-    canvas.id = `gs-atmosphere-${name}`;
-    canvases[name] = canvas;
-    contexts[name] = canvas.getContext('2d', { alpha: true });
-    root.appendChild(canvas);
-  });
-  document.body.appendChild(root);
-
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const state = {
-    width: 1,
-    height: 1,
-    dpr: 1,
-    stars: [],
-    motes: [],
-    streams: [],
-    visible: true,
-    lastTime: performance.now()
-  };
-
-  const random = (min, max) => min + Math.random() * (max - min);
-  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-
-  function buildParticles() {
-    const area = state.width * state.height;
-    const starCount = clamp(Math.round(area / 14500), 42, 150);
-    const moteCount = clamp(Math.round(area / 34000), 18, 72);
-
-    state.stars = Array.from({ length: starCount }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      radius: random(.35, 1.25),
-      alpha: random(.15, .72),
-      phase: random(0, Math.PI * 2),
-      speed: random(.00045, .00125)
-    }));
-
-    state.motes = Array.from({ length: moteCount }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      radius: random(1.4, 4.6),
-      driftX: random(-.000004, .000015),
-      driftY: random(-.000012, -.000003),
-      phase: random(0, Math.PI * 2),
-      hue: random(174, 214),
-      alpha: random(.12, .36)
-    }));
-
-    state.streams = Array.from({ length: state.width < 720 ? 3 : 5 }, (_, index) => ({
-      y: random(.12, .88),
-      amplitude: random(.025, .09),
-      phase: random(0, Math.PI * 2),
-      speed: random(.00008, .00018),
-      width: random(.45, 1.05),
-      alpha: random(.08, .2),
-      hue: index % 2 ? random(188, 212) : random(164, 185)
-    }));
-  }
-
-  function resize() {
-    state.width = Math.max(1, window.innerWidth);
-    state.height = Math.max(1, window.innerHeight);
-    state.dpr = Math.min(window.devicePixelRatio || 1, 1.75);
-
-    layerNames.forEach((name) => {
-      const canvas = canvases[name];
-      canvas.width = Math.round(state.width * state.dpr);
-      canvas.height = Math.round(state.height * state.dpr);
-      canvas.style.width = `${state.width}px`;
-      canvas.style.height = `${state.height}px`;
-      const ctx = contexts[name];
-      ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
-    });
-    buildParticles();
-  }
-
-  function drawStars(time) {
-    const ctx = contexts.stars;
-    ctx.clearRect(0, 0, state.width, state.height);
-    for (const star of state.stars) {
-      const pulse = .56 + Math.sin(star.phase + time * star.speed) * .44;
-      const alpha = star.alpha * pulse;
-      const x = star.x * state.width;
-      const y = star.y * state.height;
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(218, 249, 255, ${alpha})`;
-      ctx.arc(x, y, star.radius, 0, Math.PI * 2);
-      ctx.fill();
-      if (star.radius > .95 && pulse > .82) {
-        ctx.strokeStyle = `rgba(150, 238, 233, ${alpha * .42})`;
-        ctx.lineWidth = .55;
-        ctx.beginPath();
-        ctx.moveTo(x - 4, y);
-        ctx.lineTo(x + 4, y);
-        ctx.moveTo(x, y - 4);
-        ctx.lineTo(x, y + 4);
-        ctx.stroke();
-      }
-    }
-  }
-
-  function drawMotes(time, delta) {
-    const ctx = contexts.motes;
-    ctx.clearRect(0, 0, state.width, state.height);
-    for (const mote of state.motes) {
-      if (!reducedMotion) {
-        mote.x += mote.driftX * delta;
-        mote.y += mote.driftY * delta;
-        if (mote.x > 1.05) mote.x = -.05;
-        if (mote.x < -.05) mote.x = 1.05;
-        if (mote.y < -.08) mote.y = 1.08;
-      }
-      const x = mote.x * state.width + Math.sin(time * .00016 + mote.phase) * 10;
-      const y = mote.y * state.height;
-      const glow = ctx.createRadialGradient(x, y, 0, x, y, mote.radius * 5.5);
-      glow.addColorStop(0, `hsla(${mote.hue}, 92%, 88%, ${mote.alpha * 1.9})`);
-      glow.addColorStop(.18, `hsla(${mote.hue}, 88%, 74%, ${mote.alpha})`);
-      glow.addColorStop(1, `hsla(${mote.hue}, 80%, 58%, 0)`);
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(x, y, mote.radius * 5.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  function cubicPoint(p0, p1, p2, p3, t) {
-    const inv = 1 - t;
-    return inv * inv * inv * p0 + 3 * inv * inv * t * p1 + 3 * inv * t * t * p2 + t * t * t * p3;
-  }
-
-  function drawStreams(time) {
-    const ctx = contexts.streams;
-    ctx.clearRect(0, 0, state.width, state.height);
-    ctx.globalCompositeOperation = 'lighter';
-
-    state.streams.forEach((stream, index) => {
-      const sway = Math.sin(time * stream.speed + stream.phase) * stream.amplitude;
-      const y0 = (stream.y + sway) * state.height;
-      const y1 = (stream.y - sway * .7) * state.height;
-      const y2 = (stream.y + sway * .5) * state.height;
-      const y3 = (stream.y - sway * .35) * state.height;
-      const x0 = -state.width * .08;
-      const x1 = state.width * .28;
-      const x2 = state.width * .68;
-      const x3 = state.width * 1.08;
-      const gradient = ctx.createLinearGradient(0, 0, state.width, 0);
-      gradient.addColorStop(0, `hsla(${stream.hue}, 90%, 70%, 0)`);
-      gradient.addColorStop(.24, `hsla(${stream.hue}, 90%, 72%, ${stream.alpha})`);
-      gradient.addColorStop(.72, `hsla(${stream.hue + 12}, 94%, 78%, ${stream.alpha * .78})`);
-      gradient.addColorStop(1, `hsla(${stream.hue + 12}, 90%, 75%, 0)`);
-      ctx.strokeStyle = gradient;
-      ctx.lineWidth = stream.width;
-      ctx.beginPath();
-      ctx.moveTo(x0, y0);
-      ctx.bezierCurveTo(x1, y1, x2, y2, x3, y3);
-      ctx.stroke();
-
-      const progress = reducedMotion ? .55 : (time * (stream.speed * .22) + index * .173) % 1;
-      const px = cubicPoint(x0, x1, x2, x3, progress);
-      const py = cubicPoint(y0, y1, y2, y3, progress);
-      const head = ctx.createRadialGradient(px, py, 0, px, py, 15);
-      head.addColorStop(0, `hsla(${stream.hue}, 100%, 91%, .7)`);
-      head.addColorStop(.2, `hsla(${stream.hue}, 96%, 77%, .32)`);
-      head.addColorStop(1, `hsla(${stream.hue}, 90%, 65%, 0)`);
-      ctx.fillStyle = head;
-      ctx.beginPath();
-      ctx.arc(px, py, 15, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.globalCompositeOperation = 'source-over';
-  }
-
-  function updateRouteIntensity() {
-    const route = `${location.hash} ${location.pathname}`.toLowerCase();
-    root.dataset.quiet = /earth|space|cosmos|deep-time|first-gx/.test(route) ? 'true' : 'false';
-  }
-
-  function frame(time) {
-    const delta = Math.min(40, time - state.lastTime || 16.67);
-    state.lastTime = time;
-    if (state.visible) {
-      drawStars(time);
-      drawMotes(time, delta);
-      drawStreams(time);
-    }
-    requestAnimationFrame(frame);
-  }
-
-  document.addEventListener('visibilitychange', () => {
-    state.visible = !document.hidden;
-    state.lastTime = performance.now();
-  });
-  window.addEventListener('resize', resize, { passive: true });
-  window.addEventListener('hashchange', updateRouteIntensity);
-
-  resize();
-  updateRouteIntensity();
-  requestAnimationFrame(frame);
-})();
-</script>
-  <style id="gs-atmosphere-visible-fallback">
-    #gs-atmosphere-fallback {
-      position: fixed;
-      inset: 0;
-      z-index: 820;
-      overflow: hidden;
-      pointer-events: none;
-      opacity: .86;
-      mix-blend-mode: screen;
-    }
-    #gs-atmosphere-fallback .gs-stars,
-    #gs-atmosphere-fallback .gs-light,
-    #gs-atmosphere-fallback .gs-streams {
-      position: absolute;
-      inset: -8%;
-      will-change: transform, opacity;
-    }
-    #gs-atmosphere-fallback .gs-stars {
-      background:
-        radial-gradient(circle at 8% 18%, #eaffff 0 1px, transparent 2px),
-        radial-gradient(circle at 17% 72%, #b7fff2 0 1.3px, transparent 2.5px),
-        radial-gradient(circle at 31% 29%, #d9e8ff 0 1px, transparent 2px),
-        radial-gradient(circle at 44% 82%, #f0ffff 0 1.2px, transparent 2.4px),
-        radial-gradient(circle at 58% 15%, #a8f7ee 0 1.4px, transparent 2.8px),
-        radial-gradient(circle at 71% 61%, #e9ddff 0 1px, transparent 2.2px),
-        radial-gradient(circle at 83% 27%, #d6ffff 0 1.4px, transparent 2.8px),
-        radial-gradient(circle at 94% 78%, #b9d8ff 0 1.2px, transparent 2.5px);
-      background-size: 43% 47%, 37% 53%, 41% 44%, 47% 39%, 35% 49%, 39% 43%, 46% 51%, 42% 45%;
-      filter: drop-shadow(0 0 6px rgba(146, 245, 235, .9));
-      animation: gs-stars-breathe 4.8s ease-in-out infinite alternate;
-    }
-    #gs-atmosphere-fallback .gs-light {
-      background:
-        radial-gradient(circle at 18% 36%, rgba(132,255,235,.34), transparent 2.8%),
-        radial-gradient(circle at 63% 24%, rgba(164,201,255,.3), transparent 3.2%),
-        radial-gradient(circle at 79% 72%, rgba(185,150,255,.24), transparent 2.5%),
-        radial-gradient(circle at 42% 78%, rgba(111,236,225,.28), transparent 3%);
-      filter: blur(3px);
-      animation: gs-light-drift 13s ease-in-out infinite alternate;
-    }
-    #gs-atmosphere-fallback .gs-streams {
-      background:
-        radial-gradient(ellipse 80% 36% at 3% 24%, transparent 68%, rgba(132,255,238,.24) 69%, transparent 70.2%),
-        radial-gradient(ellipse 72% 31% at 97% 66%, transparent 66%, rgba(146,189,255,.2) 67%, transparent 68.2%),
-        radial-gradient(ellipse 64% 27% at 48% 108%, transparent 65%, rgba(199,162,255,.16) 66%, transparent 67.2%);
-      filter: blur(.5px) drop-shadow(0 0 9px rgba(121,239,231,.3));
-      animation: gs-stream-drift 18s ease-in-out infinite alternate;
-    }
-    @keyframes gs-stars-breathe {
-      from { opacity: .48; transform: translate3d(-.3%, -.2%, 0) scale(1); }
-      to { opacity: 1; transform: translate3d(.35%, .25%, 0) scale(1.008); }
-    }
-    @keyframes gs-light-drift {
-      from { opacity: .42; transform: translate3d(-1.2%, .5%, 0); }
-      to { opacity: .9; transform: translate3d(1.4%, -1%, 0); }
-    }
-    @keyframes gs-stream-drift {
-      from { opacity: .46; transform: translate3d(-1%, 0, 0) scale(1.01); }
-      to { opacity: .9; transform: translate3d(1%, -.6%, 0) scale(1.025); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      #gs-atmosphere-fallback > * { animation: none !important; }
-    }
-  </style>
-  <div id="gs-atmosphere-fallback" aria-hidden="true">
-    <div class="gs-stars"></div>
-    <div class="gs-light"></div>
-    <div class="gs-streams"></div>
-  </div>
-  <style id="gs-particle-visibility-fix">
-    /* Ambient particles must sit above scene artwork, but never capture input. */
-    #gs-atmosphere-v2,
-    #gs-atmosphere-fallback {
-      display: block !important;
-      visibility: visible !important;
-      z-index: 860 !important;
-      pointer-events: none !important;
-    }
-    #gs-atmosphere-v2 { opacity: .72 !important; }
-    #gs-atmosphere-fallback { opacity: .78 !important; }
-    #gs-atmosphere-v2 canvas {
-      display: block !important;
-      visibility: visible !important;
-      opacity: .82 !important;
-    }
-  </style>
-<style id="gs-particle-guarantee-style">
-  #gs-particle-guarantee {
-    position: fixed;
-    inset: 0;
-    z-index: 2147480000;
-    overflow: hidden;
-    pointer-events: none;
-    opacity: .58;
-    mix-blend-mode: screen;
-    isolation: isolate;
-  }
-
-  #gs-particle-guarantee .gs-pg-stars {
-    position: absolute;
-    inset: -8%;
-    opacity: .9;
-    background-image:
-      radial-gradient(circle at 8% 18%, rgba(210, 255, 248, .98) 0 1.2px, transparent 2px),
-      radial-gradient(circle at 74% 24%, rgba(183, 223, 255, .94) 0 1.4px, transparent 2.2px),
-      radial-gradient(circle at 35% 68%, rgba(255, 255, 255, .9) 0 1.1px, transparent 1.9px),
-      radial-gradient(circle at 91% 76%, rgba(154, 255, 237, .95) 0 1.3px, transparent 2.1px);
-    background-size: 150px 150px, 220px 220px, 285px 285px, 350px 350px;
-    filter: drop-shadow(0 0 5px rgba(143, 244, 255, .82));
-    animation: gsPgStarDrift 32s linear infinite;
-  }
-
-  #gs-particle-guarantee .gs-pg-motes {
-    position: absolute;
-    inset: -10%;
-    opacity: .52;
-    background:
-      radial-gradient(circle at 18% 74%, rgba(98, 255, 222, .7), transparent 2.8%),
-      radial-gradient(circle at 78% 18%, rgba(126, 198, 255, .65), transparent 2.5%),
-      radial-gradient(circle at 62% 68%, rgba(255, 255, 255, .5), transparent 2.2%),
-      radial-gradient(circle at 39% 37%, rgba(125, 244, 255, .58), transparent 2.6%);
-    filter: blur(1px);
-    animation: gsPgMoteFloat 13s ease-in-out infinite alternate;
-  }
-
-  #gs-particle-guarantee svg {
-    position: absolute;
-    inset: -12%;
-    width: 124%;
-    height: 124%;
-    opacity: .56;
-    filter: drop-shadow(0 0 8px rgba(121, 238, 255, .45));
-  }
-
-  #gs-particle-guarantee path {
-    fill: none;
-    stroke: url(#gsPgGradient);
-    stroke-width: 1.05;
-    stroke-linecap: round;
-    stroke-dasharray: 5 16;
-    animation: gsPgFlow 17s linear infinite;
-  }
-
-  #gs-particle-guarantee path:nth-of-type(2) {
-    animation-duration: 23s;
-    opacity: .76;
-  }
-
-  #gs-particle-guarantee path:nth-of-type(3) {
-    animation-duration: 29s;
-    opacity: .58;
-  }
-
-  @keyframes gsPgStarDrift {
-    to { transform: translate3d(34px, 24px, 0); }
-  }
-
-  @keyframes gsPgMoteFloat {
-    to { transform: translate3d(-24px, 18px, 0) scale(1.045); opacity: .72; }
-  }
-
-  @keyframes gsPgFlow {
-    to { stroke-dashoffset: -420; }
-  }
-
-  @media (max-width: 720px) {
-    #gs-particle-guarantee { opacity: .46; }
-    #gs-particle-guarantee .gs-pg-stars {
-      background-size: 180px 180px, 250px 250px, 320px 320px, 390px 390px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    #gs-particle-guarantee .gs-pg-stars,
-    #gs-particle-guarantee .gs-pg-motes,
-    #gs-particle-guarantee path { animation: none !important; }
-  }
-</style>
-
-<div id="gs-particle-guarantee" aria-hidden="true">
-  <div class="gs-pg-stars"></div>
-  <div class="gs-pg-motes"></div>
-  <svg viewBox="0 0 1600 900" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="gsPgGradient" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#7ef4dc" stop-opacity="0" />
-        <stop offset=".42" stop-color="#b5fff0" stop-opacity=".86" />
-        <stop offset=".72" stop-color="#8abfff" stop-opacity=".74" />
-        <stop offset="1" stop-color="#c0a4ff" stop-opacity="0" />
-      </linearGradient>
-    </defs>
-    <path d="M-80 650 C260 420 430 760 780 520 S1280 300 1710 180" />
-    <path d="M-120 240 C300 80 520 400 840 250 S1260 20 1700 340" />
-    <path d="M-60 830 C350 640 650 880 970 670 S1380 540 1690 630" />
-  </svg>
-</div>
-<style id="gs-particle-stage-v4-style">
-  #gs-particle-stage-v4 {
-    position: fixed;
-    inset: 0;
-    z-index: 2147482000;
-    overflow: hidden;
-    pointer-events: none;
-    user-select: none;
-    mix-blend-mode: screen;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    isolation: isolate;
-  }
-
-  #gs-particle-stage-v4 .gs-v4-stars,
-  #gs-particle-stage-v4 .gs-v4-motes,
-  #gs-particle-stage-v4 .gs-v4-flow {
-    position: absolute;
-    inset: -8%;
-    display: block !important;
-    visibility: visible !important;
-  }
-
-  /* 遠景：小さく明滅する星 */
-  #gs-particle-stage-v4 .gs-v4-stars {
-    opacity: .92;
-    background-image:
-      radial-gradient(circle, rgba(236,255,252,.98) 0 1.2px, transparent 1.9px),
-      radial-gradient(circle, rgba(154,220,255,.92) 0 1.5px, transparent 2.2px),
-      radial-gradient(circle, rgba(151,255,225,.88) 0 1px, transparent 1.8px);
-    background-position: 17px 31px, 81px 17px, 42px 96px;
-    background-size: 137px 137px, 211px 211px, 293px 293px;
-    filter: drop-shadow(0 0 5px rgba(159,240,255,.8));
-    animation: gsV4StarDrift 36s linear infinite, gsV4StarPulse 4.8s ease-in-out infinite alternate;
-  }
-
-  /* 中景：ゆっくり漂う光粒 */
-  #gs-particle-stage-v4 .gs-v4-motes {
-    inset: -12%;
-    opacity: .82;
-    background:
-      radial-gradient(circle at 12% 22%, rgba(118,255,221,.62) 0 3px, rgba(118,255,221,.22) 7px, transparent 24px),
-      radial-gradient(circle at 31% 78%, rgba(161,220,255,.66) 0 4px, rgba(161,220,255,.18) 10px, transparent 32px),
-      radial-gradient(circle at 53% 34%, rgba(255,255,255,.55) 0 3px, rgba(181,245,255,.17) 9px, transparent 29px),
-      radial-gradient(circle at 72% 72%, rgba(132,255,230,.59) 0 4px, rgba(132,255,230,.18) 11px, transparent 36px),
-      radial-gradient(circle at 89% 27%, rgba(170,191,255,.58) 0 3px, rgba(170,191,255,.16) 9px, transparent 31px);
-    filter: blur(.25px);
-    animation: gsV4MoteFloat 14s ease-in-out infinite alternate;
-  }
-
-  /* 近景：画面を横断する細い流線 */
-  #gs-particle-stage-v4 .gs-v4-flow {
-    inset: -10%;
-    width: 120%;
-    height: 120%;
-    opacity: .88;
-    filter: drop-shadow(0 0 8px rgba(116,237,255,.5));
-  }
-
-  #gs-particle-stage-v4 .gs-v4-flow path {
-    fill: none;
-    stroke: url(#gsV4FlowGradient);
-    stroke-width: 1.35;
-    stroke-linecap: round;
-    stroke-dasharray: 7 20;
-    animation: gsV4FlowTravel 17s linear infinite;
-  }
-
-  #gs-particle-stage-v4 .gs-v4-flow path:nth-of-type(2) {
-    opacity: .74;
-    animation-duration: 23s;
-    animation-direction: reverse;
-  }
-
-  #gs-particle-stage-v4 .gs-v4-flow path:nth-of-type(3) {
-    opacity: .54;
-    animation-duration: 29s;
-  }
-
-  @keyframes gsV4StarDrift {
-    to { transform: translate3d(42px, 28px, 0); }
-  }
-
-  @keyframes gsV4StarPulse {
-    from { opacity: .48; }
-    to { opacity: .82; }
-  }
-
-  @keyframes gsV4MoteFloat {
-    from { transform: translate3d(-10px, 4px, 0) scale(.98); }
-    to { transform: translate3d(35px, -22px, 0) scale(1.06); }
-  }
-
-  @keyframes gsV4FlowTravel {
-    to { stroke-dashoffset: -540; }
-  }
-
-  @media (max-width: 720px) {
-    #gs-particle-stage-v4 .gs-v4-stars { opacity: .62; }
-    #gs-particle-stage-v4 .gs-v4-motes { opacity: .52; }
-    #gs-particle-stage-v4 .gs-v4-flow { opacity: .58; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    #gs-particle-stage-v4 * { animation: none !important; }
-  }
-</style>
-
-<div id="gs-particle-stage-v4" role="presentation">
-  <div class="gs-v4-stars"></div>
-  <div class="gs-v4-motes"></div>
-  <svg class="gs-v4-flow" viewBox="0 0 1600 900" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="gsV4FlowGradient" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#76e8d1" stop-opacity="0" />
-        <stop offset=".32" stop-color="#9effe6" stop-opacity=".86" />
-        <stop offset=".68" stop-color="#85bbff" stop-opacity=".78" />
-        <stop offset="1" stop-color="#bea6ff" stop-opacity="0" />
-      </linearGradient>
-    </defs>
-    <path d="M-120 650 C220 390 480 760 800 515 S1300 260 1740 130" />
-    <path d="M-100 235 C280 55 520 410 850 245 S1290 35 1730 360" />
-    <path d="M-90 835 C300 610 650 900 980 680 S1380 500 1720 645" />
-  </svg>
-</div>
-<style id="gs-particle-stage-v5-style">
-  /* Single, route-independent atmospheric layer. Older experiments are disabled
-     so their opacity and stacking rules cannot cancel one another out. */
-  #gs-atmosphere-v2,
-  #gs-atmosphere-fallback,
-  #gs-particle-guarantee,
-  #gs-particle-stage-v4 {
-    display: none !important;
-  }
-
-  #gs-particle-stage-v5 {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 2147483600 !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    overflow: hidden !important;
-    pointer-events: none !important;
-    user-select: none !important;
-    isolation: isolate;
-    mix-blend-mode: screen;
-  }
-
-  #gs-particle-stage-v5 > * {
-    display: block !important;
-    visibility: visible !important;
-  }
-
-  #gs-particle-stage-v5 .gs-v5-stars,
-  #gs-particle-stage-v5 .gs-v5-motes,
-  #gs-particle-stage-v5 .gs-v5-flow {
-    position: absolute;
-    inset: -8%;
-    width: 116%;
-    height: 116%;
-  }
-
-  #gs-particle-stage-v5 .gs-v5-stars {
-    opacity: .88 !important;
-    background-image:
-      radial-gradient(circle, rgba(231,255,255,.98) 0 1.2px, transparent 1.75px),
-      radial-gradient(circle, rgba(123,231,255,.92) 0 1.05px, transparent 1.6px),
-      radial-gradient(circle, rgba(196,175,255,.84) 0 1.35px, transparent 1.9px);
-    background-position: 11px 7px, 67px 39px, 139px 96px;
-    background-size: 131px 113px, 199px 173px, 283px 241px;
-    filter: drop-shadow(0 0 4px rgba(125,231,255,.75));
-    animation: gs-v5-star-drift 34s linear infinite;
-  }
-
-  #gs-particle-stage-v5 .gs-v5-motes {
-    opacity: .78 !important;
-    background:
-      radial-gradient(circle at 13% 27%, rgba(160,255,241,.78) 0 2px, rgba(110,231,255,.28) 3px 11px, transparent 25px),
-      radial-gradient(circle at 31% 74%, rgba(215,255,255,.82) 0 2.5px, rgba(104,222,255,.25) 4px 15px, transparent 31px),
-      radial-gradient(circle at 55% 22%, rgba(198,179,255,.82) 0 2px, rgba(142,153,255,.25) 4px 13px, transparent 28px),
-      radial-gradient(circle at 72% 67%, rgba(138,255,229,.82) 0 2.5px, rgba(83,213,236,.24) 4px 16px, transparent 34px),
-      radial-gradient(circle at 89% 35%, rgba(221,244,255,.86) 0 2px, rgba(132,192,255,.24) 4px 13px, transparent 28px);
-    animation: gs-v5-mote-float 14s ease-in-out infinite alternate;
-  }
-
-  #gs-particle-stage-v5 .gs-v5-flow {
-    inset: -4% -8%;
-    width: 116%;
-    height: 108%;
-    opacity: .84 !important;
-    overflow: visible;
-    filter: drop-shadow(0 0 7px rgba(116,235,255,.4));
-  }
-
-  #gs-particle-stage-v5 .gs-v5-flow path {
-    fill: none;
-    stroke: url(#gsV5FlowGradient);
-    stroke-linecap: round;
-    stroke-width: 1.4;
-    stroke-dasharray: 10 22;
-    vector-effect: non-scaling-stroke;
-    animation: gs-v5-flow-run 9s linear infinite;
-  }
-
-  #gs-particle-stage-v5 .gs-v5-flow path:nth-of-type(2) {
-    stroke-width: 1;
-    stroke-dasharray: 5 27;
-    animation-duration: 13s;
-    animation-direction: reverse;
-    opacity: .78;
-  }
-
-  #gs-particle-stage-v5 .gs-v5-flow path:nth-of-type(3) {
-    stroke-width: 1.7;
-    stroke-dasharray: 2 32;
-    animation-duration: 17s;
-    opacity: .58;
-  }
-
-  @keyframes gs-v5-star-drift {
-    from { transform: translate3d(0, 0, 0) rotate(.001deg); }
-    to { transform: translate3d(-54px, 38px, 0) rotate(.001deg); }
-  }
-
-  @keyframes gs-v5-mote-float {
-    0% { transform: translate3d(-1.2%, 1.4%, 0) scale(.98); filter: brightness(.86); }
-    55% { transform: translate3d(1.4%, -.7%, 0) scale(1.02); filter: brightness(1.24); }
-    100% { transform: translate3d(-.4%, -1.6%, 0) scale(1); filter: brightness(1); }
-  }
-
-  @keyframes gs-v5-flow-run {
-    from { stroke-dashoffset: 0; }
-    to { stroke-dashoffset: -128; }
-  }
-
-  @media (max-width: 760px) {
-    #gs-particle-stage-v5 .gs-v5-stars { opacity: .76 !important; }
-    #gs-particle-stage-v5 .gs-v5-motes { opacity: .64 !important; }
-    #gs-particle-stage-v5 .gs-v5-flow { opacity: .7 !important; }
-  }
-</style>
-<div id="gs-particle-stage-v5" role="presentation">
-  <div class="gs-v5-stars"></div>
-  <div class="gs-v5-motes"></div>
-  <svg class="gs-v5-flow" viewBox="0 0 1600 900" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="gsV5FlowGradient" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#71ffe1" stop-opacity="0" />
-        <stop offset=".28" stop-color="#71ffe1" stop-opacity=".88" />
-        <stop offset=".66" stop-color="#78cfff" stop-opacity=".78" />
-        <stop offset="1" stop-color="#c6a8ff" stop-opacity="0" />
-      </linearGradient>
-    </defs>
-    <path d="M-130 710 C 155 525, 335 760, 590 590 S 1010 300, 1260 430 S 1500 575, 1730 280" />
-    <path d="M-100 250 C 210 410, 355 190, 615 350 S 1000 720, 1290 560 S 1530 300, 1715 470" />
-    <path d="M-80 510 C 250 310, 430 560, 720 430 S 1120 120, 1410 260 S 1590 470, 1700 390" />
-  </svg>
-</div>
-  <style id="gs-particle-stage-v6-style">
-    #gs-atmosphere-v2,
-    #gs-atmosphere-fallback,
-    #gs-particle-guarantee,
-    #gs-particle-stage-v4,
-    #gs-particle-stage-v5 {
-      display: none !important;
-    }
-
-    body > #gs-particle-stage-v6 {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      overflow: hidden !important;
-      pointer-events: none !important;
-      z-index: 2147483000 !important;
-      isolation: isolate;
-      mix-blend-mode: normal !important;
-    }
-
-    #gs-particle-stage-v6 > *,
-    #gs-particle-stage-v6 svg,
-    #gs-particle-stage-v6 path {
-      display: block !important;
-      visibility: visible !important;
-    }
-
-    .gs-v6-stars,
-    .gs-v6-stars--near,
-    .gs-v6-motes,
-    .gs-v6-flow {
-      position: absolute;
-      inset: 0;
-    }
-
-    .gs-v6-stars {
-      opacity: .72 !important;
-      background-image:
-        radial-gradient(circle at 7% 14%, rgba(219,255,250,.98) 0 1.3px, transparent 2.7px),
-        radial-gradient(circle at 21% 72%, rgba(117,240,255,.95) 0 1.5px, transparent 3px),
-        radial-gradient(circle at 37% 27%, rgba(255,255,255,.95) 0 1.1px, transparent 2.4px),
-        radial-gradient(circle at 52% 84%, rgba(161,218,255,.96) 0 1.6px, transparent 3.2px),
-        radial-gradient(circle at 68% 18%, rgba(198,180,255,.94) 0 1.3px, transparent 2.8px),
-        radial-gradient(circle at 83% 61%, rgba(153,255,234,.98) 0 1.6px, transparent 3.1px),
-        radial-gradient(circle at 94% 33%, rgba(255,255,255,.92) 0 1.2px, transparent 2.5px);
-      background-size: 217px 191px, 283px 257px, 347px 229px, 307px 331px, 263px 293px, 389px 271px, 241px 313px;
-      filter: drop-shadow(0 0 5px rgba(105,236,255,.8));
-      animation: gsV6StarDrift 28s linear infinite, gsV6Twinkle 4.8s ease-in-out infinite alternate;
-    }
-
-    .gs-v6-stars--near {
-      opacity: .82 !important;
-      background-image:
-        radial-gradient(circle at 12% 42%, rgba(137,255,235,.95) 0 2px, transparent 5px),
-        radial-gradient(circle at 31% 11%, rgba(239,255,255,.96) 0 1.8px, transparent 4.6px),
-        radial-gradient(circle at 46% 63%, rgba(160,208,255,.96) 0 2.2px, transparent 5.6px),
-        radial-gradient(circle at 64% 38%, rgba(208,184,255,.94) 0 2px, transparent 5px),
-        radial-gradient(circle at 78% 81%, rgba(141,255,235,.96) 0 2.3px, transparent 5.8px),
-        radial-gradient(circle at 91% 17%, rgba(255,255,255,.98) 0 1.9px, transparent 4.8px);
-      background-size: 419px 367px, 521px 413px, 463px 509px, 557px 397px, 487px 451px, 431px 533px;
-      filter: drop-shadow(0 0 8px rgba(117,235,255,.85));
-      animation: gsV6NearDrift 20s ease-in-out infinite alternate, gsV6Twinkle 3.4s ease-in-out infinite alternate-reverse;
-    }
-
-    .gs-v6-motes {
-      opacity: .64 !important;
-      background-image:
-        radial-gradient(circle at 10% 78%, rgba(96,243,225,.76) 0 3px, rgba(96,243,225,.26) 5px, transparent 17px),
-        radial-gradient(circle at 29% 36%, rgba(162,221,255,.75) 0 4px, rgba(162,221,255,.24) 7px, transparent 22px),
-        radial-gradient(circle at 53% 15%, rgba(206,187,255,.72) 0 3px, rgba(206,187,255,.22) 6px, transparent 20px),
-        radial-gradient(circle at 72% 69%, rgba(108,255,227,.72) 0 4px, rgba(108,255,227,.22) 8px, transparent 25px),
-        radial-gradient(circle at 91% 44%, rgba(178,224,255,.72) 0 3px, rgba(178,224,255,.2) 7px, transparent 23px);
-      background-size: 503px 461px, 617px 543px, 571px 607px, 659px 499px, 547px 631px;
-      animation: gsV6MoteFloat 16s ease-in-out infinite alternate;
-    }
-
-    .gs-v6-flow {
-      inset: -8%;
-      width: 116%;
-      height: 116%;
-      opacity: .76 !important;
-      filter: drop-shadow(0 0 5px rgba(112,244,239,.58));
-    }
-
-    .gs-v6-flow path {
-      fill: none !important;
-      stroke-width: 1.65;
-      stroke-linecap: round;
-      stroke-dasharray: 4 15;
-      animation: gsV6Flow 14s linear infinite;
-    }
-
-    .gs-v6-flow path:nth-of-type(2) {
-      stroke-dasharray: 2 19;
-      animation-duration: 19s;
-      animation-direction: reverse;
-    }
-
-    .gs-v6-flow path:nth-of-type(3) {
-      stroke-dasharray: 6 23;
-      animation-duration: 24s;
-    }
-
-    @keyframes gsV6StarDrift {
-      to { transform: translate3d(-64px, 48px, 0); }
-    }
-
-    @keyframes gsV6NearDrift {
-      from { transform: translate3d(-18px, 20px, 0) scale(1); }
-      to { transform: translate3d(34px, -28px, 0) scale(1.025); }
-    }
-
-    @keyframes gsV6MoteFloat {
-      from { transform: translate3d(0, 26px, 0); }
-      to { transform: translate3d(24px, -22px, 0); }
-    }
-
-    @keyframes gsV6Twinkle {
-      0%, 100% { filter: brightness(.85); }
-      50% { filter: brightness(1.55); }
-    }
-
-    @keyframes gsV6Flow {
-      to { stroke-dashoffset: -190; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .gs-v6-stars,
-      .gs-v6-stars--near,
-      .gs-v6-motes,
-      .gs-v6-flow path {
-        animation: none !important;
-      }
-    }
-  </style>
-  <div id="gs-particle-stage-v6" aria-hidden="true">
-    <div class="gs-v6-stars"></div>
-    <div class="gs-v6-stars gs-v6-stars--near"></div>
-    <div class="gs-v6-motes"></div>
-    <svg class="gs-v6-flow" viewBox="0 0 1600 900" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="gsV6FlowA" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stop-color="#71f5de" stop-opacity="0"/>
-          <stop offset=".38" stop-color="#71f5de" stop-opacity=".9"/>
-          <stop offset=".72" stop-color="#91bfff" stop-opacity=".78"/>
-          <stop offset="1" stop-color="#b49bff" stop-opacity="0"/>
-        </linearGradient>
-        <linearGradient id="gsV6FlowB" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stop-color="#8ebfff" stop-opacity="0"/>
-          <stop offset=".48" stop-color="#a9dcff" stop-opacity=".82"/>
-          <stop offset="1" stop-color="#79f2dc" stop-opacity="0"/>
-        </linearGradient>
-        <linearGradient id="gsV6FlowC" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#b39cff" stop-opacity="0"/>
-          <stop offset=".52" stop-color="#9cd8ff" stop-opacity=".72"/>
-          <stop offset="1" stop-color="#73f3db" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d="M -160 650 C 250 180, 560 800, 1760 270" stroke="url(#gsV6FlowA)"/>
-      <path d="M -120 280 C 390 690, 920 40, 1740 560" stroke="url(#gsV6FlowB)"/>
-      <path d="M 80 980 C 520 400, 1180 720, 1680 80" stroke="url(#gsV6FlowC)"/>
-    </svg>
-  </div>
-<style id="gs-particle-canvas-v7-style">
-  #gs-atmosphere-v2,
-  #gs-atmosphere-fallback,
-  #gs-particle-guarantee,
-  #gs-particle-stage-v4,
-  #gs-particle-stage-v5,
-  #gs-particle-stage-v6 {
-    display: none !important;
-  }
-
-  #gs-particle-canvas-v7 {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 0;
-    pointer-events: none !important;
-    z-index: 2147482000 !important;
-    animation: gs-v7-canvas-in 1.4s ease-out forwards;
-  }
-
-  @keyframes gs-v7-canvas-in {
-    to { opacity: .84; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    #gs-particle-canvas-v7 {
-      animation: none;
-      opacity: .72;
-    }
-  }
-</style>
-<canvas id="gs-particle-canvas-v7" aria-hidden="true"></canvas>
-<script id="gs-particle-canvas-v7-script">
-  (() => {
-    const canvas = document.getElementById('gs-particle-canvas-v7');
-    if (!canvas || canvas.dataset.ready === 'true') return;
-    canvas.dataset.ready = 'true';
-
-    const ctx = canvas.getContext('2d', { alpha: true });
-    if (!ctx) return;
-
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const colors = ['#9effee', '#ffffff', '#a9cfff', '#cfb8ff'];
-    let width = 1;
-    let height = 1;
-    let dpr = 1;
-    let stars = [];
-    let motes = [];
-    let seed = 73129;
-
-    const random = () => {
-      seed = (seed * 16807) % 2147483647;
-      return (seed - 1) / 2147483646;
-    };
-
-    const rebuild = () => {
-      width = Math.max(1, window.innerWidth);
-      height = Math.max(1, window.innerHeight);
-      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      seed = 73129;
-      const starCount = Math.min(110, Math.max(62, Math.round(width * height / 14500)));
-      stars = Array.from({ length: starCount }, (_, index) => ({
-        x: random(),
-        y: random(),
-        r: .8 + random() * 1.8,
-        phase: random() * Math.PI * 2,
-        speed: .45 + random() * 1.15,
-        color: colors[index % colors.length]
-      }));
-
-      motes = Array.from({ length: 26 }, (_, index) => ({
-        x: random() * width,
-        y: random() * height,
-        r: 3.5 + random() * 7.5,
-        vx: (-.12 + random() * .24),
-        vy: (-.2 - random() * .22),
-        phase: random() * Math.PI * 2,
-        color: colors[(index + 1) % colors.length]
-      }));
-    };
-
-    const pointOnCurve = (p0, p1, p2, p3, t) => {
-      const u = 1 - t;
-      const tt = t * t;
-      const uu = u * u;
-      return {
-        x: uu * u * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + tt * t * p3.x,
-        y: uu * u * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + tt * t * p3.y
-      };
-    };
-
-    const drawFlows = (time) => {
-      const routes = [
-        { y: .22, bend: .14, color: '#8fffe9', speed: .000030 },
-        { y: .50, bend: -.18, color: '#9ec8ff', speed: .000024 },
-        { y: .76, bend: .12, color: '#c8aaff', speed: .000027 }
-      ];
-
-      routes.forEach((route, routeIndex) => {
-        const p0 = { x: -90, y: height * route.y };
-        const p1 = { x: width * .28, y: height * (route.y + route.bend) };
-        const p2 = { x: width * .70, y: height * (route.y - route.bend) };
-        const p3 = { x: width + 90, y: height * route.y };
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(p0.x, p0.y);
-        ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-        ctx.strokeStyle = 'rgba(2, 14, 30, .48)';
-        ctx.lineWidth = 5;
-        ctx.setLineDash([25, 32]);
-        ctx.lineDashOffset = -(time * route.speed * 900 + routeIndex * 19);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(p0.x, p0.y);
-        ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-        ctx.strokeStyle = route.color;
-        ctx.globalAlpha = .38;
-        ctx.lineWidth = 1.3;
-        ctx.setLineDash([25, 32]);
-        ctx.stroke();
-
-        for (let index = 0; index < 13; index += 1) {
-          const progress = (time * route.speed + index / 13 + routeIndex * .17) % 1;
-          const point = pointOnCurve(p0, p1, p2, p3, progress);
-          ctx.setLineDash([]);
-          ctx.globalAlpha = .38 + Math.sin(progress * Math.PI) * .5;
-          ctx.shadowColor = route.color;
-          ctx.shadowBlur = 12;
-          ctx.fillStyle = route.color;
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, 1.4 + (index % 3) * .45, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
-      });
-    };
-
-    const drawStars = (time) => {
-      stars.forEach((star) => {
-        const pulse = .42 + (Math.sin(time * .001 * star.speed + star.phase) + 1) * .28;
-        const x = star.x * width;
-        const y = star.y * height;
-
-        ctx.save();
-        ctx.globalAlpha = pulse * .64;
-        ctx.fillStyle = 'rgba(3, 15, 31, .68)';
-        ctx.beginPath();
-        ctx.arc(x, y, star.r + 2.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.globalAlpha = pulse;
-        ctx.shadowColor = star.color;
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = star.color;
-        ctx.beginPath();
-        ctx.arc(x, y, star.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      });
-    };
-
-    const drawMotes = (time) => {
-      motes.forEach((mote) => {
-        if (!reduceMotion) {
-          mote.x += mote.vx;
-          mote.y += mote.vy;
-          if (mote.y < -24) mote.y = height + 24;
-          if (mote.x < -24) mote.x = width + 24;
-          if (mote.x > width + 24) mote.x = -24;
-        }
-
-        const pulse = .28 + (Math.sin(time * .0007 + mote.phase) + 1) * .16;
-        const glow = ctx.createRadialGradient(mote.x, mote.y, 0, mote.x, mote.y, mote.r * 3.4);
-        glow.addColorStop(0, mote.color);
-        glow.addColorStop(.18, `${mote.color}b8`);
-        glow.addColorStop(.48, `${mote.color}30`);
-        glow.addColorStop(1, 'rgba(2, 12, 27, 0)');
-        ctx.save();
-        ctx.globalAlpha = pulse;
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(mote.x, mote.y, mote.r * 3.4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      });
-    };
-
-    const render = (time = 0) => {
-      ctx.clearRect(0, 0, width, height);
-      drawFlows(time);
-      drawMotes(time);
-      drawStars(time);
-      if (!reduceMotion) window.requestAnimationFrame(render);
-    };
-
-    rebuild();
-    window.addEventListener('resize', rebuild, { passive: true });
-    render(0);
-  })();
-</script>
-  <script src="./particles-v8.js?v=20260805a"></script>
-  <script src="./particles-v9.js?v=20260805"></script>
+  <script src="./particles-v9.js?v=20260805b"></script>
 </body>
 </html>

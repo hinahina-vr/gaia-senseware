@@ -1,4 +1,4 @@
-// Persistent three-layer ambience: stars / light motes / flowing traces.
+// Persistent ambience: stars / light motes.
 (() => {
   const ID = "gs-particle-canvas-v9";
   const OLD_IDS = ["gs-particle-canvas-v7", "gs-particle-canvas-v8"];
@@ -28,8 +28,8 @@
       width: "100vw",
       height: "100vh",
       pointerEvents: "none",
-      zIndex: "2147482000",
-      opacity: "0.88",
+      zIndex: "18",
+      opacity: "0.58",
       mixBlendMode: "screen",
       display: "block",
       visibility: "visible",
@@ -51,24 +51,47 @@
     return canvas;
   };
 
-  const randomStar = () => ({
-    x: Math.random() * width,
-    y: Math.random() * height,
-    radius: 0.65 + Math.random() * 1.55,
-    alpha: 0.32 + Math.random() * 0.64,
-    phase: Math.random() * Math.PI * 2,
-    speed: 0.35 + Math.random() * 0.8
-  });
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  const clusters = [
+    { x: 0.12, y: 0.14, spreadX: 0.2, spreadY: 0.18 },
+    { x: 0.12, y: 0.14, spreadX: 0.2, spreadY: 0.18 },
+    { x: 0.44, y: 0.075, spreadX: 0.26, spreadY: 0.08 },
+    { x: 0.1, y: 0.72, spreadX: 0.12, spreadY: 0.22 },
+    { x: 0.94, y: 0.18, spreadX: 0.05, spreadY: 0.16 }
+  ];
+  const bell = () => (Math.random() + Math.random() + Math.random()) / 3 - 0.5;
+  const clusteredPoint = () => {
+    const cluster = clusters[Math.floor(Math.random() * clusters.length)];
+    return {
+      x: clamp(cluster.x + bell() * cluster.spreadX * 2, 0.015, 0.985) * width,
+      y: clamp(cluster.y + bell() * cluster.spreadY * 2, 0.015, 0.985) * height
+    };
+  };
 
-  const randomMote = () => ({
-    x: Math.random() * width,
-    y: Math.random() * height,
-    radius: 12 + Math.random() * 34,
-    vx: -3 + Math.random() * 6,
-    vy: -7 - Math.random() * 13,
-    alpha: 0.08 + Math.random() * 0.17,
-    hue: Math.random() > 0.3 ? 174 : 211
-  });
+  const randomStar = () => {
+    const point = clusteredPoint();
+    return {
+      x: point.x,
+      y: point.y,
+      radius: 0.5 + Math.random() * 1.05,
+      alpha: 0.16 + Math.random() * 0.42,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.28 + Math.random() * 0.62
+    };
+  };
+
+  const randomMote = () => {
+    const point = clusteredPoint();
+    return {
+      x: point.x,
+      y: point.y,
+      radius: 9 + Math.random() * 18,
+      vx: -1.5 + Math.random() * 3,
+      vy: -3.5 - Math.random() * 6.5,
+      alpha: 0.045 + Math.random() * 0.075,
+      hue: Math.random() > 0.3 ? 174 : 211
+    };
+  };
 
   const makeFlow = (index) => ({
     y: height * (0.26 + index * 0.24),
@@ -80,8 +103,10 @@
   });
 
   const rebuild = () => {
-    stars = Array.from({ length: Math.max(80, Math.round((width * height) / 12500)) }, randomStar);
-    motes = Array.from({ length: Math.max(14, Math.round(width / 95)) }, randomMote);
+    const starCount = clamp(Math.round((width * height) / 42000), 22, 52);
+    const moteCount = clamp(Math.round(width / 260), 5, 9);
+    stars = Array.from({ length: starCount }, randomStar);
+    motes = Array.from({ length: moteCount }, randomMote);
     flows = Array.from({ length: 3 }, (_, i) => makeFlow(i));
   };
 
@@ -184,7 +209,6 @@
     ctx.clearRect(0, 0, width, height);
     drawStars(time);
     drawMotes(dt);
-    drawFlows(time, dt);
   };
 
   const tick = (time) => {
