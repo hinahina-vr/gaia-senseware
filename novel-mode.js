@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "gaiaSensewareNovel:v5";
+  const STORAGE_KEY = "gaiaSensewareNovel:v6";
   const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const TEXT_REVEAL_STEP_MS = 36;
   const TEXT_REVEAL_FADE_MS = 280;
@@ -45,18 +45,6 @@
   };
 
   const STORY = [
-    { type: "chapter", chapter: "PROLOGUE", title: "はじめまして、画面の外で", mode: 0, location: "夏の逗子" },
-    { type: "line", speaker: "narrator", mode: 0, kind: "SOURCE", signal: "ONLINE CLASS / WEEKLY SESSION", text: "私たちは毎週、同じ画面にいた。声も、考え方も、文字を打つ間も知っている。それでも今日が、初対面だった。", location: "海の見える共同制作室" },
-    { type: "line", speaker: "minamo", expression: "worried", mode: 0, kind: "SOURCE", signal: "FIRST MEETING / MIZUHA", text: "ええ……アマネ、で合っていますの？", location: "海の見える共同制作室" },
-    { type: "line", speaker: "sora", expression: "startled", mode: 0, kind: "SOURCE", signal: "FIRST MEETING / AMANE", text: "ええ。ミズハさん、だよね？", location: "海の見える共同制作室" },
-    { type: "line", speaker: "minamo", expression: "teasing", mode: 0, kind: "SOURCE", signal: "同じ声 / はじめての距離", text: "毎週話していましたのに、画面の外だとさん付けになるんですのね。", location: "海の見える共同制作室" },
-    { type: "line", speaker: "sora", expression: "calm", mode: 0, kind: "SOURCE", signal: "画面の外では初対面", text: "画面の外では初対面だから。なんか変だね。", location: "海の見える共同制作室" },
-    { type: "line", speaker: "minamo", expression: "calm", mode: 0, kind: "SOURCE", signal: "HELLO / OUTSIDE THE SCREEN", text: "ほいじゃ――改めまして。はじめまして、ですわね。", location: "海の見える共同制作室" },
-    { type: "line", speaker: "sora", expression: "soft", mode: 0, kind: "SOURCE", signal: "HELLO / OUTSIDE THE SCREEN", text: "ええ。はじめまして。", location: "海の見える共同制作室" },
-    { type: "line", speaker: "narrator", mode: 0, kind: "SOURCE", signal: "THREE SEATS / TWO ARRIVALS", text: "三人分の席のうち、ひとつだけが空いていた。サクヤからは、まだ返事がない。", location: "SAKUYA / OFFLINE" },
-    { type: "line", speaker: "sakuya", mode: 0, kind: "SOURCE", signal: "LAST ONLINE 02:14 / 制作ログ", text: "データだけ先に上げた。きれいにしすぎないでね。", location: "サクヤの最終メッセージ" },
-    { type: "line", speaker: "minamo", expression: "calm", mode: 0, kind: "SCENARIO", signal: "THE VISITOR BECOMES A PARTICIPANT", text: "ええ、サクヤを待つあいだ、少しだけ手伝ってくださる？", location: "GAIA SENSEWARE / ENTRANCE" },
-
     { type: "chapter", chapter: "GX / 00", title: "酸素は、最初の廃棄物だった", mode: 0, location: "THE FIRST GX" },
     { type: "line", speaker: "narrator", mode: 0, kind: "SOURCE", signal: "SAKUYA / DEEP TIME RECORD", text: "サクヤが最後に開いていたのは、何十億年もの地球史を六つの場面に畳んだ観測記録だった。", location: "THE FIRST GX / LOCAL SNAPSHOT" },
     { type: "line", speaker: "minamo", expression: "teasing", mode: 0, kind: "SOURCE", signal: "CYANOBACTERIA / OXYGENIC PHOTOSYNTHESIS", text: "ええ、能書きタイムですの。酸素は最初、ごみでした。光を食べた小さな生命が、いらないものとして海へ捨てたんですのよ。", location: "THE FIRST GX / ANCIENT OCEAN" },
