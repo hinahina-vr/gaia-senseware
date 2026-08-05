@@ -19,7 +19,7 @@
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="stylesheet" href="./styles.css?v=gaia-122" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-50" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-133" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-132" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
     <link rel="stylesheet" href="./novel-mode.css?v=gaia-140" />
@@ -28,14 +28,14 @@
     <script src="./gaia-particles.js?v=gaia-19" defer></script>
     <script src="./opening-audio.js?v=gaia-09" defer></script>
     <script src="./ui-sound.js?v=gaia-01" defer></script>
-    <script src="./opening.js?v=gaia-112" defer></script>
+    <script src="./opening.js?v=gaia-111" defer></script>
     <script src="./data-ledger.js?v=gaia-31" defer></script>
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-65" defer></script>
     <script src="./app-content.js?v=gaia-101" defer></script>
     <script src="./app.js?v=gaia-106" defer></script>
   <script src="./gx-mode.js?v=gx-29" defer></script>
-    <script src="./novel-mode.js?v=gaia-118" defer></script>
+    <script src="./novel-mode.js?v=gaia-117" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-97" defer></script>
   <link rel="stylesheet" href="./map-ui-grid-polish.css?v=1">
@@ -67,9 +67,9 @@
           aria-describedby="gaia-opening-sound-copy"
         >
           <div class="gaia-opening-sound-card">
-            <p>PROLOGUE / RESTORE AUDIO</p>
-            <h2 id="gaia-opening-sound-title"><span>この記録に、</span><span>音を戻しますか。</span></h2>
-            <p id="gaia-opening-sound-copy">二人の打鍵と、翌朝の波音を再生します。記録に残らなかった音は補いません。</p>
+            <p>PROLOGUE / SOUND</p>
+            <h2 id="gaia-opening-sound-title"><span>音とともに、</span><span>物語へ。</span></h2>
+            <p id="gaia-opening-sound-copy">静かな音から、世界がひらきます。</p>
             <div class="gaia-opening-volume-choice">
               <label for="gaia-opening-volume">
                 <span>音の大きさ</span>
@@ -94,7 +94,7 @@
                     <path d="M18.75 5.75c1.7 1.55 2.75 3.6 2.75 6.25s-1.05 4.7-2.75 6.25" />
                   </svg>
                 </span>
-                <span class="gaia-opening-sound-label">音あり</span>
+                <span class="gaia-opening-sound-label">音と進む</span>
               </button>
               <button id="gaia-opening-sound-off" type="button">
                 <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
@@ -103,52 +103,121 @@
                     <path d="m16.25 8.25 5.5 7.5M21.75 8.25l-5.5 7.5" />
                   </svg>
                 </span>
-                <span class="gaia-opening-sound-label">音なし</span>
+                <span class="gaia-opening-sound-label">静かに進む</span>
               </button>
             </div>
           </div>
         </div>
 
-        <div class="gaia-record-film">
-          <section class="gaia-record-scene gaia-record-scene--chat is-active" data-opening-scene="chat" aria-hidden="false">
-            <div class="gaia-record-night-rooms" aria-hidden="true">
-              <figure class="gaia-record-room gaia-record-room--mizuha"><figcaption><span>ROOM 01</span><strong>MIZUHA</strong></figcaption><div class="gaia-record-hands"><i></i><i></i></div><div class="gaia-record-keyboard">⌨</div></figure>
-              <figure class="gaia-record-room gaia-record-room--amane"><figcaption><span>ROOM 02</span><strong>AMANE</strong></figcaption><div class="gaia-record-hands"><i></i><i></i></div><div class="gaia-record-keyboard">⌨</div></figure>
+        <canvas
+          class="gaia-opening-particles"
+          id="gaia-opening-particles"
+          aria-hidden="true"
+        ></canvas>
+
+        <div class="gaia-vn-track" aria-hidden="true">
+          <section class="gaia-vn-panel gaia-vn-panel-prologue">
+            <div class="gaia-vn-prologue-lines"></div>
+            <p class="gaia-vn-project">PROLOGUE / ZUSHI COAST</p>
+            <div class="gaia-vn-prologue-lockup">
+              <small>THREE STUDENTS / ONE UNFINISHED WORK</small>
+              <h2 data-opening-focus>「はじめまして。」</h2>
+              <p data-opening-focus>画面越しでは、何度も話していた。同じ風の中で会うのは、今日が初めてだった。</p>
             </div>
-            <article class="gaia-record-chat-window"><header><span>GROUP / 3 MEMBERS</span><strong>明日の共同制作室</strong><small>ONLINE</small></header><div class="gaia-record-chat-log" id="gaia-opening-chat-log" aria-live="polite"></div><footer><span>2 KEYBOARDS</span><span>3 VOICES</span></footer></article>
+            <p class="gaia-vn-season">ZUSHI / NEAR FUTURE</p>
           </section>
 
-          <section class="gaia-record-scene gaia-record-scene--late" data-opening-scene="late" aria-hidden="true">
-            <div class="gaia-record-late-clock" aria-hidden="true"><span>02</span><i>:</i><span>14</span></div>
-            <article class="gaia-record-terminal"><header><span>LAST ONLINE</span><strong>SAKUYA</strong></header><div class="gaia-record-chat-log gaia-record-chat-log--late" id="gaia-opening-late-log" aria-live="polite"></div><p class="gaia-record-typing" id="gaia-opening-sakuya-typing" aria-hidden="true"><i></i><span>SAKUYA is typing...</span><b></b></p></article>
-            <p class="gaia-record-silence-label">NO KEYSTROKE RECORDED</p>
+          <section class="gaia-vn-panel gaia-vn-panel-character gaia-vn-panel-minamo">
+            <div class="gaia-vn-character-grid"></div>
+            <div class="gaia-vn-character-echoes" aria-hidden="true"><i></i><i></i><i></i></div>
+            <figure class="gaia-vn-character-focus">
+              <div class="gaia-vn-character-image" role="img" aria-label="海をイメージした少女、ミズハ"></div>
+            </figure>
+            <div class="gaia-vn-character-copy">
+              <p><span>01</span> MIZUHA / FEEL</p>
+              <h2 data-opening-focus>ミズハ</h2>
+              <strong data-opening-focus>「海って、数字になる前にも、ちゃんと変わってるよね。」</strong>
+              <span class="gaia-vn-character-reply" data-opening-focus>生命の違和感を、身体で聴く。</span>
+              <small>ECOLOGY / SENSATION / LISTEN</small>
+            </div>
+            <div class="gaia-vn-character-band">MIZUHA　MIZUHA　MIZUHA</div>
           </section>
 
-          <section class="gaia-record-scene gaia-record-scene--morning" data-opening-scene="morning" aria-hidden="true">
-            <div class="gaia-record-morning-photo" aria-hidden="true"></div><div class="gaia-record-morning-shade" aria-hidden="true"></div>
-            <div class="gaia-record-morning-location"><span>ZUSHI / 10:00</span><strong>海の見える共同制作室</strong></div>
-            <div class="gaia-record-apple" aria-label="目印の青りんご"><i></i></div>
-            <div class="gaia-record-dialogue" id="gaia-opening-morning-dialogue" aria-live="polite"></div>
+          <section class="gaia-vn-panel gaia-vn-panel-character gaia-vn-panel-sora">
+            <div class="gaia-vn-character-grid"></div>
+            <div class="gaia-vn-character-echoes" aria-hidden="true"><i></i><i></i><i></i></div>
+            <figure class="gaia-vn-character-focus">
+              <div class="gaia-vn-character-image" role="img" aria-label="青空をイメージした少女、アマネ"></div>
+            </figure>
+            <div class="gaia-vn-character-copy">
+              <p><span>02</span> AMANE / MEASURE</p>
+              <h2 data-opening-focus>アマネ</h2>
+              <strong data-opening-focus>「わからないところは、わからないまま残そう。」</strong>
+              <span class="gaia-vn-character-reply" data-opening-focus>測れた事実と、未来の仮説を分ける。</span>
+              <small>SOURCE / DERIVED / SCENARIO</small>
+            </div>
+            <div class="gaia-vn-character-band">AMANE　AMANE　AMANE　AMANE</div>
           </section>
 
-          <section class="gaia-record-scene gaia-record-scene--chairs" data-opening-scene="chairs" aria-hidden="true">
-            <div class="gaia-record-room-stage" aria-hidden="true"><div class="gaia-record-window-light"></div><div class="gaia-record-table"><div class="gaia-record-apple gaia-record-apple--table"><i></i></div></div><i class="gaia-record-chair gaia-record-chair--one"></i><i class="gaia-record-chair gaia-record-chair--two"></i><i class="gaia-record-chair gaia-record-chair--empty"></i></div>
-            <article class="gaia-record-seat-chat"><div class="gaia-record-chat-log" id="gaia-opening-chair-chat" aria-live="polite"></div><p class="gaia-record-presence" id="gaia-opening-presence"><strong>SAKUYA</strong><span>last online 02:14</span></p></article>
-            <div class="gaia-record-dialogue gaia-record-dialogue--chairs" id="gaia-opening-chair-dialogue" aria-live="polite"></div>
+          <section class="gaia-vn-panel gaia-vn-panel-montage">
+            <div class="gaia-vn-montage-dots"></div>
+            <p class="gaia-vn-montage-label">THREE VOICES / ONE UNFINISHED WORK</p>
+            <div class="gaia-vn-path-copy">
+              <small>GAIA TRANSFORMATION / BEFORE THE NAME</small>
+              <h2 data-opening-focus>三人は、同じ未来を見ていなかった。</h2>
+              <p>足りない視点を重ねるために、この作品をつくった。</p>
+            </div>
+            <div class="gaia-vn-word-rails" aria-label="四つの声">
+              <p><span>01</span><strong data-opening-focus>感じる。</strong><small>MIZUHA</small></p>
+              <p><span>02</span><strong data-opening-focus>測る。</strong><small>AMANE</small></p>
+              <p><span>03</span><strong data-opening-focus>残す。</strong><small>SAKUYA</small></p>
+              <p><span>04</span><strong data-opening-focus>ともに選ぶ。</strong><small>YOU</small></p>
+            </div>
           </section>
 
-          <section class="gaia-record-scene gaia-record-scene--title" data-opening-scene="title" aria-hidden="true">
-            <div class="gaia-record-title-still" aria-hidden="true"><div class="gaia-record-apple gaia-record-apple--title"><i></i></div><i class="gaia-record-chair gaia-record-chair--title"></i><span class="gaia-record-cursor"></span></div>
-            <p class="gaia-record-title-narration" id="gaia-opening-title-narration">私たちは、三人で会うはずだった。</p>
-            <div class="gaia-record-title-lockup" id="gaia-opening-title-lockup"><h1>空白のところで、<br />地球は待っている</h1><p>GAIA SENSEWARE GX</p></div>
-            <nav class="gaia-opening-final-menu" id="gaia-opening-final-menu" aria-label="体験の入口" hidden>
-              <button class="gaia-opening-route gaia-opening-route--story" id="gaia-opening-route-story" type="button"><small>MAIN STORY <em>RECOMMENDED</em></small><strong>物語を始める</strong><span>THE FIRST GXへ</span><b aria-hidden="true">→</b></button>
-              <button class="gaia-opening-route gaia-opening-route--other" id="gaia-opening-route-other" type="button"><small>FREE EXPLORATION</small><strong>自由に観測する</strong><span>光・地図・宇宙を選ぶ</span><b aria-hidden="true">→</b></button>
-            </nav>
+          <section class="gaia-vn-panel gaia-vn-panel-final">
+            <div class="gaia-vn-final-photo"></div>
+            <div class="gaia-vn-final-shade"></div>
+            <div class="gaia-vn-final-copy">
+              <p>GAIA TRANSFORMATION / INTERACTIVE DATA FICTION</p>
+              <h1 data-opening-focus>GAIA SENSEWARE</h1>
+              <div class="gaia-vn-final-choice">
+                <strong data-opening-focus>人間と地球は、どんな次の関係を選べるだろう。</strong>
+                <nav class="gaia-opening-final-menu" id="gaia-opening-final-menu" aria-label="体験の入口" hidden>
+                  <button class="gaia-opening-route gaia-opening-route--story" id="gaia-opening-route-story" type="button">
+                    <small>MAIN STORY <em>RECOMMENDED</em></small>
+                    <strong>物語を始める</strong>
+                    <span>プロローグの続き・第1章へ</span>
+                    <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
+                      <path d="M8 14c9-2.4 17-.2 24 5.8v32c-7-5.8-15-8.2-24-5.8Z" />
+                      <path d="M56 14c-9-2.4-17-.2-24 5.8v32c7-5.8 15-8.2 24-5.8Z" />
+                      <path d="M32 20v32M14 22c4.7-.2 9 1 13 3.5M50 22c-4.7-.2-9 1-13 3.5" />
+                    </svg>
+                  </button>
+                  <button class="gaia-opening-route gaia-opening-route--other" id="gaia-opening-route-other" type="button">
+                    <small>FREE EXPLORATION</small>
+                    <strong>自由に観測する</strong>
+                    <span>光・地図・宇宙を選ぶ</span>
+                    <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
+                      <circle cx="32" cy="32" r="23" />
+                      <circle cx="32" cy="32" r="3.2" />
+                      <path d="m42 20-6.5 15.5L20 42l6.5-15.5ZM32 5v5M32 54v5M5 32h5M54 32h5" />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+              <span data-opening-focus>公開データという地球の信号に触れ、物語の続きを共創する。</span>
+            </div>
           </section>
         </div>
 
-        <div class="gaia-record-hud" aria-hidden="true"><p><span>REC</span> THREE VOICES / TWO KEYBOARDS</p><div class="gaia-record-progress"><i id="gaia-opening-progress-bar"></i></div><time id="gaia-opening-progress-time">00:00</time></div>
+        <div class="gaia-opening-hud" aria-hidden="true">
+          <p><span>GS</span> LISTENING TO THE PLANET</p>
+          <div class="gaia-opening-progress"><i></i></div>
+          <p class="gaia-opening-steps"><span>01</span><span>02</span><span>03</span><span>04</span><span>05</span></p>
+        </div>
+
+        <div class="gaia-vn-light-sweep" aria-hidden="true"></div>
 
         <button class="gaia-opening-skip" id="gaia-opening-skip" type="button">
           <span>スキップ</span><span aria-hidden="true">→</span>
