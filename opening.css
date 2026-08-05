@@ -896,6 +896,12 @@ body.gaia-opening-active { overflow: hidden; }
 
 .gaia-opening-final-menu[hidden] { display: none; }
 
+/* A selected route must leave as one complete card. Fading the menu here used
+   to expose the card border after its text had already disappeared. */
+.gaia-opening.is-leaving .gaia-opening-final-menu {
+  display: none;
+}
+
 .gaia-opening-final-menu.is-visible {
   opacity: 1;
   filter: blur(0);

@@ -357,7 +357,10 @@
     }
     // Remove the choice cards as one completed unit. Leaving them mounted while
     // the opening dissolves can expose their borders after the copy has faded.
-    finalMenu?.classList.remove("is-visible");
+    if (finalMenu instanceof HTMLElement) {
+      finalMenu.classList.remove("is-visible");
+      finalMenu.hidden = true;
+    }
     // Open the destination behind the final frame first. The opening then
     // dissolves away while the menu cards run their own glint reveal.
     window.dispatchEvent(new CustomEvent("gaia:opening-complete"));

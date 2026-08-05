@@ -7,3 +7,11 @@ qa-*.png
 
 # Cloudflare Wrangler local cache
 .wrangler/
+
+# Local visual QA artifacts and temporary working files
+/artifacts/
+/tmp/
+
+# Python-generated caches
+__pycache__/
+*.py[cod]

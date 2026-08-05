@@ -1,0 +1,113 @@
+:root {
+  --map-grid-gutter: clamp(18px, 1.7vw, 34px);
+  --map-grid-gap: clamp(9px, 0.75vw, 14px);
+  --map-grid-rail: clamp(390px, 28vw, 530px);
+  --map-grid-panel-bg: linear-gradient(145deg, rgba(5, 16, 27, 0.91), rgba(8, 25, 36, 0.82));
+  --map-grid-panel-line: rgba(142, 224, 216, 0.3);
+  --map-grid-panel-line-strong: rgba(170, 242, 231, 0.58);
+  --map-grid-panel-glow: rgba(87, 203, 198, 0.13);
+}
+
+/* The bottom-centre guide is deliberately not part of this system. */
+body.map-grid-desktop .map-grid-polish {
+  position: fixed !important;
+  z-index: 86 !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  color: rgba(239, 249, 248, 0.94) !important;
+  background: var(--map-grid-panel-bg) !important;
+  border: 1px solid var(--map-grid-panel-line) !important;
+  border-radius: 5px !important;
+  box-shadow:
+    0 18px 44px rgba(0, 7, 14, 0.28),
+    inset 0 1px rgba(255, 255, 255, 0.035),
+    0 0 0 1px rgba(4, 12, 20, 0.32) !important;
+  backdrop-filter: blur(16px) saturate(118%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(118%) !important;
+  overflow: hidden !important;
+  isolation: isolate;
+}
+
+body.map-grid-desktop .map-grid-polish::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(127, 230, 220, 0.28) 12%,
+    rgba(200, 255, 246, 0.78) 34%,
+    rgba(125, 191, 236, 0.38) 66%,
+    transparent 100%
+  );
+  opacity: 0.76;
+}
+
+body.map-grid-desktop .map-grid-polish::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--map-grid-panel-glow), transparent 22%),
+    radial-gradient(circle at 100% 0%, rgba(112, 179, 224, 0.12), transparent 38%);
+}
+
+body.map-grid-desktop .map-grid-intro {
+  width: var(--map-grid-rail) !important;
+  padding: clamp(22px, 1.8vw, 31px) !important;
+}
+
+body.map-grid-desktop .map-grid-bank,
+body.map-grid-desktop .map-grid-data {
+  width: var(--map-grid-rail) !important;
+  padding: clamp(15px, 1.15vw, 21px) !important;
+}
+
+body.map-grid-desktop .map-grid-bank {
+  border-left-color: rgba(142, 224, 216, 0.48) !important;
+}
+
+body.map-grid-desktop .map-grid-data {
+  border-left: 2px solid rgba(119, 190, 236, 0.52) !important;
+}
+
+body.map-grid-desktop .map-grid-scale {
+  width: clamp(220px, 15.5vw, 286px) !important;
+  min-height: 68px !important;
+  padding: 10px 13px !important;
+  display: grid !important;
+  align-content: center !important;
+}
+
+body.map-grid-desktop .map-grid-intro,
+body.map-grid-desktop .map-grid-bank,
+body.map-grid-desktop .map-grid-data,
+body.map-grid-desktop .map-grid-scale {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease !important;
+}
+
+body.map-grid-desktop .map-grid-intro:hover,
+body.map-grid-desktop .map-grid-bank:hover,
+body.map-grid-desktop .map-grid-data:hover,
+body.map-grid-desktop .map-grid-scale:hover {
+  border-color: var(--map-grid-panel-line-strong) !important;
+  box-shadow:
+    0 20px 48px rgba(0, 7, 14, 0.34),
+    0 0 24px rgba(101, 219, 208, 0.09),
+    inset 0 1px rgba(255, 255, 255, 0.055) !important;
+}
+
+@media (max-width: 900px) {
+  /* Keep the established mobile layout intact. */
+  body:not(.map-grid-desktop) .map-grid-polish {
+    --map-grid-mobile-noop: 1;
+  }
+}
