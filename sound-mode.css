@@ -1,0 +1,647 @@
+.sound-layer[hidden] {
+  display: none;
+}
+
+.sound-layer {
+  --sound-accent: #8ce9cf;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483100;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: clamp(20px, 3.5vw, 52px);
+  overflow: hidden;
+  color: #edf9f5;
+  background: #07110f;
+  opacity: 0;
+  transform: scale(1.012);
+  transition: opacity 240ms ease, transform 320ms cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.sound-layer.is-open {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.sound-layer-background {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background:
+    linear-gradient(90deg, rgba(2, 10, 14, 0.9) 0%, rgba(2, 12, 15, 0.74) 42%, rgba(3, 16, 20, 0.54) 70%, rgba(2, 12, 17, 0.48) 100%),
+    linear-gradient(180deg, rgba(2, 10, 14, 0.08), rgba(1, 8, 12, 0.42)),
+    url("./assets/visuals-07/sound-archive-bg-v1.webp") center / cover no-repeat;
+  filter: saturate(0.78) contrast(1.06) brightness(0.9);
+}
+
+.sound-layer::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 68% 48%, rgba(89, 226, 196, 0.16), transparent 28%),
+    radial-gradient(circle at 25% 78%, rgba(92, 144, 211, 0.12), transparent 25%);
+  animation: sound-ambient 12s ease-in-out infinite alternate;
+}
+
+.sound-layer-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.08;
+  background-image:
+    linear-gradient(rgba(140, 233, 207, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 233, 207, 0.18) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to right, black, transparent 72%);
+}
+
+@keyframes sound-ambient {
+  to { transform: translate3d(-2%, 1.5%, 0) scale(1.04); }
+}
+
+.sound-header,
+.sound-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  position: relative;
+  z-index: 2;
+}
+
+.sound-header {
+  padding-bottom: clamp(18px, 3vh, 34px);
+  border-bottom: 1px solid rgba(140, 233, 207, 0.22);
+}
+
+.sound-header p,
+.sound-footer,
+.sound-track-heading,
+.sound-now-playing > p,
+.sound-progress-group label,
+.sound-volume > span {
+  font-family: Consolas, "Yu Gothic UI", monospace;
+  letter-spacing: 0.14em;
+}
+
+.sound-header p {
+  margin: 0 0 8px;
+  color: rgba(214, 236, 229, 0.57);
+  font-size: 10px;
+}
+
+.sound-header p span {
+  color: var(--sound-accent);
+}
+
+.sound-header h2 {
+  margin: 0;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(25px, 3.5vw, 48px);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.sound-close {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(140, 233, 207, 0.36);
+  border-radius: 50%;
+  color: #eafff8;
+  background: rgba(7, 24, 22, 0.72);
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.sound-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(430px, 1.28fr);
+  align-items: start;
+  gap: clamp(32px, 6vw, 100px);
+  min-height: 0;
+  padding: clamp(28px, 5vh, 70px) 0;
+}
+
+.sound-track-panel {
+  align-self: start;
+}
+
+.sound-track-heading {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 13px;
+  color: rgba(220, 240, 233, 0.5);
+  font-size: 10px;
+}
+
+.sound-track {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 10px;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  padding: 19px 15px;
+  color: rgba(225, 239, 234, 0.64);
+  text-align: left;
+  border: 0;
+  border-top: 1px solid rgba(140, 233, 207, 0.15);
+  background: transparent;
+  cursor: pointer;
+  transition: color 180ms ease, background 180ms ease, padding 180ms ease;
+}
+
+.sound-track:last-of-type {
+  border-bottom: 1px solid rgba(140, 233, 207, 0.15);
+}
+
+.sound-track:hover,
+.sound-track:focus-visible,
+.sound-track[aria-current="true"] {
+  padding-left: 21px;
+  color: #f3fffb;
+  background: linear-gradient(90deg, rgba(140, 233, 207, 0.12), transparent);
+  outline: none;
+}
+
+.sound-track > span {
+  color: var(--sound-accent);
+  font-family: Consolas, monospace;
+  font-size: 12px;
+}
+
+.sound-track strong,
+.sound-track small {
+  display: block;
+}
+
+.sound-track strong {
+  margin-bottom: 5px;
+  font-family: "Yu Gothic UI", sans-serif;
+  font-size: clamp(13px, 1.25vw, 17px);
+  letter-spacing: 0.015em;
+}
+
+.sound-track small {
+  color: rgba(191, 215, 207, 0.48);
+  font: 9px/1.4 Consolas, monospace;
+  letter-spacing: 0.11em;
+}
+
+.sound-track i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(140, 233, 207, 0.18);
+}
+
+.sound-track[aria-current="true"] i {
+  background: var(--sound-accent);
+  box-shadow: 0 0 14px var(--sound-accent);
+}
+
+.sound-track-note {
+  margin: 20px 8px 0;
+  color: rgba(213, 231, 225, 0.53);
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.sound-player {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(260px, 1fr);
+  grid-template-areas:
+    "disc info"
+    "disc transport"
+    "disc volume";
+  column-gap: clamp(30px, 5vw, 78px);
+  align-self: start;
+  align-content: start;
+}
+
+.sound-planetarium {
+  grid-area: disc;
+  position: relative;
+  place-self: center;
+  width: min(31vw, 400px);
+  aspect-ratio: 1;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 15% 28%, rgba(183, 255, 232, 0.55) 0 1px, transparent 1.7px),
+    radial-gradient(circle at 82% 17%, rgba(240, 222, 159, 0.44) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 87% 73%, rgba(168, 246, 223, 0.38) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 12% 78%, rgba(168, 246, 223, 0.25) 0 1px, transparent 1.8px),
+    radial-gradient(circle, rgba(76, 206, 177, 0.09), transparent 62%);
+  filter: drop-shadow(0 20px 55px rgba(0, 18, 20, 0.48));
+}
+
+.sound-planetarium::before {
+  content: "";
+  position: absolute;
+  inset: 7%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from -6deg,
+    rgba(166, 240, 219, 0.38) 0 0.35deg,
+    transparent 0.35deg 12deg
+  );
+  opacity: 0.22;
+  -webkit-mask: radial-gradient(circle, transparent 0 91%, #000 91.2% 92%, transparent 92.2%);
+  mask: radial-gradient(circle, transparent 0 91%, #000 91.2% 92%, transparent 92.2%);
+}
+
+.sound-orbit {
+  --orbit-rotation: 0deg;
+  --point-x: 78%;
+  --point-y: 10%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--orbit-width);
+  height: var(--orbit-height);
+  border: 1px solid rgba(157, 237, 216, 0.24);
+  border-radius: 50%;
+  box-shadow: inset 0 0 18px rgba(115, 229, 202, 0.025);
+  transform: translate(-50%, -50%) rotate(var(--orbit-rotation));
+}
+
+.sound-orbit::after {
+  content: "";
+  position: absolute;
+  top: var(--point-y);
+  left: var(--point-x);
+  width: 5px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(229, 255, 245, 0.75);
+  border-radius: 50%;
+  background: #9ef4d8;
+  box-shadow: 0 0 5px #b8ffe9, 0 0 18px rgba(122, 236, 207, 0.75);
+  transform: translate(-50%, -50%);
+}
+
+.sound-orbit--outer {
+  --orbit-width: 98%;
+  --orbit-height: 42%;
+  --orbit-rotation: -17deg;
+  --point-x: 88%;
+  --point-y: 24%;
+}
+
+.sound-orbit--inner {
+  --orbit-width: 74%;
+  --orbit-height: 27%;
+  --orbit-rotation: 24deg;
+  --point-x: 18%;
+  --point-y: 18%;
+  border-color: rgba(221, 223, 171, 0.18);
+}
+
+.sound-orbit--inner::after {
+  width: 4px;
+  background: #f2dda1;
+  box-shadow: 0 0 6px rgba(255, 235, 172, 0.9), 0 0 20px rgba(233, 207, 132, 0.48);
+}
+
+.sound-orbit--polar {
+  --orbit-width: 31%;
+  --orbit-height: 90%;
+  --orbit-rotation: 14deg;
+  --point-x: 38%;
+  --point-y: 2%;
+  border-color: rgba(151, 231, 213, 0.15);
+}
+
+.sound-observation-line {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: -1;
+  width: 88%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(143, 235, 211, 0.16) 22%, rgba(143, 235, 211, 0.34) 50%, rgba(143, 235, 211, 0.13) 78%, transparent);
+  transform: translate(-50%, -50%) rotate(-42deg);
+}
+
+.sound-planet {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: 47%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid rgba(192, 255, 235, 0.44);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 27% 23%, rgba(229, 255, 246, 0.82) 0 1.2%, transparent 2.2%),
+    radial-gradient(circle at 30% 29%, rgba(157, 240, 215, 0.52), transparent 26%),
+    linear-gradient(142deg, #59a993 0%, #245e55 25%, #0d3032 48%, #06171e 68%, #02080e 100%);
+  box-shadow:
+    inset -26px -24px 54px rgba(0, 5, 12, 0.82),
+    inset 13px 11px 32px rgba(159, 244, 217, 0.1),
+    0 0 0 6px rgba(126, 230, 201, 0.025),
+    0 0 34px rgba(105, 224, 194, 0.2),
+    0 0 90px rgba(44, 171, 150, 0.13);
+  transform: translate(-50%, -50%);
+}
+
+.sound-planet::after {
+  content: "";
+  position: absolute;
+  inset: -4%;
+  border: 1px solid transparent;
+  border-top-color: rgba(213, 255, 243, 0.75);
+  border-left-color: rgba(152, 244, 218, 0.44);
+  border-radius: 50%;
+  filter: blur(0.3px);
+  transform: rotate(-26deg);
+}
+
+.sound-planet-light {
+  position: absolute;
+  top: -24%;
+  left: -34%;
+  width: 88%;
+  height: 118%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(181, 255, 232, 0.22), rgba(119, 226, 199, 0.04) 42%, transparent 68%);
+  filter: blur(7px);
+  transform: rotate(19deg);
+}
+
+.sound-planet-contours {
+  position: absolute;
+  inset: 7%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 33% 41%, transparent 0 17%, rgba(159, 230, 210, 0.14) 17.5% 18%, transparent 18.5% 27%, rgba(159, 230, 210, 0.09) 27.5% 28%, transparent 28.5%),
+    radial-gradient(ellipse at 68% 74%, transparent 0 12%, rgba(159, 230, 210, 0.08) 12.5% 13%, transparent 13.5%);
+  opacity: 0.72;
+  transform: rotate(-19deg) scale(1.2, 0.88);
+}
+
+.sound-planet-caption {
+  position: absolute;
+  bottom: 4%;
+  left: 7%;
+  display: grid;
+  gap: 5px;
+  padding-left: 12px;
+  color: rgba(204, 243, 232, 0.62);
+  font-family: Consolas, "Yu Gothic UI", monospace;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.sound-planet-caption::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 0;
+  width: 1px;
+  background: linear-gradient(#b6f5e2, rgba(125, 223, 198, 0.08));
+}
+
+.sound-planet-caption b {
+  color: rgba(204, 255, 239, 0.88);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.sound-planet-caption i {
+  font-size: 7px;
+  font-style: normal;
+}
+
+.sound-layer[data-playing="true"] .sound-planet {
+  animation: sound-planet-breathe 4.6s ease-in-out infinite alternate;
+}
+
+.sound-layer[data-playing="true"] .sound-orbit::after {
+  animation: sound-observation-pulse 2.7s ease-in-out infinite;
+}
+
+.sound-layer[data-playing="true"] .sound-orbit--inner::after { animation-delay: -1.2s; }
+.sound-layer[data-playing="true"] .sound-orbit--polar::after { animation-delay: -2s; }
+
+@keyframes sound-planet-breathe {
+  to {
+    box-shadow:
+      inset -26px -24px 54px rgba(0, 5, 12, 0.76),
+      inset 13px 11px 32px rgba(159, 244, 217, 0.16),
+      0 0 0 7px rgba(126, 230, 201, 0.04),
+      0 0 46px rgba(105, 224, 194, 0.3),
+      0 0 110px rgba(44, 171, 150, 0.18);
+  }
+}
+
+@keyframes sound-observation-pulse {
+  50% {
+    opacity: 0.52;
+    transform: translate(-50%, -50%) scale(0.62);
+  }
+}
+
+.sound-now-playing { grid-area: info; align-self: start; }
+
+.sound-now-playing > p:first-child {
+  margin: 0 0 13px;
+  color: var(--sound-accent);
+  font-size: 10px;
+}
+
+.sound-now-playing h3 {
+  margin: 0;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(24px, 2.1vw, 42px);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.sound-now-playing > p:last-child {
+  margin: 17px 0 0;
+  color: rgba(218, 236, 230, 0.62);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.sound-transport {
+  grid-area: transport;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  margin-top: 30px;
+}
+
+.sound-play {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid rgba(140, 233, 207, 0.5);
+  border-radius: 50%;
+  color: #06110e;
+  background: var(--sound-accent);
+  cursor: pointer;
+  box-shadow: 0 0 28px rgba(140, 233, 207, 0.16);
+}
+
+.sound-play-icon {
+  width: 0;
+  height: 0;
+  margin-left: 4px;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 11px solid currentColor;
+}
+
+.sound-play[aria-pressed="true"] .sound-play-icon {
+  width: 11px;
+  height: 14px;
+  margin-left: 0;
+  border: 0;
+  border-right: 4px solid currentColor;
+  border-left: 4px solid currentColor;
+}
+
+.sound-progress-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(211, 233, 225, 0.47);
+  font-size: 9px;
+}
+
+.sound-progress-group input,
+.sound-volume input {
+  width: 100%;
+  accent-color: var(--sound-accent);
+}
+
+.sound-time {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: rgba(211, 233, 225, 0.48);
+  font: 9px/1 Consolas, monospace;
+}
+
+.sound-time span { color: var(--sound-accent); }
+
+.sound-volume {
+  grid-area: volume;
+  display: grid;
+  grid-template-columns: auto minmax(80px, 1fr) 42px;
+  gap: 12px;
+  align-items: center;
+  margin-top: 24px;
+  color: rgba(211, 233, 225, 0.5);
+  font: 9px/1 Consolas, monospace;
+}
+
+.sound-footer {
+  padding-top: 18px;
+  border-top: 1px solid rgba(140, 233, 207, 0.18);
+  color: rgba(210, 230, 223, 0.42);
+  font-size: 9px;
+}
+
+.sound-footer span { color: var(--sound-accent); }
+.sound-footer p { margin: 0; }
+
+.gaia-audio-dock .gaia-audio-gallery-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: 34px;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  color: rgba(226, 247, 240, 0.76);
+  border: 0;
+  border-left: 1px solid rgba(139, 226, 205, 0.2);
+  border-radius: 0;
+  background: transparent;
+  font: 9px/1 Consolas, monospace;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.gaia-audio-dock .gaia-audio-gallery-open:hover,
+.gaia-audio-dock .gaia-audio-gallery-open:focus-visible {
+  color: #f3fffb;
+  background: rgba(140, 233, 207, 0.08);
+  box-shadow: none;
+  outline: none;
+  transform: none;
+}
+
+body.gaia-opening-active .gaia-audio-gallery-open {
+  display: none;
+}
+
+.intro-lp-hero .intro-path-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(900px, 100%);
+}
+
+.intro-path-card--sound {
+  --path-rgb: 140, 233, 207;
+}
+
+.intro-lp-hero .intro-path-card--sound > p {
+  max-width: 100%;
+  font-size: clamp(6px, 0.42vw, 8px);
+  letter-spacing: 0.035em;
+  white-space: nowrap;
+}
+
+.intro-path-card--sound .intro-path-glyph--sound {
+  color: #9be8d0;
+  text-shadow: 0 0 20px rgba(123, 232, 202, 0.42);
+}
+
+@media (max-width: 920px) {
+  .sound-layer { padding: 20px; }
+  .sound-layout {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    overflow: auto;
+  }
+  .sound-track-panel { order: 2; }
+  .sound-player {
+    grid-template-columns: minmax(150px, 0.55fr) minmax(240px, 1fr);
+  }
+  .sound-planetarium { width: min(38vw, 300px); }
+  .intro-lp-hero .intro-path-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .sound-header h2 { font-size: 24px; }
+  .sound-header p span { display: none; }
+  .sound-layout { padding: 22px 0; }
+  .sound-player {
+    grid-template-columns: 1fr;
+    grid-template-areas: "disc" "info" "transport" "volume";
+  }
+  .sound-planetarium { width: min(68vw, 280px); margin-bottom: 24px; }
+  .sound-now-playing { text-align: center; }
+  .sound-now-playing h3 { font-size: 27px; white-space: normal; }
+  .sound-footer p { display: none; }
+  .intro-lp-hero .intro-path-grid { grid-template-columns: 1fr; }
+  .gaia-audio-dock .gaia-audio-gallery-open strong { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sound-layer,
+  .sound-layer::before,
+  .sound-planet,
+  .sound-orbit::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

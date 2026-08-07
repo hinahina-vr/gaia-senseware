@@ -22,7 +22,7 @@
   const finalStoryButton = document.querySelector("#gaia-opening-route-story");
   const finalOtherButton = document.querySelector("#gaia-opening-route-other");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const directDestination = ["#earth", "#japan", "#data", "#source", "#concept"].includes(
+  const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound"].includes(
     window.location.hash,
   );
 

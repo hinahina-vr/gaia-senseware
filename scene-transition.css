@@ -17,6 +17,13 @@ body.scene-transitioning {
   cursor: wait;
 }
 
+/* The global button glint sits above ordinary UI. Never let its fixed frame
+   survive over the full-screen scene transition. */
+body.scene-transitioning .gaia-global-button-glint {
+  display: none !important;
+  animation: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scene-transition {
     display: none !important;

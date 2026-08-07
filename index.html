@@ -18,28 +18,29 @@
     <link rel="preload" as="image" href="./assets/visuals-07/opening-keyvisual-v1.webp" fetchpriority="high" />
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="stylesheet" href="./styles.css?v=gaia-122" />
-    <link rel="stylesheet" href="./scene-transition.css?v=gaia-50" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-132" />
+    <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-136" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
     <link rel="stylesheet" href="./novel-mode.css?v=gaia-140" />
     <link rel="stylesheet" href="./gx-mode.css?v=gx-33" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
+    <link rel="stylesheet" href="./sound-mode.css?v=gaia-05" />
     <script src="./gaia-particles.js?v=gaia-19" defer></script>
-    <script src="./opening-audio.js?v=gaia-09" defer></script>
+    <script src="./opening-audio.js?v=gaia-11" defer></script>
     <script src="./ui-sound.js?v=gaia-01" defer></script>
-    <script src="./opening.js?v=gaia-111" defer></script>
+    <script src="./opening.js?v=gaia-112" defer></script>
     <script src="./data-ledger.js?v=gaia-31" defer></script>
     <script src="./data-journey.js?v=gaia-01" defer></script>
-    <script src="./scene-transition.js?v=gaia-65" defer></script>
+    <script src="./scene-transition.js?v=gaia-66" defer></script>
     <script src="./app-content.js?v=gaia-101" defer></script>
     <script src="./app.js?v=gaia-106" defer></script>
   <script src="./gx-mode.js?v=gx-29" defer></script>
     <script src="./novel-mode.js?v=gaia-117" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-97" defer></script>
-  <link rel="stylesheet" href="./map-ui-grid-polish.css?v=1">
-  <link rel="stylesheet" href="./map-ui-grid-v2.css?v=2">
+    <script src="./sound-mode.js?v=gaia-03" defer></script>
+  <link rel="stylesheet" href="./map-ui-grid-polish.css?v=3">
 </head>
   <body>
     <main class="experience">
@@ -225,7 +226,7 @@
         <div class="gaia-opening-wipe" aria-hidden="true"></div>
       </section>
 
-      <aside class="gaia-audio-dock" id="gaia-audio-dock" aria-label="BGM音量" hidden>
+      <aside class="gaia-audio-dock" id="gaia-audio-dock" aria-label="BGM操作" hidden>
         <button id="gaia-audio-toggle" type="button" aria-label="BGMを消音" aria-pressed="false">
           <span class="gaia-audio-toggle-icon" id="gaia-audio-toggle-icon" aria-hidden="true">
             <svg class="gaia-audio-icon gaia-audio-icon--playing" viewBox="0 0 24 24">
@@ -252,7 +253,126 @@
           />
           <output id="gaia-audio-volume-value" for="gaia-audio-volume">10%</output>
         </label>
+        <button
+          class="gaia-audio-gallery-open"
+          type="button"
+          data-sound-gallery-open
+          aria-haspopup="dialog"
+          aria-controls="sound-layer"
+        >
+          <span aria-hidden="true">♪</span>
+          <strong>SOUND</strong>
+        </button>
       </aside>
+
+      <section
+        class="sound-layer"
+        id="sound-layer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sound-mode-title"
+        aria-describedby="sound-mode-description"
+        aria-hidden="true"
+        hidden
+      >
+        <div class="sound-layer-background" aria-hidden="true"></div>
+        <div class="sound-layer-grid" aria-hidden="true"></div>
+
+        <header class="sound-header">
+          <div>
+            <p><span>GAIA SENSEWARE</span> / SOUND ARCHIVE</p>
+            <h2 id="sound-mode-title">サウンド鑑賞モード</h2>
+          </div>
+          <button class="sound-close" id="sound-close" type="button" aria-label="サウンド鑑賞モードを閉じる">×</button>
+        </header>
+
+        <div class="sound-layout">
+          <aside class="sound-track-panel" aria-label="収録曲">
+            <div class="sound-track-heading">
+              <span>TRACK LIST</span>
+              <strong>4 TRACKS</strong>
+            </div>
+            <button class="sound-track" type="button" data-sound-track="opening" aria-current="true">
+              <span>01</span>
+              <div>
+                <strong>Planet Forecast — Hope</strong>
+                <small>OPENING THEME / LOOP</small>
+              </div>
+              <i aria-hidden="true"></i>
+            </button>
+            <button class="sound-track" type="button" data-sound-track="story" aria-current="false">
+              <span>02</span>
+              <div>
+                <strong>Planet Forecast — Calm</strong>
+                <small>STORY THEME / LOOP</small>
+              </div>
+              <i aria-hidden="true"></i>
+            </button>
+            <button class="sound-track" type="button" data-sound-track="windowlight" aria-current="false">
+              <span>03</span>
+              <div>
+                <strong>Planet Forecast — Windowlight</strong>
+                <small>OBSERVATION ROOM / LOOP</small>
+              </div>
+              <i aria-hidden="true"></i>
+            </button>
+            <button class="sound-track" type="button" data-sound-track="firstlight" aria-current="false">
+              <span>04</span>
+              <div>
+                <strong>Planet Forecast — First Light</strong>
+                <small>DAWN THEME / LOOP</small>
+              </div>
+              <i aria-hidden="true"></i>
+            </button>
+            <p class="sound-track-note">本編で使われているBGMを、演出から離れて聴くためのアーカイブです。</p>
+          </aside>
+
+          <main class="sound-player">
+            <div class="sound-planetarium" aria-hidden="true">
+              <span class="sound-orbit sound-orbit--outer"></span>
+              <span class="sound-orbit sound-orbit--inner"></span>
+              <span class="sound-orbit sound-orbit--polar"></span>
+              <span class="sound-observation-line"></span>
+              <div class="sound-planet">
+                <span class="sound-planet-light"></span>
+                <span class="sound-planet-contours"></span>
+              </div>
+              <span class="sound-planet-caption">
+                <b id="sound-planet-number">PLANET 01</b>
+                <i id="sound-planet-signal">FORECAST SIGNAL</i>
+              </span>
+            </div>
+
+            <div class="sound-now-playing">
+              <p id="sound-track-number">TRACK 01 / OPENING THEME</p>
+              <h3 id="sound-track-title">Planet Forecast — Hope</h3>
+              <p id="sound-mode-description">物語が始まる直前、観測の扉が開く場面の音楽。</p>
+            </div>
+
+            <div class="sound-transport">
+              <button class="sound-play" id="sound-play" type="button" aria-label="再生する" aria-pressed="false">
+                <span class="sound-play-icon" aria-hidden="true"></span>
+              </button>
+              <div class="sound-progress-group">
+                <label for="sound-progress">再生位置</label>
+                <input id="sound-progress" type="range" min="0" max="1000" step="1" value="0" />
+                <div class="sound-time"><output id="sound-current-time">0:00</output><span>LOOP</span><output id="sound-duration">0:00</output></div>
+              </div>
+            </div>
+
+            <label class="sound-volume" for="sound-volume">
+              <span>VOLUME</span>
+              <input id="sound-volume" type="range" min="0" max="100" step="1" value="10" />
+              <output id="sound-volume-value" for="sound-volume">10%</output>
+            </label>
+          </main>
+        </div>
+
+        <footer class="sound-footer">
+          <span>LOCAL AUDIO ARCHIVE</span>
+          <p>音源は作品内に保存されています。外部サービスへの接続は行いません。</p>
+        </footer>
+      </section>
 
       <canvas
         id="gaia-canvas"
@@ -370,6 +490,15 @@
                   <strong>宇宙から見る</strong>
                   <p>太陽、小惑星、系外惑星の記録を読む。</p>
                   <span class="intro-path-enter">DEEP SPACE <b aria-hidden="true">→</b></span>
+                </button>
+                <button class="intro-path-card intro-path-card--sound" type="button" data-sound-gallery-open aria-haspopup="dialog" aria-controls="sound-layer">
+                  <span class="intro-card-reveal-fx" aria-hidden="true"></span>
+                  <span class="intro-border-glint" aria-hidden="true"></span>
+                  <span class="intro-path-index">04 / SOUND</span>
+                  <span class="intro-path-glyph intro-path-glyph--sound" aria-hidden="true">♪</span>
+                  <strong>音を聴く</strong>
+                  <p>物語に流れる二つの音楽を、静かに聴き直す。</p>
+                  <span class="intro-path-enter">SOUND ARCHIVE <b aria-hidden="true">→</b></span>
                 </button>
               </div>
 
@@ -2032,7 +2161,6 @@
     })();
   </script>
   <script src="./map-ui-grid-polish.js?v=1"></script>
-  <script src="./map-ui-grid-v2.js?v=2"></script>
   <script>
     (() => {
       const compactLabel = 'E.V.E.S. - Epistemological Variant Evolution System - / BRANCH ARCHIVE';

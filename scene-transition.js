@@ -130,6 +130,8 @@
 
     running = true;
     document.body.classList.add("scene-transitioning");
+    const buttonGlint = document.querySelector(".gaia-global-button-glint");
+    buttonGlint?.classList.remove("is-active");
     canvas.hidden = false;
     const dimensions = configureCanvas();
     const cells = createGrid(dimensions);
@@ -147,6 +149,7 @@
     } finally {
       context.clearRect(0, 0, canvas.width, canvas.height);
       canvas.hidden = true;
+      buttonGlint?.classList.remove("is-active");
       document.body.classList.remove("scene-transitioning");
       running = false;
     }

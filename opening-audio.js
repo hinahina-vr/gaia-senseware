@@ -4,6 +4,8 @@
   const TRACKS = Object.freeze({
     opening: "./assets/audio/satellite-forecast-hope.mp3",
     story: "./assets/audio/satellite-forecast-calm.mp3",
+    windowlight: "./assets/audio/planet-forecast-windowlight.mp3",
+    firstlight: "./assets/audio/planet-forecast-first-light.mp3",
   });
   const DEFAULT_VOLUME = 0.1;
   const VOLUME_STORAGE_KEY = "gaia-senseware-bgm-volume";
@@ -261,6 +263,20 @@
     track: activeTrack,
   });
 
+  const getPlaybackState = () => ({
+    ...getState(),
+    currentTime: Number.isFinite(audio?.currentTime) ? audio.currentTime : 0,
+    duration: Number.isFinite(audio?.duration) ? audio.duration : 0,
+  });
+
+  const seek = (seconds) => {
+    const player = ensureAudio();
+    if (!Number.isFinite(player.duration) || player.duration <= 0) return false;
+    player.currentTime = Math.max(0, Math.min(player.duration, Number(seconds) || 0));
+    emitState();
+    return true;
+  };
+
   const stop = (fadeSeconds = 1.1) => {
     if (!audio) return;
     const player = audio;
@@ -284,5 +300,7 @@
     setMuted,
     toggleMuted,
     getState,
+    getPlaybackState,
+    seek,
   });
 })();

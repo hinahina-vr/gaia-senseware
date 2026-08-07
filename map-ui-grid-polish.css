@@ -25,6 +25,7 @@ body.map-grid-desktop .map-grid-polish {
   backdrop-filter: blur(16px) saturate(118%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(118%) !important;
   overflow: hidden !important;
+  transform: none !important;
   isolation: isolate;
 }
 
@@ -60,6 +61,13 @@ body.map-grid-desktop .map-grid-polish::after {
 body.map-grid-desktop .map-grid-intro {
   width: var(--map-grid-rail) !important;
   padding: clamp(22px, 1.8vw, 31px) !important;
+}
+
+body.map-grid-desktop .map-grid-intro #japan-title {
+  max-width: 100% !important;
+  font-size: clamp(34px, 2.55vw, 44px) !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.08 !important;
 }
 
 body.map-grid-desktop .map-grid-bank,
@@ -109,5 +117,47 @@ body.map-grid-desktop .map-grid-scale:hover {
   /* Keep the established mobile layout intact. */
   body:not(.map-grid-desktop) .map-grid-polish {
     --map-grid-mobile-noop: 1;
+  }
+}
+
+/* The map exit always owns the top-right corner. */
+.experience.japan-open .japan-close {
+  position: fixed !important;
+  z-index: 700 !important;
+  top: max(18px, env(safe-area-inset-top)) !important;
+  right: max(18px, env(safe-area-inset-right)) !important;
+  bottom: auto !important;
+  left: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Keep persistent audio beside the exit instead of covering it. */
+body:has(.experience.japan-open) .gaia-audio-dock {
+  top: max(18px, env(safe-area-inset-top)) !important;
+  right: max(96px, calc(env(safe-area-inset-right) + 96px)) !important;
+  left: auto !important;
+}
+
+/* The data drawer keeps its own close action, offset from the global exit. */
+.japan-layer.japan-data-open .japan-data-header button {
+  margin-right: 72px;
+}
+
+@media (max-width: 720px) {
+  .experience.japan-open .japan-close {
+    top: max(12px, env(safe-area-inset-top)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+  }
+
+  body:has(.experience.japan-open) .gaia-audio-dock {
+    top: calc(max(12px, env(safe-area-inset-top)) + 64px) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: auto !important;
+  }
+
+  .japan-layer.japan-data-open .japan-data-header button {
+    margin-right: 62px;
   }
 }

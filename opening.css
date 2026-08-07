@@ -2515,6 +2515,17 @@ body.gaia-opening-active .gaia-opening-skip {
   transform: translateX(4px);
 }
 
+/* Keep the final lockup level with the characters instead of sinking toward
+   the lower third as the title/menu group changes height. */
+@media (min-width: 721px) {
+  .gaia-vn-final-copy,
+  .gaia-opening.is-menu-ready .gaia-vn-final-copy {
+    top: clamp(220px, 30vh, 330px);
+    bottom: auto;
+    transform: none;
+  }
+}
+
 .gaia-opening-route:hover .gaia-opening-route-icon,
 .gaia-opening-route:focus-visible .gaia-opening-route-icon {
   fill: none;
@@ -2953,22 +2964,22 @@ body.gaia-opening-active .gaia-opening-skip {
   }
 }
 
-/* Opening controls form a vertical stack. Keeping the skip action below the
-   audio dock prevents the two pill-shaped controls from crossing at any zoom. */
+/* Keep the primary escape action in the top-right corner. The audio dock sits
+   immediately to its left so the opening controls stay on one calm row. */
 body.gaia-opening-active .gaia-opening-skip {
-  top: calc(max(24px, env(safe-area-inset-top)) + 60px);
+  top: max(24px, env(safe-area-inset-top));
   right: max(24px, env(safe-area-inset-right));
   min-height: 48px;
 }
 
 body.gaia-opening-active .gaia-audio-dock {
   top: max(24px, env(safe-area-inset-top));
-  right: max(24px, env(safe-area-inset-right));
+  right: calc(max(24px, env(safe-area-inset-right)) + 140px);
 }
 
 @media (max-width: 720px) {
   body.gaia-opening-active .gaia-opening-skip {
-    top: calc(max(12px, env(safe-area-inset-top)) + 60px);
+    top: max(12px, env(safe-area-inset-top));
     right: max(12px, env(safe-area-inset-right));
     min-width: 112px;
     min-height: 48px;
@@ -2977,7 +2988,7 @@ body.gaia-opening-active .gaia-audio-dock {
 
   body.gaia-opening-active .gaia-audio-dock {
     top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
+    right: calc(max(12px, env(safe-area-inset-right)) + 120px);
   }
 }
 
@@ -3075,4 +3086,30 @@ body.novel-open:has(#novel-eves-panel:not([hidden])) .novel-topbar #novel-close-
     padding: 30px 24px 28px;
     border-radius: 0;
   }
+}
+
+/* The choice itself is the icon and the words; keep the generous hit area,
+   but let it dissolve into the scene instead of drawing another pill. */
+.gaia-opening-sound-actions button,
+.gaia-opening-sound-actions button:first-child {
+  overflow: visible;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.gaia-opening-sound-actions button::after {
+  display: none;
+}
+
+.gaia-opening-sound-actions button:hover,
+.gaia-opening-sound-actions button:focus-visible {
+  border-color: transparent;
+  color: rgba(235, 243, 238, 0.94);
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  transform: translateY(-1px);
 }
