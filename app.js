@@ -112,6 +112,7 @@
   const introSenseStage = document.querySelector("#intro-sense-stage");
   const introPathGrid = document.querySelector("#intro-path-grid");
   const introPathButtons = Array.from(document.querySelectorAll("[data-intro-path]"));
+  const introSoundPreviewButton = document.querySelector(".intro-path-card--sound");
   const introVisuals = Array.from(document.querySelectorAll("[data-intro-visual]"));
   const introPathBack = document.querySelector("#intro-path-back");
   const introPathKicker = document.querySelector("#intro-path-kicker");
@@ -4594,6 +4595,10 @@ drawAudienceMemory(audienceTraces);
       runSceneTransition(() => selectIntroPath(path), path, event);
     });
   });
+
+  const previewIntroSound = () => setIntroVisual("sound");
+  introSoundPreviewButton?.addEventListener("pointerenter", previewIntroSound);
+  introSoundPreviewButton?.addEventListener("focus", previewIntroSound);
 
   introPathGrid?.addEventListener("pointerleave", () => {
     if (introStage === "path") setIntroVisual("default");

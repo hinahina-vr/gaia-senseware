@@ -16,8 +16,9 @@
     <link rel="preload" as="image" href="./assets/characters/mizuha-calm-07-v2.png" fetchpriority="high" />
     <link rel="preload" as="image" href="./assets/characters/amane-calm-07-v2.png" fetchpriority="high" />
     <link rel="preload" as="image" href="./assets/visuals-07/opening-keyvisual-v1.webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="./assets/visuals-07/sound-archive-bg-v1.webp" />
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
-    <link rel="stylesheet" href="./styles.css?v=gaia-122" />
+    <link rel="stylesheet" href="./styles.css?v=gaia-123" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
     <link rel="stylesheet" href="./opening.css?v=gaia-137" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
@@ -34,7 +35,7 @@
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
     <script src="./app-content.js?v=gaia-101" defer></script>
-    <script src="./app.js?v=gaia-106" defer></script>
+    <script src="./app.js?v=gaia-107" defer></script>
   <script src="./gx-mode.js?v=gx-29" defer></script>
     <script src="./novel-mode.js?v=gaia-117" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
@@ -429,6 +430,12 @@
             src="./assets/visuals-07/mode-space-v1.webp"
             alt=""
           />
+          <img
+            class="intro-visual"
+            data-intro-visual="sound"
+            src="./assets/visuals-07/sound-archive-bg-v1.webp"
+            alt=""
+          />
         </div>
         <div class="intro-shell">
           <section class="intro-stage intro-path-stage" id="intro-path-stage" data-intro-stage="path">
@@ -497,7 +504,7 @@
                   <span class="intro-path-index">04 / SOUND</span>
                   <span class="intro-path-glyph intro-path-glyph--sound" aria-hidden="true">♪</span>
                   <strong>音を聴く</strong>
-                  <p>物語に流れる二つの音楽を、静かに聴き直す。</p>
+                  <p>物語に流れる四つの音楽を、静かに聴き直す。</p>
                   <span class="intro-path-enter">SOUND ARCHIVE <b aria-hidden="true">→</b></span>
                 </button>
               </div>
