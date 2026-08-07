@@ -2520,7 +2520,7 @@ body.gaia-opening-active .gaia-opening-skip {
 @media (min-width: 721px) {
   .gaia-vn-final-copy,
   .gaia-opening.is-menu-ready .gaia-vn-final-copy {
-    top: clamp(220px, 30vh, 330px);
+    top: clamp(245px, 34vh, 360px);
     bottom: auto;
     transform: none;
   }
