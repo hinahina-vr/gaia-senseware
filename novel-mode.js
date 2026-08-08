@@ -458,6 +458,39 @@
     });
   };
 
+  const slackTimelineFor = (step) => {
+    const scene = sceneMap.get(step.sceneId);
+    const localIndex = scene?.steps.findIndex((candidate) => candidate.id === step.id) ?? -1;
+    if (!scene || localIndex < 0) return { messages: [step], typing: null };
+    const messages = scene.steps
+      .slice(0, localIndex + 1)
+      .filter((candidate) => candidate.type === "chat" && conditionMatches(candidate));
+    const following = scene.steps[localIndex + 1];
+    return { messages, typing: following?.type === "chat" && conditionMatches(following) ? following : null };
+  };
+
+  const createSlackPost = (message, { root = false, current = false } = {}) => {
+    const article = document.createElement("article");
+    article.className = `novel-slack-post ${root ? "is-root" : "is-reply"}${current ? " is-new" : ""}`;
+    article.dataset.speaker = message.speaker || "system";
+    const avatar = document.createElement("div");
+    avatar.className = "novel-slack-avatar";
+    avatar.textContent = SPEAKERS[message.speaker]?.glyph || "◌";
+    const body = document.createElement("div");
+    const meta = document.createElement("p");
+    const speaker = document.createElement("strong");
+    const time = document.createElement("time");
+    const text = document.createElement("div");
+    speaker.textContent = message.speakerLabel || SPEAKERS[message.speaker]?.name || "SYSTEM";
+    time.textContent = message.time || "";
+    text.className = "novel-slack-message";
+    appendLines(text, message.text || "");
+    meta.append(speaker, time);
+    body.append(meta, text);
+    article.append(avatar, body);
+    return article;
+  };
+
   const renderSimpleStep = (step) => {
     prepareStepFrame(step);
     const speaker = step.speaker || "narrator";
@@ -473,15 +506,31 @@
     elements.cursor.hidden = true;
     elements.continueMark.classList.add("is-visible");
     if (step.type === "chat") {
-      elements.dialogue.hidden = true;
+      const timeline = slackTimelineFor(step);
+      setCharacterPresentation(step.speaker);
+      elements.dialogue.hidden = false;
+      elements.speaker.textContent = "SLACK / #惑星の放課後";
+      elements.text.textContent = timeline.typing ? "返信を待っています。クリックすると次の投稿へ進みます。" : "このスレッドの記録を表示しています。";
       elements.sourceButton.hidden = true;
       elements.slackSurface.hidden = false;
       layer.classList.add("is-slack");
       const workspace = document.createElement("div");
       workspace.className = "novel-slack-workspace";
-      workspace.innerHTML = `<header><b>◀　▶　◷</b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、持ち寄る場所</small></div><span>♟ 3　⌕</span></header><article><div class="novel-slack-avatar">${SPEAKERS[step.speaker]?.glyph || "◌"}</div><div><p><strong>${step.speakerLabel}</strong><time>${step.time}</time></p><div class="novel-slack-message"></div></div></article><footer># 惑星の放課後 へのメッセージ</footer></main>`;
-      appendLines(workspace.querySelector(".novel-slack-message"), step.text || "");
+      workspace.innerHTML = `<header><b>◀　▶　◷</b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、持ち寄る場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
+      const thread = workspace.querySelector(".novel-slack-thread");
+      timeline.messages.forEach((message, index) => {
+        thread.append(createSlackPost(message, { root: index === 0, current: message.id === step.id }));
+      });
+      if (timeline.typing) {
+        const typing = document.createElement("div");
+        typing.className = "novel-slack-typing";
+        typing.dataset.speaker = timeline.typing.speaker || "system";
+        typing.setAttribute("role", "status");
+        typing.innerHTML = `<span class="novel-slack-avatar">${SPEAKERS[timeline.typing.speaker]?.glyph || "◌"}</span><span><b>${timeline.typing.speakerLabel || SPEAKERS[timeline.typing.speaker]?.name || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
+        thread.append(typing);
+      }
       elements.slackSurface.append(workspace);
+      requestAnimationFrame(() => { thread.scrollTop = thread.scrollHeight; });
       scheduleAutoAdvance();
       return;
     }

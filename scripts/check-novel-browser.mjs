@@ -210,15 +210,39 @@ try {
   const titlePath = await screenshot(page, "start");
   await compareBaseline(titlePath, "start");
 
-  const chat = steps.find((step) => step.type === "chat");
+  const chat = steps.find((step) => step.id === "opening_empty_seat_004");
   await bootAt(page, chat.id);
-  assert(await page.locator("#novel-dialogue").isHidden(), "normal dialogue must be hidden during Slack");
+  assert(await page.locator("#novel-dialogue").isVisible(), "Slack must float above the normal dialogue window");
   assert(await page.locator(".novel-slack-workspace").count() === 1, "Slack must be one surface");
-  assert(await page.locator(".novel-slack-workspace article").count() === 1, "Slack step must render one post");
-  const speakerText = await page.locator(".novel-slack-workspace article p strong").allTextContents();
-  assert(speakerText.length === 1, "Slack speaker is duplicated");
+  assert(await page.locator(".novel-slack-post").count() === 1, "Slack thread must begin with one root post");
+  assert(await page.locator(".novel-slack-typing").isVisible(), "continued Slack conversation must show a typing indicator");
+  const slackGeometry = await page.evaluate(() => {
+    const workspace = document.querySelector(".novel-slack-workspace");
+    const dialogue = document.querySelector("#novel-dialogue");
+    const rect = workspace.getBoundingClientRect();
+    const dialogueRect = dialogue.getBoundingClientRect();
+    return {
+      widthRatio: rect.width / innerWidth,
+      heightRatio: rect.height / innerHeight,
+      sitsAboveDialogue: rect.top < dialogueRect.top && rect.bottom <= dialogueRect.bottom,
+      background: getComputedStyle(workspace).backgroundColor,
+    };
+  });
+  assert(slackGeometry.widthRatio < 0.72 && slackGeometry.heightRatio < 0.7, `Slack overlay is still too large: ${JSON.stringify(slackGeometry)}`);
+  assert(slackGeometry.sitsAboveDialogue && slackGeometry.background.startsWith("rgba("), `Slack overlay placement/translucency failed: ${JSON.stringify(slackGeometry)}`);
+  await advanceLinear(page);
+  assert(await page.locator(".novel-slack-post").count() === 2, "second Slack message did not append to the thread");
+  assert((await page.locator(".novel-slack-post").first().innerText()).includes("先に部屋、入ってる。"), "earlier Slack post disappeared");
+  assert(await page.locator(".novel-slack-typing").isVisible(), "typing indicator did not continue before the next reply");
+  assert((await page.locator(".novel-slack-post.is-new").evaluate((post) => getComputedStyle(post).animationName)) === "novel-slack-reply-in", "new Slack reply has no append animation");
+  assert((await page.locator(".novel-slack-typing i b").first().evaluate((dot) => getComputedStyle(dot).animationName)) === "novel-slack-typing", "Slack typing indicator is not animated");
   const slackPath = await screenshot(page, "slack");
   await compareBaseline(slackPath, "slack");
+  await advanceLinear(page);
+  assert(await page.locator(".novel-slack-post").count() === 3, "third Slack message did not append to the thread");
+  assert(await page.locator(".novel-slack-post.is-reply").count() === 2, "Slack replies are not connected as a thread");
+  const speakerText = await page.locator(".novel-slack-post p strong").allTextContents();
+  assert(speakerText.length === 3, "Slack speaker labels do not match the visible posts");
 
   const editorial = steps.find((step) => step.choiceId === "editorial_choice");
   await bootAt(page, editorial.id);
@@ -343,6 +367,20 @@ try {
   }));
   assert(!mobileGeometry.horizontalOverflow && mobileGeometry.surfaceScroll && mobileGeometry.count === 36, `mobile reflection layout failed: ${JSON.stringify(mobileGeometry)}`);
   await screenshot(mobile, "choice-mobile");
+  await bootAt(mobile, chat.id, {}, { reducedMotion: true });
+  await advanceLinear(mobile);
+  const mobileSlackGeometry = await mobile.evaluate(() => {
+    const workspaceRect = document.querySelector(".novel-slack-workspace").getBoundingClientRect();
+    const dialogueRect = document.querySelector("#novel-dialogue").getBoundingClientRect();
+    return {
+      horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+      workspace: { top: workspaceRect.top, right: workspaceRect.right, bottom: workspaceRect.bottom, left: workspaceRect.left },
+      dialogue: { top: dialogueRect.top, right: dialogueRect.right, bottom: dialogueRect.bottom, left: dialogueRect.left },
+      posts: document.querySelectorAll(".novel-slack-post").length,
+    };
+  });
+  assert(!mobileSlackGeometry.horizontalOverflow && mobileSlackGeometry.posts === 2 && mobileSlackGeometry.workspace.bottom <= mobileSlackGeometry.dialogue.bottom, `mobile Slack overlay failed: ${JSON.stringify(mobileSlackGeometry)}`);
+  await screenshot(mobile, "slack-mobile");
   report.viewports.push({ width: 390, height: 844, passed: true });
   await context.close();
 

@@ -4434,8 +4434,6 @@ body.novel-reduced-motion .story-detour-dock * {
   color: #f5f5f5;
 }
 
-.novel-layer.is-slack .novel-cast,
-.novel-layer.is-slack .novel-avatar,
 .novel-layer.is-evidence .novel-cast,
 .novel-layer.is-evidence .novel-avatar,
 .novel-layer.is-reflection .novel-cast,
@@ -4450,22 +4448,29 @@ body.novel-reduced-motion .story-detour-dock * {
 }
 
 .novel-slack-surface {
-  padding: clamp(16px, 3vh, 34px) clamp(18px, 4vw, 72px) clamp(18px, 3vh, 36px);
-  background: linear-gradient(180deg, rgba(25, 8, 27, 0.78), rgba(12, 8, 17, 0.94));
+  inset: clamp(82px, 9vh, 112px) 0 auto;
+  display: grid;
+  height: min(62vh, 650px);
+  padding: 0 clamp(56px, 10vw, 210px);
+  background: transparent;
+  pointer-events: none;
+  place-items: start center;
 }
 
 .novel-slack-workspace {
   display: grid;
-  grid-template: 52px minmax(0, 1fr) / clamp(210px, 18vw, 300px) minmax(0, 1fr);
-  width: min(1540px, 100%);
+  grid-template: 44px minmax(0, 1fr) / clamp(154px, 15vw, 214px) minmax(0, 1fr);
+  width: min(1080px, 100%);
   height: 100%;
   margin: 0 auto;
   overflow: hidden;
-  border: 1px solid #5d3760;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(196, 165, 199, 0.72);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.42);
   font-family: Arial, "Noto Sans JP", sans-serif;
+  pointer-events: auto;
+  backdrop-filter: blur(18px) saturate(0.85);
 }
 
 .novel-slack-workspace > header {
@@ -4473,9 +4478,9 @@ body.novel-reduced-motion .story-detour-dock * {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  padding: 0 18px;
+  padding: 0 14px;
   border-bottom: 1px solid #633265;
-  background: #3f0e40;
+  background: rgba(63, 14, 64, 0.84);
   color: #f2e9f2;
   font-size: 13px;
 }
@@ -4488,22 +4493,22 @@ body.novel-reduced-motion .story-detour-dock * {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 18px 10px;
+  padding: 13px 8px;
   border-right: 1px solid #5d2c5f;
-  background: #3f0e40;
+  background: rgba(63, 14, 64, 0.84);
   color: #e9dce8;
 }
 
-.novel-slack-workspace > aside strong { padding: 0 10px 15px; color: #fff; font-size: 16px; }
-.novel-slack-workspace > aside small { margin: 10px 10px 3px; color: #cdb7cb; font-size: 12px; }
-.novel-slack-workspace > aside span { padding: 7px 11px; border-radius: 4px; font-size: 14px; }
+.novel-slack-workspace > aside strong { padding: 0 8px 10px; color: #fff; font-size: 14px; }
+.novel-slack-workspace > aside small { margin: 7px 8px 2px; color: #cdb7cb; font-size: 10px; }
+.novel-slack-workspace > aside span { padding: 5px 8px; border-radius: 4px; font-size: 12px; }
 .novel-slack-workspace > aside span.is-current { background: #1264a3; color: #fff; }
 
 .novel-slack-workspace > main {
   display: grid;
-  grid-template-rows: 64px minmax(0, 1fr) 58px;
+  grid-template-rows: 56px minmax(0, 1fr) 50px;
   min-width: 0;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.76);
   color: #1d1c1d;
 }
 
@@ -4511,39 +4516,92 @@ body.novel-reduced-motion .story-detour-dock * {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 20px;
   border-bottom: 1px solid #ddd;
 }
 
 .novel-slack-workspace > main > header div { display: grid; gap: 3px; }
-.novel-slack-workspace > main > header strong { font-size: 16px; }
+.novel-slack-workspace > main > header strong { font-size: 14px; }
 .novel-slack-workspace > main > header small,
 .novel-slack-workspace > main > header > span { color: #616061; font-size: 12px; }
 
-.novel-slack-workspace > main > article {
+.novel-slack-thread {
+  min-height: 0;
+  padding: 18px 26px 20px;
+  overflow: auto;
+  scrollbar-color: rgba(63, 14, 64, 0.24) transparent;
+}
+
+.novel-slack-post {
+  position: relative;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 38px minmax(0, 1fr);
   align-content: start;
-  gap: 12px;
-  padding: clamp(36px, 8vh, 92px) clamp(24px, 4vw, 62px);
+  gap: 10px;
+  padding: 9px 8px;
+}
+
+.novel-slack-post.is-reply {
+  margin-left: 28px;
+}
+
+.novel-slack-post.is-reply::before {
+  position: absolute;
+  top: -12px;
+  bottom: 50%;
+  left: -16px;
+  width: 13px;
+  border-bottom: 1px solid rgba(97, 96, 97, 0.28);
+  border-left: 1px solid rgba(97, 96, 97, 0.28);
+  border-radius: 0 0 0 8px;
+  content: "";
+}
+
+.novel-slack-post.is-new {
+  animation: novel-slack-reply-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .novel-slack-avatar {
   display: grid;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
   background: #2f7693;
   color: #fff;
   place-items: center;
-  font: 700 20px/1 Georgia, serif;
+  font: 700 16px/1 Georgia, serif;
 }
 
-.novel-slack-workspace article p { margin: 0 0 7px; }
-.novel-slack-workspace article p strong { font-size: 15px; }
-.novel-slack-workspace article time { margin-left: 9px; color: #9a9b9e; font-size: 11px; }
-.novel-slack-message { color: #1d1c1d; font-size: clamp(15px, 1.2vw, 19px); line-height: 1.7; }
-.novel-slack-workspace > main > footer { align-self: center; margin: 0 24px 12px; padding: 12px 16px; border: 1px solid #8d8d8d; border-radius: 4px; color: #616061; font-size: 13px; }
+.novel-slack-post[data-speaker="mizuha"] .novel-slack-avatar,
+.novel-slack-typing[data-speaker="mizuha"] .novel-slack-avatar { background: #3f63a5; }
+.novel-slack-post[data-speaker="amane"] .novel-slack-avatar,
+.novel-slack-typing[data-speaker="amane"] .novel-slack-avatar { background: #377d6d; }
+.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar,
+.novel-slack-typing[data-speaker="sakuya"] .novel-slack-avatar { background: #2f7693; }
+
+.novel-slack-workspace article p { margin: 0 0 4px; }
+.novel-slack-workspace article p strong { font-size: 13px; }
+.novel-slack-workspace article time { margin-left: 8px; color: #777; font-size: 10px; }
+.novel-slack-message { color: #1d1c1d; font-size: clamp(13px, 1vw, 16px); line-height: 1.55; }
+.novel-slack-typing { display: flex; align-items: center; gap: 9px; margin: 7px 8px 2px 36px; color: #616061; font-size: 11px; }
+.novel-slack-typing .novel-slack-avatar { flex: 0 0 auto; width: 25px; height: 25px; font-size: 12px; }
+.novel-slack-typing > i { display: inline-flex; gap: 3px; align-items: end; height: 10px; }
+.novel-slack-typing > i b { width: 4px; height: 4px; border-radius: 50%; background: #616061; animation: novel-slack-typing 900ms ease-in-out infinite; }
+.novel-slack-typing > i b:nth-child(2) { animation-delay: 120ms; }
+.novel-slack-typing > i b:nth-child(3) { animation-delay: 240ms; }
+.novel-slack-workspace > main > footer { display: grid; grid-template-columns: auto 1fr auto; align-items: center; margin: 0 18px 10px; padding: 9px 12px; gap: 10px; border: 1px solid rgba(70, 70, 70, 0.66); border-radius: 4px; color: #616061; font-size: 11px; }
+.novel-slack-workspace > main > footer b { color: #888; font-size: 10px; font-weight: 400; }
+.novel-layer.is-slack .novel-cursor { display: none; }
+
+@keyframes novel-slack-reply-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes novel-slack-typing {
+  0%, 70%, 100% { transform: translateY(0); opacity: 0.42; }
+  35% { transform: translateY(-3px); opacity: 1; }
+}
 
 .novel-evidence-surface {
   display: grid;
@@ -4776,8 +4834,8 @@ body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0; }
 @media (max-width: 900px) {
   .novel-layer.is-title { background-position: center, center, 64% center; }
   .novel-layer.is-title .novel-title-screen { left: 24px; width: min(600px, 60vw); }
-  .novel-slack-surface { padding: 8px; }
-  .novel-slack-workspace { grid-template-columns: 176px minmax(0, 1fr); }
+  .novel-slack-surface { padding: 0 28px; }
+  .novel-slack-workspace { grid-template-columns: 154px minmax(0, 1fr); }
   .novel-reflection-grid button strong { font-size: 10px; line-height: 1.35; }
   .story-detour-dock { grid-template-columns: 1fr auto; }
   .story-detour-dock header { grid-column: 1; grid-row: 1; }
@@ -4799,11 +4857,19 @@ body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0; }
   .novel-slack-surface,
   .novel-evidence-surface,
   .novel-reflection-surface { top: 54px; }
+  .novel-slack-surface { height: calc(100vh - 54px - var(--novel-say-height) - var(--novel-say-bottom) - 22px); padding: 0 10px; }
   .novel-slack-workspace { grid-template: 46px minmax(0, 1fr) / 1fr; }
   .novel-slack-workspace > aside { display: none; }
   .novel-slack-workspace > header { grid-template-columns: 1fr auto; }
   .novel-slack-workspace > header span { display: none; }
-  .novel-slack-workspace > main > article { padding: 34px 18px; }
+  .novel-slack-thread { padding: 12px 12px 14px; }
+  .novel-slack-post { grid-template-columns: 34px minmax(0, 1fr); gap: 8px; padding: 8px 4px; }
+  .novel-slack-post.is-reply { margin-left: 14px; }
+  .novel-slack-post.is-reply::before { left: -9px; width: 7px; }
+  .novel-slack-workspace > main > header { padding: 0 13px; }
+  .novel-slack-workspace > main > header small { display: none; }
+  .novel-slack-workspace > main > footer { margin-inline: 10px; }
+  .novel-slack-workspace > main > footer b { display: none; }
   .novel-evidence-surface { padding: 20px 14px; }
   .novel-evidence-card { padding: 24px 20px; }
   .novel-evidence-card p { max-height: 54vh; font-size: 14px; }
