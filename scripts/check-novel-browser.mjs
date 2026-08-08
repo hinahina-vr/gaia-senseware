@@ -250,10 +250,13 @@ try {
       heightRatio: rect.height / innerHeight,
       sitsAboveDialogue: rect.top < dialogueRect.top && rect.bottom <= dialogueRect.bottom,
       background: getComputedStyle(workspace).backgroundColor,
+      mainBackground: getComputedStyle(workspace.querySelector("main")).backgroundColor,
+      backdropFilter: getComputedStyle(workspace).backdropFilter,
     };
   });
-  assert(slackGeometry.widthRatio < 0.72 && slackGeometry.heightRatio < 0.7, `Slack overlay is still too large: ${JSON.stringify(slackGeometry)}`);
-  assert(slackGeometry.sitsAboveDialogue && slackGeometry.background.startsWith("rgba("), `Slack overlay placement/translucency failed: ${JSON.stringify(slackGeometry)}`);
+  const slackAlpha = (color) => Number(color.match(/[\d.]+(?=\))/u)?.[0] || 1);
+  assert(slackGeometry.widthRatio < 0.64 && slackGeometry.heightRatio < 0.62, `Slack overlay is still too large: ${JSON.stringify(slackGeometry)}`);
+  assert(slackGeometry.sitsAboveDialogue && slackAlpha(slackGeometry.background) <= 0.3 && slackAlpha(slackGeometry.mainBackground) <= 0.5 && !slackGeometry.backdropFilter.includes("blur"), `Slack overlay placement/translucency failed: ${JSON.stringify(slackGeometry)}`);
   await advanceLinear(page);
   assert(await page.locator(".novel-slack-post").count() === 2, "second Slack message did not append to the thread");
   assert((await page.locator(".novel-slack-post").first().innerText()).includes("先に部屋、入ってる。"), "earlier Slack post disappeared");
