@@ -14,6 +14,8 @@
   const SYSTEM_REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const AUTO_DELAY_MS = 3600;
   const REVEAL_BASE_MS = 24;
+  const REVEAL_MIN_LINE_MS = 120;
+  const REVEAL_PUNCTUATION_MS = 84;
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
   const SPEAKERS = Object.freeze({
     narrator: { name: "", glyph: "◌" },
@@ -148,6 +150,8 @@
   let isRevealing = false;
   let fullText = "";
   let revealTimer = 0;
+  let revealFrame = 0;
+  let revealGeneration = 0;
   let autoTimer = 0;
   let previousFocus = null;
   let archiveMode = "save";
@@ -289,9 +293,12 @@
   };
 
   const clearTimers = () => {
+    revealGeneration += 1;
     window.clearTimeout(revealTimer);
+    window.cancelAnimationFrame(revealFrame);
     window.clearTimeout(autoTimer);
     revealTimer = 0;
+    revealFrame = 0;
     autoTimer = 0;
   };
 
@@ -404,39 +411,126 @@
   };
 
   const finishReveal = () => {
+    revealGeneration += 1;
     window.clearTimeout(revealTimer);
+    window.cancelAnimationFrame(revealFrame);
     revealTimer = 0;
+    revealFrame = 0;
     isRevealing = false;
-    elements.text.textContent = fullText;
+    elements.text.classList.remove("is-preparing", "is-revealing");
+    const lines = elements.text.querySelectorAll(".novel-line");
+    if (lines.length > 0) {
+      elements.text.classList.add("is-revealed");
+    } else {
+      elements.text.textContent = fullText;
+    }
     elements.cursor.hidden = true;
     elements.continueMark.classList.add("is-visible");
     scheduleAutoAdvance();
   };
 
+  const measureNativeLines = (text) => {
+    elements.text.textContent = text;
+    const textNode = elements.text.firstChild;
+    const glyphs = Array.from(text);
+    if (!(textNode instanceof Text) || glyphs.length === 0) return [glyphs];
+
+    const range = document.createRange();
+    const lines = [];
+    let lineStart = 0;
+    let lineTop = null;
+    let textOffset = 0;
+
+    glyphs.forEach((glyph, index) => {
+      const nextOffset = textOffset + glyph.length;
+      range.setStart(textNode, textOffset);
+      range.setEnd(textNode, nextOffset);
+      const top = range.getBoundingClientRect().top;
+      if (lineTop === null) {
+        lineTop = top;
+      } else if (Math.abs(top - lineTop) > 2) {
+        lines.push(glyphs.slice(lineStart, index));
+        lineStart = index;
+        lineTop = top;
+      }
+      textOffset = nextOffset;
+    });
+
+    range.detach();
+    lines.push(glyphs.slice(lineStart));
+    return lines.filter((line) => line.length > 0);
+  };
+
+  const buildMeasuredLineLayout = (text) => {
+    const measuredLines = measureNativeLines(text);
+    const fragment = document.createDocumentFragment();
+    const speedScale = 100 / config.messageSpeedPercent;
+    let delay = 0;
+
+    measuredLines.forEach((lineGlyphs) => {
+      const lineText = lineGlyphs.join("");
+      const line = document.createElement("span");
+      const layout = document.createElement("span");
+      const reveal = document.createElement("span");
+      let duration = 0;
+
+      line.className = "novel-line";
+      line.setAttribute("aria-hidden", "true");
+      layout.className = "novel-line-layout";
+      reveal.className = "novel-line-reveal";
+      layout.textContent = lineText;
+      reveal.textContent = lineText;
+      lineGlyphs.forEach((glyph) => {
+        duration += REVEAL_BASE_MS * speedScale;
+        if (/[。！？、…―]/u.test(glyph)) duration += REVEAL_PUNCTUATION_MS * speedScale;
+      });
+      reveal.style.setProperty("--novel-line-delay", `${delay}ms`);
+      reveal.style.setProperty("--novel-line-duration", `${Math.max(duration, REVEAL_MIN_LINE_MS)}ms`);
+      reveal.style.setProperty("--novel-line-steps", String(Math.max(1, lineGlyphs.length)));
+      line.append(layout, reveal);
+      fragment.append(line);
+      delay += duration;
+    });
+
+    elements.text.replaceChildren(fragment);
+    return delay;
+  };
+
   const revealText = (text) => {
     clearTimers();
+    const generation = revealGeneration;
     fullText = text;
-    elements.text.replaceChildren();
-    elements.text.textContent = "";
     elements.text.setAttribute("aria-label", text);
+    elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
     elements.continueMark.classList.remove("is-visible");
     if (motionReduced() || !text) {
+      elements.text.replaceChildren();
       finishReveal();
       return;
     }
-    const glyphs = Array.from(text);
-    const duration = Math.max(120, glyphs.length * (REVEAL_BASE_MS * 100 / config.messageSpeedPercent));
+
     isRevealing = true;
-    elements.cursor.hidden = false;
-    const started = performance.now();
-    const tick = () => {
-      if (!isRevealing) return;
-      const progress = Math.min(1, (performance.now() - started) / duration);
-      elements.text.textContent = glyphs.slice(0, Math.ceil(glyphs.length * progress)).join("");
-      if (progress >= 1) finishReveal();
-      else revealTimer = window.setTimeout(tick, 16);
+    elements.text.textContent = text;
+    elements.text.classList.add("is-preparing");
+    elements.cursor.hidden = true;
+
+    const startMeasuredReveal = () => {
+      if (generation !== revealGeneration || !isRevealing) return;
+      revealFrame = window.requestAnimationFrame(() => {
+        revealFrame = window.requestAnimationFrame(() => {
+          if (generation !== revealGeneration || !isRevealing) return;
+          const duration = buildMeasuredLineLayout(text);
+          elements.text.classList.remove("is-preparing");
+          void elements.text.offsetWidth;
+          elements.text.classList.add("is-revealing");
+          elements.cursor.hidden = false;
+          revealTimer = window.setTimeout(finishReveal, duration + REVEAL_MIN_LINE_MS);
+        });
+      });
     };
-    tick();
+
+    const fontsReady = document.fonts?.ready || Promise.resolve();
+    Promise.resolve(fontsReady).then(startMeasuredReveal, startMeasuredReveal);
   };
 
   const markRead = (step) => {

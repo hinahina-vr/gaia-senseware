@@ -247,6 +247,25 @@ try {
   assert(backgroundBeforeTransition.includes("novel-bg-workroom-v2.png") && backgroundAfterTransition.includes("novel-bg-online-night-v2.png"), "novel background transition did not swap the expected scenes");
   await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"), null, { timeout: 5000 });
 
+  const stableRevealStep = steps.find((step) => step.id === "festival_walk_001");
+  await bootAt(page, stableRevealStep.id);
+  await page.locator("#novel-text.is-revealing .novel-line").first().waitFor({ state: "attached", timeout: 5000 });
+  const revealGeometry = () => page.locator("#novel-text").evaluate((text) => ({
+    box: (() => { const rect = text.getBoundingClientRect(); return [rect.left, rect.top, rect.width, rect.height]; })(),
+    lines: [...text.querySelectorAll(".novel-line")].map((line) => {
+      const rect = line.getBoundingClientRect();
+      return [rect.left, rect.top, rect.width, rect.height];
+    }),
+  }));
+  const revealStartGeometry = await revealGeometry();
+  await page.waitForTimeout(220);
+  const revealMidGeometry = await revealGeometry();
+  await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 5000 });
+  const revealEndGeometry = await revealGeometry();
+  assert(revealStartGeometry.lines.length >= 3, `long narration was not measured into stable lines: ${JSON.stringify(revealStartGeometry)}`);
+  assert(JSON.stringify(revealStartGeometry) === JSON.stringify(revealMidGeometry) && JSON.stringify(revealMidGeometry) === JSON.stringify(revealEndGeometry), `narration geometry moved during or after text reveal: ${JSON.stringify({ revealStartGeometry, revealMidGeometry, revealEndGeometry })}`);
+  assert(await page.locator("#novel-cursor").isHidden(), "text cursor remained visible after reveal completed");
+
   const sharedBackgroundScene = story.scenes.find((scene) => scene.id === "absence");
   const sharedBackgroundStep = sharedBackgroundScene.steps.at(-1);
   await bootAt(page, sharedBackgroundStep.id);

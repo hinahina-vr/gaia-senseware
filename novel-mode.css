@@ -2258,6 +2258,10 @@ body.novel-open .japan-credits {
   animation: novel-cursor-blink 680ms steps(1) infinite;
 }
 
+.novel-cursor[hidden] {
+  display: none;
+}
+
 .novel-continue {
   position: absolute;
   right: 28px;
