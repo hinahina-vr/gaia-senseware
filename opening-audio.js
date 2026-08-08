@@ -6,6 +6,12 @@
     story: "./assets/audio/satellite-forecast-calm.mp3",
     windowlight: "./assets/audio/planet-forecast-windowlight.mp3",
     firstlight: "./assets/audio/planet-forecast-first-light.mp3",
+    foldedwind: "./assets/audio/folded-wind-message.mp3",
+    snowfire: "./assets/audio/snowfire-signal.mp3",
+    snowafter: "./assets/audio/snowfire-afterimage.mp3",
+    moonbook: "./assets/audio/moonlit-observation-notebook.mp3",
+    moonsave: "./assets/audio/moonlit-source-save.mp3",
+    moonreopen: "./assets/audio/moonlit-reopen.mp3",
   });
   const DEFAULT_VOLUME = 0.1;
   const VOLUME_STORAGE_KEY = "gaia-senseware-bgm-volume";

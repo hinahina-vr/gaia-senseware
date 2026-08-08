@@ -126,7 +126,13 @@
 }
 
 .sound-track-panel {
-  align-self: start;
+  align-self: stretch;
+  min-height: 0;
+  max-height: 100%;
+  padding-right: 8px;
+  overflow-y: auto;
+  scrollbar-color: rgba(140, 233, 207, 0.35) rgba(5, 18, 17, 0.2);
+  scrollbar-width: thin;
 }
 
 .sound-track-heading {
@@ -612,7 +618,7 @@ body.gaia-opening-active .gaia-audio-gallery-open {
     gap: 28px;
     overflow: auto;
   }
-  .sound-track-panel { order: 2; }
+  .sound-track-panel { order: 2; max-height: none; padding-right: 0; overflow: visible; }
   .sound-player {
     grid-template-columns: minmax(150px, 0.55fr) minmax(240px, 1fr);
   }

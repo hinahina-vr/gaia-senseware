@@ -48,6 +48,48 @@
       planet: "PLANET 04",
       signal: "FIRST LIGHT TRACE",
     },
+    foldedwind: {
+      number: "TRACK 05 / UNSENT RECORD",
+      title: "折り目の向こうの風",
+      description: "折り畳まれた記録が風にほどけ、次の読み手へ渡っていく情景の音楽。",
+      planet: "PLANET 05",
+      signal: "FOLDED WIND TRACE",
+    },
+    snowfire: {
+      number: "TRACK 06 / UNKNOWN SIGNAL",
+      title: "雪火の観測信号",
+      description: "冷たい記録と消えない熱が、同じ信号の中で揺れる場面の音楽。",
+      planet: "PLANET 06",
+      signal: "SNOWFIRE SIGNAL",
+    },
+    snowafter: {
+      number: "TRACK 07 / BRANCHING LIGHT",
+      title: "雪火、軌道の外へ",
+      description: "既存の軌道から分かれた光が、まだ名のない外側へ開いていく場面の音楽。",
+      planet: "PLANET 07",
+      signal: "SNOWFIRE AFTERIMAGE",
+    },
+    moonbook: {
+      number: "TRACK 08 / NIGHT NOTE",
+      title: "月明かりの観測ノート",
+      description: "SOURCEと解釈を分けながら、夜の机で記録を読み直す場面の音楽。",
+      planet: "PLANET 08",
+      signal: "MOONLIT NOTE",
+    },
+    moonsave: {
+      number: "TRACK 09 / SOURCE ARCHIVE",
+      title: "月下のSOURCE保存",
+      description: "原文、出典、変更履歴を保ったまま、記録を次へ渡す編集判断の音楽。",
+      planet: "PLANET 09",
+      signal: "SOURCE SAVE",
+    },
+    moonreopen: {
+      number: "TRACK 10 / RELOAD MEMORY",
+      title: "月下、もう一度ひらく",
+      description: "保存された選択と空白を、優劣をつけずに読み直す場面の音楽。",
+      planet: "PLANET 10",
+      signal: "REOPENED MEMORY",
+    },
   });
 
   let isOpen = false;
