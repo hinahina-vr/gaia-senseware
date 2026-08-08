@@ -294,7 +294,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "岩、池、屋上菜園、夜の地球。返信が続き、三日目に専用チャンネルができた。\n説明欄には『まだ名前のない変化を見つけて、持ち寄る場所』とあった。\n投稿する時間はばらばらで、一つの話題が何日も続いた。"
+          "text": "岩、池、屋上菜園、夜の地球。返信が続き、三日目に専用チャンネルができた。\n説明欄には『まだ名前のない変化を見つけて、記録する場所』とあった。\n投稿する時間はばらばらで、一つの話題が何日も続いた。"
         }
       ],
       "nextSceneId": "prologue_basil"
@@ -383,7 +383,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_basil",
           "type": "record",
           "recordType": "LOCAL_SOURCE",
-          "text": "園芸売り場の温度計：36 ℃ / LOCAL SOURCE\n最寄り観測所の気温：観測所名と観測時刻を表示 / SOURCE"
+          "text": "園芸売り場の温度計：36 ℃ / LOCAL SOURCE\n最寄り観測所の気温：同じ時間帯に公開された値と照合 / SOURCE"
         }
       ],
       "nextSceneId": "choice_observation_order"
@@ -791,7 +791,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_walk",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "では、今日気になったものを一つの作品へ持ち寄ってみます？"
+          "text": "では、今日気になったものを一つの作品にしてみます？"
         },
         {
           "id": "festival_walk_008",

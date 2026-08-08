@@ -215,24 +215,55 @@ try {
   await compareBaseline(titlePath, "start");
 
   const backgroundCases = [
-    ["current_exhibition", "novel-bg-exhibition-v2.png", "scene-exhibition"],
-    ["opening_empty_seat", "novel-bg-workroom-v2.png", "scene-workroom"],
-    ["first_meeting_promise", "novel-bg-online-night-v2.png", "scene-online"],
-    ["prologue_basil", "novel-bg-garden-center-v2.png", "scene-garden-center"],
-    ["first_meeting_hall", "novel-bg-coastal-venue-v2.png", "scene-coastal-venue"],
-    ["production_year", "novel-bg-production-night-v2.png", "scene-production-night"],
-    ["interlude_sea", "novel-bg-zushi-coast-night-v2.png", "scene-zushi-coast"],
+    ["current_exhibition", "novel-bg-exhibition-v2.png", "story", "scene-exhibition"],
+    ["opening_empty_seat", "novel-bg-workroom-v2.png", "windowlight", "scene-workroom"],
+    ["first_meeting_promise", "novel-bg-online-night-v2.png", "moonbook", "scene-online"],
+    ["prologue_basil", "novel-bg-garden-center-v2.png", "firstlight", "scene-garden-center"],
+    ["first_meeting_hall", "novel-bg-coastal-venue-v2.png", "foldedwind", "scene-coastal-venue"],
+    ["production_year", "novel-bg-production-night-v2.png", "moonsave", "scene-production-night"],
+    ["interlude_sea", "novel-bg-zushi-coast-night-v2.png", "snowfire", "scene-zushi-coast"],
   ];
-  for (const [sceneId, expectedFile, screenshotName] of backgroundCases) {
+  for (const [sceneId, expectedFile, expectedTrack, screenshotName] of backgroundCases) {
     const sceneStep = steps.find((candidate) => candidate.sceneId === sceneId && ["dialogue", "chat"].includes(candidate.type))
       || steps.find((candidate) => candidate.sceneId === sceneId);
     await bootAt(page, sceneStep.id);
     const backgroundImage = await page.locator("#novel-layer").evaluate((node) => getComputedStyle(node).backgroundImage);
     assert(backgroundImage.includes(expectedFile), `${sceneId} uses the wrong background: ${backgroundImage}`);
     assert(!backgroundImage.includes("novel-background-v1") && !backgroundImage.includes("assets/characters"), `${sceneId} still uses character-composited background art`);
-    report.sceneBackgrounds.push({ sceneId, expectedFile, passed: true });
+    await page.waitForFunction((track) => window.GaiaOpeningAudio?.getState?.().track === track, expectedTrack, { timeout: 8000 });
+    report.sceneBackgrounds.push({ sceneId, expectedFile, expectedTrack, passed: true });
     await screenshot(page, screenshotName);
   }
+
+  const inlineRecord = steps.find((step) => step.id === "prologue_basil_010");
+  await bootAt(page, inlineRecord.id);
+  await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 5000 });
+  await page.waitForFunction(() => Number.parseFloat(getComputedStyle(document.querySelector("#novel-character-sora")).opacity) > 0.95);
+  const inlineRecordPresentation = await page.evaluate(() => {
+    const character = document.querySelector("#novel-character-sora");
+    const location = document.querySelector("#novel-location");
+    return {
+      dialogueVisible: !document.querySelector("#novel-dialogue").hidden,
+      evidenceHidden: document.querySelector("#novel-evidence-surface").hidden,
+      speaker: document.querySelector("#novel-speaker").textContent,
+      text: document.querySelector("#novel-text").textContent,
+      sourceDetailsAvailable: !document.querySelector("#novel-source-button").hidden,
+      castSpeaker: document.querySelector("#novel-cast").dataset.speaker,
+      characterOpacity: Number.parseFloat(getComputedStyle(character).opacity),
+      characterImage: getComputedStyle(character.querySelector(".novel-character-portrait")).backgroundImage,
+      locationText: location.textContent,
+      locationParent: location.parentElement?.id,
+      locationShadow: getComputedStyle(location).textShadow,
+      obsoleteFooterLocation: document.querySelectorAll(".novel-footer #novel-location").length,
+      obsoleteSignalTitle: document.querySelectorAll("#novel-signal-title").length,
+    };
+  });
+  assert(inlineRecordPresentation.dialogueVisible && inlineRecordPresentation.evidenceHidden && inlineRecordPresentation.speaker === "アマネの観測メモ" && inlineRecordPresentation.sourceDetailsAvailable, `record did not use the normal novel presentation: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.castSpeaker === "sora" && inlineRecordPresentation.characterOpacity > 0.95 && inlineRecordPresentation.characterImage.includes("amane-calm-07-v2.png"), `Amane character design is missing from her observation note: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.text.includes("園芸売り場の温度計：36 ℃") && inlineRecordPresentation.text.includes("同じ時間帯に公開された値と照合") && !/LOCAL SOURCE|SOURCE|観測所名と観測時刻を表示/.test(inlineRecordPresentation.text), `record exposed internal labels or placeholder copy: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.locationText === "PROLOGUE｜バジルの投稿" && inlineRecordPresentation.locationParent === "novel-source-button" && inlineRecordPresentation.obsoleteFooterLocation === 0 && inlineRecordPresentation.obsoleteSignalTitle === 0 && inlineRecordPresentation.locationShadow !== "none", `scene location was not moved into the readable upper caption: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(await page.locator(".novel-evidence-card").count() === 0, "obsolete full-screen record card remains");
+  await screenshot(page, "record-note");
 
   const backgroundTransitionScene = story.scenes.find((scene) => scene.id === "opening_empty_seat");
   const backgroundTransitionStep = backgroundTransitionScene.steps.at(-1);
@@ -243,8 +274,30 @@ try {
   await page.waitForFunction(() => document.body.classList.contains("scene-transitioning"));
   assert(await page.locator("#scene-transition").isVisible(), "novel background change did not use the shared scene transition canvas");
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, "prologue_online_circle_001", { timeout: 5000 });
+  const layeredTransitionFrame = await page.evaluate(() => {
+    const layer = document.querySelector("#novel-layer");
+    const canvas = document.querySelector("#scene-transition");
+    const bufferedStyle = getComputedStyle(layer, "::before");
+    const context = canvas.getContext("2d");
+    const sample = context.getImageData(
+      Math.max(0, Math.min(canvas.width - 1, Math.floor(canvas.width / 2))),
+      Math.max(0, Math.min(canvas.height - 1, Math.floor(canvas.height / 2))),
+      1,
+      1,
+    ).data;
+    return {
+      bufferedBackground: bufferedStyle.backgroundImage,
+      bufferedOpacity: Number(bufferedStyle.opacity),
+      canvasAlpha: sample[3] / 255,
+      buffered: layer.classList.contains("is-background-buffered"),
+      releasing: layer.classList.contains("is-background-releasing"),
+    };
+  });
   const backgroundAfterTransition = await page.locator("#novel-layer").evaluate((node) => getComputedStyle(node).backgroundImage);
   assert(backgroundBeforeTransition.includes("novel-bg-workroom-v2.png") && backgroundAfterTransition.includes("novel-bg-online-night-v2.png"), "novel background transition did not swap the expected scenes");
+  assert(layeredTransitionFrame.bufferedBackground.includes("novel-bg-workroom-v2.png") && layeredTransitionFrame.bufferedOpacity > 0.1 && layeredTransitionFrame.buffered && layeredTransitionFrame.releasing, `old background was not preserved beneath the new background: ${JSON.stringify(layeredTransitionFrame)}`);
+  assert(layeredTransitionFrame.canvasAlpha < 0.5, `scene transition surface became opaque above the layered backgrounds: ${JSON.stringify(layeredTransitionFrame)}`);
+  await screenshot(page, "scene-background-transition-layered");
   await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"), null, { timeout: 5000 });
 
   const stableRevealStep = steps.find((step) => step.id === "festival_walk_001");
@@ -275,8 +328,28 @@ try {
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.sceneId === "search");
 
   const chat = steps.find((step) => step.id === "opening_empty_seat_004");
-  await bootAt(page, chat.id);
-  assert(await page.locator("#novel-dialogue").isVisible(), "Slack must float above the normal dialogue window");
+  const preChat = steps[steps.findIndex((step) => step.id === chat.id) - 1];
+  await bootAt(page, preChat.id);
+  await advanceLinear(page);
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, chat.id);
+  await page.waitForTimeout(60);
+  const slackEntryFrame = await page.evaluate(() => {
+    const layer = document.querySelector("#novel-layer");
+    const dialogue = document.querySelector("#novel-dialogue");
+    const workspace = document.querySelector(".novel-slack-workspace");
+    const dialogueStyle = getComputedStyle(dialogue);
+    const workspaceStyle = getComputedStyle(workspace);
+    return {
+      entering: layer.classList.contains("is-slack-entering"),
+      dialogueHiddenAttribute: dialogue.hidden,
+      dialogueOpacity: Number.parseFloat(dialogueStyle.opacity),
+      dialogueTransitionDuration: dialogueStyle.transitionDuration,
+      workspaceAnimationName: workspaceStyle.animationName,
+      workspaceAnimationDuration: workspaceStyle.animationDuration,
+    };
+  });
+  assert(slackEntryFrame.entering && !slackEntryFrame.dialogueHiddenAttribute && slackEntryFrame.dialogueOpacity < 0.98 && slackEntryFrame.dialogueTransitionDuration.includes("0.32s"), `normal message window did not fade out for Slack: ${JSON.stringify(slackEntryFrame)}`);
+  assert(slackEntryFrame.workspaceAnimationName === "novel-slack-window-in" && slackEntryFrame.workspaceAnimationDuration === "0.72s", `Slack entrance animation is missing: ${JSON.stringify(slackEntryFrame)}`);
   assert(await page.locator(".novel-slack-workspace").count() === 1, "Slack must be one surface");
   assert(await page.locator(".novel-slack-post").count() === 1, "Slack thread must begin with one root post");
   assert(await page.locator(".novel-slack-typing").isVisible(), "continued Slack conversation must show a typing indicator");
@@ -284,24 +357,35 @@ try {
     amane: getComputedStyle(document.querySelector('.novel-slack-post[data-speaker="amane"] .novel-slack-avatar')).backgroundImage,
     mizuhaTyping: getComputedStyle(document.querySelector('.novel-slack-typing[data-speaker="mizuha"] .novel-slack-avatar')).backgroundImage,
   }));
-  assert(firstSlackAvatars.amane.includes("slack-avatar-amane-v1.webp") && firstSlackAvatars.mizuhaTyping.includes("slack-avatar-mizuha-v1.webp"), `character mascot avatars are missing from Slack: ${JSON.stringify(firstSlackAvatars)}`);
+  assert(firstSlackAvatars.amane.includes("slack-avatar-amane-v2.webp") && firstSlackAvatars.mizuhaTyping.includes("slack-avatar-mizuha-v2.webp"), `character mascot avatars are missing from Slack: ${JSON.stringify(firstSlackAvatars)}`);
+  await page.waitForFunction(() => !document.querySelector("#novel-layer")?.classList.contains("is-slack-entering"));
+  await page.waitForFunction(() => Number.parseFloat(getComputedStyle(document.querySelector('.novel-cast[data-speaker="sora"] .novel-character--sora')).opacity) > 0.655);
   const slackGeometry = await page.evaluate(() => {
     const workspace = document.querySelector(".novel-slack-workspace");
-    const dialogue = document.querySelector("#novel-dialogue");
+    const character = document.querySelector('.novel-cast[data-speaker="sora"] .novel-character--sora');
     const rect = workspace.getBoundingClientRect();
-    const dialogueRect = dialogue.getBoundingClientRect();
+    const characterRect = character.getBoundingClientRect();
     return {
       widthRatio: rect.width / innerWidth,
       heightRatio: rect.height / innerHeight,
-      sitsAboveDialogue: rect.top < dialogueRect.top && rect.bottom <= dialogueRect.bottom,
+      topRatio: rect.top / innerHeight,
+      fitsViewport: rect.top >= 0 && rect.bottom <= innerHeight,
       background: getComputedStyle(workspace).backgroundColor,
       mainBackground: getComputedStyle(workspace.querySelector("main")).backgroundColor,
       backdropFilter: getComputedStyle(workspace).backdropFilter,
+      characterInset: Number.parseFloat(getComputedStyle(character).right),
+      characterOpacity: Number.parseFloat(getComputedStyle(character).opacity),
+      characterWidthRatio: characterRect.width / rect.width,
+      characterRightBias: (characterRect.left + characterRect.width / 2 - rect.left) / rect.width,
+      characterBottomGap: Math.abs(characterRect.bottom - rect.bottom),
+      characterClip: getComputedStyle(character.closest(".novel-cast")).clipPath,
     };
   });
   const slackAlpha = (color) => Number(color.match(/[\d.]+(?=\))/u)?.[0] || 1);
-  assert(slackGeometry.widthRatio < 0.64 && slackGeometry.heightRatio < 0.62, `Slack overlay is still too large: ${JSON.stringify(slackGeometry)}`);
-  assert(slackGeometry.sitsAboveDialogue && slackAlpha(slackGeometry.background) <= 0.3 && slackAlpha(slackGeometry.mainBackground) <= 0.5 && !slackGeometry.backdropFilter.includes("blur"), `Slack overlay placement/translucency failed: ${JSON.stringify(slackGeometry)}`);
+  assert(slackGeometry.widthRatio > 0.68 && slackGeometry.widthRatio < 0.78 && slackGeometry.heightRatio > 0.72 && slackGeometry.heightRatio < 0.84, `Slack overlay was not enlarged to the intended 1.5x scale: ${JSON.stringify(slackGeometry)}`);
+  assert(slackGeometry.fitsViewport && slackAlpha(slackGeometry.background) <= 0.7 && slackAlpha(slackGeometry.mainBackground) <= 0.8 && !slackGeometry.backdropFilter.includes("blur"), `Slack overlay placement/translucency failed: ${JSON.stringify(slackGeometry)}`);
+  assert(slackGeometry.topRatio > 0.14, `Slack workspace was not lowered enough: ${JSON.stringify(slackGeometry)}`);
+  assert(slackGeometry.characterInset >= 96 && Math.abs(slackGeometry.characterOpacity - 0.66) < 0.01 && slackGeometry.characterWidthRatio < 0.38 && slackGeometry.characterRightBias > 0.7 && slackGeometry.characterBottomGap < 24 && slackGeometry.characterClip !== "none", `Slack character is not a small clipped figure at the lower right: ${JSON.stringify(slackGeometry)}`);
   await advanceLinear(page);
   assert(await page.locator(".novel-slack-post").count() === 2, "second Slack message did not append to the thread");
   assert((await page.locator(".novel-slack-post").first().innerText()).includes("先に部屋、入ってる。"), "earlier Slack post disappeared");
@@ -315,11 +399,43 @@ try {
   assert(await page.locator(".novel-slack-post.is-reply").count() === 2, "Slack replies are not connected as a thread");
   const speakerText = await page.locator(".novel-slack-post p strong").allTextContents();
   assert(speakerText.length === 3, "Slack speaker labels do not match the visible posts");
+  const finalSlackStepId = await currentStepId(page);
+  await page.locator(".novel-slack-thread").click();
+  await page.waitForFunction((previous) => document.querySelector("#novel-layer")?.dataset.stepId !== previous, finalSlackStepId);
+  await page.waitForTimeout(40);
+  const slackExitFrame = await page.evaluate(() => {
+    const layer = document.querySelector("#novel-layer");
+    const character = layer.querySelector(".novel-character--sora");
+    const style = getComputedStyle(character);
+    const dialogue = document.querySelector("#novel-dialogue");
+    const dialogueStyle = getComputedStyle(dialogue);
+    const workspace = document.querySelector(".novel-slack-workspace");
+    return {
+      exiting: layer.classList.contains("is-slack-exiting"),
+      slackHidden: document.querySelector("#novel-slack-surface").hidden,
+      slackAnimationName: getComputedStyle(workspace).animationName,
+      opacity: Number.parseFloat(style.opacity),
+      transitionDuration: style.transitionDuration,
+      dialogueHiddenAttribute: dialogue.hidden,
+      dialogueOpacity: Number.parseFloat(dialogueStyle.opacity),
+      dialogueTransitionDuration: dialogueStyle.transitionDuration,
+    };
+  });
+  assert(slackExitFrame.exiting && !slackExitFrame.slackHidden && slackExitFrame.slackAnimationName === "novel-slack-window-out", `Slack workspace disappeared without an exit transition: ${JSON.stringify(slackExitFrame)}`);
+  assert(slackExitFrame.opacity === 0 && slackExitFrame.transitionDuration === "0s", `Slack character resized while leaving the workspace: ${JSON.stringify(slackExitFrame)}`);
+  assert(!slackExitFrame.dialogueHiddenAttribute && slackExitFrame.dialogueOpacity < 1 && slackExitFrame.dialogueTransitionDuration.includes("0.32s"), `normal message window appeared in a single frame after Slack: ${JSON.stringify(slackExitFrame)}`);
+  await page.waitForFunction(() => !document.querySelector("#novel-layer")?.classList.contains("is-slack-exiting"));
+  const slackExitSettled = await page.evaluate(() => ({
+    slackHidden: document.querySelector("#novel-slack-surface").hidden,
+    dialogueHiddenAttribute: document.querySelector("#novel-dialogue").hidden,
+    dialogueOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#novel-dialogue")).opacity),
+  }));
+  assert(slackExitSettled.slackHidden && !slackExitSettled.dialogueHiddenAttribute && slackExitSettled.dialogueOpacity > 0.98, `Slack exit did not settle cleanly: ${JSON.stringify(slackExitSettled)}`);
 
   const sakuyaChat = steps.find((step) => step.id === "prologue_basil_007");
   await bootAt(page, sakuyaChat.id);
   const sakuyaAvatar = await page.locator('.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar').last().evaluate((avatar) => getComputedStyle(avatar).backgroundImage);
-  assert(sakuyaAvatar.includes("slack-avatar-sakuya-v1.webp"), `Sakuya mascot avatar is missing from Slack: ${sakuyaAvatar}`);
+  assert(sakuyaAvatar.includes("slack-avatar-sakuya-v2.webp"), `Sakuya mascot avatar is missing from Slack: ${sakuyaAvatar}`);
 
   const observationChoice = steps.find((step) => step.choiceId === "observation_order");
   await bootAt(page, observationChoice.id);
@@ -378,6 +494,21 @@ try {
   const interactionBounds = await interactionOpen.boundingBox();
   await interactionOpen.click();
   await page.locator(".story-detour-dock").waitFor({ state: "visible", timeout: 15000 });
+  await page.waitForFunction(() => document.querySelector("#map-guide-title")?.textContent?.includes("森が多い場所"));
+  await page.waitForFunction(() => Number.parseFloat(getComputedStyle(document.querySelector("#japan-layer")).getPropertyValue("--story-detour-dock-height")) > 0);
+  const mapDetourLayout = await page.evaluate(() => {
+    const guide = document.querySelector("#map-reading-guide").getBoundingClientRect();
+    const dock = document.querySelector(".story-detour-dock").getBoundingClientRect();
+    return {
+      guide: { top: guide.top, right: guide.right, bottom: guide.bottom, left: guide.left },
+      dock: { top: dock.top, right: dock.right, bottom: dock.bottom, left: dock.left },
+      gap: dock.top - guide.bottom,
+      dockHeightVariable: Number.parseFloat(getComputedStyle(document.querySelector("#japan-layer")).getPropertyValue("--story-detour-dock-height")),
+      targetGuideTitle: document.querySelector("#map-guide-title").textContent,
+    };
+  });
+  assert(mapDetourLayout.gap >= 12, `MAP guide is covered by the story detour dock: ${JSON.stringify(mapDetourLayout)}`);
+  assert(Math.abs(mapDetourLayout.dockHeightVariable - (mapDetourLayout.dock.bottom - mapDetourLayout.dock.top)) <= 2, `story detour dock height was not synchronized: ${JSON.stringify(mapDetourLayout)}`);
   const glintAfterTransition = await page.locator(".gaia-global-button-glint").evaluate((node) => ({
     active: node.classList.contains("is-active"),
     width: Number.parseFloat(node.style.width) || 0,
@@ -439,7 +570,42 @@ try {
     return { activated, detachedCleared, coveredCleared };
   });
   assert(glintLifecycle.activated && glintLifecycle.detachedCleared && glintLifecycle.coveredCleared, `button glint lifecycle failed: ${JSON.stringify(glintLifecycle)}`);
+  const optionalMapReturn = page.locator("#story-detour-return");
+  assert(!await optionalMapReturn.isDisabled(), "Map 03 return remained hard-locked before the optional layer checks");
+  assert((await optionalMapReturn.innerText()).trim() === "物語へ戻る", "Map 03 optional return did not explain that the story can continue");
+  await optionalMapReturn.click();
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, transitionInteraction.id, { timeout: 15000 });
   for (const interaction of interactions) await completeInteraction(page, interaction);
+
+  await bootAt(page, "prologue_basil_006");
+  const fastForwardGeometry = await page.locator("#novel-fast-forward-button").evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    return {
+      visible: !button.hidden && rect.width > 0 && rect.height > 0,
+      rightGap: innerWidth - rect.right,
+      bottomGap: innerHeight - rect.bottom,
+    };
+  });
+  assert(fastForwardGeometry.visible && fastForwardGeometry.rightGap < 180 && fastForwardGeometry.bottomGap < 90, `fast-forward button is not at the lower right: ${JSON.stringify(fastForwardGeometry)}`);
+  const controlStartStep = await currentStepId(page);
+  await page.keyboard.down("Control");
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, controlStartStep, { timeout: 5000 });
+  assert(await page.locator("#novel-fast-forward-button").evaluate((button) => button.classList.contains("is-active") && button.classList.contains("is-control-held")), "holding Ctrl did not activate fast-forward");
+  await screenshot(page, "fast-forward-ctrl");
+  await page.keyboard.up("Control");
+  const controlStopStep = await currentStepId(page);
+  await page.waitForTimeout(320);
+  assert(await currentStepId(page) === controlStopStep, "fast-forward continued after releasing Ctrl");
+
+  await bootAt(page, "prologue_basil_009", {}, { reducedMotion: true });
+  await page.locator("#novel-fast-forward-button").click();
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "choice_observation_order_001", null, { timeout: 5000 });
+  const fastForwardBarrier = await page.locator("#novel-fast-forward-button").evaluate((button) => ({
+    pressed: button.getAttribute("aria-pressed"),
+    active: button.classList.contains("is-active"),
+    label: button.querySelector("b")?.textContent,
+  }));
+  assert(fastForwardBarrier.pressed === "false" && !fastForwardBarrier.active && fastForwardBarrier.label === "早送り", `fast-forward did not stop at the choice: ${JSON.stringify(fastForwardBarrier)}`);
 
   const narration = steps.find((step) => step.type === "narration");
   await bootAt(page, narration.id);
@@ -448,11 +614,43 @@ try {
   await page.keyboard.press("Enter");
   await page.keyboard.press("Space");
   await page.waitForFunction((previous) => document.querySelector("#novel-layer")?.dataset.stepId !== previous, keyboardStep);
-  await bootAt(page, narration.id);
+  const logHistoryIds = steps.filter((step) => step.text).slice(0, 72).map((step) => step.id);
+  await bootAt(page, narration.id, { readStepIds: logHistoryIds });
   await page.locator("#novel-log-button").click();
   assert(await page.locator("#novel-log-panel").isVisible(), "LOG did not open");
+  await page.waitForTimeout(300);
+  const logGeometry = await page.evaluate(() => {
+    const panel = document.querySelector("#novel-log-panel");
+    const content = document.querySelector("#novel-log-content");
+    const rect = panel.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      viewport: { width: innerWidth, height: innerHeight },
+      contentScrollable: content.scrollHeight > content.clientHeight,
+      articleCount: content.querySelectorAll("article").length,
+    };
+  });
+  assert(Math.abs(logGeometry.left) < 1 && Math.abs(logGeometry.top) < 1 && Math.abs(logGeometry.right - logGeometry.viewport.width) < 1 && Math.abs(logGeometry.bottom - logGeometry.viewport.height) < 1, `LOG is not full-screen: ${JSON.stringify(logGeometry)}`);
+  assert(logGeometry.contentScrollable && logGeometry.articleCount >= 60, `LOG history is not scrollable: ${JSON.stringify(logGeometry)}`);
+  await screenshot(page, "log-fullscreen");
+  await page.locator("#novel-log-content").hover();
+  await page.mouse.wheel(0, 520);
+  await page.waitForFunction(() => document.querySelector("#novel-log-content").scrollTop > 0);
+  assert(await page.locator("#novel-log-panel").isVisible(), "scrolling inside LOG unexpectedly closed it");
+  await page.locator("#novel-log-close").click();
+  await page.locator("#novel-layer").dispatchEvent("wheel", { deltaY: 120 });
+  assert(await page.locator("#novel-log-panel").isHidden(), "downward wheel unexpectedly opened LOG");
+  await page.locator("#novel-layer").dispatchEvent("wheel", { deltaY: -120 });
+  await page.locator("#novel-log-panel").waitFor({ state: "visible" });
+  assert(await page.locator("#novel-log-button").getAttribute("aria-expanded") === "true", "upward wheel did not immediately open LOG");
   await page.locator("#novel-log-close").click();
   await page.locator("#novel-config-button").click();
+  assert(await page.locator(".novel-topbar #novel-restart-button").count() === 0, "RESTART remains exposed in the story top bar");
+  assert(await page.locator(".novel-config-footer #novel-restart-button").isVisible(), "RESTART is missing from CONFIG");
+  await screenshot(page, "config-with-restart");
   await page.locator("#novel-reduced-motion").check();
   await page.locator("#novel-config-close").click();
   await page.locator("#novel-auto-button").click();
@@ -460,6 +658,34 @@ try {
   await page.locator("#novel-auto-button").click();
   const savedStep = await currentStepId(page);
   await page.locator("#novel-save-button").click();
+  const saveLayout = await page.evaluate(() => {
+    const shell = document.querySelector(".novel-save-shell");
+    const slot = document.querySelector(".novel-save-slot");
+    const header = slot.querySelector(":scope > header");
+    const body = slot.querySelector(":scope > div");
+    const title = body?.querySelector("h3");
+    const excerpt = body?.querySelector(".novel-save-slot-excerpt");
+    const footer = slot.querySelector(":scope > footer");
+    const shellRect = shell.getBoundingClientRect();
+    const headerRect = header.getBoundingClientRect();
+    const bodyRect = body?.getBoundingClientRect();
+    const titleRect = title?.getBoundingClientRect();
+    const excerptRect = excerpt?.getBoundingClientRect();
+    const footerRect = footer.getBoundingClientRect();
+    return {
+      slotCount: document.querySelectorAll(".novel-save-slot").length,
+      widthRatio: shellRect.width / innerWidth,
+      heightRatio: shellRect.height / innerHeight,
+      hasBody: Boolean(body),
+      ordered: headerRect.bottom <= bodyRect?.top + 1
+        && titleRect?.bottom <= excerptRect?.top + 1
+        && bodyRect?.bottom <= footerRect.top + 1,
+      buttonFontSize: Number.parseFloat(getComputedStyle(footer.querySelector("button")).fontSize),
+    };
+  });
+  assert(saveLayout.slotCount === 6 && saveLayout.hasBody && saveLayout.ordered, `SAVE slot layout collapsed: ${JSON.stringify(saveLayout)}`);
+  assert(saveLayout.widthRatio > 0.7 && saveLayout.heightRatio > 0.8 && saveLayout.buttonFontSize >= 12, `SAVE dialog is still undersized: ${JSON.stringify(saveLayout)}`);
+  await screenshot(page, "save-dialog");
   await page.locator("#novel-save-slots .novel-save-primary").first().click();
   await page.locator("#novel-save-close").click();
   await advanceLinear(page);
@@ -469,6 +695,10 @@ try {
   await page.locator("#novel-eves-button").click();
   assert(await page.locator("#novel-eves-panel").isVisible(), "E.V.E.S. did not open");
   await page.locator("#novel-eves-close").click();
+  await page.locator("#novel-config-button").click();
+  await page.locator("#novel-restart-button").click();
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, story.scenes[0].steps[0].id);
+  assert(await page.locator("#novel-config-panel").isHidden(), "CONFIG remained open after restarting the story");
   if (await page.locator("#gaia-audio-toggle").count()) {
     await page.locator("#gaia-audio-toggle").click();
     await page.locator("#gaia-audio-toggle").click();
@@ -525,15 +755,16 @@ try {
   await advanceLinear(mobile);
   const mobileSlackGeometry = await mobile.evaluate(() => {
     const workspaceRect = document.querySelector(".novel-slack-workspace").getBoundingClientRect();
-    const dialogueRect = document.querySelector("#novel-dialogue").getBoundingClientRect();
     return {
       horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
       workspace: { top: workspaceRect.top, right: workspaceRect.right, bottom: workspaceRect.bottom, left: workspaceRect.left },
-      dialogue: { top: dialogueRect.top, right: dialogueRect.right, bottom: dialogueRect.bottom, left: dialogueRect.left },
+      workspaceFits: workspaceRect.top >= 0 && workspaceRect.bottom <= innerHeight,
+      dialogueHiddenAttribute: document.querySelector("#novel-dialogue").hidden,
+      dialogueOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#novel-dialogue")).opacity),
       posts: document.querySelectorAll(".novel-slack-post").length,
     };
   });
-  assert(!mobileSlackGeometry.horizontalOverflow && mobileSlackGeometry.posts === 2 && mobileSlackGeometry.workspace.bottom <= mobileSlackGeometry.dialogue.bottom, `mobile Slack overlay failed: ${JSON.stringify(mobileSlackGeometry)}`);
+  assert(!mobileSlackGeometry.horizontalOverflow && mobileSlackGeometry.posts === 2 && mobileSlackGeometry.workspaceFits && !mobileSlackGeometry.dialogueHiddenAttribute && mobileSlackGeometry.dialogueOpacity < 0.01, `mobile Slack overlay failed: ${JSON.stringify(mobileSlackGeometry)}`);
   await screenshot(mobile, "slack-mobile");
   report.viewports.push({ width: 390, height: 844, passed: true });
   await context.close();

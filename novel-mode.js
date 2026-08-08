@@ -16,7 +16,20 @@
   const REVEAL_BASE_MS = 24;
   const REVEAL_MIN_LINE_MS = 120;
   const REVEAL_PUNCTUATION_MS = 84;
+  const FAST_FORWARD_HOLD_DELAY_MS = 180;
+  const FAST_FORWARD_STEP_MS = 90;
+  const SLACK_ENTER_MS = 760;
+  const SLACK_EXIT_MS = 460;
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
+  const BACKGROUND_SOUNDTRACK = Object.freeze([
+    ["novel-bg-workroom-v2.png", "windowlight"],
+    ["novel-bg-online-night-v2.png", "moonbook"],
+    ["novel-bg-garden-center-v2.png", "firstlight"],
+    ["novel-bg-coastal-venue-v2.png", "foldedwind"],
+    ["novel-bg-production-night-v2.png", "moonsave"],
+    ["novel-bg-zushi-coast-night-v2.png", "snowfire"],
+    ["novel-bg-exhibition-v2.png", "story"],
+  ]);
   const SPEAKERS = Object.freeze({
     narrator: { name: "", glyph: "◌" },
     mizuha: { name: "ミズハ", glyph: "≈" },
@@ -31,6 +44,16 @@
     DERIVED: "計算・解釈 / DERIVED",
     SCENARIO: "仮定 / SCENARIO",
     VISITOR_TRACE: "操作記録 / VISITOR TRACE",
+  });
+  const RECORD_SPEAKER_LABELS = Object.freeze({
+    SOURCE: "観測メモ",
+    LOCAL_SOURCE: "観測メモ",
+    DERIVED: "解析メモ",
+    SCENARIO: "仮定メモ",
+    VISITOR_TRACE: "選択の記録",
+  });
+  const RECORD_PRESENTERS = Object.freeze({
+    prologue_basil_010: "amane",
   });
   const VIEWED_DEFAULTS = Object.freeze({
     gxDeepTime: false,
@@ -56,6 +79,8 @@
     close: layer.querySelector("#novel-close-button"),
     restart: layer.querySelector("#novel-restart-button"),
     auto: layer.querySelector("#novel-auto-button"),
+    fastForward: layer.querySelector("#novel-fast-forward-button"),
+    fastForwardLabel: layer.querySelector("#novel-fast-forward-label"),
     logButton: layer.querySelector("#novel-log-button"),
     logPanel: layer.querySelector("#novel-log-panel"),
     logClose: layer.querySelector("#novel-log-close"),
@@ -95,7 +120,6 @@
     avatar: layer.querySelector("#novel-avatar"),
     avatarGlyph: layer.querySelector("#novel-avatar-glyph"),
     dataKind: layer.querySelector("#novel-data-kind"),
-    signalTitle: layer.querySelector("#novel-signal-title"),
     sourceButton: layer.querySelector("#novel-source-button"),
     sourcePanel: layer.querySelector("#novel-source-panel"),
     sourceClose: layer.querySelector("#novel-source-close"),
@@ -153,6 +177,15 @@
   let revealFrame = 0;
   let revealGeneration = 0;
   let autoTimer = 0;
+  const fastForwardState = {
+    timer: 0,
+    holdTimer: 0,
+    controlDown: false,
+    keyActive: false,
+    buttonActive: false,
+    blocked: false,
+  };
+  let slackTransitionTimer = 0;
   let previousFocus = null;
   let archiveMode = "save";
   let pendingSlotAction = "";
@@ -160,6 +193,9 @@
   let pendingInteraction = null;
   let detourState = null;
   let detourDock = null;
+  let detourDockObserver = null;
+  let backgroundTransitionPending = false;
+  let requestedStoryTrack = null;
   let config = { messageSpeedPercent: 200, reducedMotion: false };
 
   const particleSystem = window.GaiaParticles?.create?.(elements.particles, {
@@ -167,11 +203,12 @@
     intensity: 0.62,
   }) || { start() {}, stop() {} };
 
-  const runSceneTransition = (swapScene, event = null, tone = "novel") => {
+  const runSceneTransition = (swapScene, event = null, tone = "novel", options = {}) => {
     const transition = window.GaiaSceneTransition;
     if (!transition) return Promise.resolve(swapScene());
     const hasOrigin = Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY);
     return transition.run(swapScene, {
+      ...options,
       tone,
       origin: hasOrigin ? { x: event.clientX, y: event.clientY } : undefined,
     });
@@ -302,8 +339,9 @@
     autoTimer = 0;
   };
 
-  const hideSpecialSurfaces = () => {
+  const hideSpecialSurfaces = ({ preserveSlack = false } = {}) => {
     [elements.slackSurface, elements.evidenceSurface, elements.reflectionSurface, elements.resultSurface].forEach((surface) => {
+      if (preserveSlack && surface === elements.slackSurface) return;
       surface.hidden = true;
       surface.replaceChildren();
     });
@@ -316,17 +354,21 @@
     elements.titleScreen.hidden = true;
     elements.runtime.hidden = false;
     elements.restart.hidden = false;
+    elements.fastForward.hidden = false;
     elements.saveButton.hidden = false;
     elements.loadButton.hidden = false;
   };
 
   const showTitle = () => {
     hasStarted = false;
+    resetFastForward();
+    requestStoryTrack("story", 0.45);
     hideSpecialSurfaces();
     layer.classList.add("is-title");
     elements.titleScreen.hidden = false;
     elements.runtime.hidden = true;
     elements.restart.hidden = true;
+    elements.fastForward.hidden = true;
     elements.saveButton.hidden = true;
     elements.loadButton.hidden = true;
     elements.resume.hidden = !getStoredProgress();
@@ -344,13 +386,78 @@
     return firstStepForScene(scene.nextSceneId);
   };
 
-  const backgroundImageForScene = (sceneId) => {
+  const backgroundPresentationForScene = (sceneId) => {
     const previousSceneId = layer.dataset.sceneId;
     layer.dataset.sceneId = sceneId;
-    const backgroundImage = getComputedStyle(layer).backgroundImage;
+    const computed = getComputedStyle(layer);
+    const presentation = {
+      image: computed.backgroundImage,
+      position: computed.backgroundPosition,
+      size: computed.backgroundSize,
+      repeat: computed.backgroundRepeat,
+    };
     if (previousSceneId) layer.dataset.sceneId = previousSceneId;
     else delete layer.dataset.sceneId;
-    return backgroundImage;
+    return presentation;
+  };
+
+  const soundtrackForBackground = (backgroundImage) => BACKGROUND_SOUNDTRACK
+    .find(([filename]) => String(backgroundImage).includes(filename))?.[1] || "story";
+
+  const requestStoryTrack = (track, fadeSeconds = 0.55) => {
+    if (!track || requestedStoryTrack === track) return;
+    requestedStoryTrack = track;
+    void window.GaiaOpeningAudio?.switchTrack?.(track, fadeSeconds);
+  };
+
+  const requestTrackForBackground = (presentation, fadeSeconds = 0.55) => {
+    requestStoryTrack(soundtrackForBackground(presentation?.image), fadeSeconds);
+  };
+
+  const preloadBackground = async (backgroundImage) => {
+    const urls = [...String(backgroundImage).matchAll(/url\((?:"([^"]+)"|'([^']+)'|([^'"\)]+))\)/g)]
+      .map((match) => match[1] || match[2] || match[3])
+      .filter(Boolean);
+    await Promise.all(urls.map((url) => new Promise((resolve) => {
+      const image = new Image();
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      image.addEventListener("load", () => {
+        if (typeof image.decode === "function") image.decode().catch(() => {}).finally(finish);
+        else finish();
+      }, { once: true });
+      image.addEventListener("error", finish, { once: true });
+      image.src = url;
+      if (image.complete) finish();
+    })));
+  };
+
+  const runBackgroundTransition = async (currentBackground, nextBackground, swapStep) => {
+    await preloadBackground(nextBackground.image);
+    requestTrackForBackground(nextBackground, 0.55);
+    layer.style.setProperty("--novel-transition-background", currentBackground.image);
+    layer.style.setProperty("--novel-transition-background-position", currentBackground.position);
+    layer.style.setProperty("--novel-transition-background-size", currentBackground.size);
+    layer.style.setProperty("--novel-transition-background-repeat", currentBackground.repeat);
+    layer.classList.remove("is-background-releasing");
+    layer.classList.add("is-background-buffered");
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    try {
+      return await runSceneTransition(() => {
+        swapStep();
+        layer.classList.add("is-background-releasing");
+      }, null, "novel", { surfaceAlpha: 0.24 });
+    } finally {
+      layer.classList.remove("is-background-buffered", "is-background-releasing");
+      layer.style.removeProperty("--novel-transition-background");
+      layer.style.removeProperty("--novel-transition-background-position");
+      layer.style.removeProperty("--novel-transition-background-size");
+      layer.style.removeProperty("--novel-transition-background-repeat");
+    }
   };
 
   const moveToFollowingStep = (step = currentStep()) => {
@@ -362,10 +469,15 @@
       saveProgress();
       renderCurrentStep();
     };
+    const currentBackground = backgroundPresentationForScene(step.sceneId);
+    const nextBackground = backgroundPresentationForScene(nextStep.sceneId);
     const backgroundChanges = step.sceneId !== nextStep?.sceneId
-      && backgroundImageForScene(step.sceneId) !== backgroundImageForScene(nextStep.sceneId);
+      && currentBackground.image !== nextBackground.image;
     if (backgroundChanges && !motionReduced()) {
-      return runSceneTransition(swapStep, null, "novel");
+      if (backgroundTransitionPending) return;
+      backgroundTransitionPending = true;
+      return runBackgroundTransition(currentBackground, nextBackground, swapStep)
+        .finally(() => { backgroundTransitionPending = false; });
     }
     swapStep();
   };
@@ -398,7 +510,6 @@
     const label = RECORD_LABELS[kind] || RECORD_LABELS.SOURCE;
     elements.dataKind.textContent = label;
     elements.dataKind.dataset.kind = kind;
-    elements.signalTitle.textContent = step.type === "record" ? "記録の分類と作者を分けて表示しています。" : "物語台本に記録された場面です。";
     elements.sourcePanelKind.textContent = label;
     elements.sourcePanelKind.dataset.kind = kind;
     elements.sourcePanelTitle.textContent = label;
@@ -543,13 +654,41 @@
     saveProgress();
   };
 
+  const clearSlackSurface = () => {
+    elements.slackSurface.hidden = true;
+    elements.slackSurface.replaceChildren();
+  };
+
+  const prepareSlackTransition = (nextStepType) => {
+    window.clearTimeout(slackTransitionTimer);
+    slackTransitionTimer = 0;
+    if (layer.classList.contains("is-slack-exiting")) clearSlackSurface();
+    const wasSlack = layer.classList.contains("is-slack");
+    const entersSlack = !wasSlack && nextStepType === "chat";
+    const exitsSlack = wasSlack && nextStepType !== "chat";
+    layer.classList.remove("is-slack-entering", "is-slack-exiting");
+    if (entersSlack) layer.classList.add("is-slack-entering");
+    if (exitsSlack) layer.classList.add("is-slack-exiting");
+    if (!entersSlack && !exitsSlack) return false;
+
+    const transitionDuration = exitsSlack ? SLACK_EXIT_MS : SLACK_ENTER_MS;
+    slackTransitionTimer = window.setTimeout(() => {
+      if (exitsSlack) clearSlackSurface();
+      layer.classList.remove("is-slack-entering", "is-slack-exiting");
+      slackTransitionTimer = 0;
+    }, motionReduced() ? 0 : transitionDuration);
+    return exitsSlack;
+  };
+
   const prepareStepFrame = (step) => {
     const scene = sceneMap.get(step.sceneId);
+    const preserveSlack = prepareSlackTransition(step.type);
     layer.dataset.sceneId = step.sceneId;
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
     showRuntime();
-    hideSpecialSurfaces();
+    requestTrackForBackground(backgroundPresentationForScene(step.sceneId));
+    hideSpecialSurfaces({ preserveSlack });
     elements.chapterCard.hidden = true;
     elements.dialogue.hidden = false;
     elements.choices.replaceChildren();
@@ -568,6 +707,17 @@
       if (index) container.append(document.createElement("br"));
       container.append(document.createTextNode(line));
     });
+  };
+
+  const recordTextForDisplay = (text) => {
+    const normalized = String(text || "")
+      .replace(/\s*\/\s*(?:LOCAL SOURCE|SOURCE|DERIVED|SCENARIO|VISITOR TRACE|CONTEXT|AUTHOR|GENERATED TEXT|RESPONSIBLE|EDITORIAL CHOICE|SAKUYA SOURCE|PUBLIC BUILD CHANGED)(?=：|$)/gm, "")
+      .replace(/SOURCE RECORD または DISCLOSE DERIVATION/g, "原文を残す／生成経緯を開示する")
+      .replace(/：NO(?=$|\n)/g, "：なし")
+      .trim();
+    const lines = normalized.split("\n");
+    if (lines.length > 1 && ["観測記録", "その場の観測", "計算・解釈", "操作記録"].includes(lines[0].trim())) lines.shift();
+    return lines.join("\n").trim();
   };
 
   const slackTimelineFor = (step) => {
@@ -621,15 +771,12 @@
     if (step.type === "chat") {
       const timeline = slackTimelineFor(step);
       setCharacterPresentation(step.speaker);
-      elements.dialogue.hidden = false;
-      elements.speaker.textContent = "SLACK / #惑星の放課後";
-      elements.text.textContent = timeline.typing ? "返信を待っています。クリックすると次の投稿へ進みます。" : "このスレッドの記録を表示しています。";
       elements.sourceButton.hidden = true;
       elements.slackSurface.hidden = false;
       layer.classList.add("is-slack");
       const workspace = document.createElement("div");
       workspace.className = "novel-slack-workspace";
-      workspace.innerHTML = `<header><b>◀　▶　◷</b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、持ち寄る場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
+      workspace.innerHTML = `<header><b>◀　▶　◷</b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、記録する場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
       const thread = workspace.querySelector(".novel-slack-thread");
       timeline.messages.forEach((message, index) => {
         thread.append(createSlackPost(message, { root: index === 0, current: message.id === step.id }));
@@ -649,25 +796,21 @@
     }
 
     if (step.type === "record") {
-      elements.dialogue.hidden = true;
-      elements.sourceButton.hidden = true;
-      elements.evidenceSurface.hidden = false;
-      layer.classList.add("is-evidence");
-      const isDerived = step.recordType === "DERIVED";
-      const evidence = document.createElement("article");
-      evidence.className = `novel-evidence-card ${isDerived ? "is-derived" : "is-source"}`;
-      const type = document.createElement("span");
-      const heading = document.createElement("h2");
-      const body = document.createElement("p");
-      const meta = document.createElement("footer");
-      type.textContent = isDerived ? "DERIVED" : "SOURCE";
-      heading.textContent = isDerived ? "計算・解釈として生成された記録" : "観測されたままの記録";
-      appendLines(body, step.text || "");
-      meta.textContent = isDerived
-        ? "生成実行・選定責任：MIZUHA　｜　サクヤ本人の確認：なし"
-        : "原文の作者と出典を保持しています";
-      evidence.append(type, heading, body, meta);
-      elements.evidenceSurface.append(evidence);
+      const presenter = RECORD_PRESENTERS[step.id] || "narrator";
+      setCharacterPresentation(presenter);
+      if (presenter === "narrator") elements.avatar.hidden = true;
+      elements.dialogue.hidden = false;
+      elements.sourceButton.hidden = false;
+      elements.speaker.textContent = presenter === "amane"
+        ? "アマネの観測メモ"
+        : RECORD_SPEAKER_LABELS[step.recordType] || "記録メモ";
+      elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
+      const displayText = recordTextForDisplay(step.text);
+      elements.text.replaceChildren();
+      appendLines(elements.text, displayText);
+      elements.text.setAttribute("aria-label", displayText);
+      elements.cursor.hidden = true;
+      elements.continueMark.classList.add("is-visible");
       scheduleAutoAdvance();
       return;
     }
@@ -955,8 +1098,11 @@
   const updateDetourDock = () => {
     if (!pendingInteraction || !detourDock) return;
     const kind = pendingInteraction.interaction.kind;
+    const complete = detourCompletion();
+    const returnButton = detourDock.querySelector("#story-detour-return");
     detourDock.querySelector(".story-detour-progress").textContent = detourProgressText();
-    detourDock.querySelector("#story-detour-return").disabled = !detourCompletion();
+    returnButton.disabled = !complete && kind !== "map03";
+    returnButton.textContent = complete ? "操作を保存して物語へ戻る" : "物語へ戻る";
     detourDock.querySelector(".story-detour-controls").replaceChildren();
     if (kind === "map03") {
       const controls = [
@@ -1011,7 +1157,28 @@
     return document.querySelector(".experience");
   };
 
+  const clearDetourDockMeasurement = (detourHost = detourDock?.parentElement) => {
+    detourDockObserver?.disconnect();
+    detourDockObserver = null;
+    detourHost?.style.removeProperty("--story-detour-dock-height");
+  };
+
+  const observeDetourDockHeight = (detourHost) => {
+    if (!detourHost || !detourDock) return;
+    const syncHeight = () => {
+      if (!detourDock?.isConnected) return;
+      detourHost.style.setProperty("--story-detour-dock-height", `${Math.ceil(detourDock.getBoundingClientRect().height)}px`);
+    };
+    if (typeof ResizeObserver === "function") {
+      detourDockObserver = new ResizeObserver(syncHeight);
+      detourDockObserver.observe(detourDock);
+    }
+    requestAnimationFrame(syncHeight);
+  };
+
   const closeDetourDock = () => {
+    const detourHost = detourDock?.parentElement;
+    clearDetourDockMeasurement(detourHost);
     detourDock?.remove();
     detourDock = null;
     document.body.classList.remove("novel-mode-detour");
@@ -1019,13 +1186,15 @@
   };
 
   const requestDetourReturn = () => {
-    if (!pendingInteraction || !detourCompletion()) return;
+    if (!pendingInteraction) return;
     const kind = pendingInteraction.interaction.kind;
+    const allowIncomplete = kind === "map03";
+    if (!detourCompletion() && !allowIncomplete) return;
     if (kind === "gx") window.GaiaGX?.close?.();
     else if (kind === "space10") window.GaiaSpace?.close?.({ returnToTop: false });
     else {
       window.dispatchEvent(new CustomEvent("gaia:story-mode-close", { detail: { kind } }));
-      completePendingInteraction();
+      completePendingInteraction({ allowIncomplete });
     }
   };
 
@@ -1036,10 +1205,13 @@
     closeDetourDock();
     detourDock = document.createElement("aside");
     detourDock.className = "story-detour-dock";
+    detourDock.classList.toggle("is-motion-reduced", motionReduced());
     detourDock.dataset.kind = step.interaction.kind;
     detourDock.innerHTML = `<header><span>${definition.kicker}</span><h2>${definition.title}</h2></header><p>${definition.guide}</p><p class="story-detour-progress" role="status" aria-live="polite"></p><div class="story-detour-controls"></div><button id="story-detour-return" type="button" disabled>操作を保存して物語へ戻る</button>`;
     detourDock.querySelector("#story-detour-return").addEventListener("click", requestDetourReturn);
-    detourParent(step.interaction.kind)?.append(detourDock);
+    const detourHost = detourParent(step.interaction.kind);
+    detourHost?.append(detourDock);
+    observeDetourDockHeight(detourHost);
     document.body.classList.add("novel-mode-detour");
     layer.classList.add("is-mode-detour");
     updateDetourDock();
@@ -1060,8 +1232,8 @@
     requestAnimationFrame(() => detourDock?.querySelector(".story-detour-controls button, #story-detour-return")?.focus({ preventScroll: true }));
   };
 
-  const completePendingInteraction = () => {
-    if (!pendingInteraction || !detourCompletion()) return;
+  const completePendingInteraction = ({ allowIncomplete = false } = {}) => {
+    if (!pendingInteraction || (!detourCompletion() && !allowIncomplete)) return;
     const step = pendingInteraction;
     pendingInteraction = null;
     detourState = null;
@@ -1169,6 +1341,7 @@
       guard += 1;
     }
     if (!step) return;
+    if (!canAdvanceStep(step) && fastForwardEnabled()) stopFastForwardAtBarrier();
     saveProgress();
     if (["narration", "dialogue"].includes(step.type)) return renderSimpleStep(step);
     if (["chat", "record", "ui", "transition"].includes(step.type)) return renderRichStep(step);
@@ -1182,9 +1355,108 @@
   }
 
   const canAdvanceStep = (step) => ["narration", "dialogue", "chat", "record", "ui", "transition", "details"].includes(step?.type);
+  const progressionPanelsClosed = () => [elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel]
+    .every((panel) => panel.hidden);
+
+  const updateFastForwardInterface = () => {
+    const active = !fastForwardState.blocked && (fastForwardState.keyActive || fastForwardState.buttonActive);
+    elements.fastForward.setAttribute("aria-pressed", String(fastForwardState.buttonActive));
+    elements.fastForward.classList.toggle("is-active", active);
+    elements.fastForward.classList.toggle("is-control-held", active && fastForwardState.keyActive);
+    elements.fastForwardLabel.textContent = active ? "早送り中" : "早送り";
+    layer.classList.toggle("is-fast-forwarding", active);
+  };
+
+  const disableAutoForFastForward = () => {
+    elements.auto.setAttribute("aria-pressed", "false");
+    elements.auto.classList.remove("is-active");
+    window.clearTimeout(autoTimer);
+    autoTimer = 0;
+  };
+
+  const clearFastForwardTimer = () => {
+    window.clearTimeout(fastForwardState.timer);
+    fastForwardState.timer = 0;
+  };
+
+  const clearFastForwardHoldTimer = () => {
+    window.clearTimeout(fastForwardState.holdTimer);
+    fastForwardState.holdTimer = 0;
+  };
+
+  const resetFastForward = () => {
+    clearFastForwardTimer();
+    clearFastForwardHoldTimer();
+    Object.assign(fastForwardState, {
+      controlDown: false,
+      keyActive: false,
+      buttonActive: false,
+      blocked: false,
+    });
+    updateFastForwardInterface();
+  };
+
+  const stopFastForwardAtBarrier = () => {
+    clearFastForwardTimer();
+    fastForwardState.buttonActive = false;
+    fastForwardState.blocked = true;
+    updateFastForwardInterface();
+  };
+
+  const fastForwardEnabled = () => !fastForwardState.blocked && (fastForwardState.keyActive || fastForwardState.buttonActive);
+
+  const scheduleFastForward = (delay = FAST_FORWARD_STEP_MS) => {
+    clearFastForwardTimer();
+    if (!fastForwardEnabled()) return;
+    fastForwardState.timer = window.setTimeout(() => {
+      fastForwardState.timer = 0;
+      if (!fastForwardEnabled()) return;
+      if (backgroundTransitionPending) {
+        scheduleFastForward();
+        return;
+      }
+      if (!isOpen || !hasStarted || pendingInteraction || !progressionPanelsClosed()) {
+        stopFastForwardAtBarrier();
+        return;
+      }
+      if (!canAdvanceStep(currentStep())) {
+        stopFastForwardAtBarrier();
+        return;
+      }
+      advance();
+      scheduleFastForward();
+    }, delay);
+  };
+
+  const beginControlFastForward = (event) => {
+    if (event.key !== "Control" || event.repeat || fastForwardState.controlDown || !isOpen || !hasStarted) return;
+    if (event.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
+    fastForwardState.controlDown = true;
+    clearFastForwardHoldTimer();
+    fastForwardState.holdTimer = window.setTimeout(() => {
+      fastForwardState.holdTimer = 0;
+      if (!fastForwardState.controlDown || !isOpen || !hasStarted) return;
+      fastForwardState.blocked = false;
+      fastForwardState.keyActive = true;
+      disableAutoForFastForward();
+      updateFastForwardInterface();
+      scheduleFastForward(0);
+    }, FAST_FORWARD_HOLD_DELAY_MS);
+  };
+
+  const endControlFastForward = (event) => {
+    if (event?.key && event.key !== "Control") return;
+    fastForwardState.controlDown = false;
+    clearFastForwardHoldTimer();
+    fastForwardState.keyActive = false;
+    fastForwardState.blocked = false;
+    if (!fastForwardState.buttonActive) clearFastForwardTimer();
+    updateFastForwardInterface();
+  };
+
   function advance() {
     if (!isOpen || !hasStarted || pendingInteraction) return;
-    if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel].every((panel) => panel.hidden)) return;
+    if (!progressionPanelsClosed()) return;
     const step = currentStep();
     if (!canAdvanceStep(step)) return;
     if (isRevealing) {
@@ -1213,6 +1485,8 @@
     const sessionId = state.sessionId || `${Date.now().toString(36)}-restart`;
     state = defaultState();
     state.sessionId = sessionId;
+    resetFastForward();
+    closeConfig();
     showRuntime();
     renderEves();
     saveProgress();
@@ -1249,16 +1523,20 @@
     elements.logPanel.setAttribute("aria-hidden", "true");
     elements.logButton.setAttribute("aria-expanded", "false");
   };
+  const openLog = () => {
+    if (!elements.logPanel.hidden) return;
+    closeEves();
+    closeSourceDetails();
+    renderLog();
+    elements.logPanel.hidden = false;
+    elements.logPanel.setAttribute("aria-hidden", "false");
+    elements.logButton.setAttribute("aria-expanded", "true");
+    elements.logContent.scrollTop = 0;
+    elements.logClose.focus({ preventScroll: true });
+  };
   const toggleLog = () => {
-    if (elements.logPanel.hidden) {
-      closeEves();
-      closeSourceDetails();
-      renderLog();
-      elements.logPanel.hidden = false;
-      elements.logPanel.setAttribute("aria-hidden", "false");
-      elements.logButton.setAttribute("aria-expanded", "true");
-      elements.logClose.focus({ preventScroll: true });
-    } else closeLog();
+    if (elements.logPanel.hidden) openLog();
+    else closeLog();
   };
 
   const closeSourceDetails = ({ restoreFocus = false } = {}) => {
@@ -1415,6 +1693,7 @@
       const header = document.createElement("header");
       const label = document.createElement("span");
       const time = document.createElement("time");
+      const body = document.createElement("div");
       const title = document.createElement("h3");
       const excerpt = document.createElement("p");
       const actions = document.createElement("footer");
@@ -1423,13 +1702,15 @@
       article.dataset.empty = String(!saved);
       label.textContent = `SLOT ${String(index + 1).padStart(2, "0")}`;
       time.textContent = saved?.savedAt ? new Date(saved.savedAt).toLocaleString("ja-JP") : "EMPTY";
-      title.textContent = saved?.meta?.title || "空の記録領域";
-      excerpt.textContent = saved?.meta?.excerpt || "ここにはまだ物語の現在地が保存されていません。";
+      title.textContent = saved?.meta?.title || "空きスロット";
+      excerpt.className = "novel-save-slot-excerpt";
+      excerpt.textContent = saved?.meta?.excerpt || "まだセーブデータはありません。";
       header.append(label, time);
+      body.append(title, excerpt);
       primary.type = "button";
       primary.className = "novel-save-primary";
       if (archiveMode === "save") {
-        primary.textContent = saved ? (pendingSlotAction === `save:${index}` ? "もう一度押して上書き" : "上書き保存") : "このスロットに保存";
+        primary.textContent = saved ? (pendingSlotAction === `save:${index}` ? "もう一度押して上書き" : "上書き保存") : "ここにセーブ";
         primary.addEventListener("click", () => saveManualSlot(index));
       } else {
         primary.textContent = saved ? "ここから再開" : "記録なし";
@@ -1445,7 +1726,7 @@
         remove.addEventListener("click", () => deleteManualSlot(index));
         actions.append(remove);
       }
-      article.append(header, title, excerpt, actions);
+      article.append(header, body, actions);
       elements.saveSlots.append(article);
     });
   };
@@ -1538,7 +1819,7 @@
     event?.preventDefault?.();
     previousFocus = document.activeElement;
     particleSystem.start();
-    void window.GaiaOpeningAudio?.switchTrack?.("story");
+    requestStoryTrack("story", 0.45);
     window.dispatchEvent(new CustomEvent("gaia:novel-open"));
     isOpen = true;
     layer.hidden = false;
@@ -1552,8 +1833,10 @@
   }
   function closeNovelNow() {
     clearTimers();
+    resetFastForward();
     closeDetourDock();
     particleSystem.stop();
+    requestedStoryTrack = null;
     void window.GaiaOpeningAudio?.switchTrack?.("opening");
     isOpen = false;
     layer.classList.remove("is-open", "is-mode-detour");
@@ -1654,6 +1937,21 @@
     if (enabled) scheduleAutoAdvance();
     else window.clearTimeout(autoTimer);
   });
+  elements.fastForward.addEventListener("click", () => {
+    fastForwardState.buttonActive = !fastForwardState.buttonActive;
+    fastForwardState.blocked = false;
+    if (fastForwardState.buttonActive) {
+      disableAutoForFastForward();
+      updateFastForwardInterface();
+      scheduleFastForward(0);
+    } else {
+      if (!fastForwardState.keyActive) clearFastForwardTimer();
+      updateFastForwardInterface();
+    }
+  });
+  document.addEventListener("keydown", beginControlFastForward, true);
+  document.addEventListener("keyup", endControlFastForward, true);
+  window.addEventListener("blur", () => endControlFastForward());
   elements.dialogue.addEventListener("click", (event) => {
     if (event.target.closest("button, textarea, input, details, summary")) return;
     event.stopPropagation();
@@ -1663,6 +1961,13 @@
     if (event.target.closest("button, a, input, select, textarea, details, summary, [role='button']")) return;
     advance();
   });
+  layer.addEventListener("wheel", (event) => {
+    if (event.deltaY >= 0 || event.ctrlKey || !hasStarted || elements.runtime.hidden || !elements.logPanel.hidden) return;
+    if (!progressionPanelsClosed()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openLog();
+  }, { passive: false });
   layer.addEventListener("keydown", (event) => {
     event.stopPropagation();
     if (event.key === "Escape") {

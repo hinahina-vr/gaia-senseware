@@ -1524,7 +1524,12 @@
             <button id="novel-load-button" type="button" aria-expanded="false" aria-controls="novel-save-panel">LOAD</button>
             <button id="novel-config-button" type="button" aria-expanded="false" aria-controls="novel-config-panel">CONFIG</button>
             <button id="novel-auto-button" type="button" aria-pressed="false">AUTO</button>
-            <button id="novel-restart-button" type="button">RESTART</button>
+            <button
+              id="novel-fast-forward-button"
+              type="button"
+              aria-pressed="false"
+              title="クリックで切替／Ctrlキー長押しでも早送り"
+            ><span aria-hidden="true">≫</span><b id="novel-fast-forward-label">早送り</b></button>
             <button
               id="novel-close-button"
               type="button"
@@ -1661,7 +1666,7 @@
             aria-label="この場面の内容説明を開く"
           >
             <span id="novel-data-kind">SOURCE</span>
-            <strong id="novel-signal-title">公開データは、地球が発している信号である。</strong>
+            <strong id="novel-location">GAIA SENSATION｜現在の場面</strong>
             <small aria-hidden="true">DETAIL +</small>
           </button>
 
@@ -1713,16 +1718,12 @@
 
           <div class="novel-choices" id="novel-choices" aria-label="物語の選択肢"></div>
 
-          <footer class="novel-footer">
-            <span id="novel-location">夏の逗子</span>
-            <span>CLICK / SPACE — NEXT</span>
-          </footer>
         </section>
 
-        <aside class="novel-log-panel" id="novel-log-panel" aria-hidden="true" hidden>
+        <aside class="novel-log-panel" id="novel-log-panel" role="dialog" aria-modal="true" aria-labelledby="novel-log-title" aria-hidden="true" hidden>
           <header>
-            <div><span>OBSERVATION LOG</span><strong>ここまでに聞いた言葉</strong></div>
-            <button id="novel-log-close" type="button">×</button>
+            <div><span>OBSERVATION LOG</span><strong id="novel-log-title">ここまでに聞いた言葉</strong></div>
+            <button id="novel-log-close" type="button" aria-label="LOGを閉じる">×</button>
           </header>
           <div id="novel-log-content" tabindex="0"></div>
         </aside>
@@ -1801,7 +1802,10 @@
             </div>
             <footer class="novel-config-footer">
               <span>LOCAL PROFILE / AUTO SAVE</span>
-              <button id="novel-config-reset" type="button">初期値に戻す</button>
+              <div class="novel-config-footer-actions">
+                <button id="novel-config-reset" type="button">設定を初期値に戻す</button>
+                <button class="novel-config-restart" id="novel-restart-button" type="button">物語を最初から</button>
+              </div>
             </footer>
           </div>
         </aside>

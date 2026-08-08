@@ -70,7 +70,7 @@
     return cells;
   };
 
-  const drawGrid = (dimensions, cells, accent, elapsed, duration, phase) => {
+  const drawGrid = (dimensions, cells, accent, elapsed, duration, phase, surfaceAlpha = 1) => {
     const { width, height } = dimensions;
     context.clearRect(0, 0, width, height);
 
@@ -98,7 +98,7 @@
       const tileSize = Math.ceil(cell.size * scale + 0.5);
       const offset = (cell.size - tileSize) * 0.5;
 
-      context.globalAlpha = visible;
+      context.globalAlpha = visible * surfaceAlpha;
       context.fillRect(
         Math.floor(cell.x + offset),
         Math.floor(cell.y + offset),
@@ -109,12 +109,12 @@
     context.globalAlpha = 1;
   };
 
-  const animateGrid = (dimensions, cells, accent, phase, duration) =>
+  const animateGrid = (dimensions, cells, accent, phase, duration, surfaceAlpha = 1) =>
     new Promise((resolve) => {
       const startedAt = performance.now();
       const frame = (now) => {
         const elapsed = Math.min(duration, now - startedAt);
-        drawGrid(dimensions, cells, accent, elapsed, duration, phase);
+        drawGrid(dimensions, cells, accent, elapsed, duration, phase, surfaceAlpha);
         if (elapsed < duration) requestAnimationFrame(frame);
         else resolve();
       };
@@ -136,12 +136,13 @@
     const dimensions = configureCanvas();
     const cells = createGrid(dimensions);
     const accent = tones[options.tone] || tones.default;
+    const surfaceAlpha = clamp(Number(options.surfaceAlpha ?? 1), 0, 1);
 
     try {
-      await animateGrid(dimensions, cells, accent, "cover", 760);
+      await animateGrid(dimensions, cells, accent, "cover", 760, surfaceAlpha);
       await swapScene();
       await new Promise((resolve) => window.setTimeout(resolve, 80));
-      await animateGrid(dimensions, cells, accent, "reveal", 820);
+      await animateGrid(dimensions, cells, accent, "reveal", 820, surfaceAlpha);
       return true;
     } catch (error) {
       console.error("Scene transition failed", error);
