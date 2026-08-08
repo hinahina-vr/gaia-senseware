@@ -3997,17 +3997,18 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
   align-items: center;
   min-height: 78px;
   padding: 20px 30px;
-  border-color: rgba(225, 249, 255, 0.72);
+  border-color: rgba(208, 233, 240, 0.34);
   border-radius: 16px;
   background:
-    linear-gradient(105deg, rgba(222, 247, 255, 0.72), rgba(151, 215, 242, 0.58) 56%, rgba(169, 235, 229, 0.52)),
-    rgba(166, 220, 240, 0.48);
+    linear-gradient(105deg, rgba(42, 75, 101, 0.68), rgba(61, 104, 124, 0.6) 56%, rgba(58, 108, 112, 0.54)),
+    rgba(25, 54, 75, 0.58);
   box-shadow:
-    0 16px 42px rgba(28, 92, 138, 0.2),
-    inset 0 1px rgba(255, 255, 255, 0.82),
-    inset 0 -1px rgba(67, 159, 199, 0.16);
-  -webkit-backdrop-filter: blur(20px) saturate(1.14) brightness(1.06);
-  backdrop-filter: blur(20px) saturate(1.14) brightness(1.06);
+    0 12px 30px rgba(3, 17, 31, 0.2),
+    inset 0 1px rgba(255, 255, 255, 0.16),
+    inset 0 -1px rgba(4, 22, 36, 0.18);
+  color: rgba(239, 247, 248, 0.88);
+  -webkit-backdrop-filter: blur(18px) saturate(0.82) brightness(0.94);
+  backdrop-filter: blur(18px) saturate(0.82) brightness(0.94);
 }
 
 .novel-choices button::before {
@@ -4021,10 +4022,10 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 }
 
 .novel-choices button > strong {
-  color: rgba(12, 47, 76, 0.94);
+  color: rgba(241, 248, 249, 0.9);
   font-weight: 600;
   letter-spacing: 0.06em;
-  text-shadow: 0 1px rgba(255, 255, 255, 0.68);
+  text-shadow: 0 1px 5px rgba(2, 12, 22, 0.42);
 }
 
 .novel-choices button > small {
@@ -4037,15 +4038,15 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 
 .novel-choices button:hover,
 .novel-choices button:focus-visible {
-  border-color: rgba(245, 255, 255, 0.96);
+  border-color: rgba(220, 242, 246, 0.52);
   background:
-    linear-gradient(105deg, rgba(240, 253, 255, 0.86), rgba(174, 230, 249, 0.72) 56%, rgba(187, 244, 236, 0.68)),
-    rgba(185, 230, 246, 0.62);
+    linear-gradient(105deg, rgba(52, 89, 116, 0.74), rgba(72, 119, 138, 0.66) 56%, rgba(68, 121, 123, 0.6)),
+    rgba(31, 65, 86, 0.64);
   box-shadow:
-    0 20px 50px rgba(34, 111, 159, 0.26),
-    0 0 0 1px rgba(255, 255, 255, 0.46),
-    inset 0 1px rgba(255, 255, 255, 0.92);
-  transform: translateY(-2px);
+    0 14px 34px rgba(3, 18, 32, 0.24),
+    0 0 0 1px rgba(222, 244, 247, 0.12),
+    inset 0 1px rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 720px) {

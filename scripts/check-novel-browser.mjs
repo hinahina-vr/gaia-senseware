@@ -311,7 +311,10 @@ try {
   const resultPath = await screenshot(page, "result");
   await compareBaseline(resultPath, "result");
 
-  for (const interaction of steps.filter((step) => step.type === "interaction")) await completeInteraction(page, interaction);
+  const interactions = steps.filter((step) => step.type === "interaction");
+  await bootAt(page, interactions[0].id);
+  await screenshot(page, "interaction-open");
+  for (const interaction of interactions) await completeInteraction(page, interaction);
 
   const narration = steps.find((step) => step.type === "narration");
   await bootAt(page, narration.id);
