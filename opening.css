@@ -12,6 +12,16 @@
 }
 
 body.gaia-opening-active { overflow: hidden; }
+
+/* A direct #story load initializes the novel layer before the opening sound
+   gate has finished. Keep it out of Chromium's backdrop composition so a
+   title-action border cannot leak through as an empty glowing rectangle. */
+body.gaia-opening-active .novel-layer {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 .gaia-opening[hidden] { display: none; }
 
 .gaia-opening-preload {
