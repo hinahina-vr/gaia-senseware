@@ -1,6 +1,7 @@
 ﻿.novel-layer {
   --novel-cyan: 154, 245, 224;
   --novel-font: var(--font-ja);
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-exhibition-v2.png");
   position: absolute;
   z-index: 30;
   inset: 0;
@@ -9,7 +10,7 @@
   background-color: #02050b;
   background-image:
     linear-gradient(180deg, rgba(1, 7, 15, 0.02) 0%, rgba(1, 7, 15, 0.06) 58%, rgba(1, 7, 15, 0.26) 100%),
-    url("./assets/visuals-07/novel-background-v1.webp");
+    var(--novel-scene-background);
   background-position: center, center;
   background-size: cover, cover;
   background-repeat: no-repeat;
@@ -4372,6 +4373,37 @@ body.novel-reduced-motion .story-detour-dock * {
   .novel-archive-doors span { min-height: 44px; }
   .story-detour-dock { right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); width: calc(100vw - 20px); max-height: min(54dvh, 430px); padding: 14px; overflow-y: auto; }
   .story-detour-dock-controls button { flex: 1 1 42%; }
+}
+
+/* Story-specific environment art. Character sprites are layered separately. */
+.novel-layer:not(.is-title)[data-scene-id="opening_empty_seat"],
+.novel-layer:not(.is-title)[data-scene-id="absence"],
+.novel-layer:not(.is-title)[data-scene-id="search"] {
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-workroom-v2.png");
+}
+
+.novel-layer:not(.is-title)[data-scene-id="prologue_online_circle"],
+.novel-layer:not(.is-title)[data-scene-id="first_meeting_promise"] {
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-online-night-v2.png");
+}
+
+.novel-layer:not(.is-title)[data-scene-id="prologue_basil"],
+.novel-layer:not(.is-title)[data-scene-id="choice_observation_order"] {
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-garden-center-v2.png");
+}
+
+.novel-layer:not(.is-title)[data-scene-id="first_meeting_hall"],
+.novel-layer:not(.is-title)[data-scene-id="festival_walk"] {
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-coastal-venue-v2.png");
+}
+
+.novel-layer:not(.is-title)[data-scene-id="production_year"],
+.novel-layer:not(.is-title)[data-scene-id="mode07_abstract"] {
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-production-night-v2.png");
+}
+
+.novel-layer:not(.is-title)[data-scene-id="interlude_sea"] {
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-zushi-coast-night-v2.png");
 }
 
 /* Recovery runtime: approved key visual, native Slack/evidence surfaces, and reflection result. */

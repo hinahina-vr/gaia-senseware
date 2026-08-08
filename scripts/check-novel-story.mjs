@@ -92,8 +92,20 @@ const checkedSource = checkedFiles.map((file) => fs.readFileSync(path.join(proje
 for (const forbidden of ["novel-inline-card", "novel-mode-bridge", "visitorInput", "LEAVE EMPTY", "WRITE ACCESS", "START前の通知", "旧版の記録"]) {
   assert.ok(!checkedSource.includes(forbidden), `removed UI or behavior remains: ${forbidden}`);
 }
-for (const asset of ["assets/visuals-07/novel-title-keyvisual-v2.png", "assets/visuals-07/novel-result-observation-v1.png"]) {
+for (const asset of [
+  "assets/visuals-07/novel-title-keyvisual-v2.png",
+  "assets/visuals-07/novel-result-observation-v1.png",
+  "assets/visuals-07/novel-bg-exhibition-v2.png",
+  "assets/visuals-07/novel-bg-workroom-v2.png",
+  "assets/visuals-07/novel-bg-online-night-v2.png",
+  "assets/visuals-07/novel-bg-garden-center-v2.png",
+  "assets/visuals-07/novel-bg-coastal-venue-v2.png",
+  "assets/visuals-07/novel-bg-production-night-v2.png",
+  "assets/visuals-07/novel-bg-zushi-coast-night-v2.png",
+]) {
   assert.ok(fs.statSync(path.join(projectRoot, asset)).size > 100_000, `visual asset is missing: ${asset}`);
 }
+const novelCss = fs.readFileSync(path.join(projectRoot, "novel-mode.css"), "utf8");
+assert.ok(!novelCss.includes('url("./assets/visuals-07/novel-background-v1.webp")'), "character-composited legacy background remains in the novel runtime");
 
 console.log(`novel story check passed: ${scenes.length} scenes, ${stepIds.length} steps, 36 reflection statements, 8 result combinations`);

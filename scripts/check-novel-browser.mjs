@@ -25,7 +25,7 @@ const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ executablePath, headless: true, args: ["--no-first-run", "--disable-background-networking"] });
-const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], interactions: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], interactions: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
 const attachDiagnostics = (page, label) => {
@@ -209,6 +209,26 @@ try {
   assert(await page.locator("#novel-title-privacy").count() === 0, "START notice remains");
   const titlePath = await screenshot(page, "start");
   await compareBaseline(titlePath, "start");
+
+  const backgroundCases = [
+    ["current_exhibition", "novel-bg-exhibition-v2.png", "scene-exhibition"],
+    ["opening_empty_seat", "novel-bg-workroom-v2.png", "scene-workroom"],
+    ["first_meeting_promise", "novel-bg-online-night-v2.png", "scene-online"],
+    ["prologue_basil", "novel-bg-garden-center-v2.png", "scene-garden-center"],
+    ["first_meeting_hall", "novel-bg-coastal-venue-v2.png", "scene-coastal-venue"],
+    ["production_year", "novel-bg-production-night-v2.png", "scene-production-night"],
+    ["interlude_sea", "novel-bg-zushi-coast-night-v2.png", "scene-zushi-coast"],
+  ];
+  for (const [sceneId, expectedFile, screenshotName] of backgroundCases) {
+    const sceneStep = steps.find((candidate) => candidate.sceneId === sceneId && ["dialogue", "chat"].includes(candidate.type))
+      || steps.find((candidate) => candidate.sceneId === sceneId);
+    await bootAt(page, sceneStep.id);
+    const backgroundImage = await page.locator("#novel-layer").evaluate((node) => getComputedStyle(node).backgroundImage);
+    assert(backgroundImage.includes(expectedFile), `${sceneId} uses the wrong background: ${backgroundImage}`);
+    assert(!backgroundImage.includes("novel-background-v1") && !backgroundImage.includes("assets/characters"), `${sceneId} still uses character-composited background art`);
+    report.sceneBackgrounds.push({ sceneId, expectedFile, passed: true });
+    await screenshot(page, screenshotName);
+  }
 
   const chat = steps.find((step) => step.id === "opening_empty_seat_004");
   await bootAt(page, chat.id);
