@@ -1,15 +1,15 @@
 (() => {
   "use strict";
 
-  const story = globalThis.GAIA_NOVEL_STORY_V6;
+  const story = globalThis.GAIA_NOVEL_STORY || globalThis.GAIA_NOVEL_STORY_V6;
   const layer = document.querySelector("#novel-layer");
   if (!story || !layer) return;
 
-  const STORAGE_KEY = "gaia_novel_save_v6";
-  const MANUAL_SAVE_KEY = "gaia_novel_manual_saves_v6";
-  const EVENT_KEY = "gaia_novel_event_v6";
+  const STORAGE_KEY = "gaiaSensewareNovel:progress";
+  const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
   const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
-  const LEGACY_KEYS = ["gaiaSensewareNovel:v5", "gaiaSensewareNovel:manual-saves:v1"];
+  const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
+  const LEGACY_MANUAL_KEYS = ["gaia_novel_manual_saves_v6", "gaiaSensewareNovel:manual-saves:v1"];
   const SLOT_COUNT = 6;
   const SYSTEM_REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const AUTO_DELAY_MS = 3600;
@@ -29,7 +29,6 @@
     DERIVED: "計算・解釈 / DERIVED",
     SCENARIO: "仮定 / SCENARIO",
     VISITOR_TRACE: "操作記録 / VISITOR TRACE",
-    VISITOR_POST: "来場者の投稿 / VISITOR POST",
   });
   const VIEWED_DEFAULTS = Object.freeze({
     gxDeepTime: false,
@@ -47,12 +46,7 @@
 
   const elements = {
     particles: layer.querySelector("#novel-particles"),
-    titleCast: layer.querySelector("#novel-title-cast"),
     titleScreen: layer.querySelector("#novel-title-screen"),
-    titleNotice: layer.querySelector("#novel-title-privacy"),
-    titleDetails: layer.querySelector("#novel-record-details"),
-    titleStats: layer.querySelector("#novel-event-stats"),
-    legacyNotice: layer.querySelector("#novel-legacy-notice"),
     runtime: layer.querySelector("#novel-runtime"),
     start: layer.querySelector("#novel-start-button"),
     resume: layer.querySelector("#novel-resume-button"),
@@ -80,8 +74,6 @@
     messageSpeed: layer.querySelector("#novel-message-speed"),
     messageSpeedValue: layer.querySelector("#novel-message-speed-value"),
     reducedMotion: layer.querySelector("#novel-reduced-motion"),
-    eventReset: layer.querySelector("#novel-event-reset"),
-    eventResetStatus: layer.querySelector("#novel-event-reset-status"),
     evesButton: layer.querySelector("#novel-eves-button"),
     evesCount: layer.querySelector("#novel-eves-count"),
     evesPanel: layer.querySelector("#novel-eves-panel"),
@@ -118,13 +110,10 @@
     continueMark: layer.querySelector("#novel-continue"),
     choices: layer.querySelector("#novel-choices"),
     location: layer.querySelector("#novel-location"),
-    bridge: document.querySelector("#novel-mode-bridge"),
-    bridgeKicker: document.querySelector("#novel-mode-bridge-kicker"),
-    bridgeTitle: document.querySelector("#novel-mode-bridge-title"),
-    bridgeGuide: document.querySelector("#novel-mode-bridge-guide"),
-    bridgeProgress: document.querySelector("#novel-mode-bridge-progress"),
-    bridgeControls: document.querySelector("#novel-mode-bridge-controls"),
-    bridgeReturn: document.querySelector("#novel-mode-bridge-return"),
+    slackSurface: layer.querySelector("#novel-slack-surface"),
+    evidenceSurface: layer.querySelector("#novel-evidence-surface"),
+    reflectionSurface: layer.querySelector("#novel-reflection-surface"),
+    resultSurface: layer.querySelector("#novel-result-surface"),
   };
 
   const scenes = story.scenes;
@@ -133,17 +122,19 @@
   const stepMap = new Map(allSteps.map((step) => [step.id, step]));
   const stepIndexMap = new Map(allSteps.map((step, index) => [step.id, index]));
   const firstStepForScene = (sceneId) => sceneMap.get(sceneId)?.steps?.[0]?.id || null;
+  const reflectionStep = allSteps.find((step) => step.type === "reflectionChoice");
+  const reflectionOptionMap = new Map((reflectionStep?.options || []).map((option) => [option.id, option]));
 
   const defaultState = () => ({
-    storyVersion: 6,
+    storyVersion: story.storyVersion,
     stepId: firstStepForScene(story.startSceneId),
     reachedSceneIds: [],
     viewed: { ...VIEWED_DEFAULTS },
     evesRoute: [],
     observationOrder: null,
     editorialChoice: null,
-    visitorAction: null,
-    eventActionRecorded: false,
+    reflectionIds: [],
+    resultTone: null,
     audio: { muted: false, volume: 0.1 },
     readStepIds: [],
     clear: false,
@@ -152,7 +143,6 @@
   });
 
   let state = defaultState();
-  let sessionDraft = "";
   let isOpen = false;
   let hasStarted = false;
   let isRevealing = false;
@@ -163,10 +153,9 @@
   let archiveMode = "save";
   let pendingSlotAction = "";
   let pendingSlotTimer = 0;
-  let eventResetArmed = false;
-  let eventResetTimer = 0;
   let pendingInteraction = null;
-  let bridgeState = null;
+  let detourState = null;
+  let detourDock = null;
   let config = { messageSpeedPercent: 200, reducedMotion: false };
 
   const particleSystem = window.GaiaParticles?.create?.(elements.particles, {
@@ -199,10 +188,6 @@
       return false;
     }
   };
-  const removeStorage = (key) => {
-    try { window.localStorage.removeItem(key); } catch { /* storage can be disabled */ }
-  };
-
   const readAudioState = () => {
     const volume = Number(document.querySelector("#gaia-audio-volume")?.value);
     const muted = document.querySelector("#gaia-audio-toggle")?.getAttribute("aria-pressed") === "true";
@@ -212,24 +197,49 @@
     };
   };
 
+  const migrateStepId = (stepId) => {
+    if (stepMap.has(stepId)) return stepId;
+    if (typeof stepId !== "string") return null;
+    const mappings = [
+      ["current_notice_", "current_exhibition_"],
+      ["epilogue_visitor_field_", "epilogue_reflection_field_"],
+      ["choice_visitor_action_", "choice_reflection_"],
+      ["final_record_", "final_record_"],
+    ];
+    for (const [from, to] of mappings) {
+      if (!stepId.startsWith(from)) continue;
+      const mapped = `${to}${stepId.slice(from.length)}`;
+      if (stepMap.has(mapped)) return mapped;
+      const sceneId = to.slice(0, -1);
+      return firstStepForScene(sceneId);
+    }
+    return null;
+  };
+
   const normalizeState = (candidate) => {
-    if (!candidate || candidate.storyVersion !== 6 || !stepMap.has(candidate.stepId)) return null;
+    const legacyIndexStep = Number.isInteger(candidate?.stepIndex)
+      ? allSteps[Math.max(0, Math.min(allSteps.length - 1, candidate.stepIndex))]?.id
+      : null;
+    const stepId = migrateStepId(candidate?.stepId || legacyIndexStep);
+    if (!candidate || !stepId) return null;
     const normalized = defaultState();
-    normalized.stepId = candidate.stepId;
+    normalized.stepId = stepId;
     normalized.reachedSceneIds = Array.isArray(candidate.reachedSceneIds)
       ? candidate.reachedSceneIds.filter((id) => sceneMap.has(id))
       : [];
     normalized.viewed = { ...VIEWED_DEFAULTS, ...(candidate.viewed || {}) };
     normalized.evesRoute = Array.isArray(candidate.evesRoute)
-      ? candidate.evesRoute.filter((entry) => ["editorial_choice", "visitor_action"].includes(entry?.decisionId)).slice(0, 2)
+      ? candidate.evesRoute.filter((entry) => ["editorial_choice", "reflection_choice"].includes(entry?.decisionId)).slice(0, 2)
       : [];
     normalized.observationOrder = ["LOCAL_FIRST", "STATION_FIRST"].includes(candidate.observationOrder)
       ? candidate.observationOrder : null;
     normalized.editorialChoice = ["SOURCE_RECORD", "DISCLOSE_DERIVATION"].includes(candidate.editorialChoice)
       ? candidate.editorialChoice : null;
-    normalized.visitorAction = ["WRITE", "LEAVE_EMPTY"].includes(candidate.visitorAction)
-      ? candidate.visitorAction : null;
-    normalized.eventActionRecorded = Boolean(candidate.eventActionRecorded);
+    normalized.reflectionIds = Array.isArray(candidate.reflectionIds)
+      ? [...new Set(candidate.reflectionIds.filter((id) => reflectionOptionMap.has(id)))].slice(0, 3)
+      : [];
+    normalized.resultTone = ["LAW", "NEUTRAL", "CHAOS", "UNANSWERED"].includes(candidate.resultTone)
+      ? candidate.resultTone : null;
     normalized.audio = {
       muted: Boolean(candidate.audio?.muted),
       volume: Number.isFinite(candidate.audio?.volume) ? Math.max(0, Math.min(1, candidate.audio.volume)) : 0.1,
@@ -243,74 +253,20 @@
     return normalized;
   };
 
-  const getStoredProgress = () => normalizeState(safeJson(readStorage(STORAGE_KEY)));
+  const getStoredProgress = () => {
+    const current = normalizeState(safeJson(readStorage(STORAGE_KEY)));
+    if (current) return current;
+    for (const key of LEGACY_PROGRESS_KEYS) {
+      const migrated = normalizeState(safeJson(readStorage(key)));
+      if (!migrated) continue;
+      writeStorage(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+    return null;
+  };
   const saveProgress = () => {
     state.audio = readAudioState();
     writeStorage(STORAGE_KEY, JSON.stringify(state));
-  };
-
-  const emptyEventRecord = () => ({
-    eventSessions: 0,
-    eventPosts: 0,
-    eventLeaveEmpty: 0,
-    lastVisitorAction: null,
-    markers: [],
-  });
-  const getEventRecord = () => {
-    const candidate = safeJson(readStorage(EVENT_KEY));
-    if (!candidate) return emptyEventRecord();
-    return {
-      eventSessions: Math.max(0, Number(candidate.eventSessions) || 0),
-      eventPosts: Math.max(0, Number(candidate.eventPosts) || 0),
-      eventLeaveEmpty: Math.max(0, Number(candidate.eventLeaveEmpty) || 0),
-      lastVisitorAction: ["WRITE", "LEAVE_EMPTY"].includes(candidate.lastVisitorAction) ? candidate.lastVisitorAction : null,
-      markers: Array.isArray(candidate.markers)
-        ? candidate.markers.filter((marker) => ["WRITE", "LEAVE_EMPTY"].includes(marker)).slice(0, 24)
-        : [],
-    };
-  };
-  const saveEventRecord = (record) => writeStorage(EVENT_KEY, JSON.stringify(record));
-
-  const renderEventStats = () => {
-    if (!elements.titleStats) return;
-    const record = getEventRecord();
-    elements.titleStats.replaceChildren();
-    const summary = document.createElement("p");
-    summary.textContent = `会期中 ${record.eventSessions} セッション / WRITE ${record.eventPosts} / LEAVE EMPTY ${record.eventLeaveEmpty}`;
-    const markers = document.createElement("div");
-    markers.className = "novel-event-markers";
-    markers.setAttribute("aria-label", "本文を含まない直近の来場者痕跡");
-    record.markers.forEach((kind) => {
-      const marker = document.createElement("span");
-      marker.className = kind === "WRITE" ? "is-write" : "is-empty";
-      marker.title = kind;
-      marker.setAttribute("aria-label", kind);
-      markers.append(marker);
-    });
-    const overflow = Math.max(0, record.eventPosts + record.eventLeaveEmpty - record.markers.length);
-    if (overflow) {
-      const more = document.createElement("b");
-      more.textContent = `+${overflow}`;
-      markers.append(more);
-    }
-    elements.titleStats.append(summary, markers);
-  };
-
-  const incrementSessionCount = () => {
-    const record = getEventRecord();
-    record.eventSessions += 1;
-    saveEventRecord(record);
-    renderEventStats();
-  };
-
-  const recordVisitorAction = (action) => {
-    const record = getEventRecord();
-    if (action === "WRITE") record.eventPosts += 1;
-    if (action === "LEAVE_EMPTY") record.eventLeaveEmpty += 1;
-    record.lastVisitorAction = action;
-    record.markers.unshift(action);
-    record.markers = record.markers.slice(0, 24);
-    saveEventRecord(record);
   };
 
   const loadConfig = () => {
@@ -339,9 +295,17 @@
     autoTimer = 0;
   };
 
+  const hideSpecialSurfaces = () => {
+    [elements.slackSurface, elements.evidenceSurface, elements.reflectionSurface, elements.resultSurface].forEach((surface) => {
+      surface.hidden = true;
+      surface.replaceChildren();
+    });
+    layer.classList.remove("is-slack", "is-evidence", "is-editorial-evidence", "is-reflection", "is-result");
+  };
+
   const showRuntime = () => {
     hasStarted = true;
-    elements.titleCast.hidden = true;
+    layer.classList.remove("is-title");
     elements.titleScreen.hidden = true;
     elements.runtime.hidden = false;
     elements.restart.hidden = false;
@@ -351,17 +315,14 @@
 
   const showTitle = () => {
     hasStarted = false;
-    elements.titleCast.hidden = false;
+    hideSpecialSurfaces();
+    layer.classList.add("is-title");
     elements.titleScreen.hidden = false;
     elements.runtime.hidden = true;
     elements.restart.hidden = true;
     elements.saveButton.hidden = true;
     elements.loadButton.hidden = true;
     elements.resume.hidden = !getStoredProgress();
-    if (elements.legacyNotice) {
-      elements.legacyNotice.hidden = !LEGACY_KEYS.some((key) => Boolean(readStorage(key)));
-    }
-    renderEventStats();
     requestAnimationFrame(() => elements.start.focus({ preventScroll: true }));
   };
 
@@ -461,7 +422,7 @@
   };
 
   const markRead = (step) => {
-    if (!["choice", "interaction", "visitorInput", "result", "end"].includes(step.type)
+    if (!["choice", "reflectionChoice", "interaction", "result", "end"].includes(step.type)
       && !state.readStepIds.includes(step.id)) {
       state.readStepIds.push(step.id);
       state.readStepIds = state.readStepIds.slice(-260);
@@ -476,6 +437,7 @@
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
     showRuntime();
+    hideSpecialSurfaces();
     elements.chapterCard.hidden = true;
     elements.dialogue.hidden = false;
     elements.choices.replaceChildren();
@@ -510,31 +472,48 @@
     isRevealing = false;
     elements.cursor.hidden = true;
     elements.continueMark.classList.add("is-visible");
-    const speaker = step.speaker || (step.type === "record" ? "system" : "narrator");
-    setCharacterPresentation(speaker);
-    elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
-    const card = document.createElement("section");
-    card.className = `novel-inline-card novel-inline-card--${step.type}`;
-    if (step.recordType) card.dataset.kind = step.recordType;
     if (step.type === "chat") {
-      const header = document.createElement("header");
-      const time = document.createElement("time");
-      const name = document.createElement("strong");
-      time.textContent = step.time;
-      name.textContent = step.speakerLabel;
-      header.append(time, name);
-      card.append(header);
-    } else if (step.type === "record") {
-      const label = document.createElement("strong");
-      label.className = "novel-record-label";
-      label.textContent = RECORD_LABELS[step.recordType] || step.recordType;
-      card.append(label);
+      elements.dialogue.hidden = true;
+      elements.sourceButton.hidden = true;
+      elements.slackSurface.hidden = false;
+      layer.classList.add("is-slack");
+      const workspace = document.createElement("div");
+      workspace.className = "novel-slack-workspace";
+      workspace.innerHTML = `<header><b>◀　▶　◷</b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、持ち寄る場所</small></div><span>♟ 3　⌕</span></header><article><div class="novel-slack-avatar">${SPEAKERS[step.speaker]?.glyph || "◌"}</div><div><p><strong>${step.speakerLabel}</strong><time>${step.time}</time></p><div class="novel-slack-message"></div></div></article><footer># 惑星の放課後 へのメッセージ</footer></main>`;
+      appendLines(workspace.querySelector(".novel-slack-message"), step.text || "");
+      elements.slackSurface.append(workspace);
+      scheduleAutoAdvance();
+      return;
     }
-    const body = document.createElement("p");
-    appendLines(body, step.text || "");
-    card.append(body);
-    elements.text.replaceChildren(card);
-    scheduleAutoAdvance();
+
+    if (step.type === "record") {
+      elements.dialogue.hidden = true;
+      elements.sourceButton.hidden = true;
+      elements.evidenceSurface.hidden = false;
+      layer.classList.add("is-evidence");
+      const isDerived = step.recordType === "DERIVED";
+      const evidence = document.createElement("article");
+      evidence.className = `novel-evidence-card ${isDerived ? "is-derived" : "is-source"}`;
+      const type = document.createElement("span");
+      const heading = document.createElement("h2");
+      const body = document.createElement("p");
+      const meta = document.createElement("footer");
+      type.textContent = isDerived ? "DERIVED" : "SOURCE";
+      heading.textContent = isDerived ? "計算・解釈として生成された記録" : "観測されたままの記録";
+      appendLines(body, step.text || "");
+      meta.textContent = isDerived
+        ? "生成実行・選定責任：MIZUHA　｜　サクヤ本人の確認：なし"
+        : "原文の作者と出典を保持しています";
+      evidence.append(type, heading, body, meta);
+      elements.evidenceSurface.append(evidence);
+      scheduleAutoAdvance();
+      return;
+    }
+
+    const speaker = step.speaker || "system";
+    setCharacterPresentation(speaker);
+    elements.speaker.textContent = SPEAKERS[speaker]?.name || "GAIA SENSEWARE";
+    revealText(step.text || "");
   };
 
   const renderGenerationDetails = (step) => {
@@ -576,10 +555,42 @@
   const choiceStateKey = (choiceId) => ({
     observation_order: "observationOrder",
     editorial_choice: "editorialChoice",
-    visitor_action: "visitorAction",
   })[choiceId];
 
+  const renderEditorialChoice = (step) => {
+    prepareStepFrame(step);
+    clearTimers();
+    elements.dialogue.hidden = true;
+    elements.sourceButton.hidden = true;
+    elements.evidenceSurface.hidden = false;
+    layer.classList.add("is-evidence", "is-editorial-evidence");
+    const compare = document.createElement("div");
+    compare.className = "novel-evidence-compare";
+    compare.innerHTML = `<article class="is-source"><header><span>観測記録 / SOURCE</span><time>02:14　SAKUYA</time></header><small>最後に届いたメッセージ</small><p>もし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――</p><footer><span>このあとに届いたメッセージ<br><b>0</b></span><span>本人の確認<br><b>受信済み原文</b></span></footer></article><article class="is-derived"><header><span>計算・解釈 / DERIVED</span><time>PRODUCTION RECORD</time></header><small>生成された制作過程</small><p>「聞こえたつもりになってない？」って、三人で確かめたい。</p><footer><span>生成実行・選定責任<br><b>MIZUHA</b></span><span>サクヤ本人の確認<br><b>なし</b></span></footer></article>`;
+    const actions = document.createElement("nav");
+    actions.setAttribute("aria-label", step.prompt);
+    step.options.forEach((option) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = option.label.split(" / ")[0];
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        state.editorialChoice = option.value;
+        state.evesRoute = state.evesRoute.filter((entry) => entry.decisionId !== step.choiceId);
+        state.evesRoute.push({ decisionId: step.choiceId, value: option.value, label: option.label, stepId: step.id });
+        state.evesRoute = state.evesRoute.slice(0, 2);
+        saveProgress();
+        renderEves();
+        moveToFollowingStep(step);
+      });
+      actions.append(button);
+    });
+    elements.evidenceSurface.append(compare, actions);
+    requestAnimationFrame(() => actions.querySelector("button")?.focus({ preventScroll: true }));
+  };
+
   const renderChoice = (step) => {
+    if (step.choiceId === "editorial_choice") return renderEditorialChoice(step);
     prepareStepFrame(step);
     clearTimers();
     setCharacterPresentation("visitor");
@@ -601,29 +612,11 @@
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         const key = choiceStateKey(step.choiceId);
-        if (step.choiceId === "visitor_action" && option.value === "WRITE" && !sessionDraft.trim()) {
-          const hint = document.createElement("p");
-          hint.className = "novel-input-error";
-          hint.textContent = "WRITEを選ぶ場合は、現在の自分の記録を一行入力してください。";
-          elements.choices.prepend(hint);
-          const inputStep = sceneMap.get("epilogue_visitor_field")?.steps.find((candidate) => candidate.type === "visitorInput");
-          if (inputStep) {
-            state.stepId = inputStep.id;
-            saveProgress();
-            renderCurrentStep();
-          }
-          return;
-        }
         if (key) state[key] = option.value;
-        if (option.value === "LEAVE_EMPTY") sessionDraft = "";
         if (step.trackedByEves) {
           state.evesRoute = state.evesRoute.filter((entry) => entry.decisionId !== step.choiceId);
           state.evesRoute.push({ decisionId: step.choiceId, value: option.value, label: option.label, stepId: step.id });
           state.evesRoute = state.evesRoute.slice(0, 2);
-        }
-        if (step.choiceId === "visitor_action" && !state.eventActionRecorded) {
-          recordVisitorAction(option.value);
-          state.eventActionRecorded = true;
         }
         saveProgress();
         renderEves();
@@ -636,7 +629,104 @@
     requestAnimationFrame(() => elements.choices.querySelector("button")?.focus({ preventScroll: true }));
   };
 
-  const bridgeDefinitions = Object.freeze({
+  const scoreReflection = (ids) => {
+    if (!Array.isArray(ids) || ids.length === 0) return "UNANSWERED";
+    const score = { LAW: 0, NEUTRAL: 0, CHAOS: 0 };
+    ids.forEach((id) => {
+      const weights = reflectionOptionMap.get(id)?.weights;
+      if (!weights) return;
+      score.LAW += Number(weights.law) || 0;
+      score.NEUTRAL += Number(weights.neutral) || 0;
+      score.CHAOS += Number(weights.chaos) || 0;
+    });
+    const maximum = Math.max(score.LAW, score.NEUTRAL, score.CHAOS);
+    const leaders = Object.keys(score).filter((key) => score[key] === maximum);
+    return leaders.length === 1 ? leaders[0] : "NEUTRAL";
+  };
+
+  const renderReflectionChoice = (step) => {
+    prepareStepFrame(step);
+    clearTimers();
+    elements.dialogue.hidden = true;
+    elements.sourceButton.hidden = true;
+    elements.reflectionSurface.hidden = false;
+    layer.classList.add("is-reflection");
+
+    const shell = document.createElement("div");
+    shell.className = "novel-reflection-shell";
+    const header = document.createElement("header");
+    header.innerHTML = `<div><span>REFLECTION FIELD</span><h2>次へ渡したい姿勢を選ぶ</h2></div><p>最大3つ。選ばずに進むこともできます。</p>`;
+    const grid = document.createElement("div");
+    grid.className = "novel-reflection-grid";
+    const status = document.createElement("p");
+    status.className = "novel-reflection-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    const proceed = document.createElement("button");
+    proceed.type = "button";
+    proceed.className = "novel-reflection-proceed";
+
+    const update = (message = "") => {
+      const selected = new Set(state.reflectionIds);
+      grid.querySelectorAll("button").forEach((button) => {
+        const active = selected.has(button.dataset.choiceId);
+        button.setAttribute("aria-pressed", String(active));
+        button.classList.toggle("is-selected", active);
+      });
+      status.textContent = message || `選択 ${selected.size} / ${step.maxSelections}`;
+      proceed.textContent = selected.size ? "選んだ姿勢で進む" : "選ばずに進む";
+    };
+
+    step.options.forEach((option, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.choiceId = option.id;
+      button.setAttribute("aria-pressed", "false");
+      const number = document.createElement("span");
+      const text = document.createElement("strong");
+      number.textContent = String(index + 1).padStart(2, "0");
+      text.textContent = option.text;
+      button.append(number, text);
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const selected = new Set(state.reflectionIds);
+        if (selected.has(option.id)) selected.delete(option.id);
+        else if (selected.size >= step.maxSelections) {
+          update(`最大${step.maxSelections}つまでです。いずれかを外してから選んでください。`);
+          return;
+        } else selected.add(option.id);
+        state.reflectionIds = [...selected];
+        state.resultTone = null;
+        saveProgress();
+        update();
+      });
+      grid.append(button);
+    });
+
+    proceed.addEventListener("click", (event) => {
+      event.stopPropagation();
+      state.resultTone = scoreReflection(state.reflectionIds);
+      state.evesRoute = state.evesRoute.filter((entry) => entry.decisionId !== step.choiceId);
+      state.evesRoute.push({
+        decisionId: step.choiceId,
+        value: state.reflectionIds.length ? "SELECTED" : "UNANSWERED",
+        label: state.reflectionIds.length ? "観測姿勢を選ぶ" : "観測姿勢を選ばない",
+        stepId: step.id,
+      });
+      state.evesRoute = state.evesRoute.slice(0, 2);
+      saveProgress();
+      renderEves();
+      moveToFollowingStep(step);
+    });
+    const footer = document.createElement("footer");
+    footer.append(status, proceed);
+    shell.append(header, grid, footer);
+    elements.reflectionSurface.append(shell);
+    update();
+    requestAnimationFrame(() => grid.querySelector("button")?.focus({ preventScroll: true }));
+  };
+
+  const detourDefinitions = Object.freeze({
     gx: {
       kicker: "GX / DEEP TIME",
       title: "太古の海へ触れる",
@@ -664,7 +754,7 @@
     },
   });
 
-  const bridgeCompletion = () => {
+  const detourCompletion = () => {
     if (!pendingInteraction) return false;
     switch (pendingInteraction.interaction.kind) {
       case "gx": return state.viewed.gxDeepTime;
@@ -676,90 +766,117 @@
     }
   };
 
-  const bridgeProgressText = () => {
+  const detourProgressText = () => {
     if (!pendingInteraction) return "";
     const kind = pendingInteraction.interaction.kind;
-    if (kind === "gx") return state.viewed.gxDeepTime ? "操作完了 / 海の変化を確認しました" : `水面の操作 ${bridgeState?.gestureCount || 0} / 3`;
+    if (kind === "gx") return state.viewed.gxDeepTime ? "操作完了 / 海の変化を確認しました" : `水面の操作 ${detourState?.gestureCount || 0} / 3`;
     if (kind === "map03") return `森林 ${state.viewed.mode03Forest ? "✓" : "○"}　降水量 ${state.viewed.mode03Rain ? "✓" : "○"}　重ね合わせ ${state.viewed.mode03Overlay ? "✓" : "○"}`;
     if (kind === "abstract07") return `観測点 ${state.viewed.mode07AbstractPoint ? "✓" : "○"}　SOURCE ${state.viewed.mode07Source ? "✓" : "○"}　DERIVED ${state.viewed.mode07Derived ? "✓" : "○"}`;
     if (kind === "map08") return `自然環境 ${state.viewed.mode08Nature ? "✓" : "○"}　人の暮らし ${state.viewed.mode08Life ? "✓" : "○"}　土地の記憶 ${state.viewed.mode08Memory ? "✓" : "○"}`;
     return state.viewed.mode10SpaceOverview ? "視点操作を確認しました" : "地球を回すか、対象へ触れてください";
   };
 
-  const addBridgeControl = (label, action, pressed) => {
+  const addDetourControl = (label, action, pressed) => {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
     button.setAttribute("aria-pressed", String(pressed));
     if (pressed) button.classList.add("is-complete");
     button.addEventListener("click", action);
-    elements.bridgeControls.append(button);
+    detourDock.querySelector(".story-detour-controls").append(button);
   };
 
-  const updateBridge = () => {
-    if (!pendingInteraction || !elements.bridge) return;
+  const updateDetourDock = () => {
+    if (!pendingInteraction || !detourDock) return;
     const kind = pendingInteraction.interaction.kind;
-    elements.bridgeProgress.textContent = bridgeProgressText();
-    elements.bridgeReturn.disabled = !bridgeCompletion();
-    elements.bridgeControls.replaceChildren();
+    detourDock.querySelector(".story-detour-progress").textContent = detourProgressText();
+    detourDock.querySelector("#story-detour-return").disabled = !detourCompletion();
+    detourDock.querySelector(".story-detour-controls").replaceChildren();
     if (kind === "map03") {
       const controls = [
         ["森林を開く", "mode03Forest", "forest"],
         ["降水量を開く", "mode03Rain", "rain"],
         ["二つを重ねる", "mode03Overlay", "overlay"],
       ];
-      controls.forEach(([label, key, layerName], index) => addBridgeControl(label, () => {
+      controls.forEach(([label, key, layerName], index) => addDetourControl(label, () => {
         if (index === 2 && (!state.viewed.mode03Forest || !state.viewed.mode03Rain)) return;
         state.viewed[key] = true;
         window.dispatchEvent(new CustomEvent("gaia:story-mode-layer", { detail: { kind, layer: layerName } }));
         saveProgress();
-        updateBridge();
+        updateDetourDock();
       }, state.viewed[key]));
     } else if (kind === "abstract07") {
-      addBridgeControl("SOURCE｜受信 02:14", () => {
+      addDetourControl("SOURCE｜受信 02:14", () => {
         state.viewed.mode07Source = true;
         saveProgress();
-        updateBridge();
+        updateDetourDock();
       }, state.viewed.mode07Source);
-      addBridgeControl("DERIVED｜開封 10:27 / P波→S波", () => {
+      addDetourControl("DERIVED｜開封 10:27 / P波→S波", () => {
         state.viewed.mode07Derived = true;
         saveProgress();
-        updateBridge();
+        updateDetourDock();
       }, state.viewed.mode07Derived);
     } else if (kind === "map08") {
       [
         ["自然環境", "mode08Nature", "nature"],
         ["人の暮らし", "mode08Life", "life"],
         ["土地の記憶", "mode08Memory", "memory"],
-      ].forEach(([label, key, layerName]) => addBridgeControl(label, () => {
+      ].forEach(([label, key, layerName]) => addDetourControl(label, () => {
         state.viewed[key] = true;
         window.dispatchEvent(new CustomEvent("gaia:story-mode-layer", { detail: { kind, layer: layerName } }));
         saveProgress();
-        updateBridge();
+        updateDetourDock();
       }, state.viewed[key]));
     } else if (kind === "gx" && motionReduced()) {
-      addBridgeControl("段階表示を進める", () => {
-        bridgeState.gestureCount = Math.min(3, (bridgeState.gestureCount || 0) + 1);
+      addDetourControl("段階表示を進める", () => {
+        detourState.gestureCount = Math.min(3, (detourState.gestureCount || 0) + 1);
         window.dispatchEvent(new CustomEvent("gaia:gx-story-key-step"));
-        if (bridgeState.gestureCount >= 3) state.viewed.gxDeepTime = true;
+        if (detourState.gestureCount >= 3) state.viewed.gxDeepTime = true;
         saveProgress();
-        updateBridge();
+        updateDetourDock();
       }, state.viewed.gxDeepTime);
     }
   };
 
-  const openBridge = (step) => {
+  const detourParent = (kind) => {
+    if (kind === "gx") return document.querySelector("#gx-layer");
+    if (kind === "space10") return document.querySelector("#space-layer");
+    if (kind === "map03" || kind === "map08") return document.querySelector("#japan-layer");
+    return document.querySelector(".experience");
+  };
+
+  const closeDetourDock = () => {
+    detourDock?.remove();
+    detourDock = null;
+    document.body.classList.remove("novel-mode-detour");
+    layer.classList.remove("is-mode-detour");
+  };
+
+  const requestDetourReturn = () => {
+    if (!pendingInteraction || !detourCompletion()) return;
+    const kind = pendingInteraction.interaction.kind;
+    if (kind === "gx") window.GaiaGX?.close?.();
+    else if (kind === "space10") window.GaiaSpace?.close?.({ returnToTop: false });
+    else {
+      window.dispatchEvent(new CustomEvent("gaia:story-mode-close", { detail: { kind } }));
+      completePendingInteraction();
+    }
+  };
+
+  const openDetour = (step) => {
     pendingInteraction = step;
-    bridgeState = { gestureCount: 0 };
-    const definition = bridgeDefinitions[step.interaction.kind];
-    elements.bridgeKicker.textContent = definition.kicker;
-    elements.bridgeTitle.textContent = definition.title;
-    elements.bridgeGuide.textContent = definition.guide;
-    elements.bridge.hidden = false;
-    elements.bridge.setAttribute("aria-hidden", "false");
+    detourState = { gestureCount: 0 };
+    const definition = detourDefinitions[step.interaction.kind];
+    closeDetourDock();
+    detourDock = document.createElement("aside");
+    detourDock.className = "story-detour-dock";
+    detourDock.dataset.kind = step.interaction.kind;
+    detourDock.innerHTML = `<header><span>${definition.kicker}</span><h2>${definition.title}</h2></header><p>${definition.guide}</p><p class="story-detour-progress" role="status" aria-live="polite"></p><div class="story-detour-controls"></div><button id="story-detour-return" type="button" disabled>操作を保存して物語へ戻る</button>`;
+    detourDock.querySelector("#story-detour-return").addEventListener("click", requestDetourReturn);
+    detourParent(step.interaction.kind)?.append(detourDock);
     document.body.classList.add("novel-mode-detour");
     layer.classList.add("is-mode-detour");
-    updateBridge();
+    updateDetourDock();
     const detail = {
       kind: step.interaction.kind,
       index: currentScene()?.modeIndex || 0,
@@ -774,22 +891,15 @@
     } else {
       window.dispatchEvent(new CustomEvent("gaia:story-mode-open", { detail }));
     }
-    requestAnimationFrame(() => elements.bridgeControls.querySelector("button")?.focus({ preventScroll: true }));
-  };
-
-  const closeBridge = () => {
-    elements.bridge.hidden = true;
-    elements.bridge.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("novel-mode-detour");
-    layer.classList.remove("is-mode-detour");
+    requestAnimationFrame(() => detourDock?.querySelector(".story-detour-controls button, #story-detour-return")?.focus({ preventScroll: true }));
   };
 
   const completePendingInteraction = () => {
-    if (!pendingInteraction || !bridgeCompletion()) return;
+    if (!pendingInteraction || !detourCompletion()) return;
     const step = pendingInteraction;
     pendingInteraction = null;
-    bridgeState = null;
-    closeBridge();
+    detourState = null;
+    closeDetourDock();
     saveProgress();
     moveToFollowingStep(step);
   };
@@ -808,116 +918,38 @@
     button.textContent = "既存の表示モードを開く";
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      openBridge(step);
+      openDetour(step);
     });
     elements.choices.append(button);
     elements.choices.classList.add("is-visible");
     requestAnimationFrame(() => button.focus({ preventScroll: true }));
   };
 
-  const renderVisitorInput = (step) => {
-    prepareStepFrame(step);
-    clearTimers();
-    setCharacterPresentation("visitor");
-    elements.speaker.textContent = "VISITOR POST / サクヤの続きではありません";
-    elements.cursor.hidden = true;
-    elements.continueMark.classList.remove("is-visible");
-    const form = document.createElement("section");
-    form.className = "novel-visitor-input";
-    const prompt = document.createElement("p");
-    prompt.textContent = "この展示を見た現在の記録を、残したい場合だけ一行書いてください。これはサクヤの文章の続きではありません。";
-    const privacy = document.createElement("p");
-    privacy.className = "novel-visitor-privacy";
-    privacy.textContent = "本名、住所、連絡先は書かないでください。";
-    const label = document.createElement("label");
-    label.htmlFor = "novel-visitor-post";
-    label.textContent = "作者 / AUTHOR：VISITOR　分類 / TYPE：来場者の投稿 / VISITOR POST";
-    const textarea = document.createElement("textarea");
-    textarea.id = "novel-visitor-post";
-    textarea.maxLength = step.maxLength;
-    textarea.rows = 3;
-    textarea.value = sessionDraft;
-    textarea.placeholder = "現在の自分の記録（書きたい場合だけ・120文字まで）";
-    const count = document.createElement("output");
-    count.htmlFor = textarea.id;
-    count.textContent = `${Array.from(sessionDraft).length} / 120`;
-    const policy = document.createElement("p");
-    policy.className = "novel-visitor-policy";
-    policy.textContent = "120文字まで／このセッションだけ／サーバー送信なし／次の人に本文は見えない";
-    const actions = document.createElement("div");
-    const remove = document.createElement("button");
-    const proceed = document.createElement("button");
-    remove.type = proceed.type = "button";
-    remove.textContent = "この文章を消す";
-    proceed.textContent = "WRITE / LEAVE EMPTYの選択へ";
-    textarea.addEventListener("input", () => {
-      sessionDraft = Array.from(textarea.value).slice(0, 120).join("");
-      if (textarea.value !== sessionDraft) textarea.value = sessionDraft;
-      count.textContent = `${Array.from(sessionDraft).length} / 120`;
-    });
-    remove.addEventListener("click", () => {
-      sessionDraft = "";
-      textarea.value = "";
-      count.textContent = "0 / 120";
-      textarea.focus({ preventScroll: true });
-    });
-    proceed.addEventListener("click", () => moveToFollowingStep(step));
-    actions.append(remove, proceed);
-    form.append(prompt, privacy, label, textarea, count, policy, actions);
-    elements.text.replaceChildren(form);
-    requestAnimationFrame(() => textarea.focus({ preventScroll: true }));
-  };
-
   const renderResult = (step) => {
     prepareStepFrame(step);
     clearTimers();
-    setCharacterPresentation("system");
-    elements.speaker.textContent = "FINAL RECORD / 四つは同格の到達結果です";
-    elements.cursor.hidden = true;
-    elements.continueMark.classList.remove("is-visible");
-    const result = document.createElement("section");
-    result.className = "novel-final-result";
-    const heading = document.createElement("h3");
-    heading.textContent = `${state.editorialChoice} × ${state.visitorAction}`;
-    const source = document.createElement("article");
-    source.dataset.kind = "SOURCE";
-    const sourceLabel = document.createElement("strong");
-    const sourceText = document.createElement("p");
-    sourceLabel.textContent = "観測記録 / SOURCE　作者：SAKUYA";
-    sourceText.textContent = "もし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――";
-    source.append(sourceLabel, sourceText);
-    result.append(heading, source);
-    if (state.editorialChoice === "DISCLOSE_DERIVATION") {
-      const derived = document.createElement("article");
-      derived.dataset.kind = "DERIVED";
-      const label = document.createElement("strong");
-      const text = document.createElement("p");
-      const meta = document.createElement("small");
-      label.textContent = "計算・解釈 / DERIVED　生成実行・選定責任：MIZUHA";
-      text.textContent = "「聞こえたつもりになってない？」って、三人で確かめたい。";
-      meta.textContent = "公開対象の制作投稿からローカル生成／サクヤ本人の確認なし";
-      derived.append(label, text, meta);
-      result.append(derived);
-    }
-    if (state.visitorAction === "WRITE") {
-      const visitor = document.createElement("article");
-      visitor.dataset.kind = "VISITOR_POST";
-      const label = document.createElement("strong");
-      const text = document.createElement("p");
-      label.textContent = "来場者の投稿 / VISITOR POST　作者：VISITOR";
-      text.textContent = sessionDraft;
-      visitor.append(label, text);
-      result.append(visitor);
-    }
-    const trace = document.createElement("p");
-    trace.className = "novel-final-trace";
-    trace.textContent = `操作記録 / VISITOR TRACE：${state.observationOrder || "—"} → ${state.editorialChoice} → ${state.visitorAction}　公開版の変更：NO`;
+    state.resultTone = state.resultTone || scoreReflection(state.reflectionIds);
+    saveProgress();
+    elements.dialogue.hidden = true;
+    elements.sourceButton.hidden = true;
+    elements.resultSurface.hidden = false;
+    layer.classList.add("is-result");
+    const result = document.createElement("div");
+    result.className = `novel-result-shell is-${state.resultTone.toLowerCase()}`;
+    const content = document.createElement("article");
+    const eyebrow = document.createElement("span");
+    const heading = document.createElement("h2");
+    const copy = document.createElement("p");
     const next = document.createElement("button");
+    eyebrow.textContent = "THE RECORD REMAINS OPEN";
+    heading.textContent = "地球は答えず、次の観測を待つ。";
+    copy.textContent = story.resultCopy[state.resultTone];
     next.type = "button";
-    next.textContent = "展示ホールへ戻る";
+    next.textContent = "記録を閉じる";
     next.addEventListener("click", () => moveToFollowingStep(step));
-    result.append(trace, next);
-    elements.text.replaceChildren(result);
+    content.append(eyebrow, heading, copy, next);
+    result.append(content);
+    elements.resultSurface.append(result);
     requestAnimationFrame(() => next.focus({ preventScroll: true }));
   };
 
@@ -936,7 +968,7 @@
     const title = document.createElement("h3");
     const copy = document.createElement("p");
     title.textContent = "STARTへ戻した端末が、次の来場者を待っています。";
-    copy.textContent = "本文は消えます。次へ残るのは、誰かが書いた、または書かなかったという黄色い痕跡と累積件数だけです。";
+    copy.textContent = "観測した現在地と選択は、この端末に保存されています。属性や得点を表示せず、選び直せる記録として残ります。";
     const archive = document.createElement("div");
     archive.className = "novel-archive-doors";
     [
@@ -950,11 +982,8 @@
     });
     const start = document.createElement("button");
     start.type = "button";
-    start.textContent = "STARTへ戻る（本文を破棄）";
+    start.textContent = "STARTへ戻る";
     start.addEventListener("click", () => {
-      sessionDraft = "";
-      removeStorage(STORAGE_KEY);
-      state = defaultState();
       showTitle();
     });
     end.append(title, copy, archive, start);
@@ -979,8 +1008,8 @@
     if (["chat", "record", "ui", "transition"].includes(step.type)) return renderRichStep(step);
     if (step.type === "details") return renderGenerationDetails(step);
     if (step.type === "choice") return renderChoice(step);
+    if (step.type === "reflectionChoice") return renderReflectionChoice(step);
     if (step.type === "interaction") return renderInteraction(step);
-    if (step.type === "visitorInput") return renderVisitorInput(step);
     if (step.type === "result") return renderResult(step);
     if (step.type === "end") return renderEnd(step);
     return renderSimpleStep(step);
@@ -1006,10 +1035,8 @@
   }
 
   const startNewSession = () => {
-    sessionDraft = "";
     state = defaultState();
     state.sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    incrementSessionCount();
     showRuntime();
     renderEves();
     saveProgress();
@@ -1018,7 +1045,6 @@
 
   const restartStory = () => {
     const sessionId = state.sessionId || `${Date.now().toString(36)}-restart`;
-    sessionDraft = "";
     state = defaultState();
     state.sessionId = sessionId;
     showRuntime();
@@ -1031,7 +1057,6 @@
     const stored = getStoredProgress();
     if (!stored) return startNewSession();
     state = stored;
-    sessionDraft = "";
     showRuntime();
     renderEves();
     renderCurrentStep();
@@ -1090,46 +1115,47 @@
   const evesNodeLabel = (id) => ({
     intro: "物語を観測中",
     editorial_choice: "表示選択",
-    visitor_action: "最後の選択",
-    SOURCE_RECORD_WRITE: "SOURCE RECORD × WRITE",
-    SOURCE_RECORD_LEAVE_EMPTY: "SOURCE RECORD × LEAVE EMPTY",
-    DISCLOSE_DERIVATION_WRITE: "DISCLOSE DERIVATION × WRITE",
-    DISCLOSE_DERIVATION_LEAVE_EMPTY: "DISCLOSE DERIVATION × LEAVE EMPTY",
+    reflection_choice: "観測姿勢の選択",
+    SOURCE_RECORD_SELECTED: "観測姿勢を選ぶ",
+    SOURCE_RECORD_UNANSWERED: "観測姿勢を選ばない",
+    DISCLOSE_DERIVATION_SELECTED: "観測姿勢を選ぶ",
+    DISCLOSE_DERIVATION_UNANSWERED: "観測姿勢を選ばない",
   })[id] || "物語を観測中";
 
   const renderEvesGraph = () => {
     const editorial = state.editorialChoice;
-    const action = state.visitorAction;
-    const result = editorial && action ? `${editorial}_${action}` : "";
+    const posture = state.evesRoute.find((entry) => entry.decisionId === "reflection_choice")?.value || "";
+    const result = editorial && posture ? `${editorial}_${posture}` : "";
     const visited = new Set(["intro"]);
     if (editorial) visited.add("editorial_choice");
-    if (action) visited.add("visitor_action");
+    if (posture) visited.add("reflection_choice");
     if (result) visited.add(result);
     const node = (id, x, y, width, label) => `<g class="eves-node ${visited.has(id) ? "is-visited" : ""} ${result === id ? "is-current" : ""}" data-node="${id}"><rect x="${x}" y="${y}" width="${width}" height="54" rx="8"></rect><text class="eves-node-eyebrow" x="${x + 12}" y="${y + 18}">${label}</text><text class="eves-node-label" x="${x + 12}" y="${y + 39}">${evesNodeLabel(id)}</text></g>`;
     const edge = (active, d, label, x, y) => `<g class="eves-edge ${active ? "is-active" : ""}"><path d="${d}"></path><text x="${x}" y="${y}">${label}</text></g>`;
-    elements.evesGraph.innerHTML = `<svg viewBox="0 0 1120 390" role="img" aria-label="二段階の選択から四つの同格な結果へ至る経路図">
+    elements.evesGraph.innerHTML = `<svg viewBox="0 0 1120 390" role="img" aria-label="編集方針と観測姿勢の二段階を記録する経路図">
       ${edge(Boolean(editorial), "M130 195 H200", "", 0, 0)}
       ${edge(editorial === "SOURCE_RECORD", "M360 185 C400 185 400 90 450 90", "SOURCE RECORD", 360, 124)}
       ${edge(editorial === "DISCLOSE_DERIVATION", "M360 205 C400 205 400 295 450 295", "DISCLOSE", 365, 274)}
-      ${edge(Boolean(action), "M610 90 C650 90 650 50 690 50", "WRITE", 620, 65)}
-      ${edge(Boolean(action), "M610 90 C650 90 650 135 690 135", "LEAVE EMPTY", 615, 126)}
-      ${edge(Boolean(action), "M610 295 C650 295 650 250 690 250", "WRITE", 620, 267)}
-      ${edge(Boolean(action), "M610 295 C650 295 650 335 690 335", "LEAVE EMPTY", 615, 328)}
+      ${edge(Boolean(posture), "M610 90 C650 90 650 50 690 50", "選ぶ", 626, 65)}
+      ${edge(Boolean(posture), "M610 90 C650 90 650 135 690 135", "選ばない", 615, 126)}
+      ${edge(Boolean(posture), "M610 295 C650 295 650 250 690 250", "選ぶ", 626, 267)}
+      ${edge(Boolean(posture), "M610 295 C650 295 650 335 690 335", "選ばない", 615, 328)}
       ${node("intro", 20, 168, 110, "START")}
       ${node("editorial_choice", 200, 168, 160, "DECISION 01")}
-      ${node("visitor_action", 450, 63, 160, "DECISION 02")}
-      ${node("visitor_action", 450, 268, 160, "DECISION 02")}
-      ${node("SOURCE_RECORD_WRITE", 690, 23, 310, "RESULT")}
-      ${node("SOURCE_RECORD_LEAVE_EMPTY", 690, 108, 310, "RESULT")}
-      ${node("DISCLOSE_DERIVATION_WRITE", 690, 223, 390, "RESULT")}
-      ${node("DISCLOSE_DERIVATION_LEAVE_EMPTY", 690, 308, 390, "RESULT")}
+      ${node("reflection_choice", 450, 63, 160, "DECISION 02")}
+      ${node("reflection_choice", 450, 268, 160, "DECISION 02")}
+      ${node("SOURCE_RECORD_SELECTED", 690, 23, 310, "RESULT")}
+      ${node("SOURCE_RECORD_UNANSWERED", 690, 108, 310, "RESULT")}
+      ${node("DISCLOSE_DERIVATION_SELECTED", 690, 223, 390, "RESULT")}
+      ${node("DISCLOSE_DERIVATION_UNANSWERED", 690, 308, 390, "RESULT")}
     </svg>`;
   };
 
   const renderEves = () => {
     elements.evesCount.textContent = `${state.evesRoute.length} / 2`;
-    const current = state.editorialChoice && state.visitorAction
-      ? `${state.editorialChoice}_${state.visitorAction}`
+    const posture = state.evesRoute.find((entry) => entry.decisionId === "reflection_choice")?.value;
+    const current = state.editorialChoice && posture
+      ? `${state.editorialChoice}_${posture}`
       : state.evesRoute.at(-1)?.decisionId || "intro";
     elements.evesCurrent.textContent = evesNodeLabel(current);
     elements.evesHistory.replaceChildren();
@@ -1177,11 +1203,14 @@
   const rewindEves = () => {
     const entry = state.evesRoute.pop();
     if (!entry) return;
-    sessionDraft = "";
-    if (entry.decisionId === "visitor_action") state.visitorAction = null;
+    if (entry.decisionId === "reflection_choice") {
+      state.reflectionIds = [];
+      state.resultTone = null;
+    }
     if (entry.decisionId === "editorial_choice") {
       state.editorialChoice = null;
-      state.visitorAction = null;
+      state.reflectionIds = [];
+      state.resultTone = null;
       state.evesRoute = [];
     }
     state.stepId = entry.stepId;
@@ -1193,13 +1222,23 @@
 
   const emptySlots = () => Array.from({ length: SLOT_COUNT }, () => null);
   const getManualSaves = () => {
-    const candidate = safeJson(readStorage(MANUAL_SAVE_KEY));
+    let candidate = safeJson(readStorage(MANUAL_SAVE_KEY));
+    if (!Array.isArray(candidate)) {
+      for (const key of LEGACY_MANUAL_KEYS) {
+        const legacy = safeJson(readStorage(key));
+        if (!Array.isArray(legacy)) continue;
+        candidate = legacy;
+        break;
+      }
+    }
     if (!Array.isArray(candidate)) return emptySlots();
-    return emptySlots().map((_, index) => {
+    const migrated = emptySlots().map((_, index) => {
       const saved = candidate[index];
-      const progress = normalizeState(saved?.progress);
+      const progress = normalizeState(saved?.progress || saved);
       return progress ? { progress, savedAt: Number(saved.savedAt) || 0, meta: saved.meta || {} } : null;
     });
+    writeStorage(MANUAL_SAVE_KEY, JSON.stringify(migrated));
+    return migrated;
   };
   const writeManualSaves = (slots) => writeStorage(MANUAL_SAVE_KEY, JSON.stringify(slots));
   const renderManualSlots = () => {
@@ -1271,7 +1310,7 @@
       },
     };
     writeManualSaves(slots);
-    elements.saveStatus.textContent = `SLOT ${index + 1}へ保存しました。入力本文は含まれません。`;
+    elements.saveStatus.textContent = `SLOT ${index + 1}へ現在地と選択を保存しました。`;
     renderManualSlots();
   }
   function deleteManualSlot(index) {
@@ -1289,7 +1328,6 @@
     const saved = getManualSaves()[index];
     if (!saved) return;
     state = saved.progress;
-    sessionDraft = "";
     closeManualArchive();
     showRuntime();
     renderEves();
@@ -1302,7 +1340,7 @@
     elements.saveTab.setAttribute("aria-selected", String(archiveMode === "save"));
     elements.loadTab.setAttribute("aria-selected", String(archiveMode === "load"));
     elements.saveTab.disabled = !hasStarted;
-    elements.saveStatus.textContent = archiveMode === "save" ? "保存先を選んでください。入力本文は保存されません。" : "再開する記録を選んでください。";
+    elements.saveStatus.textContent = archiveMode === "save" ? "現在地と選択を保存するスロットを選んでください。" : "再開する記録を選んでください。";
     renderManualSlots();
   };
   const openManualArchive = (mode) => {
@@ -1330,26 +1368,6 @@
     elements.configPanel.setAttribute("aria-hidden", "true");
     elements.configButton.setAttribute("aria-expanded", "false");
   };
-  const resetEventRecord = () => {
-    if (!eventResetArmed) {
-      eventResetArmed = true;
-      elements.eventReset.textContent = "もう一度押してイベント記録消去";
-      elements.eventResetStatus.textContent = "累積件数と黄色い痕跡だけを消去します。物語セーブと設定は残ります。";
-      eventResetTimer = window.setTimeout(() => {
-        eventResetArmed = false;
-        elements.eventReset.textContent = "イベント記録消去";
-        elements.eventResetStatus.textContent = "";
-      }, 5000);
-      return;
-    }
-    window.clearTimeout(eventResetTimer);
-    eventResetArmed = false;
-    removeStorage(EVENT_KEY);
-    elements.eventReset.textContent = "イベント記録消去";
-    elements.eventResetStatus.textContent = "累積件数と黄色い痕跡を消去しました。";
-    renderEventStats();
-  };
-
   function openNovel(event = null) {
     event?.preventDefault?.();
     previousFocus = document.activeElement;
@@ -1362,12 +1380,13 @@
     document.body.classList.add("novel-open");
     showTitle();
     requestAnimationFrame(() => layer.classList.add("is-open"));
-    if (window.location.hash !== "#story") history.replaceState(null, "", "#story");
+    if (window.location.hash !== "#story" && !/\/story\/?$/i.test(window.location.pathname)) {
+      history.replaceState(null, "", "#story");
+    }
   }
   function closeNovelNow() {
     clearTimers();
-    closeBridge();
-    sessionDraft = "";
+    closeDetourDock();
     particleSystem.stop();
     void window.GaiaOpeningAudio?.switchTrack?.("opening");
     isOpen = false;
@@ -1394,7 +1413,6 @@
     state = defaultState();
     if (target) state.stepId = target.steps[0].id;
     state.sessionId = `${Date.now().toString(36)}-entry`;
-    incrementSessionCount();
     openNovel();
     showRuntime();
     renderCurrentStep();
@@ -1402,40 +1420,29 @@
 
   window.addEventListener("gaia:gx-story-progress", (event) => {
     if (pendingInteraction?.interaction.kind !== "gx") return;
-    bridgeState.gestureCount = Math.max(bridgeState.gestureCount || 0, Number(event.detail?.count) || 0);
-    if (event.detail?.complete || bridgeState.gestureCount >= 3) state.viewed.gxDeepTime = true;
+    detourState.gestureCount = Math.max(detourState.gestureCount || 0, Number(event.detail?.count) || 0);
+    if (event.detail?.complete || detourState.gestureCount >= 3) state.viewed.gxDeepTime = true;
     saveProgress();
-    updateBridge();
+    updateDetourDock();
   });
   window.addEventListener("gaia:gx-return-to-novel", () => completePendingInteraction());
   window.addEventListener("gaia:story-map-interaction", () => {
     if (!pendingInteraction) return;
-    updateBridge();
+    updateDetourDock();
   });
   window.addEventListener("gaia:story-abstract-interaction", () => {
     if (pendingInteraction?.interaction.kind !== "abstract07") return;
     state.viewed.mode07AbstractPoint = true;
     saveProgress();
-    updateBridge();
+    updateDetourDock();
   });
   window.addEventListener("gaia:space-story-progress", (event) => {
     if (pendingInteraction?.interaction.kind !== "space10") return;
     if (event.detail?.complete) state.viewed.mode10SpaceOverview = true;
     saveProgress();
-    updateBridge();
+    updateDetourDock();
   });
   window.addEventListener("gaia:space-return-to-novel", () => completePendingInteraction());
-
-  elements.bridgeReturn?.addEventListener("click", () => {
-    if (!pendingInteraction || !bridgeCompletion()) return;
-    const kind = pendingInteraction.interaction.kind;
-    if (kind === "gx") window.GaiaGX?.close?.();
-    else if (kind === "space10") window.GaiaSpace?.close?.({ returnToTop: false });
-    else {
-      window.dispatchEvent(new CustomEvent("gaia:story-mode-close", { detail: { kind } }));
-      completePendingInteraction();
-    }
-  });
 
   elements.start.addEventListener("click", startNewSession);
   elements.resume.addEventListener("click", resumeStory);
@@ -1466,7 +1473,6 @@
     saveConfig();
     syncConfig();
   });
-  elements.eventReset?.addEventListener("click", resetEventRecord);
   elements.evesButton.addEventListener("click", toggleEves);
   elements.evesClose.addEventListener("click", closeEves);
   elements.evesRewind.addEventListener("click", rewindEves);
@@ -1513,11 +1519,24 @@
     }
   });
 
+  globalThis.GaiaNovel = Object.freeze({
+    open: openNovel,
+    close: closeNovel,
+    getState: () => structuredClone(state),
+    scoreReflection: (ids) => scoreReflection(ids),
+    storageKey: STORAGE_KEY,
+  });
+
   loadConfig();
   syncConfig();
   renderManualSlots();
   renderEves();
-  renderEventStats();
   showTitle();
-  if (window.location.hash === "#story") openNovel();
+  const directStoryRoute = /\/story\/?$/i.test(window.location.pathname);
+  if (directStoryRoute) {
+    const opening = document.querySelector("#gaia-opening");
+    if (opening) opening.hidden = true;
+    document.body.classList.remove("gaia-opening-active");
+  }
+  if (window.location.hash === "#story" || directStoryRoute) openNovel();
 })();

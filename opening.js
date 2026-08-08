@@ -25,9 +25,9 @@
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const AUDIO_DOCK_COLLAPSE_DELAY_MS = 6000;
   let audioDockCollapseTimer = 0;
-  const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound"].includes(
+  const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#story"].includes(
     window.location.hash,
-  );
+  ) || /\/story\/?$/i.test(window.location.pathname);
 
   const syncAudioControls = (state = window.GaiaOpeningAudio?.getState?.()) => {
     const volume = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);

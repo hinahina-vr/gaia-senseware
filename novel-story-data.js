@@ -1,9 +1,9 @@
 // Generated from story/物語台本.md by scripts/build-novel-story.mjs. Do not edit by hand.
-globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
-  "storyVersion": 6,
+globalThis.GAIA_NOVEL_STORY = Object.freeze({
+  "storyVersion": 7,
   "title": "GAIA SENSATION",
   "systemTitle": "GAIA SENSEWARE",
-  "startSceneId": "current_notice",
+  "startSceneId": "current_exhibition",
   "saveFields": [
     "storyVersion",
     "stepId",
@@ -12,19 +12,16 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
     "evesRoute",
     "observationOrder",
     "editorialChoice",
-    "visitorAction",
+    "reflectionIds",
+    "resultTone",
     "audio",
     "readStepIds",
     "clear",
     "archivesUnlocked",
     "sessionId"
   ],
-  "visitorInput": {
-    "maxLength": 120,
-    "persistent": false
-  },
   "requiredSceneIds": [
-    "current_notice",
+    "current_exhibition",
     "opening_empty_seat",
     "prologue_online_circle",
     "prologue_basil",
@@ -43,8 +40,8 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
     "mode08_map_layers",
     "mode10_space",
     "choice_editorial",
-    "epilogue_visitor_field",
-    "choice_visitor_action",
+    "epilogue_reflection_field",
+    "choice_reflection",
     "final_record",
     "return_to_start"
   ],
@@ -56,11 +53,21 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
     "space10"
   ],
   "finalResults": [
-    "SOURCE_RECORD×WRITE",
-    "SOURCE_RECORD×LEAVE_EMPTY",
-    "DISCLOSE_DERIVATION×WRITE",
-    "DISCLOSE_DERIVATION×LEAVE_EMPTY"
+    "SOURCE_RECORD×LAW",
+    "SOURCE_RECORD×NEUTRAL",
+    "SOURCE_RECORD×CHAOS",
+    "SOURCE_RECORD×UNANSWERED",
+    "DISCLOSE_DERIVATION×LAW",
+    "DISCLOSE_DERIVATION×NEUTRAL",
+    "DISCLOSE_DERIVATION×CHAOS",
+    "DISCLOSE_DERIVATION×UNANSWERED"
   ],
+  "resultCopy": {
+    "LAW": "残すべきものは、声ではなく検証可能な関係として整えられた。光は経線へ集まり、異なる記録を同じ責任の下へ結ぶ。地球は答えず、引き渡された記録だけが次の観測を待つ。",
+    "NEUTRAL": "一致しない記録は、一つの答えに閉じられなかった。光は重なりと空白のあいだを往復し、視点はどちらにも降りない。地球は答えず、距離を保った記録が次の観測を待つ。",
+    "CHAOS": "記録は定められた順序を離れ、まだ名前のない関係へ分岐した。光は海岸線の外へ散り、視点は既存の軌道を外れる。地球は答えず、選び直せる余白だけが次の観測を待つ。",
+    "UNANSWERED": "来場者は言葉を選ばなかった。空白は判断の失敗に変換されず、決めなかったという操作だけが残る。地球は答えず、次の観測を待つ。"
+  },
   "generationDetails": {
     "referencePostCount": "制作ログに件数記録なし",
     "similarPostCount": "制作ログに件数記録なし",
@@ -74,54 +81,54 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
   },
   "scenes": [
     {
-      "id": "current_notice",
+      "id": "current_exhibition",
       "title": "CURRENT｜学園祭の展示ホール",
       "chapter": "CURRENT",
       "modeIndex": 9,
       "steps": [
         {
-          "id": "current_notice_001",
-          "sceneId": "current_notice",
+          "id": "current_exhibition_001",
+          "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
           "text": "人の声とゲームの効果音が重なる通路に、小さなブースがある。\n端末の前には椅子が一脚。横には青りんごが一つ置かれている。"
         },
         {
-          "id": "current_notice_002",
-          "sceneId": "current_notice",
+          "id": "current_exhibition_002",
+          "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
           "text": "壁の制作者欄には、三人の表示名が同じ大きさで並んでいた。"
         },
         {
-          "id": "current_notice_003",
-          "sceneId": "current_notice",
+          "id": "current_exhibition_003",
+          "sceneId": "current_exhibition",
           "type": "ui",
           "text": "MIZUHA\nAMANE\nSAKUYA"
         },
         {
-          "id": "current_notice_004",
-          "sceneId": "current_notice",
+          "id": "current_exhibition_004",
+          "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
           "text": "プレイヤーが椅子へ座る。\n青りんごと同じ色のSTARTボタンの下に、短い案内がある。"
         },
         {
-          "id": "current_notice_005",
-          "sceneId": "current_notice",
+          "id": "current_exhibition_005",
+          "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
           "text": "この端末は、進行と選んだ項目を会期中の件数として記録します。\n入力した文章は次の人へ表示せず、サーバーへ送りません。"
         },
         {
-          "id": "current_notice_006",
-          "sceneId": "current_notice",
+          "id": "current_exhibition_006",
+          "sceneId": "current_exhibition",
           "type": "ui",
           "text": "記録について詳しく見る"
         },
         {
-          "id": "current_notice_007",
-          "sceneId": "current_notice",
+          "id": "current_exhibition_007",
+          "sceneId": "current_exhibition",
           "type": "ui",
           "text": "START"
         }
@@ -2030,14 +2037,14 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
           "sceneId": "mode08_map_layers",
           "type": "narration",
           "speaker": "narrator",
-          "text": "来場者欄の試作 / VISITOR FIELD PROTOTYPE\n編集者 / EDITORS：MIZUHA / AMANE / SAKUYA\n画面実装 / SCREEN：AMANE\n問いかけ / PROMPT：MIZUHA\n回答必須の解除 / OPTIONAL RESPONSE：SAKUYA\n状態 / STATUS：本編へ未接続"
+          "text": "観測姿勢面の試作 / REFLECTION FIELD PROTOTYPE\n編集者 / EDITORS：MIZUHA / AMANE / SAKUYA\n画面実装 / SCREEN：AMANE\n問いかけ / PROMPT：MIZUHA\n未選択で進む操作 / OPTIONAL SELECTION：SAKUYA\n状態 / STATUS：本編へ未接続"
         },
         {
           "id": "mode08_map_layers_010",
           "sceneId": "mode08_map_layers",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人で試したまま、使い道を決めなかった欄だった。"
+          "text": "三人で試したまま、使い道を決めなかった選択面だった。"
         },
         {
           "id": "mode08_map_layers_011",
@@ -2204,11 +2211,11 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
         "options": [
           {
             "value": "SOURCE_RECORD",
-            "next": "epilogue_visitor_field"
+            "next": "epilogue_reflection_field"
           },
           {
             "value": "DISCLOSE_DERIVATION",
-            "next": "epilogue_visitor_field"
+            "next": "epilogue_reflection_field"
           }
         ]
       },
@@ -2223,12 +2230,12 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
           "options": [
             {
               "value": "SOURCE_RECORD",
-              "next": "epilogue_visitor_field",
+              "next": "epilogue_reflection_field",
               "label": "本人記録で構成する / SOURCE RECORD"
             },
             {
               "value": "DISCLOSE_DERIVATION",
-              "next": "epilogue_visitor_field",
+              "next": "epilogue_reflection_field",
               "label": "生成した制作過程も開示する / DISCLOSE DERIVATION"
             }
           ]
@@ -2305,227 +2312,405 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
           "sceneId": "choice_editorial",
           "type": "narration",
           "speaker": "narrator",
-          "text": "選択を終えると、三人が試作した来場者欄が開く。"
+          "text": "選択を終えると、次へ渡す観測姿勢を選ぶ面が開く。"
         }
       ],
-      "nextSceneId": "epilogue_visitor_field"
+      "nextSceneId": "epilogue_reflection_field"
     },
     {
-      "id": "epilogue_visitor_field",
-      "title": "EPILOGUE｜書き込み欄 / WRITE ACCESS",
+      "id": "epilogue_reflection_field",
+      "title": "EPILOGUE｜観測姿勢 / REFLECTION FIELD",
       "chapter": "EPILOGUE",
       "modeIndex": 9,
       "steps": [
         {
-          "id": "epilogue_visitor_field_001",
-          "sceneId": "epilogue_visitor_field",
+          "id": "epilogue_reflection_field_001",
+          "sceneId": "epilogue_reflection_field",
           "type": "narration",
           "speaker": "narrator",
-          "text": "隠された文章は出ない。\n三人が以前作った来場者欄と、その後の変更者だけが表示される。"
+          "text": "隠された文章は出ない。\n三人の記録を読んだあと、来場者自身が次へ渡したい観測姿勢を選ぶ。"
         },
         {
-          "id": "epilogue_visitor_field_002",
-          "sceneId": "epilogue_visitor_field",
+          "id": "epilogue_reflection_field_002",
+          "sceneId": "epilogue_reflection_field",
           "type": "narration",
           "speaker": "narrator",
-          "text": "来場者欄の試作 / VISITOR FIELD PROTOTYPE\n編集者 / EDITORS：MIZUHA / AMANE / SAKUYA\n回答必須の解除 / OPTIONAL RESPONSE：SAKUYA\n本編への接続 / CONNECTED BY：MIZUHA / AMANE"
+          "text": "ここで選ぶ文は、サクヤの文章へ続きを足すためのものではない。\n物語の優劣や正解を決めず、最後の空間演出だけを変える。"
         },
         {
-          "id": "epilogue_visitor_field_003",
-          "sceneId": "epilogue_visitor_field",
+          "id": "epilogue_reflection_field_003",
+          "sceneId": "epilogue_reflection_field",
           "type": "narration",
           "speaker": "narrator",
-          "text": "古いテストでは、文章を書かなかった人が先へ進めなかった。\nサクヤは回答必須を解除し、「書かない人もいる」とだけ返していた。"
-        },
-        {
-          "id": "epilogue_visitor_field_004",
-          "sceneId": "epilogue_visitor_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "書き込み欄 / WRITE ACCESSは、サクヤの文章へ続きを足す欄ではない。\nプレイヤーが自分の名義で一行を表示するための欄だった。"
-        },
-        {
-          "id": "epilogue_visitor_field_005",
-          "sceneId": "epilogue_visitor_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤの吹き出しから一行離れた場所に、入力欄が表示される。"
-        },
-        {
-          "id": "epilogue_visitor_field_006",
-          "sceneId": "epilogue_visitor_field",
-          "type": "record",
-          "recordType": "VISITOR_POST",
-          "text": "投稿者 / AUTHOR：VISITOR\n分類 / TYPE：来場者の投稿 / VISITOR POST\nサクヤの文への接続 / LINK：NO"
-        },
-        {
-          "id": "epilogue_visitor_field_007",
-          "sceneId": "epilogue_visitor_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "入力欄の上には、一行だけ表示される。"
-        },
-        {
-          "id": "epilogue_visitor_field_008",
-          "sceneId": "epilogue_visitor_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "「この展示を見た現在の記録を、残したい場合だけ一行書いてください。」"
-        },
-        {
-          "id": "epilogue_visitor_field_009",
-          "sceneId": "epilogue_visitor_field",
-          "type": "ui",
-          "text": "START前に示した保存方針が、入力欄の下へ再表示される。"
-        },
-        {
-          "id": "epilogue_visitor_field_010",
-          "sceneId": "epilogue_visitor_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "120文字まで／このセッションだけ／サーバー送信なし／次の人に本文は見えない"
-        },
-        {
-          "id": "epilogue_visitor_field_011",
-          "sceneId": "epilogue_visitor_field",
-          "type": "ui",
-          "text": "保存方針を詳しく見る"
-        },
-        {
-          "id": "epilogue_visitor_field_012",
-          "sceneId": "epilogue_visitor_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "- HTMLとスクリプトは実行せず、入力された文字として表示する。\n- 本名、住所、連絡先を書かない。\n- STARTへ戻るか「この文章を消す」を押すと本文を削除する。"
-        },
-        {
-          "id": "epilogue_visitor_field_013",
-          "sceneId": "epilogue_visitor_field",
-          "type": "visitorInput",
-          "inputId": "visitor_post",
-          "maxLength": 120
+          "text": "選択した文のID、算出した演出、物語の現在地は、この端末のlocalStorageへ保存する。\n文を選ばず、空白のまま進むこともできる。"
         }
       ],
-      "nextSceneId": "choice_visitor_action"
+      "nextSceneId": "choice_reflection"
     },
     {
-      "id": "choice_visitor_action",
-      "title": "最後の選択｜自分の記録を置くか",
+      "id": "choice_reflection",
+      "title": "最後の選択｜次へ渡す姿勢",
       "chapter": "FINAL CHOICE",
       "modeIndex": 9,
-      "choice": {
-        "id": "visitor_action",
-        "prompt": "自分の記録を置くか",
-        "trackedByEves": true,
-        "options": [
-          {
-            "value": "WRITE",
-            "next": "final_record"
-          },
-          {
-            "value": "LEAVE_EMPTY",
-            "next": "final_record"
-          }
-        ]
+      "reflectionChoice": {
+        "prompt": "次へ渡したい姿勢を、最大3つまで選んでください。"
       },
       "steps": [
         {
-          "id": "choice_visitor_action_001",
-          "sceneId": "choice_visitor_action",
-          "type": "choice",
-          "choiceId": "visitor_action",
-          "prompt": "自分の記録を置くか",
+          "id": "choice_reflection_001",
+          "sceneId": "choice_reflection",
+          "type": "reflectionChoice",
+          "choiceId": "reflection_choice",
+          "prompt": "次へ渡したい姿勢を、最大3つまで選んでください。",
           "trackedByEves": true,
+          "maxSelections": 3,
           "options": [
             {
-              "value": "WRITE",
-              "next": "final_record",
-              "label": "一行書く / WRITE"
+              "id": "R01",
+              "text": "意味を決める前に、聞こえなかった可能性を残す。",
+              "weights": {
+                "law": 0,
+                "neutral": 2,
+                "chaos": 1
+              }
             },
             {
-              "value": "LEAVE_EMPTY",
-              "next": "final_record",
-              "label": "何も書かずに終える / LEAVE EMPTY"
+              "id": "R02",
+              "text": "中央の正解より、各地の異なる判断を生かす。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R03",
+              "text": "将来世代が検証できる形で、いまの判断を保存する。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R04",
+              "text": "制度が拾えない変化を、個人の感覚から始める。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R05",
+              "text": "記録されないものを、存在しなかったことにしない。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R06",
+              "text": "技術を拒絶も崇拝もせず、作用した場所を追う。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 1
+              }
+            },
+            {
+              "id": "R07",
+              "text": "人間の都合で消える生態系に、法的な代理を与える。",
+              "weights": {
+                "law": 2,
+                "neutral": 0,
+                "chaos": 1
+              }
+            },
+            {
+              "id": "R08",
+              "text": "矛盾する二つの記録を、急いで一つにしない。",
+              "weights": {
+                "law": 0,
+                "neutral": 2,
+                "chaos": 1
+              }
+            },
+            {
+              "id": "R09",
+              "text": "完成した記録より、書き換え続けられる余白を残す。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R10",
+              "text": "解釈より先に、出典と変更履歴を残す。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R11",
+              "text": "安全な解釈より、まだ名のない可能性へ進む。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R12",
+              "text": "正しさより、どこから見た記録かを確かめる。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R13",
+              "text": "一つの尺度で測れないものを、比較不能のまま置く。",
+              "weights": {
+                "law": 0,
+                "neutral": 2,
+                "chaos": 1
+              }
+            },
+            {
+              "id": "R14",
+              "text": "責任の所在が消える共同制作を、認めない。",
+              "weights": {
+                "law": 2,
+                "neutral": 0,
+                "chaos": 1
+              }
+            },
+            {
+              "id": "R15",
+              "text": "記録する権利と同じだけ、記録されない権利を守る。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R16",
+              "text": "人間と地球の境界を固定せず、関係の変化を見る。",
+              "weights": {
+                "law": 0,
+                "neutral": 2,
+                "chaos": 1
+              }
+            },
+            {
+              "id": "R17",
+              "text": "不確実でも、被害を抑える側へ制度を動かす。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R18",
+              "text": "既存の分類に入らない声のために、分類そのものを壊す。",
+              "weights": {
+                "law": 0,
+                "neutral": 0,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R19",
+              "text": "声の大きさではなく、再現可能な証拠を基準にする。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R20",
+              "text": "誰の声でもない現象に、話者を作らない。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R21",
+              "text": "未来のためという名目で、現在の自由を差し出さない。",
+              "weights": {
+                "law": 1,
+                "neutral": 0,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R22",
+              "text": "空欄を欠陥ではなく、観測できなかった証拠として扱う。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R23",
+              "text": "観測者であることをやめ、結果へ介入する。",
+              "weights": {
+                "law": 0,
+                "neutral": 0,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R24",
+              "text": "誰が変えたか辿れない生成物を、公開しない。",
+              "weights": {
+                "law": 2,
+                "neutral": 0,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R25",
+              "text": "再現できない経験にも、世界を変える力を認める。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R26",
+              "text": "迷ったときは、取り返しのつかない損失を先に防ぐ。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R27",
+              "text": "原文と生成文のあいだに、優劣ではなく距離を表示する。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R28",
+              "text": "観測装置の限界も、記録の一部として公開する。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R29",
+              "text": "出典が正しくても、世界を閉じる説明には従わない。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R30",
+              "text": "分からないという状態を、判断の失敗にしない。",
+              "weights": {
+                "law": 0,
+                "neutral": 2,
+                "chaos": 1
+              }
+            },
+            {
+              "id": "R31",
+              "text": "地球規模の危機には、個人の自由より共通規則を優先する。",
+              "weights": {
+                "law": 2,
+                "neutral": 0,
+                "chaos": 1
+              }
+            },
+            {
+              "id": "R32",
+              "text": "人間の外側に意味を求めず、人間が選んだ意味を引き受ける。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R33",
+              "text": "未来への責任を語る前に、現在の犠牲を数える。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R34",
+              "text": "公共の記録は、私的な物語より改変に強くする。",
+              "weights": {
+                "law": 2,
+                "neutral": 0,
+                "chaos": 0
+              }
+            },
+            {
+              "id": "R35",
+              "text": "責任者の許可より、当事者の異議を先に通す。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              }
+            },
+            {
+              "id": "R36",
+              "text": "結論を共有できなくても、検証の手続きを共有する。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              }
             }
           ]
         },
         {
-          "id": "choice_visitor_action_002",
-          "sceneId": "choice_visitor_action",
-          "condition": {
-            "key": "visitorAction",
-            "value": "WRITE"
-          },
-          "type": "ui",
-          "text": "一行書く / WRITE"
-        },
-        {
-          "id": "choice_visitor_action_003",
-          "sceneId": "choice_visitor_action",
-          "condition": {
-            "key": "visitorAction",
-            "value": "WRITE"
-          },
+          "id": "choice_reflection_002",
+          "sceneId": "choice_reflection",
           "type": "narration",
           "speaker": "narrator",
-          "text": "入力欄が有効になる。\nプレイヤーが120文字以内で文章を書く。"
+          "text": "最大三件まで選べる。\n四件目は追加せず、上限をその場で知らせる。\n一件以上では「選んだ姿勢で進む」、未選択では「選ばずに進む」を表示する。"
         },
         {
-          "id": "choice_visitor_action_004",
-          "sceneId": "choice_visitor_action",
-          "condition": {
-            "key": "visitorAction",
-            "value": "WRITE"
-          },
+          "id": "choice_reflection_003",
+          "sceneId": "choice_reflection",
           "type": "narration",
           "speaker": "narrator",
-          "text": "送信すると、文章はサクヤの吹き出しへつながらず、VISITORの新しい投稿として表示される。"
-        },
-        {
-          "id": "choice_visitor_action_005",
-          "sceneId": "choice_visitor_action",
-          "condition": {
-            "key": "visitorAction",
-            "value": "WRITE"
-          },
-          "type": "record",
-          "recordType": "VISITOR_POST",
-          "text": "来場者の投稿 / VISITOR POST\n作者 / AUTHOR：VISITOR\n表示：STARTへ戻るまで"
-        },
-        {
-          "id": "choice_visitor_action_006",
-          "sceneId": "choice_visitor_action",
-          "condition": {
-            "key": "visitorAction",
-            "value": "LEAVE_EMPTY"
-          },
-          "type": "ui",
-          "text": "何も書かずに終える / LEAVE EMPTY"
-        },
-        {
-          "id": "choice_visitor_action_007",
-          "sceneId": "choice_visitor_action",
-          "condition": {
-            "key": "visitorAction",
-            "value": "LEAVE_EMPTY"
-          },
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "入力欄は空のまま閉じる。\n文章を送らなかった操作だけが残る。"
-        },
-        {
-          "id": "choice_visitor_action_008",
-          "sceneId": "choice_visitor_action",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "どちらにも「正解」の印は付かない。"
+          "text": "各文の演出用重みは画面へ出さない。\n合計が単独最大の系統を採用し、最大値が同点なら中立の演出、未選択なら無回答の演出とする。"
         }
       ],
       "nextSceneId": "final_record"
     },
     {
       "id": "final_record",
-      "title": "最終表示｜誰が何を残したか",
+      "title": "最終表示｜選んだ姿勢を空間へ返す",
       "chapter": "FINAL RECORD",
       "modeIndex": 9,
       "steps": [
@@ -2534,71 +2719,64 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
           "sceneId": "final_record",
           "type": "record",
           "recordType": "SOURCE",
-          "text": "サクヤの受信文 / SAKUYA SOURCE：1\n編集方針 / EDITORIAL CHOICE：SOURCE RECORD または DISCLOSE DERIVATION\n来場者の操作 / VISITOR ACTION：WRITE または LEAVE EMPTY\n公開版の変更 / PUBLIC BUILD CHANGED：NO"
+          "text": "サクヤの受信文 / SAKUYA SOURCE：1\n編集方針 / EDITORIAL CHOICE：SOURCE RECORD または DISCLOSE DERIVATION\n公開版の変更 / PUBLIC BUILD CHANGED：NO"
         },
         {
           "id": "final_record_002",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面は現在の展示ホールへ戻る。"
+          "text": "属性名、得点、選んだ文は画面へ出さない。\n編集方針はSOURCE RECORDとDISCLOSE DERIVATIONの独立した判断として残す。"
         },
         {
           "id": "final_record_003",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "プレイヤーが文章を書いていた場合、その一行はまだ自分の画面に見えている。\n「この文章を消す」を押すか、STARTへ戻ると本文は消える。"
+          "text": "規則へ収束する演出では、光が経線へ集まり、カメラと音が規則的に静止する。\n中立の演出では、異なる記録を統合せず、重なりと空白のあいだに視点を保つ。\n分岐する演出では、光が既存の軌道から外れ、カメラと音が外側へ開く。\n無回答の演出では、「決めなかった記録」を空白のまま残し、演出を最小限にする。"
         },
         {
           "id": "final_record_004",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネが端末をSTARTへ戻した。"
+          "text": "どの演出にも優劣や正解の印は付かない。\n端末は選択結果と現在地を保存し、次の観測を待つ。"
         },
         {
           "id": "final_record_005",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "WRITEを選んでいた場合、黄色い点が一つ増える。\nLEAVE EMPTYを選んでいた場合、黄色い細い円が一つ増える。\nどちらにも本文は入っていない。"
+          "text": "ミズハは青りんごの向きを変え、傷のない側を通路へ向けた。"
         },
         {
           "id": "final_record_006",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハは青りんごの向きを変え、傷のない側を通路へ向けた。"
+          "text": "館内放送が、次のステージ企画を告げる。\n隣のブースで拍手が起きる。"
         },
         {
           "id": "final_record_007",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "館内放送が、次のステージ企画を告げる。\n隣のブースで拍手が起きる。"
-        },
-        {
-          "id": "final_record_008",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
           "text": "最初のプレイヤーが席を立つ。\n通路を歩いていた次の人が、青りんごの前で足を止めた。"
         },
         {
-          "id": "final_record_009",
+          "id": "final_record_008",
           "sceneId": "final_record",
           "type": "ui",
           "text": "START\n────────────────────────────────────────\n— END OF PLAYER STORY —\n────────────────────────────────────────"
         },
         {
-          "id": "final_record_010",
+          "id": "final_record_009",
           "sceneId": "final_record",
           "type": "ui",
           "text": "CLEAR後｜制作記録を見る"
         },
         {
-          "id": "final_record_011",
+          "id": "final_record_010",
           "sceneId": "final_record",
           "type": "result",
           "resultId": "session_result"
@@ -2623,3 +2801,4 @@ globalThis.GAIA_NOVEL_STORY_V6 = Object.freeze({
     }
   ]
 });
+globalThis.GAIA_NOVEL_STORY_V6 = globalThis.GAIA_NOVEL_STORY;

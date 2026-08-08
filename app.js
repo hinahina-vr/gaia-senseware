@@ -5274,7 +5274,7 @@ drawAudienceMemory(audienceTraces);
     if (!storyModeDetour || event.key !== "Escape") return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    document.querySelector("#novel-mode-bridge-return")?.focus({ preventScroll: true });
+    document.querySelector("#story-detour-return")?.focus({ preventScroll: true });
   }, true);
 
   window.addEventListener("gaia:opening-complete", () => {
@@ -5304,7 +5304,7 @@ drawAudienceMemory(audienceTraces);
   japanClose.addEventListener("click", (event) => {
     if (storyModeDetour) {
       event.preventDefault();
-      document.querySelector("#novel-mode-bridge-return")?.focus({ preventScroll: true });
+      document.querySelector("#story-detour-return")?.focus({ preventScroll: true });
       return;
     }
     runSceneTransition(() => openIntro(), "map", event);

@@ -1,471 +1,363 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
 const [moduleArgument, executableArgument, outputArgument, baseUrlArgument] = process.argv.slice(2);
 const moduleRoot = process.env.GAIA_PLAYWRIGHT_PATH || moduleArgument;
 const executablePath = process.env.GAIA_BROWSER_EXECUTABLE || executableArgument;
 const baseUrl = process.env.GAIA_BASE_URL || baseUrlArgument || "http://127.0.0.1:4173";
 const outputDir = path.resolve(process.env.GAIA_BROWSER_ARTIFACTS || outputArgument || "artifacts/novel-browser");
-const standaloneOnly = process.argv.includes("--standalone-only");
+if (!moduleRoot || !executablePath) throw new Error("GAIA_PLAYWRIGHT_PATH and GAIA_BROWSER_EXECUTABLE are required.");
 
-if (!moduleRoot || !executablePath) {
-  throw new Error("GAIA_PLAYWRIGHT_PATH and GAIA_BROWSER_EXECUTABLE are required.");
-}
-
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const nodeModules = path.dirname(moduleRoot);
 const { chromium } = await import(pathToFileURL(path.join(moduleRoot, "index.mjs")));
+const sharp = (await import(pathToFileURL(path.join(nodeModules, "sharp", "lib", "index.js")))).default;
+const pixelmatch = (await import(pathToFileURL(path.join(nodeModules, "pixelmatch", "index.js")))).default;
+delete globalThis.GAIA_NOVEL_STORY;
+await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?browser=${Date.now()}`);
+const story = globalThis.GAIA_NOVEL_STORY;
+const steps = story.scenes.flatMap((scene) => scene.steps);
+const stepMap = new Map(steps.map((step) => [step.id, step]));
+const routeUrl = new URL("/story", baseUrl).href;
+const STORAGE_KEY = "gaiaSensewareNovel:progress";
+const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
+
 await mkdir(outputDir, { recursive: true });
+const browser = await chromium.launch({ executablePath, headless: true, args: ["--no-first-run", "--disable-background-networking"] });
+const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], interactions: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
-const browser = await chromium.launch({
-  executablePath,
-  headless: true,
-  args: ["--no-first-run", "--disable-background-networking"],
-});
-
-const report = {
-  baseUrl,
-  routes: [],
-  screenshots: [],
-  consoleErrors: [],
-  pageErrors: [],
-  visitorTextLeaks: [],
-  mobile: null,
-};
-
-const assert = (condition, message) => {
-  if (!condition) throw new Error(message);
+const attachDiagnostics = (page, label) => {
+  page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`); });
+  page.on("pageerror", (error) => report.pageErrors.push(`${label}: ${error.message}`));
+  page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`); });
 };
 
 const screenshot = async (page, name) => {
   const destination = path.join(outputDir, `${name}.png`);
   await page.screenshot({ path: destination, fullPage: false, animations: "disabled", timeout: 90000 });
   report.screenshots.push(destination);
+  return destination;
 };
 
-const attachDiagnostics = (page, label) => {
-  page.on("console", (message) => {
-    if (message.text().includes("E2E_VISITOR_TEXT_")) {
-      report.visitorTextLeaks.push(`${label}: console: ${message.text()}`);
-    }
-    if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`);
-  });
-  page.on("pageerror", (error) => report.pageErrors.push(`${label}: ${error.message}`));
-  page.on("request", (request) => {
-    const payload = `${request.url()}\n${request.postData() || ""}`;
-    if (payload.includes("E2E_VISITOR_TEXT_")) {
-      report.visitorTextLeaks.push(`${label}: request: ${request.method()} ${request.url()}`);
-    }
-  });
+const compareBaseline = async (actualPath, baselineName) => {
+  const baselinePath = path.join(projectRoot, "tests", "visual-baselines", `${baselineName}.png`);
+  const actual = await sharp(actualPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const expected = await sharp(baselinePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  assert(actual.info.width === expected.info.width && actual.info.height === expected.info.height, `${baselineName}: screenshot dimensions differ from baseline`);
+  const diffData = Buffer.alloc(actual.data.length);
+  const mismatch = pixelmatch(actual.data, expected.data, diffData, actual.info.width, actual.info.height, { threshold: 0.15, includeAA: false });
+  const ratio = mismatch / (actual.info.width * actual.info.height);
+  const diffPath = path.join(outputDir, `${baselineName}-diff.png`);
+  await sharp(diffData, { raw: actual.info }).png().toFile(diffPath);
+  report.visualDiffs.push({ name: baselineName, mismatchRatio: ratio, baselinePath, actualPath, diffPath });
+  assert(ratio < 0.68, `${baselineName}: visual mismatch ${ratio.toFixed(3)} exceeds recovery threshold`);
 };
 
-const currentStep = (page) => page.evaluate(() => {
-  const layer = document.querySelector("#novel-layer");
-  const stepId = layer?.dataset.stepId || "";
-  const step = globalThis.GAIA_NOVEL_STORY_V6?.scenes
-    ?.flatMap((scene) => scene.steps)
-    ?.find((candidate) => candidate.id === stepId);
-  return step ? {
-    id: step.id,
-    sceneId: step.sceneId,
-    type: step.type,
-    choiceId: step.choiceId || null,
-    options: step.options?.map((option) => option.value) || [],
-    interaction: step.interaction?.kind || null,
-  } : null;
+const baseState = (stepId, overrides = {}) => ({
+  storyVersion: story.storyVersion,
+  stepId,
+  reachedSceneIds: [],
+  viewed: {},
+  evesRoute: [],
+  observationOrder: null,
+  editorialChoice: null,
+  reflectionIds: [],
+  resultTone: null,
+  audio: { muted: false, volume: 0.1 },
+  readStepIds: [],
+  clear: false,
+  archivesUnlocked: false,
+  sessionId: "browser-validation",
+  ...overrides,
 });
 
-const waitForStepChange = async (page, previousId) => {
-  await page.waitForFunction(
-    (stepId) => document.querySelector("#novel-layer")?.dataset.stepId !== stepId,
-    previousId,
-    { timeout: 5000 },
-  );
+const ensureNovelOpen = async (page) => {
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel), null, { timeout: 15000 });
+  await page.evaluate(() => {
+    const layer = document.querySelector("#novel-layer");
+    if (layer?.hidden || !layer?.classList.contains("is-open")) globalThis.GaiaNovel.open();
+  });
+  await page.waitForTimeout(150);
+  await page.locator("#novel-title-screen").waitFor({ state: "visible", timeout: 15000 });
 };
 
-const advanceLinearStep = async (page, step) => {
-  await page.locator("#novel-dialogue").dispatchEvent("click");
-  if ((await currentStep(page))?.id === step.id) {
-    await page.locator("#novel-dialogue").dispatchEvent("click");
+const bootTitle = async (page, { clear = false } = {}) => {
+  await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
+  await ensureNovelOpen(page);
+  if (clear) {
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await ensureNovelOpen(page);
   }
-  await waitForStepChange(page, step.id);
 };
 
-const clickChoice = async (page, step, value) => {
-  const index = step.options.indexOf(value);
-  assert(index >= 0, `Choice ${step.choiceId} does not include ${value}.`);
-  await page.locator("#novel-choices button").nth(index).click();
-  await waitForStepChange(page, step.id);
+const bootAt = async (page, stepId, overrides = {}, { reducedMotion = false } = {}) => {
+  await page.evaluate(({ key, stateValue, configKey, reduced }) => {
+    localStorage.setItem(key, JSON.stringify(stateValue));
+    localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 400, reducedMotion: reduced }));
+  }, { key: STORAGE_KEY, stateValue: baseState(stepId, overrides), configKey: CONFIG_KEY, reduced: reducedMotion });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await ensureNovelOpen(page);
+  await page.locator("#novel-resume-button").click();
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
 };
 
-const elementBounds = (page, selector) => page.evaluate((targetSelector) => {
-  const rectangle = document.querySelector(targetSelector)?.getBoundingClientRect();
-  return rectangle ? { x: rectangle.x, y: rectangle.y, width: rectangle.width, height: rectangle.height } : null;
-}, selector);
+const currentStepId = (page) => page.locator("#novel-layer").getAttribute("data-step-id");
+const advanceLinear = async (page) => {
+  const previous = await currentStepId(page);
+  await page.locator("#novel-layer").dispatchEvent("click");
+  if (await currentStepId(page) === previous) await page.locator("#novel-layer").dispatchEvent("click");
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, previous);
+};
 
-const completeInteraction = async (page, step, capturePrefix = "") => {
-  console.log(`interaction: ${step.interaction}`);
-  await page.locator("#novel-choices .novel-interaction-open").click();
-  await page.locator("#novel-mode-bridge").waitFor({ state: "visible" });
+const checkTitleGeometry = async (page) => {
+  const geometry = await page.evaluate(() => {
+    const screen = document.querySelector("#novel-title-screen");
+    const actions = document.querySelector(".novel-title-actions");
+    const rect = actions.getBoundingClientRect();
+    return {
+      internalScroll: ["auto", "scroll"].includes(getComputedStyle(screen).overflowY) && screen.scrollHeight > screen.clientHeight + 1,
+      actionBounds: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+      viewport: { width: innerWidth, height: innerHeight },
+      forbiddenCount: document.querySelectorAll(".novel-title-privacy, .novel-legacy-notice, .novel-inline-card, #novel-mode-bridge").length,
+    };
+  });
+  assert(!geometry.internalScroll, "START contains an internal scrollbar");
+  assert(geometry.actionBounds.left >= 0 && geometry.actionBounds.right <= geometry.viewport.width, "START actions overflow horizontally");
+  assert(geometry.actionBounds.top >= 0 && geometry.actionBounds.bottom <= geometry.viewport.height, "START actions overflow vertically");
+  assert(geometry.forbiddenCount === 0, "removed START or nested-card UI remains");
+};
 
-  if (step.interaction === "gx") {
+const operateInteraction = async (page, step, { record = false } = {}) => {
+  await page.locator(".novel-interaction-open").click();
+  await page.locator(".story-detour-dock").waitFor({ state: "visible", timeout: 15000 });
+  if (step.interaction.kind === "gx") {
     await page.locator("#gx-layer").waitFor({ state: "visible" });
-    await page.locator("#gx-loading").waitFor({ state: "hidden" });
-    await page.waitForTimeout(180);
-    if (capturePrefix) await screenshot(page, `${capturePrefix}-gx-deep-time`);
-    if (await page.locator("#novel-mode-bridge-controls button").count()) {
-      for (let index = 0; index < 3; index += 1) {
-        await page.locator("#novel-mode-bridge-controls button").first().click();
-        console.log(`gx key step ${index + 1}: ${await page.locator("#novel-mode-bridge-progress").innerText()}`);
-      }
-    } else {
-      const bounds = await elementBounds(page, "#gx-canvas");
-      assert(bounds, "GX canvas is not visible.");
-      for (let index = 0; index < 3; index += 1) {
-        const x = bounds.x + bounds.width * 0.6;
-        const y = bounds.y + bounds.height * 0.5;
-        await page.mouse.move(x, y);
-        await page.mouse.down();
-        await page.mouse.move(x + 12, y + 4);
-        await page.mouse.up();
-        await page.waitForTimeout(100);
-        console.log(`gx gesture ${index + 1}: ${await page.locator("#novel-mode-bridge-progress").innerText()}`);
-      }
-    }
-  } else if (step.interaction === "map03") {
-    if (capturePrefix) await screenshot(page, `${capturePrefix}-mode03-map`);
-    for (let index = 0; index < 3; index += 1) {
-      await page.locator("#novel-mode-bridge-controls button").nth(index).click();
-      await page.waitForTimeout(20);
-    }
-  } else if (step.interaction === "abstract07") {
-    await page.waitForTimeout(120);
-    await page.locator("#gaia-canvas").press("Enter");
-    for (let index = 0; index < 2; index += 1) {
-      await page.locator("#novel-mode-bridge-controls button").nth(index).click();
-      await page.waitForTimeout(20);
-    }
-    if (capturePrefix) await screenshot(page, `${capturePrefix}-mode07-abstract`);
-  } else if (step.interaction === "map08") {
-    for (let index = 0; index < 3; index += 1) {
-      await page.locator("#novel-mode-bridge-controls button").nth(index).click();
-      await page.waitForTimeout(20);
-    }
-    if (capturePrefix) await screenshot(page, `${capturePrefix}-mode08-layers`);
-  } else if (step.interaction === "space10") {
+    for (let index = 0; index < 3; index += 1) await page.locator(".story-detour-controls button").first().click();
+  } else if (step.interaction.kind === "map03" || step.interaction.kind === "map08") {
+    await page.locator("#japan-layer").waitFor({ state: "visible" });
+    const count = await page.locator(".story-detour-controls button").count();
+    for (let index = 0; index < count; index += 1) await page.locator(".story-detour-controls button").nth(index).click();
+  } else if (step.interaction.kind === "abstract07") {
+    await page.locator("#gaia-canvas").click({ position: { x: 320, y: 260 }, force: true });
+    await page.waitForFunction(() => globalThis.GaiaNovel.getState().viewed.mode07AbstractPoint);
+    const count = await page.locator(".story-detour-controls button").count();
+    for (let index = 0; index < count; index += 1) await page.locator(".story-detour-controls button").nth(index).click();
+  } else if (step.interaction.kind === "space10") {
     await page.locator("#space-layer").waitFor({ state: "visible" });
-    const bounds = await elementBounds(page, "#space-canvas");
-    assert(bounds, "Space canvas is not visible.");
-    await page.mouse.click(bounds.x + bounds.width * 0.5, bounds.y + bounds.height * 0.5);
-    if (capturePrefix) await screenshot(page, `${capturePrefix}-mode10-space`);
-  } else {
-    throw new Error(`Unknown interaction ${step.interaction}.`);
+    await page.locator("#space-canvas").click({ position: { x: 300, y: 240 }, force: true });
   }
-
-  const returnButton = page.locator("#novel-mode-bridge-return");
-  await returnButton.waitFor({ state: "visible" });
-  assert(await returnButton.isEnabled(), `${step.interaction} did not satisfy its completion condition.`);
-  await returnButton.click();
-  await waitForStepChange(page, step.id);
+  await page.waitForFunction(() => !document.querySelector("#story-detour-return")?.disabled);
+  await page.locator("#story-detour-return").click();
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, step.id, { timeout: 15000 });
+  const persisted = await page.evaluate(() => globalThis.GaiaNovel.getState().viewed);
+  if (record) report.interactions.push({ kind: step.interaction.kind, returnedToStory: true, persisted });
 };
 
-const storageContains = (page, needle) => page.evaluate((value) => {
-  for (let index = 0; index < localStorage.length; index += 1) {
-    const stored = localStorage.getItem(localStorage.key(index));
-    if (stored?.includes(value)) return true;
-  }
-  return false;
-}, needle);
-
-const enterNovelFromOpening = async (page) => {
-  if (!(await page.locator("#gaia-opening").isVisible())) {
-    const storyButton = page.locator("#intro-layer [data-novel-open]").first();
-    await storyButton.waitFor({ state: "visible" });
-    await storyButton.click();
-    await page.locator("#novel-title-screen").waitFor({ state: "visible" });
-    return;
-  }
-  const soundOff = page.locator("#gaia-opening-sound-off");
-  if (await soundOff.isVisible()) await soundOff.click();
-  const skip = page.locator("#gaia-opening-skip");
-  await skip.waitFor({ state: "visible" });
-  await skip.click();
-  const storyRoute = page.locator("#gaia-opening-route-story");
-  await storyRoute.waitFor({ state: "visible" });
-  await storyRoute.click();
-  await page.waitForFunction(() => !document.body.classList.contains("gaia-opening-active"));
-  await page.locator("#novel-title-screen").waitFor({ state: "visible" });
+const completeInteraction = async (page, step) => {
+  await bootAt(page, step.id, {}, { reducedMotion: true });
+  await operateInteraction(page, step, { record: true });
 };
 
-const playRoute = async (page, route, index, { captureMajor = false } = {}) => {
-  console.log(`route ${index + 1}: ${route.editorial} x ${route.visitor}`);
-  const prefix = `route-${index + 1}`;
-  const visitorMarker = `E2E_VISITOR_TEXT_${index + 1}`;
+const runFullWalkthrough = async (page) => {
+  await bootTitle(page, { clear: true });
+  await page.locator("#novel-start-button").click();
+  await page.waitForFunction(() => Boolean(document.querySelector("#novel-layer")?.dataset.stepId));
   const visited = [];
-  let manualSaveChecked = false;
-  let reloadChecked = false;
-  let evesRewindChecked = false;
-  let safety = 0;
-
-  while (safety < 420) {
-    safety += 1;
-    const step = await currentStep(page);
-    assert(step, "Novel runtime did not expose the current stable step.");
-    visited.push(step.id);
-
-    if (index === 0 && !manualSaveChecked && ["narration", "dialogue", "chat", "record", "ui", "transition", "details"].includes(step.type)) {
-      const savedStepId = step.id;
-      await page.locator("#novel-save-button").click();
-      await page.locator("#novel-save-panel").waitFor({ state: "visible" });
-      await page.locator(".novel-save-primary").first().click();
-      assert((await page.locator("#novel-save-status").innerText()).includes("入力本文は含まれません"), "Manual save did not disclose the visitor-text boundary.");
-      await page.locator("#novel-save-close").click();
-      await advanceLinearStep(page, step);
-      const advancedStep = await currentStep(page);
-      await page.locator("#novel-load-button").click();
-      await page.locator("#novel-save-panel").waitFor({ state: "visible" });
-      await page.locator(".novel-save-primary").first().click();
-      await page.waitForFunction((expected) => document.querySelector("#novel-layer")?.dataset.stepId === expected, savedStepId);
-      assert(advancedStep?.id !== savedStepId, "Manual-save test did not advance before loading.");
-      manualSaveChecked = true;
-      continue;
-    }
-
-    if (step.type === "choice") {
-      const selected = step.choiceId === "observation_order"
-        ? "LOCAL_FIRST"
-        : step.choiceId === "editorial_choice"
-          ? route.editorial
-          : route.visitor;
-      await clickChoice(page, step, selected);
-    } else if (step.type === "interaction") {
-      await completeInteraction(page, step, captureMajor ? prefix : "");
-    } else if (step.type === "visitorInput") {
-      assert((await page.locator(".novel-visitor-policy").innerText()).includes("サーバー送信なし"), "Visitor privacy policy is missing.");
-      if (route.visitor === "WRITE") await page.locator("#novel-visitor-post").fill(visitorMarker);
-      assert(!(await storageContains(page, visitorMarker)), "Visitor draft leaked into localStorage before the final choice.");
-      if (index === 0 && !reloadChecked) {
-        await page.locator("#novel-save-button").click();
-        await page.locator("#novel-save-panel").waitFor({ state: "visible" });
-        await page.locator(".novel-save-primary").first().click();
-        await page.locator(".novel-save-primary").first().click();
-        await page.locator("#novel-save-close").click();
-        assert(!(await storageContains(page, visitorMarker)), "Visitor draft leaked into a manual save.");
-        await page.reload({ waitUntil: "networkidle" });
-        await enterNovelFromOpening(page);
-        await page.locator("#novel-resume-button").waitFor({ state: "visible" });
-        await page.locator("#novel-resume-button").click();
-        await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "visitorInput");
-        assert((await page.locator("#novel-visitor-post").inputValue()) === "", "Visitor draft was restored after reload.");
-        await page.locator("#novel-visitor-post").fill(visitorMarker);
-        reloadChecked = true;
-      }
-      if (captureMajor) await screenshot(page, `${prefix}-visitor-input`);
-      await page.getByRole("button", { name: "WRITE / LEAVE EMPTYの選択へ" }).click();
-      await waitForStepChange(page, step.id);
-    } else if (step.type === "result") {
-      if (index === 0) {
-        report.resultGeometry = await page.evaluate(() => {
-          const measure = (selector) => {
-            const rectangle = document.querySelector(selector)?.getBoundingClientRect();
-            return rectangle ? { left: rectangle.left, right: rectangle.right, width: rectangle.width } : null;
-          };
-          const rightPoint = document.elementFromPoint(window.innerWidth - 80, window.innerHeight / 2);
-          return {
-            viewportWidth: window.innerWidth,
-            experience: measure(".experience"),
-            layer: measure("#novel-layer"),
-            runtime: measure("#novel-runtime"),
-            dialogue: measure("#novel-dialogue"),
-            rightPoint: rightPoint ? `${rightPoint.tagName.toLowerCase()}#${rightPoint.id}.${rightPoint.className}` : null,
-          };
-        });
-      }
-      const heading = await page.locator(".novel-final-result h3").innerText();
-      assert(heading === `${route.editorial} × ${route.visitor}`, `Unexpected final result: ${heading}`);
-      const resultText = await page.locator(".novel-final-result").innerText();
-      assert(route.visitor === "WRITE" ? resultText.includes(visitorMarker) : !resultText.includes("E2E_VISITOR_TEXT"), "Visitor result text is incorrect.");
-      assert(!(await storageContains(page, visitorMarker)), "Visitor draft leaked into localStorage at the final result.");
-      if (index === 0) {
-        await page.locator("#novel-eves-button").click();
-        await page.locator("#novel-eves-panel").waitFor({ state: "visible" });
-        assert((await page.locator("#novel-eves-history li").count()) === 2, "E.V.E.S. did not render both decisions.");
-        assert((await page.locator("#novel-eves-current").innerText()).includes("SOURCE RECORD × WRITE"), "E.V.E.S. current path is incorrect.");
-        assert((await page.locator("#novel-eves-graph svg").count()) === 1, "E.V.E.S. graph is missing.");
-        await page.locator("#novel-eves-close").click();
-      }
-      if (index === 2 && !evesRewindChecked) {
-        await page.locator("#novel-eves-button").click();
-        await page.locator("#novel-eves-panel").waitFor({ state: "visible" });
-        await page.locator("#novel-eves-rewind").click();
-        await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "choice");
-        const rewoundChoice = await currentStep(page);
-        assert(rewoundChoice?.choiceId === "visitor_action", "E.V.E.S. rewind did not return to the final decision.");
-        await clickChoice(page, rewoundChoice, "WRITE");
-        assert((await currentStep(page))?.type === "visitorInput", "WRITE without a draft did not return to the visitor input.");
-        assert((await page.locator("#novel-visitor-post").inputValue()) === "", "E.V.E.S. rewind did not discard the visitor draft.");
-        await page.locator("#novel-visitor-post").fill(visitorMarker);
-        const inputStep = await currentStep(page);
-        await page.getByRole("button", { name: "WRITE / LEAVE EMPTYの選択へ" }).click();
-        await waitForStepChange(page, inputStep.id);
-        await clickChoice(page, await currentStep(page), "WRITE");
-        evesRewindChecked = true;
-        continue;
-      }
-      await screenshot(page, `${prefix}-${route.editorial.toLowerCase()}-${route.visitor.toLowerCase()}`);
-      await page.getByRole("button", { name: "展示ホールへ戻る" }).click();
-      await waitForStepChange(page, step.id);
-    } else if (step.type === "end") {
-      const endText = await page.locator(".novel-end-v6").innerText();
-      assert(endText.includes("本文は消えます"), "End screen does not explain visitor-text disposal.");
-      if (captureMajor) await screenshot(page, `${prefix}-end`);
-      await page.getByRole("button", { name: "STARTへ戻る（本文を破棄）" }).click();
-      await page.locator("#novel-title-screen").waitFor({ state: "visible" });
-      assert(!(await page.locator("body").innerText()).includes(visitorMarker), "Visitor text remained visible after returning to START.");
-      assert(!(await storageContains(page, visitorMarker)), "Visitor text remained in localStorage after returning to START.");
-      report.routes.push({ ...route, visitedSteps: visited.length, final: `${route.editorial} × ${route.visitor}` });
+  const interactionKinds = new Set();
+  for (let guard = 0; guard < 420; guard += 1) {
+    const id = await currentStepId(page);
+    const step = stepMap.get(id);
+    assert(step, `full walkthrough reached unknown step: ${id}`);
+    visited.push(id);
+    if (step.type === "end") {
+      const state = await page.evaluate(() => globalThis.GaiaNovel.getState());
+      assert(state.clear === true, "full walkthrough reached END without clear state");
+      assert(interactionKinds.size === 5, `full walkthrough used ${interactionKinds.size} / 5 display-mode interactions`);
+      report.fullWalkthrough = { reachedEnd: true, visitedSteps: visited.length, interactionKinds: [...interactionKinds] };
       return;
+    }
+    if (step.type === "choice") {
+      const selector = step.choiceId === "editorial_choice" ? "#novel-evidence-surface nav button" : "#novel-choices button";
+      await page.locator(selector).first().click();
+      await page.waitForFunction((previous) => document.querySelector("#novel-layer")?.dataset.stepId !== previous, id);
+    } else if (step.type === "reflectionChoice") {
+      await page.locator(".novel-reflection-proceed").click();
+      await page.waitForFunction((previous) => document.querySelector("#novel-layer")?.dataset.stepId !== previous, id);
+    } else if (step.type === "interaction") {
+      interactionKinds.add(step.interaction.kind);
+      await operateInteraction(page, step);
+    } else if (step.type === "result") {
+      await page.locator(".novel-result-shell button").click();
+      await page.waitForFunction((previous) => document.querySelector("#novel-layer")?.dataset.stepId !== previous, id);
     } else {
-      await advanceLinearStep(page, step);
+      await advanceLinear(page);
     }
   }
-  throw new Error(`Route ${index + 1} exceeded the step safety limit.`);
+  throw new Error("full walkthrough did not reach END within 420 transitions");
 };
 
-const routes = [
-  { editorial: "SOURCE_RECORD", visitor: "WRITE" },
-  { editorial: "SOURCE_RECORD", visitor: "LEAVE_EMPTY" },
-  { editorial: "DISCLOSE_DERIVATION", visitor: "WRITE" },
-  { editorial: "DISCLOSE_DERIVATION", visitor: "LEAVE_EMPTY" },
-];
-
+let context;
 try {
-  if (!standaloneOnly) {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: "ja-JP" });
+  context = await browser.newContext({ viewport: { width: 2048, height: 1114 }, reducedMotion: "no-preference" });
   const page = await context.newPage();
-  attachDiagnostics(page, "desktop");
-  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
-  await enterNovelFromOpening(page);
-  assert((await page.locator("#novel-title-privacy").innerText()).includes("サーバーへ送りません"), "START privacy notice is missing.");
-  await screenshot(page, "desktop-title");
+  attachDiagnostics(page, "desktop-2048");
+  await bootTitle(page, { clear: true });
+  await checkTitleGeometry(page);
+  assert(await page.locator("#novel-title-privacy").count() === 0, "START notice remains");
+  const titlePath = await screenshot(page, "start");
+  await compareBaseline(titlePath, "start");
 
-  for (let index = 0; index < routes.length; index += 1) {
-    await page.getByRole("button", { name: "START", exact: true }).click();
-    await page.locator("#novel-runtime").waitFor({ state: "visible" });
-    if (index === 0) await screenshot(page, "desktop-opening-notice");
-    await playRoute(page, routes[index], index, { captureMajor: index === 0 });
+  const chat = steps.find((step) => step.type === "chat");
+  await bootAt(page, chat.id);
+  assert(await page.locator("#novel-dialogue").isHidden(), "normal dialogue must be hidden during Slack");
+  assert(await page.locator(".novel-slack-workspace").count() === 1, "Slack must be one surface");
+  assert(await page.locator(".novel-slack-workspace article").count() === 1, "Slack step must render one post");
+  const speakerText = await page.locator(".novel-slack-workspace article p strong").allTextContents();
+  assert(speakerText.length === 1, "Slack speaker is duplicated");
+  const slackPath = await screenshot(page, "slack");
+  await compareBaseline(slackPath, "slack");
+
+  const editorial = steps.find((step) => step.choiceId === "editorial_choice");
+  await bootAt(page, editorial.id);
+  assert(await page.locator(".novel-evidence-compare > article").count() === 2, "SOURCE and DERIVED are not separated");
+  assert((await page.locator(".novel-evidence-compare .is-derived").innerText()).includes("サクヤ本人の確認"), "DERIVED responsibility is missing");
+  const evidencePath = await screenshot(page, "evidence");
+  await compareBaseline(evidencePath, "evidence");
+
+  const reflection = steps.find((step) => step.type === "reflectionChoice");
+  await bootAt(page, reflection.id, { editorialChoice: "SOURCE_RECORD", evesRoute: [{ decisionId: "editorial_choice", value: "SOURCE_RECORD", label: "本人記録で構成する / SOURCE RECORD", stepId: editorial.id }] });
+  assert(await page.locator(".novel-reflection-grid button").count() === 36, "reflection grid must contain 36 statements");
+  const gridGeometry = await page.evaluate(() => {
+    const surface = document.querySelector("#novel-reflection-surface");
+    const rects = [...document.querySelectorAll(".novel-reflection-grid button")].map((button) => button.getBoundingClientRect());
+    return { scrolls: surface.scrollHeight > surface.clientHeight + 1, allVisible: rects.every((rect) => rect.top >= 0 && rect.bottom <= innerHeight && rect.left >= 0 && rect.right <= innerWidth) };
+  });
+  assert(!gridGeometry.scrolls && gridGeometry.allVisible, "36 statements must fit in one desktop viewport");
+  const choicePath = await screenshot(page, "choice");
+  await compareBaseline(choicePath, "choice");
+  for (let index = 0; index < 3; index += 1) await page.locator(".novel-reflection-grid button").nth(index).click();
+  await page.locator(".novel-reflection-grid button").nth(3).click();
+  assert(await page.locator('.novel-reflection-grid button[aria-pressed="true"]').count() === 3, "fourth reflection statement was incorrectly selected");
+  assert((await page.locator(".novel-reflection-status").innerText()).includes("最大3つ"), "selection limit was not announced");
+  await page.locator(".novel-reflection-grid button").nth(1).click();
+  assert(await page.locator('.novel-reflection-grid button[aria-pressed="true"]').count() === 2, "reflection deselection failed");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await ensureNovelOpen(page);
+  await page.locator("#novel-resume-button").click();
+  assert(await page.locator('.novel-reflection-grid button[aria-pressed="true"]').count() === 2, "reflection selection did not survive reload");
+  const scoring = await page.evaluate(() => ({
+    none: GaiaNovel.scoreReflection([]), law: GaiaNovel.scoreReflection(["R03"]), neutral: GaiaNovel.scoreReflection(["R01"]), chaos: GaiaNovel.scoreReflection(["R02"]),
+    allTie: GaiaNovel.scoreReflection(["R01", "R03", "R21"]), twoWayTie: GaiaNovel.scoreReflection(["R01", "R02"]),
+  }));
+  assert(JSON.stringify(scoring) === JSON.stringify({ none: "UNANSWERED", law: "LAW", neutral: "NEUTRAL", chaos: "CHAOS", allTie: "NEUTRAL", twoWayTie: "NEUTRAL" }), `unexpected reflection scoring: ${JSON.stringify(scoring)}`);
+
+  const result = steps.find((step) => step.type === "result");
+  await bootAt(page, result.id, { editorialChoice: "SOURCE_RECORD", reflectionIds: ["R01"], resultTone: "NEUTRAL", evesRoute: [{ decisionId: "editorial_choice", value: "SOURCE_RECORD", label: "本人記録で構成する / SOURCE RECORD", stepId: editorial.id }, { decisionId: "reflection_choice", value: "SELECTED", label: "観測姿勢を選ぶ", stepId: reflection.id }] });
+  const resultText = await page.locator("#novel-result-surface").innerText();
+  assert(!/LAW|NEUTRAL|CHAOS|R01/u.test(resultText), "result exposes hidden attributes or selected statement IDs");
+  const resultPath = await screenshot(page, "result");
+  await compareBaseline(resultPath, "result");
+
+  for (const interaction of steps.filter((step) => step.type === "interaction")) await completeInteraction(page, interaction);
+
+  const narration = steps.find((step) => step.type === "narration");
+  await bootAt(page, narration.id);
+  const keyboardStep = await currentStepId(page);
+  await page.locator("#novel-dialogue").focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Space");
+  await page.waitForFunction((previous) => document.querySelector("#novel-layer")?.dataset.stepId !== previous, keyboardStep);
+  await bootAt(page, narration.id);
+  await page.locator("#novel-log-button").click();
+  assert(await page.locator("#novel-log-panel").isVisible(), "LOG did not open");
+  await page.locator("#novel-log-close").click();
+  await page.locator("#novel-config-button").click();
+  await page.locator("#novel-reduced-motion").check();
+  await page.locator("#novel-config-close").click();
+  await page.locator("#novel-auto-button").click();
+  assert(await page.locator("#novel-auto-button").getAttribute("aria-pressed") === "true", "AUTO did not enable");
+  await page.locator("#novel-auto-button").click();
+  const savedStep = await currentStepId(page);
+  await page.locator("#novel-save-button").click();
+  await page.locator("#novel-save-slots .novel-save-primary").first().click();
+  await page.locator("#novel-save-close").click();
+  await advanceLinear(page);
+  await page.locator("#novel-load-button").click();
+  await page.locator("#novel-save-slots .novel-save-primary").first().click();
+  assert(await currentStepId(page) === savedStep, "manual SAVE / LOAD did not restore the step");
+  await page.locator("#novel-eves-button").click();
+  assert(await page.locator("#novel-eves-panel").isVisible(), "E.V.E.S. did not open");
+  await page.locator("#novel-eves-close").click();
+  if (await page.locator("#gaia-audio-toggle").count()) {
+    await page.locator("#gaia-audio-toggle").click();
+    await page.locator("#gaia-audio-toggle").click();
   }
 
-  const stats = await page.locator("#novel-event-stats").innerText();
-  assert(stats.includes("4 セッション"), `Unexpected event session stats: ${stats}`);
-  assert(stats.includes("WRITE 2") && stats.includes("LEAVE EMPTY 2"), `Unexpected event action stats: ${stats}`);
-  assert((await page.locator(".novel-event-markers span.is-write").count()) === 2, "WRITE markers are incorrect.");
-  assert((await page.locator(".novel-event-markers span.is-empty").count()) === 2, "LEAVE EMPTY markers are incorrect.");
-  await screenshot(page, "desktop-title-event-trace");
-  await page.locator("#novel-config-button").click();
-  await page.locator("#novel-config-panel").waitFor({ state: "visible" });
-  await page.locator("#novel-event-reset").click();
-  assert((await page.locator("#novel-event-reset").innerText()).includes("もう一度"), "Event deletion did not require confirmation.");
-  await page.locator("#novel-event-reset").click();
-  assert((await page.locator("#novel-event-reset-status").innerText()).includes("消去しました"), "Event deletion did not complete.");
-  assert((await page.locator("#novel-event-stats").innerText()).includes("0 セッション"), "Event counters were not cleared.");
-  await page.locator("#novel-config-close").click();
+  await page.evaluate((key) => localStorage.setItem(key, "{broken"), STORAGE_KEY);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await ensureNovelOpen(page);
+  assert(await page.locator("#novel-resume-button").isHidden(), "broken save must be ignored");
+  await page.evaluate(({ stable, legacy, id }) => { localStorage.removeItem(stable); localStorage.setItem(legacy, JSON.stringify({ storyVersion: 6, stepId: id })); }, { stable: STORAGE_KEY, legacy: "gaia_novel_save_v6", id: narration.id });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await ensureNovelOpen(page);
+  assert(await page.locator("#novel-resume-button").isVisible(), "v6 save was not migrated");
+  assert(await page.evaluate((key) => Boolean(localStorage.getItem(key)), STORAGE_KEY), "v6 migration did not write stable storage");
+  await page.evaluate(({ stable, v6, v5 }) => { localStorage.removeItem(stable); localStorage.removeItem(v6); localStorage.setItem(v5, JSON.stringify({ stepIndex: 3, flags: [], routeHistory: [] })); }, { stable: STORAGE_KEY, v6: "gaia_novel_save_v6", v5: "gaiaSensewareNovel:v5" });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await ensureNovelOpen(page);
+  assert(await page.locator("#novel-resume-button").isVisible(), "v5 save was not migrated");
+  const walkthroughContext = await browser.newContext({ viewport: { width: 2048, height: 1114 }, reducedMotion: "reduce" });
+  const walkthroughPage = await walkthroughContext.newPage();
+  attachDiagnostics(walkthroughPage, "full-walkthrough");
+  await runFullWalkthrough(walkthroughPage);
+  await walkthroughContext.close();
+  report.viewports.push({ width: 2048, height: 1114, passed: true });
   await context.close();
 
-  const mobileContext = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    deviceScaleFactor: 1,
-    locale: "ja-JP",
-    reducedMotion: "reduce",
-  });
-  const mobile = await mobileContext.newPage();
-  attachDiagnostics(mobile, "mobile");
-  await mobile.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
-  await enterNovelFromOpening(mobile);
-  await screenshot(mobile, "mobile-title");
-  await mobile.getByRole("button", { name: "START", exact: true }).click();
-  await mobile.locator("#novel-runtime").waitFor({ state: "visible" });
-  await playRoute(mobile, routes[2], 4);
-  const overflow = await mobile.evaluate(() => ({
-    documentWidth: document.documentElement.scrollWidth,
-    viewportWidth: window.innerWidth,
+  context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const medium = await context.newPage();
+  attachDiagnostics(medium, "desktop-1440");
+  await bootTitle(medium, { clear: true });
+  await checkTitleGeometry(medium);
+  await screenshot(medium, "start-1440");
+  await bootAt(medium, reflection.id);
+  assert(await medium.locator(".novel-reflection-grid button").count() === 36, "1440 reflection grid is incomplete");
+  await screenshot(medium, "choice-1440");
+  report.viewports.push({ width: 1440, height: 900, passed: true });
+  await context.close();
+
+  context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  const mobile = await context.newPage();
+  attachDiagnostics(mobile, "mobile-390");
+  await bootTitle(mobile, { clear: true });
+  await checkTitleGeometry(mobile);
+  await screenshot(mobile, "start-mobile");
+  await bootAt(mobile, reflection.id, {}, { reducedMotion: true });
+  const mobileGeometry = await mobile.evaluate(() => ({
+    horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+    surfaceScroll: document.querySelector("#novel-reflection-surface").scrollHeight > document.querySelector("#novel-reflection-surface").clientHeight,
+    count: document.querySelectorAll(".novel-reflection-grid button").length,
   }));
-  assert(overflow.documentWidth <= overflow.viewportWidth + 1, `Mobile horizontal overflow: ${JSON.stringify(overflow)}`);
-  report.mobile = overflow;
-  await mobileContext.close();
-  }
+  assert(!mobileGeometry.horizontalOverflow && mobileGeometry.surfaceScroll && mobileGeometry.count === 36, `mobile reflection layout failed: ${JSON.stringify(mobileGeometry)}`);
+  await screenshot(mobile, "choice-mobile");
+  report.viewports.push({ width: 390, height: 844, passed: true });
+  await context.close();
 
-  const smokeContext = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: "ja-JP", reducedMotion: "reduce" });
-  const smoke = await smokeContext.newPage();
-  attachDiagnostics(smoke, "standalone");
-  const showIntroPathStage = async () => {
-    const soundCard = smoke.locator("#intro-layer [data-sound-gallery-open]");
-    if (await soundCard.isVisible()) return;
-    const pathBack = smoke.locator("#intro-path-back");
-    if (await pathBack.isVisible()) await pathBack.click();
-    else await smoke.locator("#intro-button").click();
-    await soundCard.waitFor({ state: "visible" });
-  };
-  await smoke.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
-  await smoke.locator("#intro-layer").waitFor({ state: "visible" });
-  assert((await smoke.locator(".intro-mode-choice").count()) === 10, "Main menu does not expose all ten modes.");
-
-  await smoke.locator("#intro-gx-feature").click();
-  await smoke.locator("#gx-layer").waitFor({ state: "visible" });
-  await smoke.keyboard.press("Escape");
-  await smoke.locator("#gx-layer").waitFor({ state: "hidden" });
-  await showIntroPathStage();
-
-  await smoke.locator("#intro-layer [data-sound-gallery-open]").click();
-  await smoke.locator("#sound-layer").waitFor({ state: "visible" });
-  await smoke.locator("#sound-close").click();
-  await smoke.locator("#sound-layer").waitFor({ state: "hidden" });
-  await showIntroPathStage();
-
-  await smoke.locator('[data-intro-path="map"]').click();
-  await smoke.locator(".intro-mode-choice").nth(2).waitFor({ state: "visible" });
-  await smoke.locator(".intro-mode-choice").nth(2).click();
-  await smoke.locator("#intro-layer").waitFor({ state: "hidden" });
-  await smoke.locator("#japan-layer").waitFor({ state: "visible" });
-  await smoke.locator("#japan-map").focus();
-  await smoke.keyboard.press("Enter");
-  await smoke.locator("#japan-close").click();
-  await smoke.locator("#japan-layer").waitFor({ state: "hidden" });
-  await showIntroPathStage();
-
-  await smoke.locator('[data-intro-path="abstract"]').click();
-  await smoke.locator(".intro-mode-choice").nth(6).waitFor({ state: "visible" });
-  await smoke.locator(".intro-mode-choice").nth(6).click();
-  await smoke.locator("#intro-layer").waitFor({ state: "hidden" });
-  await smoke.locator("#gaia-canvas").focus();
-  await smoke.keyboard.press("Enter");
-  await smoke.locator("#space-button").click();
-  await smoke.locator("#space-layer").waitFor({ state: "visible" });
-  await smoke.locator("#space-close").click();
-  await smoke.locator("#space-layer").waitFor({ state: "hidden" });
-  await smoke.locator("#intro-layer").waitFor({ state: "visible" });
-
-  await smoke.evaluate(() => localStorage.setItem("gaiaSensewareNovel:v5", JSON.stringify({ sceneIndex: 999 })));
-  await smoke.reload({ waitUntil: "networkidle" });
-  await enterNovelFromOpening(smoke);
-  await smoke.locator("#novel-legacy-notice").waitFor({ state: "visible" });
-  report.standalone = { mainMenu: true, gx: true, map: true, abstract: true, space: true, sound: true, legacySave: true };
-  await smokeContext.close();
-
-  const actionableConsoleErrors = report.consoleErrors.filter((entry) => !entry.includes("favicon.ico"));
-  assert(report.pageErrors.length === 0, `Page errors: ${report.pageErrors.join(" | ")}`);
-  assert(actionableConsoleErrors.length === 0, `Console errors: ${actionableConsoleErrors.join(" | ")}`);
-  assert(report.visitorTextLeaks.length === 0, `Visitor text leaks: ${report.visitorTextLeaks.join(" | ")}`);
+  assert(report.pageErrors.length === 0, `page errors: ${report.pageErrors.join(" | ")}`);
+  assert(report.consoleErrors.length === 0, `console errors: ${report.consoleErrors.join(" | ")}`);
+  assert(report.responses404.length === 0, `404 responses: ${report.responses404.join(" | ")}`);
   report.status = "passed";
 } catch (error) {
   report.status = "failed";
   report.failure = error instanceof Error ? error.stack : String(error);
   throw error;
 } finally {
+  await context?.close().catch(() => {});
   await writeFile(path.join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
   await browser.close();
 }
 
-  console.log(standaloneOnly
-    ? "standalone UI smoke check passed"
-    : "novel browser check passed: 4 desktop routes + 1 mobile reduced-motion rerun");
-console.log(`screenshots: ${report.screenshots.length} in ${outputDir}`);
+console.log(`novel browser check passed: ${report.viewports.length} viewports, ${report.interactions.length} mode interactions, ${report.visualDiffs.length} visual diffs`);
