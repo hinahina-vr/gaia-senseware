@@ -261,6 +261,11 @@ try {
   assert(await page.locator(".novel-slack-workspace").count() === 1, "Slack must be one surface");
   assert(await page.locator(".novel-slack-post").count() === 1, "Slack thread must begin with one root post");
   assert(await page.locator(".novel-slack-typing").isVisible(), "continued Slack conversation must show a typing indicator");
+  const firstSlackAvatars = await page.evaluate(() => ({
+    amane: getComputedStyle(document.querySelector('.novel-slack-post[data-speaker="amane"] .novel-slack-avatar')).backgroundImage,
+    mizuhaTyping: getComputedStyle(document.querySelector('.novel-slack-typing[data-speaker="mizuha"] .novel-slack-avatar')).backgroundImage,
+  }));
+  assert(firstSlackAvatars.amane.includes("slack-avatar-amane-v1.webp") && firstSlackAvatars.mizuhaTyping.includes("slack-avatar-mizuha-v1.webp"), `character mascot avatars are missing from Slack: ${JSON.stringify(firstSlackAvatars)}`);
   const slackGeometry = await page.evaluate(() => {
     const workspace = document.querySelector(".novel-slack-workspace");
     const dialogue = document.querySelector("#novel-dialogue");
@@ -291,6 +296,11 @@ try {
   assert(await page.locator(".novel-slack-post.is-reply").count() === 2, "Slack replies are not connected as a thread");
   const speakerText = await page.locator(".novel-slack-post p strong").allTextContents();
   assert(speakerText.length === 3, "Slack speaker labels do not match the visible posts");
+
+  const sakuyaChat = steps.find((step) => step.id === "prologue_basil_007");
+  await bootAt(page, sakuyaChat.id);
+  const sakuyaAvatar = await page.locator('.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar').last().evaluate((avatar) => getComputedStyle(avatar).backgroundImage);
+  assert(sakuyaAvatar.includes("slack-avatar-sakuya-v1.webp"), `Sakuya mascot avatar is missing from Slack: ${sakuyaAvatar}`);
 
   const observationChoice = steps.find((step) => step.choiceId === "observation_order");
   await bootAt(page, observationChoice.id);

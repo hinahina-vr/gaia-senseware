@@ -4599,21 +4599,42 @@ body.novel-reduced-motion .story-detour-dock * {
 
 .novel-slack-avatar {
   display: grid;
-  width: 34px;
-  height: 34px;
-  border-radius: 7px;
-  background: #2f7693;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 50%;
+  background-color: #2f7693;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  box-shadow: 0 1px 3px rgba(29, 28, 29, 0.2);
   color: #fff;
   place-items: center;
   font: 700 16px/1 Georgia, serif;
 }
 
 .novel-slack-post[data-speaker="mizuha"] .novel-slack-avatar,
-.novel-slack-typing[data-speaker="mizuha"] .novel-slack-avatar { background: #3f63a5; }
+.novel-slack-typing[data-speaker="mizuha"] .novel-slack-avatar {
+  background-color: #3f63a5;
+  background-image: url("./assets/visuals-07/slack-avatar-mizuha-v1.webp");
+  color: transparent;
+  font-size: 0;
+}
 .novel-slack-post[data-speaker="amane"] .novel-slack-avatar,
-.novel-slack-typing[data-speaker="amane"] .novel-slack-avatar { background: #377d6d; }
+.novel-slack-typing[data-speaker="amane"] .novel-slack-avatar {
+  background-color: #a9cfe9;
+  background-image: url("./assets/visuals-07/slack-avatar-amane-v1.webp");
+  color: transparent;
+  font-size: 0;
+}
 .novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar,
-.novel-slack-typing[data-speaker="sakuya"] .novel-slack-avatar { background: #2f7693; }
+.novel-slack-typing[data-speaker="sakuya"] .novel-slack-avatar {
+  background-color: #9a654f;
+  background-image: url("./assets/visuals-07/slack-avatar-sakuya-v1.webp");
+  color: transparent;
+  font-size: 0;
+}
 
 .novel-slack-workspace article p { margin: 0 0 4px; }
 .novel-slack-workspace article p strong { font-size: 13px; }
@@ -4900,6 +4921,7 @@ body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0; }
   .novel-slack-workspace > header span { display: none; }
   .novel-slack-thread { padding: 12px 12px 14px; }
   .novel-slack-post { grid-template-columns: 34px minmax(0, 1fr); gap: 8px; padding: 8px 4px; }
+  .novel-slack-post .novel-slack-avatar { width: 32px; height: 32px; }
   .novel-slack-post.is-reply { margin-left: 14px; }
   .novel-slack-post.is-reply::before { left: -9px; width: 7px; }
   .novel-slack-workspace > main > header { padding: 0 13px; }

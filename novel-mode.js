@@ -493,6 +493,7 @@
     article.dataset.speaker = message.speaker || "system";
     const avatar = document.createElement("div");
     avatar.className = "novel-slack-avatar";
+    avatar.setAttribute("aria-hidden", "true");
     avatar.textContent = SPEAKERS[message.speaker]?.glyph || "◌";
     const body = document.createElement("div");
     const meta = document.createElement("p");
@@ -544,7 +545,7 @@
         typing.className = "novel-slack-typing";
         typing.dataset.speaker = timeline.typing.speaker || "system";
         typing.setAttribute("role", "status");
-        typing.innerHTML = `<span class="novel-slack-avatar">${SPEAKERS[timeline.typing.speaker]?.glyph || "◌"}</span><span><b>${timeline.typing.speakerLabel || SPEAKERS[timeline.typing.speaker]?.name || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
+        typing.innerHTML = `<span class="novel-slack-avatar" aria-hidden="true">${SPEAKERS[timeline.typing.speaker]?.glyph || "◌"}</span><span><b>${timeline.typing.speakerLabel || SPEAKERS[timeline.typing.speaker]?.name || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
         thread.append(typing);
       }
       elements.slackSurface.append(workspace);
