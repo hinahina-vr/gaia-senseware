@@ -294,7 +294,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "岩、池、屋上菜園、夜の地球。返信が続き、三日目に専用チャンネルができた。\n説明欄には『まだ名前のない変化を見つけて、記録する場所』とあった。\n投稿する時間はばらばらで、一つの話題が何日も続いた。"
+          "text": "岩、池、屋上菜園、夜の地球。返信が続き、三日目に専用チャンネルができた。"
+        },
+        {
+          "id": "prologue_online_circle_006",
+          "sceneId": "prologue_online_circle",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "説明欄には『まだ名前のない変化を見つけて、記録する場所』とあった。\n投稿する時間はばらばらで、一つの話題が何日も続いた。"
         }
       ],
       "nextSceneId": "prologue_basil"
