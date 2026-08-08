@@ -8,13 +8,51 @@
   buttonGlint.setAttribute("aria-hidden", "true");
   document.body.append(buttonGlint);
 
-  const triggerButtonGlint = (button) => {
+  let buttonGlintSource = null;
+  let buttonGlintPoint = null;
+  let buttonGlintFrame = 0;
+
+  const stopButtonGlint = () => {
+    buttonGlint.classList.remove("is-active");
+    buttonGlintSource = null;
+    buttonGlintPoint = null;
+    if (buttonGlintFrame) cancelAnimationFrame(buttonGlintFrame);
+    buttonGlintFrame = 0;
+  };
+
+  const validateButtonGlint = () => {
+    buttonGlintFrame = 0;
+    const button = buttonGlintSource;
+    if (!button || !buttonGlint.classList.contains("is-active")) return;
+    const bounds = button.getBoundingClientRect();
+    const glintBounds = buttonGlint.getBoundingClientRect();
+    const visible = typeof button.checkVisibility === "function"
+      ? button.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+      : button.isConnected && getComputedStyle(button).visibility !== "hidden";
+    const topElement = buttonGlintPoint
+      ? document.elementFromPoint(buttonGlintPoint.x, buttonGlintPoint.y)
+      : button;
+    const ownsPointer = !buttonGlintPoint || (topElement && button.contains(topElement));
+    const sameBounds = Math.abs(bounds.left - glintBounds.left) < 1
+      && Math.abs(bounds.top - glintBounds.top) < 1
+      && Math.abs(bounds.width - glintBounds.width) < 1
+      && Math.abs(bounds.height - glintBounds.height) < 1;
+    if (!button.isConnected || button.disabled || !visible || !ownsPointer || !sameBounds) {
+      stopButtonGlint();
+      return;
+    }
+    buttonGlintFrame = requestAnimationFrame(validateButtonGlint);
+  };
+
+  const triggerButtonGlint = (button, point = null) => {
     if (!(button instanceof HTMLButtonElement) || button.disabled || button.matches(".novel-interaction-open")) {
+      stopButtonGlint();
       return;
     }
 
     const bounds = button.getBoundingClientRect();
     if (bounds.width < 2 || bounds.height < 2) {
+      stopButtonGlint();
       return;
     }
 
@@ -40,9 +78,12 @@
     buttonGlint.style.borderRadius = buttonStyle.borderRadius;
     buttonGlint.style.setProperty("--gaia-button-glint-rgb", glintColor);
 
-    buttonGlint.classList.remove("is-active");
+    stopButtonGlint();
+    buttonGlintSource = button;
+    buttonGlintPoint = point;
     void buttonGlint.offsetWidth;
     buttonGlint.classList.add("is-active");
+    buttonGlintFrame = requestAnimationFrame(validateButtonGlint);
   };
 
   document.addEventListener("pointerover", (event) => {
@@ -50,7 +91,14 @@
     if (!button || (event.relatedTarget instanceof Node && button.contains(event.relatedTarget))) {
       return;
     }
-    triggerButtonGlint(button);
+    triggerButtonGlint(button, { x: event.clientX, y: event.clientY });
+  });
+
+  document.addEventListener("pointerout", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("button") : null;
+    if (button && button === buttonGlintSource && !(event.relatedTarget instanceof Node && button.contains(event.relatedTarget))) {
+      stopButtonGlint();
+    }
   });
 
   document.addEventListener("focusin", (event) => {
@@ -66,13 +114,13 @@
   document.addEventListener("click", (event) => {
     const button = event.target instanceof Element ? event.target.closest("button") : null;
     if (button) {
-      buttonGlint.classList.remove("is-active");
+      stopButtonGlint();
     }
   }, true);
 
   buttonGlint.addEventListener("animationend", (event) => {
     if (event.animationName === "gaia-button-glint-frame") {
-      buttonGlint.classList.remove("is-active");
+      stopButtonGlint();
     }
   });
 

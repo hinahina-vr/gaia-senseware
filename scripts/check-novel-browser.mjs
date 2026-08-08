@@ -335,6 +335,57 @@ try {
     && glintAfterTransition.height >= interactionBounds.height * 0.8;
   assert(!sourceSizedGlint, `button glint leaked into the interaction view: ${JSON.stringify(glintAfterTransition)}`);
   await screenshot(page, "interaction-transition-clean");
+  const glintLifecycle = await page.evaluate(async () => {
+    const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+    const makeButton = () => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "test";
+      Object.assign(button.style, {
+        position: "fixed",
+        zIndex: "2147482000",
+        top: "24px",
+        left: "24px",
+        width: "180px",
+        height: "52px",
+      });
+      document.body.append(button);
+      return button;
+    };
+    const hover = (button) => button.dispatchEvent(new PointerEvent("pointerover", {
+      bubbles: true,
+      clientX: 40,
+      clientY: 40,
+    }));
+    const glint = document.querySelector(".gaia-global-button-glint");
+    const detachedButton = makeButton();
+    hover(detachedButton);
+    await nextFrame();
+    const activated = glint.classList.contains("is-active");
+    detachedButton.remove();
+    await nextFrame();
+    await nextFrame();
+    const detachedCleared = !glint.classList.contains("is-active");
+
+    const coveredButton = makeButton();
+    const cover = document.createElement("div");
+    Object.assign(cover.style, {
+      position: "fixed",
+      zIndex: "2147482500",
+      inset: "20px auto auto 20px",
+      width: "190px",
+      height: "62px",
+    });
+    document.body.append(cover);
+    hover(coveredButton);
+    await nextFrame();
+    await nextFrame();
+    const coveredCleared = !glint.classList.contains("is-active");
+    cover.remove();
+    coveredButton.remove();
+    return { activated, detachedCleared, coveredCleared };
+  });
+  assert(glintLifecycle.activated && glintLifecycle.detachedCleared && glintLifecycle.coveredCleared, `button glint lifecycle failed: ${JSON.stringify(glintLifecycle)}`);
   for (const interaction of interactions) await completeInteraction(page, interaction);
 
   const narration = steps.find((step) => step.type === "narration");
