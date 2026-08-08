@@ -9,7 +9,8 @@
     "data:space": "node scripts/build-space-data.mjs",
     "data:statistics": "node scripts/enrich-gaia-statistics.mjs",
     "data:jma": "node scripts/build-jma-history.mjs",
-    "check": "node --check gaia-particles.js && node --check data-journey.js && node --check opening-audio.js && node --check sound-mode.js && node --check ui-sound.js && node --check opening.js && node --check app-content.js && node --check app.js && node --check data-ledger.js && node --check gx-mode.js && node --check novel-mode.js && node --check space-scenes.js && node --check space-mode.js && node --check scripts/build-gaia-data.mjs && node --check scripts/build-space-data.mjs && node --check scripts/statistics.mjs && node --check scripts/enrich-gaia-statistics.mjs && node scripts/check-app-content.mjs && node scripts/check-statistics.mjs && node scripts/check-natural-earth.mjs && node scripts/check-space-data.mjs"
+    "data:novel": "node scripts/build-novel-story.mjs",
+    "check": "node --check gaia-particles.js && node --check data-journey.js && node --check opening-audio.js && node --check sound-mode.js && node --check ui-sound.js && node --check opening.js && node --check app-content.js && node --check app.js && node --check data-ledger.js && node --check gx-mode.js && node --check novel-story-data.js && node --check novel-mode.js && node --check space-scenes.js && node --check space-mode.js && node --check scripts/build-gaia-data.mjs && node --check scripts/build-space-data.mjs && node --check scripts/build-novel-story.mjs && node --check scripts/check-novel-story.mjs && node --check scripts/check-novel-browser.mjs && node --check scripts/statistics.mjs && node --check scripts/enrich-gaia-statistics.mjs && node scripts/check-app-content.mjs && node scripts/check-statistics.mjs && node scripts/check-natural-earth.mjs && node scripts/check-space-data.mjs && node scripts/check-novel-story.mjs"
   },
   "engines": {
     "node": ">=20"
