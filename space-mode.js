@@ -44,6 +44,9 @@
   const AU_KM = 149_597_870.7;
   const TAU = Math.PI * 2;
   const scenes = window.GaiaSpaceScenes;
+  let returnToNovel = false;
+  let storyMode = "";
+  let storyInteractionComplete = false;
 
   const state = {
     snapshot: null,
@@ -1121,8 +1124,17 @@
     if (restoreFocus) ui.dataButton.focus({ preventScroll: true });
   };
 
-  const openSpace = async (index = 0) => {
+  const openSpace = async (index = 0, options = {}) => {
     await loadSnapshot();
+    returnToNovel = options.returnTo === "novel";
+    storyMode = returnToNovel && options.storyMode === "v6" ? "v6" : "";
+    storyInteractionComplete = false;
+    layer.dataset.returnTo = returnToNovel ? "novel" : "intro";
+    if (storyMode) layer.dataset.storyMode = storyMode;
+    else delete layer.dataset.storyMode;
+    ui.close.textContent = returnToNovel ? "ストーリーへ戻る" : "×";
+    ui.close.setAttribute("aria-label", returnToNovel ? "ストーリーへ戻る" : "宇宙モードを閉じてトップへ戻る");
+    ui.close.disabled = storyMode === "v6";
     state.open = true;
     state.modeIndex = clamp(Number(index) || 0, 0, state.snapshot.modes.length - 1);
     state.recordIndex = 0;
@@ -1146,6 +1158,8 @@
 
   const closeSpaceNow = ({ returnToTop = true } = {}) => {
     if (!state.open) return;
+    if (storyMode === "v6" && !storyInteractionComplete) return;
+    const shouldReturnToNovel = returnToNovel;
     if (!ui.dataPanel.hidden) closeDataPanel({ restoreFocus: false });
     window.clearTimeout(state.interfaceTimer);
     window.clearTimeout(state.effectTimer);
@@ -1157,7 +1171,13 @@
     document.body.classList.remove("space-mode-open");
     if (state.frame !== null) cancelAnimationFrame(state.frame);
     state.frame = null;
-    if (returnToTop) ui.intro?.click();
+    delete layer.dataset.returnTo;
+    delete layer.dataset.storyMode;
+    returnToNovel = false;
+    storyMode = "";
+    storyInteractionComplete = false;
+    if (shouldReturnToNovel) window.dispatchEvent(new CustomEvent("gaia:space-return-to-novel"));
+    else if (returnToTop) ui.intro?.click();
   };
 
   const closeSpace = (options = {}, event = null) => runSceneTransition(() => closeSpaceNow(options), event);
@@ -1199,6 +1219,11 @@
     const interaction = scenes?.interaction(currentMode());
     if (interaction) ui.phase.textContent = interaction.prompt;
     canvas.setPointerCapture?.(event.pointerId);
+    if (storyMode === "v6" && !storyInteractionComplete) {
+      storyInteractionComplete = true;
+      ui.close.disabled = false;
+      window.dispatchEvent(new CustomEvent("gaia:space-story-progress", { detail: { complete: true } }));
+    }
   });
 
   const finishGesture = () => {
@@ -1219,6 +1244,11 @@
     showInteractionFeedback(interactionFeedback(currentMode(), currentRecord()));
     const interaction = scenes?.interaction(currentMode());
     if (interaction) ui.phase.textContent = interaction.prompt;
+    if (storyMode === "v6" && !storyInteractionComplete) {
+      storyInteractionComplete = true;
+      ui.close.disabled = false;
+      window.dispatchEvent(new CustomEvent("gaia:space-story-progress", { detail: { complete: true } }));
+    }
   });
   ui.previous.addEventListener("click", () => selectRecord(-1));
   ui.next.addEventListener("click", () => selectRecord(1));
@@ -1231,7 +1261,7 @@
 
   window.addEventListener("gaia:space-open-at-mode", (event) => {
     const index = Number(event.detail?.index);
-    openSpace(Number.isInteger(index) ? index : 0);
+    openSpace(Number.isInteger(index) ? index : 0, event.detail || {});
   });
 
   window.addEventListener("resize", () => {
@@ -1257,6 +1287,11 @@
     } else if ((event.key === " " || event.key === "Enter") && event.target === canvas) {
       event.preventDefault();
       launchSignal(state.pointer.y, "SCENARIO");
+      if (storyMode === "v6" && !storyInteractionComplete) {
+        storyInteractionComplete = true;
+        ui.close.disabled = false;
+        window.dispatchEvent(new CustomEvent("gaia:space-story-progress", { detail: { complete: true } }));
+      }
     }
   });
 
@@ -1270,4 +1305,5 @@
   }
 
   loadSnapshot().catch(() => {});
+  window.GaiaSpace = { open: openSpace, close: closeSpaceNow };
 })();

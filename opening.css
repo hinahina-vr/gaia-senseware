@@ -1683,7 +1683,15 @@ body.gaia-opening-active .novel-layer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gaia-opening { display: none; }
+  .gaia-opening,
+  .gaia-opening *,
+  .gaia-opening *::before,
+  .gaia-opening *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* 2026-08 world refit: from a profile deck to an opening scene */

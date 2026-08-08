@@ -609,6 +609,7 @@
   let japanEarthquakeDataState = "idle";
   let japanHistoryDataState = "idle";
   let japanDataLayer = "history";
+  let storyModeDetour = null;
   let mapScope = "earth";
   let japanDataUpdatedAt = null;
   let japanHistoryUpdatedAt = null;
@@ -4767,6 +4768,11 @@ drawAudienceMemory(audienceTraces);
     japanView.gesture = false;
     japanView.pinchDistance = 0;
     japanMap.classList.remove("is-dragging");
+    if (createPulse && ["map03", "map08"].includes(storyModeDetour?.kind)) {
+      window.dispatchEvent(new CustomEvent("gaia:story-map-interaction", {
+        detail: { kind: storyModeDetour.kind },
+      }));
+    }
   };
 
   japanMap.addEventListener("pointerup", (event) => releaseJapanPointer(event, true));
@@ -4813,6 +4819,11 @@ drawAudienceMemory(audienceTraces);
       event.preventDefault();
       const rect = japanMap.getBoundingClientRect();
       addJapanPulse(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      if (["map03", "map08"].includes(storyModeDetour?.kind)) {
+        window.dispatchEvent(new CustomEvent("gaia:story-map-interaction", {
+          detail: { kind: storyModeDetour.kind, keyboard: true },
+        }));
+      }
       return;
     } else {
       return;
@@ -4847,10 +4858,23 @@ drawAudienceMemory(audienceTraces);
     }
     pointer.down = false;
     pointer.id = null;
+    if (event.type === "pointerup" && storyModeDetour?.kind === "abstract07") {
+      window.dispatchEvent(new CustomEvent("gaia:story-abstract-interaction", {
+        detail: { kind: "abstract07" },
+      }));
+    }
   };
 
   canvas.addEventListener("pointerup", releasePointer);
   canvas.addEventListener("pointercancel", releasePointer);
+  canvas.addEventListener("keydown", (event) => {
+    if (storyModeDetour?.kind !== "abstract07" || !["Enter", " "].includes(event.key)) return;
+    event.preventDefault();
+    pointer.energy = Math.max(pointer.energy, 1);
+    window.dispatchEvent(new CustomEvent("gaia:story-abstract-interaction", {
+      detail: { kind: "abstract07", keyboard: true },
+    }));
+  });
   canvas.addEventListener("pointerleave", (event) => {
     if (!pointer.down && event.pointerType === "mouse") {
       pointer.energy *= 0.6;
@@ -5198,6 +5222,61 @@ drawAudienceMemory(audienceTraces);
     }
   });
 
+  window.addEventListener("gaia:story-mode-open", (event) => {
+    const kind = event.detail?.kind;
+    const index = Number(event.detail?.index);
+    if (!["map03", "abstract07", "map08"].includes(kind) || !Number.isInteger(index)) return;
+    storyModeDetour = { kind, index };
+    experience.dataset.storyMode = kind;
+    selectMode(index, { resetAutoTimer: false });
+    if (introIsOpen) closeIntro({ restoreFocus: false });
+    if (sourceIsOpen) closeSource({ restoreFocus: false, updateHash: false });
+    if (conceptIsOpen) closeConcept({ restoreFocus: false, updateHash: false });
+    if (kind === "abstract07") {
+      if (japanIsOpen) closeJapan({ restoreFocus: false, updateHash: false });
+      requestAnimationFrame(() => canvas.focus({ preventScroll: true }));
+      return;
+    }
+    if (!japanIsOpen) {
+      openJapan({ updateHash: false, restoreFocusOnClose: false, respectUrlMode: false });
+    }
+    japanClose.disabled = true;
+    japanLayer.dataset.storyMode = kind;
+    requestAnimationFrame(() => japanMap.focus({ preventScroll: true }));
+  });
+
+  window.addEventListener("gaia:story-mode-layer", (event) => {
+    if (!storyModeDetour || event.detail?.kind !== storyModeDetour.kind) return;
+    const storyLayer = String(event.detail?.layer || "");
+    japanLayer.dataset.storyLayer = storyLayer;
+    const labels = {
+      forest: "FOREST / 森林分布を表示",
+      rain: "RAIN / 降水量を表示",
+      overlay: "FOREST + RAIN / 二つの記録を重ねて表示",
+      nature: "NATURE / 自然環境",
+      life: "LIFE / 人の暮らし",
+      memory: "MEMORY / 土地の記憶",
+    };
+    if (labels[storyLayer]) japanMapStatus.textContent = labels[storyLayer];
+  });
+
+  window.addEventListener("gaia:story-mode-close", (event) => {
+    if (!storyModeDetour || (event.detail?.kind && event.detail.kind !== storyModeDetour.kind)) return;
+    if (japanIsOpen) closeJapan({ restoreFocus: false, updateHash: false });
+    japanClose.disabled = false;
+    delete japanLayer.dataset.storyMode;
+    delete japanLayer.dataset.storyLayer;
+    delete experience.dataset.storyMode;
+    storyModeDetour = null;
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (!storyModeDetour || event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    document.querySelector("#novel-mode-bridge-return")?.focus({ preventScroll: true });
+  }, true);
+
   window.addEventListener("gaia:opening-complete", () => {
     const hasDirectDestination =
       ["#source", "#concept", "#earth", "#japan", "#data", "#story"].includes(
@@ -5223,6 +5302,11 @@ drawAudienceMemory(audienceTraces);
     );
   });
   japanClose.addEventListener("click", (event) => {
+    if (storyModeDetour) {
+      event.preventDefault();
+      document.querySelector("#novel-mode-bridge-return")?.focus({ preventScroll: true });
+      return;
+    }
     runSceneTransition(() => openIntro(), "map", event);
   });
   japanDataButton.addEventListener("click", openJapanData);

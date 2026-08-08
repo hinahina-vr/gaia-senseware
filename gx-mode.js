@@ -212,6 +212,9 @@
   let previousTime = 0;
   let previousFocus = null;
   let returnTo = "intro";
+  let storyMode = "";
+  let storyGestureCount = 0;
+  let storyPointerActive = false;
   let width = 0;
   let height = 0;
   let dpr = 1;
@@ -1941,9 +1944,14 @@
     if (isOpen) return;
     previousFocus = document.activeElement;
     returnTo = options.returnTo === "novel" ? "novel" : "intro";
+    storyMode = returnTo === "novel" && options.storyMode === "v6" ? "v6" : "";
+    storyGestureCount = 0;
+    storyPointerActive = false;
     layer.dataset.returnTo = returnTo;
+    if (storyMode) layer.dataset.storyMode = storyMode;
     if (returnTo === "novel") syncStoryGuidePortrait();
     elements.close.textContent = returnTo === "novel" ? "ストーリーへ戻る" : "戻る";
+    elements.close.disabled = storyMode === "v6";
     isOpen = true;
     if (storyBackdrop) {
       storyBackdrop.hidden = returnTo !== "novel";
@@ -1960,6 +1968,7 @@
       if (returnTo === "novel") storyBackdrop?.classList.add("is-open");
     });
     await loadExhibit();
+    if (storyMode === "v6") resetWorld();
     setPhase(options.phase ?? 0);
     previousTime = performance.now();
     cancelAnimationFrame(animationFrame);
@@ -1969,6 +1978,8 @@
 
   const closeGX = () => {
     if (!isOpen) return;
+    if (storyMode === "v6" && storyGestureCount < 3) return;
+    storyPointerActive = false;
     closeDataPanel();
     window.clearTimeout(eraTransitionTimer);
     window.clearTimeout(storyLineTimer);
@@ -1999,6 +2010,7 @@
       if (!isOpen) {
         layer.hidden = true;
         delete layer.dataset.returnTo;
+        delete layer.dataset.storyMode;
         delete layer.dataset.guideSpeaker;
         layer.style.removeProperty("--gx-story-character-image");
       }
@@ -2017,6 +2029,16 @@
       x: (event.clientX - bounds.left) / bounds.width,
       y: (event.clientY - bounds.top) / bounds.height,
     };
+  };
+
+  const recordStoryGesture = () => {
+    if (storyMode !== "v6" || !isOpen) return;
+    storyGestureCount = Math.min(3, storyGestureCount + 1);
+    const complete = storyGestureCount >= 3;
+    elements.close.disabled = !complete;
+    window.dispatchEvent(new CustomEvent("gaia:gx-story-progress", {
+      detail: { count: storyGestureCount, complete },
+    }));
   };
 
   openButton.addEventListener("click", (event) => {
@@ -2041,9 +2063,11 @@
     const position = pointerPosition(event);
     if (!isPointOnPlanet(position.x, position.y, 2)) {
       pointer.active = false;
+      storyPointerActive = false;
       return;
     }
     pointer = { ...position, active: true };
+    storyPointerActive = storyMode === "v6";
     addInteraction(position.x, position.y, 0.02);
     canvas.setPointerCapture?.(event.pointerId);
   });
@@ -2056,19 +2080,25 @@
     if (!isPointOnPlanet(position.x, position.y, 2)) return;
     addInteraction(position.x, position.y, motion);
   });
-  const releasePointer = () => { pointer.active = false; };
+  const releasePointer = () => {
+    if (storyPointerActive) recordStoryGesture();
+    storyPointerActive = false;
+    pointer.active = false;
+  };
   canvas.addEventListener("pointerup", releasePointer);
   canvas.addEventListener("pointercancel", releasePointer);
   window.addEventListener("resize", () => { if (isOpen) resize(); });
   window.addEventListener("gaia:gx-open", (event) => openGX(event.detail || {}));
+  window.addEventListener("gaia:gx-story-key-step", recordStoryGesture);
   window.addEventListener("keydown", (event) => {
     if (!isOpen) return;
     if (event.key === "Escape") {
       event.preventDefault();
+      event.stopPropagation();
       if (elements.dataPanel.classList.contains("is-open")) closeDataPanel();
       else closeGX();
     }
-  });
+  }, { capture: true });
 
   window.GaiaGX = { open: openGX, close: closeGX, setPhase };
 })();

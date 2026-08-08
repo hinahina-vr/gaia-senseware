@@ -20,10 +20,10 @@
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="stylesheet" href="./styles.css?v=gaia-124" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-141" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-142" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-146" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-148" />
     <link rel="stylesheet" href="./gx-mode.css?v=gx-35" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-06" />
@@ -35,11 +35,12 @@
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
     <script src="./app-content.js?v=gaia-101" defer></script>
-    <script src="./app.js?v=gaia-107" defer></script>
-  <script src="./gx-mode.js?v=gx-29" defer></script>
-    <script src="./novel-mode.js?v=gaia-121" defer></script>
+    <script src="./app.js?v=gaia-108" defer></script>
+    <script src="./gx-mode.js?v=gx-33" defer></script>
+    <script src="./novel-story-data.js?v=gaia-novel-v6" defer></script>
+    <script src="./novel-mode.js?v=gaia-123" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
-    <script src="./space-mode.js?v=gaia-97" defer></script>
+    <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-03" defer></script>
   <link rel="stylesheet" href="./map-ui-grid-polish.css?v=3">
 </head>
@@ -383,6 +384,7 @@
 
       <canvas
         id="gaia-canvas"
+        tabindex="0"
         aria-label="指やマウスで動きを変えながら見る、地球観測データの10の展示"
       >
         お使いのブラウザはCanvasに対応していません。
@@ -1455,8 +1457,8 @@
 
         <header class="novel-topbar">
           <div>
-            <span>GAIA SENSEWARE / DATA FICTION</span>
-            <strong id="novel-mode-readout">PROLOGUE — はじめまして、画面の外で</strong>
+            <span>GAIA SENSATION / DATA FICTION</span>
+            <strong id="novel-mode-readout">CURRENT — 学園祭の展示ホール</strong>
           </div>
           <nav aria-label="ストーリーモードの操作">
             <button
@@ -1496,14 +1498,22 @@
         <section class="novel-title-screen" id="novel-title-screen">
           <div class="novel-title-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
           <p>AN ORIGINAL DATA FICTION</p>
-          <h2 id="novel-title">空白のところで、地球は待っている</h2>
-          <p class="novel-title-sub">観測値と、届かなかった声と、まだ選べる未来の話</p>
-          <p class="novel-title-note">
-            この物語では、10の公開データ演出が背景として応答します。<br />
-              測ったこと、計算したこと、想像したこと。その境界を守る行為が、物語の選択になります。
-          </p>
+          <h2 id="novel-title">GAIA SENSATION</h2>
+          <p class="novel-title-sub">『今日、はじめまして。』</p>
+          <div class="novel-title-privacy" id="novel-title-privacy">
+            <strong>START前の記録案内</strong>
+            <p>この端末は、進行と選んだ項目を会期中の件数として記録します。</p>
+            <p>入力した文章は次の人へ表示せず、サーバーへ送りません。</p>
+            <details id="novel-record-details">
+              <summary>記録について詳しく見る</summary>
+              <p>物語の進行・選択と、本文を持たない黄色い痕跡は、このブラウザのlocalStorageへ保存します。WRITEは点、LEAVE EMPTYは細い円です。</p>
+              <p>入力本文は現在のタブのメモリだけで扱い、STARTへ戻ると破棄します。CONFIGの「イベント記録消去」で累積件数と痕跡だけを消去できます。</p>
+            </details>
+            <div id="novel-event-stats" aria-live="polite"></div>
+          </div>
+          <p class="novel-legacy-notice" id="novel-legacy-notice" hidden>旧版の記録のため再開できません。新版を新しく始めてください。</p>
           <div class="novel-title-actions">
-            <button id="novel-start-button" type="button">▶ はじめから聴く</button>
+            <button id="novel-start-button" type="button">START</button>
             <button id="novel-resume-button" type="button" hidden>続きから聴く</button>
             <button id="novel-title-load-button" type="button">セーブデータから</button>
           </div>
@@ -1742,6 +1752,28 @@
                 </label>
                 <p id="novel-message-speed-hint">初期値はこれまでの2倍速です。次に表示するメッセージから反映されます。</p>
               </section>
+              <section class="novel-config-setting" aria-labelledby="novel-motion-title">
+                <div class="novel-config-setting-header">
+                  <div>
+                    <span>MOTION</span>
+                    <h3 id="novel-motion-title">動きを減らす</h3>
+                  </div>
+                </div>
+                <label class="novel-config-check" for="novel-reduced-motion">
+                  <input id="novel-reduced-motion" type="checkbox" />
+                  <span>粒子・場面転換を抑え、操作の順序を文字でも表示する</span>
+                </label>
+              </section>
+              <section class="novel-config-setting novel-config-setting--event" aria-labelledby="novel-event-reset-title">
+                <div class="novel-config-setting-header">
+                  <div>
+                    <span>EVENT DEVICE</span>
+                    <h3 id="novel-event-reset-title">会期中の痕跡</h3>
+                  </div>
+                </div>
+                <button id="novel-event-reset" type="button">イベント記録消去</button>
+                <p id="novel-event-reset-status" aria-live="polite"></p>
+              </section>
             </div>
             <footer class="novel-config-footer">
               <span>LOCAL PROFILE / AUTO SAVE</span>
@@ -1756,7 +1788,7 @@
               <div>
                 <span>E.V.E.S. / BRANCH ARCHIVE</span>
                 <h2 id="novel-eves-title">Epistemological Variant Evolution System</h2>
-                <p>あなたの選択が、物語のどこを通り、どの未来へ向かっているかを記録します。</p>
+                <p>あなたが何を選び、どの順番で物語を通ったかを記録します。作品の正解を示すものではありません。</p>
               </div>
               <button id="novel-eves-close" type="button" aria-label="E.V.E.S.を閉じる">×</button>
             </header>
@@ -1768,7 +1800,7 @@
             <section class="novel-eves-history" aria-labelledby="novel-eves-history-title">
               <header>
                 <span>EVOLUTION LOG</span>
-                <h3 id="novel-eves-history-title">選んだ理由を、経路として残す</h3>
+                <h3 id="novel-eves-history-title">表示選択と最後の選択を、経路として残す</h3>
               </header>
               <ol id="novel-eves-history"></ol>
             </section>
@@ -1779,6 +1811,23 @@
           </div>
         </aside>
       </section>
+
+      <aside
+        class="novel-mode-bridge"
+        id="novel-mode-bridge"
+        aria-labelledby="novel-mode-bridge-title"
+        aria-hidden="true"
+        hidden
+      >
+        <div>
+          <span id="novel-mode-bridge-kicker">STORY INTERACTION</span>
+          <h2 id="novel-mode-bridge-title">物語の表示を操作する</h2>
+          <p id="novel-mode-bridge-guide"></p>
+          <p id="novel-mode-bridge-progress" role="status" aria-live="polite"></p>
+          <div id="novel-mode-bridge-controls" class="novel-mode-bridge-controls"></div>
+          <button id="novel-mode-bridge-return" type="button" disabled>操作を保存して物語へ戻る</button>
+        </div>
+      </aside>
 
       <section
         class="space-layer"
