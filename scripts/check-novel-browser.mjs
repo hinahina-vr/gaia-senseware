@@ -133,13 +133,17 @@ const checkTitleGeometry = async (page) => {
 const operateInteraction = async (page, step, { record = false } = {}) => {
   await page.locator(".novel-interaction-open").click();
   await page.locator(".story-detour-dock").waitFor({ state: "visible", timeout: 15000 });
+  if (record) await screenshot(page, `mode-${step.interaction.kind}-open`);
   if (step.interaction.kind === "gx") {
     await page.locator("#gx-layer").waitFor({ state: "visible" });
     for (let index = 0; index < 3; index += 1) await page.locator(".story-detour-controls button").first().click();
   } else if (step.interaction.kind === "map03" || step.interaction.kind === "map08") {
     await page.locator("#japan-layer").waitFor({ state: "visible" });
     const count = await page.locator(".story-detour-controls button").count();
-    for (let index = 0; index < count; index += 1) await page.locator(".story-detour-controls button").nth(index).click();
+    for (let index = 0; index < count; index += 1) {
+      await page.locator(".story-detour-controls button").nth(index).click();
+      if (record) await screenshot(page, `mode-${step.interaction.kind}-layer-${index + 1}`);
+    }
   } else if (step.interaction.kind === "abstract07") {
     await page.locator("#gaia-canvas").click({ position: { x: 320, y: 260 }, force: true });
     await page.waitForFunction(() => globalThis.GaiaNovel.getState().viewed.mode07AbstractPoint);
@@ -312,8 +316,25 @@ try {
   await compareBaseline(resultPath, "result");
 
   const interactions = steps.filter((step) => step.type === "interaction");
-  await bootAt(page, interactions[0].id);
+  const transitionInteraction = interactions.find((step) => step.interaction.kind === "map03") || interactions[0];
+  await bootAt(page, transitionInteraction.id);
   await screenshot(page, "interaction-open");
+  const interactionOpen = page.locator(".novel-interaction-open");
+  await interactionOpen.hover();
+  assert(!await page.locator(".gaia-global-button-glint").evaluate((node) => node.classList.contains("is-active")), "full-width interaction button activates the fixed glint");
+  const interactionBounds = await interactionOpen.boundingBox();
+  await interactionOpen.click();
+  await page.locator(".story-detour-dock").waitFor({ state: "visible", timeout: 15000 });
+  const glintAfterTransition = await page.locator(".gaia-global-button-glint").evaluate((node) => ({
+    active: node.classList.contains("is-active"),
+    width: Number.parseFloat(node.style.width) || 0,
+    height: Number.parseFloat(node.style.height) || 0,
+  }));
+  const sourceSizedGlint = glintAfterTransition.active
+    && glintAfterTransition.width >= interactionBounds.width * 0.8
+    && glintAfterTransition.height >= interactionBounds.height * 0.8;
+  assert(!sourceSizedGlint, `button glint leaked into the interaction view: ${JSON.stringify(glintAfterTransition)}`);
+  await screenshot(page, "interaction-transition-clean");
   for (const interaction of interactions) await completeInteraction(page, interaction);
 
   const narration = steps.find((step) => step.type === "narration");

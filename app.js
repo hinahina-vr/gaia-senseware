@@ -9,7 +9,7 @@
   document.body.append(buttonGlint);
 
   const triggerButtonGlint = (button) => {
-    if (!(button instanceof HTMLButtonElement) || button.disabled) {
+    if (!(button instanceof HTMLButtonElement) || button.disabled || button.matches(".novel-interaction-open")) {
       return;
     }
 
@@ -59,6 +59,16 @@
       triggerButtonGlint(button);
     }
   });
+
+  // The fixed glint must not outlive a button that swaps the current view.
+  // End it in the capture phase so navigation handlers cannot leave its frame
+  // floating over the destination screen.
+  document.addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("button") : null;
+    if (button) {
+      buttonGlint.classList.remove("is-active");
+    }
+  }, true);
 
   buttonGlint.addEventListener("animationend", (event) => {
     if (event.animationName === "gaia-button-glint-frame") {
