@@ -234,6 +234,27 @@ try {
     await screenshot(page, screenshotName);
   }
 
+  const backgroundTransitionScene = story.scenes.find((scene) => scene.id === "opening_empty_seat");
+  const backgroundTransitionStep = backgroundTransitionScene.steps.at(-1);
+  await bootAt(page, backgroundTransitionStep.id);
+  await page.waitForTimeout(200);
+  const backgroundBeforeTransition = await page.locator("#novel-layer").evaluate((node) => getComputedStyle(node).backgroundImage);
+  await page.locator("#novel-dialogue").click();
+  await page.waitForFunction(() => document.body.classList.contains("scene-transitioning"));
+  assert(await page.locator("#scene-transition").isVisible(), "novel background change did not use the shared scene transition canvas");
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, "prologue_online_circle_001", { timeout: 5000 });
+  const backgroundAfterTransition = await page.locator("#novel-layer").evaluate((node) => getComputedStyle(node).backgroundImage);
+  assert(backgroundBeforeTransition.includes("novel-bg-workroom-v2.png") && backgroundAfterTransition.includes("novel-bg-online-night-v2.png"), "novel background transition did not swap the expected scenes");
+  await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"), null, { timeout: 5000 });
+
+  const sharedBackgroundScene = story.scenes.find((scene) => scene.id === "absence");
+  const sharedBackgroundStep = sharedBackgroundScene.steps.at(-1);
+  await bootAt(page, sharedBackgroundStep.id);
+  await page.locator("#novel-dialogue").click();
+  if (await currentStepId(page) === sharedBackgroundStep.id) await page.locator("#novel-dialogue").click();
+  assert(!await page.locator("body").evaluate((node) => node.classList.contains("scene-transitioning")), "unchanged story background incorrectly triggered a scene transition");
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.sceneId === "search");
+
   const chat = steps.find((step) => step.id === "opening_empty_seat_004");
   await bootAt(page, chat.id);
   assert(await page.locator("#novel-dialogue").isVisible(), "Slack must float above the normal dialogue window");

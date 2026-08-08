@@ -337,12 +337,30 @@
     return firstStepForScene(scene.nextSceneId);
   };
 
+  const backgroundImageForScene = (sceneId) => {
+    const previousSceneId = layer.dataset.sceneId;
+    layer.dataset.sceneId = sceneId;
+    const backgroundImage = getComputedStyle(layer).backgroundImage;
+    if (previousSceneId) layer.dataset.sceneId = previousSceneId;
+    else delete layer.dataset.sceneId;
+    return backgroundImage;
+  };
+
   const moveToFollowingStep = (step = currentStep()) => {
     const next = step ? getFollowingStepId(step) : null;
     if (!next) return;
-    state.stepId = next;
-    saveProgress();
-    renderCurrentStep();
+    const nextStep = stepMap.get(next);
+    const swapStep = () => {
+      state.stepId = next;
+      saveProgress();
+      renderCurrentStep();
+    };
+    const backgroundChanges = step.sceneId !== nextStep?.sceneId
+      && backgroundImageForScene(step.sceneId) !== backgroundImageForScene(nextStep.sceneId);
+    if (backgroundChanges && !motionReduced()) {
+      return runSceneTransition(swapStep, null, "novel");
+    }
+    swapStep();
   };
 
   const updateProgress = () => {
