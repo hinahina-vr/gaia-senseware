@@ -28,10 +28,10 @@
 
 .intro-shell:has(.intro-path-stage:not([hidden])) {
   justify-content: flex-start;
-  width: min(820px, 52vw);
+  width: min(1120px, 68vw);
   min-height: auto;
   padding-block: 0;
-  padding-right: 34px;
+  padding-right: 24px;
   padding-left: clamp(42px, 4vw, 82px);
 }
 
@@ -144,8 +144,8 @@
 
 .intro-lp-hero .intro-path-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
-  width: min(700px, 100%);
+  gap: 12px;
+  width: min(1000px, 100%);
   margin-top: clamp(20px, 3vh, 32px);
 }
 
@@ -153,7 +153,7 @@
   display: flex;
   gap: 18px;
   align-items: baseline;
-  width: min(700px, 100%);
+  width: min(1000px, 100%);
   margin-top: clamp(20px, 3vh, 32px);
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(187, 229, 239, 0.18);
@@ -185,7 +185,7 @@
   grid-template-columns: auto 1fr auto;
   gap: 14px;
   align-items: center;
-  width: min(700px, 100%);
+  width: min(1000px, 100%);
   min-height: 40px;
   margin-top: 9px;
   padding: 0 15px;
@@ -255,8 +255,8 @@
 }
 
 .intro-lp-hero .intro-path-card {
-  min-height: 112px;
-  padding: 14px 15px 12px;
+  min-height: 120px;
+  padding: 15px 18px 13px;
   border-color: rgba(var(--path-rgb), 0.2);
   border-radius: 2px;
   background:
@@ -280,8 +280,8 @@
 
 .intro-lp-hero .intro-path-card > p {
   margin: 5px 0 7px;
-  font-size: 7px;
-  line-height: 1.55;
+  font-size: clamp(7px, 0.48vw, 9px);
+  line-height: 1.65;
 }
 
 .intro-lp-hero .intro-path-enter {

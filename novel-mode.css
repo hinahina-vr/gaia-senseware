@@ -557,6 +557,771 @@
   }
 }
 
+/* Local story archive ----------------------------------------------------- */
+.novel-save-panel[hidden] {
+  display: none !important;
+}
+
+.novel-save-panel {
+  position: absolute;
+  z-index: 610;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: clamp(18px, 4vw, 68px);
+  overflow: auto;
+  background:
+    radial-gradient(circle at 76% 16%, rgba(113, 219, 211, 0.12), transparent 34%),
+    linear-gradient(112deg, rgba(1, 8, 18, 0.9), rgba(3, 15, 27, 0.74));
+  -webkit-backdrop-filter: blur(22px) saturate(0.82);
+  backdrop-filter: blur(22px) saturate(0.82);
+}
+
+.novel-save-shell {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: min(1080px, calc(100vw - 48px));
+  max-height: min(830px, calc(100vh - 48px));
+  overflow: hidden;
+  border: 1px solid rgba(151, 235, 222, 0.34);
+  border-radius: 5px;
+  background:
+    linear-gradient(140deg, rgba(9, 33, 49, 0.97), rgba(2, 15, 28, 0.95) 48%, rgba(3, 20, 31, 0.98)),
+    rgba(2, 14, 25, 0.96);
+  box-shadow:
+    0 38px 110px rgba(0, 0, 0, 0.58),
+    inset 0 1px rgba(244, 255, 252, 0.08);
+  color: rgba(242, 253, 250, 0.94);
+}
+
+.novel-save-shell::before,
+.novel-save-shell::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.novel-save-shell::before {
+  top: 0;
+  left: 0;
+  width: 86px;
+  height: 2px;
+  background: rgb(var(--novel-cyan));
+  box-shadow: 0 0 18px rgba(var(--novel-cyan), 0.66);
+}
+
+.novel-save-shell::after {
+  top: 18px;
+  right: 18px;
+  width: 8px;
+  height: 8px;
+  border-top: 1px solid rgba(var(--novel-cyan), 0.48);
+  border-right: 1px solid rgba(var(--novel-cyan), 0.48);
+}
+
+.novel-save-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 28px clamp(24px, 3vw, 42px) 22px;
+  border-bottom: 1px solid rgba(155, 226, 217, 0.13);
+}
+
+.novel-save-header > div {
+  display: grid;
+  gap: 6px;
+}
+
+.novel-save-header span,
+.novel-save-footer span,
+.novel-save-slot header span,
+.novel-save-slot-chapter {
+  color: rgba(143, 231, 216, 0.72);
+  font: 700 9px/1.4 Consolas, "Courier New", monospace;
+  letter-spacing: 0.18em;
+}
+
+.novel-save-header h2 {
+  margin: 0;
+  font: 500 clamp(28px, 3vw, 42px)/1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.12em;
+}
+
+.novel-save-header p {
+  margin: 1px 0 0;
+  color: rgba(223, 243, 239, 0.64);
+  font: 500 13px/1.65 var(--novel-font);
+}
+
+.novel-save-header > button {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(158, 229, 219, 0.24);
+  border-radius: 50%;
+  background: rgba(1, 12, 22, 0.6);
+  color: rgba(235, 251, 247, 0.72);
+  cursor: pointer;
+  font: 300 20px/1 var(--novel-font);
+}
+
+.novel-save-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 58px;
+  padding: 0 clamp(24px, 3vw, 42px);
+  border-bottom: 1px solid rgba(155, 226, 217, 0.1);
+  background: rgba(0, 8, 16, 0.28);
+}
+
+.novel-save-tabs {
+  align-self: stretch;
+  display: flex;
+}
+
+.novel-save-tabs button {
+  position: relative;
+  min-width: 94px;
+  border: 0;
+  border-right: 1px solid rgba(155, 226, 217, 0.11);
+  background: transparent;
+  color: rgba(218, 240, 236, 0.45);
+  cursor: pointer;
+  font: 700 10px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.18em;
+}
+
+.novel-save-tabs button:first-child {
+  border-left: 1px solid rgba(155, 226, 217, 0.11);
+}
+
+.novel-save-tabs button::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  height: 2px;
+  background: rgb(var(--novel-cyan));
+  opacity: 0;
+  transform: scaleX(0.3);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.novel-save-tabs button.is-active {
+  color: rgba(241, 255, 251, 0.96);
+  background: linear-gradient(180deg, transparent, rgba(var(--novel-cyan), 0.07));
+}
+
+.novel-save-tabs button.is-active::after {
+  opacity: 1;
+  transform: none;
+}
+
+.novel-save-tabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.28;
+}
+
+#novel-save-status {
+  margin: 0;
+  color: rgba(205, 235, 229, 0.66);
+  font: 600 11px/1.5 var(--novel-font);
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
+#novel-save-status.is-error {
+  color: #ffc7b8;
+}
+
+.novel-save-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(210px, auto);
+  gap: 10px;
+  padding: 22px clamp(24px, 3vw, 42px) 26px;
+  overflow: auto;
+  scrollbar-color: rgba(var(--novel-cyan), 0.36) transparent;
+}
+
+.novel-save-slot {
+  --save-kind: var(--novel-cyan);
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 210px;
+  overflow: hidden;
+  border: 1px solid rgba(157, 225, 216, 0.18);
+  border-left-color: rgba(var(--save-kind), 0.76);
+  border-radius: 2px;
+  background:
+    linear-gradient(115deg, rgba(var(--save-kind), 0.075), transparent 42%),
+    rgba(2, 15, 27, 0.72);
+  box-shadow: inset 0 1px rgba(244, 255, 252, 0.035);
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+.novel-save-slot[data-kind="DERIVED"] { --save-kind: 247, 201, 139; }
+.novel-save-slot[data-kind="SCENARIO"] { --save-kind: 196, 178, 247; }
+
+.novel-save-slot::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 42%;
+  background: rgba(var(--save-kind), 0.92);
+  box-shadow: 0 0 14px rgba(var(--save-kind), 0.48);
+}
+
+.novel-save-slot[data-empty="true"] {
+  border-style: dashed;
+  border-left-style: solid;
+  opacity: 0.68;
+}
+
+.novel-save-slot:focus-within,
+.novel-save-slot:hover {
+  border-color: rgba(var(--save-kind), 0.52);
+  background-color: rgba(var(--save-kind), 0.035);
+}
+
+.novel-save-slot > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px 10px;
+  border-bottom: 1px solid rgba(157, 225, 216, 0.08);
+}
+
+.novel-save-slot > header time {
+  color: rgba(210, 234, 230, 0.46);
+  font: 500 9px/1.4 Consolas, "Courier New", monospace;
+  letter-spacing: 0.08em;
+}
+
+.novel-save-slot > div {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  padding: 13px 16px 12px;
+}
+
+.novel-save-slot-chapter {
+  margin: 0;
+  overflow: hidden;
+  color: rgba(var(--save-kind), 0.72);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.novel-save-slot h3 {
+  margin: 0;
+  overflow: hidden;
+  color: rgba(245, 253, 251, 0.96);
+  font: 600 17px/1.5 var(--novel-font);
+  letter-spacing: 0.035em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.novel-save-slot-excerpt {
+  display: -webkit-box;
+  min-height: 3.1em;
+  margin: 1px 0 0;
+  overflow: hidden;
+  color: rgba(221, 239, 235, 0.69);
+  font: 500 12px/1.62 var(--novel-font);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.novel-save-slot-meta {
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: rgba(174, 211, 205, 0.48);
+  font: 600 9px/1.5 Consolas, "Courier New", monospace;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.novel-save-slot > footer {
+  display: flex;
+  align-items: stretch;
+  min-height: 38px;
+  border-top: 1px solid rgba(157, 225, 216, 0.1);
+}
+
+.novel-save-slot > footer button {
+  border: 0;
+  border-right: 1px solid rgba(157, 225, 216, 0.1);
+  background: rgba(0, 8, 16, 0.22);
+  color: rgba(224, 244, 240, 0.68);
+  cursor: pointer;
+  font: 700 10px/1 var(--novel-font);
+  letter-spacing: 0.08em;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.novel-save-slot > footer button:last-child {
+  border-right: 0;
+}
+
+.novel-save-primary {
+  flex: 1 1 auto;
+}
+
+.novel-save-delete {
+  flex: 0 0 74px;
+  color: rgba(222, 223, 218, 0.42) !important;
+}
+
+.novel-save-slot > footer button:hover,
+.novel-save-slot > footer button:focus-visible {
+  outline: none;
+  background: rgba(var(--save-kind), 0.13);
+  color: #fff;
+}
+
+.novel-save-slot > footer button:disabled {
+  cursor: default;
+  color: rgba(216, 235, 231, 0.25);
+}
+
+.novel-save-footer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 22px;
+  padding: 14px clamp(24px, 3vw, 42px) 16px;
+  border-top: 1px solid rgba(155, 226, 217, 0.1);
+  background: rgba(0, 7, 14, 0.34);
+}
+
+.novel-save-footer p {
+  margin: 0;
+  color: rgba(203, 229, 224, 0.48);
+  font: 500 10px/1.6 var(--novel-font);
+  text-align: right;
+}
+
+#novel-title-load-button {
+  border-color: rgba(224, 246, 241, 0.2);
+  background: rgba(1, 12, 22, 0.46);
+  color: rgba(229, 247, 243, 0.72);
+}
+
+@media (max-width: 760px) {
+  .novel-save-panel {
+    place-items: stretch;
+    padding: 10px;
+  }
+
+  .novel-save-shell {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+  }
+
+  .novel-save-header {
+    gap: 14px;
+    padding: 20px 18px 16px;
+  }
+
+  .novel-save-header h2 {
+    font-size: 28px;
+  }
+
+  .novel-save-header p {
+    font-size: 11px;
+  }
+
+  .novel-save-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 18px 10px;
+  }
+
+  .novel-save-tabs {
+    min-height: 48px;
+  }
+
+  .novel-save-tabs button {
+    flex: 1 1 50%;
+  }
+
+  #novel-save-status {
+    min-height: 1.5em;
+    text-align: left;
+  }
+
+  .novel-save-slots {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(196px, auto);
+    padding: 14px 18px 18px;
+  }
+
+  .novel-save-slot {
+    min-height: 196px;
+  }
+
+  .novel-save-footer {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 11px 18px 13px;
+  }
+
+  .novel-save-footer p {
+    font-size: 9px;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-save-slot,
+  .novel-save-tabs button::after {
+    transition: none;
+  }
+}
+
+.novel-config-panel[hidden] {
+  display: none !important;
+}
+
+.novel-config-panel {
+  position: absolute;
+  z-index: 620;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: clamp(18px, 4vw, 68px);
+  overflow: auto;
+  background:
+    radial-gradient(circle at 74% 18%, rgba(91, 180, 226, 0.15), transparent 34%),
+    linear-gradient(112deg, rgba(1, 8, 20, 0.88), rgba(3, 17, 35, 0.7));
+  -webkit-backdrop-filter: blur(24px) saturate(1.12);
+  backdrop-filter: blur(24px) saturate(1.12);
+}
+
+.novel-config-shell {
+  position: relative;
+  width: min(760px, calc(100vw - 48px));
+  overflow: hidden;
+  border: 1px solid rgba(159, 225, 238, 0.34);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(13, 49, 78, 0.8), rgba(3, 19, 43, 0.82) 54%, rgba(2, 12, 31, 0.88)),
+    rgba(2, 15, 34, 0.78);
+  box-shadow:
+    0 38px 110px rgba(0, 4, 22, 0.58),
+    inset 0 1px rgba(235, 252, 255, 0.17),
+    0 0 52px rgba(88, 186, 224, 0.09);
+  color: rgba(242, 252, 255, 0.95);
+}
+
+.novel-config-shell::before {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 13%;
+  left: 13%;
+  height: 1px;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(220, 249, 255, 0.92), transparent);
+  box-shadow: 0 0 18px rgba(123, 217, 244, 0.42);
+}
+
+.novel-config-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 30px clamp(24px, 4vw, 44px) 24px;
+  border-bottom: 1px solid rgba(160, 222, 238, 0.14);
+}
+
+.novel-config-header > div {
+  display: grid;
+  gap: 6px;
+}
+
+.novel-config-header span,
+.novel-config-setting-header span,
+.novel-config-footer span {
+  color: rgba(140, 225, 229, 0.74);
+  font: 700 9px/1.4 Consolas, "Courier New", monospace;
+  letter-spacing: 0.18em;
+}
+
+.novel-config-header h2 {
+  margin: 0;
+  font: 500 clamp(28px, 3vw, 42px)/1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.12em;
+}
+
+.novel-config-header p {
+  margin: 2px 0 0;
+  color: rgba(218, 240, 247, 0.66);
+  font: 500 13px/1.65 var(--novel-font);
+}
+
+.novel-config-header > button {
+  display: grid;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(174, 229, 241, 0.28);
+  border-radius: 50%;
+  background: rgba(1, 13, 31, 0.46);
+  color: rgba(237, 251, 255, 0.82);
+  cursor: pointer;
+  font: 300 20px/1 var(--novel-font);
+  place-items: center;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.novel-config-header > button:hover,
+.novel-config-header > button:focus-visible {
+  border-color: rgba(213, 247, 255, 0.68);
+  background: rgba(30, 78, 108, 0.55);
+  outline: none;
+  transform: rotate(7deg);
+}
+
+.novel-config-content {
+  padding: clamp(24px, 4vw, 42px) clamp(24px, 4vw, 44px);
+}
+
+.novel-config-setting {
+  position: relative;
+  display: grid;
+  gap: 26px;
+  padding: clamp(22px, 3vw, 32px);
+  overflow: hidden;
+  border: 1px solid rgba(163, 222, 239, 0.2);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(117, 207, 230, 0.12), transparent 38%),
+    linear-gradient(125deg, rgba(107, 188, 218, 0.08), rgba(0, 11, 30, 0.24));
+  box-shadow: inset 0 1px rgba(235, 252, 255, 0.08);
+}
+
+.novel-config-setting::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  content: "";
+  background: rgba(var(--novel-cyan), 0.76);
+  box-shadow: 0 0 16px rgba(var(--novel-cyan), 0.48);
+}
+
+.novel-config-setting-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.novel-config-setting-header > div {
+  display: grid;
+  gap: 7px;
+}
+
+.novel-config-setting-header h3 {
+  margin: 0;
+  color: rgba(245, 253, 255, 0.96);
+  font: 600 clamp(17px, 2vw, 21px)/1.5 var(--novel-font);
+  letter-spacing: 0.05em;
+}
+
+.novel-config-setting-header output {
+  min-width: 86px;
+  color: rgba(215, 250, 248, 0.96);
+  font: 500 clamp(26px, 4vw, 38px)/1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.04em;
+  text-align: right;
+  text-shadow: 0 0 24px rgba(var(--novel-cyan), 0.34);
+}
+
+.novel-config-range {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  color: rgba(202, 232, 239, 0.58);
+  font: 700 9px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.13em;
+}
+
+.novel-config-range input {
+  --novel-range-position: 42.85%;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.novel-config-range input::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(126, 228, 218, 0.94) var(--novel-range-position), rgba(126, 193, 224, 0.27) var(--novel-range-position));
+  box-shadow: 0 0 13px rgba(88, 200, 215, 0.22);
+}
+
+.novel-config-range input::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: -8.5px;
+  appearance: none;
+  border: 3px solid rgba(220, 252, 249, 0.88);
+  border-radius: 50%;
+  background: rgb(119, 218, 210);
+  box-shadow: 0 0 0 6px rgba(116, 218, 217, 0.12), 0 0 20px rgba(109, 224, 218, 0.5);
+}
+
+.novel-config-range input::-moz-range-track {
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(126, 193, 224, 0.27);
+}
+
+.novel-config-range input::-moz-range-progress {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(126, 228, 218, 0.94);
+  box-shadow: 0 0 13px rgba(88, 200, 215, 0.22);
+}
+
+.novel-config-range input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 3px solid rgba(220, 252, 249, 0.88);
+  border-radius: 50%;
+  background: rgb(119, 218, 210);
+  box-shadow: 0 0 0 6px rgba(116, 218, 217, 0.12), 0 0 20px rgba(109, 224, 218, 0.5);
+}
+
+.novel-config-range input:focus-visible {
+  outline: 1px solid rgba(190, 242, 249, 0.72);
+  outline-offset: 7px;
+}
+
+.novel-config-setting > p {
+  margin: -9px 0 0;
+  color: rgba(208, 234, 241, 0.58);
+  font: 500 11px/1.7 var(--novel-font);
+  letter-spacing: 0.025em;
+}
+
+.novel-config-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px clamp(24px, 4vw, 44px) 18px;
+  border-top: 1px solid rgba(160, 222, 238, 0.12);
+  background: rgba(0, 9, 24, 0.24);
+}
+
+.novel-config-footer button {
+  min-height: 36px;
+  padding: 0 18px;
+  border: 1px solid rgba(165, 225, 237, 0.24);
+  border-radius: 999px;
+  background: rgba(10, 43, 65, 0.4);
+  color: rgba(229, 247, 250, 0.76);
+  cursor: pointer;
+  font: 600 11px/1 var(--novel-font);
+  letter-spacing: 0.05em;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.novel-config-footer button:hover,
+.novel-config-footer button:focus-visible {
+  border-color: rgba(190, 239, 245, 0.62);
+  background: rgba(31, 83, 104, 0.58);
+  color: rgba(247, 255, 255, 0.96);
+  outline: none;
+}
+
+@media (max-width: 720px) {
+  .novel-config-panel {
+    place-items: center stretch;
+    padding: 10px;
+  }
+
+  .novel-config-shell {
+    width: 100%;
+  }
+
+  .novel-config-header {
+    gap: 14px;
+    padding: 22px 18px 18px;
+  }
+
+  .novel-config-content {
+    padding: 18px;
+  }
+
+  .novel-config-setting {
+    gap: 22px;
+    padding: 20px 18px;
+  }
+
+  .novel-config-range {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .novel-config-range input {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .novel-config-range > span:last-child {
+    text-align: right;
+  }
+
+  .novel-config-footer {
+    padding: 14px 18px 16px;
+  }
+
+  .novel-config-footer span {
+    display: none;
+  }
+
+  .novel-config-footer button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-config-header > button,
+  .novel-config-footer button {
+    transition: none;
+  }
+}
+
 /* Clickable provenance card for the story signal label. */
 .novel-signal-caption {
   appearance: none;
@@ -2947,33 +3712,59 @@ body.gx-story-open .novel-character.novel-character--minamo .novel-character-por
   gap: 4px;
 }
 
-body.novel-open .gaia-audio-dock {
-  top: max(18px, env(safe-area-inset-top));
-  right: max(72px, calc(env(safe-area-inset-right) + 72px));
+body.novel-open .gaia-audio-dock,
+body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {
+  top: max(18px, env(safe-area-inset-top)) !important;
+  right: max(146px, calc(env(safe-area-inset-right) + 146px)) !important;
+  left: auto !important;
 }
 
 body.novel-open .novel-topbar #novel-close-button {
   z-index: 521;
   top: max(18px, env(safe-area-inset-top));
   right: max(18px, env(safe-area-inset-right));
-  width: 46px;
-  min-width: 46px;
+  display: inline-flex;
+  width: auto;
+  min-width: 116px;
   height: 46px;
-  padding: 0;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border-color: rgba(var(--novel-cyan), 0.34);
+  border-radius: 999px;
+  background: rgba(2, 13, 24, 0.78);
+  box-shadow: 0 10px 34px rgba(0, 4, 12, 0.25), inset 0 0 20px rgba(var(--novel-cyan), 0.035);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+body.novel-open .novel-topbar #novel-close-button span:last-child {
+  color: rgb(var(--novel-cyan));
+  font-size: 15px;
+  line-height: 1;
 }
 
 @media (max-width: 720px) {
-  body.novel-open .gaia-audio-dock {
-    top: max(12px, env(safe-area-inset-top));
-    right: max(66px, calc(env(safe-area-inset-right) + 66px));
+  body.novel-open .gaia-audio-dock,
+  body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {
+    top: max(12px, env(safe-area-inset-top)) !important;
+    right: max(116px, calc(env(safe-area-inset-right) + 116px)) !important;
+    left: auto !important;
+  }
+
+  body.novel-open .gaia-audio-dock.is-expanded {
+    width: min(320px, calc(100vw - 128px));
   }
 
   body.novel-open .novel-topbar #novel-close-button {
     top: max(12px, env(safe-area-inset-top));
     right: max(12px, env(safe-area-inset-right));
-    width: 46px;
-    min-width: 46px;
+    width: auto;
+    min-width: 94px;
     height: 46px;
+    padding-inline: 14px;
+    font-size: 10px;
   }
 }
 
@@ -3018,7 +3809,7 @@ body.novel-open .novel-topbar #novel-close-button {
 
 .novel-layer.is-chapter-transition .novel-topbar > div {
   visibility: visible;
-  animation: novel-context-transition 4.93s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: novel-context-transition 3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes novel-context-transition {
@@ -3201,21 +3992,25 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 
 /* E.V.E.S. route choices must stay readable over bright sky and architecture. */
 .novel-choices button {
-  border-color: rgba(142, 235, 220, 0.58);
+  display: flex;
+  align-items: center;
+  min-height: 78px;
+  padding: 20px 30px;
+  border-color: rgba(225, 249, 255, 0.72);
+  border-radius: 16px;
   background:
-    linear-gradient(100deg, rgba(2, 18, 31, 0.94), rgba(3, 24, 36, 0.86) 58%, rgba(5, 30, 40, 0.76)),
-    rgba(2, 14, 25, 0.88);
+    linear-gradient(105deg, rgba(222, 247, 255, 0.72), rgba(151, 215, 242, 0.58) 56%, rgba(169, 235, 229, 0.52)),
+    rgba(166, 220, 240, 0.48);
   box-shadow:
-    0 18px 48px rgba(0, 10, 20, 0.42),
-    inset 0 1px rgba(238, 255, 252, 0.09),
-    inset 3px 0 rgba(var(--novel-cyan), 0.16);
-  -webkit-backdrop-filter: blur(18px) saturate(1.08) brightness(0.72);
-  backdrop-filter: blur(18px) saturate(1.08) brightness(0.72);
+    0 16px 42px rgba(28, 92, 138, 0.2),
+    inset 0 1px rgba(255, 255, 255, 0.82),
+    inset 0 -1px rgba(67, 159, 199, 0.16);
+  -webkit-backdrop-filter: blur(20px) saturate(1.14) brightness(1.06);
+  backdrop-filter: blur(20px) saturate(1.14) brightness(1.06);
 }
 
 .novel-choices button::before {
-  color: rgba(164, 255, 237, 0.96);
-  text-shadow: 0 0 14px rgba(112, 238, 218, 0.5);
+  content: none;
 }
 
 .novel-choices button > span {
@@ -3225,9 +4020,10 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 }
 
 .novel-choices button > strong {
-  color: rgba(249, 255, 253, 0.99);
+  color: rgba(12, 47, 76, 0.94);
   font-weight: 600;
-  text-shadow: 0 2px 10px rgba(0, 5, 12, 0.96);
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px rgba(255, 255, 255, 0.68);
 }
 
 .novel-choices button > small {
@@ -3240,10 +4036,15 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 
 .novel-choices button:hover,
 .novel-choices button:focus-visible {
-  border-color: rgba(177, 255, 239, 0.88);
+  border-color: rgba(245, 255, 255, 0.96);
   background:
-    linear-gradient(100deg, rgba(5, 35, 46, 0.96), rgba(8, 49, 57, 0.9) 58%, rgba(12, 54, 61, 0.82)),
-    rgba(3, 24, 34, 0.92);
+    linear-gradient(105deg, rgba(240, 253, 255, 0.86), rgba(174, 230, 249, 0.72) 56%, rgba(187, 244, 236, 0.68)),
+    rgba(185, 230, 246, 0.62);
+  box-shadow:
+    0 20px 50px rgba(34, 111, 159, 0.26),
+    0 0 0 1px rgba(255, 255, 255, 0.46),
+    inset 0 1px rgba(255, 255, 255, 0.92);
+  transform: translateY(-2px);
 }
 
 @media (max-width: 720px) {
@@ -3258,5 +4059,29 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
   body:not(.gx-story-open) .novel-character.novel-character--sora .novel-character-portrait,
   body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-character-portrait {
     background-size: auto clamp(840px, 186vh, 1420px);
+  }
+}
+
+/* Pull the active GX guide into the conversation instead of leaving a vacant
+   strip between the glass instrument and the character. The source portraits
+   include generous transparent margins, so their layout box needs to sit a
+   little farther inward than the visible figure suggests. */
+@media (min-width: 901px) {
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--sora,
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--minamo {
+    right: clamp(-28px, -1.2vw, -12px);
+    bottom: clamp(-32px, -2.2vh, -18px);
+    width: clamp(640px, 44vw, 860px);
+    height: min(96vh, 980px);
+  }
+}
+
+@media (min-width: 2200px) {
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--sora,
+  body.gx-story-open .novel-cast[data-gx-speaker] .novel-character--minamo {
+    right: 0;
+    bottom: -10px;
+    width: clamp(900px, 38vw, 960px);
+    height: min(92vh, 1080px);
   }
 }

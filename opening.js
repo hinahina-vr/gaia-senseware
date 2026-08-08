@@ -17,11 +17,14 @@
   const audioToggle = document.querySelector("#gaia-audio-toggle");
   const audioToggleIcon = document.querySelector("#gaia-audio-toggle-icon");
   const audioVolume = document.querySelector("#gaia-audio-volume");
+  const audioVolumePanel = document.querySelector("#gaia-audio-volume-panel");
   const audioVolumeValue = document.querySelector("#gaia-audio-volume-value");
   const finalMenu = document.querySelector("#gaia-opening-final-menu");
   const finalStoryButton = document.querySelector("#gaia-opening-route-story");
   const finalOtherButton = document.querySelector("#gaia-opening-route-other");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const AUDIO_DOCK_COLLAPSE_DELAY_MS = 6000;
+  let audioDockCollapseTimer = 0;
   const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound"].includes(
     window.location.hash,
   );
@@ -36,7 +39,13 @@
     if (audioDock) audioDock.dataset.muted = String(isMuted);
     if (audioToggle) {
       audioToggle.setAttribute("aria-pressed", String(isMuted));
-      audioToggle.setAttribute("aria-label", isMuted ? "BGMを再生" : "BGMを消音");
+      const isExpanded = audioDock?.classList.contains("is-expanded") ?? false;
+      audioToggle.setAttribute("aria-expanded", String(isExpanded));
+      audioToggle.setAttribute("aria-label", isExpanded
+        ? (isMuted ? "BGMを再生" : "BGMを消音")
+        : "音量調整を開く");
+      audioVolumePanel?.setAttribute("aria-hidden", String(!isExpanded));
+      if (audioVolume instanceof HTMLInputElement) audioVolume.tabIndex = isExpanded ? 0 : -1;
     }
     if (audioToggleIcon) audioToggleIcon.dataset.muted = String(isMuted);
   };
@@ -44,19 +53,71 @@
   const revealAudioDock = () => {
     if (!audioDock) return;
     audioDock.hidden = false;
+    audioDock.classList.remove("is-expanded");
+    audioDock.dataset.expanded = "false";
     requestAnimationFrame(() => audioDock.classList.add("is-visible"));
+  };
+
+  const clearAudioDockCollapse = () => {
+    window.clearTimeout(audioDockCollapseTimer);
+    audioDockCollapseTimer = 0;
+  };
+
+  const setAudioDockExpanded = (expanded, { focusVolume = false } = {}) => {
+    if (!audioDock) return;
+    clearAudioDockCollapse();
+    const nextExpanded = Boolean(expanded);
+    audioDock.classList.toggle("is-expanded", nextExpanded);
+    audioDock.dataset.expanded = String(nextExpanded);
+    syncAudioControls();
+    if (nextExpanded) {
+      if (focusVolume) window.setTimeout(() => audioVolume?.focus({ preventScroll: true }), 260);
+      audioDockCollapseTimer = window.setTimeout(() => setAudioDockExpanded(false), AUDIO_DOCK_COLLAPSE_DELAY_MS);
+    }
+  };
+
+  const scheduleAudioDockCollapse = (delay = AUDIO_DOCK_COLLAPSE_DELAY_MS) => {
+    if (!audioDock?.classList.contains("is-expanded")) return;
+    clearAudioDockCollapse();
+    audioDockCollapseTimer = window.setTimeout(() => setAudioDockExpanded(false), delay);
   };
 
   const setVolumeFromInput = (input) => {
     if (!(input instanceof HTMLInputElement)) return;
-    window.GaiaOpeningAudio?.setVolume?.(Number(input.value) / 100);
+    const nextVolume = Number(input.value) / 100;
+    window.GaiaOpeningAudio?.setVolume?.(nextVolume);
+    if (input === audioVolume) {
+      const state = window.GaiaOpeningAudio?.getState?.();
+      if (nextVolume <= 0 && !state?.muted) void window.GaiaOpeningAudio?.setMuted?.(true);
+      else if (nextVolume > 0 && state?.muted) void window.GaiaOpeningAudio?.setMuted?.(false);
+      scheduleAudioDockCollapse();
+    }
   };
 
   openingVolume?.addEventListener("input", () => setVolumeFromInput(openingVolume));
   audioVolume?.addEventListener("input", () => setVolumeFromInput(audioVolume));
   audioToggle?.addEventListener("click", async () => {
+    if (!audioDock?.classList.contains("is-expanded")) {
+      setAudioDockExpanded(true);
+      return;
+    }
     await window.GaiaOpeningAudio?.toggleMuted?.();
     syncAudioControls();
+    scheduleAudioDockCollapse();
+  });
+  audioDock?.addEventListener("pointerenter", clearAudioDockCollapse);
+  audioDock?.addEventListener("pointerleave", () => scheduleAudioDockCollapse(2200));
+  audioDock?.addEventListener("focusin", clearAudioDockCollapse);
+  audioDock?.addEventListener("focusout", () => scheduleAudioDockCollapse(2200));
+  document.addEventListener("pointerdown", (event) => {
+    if (!audioDock?.classList.contains("is-expanded") || audioDock.contains(event.target)) return;
+    setAudioDockExpanded(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !audioDock?.classList.contains("is-expanded")) return;
+    event.preventDefault();
+    setAudioDockExpanded(false);
+    audioToggle?.focus({ preventScroll: true });
   });
   window.addEventListener("gaia:audio-state", (event) => syncAudioControls(event.detail));
   syncAudioControls();
@@ -467,7 +528,8 @@
     window.GaiaOpeningAudio?.stop(0.05);
   });
 
-  requestAnimationFrame(() => soundOnButton?.focus({ preventScroll: true }));
+  // Avoid focusing a moving button during the first paint. Chromium can leave
+  // its pre-layout focus outline behind as an empty glowing rectangle.
 
   updatePreload();
   Promise.race([

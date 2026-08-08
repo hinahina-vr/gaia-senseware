@@ -9,6 +9,8 @@
   });
   const DEFAULT_VOLUME = 0.1;
   const VOLUME_STORAGE_KEY = "gaia-senseware-bgm-volume";
+  const TRACK_SWITCH_FADE_MULTIPLIER = 2;
+  const TRACK_SWITCH_FADE_IN_SECONDS = 0.8 * TRACK_SWITCH_FADE_MULTIPLIER;
 
   let audio = null;
   let activeTrack = "opening";
@@ -190,6 +192,7 @@
   const switchTrack = async (track, fadeSeconds = 0.5) => {
     if (!TRACKS[track]) return false;
     const serial = ++switchSerial;
+    const switchFadeOutSeconds = Math.max(0, fadeSeconds) * TRACK_SWITCH_FADE_MULTIPLIER;
     if (track === activeTrack) {
       if (playbackRequested && !muted && audio?.paused) {
         try {
@@ -219,7 +222,7 @@
     const shouldResume = playbackRequested && !muted;
 
     if (shouldResume && previousPlayer.volume > 0.001) {
-      await new Promise((resolve) => fadeTo(0, fadeSeconds, resolve));
+      await new Promise((resolve) => fadeTo(0, switchFadeOutSeconds, resolve));
       if (serial !== switchSerial) return false;
     }
 
@@ -238,7 +241,7 @@
     try {
       await nextPlayer.play();
       if (serial !== switchSerial) return false;
-      fadeTo(preferredVolume, 0.8, emitState);
+      fadeTo(preferredVolume, TRACK_SWITCH_FADE_IN_SECONDS, emitState);
       emitState();
       return true;
     } catch {

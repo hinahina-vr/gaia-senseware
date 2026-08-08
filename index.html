@@ -18,26 +18,26 @@
     <link rel="preload" as="image" href="./assets/visuals-07/opening-keyvisual-v1.webp" fetchpriority="high" />
     <link rel="preload" as="image" href="./assets/visuals-07/sound-archive-bg-v1.webp" />
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
-    <link rel="stylesheet" href="./styles.css?v=gaia-123" />
+    <link rel="stylesheet" href="./styles.css?v=gaia-124" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-137" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-140" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-140" />
-    <link rel="stylesheet" href="./gx-mode.css?v=gx-33" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-146" />
+    <link rel="stylesheet" href="./gx-mode.css?v=gx-35" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
-    <link rel="stylesheet" href="./sound-mode.css?v=gaia-05" />
+    <link rel="stylesheet" href="./sound-mode.css?v=gaia-06" />
     <script src="./gaia-particles.js?v=gaia-19" defer></script>
-    <script src="./opening-audio.js?v=gaia-11" defer></script>
+    <script src="./opening-audio.js?v=gaia-12" defer></script>
     <script src="./ui-sound.js?v=gaia-01" defer></script>
-    <script src="./opening.js?v=gaia-112" defer></script>
+    <script src="./opening.js?v=gaia-114" defer></script>
     <script src="./data-ledger.js?v=gaia-31" defer></script>
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
     <script src="./app-content.js?v=gaia-101" defer></script>
     <script src="./app.js?v=gaia-107" defer></script>
   <script src="./gx-mode.js?v=gx-29" defer></script>
-    <script src="./novel-mode.js?v=gaia-117" defer></script>
+    <script src="./novel-mode.js?v=gaia-121" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-97" defer></script>
     <script src="./sound-mode.js?v=gaia-03" defer></script>
@@ -187,9 +187,9 @@
                 <strong data-opening-focus>人間と地球は、どんな次の関係を選べるだろう。</strong>
                 <nav class="gaia-opening-final-menu" id="gaia-opening-final-menu" aria-label="体験の入口" hidden>
                   <button class="gaia-opening-route gaia-opening-route--story" id="gaia-opening-route-story" type="button">
-                    <small>MAIN STORY <em>RECOMMENDED</em></small>
+                    <small class="gaia-opening-route-guide"><i>じっくり遊ぶ</i> / MAIN STORY <em>RECOMMENDED</em></small>
                     <strong>物語を始める</strong>
-                    <span>プロローグの続き・第1章へ</span>
+                    <span>ビジュアルノベルで物語をたどる</span>
                     <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
                       <path d="M8 14c9-2.4 17-.2 24 5.8v32c-7-5.8-15-8.2-24-5.8Z" />
                       <path d="M56 14c-9-2.4-17-.2-24 5.8v32c7-5.8 15-8.2 24-5.8Z" />
@@ -197,13 +197,12 @@
                     </svg>
                   </button>
                   <button class="gaia-opening-route gaia-opening-route--other" id="gaia-opening-route-other" type="button">
-                    <small>FREE EXPLORATION</small>
-                    <strong>自由に観測する</strong>
-                    <span>光・地図・宇宙を選ぶ</span>
+                    <small class="gaia-opening-route-guide"><i>さらっと遊ぶ</i> / FREE EXPLORATION</small>
+                    <strong>データを見てみる</strong>
+                    <span>気になるテーマから自由に見る</span>
                     <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
-                      <circle cx="32" cy="32" r="23" />
-                      <circle cx="32" cy="32" r="3.2" />
-                      <path d="m42 20-6.5 15.5L20 42l6.5-15.5ZM32 5v5M32 54v5M5 32h5M54 32h5" />
+                      <path d="m32 10 22 12-22 12L10 22Z" />
+                      <path d="m13 32 19 10 19-10M13 42l19 10 19-10" />
                     </svg>
                   </button>
                 </nav>
@@ -228,7 +227,14 @@
       </section>
 
       <aside class="gaia-audio-dock" id="gaia-audio-dock" aria-label="BGM操作" hidden>
-        <button id="gaia-audio-toggle" type="button" aria-label="BGMを消音" aria-pressed="false">
+        <button
+          id="gaia-audio-toggle"
+          type="button"
+          aria-label="音量調整を開く"
+          aria-pressed="false"
+          aria-expanded="false"
+          aria-controls="gaia-audio-volume-panel"
+        >
           <span class="gaia-audio-toggle-icon" id="gaia-audio-toggle-icon" aria-hidden="true">
             <svg class="gaia-audio-icon gaia-audio-icon--playing" viewBox="0 0 24 24">
               <path d="M4 9.25h4L13 5v14l-5-4.25H4z" />
@@ -241,7 +247,7 @@
             </svg>
           </span>
         </button>
-        <label for="gaia-audio-volume">
+        <label id="gaia-audio-volume-panel" for="gaia-audio-volume">
           <span>BGM</span>
           <input
             id="gaia-audio-volume"
@@ -1462,9 +1468,17 @@
               title="選択した経路を確認する"
             ><span>E.V.E.S.</span><b id="novel-eves-count">0 / 2</b></button>
             <button id="novel-log-button" type="button" aria-expanded="false" aria-controls="novel-log-panel">LOG</button>
+            <button id="novel-save-button" type="button" aria-expanded="false" aria-controls="novel-save-panel">SAVE</button>
+            <button id="novel-load-button" type="button" aria-expanded="false" aria-controls="novel-save-panel">LOAD</button>
+            <button id="novel-config-button" type="button" aria-expanded="false" aria-controls="novel-config-panel">CONFIG</button>
             <button id="novel-auto-button" type="button" aria-pressed="false">AUTO</button>
             <button id="novel-restart-button" type="button">RESTART</button>
-            <button id="novel-close-button" type="button" aria-label="ストーリーモードを閉じる">×</button>
+            <button
+              id="novel-close-button"
+              type="button"
+              aria-label="ストーリーをスキップしてメニューへ戻る"
+              title="ストーリーをスキップしてメニューへ戻る"
+            ><span>スキップ</span><span aria-hidden="true">→</span></button>
           </nav>
         </header>
 
@@ -1491,6 +1505,7 @@
           <div class="novel-title-actions">
             <button id="novel-start-button" type="button">▶ はじめから聴く</button>
             <button id="novel-resume-button" type="button" hidden>続きから聴く</button>
+            <button id="novel-title-load-button" type="button">セーブデータから</button>
           </div>
         </section>
 
@@ -1666,6 +1681,73 @@
             <button id="novel-log-close" type="button">×</button>
           </header>
           <div id="novel-log-content" tabindex="0"></div>
+        </aside>
+
+        <aside class="novel-save-panel" id="novel-save-panel" aria-hidden="true" hidden>
+          <div class="novel-save-shell" role="dialog" aria-modal="true" aria-labelledby="novel-save-title">
+            <header class="novel-save-header">
+              <div>
+                <span>LOCAL STORY ARCHIVE</span>
+                <h2 id="novel-save-title">SAVE / LOAD</h2>
+                <p>物語の現在地と選択経路を、このブラウザのユーザープロファイルに保存します。</p>
+              </div>
+              <button id="novel-save-close" type="button" aria-label="セーブ・ロード画面を閉じる">×</button>
+            </header>
+            <div class="novel-save-toolbar">
+              <div class="novel-save-tabs" role="tablist" aria-label="セーブまたはロード">
+                <button id="novel-save-tab" type="button" role="tab" aria-selected="true">SAVE</button>
+                <button id="novel-load-tab" type="button" role="tab" aria-selected="false">LOAD</button>
+              </div>
+              <p id="novel-save-status" aria-live="polite">保存先：このブラウザのみ</p>
+            </div>
+            <div class="novel-save-slots" id="novel-save-slots"></div>
+            <footer class="novel-save-footer">
+              <span>LOCAL PROFILE ONLY / NO SERVER SYNC</span>
+              <p>サーバーへの送信・アカウント同期は行いません。ブラウザデータを消去した場合や、別のブラウザプロファイルでは読み込めません。</p>
+            </footer>
+          </div>
+        </aside>
+
+        <aside class="novel-config-panel" id="novel-config-panel" aria-hidden="true" hidden>
+          <div class="novel-config-shell" role="dialog" aria-modal="true" aria-labelledby="novel-config-title">
+            <header class="novel-config-header">
+              <div>
+                <span>STORY PLAYBACK SETTINGS</span>
+                <h2 id="novel-config-title">CONFIG</h2>
+                <p>物語の読み心地を、このブラウザ用に調整します。</p>
+              </div>
+              <button id="novel-config-close" type="button" aria-label="コンフィグ画面を閉じる">×</button>
+            </header>
+            <div class="novel-config-content">
+              <section class="novel-config-setting" aria-labelledby="novel-message-speed-title">
+                <div class="novel-config-setting-header">
+                  <div>
+                    <span>MESSAGE SPEED</span>
+                    <h3 id="novel-message-speed-title">メッセージ表示速度</h3>
+                  </div>
+                  <output id="novel-message-speed-value" for="novel-message-speed">2.0×</output>
+                </div>
+                <label class="novel-config-range" for="novel-message-speed">
+                  <span>ゆっくり</span>
+                  <input
+                    id="novel-message-speed"
+                    type="range"
+                    min="50"
+                    max="400"
+                    step="10"
+                    value="200"
+                    aria-describedby="novel-message-speed-hint"
+                  />
+                  <span>速い</span>
+                </label>
+                <p id="novel-message-speed-hint">初期値はこれまでの2倍速です。次に表示するメッセージから反映されます。</p>
+              </section>
+            </div>
+            <footer class="novel-config-footer">
+              <span>LOCAL PROFILE / AUTO SAVE</span>
+              <button id="novel-config-reset" type="button">初期値に戻す</button>
+            </footer>
+          </div>
         </aside>
 
         <aside class="novel-eves-panel" id="novel-eves-panel" aria-hidden="true" hidden>

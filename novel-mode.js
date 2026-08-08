@@ -2,12 +2,19 @@
   "use strict";
 
   const STORAGE_KEY = "gaiaSensewareNovel:v5";
+  const MANUAL_SAVE_STORAGE_KEY = "gaiaSensewareNovel:manual-saves:v1";
+  const CONFIG_STORAGE_KEY = "gaiaSensewareNovel:config:v1";
+  const MANUAL_SAVE_SLOT_COUNT = 6;
   const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const TEXT_REVEAL_STEP_MS = 36;
+  const MESSAGE_SPEED_BASE_STEP_MS = 36;
+  const MESSAGE_SPEED_MIN = 50;
+  const MESSAGE_SPEED_MAX = 400;
+  const MESSAGE_SPEED_STEP = 10;
+  const MESSAGE_SPEED_DEFAULT = 200;
   const TEXT_REVEAL_FADE_MS = 280;
   const TEXT_REVEAL_PAUSE_MS = 110;
   const AUTO_DELAY_MS = 3200;
-  const CHAPTER_CARD_DURATION_MS = Math.round(2900 * 1.7);
+  const CHAPTER_CARD_DURATION_MS = 3000;
   const SCRAMBLE_ALPHABET = Array.from("アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン０１２３４５６７８９◇○△");
   const MODE_TITLES = [
     "01 — 地球の一呼吸",
@@ -160,6 +167,7 @@
     runtime: layer.querySelector("#novel-runtime"),
     start: layer.querySelector("#novel-start-button"),
     resume: layer.querySelector("#novel-resume-button"),
+    titleLoad: layer.querySelector("#novel-title-load-button"),
     close: layer.querySelector("#novel-close-button"),
     restart: layer.querySelector("#novel-restart-button"),
     auto: layer.querySelector("#novel-auto-button"),
@@ -167,6 +175,21 @@
     logPanel: layer.querySelector("#novel-log-panel"),
     logClose: layer.querySelector("#novel-log-close"),
     logContent: layer.querySelector("#novel-log-content"),
+    saveButton: layer.querySelector("#novel-save-button"),
+    loadButton: layer.querySelector("#novel-load-button"),
+    savePanel: layer.querySelector("#novel-save-panel"),
+    saveClose: layer.querySelector("#novel-save-close"),
+    saveTitle: layer.querySelector("#novel-save-title"),
+    saveTab: layer.querySelector("#novel-save-tab"),
+    loadTab: layer.querySelector("#novel-load-tab"),
+    saveStatus: layer.querySelector("#novel-save-status"),
+    saveSlots: layer.querySelector("#novel-save-slots"),
+    configButton: layer.querySelector("#novel-config-button"),
+    configPanel: layer.querySelector("#novel-config-panel"),
+    configClose: layer.querySelector("#novel-config-close"),
+    configReset: layer.querySelector("#novel-config-reset"),
+    messageSpeed: layer.querySelector("#novel-message-speed"),
+    messageSpeedValue: layer.querySelector("#novel-message-speed-value"),
     evesButton: layer.querySelector("#novel-eves-button"),
     evesCount: layer.querySelector("#novel-eves-count"),
     evesPanel: layer.querySelector("#novel-eves-panel"),
@@ -345,6 +368,12 @@
   let fullText = "";
   let previousFocus = null;
   let lastIllustratedPresentation = null;
+  let archiveMode = "save";
+  let archiveReturnFocus = null;
+  let pendingArchiveAction = "";
+  let pendingArchiveTimer = 0;
+  let configReturnFocus = null;
+  let messageSpeedPercent = MESSAGE_SPEED_DEFAULT;
 
   const clearTimers = () => {
     revealGeneration += 1;
@@ -358,6 +387,53 @@
     chapterTimer = 0;
     autoTimer = 0;
     endingTimer = 0;
+  };
+
+  const normalizeMessageSpeed = (value) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return MESSAGE_SPEED_DEFAULT;
+    const clampedValue = Math.min(MESSAGE_SPEED_MAX, Math.max(MESSAGE_SPEED_MIN, numericValue));
+    return Math.round(clampedValue / MESSAGE_SPEED_STEP) * MESSAGE_SPEED_STEP;
+  };
+
+  const getStoredMessageSpeed = () => {
+    try {
+      const config = JSON.parse(window.localStorage.getItem(CONFIG_STORAGE_KEY) || "null");
+      return normalizeMessageSpeed(config?.messageSpeedPercent);
+    } catch {
+      return MESSAGE_SPEED_DEFAULT;
+    }
+  };
+
+  const writeMessageSpeed = () => {
+    try {
+      window.localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ messageSpeedPercent }));
+    } catch {
+      // The setting still works for the current session when storage is unavailable.
+    }
+  };
+
+  const syncMessageSpeedControls = () => {
+    const multiplier = messageSpeedPercent / 100;
+    elements.messageSpeed.value = String(messageSpeedPercent);
+    elements.messageSpeedValue.value = `${multiplier.toFixed(1)}×`;
+    elements.messageSpeedValue.textContent = `${multiplier.toFixed(1)}×`;
+    const position = ((messageSpeedPercent - MESSAGE_SPEED_MIN) / (MESSAGE_SPEED_MAX - MESSAGE_SPEED_MIN)) * 100;
+    elements.messageSpeed.style.setProperty("--novel-range-position", `${position}%`);
+  };
+
+  const setMessageSpeed = (value, { persist = true } = {}) => {
+    messageSpeedPercent = normalizeMessageSpeed(value);
+    syncMessageSpeedControls();
+    if (persist) writeMessageSpeed();
+  };
+
+  const getMessageRevealTiming = () => {
+    const multiplier = messageSpeedPercent / 100;
+    return {
+      glyph: MESSAGE_SPEED_BASE_STEP_MS / multiplier,
+      pause: TEXT_REVEAL_PAUSE_MS / multiplier,
+    };
   };
 
   const setCharacterPresentation = (speaker, requestedExpression) => {
@@ -394,17 +470,20 @@
     return null;
   };
 
+  const normalizeProgress = (value) => {
+    if (!value || !Number.isInteger(value.stepIndex)) return null;
+    return {
+      stepIndex: Math.max(0, Math.min(STORY.length - 1, value.stepIndex)),
+      flags: Array.isArray(value.flags) ? [...value.flags] : [],
+      backlog: Array.isArray(value.backlog) ? value.backlog.slice(-80) : [],
+      routeHistory: Array.isArray(value.routeHistory) ? value.routeHistory.slice(-2) : [],
+      activeDecisionId: typeof value.activeDecisionId === "string" ? value.activeDecisionId : "",
+    };
+  };
+
   const getStoredProgress = () => {
     try {
-      const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
-      if (!parsed || !Number.isInteger(parsed.stepIndex)) return null;
-      return {
-        stepIndex: Math.max(0, Math.min(STORY.length - 1, parsed.stepIndex)),
-        flags: Array.isArray(parsed.flags) ? parsed.flags : [],
-        backlog: Array.isArray(parsed.backlog) ? parsed.backlog.slice(-80) : [],
-        routeHistory: Array.isArray(parsed.routeHistory) ? parsed.routeHistory.slice(-2) : [],
-        activeDecisionId: typeof parsed.activeDecisionId === "string" ? parsed.activeDecisionId : "",
-      };
+      return normalizeProgress(JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null"));
     } catch {
       return null;
     }
@@ -430,6 +509,313 @@
     }
     return null;
   };
+
+  const emptyManualSlots = () => Array.from({ length: MANUAL_SAVE_SLOT_COUNT }, () => null);
+
+  const getManualSaves = () => {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(MANUAL_SAVE_STORAGE_KEY) || "null");
+      if (!Array.isArray(parsed)) return emptyManualSlots();
+      return emptyManualSlots().map((_, index) => {
+        const saved = parsed[index];
+        const progress = normalizeProgress(saved);
+        if (!progress) return null;
+        return {
+          ...progress,
+          savedAt: Number.isFinite(saved.savedAt) ? saved.savedAt : 0,
+          meta: saved.meta && typeof saved.meta === "object" ? saved.meta : {},
+        };
+      });
+    } catch {
+      return emptyManualSlots();
+    }
+  };
+
+  const writeManualSaves = (slots) => {
+    try {
+      window.localStorage.setItem(MANUAL_SAVE_STORAGE_KEY, JSON.stringify(slots));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const getManualSaveMeta = () => {
+    const step = STORY[stepIndex] || {};
+    const chapter = getCurrentChapter();
+    const speaker = CHARACTERS[step.speaker]?.name || (step.type === "choice" ? "あなたの選択" : "観測記録");
+    const excerpt = step.type === "line"
+      ? step.text
+      : step.type === "choice"
+        ? step.prompt
+        : step.type === "end"
+          ? step.subtitle
+          : step.type === "gx"
+            ? "THE FIRST GX / インタラクション開始地点"
+            : chapter?.title || "物語の現在地";
+    return {
+      chapter: chapter?.chapter || "PROLOGUE",
+      chapterTitle: chapter?.title || "物語の入口",
+      speaker,
+      excerpt: String(excerpt || "物語の現在地").slice(0, 120),
+      location: step.location || elements.location.textContent || "GAIA SENSEWARE",
+      kind: step.kind || (step.type === "choice" ? "SCENARIO" : "SOURCE"),
+      mode: Number.isInteger(step.mode) ? step.mode : chapter?.mode || 0,
+    };
+  };
+
+  const formatSaveDate = (timestamp) => {
+    if (!timestamp) return "日時記録なし";
+    try {
+      return new Intl.DateTimeFormat("ja-JP", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(timestamp));
+    } catch {
+      return new Date(timestamp).toLocaleString();
+    }
+  };
+
+  const resetPendingArchiveAction = () => {
+    window.clearTimeout(pendingArchiveTimer);
+    pendingArchiveTimer = 0;
+    pendingArchiveAction = "";
+  };
+
+  const setArchiveStatus = (message, isError = false) => {
+    elements.saveStatus.textContent = message;
+    elements.saveStatus.classList.toggle("is-error", isError);
+  };
+
+  const setArchiveMode = (mode) => {
+    archiveMode = mode === "load" || !hasStarted ? "load" : "save";
+    resetPendingArchiveAction();
+    elements.saveTitle.textContent = archiveMode === "save" ? "SAVE" : "LOAD";
+    elements.saveTab.setAttribute("aria-selected", String(archiveMode === "save"));
+    elements.loadTab.setAttribute("aria-selected", String(archiveMode === "load"));
+    elements.saveTab.classList.toggle("is-active", archiveMode === "save");
+    elements.loadTab.classList.toggle("is-active", archiveMode === "load");
+    elements.saveTab.disabled = !hasStarted;
+    setArchiveStatus(archiveMode === "save"
+      ? "現在の物語を保存するスロットを選んでください"
+      : "再開する記録を選んでください");
+    renderManualSlots();
+  };
+
+  function renderManualSlots() {
+    const slots = getManualSaves();
+    elements.saveSlots.replaceChildren();
+
+    slots.forEach((saved, index) => {
+      const slotNumber = String(index + 1).padStart(2, "0");
+      const article = document.createElement("article");
+      const header = document.createElement("header");
+      const slotLabel = document.createElement("span");
+      const savedAt = document.createElement("time");
+      const body = document.createElement("div");
+      const chapter = document.createElement("p");
+      const title = document.createElement("h3");
+      const excerpt = document.createElement("p");
+      const meta = document.createElement("p");
+      const actions = document.createElement("footer");
+      const primary = document.createElement("button");
+
+      article.className = "novel-save-slot";
+      article.dataset.empty = String(!saved);
+      article.dataset.kind = saved?.meta?.kind || "SOURCE";
+      slotLabel.textContent = `SLOT ${slotNumber}`;
+      savedAt.textContent = saved ? formatSaveDate(saved.savedAt) : "EMPTY";
+      savedAt.dateTime = saved?.savedAt ? new Date(saved.savedAt).toISOString() : "";
+      header.append(slotLabel, savedAt);
+
+      chapter.className = "novel-save-slot-chapter";
+      chapter.textContent = saved
+        ? `${saved.meta.chapter || "STORY"} / ${MODE_TITLES[saved.meta.mode] || "GAIA SENSEWARE"}`
+        : "NO STORY RECORD";
+      title.textContent = saved?.meta?.chapterTitle || "空の記録領域";
+      excerpt.className = "novel-save-slot-excerpt";
+      excerpt.textContent = saved?.meta?.excerpt || "ここにはまだ、物語の現在地が保存されていません。";
+      meta.className = "novel-save-slot-meta";
+      meta.textContent = saved
+        ? `${saved.meta.speaker || "観測記録"}  ·  ${saved.meta.location || "GAIA SENSEWARE"}`
+        : "LOCAL PROFILE / AVAILABLE";
+      body.append(chapter, title, excerpt, meta);
+
+      primary.type = "button";
+      primary.className = "novel-save-primary";
+      if (archiveMode === "save") {
+        const actionKey = `save:${index}`;
+        const confirming = pendingArchiveAction === actionKey;
+        primary.textContent = saved
+          ? (confirming ? "もう一度押して上書き" : "上書き保存")
+          : "このスロットに保存";
+        primary.addEventListener("click", () => saveManualSlot(index));
+      } else {
+        primary.textContent = saved ? "ここから再開" : "記録なし";
+        primary.disabled = !saved;
+        primary.addEventListener("click", () => loadManualSlot(index));
+      }
+      actions.append(primary);
+
+      if (saved) {
+        const remove = document.createElement("button");
+        const actionKey = `delete:${index}`;
+        remove.type = "button";
+        remove.className = "novel-save-delete";
+        remove.textContent = pendingArchiveAction === actionKey ? "もう一度押して消去" : "消去";
+        remove.addEventListener("click", () => deleteManualSlot(index));
+        actions.append(remove);
+      }
+
+      article.append(header, body, actions);
+      elements.saveSlots.append(article);
+    });
+  }
+
+  function armArchiveAction(actionKey, message) {
+    resetPendingArchiveAction();
+    pendingArchiveAction = actionKey;
+    setArchiveStatus(message);
+    renderManualSlots();
+    pendingArchiveTimer = window.setTimeout(() => {
+      pendingArchiveAction = "";
+      renderManualSlots();
+      setArchiveStatus(archiveMode === "save"
+        ? "現在の物語を保存するスロットを選んでください"
+        : "再開する記録を選んでください");
+    }, 3000);
+  }
+
+  function saveManualSlot(index) {
+    if (!hasStarted) return;
+    const slots = getManualSaves();
+    if (slots[index] && pendingArchiveAction !== `save:${index}`) {
+      armArchiveAction(`save:${index}`, `SLOT ${String(index + 1).padStart(2, "0")} を上書きします。もう一度押すと保存します`);
+      return;
+    }
+
+    resetPendingArchiveAction();
+    slots[index] = {
+      stepIndex,
+      flags: [...flags],
+      backlog: backlog.slice(-80),
+      routeHistory: routeHistory.slice(-2),
+      activeDecisionId,
+      savedAt: Date.now(),
+      meta: getManualSaveMeta(),
+    };
+    if (!writeManualSaves(slots)) {
+      setArchiveStatus("保存できませんでした。ブラウザの保存設定を確認してください", true);
+      return;
+    }
+    renderManualSlots();
+    setArchiveStatus(`SLOT ${String(index + 1).padStart(2, "0")} に保存しました`);
+  }
+
+  function deleteManualSlot(index) {
+    const slots = getManualSaves();
+    if (!slots[index]) return;
+    if (pendingArchiveAction !== `delete:${index}`) {
+      armArchiveAction(`delete:${index}`, `SLOT ${String(index + 1).padStart(2, "0")} を消去します。もう一度押すと確定します`);
+      return;
+    }
+    resetPendingArchiveAction();
+    slots[index] = null;
+    if (!writeManualSaves(slots)) {
+      setArchiveStatus("記録を消去できませんでした", true);
+      return;
+    }
+    renderManualSlots();
+    setArchiveStatus(`SLOT ${String(index + 1).padStart(2, "0")} を消去しました`);
+  }
+
+  function loadManualSlot(index) {
+    const saved = getManualSaves()[index];
+    if (!saved) return;
+    clearTimers();
+    stepIndex = saved.stepIndex;
+    flags = [...saved.flags];
+    backlog = [...saved.backlog];
+    routeHistory = [...saved.routeHistory];
+    activeDecisionId = saved.activeDecisionId || "intro";
+    closeManualArchive({ restoreFocus: false, resumePlayback: false });
+    showRuntime();
+    renderEves();
+    saveProgress();
+    renderCurrentStep();
+  }
+
+  function openManualArchive(mode, trigger = null) {
+    if (mode === "save" && !hasStarted) return;
+    archiveReturnFocus = trigger || document.activeElement;
+    if (isRevealing) finishReveal();
+    clearTimers();
+    closeConfig({ restoreFocus: false, resumePlayback: false });
+    closeLog();
+    closeEves();
+    closeSourceDetails();
+    setArchiveMode(mode);
+    elements.savePanel.hidden = false;
+    elements.savePanel.setAttribute("aria-hidden", "false");
+    elements.saveButton.setAttribute("aria-expanded", String(mode === "save"));
+    elements.loadButton.setAttribute("aria-expanded", String(mode === "load"));
+    document.body.classList.add("novel-save-open");
+    requestAnimationFrame(() => {
+      const target = elements.saveSlots.querySelector("button:not([disabled])") || elements.saveClose;
+      target.focus({ preventScroll: true });
+    });
+  }
+
+  function closeManualArchive({ restoreFocus = true, resumePlayback = true } = {}) {
+    if (elements.savePanel.hidden) return;
+    resetPendingArchiveAction();
+    elements.savePanel.hidden = true;
+    elements.savePanel.setAttribute("aria-hidden", "true");
+    elements.saveButton.setAttribute("aria-expanded", "false");
+    elements.loadButton.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("novel-save-open");
+    if (restoreFocus) archiveReturnFocus?.focus?.({ preventScroll: true });
+    archiveReturnFocus = null;
+    if (!resumePlayback || !hasStarted || !isOpen) return;
+    const step = STORY[stepIndex];
+    if (step?.type === "chapter") renderCurrentStep();
+    else if (step?.type === "end") endingTimer = window.setTimeout(finishEnding, ENDING_RETURN_DELAY_MS);
+    else if (step?.type === "line") scheduleAutoAdvance();
+  }
+
+  function openConfig(trigger = null) {
+    configReturnFocus = trigger || document.activeElement;
+    if (isRevealing) finishReveal();
+    clearTimers();
+    closeManualArchive({ restoreFocus: false, resumePlayback: false });
+    closeLog();
+    closeEves();
+    closeSourceDetails();
+    syncMessageSpeedControls();
+    elements.configPanel.hidden = false;
+    elements.configPanel.setAttribute("aria-hidden", "false");
+    elements.configButton.setAttribute("aria-expanded", "true");
+    document.body.classList.add("novel-config-open");
+    requestAnimationFrame(() => elements.messageSpeed.focus({ preventScroll: true }));
+  }
+
+  function closeConfig({ restoreFocus = true, resumePlayback = true } = {}) {
+    if (elements.configPanel.hidden) return;
+    elements.configPanel.hidden = true;
+    elements.configPanel.setAttribute("aria-hidden", "true");
+    elements.configButton.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("novel-config-open");
+    if (restoreFocus) configReturnFocus?.focus?.({ preventScroll: true });
+    configReturnFocus = null;
+    if (!resumePlayback || !hasStarted || !isOpen) return;
+    const step = STORY[stepIndex];
+    if (step?.type === "chapter") renderCurrentStep();
+    else if (step?.type === "end") endingTimer = window.setTimeout(finishEnding, ENDING_RETURN_DELAY_MS);
+    else if (step?.type === "line") scheduleAutoAdvance();
+  }
 
   const selectMode = (mode) => {
     if (!Number.isInteger(mode)) return;
@@ -732,9 +1118,10 @@
       layout.textContent = lineText;
       reveal.textContent = lineText;
 
+      const revealTiming = getMessageRevealTiming();
       lineGlyphs.forEach((glyph) => {
-        duration += TEXT_REVEAL_STEP_MS;
-        if (/[。！？、…―]/u.test(glyph)) duration += TEXT_REVEAL_PAUSE_MS;
+        duration += revealTiming.glyph;
+        if (/[。！？、…―]/u.test(glyph)) duration += revealTiming.pause;
       });
 
       reveal.style.setProperty("--novel-line-delay", `${delay}ms`);
@@ -795,6 +1182,8 @@
     elements.titleScreen.hidden = true;
     elements.runtime.hidden = false;
     elements.restart.hidden = false;
+    elements.saveButton.hidden = false;
+    elements.loadButton.hidden = false;
   };
 
   const renderLine = (step) => {
@@ -877,16 +1266,12 @@
     });
     revealSourceSignal();
     elements.choices.replaceChildren();
-    step.choices.forEach((choice, choiceIndex) => {
+    step.choices.forEach((choice) => {
       const button = document.createElement("button");
       button.type = "button";
-      const meta = document.createElement("span");
       const label = document.createElement("strong");
-      const hint = document.createElement("small");
-      meta.textContent = `E.V.E.S. ${step.id === "gap_decision" ? "01" : "02"} / VARIANT ${String.fromCharCode(65 + choiceIndex)}`;
       label.textContent = choice.text;
-      hint.textContent = "この経路を記録する";
-      button.append(meta, label, hint);
+      button.append(label);
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         routeHistory = routeHistory.filter((entry) => entry.decisionId !== step.id);
@@ -1012,6 +1397,7 @@
       !hasStarted ||
       !elements.logPanel.hidden ||
       !elements.evesPanel.hidden ||
+      !elements.savePanel.hidden ||
       !elements.sourcePanel.hidden
     ) return;
     const step = STORY[stepIndex];
@@ -1104,6 +1490,8 @@
 
   function closeNovelNow() {
     clearTimers();
+    closeManualArchive({ restoreFocus: false, resumePlayback: false });
+    closeConfig({ restoreFocus: false, resumePlayback: false });
     closeLog();
     closeEves();
     closeSourceDetails();
@@ -1159,10 +1547,28 @@
   });
   elements.start.addEventListener("click", restartStory);
   elements.resume.addEventListener("click", resumeStory);
+  elements.titleLoad.addEventListener("click", () => openManualArchive("load", elements.titleLoad));
   elements.close.addEventListener("click", (event) => closeNovel(event));
   elements.restart.addEventListener("click", restartStory);
   elements.logButton.addEventListener("click", toggleLog);
   elements.logClose.addEventListener("click", closeLog);
+  elements.saveButton.addEventListener("click", () => openManualArchive("save", elements.saveButton));
+  elements.loadButton.addEventListener("click", () => openManualArchive("load", elements.loadButton));
+  elements.saveClose.addEventListener("click", () => closeManualArchive());
+  elements.saveTab.addEventListener("click", () => setArchiveMode("save"));
+  elements.loadTab.addEventListener("click", () => setArchiveMode("load"));
+  elements.savePanel.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (event.target === elements.savePanel) closeManualArchive();
+  });
+  elements.configButton.addEventListener("click", () => openConfig(elements.configButton));
+  elements.configClose.addEventListener("click", () => closeConfig());
+  elements.configReset.addEventListener("click", () => setMessageSpeed(MESSAGE_SPEED_DEFAULT));
+  elements.messageSpeed.addEventListener("input", (event) => setMessageSpeed(event.currentTarget.value));
+  elements.configPanel.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (event.target === elements.configPanel) closeConfig();
+  });
   elements.evesButton.addEventListener("click", toggleEves);
   elements.evesClose.addEventListener("click", closeEves);
   elements.evesRewind.addEventListener("click", rewindEves);
@@ -1205,7 +1611,9 @@
     }
     if (event.key === "Escape") {
       event.preventDefault();
-      if (!elements.sourcePanel.hidden) closeSourceDetails({ restoreFocus: true });
+      if (!elements.configPanel.hidden) closeConfig();
+      else if (!elements.savePanel.hidden) closeManualArchive();
+      else if (!elements.sourcePanel.hidden) closeSourceDetails({ restoreFocus: true });
       else if (!elements.evesPanel.hidden) closeEves();
       else if (!elements.logPanel.hidden) closeLog();
       else closeNovel();
@@ -1222,6 +1630,10 @@
   });
 
   elements.restart.hidden = true;
+  elements.saveButton.hidden = true;
+  elements.loadButton.hidden = true;
+  setMessageSpeed(getStoredMessageSpeed(), { persist: false });
+  renderManualSlots();
   renderEves();
   if (window.location.hash === "#story") openNovel();
 })();

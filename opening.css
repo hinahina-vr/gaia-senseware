@@ -2515,6 +2515,15 @@ body.gaia-opening-active .gaia-opening-skip {
   transform: translateX(4px);
 }
 
+.gaia-opening-route-guide i {
+  color: rgba(var(--opening-paper), 0.76);
+  font-family: var(--font-ja);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+}
+
 /* Keep the final lockup level with the characters instead of sinking toward
    the lower third as the title/menu group changes height. */
 @media (min-width: 721px) {
@@ -3112,4 +3121,108 @@ body.novel-open:has(#novel-eves-panel:not([hidden])) .novel-topbar #novel-close-
   box-shadow: none;
   outline: none;
   transform: translateY(-1px);
+}
+
+/* Keep keyboard focus on the icon/label treatment; the full-width pill ring
+   competes with the glass scene and reads like a second button boundary. */
+.gaia-opening-sound-actions button:focus,
+.gaia-opening-sound-actions button:focus-visible,
+.gaia-opening-sound-actions button:active {
+  border-color: transparent !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Persistent volume control: one quiet icon at rest, then a glass strip that
+   unfolds horizontally only when the visitor asks for it. */
+.gaia-audio-dock,
+body.gaia-opening-active .gaia-audio-dock {
+  width: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  gap: 0;
+  padding: 5px;
+  overflow: hidden;
+  transform-origin: right center;
+  transition:
+    width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    gap 320ms ease,
+    padding 320ms ease,
+    opacity 260ms ease,
+    transform 260ms ease,
+    border-color 260ms ease,
+    box-shadow 260ms ease;
+}
+
+.gaia-audio-dock.is-visible.is-expanded,
+body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
+  width: min(350px, calc(100vw - 36px));
+  gap: 10px;
+  padding-right: 14px;
+}
+
+.gaia-audio-dock label {
+  flex: 1 1 auto;
+  grid-template-columns: auto minmax(110px, 1fr) 38px;
+  min-width: 0;
+  max-width: 0;
+  gap: 9px;
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-14px);
+  transition:
+    max-width 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 150ms ease,
+    transform 300ms ease;
+}
+
+.gaia-audio-dock:not(.is-expanded) label {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.gaia-audio-dock.is-expanded label {
+  max-width: 280px;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  transition-delay: 0s, 120ms, 70ms;
+}
+
+.gaia-audio-dock .gaia-audio-gallery-open {
+  display: none !important;
+}
+
+.gaia-audio-dock:not(.is-expanded)::after {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .gaia-audio-dock,
+  body.gaia-opening-active .gaia-audio-dock {
+    width: 46px;
+    min-width: 46px;
+    min-height: 46px;
+    padding: 5px;
+  }
+
+  .gaia-audio-dock.is-visible.is-expanded,
+  body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
+    width: min(320px, calc(100vw - 24px));
+    padding-right: 12px;
+  }
+
+  .gaia-audio-dock label {
+    grid-template-columns: auto minmax(82px, 1fr) 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaia-audio-dock,
+  .gaia-audio-dock label {
+    transition-duration: 0.01ms;
+  }
 }

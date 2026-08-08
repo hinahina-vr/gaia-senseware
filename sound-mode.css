@@ -586,7 +586,7 @@ body.gaia-opening-active .gaia-audio-gallery-open {
 
 .intro-lp-hero .intro-path-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  width: min(900px, 100%);
+  width: min(1000px, 100%);
 }
 
 .intro-path-card--sound {
@@ -595,9 +595,9 @@ body.gaia-opening-active .gaia-audio-gallery-open {
 
 .intro-lp-hero .intro-path-card--sound > p {
   max-width: 100%;
-  font-size: clamp(6px, 0.42vw, 8px);
+  font-size: clamp(7px, 0.48vw, 9px);
   letter-spacing: 0.035em;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .intro-path-card--sound .intro-path-glyph--sound {
