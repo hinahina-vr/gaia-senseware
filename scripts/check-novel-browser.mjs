@@ -244,6 +244,12 @@ try {
   const speakerText = await page.locator(".novel-slack-post p strong").allTextContents();
   assert(speakerText.length === 3, "Slack speaker labels do not match the visible posts");
 
+  const observationChoice = steps.find((step) => step.choiceId === "observation_order");
+  await bootAt(page, observationChoice.id);
+  const observationLabels = await page.locator("#novel-choices button").allTextContents();
+  assert(JSON.stringify(observationLabels) === JSON.stringify(["売り場の温度計から見る", "最寄り観測所の記録から見る"]), `observation choice leaked internal labels: ${JSON.stringify(observationLabels)}`);
+  await screenshot(page, "observation-choice");
+
   const editorial = steps.find((step) => step.choiceId === "editorial_choice");
   await bootAt(page, editorial.id);
   assert(await page.locator(".novel-evidence-compare > article").count() === 2, "SOURCE and DERIVED are not separated");

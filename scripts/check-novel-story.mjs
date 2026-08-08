@@ -21,6 +21,8 @@ assert.equal(sceneSet.size, sceneIds.length, "scene IDs must be unique");
 const steps = scenes.flatMap((scene) => scene.steps || []);
 const stepIds = steps.map((step) => step.id);
 assert.equal(new Set(stepIds).size, stepIds.length, "step IDs must be unique");
+const visibleStoryText = steps.flatMap((step) => [step.text, step.prompt, ...(step.options || []).map((option) => option.label)]).filter(Boolean).join("\n");
+assert.doesNotMatch(visibleStoryText, /LOCAL FIRST|STATION FIRST/u, "internal observation-order identifiers leaked into visible story text");
 
 for (const required of story.requiredSceneIds || []) assert.ok(sceneSet.has(required), `required scene is missing: ${required}`);
 for (const scene of scenes) {

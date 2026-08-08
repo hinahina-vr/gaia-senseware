@@ -420,12 +420,12 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
             {
               "value": "LOCAL_FIRST",
               "next": "first_meeting_promise",
-              "label": "売り場の温度計から見る / LOCAL FIRST"
+              "label": "売り場の温度計から見る"
             },
             {
               "value": "STATION_FIRST",
               "next": "first_meeting_promise",
-              "label": "最寄り観測所の記録から見る / STATION FIRST"
+              "label": "最寄り観測所の記録から見る"
             }
           ]
         },
@@ -2115,7 +2115,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初のバジルでLOCAL FIRSTを選んでいた場合、ミズハの部屋で湯が沸き、そのあとアマネの扇風機が鳴る。\nSTATION FIRSTを選んでいた場合、扇風機のあとに湯が沸く。"
+          "text": "最初のバジルで売り場の温度計を先に見ていた場合、ミズハの部屋で湯が沸き、そのあとアマネの扇風機が鳴る。\n最寄り観測所の記録を先に見ていた場合、扇風機のあとに湯が沸く。"
         },
         {
           "id": "mode10_space_006",

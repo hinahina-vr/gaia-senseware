@@ -656,8 +656,12 @@
       const code = document.createElement("small");
       const parts = option.label.split(" / ");
       title.textContent = parts[0];
-      code.textContent = parts.slice(1).join(" / ") || option.value;
-      button.append(title, code);
+      if (parts.length > 1) {
+        code.textContent = parts.slice(1).join(" / ");
+        button.append(title, code);
+      } else {
+        button.append(title);
+      }
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         const key = choiceStateKey(step.choiceId);
