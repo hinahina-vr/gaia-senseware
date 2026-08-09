@@ -5640,3 +5640,234 @@ body:not(.gx-story-open) .novel-layer.is-slack .novel-character.novel-character-
   opacity: 1;
   transform: translateY(0);
 }
+
+/* Back-half handoff: one operations-phone frame persists from notice to audio. */
+.novel-operations-phone-surface[hidden] { display: none; }
+
+.novel-operations-phone-surface {
+  position: absolute;
+  z-index: 8;
+  top: max(72px, env(safe-area-inset-top));
+  right: 0;
+  bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) + 18px);
+  left: 0;
+  display: grid;
+  min-height: 0;
+  padding-inline: max(16px, env(safe-area-inset-left), env(safe-area-inset-right));
+  overflow: hidden;
+  pointer-events: none;
+  place-items: center;
+}
+
+.novel-operations-phone {
+  position: relative;
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr) 22px;
+  width: min(320px, calc(100vw - 32px));
+  height: min(520px, 100%);
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid rgba(157, 202, 235, 0.5);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 72% 18%, rgba(87, 161, 220, 0.17), transparent 34%),
+    linear-gradient(165deg, rgba(11, 29, 51, 0.98), rgba(3, 11, 25, 0.99));
+  box-shadow: 0 26px 68px rgba(0, 3, 16, 0.48), inset 0 1px rgba(242, 250, 255, 0.12);
+  color: rgba(241, 249, 255, 0.96);
+}
+
+.novel-operations-phone::before {
+  position: absolute;
+  z-index: 2;
+  top: 9px;
+  left: 50%;
+  width: 58px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(209, 227, 241, 0.24);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.novel-operations-phone-statusbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  padding: 0 18px 8px;
+  color: rgba(222, 238, 249, 0.72);
+  font: 700 9px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.08em;
+}
+
+.novel-operations-phone-statusbar > span { display: flex; align-items: end; gap: 3px; }
+.novel-operations-phone-statusbar > span i { display: block; width: 3px; border-radius: 2px; background: currentColor; }
+.novel-operations-phone-statusbar > span i:nth-child(1) { height: 4px; opacity: 0.5; }
+.novel-operations-phone-statusbar > span i:nth-child(2) { height: 6px; opacity: 0.72; }
+.novel-operations-phone-statusbar > span i:nth-child(3) { height: 8px; }
+
+.novel-operations-phone-screen {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  margin: 0 10px;
+  overflow: hidden;
+  border-top: 1px solid rgba(164, 205, 233, 0.12);
+  border-bottom: 1px solid rgba(164, 205, 233, 0.12);
+}
+
+.novel-operations-phone-view {
+  grid-area: 1 / 1;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(24px, 5vh, 42px) 22px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(5px);
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms step-end;
+}
+
+.novel-layer[data-story-device="portrait-operations-phone"][data-story-device-phase="prepare"] .novel-operations-phone-view.is-prepare,
+.novel-layer[data-story-device="portrait-operations-phone"][data-story-device-phase="official-notice"] .novel-operations-phone-view.is-notice,
+.novel-layer[data-story-device="portrait-operations-phone"][data-story-device-phase="incoming-audio"] .novel-operations-phone-view.is-audio {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0ms;
+}
+
+.novel-operations-phone-view.is-prepare {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.novel-operations-phone-view.is-prepare span,
+.novel-operations-phone-view.is-audio > span {
+  color: rgba(134, 196, 235, 0.72);
+  font: 700 9px/1.4 Consolas, "Courier New", monospace;
+  letter-spacing: 0.18em;
+}
+
+.novel-operations-phone-view.is-prepare strong { margin-top: 14px; font: 500 26px/1.4 var(--novel-font); }
+.novel-operations-phone-view.is-prepare p { margin: 8px 0 0; color: rgba(219, 235, 246, 0.56); font-size: 12px; }
+
+.novel-operations-phone-view.is-notice {
+  display: grid;
+  align-content: start;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.novel-operations-phone-view.is-notice header {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(151, 202, 237, 0.18);
+  color: rgba(152, 209, 241, 0.76);
+  font: 700 9px/1.4 Consolas, "Courier New", monospace;
+  letter-spacing: 0.12em;
+}
+
+.novel-operations-phone-view.is-notice > strong { margin-top: 24px; font: 600 18px/1.5 var(--novel-font); }
+.novel-operations-phone-view.is-notice > p { margin: 12px 0 0; overflow-y: auto; color: rgba(229, 240, 248, 0.82); font-size: 13px; line-height: 1.9; }
+
+.novel-operations-phone-view.is-audio {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.novel-operations-phone-avatar {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  margin-top: 22px;
+  border: 1px solid rgba(147, 204, 238, 0.4);
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, rgba(174, 218, 246, 0.3), rgba(34, 78, 112, 0.48));
+  color: rgba(239, 249, 255, 0.88);
+  font: 500 28px/1 Georgia, "Times New Roman", serif;
+  place-items: center;
+}
+
+.novel-operations-phone-view.is-audio > strong { margin-top: 14px; font: 500 24px/1.4 var(--novel-font); }
+.novel-operations-phone-view.is-audio > p { margin: 4px 0 0; color: rgba(178, 215, 237, 0.68); font-size: 11px; }
+.novel-operations-phone-wave { display: flex; align-items: center; height: 32px; margin-top: 18px; gap: 5px; }
+.novel-operations-phone-wave i { width: 2px; height: 8px; border-radius: 2px; background: rgba(136, 205, 240, 0.74); }
+.novel-operations-phone-wave i:nth-child(2),
+.novel-operations-phone-wave i:nth-child(4) { height: 18px; }
+.novel-operations-phone-wave i:nth-child(3) { height: 27px; }
+.novel-operations-phone-call-controls { display: flex; margin-top: 24px; gap: 18px; }
+.novel-operations-phone-call-controls i { width: 34px; height: 34px; border: 1px solid rgba(160, 205, 234, 0.24); border-radius: 50%; background: rgba(117, 178, 215, 0.08); }
+
+.novel-operations-phone > footer { display: grid; place-items: center; }
+.novel-operations-phone > footer i { width: 86px; height: 3px; border-radius: 999px; background: rgba(211, 230, 243, 0.28); }
+
+/* Recorded/remote voices remain off-stage; physical Sakuya appears only after the gate. */
+.novel-layer.is-cast-suppressed .novel-cast {
+  visibility: hidden;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+body:not(.gx-story-open) .novel-layer.is-central-entrance-distance .novel-character:not(.novel-character--sakuya) {
+  visibility: hidden;
+  opacity: 0 !important;
+}
+
+body:not(.gx-story-open) .novel-layer.is-central-entrance-distance .novel-character.novel-character--sakuya {
+  z-index: 2;
+  top: clamp(100px, 13vh, 142px);
+  right: auto;
+  bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) + 10px);
+  left: 72%;
+  width: clamp(250px, 24vw, 360px);
+  height: auto;
+  opacity: 0.9 !important;
+  visibility: visible;
+  filter: saturate(0.88) brightness(0.96) drop-shadow(0 16px 26px rgba(0, 8, 20, 0.24));
+  transform: translate3d(-50%, 0, 0) scale(0.82) !important;
+  transform-origin: 50% 100%;
+}
+
+body:not(.gx-story-open) .novel-layer.is-central-entrance-distance .novel-character--sakuya .novel-character-portrait,
+body:not(.gx-story-open) .novel-layer.is-central-entrance-distance[data-step-type="dialogue"] .novel-cast[data-speaker="sakuya"] .novel-character--sakuya .novel-character-portrait {
+  background-position: 50% 100%;
+  background-size: contain;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+}
+
+.novel-layer.is-central-entrance-distance .novel-character--sakuya figcaption { opacity: 0 !important; }
+
+@media (max-width: 600px) {
+  .novel-operations-phone-surface {
+    top: max(58px, env(safe-area-inset-top));
+    bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) + 10px);
+    padding-inline: 12px;
+  }
+
+  .novel-operations-phone {
+    width: min(318px, calc(100vw - 24px));
+    min-height: 330px;
+    border-radius: 24px;
+  }
+
+  .novel-operations-phone-view { padding: 22px 18px; }
+
+  body:not(.gx-story-open) .novel-layer.is-central-entrance-distance .novel-character.novel-character--sakuya {
+    top: 96px;
+    bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) + 8px);
+    left: 70%;
+    width: min(58vw, 224px);
+    opacity: 0.86 !important;
+    transform: translate3d(-50%, 0, 0) scale(0.86) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-operations-phone-view { transition: none; }
+}
