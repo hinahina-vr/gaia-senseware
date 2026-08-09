@@ -759,7 +759,78 @@ try {
   await bootAt(page, narration.id);
   await page.locator("#novel-log-button").click();
   assert(await page.locator("#novel-log-panel").isVisible(), "LOG did not open");
+  await page.waitForTimeout(300);
+  const logGeometry = await page.evaluate(() => {
+    const panel = document.querySelector("#novel-log-panel");
+    const content = document.querySelector("#novel-log-content");
+    const rect = panel.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      viewport: { width: innerWidth, height: innerHeight },
+      contentScrollable: content.scrollHeight > content.clientHeight,
+      articleCount: content.querySelectorAll("article").length,
+      firstStepId: content.querySelector("article:first-child")?.dataset.stepId,
+      lastStepId: content.querySelector("article:last-child")?.dataset.stepId,
+      distanceFromBottom: content.scrollHeight - content.clientHeight - content.scrollTop,
+    };
+  });
+  assert(Math.abs(logGeometry.left) < 1 && Math.abs(logGeometry.top) < 1 && Math.abs(logGeometry.right - logGeometry.viewport.width) < 1 && Math.abs(logGeometry.bottom - logGeometry.viewport.height) < 1, `LOG is not full-screen: ${JSON.stringify(logGeometry)}`);
+  assert(logGeometry.contentScrollable && logGeometry.articleCount >= 60, `LOG history is not scrollable: ${JSON.stringify(logGeometry)}`);
+  assert(logGeometry.firstStepId === logHistoryIds[0] && logGeometry.lastStepId === logHistoryIds.at(-1), `LOG is not ordered from oldest to newest: ${JSON.stringify(logGeometry)}`);
+  assert(logGeometry.distanceFromBottom <= 1, `LOG did not open at the latest entry: ${JSON.stringify(logGeometry)}`);
+  const overflowLogContainsFullText = await page.locator("#novel-log-content article").evaluateAll((articles, fullText) => {
+    const normalize = (value) => String(value || "").replace(/\s/gu, "");
+    return articles.some((article) => normalize(article.textContent).includes(normalize(fullText)));
+  }, overflowRegressionStep.text);
+  assert(overflowLogContainsFullText, "LOG did not retain the full unpaginated narration text");
+  await screenshot(page, "log-fullscreen");
+  await page.locator("#novel-log-content").hover();
+  await page.mouse.wheel(0, -520);
+  await page.waitForFunction(() => {
+    const content = document.querySelector("#novel-log-content");
+    return content.scrollTop < content.scrollHeight - content.clientHeight - 72;
+  });
+  assert(await page.locator("#novel-log-panel").isVisible(), "scrolling inside LOG unexpectedly closed it");
+  const retainedScrollTop = await page.locator("#novel-log-content").evaluate((content) => {
+    const article = document.createElement("article");
+    article.dataset.stepId = "test-newer-while-reading";
+    article.innerHTML = "<p>TEST</p><p>新しい記録</p>";
+    content.append(article);
+    return content.scrollTop;
+  });
+  await page.waitForTimeout(100);
+  assert(Math.abs(await page.locator("#novel-log-content").evaluate((content) => content.scrollTop) - retainedScrollTop) <= 1, "LOG stole the scroll position while older entries were being read");
+  await page.locator("#novel-log-content").evaluate((content) => {
+    content.scrollTop = content.scrollHeight;
+    content.dispatchEvent(new Event("scroll"));
+    const article = document.createElement("article");
+    article.dataset.stepId = "test-newest-follow";
+    article.innerHTML = "<p>TEST</p><p>最新の記録</p>";
+    content.append(article);
+  });
+  await page.waitForFunction(() => {
+    const content = document.querySelector("#novel-log-content");
+    return content.scrollHeight - content.clientHeight - content.scrollTop <= 1;
+  });
   await page.locator("#novel-log-close").click();
+  await page.locator("#novel-layer").dispatchEvent("wheel", { deltaY: 120 });
+  assert(await page.locator("#novel-log-panel").isHidden(), "downward wheel unexpectedly opened LOG");
+  await page.locator("#novel-layer").dispatchEvent("wheel", { deltaY: -120 });
+  await page.locator("#novel-log-panel").waitFor({ state: "visible" });
+  assert(await page.locator("#novel-log-button").getAttribute("aria-expanded") === "true", "upward wheel did not immediately open LOG");
+  await page.locator("#novel-log-close").click();
+  await page.locator("#novel-dialogue").focus();
+  await page.keyboard.press("l");
+  await page.locator("#novel-log-panel").waitFor({ state: "visible" });
+  await page.waitForFunction(() => {
+    const content = document.querySelector("#novel-log-content");
+    return content.scrollHeight - content.clientHeight - content.scrollTop <= 1;
+  });
+  await page.keyboard.press("Escape");
+  await page.locator("#novel-log-panel").waitFor({ state: "hidden" });
   await page.locator("#novel-config-button").click();
   await page.locator("#novel-reduced-motion").check();
   await page.locator("#novel-config-close").click();
@@ -921,6 +992,22 @@ try {
   const mobileGxInteraction = steps.find((step) => step.type === "interaction" && step.interaction.kind === "gx");
   await bootAt(mobile, mobileGxInteraction.id, {}, { reducedMotion: true });
   await operateInteraction(mobile, mobileGxInteraction);
+  await bootAt(mobile, narration.id, { readStepIds: logHistoryIds }, { reducedMotion: true });
+  await mobile.locator("#novel-dialogue").focus();
+  await mobile.keyboard.press("l");
+  await mobile.locator("#novel-log-panel").waitFor({ state: "visible" });
+  await mobile.waitForFunction(() => {
+    const content = document.querySelector("#novel-log-content");
+    return content.scrollHeight - content.clientHeight - content.scrollTop <= 1;
+  });
+  const mobileLogState = await mobile.locator("#novel-log-content").evaluate((content) => ({
+    firstStepId: content.querySelector("article:first-child")?.dataset.stepId,
+    lastStepId: content.querySelector("article:last-child")?.dataset.stepId,
+    distanceFromBottom: content.scrollHeight - content.clientHeight - content.scrollTop,
+  }));
+  assert(mobileLogState.firstStepId === logHistoryIds[0] && mobileLogState.lastStepId === logHistoryIds.at(-1) && mobileLogState.distanceFromBottom <= 1, `mobile LOG order or initial position failed: ${JSON.stringify(mobileLogState)}`);
+  await mobile.keyboard.press("Escape");
+  await mobile.locator("#novel-log-panel").waitFor({ state: "hidden" });
   report.viewports.push({ width: 390, height: 844, passed: true });
   await context.close();
 

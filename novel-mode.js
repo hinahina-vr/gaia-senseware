@@ -20,6 +20,14 @@
   const REVEAL_BASE_MS = 24;
   const REVEAL_MIN_LINE_MS = 120;
   const REVEAL_PUNCTUATION_MS = 84;
+  const TEXT_PAGE_MAX_LINES = 3;
+  const TEXT_PAGE_HEIGHT_BUFFER_PX = 4;
+  const SECTION_SEPARATOR_MS = 1450;
+  const FAST_FORWARD_HOLD_DELAY_MS = 180;
+  const FAST_FORWARD_STEP_MS = 90;
+  const SLACK_ENTER_MS = 760;
+  const SLACK_EXIT_MS = 460;
+  const LOG_FOLLOW_THRESHOLD_PX = 72;
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
   const SPEAKERS = Object.freeze({
     narrator: { name: "", glyph: "◌" },
@@ -165,6 +173,10 @@
   let pendingInteraction = null;
   let detourState = null;
   let detourDock = null;
+  let detourDockObserver = null;
+  let backgroundTransitionPending = false;
+  let requestedStoryTrack = null;
+  let logFollowLatest = true;
   let config = { messageSpeedPercent: 200, reducedMotion: false };
 
   const particleSystem = window.GaiaParticles?.create?.(elements.particles, {
@@ -791,13 +803,16 @@
   };
 
   const markRead = (step) => {
+    let addedToLog = false;
     if (!["choice", "reflectionChoice", "interaction", "result", "end"].includes(step.type)
       && !state.readStepIds.includes(step.id)) {
       state.readStepIds.push(step.id);
       state.readStepIds = state.readStepIds.slice(-260);
+      addedToLog = true;
     }
     if (!state.reachedSceneIds.includes(step.sceneId)) state.reachedSceneIds.push(step.sceneId);
     saveProgress();
+    if (addedToLog && !elements.logPanel.hidden) renderLog();
   };
 
   const prepareStepFrame = (step) => {
@@ -1490,13 +1505,14 @@
 
   const renderLog = () => {
     elements.logContent.replaceChildren();
-    [...state.readStepIds].reverse().forEach((id) => {
+    state.readStepIds.forEach((id) => {
       const step = stepMap.get(id);
       if (!step?.text) return;
       const article = document.createElement("article");
       const header = document.createElement("p");
       const text = document.createElement("p");
       const speaker = SPEAKERS[step.speaker]?.name || step.type.toUpperCase();
+      article.dataset.stepId = id;
       article.dataset.kind = step.recordType || "SOURCE";
       article.dataset.speaker = step.speaker || "system";
       header.textContent = `${speaker || "観測記録"} / ${RECORD_LABELS[step.recordType] || step.type}`;
@@ -1505,21 +1521,39 @@
       elements.logContent.append(article);
     });
   };
+  const logDistanceFromBottom = () => Math.max(0,
+    elements.logContent.scrollHeight - elements.logContent.clientHeight - elements.logContent.scrollTop);
+  const scrollLogToLatest = () => {
+    elements.logContent.scrollTop = elements.logContent.scrollHeight;
+    logFollowLatest = true;
+  };
+  elements.logContent.addEventListener("scroll", () => {
+    logFollowLatest = logDistanceFromBottom() <= LOG_FOLLOW_THRESHOLD_PX;
+  }, { passive: true });
+  new MutationObserver(() => {
+    if (elements.logPanel.hidden || !logFollowLatest) return;
+    requestAnimationFrame(scrollLogToLatest);
+  }).observe(elements.logContent, { childList: true });
   const closeLog = () => {
     elements.logPanel.hidden = true;
     elements.logPanel.setAttribute("aria-hidden", "true");
     elements.logButton.setAttribute("aria-expanded", "false");
   };
+  const openLog = () => {
+    if (!elements.logPanel.hidden) return;
+    closeEves();
+    closeSourceDetails();
+    logFollowLatest = true;
+    renderLog();
+    elements.logPanel.hidden = false;
+    elements.logPanel.setAttribute("aria-hidden", "false");
+    elements.logButton.setAttribute("aria-expanded", "true");
+    requestAnimationFrame(scrollLogToLatest);
+    elements.logClose.focus({ preventScroll: true });
+  };
   const toggleLog = () => {
-    if (elements.logPanel.hidden) {
-      closeEves();
-      closeSourceDetails();
-      renderLog();
-      elements.logPanel.hidden = false;
-      elements.logPanel.setAttribute("aria-hidden", "false");
-      elements.logButton.setAttribute("aria-expanded", "true");
-      elements.logClose.focus({ preventScroll: true });
-    } else closeLog();
+    if (elements.logPanel.hidden) openLog();
+    else closeLog();
   };
 
   const closeSourceDetails = ({ restoreFocus = false } = {}) => {
