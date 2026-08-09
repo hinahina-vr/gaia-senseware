@@ -12,6 +12,8 @@
     moonbook: "./assets/audio/moonlit-observation-notebook.mp3",
     moonsave: "./assets/audio/moonlit-source-save.mp3",
     moonreopen: "./assets/audio/moonlit-reopen.mp3",
+    softsave: "./assets/audio/soft-save-room.mp3",
+    softwindow: "./assets/audio/soft-window-loop.mp3",
   });
   const DEFAULT_VOLUME = 0.1;
   const VOLUME_STORAGE_KEY = "gaia-senseware-bgm-volume";

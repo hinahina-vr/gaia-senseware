@@ -795,7 +795,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_basil",
           "type": "record",
           "recordType": "LOCAL_SOURCE",
-          "text": "園芸売り場の温度計：36 ℃ / LOCAL SOURCE\n最寄り観測所の気温：観測所名と観測時刻を表示 / SOURCE"
+          "text": "園芸売り場の温度計：36 ℃ / LOCAL SOURCE\n最寄り観測所の気温：同じ時間帯に公開された値と照合 / SOURCE"
         }
       ],
       "nextSceneId": "choice_observation_order"
@@ -2042,7 +2042,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_walk",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "では、今日気になったものを一つの作品へ持ち寄ってみます？"
+          "text": "では、今日気になったものを一つの作品にしてみます？"
         },
         {
           "id": "festival_walk_015",

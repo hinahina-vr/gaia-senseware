@@ -90,6 +90,20 @@
       planet: "PLANET 10",
       signal: "REOPENED MEMORY",
     },
+    softsave: {
+      number: "TRACK 11 / SAVE ROOM",
+      title: "保存室の小さな灯",
+      description: "選んだ現在地をそっと棚へ戻し、また物語へ帰るまでの静かな待ち時間の音楽。",
+      planet: "PLANET 11",
+      signal: "SOFT SAVE LIGHT",
+    },
+    softwindow: {
+      number: "TRACK 12 / WINDOW LOOP",
+      title: "窓辺にほどける光",
+      description: "午後の窓辺を巡る光と、言葉になる前の気配を繰り返し見つめる音楽。",
+      planet: "PLANET 12",
+      signal: "WINDOWLIGHT LOOP",
+    },
   });
 
   let isOpen = false;
