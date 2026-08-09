@@ -108,6 +108,116 @@ const bootAt = async (page, stepId, overrides = {}, { reducedMotion = false } = 
 };
 
 const currentStepId = (page) => page.locator("#novel-layer").getAttribute("data-step-id");
+const dialoguePageGeometry = (page) => page.evaluate(() => {
+  const dialogue = document.querySelector("#novel-dialogue");
+  const text = document.querySelector("#novel-text");
+  const dialogueRect = dialogue.getBoundingClientRect();
+  const textRect = text.getBoundingClientRect();
+  const dialogueStyle = getComputedStyle(dialogue);
+  const contentTop = dialogueRect.top + (Number.parseFloat(dialogueStyle.paddingTop) || 0);
+  const contentBottom = dialogueRect.bottom - (Number.parseFloat(dialogueStyle.paddingBottom) || 0);
+  const renderedLineTops = new Set();
+  const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    for (let offset = 0; offset < node.data.length; offset += 1) {
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.setEnd(node, offset + 1);
+      const rect = [...range.getClientRects()].find((candidate) => candidate.width > 0 && candidate.height > 0);
+      if (rect) renderedLineTops.add(Math.round(rect.top * 2) / 2);
+    }
+  }
+  return {
+    characterCount: Number(text.dataset.characterCount),
+    explicitLineCount: Number(text.dataset.explicitLineCount),
+    measuredLineCount: Number(text.dataset.measuredLineCount),
+    maxLineCount: Number(text.dataset.maxLineCount),
+    pageCount: Number(text.dataset.pageCount),
+    pageIndex: Number(text.dataset.pageIndex),
+    renderedLineCount: renderedLineTops.size,
+    visibleText: text.getAttribute("aria-label") || text.textContent,
+    fontSize: getComputedStyle(text).fontSize,
+    inlineFontSize: text.style.fontSize,
+    bounds: { textTop: textRect.top, textBottom: textRect.bottom, contentTop, contentBottom },
+    fits: textRect.top >= contentTop - 1 && textRect.bottom <= contentBottom + 1,
+  };
+});
+const assertDialoguePageFits = async (page, step) => {
+  await page.waitForFunction(() => Boolean(document.querySelector("#novel-text")?.dataset.pageCount));
+  const geometry = await dialoguePageGeometry(page);
+  assert(geometry.characterCount === Array.from(step.text.replace(/\s/gu, "")).length, `${step.id}: character count was not applied to pagination`);
+  assert(geometry.explicitLineCount === step.text.split("\n").length, `${step.id}: explicit line count was not applied to pagination`);
+  assert(geometry.measuredLineCount >= 1, `${step.id}: measured line count is invalid`);
+  assert(geometry.maxLineCount >= geometry.measuredLineCount, `${step.id}: page exceeded its available line count`);
+  assert(geometry.renderedLineCount <= 3, `${step.id}: a fourth rendered line is visible: ${JSON.stringify(geometry)}`);
+  assert(!geometry.inlineFontSize, `${step.id}: pagination changed the inline font size`);
+  assert(geometry.fits, `${step.id}: dialogue page overflowed: ${JSON.stringify(geometry)}`);
+  return geometry;
+};
+const normalizedDialogueText = (value) => String(value || "").replace(/\s/gu, "");
+const assertSentenceAwarePages = (pages, step) => {
+  pages.slice(0, -1).forEach((pageText, index) => {
+    if (!/[。！？]/u.test(pageText)) return;
+    assert(/[。！？][」』】）》〉］〕）”’"']*$/u.test(pageText), `${step.id}: page ${index + 1} includes a fragment of the next sentence: ${JSON.stringify(pages)}`);
+  });
+};
+const collectDialoguePages = async (page, step, { advancePastFinal = false } = {}) => {
+  const visiblePages = [];
+  let geometry = await assertDialoguePageFits(page, step);
+  const expectedPageCount = geometry.pageCount;
+  for (let expectedPage = 1; expectedPage <= expectedPageCount; expectedPage += 1) {
+    await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 10000 });
+    geometry = await assertDialoguePageFits(page, step);
+    assert(geometry.pageIndex === expectedPage, `${step.id}: expected page ${expectedPage}, got ${geometry.pageIndex}`);
+    assert(await currentStepId(page) === step.id, `${step.id}: story advanced before its final text page`);
+    visiblePages.push(geometry.visibleText);
+    if (expectedPage < expectedPageCount) {
+      await page.locator("#novel-dialogue").click();
+      await page.waitForFunction((index) => Number(document.querySelector("#novel-text")?.dataset.pageIndex) === index, expectedPage + 1);
+    }
+  }
+  assert(normalizedDialogueText(visiblePages.join("")) === normalizedDialogueText(step.text), `${step.id}: paginated text did not preserve the full source text`);
+  assertSentenceAwarePages(visiblePages, step);
+  if (advancePastFinal) {
+    await page.locator("#novel-dialogue").click();
+    await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, step.id);
+  }
+  return { geometry, visiblePages };
+};
+const startPaginationTrace = (page) => page.evaluate(() => {
+  globalThis.__novelPaginationObserver?.disconnect();
+  const events = [];
+  const record = () => {
+    const event = {
+      stepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
+      pageIndex: Number(document.querySelector("#novel-text")?.dataset.pageIndex) || 0,
+    };
+    const previous = events.at(-1);
+    if (!previous || previous.stepId !== event.stepId || previous.pageIndex !== event.pageIndex) events.push(event);
+  };
+  globalThis.__novelPaginationObserver = new MutationObserver(record);
+  globalThis.__novelPaginationObserver.observe(document.querySelector("#novel-layer"), {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ["data-step-id", "data-page-index"],
+  });
+  globalThis.__novelPaginationTrace = events;
+  record();
+});
+const finishPaginationTrace = (page) => page.evaluate(() => {
+  globalThis.__novelPaginationObserver?.disconnect();
+  return globalThis.__novelPaginationTrace || [];
+});
+const assertPaginationTrace = (trace, step, expectedPageCount, mode) => {
+  const visitedPages = trace
+    .filter((event) => event.stepId === step.id && event.pageIndex > 0)
+    .map((event) => event.pageIndex)
+    .filter((pageIndex, index, values) => index === 0 || values[index - 1] !== pageIndex);
+  const expectedPages = Array.from({ length: expectedPageCount }, (_, index) => index + 1);
+  assert(JSON.stringify(visitedPages) === JSON.stringify(expectedPages), `${mode} changed pagination order: ${JSON.stringify(trace)}`);
+  assert(trace.some((event) => event.stepId !== step.id), `${mode} did not advance after the final page: ${JSON.stringify(trace)}`);
+};
 const advanceLinear = async (page) => {
   const previous = await currentStepId(page);
   await page.locator("#novel-layer").dispatchEvent("click");
@@ -431,6 +541,39 @@ try {
   assert(JSON.stringify(revealStartGeometry) === JSON.stringify(revealMidGeometry) && JSON.stringify(revealMidGeometry) === JSON.stringify(revealEndGeometry), `narration geometry moved during or after text reveal: ${JSON.stringify({ revealStartGeometry, revealMidGeometry, revealEndGeometry })}`);
   assert(await page.locator("#novel-cursor").isHidden(), "text cursor remained visible after reveal completed");
 
+  const nativeFontStep = steps.find((step) => step.id === "current_exhibition_001");
+  const overflowRegressionStep = steps.find((step) => step.id === "current_exhibition_006");
+  const sentenceBoundaryRegressionStep = steps.find((step) => step.id === "current_exhibition_010");
+  const dialogueSentenceRegressionStep = steps
+    .filter((step) => step.type === "dialogue" && (step.text.match(/[。！？]/gu) || []).length >= 2)
+    .sort((left, right) => right.text.length - left.text.length)[0];
+  await bootAt(page, nativeFontStep.id);
+  const nativeFontGeometry = await assertDialoguePageFits(page, nativeFontStep);
+  await bootAt(page, overflowRegressionStep.id);
+  const overflowRegressionGeometry = await assertDialoguePageFits(page, overflowRegressionStep);
+  assert(overflowRegressionGeometry.pageCount > 1, "long narration was not split across pages");
+  assert(overflowRegressionGeometry.maxLineCount === 3, "desktop dialogue did not reserve three lines per page");
+  assert(overflowRegressionGeometry.measuredLineCount === overflowRegressionGeometry.maxLineCount, "long narration turned the page before using its final available line");
+  assert(overflowRegressionGeometry.fontSize === nativeFontGeometry.fontSize, "long narration changed the dialogue font size");
+  const firstPageFontSize = overflowRegressionGeometry.fontSize;
+  await page.locator("#novel-dialogue").click();
+  await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 10000 });
+  assert(await currentStepId(page) === overflowRegressionStep.id, "completing the reveal advanced the story step");
+  assert((await dialoguePageGeometry(page)).pageIndex === 1, "completing the reveal skipped the first text page");
+  const collectedDesktopPages = await collectDialoguePages(page, overflowRegressionStep);
+  assert(collectedDesktopPages.geometry.fontSize === firstPageFontSize, "page turn changed the dialogue font size");
+  await screenshot(page, "dialogue-pagination");
+  await page.locator("#novel-dialogue").click();
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, overflowRegressionStep.id);
+
+  const explicitMultilineStep = steps
+    .filter((step) => ["narration", "dialogue"].includes(step.type) && step.text.includes("\n"))
+    .sort((left, right) => right.text.split("\n").length - left.text.split("\n").length)[0];
+  if (explicitMultilineStep) {
+    await bootAt(page, explicitMultilineStep.id);
+    await assertDialoguePageFits(page, explicitMultilineStep);
+  }
+
   const sharedBackgroundScene = story.scenes.find((scene) => scene.id === "absence");
   const sharedBackgroundStep = sharedBackgroundScene.steps.at(-1);
   await bootAt(page, sharedBackgroundStep.id);
@@ -677,12 +820,66 @@ try {
   report.viewports.push({ width: 1440, height: 900, passed: true });
   await context.close();
 
+  context = await browser.newContext({ viewport: { width: 1612, height: 454 }, reducedMotion: "reduce" });
+  const shortDesktop = await context.newPage();
+  attachDiagnostics(shortDesktop, "short-desktop-1612x454");
+  await bootTitle(shortDesktop, { clear: true });
+  await bootAt(shortDesktop, nativeFontStep.id, {}, { reducedMotion: true });
+  const shortDesktopNativeFont = (await assertDialoguePageFits(shortDesktop, nativeFontStep)).fontSize;
+  await bootAt(shortDesktop, overflowRegressionStep.id, {}, { reducedMotion: true });
+  const shortDesktopGeometry = await assertDialoguePageFits(shortDesktop, overflowRegressionStep);
+  assert(shortDesktopGeometry.pageCount > 1, "short desktop did not paginate the long narration");
+  assert(shortDesktopGeometry.maxLineCount === 3, "short desktop dialogue did not reserve three lines per page");
+  assert(shortDesktopGeometry.measuredLineCount === shortDesktopGeometry.maxLineCount, "short desktop turned the page before using its third line");
+  assert(shortDesktopGeometry.fontSize === shortDesktopNativeFont, "short desktop changed the dialogue font size");
+  await collectDialoguePages(shortDesktop, overflowRegressionStep);
+  await screenshot(shortDesktop, "dialogue-pagination-1612x454");
+
+  await bootAt(shortDesktop, sentenceBoundaryRegressionStep.id, {}, { reducedMotion: true });
+  const shortDesktopSentencePages = (await collectDialoguePages(shortDesktop, sentenceBoundaryRegressionStep)).visiblePages;
+  assert(shortDesktopSentencePages[0].endsWith("風向きと発電量について話している。"), `short desktop did not end the first page at the requested sentence boundary: ${JSON.stringify(shortDesktopSentencePages)}`);
+  assert(shortDesktopSentencePages[1]?.startsWith("奥のステージから"), `short desktop left a fragment of the next sentence on page one: ${JSON.stringify(shortDesktopSentencePages)}`);
+  await screenshot(shortDesktop, "dialogue-sentence-boundary-1612x454");
+
+  await bootAt(shortDesktop, overflowRegressionStep.id, {}, { reducedMotion: true });
+  const autoPageCount = (await assertDialoguePageFits(shortDesktop, overflowRegressionStep)).pageCount;
+  await startPaginationTrace(shortDesktop);
+  await shortDesktop.locator("#novel-auto-button").click();
+  await shortDesktop.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, overflowRegressionStep.id, { timeout: 15000 });
+  if (await shortDesktop.locator("#novel-auto-button").getAttribute("aria-pressed") === "true") await shortDesktop.locator("#novel-auto-button").click();
+  assertPaginationTrace(await finishPaginationTrace(shortDesktop), overflowRegressionStep, autoPageCount, "AUTO");
+
+  await bootAt(shortDesktop, overflowRegressionStep.id, {}, { reducedMotion: true });
+  const fastForwardPageCount = (await assertDialoguePageFits(shortDesktop, overflowRegressionStep)).pageCount;
+  await startPaginationTrace(shortDesktop);
+  await shortDesktop.locator("#novel-fast-forward-button").click();
+  await shortDesktop.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, overflowRegressionStep.id, { timeout: 5000 });
+  if (await shortDesktop.locator("#novel-fast-forward-button").getAttribute("aria-pressed") === "true") await shortDesktop.locator("#novel-fast-forward-button").click();
+  assertPaginationTrace(await finishPaginationTrace(shortDesktop), overflowRegressionStep, fastForwardPageCount, "fast-forward");
+  report.viewports.push({ width: 1612, height: 454, passed: true });
+  await context.close();
+
   context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   const mobile = await context.newPage();
   attachDiagnostics(mobile, "mobile-390");
   await bootTitle(mobile, { clear: true });
   await checkTitleGeometry(mobile);
   await screenshot(mobile, "start-mobile");
+  await bootAt(mobile, nativeFontStep.id, {}, { reducedMotion: true });
+  const mobileNativeFont = (await assertDialoguePageFits(mobile, nativeFontStep)).fontSize;
+  await bootAt(mobile, overflowRegressionStep.id, {}, { reducedMotion: true });
+  const mobilePaginationGeometry = await assertDialoguePageFits(mobile, overflowRegressionStep);
+  assert(mobilePaginationGeometry.pageCount > 1 && mobilePaginationGeometry.maxLineCount === 3, `mobile did not paginate narration at three rendered lines: ${JSON.stringify(mobilePaginationGeometry)}`);
+  assert(mobilePaginationGeometry.fontSize === mobileNativeFont, "mobile pagination changed the dialogue font size");
+  await collectDialoguePages(mobile, overflowRegressionStep);
+  await screenshot(mobile, "dialogue-pagination-mobile");
+  await bootAt(mobile, sentenceBoundaryRegressionStep.id, {}, { reducedMotion: true });
+  const mobileSentencePages = (await collectDialoguePages(mobile, sentenceBoundaryRegressionStep)).visiblePages;
+  const mobileStagePage = mobileSentencePages.findIndex((pageText) => pageText.startsWith("奥のステージから"));
+  assert(mobileStagePage > 0 && mobileSentencePages[mobileStagePage - 1].endsWith("風向きと発電量について話している。"), `mobile left a fragment of the next sentence on the previous page: ${JSON.stringify(mobileSentencePages)}`);
+  await bootAt(mobile, dialogueSentenceRegressionStep.id, {}, { reducedMotion: true });
+  const mobileDialogueSentencePages = (await collectDialoguePages(mobile, dialogueSentenceRegressionStep)).visiblePages;
+  assert(mobileDialogueSentencePages.length > 1, `${dialogueSentenceRegressionStep.id}: mobile dialogue did not exercise sentence-aware pagination`);
   await bootAt(mobile, reflection.id, {}, { reducedMotion: true });
   const mobileGeometry = await mobile.evaluate(() => ({
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,

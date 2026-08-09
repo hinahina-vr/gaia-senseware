@@ -593,6 +593,130 @@
     return lines.filter((line) => line.length > 0);
   };
 
+  const dialoguePageMetrics = (text) => {
+    const normalized = String(text || "");
+    const measuredLines = measureNativeLines(normalized);
+    const textStyle = getComputedStyle(elements.text);
+    const fontSize = Number.parseFloat(textStyle.fontSize) || 16;
+    const lineHeight = Number.parseFloat(textStyle.lineHeight) || fontSize * 1.6;
+    const maxLines = Math.min(TEXT_PAGE_MAX_LINES, Math.max(1, Math.floor(dialogueTextCapacity() / lineHeight)));
+    const estimatedCharactersPerLine = Math.max(8, Math.floor(elements.text.clientWidth / Math.max(1, fontSize * 0.92)));
+    const characterBudget = Math.max(16, estimatedCharactersPerLine * maxLines);
+    const characterCount = Array.from(normalized.replace(/\s/gu, "")).length;
+    const renderedHeight = Math.max(elements.text.scrollHeight, measuredLines.length * lineHeight);
+    return {
+      measuredLines,
+      maxLines,
+      characterCount,
+      characterBudget,
+      fits: characterCount <= characterBudget
+        && measuredLines.length <= maxLines
+        && renderedHeight <= dialogueTextCapacity(),
+    };
+  };
+
+  const sentenceBoundaryOffset = (glyphs) => {
+    const sentenceMarks = new Set(["。", "！", "？"]);
+    const closingMarks = new Set(["」", "』", "】", "》", "〉", "］", "〕", "）", "”", "’", "\"", "'"]);
+    let boundary = 0;
+    glyphs.forEach((glyph, index) => {
+      if (!sentenceMarks.has(glyph)) return;
+      let next = index + 1;
+      while (next < glyphs.length && closingMarks.has(glyphs[next])) next += 1;
+      boundary = next;
+    });
+    return boundary;
+  };
+
+  const preferredPageBreak = (prefix, glyphs, maximum) => {
+    const prefixGlyphs = Array.from(prefix);
+    const maximumGlyphs = [...prefixGlyphs, ...glyphs.slice(0, maximum)];
+    const sentenceBoundary = sentenceBoundaryOffset(maximumGlyphs);
+    if (sentenceBoundary >= prefixGlyphs.length && sentenceBoundary > 0) {
+      const sentenceCandidate = maximumGlyphs.slice(0, sentenceBoundary).join("").trimEnd();
+      if (dialoguePageMetrics(sentenceCandidate).fits) return sentenceBoundary - prefixGlyphs.length;
+    }
+
+    const maximumText = maximumGlyphs.join("").trimEnd();
+    const occupiedLineCount = dialoguePageMetrics(maximumText).measuredLines.length;
+    const minimum = Math.floor(maximum * 0.58);
+    for (let index = maximum - 1; index >= minimum; index -= 1) {
+      if (!/[、，,；;：:\s]/u.test(glyphs[index])) continue;
+      const candidate = `${prefix}${glyphs.slice(0, index + 1).join("")}`.trimEnd();
+      if (dialoguePageMetrics(candidate).measuredLines.length === occupiedLineCount) return index + 1;
+    }
+    return maximum;
+  };
+
+  const largestFittingPrefix = (text, prefix = "") => {
+    const glyphs = Array.from(text);
+    let low = 1;
+    let high = glyphs.length;
+    let best = 0;
+    while (low <= high) {
+      const middle = Math.floor((low + high) / 2);
+      const candidate = `${prefix}${glyphs.slice(0, middle).join("")}`.trimEnd();
+      if (candidate && dialoguePageMetrics(candidate).fits) {
+        best = middle;
+        low = middle + 1;
+      } else {
+        high = middle - 1;
+      }
+    }
+    if (!best) return 0;
+    return preferredPageBreak(prefix, glyphs, best);
+  };
+
+  const paginateDialogueText = (text) => {
+    const normalized = String(text || "").trim();
+    if (!normalized) return [""];
+    const units = normalized.match(/[^\n。！？]+(?:[。！？][」』】）》〉］〕）”’"']*)?|\n+/gu) || [normalized];
+    const pages = [];
+    let page = "";
+
+    const commitPage = () => {
+      const committed = page.trim();
+      if (committed) pages.push(committed);
+      page = "";
+    };
+
+    for (const unit of units) {
+      if (/^\n+$/u.test(unit)) {
+        const candidate = `${page}${unit}`;
+        if (page && dialoguePageMetrics(candidate).fits) page = candidate;
+        else commitPage();
+        continue;
+      }
+
+      let remainder = unit;
+      while (remainder) {
+        const candidate = `${page}${remainder}`;
+        if (dialoguePageMetrics(candidate).fits) {
+          page = candidate;
+          remainder = "";
+          continue;
+        }
+        if (page) {
+          const breakAt = largestFittingPrefix(remainder, page);
+          if (breakAt > 0) {
+            page += Array.from(remainder).slice(0, breakAt).join("");
+            commitPage();
+            remainder = Array.from(remainder).slice(breakAt).join("").trimStart();
+            continue;
+          }
+          commitPage();
+          continue;
+        }
+        const breakAt = largestFittingPrefix(remainder);
+        page = Array.from(remainder).slice(0, Math.max(1, breakAt)).join("");
+        commitPage();
+        remainder = Array.from(remainder).slice(Math.max(1, breakAt)).join("").trimStart();
+      }
+    }
+    commitPage();
+    return pages.length ? pages : [normalized];
+  };
+
   const buildMeasuredLineLayout = (text) => {
     const measuredLines = measureNativeLines(text);
     const fragment = document.createDocumentFragment();
