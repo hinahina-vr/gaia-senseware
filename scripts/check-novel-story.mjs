@@ -80,6 +80,41 @@ assert.deepEqual(dominance, { law: 12, neutral: 12, chaos: 12 });
 assert.equal(story.finalResults.length, 8, "two editorial choices by four spatial outcomes are required");
 assert.deepEqual(story.saveFields.filter((field) => ["reflectionIds", "resultTone"].includes(field)), ["reflectionIds", "resultTone"]);
 
+const backHalfSceneIds = [
+  "festival_build", "gx_deep_time", "mode03_map", "mode07_abstract", "interlude_sea", "mode08_map_layers",
+  "mode10_space", "choice_editorial", "epilogue_reflection_field", "choice_reflection", "final_record", "return_to_start",
+];
+const backHalfSteps = scenes.filter((scene) => backHalfSceneIds.includes(scene.id)).flatMap((scene) => scene.steps);
+assert.equal(backHalfSteps.length, 297, "the approved back-half rewrite must stay within the 235-297 step ceiling");
+
+const migrationSource = fs.readFileSync(path.join(projectRoot, "docs", "SCENARIO_HANDOFF_BACK_HALF_REWRITE.md"), "utf8");
+const migrationRangeSource = migrationSource.split("## 完全範囲移行表")[1]?.split("## 新規CURRENT境界")[0] || "";
+const expectedOldStepCounts = {
+  festival_build: 32,
+  gx_deep_time: 58,
+  mode03_map: 33,
+  mode07_abstract: 124,
+  interlude_sea: 76,
+  mode08_map_layers: 34,
+  mode10_space: 38,
+  choice_editorial: 15,
+  epilogue_reflection_field: 6,
+  choice_reflection: 4,
+  final_record: 50,
+  return_to_start: 1,
+};
+for (const [sceneId, oldCount] of Object.entries(expectedOldStepCounts)) {
+  const coverage = Array(oldCount + 1).fill(0);
+  const rangePattern = new RegExp(`\\| ${sceneId} \\| (\\d{3})(?:–(\\d{3}))? \\|`, "gu");
+  for (const match of migrationRangeSource.matchAll(rangePattern)) {
+    const start = Number(match[1]);
+    const end = Number(match[2] || match[1]);
+    assert.ok(start >= 1 && end <= oldCount && start <= end, `${sceneId}: invalid old-step migration range ${match[0]}`);
+    for (let index = start; index <= end; index += 1) coverage[index] += 1;
+  }
+  assert.deepEqual(coverage.slice(1), Array(oldCount).fill(1), `${sceneId}: old-step migration ranges must cover every former step exactly once`);
+}
+
 const allText = steps.map((step) => step.text || "").join("\n");
 const exhibitionText = scenes.find((scene) => scene.id === "current_exhibition")?.steps.map((step) => step.text || "").join("\n") || "";
 for (const requiredText of [
@@ -91,6 +126,30 @@ for (const requiredText of [
   "「聞こえたつもりになってない？」って、三人で確かめたい。",
 ]) assert.ok(allText.includes(requiredText), `canon text is missing: ${requiredText}`);
 assert.ok(!allText.includes("サクヤの分だけ、縁が乾いたままだった。"), "confirmed paper-cup wording regressed to the past-form draft");
+for (const requiredResolutionText of [
+  "本人の安全を確認し、本人同意により中央入口で二人と話したい旨をお伝えします。",
+  "中央入口にいる。待たせた。ごめん",
+  "最初は連絡できなかった。できるようになってからも、返すのが怖くて遅らせた",
+  "理由は二人に話す",
+  "話は聞く。でも、なかったことにはしない",
+  "分かりました。作品ではなく、あなたから聞かせてください",
+  "三人は数歩の距離を残したまま、話し始める。",
+]) assert.ok(allText.includes(requiredResolutionText), `back-half resolution text is missing: ${requiredResolutionText}`);
+assert.equal(allText.match(/本人の安全を確認し、本人同意により中央入口で二人と話したい旨をお伝えします。/gu)?.length, 1, "the university notification must remain a single line in one step");
+assert.match(allText, /音声だけではなく、顔と声と表示名を結び付けた本人が、現在の中央入口にいる。/u, "Sakuya must be physically identified at the current central entrance");
+assert.match(allText, /この選択は三人の発言を書き換えず、これから起きる現在の出来事も変えない。/u, "visitor choices must not cause the current contact");
+assert.match(allText, /現在の画面に送信ボタンは出ない。二人が当日になって新しい依頼を送ったのではない。/u, "MODE 08 must show the previous-night receipt instead of sending a current request");
+assert.match(allText, /お願い。この札をSTARTの前に置いて。次の人が触らないように/u, "Amane must explicitly ask the player to place the pause sign");
+assert.match(allText, /ここから先、私は二人を追わない。/u, "the player must not follow the private meeting");
+for (const obsoleteEndingCopy of [
+  "失踪の理由が明かされることはない",
+  "次の来場者がSTART",
+  "START画面へ戻る",
+  "青りんごの向きを変える",
+]) assert.ok(!allText.includes(obsoleteEndingCopy), `obsolete ending copy remains: ${obsoleteEndingCopy}`);
+const endSteps = steps.filter((step) => step.type === "end");
+assert.deepEqual(endSteps.map((step) => [step.sceneId, step.text]), [["return_to_start", "END"]], "16:03 must be the sole canonical END path");
+assert.ok(!scenes.find((scene) => scene.id === "return_to_start")?.steps.some((step) => step.type === "start"), "return_to_start must no longer cycle to START");
 assert.match(allText, /園芸売り場の写真が閉じ、画面は現在の展示席へ戻る。/u, "the observation-order choice must establish the return to the exhibition seat");
 assert.match(allText, /端末の右側には、傷のある青りんごが最初と同じ位置に置かれている。/u, "the physical apple must be distinguished from the on-screen measurements");
 assert.match(allText, /園芸売り場の温度計は三十六度。/u, "the garden-center measurement must read as natural narration");

@@ -18,6 +18,8 @@ assert.equal(metadata.timeZone, "Asia/Tokyo");
 assert.equal(metadata.currentYear, 2026);
 assert.equal(metadata.clockPolicy, "AUTHOR_FIXED");
 assert.equal(metadata.missingMetadataPolicy, "ERROR");
+assert.equal(metadata.currentSessionEndAt, "2026-11-01T16:03:00+09:00");
+assert.equal(metadata.currentSessionEndTimePrecision, "MINUTE");
 
 const expectedSceneOrder = [
   "current_exhibition", "opening_empty_seat", "prologue_online_circle", "prologue_basil",
@@ -90,8 +92,31 @@ const currentIds = [
 ];
 const expectedCurrentTimes = ["13:30", "13:42", "14:40", "14:44", "14:53", "15:00", "15:22", "15:30", "15:38", "15:42", "15:44", "15:47", "15:55"];
 assert.deepEqual(currentIds.map((id) => metadata.scenes[id].startAt.slice(11, 16)), expectedCurrentTimes, "CURRENT fixed author times must match the approved 2h25m sequence");
-assert.equal((new Date(metadata.scenes.return_to_start.startAt) - new Date(metadata.scenes.current_exhibition.startAt)) / 60000, 145, "CURRENT session duration must be 145 minutes");
+assert.equal((new Date(metadata.scenes.return_to_start.startAt) - new Date(metadata.scenes.current_exhibition.startAt)) / 60000, 145, "the final scene must begin with the 15:55 pause after 145 minutes");
+assert.equal((new Date(metadata.currentSessionEndAt) - new Date(metadata.scenes.current_exhibition.startAt)) / 60000, 153, "the canonical session must end at 16:03 after 153 minutes");
 assert.ok(!expectedCurrentTimes.includes("14:02"), "obsolete compressed CURRENT endpoint must not return");
+
+assert.deepEqual(
+  metadata.scenes.final_record.transitions.map(({ stepId, transitionAt }) => [stepId, transitionAt]),
+  [
+    ["final_record_008", "2026-11-01T15:52:00+09:00"],
+    ["final_record_017", "2026-11-01T15:54:00+09:00"],
+  ],
+  "final_record must contain only the official notice and current audio transitions",
+);
+assert.equal(metadata.scenes.return_to_start.startAt, "2026-11-01T15:55:00+09:00", "scene23 must begin at the exhibition pause");
+assert.equal(metadata.scenes.return_to_start.endAt, "2026-11-01T16:03:00+09:00", "scene23 must end when the private conversation starts");
+assert.deepEqual(
+  metadata.scenes.return_to_start.transitions.map(({ stepId, transitionAt, location }) => [stepId, transitionAt, location]),
+  [
+    ["return_to_start_018", "2026-11-01T16:00:00+09:00", "海沿いの展示場・中央入口"],
+    ["return_to_start_032", "2026-11-01T16:03:00+09:00", "海沿いの展示場・中央入口"],
+  ],
+  "scene23 must move from the 15:55 pause to the 16:00 sighting and 16:03 END",
+);
+const interludeReceipt = metadata.scenes.interlude_sea.transitions.find((transition) => transition.stepId === "interlude_sea_059");
+assert.equal(interludeReceipt?.transitionAt, "2026-11-01T00:26:00+09:00");
+assert.match(interludeReceipt?.displayTitle || "", /本人文と面談希望の受付控え/u, "00:26 must identify the previous-night meeting-request receipt");
 
 const exactPeriodTitles = {
   prologue_basil: "5月3日（土）〜5月4日（日）｜学内チャット「惑星の放課後」",
@@ -172,4 +197,4 @@ for (const requiredArchiveLabel of [
 assert.ok(!source.includes("六月の終わり、アマネが共同作業室を予約した。"), "obsolete production month remains");
 assert.ok(source.includes("七月の終わり、アマネが共同作業室を予約した。"), "approved production month is missing");
 
-console.log(`story temporal metadata check passed: ${expectedSceneOrder.length} scenes, ${metadata.scenes.production_year.transitions.length + metadata.scenes.search.transitions.length + metadata.scenes.mode07_abstract.transitions.length + metadata.scenes.interlude_sea.transitions.length + metadata.scenes.prologue_basil.transitions.length + metadata.scenes.first_meeting_promise.transitions.length} internal transitions, 4 archive records`);
+console.log(`story temporal metadata check passed: ${expectedSceneOrder.length} scenes, ${metadata.scenes.production_year.transitions.length + metadata.scenes.search.transitions.length + metadata.scenes.mode07_abstract.transitions.length + metadata.scenes.interlude_sea.transitions.length + metadata.scenes.prologue_basil.transitions.length + metadata.scenes.first_meeting_promise.transitions.length + metadata.scenes.final_record.transitions.length + metadata.scenes.return_to_start.transitions.length} internal transitions, 4 archive records`);

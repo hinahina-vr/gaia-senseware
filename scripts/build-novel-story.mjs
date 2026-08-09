@@ -124,6 +124,8 @@ const parseSceneSteps = (scene, sectionLines) => {
     steps.push({ id: `${scene.id}_${String(serial).padStart(3, "0")}`, sceneId: scene.id, ...(condition ? { condition } : {}), ...step });
   };
 
+  if (scene.id === "final_record") pushStep({ type: "result", resultId: "session_result" });
+
   if (scene.reflectionChoice) {
     const optionById = new Map(REFLECTION_OPTIONS.map((option) => [option.id, option]));
     let currentTheme = null;
@@ -204,6 +206,10 @@ const parseSceneSteps = (scene, sectionLines) => {
       pushStep({ type: "details", text: "生成履歴を詳しく見る", detailId: "mode07_generation_details" });
       continue;
     }
+    if (/^［表示｜END］$/u.test(block)) {
+      pushStep({ type: "end", text: "END" });
+      continue;
+    }
     const chatMatch = block.match(/^(\d{2}:\d{2})\s{2,}([^\n]+)\n([\s\S]+)$/u);
     if (chatMatch) {
       pushStep({ type: "chat", time: chatMatch[1], speaker: speakerMap[chatMatch[2].trim()] || "system", speakerLabel: chatMatch[2].trim(), text: chatMatch[3] });
@@ -221,7 +227,6 @@ const parseSceneSteps = (scene, sectionLines) => {
     if (/^(START|CONNECTED|TEMP：|LIGHT：|MIZUHA\nAMANE\nSAKUYA)/u.test(block)) { pushStep({ type: "ui", text: block }); continue; }
     pushStep({ type: "narration", speaker: "narrator", text: block });
   }
-  if (scene.id === "final_record") pushStep({ type: "result", resultId: "session_result" });
   return steps;
 };
 
@@ -247,6 +252,7 @@ const configs = [
   { id: "epilogue_reflection_field", prefix: "EPILOGUE｜次へ持ち帰りたい姿勢", chapter: "EPILOGUE", modeIndex: 9 },
   { id: "choice_reflection", prefix: "最後の選択｜次へ渡す姿勢", chapter: "FINAL CHOICE", modeIndex: 9, reflectionChoice: { prompt: "次へ渡したい姿勢を、最大3つまで選んでください。" } },
   { id: "final_record", prefix: "最終表示｜選んだ姿勢を空間へ返す", chapter: "FINAL RECORD", modeIndex: 9 },
+  { id: "return_to_start", prefix: "END｜展示を一時休止する", chapter: "END", modeIndex: 9 },
 ];
 
 const scenes = [];
@@ -265,7 +271,6 @@ for (const config of configs) {
   }
 }
 
-scenes.push({ id: "return_to_start", title: "END OF PLAYER STORY", chapter: "END", modeIndex: 9, steps: [{ id: "return_to_start_001", sceneId: "return_to_start", type: "end", text: "START" }] });
 scenes.forEach((scene, index) => { scene.nextSceneId = scenes[index + 1]?.id || null; });
 
 const tones = ["LAW", "NEUTRAL", "CHAOS", "UNANSWERED"];
@@ -279,10 +284,10 @@ const story = {
   requiredInteractions: ["gx", "map03", "abstract07", "map08", "space10"],
   finalResults: ["SOURCE_RECORD", "DISCLOSE_DERIVATION"].flatMap((editorial) => tones.map((tone) => `${editorial}×${tone}`)),
   resultCopy: {
-    LAW: "残すべきものは、声ではなく検証可能な関係として整えられた。光は経線へ集まり、異なる記録を同じ責任の下へ結ぶ。地球は答えず、引き渡された記録だけが次の観測を待つ。",
-    NEUTRAL: "一致しない記録は、一つの答えに閉じられなかった。光は重なりと空白のあいだを往復し、視点はどちらにも降りない。地球は答えず、距離を保った記録が次の観測を待つ。",
-    CHAOS: "記録は定められた順序を離れ、まだ名前のない関係へ分岐した。光は海岸線の外へ散り、視点は既存の軌道を外れる。地球は答えず、選び直せる余白だけが次の観測を待つ。",
-    UNANSWERED: "来場者は言葉を選ばなかった。空白は判断の失敗に変換されず、決めなかったという操作だけが残る。地球は答えず、次の観測を待つ。",
+    LAW: "選んだ文の光が細い線へ集まり、地球の輪郭を一周して消えた。",
+    NEUTRAL: "選んだ文の光は、重なりと間を残したまま、ゆっくり消えた。",
+    CHAOS: "選んだ文の光は複数の方向へ広がり、画面の外へ消えた。",
+    UNANSWERED: "新しい光は加わらず、地球の輪郭だけが残った。",
   },
   generationDetails: {
     referencePostCount: "制作ログに件数記録なし", similarPostCount: "制作ログに件数記録なし", candidateCount: "複数候補から1件を選定（総数記録なし）",

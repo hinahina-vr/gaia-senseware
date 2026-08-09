@@ -63,10 +63,10 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
     "DISCLOSE_DERIVATION×UNANSWERED"
   ],
   "resultCopy": {
-    "LAW": "残すべきものは、声ではなく検証可能な関係として整えられた。光は経線へ集まり、異なる記録を同じ責任の下へ結ぶ。地球は答えず、引き渡された記録だけが次の観測を待つ。",
-    "NEUTRAL": "一致しない記録は、一つの答えに閉じられなかった。光は重なりと空白のあいだを往復し、視点はどちらにも降りない。地球は答えず、距離を保った記録が次の観測を待つ。",
-    "CHAOS": "記録は定められた順序を離れ、まだ名前のない関係へ分岐した。光は海岸線の外へ散り、視点は既存の軌道を外れる。地球は答えず、選び直せる余白だけが次の観測を待つ。",
-    "UNANSWERED": "来場者は言葉を選ばなかった。空白は判断の失敗に変換されず、決めなかったという操作だけが残る。地球は答えず、次の観測を待つ。"
+    "LAW": "選んだ文の光が細い線へ集まり、地球の輪郭を一周して消えた。",
+    "NEUTRAL": "選んだ文の光は、重なりと間を残したまま、ゆっくり消えた。",
+    "CHAOS": "選んだ文の光は複数の方向へ広がり、画面の外へ消えた。",
+    "UNANSWERED": "新しい光は加わらず、地球の輪郭だけが残った。"
   },
   "generationDetails": {
     "referencePostCount": "制作ログに件数記録なし",
@@ -4126,7 +4126,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "六月の終わり、アマネが共同作業室を予約した。"
+          "text": "七月の終わり、アマネが共同作業室を予約した。"
         },
         {
           "id": "production_year_249",
@@ -5962,223 +5962,124 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二週間の記録が閉じる。"
+          "text": "二週間の安否確認記録が閉じる。"
         },
         {
           "id": "festival_build_002",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私の前には、共同作業室の長机ではなく、学園祭の黒い展示机がある。"
+          "text": "画面の暗さが戻るより先に、展示ホールの音が近づいた。椅子の縁が膝の裏へ当たり、長く置いていた指の跡が端末に残っている。"
         },
         {
           "id": "festival_build_003",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "背後の呼び込み、ゲームの決定音、館内放送が一度に戻る。長く同じ姿勢でいたため、椅子の縁が膝の裏へ当たっている。画面へ置いていた指を離すと、指先の跡が淡く残る。"
+          "text": "目の前にあるのは共同作業室の長机ではない。黒い展示机と、傷のある青りんごと、細く折った案内図だ。"
         },
         {
           "id": "festival_build_004",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面の時刻表示が現在へ戻り、「学園祭・展示ホール」と出る。"
+          "text": "机の後ろでは、アマネが床のケーブルを一本ずつ束へ戻している。長さを揃え、端へ「あまあま」と書いた札を巻く。"
         },
         {
           "id": "festival_build_005",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "記録を開く前と同じ会場だが、机の上の物には名前が増えている。"
+          "text": "ミズハは隣の端末で説明を終えると、保温ボトルの蓋を閉めた。言い足しかけた一文を飲み込み、来場者が自分で画面を開くのを待つ。二人はここにいる。"
         },
         {
           "id": "festival_build_006",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "端末の右側に置かれた保温ボトルは、ミズハが三つの紙コップへ茶を注いだときのものと同じ形をしている。"
+          "text": "壁には三人の表示名が、同じ大きさで並んでいる。"
         },
         {
           "id": "festival_build_007",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "床の機材箱から出ている予備ケーブルは長さ順に束ねられ、端へ小さく `あまあま` と書かれている。"
+          "text": "みず\nあまあま\nsaku"
         },
         {
           "id": "festival_build_008",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "青りんごの傷は、最初の待ち合わせ写真にあったりんごとは違う。九か月目の制作写真、公開前夜の紙袋、現在の机へ、同じ種類の別の実が繰り返し置かれてきた。"
+          "text": "三人目の空席は展示されていない。作者名の下に、出席や不在を示す印もない。"
         },
         {
           "id": "festival_build_009",
           "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "机の後ろにいた黒いシャツの人物が立ち上がる。記録の中で何度もケーブルを確かめていたアマネだと、いまは分かる。"
+          "type": "ui",
+          "text": "表示｜三人が確認した公開版"
         },
         {
           "id": "festival_build_010",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ブースの端で画面を見ていた人物は、戻ってきた館内音に埋もれない程度の声で、隣の来場者へ操作案内をしている。話が一文で終わらず、観測条件まで続く。ミズハは途中で相手の表情を見て、詳細は画面から開けると言い直す。"
+          "text": "学園祭公開版1.0\n作者：みず／あまあま／saku\n三人が公開内容を確認済み"
         },
         {
           "id": "festival_build_011",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人は会場にいる。"
+          "text": "その下に、会場用の案内と接続作業をミズハとアマネが加えたことだけが、別の一行で示されている。三人の公開版は上書きされていない。"
         },
         {
           "id": "festival_build_012",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人目の制作者用椅子が空いているのではない。最初から、制作者用の椅子そのものをブースへ置いていない。誰かが戻る場所を展示物として示す形にも、誰かの不在を来場者へ演じて見せる形にもしていない。"
+          "text": "画面を送ると、最初に聞いた十一秒の波形が現れる。"
         },
         {
           "id": "festival_build_013",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "残っているのは、壁と画面に並ぶ三人の名前である。"
+          "text": "扇風機。湯の沸く音。踏切。"
         },
         {
           "id": "festival_build_014",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "この三人の名前は、今日会場へ出勤している人の一覧ではない。三人が公開へ同意した版を誰が作ったかを示す作者表示である。\nいま二人しか見えないことと、作品を三人で作ったことを同じ欄で上書きしないため、出席状況の印は作者名へ付けていない。"
+          "text": "三人が初めて声でつながった年越しの録音だった。誰かの不在を知らせるために、あとから作られた音ではない。"
         },
         {
           "id": "festival_build_015",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "みず\nあまあま\nsaku"
+          "text": "音が終わるまで、ミズハもアマネも話さない。アマネの手はケーブルの途中で止まり、ミズハは保温ボトルへ置いた指を離す。"
         },
         {
           "id": "festival_build_016",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "端末に入っている作品の核は、三人が公開可を付けた学園祭公開版1.0のまま保存されている。"
+          "text": "青りんごは、最初の待ち合わせで使ったものと同じ種類だ。ミズハが今朝選び、再び目印として机へ置いた。"
         },
         {
           "id": "festival_build_017",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "その後、ミズハとアマネが会場用に加えた案内、端末への接続、制作過程を開く入口は、三人の版へ混ぜず、二人の変更として別に記録されている。"
+          "text": "画面には太古の海が開く。生命が環境を変え、その変化が次の生命の条件になった時間をたどる画面だ。"
         },
         {
           "id": "festival_build_018",
           "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面には、二本の線が上下に分かれている。"
-        },
-        {
-          "id": "festival_build_019",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "学園祭公開版1.0\n作者：みず / あまあま / saku\n三人が公開内容を確認済み"
-        },
-        {
-          "id": "festival_build_020",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "公開同意後に会場用として加えた変更\n変更した人：みず / あまあま\n三人の版とは分けて記録\n学園祭公開版1.0への上書きなし"
-        },
-        {
-          "id": "festival_build_021",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "上の線は、三人が内容と公開範囲を確認して保存した作品。\n下の線は、その作品を現在の会場で動かすために二人が行った作業。"
-        },
-        {
-          "id": "festival_build_022",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "線を分けることで、サクヤがいない現在に二人が加えた判断を、三人全員の判断だったようには表示しない。同時に、いま会場にいないことを理由に、三人で作った版からサクヤの作者名を減らさない。"
-        },
-        {
-          "id": "festival_build_023",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面を下へ送ると、最初に聞いた十一秒の波形が現れる。"
-        },
-        {
-          "id": "festival_build_024",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "待機中には題名がなかった音へ、いまは制作記録が付いている。"
-        },
-        {
-          "id": "festival_build_025",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "`first_huddle.wav`\n録音時：三人が初めて声で接続した年越し\n内容：扇風機、湯の沸く音、踏切\n公開同意：みず / あまあま / saku"
-        },
-        {
-          "id": "festival_build_026",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "聞き取れなかった音は、誰かの不在を知らせるために後から作られたものではなかった。三人が同じ通話にいた最初の十一秒を、三人が制作中に残し、公開対象として確認した音だった。"
-        },
-        {
-          "id": "festival_build_027",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面の端へ、次に開く四つの見方が現れる。"
-        },
-        {
-          "id": "festival_build_028",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "GX：太古の時間から、生命と環境の変化を見る。\nMODE 03：同じ場所に重なる記録と、原因を断定できる範囲を見る。\nMODE 07：出来事が起き、届き、開かれるまでの時刻を見る。\nMODE 08：数値、暮らし、土地の記憶を同じ地図で切り替える。\nMODE 10：それまで触れた記録を、宇宙から振り返る。"
-        },
-        {
-          "id": "festival_build_029",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ここから私が操作するのは、サクヤを探すための検索画面ではない。\n三人が学園祭公開版1.0へ入れた地球の記録と、その記録をどこまで解釈できるかを確かめる本編である。"
-        },
-        {
-          "id": "festival_build_030",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "最初は、現在の地図よりはるか前へ戻る。"
-        },
-        {
-          "id": "festival_build_031",
-          "sceneId": "festival_build",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面上部に、これから何が表示されるか、何を操作するか、何が分かって何は分からないかという三行の案内が出る。「GXを開く」へ触れるまで、太古の海は始まらない。"
-        },
-        {
-          "id": "festival_build_032",
-          "sceneId": "festival_build",
           "type": "ui",
-          "text": "GXを開く"
+          "text": "操作｜太古の海を開く"
         }
       ],
       "nextSceneId": "gx_deep_time"
@@ -6198,404 +6099,185 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "GXを開く前に、画面は三つの案内を一枚ずつ表示する。"
+          "text": "四十六億年の時間軸を左右へ動かし、水面をなぞる。生命の活動と環境の変化は見えるが、その結果から生命の最初の目的までは決められない。"
         },
         {
           "id": "gx_deep_time_002",
-          "sceneId": "gx_deep_time",
-          "type": "ui",
-          "text": "1｜画面に何が表示されるか"
-        },
-        {
-          "id": "gx_deep_time_003",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "約四十六億年前から現在までの長い時間軸と、その途中に置かれた太古の海を表示する。\n都市、国境、現在の生物分布はまだ出ない。研究記録から考えられている出来事の順序を、海の色、点、時間の目盛りへ置き換えた画面である。"
-        },
-        {
-          "id": "gx_deep_time_004",
-          "sceneId": "gx_deep_time",
-          "type": "ui",
-          "text": "2｜操作すること"
-        },
-        {
-          "id": "gx_deep_time_005",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "時間軸を左右へ動かし、水面をゆっくりなぞる。\n指を動かした距離で生命の数を増やす操作ではない。なぞっているあいだ、長い時間が進み、表示上の点と海の状態が段階的に変わる。"
-        },
-        {
-          "id": "gx_deep_time_006",
-          "sceneId": "gx_deep_time",
-          "type": "ui",
-          "text": "3｜何が分かり、何は断定できないか"
-        },
-        {
-          "id": "gx_deep_time_007",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "生命の活動が環境を変え、その環境が後の生命の条件になったという大きな順序を見られる。\n個々の生物が未来を計画したこと、画面の点が実在した一個体であること、当時の海の色がこの表示どおりだったことまでは断定できない。"
-        },
-        {
-          "id": "gx_deep_time_008",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三枚を読み終えると、画面の下に凡例が残る。"
-        },
-        {
-          "id": "gx_deep_time_009",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面には、「もとになった観測・研究記録」と「展示のために変換した表示」の二つの入口が残る。"
-        },
-        {
-          "id": "gx_deep_time_010",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "前者からは、岩石、化学的な痕跡、年代測定、複数の研究へ戻れる。太古の海を直接撮影した映像がある、という意味ではない。"
-        },
-        {
-          "id": "gx_deep_time_011",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "後者からは、制作者がそれらをどのように時間軸、色、動きへ置き換えたかを確かめられる。"
-        },
-        {
-          "id": "gx_deep_time_012",
           "sceneId": "gx_deep_time",
           "type": "interaction",
           "interaction": {
             "kind": "gx",
             "requiredGestures": 3
           },
-          "text": "操作｜案内を閉じ、時間軸を開く"
+          "text": "操作｜時間軸を開き、水面をなぞる"
+        },
+        {
+          "id": "gx_deep_time_003",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "案内を閉じると、展示ホールの白い光が深い紺へ沈む。"
+        },
+        {
+          "id": "gx_deep_time_004",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "時間軸の左端には岩と水だけの地球があり、右端に近づくにつれて森林と都市の色が現れる。"
+        },
+        {
+          "id": "gx_deep_time_005",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "目盛りを広げても、人の一生は線にならない。今日の学園祭は点として置くこともできない。"
+        },
+        {
+          "id": "gx_deep_time_006",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "水面へ指を置く。"
+        },
+        {
+          "id": "gx_deep_time_007",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "指のあとへ、光合成を行う小さな生命の活動を表す青緑の点が現れる。"
+        },
+        {
+          "id": "gx_deep_time_008",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "点は、私が生命を作った数ではない。用意された時間を読み進めるときにだけ灯る印だ。"
+        },
+        {
+          "id": "gx_deep_time_009",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "一度なぞっただけでは海全体は変わらない。"
+        },
+        {
+          "id": "gx_deep_time_010",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "長い時間が進むにつれ、点の周囲から生まれた金色の筋が海中の物質へ触れ、暗くなる。"
+        },
+        {
+          "id": "gx_deep_time_011",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "酸素は最初から空へたまらない。海の中で別の物質と反応する時期が続く。"
+        },
+        {
+          "id": "gx_deep_time_012",
+          "sceneId": "gx_deep_time",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "さらに時間を進めると、変化は海だけに収まらず、大気にも現れる。"
         },
         {
           "id": "gx_deep_time_013",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "案内を閉じる。\n展示ホールの照明が画面から消えたように見えるほど、背景が深い紺へ変わる。端末の黒い縁には、私の指と青りんごの輪郭だけが残る。"
+          "text": "画面は境目を一本の線にしない。年代に幅がある場所は、幅のある帯のまま残る。"
         },
         {
           "id": "gx_deep_time_014",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面の上に、現在から約四十六億年前の地球の始まりへ向かう長い目盛りが現れる。\n一秒ごとに何億年もの数字が巻き戻り、都市の光も森林の緑も消え、最後に岩と水だけの暗い海が開いた。"
+          "text": "生命の活動が環境を変えた。"
         },
         {
           "id": "gx_deep_time_015",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初、時間軸の全体は腕一本ほどの長さに収まっている。"
+          "text": "変わった環境は、あとから生きるものにとって新しい条件になった。"
         },
         {
           "id": "gx_deep_time_016",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "目盛りを広げると、十億年、億年、千万年と単位が変わる。人の一生を示す幅は細くなり、現在の学園祭は一つの点としても描けない。"
+          "text": "画面の隅で、三人がこの動きを調整した日の録音が始まる。"
         },
         {
           "id": "gx_deep_time_017",
           "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "現在の森林が現れる時期。複雑な生物が広がる時期。酸素が大気に増えるより前の長い時間。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「今の役割から、最初の目的を決めることはできませんわ」"
         },
         {
           "id": "gx_deep_time_018",
           "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "目盛りを動かすたび、画面の下に「表示の縮尺」が出る。数秒の演出が数億年を表していることを隠さないためである。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「酸素を使う生き物のために、酸素を作ったわけじゃない」"
         },
         {
           "id": "gx_deep_time_019",
           "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "これは太古の海をそのまま撮影した映像ではない。\n地球史について得られている研究記録を、出来事の順番と時間の長さへ触れられるように並べ直した表示である。"
+          "type": "dialogue",
+          "speaker": "sakuya",
+          "text": "「点、増やしすぎないで」"
         },
         {
           "id": "gx_deep_time_020",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面の右端に、もとになった研究を確かめる入口が並ぶ。"
+          "text": "サクヤの声のあと、マウスが机へ当たる音がする。ミズハが紙をめくり、アマネが二度クリックする。"
         },
         {
           "id": "gx_deep_time_021",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "年代の根拠。\n酸素が増えたことを考える手掛かり。\n海中の鉄との反応を示す岩石記録。\n表示へ採用した出来事の順序。"
+          "text": "三人はその日、同じ画面を見ていた。録音には日付と三人の名前が付いている。"
         },
         {
           "id": "gx_deep_time_022",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "どの入口にも提供元と参照範囲があり、開けば太古の海の演出は一時停止する。"
+          "text": "指を止める。青緑の点は増えず、海の色だけがゆっくり遠ざかる。"
         },
         {
           "id": "gx_deep_time_023",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "入口を閉じると、演出は止めた時刻から再開する。資料を開いているあいだに、勝手に時間が進むことはない。"
+          "text": "画面の縁へ、現在の展示ホールの照明が戻る。"
         },
         {
           "id": "gx_deep_time_024",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面の隅には「展示のために変換した表示」と出る。\n元の研究記録そのものではなく、制作者が鑑賞用の時間軸へ変換した部分だと分かる。"
+          "text": "不在という現在から、サクヤが何を考えていたかは決められない。"
         },
         {
           "id": "gx_deep_time_025",
           "sceneId": "gx_deep_time",
-          "type": "ui",
-          "text": "操作｜水面をなぞる"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "決められるのは、サクヤが制作中に点を増やしすぎないよう止めたことだ。"
         },
         {
           "id": "gx_deep_time_026",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "水面へ指を置く。\n指を動かした場所へ、光合成を行う小さな生命の活動を表す青緑の点が残る。"
-        },
-        {
-          "id": "gx_deep_time_027",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "一度なぞっただけでは、海全体は変わらない。\n何度かなぞるうちに点が増え、その周囲から海の色が少しずつ変わる。画面上では数秒でも、目盛りは非常に長い時間が経過したことを示す。"
-        },
-        {
-          "id": "gx_deep_time_028",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "指を速く動かしても、時間の進み方は速くならない。\n同じ場所を何度こすっても、点が無制限に増えることもない。"
-        },
-        {
-          "id": "gx_deep_time_029",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "私の操作は、歴史を作り替える命令ではなく、用意された時間の経過を先へ読み進める動作である。"
-        },
-        {
-          "id": "gx_deep_time_030",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "青緑の点が現れるたび、画面の下へ小さく表示される。"
-        },
-        {
-          "id": "gx_deep_time_031",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "説明用の点\n個体数の実測ではなく、光合成を行う生命活動を表す画面上の記号"
-        },
-        {
-          "id": "gx_deep_time_032",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "点の周囲から細い金色の筋が生まれる。筋はすぐ海面へ上がらず、海の中にある別の物質へ触れて暗くなる。"
-        },
-        {
-          "id": "gx_deep_time_033",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "指を止めると、時間も止まる。"
-        },
-        {
-          "id": "gx_deep_time_034",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面を二本指で広げると、金色の筋が海中の鉄などと反応する段階が拡大される。閉じれば、再び地球規模の長い目盛りへ戻る。"
-        },
-        {
-          "id": "gx_deep_time_035",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "光合成で生じた酸素は、最初から空へたまったわけではなかった。\nまず海の中の鉄などと反応し、すぐには大気へ増えない時期が続く。その反応を重ねたあと、酸素は長い時間をかけて大気にも増えていった。"
-        },
-        {
-          "id": "gx_deep_time_036",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "海の上には、酸素の量を一本の単純なメーターで採点する表示を置かない。"
-        },
-        {
-          "id": "gx_deep_time_037",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "代わりに、「海中の反応が大きい段階」「大気にも変化が現れる段階」という二つの帯が時間軸へ重なる。境目は一本の確定線ではなく、幅を持った色で示される。"
-        },
-        {
-          "id": "gx_deep_time_038",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "年代の見積もりや出来事の詳しい関係に研究上の幅があることを、ぼかして消さないためである。"
-        },
-        {
-          "id": "gx_deep_time_039",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "この操作で分かるのは、生命の活動が環境を変え、変わった環境が後の生命にとって新しい条件になったという順序である。\n一つの生物が将来を計画して酸素を作ったことや、画面上の一つ一つの点が実在した個体であることを示すものではない。"
-        },
-        {
-          "id": "gx_deep_time_040",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "さらに、この画面だけから、生命がどこで最初に生まれたか、当時のすべての海が同じ状態だったか、酸素の増加だけで後の生物が生まれたかを決めることもできない。"
-        },
-        {
-          "id": "gx_deep_time_041",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面に入っていない条件は、存在しなかった条件ではない。"
-        },
-        {
-          "id": "gx_deep_time_042",
-          "sceneId": "gx_deep_time",
-          "type": "ui",
-          "text": "確認カード"
-        },
-        {
-          "id": "gx_deep_time_043",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "分かること：生命活動と環境変化が一方向ではなく連なっている。\n分からないこと：個体の目的、当時の全地点の状態、画面外の条件を含む完全な原因。"
-        },
-        {
-          "id": "gx_deep_time_044",
-          "sceneId": "gx_deep_time",
-          "type": "record",
-          "recordType": "DERIVED",
-          "text": "展示のために変換した表示\n太古の記録を、触れられる時間軸へ並べたもの"
-        },
-        {
-          "id": "gx_deep_time_045",
-          "sceneId": "gx_deep_time",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "今の役割から、最初の目的を決めることはできませんわ。"
-        },
-        {
-          "id": "gx_deep_time_046",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハの声は現在の会場からの解説ではなく、三人が公開版へ保存した制作時の録音である。台詞の横に録音日と公開同意の印が出る。"
-        },
-        {
-          "id": "gx_deep_time_047",
-          "sceneId": "gx_deep_time",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "酸素を使う生き物のために、酸素を作ったわけじゃない。"
-        },
-        {
-          "id": "gx_deep_time_048",
-          "sceneId": "gx_deep_time",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "ええ。できたものが、あとから別の生き物にも使われましたの。"
-        },
-        {
-          "id": "gx_deep_time_049",
-          "sceneId": "gx_deep_time",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "目的が先にあったんじゃなくて、変化が先。"
-        },
-        {
-          "id": "gx_deep_time_050",
-          "sceneId": "gx_deep_time",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "その変化を、別の生き物が条件として受け取りましたのね。"
-        },
-        {
-          "id": "gx_deep_time_051",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人の会話のあと、十一秒の無言とは違う短い生活音が残る。"
-        },
-        {
-          "id": "gx_deep_time_052",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハが紙をめくる音。\nアマネがマウスを二度動かす音。\nその奥で、サクヤが「点、増やしすぎないで」と小さく言う。"
-        },
-        {
-          "id": "gx_deep_time_053",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤの声だけを現在の不在へ結び付ける説明は付かない。三人がこの画面を調整していた日の制作録音として、三人の名前と同じ欄へ置かれている。"
-        },
-        {
-          "id": "gx_deep_time_054",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "指を離す。\n青緑の点は消えずに遠ざかり、太古の海が一枚の地図へ縮む。"
-        },
-        {
-          "id": "gx_deep_time_055",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面の縁に展示ホールの照明が戻る。"
-        },
-        {
-          "id": "gx_deep_time_056",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "指先には画面の熱がわずかに残り、背後では別のブースの終了音が鳴る。私は現在の展示席に座ったまま、画面の時間だけが太古から現在へ進む。"
-        },
-        {
-          "id": "gx_deep_time_057",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "GX完了の印は、地球史を理解したという採点ではない。私が案内を読み、水面を操作し、確認カードまで開いたという進行記録だけを示す。"
-        },
-        {
-          "id": "gx_deep_time_058",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "長い時間の中で生命と環境が変わり合ったことを見たあと、画面は現在の森林へ切り替わる。\n次に確かめるのは、同じ場所に見える二つの記録から、どこまで意味を読み取れるかである。"
+          "text": "次の画面は、その人が最後に完成させた作業へ戻る。"
         }
       ],
       "nextSceneId": "mode03_map"
@@ -6619,93 +6301,10 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode03_map",
           "type": "narration",
           "speaker": "narrator",
-          "text": "GXの暗い海が閉じ、指の下へ白い案内面が現れる。"
+          "text": "森と雨を同じ地図へ重ね、重なった地点を開く。二つが同じ場所にあることは分かるが、重なりだけでは原因と結果は決められない。"
         },
         {
           "id": "mode03_map_002",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［画面に表示されるもの］\n同じ地域について作られた森林分布と降水量の二つの記録。提供元、観測年、観測地点、地図上の細かさを別々に表示する。"
-        },
-        {
-          "id": "mode03_map_003",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［操作すること］\n森林と降水量を一枚ずつ開き、同じ地図へ重ねる。重なった地点に触れ、数値と制作履歴を確かめる。"
-        },
-        {
-          "id": "mode03_map_004",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［分かること／断定できないこと］\n二つの記録が地図上で重なる場所は分かる。重なりだけから、森が雨を増やした、雨だけが森を作った、という原因と結果までは断定できない。"
-        },
-        {
-          "id": "mode03_map_005",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三項目を読み終えると、地図モードが開く。"
-        },
-        {
-          "id": "mode03_map_006",
-          "sceneId": "mode03_map",
-          "type": "ui",
-          "text": "表示｜地図モード"
-        },
-        {
-          "id": "mode03_map_007",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "世界地図の輪郭と、二つのレイヤーボタンが現れる。\nレイヤーとは、同じ地図の上へ別々の記録を重ねて見るための透明な層である。"
-        },
-        {
-          "id": "mode03_map_008",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "「森林」を開く。\n衛星などから作られた森林分布が緑で表示され、観測年、提供元、元のデータへ戻るための出典が添えられる。"
-        },
-        {
-          "id": "mode03_map_009",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "次に「降水量」を開く。\n各地点で記録された同じ時期の降水量が、青い円の大きさで表示される。"
-        },
-        {
-          "id": "mode03_map_010",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "緑は土地の広がりを示す面、青は限られた地点で測られた量であり、最初から同じ細かさで世界全体を埋めた記録ではない。"
-        },
-        {
-          "id": "mode03_map_011",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二つの凡例へ交互に触れる。"
-        },
-        {
-          "id": "mode03_map_012",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "緑の面には観測年と分類方法が出る。\n青い円には観測地点と期間が出る。"
-        },
-        {
-          "id": "mode03_map_013",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地図の上では隣り合って見えても、同じ機械が同じ瞬間に測った二つの値ではない。画面上で位置を合わせるために行った変換は、「この展示で加えた処理」から開いて確かめられる。"
-        },
-        {
-          "id": "mode03_map_014",
           "sceneId": "mode03_map",
           "type": "interaction",
           "interaction": {
@@ -6716,140 +6315,137 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               "overlay"
             ]
           },
-          "text": "操作｜二つの記録を重ねる"
+          "text": "操作｜森と雨を重ねる"
+        },
+        {
+          "id": "mode03_map_003",
+          "sceneId": "mode03_map",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "緑の森林分布へ、青い降水地点が重なる。"
+        },
+        {
+          "id": "mode03_map_004",
+          "sceneId": "mode03_map",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "森が広がっていても近くに降水地点がない場所がある。降水量が多くても、森林の少ない場所がある。"
+        },
+        {
+          "id": "mode03_map_005",
+          "sceneId": "mode03_map",
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「重なっている場所は見えます。ただ、この画面だけで原因と結果は決められませんわ」"
+        },
+        {
+          "id": "mode03_map_006",
+          "sceneId": "mode03_map",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「あの一行、残ってる」"
+        },
+        {
+          "id": "mode03_map_007",
+          "sceneId": "mode03_map",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "地点を開くと、完成した説明の下に、制作中の修正履歴が現れる。"
+        },
+        {
+          "id": "mode03_map_008",
+          "sceneId": "mode03_map",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "公開画面から外した文：\n森が雨を呼ぶ。"
+        },
+        {
+          "id": "mode03_map_009",
+          "sceneId": "mode03_map",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "三人で直して戻した文：\n森と雨が重なる場所があります。原因はこの画面だけでは決められません。"
+        },
+        {
+          "id": "mode03_map_010",
+          "sceneId": "mode03_map",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "直した人：\nsaku／みず／あまあま"
+        },
+        {
+          "id": "mode03_map_011",
+          "sceneId": "mode03_map",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤは短くしすぎた文を削った二日後、自分から条件を書き足す作業へ戻っていた。"
+        },
+        {
+          "id": "mode03_map_012",
+          "sceneId": "mode03_map",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "その下に、不在直前の二件が別々のカードで並ぶ。"
+        },
+        {
+          "id": "mode03_map_013",
+          "sceneId": "mode03_map",
+          "type": "chat",
+          "time": "02:13",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "データだけ先に上げた。\n森と雨が重なっても、「森が雨を降らせた」にはしないでね。"
+        },
+        {
+          "id": "mode03_map_014",
+          "sceneId": "mode03_map",
+          "type": "chat",
+          "time": "02:14",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "もし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――"
         },
         {
           "id": "mode03_map_015",
           "sceneId": "mode03_map",
           "type": "narration",
           "speaker": "narrator",
-          "text": "森林分布へ降水量を重ねる。\n緑と青が重なる場所がある。森林は見えても近くに降水地点がない場所、降水量は表示されても森林が少ない場所もある。"
+          "text": "02:13は作業を終えた連絡だ。02:14は別の投稿で、横線のあとには文字がない。"
         },
         {
           "id": "mode03_map_016",
           "sceneId": "mode03_map",
           "type": "narration",
           "speaker": "narrator",
-          "text": "重なりは「同じ場所に二つの記録がある」ことを見せる。\n森が雨を増やしたのか、雨が森を支えたのか、別の条件が両方へ影響したのかは、この画面だけでは決められない。"
+          "text": "このあとに届いたメッセージ：0"
         },
         {
           "id": "mode03_map_017",
           "sceneId": "mode03_map",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "重なっている場所は見えます。ただ、この画面だけで原因と結果は決められませんわ。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "一件目を二件目の前半にはしない。届かなかった文章があったとも決めない。"
         },
         {
           "id": "mode03_map_018",
           "sceneId": "mode03_map",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "あの一行、残ってる。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "現在の展示席で、指が二件の境目に止まる。"
         },
         {
           "id": "mode03_map_019",
           "sceneId": "mode03_map",
           "type": "narration",
           "speaker": "narrator",
-          "text": "重なった地点へ触れると、数値のカードではなく、その表示を作ったときの制作履歴も開く。"
+          "text": "黒い画面の端には、別のケーブルを持ち上げるアマネが映っている。"
         },
         {
           "id": "mode03_map_020",
           "sceneId": "mode03_map",
           "type": "narration",
           "speaker": "narrator",
-          "text": "履歴には、完成した説明だけでなく、一度削除された文章と、誰が戻したかが残っている。"
-        },
-        {
-          "id": "mode03_map_021",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "公開画面から外した文：森が雨を呼ぶ。\n三人で直して戻した文：森と雨が重なる場所があります。原因はこの画面だけでは決められません。\n直した人：saku / みず / あまあま"
-        },
-        {
-          "id": "mode03_map_022",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤが短くしすぎた文章と、三人で直した文章が並ぶ。"
-        },
-        {
-          "id": "mode03_map_023",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "「削除」は間違いをなかったことにする印ではない。\n公開画面から外した文章を、いつ、誰が、どのような理由で直したか辿れるようにするための記録である。"
-        },
-        {
-          "id": "mode03_map_024",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "その下に、公開版へ入っていない二件の投稿があった。"
-        },
-        {
-          "id": "mode03_map_025",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二件は一分違いで送られているが、同じ投稿ではない。\n一件目は制作作業の連絡として文が完結し、二件目だけが横線の途中で止まっている。"
-        },
-        {
-          "id": "mode03_map_026",
-          "sceneId": "mode03_map",
-          "type": "record",
-          "recordType": "SOURCE",
-          "text": "直前に届いた投稿\n02:13  🌸 saku 🌸\nデータだけ先に上げた。\n森と雨が重なっても、「森が雨を降らせた」にはしないでね。"
-        },
-        {
-          "id": "mode03_map_027",
-          "sceneId": "mode03_map",
-          "type": "record",
-          "recordType": "SOURCE",
-          "text": "サクヤから最後に届いた投稿\n02:14  🌸 saku 🌸\nもし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――"
-        },
-        {
-          "id": "mode03_map_028",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "このあとに届いたメッセージ：0"
-        },
-        {
-          "id": "mode03_map_029",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面は二件を一つの文章へつなげず、送られた順番と時刻を保ったまま残した。\n一件目を二件目の「前半」と決めることも、二件目に届かなかった続きがあったと断定することもしない。"
-        },
-        {
-          "id": "mode03_map_030",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "現在の展示席で、私の指が二件の境目に止まる。"
-        },
-        {
-          "id": "mode03_map_031",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面の白い部分へ、背後を通る人の影が一度横切る。端末の横では青りんごの表面へ照明が戻り、黒いシャツのアマネが別のケーブルを持ち上げる姿が端に映る。"
-        },
-        {
-          "id": "mode03_map_032",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "いま見ている二件の間には一分ある。\nその一分を、端末は空白のまま残す。"
-        },
-        {
-          "id": "mode03_map_033",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "履歴を閉じると、地図の地名と境界線が薄くなる。\n次の画面は、地震の波が起きた時刻、ある場所へ届いた時刻、人が気づいた時刻の違いを使って、同じ「遅れ」を別の角度から見せる。"
+          "text": "意味を足す前に、二件がいつ届き、いつ開かれたかを確かめる。"
         }
       ],
       "nextSceneId": "mode07_abstract"
@@ -6869,870 +6465,378 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "町名が消える前に、三行の案内が地図の上へ残る。"
+          "text": "地震の波が発生し、観測点へ届くまでを進める。続けて02:14の受信時刻と、二人が開いた10:27を並べるが、その差から人の行動理由は決めない。"
         },
         {
           "id": "mode07_abstract_002",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［画面に表示されるもの］\n地震が起きた地点、波が観測点へ届くまでの表示上の時間、その記録を人が確認するまでの時刻。後半では、同じ「届く／開く」の違いをサクヤの投稿記録に重ねる。"
-        },
-        {
-          "id": "mode07_abstract_003",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［操作すること］\n観測点を一つ選び、P波とS波の到着を進める。地図表示と、距離と時刻だけを残した抽象表示を切り替える。投稿の受信時刻と開封時刻の情報欄を開く。"
-        },
-        {
-          "id": "mode07_abstract_004",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［分かること／断定できないこと］\n出来事が起きた時刻、端末へ届いた時刻、人が開いた時刻が別だと分かる。時刻の差だけから、その間に誰が何をしていたか、なぜ開かなかったか、届かなかった文章があるかは断定できない。"
-        },
-        {
-          "id": "mode07_abstract_005",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "案内を閉じると、地図の町名から先に薄くなる。"
-        },
-        {
-          "id": "mode07_abstract_006",
-          "sceneId": "mode07_abstract",
-          "type": "ui",
-          "text": "表示｜地図モードから抽象モードへ"
-        },
-        {
-          "id": "mode07_abstract_007",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地図には、地震が始まった震源と、揺れを記録した観測点が表示される。\n最初は海岸線、町名、境界線も見えているため、どこで起き、どこで測られた記録かを確かめられる。"
-        },
-        {
-          "id": "mode07_abstract_008",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "抽象モードへ切り替えると、震源と観測点だけが残り、町名と境界線がゆっくり消える。\n震源が画面の中央へ移り、観測点は距離に応じた位置へ並び直される。"
-        },
-        {
-          "id": "mode07_abstract_009",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地図を消すのは、場所を無かったことにするためではない。\nここでは、同じ出来事が場所ごとに違う時刻へ届くことだけを、波と時間で読みやすくする。"
-        },
-        {
-          "id": "mode07_abstract_010",
           "sceneId": "mode07_abstract",
           "type": "interaction",
           "interaction": {
             "kind": "abstract07",
             "requiredPoints": 1
           },
-          "text": "操作｜観測点に触れる"
+          "text": "操作｜観測点と時刻を開く"
         },
         {
-          "id": "mode07_abstract_011",
+          "id": "mode07_abstract_003",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "一つの観測点に触れる。\n震源から、先に届く速いP波と、あとから届く大きな揺れのS波が、色の違う輪になって広がる。\n二つの輪は同時に始まるが、触れた地点へは別々の時刻に到着する。"
+          "text": "震源から二つの輪が広がる。先に届く輪と、あとから届く輪は、同じ場所から始まっても観測点へ着く時刻が違う。"
         },
         {
-          "id": "mode07_abstract_012",
+          "id": "mode07_abstract_004",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面に出る到着時刻は、代表的な速度と震源までの距離から求めた表示上の計算である。\nその地震で実際に記録された観測震度とは分けて表示され、実際の到着時刻や緊急地震速報を再現したものではない。"
+          "text": "画面の右側へ、三つの時刻が縦に並ぶ。"
         },
         {
-          "id": "mode07_abstract_013",
+          "id": "mode07_abstract_005",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "町名を外した画面には、発生、到着、観測という三つの時刻が縦に並ぶ。"
+          "text": "発生。\n到着。\n開封。"
         },
         {
-          "id": "mode07_abstract_014",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "起きた時刻と、届いた時刻と、気づいた時刻。全部別。"
-        },
-        {
-          "id": "mode07_abstract_015",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "同じ出来事でも、起きた瞬間にすべての場所へ同時に届くわけではありませんの。"
-        },
-        {
-          "id": "mode07_abstract_016",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "届いても、開くまで分からないこともある。"
-        },
-        {
-          "id": "mode07_abstract_017",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地震の時刻表示の横に、サクヤの投稿時刻が重なる。"
-        },
-        {
-          "id": "mode07_abstract_018",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地震とメッセージを同じ現象として扱うためではない。\n出来事が起きた時刻、記録が端末へ届いた時刻、人がその記録を開いた時刻は、それぞれ別だと確かめるために並べている。"
-        },
-        {
-          "id": "mode07_abstract_019",
+          "id": "mode07_abstract_006",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
           "text": "サクヤの投稿が届いた時刻：02:14\nミズハとアマネが初めて開いた時刻：10:27"
         },
         {
+          "id": "mode07_abstract_007",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "八時間十三分のあいだへ、端末は理由を書き込まない。"
+        },
+        {
+          "id": "mode07_abstract_008",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "睡眠、移動、事故、送信のためらい。どの語も、この二つの時刻だけからは選べない。"
+        },
+        {
+          "id": "mode07_abstract_009",
+          "sceneId": "mode07_abstract",
+          "type": "transition",
+          "text": "公開前夜｜共同作業室"
+        },
+        {
+          "id": "mode07_abstract_010",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "画面の時刻が、学園祭前日の夕方へ切り替わる。"
+        },
+        {
+          "id": "mode07_abstract_011",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハとアマネは、三か月前と同じ共同作業室で会場用端末を確認していた。"
+        },
+        {
+          "id": "mode07_abstract_012",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネは確認済みの項目へ時刻を入れる。ミズハは三行読むたび、一行前へ戻る。"
+        },
+        {
+          "id": "mode07_abstract_013",
+          "sceneId": "mode07_abstract",
+          "type": "transition",
+          "text": "22:00｜パンは未開封"
+        },
+        {
+          "id": "mode07_abstract_014",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハが買ったパンは、紙袋に入ったままだった。"
+        },
+        {
+          "id": "mode07_abstract_015",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネが袋を画面の横へ寄せる。ミズハは「あとで」と言い、蓋を開けた水だけを手元へ戻す。"
+        },
+        {
+          "id": "mode07_abstract_016",
+          "sceneId": "mode07_abstract",
+          "type": "transition",
+          "text": "23:00｜最終画面の確認"
+        },
+        {
+          "id": "mode07_abstract_017",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "最後に、02:14の白いカードが開く。"
+        },
+        {
+          "id": "mode07_abstract_018",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "横線のあとは三か月前から変わらず、何も表示されていない。"
+        },
+        {
+          "id": "mode07_abstract_019",
+          "sceneId": "mode07_abstract",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハは白いカードを閉じ、また開く。"
+        },
+        {
           "id": "mode07_abstract_020",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "午前二時十四分に届いた文章を、ミズハとアマネが初めて読んだのは八時間十三分後だった。\nそのあいだにサクヤが何をしていたか、続きが存在したかは、この時刻からは分からない。"
+          "text": "新しい文章を書く欄へ、「私たちは、まだ意味を決めていません」と入力する。"
         },
         {
           "id": "mode07_abstract_021",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "「届いた時刻」を開くと、投稿を受け付けた時刻と、二人の画面へ表示された時刻が分けて示される。"
+          "text": "読み直し、保存せず消す。"
         },
         {
           "id": "mode07_abstract_022",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "「初めて開いた時刻」を開くと、ミズハとアマネがその投稿を初めて表示した時刻が示される。"
+          "text": "次に、「この文章には続きがありません」と書く。"
         },
         {
           "id": "mode07_abstract_023",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二つの時刻の間へ、端末は推測した行動を入れない。\n睡眠、移動、事故、送信のためらい。どの言葉も時刻記録だけからは選べない。"
+          "text": "本人が続きを書くつもりだったか分からないため、その文も消す。"
         },
         {
           "id": "mode07_abstract_024",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "時刻の列が暗くなり、「公開前夜」と表示される。"
+          "text": "ミズハは、三人が公開へ同意した制作チャンネルの投稿だけを使い、ローカルで文章を生成した。"
         },
         {
           "id": "mode07_abstract_025",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "現在の学園祭が始まる前の夜。ミズハとアマネは、三か月前と同じ共同作業室で最終確認をしていた。\n窓の外は暗く、共同ディスプレイの右上では、会場搬入までの残り時間が減っている。"
+          "text": "アマネが振り返ったとき、白いカードの下に青いカードが一枚置かれていた。"
         },
         {
           "id": "mode07_abstract_026",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネの机には空になった缶コーヒーが二本、ミズハの机には蓋を開けた水が一本あった。\n二人は夕食を取らないまま、作者名と表示分類がすべて正しいかを上から確かめていた。"
+          "type": "record",
+          "recordType": "SOURCE",
+          "text": "サクヤ本人から届いた文章\n作者：saku\nもし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――"
         },
         {
           "id": "mode07_abstract_027",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人が部屋へ入ったのは夕方だった。"
+          "type": "record",
+          "recordType": "DERIVED",
+          "text": "ミズハが生成し、候補から選んだ文章\n「聞こえたつもりになってない？」って、三人で確かめたい。\n生成・選定：みず\nサクヤ本人の確認：なし"
         },
         {
           "id": "mode07_abstract_028",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初の一時間は、会場用端末の起動確認に使った。次の一時間で、前の来場者の選択が待機画面へ残らないことを試した。日が暮れてから、三人の公開同意、作者名、本人や観測元から届いた記録と、そこから計算・生成した内容の区別を、画面の先頭から一件ずつ読み直した。"
+          "text": "アマネは椅子を会場端末と同じ距離まで下げ、二歩離れる。"
         },
         {
           "id": "mode07_abstract_029",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは確認済みの項目へ時刻を入れる。\nミズハは読み終えた説明の横へ小さな印を付け、三行進むごとに一行前へ戻る。"
+          "text": "細い作者名より先に、二つの本文が一続きに見えた。"
         },
         {
           "id": "mode07_abstract_030",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "午後十時、ミズハが買ってきたパンは紙袋に入ったままだった。アマネが袋を画面の横へ動かすと、ミズハは「あとで」と言い、蓋を開けた水だけを自分の側へ戻した。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「最初に、誰の文だと思った？」"
         },
         {
           "id": "mode07_abstract_031",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "午後十一時、チェック欄は最後の画面まで進む。"
+          "text": "ミズハは白い文、青い文、自分の名前の順に見る。"
         },
         {
           "id": "mode07_abstract_032",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "そこで、サクヤから最後に届いた白いカードと、その横線のあとの空白が開いた。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「私が作った文章ですわ」"
         },
         {
           "id": "mode07_abstract_033",
           "sceneId": "mode07_abstract",
-          "type": "record",
-          "recordType": "SOURCE",
-          "text": "最後の受信文を開いたところで、ミズハの確認作業が止まった。\n横線のあとには、何も表示されていない。三か月前から変わらない空白だった。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「知ってるから読める答えじゃなくて」"
         },
         {
           "id": "mode07_abstract_034",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハは次の確認項目へ進まず、白いカードを閉じては開く。"
+          "text": "ミズハは青いカードを白いカードから離す。"
         },
         {
           "id": "mode07_abstract_035",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "一度、自分の名前で新しい文章を書く欄を作る。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「これなら、別の文章だと分かります」"
         },
         {
           "id": "mode07_abstract_036",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "「私たちは、まだ意味を決めていません」"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「離しても、sakuの文のあとに置いたら、続きを読んだと思う人がいる」"
         },
         {
           "id": "mode07_abstract_037",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "入力した文を読み、保存せず削除する。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「本人の文章として置くつもりはありません。私が何を作ったかを隠したくないのです」"
         },
         {
           "id": "mode07_abstract_038",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "次に「この文章には続きがありません」と説明を足す。受信した文章の先に本当に続きが存在しなかったと断定する書き方になるため、その文も削除する。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「作ったことは残す。本人の文の隣には置かない」"
         },
         {
           "id": "mode07_abstract_039",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは反対側の机で機材ログを確認しており、その二つの文は見ていない。送信されず、保存されず、制作記録にも残らない。"
+          "text": "ミズハの指が止まる。"
         },
         {
           "id": "mode07_abstract_040",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "公開同意では、三人が公開対象として選んだ制作チャンネルの投稿だけを、候補生成へ使うことが認められていた。\nミズハはその範囲だけをローカルの生成処理へ読み込ませ、サクヤの文体に似た続きの候補を複数作った。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「何もないまま待つのが、怖かったのです。書いてあるものがあれば、待っているあいだも次の行へ進めると思いましたの」"
         },
         {
           "id": "mode07_abstract_041",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "処理を始める前に、参照範囲が一覧で出る。"
+          "text": "アマネはすぐに答えず、空の缶を机の端へ寄せる。"
         },
         {
           "id": "mode07_abstract_042",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "含む：公開対象として三人が選定済みの制作チャンネル投稿。\n含まない：個別メッセージ、授業チャンネル、下書き、削除済みの私的投稿、端末内の未送信文。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「私は、これをsakuのいい台詞だと思われるのが怖い」"
         },
         {
           "id": "mode07_abstract_043",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは一覧を上から下まで送り、対象件数を確認してから実行する。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「私の名前を出します」"
         },
         {
           "id": "mode07_abstract_044",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "生成された候補は二十四件。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「名前を読まない人もいる」"
         },
         {
           "id": "mode07_abstract_045",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "長い説明になる文。\nサクヤが使わなかった丁寧語を含む文。\n地球を一人の話者として断定する文。\n不在の理由を知っているように読める文。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「では、作らなかったことにしますの？」"
         },
         {
           "id": "mode07_abstract_046",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは候補を一件ずつ閉じる。閉じた理由を「語調」「断定」「本人未確認」と記録する。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「消さない。みずが作ったものとして残す。でも、sakuの文を完成させる場所には置かない」"
         },
         {
           "id": "mode07_abstract_047",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最後まで残した一件にも、採用や本人確認の印は付けない。"
+          "text": "ミズハの手がマウスから離れる。"
         },
         {
           "id": "mode07_abstract_048",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三人で確かめたい、という言葉があるため選択したことを、ミズハ自身の選定理由として書く。サクヤがそう書こうとしていた、という理由にはしない。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「私だけに責任を戻して、あなたは外へ立つのですか」"
         },
         {
           "id": "mode07_abstract_049",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "個別メッセージも、授業の投稿も、送信されなかった文章も使っていない。\nそれでも、生成された文はサクヤ本人が送った文章ではない。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「そう聞こえたなら、ごめん。二人で決める」"
         },
         {
           "id": "mode07_abstract_050",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハは候補の一つを青いカードへ置き、白い原文の下に並べた。"
+          "text": "二人のあいだに、白いカードと青いカードが離れて残る。"
         },
         {
           "id": "mode07_abstract_051",
           "sceneId": "mode07_abstract",
-          "type": "record",
-          "recordType": "SOURCE",
-          "text": "サクヤ本人から届いた文章\n作者：saku"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "締切までの数字だけが一秒ずつ減る。"
         },
         {
           "id": "mode07_abstract_052",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "もし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――"
+          "text": "アマネは端末をロックする。"
         },
         {
           "id": "mode07_abstract_053",
           "sceneId": "mode07_abstract",
-          "type": "record",
-          "recordType": "DERIVED",
-          "text": "ミズハが生成し、候補から選んだ文章"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「一回、外へ出よう」"
         },
         {
           "id": "mode07_abstract_054",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "「聞こえたつもりになってない？」って、三人で確かめたい。"
-        },
-        {
-          "id": "mode07_abstract_055",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "もとにした文章：公開対象として三人が選んだ制作チャンネルの投稿\n生成した人：みず\n候補から選んだ人：みず\nサクヤ本人の確認：なし"
-        },
-        {
-          "id": "mode07_abstract_056",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "白いカードは、実際にサクヤのアカウントから届き、保存された文章を示す。\n青いカードは、公開対象の文章を材料に生成し、ミズハが候補の中から選んだ文章を示す。"
-        },
-        {
-          "id": "mode07_abstract_057",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "似ているかどうかと、本人が書いたかどうかは別である。\n青いカードには、その区別を画面から辿れるよう、作った人、選んだ人、本人未確認という表示が付けられている。"
-        },
-        {
-          "id": "mode07_abstract_058",
-          "sceneId": "mode07_abstract",
-          "type": "details",
-          "text": "生成履歴を詳しく見る",
-          "detailId": "mode07_generation_details"
-        },
-        {
-          "id": "mode07_abstract_059",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "公開対象の制作投稿だけを参照。個別メッセージと授業チャンネルは対象外。\nローカル環境で複数候補を生成し、ミズハが一件を選んだ。本文の編集はしていない。"
-        },
-        {
-          "id": "mode07_abstract_060",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは白い文、青い文、本人未確認の表示を順番に開いた。\n最後に、来場者が最初に目にする二枚の並びへ戻り、青いカードを閉じた状態と開いた状態で何度も見比べた。"
-        },
-        {
-          "id": "mode07_abstract_061",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは椅子を共同ディスプレイの正面へ移す。制作者の確認画面ではなく、来場者用の表示へ切り替える。"
-        },
-        {
-          "id": "mode07_abstract_062",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "最初の状態では、白い原文が上、青い生成文が下にある。色は違う。分類も違う。けれど二つの文章の左端と行間は揃い、横線から視線を下げれば、そのまま一続きに読める距離だった。"
-        },
-        {
-          "id": "mode07_abstract_063",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは表示倍率を、会場端末と同じ大きさへ戻す。\n椅子から立ち、二歩離れる。"
-        },
-        {
-          "id": "mode07_abstract_064",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "離れると、作者と作り方を示す細い文字は読みにくくなり、二つの本文だけが先に見える。"
-        },
-        {
-          "id": "mode07_abstract_065",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネはミズハを呼ばず、椅子を元の位置へ戻す。青いカードの作者欄を開き、ミズハの名前が最初から見える設定へ変える。それでも白い横線と青い文の距離は変わらない。"
-        },
-        {
-          "id": "mode07_abstract_066",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "これ、最初に誰の文だと思った？"
-        },
-        {
-          "id": "mode07_abstract_067",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは画面へ近づき、二つのラベル、作者名、本文の順に見る。"
-        },
-        {
-          "id": "mode07_abstract_068",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "私が作った派生文です。"
-        },
-        {
-          "id": "mode07_abstract_069",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "知ってるから読める答えじゃなくて。"
-        },
-        {
-          "id": "mode07_abstract_070",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは椅子へ座り、アマネがしたように来場者表示へ戻す。青い文を閉じ、開き、情報欄を出さない状態で横線から下へ読む。"
-        },
-        {
-          "id": "mode07_abstract_071",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハの指が青いカードの最初の鉤括弧で止まる。"
-        },
-        {
-          "id": "mode07_abstract_072",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "似ておりますわね。"
-        },
-        {
-          "id": "mode07_abstract_073",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "だから、本人の続きには置けない。"
-        },
-        {
-          "id": "mode07_abstract_074",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "本人の文とは分けています。"
-        },
-        {
-          "id": "mode07_abstract_075",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "情報欄を開けば、でしょ。"
-        },
-        {
-          "id": "mode07_abstract_076",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "生成したことも、選んだのが私だということも、最初から表示できますわ。"
-        },
-        {
-          "id": "mode07_abstract_077",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "最初に読むのは文章だよ。\nラベルより先に、続きを読んだと思う人がいる。"
-        },
-        {
-          "id": "mode07_abstract_078",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "でしたら、距離をもっと離します。色ではなく、枠の形も変えますわ。"
-        },
-        {
-          "id": "mode07_abstract_079",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "離しても「sakuの最後の文から作った続き」なのは変わらない。"
-        },
-        {
-          "id": "mode07_abstract_080",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "続きとして採用するのではありません。私が、何を作ってしまったかを出すのです。"
-        },
-        {
-          "id": "mode07_abstract_081",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "それなら制作記録に出す。最後の受信文の隣じゃない。"
-        },
-        {
-          "id": "mode07_abstract_082",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは青いカードを画面の右端へ動かす。二枚の間に余白ができる。アマネは余白ごと選択し、来場者が一つの画面として見る範囲を示す。"
-        },
-        {
-          "id": "mode07_abstract_083",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人のカーソルが、白と青の間で重なる。"
-        },
-        {
-          "id": "mode07_abstract_084",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは候補文を公開画面から外した。"
-        },
-        {
-          "id": "mode07_abstract_085",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "青いカードが消えると、白い原文の横線のあとには、元どおり何もなくなった。"
-        },
-        {
-          "id": "mode07_abstract_086",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは何も言わず、表示を戻した。"
-        },
-        {
-          "id": "mode07_abstract_087",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "戻した直後、ミズハは生成履歴の作者欄を一番上へ移す。自分の名前を大きくし、本人未確認を赤い枠へ変える。"
-        },
-        {
-          "id": "mode07_abstract_088",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネはその変更を消さない。表示されたまま、青いカード全体をもう一度選択する。"
-        },
-        {
-          "id": "mode07_abstract_089",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "戻さないで。"
-        },
-        {
-          "id": "mode07_abstract_090",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "sakuの文章とは書いていませんわ。"
-        },
-        {
-          "id": "mode07_abstract_091",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "ラベルを全部読む人ばかりじゃない。"
-        },
-        {
-          "id": "mode07_abstract_092",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "では、作らなかったことにしますの？"
-        },
-        {
-          "id": "mode07_abstract_093",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "作った記録は残す。\nsakuの文と同じ場所には置かない。\n作ったのはみずでしょ。"
-        },
-        {
-          "id": "mode07_abstract_094",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハの手がマウスから離れた。\n机の端に置いた水は、蓋を開けたまま減っていなかった。"
-        },
-        {
-          "id": "mode07_abstract_095",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "それは、ずるい言い方ですわ。"
-        },
-        {
-          "id": "mode07_abstract_096",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "分かってる。"
-        },
-        {
-          "id": "mode07_abstract_097",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは一度目を閉じ、空の缶を机の端へ寄せた。\n口を開きかけ、声を出さないまま閉じる。先に青いカードへ手を伸ばした。"
-        },
-        {
-          "id": "mode07_abstract_098",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "缶の底が机の継ぎ目へ当たり、乾いた音を立てる。"
-        },
-        {
-          "id": "mode07_abstract_099",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハはその音へ顔を上げる。アマネは缶を倒れない位置へ置き直し、今度はキーボードへすぐ手を戻さない。"
-        },
-        {
-          "id": "mode07_abstract_100",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは青い文をもう一度非表示にした。\nファイルそのものは削除しなかった。\nただし、本人の最後のメッセージに見える名前から、サクヤの文章を材料にミズハが作った派生物だと分かる名前へ変えた。"
-        },
-        {
-          "id": "mode07_abstract_101",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "saku_last_message.txt\n　　　↓\nmizu_generated_from_saku_01.txt"
-        },
-        {
-          "id": "mode07_abstract_102",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "白い文だけ置いたら、私たちが何もしなかったように見えますわ。"
-        },
-        {
-          "id": "mode07_abstract_103",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは白いカードの横線へカーソルを置いたまま、画面から手を離さなかった。\n水のボトルは開いたまま、表面の結露だけが机へ丸い跡を作っている。"
-        },
-        {
-          "id": "mode07_abstract_104",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "見せたら、sakuが書いたと思う人が出る。"
-        },
-        {
-          "id": "mode07_abstract_105",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "私の名前を出します。"
-        },
-        {
-          "id": "mode07_abstract_106",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "だったら最初から、自分の文章として書けばよかった。"
-        },
-        {
-          "id": "mode07_abstract_107",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "自分の文章では、待っているふりができませんもの。"
-        },
-        {
-          "id": "mode07_abstract_108",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "言い終えたあと、ミズハは横線の先ではなく、青いカードに表示された自分の名前を見た。"
-        },
-        {
-          "id": "mode07_abstract_109",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは空になった缶コーヒーを振った。\n音はしなかった。"
-        },
-        {
-          "id": "mode07_abstract_110",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "私は、これをsakuのいい台詞だと思われるのが嫌。"
-        },
-        {
-          "id": "mode07_abstract_111",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "私は、これを隠して、何も間違えなかった顔をするのが嫌ですわ。"
-        },
-        {
-          "id": "mode07_abstract_112",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "隠さない。\n制作記録に、みずが作ったって残す。"
-        },
-        {
-          "id": "mode07_abstract_113",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "けれど、最後の画面では見えません。"
-        },
-        {
-          "id": "mode07_abstract_114",
-          "sceneId": "mode07_abstract",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "見せることと、本人の隣に置くことは同じじゃない。"
-        },
-        {
-          "id": "mode07_abstract_115",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人とも表示には触れなかった。\n空調が止まり、共同作業室の中でノートパソコンのファンだけが回った。\n締切までの残り時間だけが、画面の右上で一秒ずつ減った。"
-        },
-        {
-          "id": "mode07_abstract_116",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "記録映像の上へ、現在の展示ホールの音が少し戻る。"
-        },
-        {
-          "id": "mode07_abstract_117",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "喉に、長く黙っていたあとの乾きが残る。端末の横には青りんごがあるが、飲み物はない。背後を歩く人の紙コップから氷が動く音がして、公開前夜の机に置かれた水の輪と重なる。"
-        },
-        {
-          "id": "mode07_abstract_118",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面は二人のどちらかを正しい側として強調しない。"
-        },
-        {
-          "id": "mode07_abstract_119",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "白い原文を守る理由。\n青い文を作った事実と責任を隠したくない理由。"
-        },
-        {
-          "id": "mode07_abstract_120",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "それぞれの発言と操作を同じ大きさで残し、次に、私が区別を自分で確かめる画面へ移る。"
-        },
-        {
-          "id": "mode07_abstract_121",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "私は白い原文と青い生成部分の情報欄を開く。\n白い文には作者と受信時刻が表示される。\n青い文には分類、生成元、生成実行者、選定責任者、本人未確認が表示される。\n参照範囲、生成方法、モデル、時刻は「生成履歴を詳しく見る」から任意で開ける。"
-        },
-        {
-          "id": "mode07_abstract_122",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "この場面で求められるのは、どちらかをサクヤの本当の続きとして選ぶことではない。\n本人から届いた記録と、本人らしさを材料に別の人が作った記録が、どのように違うかを確かめることである。"
-        },
-        {
-          "id": "mode07_abstract_123",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［この画面では選択肢を出さない］\n私が二つの情報欄を見たという操作だけが、MODE 10へ残る。"
-        },
-        {
-          "id": "mode07_abstract_124",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面が暗転する直前、白い原文は開いたまま、青い生成文は閉じたカードへ戻る。\n二人があの夜どちらも削除しなかったことと、同じ場所には置かなかったことが、別々の記録として残る。"
+          "text": "ミズハは開いた水の蓋を閉め、食べていないパンと青りんごを紙袋へ入れる。"
         }
       ],
       "nextSceneId": "interlude_sea"
@@ -7746,534 +6850,466 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "interlude_sea_001",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "MODE 07の画面が閉じると、公開前夜の続きが始まる。"
+          "type": "transition",
+          "text": "23:20｜共同作業室を出る"
         },
         {
           "id": "interlude_sea_002",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面右上には「再生中：公開前夜」と表示されたままである。\n私が展示ホールを出て海へ歩いているのではない。現在の展示席に座り、二人が保存した作業記録と、ミズハが撮った一枚の写真を順に見ている。"
+          "text": "二人は結論を出さないまま廊下へ出た。"
         },
         {
           "id": "interlude_sea_003",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人は結論を出さないまま共同作業室を出た。\n廊下の照明は半分消え、エレベーターの階数表示だけが白く点いていた。"
+          "text": "アマネはドアノブを二度引く。ミズハは廊下の時計を見てから、紙袋を抱え直す。"
         },
         {
           "id": "interlude_sea_004",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは端末の電源を落とさず、画面だけをロックした。ミズハは開いた水の蓋を閉め、食べていないパンと青りんごを同じ紙袋へ入れる。"
+          "text": "自動販売機で、アマネは無糖の缶コーヒーを買う。"
         },
         {
           "id": "interlude_sea_005",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "部屋を出るとき、二人とも「休憩」とは言わない。アマネがドアノブを二度引いて施錠を確かめ、ミズハが廊下の時計を見る。"
+          "text": "ミズハは甘い飲み物へ伸ばした指を戻し、いちばん安い水を選ぶ。"
         },
         {
           "id": "interlude_sea_006",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは自動販売機へ硬貨を入れ、無糖の缶コーヒーを買った。\nミズハは甘い飲み物のボタンへ指を伸ばしたあと、財布の中を見て、いちばん安い水に変えた。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「それで足りる？」"
         },
         {
           "id": "interlude_sea_007",
           "sceneId": "interlude_sea",
           "type": "dialogue",
-          "speaker": "amane",
-          "text": "それで足りる？"
+          "speaker": "mizuha",
+          "text": "「足りることにしますわ」"
         },
         {
           "id": "interlude_sea_008",
           "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "足りることにしますわ。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "坂を下ると、街灯の切れ目から海が見える。"
         },
         {
           "id": "interlude_sea_009",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネはもう一度硬貨を探したが、ミズハは先に取り出し口から水を拾った。"
+          "text": "ミズハの歩幅が短くなる。先へ出たアマネは横断歩道の手前で止まり、ミズハが隣へ来てから次の青信号を待つ。"
         },
         {
           "id": "interlude_sea_010",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "坂を下ると海岸へ出た。\n街灯の切れ目から暗い海が見え、風が建物の間より強くなった。\n波は護岸へ当たるたび形を変えたが、暗くて白い縁しか見えない。"
+          "text": "紙袋の中で青りんごが転がる。ミズハは袋の底を両手で支える。"
         },
         {
           "id": "interlude_sea_011",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "坂の途中でミズハの歩幅が短くなる。アマネは先へ出たあと、横断歩道の手前で立ち止まり、信号が変わってもすぐ渡らない。"
+          "type": "transition",
+          "text": "23:31〜23:43｜海の十二分"
         },
         {
           "id": "interlude_sea_012",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハが隣へ着いてから、二人で次の青信号を待つ。"
+          "text": "終電までの時間から往復を引き、アマネがタイマーを十二分に設定する。"
         },
         {
           "id": "interlude_sea_013",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "海岸へ下りる階段では、風に押された紙袋が膝へ当たる。ミズハは青りんごが転がらないよう袋の底を抱え、アマネは手すりを握ったまま一度深く息を吐く。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「海まで来て、十二分」"
         },
         {
           "id": "interlude_sea_014",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "終電まで時間はなかった。\n駅へ戻る時間と、共同作業室へ置いた荷物を取りに戻る時間を引き、アマネがスマートフォンのタイマーを十二分に設定した。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「短い休憩ですこと」"
         },
         {
           "id": "interlude_sea_015",
           "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "海まで来て、十二分。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二人は護岸の低い段差へ座る。"
         },
         {
           "id": "interlude_sea_016",
           "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "往復入れたら、それ以上ない。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハの紙袋には、翌日のブースへ置く青りんごと、食べていないパンがある。"
         },
         {
           "id": "interlude_sea_017",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人は護岸の低い段差へ座った。\nコンクリートは昼の熱を失い、服越しにも冷たかった。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「りんご、丸かじりすれば」"
         },
         {
           "id": "interlude_sea_018",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハの紙袋には、翌日のブースへ置くために買った青りんごが一つ入っていた。\n最初の学園祭で待ち合わせに使ったものと同じ種類を、園芸売り場の隣で選んできた。\n二人とも夕食を取っていなかった。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「歯形まで展示へ持ち帰りたくありませんわ」"
         },
         {
           "id": "interlude_sea_019",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "丸かじりすれば。"
+          "text": "「じゃあ、明日終わったら食べて」"
         },
         {
           "id": "interlude_sea_020",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "歯形まで展示へ持ち帰りたくありませんわ。"
+          "text": "「明日まで傷まなければ」"
         },
         {
           "id": "interlude_sea_021",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "じゃあ、明日終わったら食べて。"
+          "text": "「その説明、いまいる？」"
         },
         {
           "id": "interlude_sea_022",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "明日まで傷まなければ。"
+          "text": "「あなたが丸かじりを勧めるからです」"
         },
         {
           "id": "interlude_sea_023",
           "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "その説明、いまいる？"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネの口元が一度だけ緩む。"
         },
         {
           "id": "interlude_sea_024",
           "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "あなたが丸かじりを勧めるからです。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "残り七分。二人は作品の話をしない。"
         },
         {
           "id": "interlude_sea_025",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネの口元が一度だけ緩んだ。\nミズハは紙袋を膝の間へ置き、倒れないよう両側を靴で挟んだ。"
+          "text": "沖の暗い場所を、船の明かりが横切る。"
         },
         {
           "id": "interlude_sea_026",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "残り七分。\n二人は作品の話をしなかった。"
+          "text": "アマネは缶の水滴を親指で拭く。ミズハは紙袋の口を折り、ほどき、もう一度折る。"
         },
         {
           "id": "interlude_sea_027",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネの呼吸は坂を下りた直後より遅くなる。\nミズハは水を一口だけ飲み、蓋を閉める。もう一口飲もうとしてやめたのではなく、ボトルを膝の横へ置き、両手を空けて紙袋を押さえる。"
+          "text": "残り五分。"
         },
         {
           "id": "interlude_sea_028",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "沖の暗い場所を、小さな船の明かりが横切った。\n背後の道路を車が通るたび、二人の影が護岸へ伸び、すぐに消えた。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「さっきの言い方、ごめん」"
         },
         {
           "id": "interlude_sea_029",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは缶の水滴を親指で拭いた。\nミズハは紙袋の口を一度折り、ほどき、もう一度だけ丁寧に折った。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「どれですの？」"
         },
         {
           "id": "interlude_sea_030",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "残り五分。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「作ったのはみず、って。責任だけ渡す言い方にした」"
         },
         {
           "id": "interlude_sea_031",
           "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "さっきの言い方、ごめん。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハはすぐに返事をせず、紙袋の口を押さえる。"
         },
         {
           "id": "interlude_sea_032",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "どれですの？"
+          "text": "「私も、似ている文章を、届いた言葉の代わりにしようとしました」"
         },
         {
           "id": "interlude_sea_033",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "作ったのはみず、って。"
+          "text": "「代わりにはしない」"
         },
         {
           "id": "interlude_sea_034",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "事実ではありますわ。"
+          "text": "「ええ。本人の文は完成させません」"
         },
         {
           "id": "interlude_sea_035",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "責任だけ渡す言い方にした。"
+          "text": "「作ったことは消さない。みずの名前で残す」"
         },
         {
           "id": "interlude_sea_036",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハはすぐに返事をせず、閉じた紙袋の口を親指で押さえた。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「二人で決めたこととして、残しましょう」"
         },
         {
           "id": "interlude_sea_037",
           "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "私も、似ていることを、届いたことの代わりにしようとしました。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "残り三分。"
         },
         {
           "id": "interlude_sea_038",
           "sceneId": "interlude_sea",
           "type": "dialogue",
-          "speaker": "amane",
-          "text": "代わりにはしない。"
+          "speaker": "mizuha",
+          "text": "「展示が終わるまでに返事がなくても、もう一度だけ会いたいと伝えませんこと？」"
         },
         {
           "id": "interlude_sea_039",
           "sceneId": "interlude_sea",
           "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "ええ。代わりにはしません。"
+          "speaker": "amane",
+          "text": "「大学の案件に預ける。私たちから直接、何度も送らない」"
         },
         {
           "id": "interlude_sea_040",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "残り三分で、ミズハが言った。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「説明を求める文にはしません」"
         },
         {
           "id": "interlude_sea_041",
           "sceneId": "interlude_sea",
           "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "候補には、私の名前を出します。"
+          "speaker": "amane",
+          "text": "「中央入口で待つ。来なくても、理由を書かせない」"
         },
         {
           "id": "interlude_sea_042",
-          "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "最終画面に出すかは。"
-        },
-        {
-          "id": "interlude_sea_043",
-          "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "見る方に選んでいただきますわ。"
-        },
-        {
-          "id": "interlude_sea_044",
-          "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "選ばせる前に、違いを全部見せる。"
-        },
-        {
-          "id": "interlude_sea_045",
-          "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "本人の文、生成した文、作った人、確認されていないこと。"
-        },
-        {
-          "id": "interlude_sea_046",
-          "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "生成を見せない方を選んでも、作った記録までは消さない。"
-        },
-        {
-          "id": "interlude_sea_047",
-          "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "公開版そのものは変えない。"
-        },
-        {
-          "id": "interlude_sea_048",
-          "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "ええ。"
-        },
-        {
-          "id": "interlude_sea_049",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人はそれ以上言葉を足さなかった。波の音だけが続き、数秒後にタイマーが鳴った。"
-        },
-        {
-          "id": "interlude_sea_050",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
           "text": "タイマーが鳴る。"
         },
         {
-          "id": "interlude_sea_051",
+          "id": "interlude_sea_043",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "戻るよ。"
+          "text": "「戻るよ」"
         },
         {
-          "id": "interlude_sea_052",
+          "id": "interlude_sea_044",
           "sceneId": "interlude_sea",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "はい。"
+          "text": "「はい」"
         },
         {
-          "id": "interlude_sea_053",
+          "id": "interlude_sea_045",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは空になった缶を持ち、ミズハは水と紙袋を抱えて立ち上がった。\n座っていた場所には、缶とボトルの底でできた二つの濡れた円だけが残った。"
+          "text": "ミズハは青りんごを一度だけ海へ向ける。暗い輪郭と遠い船の光を撮り、撮り直さず紙袋へ戻す。"
         },
         {
-          "id": "interlude_sea_054",
+          "id": "interlude_sea_046",
+          "sceneId": "interlude_sea",
+          "type": "transition",
+          "text": "23:58｜共同作業室へ戻る"
+        },
+        {
+          "id": "interlude_sea_047",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハは青りんごを紙袋から出した。\n海へ向けて持ち上げると、暗い画面には青りんごの輪郭と、遠くの船の明かりが一つだけ入った。"
+          "text": "帰りの坂で、ミズハはパンを半分に割る。片方をアマネへ渡し、二人とも歩きながら食べる。"
         },
         {
-          "id": "interlude_sea_055",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは一枚だけ写真を撮り、撮り直さずに袋へ戻した。\n二人は来た坂を上り、公開版を変えないまま、制作過程をどう見せるか決めるために共同作業室へ戻った。"
-        },
-        {
-          "id": "interlude_sea_056",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "帰りの坂では、二人とも先ほどよりゆっくり歩く。"
-        },
-        {
-          "id": "interlude_sea_057",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネはタイマーの終了画面を閉じ、搬入までの残り時間を開く。ミズハは紙袋からパンを取り出し、半分に割る。片方をアマネへ渡すと、今度は「あとで」と言わず、その場で二人とも食べる。"
-        },
-        {
-          "id": "interlude_sea_058",
+          "id": "interlude_sea_048",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
           "text": "共同作業室へ戻ると、ロック画面の時計は日付が変わる直前だった。"
         },
         {
-          "id": "interlude_sea_059",
+          "id": "interlude_sea_049",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネが端末を開く。\nミズハは青い生成文のカードを、白い原文の隣から制作記録の領域へ移す。"
+          "text": "ミズハは青い生成文を、白い本人文の隣から制作記録の欄へ移す。"
+        },
+        {
+          "id": "interlude_sea_050",
+          "sceneId": "interlude_sea",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネは既存の学生支援窓口案件を開く。"
+        },
+        {
+          "id": "interlude_sea_051",
+          "sceneId": "interlude_sea",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二人で短い文を作る。"
+        },
+        {
+          "id": "interlude_sea_052",
+          "sceneId": "interlude_sea",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "学園祭当日16:00、中央入口で待ちます。\n説明を強制しません。\nこの面談希望を、本人へ一度だけ転送してください。"
+        },
+        {
+          "id": "interlude_sea_053",
+          "sceneId": "interlude_sea",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "送信者欄へ、あまあま、みずの順に名前を入れる。"
+        },
+        {
+          "id": "interlude_sea_054",
+          "sceneId": "interlude_sea",
+          "type": "transition",
+          "text": "00:00｜日付をまたぐ"
+        },
+        {
+          "id": "interlude_sea_055",
+          "sceneId": "interlude_sea",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "送信ボタンを押す前に、アマネが日時と場所を読み上げる。"
+        },
+        {
+          "id": "interlude_sea_056",
+          "sceneId": "interlude_sea",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハは「説明を強制しません」の行を指でなぞり、語を足さない。"
+        },
+        {
+          "id": "interlude_sea_057",
+          "sceneId": "interlude_sea",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネが送信する。"
+        },
+        {
+          "id": "interlude_sea_058",
+          "sceneId": "interlude_sea",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "安全や所在を尋ねる新しい欄は作らない。三か月前から続く案件へ、二人の面談希望だけを預ける。"
+        },
+        {
+          "id": "interlude_sea_059",
+          "sceneId": "interlude_sea",
+          "type": "transition",
+          "text": "00:26｜本人文と受付控え"
         },
         {
           "id": "interlude_sea_060",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "白いカードは、saku本人から届いた原文。受信時刻は02:14。本文は変更しない。"
+          "text": "公開版の値は、海へ出る前と同じだった。"
         },
         {
           "id": "interlude_sea_061",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "青いカードは、みずが生成し、候補から選んだ文章。saku本人の確認はない。ファイルは削除しない。"
+          "text": "白い本人文は02:14で終わり、青い生成文はミズハ名義の制作記録へ移っている。"
         },
         {
           "id": "interlude_sea_062",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人は、最終画面へ出す並びを一つへ決めない。"
+          "text": "学生支援窓口の画面には、面談希望を受け付けた番号が表示される。"
         },
         {
           "id": "interlude_sea_063",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "一つ目は、本人から届いた原文だけを最終画面に置く見せ方。生成した事実と青い文は、制作記録から開ける。"
+          "text": "本人の安全や所在についての返答は、まだない。"
         },
         {
           "id": "interlude_sea_064",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二つ目は、本人の原文と、ミズハが生成した文を、別の色と作者名で分けて最終画面に開く見せ方。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「受付だけ」"
         },
         {
           "id": "interlude_sea_065",
           "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "どちらを選んでも、青い文をサクヤの続きとして採用しない。\nどちらを選んでも、生成したファイルを削除しない。\nどちらを選んでも、学園祭公開版1.0を上書きしない。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「ええ。返事ではありませんわ」"
         },
         {
           "id": "interlude_sea_066",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは二つの表示を交互に開き、白と青が一続きに見えない距離を測る。\nミズハはラベルをすべて開いた状態で読み上げ、本人未確認の表示が本文よりあとへ隠れないことを確かめる。"
+          "text": "二人は受付番号と送信した二人の名前を保存し、会場用端末を閉じる。"
         },
         {
           "id": "interlude_sea_067",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "午前零時二十六分。二人は公開版のハッシュ値を再確認する。\n海へ出る前と同じ値が表示される。"
-        },
-        {
-          "id": "interlude_sea_068",
-          "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "変わってない。"
-        },
-        {
-          "id": "interlude_sea_069",
-          "sceneId": "interlude_sea",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "ええ。変えたのは、制作過程を開く道筋ですわ。"
-        },
-        {
-          "id": "interlude_sea_070",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人は次のMODEへ接続する。"
-        },
-        {
-          "id": "interlude_sea_071",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "窓の外では、終電へ向かう車の音が一台ぶんだけ坂を上る。共同作業室には、食べ終えたパンの袋、水、空の缶、青りんごが残る。"
-        },
-        {
-          "id": "interlude_sea_072",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハが海で撮った写真を制作記録へ入れる。"
-        },
-        {
-          "id": "interlude_sea_073",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "暗い海。青りんごの輪郭。遠い船の光。"
-        },
-        {
-          "id": "interlude_sea_074",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤが撮った写真ではないこと、撮影者がミズハであること、公開前夜に二人が会場表示を決め直す途中で撮ったことを添える。"
-        },
-        {
-          "id": "interlude_sea_075",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "そこで公開前夜の記録が閉じる。"
-        },
-        {
-          "id": "interlude_sea_076",
-          "sceneId": "interlude_sea",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "目の前へ現在の地図が戻り、次の操作案内が開く。"
+          "text": "公開前夜の記録が終わる。"
         }
       ],
       "nextSceneId": "mode08_map_layers"
@@ -8297,86 +7333,10 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode08_map_layers",
           "type": "narration",
           "speaker": "narrator",
-          "text": "［画面に表示されるもの］\n同じ地点について残された「自然環境」「人の暮らし」「土地の記憶」の三つの層。森林や人口の数値だけでなく、地名、写真、記録がない理由も表示する。"
+          "text": "同じ場所の自然、人の暮らし、土地の記憶を切り替える。空欄へ触れると、ゼロではなく、今回の資料にないのか、比べないのかが表示される。"
         },
         {
           "id": "mode08_map_layers_002",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［操作すること］\n一つの地点を選び、三つの層を順に切り替える。空欄へ触れ、未取得、比較不可、数値にしないという違いを確かめる。"
-        },
-        {
-          "id": "mode08_map_layers_003",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［分かること／断定できないこと］\n同じ場所に異なる種類の記録があること、数値のない欄にも理由があることは分かる。三つの層だけで、その土地の全体像、住む人全員の経験、記録されなかった出来事までは断定できない。"
-        },
-        {
-          "id": "mode08_map_layers_004",
-          "sceneId": "mode08_map_layers",
-          "type": "ui",
-          "text": "表示｜抽象モードから地図モードへ"
-        },
-        {
-          "id": "mode08_map_layers_005",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "公開前夜の海が暗くなり、画面は再び現在の展示端末へ戻る。"
-        },
-        {
-          "id": "mode08_map_layers_006",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "波と時間だけになっていた抽象画面へ、海岸線と町の名前が戻る。\n地震の観測点として距離だけで並んでいた場所が、再び人の暮らす土地として見える。"
-        },
-        {
-          "id": "mode08_map_layers_007",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "同じ地図の上に、「自然環境」「人の暮らし」「土地の記憶」という三つの層が開く。\n三つは地球を三等分する分類ではない。同じ場所について、異なる方法で残された記録を切り替えるための見方である。"
-        },
-        {
-          "id": "mode08_map_layers_008",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "自然環境には森林と水域、人の暮らしには人口と夜間光、土地の記憶には地名と写真が入っている。"
-        },
-        {
-          "id": "mode08_map_layers_009",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "森林面積や人口のように数値で比べられる欄もあれば、土地で使われている名前や写真のように、一つの数量へ置き換えない欄もある。\n空欄は、そこに何も存在しないという意味ではない。今回使った資料に記録がない、条件が違って比べられない、数値にしないと決めた場合も含まれる。"
-        },
-        {
-          "id": "mode08_map_layers_010",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "空欄へ触れると、白いままのカードに理由が一つずつ出る。"
-        },
-        {
-          "id": "mode08_map_layers_011",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "今回参照した資料には記録がない。\n時期や方法が違うため、同じ尺度では比べない。\n名前や写真など、一つの数へ置き換えない。"
-        },
-        {
-          "id": "mode08_map_layers_012",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "どの表示も「ゼロ」とは書かない。\nゼロという観測値と、観測値がない状態を、同じ空白へまとめないためである。"
-        },
-        {
-          "id": "mode08_map_layers_013",
           "sceneId": "mode08_map_layers",
           "type": "interaction",
           "interaction": {
@@ -8387,154 +7347,126 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               "memory"
             ]
           },
-          "text": "操作｜三つの層を切り替える"
+          "text": "操作｜三つの層と空欄を開く"
+        },
+        {
+          "id": "mode08_map_layers_003",
+          "sceneId": "mode08_map_layers",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "現在の展示端末へ、海岸線と町の名前が戻る。"
+        },
+        {
+          "id": "mode08_map_layers_004",
+          "sceneId": "mode08_map_layers",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "自然の層には森と水がある。暮らしの層には人口と夜の光がある。記憶の層には地名と写真がある。"
+        },
+        {
+          "id": "mode08_map_layers_005",
+          "sceneId": "mode08_map_layers",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "一つの層だけでは、同じ場所の全部を説明できない。"
+        },
+        {
+          "id": "mode08_map_layers_006",
+          "sceneId": "mode08_map_layers",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "空欄へ触れると、「今回の資料にはない」と出る。"
+        },
+        {
+          "id": "mode08_map_layers_007",
+          "sceneId": "mode08_map_layers",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「ないなら、ないまま出す」"
+        },
+        {
+          "id": "mode08_map_layers_008",
+          "sceneId": "mode08_map_layers",
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「存在しない、という意味にはしませんのね」"
+        },
+        {
+          "id": "mode08_map_layers_009",
+          "sceneId": "mode08_map_layers",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "更新履歴を開くと、三人が作った選択面の試作が現れる。"
+        },
+        {
+          "id": "mode08_map_layers_010",
+          "sceneId": "mode08_map_layers",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "あまあまが画面を作り、みずが問いを書き、sakuが「何も選ばず進む」を加えている。"
+        },
+        {
+          "id": "mode08_map_layers_011",
+          "sceneId": "mode08_map_layers",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤが不在を予想して残した仕掛けではない。三人がいた制作期間に、答えられない人も画面を止めないために作った操作だ。"
+        },
+        {
+          "id": "mode08_map_layers_012",
+          "sceneId": "mode08_map_layers",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "その下に、公開前夜の受付控えが開く。"
+        },
+        {
+          "id": "mode08_map_layers_013",
+          "sceneId": "mode08_map_layers",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "送信：10月31日深夜\n送信者：あまあま／みず\n希望：11月1日16:00、中央入口\n状態：本人への転送を依頼済み\n安全・所在についての返答：なし"
         },
         {
           "id": "mode08_map_layers_014",
           "sceneId": "mode08_map_layers",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私は一つの地点を選び、自然環境、人の暮らし、土地の記憶を順に開く。"
+          "text": "現在の画面に送信ボタンは出ない。二人が当日になって新しい依頼を送ったのではない。"
         },
         {
           "id": "mode08_map_layers_015",
           "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "最初の層では森林と水域が広がる。\n次の層では同じ輪郭の上へ人口と夜間光が現れる。\n最後の層では数値の色が薄れ、その場所で使われる地名と、制作中に選ばれた写真が開く。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「答えがないままでも、私たちは待つ場所を決めましたのね」"
         },
         {
           "id": "mode08_map_layers_016",
           "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三つの層は互いを説明し切らない。\n自然環境だけを見ても人の暮らしは分からず、人口や光だけを見ても、その土地で何が記憶されているかまでは決められない。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「止まらないために決めた。答えを作ったわけじゃない」"
         },
         {
           "id": "mode08_map_layers_017",
           "sceneId": "mode08_map_layers",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "数値のない欄もありますわね。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二人が面談希望を預けた行動は、三人の公開版へ混ぜず、二人の名前で残っている。"
         },
         {
           "id": "mode08_map_layers_018",
           "sceneId": "mode08_map_layers",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "ないなら、ないまま出す。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "地図が丸みを帯び、地球へ変わる。"
         },
         {
           "id": "mode08_map_layers_019",
           "sceneId": "mode08_map_layers",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "存在しない、ではなく、今回の記録にはないと分かる形で。"
-        },
-        {
-          "id": "mode08_map_layers_020",
-          "sceneId": "mode08_map_layers",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "空欄にも理由を付ける。"
-        },
-        {
-          "id": "mode08_map_layers_021",
-          "sceneId": "mode08_map_layers",
           "type": "narration",
           "speaker": "narrator",
-          "text": "更新履歴を開く。"
-        },
-        {
-          "id": "mode08_map_layers_022",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "そこには、データの変更ではなく、来場者が最後に触れる予定だった画面の試作履歴が残っていた。"
-        },
-        {
-          "id": "mode08_map_layers_023",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "「次へ持ち帰りたい姿勢」を選ぶ画面の試作だった。三人が編集し、あまあまが画面を作り、みずが問いを書き、sakuが何も選ばず進める操作を加えている。本編へはまだ接続されていない。"
-        },
-        {
-          "id": "mode08_map_layers_024",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三人で試したまま、使い道を決めなかった選択面だった。\nアマネが画面を作り、ミズハが問いを書き、サクヤが「何も選ばず進める」操作を加えている。"
-        },
-        {
-          "id": "mode08_map_layers_025",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤが不在を予想して残した仕掛けではない。\n三人がいた制作期間に、「答えを選ばない人も先へ進めるようにするか」を試し、そのまま本編へつながれずにいた記録である。"
-        },
-        {
-          "id": "mode08_map_layers_026",
-          "sceneId": "mode08_map_layers",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "三人とも触ってる。"
-        },
-        {
-          "id": "mode08_map_layers_027",
-          "sceneId": "mode08_map_layers",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "本編へつなぐのは、私たちですわね。"
-        },
-        {
-          "id": "mode08_map_layers_028",
-          "sceneId": "mode08_map_layers",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "三人で決めたことにはしない。"
-        },
-        {
-          "id": "mode08_map_layers_029",
-          "sceneId": "mode08_map_layers",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "ええ。接続したのは二人だと残します。"
-        },
-        {
-          "id": "mode08_map_layers_030",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人は自分たちの変更として、エピローグへ接続した。"
-        },
-        {
-          "id": "mode08_map_layers_031",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "試作を作った三人の履歴と、本編へつないだ二人の履歴は別の行に表示される。\n三つの層を閉じると、地図全体がゆっくり丸みを帯び始める。"
-        },
-        {
-          "id": "mode08_map_layers_032",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地図が丸くなる途中、画面は一度だけ現在の展示席を映し込む。"
-        },
-        {
-          "id": "mode08_map_layers_033",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "私の肩越しに、通路を歩く人の色が丸い地球の表面へ重なる。ミズハは隣の来場者へ空欄の違いを説明している。アマネは説明へ加わらず、端末の終了時刻を記録している。"
-        },
-        {
-          "id": "mode08_map_layers_034",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人の姿も、会場の人の流れも、地球の観測値として画面へ保存されない。\n端末が覚えているのは、このプレイで私が三つの層を開いた順番だけである。"
+          "text": "返事がない状態で取った行動と、返事そのものは、次の画面でも同じ印にしない。"
         }
       ],
       "nextSceneId": "mode10_space"
@@ -8554,270 +7486,129 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "［画面に表示されるもの］\nこれまで開いた地球の記録、私が触れた場所を示す細い輪郭、三人の十一秒の録音、サクヤから最後に届いた文章。観測値と、私が画面で開いた場所は別の色で表示する。"
+          "text": "地球を回し、ここまで触れた四つの地点を開く。最後に十一秒と02:14を一度だけ確認し、最終画面の表示方法を選ぶ。"
         },
         {
           "id": "mode10_space_002",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［操作すること］\n地球を回し、これまで触れた地点を開く。最後の受信文と、閉じた状態の生成記録を見比べ、次の編集方針の説明へ進む。"
-        },
-        {
-          "id": "mode10_space_003",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "［分かること／断定できないこと］\nどの記録へ触れたか、サクヤの原文がどこで終わるか、生成文を誰が作ったかは分かる。地球全体を一つの点数で表すこと、サクヤの意図や不在理由、未送信の続きまでは断定できない。"
-        },
-        {
-          "id": "mode10_space_004",
-          "sceneId": "mode10_space",
-          "type": "ui",
-          "text": "表示｜地図モードから宇宙モードへ"
-        },
-        {
-          "id": "mode10_space_005",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地図の海岸線が丸みを持ち、画面の端へ回り込む。\n視点が雲より高く、人工衛星より遠くへ引くと、地図は一つの地球になる。"
-        },
-        {
-          "id": "mode10_space_006",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "森林と雨、地震の波、自然環境、人の暮らし、土地の記憶が、地球上の別々の場所に残る。\nそれぞれの色や単位は統合されない。森林面積と震度と地名を足し合わせ、一つの「地球の状態」へ採点する画面ではない。"
-        },
-        {
-          "id": "mode10_space_007",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ここで見直すのは、私がどの記録へ触れ、どの順番で開いたかである。"
-        },
-        {
-          "id": "mode10_space_008",
           "sceneId": "mode10_space",
           "type": "interaction",
           "interaction": {
             "kind": "space10",
             "requiredGestures": 1
           },
-          "text": "操作｜地球を回し、触れた記録を開く"
+          "text": "操作｜地球を回し、四つの地点を開く"
+        },
+        {
+          "id": "mode10_space_003",
+          "sceneId": "mode10_space",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "太古の海、森と雨、地震の観測点、三つの層を開いた土地が順に灯る。"
+        },
+        {
+          "id": "mode10_space_004",
+          "sceneId": "mode10_space",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "色や単位は一つの点数へまとめられない。"
+        },
+        {
+          "id": "mode10_space_005",
+          "sceneId": "mode10_space",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "地球を一周させると、年越しの十一秒が再生される。"
+        },
+        {
+          "id": "mode10_space_006",
+          "sceneId": "mode10_space",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "扇風機。湯の沸く音。踏切。"
+        },
+        {
+          "id": "mode10_space_007",
+          "sceneId": "mode10_space",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "過去の音の下に、現在の展示ホールの空調と足音が重なる。"
+        },
+        {
+          "id": "mode10_space_008",
+          "sceneId": "mode10_space",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "十一秒が終わるまで、ミズハもアマネも話さない。"
         },
         {
           "id": "mode10_space_009",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "地球を左右へ回す。\n太古の海でなぞった跡、森と雨を重ねた地点、地震の観測点、三つの層を開いた場所が、一つずつ点灯する。"
+          "text": "画面に02:14の本人文が開く。"
         },
         {
           "id": "mode10_space_010",
           "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地球は指の速さに合わせて回り、指を離すと少しだけ進んで止まる。"
+          "type": "record",
+          "recordType": "SOURCE",
+          "text": "サクヤ本人から届いた文章\nもし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――"
         },
         {
           "id": "mode10_space_011",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "点へ触れると、その場所の観測値と、私がこのプレイで開いた時刻が上下に分かれて表示される。"
+          "text": "このあとに届いたメッセージ：0"
         },
         {
           "id": "mode10_space_012",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "上は、三人が出典とともに公開した記録。\n下は、現在の私がこのセッションでその場所を開いたという操作跡。"
+          "text": "横線のあとに、入力カーソルは出ない。"
         },
         {
           "id": "mode10_space_013",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私が触れなかった地点を暗い値として扱わず、「未操作」と表示する。触れなかったことは、関心がない、理解できなかった、反対したという意味へ自動変換されない。"
+          "text": "その下には、ミズハ生成文の閉じたカードがある。"
         },
         {
           "id": "mode10_space_014",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "細い光は観測値ではなく、このプレイで私が触れた場所を示す印である。\n実際の地球データと同じ色へ混ぜず、細い輪郭だけで表示される。"
+          "text": "開けば、文章、ミズハの名前、本人未確認の表示が同時に見える。"
         },
         {
           "id": "mode10_space_015",
           "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "拡張版にあるほかの観測画面は、出典名だけが端に表示される。私が触れた記録には数えない。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「公開版のファイルは変えない」"
         },
         {
           "id": "mode10_space_016",
           "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地球を一周させると、最初に開いたバジルの二枚の記録カードが、小さく再表示される。\n売り場の温度計と最寄り観測所のどちらも残り、先に開いた順番だけが生活音の順番へ置き換わる。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「本人の文も変えませんわ」"
         },
         {
           "id": "mode10_space_017",
           "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "最初のバジルで売り場の温度計を先に見ていた場合、ミズハの部屋で湯が沸き、そのあとアマネの扇風機が鳴る。\n最寄り観測所の記録を先に見ていた場合、扇風機のあとに湯が沸く。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「決めるのは、この画面で二つを並べるかどうかだけ」"
         },
         {
           "id": "mode10_space_018",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最後に、サクヤの窓の外で踏切が鳴る。"
-        },
-        {
-          "id": "mode10_space_019",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "どちらを先に選んでも、三つの音はすべて再生される。\n最初の選択は、一方の記録や一人の存在を消す分岐ではなく、同じ記録を思い出す順番だけを変える。"
-        },
-        {
-          "id": "mode10_space_020",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三人が年越しのハドルで黙っていた十一秒が再生される。\n声はない。湯の沸く音、扇風機、踏切が同じ録音に入っている。"
-        },
-        {
-          "id": "mode10_space_021",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "現在の展示ホールの音も完全には消えない。\n遠くの拍手と足音の下へ、一年前に三人が別々の部屋で立てていた音が重なる。"
-        },
-        {
-          "id": "mode10_space_022",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面から指を離す。"
-        },
-        {
-          "id": "mode10_space_023",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "扇風機の音が始まると、背後の空調も低く鳴っている。\n湯の沸く音へ、館内放送の最初の一音が重なる。\n踏切が鳴る直前、隣のブースで誰かが笑い、その声は録音へ入らず現在の会場だけに残る。"
-        },
-        {
-          "id": "mode10_space_024",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "過去の十一秒と現在の十一秒は、同じ音声へ統合されない。端末の表示では、録音済みの波形と、現在マイク入力を行っていないことが別に示される。"
-        },
-        {
-          "id": "mode10_space_025",
-          "sceneId": "mode10_space",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "音量を下げます？"
-        },
-        {
-          "id": "mode10_space_026",
-          "sceneId": "mode10_space",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "このままで。"
-        },
-        {
-          "id": "mode10_space_027",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは音量のつまみから手を離す。\n十一秒が終わるまで、二人の台詞は入らない。"
-        },
-        {
-          "id": "mode10_space_028",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤから最後に届いたメッセージが表示される。"
-        },
-        {
-          "id": "mode10_space_029",
-          "sceneId": "mode10_space",
-          "type": "record",
-          "recordType": "SOURCE",
-          "text": "サクヤ本人から届いた文章"
-        },
-        {
-          "id": "mode10_space_030",
-          "sceneId": "mode10_space",
-          "type": "chat",
-          "time": "02:14",
-          "speaker": "sakuya",
-          "speakerLabel": "🌸 saku 🌸",
-          "text": "もし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――"
-        },
-        {
-          "id": "mode10_space_031",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "このあとに届いたメッセージ：0"
-        },
-        {
-          "id": "mode10_space_032",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "横線のあとにカーソルは点滅しない。\n端末は続きを待つ入力欄にせず、届いた文章がそこで終わっている記録として表示する。"
-        },
-        {
-          "id": "mode10_space_033",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "その下に、MODE 07で見た青い文のカードが閉じた状態で置かれる。"
-        },
-        {
-          "id": "mode10_space_034",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "カードを開けば生成文と制作責任を読めるが、閉じたままでも、生成した事実があることは隠れない。"
-        },
-        {
-          "id": "mode10_space_035",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "生成した人、候補から選んだ人：みず\nサクヤ本人の確認：なし"
-        },
-        {
-          "id": "mode10_space_036",
-          "sceneId": "mode10_space",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "公開版のファイルは変えない。\nここで決めるのは、最後の画面に制作過程まで出すかどうか。"
-        },
-        {
-          "id": "mode10_space_037",
-          "sceneId": "mode10_space",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "どちらを選んでも、sakuの原文は変わりません。"
-        },
-        {
-          "id": "mode10_space_038",
-          "sceneId": "mode10_space",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "生成した記録も消えない。\n違うのは、最後の画面で二つを並べるかどうか。"
+          "text": "地球の光が止まり、二つの表示方法が現れる。"
         }
       ],
       "nextSceneId": "choice_editorial"
@@ -8848,17 +7639,10 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_editorial",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二つの選択肢は、「本物か偽物か」を当てる問題ではない。\n白い原文だけがサクヤ本人から届いた文章であり、青い文はミズハが生成して選んだ文章であることは、どちらを選んでも変わらない。"
+          "text": "本人から届いた02:14の文だけを表示するか、ミズハ生成文も作者を分けて表示するかを選ぶ。どちらを選んでも、三人の公開版は変わらない。"
         },
         {
           "id": "choice_editorial_002",
-          "sceneId": "choice_editorial",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選ぶのは、最後の画面で本人の記録だけを見せるか、本人とは別の作者・別の分類として制作過程も同時に見せるかである。"
-        },
-        {
-          "id": "choice_editorial_003",
           "sceneId": "choice_editorial",
           "type": "choice",
           "choiceId": "editorial_choice",
@@ -8878,7 +7662,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           ]
         },
         {
-          "id": "choice_editorial_004",
+          "id": "choice_editorial_003",
           "sceneId": "choice_editorial",
           "condition": {
             "key": "editorialChoice",
@@ -8888,29 +7672,18 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "本人から届いた記録だけを表示"
         },
         {
+          "id": "choice_editorial_004",
+          "sceneId": "choice_editorial",
+          "condition": {
+            "key": "editorialChoice",
+            "value": "SOURCE_RECORD"
+          },
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "最終画面には02:14の本人文だけを置く。ミズハ生成文は削除せず、制作記録から開ける。"
+        },
+        {
           "id": "choice_editorial_005",
-          "sceneId": "choice_editorial",
-          "condition": {
-            "key": "editorialChoice",
-            "value": "SOURCE_RECORD"
-          },
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "最終画面には、サクヤが送った白い文だけが残る。\n生成した事実、青い文、ミズハが実行して選んだという履歴は制作記録へ残る。\nそれらを削除したり、作られなかったことにしたりはしない。ただし、本人の最後の文章と同じ画面には並べない。"
-        },
-        {
-          "id": "choice_editorial_006",
-          "sceneId": "choice_editorial",
-          "condition": {
-            "key": "editorialChoice",
-            "value": "SOURCE_RECORD"
-          },
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "この方針が守るのは、本人が送った記録の境界である。\n制作過程を隠すのではなく、本人の記録と別の場所で開示する。"
-        },
-        {
-          "id": "choice_editorial_007",
           "sceneId": "choice_editorial",
           "condition": {
             "key": "editorialChoice",
@@ -8920,7 +7693,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "本人の記録と生成した部分を分けて表示"
         },
         {
-          "id": "choice_editorial_008",
+          "id": "choice_editorial_006",
           "sceneId": "choice_editorial",
           "condition": {
             "key": "editorialChoice",
@@ -8928,84 +7701,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           },
           "type": "narration",
           "speaker": "narrator",
-          "text": "白い原文の横に、ミズハが生成した青い文が別のカードで開く。"
+          "text": "02:14の本人文とミズハ生成文を、作者名と枠を分けて表示する。二つを一つの文章にはしない。"
         },
         {
-          "id": "choice_editorial_009",
+          "id": "choice_editorial_007",
           "sceneId": "choice_editorial",
-          "condition": {
-            "key": "editorialChoice",
-            "value": "DISCLOSE_DERIVATION"
-          },
           "type": "narration",
           "speaker": "narrator",
-          "text": "二枚は同じ吹き出しへ結合されず、色、作者、分類、確認状態を分けて表示する。\n青い文をサクヤの続きとして採用する選択ではない。二人が何を作り、何を迷い、誰が責任を持つかまで最終画面へ出す選択である。"
-        },
-        {
-          "id": "choice_editorial_010",
-          "sceneId": "choice_editorial",
-          "condition": {
-            "key": "editorialChoice",
-            "value": "DISCLOSE_DERIVATION"
-          },
-          "type": "record",
-          "recordType": "DERIVED",
-          "text": "ミズハが生成し、候補から選んだ文章\n「聞こえたつもりになってない？」って、三人で確かめたい。\n生成した人、候補から選んだ人：みず\nサクヤ本人の確認：なし"
-        },
-        {
-          "id": "choice_editorial_011",
-          "sceneId": "choice_editorial",
-          "condition": {
-            "key": "editorialChoice",
-            "value": "DISCLOSE_DERIVATION"
-          },
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "どちらを選んでも、変わるのは現在の私が見る、このセッション内の最終表示だけである。\n学園祭公開版1.0の保存ファイルと、三人の作者表示は変更されない。"
-        },
-        {
-          "id": "choice_editorial_012",
-          "sceneId": "choice_editorial",
-          "condition": {
-            "key": "editorialChoice",
-            "value": "DISCLOSE_DERIVATION"
-          },
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選択は公開版を編集する命令ではなく、すでに分けて保存されている記録を、この一度の鑑賞でどう並べるかという編集方針として残る。"
-        },
-        {
-          "id": "choice_editorial_013",
-          "sceneId": "choice_editorial",
-          "condition": {
-            "key": "editorialChoice",
-            "value": "DISCLOSE_DERIVATION"
-          },
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "端末には、このプレイでどちらの表示方法を選んだかだけが残る。"
-        },
-        {
-          "id": "choice_editorial_014",
-          "sceneId": "choice_editorial",
-          "condition": {
-            "key": "editorialChoice",
-            "value": "DISCLOSE_DERIVATION"
-          },
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選択を終えると、次へ渡す観測姿勢を選ぶ面が開く。"
-        },
-        {
-          "id": "choice_editorial_015",
-          "sceneId": "choice_editorial",
-          "condition": {
-            "key": "editorialChoice",
-            "value": "DISCLOSE_DERIVATION"
-          },
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ここまでの選択は、サクヤの文章をどう扱うかについてのものだった。\n次の面では、誰かの文章を完成させるのではなく、私自身がこの展示のあとに持ち帰りたい姿勢を選ぶ。"
+          "text": "セッション内の表示だけが変わり、三人が確認した公開版と作者名は変わらない。"
         }
       ],
       "nextSceneId": "epilogue_reflection_field"
@@ -9021,42 +7724,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "epilogue_reflection_field",
           "type": "narration",
           "speaker": "narrator",
-          "text": "地球の表示が暗くなり、これまで開いた記録が小さな光として周囲へ残る。\n中央には、三人の誰の吹き出しにもつながっていない新しい選択面が開く。"
+          "text": "展示を出たあとに持ち帰りたい文を、最大三件まで選べる。どれも選ばず進んでもよい。"
         },
         {
           "id": "epilogue_reflection_field_002",
           "sceneId": "epilogue_reflection_field",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ここで隠されていたサクヤの文章や、失踪の理由が明かされることはない。\n三人の記録を読んだあと、来場者自身が次へ渡したい観測姿勢を選ぶための面である。"
-        },
-        {
-          "id": "epilogue_reflection_field_003",
-          "sceneId": "epilogue_reflection_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ここで選ぶ文は、サクヤの文章へ続きを足すためのものではない。\nミズハやアマネの代わりに結論を出すものでも、物語の優劣や正解を決めるものでもない。"
-        },
-        {
-          "id": "epilogue_reflection_field_004",
-          "sceneId": "epilogue_reflection_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三十六の文は、内容を探しやすくするため六つのテーマへ分けて表示される。\nテーマは考え方を採点する分類ではなく、近い問いを持つ文を同じ場所で読み比べるための見出しである。"
-        },
-        {
-          "id": "epilogue_reflection_field_005",
-          "sceneId": "epilogue_reflection_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "一つのテーマから複数選んでも、異なるテーマから選んでもよい。\n最大三件まで選べるが、どの文にも同意できなければ、何も選ばず空白のまま進める。"
-        },
-        {
-          "id": "epilogue_reflection_field_006",
-          "sceneId": "epilogue_reflection_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選んだ文章が、サクヤの文章へ加えられることはない。"
+          "text": "この選択は三人の発言を書き換えず、これから起きる現在の出来事も変えない。"
         }
       ],
       "nextSceneId": "choice_reflection"
@@ -9075,7 +7750,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_reflection",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面には三十六の文だけが並ぶ。制作に使った番号や、考え方を採点する点数は表示されない。"
+          "text": "展示を出たあとに持ち帰りたい文を、最大三件まで選ぶ。選ばずに進むこともできる。"
         },
         {
           "id": "choice_reflection_002",
@@ -9489,14 +8164,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_reflection",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最大三件まで選べる。\n四件目は追加せず、上限をその場で知らせる。\n一件以上では「選んだ姿勢で進む」、未選択では「選ばずに進む」を表示する。"
-        },
-        {
-          "id": "choice_reflection_004",
-          "sceneId": "choice_reflection",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選んだ内容に応じて最後の光、カメラ、音の動きが変わるが、どの動きにも正解や優劣は付かない。何も選ばなかった場合も、そのまま一つの終わり方として進む。"
+          "text": "選んだ文はこの一度の表示へ反映される。何も選ばなかった場合も、そのまま進む。"
         }
       ],
       "nextSceneId": "final_record"
@@ -9510,364 +8178,445 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "final_record_001",
           "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選択面が閉じる。\n三件を選んだ場合も、一件だけ選んだ場合も、何も選ばず進んだ場合も、確認音は同じ長さで鳴る。"
+          "type": "result",
+          "resultId": "session_result"
         },
         {
           "id": "final_record_002",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面は「正解」「一致度」「診断タイプ」という結果を出さない。\n選んだ文を作者へ送信したとは表示しない。"
+          "text": "選んだ文の光が地球の表面を動き、ゆっくり消える。"
         },
         {
           "id": "final_record_003",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "指先から選択面の光が消え、暗い地球だけが残る。\n地球の縁には、ここまで触れた地点が細い輪郭で灯っている。触れなかった場所は黒く採点されず、背景と同じ色のまま残る。"
+          "text": "何も選ばなかった場合は、新しい光を足さず、ここまで触れた四つの地点だけが残る。"
         },
         {
           "id": "final_record_004",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面中央には、最後まで変わらない事実が先に表示される。"
+          "text": "画面が暗くなると、年越しの録音に入っていた踏切が一度だけ鳴る。"
         },
         {
           "id": "final_record_005",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "サクヤ本人から届いた最後の文章は一件。次の行には、私が先ほど選んだ表示方法が、日本語でそのまま示される。その下には、この選択によって学園祭公開版1.0が書き換えられていないことが表示される。"
+          "text": "過去の音が終わり、現在の展示ホールの足音と館内放送が戻る。"
         },
         {
           "id": "final_record_006",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "属性名、得点、選んだ文そのものは、結果の名前として画面へ出さない。"
+          "text": "ミズハは結果をのぞき込まない。青りんごの横で、保温ボトルの蓋を閉める。"
         },
         {
           "id": "final_record_007",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "次へ持ち帰りたい姿勢の選択は、人を分類する診断結果にはしない。\n選んだ内容は、最後の光、カメラ、音の動きにだけ反映される。"
+          "text": "アマネも選んだ文を見ない。床のケーブルを束へ戻し、運営用のスマートフォンを机へ置く。"
         },
         {
           "id": "final_record_008",
           "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "規則へ収束する演出では、離れた場所にあった光が細い経線へ集まる。\nそれぞれの記録は出典名を保ったまま整列し、カメラの移動と音の間隔が少しずつ規則的になって静止する。"
+          "type": "transition",
+          "text": "15:52｜学園祭・展示席"
         },
         {
           "id": "final_record_009",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "中立の演出では、森林、雨、地震、土地の記憶を一つの色へ統合しない。\n光は重なる場所と何も記録されていない場所のあいだを往復し、カメラはどちらか一方へ降りずに距離を保つ。"
+          "text": "スマートフォンが短く振動する。"
         },
         {
           "id": "final_record_010",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "分岐する演出では、光が既存の緯線と経線から外れ、画面の外側へ複数の軌道を描く。\nカメラと音も一つの中心へ集まらず、まだ名前の付いていない方向へ開いていく。"
+          "text": "通知の件名には、公開前夜に二人が面談希望を預けた学生支援案件の番号がある。"
         },
         {
           "id": "final_record_011",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "無回答の演出では、新しい色や軌道を加えない。\n「決めなかった記録」を空白のまま残し、地球の輪郭と、これまで触れた場所の小さな光だけを表示する。"
+          "text": "アマネは差出人、案件番号、受信時刻を順に三度見る。"
         },
         {
           "id": "final_record_012",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "どの演出にも優劣や正解の印は付かない。\n派手さの違いを成功や失敗として扱わず、どの演出も同じ長さで終わる。"
+          "text": "学園祭対応窓口：\n本人の安全を確認し、本人同意により中央入口で二人と話したい旨をお伝えします。"
         },
         {
           "id": "final_record_013",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "演出が動いているあいだ、三人の作者名は消えない。"
+          "text": "制度の説明も、個人的な事情も書かれていない。"
         },
         {
           "id": "final_record_014",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "光が規則へ集まっても、分岐して画面の外へ開いても、新しい色を加えず空白が残っても、みず、あまあま、sakuの文字は地球の下へ同じ大きさで置かれている。"
+          "text": "アマネはスマートフォンをミズハへ向ける。声を出す前に、画面を一度伏せ、また表へ返す。"
         },
         {
           "id": "final_record_015",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私が選んだ姿勢は、その三人の名前へ加わる四人目の署名にはならない。\n三人の物語へ結末を書き足す文章でもない。"
+          "text": "ミズハは通知の一行を読み、保温ボトルへ置いた手を離す。"
         },
         {
           "id": "final_record_016",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私が選んだ内容は、この一度の鑑賞で、展示の見え方を変えるためにだけ使われる。"
+          "text": "二人のあいだで、学園祭の館内放送だけが続く。"
         },
         {
           "id": "final_record_017",
           "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "最後の光が消えると、年越しの録音に入っていた踏切が一度だけ遠くで鳴る。\nそのあとへ、現在の展示ホールの足音と話し声が戻ってくる。"
+          "type": "transition",
+          "text": "15:54｜学園祭・展示席"
         },
         {
           "id": "final_record_018",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初は一つずつ戻る。"
+          "text": "スマートフォンへ、sakuの既存アカウントから音声着信が入る。"
         },
         {
           "id": "final_record_019",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "靴底が養生テープを踏む音。\n紙の案内図を開く音。\nゲームの残り時間を数える声。\n館内放送が、次のステージ企画を知らせる前の短い雑音。"
+          "text": "アマネが応答する。"
         },
         {
           "id": "final_record_020",
           "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "長く見ていた暗い地球は、会場の照明を反射する黒い画面へ変わる。\nそこに映っているのは太古の海でも共同作業室でもなく、椅子へ座った私の肩と、その後ろを行き交う現在の人影である。"
+          "type": "dialogue",
+          "speaker": "sakuya",
+          "text": "「中央入口にいる。待たせた。ごめん」"
         },
         {
           "id": "final_record_021",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "終了画面の下に、短い案内が出る。"
+          "text": "会場のスピーカーから、中央入口を案内する放送が流れる。同じ放送が、少し遅れて電話の向こうからも聞こえる。"
         },
         {
           "id": "final_record_022",
           "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "「今回選んだ見せ方は、この画面だけに反映されています」\n「三人が確認した公開版と作者名は変わりません」\n「制作の記録は、体験を終えたあとも開けます」"
+          "type": "dialogue",
+          "speaker": "sakuya",
+          "text": "「最初は連絡できなかった。できるようになってからも、返すのが怖くて遅らせた」"
         },
         {
           "id": "final_record_023",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "案内を閉じると、画面はすぐSTARTへ戻らない。\nまず十一秒の波形が細い線になって端へ収まり、その下へ三人の名前が戻る。"
+          "text": "息を吸う音が一度入る。"
         },
         {
           "id": "final_record_024",
           "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ブースの端で画面を確認していたアマネが、終了表示の時刻を一度だけ見る。\nミズハは端末の横へ戻り、青りんごに触れた。"
+          "type": "dialogue",
+          "speaker": "sakuya",
+          "text": "「理由は二人に話す」"
         },
         {
           "id": "final_record_025",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは私が選んだ文も、最後の演出の系統も見ない。\n確認したのは、端末が最後まで進み、公開版の読み込みエラーが出ず、終了時刻が記録されたことだけだった。"
+          "text": "アマネは目を閉じず、画面の通話時間を見たまま答える。"
         },
         {
           "id": "final_record_026",
           "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハも画面の結果をのぞき込まない。\n机の端へずれていた青りんごを、両手ではなく指先で少し回す。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「分かった。今行く」"
         },
         {
           "id": "final_record_027",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私が座る前には通路へ向いていた傷が、今は照明の側へ回っている。\nミズハは青りんごを持ち上げる。机には、青りんごの底が触れていた位置に小さな円形の跡がある。ミズハはその位置へ青りんごを戻し、傷のない側を通路へ向けた。"
-        },
-        {
-          "id": "final_record_028",
-          "sceneId": "final_record",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "毎回、向き変えるの。"
-        },
-        {
-          "id": "final_record_029",
-          "sceneId": "final_record",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "触れた方がいらしたと分かりますもの。"
-        },
-        {
-          "id": "final_record_030",
-          "sceneId": "final_record",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "記録には入らないよ。"
-        },
-        {
-          "id": "final_record_031",
-          "sceneId": "final_record",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "ええ。ですから、私が見ていますわ。"
-        },
-        {
-          "id": "final_record_032",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "館内放送が、次のステージ企画を告げる。\n隣のブースで拍手が起きる。"
-        },
-        {
-          "id": "final_record_033",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "椅子の横には、最初に持っていた案内図が落ちかけている。\n紙の端を拾い、二度折られた線へ沿って畳み直す。"
-        },
-        {
-          "id": "final_record_034",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "立ち上がる前、端末の縁に残った指の跡が照明へ浮かぶ。ミズハはすぐ拭かない。アマネも消毒用シートへ手を伸ばさない。"
-        },
-        {
-          "id": "final_record_035",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "椅子から立つと、展示ホールの音が急に近くなる。\n振り返った画面には、最初と同じ三人の表示名が、同じ大きさで並んでいる。"
-        },
-        {
-          "id": "final_record_036",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "みず\nあまあま\nsaku"
-        },
-        {
-          "id": "final_record_037",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハとアマネは次の人を呼び込まない。\n端末も、前に座った私が何を選んだかを、次の待機画面へ表示しない。"
-        },
-        {
-          "id": "final_record_038",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "私は人の流れへ戻る。"
-        },
-        {
-          "id": "final_record_039",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "数歩進むと、ゲームの決定音が先ほどより大きく聞こえる。風車のブースでは、同じ説明が別の来場者へ始まっている。展示案内図の上では、GAIA SENSEWAREの小さな区画番号が、ほかの百以上の展示と同じ大きさで印刷されている。"
-        },
-        {
-          "id": "final_record_040",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "連絡通路へ入る手前で振り返ると、ブースの照明は通路より暗い。"
-        },
-        {
-          "id": "final_record_041",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "それでも、机の上の青りんごだけは、上からの光を受けて輪郭が見える。"
-        },
-        {
-          "id": "final_record_042",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "通路を歩いていた次の人が、青りんごの前で足を止める。\n三つの名前を上から読み、空いている椅子とSTARTボタンを交互に見る。"
-        },
-        {
-          "id": "final_record_043",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "次の人の後ろを、段ボール箱を抱えた学生が通る。\n椅子の背へ箱の端が触れ、椅子が机から数センチだけ離れる。"
-        },
-        {
-          "id": "final_record_044",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "最初に私が座る前と同じ距離である。"
-        },
-        {
-          "id": "final_record_045",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "次の人が椅子へ手を掛ける。"
-        },
-        {
-          "id": "final_record_046",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "スピーカーから、扇風機、湯の沸く音、踏切が始まる。\n十一秒が何の音なのか、その人はまだ知らない。"
-        },
-        {
-          "id": "final_record_047",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "青りんごの薄い傷は、通路側からは見えない。\n青りんごは最初と同じ位置にあるが、ミズハが置き直したため、傷の向きだけが変わっている。"
-        },
-        {
-          "id": "final_record_048",
-          "sceneId": "final_record",
-          "type": "ui",
-          "text": "START\n────────────────────────────────────────\n— END OF PLAYER STORY —\n────────────────────────────────────────"
-        },
-        {
-          "id": "final_record_049",
-          "sceneId": "final_record",
-          "type": "ui",
-          "text": "体験後｜制作記録を見る"
-        },
-        {
-          "id": "final_record_050",
-          "sceneId": "final_record",
-          "type": "result",
-          "resultId": "session_result"
+          "text": "通話が切れる。ミズハは青りんごを両手で持ち上げる。"
         }
       ],
       "nextSceneId": "return_to_start"
     },
     {
       "id": "return_to_start",
-      "title": "END OF PLAYER STORY",
+      "title": "END｜展示を一時休止する",
       "chapter": "END",
       "modeIndex": 9,
       "steps": [
         {
           "id": "return_to_start_001",
           "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネは運営ログへ、15:55、一時休止、担当あまあまと入力する。"
+        },
+        {
+          "id": "return_to_start_002",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "次に、机の下から白い札を取り出す。"
+        },
+        {
+          "id": "return_to_start_003",
+          "sceneId": "return_to_start",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「お願い。この札をSTARTの前に置いて。次の人が触らないように」"
+        },
+        {
+          "id": "return_to_start_004",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "私は札を受け取る。"
+        },
+        {
+          "id": "return_to_start_005",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "一時休止\n制作者対応中"
+        },
+        {
+          "id": "return_to_start_006",
+          "sceneId": "return_to_start",
+          "type": "ui",
+          "text": "STARTボタンの前へ札を置く。札の下端が浮いたため、案内図の角ではなく、展示側に用意された透明な重しで押さえる。"
+        },
+        {
+          "id": "return_to_start_007",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネは札が画面を隠していることを確かめ、運営用スマートフォンへ「今行く」と送る。"
+        },
+        {
+          "id": "return_to_start_008",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハは保温ボトルの横へ、三つ目の紙コップを置く。"
+        },
+        {
+          "id": "return_to_start_009",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "まだ茶は注がない。"
+        },
+        {
+          "id": "return_to_start_010",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハは傷のある青りんごを持つ。最初の待ち合わせと同じように、胸の前で見える高さへ上げる。"
+        },
+        {
+          "id": "return_to_start_011",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二人は展示机の外へ出る。"
+        },
+        {
+          "id": "return_to_start_012",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "私は展示席に残り、二人が中央入口の表示へ曲がるまで見送る。"
+        },
+        {
+          "id": "return_to_start_013",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "展示側の記録用紙へ、一行だけ書く。"
+        },
+        {
+          "id": "return_to_start_014",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "15:55／展示席／二人は中央入口へ向かった／海側から風"
+        },
+        {
+          "id": "return_to_start_015",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "理由の欄は作らない。"
+        },
+        {
+          "id": "return_to_start_016",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ここから先、私は二人を追わない。"
+        },
+        {
+          "id": "return_to_start_017",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "作品の画面だけが暗くなり、物語の視点が中央入口へ切り替わる。"
+        },
+        {
+          "id": "return_to_start_018",
+          "sceneId": "return_to_start",
+          "type": "transition",
+          "text": "16:00｜海沿いの展示場・中央入口"
+        },
+        {
+          "id": "return_to_start_019",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ガラス扉の向こうから、海側の光が床へ長く伸びている。"
+        },
+        {
+          "id": "return_to_start_020",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "中央入口の案内板の下に、サクヤが立っている。"
+        },
+        {
+          "id": "return_to_start_021",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "首からカメラを下げているが、構えてはいない。"
+        },
+        {
+          "id": "return_to_start_022",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "音声だけではなく、顔と声と表示名を結び付けた本人が、現在の中央入口にいる。"
+        },
+        {
+          "id": "return_to_start_023",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハの青りんごに気づくと、サクヤは一歩だけ前へ出る。"
+        },
+        {
+          "id": "return_to_start_024",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハとアマネは、すぐには近づかない。"
+        },
+        {
+          "id": "return_to_start_025",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "最初の対面と同じように、三人のあいだへ数歩の距離が残る。"
+        },
+        {
+          "id": "return_to_start_026",
+          "sceneId": "return_to_start",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「話は聞く。でも、なかったことにはしない」"
+        },
+        {
+          "id": "return_to_start_027",
+          "sceneId": "return_to_start",
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「分かりました。作品ではなく、あなたから聞かせてください」"
+        },
+        {
+          "id": "return_to_start_028",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤはカメラへ触れかけ、手を下ろす。"
+        },
+        {
+          "id": "return_to_start_029",
+          "sceneId": "return_to_start",
+          "type": "dialogue",
+          "speaker": "sakuya",
+          "text": "「うん」"
+        },
+        {
+          "id": "return_to_start_030",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "誰も抱き合わない。"
+        },
+        {
+          "id": "return_to_start_031",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "誰も制作へ戻る約束をしない。"
+        },
+        {
+          "id": "return_to_start_032",
+          "sceneId": "return_to_start",
+          "type": "transition",
+          "text": "16:03｜海沿いの展示場・中央入口"
+        },
+        {
+          "id": "return_to_start_033",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "三人は数歩の距離を残したまま、話し始める。"
+        },
+        {
+          "id": "return_to_start_034",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "言葉の内容は、展示画面にも、展示席の記録用紙にも入らない。"
+        },
+        {
+          "id": "return_to_start_035",
+          "sceneId": "return_to_start",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "中央入口の外で風が動き、ミズハの手の青りんごへ海側の光が当たる。"
+        },
+        {
+          "id": "return_to_start_036",
+          "sceneId": "return_to_start",
           "type": "end",
-          "text": "START"
+          "text": "END"
         }
       ],
       "nextSceneId": null
