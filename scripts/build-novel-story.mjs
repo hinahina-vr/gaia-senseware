@@ -86,6 +86,7 @@ const splitBlocks = (sectionLines) => trimSectionLines(sectionLines)
 
 const speakerMap = Object.freeze({
   "ミズハ": "mizuha", "アマネ": "amane", "サクヤ": "sakuya", "プレイヤー": "visitor", "参加者": "visitor",
+  "🌱 みず 🌱": "mizuha", "☁️ あまあま ☁️": "amane", "🌸 saku 🌸": "sakuya",
   MIZUHA: "mizuha", AMANE: "amane", SAKUYA: "sakuya", VISITOR: "visitor",
 });
 const recordTypeFor = (text) => {
@@ -116,10 +117,36 @@ const parseSceneSteps = (scene, sectionLines) => {
   const steps = [];
   let condition = null;
   let serial = 0;
+  let reflectionAdded = false;
+  let themedReflectionOptions = [];
   const pushStep = (step) => {
     serial += 1;
     steps.push({ id: `${scene.id}_${String(serial).padStart(3, "0")}`, sceneId: scene.id, ...(condition ? { condition } : {}), ...step });
   };
+
+  if (scene.reflectionChoice) {
+    const optionById = new Map(REFLECTION_OPTIONS.map((option) => [option.id, option]));
+    let currentTheme = null;
+    for (const line of sectionLines) {
+      const themeMatch = line.match(/^［テーマ(\d+)｜(.+)］$/u);
+      if (themeMatch) {
+        currentTheme = { themeId: `T${themeMatch[1]}`, theme: themeMatch[2] };
+        continue;
+      }
+      const optionMatch = line.match(/^(R\d{2})｜(.+)$/u);
+      if (!optionMatch) continue;
+      if (!currentTheme) throw new Error(`reflection_choice: ${optionMatch[1]}にテーマがありません`);
+      const option = optionById.get(optionMatch[1]);
+      if (!option) throw new Error(`reflection_choice: 未知のIDです: ${optionMatch[1]}`);
+      if (option.text !== optionMatch[2]) throw new Error(`reflection_choice: ${option.id}の文面が正本と一致しません`);
+      themedReflectionOptions.push({ ...option, ...currentTheme });
+    }
+    if (themedReflectionOptions.length) {
+      if (themedReflectionOptions.length !== REFLECTION_OPTIONS.length) throw new Error("reflection_choice: 正本には36文が必要です");
+      if (new Set(themedReflectionOptions.map((option) => option.id)).size !== REFLECTION_OPTIONS.length) throw new Error("reflection_choice: R番号が重複しています");
+      if (new Set(themedReflectionOptions.map((option) => option.themeId)).size !== 6) throw new Error("reflection_choice: テーマは6件必要です");
+    }
+  }
 
   for (const block of splitBlocks(sectionLines)) {
     const branchCondition = conditionFromHeading(block);
@@ -129,6 +156,21 @@ const parseSceneSteps = (scene, sectionLines) => {
       continue;
     }
     if (scene.id === "choice_editorial" && /^セッション内の表示だけ/u.test(block)) condition = null;
+
+    if (scene.reflectionChoice && (/^［テーマ\d+｜/u.test(block) || /^R\d{2}｜/u.test(block))) {
+      if (!reflectionAdded) {
+        pushStep({
+          type: "reflectionChoice",
+          choiceId: "reflection_choice",
+          prompt: scene.reflectionChoice.prompt,
+          trackedByEves: true,
+          maxSelections: 3,
+          options: themedReflectionOptions,
+        });
+        reflectionAdded = true;
+      }
+      continue;
+    }
 
     if (/^\d+\.\s/u.test(block) && scene.reflectionChoice) {
       const canonical = block.split("\n").map((line) => line.match(/^\d+\.\s*(.+)$/u)?.[1]).filter(Boolean);
@@ -144,6 +186,7 @@ const parseSceneSteps = (scene, sectionLines) => {
         maxSelections: 3,
         options: REFLECTION_OPTIONS,
       });
+      reflectionAdded = true;
       continue;
     }
     if (/^\d+\.\s/u.test(block) && scene.choice) {
@@ -151,7 +194,10 @@ const parseSceneSteps = (scene, sectionLines) => {
       continue;
     }
     if (/^［操作｜/u.test(block) && scene.interaction) {
-      pushStep({ type: "interaction", interaction: scene.interaction, text: block.slice(1, -1) });
+      const interactionAlreadyAdded = steps.some((step) => step.type === "interaction");
+      pushStep(interactionAlreadyAdded
+        ? { type: "ui", text: block.slice(1, -1) }
+        : { type: "interaction", interaction: scene.interaction, text: block.slice(1, -1) });
       continue;
     }
     if (/^［生成履歴を詳しく見る］$/u.test(block)) {
@@ -180,17 +226,17 @@ const parseSceneSteps = (scene, sectionLines) => {
 };
 
 const configs = [
-  { id: "current_exhibition", prefix: "CURRENT｜学園祭の展示ホール", chapter: "CURRENT", modeIndex: 9 },
+  { id: "current_exhibition", prefix: "現在の展示｜学園祭の展示ホール", chapter: "現在", modeIndex: 9 },
   { id: "opening_empty_seat", prefix: "OPENING｜三か月前／10:21", chapter: "OPENING", modeIndex: 9 },
   { id: "prologue_online_circle", prefix: "PROLOGUE｜文字だけだった三人", chapter: "PROLOGUE", modeIndex: 0, split: "ミズハ、アマネ、サクヤが初めて同じスレッドに揃った" },
-  { id: "choice_observation_order", prefix: "プレイヤーの小さな選択｜どちらから見る？", chapter: "PROLOGUE", modeIndex: 0, choice: { id: "observation_order", prompt: "どちらから見る？", trackedByEves: false, options: [{ value: "LOCAL_FIRST", next: "first_meeting_promise" }, { value: "STATION_FIRST", next: "first_meeting_promise" }] } },
+  { id: "choice_observation_order", prefix: "小さな選択｜どちらから見る？", chapter: "PROLOGUE", modeIndex: 0, choice: { id: "observation_order", prompt: "どちらから見る？", trackedByEves: false, options: [{ value: "LOCAL_FIRST", next: "first_meeting_promise" }, { value: "STATION_FIRST", next: "first_meeting_promise" }] } },
   { id: "first_meeting_promise", prefix: "00:08｜初めて会う約束", chapter: "PROLOGUE", modeIndex: 0 },
   { id: "first_meeting_hall", prefix: "09:48｜海沿いの展示場・中央入口", chapter: "PROLOGUE", modeIndex: 0 },
   { id: "festival_walk", prefix: "17:06｜展示ホールをつなぐ連絡通路", chapter: "PROLOGUE", modeIndex: 0 },
   { id: "production_year", prefix: "九か月間｜三人で作ったもの", chapter: "PRODUCTION", modeIndex: 5 },
   { id: "absence", prefix: "三か月前／来なかった日", chapter: "ABSENCE", modeIndex: 2 },
   { id: "search", prefix: "その日から二週間｜安否確認", chapter: "SEARCH", modeIndex: 2 },
-  { id: "festival_build", prefix: "CURRENT｜公開されたGAIA SENSEWARE", chapter: "CURRENT", modeIndex: 9 },
+  { id: "festival_build", prefix: "現在の展示｜公開されたGAIA SENSEWARE", chapter: "現在", modeIndex: 9 },
   { id: "gx_deep_time", prefix: "GXモード｜太古の海", chapter: "GX", modeIndex: 0, interaction: { kind: "gx", requiredGestures: 3 } },
   { id: "mode03_map", prefix: "MODE 03｜地図モード／森の気候装置", chapter: "MODE 03", modeIndex: 2, interaction: { kind: "map03", requiredLayers: ["forest", "rain", "overlay"] } },
   { id: "mode07_abstract", prefix: "MODE 07｜抽象モード／届いた時刻、開いた時刻", chapter: "MODE 07", modeIndex: 6, interaction: { kind: "abstract07", requiredPoints: 1 } },

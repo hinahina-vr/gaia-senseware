@@ -62,8 +62,12 @@ assert.equal(new Set(reflection.options.map((option) => option.id)).size, 36, "r
 assert.equal(new Set(reflection.options.map((option) => option.text)).size, 36, "reflection statements must be unique");
 
 const dominance = { law: 0, neutral: 0, chaos: 0 };
-reflection.options.forEach((option, index) => {
-  assert.equal(option.id, `R${String(index + 1).padStart(2, "0")}`, "reflection order must be fixed");
+const expectedReflectionIds = Array.from({ length: 36 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`);
+assert.deepEqual(reflection.options.map((option) => option.id).sort(), expectedReflectionIds, "all fixed reflection IDs must remain present");
+const expectedThemes = ["不確実さと解釈", "記録と検証", "技術と生成責任", "権利と当事者", "制度と行動", "人間・地球・未来"];
+assert.deepEqual([...new Set(reflection.options.map((option) => option.theme))], expectedThemes, "reflection themes must keep the script order");
+expectedThemes.forEach((theme) => assert.equal(reflection.options.filter((option) => option.theme === theme).length, 6, `${theme} must contain six statements`));
+reflection.options.forEach((option) => {
   const values = Object.entries(option.weights);
   const max = Math.max(...values.map(([, value]) => value));
   const leaders = values.filter(([, value]) => value === max);
@@ -76,8 +80,8 @@ assert.deepEqual(story.saveFields.filter((field) => ["reflectionIds", "resultTon
 
 const allText = steps.map((step) => step.text || "").join("\n");
 for (const requiredText of [
-  "真ん中の椅子には、誰も座っていない。",
-  "うん。今日、はじめまして。",
+  "真ん中の椅子には鞄も上着もなく、誰も座っていない。",
+  "うん。今日、はじめまして🌸",
   "森と雨が重なる場所があります。原因はこの画面だけでは決められません。",
   "もし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――",
   "「聞こえたつもりになってない？」って、三人で確かめたい。",
