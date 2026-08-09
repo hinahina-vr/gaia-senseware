@@ -82,8 +82,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "scenes": [
     {
       "id": "current_exhibition",
-      "title": "CURRENT｜学園祭の展示ホール",
-      "chapter": "CURRENT",
+      "title": "現在の展示｜学園祭の展示ホール",
+      "chapter": "現在",
       "modeIndex": 9,
       "steps": [
         {
@@ -369,17 +369,31 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "CURRENT：学園祭・展示ホール\nRECORD：三か月前／10:21"
+          "text": "いまいる場所：学園祭・展示ホール\n再生している記録：三か月前／10:21"
         },
         {
           "id": "current_exhibition_042",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "これから開くのは、現在の会場を離れて過去へ移動する体験ではない。三か月前に保存された制作記録を、いま展示席にいる私が端末で再生する。"
+          "text": "その横に、英字で `CURRENT` と `RECORD` が小さく添えられている。"
         },
         {
           "id": "current_exhibition_043",
+          "sceneId": "current_exhibition",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "`CURRENT` は、私の身体がいまいる場所と時刻。`RECORD` は、その場で開いている過去の記録が保存された時刻を表す。このあと英字だけが残る場面でも、二つの時間が入れ替わったわけではない。"
+        },
+        {
+          "id": "current_exhibition_044",
+          "sceneId": "current_exhibition",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "これから開くのは、現在の会場を離れて過去へ移動する体験ではない。三か月前に保存された制作記録を、いま展示席にいる私が端末で再生する。"
+        },
+        {
+          "id": "current_exhibition_045",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
@@ -399,142 +413,177 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "海に近い町の共同作業室。大学が借りている小さな部屋には、長机が一つ、椅子が三脚、壁際に共同ディスプレイが一台あった。\n窓は細く、曇った空の明るさだけが机の端まで届いている。"
+          "text": "画面は、いきなり人物の顔を映さない。"
         },
         {
           "id": "opening_empty_seat_002",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハは保温ボトルと紙コップを三つ持ってきた。\nアマネは電源タップ、予備のケーブル、消毒用シートを机へ並べ、使っていない差込口まで一つずつ確かめた。"
+          "text": "最初に現れるのは、記録の日付、部屋の予約名、今日の作業予定である。"
         },
         {
           "id": "opening_empty_seat_003",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人は長机の両端へ座っていた。\n真ん中の椅子には鞄も上着もなく、誰も座っていない。"
+          "text": "三か月前。学園祭への出展申請を終えた三人は、オンラインで作ってきた画面を実物の端末とスピーカーへ初めてつなぐため、大学の共同作業室を予約していた。ここは三人の部室でも自宅でもない。学生証で時間を区切って借りる、六人ほどでいっぱいになる作業部屋だ。"
         },
         {
           "id": "opening_empty_seat_004",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "今日ここへ集まるのは、学園祭へ出す作品を初めて実機でつなぐためだった。\n待ち合わせは午前十時。画面に表示されている時刻は、すでに十時二十一分になっている。"
+          "text": "海に近い町の共同作業室。大学が借りている小さな部屋には、長机が一つ、椅子が三脚、壁際に共同ディスプレイが一台あった。\n窓は細く、曇った空の明るさだけが机の端まで届いている。"
         },
         {
           "id": "opening_empty_seat_005",
           "sceneId": "opening_empty_seat",
-          "type": "chat",
-          "time": "10:08",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "先に部屋、入ってる。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "机の上に、三人分の持ち物を置く予定で空けられた場所がある。"
         },
         {
           "id": "opening_empty_seat_006",
           "sceneId": "opening_empty_seat",
-          "type": "chat",
-          "time": "10:09",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "迷われたなら迎えに行きますわ。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "そこでようやく、保存された写真と作業ログに沿って二人の姿が示される。"
         },
         {
           "id": "opening_empty_seat_007",
           "sceneId": "opening_empty_seat",
-          "type": "chat",
-          "time": "10:21",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "どこにいる？"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハは保温ボトルと紙コップを三つ持ってきた。\nアマネは電源タップ、予備のケーブル、消毒用シートを机へ並べ、使っていない差込口まで一つずつ確かめた。"
         },
         {
           "id": "opening_empty_seat_008",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "短い文の横に未読の印が残った。"
+          "text": "二人は長机の両端へ座っていた。\n真ん中の椅子には鞄も上着もなく、誰も座っていない。"
         },
         {
           "id": "opening_empty_seat_009",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "宛先はサクヤだった。\n画面には送信済みの印がある。けれど、相手が開いたことを示す印へは変わらない。"
+          "text": "今日ここへ集まるのは、学園祭へ出す作品を初めて実機でつなぐためだった。\n待ち合わせは午前十時。画面に表示されている時刻は、すでに十時二十一分になっている。"
         },
         {
           "id": "opening_empty_seat_010",
+          "sceneId": "opening_empty_seat",
+          "type": "chat",
+          "time": "10:08",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "先に入ってる🙆"
+        },
+        {
+          "id": "opening_empty_seat_011",
+          "sceneId": "opening_empty_seat",
+          "type": "chat",
+          "time": "10:09",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "迷っていたら迎えに行きますわ🌱"
+        },
+        {
+          "id": "opening_empty_seat_012",
+          "sceneId": "opening_empty_seat",
+          "type": "chat",
+          "time": "10:21",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "いまどこ？"
+        },
+        {
+          "id": "opening_empty_seat_013",
+          "sceneId": "opening_empty_seat",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "短い文の横に未読の印が残った。"
+        },
+        {
+          "id": "opening_empty_seat_014",
+          "sceneId": "opening_empty_seat",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "宛先はサクヤだった。\n画面には送信済みの印がある。けれど、相手が開いたことを示す印へは変わらない。"
+        },
+        {
+          "id": "opening_empty_seat_015",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
           "text": "ミズハは紙コップへ茶を注いだ。\n二つではなく、三つ全部に注いだ。"
         },
         {
-          "id": "opening_empty_seat_011",
+          "id": "opening_empty_seat_016",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
           "text": "三つ目を真ん中の椅子の前へ置くときだけ、紙コップの底が机を擦って、乾いた音を立てた。"
         },
         {
-          "id": "opening_empty_seat_012",
+          "id": "opening_empty_seat_017",
           "sceneId": "opening_empty_seat",
           "type": "dialogue",
           "speaker": "amane",
           "text": "まだ、寝坊でいい？"
         },
         {
-          "id": "opening_empty_seat_013",
+          "id": "opening_empty_seat_018",
           "sceneId": "opening_empty_seat",
           "type": "dialogue",
           "speaker": "mizuha",
           "text": "十一時までは。"
         },
         {
-          "id": "opening_empty_seat_014",
+          "id": "opening_empty_seat_019",
           "sceneId": "opening_empty_seat",
           "type": "dialogue",
           "speaker": "amane",
           "text": "十時集合。"
         },
         {
-          "id": "opening_empty_seat_015",
+          "id": "opening_empty_seat_020",
           "sceneId": "opening_empty_seat",
           "type": "dialogue",
           "speaker": "mizuha",
           "text": "存じていますわ。"
         },
         {
-          "id": "opening_empty_seat_016",
+          "id": "opening_empty_seat_021",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
           "text": "アマネはスマートフォンを伏せ、接続済みのケーブルを意味もなく指で押し直した。\nミズハは保温ボトルの蓋を閉めたあと、もう一度だけ緩め、湯気が残っているか確かめた。"
         },
         {
-          "id": "opening_empty_seat_017",
+          "id": "opening_empty_seat_022",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
           "text": "廊下で足音がするたび、二人とも扉を見た。\n足音は部屋の前を通り過ぎ、コピー機が動き、離れた扉が閉まる。そのたびに、二人の視線だけが空席へ戻った。"
         },
         {
-          "id": "opening_empty_seat_018",
+          "id": "opening_empty_seat_023",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
           "text": "真ん中の紙コップから、先に湯気が見えなくなった。"
         },
         {
-          "id": "opening_empty_seat_019",
+          "id": "opening_empty_seat_024",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
           "text": "ここに三脚の椅子が並ぶまで、三人は一年以上、文字と画面を間に置いて話してきた。"
         },
         {
-          "id": "opening_empty_seat_020",
+          "id": "opening_empty_seat_025",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
@@ -575,52 +624,66 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ある授業のあと、雑談チャンネルの一行から始まった。"
+          "text": "この時点で、三人はまだ互いの顔を知らない。"
         },
         {
           "id": "prologue_online_circle_005",
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "『人間は、地球を変える側にだけいるのだろうか。』"
+          "text": "だから端末にも人物の立ち絵は出ない。Slackの画面に並ぶのは、表示名と、みずの芽、あまあまの雲、sakuの花をかたどった小さなアイコンだけである。声も服装も、背の高さも、まだ記録の外にある。"
         },
         {
           "id": "prologue_online_circle_006",
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "岩の写真、干上がりかけた池、屋上菜園の土、人工衛星が写した夜の地球。答えではなく、気になったものを持ち寄る返信が続き、三日目に専用チャンネルができた。\n説明欄には『まだ名前のない変化を見つけて、持ち寄る場所』とあった。\n投稿する時間はばらばらで、一つの話題が何日も続いた。"
+          "text": "ある授業のあと、雑談チャンネルの一行から始まった。"
         },
         {
           "id": "prologue_online_circle_007",
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハは、写真に写らない気温や湿り気まで長い文章で足した。\nアマネは、公開データの場所を探し、同じ言葉で呼ばれている数値が本当に同じ条件かを確かめた。\nサクヤは、話題が流れたあとで写真や一行を置き、誰も拾わなかった言葉へ戻った。"
+          "text": "『人間は、地球を変える側にだけいるのだろうか。』"
         },
         {
           "id": "prologue_online_circle_008",
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人は最初から仲がよかったわけではない。\n同じ投稿を読んでも、気にする場所が違った。その違いが何度も同じスレッドでぶつかるうちに、三人の表示名は一緒に並ぶことが増えていった。"
+          "text": "岩の写真、干上がりかけた池、屋上菜園の土、人工衛星が写した夜の地球。答えではなく、気になったものを持ち寄る返信が続き、三日目に専用チャンネルができた。\n説明欄には『まだ名前のない変化を見つけて、持ち寄る場所』とあった。\n投稿する時間はばらばらで、一つの話題が何日も続いた。"
         },
         {
           "id": "prologue_online_circle_009",
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "Slackで使っている表示名は、作品の作者表示とは違う。"
+          "text": "ミズハは、写真に写らない気温や湿り気まで長い文章で足した。\nアマネは、公開データの場所を探し、同じ言葉で呼ばれている数値が本当に同じ条件かを確かめた。\nサクヤは、話題が流れたあとで写真や一行を置き、誰も拾わなかった言葉へ戻った。"
         },
         {
           "id": "prologue_online_circle_010",
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "🌱 みず 🌱：ミズハ\n☁️ あまあま ☁️：アマネ\n🌸 saku 🌸：サクヤ"
+          "text": "三人は最初から仲がよかったわけではない。\n同じ投稿を読んでも、気にする場所が違った。その違いが何度も同じスレッドでぶつかるうちに、三人の表示名は一緒に並ぶことが増えていった。"
         },
         {
           "id": "prologue_online_circle_011",
+          "sceneId": "prologue_online_circle",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "Slackで使っている表示名は、作品の作者表示とは違う。"
+        },
+        {
+          "id": "prologue_online_circle_012",
+          "sceneId": "prologue_online_circle",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "🌱 みず 🌱：ミズハ\n☁️ あまあま ☁️：アマネ\n🌸 saku 🌸：サクヤ"
+        },
+        {
+          "id": "prologue_online_circle_013",
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
@@ -640,14 +703,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハ、アマネ、サクヤが初めて同じスレッドに揃ったのは、園芸売り場の裏で撮られたバジルの写真だった。"
+          "text": "ミズハ、アマネ、サクヤが初めて同じスレッドに揃ったのは、ミズハがSlackへ貼った一枚の写真だった。"
         },
         {
           "id": "prologue_basil_002",
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "値下げ札のついた鉢が、日陰で葉を垂らしている。\n写真の端には黄色い散水ホースと、土で汚れたスニーカーのつま先が写っていた。"
+          "text": "画像を開くと、園芸売り場の裏で、値下げ札のついたバジルの鉢が日陰に葉を垂らしている。\n写真の端には黄色い散水ホースと、土で汚れたスニーカーのつま先が写っていた。三人が同じ売り場に立っているのではない。アマネとサクヤが見ているのは、ミズハのスマートフォンからSlackへ投稿された画像である。"
         },
         {
           "id": "prologue_basil_003",
@@ -663,7 +726,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:12",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "本日の売り場、三十六度ですの。\n土が湿っていても、葉から出る水へ根が追いつかないことがありますわ。"
+          "text": "今日の売り場、36度ですの🥵\n土が湿ってても、暑すぎると根から吸うより先に葉から水が出てしまいますわ。\n［画像添付｜BASIL｜売り場の裏にあるバジル。値下げ札、黄色いホース、土のついた靴先が写っている］"
         },
         {
           "id": "prologue_basil_005",
@@ -672,7 +735,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:18",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "店内に入れないの。"
+          "text": "これ店内に入れられないの？"
         },
         {
           "id": "prologue_basil_006",
@@ -681,7 +744,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:24",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "売り場をすべて店内へ移せたら、私の時給では足りませんわね。"
+          "text": "全部入れたら売り場が消えますわ😂"
         },
         {
           "id": "prologue_basil_007",
@@ -690,7 +753,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:26",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "読んだ。長い。\nつまり、水があっても暑すぎると弱る？"
+          "text": "長い長い笑\nつまり、水あっても暑すぎると弱る？"
         },
         {
           "id": "prologue_basil_008",
@@ -699,7 +762,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:29",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "簡単に言えば、そうですわ。\nただし根の状態と風と鉢の大きさも――"
+          "text": "ざっくり言えばそうですわ🙆‍♀️\nでも根の状態と風と鉢の大きさも――"
         },
         {
           "id": "prologue_basil_009",
@@ -708,7 +771,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:30",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "簡単、終わってないね。"
+          "text": "補足きた笑"
         },
         {
           "id": "prologue_basil_010",
@@ -724,7 +787,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:31",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "名前だけ残ってた。\n花はない。\n分からない。\n花壇をやめたのかもしれない。"
+          "text": "名前だけ残ってた。\n花はない。\n［画像添付｜FLOWERBED｜駅裏の花壇。花ではなく、色あせた「水やり当番」の札にピントが合っている］\n花壇やめたのかも。まだ分かんない。"
         },
         {
           "id": "prologue_basil_012",
@@ -733,7 +796,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:37",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "場所は？"
+          "text": "どこ？"
         },
         {
           "id": "prologue_basil_013",
@@ -742,7 +805,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:44",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "駅の裏。\n工事の板があった。"
+          "text": "駅裏。\n工事の板あった。"
         },
         {
           "id": "prologue_basil_014",
@@ -751,7 +814,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:46",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "じゃあ、なくなったとはまだ言えない。"
+          "text": "じゃあ、なくなったって決めるのはまだ早い。"
         },
         {
           "id": "prologue_basil_015",
@@ -760,7 +823,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:51",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "分からないなら、花がないところまでが今日の記録ですわね。"
+          "text": "なら、今日は「花がないところまで」ですわね👀"
         },
         {
           "id": "prologue_basil_016",
@@ -793,9 +856,30 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "prologue_basil_020",
           "sceneId": "prologue_basil",
-          "type": "record",
-          "recordType": "LOCAL_SOURCE",
-          "text": "園芸売り場の温度計：36 ℃ / LOCAL SOURCE\n最寄り観測所の気温：同じ時間帯に公開された値と照合 / SOURCE"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "カードには、日本語の説明が大きく、英字の分類がその下へ小さく表示される。"
+        },
+        {
+          "id": "prologue_basil_021",
+          "sceneId": "prologue_basil",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "その場で見た記録：園芸売り場の温度計 36 ℃\n補助表示：LOCAL SOURCE"
+        },
+        {
+          "id": "prologue_basil_022",
+          "sceneId": "prologue_basil",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "公開された元の記録：最寄り観測所の気温、観測所名、観測時刻\n補助表示：SOURCE"
+        },
+        {
+          "id": "prologue_basil_023",
+          "sceneId": "prologue_basil",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ここでいう `SOURCE` は、難しい種類名ではない。「誰が、どこで、どの方法で確かめたものかを後からたどれる元の記録」という意味である。売り場の温度計も観測所の値も元の記録だが、測った場所が違うため、同じ一本の気温としてはつながない。"
         }
       ],
       "nextSceneId": "choice_observation_order"
@@ -833,7 +917,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "これは半年間の記録の中へ何かを書き込む選択ではない。いま展示席にいる私が、どちらのSOURCEを先に開くかを選ぶ。"
+          "text": "これは半年間の記録の中へ何かを書き込む選択ではない。いま展示席にいる私が、どちらの元の記録を先に開くかを選ぶ。"
         },
         {
           "id": "choice_observation_order_003",
@@ -874,7 +958,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初のカードを閉じるとき、背後で誰かが椅子を引く音がする。\n二枚目を開くと、画面の右上にある `CURRENT` の下へ、過去の制作チャンネルの日付が重なる。"
+          "text": "最初のカードを閉じるとき、背後で誰かが椅子を引く音がする。\n二枚目を開くと、画面の右上にある「いまいる場所」の下へ、過去の制作チャンネルの日付が重なる。英字の `CURRENT` は小さく残っているが、それより先に日本語の説明が読める。"
         },
         {
           "id": "choice_observation_order_007",
@@ -946,114 +1030,149 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハの画面では、ブラウザの横に園芸売り場の勤務表が開いたままになっている。閉店作業を終えて帰ったあとで、制服の上に着けていた名札が机の端へ置かれていた。湯を注いだカップにはまだ口を付けず、展示名を一つ読むたび、関連する生き物の資料を別のタブで増やしている。"
+          "text": "三枚の画面のあいだに、人物の立ち絵は置かれない。まだ三人自身が互いの顔を知らないからだ。代わりに、芽、雲、花のSlackアイコンが、投稿のたびに小さく明滅する。"
         },
         {
           "id": "first_meeting_promise_005",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネの画面には、会場案内図と乗換案内と混雑予報が同じ幅で並ぶ。展示一覧から気になる作品へ印を付けるより先に、入口の数、利用できる充電場所、最終入場時刻を調べていた。ノートパソコンの横には、被覆を直しかけた短いケーブルと小さな工具が置かれている。"
+          "text": "ミズハの画面では、ブラウザの横に園芸売り場の勤務表が開いたままになっている。閉店作業を終えて帰ったあとで、制服の上に着けていた名札が机の端へ置かれていた。湯を注いだカップにはまだ口を付けず、展示名を一つ読むたび、関連する生き物の資料を別のタブで増やしている。"
         },
         {
           "id": "first_meeting_promise_006",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "サクヤの画面では、展示一覧の上に写真フォルダが半分だけ重なっている。花壇の札、濡れた道路、閉じた店のシャッター。説明文の中心ではなく、その端に残ったものを撮った写真が、日付だけ付けて並べられていた。"
+          "text": "アマネの画面には、会場案内図と乗換案内と混雑予報が同じ幅で並ぶ。展示一覧から気になる作品へ印を付けるより先に、入口の数、利用できる充電場所、最終入場時刻を調べていた。ノートパソコンの横には、被覆を直しかけた短いケーブルと小さな工具が置かれている。"
         },
         {
           "id": "first_meeting_promise_007",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人は数日前から、見たい展示のリンクを「惑星の放課後」へ貼っていた。"
+          "text": "サクヤの画面では、展示一覧の上に写真フォルダが半分だけ重なっている。花壇の札、濡れた道路、閉じた店のシャッター。説明文の中心ではなく、その端に残ったものを撮った写真が、日付だけ付けて並べられていた。"
         },
         {
           "id": "first_meeting_promise_008",
           "sceneId": "first_meeting_promise",
-          "type": "chat",
-          "time": "21:06",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "海流の展示は深さを変えられるのかしら。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "三人は数日前から、見たい展示のリンクを「惑星の放課後」へ貼っていた。"
         },
         {
           "id": "first_meeting_promise_009",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "21:19",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "混むなら最初。"
+          "time": "21:06",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "海流の展示、深さも変えられるのかしら🌊"
         },
         {
           "id": "first_meeting_promise_010",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "23:42",
-          "speaker": "sakuya",
-          "speakerLabel": "🌸 saku 🌸",
-          "text": "文章が天井に出るやつ、見たい。"
+          "time": "21:19",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "混みそう。行くなら朝いち。"
         },
         {
           "id": "first_meeting_promise_011",
           "sceneId": "first_meeting_promise",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "返信は続いたが、「一緒に行く」という文だけはなかった。"
+          "type": "chat",
+          "time": "23:42",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "文章が天井に出るやつ見たい🌸"
         },
         {
           "id": "first_meeting_promise_012",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人が同じ日に来場することは、投稿された乗換案内と勤務表の話から分かっていた。それでも待ち合わせの時刻も場所も、互いの服装も知らないまま、画面の日付が変わった。"
+          "text": "返信は続いたが、「一緒に行く」という文だけはなかった。"
         },
         {
           "id": "first_meeting_promise_013",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "午前零時七分、サクヤの入力欄へ文字が入る。"
+          "text": "三人が同じ日に来場することは、投稿された乗換案内と勤務表の話から分かっていた。それでも待ち合わせの時刻も場所も、互いの服装も知らないまま、画面の日付が変わった。"
         },
         {
           "id": "first_meeting_promise_014",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "「明日、会える？」"
+          "text": "同じ展示のリンクを送り合うだけなら、翌日もこれまでの半年と同じように終えられる。別々に会場へ行き、気になった写真を夜のSlackへ貼ればいい。"
         },
         {
           "id": "first_meeting_promise_015",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "文末が消える。"
+          "text": "待ち合わせを決めれば、文字の中だけにあった関係へ顔と声が加わる。"
         },
         {
           "id": "first_meeting_promise_016",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "「学園祭、一緒に」"
+          "text": "ミズハは学園祭のページとSlackを交互に開き、まだ送られていない通知を二度確認する。アマネは乗換案内で三人の到着時刻が近いことを見つけたまま、その事実を投稿しない。サクヤは展示一覧を閉じ、三人の表示名が並んだスレッドだけを画面の中央へ残す。"
         },
         {
           "id": "first_meeting_promise_017",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "それも消える。"
+          "text": "半年間、返事の遅さも、文章を直す癖も、話題へ戻ってくる順番も知っている。それでも、会った瞬間に同じ調子で話せるかは誰にも分からない。"
         },
         {
           "id": "first_meeting_promise_018",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "送信されなかった文は記録には残らない。端末が表示するのは、午前零時八分に実際に届いた短い一行からである。"
+          "text": "午前零時七分、サクヤの入力欄へ文字が入る。"
         },
         {
           "id": "first_meeting_promise_019",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "「明日、会える？」"
+        },
+        {
+          "id": "first_meeting_promise_020",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "文末が消える。"
+        },
+        {
+          "id": "first_meeting_promise_021",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "「学園祭、一緒に」"
+        },
+        {
+          "id": "first_meeting_promise_022",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "それも消える。"
+        },
+        {
+          "id": "first_meeting_promise_023",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "送信されなかった文は記録には残らない。端末が表示するのは、午前零時八分に実際に届いた短い一行からである。"
+        },
+        {
+          "id": "first_meeting_promise_024",
           "sceneId": "first_meeting_promise",
           "type": "chat",
           "time": "00:08",
@@ -1062,310 +1181,372 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "今日、会わない？"
         },
         {
-          "id": "first_meeting_promise_020",
+          "id": "first_meeting_promise_025",
           "sceneId": "first_meeting_promise",
           "type": "chat",
           "time": "00:08",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "今日？"
+          "text": "今日？？"
         },
         {
-          "id": "first_meeting_promise_021",
+          "id": "first_meeting_promise_026",
           "sceneId": "first_meeting_promise",
           "type": "chat",
           "time": "00:09",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "ずいぶん急ですのね。"
+          "text": "急ですわね…！"
         },
         {
-          "id": "first_meeting_promise_022",
+          "id": "first_meeting_promise_027",
           "sceneId": "first_meeting_promise",
           "type": "chat",
           "time": "00:09",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "学園祭。\n三人で行きたい。"
+          "text": "学園祭。\n3人で行きたい。"
         },
         {
-          "id": "first_meeting_promise_023",
+          "id": "first_meeting_promise_028",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
           "text": "三人の「入力中」が、順番に出ては消えた。"
         },
         {
-          "id": "first_meeting_promise_024",
+          "id": "first_meeting_promise_029",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
           "text": "アマネはすぐに返したあと、開いていた案内図を拡大した。ミズハは湯気の止まりかけたカップへ両手を添え、入力欄へ長い文章を作っては一行ずつ消した。"
         },
         {
-          "id": "first_meeting_promise_025",
+          "id": "first_meeting_promise_030",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネの返した「今日？？」は驚きにも、断りかけにも読める。送った本人も追記しない。サクヤは既読が二つ付いた画面を見たまま、写真フォルダを開いて閉じる。ミズハは「もちろん」と打ったあと、その四文字を消す。"
+        },
+        {
+          "id": "first_meeting_promise_031",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
           "text": "画面には、三人がどんな顔でその一行を読んだかは保存されていない。ただ、普段なら数分ずれる三人の既読時刻が、このときだけ十秒以内に並んでいる。"
         },
         {
-          "id": "first_meeting_promise_026",
+          "id": "first_meeting_promise_032",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
           "text": "会うと決めれば、表示名だけだった相手に顔と声が加わる。返事を待っているのか、言葉を選んでいるのか、文字の会話なら「入力中」が教えてくれる。会ったあとの沈黙には、その印が出ない。"
         },
         {
-          "id": "first_meeting_promise_027",
-          "sceneId": "first_meeting_promise",
-          "type": "chat",
-          "time": "00:11",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "会場のどこで待ち合わせますの？"
-        },
-        {
-          "id": "first_meeting_promise_028",
-          "sceneId": "first_meeting_promise",
-          "type": "chat",
-          "time": "00:11",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "入口、たぶん何個もある。\n人も多いよ。"
-        },
-        {
-          "id": "first_meeting_promise_029",
-          "sceneId": "first_meeting_promise",
-          "type": "chat",
-          "time": "00:12",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "そもそも、私たちはお互いの顔が分かりませんわ。"
-        },
-        {
-          "id": "first_meeting_promise_030",
-          "sceneId": "first_meeting_promise",
-          "type": "chat",
-          "time": "00:12",
-          "speaker": "sakuya",
-          "speakerLabel": "🌸 saku 🌸",
-          "text": "目印、青りんごにしよ。"
-        },
-        {
-          "id": "first_meeting_promise_031",
-          "sceneId": "first_meeting_promise",
-          "type": "chat",
-          "time": "00:13",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "なんで青りんご。"
-        },
-        {
-          "id": "first_meeting_promise_032",
-          "sceneId": "first_meeting_promise",
-          "type": "chat",
-          "time": "00:13",
-          "speaker": "sakuya",
-          "speakerLabel": "🌸 saku 🌸",
-          "text": "丸いし、青いし、地球っぽいから。"
-        },
-        {
           "id": "first_meeting_promise_033",
           "sceneId": "first_meeting_promise",
-          "type": "chat",
-          "time": "00:14",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "名前は青だけど、緑じゃん。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "期待は、すぐに返事をしたい指を画面へ近づける。不安は、その指を送信ボタンの手前で止める。三人の入力表示が何度も消えるのは、どちらか一方だけではないからだった。"
         },
         {
           "id": "first_meeting_promise_034",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:14",
-          "speaker": "sakuya",
-          "speakerLabel": "🌸 saku 🌸",
-          "text": "そこもいい。"
+          "time": "00:11",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "会場のどこで待ち合わせます？"
         },
         {
           "id": "first_meeting_promise_035",
           "sceneId": "first_meeting_promise",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤが、過去にミズハの投稿へ付けた地球の絵文字を一つ貼る。\n青い海より緑の陸が大きく描かれた、単純な丸いアイコンだった。"
+          "type": "chat",
+          "time": "00:11",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "入口たぶん何個もある。\n人も多そう。"
         },
         {
           "id": "first_meeting_promise_036",
           "sceneId": "first_meeting_promise",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは会場案内図へ戻り、「中央入口」と書かれた場所が二か所ないことを確かめた。北口、搬入口、ホール連絡口には赤い線を引き、待ち合わせ場所のスクリーンショットを共有する。"
+          "type": "chat",
+          "time": "00:12",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "そもそも、お互いの顔分かりませんわ😂"
         },
         {
           "id": "first_meeting_promise_037",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:15",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "持ってくる人は。"
+          "time": "00:12",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "目印、青りんごにしよ🍏"
         },
         {
           "id": "first_meeting_promise_038",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:15",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "私が用意しますわ。\n園芸売り場の隣で買えますもの。"
+          "time": "00:13",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "なんで🍏"
         },
         {
           "id": "first_meeting_promise_039",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:16",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "青りんごを持って、十時に中央入口。"
+          "time": "00:13",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "丸いし、青いし、地球っぽい。"
         },
         {
           "id": "first_meeting_promise_040",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:16",
+          "time": "00:14",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "じゃあ、今日。"
+          "text": "青りんご、緑じゃん。"
         },
         {
           "id": "first_meeting_promise_041",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:17",
+          "time": "00:14",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "うん。今日、はじめまして。"
+          "text": "そこもいい🌸"
         },
         {
           "id": "first_meeting_promise_042",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "その一行のあと、会話は終わらなかった。"
+          "text": "サクヤが、過去にミズハの投稿へ付けた地球の絵文字を一つ貼る。\n青い海より緑の陸が大きく描かれた、単純な丸いアイコンだった。"
         },
         {
           "id": "first_meeting_promise_043",
           "sceneId": "first_meeting_promise",
-          "type": "chat",
-          "time": "00:22",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "十時。遅れるなら、着く前に書いて。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネは会場案内図へ戻り、「中央入口」と書かれた場所が二か所ないことを確かめた。北口、搬入口、ホール連絡口には赤い線を引き、待ち合わせ場所のスクリーンショットをSlackへ添付する。"
         },
         {
           "id": "first_meeting_promise_044",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:24",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "初対面の注意事項が遅刻だけですの？"
+          "time": "00:15",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "ここで合ってる？📍\n［画像添付｜MEETING_MAP｜学園祭会場案内図。中央入口に赤い丸、北口・搬入口・ホール連絡口に赤い線が引かれている］"
         },
         {
           "id": "first_meeting_promise_045",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:31",
+          "time": "00:15",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "顔、間違えたらごめん。"
+          "text": "そこ。"
         },
         {
           "id": "first_meeting_promise_046",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:32",
+          "time": "00:15",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "りんごを見て。"
+          "text": "青りんご持ってくる人は？"
         },
         {
           "id": "first_meeting_promise_047",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:33",
+          "time": "00:15",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "私ではなく？"
+          "text": "私が用意しますわ。\n園芸売り場の隣で買えますもの🍏"
         },
         {
           "id": "first_meeting_promise_048",
           "sceneId": "first_meeting_promise",
           "type": "chat",
-          "time": "00:34",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "最初は。"
+          "time": "00:16",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "では、青りんご持って10時に中央入口ですわ。"
         },
         {
           "id": "first_meeting_promise_049",
           "sceneId": "first_meeting_promise",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "そこから、会場までの経路、見たい展示、混雑予報、昼食をどこで取れるかというリンクが続いた。"
+          "type": "chat",
+          "time": "00:16",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "了解。じゃ、今日🙆"
         },
         {
           "id": "first_meeting_promise_050",
           "sceneId": "first_meeting_promise",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは「念のため」と持ち物を列挙し始め、帽子、飲み物、モバイルバッテリーまで書いたところで、日焼け止めの一行を消した。アマネは三人の経路が止まりやすい路線を調べ、遅延時の集合規則を一文にした。サクヤは返事の代わりに、中央入口のガラス壁を昨年撮った写真を貼った。"
+          "type": "chat",
+          "time": "00:17",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "うん。今日、はじめまして🌸"
         },
         {
           "id": "first_meeting_promise_051",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最後に会話を閉じたのは午前二時を過ぎてからだった。"
+          "text": "その一行のあと、会話は終わらなかった。"
         },
         {
           "id": "first_meeting_promise_052",
+          "sceneId": "first_meeting_promise",
+          "type": "chat",
+          "time": "00:22",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "10時。遅れそうなら先に書いて。"
+        },
+        {
+          "id": "first_meeting_promise_053",
+          "sceneId": "first_meeting_promise",
+          "type": "chat",
+          "time": "00:24",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "初対面の注意事項、遅刻だけですの？笑"
+        },
+        {
+          "id": "first_meeting_promise_054",
+          "sceneId": "first_meeting_promise",
+          "type": "chat",
+          "time": "00:31",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "顔間違えたらごめん笑"
+        },
+        {
+          "id": "first_meeting_promise_055",
+          "sceneId": "first_meeting_promise",
+          "type": "chat",
+          "time": "00:32",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "りんご見て🍏"
+        },
+        {
+          "id": "first_meeting_promise_056",
+          "sceneId": "first_meeting_promise",
+          "type": "chat",
+          "time": "00:33",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "私じゃなくて？"
+        },
+        {
+          "id": "first_meeting_promise_057",
+          "sceneId": "first_meeting_promise",
+          "type": "chat",
+          "time": "00:34",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "最初はね。"
+        },
+        {
+          "id": "first_meeting_promise_058",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "そこから、会場までの経路、見たい展示、混雑予報、昼食をどこで取れるかというリンクが続いた。"
+        },
+        {
+          "id": "first_meeting_promise_059",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハは「念のため」と持ち物を列挙し始め、帽子、飲み物、モバイルバッテリーまで書いたところで、日焼け止めの一行を消した。アマネは三人の経路が止まりやすい路線を調べ、遅延時の集合規則を一文にした。"
+        },
+        {
+          "id": "first_meeting_promise_060",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤは返事の代わりに、中央入口のガラス壁を昨年撮った写真をSlackへ貼った。"
+        },
+        {
+          "id": "first_meeting_promise_061",
+          "sceneId": "first_meeting_promise",
+          "type": "chat",
+          "time": "01:07",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "たぶんここ。\n明日これより人多そう。\n［画像添付｜VENUE｜昨年の中央入口。大きなガラス壁と、その向こうの海が写っている］"
+        },
+        {
+          "id": "first_meeting_promise_062",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "最後に会話を閉じたのは午前二時を過ぎてからだった。"
+        },
+        {
+          "id": "first_meeting_promise_063",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハはベッドへ入ってから、青りんごの写真を検索し、検索履歴を消さずに画面を伏せる。アマネは目覚ましを一つ増やし、増やしすぎたと思って一つ戻す。サクヤは三人のスレッドを開いたままスマートフォンを充電器へつなぐ。"
+        },
+        {
+          "id": "first_meeting_promise_064",
+          "sceneId": "first_meeting_promise",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "会う約束ができた安心で眠りやすくなったのか、顔も声も知らない二人へ会う予定が現実になって眠りにくくなったのかは、記録からは決められない。ただ、三人とも普段より早い時刻に翌朝の接続表示を点灯させた。"
+        },
+        {
+          "id": "first_meeting_promise_065",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
           "text": "翌朝七時十三分から、三人の接続表示が一人ずつオンラインへ変わる。"
         },
         {
-          "id": "first_meeting_promise_053",
+          "id": "first_meeting_promise_066",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
           "text": "ミズハは出勤前の園芸売り場の隣で、同じ籠に入った青りんごを三つ見比べた。最も丸いものを持ち上げ、傷の少ない側を表へ向け、紙袋には入れず手に持って店を出た。"
         },
         {
-          "id": "first_meeting_promise_054",
+          "id": "first_meeting_promise_067",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
           "text": "アマネは黒いシャツを選び、予備のケーブルを鞄から一本抜き、代わりに未開封の消毒用シートを入れた。玄関を出てから戻り、充電中だったスマートフォンを外す。"
         },
         {
-          "id": "first_meeting_promise_055",
+          "id": "first_meeting_promise_068",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
           "text": "サクヤは目覚ましを二度止めたあと、小型カメラの保存容量を確かめた。レンズを拭き、首紐を付け、玄関の鍵を閉めてから、室内へ戻って予備の電池を取った。"
         },
         {
-          "id": "first_meeting_promise_056",
+          "id": "first_meeting_promise_069",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
           "text": "三人の部屋を映した映像は残っていない。ここに表示される持ち物と時刻は、その朝に投稿された写真、経路共有、撮影データから並べ直された記録である。"
         },
         {
-          "id": "first_meeting_promise_057",
+          "id": "first_meeting_promise_070",
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
@@ -1448,490 +1629,546 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "左手にはスマートフォン。右手には青りんご。二つを同時に見られず、通知を確かめるたび、青りんごを肘と鞄の間へ挟んだ。"
+          "text": "待ち合わせを提案したのはsakuで、場所を確かめたのはあまあまで、目印を持ってきたのは自分。その役割を頭の中で並べると、次に誰が何を言うかまで決まっているように思える。けれど、最初の挨拶だけはスレッドのどこにも書かれていない。"
         },
         {
           "id": "first_meeting_hall_011",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ガラス壁には、待っているミズハ自身と、その後ろを流れる何十人もの顔が重なって映る。"
+          "text": "左手にはスマートフォン。右手には青りんご。二つを同時に見られず、通知を確かめるたび、青りんごを肘と鞄の間へ挟んだ。"
         },
         {
           "id": "first_meeting_hall_012",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面でなら毎日話している二人が、この人混みのどこかにいる。けれどミズハが知っているアマネは、短い文章と修正履歴と、夜中でもすぐ付く目の形のリアクションだった。サクヤについて知っているのは、返事が来るまでの長さと、写真の中で中心を外す癖だけだった。"
+          "text": "ガラス壁には、待っているミズハ自身と、その後ろを流れる何十人もの顔が重なって映る。"
         },
         {
           "id": "first_meeting_hall_013",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハはすれ違う黒い服の人を三人続けて目で追い、いずれにも声をかけなかった。青りんごを持つ指へ力が入り、皮の上に親指の丸い跡が残る。"
+          "text": "画面でなら毎日話している二人が、この人混みのどこかにいる。けれどミズハが知っているアマネは、短い文章と修正履歴と、夜中でもすぐ付く目の形のリアクションだった。サクヤについて知っているのは、返事が来るまでの長さと、写真の中で中心を外す癖だけだった。"
         },
         {
           "id": "first_meeting_hall_014",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "午前九時五十一分。アマネは北口の列へ並びかけ、中央入口の表示を見て進路を変えた。"
+          "text": "ミズハはすれ違う黒い服の人を三人続けて目で追い、いずれにも声をかけなかった。青りんごを持つ指へ力が入り、皮の上に親指の丸い跡が残る。"
         },
         {
           "id": "first_meeting_hall_015",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "歩きながら案内図を開き、前の人の鞄へぶつかりそうになると、端末を胸元へ引いた。人の顔より先に、ガラス壁の前で不自然に立ち止まっている人の手元を見る。"
+          "text": "一人目へ声をかけなかったあと、ミズハは「違っていたらすみません」と小さく口の中で言う。二人目には「もしかして、あまあま？」まで声に出さず試す。三人目が通り過ぎるころには、どの言い方も急に不自然に思えて、青りんごの向きだけを直す。"
         },
         {
           "id": "first_meeting_hall_016",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "緑色の丸いものが、人の肩と肩の間から一度見え、また隠れる。"
+          "text": "午前九時五十一分。アマネは北口の列へ並びかけ、中央入口の表示を見て進路を変えた。"
         },
         {
           "id": "first_meeting_hall_017",
           "sceneId": "first_meeting_hall",
-          "type": "chat",
-          "time": "09:54",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "中央入口の右。\n青りんご持ってる？"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "歩きながら案内図を開き、前の人の鞄へぶつかりそうになると、端末を胸元へ引いた。人の顔より先に、ガラス壁の前で不自然に立ち止まっている人の手元を見る。"
         },
         {
           "id": "first_meeting_hall_018",
           "sceneId": "first_meeting_hall",
-          "type": "chat",
-          "time": "09:54",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "持っていますわ。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "緑色の丸いものが、人の肩と肩の間から一度見え、また隠れる。"
         },
         {
           "id": "first_meeting_hall_019",
           "sceneId": "first_meeting_hall",
-          "type": "chat",
-          "time": "09:55",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "たぶん、見つけた。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネは、その丸いものを見つけた瞬間に歩幅を狭める。探していた目印が見つかった安心と、目印の向こうに本当に人が立っている戸惑いが、同じ動きになって足を止めた。"
         },
         {
           "id": "first_meeting_hall_020",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハがスマートフォンから顔を上げた。\n黒いシャツの少女と目が合う。"
+          "text": "ここからのSlackは、外出中に開かれたスマートフォンの記録として縦長に表示される。デスクトップ版の横長の画面ではない。片手で持った端末の上に、会場の照明と通り過ぎる人影が反射している。"
         },
         {
           "id": "first_meeting_hall_021",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "少女は片手にスマートフォン、もう片方に未開封の消毒用シートを持っていた。近づく途中で一度止まり、自分の画面と青りんごを見比べている。"
+          "type": "chat",
+          "time": "09:54",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "中央入口の右いる。\n🍏持ってる？"
         },
         {
           "id": "first_meeting_hall_022",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハが写真で見たことのあるものは、そのどちらでもなく、通知欄へ現れる短い文章だけだった。"
+          "type": "chat",
+          "time": "09:54",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "ありますわ🍏"
         },
         {
           "id": "first_meeting_hall_023",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは三歩ぶんの距離を残して立つ。ミズハも青りんごを持ち上げかけ、何も言わないまま、すぐ元の高さへ戻す。"
+          "type": "chat",
+          "time": "09:55",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "たぶん見つけた👀"
         },
         {
           "id": "first_meeting_hall_024",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人とも、すぐには声を出さなかった。\nSlackなら、返事を考えていることを「入力中」が教えてくれる。\n画面の外には、その表示がなかった。"
+          "text": "ミズハがスマートフォンから顔を上げた。\n黒いシャツの少女と目が合う。"
         },
         {
           "id": "first_meeting_hall_025",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "列を整理する学生が「通路を空けてください」と声をかける。二人は同時に半歩動き、同じ方向へ避けてぶつかりそうになり、今度は別々の方向へ戻った。"
+          "text": "少女は片手にスマートフォン、もう片方に未開封の消毒用シートを持っていた。近づく途中で一度止まり、自分の画面と青りんごを見比べている。"
         },
         {
           "id": "first_meeting_hall_026",
           "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "あまあま、で合っていますの？"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハが写真で見たことのあるものは、そのどちらでもなく、通知欄へ現れる短い文章だけだった。"
         },
         {
           "id": "first_meeting_hall_027",
           "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "うん。みず、だよね。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネは三歩ぶんの距離を残して立つ。ミズハも青りんごを持ち上げかけ、何も言わないまま、すぐ元の高さへ戻す。"
         },
         {
           "id": "first_meeting_hall_028",
           "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "毎日文字を交わしていましたから、画面の外でも「あまあま」なのですね。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二人とも、すぐには声を出さなかった。\nSlackなら、返事を考えていることを「入力中」が教えてくれる。\n画面の外には、その表示がなかった。"
         },
         {
           "id": "first_meeting_hall_029",
           "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "そっちも。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネは、毎日読んでいた長い文章と、目の前のミズハの声がまだ結び付いていない。ミズハは、短い投稿の向こうに想像していた話し方より、実際のアマネの声が少し柔らかいことに気づく。どちらもそれを伝える言葉をすぐには選べない。"
         },
         {
           "id": "first_meeting_hall_030",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人の会話はそこで一度止まった。\n通路を横切る人を避けて並んだあと、アマネは青りんごの表面を見て、ミズハはアマネが話すときに視線を少し横へ外すことを見た。"
+          "text": "列を整理する学生が「通路を空けてください」と声をかける。二人は同時に半歩動き、同じ方向へ避けてぶつかりそうになり、今度は別々の方向へ戻った。"
         },
         {
           "id": "first_meeting_hall_031",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは消毒用シートの袋を開けかけ、まだ何にも触れていないことに気づいて、折らずに鞄へ戻した。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "あまあま、で合っていますの？"
         },
         {
           "id": "first_meeting_hall_032",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは青りんごを左手へ持ち替え、空いた右手を一度だけ前へ出す。握手をするには二人の距離が少し遠く、その手は髪を耳へかける動きへ変わった。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "うん。みず、だよね。"
         },
         {
           "id": "first_meeting_hall_033",
           "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "本当に持ってきたんだ。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二つの表示名が声になった瞬間、画面の端へ初めて二人の立ち絵が現れる。ここより前のSlack記録には、顔を知ったあとの姿をさかのぼって置かない。"
         },
         {
           "id": "first_meeting_hall_034",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "目印を提案した方が、遅刻していらっしゃいますけれど。"
+          "text": "毎日文字を交わしていましたから、画面の外でも「あまあま」なのですね。"
         },
         {
           "id": "first_meeting_hall_035",
+          "sceneId": "first_meeting_hall",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "そっちも。"
+        },
+        {
+          "id": "first_meeting_hall_036",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二人の会話はそこで一度止まった。\n通路を横切る人を避けて並んだあと、アマネは青りんごの表面を見て、ミズハはアマネが話すときに視線を少し横へ外すことを見た。"
+        },
+        {
+          "id": "first_meeting_hall_037",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "アマネは消毒用シートの袋を開けかけ、まだ何にも触れていないことに気づいて、折らずに鞄へ戻した。"
+        },
+        {
+          "id": "first_meeting_hall_038",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハは青りんごを左手へ持ち替え、空いた右手を一度だけ前へ出す。握手をするには二人の距離が少し遠く、その手は髪を耳へかける動きへ変わった。"
+        },
+        {
+          "id": "first_meeting_hall_039",
+          "sceneId": "first_meeting_hall",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "本当に持ってきたんだ。"
+        },
+        {
+          "id": "first_meeting_hall_040",
+          "sceneId": "first_meeting_hall",
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "目印を提案した方が、遅刻していらっしゃいますけれど。"
+        },
+        {
+          "id": "first_meeting_hall_041",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
           "text": "アマネはサクヤの接続状態を開く。最終オンラインは九時五十七分。既読の印が付いた直後、短い投稿が届く。"
         },
         {
-          "id": "first_meeting_hall_036",
+          "id": "first_meeting_hall_042",
           "sceneId": "first_meeting_hall",
           "type": "chat",
           "time": "09:58",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "入口、海が左に見える。"
+          "text": "入口まちがえた。\n海が左に見える🥲"
         },
         {
-          "id": "first_meeting_hall_037",
+          "id": "first_meeting_hall_043",
           "sceneId": "first_meeting_hall",
           "type": "chat",
           "time": "09:58",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "どの入口。"
+          "text": "どの入口？"
         },
         {
-          "id": "first_meeting_hall_038",
+          "id": "first_meeting_hall_044",
           "sceneId": "first_meeting_hall",
           "type": "chat",
           "time": "09:59",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "中央入口から海は正面ですわ。"
+          "text": "中央入口なら海は正面ですわ😂"
         },
         {
-          "id": "first_meeting_hall_039",
+          "id": "first_meeting_hall_045",
           "sceneId": "first_meeting_hall",
           "type": "chat",
           "time": "10:00",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "違うとこいる。"
-        },
-        {
-          "id": "first_meeting_hall_040",
-          "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネは案内図を拡大し、東入口から中央入口までの線を指でなぞる。"
-        },
-        {
-          "id": "first_meeting_hall_041",
-          "sceneId": "first_meeting_hall",
-          "type": "chat",
-          "time": "10:01",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "建物沿いに西。走らなくていい。"
-        },
-        {
-          "id": "first_meeting_hall_042",
-          "sceneId": "first_meeting_hall",
-          "type": "chat",
-          "time": "10:02",
-          "speaker": "sakuya",
-          "speakerLabel": "🌸 saku 🌸",
-          "text": "走ってる。"
-        },
-        {
-          "id": "first_meeting_hall_043",
-          "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "走らなくていいって書いた。"
-        },
-        {
-          "id": "first_meeting_hall_044",
-          "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "文字で話しているときと同じですわね。"
-        },
-        {
-          "id": "first_meeting_hall_045",
-          "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "既読だけ速い。"
+          "text": "別のとこいる🌸"
         },
         {
           "id": "first_meeting_hall_046",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人は初めて同じ方向を見て、人の流れを探した。"
+          "text": "アマネは案内図を拡大し、東入口から中央入口までの線を指でなぞる。"
         },
         {
           "id": "first_meeting_hall_047",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤが着いたのは、アマネとミズハが出会ってから十分後だった。"
+          "type": "chat",
+          "time": "10:01",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "建物沿いに西。\n走らんでいいよ。"
         },
         {
           "id": "first_meeting_hall_048",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "人の流れを斜めに横切り、小型カメラの紐を片手で押さえながら近づいてくる。急いでいるのに、途中で電光掲示を見上げる人を避け、床へ落ちたパンフレットを踏まないよう一歩だけ軌道を変えた。"
+          "type": "chat",
+          "time": "10:02",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "もう走ってる🏃‍♀️"
         },
         {
           "id": "first_meeting_hall_049",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "二人の前まで来ても、すぐには名乗らない。少し息を切らしたまま、青りんごを一度指した。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "走らなくていいって書いた。"
         },
         {
           "id": "first_meeting_hall_050",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
-          "speaker": "sakuya",
-          "text": "本物だった。"
+          "speaker": "mizuha",
+          "text": "文字で話しているときと同じですわね。"
         },
         {
           "id": "first_meeting_hall_051",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "提案した人がそれ言う？"
+          "text": "既読だけ速い。"
         },
         {
           "id": "first_meeting_hall_052",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "サクヤは膝へ手を置き、呼吸を整える。首から下げたカメラが揺れ、レンズの蓋が胸元へ二度当たる。"
+          "text": "二人は初めて同じ方向を見て、人の流れを探した。"
         },
         {
           "id": "first_meeting_hall_053",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤが着いたのは、アマネとミズハが出会ってから十分後だった。"
+        },
+        {
+          "id": "first_meeting_hall_054",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "人の流れを斜めに横切り、小型カメラの紐を片手で押さえながら近づいてくる。急いでいるのに、途中で電光掲示を見上げる人を避け、床へ落ちたパンフレットを踏まないよう一歩だけ軌道を変えた。"
+        },
+        {
+          "id": "first_meeting_hall_055",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二人の前まで来ても、すぐには名乗らない。少し息を切らしたまま、青りんごを一度指した。"
+        },
+        {
+          "id": "first_meeting_hall_056",
+          "sceneId": "first_meeting_hall",
+          "type": "dialogue",
+          "speaker": "sakuya",
+          "text": "ほんとにあった、青りんご。"
+        },
+        {
+          "id": "first_meeting_hall_057",
+          "sceneId": "first_meeting_hall",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "提案した人がそれ言う？"
+        },
+        {
+          "id": "first_meeting_hall_058",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤは膝へ手を置き、呼吸を整える。首から下げたカメラが揺れ、レンズの蓋が胸元へ二度当たる。"
+        },
+        {
+          "id": "first_meeting_hall_059",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
           "speaker": "sakuya",
           "text": "みず。"
         },
         {
-          "id": "first_meeting_hall_054",
+          "id": "first_meeting_hall_060",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
           "speaker": "mizuha",
           "text": "ええ。"
         },
         {
-          "id": "first_meeting_hall_055",
+          "id": "first_meeting_hall_061",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
           "speaker": "sakuya",
           "text": "あまあま。"
         },
         {
-          "id": "first_meeting_hall_056",
+          "id": "first_meeting_hall_062",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
           "speaker": "amane",
           "text": "うん。"
         },
         {
-          "id": "first_meeting_hall_057",
+          "id": "first_meeting_hall_063",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
           "speaker": "sakuya",
-          "text": "声、ある。"
+          "text": "ほんとに声ある。"
         },
         {
-          "id": "first_meeting_hall_058",
+          "id": "first_meeting_hall_064",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
           "speaker": "amane",
           "text": "そっちもね。"
         },
         {
-          "id": "first_meeting_hall_059",
+          "id": "first_meeting_hall_065",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
           "text": "三人とも笑う前に相手の顔を見て、相手が笑い始めたのを見てから口元を緩めた。"
         },
         {
-          "id": "first_meeting_hall_060",
-          "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "sakuya",
-          "text": "写真撮っていい？"
-        },
-        {
-          "id": "first_meeting_hall_061",
-          "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "顔を撮る前に、それを聞くんですのね。"
-        },
-        {
-          "id": "first_meeting_hall_062",
-          "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "sakuya",
-          "text": "まだ顔、うまく見られないから。"
-        },
-        {
-          "id": "first_meeting_hall_063",
-          "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤは青りんごを真ん中に置き、三人へ手だけを差し出すよう頼んだ。\nミズハの指には園芸売り場で付いた細い傷があった。アマネの指先には、結束バンドを強く引いたときに付いた細い赤い線が残っていた。"
-        },
-        {
-          "id": "first_meeting_hall_064",
-          "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤは自分の手を最後に入れる。シャッターへ触れる指が足りなくなり、三秒のタイマーを設定して、カメラを案内板の低い縁へ立てかけた。"
-        },
-        {
-          "id": "first_meeting_hall_065",
-          "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "一枚目は、通り過ぎた人の鞄が画面の半分を隠した。"
-        },
-        {
           "id": "first_meeting_hall_066",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二枚目は、アマネが青りんごを落とさないよう支えた瞬間に撮れた。"
+          "text": "約束が文字だけの冗談ではなかったことに、ようやく三人の身体が追いつく。笑い声が重なると、次に何を話すか決めていない沈黙も、到着前ほど長くは感じられなかった。"
         },
         {
           "id": "first_meeting_hall_067",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三枚目でようやく、三人の手と青りんごが中央へ収まる。"
+          "text": "ここで初めて、サクヤの立ち絵もミズハ、アマネと同じ胸上の大きさで現れる。サクヤだけを遠い全身像にせず、三人が同じ距離に立っている画面にする。"
         },
         {
           "id": "first_meeting_hall_068",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三人の手と青りんごだけが、最初の一枚に写った。\n撮影後の画面をのぞくとき、三人の肩が初めて触れた。"
+          "type": "dialogue",
+          "speaker": "sakuya",
+          "text": "写真撮っていい？"
         },
         {
           "id": "first_meeting_hall_069",
           "sceneId": "first_meeting_hall",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは自分の指の傷を見つけ、画面を拡大する。アマネは写真の端に写った入口名を確かめる。サクヤは二人が見ているあいだ、写真そのものではなく、液晶へ重なった三人の顔を一度見た。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "顔を撮る前に、それを聞くんですのね。"
         },
         {
           "id": "first_meeting_hall_070",
           "sceneId": "first_meeting_hall",
           "type": "dialogue",
           "speaker": "sakuya",
-          "text": "消さなくていい？"
+          "text": "まだ顔、うまく見られないから。"
         },
         {
           "id": "first_meeting_hall_071",
           "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "どの一枚を？"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤは青りんごを真ん中に置き、三人へ手だけを差し出すよう頼んだ。\nミズハの指には園芸売り場で付いた細い傷があった。アマネの指先には、結束バンドを強く引いたときに付いた細い赤い線が残っていた。"
         },
         {
           "id": "first_meeting_hall_072",
           "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "sakuya",
-          "text": "失敗した二枚も。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤは自分の手を最後に入れる。シャッターへ触れる指が足りなくなり、三秒のタイマーを設定して、カメラを案内板の低い縁へ立てかけた。"
         },
         {
           "id": "first_meeting_hall_073",
           "sceneId": "first_meeting_hall",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "容量あるなら。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "一枚目は、通り過ぎた人の鞄が画面の半分を隠した。"
         },
         {
           "id": "first_meeting_hall_074",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "サクヤは三枚とも残した。"
+          "text": "二枚目は、アマネが青りんごを落とさないよう支えた瞬間に撮れた。"
         },
         {
           "id": "first_meeting_hall_075",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "記録写真が閉じると、画面は現在の展示端末の進行画面へ戻る。隣を誰かが通り、椅子の背に掛けた上着の裾がわずかに揺れる。"
+          "text": "三枚目でようやく、三人の手と青りんごが中央へ収まる。"
         },
         {
           "id": "first_meeting_hall_076",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "端末には、最初の一枚ではなく三枚すべての縮小画像が並んでいる。中央の青りんごは同じでも、通り過ぎた鞄、支えた指、三人の手がそれぞれ違う時刻として残っている。"
+          "text": "三人の手と青りんごだけが、最初の一枚に写った。\n撮影後の画面をのぞくとき、三人の肩が初めて触れた。"
         },
         {
           "id": "first_meeting_hall_077",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ミズハは自分の指の傷を見つけ、画面を拡大する。アマネは写真の端に写った入口名を確かめる。サクヤは二人が見ているあいだ、写真そのものではなく、液晶へ重なった三人の顔を一度見た。"
+        },
+        {
+          "id": "first_meeting_hall_078",
+          "sceneId": "first_meeting_hall",
+          "type": "dialogue",
+          "speaker": "sakuya",
+          "text": "消さなくていい？"
+        },
+        {
+          "id": "first_meeting_hall_079",
+          "sceneId": "first_meeting_hall",
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "どの一枚を？"
+        },
+        {
+          "id": "first_meeting_hall_080",
+          "sceneId": "first_meeting_hall",
+          "type": "dialogue",
+          "speaker": "sakuya",
+          "text": "失敗した二枚も。"
+        },
+        {
+          "id": "first_meeting_hall_081",
+          "sceneId": "first_meeting_hall",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "容量あるなら。"
+        },
+        {
+          "id": "first_meeting_hall_082",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤは三枚とも残した。"
+        },
+        {
+          "id": "first_meeting_hall_083",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "記録写真が閉じると、画面は現在の展示端末の進行画面へ戻る。隣を誰かが通り、椅子の背に掛けた上着の裾がわずかに揺れる。"
+        },
+        {
+          "id": "first_meeting_hall_084",
+          "sceneId": "first_meeting_hall",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "端末には、最初の一枚ではなく三枚すべての縮小画像が並んでいる。中央の青りんごは同じでも、通り過ぎた鞄、支えた指、三人の手がそれぞれ違う時刻として残っている。"
+        },
+        {
+          "id": "first_meeting_hall_085",
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
@@ -2042,7 +2279,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_walk",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "では、今日気になったものを一つの作品にしてみます？"
+          "text": "では、今日気になったものを一つの作品へ持ち寄ってみます？"
         },
         {
           "id": "festival_walk_015",
@@ -2163,7 +2400,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "21:03",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "何を作るか決める。"
+          "text": "まず何作るか決めよ。"
         },
         {
           "id": "production_year_010",
@@ -2172,7 +2409,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "21:07",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "地球環境について、異なる資料を行き来できるものがよいと思いますわ。"
+          "text": "地球環境の違う資料を行き来できるもの、よくないです？🌏"
         },
         {
           "id": "production_year_011",
@@ -2181,7 +2418,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "21:08",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "広い。"
+          "text": "広すぎ。"
         },
         {
           "id": "production_year_012",
@@ -2190,7 +2427,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "21:19",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "広いまま触って、狭くしてく。"
+          "text": "広いまま触って、だんだん狭くしてこ。"
         },
         {
           "id": "production_year_013",
@@ -2199,7 +2436,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "21:20",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "作業量も広いままだけど。"
+          "text": "作業量も広いままなんだけど笑"
         },
         {
           "id": "production_year_014",
@@ -2250,7 +2487,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "21:46",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "結果だけじゃなくて、触る前と、止まったあとが見たい。"
+          "text": "結果だけじゃなくて、触る前と止まったあとも見たい。"
         },
         {
           "id": "production_year_021",
@@ -2259,7 +2496,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "21:51",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "変化の原因を一つへ決めない表示も必要ですわ。"
+          "text": "原因を一つに決めない表示も欲しいですわ。"
         },
         {
           "id": "production_year_022",
@@ -2268,7 +2505,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "21:53",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "元の記録に戻れること。"
+          "text": "元の記録に戻れるのは絶対。"
         },
         {
           "id": "production_year_023",
@@ -2381,7 +2618,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "01:04",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "最終、三つある。"
+          "text": "final、3つある😇"
         },
         {
           "id": "production_year_039",
@@ -2390,7 +2627,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "01:09",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "どれが本当の最終ですの？"
+          "text": "どれが本当のfinalですの？"
         },
         {
           "id": "production_year_040",
@@ -2399,7 +2636,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "01:17",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "今日の最終。"
+          "text": "今日のfinal笑"
         },
         {
           "id": "production_year_041",
@@ -2491,7 +2728,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "22:38",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "色だけ見たら、気温だと思う。"
+          "text": "色だけ見たら、気温そのものだと思う。"
         },
         {
           "id": "production_year_054",
@@ -2500,7 +2737,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "22:41",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "気温から作った色。"
+          "text": "気温から作った色だよ。"
         },
         {
           "id": "production_year_055",
@@ -2509,7 +2746,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "22:44",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "作った人と、作り方、先に出して。"
+          "text": "じゃあ作った人と作り方、先に出して。"
         },
         {
           "id": "production_year_056",
@@ -2518,7 +2755,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "22:47",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "元の二つの値も、一度で開けるようにしましょう。"
+          "text": "元の2つの値も、すぐ開けるようにしましょ。"
         },
         {
           "id": "production_year_057",
@@ -2619,7 +2856,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:18",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "排出を見せる画面だから。"
+          "text": "排出を見せる画面だよ。"
         },
         {
           "id": "production_year_071",
@@ -2628,7 +2865,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:20",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "重ねると赤が読めなくなる。"
+          "text": "重ねると赤が読めない。"
         },
         {
           "id": "production_year_072",
@@ -2637,7 +2874,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:22",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "そこに住んでる人の灯りでもある。"
+          "text": "でも、そこに住んでる人の灯りでもある。"
         },
         {
           "id": "production_year_073",
@@ -2655,7 +2892,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:27",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "だから、悪い色で塗りつぶさないで。"
+          "text": "だから、悪い色で全部塗らないで。"
         },
         {
           "id": "production_year_075",
@@ -2726,7 +2963,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "06:54",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "これなら。"
+          "text": "これならいけそう。"
         },
         {
           "id": "production_year_084",
@@ -2735,7 +2972,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "07:02",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "出典名も二つ、残っていますわね。"
+          "text": "出典名も2つ残ってますわね🙆‍♀️"
         },
         {
           "id": "production_year_085",
@@ -2744,7 +2981,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "07:03",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "別の記録だから。"
+          "text": "別の記録だからね。"
         },
         {
           "id": "production_year_086",
@@ -2964,7 +3201,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "08:12",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "短くしすぎた。"
+          "text": "短くしすぎた。ごめん。"
         },
         {
           "id": "production_year_117",
@@ -2987,7 +3224,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "08:16",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "二日お待ちしましたわ。"
+          "text": "2日待ちましたわ😑"
         },
         {
           "id": "production_year_120",
@@ -2996,7 +3233,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "08:29",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "ごめん。"
+          "text": "ほんとごめん。"
         },
         {
           "id": "production_year_121",
@@ -3005,7 +3242,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "08:31",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "戻ってる。確認して。"
+          "text": "直したの戻ってる。確認して。"
         },
         {
           "id": "production_year_122",
@@ -3035,7 +3272,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "12:36",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "またそれ。"
+          "text": "またそのパン笑"
         },
         {
           "id": "production_year_126",
@@ -3044,7 +3281,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "12:51",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "三日目。"
+          "text": "3日連続🍞"
         },
         {
           "id": "production_year_127",
@@ -3053,7 +3290,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "12:54",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "制作履歴だけでなく、昼食まで追跡なさらないで。"
+          "text": "制作履歴だけでなく昼食まで追わないでくださいませ😂"
         },
         {
           "id": "production_year_128",
@@ -4051,7 +4288,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "absence",
           "type": "narration",
           "speaker": "narrator",
-          "text": "十時八分、アマネが「先に部屋、入ってる」と送る。\n十時九分、ミズハが「迷われたなら迎えに行きますわ」と続ける。\n十時二十一分、アマネが「どこにいる？」と送る。"
+          "text": "十時八分、アマネが「先に入ってる🙆」と送る。\n十時九分、ミズハが「迷っていたら迎えに行きますわ🌱」と続ける。\n十時二十一分、アマネが「いまどこ？」と送る。"
         },
         {
           "id": "absence_006",
@@ -5254,29 +5491,23 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "search_079",
           "sceneId": "search",
-          "type": "chat",
-          "time": "08日 20:10",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "返事は「いる」だけでいい。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "08日 20:10  ☁️ あまあま ☁️\n返事は「いる」だけでいい。"
         },
         {
           "id": "search_080",
           "sceneId": "search",
-          "type": "chat",
-          "time": "09日 19:42",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "説明はあとで構いません。無事だと分かる印だけお待ちしています。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "09日 19:42  🌱 みず 🌱\n説明はあとで構いません。無事だと分かる印だけお待ちしています。"
         },
         {
           "id": "search_081",
           "sceneId": "search",
-          "type": "chat",
-          "time": "10日 21:03",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "大学と警察に相談してる。困るならその一言でもいい。"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "10日 21:03  ☁️ あまあま ☁️\n大学と警察に相談してる。困るならその一言でもいい。"
         },
         {
           "id": "search_082",
@@ -5735,8 +5966,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
     },
     {
       "id": "festival_build",
-      "title": "CURRENT｜公開されたGAIA SENSEWARE",
-      "chapter": "CURRENT",
+      "title": "現在の展示｜公開されたGAIA SENSEWARE",
+      "chapter": "現在",
       "modeIndex": 9,
       "steps": [
         {
@@ -5765,7 +5996,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "時間表示は `CURRENT`。\nいま、私が座っている学園祭の展示ホールである。"
+          "text": "時間表示は「いまいる場所」。\nその横に補助ラベルとして、小さく `CURRENT` と出ている。いま、私が座っている学園祭の展示ホールである。"
         },
         {
           "id": "festival_build_005",
@@ -6052,7 +6283,11 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "gx_deep_time_012",
           "sceneId": "gx_deep_time",
-          "type": "ui",
+          "type": "interaction",
+          "interaction": {
+            "kind": "gx",
+            "requiredGestures": 3
+          },
           "text": "操作｜案内を閉じ、時間軸を開く"
         },
         {
@@ -6142,11 +6377,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "gx_deep_time_025",
           "sceneId": "gx_deep_time",
-          "type": "interaction",
-          "interaction": {
-            "kind": "gx",
-            "requiredGestures": 3
-          },
+          "type": "ui",
           "text": "操作｜水面をなぞる"
         },
         {
@@ -8874,80 +9105,6 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "prompt": "次へ渡したい姿勢を、最大3つまで選んでください。",
           "trackedByEves": true,
           "maxSelections": 3,
-          "groups": [
-            {
-              "id": "theme_1",
-              "title": "不確実さと解釈",
-              "optionIds": [
-                "R01",
-                "R08",
-                "R11",
-                "R13",
-                "R22",
-                "R30"
-              ]
-            },
-            {
-              "id": "theme_2",
-              "title": "記録と検証",
-              "optionIds": [
-                "R03",
-                "R05",
-                "R10",
-                "R12",
-                "R19",
-                "R28"
-              ]
-            },
-            {
-              "id": "theme_3",
-              "title": "技術と生成責任",
-              "optionIds": [
-                "R06",
-                "R14",
-                "R24",
-                "R27",
-                "R29",
-                "R34"
-              ]
-            },
-            {
-              "id": "theme_4",
-              "title": "権利と当事者",
-              "optionIds": [
-                "R15",
-                "R18",
-                "R21",
-                "R33",
-                "R35",
-                "R36"
-              ]
-            },
-            {
-              "id": "theme_5",
-              "title": "制度と行動",
-              "optionIds": [
-                "R02",
-                "R04",
-                "R07",
-                "R17",
-                "R23",
-                "R26"
-              ]
-            },
-            {
-              "id": "theme_6",
-              "title": "人間・地球・未来",
-              "optionIds": [
-                "R09",
-                "R16",
-                "R20",
-                "R25",
-                "R31",
-                "R32"
-              ]
-            }
-          ],
           "options": [
             {
               "id": "R01",
@@ -8956,7 +9113,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 2,
                 "chaos": 1
-              }
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
             },
             {
               "id": "R08",
@@ -8965,7 +9124,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 2,
                 "chaos": 1
-              }
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
             },
             {
               "id": "R11",
@@ -8974,7 +9135,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
-              }
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
             },
             {
               "id": "R13",
@@ -8983,7 +9146,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 2,
                 "chaos": 1
-              }
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
             },
             {
               "id": "R22",
@@ -8992,7 +9157,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 1,
                 "neutral": 2,
                 "chaos": 0
-              }
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
             },
             {
               "id": "R30",
@@ -9001,7 +9168,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 2,
                 "chaos": 1
-              }
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
             },
             {
               "id": "R03",
@@ -9010,7 +9179,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 1,
                 "chaos": 0
-              }
+              },
+              "themeId": "T2",
+              "theme": "記録と検証"
             },
             {
               "id": "R05",
@@ -9019,7 +9190,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 1,
                 "chaos": 0
-              }
+              },
+              "themeId": "T2",
+              "theme": "記録と検証"
             },
             {
               "id": "R10",
@@ -9028,7 +9201,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 1,
                 "chaos": 0
-              }
+              },
+              "themeId": "T2",
+              "theme": "記録と検証"
             },
             {
               "id": "R12",
@@ -9037,7 +9212,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 1,
                 "neutral": 2,
                 "chaos": 0
-              }
+              },
+              "themeId": "T2",
+              "theme": "記録と検証"
             },
             {
               "id": "R19",
@@ -9046,7 +9223,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 1,
                 "chaos": 0
-              }
+              },
+              "themeId": "T2",
+              "theme": "記録と検証"
             },
             {
               "id": "R28",
@@ -9055,7 +9234,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 1,
                 "chaos": 0
-              }
+              },
+              "themeId": "T2",
+              "theme": "記録と検証"
             },
             {
               "id": "R06",
@@ -9064,7 +9245,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 1,
                 "neutral": 2,
                 "chaos": 1
-              }
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
             },
             {
               "id": "R14",
@@ -9073,7 +9256,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 0,
                 "chaos": 1
-              }
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
             },
             {
               "id": "R24",
@@ -9082,7 +9267,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 0,
                 "chaos": 0
-              }
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
             },
             {
               "id": "R27",
@@ -9091,7 +9278,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 1,
                 "neutral": 2,
                 "chaos": 0
-              }
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
             },
             {
               "id": "R29",
@@ -9100,7 +9289,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
-              }
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
             },
             {
               "id": "R34",
@@ -9109,7 +9300,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 0,
                 "chaos": 0
-              }
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
             },
             {
               "id": "R15",
@@ -9118,7 +9311,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
-              }
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
             },
             {
               "id": "R18",
@@ -9127,7 +9322,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 0,
                 "chaos": 2
-              }
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
             },
             {
               "id": "R21",
@@ -9136,7 +9333,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 1,
                 "neutral": 0,
                 "chaos": 2
-              }
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
             },
             {
               "id": "R33",
@@ -9145,7 +9344,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 1,
                 "neutral": 2,
                 "chaos": 0
-              }
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
             },
             {
               "id": "R35",
@@ -9154,7 +9355,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
-              }
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
             },
             {
               "id": "R36",
@@ -9163,7 +9366,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 1,
                 "neutral": 2,
                 "chaos": 0
-              }
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
             },
             {
               "id": "R02",
@@ -9172,7 +9377,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
-              }
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
             },
             {
               "id": "R04",
@@ -9181,7 +9388,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
-              }
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
             },
             {
               "id": "R07",
@@ -9190,7 +9399,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 0,
                 "chaos": 1
-              }
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
             },
             {
               "id": "R17",
@@ -9199,7 +9410,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 1,
                 "chaos": 0
-              }
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
             },
             {
               "id": "R23",
@@ -9208,7 +9421,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 0,
                 "chaos": 2
-              }
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
             },
             {
               "id": "R26",
@@ -9217,7 +9432,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 1,
                 "chaos": 0
-              }
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
             },
             {
               "id": "R09",
@@ -9226,7 +9443,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
-              }
+              },
+              "themeId": "T6",
+              "theme": "人間・地球・未来"
             },
             {
               "id": "R16",
@@ -9235,7 +9454,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 2,
                 "chaos": 1
-              }
+              },
+              "themeId": "T6",
+              "theme": "人間・地球・未来"
             },
             {
               "id": "R20",
@@ -9244,7 +9465,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 1,
                 "neutral": 2,
                 "chaos": 0
-              }
+              },
+              "themeId": "T6",
+              "theme": "人間・地球・未来"
             },
             {
               "id": "R25",
@@ -9253,7 +9476,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
-              }
+              },
+              "themeId": "T6",
+              "theme": "人間・地球・未来"
             },
             {
               "id": "R31",
@@ -9262,7 +9487,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 2,
                 "neutral": 0,
                 "chaos": 1
-              }
+              },
+              "themeId": "T6",
+              "theme": "人間・地球・未来"
             },
             {
               "id": "R32",
@@ -9271,9 +9498,25 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
-              }
+              },
+              "themeId": "T6",
+              "theme": "人間・地球・未来"
             }
           ]
+        },
+        {
+          "id": "choice_reflection_003",
+          "sceneId": "choice_reflection",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "最大三件まで選べる。\n四件目は追加せず、上限をその場で知らせる。\n一件以上では「選んだ姿勢で進む」、未選択では「選ばずに進む」を表示する。"
+        },
+        {
+          "id": "choice_reflection_004",
+          "sceneId": "choice_reflection",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "R番号に対応する既存の演出用重みは変更せず、画面へ出さない。\n合計が単独最大の系統を採用し、最大値が同点なら中立の演出、未選択なら無回答の演出とする。"
         }
       ],
       "nextSceneId": "final_record"
