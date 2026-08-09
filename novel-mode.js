@@ -23,7 +23,8 @@
   const REVEAL_PUNCTUATION_MS = 84;
   const TEXT_PAGE_MAX_LINES = 3;
   const TEXT_PAGE_HEIGHT_BUFFER_PX = 4;
-  const SECTION_SEPARATOR_MS = 1450;
+  const SECTION_SEPARATOR_MS = 2200;
+  const SECTION_SEPARATOR_REDUCED_MOTION_MS = 2900;
   const FAST_FORWARD_HOLD_DELAY_MS = 180;
   const FAST_FORWARD_STEP_MS = 90;
   const SLACK_ENTER_MS = 760;
@@ -195,10 +196,15 @@
   let hasStarted = false;
   let isRevealing = false;
   let fullText = "";
+  let dialoguePages = [];
+  let dialoguePageIndex = 0;
+  let dialoguePageReveal = true;
   let revealTimer = 0;
   let revealFrame = 0;
   let revealGeneration = 0;
   let autoTimer = 0;
+  let sectionSeparatorTimer = 0;
+  let sectionSeparatorActive = false;
   let temporalTransitionTimer = 0;
   let temporalTransitionActive = false;
   let previousFocus = null;
@@ -359,12 +365,27 @@
     window.clearTimeout(revealTimer);
     window.cancelAnimationFrame(revealFrame);
     window.clearTimeout(autoTimer);
+    window.clearTimeout(sectionSeparatorTimer);
     window.clearTimeout(temporalTransitionTimer);
     revealTimer = 0;
     revealFrame = 0;
     autoTimer = 0;
+    sectionSeparatorTimer = 0;
     temporalTransitionTimer = 0;
     temporalTransitionActive = false;
+  };
+
+  const resetDialoguePagination = () => {
+    dialoguePages = [];
+    dialoguePageIndex = 0;
+    dialoguePageReveal = true;
+    delete elements.text.dataset.characterCount;
+    delete elements.text.dataset.explicitLineCount;
+    delete elements.text.dataset.measuredLineCount;
+    delete elements.text.dataset.maxLineCount;
+    delete elements.text.dataset.pageCount;
+    delete elements.text.dataset.pageIndex;
+    elements.continueMark.textContent = "▼";
   };
 
   const hideSpecialSurfaces = () => {
@@ -562,7 +583,8 @@
       });
       state.stepId = next;
       saveProgress();
-      if (temporalRuntime.contextTransitionForStep(nextStep)) renderTemporalTransitionCard(nextStep);
+      if (step.sceneId !== nextStep?.sceneId) renderSectionSeparator(nextStep);
+      else if (temporalRuntime.contextTransitionForStep(nextStep)) renderTemporalTransitionCard(nextStep);
       else renderCurrentStep();
     };
     const currentBackground = backgroundPresentationForStep(step);
@@ -926,6 +948,93 @@
     Promise.resolve(fontsReady).then(startMeasuredReveal, startMeasuredReveal);
   };
 
+  const renderDialoguePage = () => {
+    const page = dialoguePages[dialoguePageIndex] || "";
+    const metrics = dialoguePageMetrics(page);
+    elements.text.dataset.pageCount = String(dialoguePages.length);
+    elements.text.dataset.pageIndex = String(dialoguePageIndex + 1);
+    elements.text.dataset.measuredLineCount = String(metrics.measuredLines.length);
+    elements.text.dataset.maxLineCount = String(metrics.maxLines);
+    elements.continueMark.textContent = dialoguePages.length > 1
+      ? `${dialoguePageIndex + 1} / ${dialoguePages.length}　▼`
+      : "▼";
+    if (dialoguePageReveal) {
+      revealText(page);
+      return;
+    }
+    clearTimers();
+    fullText = page;
+    isRevealing = false;
+    elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
+    elements.text.textContent = page;
+    elements.text.setAttribute("aria-label", page);
+    elements.cursor.hidden = true;
+    elements.continueMark.classList.add("is-visible");
+    scheduleAutoAdvance();
+  };
+
+  const renderDialoguePages = (text, { reveal = true } = {}) => {
+    const normalized = String(text || "");
+    resetDialoguePagination();
+    dialoguePageReveal = reveal;
+    dialoguePages = paginateDialogueText(normalized);
+    elements.text.dataset.characterCount = String(Array.from(normalized.replace(/\s/gu, "")).length);
+    elements.text.dataset.explicitLineCount = String(Math.max(1, normalized.split("\n").length));
+    elements.text.dataset.pageCount = String(dialoguePages.length);
+    renderDialoguePage();
+  };
+
+  const advanceDialoguePage = () => {
+    if (dialoguePageIndex + 1 >= dialoguePages.length) return false;
+    dialoguePageIndex += 1;
+    renderDialoguePage();
+    return true;
+  };
+
+  function finishSectionSeparator() {
+    if (!sectionSeparatorActive) return false;
+    window.clearTimeout(sectionSeparatorTimer);
+    sectionSeparatorTimer = 0;
+    sectionSeparatorActive = false;
+    elements.chapterCard.hidden = true;
+    renderCurrentStep();
+    return true;
+  }
+
+  function renderSectionSeparator(step = currentStep()) {
+    if (!step) return;
+    const scene = sceneMap.get(step.sceneId);
+    if (!scene) return renderCurrentStep();
+    clearTimers();
+    closeLog();
+    closeSourceDetails();
+    showRuntime();
+    requestTrackForBackground(backgroundPresentationForScene(step.sceneId));
+    hideSpecialSurfaces();
+    resetDialoguePagination();
+    isRevealing = false;
+    layer.dataset.sceneId = step.sceneId;
+    layer.dataset.stepId = step.id;
+    layer.dataset.stepType = "section-separator";
+    elements.dialogue.hidden = true;
+    elements.choices.replaceChildren();
+    elements.choices.classList.remove("is-visible");
+    elements.sourceButton.hidden = true;
+    elements.modeReadout.textContent = `${scene.chapter} — ${scene.title}`;
+    elements.location.textContent = scene.title;
+    elements.chapterIndex.textContent = scene.chapter;
+    elements.chapterTitle.textContent = scene.title;
+    elements.chapterCard.dataset.sceneId = scene.id;
+    elements.chapterCard.hidden = false;
+    setCharacterPresentation("chapter");
+    selectMode(scene.modeIndex);
+    updateProgress();
+    sectionSeparatorActive = true;
+    sectionSeparatorTimer = window.setTimeout(
+      finishSectionSeparator,
+      motionReduced() ? SECTION_SEPARATOR_REDUCED_MOTION_MS : SECTION_SEPARATOR_MS,
+    );
+  }
   const markRead = (step) => {
     let addedToLog = false;
     if (!["choice", "reflectionChoice", "interaction", "result", "end"].includes(step.type)
@@ -949,6 +1058,7 @@
     if (step.type !== "chat") delete elements.cast.dataset.slackCast;
     applyBackgroundCueForStep(step);
     applyBackHalfCueForStep(step);
+    sectionSeparatorActive = false;
     showRuntime();
     warmUpcomingBackground(step);
     hideSpecialSurfaces();
@@ -957,6 +1067,7 @@
     elements.choices.replaceChildren();
     elements.choices.classList.remove("is-visible");
     elements.sourceButton.hidden = false;
+    resetDialoguePagination();
     applyTemporalPresentation(step);
     selectMode(scene.modeIndex);
     updateProgress();
@@ -1058,7 +1169,7 @@
     const speaker = step.speaker || "narrator";
     setCharacterPresentation(speaker);
     elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
-    revealText(step.text || "");
+    renderDialoguePages(step.text || "");
   };
 
   const renderRichStep = (step) => {
@@ -1643,6 +1754,7 @@
   function advance() {
     if (!isOpen || !hasStarted || pendingInteraction) return;
     if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel].every((panel) => panel.hidden)) return;
+    if (finishSectionSeparator()) return;
     if (finishTemporalTransitionCard()) return;
     const step = currentStep();
     if (!canAdvanceStep(step)) return;
@@ -1650,6 +1762,7 @@
       finishReveal();
       return;
     }
+    if (["narration", "dialogue"].includes(step.type) && advanceDialoguePage()) return;
     moveToFollowingStep(step);
   }
 
@@ -1665,7 +1778,7 @@
     showRuntime();
     renderEves();
     saveProgress();
-    renderCurrentStep();
+    renderSectionSeparator();
   };
 
   const restartStory = () => {
@@ -1675,7 +1788,7 @@
     showRuntime();
     renderEves();
     saveProgress();
-    renderCurrentStep();
+    renderSectionSeparator();
   };
 
   const resumeStory = () => {
@@ -2103,7 +2216,7 @@
     state.sessionId = `${Date.now().toString(36)}-entry`;
     openNovel();
     showRuntime();
-    renderCurrentStep();
+    renderSectionSeparator();
   });
 
   window.addEventListener("gaia:gx-story-progress", (event) => {

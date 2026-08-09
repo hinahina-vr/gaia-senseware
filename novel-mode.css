@@ -2560,6 +2560,21 @@ body.novel-open .japan-credits {
   animation: novel-chapter-beam 1.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.novel-layer[data-step-type="section-separator"] .novel-chapter-card {
+  animation: novel-section-chapter-in 2.2s ease both;
+}
+
+.novel-layer[data-step-type="section-separator"] .novel-chapter-card::after {
+  animation: novel-section-chapter-beam 2.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-layer[data-step-type="section-separator"] .novel-chapter-card,
+  .novel-layer[data-step-type="section-separator"] .novel-chapter-card::after {
+    animation: none;
+  }
+}
+
 .novel-chapter-card span {
   display: flex;
   align-items: center;
@@ -2907,6 +2922,12 @@ body.novel-open .japan-credits {
   100% { opacity: 0; filter: blur(4px); transform: translate(-50%, calc(-50% - 5px)) scale(1.008); }
 }
 
+@keyframes novel-section-chapter-in {
+  0% { opacity: 0; filter: blur(7px); transform: translate(-50%, calc(-50% + 8px)) scale(0.985); }
+  15.8%, 84.2% { opacity: 1; filter: blur(0); transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; filter: blur(4px); transform: translate(-50%, calc(-50% - 5px)) scale(1.008); }
+}
+
 @keyframes novel-chapter-orbit {
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
@@ -2914,6 +2935,12 @@ body.novel-open .japan-credits {
 @keyframes novel-chapter-beam {
   0%, 10% { opacity: 0; transform: scaleX(0); }
   32%, 74% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(0.2); }
+}
+
+@keyframes novel-section-chapter-beam {
+  0%, 6.6% { opacity: 0; transform: scaleX(0); }
+  21.1%, 83% { opacity: 1; transform: scaleX(1); }
   100% { opacity: 0; transform: scaleX(0.2); }
 }
 
