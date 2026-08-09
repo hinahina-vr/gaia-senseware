@@ -1,7 +1,7 @@
 ﻿.novel-layer {
   --novel-cyan: 154, 245, 224;
   --novel-font: var(--font-ja);
-  --novel-scene-background: url("./assets/visuals-07/novel-bg-exhibition-v2.png");
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-exhibition-v3.png");
   position: absolute;
   z-index: 30;
   inset: 0;
@@ -4494,27 +4494,207 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 .novel-layer.is-title .novel-title-screen {
   top: 50%;
   left: clamp(34px, 7vw, 132px);
-  width: min(690px, 48vw);
+  width: min(780px, 58vw);
   max-height: none;
   padding: 0;
   overflow: visible;
-  transform: translateY(-44%);
+  transform: translateY(-47%);
+  isolation: isolate;
+}
+
+.novel-layer.is-title .novel-title-screen::before {
+  position: absolute;
+  z-index: -1;
+  inset: -14% -16% -18% -12%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 22% 48%,
+    rgba(1, 9, 22, 0.64) 0%,
+    rgba(1, 9, 22, 0.34) 48%,
+    transparent 74%
+  );
+  filter: blur(8px);
+  content: "";
+}
+
+.novel-layer.is-title .novel-title-screen > p:first-of-type {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  color: rgba(var(--novel-cyan), 0.76);
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.88);
+}
+
+.novel-layer.is-title .novel-title-screen > p:first-of-type::before {
+  width: 34px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--novel-cyan), 0.16), rgba(var(--novel-cyan), 0.86));
+  box-shadow: 0 0 10px rgba(var(--novel-cyan), 0.36);
+  content: "";
 }
 
 .novel-layer.is-title .novel-title-screen h2 {
-  font-size: clamp(52px, 6.1vw, 104px);
-  line-height: 0.98;
+  display: grid;
+  width: fit-content;
+  max-width: none;
+  font-size: clamp(70px, 7.7vw, 126px);
+  line-height: 0.84;
+  letter-spacing: 0;
+  text-shadow:
+    0 4px 34px rgba(0, 0, 0, 0.82),
+    0 0 1px rgba(220, 255, 250, 0.36);
+}
+
+.novel-layer.is-title .novel-title-screen h2 span:first-child {
+  margin: 0 0 0.2em 0.08em;
+  color: rgba(224, 250, 247, 0.88);
+  font-size: 0.46em;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  line-height: 1;
+}
+
+.novel-layer.is-title .novel-title-screen h2 span:last-child {
+  color: rgba(246, 255, 252, 0.98);
+  font-weight: 500;
   letter-spacing: -0.055em;
 }
 
 .novel-layer.is-title .novel-title-sub {
-  margin-top: 26px;
-  color: rgba(242, 252, 255, 0.84);
-  font-size: clamp(12px, 1vw, 16px);
+  position: relative;
+  margin-top: 30px;
+  padding: 10px 22px;
+  border: 0;
+  border-left: 2px solid rgba(var(--novel-cyan), 0.9);
+  border-radius: 0;
+  background: linear-gradient(90deg, rgba(3, 18, 34, 0.56), rgba(3, 18, 34, 0.12) 74%, transparent);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: rgba(242, 252, 255, 0.9);
+  font-size: clamp(13px, 1vw, 17px);
+  letter-spacing: 0.18em;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.96);
 }
 
 .novel-layer.is-title .novel-title-actions {
-  margin-top: clamp(30px, 5vh, 58px);
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: 12px;
+  width: fit-content;
+  margin-top: clamp(32px, 4.8vh, 52px);
+}
+
+.novel-layer.is-title .novel-title-actions button {
+  position: relative;
+  min-height: 54px;
+  overflow: hidden;
+  padding: 0 22px;
+  border-color: rgba(var(--novel-cyan), 0.28);
+  border-radius: 3px;
+  background: linear-gradient(145deg, rgba(2, 17, 29, 0.84), rgba(2, 11, 23, 0.68));
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(218, 255, 249, 0.04);
+  color: rgba(229, 244, 243, 0.78);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.novel-layer.is-title .novel-title-actions button::before {
+  position: absolute;
+  top: 0;
+  right: 16px;
+  left: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--novel-cyan), 0.42), transparent);
+  content: "";
+}
+
+.novel-layer.is-title #novel-start-button {
+  min-width: 146px;
+  border-color: rgba(var(--novel-cyan), 0.54);
+  background: linear-gradient(145deg, rgba(var(--novel-cyan), 0.18), rgba(2, 17, 29, 0.76));
+  color: rgba(248, 255, 253, 0.98);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(var(--novel-cyan), 0.06),
+    inset 0 1px 0 rgba(229, 255, 252, 0.12);
+}
+
+.novel-layer.is-title #novel-resume-button {
+  min-width: 132px;
+}
+
+.novel-layer.is-title #novel-title-load-button {
+  min-width: 196px;
+}
+
+.novel-layer.is-title .novel-title-actions button:hover,
+.novel-layer.is-title .novel-title-actions button:focus-visible {
+  border-color: rgba(var(--novel-cyan), 0.74);
+  background: linear-gradient(145deg, rgba(var(--novel-cyan), 0.24), rgba(3, 20, 34, 0.8));
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.26),
+    0 0 28px rgba(var(--novel-cyan), 0.1);
+  transform: translateY(-2px);
+}
+
+.novel-layer.is-title .novel-title-orbit {
+  top: 52%;
+  left: 103%;
+  width: min(58vw, 780px);
+  border-color: rgba(var(--novel-cyan), 0.1);
+  opacity: 0.7;
+  animation-duration: 28s;
+}
+
+.novel-layer.is-title .novel-title-orbit::before,
+.novel-layer.is-title .novel-title-orbit::after,
+.novel-layer.is-title .novel-title-orbit i {
+  border-color: rgba(var(--novel-cyan), 0.085);
+}
+
+.novel-layer.is-title .novel-title-orbit i:nth-child(3) {
+  background: rgba(var(--accent-rgb), 0.18);
+  box-shadow: 0 0 100px rgba(var(--accent-rgb), 0.24);
+}
+
+.novel-layer.is-title .novel-title-screen > p:first-of-type,
+.novel-layer.is-title .novel-title-screen h2,
+.novel-layer.is-title .novel-title-sub,
+.novel-layer.is-title .novel-title-actions {
+  animation: novel-title-arrive 760ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+}
+
+.novel-layer.is-title .novel-title-screen h2 { animation-delay: 80ms; }
+.novel-layer.is-title .novel-title-sub { animation-delay: 180ms; }
+.novel-layer.is-title .novel-title-actions { animation-delay: 280ms; }
+
+@keyframes novel-title-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-layer.is-title .novel-title-screen > p:first-of-type,
+  .novel-layer.is-title .novel-title-screen h2,
+  .novel-layer.is-title .novel-title-sub,
+  .novel-layer.is-title .novel-title-actions {
+    animation: none;
+  }
 }
 
 .novel-slack-surface[hidden],
@@ -4814,7 +4994,7 @@ body:not(.gx-story-open) .novel-layer.is-slack .novel-character.novel-character-
 
 body:not(.gx-story-open) .novel-layer.is-slack .novel-cast[data-speaker="sora"] .novel-character--sora,
 body:not(.gx-story-open) .novel-layer.is-slack .novel-cast[data-speaker="minamo"] .novel-character--minamo {
-  opacity: 0.66;
+  opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);
 }
 
@@ -5118,6 +5298,10 @@ body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0; }
   .novel-layer.is-title .novel-title-sub { margin-top: 13px; }
   .novel-layer.is-title .novel-title-actions { display: grid; grid-template-columns: 1fr 1fr; margin-top: 18px; }
   .novel-layer.is-title #novel-start-button { grid-column: 1 / -1; }
+  .novel-layer.is-title #novel-start-button,
+  .novel-layer.is-title #novel-resume-button,
+  .novel-layer.is-title #novel-title-load-button { min-width: 0; }
+  .novel-layer.is-title #novel-title-load-button { grid-column: 1 / -1; }
   .novel-slack-surface,
   .novel-evidence-surface,
   .novel-reflection-surface { top: 54px; }
@@ -5161,4 +5345,56 @@ body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0; }
   .story-detour-dock > #story-detour-return { grid-column: 1; grid-row: auto; justify-self: stretch; }
   .story-detour-controls { justify-content: stretch; }
   .story-detour-controls button { flex: 1 1 42%; }
+}
+
+/* Sakuya uses the same character-sprite presentation as Amane and Mizuha. */
+.novel-character--sakuya .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-calm-07-v1.png");
+  background-position: 50% 0;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+}
+
+.novel-character--sakuya[data-expression] .novel-character-portrait {
+  background-position: 50% 0;
+  background-size: 100% auto;
+}
+
+.novel-character--sakuya[data-expression="teasing"] .novel-character-portrait,
+.novel-character--sakuya[data-expression="startled"] .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-teasing-07-v1.png");
+}
+
+.novel-character--sakuya[data-expression="worried"] .novel-character-portrait,
+.novel-character--sakuya[data-expression="exasperated"] .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-worried-07-v1.png");
+}
+
+.novel-character--sakuya[data-expression="sad"] .novel-character-portrait,
+.novel-character--sakuya[data-expression="soft"] .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-sad-07-v1.png");
+}
+
+body:not(.gx-story-open) .novel-cast[data-speaker="sakuya"] .novel-character.novel-character--sakuya {
+  z-index: 2;
+  opacity: 1;
+  filter: saturate(1.02) brightness(1.04);
+  transform: translate3d(-50%, 0, 0) scale(1);
+}
+
+body:not(.gx-story-open) .novel-layer.is-slack .novel-cast[data-speaker="sakuya"] .novel-character.novel-character--sakuya {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+body:not(.gx-story-open) .novel-layer.is-slack .novel-character.novel-character--sakuya .novel-character-portrait {
+  background-position: 50% 100%;
+  background-size: contain;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+}
+
+.novel-cast[data-speaker="sakuya"] .novel-character--sakuya figcaption {
+  opacity: 1;
+  transform: translateY(0);
 }

@@ -91,7 +91,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "人の声とゲームの効果音が重なる通路に、小さなブースがある。\n端末の前には椅子が一脚。横には青りんごが一つ置かれている。"
+          "text": "人の声とゲームの効果音が重なる通路に、小さなブースがある。\n有孔ボードには青い地図と観測メモが重ねて留められ、立ったまま触れられる端末が一台ある。横には青りんごが一つ置かれている。"
         },
         {
           "id": "current_exhibition_002",

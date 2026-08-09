@@ -28,7 +28,7 @@
     ["novel-bg-coastal-venue-v2.png", "foldedwind"],
     ["novel-bg-production-night-v2.png", "moonsave"],
     ["novel-bg-zushi-coast-night-v2.png", "snowfire"],
-    ["novel-bg-exhibition-v2.png", "story"],
+    ["novel-bg-exhibition-v3.png", "story"],
   ]);
   const SPEAKERS = Object.freeze({
     narrator: { name: "", glyph: "◌" },
@@ -54,6 +54,24 @@
   });
   const RECORD_PRESENTERS = Object.freeze({
     prologue_basil_010: "amane",
+  });
+  const SAKUYA_STEP_EXPRESSIONS = Object.freeze({
+    prologue_basil_007: "worried",
+    first_meeting_promise_010: "teasing",
+    first_meeting_promise_012: "teasing",
+    first_meeting_promise_014: "teasing",
+    first_meeting_hall_014: "teasing",
+    first_meeting_hall_016: "teasing",
+    festival_walk_004: "teasing",
+    festival_walk_006: "worried",
+    production_year_018: "worried",
+    production_year_022: "worried",
+    production_year_024: "worried",
+    production_year_032: "teasing",
+    production_year_042: "worried",
+    absence_003: "worried",
+    absence_004: "sad",
+    mode10_space_012: "sad",
   });
   const VIEWED_DEFAULTS = Object.freeze({
     gxDeepTime: false,
@@ -117,6 +135,7 @@
     cast: layer.querySelector("#novel-cast"),
     characterSora: layer.querySelector("#novel-character-sora"),
     characterMinamo: layer.querySelector("#novel-character-minamo"),
+    characterSakuya: layer.querySelector("#novel-character-sakuya"),
     avatar: layer.querySelector("#novel-avatar"),
     avatarGlyph: layer.querySelector("#novel-avatar-glyph"),
     dataKind: layer.querySelector("#novel-data-kind"),
@@ -492,16 +511,26 @@
     window.dispatchEvent(new CustomEvent("gaia:select-mode", { detail: { index, source: "novel-v6" } }));
   };
 
-  const setCharacterPresentation = (speaker) => {
+  const expressionForStep = (step) => step?.speaker === "sakuya"
+    ? SAKUYA_STEP_EXPRESSIONS[step.id] || "calm"
+    : "calm";
+
+  const setCharacterPresentation = (speaker, expression = "calm") => {
     const legacySpeaker = CHARACTER_VIEW[speaker] || speaker || "narrator";
     elements.cast.dataset.speaker = legacySpeaker;
     elements.avatar.dataset.speaker = legacySpeaker;
     elements.avatarGlyph.textContent = SPEAKERS[speaker]?.glyph || "◌";
-    const illustrated = legacySpeaker === "sora" || legacySpeaker === "minamo";
+    const figure = {
+      sora: elements.characterSora,
+      minamo: elements.characterMinamo,
+      sakuya: elements.characterSakuya,
+    }[legacySpeaker];
+    const illustrated = Boolean(figure);
     elements.avatar.hidden = illustrated;
-    if (illustrated) {
-      const figure = legacySpeaker === "sora" ? elements.characterSora : elements.characterMinamo;
-      figure.dataset.expression = "calm";
+    if (figure && figure.dataset.expression !== expression) {
+      figure.classList.remove("is-changing");
+      figure.dataset.expression = expression;
+      requestAnimationFrame(() => figure.classList.add("is-changing"));
     }
   };
 
@@ -757,7 +786,7 @@
   const renderSimpleStep = (step) => {
     prepareStepFrame(step);
     const speaker = step.speaker || "narrator";
-    setCharacterPresentation(speaker);
+    setCharacterPresentation(speaker, expressionForStep(step));
     elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
     revealText(step.text || "");
   };
@@ -770,7 +799,7 @@
     elements.continueMark.classList.add("is-visible");
     if (step.type === "chat") {
       const timeline = slackTimelineFor(step);
-      setCharacterPresentation(step.speaker);
+      setCharacterPresentation(step.speaker, expressionForStep(step));
       elements.sourceButton.hidden = true;
       elements.slackSurface.hidden = false;
       layer.classList.add("is-slack");
@@ -816,7 +845,7 @@
     }
 
     const speaker = step.speaker || "system";
-    setCharacterPresentation(speaker);
+    setCharacterPresentation(speaker, expressionForStep(step));
     elements.speaker.textContent = SPEAKERS[speaker]?.name || "GAIA SENSEWARE";
     revealText(step.text || "");
   };

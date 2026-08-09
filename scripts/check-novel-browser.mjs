@@ -215,7 +215,7 @@ try {
   await compareBaseline(titlePath, "start");
 
   const backgroundCases = [
-    ["current_exhibition", "novel-bg-exhibition-v2.png", "story", "scene-exhibition"],
+    ["current_exhibition", "novel-bg-exhibition-v3.png", "story", "scene-exhibition"],
     ["opening_empty_seat", "novel-bg-workroom-v2.png", "windowlight", "scene-workroom"],
     ["first_meeting_promise", "novel-bg-online-night-v2.png", "moonbook", "scene-online"],
     ["prologue_basil", "novel-bg-garden-center-v2.png", "firstlight", "scene-garden-center"],
