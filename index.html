@@ -1519,7 +1519,7 @@
               type="button"
               aria-expanded="false"
               aria-controls="novel-eves-panel"
-              title="選択した経路を確認する"
+              title="これまでの選択を確認する"
             ><span>E.V.E.S.</span><b id="novel-eves-count">0 / 2</b></button>
             <button id="novel-log-button" type="button" aria-expanded="false" aria-controls="novel-log-panel">LOG</button>
             <button id="novel-save-button" type="button" aria-expanded="false" aria-controls="novel-save-panel">SAVE</button>
@@ -1812,27 +1812,28 @@
           <div class="novel-eves-shell" role="dialog" aria-modal="true" aria-labelledby="novel-eves-title">
             <header class="novel-eves-header">
               <div>
-                <span>E.V.E.S. / BRANCH ARCHIVE</span>
-                <h2 id="novel-eves-title">Epistemological Variant Evolution System</h2>
-                <p>編集方針と、観測姿勢を選んだかどうかを記録します。属性や得点を示すものではありません。</p>
+                <span>E.V.E.S.</span>
+                <h2 id="novel-eves-title">これまでの選択</h2>
+                <p>このプレイで行った二つの選択を確認し、最後の選択からやり直せます。箱は選択する場所とその結果、線は選べる内容と進む順番を表します。得点や性格診断を表示する画面ではありません。</p>
               </div>
               <button id="novel-eves-close" type="button" aria-label="E.V.E.S.を閉じる">×</button>
             </header>
             <div class="novel-eves-status" aria-live="polite">
-              <span>CURRENT POSITION</span>
-              <strong id="novel-eves-current">物語の入口</strong>
+              <span>選択の進み具合</span>
+              <strong id="novel-eves-current">0 / 2｜まだ選択前です</strong>
             </div>
-            <div class="novel-eves-graph" id="novel-eves-graph" aria-label="選択経路図"></div>
+            <div class="novel-eves-graph" id="novel-eves-graph" aria-label="二つの選択の進み具合を示す図"></div>
             <section class="novel-eves-history" aria-labelledby="novel-eves-history-title">
               <header>
-                <span>EVOLUTION LOG</span>
-                <h3 id="novel-eves-history-title">表示選択と観測姿勢を、経路として残す</h3>
+                <span>E.V.E.S.</span>
+                <h3 id="novel-eves-history-title">選択した内容</h3>
+                <p>このプレイで選んだ内容を、選んだ順に表示します。</p>
               </header>
               <ol id="novel-eves-history"></ol>
             </section>
             <footer class="novel-eves-footer">
-              <button id="novel-eves-rewind" type="button" disabled>ひとつ前の分岐へ戻る</button>
-              <p>戻ると、最後の選択より後の記録だけを消して、その分岐から選び直せます。</p>
+              <button id="novel-eves-rewind" type="button" disabled>最後の選択をやり直す</button>
+              <p id="novel-eves-rewind-note">まだやり直せる選択はありません。</p>
             </footer>
           </div>
         </aside>
@@ -2308,48 +2309,6 @@
     })();
   </script>
   <script src="./map-ui-grid-polish.js?v=1"></script>
-  <script>
-    (() => {
-      const compactLabel = 'E.V.E.S. - Epistemological Variant Evolution System - / BRANCH ARCHIVE';
-
-      const refineEvesArchiveHeading = () => {
-        const elements = Array.from(document.querySelectorAll('h1, h2, h3, p, span, div'));
-        const formalTitle = elements.find((element) =>
-          element.children.length === 0 &&
-          element.textContent.trim() === 'Epistemological Variant Evolution System'
-        );
-        const archiveLabel = elements.find((element) => {
-          if (element.children.length !== 0) return false;
-          const text = element.textContent.trim();
-          return text === 'E.V.E.S. / BRANCH ARCHIVE' || text === compactLabel;
-        });
-
-        const target = archiveLabel || formalTitle;
-        if (!target) return false;
-
-        target.textContent = compactLabel;
-        target.classList.add('eves-compact-heading');
-        target.style.fontSize = 'clamp(0.72rem, 1vw, 0.95rem)';
-        target.style.lineHeight = '1.5';
-        target.style.letterSpacing = '0.12em';
-        target.style.whiteSpace = 'nowrap';
-
-        if (formalTitle && formalTitle !== target) {
-          formalTitle.hidden = true;
-          formalTitle.setAttribute('aria-hidden', 'true');
-        }
-
-        return true;
-      };
-
-      if (!refineEvesArchiveHeading()) {
-        const observer = new MutationObserver(() => {
-          if (refineEvesArchiveHeading()) observer.disconnect();
-        });
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-      }
-    })();
-  </script>
 <style id="close-control-color-refinement">
   /* Keep close controls inside the same translucent blue-green visual system. */
   .gs-close-refined {

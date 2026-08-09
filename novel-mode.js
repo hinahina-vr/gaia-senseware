@@ -88,6 +88,7 @@
     evesGraph: layer.querySelector("#novel-eves-graph"),
     evesHistory: layer.querySelector("#novel-eves-history"),
     evesRewind: layer.querySelector("#novel-eves-rewind"),
+    evesRewindNote: layer.querySelector("#novel-eves-rewind-note"),
     modeReadout: layer.querySelector("#novel-mode-readout"),
     progress: layer.querySelector("#novel-progress-bar"),
     chapterCard: layer.querySelector("#novel-chapter-card"),
@@ -1538,76 +1539,119 @@
     } else closeSourceDetails({ restoreFocus: true });
   };
 
-  const evesNodeLabel = (id) => ({
-    intro: "物語を観測中",
-    editorial_choice: "表示選択",
-    reflection_choice: "観測姿勢の選択",
-    SOURCE_RECORD_SELECTED: "観測姿勢を選ぶ",
-    SOURCE_RECORD_UNANSWERED: "観測姿勢を選ばない",
-    DISCLOSE_DERIVATION_SELECTED: "観測姿勢を選ぶ",
-    DISCLOSE_DERIVATION_UNANSWERED: "観測姿勢を選ばない",
-  })[id] || "物語を観測中";
+  const evesEditorialLabel = (choice) => ({
+    SOURCE_RECORD: "本人から届いた記録だけを表示",
+    DISCLOSE_DERIVATION: "本人の記録と生成した部分を分けて表示",
+  })[choice] || "最終画面の表示を選択前";
+
+  const evesPostureResultLabel = (posture) => {
+    if (posture !== "SELECTED") return "何も選ばずに進んだ";
+    const confirmed = state.evesRoute.some((entry) => entry.decisionId === "reflection_choice" && entry.value === "SELECTED");
+    return confirmed ? `姿勢を${state.reflectionIds.length}件選択` : "姿勢を1〜3件選択";
+  };
+
+  const evesProgress = () => {
+    const posture = state.evesRoute.find((entry) => entry.decisionId === "reflection_choice")?.value || "";
+    const count = state.editorialChoice ? (posture ? 2 : 1) : 0;
+    const label = [
+      "0 / 2｜まだ選択前です",
+      "1 / 2｜最終画面の表示を選びました",
+      "2 / 2｜二つの選択が完了しました",
+    ][count];
+    return { count, label, posture };
+  };
 
   const renderEvesGraph = () => {
     const editorial = state.editorialChoice;
-    const posture = state.evesRoute.find((entry) => entry.decisionId === "reflection_choice")?.value || "";
+    const { posture } = evesProgress();
     const result = editorial && posture ? `${editorial}_${posture}` : "";
+    const currentNode = result || (editorial ? "editorial_choice" : "intro");
     const visited = new Set(["intro"]);
     if (editorial) visited.add("editorial_choice");
     if (posture) visited.add("reflection_choice");
     if (result) visited.add(result);
-    const node = (id, x, y, width, label) => `<g class="eves-node ${visited.has(id) ? "is-visited" : ""} ${result === id ? "is-current" : ""}" data-node="${id}"><rect x="${x}" y="${y}" width="${width}" height="54" rx="8"></rect><text class="eves-node-eyebrow" x="${x + 12}" y="${y + 18}">${label}</text><text class="eves-node-label" x="${x + 12}" y="${y + 39}">${evesNodeLabel(id)}</text></g>`;
-    const edge = (active, d, label, x, y) => `<g class="eves-edge ${active ? "is-active" : ""}"><path d="${d}"></path><text x="${x}" y="${y}">${label}</text></g>`;
-    elements.evesGraph.innerHTML = `<svg viewBox="0 0 1120 390" role="img" aria-label="編集方針と観測姿勢の二段階を記録する経路図">
+    const resultLabels = {
+      SOURCE_RECORD_SELECTED: [evesEditorialLabel("SOURCE_RECORD"), evesPostureResultLabel("SELECTED")],
+      SOURCE_RECORD_UNANSWERED: [evesEditorialLabel("SOURCE_RECORD"), evesPostureResultLabel("UNANSWERED")],
+      DISCLOSE_DERIVATION_SELECTED: [evesEditorialLabel("DISCLOSE_DERIVATION"), evesPostureResultLabel("SELECTED")],
+      DISCLOSE_DERIVATION_UNANSWERED: [evesEditorialLabel("DISCLOSE_DERIVATION"), evesPostureResultLabel("UNANSWERED")],
+    };
+    const textLines = (lines, x, y, gap = 14) => lines
+      .map((line, index) => `<tspan x="${x}" y="${y + (index * gap)}">${line}</tspan>`)
+      .join("");
+    const node = (id, x, y, width, eyebrow, lines) => {
+      const current = currentNode === id;
+      const labels = Array.isArray(lines) ? lines : [lines];
+      const labelY = labels.length > 1 ? y + 32 : y + 39;
+      return `<g class="eves-node ${visited.has(id) ? "is-visited" : ""} ${current ? "is-current" : ""}" data-node="${id}"><rect x="${x}" y="${y}" width="${width}" height="54" rx="8"></rect><text class="eves-node-eyebrow" x="${x + 12}" y="${y + 16}">${current ? "現在｜" : ""}${eyebrow}</text><text class="eves-node-label">${textLines(labels, x + 12, labelY)}</text></g>`;
+    };
+    const edge = (active, d, labels, x, y) => {
+      const lines = Array.isArray(labels) ? labels : [labels];
+      return `<g class="eves-edge ${active ? "is-active" : ""}"><path d="${d}"></path><text>${textLines(lines, x, y, 12)}</text></g>`;
+    };
+    elements.evesGraph.innerHTML = `<svg viewBox="0 0 1120 390" role="img" aria-label="左からプレイ開始、選択1、選択2、今回の選択結果の順です。箱は選択する場所と結果、線は選べる内容と進む順番を表します。">
       ${edge(Boolean(editorial), "M130 195 H200", "", 0, 0)}
-      ${edge(editorial === "SOURCE_RECORD", "M360 185 C400 185 400 90 450 90", "SOURCE RECORD", 360, 124)}
-      ${edge(editorial === "DISCLOSE_DERIVATION", "M360 205 C400 205 400 295 450 295", "DISCLOSE", 365, 274)}
-      ${edge(Boolean(posture), "M610 90 C650 90 650 50 690 50", "選ぶ", 626, 65)}
-      ${edge(Boolean(posture), "M610 90 C650 90 650 135 690 135", "選ばない", 615, 126)}
-      ${edge(Boolean(posture), "M610 295 C650 295 650 250 690 250", "選ぶ", 626, 267)}
-      ${edge(Boolean(posture), "M610 295 C650 295 650 335 690 335", "選ばない", 615, 328)}
-      ${node("intro", 20, 168, 110, "START")}
-      ${node("editorial_choice", 200, 168, 160, "DECISION 01")}
-      ${node("reflection_choice", 450, 63, 160, "DECISION 02")}
-      ${node("reflection_choice", 450, 268, 160, "DECISION 02")}
-      ${node("SOURCE_RECORD_SELECTED", 690, 23, 310, "RESULT")}
-      ${node("SOURCE_RECORD_UNANSWERED", 690, 108, 310, "RESULT")}
-      ${node("DISCLOSE_DERIVATION_SELECTED", 690, 223, 390, "RESULT")}
-      ${node("DISCLOSE_DERIVATION_UNANSWERED", 690, 308, 390, "RESULT")}
+      ${edge(editorial === "SOURCE_RECORD", "M360 185 C400 185 400 90 450 90", ["本人から届いた記録", "だけを表示"], 360, 124)}
+      ${edge(editorial === "DISCLOSE_DERIVATION", "M360 205 C400 205 400 295 450 295", ["本人の記録と生成した部分を", "分けて表示"], 365, 242)}
+      ${edge(Boolean(posture), "M610 90 C650 90 650 50 690 50", "1〜3件選んで進む", 610, 65)}
+      ${edge(Boolean(posture), "M610 90 C650 90 650 135 690 135", "何も選ばず進む", 615, 126)}
+      ${edge(Boolean(posture), "M610 295 C650 295 650 250 690 250", "1〜3件選んで進む", 610, 267)}
+      ${edge(Boolean(posture), "M610 295 C650 295 650 335 690 335", "何も選ばず進む", 615, 328)}
+      ${node("intro", 20, 168, 110, "開始", "プレイ開始")}
+      ${node("editorial_choice", 200, 168, 160, "選択1", ["最終画面に", "何を表示するか"])}
+      ${node("reflection_choice", 450, 63, 160, "選択2", ["次へ持ち帰りたい", "姿勢"])}
+      ${node("reflection_choice", 450, 268, 160, "選択2", ["次へ持ち帰りたい", "姿勢"])}
+      ${node("SOURCE_RECORD_SELECTED", 690, 23, 310, "今回の選択結果", resultLabels.SOURCE_RECORD_SELECTED)}
+      ${node("SOURCE_RECORD_UNANSWERED", 690, 108, 310, "今回の選択結果", resultLabels.SOURCE_RECORD_UNANSWERED)}
+      ${node("DISCLOSE_DERIVATION_SELECTED", 690, 223, 390, "今回の選択結果", resultLabels.DISCLOSE_DERIVATION_SELECTED)}
+      ${node("DISCLOSE_DERIVATION_UNANSWERED", 690, 308, 390, "今回の選択結果", resultLabels.DISCLOSE_DERIVATION_UNANSWERED)}
     </svg>`;
   };
 
   const renderEves = () => {
-    elements.evesCount.textContent = `${state.evesRoute.length} / 2`;
-    const posture = state.evesRoute.find((entry) => entry.decisionId === "reflection_choice")?.value;
-    const current = state.editorialChoice && posture
-      ? `${state.editorialChoice}_${posture}`
-      : state.evesRoute.at(-1)?.decisionId || "intro";
-    elements.evesCurrent.textContent = evesNodeLabel(current);
+    const { count, label, posture } = evesProgress();
+    elements.evesCount.textContent = `${count} / 2`;
+    elements.evesCurrent.textContent = label;
     elements.evesHistory.replaceChildren();
-    if (!state.evesRoute.length) {
+    if (count === 0) {
       const item = document.createElement("li");
       item.className = "is-empty";
       const span = document.createElement("span");
       const strong = document.createElement("strong");
-      span.textContent = "NO VARIANT YET";
-      strong.textContent = "E.V.E.S.は作品の正解ではなく、選択と順番を記録します。";
-      item.append(span, strong);
+      const small = document.createElement("small");
+      span.textContent = "選択前";
+      strong.textContent = "まだ選択はありません";
+      small.textContent = "物語を進めると、ここに選んだ内容が表示されます。";
+      item.append(span, strong, small);
       elements.evesHistory.append(item);
     } else {
-      state.evesRoute.forEach((entry, index) => {
+      const historyEntries = [
+        { decisionId: "editorial_choice" },
+        ...(posture ? [{ decisionId: "reflection_choice" }] : []),
+      ];
+      historyEntries.forEach((entry, index) => {
         const item = document.createElement("li");
         const span = document.createElement("span");
         const strong = document.createElement("strong");
         const small = document.createElement("small");
-        span.textContent = `VARIANT ${String(index + 1).padStart(2, "0")}`;
-        strong.textContent = entry.label;
-        small.textContent = entry.decisionId === "editorial_choice" ? "表示選択" : "最後の選択";
+        const editorialEntry = entry.decisionId === "editorial_choice";
+        span.textContent = `選択${index + 1}`;
+        strong.textContent = editorialEntry
+          ? evesEditorialLabel(state.editorialChoice)
+          : posture === "SELECTED"
+            ? `次へ持ち帰りたい姿勢を${state.reflectionIds.length}件選んだ`
+            : "何も選ばずに進んだ";
+        small.textContent = editorialEntry ? "最終画面の表示" : "次へ持ち帰る姿勢";
         item.append(span, strong, small);
         elements.evesHistory.append(item);
       });
     }
-    elements.evesRewind.disabled = state.evesRoute.length === 0;
+    elements.evesRewind.disabled = count === 0;
+    elements.evesRewindNote.textContent = count === 0
+      ? "まだやり直せる選択はありません。"
+      : count === 1
+        ? "「最終画面の表示」の選択を取り消し、その選択画面へ戻ります。物語の既読記録は残ります。"
+        : "「次へ持ち帰りたい姿勢」の選択と結果演出を取り消し、その選択画面へ戻ります。「最終画面の表示」の選択は残ります。";
     renderEvesGraph();
   };
   const closeEves = () => {

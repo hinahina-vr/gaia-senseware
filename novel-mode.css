@@ -227,6 +227,13 @@
   font: 500 17px/1.5 var(--font-serif-jp, serif);
 }
 
+.novel-eves-history header p {
+  margin: 6px 0 0;
+  color: rgba(216, 230, 238, 0.52);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .novel-eves-history ol {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -330,7 +337,7 @@
   .novel-eves-shell { width: calc(100vw - 20px); max-height: calc(100vh - 20px); border-radius: 12px; }
   .novel-eves-header { padding: 20px; }
   .novel-eves-header p { font-size: 11px; }
-  .novel-eves-status { padding: 14px 20px 0; }
+  .novel-eves-status { align-items: flex-start; flex-direction: column; gap: 6px; padding: 14px 20px 0; }
   .novel-eves-history { grid-template-columns: 1fr; margin: 0 20px; }
   .novel-eves-history ol { grid-template-columns: 1fr; }
   .novel-eves-footer { align-items: stretch; flex-direction: column; padding: 16px 20px 20px; }
