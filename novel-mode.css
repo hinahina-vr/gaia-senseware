@@ -4839,6 +4839,100 @@ body.novel-reduced-motion .story-detour-dock * {
 .novel-slack-workspace > main > footer b { color: #888; font-size: 10px; font-weight: 400; }
 .novel-layer.is-slack .novel-cursor { display: none; }
 
+.novel-layer.is-slack .novel-cast {
+  z-index: 6;
+  clip-path: inset(
+    var(--novel-slack-top)
+    var(--novel-slack-inline)
+    calc(100vh - var(--novel-slack-top) - var(--novel-slack-height))
+    var(--novel-slack-inline)
+    round 12px
+  );
+}
+
+body:not(.gx-story-open) .novel-layer.is-slack .novel-character,
+body:not(.gx-story-open) .novel-layer.is-slack .novel-character--sora,
+body:not(.gx-story-open) .novel-layer.is-slack .novel-character--minamo {
+  top: auto;
+  right: calc(var(--novel-slack-inline) - 46px);
+  bottom: calc(100vh - var(--novel-slack-top) - var(--novel-slack-height) - 2px);
+  left: auto;
+  width: clamp(230px, 21vw, 340px);
+  height: min(46vh, 480px);
+  transform: translate3d(0, 12px, 0) scale(0.98);
+}
+
+body:not(.gx-story-open) .novel-layer.is-slack .novel-character .novel-character-portrait,
+body:not(.gx-story-open) .novel-layer.is-slack .novel-character.novel-character--sora .novel-character-portrait,
+body:not(.gx-story-open) .novel-layer.is-slack .novel-character.novel-character--minamo .novel-character-portrait {
+  background-position: 50% 100%;
+  background-size: contain;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+}
+
+@media (max-width: 720px) {
+  .novel-layer.is-slack .novel-cast {
+    clip-path: none;
+  }
+
+  body:not(.gx-story-open) .novel-layer.is-slack .novel-character,
+  body:not(.gx-story-open) .novel-layer.is-slack .novel-character--sora,
+  body:not(.gx-story-open) .novel-layer.is-slack .novel-character--minamo {
+    top: clamp(70px, 11vh, 104px);
+    right: clamp(8px, 1.25vw, 20px);
+    bottom: calc(var(--novel-say-bottom) + var(--novel-say-height) - 22px);
+    width: min(96vw, 470px);
+    height: auto;
+  }
+}
+
+body:not(.gx-story-open) .novel-layer.is-slack .novel-cast[data-speaker="sora"] .novel-character--sora,
+body:not(.gx-story-open) .novel-layer.is-slack .novel-cast[data-speaker="minamo"] .novel-character--minamo {
+  opacity: 0.66;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+body:not(.gx-story-open) .novel-layer.is-slack-exiting .novel-character,
+body:not(.gx-story-open) .novel-layer.is-slack-exiting .novel-character--sora,
+body:not(.gx-story-open) .novel-layer.is-slack-exiting .novel-character--minamo {
+  opacity: 0 !important;
+  transition: none !important;
+}
+
+@keyframes novel-slack-window-in {
+  0% {
+    opacity: 0;
+    filter: blur(10px) saturate(0.72);
+    transform: translateY(44px) scale(0.9);
+  }
+  58% {
+    opacity: 1;
+    filter: blur(0) saturate(1);
+    transform: translateY(-5px) scale(1.012);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0) saturate(1);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes novel-slack-part-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes novel-slack-main-in {
+  from { opacity: 0; transform: translateX(22px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes novel-slack-window-out {
+  from { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+  to { opacity: 0; filter: blur(6px); transform: translateY(24px) scale(0.97); }
+}
+
 @keyframes novel-slack-reply-in {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

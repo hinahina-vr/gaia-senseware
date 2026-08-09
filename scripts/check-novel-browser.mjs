@@ -157,9 +157,40 @@ const assertSlackAttachment = async (page, step, viewportLabel) => {
     return result;
   });
   assert(fallback.markedAsError && fallback.statusVisible && fallback.statusText === "画像を読み込めませんでした。", `${attachment.id} attachment fallback failed at ${viewportLabel}: ${JSON.stringify(fallback)}`);
-  report.slackAttachments.push({ id: attachment.id, stepId: step.id, viewport: viewportLabel, source: expectedAsset, passed: true });
   await figure.scrollIntoViewIfNeeded();
   await page.waitForTimeout(80);
+  const stacking = await figure.evaluate((node) => {
+    const cast = document.querySelector(".novel-layer.is-slack .novel-cast");
+    const surface = document.querySelector(".novel-slack-surface");
+    const contentNodes = [node.closest(".novel-slack-post")?.querySelector(".novel-slack-message"), node.querySelector("img")].filter(Boolean);
+    const samples = contentNodes.flatMap((content) => {
+      const rect = content.getBoundingClientRect();
+      const visibleLeft = Math.max(0, rect.left);
+      const visibleTop = Math.max(0, rect.top);
+      const visibleRight = Math.min(innerWidth, rect.right);
+      const visibleBottom = Math.min(innerHeight, rect.bottom);
+      if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) return [];
+      return [[
+        visibleLeft + ((visibleRight - visibleLeft) / 2),
+        visibleTop + ((visibleBottom - visibleTop) / 2),
+        content,
+      ]];
+    });
+    const occludedSamples = samples.filter(([x, y, content]) => {
+      const stack = document.elementsFromPoint(x, y);
+      const castIndex = stack.findIndex((element) => element === cast || cast?.contains(element));
+      const contentIndex = stack.findIndex((element) => element === content || content.contains(element));
+      return castIndex >= 0 && (contentIndex < 0 || castIndex < contentIndex);
+    }).length;
+    return {
+      castZIndex: Number.parseInt(getComputedStyle(cast).zIndex, 10),
+      surfaceZIndex: Number.parseInt(getComputedStyle(surface).zIndex, 10),
+      sampleCount: samples.length,
+      occludedSamples,
+    };
+  });
+  assert(stacking.castZIndex < stacking.surfaceZIndex && stacking.sampleCount > 0 && stacking.occludedSamples === 0, `${attachment.id} Slack cast obscured message content at ${viewportLabel}: ${JSON.stringify(stacking)}`);
+  report.slackAttachments.push({ id: attachment.id, stepId: step.id, viewport: viewportLabel, source: expectedAsset, stacking, passed: true });
   await screenshot(page, `slack-attachment-${attachment.id.toLowerCase()}-${viewportLabel}`);
 };
 const dialoguePageGeometry = (page) => page.evaluate(() => {
