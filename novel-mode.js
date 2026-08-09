@@ -47,6 +47,11 @@
     },
   });
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
+  const CHAT_CAST_MEETING_GATES = Object.freeze({
+    mizuha: Object.freeze({ completedAt: "first_meeting_hall_032", visibleFrom: "first_meeting_hall_033" }),
+    amane: Object.freeze({ completedAt: "first_meeting_hall_032", visibleFrom: "first_meeting_hall_033" }),
+    sakuya: Object.freeze({ completedAt: "first_meeting_hall_066", visibleFrom: "first_meeting_hall_067" }),
+  });
   const SPEAKERS = Object.freeze({
     narrator: { name: "", glyph: "◌" },
     mizuha: { name: "ミズハ", glyph: "≈" },
@@ -168,6 +173,7 @@
     editorialChoice: null,
     reflectionIds: [],
     resultTone: null,
+    metCharacters: { mizuha: false, amane: false, sakuya: false },
     audio: { muted: false, volume: 0.1 },
     readStepIds: [],
     clear: false,
@@ -279,6 +285,16 @@
       : [];
     normalized.resultTone = ["LAW", "NEUTRAL", "CHAOS", "UNANSWERED"].includes(candidate.resultTone)
       ? candidate.resultTone : null;
+    const currentStepIndex = stepIndexMap.get(stepId) ?? -1;
+    normalized.metCharacters = Object.fromEntries(Object.entries(CHAT_CAST_MEETING_GATES).map(([speaker, gate]) => {
+      const savedFlag = candidate.metCharacters?.[speaker];
+      if (typeof savedFlag === "boolean") return [speaker, savedFlag];
+      const visibleFromIndex = stepIndexMap.get(gate.visibleFrom) ?? Number.POSITIVE_INFINITY;
+      const legacyProgressPassedGate = currentStepIndex >= visibleFromIndex
+        && Array.isArray(candidate.readStepIds)
+        && candidate.readStepIds.includes(gate.completedAt);
+      return [speaker, legacyProgressPassedGate];
+    }));
     normalized.audio = {
       muted: Boolean(candidate.audio?.muted),
       volume: Number.isFinite(candidate.audio?.volume) ? Math.max(0, Math.min(1, candidate.audio.volume)) : 0.1,
@@ -520,6 +536,9 @@
     if (!next) return;
     const nextStep = stepMap.get(next);
     const swapStep = () => {
+      Object.entries(CHAT_CAST_MEETING_GATES).forEach(([speaker, gate]) => {
+        if (step.id === gate.completedAt) state.metCharacters[speaker] = true;
+      });
       state.stepId = next;
       saveProgress();
       renderCurrentStep();
@@ -554,6 +573,14 @@
       const figure = legacySpeaker === "sora" ? elements.characterSora : elements.characterMinamo;
       figure.dataset.expression = "calm";
     }
+  };
+
+  const setSlackCastVisibility = (step) => {
+    const gate = CHAT_CAST_MEETING_GATES[step?.speaker];
+    const currentIndex = stepIndexMap.get(step?.id) ?? -1;
+    const visibleFromIndex = gate ? (stepIndexMap.get(gate.visibleFrom) ?? Number.POSITIVE_INFINITY) : Number.POSITIVE_INFINITY;
+    const visible = Boolean(gate && state.metCharacters[step.speaker] && currentIndex >= visibleFromIndex);
+    elements.cast.dataset.slackCast = visible ? "visible" : "hidden";
   };
 
   const updateSourceDetails = (step) => {
@@ -838,6 +865,7 @@
     layer.dataset.sceneId = step.sceneId;
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
+    if (step.type !== "chat") delete elements.cast.dataset.slackCast;
     applyBackgroundCueForStep(step);
     applyBackHalfCueForStep(step);
     showRuntime();
@@ -961,6 +989,7 @@
     if (step.type === "chat") {
       const timeline = slackTimelineFor(step);
       setCharacterPresentation(step.speaker);
+      setSlackCastVisibility(step);
       elements.dialogue.hidden = false;
       elements.speaker.textContent = "学内チャット / #惑星の放課後";
       elements.text.textContent = timeline.typing ? "返信を待っています。クリックすると次の投稿へ進みます。" : "このスレッドの記録を表示しています。";

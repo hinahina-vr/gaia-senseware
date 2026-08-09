@@ -4862,6 +4862,10 @@ body:not(.gx-story-open) .novel-layer.is-slack .novel-character--minamo {
   transform: translate3d(0, 12px, 0) scale(0.98);
 }
 
+body:not(.gx-story-open) .novel-layer.is-slack .novel-cast[data-slack-cast="hidden"] {
+  display: none !important;
+}
+
 body:not(.gx-story-open) .novel-layer.is-slack .novel-character .novel-character-portrait,
 body:not(.gx-story-open) .novel-layer.is-slack .novel-character.novel-character--sora .novel-character-portrait,
 body:not(.gx-story-open) .novel-layer.is-slack .novel-character.novel-character--minamo .novel-character-portrait {

@@ -35,7 +35,7 @@ const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ executablePath, headless: true, args: ["--no-first-run", "--disable-background-networking"] });
-const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], productionBackgrounds: [], backgroundPreloads: [], slackAttachments: [], interactions: [], modeModalChecks: [], fullWalkthrough: null, viewports: [], sakuyaBust: { dialogues: [], references: [], fullBodyCues: [] }, consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], productionBackgrounds: [], backgroundPreloads: [], slackAttachments: [], interactions: [], modeModalChecks: [], chatCastGateChecks: [], fullWalkthrough: null, viewports: [], sakuyaBust: { dialogues: [], references: [], fullBodyCues: [] }, consoleErrors: [], pageErrors: [], responses404: [] };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
 const attachDiagnostics = (page, label) => {
@@ -75,6 +75,7 @@ const baseState = (stepId, overrides = {}) => ({
   editorialChoice: null,
   reflectionIds: [],
   resultTone: null,
+  metCharacters: { mizuha: false, amane: false, sakuya: false },
   audio: { muted: false, volume: 0.1 },
   readStepIds: [],
   clear: false,
@@ -238,6 +239,52 @@ const inspectSakuyaDialogueBust = async (page, step, viewport) => {
   assert(Number.isFinite(renderedHeight) && renderedHeight >= expectedRange[0] && renderedHeight <= expectedRange[1], `Sakuya bust scale is outside the ${viewport} preset at ${step.id}: ${presentation.backgroundSize}`);
   assert(presentation.figureOpacity > 0.98 && presentation.figureTop >= 0 && presentation.figureBottom > presentation.dialogueTop && !presentation.horizontalOverflow, `Sakuya bust/dialogue geometry failed at ${step.id}: ${JSON.stringify(presentation)}`);
   return { stepId: step.id, sceneId: step.sceneId, viewport, expectedAsset, ...presentation };
+};
+
+const slackCastSnapshot = (page) => page.evaluate(() => {
+  const cast = document.querySelector("#novel-cast");
+  const workspace = document.querySelector(".novel-slack-workspace");
+  const character = cast.querySelector(`.novel-character--${cast.dataset.speaker}`);
+  const workspaceRect = workspace.getBoundingClientRect();
+  const characterRect = character?.getBoundingClientRect();
+  return {
+    stepId: document.querySelector("#novel-layer")?.dataset.stepId,
+    state: globalThis.GaiaNovel.getState().metCharacters,
+    gate: cast.dataset.slackCast || "",
+    speaker: cast.dataset.speaker,
+    castDisplay: getComputedStyle(cast).display,
+    castRectCount: cast.getClientRects().length,
+    characterRectCount: character?.getClientRects().length || 0,
+    characterOpacity: character ? Number.parseFloat(getComputedStyle(character).opacity) : 0,
+    characterInset: character ? Number.parseFloat(getComputedStyle(character).right) : 0,
+    characterWidthRatio: characterRect ? characterRect.width / workspaceRect.width : 0,
+    characterRightBias: characterRect ? (characterRect.left + characterRect.width / 2 - workspaceRect.left) / workspaceRect.width : 0,
+    characterBottomGap: characterRect ? Math.abs(characterRect.bottom - workspaceRect.bottom) : 0,
+    characterClip: getComputedStyle(cast).clipPath,
+    visiblePostAvatars: [...document.querySelectorAll(".novel-slack-avatar")]
+      .filter((avatar) => avatar.getClientRects().length > 0).length,
+  };
+});
+const assertSlackCastGate = async (page, { visible, speaker, label }) => {
+  if (visible) {
+    await page.waitForFunction(() => {
+      const cast = document.querySelector("#novel-cast");
+      const character = cast?.querySelector(`.novel-character--${cast.dataset.speaker}`);
+      return cast?.dataset.slackCast === "visible"
+        && character?.getClientRects().length > 0
+        && Number.parseFloat(getComputedStyle(character).opacity) > 0.65;
+    });
+  }
+  const state = await slackCastSnapshot(page);
+  assert(state.speaker === speaker, `${label}: unexpected large-cast speaker: ${JSON.stringify(state)}`);
+  if (visible) {
+    assert(state.gate === "visible" && state.castDisplay !== "none" && state.castRectCount > 0 && state.characterRectCount > 0, `${label}: unlocked large cast is not visible: ${JSON.stringify(state)}`);
+  } else {
+    assert(state.gate === "hidden" && state.castDisplay === "none" && state.castRectCount === 0 && state.characterRectCount === 0, `${label}: locked large cast leaks a frame, silhouette, name, or portrait: ${JSON.stringify(state)}`);
+  }
+  assert(state.visiblePostAvatars > 0, `${label}: post/typing avatars were hidden with the large cast: ${JSON.stringify(state)}`);
+  report.chatCastGateChecks.push({ label, visible, ...state });
+  return state;
 };
 const dialoguePageGeometry = (page) => page.evaluate(() => {
   const dialogue = document.querySelector("#novel-dialogue");
@@ -472,6 +519,7 @@ const runFullWalkthrough = async (page) => {
   await bootTitle(page, { clear: true });
   await page.locator("#novel-start-button").click();
   await page.waitForFunction(() => Boolean(document.querySelector("#novel-layer")?.dataset.stepId));
+  assert(Object.values(await page.evaluate(() => globalThis.GaiaNovel.getState().metCharacters)).every((value) => value === false), "NEW GAME began with a large chat cast already unlocked");
   const visited = [];
   const interactionKinds = new Set();
   for (let guard = 0; guard < 420; guard += 1) {
@@ -482,6 +530,7 @@ const runFullWalkthrough = async (page) => {
     if (step.type === "end") {
       const state = await page.evaluate(() => globalThis.GaiaNovel.getState());
       assert(state.clear === true, "full walkthrough reached END without clear state");
+      assert(Object.values(state.metCharacters).every((value) => value === true), `full walkthrough did not unlock all three meeting flags: ${JSON.stringify(state.metCharacters)}`);
       assert(interactionKinds.size === 5, `full walkthrough used ${interactionKinds.size} / 5 display-mode interactions`);
       report.fullWalkthrough = { reachedEnd: true, visitedSteps: visited.length, interactionKinds: [...interactionKinds] };
       return;
@@ -724,6 +773,8 @@ try {
     mizuhaTyping: getComputedStyle(document.querySelector('.novel-slack-typing[data-speaker="mizuha"] .novel-slack-avatar')).backgroundImage,
   }));
   assert(firstSlackAvatars.amane.includes("slack-avatar-amane-v1.webp") && firstSlackAvatars.mizuhaTyping.includes("slack-avatar-mizuha-v1.webp"), `character mascot avatars are missing from Slack: ${JSON.stringify(firstSlackAvatars)}`);
+  await page.waitForFunction(() => !document.querySelector("#novel-layer")?.classList.contains("is-slack-entering"));
+  await assertSlackCastGate(page, { visible: false, speaker: "sora", label: "desktop pre-meeting Amane" });
   const slackGeometry = await page.evaluate(() => {
     const workspace = document.querySelector(".novel-slack-workspace");
     const dialogue = document.querySelector("#novel-dialogue");
@@ -754,6 +805,39 @@ try {
   assert(await page.locator(".novel-slack-post.is-reply").count() === 2, "Slack replies are not connected as a thread");
   const speakerText = await page.locator(".novel-slack-post p strong").allTextContents();
   assert(speakerText.length === 3, "Slack speaker labels do not match the visible posts");
+  assert(Object.values(await page.evaluate(() => globalThis.GaiaNovel.getState().metCharacters)).every((value) => value === false), "chat open/receive/read unlocked a large cast before an offline meeting");
+  const finalSlackStepId = await currentStepId(page);
+  await page.locator(".novel-slack-thread").click();
+  await page.waitForFunction((previous) => document.querySelector("#novel-layer")?.dataset.stepId !== previous, finalSlackStepId);
+  await page.waitForTimeout(40);
+  const slackExitFrame = await page.evaluate(() => {
+    const layer = document.querySelector("#novel-layer");
+    const character = layer.querySelector(".novel-character--sora");
+    const style = getComputedStyle(character);
+    const dialogue = document.querySelector("#novel-dialogue");
+    const dialogueStyle = getComputedStyle(dialogue);
+    const workspace = document.querySelector(".novel-slack-workspace");
+    return {
+      exiting: layer.classList.contains("is-slack-exiting"),
+      slackHidden: document.querySelector("#novel-slack-surface").hidden,
+      slackAnimationName: getComputedStyle(workspace).animationName,
+      opacity: Number.parseFloat(style.opacity),
+      transitionDuration: style.transitionDuration,
+      dialogueHiddenAttribute: dialogue.hidden,
+      dialogueOpacity: Number.parseFloat(dialogueStyle.opacity),
+      dialogueTransitionDuration: dialogueStyle.transitionDuration,
+    };
+  });
+  assert(slackExitFrame.exiting && !slackExitFrame.slackHidden && slackExitFrame.slackAnimationName === "novel-slack-window-out", `Slack workspace disappeared without an exit transition: ${JSON.stringify(slackExitFrame)}`);
+  assert(slackExitFrame.opacity === 0 && slackExitFrame.transitionDuration === "0s", `Slack character resized while leaving the workspace: ${JSON.stringify(slackExitFrame)}`);
+  assert(!slackExitFrame.dialogueHiddenAttribute && slackExitFrame.dialogueOpacity < 1 && slackExitFrame.dialogueTransitionDuration.includes("0.32s"), `normal message window appeared in a single frame after Slack: ${JSON.stringify(slackExitFrame)}`);
+  await page.waitForFunction(() => !document.querySelector("#novel-layer")?.classList.contains("is-slack-exiting"));
+  const slackExitSettled = await page.evaluate(() => ({
+    slackHidden: document.querySelector("#novel-slack-surface").hidden,
+    dialogueHiddenAttribute: document.querySelector("#novel-dialogue").hidden,
+    dialogueOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#novel-dialogue")).opacity),
+  }));
+  assert(slackExitSettled.slackHidden && !slackExitSettled.dialogueHiddenAttribute && slackExitSettled.dialogueOpacity > 0.98, `Slack exit did not settle cleanly: ${JSON.stringify(slackExitSettled)}`);
 
   const sakuyaChats = steps.filter((step) => step.sceneId === "prologue_basil" && step.type === "chat" && step.speaker === "sakuya");
   const sakuyaChat = sakuyaChats.at(-1);
@@ -797,6 +881,53 @@ try {
     report.sakuyaBust.references.push({ speaker, stepId: referenceStep.id, sceneId: referenceStep.sceneId, viewport: "2048" });
     await screenshot(page, `sakuya-bust-reference-${speaker}-desktop`);
   }
+  await assertSlackCastGate(page, { visible: false, speaker: "sakuya", label: "desktop pre-meeting Sakuya" });
+
+  const lockedMeetingFlags = { mizuha: false, amane: false, sakuya: false };
+  const pairMeetingFlags = { mizuha: true, amane: true, sakuya: false };
+  const completeMeetingFlags = { mizuha: true, amane: true, sakuya: true };
+  const pairMeetingCompletion = stepMap.get("first_meeting_hall_032");
+  await bootAt(page, pairMeetingCompletion.id, { metCharacters: lockedMeetingFlags });
+  assert(JSON.stringify((await page.evaluate(() => globalThis.GaiaNovel.getState())).metCharacters) === JSON.stringify(lockedMeetingFlags), "Mizuha/Amane unlocked while _032 was still visible");
+  await advanceLinear(page);
+  assert(await currentStepId(page) === "first_meeting_hall_033", "Mizuha/Amane boundary did not advance to _033");
+  const pairUnlockedState = await page.evaluate(({ key }) => ({ runtime: globalThis.GaiaNovel.getState().metCharacters, stored: JSON.parse(localStorage.getItem(key)).metCharacters }), { key: STORAGE_KEY });
+  assert(JSON.stringify(pairUnlockedState.runtime) === JSON.stringify(pairMeetingFlags) && JSON.stringify(pairUnlockedState.stored) === JSON.stringify(pairMeetingFlags), `Mizuha/Amane flags were not persisted at _033: ${JSON.stringify(pairUnlockedState)}`);
+
+  const amaneChatAfterMeeting = stepMap.get("first_meeting_hall_043");
+  await bootAt(page, amaneChatAfterMeeting.id, { metCharacters: pairMeetingFlags });
+  const visibleAmaneCast = await assertSlackCastGate(page, { visible: true, speaker: "sora", label: "desktop post-meeting Amane" });
+  assert(visibleAmaneCast.characterInset >= 96 && Math.abs(visibleAmaneCast.characterOpacity - 0.66) < 0.01 && visibleAmaneCast.characterWidthRatio < 0.38 && visibleAmaneCast.characterRightBias > 0.7 && visibleAmaneCast.characterBottomGap < 24 && visibleAmaneCast.characterClip !== "none", `unlocked chat cast lost its lower-right clipped presentation: ${JSON.stringify(visibleAmaneCast)}`);
+
+  const sakuyaChatBeforeMeeting = stepMap.get("first_meeting_hall_042");
+  await bootAt(page, sakuyaChatBeforeMeeting.id, { metCharacters: pairMeetingFlags });
+  await assertSlackCastGate(page, { visible: false, speaker: "sakuya", label: "desktop Sakuya before _067" });
+
+  await bootAt(page, chat.id, { metCharacters: completeMeetingFlags });
+  await assertSlackCastGate(page, { visible: false, speaker: "sora", label: "desktop replay of pre-meeting scene" });
+
+  const sakuyaMeetingCompletion = stepMap.get("first_meeting_hall_066");
+  await bootAt(page, sakuyaMeetingCompletion.id, { metCharacters: pairMeetingFlags });
+  assert((await page.evaluate(() => globalThis.GaiaNovel.getState().metCharacters.sakuya)) === false, "Sakuya unlocked while _066 was still visible");
+  await advanceLinear(page);
+  assert(await currentStepId(page) === "first_meeting_hall_067", "Sakuya boundary did not advance to _067");
+  const sakuyaUnlockedState = await page.evaluate(({ key }) => ({ runtime: globalThis.GaiaNovel.getState().metCharacters, stored: JSON.parse(localStorage.getItem(key)).metCharacters }), { key: STORAGE_KEY });
+  assert(JSON.stringify(sakuyaUnlockedState.runtime) === JSON.stringify(completeMeetingFlags) && JSON.stringify(sakuyaUnlockedState.stored) === JSON.stringify(completeMeetingFlags), `Sakuya flag was not persisted at _067: ${JSON.stringify(sakuyaUnlockedState)}`);
+
+  const sakuyaChatAfterMeeting = stepMap.get("production_year_012");
+  await bootAt(page, sakuyaChatAfterMeeting.id, { metCharacters: lockedMeetingFlags, readStepIds: ["first_meeting_hall_032", "first_meeting_hall_066"] });
+  await assertSlackCastGate(page, { visible: false, speaker: "sakuya", label: "desktop read-only state after meeting boundary" });
+  await bootAt(page, sakuyaChatAfterMeeting.id, { metCharacters: completeMeetingFlags });
+  await assertSlackCastGate(page, { visible: true, speaker: "sakuya", label: "desktop post-meeting Sakuya" });
+  await page.locator("#novel-save-button").click();
+  await page.locator("#novel-save-slots .novel-save-primary").last().click();
+  await page.locator("#novel-save-close").click();
+  await bootAt(page, chat.id, { metCharacters: lockedMeetingFlags });
+  await page.locator("#novel-load-button").click();
+  await page.locator("#novel-save-slots .novel-save-primary").last().click();
+  assert(await currentStepId(page) === sakuyaChatAfterMeeting.id, "manual LOAD did not restore the post-meeting chat step");
+  assert(JSON.stringify((await page.evaluate(() => globalThis.GaiaNovel.getState())).metCharacters) === JSON.stringify(completeMeetingFlags), "manual SAVE / LOAD did not restore the three meeting flags");
+  await assertSlackCastGate(page, { visible: true, speaker: "sakuya", label: "desktop Sakuya after SAVE/LOAD" });
 
   const observationChoice = steps.find((step) => step.choiceId === "observation_order");
   await bootAt(page, observationChoice.id);
@@ -844,6 +975,14 @@ try {
   assert(!/LAW|NEUTRAL|CHAOS|R01/u.test(resultText), "result exposes hidden attributes or selected statement IDs");
   const resultPath = await screenshot(page, "result");
   await compareBaseline(resultPath, "result");
+  await page.locator("#novel-eves-button").click();
+  await page.locator("#novel-eves-rewind").click();
+  assert(await currentStepId(page) === reflection.id, "E.V.E.S. rewind did not return to the reflection choice");
+  assert(Object.values(await page.evaluate(() => globalThis.GaiaNovel.getState().metCharacters)).every((value) => value === false), "rewind incorrectly unlocked a chat cast");
+  await bootAt(page, result.id, { editorialChoice: "SOURCE_RECORD", reflectionIds: ["R01"], resultTone: "NEUTRAL", metCharacters: completeMeetingFlags, evesRoute: [{ decisionId: "editorial_choice", value: "SOURCE_RECORD", label: "本人記録で構成する / SOURCE RECORD", stepId: editorial.id }, { decisionId: "reflection_choice", value: "SELECTED", label: "観測姿勢を選ぶ", stepId: reflection.id }] });
+  await page.locator("#novel-eves-button").click();
+  await page.locator("#novel-eves-rewind").click();
+  assert(Object.values(await page.evaluate(() => globalThis.GaiaNovel.getState().metCharacters)).every((value) => value === true), "rewind discarded legitimately completed meeting flags");
 
   const interactions = steps.filter((step) => step.type === "interaction");
   const transitionInteraction = interactions.find((step) => step.interaction.kind === "map03") || interactions[0];
@@ -1017,6 +1156,11 @@ try {
   await page.locator("#novel-eves-button").click();
   assert(await page.locator("#novel-eves-panel").isVisible(), "E.V.E.S. did not open");
   await page.locator("#novel-eves-close").click();
+  await page.locator("#novel-config-button").click();
+  await page.locator("#novel-restart-button").click();
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, story.scenes[0].steps[0].id);
+  assert(await page.locator("#novel-config-panel").isHidden(), "CONFIG remained open after restarting the story");
+  assert(Object.values(await page.evaluate(() => globalThis.GaiaNovel.getState().metCharacters)).every((value) => value === false), "restart did not reset the three meeting flags");
   if (await page.locator("#gaia-audio-toggle").count()) {
     await page.locator("#gaia-audio-toggle").click();
     await page.locator("#gaia-audio-toggle").click();
@@ -1146,6 +1290,7 @@ try {
   }
   await bootAt(mobile, chat.id, {}, { reducedMotion: true });
   await advanceLinear(mobile);
+  await assertSlackCastGate(mobile, { visible: false, speaker: "minamo", label: "mobile pre-meeting Mizuha" });
   const mobileSlackGeometry = await mobile.evaluate(() => {
     const workspaceRect = document.querySelector(".novel-slack-workspace").getBoundingClientRect();
     const dialogueRect = document.querySelector("#novel-dialogue").getBoundingClientRect();
@@ -1158,6 +1303,9 @@ try {
   });
   assert(!mobileSlackGeometry.horizontalOverflow && mobileSlackGeometry.posts === 2 && mobileSlackGeometry.workspace.bottom <= mobileSlackGeometry.dialogue.bottom, `mobile Slack overlay failed: ${JSON.stringify(mobileSlackGeometry)}`);
   await screenshot(mobile, "slack-mobile");
+  await bootAt(mobile, sakuyaChatAfterMeeting.id, { metCharacters: completeMeetingFlags }, { reducedMotion: true });
+  await assertSlackCastGate(mobile, { visible: true, speaker: "sakuya", label: "mobile post-meeting Sakuya" });
+  assert(!await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), "mobile unlocked chat cast introduced horizontal overflow");
   const mobileGxInteraction = steps.find((step) => step.type === "interaction" && step.interaction.kind === "gx");
   await bootAt(mobile, mobileGxInteraction.id, {}, { reducedMotion: true });
   await operateInteraction(mobile, mobileGxInteraction);
