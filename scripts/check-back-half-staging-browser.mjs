@@ -93,6 +93,18 @@ const presentation = (page) => page.locator("#novel-layer").evaluate((node) => {
   const phoneFrame = phoneSurface?.querySelector(".novel-operations-phone");
   const visiblePhoneViews = [...(phoneSurface?.querySelectorAll(".novel-operations-phone-view") || [])]
     .filter((view) => getComputedStyle(view).visibility === "visible");
+  const layerRect = node.getBoundingClientRect();
+  const overflowingElements = [...node.querySelectorAll("*")].flatMap((element) => {
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0 || (rect.left >= layerRect.left - 1 && rect.right <= layerRect.right + 1)) return [];
+    return [{
+      id: element.id,
+      className: typeof element.className === "string" ? element.className : "",
+      left: Math.round(rect.left * 10) / 10,
+      right: Math.round(rect.right * 10) / 10,
+      width: Math.round(rect.width * 10) / 10,
+    }];
+  }).slice(0, 12);
   const characterState = (id) => {
     const figure = node.querySelector(id);
     if (!figure) return null;
@@ -142,6 +154,7 @@ const presentation = (page) => page.locator("#novel-layer").evaluate((node) => {
     },
     bodyOverflow: document.documentElement.scrollWidth - innerWidth,
     layerOverflow: node.scrollWidth - node.clientWidth,
+    overflowingElements,
   };
 });
 
@@ -150,6 +163,9 @@ const capture = async (page, viewportName, stepId) => {
   const step = stepMap.get(stepId);
   const expectedBackground = path.basename(backgrounds.forStep(step).assetPath);
   const expectedStaging = staging.forStep(step);
+  if (expectedStaging.castMode === "central-entrance-distance") {
+    await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#novel-character-sakuya")).opacity) > 0, null, { timeout: 3000 });
+  }
   const current = await presentation(page);
   assert(current.backgroundImage.includes(expectedBackground), `${viewportName}/${stepId}: wrong background ${current.backgroundImage}`);
   assert(current.context === expectedStaging.temporal.context, `${viewportName}/${stepId}: wrong context`);
@@ -158,7 +174,7 @@ const capture = async (page, viewportName, stepId) => {
   assert(current.device === expectedStaging.device, `${viewportName}/${stepId}: wrong device`);
   assert(current.viewpoint === expectedStaging.viewpoint, `${viewportName}/${stepId}: wrong viewpoint`);
   assert(current.castMode === expectedStaging.castMode, `${viewportName}/${stepId}: wrong cast mode`);
-  assert(current.bodyOverflow <= 1 && current.layerOverflow <= 1, `${viewportName}/${stepId}: horizontal overflow ${current.bodyOverflow}/${current.layerOverflow}`);
+  assert(current.bodyOverflow <= 1 && current.layerOverflow <= 1, `${viewportName}/${stepId}: horizontal overflow ${current.bodyOverflow}/${current.layerOverflow} ${JSON.stringify(current.overflowingElements)}`);
   if (expectedStaging.device === "portrait-operations-phone") {
     const expectedView = {
       prepare: "is-prepare",
@@ -181,7 +197,7 @@ const capture = async (page, viewportName, stepId) => {
   }
   if (expectedStaging.castMode === "central-entrance-distance") {
     assert(!current.castSuppressed, `${viewportName}/${stepId}: physical Sakuya gate remained suppressed`);
-    assert(current.characters.sakuya?.display !== "none" && current.characters.sakuya?.visibility === "visible" && current.characters.sakuya?.opacity > 0, `${viewportName}/${stepId}: physical Sakuya is not visible`);
+    assert(current.characters.sakuya?.display !== "none" && current.characters.sakuya?.visibility === "visible" && current.characters.sakuya?.opacity > 0, `${viewportName}/${stepId}: physical Sakuya is not visible (${JSON.stringify({ castVisibility: current.castVisibility, castOpacity: current.castOpacity, characters: current.characters })})`);
     assert(current.characters.sakuya?.width > 0 && current.characters.sakuya?.height > 0, `${viewportName}/${stepId}: physical Sakuya has no rendered bounds`);
     assert(current.characters.mizuha?.visibility === "hidden" && current.characters.amane?.visibility === "hidden", `${viewportName}/${stepId}: another character leaked into Sakuya distance framing`);
   }
@@ -203,6 +219,7 @@ const checkBoundary = async (page, viewportName, fromId, toId, expectedFile) => 
   await page.locator("#novel-layer").dispatchEvent("click");
   await page.locator("#novel-layer").dispatchEvent("click");
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, toId, { timeout: 15000 });
+  await page.waitForFunction((file) => getComputedStyle(document.querySelector("#novel-layer")).backgroundImage.includes(file), expectedFile, { timeout: 3000 });
   const current = await presentation(page);
   const transitionSeen = await page.evaluate(() => globalThis.__gaiaBackHalfTransitionSeen);
   assert(current.backgroundImage.includes(expectedFile), `${viewportName}/${fromId}→${toId}: background did not switch`);
@@ -229,6 +246,9 @@ const checkStableBoundary = async (page, viewportName, fromId, toId) => {
   await page.locator("#novel-layer").dispatchEvent("click");
   await page.locator("#novel-layer").dispatchEvent("click");
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, toId, { timeout: 15000 });
+  if (toId === "return_to_start_021") {
+    await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#novel-character-sakuya")).opacity) > 0, null, { timeout: 3000 });
+  }
   const transitionSeen = await page.evaluate(() => globalThis.__gaiaBackHalfTransitionSeen);
   const current = await presentation(page);
   let phoneIdentity = null;

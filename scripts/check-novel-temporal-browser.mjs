@@ -93,6 +93,8 @@ try {
     await page.locator("#novel-dialogue").dispatchEvent("click");
     await page.waitForTimeout(50);
     await page.locator("#novel-dialogue").dispatchEvent("click");
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "section-separator");
+    await page.locator("#novel-layer").dispatchEvent("click");
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "temporal-transition");
     const card = await page.locator("#novel-chapter-card").evaluate((element) => ({
       hidden: element.hidden,

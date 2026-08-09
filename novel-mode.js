@@ -49,6 +49,14 @@
     },
   });
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
+  const BACKGROUND_SOUNDTRACK = Object.freeze([
+    ["novel-bg-workroom-v2.png", "windowlight"],
+    ["novel-bg-online-night-v2.png", "moonbook"],
+    ["novel-bg-garden-center-v2.png", "firstlight"],
+    ["novel-bg-coastal-venue-v2.png", "foldedwind"],
+    ["novel-bg-zushi-coast-night-v2.png", "snowfire"],
+    ["novel-bg-exhibition-v3.png", "story"],
+  ]);
   const CHAT_CAST_MEETING_GATES = Object.freeze({
     mizuha: Object.freeze({ completedAt: "first_meeting_hall_032", visibleFrom: "first_meeting_hall_033" }),
     amane: Object.freeze({ completedAt: "first_meeting_hall_032", visibleFrom: "first_meeting_hall_033" }),
@@ -74,6 +82,36 @@
     DERIVED: "計算・解釈 / DERIVED",
     SCENARIO: "仮定 / SCENARIO",
     VISITOR_TRACE: "操作記録 / VISITOR TRACE",
+  });
+  const RECORD_SPEAKER_LABELS = Object.freeze({
+    SOURCE: "観測メモ",
+    LOCAL_SOURCE: "観測メモ",
+    DERIVED: "解析メモ",
+    SCENARIO: "仮定メモ",
+    VISITOR_TRACE: "選択の記録",
+  });
+  const getRecordPresenter = (step) => (
+    step.sceneId === "prologue_basil" && step.recordType === "LOCAL_SOURCE"
+      ? "amane"
+      : "narrator"
+  );
+  const SAKUYA_STEP_EXPRESSIONS = Object.freeze({
+    prologue_basil_007: "worried",
+    first_meeting_promise_010: "teasing",
+    first_meeting_promise_012: "teasing",
+    first_meeting_promise_014: "teasing",
+    first_meeting_hall_014: "teasing",
+    first_meeting_hall_016: "teasing",
+    festival_walk_004: "teasing",
+    festival_walk_006: "worried",
+    production_year_018: "worried",
+    production_year_022: "worried",
+    production_year_024: "worried",
+    production_year_032: "teasing",
+    production_year_042: "worried",
+    absence_003: "worried",
+    absence_004: "sad",
+    mode10_space_012: "sad",
   });
   const VIEWED_DEFAULTS = Object.freeze({
     gxDeepTime: false,
@@ -211,6 +249,7 @@
   let revealFrame = 0;
   let revealGeneration = 0;
   let autoTimer = 0;
+  let slackTransitionTimer = 0;
   let sectionSeparatorTimer = 0;
   let sectionSeparatorActive = false;
   let temporalTransitionTimer = 0;
@@ -396,8 +435,16 @@
     elements.continueMark.textContent = "▼";
   };
 
-  const hideSpecialSurfaces = () => {
+  const dialogueTextCapacity = () => {
+    const dialogueStyle = getComputedStyle(elements.dialogue);
+    const verticalPadding = (Number.parseFloat(dialogueStyle.paddingTop) || 0)
+      + (Number.parseFloat(dialogueStyle.paddingBottom) || 0);
+    return Math.max(1, elements.dialogue.clientHeight - verticalPadding - TEXT_PAGE_HEIGHT_BUFFER_PX);
+  };
+
+  const hideSpecialSurfaces = ({ preserveSlack = false } = {}) => {
     [elements.slackSurface, elements.evidenceSurface, elements.reflectionSurface, elements.resultSurface].forEach((surface) => {
+      if (preserveSlack && surface === elements.slackSurface) return;
       surface.hidden = true;
       surface.replaceChildren();
     });
@@ -487,6 +534,19 @@
     }
   };
 
+  const soundtrackForBackground = (backgroundImage) => BACKGROUND_SOUNDTRACK
+    .find(([filename]) => String(backgroundImage).includes(filename))?.[1] || "story";
+
+  const requestStoryTrack = (track, fadeSeconds = 0.55) => {
+    if (!track || requestedStoryTrack === track) return;
+    requestedStoryTrack = track;
+    void window.GaiaOpeningAudio?.switchTrack?.(track, fadeSeconds);
+  };
+
+  const requestTrackForBackground = (presentation, fadeSeconds = 0.55) => {
+    requestStoryTrack(soundtrackForBackground(presentation?.image), fadeSeconds);
+  };
+
   const backgroundPreloadCache = new Map();
 
   const preloadBackgroundUrl = (url) => {
@@ -520,12 +580,13 @@
 
   const warmUpcomingBackground = (step) => {
     let nextBackground = null;
-    const followingId = getFollowingStepId(step);
-    const followingStep = stepMap.get(followingId);
-    if (followingStep) {
-      const currentPresentation = backgroundPresentationForStep(step);
-      const followingPresentation = backgroundPresentationForStep(followingStep);
-      if (currentPresentation.image !== followingPresentation.image) nextBackground = followingPresentation.image;
+    const currentPresentation = backgroundPresentationForStep(step);
+    const currentIndex = stepIndexMap.get(step.id) ?? -1;
+    for (let index = currentIndex + 1; index < allSteps.length; index += 1) {
+      const followingPresentation = backgroundPresentationForStep(allSteps[index]);
+      if (currentPresentation.image === followingPresentation.image) continue;
+      nextBackground = followingPresentation.image;
+      break;
     }
     if (!nextBackground) return;
     const warm = () => { void preloadBackground(nextBackground); };
@@ -687,6 +748,10 @@
     if (!Number.isInteger(index)) return;
     window.dispatchEvent(new CustomEvent("gaia:select-mode", { detail: { index, source: "novel-v6" } }));
   };
+
+  const expressionForStep = (step) => step?.speaker === "sakuya"
+    ? SAKUYA_STEP_EXPRESSIONS[step.id] || "calm"
+    : "calm";
 
   const setCharacterPresentation = (speaker, expression = "calm") => {
     const legacySpeaker = CHARACTER_VIEW[speaker] || speaker || "narrator";
@@ -1027,7 +1092,9 @@
     sectionSeparatorTimer = 0;
     sectionSeparatorActive = false;
     elements.chapterCard.hidden = true;
-    renderCurrentStep();
+    const step = currentStep();
+    if (temporalRuntime.contextTransitionForStep(step)) renderTemporalTransitionCard(step);
+    else renderCurrentStep();
     return true;
   }
 
@@ -1039,7 +1106,7 @@
     closeLog();
     closeSourceDetails();
     showRuntime();
-    requestTrackForBackground(backgroundPresentationForScene(step.sceneId));
+    requestTrackForBackground(backgroundPresentationForStep(step));
     hideSpecialSurfaces();
     resetDialoguePagination();
     isRevealing = false;
@@ -1078,9 +1145,36 @@
     if (addedToLog && !elements.logPanel.hidden) renderLog();
   };
 
+  const clearSlackSurface = () => {
+    elements.slackSurface.hidden = true;
+    elements.slackSurface.replaceChildren();
+  };
+
+  const prepareSlackTransition = (nextStepType) => {
+    window.clearTimeout(slackTransitionTimer);
+    slackTransitionTimer = 0;
+    if (layer.classList.contains("is-slack-exiting")) clearSlackSurface();
+    const wasSlack = layer.classList.contains("is-slack");
+    const entersSlack = !wasSlack && nextStepType === "chat";
+    const exitsSlack = wasSlack && nextStepType !== "chat";
+    layer.classList.remove("is-slack-entering", "is-slack-exiting");
+    if (entersSlack) layer.classList.add("is-slack-entering");
+    if (exitsSlack) layer.classList.add("is-slack-exiting");
+    if (!entersSlack && !exitsSlack) return false;
+
+    const transitionDuration = exitsSlack ? SLACK_EXIT_MS : SLACK_ENTER_MS;
+    slackTransitionTimer = window.setTimeout(() => {
+      if (exitsSlack) clearSlackSurface();
+      layer.classList.remove("is-slack-entering", "is-slack-exiting");
+      slackTransitionTimer = 0;
+    }, motionReduced() ? 0 : transitionDuration);
+    return exitsSlack;
+  };
+
   const prepareStepFrame = (step) => {
     const scene = sceneMap.get(step.sceneId);
     const chatDevice = chatDeviceForStep(step);
+    const preserveSlack = prepareSlackTransition(step.type);
     layer.dataset.sceneId = step.sceneId;
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
@@ -1090,7 +1184,7 @@
     sectionSeparatorActive = false;
     showRuntime();
     warmUpcomingBackground(step);
-    hideSpecialSurfaces();
+    hideSpecialSurfaces({ preserveSlack });
     applyBackHalfCueForStep(step);
     elements.chapterCard.hidden = true;
     elements.dialogue.hidden = false;
@@ -1110,6 +1204,17 @@
       if (index) container.append(document.createElement("br"));
       container.append(document.createTextNode(line));
     });
+  };
+
+  const recordTextForDisplay = (text) => {
+    const normalized = String(text || "")
+      .replace(/\s*\/\s*(?:LOCAL SOURCE|SOURCE|DERIVED|SCENARIO|VISITOR TRACE|CONTEXT|AUTHOR|GENERATED TEXT|RESPONSIBLE|EDITORIAL CHOICE|SAKUYA SOURCE|PUBLIC BUILD CHANGED)(?=：|$)/gm, "")
+      .replace(/SOURCE RECORD または DISCLOSE DERIVATION/g, "原文を残す／生成経緯を開示する")
+      .replace(/：NO(?=$|\n)/g, "：なし")
+      .trim();
+    const lines = normalized.split("\n");
+    if (lines.length > 1 && ["観測記録", "その場の観測", "計算・解釈", "操作記録"].includes(lines[0].trim())) lines.shift();
+    return lines.join("\n").trim();
   };
 
   const slackTimelineFor = (step) => {
@@ -1197,7 +1302,7 @@
   const renderSimpleStep = (step) => {
     prepareStepFrame(step);
     const speaker = step.speaker || "narrator";
-    setCharacterPresentation(speaker);
+    setCharacterPresentation(speaker, expressionForStep(step));
     elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
     renderDialoguePages(step.text || "");
   };
@@ -1210,7 +1315,7 @@
     elements.continueMark.classList.add("is-visible");
     if (step.type === "chat") {
       const timeline = slackTimelineFor(step);
-      setCharacterPresentation(step.speaker);
+      setCharacterPresentation(step.speaker, expressionForStep(step));
       setSlackCastVisibility(step);
       elements.dialogue.hidden = false;
       elements.speaker.textContent = "学内チャット / #惑星の放課後";
@@ -1242,31 +1347,27 @@
     }
 
     if (step.type === "record") {
-      elements.dialogue.hidden = true;
-      elements.sourceButton.hidden = true;
-      elements.evidenceSurface.hidden = false;
-      layer.classList.add("is-evidence");
-      const isDerived = step.recordType === "DERIVED";
-      const evidence = document.createElement("article");
-      evidence.className = `novel-evidence-card ${isDerived ? "is-derived" : "is-source"}`;
-      const type = document.createElement("span");
-      const heading = document.createElement("h2");
-      const body = document.createElement("p");
-      const meta = document.createElement("footer");
-      type.textContent = isDerived ? "DERIVED" : "SOURCE";
-      heading.textContent = isDerived ? "計算・解釈として生成された記録" : "観測されたままの記録";
-      appendLines(body, step.text || "");
-      meta.textContent = isDerived
-        ? "生成実行・選定責任：MIZUHA　｜　サクヤ本人の確認：なし"
-        : "原文の作者と出典を保持しています";
-      evidence.append(type, heading, body, meta);
-      elements.evidenceSurface.append(evidence);
+      const presenter = getRecordPresenter(step);
+      setCharacterPresentation(presenter);
+      if (presenter === "narrator") elements.avatar.hidden = true;
+      elements.dialogue.hidden = false;
+      elements.sourceButton.hidden = false;
+      elements.speaker.textContent = presenter === "amane"
+        ? "アマネの観測メモ"
+        : RECORD_SPEAKER_LABELS[step.recordType] || "記録メモ";
+      elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
+      const displayText = recordTextForDisplay(step.text);
+      elements.text.replaceChildren();
+      appendLines(elements.text, displayText);
+      elements.text.setAttribute("aria-label", displayText);
+      elements.cursor.hidden = true;
+      elements.continueMark.classList.add("is-visible");
       scheduleAutoAdvance();
       return;
     }
 
     const speaker = step.speaker || "system";
-    setCharacterPresentation(speaker);
+    setCharacterPresentation(speaker, expressionForStep(step));
     elements.speaker.textContent = SPEAKERS[speaker]?.name || "GAIA SENSEWARE";
     revealText(step.text || "");
   };
@@ -1815,6 +1916,7 @@
     const sessionId = state.sessionId || `${Date.now().toString(36)}-restart`;
     state = defaultState();
     state.sessionId = sessionId;
+    closeConfig();
     showRuntime();
     renderEves();
     saveProgress();
@@ -2328,6 +2430,13 @@
     if (event.target.closest("button, a, input, select, textarea, details, summary, [role='button']")) return;
     advance();
   });
+  layer.addEventListener("wheel", (event) => {
+    if (event.deltaY >= 0 || event.ctrlKey || !hasStarted || elements.runtime.hidden || !elements.logPanel.hidden) return;
+    if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel].every((panel) => panel.hidden)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openLog();
+  }, { passive: false });
   layer.addEventListener("keydown", (event) => {
     event.stopPropagation();
     if (event.key === "Escape") {

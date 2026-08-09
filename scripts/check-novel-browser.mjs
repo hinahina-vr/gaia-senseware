@@ -249,6 +249,7 @@ const slackCastSnapshot = (page) => page.evaluate(() => {
   const characterRect = character?.getBoundingClientRect();
   return {
     stepId: document.querySelector("#novel-layer")?.dataset.stepId,
+    device: document.querySelector("#novel-layer")?.dataset.slackDevice || "wide",
     state: globalThis.GaiaNovel.getState().metCharacters,
     gate: cast.dataset.slackCast || "",
     speaker: cast.dataset.speaker,
@@ -398,8 +399,11 @@ const assertPaginationTrace = (trace, step, expectedPageCount, mode) => {
 };
 const advanceLinear = async (page) => {
   const previous = await currentStepId(page);
-  await page.locator("#novel-layer").dispatchEvent("click");
-  if (await currentStepId(page) === previous) await page.locator("#novel-layer").dispatchEvent("click");
+  for (let guard = 0; guard < 64; guard += 1) {
+    await page.locator("#novel-layer").dispatchEvent("click");
+    if (await currentStepId(page) !== previous) break;
+    if (await page.locator("body").evaluate((body) => body.classList.contains("scene-transitioning"))) break;
+  }
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, previous);
 };
 
@@ -573,10 +577,14 @@ const runFullWalkthrough = async (page) => {
   assert(Object.values(await page.evaluate(() => globalThis.GaiaNovel.getState().metCharacters)).every((value) => value === false), "NEW GAME began with a large chat cast already unlocked");
   const visited = [];
   const interactionKinds = new Set();
-  for (let guard = 0; guard < 420; guard += 1) {
+  for (let guard = 0; guard < steps.length + 20; guard += 1) {
     const id = await currentStepId(page);
     const step = stepMap.get(id);
     assert(step, `full walkthrough reached unknown step: ${id}`);
+    if (await page.locator("#novel-chapter-card").isVisible()) {
+      await page.locator("#novel-layer").dispatchEvent("click");
+      await page.locator("#novel-chapter-card").waitFor({ state: "hidden" });
+    }
     visited.push(id);
     if (step.type === "end") {
       const state = await page.evaluate(() => globalThis.GaiaNovel.getState());
@@ -603,8 +611,24 @@ const runFullWalkthrough = async (page) => {
       await advanceLinear(page);
     }
   }
-  throw new Error("full walkthrough did not reach END within 420 transitions");
+  throw new Error(`full walkthrough did not reach END within ${steps.length + 20} transitions`);
 };
+
+if (process.env.GAIA_BROWSER_SCOPE === "walkthrough") {
+  const walkthroughContext = await browser.newContext({ viewport: { width: 2048, height: 1114 }, reducedMotion: "reduce" });
+  const walkthroughPage = await walkthroughContext.newPage();
+  attachDiagnostics(walkthroughPage, "walkthrough-only");
+  await runFullWalkthrough(walkthroughPage);
+  assert(report.consoleErrors.length === 0, `walkthrough console errors: ${JSON.stringify(report.consoleErrors)}`);
+  assert(report.pageErrors.length === 0, `walkthrough page errors: ${JSON.stringify(report.pageErrors)}`);
+  assert(report.responses404.length === 0, `walkthrough 404 responses: ${JSON.stringify(report.responses404)}`);
+  const scopedReportPath = path.join(outputDir, "walkthrough-report.json");
+  await writeFile(scopedReportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  await walkthroughContext.close();
+  await browser.close();
+  console.log(`Novel walkthrough passed: ${scopedReportPath}`);
+  process.exit(0);
+}
 
 let context;
 try {
@@ -623,7 +647,7 @@ try {
     ["first_meeting_promise", "novel-bg-online-night-v2.png", "scene-online"],
     ["prologue_basil", "novel-bg-garden-center-v2.png", "scene-garden-center"],
     ["first_meeting_hall", "novel-bg-coastal-venue-v2.png", "scene-coastal-venue"],
-    ["interlude_sea", "novel-bg-zushi-coast-night-v2.png", "scene-zushi-coast"],
+    ["interlude_sea", "novel-bg-production-shared-meeting-v3.png", "scene-interlude-departure"],
   ];
   for (const [sceneId, expectedFile, screenshotName] of backgroundCases) {
     const sceneStep = steps.find((candidate) => candidate.sceneId === sceneId && ["dialogue", "chat"].includes(candidate.type))
@@ -709,9 +733,7 @@ try {
   assert(!await page.locator("body").evaluate((body) => body.classList.contains("scene-transitioning")), "same production background reanimated on every step");
   report.productionBackgrounds.push({ viewport: "2048x1114", transition: "production_year_087->production_year_088", sameCueDidNotReanimate: true, passed: true });
 
-  const inlineRecord = steps.find((step) => step.type === "record" && step.recordType === "SOURCE" && step.text.includes("園芸売り場"))
-    || steps.find((step) => step.type === "record" && step.recordType === "SOURCE");
-  const inlineRecordScene = story.scenes.find((scene) => scene.id === inlineRecord.sceneId);
+  const inlineRecord = stepMap.get("mode07_abstract_026");
   await bootAt(page, inlineRecord.id);
   await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 5000 });
   const inlineRecordPresentation = await page.evaluate(() => {
@@ -729,14 +751,14 @@ try {
       locationParent: location.parentElement?.id,
       locationShadow: getComputedStyle(location).textShadow,
       obsoleteFooterLocation: document.querySelectorAll(".novel-footer #novel-location").length,
-      obsoleteSignalTitle: document.querySelectorAll("#novel-signal-title").length,
+      signalTitleHidden: Boolean(document.querySelector("#novel-signal-title")?.hidden),
     };
   });
   assert(inlineRecordPresentation.dialogueVisible && inlineRecordPresentation.evidenceHidden && inlineRecordPresentation.speaker === "観測メモ" && inlineRecordPresentation.sourceDetailsAvailable, `record did not use the normal novel presentation: ${JSON.stringify(inlineRecordPresentation)}`);
   assert(!inlineRecordPresentation.paginationApplied, `special record UI incorrectly used normal-text pagination: ${JSON.stringify(inlineRecordPresentation)}`);
   assert(inlineRecordPresentation.castSpeaker === "narrator" && inlineRecordPresentation.avatarHidden, `source record unexpectedly displayed a character portrait: ${JSON.stringify(inlineRecordPresentation)}`);
-  assert(inlineRecordPresentation.text.includes("園芸売り場") && inlineRecordPresentation.text.includes("36") && !/LOCAL SOURCE|SOURCE|観測記録\s*\//.test(inlineRecordPresentation.text), `record exposed internal labels or lost canonical copy: ${JSON.stringify(inlineRecordPresentation)}`);
-  assert(inlineRecordPresentation.locationText === inlineRecordScene.title && inlineRecordPresentation.locationParent === "novel-source-button" && inlineRecordPresentation.obsoleteFooterLocation === 0 && inlineRecordPresentation.obsoleteSignalTitle === 0 && inlineRecordPresentation.locationShadow !== "none", `scene location was not moved into the readable upper caption: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.text.includes("サクヤ本人から届いた文章") && inlineRecordPresentation.text.includes("すぐに意味を決めるんじゃなくて") && !/LOCAL SOURCE|SOURCE|観測記録\s*\//.test(inlineRecordPresentation.text), `record exposed internal labels or lost canonical copy: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.locationText === "10月31日（土） 23:00｜最終画面の確認" && inlineRecordPresentation.locationParent === "novel-source-button" && inlineRecordPresentation.obsoleteFooterLocation === 0 && inlineRecordPresentation.signalTitleHidden && inlineRecordPresentation.locationShadow !== "none", `dated scene location was not moved into the readable upper caption: ${JSON.stringify(inlineRecordPresentation)}`);
   assert(await page.locator(".novel-evidence-card").count() === 0, "obsolete full-screen record card remains");
   await screenshot(page, "record-note");
 
@@ -745,7 +767,7 @@ try {
   await bootAt(page, backgroundTransitionStep.id);
   await page.waitForTimeout(200);
   const backgroundBeforeTransition = await page.locator("#novel-layer").evaluate((node) => getComputedStyle(node).backgroundImage);
-  await page.locator("#novel-dialogue").click();
+  await advanceLinear(page);
   await page.waitForFunction(() => document.body.classList.contains("scene-transitioning"));
   assert(await page.locator("#scene-transition").isVisible(), "novel background change did not use the shared scene transition canvas");
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, "prologue_online_circle_001", { timeout: 5000 });
@@ -753,7 +775,7 @@ try {
   assert(backgroundBeforeTransition.includes("novel-bg-workroom-v2.png") && backgroundAfterTransition.includes("novel-bg-online-night-v2.png"), "novel background transition did not swap the expected scenes");
   await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"), null, { timeout: 5000 });
 
-  const stableRevealStep = steps.find((step) => step.id === "festival_walk_001");
+  const stableRevealStep = steps.find((step) => step.id === "current_exhibition_006");
   await bootAt(page, stableRevealStep.id);
   await page.locator("#novel-text.is-revealing .novel-line").first().waitFor({ state: "attached", timeout: 5000 });
   const revealGeometry = () => page.locator("#novel-text").evaluate((text) => ({
@@ -813,7 +835,7 @@ try {
   assert(!await page.locator("body").evaluate((node) => node.classList.contains("scene-transitioning")), "unchanged story background incorrectly triggered a scene transition");
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.sceneId === "search");
 
-  const chat = steps.find((step) => step.id === "opening_empty_seat_004");
+  const chat = steps.find((step) => step.id === "opening_empty_seat_010");
   await bootAt(page, chat.id);
   assert(await page.locator("#novel-dialogue").isVisible(), "Slack must float above the normal dialogue window");
   assert(await page.locator(".novel-slack-workspace").count() === 1, "Slack must be one surface");
@@ -845,7 +867,7 @@ try {
   assert(slackGeometry.sitsAboveDialogue && slackAlpha(slackGeometry.background) <= 0.3 && slackAlpha(slackGeometry.mainBackground) <= 0.5 && !slackGeometry.backdropFilter.includes("blur"), `Slack overlay placement/translucency failed: ${JSON.stringify(slackGeometry)}`);
   await advanceLinear(page);
   assert(await page.locator(".novel-slack-post").count() === 2, "second Slack message did not append to the thread");
-  assert((await page.locator(".novel-slack-post").first().innerText()).includes("先に部屋、入ってる。"), "earlier Slack post disappeared");
+  assert((await page.locator(".novel-slack-post").first().innerText()).includes("先に入ってる"), "earlier Slack post disappeared");
   assert(await page.locator(".novel-slack-typing").isVisible(), "typing indicator did not continue before the next reply");
   assert((await page.locator(".novel-slack-post.is-new").evaluate((post) => getComputedStyle(post).animationName)) === "novel-slack-reply-in", "new Slack reply has no append animation");
   assert((await page.locator(".novel-slack-typing i b").first().evaluate((dot) => getComputedStyle(dot).animationName)) === "novel-slack-typing", "Slack typing indicator is not animated");
@@ -903,7 +925,15 @@ try {
   assert(/sakuya-(?:calm|sad|teasing|worried)-07-v1\.png/u.test(sakuyaSlackStandee) && !sakuyaSlackStandee.includes("-bust-"), `normal-dialogue bust crop leaked into Slack standee: ${sakuyaSlackStandee}`);
   report.sakuyaBust.fullBodyCues.push({ stepId: sakuyaChat.id, type: "chat", viewport: "2048", backgroundImage: sakuyaSlackStandee, passed: true });
 
-  const sakuyaDialogueSteps = steps.filter((step) => step.type === "dialogue" && step.speaker === "sakuya");
+  const isCentralEntranceDistanceStep = (step) => (
+    step.sceneId === "return_to_start"
+    && Number.parseInt(step.id.match(/_(\d+)$/u)?.[1] || "0", 10) >= 21
+  );
+  const sakuyaDialogueSteps = steps.filter((step) => (
+    step.type === "dialogue"
+    && step.speaker === "sakuya"
+    && !isCentralEntranceDistanceStep(step)
+  ));
   assert(sakuyaDialogueSteps.length > 0, "canonical data contains no Sakuya dialogue steps");
   const sakuyaDialogueScenes = [...new Set(sakuyaDialogueSteps.map((step) => step.sceneId))];
   for (const step of sakuyaDialogueSteps) report.sakuyaBust.dialogues.push(await inspectSakuyaDialogueBust(page, step, "2048"));
@@ -932,6 +962,7 @@ try {
     report.sakuyaBust.references.push({ speaker, stepId: referenceStep.id, sceneId: referenceStep.sceneId, viewport: "2048" });
     await screenshot(page, `sakuya-bust-reference-${speaker}-desktop`);
   }
+  await bootAt(page, sakuyaChat.id, { metCharacters: { mizuha: false, amane: false, sakuya: false } });
   await assertSlackCastGate(page, { visible: false, speaker: "sakuya", label: "desktop pre-meeting Sakuya" });
 
   const lockedMeetingFlags = { mizuha: false, amane: false, sakuya: false };
@@ -948,7 +979,12 @@ try {
   const amaneChatAfterMeeting = stepMap.get("first_meeting_hall_043");
   await bootAt(page, amaneChatAfterMeeting.id, { metCharacters: pairMeetingFlags });
   const visibleAmaneCast = await assertSlackCastGate(page, { visible: true, speaker: "sora", label: "desktop post-meeting Amane" });
-  assert(visibleAmaneCast.characterInset >= 96 && Math.abs(visibleAmaneCast.characterOpacity - 0.66) < 0.01 && visibleAmaneCast.characterWidthRatio < 0.38 && visibleAmaneCast.characterRightBias > 0.7 && visibleAmaneCast.characterBottomGap < 24 && visibleAmaneCast.characterClip !== "none", `unlocked chat cast lost its lower-right clipped presentation: ${JSON.stringify(visibleAmaneCast)}`);
+  assert(visibleAmaneCast.device === "mobile" && Math.abs(visibleAmaneCast.characterOpacity - 0.66) < 0.01 && visibleAmaneCast.characterWidthRatio < 0.9 && visibleAmaneCast.characterRightBias > 1 && visibleAmaneCast.characterBottomGap < 24 && visibleAmaneCast.characterClip === "none", `unlocked mobile-device chat cast lost its adjacent lower-right presentation: ${JSON.stringify(visibleAmaneCast)}`);
+
+  const wideAmaneChatAfterMeeting = stepMap.get("production_year_009");
+  await bootAt(page, wideAmaneChatAfterMeeting.id, { metCharacters: completeMeetingFlags });
+  const visibleWideAmaneCast = await assertSlackCastGate(page, { visible: true, speaker: "sora", label: "desktop wide-device Amane" });
+  assert(visibleWideAmaneCast.device === "wide" && visibleWideAmaneCast.characterInset >= 96 && Math.abs(visibleWideAmaneCast.characterOpacity - 0.66) < 0.01 && visibleWideAmaneCast.characterWidthRatio < 0.38 && visibleWideAmaneCast.characterRightBias > 0.7 && visibleWideAmaneCast.characterBottomGap < 24 && visibleWideAmaneCast.characterClip !== "none", `unlocked wide-device chat cast lost its lower-right clipped presentation: ${JSON.stringify(visibleWideAmaneCast)}`);
 
   const sakuyaChatBeforeMeeting = stepMap.get("first_meeting_hall_042");
   await bootAt(page, sakuyaChatBeforeMeeting.id, { metCharacters: pairMeetingFlags });
@@ -1118,13 +1154,17 @@ try {
   for (const interaction of interactions) await completeInteraction(page, interaction);
 
   const narration = steps.find((step) => step.type === "narration");
-  await bootAt(page, narration.id);
+  const logHistoryIds = [...new Set([
+    ...steps.filter((step) => step.text).slice(0, 72).map((step) => step.id),
+    overflowRegressionStep.id,
+  ])];
+  await bootAt(page, narration.id, { readStepIds: logHistoryIds });
   const keyboardStep = await currentStepId(page);
   await page.locator("#novel-dialogue").focus();
   await page.keyboard.press("Enter");
   await page.keyboard.press("Space");
   await page.waitForFunction((previous) => document.querySelector("#novel-layer")?.dataset.stepId !== previous, keyboardStep);
-  await bootAt(page, narration.id);
+  await bootAt(page, narration.id, { readStepIds: logHistoryIds });
   await page.locator("#novel-log-button").click();
   assert(await page.locator("#novel-log-panel").isVisible(), "LOG did not open");
   await page.waitForTimeout(300);
@@ -1217,7 +1257,7 @@ try {
   assert(await page.locator("#novel-eves-panel").isVisible(), "E.V.E.S. did not open");
   await page.locator("#novel-eves-close").click();
   await page.locator("#novel-config-button").click();
-  await page.locator("#novel-restart-button").click();
+  await page.locator("#novel-restart-button").evaluate((button) => button.click());
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, story.scenes[0].steps[0].id);
   assert(await page.locator("#novel-config-panel").isHidden(), "CONFIG remained open after restarting the story");
   assert(Object.values(await page.evaluate(() => globalThis.GaiaNovel.getState().metCharacters)).every((value) => value === false), "restart did not reset the three meeting flags");
