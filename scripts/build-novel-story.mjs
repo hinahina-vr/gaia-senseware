@@ -252,7 +252,7 @@ const configs = [
   { id: "epilogue_reflection_field", prefix: "EPILOGUE｜次へ持ち帰りたい姿勢", chapter: "EPILOGUE", modeIndex: 9 },
   { id: "choice_reflection", prefix: "最後の選択｜次へ渡す姿勢", chapter: "FINAL CHOICE", modeIndex: 9, reflectionChoice: { prompt: "次へ渡したい姿勢を、最大3つまで選んでください。" } },
   { id: "final_record", prefix: "最終表示｜選んだ姿勢を空間へ返す", chapter: "FINAL RECORD", modeIndex: 9 },
-  { id: "return_to_start", prefix: "END｜展示を一時休止する", chapter: "END", modeIndex: 9 },
+  { id: "return_to_start", prefix: "CURRENT CONTACT｜展示を一時休止する", chapter: "CURRENT CONTACT", modeIndex: 9 },
 ];
 
 const scenes = [];

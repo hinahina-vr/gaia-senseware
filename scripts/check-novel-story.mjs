@@ -149,7 +149,12 @@ for (const obsoleteEndingCopy of [
 ]) assert.ok(!allText.includes(obsoleteEndingCopy), `obsolete ending copy remains: ${obsoleteEndingCopy}`);
 const endSteps = steps.filter((step) => step.type === "end");
 assert.deepEqual(endSteps.map((step) => [step.sceneId, step.text]), [["return_to_start", "END"]], "16:03 must be the sole canonical END path");
-assert.ok(!scenes.find((scene) => scene.id === "return_to_start")?.steps.some((step) => step.type === "start"), "return_to_start must no longer cycle to START");
+const currentContactScene = scenes.find((scene) => scene.id === "return_to_start");
+assert.equal(currentContactScene?.title, "CURRENT CONTACT｜展示を一時休止する", "the 15:55 scene title must describe the current contact, not END");
+assert.equal(currentContactScene?.chapter, "CURRENT CONTACT", "the 15:55 scene chapter must not begin END before 16:03");
+assert.notEqual(currentContactScene?.title, "END｜展示を一時休止する", "the obsolete 15:55 END title remains");
+assert.notEqual(currentContactScene?.chapter, "END", "the obsolete 15:55 END chapter remains");
+assert.ok(!currentContactScene?.steps.some((step) => step.type === "start"), "return_to_start must no longer cycle to START");
 assert.match(allText, /園芸売り場の写真が閉じ、画面は現在の展示席へ戻る。/u, "the observation-order choice must establish the return to the exhibition seat");
 assert.match(allText, /端末の右側には、傷のある青りんごが最初と同じ位置に置かれている。/u, "the physical apple must be distinguished from the on-screen measurements");
 assert.match(allText, /園芸売り場の温度計は三十六度。/u, "the garden-center measurement must read as natural narration");

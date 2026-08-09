@@ -8366,8 +8366,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
     },
     {
       "id": "return_to_start",
-      "title": "END｜展示を一時休止する",
-      "chapter": "END",
+      "title": "CURRENT CONTACT｜展示を一時休止する",
+      "chapter": "CURRENT CONTACT",
       "modeIndex": 9,
       "steps": [
         {
