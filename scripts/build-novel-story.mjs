@@ -92,13 +92,13 @@ const speakerMap = Object.freeze({
 const recordTypeFor = (text) => {
   if (/LOCAL SOURCE/u.test(text)) return "LOCAL_SOURCE";
   if (/VISITOR TRACE|操作記録/u.test(text)) return "VISITOR_TRACE";
-  if (/DERIVED|計算・解釈/u.test(text)) return "DERIVED";
+  if (/DERIVED|計算・解釈|展示のために変換した表示|ミズハが生成し、候補から選んだ文章/u.test(text)) return "DERIVED";
   if (/SCENARIO|仮定/u.test(text)) return "SCENARIO";
-  if (/SOURCE|観測記録|最後の受信文|直前の投稿/u.test(text)) return "SOURCE";
+  if (/SOURCE|観測記録|最後の受信文|直前の投稿|サクヤ本人から届いた文章|サクヤから最後に届いた投稿|直前に届いた投稿/u.test(text)) return "SOURCE";
   return null;
 };
 const isRecordBlock = (text) => Boolean(recordTypeFor(text)) && (
-  /^(観測記録|その場の観測|計算・解釈|仮定|操作記録|園芸売り場の温度計|最寄り観測所の気温|公開同意|学園祭公開版|削除 \/|復元 \/|編集履歴 \/|直前の投稿|最後の受信文|受信時刻|制作記録|サクヤの受信文)/u.test(text)
+  /^(観測記録|その場の観測|計算・解釈|仮定|操作記録|園芸売り場の温度計|最寄り観測所の気温|公開同意|学園祭公開版|削除 \/|復元 \/|編集履歴 \/|直前の投稿|最後の受信文|受信時刻|制作記録|サクヤの受信文|展示のために変換した表示|ミズハが生成し、候補から選んだ文章|サクヤ本人から届いた文章|サクヤから最後に届いた投稿|直前に届いた投稿)/u.test(text)
   || /\n(AUTHOR|GENERATED|EDITORS|SOURCE|DERIVED|VISITOR)/u.test(text)
 );
 const parseChoiceOptions = (block, choice) => {
@@ -108,8 +108,8 @@ const parseChoiceOptions = (block, choice) => {
 };
 const conditionFromHeading = (block) => {
   if (!/^＜.+＞$/u.test(block)) return null;
-  if (/SOURCE RECORD/u.test(block)) return { key: "editorialChoice", value: "SOURCE_RECORD" };
-  if (/DISCLOSE DERIVATION/u.test(block)) return { key: "editorialChoice", value: "DISCLOSE_DERIVATION" };
+  if (/本人から届いた記録だけを表示/u.test(block)) return { key: "editorialChoice", value: "SOURCE_RECORD" };
+  if (/本人の記録と生成した部分を分けて表示/u.test(block)) return { key: "editorialChoice", value: "DISCLOSE_DERIVATION" };
   return null;
 };
 
@@ -244,7 +244,7 @@ const configs = [
   { id: "mode08_map_layers", prefix: "MODE 08｜地図モード／三つの生態系", chapter: "MODE 08", modeIndex: 7, interaction: { kind: "map08", requiredLayers: ["nature", "life", "memory"] } },
   { id: "mode10_space", prefix: "MODE 10｜宇宙モード／最後の受信文", chapter: "MODE 10", modeIndex: 9, interaction: { kind: "space10", requiredGestures: 1 } },
   { id: "choice_editorial", prefix: "編集方針の選択｜最終画面に何を残すか", chapter: "EDITORIAL CHOICE", modeIndex: 9, choice: { id: "editorial_choice", prompt: "最終画面に何を残すか", trackedByEves: true, options: [{ value: "SOURCE_RECORD", next: "epilogue_reflection_field" }, { value: "DISCLOSE_DERIVATION", next: "epilogue_reflection_field" }] } },
-  { id: "epilogue_reflection_field", prefix: "EPILOGUE｜観測姿勢 / REFLECTION FIELD", chapter: "EPILOGUE", modeIndex: 9 },
+  { id: "epilogue_reflection_field", prefix: "EPILOGUE｜次へ持ち帰りたい姿勢", chapter: "EPILOGUE", modeIndex: 9 },
   { id: "choice_reflection", prefix: "最後の選択｜次へ渡す姿勢", chapter: "FINAL CHOICE", modeIndex: 9, reflectionChoice: { prompt: "次へ渡したい姿勢を、最大3つまで選んでください。" } },
   { id: "final_record", prefix: "最終表示｜選んだ姿勢を空間へ返す", chapter: "FINAL RECORD", modeIndex: 9 },
 ];

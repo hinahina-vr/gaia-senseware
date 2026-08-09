@@ -838,28 +838,28 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "カードには、日本語の説明が大きく、英字の分類がその下へ小さく表示される。"
+          "text": "画面には、二つの値が、測った場所と時刻を添えて並ぶ。"
         },
         {
           "id": "prologue_basil_021",
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "その場で見た記録：園芸売り場の温度計 36 ℃\n補助表示：LOCAL SOURCE"
+          "text": "園芸売り場の温度計は三十六度。ミズハがバジルの鉢のそばで見た値で、撮影時刻が添えられている。"
         },
         {
           "id": "prologue_basil_022",
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "公開された元の記録：最寄り観測所の気温、観測所名、観測時刻\n補助表示：SOURCE"
+          "text": "もう一つは、最寄りの観測所が同じ時間帯に公開した気温。観測所名、観測時刻、提供元を開いて確かめられる。"
         },
         {
           "id": "prologue_basil_023",
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ここでいう `SOURCE` は、難しい種類名ではない。「誰が、どこで、どの方法で確かめたものかを後からたどれる元の記録」という意味である。売り場の温度計も観測所の値も元の記録だが、測った場所が違うため、同じ一本の気温としてはつながない。"
+          "text": "どちらも、あとから測った場所と方法を確かめられる値である。ただし条件が違うため、画面は二つを一本の気温変化としてつながない。"
         }
       ],
       "nextSceneId": "choice_observation_order"
@@ -890,24 +890,31 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "現在の展示端末へ、二つの記録カードが並ぶ。\n私の右手は青りんごのすぐ横にあり、カードの白い光が指の側面を照らしている。"
+          "text": "園芸売り場の写真が閉じ、画面は現在の展示席へ戻る。背後の呼び込みと足音が近づき、黒い展示机と端末の縁が照明を反射する。"
         },
         {
           "id": "choice_observation_order_002",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "これは半年間の記録の中へ何かを書き込む選択ではない。いま展示席にいる私が、どちらの元の記録を先に開くかを選ぶ。"
+          "text": "端末には、園芸売り場の温度計と、最寄り観測所の気温が横に並ぶ。端末の右側には、傷のある青りんごが最初と同じ位置に置かれている。私は画面へ右手を戻す。"
         },
         {
           "id": "choice_observation_order_003",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "先に開く記録を選ぶが、選ばなかった記録が消えるわけではない。"
+          "text": "これは半年間の記録の中へ何かを書き込む選択ではない。いま展示席にいる私が、どちらの元の記録を先に開くかを選ぶ。"
         },
         {
           "id": "choice_observation_order_004",
+          "sceneId": "choice_observation_order",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "先に開く記録を選ぶが、選ばなかった記録が消えるわけではない。"
+        },
+        {
+          "id": "choice_observation_order_005",
           "sceneId": "choice_observation_order",
           "type": "choice",
           "choiceId": "observation_order",
@@ -927,49 +934,49 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           ]
         },
         {
-          "id": "choice_observation_order_005",
-          "sceneId": "choice_observation_order",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選んだあと、もう一方も開く。\n二つの値は同じ場所で測った一続きの線にはされず、別々の条件を持つ記録として残る。\n操作記録へ保存されるのは、どちらを先に開いたかだけである。"
-        },
-        {
           "id": "choice_observation_order_006",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初のカードを閉じるとき、背後で誰かが椅子を引く音がする。\n二枚目を開くと、画面の右上にある「いまいる場所」の下へ、過去の制作チャンネルの日付が重なる。英字の `CURRENT` は小さく残っているが、それより先に日本語の説明が読める。"
+          "text": "選んだあと、もう一方も開く。\n二つの値は同じ場所で測った一続きの線にはされず、それぞれの測定条件と一緒に表示される。"
         },
         {
           "id": "choice_observation_order_007",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私は展示席に座ったまま、半年ぶんの投稿を読み進める。"
+          "text": "最初のカードを閉じるとき、背後で誰かが椅子を引く音がする。\n二つ目を閉じると、画面に「一年前・学園祭前夜」と表示される。端末は、三人が初めて会う約束をした日の投稿へ進む。"
         },
         {
           "id": "choice_observation_order_008",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人はそれから半年、顔を見ず、声も聞かず、文字だけで話した。\nミズハの長い説明には、アマネがまず目のリアクションを付けた。サクヤは翌日の夜になって、途中の一文だけを引用した。"
+          "text": "私は展示席に座ったまま、半年ぶんの投稿を読み進める。"
         },
         {
           "id": "choice_observation_order_009",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネが画面の不具合を直した日は、ミズハが「助かりましたわ」と書き、サクヤが数日後に同じ画面のスクリーンショットを貼った。\n誰かの返事が一日途切れても、戻ってきた人は前の話の続きから書き始めた。"
+          "text": "三人はそれから半年、顔を見ず、声も聞かず、文字だけで話した。\nミズハの長い説明には、アマネがまず目のリアクションを付けた。サクヤは翌日の夜になって、途中の一文だけを引用した。"
         },
         {
           "id": "choice_observation_order_010",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ハドルを開こうという話は二度出た。三人とも賛成の印を付けたが、開始時刻を決めないまま別の話題へ移り、二度とも誰も通話開始ボタンを押さなかった。"
+          "text": "アマネが画面の不具合を直した日は、ミズハが「助かりましたわ」と書き、サクヤが数日後に同じ画面のスクリーンショットを貼った。\n誰かの返事が一日途切れても、戻ってきた人は前の話の続きから書き始めた。"
         },
         {
           "id": "choice_observation_order_011",
+          "sceneId": "choice_observation_order",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "ハドルを開こうという話は二度出た。三人とも賛成の印を付けたが、開始時刻を決めないまま別の話題へ移り、二度とも誰も通話開始ボタンを押さなかった。"
+        },
+        {
+          "id": "choice_observation_order_012",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
@@ -2636,7 +2643,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "production_year_043",
           "sceneId": "production_year",
           "type": "transition",
-          "text": "十一月末｜SOURCEとDERIVEDを分ける"
+          "text": "十一月末｜元の記録と、そこから作った表示を分ける"
         },
         {
           "id": "production_year_044",
@@ -2657,28 +2664,28 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは二つを一本の折れ線へ入れず、別々のカードにした。"
+          "text": "アマネは二つを一本の折れ線へ入れず、別々の欄にした。"
         },
         {
           "id": "production_year_047",
           "sceneId": "production_year",
-          "type": "record",
-          "recordType": "SOURCE",
-          "text": "観測記録 / SOURCE\n園芸売り場の温度計：36 ℃\n記録者：みず\n場所：鉢の近く"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "一つ目には、園芸売り場の温度計が三十六度を示していたこと、見た人がみずであること、場所が鉢の近くだったことを書く。"
         },
         {
           "id": "production_year_048",
           "sceneId": "production_year",
-          "type": "record",
-          "recordType": "SOURCE",
-          "text": "観測記録 / SOURCE\n最寄り観測所の気温：公開値\n観測所名・観測時刻・提供元を表示"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二つ目には、最寄り観測所が公開した気温と、観測所名、観測時刻、提供元を書く。"
         },
         {
           "id": "production_year_049",
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "SOURCEは「絶対に正しい」という印ではない。誰が、どこで、どの方法で得た記録かを辿れる元の値や文章を指す。"
+          "text": "どちらにも、誰が、どこで、どの方法で得た値かをあとから確かめられる情報を残す。それは「絶対に正しい」という印ではなく、条件の違いを隠さないためだった。"
         },
         {
           "id": "production_year_050",
@@ -2690,16 +2697,16 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "production_year_051",
           "sceneId": "production_year",
-          "type": "record",
-          "recordType": "DERIVED",
-          "text": "計算・解釈 / DERIVED\n二つの値を表示用の色へ変換\n変換者：あまあま"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "二つの値から計算した平均を、アマネが表示用の背景色へ変換する。画面には、色を作った人と変換方法も添えた。"
         },
         {
           "id": "production_year_052",
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "DERIVEDは、元の記録から計算、要約、変換、生成によって作ったものを指す。元の値を隠すための偽物という意味でも、本人が直接記録したSOURCEと同じものという意味でもない。"
+          "text": "その色は温度計が直接示したものではない。二つの値を材料に制作者が作った表示であり、元の値を隠すものでも、元の値そのものでもなかった。"
         },
         {
           "id": "production_year_053",
@@ -2742,7 +2749,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは背景の隅へ小さく置いていた `DERIVED` を、操作ボタンの横へ移した。サクヤはその下へ「二つの記録を表示用の色へ変換」と書く。ミズハは開閉できる欄へ、二つの測定条件を戻した。"
+          "text": "アマネは背景の隅へ小さく置いていた変換方法を、操作ボタンの横へ移した。サクヤはその下へ「二つの記録を表示用の色へ変換」と書く。ミズハは開閉できる欄へ、二つの測定条件を戻した。"
         },
         {
           "id": "production_year_058",
@@ -2756,7 +2763,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "何かが届いたまま残るならSOURCE。\n届いたものを使って制作者が別の表示を作るならDERIVED。\n二つは色だけでなく、作者、時刻、変換方法を分ける。"
+          "text": "温度や文章など、届いたものは、得た人、場所、時刻と一緒に残す。\nそれを使って制作者が色、要約、生成文などを作った場合は、作った人と方法を添え、元の記録とは別に置く。"
         },
         {
           "id": "production_year_060",
@@ -3451,7 +3458,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "発生 / OCCURRED：それぞれの部屋で音が鳴った時刻\n受信 / RECEIVED：通話の仕組みが音を受け取った時刻\n開封 / OPENED：保存された録音を誰かが開いた時刻"
+          "text": "発生 / OCCURRED：それぞれの部屋で音が鳴った時刻\n音が通話へ届いた時刻\n保存された録音を誰かが開いた時刻"
         },
         {
           "id": "production_year_154",
@@ -3820,7 +3827,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人目はSOURCEの印を押し、元データを開いたあと、戻る場所を見失った。"
+          "text": "二人目は「もとになった記録を見る」を押し、観測所の値を開いたあと、戻る場所を見失った。"
         },
         {
           "id": "production_year_206",
@@ -3841,14 +3848,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "「因果に見えた」\n「戻れない」\n「SOURCEの意味が分からない」\n「音をもう一度聞きたい」\n「選ばないと進めないと思った」"
+          "text": "「因果に見えた」\n「戻れない」\n「どれが元の記録か分からない」\n「音をもう一度聞きたい」\n「選ばないと進めないと思った」"
         },
         {
           "id": "production_year_209",
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは戻るボタンを常に同じ位置へ置いた。ミズハはSOURCEの最初の説明を「元の記録へ戻れます」に変えた。サクヤは選択画面へ「何も選ばず進む」を足した。"
+          "text": "アマネは戻るボタンを常に同じ位置へ置いた。ミズハはボタンの名前を「もとになった記録を見る」に変えた。サクヤは選択画面へ「何も選ばず進む」を足した。"
         },
         {
           "id": "production_year_210",
@@ -3910,7 +3917,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "公開同意 / PUBLICATION AGREEMENT\n学園祭公開版 1.0 / FESTIVAL BUILD 1.0"
+          "text": "学園祭公開版1.0　公開する内容の確認"
         },
         {
           "id": "production_year_219",
@@ -4008,7 +4015,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人分の公開可が揃い、FESTIVAL BUILD 1.0が保存された。\n申請が受理された通知は、同じ夜、三人の制作チャンネルへ届いた。"
+          "text": "三人分の公開可が揃い、学園祭公開版1.0が保存された。\n申請が受理された通知は、同じ夜、三人の制作チャンネルへ届いた。"
         },
         {
           "id": "production_year_233",
@@ -4028,7 +4035,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "会場の端末はネットワークが不安定でも起動すること。外部サーバーへ来場者の操作記録を送らないこと。停電や強制終了のあとも、三人が確認した公開版を壊さないこと。展示机の幅、椅子の高さ、スピーカーから隣のブースへ漏れる音量。"
+          "text": "会場の端末は、ネットワークが不安定でも起動すること。停電や強制終了のあとも、三人が確認した公開版を壊さないこと。展示机の幅、椅子の高さ、スピーカーから隣のブースへ漏れる音量。"
         },
         {
           "id": "production_year_236",
@@ -5577,14 +5584,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "左：FESTIVAL BUILD 1.0\n保存時点の編集者：みず / あまあま / saku\n公開同意：三人確認済み"
+          "text": "左には、三人が内容を確認した学園祭公開版1.0を置く。保存時点の制作者は、みず、あまあま、sakuの三人である。"
         },
         {
           "id": "search_095",
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "右：POST-BUILD WORKSPACE\n保存時点以後の候補、確認事項、未完了作業\n公開版へ未反映"
+          "text": "右には、その版を保存したあとに出た候補、確認事項、未完了の作業を置く。右側の内容は、学園祭公開版にはまだ入っていない。"
         },
         {
           "id": "search_096",
@@ -5598,7 +5605,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "学園祭へ出すなら、三人が公開を確認したFESTIVAL BUILD 1.0まで。\nサクヤ名義の文章は足さない。\nその後の変更は、ミズハとアマネの名前で履歴を残す。"
+          "text": "学園祭へ出すなら、三人が公開を確認した学園祭公開版1.0まで。\nサクヤ名義の文章は足さない。\nその後の変更は、ミズハとアマネの名前で履歴を残す。"
         },
         {
           "id": "search_098",
@@ -5675,7 +5682,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人はFESTIVAL BUILD 1.0を最初から最後まで開く。"
+          "text": "二人は学園祭公開版1.0を最初から最後まで開く。"
         },
         {
           "id": "search_109",
@@ -5696,7 +5703,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "サクヤが「三人の版は、三人のまま」と書いた投稿も開く。\nその文を、現在の出展への新しい同意とは扱わない。三人がFESTIVAL BUILD 1.0を保存した時点の確認として読む。"
+          "text": "サクヤが「三人の版は、三人のまま」と書いた投稿も開く。\nその文を、現在の出展への新しい同意とは扱わない。三人が学園祭公開版1.0を保存した時点の確認として読む。"
         },
         {
           "id": "search_112",
@@ -5827,7 +5834,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "- 端末起動時にFESTIVAL BUILD 1.0を読み込む接続。\n- 会場の音量に合わせたスピーカー設定。\n- 途中で席を離れられる案内。\n- 操作記録が端末内だけに保存されることの説明。\n- 制作過程を開く入口。"
+          "text": "- 端末起動時に学園祭公開版1.0を読み込む接続。\n- 会場の音量に合わせたスピーカー設定。\n- 途中で席を離れられる案内。\n- 制作過程を開く入口。"
         },
         {
           "id": "search_131",
@@ -5939,7 +5946,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "FESTIVAL BUILD 1.0：EDITORS 3\nPOST-BUILD CHANGES：EDITORS 2"
+          "text": "三人が内容を確認した学園祭公開版1.0\nその後に二人が行った会場用の変更"
         }
       ],
       "nextSceneId": "festival_build"
@@ -5976,7 +5983,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "時間表示は「いまいる場所」。\nその横に補助ラベルとして、小さく `CURRENT` と出ている。いま、私が座っている学園祭の展示ホールである。"
+          "text": "画面の時刻表示が現在へ戻り、「学園祭・展示ホール」と出る。"
         },
         {
           "id": "festival_build_005",
@@ -6060,14 +6067,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "端末に入っている作品の核は、三人が公開可を付けたFESTIVAL BUILD 1.0のまま保存されている。"
+          "text": "端末に入っている作品の核は、三人が公開可を付けた学園祭公開版1.0のまま保存されている。"
         },
         {
           "id": "festival_build_017",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "その後、ミズハとアマネが会場用に加えた案内、端末への接続、操作記録の保存、制作過程を開く入口は、三人の版へ混ぜず、二人の変更として別に記録されている。"
+          "text": "その後、ミズハとアマネが会場用に加えた案内、端末への接続、制作過程を開く入口は、三人の版へ混ぜず、二人の変更として別に記録されている。"
         },
         {
           "id": "festival_build_018",
@@ -6081,14 +6088,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "学園祭公開版 1.0 / FESTIVAL BUILD 1.0\nEDITORS：みず / あまあま / saku\nPUBLICATION AGREED：YES"
+          "text": "学園祭公開版1.0\n作者：みず / あまあま / saku\n三人が公開内容を確認済み"
         },
         {
           "id": "festival_build_020",
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "公開同意後の変更 / POST-BUILD CHANGES\nEDITORS：みず / あまあま\nATTRIBUTED SEPARATELY：YES\nPUBLIC BUILD OVERWRITTEN：NO"
+          "text": "公開同意後に会場用として加えた変更\n変更した人：みず / あまあま\n三人の版とは分けて記録\n学園祭公開版1.0への上書きなし"
         },
         {
           "id": "festival_build_021",
@@ -6151,7 +6158,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ここから私が操作するのは、サクヤを探すための検索画面ではない。\n三人がFESTIVAL BUILD 1.0へ入れた地球の記録と、その記録をどこまで解釈できるかを確かめる本編である。"
+          "text": "ここから私が操作するのは、サクヤを探すための検索画面ではない。\n三人が学園祭公開版1.0へ入れた地球の記録と、その記録をどこまで解釈できるかを確かめる本編である。"
         },
         {
           "id": "festival_build_030",
@@ -6244,21 +6251,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "観測・研究記録へ戻れる情報 / SOURCE\n記録を時間軸、色、動きへ変換した表示 / DERIVED"
+          "text": "画面には、「もとになった観測・研究記録」と「展示のために変換した表示」の二つの入口が残る。"
         },
         {
           "id": "gx_deep_time_010",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "SOURCEは太古の海を撮影した映像という意味ではない。岩石、化学的な痕跡、年代測定、複数の研究から得られた記録へ戻る入口である。"
+          "text": "前者からは、岩石、化学的な痕跡、年代測定、複数の研究へ戻れる。太古の海を直接撮影した映像がある、という意味ではない。"
         },
         {
           "id": "gx_deep_time_011",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "DERIVEDは、それらを来場者が触れられる一つの順序へ制作者が並べた部分を示す。"
+          "text": "後者からは、制作者がそれらをどのように時間軸、色、動きへ置き換えたかを確かめられる。"
         },
         {
           "id": "gx_deep_time_012",
@@ -6324,7 +6331,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面の右端にSOURCEの入口が並ぶ。"
+          "text": "画面の右端に、もとになった研究を確かめる入口が並ぶ。"
         },
         {
           "id": "gx_deep_time_021",
@@ -6352,7 +6359,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面の隅には「計算・解釈 / DERIVED」と出る。\n元の研究記録そのものではなく、制作者が鑑賞用の時間軸へ変換した部分だと示している。"
+          "text": "画面の隅には「展示のために変換した表示」と出る。\n元の研究記録そのものではなく、制作者が鑑賞用の時間軸へ変換した部分だと分かる。"
         },
         {
           "id": "gx_deep_time_025",
@@ -6400,7 +6407,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "`SYMBOLIC POINT / DERIVED`\n個体数の実測ではなく、光合成を行う生命活動を表す表示上の記号"
+          "text": "説明用の点\n個体数の実測ではなく、光合成を行う生命活動を表す画面上の記号"
         },
         {
           "id": "gx_deep_time_032",
@@ -6490,7 +6497,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_deep_time",
           "type": "record",
           "recordType": "DERIVED",
-          "text": "計算・解釈 / DERIVED\n太古の記録を、触れられる時間軸へ並べた表示"
+          "text": "展示のために変換した表示\n太古の記録を、触れられる時間軸へ並べたもの"
         },
         {
           "id": "gx_deep_time_045",
@@ -6574,7 +6581,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "指先には画面の熱がわずかに残り、背後では別のブースの終了音が鳴る。端末の右上は `CURRENT` のまま、開いている記録だけが太古から現在へ進む。"
+          "text": "指先には画面の熱がわずかに残り、背後では別のブースの終了音が鳴る。私は現在の展示席に座ったまま、画面の時間だけが太古から現在へ進む。"
         },
         {
           "id": "gx_deep_time_057",
@@ -6695,7 +6702,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode03_map",
           "type": "narration",
           "speaker": "narrator",
-          "text": "地図の上では隣り合って見えても、同じ機械が同じ瞬間に測った二つの値ではない。画面は位置を合わせるために記録を変換しているため、その処理もDERIVEDとして開ける。"
+          "text": "地図の上では隣り合って見えても、同じ機械が同じ瞬間に測った二つの値ではない。画面上で位置を合わせるために行った変換は、「この展示で加えた処理」から開いて確かめられる。"
         },
         {
           "id": "mode03_map_014",
@@ -6758,7 +6765,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode03_map",
           "type": "narration",
           "speaker": "narrator",
-          "text": "削除 / REMOVED：森が雨を呼ぶ。\n復元 / RESTORED：森と雨が重なる場所があります。原因はこの画面だけでは決められません。\n編集履歴 / EDIT HISTORY：saku / みず / あまあま"
+          "text": "公開画面から外した文：森が雨を呼ぶ。\n三人で直して戻した文：森と雨が重なる場所があります。原因はこの画面だけでは決められません。\n直した人：saku / みず / あまあま"
         },
         {
           "id": "mode03_map_022",
@@ -6793,14 +6800,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode03_map",
           "type": "record",
           "recordType": "SOURCE",
-          "text": "直前の投稿 / CONTEXT\n02:13  🌸 saku 🌸\nデータだけ先に上げた。\n森と雨が重なっても、「森が雨を降らせた」にはしないでね。"
+          "text": "直前に届いた投稿\n02:13  🌸 saku 🌸\nデータだけ先に上げた。\n森と雨が重なっても、「森が雨を降らせた」にはしないでね。"
         },
         {
           "id": "mode03_map_027",
           "sceneId": "mode03_map",
           "type": "record",
           "recordType": "SOURCE",
-          "text": "最後の受信文 / SOURCE\n02:14  🌸 saku 🌸\nもし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――"
+          "text": "サクヤから最後に届いた投稿\n02:14  🌸 saku 🌸\nもし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――"
         },
         {
           "id": "mode03_map_028",
@@ -6990,7 +6997,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "受信時刻 / RECEIVED：02:14\n二人が開いた時刻 / OPENED：10:27"
+          "text": "サクヤの投稿が届いた時刻：02:14\nミズハとアマネが初めて開いた時刻：10:27"
         },
         {
           "id": "mode07_abstract_020",
@@ -7004,14 +7011,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "`RECEIVED` へ触れると、サーバーが投稿を受け付けた時刻と、制作者の画面へ表示した時刻が開く。"
+          "text": "「届いた時刻」を開くと、投稿を受け付けた時刻と、二人の画面へ表示された時刻が分けて示される。"
         },
         {
           "id": "mode07_abstract_022",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "`OPENED` へ触れると、ミズハとアマネの端末がその投稿を初めて開いた時刻が開く。"
+          "text": "「初めて開いた時刻」を開くと、ミズハとアマネがその投稿を初めて表示した時刻が示される。"
         },
         {
           "id": "mode07_abstract_023",
@@ -7053,7 +7060,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初の一時間は、会場用端末の起動確認に使った。次の一時間で、前の来場者の選択が待機画面へ残らないことを試した。日が暮れてから、三人の公開同意、作者名、SOURCEとDERIVEDの分類を、画面の先頭から一件ずつ読み直した。"
+          "text": "最初の一時間は、会場用端末の起動確認に使った。次の一時間で、前の来場者の選択が待機画面へ残らないことを試した。日が暮れてから、三人の公開同意、作者名、本人や観測元から届いた記録と、そこから計算・生成した内容の区別を、画面の先頭から一件ずつ読み直した。"
         },
         {
           "id": "mode07_abstract_029",
@@ -7214,7 +7221,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "record",
           "recordType": "SOURCE",
-          "text": "観測記録 / SOURCE\n作者 / AUTHOR：saku"
+          "text": "サクヤ本人から届いた文章\n作者：saku"
         },
         {
           "id": "mode07_abstract_052",
@@ -7228,7 +7235,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "record",
           "recordType": "DERIVED",
-          "text": "計算・解釈 / DERIVED\n生成部分 / GENERATED TEXT"
+          "text": "ミズハが生成し、候補から選んだ文章"
         },
         {
           "id": "mode07_abstract_054",
@@ -7242,14 +7249,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "生成元 / GENERATED FROM：公開対象として選定済みの制作チャンネル投稿からローカル生成\n生成実行 / GENERATED BY：みず\n選定責任 / SELECTED BY：みず\n本人の確認 / CONFIRMED BY saku：なし"
+          "text": "もとにした文章：公開対象として三人が選んだ制作チャンネルの投稿\n生成した人：みず\n候補から選んだ人：みず\nサクヤ本人の確認：なし"
         },
         {
           "id": "mode07_abstract_056",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "白いカードのSOURCEは、実際にサクヤのアカウントから届き、保存された文章を示す。\n青いカードのDERIVEDは、公開対象の文章を材料に計算で作り、ミズハが候補の中から選んだ文章を示す。"
+          "text": "白いカードは、実際にサクヤのアカウントから届き、保存された文章を示す。\n青いカードは、公開対象の文章を材料に生成し、ミズハが候補の中から選んだ文章を示す。"
         },
         {
           "id": "mode07_abstract_057",
@@ -7305,7 +7312,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "離れると `SOURCE` と `DERIVED` の細い文字は読みにくくなり、二つの本文だけが先に見える。"
+          "text": "離れると、作者と作り方を示す細い文字は読みにくくなり、二つの本文だけが先に見える。"
         },
         {
           "id": "mode07_abstract_065",
@@ -7564,7 +7571,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "saku_LAST_MESSAGE.txt\n　　　↓\nsaku_STYLE_DERIVED_01.txt"
+          "text": "saku_last_message.txt\n　　　↓\nmizu_generated_from_saku_01.txt"
         },
         {
           "id": "mode07_abstract_102",
@@ -7748,7 +7755,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面右上は `RECORD：公開前夜` のまま残る。\n私が展示ホールを出て海へ歩いているのではない。現在の展示席に座り、二人が保存した作業記録と、ミズハが撮った一枚の写真を順に見ている。"
+          "text": "画面右上には「再生中：公開前夜」と表示されたままである。\n私が展示ホールを出て海へ歩いているのではない。現在の展示席に座り、二人が保存した作業記録と、ミズハが撮った一枚の写真を順に見ている。"
         },
         {
           "id": "interlude_sea_003",
@@ -8154,14 +8161,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "白い原文：SOURCE。作者はsaku。受信時刻02:14。本文は変更しない。"
+          "text": "白いカードは、saku本人から届いた原文。受信時刻は02:14。本文は変更しない。"
         },
         {
           "id": "interlude_sea_061",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "青い生成文：DERIVED。生成実行と選定責任はみず。本人確認なし。ファイルは削除しない。"
+          "text": "青いカードは、みずが生成し、候補から選んだ文章。saku本人の確認はない。ファイルは削除しない。"
         },
         {
           "id": "interlude_sea_062",
@@ -8175,21 +8182,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "`SOURCE RECORD`\n本人から届いた原文だけを最終画面に置く。生成した事実と青い文は、制作記録から開ける。"
+          "text": "一つ目は、本人から届いた原文だけを最終画面に置く見せ方。生成した事実と青い文は、制作記録から開ける。"
         },
         {
           "id": "interlude_sea_064",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "`DISCLOSE DERIVATION`\n本人の原文と、ミズハが作った派生文を、別の色、別の作者、別の分類で同じ最終画面に開く。"
+          "text": "二つ目は、本人の原文と、ミズハが生成した文を、別の色と作者名で分けて最終画面に開く見せ方。"
         },
         {
           "id": "interlude_sea_065",
           "sceneId": "interlude_sea",
           "type": "narration",
           "speaker": "narrator",
-          "text": "どちらを選んでも、青い文をサクヤの続きとして採用しない。\nどちらを選んでも、生成したファイルを削除しない。\nどちらを選んでも、FESTIVAL BUILD 1.0を上書きしない。"
+          "text": "どちらを選んでも、青い文をサクヤの続きとして採用しない。\nどちらを選んでも、生成したファイルを削除しない。\nどちらを選んでも、学園祭公開版1.0を上書きしない。"
         },
         {
           "id": "interlude_sea_066",
@@ -8359,7 +8366,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode08_map_layers",
           "type": "narration",
           "speaker": "narrator",
-          "text": "NOT COLLECTED：今回参照した資料には収録されていない。\nNOT COMPARABLE：時期や方法が違い、同じ尺度で並べない。\nNOT QUANTIFIED：名前や写真など、一つの数へ置き換えない。"
+          "text": "今回参照した資料には記録がない。\n時期や方法が違うため、同じ尺度では比べない。\n名前や写真など、一つの数へ置き換えない。"
         },
         {
           "id": "mode08_map_layers_012",
@@ -8450,7 +8457,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode08_map_layers",
           "type": "narration",
           "speaker": "narrator",
-          "text": "観測姿勢面の試作 / REFLECTION FIELD PROTOTYPE\n編集者 / EDITORS：みず / あまあま / saku\n画面実装 / SCREEN：あまあま\n問いかけ / PROMPT：みず\n未選択で進む操作 / OPTIONAL SELECTION：saku\n状態 / STATUS：本編へ未接続"
+          "text": "「次へ持ち帰りたい姿勢」を選ぶ画面の試作だった。三人が編集し、あまあまが画面を作り、みずが問いを書き、sakuが何も選ばず進める操作を加えている。本編へはまだ接続されていない。"
         },
         {
           "id": "mode08_map_layers_024",
@@ -8527,7 +8534,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode08_map_layers",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人の姿も、会場の人の流れも、地球の観測値として画面へ保存されない。\n私が三つの層を開いた順番だけがVISITOR TRACEとして残る。"
+          "text": "二人の姿も、会場の人の流れも、地球の観測値として画面へ保存されない。\n端末が覚えているのは、このプレイで私が三つの層を開いた順番だけである。"
         }
       ],
       "nextSceneId": "mode10_space"
@@ -8547,7 +8554,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "［画面に表示されるもの］\nこれまで開いた地球の記録、私が触れた場所を示す細い輪郭、三人の十一秒の録音、サクヤから最後に届いたSOURCE。観測値と来場者の操作跡は別の色で表示する。"
+          "text": "［画面に表示されるもの］\nこれまで開いた地球の記録、私が触れた場所を示す細い輪郭、三人の十一秒の録音、サクヤから最後に届いた文章。観測値と、私が画面で開いた場所は別の色で表示する。"
         },
         {
           "id": "mode10_space_002",
@@ -8619,7 +8626,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "点へ触れると、観測値のカードとVISITOR TRACEのカードが上下に分かれて開く。"
+          "text": "点へ触れると、その場所の観測値と、私がこのプレイで開いた時刻が上下に分かれて表示される。"
         },
         {
           "id": "mode10_space_012",
@@ -8640,7 +8647,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "光は観測値ではなく、このセッションで私が触れた場所を示す操作記録 / VISITOR TRACEである。\n実際の地球データと同じ色へ混ぜず、細い輪郭だけで表示される。"
+          "text": "細い光は観測値ではなく、このプレイで私が触れた場所を示す印である。\n実際の地球データと同じ色へ混ぜず、細い輪郭だけで表示される。"
         },
         {
           "id": "mode10_space_015",
@@ -8745,7 +8752,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode10_space",
           "type": "record",
           "recordType": "SOURCE",
-          "text": "観測記録 / SOURCE"
+          "text": "サクヤ本人から届いた文章"
         },
         {
           "id": "mode10_space_030",
@@ -8789,7 +8796,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "制作記録 / PRODUCTION RECORD\n生成実行・選定責任 / RESPONSIBLE：みず\nサクヤ本人の確認：なし"
+          "text": "生成した人、候補から選んだ人：みず\nサクヤ本人の確認：なし"
         },
         {
           "id": "mode10_space_036",
@@ -8841,7 +8848,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_editorial",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二つの選択肢は、「本物か偽物か」を当てる問題ではない。\n白い原文だけが本人から届いたSOURCEであり、青い文はミズハが生成して選んだDERIVEDであることは、どちらを選んでも変わらない。"
+          "text": "二つの選択肢は、「本物か偽物か」を当てる問題ではない。\n白い原文だけがサクヤ本人から届いた文章であり、青い文はミズハが生成して選んだ文章であることは、どちらを選んでも変わらない。"
         },
         {
           "id": "choice_editorial_002",
@@ -8861,12 +8868,12 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
             {
               "value": "SOURCE_RECORD",
               "next": "epilogue_reflection_field",
-              "label": "本人記録で構成する / SOURCE RECORD"
+              "label": "本人から届いた記録だけを表示"
             },
             {
               "value": "DISCLOSE_DERIVATION",
               "next": "epilogue_reflection_field",
-              "label": "生成した制作過程も開示する / DISCLOSE DERIVATION"
+              "label": "本人の記録と生成した部分を分けて表示"
             }
           ]
         },
@@ -8878,7 +8885,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
             "value": "SOURCE_RECORD"
           },
           "type": "ui",
-          "text": "本人記録で構成する / SOURCE RECORD"
+          "text": "本人から届いた記録だけを表示"
         },
         {
           "id": "choice_editorial_005",
@@ -8910,7 +8917,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
             "value": "DISCLOSE_DERIVATION"
           },
           "type": "ui",
-          "text": "生成した制作過程も開示する / DISCLOSE DERIVATION"
+          "text": "本人の記録と生成した部分を分けて表示"
         },
         {
           "id": "choice_editorial_008",
@@ -8943,7 +8950,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           },
           "type": "record",
           "recordType": "DERIVED",
-          "text": "計算・解釈 / DERIVED\n生成部分：「聞こえたつもりになってない？」って、三人で確かめたい。\n生成実行・選定責任 / RESPONSIBLE：みず\nサクヤ本人の確認：なし"
+          "text": "ミズハが生成し、候補から選んだ文章\n「聞こえたつもりになってない？」って、三人で確かめたい。\n生成した人、候補から選んだ人：みず\nサクヤ本人の確認：なし"
         },
         {
           "id": "choice_editorial_011",
@@ -8954,7 +8961,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           },
           "type": "narration",
           "speaker": "narrator",
-          "text": "どちらを選んでも、変わるのは現在の私が見る、このセッション内の最終表示だけである。\n学園祭公開版1.0の保存ファイル、三人の作者表示、次の来場者が最初に見る画面は変更されない。"
+          "text": "どちらを選んでも、変わるのは現在の私が見る、このセッション内の最終表示だけである。\n学園祭公開版1.0の保存ファイルと、三人の作者表示は変更されない。"
         },
         {
           "id": "choice_editorial_012",
@@ -8974,9 +8981,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
             "key": "editorialChoice",
             "value": "DISCLOSE_DERIVATION"
           },
-          "type": "record",
-          "recordType": "VISITOR_TRACE",
-          "text": "操作記録 / VISITOR TRACE\n編集方針 / EDITORIAL CHOICE：SOURCE RECORD または DISCLOSE DERIVATION"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "端末には、このプレイでどちらの表示方法を選んだかだけが残る。"
         },
         {
           "id": "choice_editorial_014",
@@ -9005,7 +9012,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
     },
     {
       "id": "epilogue_reflection_field",
-      "title": "EPILOGUE｜観測姿勢 / REFLECTION FIELD",
+      "title": "EPILOGUE｜次へ持ち帰りたい姿勢",
       "chapter": "EPILOGUE",
       "modeIndex": 9,
       "steps": [
@@ -9049,14 +9056,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "epilogue_reflection_field",
           "type": "narration",
           "speaker": "narrator",
-          "text": "選択した文のID、算出した演出、物語の現在地は、この端末のlocalStorageへ保存する。\n保存されるのは選択結果と現在地で、氏名や連絡先とは結び付かない。"
-        },
-        {
-          "id": "epilogue_reflection_field_007",
-          "sceneId": "epilogue_reflection_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選んだ文章そのものがサクヤの文章として保存されたり、次の来場者の初期画面へ表示されたりすることはない。"
+          "text": "選んだ文章が、サクヤの文章へ加えられることはない。"
         }
       ],
       "nextSceneId": "choice_reflection"
@@ -9075,7 +9075,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_reflection",
           "type": "narration",
           "speaker": "narrator",
-          "text": "以下のR番号は制作管理用で、私の画面には文だけを表示する。\nテーマ見出しとR番号は演出用の得点を示さず、どのグループにも優劣を付けない。"
+          "text": "画面には三十六の文だけが並ぶ。制作に使った番号や、考え方を採点する点数は表示されない。"
         },
         {
           "id": "choice_reflection_002",
@@ -9496,7 +9496,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_reflection",
           "type": "narration",
           "speaker": "narrator",
-          "text": "R番号に対応する既存の演出用重みは変更せず、画面へ出さない。\n合計が単独最大の系統を採用し、最大値が同点なら中立の演出、未選択なら無回答の演出とする。"
+          "text": "選んだ内容に応じて最後の光、カメラ、音の動きが変わるが、どの動きにも正解や優劣は付かない。何も選ばなかった場合も、そのまま一つの終わり方として進む。"
         }
       ],
       "nextSceneId": "final_record"
@@ -9519,7 +9519,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面は「正解」「一致度」「診断タイプ」という結果を出さない。\n選んだ文を作者へ送信したとも、次の来場者へ共有したとも表示しない。"
+          "text": "画面は「正解」「一致度」「診断タイプ」という結果を出さない。\n選んだ文を作者へ送信したとは表示しない。"
         },
         {
           "id": "final_record_003",
@@ -9533,337 +9533,323 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面中央には、最後まで変わらない三つの記録が先に表示される。"
+          "text": "画面中央には、最後まで変わらない事実が先に表示される。"
         },
         {
           "id": "final_record_005",
           "sceneId": "final_record",
-          "type": "record",
-          "recordType": "SOURCE",
-          "text": "サクヤの受信文 / saku SOURCE：1\n編集方針 / EDITORIAL CHOICE：SOURCE RECORD または DISCLOSE DERIVATION\n公開版の変更 / PUBLIC BUILD CHANGED：NO"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "サクヤ本人から届いた最後の文章は一件。次の行には、私が先ほど選んだ表示方法が、日本語でそのまま示される。その下には、この選択によって学園祭公開版1.0が書き換えられていないことが表示される。"
         },
         {
           "id": "final_record_006",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "一行目は、サクヤ本人から届いた最後の文章が一件あることを示す。\n二行目は、現在の私が選んだ表示方法を示す。\n三行目は、その選択によって公開版そのものは書き換えられていないことを示す。"
+          "text": "属性名、得点、選んだ文そのものは、結果の名前として画面へ出さない。"
         },
         {
           "id": "final_record_007",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "属性名、得点、選んだ文は画面へ出さない。\n編集方針はSOURCE RECORDとDISCLOSE DERIVATIONの独立した判断として残す。"
+          "text": "次へ持ち帰りたい姿勢の選択は、人を分類する診断結果にはしない。\n選んだ内容は、最後の光、カメラ、音の動きにだけ反映される。"
         },
         {
           "id": "final_record_008",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "観測姿勢の選択は、人を分類する診断結果にはしない。\n選んだ文に付けられた演出用の重みだけを合計し、最後の光、カメラ、音の動きへ変換する。"
+          "text": "規則へ収束する演出では、離れた場所にあった光が細い経線へ集まる。\nそれぞれの記録は出典名を保ったまま整列し、カメラの移動と音の間隔が少しずつ規則的になって静止する。"
         },
         {
           "id": "final_record_009",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "規則へ収束する演出では、離れた場所にあった光が細い経線へ集まる。\nそれぞれの記録は出典名を保ったまま整列し、カメラの移動と音の間隔が少しずつ規則的になって静止する。"
+          "text": "中立の演出では、森林、雨、地震、土地の記憶を一つの色へ統合しない。\n光は重なる場所と何も記録されていない場所のあいだを往復し、カメラはどちらか一方へ降りずに距離を保つ。"
         },
         {
           "id": "final_record_010",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "中立の演出では、森林、雨、地震、土地の記憶を一つの色へ統合しない。\n光は重なる場所と何も記録されていない場所のあいだを往復し、カメラはどちらか一方へ降りずに距離を保つ。"
+          "text": "分岐する演出では、光が既存の緯線と経線から外れ、画面の外側へ複数の軌道を描く。\nカメラと音も一つの中心へ集まらず、まだ名前の付いていない方向へ開いていく。"
         },
         {
           "id": "final_record_011",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "分岐する演出では、光が既存の緯線と経線から外れ、画面の外側へ複数の軌道を描く。\nカメラと音も一つの中心へ集まらず、まだ名前の付いていない方向へ開いていく。"
+          "text": "無回答の演出では、新しい色や軌道を加えない。\n「決めなかった記録」を空白のまま残し、地球の輪郭と、これまで触れた場所の小さな光だけを表示する。"
         },
         {
           "id": "final_record_012",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "無回答の演出では、新しい色や軌道を加えない。\n「決めなかった記録」を空白のまま残し、地球の輪郭と、これまで触れた場所の小さな光だけを表示する。"
+          "text": "どの演出にも優劣や正解の印は付かない。\n派手さの違いを成功や失敗として扱わず、どの演出も同じ長さで終わる。"
         },
         {
           "id": "final_record_013",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "どの演出にも優劣や正解の印は付かない。\n派手さの違いを成功や失敗として扱わず、どの演出も同じ長さで終わる。"
+          "text": "演出が動いているあいだ、三人の作者名は消えない。"
         },
         {
           "id": "final_record_014",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "演出が動いているあいだ、三人の作者名は消えない。"
+          "text": "光が規則へ集まっても、分岐して画面の外へ開いても、新しい色を加えず空白が残っても、みず、あまあま、sakuの文字は地球の下へ同じ大きさで置かれている。"
         },
         {
           "id": "final_record_015",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "光が規則へ集まっても、分岐して画面の外へ開いても、新しい色を加えず空白が残っても、みず、あまあま、sakuの文字は地球の下へ同じ大きさで置かれている。"
+          "text": "私が選んだ姿勢は、その三人の名前へ加わる四人目の署名にはならない。\n三人の物語へ結末を書き足す文章でもない。"
         },
         {
           "id": "final_record_016",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私が選んだ姿勢は、その三人の名前へ加わる四人目の署名にはならない。\n三人の物語へ結末を書き足す文章でもない。"
+          "text": "私が選んだ内容は、この一度の鑑賞で、展示の見え方を変えるためにだけ使われる。"
         },
         {
           "id": "final_record_017",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "いま一度だけ、展示の見え方を変えるVISITOR TRACEとして端末内へ残る。"
+          "text": "最後の光が消えると、年越しの録音に入っていた踏切が一度だけ遠くで鳴る。\nそのあとへ、現在の展示ホールの足音と話し声が戻ってくる。"
         },
         {
           "id": "final_record_018",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最後の光が消えると、年越しの録音に入っていた踏切が一度だけ遠くで鳴る。\nそのあとへ、現在の展示ホールの足音と話し声が戻ってくる。"
+          "text": "最初は一つずつ戻る。"
         },
         {
           "id": "final_record_019",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初は一つずつ戻る。"
+          "text": "靴底が養生テープを踏む音。\n紙の案内図を開く音。\nゲームの残り時間を数える声。\n館内放送が、次のステージ企画を知らせる前の短い雑音。"
         },
         {
           "id": "final_record_020",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "靴底が養生テープを踏む音。\n紙の案内図を開く音。\nゲームの残り時間を数える声。\n館内放送が、次のステージ企画を知らせる前の短い雑音。"
+          "text": "長く見ていた暗い地球は、会場の照明を反射する黒い画面へ変わる。\nそこに映っているのは太古の海でも共同作業室でもなく、椅子へ座った私の肩と、その後ろを行き交う現在の人影である。"
         },
         {
           "id": "final_record_021",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "長く見ていた暗い地球は、会場の照明を反射する黒い画面へ変わる。\nそこに映っているのは太古の海でも共同作業室でもなく、椅子へ座った私の肩と、その後ろを行き交う現在の人影である。"
+          "text": "終了画面の下に、短い案内が出る。"
         },
         {
           "id": "final_record_022",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "端末は選択結果と現在地を保存し、本文や作者名を書き換えず、次の観測を待つ。"
+          "text": "「今回選んだ見せ方は、この画面だけに反映されています」\n「三人が確認した公開版と作者名は変わりません」\n「制作の記録は、体験を終えたあとも開けます」"
         },
         {
           "id": "final_record_023",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "終了画面の下に、短い案内が出る。"
+          "text": "案内を閉じると、画面はすぐSTARTへ戻らない。\nまず十一秒の波形が細い線になって端へ収まり、その下へ三人の名前が戻る。"
         },
         {
           "id": "final_record_024",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "「今回の選択は、この鑑賞中の表示にだけ使われました」\n「三人の公開版と作者表示は変更されていません」\n「制作記録はCLEAR後も任意で開けます」"
+          "text": "ブースの端で画面を確認していたアマネが、終了表示の時刻を一度だけ見る。\nミズハは端末の横へ戻り、青りんごに触れた。"
         },
         {
           "id": "final_record_025",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "案内を閉じると、画面はすぐSTARTへ戻らない。\nまず十一秒の波形が細い線になって端へ収まり、その下へ三人の名前が戻る。"
+          "text": "アマネは私が選んだ文も、最後の演出の系統も見ない。\n確認したのは、端末が最後まで進み、公開版の読み込みエラーが出ず、終了時刻が記録されたことだけだった。"
         },
         {
           "id": "final_record_026",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ブースの端で画面を確認していたアマネが、終了表示の時刻を一度だけ見る。\nミズハは端末の横へ戻り、青りんごに触れた。"
+          "text": "ミズハも画面の結果をのぞき込まない。\n机の端へずれていた青りんごを、両手ではなく指先で少し回す。"
         },
         {
           "id": "final_record_027",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは私が選んだ文も、最後の演出の系統も見ない。\n確認したのは、端末が最後まで進み、公開版の読み込みエラーが出ず、終了時刻が記録されたことだけだった。"
-        },
-        {
-          "id": "final_record_028",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハも画面の結果をのぞき込まない。\n机の端へずれていた青りんごを、両手ではなく指先で少し回す。"
-        },
-        {
-          "id": "final_record_029",
-          "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
           "text": "私が座る前には通路へ向いていた傷が、今は照明の側へ回っている。\nミズハは青りんごを持ち上げる。机には、青りんごの底が触れていた位置に小さな円形の跡がある。ミズハはその位置へ青りんごを戻し、傷のない側を通路へ向けた。"
         },
         {
-          "id": "final_record_030",
+          "id": "final_record_028",
           "sceneId": "final_record",
           "type": "dialogue",
           "speaker": "amane",
           "text": "毎回、向き変えるの。"
         },
         {
-          "id": "final_record_031",
+          "id": "final_record_029",
           "sceneId": "final_record",
           "type": "dialogue",
           "speaker": "mizuha",
           "text": "触れた方がいらしたと分かりますもの。"
         },
         {
-          "id": "final_record_032",
+          "id": "final_record_030",
           "sceneId": "final_record",
           "type": "dialogue",
           "speaker": "amane",
           "text": "記録には入らないよ。"
         },
         {
-          "id": "final_record_033",
+          "id": "final_record_031",
           "sceneId": "final_record",
           "type": "dialogue",
           "speaker": "mizuha",
           "text": "ええ。ですから、私が見ていますわ。"
         },
         {
-          "id": "final_record_034",
+          "id": "final_record_032",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "館内放送が、次のステージ企画を告げる。\n隣のブースで拍手が起きる。"
         },
         {
-          "id": "final_record_035",
+          "id": "final_record_033",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "椅子の横には、最初に持っていた案内図が落ちかけている。\n紙の端を拾い、二度折られた線へ沿って畳み直す。"
         },
         {
-          "id": "final_record_036",
+          "id": "final_record_034",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "立ち上がる前、端末の縁に残った指の跡が照明へ浮かぶ。ミズハはすぐ拭かない。アマネも消毒用シートへ手を伸ばさない。"
         },
         {
-          "id": "final_record_037",
+          "id": "final_record_035",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "椅子から立つと、展示ホールの音が急に近くなる。\n振り返った画面には、最初と同じ三人の表示名が、同じ大きさで並んでいる。"
         },
         {
-          "id": "final_record_038",
+          "id": "final_record_036",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "みず\nあまあま\nsaku"
         },
         {
-          "id": "final_record_039",
+          "id": "final_record_037",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "ミズハとアマネは次の人を呼び込まない。\n端末も、前に座った私が何を選んだかを、次の待機画面へ表示しない。"
         },
         {
-          "id": "final_record_040",
+          "id": "final_record_038",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "私は人の流れへ戻る。"
         },
         {
-          "id": "final_record_041",
+          "id": "final_record_039",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "数歩進むと、ゲームの決定音が先ほどより大きく聞こえる。風車のブースでは、同じ説明が別の来場者へ始まっている。展示案内図の上では、GAIA SENSEWAREの小さな区画番号が、ほかの百以上の展示と同じ大きさで印刷されている。"
         },
         {
-          "id": "final_record_042",
+          "id": "final_record_040",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "連絡通路へ入る手前で振り返ると、ブースの照明は通路より暗い。"
         },
         {
-          "id": "final_record_043",
+          "id": "final_record_041",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "それでも、机の上の青りんごだけは、上からの光を受けて輪郭が見える。"
         },
         {
-          "id": "final_record_044",
+          "id": "final_record_042",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "通路を歩いていた次の人が、青りんごの前で足を止める。\n三つの名前を上から読み、空いている椅子とSTARTボタンを交互に見る。"
         },
         {
-          "id": "final_record_045",
+          "id": "final_record_043",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "次の人の後ろを、段ボール箱を抱えた学生が通る。\n椅子の背へ箱の端が触れ、椅子が机から数センチだけ離れる。"
         },
         {
-          "id": "final_record_046",
+          "id": "final_record_044",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "最初に私が座る前と同じ距離である。"
         },
         {
-          "id": "final_record_047",
+          "id": "final_record_045",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "次の人が椅子へ手を掛ける。"
         },
         {
-          "id": "final_record_048",
+          "id": "final_record_046",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
           "text": "スピーカーから、扇風機、湯の沸く音、踏切が始まる。\n十一秒が何の音なのか、その人はまだ知らない。"
         },
         {
-          "id": "final_record_049",
+          "id": "final_record_047",
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "青りんごの薄い傷は、通路側からは見えない。\n青りんごは最初と同じ位置にあるが、ミズハが置き直したため、傷の向きだけが変わっている。その変化は端末の操作記録には保存されない。"
+          "text": "青りんごの薄い傷は、通路側からは見えない。\n青りんごは最初と同じ位置にあるが、ミズハが置き直したため、傷の向きだけが変わっている。"
         },
         {
-          "id": "final_record_050",
+          "id": "final_record_048",
           "sceneId": "final_record",
           "type": "ui",
           "text": "START\n────────────────────────────────────────\n— END OF PLAYER STORY —\n────────────────────────────────────────"
         },
         {
-          "id": "final_record_051",
+          "id": "final_record_049",
           "sceneId": "final_record",
           "type": "ui",
-          "text": "CLEAR後｜制作記録を見る"
+          "text": "体験後｜制作記録を見る"
         },
         {
-          "id": "final_record_052",
+          "id": "final_record_050",
           "sceneId": "final_record",
           "type": "result",
           "resultId": "session_result"

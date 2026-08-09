@@ -23,6 +23,8 @@ const stepIds = steps.map((step) => step.id);
 assert.equal(new Set(stepIds).size, stepIds.length, "step IDs must be unique");
 const visibleStoryText = steps.flatMap((step) => [step.text, step.prompt, ...(step.options || []).map((option) => option.label)]).filter(Boolean).join("\n");
 assert.doesNotMatch(visibleStoryText, /LOCAL FIRST|STATION FIRST/u, "internal observation-order identifiers leaked into visible story text");
+assert.doesNotMatch(visibleStoryText, /\b(?:LOCAL SOURCE|SOURCE RECORD|DISCLOSE DERIVATION|SOURCE|DERIVED|CURRENT|VISITOR TRACE|PRODUCTION RECORD|RESPONSIBLE|EDITORIAL CHOICE|PUBLIC BUILD CHANGED|REFLECTION FIELD|CLEAR)\b/u, "internal or unexplained system labels leaked into visible story text");
+assert.doesNotMatch(visibleStoryText, /補助表示：|操作記録 \/|計算・解釈 \/|観測記録 \/|localStorage/u, "system-oriented explanatory copy leaked into visible story text");
 
 for (const required of story.requiredSceneIds || []) assert.ok(sceneSet.has(required), `required scene is missing: ${required}`);
 for (const scene of scenes) {
@@ -89,6 +91,9 @@ for (const requiredText of [
   "「聞こえたつもりになってない？」って、三人で確かめたい。",
 ]) assert.ok(allText.includes(requiredText), `canon text is missing: ${requiredText}`);
 assert.ok(!allText.includes("サクヤの分だけ、縁が乾いたままだった。"), "confirmed paper-cup wording regressed to the past-form draft");
+assert.match(allText, /園芸売り場の写真が閉じ、画面は現在の展示席へ戻る。/u, "the observation-order choice must establish the return to the exhibition seat");
+assert.match(allText, /端末の右側には、傷のある青りんごが最初と同じ位置に置かれている。/u, "the physical apple must be distinguished from the on-screen measurements");
+assert.match(allText, /園芸売り場の温度計は三十六度。/u, "the garden-center measurement must read as natural narration");
 assert.match(exhibitionText, /地球と人類の共進化を考える展示です。/u, "the exhibition entrance must state the work's central theme");
 assert.match(exhibitionText, /地球の変化が人の暮らしをどう変え、人の選択が地球をどう変えてきたか/u, "the exhibition entrance must explain coevolution in concrete terms");
 for (const removedEntranceCopy of [
