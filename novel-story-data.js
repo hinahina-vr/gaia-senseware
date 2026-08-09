@@ -112,7 +112,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "大学には大人数を毎日収容する一つの中心キャンパスがない。代わりに、各地の小さな共同作業室、予約制の対面拠点、学生同士のSlackが、教室の外にある廊下や部室の役割を分けて担っている。"
+          "text": "大学には大人数を毎日収容する一つの中心キャンパスがない。代わりに、各地の小さな共同作業室、予約制の対面拠点、学生同士の学内チャットが、教室の外にある廊下や部室の役割を分けて担っている。"
         },
         {
           "id": "current_exhibition_005",
@@ -133,7 +133,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "学園祭の名札を下げていても、初めて見る学生は多い。講義の提出欄で名前だけ知っている相手や、Slackで同じリアクションを付けた相手と、気づかないまますれ違っているかもしれない。"
+          "text": "学園祭の名札を下げていても、初めて見る学生は多い。講義の提出欄で名前だけ知っている相手や、学内チャットで同じリアクションを付けた相手と、気づかないまますれ違っているかもしれない。"
         },
         {
           "id": "current_exhibition_008",
@@ -597,7 +597,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "大学のSlackには、学生が自由に作ったサークルが並んでいた。\n授業が教室なら、そこは授業のあとに立ち寄る廊下に近かった。その一つが「惑星の放課後」だった。"
+          "text": "大学の学内チャットには、学生が自由に作ったサークルが並んでいた。\n授業が教室なら、そこは授業のあとに立ち寄る廊下に近かった。その一つが「惑星の放課後」だった。"
         },
         {
           "id": "prologue_online_circle_004",
@@ -611,7 +611,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "だから端末にも人物の立ち絵は出ない。Slackの画面に並ぶのは、表示名と、みずの芽、あまあまの雲、sakuの花をかたどった小さなアイコンだけである。声も服装も、背の高さも、まだ記録の外にある。"
+          "text": "だから端末にも人物の立ち絵は出ない。学内チャットの画面に並ぶのは、表示名と、みずの芽、あまあまの雲、sakuの花をかたどった小さなアイコンだけである。声も服装も、背の高さも、まだ記録の外にある。"
         },
         {
           "id": "prologue_online_circle_006",
@@ -653,7 +653,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "Slackで使っている表示名は、作品の作者表示とは違う。"
+          "text": "学内チャットで使っている表示名は、作品の作者表示とは違う。"
         },
         {
           "id": "prologue_online_circle_012",
@@ -667,7 +667,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "これ以降、時刻の付いた投稿には、その時点のSlack表示名が記録される。"
+          "text": "これ以降、時刻の付いた投稿には、その時点の学内チャット表示名が記録される。"
         }
       ],
       "nextSceneId": "prologue_basil"
@@ -683,14 +683,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハ、アマネ、サクヤが初めて同じスレッドに揃ったのは、ミズハがSlackへ貼った一枚の写真だった。"
+          "text": "ミズハ、アマネ、サクヤが初めて同じスレッドに揃ったのは、ミズハが学内チャットへ貼った一枚の写真だった。"
         },
         {
           "id": "prologue_basil_002",
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画像を開くと、園芸売り場の裏で、値下げ札のついたバジルの鉢が日陰に葉を垂らしている。\n写真の端には黄色い散水ホースと、土で汚れたスニーカーのつま先が写っていた。三人が同じ売り場に立っているのではない。アマネとサクヤが見ているのは、ミズハのスマートフォンからSlackへ投稿された画像である。"
+          "text": "画像を開くと、園芸売り場の裏で、値下げ札のついたバジルの鉢が日陰に葉を垂らしている。\n写真の端には黄色い散水ホースと、土で汚れたスニーカーのつま先が写っていた。三人が同じ売り場に立っているのではない。アマネとサクヤが見ているのは、ミズハのスマートフォンから学内チャットへ投稿された画像である。"
         },
         {
           "id": "prologue_basil_003",
@@ -1017,7 +1017,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三枚の画面のあいだに、人物の立ち絵は置かれない。まだ三人自身が互いの顔を知らないからだ。代わりに、芽、雲、花のSlackアイコンが、投稿のたびに小さく明滅する。"
+          "text": "三枚の画面のあいだに、人物の立ち絵は置かれない。まだ三人自身が互いの顔を知らないからだ。代わりに、芽、雲、花の学内チャットアイコンが、投稿のたびに小さく明滅する。"
         },
         {
           "id": "first_meeting_promise_005",
@@ -1093,7 +1093,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "同じ展示のリンクを送り合うだけなら、翌日もこれまでの半年と同じように終えられる。別々に会場へ行き、気になった写真を夜のSlackへ貼ればいい。"
+          "text": "同じ展示のリンクを送り合うだけなら、翌日もこれまでの半年と同じように終えられる。別々に会場へ行き、気になった写真を夜の学内チャットへ貼ればいい。"
         },
         {
           "id": "first_meeting_promise_015",
@@ -1107,7 +1107,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハは学園祭のページとSlackを交互に開き、まだ送られていない通知を二度確認する。アマネは乗換案内で三人の到着時刻が近いことを見つけたまま、その事実を投稿しない。サクヤは展示一覧を閉じ、三人の表示名が並んだスレッドだけを画面の中央へ残す。"
+          "text": "ミズハは学園祭のページと学内チャットを交互に開き、まだ送られていない通知を二度確認する。アマネは乗換案内で三人の到着時刻が近いことを見つけたまま、その事実を投稿しない。サクヤは展示一覧を閉じ、三人の表示名が並んだスレッドだけを画面の中央へ残す。"
         },
         {
           "id": "first_meeting_promise_017",
@@ -1320,7 +1320,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは会場案内図へ戻り、「中央入口」と書かれた場所が二か所ないことを確かめた。北口、搬入口、ホール連絡口には赤い線を引き、待ち合わせ場所のスクリーンショットをSlackへ添付する。"
+          "text": "アマネは会場案内図へ戻り、「中央入口」と書かれた場所が二か所ないことを確かめた。北口、搬入口、ホール連絡口には赤い線を引き、待ち合わせ場所のスクリーンショットを学内チャットへ添付する。"
         },
         {
           "id": "first_meeting_promise_044",
@@ -1465,7 +1465,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "サクヤは返事の代わりに、中央入口のガラス壁を昨年撮った写真をSlackへ貼った。"
+          "text": "サクヤは返事の代わりに、中央入口のガラス壁を昨年撮った写真を学内チャットへ貼った。"
         },
         {
           "id": "first_meeting_promise_061",
@@ -1686,7 +1686,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ここからのSlackは、外出中に開かれたスマートフォンの記録として縦長に表示される。デスクトップ版の横長の画面ではない。片手で持った端末の上に、会場の照明と通り過ぎる人影が反射している。"
+          "text": "ここからの学内チャットは、外出中に開かれたスマートフォンの記録として縦長に表示される。デスクトップ版の横長の画面ではない。片手で持った端末の上に、会場の照明と通り過ぎる人影が反射している。"
         },
         {
           "id": "first_meeting_hall_021",
@@ -1748,7 +1748,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人とも、すぐには声を出さなかった。\nSlackなら、返事を考えていることを「入力中」が教えてくれる。\n画面の外には、その表示がなかった。"
+          "text": "二人とも、すぐには声を出さなかった。\n学内チャットなら、返事を考えていることを「入力中」が教えてくれる。\n画面の外には、その表示がなかった。"
         },
         {
           "id": "first_meeting_hall_029",
@@ -1783,7 +1783,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二つの表示名が声になった瞬間、画面の端へ初めて二人の立ち絵が現れる。ここより前のSlack記録には、顔を知ったあとの姿をさかのぼって置かない。"
+          "text": "二つの表示名が声になった瞬間、画面の端へ初めて二人の立ち絵が現れる。ここより前の学内チャット記録には、顔を知ったあとの姿をさかのぼって置かない。"
         },
         {
           "id": "first_meeting_hall_034",
@@ -2189,7 +2189,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_walk",
           "type": "narration",
           "speaker": "narrator",
-          "text": "途中で三人は何度も別の方向へ歩きかけ、そのたびにチャットではなく声で相手を呼び止めた。\n昼を過ぎるころには「さん」が取れ、展示の感想はSlackと同じ長さへ戻っていた。"
+          "text": "途中で三人は何度も別の方向へ歩きかけ、そのたびにチャットではなく声で相手を呼び止めた。\n昼を過ぎるころには「さん」が取れ、展示の感想は学内チャットと同じ長さへ戻っていた。"
         },
         {
           "id": "festival_walk_004",
@@ -3325,7 +3325,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "Slackなら、誰かが文章を考えているあいだ「入力中」と表示される。\n声だけの通話には、その印がない。三人は相手が話し始めるのを待ち、同時に自分から始めるのを避けた。"
+          "text": "学内チャットなら、誰かが文章を考えているあいだ「入力中」と表示される。\n声だけの通話には、その印がない。三人は相手が話し始めるのを待ち、同時に自分から始めるのを避けた。"
         },
         {
           "id": "production_year_135",
@@ -3645,7 +3645,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "同じ部屋にいるのに、Slackへ？"
+          "text": "同じ部屋にいるのに、学内チャットへ？"
         },
         {
           "id": "production_year_181",
@@ -4447,7 +4447,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "absence",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハはSlackへ「急ぎませんから、起きたら一言ください」と送る。"
+          "text": "ミズハは学内チャットへ「急ぎませんから、起きたら一言ください」と送る。"
         },
         {
           "id": "absence_030",
@@ -4869,7 +4869,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "absence",
           "type": "narration",
           "speaker": "narrator",
-          "text": "- 午前二時十三分と十四分に、サクヤのアカウントから制作投稿が届いた。\n- その直前に更新された制作データは開けた。\n- 午前十時の待ち合わせ以後、Slack、電話、大学メールへの応答はない。\n- 二人が確認した駅、共同作業室、以前の待ち合わせ場所では姿を確認できなかった。\n- 大学とサークルの窓口へ安否確認を依頼した。"
+          "text": "- 午前二時十三分と十四分に、サクヤのアカウントから制作投稿が届いた。\n- その直前に更新された制作データは開けた。\n- 午前十時の待ち合わせ以後、学内チャット、電話、大学メールへの応答はない。\n- 二人が確認した駅、共同作業室、以前の待ち合わせ場所では姿を確認できなかった。\n- 大学とサークルの窓口へ安否確認を依頼した。"
         },
         {
           "id": "absence_089",
@@ -4956,7 +4956,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人はSlack、大学メール、共有されていた電話番号へ連絡し、時間を空けて通話も試した。"
+          "text": "二人は学内チャット、大学メール、共有されていた電話番号へ連絡し、時間を空けて通話も試した。"
         },
         {
           "id": "search_005",
@@ -4998,7 +4998,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "Slack：送信済み、未読。\n大学メール：送信済み、開封確認の機能なし。\n電話：呼出し後、留守番電話。"
+          "text": "学内チャット：送信済み、未読。\n大学メール：送信済み、開封確認の機能なし。\n電話：呼出し後、留守番電話。"
         },
         {
           "id": "search_011",
@@ -5418,7 +5418,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "search",
           "type": "narration",
           "speaker": "narrator",
-          "text": "一週間目の朝、ミズハは園芸売り場の開店前にSlackを開く。"
+          "text": "一週間目の朝、ミズハは園芸売り場の開店前に学内チャットを開く。"
         },
         {
           "id": "search_071",

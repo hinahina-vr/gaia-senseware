@@ -622,7 +622,7 @@
       const timeline = slackTimelineFor(step);
       setCharacterPresentation(step.speaker);
       elements.dialogue.hidden = false;
-      elements.speaker.textContent = "SLACK / #惑星の放課後";
+      elements.speaker.textContent = "学内チャット / #惑星の放課後";
       elements.text.textContent = timeline.typing ? "返信を待っています。クリックすると次の投稿へ進みます。" : "このスレッドの記録を表示しています。";
       elements.sourceButton.hidden = true;
       elements.slackSurface.hidden = false;

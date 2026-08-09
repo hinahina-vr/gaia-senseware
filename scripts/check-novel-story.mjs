@@ -110,6 +110,12 @@ assert.ok(story.generationDetails?.model);
 
 const checkedFiles = ["index.html", "novel-mode.js", "novel-mode.css", "scripts/build-novel-story.mjs", "story/物語台本.md", "story/世界観設定.md"];
 const checkedSource = checkedFiles.map((file) => fs.readFileSync(path.join(projectRoot, file), "utf8")).join("\n");
+const visibleStoryAndData = ["story/物語台本.md", "novel-story-data.js"]
+  .map((file) => fs.readFileSync(path.join(projectRoot, file), "utf8"))
+  .join("\n");
+assert.doesNotMatch(visibleStoryAndData, /Slack|スラック|グループチャット/u, "story and generated copy must use 学内チャット");
+assert.doesNotMatch(fs.readFileSync(path.join(projectRoot, "index.html"), "utf8"), /aria-label="[^"]*Slack/u, "accessible chat naming must use 学内チャット");
+assert.doesNotMatch(fs.readFileSync(path.join(projectRoot, "novel-mode.js"), "utf8"), /textContent\s*=\s*"(?:SLACK|Slack)|>Slack<|SLACK \/ #/u, "runtime-visible chat naming must use 学内チャット");
 for (const forbidden of ["novel-inline-card", "novel-mode-bridge", "visitorInput", "LEAVE EMPTY", "WRITE ACCESS", "START前の通知", "旧版の記録"]) {
   assert.ok(!checkedSource.includes(forbidden), `removed UI or behavior remains: ${forbidden}`);
 }
