@@ -2,8 +2,10 @@
   "use strict";
 
   const story = globalThis.GAIA_NOVEL_STORY || globalThis.GAIA_NOVEL_STORY_V6;
+  const backgroundCues = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
   const layer = document.querySelector("#novel-layer");
   if (!story || !layer) return;
+  if (!backgroundCues) throw new Error("[GAIA novel] Background cue data is unavailable");
 
   const STORAGE_KEY = "gaiaSensewareNovel:progress";
   const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
@@ -344,13 +346,114 @@
     return firstStepForScene(scene.nextSceneId);
   };
 
-  const backgroundImageForScene = (sceneId) => {
+  const applyBackgroundCueForStep = (step) => {
+    const cue = backgroundCues.forStep(step);
+    if (!cue) {
+      layer.style.removeProperty("--novel-scene-background");
+      delete layer.dataset.backgroundCue;
+      return null;
+    }
+    layer.style.setProperty("--novel-scene-background", `url("./${cue.assetPath}")`);
+    layer.dataset.backgroundCue = cue.id;
+    return cue;
+  };
+
+  const backgroundPresentationForStep = (step) => {
     const previousSceneId = layer.dataset.sceneId;
-    layer.dataset.sceneId = sceneId;
-    const backgroundImage = getComputedStyle(layer).backgroundImage;
-    if (previousSceneId) layer.dataset.sceneId = previousSceneId;
-    else delete layer.dataset.sceneId;
-    return backgroundImage;
+    const previousStepId = layer.dataset.stepId;
+    const previousCue = layer.dataset.backgroundCue;
+    const previousBackground = layer.style.getPropertyValue("--novel-scene-background");
+    const previousBackgroundPriority = layer.style.getPropertyPriority("--novel-scene-background");
+    try {
+      layer.dataset.sceneId = step.sceneId;
+      layer.dataset.stepId = step.id;
+      applyBackgroundCueForStep(step);
+      const computed = getComputedStyle(layer);
+      return {
+        image: computed.backgroundImage,
+        position: computed.backgroundPosition,
+        size: computed.backgroundSize,
+        repeat: computed.backgroundRepeat,
+      };
+    } finally {
+      if (previousSceneId) layer.dataset.sceneId = previousSceneId;
+      else delete layer.dataset.sceneId;
+      if (previousStepId) layer.dataset.stepId = previousStepId;
+      else delete layer.dataset.stepId;
+      if (previousCue) layer.dataset.backgroundCue = previousCue;
+      else delete layer.dataset.backgroundCue;
+      if (previousBackground) layer.style.setProperty("--novel-scene-background", previousBackground, previousBackgroundPriority);
+      else layer.style.removeProperty("--novel-scene-background");
+    }
+  };
+
+  const backgroundPreloadCache = new Map();
+
+  const preloadBackgroundUrl = (url) => {
+    if (backgroundPreloadCache.has(url)) return backgroundPreloadCache.get(url);
+    const pending = new Promise((resolve) => {
+      const image = new Image();
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      image.addEventListener("load", () => {
+        if (typeof image.decode === "function") image.decode().catch(() => {}).finally(finish);
+        else finish();
+      }, { once: true });
+      image.addEventListener("error", finish, { once: true });
+      image.src = url;
+      if (image.complete) finish();
+    });
+    backgroundPreloadCache.set(url, pending);
+    return pending;
+  };
+
+  const preloadBackground = async (backgroundImage) => {
+    const urls = [...String(backgroundImage).matchAll(/url\((?:"([^"]+)"|'([^']+)'|([^'"\)]+))\)/g)]
+      .map((match) => match[1] || match[2] || match[3])
+      .filter(Boolean);
+    await Promise.all(urls.map(preloadBackgroundUrl));
+  };
+
+  const warmUpcomingBackground = (step) => {
+    let nextBackground = null;
+    const followingId = getFollowingStepId(step);
+    const followingStep = stepMap.get(followingId);
+    if (followingStep) {
+      const currentPresentation = backgroundPresentationForStep(step);
+      const followingPresentation = backgroundPresentationForStep(followingStep);
+      if (currentPresentation.image !== followingPresentation.image) nextBackground = followingPresentation.image;
+    }
+    if (!nextBackground) return;
+    const warm = () => { void preloadBackground(nextBackground); };
+    if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(warm, { timeout: 1200 });
+    else window.setTimeout(warm, 0);
+  };
+
+  const runBackgroundTransition = async (currentBackground, nextBackground, swapStep) => {
+    await preloadBackground(nextBackground.image);
+    layer.style.setProperty("--novel-transition-background", currentBackground.image);
+    layer.style.setProperty("--novel-transition-background-position", currentBackground.position);
+    layer.style.setProperty("--novel-transition-background-size", currentBackground.size);
+    layer.style.setProperty("--novel-transition-background-repeat", currentBackground.repeat);
+    layer.classList.remove("is-background-releasing");
+    layer.classList.add("is-background-buffered");
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    try {
+      return await runSceneTransition(() => {
+        swapStep();
+        layer.classList.add("is-background-releasing");
+      }, null, "novel");
+    } finally {
+      layer.classList.remove("is-background-buffered", "is-background-releasing");
+      layer.style.removeProperty("--novel-transition-background");
+      layer.style.removeProperty("--novel-transition-background-position");
+      layer.style.removeProperty("--novel-transition-background-size");
+      layer.style.removeProperty("--novel-transition-background-repeat");
+    }
   };
 
   const moveToFollowingStep = (step = currentStep()) => {
@@ -362,10 +465,11 @@
       saveProgress();
       renderCurrentStep();
     };
-    const backgroundChanges = step.sceneId !== nextStep?.sceneId
-      && backgroundImageForScene(step.sceneId) !== backgroundImageForScene(nextStep.sceneId);
+    const currentBackground = backgroundPresentationForStep(step);
+    const nextBackground = backgroundPresentationForStep(nextStep);
+    const backgroundChanges = currentBackground.image !== nextBackground.image;
     if (backgroundChanges && !motionReduced()) {
-      return runSceneTransition(swapStep, null, "novel");
+      return runBackgroundTransition(currentBackground, nextBackground, swapStep);
     }
     swapStep();
   };
@@ -548,7 +652,9 @@
     layer.dataset.sceneId = step.sceneId;
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
+    applyBackgroundCueForStep(step);
     showRuntime();
+    warmUpcomingBackground(step);
     hideSpecialSurfaces();
     elements.chapterCard.hidden = true;
     elements.dialogue.hidden = false;
@@ -1690,6 +1796,12 @@
     close: closeNovel,
     getState: () => structuredClone(state),
     scoreReflection: (ids) => scoreReflection(ids),
+    getBackgroundCue: (stepId) => {
+      const step = stepMap.get(stepId);
+      if (!step) return null;
+      const cue = backgroundCues.forStep(step);
+      return cue ? { ...cue } : null;
+    },
     storageKey: STORAGE_KEY,
   });
 

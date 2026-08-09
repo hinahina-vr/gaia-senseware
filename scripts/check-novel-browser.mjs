@@ -15,8 +15,11 @@ const { chromium } = await import(pathToFileURL(path.join(moduleRoot, "index.mjs
 const sharp = (await import(pathToFileURL(path.join(nodeModules, "sharp", "lib", "index.js")))).default;
 const pixelmatch = (await import(pathToFileURL(path.join(nodeModules, "pixelmatch", "index.js")))).default;
 delete globalThis.GAIA_NOVEL_STORY;
+delete globalThis.GAIA_NOVEL_BACKGROUND_CUES;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?browser=${Date.now()}`);
+await import(`${pathToFileURL(path.join(projectRoot, "novel-background-cues.js")).href}?browser=${Date.now()}`);
 const story = globalThis.GAIA_NOVEL_STORY;
+const backgroundCueData = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
 const steps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(steps.map((step) => [step.id, step]));
 const routeUrl = new URL("/story", baseUrl).href;
@@ -25,7 +28,7 @@ const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ executablePath, headless: true, args: ["--no-first-run", "--disable-background-networking"] });
-const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], interactions: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], productionBackgrounds: [], backgroundPreloads: [], interactions: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
 const attachDiagnostics = (page, label) => {
@@ -215,12 +218,11 @@ try {
   await compareBaseline(titlePath, "start");
 
   const backgroundCases = [
-    ["current_exhibition", "novel-bg-exhibition-v2.png", "scene-exhibition"],
+    ["current_exhibition", "novel-bg-exhibition-v3.png", "scene-exhibition"],
     ["opening_empty_seat", "novel-bg-workroom-v2.png", "scene-workroom"],
     ["first_meeting_promise", "novel-bg-online-night-v2.png", "scene-online"],
     ["prologue_basil", "novel-bg-garden-center-v2.png", "scene-garden-center"],
     ["first_meeting_hall", "novel-bg-coastal-venue-v2.png", "scene-coastal-venue"],
-    ["production_year", "novel-bg-production-night-v2.png", "scene-production-night"],
     ["interlude_sea", "novel-bg-zushi-coast-night-v2.png", "scene-zushi-coast"],
   ];
   for (const [sceneId, expectedFile, screenshotName] of backgroundCases) {
@@ -233,6 +235,110 @@ try {
     report.sceneBackgrounds.push({ sceneId, expectedFile, passed: true });
     await screenshot(page, screenshotName);
   }
+
+  // production_year has step-level background cues and is audited separately.
+  const productionSteps = steps.filter((step) => step.sceneId === "production_year");
+  const productionRuntimeCues = await page.evaluate((stepIds) => stepIds.map((stepId) => globalThis.GaiaNovel.getBackgroundCue(stepId)), productionSteps.map((step) => step.id));
+  assert(productionRuntimeCues.length === 261 && productionRuntimeCues.every((cue) => cue?.assetPath), "production_year has an unresolved background cue");
+  assert(productionRuntimeCues.every((cue) => !cue.assetPath.includes("novel-bg-production-night-v2.png")), "production_year still references the old production-night background");
+  assert(productionRuntimeCues.every((cue) => !/novel-bg-(?:amane|mizuha|sakuya)-room-v1\.png$/.test(cue.assetPath)), "production_year uses an unqualified room-v1 fallback");
+
+  const productionEvidenceSteps = [
+    "production_year_001", "production_year_007", "production_year_060", "production_year_080", "production_year_083",
+    "production_year_086", "production_year_089", "production_year_090", "production_year_103", "production_year_122",
+    "production_year_150", "production_year_156", "production_year_168", "production_year_169", "production_year_170", "production_year_175", "production_year_195",
+    "production_year_200", "production_year_215", "production_year_233", "production_year_239", "production_year_248",
+    "production_year_254", "production_year_257", "production_year_259",
+  ];
+  const preloadTargets = new Map([
+    ["production_year_083", "novel-bg-sakuya-room-day-v1.png"],
+    ["production_year_168", "novel-bg-production-station-meeting-v1.png"],
+  ]);
+  for (const stepId of productionEvidenceSteps) {
+    const step = stepMap.get(stepId);
+    const cue = backgroundCueData.forStep(step);
+    const expectedFile = path.basename(cue.assetPath);
+    await bootAt(page, stepId);
+    const presentation = await page.locator("#novel-layer").evaluate((node) => ({
+      backgroundImage: getComputedStyle(node).backgroundImage,
+      cueId: node.dataset.backgroundCue,
+      horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+    }));
+    assert(presentation.backgroundImage.includes(expectedFile), `${stepId} uses the wrong production background: ${presentation.backgroundImage}`);
+    assert(presentation.cueId === cue.id && !presentation.horizontalOverflow, `${stepId} cue presentation failed: ${JSON.stringify(presentation)}`);
+    const preloadTarget = preloadTargets.get(stepId);
+    if (preloadTarget) {
+      await page.waitForFunction((filename) => performance.getEntriesByType("resource").some((entry) => entry.name.includes(filename)), preloadTarget, { timeout: 5000 });
+      report.backgroundPreloads.push({ stepId, nextAsset: preloadTarget, requestedBeforeBoundary: true });
+    }
+    report.productionBackgrounds.push({ viewport: "2048x1114", stepId, cueId: cue.id, assetPath: cue.assetPath, passed: true });
+    await screenshot(page, `production-${stepId.slice(-3)}-desktop`);
+  }
+
+  const productionTransitionCases = productionSteps.slice(0, -1)
+    .map((step, index) => [step, productionSteps[index + 1]])
+    .filter(([fromStep, toStep]) => backgroundCueData.forStep(fromStep).assetPath !== backgroundCueData.forStep(toStep).assetPath)
+    .map(([fromStep, toStep]) => [fromStep.id, toStep.id]);
+  for (const [fromStepId, toStepId] of productionTransitionCases) {
+    const fromCue = backgroundCueData.forStep(stepMap.get(fromStepId));
+    const toCue = backgroundCueData.forStep(stepMap.get(toStepId));
+    const fromFile = path.basename(fromCue.assetPath);
+    const toFile = path.basename(toCue.assetPath);
+    await bootAt(page, fromStepId);
+    for (let guard = 0; guard < 64; guard += 1) {
+      await page.locator("#novel-layer").dispatchEvent("click");
+      await page.waitForTimeout(24);
+      if (await page.locator("body").evaluate((body) => body.classList.contains("scene-transitioning"))) break;
+    }
+    await page.waitForFunction(() => document.body.classList.contains("scene-transitioning"), null, { timeout: 8000 });
+    await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, toStepId, { timeout: 8000 });
+    const frame = await page.locator("#novel-layer").evaluate((layer) => ({
+      currentBackground: getComputedStyle(layer).backgroundImage,
+      bufferedBackground: getComputedStyle(layer, "::before").backgroundImage,
+      buffered: layer.classList.contains("is-background-buffered"),
+      releasing: layer.classList.contains("is-background-releasing"),
+    }));
+    assert(frame.currentBackground.includes(toFile) && frame.bufferedBackground.includes(fromFile) && frame.buffered && frame.releasing, `${fromStepId}->${toStepId} did not preserve the old background beneath the new cue: ${JSON.stringify(frame)}`);
+    report.productionBackgrounds.push({ viewport: "2048x1114", transition: `${fromStepId}->${toStepId}`, from: fromCue.id, to: toCue.id, layered: true, passed: true });
+    await screenshot(page, `production-transition-${fromStepId.slice(-3)}-${toStepId.slice(-3)}`, { animations: "allow" });
+    await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"), null, { timeout: 8000 });
+  }
+  await bootAt(page, "production_year_087");
+  await advanceLinear(page);
+  assert(await currentStepId(page) === "production_year_088", "same-cue production step did not advance normally");
+  assert(!await page.locator("body").evaluate((body) => body.classList.contains("scene-transitioning")), "same production background reanimated on every step");
+  report.productionBackgrounds.push({ viewport: "2048x1114", transition: "production_year_087->production_year_088", sameCueDidNotReanimate: true, passed: true });
+
+  const inlineRecord = steps.find((step) => step.type === "record" && step.recordType === "SOURCE" && step.text.includes("園芸売り場"))
+    || steps.find((step) => step.type === "record" && step.recordType === "SOURCE");
+  const inlineRecordScene = story.scenes.find((scene) => scene.id === inlineRecord.sceneId);
+  await bootAt(page, inlineRecord.id);
+  await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 5000 });
+  const inlineRecordPresentation = await page.evaluate(() => {
+    const location = document.querySelector("#novel-location");
+    return {
+      dialogueVisible: !document.querySelector("#novel-dialogue").hidden,
+      evidenceHidden: document.querySelector("#novel-evidence-surface").hidden,
+      speaker: document.querySelector("#novel-speaker").textContent,
+      text: document.querySelector("#novel-text").textContent,
+      paginationApplied: Boolean(document.querySelector("#novel-text").dataset.pageCount),
+      sourceDetailsAvailable: !document.querySelector("#novel-source-button").hidden,
+      castSpeaker: document.querySelector("#novel-cast").dataset.speaker,
+      avatarHidden: document.querySelector("#novel-avatar").hidden,
+      locationText: location.textContent,
+      locationParent: location.parentElement?.id,
+      locationShadow: getComputedStyle(location).textShadow,
+      obsoleteFooterLocation: document.querySelectorAll(".novel-footer #novel-location").length,
+      obsoleteSignalTitle: document.querySelectorAll("#novel-signal-title").length,
+    };
+  });
+  assert(inlineRecordPresentation.dialogueVisible && inlineRecordPresentation.evidenceHidden && inlineRecordPresentation.speaker === "観測メモ" && inlineRecordPresentation.sourceDetailsAvailable, `record did not use the normal novel presentation: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(!inlineRecordPresentation.paginationApplied, `special record UI incorrectly used normal-text pagination: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.castSpeaker === "narrator" && inlineRecordPresentation.avatarHidden, `source record unexpectedly displayed a character portrait: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.text.includes("園芸売り場") && inlineRecordPresentation.text.includes("36") && !/LOCAL SOURCE|SOURCE|観測記録\s*\//.test(inlineRecordPresentation.text), `record exposed internal labels or lost canonical copy: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.locationText === inlineRecordScene.title && inlineRecordPresentation.locationParent === "novel-source-button" && inlineRecordPresentation.obsoleteFooterLocation === 0 && inlineRecordPresentation.obsoleteSignalTitle === 0 && inlineRecordPresentation.locationShadow !== "none", `scene location was not moved into the readable upper caption: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(await page.locator(".novel-evidence-card").count() === 0, "obsolete full-screen record card remains");
+  await screenshot(page, "record-note");
 
   const backgroundTransitionScene = story.scenes.find((scene) => scene.id === "opening_empty_seat");
   const backgroundTransitionStep = backgroundTransitionScene.steps.at(-1);
@@ -521,6 +627,22 @@ try {
   }));
   assert(!mobileGeometry.horizontalOverflow && mobileGeometry.surfaceScroll && mobileGeometry.count === 36, `mobile reflection layout failed: ${JSON.stringify(mobileGeometry)}`);
   await screenshot(mobile, "choice-mobile");
+  for (const stepId of productionEvidenceSteps) {
+    const step = stepMap.get(stepId);
+    const cue = backgroundCueData.forStep(step);
+    const expectedFile = path.basename(cue.assetPath);
+    await bootAt(mobile, stepId, {}, { reducedMotion: true });
+    const presentation = await mobile.locator("#novel-layer").evaluate((node) => ({
+      backgroundImage: getComputedStyle(node).backgroundImage,
+      backgroundSize: getComputedStyle(node).backgroundSize,
+      cueId: node.dataset.backgroundCue,
+      horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+    }));
+    assert(presentation.backgroundImage.includes(expectedFile), `${stepId} uses the wrong 390px production background: ${presentation.backgroundImage}`);
+    assert(presentation.backgroundSize.split(",").every((value) => value.trim() === "cover") && presentation.cueId === cue.id && !presentation.horizontalOverflow, `${stepId} 390px cue presentation failed: ${JSON.stringify(presentation)}`);
+    report.productionBackgrounds.push({ viewport: "390x844", stepId, cueId: cue.id, assetPath: cue.assetPath, passed: true });
+    await screenshot(mobile, `production-${stepId.slice(-3)}-mobile`);
+  }
   await bootAt(mobile, chat.id, {}, { reducedMotion: true });
   await advanceLinear(mobile);
   const mobileSlackGeometry = await mobile.evaluate(() => {

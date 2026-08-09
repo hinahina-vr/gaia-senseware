@@ -4402,7 +4402,6 @@ body.novel-reduced-motion .story-detour-dock * {
   --novel-scene-background: url("./assets/visuals-07/novel-bg-coastal-venue-v2.png");
 }
 
-.novel-layer:not(.is-title)[data-scene-id="production_year"],
 .novel-layer:not(.is-title)[data-scene-id="mode07_abstract"] {
   --novel-scene-background: url("./assets/visuals-07/novel-bg-production-night-v2.png");
 }
