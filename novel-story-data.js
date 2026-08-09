@@ -4,6 +4,72 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "title": "GAIA SENSATION",
   "systemTitle": "GAIA SENSEWARE",
   "startSceneId": "current_exhibition",
+  "temporal": {
+    "schemaVersion": 1,
+    "calendar": "GREGORIAN",
+    "timeZone": "Asia/Tokyo",
+    "currentYear": 2026,
+    "clockPolicy": "AUTHOR_FIXED",
+    "missingMetadataPolicy": "ERROR",
+    "sceneOrder": [
+      "current_exhibition",
+      "opening_empty_seat",
+      "prologue_online_circle",
+      "prologue_basil",
+      "choice_observation_order",
+      "first_meeting_promise",
+      "first_meeting_hall",
+      "festival_walk",
+      "production_year",
+      "absence",
+      "search",
+      "festival_build",
+      "gx_deep_time",
+      "mode03_map",
+      "mode07_abstract",
+      "interlude_sea",
+      "mode08_map_layers",
+      "mode10_space",
+      "choice_editorial",
+      "epilogue_reflection_field",
+      "choice_reflection",
+      "final_record",
+      "return_to_start"
+    ],
+    "archives": {
+      "C-01": {
+        "startAt": "2026-06-20",
+        "timePrecision": "PART_OF_DAY",
+        "partOfDay": "NIGHT",
+        "displayTitle": "2026年6月20日（土） 夜｜MODE 01問い追加"
+      },
+      "C-02": {
+        "startAt": "2026-06-28T18:36:00+09:00",
+        "timePrecision": "MINUTE",
+        "displayTitle": "2026年6月28日（日） 18:36〜｜地図詳細画面",
+        "transitions": [
+          {
+            "transitionAt": "2026-06-29",
+            "timePrecision": "PART_OF_DAY",
+            "partOfDay": "MORNING",
+            "displayTitle": "2026年6月29日（月） 朝｜町名欄を追加"
+          }
+        ]
+      },
+      "C-03": {
+        "startAt": "2026-07-12",
+        "timePrecision": "DAY",
+        "displayTitle": "2026年7月12日（日）｜資源・粒子画面"
+      },
+      "C-04": {
+        "startAt": "2026-07-25T00:18:00+09:00",
+        "endAt": "2026-07-25T01:03:00+09:00",
+        "timePrecision": "MINUTE",
+        "endTimePrecision": "MINUTE",
+        "displayTitle": "2026年7月25日（土） 00:18〜01:03｜宇宙ビュー試作"
+      }
+    }
+  },
   "saveFields": [
     "storyVersion",
     "stepId",
@@ -380,7 +446,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "青い進行線が、現在の展示ホールから三か月前の共同作業室へ伸びる。"
         }
       ],
-      "nextSceneId": "opening_empty_seat"
+      "nextSceneId": "opening_empty_seat",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T13:30:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "学園祭・展示ホール",
+        "displayTitle": "11月1日（日） 13:30｜学園祭・展示ホール"
+      }
     },
     {
       "id": "opening_empty_seat",
@@ -570,7 +643,22 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "画面の日付がさらに巻き戻る。\n最初に三人が同じスレッドへ集まった、現在から一年半前。そこから半年をかけて、三人が初めて顔を合わせる学園祭の日まで進んでいく。"
         }
       ],
-      "nextSceneId": "prologue_online_circle"
+      "nextSceneId": "prologue_online_circle",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2026-08-01T10:21:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "海に近い町・共同作業室",
+        "displayTitle": "8月1日（土） 10:21｜海に近い町・共同作業室",
+        "entryTransition": {
+          "stepId": "opening_empty_seat_001",
+          "fromTemporalContext": "CURRENT",
+          "toTemporalContext": "RECORD",
+          "transitionAt": "2026-08-01T10:21:00+09:00",
+          "timePrecision": "MINUTE",
+          "displayTitle": "8月1日（土） 10:21｜三か月前の共同作業室"
+        }
+      }
     },
     {
       "id": "prologue_online_circle",
@@ -670,7 +758,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "これ以降、時刻の付いた投稿には、その時点の学内チャット表示名が記録される。"
         }
       ],
-      "nextSceneId": "prologue_basil"
+      "nextSceneId": "prologue_basil",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2025-05-01T18:00:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "学内チャット「惑星の放課後」",
+        "displayTitle": "5月1日（木） 18:00｜学内チャット「惑星の放課後」"
+      }
     },
     {
       "id": "prologue_basil",
@@ -874,7 +969,34 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "どちらも、あとから測った場所と方法を確かめられる値である。ただし条件が違うため、画面は二つを一本の気温変化としてつながない。"
         }
       ],
-      "nextSceneId": "choice_observation_order"
+      "nextSceneId": "choice_observation_order",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2025-05-03T18:12:00+09:00",
+        "endAt": "2025-05-04",
+        "timePrecision": "MINUTE",
+        "endTimePrecision": "PART_OF_DAY",
+        "endPartOfDay": "DAYTIME",
+        "location": "学内チャット「惑星の放課後」",
+        "displayTitle": "5月3日（土）〜5月4日（日）｜学内チャット「惑星の放課後」",
+        "transitions": [
+          {
+            "stepId": "prologue_basil_011",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-05-04T00:31:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "5月4日（日） 00:31｜サクヤの花壇投稿"
+          },
+          {
+            "stepId": "prologue_basil_017",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-05-04",
+            "timePrecision": "PART_OF_DAY",
+            "partOfDay": "DAYTIME",
+            "displayTitle": "5月4日（日） 昼｜バジルの翌日写真"
+          }
+        ]
+      }
     },
     {
       "id": "choice_observation_order",
@@ -995,7 +1117,22 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "その半年で三人が知ったのは、互いの顔ではなく、句読点の直し方や、既読のあとに返事が来るまでの長さだった。"
         }
       ],
-      "nextSceneId": "first_meeting_promise"
+      "nextSceneId": "first_meeting_promise",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T13:42:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "学園祭・展示席",
+        "displayTitle": "11月1日（日） 13:42｜学園祭・展示席",
+        "entryTransition": {
+          "stepId": "choice_observation_order_001",
+          "fromTemporalContext": "RECORD",
+          "toTemporalContext": "CURRENT",
+          "transitionAt": "2026-11-01T13:42:00+09:00",
+          "timePrecision": "MINUTE",
+          "displayTitle": "11月1日（日） 13:42｜現在の展示席へ戻る"
+        }
+      }
     },
     {
       "id": "first_meeting_promise",
@@ -1564,7 +1701,34 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "画面の三分割が閉じる。\n指先の下で、午前零時十七分の「今日、はじめまして。」だけが小さく残り、その文字の向こうから駅の発車ベルが聞こえてくる。"
         }
       ],
-      "nextSceneId": "first_meeting_hall"
+      "nextSceneId": "first_meeting_hall",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2025-11-01T21:06:00+09:00",
+        "endAt": "2025-11-02T02:00:00+09:00",
+        "timePrecision": "MINUTE",
+        "endTimePrecision": "APPROXIMATE",
+        "endQualifier": "AFTER",
+        "location": "学内チャット「惑星の放課後」",
+        "displayTitle": "11月1日（土）21:06〜11月2日（日）02:00過ぎ｜学内チャット「惑星の放課後」",
+        "entryTransition": {
+          "stepId": "first_meeting_promise_001",
+          "fromTemporalContext": "CURRENT",
+          "toTemporalContext": "RECORD",
+          "transitionAt": "2025-11-01T21:06:00+09:00",
+          "timePrecision": "MINUTE",
+          "displayTitle": "11月1日（土） 21:06｜一年前・学園祭前夜"
+        },
+        "transitions": [
+          {
+            "stepId": "first_meeting_promise_024",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-11-02T00:08:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "11月2日（日） 00:08｜初めて会う提案"
+          }
+        ]
+      }
     },
     {
       "id": "first_meeting_hall",
@@ -2186,7 +2350,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "進行矢印へ触れると、記録時刻は午前十時から午後五時六分へ進む。"
         }
       ],
-      "nextSceneId": "festival_walk"
+      "nextSceneId": "festival_walk",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2025-11-02T09:48:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "海沿いの展示場・中央入口",
+        "displayTitle": "11月2日（日） 09:48｜海沿いの展示場・中央入口"
+      }
     },
     {
       "id": "festival_walk",
@@ -2342,7 +2513,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "GAIA SENSEWARE"
         }
       ],
-      "nextSceneId": "production_year"
+      "nextSceneId": "production_year",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2025-11-02T17:06:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "展示ホールをつなぐ連絡通路",
+        "displayTitle": "11月2日（日） 17:06｜展示ホールをつなぐ連絡通路"
+      }
     },
     {
       "id": "production_year",
@@ -4258,7 +4436,215 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "三か月前／10:21"
         }
       ],
-      "nextSceneId": "absence"
+      "nextSceneId": "absence",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2025-11-09T21:03:00+09:00",
+        "endAt": "2026-08-01T10:21:00+09:00",
+        "timePrecision": "MINUTE",
+        "endTimePrecision": "MINUTE",
+        "location": "九か月間の制作記録",
+        "displayTitle": "2025年11月9日（日）〜2026年8月1日（土）｜九か月間の制作記録",
+        "transitions": [
+          {
+            "stepId": "production_year_006",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-11-09T21:03:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年11月9日（日） 21:03｜空のフォルダ"
+          },
+          {
+            "stepId": "production_year_028",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-11-12T22:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年11月12日（水） 22:00｜担当の境界"
+          },
+          {
+            "stepId": "production_year_038",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-11-13T01:04:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年11月13日（木） 01:04｜三つのfinal"
+          },
+          {
+            "stepId": "production_year_043",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-11-29T22:38:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年11月29日（土） 22:38｜元の記録と作った表示"
+          },
+          {
+            "stepId": "production_year_060",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-06T18:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月6日（土） 18:00｜白と赤"
+          },
+          {
+            "stepId": "production_year_069",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-07T00:16:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月7日（日） 00:16｜白を消さない"
+          },
+          {
+            "stepId": "production_year_081",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-07T02:13:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月7日（日） 02:13｜警告色を外す"
+          },
+          {
+            "stepId": "production_year_083",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-07T06:54:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月7日（日） 06:54｜修正版の確認"
+          },
+          {
+            "stepId": "production_year_088",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-07T19:42:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月7日（日） 19:42｜同じ意味にはしない"
+          },
+          {
+            "stepId": "production_year_089",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-08T08:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月8日（月） 08:00｜制作写真を保存"
+          },
+          {
+            "stepId": "production_year_090",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-27T19:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月27日（土） 19:00｜サクヤが消した一行"
+          },
+          {
+            "stepId": "production_year_116",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-29T08:12:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月29日（月） 08:12｜二日後の返信"
+          },
+          {
+            "stepId": "production_year_125",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-29T12:36:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月29日（月） 12:36｜昼の写真"
+          },
+          {
+            "stepId": "production_year_130",
+            "temporalContext": "RECORD",
+            "transitionAt": "2025-12-31T23:45:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2025年12月31日（水） 23:45｜年越しハドル"
+          },
+          {
+            "stepId": "production_year_148",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-01-01T00:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年1月1日（木） 00:00｜年をまたぐ"
+          },
+          {
+            "stepId": "production_year_156",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-01-04T20:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年1月4日（日） 20:00｜十個の四角"
+          },
+          {
+            "stepId": "production_year_168",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-02-21T09:30:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年2月21日（土） 09:30｜初めて同じ机"
+          },
+          {
+            "stepId": "production_year_183",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-02-21T11:26:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年2月21日（土） 11:26｜作業履歴へ投稿"
+          },
+          {
+            "stepId": "production_year_196",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-02-21T19:18:00+09:00",
+            "endAt": "2026-02-21T20:03:00+09:00",
+            "timePrecision": "MINUTE",
+            "endTimePrecision": "MINUTE",
+            "displayTitle": "2026年2月21日（土） 19:18〜20:03｜帰路"
+          },
+          {
+            "stepId": "production_year_200",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-03-15T10:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年3月15日（日） 10:00｜友人二人のテスト"
+          },
+          {
+            "stepId": "production_year_215",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-04-19T20:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年4月19日（日） 20:00｜公開する約束"
+          },
+          {
+            "stepId": "production_year_233",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-05-24T10:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年5月24日（日） 10:00｜会場へ運べる形"
+          },
+          {
+            "stepId": "production_year_239",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-07-18T13:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年7月18日（土） 13:00｜中古機材店"
+          },
+          {
+            "stepId": "production_year_248",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-07-25T00:18:00+09:00",
+            "endAt": "2026-07-25T01:03:00+09:00",
+            "timePrecision": "MINUTE",
+            "endTimePrecision": "MINUTE",
+            "displayMode": "ARCHIVE_REFERENCE",
+            "archiveId": "C-04",
+            "displayTitle": "2026年7月25日（土） 00:18〜01:03｜宇宙ビュー試作"
+          },
+          {
+            "stepId": "production_year_248",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-07-25T10:02:00+09:00",
+            "endAt": "2026-07-25T18:32:00+09:00",
+            "timePrecision": "MINUTE",
+            "endTimePrecision": "MINUTE",
+            "displayTitle": "2026年7月25日（土） 10:02〜18:32｜七月の終わり・予約と制作チャット"
+          },
+          {
+            "stepId": "production_year_257",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-01T10:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年8月1日（土） 10:00｜実機接続の集合"
+          },
+          {
+            "stepId": "production_year_261",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-01T10:21:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "2026年8月1日（土） 10:21｜不在発覚"
+          }
+        ]
+      }
     },
     {
       "id": "absence",
@@ -4947,7 +5333,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "未読の印は変わらなかった。"
         }
       ],
-      "nextSceneId": "search"
+      "nextSceneId": "search",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2026-08-01T10:21:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "海に近い町・共同作業室",
+        "displayTitle": "8月1日（土） 10:21｜海に近い町・共同作業室"
+      }
     },
     {
       "id": "search",
@@ -5973,7 +6366,116 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "三人が内容を確認した学園祭公開版1.0\nその後に二人が行った会場用の変更"
         }
       ],
-      "nextSceneId": "festival_build"
+      "nextSceneId": "festival_build",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2026-08-01T10:21:00+09:00",
+        "endAt": "2026-08-14",
+        "timePrecision": "MINUTE",
+        "endTimePrecision": "DAY",
+        "location": "安否確認記録",
+        "displayTitle": "8月1日（土）〜8月14日（金）｜安否確認記録",
+        "transitions": [
+          {
+            "stepId": "search_003",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-01T10:21:00+09:00",
+            "endAt": "2026-08-01T22:06:00+09:00",
+            "timePrecision": "MINUTE",
+            "endTimePrecision": "MINUTE",
+            "displayTitle": "8月1日（土） 10:21〜22:06｜一日目"
+          },
+          {
+            "stepId": "search_013",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-02T09:18:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "8月2日（日） 09:18｜二日目"
+          },
+          {
+            "stepId": "search_024",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-03",
+            "timePrecision": "DAY",
+            "displayTitle": "8月3日（月）｜三日目"
+          },
+          {
+            "stepId": "search_034",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-04",
+            "timePrecision": "DAY",
+            "displayTitle": "8月4日（火）｜四日目"
+          },
+          {
+            "stepId": "search_045",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-05",
+            "timePrecision": "DAY",
+            "displayTitle": "8月5日（水）｜五日目"
+          },
+          {
+            "stepId": "search_060",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-06",
+            "timePrecision": "PART_OF_DAY",
+            "partOfDay": "MORNING",
+            "displayTitle": "8月6日（木） 朝｜六日目"
+          },
+          {
+            "stepId": "search_069",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-07",
+            "timePrecision": "PART_OF_DAY",
+            "partOfDay": "MORNING",
+            "displayTitle": "8月7日（金） 朝｜七日目"
+          },
+          {
+            "stepId": "search_076",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-08T20:10:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "8月8日（土） 20:10｜八日目"
+          },
+          {
+            "stepId": "search_080",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-09T19:42:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "8月9日（日） 19:42｜九日目"
+          },
+          {
+            "stepId": "search_081",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-10T21:03:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "8月10日（月） 21:03｜十日目"
+          },
+          {
+            "stepId": "search_086",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-11",
+            "timePrecision": "DAY",
+            "displayTitle": "8月11日（火）｜十一日目"
+          },
+          {
+            "stepId": "search_112",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-12",
+            "timePrecision": "PART_OF_DAY",
+            "partOfDay": "NIGHT",
+            "displayTitle": "8月12日（水） 夜｜十二日目"
+          },
+          {
+            "stepId": "search_127",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-08-13",
+            "endAt": "2026-08-14",
+            "timePrecision": "DAY",
+            "endTimePrecision": "DAY",
+            "displayTitle": "8月13日（木）〜8月14日（金）｜十三〜十四日目"
+          }
+        ]
+      }
     },
     {
       "id": "festival_build",
@@ -6106,7 +6608,22 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "操作｜太古の海を開く"
         }
       ],
-      "nextSceneId": "gx_deep_time"
+      "nextSceneId": "gx_deep_time",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T14:40:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "学園祭・展示ホール",
+        "displayTitle": "11月1日（日） 14:40｜学園祭・展示ホール",
+        "entryTransition": {
+          "stepId": "festival_build_001",
+          "fromTemporalContext": "RECORD",
+          "toTemporalContext": "CURRENT",
+          "transitionAt": "2026-11-01T14:40:00+09:00",
+          "timePrecision": "MINUTE",
+          "displayTitle": "11月1日（日） 14:40｜現在の展示ホールへ戻る"
+        }
+      }
     },
     {
       "id": "gx_deep_time",
@@ -6304,7 +6821,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "次の画面は、その人が最後に完成させた作業へ戻る。"
         }
       ],
-      "nextSceneId": "mode03_map"
+      "nextSceneId": "mode03_map",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T14:44:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "展示端末・GXモード",
+        "displayTitle": "11月1日（日） 14:44｜展示端末・GXモード"
+      }
     },
     {
       "id": "mode03_map",
@@ -6472,7 +6996,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "意味を足す前に、二件がいつ届き、いつ開かれたかを確かめる。"
         }
       ],
-      "nextSceneId": "mode07_abstract"
+      "nextSceneId": "mode07_abstract",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T14:53:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "展示端末・MODE 03",
+        "displayTitle": "11月1日（日） 14:53｜展示端末・MODE 03"
+      }
     },
     {
       "id": "mode07_abstract",
@@ -6863,7 +7394,38 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "ミズハは開いた水の蓋を閉め、食べていないパンと青りんごを紙袋へ入れる。"
         }
       ],
-      "nextSceneId": "interlude_sea"
+      "nextSceneId": "interlude_sea",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T15:00:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "展示端末・MODE 07",
+        "displayTitle": "11月1日（日） 15:00｜展示端末・MODE 07",
+        "transitions": [
+          {
+            "stepId": "mode07_abstract_024",
+            "fromTemporalContext": "CURRENT",
+            "toTemporalContext": "RECORD",
+            "transitionAt": "2026-10-31T18:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "10月31日（土） 18:00｜公開前夜・共同作業室"
+          },
+          {
+            "stepId": "mode07_abstract_030",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-10-31T22:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "10月31日（土） 22:00｜パンは未開封"
+          },
+          {
+            "stepId": "mode07_abstract_031",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-10-31T23:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "10月31日（土） 23:00｜最終画面の確認"
+          }
+        ]
+      }
     },
     {
       "id": "interlude_sea",
@@ -7336,7 +7898,55 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "公開前夜の記録が終わる。"
         }
       ],
-      "nextSceneId": "mode08_map_layers"
+      "nextSceneId": "mode08_map_layers",
+      "temporal": {
+        "temporalContext": "RECORD",
+        "startAt": "2026-10-31T23:20:00+09:00",
+        "endAt": "2026-11-01T00:26:00+09:00",
+        "timePrecision": "MINUTE",
+        "endTimePrecision": "MINUTE",
+        "location": "共同作業室から海岸へ",
+        "displayTitle": "10月31日（土）23:20〜11月1日（日）00:26｜共同作業室から海岸へ",
+        "transitions": [
+          {
+            "stepId": "interlude_sea_003",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-10-31T23:20:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "10月31日（土） 23:20｜共同作業室を出る"
+          },
+          {
+            "stepId": "interlude_sea_014",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-10-31T23:31:00+09:00",
+            "endAt": "2026-10-31T23:43:00+09:00",
+            "timePrecision": "MINUTE",
+            "endTimePrecision": "MINUTE",
+            "displayTitle": "10月31日（土） 23:31〜23:43｜海の十二分"
+          },
+          {
+            "stepId": "interlude_sea_058",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-10-31T23:58:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "10月31日（土） 23:58｜共同作業室へ戻る"
+          },
+          {
+            "stepId": "interlude_sea_059",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-11-01T00:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "11月1日（日） 00:00｜日付をまたぐ"
+          },
+          {
+            "stepId": "interlude_sea_067",
+            "temporalContext": "RECORD",
+            "transitionAt": "2026-11-01T00:26:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "11月1日（日） 00:26｜公開版の再確認"
+          }
+        ]
+      }
     },
     {
       "id": "mode08_map_layers",
@@ -7493,7 +8103,22 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "返事がない状態で取った行動と、返事そのものは、次の画面でも同じ印にしない。"
         }
       ],
-      "nextSceneId": "mode10_space"
+      "nextSceneId": "mode10_space",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T15:22:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "展示端末・MODE 08",
+        "displayTitle": "11月1日（日） 15:22｜展示端末・MODE 08",
+        "entryTransition": {
+          "stepId": "mode08_map_layers_005",
+          "fromTemporalContext": "RECORD",
+          "toTemporalContext": "CURRENT",
+          "transitionAt": "2026-11-01T15:22:00+09:00",
+          "timePrecision": "MINUTE",
+          "displayTitle": "11月1日（日） 15:22｜現在の展示端末へ戻る"
+        }
+      }
     },
     {
       "id": "mode10_space",
@@ -7635,7 +8260,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "地球の光が止まり、二つの表示方法が現れる。"
         }
       ],
-      "nextSceneId": "choice_editorial"
+      "nextSceneId": "choice_editorial",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T15:30:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "展示端末・MODE 10",
+        "displayTitle": "11月1日（日） 15:30｜展示端末・MODE 10"
+      }
     },
     {
       "id": "choice_editorial",
@@ -7735,7 +8367,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "セッション内の表示だけが変わり、三人が確認した公開版と作者名は変わらない。"
         }
       ],
-      "nextSceneId": "epilogue_reflection_field"
+      "nextSceneId": "epilogue_reflection_field",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T15:38:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "学園祭・展示席",
+        "displayTitle": "11月1日（日） 15:38｜学園祭・展示席"
+      }
     },
     {
       "id": "epilogue_reflection_field",
@@ -7758,7 +8397,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "この選択は三人の発言を書き換えず、これから起きる現在の出来事も変えない。"
         }
       ],
-      "nextSceneId": "choice_reflection"
+      "nextSceneId": "choice_reflection",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T15:42:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "学園祭・展示席",
+        "displayTitle": "11月1日（日） 15:42｜学園祭・展示席"
+      }
     },
     {
       "id": "choice_reflection",
@@ -8191,7 +8837,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "選んだ文はこの一度の表示へ反映される。何も選ばなかった場合も、そのまま進む。"
         }
       ],
-      "nextSceneId": "final_record"
+      "nextSceneId": "final_record",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T15:44:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "学園祭・展示席",
+        "displayTitle": "11月1日（日） 15:44｜学園祭・展示席"
+      }
     },
     {
       "id": "final_record",
@@ -8386,7 +9039,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "通話が切れる。ミズハは青りんごを両手で持ち上げる。"
         }
       ],
-      "nextSceneId": "return_to_start"
+      "nextSceneId": "return_to_start",
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T15:47:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "学園祭・展示席",
+        "displayTitle": "11月1日（日） 15:47｜学園祭・展示席"
+      }
     },
     {
       "id": "return_to_start",
@@ -8643,7 +9303,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "END"
         }
       ],
-      "nextSceneId": null
+      "nextSceneId": null,
+      "temporal": {
+        "temporalContext": "CURRENT",
+        "startAt": "2026-11-01T15:55:00+09:00",
+        "timePrecision": "MINUTE",
+        "location": "学園祭・展示席",
+        "displayTitle": "11月1日（日） 15:55｜学園祭・展示席"
+      }
     }
   ]
 });

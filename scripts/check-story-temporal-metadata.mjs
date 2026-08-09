@@ -56,12 +56,26 @@ const assertDisplayWeekdays = (displayTitle, values, label) => {
 };
 
 await import(`${pathToFileURL(generatedPath).href}?temporal-check=1`);
-const generatedScenes = globalThis.GAIA_NOVEL_STORY.scenes;
+const generatedStory = globalThis.GAIA_NOVEL_STORY;
+const generatedScenes = generatedStory.scenes;
 const generatedStepIds = new Set(generatedScenes.flatMap((scene) => scene.steps.map((step) => step.id)));
+assert.deepEqual(generatedStory.temporal, {
+  schemaVersion: metadata.schemaVersion,
+  calendar: metadata.calendar,
+  timeZone: metadata.timeZone,
+  currentYear: metadata.currentYear,
+  clockPolicy: metadata.clockPolicy,
+  missingMetadataPolicy: metadata.missingMetadataPolicy,
+  sceneOrder: metadata.sceneOrder,
+  archives: metadata.archives,
+}, "generated temporal policy and archives must match the canonical metadata");
 
 for (const sceneId of expectedSceneOrder) {
   const scene = metadata.scenes[sceneId];
+  const generatedScene = generatedScenes.find((candidate) => candidate.id === sceneId);
   assert.ok(scene, `${sceneId}: temporal metadata is required`);
+  assert.ok(generatedScene, `${sceneId}: generated scene is required`);
+  assert.deepEqual(generatedScene.temporal, scene, `${sceneId}: generated temporal metadata must match the canonical script`);
   assert.ok(["CURRENT", "RECORD"].includes(scene.temporalContext), `${sceneId}: temporalContext must be CURRENT or RECORD`);
   assert.equal(typeof scene.location, "string", `${sceneId}: location is required`);
   assert.equal(typeof scene.displayTitle, "string", `${sceneId}: displayTitle is required`);

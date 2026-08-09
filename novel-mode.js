@@ -17,6 +17,7 @@
   const SLOT_COUNT = 6;
   const SYSTEM_REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const AUTO_DELAY_MS = 3600;
+  const TEMPORAL_TRANSITION_MS = 2400;
   const REVEAL_BASE_MS = 24;
   const REVEAL_MIN_LINE_MS = 120;
   const REVEAL_PUNCTUATION_MS = 84;
@@ -159,6 +160,8 @@
   const allSteps = scenes.flatMap((scene) => scene.steps);
   const stepMap = new Map(allSteps.map((step) => [step.id, step]));
   const stepIndexMap = new Map(allSteps.map((step, index) => [step.id, index]));
+  if (!globalThis.GaiaNovelTemporal?.create) throw new Error("[GAIA temporal metadata] runtime is not loaded");
+  const temporalRuntime = globalThis.GaiaNovelTemporal.create(story);
   const firstStepForScene = (sceneId) => sceneMap.get(sceneId)?.steps?.[0]?.id || null;
   const reflectionStep = allSteps.find((step) => step.type === "reflectionChoice");
   const reflectionOptionMap = new Map((reflectionStep?.options || []).map((option) => [option.id, option]));
@@ -190,6 +193,8 @@
   let revealFrame = 0;
   let revealGeneration = 0;
   let autoTimer = 0;
+  let temporalTransitionTimer = 0;
+  let temporalTransitionActive = false;
   let previousFocus = null;
   let archiveMode = "save";
   let pendingSlotAction = "";
@@ -348,9 +353,12 @@
     window.clearTimeout(revealTimer);
     window.cancelAnimationFrame(revealFrame);
     window.clearTimeout(autoTimer);
+    window.clearTimeout(temporalTransitionTimer);
     revealTimer = 0;
     revealFrame = 0;
     autoTimer = 0;
+    temporalTransitionTimer = 0;
+    temporalTransitionActive = false;
   };
 
   const hideSpecialSurfaces = () => {
@@ -541,7 +549,8 @@
       });
       state.stepId = next;
       saveProgress();
-      renderCurrentStep();
+      if (temporalRuntime.contextTransitionForStep(nextStep)) renderTemporalTransitionCard(nextStep);
+      else renderCurrentStep();
     };
     const currentBackground = backgroundPresentationForStep(step);
     const nextBackground = backgroundPresentationForStep(nextStep);
@@ -556,6 +565,63 @@
     const index = stepIndexMap.get(state.stepId) || 0;
     elements.progress.style.width = `${Math.max(2, ((index + 1) / allSteps.length) * 100)}%`;
   };
+
+  const applyTemporalPresentation = (step) => {
+    const scene = sceneMap.get(step.sceneId);
+    const presentation = temporalRuntime.presentationForStep(step);
+    layer.dataset.temporalContext = presentation.temporalContext;
+    layer.dataset.timePrecision = presentation.timePrecision;
+    layer.dataset.temporalPeriod = String(presentation.isPeriod);
+    layer.dataset.temporalSource = presentation.source;
+    elements.modeReadout.textContent = `${scene.chapter} — ${presentation.displayTitle}`;
+    elements.location.textContent = presentation.displayTitle;
+    return presentation;
+  };
+
+  function finishTemporalTransitionCard() {
+    if (!temporalTransitionActive) return false;
+    window.clearTimeout(temporalTransitionTimer);
+    temporalTransitionTimer = 0;
+    temporalTransitionActive = false;
+    elements.chapterCard.hidden = true;
+    renderCurrentStep();
+    return true;
+  }
+
+  function renderTemporalTransitionCard(step = currentStep()) {
+    const transition = temporalRuntime.contextTransitionForStep(step);
+    if (!step || !transition) return renderCurrentStep();
+    clearTimers();
+    closeLog();
+    closeSourceDetails();
+    showRuntime();
+    hideSpecialSurfaces();
+    isRevealing = false;
+    layer.dataset.sceneId = step.sceneId;
+    layer.dataset.stepId = step.id;
+    layer.dataset.stepType = "temporal-transition";
+    applyTemporalPresentation(step);
+    elements.dialogue.hidden = true;
+    elements.choices.replaceChildren();
+    elements.choices.classList.remove("is-visible");
+    elements.sourceButton.hidden = true;
+    elements.chapterIndex.textContent = `${transition.fromTemporalContext} → ${transition.toTemporalContext}`;
+    elements.chapterTitle.textContent = transition.displayTitle;
+    elements.chapterCard.dataset.transitionFrom = transition.fromTemporalContext;
+    elements.chapterCard.dataset.transitionTo = transition.toTemporalContext;
+    elements.chapterCard.setAttribute("role", "status");
+    elements.chapterCard.setAttribute("aria-live", "polite");
+    elements.chapterCard.setAttribute("aria-label", `${transition.fromTemporalContext}から${transition.toTemporalContext}へ。${transition.displayTitle}`);
+    elements.chapterCard.hidden = false;
+    setCharacterPresentation("chapter");
+    selectMode(sceneMap.get(step.sceneId)?.modeIndex);
+    updateProgress();
+    temporalTransitionActive = true;
+    temporalTransitionTimer = window.setTimeout(
+      finishTemporalTransitionCard,
+      motionReduced() ? 600 : TEMPORAL_TRANSITION_MS,
+    );
+  }
 
   const selectMode = (index) => {
     if (!Number.isInteger(index)) return;
@@ -876,8 +942,7 @@
     elements.choices.replaceChildren();
     elements.choices.classList.remove("is-visible");
     elements.sourceButton.hidden = false;
-    elements.modeReadout.textContent = `${scene.chapter} — ${scene.title}`;
-    elements.location.textContent = scene.title;
+    applyTemporalPresentation(step);
     selectMode(scene.modeIndex);
     updateProgress();
     updateSourceDetails(step);
@@ -1554,6 +1619,7 @@
   function advance() {
     if (!isOpen || !hasStarted || pendingInteraction) return;
     if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel].every((panel) => panel.hidden)) return;
+    if (finishTemporalTransitionCard()) return;
     const step = currentStep();
     if (!canAdvanceStep(step)) return;
     if (isRevealing) {

@@ -13,6 +13,8 @@ const story = globalThis.GAIA_NOVEL_STORY;
 assert.ok(story, "GAIA_NOVEL_STORY must be defined");
 assert.equal(story.storyVersion, 7);
 assert.equal(story.startSceneId, "current_exhibition");
+assert.equal(story.temporal?.clockPolicy, "AUTHOR_FIXED");
+assert.equal(story.temporal?.missingMetadataPolicy, "ERROR");
 
 const scenes = story.scenes || [];
 const sceneIds = scenes.map((scene) => scene.id);
@@ -34,6 +36,9 @@ attachments.forEach((attachment) => assert.ok(attachment.description, `${attachm
 for (const required of story.requiredSceneIds || []) assert.ok(sceneSet.has(required), `required scene is missing: ${required}`);
 for (const scene of scenes) {
   assert.ok(scene.steps?.length, `${scene.id} must contain steps`);
+  assert.ok(scene.temporal, `${scene.id} must contain canonical temporal metadata`);
+  assert.ok(["CURRENT", "RECORD"].includes(scene.temporal.temporalContext), `${scene.id} has an invalid temporal context`);
+  assert.equal(typeof scene.temporal.displayTitle, "string", `${scene.id} must contain a temporal display title`);
   if (scene.nextSceneId) assert.ok(sceneSet.has(scene.nextSceneId), `${scene.id} has an invalid nextSceneId`);
   for (const step of scene.steps) {
     assert.equal(step.sceneId, scene.id, `${step.id} must reference its containing scene`);

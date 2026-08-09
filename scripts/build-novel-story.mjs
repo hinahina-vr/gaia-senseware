@@ -46,6 +46,19 @@ const REFLECTION_OPTIONS = Object.freeze([
 ].map(([id, text, law, neutral, chaos]) => ({ id, text, weights: { law, neutral, chaos } })));
 
 const source = fs.readFileSync(canonPath, "utf8").replace(/\r\n?/g, "\n");
+const temporalMetadataMatch = source.match(/<!-- GAIA_TEMPORAL_METADATA\n([\s\S]*?)\nGAIA_TEMPORAL_METADATA -->/u);
+if (!temporalMetadataMatch) throw new Error("正本にGAIA_TEMPORAL_METADATAがありません");
+let temporalMetadata;
+try {
+  temporalMetadata = JSON.parse(temporalMetadataMatch[1]);
+} catch (error) {
+  throw new Error(`GAIA_TEMPORAL_METADATAを解析できません: ${error.message}`);
+}
+if (temporalMetadata.clockPolicy !== "AUTHOR_FIXED") throw new Error("日時metadataのclockPolicyはAUTHOR_FIXEDである必要があります");
+if (temporalMetadata.missingMetadataPolicy !== "ERROR") throw new Error("日時metadataの欠損方針はERRORである必要があります");
+if (!Array.isArray(temporalMetadata.sceneOrder) || !temporalMetadata.scenes || typeof temporalMetadata.scenes !== "object") {
+  throw new Error("日時metadataにはsceneOrderとscenesが必要です");
+}
 const lines = source.split("\n");
 const dividerPattern = /^─+$/u;
 const headingPattern = /^【(.+)】$/u;
@@ -294,6 +307,19 @@ for (const config of configs) {
 }
 
 scenes.forEach((scene, index) => { scene.nextSceneId = scenes[index + 1]?.id || null; });
+const generatedSceneOrder = scenes.map((scene) => scene.id);
+if (JSON.stringify(temporalMetadata.sceneOrder) !== JSON.stringify(generatedSceneOrder)) {
+  throw new Error(`日時metadataのsceneOrderが生成sceneと一致しません: ${JSON.stringify(generatedSceneOrder)}`);
+}
+for (const scene of scenes) {
+  const temporal = temporalMetadata.scenes[scene.id];
+  if (!temporal) throw new Error(`${scene.id}: 日時metadataがありません`);
+  const stepIds = new Set(scene.steps.map((step) => step.id));
+  for (const transition of [temporal.entryTransition, ...(temporal.transitions || [])].filter(Boolean)) {
+    if (transition.stepId && !stepIds.has(transition.stepId)) throw new Error(`${scene.id}: 日時transitionのstepがありません: ${transition.stepId}`);
+  }
+  scene.temporal = temporal;
+}
 
 const tones = ["LAW", "NEUTRAL", "CHAOS", "UNANSWERED"];
 const story = {
@@ -301,6 +327,16 @@ const story = {
   title: "GAIA SENSATION",
   systemTitle: "GAIA SENSEWARE",
   startSceneId: "current_exhibition",
+  temporal: {
+    schemaVersion: temporalMetadata.schemaVersion,
+    calendar: temporalMetadata.calendar,
+    timeZone: temporalMetadata.timeZone,
+    currentYear: temporalMetadata.currentYear,
+    clockPolicy: temporalMetadata.clockPolicy,
+    missingMetadataPolicy: temporalMetadata.missingMetadataPolicy,
+    sceneOrder: temporalMetadata.sceneOrder,
+    archives: temporalMetadata.archives,
+  },
   saveFields: ["storyVersion", "stepId", "reachedSceneIds", "viewed", "evesRoute", "observationOrder", "editorialChoice", "reflectionIds", "resultTone", "audio", "readStepIds", "clear", "archivesUnlocked", "sessionId"],
   requiredSceneIds: scenes.map((scene) => scene.id),
   requiredInteractions: ["gx", "map03", "abstract07", "map08", "space10"],
