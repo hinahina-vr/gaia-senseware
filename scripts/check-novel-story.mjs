@@ -94,6 +94,18 @@ assert.ok(!allText.includes("サクヤの分だけ、縁が乾いたままだっ
 assert.match(allText, /園芸売り場の写真が閉じ、画面は現在の展示席へ戻る。/u, "the observation-order choice must establish the return to the exhibition seat");
 assert.match(allText, /端末の右側には、傷のある青りんごが最初と同じ位置に置かれている。/u, "the physical apple must be distinguished from the on-screen measurements");
 assert.match(allText, /園芸売り場の温度計は三十六度。/u, "the garden-center measurement must read as natural narration");
+const promiseScene = scenes.find((scene) => scene.id === "first_meeting_promise");
+const meetingScene = scenes.find((scene) => scene.id === "first_meeting_hall");
+const stepWithText = (scene, text) => scene?.steps.find((step) => step.text?.includes(text));
+assert.equal(stepWithText(promiseScene, "顔間違えたらごめん笑")?.id, "first_meeting_promise_054", "Sakuya's pre-meeting misrecognition anxiety must remain before the offline meeting");
+assert.match(promiseScene?.steps.map((step) => step.text || "").join("\n") || "", /二度とも誰も通話開始ボタンを押さなかった|顔も声も知らない/u, "the script must not imply a call before the first offline meeting");
+assert.equal(stepWithText(meetingScene, "あまあま、で合っていますの？")?.id, "first_meeting_hall_031", "Mizuha must confirm Amane's chat name aloud");
+assert.equal(stepWithText(meetingScene, "うん。みず、だよね。")?.id, "first_meeting_hall_032", "Amane must confirm Mizuha's chat name aloud");
+assert.equal(stepWithText(meetingScene, "ほんとに声ある。")?.id, "first_meeting_hall_063", "Sakuya must connect the known chat names to real voices");
+assert.equal(stepWithText(meetingScene, "約束が文字だけの冗談ではなかったこと")?.id, "first_meeting_hall_066", "the three-person offline meeting gate must remain explicit");
+assert.equal(stepWithText(meetingScene, "サクヤの立ち絵もミズハ、アマネと同じ胸上の大きさ")?.id, "first_meeting_hall_067", "Sakuya's large portrait must unlock only after the three-person meeting gate");
+assert.ok(meetingScene.steps.findIndex((step) => step.id === "first_meeting_hall_032") < meetingScene.steps.findIndex((step) => step.id === "first_meeting_hall_063"), "Mizuha and Amane must recognize each other before Sakuya arrives");
+assert.ok(meetingScene.steps.findIndex((step) => step.id === "first_meeting_hall_066") < meetingScene.steps.findIndex((step) => step.text?.includes("三人の肩が初めて触れた")), "the meeting must be established before the photo closes their physical distance");
 assert.match(exhibitionText, /地球と人類の共進化を考える展示です。/u, "the exhibition entrance must state the work's central theme");
 assert.match(exhibitionText, /地球の変化が人の暮らしをどう変え、人の選択が地球をどう変えてきたか/u, "the exhibition entrance must explain coevolution in concrete terms");
 for (const removedEntranceCopy of [
