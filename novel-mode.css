@@ -5927,10 +5927,13 @@ body:not(.gx-story-open) .novel-layer.is-central-entrance-distance .novel-charac
 
 body:not(.gx-story-open) .novel-layer.is-central-entrance-distance .novel-character--sakuya .novel-character-portrait,
 body:not(.gx-story-open) .novel-layer.is-central-entrance-distance[data-step-type="dialogue"] .novel-cast[data-speaker="sakuya"] .novel-character--sakuya .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-calm-07-v1.png") !important;
   background-position: 50% 100%;
+  background-repeat: no-repeat;
   background-size: contain;
   -webkit-mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
   mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+  animation: none !important;
 }
 
 .novel-layer.is-central-entrance-distance .novel-character--sakuya figcaption { opacity: 0 !important; }

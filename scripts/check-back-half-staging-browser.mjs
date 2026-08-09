@@ -36,6 +36,7 @@ const report = {
   evidence: [],
   boundaries: [],
   stableBoundaries: [],
+  distanceContinuity: [],
   consoleErrors: [],
   pageErrors: [],
   responses404: [],
@@ -109,13 +110,24 @@ const presentation = (page) => page.locator("#novel-layer").evaluate((node) => {
     const figure = node.querySelector(id);
     if (!figure) return null;
     const figureStyle = getComputedStyle(figure);
+    const portrait = figure.querySelector(".novel-character-portrait");
+    const portraitStyle = portrait ? getComputedStyle(portrait) : null;
     const rect = figure.getBoundingClientRect();
     return {
       display: figureStyle.display,
       visibility: figureStyle.visibility,
       opacity: Number(figureStyle.opacity),
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
       width: rect.width,
       height: rect.height,
+      backgroundImage: portraitStyle?.backgroundImage || "",
+      backgroundPosition: portraitStyle?.backgroundPosition || "",
+      backgroundRepeat: portraitStyle?.backgroundRepeat || "",
+      backgroundSize: portraitStyle?.backgroundSize || "",
+      animationName: portraitStyle?.animationName || "none",
     };
   };
   return {
@@ -267,6 +279,67 @@ const checkStableBoundary = async (page, viewportName, fromId, toId) => {
   Object.assign(report.stableBoundaries.at(-1), { phoneIdentity });
 };
 
+const advanceStep = async (page) => {
+  const previous = await page.locator("#novel-layer").getAttribute("data-step-id");
+  for (let guard = 0; guard < 64; guard += 1) {
+    await page.locator("#novel-layer").dispatchEvent("click");
+    if (await page.locator("#novel-layer").getAttribute("data-step-id") !== previous) break;
+  }
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, previous, { timeout: 15000 });
+};
+
+const checkDistanceContinuity = async (page, viewportName) => {
+  const targetIds = ["return_to_start_021", "return_to_start_029", "return_to_start_032", "return_to_start_035"];
+  await bootAt(page, "return_to_start_020");
+  await page.waitForTimeout(850);
+  const hidden = await presentation(page);
+  assert(hidden.castSuppressed && hidden.characters.sakuya?.visibility !== "visible", `${viewportName}/return_to_start_020: Sakuya leaked before the physical gate`);
+  await advanceStep(page);
+  assert(await page.locator("#novel-layer").getAttribute("data-step-id") === targetIds[0], `${viewportName}: physical gate did not advance to _021`);
+  await page.waitForTimeout(850);
+  await page.evaluate(() => {
+    const figure = document.querySelector("#novel-character-sakuya");
+    const portrait = figure?.querySelector(".novel-character-portrait");
+    globalThis.__gaiaDistanceReentryEvents = [];
+    const record = (event) => globalThis.__gaiaDistanceReentryEvents.push({ type: event.type, propertyName: event.propertyName || "", animationName: event.animationName || "" });
+    figure?.addEventListener("transitionrun", record);
+    figure?.addEventListener("animationstart", record);
+    portrait?.addEventListener("transitionrun", record);
+    portrait?.addEventListener("animationstart", record);
+  });
+
+  const snapshots = [];
+  for (const targetId of targetIds) {
+    while (await page.locator("#novel-layer").getAttribute("data-step-id") !== targetId) await advanceStep(page);
+    await page.waitForTimeout(850);
+    const current = await presentation(page);
+    const sakuya = current.characters.sakuya;
+    assert(current.castMode === "central-entrance-distance" && !current.castSuppressed, `${viewportName}/${targetId}: distance cast mode was lost`);
+    assert(sakuya?.backgroundImage.includes("sakuya-calm-07-v1.png") && !sakuya.backgroundImage.includes("-bust-"), `${viewportName}/${targetId}: normal-dialogue bust leaked into distance framing: ${sakuya?.backgroundImage}`);
+    assert(sakuya.backgroundPosition === "50% 100%" && sakuya.backgroundSize === "contain" && sakuya.backgroundRepeat === "no-repeat", `${viewportName}/${targetId}: distance portrait crop changed: ${JSON.stringify(sakuya)}`);
+    assert(sakuya.animationName === "none", `${viewportName}/${targetId}: distance portrait retained a re-entry animation: ${sakuya.animationName}`);
+    assert(current.characters.mizuha?.visibility === "hidden" && current.characters.amane?.visibility === "hidden", `${viewportName}/${targetId}: another character leaked into distance framing`);
+    assert(current.bodyOverflow <= 1, `${viewportName}/${targetId}: distance framing introduced document overflow: ${JSON.stringify({ bodyOverflow: current.bodyOverflow, layerOverflow: current.layerOverflow, overflowingElements: current.overflowingElements })}`);
+    const screenshotPath = path.join(outputDir, `distance-continuity-${viewportName}-${targetId}.png`);
+    await page.screenshot({ path: screenshotPath, animations: "disabled", timeout: 90000 });
+    snapshots.push({ stepId: targetId, sakuya, screenshotPath });
+  }
+
+  const reference = snapshots[0].sakuya;
+  for (const snapshot of snapshots.slice(1)) {
+    const current = snapshot.sakuya;
+    for (const key of ["left", "top", "right", "bottom", "width", "height", "opacity"]) {
+      assert(Math.abs(current[key] - reference[key]) <= 1, `${viewportName}/${snapshot.stepId}: distance ${key} changed from ${reference[key]} to ${current[key]}`);
+    }
+    for (const key of ["backgroundImage", "backgroundPosition", "backgroundRepeat", "backgroundSize"]) {
+      assert(current[key] === reference[key], `${viewportName}/${snapshot.stepId}: distance ${key} changed`);
+    }
+  }
+  const reentryEvents = await page.evaluate(() => globalThis.__gaiaDistanceReentryEvents || []);
+  assert(reentryEvents.length === 0, `${viewportName}: Sakuya distance preset replayed an animation/transition after _021: ${JSON.stringify(reentryEvents)}`);
+  report.distanceContinuity.push({ viewport: viewportName, hiddenStep: "return_to_start_020", snapshots, reentryEvents, passed: true });
+};
+
 try {
   const viewports = [
     { name: "pc-1440", width: 1440, height: 900 },
@@ -294,15 +367,18 @@ try {
     attachDiagnostics(page, viewport.name);
     await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
     await ensureNovelOpen(page);
-    for (const stepId of evidenceSteps) await capture(page, viewport.name, stepId);
-    await checkBoundary(page, viewport.name, "mode07_abstract_008", "mode07_abstract_009", "novel-bg-production-shared-meeting-v3.png");
-    await checkBoundary(page, viewport.name, "interlude_sea_007", "interlude_sea_008", "novel-bg-zushi-coast-night-v2.png");
-    await checkBoundary(page, viewport.name, "interlude_sea_045", "interlude_sea_046", "novel-bg-production-shared-meeting-v3.png");
-    await checkBoundary(page, viewport.name, "interlude_sea_067", "mode08_map_layers_001", "novel-bg-exhibition-v3.png");
-    await checkBoundary(page, viewport.name, "return_to_start_017", "return_to_start_018", "novel-bg-coastal-venue-v2.png");
-    await checkStableBoundary(page, viewport.name, "mode07_abstract_009", "mode07_abstract_010");
-    await checkStableBoundary(page, viewport.name, "final_record_017", "final_record_018");
-    await checkStableBoundary(page, viewport.name, "return_to_start_020", "return_to_start_021");
+    await checkDistanceContinuity(page, viewport.name);
+    if (process.env.GAIA_STAGING_SCOPE !== "distance") {
+      for (const stepId of evidenceSteps) await capture(page, viewport.name, stepId);
+      await checkBoundary(page, viewport.name, "mode07_abstract_008", "mode07_abstract_009", "novel-bg-production-shared-meeting-v3.png");
+      await checkBoundary(page, viewport.name, "interlude_sea_007", "interlude_sea_008", "novel-bg-zushi-coast-night-v2.png");
+      await checkBoundary(page, viewport.name, "interlude_sea_045", "interlude_sea_046", "novel-bg-production-shared-meeting-v3.png");
+      await checkBoundary(page, viewport.name, "interlude_sea_067", "mode08_map_layers_001", "novel-bg-exhibition-v3.png");
+      await checkBoundary(page, viewport.name, "return_to_start_017", "return_to_start_018", "novel-bg-coastal-venue-v2.png");
+      await checkStableBoundary(page, viewport.name, "mode07_abstract_009", "mode07_abstract_010");
+      await checkStableBoundary(page, viewport.name, "final_record_017", "final_record_018");
+      await checkStableBoundary(page, viewport.name, "return_to_start_020", "return_to_start_021");
+    }
     report.viewports.push({ ...viewport, passed: true });
     await context.close();
   }
@@ -321,6 +397,7 @@ console.log(JSON.stringify({
   evidence: report.evidence.length,
   boundaries: report.boundaries.length,
   stableBoundaries: report.stableBoundaries.length,
+  distanceContinuity: report.distanceContinuity.length,
   consoleErrors: report.consoleErrors.length,
   pageErrors: report.pageErrors.length,
   responses404: report.responses404.length,
