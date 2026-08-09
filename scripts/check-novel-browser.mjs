@@ -709,11 +709,13 @@ try {
   const speakerText = await page.locator(".novel-slack-post p strong").allTextContents();
   assert(speakerText.length === 3, "Slack speaker labels do not match the visible posts");
 
-  const sakuyaChat = steps.find((step) => step.id === "prologue_basil_007");
+  const sakuyaChats = steps.filter((step) => step.sceneId === "prologue_basil" && step.type === "chat" && step.speaker === "sakuya");
+  const sakuyaChat = sakuyaChats.at(-1);
   await bootAt(page, sakuyaChat.id);
   assert(await page.locator("#novel-slack-surface").getAttribute("aria-label") === "制作チームの学内チャット記録", "campus chat accessibility label regressed to a legacy service name");
-  const sakuyaAvatar = await page.locator('.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar').last().evaluate((avatar) => getComputedStyle(avatar).backgroundImage);
-  assert(sakuyaAvatar.includes("slack-avatar-sakuya-v1.webp"), `Sakuya mascot avatar is missing from Slack: ${sakuyaAvatar}`);
+  const sakuyaAvatars = await page.locator('.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar').evaluateAll((avatars) => avatars.map((avatar) => getComputedStyle(avatar).backgroundImage));
+  assert(sakuyaAvatars.length === sakuyaChats.length && sakuyaAvatars.every((avatar) => avatar.includes("slack-avatar-sakuya-flower-v3.webp")), `Sakuya flower avatar is missing from one or more posts: ${JSON.stringify(sakuyaAvatars)}`);
+  await screenshot(page, "slack-sakuya-flower-avatar");
 
   for (const attachmentStep of attachmentSteps) await assertSlackAttachment(page, attachmentStep, "desktop");
 
@@ -1097,6 +1099,10 @@ try {
   await mobile.keyboard.press("Escape");
   await mobile.locator("#novel-log-panel").waitFor({ state: "hidden" });
   for (const attachmentStep of attachmentSteps) await assertSlackAttachment(mobile, attachmentStep, "390px");
+  await bootAt(mobile, sakuyaChat.id, {}, { reducedMotion: true });
+  const mobileSakuyaAvatars = await mobile.locator('.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar').evaluateAll((avatars) => avatars.map((avatar) => getComputedStyle(avatar).backgroundImage));
+  assert(mobileSakuyaAvatars.length === sakuyaChats.length && mobileSakuyaAvatars.every((avatar) => avatar.includes("slack-avatar-sakuya-flower-v3.webp")), `mobile Sakuya flower avatar is missing from one or more posts: ${JSON.stringify(mobileSakuyaAvatars)}`);
+  await screenshot(mobile, "slack-sakuya-flower-avatar-390px");
   report.viewports.push({ width: 390, height: 844, passed: true });
   await context.close();
 
