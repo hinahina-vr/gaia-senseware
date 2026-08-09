@@ -711,6 +711,7 @@ try {
 
   const sakuyaChat = steps.find((step) => step.id === "prologue_basil_007");
   await bootAt(page, sakuyaChat.id);
+  assert(await page.locator("#novel-slack-surface").getAttribute("aria-label") === "制作チームの学内チャット記録", "campus chat accessibility label regressed to a legacy service name");
   const sakuyaAvatar = await page.locator('.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar').last().evaluate((avatar) => getComputedStyle(avatar).backgroundImage);
   assert(sakuyaAvatar.includes("slack-avatar-sakuya-v1.webp"), `Sakuya mascot avatar is missing from Slack: ${sakuyaAvatar}`);
 
