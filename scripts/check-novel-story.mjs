@@ -82,10 +82,12 @@ const allText = steps.map((step) => step.text || "").join("\n");
 for (const requiredText of [
   "真ん中の椅子には鞄も上着もなく、誰も座っていない。",
   "うん。今日、はじめまして🌸",
+  "サクヤの分だけ、縁が乾いたまま",
   "森と雨が重なる場所があります。原因はこの画面だけでは決められません。",
   "もし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――",
   "「聞こえたつもりになってない？」って、三人で確かめたい。",
 ]) assert.ok(allText.includes(requiredText), `canon text is missing: ${requiredText}`);
+assert.ok(!allText.includes("サクヤの分だけ、縁が乾いたままだった。"), "confirmed paper-cup wording regressed to the past-form draft");
 
 assert.ok(steps.some((step) => step.sceneId === "mode07_abstract" && ["SOURCE", "LOCAL_SOURCE"].includes(step.recordType)), "MODE 07 SOURCE must exist");
 assert.ok(steps.some((step) => step.sceneId === "mode07_abstract" && step.recordType === "DERIVED"), "MODE 07 DERIVED must exist separately");
