@@ -5240,3 +5240,83 @@ body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0.4; }
   .story-detour-controls { justify-content: stretch; }
   .story-detour-controls button { flex: 1 1 42%; }
 }
+/* Sakuya uses the same character-sprite presentation as Amane and Mizuha. */
+.novel-character--sakuya .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-calm-07-v1.png");
+  background-position: 50% 0;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+}
+
+.novel-character--sakuya[data-expression] .novel-character-portrait {
+  background-position: 50% 0;
+  background-size: 100% auto;
+}
+
+.novel-character--sakuya[data-expression="teasing"] .novel-character-portrait,
+.novel-character--sakuya[data-expression="startled"] .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-teasing-07-v1.png");
+}
+
+.novel-character--sakuya[data-expression="worried"] .novel-character-portrait,
+.novel-character--sakuya[data-expression="exasperated"] .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-worried-07-v1.png");
+}
+
+.novel-character--sakuya[data-expression="sad"] .novel-character-portrait,
+.novel-character--sakuya[data-expression="soft"] .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-sad-07-v1.png");
+}
+
+/* Normal dialogue uses non-destructive bust crops; Slack and full-body cues retain v1. */
+body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-calm-bust-07-v2.png");
+  background-position: 50% 0;
+  background-repeat: no-repeat;
+  background-size: auto clamp(960px, 135vh, 1500px);
+}
+
+body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="teasing"] .novel-character-portrait,
+body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="startled"] .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-teasing-bust-07-v2.png");
+}
+
+body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="worried"] .novel-character-portrait,
+body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="exasperated"] .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-worried-bust-07-v2.png");
+}
+
+body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="sad"] .novel-character-portrait,
+body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="soft"] .novel-character-portrait {
+  background-image: url("./assets/characters/sakuya-sad-bust-07-v2.png");
+}
+
+@media (max-width: 720px) {
+  body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya .novel-character-portrait {
+    background-size: auto clamp(840px, 132vh, 1180px);
+  }
+}
+
+body:not(.gx-story-open) .novel-cast[data-speaker="sakuya"] .novel-character.novel-character--sakuya {
+  z-index: 2;
+  opacity: 1;
+  filter: saturate(1.02) brightness(1.04);
+  transform: translate3d(-50%, 0, 0) scale(1);
+}
+
+body:not(.gx-story-open) .novel-layer.is-slack .novel-cast[data-speaker="sakuya"] .novel-character.novel-character--sakuya {
+  opacity: 0.66;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+body:not(.gx-story-open) .novel-layer.is-slack .novel-character.novel-character--sakuya .novel-character-portrait {
+  background-position: 50% 100%;
+  background-size: contain;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0 92%, transparent 100%);
+}
+
+.novel-cast[data-speaker="sakuya"] .novel-character--sakuya figcaption {
+  opacity: 1;
+  transform: translateY(0);
+}

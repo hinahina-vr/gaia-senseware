@@ -35,7 +35,7 @@ const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ executablePath, headless: true, args: ["--no-first-run", "--disable-background-networking"] });
-const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], productionBackgrounds: [], backgroundPreloads: [], slackAttachments: [], interactions: [], modeModalChecks: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], productionBackgrounds: [], backgroundPreloads: [], slackAttachments: [], interactions: [], modeModalChecks: [], fullWalkthrough: null, viewports: [], sakuyaBust: { dialogues: [], references: [], fullBodyCues: [] }, consoleErrors: [], pageErrors: [], responses404: [] };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
 const attachDiagnostics = (page, label) => {
@@ -192,6 +192,52 @@ const assertSlackAttachment = async (page, step, viewportLabel) => {
   assert(stacking.castZIndex < stacking.surfaceZIndex && stacking.sampleCount > 0 && stacking.occludedSamples === 0, `${attachment.id} Slack cast obscured message content at ${viewportLabel}: ${JSON.stringify(stacking)}`);
   report.slackAttachments.push({ id: attachment.id, stepId: step.id, viewport: viewportLabel, source: expectedAsset, stacking, passed: true });
   await screenshot(page, `slack-attachment-${attachment.id.toLowerCase()}-${viewportLabel}`);
+};
+
+const sakuyaBustAssetForExpression = (expression) => ({
+  teasing: "sakuya-teasing-bust-07-v2.png",
+  startled: "sakuya-teasing-bust-07-v2.png",
+  worried: "sakuya-worried-bust-07-v2.png",
+  exasperated: "sakuya-worried-bust-07-v2.png",
+  sad: "sakuya-sad-bust-07-v2.png",
+  soft: "sakuya-sad-bust-07-v2.png",
+})[expression] || "sakuya-calm-bust-07-v2.png";
+
+const inspectSakuyaDialogueBust = async (page, step, viewport) => {
+  await bootAt(page, step.id, {}, { reducedMotion: true });
+  const presentation = await page.evaluate(() => {
+    const layer = document.querySelector("#novel-layer");
+    const figure = document.querySelector("#novel-character-sakuya");
+    const portrait = figure.querySelector(".novel-character-portrait");
+    const dialogue = document.querySelector("#novel-dialogue");
+    const figureRect = figure.getBoundingClientRect();
+    const dialogueRect = dialogue.getBoundingClientRect();
+    const style = getComputedStyle(portrait);
+    return {
+      stepType: layer.dataset.stepType,
+      slack: layer.classList.contains("is-slack"),
+      castSpeaker: document.querySelector("#novel-cast").dataset.speaker,
+      expression: figure.dataset.expression,
+      backgroundImage: style.backgroundImage,
+      backgroundPosition: style.backgroundPosition,
+      backgroundRepeat: style.backgroundRepeat,
+      backgroundSize: style.backgroundSize,
+      figureOpacity: Number.parseFloat(getComputedStyle(figure).opacity),
+      figureTop: figureRect.top,
+      figureBottom: figureRect.bottom,
+      dialogueTop: dialogueRect.top,
+      horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+    };
+  });
+  const expectedAsset = sakuyaBustAssetForExpression(presentation.expression);
+  assert(presentation.stepType === "dialogue" && !presentation.slack && presentation.castSpeaker === "sakuya", `Sakuya bust escaped normal dialogue scope at ${step.id}: ${JSON.stringify(presentation)}`);
+  assert(presentation.backgroundImage.includes(expectedAsset) && !presentation.backgroundImage.includes("sakuya-calm-07-v1.png"), `Sakuya dialogue used the wrong portrait at ${step.id}: ${JSON.stringify(presentation)}`);
+  assert(presentation.backgroundPosition.startsWith("50% 0") && presentation.backgroundRepeat === "no-repeat", `Sakuya bust anchor/repeat regressed at ${step.id}: ${JSON.stringify(presentation)}`);
+  const renderedHeight = Number.parseFloat(presentation.backgroundSize.split(" ").at(-1));
+  const expectedRange = viewport === "390" ? [839, 1181] : [959, 1501];
+  assert(Number.isFinite(renderedHeight) && renderedHeight >= expectedRange[0] && renderedHeight <= expectedRange[1], `Sakuya bust scale is outside the ${viewport} preset at ${step.id}: ${presentation.backgroundSize}`);
+  assert(presentation.figureOpacity > 0.98 && presentation.figureTop >= 0 && presentation.figureBottom > presentation.dialogueTop && !presentation.horizontalOverflow, `Sakuya bust/dialogue geometry failed at ${step.id}: ${JSON.stringify(presentation)}`);
+  return { stepId: step.id, sceneId: step.sceneId, viewport, expectedAsset, ...presentation };
 };
 const dialoguePageGeometry = (page) => page.evaluate(() => {
   const dialogue = document.querySelector("#novel-dialogue");
@@ -718,6 +764,39 @@ try {
   await screenshot(page, "slack-sakuya-flower-avatar");
 
   for (const attachmentStep of attachmentSteps) await assertSlackAttachment(page, attachmentStep, "desktop");
+  const sakuyaSlackStandee = await page.locator("#novel-character-sakuya .novel-character-portrait").evaluate((portrait) => getComputedStyle(portrait).backgroundImage);
+  assert(/sakuya-(?:calm|sad|teasing|worried)-07-v1\.png/u.test(sakuyaSlackStandee) && !sakuyaSlackStandee.includes("-bust-"), `normal-dialogue bust crop leaked into Slack standee: ${sakuyaSlackStandee}`);
+  report.sakuyaBust.fullBodyCues.push({ stepId: sakuyaChat.id, type: "chat", viewport: "2048", backgroundImage: sakuyaSlackStandee, passed: true });
+
+  const sakuyaDialogueSteps = steps.filter((step) => step.type === "dialogue" && step.speaker === "sakuya");
+  assert(sakuyaDialogueSteps.length > 0, "canonical data contains no Sakuya dialogue steps");
+  const sakuyaDialogueScenes = [...new Set(sakuyaDialogueSteps.map((step) => step.sceneId))];
+  for (const step of sakuyaDialogueSteps) report.sakuyaBust.dialogues.push(await inspectSakuyaDialogueBust(page, step, "2048"));
+  assert(["first_meeting_hall", "festival_walk", "production_year"].every((sceneId) => sakuyaDialogueScenes.includes(sceneId)), `Sakuya dialogue scene audit is incomplete: ${JSON.stringify(sakuyaDialogueScenes)}`);
+
+  const sakuyaBustReferenceStep = sakuyaDialogueSteps.find((step) => step.id === "festival_walk_006") || sakuyaDialogueSteps[0];
+  const expressionAssets = {
+    calm: "sakuya-calm-bust-07-v2.png",
+    teasing: "sakuya-teasing-bust-07-v2.png",
+    worried: "sakuya-worried-bust-07-v2.png",
+    sad: "sakuya-sad-bust-07-v2.png",
+  };
+  await bootAt(page, sakuyaBustReferenceStep.id, {}, { reducedMotion: true });
+  for (const [expression, expectedAsset] of Object.entries(expressionAssets)) {
+    const expressionImage = await page.locator("#novel-character-sakuya").evaluate((figure, value) => {
+      figure.dataset.expression = value;
+      return getComputedStyle(figure.querySelector(".novel-character-portrait")).backgroundImage;
+    }, expression);
+    assert(expressionImage.includes(expectedAsset), `Sakuya ${expression} did not use ${expectedAsset}: ${expressionImage}`);
+    await screenshot(page, `sakuya-bust-${expression}-desktop`);
+  }
+
+  for (const speaker of ["amane", "mizuha"]) {
+    const referenceStep = steps.find((step) => step.type === "dialogue" && step.speaker === speaker);
+    await bootAt(page, referenceStep.id, {}, { reducedMotion: true });
+    report.sakuyaBust.references.push({ speaker, stepId: referenceStep.id, sceneId: referenceStep.sceneId, viewport: "2048" });
+    await screenshot(page, `sakuya-bust-reference-${speaker}-desktop`);
+  }
 
   const observationChoice = steps.find((step) => step.choiceId === "observation_order");
   await bootAt(page, observationChoice.id);
@@ -1103,6 +1182,28 @@ try {
   const mobileSakuyaAvatars = await mobile.locator('.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar').evaluateAll((avatars) => avatars.map((avatar) => getComputedStyle(avatar).backgroundImage));
   assert(mobileSakuyaAvatars.length === sakuyaChats.length && mobileSakuyaAvatars.every((avatar) => avatar.includes("slack-avatar-sakuya-flower-v3.webp")), `mobile Sakuya flower avatar is missing from one or more posts: ${JSON.stringify(mobileSakuyaAvatars)}`);
   await screenshot(mobile, "slack-sakuya-flower-avatar-390px");
+
+  const mobileSakuyaSlackStandee = await mobile.locator("#novel-character-sakuya .novel-character-portrait").evaluate((portrait) => getComputedStyle(portrait).backgroundImage);
+  assert(/sakuya-(?:calm|sad|teasing|worried)-07-v1\.png/u.test(mobileSakuyaSlackStandee) && !mobileSakuyaSlackStandee.includes("-bust-"), `mobile normal-dialogue bust crop leaked into Slack standee: ${mobileSakuyaSlackStandee}`);
+  report.sakuyaBust.fullBodyCues.push({ stepId: sakuyaChat.id, type: "chat", viewport: "390", backgroundImage: mobileSakuyaSlackStandee, passed: true });
+
+  for (const step of sakuyaDialogueSteps) report.sakuyaBust.dialogues.push(await inspectSakuyaDialogueBust(mobile, step, "390"));
+  await bootAt(mobile, sakuyaBustReferenceStep.id, {}, { reducedMotion: true });
+  for (const [expression, expectedAsset] of Object.entries(expressionAssets)) {
+    const expressionImage = await mobile.locator("#novel-character-sakuya").evaluate((figure, value) => {
+      figure.dataset.expression = value;
+      return getComputedStyle(figure.querySelector(".novel-character-portrait")).backgroundImage;
+    }, expression);
+    assert(expressionImage.includes(expectedAsset), `mobile Sakuya ${expression} did not use ${expectedAsset}: ${expressionImage}`);
+    await screenshot(mobile, `sakuya-bust-${expression}-390px`);
+  }
+
+  for (const speaker of ["amane", "mizuha"]) {
+    const referenceStep = steps.find((step) => step.type === "dialogue" && step.speaker === speaker);
+    await bootAt(mobile, referenceStep.id, {}, { reducedMotion: true });
+    report.sakuyaBust.references.push({ speaker, stepId: referenceStep.id, sceneId: referenceStep.sceneId, viewport: "390" });
+    await screenshot(mobile, `sakuya-bust-reference-${speaker}-390px`);
+  }
   report.viewports.push({ width: 390, height: 844, passed: true });
   await context.close();
 
