@@ -53,6 +53,12 @@
     amane: Object.freeze({ completedAt: "first_meeting_hall_032", visibleFrom: "first_meeting_hall_033" }),
     sakuya: Object.freeze({ completedAt: "first_meeting_hall_066", visibleFrom: "first_meeting_hall_067" }),
   });
+  const CHAT_DEVICE_MOBILE_RANGES = Object.freeze({
+    prologue_basil: Object.freeze([[4, 9]]),
+    first_meeting_hall: Object.freeze([[21, 23], [42, 48]]),
+    production_year: Object.freeze([[125, 127], [196, 198]]),
+    absence: Object.freeze([[40, 40], [61, 63]]),
+  });
   const SPEAKERS = Object.freeze({
     narrator: { name: "", glyph: "◌" },
     mizuha: { name: "ミズハ", glyph: "≈" },
@@ -395,6 +401,13 @@
   const currentStep = () => stepMap.get(state.stepId) || null;
   const currentScene = () => sceneMap.get(currentStep()?.sceneId) || null;
   const conditionMatches = (step) => !step.condition || state[step.condition.key] === step.condition.value;
+  const chatDeviceForStep = (step) => {
+    const sequence = Number(step?.id?.match(/_(\d{3})$/u)?.[1]);
+    const ranges = CHAT_DEVICE_MOBILE_RANGES[step?.sceneId] || [];
+    return Number.isInteger(sequence) && ranges.some(([start, end]) => sequence >= start && sequence <= end)
+      ? "mobile"
+      : "wide";
+  };
 
   const getFollowingStepId = (step) => {
     const scene = sceneMap.get(step.sceneId);
@@ -928,9 +941,11 @@
 
   const prepareStepFrame = (step) => {
     const scene = sceneMap.get(step.sceneId);
+    const chatDevice = chatDeviceForStep(step);
     layer.dataset.sceneId = step.sceneId;
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
+    layer.dataset.slackDevice = chatDevice;
     if (step.type !== "chat") delete elements.cast.dataset.slackCast;
     applyBackgroundCueForStep(step);
     applyBackHalfCueForStep(step);
@@ -1064,6 +1079,8 @@
       layer.classList.add("is-slack");
       const workspace = document.createElement("div");
       workspace.className = "novel-slack-workspace";
+      workspace.classList.toggle("is-mobile-device", layer.dataset.slackDevice === "mobile");
+      workspace.dataset.device = layer.dataset.slackDevice;
       workspace.innerHTML = `<header><b><span class="novel-slack-app-name">学内チャット</span><i aria-hidden="true">◀　▶　◷</i></b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、記録する場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
       const thread = workspace.querySelector(".novel-slack-thread");
       timeline.messages.forEach((message, index) => {
