@@ -136,6 +136,7 @@
     cast: layer.querySelector("#novel-cast"),
     characterSora: layer.querySelector("#novel-character-sora"),
     characterMinamo: layer.querySelector("#novel-character-minamo"),
+    characterSakuya: layer.querySelector("#novel-character-sakuya"),
     avatar: layer.querySelector("#novel-avatar"),
     avatarGlyph: layer.querySelector("#novel-avatar-glyph"),
     dataKind: layer.querySelector("#novel-data-kind"),
@@ -157,6 +158,13 @@
     choices: layer.querySelector("#novel-choices"),
     location: layer.querySelector("#novel-location"),
     slackSurface: layer.querySelector("#novel-slack-surface"),
+    operationsPhoneSurface: layer.querySelector("#novel-operations-phone-surface"),
+    operationsPhoneClock: layer.querySelector("#novel-operations-phone-clock"),
+    operationsPhoneNoticeTime: layer.querySelector("#novel-operations-phone-notice-time"),
+    operationsPhoneNoticeSender: layer.querySelector("#novel-operations-phone-notice-sender"),
+    operationsPhoneNoticeBody: layer.querySelector("#novel-operations-phone-notice-body"),
+    operationsPhoneAudioSpeaker: layer.querySelector("#novel-operations-phone-audio-speaker"),
+    operationsPhoneAudioStatus: layer.querySelector("#novel-operations-phone-audio-status"),
     evidenceSurface: layer.querySelector("#novel-evidence-surface"),
     reflectionSurface: layer.querySelector("#novel-reflection-surface"),
     resultSurface: layer.querySelector("#novel-result-surface"),
@@ -393,6 +401,7 @@
       surface.hidden = true;
       surface.replaceChildren();
     });
+    if (elements.operationsPhoneSurface) elements.operationsPhoneSurface.hidden = true;
     layer.classList.remove("is-slack", "is-evidence", "is-editorial-evidence", "is-reflection", "is-result");
   };
 
@@ -547,6 +556,20 @@
     }
   };
 
+  const applyOperationsPhonePresentation = (cue) => {
+    const phone = cue?.phone;
+    const visible = cue?.device === "portrait-operations-phone" && Boolean(phone);
+    if (!elements.operationsPhoneSurface) return;
+    elements.operationsPhoneSurface.hidden = !visible;
+    if (!visible) return;
+    elements.operationsPhoneClock.textContent = phone.clock;
+    elements.operationsPhoneNoticeTime.textContent = phone.noticeTime;
+    elements.operationsPhoneNoticeSender.textContent = phone.noticeSender;
+    elements.operationsPhoneNoticeBody.textContent = phone.noticeBody;
+    elements.operationsPhoneAudioSpeaker.textContent = phone.audioSpeaker;
+    elements.operationsPhoneAudioStatus.textContent = phone.audioStatus;
+  };
+
   const applyBackHalfCueForStep = (step) => {
     const cue = backHalfCues.forStep(step);
     const cueKeys = [
@@ -556,6 +579,7 @@
     if (!cue) {
       cueKeys.forEach((key) => { delete layer.dataset[key]; });
       layer.classList.remove("is-cast-suppressed", "is-central-entrance-distance");
+      applyOperationsPhonePresentation(null);
       return null;
     }
     layer.dataset.storyContext = cue.temporal.context;
@@ -570,6 +594,7 @@
     layer.dataset.storyAudioCue = cue.audio;
     layer.classList.toggle("is-cast-suppressed", ["archived-voice-no-cast", "remote-sakuya-no-cast", "sakuya-unseen"].includes(cue.castMode));
     layer.classList.toggle("is-central-entrance-distance", cue.castMode === "central-entrance-distance");
+    applyOperationsPhonePresentation(cue);
     return cue;
   };
 
@@ -663,16 +688,21 @@
     window.dispatchEvent(new CustomEvent("gaia:select-mode", { detail: { index, source: "novel-v6" } }));
   };
 
-  const setCharacterPresentation = (speaker) => {
+  const setCharacterPresentation = (speaker, expression = "calm") => {
     const legacySpeaker = CHARACTER_VIEW[speaker] || speaker || "narrator";
     elements.cast.dataset.speaker = legacySpeaker;
     elements.avatar.dataset.speaker = legacySpeaker;
     elements.avatarGlyph.textContent = SPEAKERS[speaker]?.glyph || "◌";
-    const illustrated = legacySpeaker === "sora" || legacySpeaker === "minamo";
-    elements.avatar.hidden = illustrated;
-    if (illustrated) {
-      const figure = legacySpeaker === "sora" ? elements.characterSora : elements.characterMinamo;
-      figure.dataset.expression = "calm";
+    const figure = {
+      sora: elements.characterSora,
+      minamo: elements.characterMinamo,
+      sakuya: elements.characterSakuya,
+    }[legacySpeaker];
+    elements.avatar.hidden = Boolean(figure);
+    if (figure && figure.dataset.expression !== expression) {
+      figure.classList.remove("is-changing");
+      figure.dataset.expression = expression;
+      requestAnimationFrame(() => figure.classList.add("is-changing"));
     }
   };
 
@@ -1057,11 +1087,11 @@
     layer.dataset.slackDevice = chatDevice;
     if (step.type !== "chat") delete elements.cast.dataset.slackCast;
     applyBackgroundCueForStep(step);
-    applyBackHalfCueForStep(step);
     sectionSeparatorActive = false;
     showRuntime();
     warmUpcomingBackground(step);
     hideSpecialSurfaces();
+    applyBackHalfCueForStep(step);
     elements.chapterCard.hidden = true;
     elements.dialogue.hidden = false;
     elements.choices.replaceChildren();

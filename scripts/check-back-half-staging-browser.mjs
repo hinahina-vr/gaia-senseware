@@ -89,6 +89,23 @@ const presentation = (page) => page.locator("#novel-layer").evaluate((node) => {
   const style = getComputedStyle(node);
   const cast = node.querySelector("#novel-cast");
   const castStyle = cast ? getComputedStyle(cast) : null;
+  const phoneSurface = node.querySelector("#novel-operations-phone-surface");
+  const phoneFrame = phoneSurface?.querySelector(".novel-operations-phone");
+  const visiblePhoneViews = [...(phoneSurface?.querySelectorAll(".novel-operations-phone-view") || [])]
+    .filter((view) => getComputedStyle(view).visibility === "visible");
+  const characterState = (id) => {
+    const figure = node.querySelector(id);
+    if (!figure) return null;
+    const figureStyle = getComputedStyle(figure);
+    const rect = figure.getBoundingClientRect();
+    return {
+      display: figureStyle.display,
+      visibility: figureStyle.visibility,
+      opacity: Number(figureStyle.opacity),
+      width: rect.width,
+      height: rect.height,
+    };
+  };
   return {
     stepId: node.dataset.stepId,
     backgroundImage: style.backgroundImage,
@@ -104,6 +121,25 @@ const presentation = (page) => page.locator("#novel-layer").evaluate((node) => {
     castSuppressed: node.classList.contains("is-cast-suppressed"),
     castVisibility: castStyle?.visibility,
     castOpacity: castStyle?.opacity,
+    characters: {
+      mizuha: characterState("#novel-character-minamo"),
+      amane: characterState("#novel-character-sora"),
+      sakuya: characterState("#novel-character-sakuya"),
+    },
+    phone: {
+      hidden: Boolean(phoneSurface?.hidden),
+      visible: Boolean(phoneSurface && !phoneSurface.hidden && getComputedStyle(phoneSurface).display !== "none"),
+      frameCount: phoneSurface?.querySelectorAll(".novel-operations-phone").length || 0,
+      visibleViews: visiblePhoneViews.map((view) => [...view.classList].find((name) => name.startsWith("is-")) || ""),
+      clock: phoneSurface?.querySelector("#novel-operations-phone-clock")?.textContent?.trim() || "",
+      noticeTime: phoneSurface?.querySelector("#novel-operations-phone-notice-time")?.textContent?.trim() || "",
+      noticeSender: phoneSurface?.querySelector("#novel-operations-phone-notice-sender")?.textContent?.trim() || "",
+      noticeBody: phoneSurface?.querySelector("#novel-operations-phone-notice-body")?.textContent?.trim() || "",
+      audioSpeaker: phoneSurface?.querySelector("#novel-operations-phone-audio-speaker")?.textContent?.trim() || "",
+      audioStatus: phoneSurface?.querySelector("#novel-operations-phone-audio-status")?.textContent?.trim() || "",
+      frameWidth: phoneFrame?.getBoundingClientRect().width || 0,
+      frameHeight: phoneFrame?.getBoundingClientRect().height || 0,
+    },
     bodyOverflow: document.documentElement.scrollWidth - innerWidth,
     layerOverflow: node.scrollWidth - node.clientWidth,
   };
@@ -123,8 +159,31 @@ const capture = async (page, viewportName, stepId) => {
   assert(current.viewpoint === expectedStaging.viewpoint, `${viewportName}/${stepId}: wrong viewpoint`);
   assert(current.castMode === expectedStaging.castMode, `${viewportName}/${stepId}: wrong cast mode`);
   assert(current.bodyOverflow <= 1 && current.layerOverflow <= 1, `${viewportName}/${stepId}: horizontal overflow ${current.bodyOverflow}/${current.layerOverflow}`);
+  if (expectedStaging.device === "portrait-operations-phone") {
+    const expectedView = {
+      prepare: "is-prepare",
+      "official-notice": "is-notice",
+      "incoming-audio": "is-audio",
+    }[expectedStaging.devicePhase];
+    assert(current.phone.visible && current.phone.frameCount === 1, `${viewportName}/${stepId}: operations phone is not a single visible surface`);
+    assert(current.phone.visibleViews.length === 1 && current.phone.visibleViews[0] === expectedView, `${viewportName}/${stepId}: wrong phone phase ${current.phone.visibleViews}`);
+    assert(current.phone.clock === expectedStaging.phone.clock, `${viewportName}/${stepId}: wrong phone clock`);
+    assert(current.phone.noticeTime === expectedStaging.phone.noticeTime, `${viewportName}/${stepId}: wrong notice time`);
+    assert(current.phone.noticeSender === expectedStaging.phone.noticeSender, `${viewportName}/${stepId}: wrong notice sender`);
+    assert(current.phone.noticeBody === expectedStaging.phone.noticeBody, `${viewportName}/${stepId}: wrong notice body`);
+    assert(current.phone.audioSpeaker === expectedStaging.phone.audioSpeaker, `${viewportName}/${stepId}: wrong audio speaker`);
+    assert(current.phone.audioStatus === expectedStaging.phone.audioStatus, `${viewportName}/${stepId}: wrong audio status`);
+  } else {
+    assert(!current.phone.visible, `${viewportName}/${stepId}: operations phone leaked outside its cue`);
+  }
   if (["archived-voice-no-cast", "remote-sakuya-no-cast", "sakuya-unseen"].includes(expectedStaging.castMode)) {
     assert(current.castSuppressed && current.castVisibility === "hidden", `${viewportName}/${stepId}: remote/recorded cast is visible`);
+  }
+  if (expectedStaging.castMode === "central-entrance-distance") {
+    assert(!current.castSuppressed, `${viewportName}/${stepId}: physical Sakuya gate remained suppressed`);
+    assert(current.characters.sakuya?.display !== "none" && current.characters.sakuya?.visibility === "visible" && current.characters.sakuya?.opacity > 0, `${viewportName}/${stepId}: physical Sakuya is not visible`);
+    assert(current.characters.sakuya?.width > 0 && current.characters.sakuya?.height > 0, `${viewportName}/${stepId}: physical Sakuya has no rendered bounds`);
+    assert(current.characters.mizuha?.visibility === "hidden" && current.characters.amane?.visibility === "hidden", `${viewportName}/${stepId}: another character leaked into Sakuya distance framing`);
   }
   const screenshotPath = path.join(outputDir, `${viewportName}-${stepId}.png`);
   await page.screenshot({ path: screenshotPath, animations: "disabled", timeout: 90000 });
@@ -153,6 +212,12 @@ const checkBoundary = async (page, viewportName, fromId, toId, expectedFile) => 
 
 const checkStableBoundary = async (page, viewportName, fromId, toId) => {
   await bootAt(page, fromId);
+  if (fromId === "final_record_017") {
+    await page.evaluate(() => {
+      globalThis.__gaiaOperationsPhoneSurface = document.querySelector("#novel-operations-phone-surface");
+      globalThis.__gaiaOperationsPhoneFrame = document.querySelector(".novel-operations-phone");
+    });
+  }
   await page.evaluate(() => {
     globalThis.__gaiaBackHalfTransitionSeen = false;
     globalThis.__gaiaBackHalfTransitionObserver?.disconnect();
@@ -165,8 +230,21 @@ const checkStableBoundary = async (page, viewportName, fromId, toId) => {
   await page.locator("#novel-layer").dispatchEvent("click");
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, toId, { timeout: 15000 });
   const transitionSeen = await page.evaluate(() => globalThis.__gaiaBackHalfTransitionSeen);
+  const current = await presentation(page);
+  let phoneIdentity = null;
+  if (fromId === "final_record_017") {
+    phoneIdentity = await page.evaluate(() => globalThis.__gaiaOperationsPhoneSurface === document.querySelector("#novel-operations-phone-surface")
+      && globalThis.__gaiaOperationsPhoneFrame === document.querySelector(".novel-operations-phone"));
+    assert(phoneIdentity, `${viewportName}/${fromId}->${toId}: phone DOM/frame was replaced`);
+    assert(current.phone.visible && current.phone.visibleViews[0] === "is-audio", `${viewportName}/${toId}: incoming audio phase is not visible`);
+  }
+  if (fromId === "return_to_start_020") {
+    assert(current.castMode === "central-entrance-distance", `${viewportName}/${toId}: physical Sakuya gate did not open`);
+    assert(current.characters.sakuya?.visibility === "visible" && current.characters.sakuya?.opacity > 0, `${viewportName}/${toId}: Sakuya is not visible after the physical gate`);
+  }
   assert(!transitionSeen, `${viewportName}/${fromId}→${toId}: same-surface step replayed the scene transition`);
   report.stableBoundaries.push({ viewport: viewportName, fromId, toId, transitionSeen, passed: true });
+  Object.assign(report.stableBoundaries.at(-1), { phoneIdentity });
 };
 
 try {

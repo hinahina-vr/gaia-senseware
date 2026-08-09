@@ -34,9 +34,9 @@ assert.equal(presentation("mode07_abstract_024").temporalContext, "RECORD");
 
 const entryChange = runtime.contextTransitionForStep(steps.get("opening_empty_seat_001"));
 assert.deepEqual([entryChange.fromTemporalContext, entryChange.toTemporalContext], ["CURRENT", "RECORD"]);
-const internalChange = runtime.contextTransitionForStep(steps.get("mode07_abstract_024"));
+const internalChange = runtime.contextTransitionForStep(steps.get("mode07_abstract_009"));
 assert.deepEqual([internalChange.fromTemporalContext, internalChange.toTemporalContext], ["CURRENT", "RECORD"]);
-const delayedEntryChange = runtime.contextTransitionForStep(steps.get("mode08_map_layers_005"));
+const delayedEntryChange = runtime.contextTransitionForStep(steps.get("mode08_map_layers_003"));
 assert.deepEqual([delayedEntryChange.fromTemporalContext, delayedEntryChange.toTemporalContext], ["RECORD", "CURRENT"]);
 assert.equal(runtime.contextTransitionForStep(steps.get("mode08_map_layers_001")), null);
 

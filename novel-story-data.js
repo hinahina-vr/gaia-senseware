@@ -7403,7 +7403,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "displayTitle": "11月1日（日） 15:00｜展示端末・MODE 07",
         "transitions": [
           {
-            "stepId": "mode07_abstract_024",
+            "stepId": "mode07_abstract_009",
             "fromTemporalContext": "CURRENT",
             "toTemporalContext": "RECORD",
             "transitionAt": "2026-10-31T18:00:00+09:00",
@@ -7411,14 +7411,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
             "displayTitle": "10月31日（土） 18:00｜公開前夜・共同作業室"
           },
           {
-            "stepId": "mode07_abstract_030",
+            "stepId": "mode07_abstract_013",
             "temporalContext": "RECORD",
             "transitionAt": "2026-10-31T22:00:00+09:00",
             "timePrecision": "MINUTE",
             "displayTitle": "10月31日（土） 22:00｜パンは未開封"
           },
           {
-            "stepId": "mode07_abstract_031",
+            "stepId": "mode07_abstract_016",
             "temporalContext": "RECORD",
             "transitionAt": "2026-10-31T23:00:00+09:00",
             "timePrecision": "MINUTE",
@@ -7909,14 +7909,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "displayTitle": "10月31日（土）23:20〜11月1日（日）00:26｜共同作業室から海岸へ",
         "transitions": [
           {
-            "stepId": "interlude_sea_003",
+            "stepId": "interlude_sea_001",
             "temporalContext": "RECORD",
             "transitionAt": "2026-10-31T23:20:00+09:00",
             "timePrecision": "MINUTE",
             "displayTitle": "10月31日（土） 23:20｜共同作業室を出る"
           },
           {
-            "stepId": "interlude_sea_014",
+            "stepId": "interlude_sea_011",
             "temporalContext": "RECORD",
             "transitionAt": "2026-10-31T23:31:00+09:00",
             "endAt": "2026-10-31T23:43:00+09:00",
@@ -7925,25 +7925,25 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
             "displayTitle": "10月31日（土） 23:31〜23:43｜海の十二分"
           },
           {
-            "stepId": "interlude_sea_058",
+            "stepId": "interlude_sea_046",
             "temporalContext": "RECORD",
             "transitionAt": "2026-10-31T23:58:00+09:00",
             "timePrecision": "MINUTE",
             "displayTitle": "10月31日（土） 23:58｜共同作業室へ戻る"
           },
           {
-            "stepId": "interlude_sea_059",
+            "stepId": "interlude_sea_054",
             "temporalContext": "RECORD",
             "transitionAt": "2026-11-01T00:00:00+09:00",
             "timePrecision": "MINUTE",
             "displayTitle": "11月1日（日） 00:00｜日付をまたぐ"
           },
           {
-            "stepId": "interlude_sea_067",
+            "stepId": "interlude_sea_059",
             "temporalContext": "RECORD",
             "transitionAt": "2026-11-01T00:26:00+09:00",
             "timePrecision": "MINUTE",
-            "displayTitle": "11月1日（日） 00:26｜公開版の再確認"
+            "displayTitle": "11月1日（日） 00:26｜本人文と面談希望の受付控え"
           }
         ]
       }
@@ -8111,7 +8111,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "location": "展示端末・MODE 08",
         "displayTitle": "11月1日（日） 15:22｜展示端末・MODE 08",
         "entryTransition": {
-          "stepId": "mode08_map_layers_005",
+          "stepId": "mode08_map_layers_003",
           "fromTemporalContext": "RECORD",
           "toTemporalContext": "CURRENT",
           "transitionAt": "2026-11-01T15:22:00+09:00",
@@ -9045,7 +9045,23 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "startAt": "2026-11-01T15:47:00+09:00",
         "timePrecision": "MINUTE",
         "location": "学園祭・展示席",
-        "displayTitle": "11月1日（日） 15:47｜学園祭・展示席"
+        "displayTitle": "11月1日（日） 15:47｜学園祭・展示席",
+        "transitions": [
+          {
+            "stepId": "final_record_008",
+            "temporalContext": "CURRENT",
+            "transitionAt": "2026-11-01T15:52:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "11月1日（日） 15:52｜展示席・大学の公式通知"
+          },
+          {
+            "stepId": "final_record_017",
+            "temporalContext": "CURRENT",
+            "transitionAt": "2026-11-01T15:54:00+09:00",
+            "timePrecision": "MINUTE",
+            "displayTitle": "11月1日（日） 15:54｜展示席・sakuからの現在音声"
+          }
+        ]
       }
     },
     {
@@ -9307,9 +9323,29 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "temporal": {
         "temporalContext": "CURRENT",
         "startAt": "2026-11-01T15:55:00+09:00",
+        "endAt": "2026-11-01T16:03:00+09:00",
         "timePrecision": "MINUTE",
+        "endTimePrecision": "MINUTE",
         "location": "学園祭・展示席",
-        "displayTitle": "11月1日（日） 15:55｜学園祭・展示席"
+        "displayTitle": "11月1日（日） 15:55｜学園祭・展示席",
+        "transitions": [
+          {
+            "stepId": "return_to_start_018",
+            "temporalContext": "CURRENT",
+            "transitionAt": "2026-11-01T16:00:00+09:00",
+            "timePrecision": "MINUTE",
+            "location": "海沿いの展示場・中央入口",
+            "displayTitle": "11月1日（日） 16:00｜海沿いの展示場・中央入口"
+          },
+          {
+            "stepId": "return_to_start_032",
+            "temporalContext": "CURRENT",
+            "transitionAt": "2026-11-01T16:03:00+09:00",
+            "timePrecision": "MINUTE",
+            "location": "海沿いの展示場・中央入口",
+            "displayTitle": "11月1日（日） 16:03｜中央入口・私的な会話の開始／END"
+          }
+        ]
       }
     }
   ]

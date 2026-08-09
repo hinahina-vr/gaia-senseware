@@ -65,9 +65,21 @@ assert.equal(cue("interlude_sea_067").temporal.context, "RECORD");
 assert.equal(cue("mode08_map_layers_001").temporal.context, "CURRENT");
 assert.equal(cue("final_record_008").temporal.time, "15:52");
 assert.equal(cue("final_record_009").device, "portrait-operations-phone");
+assert.equal(cue("final_record_009").phone.noticeTime, "15:52");
+assert.equal(cue("final_record_009").phone.noticeSender, "大学学生支援窓口");
+assert.equal(
+  cue("final_record_009").phone.noticeBody,
+  "本人の安全を確認しました。本人の同意により、中央入口で二人と話したい旨をお伝えします。",
+);
 assert.equal(cue("final_record_017").temporal.time, "15:54");
 assert.equal(cue("final_record_018").devicePhase, "incoming-audio");
+assert.equal(cue("final_record_018").phone.clock, "15:54");
+assert.equal(cue("final_record_018").phone.audioSpeaker, "サクヤ");
+assert.equal(cue("final_record_018").phone.audioStatus, "音声着信");
+assert.equal(cue("final_record_019").phone.audioStatus, "接続中");
+assert.equal(cue("final_record_027").phone.audioStatus, "通話終了");
 assert.equal(cue("return_to_start_001").temporal.time, "15:55");
+assert.equal(cue("return_to_start_001").phone, null, "operations phone must close at the 15:55 pause scene");
 assert.equal(cue("return_to_start_018").temporal.time, "16:00");
 assert.equal(cue("return_to_start_032").temporal.time, "16:03");
 assert.equal(cue("return_to_start_017").viewpoint, "visitor");

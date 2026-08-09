@@ -84,6 +84,13 @@
     { stepId: "return_to_start_035", cue: "coastal-wind" },
   ]);
 
+  const operationsPhone = Object.freeze({
+    noticeTime: "15:52",
+    noticeSender: "大学学生支援窓口",
+    noticeBody: "本人の安全を確認しました。本人の同意により、中央入口で二人と話したい旨をお伝えします。",
+    audioSpeaker: "サクヤ",
+  });
+
   const stepNumber = (step, sceneId = step?.sceneId) => {
     const match = new RegExp(`^${sceneId}_(\\d{3})$`).exec(String(step?.id || ""));
     return match ? Number(match[1]) : null;
@@ -107,6 +114,14 @@
     if (step.sceneId === "final_record" && number >= 9 && number <= 27) castMode = "remote-sakuya-no-cast";
     if (step.sceneId === "return_to_start" && number >= 18 && number <= 20) castMode = "sakuya-unseen";
     if (step.sceneId === "return_to_start" && number >= 21) castMode = "central-entrance-distance";
+    const phone = deviceCue?.device === "portrait-operations-phone" ? Object.freeze({
+      clock: temporalCue.time,
+      noticeTime: operationsPhone.noticeTime,
+      noticeSender: operationsPhone.noticeSender,
+      noticeBody: operationsPhone.noticeBody,
+      audioSpeaker: operationsPhone.audioSpeaker,
+      audioStatus: number <= 18 ? "音声着信" : number === 27 ? "通話終了" : "接続中",
+    }) : null;
     return Object.freeze({
       temporal: temporalCue,
       device: deviceCue?.device || "none",
@@ -114,6 +129,7 @@
       viewpoint,
       castMode,
       audio: audio.find((entry) => entry.stepId === step.id)?.cue || "none",
+      phone,
     });
   };
 
@@ -124,6 +140,7 @@
     interactions,
     devices,
     audio,
+    operationsPhone,
     forStep,
   });
 })();
