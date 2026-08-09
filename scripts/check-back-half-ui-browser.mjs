@@ -83,7 +83,7 @@ try {
     });
     const prepare = await phoneMetrics(page);
     assert(prepare.frameCount === 1 && prepare.visibleViews.length === 1 && prepare.visibleViews[0].includes("is-prepare"), `${viewport.name}: prepare view failed: ${JSON.stringify(prepare)}`);
-    assert(prepare.visibleText.includes("運営端末") && !/OPERATIONS DEVICE|INCOMING AUDIO/u.test(prepare.visibleText), `${viewport.name}: untranslated phone label remains: ${prepare.visibleText}`);
+    assert(prepare.visibleText.includes("運営端末") && prepare.visibleText.includes("連絡を確認中") && !prepare.visibleText.includes("連絡を確認しています") && !/OPERATIONS DEVICE|INCOMING AUDIO/u.test(prepare.visibleText), `${viewport.name}: prepare copy is incorrect: ${prepare.visibleText}`);
     assert(prepare.fitsViewport && !prepare.horizontalOverflow && !prepare.intersectsDialogue && !prepare.intersectsNav, `${viewport.name}: prepare geometry failed: ${JSON.stringify(prepare)}`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-prepare.png`), animations: "disabled" });
 
