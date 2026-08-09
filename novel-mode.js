@@ -1017,6 +1017,7 @@
     avatar.setAttribute("aria-hidden", "true");
     avatar.textContent = SPEAKERS[message.speaker]?.glyph || "◌";
     const body = document.createElement("div");
+    body.className = "novel-slack-post-body";
     const meta = document.createElement("p");
     const speaker = document.createElement("strong");
     const time = document.createElement("time");
@@ -1063,7 +1064,7 @@
       layer.classList.add("is-slack");
       const workspace = document.createElement("div");
       workspace.className = "novel-slack-workspace";
-      workspace.innerHTML = `<header><b>◀　▶　◷</b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、持ち寄る場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
+      workspace.innerHTML = `<header><b><span class="novel-slack-app-name">学内チャット</span><i aria-hidden="true">◀　▶　◷</i></b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、記録する場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
       const thread = workspace.querySelector(".novel-slack-thread");
       timeline.messages.forEach((message, index) => {
         thread.append(createSlackPost(message, { root: index === 0, current: message.id === step.id }));

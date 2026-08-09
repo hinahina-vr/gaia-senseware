@@ -4847,9 +4847,16 @@ body.novel-reduced-motion .story-detour-dock * {
   font-size: 13px;
 }
 
-.novel-slack-workspace > header b { justify-self: start; }
-.novel-slack-workspace > header span { justify-self: center; color: #e0cfdf; }
+.novel-slack-workspace > header b {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: start;
+}
+.novel-slack-workspace > header > span { justify-self: center; color: #e0cfdf; }
 .novel-slack-workspace > header i { justify-self: end; color: #f1e7f0; font-style: normal; }
+.novel-slack-app-name { color: #fff; font-size: 11px; letter-spacing: 0.08em; white-space: nowrap; }
+.novel-slack-workspace > header b > i { color: #e0cfdf; font-size: 11px; font-style: normal; }
 
 .novel-slack-workspace > aside {
   display: flex;
@@ -4968,6 +4975,7 @@ body.novel-reduced-motion .story-detour-dock * {
 .novel-slack-workspace article p { margin: 0 0 4px; }
 .novel-slack-workspace article p strong { font-size: 13px; }
 .novel-slack-workspace article time { margin-left: 8px; color: #777; font-size: 10px; }
+.novel-slack-post-body { min-width: 0; }
 .novel-slack-message { color: #1d1c1d; font-size: clamp(13px, 1vw, 16px); line-height: 1.55; }
 .novel-slack-attachments {
   display: grid;
@@ -5010,6 +5018,7 @@ body.novel-reduced-motion .story-detour-dock * {
 }
 .novel-slack-attachment-error[hidden] { display: none; }
 .novel-slack-attachment.is-error img { display: none; }
+.novel-slack-message { overflow-wrap: anywhere; }
 .novel-slack-typing { display: flex; align-items: center; gap: 9px; margin: 7px 8px 2px 36px; color: #616061; font-size: 11px; }
 .novel-slack-typing .novel-slack-avatar { flex: 0 0 auto; width: 25px; height: 25px; font-size: 12px; }
 .novel-slack-typing > i { display: inline-flex; gap: 3px; align-items: end; height: 10px; }
@@ -5019,6 +5028,98 @@ body.novel-reduced-motion .story-detour-dock * {
 .novel-slack-workspace > main > footer { display: grid; grid-template-columns: auto 1fr auto; align-items: center; margin: 0 18px 10px; padding: 9px 12px; gap: 10px; border: 1px solid rgba(70, 70, 70, 0.5); border-radius: 4px; background: rgba(255, 255, 255, 0.28); color: #4d4b4d; font-size: 11px; }
 .novel-slack-workspace > main > footer b { color: #888; font-size: 10px; font-weight: 400; }
 .novel-layer.is-slack .novel-cursor { display: none; }
+
+.novel-layer.is-slack[data-slack-device="mobile"] {
+  --novel-slack-height: min(82dvh, 810px, calc(100dvh - var(--novel-slack-top) - 18px));
+}
+
+.novel-layer.is-slack[data-slack-device="mobile"] .novel-slack-surface {
+  z-index: 9;
+}
+
+.novel-layer.is-slack[data-slack-device="mobile"] .novel-cast {
+  z-index: 8;
+  clip-path: none;
+}
+
+.novel-slack-workspace.is-mobile-device {
+  position: relative;
+  grid-template: 42px minmax(0, 1fr) / 1fr;
+  width: min(430px, 100%);
+  max-width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 6px solid rgba(18, 20, 24, 0.96);
+  border-radius: 30px;
+  background: #15171b;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.48),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.novel-slack-workspace.is-mobile-device::before {
+  position: absolute;
+  z-index: 4;
+  top: 5px;
+  left: 50%;
+  width: 78px;
+  height: 17px;
+  border-radius: 0 0 12px 12px;
+  background: #121317;
+  content: "";
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.novel-slack-workspace.is-mobile-device > header {
+  grid-column: 1;
+  grid-row: 1;
+  grid-template-columns: 1fr auto;
+  padding: 0 14px;
+  border-radius: 22px 22px 0 0;
+  font-size: 11px;
+}
+
+.novel-slack-workspace.is-mobile-device > header > span,
+.novel-slack-workspace.is-mobile-device > header b > i,
+.novel-slack-workspace.is-mobile-device > aside {
+  display: none;
+}
+
+.novel-slack-workspace.is-mobile-device > main {
+  grid-column: 1;
+  grid-row: 2;
+  grid-template-rows: 52px minmax(0, 1fr) 48px;
+  border-radius: 0 0 22px 22px;
+}
+
+.novel-slack-workspace.is-mobile-device > main > header { padding: 0 14px; }
+.novel-slack-workspace.is-mobile-device > main > header small { display: none; }
+.novel-slack-workspace.is-mobile-device .novel-slack-thread { padding: 11px 10px 16px; }
+.novel-slack-workspace.is-mobile-device .novel-slack-post {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 4px;
+}
+.novel-slack-workspace.is-mobile-device .novel-slack-post.is-reply { margin-left: 10px; }
+.novel-slack-workspace.is-mobile-device .novel-slack-post .novel-slack-avatar { width: 32px; height: 32px; }
+.novel-slack-workspace.is-mobile-device .novel-slack-message { font-size: 13px; }
+.novel-slack-workspace.is-mobile-device .novel-slack-attachments,
+.novel-slack-workspace.is-mobile-device .novel-slack-attachment,
+.novel-slack-workspace.is-mobile-device .novel-slack-attachment img {
+  min-width: 0;
+  max-width: 100%;
+}
+.novel-slack-workspace.is-mobile-device .novel-slack-attachment {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+.novel-slack-workspace.is-mobile-device .novel-slack-attachment img { display: block; height: auto; }
+.novel-slack-workspace.is-mobile-device > main > footer { margin: 0 8px 8px; padding: 8px 10px; }
+.novel-slack-workspace.is-mobile-device > main > footer b { display: none; }
 
 .novel-layer.is-slack .novel-cast {
   z-index: 6;
@@ -5382,11 +5483,19 @@ body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0.4; }
   .novel-slack-surface,
   .novel-evidence-surface,
   .novel-reflection-surface { top: 54px; }
-  .novel-slack-surface { height: calc(100vh - 54px - var(--novel-say-height) - var(--novel-say-bottom) - 22px); padding: 0 10px; }
+  .novel-slack-surface { height: calc(100dvh - 76px); padding: 0 10px; }
+  .novel-layer.is-slack[data-slack-device="mobile"] .novel-slack-surface { padding-inline: 8px; }
   .novel-slack-workspace { grid-template: 46px minmax(0, 1fr) / 1fr; }
+  .novel-slack-workspace.is-mobile-device {
+    grid-template: 42px minmax(0, 1fr) / 1fr;
+    border-width: 4px;
+    border-radius: 24px;
+  }
+  .novel-slack-workspace.is-mobile-device > header { border-radius: 18px 18px 0 0; }
+  .novel-slack-workspace.is-mobile-device > main { border-radius: 0 0 18px 18px; }
   .novel-slack-workspace > aside { display: none; }
   .novel-slack-workspace > header { grid-template-columns: 1fr auto; }
-  .novel-slack-workspace > header span { display: none; }
+  .novel-slack-workspace > header > span { display: none; }
   .novel-slack-thread { padding: 12px 12px 14px; }
   .novel-slack-post { grid-template-columns: 34px minmax(0, 1fr); gap: 8px; padding: 8px 4px; }
   .novel-slack-post .novel-slack-avatar { width: 32px; height: 32px; }
