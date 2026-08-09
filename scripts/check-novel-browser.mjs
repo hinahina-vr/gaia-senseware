@@ -171,7 +171,7 @@ const runFullWalkthrough = async (page) => {
   await page.waitForFunction(() => Boolean(document.querySelector("#novel-layer")?.dataset.stepId));
   const visited = [];
   const interactionKinds = new Set();
-  for (let guard = 0; guard < 420; guard += 1) {
+  for (let guard = 0; guard < steps.length + 20; guard += 1) {
     const id = await currentStepId(page);
     const step = stepMap.get(id);
     assert(step, `full walkthrough reached unknown step: ${id}`);
@@ -200,7 +200,7 @@ const runFullWalkthrough = async (page) => {
       await advanceLinear(page);
     }
   }
-  throw new Error("full walkthrough did not reach END within 420 transitions");
+  throw new Error(`full walkthrough did not reach END within ${steps.length + 20} transitions`);
 };
 
 let context;
@@ -240,6 +240,7 @@ try {
   await page.waitForTimeout(200);
   const backgroundBeforeTransition = await page.locator("#novel-layer").evaluate((node) => getComputedStyle(node).backgroundImage);
   await page.locator("#novel-dialogue").click();
+  if (await currentStepId(page) === backgroundTransitionStep.id) await page.locator("#novel-dialogue").click();
   await page.waitForFunction(() => document.body.classList.contains("scene-transitioning"));
   assert(await page.locator("#scene-transition").isVisible(), "novel background change did not use the shared scene transition canvas");
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, "prologue_online_circle_001", { timeout: 5000 });
@@ -247,7 +248,9 @@ try {
   assert(backgroundBeforeTransition.includes("novel-bg-workroom-v2.png") && backgroundAfterTransition.includes("novel-bg-online-night-v2.png"), "novel background transition did not swap the expected scenes");
   await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"), null, { timeout: 5000 });
 
-  const stableRevealStep = steps.find((step) => step.id === "festival_walk_001");
+  const stableRevealStep = steps
+    .filter((step) => step.type === "narration")
+    .sort((left, right) => right.text.length - left.text.length)[0];
   await bootAt(page, stableRevealStep.id);
   await page.locator("#novel-text.is-revealing .novel-line").first().waitFor({ state: "attached", timeout: 5000 });
   const revealGeometry = () => page.locator("#novel-text").evaluate((text) => ({
@@ -274,7 +277,7 @@ try {
   assert(!await page.locator("body").evaluate((node) => node.classList.contains("scene-transitioning")), "unchanged story background incorrectly triggered a scene transition");
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.sceneId === "search");
 
-  const chat = steps.find((step) => step.id === "opening_empty_seat_004");
+  const chat = steps.find((step) => step.sceneId === "opening_empty_seat" && step.type === "chat");
   await bootAt(page, chat.id);
   assert(await page.locator("#novel-dialogue").isVisible(), "Slack must float above the normal dialogue window");
   assert(await page.locator(".novel-slack-workspace").count() === 1, "Slack must be one surface");
@@ -316,7 +319,7 @@ try {
   const speakerText = await page.locator(".novel-slack-post p strong").allTextContents();
   assert(speakerText.length === 3, "Slack speaker labels do not match the visible posts");
 
-  const sakuyaChat = steps.find((step) => step.id === "prologue_basil_007");
+  const sakuyaChat = steps.find((step) => step.sceneId === "prologue_basil" && step.type === "chat" && step.speaker === "sakuya");
   await bootAt(page, sakuyaChat.id);
   const sakuyaAvatar = await page.locator('.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar').last().evaluate((avatar) => getComputedStyle(avatar).backgroundImage);
   assert(sakuyaAvatar.includes("slack-avatar-sakuya-v1.webp"), `Sakuya mascot avatar is missing from Slack: ${sakuyaAvatar}`);
@@ -337,6 +340,8 @@ try {
   const reflection = steps.find((step) => step.type === "reflectionChoice");
   await bootAt(page, reflection.id, { editorialChoice: "SOURCE_RECORD", evesRoute: [{ decisionId: "editorial_choice", value: "SOURCE_RECORD", label: "本人記録で構成する / SOURCE RECORD", stepId: editorial.id }] });
   assert(await page.locator(".novel-reflection-grid button").count() === 36, "reflection grid must contain 36 statements");
+  assert(await page.locator(".novel-reflection-group").count() === 6, "reflection grid must contain six canon themes");
+  assert(await page.locator(".novel-reflection-grid button span").count() === 0, "internal reflection IDs must not be visible");
   const gridGeometry = await page.evaluate(() => {
     const surface = document.querySelector("#novel-reflection-surface");
     const rects = [...document.querySelectorAll(".novel-reflection-grid button")].map((button) => button.getBoundingClientRect());

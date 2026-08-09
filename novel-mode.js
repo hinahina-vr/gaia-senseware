@@ -843,16 +843,14 @@
       proceed.textContent = selected.size ? "選んだ姿勢で進む" : "選ばずに進む";
     };
 
-    step.options.forEach((option, index) => {
+    const createOptionButton = (option) => {
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.choiceId = option.id;
       button.setAttribute("aria-pressed", "false");
-      const number = document.createElement("span");
       const text = document.createElement("strong");
-      number.textContent = String(index + 1).padStart(2, "0");
       text.textContent = option.text;
-      button.append(number, text);
+      button.append(text);
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         const selected = new Set(state.reflectionIds);
@@ -866,7 +864,24 @@
         saveProgress();
         update();
       });
-      grid.append(button);
+      return button;
+    };
+
+    const groups = step.groups?.length
+      ? step.groups
+      : [{ id: "all", title: "観測姿勢", optionIds: step.options.map((option) => option.id) }];
+    groups.forEach((group) => {
+      const section = document.createElement("section");
+      section.className = "novel-reflection-group";
+      section.dataset.themeId = group.id;
+      const title = document.createElement("h3");
+      title.textContent = group.title;
+      section.append(title);
+      group.optionIds.forEach((id) => {
+        const option = reflectionOptionMap.get(id);
+        if (option) section.append(createOptionButton(option));
+      });
+      grid.append(section);
     });
 
     proceed.addEventListener("click", (event) => {

@@ -44,6 +44,7 @@ const REFLECTION_OPTIONS = Object.freeze([
   ["R35", "責任者の許可より、当事者の異議を先に通す。", 0, 1, 2],
   ["R36", "結論を共有できなくても、検証の手続きを共有する。", 1, 2, 0],
 ].map(([id, text, law, neutral, chaos]) => ({ id, text, weights: { law, neutral, chaos } })));
+const REFLECTION_OPTION_MAP = new Map(REFLECTION_OPTIONS.map((option) => [option.id, option]));
 
 const source = fs.readFileSync(canonPath, "utf8").replace(/\r\n?/g, "\n");
 const lines = source.split("\n");
@@ -84,8 +85,46 @@ const splitBlocks = (sectionLines) => trimSectionLines(sectionLines)
   .map((block) => block.trim())
   .filter(Boolean);
 
+const parseReflectionGroups = (sectionLines) => {
+  const groups = [];
+  const seen = new Set();
+  let currentGroup = null;
+
+  for (const rawLine of sectionLines) {
+    const line = rawLine.trim();
+    const theme = line.match(/^［テーマ(\d+)｜(.+)］$/u);
+    if (theme) {
+      currentGroup = { id: `theme_${theme[1]}`, title: theme[2], optionIds: [] };
+      groups.push(currentGroup);
+      continue;
+    }
+
+    const statement = line.match(/^(R\d{2})｜(.+)$/u);
+    if (!statement) continue;
+    if (!currentGroup) throw new Error(`${statement[1]}: テーマ見出しがありません`);
+    const canonical = REFLECTION_OPTION_MAP.get(statement[1]);
+    if (!canonical) throw new Error(`${statement[1]}: 未定義の観測姿勢です`);
+    if (canonical.text !== statement[2]) throw new Error(`${statement[1]}: 文面が正本と一致しません`);
+    if (seen.has(statement[1])) throw new Error(`${statement[1]}: 観測姿勢が重複しています`);
+    seen.add(statement[1]);
+    currentGroup.optionIds.push(statement[1]);
+  }
+
+  if (groups.length !== 6) throw new Error("reflection_choice: 正本には6テーマが必要です");
+  if (seen.size !== REFLECTION_OPTIONS.length) throw new Error("reflection_choice: 正本には36文が必要です");
+  groups.forEach((group) => {
+    if (group.optionIds.length !== 6) throw new Error(`${group.id}: 正本には6文が必要です`);
+  });
+
+  return {
+    groups,
+    options: groups.flatMap((group) => group.optionIds.map((id) => REFLECTION_OPTION_MAP.get(id))),
+  };
+};
+
 const speakerMap = Object.freeze({
   "ミズハ": "mizuha", "アマネ": "amane", "サクヤ": "sakuya", "プレイヤー": "visitor", "参加者": "visitor",
+  "🌱 みず 🌱": "mizuha", "☁️ あまあま ☁️": "amane", "🌸 saku 🌸": "sakuya",
   MIZUHA: "mizuha", AMANE: "amane", SAKUYA: "sakuya", VISITOR: "visitor",
 });
 const recordTypeFor = (text) => {
@@ -112,8 +151,17 @@ const conditionFromHeading = (block) => {
   return null;
 };
 
+const interactionTriggerFor = Object.freeze({
+  gx: "水面をなぞる",
+  map03: "二つの記録を重ねる",
+  abstract07: "観測点に触れる",
+  map08: "三つの層を切り替える",
+  space10: "地球を回し、触れた記録を開く",
+});
+
 const parseSceneSteps = (scene, sectionLines) => {
   const steps = [];
+  const reflection = scene.reflectionChoice ? parseReflectionGroups(sectionLines) : null;
   let condition = null;
   let serial = 0;
   const pushStep = (step) => {
@@ -130,27 +178,27 @@ const parseSceneSteps = (scene, sectionLines) => {
     }
     if (scene.id === "choice_editorial" && /^セッション内の表示だけ/u.test(block)) condition = null;
 
-    if (/^\d+\.\s/u.test(block) && scene.reflectionChoice) {
-      const canonical = block.split("\n").map((line) => line.match(/^\d+\.\s*(.+)$/u)?.[1]).filter(Boolean);
-      if (canonical.length !== REFLECTION_OPTIONS.length) throw new Error("reflection_choice: 正本には36文が必要です");
-      REFLECTION_OPTIONS.forEach((option, index) => {
-        if (canonical[index] !== option.text) throw new Error(`reflection_choice: ${index + 1}番の文面が正本と一致しません`);
-      });
+    if (reflection && /^［テーマ\d+｜/u.test(block)) {
       pushStep({
         type: "reflectionChoice",
         choiceId: "reflection_choice",
         prompt: scene.reflectionChoice.prompt,
         trackedByEves: true,
         maxSelections: 3,
-        options: REFLECTION_OPTIONS,
+        groups: reflection.groups,
+        options: reflection.options,
       });
-      continue;
+      break;
     }
     if (/^\d+\.\s/u.test(block) && scene.choice) {
       pushStep({ type: "choice", choiceId: scene.choice.id, prompt: scene.choice.prompt, trackedByEves: scene.choice.trackedByEves, options: parseChoiceOptions(block, scene.choice) });
       continue;
     }
-    if (/^［操作｜/u.test(block) && scene.interaction) {
+    if (
+      /^［操作｜/u.test(block)
+      && scene.interaction
+      && block.includes(interactionTriggerFor[scene.interaction.kind])
+    ) {
       pushStep({ type: "interaction", interaction: scene.interaction, text: block.slice(1, -1) });
       continue;
     }
@@ -158,7 +206,7 @@ const parseSceneSteps = (scene, sectionLines) => {
       pushStep({ type: "details", text: "生成履歴を詳しく見る", detailId: "mode07_generation_details" });
       continue;
     }
-    const chatMatch = block.match(/^(\d{2}:\d{2})\s{2,}([^\n]+)\n([\s\S]+)$/u);
+    const chatMatch = block.match(/^((?:\d{2}日\s+)?\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)\s{2,}([^\n]+)\n([\s\S]+)$/u);
     if (chatMatch) {
       pushStep({ type: "chat", time: chatMatch[1], speaker: speakerMap[chatMatch[2].trim()] || "system", speakerLabel: chatMatch[2].trim(), text: chatMatch[3] });
       continue;
@@ -183,7 +231,7 @@ const configs = [
   { id: "current_exhibition", prefix: "CURRENT｜学園祭の展示ホール", chapter: "CURRENT", modeIndex: 9 },
   { id: "opening_empty_seat", prefix: "OPENING｜三か月前／10:21", chapter: "OPENING", modeIndex: 9 },
   { id: "prologue_online_circle", prefix: "PROLOGUE｜文字だけだった三人", chapter: "PROLOGUE", modeIndex: 0, split: "ミズハ、アマネ、サクヤが初めて同じスレッドに揃った" },
-  { id: "choice_observation_order", prefix: "プレイヤーの小さな選択｜どちらから見る？", chapter: "PROLOGUE", modeIndex: 0, choice: { id: "observation_order", prompt: "どちらから見る？", trackedByEves: false, options: [{ value: "LOCAL_FIRST", next: "first_meeting_promise" }, { value: "STATION_FIRST", next: "first_meeting_promise" }] } },
+  { id: "choice_observation_order", prefix: "小さな選択｜どちらから見る？", chapter: "PROLOGUE", modeIndex: 0, choice: { id: "observation_order", prompt: "どちらから見る？", trackedByEves: false, options: [{ value: "LOCAL_FIRST", next: "first_meeting_promise" }, { value: "STATION_FIRST", next: "first_meeting_promise" }] } },
   { id: "first_meeting_promise", prefix: "00:08｜初めて会う約束", chapter: "PROLOGUE", modeIndex: 0 },
   { id: "first_meeting_hall", prefix: "09:48｜海沿いの展示場・中央入口", chapter: "PROLOGUE", modeIndex: 0 },
   { id: "festival_walk", prefix: "17:06｜展示ホールをつなぐ連絡通路", chapter: "PROLOGUE", modeIndex: 0 },
