@@ -706,7 +706,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:12",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "今日の売り場、36度ですの🥵\n土が湿ってても、暑すぎると根から吸うより先に葉から水が出てしまいますわ。\n［画像添付｜BASIL｜売り場の裏にあるバジル。値下げ札、黄色いホース、土のついた靴先が写っている］"
+          "text": "今日の売り場、36度ですの🥵\n土が湿ってても、暑すぎると根から吸うより先に葉から水が出てしまいますわ。",
+          "attachments": [
+            {
+              "id": "BASIL",
+              "description": "売り場の裏にあるバジル。値下げ札、黄色いホース、土のついた靴先が写っている"
+            }
+          ]
         },
         {
           "id": "prologue_basil_005",
@@ -767,7 +773,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:31",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "名前だけ残ってた。\n花はない。\n［画像添付｜FLOWERBED｜駅裏の花壇。花ではなく、色あせた「水やり当番」の札にピントが合っている］\n花壇やめたのかも。まだ分かんない。"
+          "text": "名前だけ残ってた。\n花はない。\n花壇やめたのかも。まだ分かんない。",
+          "attachments": [
+            {
+              "id": "FLOWERBED",
+              "description": "駅裏の花壇。花ではなく、色あせた「水やり当番」の札にピントが合っている"
+            }
+          ]
         },
         {
           "id": "prologue_basil_012",
@@ -1329,7 +1341,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:15",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "ここで合ってる？📍\n［画像添付｜MEETING_MAP｜学園祭会場案内図。中央入口に赤い丸、北口・搬入口・ホール連絡口に赤い線が引かれている］"
+          "text": "ここで合ってる？📍",
+          "attachments": [
+            {
+              "id": "MEETING_MAP",
+              "description": "学園祭会場案内図。中央入口に赤い丸、北口・搬入口・ホール連絡口に赤い線が引かれている"
+            }
+          ]
         },
         {
           "id": "first_meeting_promise_045",
@@ -1474,7 +1492,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "01:07",
           "speaker": "sakuya",
           "speakerLabel": "🌸 saku 🌸",
-          "text": "たぶんここ。\n明日これより人多そう。\n［画像添付｜VENUE｜昨年の中央入口。大きなガラス壁と、その向こうの海が写っている］"
+          "text": "たぶんここ。\n明日これより人多そう。",
+          "attachments": [
+            {
+              "id": "VENUE",
+              "description": "昨年の中央入口。大きなガラス壁と、その向こうの海が写っている"
+            }
+          ]
         },
         {
           "id": "first_meeting_promise_062",

@@ -89,6 +89,21 @@ const speakerMap = Object.freeze({
   "🌱 みず 🌱": "mizuha", "☁️ あまあま ☁️": "amane", "🌸 saku 🌸": "sakuya",
   MIZUHA: "mizuha", AMANE: "amane", SAKUYA: "sakuya", VISITOR: "visitor",
 });
+const attachmentPattern = /^[［[](?:画像添付|添付画像)｜([A-Z0-9_]+)｜(.+)[］\]]$/iu;
+const parseChatContent = (rawText) => {
+  const attachments = [];
+  const text = rawText
+    .split("\n")
+    .filter((line) => {
+      const attachment = line.trim().match(attachmentPattern);
+      if (!attachment) return true;
+      attachments.push({ id: attachment[1].toUpperCase(), description: attachment[2] });
+      return false;
+    })
+    .join("\n")
+    .trim();
+  return { text, ...(attachments.length ? { attachments } : {}) };
+};
 const recordTypeFor = (text) => {
   if (/LOCAL SOURCE/u.test(text)) return "LOCAL_SOURCE";
   if (/VISITOR TRACE|操作記録/u.test(text)) return "VISITOR_TRACE";
@@ -213,7 +228,13 @@ const parseSceneSteps = (scene, sectionLines) => {
     }
     const chatMatch = block.match(/^(\d{2}:\d{2})\s{2,}([^\n]+)\n([\s\S]+)$/u);
     if (chatMatch) {
-      pushStep({ type: "chat", time: chatMatch[1], speaker: speakerMap[chatMatch[2].trim()] || "system", speakerLabel: chatMatch[2].trim(), text: chatMatch[3] });
+      pushStep({
+        type: "chat",
+        time: chatMatch[1],
+        speaker: speakerMap[chatMatch[2].trim()] || "system",
+        speakerLabel: chatMatch[2].trim(),
+        ...parseChatContent(chatMatch[3]),
+      });
       continue;
     }
     const dialogueMatch = block.match(/^(ミズハ|アマネ|サクヤ|プレイヤー)：\n([\s\S]+)$/u);

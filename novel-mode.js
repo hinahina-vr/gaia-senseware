@@ -28,6 +28,24 @@
   const SLACK_ENTER_MS = 760;
   const SLACK_EXIT_MS = 460;
   const LOG_FOLLOW_THRESHOLD_PX = 72;
+  const SLACK_ATTACHMENT_ASSETS = Object.freeze({
+    BASIL: {
+      src: "./assets/visuals-07/slack-attachment-basil-v1.webp",
+      label: "IMG_1812.JPG",
+    },
+    FLOWERBED: {
+      src: "./assets/visuals-07/slack-attachment-flowerbed-v1.webp",
+      label: "IMG_0031.JPG",
+    },
+    MEETING_MAP: {
+      src: "./assets/visuals-07/slack-attachment-venue-map-v1.svg",
+      label: "meeting-place.png",
+    },
+    VENUE: {
+      src: "./assets/visuals-07/slack-attachment-venue-v1.webp",
+      label: "entrance-reference.jpg",
+    },
+  });
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
   const SPEAKERS = Object.freeze({
     narrator: { name: "", glyph: "◌" },
@@ -856,6 +874,47 @@
     return { messages, typing: following?.type === "chat" && conditionMatches(following) ? following : null };
   };
 
+  const createSlackAttachment = (attachment) => {
+    const identifier = String(attachment?.id || "").toUpperCase();
+    const asset = SLACK_ATTACHMENT_ASSETS[identifier];
+    const figure = document.createElement("figure");
+    const status = document.createElement("p");
+    figure.className = "novel-slack-attachment";
+    figure.dataset.attachment = identifier;
+    status.className = "novel-slack-attachment-error";
+    status.setAttribute("role", "status");
+    status.textContent = "画像を読み込めませんでした。";
+    status.hidden = true;
+
+    if (!asset) {
+      figure.classList.add("is-error");
+      status.hidden = false;
+      figure.append(status);
+      return figure;
+    }
+
+    const image = document.createElement("img");
+    const caption = document.createElement("figcaption");
+    const icon = document.createElement("span");
+    const label = document.createElement("strong");
+    const kind = document.createElement("small");
+    image.src = asset.src;
+    image.alt = attachment.description || asset.label;
+    image.decoding = "async";
+    image.loading = "eager";
+    image.addEventListener("error", () => {
+      figure.classList.add("is-error");
+      status.hidden = false;
+    });
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "▣";
+    label.textContent = asset.label;
+    kind.textContent = "画像";
+    caption.append(icon, label, kind);
+    figure.append(image, status, caption);
+    return figure;
+  };
+
   const createSlackPost = (message, { root = false, current = false } = {}) => {
     const article = document.createElement("article");
     article.className = `novel-slack-post ${root ? "is-root" : "is-reply"}${current ? " is-new" : ""}`;
@@ -875,6 +934,12 @@
     appendLines(text, message.text || "");
     meta.append(speaker, time);
     body.append(meta, text);
+    if (Array.isArray(message.attachments) && message.attachments.length > 0) {
+      const attachments = document.createElement("div");
+      attachments.className = "novel-slack-attachments";
+      message.attachments.forEach((attachment) => attachments.append(createSlackAttachment(attachment)));
+      body.append(attachments);
+    }
     article.append(avatar, body);
     return article;
   };

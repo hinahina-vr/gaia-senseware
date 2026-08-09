@@ -25,6 +25,11 @@ const visibleStoryText = steps.flatMap((step) => [step.text, step.prompt, ...(st
 assert.doesNotMatch(visibleStoryText, /LOCAL FIRST|STATION FIRST/u, "internal observation-order identifiers leaked into visible story text");
 assert.doesNotMatch(visibleStoryText, /\b(?:LOCAL SOURCE|SOURCE RECORD|DISCLOSE DERIVATION|SOURCE|DERIVED|CURRENT|VISITOR TRACE|PRODUCTION RECORD|RESPONSIBLE|EDITORIAL CHOICE|PUBLIC BUILD CHANGED|REFLECTION FIELD|CLEAR)\b/u, "internal or unexplained system labels leaked into visible story text");
 assert.doesNotMatch(visibleStoryText, /補助表示：|操作記録 \/|計算・解釈 \/|観測記録 \/|localStorage/u, "system-oriented explanatory copy leaked into visible story text");
+assert.doesNotMatch(visibleStoryText, /[［[](?:画像添付|添付画像)｜/u, "raw attachment token leaked into visible story text");
+const attachmentSteps = steps.filter((step) => Array.isArray(step.attachments) && step.attachments.length > 0);
+const attachments = attachmentSteps.flatMap((step) => step.attachments.map((attachment) => ({ stepId: step.id, ...attachment })));
+assert.deepEqual(attachments.map((attachment) => attachment.id), ["BASIL", "FLOWERBED", "MEETING_MAP", "VENUE"], "story attachment identifiers changed or an attachment was not parsed");
+attachments.forEach((attachment) => assert.ok(attachment.description, `${attachment.stepId}/${attachment.id} must retain its accessibility description`));
 
 for (const required of story.requiredSceneIds || []) assert.ok(sceneSet.has(required), `required scene is missing: ${required}`);
 for (const scene of scenes) {
@@ -219,6 +224,15 @@ for (const asset of [
   "assets/visuals-07/novel-bg-zushi-coast-night-v2.png",
 ]) {
   assert.ok(fs.statSync(path.join(projectRoot, asset)).size > 100_000, `visual asset is missing: ${asset}`);
+}
+for (const asset of [
+  "assets/visuals-07/slack-attachment-basil-v1.webp",
+  "assets/visuals-07/slack-attachment-flowerbed-v1.webp",
+  "assets/visuals-07/slack-attachment-venue-map-v1.svg",
+  "assets/visuals-07/slack-attachment-venue-v1.webp",
+]) {
+  const minimumSize = asset.endsWith(".svg") ? 1_000 : 10_000;
+  assert.ok(fs.statSync(path.join(projectRoot, asset)).size > minimumSize, `Slack attachment asset is missing: ${asset}`);
 }
 const novelCss = fs.readFileSync(path.join(projectRoot, "novel-mode.css"), "utf8");
 assert.ok(!novelCss.includes('url("./assets/visuals-07/novel-background-v1.webp")'), "character-composited legacy background remains in the novel runtime");

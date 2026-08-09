@@ -22,13 +22,20 @@ const story = globalThis.GAIA_NOVEL_STORY;
 const backgroundCueData = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
 const steps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(steps.map((step) => [step.id, step]));
+const attachmentSteps = steps.filter((step) => Array.isArray(step.attachments) && step.attachments.length > 0);
+const attachmentAssets = Object.freeze({
+  BASIL: "slack-attachment-basil-v1.webp",
+  FLOWERBED: "slack-attachment-flowerbed-v1.webp",
+  MEETING_MAP: "slack-attachment-venue-map-v1.svg",
+  VENUE: "slack-attachment-venue-v1.webp",
+});
 const routeUrl = new URL("/story", baseUrl).href;
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
 const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ executablePath, headless: true, args: ["--no-first-run", "--disable-background-networking"] });
-const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], productionBackgrounds: [], backgroundPreloads: [], interactions: [], modeModalChecks: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], productionBackgrounds: [], backgroundPreloads: [], slackAttachments: [], interactions: [], modeModalChecks: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
 const attachDiagnostics = (page, label) => {
@@ -108,6 +115,53 @@ const bootAt = async (page, stepId, overrides = {}, { reducedMotion = false } = 
 };
 
 const currentStepId = (page) => page.locator("#novel-layer").getAttribute("data-step-id");
+const assertSlackAttachment = async (page, step, viewportLabel) => {
+  const attachment = step.attachments[0];
+  const expectedAsset = attachmentAssets[attachment.id];
+  assert(expectedAsset, `attachment asset mapping is missing: ${attachment.id}`);
+  await bootAt(page, step.id, {}, { reducedMotion: true });
+  const figure = page.locator(`.novel-slack-attachment[data-attachment="${attachment.id}"]`).last();
+  const image = figure.locator("img");
+  await image.waitFor({ state: "visible", timeout: 5000 });
+  await image.evaluate((node) => node.decode().catch(() => {}));
+  const presentation = await figure.evaluate((node) => {
+    const imageNode = node.querySelector("img");
+    const imageRect = imageNode.getBoundingClientRect();
+    const figureRect = node.getBoundingClientRect();
+    const workspaceRect = node.closest(".novel-slack-workspace").getBoundingClientRect();
+    return {
+      source: imageNode.getAttribute("src"),
+      alt: imageNode.getAttribute("alt"),
+      loaded: imageNode.complete && imageNode.naturalWidth > 0 && imageNode.naturalHeight > 0,
+      aspectRatioDelta: Math.abs((imageRect.width / imageRect.height) - (imageNode.naturalWidth / imageNode.naturalHeight)),
+      figureContained: figureRect.left >= workspaceRect.left - 1 && figureRect.right <= workspaceRect.right + 1,
+      horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+      errorVisible: !node.querySelector(".novel-slack-attachment-error").hidden,
+      rawTokenCount: [...document.querySelectorAll(".novel-slack-message")].filter((message) => /[［[](?:画像添付|添付画像)｜/u.test(message.textContent)).length,
+    };
+  });
+  assert(presentation.source.includes(expectedAsset) && presentation.alt === attachment.description, `${attachment.id} used the wrong source or alt: ${JSON.stringify(presentation)}`);
+  assert(presentation.loaded && presentation.aspectRatioDelta < 0.02 && presentation.figureContained && !presentation.horizontalOverflow && !presentation.errorVisible, `${attachment.id} attachment layout or loading failed at ${viewportLabel}: ${JSON.stringify(presentation)}`);
+  assert(presentation.rawTokenCount === 0, `raw attachment token remained visible at ${viewportLabel}: ${attachment.id}`);
+  const fallback = await figure.evaluate((node) => {
+    const imageNode = node.querySelector("img");
+    const status = node.querySelector(".novel-slack-attachment-error");
+    imageNode.dispatchEvent(new Event("error"));
+    const result = {
+      markedAsError: node.classList.contains("is-error"),
+      statusVisible: !status.hidden,
+      statusText: status.textContent,
+    };
+    node.classList.remove("is-error");
+    status.hidden = true;
+    return result;
+  });
+  assert(fallback.markedAsError && fallback.statusVisible && fallback.statusText === "画像を読み込めませんでした。", `${attachment.id} attachment fallback failed at ${viewportLabel}: ${JSON.stringify(fallback)}`);
+  report.slackAttachments.push({ id: attachment.id, stepId: step.id, viewport: viewportLabel, source: expectedAsset, passed: true });
+  await figure.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(80);
+  await screenshot(page, `slack-attachment-${attachment.id.toLowerCase()}-${viewportLabel}`);
+};
 const dialoguePageGeometry = (page) => page.evaluate(() => {
   const dialogue = document.querySelector("#novel-dialogue");
   const text = document.querySelector("#novel-text");
@@ -629,6 +683,8 @@ try {
   const sakuyaAvatar = await page.locator('.novel-slack-post[data-speaker="sakuya"] .novel-slack-avatar').last().evaluate((avatar) => getComputedStyle(avatar).backgroundImage);
   assert(sakuyaAvatar.includes("slack-avatar-sakuya-v1.webp"), `Sakuya mascot avatar is missing from Slack: ${sakuyaAvatar}`);
 
+  for (const attachmentStep of attachmentSteps) await assertSlackAttachment(page, attachmentStep, "desktop");
+
   const observationChoice = steps.find((step) => step.choiceId === "observation_order");
   await bootAt(page, observationChoice.id);
   const observationLabels = await page.locator("#novel-choices button").allTextContents();
@@ -1008,6 +1064,7 @@ try {
   assert(mobileLogState.firstStepId === logHistoryIds[0] && mobileLogState.lastStepId === logHistoryIds.at(-1) && mobileLogState.distanceFromBottom <= 1, `mobile LOG order or initial position failed: ${JSON.stringify(mobileLogState)}`);
   await mobile.keyboard.press("Escape");
   await mobile.locator("#novel-log-panel").waitFor({ state: "hidden" });
+  for (const attachmentStep of attachmentSteps) await assertSlackAttachment(mobile, attachmentStep, "390px");
   report.viewports.push({ width: 390, height: 844, passed: true });
   await context.close();
 

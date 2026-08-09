@@ -4788,6 +4788,47 @@ body.novel-reduced-motion .story-detour-dock * {
 .novel-slack-workspace article p strong { font-size: 13px; }
 .novel-slack-workspace article time { margin-left: 8px; color: #777; font-size: 10px; }
 .novel-slack-message { color: #1d1c1d; font-size: clamp(13px, 1vw, 16px); line-height: 1.55; }
+.novel-slack-attachments {
+  display: grid;
+  gap: 8px;
+  margin-top: 9px;
+}
+.novel-slack-attachment {
+  width: min(560px, 100%);
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(68, 61, 69, 0.25);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 14px rgba(29, 28, 29, 0.12);
+}
+.novel-slack-attachment img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-bottom: 1px solid rgba(68, 61, 69, 0.16);
+  background: #eef2f4;
+}
+.novel-slack-attachment figcaption {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  color: #454146;
+  font-size: 11px;
+}
+.novel-slack-attachment figcaption span { color: #1264a3; }
+.novel-slack-attachment figcaption strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.novel-slack-attachment figcaption small { color: #777; font-size: 9px; }
+.novel-slack-attachment-error {
+  padding: 14px;
+  color: #8f2d22;
+  background: #fff2f0;
+  font-size: 12px;
+}
+.novel-slack-attachment-error[hidden] { display: none; }
+.novel-slack-attachment.is-error img { display: none; }
 .novel-slack-typing { display: flex; align-items: center; gap: 9px; margin: 7px 8px 2px 36px; color: #616061; font-size: 11px; }
 .novel-slack-typing .novel-slack-avatar { flex: 0 0 auto; width: 25px; height: 25px; font-size: 12px; }
 .novel-slack-typing > i { display: inline-flex; gap: 3px; align-items: end; height: 10px; }
