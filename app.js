@@ -45,7 +45,7 @@
   };
 
   const triggerButtonGlint = (button, point = null) => {
-    if (!(button instanceof HTMLButtonElement) || button.disabled || button.matches(".novel-interaction-open")) {
+    if (!(button instanceof HTMLButtonElement) || button.disabled || button.matches(".novel-interaction-open, #novel-log-close")) {
       stopButtonGlint();
       return;
     }
