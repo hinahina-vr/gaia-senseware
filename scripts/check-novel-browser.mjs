@@ -153,6 +153,12 @@ const assertDialoguePageFits = async (page, step) => {
   return geometry;
 };
 const normalizedDialogueText = (value) => String(value || "").replace(/\s/gu, "");
+const assertSentenceAwarePages = (pages, step) => {
+  pages.slice(0, -1).forEach((pageText, index) => {
+    if (!/[。！？]/u.test(pageText)) return;
+    assert(/[。！？][」』】）》〉］〕）”’"']*$/u.test(pageText), `${step.id}: page ${index + 1} includes a fragment of the next sentence: ${JSON.stringify(pages)}`);
+  });
+};
 const collectDialoguePages = async (page, step, { advancePastFinal = false } = {}) => {
   const visiblePages = [];
   let geometry = await assertDialoguePageFits(page, step);
@@ -169,6 +175,7 @@ const collectDialoguePages = async (page, step, { advancePastFinal = false } = {
     }
   }
   assert(normalizedDialogueText(visiblePages.join("")) === normalizedDialogueText(step.text), `${step.id}: paginated text did not preserve the full source text`);
+  assertSentenceAwarePages(visiblePages, step);
   if (advancePastFinal) {
     await page.locator("#novel-dialogue").click();
     await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, step.id);
@@ -496,6 +503,10 @@ try {
 
   const nativeFontStep = steps.find((step) => step.id === "current_exhibition_001");
   const overflowRegressionStep = steps.find((step) => step.id === "current_exhibition_006");
+  const sentenceBoundaryRegressionStep = steps.find((step) => step.id === "current_exhibition_010");
+  const dialogueSentenceRegressionStep = steps
+    .filter((step) => step.type === "dialogue" && (step.text.match(/[。！？]/gu) || []).length >= 2)
+    .sort((left, right) => right.text.length - left.text.length)[0];
   await bootAt(page, nativeFontStep.id);
   const nativeFontGeometry = await assertDialoguePageFits(page, nativeFontStep);
   await bootAt(page, overflowRegressionStep.id);
@@ -1001,6 +1012,12 @@ try {
   await collectDialoguePages(shortDesktop, overflowRegressionStep);
   await screenshot(shortDesktop, "dialogue-pagination-1612x454");
 
+  await bootAt(shortDesktop, sentenceBoundaryRegressionStep.id, {}, { reducedMotion: true });
+  const shortDesktopSentencePages = (await collectDialoguePages(shortDesktop, sentenceBoundaryRegressionStep)).visiblePages;
+  assert(shortDesktopSentencePages[0].endsWith("風向きと発電量について話している。"), `short desktop did not end the first page at the requested sentence boundary: ${JSON.stringify(shortDesktopSentencePages)}`);
+  assert(shortDesktopSentencePages[1]?.startsWith("奥のステージから"), `short desktop left a fragment of the next sentence on page one: ${JSON.stringify(shortDesktopSentencePages)}`);
+  await screenshot(shortDesktop, "dialogue-sentence-boundary-1612x454");
+
   await bootAt(shortDesktop, overflowRegressionStep.id, {}, { reducedMotion: true });
   const autoPageCount = (await assertDialoguePageFits(shortDesktop, overflowRegressionStep)).pageCount;
   await startPaginationTrace(shortDesktop);
@@ -1033,6 +1050,13 @@ try {
   assert(mobilePaginationGeometry.fontSize === mobileNativeFont, "mobile pagination changed the dialogue font size");
   await collectDialoguePages(mobile, overflowRegressionStep);
   await screenshot(mobile, "dialogue-pagination-mobile");
+  await bootAt(mobile, sentenceBoundaryRegressionStep.id, {}, { reducedMotion: true });
+  const mobileSentencePages = (await collectDialoguePages(mobile, sentenceBoundaryRegressionStep)).visiblePages;
+  const mobileStagePage = mobileSentencePages.findIndex((pageText) => pageText.startsWith("奥のステージから"));
+  assert(mobileStagePage > 0 && mobileSentencePages[mobileStagePage - 1].endsWith("風向きと発電量について話している。"), `mobile left a fragment of the next sentence on the previous page: ${JSON.stringify(mobileSentencePages)}`);
+  await bootAt(mobile, dialogueSentenceRegressionStep.id, {}, { reducedMotion: true });
+  const mobileDialogueSentencePages = (await collectDialoguePages(mobile, dialogueSentenceRegressionStep)).visiblePages;
+  assert(mobileDialogueSentencePages.length > 1, `${dialogueSentenceRegressionStep.id}: mobile dialogue did not exercise sentence-aware pagination`);
   await bootAt(mobile, reflection.id, {}, { reducedMotion: true });
   const mobileGeometry = await mobile.evaluate(() => ({
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,

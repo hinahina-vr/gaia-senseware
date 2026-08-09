@@ -656,8 +656,29 @@ const getRecordPresenter = (step) =>
     };
   };
 
+  const sentenceBoundaryOffset = (glyphs) => {
+    const sentenceMarks = new Set(["。", "！", "？"]);
+    const closingMarks = new Set(["」", "』", "】", "》", "〉", "］", "〕", "）", "”", "’", "\"", "'"]);
+    let boundary = 0;
+    glyphs.forEach((glyph, index) => {
+      if (!sentenceMarks.has(glyph)) return;
+      let next = index + 1;
+      while (next < glyphs.length && closingMarks.has(glyphs[next])) next += 1;
+      boundary = next;
+    });
+    return boundary;
+  };
+
   const preferredPageBreak = (prefix, glyphs, maximum) => {
-    const maximumText = `${prefix}${glyphs.slice(0, maximum).join("")}`.trimEnd();
+    const prefixGlyphs = Array.from(prefix);
+    const maximumGlyphs = [...prefixGlyphs, ...glyphs.slice(0, maximum)];
+    const sentenceBoundary = sentenceBoundaryOffset(maximumGlyphs);
+    if (sentenceBoundary >= prefixGlyphs.length && sentenceBoundary > 0) {
+      const sentenceCandidate = maximumGlyphs.slice(0, sentenceBoundary).join("").trimEnd();
+      if (dialoguePageMetrics(sentenceCandidate).fits) return sentenceBoundary - prefixGlyphs.length;
+    }
+
+    const maximumText = maximumGlyphs.join("").trimEnd();
     const occupiedLineCount = dialoguePageMetrics(maximumText).measuredLines.length;
     const minimum = Math.floor(maximum * 0.58);
     for (let index = maximum - 1; index >= minimum; index -= 1) {
@@ -690,7 +711,7 @@ const getRecordPresenter = (step) =>
   const paginateDialogueText = (text) => {
     const normalized = String(text || "").trim();
     if (!normalized) return [""];
-    const units = normalized.match(/[^\n。！？]+[。！？]?|\n+/gu) || [normalized];
+    const units = normalized.match(/[^\n。！？]+(?:[。！？][」』】）》〉］〕）”’"']*)?|\n+/gu) || [normalized];
     const pages = [];
     let page = "";
 
