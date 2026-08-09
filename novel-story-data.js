@@ -1017,7 +1017,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_promise",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三枚の画面のあいだに、人物の立ち絵は置かれない。まだ三人自身が互いの顔を知らないからだ。代わりに、芽、雲、花の学内チャットアイコンが、投稿のたびに小さく明滅する。"
+          "text": "三枚の画面に映るのは、それぞれの部屋の机と、開かれた学園祭一覧だけだった。芽、雲、花の印が投稿のたびに明滅し、まだ聞いたことのない三人の声の代わりに、短い文が順番に増えていく。"
         },
         {
           "id": "first_meeting_promise_005",
@@ -1686,7 +1686,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ここからの学内チャットは、外出中に開かれたスマートフォンの記録として縦長に表示される。デスクトップ版の横長の画面ではない。片手で持った端末の上に、会場の照明と通り過ぎる人影が反射している。"
+          "text": "アマネは歩みを止め、片手の端末を胸の高さへ上げた。ガラスには会場の照明と通り過ぎる人影が重なり、文字の上を白い光が滑った。"
         },
         {
           "id": "first_meeting_hall_021",
@@ -1783,7 +1783,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二つの表示名が声になった瞬間、画面の端へ初めて二人の立ち絵が現れる。ここより前の学内チャット記録には、顔を知ったあとの姿をさかのぼって置かない。"
+          "text": "呼び名と声が結びついたあとも、二人のあいだには三歩ぶんの距離が残っていた。どちらもまだ足を動かさず、手の置き場を探している。"
         },
         {
           "id": "first_meeting_hall_034",
@@ -2033,7 +2033,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ここで初めて、サクヤの立ち絵もミズハ、アマネと同じ胸上の大きさで現れる。サクヤだけを遠い全身像にせず、三人が同じ距離に立っている画面にする。"
+          "text": "文字の向こうにいた三人が、ようやく同じ場所へ立っていた。サクヤは視線を外し、首から下げたカメラへ手を添えた。"
         },
         {
           "id": "first_meeting_hall_068",

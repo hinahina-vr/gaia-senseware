@@ -103,9 +103,21 @@ assert.equal(stepWithText(meetingScene, "あまあま、で合っていますの
 assert.equal(stepWithText(meetingScene, "うん。みず、だよね。")?.id, "first_meeting_hall_032", "Amane must confirm Mizuha's chat name aloud");
 assert.equal(stepWithText(meetingScene, "ほんとに声ある。")?.id, "first_meeting_hall_063", "Sakuya must connect the known chat names to real voices");
 assert.equal(stepWithText(meetingScene, "約束が文字だけの冗談ではなかったこと")?.id, "first_meeting_hall_066", "the three-person offline meeting gate must remain explicit");
-assert.equal(stepWithText(meetingScene, "サクヤの立ち絵もミズハ、アマネと同じ胸上の大きさ")?.id, "first_meeting_hall_067", "Sakuya's large portrait must unlock only after the three-person meeting gate");
+assert.equal(stepWithText(promiseScene, "まだ聞いたことのない三人の声の代わりに")?.id, "first_meeting_promise_004", "the pre-meeting rooms must be described as story, not portrait direction");
+assert.equal(stepWithText(meetingScene, "片手の端末を胸の高さへ上げた")?.id, "first_meeting_hall_020", "the outdoor phone view must be described through Amane's action");
+assert.equal(stepWithText(meetingScene, "二人のあいだには三歩ぶんの距離が残っていた")?.id, "first_meeting_hall_033", "Mizuha and Amane must keep their initial distance after recognition");
+assert.equal(stepWithText(meetingScene, "文字の向こうにいた三人が、ようやく同じ場所へ立っていた")?.id, "first_meeting_hall_067", "Sakuya's portrait gate step must read as natural story");
 assert.ok(meetingScene.steps.findIndex((step) => step.id === "first_meeting_hall_032") < meetingScene.steps.findIndex((step) => step.id === "first_meeting_hall_063"), "Mizuha and Amane must recognize each other before Sakuya arrives");
 assert.ok(meetingScene.steps.findIndex((step) => step.id === "first_meeting_hall_066") < meetingScene.steps.findIndex((step) => step.text?.includes("三人の肩が初めて触れた")), "the meeting must be established before the photo closes their physical distance");
+for (const leakedDirection of [
+  "人物の立ち絵は置かれない",
+  "学内チャットアイコンが",
+  "デスクトップ版の横長の画面ではない",
+  "画面の端へ初めて二人の立ち絵が現れる",
+  "姿をさかのぼって置かない",
+  "サクヤの立ち絵もミズハ、アマネと同じ胸上の大きさ",
+  "サクヤだけを遠い全身像にせず",
+]) assert.ok(!allText.includes(leakedDirection), `production direction leaked into player-visible narration: ${leakedDirection}`);
 assert.match(exhibitionText, /地球と人類の共進化を考える展示です。/u, "the exhibition entrance must state the work's central theme");
 assert.match(exhibitionText, /地球の変化が人の暮らしをどう変え、人の選択が地球をどう変えてきたか/u, "the exhibition entrance must explain coevolution in concrete terms");
 for (const removedEntranceCopy of [
