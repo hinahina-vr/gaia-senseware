@@ -4887,7 +4887,7 @@ body.novel-reduced-motion .story-detour-dock * {
 .story-detour-dock > #story-detour-return { grid-column: 3; grid-row: 2; justify-self: end; border-color: rgba(246, 213, 76, 0.56); }
 .story-detour-dock button:disabled { cursor: not-allowed; opacity: 0.46; }
 
-body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0; }
+body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0.4; }
 
 .novel-layer.is-motion-reduced *,
 .novel-layer.is-motion-reduced *::before,
