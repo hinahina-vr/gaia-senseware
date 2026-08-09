@@ -359,6 +359,13 @@
   z-index: 4;
 }
 
+/* Recorded and remote voices do not unlock a physical large-cast reveal. */
+.novel-layer.is-cast-suppressed .novel-cast {
+  visibility: hidden;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
 .novel-character,
 .novel-character--sora,
 .novel-character--minamo {

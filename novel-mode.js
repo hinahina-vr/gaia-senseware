@@ -3,9 +3,11 @@
 
   const story = globalThis.GAIA_NOVEL_STORY || globalThis.GAIA_NOVEL_STORY_V6;
   const backgroundCues = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
+  const backHalfCues = globalThis.GAIA_NOVEL_BACK_HALF_CUES;
   const layer = document.querySelector("#novel-layer");
   if (!story || !layer) return;
   if (!backgroundCues) throw new Error("[GAIA novel] Background cue data is unavailable");
+  if (!backHalfCues) throw new Error("[GAIA novel] Back-half staging cue data is unavailable");
 
   const STORAGE_KEY = "gaiaSensewareNovel:progress";
   const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
@@ -456,6 +458,32 @@
     }
   };
 
+  const applyBackHalfCueForStep = (step) => {
+    const cue = backHalfCues.forStep(step);
+    const cueKeys = [
+      "storyContext", "storyDate", "storyTime", "storyDayPeriod", "storyLocation",
+      "storyDevice", "storyDevicePhase", "storyViewpoint", "storyCastMode", "storyAudioCue",
+    ];
+    if (!cue) {
+      cueKeys.forEach((key) => { delete layer.dataset[key]; });
+      layer.classList.remove("is-cast-suppressed", "is-central-entrance-distance");
+      return null;
+    }
+    layer.dataset.storyContext = cue.temporal.context;
+    layer.dataset.storyDate = cue.temporal.date;
+    layer.dataset.storyTime = cue.temporal.time;
+    layer.dataset.storyDayPeriod = cue.temporal.dayPeriod;
+    layer.dataset.storyLocation = cue.temporal.location;
+    layer.dataset.storyDevice = cue.device;
+    layer.dataset.storyDevicePhase = cue.devicePhase;
+    layer.dataset.storyViewpoint = cue.viewpoint;
+    layer.dataset.storyCastMode = cue.castMode;
+    layer.dataset.storyAudioCue = cue.audio;
+    layer.classList.toggle("is-cast-suppressed", ["archived-voice-no-cast", "remote-sakuya-no-cast", "sakuya-unseen"].includes(cue.castMode));
+    layer.classList.toggle("is-central-entrance-distance", cue.castMode === "central-entrance-distance");
+    return cue;
+  };
+
   const moveToFollowingStep = (step = currentStep()) => {
     const next = step ? getFollowingStepId(step) : null;
     if (!next) return;
@@ -653,6 +681,7 @@
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
     applyBackgroundCueForStep(step);
+    applyBackHalfCueForStep(step);
     showRuntime();
     warmUpcomingBackground(step);
     hideSpecialSurfaces();

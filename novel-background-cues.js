@@ -31,19 +31,54 @@
     { id: "current-exhibition-return", from: 259, to: 261, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
   ].map((cue) => Object.freeze(cue)));
 
+  const backHalf = Object.freeze([
+    { id: "festival-build-current", sceneId: "festival_build", from: 1, to: 18, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "gx-current", sceneId: "gx_deep_time", from: 1, to: 26, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "mode03-current", sceneId: "mode03_map", from: 1, to: 20, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "mode07-current", sceneId: "mode07_abstract", from: 1, to: 8, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "mode07-public-eve-record", sceneId: "mode07_abstract", from: 9, to: 54, assetPath: "assets/visuals-07/novel-bg-production-shared-meeting-v3.png" },
+    { id: "interlude-room-departure", sceneId: "interlude_sea", from: 1, to: 7, assetPath: "assets/visuals-07/novel-bg-production-shared-meeting-v3.png" },
+    { id: "interlude-zushi-coast", sceneId: "interlude_sea", from: 8, to: 45, assetPath: "assets/visuals-07/novel-bg-zushi-coast-night-v2.png" },
+    { id: "interlude-room-return", sceneId: "interlude_sea", from: 46, to: 67, assetPath: "assets/visuals-07/novel-bg-production-shared-meeting-v3.png" },
+    { id: "mode08-current", sceneId: "mode08_map_layers", from: 1, to: 19, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "mode10-current", sceneId: "mode10_space", from: 1, to: 18, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "choice-editorial-current", sceneId: "choice_editorial", from: 1, to: 7, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "epilogue-current", sceneId: "epilogue_reflection_field", from: 1, to: 2, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "reflection-current", sceneId: "choice_reflection", from: 1, to: 3, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "final-record-current", sceneId: "final_record", from: 1, to: 27, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "pause-current-exhibition", sceneId: "return_to_start", from: 1, to: 17, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png" },
+    { id: "central-entrance-current", sceneId: "return_to_start", from: 18, to: 36, assetPath: "assets/visuals-07/novel-bg-coastal-venue-v2.png" },
+  ].map((cue) => Object.freeze(cue)));
+
+  const backHalfSceneIds = Object.freeze([...new Set(backHalf.map((cue) => cue.sceneId))]);
+
   const productionStepNumber = (stepId) => {
     const match = /^production_year_(\d{3})$/.exec(String(stepId || ""));
     return match ? Number(match[1]) : null;
   };
 
+  const numberedStep = (step, sceneId) => {
+    const match = new RegExp(`^${sceneId}_(\\d{3})$`).exec(String(step?.id || ""));
+    return match ? Number(match[1]) : null;
+  };
+
   const forStep = (step) => {
-    if (step?.sceneId !== "production_year") return null;
-    const number = productionStepNumber(step.id);
-    const cue = number === null ? null : productionYear.find((candidate) => number >= candidate.from && number <= candidate.to);
-    if (!cue) throw new Error(`[GAIA novel] Missing production_year background cue for ${step?.id || "unknown step"}`);
-    if (!cue.assetPath) throw new Error(`[GAIA novel] Missing approved production_year background asset for ${step.id} (${cue.id})`);
+    if (step?.sceneId === "production_year") {
+      const number = productionStepNumber(step.id);
+      const cue = number === null ? null : productionYear.find((candidate) => number >= candidate.from && number <= candidate.to);
+      if (!cue) throw new Error(`[GAIA novel] Missing production_year background cue for ${step?.id || "unknown step"}`);
+      if (!cue.assetPath) throw new Error(`[GAIA novel] Missing approved production_year background asset for ${step.id} (${cue.id})`);
+      return cue;
+    }
+    if (!backHalfSceneIds.includes(step?.sceneId)) return null;
+    const number = numberedStep(step, step.sceneId);
+    const cue = number === null ? null : backHalf.find((candidate) => (
+      candidate.sceneId === step.sceneId && number >= candidate.from && number <= candidate.to
+    ));
+    if (!cue) throw new Error(`[GAIA novel] Missing back-half background cue for ${step?.id || "unknown step"}`);
+    if (!cue.assetPath) throw new Error(`[GAIA novel] Missing approved back-half background asset for ${step.id} (${cue.id})`);
     return cue;
   };
 
-  globalThis.GAIA_NOVEL_BACKGROUND_CUES = Object.freeze({ productionYear, forStep });
+  globalThis.GAIA_NOVEL_BACKGROUND_CUES = Object.freeze({ productionYear, backHalf, backHalfSceneIds, forStep });
 })();
