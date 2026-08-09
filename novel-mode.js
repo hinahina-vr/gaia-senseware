@@ -16,6 +16,9 @@
   const REVEAL_BASE_MS = 24;
   const REVEAL_MIN_LINE_MS = 120;
   const REVEAL_PUNCTUATION_MS = 84;
+  const TEXT_PAGE_MAX_LINES = 3;
+  const TEXT_PAGE_HEIGHT_BUFFER_PX = 4;
+  const SECTION_SEPARATOR_MS = 1450;
   const FAST_FORWARD_HOLD_DELAY_MS = 180;
   const FAST_FORWARD_STEP_MS = 90;
   const SLACK_ENTER_MS = 760;
@@ -193,10 +196,15 @@ const getRecordPresenter = (step) =>
   let hasStarted = false;
   let isRevealing = false;
   let fullText = "";
+  let dialoguePages = [];
+  let dialoguePageIndex = 0;
+  let dialoguePageReveal = true;
   let revealTimer = 0;
   let revealFrame = 0;
   let revealGeneration = 0;
   let autoTimer = 0;
+  let sectionSeparatorTimer = 0;
+  let sectionSeparatorActive = false;
   const fastForwardState = {
     timer: 0,
     holdTimer: 0,
@@ -354,9 +362,11 @@ const getRecordPresenter = (step) =>
     window.clearTimeout(revealTimer);
     window.cancelAnimationFrame(revealFrame);
     window.clearTimeout(autoTimer);
+    window.clearTimeout(sectionSeparatorTimer);
     revealTimer = 0;
     revealFrame = 0;
     autoTimer = 0;
+    sectionSeparatorTimer = 0;
   };
 
   const hideSpecialSurfaces = ({ preserveSlack = false } = {}) => {
@@ -484,14 +494,16 @@ const getRecordPresenter = (step) =>
     const next = step ? getFollowingStepId(step) : null;
     if (!next) return;
     const nextStep = stepMap.get(next);
+    const sceneChanges = step.sceneId !== nextStep?.sceneId;
     const swapStep = () => {
       state.stepId = next;
       saveProgress();
-      renderCurrentStep();
+      if (sceneChanges) renderSectionSeparator(nextStep);
+      else renderCurrentStep();
     };
     const currentBackground = backgroundPresentationForScene(step.sceneId);
     const nextBackground = backgroundPresentationForScene(nextStep.sceneId);
-    const backgroundChanges = step.sceneId !== nextStep?.sceneId
+    const backgroundChanges = sceneChanges
       && currentBackground.image !== nextBackground.image;
     if (backgroundChanges && !motionReduced()) {
       if (backgroundTransitionPending) return;
@@ -570,6 +582,26 @@ const getRecordPresenter = (step) =>
     scheduleAutoAdvance();
   };
 
+  const resetDialoguePagination = () => {
+    dialoguePages = [];
+    dialoguePageIndex = 0;
+    dialoguePageReveal = true;
+    delete elements.text.dataset.characterCount;
+    delete elements.text.dataset.explicitLineCount;
+    delete elements.text.dataset.measuredLineCount;
+    delete elements.text.dataset.maxLineCount;
+    delete elements.text.dataset.pageCount;
+    delete elements.text.dataset.pageIndex;
+    elements.continueMark.textContent = "▼";
+  };
+
+  const dialogueTextCapacity = () => {
+    const dialogueStyle = getComputedStyle(elements.dialogue);
+    const verticalPadding = (Number.parseFloat(dialogueStyle.paddingTop) || 0)
+      + (Number.parseFloat(dialogueStyle.paddingBottom) || 0);
+    return Math.max(1, elements.dialogue.clientHeight - verticalPadding - TEXT_PAGE_HEIGHT_BUFFER_PX);
+  };
+
   const measureNativeLines = (text) => {
     elements.text.textContent = text;
     const textNode = elements.text.firstChild;
@@ -600,6 +632,109 @@ const getRecordPresenter = (step) =>
     range.detach();
     lines.push(glyphs.slice(lineStart));
     return lines.filter((line) => line.length > 0);
+  };
+
+  const dialoguePageMetrics = (text) => {
+    const normalized = String(text || "");
+    const measuredLines = measureNativeLines(normalized);
+    const textStyle = getComputedStyle(elements.text);
+    const fontSize = Number.parseFloat(textStyle.fontSize) || 16;
+    const lineHeight = Number.parseFloat(textStyle.lineHeight) || fontSize * 1.6;
+    const maxLines = Math.min(TEXT_PAGE_MAX_LINES, Math.max(1, Math.floor(dialogueTextCapacity() / lineHeight)));
+    const estimatedCharactersPerLine = Math.max(8, Math.floor(elements.text.clientWidth / Math.max(1, fontSize * 0.92)));
+    const characterBudget = Math.max(16, estimatedCharactersPerLine * maxLines);
+    const characterCount = Array.from(normalized.replace(/\s/gu, "")).length;
+    const renderedHeight = Math.max(elements.text.scrollHeight, measuredLines.length * lineHeight);
+    return {
+      measuredLines,
+      maxLines,
+      characterCount,
+      characterBudget,
+      fits: characterCount <= characterBudget
+        && measuredLines.length <= maxLines
+        && renderedHeight <= dialogueTextCapacity(),
+    };
+  };
+
+  const preferredPageBreak = (prefix, glyphs, maximum) => {
+    const maximumText = `${prefix}${glyphs.slice(0, maximum).join("")}`.trimEnd();
+    const occupiedLineCount = dialoguePageMetrics(maximumText).measuredLines.length;
+    const minimum = Math.floor(maximum * 0.58);
+    for (let index = maximum - 1; index >= minimum; index -= 1) {
+      if (!/[、，,；;：:\s]/u.test(glyphs[index])) continue;
+      const candidate = `${prefix}${glyphs.slice(0, index + 1).join("")}`.trimEnd();
+      if (dialoguePageMetrics(candidate).measuredLines.length === occupiedLineCount) return index + 1;
+    }
+    return maximum;
+  };
+
+  const largestFittingPrefix = (text, prefix = "") => {
+    const glyphs = Array.from(text);
+    let low = 1;
+    let high = glyphs.length;
+    let best = 0;
+    while (low <= high) {
+      const middle = Math.floor((low + high) / 2);
+      const candidate = `${prefix}${glyphs.slice(0, middle).join("")}`.trimEnd();
+      if (candidate && dialoguePageMetrics(candidate).fits) {
+        best = middle;
+        low = middle + 1;
+      } else {
+        high = middle - 1;
+      }
+    }
+    if (!best) return 0;
+    return preferredPageBreak(prefix, glyphs, best);
+  };
+
+  const paginateDialogueText = (text) => {
+    const normalized = String(text || "").trim();
+    if (!normalized) return [""];
+    const units = normalized.match(/[^\n。！？]+[。！？]?|\n+/gu) || [normalized];
+    const pages = [];
+    let page = "";
+
+    const commitPage = () => {
+      const committed = page.trim();
+      if (committed) pages.push(committed);
+      page = "";
+    };
+
+    for (const unit of units) {
+      if (/^\n+$/u.test(unit)) {
+        const candidate = `${page}${unit}`;
+        if (page && dialoguePageMetrics(candidate).fits) page = candidate;
+        else commitPage();
+        continue;
+      }
+
+      let remainder = unit;
+      while (remainder) {
+        const candidate = `${page}${remainder}`;
+        if (dialoguePageMetrics(candidate).fits) {
+          page = candidate;
+          remainder = "";
+          continue;
+        }
+        if (page) {
+          const breakAt = largestFittingPrefix(remainder, page);
+          if (breakAt > 0) {
+            page += Array.from(remainder).slice(0, breakAt).join("");
+            commitPage();
+            remainder = Array.from(remainder).slice(breakAt).join("").trimStart();
+            continue;
+          }
+          commitPage();
+          continue;
+        }
+        const breakAt = largestFittingPrefix(remainder);
+        page = Array.from(remainder).slice(0, Math.max(1, breakAt)).join("");
+        commitPage();
+        remainder = Array.from(remainder).slice(Math.max(1, breakAt)).join("").trimStart();
+      }
+    }
+    commitPage();
+    return pages.length ? pages : [normalized];
   };
 
   const buildMeasuredLineLayout = (text) => {
@@ -645,7 +780,6 @@ const getRecordPresenter = (step) =>
     elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
     elements.continueMark.classList.remove("is-visible");
     if (motionReduced() || !text) {
-      elements.text.replaceChildren();
       finishReveal();
       return;
     }
@@ -673,6 +807,91 @@ const getRecordPresenter = (step) =>
     const fontsReady = document.fonts?.ready || Promise.resolve();
     Promise.resolve(fontsReady).then(startMeasuredReveal, startMeasuredReveal);
   };
+
+  const renderDialoguePage = () => {
+    const page = dialoguePages[dialoguePageIndex] || "";
+    const metrics = dialoguePageMetrics(page);
+    elements.text.dataset.pageCount = String(dialoguePages.length);
+    elements.text.dataset.pageIndex = String(dialoguePageIndex + 1);
+    elements.text.dataset.measuredLineCount = String(metrics.measuredLines.length);
+    elements.text.dataset.maxLineCount = String(metrics.maxLines);
+    elements.continueMark.textContent = dialoguePages.length > 1
+      ? `${dialoguePageIndex + 1} / ${dialoguePages.length}　▼`
+      : "▼";
+    if (dialoguePageReveal) {
+      revealText(page);
+      return;
+    }
+    clearTimers();
+    fullText = page;
+    isRevealing = false;
+    elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
+    elements.text.textContent = page;
+    elements.text.setAttribute("aria-label", page);
+    elements.cursor.hidden = true;
+    elements.continueMark.classList.add("is-visible");
+    scheduleAutoAdvance();
+  };
+
+  const renderDialoguePages = (text, { reveal = true } = {}) => {
+    const normalized = String(text || "");
+    resetDialoguePagination();
+    dialoguePageReveal = reveal;
+    dialoguePages = paginateDialogueText(normalized);
+    elements.text.dataset.characterCount = String(Array.from(normalized.replace(/\s/gu, "")).length);
+    elements.text.dataset.explicitLineCount = String(Math.max(1, normalized.split("\n").length));
+    elements.text.dataset.pageCount = String(dialoguePages.length);
+    renderDialoguePage();
+  };
+
+  const advanceDialoguePage = () => {
+    if (dialoguePageIndex + 1 >= dialoguePages.length) return false;
+    dialoguePageIndex += 1;
+    renderDialoguePage();
+    return true;
+  };
+
+  function finishSectionSeparator() {
+    if (!sectionSeparatorActive) return false;
+    window.clearTimeout(sectionSeparatorTimer);
+    sectionSeparatorTimer = 0;
+    sectionSeparatorActive = false;
+    elements.chapterCard.hidden = true;
+    renderCurrentStep();
+    return true;
+  }
+
+  function renderSectionSeparator(step = currentStep()) {
+    if (!step) return;
+    const scene = sceneMap.get(step.sceneId);
+    if (!scene) return renderCurrentStep();
+    clearTimers();
+    closeLog();
+    closeSourceDetails();
+    showRuntime();
+    requestTrackForBackground(backgroundPresentationForScene(step.sceneId));
+    hideSpecialSurfaces();
+    resetDialoguePagination();
+    isRevealing = false;
+    layer.dataset.sceneId = step.sceneId;
+    layer.dataset.stepId = step.id;
+    layer.dataset.stepType = "section-separator";
+    elements.dialogue.hidden = true;
+    elements.choices.replaceChildren();
+    elements.choices.classList.remove("is-visible");
+    elements.sourceButton.hidden = true;
+    elements.modeReadout.textContent = `${scene.chapter} — ${scene.title}`;
+    elements.location.textContent = scene.title;
+    elements.chapterIndex.textContent = scene.chapter;
+    elements.chapterTitle.textContent = scene.title;
+    elements.chapterCard.dataset.sceneId = scene.id;
+    elements.chapterCard.hidden = false;
+    setCharacterPresentation("chapter");
+    selectMode(scene.modeIndex);
+    updateProgress();
+    sectionSeparatorActive = true;
+    sectionSeparatorTimer = window.setTimeout(finishSectionSeparator, SECTION_SEPARATOR_MS);
+  }
 
   const markRead = (step) => {
     if (!["choice", "reflectionChoice", "interaction", "result", "end"].includes(step.type)
@@ -716,6 +935,7 @@ const getRecordPresenter = (step) =>
     layer.dataset.sceneId = step.sceneId;
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
+    sectionSeparatorActive = false;
     showRuntime();
     requestTrackForBackground(backgroundPresentationForScene(step.sceneId));
     hideSpecialSurfaces({ preserveSlack });
@@ -723,6 +943,7 @@ const getRecordPresenter = (step) =>
     elements.dialogue.hidden = false;
     elements.choices.replaceChildren();
     elements.choices.classList.remove("is-visible");
+    resetDialoguePagination();
     elements.sourceButton.hidden = false;
     elements.modeReadout.textContent = `${scene.chapter} — ${scene.title}`;
     elements.location.textContent = scene.title;
@@ -789,7 +1010,7 @@ const getRecordPresenter = (step) =>
     const speaker = step.speaker || "narrator";
     setCharacterPresentation(speaker, expressionForStep(step));
     elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
-    revealText(step.text || "");
+    renderDialoguePages(step.text || "");
   };
 
   const renderRichStep = (step) => {
@@ -826,7 +1047,7 @@ const getRecordPresenter = (step) =>
     }
 
     if (step.type === "record") {
-    const presenter = getRecordPresenter(step);
+      const presenter = getRecordPresenter(step);
       setCharacterPresentation(presenter);
       if (presenter === "narrator") elements.avatar.hidden = true;
       elements.dialogue.hidden = false;
@@ -1040,9 +1261,13 @@ const getRecordPresenter = (step) =>
       return button;
     };
 
-    const groups = step.groups?.length
-      ? step.groups
-      : [{ id: "all", title: "観測姿勢", optionIds: step.options.map((option) => option.id) }];
+    const derivedGroups = [...step.options.reduce((groupsByTheme, option) => {
+      const id = option.themeId || "all";
+      if (!groupsByTheme.has(id)) groupsByTheme.set(id, { id, title: option.theme || "観測姿勢", optionIds: [] });
+      groupsByTheme.get(id).optionIds.push(option.id);
+      return groupsByTheme;
+    }, new Map()).values()];
+    const groups = step.groups?.length ? step.groups : derivedGroups;
     groups.forEach((group) => {
       const section = document.createElement("section");
       section.className = "novel-reflection-group";
@@ -1376,6 +1601,7 @@ const getRecordPresenter = (step) =>
 
   function renderCurrentStep() {
     clearTimers();
+    sectionSeparatorActive = false;
     closeLog();
     closeSourceDetails();
     let step = currentStep();
@@ -1502,12 +1728,14 @@ const getRecordPresenter = (step) =>
   function advance() {
     if (!isOpen || !hasStarted || pendingInteraction) return;
     if (!progressionPanelsClosed()) return;
+    if (finishSectionSeparator()) return;
     const step = currentStep();
     if (!canAdvanceStep(step)) return;
     if (isRevealing) {
       finishReveal();
       return;
     }
+    if (advanceDialoguePage()) return;
     moveToFollowingStep(step);
   }
 
@@ -1523,7 +1751,7 @@ const getRecordPresenter = (step) =>
     showRuntime();
     renderEves();
     saveProgress();
-    renderCurrentStep();
+    renderSectionSeparator();
   };
 
   const restartStory = () => {
@@ -1535,7 +1763,7 @@ const getRecordPresenter = (step) =>
     showRuntime();
     renderEves();
     saveProgress();
-    renderCurrentStep();
+    renderSectionSeparator();
   };
 
   const resumeStory = () => {
@@ -1909,7 +2137,7 @@ const getRecordPresenter = (step) =>
     state.sessionId = `${Date.now().toString(36)}-entry`;
     openNovel();
     showRuntime();
-    renderCurrentStep();
+    renderSectionSeparator();
   });
 
   window.addEventListener("gaia:gx-story-progress", (event) => {

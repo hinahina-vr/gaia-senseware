@@ -368,7 +368,7 @@
  */
 .novel-layer {
   --novel-say-width: min(1040px, calc(100vw - 72px));
-  --novel-say-height: clamp(194px, 23vh, 252px);
+  --novel-say-height: clamp(224px, 26vh, 272px);
   --novel-say-bottom: clamp(28px, 4vh, 48px);
 }
 
@@ -2555,7 +2555,7 @@ body.novel-open .japan-credits {
 
 .novel-chapter-card strong {
   position: relative;
-  max-width: min(820px, 84vw);
+  max-width: min(960px, 90vw);
   padding: 4px 30px 16px;
   font-family: var(--novel-font);
   font-size: clamp(30px, 4.2vw, 58px);
@@ -3026,8 +3026,16 @@ body.novel-open .japan-credits {
   font-weight: 500;
   letter-spacing: 0.02em;
   line-height: 1.58;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
   text-align: left;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.88);
+}
+
+@media (min-width: 721px) {
+  .novel-chapter-card strong {
+    white-space: nowrap;
+  }
 }
 
 .novel-text.is-preparing {

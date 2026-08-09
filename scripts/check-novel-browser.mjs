@@ -34,9 +34,9 @@ const attachDiagnostics = (page, label) => {
   page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`); });
 };
 
-const screenshot = async (page, name) => {
+const screenshot = async (page, name, { animations = "disabled" } = {}) => {
   const destination = path.join(outputDir, `${name}.png`);
-  await page.screenshot({ path: destination, fullPage: false, animations: "disabled", timeout: 90000 });
+  await page.screenshot({ path: destination, fullPage: false, animations, timeout: 90000 });
   report.screenshots.push(destination);
   return destination;
 };
@@ -105,10 +105,116 @@ const bootAt = async (page, stepId, overrides = {}, { reducedMotion = false } = 
 };
 
 const currentStepId = (page) => page.locator("#novel-layer").getAttribute("data-step-id");
+const dialoguePageGeometry = (page) => page.evaluate(() => {
+  const dialogue = document.querySelector("#novel-dialogue");
+  const text = document.querySelector("#novel-text");
+  const dialogueRect = dialogue.getBoundingClientRect();
+  const textRect = text.getBoundingClientRect();
+  const dialogueStyle = getComputedStyle(dialogue);
+  const contentTop = dialogueRect.top + (Number.parseFloat(dialogueStyle.paddingTop) || 0);
+  const contentBottom = dialogueRect.bottom - (Number.parseFloat(dialogueStyle.paddingBottom) || 0);
+  const renderedLineTops = new Set();
+  const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    for (let offset = 0; offset < node.data.length; offset += 1) {
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.setEnd(node, offset + 1);
+      const rect = [...range.getClientRects()].find((candidate) => candidate.width > 0 && candidate.height > 0);
+      if (rect) renderedLineTops.add(Math.round(rect.top * 2) / 2);
+    }
+  }
+  return {
+    characterCount: Number(text.dataset.characterCount),
+    explicitLineCount: Number(text.dataset.explicitLineCount),
+    measuredLineCount: Number(text.dataset.measuredLineCount),
+    maxLineCount: Number(text.dataset.maxLineCount),
+    pageCount: Number(text.dataset.pageCount),
+    pageIndex: Number(text.dataset.pageIndex),
+    renderedLineCount: renderedLineTops.size,
+    visibleText: text.getAttribute("aria-label") || text.textContent,
+    fontSize: getComputedStyle(text).fontSize,
+    inlineFontSize: text.style.fontSize,
+    bounds: { textTop: textRect.top, textBottom: textRect.bottom, contentTop, contentBottom },
+    fits: textRect.top >= contentTop - 1 && textRect.bottom <= contentBottom + 1,
+  };
+});
+const assertDialoguePageFits = async (page, step) => {
+  await page.waitForFunction(() => Boolean(document.querySelector("#novel-text")?.dataset.pageCount));
+  const geometry = await dialoguePageGeometry(page);
+  assert(geometry.characterCount === Array.from(step.text.replace(/\s/gu, "")).length, `${step.id}: character count was not applied to pagination`);
+  assert(geometry.explicitLineCount === step.text.split("\n").length, `${step.id}: explicit line count was not applied to pagination`);
+  assert(geometry.measuredLineCount >= 1, `${step.id}: measured line count is invalid`);
+  assert(geometry.maxLineCount >= geometry.measuredLineCount, `${step.id}: page exceeded its available line count`);
+  assert(geometry.renderedLineCount <= 3, `${step.id}: a fourth rendered line is visible: ${JSON.stringify(geometry)}`);
+  assert(!geometry.inlineFontSize, `${step.id}: pagination changed the inline font size`);
+  assert(geometry.fits, `${step.id}: dialogue page overflowed: ${JSON.stringify(geometry)}`);
+  return geometry;
+};
+const normalizedDialogueText = (value) => String(value || "").replace(/\s/gu, "");
+const collectDialoguePages = async (page, step, { advancePastFinal = false } = {}) => {
+  const visiblePages = [];
+  let geometry = await assertDialoguePageFits(page, step);
+  const expectedPageCount = geometry.pageCount;
+  for (let expectedPage = 1; expectedPage <= expectedPageCount; expectedPage += 1) {
+    await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 10000 });
+    geometry = await assertDialoguePageFits(page, step);
+    assert(geometry.pageIndex === expectedPage, `${step.id}: expected page ${expectedPage}, got ${geometry.pageIndex}`);
+    assert(await currentStepId(page) === step.id, `${step.id}: story advanced before its final text page`);
+    visiblePages.push(geometry.visibleText);
+    if (expectedPage < expectedPageCount) {
+      await page.locator("#novel-dialogue").click();
+      await page.waitForFunction((index) => Number(document.querySelector("#novel-text")?.dataset.pageIndex) === index, expectedPage + 1);
+    }
+  }
+  assert(normalizedDialogueText(visiblePages.join("")) === normalizedDialogueText(step.text), `${step.id}: paginated text did not preserve the full source text`);
+  if (advancePastFinal) {
+    await page.locator("#novel-dialogue").click();
+    await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, step.id);
+  }
+  return { geometry, visiblePages };
+};
+const startPaginationTrace = (page) => page.evaluate(() => {
+  globalThis.__novelPaginationObserver?.disconnect();
+  const events = [];
+  const record = () => {
+    const event = {
+      stepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
+      pageIndex: Number(document.querySelector("#novel-text")?.dataset.pageIndex) || 0,
+    };
+    const previous = events.at(-1);
+    if (!previous || previous.stepId !== event.stepId || previous.pageIndex !== event.pageIndex) events.push(event);
+  };
+  globalThis.__novelPaginationObserver = new MutationObserver(record);
+  globalThis.__novelPaginationObserver.observe(document.querySelector("#novel-layer"), {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ["data-step-id", "data-page-index"],
+  });
+  globalThis.__novelPaginationTrace = events;
+  record();
+});
+const finishPaginationTrace = (page) => page.evaluate(() => {
+  globalThis.__novelPaginationObserver?.disconnect();
+  return globalThis.__novelPaginationTrace || [];
+});
+const assertPaginationTrace = (trace, step, expectedPageCount, mode) => {
+  const visitedPages = trace
+    .filter((event) => event.stepId === step.id && event.pageIndex > 0)
+    .map((event) => event.pageIndex)
+    .filter((pageIndex, index, values) => index === 0 || values[index - 1] !== pageIndex);
+  const expectedPages = Array.from({ length: expectedPageCount }, (_, index) => index + 1);
+  assert(JSON.stringify(visitedPages) === JSON.stringify(expectedPages), `${mode} changed pagination order: ${JSON.stringify(trace)}`);
+  assert(trace.some((event) => event.stepId !== step.id), `${mode} did not advance after the final page: ${JSON.stringify(trace)}`);
+};
 const advanceLinear = async (page) => {
   const previous = await currentStepId(page);
-  await page.locator("#novel-layer").dispatchEvent("click");
-  if (await currentStepId(page) === previous) await page.locator("#novel-layer").dispatchEvent("click");
+  for (let guard = 0; guard < 64; guard += 1) {
+    await page.locator("#novel-layer").dispatchEvent("click");
+    if (await currentStepId(page) !== previous) break;
+    if (await page.locator("body").evaluate((body) => body.classList.contains("scene-transitioning"))) break;
+  }
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, previous);
 };
 
@@ -175,6 +281,10 @@ const runFullWalkthrough = async (page) => {
     const id = await currentStepId(page);
     const step = stepMap.get(id);
     assert(step, `full walkthrough reached unknown step: ${id}`);
+    if (await page.locator("#novel-chapter-card").isVisible()) {
+      await page.locator("#novel-layer").dispatchEvent("click");
+      await page.locator("#novel-chapter-card").waitFor({ state: "hidden" });
+    }
     visited.push(id);
     if (step.type === "end") {
       const state = await page.evaluate(() => globalThis.GaiaNovel.getState());
@@ -235,22 +345,22 @@ try {
     await screenshot(page, screenshotName);
   }
 
-  const inlineRecord = steps.find((step) => step.sceneId === "prologue_basil" && step.type === "record" && step.recordType === "LOCAL_SOURCE");
+  const inlineRecord = steps.find((step) => step.type === "record" && step.recordType === "SOURCE" && step.text.includes("園芸売り場"))
+    || steps.find((step) => step.type === "record" && step.recordType === "SOURCE");
+  const inlineRecordScene = story.scenes.find((scene) => scene.id === inlineRecord.sceneId);
   await bootAt(page, inlineRecord.id);
   await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 5000 });
-  await page.waitForFunction(() => Number.parseFloat(getComputedStyle(document.querySelector("#novel-character-sora")).opacity) > 0.95);
   const inlineRecordPresentation = await page.evaluate(() => {
-    const character = document.querySelector("#novel-character-sora");
     const location = document.querySelector("#novel-location");
     return {
       dialogueVisible: !document.querySelector("#novel-dialogue").hidden,
       evidenceHidden: document.querySelector("#novel-evidence-surface").hidden,
       speaker: document.querySelector("#novel-speaker").textContent,
       text: document.querySelector("#novel-text").textContent,
+      paginationApplied: Boolean(document.querySelector("#novel-text").dataset.pageCount),
       sourceDetailsAvailable: !document.querySelector("#novel-source-button").hidden,
       castSpeaker: document.querySelector("#novel-cast").dataset.speaker,
-      characterOpacity: Number.parseFloat(getComputedStyle(character).opacity),
-      characterImage: getComputedStyle(character.querySelector(".novel-character-portrait")).backgroundImage,
+      avatarHidden: document.querySelector("#novel-avatar").hidden,
       locationText: location.textContent,
       locationParent: location.parentElement?.id,
       locationShadow: getComputedStyle(location).textShadow,
@@ -258,10 +368,11 @@ try {
       obsoleteSignalTitle: document.querySelectorAll("#novel-signal-title").length,
     };
   });
-  assert(inlineRecordPresentation.dialogueVisible && inlineRecordPresentation.evidenceHidden && inlineRecordPresentation.speaker === "アマネの観測メモ" && inlineRecordPresentation.sourceDetailsAvailable, `record did not use the normal novel presentation: ${JSON.stringify(inlineRecordPresentation)}`);
-  assert(inlineRecordPresentation.castSpeaker === "sora" && inlineRecordPresentation.characterOpacity > 0.95 && inlineRecordPresentation.characterImage.includes("amane-calm-07-v2.png"), `Amane character design is missing from her observation note: ${JSON.stringify(inlineRecordPresentation)}`);
-  assert(inlineRecordPresentation.text.includes("園芸売り場の温度計：36 ℃") && inlineRecordPresentation.text.includes("同じ時間帯に公開された値と照合") && !/LOCAL SOURCE|SOURCE|観測所名と観測時刻を表示/.test(inlineRecordPresentation.text), `record exposed internal labels or placeholder copy: ${JSON.stringify(inlineRecordPresentation)}`);
-  assert(inlineRecordPresentation.locationText === "PROLOGUE｜バジルの投稿" && inlineRecordPresentation.locationParent === "novel-source-button" && inlineRecordPresentation.obsoleteFooterLocation === 0 && inlineRecordPresentation.obsoleteSignalTitle === 0 && inlineRecordPresentation.locationShadow !== "none", `scene location was not moved into the readable upper caption: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.dialogueVisible && inlineRecordPresentation.evidenceHidden && inlineRecordPresentation.speaker === "観測メモ" && inlineRecordPresentation.sourceDetailsAvailable, `record did not use the normal novel presentation: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(!inlineRecordPresentation.paginationApplied, `special record UI incorrectly used normal-text pagination: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.castSpeaker === "narrator" && inlineRecordPresentation.avatarHidden, `source record unexpectedly displayed a character portrait: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.text.includes("園芸売り場") && inlineRecordPresentation.text.includes("36") && !/LOCAL SOURCE|SOURCE|観測記録\s*\//.test(inlineRecordPresentation.text), `record exposed internal labels or lost canonical copy: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.locationText === inlineRecordScene.title && inlineRecordPresentation.locationParent === "novel-source-button" && inlineRecordPresentation.obsoleteFooterLocation === 0 && inlineRecordPresentation.obsoleteSignalTitle === 0 && inlineRecordPresentation.locationShadow !== "none", `scene location was not moved into the readable upper caption: ${JSON.stringify(inlineRecordPresentation)}`);
   assert(await page.locator(".novel-evidence-card").count() === 0, "obsolete full-screen record card remains");
   await screenshot(page, "record-note");
 
@@ -270,8 +381,10 @@ try {
   await bootAt(page, backgroundTransitionStep.id);
   await page.waitForTimeout(200);
   const backgroundBeforeTransition = await page.locator("#novel-layer").evaluate((node) => getComputedStyle(node).backgroundImage);
-  await page.locator("#novel-dialogue").click();
-  if (await currentStepId(page) === backgroundTransitionStep.id) await page.locator("#novel-dialogue").click();
+  for (let guard = 0; guard < 64; guard += 1) {
+    await page.locator("#novel-layer").dispatchEvent("click");
+    if (await page.locator("body").evaluate((body) => body.classList.contains("scene-transitioning"))) break;
+  }
   await page.waitForFunction(() => document.body.classList.contains("scene-transitioning"));
   assert(await page.locator("#scene-transition").isVisible(), "novel background change did not use the shared scene transition canvas");
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, "prologue_online_circle_001", { timeout: 5000 });
@@ -322,13 +435,63 @@ try {
   assert(JSON.stringify(revealStartGeometry) === JSON.stringify(revealMidGeometry) && JSON.stringify(revealMidGeometry) === JSON.stringify(revealEndGeometry), `narration geometry moved during or after text reveal: ${JSON.stringify({ revealStartGeometry, revealMidGeometry, revealEndGeometry })}`);
   assert(await page.locator("#novel-cursor").isHidden(), "text cursor remained visible after reveal completed");
 
+  const nativeFontStep = steps.find((step) => step.id === "current_exhibition_001");
+  const overflowRegressionStep = steps.find((step) => step.id === "current_exhibition_006");
+  await bootAt(page, nativeFontStep.id);
+  const nativeFontGeometry = await assertDialoguePageFits(page, nativeFontStep);
+  await bootAt(page, overflowRegressionStep.id);
+  const overflowRegressionGeometry = await assertDialoguePageFits(page, overflowRegressionStep);
+  assert(overflowRegressionGeometry.pageCount > 1, "long narration was not split across pages");
+  assert(overflowRegressionGeometry.maxLineCount === 3, "desktop dialogue did not reserve three lines per page");
+  assert(overflowRegressionGeometry.measuredLineCount === overflowRegressionGeometry.maxLineCount, "long narration turned the page before using its final available line");
+  assert(overflowRegressionGeometry.fontSize === nativeFontGeometry.fontSize, "long narration changed the dialogue font size");
+  const firstPageFontSize = overflowRegressionGeometry.fontSize;
+  await page.locator("#novel-dialogue").click();
+  await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 10000 });
+  assert(await currentStepId(page) === overflowRegressionStep.id, "completing the reveal advanced the story step");
+  assert((await dialoguePageGeometry(page)).pageIndex === 1, "completing the reveal skipped the first text page");
+  const collectedDesktopPages = await collectDialoguePages(page, overflowRegressionStep);
+  assert(collectedDesktopPages.geometry.fontSize === firstPageFontSize, "page turn changed the dialogue font size");
+  await screenshot(page, "dialogue-pagination");
+  await page.locator("#novel-dialogue").click();
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, overflowRegressionStep.id);
+
+  const explicitMultilineStep = steps
+    .filter((step) => ["narration", "dialogue"].includes(step.type) && step.text.includes("\n"))
+    .sort((left, right) => right.text.split("\n").length - left.text.split("\n").length)[0];
+  if (explicitMultilineStep) {
+    await bootAt(page, explicitMultilineStep.id);
+    await assertDialoguePageFits(page, explicitMultilineStep);
+  }
+
   const sharedBackgroundScene = story.scenes.find((scene) => scene.id === "absence");
   const sharedBackgroundStep = sharedBackgroundScene.steps.at(-1);
   await bootAt(page, sharedBackgroundStep.id);
-  await page.locator("#novel-dialogue").click();
-  if (await currentStepId(page) === sharedBackgroundStep.id) await page.locator("#novel-dialogue").click();
+  await advanceLinear(page);
   assert(!await page.locator("body").evaluate((node) => node.classList.contains("scene-transitioning")), "unchanged story background incorrectly triggered a scene transition");
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.sceneId === "search");
+  await page.waitForTimeout(420);
+  const sectionSeparator = await page.locator("#novel-chapter-card").evaluate((card) => ({
+    visible: !card.hidden && card.getClientRects().length > 0,
+    opacity: Number.parseFloat(getComputedStyle(card).opacity),
+    titleFontSize: Number.parseFloat(getComputedStyle(card.querySelector("#novel-chapter-title")).fontSize),
+    titleHeight: (() => {
+      const title = card.querySelector("#novel-chapter-title");
+      const style = getComputedStyle(title);
+      return title.getBoundingClientRect().height - (Number.parseFloat(style.paddingTop) || 0) - (Number.parseFloat(style.paddingBottom) || 0);
+    })(),
+    titleLineHeight: Number.parseFloat(getComputedStyle(card.querySelector("#novel-chapter-title")).lineHeight),
+    sceneId: card.dataset.sceneId,
+    chapter: card.querySelector("#novel-chapter-index")?.textContent,
+    title: card.querySelector("#novel-chapter-title")?.textContent,
+    dialogueHidden: document.querySelector("#novel-dialogue").hidden,
+  }));
+  assert(sectionSeparator.visible && sectionSeparator.opacity > 0.8 && sectionSeparator.titleFontSize >= 30 && sectionSeparator.titleHeight <= sectionSeparator.titleLineHeight * 1.1 && sectionSeparator.sceneId === "search" && sectionSeparator.chapter === "SEARCH" && sectionSeparator.title, `scene section separator was not restored: ${JSON.stringify(sectionSeparator)}`);
+  await screenshot(page, "section-separator", { animations: "allow" });
+  const sectionFirstStepId = await currentStepId(page);
+  await page.locator("#novel-layer").dispatchEvent("click");
+  await page.locator("#novel-chapter-card").waitFor({ state: "hidden" });
+  assert(await currentStepId(page) === sectionFirstStepId && await page.locator("#novel-dialogue").isVisible(), "dismissing the section separator skipped its first story step");
 
   const chat = steps.find((step) => step.sceneId === "opening_empty_seat" && step.type === "chat");
   const preChat = steps[steps.findIndex((step) => step.id === chat.id) - 1];
@@ -352,6 +515,7 @@ try {
     };
   });
   assert(slackEntryFrame.entering && !slackEntryFrame.dialogueHiddenAttribute && slackEntryFrame.dialogueOpacity < 0.98 && slackEntryFrame.dialogueTransitionDuration.includes("0.32s"), `normal message window did not fade out for Slack: ${JSON.stringify(slackEntryFrame)}`);
+  assert(await page.locator("#novel-text").getAttribute("data-page-count") === null, "Slack incorrectly used normal-text pagination");
   assert(slackEntryFrame.workspaceAnimationName === "novel-slack-window-in" && slackEntryFrame.workspaceAnimationDuration === "0.72s", `Slack entrance animation is missing: ${JSON.stringify(slackEntryFrame)}`);
   assert(await page.locator(".novel-slack-workspace").count() === 1, "Slack must be one surface");
   assert(await page.locator(".novel-slack-post").count() === 1, "Slack thread must begin with one root post");
@@ -391,7 +555,7 @@ try {
   assert(slackGeometry.characterInset >= 96 && Math.abs(slackGeometry.characterOpacity - 0.66) < 0.01 && slackGeometry.characterWidthRatio < 0.38 && slackGeometry.characterRightBias > 0.7 && slackGeometry.characterBottomGap < 24 && slackGeometry.characterClip !== "none", `Slack character is not a small clipped figure at the lower right: ${JSON.stringify(slackGeometry)}`);
   await advanceLinear(page);
   assert(await page.locator(".novel-slack-post").count() === 2, "second Slack message did not append to the thread");
-  assert((await page.locator(".novel-slack-post").first().innerText()).includes("先に部屋、入ってる。"), "earlier Slack post disappeared");
+  assert((await page.locator(".novel-slack-post").first().innerText()).includes(chat.text), "earlier Slack post disappeared");
   assert(await page.locator(".novel-slack-typing").isVisible(), "typing indicator did not continue before the next reply");
   assert((await page.locator(".novel-slack-post.is-new").evaluate((post) => getComputedStyle(post).animationName)) === "novel-slack-reply-in", "new Slack reply has no append animation");
   assert((await page.locator(".novel-slack-typing i b").first().evaluate((dot) => getComputedStyle(dot).animationName)) === "novel-slack-typing", "Slack typing indicator is not animated");
@@ -443,6 +607,7 @@ try {
   const observationChoice = steps.find((step) => step.choiceId === "observation_order");
   await bootAt(page, observationChoice.id);
   const observationLabels = await page.locator("#novel-choices button").allTextContents();
+  assert(await page.locator("#novel-text").getAttribute("data-page-count") === null, "choice UI incorrectly used normal-text pagination");
   assert(JSON.stringify(observationLabels) === JSON.stringify(["売り場の温度計から見る", "最寄り観測所の記録から見る"]), `observation choice leaked internal labels: ${JSON.stringify(observationLabels)}`);
   await screenshot(page, "observation-choice");
 
@@ -456,14 +621,19 @@ try {
   const reflection = steps.find((step) => step.type === "reflectionChoice");
   await bootAt(page, reflection.id, { editorialChoice: "SOURCE_RECORD", evesRoute: [{ decisionId: "editorial_choice", value: "SOURCE_RECORD", label: "本人記録で構成する / SOURCE RECORD", stepId: editorial.id }] });
   assert(await page.locator(".novel-reflection-grid button").count() === 36, "reflection grid must contain 36 statements");
-  assert(await page.locator(".novel-reflection-group").count() === 6, "reflection grid must contain six canon themes");
+  const expectedReflectionGroupCount = reflection.groups?.length || new Set(reflection.options.map((option) => option.themeId || "all")).size;
+  assert(await page.locator(".novel-reflection-group").count() === expectedReflectionGroupCount, `reflection grid group count does not match canonical data: ${expectedReflectionGroupCount}`);
   assert(await page.locator(".novel-reflection-grid button span").count() === 0, "internal reflection IDs must not be visible");
   const gridGeometry = await page.evaluate(() => {
     const surface = document.querySelector("#novel-reflection-surface");
     const rects = [...document.querySelectorAll(".novel-reflection-grid button")].map((button) => button.getBoundingClientRect());
-    return { scrolls: surface.scrollHeight > surface.clientHeight + 1, allVisible: rects.every((rect) => rect.top >= 0 && rect.bottom <= innerHeight && rect.left >= 0 && rect.right <= innerWidth) };
+    return {
+      scrolls: surface.scrollHeight > surface.clientHeight + 1,
+      allVisible: rects.every((rect) => rect.top >= 0 && rect.bottom <= innerHeight && rect.left >= 0 && rect.right <= innerWidth),
+      horizontallyContained: rects.every((rect) => rect.left >= 0 && rect.right <= innerWidth),
+    };
   });
-  assert(!gridGeometry.scrolls && gridGeometry.allVisible, "36 statements must fit in one desktop viewport");
+  assert(gridGeometry.horizontallyContained && (gridGeometry.allVisible || gridGeometry.scrolls), `36 statements are not fully accessible in the canonical layout: ${JSON.stringify(gridGeometry)}`);
   const choicePath = await screenshot(page, "choice");
   await compareBaseline(choicePath, "choice");
   for (let index = 0; index < 3; index += 1) await page.locator(".novel-reflection-grid button").nth(index).click();
@@ -621,7 +791,10 @@ try {
   await page.keyboard.press("Enter");
   await page.keyboard.press("Space");
   await page.waitForFunction((previous) => document.querySelector("#novel-layer")?.dataset.stepId !== previous, keyboardStep);
-  const logHistoryIds = steps.filter((step) => step.text).slice(0, 72).map((step) => step.id);
+  const logHistoryIds = [...new Set([
+    ...steps.filter((step) => step.text).slice(0, 72).map((step) => step.id),
+    overflowRegressionStep.id,
+  ])];
   await bootAt(page, narration.id, { readStepIds: logHistoryIds });
   await page.locator("#novel-log-button").click();
   assert(await page.locator("#novel-log-panel").isVisible(), "LOG did not open");
@@ -642,6 +815,11 @@ try {
   });
   assert(Math.abs(logGeometry.left) < 1 && Math.abs(logGeometry.top) < 1 && Math.abs(logGeometry.right - logGeometry.viewport.width) < 1 && Math.abs(logGeometry.bottom - logGeometry.viewport.height) < 1, `LOG is not full-screen: ${JSON.stringify(logGeometry)}`);
   assert(logGeometry.contentScrollable && logGeometry.articleCount >= 60, `LOG history is not scrollable: ${JSON.stringify(logGeometry)}`);
+  const overflowLogContainsFullText = await page.locator("#novel-log-content article").evaluateAll((articles, fullText) => {
+    const normalize = (value) => String(value || "").replace(/\s/gu, "");
+    return articles.some((article) => normalize(article.textContent).includes(normalize(fullText)));
+  }, overflowRegressionStep.text);
+  assert(overflowLogContainsFullText, "LOG did not retain the full unpaginated narration text");
   await screenshot(page, "log-fullscreen");
   await page.locator("#novel-log-content").hover();
   await page.mouse.wheel(0, 520);
@@ -744,12 +922,53 @@ try {
   report.viewports.push({ width: 1440, height: 900, passed: true });
   await context.close();
 
+  context = await browser.newContext({ viewport: { width: 1612, height: 454 }, reducedMotion: "reduce" });
+  const shortDesktop = await context.newPage();
+  attachDiagnostics(shortDesktop, "short-desktop-1612x454");
+  await bootTitle(shortDesktop, { clear: true });
+  await bootAt(shortDesktop, nativeFontStep.id, {}, { reducedMotion: true });
+  const shortDesktopNativeFont = (await assertDialoguePageFits(shortDesktop, nativeFontStep)).fontSize;
+  await bootAt(shortDesktop, overflowRegressionStep.id, {}, { reducedMotion: true });
+  const shortDesktopGeometry = await assertDialoguePageFits(shortDesktop, overflowRegressionStep);
+  assert(shortDesktopGeometry.pageCount > 1, "short desktop did not paginate the long narration");
+  assert(shortDesktopGeometry.maxLineCount === 3, "short desktop dialogue did not reserve three lines per page");
+  assert(shortDesktopGeometry.measuredLineCount === shortDesktopGeometry.maxLineCount, "short desktop turned the page before using its third line");
+  assert(shortDesktopGeometry.fontSize === shortDesktopNativeFont, "short desktop changed the dialogue font size");
+  await collectDialoguePages(shortDesktop, overflowRegressionStep);
+  await screenshot(shortDesktop, "dialogue-pagination-1612x454");
+
+  await bootAt(shortDesktop, overflowRegressionStep.id, {}, { reducedMotion: true });
+  const autoPageCount = (await assertDialoguePageFits(shortDesktop, overflowRegressionStep)).pageCount;
+  await startPaginationTrace(shortDesktop);
+  await shortDesktop.locator("#novel-auto-button").click();
+  await shortDesktop.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, overflowRegressionStep.id, { timeout: 15000 });
+  if (await shortDesktop.locator("#novel-auto-button").getAttribute("aria-pressed") === "true") await shortDesktop.locator("#novel-auto-button").click();
+  assertPaginationTrace(await finishPaginationTrace(shortDesktop), overflowRegressionStep, autoPageCount, "AUTO");
+
+  await bootAt(shortDesktop, overflowRegressionStep.id, {}, { reducedMotion: true });
+  const fastForwardPageCount = (await assertDialoguePageFits(shortDesktop, overflowRegressionStep)).pageCount;
+  await startPaginationTrace(shortDesktop);
+  await shortDesktop.locator("#novel-fast-forward-button").click();
+  await shortDesktop.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, overflowRegressionStep.id, { timeout: 5000 });
+  if (await shortDesktop.locator("#novel-fast-forward-button").getAttribute("aria-pressed") === "true") await shortDesktop.locator("#novel-fast-forward-button").click();
+  assertPaginationTrace(await finishPaginationTrace(shortDesktop), overflowRegressionStep, fastForwardPageCount, "fast-forward");
+  report.viewports.push({ width: 1612, height: 454, passed: true });
+  await context.close();
+
   context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   const mobile = await context.newPage();
   attachDiagnostics(mobile, "mobile-390");
   await bootTitle(mobile, { clear: true });
   await checkTitleGeometry(mobile);
   await screenshot(mobile, "start-mobile");
+  await bootAt(mobile, nativeFontStep.id, {}, { reducedMotion: true });
+  const mobileNativeFont = (await assertDialoguePageFits(mobile, nativeFontStep)).fontSize;
+  await bootAt(mobile, overflowRegressionStep.id, {}, { reducedMotion: true });
+  const mobilePaginationGeometry = await assertDialoguePageFits(mobile, overflowRegressionStep);
+  assert(mobilePaginationGeometry.pageCount > 1 && mobilePaginationGeometry.maxLineCount === 3, `mobile did not paginate narration at three rendered lines: ${JSON.stringify(mobilePaginationGeometry)}`);
+  assert(mobilePaginationGeometry.fontSize === mobileNativeFont, "mobile pagination changed the dialogue font size");
+  await collectDialoguePages(mobile, overflowRegressionStep);
+  await screenshot(mobile, "dialogue-pagination-mobile");
   await bootAt(mobile, reflection.id, {}, { reducedMotion: true });
   const mobileGeometry = await mobile.evaluate(() => ({
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
