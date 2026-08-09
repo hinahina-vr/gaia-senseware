@@ -2539,47 +2539,98 @@ body.novel-open .japan-credits {
 }
 
 .novel-log-panel {
+  --novel-log-blue: 112, 174, 255;
+  --novel-log-blue-soft: 190, 218, 255;
   position: absolute;
   z-index: 20;
   top: 0;
   right: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
-  width: min(560px, 92vw);
-  height: 100%;
-  border-left: 1px solid rgba(var(--novel-cyan), 0.22);
-  background: rgba(1, 9, 13, 0.96);
-  box-shadow: -30px 0 80px rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(24px);
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  border: 0;
+  background:
+    radial-gradient(circle at 72% 10%, rgba(63, 127, 255, 0.22), transparent 40%),
+    linear-gradient(135deg, rgba(8, 22, 61, 0.64), rgba(5, 16, 46, 0.48));
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(8px) saturate(0.92) brightness(0.82);
+  backdrop-filter: blur(8px) saturate(0.92) brightness(0.82);
+  animation: novel-log-fullscreen-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .novel-log-panel header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 34px 32px 24px;
-  border-bottom: 1px solid rgba(var(--novel-cyan), 0.12);
+  min-height: clamp(94px, 12vh, 132px);
+  padding: 24px max(clamp(28px, 6vw, 120px), calc((100vw - 1180px) / 2));
+  border-bottom: 1px solid rgba(var(--novel-log-blue), 0.3);
+  background: linear-gradient(90deg, rgba(8, 27, 70, 0.64), rgba(10, 32, 76, 0.42));
+  box-shadow: 0 12px 34px rgba(0, 8, 28, 0.18);
 }
 
 .novel-log-panel header div { display: grid; gap: 7px; }
-.novel-log-panel header span { color: rgba(var(--novel-cyan), 0.58); font: 700 7px/1 Consolas, monospace; letter-spacing: 0.2em; }
-.novel-log-panel header strong { font: 600 18px/1.4 var(--novel-font); letter-spacing: 0.04em; }
-.novel-log-panel header button { width: 34px; height: 34px; border-radius: 50%; font-size: 16px; }
+.novel-log-panel header span { color: rgba(var(--novel-log-blue-soft), 0.82); font: 700 9px/1 Consolas, monospace; letter-spacing: 0.24em; }
+.novel-log-panel header strong { color: rgba(246, 249, 255, 0.97); font: 600 clamp(20px, 2vw, 30px)/1.4 var(--novel-font); letter-spacing: 0.04em; text-shadow: 0 1px 18px rgba(6, 24, 63, 0.42); }
+.novel-log-panel header button {
+  width: 44px;
+  height: 44px;
+  border-color: rgba(var(--novel-log-blue), 0.52);
+  border-radius: 50%;
+  color: rgba(232, 242, 255, 0.94);
+  background: rgba(22, 65, 137, 0.38);
+  font-size: 20px;
+  box-shadow: inset 0 0 0 1px rgba(203, 226, 255, 0.05), 0 8px 24px rgba(0, 10, 35, 0.18);
+}
+
+.novel-log-panel header button:hover,
+.novel-log-panel header button:focus-visible {
+  border-color: rgba(var(--novel-log-blue-soft), 0.88);
+  color: #fff;
+  background: rgba(42, 104, 207, 0.58);
+}
 
 #novel-log-content {
   padding: 26px 32px 70px;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: rgba(var(--novel-log-blue), 0.72) rgba(11, 31, 72, 0.24);
+  scrollbar-width: thin;
+  background: linear-gradient(90deg, rgba(7, 20, 53, 0.38), rgba(10, 28, 67, 0.22));
+  box-shadow: inset 0 1px rgba(203, 225, 255, 0.05);
+}
+
+#novel-log-content::-webkit-scrollbar { width: 10px; }
+#novel-log-content::-webkit-scrollbar-track { background: rgba(11, 31, 72, 0.24); }
+#novel-log-content::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(var(--novel-log-blue), 0.72) padding-box;
+}
+
+#novel-log-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--novel-log-blue-soft), 0.88) padding-box;
 }
 
 #novel-log-content article {
-  padding: 0 0 22px 18px;
-  border-left: 1px solid rgba(var(--novel-cyan), 0.18);
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 0 clamp(24px, 3vh, 38px) clamp(18px, 2vw, 30px);
+  border-left: 1px solid rgba(var(--novel-log-blue), 0.34);
 }
 
-#novel-log-content article[data-kind="DERIVED"] { border-color: rgba(247, 201, 139, 0.4); }
-#novel-log-content article[data-kind="SCENARIO"] { border-color: rgba(215, 185, 255, 0.4); }
-#novel-log-content article p:first-child { margin: 0 0 7px; color: rgba(var(--novel-cyan), 0.58); font: 700 7px/1.4 Consolas, monospace; letter-spacing: 0.13em; }
-#novel-log-content article p:last-child { margin: 0; color: rgba(235, 249, 245, 0.7); font: 500 14px/1.9 var(--novel-font); }
+#novel-log-content article[data-kind="DERIVED"] { border-color: rgba(72, 142, 255, 0.58); }
+#novel-log-content article[data-kind="SCENARIO"] { border-color: rgba(157, 197, 255, 0.52); }
+#novel-log-content article p:first-child { margin: 0 0 9px; color: rgba(var(--novel-log-blue-soft), 0.78); font: 700 9px/1.4 Consolas, monospace; letter-spacing: 0.14em; }
+#novel-log-content article p:last-child { margin: 0; color: rgba(239, 245, 255, 0.92); font: 500 clamp(15px, 1.15vw, 19px)/1.9 var(--novel-font); text-shadow: 0 1px 12px rgba(2, 10, 31, 0.4); }
+
+@keyframes novel-log-fullscreen-in {
+  from { opacity: 0; filter: blur(5px); transform: scale(1.012); }
+  to { opacity: 1; filter: blur(0); transform: scale(1); }
+}
 
 .japan-story-button {
   margin-top: 8px;
