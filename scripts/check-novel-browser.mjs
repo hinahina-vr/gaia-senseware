@@ -25,7 +25,7 @@ const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ executablePath, headless: true, args: ["--no-first-run", "--disable-background-networking"] });
-const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], interactions: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], interactions: [], modeModalChecks: [], fullWalkthrough: null, viewports: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
 const attachDiagnostics = (page, label) => {
@@ -236,12 +236,71 @@ const checkTitleGeometry = async (page) => {
   assert(geometry.forbiddenCount === 0, "removed START or nested-card UI remains");
 };
 
+const assertNovelDetourModal = async (page, kind) => {
+  await page.waitForTimeout(kind === "gx" ? 1200 : 120);
+  const state = await page.evaluate((interactionKind) => {
+    const novel = document.querySelector("#novel-layer");
+    const modeSelector = interactionKind === "gx"
+      ? "#gx-layer"
+      : interactionKind === "space10"
+        ? "#space-layer"
+        : interactionKind === "abstract07"
+          ? "#gaia-canvas"
+          : "#japan-layer";
+    const mode = document.querySelector(modeSelector);
+    const backdrop = document.querySelector("#gx-story-backdrop");
+    const novelStyle = getComputedStyle(novel);
+    const modeStyle = getComputedStyle(mode);
+    const backdropStyle = getComputedStyle(backdrop);
+    const modeRect = mode.getBoundingClientRect();
+    const hitTarget = interactionKind === "gx"
+      ? document.elementFromPoint(modeRect.left + modeRect.width / 2, modeRect.top + modeRect.height / 2)
+      : null;
+    return {
+      kind: interactionKind,
+      viewport: { width: innerWidth, height: innerHeight },
+      bodyClasses: document.body.className,
+      stepId: novel.dataset.stepId,
+      novel: {
+        display: novelStyle.display,
+        opacity: Number.parseFloat(novelStyle.opacity),
+        pointerEvents: novelStyle.pointerEvents,
+        backgroundImage: novelStyle.backgroundImage,
+      },
+      mode: {
+        selector: modeSelector,
+        display: modeStyle.display,
+        visibility: modeStyle.visibility,
+        opacity: Number.parseFloat(modeStyle.opacity),
+        pointerEvents: modeStyle.pointerEvents,
+        returnTo: mode.dataset.returnTo || "",
+        bounds: { top: modeRect.top, right: modeRect.right, bottom: modeRect.bottom, left: modeRect.left },
+      },
+      backdrop: {
+        display: backdropStyle.display,
+        opacity: Number.parseFloat(backdropStyle.opacity),
+      },
+      hitTargetInsideMode: interactionKind !== "gx" || Boolean(hitTarget?.closest("#gx-layer")),
+    };
+  }, kind);
+  assert(state.bodyClasses.includes("novel-mode-detour"), `${kind} did not enter the novel modal state: ${JSON.stringify(state)}`);
+  assert(state.novel.display !== "none" && state.novel.opacity > 0 && state.novel.backgroundImage !== "none", `${kind} removed the novel scene context: ${JSON.stringify(state)}`);
+  assert(state.novel.pointerEvents === "none", `${kind} left the novel layer interactive: ${JSON.stringify(state)}`);
+  assert(state.mode.display !== "none" && state.mode.visibility !== "hidden" && state.mode.opacity > 0 && state.mode.pointerEvents !== "none", `${kind} is not the active interaction target: ${JSON.stringify(state)}`);
+  if (kind === "gx") {
+    assert(state.bodyClasses.includes("gx-open") && state.mode.returnTo === "novel", `GX modal classes are incomplete: ${JSON.stringify(state)}`);
+    assert(state.mode.bounds.top > 0 && state.mode.bounds.left > 0 && state.mode.bounds.right < state.viewport.width && state.mode.bounds.bottom < state.viewport.height, `GX did not open as an inset modal: ${JSON.stringify(state)}`);
+    assert(state.backdrop.display !== "none" && state.backdrop.opacity > 0 && state.hitTargetInsideMode, `GX modal backdrop or pointer isolation failed: ${JSON.stringify(state)}`);
+  }
+  report.modeModalChecks.push(state);
+};
+
 const operateInteraction = async (page, step, { record = false } = {}) => {
   await page.locator(".novel-interaction-open").click();
   await page.locator(".story-detour-dock").waitFor({ state: "visible", timeout: 15000 });
+  await assertNovelDetourModal(page, step.interaction.kind);
   if (record) await screenshot(page, `mode-${step.interaction.kind}-open`);
   if (step.interaction.kind === "gx") {
-    await page.locator("#gx-layer").waitFor({ state: "visible" });
     for (let index = 0; index < 3; index += 1) await page.locator(".story-detour-controls button").first().click();
   } else if (step.interaction.kind === "map03" || step.interaction.kind === "map08") {
     await page.locator("#japan-layer").waitFor({ state: "visible" });
@@ -919,6 +978,11 @@ try {
   await bootAt(medium, reflection.id);
   assert(await medium.locator(".novel-reflection-grid button").count() === 36, "1440 reflection grid is incomplete");
   await screenshot(medium, "choice-1440");
+  const mediumGxInteraction = steps.find((step) => step.type === "interaction" && step.interaction.kind === "gx");
+  await bootAt(medium, mediumGxInteraction.id);
+  await medium.locator(".novel-interaction-open").click();
+  await medium.locator(".story-detour-dock").waitFor({ state: "visible", timeout: 15000 });
+  await assertNovelDetourModal(medium, mediumGxInteraction.interaction.kind);
   report.viewports.push({ width: 1440, height: 900, passed: true });
   await context.close();
 
@@ -992,6 +1056,9 @@ try {
   });
   assert(!mobileSlackGeometry.horizontalOverflow && mobileSlackGeometry.posts === 2 && mobileSlackGeometry.workspaceFits && !mobileSlackGeometry.dialogueHiddenAttribute && mobileSlackGeometry.dialogueOpacity < 0.01, `mobile Slack overlay failed: ${JSON.stringify(mobileSlackGeometry)}`);
   await screenshot(mobile, "slack-mobile");
+  const mobileGxInteraction = steps.find((step) => step.type === "interaction" && step.interaction.kind === "gx");
+  await bootAt(mobile, mobileGxInteraction.id, {}, { reducedMotion: true });
+  await operateInteraction(mobile, mobileGxInteraction);
   report.viewports.push({ width: 390, height: 844, passed: true });
   await context.close();
 

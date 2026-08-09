@@ -5278,7 +5278,7 @@ body:not(.gx-story-open) .novel-layer.is-slack-exiting .novel-character--minamo 
   overflow-y: auto;
 }
 
-body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0; }
+body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0.4; }
 
 .novel-layer.is-motion-reduced *,
 .novel-layer.is-motion-reduced *::before,
