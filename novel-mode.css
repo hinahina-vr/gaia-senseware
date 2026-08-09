@@ -2653,15 +2653,58 @@ body.novel-open .japan-credits {
 }
 
 #novel-log-content article {
+  --novel-log-speaker: 158, 181, 210;
   max-width: 1180px;
   margin: 0 auto;
   padding: 0 0 clamp(24px, 3vh, 38px) clamp(18px, 2vw, 30px);
-  border-left: 1px solid rgba(var(--novel-log-blue), 0.34);
+  border-left: 1px solid rgba(var(--novel-log-speaker), 0.58);
 }
 
-#novel-log-content article[data-kind="DERIVED"] { border-color: rgba(72, 142, 255, 0.58); }
-#novel-log-content article[data-kind="SCENARIO"] { border-color: rgba(157, 197, 255, 0.52); }
-#novel-log-content article p:first-child { margin: 0 0 9px; color: rgba(var(--novel-log-blue-soft), 0.78); font: 700 9px/1.4 Consolas, monospace; letter-spacing: 0.14em; }
+#novel-log-content article[data-speaker="mizuha"] { --novel-log-speaker: 112, 210, 255; }
+#novel-log-content article[data-speaker="amane"] { --novel-log-speaker: 255, 195, 116; }
+#novel-log-content article[data-speaker="sakuya"] { --novel-log-speaker: 255, 145, 184; }
+#novel-log-content article[data-speaker="visitor"] { --novel-log-speaker: 203, 174, 255; }
+#novel-log-content article[data-speaker="system"] { --novel-log-speaker: 179, 166, 255; }
+#novel-log-content article p:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 9px;
+  color: rgba(var(--novel-log-speaker), 0.9);
+  font: 700 9px/1.4 Consolas, monospace;
+  letter-spacing: 0.14em;
+}
+#novel-log-content article p:first-child::before {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+  opacity: 0.9;
+}
+#novel-log-content article[data-speaker="narrator"] p:first-child::before {
+  width: 11px;
+  height: 2px;
+  border-radius: 999px;
+}
+#novel-log-content article[data-speaker="amane"] p:first-child::before {
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+#novel-log-content article[data-speaker="sakuya"] p:first-child::before {
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+#novel-log-content article[data-speaker="visitor"] p:first-child::before {
+  border-radius: 0;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+#novel-log-content article[data-speaker="system"] p:first-child::before {
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  background: transparent;
+}
 #novel-log-content article p:last-child { margin: 0; color: rgba(239, 245, 255, 0.92); font: 500 clamp(15px, 1.15vw, 19px)/1.9 var(--novel-font); text-shadow: 0 1px 12px rgba(2, 10, 31, 0.4); }
 
 @keyframes novel-log-fullscreen-in {

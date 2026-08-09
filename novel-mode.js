@@ -1497,6 +1497,7 @@
       const text = document.createElement("p");
       const speaker = SPEAKERS[step.speaker]?.name || step.type.toUpperCase();
       article.dataset.kind = step.recordType || "SOURCE";
+      article.dataset.speaker = step.speaker || "system";
       header.textContent = `${speaker || "観測記録"} / ${RECORD_LABELS[step.recordType] || step.type}`;
       text.textContent = step.text;
       article.append(header, text);
