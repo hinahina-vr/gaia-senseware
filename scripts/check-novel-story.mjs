@@ -79,6 +79,7 @@ assert.equal(story.finalResults.length, 8, "two editorial choices by four spatia
 assert.deepEqual(story.saveFields.filter((field) => ["reflectionIds", "resultTone"].includes(field)), ["reflectionIds", "resultTone"]);
 
 const allText = steps.map((step) => step.text || "").join("\n");
+const exhibitionText = scenes.find((scene) => scene.id === "current_exhibition")?.steps.map((step) => step.text || "").join("\n") || "";
 for (const requiredText of [
   "真ん中の椅子には鞄も上着もなく、誰も座っていない。",
   "うん。今日、はじめまして🌸",
@@ -88,6 +89,15 @@ for (const requiredText of [
   "「聞こえたつもりになってない？」って、三人で確かめたい。",
 ]) assert.ok(allText.includes(requiredText), `canon text is missing: ${requiredText}`);
 assert.ok(!allText.includes("サクヤの分だけ、縁が乾いたままだった。"), "confirmed paper-cup wording regressed to the past-form draft");
+assert.match(exhibitionText, /地球と人類の共進化を考える展示です。/u, "the exhibition entrance must state the work's central theme");
+assert.match(exhibitionText, /地球の変化が人の暮らしをどう変え、人の選択が地球をどう変えてきたか/u, "the exhibition entrance must explain coevolution in concrete terms");
+for (const removedEntranceCopy of [
+  "これは三人が制作した記録と、公開までの変更をたどる展示です。",
+  "青りんごと同じ色のSTARTボタン",
+  "この端末は、進行と選んだ項目を会期中の件数として記録します。",
+  "記録について詳しく見る",
+  "前の来場者が何を選んだかは、次の来場者の最初の画面へ表示されない。",
+]) assert.ok(!exhibitionText.includes(removedEntranceCopy), `obsolete exhibition entrance copy remains: ${removedEntranceCopy}`);
 
 assert.ok(steps.some((step) => step.sceneId === "mode07_abstract" && ["SOURCE", "LOCAL_SOURCE"].includes(step.recordType)), "MODE 07 SOURCE must exist");
 assert.ok(steps.some((step) => step.sceneId === "mode07_abstract" && step.recordType === "DERIVED"), "MODE 07 DERIVED must exist separately");
