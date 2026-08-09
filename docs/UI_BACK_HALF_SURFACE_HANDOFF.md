@@ -8,7 +8,14 @@
 - 60は `storyDevice === "portrait-operations-phone"` の間だけsurfaceの `hidden` を解除する。`final_record_008`で開始し、`return_to_start_001`で解放する。
 - phaseは `#novel-layer[data-story-device-phase]` に `prepare`、`official-notice`、`incoming-audio` のいずれかを設定する。phase変更時にsurfaceや子要素を作り直さない。
 - `final_record_016→017`では同じDOMを保ち、外枠のentry animationを再実行しない。CSSは内部viewのopacityだけを切り替える。
-- 本文は `#novel-operations-phone-notice-body`、話者／状態は `#novel-operations-phone-audio-speaker` と `#novel-operations-phone-audio-status` へ設定する。私的内容や推測を追加しない。
+- 60は正本metadataから次の全項目を設定する。所有端末名と通知送信元を混同しない。
+  - 時刻: `#novel-operations-phone-clock`
+  - 通知時刻: `#novel-operations-phone-notice-time`
+  - 通知送信元: `#novel-operations-phone-notice-sender`
+  - 通知本文: `#novel-operations-phone-notice-body`
+  - 音声話者: `#novel-operations-phone-audio-speaker`
+  - 音声状態: `#novel-operations-phone-audio-status`
+- 15:52通知の送信元は大学学生支援窓口。本人同意に基づく安全確認と中央入口での面談希望だけを表示し、展示休止の操作や私的事情・推測を本文へ追加しない。
 
 ## 中央入口の人物preset
 
