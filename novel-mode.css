@@ -5302,7 +5302,7 @@ body:not(.gx-story-open) .novel-layer.is-slack-exiting .novel-character--minamo 
   grid-template-rows: auto minmax(0, 1fr) auto;
   width: 100%;
   height: 100%;
-  padding: clamp(16px, 2.2vh, 28px) clamp(18px, 3.2vw, 62px) clamp(14px, 2vh, 24px);
+  padding: clamp(16px, 2.2vh, 28px) clamp(18px, 3.2vw, 62px) max(62px, calc(env(safe-area-inset-bottom) + 62px));
   gap: clamp(10px, 1.4vh, 18px);
 }
 
@@ -5363,17 +5363,6 @@ body:not(.gx-story-open) .novel-layer.is-slack-exiting .novel-character--minamo 
   text-align: left;
 }
 
-.novel-reflection-grid.is-flat button {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 5px;
-}
-
-.novel-reflection-choice-id {
-  color: rgba(158, 210, 226, 0.76);
-  font: 700 9px/1 Consolas, "Courier New", monospace;
-  letter-spacing: 0.12em;
-}
 .novel-reflection-grid button strong { font-size: clamp(11px, 0.7vw, 14px); font-weight: 500; line-height: 1.55; }
 .novel-reflection-grid button:hover,
 .novel-reflection-grid button:focus-visible { border-color: rgba(132, 219, 238, 0.7); background: rgba(17, 55, 75, 0.68); outline: none; }

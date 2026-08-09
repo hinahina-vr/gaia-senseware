@@ -35,7 +35,7 @@ const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ executablePath, headless: true, args: ["--no-first-run", "--disable-background-networking"] });
-const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], productionBackgrounds: [], backgroundPreloads: [], slackAttachments: [], interactions: [], modeModalChecks: [], chatCastGateChecks: [], fullWalkthrough: null, viewports: [], sakuyaBust: { dialogues: [], references: [], fullBodyCues: [] }, consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { baseUrl: routeUrl, screenshots: [], visualDiffs: [], sceneBackgrounds: [], productionBackgrounds: [], backgroundPreloads: [], slackAttachments: [], interactions: [], modeModalChecks: [], chatCastGateChecks: [], reflectionLayouts: [], currentContactLayouts: [], fullWalkthrough: null, viewports: [], sakuyaBust: { dialogues: [], references: [], fullBodyCues: [] }, consoleErrors: [], pageErrors: [], responses404: [] };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
 const attachDiagnostics = (page, label) => {
@@ -478,6 +478,57 @@ const assertNovelDetourModal = async (page, kind) => {
     assert(state.backdrop.display !== "none" && state.backdrop.opacity > 0 && state.hitTargetInsideMode, `GX modal backdrop or pointer isolation failed: ${JSON.stringify(state)}`);
   }
   report.modeModalChecks.push(state);
+};
+
+const checkReflectionControlGeometry = async (page, label) => {
+  const geometry = await page.evaluate(() => {
+    const proceed = document.querySelector(".novel-reflection-proceed");
+    const navButtons = [...document.querySelectorAll(".novel-topbar nav button")].filter((button) => {
+      const style = getComputedStyle(button);
+      const rect = button.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && Number.parseFloat(style.opacity) > 0 && rect.width > 0 && rect.height > 0;
+    });
+    const toBounds = (rect) => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height });
+    const overlaps = (first, second) => Math.min(first.right, second.right) > Math.max(first.left, second.left)
+      && Math.min(first.bottom, second.bottom) > Math.max(first.top, second.top);
+    const centerStack = (rect) => document.elementsFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2);
+    const proceedRect = proceed.getBoundingClientRect();
+    const proceedStack = centerStack(proceedRect);
+    return {
+      proceed: toBounds(proceedRect),
+      proceedCenterHit: proceedStack.some((node, index) => index === 0 && (node === proceed || proceed.contains(node))),
+      proceedCenterObscuredByNav: proceedStack.some((node) => node.closest?.(".novel-topbar nav")),
+      nav: navButtons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        const stack = centerStack(rect);
+        return {
+          id: button.id,
+          bounds: toBounds(rect),
+          intersectsProceed: overlaps(proceedRect, rect),
+          centerHit: stack.some((node, index) => index === 0 && (node === button || button.contains(node))),
+          centerObscuredByProceed: stack.some((node) => node === proceed || proceed.contains(node)),
+        };
+      }),
+    };
+  });
+  assert(!geometry.proceedCenterObscuredByNav && geometry.proceedCenterHit, `${label}: reflection proceed is obscured: ${JSON.stringify(geometry)}`);
+  assert(geometry.nav.length > 0, `${label}: no visible story controls were available for overlap validation`);
+  assert(geometry.nav.every((button) => !button.intersectsProceed && button.centerHit && !button.centerObscuredByProceed), `${label}: reflection proceed overlaps or obscures story controls: ${JSON.stringify(geometry)}`);
+  report.reflectionLayouts.push({ label, ...geometry });
+};
+
+const checkCurrentContactNonImpact = async (page, label) => {
+  const geometry = await page.evaluate(() => ({
+    mode: document.querySelector("#novel-mode-readout")?.textContent?.trim() || "",
+    location: document.querySelector("#novel-location")?.textContent?.trim() || "",
+    reflectionActive: document.querySelector("#novel-layer")?.classList.contains("is-reflection"),
+    reflectionVisible: !document.querySelector("#novel-reflection-surface")?.hidden,
+    proceedCount: document.querySelectorAll(".novel-reflection-proceed").length,
+    horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+  }));
+  assert(geometry.mode.includes("CURRENT CONTACT"), `${label}: CURRENT CONTACT heading changed: ${JSON.stringify(geometry)}`);
+  assert(geometry.location.length > 0 && !geometry.reflectionActive && !geometry.reflectionVisible && geometry.proceedCount === 0 && !geometry.horizontalOverflow, `${label}: reflection layout leaked into CURRENT CONTACT: ${JSON.stringify(geometry)}`);
+  report.currentContactLayouts.push({ label, ...geometry });
 };
 
 const operateInteraction = async (page, step, { record = false } = {}) => {
@@ -949,15 +1000,17 @@ try {
   assert(await page.locator(".novel-reflection-grid h3").count() === 0, "reflection grid must not expose theme headings");
   const expectedReflectionIds = Array.from({ length: 36 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`);
   const reflectionIds = await page.locator(".novel-reflection-grid > button").evaluateAll((buttons) => buttons.map((button) => button.dataset.choiceId));
-  const visibleReflectionIds = await page.locator(".novel-reflection-choice-id").allTextContents();
+  const reflectionAriaLabels = await page.locator(".novel-reflection-grid > button").evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-label") || ""));
   assert(JSON.stringify(reflectionIds) === JSON.stringify(expectedReflectionIds), `reflection DOM order is not R01-R36: ${JSON.stringify(reflectionIds)}`);
-  assert(JSON.stringify(visibleReflectionIds) === JSON.stringify(expectedReflectionIds), `reflection labels are not R01-R36: ${JSON.stringify(visibleReflectionIds)}`);
+  assert(await page.locator(".novel-reflection-choice-id").count() === 0, "internal reflection IDs must not be visible");
+  assert(reflectionAriaLabels.every((label) => !/\bR\d{2}\b/u.test(label)), `internal reflection IDs leaked into aria-labels: ${JSON.stringify(reflectionAriaLabels)}`);
   const gridGeometry = await page.evaluate(() => {
     const surface = document.querySelector("#novel-reflection-surface");
     const rects = [...document.querySelectorAll(".novel-reflection-grid button")].map((button) => button.getBoundingClientRect());
     return { scrolls: surface.scrollHeight > surface.clientHeight + 1, allVisible: rects.every((rect) => rect.top >= 0 && rect.bottom <= innerHeight && rect.left >= 0 && rect.right <= innerWidth) };
   });
   assert(!gridGeometry.scrolls && gridGeometry.allVisible, "36 statements must fit in one desktop viewport");
+  await checkReflectionControlGeometry(page, "desktop-2048");
   const choicePath = await screenshot(page, "choice");
   await compareBaseline(choicePath, "choice");
   for (let index = 0; index < 3; index += 1) await page.locator(".novel-reflection-grid button").nth(index).click();
@@ -1202,12 +1255,22 @@ try {
   await screenshot(medium, "start-1440");
   await bootAt(medium, reflection.id);
   assert(await medium.locator(".novel-reflection-grid button").count() === 36, "1440 reflection grid is incomplete");
+  await checkReflectionControlGeometry(medium, "desktop-1440");
   await screenshot(medium, "choice-1440");
   const mediumGxInteraction = steps.find((step) => step.type === "interaction" && step.interaction.kind === "gx");
   await bootAt(medium, mediumGxInteraction.id);
   await medium.locator(".novel-interaction-open").click();
   await medium.locator(".story-detour-dock").waitFor({ state: "visible", timeout: 15000 });
   await assertNovelDetourModal(medium, mediumGxInteraction.interaction.kind);
+  const currentContactScene = story.scenes.find((scene) => scene.chapter === "CURRENT CONTACT" || scene.title?.includes("CURRENT CONTACT"));
+  const currentContact = steps.find((step) => step.id === "return_to_start_005")
+    || currentContactScene?.steps.find((step) => step.type !== "end");
+  if (currentContact) {
+    await bootAt(medium, currentContact.id);
+    await checkCurrentContactNonImpact(medium, "desktop-1440");
+  } else {
+    report.currentContactLayouts.push({ label: "desktop-1440", skipped: "CURRENT CONTACT is absent from this generated story version" });
+  }
   report.viewports.push({ width: 1440, height: 900, passed: true });
   await context.close();
 
@@ -1294,6 +1357,36 @@ try {
     assert(presentation.backgroundSize.split(",").every((value) => value.trim() === "cover") && presentation.cueId === cue.id && !presentation.horizontalOverflow, `${stepId} 390px cue presentation failed: ${JSON.stringify(presentation)}`);
     report.productionBackgrounds.push({ viewport: "390x844", stepId, cueId: cue.id, assetPath: cue.assetPath, passed: true });
     await screenshot(mobile, `production-${stepId.slice(-3)}-mobile`);
+  }
+  const mobileEndGeometry = await mobile.evaluate(() => {
+    const surface = document.querySelector("#novel-reflection-surface");
+    surface.scrollTop = surface.scrollHeight;
+    const lastChoice = document.querySelector('.novel-reflection-grid > button[data-choice-id="R36"]');
+    const footer = document.querySelector(".novel-reflection-shell > footer");
+    const proceed = document.querySelector(".novel-reflection-proceed");
+    const lastRect = lastChoice.getBoundingClientRect();
+    const footerRect = footer.getBoundingClientRect();
+    const proceedRect = proceed.getBoundingClientRect();
+    const intersects = Math.min(lastRect.right, footerRect.right) > Math.max(lastRect.left, footerRect.left)
+      && Math.min(lastRect.bottom, footerRect.bottom) > Math.max(lastRect.top, footerRect.top);
+    return {
+      scrollTop: surface.scrollTop,
+      scrollMax: surface.scrollHeight - surface.clientHeight,
+      horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+      lastChoice: { left: lastRect.left, top: lastRect.top, right: lastRect.right, bottom: lastRect.bottom },
+      footer: { left: footerRect.left, top: footerRect.top, right: footerRect.right, bottom: footerRect.bottom },
+      proceed: { left: proceedRect.left, top: proceedRect.top, right: proceedRect.right, bottom: proceedRect.bottom },
+      lastChoiceVisible: lastRect.top >= 0 && lastRect.bottom <= innerHeight,
+      proceedVisible: proceedRect.top >= 0 && proceedRect.bottom <= innerHeight,
+      lastChoiceIntersectsFooter: intersects,
+    };
+  });
+  assert(mobileEndGeometry.scrollTop === mobileEndGeometry.scrollMax && !mobileEndGeometry.horizontalOverflow && mobileEndGeometry.lastChoiceVisible && mobileEndGeometry.proceedVisible && !mobileEndGeometry.lastChoiceIntersectsFooter, `mobile R36/footer reachability failed: ${JSON.stringify(mobileEndGeometry)}`);
+  report.reflectionLayouts.push({ label: "mobile-390-end", ...mobileEndGeometry });
+  await screenshot(mobile, "choice-mobile-end");
+  if (currentContact) {
+    await bootAt(mobile, currentContact.id, {}, { reducedMotion: true });
+    await checkCurrentContactNonImpact(mobile, "mobile-390");
   }
   await bootAt(mobile, chat.id, {}, { reducedMotion: true });
   await advanceLinear(mobile);

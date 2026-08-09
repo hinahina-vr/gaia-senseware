@@ -1283,12 +1283,9 @@
       button.type = "button";
       button.dataset.choiceId = option.id;
       button.setAttribute("aria-pressed", "false");
-      const id = document.createElement("small");
-      id.className = "novel-reflection-choice-id";
-      id.textContent = option.id;
       const text = document.createElement("strong");
       text.textContent = option.text;
-      button.append(id, text);
+      button.append(text);
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         const selected = new Set(state.reflectionIds);
