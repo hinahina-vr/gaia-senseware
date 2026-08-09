@@ -1278,16 +1278,17 @@
       proceed.textContent = selected.size ? "選んだ姿勢で進む" : "選ばずに進む";
     };
 
-    step.options.forEach((option, index) => {
+    const createOptionButton = (option) => {
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.choiceId = option.id;
       button.setAttribute("aria-pressed", "false");
-      const number = document.createElement("span");
+      const id = document.createElement("small");
+      id.className = "novel-reflection-choice-id";
+      id.textContent = option.id;
       const text = document.createElement("strong");
-      number.textContent = String(index + 1).padStart(2, "0");
       text.textContent = option.text;
-      button.append(number, text);
+      button.append(id, text);
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         const selected = new Set(state.reflectionIds);
@@ -1301,8 +1302,16 @@
         saveProgress();
         update();
       });
-      grid.append(button);
-    });
+      return button;
+    };
+
+    const reflectionNumber = (option) => Number(/^R(\d{2})$/.exec(option.id)?.[1] || Number.MAX_SAFE_INTEGER);
+    const orderedOptions = [...step.options].sort((left, right) => (
+      reflectionNumber(left) - reflectionNumber(right)
+      || String(left.id).localeCompare(String(right.id))
+    ));
+    grid.classList.add("is-flat");
+    orderedOptions.forEach((option) => grid.append(createOptionButton(option)));
 
     proceed.addEventListener("click", (event) => {
       event.stopPropagation();

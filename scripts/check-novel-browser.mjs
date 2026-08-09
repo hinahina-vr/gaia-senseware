@@ -945,6 +945,13 @@ try {
   const reflection = steps.find((step) => step.type === "reflectionChoice");
   await bootAt(page, reflection.id, { editorialChoice: "SOURCE_RECORD", evesRoute: [{ decisionId: "editorial_choice", value: "SOURCE_RECORD", label: "本人記録で構成する / SOURCE RECORD", stepId: editorial.id }] });
   assert(await page.locator(".novel-reflection-grid button").count() === 36, "reflection grid must contain 36 statements");
+  assert(await page.locator(".novel-reflection-group").count() === 0, "reflection grid must not expose theme groups");
+  assert(await page.locator(".novel-reflection-grid h3").count() === 0, "reflection grid must not expose theme headings");
+  const expectedReflectionIds = Array.from({ length: 36 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`);
+  const reflectionIds = await page.locator(".novel-reflection-grid > button").evaluateAll((buttons) => buttons.map((button) => button.dataset.choiceId));
+  const visibleReflectionIds = await page.locator(".novel-reflection-choice-id").allTextContents();
+  assert(JSON.stringify(reflectionIds) === JSON.stringify(expectedReflectionIds), `reflection DOM order is not R01-R36: ${JSON.stringify(reflectionIds)}`);
+  assert(JSON.stringify(visibleReflectionIds) === JSON.stringify(expectedReflectionIds), `reflection labels are not R01-R36: ${JSON.stringify(visibleReflectionIds)}`);
   const gridGeometry = await page.evaluate(() => {
     const surface = document.querySelector("#novel-reflection-surface");
     const rects = [...document.querySelectorAll(".novel-reflection-grid button")].map((button) => button.getBoundingClientRect());
