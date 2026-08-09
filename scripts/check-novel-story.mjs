@@ -65,9 +65,9 @@ assert.equal(new Set(reflection.options.map((option) => option.text)).size, 36, 
 
 const dominance = { law: 0, neutral: 0, chaos: 0 };
 const expectedReflectionIds = Array.from({ length: 36 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`);
-assert.deepEqual(reflection.options.map((option) => option.id).sort(), expectedReflectionIds, "all fixed reflection IDs must remain present");
+assert.deepEqual(reflection.options.map((option) => option.id), expectedReflectionIds, "reflection options must keep the fixed R01-R36 display order");
 const expectedThemes = ["不確実さと解釈", "記録と検証", "技術と生成責任", "権利と当事者", "制度と行動", "人間・地球・未来"];
-assert.deepEqual([...new Set(reflection.options.map((option) => option.theme))], expectedThemes, "reflection themes must keep the script order");
+assert.deepEqual([...new Set(reflection.options.map((option) => option.theme))].sort(), [...expectedThemes].sort(), "all six internal reflection themes must remain present");
 expectedThemes.forEach((theme) => assert.equal(reflection.options.filter((option) => option.theme === theme).length, 6, `${theme} must contain six statements`));
 reflection.options.forEach((option) => {
   const values = Object.entries(option.weights);

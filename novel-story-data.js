@@ -7773,59 +7773,15 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               "theme": "不確実さと解釈"
             },
             {
-              "id": "R08",
-              "text": "矛盾する二つの記録を、急いで一つにしない。",
-              "weights": {
-                "law": 0,
-                "neutral": 2,
-                "chaos": 1
-              },
-              "themeId": "T1",
-              "theme": "不確実さと解釈"
-            },
-            {
-              "id": "R11",
-              "text": "安全な解釈より、まだ名のない可能性へ進む。",
+              "id": "R02",
+              "text": "中央の正解より、各地の異なる判断を生かす。",
               "weights": {
                 "law": 0,
                 "neutral": 1,
                 "chaos": 2
               },
-              "themeId": "T1",
-              "theme": "不確実さと解釈"
-            },
-            {
-              "id": "R13",
-              "text": "一つの尺度で測れないものを、比較不能のまま置く。",
-              "weights": {
-                "law": 0,
-                "neutral": 2,
-                "chaos": 1
-              },
-              "themeId": "T1",
-              "theme": "不確実さと解釈"
-            },
-            {
-              "id": "R22",
-              "text": "空欄を欠陥ではなく、観測できなかった証拠として扱う。",
-              "weights": {
-                "law": 1,
-                "neutral": 2,
-                "chaos": 0
-              },
-              "themeId": "T1",
-              "theme": "不確実さと解釈"
-            },
-            {
-              "id": "R30",
-              "text": "分からないという状態を、判断の失敗にしない。",
-              "weights": {
-                "law": 0,
-                "neutral": 2,
-                "chaos": 1
-              },
-              "themeId": "T1",
-              "theme": "不確実さと解釈"
+              "themeId": "T5",
+              "theme": "制度と行動"
             },
             {
               "id": "R03",
@@ -7839,52 +7795,19 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               "theme": "記録と検証"
             },
             {
+              "id": "R04",
+              "text": "制度が拾えない変化を、個人の感覚から始める。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
+            },
+            {
               "id": "R05",
               "text": "記録されないものを、存在しなかったことにしない。",
-              "weights": {
-                "law": 2,
-                "neutral": 1,
-                "chaos": 0
-              },
-              "themeId": "T2",
-              "theme": "記録と検証"
-            },
-            {
-              "id": "R10",
-              "text": "解釈より先に、出典と変更履歴を残す。",
-              "weights": {
-                "law": 2,
-                "neutral": 1,
-                "chaos": 0
-              },
-              "themeId": "T2",
-              "theme": "記録と検証"
-            },
-            {
-              "id": "R12",
-              "text": "正しさより、どこから見た記録かを確かめる。",
-              "weights": {
-                "law": 1,
-                "neutral": 2,
-                "chaos": 0
-              },
-              "themeId": "T2",
-              "theme": "記録と検証"
-            },
-            {
-              "id": "R19",
-              "text": "声の大きさではなく、再現可能な証拠を基準にする。",
-              "weights": {
-                "law": 2,
-                "neutral": 1,
-                "chaos": 0
-              },
-              "themeId": "T2",
-              "theme": "記録と検証"
-            },
-            {
-              "id": "R28",
-              "text": "観測装置の限界も、記録の一部として公開する。",
               "weights": {
                 "law": 2,
                 "neutral": 1,
@@ -7905,56 +7828,89 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               "theme": "技術と生成責任"
             },
             {
+              "id": "R07",
+              "text": "人間の都合で消える生態系に、法的な代理を与える。",
+              "weights": {
+                "law": 2,
+                "neutral": 0,
+                "chaos": 1
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
+            },
+            {
+              "id": "R08",
+              "text": "矛盾する二つの記録を、急いで一つにしない。",
+              "weights": {
+                "law": 0,
+                "neutral": 2,
+                "chaos": 1
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
+            },
+            {
+              "id": "R09",
+              "text": "完成した記録より、書き換え続けられる余白を残す。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              },
+              "themeId": "T6",
+              "theme": "人間・地球・未来"
+            },
+            {
+              "id": "R10",
+              "text": "解釈より先に、出典と変更履歴を残す。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              },
+              "themeId": "T2",
+              "theme": "記録と検証"
+            },
+            {
+              "id": "R11",
+              "text": "安全な解釈より、まだ名のない可能性へ進む。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
+            },
+            {
+              "id": "R12",
+              "text": "正しさより、どこから見た記録かを確かめる。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              },
+              "themeId": "T2",
+              "theme": "記録と検証"
+            },
+            {
+              "id": "R13",
+              "text": "一つの尺度で測れないものを、比較不能のまま置く。",
+              "weights": {
+                "law": 0,
+                "neutral": 2,
+                "chaos": 1
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
+            },
+            {
               "id": "R14",
               "text": "責任の所在が消える共同制作を、認めない。",
               "weights": {
                 "law": 2,
                 "neutral": 0,
                 "chaos": 1
-              },
-              "themeId": "T3",
-              "theme": "技術と生成責任"
-            },
-            {
-              "id": "R24",
-              "text": "誰が変えたか辿れない生成物を、公開しない。",
-              "weights": {
-                "law": 2,
-                "neutral": 0,
-                "chaos": 0
-              },
-              "themeId": "T3",
-              "theme": "技術と生成責任"
-            },
-            {
-              "id": "R27",
-              "text": "原文と生成文のあいだに、優劣ではなく距離を表示する。",
-              "weights": {
-                "law": 1,
-                "neutral": 2,
-                "chaos": 0
-              },
-              "themeId": "T3",
-              "theme": "技術と生成責任"
-            },
-            {
-              "id": "R29",
-              "text": "出典が正しくても、世界を閉じる説明には従わない。",
-              "weights": {
-                "law": 0,
-                "neutral": 1,
-                "chaos": 2
-              },
-              "themeId": "T3",
-              "theme": "技術と生成責任"
-            },
-            {
-              "id": "R34",
-              "text": "公共の記録は、私的な物語より改変に強くする。",
-              "weights": {
-                "law": 2,
-                "neutral": 0,
-                "chaos": 0
               },
               "themeId": "T3",
               "theme": "技術と生成責任"
@@ -7971,92 +7927,15 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               "theme": "権利と当事者"
             },
             {
-              "id": "R18",
-              "text": "既存の分類に入らない声のために、分類そのものを壊す。",
+              "id": "R16",
+              "text": "人間と地球の境界を固定せず、関係の変化を見る。",
               "weights": {
                 "law": 0,
-                "neutral": 0,
-                "chaos": 2
-              },
-              "themeId": "T4",
-              "theme": "権利と当事者"
-            },
-            {
-              "id": "R21",
-              "text": "未来のためという名目で、現在の自由を差し出さない。",
-              "weights": {
-                "law": 1,
-                "neutral": 0,
-                "chaos": 2
-              },
-              "themeId": "T4",
-              "theme": "権利と当事者"
-            },
-            {
-              "id": "R33",
-              "text": "未来への責任を語る前に、現在の犠牲を数える。",
-              "weights": {
-                "law": 1,
                 "neutral": 2,
-                "chaos": 0
-              },
-              "themeId": "T4",
-              "theme": "権利と当事者"
-            },
-            {
-              "id": "R35",
-              "text": "責任者の許可より、当事者の異議を先に通す。",
-              "weights": {
-                "law": 0,
-                "neutral": 1,
-                "chaos": 2
-              },
-              "themeId": "T4",
-              "theme": "権利と当事者"
-            },
-            {
-              "id": "R36",
-              "text": "結論を共有できなくても、検証の手続きを共有する。",
-              "weights": {
-                "law": 1,
-                "neutral": 2,
-                "chaos": 0
-              },
-              "themeId": "T4",
-              "theme": "権利と当事者"
-            },
-            {
-              "id": "R02",
-              "text": "中央の正解より、各地の異なる判断を生かす。",
-              "weights": {
-                "law": 0,
-                "neutral": 1,
-                "chaos": 2
-              },
-              "themeId": "T5",
-              "theme": "制度と行動"
-            },
-            {
-              "id": "R04",
-              "text": "制度が拾えない変化を、個人の感覚から始める。",
-              "weights": {
-                "law": 0,
-                "neutral": 1,
-                "chaos": 2
-              },
-              "themeId": "T5",
-              "theme": "制度と行動"
-            },
-            {
-              "id": "R07",
-              "text": "人間の都合で消える生態系に、法的な代理を与える。",
-              "weights": {
-                "law": 2,
-                "neutral": 0,
                 "chaos": 1
               },
-              "themeId": "T5",
-              "theme": "制度と行動"
+              "themeId": "T6",
+              "theme": "人間・地球・未来"
             },
             {
               "id": "R17",
@@ -8070,48 +7949,26 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               "theme": "制度と行動"
             },
             {
-              "id": "R23",
-              "text": "観測者であることをやめ、結果へ介入する。",
+              "id": "R18",
+              "text": "既存の分類に入らない声のために、分類そのものを壊す。",
               "weights": {
                 "law": 0,
                 "neutral": 0,
                 "chaos": 2
               },
-              "themeId": "T5",
-              "theme": "制度と行動"
+              "themeId": "T4",
+              "theme": "権利と当事者"
             },
             {
-              "id": "R26",
-              "text": "迷ったときは、取り返しのつかない損失を先に防ぐ。",
+              "id": "R19",
+              "text": "声の大きさではなく、再現可能な証拠を基準にする。",
               "weights": {
                 "law": 2,
                 "neutral": 1,
                 "chaos": 0
               },
-              "themeId": "T5",
-              "theme": "制度と行動"
-            },
-            {
-              "id": "R09",
-              "text": "完成した記録より、書き換え続けられる余白を残す。",
-              "weights": {
-                "law": 0,
-                "neutral": 1,
-                "chaos": 2
-              },
-              "themeId": "T6",
-              "theme": "人間・地球・未来"
-            },
-            {
-              "id": "R16",
-              "text": "人間と地球の境界を固定せず、関係の変化を見る。",
-              "weights": {
-                "law": 0,
-                "neutral": 2,
-                "chaos": 1
-              },
-              "themeId": "T6",
-              "theme": "人間・地球・未来"
+              "themeId": "T2",
+              "theme": "記録と検証"
             },
             {
               "id": "R20",
@@ -8125,6 +7982,50 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               "theme": "人間・地球・未来"
             },
             {
+              "id": "R21",
+              "text": "未来のためという名目で、現在の自由を差し出さない。",
+              "weights": {
+                "law": 1,
+                "neutral": 0,
+                "chaos": 2
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
+            },
+            {
+              "id": "R22",
+              "text": "空欄を欠陥ではなく、観測できなかった証拠として扱う。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
+            },
+            {
+              "id": "R23",
+              "text": "観測者であることをやめ、結果へ介入する。",
+              "weights": {
+                "law": 0,
+                "neutral": 0,
+                "chaos": 2
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
+            },
+            {
+              "id": "R24",
+              "text": "誰が変えたか辿れない生成物を、公開しない。",
+              "weights": {
+                "law": 2,
+                "neutral": 0,
+                "chaos": 0
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
+            },
+            {
               "id": "R25",
               "text": "再現できない経験にも、世界を変える力を認める。",
               "weights": {
@@ -8134,6 +8035,61 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               },
               "themeId": "T6",
               "theme": "人間・地球・未来"
+            },
+            {
+              "id": "R26",
+              "text": "迷ったときは、取り返しのつかない損失を先に防ぐ。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              },
+              "themeId": "T5",
+              "theme": "制度と行動"
+            },
+            {
+              "id": "R27",
+              "text": "原文と生成文のあいだに、優劣ではなく距離を表示する。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
+            },
+            {
+              "id": "R28",
+              "text": "観測装置の限界も、記録の一部として公開する。",
+              "weights": {
+                "law": 2,
+                "neutral": 1,
+                "chaos": 0
+              },
+              "themeId": "T2",
+              "theme": "記録と検証"
+            },
+            {
+              "id": "R29",
+              "text": "出典が正しくても、世界を閉じる説明には従わない。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
+            },
+            {
+              "id": "R30",
+              "text": "分からないという状態を、判断の失敗にしない。",
+              "weights": {
+                "law": 0,
+                "neutral": 2,
+                "chaos": 1
+              },
+              "themeId": "T1",
+              "theme": "不確実さと解釈"
             },
             {
               "id": "R31",
@@ -8156,6 +8112,50 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               },
               "themeId": "T6",
               "theme": "人間・地球・未来"
+            },
+            {
+              "id": "R33",
+              "text": "未来への責任を語る前に、現在の犠牲を数える。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
+            },
+            {
+              "id": "R34",
+              "text": "公共の記録は、私的な物語より改変に強くする。",
+              "weights": {
+                "law": 2,
+                "neutral": 0,
+                "chaos": 0
+              },
+              "themeId": "T3",
+              "theme": "技術と生成責任"
+            },
+            {
+              "id": "R35",
+              "text": "責任者の許可より、当事者の異議を先に通す。",
+              "weights": {
+                "law": 0,
+                "neutral": 1,
+                "chaos": 2
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
+            },
+            {
+              "id": "R36",
+              "text": "結論を共有できなくても、検証の手続きを共有する。",
+              "weights": {
+                "law": 1,
+                "neutral": 2,
+                "chaos": 0
+              },
+              "themeId": "T4",
+              "theme": "権利と当事者"
             }
           ]
         },

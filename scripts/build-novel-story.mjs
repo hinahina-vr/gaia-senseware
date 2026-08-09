@@ -147,6 +147,7 @@ const parseSceneSteps = (scene, sectionLines) => {
       if (themedReflectionOptions.length !== REFLECTION_OPTIONS.length) throw new Error("reflection_choice: 正本には36文が必要です");
       if (new Set(themedReflectionOptions.map((option) => option.id)).size !== REFLECTION_OPTIONS.length) throw new Error("reflection_choice: R番号が重複しています");
       if (new Set(themedReflectionOptions.map((option) => option.themeId)).size !== 6) throw new Error("reflection_choice: テーマは6件必要です");
+      themedReflectionOptions.sort((left, right) => left.id.localeCompare(right.id, "en"));
     }
   }
 
