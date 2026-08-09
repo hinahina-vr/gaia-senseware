@@ -1557,6 +1557,19 @@
             <strong id="novel-chapter-title"></strong>
           </div>
 
+          <div
+            class="novel-temporal-transition"
+            id="novel-temporal-transition"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            hidden
+          >
+            <span id="novel-temporal-transition-context"></span>
+            <strong id="novel-temporal-transition-title"></strong>
+            <small id="novel-temporal-transition-detail" hidden></small>
+          </div>
+
           <div class="novel-cast" id="novel-cast" data-speaker="narrator" aria-hidden="true">
             <figure class="novel-character novel-character--sora" id="novel-character-sora" data-expression="calm">
               <div class="novel-character-portrait" role="img" aria-label="青空をイメージしたアマネの立ち絵"></div>
@@ -1664,7 +1677,9 @@
             aria-label="この場面の内容説明を開く"
           >
             <span id="novel-data-kind">SOURCE</span>
-            <strong id="novel-signal-title">公開データは、地球が発している信号である。</strong>
+            <span id="novel-signal-title" hidden></span>
+            <em class="novel-temporal-context" id="novel-temporal-context" hidden></em>
+            <strong id="novel-location">GAIA SENSATION｜現在の場面</strong>
             <small aria-hidden="true">DETAIL +</small>
           </button>
 
@@ -1717,7 +1732,7 @@
           <div class="novel-choices" id="novel-choices" aria-label="物語の選択肢"></div>
 
           <footer class="novel-footer">
-            <span id="novel-location">夏の逗子</span>
+            <span class="novel-footer-location">夏の逗子</span>
             <span>CLICK / SPACE — NEXT</span>
           </footer>
         </section>
