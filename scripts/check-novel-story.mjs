@@ -23,6 +23,7 @@ assert.equal(sceneSet.size, sceneIds.length, "scene IDs must be unique");
 const steps = scenes.flatMap((scene) => scene.steps || []);
 const stepIds = steps.map((step) => step.id);
 assert.equal(new Set(stepIds).size, stepIds.length, "step IDs must be unique");
+assert.equal(stepIds.length, 1053, "the approved opening rewrite must reduce the full story to 1053 steps");
 const visibleStoryText = steps.flatMap((step) => [step.text, step.prompt, ...(step.options || []).map((option) => option.label)]).filter(Boolean).join("\n");
 assert.doesNotMatch(visibleStoryText, /LOCAL FIRST|STATION FIRST/u, "internal observation-order identifiers leaked into visible story text");
 assert.doesNotMatch(visibleStoryText, /\b(?:LOCAL SOURCE|SOURCE RECORD|DISCLOSE DERIVATION|SOURCE|DERIVED|CURRENT|VISITOR TRACE|PRODUCTION RECORD|RESPONSIBLE|EDITORIAL CHOICE|PUBLIC BUILD CHANGED|REFLECTION FIELD|CLEAR)\b/u, "internal or unexplained system labels leaked into visible story text");
@@ -124,6 +125,116 @@ for (const [sceneId, oldCount] of Object.entries(expectedOldStepCounts)) {
   }
   assert.deepEqual(coverage.slice(1), Array(oldCount).fill(1), `${sceneId}: old-step migration ranges must cover every former step exactly once`);
 }
+
+const openingSceneCounts = {
+  current_exhibition: 16,
+  opening_empty_seat: 18,
+  prologue_online_circle: 9,
+};
+for (const [sceneId, expectedCount] of Object.entries(openingSceneCounts)) {
+  assert.equal(scenes.find((scene) => scene.id === sceneId)?.steps.length, expectedCount, `${sceneId}: approved opening step count changed`);
+}
+assert.deepEqual(scenes.map((scene) => [scene.id, scene.steps.length]), [
+  ["current_exhibition", 16], ["opening_empty_seat", 18], ["prologue_online_circle", 9], ["prologue_basil", 23],
+  ["choice_observation_order", 12], ["first_meeting_promise", 70], ["first_meeting_hall", 85], ["festival_walk", 21],
+  ["production_year", 261], ["absence", 95], ["search", 146], ["festival_build", 18], ["gx_deep_time", 26],
+  ["mode03_map", 20], ["mode07_abstract", 54], ["interlude_sea", 67], ["mode08_map_layers", 19],
+  ["mode10_space", 18], ["choice_editorial", 7], ["epilogue_reflection_field", 2], ["choice_reflection", 3],
+  ["final_record", 27], ["return_to_start", 36],
+], "only the three approved opening scenes may change their step counts");
+
+const openingMigrationSource = fs.readFileSync(path.join(projectRoot, "docs", "SCENARIO_HANDOFF_OPENING_RECORD_TRANSITION.md"), "utf8");
+const openingMigrationCsv = openingMigrationSource.match(/## 完全一意移行表[\s\S]*?```csv\n([\s\S]*?)\n```/u)?.[1] || "";
+const openingMigrationRows = openingMigrationCsv.split("\n").filter(Boolean).map((line) => {
+  const fields = line.split(",");
+  assert.equal(fields.length, 3, `opening migration row must have three fields: ${line}`);
+  const [oldStepId, newSceneId, newStepId] = fields;
+  return { oldStepId, newSceneId, newStepId };
+});
+const expectedOpeningOldIds = Object.entries({ current_exhibition: 42, opening_empty_seat: 25, prologue_online_circle: 13 })
+  .flatMap(([sceneId, count]) => Array.from({ length: count }, (_, index) => `${sceneId}_${String(index + 1).padStart(3, "0")}`));
+assert.equal(openingMigrationRows.length, 80, "opening migration must contain all 80 former steps");
+assert.equal(new Set(openingMigrationRows.map((row) => row.oldStepId)).size, 80, "opening migration old step IDs must be unique");
+assert.deepEqual([...openingMigrationRows.map((row) => row.oldStepId)].sort(), [...expectedOpeningOldIds].sort(), "opening migration old step set must exactly match the former 80 steps");
+const generatedStepSet = new Set(stepIds);
+for (const row of openingMigrationRows) {
+  assert.ok(sceneSet.has(row.newSceneId), `opening migration target scene is missing: ${row.newSceneId}`);
+  assert.ok(generatedStepSet.has(row.newStepId), `opening migration target step is missing: ${row.newStepId}`);
+  assert.ok(row.newStepId.startsWith(`${row.newSceneId}_`), `opening migration target scene and step disagree: ${row.oldStepId}`);
+}
+const currentMigrationRows = openingMigrationRows.filter((row) => row.oldStepId.startsWith("current_exhibition_"));
+for (const row of currentMigrationRows) {
+  const oldIndex = Number(row.oldStepId.slice(-3));
+  const targetIndex = Number(row.newStepId.slice(-3));
+  if (oldIndex <= 33) {
+    assert.equal(row.newSceneId, "current_exhibition", `${row.oldStepId}: a pre-START save must remain before START`);
+    assert.ok(targetIndex <= 14, `${row.oldStepId}: a pre-START save crossed the new START boundary`);
+  } else if (oldIndex === 34) {
+    assert.deepEqual([row.newSceneId, row.newStepId], ["current_exhibition", "current_exhibition_015"], "the former START must map to the new START interaction");
+  } else {
+    const afterStart = row.newSceneId === "opening_empty_seat" || (row.newSceneId === "current_exhibition" && targetIndex >= 16);
+    assert.ok(afterStart, `${row.oldStepId}: a post-START save moved before START`);
+  }
+}
+for (const sceneId of ["opening_empty_seat", "prologue_online_circle"]) {
+  const rows = openingMigrationRows.filter((row) => row.oldStepId.startsWith(`${sceneId}_`));
+  let previousTarget = 0;
+  for (const row of rows) {
+    assert.equal(row.newSceneId, sceneId, `${row.oldStepId}: migration must not jump to a future scene`);
+    const target = Number(row.newStepId.slice(-3));
+    assert.ok(target >= previousTarget, `${sceneId}: migration targets must be monotonic`);
+    previousTarget = target;
+  }
+}
+
+const openingScenes = scenes.filter((scene) => Object.hasOwn(openingSceneCounts, scene.id));
+const openingSteps = openingScenes.flatMap((scene) => scene.steps);
+const openingVisibleText = openingSteps.flatMap((step) => [step.text, step.prompt, ...(step.options || []).map((option) => option.label)]).filter(Boolean).join("\n");
+assert.equal(openingVisibleText.match(/三か月前/gu)?.length || 0, 1, "the three opening scenes must use 三か月前 exactly once in visible step copy");
+const openingLocationAndUi = openingScenes.flatMap((scene) => [
+  scene.temporal.location,
+  scene.temporal.displayTitle,
+  scene.temporal.entryTransition?.displayTitle,
+  ...(scene.temporal.transitions || []).map((transition) => transition.displayTitle),
+  ...scene.steps.filter((step) => step.type === "ui").map((step) => step.text),
+]).filter(Boolean).join("\n");
+assert.doesNotMatch(openingLocationAndUi, /三か月前/u, "三か月前 must not be hard-coded into opening locations, headers, or UI steps");
+assert.doesNotMatch(openingVisibleText, /監視映像|隠し録音/u, "the opening must explain its record medium in affirmative language");
+const reconstructionCopy = "これは、二人が後から照合した保存写真、作業予定、学内チャット、作業ログ、作業メモを、端末が一つの場面として組み直した制作記録だ。";
+const dialogueDisclosure = "部屋で交わした短いやり取りは、二人の照合メモで一致した部分を再構成している。";
+assert.equal(openingVisibleText.match(new RegExp(reconstructionCopy, "gu"))?.length || 0, 1, "the affirmative record-medium explanation must appear exactly once");
+assert.equal(openingVisibleText.match(new RegExp(dialogueDisclosure, "gu"))?.length || 0, 1, "the reconstructed-dialogue disclosure must appear exactly once");
+const currentOpeningScene = scenes.find((scene) => scene.id === "current_exhibition");
+const emptySeatScene = scenes.find((scene) => scene.id === "opening_empty_seat");
+const onlineCircleScene = scenes.find((scene) => scene.id === "prologue_online_circle");
+assert.equal(currentOpeningScene?.steps.find((step) => step.type === "ui" && step.text === "START")?.id, "current_exhibition_015", "START interaction moved from its approved step");
+assert.match(currentOpeningScene?.steps[15]?.text || "", /身体は学園祭の展示席に残ったまま/u, "the player must remain physically at the exhibition seat after START");
+assert.doesNotMatch(emptySeatScene?.steps.map((step) => step.text || "").join("\n") || "", /私/u, "the August RECORD must not use the player's first-person viewpoint");
+assert.doesNotMatch(onlineCircleScene?.steps.map((step) => step.text || "").join("\n") || "", /私/u, "the May RECORD must not use the player's first-person viewpoint");
+assert.deepEqual(emptySeatScene?.steps.filter((step) => step.type === "chat").map((step) => step.id), ["opening_empty_seat_006", "opening_empty_seat_007", "opening_empty_seat_008"], "timestamped chat originals must stay separate from reconstructed dialogue");
+assert.deepEqual(emptySeatScene?.steps.filter((step) => step.type === "dialogue").map((step) => step.id), ["opening_empty_seat_013", "opening_empty_seat_014", "opening_empty_seat_015", "opening_empty_seat_016"], "reconstructed room dialogue must stay in normal dialogue steps");
+assert.match(onlineCircleScene?.steps[8]?.text || "", /既存の学内チャット画面/u, "display-name correspondence must use the existing chat surface, not a dedicated card");
+assert.equal(currentOpeningScene?.nextSceneId, "opening_empty_seat");
+assert.equal(emptySeatScene?.nextSceneId, "prologue_online_circle");
+assert.equal(onlineCircleScene?.nextSceneId, "prologue_basil");
+assert.deepEqual(emptySeatScene?.temporal.entryTransition, {
+  stepId: "opening_empty_seat_001",
+  fromTemporalContext: "CURRENT",
+  toTemporalContext: "RECORD",
+  transitionAt: "2026-08-01T10:21:00+09:00",
+  timePrecision: "MINUTE",
+  displayTitle: "8月1日（土） 10:21｜海に近い町・共同作業室",
+});
+assert.deepEqual(onlineCircleScene?.temporal.entryTransition, {
+  stepId: "prologue_online_circle_001",
+  fromTemporalContext: "RECORD",
+  toTemporalContext: "RECORD",
+  transitionAt: "2025-05-01T18:00:00+09:00",
+  timePrecision: "MINUTE",
+  displayTitle: "5月1日（木） 18:00｜学内チャット「惑星の放課後」",
+});
+const temporalTransitionCount = scenes.reduce((count, scene) => count + Number(Boolean(scene.temporal.entryTransition)) + (scene.temporal.transitions?.length || 0), 0);
+assert.equal(temporalTransitionCount, 61, "opening rewrite must add only the approved RECORD-to-RECORD transition");
 
 const allText = steps.map((step) => step.text || "").join("\n");
 const exhibitionText = scenes.find((scene) => scene.id === "current_exhibition")?.steps.map((step) => step.text || "").join("\n") || "";

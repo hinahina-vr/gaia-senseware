@@ -1,0 +1,125 @@
+# opening 現在→記録 改稿 handoff / step ID移行表
+
+## 対象と不変条件
+
+- 基準親: `53a6aae4932eedff9127f9a4316dbbec130feddb`
+- 対象: `current_exhibition`、`opening_empty_seat`、`prologue_online_circle`
+- scene ID、START interaction、後続scene、選択値、正式出典、後半正史、`ARCHIVES`は変更しない。
+- 旧80stepを新43stepへ再採番する。
+- CURRENTは展示席にいる来場者「私」の一人称、RECORDは保存資料を二人が照合した編集再構成とする。
+- 時刻付き学内チャットは送信原文、室内の短い会話は二人の照合メモで一致した部分の再構成として分ける。
+
+## scene別step数
+
+| scene | 旧 | 新 | 差分 |
+|---|---:|---:|---:|
+| current_exhibition | 42 | 16 | -26 |
+| opening_empty_seat | 25 | 18 | -7 |
+| prologue_online_circle | 13 | 9 | -4 |
+| 合計 | 80 | 43 | -37 |
+
+全編は1090stepから1053stepになる。対象外の20sceneはstep数・step IDとも変更しない。
+
+## 完全一意移行表
+
+各行は `oldStepId,newSceneId,newStepId`。旧step IDは80件すべてをちょうど一度だけ列挙し、各行の移行先は一件に固定する。複数の旧stepが同じ安全な新stepへ集約される場合はある。
+
+```csv
+current_exhibition_001,current_exhibition,current_exhibition_001
+current_exhibition_002,current_exhibition,current_exhibition_002
+current_exhibition_003,current_exhibition,current_exhibition_002
+current_exhibition_004,current_exhibition,current_exhibition_002
+current_exhibition_005,current_exhibition,current_exhibition_002
+current_exhibition_006,current_exhibition,current_exhibition_002
+current_exhibition_007,current_exhibition,current_exhibition_002
+current_exhibition_008,current_exhibition,current_exhibition_002
+current_exhibition_009,current_exhibition,current_exhibition_003
+current_exhibition_010,current_exhibition,current_exhibition_003
+current_exhibition_011,current_exhibition,current_exhibition_003
+current_exhibition_012,current_exhibition,current_exhibition_004
+current_exhibition_013,current_exhibition,current_exhibition_004
+current_exhibition_014,current_exhibition,current_exhibition_005
+current_exhibition_015,current_exhibition,current_exhibition_006
+current_exhibition_016,current_exhibition,current_exhibition_006
+current_exhibition_017,current_exhibition,current_exhibition_007
+current_exhibition_018,current_exhibition,current_exhibition_007
+current_exhibition_019,current_exhibition,current_exhibition_008
+current_exhibition_020,current_exhibition,current_exhibition_009
+current_exhibition_021,current_exhibition,current_exhibition_009
+current_exhibition_022,current_exhibition,current_exhibition_010
+current_exhibition_023,current_exhibition,current_exhibition_010
+current_exhibition_024,current_exhibition,current_exhibition_011
+current_exhibition_025,current_exhibition,current_exhibition_011
+current_exhibition_026,current_exhibition,current_exhibition_011
+current_exhibition_027,current_exhibition,current_exhibition_011
+current_exhibition_028,current_exhibition,current_exhibition_012
+current_exhibition_029,current_exhibition,current_exhibition_012
+current_exhibition_030,current_exhibition,current_exhibition_012
+current_exhibition_031,current_exhibition,current_exhibition_013
+current_exhibition_032,current_exhibition,current_exhibition_013
+current_exhibition_033,current_exhibition,current_exhibition_014
+current_exhibition_034,current_exhibition,current_exhibition_015
+current_exhibition_035,current_exhibition,current_exhibition_016
+current_exhibition_036,current_exhibition,current_exhibition_016
+current_exhibition_037,opening_empty_seat,opening_empty_seat_001
+current_exhibition_038,opening_empty_seat,opening_empty_seat_001
+current_exhibition_039,opening_empty_seat,opening_empty_seat_001
+current_exhibition_040,opening_empty_seat,opening_empty_seat_001
+current_exhibition_041,opening_empty_seat,opening_empty_seat_002
+current_exhibition_042,opening_empty_seat,opening_empty_seat_003
+opening_empty_seat_001,opening_empty_seat,opening_empty_seat_001
+opening_empty_seat_002,opening_empty_seat,opening_empty_seat_002
+opening_empty_seat_003,opening_empty_seat,opening_empty_seat_003
+opening_empty_seat_004,opening_empty_seat,opening_empty_seat_003
+opening_empty_seat_005,opening_empty_seat,opening_empty_seat_004
+opening_empty_seat_006,opening_empty_seat,opening_empty_seat_005
+opening_empty_seat_007,opening_empty_seat,opening_empty_seat_005
+opening_empty_seat_008,opening_empty_seat,opening_empty_seat_005
+opening_empty_seat_009,opening_empty_seat,opening_empty_seat_005
+opening_empty_seat_010,opening_empty_seat,opening_empty_seat_006
+opening_empty_seat_011,opening_empty_seat,opening_empty_seat_007
+opening_empty_seat_012,opening_empty_seat,opening_empty_seat_008
+opening_empty_seat_013,opening_empty_seat,opening_empty_seat_009
+opening_empty_seat_014,opening_empty_seat,opening_empty_seat_009
+opening_empty_seat_015,opening_empty_seat,opening_empty_seat_010
+opening_empty_seat_016,opening_empty_seat,opening_empty_seat_011
+opening_empty_seat_017,opening_empty_seat,opening_empty_seat_013
+opening_empty_seat_018,opening_empty_seat,opening_empty_seat_014
+opening_empty_seat_019,opening_empty_seat,opening_empty_seat_015
+opening_empty_seat_020,opening_empty_seat,opening_empty_seat_016
+opening_empty_seat_021,opening_empty_seat,opening_empty_seat_017
+opening_empty_seat_022,opening_empty_seat,opening_empty_seat_017
+opening_empty_seat_023,opening_empty_seat,opening_empty_seat_017
+opening_empty_seat_024,opening_empty_seat,opening_empty_seat_018
+opening_empty_seat_025,opening_empty_seat,opening_empty_seat_018
+prologue_online_circle_001,prologue_online_circle,prologue_online_circle_001
+prologue_online_circle_002,prologue_online_circle,prologue_online_circle_001
+prologue_online_circle_003,prologue_online_circle,prologue_online_circle_002
+prologue_online_circle_004,prologue_online_circle,prologue_online_circle_003
+prologue_online_circle_005,prologue_online_circle,prologue_online_circle_003
+prologue_online_circle_006,prologue_online_circle,prologue_online_circle_004
+prologue_online_circle_007,prologue_online_circle,prologue_online_circle_005
+prologue_online_circle_008,prologue_online_circle,prologue_online_circle_006
+prologue_online_circle_009,prologue_online_circle,prologue_online_circle_007
+prologue_online_circle_010,prologue_online_circle,prologue_online_circle_008
+prologue_online_circle_011,prologue_online_circle,prologue_online_circle_009
+prologue_online_circle_012,prologue_online_circle,prologue_online_circle_009
+prologue_online_circle_013,prologue_online_circle,prologue_online_circle_009
+```
+
+## 保存復帰境界
+
+- 旧 `current_exhibition_001`〜`033`は新START前へ復帰する。
+- 旧 `current_exhibition_034`は新 `current_exhibition_015`のSTART操作へ復帰する。
+- 旧 `current_exhibition_035`〜`042`は新START後へ復帰し、START前へ巻き戻さない。
+- openingとprologueは旧step順に対して移行先を単調非減少とし、未来sceneへ飛ばさない。
+- `reachedSceneIds`、既存の選択値、既読sceneは保持する。`readStepIds`は本表を使って再構成し、削除した説明stepをLOGへ復元しない。
+
+## RECORD媒体と日時境界
+
+- `opening_empty_seat_001`: CURRENT→RECORD。表示はmetadata由来の「8月1日（土） 10:21｜海に近い町・共同作業室」。
+- `prologue_online_circle_001`: RECORD→RECORD。表示はmetadata由来の「5月1日（木） 18:00｜学内チャット「惑星の放課後」」。
+- `opening_empty_seat_002`: 保存写真、作業予定、学内チャット、作業ログ、作業メモを端末が一場面へ組み直した制作記録であることを示す。
+- `opening_empty_seat_012`: 室内会話が二人の照合メモで一致した部分の再構成であることを、会話前に一度だけ示す。
+- `opening_empty_seat_006`〜`008`: 時刻付き学内チャット原文として通常のdialogueと分ける。
+

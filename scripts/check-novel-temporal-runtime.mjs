@@ -34,6 +34,9 @@ assert.equal(presentation("mode07_abstract_024").temporalContext, "RECORD");
 
 const entryChange = runtime.contextTransitionForStep(steps.get("opening_empty_seat_001"));
 assert.deepEqual([entryChange.fromTemporalContext, entryChange.toTemporalContext], ["CURRENT", "RECORD"]);
+const recordEntryChange = runtime.contextTransitionForStep(steps.get("prologue_online_circle_001"));
+assert.deepEqual([recordEntryChange.fromTemporalContext, recordEntryChange.toTemporalContext], ["RECORD", "RECORD"]);
+assert.equal(recordEntryChange.displayTitle, "5月1日（木） 18:00｜学内チャット「惑星の放課後」");
 const internalChange = runtime.contextTransitionForStep(steps.get("mode07_abstract_009"));
 assert.deepEqual([internalChange.fromTemporalContext, internalChange.toTemporalContext], ["CURRENT", "RECORD"]);
 const delayedEntryChange = runtime.contextTransitionForStep(steps.get("mode08_map_layers_003"));

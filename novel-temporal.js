@@ -18,7 +18,7 @@
     return value;
   };
 
-  const validatePresentation = (presentation, label, { allowContextTransition = false } = {}) => {
+  const validatePresentation = (presentation, label, { allowContextTransition = false, allowSameContextTransition = false } = {}) => {
     requireObject(presentation, label);
     requireText(presentation.displayTitle, `${label}.displayTitle`);
     if (!PRECISIONS.has(presentation.timePrecision)) fail(`${label}.timePrecision is invalid`);
@@ -31,7 +31,10 @@
       if (!CONTEXTS.has(presentation.fromTemporalContext) || !CONTEXTS.has(presentation.toTemporalContext)) {
         fail(`${label} requires valid fromTemporalContext and toTemporalContext`);
       }
-      if (presentation.fromTemporalContext === presentation.toTemporalContext) {
+      const isApprovedRecordToRecord = allowSameContextTransition
+        && presentation.fromTemporalContext === "RECORD"
+        && presentation.toTemporalContext === "RECORD";
+      if (!isApprovedRecordToRecord && presentation.fromTemporalContext === presentation.toTemporalContext) {
         fail(`${label} must change temporal context`);
       }
     }
@@ -59,7 +62,7 @@
       const stepIndices = new Map(steps.map((step, index) => [step.id, index]));
       const entryTransition = temporal.entryTransition || null;
       if (entryTransition) {
-        validatePresentation(entryTransition, `${label}.temporal.entryTransition`, { allowContextTransition: true });
+        validatePresentation(entryTransition, `${label}.temporal.entryTransition`, { allowContextTransition: true, allowSameContextTransition: true });
         if (!stepIndices.has(entryTransition.stepId)) fail(`${label}.temporal.entryTransition.stepId does not exist in the scene`);
       }
 

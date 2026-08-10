@@ -147,6 +147,7 @@ assert.ok(!metadataMatch[1].includes("2025-05-04T12:00"), "prologue_basil must n
 
 const requiredContextChanges = [
   ["opening_empty_seat", "CURRENT", "RECORD"],
+  ["prologue_online_circle", "RECORD", "RECORD"],
   ["choice_observation_order", "RECORD", "CURRENT"],
   ["first_meeting_promise", "CURRENT", "RECORD"],
   ["festival_build", "RECORD", "CURRENT"],
