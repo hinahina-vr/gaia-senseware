@@ -2536,7 +2536,7 @@ body.novel-open .japan-credits {
   display: grid;
   place-items: center;
   gap: 22px;
-  width: min(1040px, calc(100vw - 48px));
+  width: min(1440px, calc(100vw - 48px));
   min-height: 280px;
   padding: 52px 48px;
   overflow: hidden;
@@ -2598,7 +2598,7 @@ body.novel-open .japan-credits {
   }
 }
 
-.novel-chapter-card span {
+.novel-chapter-card > span {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2611,32 +2611,59 @@ body.novel-open .japan-credits {
   letter-spacing: 0.3em;
 }
 
-.novel-chapter-card span::before,
-.novel-chapter-card span::after {
+.novel-chapter-card > span::before,
+.novel-chapter-card > span::after {
   content: "";
   width: clamp(38px, 10vw, 126px);
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(var(--novel-cyan), 0.55));
 }
 
-.novel-chapter-card span::after {
+.novel-chapter-card > span::after {
   transform: scaleX(-1);
 }
 
 .novel-chapter-card strong {
   position: relative;
-  max-width: min(820px, 84vw);
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: min(1120px, calc(100vw - 64px));
   padding: 4px 30px 16px;
   font-family: var(--novel-font);
-  font-size: clamp(30px, 4.2vw, 58px);
+  font-size: clamp(28px, 3vw, 38px);
   font-weight: 500;
   line-height: 1.32;
   letter-spacing: 0.075em;
-  text-wrap: balance;
+  column-gap: 0.12em;
+  row-gap: 0.16em;
   text-shadow:
     0 2px 24px rgba(0, 7, 14, 0.82),
     0 0 20px rgba(var(--novel-cyan), 0.12);
 }
+
+.novel-chapter-card strong[data-title-density="compact"] {
+  font-size: clamp(23px, 2.4vw, 30px);
+}
+
+.novel-chapter-card strong[data-title-density="dense"] {
+  font-size: clamp(16px, 1.7vw, 23px);
+}
+
+.novel-chapter-title-unit,
+.novel-chapter-title-tail {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  width: auto;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+}
+
+.novel-chapter-title-tail { column-gap: 0.12em; }
 
 .novel-chapter-card strong::after {
   content: "◇";
@@ -3076,9 +3103,16 @@ body.novel-open .japan-credits {
   }
 
   .novel-chapter-card strong {
-    max-width: 92vw;
+    max-width: calc(100vw - 36px);
     padding-inline: 8px;
-    font-size: clamp(26px, 8.2vw, 38px);
+    font-size: clamp(18px, 5.1vw, 22px);
+    letter-spacing: 0.045em;
+  }
+  .novel-chapter-card strong[data-title-density="compact"] {
+    font-size: clamp(13px, 3.6vw, 16px);
+  }
+  .novel-chapter-card strong[data-title-density="dense"] {
+    font-size: clamp(10px, 2.8vw, 12px);
   }
   .novel-temporal-transition {
     width: calc(100vw - 24px);

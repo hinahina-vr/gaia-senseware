@@ -727,7 +727,7 @@
     elements.choices.classList.remove("is-visible");
     elements.sourceButton.hidden = true;
     elements.chapterIndex.textContent = `${transition.fromTemporalContext} → ${transition.toTemporalContext}`;
-    elements.chapterTitle.textContent = transition.displayTitle;
+    renderChapterTitleUnits(transition.displayTitle);
     elements.chapterCard.dataset.transitionFrom = transition.fromTemporalContext;
     elements.chapterCard.dataset.transitionTo = transition.toTemporalContext;
     elements.chapterCard.setAttribute("role", "status");
@@ -1098,6 +1098,37 @@
     return true;
   }
 
+  function renderChapterTitleUnits(value) {
+    const title = String(value || "");
+    const labels = title.split("｜");
+    const longestLabel = labels.reduce((longest, label) => Math.max(longest, Array.from(label).length), 0);
+    elements.chapterTitle.dataset.titleDensity = longestLabel >= 23
+      ? "dense"
+      : longestLabel >= 17
+        ? "compact"
+        : "regular";
+    elements.chapterTitle.setAttribute("aria-label", title);
+    const labelUnit = (label) => {
+      const unit = document.createElement("span");
+      unit.className = "novel-chapter-title-unit";
+      unit.dataset.titleUnit = "label";
+      unit.textContent = label;
+      return unit;
+    };
+    const units = [labelUnit(labels.shift() || "")];
+    labels.forEach((label) => {
+      const tail = document.createElement("span");
+      tail.className = "novel-chapter-title-tail";
+      const separator = document.createElement("span");
+      separator.className = "novel-chapter-title-unit is-separator";
+      separator.dataset.titleUnit = "separator";
+      separator.textContent = "｜";
+      tail.append(separator, labelUnit(label));
+      units.push(tail);
+    });
+    elements.chapterTitle.replaceChildren(...units);
+  }
+
   function renderSectionSeparator(step = currentStep()) {
     if (!step) return;
     const scene = sceneMap.get(step.sceneId);
@@ -1120,7 +1151,7 @@
     elements.modeReadout.textContent = `${scene.chapter} — ${scene.title}`;
     elements.location.textContent = scene.title;
     elements.chapterIndex.textContent = scene.chapter;
-    elements.chapterTitle.textContent = scene.title;
+    renderChapterTitleUnits(scene.title);
     elements.chapterCard.dataset.sceneId = scene.id;
     elements.chapterCard.hidden = false;
     setCharacterPresentation("chapter");
