@@ -89,10 +89,12 @@ try {
       title: "8月6日（木） 朝｜六日目", context: "RECORD", precision: "PART_OF_DAY", period: false,
     });
 
-    await bootAt("current_exhibition_042");
-    await page.locator("#novel-dialogue").dispatchEvent("click");
-    await page.waitForTimeout(50);
-    await page.locator("#novel-dialogue").dispatchEvent("click");
+    await bootAt("current_exhibition_016");
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      if (await page.locator("#novel-layer").getAttribute("data-step-type") === "section-separator") break;
+      await page.locator("#novel-dialogue").dispatchEvent("click");
+      await page.waitForTimeout(80);
+    }
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "section-separator");
     await page.locator("#novel-layer").dispatchEvent("click");
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "temporal-transition");
@@ -103,7 +105,7 @@ try {
       title: element.querySelector("strong")?.textContent,
     }));
     assert(!card.hidden && card.from === "CURRENT" && card.to === "RECORD", `${viewport.width}: context transition card missing`);
-    assert(card.title === "8月1日（土） 10:21｜三か月前の共同作業室", `${viewport.width}: context transition title mismatch`);
+    assert(card.title === "8月1日（土） 10:21｜海に近い町・共同作業室", `${viewport.width}: context transition title mismatch`);
     await page.locator("#novel-layer").dispatchEvent("click");
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
     assert(await page.locator("#novel-location").textContent() === "8月1日（土） 10:21｜海に近い町・共同作業室", `${viewport.width}: heading did not settle after transition card`);

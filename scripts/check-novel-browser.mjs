@@ -835,7 +835,7 @@ try {
   assert(!await page.locator("body").evaluate((node) => node.classList.contains("scene-transitioning")), "unchanged story background incorrectly triggered a scene transition");
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.sceneId === "search");
 
-  const chat = steps.find((step) => step.id === "opening_empty_seat_010");
+  const chat = steps.find((step) => step.id === "opening_empty_seat_006");
   await bootAt(page, chat.id);
   assert(await page.locator("#novel-dialogue").isVisible(), "Slack must float above the normal dialogue window");
   assert(await page.locator(".novel-slack-workspace").count() === 1, "Slack must be one surface");
@@ -911,6 +911,22 @@ try {
     dialogueOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#novel-dialogue")).opacity),
   }));
   assert(slackExitSettled.slackHidden && !slackExitSettled.dialogueHiddenAttribute && slackExitSettled.dialogueOpacity > 0.98, `Slack exit did not settle cleanly: ${JSON.stringify(slackExitSettled)}`);
+
+  const reconstructionDialogue = stepMap.get("opening_empty_seat_013");
+  await bootAt(page, reconstructionDialogue.id, { metCharacters: { mizuha: false, amane: false, sakuya: false } });
+  const reconstructionPresentation = await page.evaluate(() => ({
+    presentation: document.querySelector("#novel-layer")?.dataset.recordPresentation,
+    speaker: document.querySelector("#novel-speaker")?.textContent,
+    castSpeaker: document.querySelector("#novel-cast")?.dataset.speaker,
+    visibleCharacters: [...document.querySelectorAll(".novel-character")]
+      .filter((character) => Number.parseFloat(getComputedStyle(character).opacity) > 0.01)
+      .length,
+  }));
+  assert(reconstructionPresentation.presentation === "edited-reconstruction"
+    && reconstructionPresentation.speaker === "アマネ｜照合メモからの再構成"
+    && reconstructionPresentation.castSpeaker === "chapter"
+    && reconstructionPresentation.visibleCharacters === 0,
+  `opening reconstructed dialogue looks like a physical flashback: ${JSON.stringify(reconstructionPresentation)}`);
 
   const sakuyaChats = steps.filter((step) => step.sceneId === "prologue_basil" && step.type === "chat" && step.speaker === "sakuya");
   const sakuyaChat = sakuyaChats.at(-1);

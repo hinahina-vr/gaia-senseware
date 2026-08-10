@@ -776,6 +776,10 @@
     ? SAKUYA_STEP_EXPRESSIONS[step.id] || "calm"
     : "calm";
 
+  const isOpeningReconstructionDialogue = (step) => (
+    step?.sceneId === "opening_empty_seat" && step?.type === "dialogue"
+  );
+
   const setCharacterPresentation = (speaker, expression = "calm") => {
     const legacySpeaker = CHARACTER_VIEW[speaker] || speaker || "narrator";
     elements.cast.dataset.speaker = legacySpeaker;
@@ -1233,6 +1237,8 @@
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
     layer.dataset.slackDevice = chatDevice;
+    if (isOpeningReconstructionDialogue(step)) layer.dataset.recordPresentation = "edited-reconstruction";
+    else delete layer.dataset.recordPresentation;
     if (step.type !== "chat") delete elements.cast.dataset.slackCast;
     applyBackgroundCueForStep(step);
     sectionSeparatorActive = false;
@@ -1356,8 +1362,13 @@
   const renderSimpleStep = (step) => {
     prepareStepFrame(step);
     const speaker = step.speaker || "narrator";
-    setCharacterPresentation(speaker, expressionForStep(step));
-    elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
+    if (isOpeningReconstructionDialogue(step)) {
+      setCharacterPresentation("chapter");
+      elements.speaker.textContent = `${SPEAKERS[speaker]?.name || ""}｜照合メモからの再構成`;
+    } else {
+      setCharacterPresentation(speaker, expressionForStep(step));
+      elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
+    }
     renderDialoguePages(step.text || "");
   };
 
