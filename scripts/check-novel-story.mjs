@@ -144,8 +144,8 @@ assert.deepEqual(scenes.map((scene) => [scene.id, scene.steps.length]), [
 ], "only the three approved opening scenes may change their step counts");
 
 const openingMigrationSource = fs.readFileSync(path.join(projectRoot, "docs", "SCENARIO_HANDOFF_OPENING_RECORD_TRANSITION.md"), "utf8");
-const openingMigrationCsv = openingMigrationSource.match(/## 完全一意移行表[\s\S]*?```csv\n([\s\S]*?)\n```/u)?.[1] || "";
-const openingMigrationRows = openingMigrationCsv.split("\n").filter(Boolean).map((line) => {
+const openingMigrationCsv = openingMigrationSource.match(/## 完全一意移行表[\s\S]*?```csv\r?\n([\s\S]*?)\r?\n```/u)?.[1] || "";
+const openingMigrationRows = openingMigrationCsv.split(/\r?\n/u).filter(Boolean).map((line) => {
   const fields = line.split(",");
   assert.equal(fields.length, 3, `opening migration row must have three fields: ${line}`);
   const [oldStepId, newSceneId, newStepId] = fields;
@@ -191,14 +191,16 @@ const openingScenes = scenes.filter((scene) => Object.hasOwn(openingSceneCounts,
 const openingSteps = openingScenes.flatMap((scene) => scene.steps);
 const openingVisibleText = openingSteps.flatMap((step) => [step.text, step.prompt, ...(step.options || []).map((option) => option.label)]).filter(Boolean).join("\n");
 assert.equal(openingVisibleText.match(/三か月前/gu)?.length || 0, 1, "the three opening scenes must use 三か月前 exactly once in visible step copy");
-const openingLocationAndUi = openingScenes.flatMap((scene) => [
+const openingHeaderAndUi = openingScenes.flatMap((scene) => [
+  scene.title,
+  scene.chapter,
   scene.temporal.location,
   scene.temporal.displayTitle,
   scene.temporal.entryTransition?.displayTitle,
   ...(scene.temporal.transitions || []).map((transition) => transition.displayTitle),
   ...scene.steps.filter((step) => step.type === "ui").map((step) => step.text),
 ]).filter(Boolean).join("\n");
-assert.doesNotMatch(openingLocationAndUi, /三か月前/u, "三か月前 must not be hard-coded into opening locations, headers, or UI steps");
+assert.doesNotMatch(openingHeaderAndUi, /三か月前/u, "三か月前 must not be hard-coded into opening titles, locations, headers, or UI steps");
 assert.doesNotMatch(openingVisibleText, /監視映像|隠し録音/u, "the opening must explain its record medium in affirmative language");
 const reconstructionCopy = "これは、二人が後から照合した保存写真、作業予定、学内チャット、作業ログ、作業メモを、端末が一つの場面として組み直した制作記録だ。";
 const dialogueDisclosure = "部屋で交わした短いやり取りは、二人の照合メモで一致した部分を再構成している。";
@@ -207,6 +209,24 @@ assert.equal(openingVisibleText.match(new RegExp(dialogueDisclosure, "gu"))?.len
 const currentOpeningScene = scenes.find((scene) => scene.id === "current_exhibition");
 const emptySeatScene = scenes.find((scene) => scene.id === "opening_empty_seat");
 const onlineCircleScene = scenes.find((scene) => scene.id === "prologue_online_circle");
+const canonicalEmptySeatHeading = "8月1日（土） 10:21｜海に近い町・共同作業室";
+assert.equal(emptySeatScene?.title, "OPENING｜空席", "opening_empty_seat must not repeat relative or clock time in its visible scene title");
+assert.equal(emptySeatScene?.chapter, "OPENING", "opening_empty_seat chapter must remain OPENING");
+const emptySeatNonTemporalHeaders = [
+  emptySeatScene?.title,
+  emptySeatScene?.chapter,
+  ...(emptySeatScene?.steps.filter((step) => step.type === "ui").map((step) => step.text) || []),
+].filter(Boolean).join("\n");
+assert.doesNotMatch(emptySeatNonTemporalHeaders, /三か月前|\b\d{1,2}:\d{2}\b/u, "relative or clock time must not be duplicated outside temporal metadata");
+assert.equal(emptySeatScene?.temporal.displayTitle, canonicalEmptySeatHeading, "the scene temporal heading must remain canonical");
+const emptySeatVisibleHeaderSet = new Set([
+  emptySeatScene?.title,
+  emptySeatScene?.chapter,
+  emptySeatScene?.temporal.displayTitle,
+  emptySeatScene?.temporal.entryTransition?.displayTitle,
+  ...(emptySeatScene?.steps.filter((step) => step.type === "ui").map((step) => step.text) || []),
+].filter(Boolean));
+assert.deepEqual([...emptySeatVisibleHeaderSet].filter((value) => /\b\d{1,2}:\d{2}\b/u.test(value)), [canonicalEmptySeatHeading], "the canonical metadata heading must be the only visible opening time heading");
 assert.equal(currentOpeningScene?.steps.find((step) => step.type === "ui" && step.text === "START")?.id, "current_exhibition_015", "START interaction moved from its approved step");
 assert.match(currentOpeningScene?.steps[15]?.text || "", /身体は学園祭の展示席に残ったまま/u, "the player must remain physically at the exhibition seat after START");
 assert.doesNotMatch(emptySeatScene?.steps.map((step) => step.text || "").join("\n") || "", /私/u, "the August RECORD must not use the player's first-person viewpoint");
@@ -223,7 +243,7 @@ assert.deepEqual(emptySeatScene?.temporal.entryTransition, {
   toTemporalContext: "RECORD",
   transitionAt: "2026-08-01T10:21:00+09:00",
   timePrecision: "MINUTE",
-  displayTitle: "8月1日（土） 10:21｜海に近い町・共同作業室",
+  displayTitle: canonicalEmptySeatHeading,
 });
 assert.deepEqual(onlineCircleScene?.temporal.entryTransition, {
   stepId: "prologue_online_circle_001",

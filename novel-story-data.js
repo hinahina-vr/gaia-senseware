@@ -275,7 +275,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
     },
     {
       "id": "opening_empty_seat",
-      "title": "OPENING｜三か月前／10:21",
+      "title": "OPENING｜空席",
       "chapter": "OPENING",
       "modeIndex": 9,
       "steps": [

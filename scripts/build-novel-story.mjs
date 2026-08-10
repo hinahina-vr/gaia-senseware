@@ -267,7 +267,7 @@ const parseSceneSteps = (scene, sectionLines) => {
 
 const configs = [
   { id: "current_exhibition", prefix: "現在の展示｜学園祭の展示ホール", chapter: "現在", modeIndex: 9 },
-  { id: "opening_empty_seat", prefix: "OPENING｜三か月前／10:21", chapter: "OPENING", modeIndex: 9 },
+  { id: "opening_empty_seat", prefix: "OPENING｜空席", chapter: "OPENING", modeIndex: 9 },
   { id: "prologue_online_circle", prefix: "PROLOGUE｜文字だけだった三人", chapter: "PROLOGUE", modeIndex: 0, split: "ミズハ、アマネ、サクヤが初めて同じスレッドに揃った" },
   { id: "choice_observation_order", prefix: "小さな選択｜どちらから見る？", chapter: "PROLOGUE", modeIndex: 0, choice: { id: "observation_order", prompt: "どちらから見る？", trackedByEves: false, options: [{ value: "LOCAL_FIRST", next: "first_meeting_promise" }, { value: "STATION_FIRST", next: "first_meeting_promise" }] } },
   { id: "first_meeting_promise", prefix: "00:08｜初めて会う約束", chapter: "PROLOGUE", modeIndex: 0 },
