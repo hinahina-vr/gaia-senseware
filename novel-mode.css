@@ -5685,6 +5685,70 @@ body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0.4; }
   .story-detour-controls { justify-content: stretch; }
   .story-detour-controls button { flex: 1 1 42%; }
 }
+
+/* Keep the complete date/location heading centered on the viewport, including wrapped lines. */
+.novel-signal-caption,
+.novel-signal-caption[data-temporal-range="true"],
+.novel-signal-caption[data-crosses-year="true"],
+.novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+  left: 50vw;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  width: min(760px, calc(100vw - 380px));
+  max-width: min(760px, calc(100vw - 380px));
+  padding: 11px 24px 10px;
+  box-sizing: border-box;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.novel-signal-caption strong {
+  display: flex;
+  grid-column: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding-inline: 0;
+  column-gap: 0.18em;
+  row-gap: 0.12em;
+  overflow-wrap: normal;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.novel-signal-caption .novel-temporal-heading-unit,
+.novel-signal-caption .novel-temporal-heading-tail {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  width: auto;
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+}
+
+.novel-signal-caption .novel-temporal-heading-tail { column-gap: 0.08em; }
+
+@media (max-width: 600px) {
+  .novel-signal-caption,
+  .novel-signal-caption[data-temporal-range="true"],
+  .novel-signal-caption[data-crosses-year="true"],
+  .novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+    top: 72px;
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    padding: 9px 18px 8px;
+  }
+}
 /* Sakuya uses the same character-sprite presentation as Amane and Mizuha. */
 .novel-character--sakuya .novel-character-portrait {
   background-image: url("./assets/characters/sakuya-calm-07-v1.png");

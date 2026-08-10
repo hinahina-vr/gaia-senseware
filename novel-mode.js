@@ -687,6 +687,29 @@
     elements.progress.style.width = `${Math.max(2, ((index + 1) / allSteps.length) * 100)}%`;
   };
 
+  function renderTemporalHeading(value) {
+    const title = String(value || "");
+    const [temporal = "", ...locationParts] = title.split("｜");
+    const unit = (text, kind) => {
+      const node = document.createElement("span");
+      node.className = "novel-temporal-heading-unit";
+      node.dataset.temporalHeadingUnit = kind;
+      node.textContent = text;
+      return node;
+    };
+    const temporalParts = temporal.split("〜");
+    const units = [unit(temporalParts.shift() || "", "time")];
+    if (temporalParts.length) units.push(unit(`〜${temporalParts.join("〜")}`, "range"));
+    if (locationParts.length) {
+      const tail = document.createElement("span");
+      tail.className = "novel-temporal-heading-tail";
+      tail.append(unit("｜", "separator"), unit(locationParts.join("｜"), "location"));
+      units.push(tail);
+    }
+    elements.location.setAttribute("aria-label", title);
+    elements.location.replaceChildren(...units);
+  }
+
   const applyTemporalPresentation = (step) => {
     const scene = sceneMap.get(step.sceneId);
     const presentation = temporalRuntime.presentationForStep(step);
@@ -695,7 +718,7 @@
     layer.dataset.temporalPeriod = String(presentation.isPeriod);
     layer.dataset.temporalSource = presentation.source;
     elements.modeReadout.textContent = `${scene.chapter} — ${presentation.displayTitle}`;
-    elements.location.textContent = presentation.displayTitle;
+    renderTemporalHeading(presentation.displayTitle);
     return presentation;
   };
 
@@ -1149,7 +1172,7 @@
     elements.choices.classList.remove("is-visible");
     elements.sourceButton.hidden = true;
     elements.modeReadout.textContent = `${scene.chapter} — ${scene.title}`;
-    elements.location.textContent = scene.title;
+    renderTemporalHeading(scene.title);
     elements.chapterIndex.textContent = scene.chapter;
     renderChapterTitleUnits(scene.title);
     elements.chapterCard.dataset.sceneId = scene.id;
