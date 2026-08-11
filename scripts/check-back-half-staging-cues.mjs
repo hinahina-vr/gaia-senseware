@@ -51,12 +51,24 @@ for (const interaction of staging.interactions) {
   assert.equal(step.type, "interaction", `${interaction.stepId}: interaction type changed`);
   assert.equal(step.interaction?.kind, interaction.kind, `${interaction.stepId}: interaction kind changed`);
   assert(stepMap.has(interaction.returnStepId), `${interaction.stepId}: return step is missing`);
+  assert.deepEqual(interaction.prepStepIds.map((stepId) => stepMap.get(stepId)?.speaker), ["mizuha", "amane"], `${interaction.stepId}: PREP must be Mizuha then Amane`);
+  assert.deepEqual(interaction.postStepIds.map((stepId) => stepMap.get(stepId)?.speaker), ["mizuha", "amane"], `${interaction.stepId}: post talk must be Mizuha then Amane`);
+  assert.equal(interaction.returnStepId, interaction.postStepIds[0], `${interaction.stepId}: CLOSE must return to the first post-talk step`);
+  assert.equal(Boolean(step.interaction?.optional), Boolean(interaction.optional), `${interaction.stepId}: optional interaction contract changed`);
 }
 assert.deepEqual(
   backHalfSteps.filter((step) => step.type === "interaction").map((step) => step.id),
   staging.interactions.map((entry) => entry.stepId),
   "MODE interaction starts changed",
 );
+
+for (const flow of staging.choices) {
+  const step = stepMap.get(flow.stepId);
+  assert.equal(step?.type, flow.type, `${flow.stepId}: modal choice type changed`);
+  assert.deepEqual(flow.prepStepIds.map((stepId) => stepMap.get(stepId)?.speaker), ["mizuha", "amane"], `${flow.stepId}: PREP must be Mizuha then Amane`);
+  assert.deepEqual(flow.postStepIds.map((stepId) => stepMap.get(stepId)?.speaker), ["mizuha", "amane"], `${flow.stepId}: post talk must be Mizuha then Amane`);
+  if (flow.resultStepId) assert.equal(stepMap.get(flow.resultStepId)?.type, "result", `${flow.stepId}: result boundary changed`);
+}
 
 const cue = (stepId) => staging.forStep(stepMap.get(stepId));
 assert.equal(cue("mode07_abstract_008").temporal.context, "CURRENT");
@@ -88,11 +100,21 @@ assert.equal(cue("return_to_start_020").castMode, "sakuya-unseen");
 assert.equal(cue("return_to_start_021").castMode, "central-entrance-distance");
 assert.equal(cue("gx_deep_time_017").castMode, "archived-voice-no-cast");
 assert.equal(cue("final_record_024").castMode, "remote-sakuya-no-cast");
-assert.equal(cue("mode10_space_009").device, "wide-exhibition-terminal");
-assert.equal(cue("mode10_space_014").device, "wide-exhibition-terminal");
+assert.equal(cue("gx_deep_time_016").audio, "archive-recording-start");
+assert.equal(cue("gx_deep_time_017").audio, "archived-voices");
+assert.equal(cue("gx_deep_time_018").audio, "archive-room-foley");
+assert.equal(cue("gx_deep_time_019").audio, "archive-recording-stop");
+assert.equal(cue("mode03_map_002").device, "none", "PREP must stay on the normal story surface");
+assert.equal(cue("mode03_map_003").device, "native-mode-overlay", "OPEN must use the exclusive mode overlay");
+assert.equal(cue("mode03_map_004").device, "none", "CLOSE must restore the normal story surface before post talk");
+assert.equal(cue("mode10_space_010").device, "wide-exhibition-terminal");
+assert.equal(cue("mode10_space_015").device, "wide-exhibition-terminal");
+assert.equal(cue("mode10_space_006").audio, "eleven-second-recording-start");
+assert.equal(cue("mode10_space_009").audio, "eleven-second-recording-stop");
 assert(!stepMap.has("mode10_space_030"), "obsolete pre-rewrite mode10 device boundary remains");
+assert.equal(staging.temporal.some((entry) => entry.location === "exhibition-seat"), false, "obsolete exhibition-seat cue remains");
 
-const reflection = stepMap.get("choice_reflection_002");
+const reflection = stepMap.get("choice_reflection_001");
 assert.equal(reflection.maxSelections, 3, "reflection max selection changed");
 assert.deepEqual(reflection.options.map((option) => option.id), Array.from({ length: 36 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`), "R01-R36 fixed order changed");
 const endSteps = allSteps.filter((step) => step.type === "end");
@@ -108,6 +130,7 @@ const report = {
   backgrounds: backgrounds.backHalf.length,
   temporalCues: staging.temporal.length,
   interactions: staging.interactions.length,
+  choices: staging.choices.length,
   deviceCues: staging.devices.length,
   audioCues: staging.audio.length,
   currentRecordBoundaries: ["mode07_abstract_008→009", "interlude_sea_067→mode08_map_layers_001"],

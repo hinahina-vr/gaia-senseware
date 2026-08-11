@@ -341,6 +341,7 @@ const checkDistanceContinuity = async (page, viewportName) => {
 };
 
 try {
+  const scope = process.env.GAIA_STAGING_SCOPE || "full";
   const viewports = [
     { name: "pc-1440", width: 1440, height: 900 },
     { name: "mobile-390", width: 390, height: 844 },
@@ -361,14 +362,27 @@ try {
     "return_to_start_029",
     "return_to_start_032",
   ];
+  const interactionEvidenceSteps = [
+    "mode03_map_002",
+    "mode03_map_003",
+    "mode03_map_004",
+    "gx_deep_time_016",
+    "gx_deep_time_017",
+    "gx_deep_time_018",
+    "gx_deep_time_019",
+  ];
   for (const viewport of viewports) {
     const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, reducedMotion: "no-preference" });
     const page = await context.newPage();
     attachDiagnostics(page, viewport.name);
     await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
     await ensureNovelOpen(page);
-    await checkDistanceContinuity(page, viewport.name);
-    if (process.env.GAIA_STAGING_SCOPE !== "distance") {
+    if (scope === "interaction") {
+      for (const stepId of interactionEvidenceSteps) await capture(page, viewport.name, stepId);
+    } else {
+      await checkDistanceContinuity(page, viewport.name);
+    }
+    if (scope === "full") {
       for (const stepId of evidenceSteps) await capture(page, viewport.name, stepId);
       await checkBoundary(page, viewport.name, "mode07_abstract_008", "mode07_abstract_009", "novel-bg-production-shared-meeting-v3.png");
       await checkBoundary(page, viewport.name, "interlude_sea_007", "interlude_sea_008", "novel-bg-zushi-coast-night-v2.png");
