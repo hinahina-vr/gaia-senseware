@@ -917,11 +917,20 @@ try {
     await bootAt(page, objectiveStep.id, { metCharacters: { mizuha: false, amane: false, sakuya: false } });
     const objectivePresentation = await page.evaluate(() => ({
       castSpeaker: document.querySelector("#novel-cast")?.dataset.speaker,
+      castRendered: (() => {
+        const style = getComputedStyle(document.querySelector("#novel-cast"));
+        return style.display !== "none" && style.visibility !== "hidden" && Number.parseFloat(style.opacity) > 0.01;
+      })(),
+      avatarHidden: document.querySelector("#novel-avatar")?.hidden,
+      openingPresentation: document.querySelector("#novel-layer")?.dataset.openingPresentation,
+      obsoletePresentation: document.querySelector("#novel-layer")?.dataset.recordPresentation || "",
       visibleCharacters: [...document.querySelectorAll(".novel-character")]
         .filter((character) => Number.parseFloat(getComputedStyle(character).opacity) > 0.01)
         .length,
     }));
-    assert(objectivePresentation.visibleCharacters === 0 && !["mizuha", "amane", "sakuya"].includes(objectivePresentation.castSpeaker),
+    assert((!objectivePresentation.castRendered || objectivePresentation.visibleCharacters === 0) && objectivePresentation.avatarHidden
+      && objectivePresentation.openingPresentation === "objective-record" && objectivePresentation.obsoletePresentation === ""
+      && !["mizuha", "amane", "sakuya"].includes(objectivePresentation.castSpeaker),
       `opening objective RECORD rendered a person at ${objectiveStep.id}: ${JSON.stringify(objectivePresentation)}`);
   }
 

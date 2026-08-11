@@ -299,6 +299,7 @@
   let detourDock = null;
   let detourDockObserver = null;
   let backgroundTransitionPending = false;
+  let deferredOpeningBackground = null;
   let requestedStoryTrack = null;
   let logFollowLatest = true;
   let debugJumpActive = false;
@@ -786,6 +787,8 @@
   };
 
   const runBackgroundTransition = async (currentBackground, nextBackground, swapStep) => {
+    if (backgroundTransitionPending) return;
+    backgroundTransitionPending = true;
     await preloadBackground(nextBackground.image);
     layer.style.setProperty("--novel-transition-background", currentBackground.image);
     layer.style.setProperty("--novel-transition-background-position", currentBackground.position);
@@ -800,6 +803,7 @@
         layer.classList.add("is-background-releasing");
       }, null, "novel");
     } finally {
+      backgroundTransitionPending = false;
       layer.classList.remove("is-background-buffered", "is-background-releasing");
       layer.style.removeProperty("--novel-transition-background");
       layer.style.removeProperty("--novel-transition-background-position");
@@ -867,6 +871,13 @@
     const currentBackground = backgroundPresentationForStep(step);
     const nextBackground = backgroundPresentationForStep(nextStep);
     const backgroundChanges = currentBackground.image !== nextBackground.image;
+    if (backgroundChanges && nextStep?.id === "opening_empty_seat_001") {
+      deferredOpeningBackground = { stepId: nextStep.id, current: currentBackground, next: nextBackground };
+      layer.dataset.openingTransitionStage = "awaiting-record";
+      layer.dataset.openingCue = "record-transition";
+      swapStep();
+      return;
+    }
     if (backgroundChanges && !motionReduced()) {
       if (backgroundTransitionPending) return;
       backgroundTransitionPending = true;
@@ -922,7 +933,22 @@
     temporalTransitionTimer = 0;
     temporalTransitionActive = false;
     elements.chapterCard.hidden = true;
-    renderCurrentStep();
+    const deferred = deferredOpeningBackground;
+    if (deferred?.stepId === currentStep()?.id) {
+      deferredOpeningBackground = null;
+      requestTrackForBackground(deferred.next);
+      if (motionReduced()) {
+        delete layer.dataset.openingTransitionStage;
+        renderCurrentStep();
+      } else {
+        void runBackgroundTransition(deferred.current, deferred.next, () => {
+          delete layer.dataset.openingTransitionStage;
+          renderCurrentStep();
+        });
+      }
+    } else {
+      renderCurrentStep();
+    }
     return true;
   }
 
@@ -953,6 +979,7 @@
     elements.chapterCard.setAttribute("aria-label", `${transition.fromTemporalContext}から${transition.toTemporalContext}へ。${transition.displayTitle}`);
     elements.chapterCard.hidden = false;
     setCharacterPresentation("chapter");
+    if (isPreMeetingRecordPresentation(step)) elements.avatar.hidden = true;
     selectMode(sceneMap.get(step.sceneId)?.modeIndex);
     updateProgress();
     temporalTransitionActive = true;
@@ -971,9 +998,18 @@
     ? SAKUYA_STEP_EXPRESSIONS[step.id] || "calm"
     : "calm";
 
-  const isOpeningReconstructionDialogue = (step) => (
-    step?.sceneId === "opening_empty_seat" && step?.type === "dialogue"
+  const isObjectiveOpeningRecord = (step) => step?.sceneId === "opening_empty_seat";
+  const isPreMeetingRecordPresentation = (step) => (
+    isObjectiveOpeningRecord(step) || step?.sceneId === "prologue_online_circle"
   );
+  const openingCueForStep = (step) => {
+    if (step?.id === "current_exhibition_015") return "start-ready";
+    if (step?.id === "current_exhibition_016") return "terminal-focus";
+    if (step?.id === "current_exhibition_017") return "material-index";
+    if (isObjectiveOpeningRecord(step)) return "objective-record";
+    if (step?.sceneId === "prologue_online_circle") return step.type === "chat" ? "circle-chat" : "circle-context";
+    return "";
+  };
 
   const setCharacterPresentation = (speaker, expression = "calm") => {
     const legacySpeaker = CHARACTER_VIEW[speaker] || speaker || "narrator";
@@ -991,6 +1027,11 @@
       figure.dataset.expression = expression;
       requestAnimationFrame(() => figure.classList.add("is-changing"));
     }
+  };
+
+  const suppressCharacterPresentation = () => {
+    setCharacterPresentation("chapter");
+    elements.avatar.hidden = true;
   };
 
   const setSlackCastVisibility = (step) => {
@@ -1630,6 +1671,7 @@
     elements.chapterCard.dataset.sceneId = scene.id;
     elements.chapterCard.hidden = false;
     setCharacterPresentation("chapter");
+    if (isPreMeetingRecordPresentation(step)) elements.avatar.hidden = true;
     selectMode(scene.modeIndex);
     updateProgress();
     sectionSeparatorActive = true;
@@ -1685,8 +1727,12 @@
     layer.dataset.stepId = step.id;
     layer.dataset.stepType = step.type;
     layer.dataset.slackDevice = chatDevice;
-    if (isOpeningReconstructionDialogue(step)) layer.dataset.recordPresentation = "edited-reconstruction";
-    else delete layer.dataset.recordPresentation;
+    const openingCue = openingCueForStep(step);
+    if (openingCue) layer.dataset.openingCue = openingCue;
+    else delete layer.dataset.openingCue;
+    if (isObjectiveOpeningRecord(step)) layer.dataset.openingPresentation = "objective-record";
+    else delete layer.dataset.openingPresentation;
+    delete layer.dataset.recordPresentation;
     if (step.type !== "chat") delete elements.cast.dataset.slackCast;
     applyBackgroundCueForStep(step);
     sectionSeparatorActive = false;
@@ -1867,9 +1913,9 @@
   const renderSimpleStep = (step) => {
     prepareStepFrame(step);
     const speaker = step.speaker || "narrator";
-    if (isOpeningReconstructionDialogue(step)) {
-      setCharacterPresentation("chapter");
-      elements.speaker.textContent = `${SPEAKERS[speaker]?.name || ""}｜照合メモからの再構成`;
+    if (isPreMeetingRecordPresentation(step)) {
+      suppressCharacterPresentation();
+      elements.speaker.textContent = "";
     } else {
       setCharacterPresentation(speaker, expressionForStep(step));
       elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
@@ -1885,8 +1931,13 @@
     elements.continueMark.classList.add("is-visible");
     if (step.type === "chat") {
       const timeline = slackTimelineFor(step);
-      setCharacterPresentation(step.speaker, expressionForStep(step));
-      setSlackCastVisibility(step);
+      if (isPreMeetingRecordPresentation(step)) {
+        suppressCharacterPresentation();
+        elements.cast.dataset.slackCast = "hidden";
+      } else {
+        setCharacterPresentation(step.speaker, expressionForStep(step));
+        setSlackCastVisibility(step);
+      }
       elements.dialogue.hidden = false;
       elements.speaker.textContent = "学内チャット / #惑星の放課後";
       elements.text.textContent = timeline.typing ? "返信を待っています。クリックすると次の投稿へ進みます。" : "このスレッドの記録を表示しています。";
@@ -1937,7 +1988,12 @@
     }
 
     const speaker = step.speaker || "system";
-    setCharacterPresentation(speaker, expressionForStep(step));
+    if (["current_exhibition_016", "current_exhibition_017"].includes(step.id)) {
+      suppressCharacterPresentation();
+    } else {
+      const presentationSpeaker = step.id === "current_exhibition_015" ? "amane" : speaker;
+      setCharacterPresentation(presentationSpeaker, expressionForStep(step));
+    }
     elements.speaker.textContent = SPEAKERS[speaker]?.name || "GAIA SENSEWARE";
     revealText(step.text || "");
   };
@@ -2566,7 +2622,7 @@
   };
 
   function advance() {
-    if (!isOpen || !hasStarted || pendingInteraction) return;
+    if (!isOpen || !hasStarted || pendingInteraction || backgroundTransitionPending) return;
     if (!progressionPanelsClosed()) return;
     if (finishSectionSeparator()) return;
     if (finishTemporalTransitionCard()) return;

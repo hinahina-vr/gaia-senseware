@@ -89,7 +89,7 @@ try {
       title: "8月6日（木） 朝｜六日目", context: "RECORD", precision: "PART_OF_DAY", period: false,
     });
 
-    await bootAt("current_exhibition_016");
+    await bootAt("current_exhibition_017");
     for (let attempt = 0; attempt < 4; attempt += 1) {
       if (await page.locator("#novel-layer").getAttribute("data-step-type") === "section-separator") break;
       await page.locator("#novel-dialogue").dispatchEvent("click");
@@ -98,6 +98,11 @@ try {
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "section-separator");
     await page.locator("#novel-layer").dispatchEvent("click");
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "temporal-transition");
+    const transitionBackground = await page.locator("#novel-layer").evaluate((element) => ({
+      stage: element.dataset.openingTransitionStage,
+      image: getComputedStyle(element).backgroundImage,
+    }));
+    assert(transitionBackground.stage === "awaiting-record" && transitionBackground.image.includes("novel-bg-exhibition-v3.png"), `${viewport.width}: workroom appeared before the RECORD date card: ${JSON.stringify(transitionBackground)}`);
     const card = await page.locator("#novel-chapter-card").evaluate((element) => ({
       hidden: element.hidden,
       from: element.dataset.transitionFrom,
@@ -108,6 +113,14 @@ try {
     assert(card.title === "8月1日（土） 10:21｜海に近い町・共同作業室", `${viewport.width}: context transition title mismatch`);
     await page.locator("#novel-layer").dispatchEvent("click");
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
+    await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"));
+    const settledRecord = await page.locator("#novel-layer").evaluate((element) => ({
+      stage: element.dataset.openingTransitionStage || "",
+      cue: element.dataset.openingCue,
+      presentation: element.dataset.openingPresentation,
+      image: getComputedStyle(element).backgroundImage,
+    }));
+    assert(settledRecord.stage === "" && settledRecord.cue === "objective-record" && settledRecord.presentation === "objective-record" && settledRecord.image.includes("novel-bg-workroom-v2.png"), `${viewport.width}: objective RECORD did not settle after the date card: ${JSON.stringify(settledRecord)}`);
     assert(await page.locator("#novel-location").textContent() === "8月1日（土） 10:21｜海に近い町・共同作業室", `${viewport.width}: heading did not settle after transition card`);
     await page.close();
   }

@@ -4797,6 +4797,12 @@ body.novel-reduced-motion .story-detour-dock * {
   --novel-scene-background: url("./assets/visuals-07/novel-bg-workroom-v2.png");
 }
 
+/* Keep CURRENT visible through the section/date cards; the approved layered
+   fade releases the workroom only after the RECORD heading has been read. */
+.novel-layer:not(.is-title)[data-scene-id="opening_empty_seat"][data-opening-transition-stage="awaiting-record"] {
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-exhibition-v3.png");
+}
+
 .novel-layer:not(.is-title)[data-scene-id="prologue_online_circle"],
 .novel-layer:not(.is-title)[data-scene-id="first_meeting_promise"] {
   --novel-scene-background: url("./assets/visuals-07/novel-bg-online-night-v2.png");
