@@ -3263,6 +3263,8 @@
   };
   const openManualArchive = (mode) => {
     setArchiveMode(mode);
+    elements.saveButton.setAttribute("aria-expanded", String(archiveMode === "save"));
+    elements.loadButton.setAttribute("aria-expanded", String(archiveMode === "load"));
     elements.savePanel.hidden = false;
     elements.savePanel.setAttribute("aria-hidden", "false");
     requestAnimationFrame(() => elements.saveSlots.querySelector("button:not([disabled])")?.focus({ preventScroll: true }));
