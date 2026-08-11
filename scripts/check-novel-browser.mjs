@@ -1043,6 +1043,8 @@ try {
   assert(observationSequence.title === "現在の展示｜売り場と観測所", "the observation sequence must use the approved Japanese title");
   await bootAt(page, observationSequence.steps[0].id);
   assert(await page.locator("#novel-choices button").count() === 0, "the canonical observation sequence must not render a choice");
+  const observationBackground = await page.locator("#novel-layer").evaluate((node) => getComputedStyle(node).backgroundImage);
+  assert(observationBackground.includes("novel-bg-exhibition-v3.png") && !observationBackground.includes("novel-bg-garden-center-v2.png"), `CURRENT observation return used the wrong background: ${observationBackground}`);
   await screenshot(page, "observation-sequence");
 
   const editorial = steps.find((step) => step.choiceId === "editorial_choice");
