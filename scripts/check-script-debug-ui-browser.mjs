@@ -20,7 +20,10 @@ assert.match(indexSource, /id="novel-script-debug-number"><\/b>/u);
 assert.match(indexSource, /id="novel-script-debug-step-id"><\/code>/u);
 assert.match(cssSource, /\.novel-script-debug\s*\{[\s\S]*?pointer-events:\s*none;/u);
 assert.match(cssSource, /\.novel-script-debug-copy\s*\{[\s\S]*?user-select:\s*text;/u);
-assert.doesNotMatch(runtimeSource, /novel-script-debug/u, "35 UI commit must not add runtime binding");
+for (const selector of ["#novel-script-debug", "#novel-script-debug-number", "#novel-script-debug-step-id"]) {
+  assert.match(runtimeSource, new RegExp(selector), `integrated runtime is missing ${selector}`);
+}
+assert.match(runtimeSource, /スクリプト位置 \$\{index\}、\$\{step\.id\}/u, "integrated runtime is missing the SCRIPT aria-label binding");
 
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?script-debug=${Date.now()}`);
