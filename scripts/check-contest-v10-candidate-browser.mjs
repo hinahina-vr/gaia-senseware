@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4319"] = process.argv.slice(2);
+const welcomeAvatarOnly = process.argv.includes("--welcome-avatar-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const { chromium } = await import(pathToFileURL(path.join(moduleRoot, "index.mjs")));
 const outputDir = path.resolve(outputArgument || "artifacts/contest-v10-candidate");
@@ -18,7 +19,7 @@ const interactions = [
   { name: "gx", stepId: "gx_experience_017", nextStepId: "gx_experience_018", modal: "#gx-layer" },
 ];
 const welcomeCases = [
-  { name: "wide", stepId: "welcome_chat_004", device: "wide", slack: true },
+  { name: "wide", stepId: "welcome_chat_006", device: "wide", slack: true },
   { name: "physical-mizuha", stepId: "welcome_chat_055", device: "wide", slack: false, cast: "novel-character-minamo" },
   { name: "physical-amane", stepId: "welcome_chat_060", device: "wide", slack: false, cast: "novel-character-sora" },
   { name: "mobile", stepId: "welcome_chat_081", device: "mobile", slack: true },
@@ -91,31 +92,34 @@ const layoutSnapshot = (page) => page.evaluate(() => ({
 }));
 
 try {
-  const staticContext = await browser.newContext({ viewport: viewports[0], reducedMotion: "reduce" });
-  const staticPage = await staticContext.newPage();
-  await staticPage.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await staticPage.waitForFunction(() => Boolean(globalThis.GAIA_NOVEL_STORY));
-  const canonical = await staticPage.evaluate(() => {
-    const story = globalThis.GAIA_NOVEL_STORY;
-    const steps = story.scenes.flatMap((scene) => scene.steps);
-    return {
-      storyVersion: story.storyVersion,
-      sceneIds: story.scenes.map((scene) => scene.id),
-      stepCount: steps.length,
-      interactions: steps.filter((step) => step.type === "interaction").map((step) => [step.id, step.interaction.kind]),
-      requiredInteractions: story.requiredInteractions,
-    };
-  });
-  assert.deepEqual(canonical, {
-    storyVersion: 10,
-    sceneIds: ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"],
-    stepCount: 396,
-    interactions: [["map_mode01_004", "map01"], ["gx_experience_017", "gx"]],
-    requiredInteractions: ["map01", "gx"],
-  });
-  await staticContext.close();
+  if (!welcomeAvatarOnly) {
+    const staticContext = await browser.newContext({ viewport: viewports[0], reducedMotion: "reduce" });
+    const staticPage = await staticContext.newPage();
+    await staticPage.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await staticPage.waitForFunction(() => Boolean(globalThis.GAIA_NOVEL_STORY));
+    const canonical = await staticPage.evaluate(() => {
+      const story = globalThis.GAIA_NOVEL_STORY;
+      const steps = story.scenes.flatMap((scene) => scene.steps);
+      return {
+        storyVersion: story.storyVersion,
+        sceneIds: story.scenes.map((scene) => scene.id),
+        stepCount: steps.length,
+        interactions: steps.filter((step) => step.type === "interaction").map((step) => [step.id, step.interaction.kind]),
+        requiredInteractions: story.requiredInteractions,
+      };
+    });
+    assert.deepEqual(canonical, {
+      storyVersion: 10,
+      sceneIds: ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"],
+      stepCount: 396,
+      interactions: [["map_mode01_004", "map01"], ["gx_experience_017", "gx"]],
+      requiredInteractions: ["map01", "gx"],
+    });
+    await staticContext.close();
+  }
 
   for (const viewport of viewports) {
+    if (!welcomeAvatarOnly) {
     const startLabel = `${viewport.name}-festival-start`;
     const { context: startContext, page: startPage } = await createPage(viewport, startLabel);
     await startPage.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
@@ -208,24 +212,48 @@ try {
       await page.screenshot({ path: path.join(outputDir, `${label}-closed.png`) });
       await context.close();
     }
+    }
 
     for (const testCase of welcomeCases) {
+      if (welcomeAvatarOnly) {
+        const focusedCase = (viewport.name === "pc-1440" && testCase.name === "wide")
+          || (viewport.name === "mobile-390" && testCase.name === "mobile");
+        if (!focusedCase) continue;
+      }
       const label = `${viewport.name}-welcome-${testCase.name}`;
       const { context, page } = await createPage(viewport, label);
       await bootAt(page, testCase.stepId);
-      const scan = await page.evaluate(() => ({
-        stepId: globalThis.GaiaNovel.getState().stepId,
-        slack: document.querySelector("#novel-layer")?.classList.contains("is-slack"),
-        slackDevice: document.querySelector(".novel-slack-workspace")?.dataset.device || "",
-        visibleCast: [...document.querySelectorAll("#novel-cast .novel-character")]
-          .filter((node) => globalThis.__contestVisible(node)).map((node) => node.id),
-        visibleSakuImages: [...document.querySelectorAll("img[src*='saku' i], #novel-character-sakuya")]
-          .filter((node) => globalThis.__contestVisible(node)).length,
-        audioCue: document.querySelector("#novel-layer")?.dataset.storyAudioCue || "",
-        overflow: document.documentElement.scrollWidth > innerWidth + 1,
-      }));
+      const scan = await page.evaluate(() => {
+        const humanSlackAvatars = [...document.querySelectorAll([
+          ".novel-slack-post[data-speaker='mizuha'] .novel-slack-avatar",
+          ".novel-slack-post[data-speaker='amane'] .novel-slack-avatar",
+          ".novel-slack-post[data-speaker='sakuya'] .novel-slack-avatar",
+          ".novel-slack-typing[data-speaker='mizuha'] .novel-slack-avatar",
+          ".novel-slack-typing[data-speaker='amane'] .novel-slack-avatar",
+          ".novel-slack-typing[data-speaker='sakuya'] .novel-slack-avatar",
+        ].join(", "))];
+        return {
+          stepId: globalThis.GaiaNovel.getState().stepId,
+          slack: document.querySelector("#novel-layer")?.classList.contains("is-slack"),
+          slackDevice: document.querySelector(".novel-slack-workspace")?.dataset.device || "",
+          visibleCast: [...document.querySelectorAll("#novel-cast .novel-character")]
+            .filter((node) => globalThis.__contestVisible(node)).map((node) => node.id),
+          visibleSakuImages: [...document.querySelectorAll("img[src*='saku' i], #novel-character-sakuya")]
+            .filter((node) => globalThis.__contestVisible(node)).length,
+          humanSlackAvatarDomCount: humanSlackAvatars.length,
+          humanSlackAvatarVisibleCount: humanSlackAvatars.filter((node) => globalThis.__contestVisible(node)).length,
+          sakuTypingAvatarVisible: globalThis.__contestVisible(document.querySelector(".novel-slack-typing[data-speaker='sakuya'] .novel-slack-avatar")),
+          audioCue: document.querySelector("#novel-layer")?.dataset.storyAudioCue || "",
+          overflow: document.documentElement.scrollWidth > innerWidth + 1,
+        };
+      });
       assert.equal(scan.slack, testCase.slack);
-      if (testCase.slack) assert.equal(scan.slackDevice, testCase.device);
+      if (testCase.slack) {
+        assert.equal(scan.slackDevice, testCase.device);
+        assert.equal(scan.humanSlackAvatarDomCount, 0);
+        assert.equal(scan.humanSlackAvatarVisibleCount, 0);
+        assert.equal(scan.sakuTypingAvatarVisible, false);
+      }
       if (testCase.cast) {
         assert.deepEqual(scan.visibleCast, [testCase.cast]);
       } else {
@@ -239,6 +267,7 @@ try {
       await context.close();
     }
 
+    if (!welcomeAvatarOnly) {
     const endLabel = `${viewport.name}-end`;
     const { context: endContext, page: endPage } = await createPage(viewport, endLabel);
     await bootAt(endPage, "welcome_chat_095");
@@ -253,6 +282,7 @@ try {
     report.scans.push({ viewport, case: "end", ...endScan, passed: true });
     await endPage.screenshot({ path: path.join(outputDir, `${endLabel}.png`) });
     await endContext.close();
+    }
   }
 
   assert.equal(report.consoleErrors.length, 0);

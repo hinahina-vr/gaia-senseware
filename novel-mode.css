@@ -5048,6 +5048,10 @@ body.novel-reduced-motion .story-detour-dock * {
   padding: 9px 8px;
 }
 
+.novel-slack-post.is-avatarless .novel-slack-post-body {
+  grid-column: 1 / -1;
+}
+
 .novel-slack-post.is-reply {
   margin-left: 28px;
 }
@@ -5155,6 +5159,7 @@ body.novel-reduced-motion .story-detour-dock * {
 .novel-slack-attachment.is-error img { display: none; }
 .novel-slack-message { overflow-wrap: anywhere; }
 .novel-slack-typing { display: flex; align-items: center; gap: 9px; margin: 7px 8px 2px 36px; color: #616061; font-size: 11px; }
+.novel-slack-typing.is-avatarless { margin-left: 8px; }
 .novel-slack-typing .novel-slack-avatar { flex: 0 0 auto; width: 25px; height: 25px; font-size: 12px; }
 .novel-slack-typing > i { display: inline-flex; gap: 3px; align-items: end; height: 10px; }
 .novel-slack-typing > i b { width: 4px; height: 4px; border-radius: 50%; background: #616061; animation: novel-slack-typing 900ms ease-in-out infinite; }

@@ -1979,6 +1979,12 @@
     return { messages, typing: following?.type === "chat" && conditionMatches(following) ? following : null };
   };
 
+  const HUMAN_SLACK_SPEAKERS = new Set(["mizuha", "amane", "sakuya"]);
+  const shouldRenderSlackAvatar = (message) => (
+    !HUMAN_SLACK_SPEAKERS.has(message?.speaker)
+    || backHalfCues.forStep(message)?.character?.avatar !== "none"
+  );
+
   const createSlackAttachment = (attachment) => {
     const identifier = String(attachment?.id || "").toUpperCase();
     const asset = SLACK_ATTACHMENT_ASSETS[identifier];
@@ -2024,10 +2030,8 @@
     const article = document.createElement("article");
     article.className = `novel-slack-post ${root ? "is-root" : "is-reply"}${current ? " is-new" : ""}`;
     article.dataset.speaker = message.speaker || "system";
-    const avatar = document.createElement("div");
-    avatar.className = "novel-slack-avatar";
-    avatar.setAttribute("aria-hidden", "true");
-    avatar.textContent = SPEAKERS[message.speaker]?.glyph || "◌";
+    const renderAvatar = shouldRenderSlackAvatar(message);
+    article.classList.toggle("is-avatarless", !renderAvatar);
     const body = document.createElement("div");
     body.className = "novel-slack-post-body";
     const meta = document.createElement("p");
@@ -2046,7 +2050,14 @@
       message.attachments.forEach((attachment) => attachments.append(createSlackAttachment(attachment)));
       body.append(attachments);
     }
-    article.append(avatar, body);
+    if (renderAvatar) {
+      const avatar = document.createElement("div");
+      avatar.className = "novel-slack-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = SPEAKERS[message.speaker]?.glyph || "◌";
+      article.append(avatar);
+    }
+    article.append(body);
     return article;
   };
 
@@ -2101,10 +2112,19 @@
       });
       if (timeline.typing) {
         const typing = document.createElement("div");
+        const renderAvatar = shouldRenderSlackAvatar(timeline.typing);
         typing.className = "novel-slack-typing";
+        typing.classList.toggle("is-avatarless", !renderAvatar);
         typing.dataset.speaker = timeline.typing.speaker || "system";
         typing.setAttribute("role", "status");
-        typing.innerHTML = `<span class="novel-slack-avatar" aria-hidden="true">${SPEAKERS[timeline.typing.speaker]?.glyph || "◌"}</span><span><b>${timeline.typing.speakerLabel || SPEAKERS[timeline.typing.speaker]?.name || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
+        typing.innerHTML = `<span><b>${timeline.typing.speakerLabel || SPEAKERS[timeline.typing.speaker]?.name || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
+        if (renderAvatar) {
+          const avatar = document.createElement("span");
+          avatar.className = "novel-slack-avatar";
+          avatar.setAttribute("aria-hidden", "true");
+          avatar.textContent = SPEAKERS[timeline.typing.speaker]?.glyph || "◌";
+          typing.prepend(avatar);
+        }
         thread.append(typing);
       }
       if (terminalChat) {
