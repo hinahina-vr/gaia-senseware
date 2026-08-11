@@ -11,132 +11,137 @@ await import(new URL("../novel-back-half-cues.js", import.meta.url));
 const story = globalThis.GAIA_NOVEL_STORY;
 const backgrounds = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
 const staging = globalThis.GAIA_NOVEL_BACK_HALF_CUES;
+const expectedSceneIds = [
+  "festival_concept",
+  "map_mode01",
+  "gx_experience",
+  "esp32_pitch",
+  "circle_invitation",
+  "welcome_chat",
+];
+const expectedCounts = [76, 43, 58, 43, 81, 95];
 const allSteps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(allSteps.map((step) => [step.id, step]));
+const range = (sceneId, from, to) => Array.from(
+  { length: to - from + 1 },
+  (_, index) => `${sceneId}_${String(from + index).padStart(3, "0")}`,
+);
 
-assert.equal(story.scenes.length, 23, "canonical story must keep 23 scenes");
-assert.equal(allSteps.length, 1022, "canonical story must keep 1022 steps after the focused opening and GX copy rewrite");
+assert.equal(story.storyVersion, 10, "contest story version changed");
+assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds, "contest scene order changed");
+assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedCounts, "contest scene counts changed");
+assert.equal(allSteps.length, 396, "contest story must keep 396 steps");
+assert.deepEqual(staging.sceneIds, expectedSceneIds, "staging scene registry changed");
+assert.deepEqual(staging.expectedSceneCounts, Object.fromEntries(expectedSceneIds.map((id, index) => [id, expectedCounts[index]])));
 
-const backHalfScenes = story.scenes.filter((scene) => staging.backHalfSceneIds.includes(scene.id));
-assert.equal(backHalfScenes.length, 12, "back half must contain 12 scenes");
-for (const [sceneId, expectedCount] of Object.entries(staging.expectedSceneCounts)) {
-  const scene = backHalfScenes.find((candidate) => candidate.id === sceneId);
-  assert(scene, `${sceneId}: scene is missing`);
-  assert.equal(scene.steps.length, expectedCount, `${sceneId}: canonical step count changed`);
+for (const scene of story.scenes) {
+  assert.equal(scene.temporal?.temporalContext, "CURRENT", `${scene.id}: temporal context changed`);
+  assert.equal(scene.temporal?.timePrecision, "APPROXIMATE", `${scene.id}: temporal precision changed`);
   scene.steps.forEach((step, index) => {
-    assert.equal(step.id, `${sceneId}_${String(index + 1).padStart(3, "0")}`, `${sceneId}: non-canonical step id at ${index + 1}`);
+    assert.equal(step.id, `${scene.id}_${String(index + 1).padStart(3, "0")}`, `${scene.id}: non-canonical step id`);
   });
 }
 
-const backHalfSteps = backHalfScenes.flatMap((scene) => scene.steps);
-assert.equal(backHalfSteps.length, 295, "back-half migration must resolve to 295 steps");
-
-const resolved = backHalfSteps.map((step) => ({
+const resolved = allSteps.map((step) => ({
   step,
   background: backgrounds.forStep(step),
   staging: staging.forStep(step),
 }));
-assert(resolved.every(({ background }) => background?.assetPath), "every back-half step needs an approved background");
-assert(resolved.every(({ staging: cue }) => cue?.temporal), "every back-half step needs a temporal cue");
-assert.equal(resolved.filter(({ background }) => background.assetPath.includes("novel-bg-production-night-v2.png")).length, 0, "old production-night background leaked into the new back half");
+assert(resolved.every(({ background }) => background?.assetPath), "every contest step needs an approved background");
+assert(resolved.every(({ staging: cue }) => cue?.temporal), "every contest step needs a temporal cue");
+assert(resolved.every(({ staging: cue }) => cue.temporal.context === "CURRENT"), "contest route must stay CURRENT");
+assert(resolved.every(({ staging: cue }) => cue.temporal.precision === "APPROXIMATE"), "contest route must stay APPROXIMATE");
+assert(resolved.every(({ staging: cue }) => cue.temporal.date === ""), "contest cue invented an absolute date");
+assert(resolved.every(({ staging: cue }) => cue.audio === "none"), "contest cue added character or archive audio");
 
 for (const assetPath of new Set(resolved.map(({ background }) => background.assetPath))) {
-  assert(assetPath.startsWith("assets/visuals-07/"), `background escaped the approved asset root: ${assetPath}`);
+  assert(assetPath.startsWith("assets/visuals-07/"), `background escaped approved assets: ${assetPath}`);
   await access(path.join(projectRoot, assetPath));
 }
 
+assert.deepEqual(staging.interactions.map((entry) => entry.stepId), ["map_mode01_004", "gx_experience_017"]);
+assert.deepEqual(
+  allSteps.filter((step) => step.type === "interaction").map((step) => step.id),
+  staging.interactions.map((entry) => entry.stepId),
+  "interaction registry must contain exactly MAP01 and GX",
+);
+
+const mapInteraction = staging.interactions[0];
+assert.deepEqual(mapInteraction.prepStepIds, range("map_mode01", 1, 3));
+assert.deepEqual(mapInteraction.postStepIds, range("map_mode01", 5, 43));
+assert.equal(mapInteraction.returnStepId, "map_mode01_005");
+assert.equal(mapInteraction.kind, "map01");
+assert.equal(mapInteraction.modeIndex, 0);
+assert.equal(mapInteraction.modeId, "breathing-earth");
+assert.equal(mapInteraction.target, "#japan-layer");
+
+const gxInteraction = staging.interactions[1];
+assert.deepEqual(gxInteraction.prepStepIds, range("gx_experience", 1, 16));
+assert.deepEqual(gxInteraction.postStepIds, range("gx_experience", 18, 58));
+assert.equal(gxInteraction.returnStepId, "gx_experience_018");
+assert.equal(gxInteraction.kind, "gx");
+assert.equal(gxInteraction.target, "#gx-layer");
+
 for (const interaction of staging.interactions) {
   const step = stepMap.get(interaction.stepId);
-  assert(step, `${interaction.stepId}: interaction step is missing`);
-  assert.equal(step.type, "interaction", `${interaction.stepId}: interaction type changed`);
-  assert.equal(step.interaction?.kind, interaction.kind, `${interaction.stepId}: interaction kind changed`);
+  assert.equal(step?.type, "interaction", `${interaction.stepId}: interaction type changed`);
+  assert.equal(step?.interaction?.kind, interaction.kind, `${interaction.stepId}: interaction kind changed`);
   assert(stepMap.has(interaction.returnStepId), `${interaction.stepId}: return step is missing`);
-  assert.deepEqual(interaction.prepStepIds.map((stepId) => stepMap.get(stepId)?.speaker), ["mizuha", "amane"], `${interaction.stepId}: PREP must be Mizuha then Amane`);
-  assert.deepEqual(interaction.postStepIds.map((stepId) => stepMap.get(stepId)?.speaker), ["mizuha", "amane"], `${interaction.stepId}: post talk must be Mizuha then Amane`);
-  assert.equal(interaction.returnStepId, interaction.postStepIds[0], `${interaction.stepId}: CLOSE must return to the first post-talk step`);
-  assert.equal(Boolean(step.interaction?.optional), Boolean(interaction.optional), `${interaction.stepId}: optional interaction contract changed`);
 }
-assert.deepEqual(
-  backHalfSteps.filter((step) => step.type === "interaction").map((step) => step.id),
-  staging.interactions.map((entry) => entry.stepId),
-  "MODE interaction starts changed",
-);
 
-for (const flow of staging.choices) {
-  const step = stepMap.get(flow.stepId);
-  assert.equal(step?.type, flow.type, `${flow.stepId}: modal choice type changed`);
-  assert.deepEqual(flow.prepStepIds.map((stepId) => stepMap.get(stepId)?.speaker), ["mizuha", "amane"], `${flow.stepId}: PREP must be Mizuha then Amane`);
-  assert.deepEqual(flow.postStepIds.map((stepId) => stepMap.get(stepId)?.speaker), ["mizuha", "amane"], `${flow.stepId}: post talk must be Mizuha then Amane`);
-  if (flow.resultStepId) assert.equal(stepMap.get(flow.resultStepId)?.type, "result", `${flow.stepId}: result boundary changed`);
-}
+assert.deepEqual(staging.choices, [{
+  id: "demo-interest",
+  sceneId: "gx_experience",
+  stepId: "gx_experience_046",
+  type: "choice",
+  scope: "scene-local-demo",
+  resultToken: "demo_interest",
+}]);
+assert.equal(stepMap.get("gx_experience_046")?.type, "choice");
 
 const cue = (stepId) => staging.forStep(stepMap.get(stepId));
-assert.equal(cue("mode07_abstract_008").temporal.context, "CURRENT");
-assert.equal(cue("mode07_abstract_009").temporal.context, "RECORD");
-assert.equal(cue("interlude_sea_067").temporal.context, "RECORD");
-assert.equal(cue("mode08_map_layers_001").temporal.context, "CURRENT");
-assert.equal(cue("final_record_008").temporal.time, "15:52");
-assert.equal(cue("final_record_009").device, "portrait-operations-phone");
-assert.equal(cue("final_record_009").phone.noticeTime, "15:52");
-assert.equal(cue("final_record_009").phone.noticeSender, "大学学生支援窓口");
-assert.equal(
-  cue("final_record_009").phone.noticeBody,
-  "本人の安全を確認しました。本人の同意により、中央入口で二人と話したい旨をお伝えします。",
-);
-assert.equal(cue("final_record_017").temporal.time, "15:54");
-assert.equal(cue("final_record_018").devicePhase, "incoming-audio");
-assert.equal(cue("final_record_018").phone.clock, "15:54");
-assert.equal(cue("final_record_018").phone.audioSpeaker, "サクヤ");
-assert.equal(cue("final_record_018").phone.audioStatus, "音声着信");
-assert.equal(cue("final_record_019").phone.audioStatus, "接続中");
-assert.equal(cue("final_record_027").phone.audioStatus, "通話終了");
-assert.equal(cue("return_to_start_001").temporal.time, "15:55");
-assert.equal(cue("return_to_start_001").phone, null, "operations phone must close at the 15:55 pause scene");
-assert.equal(cue("return_to_start_018").temporal.time, "16:00");
-assert.equal(cue("return_to_start_032").temporal.time, "16:03");
-assert.equal(cue("return_to_start_017").viewpoint, "visitor");
-assert.equal(cue("return_to_start_018").viewpoint, "work-camera");
-assert.equal(cue("return_to_start_020").castMode, "sakuya-unseen");
-assert.equal(cue("return_to_start_021").castMode, "central-entrance-distance");
-assert.equal(cue("gx_deep_time_017").castMode, "archived-voice-no-cast");
-assert.equal(cue("final_record_024").castMode, "remote-sakuya-no-cast");
-assert.equal(cue("gx_deep_time_016").audio, "archive-recording-start");
-assert.equal(cue("gx_deep_time_017").audio, "archived-voices");
-assert.equal(cue("gx_deep_time_018").audio, "archive-room-foley");
-assert.equal(cue("gx_deep_time_019").audio, "archive-recording-stop");
-assert.equal(cue("mode03_map_002").device, "none", "PREP must stay on the normal story surface");
-assert.equal(cue("mode03_map_003").device, "native-mode-overlay", "OPEN must use the exclusive mode overlay");
-assert.equal(cue("mode03_map_004").device, "none", "CLOSE must restore the normal story surface before post talk");
-assert.equal(cue("mode10_space_010").device, "wide-exhibition-terminal");
-assert.equal(cue("mode10_space_015").device, "wide-exhibition-terminal");
-assert.equal(cue("mode10_space_006").audio, "eleven-second-recording-start");
-assert.equal(cue("mode10_space_009").audio, "eleven-second-recording-stop");
-assert(!stepMap.has("mode10_space_030"), "obsolete pre-rewrite mode10 device boundary remains");
-assert.equal(staging.temporal.some((entry) => entry.location === "exhibition-seat"), false, "obsolete exhibition-seat cue remains");
+assert.equal(cue("map_mode01_003").device, "none");
+assert.equal(cue("map_mode01_003").castMode, "normal");
+assert.equal(cue("map_mode01_004").device, "native-mode-overlay");
+assert.equal(cue("map_mode01_004").devicePhase, "open");
+assert.equal(cue("map_mode01_004").castMode, "interaction-no-cast");
+assert.equal(cue("map_mode01_005").device, "none");
+assert.equal(cue("map_mode01_005").castMode, "normal");
+assert.equal(cue("gx_experience_016").castMode, "normal");
+assert.equal(cue("gx_experience_017").device, "native-mode-overlay");
+assert.equal(cue("gx_experience_017").castMode, "interaction-no-cast");
+assert.equal(cue("gx_experience_018").castMode, "normal");
+assert.equal(cue("welcome_chat_001").device, "wide-campus-chat");
+assert.equal(cue("welcome_chat_001").character.avatar, "none");
+assert.equal(cue("welcome_chat_001").character.cast, "none");
+assert.equal(cue("welcome_chat_054").castMode, "chat-text-only-no-cast");
+assert.equal(cue("welcome_chat_055").devicePhase, "physical");
+assert.equal(cue("welcome_chat_055").castMode, "normal");
+assert.equal(cue("welcome_chat_055").character.cast, "mizuha-amane");
+assert.equal(cue("welcome_chat_055").character.portrait, "normal");
+assert.equal(cue("welcome_chat_077").castMode, "normal");
+assert.equal(cue("welcome_chat_078").device, "mobile-campus-chat");
+assert.equal(cue("welcome_chat_078").character.avatar, "none");
+assert.equal(cue("welcome_chat_095").castMode, "chat-text-only-no-cast");
+assert.equal(staging.audio.length, 0, "contest route must not add Sakuya voice/audio cues");
+assert(staging.characters.every((entry) => entry.voice === "none"), "welcome route must not add character voice");
 
-const reflection = stepMap.get("choice_reflection_001");
-assert.equal(reflection.maxSelections, 3, "reflection max selection changed");
-assert.deepEqual(reflection.options.map((option) => option.id), Array.from({ length: 36 }, (_, index) => `R${String(index + 1).padStart(2, "0")}`), "R01-R36 fixed order changed");
-const endSteps = allSteps.filter((step) => step.type === "end");
-assert.deepEqual(endSteps.map((step) => step.id), ["return_to_start_036"], "16:03 must remain the only END");
-assert.equal(story.scenes.find((scene) => scene.id === "return_to_start")?.chapter, "CURRENT CONTACT", "CURRENT CONTACT chapter changed");
-assert.equal(story.scenes.find((scene) => scene.id === "return_to_start")?.title, "CURRENT CONTACT｜展示を一時休止する", "CURRENT CONTACT title changed");
+const sakuyaSteps = allSteps.filter((step) => step.speaker === "sakuya");
+assert(sakuyaSteps.length > 0, "Sakuya text chat is missing");
+assert(sakuyaSteps.every((step) => step.sceneId === "welcome_chat" && step.type === "chat"), "Sakuya escaped text-only chat");
+assert.throws(() => staging.forStep({ sceneId: "welcome_chat", id: "welcome_chat_999" }), /Missing contest-v10 temporal cue/);
+assert.throws(() => staging.forStep({ sceneId: "unknown", id: "unknown_001" }), /Unknown contest-v10 staging scene/);
 
-const report = {
+console.log(JSON.stringify({
   status: "passed",
-  storySteps: allSteps.length,
-  backHalfScenes: backHalfScenes.length,
-  backHalfSteps: backHalfSteps.length,
-  backgrounds: backgrounds.backHalf.length,
+  storyVersion: story.storyVersion,
+  scenes: story.scenes.length,
+  steps: allSteps.length,
   temporalCues: staging.temporal.length,
-  interactions: staging.interactions.length,
-  choices: staging.choices.length,
+  interactions: staging.interactions.map((entry) => entry.stepId),
+  choices: staging.choices.map((entry) => entry.stepId),
   deviceCues: staging.devices.length,
+  characterCues: staging.characters.length,
   audioCues: staging.audio.length,
-  currentRecordBoundaries: ["mode07_abstract_008→009", "interlude_sea_067→mode08_map_layers_001"],
-  phoneWindow: "final_record_008→027",
-  viewpointBoundary: "return_to_start_017→018",
-  sakuyaPhysicalGate: "return_to_start_020 displayed; eligible from _021",
-  onlyEnd: endSteps[0].id,
-};
-console.log(JSON.stringify(report, null, 2));
+  welcomePresentation: ["001-054 wide", "055-077 physical", "078-095 mobile"],
+}, null, 2));

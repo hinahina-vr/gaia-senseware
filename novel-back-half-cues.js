@@ -2,102 +2,85 @@
   "use strict";
 
   const expectedSceneCounts = Object.freeze({
-    festival_build: 18,
-    gx_deep_time: 24,
-    mode03_map: 20,
-    mode07_abstract: 54,
-    interlude_sea: 67,
-    mode08_map_layers: 19,
-    mode10_space: 18,
-    choice_editorial: 6,
-    epilogue_reflection_field: 4,
-    choice_reflection: 2,
-    final_record: 27,
-    return_to_start: 36,
+    festival_concept: 76,
+    map_mode01: 43,
+    gx_experience: 58,
+    esp32_pitch: 43,
+    circle_invitation: 81,
+    welcome_chat: 95,
   });
 
-  const backHalfSceneIds = Object.freeze(Object.keys(expectedSceneCounts));
+  const sceneIds = Object.freeze(Object.keys(expectedSceneCounts));
   const freezeRows = (rows) => Object.freeze(rows.map((row) => Object.freeze(row)));
+  const stepIds = (sceneId, from, to) => Object.freeze(Array.from(
+    { length: to - from + 1 },
+    (_, index) => `${sceneId}_${String(from + index).padStart(3, "0")}`,
+  ));
+
+  // Contest v10 is a timed presentation, not an in-world absolute chronology.
+  // Keep the source-authored duration and location without inventing a calendar date.
   const temporal = freezeRows([
-    { id: "festival-build-current", sceneId: "festival_build", from: 1, to: 18, context: "CURRENT", date: "2026-11-01", time: "14:40", dayPeriod: "day", location: "exhibition-hall" },
-    { id: "gx-current", sceneId: "gx_deep_time", from: 1, to: 24, context: "CURRENT", date: "2026-11-01", time: "14:44", dayPeriod: "day", location: "exhibition-terminal" },
-    { id: "mode03-current", sceneId: "mode03_map", from: 1, to: 20, context: "CURRENT", date: "2026-11-01", time: "14:53", dayPeriod: "day", location: "exhibition-terminal" },
-    { id: "mode07-current", sceneId: "mode07_abstract", from: 1, to: 8, context: "CURRENT", date: "2026-11-01", time: "15:00", dayPeriod: "day", location: "exhibition-terminal" },
-    { id: "mode07-record-evening", sceneId: "mode07_abstract", from: 9, to: 12, context: "RECORD", date: "2026-10-31", time: "18:00", dayPeriod: "night", location: "shared-meeting-room" },
-    { id: "mode07-record-2200", sceneId: "mode07_abstract", from: 13, to: 15, context: "RECORD", date: "2026-10-31", time: "22:00", dayPeriod: "night", location: "shared-meeting-room" },
-    { id: "mode07-record-2300", sceneId: "mode07_abstract", from: 16, to: 54, context: "RECORD", date: "2026-10-31", time: "23:00", dayPeriod: "night", location: "shared-meeting-room" },
-    { id: "interlude-record-2320", sceneId: "interlude_sea", from: 1, to: 10, context: "RECORD", date: "2026-10-31", time: "23:20", dayPeriod: "night", location: "shared-room-to-hall" },
-    { id: "interlude-record-coast", sceneId: "interlude_sea", from: 11, to: 45, context: "RECORD", date: "2026-10-31", time: "23:31–23:43", precision: "period", dayPeriod: "night", location: "zushi-coast" },
-    { id: "interlude-record-2358", sceneId: "interlude_sea", from: 46, to: 53, context: "RECORD", date: "2026-10-31", time: "23:58", dayPeriod: "night", location: "shared-meeting-room" },
-    { id: "interlude-record-midnight", sceneId: "interlude_sea", from: 54, to: 58, context: "RECORD", date: "2026-11-01", time: "00:00", dayPeriod: "night", location: "shared-meeting-room" },
-    { id: "interlude-record-0026", sceneId: "interlude_sea", from: 59, to: 67, context: "RECORD", date: "2026-11-01", time: "00:26", dayPeriod: "night", location: "shared-meeting-room" },
-    { id: "mode08-current", sceneId: "mode08_map_layers", from: 1, to: 19, context: "CURRENT", date: "2026-11-01", time: "15:22", dayPeriod: "day", location: "exhibition-terminal" },
-    { id: "mode10-current", sceneId: "mode10_space", from: 1, to: 18, context: "CURRENT", date: "2026-11-01", time: "15:30", dayPeriod: "day", location: "exhibition-terminal" },
-    { id: "choice-editorial-current", sceneId: "choice_editorial", from: 1, to: 6, context: "CURRENT", date: "2026-11-01", time: "15:38", dayPeriod: "day", location: "exhibition-booth" },
-    { id: "epilogue-current", sceneId: "epilogue_reflection_field", from: 1, to: 4, context: "CURRENT", date: "2026-11-01", time: "15:42", dayPeriod: "day", location: "exhibition-booth" },
-    { id: "reflection-current", sceneId: "choice_reflection", from: 1, to: 2, context: "CURRENT", date: "2026-11-01", time: "15:44", dayPeriod: "day", location: "exhibition-booth" },
-    { id: "final-record-1547", sceneId: "final_record", from: 1, to: 7, context: "CURRENT", date: "2026-11-01", time: "15:47", dayPeriod: "day", location: "exhibition-booth" },
-    { id: "final-record-1552", sceneId: "final_record", from: 8, to: 16, context: "CURRENT", date: "2026-11-01", time: "15:52", dayPeriod: "day", location: "exhibition-booth" },
-    { id: "final-record-1554", sceneId: "final_record", from: 17, to: 27, context: "CURRENT", date: "2026-11-01", time: "15:54", dayPeriod: "day", location: "exhibition-booth" },
-    { id: "pause-1555", sceneId: "return_to_start", from: 1, to: 17, context: "CURRENT", date: "2026-11-01", time: "15:55", dayPeriod: "day", location: "exhibition-booth" },
-    { id: "entrance-1600", sceneId: "return_to_start", from: 18, to: 31, context: "CURRENT", date: "2026-11-01", time: "16:00", dayPeriod: "day", location: "central-entrance" },
-    { id: "entrance-1603", sceneId: "return_to_start", from: 32, to: 36, context: "CURRENT", date: "2026-11-01", time: "16:03", dayPeriod: "day", location: "central-entrance" },
+    { id: "festival-concept-current", sceneId: "festival_concept", from: 1, to: 76, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "0:00–1:45", duration: "0:00–1:45", dayPeriod: "", location: "オンライン大学・年次対面イベント／学生作品・体験展示ホール" },
+    { id: "map01-current", sceneId: "map_mode01", from: 1, to: 43, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "1:45–3:25", duration: "1:45–3:25", dayPeriod: "", location: "展示端末・地図MODE 01" },
+    { id: "gx-current", sceneId: "gx_experience", from: 1, to: 58, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "3:25–5:35", duration: "3:25–5:35", dayPeriod: "", location: "展示端末・GX／太古の海" },
+    { id: "esp32-current", sceneId: "esp32_pitch", from: 1, to: 43, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "5:35–7:15", duration: "5:35–7:15", dayPeriod: "", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
+    { id: "circle-invitation-current", sceneId: "circle_invitation", from: 1, to: 81, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "7:15–9:05", duration: "7:15–9:05", dayPeriod: "", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
+    { id: "welcome-current", sceneId: "welcome_chat", from: 1, to: 95, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "9:05–11:30", duration: "9:05–11:30", dayPeriod: "", location: "学内チャット『惑星の放課後』／閉場後の展示ホールから帰路へ" },
   ]);
 
   const interactions = freezeRows([
-    { sceneId: "gx_deep_time", prepStepIds: ["gx_deep_time_001", "gx_deep_time_002"], stepId: "gx_deep_time_003", kind: "gx", returnStepId: "gx_deep_time_004", postStepIds: ["gx_deep_time_004", "gx_deep_time_005"] },
-    { sceneId: "mode03_map", prepStepIds: ["mode03_map_001", "mode03_map_002"], stepId: "mode03_map_003", kind: "map03", returnStepId: "mode03_map_004", postStepIds: ["mode03_map_004", "mode03_map_005"] },
-    { sceneId: "mode07_abstract", prepStepIds: ["mode07_abstract_001", "mode07_abstract_002"], stepId: "mode07_abstract_003", kind: "abstract07", returnStepId: "mode07_abstract_004", postStepIds: ["mode07_abstract_004", "mode07_abstract_005"] },
-    { sceneId: "mode08_map_layers", prepStepIds: ["mode08_map_layers_001", "mode08_map_layers_002"], stepId: "mode08_map_layers_003", kind: "map08", returnStepId: "mode08_map_layers_004", postStepIds: ["mode08_map_layers_004", "mode08_map_layers_005"], optional: true },
-    { sceneId: "mode10_space", prepStepIds: ["mode10_space_001", "mode10_space_002"], stepId: "mode10_space_003", kind: "space10", returnStepId: "mode10_space_004", postStepIds: ["mode10_space_004", "mode10_space_005"] },
+    {
+      sceneId: "map_mode01",
+      prepStepIds: stepIds("map_mode01", 1, 3),
+      stepId: "map_mode01_004",
+      kind: "map01",
+      modeIndex: 0,
+      modeId: "breathing-earth",
+      target: "#japan-layer",
+      returnStepId: "map_mode01_005",
+      postStepIds: stepIds("map_mode01", 5, 43),
+    },
+    {
+      sceneId: "gx_experience",
+      prepStepIds: stepIds("gx_experience", 1, 16),
+      stepId: "gx_experience_017",
+      kind: "gx",
+      target: "#gx-layer",
+      returnStepId: "gx_experience_018",
+      postStepIds: stepIds("gx_experience", 18, 58),
+    },
   ]);
 
   const choices = freezeRows([
-    { id: "editorial", prepStepIds: ["mode10_space_017", "mode10_space_018"], stepId: "choice_editorial_001", type: "choice", postStepIds: ["epilogue_reflection_field_001", "epilogue_reflection_field_002"] },
-    { id: "reflection", prepStepIds: ["epilogue_reflection_field_003", "epilogue_reflection_field_004"], stepId: "choice_reflection_001", type: "reflectionChoice", resultStepId: "final_record_001", postStepIds: ["final_record_002", "final_record_003"] },
+    {
+      id: "demo-interest",
+      sceneId: "gx_experience",
+      stepId: "gx_experience_046",
+      type: "choice",
+      scope: "scene-local-demo",
+      resultToken: "demo_interest",
+    },
   ]);
 
   const devices = freezeRows([
-    { id: "mode03-native-overlay", sceneId: "mode03_map", from: 3, to: 3, device: "native-mode-overlay" },
-    { id: "mode07-native-overlay", sceneId: "mode07_abstract", from: 3, to: 3, device: "native-mode-overlay" },
-    { id: "mode08-native-overlay", sceneId: "mode08_map_layers", from: 3, to: 3, device: "native-mode-overlay" },
-    { id: "mode10-native-overlay", sceneId: "mode10_space", from: 3, to: 3, device: "native-mode-overlay" },
-    { id: "mode10-record-terminal", sceneId: "mode10_space", from: 10, to: 15, device: "wide-exhibition-terminal" },
-    { id: "amane-phone-prep", sceneId: "final_record", from: 8, to: 8, device: "portrait-operations-phone", phase: "prepare" },
-    { id: "amane-official-notice", sceneId: "final_record", from: 9, to: 16, device: "portrait-operations-phone", phase: "official-notice" },
-    { id: "amane-phone-audio", sceneId: "final_record", from: 17, to: 27, device: "portrait-operations-phone", phase: "incoming-audio" },
+    { id: "map01-native-overlay", sceneId: "map_mode01", from: 4, to: 4, device: "native-mode-overlay", phase: "open" },
+    { id: "gx-native-overlay", sceneId: "gx_experience", from: 17, to: 17, device: "native-mode-overlay", phase: "open" },
+    { id: "welcome-wide-chat", sceneId: "welcome_chat", from: 1, to: 54, device: "wide-campus-chat", phase: "wide" },
+    { id: "welcome-physical", sceneId: "welcome_chat", from: 55, to: 77, device: "none", phase: "physical" },
+    { id: "welcome-mobile-chat", sceneId: "welcome_chat", from: 78, to: 95, device: "mobile-campus-chat", phase: "mobile" },
   ]);
 
-  const audio = freezeRows([
-    { stepId: "gx_deep_time_016", cue: "archive-recording-start" },
-    { stepId: "gx_deep_time_017", cue: "archived-voices" },
-    { stepId: "gx_deep_time_018", cue: "archive-room-foley" },
-    { stepId: "gx_deep_time_019", cue: "archive-recording-stop" },
-    { stepId: "mode10_space_006", cue: "eleven-second-recording-start" },
-    { stepId: "mode10_space_007", cue: "recording-foley" },
-    { stepId: "mode10_space_008", cue: "recording-to-current-hall-crossfade" },
-    { stepId: "mode10_space_009", cue: "eleven-second-recording-stop" },
-    { stepId: "final_record_004", cue: "railroad-single-pass" },
-    { stepId: "final_record_005", cue: "current-hall-ambience" },
-    { stepId: "final_record_009", cue: "operations-phone-vibration" },
-    { stepId: "final_record_018", cue: "incoming-audio-call" },
-    { stepId: "final_record_019", cue: "audio-call-connect" },
-    { stepId: "final_record_021", cue: "phone-pa-delay" },
-    { stepId: "final_record_027", cue: "audio-call-hangup" },
-    { stepId: "return_to_start_017", cue: "exhibition-screen-fade" },
-    { stepId: "return_to_start_018", cue: "central-entrance-ambience" },
-    { stepId: "return_to_start_035", cue: "coastal-wind" },
+  const characters = freezeRows([
+    { id: "welcome-wide-text-only", sceneId: "welcome_chat", from: 1, to: 54, cast: "none", portrait: "none", avatar: "none", voice: "none" },
+    { id: "welcome-physical-mizuha-amane", sceneId: "welcome_chat", from: 55, to: 77, cast: "mizuha-amane", portrait: "normal", avatar: "none", voice: "none" },
+    { id: "welcome-mobile-text-only", sceneId: "welcome_chat", from: 78, to: 95, cast: "none", portrait: "none", avatar: "none", voice: "none" },
   ]);
 
-  const operationsPhone = Object.freeze({
-    noticeTime: "15:52",
-    noticeSender: "大学学生支援窓口",
-    noticeBody: "本人の安全を確認しました。本人の同意により、中央入口で二人と話したい旨をお伝えします。",
-    audioSpeaker: "サクヤ",
-  });
+  // The short script contains no character voice or archive-recording cue.
+  const audio = Object.freeze([]);
 
-  const stepNumber = (step, sceneId = step?.sceneId) => {
-    const match = new RegExp(`^${sceneId}_(\\d{3})$`).exec(String(step?.id || ""));
+  const stepNumber = (step) => {
+    const match = new RegExp(`^${step?.sceneId}_(\\d{3})$`).exec(String(step?.id || ""));
     return match ? Number(match[1]) : null;
   };
   const ranged = (rows, step) => {
@@ -106,47 +89,44 @@
   };
 
   const forStep = (step) => {
-    if (!backHalfSceneIds.includes(step?.sceneId)) return null;
+    if (!sceneIds.includes(step?.sceneId)) {
+      throw new Error(`[GAIA novel] Unknown contest-v10 staging scene for ${step?.id || "unknown step"}`);
+    }
     const temporalCue = ranged(temporal, step);
-    if (!temporalCue) throw new Error(`[GAIA novel] Missing back-half temporal cue for ${step?.id || "unknown step"}`);
+    if (!temporalCue) throw new Error(`[GAIA novel] Missing contest-v10 temporal cue for ${step?.id || "unknown step"}`);
     const deviceCue = ranged(devices, step);
+    const characterCue = ranged(characters, step);
     const number = stepNumber(step);
-    const viewpoint = step.sceneId === "return_to_start" && number >= 18
-      ? "work-camera"
-      : temporalCue.context === "RECORD" ? "archive-record" : "visitor";
+    const isInteraction = interactions.some((entry) => entry.stepId === step.id);
     let castMode = "normal";
-    if (step.sceneId === "gx_deep_time" && number >= 17 && number <= 19) castMode = "archived-voice-no-cast";
-    if (step.sceneId === "final_record" && number >= 9 && number <= 27) castMode = "remote-sakuya-no-cast";
-    if (step.sceneId === "return_to_start" && number >= 18 && number <= 20) castMode = "sakuya-unseen";
-    if (step.sceneId === "return_to_start" && number >= 21) castMode = "central-entrance-distance";
-    const phone = deviceCue?.device === "portrait-operations-phone" ? Object.freeze({
-      clock: temporalCue.time,
-      noticeTime: operationsPhone.noticeTime,
-      noticeSender: operationsPhone.noticeSender,
-      noticeBody: operationsPhone.noticeBody,
-      audioSpeaker: operationsPhone.audioSpeaker,
-      audioStatus: number <= 18 ? "音声着信" : number === 27 ? "通話終了" : "接続中",
-    }) : null;
+    if (isInteraction) castMode = "interaction-no-cast";
+    if (step.sceneId === "welcome_chat" && number <= 54) castMode = "chat-text-only-no-cast";
+    if (step.sceneId === "welcome_chat" && number >= 78) castMode = "chat-text-only-no-cast";
+
     return Object.freeze({
       temporal: temporalCue,
       device: deviceCue?.device || "none",
       devicePhase: deviceCue?.phase || "none",
-      viewpoint,
+      viewpoint: "visitor",
       castMode,
-      audio: audio.find((entry) => entry.stepId === step.id)?.cue || "none",
-      phone,
+      character: characterCue || Object.freeze({ cast: "normal", portrait: "normal", avatar: "normal", voice: "none" }),
+      audio: "none",
+      phone: null,
     });
   };
 
   globalThis.GAIA_NOVEL_BACK_HALF_CUES = Object.freeze({
     expectedSceneCounts,
-    backHalfSceneIds,
+    sceneIds,
+    // Compatibility name retained until the runtime registry is renamed.
+    backHalfSceneIds: sceneIds,
     temporal,
     interactions,
     choices,
     devices,
+    characters,
     audio,
-    operationsPhone,
+    operationsPhone: null,
     forStep,
   });
 })();
