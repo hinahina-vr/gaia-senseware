@@ -80,7 +80,7 @@ try {
       title: "11月1日（日） 13:30｜学園祭・展示ホール", context: "CURRENT", precision: "MINUTE", period: false,
     });
     await assertHeading("prologue_basil_001", {
-      title: "5月3日（土）〜5月4日（日）｜学内チャット「惑星の放課後」", context: "RECORD", precision: "MINUTE", period: true,
+      title: "5月3日（土）〜5月4日（日）｜学内サークル「惑星の放課後」・チャット", context: "RECORD", precision: "MINUTE", period: true,
     });
     await assertHeading("production_year_248", {
       title: "2026年7月25日（土） 10:02〜18:32｜七月の終わり・予約と制作チャット", context: "RECORD", precision: "MINUTE", period: true,

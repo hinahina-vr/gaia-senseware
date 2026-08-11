@@ -19,7 +19,7 @@ assert.deepEqual(presentation("current_exhibition_001"), {
   displayMode: "",
   source: "SCENE",
 });
-assert.equal(presentation("prologue_basil_001").displayTitle, "5月3日（土）〜5月4日（日）｜学内チャット「惑星の放課後」");
+assert.equal(presentation("prologue_basil_001").displayTitle, "5月3日（土）〜5月4日（日）｜学内サークル「惑星の放課後」・チャット");
 assert.equal(presentation("prologue_basil_001").isPeriod, true);
 assert.equal(presentation("prologue_basil_011").displayTitle, "5月4日（日） 00:31｜サクヤの花壇投稿");
 assert.equal(presentation("prologue_basil_017").displayTitle, "5月4日（日） 昼｜バジルの翌日写真");
@@ -36,7 +36,7 @@ const entryChange = runtime.contextTransitionForStep(steps.get("opening_empty_se
 assert.deepEqual([entryChange.fromTemporalContext, entryChange.toTemporalContext], ["CURRENT", "RECORD"]);
 const recordEntryChange = runtime.contextTransitionForStep(steps.get("prologue_online_circle_001"));
 assert.deepEqual([recordEntryChange.fromTemporalContext, recordEntryChange.toTemporalContext], ["RECORD", "RECORD"]);
-assert.equal(recordEntryChange.displayTitle, "5月1日（木） 18:00｜学内チャット「惑星の放課後」");
+assert.equal(recordEntryChange.displayTitle, "5月1日（木） 18:00｜学内サークル「惑星の放課後」・チャット");
 const internalChange = runtime.contextTransitionForStep(steps.get("mode07_abstract_009"));
 assert.deepEqual([internalChange.fromTemporalContext, internalChange.toTemporalContext], ["CURRENT", "RECORD"]);
 const delayedEntryChange = runtime.contextTransitionForStep(steps.get("mode08_map_layers_003"));

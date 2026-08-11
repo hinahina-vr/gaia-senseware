@@ -268,7 +268,7 @@ const parseSceneSteps = (scene, sectionLines) => {
 const configs = [
   { id: "current_exhibition", prefix: "現在の展示｜学園祭の展示ホール", chapter: "現在", modeIndex: 9 },
   { id: "opening_empty_seat", prefix: "OPENING｜空席", chapter: "OPENING", modeIndex: 9 },
-  { id: "prologue_online_circle", prefix: "PROLOGUE｜文字だけだった三人", chapter: "PROLOGUE", modeIndex: 0, split: "ミズハ、アマネ、サクヤが初めて同じスレッドに揃った" },
+  { id: "prologue_online_circle", prefix: "PROLOGUE｜文字だけだった三人", chapter: "PROLOGUE", modeIndex: 0, split: "二日後、みずが学内サークル「惑星の放課後」のチャットへ、バジルの写真を投稿した。" },
   { id: "choice_observation_order", prefix: "小さな選択｜どちらから見る？", chapter: "PROLOGUE", modeIndex: 0, choice: { id: "observation_order", prompt: "どちらから見る？", trackedByEves: false, options: [{ value: "LOCAL_FIRST", next: "first_meeting_promise" }, { value: "STATION_FIRST", next: "first_meeting_promise" }] } },
   { id: "first_meeting_promise", prefix: "00:08｜初めて会う約束", chapter: "PROLOGUE", modeIndex: 0 },
   { id: "first_meeting_hall", prefix: "09:48｜海沿いの展示場・中央入口", chapter: "PROLOGUE", modeIndex: 0 },

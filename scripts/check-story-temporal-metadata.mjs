@@ -133,8 +133,8 @@ assert.equal(interludeReceipt?.transitionAt, "2026-11-01T00:26:00+09:00");
 assert.match(interludeReceipt?.displayTitle || "", /本人文と面談希望の受付控え/u, "00:26 must identify the previous-night meeting-request receipt");
 
 const exactPeriodTitles = {
-  prologue_basil: "5月3日（土）〜5月4日（日）｜学内チャット「惑星の放課後」",
-  first_meeting_promise: "11月1日（土）21:06〜11月2日（日）02:00過ぎ｜学内チャット「惑星の放課後」",
+  prologue_basil: "5月3日（土）〜5月4日（日）｜学内サークル「惑星の放課後」・チャット",
+  first_meeting_promise: "11月1日（土）21:06〜11月2日（日）02:00過ぎ｜学内サークル「惑星の放課後」・チャット",
   production_year: "2025年11月9日（日）〜2026年8月1日（土）｜九か月間の制作記録",
   search: "8月1日（土）〜8月14日（金）｜安否確認記録",
   interlude_sea: "10月31日（土）23:20〜11月1日（日）00:26｜共同作業室から海岸へ",

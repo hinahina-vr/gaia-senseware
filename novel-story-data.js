@@ -157,56 +157,56 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "午後の学園祭。私は学生証を受付端末へかざし、海沿いの展示棟へ入る。今日の私は出展者ではない。受付でもらった案内図を片手に、学生が作った展示を見る側としてホールを歩いている。"
+          "text": "午後の学園祭。私は学生証を受付端末へかざし、海沿いの展示棟へ入る。今日の私は出展者ではなく、学生が作った展示を見る来場者だ。"
         },
         {
           "id": "current_exhibition_002",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私が通うのは、授業の大半を別々の町からブラウザ越しに受けるオンライン大学だ。この学園祭は、普段は離れて学ぶ学生が、年に一度、同じ場所へ作品や活動を持ち寄る対面行事である。"
+          "text": "授業の大半を別々の町から受けるオンライン大学では、この学園祭が、学生たちの作品を同じ場所で見られる年に一度の対面行事になっている。"
         },
         {
           "id": "current_exhibition_003",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "高い天井の下にブースが隙間なく続く。館内放送、呼び込み、拍手が重なり、足元の電源ケーブルを覆う養生を踏むたび、靴底へ小さな硬さが返ってくる。"
+          "text": "二つ目のホールへ渡る手前に、照明を落とした小さな展示ブースがある。黒い布を掛けた机の上には、展示端末、スピーカー、束ねたケーブルが並んでいる。私は端末の前で足を止める。"
         },
         {
           "id": "current_exhibition_004",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二つ目のホールへ渡る手前に、ほかより照明を落とした小さなブースがある。呼び込みの声も列もなく、黒い布を掛けた机の正面に、一台の端末と空いた椅子が置かれている。"
+          "text": "端末の横には、片側に薄い擦り傷のある青りんごが一つ置かれている。"
         },
         {
           "id": "current_exhibition_005",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "端末の横には、片側に薄い擦り傷のある青りんごが一つ置かれている。"
+          "text": "スピーカーから扇風機、湯が沸き始める音、遠い踏切が順に聞こえる。人の声が始まりそうで始まらないまま、十一秒ほどで途切れる。"
         },
         {
           "id": "current_exhibition_006",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "通り過ぎかけたとき、スピーカーから扇風機、湯が沸き始める音、遠い踏切が順に聞こえる。人の声が始まりそうで始まらないまま、十一秒ほどで途切れる。"
+          "text": "机の向こうにいる二人が、こちらを見る。二人とも壁の制作者欄と同じブースに立っている。"
         },
         {
           "id": "current_exhibition_007",
           "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "待機画面に音の題名はなく、録音された場所も、三つの音が同じ部屋のものかどうかも表示されていない。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「こんにちは。制作者のミズハです。掲示では『みず』。こちらはアマネですわ」"
         },
         {
           "id": "current_exhibition_008",
           "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "机の後ろには二人いる。黒いシャツの人物はしゃがんでケーブルを確かめ、もう一人はブースの端から、来場者が操作を終えたらしい画面を見ている。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「アマネです。掲示では『あまあま』。画面はそのまま触って大丈夫」"
         },
         {
           "id": "current_exhibition_009",
@@ -220,35 +220,35 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "会場にいる二人のどちらがどの名前なのか、残る一人がどこにいるのかは書かれていない。"
+          "text": "端末の案内には、「GAIA SENSEWARE　地球と人類の共進化を考える展示です。」とある。「地球の変化が人の暮らしをどう変え、人の選択が地球をどう変えてきたかをたどります」と続いている。"
         },
         {
           "id": "current_exhibition_011",
           "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "端末の案内には、「GAIA SENSEWARE　地球と人類の共進化を考える展示です。」とある。長い時間の生命と環境、現在の自然と人の暮らし、地球全体の変化を見ながら、「地球の変化が人の暮らしをどう変え、人の選択が地球をどう変えてきたかをたどります」と記されている。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「この展示は、掲示にある三人で作りましたの。sakuも、同じ制作者ですわ」"
         },
         {
           "id": "current_exhibition_012",
           "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "私は空いている椅子を引いて座る。通路を歩く人の姿は机に遮られ、正面の暗い画面が視界の大半を占める。背後のステージ音は消えずに残っている。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「八月一日、三人で初めて実機をつなぐ予定でした。でも、その日に集まったのは二人でしたの」"
         },
         {
           "id": "current_exhibition_013",
           "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "待機画面には、暗い海、森、都市、雲をまとった地球が順に浮かび、中央に青いSTARTボタンがある。その下には「地球の変化と、人の選択。その二つが重なった場所をたどる」と一行だけ表示されている。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「最初に、その日の作業予定と保存された資料を開く」"
         },
         {
           "id": "current_exhibition_014",
           "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "黒いシャツの人物が、壁の三人の名前を一度見上げてから、STARTの横を指す。\n「最初は、三人で集まるはずだった日の記録からです」"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「準備ができたら、STARTを押して」"
         },
         {
           "id": "current_exhibition_015",
@@ -259,9 +259,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "current_exhibition_016",
           "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "私は青いボタンへ触れる。身体は学園祭の展示席に残ったまま、正面の画面だけが共同作業室の記録へ切り替わる。"
+          "type": "ui",
+          "text": "STARTを押すと、端末の画面だけが暗くなった。私は展示端末の前に立ったままだ。"
+        },
+        {
+          "id": "current_exhibition_017",
+          "sceneId": "current_exhibition",
+          "type": "ui",
+          "text": "表示｜作業予定／保存写真／学内チャット"
         }
       ],
       "nextSceneId": "opening_empty_seat",
@@ -284,38 +289,31 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三か月前、三人で実機をつなぐ予定の日、共同作業室にいたのは二人だった。"
+          "text": "三か月前、三人で初めて実機をつなぐ予定だった日。共同作業室に来たのは、みずとあまあまの二人だった。"
         },
         {
           "id": "opening_empty_seat_002",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "これは、二人が後から照合した保存写真、作業予定、学内チャット、作業ログ、作業メモを、端末が一つの場面として組み直した制作記録だ。"
+          "text": "保存された予定、投稿、写真が順に表示される。"
         },
         {
           "id": "opening_empty_seat_003",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "保存写真には、曇った窓の下の長机、三脚の椅子、壁際の共同ディスプレイが写っている。真ん中の椅子には鞄も上着もなく、誰も座っていない。"
+          "text": "作業予定\n10:00　三人で展示端末とスピーカーを実機接続"
         },
         {
           "id": "opening_empty_seat_004",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "別の写真では、ミズハの保温ボトルと三つの紙コップ、アマネが並べた電源タップ、予備のケーブル、消毒用シートが机の両端に分かれている。中央だけが空いている。"
+          "text": "保存写真には、曇った窓の下の長机、三脚の椅子、壁際の共同ディスプレイ、三つの紙コップが写っている。真ん中の椅子には鞄も上着もなく、誰も座っていない。"
         },
         {
           "id": "opening_empty_seat_005",
-          "sceneId": "opening_empty_seat",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "作業予定には、午前十時から三人で展示用端末とスピーカーを接続するとある。作業ログの表示時刻は、十時二十一分になっている。"
-        },
-        {
-          "id": "opening_empty_seat_006",
           "sceneId": "opening_empty_seat",
           "type": "chat",
           "time": "10:08",
@@ -324,7 +322,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "先に入ってる🙆"
         },
         {
-          "id": "opening_empty_seat_007",
+          "id": "opening_empty_seat_006",
           "sceneId": "opening_empty_seat",
           "type": "chat",
           "time": "10:09",
@@ -333,7 +331,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "迷っていたら迎えに行きますわ🌱"
         },
         {
-          "id": "opening_empty_seat_008",
+          "id": "opening_empty_seat_007",
           "sceneId": "opening_empty_seat",
           "type": "chat",
           "time": "10:21",
@@ -342,74 +340,25 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "いまどこ？"
         },
         {
+          "id": "opening_empty_seat_008",
+          "sceneId": "opening_empty_seat",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "最後のメッセージはsaku宛てで、未読の印が残っている。"
+        },
+        {
           "id": "opening_empty_seat_009",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "短い文の横には未読の印が残っている。宛先の表示名はsaku。送信済みだが、相手が開いた印には変わっていない。"
+          "text": "10時21分になっても、sakuは共同作業室へ来ず、メッセージは未読のままだった。"
         },
         {
           "id": "opening_empty_seat_010",
           "sceneId": "opening_empty_seat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハは紙コップへ茶を注いだ。\n二つではなく、三つ全部に注いだ。"
-        },
-        {
-          "id": "opening_empty_seat_011",
-          "sceneId": "opening_empty_seat",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三つ目を真ん中の椅子の前へ置くと、紙コップの底が机を擦って、乾いた音を立てた。"
-        },
-        {
-          "id": "opening_empty_seat_012",
-          "sceneId": "opening_empty_seat",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "部屋で交わした短いやり取りは、二人の照合メモで一致した部分を再構成している。"
-        },
-        {
-          "id": "opening_empty_seat_013",
-          "sceneId": "opening_empty_seat",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "まだ、寝坊でいい？"
-        },
-        {
-          "id": "opening_empty_seat_014",
-          "sceneId": "opening_empty_seat",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "十一時までは。"
-        },
-        {
-          "id": "opening_empty_seat_015",
-          "sceneId": "opening_empty_seat",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "十時集合。"
-        },
-        {
-          "id": "opening_empty_seat_016",
-          "sceneId": "opening_empty_seat",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "存じていますわ。"
-        },
-        {
-          "id": "opening_empty_seat_017",
-          "sceneId": "opening_empty_seat",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネはスマートフォンを伏せ、接続済みのケーブルを二度押し直した。ミズハは保温ボトルの蓋を閉め、もう一度緩めた。廊下で足音がするたび、二人は扉を見た。真ん中の紙コップから先に湯気が見えなくなった。"
-        },
-        {
-          "id": "opening_empty_seat_018",
-          "sceneId": "opening_empty_seat",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "真ん中の席へ来る予定だった表示名は、saku。端末は、その名前がみず、あまあまの隣へ初めて並んだ共有スレッドを開く。"
+          "text": "端末は、sakuがみずとあまあまに初めて返信した、学内サークル「惑星の放課後」のチャットを開いた。"
         }
       ],
       "nextSceneId": "prologue_online_circle",
@@ -440,63 +389,59 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人の大学では、授業の大半を別々の町からブラウザで受ける。顔や声を知らないまま、同じ授業の表示名だけを覚えることも珍しくなかった。"
+          "text": "三人が知り合ったのは、オンライン大学の小さな学内サークル「惑星の放課後」のチャットだった。"
         },
         {
           "id": "prologue_online_circle_002",
           "sceneId": "prologue_online_circle",
           "type": "narration",
           "speaker": "narrator",
-          "text": "授業後の廊下に近い役割を持っていたのが学内チャットだった。学生が自由に作った場所の一つに、「惑星の放課後」があった。"
+          "text": "地球や宇宙、身近な環境について話す場所で、この時点では互いの顔も声も知らず、まだ会ったことがない。"
         },
         {
           "id": "prologue_online_circle_003",
           "sceneId": "prologue_online_circle",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "この時点で三人が知っているのは、表示名、アイコン、投稿、投稿画像、返信までの間だけである。顔、声、服装、背の高さは、まだ互いに知らない。"
+          "type": "chat",
+          "time": "18:00",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "雨が止んだあと、中庭の水たまりが片側だけ残っていますの。縁の落ち葉は門の方へ寄っていますわ。"
         },
         {
           "id": "prologue_online_circle_004",
           "sceneId": "prologue_online_circle",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "始まりは、ある授業のあとに雑談チャンネルへ置かれた一行だった。"
+          "type": "chat",
+          "time": "18:02",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "何時ごろ？"
         },
         {
           "id": "prologue_online_circle_005",
           "sceneId": "prologue_online_circle",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "『人間は、地球を変える側にだけいるのだろうか。』"
+          "type": "chat",
+          "time": "18:19",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "落ち葉、門の方に寄ってる。明日も同じ場所を見られる？"
         },
         {
           "id": "prologue_online_circle_006",
           "sceneId": "prologue_online_circle",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "岩の写真、干上がりかけた池、屋上菜園の土、人工衛星が写した夜の地球。答えではなく、気になったものを持ち寄る返信が続き、三日目に専用チャンネルができた。説明欄には『まだ名前のない変化を見つけて、持ち寄る場所』とあった。"
+          "type": "chat",
+          "time": "18:24",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "見てきますわ。同じ場所から送ります。"
         },
         {
           "id": "prologue_online_circle_007",
           "sceneId": "prologue_online_circle",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ミズハは、写真に写らない気温や湿り気まで長い文章で足した。アマネは公開データの場所と条件を確かめた。サクヤは話題が流れたあとで写真や一行を置き、誰も拾わなかった言葉へ戻った。"
-        },
-        {
-          "id": "prologue_online_circle_008",
-          "sceneId": "prologue_online_circle",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "同じ投稿を読んでも、三人が気にする場所は違った。その違いが同じスレッドで何度も交わるうちに、三人の表示名は一緒に並ぶことが増えていった。"
-        },
-        {
-          "id": "prologue_online_circle_009",
-          "sceneId": "prologue_online_circle",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "既存の学内チャット画面では、芽のアイコンが「みず」、雲が「あまあま」、花が「saku」と表示される。作品の作者表示では、それぞれミズハ、アマネ、サクヤの名が対応している。"
+          "type": "chat",
+          "time": "18:25",
+          "speaker": "amane",
+          "speakerLabel": "☁️ あまあま ☁️",
+          "text": "同じ時刻なら比べやすい。"
         }
       ],
       "nextSceneId": "prologue_basil",
@@ -504,15 +449,15 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "temporalContext": "RECORD",
         "startAt": "2025-05-01T18:00:00+09:00",
         "timePrecision": "MINUTE",
-        "location": "学内チャット「惑星の放課後」",
-        "displayTitle": "5月1日（木） 18:00｜学内チャット「惑星の放課後」",
+        "location": "学内サークル「惑星の放課後」・チャット",
+        "displayTitle": "5月1日（木） 18:00｜学内サークル「惑星の放課後」・チャット",
         "entryTransition": {
           "stepId": "prologue_online_circle_001",
           "fromTemporalContext": "RECORD",
           "toTemporalContext": "RECORD",
           "transitionAt": "2025-05-01T18:00:00+09:00",
           "timePrecision": "MINUTE",
-          "displayTitle": "5月1日（木） 18:00｜学内チャット「惑星の放課後」"
+          "displayTitle": "5月1日（木） 18:00｜学内サークル「惑星の放課後」・チャット"
         }
       }
     },
@@ -527,21 +472,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ミズハ、アマネ、サクヤが初めて同じスレッドに揃ったのは、ミズハが学内チャットへ貼った一枚の写真だった。"
+          "text": "二日後、みずが学内サークル「惑星の放課後」のチャットへ、バジルの写真を投稿した。"
         },
         {
           "id": "prologue_basil_002",
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画像を開くと、園芸売り場の裏で、値下げ札のついたバジルの鉢が日陰に葉を垂らしている。\n写真の端には黄色い散水ホースと、土で汚れたスニーカーのつま先が写っていた。三人が同じ売り場に立っているのではない。アマネとサクヤが見ているのは、ミズハのスマートフォンから学内チャットへ投稿された画像である。"
+          "text": "画像を開くと、園芸売り場の裏で、値下げ札のついたバジルの鉢が日陰に葉を垂らしている。写真の端には黄色い散水ホースと、土で汚れたスニーカーのつま先が写っていた。"
         },
         {
           "id": "prologue_basil_003",
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "撮影したのは、ミズハの休憩時間だった。\n画面の向こうにいる二人には、売り場の熱気も、湿った土の匂いも、温度計の数字以外には届かない。"
+          "text": "アマネとサクヤは、別々の町からその写真を開いた。"
         },
         {
           "id": "prologue_basil_004",
@@ -726,8 +671,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "timePrecision": "MINUTE",
         "endTimePrecision": "PART_OF_DAY",
         "endPartOfDay": "DAYTIME",
-        "location": "学内チャット「惑星の放課後」",
-        "displayTitle": "5月3日（土）〜5月4日（日）｜学内チャット「惑星の放課後」",
+        "location": "学内サークル「惑星の放課後」・チャット",
+        "displayTitle": "5月3日（土）〜5月4日（日）｜学内サークル「惑星の放課後」・チャット",
         "transitions": [
           {
             "stepId": "prologue_basil_011",
@@ -773,7 +718,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "園芸売り場の写真が閉じ、画面は現在の展示席へ戻る。背後の呼び込みと足音が近づき、黒い展示机と端末の縁が照明を反射する。"
+          "text": "園芸売り場の写真が閉じ、画面は現在の展示ブースへ戻る。背後の呼び込みと足音が近づき、黒い展示机と端末の縁が照明を反射する。"
         },
         {
           "id": "choice_observation_order_002",
@@ -787,7 +732,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "これは半年間の記録の中へ何かを書き込む選択ではない。いま展示席にいる私が、どちらの元の記録を先に開くかを選ぶ。"
+          "text": "これは半年間の記録の中へ何かを書き込む選択ではない。いま展示端末の前に立つ私が、どちらの元の記録を先に開くかを選ぶ。"
         },
         {
           "id": "choice_observation_order_004",
@@ -828,14 +773,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初のカードを閉じるとき、背後で誰かが椅子を引く音がする。\n二つ目を閉じると、画面に「一年前・学園祭前夜」と表示される。端末は、三人が初めて会う約束をした日の投稿へ進む。"
+          "text": "最初のカードを閉じるとき、背後を通る足音が近づく。\n二つ目を閉じると、画面に「一年前・学園祭前夜」と表示される。端末は、三人が初めて会う約束をした日の投稿へ進む。"
         },
         {
           "id": "choice_observation_order_008",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私は展示席に座ったまま、半年ぶんの投稿を読み進める。"
+          "text": "私は展示端末の前に立ったまま、半年ぶんの投稿を読み進める。"
         },
         {
           "id": "choice_observation_order_009",
@@ -871,15 +816,15 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "temporalContext": "CURRENT",
         "startAt": "2026-11-01T13:42:00+09:00",
         "timePrecision": "MINUTE",
-        "location": "学園祭・展示席",
-        "displayTitle": "11月1日（日） 13:42｜学園祭・展示席",
+        "location": "学園祭・展示ブース",
+        "displayTitle": "11月1日（日） 13:42｜学園祭・展示ブース",
         "entryTransition": {
           "stepId": "choice_observation_order_001",
           "fromTemporalContext": "RECORD",
           "toTemporalContext": "CURRENT",
           "transitionAt": "2026-11-01T13:42:00+09:00",
           "timePrecision": "MINUTE",
-          "displayTitle": "11月1日（日） 13:42｜現在の展示席へ戻る"
+          "displayTitle": "11月1日（日） 13:42｜現在の展示ブースへ戻る"
         }
       }
     },
@@ -1458,8 +1403,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "timePrecision": "MINUTE",
         "endTimePrecision": "APPROXIMATE",
         "endQualifier": "AFTER",
-        "location": "学内チャット「惑星の放課後」",
-        "displayTitle": "11月1日（土）21:06〜11月2日（日）02:00過ぎ｜学内チャット「惑星の放課後」",
+        "location": "学内サークル「惑星の放課後」・チャット",
+        "displayTitle": "11月1日（土）21:06〜11月2日（日）02:00過ぎ｜学内サークル「惑星の放課後」・チャット",
         "entryTransition": {
           "stepId": "first_meeting_promise_001",
           "fromTemporalContext": "CURRENT",
@@ -2082,7 +2027,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "first_meeting_hall",
           "type": "narration",
           "speaker": "narrator",
-          "text": "記録写真が閉じると、画面は現在の展示端末の進行画面へ戻る。隣を誰かが通り、椅子の背に掛けた上着の裾がわずかに揺れる。"
+          "text": "記録写真が閉じると、画面は現在の展示端末の進行画面へ戻る。隣を誰かが通り、足音が近づいてから遠ざかる。"
         },
         {
           "id": "first_meeting_hall_084",
@@ -2282,7 +2227,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "現在の展示席で、私の手の下に横長の進行表が開く。"
+          "text": "現在の展示端末の前で、私の手の下に横長の進行表が開く。"
         },
         {
           "id": "production_year_002",
@@ -4168,7 +4113,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "production_year",
           "type": "narration",
           "speaker": "narrator",
-          "text": "現在の展示席で、私の指も止まる。\n画面の黒い部分には、端末の横に置かれた青りんごが反射している。待機画面で見た傷は、最初の写真のりんごにはなかった。"
+          "text": "現在の展示端末の前で、私の指も止まる。\n画面の黒い部分には、端末の横に置かれた青りんごが反射している。待機画面で見た傷は、最初の写真のりんごにはなかった。"
         },
         {
           "id": "production_year_260",
@@ -6244,7 +6189,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_build",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面の暗さが戻るより先に、展示ホールの音が近づいた。椅子の縁が膝の裏へ当たり、長く置いていた指の跡が端末に残っている。"
+          "text": "画面の暗さが戻るより先に、展示ホールの音が近づいた。展示端末の前に立つ私の指の跡が、画面の端に残っている。"
         },
         {
           "id": "festival_build_003",
@@ -6728,7 +6673,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode03_map",
           "type": "narration",
           "speaker": "narrator",
-          "text": "現在の展示席で、指が二件の境目に止まる。"
+          "text": "現在の展示端末の前で、指が二件の境目に止まる。"
         },
         {
           "id": "mode03_map_019",
@@ -6958,7 +6903,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネは椅子を会場端末と同じ距離まで下げ、二歩離れる。"
+          "text": "アマネは会場端末の表示を一歩離れて確かめる。"
         },
         {
           "id": "mode07_abstract_029",
@@ -8121,8 +8066,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "temporalContext": "CURRENT",
         "startAt": "2026-11-01T15:38:00+09:00",
         "timePrecision": "MINUTE",
-        "location": "学園祭・展示席",
-        "displayTitle": "11月1日（日） 15:38｜学園祭・展示席"
+        "location": "学園祭・展示ブース",
+        "displayTitle": "11月1日（日） 15:38｜学園祭・展示ブース"
       }
     },
     {
@@ -8151,8 +8096,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "temporalContext": "CURRENT",
         "startAt": "2026-11-01T15:42:00+09:00",
         "timePrecision": "MINUTE",
-        "location": "学園祭・展示席",
-        "displayTitle": "11月1日（日） 15:42｜学園祭・展示席"
+        "location": "学園祭・展示ブース",
+        "displayTitle": "11月1日（日） 15:42｜学園祭・展示ブース"
       }
     },
     {
@@ -8591,8 +8536,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "temporalContext": "CURRENT",
         "startAt": "2026-11-01T15:44:00+09:00",
         "timePrecision": "MINUTE",
-        "location": "学園祭・展示席",
-        "displayTitle": "11月1日（日） 15:44｜学園祭・展示席"
+        "location": "学園祭・展示ブース",
+        "displayTitle": "11月1日（日） 15:44｜学園祭・展示ブース"
       }
     },
     {
@@ -8653,7 +8598,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "final_record_008",
           "sceneId": "final_record",
           "type": "transition",
-          "text": "15:52｜学園祭・展示席"
+          "text": "15:52｜学園祭・展示ブース"
         },
         {
           "id": "final_record_009",
@@ -8715,7 +8660,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "final_record_017",
           "sceneId": "final_record",
           "type": "transition",
-          "text": "15:54｜学園祭・展示席"
+          "text": "15:54｜学園祭・展示ブース"
         },
         {
           "id": "final_record_018",
@@ -8793,22 +8738,22 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "temporalContext": "CURRENT",
         "startAt": "2026-11-01T15:47:00+09:00",
         "timePrecision": "MINUTE",
-        "location": "学園祭・展示席",
-        "displayTitle": "11月1日（日） 15:47｜学園祭・展示席",
+        "location": "学園祭・展示ブース",
+        "displayTitle": "11月1日（日） 15:47｜学園祭・展示ブース",
         "transitions": [
           {
             "stepId": "final_record_008",
             "temporalContext": "CURRENT",
             "transitionAt": "2026-11-01T15:52:00+09:00",
             "timePrecision": "MINUTE",
-            "displayTitle": "11月1日（日） 15:52｜展示席・大学の公式通知"
+            "displayTitle": "11月1日（日） 15:52｜展示ブース・大学の公式通知"
           },
           {
             "stepId": "final_record_017",
             "temporalContext": "CURRENT",
             "transitionAt": "2026-11-01T15:54:00+09:00",
             "timePrecision": "MINUTE",
-            "displayTitle": "11月1日（日） 15:54｜展示席・sakuからの現在音声"
+            "displayTitle": "11月1日（日） 15:54｜展示ブース・sakuからの現在音声"
           }
         ]
       }
@@ -8900,7 +8845,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "return_to_start",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私は展示席に残り、二人が中央入口の表示へ曲がるまで見送る。"
+          "text": "私は展示端末の前に残り、二人が中央入口の表示へ曲がるまで見送る。"
         },
         {
           "id": "return_to_start_013",
@@ -8914,7 +8859,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "return_to_start",
           "type": "narration",
           "speaker": "narrator",
-          "text": "15:55／展示席／二人は中央入口へ向かった／海側から風"
+          "text": "15:55／展示ブース／二人は中央入口へ向かった／海側から風"
         },
         {
           "id": "return_to_start_015",
@@ -9052,7 +8997,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "return_to_start",
           "type": "narration",
           "speaker": "narrator",
-          "text": "言葉の内容は、展示画面にも、展示席の記録用紙にも入らない。"
+          "text": "言葉の内容は、展示画面にも、展示ブースの記録用紙にも入らない。"
         },
         {
           "id": "return_to_start_035",
@@ -9075,8 +9020,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "endAt": "2026-11-01T16:03:00+09:00",
         "timePrecision": "MINUTE",
         "endTimePrecision": "MINUTE",
-        "location": "学園祭・展示席",
-        "displayTitle": "11月1日（日） 15:55｜学園祭・展示席",
+        "location": "学園祭・展示ブース",
+        "displayTitle": "11月1日（日） 15:55｜学園祭・展示ブース",
         "transitions": [
           {
             "stepId": "return_to_start_018",
