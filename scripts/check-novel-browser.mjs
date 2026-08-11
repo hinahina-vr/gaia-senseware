@@ -646,7 +646,8 @@ try {
     ["opening_empty_seat", "novel-bg-workroom-v2.png", "scene-workroom"],
     ["first_meeting_promise", "novel-bg-online-night-v2.png", "scene-online"],
     ["prologue_basil", "novel-bg-garden-center-v2.png", "scene-garden-center"],
-    ["first_meeting_hall", "novel-bg-coastal-venue-v2.png", "scene-coastal-venue"],
+    ["first_meeting_hall", "novel-bg-coastal-venue-v3.png", "scene-coastal-venue"],
+    ["festival_walk", "novel-bg-coastal-venue-v2.png", "scene-festival-walk"],
     ["interlude_sea", "novel-bg-production-shared-meeting-v3.png", "scene-interlude-departure"],
   ];
   for (const [sceneId, expectedFile, screenshotName] of backgroundCases) {
