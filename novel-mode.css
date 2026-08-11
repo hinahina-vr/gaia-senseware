@@ -6870,3 +6870,188 @@ body.gx-story-open .novel-script-debug-copy {
     padding: 0;
   }
 }
+
+/* Reference-faithful message layer: horizontal fade, never an oval pill. */
+.novel-dialogue {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.novel-dialogue::before {
+  display: none !important;
+}
+
+.novel-dialogue::after {
+  inset: 8px clamp(-54px, -4vw, -28px) -12px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(4, 20, 48, 0.16) 22%,
+    rgba(3, 17, 42, 0.58) 58%,
+    rgba(1, 9, 27, 0.92) 100%
+  ) !important;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+  animation: none !important;
+}
+
+.novel-speaker {
+  top: clamp(24px, 4vh, 36px) !important;
+  left: 0 !important;
+  justify-content: center !important;
+  width: min(480px, 46%) !important;
+  min-width: 0 !important;
+  min-height: 26px !important;
+  padding: 0 clamp(18px, 3vw, 42px) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(90deg, transparent 0%, rgba(20, 67, 108, 0.18) 16%, rgba(29, 87, 132, 0.42) 50%, rgba(20, 67, 108, 0.18) 84%, transparent 100%) !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  font-size: clamp(12px, 0.9vw, 14px) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.12em !important;
+  text-align: center !important;
+  transform: none !important;
+}
+
+.novel-speaker:empty {
+  display: none !important;
+}
+
+/* Eight visible icon + label controls, with the 44px target kept transparent. */
+.novel-topbar nav {
+  right: auto !important;
+  bottom: max(5px, env(safe-area-inset-bottom)) !important;
+  left: max(12px, calc((100vw - 640px) / 2)) !important;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(44px, 1fr));
+  width: min(640px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px) !important;
+  gap: 1px !important;
+  transform: none !important;
+}
+
+.novel-topbar nav > button:not(#novel-close-button):not(#novel-restart-button) {
+  display: grid;
+  grid-template-rows: 19px 10px;
+  align-content: center;
+  justify-items: center;
+  width: auto !important;
+  min-width: 44px !important;
+  height: 48px !important;
+  padding: 4px 1px 3px !important;
+  border: 1px solid transparent !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(207, 228, 246, 0.72) !important;
+  font-size: inherit !important;
+  letter-spacing: 0 !important;
+}
+
+.novel-topbar nav > button:not(#novel-close-button):not(#novel-restart-button):hover,
+.novel-topbar nav > button:not(#novel-close-button):not(#novel-restart-button):focus-visible,
+.novel-topbar #novel-auto-button[aria-pressed="true"],
+.novel-topbar #novel-fast-forward-button[aria-pressed="true"],
+.novel-topbar #novel-jump-button[aria-expanded="true"] {
+  border-color: rgba(132, 197, 239, 0.28) !important;
+  background: linear-gradient(180deg, rgba(61, 137, 193, 0.12), rgba(21, 64, 101, 0.04)) !important;
+  color: rgba(241, 249, 255, 0.98) !important;
+  outline: none;
+}
+
+.novel-nav-icon {
+  width: 17px !important;
+  height: 17px !important;
+  align-self: center;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.55;
+}
+
+.novel-nav-label {
+  position: static !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100%;
+  padding: 0 !important;
+  overflow: visible !important;
+  clip: auto !important;
+  clip-path: none !important;
+  color: inherit;
+  font: 500 7px/1 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0 !important;
+  text-align: center;
+  white-space: nowrap !important;
+}
+
+.novel-topbar #novel-eves-button b {
+  top: 1px !important;
+  right: 1px !important;
+  font-size: 5.5px !important;
+}
+
+.novel-topbar #novel-restart-button {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 720px) {
+  .novel-speaker {
+    top: 30px !important;
+    width: min(280px, 62%) !important;
+    min-height: 24px !important;
+    padding-inline: 16px !important;
+    font-size: 12px !important;
+  }
+
+  .novel-topbar nav {
+    left: 8px !important;
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px) !important;
+    grid-template-columns: repeat(8, minmax(44px, 1fr));
+    gap: 0 !important;
+  }
+
+  .novel-topbar nav > button:not(#novel-close-button):not(#novel-restart-button) {
+    min-width: 44px !important;
+    height: 48px !important;
+    padding-inline: 0 !important;
+  }
+
+  .novel-nav-icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .novel-nav-label {
+    font-size: 6px;
+  }
+}
+
+@media (max-height: 650px) and (min-width: 601px) {
+  .novel-layer:has(.novel-dialogue:not([hidden])):not(.is-slack):not(.is-evidence):not(.is-reflection):not(.is-result) {
+    --novel-say-height: 170px;
+  }
+
+  .novel-dialogue {
+    padding-top: 88px !important;
+  }
+
+  .novel-speaker {
+    top: 46px !important;
+  }
+}
