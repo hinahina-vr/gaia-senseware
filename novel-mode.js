@@ -2709,7 +2709,6 @@
     elements.fastForward?.classList.toggle("is-active", active);
     elements.fastForward?.classList.toggle("is-control-held", active && fastForwardState.keyActive);
     if (elements.fastForwardLabel) elements.fastForwardLabel.textContent = active ? "早送り中" : "早送り";
-    else if (elements.fastForward) elements.fastForward.textContent = active ? "早送り中" : "早送り";
     layer.classList.toggle("is-fast-forwarding", active);
   };
 
