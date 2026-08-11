@@ -328,7 +328,7 @@ for (const scene of scenes) {
 
 const tones = ["LAW", "NEUTRAL", "CHAOS", "UNANSWERED"];
 const story = {
-  storyVersion: 8,
+  storyVersion: 9,
   title: "GAIA SENSATION",
   systemTitle: "GAIA SENSEWARE",
   startSceneId: "current_exhibition",

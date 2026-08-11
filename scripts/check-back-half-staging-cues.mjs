@@ -15,7 +15,7 @@ const allSteps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(allSteps.map((step) => [step.id, step]));
 
 assert.equal(story.scenes.length, 23, "canonical story must keep 23 scenes");
-assert.equal(allSteps.length, 1024, "canonical story must keep 1024 steps after the focused opening and interaction rewrite");
+assert.equal(allSteps.length, 1022, "canonical story must keep 1022 steps after the focused opening and GX copy rewrite");
 
 const backHalfScenes = story.scenes.filter((scene) => staging.backHalfSceneIds.includes(scene.id));
 assert.equal(backHalfScenes.length, 12, "back half must contain 12 scenes");
@@ -29,7 +29,7 @@ for (const [sceneId, expectedCount] of Object.entries(staging.expectedSceneCount
 }
 
 const backHalfSteps = backHalfScenes.flatMap((scene) => scene.steps);
-assert.equal(backHalfSteps.length, 297, "back-half migration must resolve to 297 steps");
+assert.equal(backHalfSteps.length, 295, "back-half migration must resolve to 295 steps");
 
 const resolved = backHalfSteps.map((step) => ({
   step,

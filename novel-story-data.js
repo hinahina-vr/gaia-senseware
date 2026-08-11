@@ -1,6 +1,6 @@
 // Generated from story/物語台本.md by scripts/build-novel-story.mjs. Do not edit by hand.
 globalThis.GAIA_NOVEL_STORY = Object.freeze({
-  "storyVersion": 8,
+  "storyVersion": 9,
   "title": "GAIA SENSATION",
   "systemTitle": "GAIA SENSEWARE",
   "startSceneId": "current_exhibition",
@@ -618,7 +618,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "端末は、園芸売り場の写真記録、同じ時間帯の最寄り観測所の公開記録の順に開く。場所と測った時刻が違うため、同じ値としてまとめない。"
+          "text": "端末は、園芸売り場のバジル写真、次に同じ時間帯の最寄り観測所が公開した気温を開く。観測所の気温だけで、写真の鉢の状態や売り場の温度は決めない。"
         },
         {
           "id": "choice_observation_order_005",
@@ -6265,67 +6265,53 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "gx_deep_time_017",
           "sceneId": "gx_deep_time",
           "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "「今の役割から、最初の目的を決めることはできませんわ」"
-        },
-        {
-          "id": "gx_deep_time_018",
-          "sceneId": "gx_deep_time",
-          "type": "dialogue",
-          "speaker": "amane",
-          "text": "「酸素を使う生き物のために、酸素を作ったわけじゃない」"
-        },
-        {
-          "id": "gx_deep_time_019",
-          "sceneId": "gx_deep_time",
-          "type": "dialogue",
           "speaker": "sakuya",
           "text": "「点、増やしすぎないで」"
         },
         {
-          "id": "gx_deep_time_020",
+          "id": "gx_deep_time_018",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
           "text": "サクヤの声のあと、マウスが机へ当たる音がする。ミズハが紙をめくり、アマネが二度クリックする。"
         },
         {
-          "id": "gx_deep_time_021",
+          "id": "gx_deep_time_019",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
           "text": "三人はその日、同じ画面を見ていた。録音には日付と三人の名前が付いている。"
         },
         {
-          "id": "gx_deep_time_022",
+          "id": "gx_deep_time_020",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
           "text": "指を止める。青緑の点は増えず、海の色だけがゆっくり遠ざかる。"
         },
         {
-          "id": "gx_deep_time_023",
+          "id": "gx_deep_time_021",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
           "text": "画面の縁へ、現在の展示ホールの照明が戻る。"
         },
         {
-          "id": "gx_deep_time_024",
+          "id": "gx_deep_time_022",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
           "text": "不在という現在から、サクヤが何を考えていたかは決められない。"
         },
         {
-          "id": "gx_deep_time_025",
+          "id": "gx_deep_time_023",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
           "text": "決められるのは、サクヤが制作中に点を増やしすぎないよう止めたことだ。"
         },
         {
-          "id": "gx_deep_time_026",
+          "id": "gx_deep_time_024",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",

@@ -567,13 +567,30 @@
     ["mode10_space", 18],
   ].forEach(([sceneId, total]) => registerShiftedInteractionMigration(sceneId, total));
 
+  const version8To9StepIds = new Map([
+    ["gx_deep_time_017", "gx_deep_time_017"],
+    ["gx_deep_time_018", "gx_deep_time_017"],
+    ["gx_deep_time_019", "gx_deep_time_017"],
+    ["gx_deep_time_020", "gx_deep_time_018"],
+    ["gx_deep_time_021", "gx_deep_time_019"],
+    ["gx_deep_time_022", "gx_deep_time_020"],
+    ["gx_deep_time_023", "gx_deep_time_021"],
+    ["gx_deep_time_024", "gx_deep_time_022"],
+    ["gx_deep_time_025", "gx_deep_time_023"],
+    ["gx_deep_time_026", "gx_deep_time_024"],
+  ]);
+
   const migrateStepId = (stepId, sourceVersion = story.storyVersion) => {
     if (typeof stepId !== "string") return null;
+    let migratedStepId = stepId;
     if (Number(sourceVersion) < 8 && version7To8StepIds.has(stepId)) {
-      return version7To8StepIds.get(stepId);
+      migratedStepId = version7To8StepIds.get(stepId);
     }
-    if (stepId === "current_exhibition_017") return "opening_empty_seat_001";
-    if (stepMap.has(stepId)) return stepId;
+    if (Number(sourceVersion) < 9 && version8To9StepIds.has(migratedStepId)) {
+      migratedStepId = version8To9StepIds.get(migratedStepId);
+    }
+    if (migratedStepId === "current_exhibition_017") return "opening_empty_seat_001";
+    if (stepMap.has(migratedStepId)) return migratedStepId;
     const mappings = [
       ["current_notice_", "current_exhibition_"],
       ["epilogue_visitor_field_", "epilogue_reflection_field_"],
@@ -581,8 +598,8 @@
       ["final_record_", "final_record_"],
     ];
     for (const [from, to] of mappings) {
-      if (!stepId.startsWith(from)) continue;
-      const mapped = `${to}${stepId.slice(from.length)}`;
+      if (!migratedStepId.startsWith(from)) continue;
+      const mapped = `${to}${migratedStepId.slice(from.length)}`;
       if (stepMap.has(mapped)) return mapped;
       const sceneId = to.slice(0, -1);
       return firstStepForScene(sceneId);

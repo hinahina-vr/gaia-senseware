@@ -18,7 +18,7 @@
 | prologue_online_circle | 9 | 7 | -2 |
 | 合計 | 43 | 34 | -9 |
 
-この追補では、`prologue_basil`を23stepから10stepへ、`choice_observation_order`を12stepから5stepへ圧縮する。1044stepだった直前正本は1024stepになる。対象外sceneのstep数は維持する。
+この追補では、`prologue_basil`を23stepから10stepへ、`choice_observation_order`を12stepから5stepへ圧縮する。さらにGXの重複説明2stepを削除し、1044stepだった直前正本は1022stepになる。
 
 ## 現公開43step→新34step 完全一意移行表
 
@@ -202,6 +202,40 @@ choice_observation_order_011,choice_observation_order,choice_observation_order_0
 choice_observation_order_012,choice_observation_order,choice_observation_order_005
 ```
 
+## GX v8→v9局所移行表
+
+重複していた限界説明を削除し、固有のsaku制作音声へ復帰先を集約する。各v8 stepは次のv9 stepへ一意に移す。
+
+```csv
+oldStepId,newSceneId,newStepId
+gx_deep_time_001,gx_deep_time,gx_deep_time_001
+gx_deep_time_002,gx_deep_time,gx_deep_time_002
+gx_deep_time_003,gx_deep_time,gx_deep_time_003
+gx_deep_time_004,gx_deep_time,gx_deep_time_004
+gx_deep_time_005,gx_deep_time,gx_deep_time_005
+gx_deep_time_006,gx_deep_time,gx_deep_time_006
+gx_deep_time_007,gx_deep_time,gx_deep_time_007
+gx_deep_time_008,gx_deep_time,gx_deep_time_008
+gx_deep_time_009,gx_deep_time,gx_deep_time_009
+gx_deep_time_010,gx_deep_time,gx_deep_time_010
+gx_deep_time_011,gx_deep_time,gx_deep_time_011
+gx_deep_time_012,gx_deep_time,gx_deep_time_012
+gx_deep_time_013,gx_deep_time,gx_deep_time_013
+gx_deep_time_014,gx_deep_time,gx_deep_time_014
+gx_deep_time_015,gx_deep_time,gx_deep_time_015
+gx_deep_time_016,gx_deep_time,gx_deep_time_016
+gx_deep_time_017,gx_deep_time,gx_deep_time_017
+gx_deep_time_018,gx_deep_time,gx_deep_time_017
+gx_deep_time_019,gx_deep_time,gx_deep_time_017
+gx_deep_time_020,gx_deep_time,gx_deep_time_018
+gx_deep_time_021,gx_deep_time,gx_deep_time_019
+gx_deep_time_022,gx_deep_time,gx_deep_time_020
+gx_deep_time_023,gx_deep_time,gx_deep_time_021
+gx_deep_time_024,gx_deep_time,gx_deep_time_022
+gx_deep_time_025,gx_deep_time,gx_deep_time_023
+gx_deep_time_026,gx_deep_time,gx_deep_time_024
+```
+
 ## 保存復帰境界
 
 - 現公開 `current_exhibition_001`〜`014`は新START前、`_015`は新START、`_016`は新START後へ復帰する。
@@ -211,7 +245,7 @@ choice_observation_order_012,choice_observation_order,choice_observation_order_0
 - `observationOrder`が未設定の新規進行だけ`LOCAL_FIRST`を使う。既存`STATION_FIRST`は上書きせず読み込むが、新しい自動表示順の分岐には使わない。
 - GX／MODE 03／07／08／10はscene内step数を維持する。旧interaction step `_002`のsaveは、同じkindを持つ新interaction step `_003`へ移す。
 - `reachedSceneIds`、既存の選択値、既読sceneは保持する。`readStepIds`は本表を使って再構成し、削除した説明や再演会話をLOGへ復元しない。
-- 正本の`storyVersion`は8。v7の直接復帰と`readStepIds`は、同名stepの素通しより先に本表とinteraction境界の移行を適用する。
+- 正本の`storyVersion`は9。v7は先にv8のinteraction境界へ、続けてv9のGX境界へ移す。v8の直接復帰と`readStepIds`も、同名stepの素通しより先にGX局所移行を適用する。
 
 ## RECORD媒体と日時境界
 

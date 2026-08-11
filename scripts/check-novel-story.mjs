@@ -11,7 +11,7 @@ await import(`${pathToFileURL(dataPath).href}?check=${Date.now()}`);
 const story = globalThis.GAIA_NOVEL_STORY;
 
 assert.ok(story, "GAIA_NOVEL_STORY must be defined");
-assert.equal(story.storyVersion, 8);
+assert.equal(story.storyVersion, 9);
 assert.equal(story.startSceneId, "current_exhibition");
 assert.equal(story.temporal?.clockPolicy, "AUTHOR_FIXED");
 assert.equal(story.temporal?.missingMetadataPolicy, "ERROR");
@@ -23,7 +23,7 @@ assert.equal(sceneSet.size, sceneIds.length, "scene IDs must be unique");
 const steps = scenes.flatMap((scene) => scene.steps || []);
 const stepIds = steps.map((step) => step.id);
 assert.equal(new Set(stepIds).size, stepIds.length, "step IDs must be unique");
-assert.equal(stepIds.length, 1024, "the focused opening, basil, and observation-order rewrite must produce 1024 steps");
+assert.equal(stepIds.length, 1022, "the focused opening, basil, observation-order, and GX copy rewrite must produce 1022 steps");
 const visibleStoryText = steps.flatMap((step) => [step.text, step.prompt, ...(step.options || []).map((option) => option.label)]).filter(Boolean).join("\n");
 assert.doesNotMatch(visibleStoryText, /LOCAL FIRST|STATION FIRST/u, "internal observation-order identifiers leaked into visible story text");
 assert.doesNotMatch(visibleStoryText, /\b(?:LOCAL SOURCE|SOURCE RECORD|DISCLOSE DERIVATION|SOURCE|DERIVED|CURRENT|VISITOR TRACE|PRODUCTION RECORD|RESPONSIBLE|EDITORIAL CHOICE|PUBLIC BUILD CHANGED|REFLECTION FIELD|CLEAR)\b/u, "internal or unexplained system labels leaked into visible story text");
@@ -100,7 +100,7 @@ const backHalfSceneIds = [
   "mode10_space", "choice_editorial", "epilogue_reflection_field", "choice_reflection", "final_record", "return_to_start",
 ];
 const backHalfSteps = scenes.filter((scene) => backHalfSceneIds.includes(scene.id)).flatMap((scene) => scene.steps);
-assert.equal(backHalfSteps.length, 297, "the approved back-half rewrite must stay within the 235-297 step ceiling");
+assert.equal(backHalfSteps.length, 295, "the approved back-half rewrite must stay within the 235-297 step ceiling");
 
 const interactionDialogueContract = new Map([
   ["gx_deep_time", {
@@ -167,7 +167,8 @@ assert.match(novelModeSource, /const isMode08Optional = step\.type === "interact
 assert.match(novelModeSource, /event\.stopPropagation\(\);[\s\S]*?skip\.disabled = true;[\s\S]*?moveToFollowingStep\(step\);/u, "MODE 08 skip must advance once without opening the detour");
 assert.match(novelModeSource, /resolveVisibleStep[\s\S]*?candidate\?\.type === "phase"/u, "the invisible opening phase must be consumed before rendering or saving the next visible step");
 assert.match(novelModeSource, /version7To8StepIds[\s\S]*?Number\(sourceVersion\) < 8/u, "v7 saves must use the focused step migration before same-ID passthrough");
-assert.match(novelModeSource, /candidate\.readStepIds[\s\S]*?\.map\(\(id\) =>[\s\S]*?migrateStepId\(id, sourceVersion\)/u, "readStepIds must use the same v7 migration as direct resume");
+assert.match(novelModeSource, /version8To9StepIds[\s\S]*?Number\(sourceVersion\) < 9/u, "v8 GX saves must migrate before same-ID passthrough");
+assert.match(novelModeSource, /candidate\.readStepIds[\s\S]*?\.map\(\(id\) =>[\s\S]*?migrateStepId\(id, sourceVersion\)/u, "readStepIds must use the same versioned migration as direct resume");
 
 const migrationSource = fs.readFileSync(path.join(projectRoot, "docs", "SCENARIO_HANDOFF_BACK_HALF_REWRITE.md"), "utf8");
 const migrationRangeSource = migrationSource.split("## 完全範囲移行表")[1]?.split("## 新規CURRENT境界")[0] || "";
@@ -208,13 +209,44 @@ for (const [sceneId, expectedCount] of Object.entries(openingSceneCounts)) {
 assert.deepEqual(scenes.map((scene) => [scene.id, scene.steps.length]), [
   ["current_exhibition", 17], ["opening_empty_seat", 10], ["prologue_online_circle", 7], ["prologue_basil", 10],
   ["choice_observation_order", 5], ["first_meeting_promise", 70], ["first_meeting_hall", 85], ["festival_walk", 21],
-  ["production_year", 261], ["absence", 95], ["search", 146], ["festival_build", 18], ["gx_deep_time", 26],
+  ["production_year", 261], ["absence", 95], ["search", 146], ["festival_build", 18], ["gx_deep_time", 24],
   ["mode03_map", 20], ["mode07_abstract", 54], ["interlude_sea", 67], ["mode08_map_layers", 19],
   ["mode10_space", 18], ["choice_editorial", 6], ["epilogue_reflection_field", 4], ["choice_reflection", 2],
   ["final_record", 27], ["return_to_start", 36],
 ], "the focused scene counts changed outside the approved rewrite");
 
+const gxScene = scenes.find((scene) => scene.id === "gx_deep_time");
+const gxVisibleText = gxScene?.steps.map((step) => step.text || "").join("\n") || "";
+assert.equal(gxScene?.steps[16]?.id, "gx_deep_time_017", "the retained saku production voice must be the safe GX resume step");
+assert.deepEqual([gxScene?.steps[16]?.type, gxScene?.steps[16]?.speaker, gxScene?.steps[16]?.text], ["dialogue", "sakuya", "「点、増やしすぎないで」"], "the retained saku production voice changed");
+assert.doesNotMatch(gxVisibleText, /今の役割から、最初の目的を決めることはできませんわ|酸素を使う生き物のために、酸素を作ったわけじゃない/u, "the deleted GX limit explanation was restored");
+
+const expectedVersion8To9GxMigration = [
+  ["gx_deep_time_017", "gx_deep_time_017"],
+  ["gx_deep_time_018", "gx_deep_time_017"],
+  ["gx_deep_time_019", "gx_deep_time_017"],
+  ["gx_deep_time_020", "gx_deep_time_018"],
+  ["gx_deep_time_021", "gx_deep_time_019"],
+  ["gx_deep_time_022", "gx_deep_time_020"],
+  ["gx_deep_time_023", "gx_deep_time_021"],
+  ["gx_deep_time_024", "gx_deep_time_022"],
+  ["gx_deep_time_025", "gx_deep_time_023"],
+  ["gx_deep_time_026", "gx_deep_time_024"],
+];
+for (const [oldStepId, newStepId] of expectedVersion8To9GxMigration) {
+  assert.ok(novelModeSource.includes(`["${oldStepId}", "${newStepId}"]`), `${oldStepId}: v8 to v9 GX migration changed`);
+}
+
 const openingMigrationSource = fs.readFileSync(path.join(projectRoot, "docs", "SCENARIO_HANDOFF_OPENING_RECORD_TRANSITION.md"), "utf8");
+const version8To9MigrationCsv = openingMigrationSource.match(/## GX v8→v9局所移行表[\s\S]*?```csv\r?\n([\s\S]*?)\r?\n```/u)?.[1] || "";
+const version8To9MigrationRows = version8To9MigrationCsv.split(/\r?\n/u).slice(1).filter(Boolean).map((line) => line.split(","));
+assert.deepEqual(version8To9MigrationRows, [
+  ...Array.from({ length: 16 }, (_, index) => {
+    const id = `gx_deep_time_${String(index + 1).padStart(3, "0")}`;
+    return [id, "gx_deep_time", id];
+  }),
+  ...expectedVersion8To9GxMigration.map(([oldStepId, newStepId]) => [oldStepId, "gx_deep_time", newStepId]),
+], "the documented v8 to v9 GX migration must cover all 26 former steps exactly once");
 const readOpeningMigration = (heading) => {
   const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
   const csv = openingMigrationSource.match(new RegExp("## " + escapedHeading + "[\\s\\S]*?```csv\\r?\\n([\\s\\S]*?)\\r?\\n```", "u"))?.[1] || "";
@@ -389,7 +421,7 @@ assert.deepEqual(observationScene?.steps.map((step) => [step.type, step.speaker,
   ["narration", "narrator", "バジルの記録が閉じ、画面は現在の展示ブースへ戻る。展示端末の前には、海側からの明るい光が届いている。"],
   ["dialogue", "mizuha", "「三人が話し始めた日と、sakuが来なかった日の記録を見ても、来なかった理由までは分かりませんわ」"],
   ["dialogue", "amane", "「残っている記録だけで進む。次は、三人が初めて会う約束をした前夜」"],
-  ["narration", "narrator", "端末は、園芸売り場の写真記録、同じ時間帯の最寄り観測所の公開記録の順に開く。場所と測った時刻が違うため、同じ値としてまとめない。"],
+  ["narration", "narrator", "端末は、園芸売り場のバジル写真、次に同じ時間帯の最寄り観測所が公開した気温を開く。観測所の気温だけで、写真の鉢の状態や売り場の温度は決めない。"],
   ["narration", "narrator", "二つの記録を閉じると、端末は、三人が初めて会う約束をした前夜のチャットを開く。"],
 ], "the observation record must return to CURRENT, speak once, then follow the canonical automatic order");
 assert.doesNotMatch(observationScene?.steps.map((step) => step.text || "").join("\n") || "", /小さな選択|どちらから見る|記録を選ぶ|選ばなかった記録|LOCAL FIRST|STATION FIRST|CURRENT/u, "obsolete choice copy leaked into the automatic observation sequence");
