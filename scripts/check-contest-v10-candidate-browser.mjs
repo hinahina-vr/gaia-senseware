@@ -19,7 +19,8 @@ const interactions = [
 ];
 const welcomeCases = [
   { name: "wide", stepId: "welcome_chat_004", device: "wide", slack: true },
-  { name: "physical", stepId: "welcome_chat_055", device: "wide", slack: false },
+  { name: "physical-mizuha", stepId: "welcome_chat_055", device: "wide", slack: false, cast: "novel-character-minamo" },
+  { name: "physical-amane", stepId: "welcome_chat_060", device: "wide", slack: false, cast: "novel-character-sora" },
   { name: "mobile", stepId: "welcome_chat_081", device: "mobile", slack: true },
 ];
 const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
@@ -62,12 +63,13 @@ const createPage = async (viewport, label) => {
   return { context, page };
 };
 
-const bootAt = async (page, stepId, extra = {}, storyVersion = 10) => {
+const bootAt = async (page, stepId, extra = {}, storyVersion = 10, expectedStepId = stepId) => {
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate(({ candidate, config }) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
     localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify(config));
+    localStorage.setItem("gaia-senseware-bgm-volume", String(candidate.audio.volume));
   }, {
     candidate: stateFor(storyVersion, stepId, extra),
     config: { messageSpeedPercent: 400, reducedMotion: true },
@@ -76,7 +78,7 @@ const bootAt = async (page, stepId, extra = {}, storyVersion = 10) => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
-  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, expectedStepId);
 };
 
 const layoutSnapshot = (page) => page.evaluate(() => ({
@@ -136,7 +138,7 @@ try {
     await bootAt(migrationPage, "current_exhibition_001", {
       unknownFuturePayload: { nested: "keep", count: 7 },
       unknownScalar: "keep",
-    }, 9);
+    }, 9, "festival_concept_001");
     const migrated = await migrationPage.evaluate(() => globalThis.GaiaNovel.getState());
     assert.equal(migrated.stepId, "festival_concept_001");
     assert.deepEqual(migrated.audio, { muted: true, volume: 0.37 });
@@ -224,8 +226,8 @@ try {
       }));
       assert.equal(scan.slack, testCase.slack);
       if (testCase.slack) assert.equal(scan.slackDevice, testCase.device);
-      if (testCase.name === "physical") {
-        assert.deepEqual(new Set(scan.visibleCast), new Set(["novel-character-sora", "novel-character-mizuha"]));
+      if (testCase.cast) {
+        assert.deepEqual(scan.visibleCast, [testCase.cast]);
       } else {
         assert.equal(scan.visibleCast.length, 0);
       }
@@ -241,7 +243,7 @@ try {
     const { context: endContext, page: endPage } = await createPage(viewport, endLabel);
     await bootAt(endPage, "welcome_chat_095");
     for (let attempt = 0; attempt < 4 && await endPage.locator(".novel-end-v6").count() === 0; attempt += 1) {
-      await endPage.keyboard.press("Enter");
+      await endPage.locator("#novel-dialogue").click({ position: { x: 20, y: 20 } });
       await endPage.waitForTimeout(80);
     }
     assert.equal(await endPage.locator(".novel-end-v6").count(), 1, `${endLabel}: END was not reached`);

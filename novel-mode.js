@@ -479,11 +479,14 @@
     }
   };
   const readAudioState = () => {
-    const volume = Number(document.querySelector("#gaia-audio-volume")?.value);
+    const volumeInput = document.querySelector("#gaia-audio-volume");
+    const volume = Number(volumeInput?.value);
+    const volumeMaximum = Number(volumeInput?.max);
+    const normalizedVolume = volumeMaximum > 1 ? volume / volumeMaximum : volume;
     const muted = document.querySelector("#gaia-audio-toggle")?.getAttribute("aria-pressed") === "true";
     return {
       muted,
-      volume: Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : state.audio.volume,
+      volume: Number.isFinite(normalizedVolume) ? Math.max(0, Math.min(1, normalizedVolume)) : state.audio.volume,
     };
   };
 
@@ -788,6 +791,9 @@
   const currentScene = () => sceneMap.get(currentStep()?.sceneId) || null;
   const conditionMatches = (step) => !step.condition || state[step.condition.key] === step.condition.value;
   const chatDeviceForStep = (step) => {
+    const cueDevice = backHalfCues.forStep(step)?.device || "";
+    if (cueDevice === "mobile-campus-chat") return "mobile";
+    if (cueDevice === "wide-campus-chat") return "wide";
     const sequence = Number(step?.id?.match(/_(\d{3})$/u)?.[1]);
     const ranges = CHAT_DEVICE_MOBILE_RANGES[step?.sceneId] || [];
     return Number.isInteger(sequence) && ranges.some(([start, end]) => sequence >= start && sequence <= end)
@@ -985,7 +991,10 @@
     const rawNextStep = step ? stepMap.get(getFollowingStepId(step)) : null;
     const nextStep = resolveVisibleStep(rawNextStep?.id);
     const next = nextStep?.id || null;
-    if (!next) return;
+    if (!next) {
+      renderEnd(step);
+      return;
+    }
     const swapStep = () => {
       Object.entries(CHAT_CAST_MEETING_GATES).forEach(([speaker, gate]) => {
         if (step.id === gate.completedAt) state.metCharacters[speaker] = true;
