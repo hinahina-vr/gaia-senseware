@@ -4810,7 +4810,10 @@ body.novel-reduced-motion .story-detour-dock * {
   --novel-scene-background: url("./assets/visuals-07/novel-bg-garden-center-v2.png");
 }
 
-.novel-layer:not(.is-title)[data-scene-id="first_meeting_hall"],
+.novel-layer:not(.is-title)[data-scene-id="first_meeting_hall"] {
+  --novel-scene-background: url("./assets/visuals-07/novel-bg-coastal-venue-v3.png");
+}
+
 .novel-layer:not(.is-title)[data-scene-id="festival_walk"] {
   --novel-scene-background: url("./assets/visuals-07/novel-bg-coastal-venue-v2.png");
 }

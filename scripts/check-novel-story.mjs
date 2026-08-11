@@ -427,6 +427,7 @@ for (const asset of [
   "assets/visuals-07/novel-bg-online-night-v2.png",
   "assets/visuals-07/novel-bg-garden-center-v2.png",
   "assets/visuals-07/novel-bg-coastal-venue-v2.png",
+  "assets/visuals-07/novel-bg-coastal-venue-v3.png",
   "assets/visuals-07/novel-bg-production-night-v2.png",
   "assets/visuals-07/novel-bg-zushi-coast-night-v2.png",
 ]) {
@@ -443,5 +444,8 @@ for (const asset of [
 }
 const novelCss = fs.readFileSync(path.join(projectRoot, "novel-mode.css"), "utf8");
 assert.ok(!novelCss.includes('url("./assets/visuals-07/novel-background-v1.webp")'), "character-composited legacy background remains in the novel runtime");
+assert.match(novelCss, /data-scene-id="first_meeting_hall"[^}]*novel-bg-coastal-venue-v3\.png/su, "first_meeting_hall must use approved coastal venue v3");
+assert.match(novelCss, /data-scene-id="festival_walk"[^}]*novel-bg-coastal-venue-v2\.png/su, "festival_walk must retain coastal venue v2");
+assert.doesNotMatch(novelCss, /data-scene-id="first_meeting_hall"\][^}]*data-scene-id="festival_walk"/su, "first_meeting_hall and festival_walk background selectors must remain independent");
 
 console.log(`novel story check passed: ${scenes.length} scenes, ${stepIds.length} steps, 36 reflection statements, 8 result combinations`);
