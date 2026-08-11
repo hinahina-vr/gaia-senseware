@@ -253,6 +253,7 @@
     editorialChoice: null,
     reflectionIds: [],
     resultTone: null,
+    demoInterest: "",
     metCharacters: { mizuha: false, amane: false, sakuya: false },
     audio: { muted: false, volume: 0.1 },
     readStepIds: [],
@@ -582,6 +583,7 @@
 
   const migrateStepId = (stepId, sourceVersion = story.storyVersion) => {
     if (typeof stepId !== "string") return null;
+    if (Number(sourceVersion) < 10) return firstStepForScene(story.startSceneId);
     let migratedStepId = stepId;
     if (Number(sourceVersion) < 8 && version7To8StepIds.has(stepId)) {
       migratedStepId = version7To8StepIds.get(stepId);
@@ -604,41 +606,45 @@
       const sceneId = to.slice(0, -1);
       return firstStepForScene(sceneId);
     }
-    return null;
+    return firstStepForScene(story.startSceneId);
   };
 
   const normalizeState = (candidate) => {
     const sourceVersion = Number.isFinite(Number(candidate?.storyVersion)) ? Number(candidate.storyVersion) : 7;
+    const resetsLegacyProgress = sourceVersion < 10;
     const legacyIndexStep = Number.isInteger(candidate?.stepIndex)
       ? allSteps[Math.max(0, Math.min(allSteps.length - 1, candidate.stepIndex))]?.id
       : null;
     const stepId = migrateStepId(candidate?.stepId || legacyIndexStep, sourceVersion);
     if (!candidate || !stepId) return null;
-    const migratedReadStepIds = Array.isArray(candidate.readStepIds)
+    const migratedReadStepIds = !resetsLegacyProgress && Array.isArray(candidate.readStepIds)
       ? [...new Set(candidate.readStepIds
         .map((id) => (id === "current_exhibition_017" ? null : migrateStepId(id, sourceVersion)))
         .filter((id) => stepMap.has(id) && stepMap.get(id)?.type !== "phase"))].slice(-260)
       : [];
     const normalized = defaultState();
     normalized.stepId = stepId;
-    normalized.reachedSceneIds = Array.isArray(candidate.reachedSceneIds)
+    normalized.reachedSceneIds = !resetsLegacyProgress && Array.isArray(candidate.reachedSceneIds)
       ? candidate.reachedSceneIds.filter((id) => sceneMap.has(id))
       : [];
-    normalized.viewed = { ...VIEWED_DEFAULTS, ...(candidate.viewed || {}) };
-    normalized.evesRoute = Array.isArray(candidate.evesRoute)
+    normalized.viewed = resetsLegacyProgress ? { ...VIEWED_DEFAULTS } : { ...VIEWED_DEFAULTS, ...(candidate.viewed || {}) };
+    normalized.evesRoute = !resetsLegacyProgress && Array.isArray(candidate.evesRoute)
       ? candidate.evesRoute.filter((entry) => ["editorial_choice", "reflection_choice"].includes(entry?.decisionId)).slice(0, 2)
       : [];
-    normalized.observationOrder = ["LOCAL_FIRST", "STATION_FIRST"].includes(candidate.observationOrder)
+    normalized.observationOrder = !resetsLegacyProgress && ["LOCAL_FIRST", "STATION_FIRST"].includes(candidate.observationOrder)
       ? candidate.observationOrder : normalized.observationOrder;
-    normalized.editorialChoice = ["SOURCE_RECORD", "DISCLOSE_DERIVATION"].includes(candidate.editorialChoice)
+    normalized.editorialChoice = !resetsLegacyProgress && ["SOURCE_RECORD", "DISCLOSE_DERIVATION"].includes(candidate.editorialChoice)
       ? candidate.editorialChoice : null;
-    normalized.reflectionIds = Array.isArray(candidate.reflectionIds)
+    normalized.reflectionIds = !resetsLegacyProgress && Array.isArray(candidate.reflectionIds)
       ? [...new Set(candidate.reflectionIds.filter((id) => reflectionOptionMap.has(id)))].slice(0, 3)
       : [];
-    normalized.resultTone = ["LAW", "NEUTRAL", "CHAOS", "UNANSWERED"].includes(candidate.resultTone)
+    normalized.resultTone = !resetsLegacyProgress && ["LAW", "NEUTRAL", "CHAOS", "UNANSWERED"].includes(candidate.resultTone)
       ? candidate.resultTone : null;
+    normalized.demoInterest = !resetsLegacyProgress && ["太古の海", "CO2の季節変動", "気温偏差の地図"].includes(candidate.demoInterest)
+      ? candidate.demoInterest : "";
     const currentStepIndex = stepIndexMap.get(stepId) ?? -1;
     normalized.metCharacters = Object.fromEntries(Object.entries(CHAT_CAST_MEETING_GATES).map(([speaker, gate]) => {
+      if (resetsLegacyProgress) return [speaker, false];
       const savedFlag = candidate.metCharacters?.[speaker];
       if (typeof savedFlag === "boolean") return [speaker, savedFlag];
       const visibleFromIndex = stepIndexMap.get(gate.visibleFrom) ?? Number.POSITIVE_INFINITY;
@@ -651,8 +657,8 @@
       volume: Number.isFinite(candidate.audio?.volume) ? Math.max(0, Math.min(1, candidate.audio.volume)) : 0.1,
     };
     normalized.readStepIds = migratedReadStepIds;
-    normalized.clear = Boolean(candidate.clear);
-    normalized.archivesUnlocked = Boolean(candidate.archivesUnlocked);
+    normalized.clear = resetsLegacyProgress ? false : Boolean(candidate.clear);
+    normalized.archivesUnlocked = resetsLegacyProgress ? false : Boolean(candidate.archivesUnlocked);
     normalized.sessionId = typeof candidate.sessionId === "string" ? candidate.sessionId.slice(0, 80) : "";
     return normalized;
   };
@@ -2040,7 +2046,7 @@
       setCharacterPresentation(speaker, expressionForStep(step));
       elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
     }
-    renderDialoguePages(step.text || "");
+    renderDialoguePages(String(step.text || "").replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目"));
   };
 
   const renderRichStep = (step) => {
@@ -2178,6 +2184,7 @@
   const choiceStateKey = (choiceId) => ({
     observation_order: "observationOrder",
     editorial_choice: "editorialChoice",
+    demo_interest: "demoInterest",
   })[choiceId];
 
   const renderEditorialChoice = (step) => {
@@ -2940,7 +2947,7 @@
       article.dataset.kind = step.recordType || "SOURCE";
       article.dataset.speaker = step.speaker || "system";
       header.textContent = `${speaker || "観測記録"} / ${RECORD_LABELS[step.recordType] || step.type}`;
-      text.textContent = step.text;
+      text.textContent = String(step.text).replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目");
       article.append(header, text);
       elements.logContent.append(article);
     });

@@ -1,56 +1,19 @@
 import assert from "node:assert/strict";
-import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
 
-const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?temporal-runtime-data=1`);
-await import(`${pathToFileURL(path.join(projectRoot, "novel-temporal.js")).href}?temporal-runtime=1`);
+await import(`${new URL("../novel-story-data.js", import.meta.url).href}?story=${Date.now()}`);
+await import(`${new URL("../novel-temporal.js", import.meta.url).href}?temporal=${Date.now()}`);
 
 const story = globalThis.GAIA_NOVEL_STORY;
 const runtime = globalThis.GaiaNovelTemporal.create(story);
-const steps = new Map(story.scenes.flatMap((scene) => scene.steps.map((step) => [step.id, step])));
-const presentation = (stepId) => runtime.presentationForStep(steps.get(stepId));
-
-assert.deepEqual(presentation("current_exhibition_001"), {
-  displayTitle: "11月1日（日） 13:30｜学園祭・展示ホール",
-  temporalContext: "CURRENT",
-  timePrecision: "MINUTE",
-  isPeriod: false,
-  displayMode: "",
-  source: "SCENE",
-});
-assert.equal(presentation("prologue_basil_001").displayTitle, "5月3日（土）〜5月4日（日）｜学内サークル「惑星の放課後」・チャット");
-assert.equal(presentation("prologue_basil_001").isPeriod, true);
-assert.equal(presentation("prologue_basil_008").displayTitle, "5月4日（日） 昼｜次回撮影の約束");
-assert.equal(presentation("prologue_basil_008").timePrecision, "PART_OF_DAY");
-assert.equal(presentation("production_year_001").displayTitle, "2025年11月9日（日）〜2026年8月1日（土）｜九か月間の制作記録");
-assert.equal(presentation("production_year_248").displayTitle, "2026年7月25日（土） 10:02〜18:32｜七月の終わり・予約と制作チャット");
-assert.equal(presentation("production_year_248").displayMode, "", "ARCHIVE_REFERENCE must not replace the story heading");
-assert.equal(presentation("search_024").timePrecision, "DAY");
-assert.equal(presentation("search_060").timePrecision, "PART_OF_DAY");
-assert.equal(presentation("search_127").isPeriod, true);
-assert.equal(presentation("mode07_abstract_024").temporalContext, "RECORD");
-
-const entryChange = runtime.contextTransitionForStep(steps.get("opening_empty_seat_001"));
-assert.deepEqual([entryChange.fromTemporalContext, entryChange.toTemporalContext], ["CURRENT", "RECORD"]);
-const recordEntryChange = runtime.contextTransitionForStep(steps.get("prologue_online_circle_001"));
-assert.deepEqual([recordEntryChange.fromTemporalContext, recordEntryChange.toTemporalContext], ["RECORD", "RECORD"]);
-assert.equal(recordEntryChange.displayTitle, "5月1日（木） 18:00｜学内サークル「惑星の放課後」・チャット");
-const internalChange = runtime.contextTransitionForStep(steps.get("mode07_abstract_009"));
-assert.deepEqual([internalChange.fromTemporalContext, internalChange.toTemporalContext], ["CURRENT", "RECORD"]);
-const delayedEntryChange = runtime.contextTransitionForStep(steps.get("mode08_map_layers_001"));
-assert.deepEqual([delayedEntryChange.fromTemporalContext, delayedEntryChange.toTemporalContext], ["RECORD", "CURRENT"]);
-assert.equal(runtime.contextTransitionForStep(steps.get("mode08_map_layers_003")), null);
-
-const missingSceneMetadata = structuredClone(story);
-delete missingSceneMetadata.scenes[0].temporal;
-assert.throws(
-  () => globalThis.GaiaNovelTemporal.create(missingSceneMetadata),
-  /scene current_exhibition\.temporal is required/u,
-  "missing scene metadata must fail instead of falling back to the current date",
-);
-const missingPolicy = structuredClone(story);
-delete missingPolicy.temporal.clockPolicy;
-assert.throws(() => globalThis.GaiaNovelTemporal.create(missingPolicy), /clockPolicy must be AUTHOR_FIXED/u);
-
-console.log("novel temporal runtime check passed: scene, period, cross-year, precision, context cards, strict missing-data errors");
+for (const scene of story.scenes) {
+  for (const step of [scene.steps[0], scene.steps.at(-1)]) {
+    const presentation = runtime.presentationForStep(step);
+    assert.equal(presentation.displayTitle, `${scene.duration}｜${scene.location}`, `${scene.id}: scene-meta display title changed`);
+    assert.equal(presentation.temporalContext, "CURRENT", `${scene.id}: short contest route must stay CURRENT`);
+    assert.equal(presentation.timePrecision, "APPROXIMATE", `${scene.id}: source has no absolute date`);
+    assert.equal(presentation.source, "SCENE");
+    assert.equal(runtime.contextTransitionForStep(step), null);
+  }
+}
+assert.throws(() => runtime.presentationForStep({ id: "unknown", sceneId: "unknown" }), /has no scene temporal metadata/u);
+console.log("contest v10 temporal runtime check passed: 6 scene-meta presentations, no invented absolute dates");
