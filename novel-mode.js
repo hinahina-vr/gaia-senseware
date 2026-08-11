@@ -299,6 +299,7 @@
   let detourState = null;
   let detourDock = null;
   let detourDockObserver = null;
+  let interactionLifecycle = "idle";
   let backgroundTransitionPending = false;
   let deferredOpeningBackground = null;
   let requestedStoryTrack = null;
@@ -2359,6 +2360,27 @@
     return document.querySelector(".experience");
   };
 
+  const setInteractionLifecycle = (phase) => {
+    interactionLifecycle = phase;
+    const exclusive = phase === "open" || phase === "closing";
+    if (phase === "idle") {
+      delete layer.dataset.interactionState;
+      delete document.body.dataset.novelInteractionState;
+    } else {
+      layer.dataset.interactionState = phase;
+      document.body.dataset.novelInteractionState = phase;
+    }
+    document.body.classList.toggle("novel-interaction-exclusive", exclusive);
+    layer.inert = exclusive;
+    if (exclusive) {
+      layer.hidden = true;
+      layer.setAttribute("aria-hidden", "true");
+    } else if (isOpen) {
+      layer.hidden = false;
+      layer.setAttribute("aria-hidden", "false");
+    }
+  };
+
   const closeDetourDock = () => {
     detourDock?.remove();
     detourDock = null;
@@ -2369,15 +2391,16 @@
   const requestDetourReturn = () => {
     if (!pendingInteraction || !detourCompletion()) return;
     const kind = pendingInteraction.interaction.kind;
+    setInteractionLifecycle("closing");
     if (kind === "gx") window.GaiaGX?.close?.();
     else if (kind === "space10") window.GaiaSpace?.close?.({ returnToTop: false });
     else {
       window.dispatchEvent(new CustomEvent("gaia:story-mode-close", { detail: { kind } }));
-      completePendingInteraction();
     }
   };
 
   const openDetour = (step) => {
+    if (pendingInteraction || interactionLifecycle !== "prep") return;
     pendingInteraction = step;
     detourState = { gestureCount: 0 };
     const definition = detourDefinitions[step.interaction.kind];
@@ -2391,6 +2414,7 @@
     document.body.classList.add("novel-mode-detour");
     layer.classList.add("is-mode-detour");
     updateDetourDock();
+    setInteractionLifecycle("open");
     const detail = {
       kind: step.interaction.kind,
       index: currentScene()?.modeIndex || 0,
@@ -2414,8 +2438,12 @@
     pendingInteraction = null;
     detourState = null;
     closeDetourDock();
+    setInteractionLifecycle("idle");
     saveProgress();
     moveToFollowingStep(step);
+    requestAnimationFrame(() => {
+      if (!elements.dialogue.hidden) elements.dialogue.focus({ preventScroll: true });
+    });
   };
 
   const renderInteraction = (step) => {
@@ -2426,6 +2454,7 @@
     elements.text.textContent = step.text;
     elements.cursor.hidden = true;
     elements.continueMark.classList.remove("is-visible");
+    setInteractionLifecycle("prep");
     const button = document.createElement("button");
     button.type = "button";
     button.className = "novel-interaction-open";
@@ -2710,6 +2739,7 @@
     pendingInteraction = null;
     detourState = null;
     closeDetourDock();
+    setInteractionLifecycle("idle");
     if (detourKind === "gx") window.GaiaGX?.close?.();
     else if (detourKind === "space10") window.GaiaSpace?.close?.({ returnToTop: false });
     else if (detourKind) window.dispatchEvent(new CustomEvent("gaia:story-mode-close", { detail: { kind: detourKind } }));
@@ -3128,6 +3158,7 @@
     void window.GaiaOpeningAudio?.switchTrack?.("story");
     window.dispatchEvent(new CustomEvent("gaia:novel-open"));
     isOpen = true;
+    setInteractionLifecycle("idle");
     layer.hidden = false;
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("novel-open");
@@ -3144,6 +3175,7 @@
     particleSystem.stop();
     void window.GaiaOpeningAudio?.switchTrack?.("opening");
     isOpen = false;
+    setInteractionLifecycle("idle");
     clearScriptDebug();
     setSceneJumpAvailability(false);
     layer.classList.remove("is-open", "is-mode-detour");
@@ -3183,6 +3215,10 @@
     updateDetourDock();
   });
   window.addEventListener("gaia:gx-return-to-novel", () => completePendingInteraction());
+  window.addEventListener("gaia:story-mode-return-to-novel", (event) => {
+    if (!pendingInteraction || event.detail?.kind !== pendingInteraction.interaction.kind) return;
+    completePendingInteraction();
+  });
   window.addEventListener("gaia:story-map-interaction", () => {
     if (!pendingInteraction) return;
     updateDetourDock();

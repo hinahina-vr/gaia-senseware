@@ -257,10 +257,12 @@
   const random = (minimum, maximum) => minimum + Math.random() * (maximum - minimum);
 
   const setUnderlayHidden = (hidden) => {
+    if (returnTo === "novel") return;
     const underlay = returnTo === "novel"
       ? document.querySelector("#novel-layer")
       : document.querySelector("#intro-layer");
     underlay?.setAttribute("aria-hidden", String(hidden));
+    if (underlay) underlay.inert = hidden;
   };
 
   const loadExhibit = async () => {
@@ -502,7 +504,11 @@
     const dialogue = elements.storyDialogue;
     const bubbles = [elements.storyBubbleFirst, elements.storyBubbleSecond];
     const cast = document.querySelector(".novel-cast");
-    const show = returnTo === "novel" && isOpen && dialogue && bubbles.every(Boolean);
+    const show = returnTo === "novel"
+      && isOpen
+      && document.body.dataset.novelInteractionState !== "open"
+      && dialogue
+      && bubbles.every(Boolean);
 
     window.clearTimeout(storyLineTimer);
     storyLineTimer = 0;
@@ -2006,6 +2012,7 @@
     if (elements.storyDialogue) elements.storyDialogue.hidden = true;
     document.querySelector(".novel-cast")?.removeAttribute("data-gx-speaker");
     setUnderlayHidden(false);
+    const returningToNovel = returnTo === "novel";
     window.setTimeout(() => {
       if (!isOpen) {
         layer.hidden = true;
@@ -2015,10 +2022,9 @@
         layer.style.removeProperty("--gx-story-character-image");
       }
       if (storyBackdrop && !storyBackdrop.classList.contains("is-open")) storyBackdrop.hidden = true;
+      if (returningToNovel) window.dispatchEvent(new CustomEvent("gaia:gx-return-to-novel"));
     }, reducedMotion ? 0 : 340);
-    if (returnTo === "novel") {
-      window.dispatchEvent(new CustomEvent("gaia:gx-return-to-novel"));
-    } else {
+    if (!returningToNovel) {
       previousFocus?.focus?.({ preventScroll: true });
     }
   };

@@ -5320,12 +5320,18 @@ drawAudienceMemory(audienceTraces);
 
   window.addEventListener("gaia:story-mode-close", (event) => {
     if (!storyModeDetour || (event.detail?.kind && event.detail.kind !== storyModeDetour.kind)) return;
+    const closedDetour = storyModeDetour;
     if (japanIsOpen) closeJapan({ restoreFocus: false, updateHash: false });
     japanClose.disabled = false;
     delete japanLayer.dataset.storyMode;
     delete japanLayer.dataset.storyLayer;
     delete experience.dataset.storyMode;
     storyModeDetour = null;
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("gaia:story-mode-return-to-novel", {
+        detail: { kind: closedDetour.kind },
+      }));
+    }, ["map03", "map08"].includes(closedDetour.kind) && !reducedMotion ? 420 : 0);
   });
 
   window.addEventListener("keydown", (event) => {
