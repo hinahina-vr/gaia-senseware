@@ -1527,7 +1527,16 @@
             <button id="novel-load-button" type="button" aria-expanded="false" aria-controls="novel-save-panel">LOAD</button>
             <button id="novel-config-button" type="button" aria-expanded="false" aria-controls="novel-config-panel">CONFIG</button>
             <button id="novel-auto-button" type="button" aria-pressed="false">AUTO</button>
-            <button id="novel-restart-button" type="button">RESTART</button>
+            <button id="novel-fast-forward-button" type="button" aria-pressed="false">早送り</button>
+            <button
+              class="novel-jump-button"
+              id="novel-jump-button"
+              type="button"
+              aria-expanded="false"
+              aria-controls="novel-jump-panel"
+              hidden
+            >JUMP</button>
+            <button id="novel-restart-button" type="button" aria-hidden="true" tabindex="-1" hidden>RESTART</button>
             <button
               id="novel-close-button"
               type="button"
@@ -1535,6 +1544,24 @@
               title="ストーリーをスキップしてメニューへ戻る"
             ><span>スキップ</span><span aria-hidden="true">→</span></button>
           </nav>
+          <aside
+            class="novel-jump-panel"
+            id="novel-jump-panel"
+            role="dialog"
+            aria-modal="false"
+            aria-labelledby="novel-jump-title"
+            hidden
+          >
+            <header>
+              <div>
+                <span>SCENE JUMP</span>
+                <strong id="novel-jump-title">シーンの先頭へ移動</strong>
+              </div>
+              <button id="novel-jump-close" type="button" aria-label="シーン一覧を閉じる">×</button>
+            </header>
+            <p class="novel-jump-current" id="novel-jump-current" aria-live="polite"></p>
+            <ol class="novel-jump-list" id="novel-jump-list" aria-label="シーン一覧"></ol>
+          </aside>
         </header>
 
         <div class="novel-progress" aria-hidden="true"><i id="novel-progress-bar"></i></div>

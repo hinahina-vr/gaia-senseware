@@ -5750,6 +5750,310 @@ body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0.4; }
     padding: 9px 18px 8px;
   }
 }
+
+/* Debug scene navigation: preserve the user nav while keeping restart internal. */
+.novel-topbar #novel-restart-button {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.novel-topbar #novel-fast-forward-button,
+.novel-topbar #novel-jump-button {
+  flex: 0 0 auto;
+}
+
+.novel-topbar #novel-fast-forward-button[aria-pressed="true"] {
+  color: rgba(232, 247, 255, 0.96);
+  border-color: rgba(124, 196, 244, 0.4);
+  background: rgba(76, 155, 214, 0.12);
+}
+
+.novel-topbar #novel-jump-button {
+  border-color: rgba(119, 193, 241, 0.2);
+  color: rgba(184, 222, 249, 0.76);
+}
+
+.novel-topbar #novel-jump-button:hover,
+.novel-topbar #novel-jump-button:focus-visible,
+.novel-topbar #novel-jump-button[aria-expanded="true"] {
+  border-color: rgba(126, 202, 250, 0.48);
+  color: rgba(231, 247, 255, 0.98);
+  background: rgba(64, 143, 205, 0.13);
+}
+
+.novel-topbar #novel-fast-forward-button:disabled,
+.novel-topbar #novel-jump-button:disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+}
+
+.novel-layer.is-title #novel-jump-button,
+.novel-layer:not(.is-open) #novel-jump-button,
+.novel-jump-panel[hidden] {
+  display: none !important;
+}
+
+.novel-layer:has(.novel-jump-panel:not([hidden])) .novel-script-debug {
+  top: max(1px, env(safe-area-inset-top));
+  left: max(4px, env(safe-area-inset-left));
+  font-size: 8px;
+  line-height: 1;
+}
+
+.novel-layer:has(.novel-jump-panel:not([hidden])) .novel-script-debug-copy {
+  padding: 1px 4px 0;
+  border-width: 0;
+  background: rgba(4, 24, 49, 0.38);
+  box-shadow: none;
+}
+
+.novel-jump-panel {
+  position: fixed;
+  z-index: 24;
+  top: max(86px, calc(env(safe-area-inset-top) + 68px));
+  right: var(--novel-dialogue-right);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  width: min(410px, calc(100vw - 40px));
+  height: min(540px, calc(100dvh - 250px));
+  min-height: 250px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(143, 203, 239, 0.34);
+  border-radius: 12px;
+  background:
+    linear-gradient(155deg, rgba(16, 52, 88, 0.97), rgba(4, 22, 49, 0.985) 58%, rgba(3, 15, 35, 0.99));
+  box-shadow: 0 28px 74px rgba(0, 4, 18, 0.46), inset 0 1px rgba(227, 247, 255, 0.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.12);
+  backdrop-filter: blur(16px) saturate(1.12);
+  color: rgba(238, 248, 255, 0.94);
+  pointer-events: auto;
+  animation: novel-jump-panel-in 150ms ease-out both;
+}
+
+.novel-jump-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 16px 14px 18px;
+  border-bottom: 1px solid rgba(143, 203, 239, 0.18);
+  background: rgba(72, 139, 190, 0.06);
+}
+
+.novel-jump-panel > header > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.novel-jump-panel > header span {
+  color: rgba(143, 205, 247, 0.58);
+  font: 700 8px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.2em;
+}
+
+.novel-jump-panel > header strong {
+  color: rgba(244, 250, 255, 0.96);
+  font: 600 14px/1.35 var(--novel-font);
+  letter-spacing: 0.06em;
+}
+
+.novel-topbar .novel-jump-panel #novel-jump-close {
+  flex: 0 0 auto;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: rgba(202, 229, 248, 0.7);
+  background: transparent;
+  font: 300 22px/1 Arial, sans-serif;
+}
+
+.novel-topbar .novel-jump-panel #novel-jump-close:hover,
+.novel-topbar .novel-jump-panel #novel-jump-close:focus-visible {
+  color: #fff;
+  background: rgba(135, 199, 240, 0.1);
+  outline: 1px solid rgba(148, 211, 251, 0.34);
+  outline-offset: -2px;
+}
+
+.novel-jump-current {
+  min-height: 16px;
+  margin: 0;
+  padding: 10px 18px 7px;
+  color: rgba(171, 211, 239, 0.66);
+  font: 600 9px/1.5 var(--novel-font);
+  letter-spacing: 0.08em;
+}
+
+.novel-jump-list {
+  min-height: 0;
+  margin: 0;
+  padding: 0 8px 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(115, 187, 233, 0.52) rgba(8, 30, 58, 0.34);
+  scrollbar-width: thin;
+  list-style: none;
+}
+
+.novel-jump-list > li {
+  margin: 0;
+  padding: 0;
+}
+
+.novel-topbar .novel-jump-item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(142, 195, 229, 0.1);
+  border-radius: 7px;
+  color: rgba(220, 237, 249, 0.72);
+  background: transparent;
+  text-align: left;
+}
+
+.novel-topbar .novel-jump-item:hover,
+.novel-topbar .novel-jump-item:focus-visible {
+  color: rgba(245, 251, 255, 0.98);
+  background: rgba(102, 174, 222, 0.1);
+  outline: 1px solid rgba(126, 197, 243, 0.25);
+  outline-offset: -1px;
+}
+
+.novel-topbar .novel-jump-item.is-current,
+.novel-topbar .novel-jump-item[aria-current="true"] {
+  color: #fff;
+  background: linear-gradient(90deg, rgba(74, 159, 218, 0.2), rgba(74, 159, 218, 0.05));
+  box-shadow: inset 2px 0 rgba(137, 211, 255, 0.78);
+}
+
+.novel-jump-index {
+  color: rgba(146, 207, 247, 0.74);
+  font: 700 10px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.08em;
+}
+
+.novel-jump-label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.novel-jump-label small {
+  overflow: hidden;
+  color: rgba(154, 193, 221, 0.54);
+  font: 600 7px/1.2 var(--novel-font);
+  letter-spacing: 0.12em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.novel-jump-label strong {
+  overflow: hidden;
+  color: inherit;
+  font: 500 11px/1.45 var(--novel-font);
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.novel-jump-script {
+  color: rgba(150, 193, 223, 0.5);
+  font: 600 8px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+@keyframes novel-jump-panel-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-jump-panel { animation: none; }
+}
+
+@media (max-width: 720px) {
+  .novel-layer.is-slack .novel-topbar nav {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .novel-layer:has(.novel-jump-panel:not([hidden])) .novel-script-debug {
+    top: max(1px, env(safe-area-inset-top));
+    left: max(3px, env(safe-area-inset-left));
+    max-width: calc(100vw - 6px);
+    font-size: 7px;
+  }
+
+  .novel-layer:has(.novel-jump-panel:not([hidden])) .novel-script-debug-copy {
+    padding: 1px 3px 0;
+  }
+
+  .novel-topbar nav {
+    right: 10px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    max-width: calc(100vw - 20px);
+    gap: 2px;
+  }
+
+  .novel-topbar nav > button:not(#novel-close-button):not(#novel-restart-button) {
+    flex: 0 1 auto;
+    min-width: 0;
+    height: 32px;
+    padding: 0 5px;
+    font-size: 7.5px;
+    letter-spacing: 0.045em;
+  }
+
+  .novel-topbar #novel-eves-button b {
+    min-width: 30px;
+  }
+
+  .novel-jump-panel {
+    top: max(72px, calc(env(safe-area-inset-top) + 58px));
+    right: 10px;
+    width: calc(100vw - 20px);
+    height: min(500px, calc(100dvh - 274px));
+    min-height: 250px;
+    border-radius: 10px;
+  }
+
+  .novel-jump-panel > header {
+    padding: 12px 11px 11px 14px;
+  }
+
+  .novel-jump-current {
+    padding: 8px 14px 6px;
+  }
+
+  .novel-jump-list {
+    padding: 0 6px 8px;
+  }
+
+  .novel-topbar .novel-jump-item {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    min-height: 50px;
+    padding: 7px 8px;
+    gap: 8px;
+  }
+
+  .novel-jump-label strong { font-size: 10px; }
+  .novel-jump-script { font-size: 7px; }
+}
 /* Sakuya uses the same character-sprite presentation as Amane and Mizuha. */
 .novel-character--sakuya .novel-character-portrait {
   background-image: url("./assets/characters/sakuya-calm-07-v1.png");
