@@ -21,9 +21,8 @@ assert.deepEqual(presentation("current_exhibition_001"), {
 });
 assert.equal(presentation("prologue_basil_001").displayTitle, "5月3日（土）〜5月4日（日）｜学内サークル「惑星の放課後」・チャット");
 assert.equal(presentation("prologue_basil_001").isPeriod, true);
-assert.equal(presentation("prologue_basil_011").displayTitle, "5月4日（日） 00:31｜サクヤの花壇投稿");
-assert.equal(presentation("prologue_basil_017").displayTitle, "5月4日（日） 昼｜バジルの翌日写真");
-assert.equal(presentation("prologue_basil_017").timePrecision, "PART_OF_DAY");
+assert.equal(presentation("prologue_basil_008").displayTitle, "5月4日（日） 昼｜次回撮影の約束");
+assert.equal(presentation("prologue_basil_008").timePrecision, "PART_OF_DAY");
 assert.equal(presentation("production_year_001").displayTitle, "2025年11月9日（日）〜2026年8月1日（土）｜九か月間の制作記録");
 assert.equal(presentation("production_year_248").displayTitle, "2026年7月25日（土） 10:02〜18:32｜七月の終わり・予約と制作チャット");
 assert.equal(presentation("production_year_248").displayMode, "", "ARCHIVE_REFERENCE must not replace the story heading");
@@ -39,9 +38,9 @@ assert.deepEqual([recordEntryChange.fromTemporalContext, recordEntryChange.toTem
 assert.equal(recordEntryChange.displayTitle, "5月1日（木） 18:00｜学内サークル「惑星の放課後」・チャット");
 const internalChange = runtime.contextTransitionForStep(steps.get("mode07_abstract_009"));
 assert.deepEqual([internalChange.fromTemporalContext, internalChange.toTemporalContext], ["CURRENT", "RECORD"]);
-const delayedEntryChange = runtime.contextTransitionForStep(steps.get("mode08_map_layers_003"));
+const delayedEntryChange = runtime.contextTransitionForStep(steps.get("mode08_map_layers_001"));
 assert.deepEqual([delayedEntryChange.fromTemporalContext, delayedEntryChange.toTemporalContext], ["RECORD", "CURRENT"]);
-assert.equal(runtime.contextTransitionForStep(steps.get("mode08_map_layers_001")), null);
+assert.equal(runtime.contextTransitionForStep(steps.get("mode08_map_layers_003")), null);
 
 const missingSceneMetadata = structuredClone(story);
 delete missingSceneMetadata.scenes[0].temporal;

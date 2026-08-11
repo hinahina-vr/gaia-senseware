@@ -1,6 +1,6 @@
 // Generated from story/物語台本.md by scripts/build-novel-story.mjs. Do not edit by hand.
 globalThis.GAIA_NOVEL_STORY = Object.freeze({
-  "storyVersion": 7,
+  "storyVersion": 8,
   "title": "GAIA SENSATION",
   "systemTitle": "GAIA SENSEWARE",
   "startSceneId": "current_exhibition",
@@ -157,98 +157,98 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "午後の学園祭。私は学生証を受付端末へかざし、海沿いの展示棟へ入る。今日の私は出展者ではなく、学生が作った展示を見る来場者だ。"
+          "text": "午後の学園祭。来場者の流れから少し外れ、「GAIA SENSEWARE」と掲げられた展示ブースの前で足を止めた。"
         },
         {
           "id": "current_exhibition_002",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "授業の大半を別々の町から受けるオンライン大学では、この学園祭が、学生たちの作品を同じ場所で見られる年に一度の対面行事になっている。"
+          "text": "明るい展示ホールの左側は海と空へ開き、右側の長い通路を来場者が行き交っている。"
         },
         {
           "id": "current_exhibition_003",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二つ目のホールへ渡る手前に、照明を落とした小さな展示ブースがある。黒い布を掛けた机の上には、展示端末、スピーカー、束ねたケーブルが並んでいる。私は端末の前で足を止める。"
+          "text": "中央の自立式有孔パネルには、青い地図や図表と、白地に青字の展示名が留められている。"
         },
         {
           "id": "current_exhibition_004",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "端末の横には、片側に薄い擦り傷のある青りんごが一つ置かれている。"
+          "text": "パネル手前の細い木製テーブルには、傾斜した展示端末と銀色のボトル、青い小箱、片側に薄い擦り傷のある青りんごが一つ置かれている。"
         },
         {
           "id": "current_exhibition_005",
-          "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "スピーカーから扇風機、湯が沸き始める音、遠い踏切が順に聞こえる。人の声が始まりそうで始まらないまま、十一秒ほどで途切れる。"
-        },
-        {
-          "id": "current_exhibition_006",
-          "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "机の向こうにいる二人が、こちらを見る。二人とも壁の制作者欄と同じブースに立っている。"
-        },
-        {
-          "id": "current_exhibition_007",
           "sceneId": "current_exhibition",
           "type": "dialogue",
           "speaker": "mizuha",
           "text": "「こんにちは。制作者のミズハです。掲示では『みず』。こちらはアマネですわ」"
         },
         {
-          "id": "current_exhibition_008",
+          "id": "current_exhibition_006",
           "sceneId": "current_exhibition",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "「アマネです。掲示では『あまあま』。画面はそのまま触って大丈夫」"
+          "text": "「アマネです。掲示では『あまあま』。よかったら、画面はそのまま触って」"
+        },
+        {
+          "id": "current_exhibition_007",
+          "sceneId": "current_exhibition",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "掲示の制作者欄には、会場にいる二人より一つ多い、三人の表示名が同じ大きさで並んでいる。\nみず\nあまあま\nsaku"
+        },
+        {
+          "id": "current_exhibition_008",
+          "sceneId": "current_exhibition",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "展示名の下には、「地球の声、聴いてみませんか」とある。"
         },
         {
           "id": "current_exhibition_009",
           "sceneId": "current_exhibition",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "壁の制作者欄には、会場にいる二人より一つ多い、三人の表示名が同じ大きさで並んでいる。\nみず\nあまあま\nsaku"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「掲示にある三人で作った展示ですの」"
         },
         {
           "id": "current_exhibition_010",
           "sceneId": "current_exhibition",
           "type": "narration",
           "speaker": "narrator",
-          "text": "端末の案内には、「GAIA SENSEWARE　地球と人類の共進化を考える展示です。」とある。「地球の変化が人の暮らしをどう変え、人の選択が地球をどう変えてきたかをたどります」と続いている。"
+          "text": "会場にいる制作者は、ミズハとアマネの二人だけだ。"
         },
         {
           "id": "current_exhibition_011",
           "sceneId": "current_exhibition",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "「この展示は、掲示にある三人で作りましたの。sakuも、同じ制作者ですわ」"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "展示端末の画面には、STARTが一つ表示されている。"
         },
         {
           "id": "current_exhibition_012",
           "sceneId": "current_exhibition",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "「八月一日、三人で初めて実機をつなぐ予定でした。でも、その日に集まったのは二人でしたの」"
+          "text": "「よろしければ、最初の記録からご覧になりますか？」"
         },
         {
           "id": "current_exhibition_013",
           "sceneId": "current_exhibition",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "「最初に、その日の作業予定と保存された資料を開く」"
+          "text": "「STARTで、予定、写真、学内チャットを順に開く。最後の未読まで見たら戻る」"
         },
         {
           "id": "current_exhibition_014",
           "sceneId": "current_exhibition",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "「準備ができたら、STARTを押して」"
+          "text": "「準備ができたときに押して」"
         },
         {
           "id": "current_exhibition_015",
@@ -265,8 +265,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "current_exhibition_017",
           "sceneId": "current_exhibition",
-          "type": "ui",
-          "text": "表示｜作業予定／保存写真／学内チャット"
+          "type": "phase",
+          "phase": "OPENING_RECORD_READY"
         }
       ],
       "nextSceneId": "opening_empty_seat",
@@ -472,21 +472,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二日後、みずが学内サークル「惑星の放課後」のチャットへ、バジルの写真を投稿した。"
+          "text": "二日後、園芸売り場にいるみずが、学内サークル「惑星の放課後」のチャットへ、バジル一鉢の写真を投稿した。"
         },
         {
           "id": "prologue_basil_002",
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画像を開くと、園芸売り場の裏で、値下げ札のついたバジルの鉢が日陰に葉を垂らしている。写真の端には黄色い散水ホースと、土で汚れたスニーカーのつま先が写っていた。"
+          "text": "アマネとサクヤは別々の町から開いた。写真には、値下げ札、太い黄色いホース、青灰色と白のスニーカーの先、濡れた床、中央から下の大きな葉が斜め下を向く様子が写っている。"
         },
         {
           "id": "prologue_basil_003",
           "sceneId": "prologue_basil",
           "type": "narration",
           "speaker": "narrator",
-          "text": "アマネとサクヤは、別々の町からその写真を開いた。"
+          "text": "18時12分、みずの投稿が届いた。"
         },
         {
           "id": "prologue_basil_004",
@@ -495,11 +495,11 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:12",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "今日の売り場、36度ですの🥵\n土が湿ってても、暑すぎると根から吸うより先に葉から水が出てしまいますわ。",
+          "text": "売り場の裏のバジルですの。同じ鉢をもう一度見たいですわ。",
           "attachments": [
             {
               "id": "BASIL",
-              "description": "売り場の裏にあるバジル。値下げ札、黄色いホース、土のついた靴先が写っている"
+              "description": "売り場の裏にあるバジル。値下げ札、黄色いホース、青灰色と白のスニーカーの先が写っている"
             }
           ]
         },
@@ -507,160 +507,53 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "prologue_basil_005",
           "sceneId": "prologue_basil",
           "type": "chat",
-          "time": "18:18",
+          "time": "18:13",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "これ店内に入れられないの？"
+          "text": "撮ったの、何時？"
         },
         {
           "id": "prologue_basil_006",
           "sceneId": "prologue_basil",
           "type": "chat",
-          "time": "18:24",
+          "time": "18:14",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "全部入れたら売り場が消えますわ😂"
+          "text": "18時12分、売り場の裏ですわ。"
         },
         {
           "id": "prologue_basil_007",
           "sceneId": "prologue_basil",
           "type": "chat",
-          "time": "18:26",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "長い長い笑\nつまり、水あっても暑すぎると弱る？"
+          "time": "18:19",
+          "speaker": "sakuya",
+          "speakerLabel": "🌸 saku 🌸",
+          "text": "次も値下げ札と黄色いホースを入れて、同じ角度で見たい。"
         },
         {
           "id": "prologue_basil_008",
           "sceneId": "prologue_basil",
-          "type": "chat",
-          "time": "18:29",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "ざっくり言えばそうですわ🙆‍♀️\nでも根の状態と風と鉢の大きさも――"
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "翌日の昼、みずがチャットへ戻った。"
         },
         {
           "id": "prologue_basil_009",
           "sceneId": "prologue_basil",
           "type": "chat",
-          "time": "18:30",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "補足きた笑"
+          "time": "昼",
+          "speaker": "mizuha",
+          "speakerLabel": "🌱 みず 🌱",
+          "text": "今日も18時12分に、同じ場所と角度で撮りますわ。値下げ札と黄色いホースも入れます。"
         },
         {
           "id": "prologue_basil_010",
           "sceneId": "prologue_basil",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "日付が変わるころ、見覚えのない花壇の写真が一枚増えた。\n花ではなく、日焼けして文字の薄くなった「水やり当番」の札へ焦点が合っていた。"
-        },
-        {
-          "id": "prologue_basil_011",
-          "sceneId": "prologue_basil",
           "type": "chat",
-          "time": "00:31",
-          "speaker": "sakuya",
-          "speakerLabel": "🌸 saku 🌸",
-          "text": "名前だけ残ってた。\n花はない。\n花壇やめたのかも。まだ分かんない。",
-          "attachments": [
-            {
-              "id": "FLOWERBED",
-              "description": "駅裏の花壇。花ではなく、色あせた「水やり当番」の札にピントが合っている"
-            }
-          ]
-        },
-        {
-          "id": "prologue_basil_012",
-          "sceneId": "prologue_basil",
-          "type": "chat",
-          "time": "00:37",
+          "time": "昼",
           "speaker": "amane",
           "speakerLabel": "☁️ あまあま ☁️",
-          "text": "どこ？"
-        },
-        {
-          "id": "prologue_basil_013",
-          "sceneId": "prologue_basil",
-          "type": "chat",
-          "time": "00:44",
-          "speaker": "sakuya",
-          "speakerLabel": "🌸 saku 🌸",
-          "text": "駅裏。\n工事の板あった。"
-        },
-        {
-          "id": "prologue_basil_014",
-          "sceneId": "prologue_basil",
-          "type": "chat",
-          "time": "00:46",
-          "speaker": "amane",
-          "speakerLabel": "☁️ あまあま ☁️",
-          "text": "じゃあ、なくなったって決めるのはまだ早い。"
-        },
-        {
-          "id": "prologue_basil_015",
-          "sceneId": "prologue_basil",
-          "type": "chat",
-          "time": "00:51",
-          "speaker": "mizuha",
-          "speakerLabel": "🌱 みず 🌱",
-          "text": "なら、今日は「花がないところまで」ですわね👀"
-        },
-        {
-          "id": "prologue_basil_016",
-          "sceneId": "prologue_basil",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "サクヤはその一行へ、返事の代わりに目の形のリアクションを付けた。\n三人が初めて同じ結論へ揃ったのは、「分からない」という結論だった。"
-        },
-        {
-          "id": "prologue_basil_017",
-          "sceneId": "prologue_basil",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "翌日の昼、葉を少し持ち上げたバジルの写真が届いた。\n前日の写真と同じ鉢だと分かるよう、値下げ札と黄色いホースも同じ位置に入っている。"
-        },
-        {
-          "id": "prologue_basil_018",
-          "sceneId": "prologue_basil",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネが、最寄りの観測所で公開された気温を探した。\n売り場の温度計は、その鉢のすぐ近くでミズハが見た値。観測所の気温は、決められた場所と方法で測られ、時刻と一緒に公開された値だった。"
-        },
-        {
-          "id": "prologue_basil_019",
-          "sceneId": "prologue_basil",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "どちらも気温だが、測った場所も条件も違う。一方を正解にして、もう一方を消すための比較ではない。"
-        },
-        {
-          "id": "prologue_basil_020",
-          "sceneId": "prologue_basil",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面には、二つの値が、測った場所と時刻を添えて並ぶ。"
-        },
-        {
-          "id": "prologue_basil_021",
-          "sceneId": "prologue_basil",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "園芸売り場の温度計は三十六度。ミズハがバジルの鉢のそばで見た値で、撮影時刻が添えられている。"
-        },
-        {
-          "id": "prologue_basil_022",
-          "sceneId": "prologue_basil",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "もう一つは、最寄りの観測所が同じ時間帯に公開した気温。観測所名、観測時刻、提供元を開いて確かめられる。"
-        },
-        {
-          "id": "prologue_basil_023",
-          "sceneId": "prologue_basil",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "どちらも、あとから測った場所と方法を確かめられる値である。ただし条件が違うため、画面は二つを一本の気温変化としてつながない。"
+          "text": "それなら比べられる。"
         }
       ],
       "nextSceneId": "choice_observation_order",
@@ -675,41 +568,27 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "displayTitle": "5月3日（土）〜5月4日（日）｜学内サークル「惑星の放課後」・チャット",
         "transitions": [
           {
-            "stepId": "prologue_basil_011",
-            "temporalContext": "RECORD",
-            "transitionAt": "2025-05-04T00:31:00+09:00",
-            "timePrecision": "MINUTE",
-            "displayTitle": "5月4日（日） 00:31｜サクヤの花壇投稿"
-          },
-          {
-            "stepId": "prologue_basil_017",
+            "stepId": "prologue_basil_008",
             "temporalContext": "RECORD",
             "transitionAt": "2025-05-04",
             "timePrecision": "PART_OF_DAY",
             "partOfDay": "DAYTIME",
-            "displayTitle": "5月4日（日） 昼｜バジルの翌日写真"
+            "displayTitle": "5月4日（日） 昼｜次回撮影の約束"
           }
         ]
       }
     },
     {
       "id": "choice_observation_order",
-      "title": "小さな選択｜どちらから見る？",
+      "title": "現在の展示｜売り場と観測所",
       "chapter": "PROLOGUE",
       "modeIndex": 0,
-      "choice": {
+      "legacyChoice": {
         "id": "observation_order",
-        "prompt": "どちらから見る？",
-        "trackedByEves": false,
-        "options": [
-          {
-            "value": "LOCAL_FIRST",
-            "next": "first_meeting_promise"
-          },
-          {
-            "value": "STATION_FIRST",
-            "next": "first_meeting_promise"
-          }
+        "defaultValue": "LOCAL_FIRST",
+        "values": [
+          "LOCAL_FIRST",
+          "STATION_FIRST"
         ]
       },
       "steps": [
@@ -718,97 +597,35 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "園芸売り場の写真が閉じ、画面は現在の展示ブースへ戻る。背後の呼び込みと足音が近づき、黒い展示机と端末の縁が照明を反射する。"
+          "text": "バジルの記録が閉じ、画面は現在の展示ブースへ戻る。展示端末の前には、海側からの明るい光が届いている。"
         },
         {
           "id": "choice_observation_order_002",
           "sceneId": "choice_observation_order",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "端末には、園芸売り場の温度計と、最寄り観測所の気温が横に並ぶ。端末の右側には、傷のある青りんごが最初と同じ位置に置かれている。私は画面へ右手を戻す。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「三人が話し始めた日と、sakuが来なかった日の記録を見ても、来なかった理由までは分かりませんわ」"
         },
         {
           "id": "choice_observation_order_003",
           "sceneId": "choice_observation_order",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "これは半年間の記録の中へ何かを書き込む選択ではない。いま展示端末の前に立つ私が、どちらの元の記録を先に開くかを選ぶ。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「残っている記録だけで進む。次は、三人が初めて会う約束をした前夜」"
         },
         {
           "id": "choice_observation_order_004",
           "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "先に開く記録を選ぶが、選ばなかった記録が消えるわけではない。"
+          "text": "端末は、園芸売り場の写真記録、同じ時間帯の最寄り観測所の公開記録の順に開く。場所と測った時刻が違うため、同じ値としてまとめない。"
         },
         {
           "id": "choice_observation_order_005",
           "sceneId": "choice_observation_order",
-          "type": "choice",
-          "choiceId": "observation_order",
-          "prompt": "どちらから見る？",
-          "trackedByEves": false,
-          "options": [
-            {
-              "value": "LOCAL_FIRST",
-              "next": "first_meeting_promise",
-              "label": "売り場の温度計から見る"
-            },
-            {
-              "value": "STATION_FIRST",
-              "next": "first_meeting_promise",
-              "label": "最寄り観測所の記録から見る"
-            }
-          ]
-        },
-        {
-          "id": "choice_observation_order_006",
-          "sceneId": "choice_observation_order",
           "type": "narration",
           "speaker": "narrator",
-          "text": "選んだあと、もう一方も開く。\n二つの値は同じ場所で測った一続きの線にはされず、それぞれの測定条件と一緒に表示される。"
-        },
-        {
-          "id": "choice_observation_order_007",
-          "sceneId": "choice_observation_order",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "最初のカードを閉じるとき、背後を通る足音が近づく。\n二つ目を閉じると、画面に「一年前・学園祭前夜」と表示される。端末は、三人が初めて会う約束をした日の投稿へ進む。"
-        },
-        {
-          "id": "choice_observation_order_008",
-          "sceneId": "choice_observation_order",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "私は展示端末の前に立ったまま、半年ぶんの投稿を読み進める。"
-        },
-        {
-          "id": "choice_observation_order_009",
-          "sceneId": "choice_observation_order",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三人はそれから半年、顔を見ず、声も聞かず、文字だけで話した。\nミズハの長い説明には、アマネがまず目のリアクションを付けた。サクヤは翌日の夜になって、途中の一文だけを引用した。"
-        },
-        {
-          "id": "choice_observation_order_010",
-          "sceneId": "choice_observation_order",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "アマネが画面の不具合を直した日は、ミズハが「助かりましたわ」と書き、サクヤが数日後に同じ画面のスクリーンショットを貼った。\n誰かの返事が一日途切れても、戻ってきた人は前の話の続きから書き始めた。"
-        },
-        {
-          "id": "choice_observation_order_011",
-          "sceneId": "choice_observation_order",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "ハドルを開こうという話は二度出た。三人とも賛成の印を付けたが、開始時刻を決めないまま別の話題へ移り、二度とも誰も通話開始ボタンを押さなかった。"
-        },
-        {
-          "id": "choice_observation_order_012",
-          "sceneId": "choice_observation_order",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "その半年で三人が知ったのは、互いの顔ではなく、句読点の直し方や、既読のあとに返事が来るまでの長さだった。"
+          "text": "二つの記録を閉じると、端末は、三人が初めて会う約束をした前夜のチャットを開く。"
         }
       ],
       "nextSceneId": "first_meeting_promise",
@@ -1026,7 +843,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "00:09",
           "speaker": "mizuha",
           "speakerLabel": "🌱 みず 🌱",
-          "text": "急ですわね…！"
+          "text": "いよいよ、直接会うのですわね…！"
         },
         {
           "id": "first_meeting_promise_027",
@@ -6332,12 +6149,19 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "gx_deep_time_001",
           "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "四十六億年の時間軸を左右へ動かし、水面をなぞる。生命の活動と環境の変化は見えるが、その結果から生命の最初の目的までは決められない。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「この展示が『共進化』という言葉を使う理由を、まず人のいない海から見てくださいな」"
         },
         {
           "id": "gx_deep_time_002",
+          "sceneId": "gx_deep_time",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「時間軸を開いて水面をなぞる。最後の年代まで進めたら戻って」"
+        },
+        {
+          "id": "gx_deep_time_003",
           "sceneId": "gx_deep_time",
           "type": "interaction",
           "interaction": {
@@ -6347,81 +6171,74 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "操作｜時間軸を開き、水面をなぞる"
         },
         {
-          "id": "gx_deep_time_003",
-          "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "案内を閉じると、展示ホールの白い光が深い紺へ沈む。"
-        },
-        {
           "id": "gx_deep_time_004",
           "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "時間軸の左端には岩と水だけの地球があり、右端に近づくにつれて森林と都市の色が現れる。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「酸素が増え、その変化が次の生命の条件になりましたのね」"
         },
         {
           "id": "gx_deep_time_005",
           "sceneId": "gx_deep_time",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "目盛りを広げても、人の一生は線にならない。今日の学園祭は点として置くこともできない。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「でも、それが最初から目的だった証拠にはならない。三人の制作音声を確認したら、次はsakuの地図を開く」"
         },
         {
           "id": "gx_deep_time_006",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "水面へ指を置く。"
+          "text": "目盛りを広げても、人の一生は線にならない。今日の学園祭は点として置くこともできない。"
         },
         {
           "id": "gx_deep_time_007",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "指のあとへ、光合成を行う小さな生命の活動を表す青緑の点が現れる。"
+          "text": "水面へ指を置く。"
         },
         {
           "id": "gx_deep_time_008",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "点は、私が生命を作った数ではない。用意された時間を読み進めるときにだけ灯る印だ。"
+          "text": "指のあとへ、光合成を行う小さな生命の活動を表す青緑の点が現れる。"
         },
         {
           "id": "gx_deep_time_009",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "一度なぞっただけでは海全体は変わらない。"
+          "text": "点は、私が生命を作った数ではない。用意された時間を読み進めるときにだけ灯る印だ。"
         },
         {
           "id": "gx_deep_time_010",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "長い時間が進むにつれ、点の周囲から生まれた金色の筋が海中の物質へ触れ、暗くなる。"
+          "text": "一度なぞっただけでは海全体は変わらない。"
         },
         {
           "id": "gx_deep_time_011",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "酸素は最初から空へたまらない。海の中で別の物質と反応する時期が続く。"
+          "text": "長い時間が進むにつれ、点の周囲から生まれた金色の筋が海中の物質へ触れ、暗くなる。"
         },
         {
           "id": "gx_deep_time_012",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "さらに時間を進めると、変化は海だけに収まらず、大気にも現れる。"
+          "text": "酸素は最初から空へたまらない。海の中で別の物質と反応する時期が続く。"
         },
         {
           "id": "gx_deep_time_013",
           "sceneId": "gx_deep_time",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面は境目を一本の線にしない。年代に幅がある場所は、幅のある帯のまま残る。"
+          "text": "さらに時間を進めると、変化は海だけに収まらず、大気にも現れる。"
         },
         {
           "id": "gx_deep_time_014",
@@ -6541,12 +6358,19 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "mode03_map_001",
           "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "森と雨を同じ地図へ重ね、重なった地点を開く。二つが同じ場所にあることは分かるが、重なりだけでは原因と結果は決められない。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「sakuが最後まで仕上げた地図ですの。完成した説明と、その直後の未完文を分けて見ます」"
         },
         {
           "id": "mode03_map_002",
+          "sceneId": "mode03_map",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「森と雨を重ね、重なる地点を一つ開く。説明と修正履歴が出たら戻って」"
+        },
+        {
+          "id": "mode03_map_003",
           "sceneId": "mode03_map",
           "type": "interaction",
           "interaction": {
@@ -6560,25 +6384,18 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "操作｜森と雨を重ねる"
         },
         {
-          "id": "mode03_map_003",
-          "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "緑の森林分布へ、青い降水地点が重なる。"
-        },
-        {
           "id": "mode03_map_004",
           "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "森が広がっていても近くに降水地点がない場所がある。降水量が多くても、森林の少ない場所がある。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「森と雨が重なった場所は見えましたわ」"
         },
         {
           "id": "mode03_map_005",
           "sceneId": "mode03_map",
           "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "「重なっている場所は見えます。ただ、この画面だけで原因と結果は決められませんわ」"
+          "speaker": "amane",
+          "text": "「でも、この地図だけで原因は決まらない。02:13の完成作業と02:14の未完文を別に見る」"
         },
         {
           "id": "mode03_map_006",
@@ -6685,9 +6502,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "mode03_map_020",
           "sceneId": "mode03_map",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "意味を足す前に、二件がいつ届き、いつ開かれたかを確かめる。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「意味を足さず、次は二件が届いた時刻と出典を確かめる」"
         }
       ],
       "nextSceneId": "mode07_abstract",
@@ -6712,12 +6529,19 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "mode07_abstract_001",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地震の波が発生し、観測点へ届くまでを進める。続けて02:14の受信時刻と、二人が開いた10:27を並べるが、その差から人の行動理由は決めない。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「完成した作業と未完文を、同じ出来事にせず確かめます」"
         },
         {
           "id": "mode07_abstract_002",
+          "sceneId": "mode07_abstract",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「発生、到着、開封の時刻を順に開く。最後の時刻まで見たら戻って」"
+        },
+        {
+          "id": "mode07_abstract_003",
           "sceneId": "mode07_abstract",
           "type": "interaction",
           "interaction": {
@@ -6727,46 +6551,39 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "操作｜観測点と時刻を開く"
         },
         {
-          "id": "mode07_abstract_003",
-          "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "震源から二つの輪が広がる。先に届く輪と、あとから届く輪は、同じ場所から始まっても観測点へ着く時刻が違う。"
-        },
-        {
           "id": "mode07_abstract_004",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "画面の右側へ、三つの時刻が縦に並ぶ。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「02:14に届き、二人が開いたのは10:27だったと分かりましたわ」"
         },
         {
           "id": "mode07_abstract_005",
           "sceneId": "mode07_abstract",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "発生。\n到着。\n開封。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「でも、八時間十三分の理由はこの操作では分からない。次は本人文と生成文の出典を分ける」"
         },
         {
           "id": "mode07_abstract_006",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "サクヤの投稿が届いた時刻：02:14\nミズハとアマネが初めて開いた時刻：10:27"
+          "text": "発生。\n到着。\n開封。"
         },
         {
           "id": "mode07_abstract_007",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "八時間十三分のあいだへ、端末は理由を書き込まない。"
+          "text": "サクヤの投稿が届いた時刻：02:14\nミズハとアマネが初めて開いた時刻：10:27"
         },
         {
           "id": "mode07_abstract_008",
           "sceneId": "mode07_abstract",
           "type": "narration",
           "speaker": "narrator",
-          "text": "睡眠、移動、事故、送信のためらい。どの語も、この二つの時刻だけからは選べない。"
+          "text": "八時間十三分のあいだへ、端末は理由を書き込まない。"
         },
         {
           "id": "mode07_abstract_009",
@@ -7653,18 +7470,26 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "nature",
           "life",
           "memory"
-        ]
+        ],
+        "optional": true
       },
       "steps": [
         {
           "id": "mode08_map_layers_001",
           "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "同じ場所の自然、人の暮らし、土地の記憶を切り替える。空欄へ触れると、ゼロではなく、今回の資料にないのか、比べないのかが表示される。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「同じ町でも、自然、暮らし、土地の記憶の資料は揃っていませんの」"
         },
         {
           "id": "mode08_map_layers_002",
+          "sceneId": "mode08_map_layers",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「三層を切り替え、空欄を一つ開く。更新履歴と受付控えまで見たら戻って。見ないで進んでもいい」"
+        },
+        {
+          "id": "mode08_map_layers_003",
           "sceneId": "mode08_map_layers",
           "type": "interaction",
           "interaction": {
@@ -7673,30 +7498,24 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
               "nature",
               "life",
               "memory"
-            ]
+            ],
+            "optional": true
           },
           "text": "操作｜三つの層と空欄を開く"
         },
         {
-          "id": "mode08_map_layers_003",
-          "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "現在の展示端末へ、海岸線と町の名前が戻る。"
-        },
-        {
           "id": "mode08_map_layers_004",
           "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "自然の層には森と水がある。暮らしの層には人口と夜の光がある。記憶の層には地名と写真がある。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「三層には、資料がある場所と空欄が分けて置かれていますのね」"
         },
         {
           "id": "mode08_map_layers_005",
           "sceneId": "mode08_map_layers",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "一つの層だけでは、同じ場所の全部を説明できない。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「開いても、空欄の理由までは決まらない。更新履歴と受付控えだけを確認する」"
         },
         {
           "id": "mode08_map_layers_006",
@@ -7766,14 +7585,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "mode08_map_layers",
           "type": "dialogue",
           "speaker": "mizuha",
-          "text": "「答えがないままでも、私たちは待つ場所を決めましたのね」"
+          "text": "「返事がないままでも、前夜に待つ場所を決めたことは控えへ残っていますのね」"
         },
         {
           "id": "mode08_map_layers_016",
           "sceneId": "mode08_map_layers",
           "type": "dialogue",
           "speaker": "amane",
-          "text": "「止まらないために決めた。答えを作ったわけじゃない」"
+          "text": "「答えを作った記録じゃない。次は、資料がある四地点だけを地球へ戻す」"
         },
         {
           "id": "mode08_map_layers_017",
@@ -7805,7 +7624,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "location": "展示端末・MODE 08",
         "displayTitle": "11月1日（日） 15:22｜展示端末・MODE 08",
         "entryTransition": {
-          "stepId": "mode08_map_layers_003",
+          "stepId": "mode08_map_layers_001",
           "fromTemporalContext": "RECORD",
           "toTemporalContext": "CURRENT",
           "transitionAt": "2026-11-01T15:22:00+09:00",
@@ -7827,12 +7646,19 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "mode10_space_001",
           "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地球を回し、ここまで触れた四つの地点を開く。最後に十一秒と02:14を一度だけ確認し、最終画面の表示方法を選ぶ。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「離れた記録を一つの物語にしすぎていないか、地球上へ戻して確かめます」"
         },
         {
           "id": "mode10_space_002",
+          "sceneId": "mode10_space",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「地球を回し、四地点を一回ずつ開く。十一秒と02:14を確認したら戻って」"
+        },
+        {
+          "id": "mode10_space_003",
           "sceneId": "mode10_space",
           "type": "interaction",
           "interaction": {
@@ -7842,116 +7668,109 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "操作｜地球を回し、四つの地点を開く"
         },
         {
-          "id": "mode10_space_003",
-          "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "太古の海、森と雨、地震の観測点、三つの層を開いた土地が順に灯る。"
-        },
-        {
           "id": "mode10_space_004",
           "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "色や単位は一つの点数へまとめられない。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「四地点と、十一秒と、02:14の本人文が別々に開きましたわ」"
         },
         {
           "id": "mode10_space_005",
           "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地球を一周させると、年越しの十一秒が再生される。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「でも、並んだから同じ物語になるわけじゃない。本人文の意味も決めない」"
         },
         {
           "id": "mode10_space_006",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "扇風機。湯の沸く音。踏切。"
+          "text": "地球を一周させると、年越しの十一秒が再生される。"
         },
         {
           "id": "mode10_space_007",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "過去の音の下に、現在の展示ホールの空調と足音が重なる。"
+          "text": "扇風機。湯の沸く音。踏切。"
         },
         {
           "id": "mode10_space_008",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "十一秒が終わるまで、ミズハもアマネも話さない。"
+          "text": "過去の音の下に、現在の展示ホールの空調と足音が重なる。"
         },
         {
           "id": "mode10_space_009",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面に02:14の本人文が開く。"
+          "text": "十一秒が終わるまで、ミズハもアマネも話さない。"
         },
         {
           "id": "mode10_space_010",
+          "sceneId": "mode10_space",
+          "type": "narration",
+          "speaker": "narrator",
+          "text": "画面に02:14の本人文が開く。"
+        },
+        {
+          "id": "mode10_space_011",
           "sceneId": "mode10_space",
           "type": "record",
           "recordType": "SOURCE",
           "text": "サクヤ本人から届いた文章\nもし地球の声が聞こえたと思ったら、すぐに意味を決めるんじゃなくて――"
         },
         {
-          "id": "mode10_space_011",
+          "id": "mode10_space_012",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
           "text": "このあとに届いたメッセージ：0"
         },
         {
-          "id": "mode10_space_012",
+          "id": "mode10_space_013",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
           "text": "横線のあとに、入力カーソルは出ない。"
         },
         {
-          "id": "mode10_space_013",
+          "id": "mode10_space_014",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
           "text": "その下には、ミズハ生成文の閉じたカードがある。"
         },
         {
-          "id": "mode10_space_014",
+          "id": "mode10_space_015",
           "sceneId": "mode10_space",
           "type": "narration",
           "speaker": "narrator",
           "text": "開けば、文章、ミズハの名前、本人未確認の表示が同時に見える。"
         },
         {
-          "id": "mode10_space_015",
+          "id": "mode10_space_016",
           "sceneId": "mode10_space",
           "type": "dialogue",
           "speaker": "amane",
           "text": "「公開版のファイルは変えない」"
         },
         {
-          "id": "mode10_space_016",
-          "sceneId": "mode10_space",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "text": "「本人の文も変えませんわ」"
-        },
-        {
           "id": "mode10_space_017",
           "sceneId": "mode10_space",
           "type": "dialogue",
-          "speaker": "amane",
-          "text": "「決めるのは、この画面で二つを並べるかどうかだけ」"
+          "speaker": "mizuha",
+          "text": "「本人から届いた文と、わたくしが作った文は、同じものとして置けませんの」"
         },
         {
           "id": "mode10_space_018",
           "sceneId": "mode10_space",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "地球の光が止まり、二つの表示方法が現れる。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「この端末の表示だけを二択で決める。どちらか選べば終了。本人文と公開版は変わらない」"
         }
       ],
       "nextSceneId": "choice_editorial",
@@ -7987,13 +7806,6 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "choice_editorial_001",
           "sceneId": "choice_editorial",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "本人から届いた02:14の文だけを表示するか、ミズハ生成文も作者を分けて表示するかを選ぶ。どちらを選んでも、三人の公開版は変わらない。"
-        },
-        {
-          "id": "choice_editorial_002",
-          "sceneId": "choice_editorial",
           "type": "choice",
           "choiceId": "editorial_choice",
           "prompt": "最終画面に何を残すか",
@@ -8012,7 +7824,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           ]
         },
         {
-          "id": "choice_editorial_003",
+          "id": "choice_editorial_002",
           "sceneId": "choice_editorial",
           "condition": {
             "key": "editorialChoice",
@@ -8022,7 +7834,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "本人から届いた記録だけを表示"
         },
         {
-          "id": "choice_editorial_004",
+          "id": "choice_editorial_003",
           "sceneId": "choice_editorial",
           "condition": {
             "key": "editorialChoice",
@@ -8033,7 +7845,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "最終画面には02:14の本人文だけを置く。ミズハ生成文は削除せず、制作記録から開ける。"
         },
         {
-          "id": "choice_editorial_005",
+          "id": "choice_editorial_004",
           "sceneId": "choice_editorial",
           "condition": {
             "key": "editorialChoice",
@@ -8043,7 +7855,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "本人の記録と生成した部分を分けて表示"
         },
         {
-          "id": "choice_editorial_006",
+          "id": "choice_editorial_005",
           "sceneId": "choice_editorial",
           "condition": {
             "key": "editorialChoice",
@@ -8054,7 +7866,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "02:14の本人文とミズハ生成文を、作者名と枠を分けて表示する。二つを一つの文章にはしない。"
         },
         {
-          "id": "choice_editorial_007",
+          "id": "choice_editorial_006",
           "sceneId": "choice_editorial",
           "type": "narration",
           "speaker": "narrator",
@@ -8079,16 +7891,30 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "epilogue_reflection_field_001",
           "sceneId": "epilogue_reflection_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "展示を出たあとに持ち帰りたい文を、最大三件まで選べる。どれも選ばず進んでもよい。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「表示を決めても、sakuの言葉の意味が決まったわけではありませんわ」"
         },
         {
           "id": "epilogue_reflection_field_002",
           "sceneId": "epilogue_reflection_field",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "この選択は三人の発言を書き換えず、これから起きる現在の出来事も変えない。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「公開版は変わってない。次は、自分が持ち帰る文を選ぶ」"
+        },
+        {
+          "id": "epilogue_reflection_field_003",
+          "sceneId": "epilogue_reflection_field",
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「ここからは三人の答えではなく、あなたが展示から持ち帰る文ですの」"
+        },
+        {
+          "id": "epilogue_reflection_field_004",
+          "sceneId": "epilogue_reflection_field",
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「最大三件。何も選ばなくても終了できる。四件目は入らない」"
         }
       ],
       "nextSceneId": "choice_reflection",
@@ -8111,13 +7937,6 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "steps": [
         {
           "id": "choice_reflection_001",
-          "sceneId": "choice_reflection",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "展示を出たあとに持ち帰りたい文を、最大三件まで選ぶ。選ばずに進むこともできる。"
-        },
-        {
-          "id": "choice_reflection_002",
           "sceneId": "choice_reflection",
           "type": "reflectionChoice",
           "choiceId": "reflection_choice",
@@ -8524,7 +8343,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           ]
         },
         {
-          "id": "choice_reflection_003",
+          "id": "choice_reflection_002",
           "sceneId": "choice_reflection",
           "type": "narration",
           "speaker": "narrator",
@@ -8555,16 +8374,16 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "final_record_002",
           "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選んだ文の光が地球の表面を動き、ゆっくり消える。"
+          "type": "dialogue",
+          "speaker": "mizuha",
+          "text": "「選んだ光は、あなたが今残した文を示すだけですわ」"
         },
         {
           "id": "final_record_003",
           "sceneId": "final_record",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "何も選ばなかった場合は、新しい光を足さず、ここまで触れた四つの地点だけが残る。"
+          "type": "dialogue",
+          "speaker": "amane",
+          "text": "「三人の真相にはしない。このセッションの表示を閉じる」"
         },
         {
           "id": "final_record_004",
@@ -8612,7 +8431,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "final_record",
           "type": "narration",
           "speaker": "narrator",
-          "text": "通知の件名には、公開前夜に二人が面談希望を預けた学生支援案件の番号がある。"
+          "text": "通知の件名には、公開前夜に二人が面談希望を預けた学生支援案件の番号がある。当日の本人同意で届いた外部通知で、直前の選択の結果ではない。"
         },
         {
           "id": "final_record_011",

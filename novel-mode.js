@@ -64,7 +64,6 @@
     sakuya: Object.freeze({ completedAt: "first_meeting_hall_066", visibleFrom: "first_meeting_hall_067" }),
   });
   const CHAT_DEVICE_MOBILE_RANGES = Object.freeze({
-    prologue_basil: Object.freeze([[4, 9]]),
     first_meeting_hall: Object.freeze([[21, 23], [42, 48]]),
     production_year: Object.freeze([[125, 127], [196, 198]]),
     absence: Object.freeze([[40, 40], [61, 63]]),
@@ -250,7 +249,7 @@
     reachedSceneIds: [],
     viewed: { ...VIEWED_DEFAULTS },
     evesRoute: [],
-    observationOrder: null,
+    observationOrder: "LOCAL_FIRST",
     editorialChoice: null,
     reflectionIds: [],
     resultTone: null,
@@ -487,9 +486,94 @@
     };
   };
 
-  const migrateStepId = (stepId) => {
-    if (stepMap.has(stepId)) return stepId;
+  const version7To8StepIds = new Map([
+    ["current_exhibition_005", "current_exhibition_005"],
+    ["current_exhibition_006", "current_exhibition_005"],
+    ["current_exhibition_007", "current_exhibition_005"],
+    ["current_exhibition_008", "current_exhibition_006"],
+    ["current_exhibition_009", "current_exhibition_007"],
+    ["current_exhibition_010", "current_exhibition_008"],
+    ["current_exhibition_011", "current_exhibition_009"],
+    ["current_exhibition_012", "current_exhibition_012"],
+    ["current_exhibition_013", "current_exhibition_013"],
+    ["current_exhibition_014", "current_exhibition_014"],
+    ["current_exhibition_015", "current_exhibition_015"],
+    ["current_exhibition_016", "current_exhibition_016"],
+    ["current_exhibition_017", "opening_empty_seat_001"],
+    ["prologue_basil_001", "prologue_basil_001"],
+    ["prologue_basil_002", "prologue_basil_002"],
+    ["prologue_basil_003", "prologue_basil_002"],
+    ["prologue_basil_004", "prologue_basil_004"],
+    ["prologue_basil_005", "prologue_basil_005"],
+    ["prologue_basil_006", "prologue_basil_006"],
+    ["prologue_basil_007", "prologue_basil_006"],
+    ["prologue_basil_008", "prologue_basil_006"],
+    ["prologue_basil_009", "prologue_basil_007"],
+    ["prologue_basil_010", "prologue_basil_008"],
+    ["prologue_basil_011", "prologue_basil_008"],
+    ["prologue_basil_012", "prologue_basil_008"],
+    ["prologue_basil_013", "prologue_basil_008"],
+    ["prologue_basil_014", "prologue_basil_008"],
+    ["prologue_basil_015", "prologue_basil_008"],
+    ["prologue_basil_016", "prologue_basil_008"],
+    ["prologue_basil_017", "prologue_basil_008"],
+    ["prologue_basil_018", "prologue_basil_010"],
+    ["prologue_basil_019", "prologue_basil_010"],
+    ["prologue_basil_020", "prologue_basil_010"],
+    ["prologue_basil_021", "prologue_basil_010"],
+    ["prologue_basil_022", "prologue_basil_010"],
+    ["prologue_basil_023", "prologue_basil_010"],
+    ["choice_observation_order_001", "choice_observation_order_001"],
+    ["choice_observation_order_002", "choice_observation_order_002"],
+    ["choice_observation_order_003", "choice_observation_order_002"],
+    ["choice_observation_order_004", "choice_observation_order_003"],
+    ["choice_observation_order_005", "choice_observation_order_003"],
+    ["choice_observation_order_006", "choice_observation_order_003"],
+    ["choice_observation_order_007", "choice_observation_order_004"],
+    ["choice_observation_order_008", "choice_observation_order_004"],
+    ["choice_observation_order_009", "choice_observation_order_004"],
+    ["choice_observation_order_010", "choice_observation_order_005"],
+    ["choice_observation_order_011", "choice_observation_order_005"],
+    ["choice_observation_order_012", "choice_observation_order_005"],
+    ["choice_editorial_001", "choice_editorial_001"],
+    ["choice_editorial_002", "choice_editorial_001"],
+    ["choice_editorial_003", "choice_editorial_002"],
+    ["choice_editorial_004", "choice_editorial_003"],
+    ["choice_editorial_005", "choice_editorial_004"],
+    ["choice_editorial_006", "choice_editorial_005"],
+    ["choice_editorial_007", "choice_editorial_006"],
+    ["epilogue_reflection_field_001", "epilogue_reflection_field_001"],
+    ["epilogue_reflection_field_002", "epilogue_reflection_field_001"],
+    ["choice_reflection_001", "choice_reflection_001"],
+    ["choice_reflection_002", "choice_reflection_001"],
+    ["choice_reflection_003", "choice_reflection_002"],
+  ]);
+  const registerShiftedInteractionMigration = (sceneId, total) => {
+    version7To8StepIds.set(`${sceneId}_001`, `${sceneId}_001`);
+    version7To8StepIds.set(`${sceneId}_002`, `${sceneId}_003`);
+    for (let index = 3; index < total; index += 1) {
+      const from = `${sceneId}_${String(index).padStart(3, "0")}`;
+      const to = `${sceneId}_${String(index + 1).padStart(3, "0")}`;
+      version7To8StepIds.set(from, to);
+    }
+    const last = `${sceneId}_${String(total).padStart(3, "0")}`;
+    version7To8StepIds.set(last, last);
+  };
+  [
+    ["gx_deep_time", 26],
+    ["mode03_map", 20],
+    ["mode07_abstract", 54],
+    ["mode08_map_layers", 19],
+    ["mode10_space", 18],
+  ].forEach(([sceneId, total]) => registerShiftedInteractionMigration(sceneId, total));
+
+  const migrateStepId = (stepId, sourceVersion = story.storyVersion) => {
     if (typeof stepId !== "string") return null;
+    if (Number(sourceVersion) < 8 && version7To8StepIds.has(stepId)) {
+      return version7To8StepIds.get(stepId);
+    }
+    if (stepId === "current_exhibition_017") return "opening_empty_seat_001";
+    if (stepMap.has(stepId)) return stepId;
     const mappings = [
       ["current_notice_", "current_exhibition_"],
       ["epilogue_visitor_field_", "epilogue_reflection_field_"],
@@ -507,11 +591,17 @@
   };
 
   const normalizeState = (candidate) => {
+    const sourceVersion = Number.isFinite(Number(candidate?.storyVersion)) ? Number(candidate.storyVersion) : 7;
     const legacyIndexStep = Number.isInteger(candidate?.stepIndex)
       ? allSteps[Math.max(0, Math.min(allSteps.length - 1, candidate.stepIndex))]?.id
       : null;
-    const stepId = migrateStepId(candidate?.stepId || legacyIndexStep);
+    const stepId = migrateStepId(candidate?.stepId || legacyIndexStep, sourceVersion);
     if (!candidate || !stepId) return null;
+    const migratedReadStepIds = Array.isArray(candidate.readStepIds)
+      ? [...new Set(candidate.readStepIds
+        .map((id) => (id === "current_exhibition_017" ? null : migrateStepId(id, sourceVersion)))
+        .filter((id) => stepMap.has(id) && stepMap.get(id)?.type !== "phase"))].slice(-260)
+      : [];
     const normalized = defaultState();
     normalized.stepId = stepId;
     normalized.reachedSceneIds = Array.isArray(candidate.reachedSceneIds)
@@ -522,7 +612,7 @@
       ? candidate.evesRoute.filter((entry) => ["editorial_choice", "reflection_choice"].includes(entry?.decisionId)).slice(0, 2)
       : [];
     normalized.observationOrder = ["LOCAL_FIRST", "STATION_FIRST"].includes(candidate.observationOrder)
-      ? candidate.observationOrder : null;
+      ? candidate.observationOrder : normalized.observationOrder;
     normalized.editorialChoice = ["SOURCE_RECORD", "DISCLOSE_DERIVATION"].includes(candidate.editorialChoice)
       ? candidate.editorialChoice : null;
     normalized.reflectionIds = Array.isArray(candidate.reflectionIds)
@@ -536,17 +626,14 @@
       if (typeof savedFlag === "boolean") return [speaker, savedFlag];
       const visibleFromIndex = stepIndexMap.get(gate.visibleFrom) ?? Number.POSITIVE_INFINITY;
       const legacyProgressPassedGate = currentStepIndex >= visibleFromIndex
-        && Array.isArray(candidate.readStepIds)
-        && candidate.readStepIds.includes(gate.completedAt);
+        && migratedReadStepIds.includes(migrateStepId(gate.completedAt, sourceVersion));
       return [speaker, legacyProgressPassedGate];
     }));
     normalized.audio = {
       muted: Boolean(candidate.audio?.muted),
       volume: Number.isFinite(candidate.audio?.volume) ? Math.max(0, Math.min(1, candidate.audio.volume)) : 0.1,
     };
-    normalized.readStepIds = Array.isArray(candidate.readStepIds)
-      ? candidate.readStepIds.filter((id) => stepMap.has(id)).slice(-260)
-      : [];
+    normalized.readStepIds = migratedReadStepIds;
     normalized.clear = Boolean(candidate.clear);
     normalized.archivesUnlocked = Boolean(candidate.archivesUnlocked);
     normalized.sessionId = typeof candidate.sessionId === "string" ? candidate.sessionId.slice(0, 80) : "";
@@ -856,10 +943,21 @@
     return cue;
   };
 
+  const resolveVisibleStep = (stepId) => {
+    let candidate = stepMap.get(stepId);
+    let guard = 0;
+    while (candidate?.type === "phase" && guard < allSteps.length) {
+      candidate = stepMap.get(getFollowingStepId(candidate));
+      guard += 1;
+    }
+    return candidate || null;
+  };
+
   const moveToFollowingStep = (step = currentStep()) => {
-    const next = step ? getFollowingStepId(step) : null;
+    const rawNextStep = step ? stepMap.get(getFollowingStepId(step)) : null;
+    const nextStep = resolveVisibleStep(rawNextStep?.id);
+    const next = nextStep?.id || null;
     if (!next) return;
-    const nextStep = stepMap.get(next);
     const swapStep = () => {
       Object.entries(CHAT_CAST_MEETING_GATES).forEach(([speaker, gate]) => {
         if (step.id === gate.completedAt) state.metCharacters[speaker] = true;
@@ -880,7 +978,8 @@
       swapStep();
       return;
     }
-    if (backgroundChanges && !motionReduced()) {
+    const shouldTransitionBackground = rawNextStep?.type !== "phase" && backgroundChanges;
+    if (shouldTransitionBackground && !motionReduced()) {
       if (backgroundTransitionPending) return;
       return runBackgroundTransition(currentBackground, nextBackground, swapStep);
     }
@@ -1682,7 +1781,7 @@
   }
   const markRead = (step) => {
     let addedToLog = false;
-    if (!["choice", "reflectionChoice", "interaction", "result", "end"].includes(step.type)
+    if (!["choice", "reflectionChoice", "interaction", "phase", "result", "end"].includes(step.type)
       && !state.readStepIds.includes(step.id)) {
       state.readStepIds.push(step.id);
       state.readStepIds = state.readStepIds.slice(-260);
@@ -1745,7 +1844,9 @@
     elements.chapterCard.hidden = true;
     elements.dialogue.hidden = false;
     elements.choices.replaceChildren();
-    elements.choices.classList.remove("is-visible");
+    elements.choices.classList.remove("is-visible", "is-mode08-optional");
+    delete elements.choices.dataset.interactionKind;
+    delete elements.choices.dataset.interactionOptional;
     elements.sourceButton.hidden = false;
     resetDialoguePagination();
     applyTemporalPresentation(step);
@@ -2456,14 +2557,32 @@
     elements.continueMark.classList.remove("is-visible");
     setInteractionLifecycle("prep");
     const button = document.createElement("button");
+    const isMode08Optional = step.type === "interaction"
+      && step.interaction?.kind === "map08"
+      && step.interaction?.optional === true;
     button.type = "button";
     button.className = "novel-interaction-open";
-    button.textContent = "既存の表示モードを開く";
+    button.textContent = isMode08Optional ? "表示モードを見る" : "既存の表示モードを開く";
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       openDetour(step);
     });
     elements.choices.append(button);
+    if (isMode08Optional) {
+      elements.choices.classList.add("is-mode08-optional");
+      elements.choices.dataset.interactionKind = "map08";
+      elements.choices.dataset.interactionOptional = "true";
+      const skip = document.createElement("button");
+      skip.type = "button";
+      skip.className = "novel-interaction-skip";
+      skip.textContent = "選ばずに進む";
+      skip.addEventListener("click", (event) => {
+        event.stopPropagation();
+        skip.disabled = true;
+        moveToFollowingStep(step);
+      }, { once: true });
+      elements.choices.append(skip);
+    }
     elements.choices.classList.add("is-visible");
     requestAnimationFrame(() => button.focus({ preventScroll: true }));
   };
@@ -2540,7 +2659,7 @@
     closeSourceDetails();
     let step = currentStep();
     let guard = 0;
-    while (step && !conditionMatches(step) && guard < allSteps.length) {
+    while (step && (!conditionMatches(step) || step.type === "phase") && guard < allSteps.length) {
       state.stepId = getFollowingStepId(step);
       step = currentStep();
       guard += 1;

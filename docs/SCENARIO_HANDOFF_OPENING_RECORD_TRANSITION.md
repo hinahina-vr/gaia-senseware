@@ -3,7 +3,7 @@
 ## 対象と不変条件
 
 - 基準親: `3a7410e1a8179e68e07c4e0f7cf2f550adc86d06`
-- 対象: `current_exhibition`、`opening_empty_seat`、`prologue_online_circle`、`prologue_basil_001`〜`003`
+- 対象: `current_exhibition`、`opening_empty_seat`、`prologue_online_circle`、`prologue_basil`、`choice_observation_order`
 - scene ID、START interaction、後続scene、選択値、正式出典、後半正史、`ARCHIVES`は変更しない。
 - CURRENTは展示ブースの展示端末前に立つ来場者「私」の一人称。RECORDは保存された作業予定、写真、時刻付き投稿、未読状態を順に見る客観資料とする。
 - 8月1日のRECORDには人物dialogue、推定動作、内心、大型cast、人物立ち絵、人物animationを置かない。
@@ -18,7 +18,7 @@
 | prologue_online_circle | 9 | 7 | -2 |
 | 合計 | 43 | 34 | -9 |
 
-全編は1053stepから1044stepになる。`prologue_basil`は23stepを維持し、冒頭3stepだけを新しい5月1日との境界へ合わせる。対象外sceneのstep数とstep IDは変更しない。
+この追補では、`prologue_basil`を23stepから10stepへ、`choice_observation_order`を12stepから5stepへ圧縮する。1044stepだった直前正本は1024stepになる。対象外sceneのstep数は維持する。
 
 ## 現公開43step→新34step 完全一意移行表
 
@@ -157,12 +157,49 @@ prologue_online_circle_012,prologue_online_circle,prologue_online_circle_007
 prologue_online_circle_013,prologue_online_circle,prologue_online_circle_007
 ```
 
-## prologue_basil冒頭 最小移行
+## prologue_basil旧23step→新10step 完全一意移行表
 
 ```csv
 prologue_basil_001,prologue_basil,prologue_basil_001
 prologue_basil_002,prologue_basil,prologue_basil_002
-prologue_basil_003,prologue_basil,prologue_basil_003
+prologue_basil_003,prologue_basil,prologue_basil_002
+prologue_basil_004,prologue_basil,prologue_basil_004
+prologue_basil_005,prologue_basil,prologue_basil_005
+prologue_basil_006,prologue_basil,prologue_basil_006
+prologue_basil_007,prologue_basil,prologue_basil_006
+prologue_basil_008,prologue_basil,prologue_basil_006
+prologue_basil_009,prologue_basil,prologue_basil_007
+prologue_basil_010,prologue_basil,prologue_basil_008
+prologue_basil_011,prologue_basil,prologue_basil_008
+prologue_basil_012,prologue_basil,prologue_basil_008
+prologue_basil_013,prologue_basil,prologue_basil_008
+prologue_basil_014,prologue_basil,prologue_basil_008
+prologue_basil_015,prologue_basil,prologue_basil_008
+prologue_basil_016,prologue_basil,prologue_basil_008
+prologue_basil_017,prologue_basil,prologue_basil_008
+prologue_basil_018,prologue_basil,prologue_basil_010
+prologue_basil_019,prologue_basil,prologue_basil_010
+prologue_basil_020,prologue_basil,prologue_basil_010
+prologue_basil_021,prologue_basil,prologue_basil_010
+prologue_basil_022,prologue_basil,prologue_basil_010
+prologue_basil_023,prologue_basil,prologue_basil_010
+```
+
+## choice_observation_order旧12step→新5step 完全一意移行表
+
+```csv
+choice_observation_order_001,choice_observation_order,choice_observation_order_001
+choice_observation_order_002,choice_observation_order,choice_observation_order_002
+choice_observation_order_003,choice_observation_order,choice_observation_order_002
+choice_observation_order_004,choice_observation_order,choice_observation_order_003
+choice_observation_order_005,choice_observation_order,choice_observation_order_003
+choice_observation_order_006,choice_observation_order,choice_observation_order_003
+choice_observation_order_007,choice_observation_order,choice_observation_order_004
+choice_observation_order_008,choice_observation_order,choice_observation_order_004
+choice_observation_order_009,choice_observation_order,choice_observation_order_004
+choice_observation_order_010,choice_observation_order,choice_observation_order_005
+choice_observation_order_011,choice_observation_order,choice_observation_order_005
+choice_observation_order_012,choice_observation_order,choice_observation_order_005
 ```
 
 ## 保存復帰境界
@@ -170,16 +207,21 @@ prologue_basil_003,prologue_basil,prologue_basil_003
 - 現公開 `current_exhibition_001`〜`014`は新START前、`_015`は新START、`_016`は新START後へ復帰する。
 - 旧80step版の `current_exhibition_001`〜`033`は新START前、`_034`は新START、`_035`〜`042`は新START後へ復帰する。
 - openingとprologueは旧step順に対して移行先を単調非減少とし、未来sceneへ飛ばさない。
+- `prologue_basil`と`choice_observation_order`も旧step順に対して移行先を単調非減少にする。削除したFLOWERBED、温度講義、可視choiceへ復帰させない。
+- `observationOrder`が未設定の新規進行だけ`LOCAL_FIRST`を使う。既存`STATION_FIRST`は上書きせず読み込むが、新しい自動表示順の分岐には使わない。
+- GX／MODE 03／07／08／10はscene内step数を維持する。旧interaction step `_002`のsaveは、同じkindを持つ新interaction step `_003`へ移す。
 - `reachedSceneIds`、既存の選択値、既読sceneは保持する。`readStepIds`は本表を使って再構成し、削除した説明や再演会話をLOGへ復元しない。
+- 正本の`storyVersion`は8。v7の直接復帰と`readStepIds`は、同名stepの素通しより先に本表とinteraction境界の移行を適用する。
 
 ## RECORD媒体と日時境界
 
 - `current_exhibition_015`: START interactionを維持する。
-- `current_exhibition_016`〜`017`: 主人公は展示端末前に立ったまま、端末画面の暗転と資料名表示を見る。人物cast消去は演出cueであり、物語上の退出ではない。
+- `current_exhibition_016`: 主人公は展示端末前に立ったまま、端末画面の暗転を見る。人物cast消去は演出cueであり、物語上の退出ではない。
+- `current_exhibition_017`: 可視文を持たない`OPENING_RECORD_READY` phase。日時cardを開く内部境界であり、LOGへ記録しない。
 - `opening_empty_seat_001`: CURRENT→RECORD。表示はmetadata由来の「8月1日（土） 10:21｜海に近い町・共同作業室」。
 - `opening_empty_seat_003`〜`004`: 作業予定と保存写真。`_005`〜`007`は同じ学内chat UI上の時刻付き送信原文、`_008`〜`009`はsaku宛て未読状態と10:21の客観事実。
 - `opening_empty_seat`はdialogue・cast・portrait・人物animationを持たない。
 - `prologue_online_circle_001`: RECORD→RECORD。表示はmetadata由来の「5月1日（木） 18:00｜学内サークル「惑星の放課後」・チャット」。
 - `prologue_online_circle_003`〜`007`: attachmentなしの水たまり文字chat。比較条件は時刻一系統だけ。
-- `prologue_basil_001`〜`003`: 二日後の別記録として既存BASIL写真へ入り、`_004`以後の原文・添付・日時を維持する。
-
+- `prologue_basil_001`〜`010`: BASIL一鉢だけを扱い、撮影時刻と同じ画角の次回写真を約束する。`_004`のBASIL attachmentだけを維持し、FLOWERBEDと未提示の翌日写真は出さない。
+- `choice_observation_order_001`〜`005`: CURRENT展示ブースへ戻り、二人の会話後に園芸売り場、最寄り観測所の順で自動表示する。可視choiceは作らない。

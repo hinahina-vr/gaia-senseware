@@ -239,7 +239,12 @@ const parseSceneSteps = (scene, sectionLines) => {
       pushStep({ type: "end", text: "END" });
       continue;
     }
-    const chatMatch = block.match(/^(\d{2}:\d{2})\s{2,}([^\n]+)\n([\s\S]+)$/u);
+    const phaseMatch = block.match(/^<!-- GAIA_PHASE\|([A-Z0-9_]+) -->$/u);
+    if (phaseMatch) {
+      pushStep({ type: "phase", phase: phaseMatch[1] });
+      continue;
+    }
+    const chatMatch = block.match(/^((?:\d{2}:\d{2})|昼)\s{2,}([^\n]+)\n([\s\S]+)$/u);
     if (chatMatch) {
       pushStep({
         type: "chat",
@@ -268,8 +273,8 @@ const parseSceneSteps = (scene, sectionLines) => {
 const configs = [
   { id: "current_exhibition", prefix: "現在の展示｜学園祭の展示ホール", chapter: "現在", modeIndex: 9 },
   { id: "opening_empty_seat", prefix: "OPENING｜空席", chapter: "OPENING", modeIndex: 9 },
-  { id: "prologue_online_circle", prefix: "PROLOGUE｜文字だけだった三人", chapter: "PROLOGUE", modeIndex: 0, split: "二日後、みずが学内サークル「惑星の放課後」のチャットへ、バジルの写真を投稿した。" },
-  { id: "choice_observation_order", prefix: "小さな選択｜どちらから見る？", chapter: "PROLOGUE", modeIndex: 0, choice: { id: "observation_order", prompt: "どちらから見る？", trackedByEves: false, options: [{ value: "LOCAL_FIRST", next: "first_meeting_promise" }, { value: "STATION_FIRST", next: "first_meeting_promise" }] } },
+  { id: "prologue_online_circle", prefix: "PROLOGUE｜文字だけだった三人", chapter: "PROLOGUE", modeIndex: 0, split: "二日後、園芸売り場にいるみずが、学内サークル「惑星の放課後」のチャットへ、バジル一鉢の写真を投稿した。" },
+  { id: "choice_observation_order", prefix: "現在の展示｜売り場と観測所", chapter: "PROLOGUE", modeIndex: 0, legacyChoice: { id: "observation_order", defaultValue: "LOCAL_FIRST", values: ["LOCAL_FIRST", "STATION_FIRST"] } },
   { id: "first_meeting_promise", prefix: "00:08｜初めて会う約束", chapter: "PROLOGUE", modeIndex: 0 },
   { id: "first_meeting_hall", prefix: "09:48｜海沿いの展示場・中央入口", chapter: "PROLOGUE", modeIndex: 0 },
   { id: "festival_walk", prefix: "17:06｜展示ホールをつなぐ連絡通路", chapter: "PROLOGUE", modeIndex: 0 },
@@ -281,7 +286,7 @@ const configs = [
   { id: "mode03_map", prefix: "MODE 03｜地図モード／森の気候装置", chapter: "MODE 03", modeIndex: 2, interaction: { kind: "map03", requiredLayers: ["forest", "rain", "overlay"] } },
   { id: "mode07_abstract", prefix: "MODE 07｜抽象モード／届いた時刻、開いた時刻", chapter: "MODE 07", modeIndex: 6, interaction: { kind: "abstract07", requiredPoints: 1 } },
   { id: "interlude_sea", prefix: "INTERLUDE｜十二分の海", chapter: "INTERLUDE", modeIndex: 6 },
-  { id: "mode08_map_layers", prefix: "MODE 08｜地図モード／三つの生態系", chapter: "MODE 08", modeIndex: 7, interaction: { kind: "map08", requiredLayers: ["nature", "life", "memory"] } },
+  { id: "mode08_map_layers", prefix: "MODE 08｜地図モード／三つの生態系", chapter: "MODE 08", modeIndex: 7, interaction: { kind: "map08", requiredLayers: ["nature", "life", "memory"], optional: true } },
   { id: "mode10_space", prefix: "MODE 10｜宇宙モード／最後の受信文", chapter: "MODE 10", modeIndex: 9, interaction: { kind: "space10", requiredGestures: 1 } },
   { id: "choice_editorial", prefix: "編集方針の選択｜最終画面に何を残すか", chapter: "EDITORIAL CHOICE", modeIndex: 9, choice: { id: "editorial_choice", prompt: "最終画面に何を残すか", trackedByEves: true, options: [{ value: "SOURCE_RECORD", next: "epilogue_reflection_field" }, { value: "DISCLOSE_DERIVATION", next: "epilogue_reflection_field" }] } },
   { id: "epilogue_reflection_field", prefix: "EPILOGUE｜次へ持ち帰りたい姿勢", chapter: "EPILOGUE", modeIndex: 9 },
@@ -293,7 +298,7 @@ const configs = [
 const scenes = [];
 for (const config of configs) {
   const section = takeSection(config.prefix);
-  const base = { id: config.id, title: section.title, chapter: config.chapter, modeIndex: config.modeIndex, ...(config.interaction ? { interaction: config.interaction } : {}), ...(config.choice ? { choice: config.choice } : {}), ...(config.reflectionChoice ? { reflectionChoice: config.reflectionChoice } : {}) };
+  const base = { id: config.id, title: section.title, chapter: config.chapter, modeIndex: config.modeIndex, ...(config.interaction ? { interaction: config.interaction } : {}), ...(config.choice ? { choice: config.choice } : {}), ...(config.legacyChoice ? { legacyChoice: config.legacyChoice } : {}), ...(config.reflectionChoice ? { reflectionChoice: config.reflectionChoice } : {}) };
   if (config.split) {
     const splitAt = section.lines.findIndex((line) => line.startsWith(config.split));
     if (splitAt < 0) throw new Error(`${config.id}: 分割位置が見つかりません`);
@@ -323,7 +328,7 @@ for (const scene of scenes) {
 
 const tones = ["LAW", "NEUTRAL", "CHAOS", "UNANSWERED"];
 const story = {
-  storyVersion: 7,
+  storyVersion: 8,
   title: "GAIA SENSATION",
   systemTitle: "GAIA SENSEWARE",
   startSceneId: "current_exhibition",

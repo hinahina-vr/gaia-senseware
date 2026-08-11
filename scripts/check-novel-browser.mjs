@@ -1039,11 +1039,11 @@ try {
   assert(JSON.stringify((await page.evaluate(() => globalThis.GaiaNovel.getState())).metCharacters) === JSON.stringify(completeMeetingFlags), "manual SAVE / LOAD did not restore the three meeting flags");
   await assertSlackCastGate(page, { visible: true, speaker: "sakuya", label: "desktop Sakuya after SAVE/LOAD" });
 
-  const observationChoice = steps.find((step) => step.choiceId === "observation_order");
-  await bootAt(page, observationChoice.id);
-  const observationLabels = await page.locator("#novel-choices button").allTextContents();
-  assert(JSON.stringify(observationLabels) === JSON.stringify(["売り場の温度計から見る", "最寄り観測所の記録から見る"]), `observation choice leaked internal labels: ${JSON.stringify(observationLabels)}`);
-  await screenshot(page, "observation-choice");
+  const observationSequence = story.scenes.find((scene) => scene.id === "choice_observation_order");
+  assert(observationSequence.title === "現在の展示｜売り場と観測所", "the observation sequence must use the approved Japanese title");
+  await bootAt(page, observationSequence.steps[0].id);
+  assert(await page.locator("#novel-choices button").count() === 0, "the canonical observation sequence must not render a choice");
+  await screenshot(page, "observation-sequence");
 
   const editorial = steps.find((step) => step.choiceId === "editorial_choice");
   await bootAt(page, editorial.id);
@@ -1104,6 +1104,29 @@ try {
   assert(Object.values(await page.evaluate(() => globalThis.GaiaNovel.getState().metCharacters)).every((value) => value === true), "rewind discarded legitimately completed meeting flags");
 
   const interactions = steps.filter((step) => step.type === "interaction");
+  const optionalMode08 = interactions.find((step) => step.interaction.kind === "map08");
+  await bootAt(page, optionalMode08.id, { observationOrder: "STATION_FIRST" });
+  const optionalControls = await page.locator("#novel-choices > button").evaluateAll((buttons) => buttons.map((button) => ({
+    className: button.className,
+    text: button.textContent,
+    type: button.type,
+  })));
+  assert(JSON.stringify(optionalControls) === JSON.stringify([
+    { className: "novel-interaction-open", text: "表示モードを見る", type: "button" },
+    { className: "novel-interaction-skip", text: "選ばずに進む", type: "button" },
+  ]), `MODE 08 optional controls changed: ${JSON.stringify(optionalControls)}`);
+  assert(await page.locator("#novel-choices").getAttribute("data-interaction-kind") === "map08", "MODE 08 optional kind dataset is missing");
+  assert(await page.locator("#novel-choices").getAttribute("data-interaction-optional") === "true", "MODE 08 optional dataset is missing");
+  assert(await page.locator("#novel-choices").evaluate((node) => node.classList.contains("is-mode08-optional")), "MODE 08 optional class is missing");
+  const optionalStateBefore = await page.evaluate(() => globalThis.GaiaNovel.getState());
+  await page.locator(".novel-interaction-skip").click();
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "mode08_map_layers_004");
+  const optionalStateAfter = await page.evaluate(() => globalThis.GaiaNovel.getState());
+  assert(JSON.stringify(optionalStateAfter.viewed) === JSON.stringify(optionalStateBefore.viewed), "MODE 08 skip changed viewed flags");
+  assert(optionalStateAfter.observationOrder === "STATION_FIRST", "MODE 08 skip overwrote an existing legacy observation value");
+  assert(optionalStateAfter.evesRoute.length === optionalStateBefore.evesRoute.length, "MODE 08 skip created an E.V.E.S. decision");
+  assert(await page.locator(".story-detour-dock").count() === 0, "MODE 08 skip opened the detour");
+  assert(await page.locator("#novel-choices > button").count() === 0, "MODE 08 optional controls remained after leaving the interaction");
   const transitionInteraction = interactions.find((step) => step.interaction.kind === "map03") || interactions[0];
   await bootAt(page, transitionInteraction.id);
   await screenshot(page, "interaction-open");

@@ -22,18 +22,13 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 
 const boundaryCases = [
   ["prologue_basil_003", "wide"],
-  ["prologue_basil_004", "mobile"],
-  ["prologue_basil_005", "mobile"],
-  ["prologue_basil_006", "mobile"],
-  ["prologue_basil_007", "mobile"],
-  ["prologue_basil_008", "mobile"],
-  ["prologue_basil_009", "mobile"],
+  ["prologue_basil_004", "wide"],
+  ["prologue_basil_005", "wide"],
+  ["prologue_basil_006", "wide"],
+  ["prologue_basil_007", "wide"],
+  ["prologue_basil_008", "wide"],
+  ["prologue_basil_009", "wide"],
   ["prologue_basil_010", "wide"],
-  ["prologue_basil_011", "wide"],
-  ["prologue_basil_012", "wide"],
-  ["prologue_basil_013", "wide"],
-  ["prologue_basil_014", "wide"],
-  ["prologue_basil_015", "wide"],
   ["first_meeting_hall_020", "wide"],
   ["first_meeting_hall_021", "mobile"],
   ["first_meeting_hall_022", "mobile"],
@@ -69,9 +64,8 @@ const boundaryCases = [
 ];
 
 const mobileViewportCases = [
-  ["prologue_basil_004", "mobile"],
-  ["prologue_basil_011", "wide"],
-  ["prologue_basil_015", "wide"],
+  ["prologue_basil_004", "wide"],
+  ["prologue_basil_010", "wide"],
   ["first_meeting_hall_041", "wide"],
   ["first_meeting_hall_042", "mobile"],
   ["first_meeting_hall_048", "mobile"],
