@@ -33,7 +33,7 @@ const sourceOrder = [...navSource.matchAll(/id="([^"]+)"/gu)].map((match) => mat
 assert.deepEqual(sourceOrder, navOrder, "authoritative nav order changed");
 assert.match(navSource, /id="novel-restart-button"[^>]*aria-hidden="true"[^>]*tabindex="-1"[^>]*hidden/u, "RESTART is not hidden from users");
 assert.match(cssSource, /#novel-restart-button\s*\{[\s\S]*?display:\s*none\s*!important;[\s\S]*?pointer-events:\s*none\s*!important;/u);
-assert.doesNotMatch(runtimeSource, /novel-jump-(?:button|panel|list|current|close)/u, "35 UI commit must not bind runtime JUMP behavior");
+assert.match(runtimeSource, /novel-jump-(?:button|panel|list|current|close)/u, "JUMP UI is not bound to the integrated runtime");
 
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?scene-jump=${Date.now()}`);

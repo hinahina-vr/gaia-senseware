@@ -20,7 +20,7 @@ for (const id of ["novel-script-debug-copy-button", "novel-script-debug-copy-sta
 assert.match(htmlSource, /id="novel-script-debug-copy-button"[\s\S]*?aria-label="現在のスクリプト位置をコピー"/u);
 assert.match(cssSource, /\.novel-script-debug-copy-button\s*\{[\s\S]*?width:\s*58px;[\s\S]*?pointer-events:\s*auto;/u);
 assert.match(cssSource, /\.novel-script-debug-copy\s*\{[\s\S]*?pointer-events:\s*none;/u);
-assert.doesNotMatch(runtimeSource, /novel-script-debug-copy-button|novel-script-debug-copy-status/u, "35 COPY shell must not bind runtime behavior");
+assert.match(runtimeSource, /novel-script-debug-copy-button|novel-script-debug-copy-status/u, "COPY UI is not bound to the integrated runtime");
 
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?script-copy=${Date.now()}`);

@@ -32,6 +32,11 @@ const viewports = [
   { name: "pc-1612-short", width: 1612, height: 454 },
   { name: "mobile-390", width: 390, height: 844 },
 ];
+const viewportFilter = process.env.GAIA_VIEWPORT_FILTER || "";
+const selectedViewports = viewportFilter
+  ? viewports.filter((viewport) => viewport.name === viewportFilter)
+  : viewports;
+assert(selectedViewports.length > 0, `unknown viewport filter: ${viewportFilter}`);
 const report = {
   status: "running",
   stepId: target.id,
@@ -159,8 +164,8 @@ const metrics = (page) => page.evaluate((sourceText) => {
 
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
-  for (const viewport of viewports) {
-    const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
+  for (const viewport of selectedViewports) {
+    const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, reducedMotion: "reduce" });
     const page = await context.newPage();
     attachDiagnostics(page, viewport.name);
     await bootAt(page, target.id);
@@ -176,6 +181,13 @@ try {
     }
     assert.equal(pages.map((item) => item.pageText).join("").replace(/\s/gu, ""), target.text.replace(/\s/gu, ""), `${viewport.name}: pagination lost text`);
     assert.equal(pages.at(-1).pageLines > 1 || expectedPages === 1, true, `${viewport.name}: final page is a single orphaned line`);
+    assert.equal(pages.every((item) => item.pageLines <= 3), true, `${viewport.name}: a page exceeded three rendered lines`);
+    assert.equal(pages.every((item) => item.indicatorSafety >= 12), true, `${viewport.name}: page text entered the indicator safety area`);
+    if (viewport.name === "mobile-390") {
+      assert.deepEqual(pages.map((item) => item.pageLines), [3, 2], "mobile-390: target must balance to 3+2 rendered lines");
+    } else {
+      assert.equal(expectedPages, 1, `${viewport.name}: fitting target was unnecessarily paginated`);
+    }
     assert.equal(pages[0].bodyOverflow, 0, `${viewport.name}: horizontal overflow`);
     report.scans.push({ viewport, pages, passed: true });
     await context.close();

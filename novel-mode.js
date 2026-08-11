@@ -23,6 +23,7 @@
   const REVEAL_PUNCTUATION_MS = 84;
   const TEXT_PAGE_MAX_LINES = 3;
   const TEXT_PAGE_HEIGHT_BUFFER_PX = 4;
+  const TEXT_PAGE_INDICATOR_SAFETY_PX = 12;
   const SECTION_SEPARATOR_MS = 2200;
   const SECTION_SEPARATOR_REDUCED_MOTION_MS = 2900;
   const FAST_FORWARD_HOLD_DELAY_MS = 180;
@@ -137,6 +138,13 @@
     close: layer.querySelector("#novel-close-button"),
     restart: layer.querySelector("#novel-restart-button"),
     auto: layer.querySelector("#novel-auto-button"),
+    fastForward: layer.querySelector("#novel-fast-forward-button"),
+    fastForwardLabel: layer.querySelector("#novel-fast-forward-label"),
+    jumpButton: layer.querySelector("#novel-jump-button"),
+    jumpPanel: layer.querySelector("#novel-jump-panel"),
+    jumpList: layer.querySelector("#novel-jump-list"),
+    jumpCurrent: layer.querySelector("#novel-jump-current"),
+    jumpClose: layer.querySelector("#novel-jump-close"),
     logButton: layer.querySelector("#novel-log-button"),
     logPanel: layer.querySelector("#novel-log-panel"),
     logClose: layer.querySelector("#novel-log-close"),
@@ -221,6 +229,15 @@
     throw new Error(`[GAIA novel] Duplicate story step IDs: ${[...new Set(duplicateStepIds)].join(", ")}`);
   }
   const scriptIndexMap = new Map(allSteps.map((step, index) => [step.id, index + 1]));
+  const sceneJumpEntries = scenes.map((scene, index) => {
+    const firstStep = scene.steps?.[0];
+    const scriptIndex = scriptIndexMap.get(firstStep?.id);
+    if (!firstStep || !Number.isInteger(scriptIndex)) throw new Error(`[GAIA novel] Scene has no valid first step: ${scene.id}`);
+    return Object.freeze({ scene, sceneId: scene.id, firstStepId: firstStep.id, scriptIndex, index: index + 1 });
+  });
+  if (new Set(sceneJumpEntries.map((entry) => entry.sceneId)).size !== scenes.length) {
+    throw new Error("[GAIA novel] Duplicate scene IDs in debug jump map");
+  }
   if (!globalThis.GaiaNovelTemporal?.create) throw new Error("[GAIA temporal metadata] runtime is not loaded");
   const temporalRuntime = globalThis.GaiaNovelTemporal.create(story);
   const firstStepForScene = (sceneId) => sceneMap.get(sceneId)?.steps?.[0]?.id || null;
@@ -253,10 +270,21 @@
   let dialoguePages = [];
   let dialoguePageIndex = 0;
   let dialoguePageReveal = true;
+  let dialogueSourceText = "";
+  let dialoguePaginationGeneration = 0;
+  let dialogueResizeTimer = 0;
   let revealTimer = 0;
   let revealFrame = 0;
   let revealGeneration = 0;
   let autoTimer = 0;
+  const fastForwardState = {
+    timer: 0,
+    holdTimer: 0,
+    controlDown: false,
+    keyActive: false,
+    buttonActive: false,
+    blocked: false,
+  };
   let slackTransitionTimer = 0;
   let sectionSeparatorTimer = 0;
   let sectionSeparatorActive = false;
@@ -273,15 +301,116 @@
   let backgroundTransitionPending = false;
   let requestedStoryTrack = null;
   let logFollowLatest = true;
+  let debugJumpActive = false;
+  let jumpOutsidePointerBlocked = false;
+  let scriptCopyFeedbackTimer = 0;
   let config = { messageSpeedPercent: 200, reducedMotion: false };
 
   const getScriptDebugElements = () => ({
     root: document.querySelector("#novel-script-debug"),
     number: document.querySelector("#novel-script-debug-number"),
     stepId: document.querySelector("#novel-script-debug-step-id"),
+    copyButton: document.querySelector("#novel-script-debug-copy-button"),
+    copyStatus: document.querySelector("#novel-script-debug-copy-status"),
   });
 
+  const clearScriptCopyFeedback = () => {
+    window.clearTimeout(scriptCopyFeedbackTimer);
+    scriptCopyFeedbackTimer = 0;
+    const debug = getScriptDebugElements();
+    if (debug.copyStatus) debug.copyStatus.textContent = "COPY";
+    if (debug.copyButton) {
+      debug.copyButton.dataset.copyState = "idle";
+      debug.copyButton.setAttribute("aria-label", "現在のスクリプト位置をコピー");
+    }
+  };
+
+  const closeSceneJump = ({ restoreFocus = true } = {}) => {
+    if (!elements.jumpPanel || !elements.jumpButton) return;
+    const wasOpen = !elements.jumpPanel.hidden;
+    elements.jumpPanel.hidden = true;
+    elements.jumpButton.setAttribute("aria-expanded", "false");
+    if (wasOpen && restoreFocus) elements.jumpButton.focus({ preventScroll: true });
+  };
+
+  const syncSceneJumpCurrent = (step) => {
+    if (!elements.jumpList || !elements.jumpCurrent) return;
+    const scene = sceneMap.get(step?.sceneId);
+    const entry = sceneJumpEntries.find((candidate) => candidate.sceneId === scene?.id);
+    elements.jumpList.querySelectorAll(".novel-jump-item").forEach((button) => {
+      const current = button.dataset.sceneId === scene?.id;
+      button.classList.toggle("is-current", current);
+      if (current) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+    });
+    elements.jumpCurrent.textContent = entry
+      ? `${String(entry.index).padStart(2, "0")} / ${scene.chapter}｜${scene.title} / SCRIPT #${String(entry.scriptIndex).padStart(4, "0")}`
+      : "現在位置を特定できません";
+  };
+
+  const renderSceneJumpList = () => {
+    if (!elements.jumpList) return;
+    const fragment = document.createDocumentFragment();
+    sceneJumpEntries.forEach((entry) => {
+      const item = document.createElement("li");
+      const button = document.createElement("button");
+      const index = document.createElement("span");
+      const label = document.createElement("span");
+      const chapter = document.createElement("small");
+      const title = document.createElement("strong");
+      const script = document.createElement("span");
+      button.type = "button";
+      button.className = "novel-jump-item";
+      button.dataset.sceneId = entry.sceneId;
+      index.className = "novel-jump-index";
+      index.textContent = String(entry.index).padStart(2, "0");
+      label.className = "novel-jump-label";
+      chapter.textContent = entry.scene.chapter;
+      title.textContent = entry.scene.title;
+      label.append(chapter, title);
+      script.className = "novel-jump-script";
+      script.textContent = `SCRIPT #${String(entry.scriptIndex).padStart(4, "0")}`;
+      button.append(index, label, script);
+      item.append(button);
+      fragment.append(item);
+    });
+    elements.jumpList.replaceChildren(fragment);
+  };
+
+  const setSceneJumpAvailability = (available) => {
+    if (!elements.jumpButton) return;
+    elements.jumpButton.hidden = !available;
+    elements.jumpButton.disabled = !available;
+    if (!available) closeSceneJump({ restoreFocus: false });
+  };
+
+  const openSceneJump = () => {
+    if (!isOpen || !hasStarted || elements.runtime.hidden || !elements.jumpPanel || !elements.jumpButton) return;
+    closeLog();
+    closeManualArchive();
+    closeConfig();
+    closeEves();
+    closeSourceDetails();
+    resetFastForward();
+    syncSceneJumpCurrent(currentStep());
+    elements.jumpPanel.hidden = false;
+    elements.jumpButton.setAttribute("aria-expanded", "true");
+    requestAnimationFrame(() => {
+      const current = elements.jumpList?.querySelector(".novel-jump-item.is-current")
+        || elements.jumpList?.querySelector(".novel-jump-item");
+      current?.scrollIntoView?.({ block: "nearest" });
+      current?.focus?.({ preventScroll: true });
+    });
+  };
+
+  const toggleSceneJump = () => {
+    if (!elements.jumpPanel) return;
+    if (elements.jumpPanel.hidden) openSceneJump();
+    else closeSceneJump();
+  };
+
   const clearScriptDebug = () => {
+    clearScriptCopyFeedback();
     const debug = getScriptDebugElements();
     if (!debug.root) return;
     if (debug.number) debug.number.textContent = "";
@@ -292,6 +421,7 @@
   };
 
   const syncScriptDebug = (step) => {
+    clearScriptCopyFeedback();
     const debug = getScriptDebugElements();
     if (!debug.root) return;
     const index = scriptIndexMap.get(step?.id);
@@ -312,6 +442,7 @@
     debug.root.setAttribute("aria-label", `スクリプト位置 ${index}、${step.id}`);
     debug.root.hidden = false;
     debug.root.setAttribute("aria-hidden", "false");
+    syncSceneJumpCurrent(step);
   };
 
   const particleSystem = window.GaiaParticles?.create?.(elements.particles, {
@@ -430,9 +561,12 @@
     }
     return null;
   };
+  const exitDebugJumpSession = () => { debugJumpActive = false; };
   const saveProgress = () => {
+    if (debugJumpActive) return false;
     state.audio = readAudioState();
     writeStorage(STORAGE_KEY, JSON.stringify(state));
+    return true;
   };
 
   const loadConfig = () => {
@@ -470,6 +604,10 @@
   };
 
   const resetDialoguePagination = () => {
+    dialoguePaginationGeneration += 1;
+    window.clearTimeout(dialogueResizeTimer);
+    dialogueResizeTimer = 0;
+    dialogueSourceText = "";
     dialoguePages = [];
     dialoguePageIndex = 0;
     dialoguePageReveal = true;
@@ -504,19 +642,24 @@
     layer.classList.remove("is-title");
     elements.titleScreen.hidden = true;
     elements.runtime.hidden = false;
-    elements.restart.hidden = false;
+    elements.restart.hidden = true;
+    if (elements.fastForward) elements.fastForward.hidden = false;
+    setSceneJumpAvailability(true);
     elements.saveButton.hidden = false;
     elements.loadButton.hidden = false;
   };
 
   const showTitle = () => {
     hasStarted = false;
+    resetFastForward();
     clearScriptDebug();
     hideSpecialSurfaces();
     layer.classList.add("is-title");
     elements.titleScreen.hidden = false;
     elements.runtime.hidden = true;
     elements.restart.hidden = true;
+    if (elements.fastForward) elements.fastForward.hidden = true;
+    setSceneJumpAvailability(false);
     elements.saveButton.hidden = true;
     elements.loadButton.hidden = true;
     elements.resume.hidden = !getStoredProgress();
@@ -725,7 +868,10 @@
     const nextBackground = backgroundPresentationForStep(nextStep);
     const backgroundChanges = currentBackground.image !== nextBackground.image;
     if (backgroundChanges && !motionReduced()) {
-      return runBackgroundTransition(currentBackground, nextBackground, swapStep);
+      if (backgroundTransitionPending) return;
+      backgroundTransitionPending = true;
+      return runBackgroundTransition(currentBackground, nextBackground, swapStep)
+        .finally(() => { backgroundTransitionPending = false; });
     }
     swapStep();
   };
@@ -924,7 +1070,7 @@
   };
 
   const dialoguePageMetrics = (text) => {
-    const normalized = String(text || "");
+    const normalized = String(text || "").replace(/\n+$/u, "");
     const measuredLines = measureNativeLines(normalized);
     const textStyle = getComputedStyle(elements.text);
     const fontSize = Number.parseFloat(textStyle.fontSize) || 16;
@@ -934,14 +1080,17 @@
     const characterBudget = Math.max(16, estimatedCharactersPerLine * maxLines);
     const characterCount = Array.from(normalized.replace(/\s/gu, "")).length;
     const renderedHeight = Math.max(elements.text.scrollHeight, measuredLines.length * lineHeight);
+    const indicatorSafety = elements.continueMark.getBoundingClientRect().top - elements.text.getBoundingClientRect().bottom;
     return {
       measuredLines,
       maxLines,
       characterCount,
       characterBudget,
+      indicatorSafety,
       fits: characterCount <= characterBudget
         && measuredLines.length <= maxLines
-        && renderedHeight <= dialogueTextCapacity(),
+        && renderedHeight <= dialogueTextCapacity()
+        && indicatorSafety >= TEXT_PAGE_INDICATOR_SAFETY_PX,
     };
   };
 
@@ -1047,6 +1196,208 @@
     return pages.length ? pages : [normalized];
   };
 
+  const isStructuredDialogueLine = (line) => /^\s*(?:[-*+>\u30fb\u2022\u25cf\u25a0\u25c6\u25c7\u25cb\u3010]|\d+[.\)\u3001\uff09]|[A-Z][.\uff1a:])/u.test(line)
+    || /^\s*[^\u3002\uff01\uff1f!?\n]{1,16}[|\uff5c\uff1a:]/u.test(line)
+    || /^\s*(?:\u300c[^\n]*\u300d|\u300e[^\n]*\u300f)\s*$/u.test(line);
+
+  const semanticDialogueUnits = (text) => {
+    const glyphs = Array.from(String(text || ""));
+    const sentenceMarks = new Set(["\u3002", "\uff01", "\uff1f", "!", "?"]);
+    const closingMarks = new Set(["\u300d", "\u300f", "\u3011", "\u3015", "\uff3d", "\uff09", ")", "\u3009", "\u300b", "\u201d", "\u2019", "\"", "'"]);
+    const units = [];
+    let lineStart = 0;
+
+    const appendLine = (lineGlyphs, newlineGlyphs) => {
+      const newline = newlineGlyphs.join("");
+      if (!lineGlyphs.length) {
+        if (newline) units.push(newline);
+        return;
+      }
+      const line = lineGlyphs.join("");
+      if (isStructuredDialogueLine(line)) {
+        units.push(`${line}${newline}`);
+        return;
+      }
+      let start = 0;
+      for (let index = 0; index < lineGlyphs.length; index += 1) {
+        if (!sentenceMarks.has(lineGlyphs[index])) continue;
+        let end = index + 1;
+        while (end < lineGlyphs.length && closingMarks.has(lineGlyphs[end])) end += 1;
+        while (end < lineGlyphs.length && /[ \t\u3000]/u.test(lineGlyphs[end])) end += 1;
+        units.push(lineGlyphs.slice(start, end).join(""));
+        start = end;
+        index = end - 1;
+      }
+      if (start < lineGlyphs.length) units.push(lineGlyphs.slice(start).join(""));
+      if (newline) units[units.length - 1] += newline;
+    };
+
+    for (let index = 0; index <= glyphs.length; index += 1) {
+      if (index < glyphs.length && glyphs[index] !== "\n") continue;
+      let newlineEnd = index;
+      while (newlineEnd < glyphs.length && glyphs[newlineEnd] === "\n") newlineEnd += 1;
+      appendLine(glyphs.slice(lineStart, index), glyphs.slice(index, newlineEnd));
+      if (newlineEnd >= glyphs.length) break;
+      lineStart = newlineEnd;
+      index = newlineEnd - 1;
+    }
+    return units.filter((unit) => unit.length > 0);
+  };
+
+  const dialogueBoundaryCandidates = (text) => {
+    const glyphs = Array.from(text);
+    const structuredRanges = [];
+    let rangeStart = 0;
+    for (let index = 0; index <= glyphs.length; index += 1) {
+      if (index < glyphs.length && glyphs[index] !== "\n") continue;
+      if (isStructuredDialogueLine(glyphs.slice(rangeStart, index).join(""))) structuredRanges.push({ start: rangeStart, end: index });
+      rangeStart = index + 1;
+    }
+    const splitsStructuredLine = (offset) => structuredRanges.some((range) => offset > range.start && offset < range.end);
+    const semanticOffsets = new Set();
+    let semanticOffset = 0;
+    semanticDialogueUnits(text).forEach((unit) => {
+      semanticOffset += Array.from(unit).length;
+      if (semanticOffset > 0 && semanticOffset < glyphs.length) semanticOffsets.add(semanticOffset);
+    });
+    const safeOffsets = new Set();
+    glyphs.forEach((glyph, index) => {
+      if (/[\u3001\uff0c,\u30fb\uff1a:；;\s]/u.test(glyph) && !splitsStructuredLine(index + 1)) safeOffsets.add(index + 1);
+    });
+    const lineOffsets = new Set();
+    let lineOffset = 0;
+    measureNativeLines(text).forEach((line) => {
+      lineOffset += line.length;
+      if (lineOffset > 0 && lineOffset < glyphs.length && !splitsStructuredLine(lineOffset)) lineOffsets.add(lineOffset);
+    });
+    return { glyphs, semanticOffsets, safeOffsets, lineOffsets };
+  };
+
+  const balanceDialoguePagePair = (left, right) => {
+    const combined = `${left}${right}`;
+    if (dialoguePageMetrics(combined).fits) return [combined];
+    const { glyphs, semanticOffsets, safeOffsets, lineOffsets } = dialogueBoundaryCandidates(combined);
+    const offsets = new Set([...semanticOffsets, ...safeOffsets, ...lineOffsets]);
+    const candidates = [];
+    offsets.forEach((offset) => {
+      const before = glyphs.slice(0, offset).join("");
+      const after = glyphs.slice(offset).join("");
+      const beforeMetrics = dialoguePageMetrics(before);
+      const afterMetrics = dialoguePageMetrics(after);
+      if (!beforeMetrics.fits || !afterMetrics.fits || afterMetrics.measuredLines.length < 2) return;
+      const boundaryRank = semanticOffsets.has(offset) ? 3 : safeOffsets.has(offset) ? 2 : 1;
+      const score = (beforeMetrics.measuredLines.length * 10000)
+        + (boundaryRank * 1000)
+        - (Math.abs(beforeMetrics.measuredLines.length - afterMetrics.measuredLines.length) * 10)
+        + (offset / Math.max(1, glyphs.length));
+      candidates.push({ before, after, score, boundaryRank });
+    });
+    const safeCandidates = candidates.filter((candidate) => candidate.boundaryRank >= 2);
+    const best = safeCandidates
+      .reduce((winner, candidate) => (!winner || candidate.score > winner.score ? candidate : winner), null);
+    return best ? [best.before, best.after] : [left, right];
+  };
+
+  const balanceDialoguePages = (inputPages) => {
+    const pages = [...inputPages];
+    for (let index = 1; index < pages.length;) {
+      const combined = `${pages[index - 1]}${pages[index]}`;
+      if (dialoguePageMetrics(combined).fits) {
+        pages.splice(index - 1, 2, combined);
+        index = Math.max(1, index - 1);
+      } else {
+        index += 1;
+      }
+    }
+    for (let index = pages.length - 1; index > 0; index -= 1) {
+      const previousMetrics = dialoguePageMetrics(pages[index - 1]);
+      const currentMetrics = dialoguePageMetrics(pages[index]);
+      const orphanedFinalPage = currentMetrics.measuredLines.length < 2;
+      const explicitLineNeedsBalance = pages[index - 1].endsWith("\n")
+        && previousMetrics.measuredLines.length < 3
+        && currentMetrics.measuredLines.length > 2;
+      if (!orphanedFinalPage && !explicitLineNeedsBalance) continue;
+      const balanced = balanceDialoguePagePair(pages[index - 1], pages[index]);
+      pages.splice(index - 1, 2, ...balanced);
+    }
+    return pages;
+  };
+
+  const paginateDialogueTextBalanced = (text) => {
+    const normalized = String(text || "");
+    if (!normalized) return [""];
+    if (dialoguePageMetrics(normalized).fits) return [normalized];
+    const pages = [];
+    const units = semanticDialogueUnits(normalized);
+    let page = "";
+
+    const commitPage = () => {
+      if (page) pages.push(page);
+      page = "";
+    };
+
+    const largestSafePrefix = (value) => {
+      const glyphs = Array.from(value);
+      let low = 1;
+      let high = glyphs.length;
+      let maximum = 0;
+      while (low <= high) {
+        const middle = Math.floor((low + high) / 2);
+        if (dialoguePageMetrics(glyphs.slice(0, middle).join("")).fits) {
+          maximum = middle;
+          low = middle + 1;
+        } else {
+          high = middle - 1;
+        }
+      }
+      maximum = Math.max(1, maximum);
+      const sentenceOffsets = new Set();
+      const safeOffsets = new Set();
+      const sentenceMarks = new Set(["\u3002", "\uff01", "\uff1f", "!", "?"]);
+      const closingMarks = new Set(["\u300d", "\u300f", "\u3011", "\u3015", "\uff3d", "\uff09", ")", "\u3009", "\u300b", "\u201d", "\u2019", "\"", "'"]);
+      glyphs.slice(0, maximum).forEach((glyph, index) => {
+        if (sentenceMarks.has(glyph)) {
+          let offset = index + 1;
+          while (offset < maximum && closingMarks.has(glyphs[offset])) offset += 1;
+          sentenceOffsets.add(offset);
+        }
+        if (/[\u3001\uff0c,\u30fb\uff1a:；;\s]/u.test(glyph)) safeOffsets.add(index + 1);
+      });
+      const fittingOffset = (offsets) => [...offsets]
+        .filter((offset) => offset > 0 && offset <= maximum && dialoguePageMetrics(glyphs.slice(0, offset).join("")).fits)
+        .sort((left, right) => right - left)[0];
+      return fittingOffset(sentenceOffsets) || fittingOffset(safeOffsets) || maximum;
+    };
+
+    units.forEach((unit) => {
+      let remainder = unit;
+      while (remainder) {
+        if (dialoguePageMetrics(`${page}${remainder}`).fits) {
+          page += remainder;
+          remainder = "";
+          continue;
+        }
+        if (page) {
+          if (dialoguePageMetrics(remainder).fits) {
+            commitPage();
+            page = remainder;
+            remainder = "";
+            continue;
+          }
+          commitPage();
+          continue;
+        }
+        const breakAt = largestSafePrefix(remainder);
+        page = Array.from(remainder).slice(0, breakAt).join("");
+        commitPage();
+        remainder = Array.from(remainder).slice(breakAt).join("");
+      }
+    });
+    commitPage();
+    const balanced = balanceDialoguePages(pages.length ? pages : [normalized]);
+    return balanced.join("") === normalized ? balanced : [normalized];
+  };
+
   const buildMeasuredLineLayout = (text) => {
     const measuredLines = measureNativeLines(text);
     const fragment = document.createDocumentFragment();
@@ -1120,7 +1471,7 @@
   };
 
   const renderDialoguePage = () => {
-    const page = dialoguePages[dialoguePageIndex] || "";
+    const page = (dialoguePages[dialoguePageIndex] || "").replace(/\n+$/u, "");
     const metrics = dialoguePageMetrics(page);
     elements.text.dataset.pageCount = String(dialoguePages.length);
     elements.text.dataset.pageIndex = String(dialoguePageIndex + 1);
@@ -1147,12 +1498,26 @@
   const renderDialoguePages = (text, { reveal = true } = {}) => {
     const normalized = String(text || "");
     resetDialoguePagination();
+    const paginationGeneration = dialoguePaginationGeneration;
+    dialogueSourceText = normalized;
     dialoguePageReveal = reveal;
-    dialoguePages = paginateDialogueText(normalized);
     elements.text.dataset.characterCount = String(Array.from(normalized.replace(/\s/gu, "")).length);
     elements.text.dataset.explicitLineCount = String(Math.max(1, normalized.split("\n").length));
-    elements.text.dataset.pageCount = String(dialoguePages.length);
-    renderDialoguePage();
+    const renderMeasuredPages = () => {
+      if (paginationGeneration !== dialoguePaginationGeneration || dialogueSourceText !== normalized) return;
+      dialoguePages = paginateDialogueTextBalanced(normalized);
+      elements.text.dataset.pageCount = String(dialoguePages.length);
+      renderDialoguePage();
+    };
+    if (!document.fonts || document.fonts.status === "loaded") {
+      renderMeasuredPages();
+      return;
+    }
+    elements.text.textContent = normalized;
+    elements.text.setAttribute("aria-label", normalized);
+    elements.text.classList.add("is-preparing");
+    elements.continueMark.classList.remove("is-visible");
+    Promise.resolve(document.fonts.ready).then(renderMeasuredPages, renderMeasuredPages);
   };
 
   const advanceDialoguePage = () => {
@@ -1160,6 +1525,35 @@
     dialoguePageIndex += 1;
     renderDialoguePage();
     return true;
+  };
+
+  const repaginateVisibleDialogue = () => {
+    window.clearTimeout(dialogueResizeTimer);
+    dialogueResizeTimer = window.setTimeout(() => {
+      dialogueResizeTimer = 0;
+      const step = currentStep();
+      if (!isOpen || !hasStarted || !["narration", "dialogue"].includes(step?.type) || !dialogueSourceText) return;
+      const generation = dialoguePaginationGeneration;
+      const source = dialogueSourceText;
+      const anchorOffset = dialoguePages.slice(0, dialoguePageIndex).reduce((total, page) => total + Array.from(page).length, 0);
+      const apply = () => {
+        if (generation !== dialoguePaginationGeneration || source !== dialogueSourceText || currentStep()?.id !== step.id) return;
+        const nextPages = paginateDialogueTextBalanced(source);
+        let nextIndex = 0;
+        let offset = 0;
+        while (nextIndex + 1 < nextPages.length && anchorOffset >= offset + Array.from(nextPages[nextIndex]).length) {
+          offset += Array.from(nextPages[nextIndex]).length;
+          nextIndex += 1;
+        }
+        dialoguePages = nextPages;
+        dialoguePageIndex = nextIndex;
+        dialoguePageReveal = false;
+        elements.text.dataset.pageCount = String(dialoguePages.length);
+        renderDialoguePage();
+      };
+      const fontsReady = document.fonts?.ready || Promise.resolve();
+      Promise.resolve(fontsReady).then(apply, apply);
+    }, 120);
   };
 
   function finishSectionSeparator() {
@@ -1212,6 +1606,7 @@
     }
     const scene = sceneMap.get(step.sceneId);
     if (!scene) return renderCurrentStep();
+    endControlFastForward();
     clearTimers();
     closeLog();
     closeSourceDetails();
@@ -1328,6 +1723,63 @@
     const lines = normalized.split("\n");
     if (lines.length > 1 && ["観測記録", "その場の観測", "計算・解釈", "操作記録"].includes(lines[0].trim())) lines.shift();
     return lines.join("\n").trim();
+  };
+
+  const canonicalStepTextForCopy = (step) => {
+    const source = String(step?.text ?? step?.prompt ?? "");
+    if (!source) return "";
+    if (!/<[a-z][^>]*>/iu.test(source)) return recordTextForDisplay(source);
+    const template = document.createElement("template");
+    template.innerHTML = source;
+    return recordTextForDisplay(template.content.textContent || "");
+  };
+
+  const fallbackClipboardWrite = (text) => {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    Object.assign(textarea.style, { position: "fixed", left: "-9999px", top: "0", opacity: "0" });
+    document.body.append(textarea);
+    textarea.select();
+    let copied = false;
+    try { copied = document.execCommand("copy"); } catch { copied = false; }
+    textarea.remove();
+    return copied;
+  };
+
+  const setScriptCopyFeedback = (copied) => {
+    clearScriptCopyFeedback();
+    const debug = getScriptDebugElements();
+    if (!debug.copyButton || !debug.copyStatus) return;
+    debug.copyStatus.textContent = copied ? "コピー済み" : "コピー失敗";
+    debug.copyButton.dataset.copyState = copied ? "copied" : "error";
+    debug.copyButton.setAttribute("aria-label", copied ? "スクリプト位置をコピーしました" : "スクリプト位置をコピーできませんでした");
+    scriptCopyFeedbackTimer = window.setTimeout(clearScriptCopyFeedback, 1200);
+  };
+
+  const copyCurrentScriptPosition = async () => {
+    const debug = getScriptDebugElements();
+    const step = currentStep();
+    const expectedIndex = scriptIndexMap.get(step?.id);
+    const number = debug.number?.textContent || "";
+    const stepId = debug.stepId?.textContent || "";
+    if (!step || !Number.isInteger(expectedIndex) || stepId !== step.id || number !== String(expectedIndex).padStart(4, "0")) {
+      setScriptCopyFeedback(false);
+      return false;
+    }
+    const header = `SCRIPT #${number}｜${stepId}`;
+    const body = canonicalStepTextForCopy(step);
+    const payload = body ? `${header}\n${body}` : header;
+    let copied = false;
+    try {
+      await navigator.clipboard?.writeText?.(payload);
+      copied = Boolean(navigator.clipboard?.writeText);
+    } catch {
+      copied = false;
+    }
+    if (!copied) copied = fallbackClipboardWrite(payload);
+    setScriptCopyFeedback(copied);
+    return copied;
   };
 
   const slackTimelineFor = (step) => {
@@ -1991,6 +2443,7 @@
       return;
     }
     syncScriptDebug(step);
+    if (!canAdvanceStep(step) && fastForwardEnabled()) stopFastForwardAtBarrier();
     saveProgress();
     if (["narration", "dialogue"].includes(step.type)) return renderSimpleStep(step);
     if (["chat", "record", "ui", "transition"].includes(step.type)) return renderRichStep(step);
@@ -2004,9 +2457,117 @@
   }
 
   const canAdvanceStep = (step) => ["narration", "dialogue", "chat", "record", "ui", "transition", "details"].includes(step?.type);
+  const progressionPanelsClosed = () => [elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel, elements.jumpPanel]
+    .every((panel) => panel.hidden);
+
+  const updateFastForwardInterface = () => {
+    const active = !fastForwardState.blocked && (fastForwardState.keyActive || fastForwardState.buttonActive);
+    elements.fastForward?.setAttribute("aria-pressed", String(fastForwardState.buttonActive));
+    elements.fastForward?.classList.toggle("is-active", active);
+    elements.fastForward?.classList.toggle("is-control-held", active && fastForwardState.keyActive);
+    if (elements.fastForwardLabel) elements.fastForwardLabel.textContent = active ? "早送り中" : "早送り";
+    else if (elements.fastForward) elements.fastForward.textContent = active ? "早送り中" : "早送り";
+    layer.classList.toggle("is-fast-forwarding", active);
+  };
+
+  const disableAutoForFastForward = () => {
+    elements.auto.setAttribute("aria-pressed", "false");
+    elements.auto.classList.remove("is-active");
+    window.clearTimeout(autoTimer);
+    autoTimer = 0;
+  };
+
+  const clearFastForwardTimer = () => {
+    window.clearTimeout(fastForwardState.timer);
+    fastForwardState.timer = 0;
+  };
+
+  const clearFastForwardHoldTimer = () => {
+    window.clearTimeout(fastForwardState.holdTimer);
+    fastForwardState.holdTimer = 0;
+  };
+
+  const resetFastForward = () => {
+    clearFastForwardTimer();
+    clearFastForwardHoldTimer();
+    Object.assign(fastForwardState, {
+      controlDown: false,
+      keyActive: false,
+      buttonActive: false,
+      blocked: false,
+    });
+    updateFastForwardInterface();
+  };
+
+  const stopFastForwardAtBarrier = () => {
+    clearFastForwardTimer();
+    fastForwardState.buttonActive = false;
+    fastForwardState.blocked = true;
+    updateFastForwardInterface();
+  };
+
+  const fastForwardEnabled = () => !fastForwardState.blocked && (fastForwardState.keyActive || fastForwardState.buttonActive);
+
+  const scheduleFastForward = (delay = FAST_FORWARD_STEP_MS) => {
+    clearFastForwardTimer();
+    if (!fastForwardEnabled()) return;
+    fastForwardState.timer = window.setTimeout(() => {
+      fastForwardState.timer = 0;
+      if (!fastForwardEnabled()) return;
+      if (backgroundTransitionPending) {
+        scheduleFastForward();
+        return;
+      }
+      if (!isOpen || !hasStarted || pendingInteraction || !progressionPanelsClosed()) {
+        stopFastForwardAtBarrier();
+        return;
+      }
+      if (!canAdvanceStep(currentStep())) {
+        stopFastForwardAtBarrier();
+        return;
+      }
+      advance();
+      scheduleFastForward();
+    }, delay);
+  };
+
+  const endControlFastForward = (event) => {
+    if (event?.key && event.key !== "Control") return;
+    fastForwardState.controlDown = false;
+    clearFastForwardHoldTimer();
+    fastForwardState.keyActive = false;
+    fastForwardState.blocked = false;
+    if (!fastForwardState.buttonActive) clearFastForwardTimer();
+    updateFastForwardInterface();
+  };
+
+  const beginControlFastForward = (event) => {
+    if (event.key !== "Control" || event.repeat || fastForwardState.controlDown || !isOpen || !hasStarted) return;
+    if (event.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
+    fastForwardState.controlDown = true;
+    clearFastForwardHoldTimer();
+    fastForwardState.holdTimer = window.setTimeout(() => {
+      fastForwardState.holdTimer = 0;
+      if (!fastForwardState.controlDown || !isOpen || !hasStarted) return;
+      fastForwardState.blocked = false;
+      fastForwardState.keyActive = true;
+      disableAutoForFastForward();
+      updateFastForwardInterface();
+      scheduleFastForward(0);
+    }, FAST_FORWARD_HOLD_DELAY_MS);
+  };
+
+  const handleFastForwardKeyDown = (event) => {
+    if (event.key === "Control") {
+      beginControlFastForward(event);
+      return;
+    }
+    if (event.ctrlKey && (fastForwardState.controlDown || fastForwardState.keyActive)) endControlFastForward();
+  };
+
   function advance() {
     if (!isOpen || !hasStarted || pendingInteraction) return;
-    if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel].every((panel) => panel.hidden)) return;
+    if (!progressionPanelsClosed()) return;
     if (finishSectionSeparator()) return;
     if (finishTemporalTransitionCard()) return;
     const step = currentStep();
@@ -2026,6 +2587,7 @@
   }
 
   const startNewSession = () => {
+    exitDebugJumpSession();
     state = defaultState();
     state.sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     showRuntime();
@@ -2035,9 +2597,11 @@
   };
 
   const restartStory = () => {
+    exitDebugJumpSession();
     const sessionId = state.sessionId || `${Date.now().toString(36)}-restart`;
     state = defaultState();
     state.sessionId = sessionId;
+    resetFastForward();
     closeConfig();
     showRuntime();
     renderEves();
@@ -2046,12 +2610,66 @@
   };
 
   const resumeStory = () => {
+    exitDebugJumpSession();
     const stored = getStoredProgress();
     if (!stored) return startNewSession();
     state = stored;
     showRuntime();
     renderEves();
     renderCurrentStep();
+  };
+
+  const jumpToSceneStart = (sceneId) => {
+    const entry = sceneJumpEntries.find((candidate) => candidate.sceneId === sceneId);
+    const target = entry ? stepMap.get(entry.firstStepId) : null;
+    if (!entry || !target) {
+      console.error(`[GAIA novel] Unknown debug scene jump target: ${String(sceneId)}`);
+      return false;
+    }
+    const targetIndex = stepIndexMap.get(target.id);
+    const detourKind = pendingInteraction?.interaction?.kind;
+    pendingInteraction = null;
+    detourState = null;
+    closeDetourDock();
+    if (detourKind === "gx") window.GaiaGX?.close?.();
+    else if (detourKind === "space10") window.GaiaSpace?.close?.({ returnToTop: false });
+    else if (detourKind) window.dispatchEvent(new CustomEvent("gaia:story-mode-close", { detail: { kind: detourKind } }));
+    resetFastForward();
+    elements.auto.setAttribute("aria-pressed", "false");
+    elements.auto.classList.remove("is-active");
+    closeLog();
+    closeManualArchive();
+    closeConfig();
+    closeEves();
+    closeSourceDetails();
+    hideSpecialSurfaces();
+    clearTimers();
+    window.clearTimeout(slackTransitionTimer);
+    slackTransitionTimer = 0;
+    layer.classList.remove("is-slack-entering", "is-slack-exiting");
+    const priorReadableSteps = allSteps
+      .slice(Math.max(0, targetIndex - 260), targetIndex)
+      .filter((step) => step.text && !["choice", "reflectionChoice", "interaction", "result", "end"].includes(step.type))
+      .map((step) => step.id);
+    state = {
+      ...state,
+      stepId: target.id,
+      reachedSceneIds: sceneJumpEntries
+        .filter((candidate) => stepIndexMap.get(candidate.firstStepId) <= targetIndex)
+        .map((candidate) => candidate.sceneId),
+      readStepIds: priorReadableSteps,
+      metCharacters: Object.fromEntries(Object.entries(CHAT_CAST_MEETING_GATES).map(([speaker, gate]) => [
+        speaker,
+        targetIndex >= (stepIndexMap.get(gate.visibleFrom) ?? Number.POSITIVE_INFINITY),
+      ])),
+    };
+    debugJumpActive = true;
+    closeSceneJump();
+    showRuntime();
+    renderEves();
+    applyBackgroundCueForStep(target);
+    renderSectionSeparator(target);
+    return true;
   };
 
   const renderLog = () => {
@@ -2382,6 +3000,7 @@
   function loadManualSlot(index) {
     const saved = getManualSaves()[index];
     if (!saved) return;
+    exitDebugJumpSession();
     state = saved.progress;
     closeManualArchive();
     showRuntime();
@@ -2441,11 +3060,13 @@
   }
   function closeNovelNow() {
     clearTimers();
+    resetFastForward();
     closeDetourDock();
     particleSystem.stop();
     void window.GaiaOpeningAudio?.switchTrack?.("opening");
     isOpen = false;
     clearScriptDebug();
+    setSceneJumpAvailability(false);
     layer.classList.remove("is-open", "is-mode-detour");
     layer.setAttribute("aria-hidden", "true");
     document.body.classList.remove("novel-open", "novel-mode-detour");
@@ -2466,6 +3087,7 @@
     }
     const index = Number(event.detail?.index);
     const target = scenes.find((scene) => scene.modeIndex === index && [2, 6, 7, 9].includes(index));
+    exitDebugJumpSession();
     state = defaultState();
     if (target) state.stepId = target.steps[0].id;
     state.sessionId = `${Date.now().toString(36)}-entry`;
@@ -2537,6 +3159,53 @@
     toggleSourceDetails();
   });
   elements.sourceClose.addEventListener("click", () => closeSourceDetails({ restoreFocus: true }));
+  elements.jumpButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleSceneJump();
+  });
+  elements.jumpClose?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    closeSceneJump();
+  });
+  elements.jumpList?.addEventListener("click", (event) => {
+    const button = event.target.closest("button.novel-jump-item[data-scene-id]");
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    jumpToSceneStart(button.dataset.sceneId);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (elements.jumpPanel?.hidden || elements.jumpPanel?.contains(event.target) || elements.jumpButton?.contains(event.target)) return;
+    jumpOutsidePointerBlocked = true;
+    closeSceneJump();
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  document.addEventListener("click", (event) => {
+    if (jumpOutsidePointerBlocked) {
+      jumpOutsidePointerBlocked = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (elements.jumpPanel?.hidden || elements.jumpPanel?.contains(event.target) || elements.jumpButton?.contains(event.target)) return;
+    closeSceneJump();
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  const scriptCopy = getScriptDebugElements().copyButton;
+  scriptCopy?.addEventListener("pointerdown", (event) => event.stopPropagation());
+  scriptCopy?.addEventListener("keydown", (event) => {
+    if (!["Enter", " "].includes(event.key)) return;
+    event.stopPropagation();
+  });
+  scriptCopy?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    void copyCurrentScriptPosition();
+  });
   elements.auto.addEventListener("click", () => {
     const enabled = elements.auto.getAttribute("aria-pressed") !== "true";
     elements.auto.setAttribute("aria-pressed", String(enabled));
@@ -2544,6 +3213,23 @@
     if (enabled) scheduleAutoAdvance();
     else window.clearTimeout(autoTimer);
   });
+  elements.fastForward?.addEventListener("click", () => {
+    fastForwardState.buttonActive = !fastForwardState.buttonActive;
+    fastForwardState.blocked = false;
+    if (fastForwardState.buttonActive) {
+      disableAutoForFastForward();
+      updateFastForwardInterface();
+      scheduleFastForward(0);
+    } else {
+      if (!fastForwardState.keyActive) clearFastForwardTimer();
+      updateFastForwardInterface();
+    }
+  });
+  document.addEventListener("keydown", handleFastForwardKeyDown, true);
+  document.addEventListener("keyup", endControlFastForward, true);
+  window.addEventListener("blur", () => endControlFastForward());
+  document.addEventListener("visibilitychange", () => endControlFastForward());
+  window.addEventListener("resize", repaginateVisibleDialogue, { passive: true });
   elements.dialogue.addEventListener("click", (event) => {
     if (event.target.closest("button, textarea, input, details, summary")) return;
     event.stopPropagation();
@@ -2564,7 +3250,8 @@
     event.stopPropagation();
     if (event.key === "Escape") {
       event.preventDefault();
-      if (!elements.configPanel.hidden) closeConfig();
+      if (!elements.jumpPanel?.hidden) closeSceneJump();
+      else if (!elements.configPanel.hidden) closeConfig();
       else if (!elements.savePanel.hidden) closeManualArchive();
       else if (!elements.sourcePanel.hidden) closeSourceDetails({ restoreFocus: true });
       else if (!elements.evesPanel.hidden) closeEves();
@@ -2593,10 +3280,40 @@
       const cue = backgroundCues.forStep(step);
       return cue ? { ...cue } : null;
     },
+    inspectDialoguePagination: (text) => {
+      const source = String(text || "");
+      const pages = paginateDialogueTextBalanced(source);
+      return {
+        source,
+        units: semanticDialogueUnits(source).map((unit) => {
+          const metrics = dialoguePageMetrics(unit);
+          return {
+            text: unit,
+            lines: metrics.measuredLines.length,
+            fits: metrics.fits,
+            indicatorSafety: metrics.indicatorSafety,
+          };
+        }),
+        pages: pages.map((page) => {
+          const metrics = dialoguePageMetrics(page);
+          const textRect = elements.text.getBoundingClientRect();
+          const indicatorRect = elements.continueMark.getBoundingClientRect();
+          return {
+            text: page,
+            lines: metrics.measuredLines.length,
+            maxLines: metrics.maxLines,
+            fits: metrics.fits,
+            characters: metrics.characterCount,
+            indicatorSafety: indicatorRect.top - textRect.bottom,
+          };
+        }),
+      };
+    },
     storageKey: STORAGE_KEY,
   });
 
   loadConfig();
+  renderSceneJumpList();
   syncConfig();
   renderManualSlots();
   renderEves();
