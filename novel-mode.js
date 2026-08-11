@@ -213,6 +213,14 @@
   const allSteps = scenes.flatMap((scene) => scene.steps);
   const stepMap = new Map(allSteps.map((step) => [step.id, step]));
   const stepIndexMap = new Map(allSteps.map((step, index) => [step.id, index]));
+  if (stepMap.size !== allSteps.length) {
+    const seenStepIds = new Set();
+    const duplicateStepIds = allSteps
+      .map((step) => step.id)
+      .filter((stepId) => seenStepIds.has(stepId) || !seenStepIds.add(stepId));
+    throw new Error(`[GAIA novel] Duplicate story step IDs: ${[...new Set(duplicateStepIds)].join(", ")}`);
+  }
+  const scriptIndexMap = new Map(allSteps.map((step, index) => [step.id, index + 1]));
   if (!globalThis.GaiaNovelTemporal?.create) throw new Error("[GAIA temporal metadata] runtime is not loaded");
   const temporalRuntime = globalThis.GaiaNovelTemporal.create(story);
   const firstStepForScene = (sceneId) => sceneMap.get(sceneId)?.steps?.[0]?.id || null;
@@ -266,6 +274,45 @@
   let requestedStoryTrack = null;
   let logFollowLatest = true;
   let config = { messageSpeedPercent: 200, reducedMotion: false };
+
+  const getScriptDebugElements = () => ({
+    root: document.querySelector("#novel-script-debug"),
+    number: document.querySelector("#novel-script-debug-number"),
+    stepId: document.querySelector("#novel-script-debug-step-id"),
+  });
+
+  const clearScriptDebug = () => {
+    const debug = getScriptDebugElements();
+    if (!debug.root) return;
+    if (debug.number) debug.number.textContent = "";
+    if (debug.stepId) debug.stepId.textContent = "";
+    debug.root.removeAttribute("aria-label");
+    debug.root.hidden = true;
+    debug.root.setAttribute("aria-hidden", "true");
+  };
+
+  const syncScriptDebug = (step) => {
+    const debug = getScriptDebugElements();
+    if (!debug.root) return;
+    const index = scriptIndexMap.get(step?.id);
+    const valid = Boolean(isOpen
+      && hasStarted
+      && !elements.runtime.hidden
+      && Number.isInteger(index)
+      && stepMap.get(step.id) === step
+      && state.stepId === step.id
+      && debug.number
+      && debug.stepId);
+    if (!valid) {
+      clearScriptDebug();
+      return;
+    }
+    debug.number.textContent = String(index).padStart(4, "0");
+    debug.stepId.textContent = step.id;
+    debug.root.setAttribute("aria-label", `スクリプト位置 ${index}、${step.id}`);
+    debug.root.hidden = false;
+    debug.root.setAttribute("aria-hidden", "false");
+  };
 
   const particleSystem = window.GaiaParticles?.create?.(elements.particles, {
     variant: "story",
@@ -464,6 +511,7 @@
 
   const showTitle = () => {
     hasStarted = false;
+    clearScriptDebug();
     hideSpecialSurfaces();
     layer.classList.add("is-title");
     elements.titleScreen.hidden = false;
@@ -739,6 +787,7 @@
     closeLog();
     closeSourceDetails();
     showRuntime();
+    syncScriptDebug(step);
     hideSpecialSurfaces();
     isRevealing = false;
     layer.dataset.sceneId = step.sceneId;
@@ -1157,13 +1206,17 @@
   }
 
   function renderSectionSeparator(step = currentStep()) {
-    if (!step) return;
+    if (!step) {
+      clearScriptDebug();
+      return;
+    }
     const scene = sceneMap.get(step.sceneId);
     if (!scene) return renderCurrentStep();
     clearTimers();
     closeLog();
     closeSourceDetails();
     showRuntime();
+    syncScriptDebug(step);
     requestTrackForBackground(backgroundPresentationForStep(step));
     hideSpecialSurfaces();
     resetDialoguePagination();
@@ -1933,7 +1986,11 @@
       step = currentStep();
       guard += 1;
     }
-    if (!step) return;
+    if (!step) {
+      clearScriptDebug();
+      return;
+    }
+    syncScriptDebug(step);
     saveProgress();
     if (["narration", "dialogue"].includes(step.type)) return renderSimpleStep(step);
     if (["chat", "record", "ui", "transition"].includes(step.type)) return renderRichStep(step);
@@ -2388,6 +2445,7 @@
     particleSystem.stop();
     void window.GaiaOpeningAudio?.switchTrack?.("opening");
     isOpen = false;
+    clearScriptDebug();
     layer.classList.remove("is-open", "is-mode-detour");
     layer.setAttribute("aria-hidden", "true");
     document.body.classList.remove("novel-open", "novel-mode-detour");
