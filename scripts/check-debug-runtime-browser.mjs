@@ -105,6 +105,28 @@ try {
     assert.deepEqual(jumpItems.map((item) => item.id), sceneEntries.map((entry) => entry.id), `${viewport.name}: scene order`);
     assert.equal(jumpItems.filter((item) => item.text.includes(item.id)).length, 0, `${viewport.name}: scene IDs became visible`);
 
+    const jumpList = page.locator("#novel-jump-list");
+    await jumpList.evaluate((list) => { list.scrollTop = Math.min(240, list.scrollHeight - list.clientHeight); });
+    const wheelBefore = await jumpList.evaluate((list) => list.scrollTop);
+    assert(wheelBefore > 0, `${viewport.name}: JUMP list did not become scrollable`);
+    await jumpList.hover();
+    await page.mouse.wheel(0, -160);
+    await page.waitForTimeout(120);
+    const wheelResult = await page.evaluate(() => ({
+      scrollTop: document.querySelector("#novel-jump-list")?.scrollTop || 0,
+      jumpHidden: document.querySelector("#novel-jump-panel")?.hidden,
+      logHidden: document.querySelector("#novel-log-panel")?.hidden,
+    }));
+    assert(wheelResult.scrollTop < wheelBefore, `${viewport.name}: upward wheel did not scroll the JUMP list`);
+    assert.equal(wheelResult.jumpHidden, false, `${viewport.name}: wheel closed JUMP`);
+    assert.equal(wheelResult.logHidden, true, `${viewport.name}: wheel leaked through JUMP and opened LOG`);
+    await page.locator("#novel-jump-close").click();
+    await page.locator("#novel-dialogue").hover();
+    await page.mouse.wheel(0, -160);
+    await page.waitForTimeout(120);
+    assert.equal(await page.locator("#novel-log-panel").isHidden(), false, `${viewport.name}: LOG wheel gesture did not recover after closing JUMP`);
+    await page.locator("#novel-log-close").click();
+
     const targets = [sceneEntries[0], sceneEntries[Math.floor(sceneEntries.length / 2)], sceneEntries.at(-1)];
     const jumps = [];
     for (const target of targets) {
@@ -160,7 +182,7 @@ try {
     }
 
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-jump-copy.png`), animations: "disabled" });
-    report.scans.push({ viewport, jumps, copy: { longStepId: longStep.id, pageCount }, passed: true });
+    report.scans.push({ viewport, jumps, wheel: { before: wheelBefore, after: wheelResult }, copy: { longStepId: longStep.id, pageCount }, passed: true });
     await context.close();
   }
   assert.equal(diagnostics.consoleErrors.length, 0, `console errors: ${diagnostics.consoleErrors.join("\n")}`);

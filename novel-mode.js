@@ -3255,6 +3255,22 @@
     event.stopPropagation();
     jumpToSceneStart(button.dataset.sceneId);
   });
+  elements.jumpPanel?.addEventListener("pointerdown", (event) => event.stopPropagation());
+  elements.jumpPanel?.addEventListener("click", (event) => event.stopPropagation());
+  elements.jumpPanel?.addEventListener("wheel", (event) => {
+    const list = elements.jumpList;
+    if (!list || event.ctrlKey) {
+      event.stopPropagation();
+      return;
+    }
+    const maximum = Math.max(0, list.scrollHeight - list.clientHeight);
+    const canScroll = maximum > 0 && (event.deltaY > 0 ? list.scrollTop < maximum : list.scrollTop > 0);
+    if (canScroll) {
+      event.preventDefault();
+      list.scrollBy({ top: event.deltaY, behavior: "auto" });
+    }
+    event.stopPropagation();
+  }, { passive: false });
   document.addEventListener("pointerdown", (event) => {
     if (elements.jumpPanel?.hidden || elements.jumpPanel?.contains(event.target) || elements.jumpButton?.contains(event.target)) return;
     jumpOutsidePointerBlocked = true;
@@ -3320,8 +3336,9 @@
     advance();
   });
   layer.addEventListener("wheel", (event) => {
+    if (!elements.jumpPanel?.hidden || event.target.closest?.("#novel-jump-panel")) return;
     if (event.deltaY >= 0 || event.ctrlKey || !hasStarted || elements.runtime.hidden || !elements.logPanel.hidden) return;
-    if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel].every((panel) => panel.hidden)) return;
+    if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel, elements.jumpPanel].every((panel) => panel.hidden)) return;
     event.preventDefault();
     event.stopPropagation();
     openLog();
@@ -3339,6 +3356,7 @@
       else closeNovel();
       return;
     }
+    if (!elements.jumpPanel?.hidden) return;
     if ((event.key === " " || event.key === "Enter") && !event.target.closest("button, textarea, input, summary")) {
       event.preventDefault();
       advance();
