@@ -286,6 +286,7 @@
     blocked: false,
   };
   let slackTransitionTimer = 0;
+  let slackScrollGuardUntil = 0;
   let sectionSeparatorTimer = 0;
   let sectionSeparatorActive = false;
   let temporalTransitionTimer = 0;
@@ -789,15 +790,15 @@
   const runBackgroundTransition = async (currentBackground, nextBackground, swapStep) => {
     if (backgroundTransitionPending) return;
     backgroundTransitionPending = true;
-    await preloadBackground(nextBackground.image);
-    layer.style.setProperty("--novel-transition-background", currentBackground.image);
-    layer.style.setProperty("--novel-transition-background-position", currentBackground.position);
-    layer.style.setProperty("--novel-transition-background-size", currentBackground.size);
-    layer.style.setProperty("--novel-transition-background-repeat", currentBackground.repeat);
-    layer.classList.remove("is-background-releasing");
-    layer.classList.add("is-background-buffered");
-    await new Promise((resolve) => requestAnimationFrame(resolve));
     try {
+      await preloadBackground(nextBackground.image);
+      layer.style.setProperty("--novel-transition-background", currentBackground.image);
+      layer.style.setProperty("--novel-transition-background-position", currentBackground.position);
+      layer.style.setProperty("--novel-transition-background-size", currentBackground.size);
+      layer.style.setProperty("--novel-transition-background-repeat", currentBackground.repeat);
+      layer.classList.remove("is-background-releasing");
+      layer.classList.add("is-background-buffered");
+      await new Promise((resolve) => requestAnimationFrame(resolve));
       return await runSceneTransition(() => {
         swapStep();
         layer.classList.add("is-background-releasing");
@@ -880,9 +881,7 @@
     }
     if (backgroundChanges && !motionReduced()) {
       if (backgroundTransitionPending) return;
-      backgroundTransitionPending = true;
-      return runBackgroundTransition(currentBackground, nextBackground, swapStep)
-        .finally(() => { backgroundTransitionPending = false; });
+      return runBackgroundTransition(currentBackground, nextBackground, swapStep);
     }
     swapStep();
   };
@@ -1696,6 +1695,8 @@
   const clearSlackSurface = () => {
     elements.slackSurface.hidden = true;
     elements.slackSurface.replaceChildren();
+    delete layer.dataset.slackTerminal;
+    slackScrollGuardUntil = 0;
   };
 
   const prepareSlackTransition = (nextStepType) => {
@@ -1931,6 +1932,9 @@
     elements.continueMark.classList.add("is-visible");
     if (step.type === "chat") {
       const timeline = slackTimelineFor(step);
+      const followingStep = stepMap.get(getFollowingStepId(step));
+      const terminalChat = Boolean(!timeline.typing && followingStep && followingStep.sceneId !== step.sceneId);
+      layer.dataset.slackTerminal = String(terminalChat);
       if (isPreMeetingRecordPresentation(step)) {
         suppressCharacterPresentation();
         elements.cast.dataset.slackCast = "hidden";
@@ -1950,6 +1954,9 @@
       workspace.dataset.device = layer.dataset.slackDevice;
       workspace.innerHTML = `<header><b><span class="novel-slack-app-name">学内チャット</span><i aria-hidden="true">◀　▶　◷</i></b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、記録する場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
       const thread = workspace.querySelector(".novel-slack-thread");
+      thread.addEventListener("scroll", () => {
+        slackScrollGuardUntil = performance.now() + 220;
+      }, { passive: true });
       timeline.messages.forEach((message, index) => {
         thread.append(createSlackPost(message, { root: index === 0, current: message.id === step.id }));
       });
@@ -1960,6 +1967,21 @@
         typing.setAttribute("role", "status");
         typing.innerHTML = `<span class="novel-slack-avatar" aria-hidden="true">${SPEAKERS[timeline.typing.speaker]?.glyph || "◌"}</span><span><b>${timeline.typing.speakerLabel || SPEAKERS[timeline.typing.speaker]?.name || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
         thread.append(typing);
+      }
+      if (terminalChat) {
+        const next = document.createElement("button");
+        next.type = "button";
+        next.className = "novel-slack-next";
+        next.setAttribute("aria-label", "次の場面へ進む");
+        next.title = "次の場面へ進む";
+        next.innerHTML = '<span aria-hidden="true">→</span>';
+        next.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (currentStep()?.id !== step.id || backgroundTransitionPending) return;
+          advance();
+        });
+        workspace.querySelector("main").append(next);
       }
       elements.slackSurface.append(workspace);
       requestAnimationFrame(() => { thread.scrollTop = thread.scrollHeight; });
@@ -2628,6 +2650,7 @@
     if (finishTemporalTransitionCard()) return;
     const step = currentStep();
     if (!canAdvanceStep(step)) return;
+    if (step.type === "chat" && (layer.classList.contains("is-slack-entering") || performance.now() < slackScrollGuardUntil)) return;
     if (isRevealing) {
       finishReveal();
       return;
@@ -3293,6 +3316,7 @@
   });
   layer.addEventListener("click", (event) => {
     if (event.target.closest("button, a, input, select, textarea, details, summary, [role='button']")) return;
+    if (layer.classList.contains("is-slack") && event.target.closest(".novel-slack-attachment, .novel-slack-workspace > header, .novel-slack-workspace > aside, .novel-slack-workspace > main > header, .novel-slack-workspace > main > footer")) return;
     advance();
   });
   layer.addEventListener("wheel", (event) => {
