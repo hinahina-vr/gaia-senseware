@@ -6392,6 +6392,9 @@ body:not(.gx-story-open) .novel-layer.is-central-entrance-distance[data-step-typ
   left: max(14px, env(safe-area-inset-left));
   max-width: calc(100vw - 28px);
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin: 0;
   pointer-events: none;
   color: rgba(194, 222, 247, 0.66);
@@ -6412,8 +6415,62 @@ body:not(.gx-story-open) .novel-layer.is-central-entrance-distance[data-step-typ
   box-shadow: inset 0 1px rgba(225, 244, 255, 0.04);
   -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
-  pointer-events: auto;
+  pointer-events: none;
   user-select: text;
+  white-space: nowrap;
+}
+
+.novel-script-debug-copy-button {
+  display: inline-grid;
+  width: 58px;
+  min-width: 58px;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid rgba(122, 188, 238, 0.22);
+  border-radius: 3px;
+  background: rgba(7, 34, 64, 0.56);
+  box-shadow: inset 0 1px rgba(225, 244, 255, 0.04);
+  color: rgba(184, 219, 246, 0.72);
+  font: 700 7px/1 Consolas, "SFMono-Regular", "Liberation Mono", monospace;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  pointer-events: auto;
+  place-items: center;
+  user-select: none;
+}
+
+.novel-script-debug-copy-button:hover,
+.novel-script-debug-copy-button:focus-visible {
+  border-color: rgba(137, 207, 252, 0.5);
+  background: rgba(34, 86, 128, 0.66);
+  color: rgba(240, 249, 255, 0.98);
+  outline: 1px solid rgba(145, 211, 252, 0.26);
+  outline-offset: 1px;
+}
+
+.novel-script-debug-copy-button[data-copy-state="copied"] {
+  border-color: rgba(126, 210, 186, 0.42);
+  background: rgba(32, 91, 85, 0.62);
+  color: rgba(225, 252, 244, 0.96);
+}
+
+.novel-script-debug-copy-button:disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+}
+
+.novel-layer:has(.novel-save-panel:not([hidden])) .novel-script-debug-copy-button,
+.novel-layer:has(.novel-config-panel:not([hidden])) .novel-script-debug-copy-button,
+.novel-layer:has(.novel-eves-panel:not([hidden])) .novel-script-debug-copy-button {
+  display: none;
+}
+
+.novel-script-debug-copy-button > span {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -6466,6 +6523,14 @@ body.gx-story-open .novel-script-debug-copy {
 
   .novel-script-debug-copy {
     padding: 2px 5px;
+  }
+
+  .novel-script-debug-copy-button {
+    width: 54px;
+    min-width: 54px;
+    height: 18px;
+    padding-inline: 3px;
+    font-size: 6.5px;
   }
 
   .novel-layer:is(.is-slack, .is-evidence, .is-reflection, .is-result) .novel-script-debug,

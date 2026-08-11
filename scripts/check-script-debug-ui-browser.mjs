@@ -18,12 +18,14 @@ const runtimeSource = fs.readFileSync(path.join(projectRoot, "novel-mode.js"), "
 assert.match(indexSource, /id="novel-script-debug"[\s\S]*?aria-hidden="true"[\s\S]*?hidden/u);
 assert.match(indexSource, /id="novel-script-debug-number"><\/b>/u);
 assert.match(indexSource, /id="novel-script-debug-step-id"><\/code>/u);
+assert.match(indexSource, /id="novel-script-debug-copy-button"[\s\S]*?id="novel-script-debug-copy-status"/u);
 assert.match(cssSource, /\.novel-script-debug\s*\{[\s\S]*?pointer-events:\s*none;/u);
 assert.match(cssSource, /\.novel-script-debug-copy\s*\{[\s\S]*?user-select:\s*text;/u);
 for (const selector of ["#novel-script-debug", "#novel-script-debug-number", "#novel-script-debug-step-id"]) {
   assert.match(runtimeSource, new RegExp(selector), `integrated runtime is missing ${selector}`);
 }
 assert.match(runtimeSource, /スクリプト位置 \$\{index\}、\$\{step\.id\}/u, "integrated runtime is missing the SCRIPT aria-label binding");
+assert.match(cssSource, /\.novel-script-debug-copy-button\s*\{[\s\S]*?pointer-events:\s*auto;/u);
 
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?script-debug=${Date.now()}`);
@@ -50,6 +52,8 @@ const report = {
     root: "#novel-script-debug",
     number: "#novel-script-debug-number",
     stepId: "#novel-script-debug-step-id",
+    copyButton: "#novel-script-debug-copy-button",
+    copyStatus: "#novel-script-debug-copy-status",
   },
   viewports,
   scans: [],
@@ -115,6 +119,8 @@ const bindDebug = async (page, stepId, rememberNode = false) => {
     if (rememberNode) globalThis.__novelScriptDebugNode = root;
     numberNode.textContent = number;
     stepNode.textContent = stepId;
+    document.querySelector("#novel-script-debug-copy-status").textContent = "COPY";
+    document.querySelector("#novel-script-debug-copy-button").dataset.copyState = "idle";
     root.setAttribute("aria-label", `スクリプト位置 ${index}、${stepId}`);
     root.setAttribute("aria-hidden", "false");
     root.hidden = false;
@@ -129,11 +135,15 @@ const hideDebug = (page) => page.evaluate(() => {
   root.removeAttribute("aria-label");
   document.querySelector("#novel-script-debug-number").textContent = "";
   document.querySelector("#novel-script-debug-step-id").textContent = "";
+  document.querySelector("#novel-script-debug-copy-status").textContent = "COPY";
+  document.querySelector("#novel-script-debug-copy-button").dataset.copyState = "idle";
 });
 
 const readLayout = (page) => page.evaluate(() => {
   const root = document.querySelector("#novel-script-debug");
   const copy = root.querySelector(".novel-script-debug-copy");
+  const copyButton = document.querySelector("#novel-script-debug-copy-button");
+  const copyStatus = document.querySelector("#novel-script-debug-copy-status");
   const debugRect = root.getBoundingClientRect();
   const selectors = [
     "#novel-source-button:not([hidden])",
@@ -173,14 +183,23 @@ const readLayout = (page) => page.evaluate(() => {
     });
   const style = getComputedStyle(root);
   const copyStyle = getComputedStyle(copy);
+  const copyButtonStyle = getComputedStyle(copyButton);
+  const copyButtonRect = copyButton.getBoundingClientRect();
+  const copyButtonCenter = document.elementsFromPoint((copyButtonRect.left + copyButtonRect.right) / 2, (copyButtonRect.top + copyButtonRect.bottom) / 2)[0];
   return {
     text: root.textContent.trim(),
+    copyText: copy.textContent.trim(),
+    copyStatus: copyStatus.textContent,
     ariaLabel: root.getAttribute("aria-label"),
     ariaHidden: root.getAttribute("aria-hidden"),
     hidden: root.hidden,
     rootPointerEvents: style.pointerEvents,
     copyPointerEvents: copyStyle.pointerEvents,
     copyUserSelect: copyStyle.userSelect,
+    copyButtonDisplay: copyButtonStyle.display,
+    copyButtonPointerEvents: copyButtonStyle.pointerEvents,
+    copyButtonFront: copyButtonCenter === copyButton || copyButton.contains(copyButtonCenter),
+    copyButtonRect: { width: copyButtonRect.width, height: copyButtonRect.height },
     rect: { left: debugRect.left, top: debugRect.top, right: debugRect.right, bottom: debugRect.bottom, width: debugRect.width, height: debugRect.height },
     rectCount: root.getClientRects().length,
     lineCount: copy.getClientRects().length,
@@ -196,11 +215,21 @@ const readLayout = (page) => page.evaluate(() => {
 const verifyBoundLayout = async (page, viewport, state, stepId, extra = {}) => {
   const { index, number } = await bindDebug(page, stepId);
   const layout = await readLayout(page);
-  assert.equal(layout.text, `SCRIPT #${number}｜${stepId}`, `${viewport}/${state}: visible format changed`);
+  assert.equal(layout.copyText, `SCRIPT #${number}｜${stepId}`, `${viewport}/${state}: visible format changed`);
+  assert.equal(layout.copyStatus, "COPY", `${viewport}/${state}: idle COPY label changed`);
   assert.equal(layout.ariaLabel, `スクリプト位置 ${index}、${stepId}`, `${viewport}/${state}: accessible name changed`);
   assert.equal(layout.ariaHidden, "false", `${viewport}/${state}: bound UI remains aria-hidden`);
   assert.equal(layout.rootPointerEvents, "none", `${viewport}/${state}: root must remain click-through`);
+  assert.equal(layout.copyPointerEvents, "none", `${viewport}/${state}: text must not intercept story input`);
   assert.equal(layout.copyUserSelect, "text", `${viewport}/${state}: visible text is not selectable`);
+  const copySuppressed = ["save-modal", "config-modal", "eves-modal"].includes(state);
+  if (copySuppressed) {
+    assert.equal(layout.copyButtonDisplay, "none", `${viewport}/${state}: COPY must clear the modal shell`);
+    assert.deepEqual(layout.copyButtonRect, { width: 0, height: 0 }, `${viewport}/${state}: hidden COPY retained a hit box`);
+  } else {
+    assert.equal(layout.copyButtonPointerEvents, "auto", `${viewport}/${state}: COPY button is not hittable`);
+    assert.equal(layout.copyButtonFront, true, `${viewport}/${state}: COPY button is covered`);
+  }
   assert.equal(layout.rectCount, 1, `${viewport}/${state}: debug UI is not a single box`);
   assert.equal(layout.lineCount, 1, `${viewport}/${state}: debug copy wrapped`);
   assert.equal(layout.clipped, false, `${viewport}/${state}: debug UI clipped ${JSON.stringify(layout.rect)}`);
@@ -223,9 +252,9 @@ try {
     const titleState = await page.locator("#novel-script-debug").evaluate((node) => ({
       hidden: node.hidden,
       ariaHidden: node.getAttribute("aria-hidden"),
-      text: node.textContent.trim(),
+      text: node.textContent.replace(/\s/gu, ""),
     }));
-    assert.deepEqual(titleState, { hidden: true, ariaHidden: "true", text: "SCRIPT #｜" }, `${viewport.name}: title placeholder state changed`);
+    assert.deepEqual(titleState, { hidden: true, ariaHidden: "true", text: "SCRIPT#｜COPY" }, `${viewport.name}: title placeholder state changed`);
 
     await bootAt(page, "current_exhibition_014");
     await bindDebug(page, "current_exhibition_014", true);
@@ -276,9 +305,9 @@ try {
       hidden: node.hidden,
       ariaHidden: node.getAttribute("aria-hidden"),
       ariaLabel: node.getAttribute("aria-label"),
-      text: node.textContent.trim(),
+      text: node.textContent.replace(/\s/gu, ""),
     }));
-    assert.deepEqual(hiddenState, { hidden: true, ariaHidden: "true", ariaLabel: null, text: "SCRIPT #｜" }, `${viewport.name}: hide-and-clear contract changed`);
+    assert.deepEqual(hiddenState, { hidden: true, ariaHidden: "true", ariaLabel: null, text: "SCRIPT#｜COPY" }, `${viewport.name}: hide-and-clear contract changed`);
     await context.close();
   }
 
