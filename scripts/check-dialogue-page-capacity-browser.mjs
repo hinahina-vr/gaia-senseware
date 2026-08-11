@@ -186,7 +186,7 @@ try {
     if (viewport.name === "mobile-390") {
       assert.deepEqual(pages.map((item) => item.pageLines), [3, 2], "mobile-390: target must balance to 3+2 rendered lines");
     } else {
-      assert.equal(expectedPages, 1, `${viewport.name}: fitting target was unnecessarily paginated`);
+      assert.equal(expectedPages, 1, `${viewport.name}: fitting target was unnecessarily paginated: ${JSON.stringify(pages)}`);
     }
     assert.equal(pages[0].bodyOverflow, 0, `${viewport.name}: horizontal overflow`);
     report.scans.push({ viewport, pages, passed: true });
