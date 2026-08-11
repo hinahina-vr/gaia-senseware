@@ -180,7 +180,10 @@ try {
   page.on("response", (response) => { if (response.status() === 404) report.responses404.push(response.url()); });
   await page.route("**/story*", async (route) => {
     const response = await route.fetch();
-    const body = (await response.text()).replace("</body>", `${debugMarkup}</body>`);
+    const source = await response.text();
+    const body = source.includes('id="novel-script-debug"')
+      ? source
+      : source.replace("</body>", `${debugMarkup}</body>`);
     await route.fulfill({ response, body });
   });
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
