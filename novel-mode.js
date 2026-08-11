@@ -660,6 +660,11 @@
     normalized.clear = resetsLegacyProgress ? false : Boolean(candidate.clear);
     normalized.archivesUnlocked = resetsLegacyProgress ? false : Boolean(candidate.archivesUnlocked);
     normalized.sessionId = typeof candidate.sessionId === "string" ? candidate.sessionId.slice(0, 80) : "";
+    const knownSaveFields = new Set(story.saveFields || []);
+    for (const [key, value] of Object.entries(candidate)) {
+      if (knownSaveFields.has(key) || ["__proto__", "prototype", "constructor"].includes(key)) continue;
+      normalized[key] = value;
+    }
     return normalized;
   };
 
