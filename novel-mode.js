@@ -2360,6 +2360,11 @@
   };
 
   const detourDefinitions = Object.freeze({
+    map01: {
+      kicker: "MODE 01 / MAP",
+      title: "長い時間の変化を見る",
+      guide: "年表示を動かして長期変化を開き、地図へ触れて気温偏差の色を確認してください。",
+    },
     gx: {
       kicker: "GX / DEEP TIME",
       title: "太古の海へ触れる",
@@ -2390,6 +2395,8 @@
   const detourCompletion = () => {
     if (!pendingInteraction) return false;
     switch (pendingInteraction.interaction.kind) {
+      case "map01": return (pendingInteraction.interaction.requiredViews || [])
+        .every((view) => detourState?.views?.has(view));
       case "gx": return state.viewed.gxDeepTime;
       case "map03": return state.viewed.mode03Forest && state.viewed.mode03Rain && state.viewed.mode03Overlay;
       case "abstract07": return state.viewed.mode07AbstractPoint && state.viewed.mode07Source && state.viewed.mode07Derived;
@@ -2402,6 +2409,9 @@
   const detourProgressText = () => {
     if (!pendingInteraction) return "";
     const kind = pendingInteraction.interaction.kind;
+    if (kind === "map01") {
+      return `長期表示 ${detourState?.views?.has("long_term") ? "✓" : "○"}　気温偏差 ${detourState?.views?.has("temperature_anomaly") ? "✓" : "○"}`;
+    }
     if (kind === "gx") return state.viewed.gxDeepTime ? "操作完了 / 海の変化を確認しました" : `水面の操作 ${detourState?.gestureCount || 0} / 3`;
     if (kind === "map03") return `森林 ${state.viewed.mode03Forest ? "✓" : "○"}　降水量 ${state.viewed.mode03Rain ? "✓" : "○"}　重ね合わせ ${state.viewed.mode03Overlay ? "✓" : "○"}`;
     if (kind === "abstract07") return `観測点 ${state.viewed.mode07AbstractPoint ? "✓" : "○"}　SOURCE ${state.viewed.mode07Source ? "✓" : "○"}　DERIVED ${state.viewed.mode07Derived ? "✓" : "○"}`;
@@ -2474,7 +2484,7 @@
   const detourParent = (kind) => {
     if (kind === "gx") return document.querySelector("#gx-layer");
     if (kind === "space10") return document.querySelector("#space-layer");
-    if (kind === "map03" || kind === "map08") return document.querySelector("#japan-layer");
+    if (kind === "map01" || kind === "map03" || kind === "map08") return document.querySelector("#japan-layer");
     return document.querySelector(".experience");
   };
 
@@ -2520,7 +2530,7 @@
   const openDetour = (step) => {
     if (pendingInteraction || interactionLifecycle !== "prep") return;
     pendingInteraction = step;
-    detourState = { gestureCount: 0 };
+    detourState = { gestureCount: 0, views: new Set() };
     const definition = detourDefinitions[step.interaction.kind];
     closeDetourDock();
     detourDock = document.createElement("aside");
@@ -2535,9 +2545,10 @@
     setInteractionLifecycle("open");
     const detail = {
       kind: step.interaction.kind,
-      index: currentScene()?.modeIndex || 0,
+      index: Number.isInteger(step.interaction.modeIndex) ? step.interaction.modeIndex : (currentScene()?.modeIndex || 0),
+      modeId: step.interaction.modeId || null,
       returnTo: "novel",
-      storyMode: "v6",
+      storyMode: `v${story.storyVersion}`,
       reducedMotion: motionReduced(),
     };
     if (step.interaction.kind === "gx") {
@@ -3356,8 +3367,12 @@
     if (!pendingInteraction || event.detail?.kind !== pendingInteraction.interaction.kind) return;
     completePendingInteraction();
   });
-  window.addEventListener("gaia:story-map-interaction", () => {
+  window.addEventListener("gaia:story-map-interaction", (event) => {
     if (!pendingInteraction) return;
+    if (pendingInteraction.interaction.kind === "map01") {
+      const view = String(event.detail?.view || "");
+      if ((pendingInteraction.interaction.requiredViews || []).includes(view)) detourState?.views?.add(view);
+    }
     updateDetourDock();
   });
   window.addEventListener("gaia:story-abstract-interaction", () => {

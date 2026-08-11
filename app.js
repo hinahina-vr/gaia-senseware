@@ -4240,6 +4240,11 @@ drawAudienceMemory(audienceTraces);
         if (peer !== input) peer.value = input.value;
       });
       updateSignalInterface();
+      if (storyModeDetour?.kind === "map01") {
+        window.dispatchEvent(new CustomEvent("gaia:story-map-interaction", {
+          detail: { kind: "map01", view: "long_term", position: signalTimePosition },
+        }));
+      }
     });
   });
 
@@ -4826,9 +4831,12 @@ drawAudienceMemory(audienceTraces);
     japanView.gesture = false;
     japanView.pinchDistance = 0;
     japanMap.classList.remove("is-dragging");
-    if (createPulse && ["map03", "map08"].includes(storyModeDetour?.kind)) {
+    if (createPulse && ["map01", "map03", "map08"].includes(storyModeDetour?.kind)) {
       window.dispatchEvent(new CustomEvent("gaia:story-map-interaction", {
-        detail: { kind: storyModeDetour.kind },
+        detail: {
+          kind: storyModeDetour.kind,
+          ...(storyModeDetour.kind === "map01" ? { view: "temperature_anomaly" } : {}),
+        },
       }));
     }
   };
@@ -4877,9 +4885,13 @@ drawAudienceMemory(audienceTraces);
       event.preventDefault();
       const rect = japanMap.getBoundingClientRect();
       addJapanPulse(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      if (["map03", "map08"].includes(storyModeDetour?.kind)) {
+      if (["map01", "map03", "map08"].includes(storyModeDetour?.kind)) {
         window.dispatchEvent(new CustomEvent("gaia:story-map-interaction", {
-          detail: { kind: storyModeDetour.kind, keyboard: true },
+          detail: {
+            kind: storyModeDetour.kind,
+            keyboard: true,
+            ...(storyModeDetour.kind === "map01" ? { view: "temperature_anomaly" } : {}),
+          },
         }));
       }
       return;
@@ -5283,7 +5295,8 @@ drawAudienceMemory(audienceTraces);
   window.addEventListener("gaia:story-mode-open", (event) => {
     const kind = event.detail?.kind;
     const index = Number(event.detail?.index);
-    if (!["map03", "abstract07", "map08"].includes(kind) || !Number.isInteger(index)) return;
+    if (!["map01", "map03", "abstract07", "map08"].includes(kind) || !Number.isInteger(index)) return;
+    if (kind === "map01" && (index !== 0 || event.detail?.modeId !== "breathing-earth")) return;
     storyModeDetour = { kind, index };
     experience.dataset.storyMode = kind;
     selectMode(index, { resetAutoTimer: false });
@@ -5331,7 +5344,7 @@ drawAudienceMemory(audienceTraces);
       window.dispatchEvent(new CustomEvent("gaia:story-mode-return-to-novel", {
         detail: { kind: closedDetour.kind },
       }));
-    }, ["map03", "map08"].includes(closedDetour.kind) && !reducedMotion ? 420 : 0);
+    }, ["map01", "map03", "map08"].includes(closedDetour.kind) && !reducedMotion ? 420 : 0);
   });
 
   window.addEventListener("keydown", (event) => {
