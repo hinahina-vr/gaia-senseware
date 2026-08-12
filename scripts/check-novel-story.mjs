@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "09c9cd2dd23fba17ef6c5be67e0cbb93d2d64bb357b28cd81962754bb0a7fffb";
+const expectedHash = "031501b2a08b93bac9f4b361126bb3098e2c510319fa7cafb29c7400649d7738";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 58, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 53591, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 53165, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);

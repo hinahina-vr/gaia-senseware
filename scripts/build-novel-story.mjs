@@ -5,15 +5,28 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
+const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "09c9cd2dd23fba17ef6c5be67e0cbb93d2d64bb357b28cd81962754bb0a7fffb";
+const EXPECTED_SOURCE_SHA256 = "031501b2a08b93bac9f4b361126bb3098e2c510319fa7cafb29c7400649d7738";
 
 const sourceBytes = fs.readFileSync(canonPath);
+const characterSourceBytes = fs.readFileSync(characterCanonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 if (sha256(sourceBytes) !== EXPECTED_SOURCE_SHA256) throw new Error("story/物語台本.mdがfreeze入力と一致しません");
 if (!sourceBytes.equals(retainedBytes)) throw new Error("repo保持版の機能限定版台本が正本と一致しません");
+const characterSource = characterSourceBytes.toString("utf8");
+const characters = Object.freeze({
+  amane: Object.freeze({ formalName: "雨音", reading: "アマネ", campusName: "あめ" }),
+  mizuha: Object.freeze({ formalName: "瑞葉", reading: "ミズハ", campusName: "みず" }),
+  sakuya: Object.freeze({ formalName: "咲弥", reading: "サクヤ", campusName: "saku" }),
+});
+for (const profile of Object.values(characters)) {
+  if (!characterSource.includes(`【${profile.formalName}（${profile.reading}）】`)) {
+    throw new Error(`story/キャラクター設定.mdに正式名 ${profile.formalName}（${profile.reading}）がありません`);
+  }
+}
 const source = sourceBytes.toString("utf8").replace(/\r\n?/gu, "\n");
 if (Buffer.from(source, "utf8").length !== sourceBytes.length) throw new Error("正本はUTF-8/LFである必要があります");
 
@@ -48,7 +61,7 @@ const speakerMap = new Map([
 ]);
 const speakerLabelMap = new Map([
   ["ミズハ", "みず"],
-  ["アマネ", "あまあま"],
+  ["アマネ", "あめ"],
   ["プレイヤー", "プレイヤー"],
 ]);
 const chatSpeakerMap = new Map([
@@ -61,7 +74,7 @@ const chatSpeakerMap = new Map([
 ]);
 const chatSpeakerLabelMap = new Map([
   ["MIZUHA", "みず"],
-  ["AMANE", "あまあま"],
+  ["AMANE", "あめ"],
   ["saku", "saku"],
   ["YOU", "YOU"],
   ["青猫", "青猫"],
@@ -72,7 +85,7 @@ const parseBlock = (block, sceneId) => {
   const dialogue = block.match(/^(ミズハ|アマネ|プレイヤー)：\n([\s\S]+)$/u);
   if (dialogue) {
     const [rawSpeaker, text] = dialogue.slice(1);
-    const speakerLabel = rawSpeaker === "アマネ" && /『あまあま』です|体験してみませんか/u.test(text)
+    const speakerLabel = rawSpeaker === "アマネ" && /『あめ』です|体験してみませんか/u.test(text)
       ? "女の子"
       : rawSpeaker === "ミズハ" && /『みず』です/u.test(text)
         ? "もう一人の女の子"
@@ -172,6 +185,8 @@ const story = {
   subtitle: "コンテスト機能限定版",
   estimatedDuration: "10〜12分",
   sourceSha256: EXPECTED_SOURCE_SHA256,
+  characterSourceSha256: sha256(characterSourceBytes),
+  characters,
   startSceneId: "festival_concept",
   temporal: {
     schemaVersion: 2,

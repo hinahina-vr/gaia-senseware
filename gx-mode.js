@@ -102,35 +102,35 @@
   const STORY_CONVERSATIONS = [
     [
       { speaker: "minamo", name: "みず / FEEL", expression: "calm", text: "ええ、ジルコンですわ。岩石より古い結晶が、水の気配を残していますの。" },
-      { speaker: "sora", name: "あまあま / MEASURE", expression: "soft", text: "可能性としてね。記録の外まで言い切るのは、やめてね。" },
+      { speaker: "sora", name: "あめ / MEASURE", expression: "soft", text: "可能性としてね。記録の外まで言い切るのは、やめてね。" },
     ],
     [
       { speaker: "minamo", name: "みず / FEEL", expression: "teasing", text: "小さな生命が海の景色を変え、やがて大気まで作り替える。大仕事ですわ。" },
-      { speaker: "sora", name: "あまあま / MEASURE", expression: "calm", text: "積み重なると、大気まで変わる。やってんね。" },
+      { speaker: "sora", name: "あめ / MEASURE", expression: "calm", text: "積み重なると、大気まで変わる。やってんね。" },
     ],
     [
-      { speaker: "sora", name: "あまあま / MEASURE", expression: "calm", text: "酸素が鉄と結びついて、赤い層になった。おるなあ。" },
+      { speaker: "sora", name: "あめ / MEASURE", expression: "calm", text: "酸素が鉄と結びついて、赤い層になった。おるなあ。" },
       { speaker: "minamo", name: "みず / FEEL", expression: "teasing", text: "ええ。生命の呼吸が、地球の色として残ったんですの。" },
     ],
     [
       { speaker: "minamo", name: "みず / FEEL", expression: "soft", text: "森が受け取った光は、炭素の時間へ姿を変え、地中へ渡されますの。" },
-      { speaker: "sora", name: "あまあま / MEASURE", expression: "calm", text: "固定された時間が、石炭層に残る。あるんだ。" },
+      { speaker: "sora", name: "あめ / MEASURE", expression: "calm", text: "固定された時間が、石炭層に残る。あるんだ。" },
     ],
     [
-      { speaker: "sora", name: "あまあま / MEASURE", expression: "worried", text: "薄い境界に、急激な変化が刻まれてる。" },
+      { speaker: "sora", name: "あめ / MEASURE", expression: "worried", text: "薄い境界に、急激な変化が刻まれてる。" },
       { speaker: "minamo", name: "みず / FEEL", expression: "worried", text: "ええ。一日の出来事が、次の生命の世界を開いてしまいました。" },
     ],
     [
       { speaker: "minamo", name: "みず / FEEL", expression: "calm", text: "氷も花粉も、気候の往復を別々の方法で覚えていますの。" },
-      { speaker: "sora", name: "あまあま / MEASURE", expression: "soft", text: "重ねると、変化の幅が見える。記録、ちゃんとおるなあ。" },
+      { speaker: "sora", name: "あめ / MEASURE", expression: "soft", text: "重ねると、変化の幅が見える。記録、ちゃんとおるなあ。" },
     ],
     [
-      { speaker: "sora", name: "あまあま / MEASURE", expression: "worried", text: "都市の材料まで、未来の地層に残り始めてる。やってんね。" },
+      { speaker: "sora", name: "あめ / MEASURE", expression: "worried", text: "都市の材料まで、未来の地層に残り始めてる。やってんね。" },
       { speaker: "minamo", name: "みず / FEEL", expression: "worried", text: "ええ。ほいじゃ、何を残すかは今から選び直せますわ。" },
     ],
     [
       { speaker: "minamo", name: "みず / FEEL", expression: "soft", text: "次の地層は、まだ執筆途中ですのね。余韻です。" },
-      { speaker: "sora", name: "あまあま / MEASURE", expression: "soft", text: "ええ。まだ途中。観測して、選び直せるね。" },
+      { speaker: "sora", name: "あめ / MEASURE", expression: "soft", text: "ええ。まだ途中。観測して、選び直せるね。" },
     ],
   ];
 

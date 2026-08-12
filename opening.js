@@ -441,6 +441,28 @@
     }, EXIT_DURATION);
   };
 
+  const retireOpeningForStory = () => {
+    window.clearTimeout(finishTimer);
+    window.clearTimeout(exitTimer);
+    settleFocusText();
+    opening.inert = true;
+    opening.setAttribute("aria-hidden", "true");
+    opening.classList.add("is-leaving");
+    soundGate?.setAttribute("aria-hidden", "true");
+    if (soundGate instanceof HTMLElement) soundGate.hidden = true;
+    if (finalMenu instanceof HTMLElement) {
+      finalMenu.classList.remove("is-visible");
+      finalMenu.hidden = true;
+    }
+    particleSystem.stop();
+    window.setTimeout(() => {
+      opening.hidden = true;
+      opening.classList.remove("is-active", "is-leaving");
+      document.body.classList.remove("gaia-opening-active");
+    }, reducedMotion ? 0 : 260);
+  };
+  window.addEventListener("gaia:novel-open", retireOpeningForStory);
+
   const showFinalMenu = () => {
     if (finished || !(finalMenu instanceof HTMLElement)) return;
     finalMenu.hidden = false;
@@ -486,6 +508,8 @@
   const chooseSound = async (enabled) => {
     if (soundChoiceResolved) return;
     soundChoiceResolved = true;
+    soundOnButton?.setAttribute("aria-pressed", String(Boolean(enabled)));
+    soundOffButton?.setAttribute("aria-pressed", String(!enabled));
     opening.classList.remove("is-awaiting-sound");
     soundGate?.classList.add("is-decided");
 

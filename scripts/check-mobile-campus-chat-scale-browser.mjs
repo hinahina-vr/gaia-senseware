@@ -152,9 +152,10 @@ const scanChatLayout = async (viewport, testCase) => {
       threadScrollMax: Math.max(0, (thread?.scrollHeight || 0) - (thread?.clientHeight || 0)),
       threadOverscroll: getComputedStyle(thread).overscrollBehavior,
       documentScrollHeight: document.documentElement.scrollHeight,
-      humanSlackAvatarDomCount: humanAvatars.length,
-      humanSlackAvatarVisibleCount: humanAvatars.filter(__chatVisible).length,
-      sakuTypingAvatarVisible: __chatVisible(document.querySelector(".novel-slack-typing[data-speaker='sakuya'] .novel-slack-avatar")),
+      symbolicAvatarDomCount: humanAvatars.length,
+      symbolicAvatarVisibleCount: humanAvatars.filter(__chatVisible).length,
+      humanSlackAvatarDomCount: document.querySelectorAll(".novel-slack-avatar[data-human-avatar], .novel-slack-avatar img[src*='/characters/']").length,
+      sakuTypingSymbolVisible: __chatVisible(document.querySelector(".novel-slack-typing[data-speaker='sakuya'] .novel-slack-avatar[data-symbol='flower']")),
       overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       overflowY: document.documentElement.scrollHeight > innerHeight + 1,
     };
@@ -174,8 +175,8 @@ const scanChatLayout = async (viewport, testCase) => {
   assert.equal(scan.textFits, true);
   assert(scan.estimatedLines <= 3, `${label}: VN dialogue exceeds three lines (${scan.estimatedLines})`);
   assert.equal(scan.humanSlackAvatarDomCount, 0);
-  assert.equal(scan.humanSlackAvatarVisibleCount, 0);
-  assert.equal(scan.sakuTypingAvatarVisible, false);
+  assert(scan.symbolicAvatarDomCount > 0);
+  assert.equal(scan.symbolicAvatarVisibleCount, scan.symbolicAvatarDomCount);
   assert.equal(scan.overflowX, false);
   assert.equal(scan.overflowY, false);
   assert.notEqual(scan.backgroundImage, "none");

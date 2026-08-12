@@ -240,7 +240,7 @@ const scanChat = async (viewport) => {
       const text = document.querySelector("#novel-text");
       const speaker = document.querySelector("#novel-speaker");
       const continueMark = document.querySelector("#novel-continue");
-      const humanAvatars = [...document.querySelectorAll([
+      const symbolicAvatars = [...document.querySelectorAll([
         ".novel-slack-post[data-speaker='mizuha'] .novel-slack-avatar",
         ".novel-slack-post[data-speaker='amane'] .novel-slack-avatar",
         ".novel-slack-post[data-speaker='sakuya'] .novel-slack-avatar",
@@ -261,9 +261,10 @@ const scanChat = async (viewport) => {
         speakerRect: speaker?.getBoundingClientRect().toJSON(),
         continueRect: continueMark?.getBoundingClientRect().toJSON(),
         textFits: text.scrollHeight <= text.clientHeight + 1,
-        humanSlackAvatarDomCount: humanAvatars.length,
-        humanSlackAvatarVisibleCount: humanAvatars.filter(__holdVisible).length,
-        sakuTypingAvatarVisible: __holdVisible(document.querySelector(".novel-slack-typing[data-speaker='sakuya'] .novel-slack-avatar")),
+        symbolicAvatarDomCount: symbolicAvatars.length,
+        symbolicAvatarVisibleCount: symbolicAvatars.filter(__holdVisible).length,
+        humanSlackAvatarDomCount: document.querySelectorAll(".novel-slack-avatar[data-human-avatar], .novel-slack-avatar img[src*='/characters/']").length,
+        sakuTypingSymbolVisible: __holdVisible(document.querySelector(".novel-slack-typing[data-speaker='sakuya'] .novel-slack-avatar[data-symbol='flower']")),
         overflow: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
@@ -277,8 +278,9 @@ const scanChat = async (viewport) => {
     assert.equal(rectInViewport(scan.continueRect, viewport.width, viewport.height), true);
     assert.equal(scan.textFits, true);
     assert.equal(scan.humanSlackAvatarDomCount, 0);
-    assert.equal(scan.humanSlackAvatarVisibleCount, 0);
-    assert.equal(scan.sakuTypingAvatarVisible, false);
+    assert(scan.symbolicAvatarDomCount > 0);
+    assert.equal(scan.symbolicAvatarVisibleCount, scan.symbolicAvatarDomCount);
+    if (testCase.stepId === "welcome_chat_083") assert.equal(scan.sakuTypingSymbolVisible, true);
     assert.equal(scan.overflow, false);
     await page.locator("#novel-dialogue").click({ position: { x: 24, y: 24 } });
     await page.waitForFunction((id) => globalThis.GaiaNovel.getState().stepId === id, testCase.nextStepId);
@@ -319,7 +321,7 @@ const nameCases = [
   ["festival_concept_016", "短髪の女性"],
   ["festival_concept_021", "短髪の女性"],
   ["festival_concept_023", "長髪の女性"],
-  ["festival_concept_032", "あまあま"],
+  ["festival_concept_032", "あめ"],
   ["festival_concept_036", "みず"],
   ["map_mode01_011", "あなた"],
 ];

@@ -22,28 +22,28 @@
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="stylesheet" href="./styles.css?v=gaia-124" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-142" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-current-ui-hotfix-1" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-mobile-chat-scale-1" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-current-ui-hotfix-1" />
     <link rel="stylesheet" href="./gx-mode.css?v=gaia-contest-hold-fixes-1" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-07" />
     <script src="./gaia-particles.js?v=gaia-19" defer></script>
     <script src="./opening-audio.js?v=gaia-13" defer></script>
     <script src="./ui-sound.js?v=gaia-01" defer></script>
-    <script src="./opening.js?v=gaia-recovery-1" defer></script>
+    <script src="./opening.js?v=gaia-current-ui-hotfix-1" defer></script>
     <script src="./data-ledger.js?v=gaia-31" defer></script>
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
     <script src="./app-content.js?v=gaia-101" defer></script>
     <script src="./app.js?v=gaia-interaction-exclusive-1" defer></script>
-    <script src="./gx-mode.js?v=gaia-contest-hold-fixes-1" defer></script>
-    <script src="./novel-story-data.js?v=gaia-recovery-3" defer></script>
+    <script src="./gx-mode.js?v=gaia-current-ui-hotfix-1" defer></script>
+    <script src="./novel-story-data.js?v=gaia-current-ui-hotfix-1" defer></script>
     <script src="./novel-background-cues.js?v=gaia-festival-entrance-bhall-1" defer></script>
     <script src="./novel-back-half-cues.js?v=back-half-1" defer></script>
     <script src="./novel-temporal.js?v=gaia-temporal-1" defer></script>
-    <script src="./novel-mode.js?v=gaia-contest-hold-fixes-1" defer></script>
+    <script src="./novel-mode.js?v=gaia-current-ui-hotfix-1" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-04" defer></script>
@@ -94,7 +94,7 @@
               />
             </div>
             <div class="gaia-opening-sound-actions">
-              <button id="gaia-opening-sound-on" type="button">
+              <button id="gaia-opening-sound-on" type="button" aria-pressed="false">
                 <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
                   <svg class="gaia-opening-sound-icon" viewBox="0 0 24 24">
                     <path class="gaia-opening-sound-icon-body" d="M4 9.25h4L13 5v14l-5-4.25H4z" />
@@ -104,7 +104,7 @@
                 </span>
                 <span class="gaia-opening-sound-label">音と進む</span>
               </button>
-              <button id="gaia-opening-sound-off" type="button">
+              <button id="gaia-opening-sound-off" type="button" aria-pressed="false">
                 <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
                   <svg class="gaia-opening-sound-icon" viewBox="0 0 24 24">
                     <path class="gaia-opening-sound-icon-body" d="M4 9.25h4L13 5v14l-5-4.25H4z" />
@@ -1521,6 +1521,10 @@
               aria-label="これまでの選択を開く"
               aria-expanded="false"
               aria-controls="novel-eves-panel"
+              aria-hidden="true"
+              tabindex="-1"
+              disabled
+              hidden
               title="これまでの選択を確認する"
             ><svg class="novel-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="6" r="2"></circle><circle cx="18" cy="8" r="2"></circle><circle cx="12" cy="18" r="2"></circle><path d="M7.8 6.7 16.1 7.6M7.1 7.7l3.8 8.6m6-6.5-3.8 6.5"></path></svg><span class="novel-nav-label">E.V.E.S.</span><b id="novel-eves-count" aria-hidden="true">0 / 2</b></button>
             <button id="novel-log-button" type="button" aria-label="会話履歴を開く" title="会話履歴" aria-expanded="false" aria-controls="novel-log-panel"><svg class="novel-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 6h12M7 12h12M7 18h8"></path><circle cx="3.5" cy="6" r="1"></circle><circle cx="3.5" cy="12" r="1"></circle><circle cx="3.5" cy="18" r="1"></circle></svg><span class="novel-nav-label">LOG</span></button>
@@ -1604,7 +1608,7 @@
           <h2 id="novel-title">GAIA SENSATION</h2>
           <p class="novel-title-sub">『今日、はじめまして。』</p>
           <div class="novel-title-actions">
-            <button id="novel-start-button" type="button">START</button>
+            <button id="novel-start-button" type="button" aria-label="はじめる">はじめる</button>
             <button id="novel-resume-button" type="button" hidden>続きから</button>
             <button id="novel-title-load-button" type="button">セーブデータから</button>
             <button class="novel-title-gallery-button" id="novel-title-gallery-button" type="button">
@@ -1861,7 +1865,7 @@
               </div>
               <p id="novel-save-status" aria-live="polite">保存先：このブラウザのみ</p>
             </div>
-            <div class="novel-save-slots" id="novel-save-slots"></div>
+            <div class="novel-save-slots" id="novel-save-slots" tabindex="0" aria-label="セーブ・ロードスロット一覧"></div>
             <footer class="novel-save-footer">
               <span>LOCAL PROFILE ONLY / NO SERVER SYNC</span>
               <p>サーバーへの送信・アカウント同期は行いません。ブラウザデータを消去した場合や、別のブラウザプロファイルでは読み込めません。</p>
@@ -1923,7 +1927,7 @@
           </div>
         </aside>
 
-        <aside class="novel-eves-panel" id="novel-eves-panel" aria-hidden="true" hidden>
+        <aside class="novel-eves-panel" id="novel-eves-panel" aria-hidden="true" inert hidden>
           <div class="novel-eves-shell" role="dialog" aria-modal="true" aria-labelledby="novel-eves-title">
             <header class="novel-eves-header">
               <div>

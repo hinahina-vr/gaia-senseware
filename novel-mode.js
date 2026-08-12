@@ -16,6 +16,53 @@
   const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
   const LEGACY_MANUAL_KEYS = ["gaia_novel_manual_saves_v6", "gaiaSensewareNovel:manual-saves:v1"];
   const SLOT_COUNT = 6;
+  const BASE_INTERFACE_SELECTOR = [
+    "#gaia-canvas",
+    ".abstract-mode-background",
+    "#intro-layer",
+    ".masthead",
+    ".status",
+    "#guide",
+    "#mode-caption",
+    ".signal-console-main",
+    ".mode-nav",
+    ".actions",
+    "#source-scrim",
+    "#concept-panel",
+    "#source-panel",
+    "#error-panel",
+  ].join(",");
+  const baseInterfaceRestore = new Map();
+  const suppressBaseInterface = () => {
+    const opening = document.querySelector("#gaia-opening");
+    if (opening instanceof HTMLElement) {
+      opening.inert = true;
+      opening.setAttribute("aria-hidden", "true");
+      opening.hidden = true;
+    }
+    document.querySelectorAll(BASE_INTERFACE_SELECTOR).forEach((node) => {
+      if (!(node instanceof HTMLElement) || layer.contains(node)) return;
+      if (!baseInterfaceRestore.has(node)) {
+        baseInterfaceRestore.set(node, {
+          hidden: node.hidden,
+          inert: node.inert,
+          ariaHidden: node.getAttribute("aria-hidden"),
+        });
+      }
+      node.inert = true;
+      node.setAttribute("aria-hidden", "true");
+      node.hidden = true;
+    });
+  };
+  const restoreBaseInterface = () => {
+    baseInterfaceRestore.forEach((previous, node) => {
+      node.hidden = previous.hidden;
+      node.inert = previous.inert;
+      if (previous.ariaHidden === null) node.removeAttribute("aria-hidden");
+      else node.setAttribute("aria-hidden", previous.ariaHidden);
+    });
+    baseInterfaceRestore.clear();
+  };
   const SYSTEM_REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const AUTO_DELAY_MS = 3600;
   const TEMPORAL_TRANSITION_MS = 2400;
@@ -71,9 +118,9 @@
   });
   const SPEAKERS = Object.freeze({
     narrator: { name: "", glyph: "◌" },
-    mizuha: { name: "みず", glyph: "≈" },
-    amane: { name: "あまあま", glyph: "△" },
-    sakuya: { name: "saku", glyph: "＊" },
+    mizuha: { name: "みず", formalName: "瑞葉", reading: "ミズハ", glyph: "≈" },
+    amane: { name: "あめ", formalName: "雨音", reading: "アマネ", glyph: "△" },
+    sakuya: { name: "saku", formalName: "咲弥", reading: "サクヤ", glyph: "＊" },
     visitor: { name: "あなた", glyph: "◇" },
     system: { name: "GAIA SENSEWARE", glyph: "◎" },
   });
@@ -2186,11 +2233,33 @@
     return { messages, typing: following?.type === "chat" && conditionMatches(following) ? following : null };
   };
 
-  const HUMAN_SLACK_SPEAKERS = new Set(["mizuha", "amane", "sakuya", "visitor"]);
-  const shouldRenderSlackAvatar = (message) => (
-    !HUMAN_SLACK_SPEAKERS.has(message?.speaker)
-    || backHalfCues.forStep(message)?.character?.avatar !== "none"
-  );
+  const SLACK_SYMBOLS = Object.freeze({
+    amane: Object.freeze({ id: "cloud", label: "あめの雲", src: "./assets/visuals-07/slack-avatar-amane-v1.webp" }),
+    mizuha: Object.freeze({ id: "water", label: "みずの水滴", src: "./assets/visuals-07/slack-avatar-mizuha-v1.webp" }),
+    sakuya: Object.freeze({ id: "flower", label: "sakuの花", src: "./assets/visuals-07/slack-avatar-sakuya-flower-v3.webp" }),
+    visitor: Object.freeze({ id: "blue-apple", label: "あなたの青りんご", src: "./assets/visuals-07/slack-symbol-blue-apple-v1.svg" }),
+    bluecat: Object.freeze({ id: "blue-apple", label: "あなたの青りんご", src: "./assets/visuals-07/slack-symbol-blue-apple-v1.svg" }),
+  });
+  const createSlackSymbol = (speakerId) => {
+    const avatar = document.createElement("span");
+    const symbol = SLACK_SYMBOLS[speakerId];
+    avatar.className = "novel-slack-avatar";
+    avatar.dataset.symbol = symbol?.id || "system";
+    avatar.setAttribute("role", "img");
+    avatar.setAttribute("aria-label", symbol?.label || "SYSTEMの記号");
+    if (symbol) {
+      const image = document.createElement("img");
+      image.className = "novel-slack-symbol";
+      image.src = symbol.src;
+      image.alt = "";
+      image.decoding = "async";
+      image.loading = "eager";
+      avatar.append(image);
+    } else {
+      avatar.textContent = SPEAKERS[speakerId]?.glyph || "◎";
+    }
+    return avatar;
+  };
 
   const createSlackAttachment = (attachment) => {
     const identifier = String(attachment?.id || "").toUpperCase();
@@ -2237,8 +2306,6 @@
     const article = document.createElement("article");
     article.className = `novel-slack-post ${root ? "is-root" : "is-reply"}${current ? " is-new" : ""}`;
     article.dataset.speaker = message.speaker || "system";
-    const renderAvatar = shouldRenderSlackAvatar(message);
-    article.classList.toggle("is-avatarless", !renderAvatar);
     const body = document.createElement("div");
     body.className = "novel-slack-post-body";
     const meta = document.createElement("p");
@@ -2257,13 +2324,7 @@
       message.attachments.forEach((attachment) => attachments.append(createSlackAttachment(attachment)));
       body.append(attachments);
     }
-    if (renderAvatar) {
-      const avatar = document.createElement("div");
-      avatar.className = "novel-slack-avatar";
-      avatar.setAttribute("aria-hidden", "true");
-      avatar.textContent = SPEAKERS[message.speaker]?.glyph || "◌";
-      article.append(avatar);
-    }
+    article.append(createSlackSymbol(message.speaker || "system"));
     article.append(body);
     return article;
   };
@@ -2309,7 +2370,7 @@
       workspace.className = "novel-slack-workspace";
       workspace.classList.toggle("is-mobile-device", layer.dataset.slackDevice === "mobile");
       workspace.dataset.device = layer.dataset.slackDevice;
-      workspace.innerHTML = `<header><b><span class="novel-slack-app-name">学内チャット</span><i aria-hidden="true">◀　▶　◷</i></b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● みず</span><span>● あまあま</span><span>○ saku</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、記録する場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
+      workspace.innerHTML = `<header><b><span class="novel-slack-app-name">学内チャット</span><i aria-hidden="true">◀　▶　◷</i></b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● みず</span><span>● あめ</span><span>○ saku</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、記録する場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
       const thread = workspace.querySelector(".novel-slack-thread");
       thread.addEventListener("scroll", () => {
         slackScrollGuardUntil = performance.now() + 220;
@@ -2319,19 +2380,11 @@
       });
       if (timeline.typing) {
         const typing = document.createElement("div");
-        const renderAvatar = shouldRenderSlackAvatar(timeline.typing);
         typing.className = "novel-slack-typing";
-        typing.classList.toggle("is-avatarless", !renderAvatar);
         typing.dataset.speaker = timeline.typing.speaker || "system";
         typing.setAttribute("role", "status");
         typing.innerHTML = `<span><b>${speakerDisplayName(timeline.typing) || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
-        if (renderAvatar) {
-          const avatar = document.createElement("span");
-          avatar.className = "novel-slack-avatar";
-          avatar.setAttribute("aria-hidden", "true");
-          avatar.textContent = SPEAKERS[timeline.typing.speaker]?.glyph || "◌";
-          typing.prepend(avatar);
-        }
+        typing.prepend(createSlackSymbol(timeline.typing.speaker || "system"));
         thread.append(typing);
       }
       elements.slackSurface.append(workspace);
@@ -2347,7 +2400,7 @@
       elements.dialogue.hidden = false;
       elements.sourceButton.hidden = false;
       elements.speaker.textContent = presenter === "amane"
-        ? "あまあまの観測メモ"
+        ? "あめの観測メモ"
         : RECORD_SPEAKER_LABELS[step.recordType] || "記録メモ";
       elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
       const displayText = recordTextForDisplay(step.text);
@@ -3360,16 +3413,7 @@
     elements.evesButton.setAttribute("aria-expanded", "false");
   };
   const toggleEves = () => {
-    if (elements.evesPanel.hidden) {
-      closeGallery({ restoreFocus: false });
-      closeLog();
-      closeSourceDetails();
-      renderEves();
-      elements.evesPanel.hidden = false;
-      elements.evesPanel.setAttribute("aria-hidden", "false");
-      elements.evesButton.setAttribute("aria-expanded", "true");
-      elements.evesClose.focus({ preventScroll: true });
-    } else closeEves();
+    closeEves();
   };
   const rewindEves = () => {
     const entry = state.evesRoute.pop();
@@ -3423,33 +3467,44 @@
       const title = document.createElement("h3");
       const excerpt = document.createElement("p");
       const actions = document.createElement("footer");
-      const primary = document.createElement("button");
+      const primary = document.createElement("span");
+      const slotDisabled = archiveMode === "load" && !saved;
+      const activateSlot = () => {
+        if (slotDisabled) return;
+        if (archiveMode === "save") saveManualSlot(index);
+        else loadManualSlot(index);
+      };
       article.className = "novel-save-slot";
       article.dataset.empty = String(!saved);
+      article.dataset.disabled = String(slotDisabled);
+      article.dataset.slotIndex = String(index);
+      article.setAttribute("role", "button");
+      article.setAttribute("aria-disabled", String(slotDisabled));
+      article.setAttribute("aria-label", archiveMode === "save"
+        ? `スロット${index + 1}へ保存`
+        : saved ? `スロット${index + 1}から読み込む` : `スロット${index + 1}は空です`);
+      article.tabIndex = slotDisabled ? -1 : 0;
       label.textContent = `SLOT ${String(index + 1).padStart(2, "0")}`;
       time.textContent = saved?.savedAt ? new Date(saved.savedAt).toLocaleString("ja-JP") : "EMPTY";
       title.textContent = saved?.meta?.title || "空の記録領域";
       excerpt.textContent = saved?.meta?.excerpt || "ここにはまだ物語の現在地が保存されていません。";
       header.append(label, time);
-      primary.type = "button";
       primary.className = "novel-save-primary";
       if (archiveMode === "save") {
         primary.textContent = saved ? (pendingSlotAction === `save:${index}` ? "もう一度押して上書き" : "上書き保存") : "このスロットに保存";
-        primary.addEventListener("click", () => saveManualSlot(index));
       } else {
         primary.textContent = saved ? "ここから再開" : "記録なし";
-        primary.disabled = !saved;
-        primary.addEventListener("click", () => loadManualSlot(index));
       }
+      article.addEventListener("click", (event) => {
+        if (event.target.closest(".novel-save-delete")) return;
+        activateSlot();
+      });
+      article.addEventListener("keydown", (event) => {
+        if (event.target !== article || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        activateSlot();
+      });
       actions.append(primary);
-      if (saved) {
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "novel-save-delete";
-        remove.textContent = pendingSlotAction === `delete:${index}` ? "もう一度押して消去" : "消去";
-        remove.addEventListener("click", () => deleteManualSlot(index));
-        actions.append(remove);
-      }
       article.append(header, title, excerpt, actions);
       elements.saveSlots.append(article);
     });
@@ -3523,7 +3578,7 @@
     elements.loadButton.setAttribute("aria-expanded", String(archiveMode === "load"));
     elements.savePanel.hidden = false;
     elements.savePanel.setAttribute("aria-hidden", "false");
-    requestAnimationFrame(() => elements.saveSlots.querySelector("button:not([disabled])")?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => elements.saveSlots.querySelector('.novel-save-slot[tabindex="0"]')?.focus({ preventScroll: true }));
   };
   const closeManualArchive = () => {
     elements.savePanel.hidden = true;
@@ -3548,6 +3603,7 @@
   function openNovel(event = null) {
     event?.preventDefault?.();
     previousFocus = document.activeElement;
+    suppressBaseInterface();
     particleSystem.start();
     void window.GaiaOpeningAudio?.switchTrack?.("story");
     window.dispatchEvent(new CustomEvent("gaia:novel-open"));
@@ -3575,6 +3631,7 @@
     layer.classList.remove("is-open", "is-mode-detour");
     layer.setAttribute("aria-hidden", "true");
     document.body.classList.remove("novel-open", "novel-mode-detour");
+    restoreBaseInterface();
     window.setTimeout(() => { if (!isOpen) layer.hidden = true; }, motionReduced() ? 0 : 260);
     if (window.location.hash === "#story") history.replaceState(null, "", window.location.pathname + window.location.search);
     window.dispatchEvent(new CustomEvent("gaia:return-to-intro"));

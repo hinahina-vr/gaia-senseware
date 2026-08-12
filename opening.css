@@ -1673,6 +1673,48 @@ body.gaia-opening-active .novel-layer {
   }
 }
 
+/* Current public UI: the sound choices keep their generous hit targets, while
+   focus and selection live on the icon/label instead of a surrounding pill. */
+.gaia-opening-sound-actions button,
+.gaia-opening-sound-actions button:first-child,
+.gaia-opening-sound-actions button:hover,
+.gaia-opening-sound-actions button:focus,
+.gaia-opening-sound-actions button:focus-visible,
+.gaia-opening-sound-actions button:active,
+.gaia-opening-sound-actions button[aria-pressed="true"] {
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.gaia-opening-sound-actions button::after {
+  display: none !important;
+}
+
+.gaia-opening-sound-actions button:is(:hover, :focus-visible, :active, [aria-pressed="true"]) {
+  color: rgba(242, 250, 246, 0.98);
+  transform: translateY(-1px);
+}
+
+.gaia-opening-sound-actions button:is(:focus-visible, [aria-pressed="true"]) .gaia-opening-sound-icon-shell {
+  border-color: rgba(var(--opening-mint), 0.9);
+  background: rgba(var(--opening-mint), 0.13);
+  box-shadow: inset 0 0 16px rgba(var(--opening-mint), 0.09), 0 0 18px rgba(var(--opening-mint), 0.16);
+  transform: scale(1.06);
+}
+
+.gaia-opening-sound-actions button:is(:focus-visible, [aria-pressed="true"]) .gaia-opening-sound-label {
+  color: rgba(247, 255, 251, 0.98);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--opening-mint), 0.54);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.35em;
+}
+
 @media (max-height: 620px) and (orientation: landscape) {
   .gaia-vn-character-focus { width: min(45vw, 88vh); }
   .gaia-vn-character-copy h2 { font-size: 44px; }

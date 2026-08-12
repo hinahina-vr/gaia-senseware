@@ -200,7 +200,7 @@ const boundaryCases = [
   ["festival_concept_026", "festival-mizuha-closeup-cg", "event-cg-mizuha-closeup-v1.png", "event-cg", ""],
   ["festival_concept_027", "festival-gaia-booth-conversation", "novel-bg-exhibition-v2.png", "scenic", "あなた"],
   ["festival_concept_031", "festival-gaia-booth-conversation", "novel-bg-exhibition-v2.png", "scenic", ""],
-  ["festival_concept_032", "festival-amane-response-closeup-cg", "event-cg-amane-closeup-v1.png", "event-cg", "あまあま"],
+  ["festival_concept_032", "festival-amane-response-closeup-cg", "event-cg-amane-closeup-v1.png", "event-cg", "あめ"],
   ["festival_concept_035", "festival-amane-response-closeup-cg", "event-cg-amane-closeup-v1.png", "event-cg", ""],
   ["festival_concept_036", "festival-mizuha-response-closeup-cg", "event-cg-mizuha-closeup-v1.png", "event-cg", "みず"],
 ];
@@ -225,7 +225,7 @@ const scanRepresentativeNonRegressions = async (viewport) => {
   const chat = await page.evaluate(() => {
     const dialogue = document.querySelector("#novel-dialogue");
     const current = document.querySelector(".novel-slack-post.is-new");
-    const humanAvatars = [...document.querySelectorAll([
+    const symbolicAvatars = [...document.querySelectorAll([
       ".novel-slack-post[data-speaker='mizuha'] .novel-slack-avatar",
       ".novel-slack-post[data-speaker='amane'] .novel-slack-avatar",
       ".novel-slack-post[data-speaker='sakuya'] .novel-slack-avatar",
@@ -234,12 +234,18 @@ const scanRepresentativeNonRegressions = async (viewport) => {
     return {
       vnVisible: __festivalVisible(dialogue),
       activePostVisible: __festivalVisible(current),
-      humanAvatarDomCount: humanAvatars.length,
-      humanAvatarVisibleCount: humanAvatars.filter(__festivalVisible).length,
+      symbolicAvatarDomCount: symbolicAvatars.length,
+      symbolicAvatarVisibleCount: symbolicAvatars.filter(__festivalVisible).length,
+      humanAvatarDomCount: document.querySelectorAll(".novel-slack-avatar[data-human-avatar], .novel-slack-avatar img[src*='/characters/']").length,
       overflowX: document.documentElement.scrollWidth > innerWidth + 1,
     };
   });
-  assert.deepEqual(chat, { vnVisible: true, activePostVisible: true, humanAvatarDomCount: 0, humanAvatarVisibleCount: 0, overflowX: false });
+  assert.equal(chat.vnVisible, true);
+  assert.equal(chat.activePostVisible, true);
+  assert.equal(chat.humanAvatarDomCount, 0);
+  assert(chat.symbolicAvatarDomCount > 0);
+  assert.equal(chat.symbolicAvatarVisibleCount, chat.symbolicAvatarDomCount);
+  assert.equal(chat.overflowX, false);
 
   await bootAt(page, "map_mode01_004", { readStepIds: ["map_mode01_001", "map_mode01_002", "map_mode01_003"] });
   const map = await page.evaluate(() => ({
