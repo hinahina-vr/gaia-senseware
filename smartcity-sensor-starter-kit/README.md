@@ -23,6 +23,8 @@
 - Device Token、Pairing Code、Wi-Fi passwordをGitHubやSerial Logへ出さないでください。
 - HTTPは禁止です。`setInsecure()` も使用しません。
 - Root CAはAPI domainの証明書chainが変わる可能性があるため、deploymentごとに運用者が確認・更新してください。
+- Wi-Fi/Pairing失敗時はSetup APへ自動復帰します。通常運転中もBOOTボタン5秒長押しでローカルcredentialを消去し、再provisionできます。
+- 送信中の電源断に備え、seqとcanonical JSON本文は送信前にNVSへ保存されます。再起動後は同一本文を再送して202/200 duplicateのどちらからも復帰します。
 
 ## API contract
 

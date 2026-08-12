@@ -25,8 +25,54 @@ String deviceToken;
 String wifiSsid;
 String wifiPassword;
 String pairingCode;
+String pendingPayload;
 uint64_t sequenceNumber = 0;
+uint64_t pendingSequence = 0;
 bool setupMode = false;
+unsigned long reprovisionPressedAt = 0;
+uint8_t wifiReconnectFailures = 0;
+
+void clearPendingPayload() {
+  preferences.remove("pending");
+  pendingPayload = "";
+  pendingSequence = 0;
+}
+
+void clearLocalProvisioning() {
+  const char* keys[] = {"wifiSsid", "wifiPass", "pairCode", "deviceId", "deviceToken", "seq", "pending"};
+  for (const char* key : keys) {
+    preferences.remove(key);
+  }
+  wifiSsid = "";
+  wifiPassword = "";
+  pairingCode = "";
+  deviceId = "";
+  deviceToken = "";
+  pendingPayload = "";
+  sequenceNumber = 0;
+  pendingSequence = 0;
+}
+
+bool checkReprovisionButton() {
+  if (digitalRead(REPROVISION_BUTTON_PIN) != LOW) {
+    reprovisionPressedAt = 0;
+    return false;
+  }
+  if (reprovisionPressedAt == 0) reprovisionPressedAt = millis();
+  if (millis() - reprovisionPressedAt < REPROVISION_HOLD_MS) return false;
+  Serial.println("Reprovision requested. Clearing local credentials without printing them.");
+  clearLocalProvisioning();
+  return true;
+}
+
+bool waitWithRecovery(unsigned long durationMs) {
+  const unsigned long startedAt = millis();
+  while (millis() - startedAt < durationMs) {
+    if (checkReprovisionButton()) return false;
+    delay(50);
+  }
+  return true;
+}
 
 String htmlEscape(const String& value) {
   String escaped;
@@ -44,6 +90,7 @@ String htmlEscape(const String& value) {
 }
 
 String setupPage(const String& message = "") {
+  const bool pairingRequired = deviceId.length() == 0 || deviceToken.length() == 0;
   return String(F(
     "<!doctype html><html lang='ja'><meta name='viewport' content='width=device-width,initial-scale=1'>"
     "<title>ESP32 SENSOR SETUP</title><style>body{font:16px system-ui;background:#071727;color:#eef9ff;"
@@ -55,12 +102,16 @@ String setupPage(const String& message = "") {
     "<form method='post' action='/save'>"
     "<label>Wi-Fi SSID<input name='ssid' maxlength='32' required value='" + htmlEscape(wifiSsid) + "'></label>"
     "<label>Wi-Fi Password<input name='password' type='password' maxlength='63' required autocomplete='new-password'></label>"
-    "<label>Pairing Code<input name='pairing' maxlength='9' pattern='[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}' required autocomplete='off'></label>"
+    "<label>Pairing Code" + String(pairingRequired ? " *" : "（Wi-Fi変更だけなら空欄）") +
+    "<input name='pairing' maxlength='9' pattern='[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}' " +
+    String(pairingRequired ? "required " : "") + "autocomplete='off'></label>"
     "<button type='submit'>Connect &amp; Register</button></form></html>";
 }
 
 void startSetupMode() {
+  if (setupMode) return;
   setupMode = true;
+  WiFi.disconnect(true, false);
   WiFi.mode(WIFI_AP);
   const String suffix = String(static_cast<uint32_t>(ESP.getEfuseMac()), HEX).substring(4);
   const String accessPoint = "CITY-SENSOR-" + suffix;
@@ -75,15 +126,16 @@ void startSetupMode() {
     const String submittedPassword = setupServer.arg("password");
     String submittedPairing = setupServer.arg("pairing");
     submittedPairing.toUpperCase();
+    const bool pairingRequired = deviceId.length() == 0 || deviceToken.length() == 0;
     const bool codeShape = submittedPairing.length() == 9 && submittedPairing[4] == '-';
     if (submittedSsid.length() == 0 || submittedSsid.length() > 32 || submittedPassword.length() < 8 ||
-        submittedPassword.length() > 63 || !codeShape) {
+        submittedPassword.length() > 63 || (pairingRequired && !codeShape) || (!pairingRequired && submittedPairing.length() > 0 && !codeShape)) {
       setupServer.send(400, "text/html; charset=utf-8", setupPage("入力内容を確認してください。"));
       return;
     }
     preferences.putString("wifiSsid", submittedSsid);
     preferences.putString("wifiPass", submittedPassword);
-    preferences.putString("pairCode", submittedPairing);
+    if (submittedPairing.length() > 0) preferences.putString("pairCode", submittedPairing);
     setupServer.sendHeader("Cache-Control", "no-store");
     setupServer.send(200, "text/html; charset=utf-8", setupPage("保存しました。再起動して接続します。"));
     delay(700);
@@ -117,7 +169,10 @@ bool connectWiFi() {
   Serial.print("Connecting to Wi-Fi");
   const unsigned long deadline = millis() + 30000UL;
   while (WiFi.status() != WL_CONNECTED && millis() < deadline) {
-    delay(350);
+    if (!waitWithRecovery(350)) {
+      startSetupMode();
+      return false;
+    }
     Serial.print(".");
   }
   Serial.println();
@@ -173,6 +228,7 @@ bool pairDevice() {
   preferences.putString("deviceId", deviceId);
   preferences.putString("deviceToken", deviceToken);
   preferences.putULong64("seq", sequenceNumber);
+  clearPendingPayload();
   preferences.remove("pairCode");
   pairingCode = "";
   Serial.println("Pairing succeeded. Device Token is stored in NVS and is not printed.");
@@ -187,7 +243,35 @@ String isoTimestampIfSynchronized() {
   return String(buffer);
 }
 
-bool sendTelemetry(const SensorValues& values) {
+bool loadPendingPayload() {
+  const String envelope = preferences.getString("pending", "");
+  if (envelope.length() == 0) return false;
+  JsonDocument stored;
+  if (deserializeJson(stored, envelope) != DeserializationError::Ok || !stored["seq"].is<uint64_t>() || !stored["body"].is<const char*>()) {
+    Serial.println("Discarding invalid pending telemetry metadata; no secret was printed.");
+    clearPendingPayload();
+    return false;
+  }
+  pendingSequence = stored["seq"].as<uint64_t>();
+  pendingPayload = stored["body"].as<String>();
+  if (pendingPayload.length() == 0) {
+    clearPendingPayload();
+    return false;
+  }
+  if (pendingSequence < sequenceNumber) {
+    // The seq update reached NVS but power was lost before pending cleanup.
+    clearPendingPayload();
+    return false;
+  }
+  if (pendingSequence > sequenceNumber) {
+    // A complete pending envelope is authoritative if an older seq write was lost.
+    sequenceNumber = pendingSequence;
+    preferences.putULong64("seq", sequenceNumber);
+  }
+  return true;
+}
+
+bool persistPendingPayload(const SensorValues& values) {
   JsonDocument payload;
   payload["seq"] = sequenceNumber;
   const String observedAt = isoTimestampIfSynchronized();
@@ -197,15 +281,37 @@ bool sendTelemetry(const SensorValues& values) {
   payload["data"]["pm25"] = roundf(values.pm25 * 10.0f) / 10.0f;
   String body;
   serializeJson(payload, body);
+  JsonDocument envelope;
+  envelope["seq"] = sequenceNumber;
+  envelope["body"] = body;
+  String encodedEnvelope;
+  serializeJson(envelope, encodedEnvelope);
+  if (preferences.putString("pending", encodedEnvelope) != encodedEnvelope.length() ||
+      preferences.getString("pending", "") != encodedEnvelope) {
+    Serial.println("Could not persist pending telemetry; nothing was sent.");
+    return false;
+  }
+  pendingSequence = sequenceNumber;
+  pendingPayload = body;
+  return true;
+}
+
+bool sendTelemetry(const SensorValues& values) {
+  if (pendingPayload.length() == 0 && !loadPendingPayload() && !persistPendingPayload(values)) return false;
 
   const String endpoint = String(API_BASE_URL) + "/devices/" + deviceId + "/telemetry";
   for (int attempt = 0; attempt < RETRY_ATTEMPTS; ++attempt) {
     int status = 0;
     String responseBody;
-    const bool sent = httpsPost(endpoint, body, String("Bearer ") + deviceToken, status, responseBody);
+    const bool sent = httpsPost(endpoint, pendingPayload, String("Bearer ") + deviceToken, status, responseBody);
     if (sent && (status == 202 || status == 200)) {
-      sequenceNumber += 1;
-      preferences.putULong64("seq", sequenceNumber);
+      const uint64_t nextSequence = pendingSequence + 1;
+      if (preferences.putULong64("seq", nextSequence) != sizeof(nextSequence)) {
+        Serial.println("Could not persist the next sequence; retaining the pending payload for an exact replay.");
+        return false;
+      }
+      sequenceNumber = nextSequence;
+      clearPendingPayload();
       Serial.printf("Telemetry accepted; next seq=%llu.\n", sequenceNumber);
       return true;
     }
@@ -216,7 +322,10 @@ bool sendTelemetry(const SensorValues& values) {
     const unsigned long baseDelay = 5000UL << attempt;
     const unsigned long jitter = esp_random() % 800UL;
     Serial.printf("Telemetry retry %d after %lu ms.\n", attempt + 1, baseDelay + jitter);
-    delay(baseDelay + jitter);
+    if (!waitWithRecovery(baseDelay + jitter)) {
+      startSetupMode();
+      return false;
+    }
   }
   return false;
 }
@@ -225,20 +334,35 @@ void setup() {
   Serial.begin(115200);
   delay(400);
   preferences.begin("gaia-sensor", false);
+  pinMode(REPROVISION_BUTTON_PIN, INPUT_PULLUP);
+  const unsigned long bootRecoveryDeadline = millis() + REPROVISION_HOLD_MS;
+  while (digitalRead(REPROVISION_BUTTON_PIN) == LOW && millis() < bootRecoveryDeadline) delay(25);
+  if (digitalRead(REPROVISION_BUTTON_PIN) == LOW || checkReprovisionButton()) {
+    clearLocalProvisioning();
+  }
   deviceId = preferences.getString("deviceId", "");
   deviceToken = preferences.getString("deviceToken", "");
   wifiSsid = preferences.getString("wifiSsid", "");
   wifiPassword = preferences.getString("wifiPass", "");
   pairingCode = preferences.getString("pairCode", "");
   sequenceNumber = preferences.getULong64("seq", 0);
+  loadPendingPayload();
   if (wifiSsid.length() == 0 || wifiPassword.length() == 0 ||
       ((deviceId.length() == 0 || deviceToken.length() == 0) && pairingCode.length() == 0)) {
     startSetupMode();
     return;
   }
-  if (!connectWiFi()) return;
+  if (!connectWiFi()) {
+    startSetupMode();
+    return;
+  }
   if (deviceId.length() == 0 || deviceToken.length() == 0) {
-    if (!pairDevice()) Serial.println("Pairing is incomplete. Obtain a new one-time code and reboot.");
+    if (!pairDevice()) {
+      preferences.remove("pairCode");
+      pairingCode = "";
+      Serial.println("Pairing is incomplete. Obtain a new code, then enter it in Setup AP.");
+      startSetupMode();
+    }
   } else {
     Serial.println("Device credential loaded from NVS. Secret value is not printed.");
   }
@@ -251,17 +375,22 @@ void loop() {
     delay(2);
     return;
   }
+  if (checkReprovisionButton()) {
+    startSetupMode();
+    return;
+  }
   if (WiFi.status() != WL_CONNECTED) {
-    connectWiFi();
-    delay(1000);
+    if (connectWiFi()) wifiReconnectFailures = 0;
+    else if (++wifiReconnectFailures >= WIFI_RECONNECT_LIMIT) startSetupMode();
+    waitWithRecovery(1000);
     return;
   }
   if (deviceId.length() == 0 || deviceToken.length() == 0) {
-    delay(TELEMETRY_INTERVAL_MS);
+    waitWithRecovery(TELEMETRY_INTERVAL_MS);
     return;
   }
   SensorValues values{};
   if (readSensors(values)) sendTelemetry(values);
   else Serial.println("Sensor read failed.");
-  delay(TELEMETRY_INTERVAL_MS);
+  if (!waitWithRecovery(TELEMETRY_INTERVAL_MS)) startSetupMode();
 }
