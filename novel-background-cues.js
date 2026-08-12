@@ -64,7 +64,8 @@
   const limitedStory = Object.freeze([
     { id: "festival-main-entrance-reception", sceneId: "festival_concept", from: 1, to: 7, assetPath: "assets/visuals-07/novel-bg-coastal-venue-v3.png", motion: "push-in" },
     { id: "festival-b-hall-overview", sceneId: "festival_concept", from: 8, to: 9, assetPath: "assets/visuals-07/novel-bg-festival-b-hall-overview-v1.png", motion: "push-in" },
-    { id: "festival-gaia-booth-approach", sceneId: "festival_concept", from: 10, to: 14, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png", motion: "drift-left" },
+    { id: "festival-gaia-five-plane-projection", sceneId: "festival_concept", from: 10, to: 12, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-v1.png", motion: "push-in" },
+    { id: "festival-gaia-booth-approach", sceneId: "festival_concept", from: 13, to: 14, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png", motion: "drift-left" },
     { id: "festival-first-encounter-cg", sceneId: "festival_concept", from: 15, to: 20, assetPath: "assets/visuals-07/event-cg-first-encounter-v1.png", motion: "event-focus", presentation: "event-cg", galleryId: "first-encounter" },
     { id: "festival-amane-closeup-cg", sceneId: "festival_concept", from: 21, to: 22, assetPath: "assets/visuals-07/event-cg-amane-closeup-v1.png", motion: "event-focus", presentation: "event-cg", galleryId: "amane-closeup" },
     { id: "festival-mizuha-closeup-cg", sceneId: "festival_concept", from: 23, to: 26, assetPath: "assets/visuals-07/event-cg-mizuha-closeup-v1.png", motion: "event-focus", presentation: "event-cg", galleryId: "mizuha-closeup" },
