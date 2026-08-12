@@ -2342,7 +2342,6 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   line-break: strict;
   overflow-wrap: normal;
   word-break: normal;
-  word-break: auto-phrase;
   text-wrap: pretty;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.78);
 }
@@ -3437,6 +3436,32 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
 
 .novel-text.is-preparing {
   visibility: hidden;
+}
+
+.novel-token-layout {
+  display: inline;
+}
+
+.novel-phrase-token,
+.novel-space-token {
+  display: inline-block;
+  white-space: pre;
+  vertical-align: baseline;
+}
+
+.novel-text.is-revealing .novel-phrase-token,
+.novel-text.is-revealing .novel-space-token {
+  animation: novel-token-reveal var(--novel-token-duration) steps(var(--novel-token-steps), end) var(--novel-token-delay) both;
+}
+
+.novel-text.is-revealed .novel-phrase-token,
+.novel-text.is-revealed .novel-space-token {
+  clip-path: inset(-0.15em 0 -0.15em 0);
+}
+
+@keyframes novel-token-reveal {
+  from { clip-path: inset(-0.15em 100% -0.15em 0); }
+  to { clip-path: inset(-0.15em 0 -0.15em 0); }
 }
 
 .novel-line {

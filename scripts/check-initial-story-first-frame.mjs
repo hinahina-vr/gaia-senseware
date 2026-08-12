@@ -64,7 +64,7 @@ assert.match(css, /0 1px 2px rgba\(0, 5, 18, 0\.86\),\s*\n\s*1px 0 1px rgba\(0, 
 
 assert.equal(canon, retained);
 const expectedHash = sha256(canon);
-assert.equal(expectedHash, "e15e68aba9c3b18a2ffc47dccc21eb5dc5b8997aa4c7cfc06424dafe6932543d");
+assert.equal(expectedHash, "4875cae7eef0a748d4124c15e32b15c97a23ee1649ac2289f1680c8c8e1d05a1");
 assert(builder.includes(expectedHash));
 assert.match(canon, /［会場案内｜国際展示場 8ホール　学生作品・体験展示］/u);
 assert.doesNotMatch(canon, /Bホール/u);

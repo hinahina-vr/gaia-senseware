@@ -357,11 +357,15 @@
   let isRevealing = false;
   let fullText = "";
   let dialoguePages = [];
+  let dialoguePageLayouts = [];
   let dialoguePageIndex = 0;
   let dialoguePageReveal = true;
   let dialogueSourceText = "";
   let dialoguePaginationGeneration = 0;
   let dialogueResizeTimer = 0;
+  let dialogueObservedWidth = 0;
+  let dialogueReflowActive = false;
+  let dialogueForceFallbackForInspection = false;
   let revealTimer = 0;
   let revealFrame = 0;
   let revealGeneration = 0;
@@ -967,6 +971,7 @@
     dialogueResizeTimer = 0;
     dialogueSourceText = "";
     dialoguePages = [];
+    dialoguePageLayouts = [];
     dialoguePageIndex = 0;
     dialoguePageReveal = true;
     delete elements.text.dataset.characterCount;
@@ -1497,8 +1502,8 @@
     revealFrame = 0;
     isRevealing = false;
     elements.text.classList.remove("is-preparing", "is-revealing");
-    const lines = elements.text.querySelectorAll(".novel-line");
-    if (lines.length > 0) {
+    const tokens = elements.text.querySelectorAll(".novel-phrase-token, .novel-space-token");
+    if (tokens.length > 0) {
       elements.text.classList.add("is-revealed");
     } else {
       elements.text.textContent = fullText;
@@ -1508,41 +1513,117 @@
     scheduleAutoAdvance();
   };
 
-  const measureNativeLines = (text) => {
-    elements.text.textContent = text;
-    const textNode = elements.text.firstChild;
-    const glyphs = Array.from(text);
-    if (!(textNode instanceof Text) || glyphs.length === 0) return [glyphs];
+  const DIALOGUE_PARTICLES = new Set(["は", "が", "を", "に", "へ", "と", "で", "の", "も", "や", "か", "ね", "よ"]);
+  const DIALOGUE_OPENING = /^[「『（【［〈《〔“‘]/u;
+  const DIALOGUE_CLOSING = /^[、。，．？！…」』）】］〉》〕ぁぃぅぇぉゃゅょっァィゥェォャュョッー]/u;
+  const DIALOGUE_PROTECTED = ["GAIA SENSEWARE", "リアルタイム", "ものづくり", "そのもの"];
 
-    const range = document.createRange();
-    const lines = [];
-    let lineStart = 0;
-    let lineTop = null;
-    let textOffset = 0;
-
-    glyphs.forEach((glyph, index) => {
-      const nextOffset = textOffset + glyph.length;
-      range.setStart(textNode, textOffset);
-      range.setEnd(textNode, nextOffset);
-      const top = range.getBoundingClientRect().top;
-      if (lineTop === null) {
-        lineTop = top;
-      } else if (Math.abs(top - lineTop) > 2) {
-        lines.push(glyphs.slice(lineStart, index));
-        lineStart = index;
-        lineTop = top;
-      }
-      textOffset = nextOffset;
-    });
-
-    range.detach();
-    lines.push(glyphs.slice(lineStart));
-    return lines.filter((line) => line.length > 0);
+  const fallbackDialogueSegments = (source) => {
+    const protectedPattern = DIALOGUE_PROTECTED.map((value) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")).join("|");
+    const pattern = new RegExp(`(${protectedPattern}|\\r?\\n|[ \\t　]+|[A-Za-z0-9]+(?:[ .+/#_-][A-Za-z0-9]+)*|[ぁ-んァ-ヶー一-龠々〆ヵヶ]+|.)`, "gu");
+    return source.match(pattern) || [];
   };
 
-  const dialoguePageMetrics = (text) => {
+  const segmentDialoguePhrases = (source, { forceFallback = dialogueForceFallbackForInspection } = {}) => {
+    const text = String(source || "");
+    const raw = [];
+    if (!forceFallback && globalThis.Intl?.Segmenter) {
+      const segmenter = new Intl.Segmenter("ja", { granularity: "word" });
+      for (const part of segmenter.segment(text)) raw.push(part.segment);
+    } else {
+      raw.push(...fallbackDialogueSegments(text));
+    }
+    const protectedMerged = [];
+    for (let index = 0; index < raw.length;) {
+      const remainder = raw.slice(index).join("");
+      const protectedWord = DIALOGUE_PROTECTED.find((word) => remainder.startsWith(word));
+      if (protectedWord) {
+        let consumed = "";
+        while (index < raw.length && consumed.length < protectedWord.length) consumed += raw[index++];
+        protectedMerged.push(consumed);
+      } else {
+        protectedMerged.push(raw[index++]);
+      }
+    }
+    const tokens = [];
+    let pendingOpening = "";
+    protectedMerged.forEach((value) => {
+      if (!value) return;
+      if (/^\r?\n$/u.test(value) || /^[ \t　]+$/u.test(value)) {
+        if (pendingOpening) tokens.push(pendingOpening);
+        pendingOpening = "";
+        tokens.push(value);
+        return;
+      }
+      if (DIALOGUE_OPENING.test(value)) {
+        pendingOpening += value;
+        return;
+      }
+      const token = `${pendingOpening}${value}`;
+      pendingOpening = "";
+      const previous = tokens.at(-1);
+      if (previous && !/^\s+$/u.test(previous) && (DIALOGUE_CLOSING.test(value) || DIALOGUE_PARTICLES.has(value))) {
+        tokens[tokens.length - 1] += token;
+      } else {
+        tokens.push(token);
+      }
+    });
+    if (pendingOpening) tokens.push(pendingOpening);
+    if (tokens.join("") !== text) return fallbackDialogueSegments(text);
+    return tokens;
+  };
+
+  const buildDialogueTokenLayout = (text, options) => {
+    const root = document.createElement("span");
+    root.className = "novel-token-layout";
+    let offset = 0;
+    segmentDialoguePhrases(text, options).forEach((token) => {
+      if (/^\r?\n$/u.test(token)) {
+        root.append(document.createElement("br"));
+      } else {
+        const span = document.createElement("span");
+        span.className = /^\s+$/u.test(token) ? "novel-space-token" : "novel-phrase-token";
+        span.textContent = token;
+        span.dataset.sourceStart = String(offset);
+        span.dataset.sourceEnd = String(offset + token.length);
+        root.append(span);
+      }
+      offset += token.length;
+    });
+    root.dataset.sourceLength = String(text.length);
+    return root;
+  };
+
+  const measureNativeLines = (text, preparedLayout = null) => {
+    const layout = preparedLayout || buildDialogueTokenLayout(text);
+    elements.text.replaceChildren(layout);
+    const lines = [];
+    let current = [];
+    let lineTop = null;
+    layout.childNodes.forEach((node) => {
+      if (node instanceof HTMLBRElement) {
+        if (current.length) lines.push(current);
+        current = [];
+        lineTop = null;
+        return;
+      }
+      if (!(node instanceof HTMLElement)) return;
+      const top = node.getBoundingClientRect().top;
+      if (lineTop === null) lineTop = top;
+      else if (Math.abs(top - lineTop) > 2) {
+        if (current.length) lines.push(current);
+        current = [];
+        lineTop = top;
+      }
+      current.push(...Array.from(node.textContent || ""));
+    });
+    if (current.length) lines.push(current);
+    return lines.length ? lines : [Array.from(text)];
+  };
+
+  const dialoguePageMetrics = (text, preparedLayout = null) => {
     const normalized = String(text || "").replace(/\n+$/u, "");
-    const measuredLines = measureNativeLines(normalized);
+    const measuredLines = measureNativeLines(normalized, preparedLayout);
     const textStyle = getComputedStyle(elements.text);
     const fontSize = Number.parseFloat(textStyle.fontSize) || 16;
     const lineHeight = Number.parseFloat(textStyle.lineHeight) || fontSize * 1.6;
@@ -1717,6 +1798,12 @@
 
   const dialogueBoundaryCandidates = (text) => {
     const glyphs = Array.from(text);
+    const tokenBoundaries = new Set();
+    let tokenOffset = 0;
+    segmentDialoguePhrases(text).forEach((token) => {
+      tokenOffset += Array.from(token).length;
+      tokenBoundaries.add(tokenOffset);
+    });
     const structuredRanges = [];
     let rangeStart = 0;
     for (let index = 0; index <= glyphs.length; index += 1) {
@@ -1729,17 +1816,17 @@
     let semanticOffset = 0;
     semanticDialogueUnits(text).forEach((unit) => {
       semanticOffset += Array.from(unit).length;
-      if (semanticOffset > 0 && semanticOffset < glyphs.length) semanticOffsets.add(semanticOffset);
+      if (semanticOffset > 0 && semanticOffset < glyphs.length && tokenBoundaries.has(semanticOffset)) semanticOffsets.add(semanticOffset);
     });
     const safeOffsets = new Set();
     glyphs.forEach((glyph, index) => {
-      if (/[\u3001\uff0c,\u30fb\uff1a:；;\s]/u.test(glyph) && !splitsStructuredLine(index + 1)) safeOffsets.add(index + 1);
+      if (/[\u3001\uff0c,\u30fb\uff1a:；;\s]/u.test(glyph) && tokenBoundaries.has(index + 1) && !splitsStructuredLine(index + 1)) safeOffsets.add(index + 1);
     });
     const lineOffsets = new Set();
     let lineOffset = 0;
     measureNativeLines(text).forEach((line) => {
       lineOffset += line.length;
-      if (lineOffset > 0 && lineOffset < glyphs.length && !splitsStructuredLine(lineOffset)) lineOffsets.add(lineOffset);
+      if (lineOffset > 0 && lineOffset < glyphs.length && tokenBoundaries.has(lineOffset) && !splitsStructuredLine(lineOffset)) lineOffsets.add(lineOffset);
     });
     return { glyphs, semanticOffsets, safeOffsets, lineOffsets };
   };
@@ -1809,19 +1896,26 @@
 
     const largestSafePrefix = (value) => {
       const glyphs = Array.from(value);
+      const tokenOffsets = [];
+      let tokenOffset = 0;
+      segmentDialoguePhrases(value).forEach((token) => {
+        tokenOffset += Array.from(token).length;
+        tokenOffsets.push(tokenOffset);
+      });
       let low = 1;
-      let high = glyphs.length;
+      let high = tokenOffsets.length;
       let maximum = 0;
       while (low <= high) {
         const middle = Math.floor((low + high) / 2);
-        if (dialoguePageMetrics(glyphs.slice(0, middle).join("")).fits) {
-          maximum = middle;
+        const candidateOffset = tokenOffsets[middle - 1];
+        if (dialoguePageMetrics(glyphs.slice(0, candidateOffset).join("")).fits) {
+          maximum = candidateOffset;
           low = middle + 1;
         } else {
           high = middle - 1;
         }
       }
-      maximum = Math.max(1, maximum);
+      if (!maximum) throw new Error(`VN phrase token exceeds one page: ${value.slice(0, 80)}`);
       const sentenceOffsets = new Set();
       const safeOffsets = new Set();
       const sentenceMarks = new Set(["\u3002", "\uff01", "\uff1f", "!", "?"]);
@@ -1837,7 +1931,9 @@
       const fittingOffset = (offsets) => [...offsets]
         .filter((offset) => offset > 0 && offset <= maximum && dialoguePageMetrics(glyphs.slice(0, offset).join("")).fits)
         .sort((left, right) => right - left)[0];
-      return fittingOffset(sentenceOffsets) || fittingOffset(safeOffsets) || maximum;
+      const tokenBoundarySet = new Set(tokenOffsets);
+      const tokenBoundaryOffsets = (offsets) => new Set([...offsets].filter((offset) => tokenBoundarySet.has(offset)));
+      return fittingOffset(tokenBoundaryOffsets(sentenceOffsets)) || fittingOffset(tokenBoundaryOffsets(safeOffsets)) || maximum;
     };
 
     units.forEach((unit) => {
@@ -1869,42 +1965,30 @@
     return balanced.join("") === normalized ? balanced : [normalized];
   };
 
-  const buildMeasuredLineLayout = (text) => {
-    const measuredLines = measureNativeLines(text);
-    const fragment = document.createDocumentFragment();
+  const buildMeasuredLineLayout = (text, preparedLayout = null) => {
+    const layout = preparedLayout || buildDialogueTokenLayout(text);
+    const measuredLines = measureNativeLines(text, layout);
     const speedScale = 100 / config.messageSpeedPercent;
     let delay = 0;
-
-    measuredLines.forEach((lineGlyphs) => {
-      const lineText = lineGlyphs.join("");
-      const line = document.createElement("span");
-      const layout = document.createElement("span");
-      const reveal = document.createElement("span");
+    layout.querySelectorAll(".novel-phrase-token, .novel-space-token").forEach((token) => {
       let duration = 0;
-
-      line.className = "novel-line";
-      line.setAttribute("aria-hidden", "true");
-      layout.className = "novel-line-layout";
-      reveal.className = "novel-line-reveal";
-      layout.textContent = lineText;
-      reveal.textContent = lineText;
-      lineGlyphs.forEach((glyph) => {
+      const tokenGlyphs = Array.from(token.textContent || "");
+      tokenGlyphs.forEach((glyph) => {
         duration += REVEAL_BASE_MS * speedScale;
         if (/[。！？、…―]/u.test(glyph)) duration += REVEAL_PUNCTUATION_MS * speedScale;
       });
-      reveal.style.setProperty("--novel-line-delay", `${delay}ms`);
-      reveal.style.setProperty("--novel-line-duration", `${Math.max(duration, REVEAL_MIN_LINE_MS)}ms`);
-      reveal.style.setProperty("--novel-line-steps", String(Math.max(1, lineGlyphs.length)));
-      line.append(layout, reveal);
-      fragment.append(line);
+      token.style.setProperty("--novel-token-delay", `${delay}ms`);
+      token.style.setProperty("--novel-token-duration", `${Math.max(duration, REVEAL_MIN_LINE_MS)}ms`);
+      token.style.setProperty("--novel-token-steps", String(Math.max(1, tokenGlyphs.length)));
       delay += duration;
     });
-
-    elements.text.replaceChildren(fragment);
+    elements.text.replaceChildren(layout);
+    elements.text.dataset.measuredNodeIdentity = layout.dataset.layoutIdentity || "";
+    elements.text.dataset.measuredLineCount = String(measuredLines.length);
     return delay;
   };
 
-  const revealText = (text) => {
+  const revealText = (text, preparedLayout = null) => {
     clearTimers();
     const generation = revealGeneration;
     fullText = text;
@@ -1912,13 +1996,13 @@
     elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
     elements.continueMark.classList.remove("is-visible");
     if (motionReduced() || !text) {
-      elements.text.replaceChildren();
+      elements.text.replaceChildren(preparedLayout || buildDialogueTokenLayout(text));
       finishReveal();
       return;
     }
 
     isRevealing = true;
-    elements.text.textContent = text;
+    elements.text.replaceChildren(preparedLayout || buildDialogueTokenLayout(text));
     elements.text.classList.add("is-preparing");
     elements.cursor.hidden = true;
 
@@ -1927,7 +2011,7 @@
       revealFrame = window.requestAnimationFrame(() => {
         revealFrame = window.requestAnimationFrame(() => {
           if (generation !== revealGeneration || !isRevealing) return;
-          const duration = buildMeasuredLineLayout(text);
+          const duration = buildMeasuredLineLayout(text, preparedLayout);
           elements.text.classList.remove("is-preparing");
           void elements.text.offsetWidth;
           elements.text.classList.add("is-revealing");
@@ -1943,7 +2027,8 @@
 
   const renderDialoguePage = () => {
     const page = (dialoguePages[dialoguePageIndex] || "").replace(/\n+$/u, "");
-    const metrics = dialoguePageMetrics(page);
+    const layout = dialoguePageLayouts[dialoguePageIndex] || buildDialogueTokenLayout(page);
+    const metrics = dialoguePageMetrics(page, layout);
     elements.text.dataset.pageCount = String(dialoguePages.length);
     elements.text.dataset.pageIndex = String(dialoguePageIndex + 1);
     elements.text.dataset.measuredLineCount = String(metrics.measuredLines.length);
@@ -1952,14 +2037,15 @@
       ? `${dialoguePageIndex + 1} / ${dialoguePages.length}　▼`
       : "▼";
     if (dialoguePageReveal) {
-      revealText(page);
+      revealText(page, layout);
       return;
     }
     clearTimers();
     fullText = page;
     isRevealing = false;
     elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
-    elements.text.textContent = page;
+    elements.text.replaceChildren(layout);
+    elements.text.dataset.measuredNodeIdentity = layout.dataset.layoutIdentity || "";
     elements.text.setAttribute("aria-label", page);
     elements.cursor.hidden = true;
     elements.continueMark.classList.add("is-visible");
@@ -1977,6 +2063,13 @@
     const renderMeasuredPages = () => {
       if (paginationGeneration !== dialoguePaginationGeneration || dialogueSourceText !== normalized) return;
       dialoguePages = paginateDialogueTextBalanced(normalized);
+      dialoguePageLayouts = dialoguePages.map((page, index) => {
+        const layout = buildDialogueTokenLayout(page.replace(/\n+$/u, ""));
+        layout.dataset.layoutIdentity = `${currentStep()?.id || "step"}:${paginationGeneration}:${index}`;
+        dialoguePageMetrics(page.replace(/\n+$/u, ""), layout);
+        layout.remove();
+        return layout;
+      });
       elements.text.dataset.pageCount = String(dialoguePages.length);
       renderDialoguePage();
     };
@@ -1999,6 +2092,7 @@
   };
 
   const repaginateVisibleDialogue = () => {
+    if (dialogueReflowActive) return;
     window.clearTimeout(dialogueResizeTimer);
     dialogueResizeTimer = window.setTimeout(() => {
       dialogueResizeTimer = 0;
@@ -2009,6 +2103,7 @@
       const anchorOffset = dialoguePages.slice(0, dialoguePageIndex).reduce((total, page) => total + Array.from(page).length, 0);
       const apply = () => {
         if (generation !== dialoguePaginationGeneration || source !== dialogueSourceText || currentStep()?.id !== step.id) return;
+        dialogueReflowActive = true;
         const nextPages = paginateDialogueTextBalanced(source);
         let nextIndex = 0;
         let offset = 0;
@@ -2017,10 +2112,21 @@
           nextIndex += 1;
         }
         dialoguePages = nextPages;
+        dialoguePageLayouts = nextPages.map((page, index) => {
+          const layout = buildDialogueTokenLayout(page.replace(/\n+$/u, ""));
+          layout.dataset.layoutIdentity = `${step.id}:${generation}:reflow:${index}`;
+          dialoguePageMetrics(page.replace(/\n+$/u, ""), layout);
+          layout.remove();
+          return layout;
+        });
         dialoguePageIndex = nextIndex;
         dialoguePageReveal = false;
         elements.text.dataset.pageCount = String(dialoguePages.length);
         renderDialoguePage();
+        dialogueObservedWidth = elements.text.getBoundingClientRect().width;
+        window.requestAnimationFrame(() => {
+          dialogueReflowActive = false;
+        });
       };
       const fontsReady = document.fonts?.ready || Promise.resolve();
       Promise.resolve(fontsReady).then(apply, apply);
@@ -3882,6 +3988,17 @@
   window.addEventListener("blur", () => endControlFastForward());
   document.addEventListener("visibilitychange", () => endControlFastForward());
   window.addEventListener("resize", repaginateVisibleDialogue, { passive: true });
+  document.fonts?.addEventListener?.("loadingdone", repaginateVisibleDialogue);
+  if (globalThis.ResizeObserver) {
+    const dialogueTextResizeObserver = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect?.width || elements.text.getBoundingClientRect().width;
+      if (Math.abs(width - dialogueObservedWidth) < 0.5) return;
+      dialogueObservedWidth = width;
+      if (dialogueReflowActive) return;
+      window.requestAnimationFrame(repaginateVisibleDialogue);
+    });
+    dialogueTextResizeObserver.observe(elements.text);
+  }
   elements.dialogue.addEventListener("click", (event) => {
     if (event.target.closest("button, textarea, input, details, summary")) return;
     event.stopPropagation();
@@ -3941,11 +4058,15 @@
       const { unlocked, total, count, percentage } = galleryProgress();
       return { unlocked: [...unlocked], total, count, percentage };
     },
-    inspectDialoguePagination: (text) => {
+    inspectDialoguePagination: (text, { forceFallback = false } = {}) => {
       const source = String(text || "");
-      const pages = paginateDialogueTextBalanced(source);
-      return {
+      dialogueForceFallbackForInspection = forceFallback;
+      try {
+        const pages = paginateDialogueTextBalanced(source);
+        return {
         source,
+        forceFallback,
+        tokens: segmentDialoguePhrases(source, { forceFallback }),
         units: semanticDialogueUnits(source).map((unit) => {
           const metrics = dialoguePageMetrics(unit);
           return {
@@ -3956,9 +4077,27 @@
           };
         }),
         pages: pages.map((page) => {
-          const metrics = dialoguePageMetrics(page);
+          const layout = buildDialogueTokenLayout(page, { forceFallback });
+          const metrics = dialoguePageMetrics(page, layout);
           const textRect = elements.text.getBoundingClientRect();
           const indicatorRect = elements.continueMark.getBoundingClientRect();
+          const tokenRows = [];
+          layout.querySelectorAll(".novel-phrase-token, .novel-space-token").forEach((token) => {
+            const rect = token.getBoundingClientRect();
+            let row = tokenRows.find((candidate) => Math.abs(candidate.top - rect.top) <= 2);
+            if (!row) {
+              row = { top: rect.top, text: "", tokens: [] };
+              tokenRows.push(row);
+            }
+            row.text += token.textContent || "";
+            row.tokens.push({
+              text: token.textContent || "",
+              start: Number(token.dataset.sourceStart),
+              end: Number(token.dataset.sourceEnd),
+              top: rect.top,
+              bottom: rect.bottom,
+            });
+          });
           return {
             text: page,
             lines: metrics.measuredLines.length,
@@ -3966,9 +4105,14 @@
             fits: metrics.fits,
             characters: metrics.characterCount,
             indicatorSafety: indicatorRect.top - textRect.bottom,
+            tokenSource: Array.from(layout.querySelectorAll(".novel-phrase-token, .novel-space-token"), (token) => token.textContent || "").join(""),
+            tokenLines: tokenRows.sort((left, right) => left.top - right.top),
           };
         }),
-      };
+        };
+      } finally {
+        dialogueForceFallbackForInspection = false;
+      }
     },
     storageKey: STORAGE_KEY,
   });
