@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { access } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,18 +25,21 @@ const assets = Object.freeze({
   fivePlaneProjection: "assets/visuals-07/novel-bg-festival-five-plane-projection-v1.png",
   boothClose: "assets/visuals-07/novel-bg-exhibition-v3.png",
   boothWide: "assets/visuals-07/novel-bg-exhibition-v2.png",
-  firstEncounter: "assets/visuals-07/event-cg-first-encounter-v1.png",
-  amaneCloseup: "assets/visuals-07/event-cg-amane-closeup-v1.png",
-  mizuhaCloseup: "assets/visuals-07/event-cg-mizuha-closeup-v1.png",
+  projectionConversation: "assets/visuals-07/novel-bg-festival-projection-conversation-v1.png",
+  firstEncounter: "assets/visuals-07/event-cg-first-encounter-five-plane-v2.png",
+  amaneCloseup: "assets/visuals-07/event-cg-amane-closeup-five-plane-v2.png",
+  mizuhaCloseup: "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v2.png",
+  mapTransition: "assets/visuals-07/event-cg-festival-map-transition-five-plane-v2.png",
   tenWindows: "assets/concept/concept-02-ten-windows.png",
   modeMap: "assets/visuals-07/mode-map-v1.webp",
   modis: "assets/data/modis-land-cover-2023.png",
   system: "assets/architecture/gaia-system-architecture.png",
-  chapterFlow: "assets/visuals-07/data-chapter-flow-v1.webp",
+  gxAncientOcean: "assets/visuals-07/novel-bg-gx-ancient-ocean-five-plane-v1.png",
   abstract: "assets/visuals-07/mode-abstract-v1.webp",
-  memory: "assets/concept/concept-03-touch-becomes-memory.png",
+  gxBreathingPoints: "assets/visuals-07/novel-bg-gx-breathing-points-five-plane-v1.png",
   observatory: "assets/architecture/observatory-architecture-v2.png",
   partner: "assets/concept/concept-01-earth-as-partner.png",
+  gxTemperatureAnomaly: "assets/visuals-07/novel-bg-gx-temperature-anomaly-five-plane-v1.png",
   esp32Collaboration: "assets/visuals-07/event-cg-esp32-collaboration-v1.png",
   future: "assets/concept/concept-04-co-created-future.png",
   shared: "assets/visuals-07/novel-background-v1.webp",
@@ -46,6 +50,18 @@ const assets = Object.freeze({
   coastNight: "assets/visuals-07/novel-bg-zushi-coast-night-v2.png",
   finale: "assets/visuals-07/event-cg-exhibition-finale-v1.png",
 });
+const approvedAssetHashes = Object.freeze({
+  [assets.firstEncounter]: "b6b51146df739b3150f5c0d126e53eb5f85f471ec788ba74de65e09d272a1c10",
+  [assets.amaneCloseup]: "f7a0eaacaca94dc8d52ffbdc626ecb5a2a5535ba433319b71194d3e06a5ea967",
+  [assets.mizuhaCloseup]: "0ad34c323b01a9f51e3bab9a7f7d30a2dd2be3f99a30b4e9657717bf8e1e3544",
+  [assets.mapTransition]: "1702eaba7fdabf3b916c437743dbb3e2d0482d937e2090b7fa54598f6142438a",
+  [assets.gxAncientOcean]: "b7529e8e40e7100a00359c51180a6d943d331e229170c82192c71877fd32ad45",
+  [assets.gxBreathingPoints]: "20b7d0534c48ecf96b598d87ac5a23d00409f89ce08edc396689af4adf2a3188",
+  [assets.gxTemperatureAnomaly]: "98ac244431d127b46638e5fe4a706693d1095d39b55e4e81063cb6e05dc05052",
+});
+const sha256 = async (assetPath) => createHash("sha256")
+  .update(await readFile(path.join(projectRoot, assetPath)))
+  .digest("hex");
 
 assert.equal(story.storyVersion, 10);
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds);
@@ -62,22 +78,17 @@ const expectedBoundaries = [
   ["festival_concept", 15, 20, "festival-first-encounter-cg", assets.firstEncounter, "event-focus", "event-cg"],
   ["festival_concept", 21, 22, "festival-amane-closeup-cg", assets.amaneCloseup, "event-focus", "event-cg"],
   ["festival_concept", 23, 26, "festival-mizuha-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
-  ["festival_concept", 27, 31, "festival-gaia-booth-conversation", assets.boothWide, "drift-left", "scenic"],
-  ["festival_concept", 32, 35, "festival-amane-response-closeup-cg", assets.amaneCloseup, "event-focus", "event-cg"],
-  ["festival_concept", 36, 37, "festival-mizuha-response-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
-  ["festival_concept", 38, 46, "festival-gaia-booth-conversation-return", assets.boothWide, "drift-left", "scenic"],
-  ["festival_concept", 47, 61, "festival-gaia-booth-explanation", assets.boothClose, "drift-right", "scenic"],
-  ["festival_concept", 62, 71, "festival-ten-senses", assets.tenWindows, "push-in", "scenic"],
-  ["festival_concept", 72, 76, "festival-map-transition", assets.modeMap, "push-in", "scenic"],
+  ["festival_concept", 27, 75, "festival-gaia-booth-conversation", assets.projectionConversation, "drift-left", "scenic"],
+  ["festival_concept", 76, 76, "festival-map-transition", assets.mapTransition, "event-focus", "event-cg"],
   ["map_mode01", 1, 14, "map01-co2-observation", assets.modeMap, "drift-right", "scenic"],
   ["map_mode01", 15, 28, "map01-temperature-observation", assets.modis, "push-in", "scenic"],
   ["map_mode01", 29, 40, "map01-data-architecture", assets.system, "drift-left", "scenic"],
   ["map_mode01", 41, 43, "map01-exhibition-return", assets.boothWide, "drift-right", "scenic"],
-  ["gx_experience", 1, 16, "gx-ocean-entry", assets.chapterFlow, "push-in", "scenic"],
+  ["gx_experience", 1, 16, "gx-ocean-entry", assets.gxAncientOcean, "push-in", "scenic"],
   ["gx_experience", 17, 29, "gx-ancient-ocean", assets.abstract, "drift-right", "scenic"],
-  ["gx_experience", 30, 41, "gx-coevolution", assets.memory, "drift-left", "scenic"],
+  ["gx_experience", 30, 41, "gx-coevolution", assets.gxBreathingPoints, "drift-left", "scenic"],
   ["gx_experience", 42, 44, "gx-present-return", assets.observatory, "push-in", "scenic"],
-  ["gx_experience", 45, 54, "gx-human-choice", assets.partner, "drift-right", "scenic"],
+  ["gx_experience", 45, 54, "gx-human-choice", assets.gxTemperatureAnomaly, "drift-right", "scenic"],
   ["gx_experience", 55, 58, "gx-ten-mode-gateway", assets.tenWindows, "push-in", "scenic"],
   ["esp32_pitch", 1, 7, "esp32-exhibition-opening", assets.boothWide, "drift-left", "scenic"],
   ["esp32_pitch", 8, 18, "esp32-collaboration-cg", assets.esp32Collaboration, "event-focus", "event-cg"],
@@ -117,8 +128,8 @@ const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(ste
 assert.equal(resolved.length, 396);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 25, "background-art cut must use twenty-five distinct scene assets");
-assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 55);
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 28, "background-art cut must use twenty-eight distinct scene assets");
+assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 50);
 
 assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
 assert.equal(new Set(backgroundCues.gallery.map((entry) => entry.id)).size, 6, "CG album IDs must be unique");
@@ -134,6 +145,25 @@ for (const assetPath of new Set(resolved.map(({ cue }) => cue.assetPath))) {
   await access(path.join(projectRoot, assetPath));
 }
 
+for (const [assetPath, expectedHash] of Object.entries(approvedAssetHashes)) {
+  assert.equal(await sha256(assetPath), expectedHash, `${assetPath}: approved asset bytes changed`);
+}
+
+const festivalResolved = resolved.filter(({ step }) => step.sceneId === "festival_concept");
+const festivalAfterEncounter = festivalResolved.filter(({ step }) => {
+  const number = Number(step.id.slice(-3));
+  return number >= 27 && number <= 75;
+});
+assert(festivalAfterEncounter.every(({ cue: resolvedCue }) => resolvedCue.assetPath === assets.projectionConversation));
+assert.equal(festivalResolved.find(({ step }) => step.id === "festival_concept_076")?.cue.assetPath, assets.mapTransition);
+const forbiddenFestivalAssets = [
+  "assets/visuals-07/novel-bg-exhibition-v2.png",
+  "assets/visuals-07/mode-map-v1.webp",
+  "assets/concept/concept-02-ten-windows.png",
+];
+assert(festivalResolved.slice(26).every(({ cue: resolvedCue }) => !forbiddenFestivalAssets.includes(resolvedCue.assetPath)), "festival 027-076 still references a superseded fantasy/flat asset");
+assert(resolved.every(({ cue: resolvedCue }) => !/portrait/iu.test(resolvedCue.assetPath)), "mobile portrait asset must never be requested");
+
 const cue = (stepId) => backgroundCues.forStep(allSteps.find((step) => step.id === stepId));
 assert.equal(cue("festival_concept_001").assetPath, assets.entrance);
 assert.equal(cue("festival_concept_008").assetPath, assets.bHallOverview);
@@ -147,13 +177,16 @@ assert.equal(cue("festival_concept_015").presentation, "event-cg");
 assert.equal(cue("festival_concept_019").assetPath, assets.firstEncounter);
 assert.equal(cue("festival_concept_021").assetPath, assets.amaneCloseup);
 assert.equal(cue("festival_concept_023").assetPath, assets.mizuhaCloseup);
-assert.equal(cue("festival_concept_027").assetPath, assets.boothWide);
-assert.equal(cue("festival_concept_031").assetPath, assets.boothWide);
-assert.equal(cue("festival_concept_032").assetPath, assets.amaneCloseup);
-assert.equal(cue("festival_concept_036").assetPath, assets.mizuhaCloseup);
-assert.equal(cue("festival_concept_062").assetPath, assets.tenWindows);
+assert.equal(cue("festival_concept_027").assetPath, assets.projectionConversation);
+assert.equal(cue("festival_concept_063").assetPath, assets.projectionConversation);
+assert.equal(cue("festival_concept_075").assetPath, assets.projectionConversation);
+assert.equal(cue("festival_concept_076").assetPath, assets.mapTransition);
+assert.equal(cue("festival_concept_076").presentation, "event-cg");
 assert.equal(cue("map_mode01_015").assetPath, assets.modis);
 assert.equal(cue("gx_experience_017").assetPath, assets.abstract);
+assert.equal(cue("gx_experience_011").assetPath, assets.gxAncientOcean);
+assert.equal(cue("gx_experience_030").assetPath, assets.gxBreathingPoints);
+assert.equal(cue("gx_experience_054").assetPath, assets.gxTemperatureAnomaly);
 assert.equal(cue("esp32_pitch_007").assetPath, assets.boothWide);
 assert.equal(cue("esp32_pitch_008").assetPath, assets.esp32Collaboration);
 assert.equal(cue("esp32_pitch_019").assetPath, assets.system);
