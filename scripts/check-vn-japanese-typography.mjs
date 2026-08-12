@@ -17,9 +17,11 @@ const scans = [
   ["protected phrase set", ["そのもの", "ものづくり", "リアルタイム", "GAIA SENSEWARE"].every((value) => runtime.includes(value))],
   ["Japanese inflection suffixes remain atomic", /DIALOGUE_INFLECTION_SUFFIXES/u.test(runtime) && ["た", "て", "ば", "れ", "さ", "ます"].every((value) => runtime.includes(`\"${value}\"`))],
   ["token-boundary pagination", /tokenBoundaries\.has/u.test(runtime) && /largestSafePrefix/u.test(runtime)],
-  ["orphan page uses bounded token transfer", /maximumMove = Math\.min\(8,/u.test(runtime) && /moveCount <= maximumMove/u.test(runtime)],
+  ["orphan page uses bounded token transfer", /maximumMove = Math\.min\(16,/u.test(runtime) && /moveCount <= maximumMove/u.test(runtime)],
   ["orphan transfer preserves source exactly", /`\$\{before\}\$\{after\}` !== combined/u.test(runtime)],
   ["orphan transfer keeps both pages bounded", /beforeMetrics\.fits \|\| !afterMetrics\.fits/u.test(runtime) && /afterMetrics\.measuredLines\.length < 2/u.test(runtime)],
+  ["sentence-safe boundary outranks punctuation", /candidates\.sort\(\(a, b\) => b\.quality - a\.quality \|\| a\.moveCount - b\.moveCount\)/u.test(runtime)],
+  ["unsafe page boundaries are rebalanced", runtime.includes("const unsafeBoundary = !/[。！？!?、，,・：:；;\\s]") && runtime.includes("!orphanedFinalPage && !unsafeBoundary")],
   ["unbounded phrase-boundary rebalance absent", !/phraseOffsets/u.test(runtime) && !/safeCandidates\.length \? safeCandidates : candidates/u.test(runtime)],
   ["same token layout for measure and render", runtime.includes("measureNativeLines = (text, preparedLayout = null)") && runtime.includes("replaceChildren(layout)")],
   ["font loading reflow", /loadingdone/u.test(runtime)],
@@ -36,7 +38,7 @@ const scans = [
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);
 assert.equal(failures.length, 0, `VN typography checks failed: ${failures.join(", ")}`);
 
-const boundedTokenTransfers = (leftTokens, right, limit = 8) => {
+const boundedTokenTransfers = (leftTokens, right, limit = 16) => {
   const combined = `${leftTokens.join("")}${right}`;
   const candidates = [];
   const maximumMove = Math.min(limit, Math.max(0, leftTokens.length - 1));
@@ -65,16 +67,36 @@ const boundedTokenTransfers = (leftTokens, right, limit = 8) => {
   },
 ].forEach(({ leftTokens, right }) => {
   const candidates = boundedTokenTransfers(leftTokens, right);
-  assert.equal(candidates.length, Math.min(8, leftTokens.length - 1));
+  assert.equal(candidates.length, Math.min(16, leftTokens.length - 1));
   candidates.forEach((candidate) => {
     assert.equal(`${candidate.before}${candidate.after}`, candidate.combined, "bounded transfer must preserve source exactly");
     assert.deepEqual(candidate.movedTokens, leftTokens.slice(-candidate.moveCount), "bounded transfer must preserve atomic tokens");
-    assert(candidate.moveCount >= 1 && candidate.moveCount <= 8, "bounded transfer must remain finite");
+    assert(candidate.moveCount >= 1 && candidate.moveCount <= 16, "bounded transfer must remain finite");
     assert(
       Math.max(...candidate.movedTokens.map((token) => Array.from(token).length))
         <= Math.max(...leftTokens.map((token) => Array.from(token).length)),
       "bounded transfer must not create a larger phrase token",
     );
   });
+});
+
+const sentenceBoundary = /[。！？!?][」』）】］〉》〕]*$/u;
+const paginationSafeBoundary = /[。！？!?、，,・：:；;\s][」』）】］〉》〕]*$/u;
+[
+  {
+    source: "「『GAIA Transformation』は、私たち『惑星の放課後』が、このシステムのためにつくった言葉ですの。生命が地球を変え、変わった地球がまた生命を変えてきた。その相互作用を表していますわ」",
+    boundary: "「『GAIA Transformation』は、私たち『惑星の放課後』が、このシステムのためにつくった言葉ですの。",
+    next: "生命が地球を変え、変わった地球がまた生命を変えてきた。その相互作用を表していますわ」",
+  },
+  {
+    source: "「温度、湿度、明るさ、気圧、空気中の粒子、音、振動。センサーを替えれば、もっといろいろ測れます。いくつか組み合わせて、その場所の環境をまとめて記録することもできます」",
+    boundary: "「温度、湿度、明るさ、気圧、空気中の粒子、音、振動。",
+    next: "センサーを替えれば、もっといろいろ測れます。いくつか組み合わせて、その場所の環境をまとめて記録することもできます」",
+  },
+].forEach(({ source: text, boundary, next }) => {
+  assert(sentenceBoundary.test(boundary), "expected target boundary must end a complete sentence");
+  assert(paginationSafeBoundary.test(boundary), "expected target boundary must satisfy the pagination safe-boundary predicate");
+  assert.equal(`${boundary}${next}`, text, "target boundary must preserve source exactly");
+  assert(!/^いろいろ/u.test(next), "もっといろいろ測れます must remain on one page");
 });
 console.log(`VN Japanese typography static check passed: ${scans.length}/${scans.length}`);

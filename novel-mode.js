@@ -1843,7 +1843,15 @@
     const combined = `${left}${right}`;
     if (dialoguePageMetrics(combined).fits) return [combined];
     const leftTokens = segmentDialoguePhrases(left);
-    const maximumMove = Math.min(8, Math.max(0, leftTokens.length - 1));
+    const sentenceBoundary = /[。！？!?][」』）】］〉》〕]*$/u;
+    const safeBoundary = /[、。，．？！…!?,：:；;][」』）】］〉》〕]*$/u;
+    const boundaryQuality = (value) => sentenceBoundary.test(value.trimEnd())
+      ? 2
+      : safeBoundary.test(value.trimEnd())
+        ? 1
+        : 0;
+    const maximumMove = Math.min(16, Math.max(0, leftTokens.length - 1));
+    const candidates = [];
     for (let moveCount = 1; moveCount <= maximumMove; moveCount += 1) {
       const splitIndex = leftTokens.length - moveCount;
       const before = leftTokens.slice(0, splitIndex).join("");
@@ -1854,9 +1862,10 @@
       if (!beforeMetrics.fits || !afterMetrics.fits) continue;
       if (beforeMetrics.measuredLines.length > TEXT_PAGE_MAX_LINES || afterMetrics.measuredLines.length > TEXT_PAGE_MAX_LINES) continue;
       if (afterMetrics.measuredLines.length < 2) continue;
-      return [before, after];
+      candidates.push({ before, after, moveCount, quality: boundaryQuality(before) });
     }
-    return [left, right];
+    candidates.sort((a, b) => b.quality - a.quality || a.moveCount - b.moveCount);
+    return candidates.length ? [candidates[0].before, candidates[0].after] : [left, right];
   };
 
   const balanceDialoguePages = (inputPages) => {
@@ -1874,10 +1883,11 @@
       const previousMetrics = dialoguePageMetrics(pages[index - 1]);
       const currentMetrics = dialoguePageMetrics(pages[index]);
       const orphanedFinalPage = currentMetrics.measuredLines.length < 2;
+      const unsafeBoundary = !/[。！？!?、，,・：:；;\s][」』）】］〉》〕]*$/u.test(pages[index - 1].trimEnd());
       const explicitLineNeedsBalance = pages[index - 1].endsWith("\n")
         && previousMetrics.measuredLines.length < 3
         && currentMetrics.measuredLines.length > 2;
-      if (!orphanedFinalPage && !explicitLineNeedsBalance) continue;
+      if (!orphanedFinalPage && !unsafeBoundary && !explicitLineNeedsBalance) continue;
       const balanced = balanceDialoguePagePair(pages[index - 1], pages[index]);
       pages.splice(index - 1, 2, ...balanced);
     }
