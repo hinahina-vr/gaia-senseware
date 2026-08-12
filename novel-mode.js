@@ -1839,32 +1839,41 @@
     return { glyphs, semanticOffsets, safeOffsets, lineOffsets };
   };
 
-  const balanceDialoguePagePair = (left, right) => {
+  const balanceDialoguePagePair = (left, right, { requireRightTwoLines = false } = {}) => {
     const combined = `${left}${right}`;
     if (dialoguePageMetrics(combined).fits) return [combined];
-    const leftTokens = segmentDialoguePhrases(left);
     const sentenceBoundary = /[。！？!?][」』）】］〉》〕]*$/u;
     const safeBoundary = /[、。，．？！…!?,：:；;][」』）】］〉》〕]*$/u;
-    const boundaryQuality = (value) => sentenceBoundary.test(value.trimEnd())
-      ? 2
-      : safeBoundary.test(value.trimEnd())
-        ? 1
-        : 0;
-    const maximumMove = Math.min(16, Math.max(0, leftTokens.length - 1));
+    const combinedTokens = segmentDialoguePhrases(combined);
+    const originalBoundary = Array.from(left).length;
     const candidates = [];
-    for (let moveCount = 1; moveCount <= maximumMove; moveCount += 1) {
-      const splitIndex = leftTokens.length - moveCount;
-      const before = leftTokens.slice(0, splitIndex).join("");
-      const after = `${leftTokens.slice(splitIndex).join("")}${right}`;
+    for (let splitIndex = 1; splitIndex < combinedTokens.length; splitIndex += 1) {
+      const before = combinedTokens.slice(0, splitIndex).join("");
+      const after = combinedTokens.slice(splitIndex).join("");
       if (`${before}${after}` !== combined) continue;
       const beforeMetrics = dialoguePageMetrics(before);
       const afterMetrics = dialoguePageMetrics(after);
       if (!beforeMetrics.fits || !afterMetrics.fits) continue;
       if (beforeMetrics.measuredLines.length > TEXT_PAGE_MAX_LINES || afterMetrics.measuredLines.length > TEXT_PAGE_MAX_LINES) continue;
-      if (afterMetrics.measuredLines.length < 2) continue;
-      candidates.push({ before, after, moveCount, quality: boundaryQuality(before) });
+      if (requireRightTwoLines && afterMetrics.measuredLines.length < 2) continue;
+      const beforeLines = beforeMetrics.measuredLines.length;
+      const afterLines = afterMetrics.measuredLines.length;
+      const boundaryOffset = Array.from(before).length;
+      candidates.push({
+        before,
+        after,
+        sentencePenalty: sentenceBoundary.test(before.trimEnd()) && beforeLines >= 2 && afterLines >= 2 ? 0 : 1,
+        unsafeBoundaryCount: safeBoundary.test(before.trimEnd()) ? 0 : 1,
+        oneLinePageCount: Number(beforeLines < 2) + Number(afterLines < 2),
+        lineBalance: Math.abs(beforeLines - afterLines),
+        boundaryDistance: Math.abs(boundaryOffset - originalBoundary),
+      });
     }
-    candidates.sort((a, b) => b.quality - a.quality || a.moveCount - b.moveCount);
+    candidates.sort((a, b) => a.sentencePenalty - b.sentencePenalty
+      || a.unsafeBoundaryCount - b.unsafeBoundaryCount
+      || a.oneLinePageCount - b.oneLinePageCount
+      || a.lineBalance - b.lineBalance
+      || a.boundaryDistance - b.boundaryDistance);
     return candidates.length ? [candidates[0].before, candidates[0].after] : [left, right];
   };
 
@@ -1888,7 +1897,11 @@
         && previousMetrics.measuredLines.length < 3
         && currentMetrics.measuredLines.length > 2;
       if (!orphanedFinalPage && !unsafeBoundary && !explicitLineNeedsBalance) continue;
-      const balanced = balanceDialoguePagePair(pages[index - 1], pages[index]);
+      const balanced = balanceDialoguePagePair(
+        pages[index - 1],
+        pages[index],
+        { requireRightTwoLines: index === pages.length - 1 },
+      );
       pages.splice(index - 1, 2, ...balanced);
     }
     return pages;
