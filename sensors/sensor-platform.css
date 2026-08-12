@@ -51,6 +51,14 @@ button, a { touch-action: manipulation; }
 .sensor-login h1, .sensor-panel > h1, .sensor-guide > h1 { margin: 0; font-size: clamp(38px, 7vw, 78px); font-weight: 400; letter-spacing: .04em; line-height: 1.2; }
 .sensor-login > p { max-width: 610px; margin: 30px 0 34px; color: var(--muted); font-size: 14px; letter-spacing: .06em; line-height: 2; }
 .sensor-login > small { display: block; margin-top: 16px; color: rgba(233,251,248,.43); font-size: 10px; }
+.sensor-register-preview, .sensor-setup-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 34px 0 0; padding: 1px; border: 1px solid var(--line); background: var(--line); list-style: none; }
+.sensor-register-preview li, .sensor-setup-steps li { display: grid; grid-template-columns: 38px minmax(0, 1fr); min-width: 0; background: rgba(5,19,28,.92); }
+.sensor-register-preview li > span, .sensor-setup-steps li > span { display: grid; place-items: center; color: var(--mint); font: 700 10px/1 Consolas, monospace; }
+.sensor-register-preview p, .sensor-setup-steps p { min-width: 0; margin: 0; padding: 15px 13px; border-left: 1px solid var(--line); color: var(--muted); font-size: 10px; line-height: 1.7; }
+.sensor-register-preview strong { display: block; margin-bottom: 3px; color: var(--ink); font-size: 12px; }
+.sensor-register-preview code, .sensor-setup-steps code, .sensor-setup-steps a { color: var(--mint); font: inherit; overflow-wrap: anywhere; }
+.sensor-setup-steps { margin: 25px 0 28px; }
+.sensor-setup-steps a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
 .sensor-primary, .sensor-secondary, .sensor-danger, .sensor-back { min-height: 46px; border: 1px solid rgba(var(--mint-rgb),.38); color: var(--ink); background: rgba(var(--mint-rgb),.09); cursor: pointer; letter-spacing: .08em; }
 .sensor-primary { min-width: 220px; padding: 13px 22px; color: #04130f; background: var(--mint); font-weight: 700; }
@@ -136,6 +144,11 @@ input:focus, select:focus { border-color: var(--mint); box-shadow: 0 0 0 2px rgb
   .sensor-login { padding-top: 7vh; }
   .sensor-login h1, .sensor-panel > h1, .sensor-guide > h1 { font-size: clamp(34px, 12vw, 50px); }
   .sensor-login > p { margin-block: 22px 28px; font-size: 12px; line-height: 1.9; }
+  .sensor-login .sensor-primary { width: 100%; min-width: 0; padding-inline: 14px; font-size: 11px; }
+  .sensor-register-preview, .sensor-setup-steps { grid-template-columns: 1fr; margin-top: 24px; }
+  .sensor-register-preview li, .sensor-setup-steps li { grid-template-columns: 42px minmax(0, 1fr); }
+  .sensor-register-preview p, .sensor-setup-steps p { padding: 13px 12px; }
+  .sensor-setup-steps { margin-bottom: 24px; }
   .sensor-page-head { align-items: flex-start; }
   .sensor-add { min-width: 0; padding-inline: 13px; font-size: 10px; }
   .sensor-device-grid { grid-template-columns: 1fr; margin-top: 24px; }

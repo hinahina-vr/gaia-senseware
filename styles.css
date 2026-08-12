@@ -275,6 +275,14 @@
   --path-rgb: 124, 233, 198;
 }
 
+@media (min-width: 761px) {
+  .intro-lp-hero .intro-path-card--sensor > strong {
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+}
+
 .intro-path-glyph--sensor {
   width: 42px;
   height: 30px;

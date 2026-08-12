@@ -26,6 +26,12 @@ const server = http.createServer(async (request, response) => {
   requests.push({ method: request.method, path: url.pathname, at: new Date().toISOString() });
   try {
     if (url.pathname === "/__qa/report") return sendJson(response, 200, { requests, latestPolls });
+    if (url.pathname === "/__qa/reset" && request.method === "POST") {
+      pairingIssued = false;
+      deviceCreated = false;
+      latestPolls = 0;
+      return sendJson(response, 200, { ok: true });
+    }
     if (url.pathname.startsWith("/api/")) return handleApi(request, response, url);
     const relative = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
     const resolved = path.resolve(root, `.${relative}`);

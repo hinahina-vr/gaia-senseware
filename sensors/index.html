@@ -33,9 +33,14 @@
         <h1>測ることから、<br />地球へ参加する。</h1>
         <p>国だけを選び、自分のESP32を登録します。GPSや住所は使いません。温度・湿度・PM2.5など、あなたが測った値だけをHTTPSで届けます。</p>
         <button class="sensor-primary" id="google-login" type="button">
-          <span aria-hidden="true">G</span>Googleでログイン
+          <span aria-hidden="true">G</span>GoogleでログインしてESP32を登録
         </button>
         <small>ログイン情報とDevice Tokenは別々に管理されます。</small>
+        <ol class="sensor-register-preview" aria-label="ESP32登録の3ステップ">
+          <li><span>01</span><p><strong>Googleでログイン</strong>所有する端末だけを安全に管理します。</p></li>
+          <li><span>02</span><p><strong>端末を追加</strong>国と名前を登録し、Pairing Codeを取得します。</p></li>
+          <li><span>03</span><p><strong>Setup APへ入力</strong><code>CITY-SENSOR-XXXX</code>へ接続し、Wi-FiとPairing Codeを入力します。</p></li>
+        </ol>
       </section>
 
       <section class="sensor-view" data-view="loading" hidden aria-busy="true">
@@ -76,6 +81,11 @@
         <div class="sensor-kicker">ONE-TIME PAIRING</div>
         <h1>ESP32にコードを入力</h1>
         <p>このコードは10分間・一回だけ使えます。Device Tokenはpairing成功時にESP32へ一度だけ返されます。</p>
+        <ol class="sensor-setup-steps" aria-label="Setup APへの入力手順">
+          <li><span>01</span><p>PCまたはスマホをWi-Fi <code>CITY-SENSOR-XXXX</code>へ接続</p></li>
+          <li><span>02</span><p><a href="http://192.168.4.1/" target="_blank" rel="noopener">http://192.168.4.1/</a> をブラウザで開く</p></li>
+          <li><span>03</span><p>自宅・会場のWi-Fiと、このPairing Codeを入力</p></li>
+        </ol>
         <output id="pairing-code" aria-label="Pairing Code">—</output>
         <p id="pairing-expiry">有効期限を確認しています。</p>
         <div class="sensor-pair-actions">
