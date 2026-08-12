@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "031501b2a08b93bac9f4b361126bb3098e2c510319fa7cafb29c7400649d7738";
+const expectedHash = "f0e87f9ea2d1adbc98a4918416653588f8288310ba85ceab89560e7f1e994452";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 58, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 53165, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 53108, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
@@ -42,6 +42,31 @@ assert.equal(story.scenes.length, 6);
 const steps = story.scenes.flatMap((scene) => scene.steps);
 assert.equal(steps.length, 396, "短尺正本は394 source block + 2 interaction stepである必要があります");
 assert.equal(new Set(steps.map((step) => step.id)).size, steps.length, "step IDが重複しています");
+const userVisibleSteps = steps.filter((step) => ["dialogue", "narration", "ui"].includes(step.type));
+const prohibitedPlacementVerb = /置(?:く|か(?:ない|な|せ|ず|ぬ|れ|ろ|ん|せる|れる)?|き|け|こ|い(?:た|て|てある|ていた|ておく)?)/u;
+assert.deepEqual(
+  userVisibleSteps.filter((step) => prohibitedPlacementVerb.test(String(step.text || ""))).map((step) => step.id),
+  [],
+  "ユーザー可視台本に動詞『置く』の活用形が残っています",
+);
+const festival = story.scenes.find((scene) => scene.id === "festival_concept");
+const storyText = steps.map((step) => String(step.text || "")).join("\n");
+assert.equal(storyText.split("あめと、みず。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 0, "旧festival_concept_024全文が残っています");
+assert.equal(storyText.split("あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 1, "festival_concept_024決定稿はexact1件必要です");
+assert.equal(storyText.split("雨が降って、水になる。二人の名前を並べると、偶然にしては出来すぎていた。").length - 1, 0, "撤回された所感が残っています");
+assert.deepEqual(
+  festival.steps.slice(20, 27).map((step) => [step.id, step.type, step.speaker || null, step.speakerLabel || null, step.text]),
+  [
+    ["festival_concept_021", "dialogue", "amane", "女の子", "私は「あめ」といいます。"],
+    ["festival_concept_022", "narration", "narrator", null, "「あめ」と名乗っても、照れたり笑ったりはしなかった。柔らかな響きとは対照的に、言葉は簡潔だった。"],
+    ["festival_concept_023", "dialogue", "mizuha", "もう一人の女の子", "「みず」と申します。あなたも、うちの大学の方ですの？"],
+    ["festival_concept_024", "narration", "narrator", null, "あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。"],
+    ["festival_concept_025", "narration", "narrator", null, "長い髪の学生もタブレットから顔を上げた。表情は落ち着いているが、「うちの大学」と言ったところで眉が少し上がる。答えを予想するより、こちらの返事を楽しみにしているように見えた。"],
+    ["festival_concept_026", "narration", "narrator", null, "あめは名乗ったあとも、机の端のケーブルを指先で確かめている。みずはタブレットを両手で持ち、返事を待つあいだ、わずかに首を傾けていた。地球の青い光が、長い髪の内側へ薄く映っている。"],
+    ["festival_concept_027", "dialogue", "visitor", "プレイヤー", "「はい。同じ大学の学生です。今日は学生作品を見に来ました。通路から見えた、この地球が気になって」"],
+  ],
+  "festival_concept_021–027の決定稿または順序が変わりました",
+);
 story.scenes.forEach((scene, sceneIndex) => {
   assert.equal(scene.nextSceneId, story.scenes[sceneIndex + 1]?.id || null, `${scene.id}: nextSceneIdが不正です`);
   assert.equal(scene.duration, ["0:00–1:45", "1:45–3:25", "3:25–5:35", "5:35–7:15", "7:15–9:05", "9:05–11:30"][sceneIndex]);

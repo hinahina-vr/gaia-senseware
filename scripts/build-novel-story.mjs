@@ -8,7 +8,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "031501b2a08b93bac9f4b361126bb3098e2c510319fa7cafb29c7400649d7738";
+const EXPECTED_SOURCE_SHA256 = "f0e87f9ea2d1adbc98a4918416653588f8288310ba85ceab89560e7f1e994452";
 
 const sourceBytes = fs.readFileSync(canonPath);
 const characterSourceBytes = fs.readFileSync(characterCanonPath);
@@ -85,9 +85,9 @@ const parseBlock = (block, sceneId) => {
   const dialogue = block.match(/^(ミズハ|アマネ|プレイヤー)：\n([\s\S]+)$/u);
   if (dialogue) {
     const [rawSpeaker, text] = dialogue.slice(1);
-    const speakerLabel = rawSpeaker === "アマネ" && /『あめ』です|体験してみませんか/u.test(text)
+    const speakerLabel = rawSpeaker === "アマネ" && /私は「あめ」といいます。|体験してみませんか/u.test(text)
       ? "女の子"
-      : rawSpeaker === "ミズハ" && /『みず』です/u.test(text)
+      : rawSpeaker === "ミズハ" && /「みず」と申します。/u.test(text)
         ? "もう一人の女の子"
         : speakerLabelMap.get(rawSpeaker);
     return { type: "dialogue", speaker: speakerMap.get(rawSpeaker), speakerLabel, text };

@@ -20,12 +20,12 @@
     <link rel="preload" as="image" href="./assets/visuals-07/novel-bg-exhibition-v3.png" />
     <link rel="preload" as="image" href="./assets/visuals-07/sound-archive-bg-v1.webp" />
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
-    <link rel="stylesheet" href="./styles.css?v=gaia-124" />
+    <link rel="stylesheet" href="./styles.css?v=gaia-lightweight-metadata-1" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
     <link rel="stylesheet" href="./opening.css?v=gaia-current-ui-hotfix-1" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-current-ui-hotfix-1" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-lightweight-metadata-1" />
     <link rel="stylesheet" href="./gx-mode.css?v=gaia-contest-hold-fixes-1" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-07" />
@@ -37,13 +37,13 @@
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
     <script src="./app-content.js?v=gaia-101" defer></script>
-    <script src="./app.js?v=gaia-interaction-exclusive-1" defer></script>
+    <script src="./app.js?v=gaia-lightweight-metadata-1" defer></script>
     <script src="./gx-mode.js?v=gaia-current-ui-hotfix-1" defer></script>
-    <script src="./novel-story-data.js?v=gaia-current-ui-hotfix-1" defer></script>
+    <script src="./novel-story-data.js?v=gaia-lightweight-story-menu-1" defer></script>
     <script src="./novel-background-cues.js?v=gaia-festival-entrance-bhall-1" defer></script>
     <script src="./novel-back-half-cues.js?v=back-half-1" defer></script>
     <script src="./novel-temporal.js?v=gaia-temporal-1" defer></script>
-    <script src="./novel-mode.js?v=gaia-current-ui-hotfix-1" defer></script>
+    <script src="./novel-mode.js?v=gaia-lightweight-metadata-1" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-04" defer></script>
@@ -532,7 +532,7 @@
                   <span class="intro-path-index">01 / ABSTRACT</span>
                   <span class="intro-path-glyph" aria-hidden="true">◌</span>
                   <strong>光に触れる</strong>
-                  <p>数字を色、粒子、呼吸へ変換する。</p>
+                  <p>数字を光へ。</p>
                   <span class="intro-path-enter">ABSTRACT <b aria-hidden="true">→</b></span>
                 </button>
                 <button class="intro-path-card" type="button" data-intro-path="map">
@@ -547,7 +547,7 @@
                     </svg>
                   </span>
                   <strong>世界を読む</strong>
-                  <p>観測値を、起きた場所へ戻す。</p>
+                  <p>変化を地図へ。</p>
                   <span class="intro-path-enter">WORLD MAP <b aria-hidden="true">→</b></span>
                 </button>
                 <button class="intro-path-card" type="button" data-intro-path="space">
@@ -556,7 +556,7 @@
                   <span class="intro-path-index">03 / SPACE</span>
                   <span class="intro-path-glyph" aria-hidden="true">✦</span>
                   <strong>宇宙から見る</strong>
-                  <p>太陽、小惑星、系外惑星の記録を読む。</p>
+                  <p>宇宙の記録へ。</p>
                   <span class="intro-path-enter">DEEP SPACE <b aria-hidden="true">→</b></span>
                 </button>
                 <button class="intro-path-card intro-path-card--sound" type="button" data-sound-gallery-open aria-haspopup="dialog" aria-controls="sound-layer">
@@ -565,12 +565,12 @@
                   <span class="intro-path-index">04 / SOUND</span>
                   <span class="intro-path-glyph intro-path-glyph--sound" aria-hidden="true">♪</span>
                   <strong>音を聴く</strong>
-                  <p>物語に流れる四つの音楽を、静かに聴き直す。</p>
+                  <p>物語の音楽へ。</p>
                   <span class="intro-path-enter">SOUND ARCHIVE <b aria-hidden="true">→</b></span>
                 </button>
               </div>
 
-              <button class="intro-story-return" type="button" data-intro-path="novel">
+              <button class="intro-story-return" type="button" data-intro-path="novel" data-primary-action="true" aria-label="物語のタイトルメニューへ戻る">
                 <span>MAIN STORY</span>
                 <strong>物語へ戻る</strong>
                 <b aria-hidden="true">→</b>
