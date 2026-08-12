@@ -18,7 +18,7 @@ const generated = read("novel-story-data.js");
 const builder = read("scripts/build-novel-story.mjs");
 
 assert.match(index, /novel-mode\.css\?v=gaia-first-frame-1/u);
-assert.match(index, /novel-mode\.js\?v=gaia-first-frame-1/u);
+assert.match(index, /novel-mode\.js\?v=gaia-map01-auto-open-1/u);
 assert.match(index, /app\.js\?v=gaia-map-compositor-fix-1/u);
 assert.match(index, /gx-mode\.css\?v=gaia-story-modal-1/u);
 assert.match(index, /gx-mode\.js\?v=gaia-story-detour-fix-1/u);

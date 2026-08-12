@@ -2919,7 +2919,9 @@
     elements.cursor.hidden = true;
     elements.continueMark.classList.remove("is-visible");
     setInteractionLifecycle("prep");
-    if (step.interaction?.kind === "gx") {
+    const autoOpenInteraction = step.interaction?.kind === "gx"
+      || (step.id === "map_mode01_004" && step.interaction?.kind === "map01");
+    if (autoOpenInteraction) {
       requestAnimationFrame(() => {
         if (currentStep()?.id === step.id && interactionLifecycle === "prep" && !pendingInteraction) openDetour(step);
       });

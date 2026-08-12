@@ -97,6 +97,30 @@ const createPage = async (viewport, label) => {
         Number(event.detail?.count) || 0,
       );
     });
+    globalThis.__p1LauncherTrace = { added: 0, domMax: 0, visibleFrames: 0, focusFrames: 0 };
+    const inspectLauncherNode = (node) => {
+      if (!(node instanceof Element)) return;
+      if (node.matches(".novel-interaction-open") || node.querySelector(".novel-interaction-open")) {
+        globalThis.__p1LauncherTrace.added += 1;
+      }
+    };
+    const startLauncherTrace = () => {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => mutation.addedNodes.forEach(inspectLauncherNode));
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      globalThis.__p1LauncherTrace.observer = observer;
+      const sample = () => {
+        const launchers = [...document.querySelectorAll(".novel-interaction-open")];
+        globalThis.__p1LauncherTrace.domMax = Math.max(globalThis.__p1LauncherTrace.domMax, launchers.length);
+        if (launchers.some((launcher) => globalThis.__p1Visible(launcher))) globalThis.__p1LauncherTrace.visibleFrames += 1;
+        if (document.activeElement?.matches?.(".novel-interaction-open")) globalThis.__p1LauncherTrace.focusFrames += 1;
+        globalThis.__p1LauncherTrace.raf = requestAnimationFrame(sample);
+      };
+      globalThis.__p1LauncherTrace.raf = requestAnimationFrame(sample);
+    };
+    if (document.readyState === "loading") addEventListener("DOMContentLoaded", startLauncherTrace, { once: true });
+    else startLauncherTrace();
   });
   return { context, page };
 };
@@ -293,10 +317,17 @@ const scanMap = async (viewport, routeMode, traceDurationMs) => {
   const label = `${viewport.name}-map-${routeMode}`;
   const { context, page } = await createPage(viewport, label);
   await reachInteraction(page, routeMode, "map_mode01_003", "map_mode01_004");
-  await page.waitForFunction(() => document.body.dataset.novelInteractionState === "prep");
-  assert.equal(await page.locator(".novel-interaction-open").count(), 1);
-  await page.locator(".novel-interaction-open").click();
   await page.waitForFunction(() => document.body.dataset.novelInteractionState === "open" && globalThis.__p1Visible(document.querySelector("#japan-layer")));
+  await page.waitForTimeout(80);
+  const launcherTrace = await page.evaluate(() => ({
+    added: globalThis.__p1LauncherTrace.added,
+    domMax: globalThis.__p1LauncherTrace.domMax,
+    visibleFrames: globalThis.__p1LauncherTrace.visibleFrames,
+    focusFrames: globalThis.__p1LauncherTrace.focusFrames,
+    currentCount: document.querySelectorAll(".novel-interaction-open").length,
+    focused: document.activeElement?.matches?.(".novel-interaction-open") || false,
+  }));
+  assert.deepEqual(launcherTrace, { added: 0, domMax: 0, visibleFrames: 0, focusFrames: 0, currentCount: 0, focused: false });
   const open = await mapOpenState(page);
   assert.equal(open.stepId, "map_mode01_004");
   assert.equal(open.lifecycle, "open");
@@ -346,7 +377,7 @@ const scanMap = async (viewport, routeMode, traceDurationMs) => {
   assert.equal(closed.events.mapClose, 1);
   assert.equal(closed.steps.filter((id) => id === "map_mode01_005").length, 1);
   assert.equal(closed.overflowX, false);
-  report.scans.push({ case: "map-real-input", viewport, routeMode, open, trace, interactionTrace, inputs, closed, passed: true });
+  report.scans.push({ case: "map-auto-open-real-input", viewport, routeMode, launcherTrace, open, trace, interactionTrace, inputs, closed, passed: true });
   await context.close();
   console.log(`PASS ${label}`);
 };
@@ -536,6 +567,12 @@ const scanStandaloneGx = async () => {
 };
 
 try {
+  if (scope === "auto-open") {
+    for (const viewport of [pcViewports[0], pcViewports[2], mobileViewport]) {
+      for (const routeMode of routeModes) await scanMap(viewport, routeMode, 30000);
+    }
+    await scanGx(pcViewports[2], "normal");
+  } else {
   if (scope !== "mobile") {
     for (const viewport of pcViewports) {
       for (const routeMode of routeModes) await scanMap(viewport, routeMode, 30000);
@@ -547,6 +584,7 @@ try {
     await scanGx(mobileViewport, "normal");
   }
   if (scope === "all") await scanStandaloneGx();
+  }
   assert.equal(report.consoleErrors.length, 0);
   assert.equal(report.pageErrors.length, 0);
   assert.equal(report.responses404.length, 0);
