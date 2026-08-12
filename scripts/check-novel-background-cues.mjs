@@ -22,8 +22,11 @@ const assets = Object.freeze({
   campus: "assets/visuals-07/zushi-campus-story-bg-v4.webp",
   entrance: "assets/visuals-07/novel-bg-coastal-venue-v3.png",
   firstEncounter: "assets/visuals-07/event-cg-first-encounter-v1.png",
+  amaneCloseup: "assets/visuals-07/event-cg-amane-closeup-v1.png",
+  mizuhaCloseup: "assets/visuals-07/event-cg-mizuha-closeup-v1.png",
   boothWide: "assets/visuals-07/novel-bg-exhibition-v2.png",
   boothClose: "assets/visuals-07/novel-bg-exhibition-v3.png",
+  esp32Collaboration: "assets/visuals-07/event-cg-esp32-collaboration-v1.png",
   circleWelcome: "assets/visuals-07/event-cg-circle-welcome-v1.png",
   onlineNight: "assets/visuals-07/novel-bg-online-night-v2.png",
   venue: "assets/visuals-07/novel-bg-coastal-venue-v2.png",
@@ -40,11 +43,15 @@ assert.equal(backgroundCues.productionYear.length, 0, "legacy production registr
 const expectedBoundaries = [
   ["festival_concept", 1, 7, "festival-campus-entrance", assets.campus, "drift-right", "scenic"],
   ["festival_concept", 8, 14, "festival-exhibition-entrance", assets.entrance, "push-in", "scenic"],
-  ["festival_concept", 15, 26, "festival-first-encounter-cg", assets.firstEncounter, "event-focus", "event-cg"],
+  ["festival_concept", 15, 18, "festival-first-encounter-cg", assets.firstEncounter, "event-focus", "event-cg"],
+  ["festival_concept", 19, 22, "festival-amane-closeup-cg", assets.amaneCloseup, "event-focus", "event-cg"],
+  ["festival_concept", 23, 26, "festival-mizuha-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
   ["festival_concept", 27, 76, "festival-gaia-booth", assets.boothWide, "drift-left", "scenic"],
   ["map_mode01", 1, 43, "map01-terminal-booth", assets.boothWide, "push-in", "scenic"],
   ["gx_experience", 1, 58, "gx-terminal-booth", assets.boothClose, "drift-right", "scenic"],
-  ["esp32_pitch", 1, 43, "esp32-exhibition", assets.boothWide, "drift-left", "scenic"],
+  ["esp32_pitch", 1, 7, "esp32-exhibition-opening", assets.boothWide, "drift-left", "scenic"],
+  ["esp32_pitch", 8, 18, "esp32-collaboration-cg", assets.esp32Collaboration, "event-focus", "event-cg"],
+  ["esp32_pitch", 19, 43, "esp32-exhibition-return", assets.boothWide, "drift-left", "scenic"],
   ["circle_invitation", 1, 47, "circle-closing-exhibition", assets.boothClose, "push-in", "scenic"],
   ["circle_invitation", 48, 69, "circle-welcome-cg", assets.circleWelcome, "event-focus", "event-cg"],
   ["circle_invitation", 70, 81, "circle-after-welcome", assets.boothClose, "drift-right", "scenic"],
@@ -72,8 +79,17 @@ const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(ste
 assert.equal(resolved.length, 396);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 9, "exhibition-finale cut must use nine distinct scene assets");
-assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 38);
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 12, "CG album cut must use twelve distinct scene assets");
+assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 49);
+
+assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
+assert.equal(new Set(backgroundCues.gallery.map((entry) => entry.id)).size, 6, "CG album IDs must be unique");
+assert.equal(new Set(backgroundCues.gallery.map((entry) => entry.assetPath)).size, 6, "each album entry must have a distinct image");
+for (const entry of backgroundCues.gallery) {
+  assert(allSteps.some((step) => step.id === entry.unlockStepId), `${entry.id}: unlock step must exist`);
+  assert(resolved.some(({ step, cue: resolvedCue }) => step.id === entry.unlockStepId && resolvedCue.galleryId === entry.id), `${entry.id}: unlock cue must map back to album entry`);
+  await access(path.join(projectRoot, entry.assetPath));
+}
 
 for (const assetPath of new Set(resolved.map(({ cue }) => cue.assetPath))) {
   assert(assetPath.startsWith("assets/visuals-07/"), `background escaped approved assets: ${assetPath}`);
@@ -84,7 +100,12 @@ const cue = (stepId) => backgroundCues.forStep(allSteps.find((step) => step.id =
 assert.equal(cue("festival_concept_001").assetPath, assets.campus);
 assert.equal(cue("festival_concept_008").assetPath, assets.entrance);
 assert.equal(cue("festival_concept_015").presentation, "event-cg");
+assert.equal(cue("festival_concept_019").assetPath, assets.amaneCloseup);
+assert.equal(cue("festival_concept_023").assetPath, assets.mizuhaCloseup);
 assert.equal(cue("festival_concept_027").assetPath, assets.boothWide);
+assert.equal(cue("esp32_pitch_007").assetPath, assets.boothWide);
+assert.equal(cue("esp32_pitch_008").assetPath, assets.esp32Collaboration);
+assert.equal(cue("esp32_pitch_019").assetPath, assets.boothWide);
 assert.equal(cue("circle_invitation_047").assetPath, assets.boothClose);
 assert.equal(cue("circle_invitation_048").presentation, "event-cg");
 assert.equal(cue("circle_invitation_070").assetPath, assets.boothClose);
@@ -106,5 +127,6 @@ console.log(JSON.stringify({
   cues: backgroundCues.limitedStory.length,
   assets: [...new Set(resolved.map(({ cue }) => cue.assetPath))],
   eventCgSteps: resolved.filter(({ cue }) => cue.presentation === "event-cg").length,
+  gallery: backgroundCues.gallery.map(({ id, unlockStepId }) => ({ id, unlockStepId })),
   welcomeBoundaries: ["001-054 wide/night", "055-077 physical/venue", "078-091 closing exhibition/mobile", "092-095 exhibition finale CG"],
 }, null, 2));

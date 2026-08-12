@@ -28,8 +28,11 @@ const cinematicCases = [
   { name: "campus-entrance", stepId: "festival_concept_001", cue: "festival-campus-entrance", asset: "zushi-campus-story-bg-v4.webp", motion: "drift-right", mobile: true },
   { name: "exhibition-entrance", stepId: "festival_concept_008", cue: "festival-exhibition-entrance", asset: "novel-bg-coastal-venue-v3.png", motion: "push-in" },
   { name: "first-encounter-cg", stepId: "festival_concept_015", cue: "festival-first-encounter-cg", asset: "event-cg-first-encounter-v1.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "amane-closeup-cg", stepId: "festival_concept_019", cue: "festival-amane-closeup-cg", asset: "event-cg-amane-closeup-v1.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "mizuha-closeup-cg", stepId: "festival_concept_023", cue: "festival-mizuha-closeup-cg", asset: "event-cg-mizuha-closeup-v1.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "gaia-booth", stepId: "festival_concept_027", cue: "festival-gaia-booth", asset: "novel-bg-exhibition-v2.png", motion: "drift-left" },
   { name: "gx-booth", stepId: "gx_experience_001", cue: "gx-terminal-booth", asset: "novel-bg-exhibition-v3.png", motion: "drift-right" },
+  { name: "esp32-collaboration-cg", stepId: "esp32_pitch_008", cue: "esp32-collaboration-cg", asset: "event-cg-esp32-collaboration-v1.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "circle-welcome-cg", stepId: "circle_invitation_048", cue: "circle-welcome-cg", asset: "event-cg-circle-welcome-v1.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "wide-chat-night", stepId: "welcome_chat_006", cue: "welcome-wide-night", asset: "novel-bg-online-night-v2.png", motion: "drift-left" },
   { name: "physical-venue", stepId: "welcome_chat_055", cue: "welcome-physical-venue", asset: "novel-bg-coastal-venue-v2.png", motion: "push-in" },
@@ -186,6 +189,79 @@ try {
     assert.equal(migrated.unknownScalar, "keep");
     report.scans.push({ viewport, case: "v9-save", stepId: migrated.stepId, audio: migrated.audio, unknownPreserved: true, passed: true });
     await migrationContext.close();
+
+    const galleryLabel = `${viewport.name}-cg-album`;
+    const { context: galleryContext, page: galleryPage } = await createPage(viewport, galleryLabel);
+    await galleryPage.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await galleryPage.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+    await galleryPage.evaluate(() => {
+      localStorage.removeItem("gaiaSensewareNovel:progress");
+      localStorage.removeItem("gaiaSensewareNovel:cg-gallery:v1");
+      globalThis.GaiaNovel.open();
+    });
+    await galleryPage.locator("#novel-title-gallery-button").click();
+    const lockedGallery = await galleryPage.evaluate(() => ({
+      visible: globalThis.__contestVisible(document.querySelector("#novel-gallery-panel")),
+      state: globalThis.GaiaNovel.getGalleryState(),
+      cards: document.querySelectorAll(".novel-gallery-card").length,
+      lockedCards: document.querySelectorAll(".novel-gallery-card[data-unlocked='false']").length,
+      leakedImages: document.querySelectorAll(".novel-gallery-card[data-unlocked='false'] img[src]").length,
+      progress: document.querySelector("#novel-gallery-progress-value")?.textContent,
+      overflow: document.documentElement.scrollWidth > innerWidth + 1,
+    }));
+    assert.equal(lockedGallery.visible, true);
+    assert.deepEqual(lockedGallery.state, { unlocked: [], total: 6, count: 0, percentage: 0 });
+    assert.equal(lockedGallery.cards, 6);
+    assert.equal(lockedGallery.lockedCards, 6);
+    assert.equal(lockedGallery.leakedImages, 0);
+    assert.equal(lockedGallery.progress, "0%");
+    assert.equal(lockedGallery.overflow, false);
+    await galleryPage.screenshot({ path: path.join(outputDir, `${galleryLabel}-locked.png`) });
+    await galleryPage.locator("#novel-gallery-close").click();
+
+    const galleryUnlockSteps = [
+      "festival_concept_015",
+      "festival_concept_019",
+      "festival_concept_023",
+      "esp32_pitch_008",
+      "circle_invitation_048",
+      "welcome_chat_092",
+    ];
+    for (let index = 0; index < galleryUnlockSteps.length; index += 1) {
+      await bootAt(galleryPage, galleryUnlockSteps[index]);
+      assert.equal((await galleryPage.evaluate(() => globalThis.GaiaNovel.getGalleryState().count)), index + 1);
+    }
+    await galleryPage.locator("#novel-gallery-button").click();
+    const completeGallery = await galleryPage.evaluate(() => ({
+      visible: globalThis.__contestVisible(document.querySelector("#novel-gallery-panel")),
+      state: globalThis.GaiaNovel.getGalleryState(),
+      unlockedCards: document.querySelectorAll(".novel-gallery-card[data-unlocked='true']").length,
+      progress: document.querySelector("#novel-gallery-progress-value")?.textContent,
+      titleProgress: document.querySelector("#novel-title-gallery-progress")?.textContent,
+      overflow: document.documentElement.scrollWidth > innerWidth + 1,
+    }));
+    assert.equal(completeGallery.visible, true);
+    assert.equal(completeGallery.state.total, 6);
+    assert.equal(completeGallery.state.count, 6);
+    assert.equal(completeGallery.state.percentage, 100);
+    assert.equal(completeGallery.unlockedCards, 6);
+    assert.equal(completeGallery.progress, "100%");
+    assert.equal(completeGallery.titleProgress, "6 / 6｜100%");
+    assert.equal(completeGallery.overflow, false);
+    await galleryPage.locator(".novel-gallery-card[data-gallery-id='exhibition-finale']").click();
+    const viewerGallery = await galleryPage.evaluate(() => ({
+      visible: globalThis.__contestVisible(document.querySelector("#novel-gallery-viewer")),
+      image: document.querySelector("#novel-gallery-viewer-image")?.getAttribute("src") || "",
+      title: document.querySelector("#novel-gallery-viewer-title")?.textContent || "",
+      overflow: document.documentElement.scrollWidth > innerWidth + 1,
+    }));
+    assert.equal(viewerGallery.visible, true);
+    assert(viewerGallery.image.includes("event-cg-exhibition-finale-v1.png"));
+    assert.equal(viewerGallery.title, "展示会の、その先へ");
+    assert.equal(viewerGallery.overflow, false);
+    report.scans.push({ viewport, case: "cg-album", lockedGallery, completeGallery, viewerGallery, passed: true });
+    await galleryPage.screenshot({ path: path.join(outputDir, `${galleryLabel}-viewer.png`) });
+    await galleryContext.close();
 
     const welcomeEntryLabel = `${viewport.name}-welcome-entry`;
     const { context: welcomeEntryContext, page: welcomeEntryPage } = await createPage(viewport, welcomeEntryLabel);

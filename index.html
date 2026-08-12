@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="./opening.css?v=gaia-142" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-exhibition-finale-1" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-cg-album-1" />
     <link rel="stylesheet" href="./gx-mode.css?v=gx-35" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-07" />
@@ -40,10 +40,10 @@
     <script src="./app.js?v=gaia-interaction-exclusive-1" defer></script>
     <script src="./gx-mode.js?v=gaia-interaction-exclusive-1" defer></script>
     <script src="./novel-story-data.js?v=gaia-recovery-3" defer></script>
-    <script src="./novel-background-cues.js?v=exhibition-finale-1" defer></script>
+    <script src="./novel-background-cues.js?v=cg-album-1" defer></script>
     <script src="./novel-back-half-cues.js?v=back-half-1" defer></script>
     <script src="./novel-temporal.js?v=gaia-temporal-1" defer></script>
-    <script src="./novel-mode.js?v=gaia-exhibition-finale-1" defer></script>
+    <script src="./novel-mode.js?v=gaia-cg-album-1" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-04" defer></script>
@@ -1547,6 +1547,19 @@
               title="ストーリーをスキップしてメニューへ戻る"
             ><span>スキップ</span><span aria-hidden="true">→</span></button>
           </nav>
+          <button
+            class="novel-gallery-button"
+            id="novel-gallery-button"
+            type="button"
+            aria-label="CGアルバムを開く"
+            aria-expanded="false"
+            aria-controls="novel-gallery-panel"
+            hidden
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h16v14H4z"></path><circle cx="9" cy="10" r="2"></circle><path d="m5 17 4-4 3 3 2-2 5 4"></path></svg>
+            <span>CG ALBUM</span>
+            <b id="novel-gallery-count">0 / 6</b>
+          </button>
           <aside
             class="novel-jump-panel"
             id="novel-jump-panel"
@@ -1594,6 +1607,9 @@
             <button id="novel-start-button" type="button">START</button>
             <button id="novel-resume-button" type="button" hidden>続きから</button>
             <button id="novel-title-load-button" type="button">セーブデータから</button>
+            <button class="novel-title-gallery-button" id="novel-title-gallery-button" type="button">
+              <span>CG ALBUM</span><b id="novel-title-gallery-progress">0 / 6｜0%</b>
+            </button>
           </div>
         </section>
 
@@ -1935,6 +1951,42 @@
               <p id="novel-eves-rewind-note">まだやり直せる選択はありません。</p>
             </footer>
           </div>
+        </aside>
+
+        <aside class="novel-gallery-panel" id="novel-gallery-panel" aria-hidden="true" hidden>
+          <div class="novel-gallery-shell" role="dialog" aria-modal="true" aria-labelledby="novel-gallery-title">
+            <header class="novel-gallery-header">
+              <div>
+                <span>VISUAL MEMORY ARCHIVE</span>
+                <h2 id="novel-gallery-title">CG ALBUM</h2>
+                <p>物語で出会った一枚絵を、このブラウザに記録します。未解放のCGは内容を伏せて表示します。</p>
+              </div>
+              <button id="novel-gallery-close" type="button" aria-label="CGアルバムを閉じる">×</button>
+            </header>
+            <section class="novel-gallery-progress" aria-labelledby="novel-gallery-progress-title">
+              <div>
+                <span id="novel-gallery-progress-title">CG達成率</span>
+                <strong id="novel-gallery-progress-value" aria-live="polite">0%</strong>
+              </div>
+              <p id="novel-gallery-progress-copy">0 / 6 UNLOCKED</p>
+              <div class="novel-gallery-progress-track" aria-hidden="true"><i id="novel-gallery-progress-bar"></i></div>
+            </section>
+            <div class="novel-gallery-grid" id="novel-gallery-grid" aria-label="CG一覧"></div>
+            <footer class="novel-gallery-footer">
+              <span>LOCAL PROFILE / PERMANENT UNLOCK</span>
+              <p>解放状況はセーブスロットとは別に保存され、物語を最初から始めても残ります。</p>
+            </footer>
+          </div>
+          <section class="novel-gallery-viewer" id="novel-gallery-viewer" aria-labelledby="novel-gallery-viewer-title" hidden>
+            <button id="novel-gallery-viewer-close" type="button" aria-label="拡大CGを閉じる">×</button>
+            <figure>
+              <img id="novel-gallery-viewer-image" alt="" />
+              <figcaption>
+                <span id="novel-gallery-viewer-chapter"></span>
+                <strong id="novel-gallery-viewer-title"></strong>
+              </figcaption>
+            </figure>
+          </section>
         </aside>
       </section>
 

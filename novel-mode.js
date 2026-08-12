@@ -12,6 +12,7 @@
   const STORAGE_KEY = "gaiaSensewareNovel:progress";
   const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
   const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
+  const GALLERY_KEY = "gaiaSensewareNovel:cg-gallery:v1";
   const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
   const LEGACY_MANUAL_KEYS = ["gaia_novel_manual_saves_v6", "gaiaSensewareNovel:manual-saves:v1"];
   const SLOT_COUNT = 6;
@@ -134,6 +135,8 @@
     start: layer.querySelector("#novel-start-button"),
     resume: layer.querySelector("#novel-resume-button"),
     titleLoad: layer.querySelector("#novel-title-load-button"),
+    titleGallery: layer.querySelector("#novel-title-gallery-button"),
+    titleGalleryProgress: layer.querySelector("#novel-title-gallery-progress"),
     close: layer.querySelector("#novel-close-button"),
     restart: layer.querySelector("#novel-restart-button"),
     auto: layer.querySelector("#novel-auto-button"),
@@ -173,6 +176,19 @@
     evesHistory: layer.querySelector("#novel-eves-history"),
     evesRewind: layer.querySelector("#novel-eves-rewind"),
     evesRewindNote: layer.querySelector("#novel-eves-rewind-note"),
+    galleryButton: layer.querySelector("#novel-gallery-button"),
+    galleryCount: layer.querySelector("#novel-gallery-count"),
+    galleryPanel: layer.querySelector("#novel-gallery-panel"),
+    galleryClose: layer.querySelector("#novel-gallery-close"),
+    galleryProgressValue: layer.querySelector("#novel-gallery-progress-value"),
+    galleryProgressCopy: layer.querySelector("#novel-gallery-progress-copy"),
+    galleryProgressBar: layer.querySelector("#novel-gallery-progress-bar"),
+    galleryGrid: layer.querySelector("#novel-gallery-grid"),
+    galleryViewer: layer.querySelector("#novel-gallery-viewer"),
+    galleryViewerClose: layer.querySelector("#novel-gallery-viewer-close"),
+    galleryViewerImage: layer.querySelector("#novel-gallery-viewer-image"),
+    galleryViewerChapter: layer.querySelector("#novel-gallery-viewer-chapter"),
+    galleryViewerTitle: layer.querySelector("#novel-gallery-viewer-title"),
     modeReadout: layer.querySelector("#novel-mode-readout"),
     progress: layer.querySelector("#novel-progress-bar"),
     chapterCard: layer.querySelector("#novel-chapter-card"),
@@ -220,6 +236,16 @@
   const allSteps = scenes.flatMap((scene) => scene.steps);
   const stepMap = new Map(allSteps.map((step) => [step.id, step]));
   const stepIndexMap = new Map(allSteps.map((step, index) => [step.id, index]));
+  const galleryEntries = Object.freeze([...(backgroundCues.gallery || [])]);
+  const galleryEntryMap = new Map(galleryEntries.map((entry) => [entry.id, entry]));
+  if (!galleryEntries.length || galleryEntryMap.size !== galleryEntries.length) {
+    throw new Error("[GAIA novel] CG gallery data is unavailable or contains duplicate IDs");
+  }
+  galleryEntries.forEach((entry) => {
+    if (!stepMap.has(entry.unlockStepId) || !entry.assetPath) {
+      throw new Error(`[GAIA novel] Invalid CG gallery entry: ${entry.id}`);
+    }
+  });
   if (stepMap.size !== allSteps.length) {
     const seenStepIds = new Set();
     const duplicateStepIds = allSteps
@@ -292,6 +318,7 @@
   let temporalTransitionTimer = 0;
   let temporalTransitionActive = false;
   let previousFocus = null;
+  let galleryPreviousFocus = null;
   let archiveMode = "save";
   let pendingSlotAction = "";
   let pendingSlotTimer = 0;
@@ -389,6 +416,7 @@
 
   const openSceneJump = () => {
     if (!isOpen || !hasStarted || elements.runtime.hidden || !elements.jumpPanel || !elements.jumpButton) return;
+    closeGallery({ restoreFocus: false });
     closeLog();
     closeManualArchive();
     closeConfig();
@@ -477,6 +505,148 @@
     } catch {
       return false;
     }
+  };
+  const getGalleryUnlocks = () => {
+    const candidate = safeJson(readStorage(GALLERY_KEY));
+    const ids = Array.isArray(candidate) ? candidate : candidate?.unlocked;
+    return new Set((Array.isArray(ids) ? ids : []).filter((id) => galleryEntryMap.has(id)));
+  };
+  const writeGalleryUnlocks = (unlocked) => writeStorage(GALLERY_KEY, JSON.stringify({
+    version: 1,
+    unlocked: galleryEntries.filter((entry) => unlocked.has(entry.id)).map((entry) => entry.id),
+  }));
+  const galleryProgress = () => {
+    const unlocked = getGalleryUnlocks();
+    const total = galleryEntries.length;
+    const count = unlocked.size;
+    return { unlocked, total, count, percentage: total ? Math.round((count / total) * 100) : 0 };
+  };
+  const renderGalleryControls = () => {
+    const { count, total, percentage } = galleryProgress();
+    if (elements.galleryCount) elements.galleryCount.textContent = `${count} / ${total}`;
+    if (elements.titleGalleryProgress) elements.titleGalleryProgress.textContent = `${count} / ${total}｜${percentage}%`;
+    if (elements.galleryProgressValue) elements.galleryProgressValue.textContent = `${percentage}%`;
+    if (elements.galleryProgressCopy) elements.galleryProgressCopy.textContent = `${count} / ${total} UNLOCKED`;
+    if (elements.galleryProgressBar) elements.galleryProgressBar.style.width = `${percentage}%`;
+  };
+  const closeGalleryViewer = () => {
+    if (!elements.galleryViewer) return;
+    elements.galleryViewer.hidden = true;
+    elements.galleryViewerImage?.removeAttribute("src");
+    if (elements.galleryViewerImage) elements.galleryViewerImage.alt = "";
+  };
+  const openGalleryViewer = (entry) => {
+    if (!entry || !elements.galleryViewer || !getGalleryUnlocks().has(entry.id)) return;
+    elements.galleryViewerImage.src = `./${entry.assetPath}`;
+    elements.galleryViewerImage.alt = entry.alt;
+    elements.galleryViewerChapter.textContent = entry.chapter;
+    elements.galleryViewerTitle.textContent = entry.title;
+    elements.galleryViewer.hidden = false;
+    requestAnimationFrame(() => elements.galleryViewerClose.focus({ preventScroll: true }));
+  };
+  const renderGallery = () => {
+    if (!elements.galleryGrid) return;
+    const { unlocked } = galleryProgress();
+    const fragment = document.createDocumentFragment();
+    galleryEntries.forEach((entry, index) => {
+      const available = unlocked.has(entry.id);
+      const card = document.createElement("button");
+      const visual = document.createElement("span");
+      const number = document.createElement("small");
+      const copy = document.createElement("span");
+      const chapter = document.createElement("small");
+      const title = document.createElement("strong");
+      card.type = "button";
+      card.className = "novel-gallery-card";
+      card.dataset.galleryId = entry.id;
+      card.dataset.unlocked = String(available);
+      card.setAttribute("aria-label", available ? `${entry.title}を拡大表示` : `CG ${index + 1}、未解放`);
+      visual.className = "novel-gallery-card-visual";
+      number.className = "novel-gallery-card-number";
+      number.textContent = String(index + 1).padStart(2, "0");
+      visual.append(number);
+      if (available) {
+        const image = document.createElement("img");
+        image.src = `./${entry.assetPath}`;
+        image.alt = entry.alt;
+        image.loading = "lazy";
+        image.decoding = "async";
+        visual.prepend(image);
+      } else {
+        const lock = document.createElement("i");
+        lock.textContent = "◇";
+        lock.setAttribute("aria-hidden", "true");
+        visual.append(lock);
+      }
+      copy.className = "novel-gallery-card-copy";
+      chapter.textContent = available ? entry.chapter : "LOCKED MEMORY";
+      title.textContent = available ? entry.title : "物語を進めると解放";
+      copy.append(chapter, title);
+      card.append(visual, copy);
+      if (available) card.addEventListener("click", () => openGalleryViewer(entry));
+      else card.disabled = true;
+      fragment.append(card);
+    });
+    elements.galleryGrid.replaceChildren(fragment);
+    renderGalleryControls();
+  };
+  const unlockGalleryCue = (cue) => {
+    if (debugJumpActive || !cue?.galleryId || !galleryEntryMap.has(cue.galleryId)) return false;
+    const unlocked = getGalleryUnlocks();
+    if (unlocked.has(cue.galleryId)) return false;
+    unlocked.add(cue.galleryId);
+    writeGalleryUnlocks(unlocked);
+    renderGalleryControls();
+    if (!elements.galleryPanel?.hidden) renderGallery();
+    return true;
+  };
+  const seedGalleryFromProgress = (progress) => {
+    if (!progress) return false;
+    const unlocked = getGalleryUnlocks();
+    const before = unlocked.size;
+    if (progress.clear) galleryEntries.forEach((entry) => unlocked.add(entry.id));
+    else {
+      const read = new Set(progress.readStepIds || []);
+      const reached = new Set(progress.reachedSceneIds || []);
+      const currentIndex = stepIndexMap.get(progress.stepId) ?? -1;
+      galleryEntries.forEach((entry) => {
+        const unlockStep = stepMap.get(entry.unlockStepId);
+        const unlockIndex = stepIndexMap.get(entry.unlockStepId) ?? Number.POSITIVE_INFINITY;
+        if (read.has(entry.unlockStepId) || (reached.has(unlockStep?.sceneId) && currentIndex >= unlockIndex)) unlocked.add(entry.id);
+      });
+    }
+    if (unlocked.size !== before) writeGalleryUnlocks(unlocked);
+    renderGalleryControls();
+    return unlocked.size !== before;
+  };
+  const closeGallery = ({ restoreFocus = true } = {}) => {
+    if (!elements.galleryPanel) return;
+    const wasOpen = !elements.galleryPanel.hidden;
+    closeGalleryViewer();
+    elements.galleryPanel.hidden = true;
+    elements.galleryPanel.setAttribute("aria-hidden", "true");
+    elements.galleryButton?.setAttribute("aria-expanded", "false");
+    elements.titleGallery?.setAttribute("aria-expanded", "false");
+    if (wasOpen && restoreFocus) galleryPreviousFocus?.focus?.({ preventScroll: true });
+    galleryPreviousFocus = null;
+  };
+  const openGallery = () => {
+    if (!isOpen || !elements.galleryPanel) return;
+    galleryPreviousFocus = document.activeElement;
+    resetFastForward();
+    closeSceneJump({ restoreFocus: false });
+    closeLog();
+    closeManualArchive();
+    closeConfig();
+    closeEves();
+    closeSourceDetails();
+    closeGallery({ restoreFocus: false });
+    renderGallery();
+    elements.galleryPanel.hidden = false;
+    elements.galleryPanel.setAttribute("aria-hidden", "false");
+    elements.galleryButton?.setAttribute("aria-expanded", "true");
+    elements.titleGallery?.setAttribute("aria-expanded", "true");
+    requestAnimationFrame(() => elements.galleryClose.focus({ preventScroll: true }));
   };
   const readAudioState = () => {
     const volumeInput = document.querySelector("#gaia-audio-volume");
@@ -673,11 +843,15 @@
 
   const getStoredProgress = () => {
     const current = normalizeState(safeJson(readStorage(STORAGE_KEY)));
-    if (current) return current;
+    if (current) {
+      seedGalleryFromProgress(current);
+      return current;
+    }
     for (const key of LEGACY_PROGRESS_KEYS) {
       const migrated = normalizeState(safeJson(readStorage(key)));
       if (!migrated) continue;
       writeStorage(STORAGE_KEY, JSON.stringify(migrated));
+      seedGalleryFromProgress(migrated);
       return migrated;
     }
     return null;
@@ -768,6 +942,8 @@
     setSceneJumpAvailability(true);
     elements.saveButton.hidden = false;
     elements.loadButton.hidden = false;
+    elements.galleryButton.hidden = false;
+    renderGalleryControls();
   };
 
   const showTitle = () => {
@@ -783,6 +959,9 @@
     setSceneJumpAvailability(false);
     elements.saveButton.hidden = true;
     elements.loadButton.hidden = true;
+    elements.galleryButton.hidden = true;
+    closeGallery({ restoreFocus: false });
+    renderGalleryControls();
     elements.resume.hidden = !getStoredProgress();
     requestAnimationFrame(() => elements.start.focus({ preventScroll: true }));
   };
@@ -1884,7 +2063,8 @@
     else delete layer.dataset.openingPresentation;
     delete layer.dataset.recordPresentation;
     if (step.type !== "chat") delete elements.cast.dataset.slackCast;
-    applyBackgroundCueForStep(step);
+    const backgroundCue = applyBackgroundCueForStep(step);
+    unlockGalleryCue(backgroundCue);
     sectionSeparatorActive = false;
     showRuntime();
     warmUpcomingBackground(step);
@@ -2765,6 +2945,7 @@
 
   const canAdvanceStep = (step) => ["narration", "dialogue", "chat", "record", "ui", "transition", "details"].includes(step?.type);
   const progressionPanelsClosed = () => [elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel, elements.jumpPanel]
+    .concat(elements.galleryPanel ? [elements.galleryPanel] : [])
     .every((panel) => panel.hidden);
 
   const updateFastForwardInterface = () => {
@@ -3018,6 +3199,7 @@
   };
   const openLog = () => {
     if (!elements.logPanel.hidden) return;
+    closeGallery({ restoreFocus: false });
     closeEves();
     closeSourceDetails();
     logFollowLatest = true;
@@ -3041,6 +3223,7 @@
   };
   const toggleSourceDetails = () => {
     if (elements.sourcePanel.hidden) {
+      closeGallery({ restoreFocus: false });
       closeLog();
       closeEves();
       elements.sourcePanel.hidden = false;
@@ -3172,6 +3355,7 @@
   };
   const toggleEves = () => {
     if (elements.evesPanel.hidden) {
+      closeGallery({ restoreFocus: false });
       closeLog();
       closeSourceDetails();
       renderEves();
@@ -3310,6 +3494,7 @@
     if (!saved) return;
     exitDebugJumpSession();
     state = saved.progress;
+    seedGalleryFromProgress(state);
     closeManualArchive();
     showRuntime();
     renderEves();
@@ -3326,6 +3511,7 @@
     renderManualSlots();
   };
   const openManualArchive = (mode) => {
+    closeGallery({ restoreFocus: false });
     setArchiveMode(mode);
     elements.saveButton.setAttribute("aria-expanded", String(archiveMode === "save"));
     elements.loadButton.setAttribute("aria-expanded", String(archiveMode === "load"));
@@ -3341,6 +3527,7 @@
   };
 
   const openConfig = () => {
+    closeGallery({ restoreFocus: false });
     syncConfig();
     elements.configPanel.hidden = false;
     elements.configPanel.setAttribute("aria-hidden", "false");
@@ -3445,6 +3632,7 @@
   elements.start.addEventListener("click", startNewSession);
   elements.resume.addEventListener("click", resumeStory);
   elements.titleLoad.addEventListener("click", () => openManualArchive("load"));
+  elements.titleGallery?.addEventListener("click", openGallery);
   elements.close.addEventListener("click", (event) => closeNovel(event));
   elements.restart.addEventListener("click", restartStory);
   elements.logButton.addEventListener("click", toggleLog);
@@ -3474,6 +3662,14 @@
   elements.evesButton.addEventListener("click", toggleEves);
   elements.evesClose.addEventListener("click", closeEves);
   elements.evesRewind.addEventListener("click", rewindEves);
+  elements.galleryButton?.addEventListener("click", openGallery);
+  elements.galleryClose?.addEventListener("click", () => closeGallery());
+  elements.galleryViewerClose?.addEventListener("click", closeGalleryViewer);
+  elements.galleryViewer?.addEventListener("click", (event) => {
+    if (event.target === elements.galleryViewer) closeGalleryViewer();
+  });
+  elements.galleryPanel?.addEventListener("pointerdown", (event) => event.stopPropagation());
+  elements.galleryPanel?.addEventListener("click", (event) => event.stopPropagation());
   elements.sourceButton.addEventListener("click", (event) => {
     event.stopPropagation();
     toggleSourceDetails();
@@ -3579,7 +3775,7 @@
   layer.addEventListener("wheel", (event) => {
     if (!elements.jumpPanel?.hidden || event.target.closest?.("#novel-jump-panel")) return;
     if (event.deltaY >= 0 || event.ctrlKey || !hasStarted || elements.runtime.hidden || !elements.logPanel.hidden) return;
-    if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel, elements.jumpPanel].every((panel) => panel.hidden)) return;
+    if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel, elements.jumpPanel, elements.galleryPanel].every((panel) => panel.hidden)) return;
     event.preventDefault();
     event.stopPropagation();
     openLog();
@@ -3588,7 +3784,9 @@
     event.stopPropagation();
     if (event.key === "Escape") {
       event.preventDefault();
-      if (!elements.jumpPanel?.hidden) closeSceneJump();
+      if (!elements.galleryViewer?.hidden) closeGalleryViewer();
+      else if (!elements.galleryPanel?.hidden) closeGallery();
+      else if (!elements.jumpPanel?.hidden) closeSceneJump();
       else if (!elements.configPanel.hidden) closeConfig();
       else if (!elements.savePanel.hidden) closeManualArchive();
       else if (!elements.sourcePanel.hidden) closeSourceDetails({ restoreFocus: true });
@@ -3618,6 +3816,10 @@
       if (!step) return null;
       const cue = backgroundCues.forStep(step);
       return cue ? { ...cue } : null;
+    },
+    getGalleryState: () => {
+      const { unlocked, total, count, percentage } = galleryProgress();
+      return { unlocked: [...unlocked], total, count, percentage };
     },
     inspectDialoguePagination: (text) => {
       const source = String(text || "");
@@ -3656,6 +3858,7 @@
   syncConfig();
   renderManualSlots();
   renderEves();
+  renderGalleryControls();
   showTitle();
   const directStoryRoute = /\/story\/?$/i.test(window.location.pathname);
   if (directStoryRoute) {
