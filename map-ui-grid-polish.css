@@ -84,6 +84,13 @@ body.map-grid-desktop .map-grid-data {
   border-left: 2px solid rgba(119, 190, 236, 0.52) !important;
 }
 
+/* The data heading is a decorative floating plate. On wide story MAP views
+   its fixed rect can cross the year range input, so it must never own pointer
+   hit-testing. The real input remains independently interactive underneath. */
+body.map-grid-desktop .signal-console-heading.map-grid-data {
+  pointer-events: none !important;
+}
+
 body.map-grid-desktop .map-grid-scale {
   width: clamp(220px, 15.5vw, 286px) !important;
   min-height: 68px !important;

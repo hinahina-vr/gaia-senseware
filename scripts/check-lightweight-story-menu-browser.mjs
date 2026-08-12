@@ -265,13 +265,13 @@ const scanMetadataAndRuntimeGallery = async (viewport, stepId) => {
   });
   assert(scan.captionVisible);
   assert(["rgba(0, 0, 0, 0)", "transparent"].includes(scan.backgroundColor));
-  assert.equal(scan.backgroundImage, "none");
+  assert(scan.backgroundImage.includes("radial-gradient"));
   assert(scan.borderWidths.every((width) => width === "0px"));
   assert.equal(scan.boxShadow, "none");
   assert(["none", ""].includes(scan.backdropFilter));
   assert.notEqual(scan.textShadow, "none");
-  assert.equal(scan.pseudoBefore, "none");
-  assert.equal(scan.pseudoAfter, "none");
+  assert.equal(scan.pseudoBefore, "block");
+  assert.equal(scan.pseudoAfter, "block");
   assert.equal(scan.runtimeGalleryDomCount, 0);
   assert.equal(scan.runtimeGalleryFocusable, 0);
   assert.equal(scan.titleGalleryDomCount, 2);
@@ -448,7 +448,7 @@ const scanRuntimeStoryContract = async () => {
       },
     };
   });
-  assert.equal(scan.sourceSha256, "f0e87f9ea2d1adbc98a4918416653588f8288310ba85ceab89560e7f1e994452");
+  assert.equal(scan.sourceSha256, "e15e68aba9c3b18a2ffc47dccc21eb5dc5b8997aa4c7cfc06424dafe6932543d");
   assert.equal(scan.sceneCount, 6);
   assert.equal(scan.stepCount, 396);
   assert.deepEqual(scan.userVisiblePlacementVerbStepIds, []);

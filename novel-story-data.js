@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "f0e87f9ea2d1adbc98a4918416653588f8288310ba85ceab89560e7f1e994452",
+  "sourceSha256": "e15e68aba9c3b18a2ffc47dccc21eb5dc5b8997aa4c7cfc06424dafe6932543d",
   "characterSourceSha256": "4b055ccd1ffcb0fabbec0a7d1d156804a97db412b8356b6f30d681f8f36c8db1",
   "characters": {
     "amane": {
@@ -143,13 +143,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "長い連絡通路を渡り、学生作品が集まるBホールへ入る。"
+          "text": "長い連絡通路を渡り、学生作品が集まる国際展示場の8ホールへ入る。"
         },
         {
           "id": "festival_concept_009",
           "sceneId": "festival_concept",
           "type": "ui",
-          "text": "会場案内板｜Bホール　学生作品・体験展示"
+          "text": "会場案内｜国際展示場 8ホール　学生作品・体験展示"
         },
         {
           "id": "festival_concept_010",
