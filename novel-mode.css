@@ -8012,3 +8012,29 @@ body.gx-story-open .novel-script-debug-copy {
     1px 0 1px rgba(0, 5, 18, 0.54),
     -1px 0 1px rgba(0, 5, 18, 0.54);
 }
+
+/* Mobile quality pass: preserve the desktop composition while giving the
+   title, story toolbar and modal close controls legible, honest hit areas. */
+@media (max-width: 720px) {
+  .novel-nav-label {
+    font-size: 8px;
+  }
+
+  .novel-layer.is-title .novel-title-screen {
+    bottom: max(64px, calc(env(safe-area-inset-bottom) + 64px));
+  }
+
+  .novel-layer.is-title #novel-start-button {
+    min-height: 44px;
+    font-size: 12px;
+  }
+
+  .novel-save-header > button,
+  .novel-config-header > button,
+  .novel-gallery-header > button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+}

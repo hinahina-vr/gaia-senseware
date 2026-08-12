@@ -6647,3 +6647,80 @@ h1 {
     padding-inline: 15px;
   }
 }
+
+/* Mobile quality pass: real 44px targets, readable type and safe-area-aware
+   two-row mode navigation. Desktop rules remain authoritative above 720px. */
+@media (max-width: 720px) {
+  .actions {
+    top: max(122px, calc(env(safe-area-inset-top) + 116px));
+    right: max(10px, env(safe-area-inset-right));
+    display: grid;
+    grid-template-columns: repeat(6, 44px);
+    gap: 4px;
+  }
+
+  .space-button,
+  .story-button,
+  .japan-button,
+  .intro-button,
+  .auto-button,
+  .source-button,
+  .reset-button {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .mode-nav {
+    right: auto;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 50%;
+    width: auto;
+    max-width: calc(100vw - 24px);
+    transform: translateX(-50%);
+  }
+
+  .mode-list {
+    display: grid;
+    flex: 0 0 auto;
+    grid-template-columns: repeat(5, 44px);
+    grid-auto-rows: 44px;
+    gap: 1px;
+    width: auto;
+    min-width: 0;
+    padding: 4px;
+    border-radius: 24px;
+  }
+
+  .mode-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    font-size: 8px;
+  }
+
+  .mode-caption {
+    bottom: max(112px, calc(env(safe-area-inset-bottom) + 104px));
+  }
+
+  #concept-open,
+  #intro-button {
+    min-height: 44px;
+  }
+
+  .intro-lp-hero .intro-path-card > strong,
+  .intro-lp-hero .intro-path-card:not(.intro-path-card--featured) > strong,
+  .intro-lp-hero .intro-path-card.intro-path-card--featured > strong {
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .intro-lp-hero .intro-path-card > p,
+  .intro-lp-hero .intro-path-card:not(.intro-path-card--featured) > p,
+  .intro-lp-hero .intro-path-card.intro-path-card--featured > p {
+    display: block;
+    font-size: 11px;
+    line-height: 1.55;
+  }
+}
