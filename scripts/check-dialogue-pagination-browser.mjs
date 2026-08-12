@@ -129,7 +129,20 @@ try {
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.inspectDialoguePagination), null, { timeout: 15_000 });
     await page.evaluate(() => globalThis.GaiaNovel.open());
     await page.locator("#novel-resume-button").click();
+    await page.waitForFunction((expectedStepId) => {
+      const layer = document.querySelector("#novel-layer");
+      const runtime = document.querySelector("#novel-runtime");
+      const text = document.querySelector("#novel-text");
+      if (layer?.dataset.stepId !== expectedStepId || !runtime || !text) return false;
+      if (runtime.hidden || runtime.getAttribute("aria-hidden") === "true") return false;
+      const runtimeRect = runtime.getBoundingClientRect();
+      const textRect = text.getBoundingClientRect();
+      return runtimeRect.width > 0 && runtimeRect.height > 0 && textRect.width > 0;
+    }, baseState.stepId, { timeout: 15_000 });
     await page.evaluate(() => document.fonts?.ready);
+    await page.evaluate(() => new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
     const results = await page.evaluate((steps) => steps.map((step) => ({
       id: step.id,
       pagination: globalThis.GaiaNovel.inspectDialoguePagination(step.text),
