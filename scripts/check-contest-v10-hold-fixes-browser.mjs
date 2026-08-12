@@ -364,7 +364,7 @@ const scanNamesAndBackgrounds = async (viewport) => {
 
 const galleryUnlockSteps = [
   "festival_concept_015",
-  "festival_concept_019",
+  "festival_concept_021",
   "festival_concept_023",
   "esp32_pitch_008",
   "circle_invitation_048",
@@ -498,7 +498,7 @@ const scanGallery = async (viewport) => {
 };
 
 const eventCgSafetyCases = [
-  ["festival_concept_019", "festival-amane-closeup-cg", "あなた"],
+  ["festival_concept_021", "festival-amane-closeup-cg", "短髪の女性"],
   ["festival_concept_023", "festival-mizuha-closeup-cg", "長髪の女性"],
   ["esp32_pitch_008", "esp32-collaboration-cg", ""],
 ];

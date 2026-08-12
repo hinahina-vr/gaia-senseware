@@ -19,8 +19,8 @@ const expectedSceneIds = [
 ];
 const expectedCounts = [76, 43, 58, 43, 81, 95];
 const assets = Object.freeze({
-  campus: "assets/visuals-07/zushi-campus-story-bg-v4.webp",
   entrance: "assets/visuals-07/novel-bg-coastal-venue-v3.png",
+  bHallOverview: "assets/visuals-07/novel-bg-festival-b-hall-overview-v1.png",
   boothClose: "assets/visuals-07/novel-bg-exhibition-v3.png",
   boothWide: "assets/visuals-07/novel-bg-exhibition-v2.png",
   firstEncounter: "assets/visuals-07/event-cg-first-encounter-v1.png",
@@ -54,13 +54,16 @@ assert.deepEqual(backgroundCues.expectedSceneCounts, Object.fromEntries(expected
 assert.equal(backgroundCues.productionYear.length, 0, "legacy production registry must be empty");
 
 const expectedBoundaries = [
-  ["festival_concept", 1, 1, "festival-campus-entrance", assets.campus, "drift-right", "scenic"],
-  ["festival_concept", 2, 7, "festival-venue-reception", assets.entrance, "push-in", "scenic"],
-  ["festival_concept", 8, 14, "festival-gaia-booth-approach", assets.boothClose, "drift-left", "scenic"],
-  ["festival_concept", 15, 18, "festival-first-encounter-cg", assets.firstEncounter, "event-focus", "event-cg"],
-  ["festival_concept", 19, 22, "festival-amane-closeup-cg", assets.amaneCloseup, "event-focus", "event-cg"],
+  ["festival_concept", 1, 7, "festival-main-entrance-reception", assets.entrance, "push-in", "scenic"],
+  ["festival_concept", 8, 9, "festival-b-hall-overview", assets.bHallOverview, "push-in", "scenic"],
+  ["festival_concept", 10, 14, "festival-gaia-booth-approach", assets.boothClose, "drift-left", "scenic"],
+  ["festival_concept", 15, 20, "festival-first-encounter-cg", assets.firstEncounter, "event-focus", "event-cg"],
+  ["festival_concept", 21, 22, "festival-amane-closeup-cg", assets.amaneCloseup, "event-focus", "event-cg"],
   ["festival_concept", 23, 26, "festival-mizuha-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
-  ["festival_concept", 27, 46, "festival-gaia-booth-conversation", assets.boothWide, "drift-left", "scenic"],
+  ["festival_concept", 27, 31, "festival-gaia-booth-conversation", assets.boothWide, "drift-left", "scenic"],
+  ["festival_concept", 32, 35, "festival-amane-response-closeup-cg", assets.amaneCloseup, "event-focus", "event-cg"],
+  ["festival_concept", 36, 37, "festival-mizuha-response-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
+  ["festival_concept", 38, 46, "festival-gaia-booth-conversation-return", assets.boothWide, "drift-left", "scenic"],
   ["festival_concept", 47, 61, "festival-gaia-booth-explanation", assets.boothClose, "drift-right", "scenic"],
   ["festival_concept", 62, 71, "festival-ten-senses", assets.tenWindows, "push-in", "scenic"],
   ["festival_concept", 72, 76, "festival-map-transition", assets.modeMap, "push-in", "scenic"],
@@ -113,7 +116,7 @@ assert.equal(resolved.length, 396);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
 assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 24, "background-art cut must use twenty-four distinct scene assets");
-assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 49);
+assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 55);
 
 assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
 assert.equal(new Set(backgroundCues.gallery.map((entry) => entry.id)).size, 6, "CG album IDs must be unique");
@@ -130,11 +133,17 @@ for (const assetPath of new Set(resolved.map(({ cue }) => cue.assetPath))) {
 }
 
 const cue = (stepId) => backgroundCues.forStep(allSteps.find((step) => step.id === stepId));
-assert.equal(cue("festival_concept_001").assetPath, assets.campus);
-assert.equal(cue("festival_concept_008").assetPath, assets.boothClose);
+assert.equal(cue("festival_concept_001").assetPath, assets.entrance);
+assert.equal(cue("festival_concept_008").assetPath, assets.bHallOverview);
+assert.equal(cue("festival_concept_010").assetPath, assets.boothClose);
 assert.equal(cue("festival_concept_015").presentation, "event-cg");
-assert.equal(cue("festival_concept_019").assetPath, assets.amaneCloseup);
+assert.equal(cue("festival_concept_019").assetPath, assets.firstEncounter);
+assert.equal(cue("festival_concept_021").assetPath, assets.amaneCloseup);
 assert.equal(cue("festival_concept_023").assetPath, assets.mizuhaCloseup);
+assert.equal(cue("festival_concept_027").assetPath, assets.boothWide);
+assert.equal(cue("festival_concept_031").assetPath, assets.boothWide);
+assert.equal(cue("festival_concept_032").assetPath, assets.amaneCloseup);
+assert.equal(cue("festival_concept_036").assetPath, assets.mizuhaCloseup);
 assert.equal(cue("festival_concept_062").assetPath, assets.tenWindows);
 assert.equal(cue("map_mode01_015").assetPath, assets.modis);
 assert.equal(cue("gx_experience_017").assetPath, assets.abstract);

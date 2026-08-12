@@ -25,10 +25,10 @@ const welcomeCases = [
   { name: "mobile", stepId: "welcome_chat_081", device: "mobile", slack: true },
 ];
 const cinematicCases = [
-  { name: "campus-entrance", stepId: "festival_concept_001", cue: "festival-campus-entrance", asset: "zushi-campus-story-bg-v4.webp", motion: "drift-right", mobile: true },
-  { name: "exhibition-entrance", stepId: "festival_concept_008", cue: "festival-exhibition-entrance", asset: "novel-bg-coastal-venue-v3.png", motion: "push-in" },
+  { name: "festival-entrance", stepId: "festival_concept_001", cue: "festival-main-entrance-reception", asset: "novel-bg-coastal-venue-v3.png", motion: "push-in", mobile: true },
+  { name: "b-hall-overview", stepId: "festival_concept_008", cue: "festival-b-hall-overview", asset: "novel-bg-festival-b-hall-overview-v1.png", motion: "push-in" },
   { name: "first-encounter-cg", stepId: "festival_concept_015", cue: "festival-first-encounter-cg", asset: "event-cg-first-encounter-v1.png", motion: "event-focus", eventCg: true, mobile: true },
-  { name: "amane-closeup-cg", stepId: "festival_concept_019", cue: "festival-amane-closeup-cg", asset: "event-cg-amane-closeup-v1.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "amane-closeup-cg", stepId: "festival_concept_021", cue: "festival-amane-closeup-cg", asset: "event-cg-amane-closeup-v1.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "mizuha-closeup-cg", stepId: "festival_concept_023", cue: "festival-mizuha-closeup-cg", asset: "event-cg-mizuha-closeup-v1.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "gaia-booth", stepId: "festival_concept_027", cue: "festival-gaia-booth", asset: "novel-bg-exhibition-v2.png", motion: "drift-left" },
   { name: "gx-booth", stepId: "gx_experience_001", cue: "gx-terminal-booth", asset: "novel-bg-exhibition-v3.png", motion: "drift-right" },
@@ -147,11 +147,11 @@ try {
       };
     });
     assert.deepEqual(motionScan, {
-      cue: "festival-campus-entrance",
-      motion: "drift-right",
+      cue: "festival-main-entrance-reception",
+      motion: "push-in",
       reduced: false,
-      animationName: "novel-background-drift-right",
-      animationDuration: "26s",
+      animationName: "novel-background-push-in",
+      animationDuration: "28s",
     });
     report.scans.push({ viewport: viewports[0], case: "cinematic-motion", ...motionScan, passed: true });
     await motionContext.close();
@@ -221,7 +221,7 @@ try {
 
     const galleryUnlockSteps = [
       "festival_concept_015",
-      "festival_concept_019",
+      "festival_concept_021",
       "festival_concept_023",
       "esp32_pitch_008",
       "circle_invitation_048",
