@@ -40,7 +40,7 @@ export default {
 } satisfies ExportedHandler<Env>;
 
 const route = async (request: Request, env: Env, url: URL): Promise<Response> => {
-  if (request.method === "GET" && url.pathname === "/health") return json({ ok: true, service: "gaia-senseware-sensor-platform" });
+  if (request.method === "GET" && url.pathname === "/api/health") return json({ ok: true, service: "gaia-senseware-sensor-platform" });
   if (request.method === "GET" && url.pathname === "/api/auth/google/start") return startGoogleLogin(request, env);
   if (request.method === "GET" && url.pathname === "/api/auth/google/callback") return finishGoogleLogin(request, env);
   if (request.method === "GET" && url.pathname === "/api/web/v1/session") return sessionResponse(request, env);

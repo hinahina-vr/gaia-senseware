@@ -6,8 +6,8 @@ info:
     ESP32をGAIA SENSEWAREへ接続するための公開API。Web管理API、Google OIDC、
     ユーザー情報、地域マスタ管理は公開Device APIに含まれません。
 servers:
-  - url: https://sensors.example.com/api/v1
-    description: Replace with the HTTPS Worker route created for GAIA SENSEWARE.
+  - url: https://gaia-senseware.pages.dev/api/v1
+    description: GAIA SENSEWARE production same-origin Pages Functions API.
 tags:
   - name: Provisioning
   - name: Telemetry

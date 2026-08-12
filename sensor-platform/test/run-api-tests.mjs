@@ -11,6 +11,13 @@ if (!wranglerPath) throw new Error("GAIA_WRANGLER_PATH is required.");
 const origin = "http://127.0.0.1:8791";
 const persistPath = `${root}\\.wrangler\\api-test-state-${process.pid}`;
 const reports = [];
+const testSecrets = {
+  GOOGLE_CLIENT_ID: `local-test-${randomBytes(12).toString("hex")}`,
+  GOOGLE_CLIENT_SECRET: randomBytes(32).toString("hex"),
+  SESSION_SECRET: randomBytes(32).toString("hex"),
+  DEVICE_TOKEN_PEPPER: randomBytes(32).toString("hex"),
+  PAIRING_CODE_PEPPER: randomBytes(32).toString("hex"),
+};
 
 const command = (argumentsList) => new Promise((resolve, reject) => {
   const child = spawn(nodePath, [wranglerPath, ...argumentsList], { cwd: root, env: process.env, windowsHide: true });
@@ -25,7 +32,11 @@ await command(["d1", "migrations", "apply", "gaia-senseware-sensors-local", "--l
 const migrationReapplyOutput = await command(["d1", "migrations", "apply", "gaia-senseware-sensors-local", "--local", `--persist-to=${persistPath}`]);
 await command(["d1", "execute", "gaia-senseware-sensors-local", "--local", `--persist-to=${persistPath}`, "--file=test/seed-local.sql"]);
 
-const server = spawn(nodePath, [wranglerPath, "dev", "--local", "--port", "8791", `--persist-to=${persistPath}`], {
+const server = spawn(nodePath, [
+  wranglerPath,
+  "dev", "--local", "--port", "8791", `--persist-to=${persistPath}`,
+  ...Object.entries(testSecrets).flatMap(([name, value]) => ["--var", `${name}:${value}`]),
+], {
   cwd: root,
   env: process.env,
   windowsHide: true,
@@ -38,7 +49,7 @@ server.stderr.on("data", (chunk) => { serverOutput += chunk; });
 try {
   await waitForServer();
   await test("health and security headers", async () => {
-    const response = await fetch(`${origin}/health`);
+    const response = await fetch(`${origin}/api/health`);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("x-frame-options"), "DENY");
     assert.match(response.headers.get("permissions-policy") ?? "", /geolocation=\(\)/u);
@@ -223,6 +234,7 @@ try {
 
   const leaked = /(Authorization: Bearer|gdt_[A-Za-z0-9_-]{20,}|[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4})/u.test(serverOutput);
   assert.equal(leaked, false, "server output must not contain credentials");
+  assert.equal(Object.values(testSecrets).some((secret) => serverOutput.includes(secret)), false, "server output must not contain test secrets");
   console.log(JSON.stringify({ status: "passed", scans: reports.length, reports }, null, 2));
 } finally {
   server.kill();
@@ -236,7 +248,7 @@ async function test(name, run) {
 async function waitForServer() {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      const response = await fetch(`${origin}/health`);
+      const response = await fetch(`${origin}/api/health`);
       if (response.ok) return;
     } catch {}
     await delay(250);

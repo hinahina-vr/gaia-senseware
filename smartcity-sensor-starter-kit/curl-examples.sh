@@ -3,7 +3,7 @@ set -eu
 
 # Requires jq. Pairing code and the one-time token stay in a mode-700
 # temporary directory and are removed when this script exits.
-API_BASE_URL="${API_BASE_URL:-https://sensors.example.com/api/v1}"
+API_BASE_URL="${API_BASE_URL:-https://gaia-senseware.pages.dev/api/v1}"
 command -v jq >/dev/null 2>&1 || { printf '%s\n' 'jq is required.' >&2; exit 1; }
 if [[ -z "${PAIRING_CODE:-}" ]]; then
   read -r -s -p "One-time pairing code: " PAIRING_CODE

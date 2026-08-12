@@ -1,7 +1,7 @@
 #pragma once
 
-// HTTPS only. Replace after the Worker route/custom domain is provisioned.
-#define API_BASE_URL "https://sensors.example.com/api/v1"
+// Production same-origin Pages Functions API. Keep HTTPS enabled.
+#define API_BASE_URL "https://gaia-senseware.pages.dev/api/v1"
 
 #define USE_MOCK_SENSOR true
 #define TELEMETRY_INTERVAL_MS 10000UL
