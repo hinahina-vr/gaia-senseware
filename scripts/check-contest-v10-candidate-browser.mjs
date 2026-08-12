@@ -33,8 +33,8 @@ const cinematicCases = [
   { name: "circle-welcome-cg", stepId: "circle_invitation_048", cue: "circle-welcome-cg", asset: "event-cg-circle-welcome-v1.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "wide-chat-night", stepId: "welcome_chat_006", cue: "welcome-wide-night", asset: "novel-bg-online-night-v2.png", motion: "drift-left" },
   { name: "physical-venue", stepId: "welcome_chat_055", cue: "welcome-physical-venue", asset: "novel-bg-coastal-venue-v2.png", motion: "push-in" },
-  { name: "station-route", stepId: "welcome_chat_078", cue: "welcome-station-route", asset: "novel-bg-production-station-meeting-v1.png", motion: "drift-right", mobile: true },
-  { name: "return-train", stepId: "welcome_chat_083", cue: "welcome-return-train", asset: "novel-bg-production-return-train-v1.png", motion: "drift-left", mobile: true },
+  { name: "closing-exhibition", stepId: "welcome_chat_078", cue: "welcome-closing-exhibition", asset: "novel-bg-exhibition-v3.png", motion: "push-in", mobile: true },
+  { name: "exhibition-finale-cg", stepId: "welcome_chat_092", cue: "welcome-exhibition-finale-cg", asset: "event-cg-exhibition-finale-v1.png", motion: "event-focus", eventCg: true, mobile: true },
 ];
 const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });

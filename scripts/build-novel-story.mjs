@@ -7,7 +7,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "b59f43f536d727d73fcf95d19298f1750f66092a6dbcbd207fedad9b3cb1aa8d";
+const EXPECTED_SOURCE_SHA256 = "09c9cd2dd23fba17ef6c5be67e0cbb93d2d64bb357b28cd81962754bb0a7fffb";
 
 const sourceBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);

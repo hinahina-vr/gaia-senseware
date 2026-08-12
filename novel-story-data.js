@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "b59f43f536d727d73fcf95d19298f1750f66092a6dbcbd207fedad9b3cb1aa8d",
+  "sourceSha256": "09c9cd2dd23fba17ef6c5be67e0cbb93d2d64bb357b28cd81962754bb0a7fffb",
   "startSceneId": "festival_concept",
   "temporal": {
     "schemaVersion": 2,
@@ -2424,13 +2424,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "新しい試作スレッド",
       "chapter": "06 / WELCOME",
       "duration": "9:05–11:30",
-      "location": "学内チャット「惑星の放課後」／閉場後の展示ホールから帰路へ",
+      "location": "学内チャット「惑星の放課後」／閉場後の展示ホール",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
         "timePrecision": "APPROXIMATE",
-        "displayTitle": "9:05–11:30｜学内チャット「惑星の放課後」／閉場後の展示ホールから帰路へ",
-        "location": "学内チャット「惑星の放課後」／閉場後の展示ホールから帰路へ"
+        "displayTitle": "9:05–11:30｜学内チャット「惑星の放課後」／閉場後の展示ホール",
+        "location": "学内チャット「惑星の放課後」／閉場後の展示ホール"
       },
       "steps": [
         {
@@ -3140,7 +3140,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面を閉じ、歩き出した二人を追いかける。"
+          "text": "画面を閉じ、機材箱を抱えた二人へ顔を上げる。"
         },
         {
           "id": "welcome_chat_093",
@@ -3154,7 +3154,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人の会話は、群青の通路を抜けても終わらなかった。画面の向こうには、まだ顔を知らないsakuがいる。"
+          "text": "三人の会話は、閉場後の展示ホールでも終わらなかった。画面の向こうには、まだ顔を知らないsakuがいる。"
         },
         {
           "id": "welcome_chat_095",

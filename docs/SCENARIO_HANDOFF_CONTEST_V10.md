@@ -17,7 +17,7 @@
 | `gx_experience` | `03 / DEEP TIME` | `3:25–5:35` | 展示端末・GX／太古の海 | 58 |
 | `esp32_pitch` | `04 / PROPOSAL` | `5:35–7:15` | 年次対面イベント・GAIA SENSEWARE展示ブース | 43 |
 | `circle_invitation` | `05 / AFTER SCHOOL` | `7:15–9:05` | 年次対面イベント・GAIA SENSEWARE展示ブース | 81 |
-| `welcome_chat` | `06 / WELCOME` | `9:05–11:30` | 学内チャット「惑星の放課後」／閉場後の展示ホールから帰路へ | 95 |
+| `welcome_chat` | `06 / WELCOME` | `9:05–11:30` | 学内チャット「惑星の放課後」／閉場後の展示ホール | 95 |
 
 絶対日付はfreeze正本にないため補完しない。各sceneは`CURRENT / APPROXIMATE`とし、可視見出しはscene-metaの`duration｜location`から生成する。
 

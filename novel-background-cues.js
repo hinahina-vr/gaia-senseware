@@ -23,8 +23,8 @@
     { id: "circle-after-welcome", sceneId: "circle_invitation", from: 70, to: 81, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png", motion: "drift-right" },
     { id: "welcome-wide-night", sceneId: "welcome_chat", from: 1, to: 54, assetPath: "assets/visuals-07/novel-bg-online-night-v2.png", motion: "drift-left" },
     { id: "welcome-physical-venue", sceneId: "welcome_chat", from: 55, to: 77, assetPath: "assets/visuals-07/novel-bg-coastal-venue-v2.png", motion: "push-in" },
-    { id: "welcome-station-route", sceneId: "welcome_chat", from: 78, to: 82, assetPath: "assets/visuals-07/novel-bg-production-station-meeting-v1.png", motion: "drift-right" },
-    { id: "welcome-return-train", sceneId: "welcome_chat", from: 83, to: 95, assetPath: "assets/visuals-07/novel-bg-production-return-train-v1.png", motion: "drift-left" },
+    { id: "welcome-closing-exhibition", sceneId: "welcome_chat", from: 78, to: 91, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png", motion: "push-in" },
+    { id: "welcome-exhibition-finale-cg", sceneId: "welcome_chat", from: 92, to: 95, assetPath: "assets/visuals-07/event-cg-exhibition-finale-v1.png", motion: "event-focus", presentation: "event-cg" },
   ].map((cue) => Object.freeze(cue)));
 
   const sceneIds = Object.freeze(Object.keys(expectedSceneCounts));

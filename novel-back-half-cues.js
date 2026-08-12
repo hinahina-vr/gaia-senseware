@@ -25,7 +25,7 @@
     { id: "gx-current", sceneId: "gx_experience", from: 1, to: 58, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "3:25–5:35", duration: "3:25–5:35", dayPeriod: "", location: "展示端末・GX／太古の海" },
     { id: "esp32-current", sceneId: "esp32_pitch", from: 1, to: 43, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "5:35–7:15", duration: "5:35–7:15", dayPeriod: "", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
     { id: "circle-invitation-current", sceneId: "circle_invitation", from: 1, to: 81, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "7:15–9:05", duration: "7:15–9:05", dayPeriod: "", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
-    { id: "welcome-current", sceneId: "welcome_chat", from: 1, to: 95, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "9:05–11:30", duration: "9:05–11:30", dayPeriod: "", location: "学内チャット『惑星の放課後』／閉場後の展示ホールから帰路へ" },
+    { id: "welcome-current", sceneId: "welcome_chat", from: 1, to: 95, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "9:05–11:30", duration: "9:05–11:30", dayPeriod: "", location: "学内チャット『惑星の放課後』／閉場後の展示ホール" },
   ]);
 
   const interactions = freezeRows([
