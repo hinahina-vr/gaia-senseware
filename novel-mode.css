@@ -4953,11 +4953,12 @@ body.novel-reduced-motion .story-detour-dock * {
 }
 
 .novel-layer.is-slack .novel-dialogue {
-  opacity: 0;
-  filter: blur(4px);
-  transform: translateX(-50%) translateY(14px) scale(0.985);
-  transition: opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease;
-  pointer-events: none;
+  z-index: 18;
+  opacity: 1;
+  filter: none;
+  transform: translateX(-50%);
+  transition: none;
+  pointer-events: auto;
 }
 
 .novel-layer.is-slack-exiting .novel-dialogue {
@@ -5241,7 +5242,7 @@ body.novel-reduced-motion .story-detour-dock * {
   opacity: 0;
   pointer-events: none;
 }
-.novel-layer.is-slack .novel-cursor { display: none; }
+.novel-layer.is-slack .novel-cursor { display: block; }
 
 .novel-layer.is-slack[data-slack-device="mobile"] {
   --novel-slack-height: min(82dvh, 810px, calc(100dvh - var(--novel-slack-top) - 18px));
@@ -5683,6 +5684,84 @@ body:not(.gx-story-open) .novel-layer.is-slack-exiting .novel-character--minamo 
 .story-detour-dock button:disabled { cursor: not-allowed; opacity: 0.46; }
 
 body.novel-mode-detour .novel-layer { pointer-events: none; opacity: 0.4; }
+
+/* MAP01 keeps its native map and year controls reachable while the story is
+   inert. The dock remains a separate, always-visible return surface. */
+body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] {
+  overflow: hidden;
+}
+
+body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .signal-console-map {
+  top: auto !important;
+  right: auto !important;
+  bottom: clamp(118px, 15vh, 150px) !important;
+  left: max(18px, env(safe-area-inset-left)) !important;
+  display: block !important;
+  width: min(420px, calc(100vw - 36px)) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+@media (max-width: 600px) {
+  body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .signal-console-map {
+    top: 214px !important;
+    bottom: auto !important;
+    left: 12px !important;
+    width: calc(100vw - 24px) !important;
+    max-height: 210px;
+    overflow-y: auto;
+  }
+
+  body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .story-detour-dock {
+    position: sticky;
+    top: calc(100dvh - min(48vh, 360px));
+    bottom: auto;
+    margin-top: calc(100dvh - min(48vh, 360px));
+  }
+}
+
+/* Slack remains a visual history panel; the VN window is the only progression
+   surface and therefore stays above it without hiding the active post. */
+.novel-layer.is-slack {
+  --novel-slack-height: min(51vh, 520px, calc(100dvh - var(--novel-slack-top) - var(--novel-say-height) - var(--novel-say-bottom) - 12px));
+}
+
+.novel-layer.is-slack .novel-slack-surface {
+  z-index: 9;
+}
+
+.novel-layer.is-slack .novel-dialogue {
+  z-index: 18;
+}
+
+.novel-layer.is-slack .novel-slack-workspace {
+  pointer-events: auto;
+}
+
+.novel-layer.is-slack .novel-slack-post.is-new {
+  scroll-margin-bottom: 22px;
+  box-shadow: inset 3px 0 rgba(18, 100, 163, 0.78);
+}
+
+@media (max-width: 600px) {
+  .novel-layer.is-slack,
+  .novel-layer.is-slack[data-slack-device="mobile"] {
+    --novel-slack-top: 58px;
+    --novel-slack-height: max(210px, calc(100dvh - var(--novel-slack-top) - var(--novel-say-height) - var(--novel-say-bottom) - 14px));
+  }
+
+  .novel-layer.is-slack .novel-slack-surface,
+  .novel-layer.is-slack[data-slack-device="mobile"] .novel-slack-surface {
+    top: var(--novel-slack-top);
+    height: var(--novel-slack-height);
+  }
+}
 
 .novel-layer.is-motion-reduced *,
 .novel-layer.is-motion-reduced *::before,
@@ -6952,12 +7031,12 @@ body.gx-story-open .novel-script-debug-copy {
 }
 
 .novel-speaker {
-  top: clamp(24px, 4vh, 36px) !important;
+  top: clamp(18px, 3vh, 28px) !important;
   left: 0 !important;
   justify-content: center !important;
-  width: min(480px, 46%) !important;
+  width: min(520px, 52%) !important;
   min-width: 0 !important;
-  min-height: 26px !important;
+  min-height: 36px !important;
   padding: 0 clamp(18px, 3vw, 42px) !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -6965,8 +7044,8 @@ body.gx-story-open .novel-script-debug-copy {
   box-shadow: none !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-  font-size: clamp(12px, 0.9vw, 14px) !important;
-  font-weight: 500 !important;
+  font-size: clamp(17px, 1.2vw, 20px) !important;
+  font-weight: 650 !important;
   letter-spacing: 0.12em !important;
   text-align: center !important;
   transform: none !important;
@@ -7059,11 +7138,11 @@ body.gx-story-open .novel-script-debug-copy {
 
 @media (max-width: 720px) {
   .novel-speaker {
-    top: 30px !important;
-    width: min(280px, 62%) !important;
-    min-height: 24px !important;
+    top: 18px !important;
+    width: min(320px, 78%) !important;
+    min-height: 34px !important;
     padding-inline: 16px !important;
-    font-size: 12px !important;
+    font-size: 16px !important;
   }
 
   .novel-topbar nav {
@@ -7087,6 +7166,18 @@ body.gx-story-open .novel-script-debug-copy {
 
   .novel-nav-label {
     font-size: 6px;
+  }
+
+  /* Chat keeps the same VN progression controls as every other story step.
+     Reserve the bottom control row instead of hiding it behind Slack. */
+  .novel-layer.is-slack {
+    --novel-say-bottom: max(60px, calc(env(safe-area-inset-bottom) + 56px));
+  }
+
+  .novel-layer.is-slack .novel-topbar nav {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 

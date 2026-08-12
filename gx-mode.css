@@ -193,6 +193,28 @@ body.gx-open {
   transform: translateY(0) scale(1);
 }
 
+@media (max-width: 900px) {
+  .gx-layer[data-return-to="novel"] {
+    top: max(8px, env(safe-area-inset-top)) !important;
+    right: 8px !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    left: 8px !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: hidden auto;
+  }
+
+  body.gx-story-open .gx-layer[data-return-to="novel"] .gx-header,
+  body.gx-story-open .gx-layer[data-return-to="novel"] .gx-story-card,
+  body.gx-story-open .gx-layer[data-return-to="novel"] .gx-time,
+  body.gx-story-open .gx-layer[data-return-to="novel"] .gx-story-dialogue,
+  body.gx-story-open .gx-layer[data-return-to="novel"] .gx-era-progress,
+  body.gx-story-open .gx-layer[data-return-to="novel"] .gx-secondary-controls,
+  body.gx-story-open .gx-layer[data-return-to="novel"] .gx-phase-nav {
+    pointer-events: none;
+  }
+}
+
 .gx-layer[data-return-to="novel"] .gx-close {
   top: clamp(20px, 3vh, 34px);
   min-width: 168px;

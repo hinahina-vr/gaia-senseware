@@ -71,12 +71,27 @@
   });
   const SPEAKERS = Object.freeze({
     narrator: { name: "", glyph: "◌" },
-    mizuha: { name: "ミズハ", glyph: "≈" },
-    amane: { name: "アマネ", glyph: "△" },
-    sakuya: { name: "サクヤ", glyph: "＊" },
-    visitor: { name: "VISITOR", glyph: "◇" },
+    mizuha: { name: "みず", glyph: "≈" },
+    amane: { name: "あまあま", glyph: "△" },
+    sakuya: { name: "saku", glyph: "＊" },
+    visitor: { name: "あなた", glyph: "◇" },
     system: { name: "GAIA SENSEWARE", glyph: "◎" },
   });
+  const INTRODUCTION_STEPS = Object.freeze({ amane: 21, mizuha: 23 });
+  const ANONYMOUS_SPEAKER_NAMES = Object.freeze({ amane: "短髪の女性", mizuha: "長髪の女性" });
+  const speakerDisplayName = (step) => {
+    const speaker = step?.speaker || "narrator";
+    if (speaker === "visitor") return SPEAKERS.visitor.name;
+    if (speaker === "amane" || speaker === "mizuha") {
+      const festivalStep = /^festival_concept_(\d+)$/.exec(String(step?.id || ""));
+      if (festivalStep && Number(festivalStep[1]) <= INTRODUCTION_STEPS[speaker]) {
+        return ANONYMOUS_SPEAKER_NAMES[speaker];
+      }
+      return SPEAKERS[speaker].name;
+    }
+    if (speaker === "system") return step?.speakerLabel || "SYSTEM";
+    return step?.speakerLabel || SPEAKERS[speaker]?.name || "";
+  };
   const RECORD_LABELS = Object.freeze({
     SOURCE: "観測記録 / SOURCE",
     LOCAL_SOURCE: "その場の観測 / LOCAL SOURCE",
@@ -2171,7 +2186,7 @@
     return { messages, typing: following?.type === "chat" && conditionMatches(following) ? following : null };
   };
 
-  const HUMAN_SLACK_SPEAKERS = new Set(["mizuha", "amane", "sakuya"]);
+  const HUMAN_SLACK_SPEAKERS = new Set(["mizuha", "amane", "sakuya", "visitor"]);
   const shouldRenderSlackAvatar = (message) => (
     !HUMAN_SLACK_SPEAKERS.has(message?.speaker)
     || backHalfCues.forStep(message)?.character?.avatar !== "none"
@@ -2230,7 +2245,7 @@
     const speaker = document.createElement("strong");
     const time = document.createElement("time");
     const text = document.createElement("div");
-    speaker.textContent = message.speakerLabel || SPEAKERS[message.speaker]?.name || "SYSTEM";
+    speaker.textContent = speakerDisplayName(message) || "SYSTEM";
     time.textContent = message.time || "";
     text.className = "novel-slack-message";
     appendLines(text, message.text || "");
@@ -2261,7 +2276,7 @@
       elements.speaker.textContent = "";
     } else {
       setCharacterPresentation(speaker, expressionForStep(step));
-      elements.speaker.textContent = SPEAKERS[speaker]?.name || "";
+      elements.speaker.textContent = speakerDisplayName(step);
     }
     renderDialoguePages(String(step.text || "").replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目"));
   };
@@ -2285,8 +2300,8 @@
         setSlackCastVisibility(step);
       }
       elements.dialogue.hidden = false;
-      elements.speaker.textContent = "学内チャット / #惑星の放課後";
-      elements.text.textContent = timeline.typing ? "返信を待っています。クリックすると次の投稿へ進みます。" : "このスレッドの記録を表示しています。";
+      elements.speaker.textContent = speakerDisplayName(step);
+      renderDialoguePages(String(step.text || "").replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目"), { reveal: false });
       elements.sourceButton.hidden = true;
       elements.slackSurface.hidden = false;
       layer.classList.add("is-slack");
@@ -2294,7 +2309,7 @@
       workspace.className = "novel-slack-workspace";
       workspace.classList.toggle("is-mobile-device", layer.dataset.slackDevice === "mobile");
       workspace.dataset.device = layer.dataset.slackDevice;
-      workspace.innerHTML = `<header><b><span class="novel-slack-app-name">学内チャット</span><i aria-hidden="true">◀　▶　◷</i></b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● ミズハ</span><span>● アマネ</span><span>○ サクヤ</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、記録する場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
+      workspace.innerHTML = `<header><b><span class="novel-slack-app-name">学内チャット</span><i aria-hidden="true">◀　▶　◷</i></b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside><strong>惑星の放課後</strong><small>チャンネル</small><span># general</span><span class="is-current"># 惑星の放課後</span><span># 観測メモ</span><small>ダイレクトメッセージ</small><span>● みず</span><span>● あまあま</span><span>○ saku</span></aside><main><header><div><strong># 惑星の放課後</strong><small>まだ名前のない変化を見つけて、記録する場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
       const thread = workspace.querySelector(".novel-slack-thread");
       thread.addEventListener("scroll", () => {
         slackScrollGuardUntil = performance.now() + 220;
@@ -2309,7 +2324,7 @@
         typing.classList.toggle("is-avatarless", !renderAvatar);
         typing.dataset.speaker = timeline.typing.speaker || "system";
         typing.setAttribute("role", "status");
-        typing.innerHTML = `<span><b>${timeline.typing.speakerLabel || SPEAKERS[timeline.typing.speaker]?.name || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
+        typing.innerHTML = `<span><b>${speakerDisplayName(timeline.typing) || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
         if (renderAvatar) {
           const avatar = document.createElement("span");
           avatar.className = "novel-slack-avatar";
@@ -2318,21 +2333,6 @@
           typing.prepend(avatar);
         }
         thread.append(typing);
-      }
-      if (terminalChat) {
-        const next = document.createElement("button");
-        next.type = "button";
-        next.className = "novel-slack-next";
-        next.setAttribute("aria-label", "次の場面へ進む");
-        next.title = "次の場面へ進む";
-        next.innerHTML = '<span aria-hidden="true">→</span>';
-        next.addEventListener("click", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          if (currentStep()?.id !== step.id || backgroundTransitionPending) return;
-          advance();
-        });
-        workspace.querySelector("main").append(next);
       }
       elements.slackSurface.append(workspace);
       requestAnimationFrame(() => { thread.scrollTop = thread.scrollHeight; });
@@ -2347,7 +2347,7 @@
       elements.dialogue.hidden = false;
       elements.sourceButton.hidden = false;
       elements.speaker.textContent = presenter === "amane"
-        ? "アマネの観測メモ"
+        ? "あまあまの観測メモ"
         : RECORD_SPEAKER_LABELS[step.recordType] || "記録メモ";
       elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
       const displayText = recordTextForDisplay(step.text);
@@ -2367,7 +2367,7 @@
       const presentationSpeaker = step.id === "current_exhibition_015" ? "amane" : speaker;
       setCharacterPresentation(presentationSpeaker, expressionForStep(step));
     }
-    elements.speaker.textContent = SPEAKERS[speaker]?.name || "GAIA SENSEWARE";
+    elements.speaker.textContent = speakerDisplayName(step) || "GAIA SENSEWARE";
     revealText(step.text || "");
   };
 
@@ -2724,6 +2724,7 @@
   const setInteractionLifecycle = (phase) => {
     interactionLifecycle = phase;
     const exclusive = phase === "open" || phase === "closing";
+    const preservesStoryUnderlay = exclusive && pendingInteraction?.interaction?.kind === "gx";
     if (phase === "idle") {
       delete layer.dataset.interactionState;
       delete document.body.dataset.novelInteractionState;
@@ -2733,12 +2734,12 @@
     }
     document.body.classList.toggle("novel-interaction-exclusive", exclusive);
     layer.inert = exclusive;
-    if (exclusive) {
+    if (exclusive && !preservesStoryUnderlay) {
       layer.hidden = true;
       layer.setAttribute("aria-hidden", "true");
     } else if (isOpen) {
       layer.hidden = false;
-      layer.setAttribute("aria-hidden", "false");
+      layer.setAttribute("aria-hidden", String(exclusive));
     }
   };
 
@@ -2817,6 +2818,12 @@
     elements.cursor.hidden = true;
     elements.continueMark.classList.remove("is-visible");
     setInteractionLifecycle("prep");
+    if (step.interaction?.kind === "gx") {
+      requestAnimationFrame(() => {
+        if (currentStep()?.id === step.id && interactionLifecycle === "prep" && !pendingInteraction) openDetour(step);
+      });
+      return;
+    }
     const button = document.createElement("button");
     const isMode08Optional = step.type === "interaction"
       && step.interaction?.kind === "map08"
@@ -3059,7 +3066,6 @@
     if (finishTemporalTransitionCard()) return;
     const step = currentStep();
     if (!canAdvanceStep(step)) return;
-    if (step.type === "chat" && (layer.classList.contains("is-slack-entering") || performance.now() < slackScrollGuardUntil)) return;
     if (isRevealing) {
       finishReveal();
       return;
@@ -3169,7 +3175,7 @@
       const article = document.createElement("article");
       const header = document.createElement("p");
       const text = document.createElement("p");
-      const speaker = SPEAKERS[step.speaker]?.name || step.type.toUpperCase();
+      const speaker = speakerDisplayName(step) || step.type.toUpperCase();
       article.dataset.stepId = id;
       article.dataset.kind = step.recordType || "SOURCE";
       article.dataset.speaker = step.speaker || "system";
@@ -3769,7 +3775,7 @@
   });
   layer.addEventListener("click", (event) => {
     if (event.target.closest("button, a, input, select, textarea, details, summary, [role='button']")) return;
-    if (layer.classList.contains("is-slack") && event.target.closest(".novel-slack-attachment, .novel-slack-workspace > header, .novel-slack-workspace > aside, .novel-slack-workspace > main > header, .novel-slack-workspace > main > footer")) return;
+    if (layer.classList.contains("is-slack")) return;
     advance();
   });
   layer.addEventListener("wheel", (event) => {
