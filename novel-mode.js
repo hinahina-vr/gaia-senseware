@@ -813,10 +813,15 @@
     if (!cue) {
       layer.style.removeProperty("--novel-scene-background");
       delete layer.dataset.backgroundCue;
+      delete layer.dataset.backgroundMotion;
+      delete layer.dataset.backgroundPresentation;
       return null;
     }
     layer.style.setProperty("--novel-scene-background", `url("./${cue.assetPath}")`);
     layer.dataset.backgroundCue = cue.id;
+    layer.dataset.backgroundMotion = cue.motion;
+    if (cue.presentation) layer.dataset.backgroundPresentation = cue.presentation;
+    else delete layer.dataset.backgroundPresentation;
     return cue;
   };
 
@@ -824,6 +829,8 @@
     const previousSceneId = layer.dataset.sceneId;
     const previousStepId = layer.dataset.stepId;
     const previousCue = layer.dataset.backgroundCue;
+    const previousMotion = layer.dataset.backgroundMotion;
+    const previousPresentation = layer.dataset.backgroundPresentation;
     const previousBackground = layer.style.getPropertyValue("--novel-scene-background");
     const previousBackgroundPriority = layer.style.getPropertyPriority("--novel-scene-background");
     try {
@@ -844,6 +851,10 @@
       else delete layer.dataset.stepId;
       if (previousCue) layer.dataset.backgroundCue = previousCue;
       else delete layer.dataset.backgroundCue;
+      if (previousMotion) layer.dataset.backgroundMotion = previousMotion;
+      else delete layer.dataset.backgroundMotion;
+      if (previousPresentation) layer.dataset.backgroundPresentation = previousPresentation;
+      else delete layer.dataset.backgroundPresentation;
       if (previousBackground) layer.style.setProperty("--novel-scene-background", previousBackground, previousBackgroundPriority);
       else layer.style.removeProperty("--novel-scene-background");
     }
@@ -971,7 +982,8 @@
     layer.dataset.storyViewpoint = cue.viewpoint;
     layer.dataset.storyCastMode = cue.castMode;
     layer.dataset.storyAudioCue = cue.audio;
-    layer.classList.toggle("is-cast-suppressed", ["archived-voice-no-cast", "remote-sakuya-no-cast", "sakuya-unseen"].includes(cue.castMode));
+    const isEventCg = layer.dataset.backgroundPresentation === "event-cg";
+    layer.classList.toggle("is-cast-suppressed", isEventCg || ["archived-voice-no-cast", "remote-sakuya-no-cast", "sakuya-unseen"].includes(cue.castMode));
     layer.classList.toggle("is-central-entrance-distance", cue.castMode === "central-entrance-distance");
     applyOperationsPhonePresentation(cue);
     return cue;

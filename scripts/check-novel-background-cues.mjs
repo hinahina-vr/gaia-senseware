@@ -18,8 +18,18 @@ const expectedSceneIds = [
   "welcome_chat",
 ];
 const expectedCounts = [76, 43, 58, 43, 81, 95];
-const exhibition = "assets/visuals-07/novel-bg-exhibition-v3.png";
-const route = "assets/visuals-07/novel-bg-coastal-venue-v2.png";
+const assets = Object.freeze({
+  campus: "assets/visuals-07/zushi-campus-story-bg-v4.webp",
+  entrance: "assets/visuals-07/novel-bg-coastal-venue-v3.png",
+  firstEncounter: "assets/visuals-07/event-cg-first-encounter-v1.png",
+  boothWide: "assets/visuals-07/novel-bg-exhibition-v2.png",
+  boothClose: "assets/visuals-07/novel-bg-exhibition-v3.png",
+  circleWelcome: "assets/visuals-07/event-cg-circle-welcome-v1.png",
+  onlineNight: "assets/visuals-07/novel-bg-online-night-v2.png",
+  venue: "assets/visuals-07/novel-bg-coastal-venue-v2.png",
+  station: "assets/visuals-07/novel-bg-production-station-meeting-v1.png",
+  train: "assets/visuals-07/novel-bg-production-return-train-v1.png",
+});
 
 assert.equal(story.storyVersion, 10);
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds);
@@ -29,21 +39,30 @@ assert.deepEqual(backgroundCues.expectedSceneCounts, Object.fromEntries(expected
 assert.equal(backgroundCues.productionYear.length, 0, "legacy production registry must be empty");
 
 const expectedBoundaries = [
-  ["festival_concept", 1, 76, "festival-concept-exhibition", exhibition],
-  ["map_mode01", 1, 43, "map01-exhibition", exhibition],
-  ["gx_experience", 1, 58, "gx-exhibition", exhibition],
-  ["esp32_pitch", 1, 43, "esp32-exhibition", exhibition],
-  ["circle_invitation", 1, 81, "circle-invitation-exhibition", exhibition],
-  ["welcome_chat", 1, 54, "welcome-wide-chat", exhibition],
-  ["welcome_chat", 55, 77, "welcome-physical-exhibition", exhibition],
-  ["welcome_chat", 78, 95, "welcome-mobile-route", route],
+  ["festival_concept", 1, 7, "festival-campus-entrance", assets.campus, "drift-right", "scenic"],
+  ["festival_concept", 8, 14, "festival-exhibition-entrance", assets.entrance, "push-in", "scenic"],
+  ["festival_concept", 15, 26, "festival-first-encounter-cg", assets.firstEncounter, "event-focus", "event-cg"],
+  ["festival_concept", 27, 76, "festival-gaia-booth", assets.boothWide, "drift-left", "scenic"],
+  ["map_mode01", 1, 43, "map01-terminal-booth", assets.boothWide, "push-in", "scenic"],
+  ["gx_experience", 1, 58, "gx-terminal-booth", assets.boothClose, "drift-right", "scenic"],
+  ["esp32_pitch", 1, 43, "esp32-exhibition", assets.boothWide, "drift-left", "scenic"],
+  ["circle_invitation", 1, 47, "circle-closing-exhibition", assets.boothClose, "push-in", "scenic"],
+  ["circle_invitation", 48, 69, "circle-welcome-cg", assets.circleWelcome, "event-focus", "event-cg"],
+  ["circle_invitation", 70, 81, "circle-after-welcome", assets.boothClose, "drift-right", "scenic"],
+  ["welcome_chat", 1, 54, "welcome-wide-night", assets.onlineNight, "drift-left", "scenic"],
+  ["welcome_chat", 55, 77, "welcome-physical-venue", assets.venue, "push-in", "scenic"],
+  ["welcome_chat", 78, 82, "welcome-station-route", assets.station, "drift-right", "scenic"],
+  ["welcome_chat", 83, 95, "welcome-return-train", assets.train, "drift-left", "scenic"],
 ];
 
 assert.equal(backgroundCues.limitedStory.length, expectedBoundaries.length);
 for (let index = 0; index < expectedBoundaries.length; index += 1) {
-  const [sceneId, from, to, id, assetPath] = expectedBoundaries[index];
+  const [sceneId, from, to, id, assetPath, motion, presentation] = expectedBoundaries[index];
   const cue = backgroundCues.limitedStory[index];
-  assert.deepEqual([cue.sceneId, cue.from, cue.to, cue.id, cue.assetPath], [sceneId, from, to, id, assetPath]);
+  assert.deepEqual(
+    [cue.sceneId, cue.from, cue.to, cue.id, cue.assetPath, cue.motion, cue.presentation || "scenic"],
+    [sceneId, from, to, id, assetPath, motion, presentation],
+  );
   if (index > 0 && expectedBoundaries[index - 1][0] === sceneId) {
     assert.equal(from, expectedBoundaries[index - 1][2] + 1, `${id}: background ranges overlap or leave a gap`);
   }
@@ -53,8 +72,9 @@ const allSteps = story.scenes.flatMap((scene) => scene.steps);
 const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(step) }));
 assert.equal(resolved.length, 396);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
-assert.equal(resolved.filter(({ cue }) => cue.assetPath === exhibition).length, 378);
-assert.equal(resolved.filter(({ cue }) => cue.assetPath === route).length, 18);
+assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 10, "cinematic cut must use ten distinct scene assets");
+assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 34);
 
 for (const assetPath of new Set(resolved.map(({ cue }) => cue.assetPath))) {
   assert(assetPath.startsWith("assets/visuals-07/"), `background escaped approved assets: ${assetPath}`);
@@ -62,13 +82,19 @@ for (const assetPath of new Set(resolved.map(({ cue }) => cue.assetPath))) {
 }
 
 const cue = (stepId) => backgroundCues.forStep(allSteps.find((step) => step.id === stepId));
-assert.equal(cue("festival_concept_001").assetPath, exhibition);
-assert.equal(cue("circle_invitation_081").assetPath, exhibition);
-assert.equal(cue("welcome_chat_054").id, "welcome-wide-chat");
-assert.equal(cue("welcome_chat_055").id, "welcome-physical-exhibition");
-assert.equal(cue("welcome_chat_077").assetPath, exhibition);
-assert.equal(cue("welcome_chat_078").assetPath, route);
-assert.equal(cue("welcome_chat_095").assetPath, route);
+assert.equal(cue("festival_concept_001").assetPath, assets.campus);
+assert.equal(cue("festival_concept_008").assetPath, assets.entrance);
+assert.equal(cue("festival_concept_015").presentation, "event-cg");
+assert.equal(cue("festival_concept_027").assetPath, assets.boothWide);
+assert.equal(cue("circle_invitation_047").assetPath, assets.boothClose);
+assert.equal(cue("circle_invitation_048").presentation, "event-cg");
+assert.equal(cue("circle_invitation_070").assetPath, assets.boothClose);
+assert.equal(cue("welcome_chat_054").id, "welcome-wide-night");
+assert.equal(cue("welcome_chat_055").id, "welcome-physical-venue");
+assert.equal(cue("welcome_chat_077").assetPath, assets.venue);
+assert.equal(cue("welcome_chat_078").assetPath, assets.station);
+assert.equal(cue("welcome_chat_083").assetPath, assets.train);
+assert.equal(cue("welcome_chat_095").assetPath, assets.train);
 assert.throws(() => backgroundCues.forStep({ sceneId: "welcome_chat", id: "welcome_chat_999" }), /Missing contest-v10 background cue/);
 assert.throws(() => backgroundCues.forStep({ sceneId: "unknown", id: "unknown_001" }), /Unknown contest-v10 background scene/);
 
@@ -79,5 +105,6 @@ console.log(JSON.stringify({
   steps: resolved.length,
   cues: backgroundCues.limitedStory.length,
   assets: [...new Set(resolved.map(({ cue }) => cue.assetPath))],
-  welcomeBoundaries: ["001-054 wide", "055-077 physical", "078-095 route/mobile"],
+  eventCgSteps: resolved.filter(({ cue }) => cue.presentation === "event-cg").length,
+  welcomeBoundaries: ["001-054 wide/night", "055-077 physical/venue", "078-082 station", "083-095 train/mobile"],
 }, null, 2));

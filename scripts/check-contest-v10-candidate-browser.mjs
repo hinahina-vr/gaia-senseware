@@ -24,6 +24,18 @@ const welcomeCases = [
   { name: "physical-amane", stepId: "welcome_chat_060", device: "wide", slack: false, cast: "novel-character-sora" },
   { name: "mobile", stepId: "welcome_chat_081", device: "mobile", slack: true },
 ];
+const cinematicCases = [
+  { name: "campus-entrance", stepId: "festival_concept_001", cue: "festival-campus-entrance", asset: "zushi-campus-story-bg-v4.webp", motion: "drift-right", mobile: true },
+  { name: "exhibition-entrance", stepId: "festival_concept_008", cue: "festival-exhibition-entrance", asset: "novel-bg-coastal-venue-v3.png", motion: "push-in" },
+  { name: "first-encounter-cg", stepId: "festival_concept_015", cue: "festival-first-encounter-cg", asset: "event-cg-first-encounter-v1.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "gaia-booth", stepId: "festival_concept_027", cue: "festival-gaia-booth", asset: "novel-bg-exhibition-v2.png", motion: "drift-left" },
+  { name: "gx-booth", stepId: "gx_experience_001", cue: "gx-terminal-booth", asset: "novel-bg-exhibition-v3.png", motion: "drift-right" },
+  { name: "circle-welcome-cg", stepId: "circle_invitation_048", cue: "circle-welcome-cg", asset: "event-cg-circle-welcome-v1.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "wide-chat-night", stepId: "welcome_chat_006", cue: "welcome-wide-night", asset: "novel-bg-online-night-v2.png", motion: "drift-left" },
+  { name: "physical-venue", stepId: "welcome_chat_055", cue: "welcome-physical-venue", asset: "novel-bg-coastal-venue-v2.png", motion: "push-in" },
+  { name: "station-route", stepId: "welcome_chat_078", cue: "welcome-station-route", asset: "novel-bg-production-station-meeting-v1.png", motion: "drift-right", mobile: true },
+  { name: "return-train", stepId: "welcome_chat_083", cue: "welcome-return-train", asset: "novel-bg-production-return-train-v1.png", motion: "drift-left", mobile: true },
+];
 const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
 
@@ -47,8 +59,8 @@ const stateFor = (storyVersion, stepId, extra = {}) => ({
   ...extra,
 });
 
-const createPage = async (viewport, label) => {
-  const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
+const createPage = async (viewport, label, reducedMotion = "reduce") => {
+  const context = await browser.newContext({ viewport, reducedMotion });
   const page = await context.newPage();
   page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`); });
   page.on("pageerror", (error) => report.pageErrors.push(`${label}: ${error.message}`));
@@ -64,7 +76,7 @@ const createPage = async (viewport, label) => {
   return { context, page };
 };
 
-const bootAt = async (page, stepId, extra = {}, storyVersion = 10, expectedStepId = stepId) => {
+const bootAt = async (page, stepId, extra = {}, storyVersion = 10, expectedStepId = stepId, reducedMotion = true) => {
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate(({ candidate, config }) => {
@@ -73,7 +85,7 @@ const bootAt = async (page, stepId, extra = {}, storyVersion = 10, expectedStepI
     localStorage.setItem("gaia-senseware-bgm-volume", String(candidate.audio.volume));
   }, {
     candidate: stateFor(storyVersion, stepId, extra),
-    config: { messageSpeedPercent: 400, reducedMotion: true },
+    config: { messageSpeedPercent: 400, reducedMotion },
   });
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
@@ -116,6 +128,30 @@ try {
       requiredInteractions: ["map01", "gx"],
     });
     await staticContext.close();
+
+    const motionLabel = "pc-1440-cinematic-motion";
+    const { context: motionContext, page: motionPage } = await createPage(viewports[0], motionLabel, "no-preference");
+    await bootAt(motionPage, "festival_concept_001", {}, 10, "festival_concept_001", false);
+    const motionScan = await motionPage.evaluate(() => {
+      const novelLayer = document.querySelector("#novel-layer");
+      const style = getComputedStyle(novelLayer);
+      return {
+        cue: novelLayer?.dataset.backgroundCue || "",
+        motion: novelLayer?.dataset.backgroundMotion || "",
+        reduced: novelLayer?.classList.contains("is-motion-reduced") || false,
+        animationName: style.animationName,
+        animationDuration: style.animationDuration,
+      };
+    });
+    assert.deepEqual(motionScan, {
+      cue: "festival-campus-entrance",
+      motion: "drift-right",
+      reduced: false,
+      animationName: "novel-background-drift-right",
+      animationDuration: "26s",
+    });
+    report.scans.push({ viewport: viewports[0], case: "cinematic-motion", ...motionScan, passed: true });
+    await motionContext.close();
   }
 
   for (const viewport of viewports) {
@@ -184,6 +220,38 @@ try {
     report.scans.push({ viewport, case: "welcome-entry", ...welcomeEntryScan, advancedTo: welcomeAdvanced.stepId, passed: true });
     await welcomeEntryPage.screenshot({ path: path.join(outputDir, `${welcomeEntryLabel}.png`) });
     await welcomeEntryContext.close();
+
+    for (const testCase of cinematicCases) {
+      if (viewport.name === "mobile-390" && !testCase.mobile) continue;
+      const label = `${viewport.name}-cinematic-${testCase.name}`;
+      const { context, page } = await createPage(viewport, label);
+      await bootAt(page, testCase.stepId);
+      const scan = await page.evaluate(() => {
+        const novelLayer = document.querySelector("#novel-layer");
+        return {
+          stepId: globalThis.GaiaNovel.getState().stepId,
+          cue: novelLayer?.dataset.backgroundCue || "",
+          motion: novelLayer?.dataset.backgroundMotion || "",
+          presentation: novelLayer?.dataset.backgroundPresentation || "scenic",
+          backgroundImage: getComputedStyle(novelLayer).backgroundImage,
+          castSuppressed: novelLayer?.classList.contains("is-cast-suppressed") || false,
+          visibleCast: [...document.querySelectorAll("#novel-cast .novel-character")]
+            .filter((node) => globalThis.__contestVisible(node)).map((node) => node.id),
+          overflow: document.documentElement.scrollWidth > innerWidth + 1,
+        };
+      });
+      assert.equal(scan.stepId, testCase.stepId);
+      assert.equal(scan.cue, testCase.cue);
+      assert.equal(scan.motion, testCase.motion);
+      assert.equal(scan.presentation, testCase.eventCg ? "event-cg" : "scenic");
+      assert(scan.backgroundImage.includes(testCase.asset), `${label}: expected ${testCase.asset} in ${scan.backgroundImage}`);
+      assert.equal(scan.castSuppressed, Boolean(testCase.eventCg));
+      if (testCase.eventCg) assert.equal(scan.visibleCast.length, 0);
+      assert.equal(scan.overflow, false);
+      report.scans.push({ viewport, case: `cinematic-${testCase.name}`, ...scan, passed: true });
+      await page.screenshot({ path: path.join(outputDir, `${label}.png`) });
+      await context.close();
+    }
 
     for (const testCase of interactions) {
       const label = `${viewport.name}-${testCase.name}`;
