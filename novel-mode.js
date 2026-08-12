@@ -1515,7 +1515,7 @@
 
   const DIALOGUE_PARTICLES = new Set(["は", "が", "を", "に", "へ", "と", "で", "の", "も", "や", "か", "ね", "よ"]);
   const DIALOGUE_INFLECTION_SUFFIXES = new Set([
-    "た", "だ", "て", "で", "ば", "れ", "る", "さ", "ない", "たい", "ます", "です", "ました", "ません", "れる", "られる",
+    "た", "だ", "て", "で", "ば", "れ", "る", "さ", "し", "え", "てい", "わ", "ない", "たい", "ます", "です", "ました", "ません", "れる", "られる",
   ]);
   const DIALOGUE_OPENING = /^[「『（【［〈《〔“‘]/u;
   const DIALOGUE_CLOSING = /^[、。，．？！…」』）】］〉》〕ぁぃぅぇぉゃゅょっァィゥェォャュョッー]/u;
@@ -1565,10 +1565,11 @@
       const token = `${pendingOpening}${value}`;
       pendingOpening = "";
       const previous = tokens.at(-1);
+      const inflectionCore = value.replace(/[、。，．？！…」』）】］〉》〕]+$/u, "");
       if (previous && !/^\s+$/u.test(previous) && (
         DIALOGUE_CLOSING.test(value)
         || DIALOGUE_PARTICLES.has(value)
-        || (DIALOGUE_INFLECTION_SUFFIXES.has(value) && /[ぁ-んァ-ヶー一-龠々〆ヵヶ]$/u.test(previous))
+        || (DIALOGUE_INFLECTION_SUFFIXES.has(inflectionCore) && /[ぁ-んァ-ヶー一-龠々〆ヵヶ]$/u.test(previous))
       )) {
         tokens[tokens.length - 1] += token;
       } else {
@@ -1835,34 +1836,27 @@
       lineOffset += line.length;
       if (lineOffset > 0 && lineOffset < glyphs.length && tokenBoundaries.has(lineOffset) && !splitsStructuredLine(lineOffset)) lineOffsets.add(lineOffset);
     });
-    const phraseOffsets = new Set([...tokenBoundaries]
-      .filter((offset) => offset > 0 && offset < glyphs.length && !splitsStructuredLine(offset)));
-    return { glyphs, semanticOffsets, safeOffsets, lineOffsets, phraseOffsets };
+    return { glyphs, semanticOffsets, safeOffsets, lineOffsets };
   };
 
   const balanceDialoguePagePair = (left, right) => {
     const combined = `${left}${right}`;
     if (dialoguePageMetrics(combined).fits) return [combined];
-    const { glyphs, semanticOffsets, safeOffsets, lineOffsets, phraseOffsets } = dialogueBoundaryCandidates(combined);
-    const offsets = new Set([...semanticOffsets, ...safeOffsets, ...lineOffsets, ...phraseOffsets]);
-    const candidates = [];
-    offsets.forEach((offset) => {
-      const before = glyphs.slice(0, offset).join("");
-      const after = glyphs.slice(offset).join("");
+    const leftTokens = segmentDialoguePhrases(left);
+    const maximumMove = Math.min(8, Math.max(0, leftTokens.length - 1));
+    for (let moveCount = 1; moveCount <= maximumMove; moveCount += 1) {
+      const splitIndex = leftTokens.length - moveCount;
+      const before = leftTokens.slice(0, splitIndex).join("");
+      const after = `${leftTokens.slice(splitIndex).join("")}${right}`;
+      if (`${before}${after}` !== combined) continue;
       const beforeMetrics = dialoguePageMetrics(before);
       const afterMetrics = dialoguePageMetrics(after);
-      if (!beforeMetrics.fits || !afterMetrics.fits || afterMetrics.measuredLines.length < 2) return;
-      const boundaryRank = semanticOffsets.has(offset) ? 3 : safeOffsets.has(offset) ? 2 : lineOffsets.has(offset) ? 1 : 0;
-      const score = (beforeMetrics.measuredLines.length * 10000)
-        + (boundaryRank * 1000)
-        - (Math.abs(beforeMetrics.measuredLines.length - afterMetrics.measuredLines.length) * 10)
-        + (offset / Math.max(1, glyphs.length));
-      candidates.push({ before, after, score, boundaryRank });
-    });
-    const safeCandidates = candidates.filter((candidate) => candidate.boundaryRank >= 2);
-    const best = (safeCandidates.length ? safeCandidates : candidates)
-      .reduce((winner, candidate) => (!winner || candidate.score > winner.score ? candidate : winner), null);
-    return best ? [best.before, best.after] : [left, right];
+      if (!beforeMetrics.fits || !afterMetrics.fits) continue;
+      if (beforeMetrics.measuredLines.length > TEXT_PAGE_MAX_LINES || afterMetrics.measuredLines.length > TEXT_PAGE_MAX_LINES) continue;
+      if (afterMetrics.measuredLines.length < 2) continue;
+      return [before, after];
+    }
+    return [left, right];
   };
 
   const balanceDialoguePages = (inputPages) => {

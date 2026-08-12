@@ -17,7 +17,10 @@ const scans = [
   ["protected phrase set", ["そのもの", "ものづくり", "リアルタイム", "GAIA SENSEWARE"].every((value) => runtime.includes(value))],
   ["Japanese inflection suffixes remain atomic", /DIALOGUE_INFLECTION_SUFFIXES/u.test(runtime) && ["た", "て", "ば", "れ", "さ", "ます"].every((value) => runtime.includes(`\"${value}\"`))],
   ["token-boundary pagination", /tokenBoundaries\.has/u.test(runtime) && /largestSafePrefix/u.test(runtime)],
-  ["orphan page backtracks to a measured token line", /safeCandidates\.length \? safeCandidates : candidates/u.test(runtime)],
+  ["orphan page uses bounded token transfer", /maximumMove = Math\.min\(8,/u.test(runtime) && /moveCount <= maximumMove/u.test(runtime)],
+  ["orphan transfer preserves source exactly", /`\$\{before\}\$\{after\}` !== combined/u.test(runtime)],
+  ["orphan transfer keeps both pages bounded", /beforeMetrics\.fits \|\| !afterMetrics\.fits/u.test(runtime) && /afterMetrics\.measuredLines\.length < 2/u.test(runtime)],
+  ["unbounded phrase-boundary rebalance absent", !/phraseOffsets/u.test(runtime) && !/safeCandidates\.length \? safeCandidates : candidates/u.test(runtime)],
   ["same token layout for measure and render", runtime.includes("measureNativeLines = (text, preparedLayout = null)") && runtime.includes("replaceChildren(layout)")],
   ["font loading reflow", /loadingdone/u.test(runtime)],
   ["width-only resize guard", /Math\.abs\(width - dialogueObservedWidth\) < 0\.5/u.test(runtime)],
@@ -32,4 +35,46 @@ const scans = [
 
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);
 assert.equal(failures.length, 0, `VN typography checks failed: ${failures.join(", ")}`);
+
+const boundedTokenTransfers = (leftTokens, right, limit = 8) => {
+  const combined = `${leftTokens.join("")}${right}`;
+  const candidates = [];
+  const maximumMove = Math.min(limit, Math.max(0, leftTokens.length - 1));
+  for (let moveCount = 1; moveCount <= maximumMove; moveCount += 1) {
+    const splitIndex = leftTokens.length - moveCount;
+    const movedTokens = leftTokens.slice(splitIndex);
+    candidates.push({
+      moveCount,
+      before: leftTokens.slice(0, splitIndex).join(""),
+      after: `${movedTokens.join("")}${right}`,
+      movedTokens,
+      combined,
+    });
+  }
+  return candidates;
+};
+
+[
+  {
+    leftTokens: ["「『GAIA", " ", "Transformation』は、", "私たち", "『惑星の放課後』が、", "この", "システムの", "ため", "につくった", "言葉ですの。", "生命が", "地球を", "変え、", "変わった", "地球が", "また", "生命を", "変えて", "きた。"],
+    right: "その相互作用を表していますわ」",
+  },
+  {
+    leftTokens: ["「温度、", "湿度、", "明るさ、", "気圧、", "空気中の", "粒子、", "音、", "振動。", "センサーを", "替えれば、", "もっと", "いろいろ", "測れます。"],
+    right: "いくつか組み合わせて、その場所の環境をまとめて記録することもできます」",
+  },
+].forEach(({ leftTokens, right }) => {
+  const candidates = boundedTokenTransfers(leftTokens, right);
+  assert.equal(candidates.length, Math.min(8, leftTokens.length - 1));
+  candidates.forEach((candidate) => {
+    assert.equal(`${candidate.before}${candidate.after}`, candidate.combined, "bounded transfer must preserve source exactly");
+    assert.deepEqual(candidate.movedTokens, leftTokens.slice(-candidate.moveCount), "bounded transfer must preserve atomic tokens");
+    assert(candidate.moveCount >= 1 && candidate.moveCount <= 8, "bounded transfer must remain finite");
+    assert(
+      Math.max(...candidate.movedTokens.map((token) => Array.from(token).length))
+        <= Math.max(...leftTokens.map((token) => Array.from(token).length)),
+      "bounded transfer must not create a larger phrase token",
+    );
+  });
+});
 console.log(`VN Japanese typography static check passed: ${scans.length}/${scans.length}`);
