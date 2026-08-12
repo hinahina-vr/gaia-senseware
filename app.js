@@ -668,6 +668,82 @@
   let japanHistoryDataState = "idle";
   let japanDataLayer = "history";
   let storyModeDetour = null;
+  let storyModeGlobalSignalConsoleState = null;
+  let storyMapGuide = null;
+  let storyMapGuideStage = 0;
+  let storyMapGuideProgress = null;
+
+  const storyMapGuideLabels = ["年代を動かす", "地図を押す", "物語へ戻る"];
+
+  const setStoryMapGuideStage = (stage, { announce = true } = {}) => {
+    if (!storyMapGuide || storyModeDetour?.kind !== "map01") return;
+    const nextStage = Math.max(1, Math.min(3, Number(stage) || 1));
+    const changed = nextStage !== storyMapGuideStage;
+    storyMapGuideStage = nextStage;
+    storyMapGuide.dataset.stage = String(nextStage);
+    storyMapGuide.querySelectorAll("[data-map-guide-step]").forEach((item) => {
+      const itemStage = Number(item.dataset.mapGuideStep);
+      item.classList.toggle("is-current", itemStage === nextStage);
+      item.classList.toggle("is-complete", itemStage < nextStage);
+      item.setAttribute("aria-current", itemStage === nextStage ? "step" : "false");
+      item.querySelector("b").textContent = itemStage < nextStage ? "✓" : String(itemStage);
+    });
+    const timelineControl = japanLayer.querySelector(".signal-console-map");
+    timelineControl?.classList.toggle("is-story-guide-current", nextStage === 1);
+    japanMap.classList.toggle("is-story-guide-current", nextStage === 2);
+    const returnButton = document.querySelector("#story-detour-return");
+    returnButton?.classList.toggle("is-story-guide-current", nextStage === 3);
+    const summary = storyMapGuide.querySelector(".story-map-guide-summary");
+    summary.textContent = nextStage === 3 ? "確認できました" : "次にやること";
+    if (changed && announce) {
+      storyMapGuide.querySelector(".story-map-guide-live").textContent = nextStage === 3
+        ? "確認できました。物語へ戻るボタンを押してください。"
+        : `次は${storyMapGuideLabels[nextStage - 1]}です。`;
+    }
+  };
+
+  const syncStoryMapGuideStage = () => {
+    if (!storyMapGuideProgress) return;
+    setStoryMapGuideStage(!storyMapGuideProgress.timeline ? 1 : (!storyMapGuideProgress.map ? 2 : 3));
+  };
+
+  const mountStoryMapGuide = () => {
+    storyMapGuide?.remove();
+    storyMapGuideProgress = { timeline: false, map: false };
+    storyMapGuideStage = 0;
+    storyMapGuide = document.createElement("aside");
+    storyMapGuide.className = "story-map-guide";
+    storyMapGuide.setAttribute("aria-label", "地図操作の手順");
+    const summary = document.createElement("strong");
+    summary.className = "story-map-guide-summary";
+    const steps = document.createElement("ol");
+    storyMapGuideLabels.forEach((label, index) => {
+      const item = document.createElement("li");
+      item.dataset.mapGuideStep = String(index + 1);
+      const marker = document.createElement("b");
+      const text = document.createElement("span");
+      text.textContent = label;
+      item.append(marker, text);
+      steps.append(item);
+    });
+    const live = document.createElement("span");
+    live.className = "story-map-guide-live";
+    live.setAttribute("aria-live", "polite");
+    live.setAttribute("aria-atomic", "true");
+    storyMapGuide.append(summary, steps, live);
+    japanLayer.append(storyMapGuide);
+    setStoryMapGuideStage(1, { announce: false });
+  };
+
+  const unmountStoryMapGuide = () => {
+    japanLayer.querySelector(".signal-console-map")?.classList.remove("is-story-guide-current");
+    japanMap.classList.remove("is-story-guide-current");
+    document.querySelector("#story-detour-return")?.classList.remove("is-story-guide-current");
+    storyMapGuide?.remove();
+    storyMapGuide = null;
+    storyMapGuideProgress = null;
+    storyMapGuideStage = 0;
+  };
   let mapScope = "earth";
   let japanDataUpdatedAt = null;
   let japanHistoryUpdatedAt = null;
@@ -3877,7 +3953,10 @@
             : `${timelineState.referencePpm.toFixed(1)} ppm`;
       co2TimelineMethod.textContent = timelineState.methodLabel;
     }
-    signalConsoles.forEach((consoleElement) => {
+    const activeSignalConsoles = storyModeDetour && japanIsOpen
+      ? signalConsoles.filter((consoleElement) => consoleElement.classList.contains("signal-console-map"))
+      : signalConsoles.filter((consoleElement) => !consoleElement.hidden && consoleElement.isConnected);
+    activeSignalConsoles.forEach((consoleElement) => {
       consoleElement.querySelector("[data-signal-act]").textContent = signalMode
         ? `ACT ${signalMode.act.number} / ${signalMode.act.title}`
         : "DATA SNAPSHOT";
@@ -5299,6 +5378,17 @@ drawAudienceMemory(audienceTraces);
     if (kind === "map01" && (index !== 0 || event.detail?.modeId !== "breathing-earth")) return;
     storyModeDetour = { kind, index };
     experience.dataset.storyMode = kind;
+    const globalSignalConsole = experience.querySelector(":scope > .signal-console-main");
+    if (globalSignalConsole) {
+      storyModeGlobalSignalConsoleState = {
+        hidden: globalSignalConsole.hidden,
+        inert: globalSignalConsole.inert,
+        ariaHidden: globalSignalConsole.getAttribute("aria-hidden"),
+      };
+      globalSignalConsole.hidden = true;
+      globalSignalConsole.inert = true;
+      globalSignalConsole.setAttribute("aria-hidden", "true");
+    }
     selectMode(index, { resetAutoTimer: false });
     if (introIsOpen) closeIntro({ restoreFocus: false });
     if (sourceIsOpen) closeSource({ restoreFocus: false, updateHash: false });
@@ -5313,7 +5403,16 @@ drawAudienceMemory(audienceTraces);
     }
     japanClose.disabled = true;
     japanLayer.dataset.storyMode = kind;
+    if (kind === "map01") mountStoryMapGuide();
     requestAnimationFrame(() => japanMap.focus({ preventScroll: true }));
+  });
+
+  window.addEventListener("gaia:story-map-interaction", (event) => {
+    if (storyModeDetour?.kind !== "map01" || event.detail?.kind !== "map01" || !storyMapGuideProgress) return;
+    const view = String(event.detail?.view || "");
+    if (view === "long_term") storyMapGuideProgress.timeline = true;
+    if (view === "temperature_anomaly") storyMapGuideProgress.map = true;
+    syncStoryMapGuideStage();
   });
 
   window.addEventListener("gaia:story-mode-layer", (event) => {
@@ -5338,8 +5437,18 @@ drawAudienceMemory(audienceTraces);
     japanClose.disabled = false;
     delete japanLayer.dataset.storyMode;
     delete japanLayer.dataset.storyLayer;
+    unmountStoryMapGuide();
     delete experience.dataset.storyMode;
     storyModeDetour = null;
+    const globalSignalConsole = experience.querySelector(":scope > .signal-console-main");
+    if (globalSignalConsole && storyModeGlobalSignalConsoleState) {
+      globalSignalConsole.hidden = storyModeGlobalSignalConsoleState.hidden;
+      globalSignalConsole.inert = storyModeGlobalSignalConsoleState.inert;
+      if (storyModeGlobalSignalConsoleState.ariaHidden === null) globalSignalConsole.removeAttribute("aria-hidden");
+      else globalSignalConsole.setAttribute("aria-hidden", storyModeGlobalSignalConsoleState.ariaHidden);
+      storyModeGlobalSignalConsoleState = null;
+      updateSignalInterface();
+    }
     window.setTimeout(() => {
       window.dispatchEvent(new CustomEvent("gaia:story-mode-return-to-novel", {
         detail: { kind: closedDetour.kind },

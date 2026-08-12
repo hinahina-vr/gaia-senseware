@@ -353,6 +353,7 @@
   let state = defaultState();
   let isOpen = false;
   let hasStarted = false;
+  let runtimeRevealPending = false;
   let isRevealing = false;
   let fullText = "";
   let dialoguePages = [];
@@ -1126,13 +1127,17 @@
         settled = true;
         resolve();
       };
-      image.addEventListener("load", () => {
+      const decode = () => {
         if (typeof image.decode === "function") image.decode().catch(() => {}).finally(finish);
         else finish();
-      }, { once: true });
+      };
+      image.addEventListener("load", decode, { once: true });
       image.addEventListener("error", finish, { once: true });
       image.src = url;
-      if (image.complete) finish();
+      if (image.complete) {
+        if (image.naturalWidth > 0) decode();
+        else finish();
+      }
     });
     backgroundPreloadCache.set(url, pending);
     return pending;
@@ -1145,17 +1150,50 @@
     await Promise.all(urls.map(preloadBackgroundUrl));
   };
 
+  const nextPaint = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+  const revealRuntimeForStep = async (step, reveal) => {
+    const target = resolveVisibleStep(step?.id) || step;
+    if (!target || runtimeRevealPending) return false;
+    runtimeRevealPending = true;
+    layer.dataset.runtimeReveal = "preparing";
+    layer.setAttribute("aria-busy", "true");
+    [elements.start, elements.resume].forEach((control) => { control.disabled = true; });
+    try {
+      const cue = backgroundCues?.forStep?.(target);
+      const presentation = cue?.assetPath
+        ? { image: `url("./${cue.assetPath}")`, cueId: cue.id }
+        : backgroundPresentationForStep(target);
+      await preloadBackground(presentation.image);
+      layer.dataset.sceneId = target.sceneId;
+      layer.dataset.stepId = target.id;
+      layer.dataset.stepType = target.type;
+      applyBackgroundCueForStep(target);
+      requestTrackForBackground(presentation);
+      layer.dataset.runtimeReveal = "paint-ready";
+      await nextPaint();
+      reveal();
+      await nextPaint();
+      layer.dataset.runtimeReveal = "revealed";
+      window.dispatchEvent(new CustomEvent("gaia:novel-runtime-revealed", {
+        detail: { stepId: target.id, backgroundCue: layer.dataset.backgroundCue || "" },
+      }));
+      return true;
+    } finally {
+      runtimeRevealPending = false;
+      layer.removeAttribute("aria-busy");
+      [elements.start, elements.resume].forEach((control) => { control.disabled = false; });
+    }
+  };
+
   const warmUpcomingBackground = (step) => {
-    let nextBackground = null;
     const currentPresentation = backgroundPresentationForStep(step);
     const currentIndex = stepIndexMap.get(step.id) ?? -1;
-    for (let index = currentIndex + 1; index < allSteps.length; index += 1) {
-      const followingPresentation = backgroundPresentationForStep(allSteps[index]);
-      if (currentPresentation.image === followingPresentation.image) continue;
-      nextBackground = followingPresentation.image;
-      break;
-    }
-    if (!nextBackground) return;
+    const followingStep = resolveVisibleStep(allSteps[currentIndex + 1]?.id);
+    if (!followingStep) return;
+    const followingPresentation = backgroundPresentationForStep(followingStep);
+    if (currentPresentation.image === followingPresentation.image) return;
+    const nextBackground = followingPresentation.image;
     const warm = () => { void preloadBackground(nextBackground); };
     if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(warm, { timeout: 1200 });
     else window.setTimeout(warm, 0);
@@ -1302,6 +1340,9 @@
     }
     elements.location.setAttribute("aria-label", title);
     elements.location.replaceChildren(...units);
+    elements.location.classList.remove("is-signal-reveal");
+    void elements.location.offsetWidth;
+    elements.location.classList.add("is-signal-reveal");
   }
 
   const applyTemporalPresentation = (step) => {
@@ -2878,7 +2919,9 @@
     elements.cursor.hidden = true;
     elements.continueMark.classList.remove("is-visible");
     setInteractionLifecycle("prep");
-    if (step.interaction?.kind === "gx") {
+    const autoOpenInteraction = step.interaction?.kind === "gx"
+      || (step.id === "map_mode01_004" && step.interaction?.kind === "map01");
+    if (autoOpenInteraction) {
       requestAnimationFrame(() => {
         if (currentStep()?.id === step.id && interactionLifecycle === "prep" && !pendingInteraction) openDetour(step);
       });
@@ -3140,14 +3183,15 @@
     autoTimer = window.setTimeout(advance, AUTO_DELAY_MS);
   }
 
-  const startNewSession = () => {
+  const startNewSession = async () => {
     exitDebugJumpSession();
     state = defaultState();
     state.sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    showRuntime();
-    renderEves();
-    saveProgress();
-    renderSectionSeparator();
+    await revealRuntimeForStep(currentStep(), () => {
+      renderEves();
+      saveProgress();
+      renderSectionSeparator();
+    });
   };
 
   const restartStory = () => {
@@ -3163,14 +3207,15 @@
     renderSectionSeparator();
   };
 
-  const resumeStory = () => {
+  const resumeStory = async () => {
     exitDebugJumpSession();
     const stored = getStoredProgress();
     if (!stored) return startNewSession();
     state = stored;
-    showRuntime();
-    renderEves();
-    renderCurrentStep();
+    await revealRuntimeForStep(currentStep(), () => {
+      renderEves();
+      renderCurrentStep();
+    });
   };
 
   const jumpToSceneStart = (sceneId) => {
@@ -3557,17 +3602,18 @@
     writeManualSaves(slots);
     renderManualSlots();
   }
-  function loadManualSlot(index) {
+  async function loadManualSlot(index) {
     const saved = getManualSaves()[index];
     if (!saved) return;
     exitDebugJumpSession();
     state = saved.progress;
     seedGalleryFromProgress(state);
     closeManualArchive();
-    showRuntime();
-    renderEves();
-    saveProgress();
-    renderCurrentStep();
+    await revealRuntimeForStep(currentStep(), () => {
+      renderEves();
+      saveProgress();
+      renderCurrentStep();
+    });
   }
   const setArchiveMode = (mode) => {
     archiveMode = mode === "load" || !hasStarted ? "load" : "save";

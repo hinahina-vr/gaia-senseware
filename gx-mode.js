@@ -212,7 +212,8 @@
   let previousTime = 0;
   let previousFocus = null;
   let returnTo = "intro";
-  let storyMode = "";
+  let storyDetourActive = false;
+  let storyModeVersion = "";
   let storyGestureCount = 0;
   let storyPointerActive = false;
   let width = 0;
@@ -1950,16 +1951,15 @@
     if (isOpen) return;
     previousFocus = document.activeElement;
     returnTo = options.returnTo === "novel" ? "novel" : "intro";
-    storyMode = returnTo === "novel" && /^v\d+$/.test(String(options.storyMode || ""))
-      ? String(options.storyMode)
-      : "";
+    storyDetourActive = returnTo === "novel";
+    storyModeVersion = storyDetourActive ? String(options.storyMode || "") : "";
     storyGestureCount = 0;
     storyPointerActive = false;
     layer.dataset.returnTo = returnTo;
-    if (storyMode) layer.dataset.storyMode = storyMode;
+    if (storyModeVersion) layer.dataset.storyMode = storyModeVersion;
     if (returnTo === "novel") syncStoryGuidePortrait();
     elements.close.textContent = returnTo === "novel" ? "ストーリーへ戻る" : "戻る";
-    elements.close.disabled = Boolean(storyMode);
+    elements.close.disabled = storyDetourActive;
     isOpen = true;
     if (storyBackdrop) {
       storyBackdrop.hidden = returnTo !== "novel";
@@ -1976,7 +1976,7 @@
       if (returnTo === "novel") storyBackdrop?.classList.add("is-open");
     });
     await loadExhibit();
-    if (storyMode) resetWorld();
+    if (storyDetourActive) resetWorld();
     setPhase(options.phase ?? 0);
     previousTime = performance.now();
     cancelAnimationFrame(animationFrame);
@@ -1986,7 +1986,7 @@
 
   const closeGX = () => {
     if (!isOpen) return;
-    if (storyMode && storyGestureCount < 3) return;
+    if (storyDetourActive && storyGestureCount < 3) return;
     storyPointerActive = false;
     closeDataPanel();
     window.clearTimeout(eraTransitionTimer);
@@ -2040,7 +2040,7 @@
   };
 
   const recordStoryGesture = () => {
-    if (!storyMode || !isOpen) return;
+    if (!storyDetourActive || !isOpen) return;
     storyGestureCount = Math.min(3, storyGestureCount + 1);
     const complete = storyGestureCount >= 3;
     elements.close.disabled = !complete;
@@ -2075,7 +2075,7 @@
       return;
     }
     pointer = { ...position, active: true };
-    storyPointerActive = Boolean(storyMode);
+    storyPointerActive = storyDetourActive;
     addInteraction(position.x, position.y, 0.02);
     canvas.setPointerCapture?.(event.pointerId);
   });

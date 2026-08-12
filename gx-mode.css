@@ -2313,6 +2313,71 @@ body.gx-story-open .gx-story-bubble::after {
   }
 }
 
+/* Final story-only geometry contract. This must remain after the historical
+   installation treatments above so production computed styles cannot drift
+   back to a near-fullscreen panel. Standalone GX is intentionally untouched. */
+body.gx-story-open .gx-story-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(1, 10, 23, 0.46);
+  -webkit-backdrop-filter: blur(2px) saturate(0.9);
+  backdrop-filter: blur(2px) saturate(0.9);
+}
+
+body.gx-story-open .gx-layer[data-return-to="novel"],
+body.gx-story-open .gx-layer[data-return-to="novel"].is-open {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: min(78vw, 1280px);
+  max-width: min(78vw, 1280px);
+  height: min(78dvh, 860px);
+  max-height: min(78dvh, 860px);
+  overflow: hidden;
+  border: 1px solid rgba(190, 238, 249, 0.48);
+  border-radius: clamp(18px, 1.8vw, 28px);
+  box-shadow:
+    0 34px 110px rgba(0, 5, 18, 0.7),
+    0 0 0 1px rgba(214, 249, 255, 0.06),
+    inset 0 1px rgba(246, 255, 255, 0.18);
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+}
+
+body.gx-story-open .gx-layer[data-return-to="novel"] .gx-story-card {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+@media (max-width: 560px) {
+  body.gx-story-open .gx-layer[data-return-to="novel"],
+  body.gx-story-open .gx-layer[data-return-to="novel"].is-open {
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: 50% !important;
+    width: 92vw !important;
+    max-width: 92vw !important;
+    height: 78dvh !important;
+    max-height: 78dvh !important;
+    border-radius: 16px;
+  }
+
+  body.gx-story-open .gx-layer[data-return-to="novel"] .gx-story-card,
+  body.gx-story-open .gx-layer[data-return-to="novel"][data-phase="gaia-transformation"] .gx-story-card {
+    z-index: 8;
+    right: auto !important;
+    left: 12px !important;
+    width: 64% !important;
+    max-height: min(38dvh, 320px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
+    touch-action: pan-y;
+  }
+}
+
 /* On compact landscape screens the outer golden split remains, while the
    information plate and controls stack for readable line lengths. */
 @media not all {
