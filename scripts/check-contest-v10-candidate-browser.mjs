@@ -151,6 +151,40 @@ try {
     report.scans.push({ viewport, case: "v9-save", stepId: migrated.stepId, audio: migrated.audio, unknownPreserved: true, passed: true });
     await migrationContext.close();
 
+    const welcomeEntryLabel = `${viewport.name}-welcome-entry`;
+    const { context: welcomeEntryContext, page: welcomeEntryPage } = await createPage(viewport, welcomeEntryLabel);
+    await bootAt(welcomeEntryPage, "welcome_chat_001", {}, 10, "welcome_chat_002");
+    const welcomeEntryScan = await welcomeEntryPage.evaluate(() => ({
+      stepId: globalThis.GaiaNovel.getState().stepId,
+      stepType: document.querySelector("#novel-layer")?.dataset.stepType || "",
+      internalMessageVisible: document.body.innerText.includes("# はじめまして／人物画像は表示しない"),
+      dialogueText: document.querySelector("#novel-text")?.textContent || "",
+      overflow: document.documentElement.scrollWidth > innerWidth + 1,
+    }));
+    assert.equal(welcomeEntryScan.stepId, "welcome_chat_002");
+    assert.equal(welcomeEntryScan.stepType, "narration");
+    assert.equal(welcomeEntryScan.internalMessageVisible, false);
+    assert.match(welcomeEntryScan.dialogueText, /学生ポータル/);
+    assert.equal(welcomeEntryScan.overflow, false);
+    for (let attempt = 0; attempt < 3 && await welcomeEntryPage.evaluate(() => globalThis.GaiaNovel.getState().stepId !== "welcome_chat_003"); attempt += 1) {
+      await welcomeEntryPage.locator("#novel-dialogue").click({ position: { x: 20, y: 20 } });
+      await welcomeEntryPage.waitForTimeout(80);
+    }
+    await welcomeEntryPage.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "welcome_chat_003");
+    const welcomeAdvanced = await welcomeEntryPage.evaluate(() => ({
+      stepId: globalThis.GaiaNovel.getState().stepId,
+      internalMessageVisible: document.body.innerText.includes("# はじめまして／人物画像は表示しない"),
+      overflow: document.documentElement.scrollWidth > innerWidth + 1,
+    }));
+    assert.deepEqual(welcomeAdvanced, {
+      stepId: "welcome_chat_003",
+      internalMessageVisible: false,
+      overflow: false,
+    });
+    report.scans.push({ viewport, case: "welcome-entry", ...welcomeEntryScan, advancedTo: welcomeAdvanced.stepId, passed: true });
+    await welcomeEntryPage.screenshot({ path: path.join(outputDir, `${welcomeEntryLabel}.png`) });
+    await welcomeEntryContext.close();
+
     for (const testCase of interactions) {
       const label = `${viewport.name}-${testCase.name}`;
       const { context, page } = await createPage(viewport, label);

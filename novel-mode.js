@@ -2728,7 +2728,7 @@
     closeSourceDetails();
     let step = currentStep();
     let guard = 0;
-    while (step && (!conditionMatches(step) || step.type === "phase") && guard < allSteps.length) {
+    while (step && (!conditionMatches(step) || ["phase", "chatSurface"].includes(step.type)) && guard < allSteps.length) {
       state.stepId = getFollowingStepId(step);
       step = currentStep();
       guard += 1;
