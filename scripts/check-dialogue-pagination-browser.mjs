@@ -66,10 +66,10 @@ const baseState = {
 const sentenceEnd = /[\u3002\uff01\uff1f!?][\u300d\u300f\u3011\u3015\uff3d\uff09\)\u3009\u300b\u201d\u2019"']*$/u;
 const safeBoundary = /[\u3002\uff01\uff1f!?\u3001\uff0c,\u30fb\uff1a:；;\s\u300d\u300f\u3011\uff09\)]$/u;
 const asciiToken = /[A-Za-z0-9_]/u;
-const predicateOnly = /^(?:入って|残って|映って|置かれて|表示されて|書かれて|続いて|揃って|含まれて|見えて|聞こえて|なって|分かって|できて|いる|いた|ある|あった|なる|なった|だった|です|ます|ました|する|した|している|できる|できた)[^\u3002\uff01\uff1f!?]{0,12}[\u3002\uff01\uff1f!?]$/u;
-const structuredLine = (line) => /^\s*(?:[-*+>\u30fb\u2022\u25cf\u25a0\u25c6\u25c7\u25cb\u3010]|\d+[.\)\u3001\uff09]|[A-Z][.\uff1a:])/u.test(line)
-  || /^\s*[^\u3002\uff01\uff1f!?\n]{1,16}[|\uff5c\uff1a:]/u.test(line)
-  || /^\s*(?:\u300c[^\n]*\u300d|\u300e[^\n]*\u300f)\s*$/u.test(line);
+const forbiddenLineStart = /^[、。，．？！…」』）】］〉》〕ぁぃぅぇぉっゃゅょァィゥェォッャュョヮヵヶー]/u;
+const forbiddenLineEnd = /[「『（【［〈《〔]$/u;
+const isolatedParticle = /^(?:は|が|を|に|へ|と|で|の|も|や|か|ね|よ)$/u;
+const protectedPhrases = ["そのもの", "ものづくり", "リアルタイム", "GAIA SENSEWARE"];
 
 const analyzeStep = (step, pagination) => {
   const errors = [];
@@ -79,33 +79,37 @@ const analyzeStep = (step, pagination) => {
     if (!page.fits) errors.push(`page ${index + 1} does not fit`);
     if (page.lines > 3 || page.lines > page.maxLines) errors.push(`page ${index + 1} exceeds rendered line limit`);
     if (page.indicatorSafety < 12) errors.push(`page ${index + 1} indicator safety ${page.indicatorSafety}`);
+    if (page.tokenSource !== page.text) errors.push(`page ${index + 1} token source mismatch`);
+    page.tokenLines.forEach((line, lineIndex) => {
+      const text = line.text.trim();
+      if (forbiddenLineStart.test(text)) errors.push(`page ${index + 1} line ${lineIndex + 1} starts with forbidden punctuation`);
+      if (forbiddenLineEnd.test(text)) errors.push(`page ${index + 1} line ${lineIndex + 1} ends with an opening bracket`);
+      if (isolatedParticle.test(text)) errors.push(`page ${index + 1} line ${lineIndex + 1} isolates a one-character particle`);
+    });
   });
-  if (pagination.pages.length > 1) {
-    const last = pagination.pages.at(-1);
-    const lastText = last.text.trim();
-    if (last.lines < 2) errors.push("final page has fewer than two rendered lines");
-    if (last.characters <= 12) errors.push("final page has at most twelve characters");
-    if (last.lines === 1 && last.characters <= 22) errors.push("final page is a short single line");
-    if (predicateOnly.test(lastText)) errors.push("final page contains only a predicate fragment");
-  }
+
+  protectedPhrases.forEach((phrase) => {
+    if (!step.text.includes(phrase)) return;
+    if (!pagination.tokens.some((token) => token.includes(phrase))) errors.push(`protected phrase is not atomic: ${phrase}`);
+  });
 
   const sourceGlyphs = Array.from(step.text);
+  const tokenBoundaries = new Set();
+  let tokenOffset = 0;
+  pagination.tokens.forEach((token) => {
+    tokenOffset += Array.from(token).length;
+    tokenBoundaries.add(tokenOffset);
+  });
   let offset = 0;
   for (let index = 0; index < pagination.pages.length - 1; index += 1) {
     offset += Array.from(pagination.pages[index].text).length;
     const left = sourceGlyphs[offset - 1] || "";
     const right = sourceGlyphs[offset] || "";
-    const lineStart = step.text.lastIndexOf("\n", Math.max(0, offset - 1)) + 1;
-    const nextNewline = step.text.indexOf("\n", offset);
-    const lineEnd = nextNewline < 0 ? step.text.length : nextNewline;
-    const line = step.text.slice(lineStart, lineEnd);
-    const withinStructuredLine = structuredLine(line) && offset > lineStart && offset < lineEnd;
     if (asciiToken.test(left) && asciiToken.test(right)) errors.push(`boundary ${index + 1} splits an ASCII token`);
-    if (withinStructuredLine && !sentenceEnd.test(pagination.pages[index].text.trimEnd())) {
-      errors.push(`boundary ${index + 1} splits a structured line`);
-    }
-    if (!sentenceEnd.test(pagination.pages[index].text.trimEnd()) && !safeBoundary.test(left)) {
-      errors.push(`boundary ${index + 1} is not a safe punctuation or line boundary`);
+    const sentenceBoundary = sentenceEnd.test(pagination.pages[index].text.trimEnd());
+    const punctuationBoundary = safeBoundary.test(left);
+    if (!sentenceBoundary && !punctuationBoundary && !tokenBoundaries.has(offset)) {
+      errors.push(`boundary ${index + 1} is not a safe punctuation or token boundary`);
     }
   }
   return errors;
