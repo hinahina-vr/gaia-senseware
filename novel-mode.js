@@ -2260,6 +2260,13 @@
     }
     return avatar;
   };
+  if (elements.galleryButton) {
+    elements.galleryButton.hidden = true;
+    elements.galleryButton.tabIndex = -1;
+    elements.galleryButton.setAttribute("aria-hidden", "true");
+    elements.galleryButton.inert = true;
+    elements.galleryButton.remove();
+  }
 
   const createSlackAttachment = (attachment) => {
     const identifier = String(attachment?.id || "").toUpperCase();
@@ -3644,6 +3651,10 @@
   });
   window.addEventListener("gaia:novel-open-at-mode", (event) => {
     if (event.detail?.source === "opening") {
+      openNovel();
+      return;
+    }
+    if (event.detail?.source === "title-menu") {
       openNovel();
       return;
     }

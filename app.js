@@ -4651,7 +4651,7 @@ drawAudienceMemory(audienceTraces);
         runSceneTransition(() => {
           closeIntro({ restoreFocus: false });
           window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
-            detail: { index: 0, source: "entrance" },
+            detail: { index: 0, source: "title-menu" },
           }));
         }, path, event);
         return;

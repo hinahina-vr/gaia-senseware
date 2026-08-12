@@ -7800,3 +7800,31 @@ body.gx-story-open .novel-script-debug-copy {
   .novel-gallery-header > button { width: 40px; height: 40px; }
   .novel-gallery-progress strong { font-size: 24px; }
 }
+
+/* Keep story metadata light over the artwork; legibility comes from the type only. */
+.novel-signal-caption,
+.novel-signal-caption[data-temporal-range="true"],
+.novel-signal-caption[data-crosses-year="true"],
+.novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.novel-signal-caption::before,
+.novel-signal-caption::after {
+  display: none;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.novel-signal-caption strong {
+  text-shadow:
+    0 1px 2px rgba(0, 5, 18, 0.86),
+    1px 0 1px rgba(0, 5, 18, 0.54),
+    -1px 0 1px rgba(0, 5, 18, 0.54);
+}

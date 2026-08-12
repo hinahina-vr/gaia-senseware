@@ -31,9 +31,9 @@ check("EVES/footer hidden without data removal", () => {
 });
 
 check("changed runtime assets use the hotfix cache key", () => {
-  for (const asset of ["opening.css", "novel-mode.css", "opening.js", "novel-mode.js", "gx-mode.js", "novel-story-data.js"]) {
-    assert.match(html, new RegExp(`${asset.replace(".", "\\.")}\\?v=gaia-current-ui-hotfix-1`, "u"));
-  }
+  for (const asset of ["opening.css", "opening.js", "gx-mode.js"]) assert.match(html, new RegExp(`${asset.replace(".", "\\.")}\\?v=gaia-current-ui-hotfix-1`, "u"));
+  for (const asset of ["novel-mode.css", "novel-mode.js"]) assert.match(html, new RegExp(`${asset.replace(".", "\\.")}\\?v=gaia-lightweight-metadata-1`, "u"));
+  assert.match(html, /novel-story-data\.js\?v=gaia-lightweight-story-menu-1/u);
 });
 
 check("SAVE whole-card and hidden-scrollbar contract", () => {
@@ -74,10 +74,12 @@ check("background is real, cover, and motionless", () => {
   assert.match(css, /data-background-motion[\s\S]*animation:\s*none\s*!important[\s\S]*background-size:\s*cover,\s*cover\s*!important[\s\S]*transform:\s*none\s*!important/u);
 });
 
-check("metadata uses a real dark scrim", () => {
-  assert(css.includes('.novel-signal-caption[data-end-time-precision="APPROXIMATE"]'));
-  assert(css.includes("background: linear-gradient(180deg, rgba(3, 19, 43, 0.92), rgba(2, 13, 34, 0.88))"));
-  assert(css.includes("backdrop-filter: blur(10px)"));
+check("metadata uses transparent chrome with restrained text shadow", () => {
+  const lightweightMetadata = css.slice(css.lastIndexOf("/* Keep story metadata light over the artwork"));
+  for (const declaration of ["border: 0;", "border-radius: 0;", "background: transparent;", "box-shadow: none;", "backdrop-filter: none;", "display: none;", "text-shadow:"]) {
+    assert.ok(lightweightMetadata.includes(declaration), `metadata lightweight override is missing ${declaration}`);
+  }
+  assert.ok(lightweightMetadata.includes("0 1px 2px rgba(0, 5, 18, 0.86)"));
 });
 
 check("campus name and formal-name canonical metadata", () => {
