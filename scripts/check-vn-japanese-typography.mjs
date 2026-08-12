@@ -21,7 +21,7 @@ const scans = [
   ["page pair preserves source exactly", /`\$\{before\}\$\{after\}` !== combined/u.test(runtime)],
   ["page pair keeps both pages bounded", /beforeMetrics\.fits \|\| !afterMetrics\.fits/u.test(runtime) && /requireRightTwoLines && afterMetrics\.measuredLines\.length < 2/u.test(runtime)],
   ["two-line minimum applies only to final pair", /requireRightTwoLines: index === pages\.length - 1/u.test(runtime)],
-  ["sentence-safe boundary outranks punctuation", /a\.sentencePenalty - b\.sentencePenalty/u.test(runtime) && /a\.unsafeBoundaryCount - b\.unsafeBoundaryCount/u.test(runtime)],
+  ["sentence-safe boundary outranks punctuation regardless of line count", /sentencePenalty: sentenceBoundary\.test\(before\.trimEnd\(\)\) \? 0 : 1/u.test(runtime) && /a\.sentencePenalty - b\.sentencePenalty/u.test(runtime) && /a\.unsafeBoundaryCount - b\.unsafeBoundaryCount/u.test(runtime)],
   ["unsafe page boundaries are rebalanced", runtime.includes("const unsafeBoundary = !/[。！？!?、，,・：:；;\\s]") && runtime.includes("!orphanedFinalPage && !unsafeBoundary")],
   ["unbounded phrase-boundary rebalance absent", !/phraseOffsets/u.test(runtime) && !/safeCandidates\.length \? safeCandidates : candidates/u.test(runtime)],
   ["same token layout for measure and render", runtime.includes("measureNativeLines = (text, preparedLayout = null)") && runtime.includes("replaceChildren(layout)")],
@@ -58,6 +58,31 @@ const paginationSafeBoundary = /[。！？!?、，,・：:；;\s][」』）】�
   assert.equal(`${boundary}${next}`, text, "target boundary must preserve source exactly");
   assert(!/^いろいろ/u.test(next), "もっといろいろ測れます must remain on one page");
 });
+
+const pc1440SentenceCandidate = {
+  before: "「温度、湿度、明るさ、気圧、空気中の粒子、音、振動。",
+  after: "センサーを替えれば、もっといろいろ測れます。いくつか組み合わせて、その場所の環境をまとめて記録することもできます」",
+  sentencePenalty: 0,
+  unsafeBoundaryCount: 0,
+  oneLinePageCount: 1,
+  lineBalance: 2,
+  boundaryDistance: 20,
+};
+const pc1440CommaCandidate = {
+  before: "「温度、湿度、明るさ、気圧、空気中の粒子、音、振動。センサーを替えれば、",
+  after: "もっといろいろ測れます。いくつか組み合わせて、その場所の環境をまとめて記録することもできます」",
+  sentencePenalty: 1,
+  unsafeBoundaryCount: 0,
+  oneLinePageCount: 0,
+  lineBalance: 0,
+  boundaryDistance: 1,
+};
+const rankedPc1440Candidates = [pc1440CommaCandidate, pc1440SentenceCandidate].sort((a, b) => a.sentencePenalty - b.sentencePenalty
+  || a.unsafeBoundaryCount - b.unsafeBoundaryCount
+  || a.oneLinePageCount - b.oneLinePageCount
+  || a.lineBalance - b.lineBalance
+  || a.boundaryDistance - b.boundaryDistance);
+assert.equal(rankedPc1440Candidates[0].before, pc1440SentenceCandidate.before, "PC1440 must prefer 振動。|センサー even when its left page has one rendered line");
 
 [
   ["pc-2048", "festival_concept_070", "NASAやJAXA、", "気象庁"],

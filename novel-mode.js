@@ -1862,7 +1862,7 @@
       candidates.push({
         before,
         after,
-        sentencePenalty: sentenceBoundary.test(before.trimEnd()) && beforeLines >= 2 && afterLines >= 2 ? 0 : 1,
+        sentencePenalty: sentenceBoundary.test(before.trimEnd()) ? 0 : 1,
         unsafeBoundaryCount: safeBoundary.test(before.trimEnd()) ? 0 : 1,
         oneLinePageCount: Number(beforeLines < 2) + Number(afterLines < 2),
         lineBalance: Math.abs(beforeLines - afterLines),
