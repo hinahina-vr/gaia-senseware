@@ -859,7 +859,8 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
        d.public_longitude AS longitude,
        CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
        u.public_id AS ownerPublicId, u.display_name AS ownerDisplayName,
-       u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
+       CASE WHEN u.avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
+       u.avatar_updated_at AS avatarUpdatedAt,
        u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl
      FROM devices d JOIN users u ON u.id = d.owner_user_id
      WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
@@ -874,7 +875,7 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
       state: row.state,
       owner: {
         displayName: row.ownerDisplayName,
-        avatarUrl: row.avatarKey ? `/api/public/v1/profiles/${encodeURIComponent(row.ownerPublicId)}/avatar?v=${encodeURIComponent(row.avatarUpdatedAt ?? "1")}` : null,
+        avatarUrl: row.hasAvatar === 1 ? `/api/public/v1/profiles/${encodeURIComponent(row.ownerPublicId)}/avatar?v=${encodeURIComponent(row.avatarUpdatedAt ?? "1")}` : null,
         xUrl: row.xUrl,
         githubUrl: row.githubUrl,
         instagramUrl: row.instagramUrl
@@ -916,7 +917,7 @@ var randomIdentifier = /* @__PURE__ */ __name((length) => {
 }, "randomIdentifier");
 
 // src/profiles.ts
-var MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+var MAX_AVATAR_BYTES = 1024 * 1024;
 var MAX_AVATAR_EDGE = 512;
 var PNG_SIGNATURE = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 var getProfile = /* @__PURE__ */ __name(async (env, user) => {
@@ -939,52 +940,37 @@ var uploadAvatar = /* @__PURE__ */ __name(async (request, env, user) => {
   const type = request.headers.get("Content-Type")?.split(";", 1)[0]?.trim().toLowerCase();
   if (type !== "image/png") throw new ApiError(415, "UNSUPPORTED_AVATAR_TYPE", "Avatar must be a PNG image.");
   const sanitized = sanitizePng(await readBytes(request, MAX_AVATAR_BYTES));
-  const previous = await profileRow(env, user.id);
-  const key = `avatars/${user.id}/${crypto.randomUUID()}.png`;
-  await env.PROFILE_IMAGES.put(key, sanitized, {
-    httpMetadata: { contentType: "image/png", cacheControl: "public, max-age=31536000, immutable" },
-    customMetadata: { owner: user.id }
-  });
   const now = (/* @__PURE__ */ new Date()).toISOString();
-  try {
-    const result = await env.DB.prepare(
-      "UPDATE users SET avatar_key = ?1, avatar_updated_at = ?2, updated_at = ?2 WHERE id = ?3"
-    ).bind(key, now, user.id).run();
-    if (result.meta.changes !== 1) throw new ApiError(404, "PROFILE_NOT_FOUND", "Profile was not found.");
-  } catch (error) {
-    await env.PROFILE_IMAGES.delete(key);
-    throw error;
-  }
-  if (previous.avatarKey) await env.PROFILE_IMAGES.delete(previous.avatarKey);
+  const result = await env.DB.prepare(
+    "UPDATE users SET avatar_png = ?1, avatar_updated_at = ?2, updated_at = ?2 WHERE id = ?3"
+  ).bind(sanitized, now, user.id).run();
+  if (result.meta.changes !== 1) throw new ApiError(404, "PROFILE_NOT_FOUND", "Profile was not found.");
   return getProfile(env, user);
 }, "uploadAvatar");
 var deleteAvatar = /* @__PURE__ */ __name(async (request, env, user) => {
   await requireCsrf(request, user);
-  const previous = await profileRow(env, user.id);
   await env.DB.prepare(
-    "UPDATE users SET avatar_key = NULL, avatar_updated_at = NULL, updated_at = ?1 WHERE id = ?2"
+    "UPDATE users SET avatar_png = NULL, avatar_updated_at = NULL, updated_at = ?1 WHERE id = ?2"
   ).bind((/* @__PURE__ */ new Date()).toISOString(), user.id).run();
-  if (previous.avatarKey) await env.PROFILE_IMAGES.delete(previous.avatarKey);
   return new Response(null, { status: 204 });
 }, "deleteAvatar");
 var getPublicAvatar = /* @__PURE__ */ __name(async (env, publicId) => {
   const profile = await env.DB.prepare(
-    "SELECT avatar_key AS avatarKey FROM users WHERE public_id = ?1"
+    "SELECT avatar_png AS avatarPng, avatar_updated_at AS avatarUpdatedAt FROM users WHERE public_id = ?1"
   ).bind(publicId).first();
-  if (!profile?.avatarKey) throw new ApiError(404, "AVATAR_NOT_FOUND", "Avatar was not found.");
-  const object = await env.PROFILE_IMAGES.get(profile.avatarKey);
-  if (!object) throw new ApiError(404, "AVATAR_NOT_FOUND", "Avatar was not found.");
+  if (!profile?.avatarPng) throw new ApiError(404, "AVATAR_NOT_FOUND", "Avatar was not found.");
+  const avatar = avatarBytes(profile.avatarPng);
   const headers = new Headers();
-  object.writeHttpMetadata(headers);
   headers.set("Content-Type", "image/png");
   headers.set("Cache-Control", "public, max-age=31536000, immutable");
-  headers.set("ETag", object.httpEtag);
+  if (profile.avatarUpdatedAt) headers.set("Last-Modified", new Date(profile.avatarUpdatedAt).toUTCString());
   headers.set("X-Content-Type-Options", "nosniff");
-  return new Response(object.body, { headers });
+  return new Response(avatar, { headers });
 }, "getPublicAvatar");
 var profileRow = /* @__PURE__ */ __name(async (env, userId) => {
   const profile = await env.DB.prepare(
-    `SELECT public_id AS publicId, display_name AS displayName, avatar_key AS avatarKey,
+    `SELECT public_id AS publicId, display_name AS displayName,
+       CASE WHEN avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
        avatar_updated_at AS avatarUpdatedAt, x_url AS xUrl, github_url AS githubUrl,
        instagram_url AS instagramUrl
      FROM users WHERE id = ?1`
@@ -995,11 +981,18 @@ var profileRow = /* @__PURE__ */ __name(async (env, userId) => {
 var serializeProfile = /* @__PURE__ */ __name((profile) => ({
   publicId: profile.publicId,
   displayName: profile.displayName,
-  avatarUrl: profile.avatarKey ? `/api/public/v1/profiles/${encodeURIComponent(profile.publicId)}/avatar?v=${encodeURIComponent(profile.avatarUpdatedAt ?? "1")}` : null,
+  avatarUrl: profile.hasAvatar === 1 ? `/api/public/v1/profiles/${encodeURIComponent(profile.publicId)}/avatar?v=${encodeURIComponent(profile.avatarUpdatedAt ?? "1")}` : null,
   xUrl: profile.xUrl,
   githubUrl: profile.githubUrl,
   instagramUrl: profile.instagramUrl
 }), "serializeProfile");
+var avatarBytes = /* @__PURE__ */ __name((value) => {
+  if (Array.isArray(value)) return Uint8Array.from(value).buffer;
+  if (value instanceof Uint8Array) {
+    return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+  }
+  return value;
+}, "avatarBytes");
 var sanitizePng = /* @__PURE__ */ __name((source) => {
   if (source.byteLength < 33 || !PNG_SIGNATURE.every((value, index) => source[index] === value)) {
     throw new ApiError(400, "INVALID_AVATAR", "Avatar is not a valid PNG image.");

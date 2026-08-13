@@ -290,7 +290,8 @@ export const listPublicSensors = async (env: Env): Promise<Response> => {
        d.public_longitude AS longitude,
        CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
        u.public_id AS ownerPublicId, u.display_name AS ownerDisplayName,
-       u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
+       CASE WHEN u.avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
+       u.avatar_updated_at AS avatarUpdatedAt,
        u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl
      FROM devices d JOIN users u ON u.id = d.owner_user_id
      WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
@@ -298,7 +299,7 @@ export const listPublicSensors = async (env: Env): Promise<Response> => {
      ORDER BY d.created_at DESC LIMIT 500`,
   ).bind(`-${threshold} seconds`).all<{
     id: string; sensorName: string; latitude: number; longitude: number; state: string;
-    ownerPublicId: string; ownerDisplayName: string; avatarKey: string | null; avatarUpdatedAt: string | null;
+    ownerPublicId: string; ownerDisplayName: string; hasAvatar: number; avatarUpdatedAt: string | null;
     xUrl: string | null; githubUrl: string | null; instagramUrl: string | null;
   }>();
   return json({
@@ -309,7 +310,7 @@ export const listPublicSensors = async (env: Env): Promise<Response> => {
       state: row.state,
       owner: {
         displayName: row.ownerDisplayName,
-        avatarUrl: row.avatarKey
+        avatarUrl: row.hasAvatar === 1
           ? `/api/public/v1/profiles/${encodeURIComponent(row.ownerPublicId)}/avatar?v=${encodeURIComponent(row.avatarUpdatedAt ?? "1")}`
           : null,
         xUrl: row.xUrl,

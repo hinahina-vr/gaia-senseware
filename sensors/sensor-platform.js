@@ -516,7 +516,7 @@ async function normalizeAvatar(file) {
   context.drawImage(bitmap, (bitmap.width - sourceEdge) / 2, (bitmap.height - sourceEdge) / 2, sourceEdge, sourceEdge, 0, 0, outputEdge, outputEdge);
   bitmap.close();
   const blob = await new Promise((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("PNGを作成できませんでした。")), "image/png"));
-  if (blob.size > 2 * 1024 * 1024) throw new Error("変換後のPNGが2MBを超えています。");
+  if (blob.size > 1024 * 1024) throw new Error("変換後のPNGが1MBを超えています。");
   return blob;
 }
 

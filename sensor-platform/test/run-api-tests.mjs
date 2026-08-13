@@ -74,7 +74,7 @@ try {
   });
   await test("migrations are sequential and safe to reapply", async () => {
     assert.match(migrationReapplyOutput, /No migrations to apply/u);
-    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "3");
+    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "4");
   });
   await test("OIDC flow cookie binds callback to the starting browser", async () => {
     const start = await fetch(`${origin}/api/auth/google/start`, { redirect: "manual" });

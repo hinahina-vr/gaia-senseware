@@ -2,14 +2,14 @@ import { AuthenticatedUser, requireCsrf } from "./auth";
 import { ApiError, json, readBytes, readJson } from "./http";
 import { validateProfileDraft } from "./validation";
 
-const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const MAX_AVATAR_BYTES = 1024 * 1024;
 const MAX_AVATAR_EDGE = 512;
 const PNG_SIGNATURE = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 
 type ProfileRow = {
   publicId: string;
   displayName: string;
-  avatarKey: string | null;
+  hasAvatar: number;
   avatarUpdatedAt: string | null;
   xUrl: string | null;
   githubUrl: string | null;
@@ -38,55 +38,40 @@ export const uploadAvatar = async (request: Request, env: Env, user: Authenticat
   const type = request.headers.get("Content-Type")?.split(";", 1)[0]?.trim().toLowerCase();
   if (type !== "image/png") throw new ApiError(415, "UNSUPPORTED_AVATAR_TYPE", "Avatar must be a PNG image.");
   const sanitized = sanitizePng(await readBytes(request, MAX_AVATAR_BYTES));
-  const previous = await profileRow(env, user.id);
-  const key = `avatars/${user.id}/${crypto.randomUUID()}.png`;
-  await env.PROFILE_IMAGES.put(key, sanitized, {
-    httpMetadata: { contentType: "image/png", cacheControl: "public, max-age=31536000, immutable" },
-    customMetadata: { owner: user.id },
-  });
   const now = new Date().toISOString();
-  try {
-    const result = await env.DB.prepare(
-      "UPDATE users SET avatar_key = ?1, avatar_updated_at = ?2, updated_at = ?2 WHERE id = ?3",
-    ).bind(key, now, user.id).run();
-    if (result.meta.changes !== 1) throw new ApiError(404, "PROFILE_NOT_FOUND", "Profile was not found.");
-  } catch (error) {
-    await env.PROFILE_IMAGES.delete(key);
-    throw error;
-  }
-  if (previous.avatarKey) await env.PROFILE_IMAGES.delete(previous.avatarKey);
+  const result = await env.DB.prepare(
+    "UPDATE users SET avatar_png = ?1, avatar_updated_at = ?2, updated_at = ?2 WHERE id = ?3",
+  ).bind(sanitized, now, user.id).run();
+  if (result.meta.changes !== 1) throw new ApiError(404, "PROFILE_NOT_FOUND", "Profile was not found.");
   return getProfile(env, user);
 };
 
 export const deleteAvatar = async (request: Request, env: Env, user: AuthenticatedUser): Promise<Response> => {
   await requireCsrf(request, user);
-  const previous = await profileRow(env, user.id);
   await env.DB.prepare(
-    "UPDATE users SET avatar_key = NULL, avatar_updated_at = NULL, updated_at = ?1 WHERE id = ?2",
+    "UPDATE users SET avatar_png = NULL, avatar_updated_at = NULL, updated_at = ?1 WHERE id = ?2",
   ).bind(new Date().toISOString(), user.id).run();
-  if (previous.avatarKey) await env.PROFILE_IMAGES.delete(previous.avatarKey);
   return new Response(null, { status: 204 });
 };
 
 export const getPublicAvatar = async (env: Env, publicId: string): Promise<Response> => {
   const profile = await env.DB.prepare(
-    "SELECT avatar_key AS avatarKey FROM users WHERE public_id = ?1",
-  ).bind(publicId).first<{ avatarKey: string | null }>();
-  if (!profile?.avatarKey) throw new ApiError(404, "AVATAR_NOT_FOUND", "Avatar was not found.");
-  const object = await env.PROFILE_IMAGES.get(profile.avatarKey);
-  if (!object) throw new ApiError(404, "AVATAR_NOT_FOUND", "Avatar was not found.");
+    "SELECT avatar_png AS avatarPng, avatar_updated_at AS avatarUpdatedAt FROM users WHERE public_id = ?1",
+  ).bind(publicId).first<{ avatarPng: number[] | ArrayBuffer | Uint8Array | null; avatarUpdatedAt: string | null }>();
+  if (!profile?.avatarPng) throw new ApiError(404, "AVATAR_NOT_FOUND", "Avatar was not found.");
+  const avatar = avatarBytes(profile.avatarPng);
   const headers = new Headers();
-  object.writeHttpMetadata(headers);
   headers.set("Content-Type", "image/png");
   headers.set("Cache-Control", "public, max-age=31536000, immutable");
-  headers.set("ETag", object.httpEtag);
+  if (profile.avatarUpdatedAt) headers.set("Last-Modified", new Date(profile.avatarUpdatedAt).toUTCString());
   headers.set("X-Content-Type-Options", "nosniff");
-  return new Response(object.body, { headers });
+  return new Response(avatar, { headers });
 };
 
 const profileRow = async (env: Env, userId: string): Promise<ProfileRow> => {
   const profile = await env.DB.prepare(
-    `SELECT public_id AS publicId, display_name AS displayName, avatar_key AS avatarKey,
+    `SELECT public_id AS publicId, display_name AS displayName,
+       CASE WHEN avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
        avatar_updated_at AS avatarUpdatedAt, x_url AS xUrl, github_url AS githubUrl,
        instagram_url AS instagramUrl
      FROM users WHERE id = ?1`,
@@ -98,13 +83,21 @@ const profileRow = async (env: Env, userId: string): Promise<ProfileRow> => {
 const serializeProfile = (profile: ProfileRow) => ({
   publicId: profile.publicId,
   displayName: profile.displayName,
-  avatarUrl: profile.avatarKey
+  avatarUrl: profile.hasAvatar === 1
     ? `/api/public/v1/profiles/${encodeURIComponent(profile.publicId)}/avatar?v=${encodeURIComponent(profile.avatarUpdatedAt ?? "1")}`
     : null,
   xUrl: profile.xUrl,
   githubUrl: profile.githubUrl,
   instagramUrl: profile.instagramUrl,
 });
+
+const avatarBytes = (value: number[] | ArrayBuffer | Uint8Array): ArrayBuffer => {
+  if (Array.isArray(value)) return Uint8Array.from(value).buffer;
+  if (value instanceof Uint8Array) {
+    return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
+  }
+  return value;
+};
 
 const sanitizePng = (source: Uint8Array): Uint8Array => {
   if (source.byteLength < 33 || !PNG_SIGNATURE.every((value, index) => source[index] === value)) {

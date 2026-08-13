@@ -18,6 +18,7 @@ const validation = read("sensor-platform/src/validation.ts");
 const migration1 = read("sensor-platform/migrations/0001_initial.sql");
 const migration2 = read("sensor-platform/migrations/0002_iso_3166_1_alpha2.sql");
 const migration3 = read("sensor-platform/migrations/0003_public_sensor_profiles.sql");
+const migration4 = read("sensor-platform/migrations/0004_d1_profile_avatars.sql");
 const wrangler = read("sensor-platform/wrangler.jsonc");
 const rootWrangler = read("wrangler.jsonc");
 const openapi = read("smartcity-sensor-starter-kit/openapi.yaml");
@@ -47,8 +48,9 @@ check("public profile and map expose only opted-in approximate ownership", () =>
   assert.match(validation, /PUBLIC_LOCATION_REQUIRED/u);
 });
 
-check("profile accepts sanitized PNG and canonical optional social URLs", () => {
-  for (const fragment of ["PROFILE_IMAGES.put", "PROFILE_IMAGES.delete", "MAX_AVATAR_BYTES", "MAX_AVATAR_EDGE", "PNG_SIGNATURE", "IHDR", "IDAT", "IEND", "Animated or unsupported PNG"]) assert(profiles.includes(fragment), fragment);
+check("profile stores sanitized PNG in D1 and accepts canonical optional social URLs", () => {
+  for (const fragment of ["avatar_png", "MAX_AVATAR_BYTES", "MAX_AVATAR_EDGE", "PNG_SIGNATURE", "IHDR", "IDAT", "IEND", "Animated or unsupported PNG"]) assert(profiles.includes(fragment), fragment);
+  assert.doesNotMatch(profiles, /PROFILE_IMAGES|R2Bucket/u);
   for (const host of ["x.com", "github.com", "instagram.com"]) assert(validation.includes(host), host);
   assert.match(validation, /parsed\.protocol !== "https:"/u);
   assert.match(profiles, /X-Content-Type-Options/u);
@@ -87,14 +89,18 @@ check("D1 schema has complete ISO alpha-2 master", () => {
 
 check("D1 profile migration preserves opaque public identifiers and opt-in locations", () => {
   for (const fragment of ["public_id", "avatar_key", "avatar_updated_at", "x_url", "github_url", "instagram_url", "public_latitude", "public_longitude", "is_public"]) assert(migration3.includes(fragment), fragment);
+  assert.match(migration4, /ALTER TABLE users ADD COLUMN avatar_png BLOB/u);
   assert.match(migration3, /CREATE UNIQUE INDEX IF NOT EXISTS idx_users_public_id/u);
   assert.match(migration3, /CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_public_id/u);
 });
 
-check("wrangler config has D1, R2, generated Env, compatibility and observability", () => {
+check("wrangler config has D1, generated Env and compatibility without R2", () => {
   for (const config of [wrangler, rootWrangler]) {
-    for (const fragment of ['"nodejs_compat"', '"d1_databases"', '"migrations_dir"', '"r2_buckets"', '"PROFILE_IMAGES"', '"observability"']) assert(config.includes(fragment), fragment);
+    for (const fragment of ['"nodejs_compat"', '"d1_databases"', '"migrations_dir"']) assert(config.includes(fragment), fragment);
+    assert.doesNotMatch(config, /r2_buckets|PROFILE_IMAGES/u);
   }
+  assert.match(wrangler, /"observability"/u);
+  assert.doesNotMatch(rootWrangler, /"observability"/u);
   assert(fs.existsSync(path.join(root, "sensor-platform/src/worker-configuration.d.ts")));
   assert.doesNotMatch(wrangler, /client_secret|token_pepper.*[A-Za-z0-9]{20}/iu);
 });
