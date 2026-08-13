@@ -2443,8 +2443,8 @@
   };
 
   const SLACK_SYMBOLS = Object.freeze({
-    amane: Object.freeze({ id: "cloud", label: "あめの雲", src: "./assets/visuals-07/slack-avatar-amane-v1.webp" }),
-    mizuha: Object.freeze({ id: "water", label: "みずの水滴", src: "./assets/visuals-07/slack-avatar-mizuha-v1.webp" }),
+    amane: Object.freeze({ id: "cloud", label: "あめの雲", src: "./assets/visuals-07/slack-avatar-amane-v2.webp" }),
+    mizuha: Object.freeze({ id: "water", label: "みずの水滴", src: "./assets/visuals-07/slack-avatar-mizuha-v2.webp" }),
     sakuya: Object.freeze({ id: "flower", label: "sakuの花", src: "./assets/visuals-07/slack-avatar-sakuya-flower-v3.webp" }),
     visitor: Object.freeze({ id: "green-apple", label: "青猫の緑のりんご", kind: "green-apple" }),
     bluecat: Object.freeze({ id: "green-apple", label: "青猫の緑のりんご", kind: "green-apple" }),

@@ -236,6 +236,38 @@ const scanChat = async (browser, viewport, testCase) => {
   assert.equal(actual.humanAvatarCount, 0, `${viewport.name}/${testCase.stepId}: human image avatar found`);
   assert(actual.workspaceOverflowX <= 1 && actual.workspaceOverflowY <= 1 && actual.documentOverflowX <= 1 && actual.documentOverflowY <= 1, `${viewport.name}/${testCase.stepId}: overflow`);
   assert(actual.autoVisible && actual.fastForwardVisible, `${viewport.name}/${testCase.stepId}: progression controls missing`);
+  const mascotAvatars = await page.locator([
+    ".novel-slack-post[data-speaker='amane'] .novel-slack-avatar img",
+    ".novel-slack-post[data-speaker='mizuha'] .novel-slack-avatar img",
+    ".novel-slack-typing[data-speaker='amane'] .novel-slack-avatar img",
+    ".novel-slack-typing[data-speaker='mizuha'] .novel-slack-avatar img",
+  ].join(", ")).evaluateAll((images) => images.map((image) => {
+    const rect = image.closest(".novel-slack-avatar").getBoundingClientRect();
+    return {
+      speaker: image.closest("[data-speaker]")?.dataset.speaker || "",
+      src: image.currentSrc || image.src,
+      complete: image.complete,
+      naturalWidth: image.naturalWidth,
+      naturalHeight: image.naturalHeight,
+      displayWidth: rect.width,
+      displayHeight: rect.height,
+      visible: rect.width > 0 && rect.height > 0 && getComputedStyle(image).display !== "none",
+    };
+  }));
+  actual.mascotAvatars = mascotAvatars;
+  for (const speaker of ["amane", "mizuha"]) {
+    const matching = mascotAvatars.filter((avatar) => avatar.speaker === speaker);
+    if (matching.length === 0) continue;
+    assert(matching.every((avatar) => avatar.src.includes(`slack-avatar-${speaker}-v2.webp`)), `${viewport.name}/${testCase.stepId}: ${speaker} is not v2`);
+    assert(matching.every((avatar) => avatar.complete && avatar.naturalWidth === 512 && avatar.naturalHeight === 512), `${viewport.name}/${testCase.stepId}: ${speaker} v2 did not decode at 512x512`);
+    assert(matching.every((avatar) => avatar.visible && avatar.displayWidth >= 24 && avatar.displayHeight >= 24), `${viewport.name}/${testCase.stepId}: ${speaker} v2 is not readable at its rendered chat size`);
+    const fullSizePosts = matching.filter((avatar) => avatar.displayWidth >= 37 && avatar.displayHeight >= 37);
+    if (matching.some((avatar) => avatar.displayWidth >= 34)) assert(fullSizePosts.length > 0, `${viewport.name}/${testCase.stepId}: ${speaker} v2 full-size post is below 38px`);
+  }
+  const v1Requests = requests.filter((url) => /slack-avatar-(?:amane|mizuha)-v1\.webp(?:\?|$)/u.test(url));
+  assert.equal(v1Requests.length, 0, `${viewport.name}/${testCase.stepId}: legacy v1 mascot requested: ${v1Requests}`);
+  const v2Requests = requests.filter((url) => /slack-avatar-(?:amane|mizuha)-v2\.webp(?:\?|$)/u.test(url));
+  for (const avatar of mascotAvatars) assert(v2Requests.some((url) => url === avatar.src), `${viewport.name}/${testCase.stepId}: visible v2 mascot was not requested`);
   if (testCase.greenApple) {
     assert(actual.greenAppleCount > 0, `${viewport.name}/${testCase.stepId}: green apple missing`);
     assert.equal(actual.greenAppleBodyColor, "rgb(88, 168, 76)", `${viewport.name}/${testCase.stepId}: apple is not green`);
