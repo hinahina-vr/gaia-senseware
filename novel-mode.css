@@ -4989,9 +4989,9 @@ body.novel-reduced-motion .story-detour-dock * {
 
 .novel-layer.is-slack,
 .novel-layer.is-slack-exiting {
-  --novel-slack-height: min(56vh, 580px);
-  --novel-slack-inline: max(clamp(56px, 10vw, 210px), calc((100vw - 980px) / 2));
-  --novel-slack-top: clamp(82px, 9vh, 112px);
+  --novel-slack-height: min(68dvh, 680px, calc(100dvh - 96px));
+  --novel-slack-inline: max(48px, calc((100vw - 1180px) / 2));
+  --novel-slack-top: calc((100dvh - var(--novel-slack-height)) / 2);
 }
 
 .novel-layer.is-slack .novel-dialogue {
@@ -5030,7 +5030,7 @@ body.novel-reduced-motion .story-detour-dock * {
 .novel-slack-workspace {
   display: grid;
   grid-template: 44px minmax(0, 1fr) / clamp(154px, 15vw, 214px) minmax(0, 1fr);
-  width: min(980px, 100%);
+  width: min(1180px, 100%);
   height: 100%;
   margin: 0 auto;
   overflow: hidden;
@@ -5188,6 +5188,21 @@ body.novel-reduced-motion .story-detour-dock * {
   height: 100%;
   object-fit: cover;
 }
+
+.novel-slack-avatar[data-symbol="green-apple"] {
+  border-color: rgba(255, 249, 226, 0.94);
+  background: #f5edd8;
+}
+
+.novel-slack-symbol--green-apple .novel-slack-apple-body { fill: #58a84c; }
+.novel-slack-symbol--green-apple .novel-slack-apple-leaf { fill: #31743e; }
+.novel-slack-symbol--green-apple .novel-slack-apple-stem {
+  fill: none;
+  stroke: #5c4932;
+  stroke-linecap: round;
+  stroke-width: 2.4;
+}
+.novel-slack-symbol--green-apple .novel-slack-apple-highlight { fill: #fff1c9; }
 
 .novel-slack-workspace article p { margin: 0 0 4px; }
 .novel-slack-workspace article p strong { font-size: 13px; }
@@ -5919,10 +5934,21 @@ body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .signal-
   .story-map-guide li span { font-size: 9px; }
 }
 
-/* Slack remains a visual history panel; the VN window is the only progression
-   surface and therefore stays above it without hiding the active post. */
+/* Chat owns the readable message surface while the layer itself remains the
+   progression hit area. Keep the workspace centered with scenic edges visible. */
 .novel-layer.is-slack {
-  --novel-slack-height: min(51vh, 520px, calc(100dvh - var(--novel-slack-top) - var(--novel-say-height) - var(--novel-say-bottom) - 12px));
+  --novel-slack-height: min(68dvh, 680px, calc(100dvh - 96px));
+}
+
+.novel-layer.is-slack[data-slack-device="mobile"] {
+  --novel-slack-height: min(68dvh, 680px, calc(100dvh - 96px));
+  --novel-slack-top: calc((100dvh - var(--novel-slack-height)) / 2);
+}
+
+@media (min-width: 601px) {
+  .novel-layer.is-slack .novel-slack-workspace.is-mobile-device {
+    width: min(830px, calc(100vw - 96px));
+  }
 }
 
 .novel-layer.is-slack .novel-slack-surface {
@@ -5945,8 +5971,8 @@ body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .signal-
 @media (max-width: 600px) {
   .novel-layer.is-slack,
   .novel-layer.is-slack[data-slack-device="mobile"] {
-    --novel-slack-top: 58px;
-    --novel-slack-height: max(210px, calc(100dvh - var(--novel-slack-top) - var(--novel-say-height) - var(--novel-say-bottom) - 14px));
+    --novel-slack-height: min(58dvh, 520px, calc(100dvh - 96px));
+    --novel-slack-top: calc((100dvh - var(--novel-slack-height)) / 2);
   }
 
   .novel-layer.is-slack .novel-slack-surface,
@@ -6055,8 +6081,8 @@ body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .signal-
 @media (max-width: 600px) {
   .novel-layer.is-slack,
   .novel-layer.is-slack[data-slack-device="mobile"] {
-    --novel-slack-top: max(72px, calc(env(safe-area-inset-top) + 62px));
-    --novel-slack-height: min(36dvh, 312px, calc(100dvh - var(--novel-slack-top) - var(--novel-say-height) - var(--novel-say-bottom) - 28px));
+    --novel-slack-height: min(58dvh, 520px, calc(100dvh - 96px));
+    --novel-slack-top: calc((100dvh - var(--novel-slack-height)) / 2);
   }
 
   .novel-layer.is-slack .novel-slack-surface,
@@ -6069,8 +6095,8 @@ body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .signal-
   .novel-layer.is-slack .novel-slack-workspace,
   .novel-layer.is-slack .novel-slack-workspace.is-mobile-device {
     grid-template: 34px minmax(0, 1fr) / 84px minmax(0, 1fr);
-    width: min(92vw, 360px);
-    max-width: min(92vw, 360px);
+    width: min(94vw, 380px);
+    max-width: min(94vw, 380px);
     height: 100%;
     border: 2px solid rgba(20, 24, 31, 0.94);
     border-radius: 10px;

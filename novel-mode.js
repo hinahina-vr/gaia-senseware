@@ -2446,8 +2446,8 @@
     amane: Object.freeze({ id: "cloud", label: "あめの雲", src: "./assets/visuals-07/slack-avatar-amane-v1.webp" }),
     mizuha: Object.freeze({ id: "water", label: "みずの水滴", src: "./assets/visuals-07/slack-avatar-mizuha-v1.webp" }),
     sakuya: Object.freeze({ id: "flower", label: "sakuの花", src: "./assets/visuals-07/slack-avatar-sakuya-flower-v3.webp" }),
-    visitor: Object.freeze({ id: "blue-apple", label: "あなたの青りんご", src: "./assets/visuals-07/slack-symbol-blue-apple-v1.svg" }),
-    bluecat: Object.freeze({ id: "blue-apple", label: "あなたの青りんご", src: "./assets/visuals-07/slack-symbol-blue-apple-v1.svg" }),
+    visitor: Object.freeze({ id: "green-apple", label: "青猫の緑のりんご", kind: "green-apple" }),
+    bluecat: Object.freeze({ id: "green-apple", label: "青猫の緑のりんご", kind: "green-apple" }),
   });
   const createSlackSymbol = (speakerId) => {
     const avatar = document.createElement("span");
@@ -2456,7 +2456,9 @@
     avatar.dataset.symbol = symbol?.id || "system";
     avatar.setAttribute("role", "img");
     avatar.setAttribute("aria-label", symbol?.label || "SYSTEMの記号");
-    if (symbol) {
+    if (symbol?.kind === "green-apple") {
+      avatar.innerHTML = `<svg class="novel-slack-symbol novel-slack-symbol--green-apple" viewBox="0 0 48 48" aria-hidden="true"><path class="novel-slack-apple-body" d="M24 15c-4.2-4.1-12.8-2.2-15.1 4.9-3.2 9.7 3.2 20.5 10.1 20.5 2.2 0 3.5-1 5-1s2.8 1 5 1c6.9 0 13.3-10.8 10.1-20.5C36.8 12.8 28.2 10.9 24 15Z"/><path class="novel-slack-apple-leaf" d="M25.3 12.7c2.5-5.2 7.2-7.1 11.8-5.5-1.6 4.6-5.3 7.2-11.8 5.5Z"/><path class="novel-slack-apple-stem" d="M24.4 14.7c-.5-4.2.6-7 2.5-9"/><ellipse class="novel-slack-apple-highlight" cx="15.3" cy="22.4" rx="2.6" ry="4.4" transform="rotate(24 15.3 22.4)"/></svg>`;
+    } else if (symbol) {
       const image = document.createElement("img");
       image.className = "novel-slack-symbol";
       image.src = symbol.src;
@@ -2576,9 +2578,10 @@
         setCharacterPresentation(step.speaker, expressionForStep(step));
         setSlackCastVisibility(step);
       }
-      elements.dialogue.hidden = false;
-      elements.speaker.textContent = speakerDisplayName(step);
-      renderDialoguePages(String(step.text || "").replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目"), { reveal: false });
+      elements.dialogue.hidden = true;
+      elements.speaker.textContent = "";
+      elements.text.replaceChildren();
+      elements.text.removeAttribute("aria-label");
       elements.sourceButton.hidden = true;
       elements.slackSurface.hidden = false;
       layer.classList.add("is-slack");
@@ -4068,7 +4071,7 @@
   });
   layer.addEventListener("click", (event) => {
     if (event.target.closest("button, a, input, select, textarea, details, summary, [role='button']")) return;
-    if (layer.classList.contains("is-slack")) return;
+    if (layer.classList.contains("is-slack") && performance.now() < slackScrollGuardUntil) return;
     advance();
   });
   layer.addEventListener("wheel", (event) => {
