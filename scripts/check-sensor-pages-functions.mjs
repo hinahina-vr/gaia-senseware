@@ -53,7 +53,7 @@ check("Pages wrangler config is the production source of truth", () => {
   assert(database);
   assert.equal(database.database_name, "gaia-senseware-sensors");
   assert.equal(database.migrations_dir, "sensor-platform/migrations");
-  assert.equal(Object.hasOwn(database, "database_id"), false, "production D1 UUID must not be fabricated before approval");
+  assert.equal(database.database_id, "6a386d6a-2858-4673-b396-6c340f9ea6d7", "production D1 binding must use the created resource UUID");
   assert.doesNotMatch(pagesConfigSource, /GOOGLE_CLIENT_SECRET|SESSION_SECRET|DEVICE_TOKEN_PEPPER|PAIRING_CODE_PEPPER/u);
 });
 

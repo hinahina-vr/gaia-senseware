@@ -1,6 +1,6 @@
-# Production setup (external changes — HOLD until release approval)
+# Production setup
 
-このcandidateはCloudflare Pages Functions advanced modeとlocal D1までを検証し、Cloudflare/Googleの外部resourceを作成しません。production originは `https://gaia-senseware.pages.dev`、Google callbackは `https://gaia-senseware.pages.dev/api/auth/google/callback` です。
+production originは `https://gaia-senseware.pages.dev`、Google callbackは `https://gaia-senseware.pages.dev/api/auth/google/callback` です。
 
 ## 1. Pages Functions / D1
 
@@ -12,13 +12,14 @@ repository rootの構成をproductionのsource of truthとします。
 - `_routes.json`: Function invocationを `/api/*` のみに限定。story、sensor SPA、主要assetは静的配信
 - health check: `GET /api/health`（legacy health endpointは使用しない）
 
-公開承認後のD1操作:
+production D1:
 
-1. `wrangler d1 create gaia-senseware-sensors`
-2. 返されたproduction UUIDをroot `wrangler.jsonc` のD1 bindingへ設定し、別candidateとして再検証する
-3. `wrangler d1 migrations apply gaia-senseware-sensors --remote --config wrangler.jsonc`
+1. `gaia-senseware-sensors` を作成済み
+2. UUID `6a386d6a-2858-4673-b396-6c340f9ea6d7` をroot `wrangler.jsonc` のD1 bindingへ設定済み
+3. remote migration `0001_initial.sql` / `0002_iso_3166_1_alpha2.sql` を適用済み
+4. read-only verification済み: migrations 2、countries 249、users 0、devices 0
 
-現在のPages設定にproduction D1は存在しないため、UUIDを架空値で埋めていません。D1作成・UUID反映は外部変更承認後に行います。
+以後のschema変更は追加migrationとして適用し、既存migrationを書き換えません。
 
 `node scripts/build-sensor-pages-worker.mjs --check` はsourceから一時bundleを再生成し、tracked `_worker.js`とのbyte一致、TypeScript import残存0、source map参照0、secret埋込0、ASSETS fallbackを検査します。source変更後にartifactがstaleなら失敗します。
 
@@ -36,19 +37,17 @@ Pages projectへ登録するsecret（全て別値）:
 - `DEVICE_TOKEN_PEPPER`（32 random bytes以上）
 - `PAIRING_CODE_PEPPER`（32 random bytes以上）
 
-`wrangler pages secret put <NAME> --project-name gaia-senseware` のinteractive promptを使い、値をcommand line・source・logへ出しません。Google credentialは現在存在しないため、実Google loginは外部接続HOLDです。authorization code、state、nonce、PKCE S256、JWKS/iss/aud/exp/iat/nonce/sub検証はlocal API test済みです。
+`wrangler pages secret put <NAME> --project-name gaia-senseware` のinteractive promptを使い、値をcommand line・source・logへ出しません。`SESSION_SECRET`、`DEVICE_TOKEN_PEPPER`、`PAIRING_CODE_PEPPER` はproductionへ登録済みです。`GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` は未登録で、Google credentialが安全経路で確認できるまで架空値を設定しません。authorization code、state、nonce、PKCE S256、JWKS/iss/aud/exp/iat/nonce/sub検証はlocal API test済みです。
 
-## 3. 承認後の実行順
+## 3. Release実行順
 
-1. production D1作成
-2. root `wrangler.jsonc`へ実UUIDを反映し、local checkerを再実行
-3. remote migration適用
-4. Pages secrets登録
-5. Google callback URI完全一致登録
-6. 承認candidateを通常FF pushし、同一tracked snapshotをPages Productionへdeploy
-7. `GET /api/health`、`/story`、`/sensors/`、主要assetを最小smoke
-8. production TLS chainを再確認し、Starter KitのRoot CAと一致を確認
-9. login → device追加 → pairing → telemetry → latestの最小smoke
+1. local checker / API / browser focused QA
+2. Google callback URI完全一致登録
+3. `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` 登録
+4. candidateを通常FF pushし、同一tracked snapshotをPages Productionへdeploy
+5. `GET /api/health`、`/story`、`/sensors/`、主要assetを最小smoke
+6. production TLS chainを再確認し、Starter KitのRoot CAと一致を確認
+7. login → device追加 → pairing → telemetry → latestの最小smoke
 
 ## 4. Rollback
 

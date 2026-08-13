@@ -22,11 +22,11 @@ const curl = read("smartcity-sensor-starter-kit/curl-examples.sh");
 const starter = read("smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino");
 
 check("global nav inserts sensor immediately after map", () => {
-  const map = index.indexOf("<strong>地図で見る</strong>");
-  const sensor = index.indexOf("<strong>センサーで参加</strong>");
-  const space = index.indexOf("<strong>宇宙から見る</strong>");
+  const map = index.indexOf('data-intro-path="map"');
+  const sensor = index.indexOf("data-sensor-platform-link");
+  const space = index.indexOf('data-intro-path="space"');
   assert(map >= 0 && map < sensor && sensor < space);
-  assert.match(index.slice(map, space), /data-sensor-platform-link/u);
+  assert.match(index.slice(sensor, space), /<strong>ESP32センサーを登録<\/strong>/u);
 });
 
 check("SPA exposes required views and web operations", () => {

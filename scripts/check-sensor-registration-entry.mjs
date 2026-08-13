@@ -11,12 +11,13 @@ const report = [];
 const check = (name, run) => { run(); report.push({ name, status: "passed" }); };
 
 check("ESP32 registration card follows map and links to the sensor SPA", () => {
-  const map = index.indexOf("<strong>地図で見る</strong>");
-  const sensor = index.indexOf("<strong>ESP32センサーを登録</strong>");
-  const space = index.indexOf("<strong>宇宙から見る</strong>");
+  const map = index.indexOf('data-intro-path="map"');
+  const sensor = index.indexOf("data-sensor-platform-link");
+  const space = index.indexOf('data-intro-path="space"');
   assert(map >= 0 && map < sensor && sensor < space);
-  const card = index.slice(index.lastIndexOf("<a", sensor), index.indexOf("</a>", sensor));
+  const card = index.slice(index.lastIndexOf("<a", sensor), index.indexOf("</a>", sensor) + 4);
   assert.match(card, /href="\.\/sensors\/"/u);
+  assert.match(card, /<strong>ESP32センサーを登録<\/strong>/u);
   assert.match(card, /class="intro-path-enter">ESP32センサーを登録/u);
 });
 

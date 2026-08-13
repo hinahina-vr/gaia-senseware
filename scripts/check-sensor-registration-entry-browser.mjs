@@ -64,7 +64,7 @@ try {
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
-    assert.equal(entrance.labels[1], "地図で見る");
+    assert.equal(entrance.labels[1], "世界を読む");
     assert.equal(entrance.sensorIndex, 2);
     assert.equal(entrance.label, "ESP32センサーを登録");
     assert.equal(entrance.enter, "ESP32センサーを登録");

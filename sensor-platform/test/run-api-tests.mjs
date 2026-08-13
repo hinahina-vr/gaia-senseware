@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 
 const root = new URL("..", import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1)).replaceAll("/", "\\");
 const nodePath = process.env.GAIA_NODE_PATH || process.execPath;
-const wranglerPath = process.env.GAIA_WRANGLER_PATH;
-if (!wranglerPath) throw new Error("GAIA_WRANGLER_PATH is required.");
+const wranglerPath = process.env.GAIA_WRANGLER_PATH || path.join(root, "node_modules", "wrangler", "bin", "wrangler.js");
+if (!fs.existsSync(wranglerPath)) throw new Error(`Wrangler entrypoint was not found: ${wranglerPath}`);
 const origin = "http://127.0.0.1:8791";
 const persistPath = `${root}\\.wrangler\\api-test-state-${process.pid}`;
 const reports = [];
