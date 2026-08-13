@@ -2347,8 +2347,7 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
 }
 
 .novel-text.is-revealing {
-  will-change: contents, opacity;
-  animation: novel-text-scramble-in 180ms ease-out both;
+  animation: none;
 }
 
 .novel-cursor {
@@ -3449,19 +3448,13 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   vertical-align: baseline;
 }
 
-.novel-text.is-revealing .novel-phrase-token,
-.novel-text.is-revealing .novel-space-token {
-  animation: novel-token-reveal var(--novel-token-duration) steps(var(--novel-token-steps), end) var(--novel-token-delay) both;
+.novel-text.is-revealing .novel-reveal-glyph {
+  visibility: hidden;
 }
 
-.novel-text.is-revealed .novel-phrase-token,
-.novel-text.is-revealed .novel-space-token {
-  clip-path: inset(-0.15em 0 -0.15em 0);
-}
-
-@keyframes novel-token-reveal {
-  from { clip-path: inset(-0.15em 100% -0.15em 0); }
-  to { clip-path: inset(-0.15em 0 -0.15em 0); }
+.novel-text.is-revealing .novel-reveal-glyph.is-visible,
+.novel-text.is-revealed .novel-reveal-glyph {
+  visibility: visible;
 }
 
 .novel-line {

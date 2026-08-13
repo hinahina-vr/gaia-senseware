@@ -1508,6 +1508,8 @@
     } else {
       elements.text.textContent = fullText;
     }
+    elements.text.dataset.revealState = "complete";
+    elements.text.dataset.revealCount = String(Array.from(fullText).length);
     elements.cursor.hidden = true;
     elements.continueMark.classList.add("is-visible");
     scheduleAutoAdvance();
@@ -1994,24 +1996,35 @@
   const buildMeasuredLineLayout = (text, preparedLayout = null) => {
     const layout = preparedLayout || buildDialogueTokenLayout(text);
     const measuredLines = measureNativeLines(text, layout);
-    const speedScale = 100 / config.messageSpeedPercent;
-    let delay = 0;
+    const glyphs = [];
     layout.querySelectorAll(".novel-phrase-token, .novel-space-token").forEach((token) => {
-      let duration = 0;
-      const tokenGlyphs = Array.from(token.textContent || "");
-      tokenGlyphs.forEach((glyph) => {
-        duration += REVEAL_BASE_MS * speedScale;
-        if (/[。！？、…―]/u.test(glyph)) duration += REVEAL_PUNCTUATION_MS * speedScale;
+      const fragment = document.createDocumentFragment();
+      Array.from(token.textContent || "").forEach((glyph) => {
+        const span = document.createElement("span");
+        span.className = "novel-reveal-glyph";
+        span.textContent = glyph;
+        span.dataset.revealIndex = String(glyphs.length);
+        span.setAttribute("aria-hidden", "true");
+        glyphs.push(span);
+        fragment.append(span);
       });
-      token.style.setProperty("--novel-token-delay", `${delay}ms`);
-      token.style.setProperty("--novel-token-duration", `${Math.max(duration, REVEAL_MIN_LINE_MS)}ms`);
-      token.style.setProperty("--novel-token-steps", String(Math.max(1, tokenGlyphs.length)));
-      delay += duration;
+      token.replaceChildren(fragment);
     });
     elements.text.replaceChildren(layout);
     elements.text.dataset.measuredNodeIdentity = layout.dataset.layoutIdentity || "";
     elements.text.dataset.measuredLineCount = String(measuredLines.length);
-    return delay;
+    elements.text.dataset.revealCount = "0";
+    elements.text.dataset.revealSourceLength = String(glyphs.length);
+    elements.text.dataset.revealState = "running";
+    window.clearTimeout(dialogueResizeTimer);
+    dialogueResizeTimer = 0;
+    dialogueObservedWidth = elements.text.getBoundingClientRect().width;
+    return glyphs;
+  };
+
+  const revealDelayForGlyph = (glyph) => {
+    const speedScale = 100 / config.messageSpeedPercent;
+    return (REVEAL_BASE_MS + (/[。！？、…―]/u.test(glyph) ? REVEAL_PUNCTUATION_MS : 0)) * speedScale;
   };
 
   const revealText = (text, preparedLayout = null) => {
@@ -2020,6 +2033,8 @@
     fullText = text;
     elements.text.setAttribute("aria-label", text);
     elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
+    elements.text.dataset.revealState = "preparing";
+    elements.text.dataset.revealCount = "0";
     elements.continueMark.classList.remove("is-visible");
     if (motionReduced() || !text) {
       elements.text.replaceChildren(preparedLayout || buildDialogueTokenLayout(text));
@@ -2037,12 +2052,33 @@
       revealFrame = window.requestAnimationFrame(() => {
         revealFrame = window.requestAnimationFrame(() => {
           if (generation !== revealGeneration || !isRevealing) return;
-          const duration = buildMeasuredLineLayout(text, preparedLayout);
+          const glyphs = buildMeasuredLineLayout(text, preparedLayout);
           elements.text.classList.remove("is-preparing");
-          void elements.text.offsetWidth;
           elements.text.classList.add("is-revealing");
           elements.cursor.hidden = false;
-          revealTimer = window.setTimeout(finishReveal, duration + REVEAL_MIN_LINE_MS);
+          let nextGlyphIndex = 0;
+          const revealNextGlyph = () => {
+            revealFrame = 0;
+            if (generation !== revealGeneration || !isRevealing) return;
+            const glyph = glyphs[nextGlyphIndex];
+            if (!glyph) {
+              finishReveal();
+              return;
+            }
+            glyph.classList.add("is-visible");
+            nextGlyphIndex += 1;
+            elements.text.dataset.revealCount = String(nextGlyphIndex);
+            if (nextGlyphIndex >= glyphs.length) {
+              revealTimer = window.setTimeout(finishReveal, REVEAL_MIN_LINE_MS);
+              return;
+            }
+            revealTimer = window.setTimeout(() => {
+              revealTimer = 0;
+              if (generation !== revealGeneration || !isRevealing) return;
+              revealFrame = window.requestAnimationFrame(revealNextGlyph);
+            }, revealDelayForGlyph(glyph.textContent || ""));
+          };
+          revealFrame = window.requestAnimationFrame(revealNextGlyph);
         });
       });
     };
