@@ -104,12 +104,19 @@ const bootAt = async (page, stepId) => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate((candidate) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{
+      progress: candidate,
+      savedAt: Date.now(),
+      meta: { title: "Focused QA", excerpt: candidate.stepId },
+    }]));
     localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
   }, stateFor(stepId));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
+  await page.waitForFunction(() => document.querySelector("#novel-save-panel")?.hidden === false);
+  await page.locator(".novel-save-slot[data-slot-index='0']").click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
   await page.waitForTimeout(300);
 };
