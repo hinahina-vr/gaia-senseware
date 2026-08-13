@@ -3,7 +3,14 @@
 
   const DESKTOP_MIN = 901;
   const ROLES = ["intro", "bank", "data", "scale"];
+  const STABLE_SELECTORS = Object.freeze({
+    intro: "#japan-layer > .japan-heading",
+    bank: "#japan-layer > .map-mode-bank",
+    data: "#japan-layer > .signal-console-map",
+    scale: "#japan-layer > .map-scope-switch"
+  });
   let scheduled = 0;
+  let markedPanels = null;
 
   const normalize = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
@@ -58,14 +65,19 @@
     const scaleSeed = deepestMatch(/MAP\s*SCALE/i);
 
     return {
-      intro: panelFrom(introSeed, { minWidth: 260, minHeight: 120, maxWidth: 900, maxHeight: 590 }),
-      bank: panelFrom(bankSeed, { minWidth: 170, minHeight: 90, maxWidth: 610, maxHeight: 290 }),
-      data: panelFrom(dataSeed, { minWidth: 220, minHeight: 120, maxWidth: 760, maxHeight: 430 }),
-      scale: panelFrom(scaleSeed, { minWidth: 120, minHeight: 36, maxWidth: 560, maxHeight: 180 })
+      intro: document.querySelector(STABLE_SELECTORS.intro)
+        || panelFrom(introSeed, { minWidth: 260, minHeight: 120, maxWidth: 900, maxHeight: 590 }),
+      bank: document.querySelector(STABLE_SELECTORS.bank)
+        || panelFrom(bankSeed, { minWidth: 170, minHeight: 90, maxWidth: 610, maxHeight: 290 }),
+      data: document.querySelector(STABLE_SELECTORS.data)
+        || panelFrom(dataSeed, { minWidth: 220, minHeight: 120, maxWidth: 760, maxHeight: 430 }),
+      scale: document.querySelector(STABLE_SELECTORS.scale)
+        || panelFrom(scaleSeed, { minWidth: 120, minHeight: 36, maxWidth: 560, maxHeight: 180 })
     };
   }
 
   function markPanels(panels) {
+    if (markedPanels && ROLES.every((role) => markedPanels[role] === panels[role])) return false;
     document.querySelectorAll("[data-map-grid-role]").forEach((node) => {
       const role = node.dataset.mapGridRole;
       if (panels[role] !== node) {
@@ -81,13 +93,21 @@
       node.dataset.mapGridRole = role;
       node.classList.add("map-grid-polish", `map-grid-${role}`);
     });
+    markedPanels = panels;
+    return true;
   }
 
   function place(node, left, top, width) {
     if (!node) return;
-    node.style.setProperty("left", `${Math.round(left)}px`, "important");
-    node.style.setProperty("top", `${Math.round(top)}px`, "important");
-    if (width) node.style.setProperty("width", `${Math.round(width)}px`, "important");
+    const values = {
+      left: `${Math.round(left)}px`,
+      top: `${Math.round(top)}px`,
+      ...(width ? { width: `${Math.round(width)}px` } : {})
+    };
+    Object.entries(values).forEach(([property, value]) => {
+      if (node.style.getPropertyValue(property) === value && node.style.getPropertyPriority(property) === "important") return;
+      node.style.setProperty(property, value, "important");
+    });
   }
 
   function layout() {
@@ -123,12 +143,17 @@
   }
 
   function schedule() {
-    if (scheduled) cancelAnimationFrame(scheduled);
+    if (scheduled) return;
     scheduled = requestAnimationFrame(layout);
   }
 
   const observer = new MutationObserver((mutations) => {
-    if (mutations.some((mutation) => mutation.type === "childList" && (mutation.addedNodes.length || mutation.removedNodes.length))) {
+    const requiresLayout = mutations.some((mutation) => {
+      if (mutation.type !== "childList" || (!mutation.addedNodes.length && !mutation.removedNodes.length)) return false;
+      const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
+      return !target?.closest("[data-map-grid-role]");
+    });
+    if (requiresLayout) {
       schedule();
     }
   });

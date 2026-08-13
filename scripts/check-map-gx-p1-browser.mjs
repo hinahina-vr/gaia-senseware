@@ -19,11 +19,15 @@ const pcViewports = [
 ];
 const mobileViewport = { name: "mobile-390", width: 390, height: 844 };
 const routeModes = ["normal", "resume", "auto", "fast"];
+const viewportFilter = process.env.GAIA_VIEWPORT_FILTER || "";
+const routeFilter = process.env.GAIA_ROUTE_FILTER || "";
+const selectedRouteModes = routeModes.filter((mode) => !routeFilter || mode === routeFilter);
+const mapTraceDurationMs = Number(process.env.GAIA_MAP_TRACE_MS || 30000);
 const report = {
   status: "running",
   baseUrl,
   scope,
-  mapTraceDurationMs: 30000,
+  mapTraceDurationMs,
   scans: [],
   consoleErrors: [],
   pageErrors: [],
@@ -239,6 +243,68 @@ const stopMapTrace = async (page) => page.evaluate(() => {
   };
 });
 
+const installMapPolishTrace = async (page) => page.evaluate(() => {
+  const expectedPanel = document.querySelector("#japan-layer > .signal-console-map");
+  const trace = {
+    expectedPanel,
+    frames: 0,
+    identityChanges: 0,
+    rectClassChanges: 0,
+    markerMutations: 0,
+    styleMutations: 0,
+    lastSignature: "",
+  };
+  const signature = () => {
+    const panel = document.querySelector("#japan-layer [data-map-grid-role='data']");
+    if (!panel) return "missing";
+    const rect = panel.getBoundingClientRect();
+    return [panel.className, rect.x, rect.y, rect.width, rect.height].join("|");
+  };
+  trace.lastSignature = signature();
+  trace.observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === "data-map-grid-role" || mutation.attributeName === "class") trace.markerMutations += 1;
+      if (mutation.attributeName === "style") trace.styleMutations += 1;
+    });
+  });
+  trace.observer.observe(document.querySelector("#japan-layer"), {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ["class", "style", "data-map-grid-role"],
+  });
+  const sample = () => {
+    trace.frames += 1;
+    const panel = document.querySelector("#japan-layer [data-map-grid-role='data']");
+    if (panel !== expectedPanel) trace.identityChanges += 1;
+    const nextSignature = signature();
+    if (nextSignature !== trace.lastSignature) {
+      trace.rectClassChanges += 1;
+      trace.lastSignature = nextSignature;
+    }
+    trace.raf = requestAnimationFrame(sample);
+  };
+  trace.raf = requestAnimationFrame(sample);
+  globalThis.__p1MapPolishTrace = trace;
+});
+
+const stopMapPolishTrace = async (page) => page.evaluate(() => {
+  const trace = globalThis.__p1MapPolishTrace;
+  cancelAnimationFrame(trace.raf);
+  trace.observer.disconnect();
+  const panel = document.querySelector("#japan-layer [data-map-grid-role='data']");
+  return {
+    frames: trace.frames,
+    identityChanges: trace.identityChanges,
+    rectClassChanges: trace.rectClassChanges,
+    markerMutations: trace.markerMutations,
+    styleMutations: trace.styleMutations,
+    exactPanel: panel === trace.expectedPanel && panel?.matches("#japan-layer > .signal-console-map"),
+    role: panel?.dataset.mapGridRole || "",
+    className: panel?.className || "",
+    rect: panel?.getBoundingClientRect().toJSON(),
+  };
+});
+
 const mapOpenState = async (page) => page.evaluate(() => {
   const globalPanel = document.querySelector(".experience > .signal-console-main");
   const mapPanel = document.querySelector("#japan-layer .signal-console-map");
@@ -344,15 +410,24 @@ const scanMap = async (viewport, routeMode, traceDurationMs) => {
   assert(open.timelineHitSamples.every((sample) => sample.hitTimeline), `${label}: MAP slider track is pointer-obscured: ${JSON.stringify(open.timelineHitSamples)}`);
   assert.equal(open.overflowX, false);
   await installMapTrace(page);
+  await installMapPolishTrace(page);
   await page.waitForTimeout(traceDurationMs);
   const trace = await stopMapTrace(page);
+  const polishTrace = await stopMapPolishTrace(page);
   assert(trace.frames > traceDurationMs / 100, `${label}: insufficient RAF samples`);
   assert.equal(trace.visualTransitions.length, 1, `${label}: MAP/ACT1 compositor state changed during trace`);
   assert.equal(trace.globalMutations, 0, `${label}: hidden global ACT1 panel was mutated`);
-  assert(trace.mapMutations > 0, `${label}: active MAP panel did not receive timeline updates`);
+  assert.equal(trace.mapMutations, 0, `${label}: idle MAP panel mutated without user input`);
   assert.equal(trace.mountMutations, 0, `${label}: MAP panel/guide remounted during trace`);
   assert.equal(trace.initialStepId, "map_mode01_004");
   assert.equal(trace.finalStepId, "map_mode01_004");
+  assert(polishTrace.frames >= 1200, `${label}: insufficient map polish samples`);
+  assert.equal(polishTrace.exactPanel, true, `${label}: data marker is not on the exact signal console`);
+  assert.equal(polishTrace.role, "data");
+  assert.equal(polishTrace.identityChanges, 0, `${label}: data panel identity changed`);
+  assert(polishTrace.rectClassChanges <= 1, `${label}: data panel rect/class oscillated`);
+  assert.equal(polishTrace.markerMutations, 0, `${label}: data marker/class was removed or re-added`);
+  assert.equal(polishTrace.styleMutations, 0, `${label}: stable data panel inline style was rewritten`);
   const screenshotPrefix = routeMode === "normal" ? `${viewport.name}-map` : "";
   await installMapTrace(page);
   const inputs = await performMapInputs(page, screenshotPrefix);
@@ -377,7 +452,7 @@ const scanMap = async (viewport, routeMode, traceDurationMs) => {
   assert.equal(closed.events.mapClose, 1);
   assert.equal(closed.steps.filter((id) => id === "map_mode01_005").length, 1);
   assert.equal(closed.overflowX, false);
-  report.scans.push({ case: "map-auto-open-real-input", viewport, routeMode, launcherTrace, open, trace, interactionTrace, inputs, closed, passed: true });
+  report.scans.push({ case: "map-auto-open-real-input", viewport, routeMode, launcherTrace, open, trace, polishTrace, interactionTrace, inputs, closed, passed: true });
   await context.close();
   console.log(`PASS ${label}`);
 };
@@ -567,21 +642,29 @@ const scanStandaloneGx = async () => {
 };
 
 try {
-  if (scope === "auto-open") {
-    for (const viewport of [pcViewports[0], pcViewports[2], mobileViewport]) {
-      for (const routeMode of routeModes) await scanMap(viewport, routeMode, 30000);
+  if (scope === "map-stability") {
+    const targets = [...pcViewports, mobileViewport].filter((candidate) => !viewportFilter || candidate.name === viewportFilter);
+    for (const viewport of targets) {
+      const modes = viewport === mobileViewport ? ["normal"] : selectedRouteModes;
+      for (const routeMode of modes) await scanMap(viewport, routeMode, mapTraceDurationMs);
+    }
+  } else if (scope === "auto-open") {
+    for (const viewport of [pcViewports[0], pcViewports[2], mobileViewport].filter((candidate) => !viewportFilter || candidate.name === viewportFilter)) {
+      for (const routeMode of selectedRouteModes) await scanMap(viewport, routeMode, mapTraceDurationMs);
     }
     await scanGx(pcViewports[2], "normal");
   } else {
   if (scope !== "mobile") {
-    for (const viewport of pcViewports) {
-      for (const routeMode of routeModes) await scanMap(viewport, routeMode, 30000);
-      for (const routeMode of routeModes) await scanGx(viewport, routeMode);
+    for (const viewport of pcViewports.filter((candidate) => !viewportFilter || candidate.name === viewportFilter)) {
+      for (const routeMode of selectedRouteModes) await scanMap(viewport, routeMode, mapTraceDurationMs);
+      for (const routeMode of selectedRouteModes) await scanGx(viewport, routeMode);
     }
   }
   if (scope !== "pc") {
-    await scanMap(mobileViewport, "normal", 3000);
-    await scanGx(mobileViewport, "normal");
+    if (!viewportFilter || viewportFilter === mobileViewport.name) {
+      await scanMap(mobileViewport, "normal", mapTraceDurationMs);
+      await scanGx(mobileViewport, "normal");
+    }
   }
   if (scope === "all") await scanStandaloneGx();
   }
