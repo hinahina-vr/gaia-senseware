@@ -196,7 +196,6 @@
     runtime: layer.querySelector("#novel-runtime"),
     start: layer.querySelector("#novel-start-button"),
     resume: layer.querySelector("#novel-resume-button"),
-    titleLoad: layer.querySelector("#novel-title-load-button"),
     titleGallery: layer.querySelector("#novel-title-gallery-button"),
     titleGalleryProgress: layer.querySelector("#novel-title-gallery-progress"),
     close: layer.querySelector("#novel-close-button"),
@@ -386,6 +385,7 @@
   let temporalTransitionActive = false;
   let previousFocus = null;
   let galleryPreviousFocus = null;
+  let archivePreviousFocus = null;
   let archiveMode = "save";
   let pendingSlotAction = "";
   let pendingSlotTimer = 0;
@@ -1030,7 +1030,7 @@
     elements.galleryButton.hidden = true;
     closeGallery({ restoreFocus: false });
     renderGalleryControls();
-    elements.resume.hidden = !getStoredProgress();
+    elements.resume.hidden = !getStoredProgress() && !getManualSaves().some(Boolean);
     requestAnimationFrame(() => elements.start.focus({ preventScroll: true }));
   };
 
@@ -3378,17 +3378,6 @@
     renderSectionSeparator();
   };
 
-  const resumeStory = async () => {
-    exitDebugJumpSession();
-    const stored = getStoredProgress();
-    if (!stored) return startNewSession();
-    state = stored;
-    await revealRuntimeForStep(currentStep(), () => {
-      renderEves();
-      renderCurrentStep();
-    });
-  };
-
   const jumpToSceneStart = (sceneId) => {
     const entry = sceneJumpEntries.find((candidate) => candidate.sceneId === sceneId);
     const target = entry ? stepMap.get(entry.firstStepId) : null;
@@ -3779,7 +3768,7 @@
     exitDebugJumpSession();
     state = saved.progress;
     seedGalleryFromProgress(state);
-    closeManualArchive();
+    closeManualArchive({ restoreFocus: false });
     await revealRuntimeForStep(currentStep(), () => {
       renderEves();
       saveProgress();
@@ -3797,18 +3786,25 @@
   };
   const openManualArchive = (mode) => {
     closeGallery({ restoreFocus: false });
+    archivePreviousFocus = document.activeElement;
     setArchiveMode(mode);
     elements.saveButton.setAttribute("aria-expanded", String(archiveMode === "save"));
     elements.loadButton.setAttribute("aria-expanded", String(archiveMode === "load"));
+    elements.resume.setAttribute("aria-expanded", String(!hasStarted && archiveMode === "load"));
     elements.savePanel.hidden = false;
     elements.savePanel.setAttribute("aria-hidden", "false");
     requestAnimationFrame(() => elements.saveSlots.querySelector('.novel-save-slot[tabindex="0"]')?.focus({ preventScroll: true }));
   };
-  const closeManualArchive = () => {
+  const closeManualArchive = ({ restoreFocus = true } = {}) => {
     elements.savePanel.hidden = true;
     elements.savePanel.setAttribute("aria-hidden", "true");
     elements.saveButton.setAttribute("aria-expanded", "false");
     elements.loadButton.setAttribute("aria-expanded", "false");
+    elements.resume.setAttribute("aria-expanded", "false");
+    if (restoreFocus && archivePreviousFocus?.isConnected && !archivePreviousFocus.hidden) {
+      archivePreviousFocus.focus({ preventScroll: true });
+    }
+    archivePreviousFocus = null;
   };
 
   const openConfig = () => {
@@ -3921,8 +3917,7 @@
   window.addEventListener("gaia:space-return-to-novel", () => completePendingInteraction());
 
   elements.start.addEventListener("click", startNewSession);
-  elements.resume.addEventListener("click", resumeStory);
-  elements.titleLoad.addEventListener("click", () => openManualArchive("load"));
+  elements.resume.addEventListener("click", () => openManualArchive("load"));
   elements.titleGallery?.addEventListener("click", openGallery);
   elements.close.addEventListener("click", (event) => closeNovel(event));
   elements.restart.addEventListener("click", restartStory);

@@ -1012,12 +1012,6 @@ body.novel-reduced-motion .novel-layer:not(.is-title) {
   text-align: right;
 }
 
-#novel-title-load-button {
-  border-color: rgba(224, 246, 241, 0.2);
-  background: rgba(1, 12, 22, 0.46);
-  color: rgba(229, 247, 243, 0.72);
-}
-
 @media (max-width: 760px) {
   .novel-save-panel {
     place-items: stretch;
