@@ -12,26 +12,37 @@ const cardTemplate = document.querySelector("#device-card-template");
 const historyList = document.querySelector("#history-list");
 const historyChart = document.querySelector("#history-chart");
 const latestMetrics = document.querySelector("#latest-metrics");
+const publicSensorMap = document.querySelector("#public-sensor-map");
+const publicSensorMarkers = document.querySelector("#public-sensor-markers");
+const publicSensorList = document.querySelector("#public-sensor-list");
+const publicSensorDetail = document.querySelector("#public-sensor-detail");
+const profileForm = document.querySelector("#profile-form");
+const profileAvatarPreview = document.querySelector("#profile-avatar-preview");
+const profileAvatarInput = document.querySelector("#profile-avatar-input");
 const pollIntervalMs = 2_000;
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
 let countries = [];
 let devices = [];
 let selectedDevice = null;
+let publicSensors = [];
+let currentProfile = null;
+let authenticated = false;
 let pollTimer = 0;
 let statusTimer = 0;
 
 const api = async (path, options = {}) => {
+  const { body: requestBody, rawBody, ...requestOptions } = options;
   const headers = new Headers(options.headers);
-  if (options.body !== undefined) headers.set("Content-Type", "application/json");
+  if (requestBody !== undefined) headers.set("Content-Type", "application/json");
   if (options.method && options.method !== "GET" && options.method !== "HEAD") {
     const csrf = readCookie("__Host-gaia_sensor_csrf");
     if (csrf) headers.set("X-CSRF-Token", csrf);
   }
   const response = await fetch(path, {
     credentials: "include",
-    ...options,
+    ...requestOptions,
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body: rawBody ?? (requestBody === undefined ? undefined : JSON.stringify(requestBody)),
   });
   if (response.status === 204) return null;
   const body = await response.json().catch(() => null);
@@ -64,12 +75,20 @@ const showStatus = (message, kind = "info") => {
 
 const boot = async () => {
   showView("loading");
+  mountMapSurfaces();
+  initLocationPickers();
+  await loadPublicSensors().catch((error) => showStatus(error.message, "error"));
   try {
     await api("../api/web/v1/session");
-    await Promise.all([loadCountries(), loadDevices()]);
+    authenticated = true;
+    await Promise.all([loadCountries(), loadDevices(), loadProfile()]);
     routeFromHash();
   } catch (error) {
-    if (error.status === 401) showView("login");
+    authenticated = false;
+    if (error.status === 401) {
+      if (location.hash === "#map") showView("map");
+      else showView("login");
+    }
     else {
       showView("login");
       showStatus(error.message, "error");
@@ -110,6 +129,97 @@ const loadDevices = async () => {
     card.dataset.deviceId = device.deviceId;
     deviceList.append(fragment);
   });
+};
+
+const loadPublicSensors = async () => {
+  const response = await api("../api/public/v1/sensors");
+  publicSensors = response.sensors;
+  renderPublicSensors();
+};
+
+const renderPublicSensors = () => {
+  publicSensorMarkers.replaceChildren();
+  publicSensorList.replaceChildren();
+  if (!publicSensors.length) {
+    publicSensorDetail.replaceChildren(Object.assign(document.createElement("p"), { textContent: "公開中のセンサーはまだありません。最初の信号を待っています。" }));
+    return;
+  }
+  publicSensors.forEach((sensor, index) => {
+    const marker = document.createElement("button");
+    marker.type = "button";
+    marker.className = "sensor-map-marker";
+    marker.style.left = `${longitudeToPercent(sensor.location.longitude)}%`;
+    marker.style.top = `${latitudeToPercent(sensor.location.latitude)}%`;
+    marker.dataset.state = sensor.state;
+    marker.setAttribute("aria-label", `${sensor.owner.displayName}さんの${sensor.sensorName}`);
+    marker.append(avatarElement(sensor.owner, "span"));
+    marker.addEventListener("click", () => selectPublicSensor(sensor, marker));
+    publicSensorMarkers.append(marker);
+
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "sensor-public-card";
+    card.append(avatarElement(sensor.owner, "span"));
+    const text = document.createElement("span");
+    text.innerHTML = `<strong></strong><small></small>`;
+    text.querySelector("strong").textContent = sensor.sensorName;
+    text.querySelector("small").textContent = `${sensor.owner.displayName} / ${sensor.state}`;
+    card.append(text);
+    card.addEventListener("click", () => { selectPublicSensor(sensor, marker); publicSensorMap.scrollIntoView({ behavior: "smooth", block: "center" }); });
+    publicSensorList.append(card);
+    if (index === 0) selectPublicSensor(sensor, marker);
+  });
+};
+
+const selectPublicSensor = (sensor, marker) => {
+  document.querySelectorAll(".sensor-map-marker[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
+  marker.setAttribute("aria-current", "true");
+  publicSensorDetail.replaceChildren();
+  const owner = document.createElement("div");
+  owner.className = "sensor-map-owner";
+  owner.append(avatarElement(sensor.owner, "span"));
+  const heading = document.createElement("div");
+  heading.append(Object.assign(document.createElement("small"), { textContent: sensor.owner.displayName }));
+  heading.append(Object.assign(document.createElement("h2"), { textContent: sensor.sensorName }));
+  owner.append(heading);
+  const state = Object.assign(document.createElement("span"), { className: "sensor-state", textContent: sensor.state });
+  state.dataset.state = sensor.state;
+  owner.append(state);
+  const social = document.createElement("div");
+  social.className = "sensor-map-socials";
+  [["X", sensor.owner.xUrl], ["GitHub", sensor.owner.githubUrl], ["Instagram", sensor.owner.instagramUrl]].forEach(([label, url]) => {
+    if (!url) return;
+    const link = Object.assign(document.createElement("a"), { href: url, textContent: label, target: "_blank", rel: "noopener noreferrer" });
+    social.append(link);
+  });
+  const note = document.createElement("p");
+  note.textContent = `公開位置 ${sensor.location.latitude.toFixed(1)}, ${sensor.location.longitude.toFixed(1)}（約10km単位）`;
+  publicSensorDetail.append(owner, note, social);
+};
+
+const avatarElement = (owner, tagName = "span") => {
+  const wrapper = document.createElement(tagName);
+  wrapper.className = "sensor-owner-avatar";
+  if (owner.avatarUrl) wrapper.append(Object.assign(document.createElement("img"), { src: owner.avatarUrl, alt: "", loading: "lazy", decoding: "async" }));
+  else wrapper.textContent = Array.from(owner.displayName || "?")[0] || "?";
+  return wrapper;
+};
+
+const loadProfile = async () => {
+  const response = await api("../api/web/v1/profile");
+  currentProfile = response.profile;
+  profileForm.elements.displayName.value = currentProfile.displayName;
+  profileForm.elements.xUrl.value = currentProfile.xUrl || "";
+  profileForm.elements.githubUrl.value = currentProfile.githubUrl || "";
+  profileForm.elements.instagramUrl.value = currentProfile.instagramUrl || "";
+  renderProfileAvatar();
+};
+
+const renderProfileAvatar = () => {
+  profileAvatarPreview.replaceChildren();
+  if (currentProfile?.avatarUrl) profileAvatarPreview.append(Object.assign(document.createElement("img"), { src: currentProfile.avatarUrl, alt: "" }));
+  else profileAvatarPreview.append(Object.assign(document.createElement("span"), { textContent: Array.from(currentProfile?.displayName || "?")[0] || "?" }));
+  document.querySelector("#profile-avatar-delete").disabled = !currentProfile?.avatarUrl;
 };
 
 const openDetail = async (deviceId) => {
@@ -161,6 +271,9 @@ const renderDetail = ({ device, latest }, telemetry) => {
   locationForm.elements.countryCode.value = device.countryCode;
   locationForm.elements.admin1Code.value = device.admin1Code || "";
   locationForm.elements.localityName.value = device.localityName || "";
+  locationForm.elements.isPublic.checked = Boolean(device.isPublic);
+  setPickerLocation(locationForm, device.publicLatitude, device.publicLongitude);
+  syncPickerEnabled(locationForm);
 };
 
 const renderHistory = (telemetry) => {
@@ -210,7 +323,10 @@ const showDevices = async () => {
 };
 
 const routeFromHash = () => {
-  if (location.hash === "#guide") showView("guide");
+  if (location.hash === "#map") showView("map");
+  else if (!authenticated) showView("login");
+  else if (location.hash === "#profile") showView("profile");
+  else if (location.hash === "#guide") showView("guide");
   else if (location.hash.startsWith("#device=")) openDetail(decodeURIComponent(location.hash.slice(8)));
   else showView("devices");
 };
@@ -219,12 +335,18 @@ loginButton.addEventListener("click", () => { location.assign("../api/auth/googl
 showAddButton.addEventListener("click", () => showView("add"));
 document.querySelectorAll("[data-action='show-add']").forEach((button) => button.addEventListener("click", () => showView("add")));
 document.querySelectorAll("[data-action='devices']").forEach((button) => button.addEventListener("click", showDevices));
+document.querySelectorAll("[data-action='map']").forEach((button) => button.addEventListener("click", () => { showView("map"); history.replaceState(null, "", "#map"); }));
 document.querySelectorAll("[data-nav]").forEach((link) => link.addEventListener("click", (event) => {
   event.preventDefault();
   const destination = link.dataset.nav;
+  if (destination !== "map" && !authenticated) { showView("login"); history.replaceState(null, "", "#login"); return; }
   if (destination === "devices") showDevices();
   else { showView(destination); history.replaceState(null, "", `#${destination}`); }
 }));
+document.querySelector("#refresh-map").addEventListener("click", async () => {
+  try { await loadPublicSensors(); showStatus("公開センサーを更新しました。"); }
+  catch (error) { showStatus(error.message, "error"); }
+});
 
 deviceForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -259,6 +381,51 @@ locationForm.addEventListener("submit", async (event) => {
   } catch (error) { showStatus(error.message, "error"); }
 });
 
+profileForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const submit = profileForm.querySelector("button[type='submit']");
+  submit.disabled = true;
+  try {
+    const data = new FormData(profileForm);
+    const response = await api("../api/web/v1/profile", { method: "PATCH", body: {
+      displayName: String(data.get("displayName") || "").trim(),
+      xUrl: String(data.get("xUrl") || "").trim() || null,
+      githubUrl: String(data.get("githubUrl") || "").trim() || null,
+      instagramUrl: String(data.get("instagramUrl") || "").trim() || null,
+    } });
+    currentProfile = response.profile;
+    renderProfileAvatar();
+    showStatus("プロフィールを保存しました。");
+    await loadPublicSensors();
+  } catch (error) { showStatus(error.message, "error"); }
+  finally { submit.disabled = false; }
+});
+
+profileAvatarInput.addEventListener("change", async () => {
+  const file = profileAvatarInput.files?.[0];
+  if (!file) return;
+  profileAvatarInput.disabled = true;
+  try {
+    const png = await normalizeAvatar(file);
+    const response = await api("../api/web/v1/profile/avatar", { method: "PUT", rawBody: png, headers: { "Content-Type": "image/png" } });
+    currentProfile = response.profile;
+    renderProfileAvatar();
+    showStatus("アイコンを保存しました。");
+    await loadPublicSensors();
+  } catch (error) { showStatus(error.message, "error"); }
+  finally { profileAvatarInput.value = ""; profileAvatarInput.disabled = false; }
+});
+
+document.querySelector("#profile-avatar-delete").addEventListener("click", async () => {
+  try {
+    await api("../api/web/v1/profile/avatar", { method: "DELETE" });
+    currentProfile = { ...currentProfile, avatarUrl: null };
+    renderProfileAvatar();
+    showStatus("アイコンを削除しました。");
+    await loadPublicSensors();
+  } catch (error) { showStatus(error.message, "error"); }
+});
+
 document.querySelector("#revoke-device").addEventListener("click", async () => {
   if (!selectedDevice || !confirm(`${selectedDevice.name} を削除しますか？Device Tokenは直ちに無効になります。`)) return;
   try {
@@ -279,8 +446,83 @@ function formDevice(form) {
     countryCode: String(data.get("countryCode") || "").trim(),
     admin1Code: String(data.get("admin1Code") || "").trim() || null,
     localityName: String(data.get("localityName") || "").trim() || null,
+    isPublic: data.get("isPublic") === "on",
+    publicLatitude: numberOrNull(data.get("publicLatitude")),
+    publicLongitude: numberOrNull(data.get("publicLongitude")),
   };
 }
+
+function initLocationPickers() {
+  document.querySelectorAll(".sensor-public-location").forEach((fieldset) => {
+    const form = fieldset.closest("form");
+    const picker = fieldset.querySelector("[data-location-picker]");
+    fieldset.querySelector("input[name='isPublic']").addEventListener("change", () => syncPickerEnabled(form));
+    picker.addEventListener("pointerdown", (event) => {
+      if (!form.elements.isPublic.checked) return;
+      const rect = picker.getBoundingClientRect();
+      setPickerLocation(form, 90 - ((event.clientY - rect.top) / rect.height) * 180, ((event.clientX - rect.left) / rect.width) * 360 - 180);
+    });
+    picker.addEventListener("keydown", (event) => {
+      if (!form.elements.isPublic.checked || !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      event.preventDefault();
+      const latitude = numberOrNull(form.elements.publicLatitude.value) ?? 35.7;
+      const longitude = numberOrNull(form.elements.publicLongitude.value) ?? 139.7;
+      setPickerLocation(form, latitude + (event.key === "ArrowUp" ? 1 : event.key === "ArrowDown" ? -1 : 0), longitude + (event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0));
+    });
+    syncPickerEnabled(form);
+  });
+}
+
+function syncPickerEnabled(form) {
+  const enabled = form.elements.isPublic.checked;
+  const picker = form.querySelector("[data-location-picker]");
+  picker.toggleAttribute("aria-disabled", !enabled);
+  if (enabled && numberOrNull(form.elements.publicLatitude.value) === null) setPickerLocation(form, 35.7, 139.7);
+}
+
+function setPickerLocation(form, rawLatitude, rawLongitude) {
+  const latitude = rawLatitude === null || rawLatitude === undefined ? null : Math.max(-90, Math.min(90, Math.round(Number(rawLatitude) * 10) / 10));
+  const longitude = rawLongitude === null || rawLongitude === undefined ? null : Math.max(-180, Math.min(180, Math.round(Number(rawLongitude) * 10) / 10));
+  form.elements.publicLatitude.value = latitude ?? "";
+  form.elements.publicLongitude.value = longitude ?? "";
+  const picker = form.querySelector("[data-location-picker]");
+  picker.querySelector(".sensor-picker-pin")?.remove();
+  const output = form.querySelector("[data-location-output]");
+  if (latitude === null || longitude === null) { output.textContent = "位置は未選択です"; return; }
+  const pin = document.createElement("i");
+  pin.className = "sensor-picker-pin";
+  pin.style.left = `${longitudeToPercent(longitude)}%`;
+  pin.style.top = `${latitudeToPercent(latitude)}%`;
+  picker.append(pin);
+  output.textContent = `公開位置 ${latitude.toFixed(1)}, ${longitude.toFixed(1)}（約10km単位）`;
+}
+
+function mountMapSurfaces() {
+  const mapSvg = `<svg viewBox="0 0 1000 500" aria-hidden="true"><g><path d="M70 94l55-40 88 2 41 37 70 13 43 37-35 44-59 7-34 37-35-18-25-53-54-5-43-28zM245 236l51 24 34 62-17 93-43 44-22-59-29-53 18-58zM438 76l55-35 100 16 38 30 99 8 78 54-31 49-73 4-48 50-57-12-31-47-67-2-43-41-42-35zM590 243l47 9 42 46-20 95-47 56-39-48-11-83zM790 290l55-29 81 25 27 50-44 48-75-6-38-41zM895 105l48-14 29 31-35 31z"/></g></svg>`;
+  document.querySelectorAll(".sensor-world-map, .sensor-location-picker").forEach((element) => {
+    if (!element.querySelector("svg")) element.insertAdjacentHTML("afterbegin", mapSvg);
+  });
+}
+
+async function normalizeAvatar(file) {
+  if (file.type !== "image/png" || file.size > 8 * 1024 * 1024) throw new Error("8MB以下のPNGを選んでください。");
+  const bitmap = await createImageBitmap(file);
+  const sourceEdge = Math.min(bitmap.width, bitmap.height);
+  const outputEdge = Math.min(512, sourceEdge);
+  if (sourceEdge < 1) { bitmap.close(); throw new Error("画像を読み込めませんでした。"); }
+  const canvas = document.createElement("canvas");
+  canvas.width = outputEdge; canvas.height = outputEdge;
+  const context = canvas.getContext("2d", { alpha: true });
+  context.drawImage(bitmap, (bitmap.width - sourceEdge) / 2, (bitmap.height - sourceEdge) / 2, sourceEdge, sourceEdge, 0, 0, outputEdge, outputEdge);
+  bitmap.close();
+  const blob = await new Promise((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("PNGを作成できませんでした。")), "image/png"));
+  if (blob.size > 2 * 1024 * 1024) throw new Error("変換後のPNGが2MBを超えています。");
+  return blob;
+}
+
+function numberOrNull(value) { const number = Number(value); return value === null || value === "" || !Number.isFinite(number) ? null : number; }
+function longitudeToPercent(longitude) { return ((Number(longitude) + 180) / 360) * 100; }
+function latitudeToPercent(latitude) { return ((90 - Number(latitude)) / 180) * 100; }
 
 function readCookie(name) {
   const prefix = `${name}=`;

@@ -22,6 +22,12 @@
       "migrations_table": "d1_migrations"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "PROFILE_IMAGES",
+      "bucket_name": "gaia-senseware-profile-images"
+    }
+  ],
   "observability": {
     "enabled": true,
     "logs": { "enabled": true, "head_sampling_rate": 1 },

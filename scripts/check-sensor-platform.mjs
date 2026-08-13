@@ -13,10 +13,13 @@ const sensorJs = read("sensors/sensor-platform.js");
 const worker = read("sensor-platform/src/index.ts");
 const auth = read("sensor-platform/src/auth.ts");
 const devices = read("sensor-platform/src/devices.ts");
+const profiles = read("sensor-platform/src/profiles.ts");
 const validation = read("sensor-platform/src/validation.ts");
 const migration1 = read("sensor-platform/migrations/0001_initial.sql");
 const migration2 = read("sensor-platform/migrations/0002_iso_3166_1_alpha2.sql");
+const migration3 = read("sensor-platform/migrations/0003_public_sensor_profiles.sql");
 const wrangler = read("sensor-platform/wrangler.jsonc");
+const rootWrangler = read("wrangler.jsonc");
 const openapi = read("smartcity-sensor-starter-kit/openapi.yaml");
 const curl = read("smartcity-sensor-starter-kit/curl-examples.sh");
 const starter = read("smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino");
@@ -30,8 +33,25 @@ check("global nav inserts sensor immediately after map", () => {
 });
 
 check("SPA exposes required views and web operations", () => {
-  for (const view of ["login", "loading", "devices", "add", "pairing", "detail", "guide"]) assert.match(sensorHtml, new RegExp(`data-view="${view}"`, "u"));
-  for (const fragment of ["/session", "/countries", "/devices/pairing", "/latest", "/telemetry", 'method: "PATCH"', 'method: "DELETE"']) assert(sensorJs.includes(fragment), fragment);
+  for (const view of ["map", "login", "loading", "devices", "add", "pairing", "detail", "profile", "guide"]) assert.match(sensorHtml, new RegExp(`data-view="${view}"`, "u"));
+  for (const fragment of ["/session", "/countries", "/devices/pairing", "/latest", "/telemetry", "/profile", "/profile/avatar", "/public/v1/sensors", 'method: "PUT"', 'method: "PATCH"', 'method: "DELETE"']) assert(sensorJs.includes(fragment), fragment);
+  for (const fragment of ["public-sensor-map", "profile-avatar-input", "xUrl", "githubUrl", "instagramUrl", "publicLatitude", "publicLongitude"]) assert(sensorHtml.includes(fragment), fragment);
+});
+
+check("public profile and map expose only opted-in approximate ownership", () => {
+  for (const fragment of ["listPublicSensors", "is_public = 1", "public_latitude", "public_longitude", "ownerDisplayName", "avatarUrl", "xUrl", "githubUrl", "instagramUrl"]) assert(devices.includes(fragment), fragment);
+  for (const fragment of ["/api/public/v1/sensors", "PUBLIC_AVATAR_PATTERN", "/api/web/v1/profile", "/api/web/v1/profile/avatar"]) assert(worker.includes(fragment), fragment);
+  assert.doesNotMatch(devices.slice(devices.indexOf("export const listPublicSensors")), /email|owner_user_id AS|ownerUserId/iu);
+  assert.doesNotMatch(devices.slice(devices.indexOf("export const listPublicSensors")), /lastSeenAt/iu);
+  assert.match(validation, /Math\.round\(value \* 10\) \/ 10/u);
+  assert.match(validation, /PUBLIC_LOCATION_REQUIRED/u);
+});
+
+check("profile accepts sanitized PNG and canonical optional social URLs", () => {
+  for (const fragment of ["PROFILE_IMAGES.put", "PROFILE_IMAGES.delete", "MAX_AVATAR_BYTES", "MAX_AVATAR_EDGE", "PNG_SIGNATURE", "IHDR", "IDAT", "IEND", "Animated or unsupported PNG"]) assert(profiles.includes(fragment), fragment);
+  for (const host of ["x.com", "github.com", "instagram.com"]) assert(validation.includes(host), host);
+  assert.match(validation, /parsed\.protocol !== "https:"/u);
+  assert.match(profiles, /X-Content-Type-Options/u);
 });
 
 check("OIDC flow is browser-bound, one-time and secure", () => {
@@ -65,8 +85,16 @@ check("D1 schema has complete ISO alpha-2 master", () => {
   assert.match(migration2, /INSERT OR IGNORE/u);
 });
 
-check("wrangler config has D1, generated Env, compatibility and observability", () => {
-  for (const fragment of ['"nodejs_compat"', '"d1_databases"', '"migrations_dir"', '"observability"']) assert(wrangler.includes(fragment), fragment);
+check("D1 profile migration preserves opaque public identifiers and opt-in locations", () => {
+  for (const fragment of ["public_id", "avatar_key", "avatar_updated_at", "x_url", "github_url", "instagram_url", "public_latitude", "public_longitude", "is_public"]) assert(migration3.includes(fragment), fragment);
+  assert.match(migration3, /CREATE UNIQUE INDEX IF NOT EXISTS idx_users_public_id/u);
+  assert.match(migration3, /CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_public_id/u);
+});
+
+check("wrangler config has D1, R2, generated Env, compatibility and observability", () => {
+  for (const config of [wrangler, rootWrangler]) {
+    for (const fragment of ['"nodejs_compat"', '"d1_databases"', '"migrations_dir"', '"r2_buckets"', '"PROFILE_IMAGES"', '"observability"']) assert(config.includes(fragment), fragment);
+  }
   assert(fs.existsSync(path.join(root, "sensor-platform/src/worker-configuration.d.ts")));
   assert.doesNotMatch(wrangler, /client_secret|token_pepper.*[A-Za-z0-9]{20}/iu);
 });
@@ -91,7 +119,7 @@ check("Arduino kit provides setup AP, NVS, root CA and safe retry", () => {
 });
 
 check("scope excludes out-of-scope technologies and hardcoded secrets", () => {
-  const tracked = [worker, auth, devices, validation, sensorJs, starter, wrangler].join("\n");
+  const tracked = [worker, auth, devices, profiles, validation, sensorJs, starter, wrangler].join("\n");
   for (const forbidden of [/\bmqtt\b/iu, /\bkafka\b/iu, /\bkubernetes\b/iu, /\bwebbluetooth\b/iu, /setInsecure\s*\(/u]) assert.doesNotMatch(tracked, forbidden);
   assert.doesNotMatch(tracked, /AIza[0-9A-Za-z_-]{20,}/u);
 });

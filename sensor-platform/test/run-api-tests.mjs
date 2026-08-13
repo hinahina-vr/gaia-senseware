@@ -74,7 +74,7 @@ try {
   });
   await test("migrations are sequential and safe to reapply", async () => {
     assert.match(migrationReapplyOutput, /No migrations to apply/u);
-    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "2");
+    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "3");
   });
   await test("OIDC flow cookie binds callback to the starting browser", async () => {
     const start = await fetch(`${origin}/api/auth/google/start`, { redirect: "manual" });
@@ -99,6 +99,53 @@ try {
 
   const auth = await createLocalSession("user_test_owner");
   const otherAuth = await createLocalSession("user_test_other");
+  await test("public sensor endpoint is available without a session", async () => {
+    const response = await fetch(`${origin}/api/public/v1/sensors`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { sensors: [] });
+  });
+  await test("owner profile stores display name and optional social profile URLs", async () => {
+    const update = await webFetch("/api/web/v1/profile", auth, {
+      method: "PATCH",
+      body: {
+        displayName: "青猫センサー",
+        xUrl: "https://x.com/bluecat_sensor",
+        githubUrl: "https://github.com/bluecat-sensor",
+        instagramUrl: "https://instagram.com/bluecat.sensor",
+      },
+    });
+    assert.equal(update.status, 200);
+    const profile = (await update.json()).profile;
+    assert.equal(profile.publicId, "usr_testowner");
+    assert.equal(profile.displayName, "青猫センサー");
+    assert.equal(profile.githubUrl, "https://github.com/bluecat-sensor");
+    assert.equal(Object.hasOwn(profile, "email"), false);
+  });
+  await test("social links only accept the intended HTTPS account hosts", async () => {
+    const response = await webFetch("/api/web/v1/profile", auth, {
+      method: "PATCH",
+      body: { displayName: "青猫センサー", xUrl: "https://example.com/tracker", githubUrl: null, instagramUrl: null },
+    });
+    assert.equal(response.status, 400);
+    assert.equal((await response.json()).error.code, "INVALID_SOCIAL_URL");
+  });
+  const avatarPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X4u1WQAAAABJRU5ErkJggg==", "base64");
+  await test("avatar upload requires PNG, strips ancillary metadata, and is publicly readable by opaque id", async () => {
+    const wrongType = await webFetch("/api/web/v1/profile/avatar", auth, {
+      method: "PUT", rawBody: Buffer.from("not an image"), contentType: "image/jpeg",
+    });
+    assert.equal(wrongType.status, 415);
+    const upload = await webFetch("/api/web/v1/profile/avatar", auth, {
+      method: "PUT", rawBody: avatarPng, contentType: "image/png",
+    });
+    assert.equal(upload.status, 200);
+    const profile = (await upload.json()).profile;
+    assert.match(profile.avatarUrl, /^\/api\/public\/v1\/profiles\/usr_testowner\/avatar\?v=/u);
+    const avatar = await fetch(`${origin}${profile.avatarUrl}`);
+    assert.equal(avatar.status, 200);
+    assert.equal(avatar.headers.get("content-type"), "image/png");
+    assert.deepEqual(Buffer.from(await avatar.arrayBuffer()).subarray(0, 8), avatarPng.subarray(0, 8));
+  });
   await test("session credential rotates while preserving expiry and Secure host cookie", async () => {
     const rotationAuth = await createLocalSession("user_test_owner");
     const session = await webFetch("/api/web/v1/session", rotationAuth);
@@ -221,9 +268,21 @@ try {
   await test("location update owner-only then logical revoke stops token", async () => {
     const update = await webFetch(`/api/web/v1/devices/${deviceId}`, auth, {
       method: "PATCH",
-      body: { ...deviceDraft(), localityName: "逗子市" },
+      body: { ...deviceDraft(), localityName: "逗子市", isPublic: true, publicLatitude: 35.294, publicLongitude: 139.581 },
     });
     assert.equal(update.status, 200);
+    assert.equal((await update.json()).device.isPublic, true);
+    const publicResponse = await fetch(`${origin}/api/public/v1/sensors`);
+    assert.equal(publicResponse.status, 200);
+    const publicBody = await publicResponse.json();
+    assert.equal(publicBody.sensors.length, 1);
+    assert.equal(publicBody.sensors[0].location.latitude, 35.3);
+    assert.equal(publicBody.sensors[0].location.longitude, 139.6);
+    assert.equal(publicBody.sensors[0].owner.displayName, "青猫センサー");
+    assert.equal(publicBody.sensors[0].owner.xUrl, "https://x.com/bluecat_sensor");
+    assert.equal(Object.hasOwn(publicBody.sensors[0], "lastSeenAt"), false);
+    const publicJson = JSON.stringify(publicBody);
+    assert.doesNotMatch(publicJson, /user_test_owner|@|localityName|逗子市/u);
     const forbidden = await webFetch(`/api/web/v1/devices/${deviceId}`, otherAuth, {
       method: "PATCH",
       body: deviceDraft(),
@@ -281,6 +340,9 @@ async function webFetch(path, auth, options = {}) {
   if (options.body) {
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(options.body);
+  } else if (options.rawBody) {
+    headers["Content-Type"] = options.contentType || "application/octet-stream";
+    body = options.rawBody;
   }
   return fetch(`${origin}${path}`, { method: options.method ?? "GET", headers, body });
 }

@@ -8,6 +8,19 @@ const port = Number(process.argv[2] || 4397);
 let pairingIssued = false;
 let deviceCreated = false;
 let latestPolls = 0;
+let avatarUploaded = false;
+let lastPairingDraft = null;
+let lastDeviceDraft = null;
+const initialProfile = () => ({
+  publicId: "usr_browserqa",
+  displayName: "青猫センサー",
+  avatarUrl: "/api/public/v1/profiles/usr_browserqa/avatar?v=qa",
+  xUrl: "https://x.com/bluecat_sensor",
+  githubUrl: "https://github.com/bluecat-sensor",
+  instagramUrl: "https://instagram.com/bluecat.sensor",
+});
+let profile = initialProfile();
+const avatarPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X4u1WQAAAABJRU5ErkJggg==", "base64");
 let device = {
   deviceId: "dev_browser_qa",
   name: "ベランダ環境センサー",
@@ -18,6 +31,9 @@ let device = {
   state: "OFFLINE",
   lastSeenAt: null,
   createdAt: "2026-08-12T00:00:00.000Z",
+  isPublic: true,
+  publicLatitude: 35.7,
+  publicLongitude: 139.7,
 };
 const requests = [];
 
@@ -25,11 +41,15 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url || "/", `http://${request.headers.host}`);
   requests.push({ method: request.method, path: url.pathname, at: new Date().toISOString() });
   try {
-    if (url.pathname === "/__qa/report") return sendJson(response, 200, { requests, latestPolls });
+    if (url.pathname === "/__qa/report") return sendJson(response, 200, { requests, latestPolls, avatarUploaded, lastPairingDraft, lastDeviceDraft, profile });
     if (url.pathname === "/__qa/reset" && request.method === "POST") {
       pairingIssued = false;
       deviceCreated = false;
       latestPolls = 0;
+      avatarUploaded = false;
+      lastPairingDraft = null;
+      lastDeviceDraft = null;
+      profile = initialProfile();
       return sendJson(response, 200, { ok: true });
     }
     if (url.pathname.startsWith("/api/")) return handleApi(request, response, url);
@@ -52,6 +72,17 @@ server.listen(port, "127.0.0.1", () => console.log(`sensor qa http://127.0.0.1:$
 async function handleApi(request, response, url) {
   const referer = request.headers.referer || "";
   if (referer.includes("error=1")) return sendJson(response, 500, { error: { code: "QA_ERROR", message: "QA用の通信エラーです。" } });
+  if (url.pathname === "/api/public/v1/sensors" && request.method === "GET") {
+    return sendJson(response, 200, { sensors: [{
+      id: "sensor_browserqa", sensorName: "ベランダ環境センサー", state: "ONLINE", lastSeenAt: new Date().toISOString(),
+      location: { latitude: 35.7, longitude: 139.7, precision: "APPROXIMATE_0_1_DEGREE" },
+      owner: { displayName: profile.displayName, avatarUrl: profile.avatarUrl, xUrl: profile.xUrl, githubUrl: profile.githubUrl, instagramUrl: profile.instagramUrl },
+    }] });
+  }
+  if (url.pathname === "/api/public/v1/profiles/usr_browserqa/avatar" && request.method === "GET") {
+    response.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+    return response.end(avatarPng);
+  }
   if (url.pathname === "/api/web/v1/session") {
     if (!referer.includes("authenticated=1")) return sendJson(response, 401, { error: { code: "AUTHENTICATION_REQUIRED", message: "Google login is required." } });
     return sendJson(response, 200, { user: { id: "user_browser_qa", displayName: "QA参加者" }, expiresAt: "2026-08-13T00:00:00.000Z" });
@@ -59,7 +90,27 @@ async function handleApi(request, response, url) {
   if (url.pathname === "/api/web/v1/countries") {
     return sendJson(response, 200, { countries: [{ code: "JP", nameEn: "Japan", nameLocal: "日本" }, { code: "US", nameEn: "United States", nameLocal: "アメリカ合衆国" }] });
   }
+  if (url.pathname === "/api/web/v1/profile" && request.method === "GET") return sendJson(response, 200, { profile });
+  if (url.pathname === "/api/web/v1/profile" && request.method === "PATCH") {
+    const body = await readJson(request);
+    profile = { ...profile, ...body };
+    return sendJson(response, 200, { profile });
+  }
+  if (url.pathname === "/api/web/v1/profile/avatar" && request.method === "PUT") {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    avatarUploaded = Buffer.concat(chunks).length > 0;
+    profile = { ...profile, avatarUrl: `/api/public/v1/profiles/usr_browserqa/avatar?v=${Date.now()}` };
+    return sendJson(response, 200, { profile });
+  }
+  if (url.pathname === "/api/web/v1/profile/avatar" && request.method === "DELETE") {
+    avatarUploaded = false;
+    profile = { ...profile, avatarUrl: null };
+    response.writeHead(204);
+    return response.end();
+  }
   if (url.pathname === "/api/web/v1/devices/pairing" && request.method === "POST") {
+    lastPairingDraft = await readJson(request);
     pairingIssued = true;
     return sendJson(response, 201, { pairingCode: "H7K2-PQ9M", expiresAt: new Date(Date.now() + 600000).toISOString() });
   }
@@ -77,6 +128,7 @@ async function handleApi(request, response, url) {
   if (match[2] === "/telemetry") return sendJson(response, 200, { telemetry: [telemetry(4), telemetry(3), telemetry(2)] });
   if (request.method === "PATCH") {
     const body = await readJson(request);
+    lastDeviceDraft = body;
     device = { ...device, ...body, countryName: body.countryCode === "JP" ? "日本" : "アメリカ合衆国" };
     return sendJson(response, 200, { device });
   }

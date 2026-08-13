@@ -10,6 +10,9 @@ type PairingRow = {
   country_code: string;
   admin1_code: string | null;
   locality_name: string | null;
+  public_latitude: number | null;
+  public_longitude: number | null;
+  is_public: number;
 };
 
 type DeviceAuthRow = { token_hash: string; status: string };
@@ -23,6 +26,9 @@ type DeviceRow = {
   state: string;
   lastSeenAt: string | null;
   createdAt: string;
+  isPublic: number;
+  publicLatitude: number | null;
+  publicLongitude: number | null;
 };
 
 type TelemetryRow = {
@@ -50,8 +56,9 @@ export const createPairing = async (request: Request, env: Env, user: Authentica
   const expiresAt = new Date(now.getTime() + 10 * 60 * 1000).toISOString();
   await env.DB.prepare(
     `INSERT INTO device_pairing_codes
-      (id, code_hash, user_id, device_name, country_code, admin1_code, locality_name, expires_at, created_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+      (id, code_hash, user_id, device_name, country_code, admin1_code, locality_name,
+       public_latitude, public_longitude, is_public, expires_at, created_at)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
   ).bind(
     crypto.randomUUID(),
     await hmacHex(env.PAIRING_CODE_PEPPER, code),
@@ -60,6 +67,9 @@ export const createPairing = async (request: Request, env: Env, user: Authentica
     draft.countryCode,
     draft.admin1Code,
     draft.localityName,
+    draft.publicLatitude,
+    draft.publicLongitude,
+    draft.isPublic ? 1 : 0,
     expiresAt,
     now.toISOString(),
   ).run();
@@ -79,19 +89,21 @@ export const pairDevice = async (request: Request, env: Env): Promise<Response> 
       `UPDATE device_pairing_codes
        SET used_at = ?1, consumed_by_device_id = ?3
        WHERE code_hash = ?2 AND used_at IS NULL AND expires_at > ?1
-       RETURNING id, user_id, device_name, country_code, admin1_code, locality_name`,
+       RETURNING id, user_id, device_name, country_code, admin1_code, locality_name,
+         public_latitude, public_longitude, is_public`,
     ).bind(now, codeHash, databaseId),
     env.DB.prepare(
       `INSERT INTO devices
-        (id, device_id, owner_user_id, name, token_hash, country_code, admin1_code, locality_name,
-         location_precision, created_at, updated_at)
-       SELECT ?1, ?2, user_id, device_name, ?3, country_code, admin1_code, locality_name,
+        (id, public_id, device_id, owner_user_id, name, token_hash, country_code, admin1_code, locality_name,
+         public_latitude, public_longitude, is_public, location_precision, created_at, updated_at)
+       SELECT ?1, ?2, ?3, user_id, device_name, ?4, country_code, admin1_code, locality_name,
+         public_latitude, public_longitude, is_public,
          CASE WHEN locality_name IS NOT NULL THEN 'LOCALITY'
               WHEN admin1_code IS NOT NULL THEN 'ADMIN1' ELSE 'COUNTRY' END,
-         ?4, ?4
+         ?5, ?5
        FROM device_pairing_codes
-       WHERE code_hash = ?5 AND used_at = ?4 AND consumed_by_device_id = ?1`,
-    ).bind(databaseId, deviceId, tokenHash, now, codeHash),
+       WHERE code_hash = ?6 AND used_at = ?5 AND consumed_by_device_id = ?1`,
+    ).bind(databaseId, `sensor_${randomIdentifier(16)}`, deviceId, tokenHash, now, codeHash),
   ]);
   const consumedRows = results[0]?.results as PairingRow[] | undefined;
   const inserted = results[1]?.meta.changes ?? 0;
@@ -167,17 +179,18 @@ export const listDevices = async (env: Env, user: AuthenticatedUser): Promise<Re
        COALESCE(c.name_local, c.name_en) AS countryName, d.admin1_code AS admin1Code,
        d.locality_name AS localityName,
        CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
-       d.last_seen_at AS lastSeenAt, d.created_at AS createdAt
+       d.last_seen_at AS lastSeenAt, d.created_at AS createdAt, d.is_public AS isPublic,
+       d.public_latitude AS publicLatitude, d.public_longitude AS publicLongitude
      FROM devices d JOIN countries c ON c.code = d.country_code
      WHERE d.owner_user_id = ?2 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
      ORDER BY d.created_at DESC`,
   ).bind(`-${threshold} seconds`, user.id).all<DeviceRow>();
-  return json({ devices: result.results });
+  return json({ devices: result.results.map(serializeDevice) });
 };
 
 export const getDevice = async (env: Env, user: AuthenticatedUser, deviceId: string): Promise<Response> => {
   const device = await ownedDevice(env, user.id, deviceId);
-  return json({ device });
+  return json({ device: serializeDevice(device) });
 };
 
 export const getLatest = async (env: Env, user: AuthenticatedUser, deviceId: string): Promise<Response> => {
@@ -186,7 +199,7 @@ export const getLatest = async (env: Env, user: AuthenticatedUser, deviceId: str
     `SELECT seq, observed_at AS observedAt, received_at AS receivedAt, payload_json AS payloadJson
      FROM telemetry WHERE device_id = ?1 ORDER BY received_at DESC, seq DESC LIMIT 1`,
   ).bind(deviceId).first<TelemetryRow>();
-  return json({ device, latest: latest ? serializeTelemetry(latest) : null });
+  return json({ device: serializeDevice(device), latest: latest ? serializeTelemetry(latest) : null });
 };
 
 export const getHistory = async (
@@ -225,10 +238,15 @@ export const updateDevice = async (
   if (!country) throw new ApiError(400, "INVALID_COUNTRY", "Selected country is not enabled.");
   const result = await env.DB.prepare(
     `UPDATE devices SET name = ?1, country_code = ?2, admin1_code = ?3, locality_name = ?4,
+       is_public = ?5, public_latitude = ?6, public_longitude = ?7,
        location_precision = CASE WHEN ?4 IS NOT NULL THEN 'LOCALITY' WHEN ?3 IS NOT NULL THEN 'ADMIN1' ELSE 'COUNTRY' END,
-       updated_at = ?5
-     WHERE device_id = ?6 AND owner_user_id = ?7 AND status = 'ACTIVE' AND deleted_at IS NULL`,
-  ).bind(draft.name, draft.countryCode, draft.admin1Code, draft.localityName, new Date().toISOString(), deviceId, user.id).run();
+       updated_at = ?8
+     WHERE device_id = ?9 AND owner_user_id = ?10 AND status = 'ACTIVE' AND deleted_at IS NULL`,
+  ).bind(
+    draft.name, draft.countryCode, draft.admin1Code, draft.localityName,
+    draft.isPublic ? 1 : 0, draft.publicLatitude, draft.publicLongitude,
+    new Date().toISOString(), deviceId, user.id,
+  ).run();
   if (result.meta.changes !== 1) throw new ApiError(404, "DEVICE_NOT_FOUND", "Device was not found.");
   return getDevice(env, user, deviceId);
 };
@@ -256,7 +274,8 @@ const ownedDevice = async (env: Env, userId: string, deviceId: string): Promise<
        COALESCE(c.name_local, c.name_en) AS countryName, d.admin1_code AS admin1Code,
        d.locality_name AS localityName,
        CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
-       d.last_seen_at AS lastSeenAt, d.created_at AS createdAt
+       d.last_seen_at AS lastSeenAt, d.created_at AS createdAt, d.is_public AS isPublic,
+       d.public_latitude AS publicLatitude, d.public_longitude AS publicLongitude
      FROM devices d JOIN countries c ON c.code = d.country_code
      WHERE d.device_id = ?2 AND d.owner_user_id = ?3 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL`,
   ).bind(`-${threshold} seconds`, deviceId, userId).first<DeviceRow>();
@@ -264,11 +283,53 @@ const ownedDevice = async (env: Env, userId: string, deviceId: string): Promise<
   return device;
 };
 
+export const listPublicSensors = async (env: Env): Promise<Response> => {
+  const threshold = onlineThreshold(env);
+  const result = await env.DB.prepare(
+    `SELECT d.public_id AS id, d.name AS sensorName, d.public_latitude AS latitude,
+       d.public_longitude AS longitude,
+       CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
+       u.public_id AS ownerPublicId, u.display_name AS ownerDisplayName,
+       u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
+       u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl
+     FROM devices d JOIN users u ON u.id = d.owner_user_id
+     WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+       AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
+     ORDER BY d.created_at DESC LIMIT 500`,
+  ).bind(`-${threshold} seconds`).all<{
+    id: string; sensorName: string; latitude: number; longitude: number; state: string;
+    ownerPublicId: string; ownerDisplayName: string; avatarKey: string | null; avatarUpdatedAt: string | null;
+    xUrl: string | null; githubUrl: string | null; instagramUrl: string | null;
+  }>();
+  return json({
+    sensors: result.results.map((row) => ({
+      id: row.id,
+      sensorName: row.sensorName,
+      location: { latitude: row.latitude, longitude: row.longitude, precision: "APPROXIMATE_0_1_DEGREE" },
+      state: row.state,
+      owner: {
+        displayName: row.ownerDisplayName,
+        avatarUrl: row.avatarKey
+          ? `/api/public/v1/profiles/${encodeURIComponent(row.ownerPublicId)}/avatar?v=${encodeURIComponent(row.avatarUpdatedAt ?? "1")}`
+          : null,
+        xUrl: row.xUrl,
+        githubUrl: row.githubUrl,
+        instagramUrl: row.instagramUrl,
+      },
+    })),
+  });
+};
+
 const serializeTelemetry = (row: TelemetryRow): { seq: number; observedAt: string | null; receivedAt: string; data: unknown } => ({
   seq: row.seq,
   observedAt: row.observedAt,
   receivedAt: row.receivedAt,
   data: JSON.parse(row.payloadJson),
+});
+
+const serializeDevice = (device: DeviceRow) => ({
+  ...device,
+  isPublic: device.isPublic === 1,
 });
 
 const parseLimit = (value: string | null): number => {

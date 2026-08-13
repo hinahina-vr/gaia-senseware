@@ -7,8 +7,8 @@
     <link rel="icon" href="data:," />
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
-    <link rel="stylesheet" href="./sensor-platform.css?v=1" />
-    <script src="./sensor-platform.js?v=1" type="module"></script>
+    <link rel="stylesheet" href="./sensor-platform.css?v=2" />
+    <script src="./sensor-platform.js?v=2" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -18,7 +18,9 @@
         <strong>SENSOR PARTICIPATION</strong>
       </a>
       <nav aria-label="センサープラットフォーム">
+        <a href="#map" data-nav="map">みんなのセンサー</a>
         <a href="#devices" data-nav="devices">マイセンサー</a>
+        <a href="#profile" data-nav="profile">プロフィール</a>
         <a href="#guide" data-nav="guide">接続ガイド</a>
         <a href="../">地図へ戻る</a>
       </nav>
@@ -28,6 +30,22 @@
       <noscript>このセンサープラットフォームにはJavaScriptが必要です。</noscript>
       <section class="sensor-status" id="sensor-status" role="status" aria-live="polite" hidden></section>
 
+      <section class="sensor-view sensor-public-map" data-view="map" id="map" hidden>
+        <header class="sensor-page-head">
+          <div><p>PUBLIC SIGNALS / APPROXIMATE LOCATION</p><h1>みんなのセンサー</h1></div>
+          <button class="sensor-secondary" id="refresh-map" type="button">地図を更新</button>
+        </header>
+        <p class="sensor-map-lead">公開を選んだセンサーだけを、約10km単位の位置で表示します。アイコンを選ぶと、センサーの持ち主とSNSを確認できます。</p>
+        <div class="sensor-world-map" id="public-sensor-map" role="region" aria-label="公開センサーの世界地図">
+          <div class="sensor-world-grid" aria-hidden="true"></div>
+          <div class="sensor-map-markers" id="public-sensor-markers"></div>
+        </div>
+        <aside class="sensor-map-card" id="public-sensor-detail" aria-live="polite">
+          <p>地図上のアイコンを選んでください。</p>
+        </aside>
+        <div class="sensor-public-list" id="public-sensor-list"></div>
+      </section>
+
       <section class="sensor-view sensor-login" data-view="login">
         <div class="sensor-kicker">YOUR SENSOR / PLANETARY SIGNAL</div>
         <h1>測ることから、<br />地球へ参加する。</h1>
@@ -35,6 +53,7 @@
         <button class="sensor-primary" id="google-login" type="button">
           <span aria-hidden="true">G</span>GoogleでログインしてESP32を登録
         </button>
+        <button class="sensor-secondary sensor-public-map-link" type="button" data-action="map">ログインせず地図を見る</button>
         <small>ログイン情報とDevice Tokenは別々に管理されます。</small>
         <ol class="sensor-register-preview" aria-label="ESP32登録の3ステップ">
           <li><span>01</span><p><strong>Googleでログイン</strong>所有する端末だけを安全に管理します。</p></li>
@@ -71,7 +90,13 @@
           <label>国 *<select name="countryCode" required><option value="">選択してください</option></select></label>
           <label>都道府県・州 <small>任意</small><input name="admin1Code" maxlength="32" autocomplete="address-level1" placeholder="東京都 / JP-13" /></label>
           <label>市区町村 <small>任意</small><input name="localityName" maxlength="80" autocomplete="address-level2" placeholder="渋谷区" /></label>
-          <p class="sensor-form-note">GPS・緯度経度・住所は取得しません。地域はサーバー側のDevice metadataとして保存されます。</p>
+          <fieldset class="sensor-public-location">
+            <label class="sensor-check"><input name="isPublic" type="checkbox" />このセンサーを「みんなのセンサー」に表示する</label>
+            <p>公開する場合だけ、地図を選んで約10km単位の位置を保存します。GPS・住所は取得も公開もしません。</p>
+            <div class="sensor-location-picker" data-location-picker="add" tabindex="0" role="application" aria-label="公開するおおよその位置を地図から選択"></div>
+            <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
+            <output data-location-output="add">位置は未選択です</output>
+          </fieldset>
           <button class="sensor-primary" type="submit">登録開始 <b aria-hidden="true">→</b></button>
         </form>
       </section>
@@ -111,14 +136,41 @@
           <ol id="history-list"></ol>
         </div>
         <form class="sensor-location-form" id="location-form">
-          <h2>地域を変更</h2>
+          <h2>地域と公開設定を変更</h2>
           <input name="name" type="hidden" />
           <label>国 *<select name="countryCode" required></select></label>
           <label>都道府県・州 <small>任意</small><input name="admin1Code" maxlength="32" /></label>
           <label>市区町村 <small>任意</small><input name="localityName" maxlength="80" /></label>
-          <button class="sensor-secondary" type="submit">地域を保存</button>
+          <fieldset class="sensor-public-location">
+            <label class="sensor-check"><input name="isPublic" type="checkbox" />このセンサーを「みんなのセンサー」に表示する</label>
+            <p>公開位置は約10km単位です。正確な住所やGPSは保存しません。</p>
+            <div class="sensor-location-picker" data-location-picker="detail" tabindex="0" role="application" aria-label="公開するおおよその位置を地図から選択"></div>
+            <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
+            <output data-location-output="detail">位置は未選択です</output>
+          </fieldset>
+          <button class="sensor-secondary" type="submit">地域と公開設定を保存</button>
         </form>
         <button class="sensor-danger" id="revoke-device" type="button">センサーを削除</button>
+      </section>
+
+      <section class="sensor-view sensor-profile" data-view="profile" id="profile" hidden>
+        <header class="sensor-page-head"><div><p>PUBLIC PROFILE</p><h1>プロフィール</h1></div></header>
+        <div class="sensor-profile-layout">
+          <section class="sensor-avatar-panel">
+            <div class="sensor-avatar-preview" id="profile-avatar-preview" aria-label="現在のアイコン"><span aria-hidden="true">◌</span></div>
+            <div><h2>センサーの持ち主アイコン</h2><p>PNGを正方形に整えて保存します。最大512px・2MB。写真の付随情報は取り除きます。</p></div>
+            <label class="sensor-secondary sensor-file-button">PNGを選ぶ<input id="profile-avatar-input" type="file" accept="image/png" /></label>
+            <button class="sensor-danger" id="profile-avatar-delete" type="button">アイコンを削除</button>
+          </section>
+          <form id="profile-form">
+            <label>表示名 *<input name="displayName" required maxlength="60" autocomplete="nickname" /></label>
+            <label>X <small>任意</small><input name="xUrl" type="url" maxlength="240" placeholder="https://x.com/yourname" /></label>
+            <label>GitHub <small>任意</small><input name="githubUrl" type="url" maxlength="240" placeholder="https://github.com/yourname" /></label>
+            <label>Instagram <small>任意</small><input name="instagramUrl" type="url" maxlength="240" placeholder="https://instagram.com/yourname" /></label>
+            <p class="sensor-form-note">入力したSNSは、公開センサーの持ち主カードにだけ表示されます。メールアドレスは公開しません。</p>
+            <button class="sensor-primary" type="submit">プロフィールを保存</button>
+          </form>
+        </div>
       </section>
 
       <section class="sensor-view sensor-guide" data-view="guide" id="guide" hidden>

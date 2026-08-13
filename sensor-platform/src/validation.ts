@@ -6,7 +6,11 @@ export type DeviceDraft = {
   countryCode: string;
   admin1Code: string | null;
   localityName: string | null;
+  isPublic: boolean;
+  publicLatitude: number | null;
+  publicLongitude: number | null;
 };
+export type ProfileDraft = { displayName: string; xUrl: string | null; githubUrl: string | null; instagramUrl: string | null };
 export type TelemetryInput = {
   seq: number;
   observedAt: string | null;
@@ -25,16 +29,58 @@ export const validatePairRequest = (value: unknown): PairRequest => {
 
 export const validateDeviceDraft = (value: unknown): DeviceDraft => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_BODY", "Request body must be an object.");
-  requireExactKeys(value, ["name", "countryCode", "admin1Code", "localityName"]);
+  requireExactKeys(value, ["name", "countryCode", "admin1Code", "localityName", "isPublic", "publicLatitude", "publicLongitude"]);
   const name = requireString(value.name, "name", 1, 80);
   const countryCode = requireString(value.countryCode, "countryCode", 2, 2).toUpperCase();
   if (!/^[A-Z]{2}$/u.test(countryCode)) throw new ApiError(400, "INVALID_COUNTRY", "countryCode must be ISO 3166-1 alpha-2.");
+  const isPublic = value.isPublic === true;
+  if (value.isPublic !== undefined && typeof value.isPublic !== "boolean") throw new ApiError(400, "INVALID_PUBLIC_LOCATION", "isPublic must be boolean.");
+  const publicLatitude = coordinate(value.publicLatitude, "publicLatitude", -90, 90);
+  const publicLongitude = coordinate(value.publicLongitude, "publicLongitude", -180, 180);
+  if (isPublic && (publicLatitude === null || publicLongitude === null)) {
+    throw new ApiError(400, "PUBLIC_LOCATION_REQUIRED", "Select an approximate public map location.");
+  }
   return {
     name,
     countryCode,
     admin1Code: optionalString(value.admin1Code, "admin1Code", 32),
     localityName: optionalString(value.localityName, "localityName", 80),
+    isPublic,
+    publicLatitude: isPublic ? publicLatitude : null,
+    publicLongitude: isPublic ? publicLongitude : null,
   };
+};
+
+export const validateProfileDraft = (value: unknown): ProfileDraft => {
+  if (!isRecord(value)) throw new ApiError(400, "INVALID_BODY", "Request body must be an object.");
+  requireExactKeys(value, ["displayName", "xUrl", "githubUrl", "instagramUrl"]);
+  return {
+    displayName: requireString(value.displayName, "displayName", 1, 60),
+    xUrl: socialUrl(value.xUrl, "xUrl", ["x.com"]),
+    githubUrl: socialUrl(value.githubUrl, "githubUrl", ["github.com"]),
+    instagramUrl: socialUrl(value.instagramUrl, "instagramUrl", ["instagram.com"]),
+  };
+};
+
+const coordinate = (value: unknown, field: string, minimum: number, maximum: number): number | null => {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < minimum || value > maximum) {
+    throw new ApiError(400, "INVALID_PUBLIC_LOCATION", `${field} is outside the accepted range.`);
+  }
+  return Math.round(value * 10) / 10;
+};
+
+const socialUrl = (value: unknown, field: string, hosts: readonly string[]): string | null => {
+  const raw = optionalString(value, field, 240);
+  if (!raw) return null;
+  let parsed: URL;
+  try { parsed = new URL(raw); } catch { throw new ApiError(400, "INVALID_SOCIAL_URL", `${field} must be a valid HTTPS profile URL.`); }
+  const host = parsed.hostname.toLowerCase().replace(/^www\./u, "");
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  if (parsed.protocol !== "https:" || !hosts.includes(host) || parsed.port || parsed.username || parsed.password || parsed.search || parsed.hash || segments.length !== 1 || !/^[A-Za-z0-9_.-]{1,80}$/u.test(segments[0] ?? "")) {
+    throw new ApiError(400, "INVALID_SOCIAL_URL", `${field} must be an HTTPS account profile URL.`);
+  }
+  return `https://${host}/${segments[0]}`;
 };
 
 export const validateTelemetry = (value: unknown): TelemetryInput => {

@@ -7,16 +7,19 @@ import {
   getLatest,
   listCountries,
   listDevices,
+  listPublicSensors,
   pairDevice,
   revokeDevice,
   updateDevice,
 } from "./devices";
 import { ApiError, clearCookie, errorResponse, json } from "./http";
+import { deleteAvatar, getProfile, getPublicAvatar, updateProfile, uploadAvatar } from "./profiles";
 
 const DEVICE_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)$/u;
 const LATEST_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)\/latest$/u;
 const HISTORY_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)\/telemetry$/u;
 const TELEMETRY_PATTERN = /^\/api\/v1\/devices\/(dev_[a-z0-9]+)\/telemetry$/u;
+const PUBLIC_AVATAR_PATTERN = /^\/api\/public\/v1\/profiles\/(usr_[a-z0-9]+)\/avatar$/u;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -46,6 +49,9 @@ const route = async (request: Request, env: Env, url: URL): Promise<Response> =>
   if (request.method === "GET" && url.pathname === "/api/web/v1/session") return sessionResponse(request, env);
   if (request.method === "POST" && url.pathname === "/api/web/v1/logout") return logout(request, env);
   if (request.method === "POST" && url.pathname === "/api/v1/device/pair") return pairDevice(request, env);
+  if (request.method === "GET" && url.pathname === "/api/public/v1/sensors") return listPublicSensors(env);
+  const publicAvatarMatch = PUBLIC_AVATAR_PATTERN.exec(url.pathname);
+  if (request.method === "GET" && publicAvatarMatch?.[1]) return getPublicAvatar(env, publicAvatarMatch[1]);
 
   const telemetryMatch = TELEMETRY_PATTERN.exec(url.pathname);
   if (request.method === "POST" && telemetryMatch?.[1]) return acceptTelemetry(request, env, telemetryMatch[1]);
@@ -55,6 +61,10 @@ const route = async (request: Request, env: Env, url: URL): Promise<Response> =>
     return listCountries(env);
   }
   const user = await getAuthenticatedUser(request, env);
+  if (request.method === "GET" && url.pathname === "/api/web/v1/profile") return getProfile(env, user);
+  if (request.method === "PATCH" && url.pathname === "/api/web/v1/profile") return updateProfile(request, env, user);
+  if (request.method === "PUT" && url.pathname === "/api/web/v1/profile/avatar") return uploadAvatar(request, env, user);
+  if (request.method === "DELETE" && url.pathname === "/api/web/v1/profile/avatar") return deleteAvatar(request, env, user);
   if (request.method === "GET" && url.pathname === "/api/web/v1/devices") return listDevices(env, user);
   if (request.method === "POST" && url.pathname === "/api/web/v1/devices/pairing") return createPairing(request, env, user);
 
@@ -86,7 +96,7 @@ const preflight = (request: Request, env: Env): Response => {
     headers: {
       "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Credentials": "true",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token",
       "Access-Control-Max-Age": "600",
       Vary: "Origin",

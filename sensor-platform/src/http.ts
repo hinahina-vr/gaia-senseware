@@ -62,6 +62,39 @@ export const readJson = async (request: Request, maximumBytes: number): Promise<
   }
 };
 
+export const readBytes = async (request: Request, maximumBytes: number): Promise<Uint8Array> => {
+  const declaredLength = request.headers.get("Content-Length");
+  if (declaredLength !== null && (!Number.isFinite(Number(declaredLength)) || Number(declaredLength) < 1 || Number(declaredLength) > maximumBytes)) {
+    throw new ApiError(413, "PAYLOAD_TOO_LARGE", `Request body must not exceed ${maximumBytes} bytes.`);
+  }
+  if (!request.body) throw new ApiError(400, "EMPTY_BODY", "A request body is required.");
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maximumBytes) {
+        await reader.cancel();
+        throw new ApiError(413, "PAYLOAD_TOO_LARGE", `Request body must not exceed ${maximumBytes} bytes.`);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  if (total < 1) throw new ApiError(400, "EMPTY_BODY", "A request body is required.");
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return output;
+};
+
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 

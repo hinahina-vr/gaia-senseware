@@ -159,6 +159,38 @@ var readJson = /* @__PURE__ */ __name(async (request, maximumBytes) => {
     throw new ApiError(400, "INVALID_JSON", "Request body is not valid JSON.");
   }
 }, "readJson");
+var readBytes = /* @__PURE__ */ __name(async (request, maximumBytes) => {
+  const declaredLength = request.headers.get("Content-Length");
+  if (declaredLength !== null && (!Number.isFinite(Number(declaredLength)) || Number(declaredLength) < 1 || Number(declaredLength) > maximumBytes)) {
+    throw new ApiError(413, "PAYLOAD_TOO_LARGE", `Request body must not exceed ${maximumBytes} bytes.`);
+  }
+  if (!request.body) throw new ApiError(400, "EMPTY_BODY", "A request body is required.");
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maximumBytes) {
+        await reader.cancel();
+        throw new ApiError(413, "PAYLOAD_TOO_LARGE", `Request body must not exceed ${maximumBytes} bytes.`);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  if (total < 1) throw new ApiError(400, "EMPTY_BODY", "A request body is required.");
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return output;
+}, "readBytes");
 var isRecord = /* @__PURE__ */ __name((value) => typeof value === "object" && value !== null && !Array.isArray(value), "isRecord");
 var requireExactKeys = /* @__PURE__ */ __name((value, allowed) => {
   const unknown = Object.keys(value).find((key) => !allowed.includes(key));
@@ -402,7 +434,7 @@ var upsertGoogleUser = /* @__PURE__ */ __name(async (db, identity, now) => {
   ).bind(identity.sub).first();
   if (existing) {
     await db.batch([
-      db.prepare("UPDATE users SET display_name = ?1, updated_at = ?2 WHERE id = ?3").bind(identity.name, now, existing.user_id),
+      db.prepare("UPDATE users SET updated_at = ?1 WHERE id = ?2").bind(now, existing.user_id),
       db.prepare(
         "UPDATE user_identities SET email = ?1, email_verified = ?2, updated_at = ?3 WHERE provider = 'google' AND provider_subject = ?4"
       ).bind(identity.email, identity.emailVerified ? 1 : 0, now, identity.sub)
@@ -410,9 +442,10 @@ var upsertGoogleUser = /* @__PURE__ */ __name(async (db, identity, now) => {
     return existing.user_id;
   }
   const userId = crypto.randomUUID();
+  const publicId = `usr_${randomToken().replace(/[^A-Za-z0-9]/gu, "").slice(0, 24).toLowerCase()}`;
   try {
     await db.batch([
-      db.prepare("INSERT INTO users (id, display_name, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)").bind(userId, identity.name, now),
+      db.prepare("INSERT INTO users (id, public_id, display_name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)").bind(userId, publicId, identity.name, now),
       db.prepare(
         `INSERT INTO user_identities
           (id, user_id, provider, provider_subject, email, email_verified, created_at, updated_at)
@@ -494,17 +527,60 @@ var validatePairRequest = /* @__PURE__ */ __name((value) => {
 }, "validatePairRequest");
 var validateDeviceDraft = /* @__PURE__ */ __name((value) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_BODY", "Request body must be an object.");
-  requireExactKeys(value, ["name", "countryCode", "admin1Code", "localityName"]);
+  requireExactKeys(value, ["name", "countryCode", "admin1Code", "localityName", "isPublic", "publicLatitude", "publicLongitude"]);
   const name = requireString(value.name, "name", 1, 80);
   const countryCode = requireString(value.countryCode, "countryCode", 2, 2).toUpperCase();
   if (!/^[A-Z]{2}$/u.test(countryCode)) throw new ApiError(400, "INVALID_COUNTRY", "countryCode must be ISO 3166-1 alpha-2.");
+  const isPublic = value.isPublic === true;
+  if (value.isPublic !== void 0 && typeof value.isPublic !== "boolean") throw new ApiError(400, "INVALID_PUBLIC_LOCATION", "isPublic must be boolean.");
+  const publicLatitude = coordinate(value.publicLatitude, "publicLatitude", -90, 90);
+  const publicLongitude = coordinate(value.publicLongitude, "publicLongitude", -180, 180);
+  if (isPublic && (publicLatitude === null || publicLongitude === null)) {
+    throw new ApiError(400, "PUBLIC_LOCATION_REQUIRED", "Select an approximate public map location.");
+  }
   return {
     name,
     countryCode,
     admin1Code: optionalString(value.admin1Code, "admin1Code", 32),
-    localityName: optionalString(value.localityName, "localityName", 80)
+    localityName: optionalString(value.localityName, "localityName", 80),
+    isPublic,
+    publicLatitude: isPublic ? publicLatitude : null,
+    publicLongitude: isPublic ? publicLongitude : null
   };
 }, "validateDeviceDraft");
+var validateProfileDraft = /* @__PURE__ */ __name((value) => {
+  if (!isRecord(value)) throw new ApiError(400, "INVALID_BODY", "Request body must be an object.");
+  requireExactKeys(value, ["displayName", "xUrl", "githubUrl", "instagramUrl"]);
+  return {
+    displayName: requireString(value.displayName, "displayName", 1, 60),
+    xUrl: socialUrl(value.xUrl, "xUrl", ["x.com"]),
+    githubUrl: socialUrl(value.githubUrl, "githubUrl", ["github.com"]),
+    instagramUrl: socialUrl(value.instagramUrl, "instagramUrl", ["instagram.com"])
+  };
+}, "validateProfileDraft");
+var coordinate = /* @__PURE__ */ __name((value, field, minimum, maximum) => {
+  if (value === void 0 || value === null || value === "") return null;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < minimum || value > maximum) {
+    throw new ApiError(400, "INVALID_PUBLIC_LOCATION", `${field} is outside the accepted range.`);
+  }
+  return Math.round(value * 10) / 10;
+}, "coordinate");
+var socialUrl = /* @__PURE__ */ __name((value, field, hosts) => {
+  const raw = optionalString(value, field, 240);
+  if (!raw) return null;
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new ApiError(400, "INVALID_SOCIAL_URL", `${field} must be a valid HTTPS profile URL.`);
+  }
+  const host = parsed.hostname.toLowerCase().replace(/^www\./u, "");
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  if (parsed.protocol !== "https:" || !hosts.includes(host) || parsed.port || parsed.username || parsed.password || parsed.search || parsed.hash || segments.length !== 1 || !/^[A-Za-z0-9_.-]{1,80}$/u.test(segments[0] ?? "")) {
+    throw new ApiError(400, "INVALID_SOCIAL_URL", `${field} must be an HTTPS account profile URL.`);
+  }
+  return `https://${host}/${segments[0]}`;
+}, "socialUrl");
 var validateTelemetry = /* @__PURE__ */ __name((value) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_BODY", "Request body must be an object.");
   requireExactKeys(value, ["seq", "observedAt", "data"]);
@@ -574,8 +650,9 @@ var createPairing = /* @__PURE__ */ __name(async (request, env, user) => {
   const expiresAt = new Date(now.getTime() + 10 * 60 * 1e3).toISOString();
   await env.DB.prepare(
     `INSERT INTO device_pairing_codes
-      (id, code_hash, user_id, device_name, country_code, admin1_code, locality_name, expires_at, created_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`
+      (id, code_hash, user_id, device_name, country_code, admin1_code, locality_name,
+       public_latitude, public_longitude, is_public, expires_at, created_at)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`
   ).bind(
     crypto.randomUUID(),
     await hmacHex(env.PAIRING_CODE_PEPPER, code),
@@ -584,6 +661,9 @@ var createPairing = /* @__PURE__ */ __name(async (request, env, user) => {
     draft.countryCode,
     draft.admin1Code,
     draft.localityName,
+    draft.publicLatitude,
+    draft.publicLongitude,
+    draft.isPublic ? 1 : 0,
     expiresAt,
     now.toISOString()
   ).run();
@@ -602,19 +682,21 @@ var pairDevice = /* @__PURE__ */ __name(async (request, env) => {
       `UPDATE device_pairing_codes
        SET used_at = ?1, consumed_by_device_id = ?3
        WHERE code_hash = ?2 AND used_at IS NULL AND expires_at > ?1
-       RETURNING id, user_id, device_name, country_code, admin1_code, locality_name`
+       RETURNING id, user_id, device_name, country_code, admin1_code, locality_name,
+         public_latitude, public_longitude, is_public`
     ).bind(now, codeHash, databaseId),
     env.DB.prepare(
       `INSERT INTO devices
-        (id, device_id, owner_user_id, name, token_hash, country_code, admin1_code, locality_name,
-         location_precision, created_at, updated_at)
-       SELECT ?1, ?2, user_id, device_name, ?3, country_code, admin1_code, locality_name,
+        (id, public_id, device_id, owner_user_id, name, token_hash, country_code, admin1_code, locality_name,
+         public_latitude, public_longitude, is_public, location_precision, created_at, updated_at)
+       SELECT ?1, ?2, ?3, user_id, device_name, ?4, country_code, admin1_code, locality_name,
+         public_latitude, public_longitude, is_public,
          CASE WHEN locality_name IS NOT NULL THEN 'LOCALITY'
               WHEN admin1_code IS NOT NULL THEN 'ADMIN1' ELSE 'COUNTRY' END,
-         ?4, ?4
+         ?5, ?5
        FROM device_pairing_codes
-       WHERE code_hash = ?5 AND used_at = ?4 AND consumed_by_device_id = ?1`
-    ).bind(databaseId, deviceId, tokenHash, now, codeHash)
+       WHERE code_hash = ?6 AND used_at = ?5 AND consumed_by_device_id = ?1`
+    ).bind(databaseId, `sensor_${randomIdentifier(16)}`, deviceId, tokenHash, now, codeHash)
   ]);
   const consumedRows = results[0]?.results;
   const inserted = results[1]?.meta.changes ?? 0;
@@ -682,16 +764,17 @@ var listDevices = /* @__PURE__ */ __name(async (env, user) => {
        COALESCE(c.name_local, c.name_en) AS countryName, d.admin1_code AS admin1Code,
        d.locality_name AS localityName,
        CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
-       d.last_seen_at AS lastSeenAt, d.created_at AS createdAt
+       d.last_seen_at AS lastSeenAt, d.created_at AS createdAt, d.is_public AS isPublic,
+       d.public_latitude AS publicLatitude, d.public_longitude AS publicLongitude
      FROM devices d JOIN countries c ON c.code = d.country_code
      WHERE d.owner_user_id = ?2 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
      ORDER BY d.created_at DESC`
   ).bind(`-${threshold} seconds`, user.id).all();
-  return json({ devices: result.results });
+  return json({ devices: result.results.map(serializeDevice) });
 }, "listDevices");
 var getDevice = /* @__PURE__ */ __name(async (env, user, deviceId) => {
   const device = await ownedDevice(env, user.id, deviceId);
-  return json({ device });
+  return json({ device: serializeDevice(device) });
 }, "getDevice");
 var getLatest = /* @__PURE__ */ __name(async (env, user, deviceId) => {
   const device = await ownedDevice(env, user.id, deviceId);
@@ -699,7 +782,7 @@ var getLatest = /* @__PURE__ */ __name(async (env, user, deviceId) => {
     `SELECT seq, observed_at AS observedAt, received_at AS receivedAt, payload_json AS payloadJson
      FROM telemetry WHERE device_id = ?1 ORDER BY received_at DESC, seq DESC LIMIT 1`
   ).bind(deviceId).first();
-  return json({ device, latest: latest ? serializeTelemetry(latest) : null });
+  return json({ device: serializeDevice(device), latest: latest ? serializeTelemetry(latest) : null });
 }, "getLatest");
 var getHistory = /* @__PURE__ */ __name(async (env, user, deviceId, url) => {
   await ownedDevice(env, user.id, deviceId);
@@ -725,10 +808,22 @@ var updateDevice = /* @__PURE__ */ __name(async (request, env, user, deviceId) =
   if (!country) throw new ApiError(400, "INVALID_COUNTRY", "Selected country is not enabled.");
   const result = await env.DB.prepare(
     `UPDATE devices SET name = ?1, country_code = ?2, admin1_code = ?3, locality_name = ?4,
+       is_public = ?5, public_latitude = ?6, public_longitude = ?7,
        location_precision = CASE WHEN ?4 IS NOT NULL THEN 'LOCALITY' WHEN ?3 IS NOT NULL THEN 'ADMIN1' ELSE 'COUNTRY' END,
-       updated_at = ?5
-     WHERE device_id = ?6 AND owner_user_id = ?7 AND status = 'ACTIVE' AND deleted_at IS NULL`
-  ).bind(draft.name, draft.countryCode, draft.admin1Code, draft.localityName, (/* @__PURE__ */ new Date()).toISOString(), deviceId, user.id).run();
+       updated_at = ?8
+     WHERE device_id = ?9 AND owner_user_id = ?10 AND status = 'ACTIVE' AND deleted_at IS NULL`
+  ).bind(
+    draft.name,
+    draft.countryCode,
+    draft.admin1Code,
+    draft.localityName,
+    draft.isPublic ? 1 : 0,
+    draft.publicLatitude,
+    draft.publicLongitude,
+    (/* @__PURE__ */ new Date()).toISOString(),
+    deviceId,
+    user.id
+  ).run();
   if (result.meta.changes !== 1) throw new ApiError(404, "DEVICE_NOT_FOUND", "Device was not found.");
   return getDevice(env, user, deviceId);
 }, "updateDevice");
@@ -749,19 +844,54 @@ var ownedDevice = /* @__PURE__ */ __name(async (env, userId, deviceId) => {
        COALESCE(c.name_local, c.name_en) AS countryName, d.admin1_code AS admin1Code,
        d.locality_name AS localityName,
        CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
-       d.last_seen_at AS lastSeenAt, d.created_at AS createdAt
+       d.last_seen_at AS lastSeenAt, d.created_at AS createdAt, d.is_public AS isPublic,
+       d.public_latitude AS publicLatitude, d.public_longitude AS publicLongitude
      FROM devices d JOIN countries c ON c.code = d.country_code
      WHERE d.device_id = ?2 AND d.owner_user_id = ?3 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL`
   ).bind(`-${threshold} seconds`, deviceId, userId).first();
   if (!device) throw new ApiError(404, "DEVICE_NOT_FOUND", "Device was not found.");
   return device;
 }, "ownedDevice");
+var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
+  const threshold = onlineThreshold(env);
+  const result = await env.DB.prepare(
+    `SELECT d.public_id AS id, d.name AS sensorName, d.public_latitude AS latitude,
+       d.public_longitude AS longitude,
+       CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
+       u.public_id AS ownerPublicId, u.display_name AS ownerDisplayName,
+       u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
+       u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl
+     FROM devices d JOIN users u ON u.id = d.owner_user_id
+     WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+       AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
+     ORDER BY d.created_at DESC LIMIT 500`
+  ).bind(`-${threshold} seconds`).all();
+  return json({
+    sensors: result.results.map((row) => ({
+      id: row.id,
+      sensorName: row.sensorName,
+      location: { latitude: row.latitude, longitude: row.longitude, precision: "APPROXIMATE_0_1_DEGREE" },
+      state: row.state,
+      owner: {
+        displayName: row.ownerDisplayName,
+        avatarUrl: row.avatarKey ? `/api/public/v1/profiles/${encodeURIComponent(row.ownerPublicId)}/avatar?v=${encodeURIComponent(row.avatarUpdatedAt ?? "1")}` : null,
+        xUrl: row.xUrl,
+        githubUrl: row.githubUrl,
+        instagramUrl: row.instagramUrl
+      }
+    }))
+  });
+}, "listPublicSensors");
 var serializeTelemetry = /* @__PURE__ */ __name((row) => ({
   seq: row.seq,
   observedAt: row.observedAt,
   receivedAt: row.receivedAt,
   data: JSON.parse(row.payloadJson)
 }), "serializeTelemetry");
+var serializeDevice = /* @__PURE__ */ __name((device) => ({
+  ...device,
+  isPublic: device.isPublic === 1
+}), "serializeDevice");
 var parseLimit = /* @__PURE__ */ __name((value) => {
   if (value === null) return 100;
   const limit = Number(value);
@@ -785,11 +915,150 @@ var randomIdentifier = /* @__PURE__ */ __name((length) => {
   return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
 }, "randomIdentifier");
 
+// src/profiles.ts
+var MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+var MAX_AVATAR_EDGE = 512;
+var PNG_SIGNATURE = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+var getProfile = /* @__PURE__ */ __name(async (env, user) => {
+  const profile = await profileRow(env, user.id);
+  return json({ profile: serializeProfile(profile) });
+}, "getProfile");
+var updateProfile = /* @__PURE__ */ __name(async (request, env, user) => {
+  await requireCsrf(request, user);
+  const draft = validateProfileDraft(await readJson(request, 4096));
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const result = await env.DB.prepare(
+    `UPDATE users SET display_name = ?1, x_url = ?2, github_url = ?3, instagram_url = ?4, updated_at = ?5
+     WHERE id = ?6`
+  ).bind(draft.displayName, draft.xUrl, draft.githubUrl, draft.instagramUrl, now, user.id).run();
+  if (result.meta.changes !== 1) throw new ApiError(404, "PROFILE_NOT_FOUND", "Profile was not found.");
+  return getProfile(env, user);
+}, "updateProfile");
+var uploadAvatar = /* @__PURE__ */ __name(async (request, env, user) => {
+  await requireCsrf(request, user);
+  const type = request.headers.get("Content-Type")?.split(";", 1)[0]?.trim().toLowerCase();
+  if (type !== "image/png") throw new ApiError(415, "UNSUPPORTED_AVATAR_TYPE", "Avatar must be a PNG image.");
+  const sanitized = sanitizePng(await readBytes(request, MAX_AVATAR_BYTES));
+  const previous = await profileRow(env, user.id);
+  const key = `avatars/${user.id}/${crypto.randomUUID()}.png`;
+  await env.PROFILE_IMAGES.put(key, sanitized, {
+    httpMetadata: { contentType: "image/png", cacheControl: "public, max-age=31536000, immutable" },
+    customMetadata: { owner: user.id }
+  });
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  try {
+    const result = await env.DB.prepare(
+      "UPDATE users SET avatar_key = ?1, avatar_updated_at = ?2, updated_at = ?2 WHERE id = ?3"
+    ).bind(key, now, user.id).run();
+    if (result.meta.changes !== 1) throw new ApiError(404, "PROFILE_NOT_FOUND", "Profile was not found.");
+  } catch (error) {
+    await env.PROFILE_IMAGES.delete(key);
+    throw error;
+  }
+  if (previous.avatarKey) await env.PROFILE_IMAGES.delete(previous.avatarKey);
+  return getProfile(env, user);
+}, "uploadAvatar");
+var deleteAvatar = /* @__PURE__ */ __name(async (request, env, user) => {
+  await requireCsrf(request, user);
+  const previous = await profileRow(env, user.id);
+  await env.DB.prepare(
+    "UPDATE users SET avatar_key = NULL, avatar_updated_at = NULL, updated_at = ?1 WHERE id = ?2"
+  ).bind((/* @__PURE__ */ new Date()).toISOString(), user.id).run();
+  if (previous.avatarKey) await env.PROFILE_IMAGES.delete(previous.avatarKey);
+  return new Response(null, { status: 204 });
+}, "deleteAvatar");
+var getPublicAvatar = /* @__PURE__ */ __name(async (env, publicId) => {
+  const profile = await env.DB.prepare(
+    "SELECT avatar_key AS avatarKey FROM users WHERE public_id = ?1"
+  ).bind(publicId).first();
+  if (!profile?.avatarKey) throw new ApiError(404, "AVATAR_NOT_FOUND", "Avatar was not found.");
+  const object = await env.PROFILE_IMAGES.get(profile.avatarKey);
+  if (!object) throw new ApiError(404, "AVATAR_NOT_FOUND", "Avatar was not found.");
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("Content-Type", "image/png");
+  headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  headers.set("ETag", object.httpEtag);
+  headers.set("X-Content-Type-Options", "nosniff");
+  return new Response(object.body, { headers });
+}, "getPublicAvatar");
+var profileRow = /* @__PURE__ */ __name(async (env, userId) => {
+  const profile = await env.DB.prepare(
+    `SELECT public_id AS publicId, display_name AS displayName, avatar_key AS avatarKey,
+       avatar_updated_at AS avatarUpdatedAt, x_url AS xUrl, github_url AS githubUrl,
+       instagram_url AS instagramUrl
+     FROM users WHERE id = ?1`
+  ).bind(userId).first();
+  if (!profile?.publicId) throw new ApiError(404, "PROFILE_NOT_FOUND", "Profile was not found.");
+  return profile;
+}, "profileRow");
+var serializeProfile = /* @__PURE__ */ __name((profile) => ({
+  publicId: profile.publicId,
+  displayName: profile.displayName,
+  avatarUrl: profile.avatarKey ? `/api/public/v1/profiles/${encodeURIComponent(profile.publicId)}/avatar?v=${encodeURIComponent(profile.avatarUpdatedAt ?? "1")}` : null,
+  xUrl: profile.xUrl,
+  githubUrl: profile.githubUrl,
+  instagramUrl: profile.instagramUrl
+}), "serializeProfile");
+var sanitizePng = /* @__PURE__ */ __name((source) => {
+  if (source.byteLength < 33 || !PNG_SIGNATURE.every((value, index) => source[index] === value)) {
+    throw new ApiError(400, "INVALID_AVATAR", "Avatar is not a valid PNG image.");
+  }
+  const kept = [source.slice(0, 8)];
+  let offset = 8;
+  let sawHeader = false;
+  let sawData = false;
+  let sawEnd = false;
+  while (offset + 12 <= source.byteLength && !sawEnd) {
+    const length = readUint32(source, offset);
+    const end = offset + 12 + length;
+    if (length > MAX_AVATAR_BYTES || end > source.byteLength) throw new ApiError(400, "INVALID_AVATAR", "PNG chunks are invalid.");
+    const type = new TextDecoder().decode(source.slice(offset + 4, offset + 8));
+    if (!/^[A-Za-z]{4}$/u.test(type)) throw new ApiError(400, "INVALID_AVATAR", "PNG chunks are invalid.");
+    const chunk = source.slice(offset, end);
+    if (type === "IHDR") {
+      if (sawHeader || offset !== 8 || length !== 13) throw new ApiError(400, "INVALID_AVATAR", "PNG header is invalid.");
+      const width = readUint32(source, offset + 8);
+      const height = readUint32(source, offset + 12);
+      const bitDepth = source[offset + 16] ?? -1;
+      const colorType = source[offset + 17] ?? -1;
+      const interlace = source[offset + 20] ?? -1;
+      if (width < 1 || height < 1 || width > MAX_AVATAR_EDGE || height > MAX_AVATAR_EDGE || bitDepth !== 8 || ![2, 6].includes(colorType) || interlace !== 0) {
+        throw new ApiError(400, "INVALID_AVATAR", `Avatar must be a non-interlaced RGB/RGBA PNG up to ${MAX_AVATAR_EDGE}px.`);
+      }
+      kept.push(chunk);
+      sawHeader = true;
+    } else if (type === "IDAT") {
+      if (!sawHeader || sawEnd) throw new ApiError(400, "INVALID_AVATAR", "PNG image data is invalid.");
+      kept.push(chunk);
+      sawData = true;
+    } else if (type === "IEND") {
+      if (!sawHeader || !sawData || length !== 0) throw new ApiError(400, "INVALID_AVATAR", "PNG ending is invalid.");
+      kept.push(chunk);
+      sawEnd = true;
+    } else if ((type.charCodeAt(0) & 32) === 0 || type === "acTL" || type === "fcTL" || type === "fdAT") {
+      throw new ApiError(400, "INVALID_AVATAR", "Animated or unsupported PNG images are not accepted.");
+    }
+    offset = end;
+  }
+  if (!sawEnd || offset !== source.byteLength) throw new ApiError(400, "INVALID_AVATAR", "PNG ending is invalid.");
+  const total = kept.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+  const output = new Uint8Array(total);
+  let outputOffset = 0;
+  for (const chunk of kept) {
+    output.set(chunk, outputOffset);
+    outputOffset += chunk.byteLength;
+  }
+  return output;
+}, "sanitizePng");
+var readUint32 = /* @__PURE__ */ __name((source, offset) => (source[offset] ?? 0) * 16777216 + ((source[offset + 1] ?? 0) << 16) + ((source[offset + 2] ?? 0) << 8) + (source[offset + 3] ?? 0) >>> 0, "readUint32");
+
 // src/index.ts
 var DEVICE_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)$/u;
 var LATEST_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)\/latest$/u;
 var HISTORY_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)\/telemetry$/u;
 var TELEMETRY_PATTERN = /^\/api\/v1\/devices\/(dev_[a-z0-9]+)\/telemetry$/u;
+var PUBLIC_AVATAR_PATTERN = /^\/api\/public\/v1\/profiles\/(usr_[a-z0-9]+)\/avatar$/u;
 var index_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -817,6 +1086,9 @@ var route = /* @__PURE__ */ __name(async (request, env, url) => {
   if (request.method === "GET" && url.pathname === "/api/web/v1/session") return sessionResponse(request, env);
   if (request.method === "POST" && url.pathname === "/api/web/v1/logout") return logout(request, env);
   if (request.method === "POST" && url.pathname === "/api/v1/device/pair") return pairDevice(request, env);
+  if (request.method === "GET" && url.pathname === "/api/public/v1/sensors") return listPublicSensors(env);
+  const publicAvatarMatch = PUBLIC_AVATAR_PATTERN.exec(url.pathname);
+  if (request.method === "GET" && publicAvatarMatch?.[1]) return getPublicAvatar(env, publicAvatarMatch[1]);
   const telemetryMatch = TELEMETRY_PATTERN.exec(url.pathname);
   if (request.method === "POST" && telemetryMatch?.[1]) return acceptTelemetry(request, env, telemetryMatch[1]);
   if (request.method === "GET" && url.pathname === "/api/web/v1/countries") {
@@ -824,6 +1096,10 @@ var route = /* @__PURE__ */ __name(async (request, env, url) => {
     return listCountries(env);
   }
   const user = await getAuthenticatedUser(request, env);
+  if (request.method === "GET" && url.pathname === "/api/web/v1/profile") return getProfile(env, user);
+  if (request.method === "PATCH" && url.pathname === "/api/web/v1/profile") return updateProfile(request, env, user);
+  if (request.method === "PUT" && url.pathname === "/api/web/v1/profile/avatar") return uploadAvatar(request, env, user);
+  if (request.method === "DELETE" && url.pathname === "/api/web/v1/profile/avatar") return deleteAvatar(request, env, user);
   if (request.method === "GET" && url.pathname === "/api/web/v1/devices") return listDevices(env, user);
   if (request.method === "POST" && url.pathname === "/api/web/v1/devices/pairing") return createPairing(request, env, user);
   const latestMatch = LATEST_PATTERN.exec(url.pathname);
@@ -852,7 +1128,7 @@ var preflight = /* @__PURE__ */ __name((request, env) => {
     headers: {
       "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Credentials": "true",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token",
       "Access-Control-Max-Age": "600",
       Vary: "Origin"

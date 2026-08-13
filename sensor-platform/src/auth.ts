@@ -234,8 +234,8 @@ const upsertGoogleUser = async (db: D1Database, identity: GoogleIdentity, now: s
   ).bind(identity.sub).first<{ user_id: string }>();
   if (existing) {
     await db.batch([
-      db.prepare("UPDATE users SET display_name = ?1, updated_at = ?2 WHERE id = ?3")
-        .bind(identity.name, now, existing.user_id),
+      db.prepare("UPDATE users SET updated_at = ?1 WHERE id = ?2")
+        .bind(now, existing.user_id),
       db.prepare(
         "UPDATE user_identities SET email = ?1, email_verified = ?2, updated_at = ?3 WHERE provider = 'google' AND provider_subject = ?4",
       ).bind(identity.email, identity.emailVerified ? 1 : 0, now, identity.sub),
@@ -243,10 +243,11 @@ const upsertGoogleUser = async (db: D1Database, identity: GoogleIdentity, now: s
     return existing.user_id;
   }
   const userId = crypto.randomUUID();
+  const publicId = `usr_${randomToken().replace(/[^A-Za-z0-9]/gu, "").slice(0, 24).toLowerCase()}`;
   try {
     await db.batch([
-      db.prepare("INSERT INTO users (id, display_name, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)")
-        .bind(userId, identity.name, now),
+      db.prepare("INSERT INTO users (id, public_id, display_name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)")
+        .bind(userId, publicId, identity.name, now),
       db.prepare(
         `INSERT INTO user_identities
           (id, user_id, provider, provider_subject, email, email_verified, created_at, updated_at)
