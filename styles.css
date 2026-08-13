@@ -264,6 +264,38 @@
   backdrop-filter: blur(10px) saturate(1.1);
 }
 
+.intro-lp-hero a.intro-path-card {
+  color: inherit;
+  text-decoration: none;
+}
+
+.intro-path-card--sensor {
+  --path-rgb: 124, 233, 198;
+}
+
+@media (min-width: 761px) {
+  .intro-lp-hero .intro-path-card--sensor > strong {
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+}
+
+.intro-path-glyph--sensor {
+  width: 42px;
+  height: 30px;
+}
+
+.intro-path-glyph--sensor svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
 .intro-lp-hero .intro-path-card::before {
   right: -18%;
   width: 58%;

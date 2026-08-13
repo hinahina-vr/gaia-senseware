@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#06111a" />
+    <link rel="icon" href="data:," />
+    <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
+    <title>センサーで参加 — GAIA SENSEWARE</title>
+    <link rel="stylesheet" href="./sensor-platform.css?v=1" />
+    <script src="./sensor-platform.js?v=1" type="module"></script>
+  </head>
+  <body>
+    <div class="sensor-atmosphere" aria-hidden="true"><i></i><i></i><i></i></div>
+    <header class="sensor-topbar">
+      <a class="sensor-brand" href="../" aria-label="GAIA SENSEWAREへ戻る">
+        <span>GAIA SENSEWARE</span>
+        <strong>SENSOR PARTICIPATION</strong>
+      </a>
+      <nav aria-label="センサープラットフォーム">
+        <a href="#devices" data-nav="devices">マイセンサー</a>
+        <a href="#guide" data-nav="guide">接続ガイド</a>
+        <a href="../">地図へ戻る</a>
+      </nav>
+    </header>
+
+    <main class="sensor-shell">
+      <noscript>このセンサープラットフォームにはJavaScriptが必要です。</noscript>
+      <section class="sensor-status" id="sensor-status" role="status" aria-live="polite" hidden></section>
+
+      <section class="sensor-view sensor-login" data-view="login">
+        <div class="sensor-kicker">YOUR SENSOR / PLANETARY SIGNAL</div>
+        <h1>測ることから、<br />地球へ参加する。</h1>
+        <p>国だけを選び、自分のESP32を登録します。GPSや住所は使いません。温度・湿度・PM2.5など、あなたが測った値だけをHTTPSで届けます。</p>
+        <button class="sensor-primary" id="google-login" type="button">
+          <span aria-hidden="true">G</span>GoogleでログインしてESP32を登録
+        </button>
+        <small>ログイン情報とDevice Tokenは別々に管理されます。</small>
+        <ol class="sensor-register-preview" aria-label="ESP32登録の3ステップ">
+          <li><span>01</span><p><strong>Googleでログイン</strong>所有する端末だけを安全に管理します。</p></li>
+          <li><span>02</span><p><strong>端末を追加</strong>国と名前を登録し、Pairing Codeを取得します。</p></li>
+          <li><span>03</span><p><strong>Setup APへ入力</strong><code>CITY-SENSOR-XXXX</code>へ接続し、Wi-FiとPairing Codeを入力します。</p></li>
+        </ol>
+      </section>
+
+      <section class="sensor-view" data-view="loading" hidden aria-busy="true">
+        <div class="sensor-loading-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+        <p>センサーの記録を読み込んでいます。</p>
+      </section>
+
+      <section class="sensor-view sensor-dashboard" data-view="devices" id="devices" hidden>
+        <header class="sensor-page-head">
+          <div><p>MY SENSORS</p><h1>マイセンサー</h1></div>
+          <button class="sensor-primary sensor-add" id="show-add" type="button">＋ センサーを追加</button>
+        </header>
+        <div class="sensor-empty" id="device-empty" hidden>
+          <span aria-hidden="true">◌</span>
+          <h2>まだセンサーがありません</h2>
+          <p>国と名前を登録すると、ESP32に入力する一回限りのコードが発行されます。</p>
+          <button class="sensor-secondary" type="button" data-action="show-add">最初のセンサーを追加</button>
+        </div>
+        <div class="sensor-device-grid" id="device-list"></div>
+      </section>
+
+      <section class="sensor-view sensor-panel" data-view="add" hidden>
+        <button class="sensor-back" type="button" data-action="devices">← マイセンサー</button>
+        <div class="sensor-kicker">REGISTER / USER DECLARED LOCATION</div>
+        <h1>センサーを追加</h1>
+        <form id="device-form">
+          <label>センサー名 *<input name="name" required maxlength="80" autocomplete="off" placeholder="ベランダ環境センサー" /></label>
+          <label>国 *<select name="countryCode" required><option value="">選択してください</option></select></label>
+          <label>都道府県・州 <small>任意</small><input name="admin1Code" maxlength="32" autocomplete="address-level1" placeholder="東京都 / JP-13" /></label>
+          <label>市区町村 <small>任意</small><input name="localityName" maxlength="80" autocomplete="address-level2" placeholder="渋谷区" /></label>
+          <p class="sensor-form-note">GPS・緯度経度・住所は取得しません。地域はサーバー側のDevice metadataとして保存されます。</p>
+          <button class="sensor-primary" type="submit">登録開始 <b aria-hidden="true">→</b></button>
+        </form>
+      </section>
+
+      <section class="sensor-view sensor-panel sensor-pairing" data-view="pairing" hidden>
+        <button class="sensor-back" type="button" data-action="devices">← マイセンサー</button>
+        <div class="sensor-kicker">ONE-TIME PAIRING</div>
+        <h1>ESP32にコードを入力</h1>
+        <p>このコードは10分間・一回だけ使えます。Device Tokenはpairing成功時にESP32へ一度だけ返されます。</p>
+        <ol class="sensor-setup-steps" aria-label="Setup APへの入力手順">
+          <li><span>01</span><p>PCまたはスマホをWi-Fi <code>CITY-SENSOR-XXXX</code>へ接続</p></li>
+          <li><span>02</span><p><a href="http://192.168.4.1/" target="_blank" rel="noopener">http://192.168.4.1/</a> をブラウザで開く</p></li>
+          <li><span>03</span><p>自宅・会場のWi-Fiと、このPairing Codeを入力</p></li>
+        </ol>
+        <output id="pairing-code" aria-label="Pairing Code">—</output>
+        <p id="pairing-expiry">有効期限を確認しています。</p>
+        <div class="sensor-pair-actions">
+          <button class="sensor-secondary" id="copy-pairing" type="button">コードをコピー</button>
+          <button class="sensor-primary" id="pairing-complete" type="button">登録完了を確認</button>
+        </div>
+      </section>
+
+      <section class="sensor-view sensor-detail" data-view="detail" hidden>
+        <button class="sensor-back" type="button" data-action="devices">← マイセンサー</button>
+        <header class="sensor-detail-head">
+          <div><p id="detail-id">DEVICE</p><h1 id="detail-name">—</h1></div>
+          <span class="sensor-state" id="detail-state">OFFLINE</span>
+        </header>
+        <div class="sensor-metrics" id="latest-metrics"><p>最初のデータを待っています。</p></div>
+        <div class="sensor-detail-meta">
+          <p><span>地域</span><strong id="detail-location">—</strong></p>
+          <p><span>最終更新</span><strong id="detail-updated">—</strong></p>
+        </div>
+        <div class="sensor-history">
+          <header><div><p>HISTORY</p><h2>最近の記録</h2></div><button class="sensor-secondary" id="refresh-detail" type="button">更新</button></header>
+          <div class="sensor-chart" id="history-chart" role="img" aria-label="温度の履歴グラフ"></div>
+          <ol id="history-list"></ol>
+        </div>
+        <form class="sensor-location-form" id="location-form">
+          <h2>地域を変更</h2>
+          <input name="name" type="hidden" />
+          <label>国 *<select name="countryCode" required></select></label>
+          <label>都道府県・州 <small>任意</small><input name="admin1Code" maxlength="32" /></label>
+          <label>市区町村 <small>任意</small><input name="localityName" maxlength="80" /></label>
+          <button class="sensor-secondary" type="submit">地域を保存</button>
+        </form>
+        <button class="sensor-danger" id="revoke-device" type="button">センサーを削除</button>
+      </section>
+
+      <section class="sensor-view sensor-guide" data-view="guide" id="guide" hidden>
+        <div class="sensor-kicker">ESP32 STARTER KIT</div>
+        <h1>HTTPSで、直接つなぐ。</h1>
+        <ol>
+          <li><span>01</span><p><strong>Webで登録</strong>Google Login後、国とセンサー名を登録します。</p></li>
+          <li><span>02</span><p><strong>Pairing</strong>10分間有効な一回限りコードをESP32へ設定します。</p></li>
+          <li><span>03</span><p><strong>NVSへ保存</strong>Device ID・Token・seqはESP32内に保存します。</p></li>
+          <li><span>04</span><p><strong>HTTPS POST</strong>Root CAで証明書を検証し、測定値だけを送ります。</p></li>
+        </ol>
+        <div class="sensor-guide-links">
+          <a href="../smartcity-sensor-starter-kit/README.md">Starter Kit README</a>
+          <a href="../smartcity-sensor-starter-kit/openapi.yaml">OpenAPI 3.1</a>
+          <a href="../smartcity-sensor-starter-kit/curl-examples.sh">curl examples</a>
+        </div>
+      </section>
+    </main>
+
+    <template id="device-card-template">
+      <article class="sensor-device-card">
+        <header><span class="sensor-state">OFFLINE</span><small></small></header>
+        <h2></h2><p></p>
+        <button class="sensor-secondary" type="button">詳細を見る →</button>
+      </article>
+    </template>
+  </body>
+</html>
