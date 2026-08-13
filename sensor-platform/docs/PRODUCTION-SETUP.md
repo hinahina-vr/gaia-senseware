@@ -16,8 +16,8 @@ production D1:
 
 1. `gaia-senseware-sensors` を作成済み
 2. UUID `6a386d6a-2858-4673-b396-6c340f9ea6d7` をroot `wrangler.jsonc` のD1 bindingへ設定済み
-3. remote migration `0001_initial.sql` / `0002_iso_3166_1_alpha2.sql` を適用済み
-4. read-only verification済み: migrations 2、countries 249、users 0、devices 0
+3. remote migration `0001_initial.sql` / `0002_iso_3166_1_alpha2.sql` / `0003_public_profiles.sql` / `0004_profile_avatar.sql` を適用済み
+4. `wrangler d1 migrations list gaia-senseware-sensors --remote` で未適用migration 0をread-only確認済み
 
 以後のschema変更は追加migrationとして適用し、既存migrationを書き換えません。
 
@@ -37,7 +37,7 @@ Pages projectへ登録するsecret（全て別値）:
 - `DEVICE_TOKEN_PEPPER`（32 random bytes以上）
 - `PAIRING_CODE_PEPPER`（32 random bytes以上）
 
-`wrangler pages secret put <NAME> --project-name gaia-senseware` のinteractive promptを使い、値をcommand line・source・logへ出しません。`SESSION_SECRET`、`DEVICE_TOKEN_PEPPER`、`PAIRING_CODE_PEPPER` はproductionへ登録済みです。`GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` は未登録で、Google credentialが安全経路で確認できるまで架空値を設定しません。authorization code、state、nonce、PKCE S256、JWKS/iss/aud/exp/iat/nonce/sub検証はlocal API test済みです。
+`wrangler pages secret put <NAME> --project-name gaia-senseware` のinteractive promptを使い、値をcommand line・source・logへ出しません。上記5secretはproductionへ登録済みで、`wrangler pages secret list --project-name gaia-senseware` により名前の存在だけを確認済みです。値は取得・表示していません。authorization code、state、nonce、PKCE S256、JWKS/iss/aud/exp/iat/nonce/sub検証はlocal API test済みです。
 
 ## 3. Release実行順
 
