@@ -27,6 +27,15 @@ check("logged-out registration CTA and three-step preview are explicit", () => {
   for (const fragment of ["Googleでログイン", "端末を追加", "Pairing Code", "CITY-SENSOR-XXXX", "Setup APへ入力"]) assert(preview.includes(fragment), fragment);
 });
 
+check("sensor workspace shares the exhibition scene and observation-node onboarding", () => {
+  for (const fragment of ["sensor-atmosphere-visual", "OBSERVATION NODE", "FIRST OBSERVATION", "WAITING FOR SIGNAL", "DECLARE", "PAIR", "OBSERVE"]) {
+    assert(sensors.includes(fragment), fragment);
+  }
+  assert.match(css, /gateway-keyvisual-v1\.webp/u);
+  assert.match(css, /\.sensor-dashboard:has\(\.sensor-empty:not\(\[hidden\]\)\)/u);
+  assert.match(css, /\.sensor-empty-flow \{[\s\S]*grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/u);
+});
+
 check("pairing view contains complete Setup AP instructions", () => {
   const pairing = sensors.slice(sensors.indexOf('data-view="pairing"'), sensors.indexOf("</section>", sensors.indexOf('data-view="pairing"')));
   for (const fragment of ["PCまたはスマホ", "CITY-SENSOR-XXXX", "http://192.168.4.1/", "Wi-Fi", "このPairing Codeを入力"]) assert(pairing.includes(fragment), fragment);

@@ -7,11 +7,15 @@
     <link rel="icon" href="data:," />
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
-    <link rel="stylesheet" href="./sensor-platform.css?v=3" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=4" />
     <script src="./sensor-platform.js?v=3" type="module"></script>
   </head>
   <body>
-    <div class="sensor-atmosphere" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="sensor-atmosphere" aria-hidden="true">
+      <div class="sensor-atmosphere-visual"></div>
+      <div class="sensor-atmosphere-readout"><span>GAIA NODE NETWORK</span><span>EARTH / SENSOR PARTICIPATION</span></div>
+      <i></i><i></i><i></i>
+    </div>
     <header class="sensor-topbar">
       <a class="sensor-brand" href="../" aria-label="GAIA SENSEWAREへ戻る">
         <span>GAIA SENSEWARE</span>
@@ -74,14 +78,29 @@
 
       <section class="sensor-view sensor-dashboard" data-view="devices" id="devices" hidden>
         <header class="sensor-page-head">
-          <div><p>MY SENSORS</p><h1>マイセンサー</h1></div>
+          <div>
+            <p>MY SENSORS / OBSERVATION NODE</p>
+            <h1>マイセンサー</h1>
+            <p class="sensor-page-lead">あなたのESP32を、地球の感覚器へ。身近な環境の変化をひとつの観測点として届けます。</p>
+          </div>
           <button class="sensor-primary sensor-add" id="show-add" type="button">＋ センサーを追加</button>
         </header>
         <div class="sensor-empty" id="device-empty" hidden>
-          <span aria-hidden="true">◌</span>
-          <h2>まだセンサーがありません</h2>
-          <p>国・地域と名前を登録すると、ESP32に入力する一回限りのコードが発行されます。</p>
-          <button class="sensor-secondary" type="button" data-action="show-add">最初のセンサーを追加</button>
+          <div class="sensor-empty-signal" aria-hidden="true">
+            <span><i></i><b>00</b></span>
+            <small>WAITING FOR SIGNAL</small>
+          </div>
+          <div class="sensor-empty-copy">
+            <p>01 / FIRST OBSERVATION</p>
+            <h2>最初の観測点をつくる</h2>
+            <p>国・地域と名前を登録すると、ESP32に入力する一回限りのPairing Codeが発行されます。GPSや正確な住所は必要ありません。</p>
+            <button class="sensor-primary" type="button" data-action="show-add">センサーを追加する <b aria-hidden="true">→</b></button>
+          </div>
+          <ol class="sensor-empty-flow" aria-label="センサーが観測を始めるまでの3ステップ">
+            <li><span>01</span><p><strong>DECLARE</strong>地域と名前を登録</p></li>
+            <li><span>02</span><p><strong>PAIR</strong>ESP32へコードを入力</p></li>
+            <li><span>03</span><p><strong>OBSERVE</strong>測定値をHTTPSで送信</p></li>
+          </ol>
         </div>
         <div class="sensor-device-grid" id="device-list"></div>
       </section>

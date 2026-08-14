@@ -13,6 +13,7 @@ const outputDir = path.resolve(outputArgument || "artifacts/sensor-registration-
 fs.mkdirSync(outputDir, { recursive: true });
 
 const viewports = [
+  { name: "wide-2048", width: 2048, height: 1114 },
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
 ];

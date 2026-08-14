@@ -1,58 +1,68 @@
 :root {
-  --ink: #e9fbf8;
-  --muted: #9cb9bb;
-  --mint: #7ee6d6;
-  --mint-rgb: 126, 230, 214;
-  --blue: #7bbde5;
-  --panel: rgba(8, 25, 36, 0.84);
-  --panel-deep: rgba(5, 16, 27, 0.93);
-  --line: rgba(147, 230, 211, 0.23);
+  --ink: #f5fbff;
+  --muted: rgba(216, 234, 240, 0.68);
+  --mint: #8fe7d2;
+  --mint-rgb: 143, 231, 210;
+  --blue: #8ed8ff;
+  --panel: rgba(5, 19, 29, 0.76);
+  --panel-deep: rgba(3, 13, 22, 0.9);
+  --line: rgba(174, 225, 226, 0.22);
   --danger: #ff9a9a;
   --font-ja: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-display: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --font-console: Consolas, "Courier New", monospace;
 }
 
 * { box-sizing: border-box; }
 html { min-width: 320px; color-scheme: dark; background: #03090e; }
 body {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
   color: var(--ink);
   background:
-    radial-gradient(circle at 78% 16%, rgba(48, 134, 131, 0.18), transparent 34vw),
-    radial-gradient(circle at 18% 72%, rgba(52, 99, 145, 0.13), transparent 38vw),
-    linear-gradient(145deg, #02070c, #07131d 52%, #06151a);
+    radial-gradient(circle at 78% 16%, rgba(62, 154, 155, 0.2), transparent 34vw),
+    radial-gradient(circle at 18% 72%, rgba(58, 101, 151, 0.16), transparent 38vw),
+    linear-gradient(145deg, #01060b, #06131d 52%, #05131a);
   font-family: var(--font-ja);
 }
-body::after { position: fixed; z-index: -1; inset: 0; content: ""; opacity: .14; background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(126,230,214,.03) 3px 4px); pointer-events: none; }
+body::after { position: fixed; z-index: 1; inset: 0; content: ""; opacity: .16; background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(182,239,231,.025) 3px 4px); pointer-events: none; }
 
 button, input, select { font: inherit; }
 button, a, select, input { -webkit-tap-highlight-color: transparent; }
 button, a { touch-action: manipulation; }
 
-.sensor-atmosphere { position: fixed; z-index: -1; inset: 0; overflow: hidden; pointer-events: none; }
-.sensor-atmosphere::before { position: absolute; inset: 0; content: ""; opacity: 0.18; background-image: linear-gradient(rgba(122,235,201,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(122,235,201,.06) 1px, transparent 1px); background-size: 42px 42px; mask-image: linear-gradient(to bottom, #000, transparent 78%); }
-.sensor-atmosphere i { position: absolute; border: 1px solid rgba(var(--mint-rgb),.13); border-radius: 50%; box-shadow: 0 0 80px rgba(var(--mint-rgb),.07); }
+.sensor-atmosphere { position: fixed; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; }
+.sensor-atmosphere::before { position: absolute; z-index: 2; inset: 0; content: ""; opacity: 0.2; background-image: linear-gradient(rgba(171,235,225,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(171,235,225,.05) 1px, transparent 1px); background-size: 48px 48px; mask-image: linear-gradient(to bottom, #000, transparent 82%); }
+.sensor-atmosphere::after { position: absolute; z-index: 1; inset: 0; content: ""; background: linear-gradient(90deg, rgba(1,7,12,.98) 0%, rgba(1,9,15,.91) 37%, rgba(2,13,21,.48) 68%, rgba(2,10,17,.3) 100%), linear-gradient(180deg, rgba(1,7,12,.2), rgba(1,8,13,.3) 70%, rgba(1,7,12,.76)); }
+.sensor-atmosphere-visual { position: absolute; z-index: 0; inset: 0; background: url("../assets/visuals-07/gateway-keyvisual-v1.webp") center / cover no-repeat; opacity: .62; filter: brightness(.72) saturate(.82) contrast(1.04); transform: scale(1.01); animation: sensor-scene-arrive 1.2s ease-out both; }
+.sensor-atmosphere-readout { position: absolute; z-index: 3; right: clamp(22px,3vw,52px); bottom: 24px; display: flex; gap: 28px; color: rgba(218,246,241,.36); font: 700 7px/1 var(--font-console); letter-spacing: .18em; }
+.sensor-atmosphere i { position: absolute; z-index: 3; border: 1px solid rgba(var(--mint-rgb),.16); border-radius: 50%; box-shadow: 0 0 80px rgba(var(--mint-rgb),.08); }
 .sensor-atmosphere i:nth-child(1) { top: 12%; right: 5%; width: 42vw; aspect-ratio: 1; }
 .sensor-atmosphere i:nth-child(2) { top: 19%; right: 12%; width: 24vw; aspect-ratio: 1; }
 .sensor-atmosphere i:nth-child(3) { bottom: -18vw; left: -9vw; width: 48vw; aspect-ratio: 1; }
 
-.sensor-topbar { position: sticky; z-index: 20; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: 70px; padding: 10px clamp(18px, 4vw, 64px); border-bottom: 1px solid var(--line); background: rgba(2, 10, 16, .82); backdrop-filter: blur(18px) saturate(1.2); }
-.sensor-brand { color: var(--ink); text-decoration: none; }
-.sensor-brand span { display: block; color: var(--mint); font: 700 10px/1.2 Consolas, monospace; letter-spacing: .22em; }
+.sensor-topbar { position: sticky; z-index: 20; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: 76px; padding: 10px clamp(20px, 4vw, 70px); border-bottom: 1px solid rgba(190,233,232,.18); background: linear-gradient(90deg, rgba(1,8,14,.94), rgba(2,13,21,.72)); box-shadow: 0 18px 55px rgba(0,5,11,.18); backdrop-filter: blur(20px) saturate(1.12); }
+.sensor-brand { position: relative; padding-left: 18px; color: var(--ink); text-decoration: none; }
+.sensor-brand::before { position: absolute; top: 4px; left: 0; width: 6px; height: 6px; border: 1px solid var(--mint); content: ""; transform: rotate(45deg); box-shadow: 0 0 14px rgba(var(--mint-rgb),.55); }
+.sensor-brand span { display: block; color: var(--mint); font: 700 10px/1.2 var(--font-console); letter-spacing: .24em; }
 .sensor-brand strong { display: block; margin-top: 5px; font: 500 8px/1 Consolas, monospace; letter-spacing: .14em; opacity: .58; }
 .sensor-topbar nav { display: flex; flex-wrap: wrap; gap: 5px 20px; justify-content: flex-end; }
-.sensor-topbar nav a { min-height: 44px; padding: 13px 2px; color: rgba(233,251,248,.68); font-size: 11px; letter-spacing: .08em; text-decoration: none; }
+.sensor-topbar nav a { min-height: 44px; padding: 13px 2px; color: rgba(233,246,248,.66); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-decoration: none; }
 .sensor-topbar nav a:hover, .sensor-topbar nav a:focus-visible, .sensor-topbar nav a[aria-current] { color: var(--mint); outline: none; }
 .sensor-topbar nav a[aria-current] { box-shadow: inset 0 -1px var(--mint); }
 
-.sensor-shell { width: min(1180px, calc(100% - 36px)); min-height: calc(100vh - 70px); margin: 0 auto; padding: clamp(54px, 8vh, 100px) 0 80px; }
+.sensor-shell { position: relative; z-index: 2; width: min(1840px, calc(100% - 8vw)); min-height: calc(100vh - 76px); margin: 0 auto; padding: clamp(48px, 7vh, 82px) 0 80px; }
 .sensor-view { animation: sensor-enter .4s ease both; }
 .sensor-view[hidden] { display: none !important; }
-.sensor-kicker, .sensor-page-head p, .sensor-detail-head p, .sensor-history header p { margin: 0 0 12px; color: var(--mint); font: 700 9px/1 Consolas, monospace; letter-spacing: .22em; }
-.sensor-login { max-width: 720px; padding-top: clamp(20px, 7vh, 90px); }
+.sensor-kicker, .sensor-page-head > div > p:first-child, .sensor-detail-head p, .sensor-history header p { margin: 0 0 12px; color: var(--mint); font: 700 9px/1 var(--font-console); letter-spacing: .22em; }
+.sensor-login { position: relative; display: flex; min-height: calc(100dvh - 76px - clamp(96px, 14vh, 164px)); max-width: 720px; flex-direction: column; justify-content: center; padding: 28px 0 34px 28px; }
+.sensor-login::before { position: absolute; top: 2%; bottom: 2%; left: 0; width: 1px; content: ""; background: linear-gradient(180deg, transparent, rgba(var(--mint-rgb),.42) 18%, rgba(142,216,255,.36) 76%, transparent); }
+.sensor-login::after { position: absolute; top: 5%; left: -3px; width: 7px; height: 7px; border: 1px solid rgba(220,255,247,.72); content: ""; transform: rotate(45deg); box-shadow: 0 0 16px rgba(var(--mint-rgb),.54); }
 .sensor-login h1, .sensor-panel > h1, .sensor-guide > h1 { margin: 0; font-size: clamp(38px, 7vw, 78px); font-weight: 400; letter-spacing: .04em; line-height: 1.2; }
-.sensor-login > p { max-width: 610px; margin: 30px 0 34px; color: var(--muted); font-size: 14px; letter-spacing: .06em; line-height: 2; }
+.sensor-login > p { max-width: 610px; margin: 25px 0 29px; color: rgba(224,238,242,.76); font-size: 13px; letter-spacing: .065em; line-height: 2; text-shadow: 0 4px 18px rgba(0,6,12,.62); }
 .sensor-login > small { display: block; margin-top: 16px; color: rgba(233,251,248,.43); font-size: 10px; }
 .sensor-register-preview, .sensor-setup-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 34px 0 0; padding: 1px; border: 1px solid var(--line); background: var(--line); list-style: none; }
 .sensor-register-preview li, .sensor-setup-steps li { display: grid; grid-template-columns: 38px minmax(0, 1fr); min-width: 0; background: rgba(5,19,28,.92); }
@@ -63,13 +73,15 @@ button, a { touch-action: manipulation; }
 .sensor-setup-steps { margin: 25px 0 28px; }
 .sensor-setup-steps a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
-.sensor-primary, .sensor-secondary, .sensor-danger, .sensor-back { min-height: 46px; border: 1px solid rgba(var(--mint-rgb),.38); color: var(--ink); background: rgba(var(--mint-rgb),.09); cursor: pointer; letter-spacing: .08em; }
-.sensor-primary { min-width: 220px; padding: 13px 22px; color: #04130f; background: var(--mint); font-weight: 700; }
+.sensor-primary, .sensor-secondary, .sensor-danger, .sensor-back { min-height: 46px; border: 1px solid rgba(var(--mint-rgb),.4); color: var(--ink); background: rgba(5,27,35,.62); cursor: pointer; letter-spacing: .09em; transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease, transform 220ms ease; }
+.sensor-primary, .sensor-secondary, .sensor-danger { position: relative; overflow: hidden; clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%); }
+.sensor-primary { min-width: 220px; padding: 13px 22px; color: #f5fffd; background: linear-gradient(112deg, rgba(35,113,109,.94), rgba(72,177,158,.88)); box-shadow: inset 0 1px rgba(255,255,255,.16), 0 12px 32px rgba(1,17,20,.28), 0 0 24px rgba(var(--mint-rgb),.08); font-weight: 700; }
 .sensor-primary span { display: inline-grid; width: 24px; height: 24px; margin-right: 12px; border: 1px solid rgba(3,20,15,.32); border-radius: 50%; place-items: center; }
-.sensor-secondary { padding: 10px 17px; }
+.sensor-secondary { padding: 10px 17px; background: linear-gradient(135deg, rgba(var(--mint-rgb),.1), rgba(3,17,25,.72)); }
 .sensor-danger { padding: 10px 17px; border-color: rgba(255,154,154,.35); color: var(--danger); background: rgba(255,100,100,.06); }
 .sensor-back { margin-bottom: 28px; padding: 10px 0; border: 0; color: rgba(233,251,248,.62); background: none; }
-button:hover, button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),.72); outline-offset: 3px; }
+button:hover { border-color: rgba(var(--mint-rgb),.8); box-shadow: 0 12px 30px rgba(0,8,13,.28), 0 0 26px rgba(var(--mint-rgb),.12); transform: translateY(-2px); }
+button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),.72); outline-offset: 3px; }
 
 .sensor-status { position: fixed; z-index: 40; top: 86px; left: 50%; width: min(560px, calc(100% - 32px)); padding: 13px 18px; border: 1px solid var(--line); color: var(--ink); background: #0a2630; box-shadow: 0 14px 50px #0009; font-size: 12px; transform: translateX(-50%); }
 .sensor-status[data-kind="error"] { border-color: #ff9a9a88; background: #36191d; }
@@ -80,7 +92,8 @@ button:hover, button:focus-visible, a:focus-visible { outline: 2px solid rgba(va
 .sensor-view[data-view="loading"] p { text-align: center; color: var(--muted); }
 
 .sensor-page-head, .sensor-detail-head, .sensor-history header { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
-.sensor-page-head h1, .sensor-detail-head h1 { margin: 0; font-size: clamp(32px, 4.4vw, 58px); font-weight: 400; letter-spacing: .05em; }
+.sensor-page-head h1, .sensor-detail-head h1 { margin: 0; font-size: clamp(36px, 4.6vw, 66px); font-weight: 350; letter-spacing: .055em; line-height: 1.08; text-shadow: 0 14px 42px rgba(0,7,14,.46); }
+.sensor-page-lead { max-width: 590px; margin: 18px 0 0 !important; color: rgba(228,240,244,.7) !important; font: 500 12px/1.9 var(--font-ja) !important; letter-spacing: .07em !important; }
 .sensor-device-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 36px; }
 .sensor-device-card { position: relative; min-height: 220px; padding: 20px; border: 1px solid var(--line); background: var(--panel); box-shadow: inset 0 1px rgba(255,255,255,.05); }
 .sensor-device-card::before, .sensor-avatar-panel::before { position: absolute; top: -1px; left: 18px; width: 84px; height: 1px; content: ""; background: var(--mint); box-shadow: 0 0 14px rgba(var(--mint-rgb),.45); }
@@ -90,9 +103,30 @@ button:hover, button:focus-visible, a:focus-visible { outline: 2px solid rgba(va
 .sensor-state { color: #84969a; font: 700 9px/1 Consolas, monospace; letter-spacing: .13em; }
 .sensor-state::before { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; content: ""; background: currentColor; box-shadow: 0 0 10px currentColor; }
 .sensor-state[data-state="ONLINE"] { color: var(--mint); }
-.sensor-empty { max-width: 560px; margin: 70px auto 0; padding: 40px; border: 1px dashed var(--line); text-align: center; }
-.sensor-empty > span { color: var(--mint); font-size: 40px; }
-.sensor-empty p { color: var(--muted); line-height: 1.8; }
+.sensor-dashboard:has(.sensor-empty:not([hidden])) { width: min(760px, 58vw); min-height: calc(100dvh - 76px - clamp(96px, 14vh, 164px)); display: flex; flex-direction: column; justify-content: center; margin: 0; }
+.sensor-dashboard:has(.sensor-empty:not([hidden])) .sensor-page-head { display: block; }
+.sensor-dashboard:has(.sensor-empty:not([hidden])) .sensor-add { display: none; }
+.sensor-empty { position: relative; display: grid; grid-template-columns: 132px minmax(0,1fr); gap: 28px; max-width: 760px; margin: 34px 0 0; padding: clamp(24px,3vw,38px); border: 1px solid rgba(var(--mint-rgb),.32); color: var(--ink); text-align: left; background: linear-gradient(135deg, rgba(7,29,39,.86), rgba(3,15,24,.74)); box-shadow: inset 0 1px rgba(255,255,255,.08), 0 28px 80px rgba(0,5,12,.3), 0 0 46px rgba(var(--mint-rgb),.04); backdrop-filter: blur(18px) saturate(1.08); clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%); }
+.sensor-empty::before { position: absolute; top: -1px; left: 24px; width: 132px; height: 1px; content: ""; background: linear-gradient(90deg, var(--mint), transparent); box-shadow: 0 0 16px rgba(var(--mint-rgb),.48); }
+.sensor-empty::after { position: absolute; z-index: -1; inset: 0; content: ""; opacity: .34; background-image: linear-gradient(rgba(var(--mint-rgb),.055) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--mint-rgb),.055) 1px, transparent 1px); background-size: 34px 34px; mask-image: linear-gradient(90deg, #000, transparent 72%); }
+.sensor-empty-signal { display: grid; align-content: start; justify-items: center; gap: 14px; padding-top: 4px; }
+.sensor-empty-signal > span { position: relative; display: grid; width: 112px; aspect-ratio: 1; border: 1px solid rgba(var(--mint-rgb),.22); border-radius: 50%; place-items: center; box-shadow: inset 0 0 28px rgba(var(--mint-rgb),.035), 0 0 34px rgba(var(--mint-rgb),.06); }
+.sensor-empty-signal > span::before, .sensor-empty-signal > span::after { position: absolute; border: 1px solid rgba(var(--mint-rgb),.28); border-radius: 50%; content: ""; }
+.sensor-empty-signal > span::before { inset: 15px; border-style: dashed; animation: sensor-orbit 18s linear infinite; }
+.sensor-empty-signal > span::after { inset: 36px; border-color: rgba(var(--mint-rgb),.52); box-shadow: 0 0 20px rgba(var(--mint-rgb),.2); }
+.sensor-empty-signal i { position: absolute; top: 15px; left: 52px; width: 7px; height: 7px; border: 1px solid #dffff8; border-radius: 50%; background: var(--mint); box-shadow: 0 0 14px var(--mint); }
+.sensor-empty-signal b { color: rgba(231,255,250,.84); font: 500 18px/1 var(--font-console); letter-spacing: .08em; }
+.sensor-empty-signal small { color: rgba(192,233,228,.48); font: 700 7px/1.4 var(--font-console); letter-spacing: .14em; white-space: nowrap; }
+.sensor-empty-copy > p:first-child { margin: 0 0 12px; color: var(--mint); font: 700 8px/1 var(--font-console); letter-spacing: .18em; }
+.sensor-empty-copy h2 { margin: 0; font-size: clamp(22px,2.1vw,30px); font-weight: 500; letter-spacing: .06em; }
+.sensor-empty-copy > p:not(:first-child) { max-width: 520px; margin: 15px 0 22px; color: var(--muted); font-size: 11px; letter-spacing: .045em; line-height: 1.9; }
+.sensor-empty-copy .sensor-primary { min-width: 0; }
+.sensor-empty-copy .sensor-primary b { margin-left: 18px; font-weight: 400; }
+.sensor-empty-flow { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1px; margin: 4px 0 0; padding: 1px; border: 1px solid rgba(var(--mint-rgb),.17); background: rgba(var(--mint-rgb),.12); list-style: none; }
+.sensor-empty-flow li { display: grid; grid-template-columns: 38px minmax(0,1fr); min-width: 0; background: rgba(2,14,22,.82); }
+.sensor-empty-flow li > span { display: grid; color: var(--mint); font: 700 8px/1 var(--font-console); place-items: center; }
+.sensor-empty-flow p { margin: 0; padding: 11px 9px; border-left: 1px solid rgba(var(--mint-rgb),.15); color: rgba(217,235,236,.65); font-size: 8px; line-height: 1.55; }
+.sensor-empty-flow strong { display: block; margin-bottom: 3px; color: rgba(237,252,250,.9); font: 700 7px/1 var(--font-console); letter-spacing: .13em; }
 
 .sensor-public-map { max-width: 1180px; margin: 0 auto; }
 .sensor-map-lead { max-width: 720px; margin: 22px 0 28px; color: var(--muted); font-size: 12px; line-height: 1.9; }
@@ -197,17 +231,86 @@ select:disabled, input:disabled { color: rgba(233,251,248,.38); cursor: not-allo
 .sensor-guide-links { display: flex; flex-wrap: wrap; gap: 10px; }
 .sensor-guide-links a { min-height: 44px; padding: 12px 15px; border: 1px solid var(--line); color: var(--mint); font-size: 11px; text-decoration: none; }
 
+/* The sensor utility views reuse the same layered exhibition language as the
+   four main modes: one cinematic field, thin data rails, and translucent
+   instrument surfaces. */
+.sensor-panel, .sensor-detail, .sensor-profile, .sensor-guide {
+  position: relative;
+  padding: clamp(26px, 4vw, 54px);
+  border: 1px solid rgba(var(--mint-rgb),.24);
+  background: linear-gradient(145deg, rgba(5,23,33,.9), rgba(3,14,23,.78));
+  box-shadow: inset 0 1px rgba(255,255,255,.07), 0 30px 90px rgba(0,5,12,.3);
+  backdrop-filter: blur(20px) saturate(1.08);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+}
+.sensor-panel::before, .sensor-detail::before, .sensor-profile::before, .sensor-guide::before {
+  position: absolute;
+  top: -1px;
+  left: 28px;
+  width: 128px;
+  height: 1px;
+  content: "";
+  background: linear-gradient(90deg, var(--mint), transparent);
+  box-shadow: 0 0 16px rgba(var(--mint-rgb),.44);
+}
+.sensor-panel { width: min(760px, 100%); }
+.sensor-profile { max-width: 1020px; }
+.sensor-detail { max-width: 1020px; }
+.sensor-guide { max-width: 900px; }
+.sensor-dashboard:has(.sensor-empty[hidden]) {
+  padding: clamp(24px,3vw,42px);
+  border: 1px solid rgba(var(--mint-rgb),.18);
+  background: rgba(3,15,24,.6);
+  box-shadow: 0 28px 90px rgba(0,5,12,.22);
+  backdrop-filter: blur(16px);
+}
+.sensor-map-console, .sensor-device-card, .sensor-avatar-panel, .sensor-metric, .sensor-region-grid, .sensor-public-location {
+  backdrop-filter: blur(14px) saturate(1.06);
+}
+.sensor-map-console {
+  border-color: rgba(var(--mint-rgb),.28);
+  background: linear-gradient(145deg, rgba(3,17,27,.84), rgba(2,11,19,.7));
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+}
+.sensor-device-card, .sensor-avatar-panel, .sensor-metric {
+  background: linear-gradient(145deg, rgba(8,29,39,.82), rgba(3,16,25,.72));
+}
+input, select {
+  border-color: rgba(var(--mint-rgb),.24);
+  background: rgba(1,11,18,.78);
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+
+body:has(.sensor-public-map:not([hidden])) .sensor-atmosphere-visual,
+body:has(.sensor-panel:not([hidden])) .sensor-atmosphere-visual,
+body:has(.sensor-detail:not([hidden])) .sensor-atmosphere-visual,
+body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
+  opacity: .28;
+  filter: brightness(.54) saturate(.66) contrast(1.05);
+}
+
+@keyframes sensor-scene-arrive {
+  from { opacity: 0; filter: brightness(.42) saturate(.5) blur(5px); transform: scale(1.035); }
+}
+@keyframes sensor-orbit { to { transform: rotate(1turn); } }
+
 @keyframes sensor-enter { from { opacity: 0; transform: translateY(8px); } }
 @keyframes sensor-pulse { 50% { opacity: .25; transform: scale(.7); } }
 
 @media (max-width: 760px) {
-  .sensor-topbar { align-items: flex-start; min-height: 94px; padding: 11px 15px 8px; }
-  .sensor-brand { padding-top: 6px; }
+  .sensor-atmosphere-visual { background-position: 66% center; opacity: .38; filter: brightness(.55) saturate(.72); }
+  .sensor-atmosphere::after { background: linear-gradient(180deg, rgba(1,8,14,.78), rgba(1,9,15,.82) 42%, rgba(1,8,13,.94)), linear-gradient(90deg, rgba(1,8,14,.92), rgba(2,13,21,.38)); }
+  .sensor-atmosphere-readout { display: none; }
+  .sensor-atmosphere i:nth-child(1) { right: -26%; width: 88vw; }
+  .sensor-atmosphere i:nth-child(2) { right: -8%; width: 54vw; }
+  .sensor-topbar { display: grid; grid-template-columns: 1fr; gap: 3px; align-items: start; min-height: 106px; padding: 12px 15px 7px; }
+  .sensor-brand { padding-top: 3px; }
   .sensor-brand strong { display: none; }
-  .sensor-topbar nav { gap: 0 12px; max-width: 210px; }
-  .sensor-topbar nav a { min-height: 44px; padding-block: 13px; font-size: 9px; white-space: nowrap; }
-  .sensor-shell { width: min(100% - 28px, 560px); min-height: calc(100vh - 94px); padding-top: 40px; }
-  .sensor-login { padding-top: 7vh; }
+  .sensor-topbar nav { width: 100%; max-width: 100%; flex-wrap: nowrap; gap: 0 18px; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+  .sensor-topbar nav::-webkit-scrollbar { display: none; }
+  .sensor-topbar nav a { flex: 0 0 auto; min-height: 42px; padding-block: 13px 11px; font-size: 9px; white-space: nowrap; }
+  .sensor-shell { width: min(100% - 28px, 600px); min-height: calc(100vh - 106px); padding-top: 32px; }
+  .sensor-login { min-height: calc(100dvh - 138px); padding: 24px 0 24px 18px; }
   .sensor-login h1, .sensor-panel > h1, .sensor-guide > h1 { font-size: clamp(34px, 12vw, 50px); }
   .sensor-login > p { margin-block: 22px 28px; font-size: 12px; line-height: 1.9; }
   .sensor-login .sensor-primary { width: 100%; min-width: 0; padding-inline: 14px; font-size: 11px; }
@@ -216,7 +319,21 @@ select:disabled, input:disabled { color: rgba(233,251,248,.38); cursor: not-allo
   .sensor-register-preview p, .sensor-setup-steps p { padding: 13px 12px; }
   .sensor-setup-steps { margin-bottom: 24px; }
   .sensor-page-head { align-items: flex-start; }
+  .sensor-page-head h1 { font-size: clamp(36px,11vw,48px); }
+  .sensor-page-lead { margin-top: 13px !important; font-size: 11px !important; line-height: 1.8 !important; }
   .sensor-add { min-width: 0; padding-inline: 13px; font-size: 10px; }
+  .sensor-dashboard:has(.sensor-empty:not([hidden])) { width: 100%; min-height: calc(100dvh - 170px); justify-content: flex-start; }
+  .sensor-empty { grid-template-columns: 1fr; gap: 22px; margin-top: 25px; padding: 24px 20px 20px; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+  .sensor-empty-signal { grid-template-columns: 82px minmax(0,1fr); align-items: center; justify-items: start; padding: 0; }
+  .sensor-empty-signal > span { width: 82px; }
+  .sensor-empty-signal > span::before { inset: 11px; }
+  .sensor-empty-signal > span::after { inset: 26px; }
+  .sensor-empty-signal i { top: 10px; left: 37px; width: 6px; height: 6px; }
+  .sensor-empty-signal small { white-space: normal; }
+  .sensor-empty-copy h2 { font-size: 23px; }
+  .sensor-empty-copy .sensor-primary { width: 100%; }
+  .sensor-empty-flow { grid-template-columns: 1fr; }
+  .sensor-empty-flow li { min-height: 52px; }
   .sensor-device-grid { grid-template-columns: 1fr; margin-top: 24px; }
   .sensor-device-card { min-height: 178px; }
   .sensor-device-card h2 { margin-top: 29px; }
@@ -248,6 +365,8 @@ select:disabled, input:disabled { color: rgba(233,251,248,.38); cursor: not-allo
   .sensor-avatar-preview { grid-row: span 2; width: 112px; height: 112px; border-radius: 28px; }
   .sensor-avatar-panel .sensor-file-button, .sensor-avatar-panel .sensor-danger { grid-column: 1 / -1; }
   .sensor-guide li { grid-template-columns: 48px 1fr; }
+  .sensor-panel, .sensor-detail, .sensor-profile, .sensor-guide { padding: 22px 18px 26px; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+  .sensor-dashboard:has(.sensor-empty[hidden]) { padding: 20px 16px 26px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
