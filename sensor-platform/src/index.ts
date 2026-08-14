@@ -14,6 +14,7 @@ import {
 } from "./devices";
 import { ApiError, clearCookie, errorResponse, json } from "./http";
 import { deleteAvatar, getProfile, getPublicAvatar, updateProfile, uploadAvatar } from "./profiles";
+import { listRegions } from "./regions";
 
 const DEVICE_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)$/u;
 const LATEST_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)\/latest$/u;
@@ -61,6 +62,7 @@ const route = async (request: Request, env: Env, url: URL): Promise<Response> =>
     return listCountries(env);
   }
   const user = await getAuthenticatedUser(request, env);
+  if (request.method === "GET" && url.pathname === "/api/web/v1/regions") return listRegions(url);
   if (request.method === "GET" && url.pathname === "/api/web/v1/profile") return getProfile(env, user);
   if (request.method === "PATCH" && url.pathname === "/api/web/v1/profile") return updateProfile(request, env, user);
   if (request.method === "PUT" && url.pathname === "/api/web/v1/profile/avatar") return uploadAvatar(request, env, user);

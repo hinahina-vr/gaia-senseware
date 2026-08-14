@@ -74,7 +74,7 @@ try {
   });
   await test("migrations are sequential and safe to reapply", async () => {
     assert.match(migrationReapplyOutput, /No migrations to apply/u);
-    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "4");
+    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "5");
   });
   await test("OIDC flow cookie binds callback to the starting browser", async () => {
     const start = await fetch(`${origin}/api/auth/google/start`, { redirect: "manual" });
@@ -170,6 +170,46 @@ try {
     });
     assert.equal(invalidCountry.status, 400);
   });
+  await test("canonical region registry lists current ISO subdivisions and official Japanese municipalities", async () => {
+    const japan = await webFetch("/api/web/v1/regions?countryCode=JP&subdivisionCode=JP-14", auth);
+    assert.equal(japan.status, 200);
+    const japanBody = await japan.json();
+    assert.equal(japanBody.subdivisions.length, 47);
+    assert.deepEqual(japanBody.subdivisions.find(({ code }) => code === "JP-14"), { code: "JP-14", name: "神奈川県" });
+    assert.deepEqual(japanBody.municipalities.find(({ code }) => code === "142085"), { code: "142085", name: "逗子市" });
+    const unitedStates = await webFetch("/api/web/v1/regions?countryCode=US", auth);
+    assert.equal(unitedStates.status, 200);
+    assert((await unitedStates.json()).subdivisions.some(({ code }) => code === "US-CA"));
+    assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('devices') WHERE name IN ('subdivision_code','municipality_code')"), "2");
+    assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('device_pairing_codes') WHERE name IN ('subdivision_code','municipality_code')"), "2");
+  });
+  await test("region validation rejects malformed, conflicting, and bad-check-digit codes", async () => {
+    const cases = [
+      [{ ...deviceDraft(), subdivisionCode: "JP-ZZ" }, "INVALID_SUBDIVISION"],
+      [{ ...deviceDraft(), countryCode: "US", subdivisionCode: "US-CA", municipalityCode: "142085" }, "INVALID_MUNICIPALITY"],
+      [{ ...deviceDraft(), municipalityCode: "142086" }, "INVALID_MUNICIPALITY"],
+      [{ ...deviceDraft(), countryCode: "US" }, "REGION_FIELD_CONFLICT"],
+      [{ ...deviceDraft(), admin1Code: "JP-13" }, "REGION_FIELD_CONFLICT"],
+    ];
+    for (const [body, code] of cases) {
+      const response = await webFetch("/api/web/v1/devices/pairing", auth, { method: "POST", body });
+      assert.equal(response.status, 400);
+      assert.equal((await response.json()).error.code, code);
+    }
+  });
+  await test("legacy location payload remains accepted without canonical fields", async () => {
+    const response = await webFetch("/api/web/v1/devices/pairing", auth, { method: "POST", body: legacyDeviceDraft() });
+    assert.equal(response.status, 201);
+    assert.equal(await scalar("SELECT COUNT(*) FROM device_pairing_codes WHERE subdivision_code IS NULL AND admin1_code = 'JP-14'"), "1");
+  });
+  await test("Japanese municipality code derives its ISO prefecture when omitted", async () => {
+    const response = await webFetch("/api/web/v1/devices/pairing", auth, {
+      method: "POST",
+      body: { ...deviceDraft(), subdivisionCode: null },
+    });
+    assert.equal(response.status, 201);
+    assert.equal(await scalar("SELECT COUNT(*) FROM device_pairing_codes WHERE subdivision_code = 'JP-14' AND municipality_code = '142085'"), "1");
+  });
   await test("owner creates one-time pairing code", async () => {
     const response = await webFetch("/api/web/v1/devices/pairing", auth, { method: "POST", body: deviceDraft() });
     assert.equal(response.status, 201);
@@ -179,6 +219,10 @@ try {
     const hashProbe = await query(`SELECT code_hash, used_at FROM device_pairing_codes WHERE user_id = 'user_test_owner' ORDER BY created_at DESC LIMIT 1`);
     assert.equal(hashProbe.includes(pairingCode), false);
     assert.match(hashProbe, /[a-f0-9]{64}/u);
+    const regionProbe = await query("SELECT subdivision_code, municipality_code, admin1_code, locality_name FROM device_pairing_codes WHERE user_id = 'user_test_owner' ORDER BY created_at DESC LIMIT 1");
+    assert.match(regionProbe, /JP-14/su);
+    assert.match(regionProbe, /142085/su);
+    assert.match(regionProbe, /逗子市/su);
   });
 
   let deviceId = "";
@@ -253,7 +297,13 @@ try {
     assert.equal(await scalar(`SELECT COUNT(*) FROM telemetry WHERE device_id = '${deviceId}' AND seq = 4`), "1");
   });
   await test("owner latest/history and other user isolation", async () => {
-    assert.equal((await webFetch(`/api/web/v1/devices/${deviceId}/latest`, auth)).status, 200);
+    const latest = await webFetch(`/api/web/v1/devices/${deviceId}/latest`, auth);
+    assert.equal(latest.status, 200);
+    const ownerDevice = (await latest.json()).device;
+    assert.equal(ownerDevice.subdivisionCode, "JP-14");
+    assert.equal(ownerDevice.subdivisionName, "神奈川県");
+    assert.equal(ownerDevice.municipalityCode, "142085");
+    assert.equal(ownerDevice.municipalityName, "逗子市");
     assert.equal((await webFetch(`/api/web/v1/devices/${deviceId}/telemetry?limit=10`, auth)).status, 200);
     assert.equal((await webFetch(`/api/web/v1/devices/${deviceId}`, otherAuth)).status, 404);
     assert.equal((await webFetch(`/api/web/v1/devices/${deviceId}/latest`, otherAuth)).status, 404);
@@ -268,7 +318,7 @@ try {
   await test("location update owner-only then logical revoke stops token", async () => {
     const update = await webFetch(`/api/web/v1/devices/${deviceId}`, auth, {
       method: "PATCH",
-      body: { ...deviceDraft(), localityName: "逗子市", isPublic: true, publicLatitude: 35.294, publicLongitude: 139.581 },
+      body: { ...deviceDraft(), isPublic: true, publicLatitude: 35.294, publicLongitude: 139.581 },
     });
     assert.equal(update.status, 200);
     assert.equal((await update.json()).device.isPublic, true);
@@ -278,11 +328,12 @@ try {
     assert.equal(publicBody.sensors.length, 1);
     assert.equal(publicBody.sensors[0].location.latitude, 35.3);
     assert.equal(publicBody.sensors[0].location.longitude, 139.6);
+    assert.deepEqual(publicBody.sensors[0].region, { countryCode: "JP", subdivisionCode: "JP-14", subdivisionName: "神奈川県" });
     assert.equal(publicBody.sensors[0].owner.displayName, "青猫センサー");
     assert.equal(publicBody.sensors[0].owner.xUrl, "https://x.com/bluecat_sensor");
     assert.equal(Object.hasOwn(publicBody.sensors[0], "lastSeenAt"), false);
     const publicJson = JSON.stringify(publicBody);
-    assert.doesNotMatch(publicJson, /user_test_owner|@|localityName|逗子市/u);
+    assert.doesNotMatch(publicJson, /user_test_owner|@|localityName|municipality|142085|逗子市/u);
     const forbidden = await webFetch(`/api/web/v1/devices/${deviceId}`, otherAuth, {
       method: "PATCH",
       body: deviceDraft(),
@@ -318,7 +369,18 @@ async function waitForServer() {
 }
 
 function deviceDraft() {
-  return { name: "ベランダ環境センサー", countryCode: "JP", admin1Code: "JP-14", localityName: null };
+  return {
+    name: "ベランダ環境センサー",
+    countryCode: "JP",
+    subdivisionCode: "JP-14",
+    municipalityCode: "142085",
+    admin1Code: null,
+    localityName: null,
+  };
+}
+
+function legacyDeviceDraft() {
+  return { name: "旧クライアント", countryCode: "JP", admin1Code: "JP-14", localityName: "逗子市" };
 }
 
 async function createLocalSession(userId) {

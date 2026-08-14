@@ -100,10 +100,20 @@ try {
     await page.screenshot({ path: path.join(outputDir, `${label}-empty.png`), fullPage: true });
     await page.locator("[data-action='show-add']").click();
     await page.locator("[data-view='add']").waitFor({ state: "visible" });
+    await page.waitForFunction(() => document.querySelector("#device-form [data-location-picker]")?.dataset.basemap === "ready");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+    assert.equal(await page.locator("#device-form [data-location-picker] svg").count(), 0);
+    assert.equal(await page.evaluate(() => {
+      const canvas = document.querySelector("#device-form .sensor-map-canvas");
+      return Boolean(canvas && canvas.width > 100 && canvas.height > 50);
+    }), true);
     await page.screenshot({ path: path.join(outputDir, `${label}-add.png`), fullPage: true });
     await page.locator("#device-form input[name='name']").fill("学園祭ESP32");
     await page.locator("#device-form select[name='countryCode']").selectOption("JP");
+    await page.waitForFunction(() => !document.querySelector("#device-form select[name='subdivisionCode']")?.disabled);
+    await page.locator("#device-form select[name='subdivisionCode']").selectOption("JP-13");
+    await page.waitForFunction(() => !document.querySelector("#device-form select[name='municipalityCode']")?.disabled);
+    await page.locator("#device-form select[name='municipalityCode']").selectOption("131130");
     await page.locator("#device-form button[type='submit']").click();
     await page.locator("[data-view='pairing']").waitFor({ state: "visible" });
     const pairing = await page.evaluate(() => {
@@ -123,8 +133,14 @@ try {
     assert(pairing.steps.join(" ").includes("Wi-Fi"));
     assert(pairing.steps.join(" ").includes("Pairing Code"));
     assert.equal(pairing.overflowX, false);
+    const qa = await (await fetch(new URL("/__qa/report", baseUrl))).json();
+    assert.equal(qa.lastPairingDraft.countryCode, "JP");
+    assert.equal(qa.lastPairingDraft.subdivisionCode, "JP-13");
+    assert.equal(qa.lastPairingDraft.municipalityCode, "131130");
+    assert.equal(qa.lastPairingDraft.admin1Code, null);
+    assert.equal(qa.lastPairingDraft.localityName, null);
     await page.screenshot({ path: path.join(outputDir, `${label}-pairing.png`), fullPage: true });
-    report.scans.push({ viewport: label, entrance, login, pairing, passed: true });
+    report.scans.push({ viewport: label, entrance, login, pairing, regionDraft: qa.lastPairingDraft, passed: true });
     await context.close();
   }
   assert.deepEqual(report.consoleErrors, []);

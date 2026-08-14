@@ -1,9 +1,12 @@
 import { ApiError, isRecord, optionalString, requireExactKeys, requireString } from "./http";
+import { getMunicipality, getSubdivision, hasValidMunicipalityCheckDigit } from "./regions";
 
 export type PairRequest = { pairingCode: string };
 export type DeviceDraft = {
   name: string;
   countryCode: string;
+  subdivisionCode: string | null;
+  municipalityCode: string | null;
   admin1Code: string | null;
   localityName: string | null;
   isPublic: boolean;
@@ -29,10 +32,41 @@ export const validatePairRequest = (value: unknown): PairRequest => {
 
 export const validateDeviceDraft = (value: unknown): DeviceDraft => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_BODY", "Request body must be an object.");
-  requireExactKeys(value, ["name", "countryCode", "admin1Code", "localityName", "isPublic", "publicLatitude", "publicLongitude"]);
+  requireExactKeys(value, ["name", "countryCode", "subdivisionCode", "municipalityCode", "admin1Code", "localityName", "isPublic", "publicLatitude", "publicLongitude"]);
   const name = requireString(value.name, "name", 1, 80);
-  const countryCode = requireString(value.countryCode, "countryCode", 2, 2).toUpperCase();
+  const countryCode = requireString(value.countryCode, "countryCode", 2, 2).normalize("NFKC").toUpperCase();
   if (!/^[A-Z]{2}$/u.test(countryCode)) throw new ApiError(400, "INVALID_COUNTRY", "countryCode must be ISO 3166-1 alpha-2.");
+  let subdivisionCode = optionalString(value.subdivisionCode, "subdivisionCode", 6)?.normalize("NFKC").toUpperCase() ?? null;
+  const municipalityCode = optionalString(value.municipalityCode, "municipalityCode", 6)?.normalize("NFKC") ?? null;
+  const legacyAdmin1Code = optionalString(value.admin1Code, "admin1Code", 32);
+  const legacyLocalityName = optionalString(value.localityName, "localityName", 80);
+  if (subdivisionCode) {
+    if (!/^[A-Z]{2}-[A-Z0-9]{1,3}$/u.test(subdivisionCode) || !getSubdivision(subdivisionCode)) {
+      throw new ApiError(400, "INVALID_SUBDIVISION", "subdivisionCode must be a current complete ISO 3166-2 code.");
+    }
+    if (!subdivisionCode.startsWith(`${countryCode}-`)) {
+      throw new ApiError(400, "REGION_FIELD_CONFLICT", "subdivisionCode does not belong to countryCode.");
+    }
+  }
+  const municipality = municipalityCode ? getMunicipality(municipalityCode) : null;
+  if (municipalityCode) {
+    if (countryCode !== "JP") {
+      throw new ApiError(400, "INVALID_MUNICIPALITY", "municipalityCode is available only when countryCode is JP.");
+    }
+    if (!hasValidMunicipalityCheckDigit(municipalityCode) || !municipality) {
+      throw new ApiError(400, "INVALID_MUNICIPALITY", "municipalityCode must be a current six-digit Japanese local public body code with a valid check digit.");
+    }
+    if (subdivisionCode && municipality.subdivisionCode !== subdivisionCode) {
+      throw new ApiError(400, "REGION_FIELD_CONFLICT", "municipalityCode does not belong to subdivisionCode.");
+    }
+    subdivisionCode ??= municipality.subdivisionCode;
+  }
+  if (subdivisionCode && legacyAdmin1Code && legacyAdmin1Code.normalize("NFKC").toUpperCase() !== subdivisionCode) {
+    throw new ApiError(400, "REGION_FIELD_CONFLICT", "admin1Code conflicts with subdivisionCode.");
+  }
+  if (municipality && legacyLocalityName && legacyLocalityName !== municipality.name) {
+    throw new ApiError(400, "REGION_FIELD_CONFLICT", "localityName conflicts with municipalityCode.");
+  }
   const isPublic = value.isPublic === true;
   if (value.isPublic !== undefined && typeof value.isPublic !== "boolean") throw new ApiError(400, "INVALID_PUBLIC_LOCATION", "isPublic must be boolean.");
   const publicLatitude = coordinate(value.publicLatitude, "publicLatitude", -90, 90);
@@ -43,8 +77,10 @@ export const validateDeviceDraft = (value: unknown): DeviceDraft => {
   return {
     name,
     countryCode,
-    admin1Code: optionalString(value.admin1Code, "admin1Code", 32),
-    localityName: optionalString(value.localityName, "localityName", 80),
+    subdivisionCode,
+    municipalityCode,
+    admin1Code: subdivisionCode ?? legacyAdmin1Code,
+    localityName: municipality?.name ?? legacyLocalityName,
     isPublic,
     publicLatitude: isPublic ? publicLatitude : null,
     publicLongitude: isPublic ? publicLongitude : null,

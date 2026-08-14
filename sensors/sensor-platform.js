@@ -19,8 +19,12 @@ const publicSensorDetail = document.querySelector("#public-sensor-detail");
 const profileForm = document.querySelector("#profile-form");
 const profileAvatarPreview = document.querySelector("#profile-avatar-preview");
 const profileAvatarInput = document.querySelector("#profile-avatar-input");
+const publicSensorCount = document.querySelector("#public-sensor-count");
 const pollIntervalMs = 2_000;
+const naturalEarthUrl = "../data/natural-earth-50m-land.geojson?v=gaia-27";
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
+const regionCache = new Map();
+const mapObservers = [];
 let countries = [];
 let devices = [];
 let selectedDevice = null;
@@ -75,8 +79,9 @@ const showStatus = (message, kind = "info") => {
 
 const boot = async () => {
   showView("loading");
-  mountMapSurfaces();
+  void mountMapSurfaces();
   initLocationPickers();
+  initRegionFields();
   await loadPublicSensors().catch((error) => showStatus(error.message, "error"));
   try {
     await api("../api/web/v1/session");
@@ -140,8 +145,12 @@ const loadPublicSensors = async () => {
 const renderPublicSensors = () => {
   publicSensorMarkers.replaceChildren();
   publicSensorList.replaceChildren();
+  publicSensorCount.textContent = `${String(publicSensors.length).padStart(3, "0")} NODES`;
   if (!publicSensors.length) {
-    publicSensorDetail.replaceChildren(Object.assign(document.createElement("p"), { textContent: "公開中のセンサーはまだありません。最初の信号を待っています。" }));
+    publicSensorDetail.replaceChildren(
+      Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SIGNAL STATUS" }),
+      Object.assign(document.createElement("p"), { textContent: "公開中のセンサーはまだありません。最初の信号を待っています。" }),
+    );
     return;
   }
   publicSensors.forEach((sensor, index) => {
@@ -175,6 +184,7 @@ const selectPublicSensor = (sensor, marker) => {
   document.querySelectorAll(".sensor-map-marker[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
   marker.setAttribute("aria-current", "true");
   publicSensorDetail.replaceChildren();
+  const consoleLabel = Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SELECTED SIGNAL" });
   const owner = document.createElement("div");
   owner.className = "sensor-map-owner";
   owner.append(avatarElement(sensor.owner, "span"));
@@ -193,8 +203,9 @@ const selectPublicSensor = (sensor, marker) => {
     social.append(link);
   });
   const note = document.createElement("p");
-  note.textContent = `公開位置 ${sensor.location.latitude.toFixed(1)}, ${sensor.location.longitude.toFixed(1)}（約10km単位）`;
-  publicSensorDetail.append(owner, note, social);
+  const region = [sensor.region?.subdivisionName, sensor.region?.subdivisionCode].filter(Boolean).join(" / ") || sensor.region?.countryCode || "地域非公開";
+  note.textContent = `${region} · 公開位置は0.1度単位へ丸めています。自治体コードと住所は公開しません。`;
+  publicSensorDetail.append(consoleLabel, owner, note, social);
 };
 
 const avatarElement = (owner, tagName = "span") => {
@@ -267,13 +278,19 @@ const renderDetail = ({ device, latest }, telemetry) => {
   if (!latest) latestMetrics.append(Object.assign(document.createElement("p"), { textContent: "最初のデータを待っています。" }));
   else Object.entries(latest.data).slice(0, 6).forEach(([key, value]) => latestMetrics.append(metric(key, value)));
   renderHistory(telemetry);
-  locationForm.elements.name.value = device.name;
-  locationForm.elements.countryCode.value = device.countryCode;
-  locationForm.elements.admin1Code.value = device.admin1Code || "";
-  locationForm.elements.localityName.value = device.localityName || "";
-  locationForm.elements.isPublic.checked = Boolean(device.isPublic);
-  setPickerLocation(locationForm, device.publicLatitude, device.publicLongitude);
-  syncPickerEnabled(locationForm);
+  if (!locationForm.contains(document.activeElement)) {
+    locationForm.elements.name.value = device.name;
+    locationForm.elements.countryCode.value = device.countryCode;
+    locationForm.elements.admin1Code.value = device.admin1Code || "";
+    locationForm.elements.localityName.value = device.localityName || "";
+    locationForm.elements.isPublic.checked = Boolean(device.isPublic);
+    setPickerLocation(locationForm, device.publicLatitude, device.publicLongitude);
+    syncPickerEnabled(locationForm);
+    void populateRegionFields(locationForm, {
+      subdivisionCode: device.subdivisionCode || "",
+      municipalityCode: device.municipalityCode || "",
+    });
+  }
 };
 
 const renderHistory = (telemetry) => {
@@ -441,15 +458,112 @@ void boot();
 
 function formDevice(form) {
   const data = new FormData(form);
+  const subdivisionCode = String(data.get("subdivisionCode") || "").trim() || null;
+  const municipalityCode = String(data.get("municipalityCode") || "").trim() || null;
   return {
     name: String(data.get("name") || "").trim(),
     countryCode: String(data.get("countryCode") || "").trim(),
-    admin1Code: String(data.get("admin1Code") || "").trim() || null,
-    localityName: String(data.get("localityName") || "").trim() || null,
+    subdivisionCode,
+    municipalityCode,
+    admin1Code: subdivisionCode ? null : String(data.get("admin1Code") || "").trim() || null,
+    localityName: municipalityCode ? null : String(data.get("localityName") || "").trim() || null,
     isPublic: data.get("isPublic") === "on",
     publicLatitude: numberOrNull(data.get("publicLatitude")),
     publicLongitude: numberOrNull(data.get("publicLongitude")),
   };
+}
+
+function initRegionFields() {
+  document.querySelectorAll("form [data-region-fields]").forEach((group) => {
+    const form = group.closest("form");
+    form.elements.countryCode.addEventListener("change", () => {
+      form.elements.subdivisionCode.value = "";
+      form.elements.municipalityCode.value = "";
+      form.elements.admin1Code.value = "";
+      form.elements.localityName.value = "";
+      void populateRegionFields(form);
+    });
+    form.elements.subdivisionCode.addEventListener("change", () => {
+      form.elements.municipalityCode.value = "";
+      form.elements.admin1Code.value = "";
+      form.elements.localityName.value = "";
+      void populateRegionFields(form, { subdivisionCode: form.elements.subdivisionCode.value });
+    });
+    form.elements.municipalityCode.addEventListener("change", () => {
+      if (form.elements.municipalityCode.value) form.elements.localityName.value = "";
+    });
+  });
+}
+
+async function populateRegionFields(form, selection = {}) {
+  const countryCode = form.elements.countryCode.value;
+  const subdivisionSelect = form.elements.subdivisionCode;
+  const municipalitySelect = form.elements.municipalityCode;
+  const municipalityField = municipalitySelect.closest("[data-municipality-field]");
+  const note = form.querySelector("[data-region-note]");
+  const requestedSubdivision = selection.subdivisionCode ?? subdivisionSelect.value;
+  const requestedMunicipality = selection.municipalityCode ?? municipalitySelect.value;
+  const requestKey = `${countryCode}:${requestedSubdivision}`;
+  form.dataset.regionRequest = requestKey;
+  subdivisionSelect.disabled = true;
+  municipalitySelect.disabled = true;
+  municipalityField.hidden = countryCode !== "JP";
+  if (!countryCode) {
+    replaceOptions(subdivisionSelect, "国を選択してください", []);
+    replaceOptions(municipalitySelect, "都道府県を選択してください", []);
+    note.textContent = "地域はISOの正式コードで保存します。住所は入力・保存しません。";
+    return;
+  }
+  try {
+    const base = await loadRegions(countryCode);
+    if (form.dataset.regionRequest !== requestKey) return;
+    replaceOptions(subdivisionSelect, "指定しない", base.subdivisions);
+    subdivisionSelect.disabled = base.subdivisions.length === 0;
+    subdivisionSelect.value = requestedSubdivision;
+    if (requestedSubdivision && !subdivisionSelect.value) appendCurrentOption(subdivisionSelect, requestedSubdivision);
+    if (countryCode === "JP" && subdivisionSelect.value) {
+      const scoped = await loadRegions(countryCode, subdivisionSelect.value);
+      if (form.dataset.regionRequest !== requestKey) return;
+      replaceOptions(municipalitySelect, "指定しない", scoped.municipalities);
+      municipalitySelect.disabled = false;
+      municipalitySelect.value = requestedMunicipality;
+      if (requestedMunicipality && !municipalitySelect.value) appendCurrentOption(municipalitySelect, requestedMunicipality);
+    } else {
+      replaceOptions(municipalitySelect, "都道府県を選択してください", []);
+    }
+    const legacy = !subdivisionSelect.value && (form.elements.admin1Code.value || form.elements.localityName.value);
+    note.textContent = legacy
+      ? `既存の地域表記「${[form.elements.admin1Code.value, form.elements.localityName.value].filter(Boolean).join(" / ")}」を保持中です。正式コードを選ぶと正規化されます。`
+      : countryCode === "JP"
+        ? "都道府県はISO 3166-2、市区町村は検査数字を含むJ-LISの6桁コードで保存します。住所は保存しません。"
+        : "地域は国コードを含む完全なISO 3166-2コードで保存します。住所は保存しません。";
+  } catch (error) {
+    if (form.dataset.regionRequest !== requestKey) return;
+    replaceOptions(subdivisionSelect, "地域コードを読み込めません", []);
+    replaceOptions(municipalitySelect, "市区町村コードを読み込めません", []);
+    note.textContent = error.message;
+  }
+}
+
+async function loadRegions(countryCode, subdivisionCode = "") {
+  const key = `${countryCode}:${subdivisionCode}`;
+  if (!regionCache.has(key)) {
+    const query = new URLSearchParams({ countryCode });
+    if (subdivisionCode) query.set("subdivisionCode", subdivisionCode);
+    regionCache.set(key, api(`../api/web/v1/regions?${query}`));
+  }
+  try { return await regionCache.get(key); }
+  catch (error) { regionCache.delete(key); throw error; }
+}
+
+function replaceOptions(select, emptyLabel, options) {
+  select.replaceChildren(new Option(emptyLabel, ""));
+  options.forEach((option) => select.append(new Option(`${option.name} / ${option.code}`, option.code)));
+}
+
+function appendCurrentOption(select, code) {
+  select.append(new Option(`${code} / 現在の登録値`, code));
+  select.value = code;
 }
 
 function initLocationPickers() {
@@ -497,11 +611,100 @@ function setPickerLocation(form, rawLatitude, rawLongitude) {
   output.textContent = `公開位置 ${latitude.toFixed(1)}, ${longitude.toFixed(1)}（約10km単位）`;
 }
 
-function mountMapSurfaces() {
-  const mapSvg = `<svg viewBox="0 0 1000 500" aria-hidden="true"><g><path d="M70 94l55-40 88 2 41 37 70 13 43 37-35 44-59 7-34 37-35-18-25-53-54-5-43-28zM245 236l51 24 34 62-17 93-43 44-22-59-29-53 18-58zM438 76l55-35 100 16 38 30 99 8 78 54-31 49-73 4-48 50-57-12-31-47-67-2-43-41-42-35zM590 243l47 9 42 46-20 95-47 56-39-48-11-83zM790 290l55-29 81 25 27 50-44 48-75-6-38-41zM895 105l48-14 29 31-35 31z"/></g></svg>`;
-  document.querySelectorAll(".sensor-world-map, .sensor-location-picker").forEach((element) => {
-    if (!element.querySelector("svg")) element.insertAdjacentHTML("afterbegin", mapSvg);
-  });
+async function mountMapSurfaces() {
+  const surfaces = [...document.querySelectorAll(".sensor-world-map, .sensor-location-picker")];
+  surfaces.forEach((surface) => { surface.dataset.basemap = "loading"; });
+  try {
+    const response = await fetch(naturalEarthUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const geometry = extractLandRings(await response.json());
+    if (geometry.length < 1_000) throw new Error("land geometry is incomplete");
+    surfaces.forEach((surface) => mountMapCanvas(surface, geometry));
+  } catch {
+    surfaces.forEach((surface) => {
+      surface.dataset.basemap = "unavailable";
+      const basis = surface.querySelector("[data-map-basis]");
+      if (basis) basis.textContent = "BASEMAP / UNAVAILABLE";
+    });
+  }
+}
+
+function extractLandRings(geojson) {
+  const rings = [];
+  for (const feature of geojson?.features ?? []) {
+    const geometry = feature?.geometry;
+    if (geometry?.type === "Polygon") rings.push(...geometry.coordinates);
+    else if (geometry?.type === "MultiPolygon") geometry.coordinates.forEach((polygon) => rings.push(...polygon));
+  }
+  return rings;
+}
+
+function mountMapCanvas(surface, rings) {
+  const canvas = document.createElement("canvas");
+  canvas.className = "sensor-map-canvas";
+  canvas.setAttribute("aria-hidden", "true");
+  surface.prepend(canvas);
+  const render = () => renderMapCanvas(canvas, rings);
+  if (typeof ResizeObserver === "function") {
+    const observer = new ResizeObserver(render);
+    observer.observe(surface);
+    mapObservers.push(observer);
+  } else {
+    window.addEventListener("resize", render, { passive: true });
+  }
+  surface.dataset.basemap = "ready";
+  render();
+}
+
+function renderMapCanvas(canvas, rings) {
+  const { width, height } = canvas.parentElement.getBoundingClientRect();
+  if (width < 1 || height < 1) return;
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(width * pixelRatio);
+  canvas.height = Math.round(height * pixelRatio);
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  context.scale(pixelRatio, pixelRatio);
+  context.clearRect(0, 0, width, height);
+  context.save();
+  context.strokeStyle = "rgba(126, 230, 214, .16)";
+  context.lineWidth = 1;
+  context.setLineDash([2, 7]);
+  for (let longitude = -150; longitude <= 150; longitude += 30) {
+    const x = ((longitude + 180) / 360) * width;
+    context.beginPath(); context.moveTo(x, 0); context.lineTo(x, height); context.stroke();
+  }
+  for (let latitude = -60; latitude <= 60; latitude += 30) {
+    const y = ((90 - latitude) / 180) * height;
+    context.beginPath(); context.moveTo(0, y); context.lineTo(width, y); context.stroke();
+  }
+  context.restore();
+
+  const land = new Path2D();
+  for (const ring of rings) {
+    let started = false;
+    let previousLongitude = null;
+    for (const coordinate of ring) {
+      const longitude = Number(coordinate?.[0]);
+      const latitude = Number(coordinate?.[1]);
+      if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) continue;
+      const x = ((longitude + 180) / 360) * width;
+      const y = ((90 - latitude) / 180) * height;
+      if (!started || (previousLongitude !== null && Math.abs(longitude - previousLongitude) > 180)) {
+        land.moveTo(x, y);
+        started = true;
+      } else land.lineTo(x, y);
+      previousLongitude = longitude;
+    }
+    if (started) land.closePath();
+  }
+  context.fillStyle = "rgba(30, 103, 99, .34)";
+  context.fill(land, "evenodd");
+  context.strokeStyle = "rgba(137, 244, 216, .72)";
+  context.lineWidth = Math.max(.65, width / 1_900);
+  context.shadowColor = "rgba(86, 255, 223, .2)";
+  context.shadowBlur = 5;
+  context.stroke(land);
 }
 
 async function normalizeAvatar(file) {
@@ -532,7 +735,13 @@ function readCookie(name) {
 
 function locationLabel(device) {
   const country = device.countryName === device.countryCode ? regionNames?.of(device.countryCode) : device.countryName;
-  return [country || device.countryCode, device.admin1Code, device.localityName].filter(Boolean).join(" / ");
+  const subdivision = device.subdivisionCode
+    ? `${device.subdivisionName || device.subdivisionCode} (${device.subdivisionCode})`
+    : device.admin1Code;
+  const municipality = device.municipalityCode
+    ? `${device.municipalityName || device.localityName || device.municipalityCode} (${device.municipalityCode})`
+    : device.localityName;
+  return [country || device.countryCode, subdivision, municipality].filter(Boolean).join(" / ");
 }
 function formatValue(value) { return Number.isFinite(Number(value)) ? Number(value).toLocaleString("ja-JP", { maximumFractionDigits: 2 }) : "—"; }
 function formatRelative(iso) { const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000)); return seconds < 60 ? `${seconds}秒前` : seconds < 3600 ? `${Math.floor(seconds / 60)}分前` : new Date(iso).toLocaleString("ja-JP"); }

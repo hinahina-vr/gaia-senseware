@@ -32,6 +32,12 @@ check("pairing view contains complete Setup AP instructions", () => {
   for (const fragment of ["PCまたはスマホ", "CITY-SENSOR-XXXX", "http://192.168.4.1/", "Wi-Fi", "このPairing Codeを入力"]) assert(pairing.includes(fragment), fragment);
 });
 
+check("registration uses canonical region selectors and the shared Natural Earth map", () => {
+  for (const field of ['name="subdivisionCode"', 'name="municipalityCode"', "ISO 3166-2", "全国地方公共団体コード"]) assert(sensors.includes(field), field);
+  assert.match(read("sensors/sensor-platform.js"), /natural-earth-50m-land\.geojson/u);
+  assert.doesNotMatch(read("sensors/sensor-platform.js"), /mapSvg|<svg viewBox/u);
+});
+
 check("responsive styles preserve readable three-step layouts", () => {
   for (const selector of [".sensor-register-preview", ".sensor-setup-steps"]) assert(css.includes(selector));
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sensor-register-preview, \.sensor-setup-steps \{ grid-template-columns: 1fr;/u);

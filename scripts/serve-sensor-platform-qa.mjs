@@ -21,11 +21,15 @@ const initialProfile = () => ({
 });
 let profile = initialProfile();
 const avatarPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X4u1WQAAAABJRU5ErkJggg==", "base64");
-let device = {
+const initialDevice = () => ({
   deviceId: "dev_browser_qa",
   name: "ベランダ環境センサー",
   countryCode: "JP",
   countryName: "日本",
+  subdivisionCode: "JP-13",
+  subdivisionName: "東京都",
+  municipalityCode: "131130",
+  municipalityName: "渋谷区",
   admin1Code: "JP-13",
   localityName: "渋谷区",
   state: "OFFLINE",
@@ -34,7 +38,8 @@ let device = {
   isPublic: true,
   publicLatitude: 35.7,
   publicLongitude: 139.7,
-};
+});
+let device = initialDevice();
 const requests = [];
 
 const server = http.createServer(async (request, response) => {
@@ -50,6 +55,7 @@ const server = http.createServer(async (request, response) => {
       lastPairingDraft = null;
       lastDeviceDraft = null;
       profile = initialProfile();
+      device = initialDevice();
       return sendJson(response, 200, { ok: true });
     }
     if (url.pathname.startsWith("/api/")) return handleApi(request, response, url);
@@ -75,7 +81,8 @@ async function handleApi(request, response, url) {
   if (url.pathname === "/api/public/v1/sensors" && request.method === "GET") {
     return sendJson(response, 200, { sensors: [{
       id: "sensor_browserqa", sensorName: "ベランダ環境センサー", state: "ONLINE", lastSeenAt: new Date().toISOString(),
-      location: { latitude: 35.7, longitude: 139.7, precision: "APPROXIMATE_0_1_DEGREE" },
+       location: { latitude: 35.7, longitude: 139.7, precision: "APPROXIMATE_0_1_DEGREE" },
+       region: { countryCode: "JP", subdivisionCode: "JP-13", subdivisionName: "東京都" },
       owner: { displayName: profile.displayName, avatarUrl: profile.avatarUrl, xUrl: profile.xUrl, githubUrl: profile.githubUrl, instagramUrl: profile.instagramUrl },
     }] });
   }
@@ -89,6 +96,17 @@ async function handleApi(request, response, url) {
   }
   if (url.pathname === "/api/web/v1/countries") {
     return sendJson(response, 200, { countries: [{ code: "JP", nameEn: "Japan", nameLocal: "日本" }, { code: "US", nameEn: "United States", nameLocal: "アメリカ合衆国" }] });
+  }
+  if (url.pathname === "/api/web/v1/regions" && request.method === "GET") {
+    const countryCode = url.searchParams.get("countryCode");
+    const subdivisionCode = url.searchParams.get("subdivisionCode");
+    const subdivisions = countryCode === "JP"
+      ? [{ code: "JP-13", name: "東京都" }, { code: "JP-14", name: "神奈川県" }]
+      : countryCode === "US" ? [{ code: "US-CA", name: "California" }] : [];
+    const municipalities = subdivisionCode === "JP-13"
+      ? [{ code: "131130", name: "渋谷区" }]
+      : subdivisionCode === "JP-14" ? [{ code: "142085", name: "逗子市" }] : [];
+    return sendJson(response, 200, { version: "qa", subdivisions, municipalities });
   }
   if (url.pathname === "/api/web/v1/profile" && request.method === "GET") return sendJson(response, 200, { profile });
   if (url.pathname === "/api/web/v1/profile" && request.method === "PATCH") {
@@ -129,7 +147,17 @@ async function handleApi(request, response, url) {
   if (request.method === "PATCH") {
     const body = await readJson(request);
     lastDeviceDraft = body;
-    device = { ...device, ...body, countryName: body.countryCode === "JP" ? "日本" : "アメリカ合衆国" };
+    const subdivisionNames = { "JP-13": "東京都", "JP-14": "神奈川県", "US-CA": "California" };
+    const municipalityNames = { "131130": "渋谷区", "142085": "逗子市" };
+    device = {
+      ...device,
+      ...body,
+      countryName: body.countryCode === "JP" ? "日本" : "アメリカ合衆国",
+      subdivisionName: subdivisionNames[body.subdivisionCode] || null,
+      municipalityName: municipalityNames[body.municipalityCode] || null,
+      admin1Code: body.subdivisionCode || body.admin1Code,
+      localityName: municipalityNames[body.municipalityCode] || body.localityName,
+    };
     return sendJson(response, 200, { device });
   }
   if (request.method === "DELETE") {

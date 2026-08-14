@@ -15,10 +15,13 @@ const auth = read("sensor-platform/src/auth.ts");
 const devices = read("sensor-platform/src/devices.ts");
 const profiles = read("sensor-platform/src/profiles.ts");
 const validation = read("sensor-platform/src/validation.ts");
+const regions = read("sensor-platform/src/regions.ts");
+const regionData = read("sensor-platform/src/region-code-data.ts");
 const migration1 = read("sensor-platform/migrations/0001_initial.sql");
 const migration2 = read("sensor-platform/migrations/0002_iso_3166_1_alpha2.sql");
 const migration3 = read("sensor-platform/migrations/0003_public_sensor_profiles.sql");
 const migration4 = read("sensor-platform/migrations/0004_d1_profile_avatars.sql");
+const migration5 = read("sensor-platform/migrations/0005_region_codes.sql");
 const wrangler = read("sensor-platform/wrangler.jsonc");
 const rootWrangler = read("wrangler.jsonc");
 const openapi = read("smartcity-sensor-starter-kit/openapi.yaml");
@@ -35,8 +38,8 @@ check("global nav inserts sensor immediately after map", () => {
 
 check("SPA exposes required views and web operations", () => {
   for (const view of ["map", "login", "loading", "devices", "add", "pairing", "detail", "profile", "guide"]) assert.match(sensorHtml, new RegExp(`data-view="${view}"`, "u"));
-  for (const fragment of ["/session", "/countries", "/devices/pairing", "/latest", "/telemetry", "/profile", "/profile/avatar", "/public/v1/sensors", 'method: "PUT"', 'method: "PATCH"', 'method: "DELETE"']) assert(sensorJs.includes(fragment), fragment);
-  for (const fragment of ["public-sensor-map", "profile-avatar-input", "xUrl", "githubUrl", "instagramUrl", "publicLatitude", "publicLongitude"]) assert(sensorHtml.includes(fragment), fragment);
+  for (const fragment of ["/session", "/countries", "/regions", "/devices/pairing", "/latest", "/telemetry", "/profile", "/profile/avatar", "/public/v1/sensors", 'method: "PUT"', 'method: "PATCH"', 'method: "DELETE"']) assert(sensorJs.includes(fragment), fragment);
+  for (const fragment of ["public-sensor-map", "profile-avatar-input", "xUrl", "githubUrl", "instagramUrl", "publicLatitude", "publicLongitude", "subdivisionCode", "municipalityCode"]) assert(sensorHtml.includes(fragment), fragment);
 });
 
 check("public profile and map expose only opted-in approximate ownership", () => {
@@ -44,8 +47,24 @@ check("public profile and map expose only opted-in approximate ownership", () =>
   for (const fragment of ["/api/public/v1/sensors", "PUBLIC_AVATAR_PATTERN", "/api/web/v1/profile", "/api/web/v1/profile/avatar"]) assert(worker.includes(fragment), fragment);
   assert.doesNotMatch(devices.slice(devices.indexOf("export const listPublicSensors")), /email|owner_user_id AS|ownerUserId/iu);
   assert.doesNotMatch(devices.slice(devices.indexOf("export const listPublicSensors")), /lastSeenAt/iu);
+  const publicHandler = devices.slice(devices.indexOf("export const listPublicSensors"), devices.indexOf("const serializeTelemetry"));
+  assert.doesNotMatch(publicHandler, /municipality_code|locality_name/iu);
+  assert.match(publicHandler, /subdivisionCode/u);
   assert.match(validation, /Math\.round\(value \* 10\) \/ 10/u);
   assert.match(validation, /PUBLIC_LOCATION_REQUIRED/u);
+});
+
+check("canonical region codes are generated from pinned registries and validated together", () => {
+  for (const fragment of ["SUBDIVISION_RECORDS", "JAPAN_MUNICIPALITY_RECORDS", "REGION_DATA_VERSION"]) assert(regionData.includes(fragment), fragment);
+  assert((regionData.match(/^  \["[A-Z]{2}-[A-Z0-9]{1,3}",/gmu) ?? []).length >= 4_500);
+  assert((regionData.match(/^  \["\d{6}","JP-/gmu) ?? []).length >= 1_800);
+  for (const fragment of ["hasValidMunicipalityCheckDigit", "getSubdivision", "getMunicipality", "INVALID_SUBDIVISION", "INVALID_MUNICIPALITY", "REGION_FIELD_CONFLICT"]) {
+    assert(regions.includes(fragment) || validation.includes(fragment), fragment);
+  }
+  assert.match(worker, /\/api\/web\/v1\/regions/u);
+  assert.match(sensorJs, /natural-earth-50m-land\.geojson/u);
+  assert.doesNotMatch(sensorJs, /mapSvg|<svg viewBox/u);
+  assert.doesNotMatch(sensorHtml.slice(sensorHtml.indexOf("public-sensor-map")), /<svg/iu);
 });
 
 check("profile stores sanitized PNG in D1 and accepts canonical optional social URLs", () => {
@@ -92,6 +111,15 @@ check("D1 profile migration preserves opaque public identifiers and opt-in locat
   assert.match(migration4, /ALTER TABLE users ADD COLUMN avatar_png BLOB/u);
   assert.match(migration3, /CREATE UNIQUE INDEX IF NOT EXISTS idx_users_public_id/u);
   assert.match(migration3, /CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_public_id/u);
+});
+
+check("D1 region migration is additive and preserves legacy location columns", () => {
+  for (const table of ["device_pairing_codes", "devices"]) {
+    assert.match(migration5, new RegExp(`ALTER TABLE ${table} ADD COLUMN subdivision_code TEXT`, "u"));
+    assert.match(migration5, new RegExp(`ALTER TABLE ${table} ADD COLUMN municipality_code TEXT`, "u"));
+  }
+  for (const legacy of ["admin1_code", "locality_name", "location_precision"]) assert(migration1.includes(legacy), legacy);
+  assert.doesNotMatch(migration5, /DROP|RENAME|DELETE/iu);
 });
 
 check("wrangler config has D1, generated Env and compatibility without R2", () => {

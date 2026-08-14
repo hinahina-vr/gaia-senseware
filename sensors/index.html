@@ -7,8 +7,8 @@
     <link rel="icon" href="data:," />
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
-    <link rel="stylesheet" href="./sensor-platform.css?v=2" />
-    <script src="./sensor-platform.js?v=2" type="module"></script>
+    <link rel="stylesheet" href="./sensor-platform.css?v=3" />
+    <script src="./sensor-platform.js?v=3" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -35,21 +35,26 @@
           <div><p>PUBLIC SIGNALS / APPROXIMATE LOCATION</p><h1>みんなのセンサー</h1></div>
           <button class="sensor-secondary" id="refresh-map" type="button">地図を更新</button>
         </header>
-        <p class="sensor-map-lead">公開を選んだセンサーだけを、約10km単位の位置で表示します。アイコンを選ぶと、センサーの持ち主とSNSを確認できます。</p>
-        <div class="sensor-world-map" id="public-sensor-map" role="region" aria-label="公開センサーの世界地図">
-          <div class="sensor-world-grid" aria-hidden="true"></div>
-          <div class="sensor-map-markers" id="public-sensor-markers"></div>
+        <p class="sensor-map-lead">公開を選んだセンサーだけを、約10km単位の位置で表示します。正確な住所や自治体コードは公開しません。</p>
+        <div class="sensor-map-console">
+          <div class="sensor-world-map" id="public-sensor-map" role="region" aria-label="公開センサーの世界地図">
+            <div class="sensor-map-hud sensor-map-hud-top" aria-hidden="true"><span>LIVE OBSERVATION FIELD</span><span id="public-sensor-count">000 NODES</span></div>
+            <div class="sensor-world-grid" aria-hidden="true"></div>
+            <div class="sensor-map-markers" id="public-sensor-markers"></div>
+            <div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div>
+          </div>
+          <aside class="sensor-map-card" id="public-sensor-detail" aria-live="polite">
+            <small class="sensor-console-label">SELECTED SIGNAL</small>
+            <p>地図上のアイコンを選んでください。</p>
+          </aside>
         </div>
-        <aside class="sensor-map-card" id="public-sensor-detail" aria-live="polite">
-          <p>地図上のアイコンを選んでください。</p>
-        </aside>
         <div class="sensor-public-list" id="public-sensor-list"></div>
       </section>
 
       <section class="sensor-view sensor-login" data-view="login">
         <div class="sensor-kicker">YOUR SENSOR / PLANETARY SIGNAL</div>
         <h1>測ることから、<br />地球へ参加する。</h1>
-        <p>国だけを選び、自分のESP32を登録します。GPSや住所は使いません。温度・湿度・PM2.5など、あなたが測った値だけをHTTPSで届けます。</p>
+        <p>国と地域コードを選び、自分のESP32を登録します。GPSや住所は使いません。温度・湿度・PM2.5など、あなたが測った値だけをHTTPSで届けます。</p>
         <button class="sensor-primary" id="google-login" type="button">
           <span aria-hidden="true">G</span>GoogleでログインしてESP32を登録
         </button>
@@ -57,7 +62,7 @@
         <small>ログイン情報とDevice Tokenは別々に管理されます。</small>
         <ol class="sensor-register-preview" aria-label="ESP32登録の3ステップ">
           <li><span>01</span><p><strong>Googleでログイン</strong>所有する端末だけを安全に管理します。</p></li>
-          <li><span>02</span><p><strong>端末を追加</strong>国と名前を登録し、Pairing Codeを取得します。</p></li>
+          <li><span>02</span><p><strong>端末を追加</strong>国・地域と名前を登録し、Pairing Codeを取得します。</p></li>
           <li><span>03</span><p><strong>Setup APへ入力</strong><code>CITY-SENSOR-XXXX</code>へ接続し、Wi-FiとPairing Codeを入力します。</p></li>
         </ol>
       </section>
@@ -75,7 +80,7 @@
         <div class="sensor-empty" id="device-empty" hidden>
           <span aria-hidden="true">◌</span>
           <h2>まだセンサーがありません</h2>
-          <p>国と名前を登録すると、ESP32に入力する一回限りのコードが発行されます。</p>
+          <p>国・地域と名前を登録すると、ESP32に入力する一回限りのコードが発行されます。</p>
           <button class="sensor-secondary" type="button" data-action="show-add">最初のセンサーを追加</button>
         </div>
         <div class="sensor-device-grid" id="device-list"></div>
@@ -88,12 +93,16 @@
         <form id="device-form">
           <label>センサー名 *<input name="name" required maxlength="80" autocomplete="off" placeholder="ベランダ環境センサー" /></label>
           <label>国 *<select name="countryCode" required><option value="">選択してください</option></select></label>
-          <label>都道府県・州 <small>任意</small><input name="admin1Code" maxlength="32" autocomplete="address-level1" placeholder="東京都 / JP-13" /></label>
-          <label>市区町村 <small>任意</small><input name="localityName" maxlength="80" autocomplete="address-level2" placeholder="渋谷区" /></label>
+          <div class="sensor-region-grid" data-region-fields>
+            <label>都道府県・州・省 <small>任意 / ISO 3166-2</small><select name="subdivisionCode" autocomplete="address-level1" disabled><option value="">国を選択してください</option></select></label>
+            <label data-municipality-field hidden>市区町村 <small>任意 / 全国地方公共団体コード</small><select name="municipalityCode" autocomplete="address-level2" disabled><option value="">都道府県を選択してください</option></select></label>
+            <input name="admin1Code" type="hidden" /><input name="localityName" type="hidden" />
+            <p class="sensor-region-note" data-region-note>地域はISOの正式コードで保存します。住所は入力・保存しません。</p>
+          </div>
           <fieldset class="sensor-public-location">
             <label class="sensor-check"><input name="isPublic" type="checkbox" />このセンサーを「みんなのセンサー」に表示する</label>
-            <p>公開する場合だけ、地図を選んで約10km単位の位置を保存します。GPS・住所は取得も公開もしません。</p>
-            <div class="sensor-location-picker" data-location-picker="add" tabindex="0" role="application" aria-label="公開するおおよその位置を地図から選択"></div>
+            <p id="add-location-help">公開する場合だけ、地図を選んで約10km単位の位置を保存します。矢印キーでも移動できます。GPS・住所は取得も公開もしません。</p>
+            <div class="sensor-location-picker" data-location-picker="add" tabindex="0" role="group" aria-label="公開するおおよその位置を地図から選択" aria-describedby="add-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
             <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
             <output data-location-output="add">位置は未選択です</output>
           </fieldset>
@@ -139,12 +148,16 @@
           <h2>地域と公開設定を変更</h2>
           <input name="name" type="hidden" />
           <label>国 *<select name="countryCode" required></select></label>
-          <label>都道府県・州 <small>任意</small><input name="admin1Code" maxlength="32" /></label>
-          <label>市区町村 <small>任意</small><input name="localityName" maxlength="80" /></label>
+          <div class="sensor-region-grid" data-region-fields>
+            <label>都道府県・州・省 <small>任意 / ISO 3166-2</small><select name="subdivisionCode" autocomplete="address-level1" disabled><option value="">国を選択してください</option></select></label>
+            <label data-municipality-field hidden>市区町村 <small>任意 / 全国地方公共団体コード</small><select name="municipalityCode" autocomplete="address-level2" disabled><option value="">都道府県を選択してください</option></select></label>
+            <input name="admin1Code" type="hidden" /><input name="localityName" type="hidden" />
+            <p class="sensor-region-note" data-region-note>既存の地域情報は保持されます。正式コードを選ぶと正規化されます。</p>
+          </div>
           <fieldset class="sensor-public-location">
             <label class="sensor-check"><input name="isPublic" type="checkbox" />このセンサーを「みんなのセンサー」に表示する</label>
-            <p>公開位置は約10km単位です。正確な住所やGPSは保存しません。</p>
-            <div class="sensor-location-picker" data-location-picker="detail" tabindex="0" role="application" aria-label="公開するおおよその位置を地図から選択"></div>
+            <p id="detail-location-help">公開位置は約10km単位です。矢印キーでも移動できます。正確な住所やGPSは保存しません。</p>
+            <div class="sensor-location-picker" data-location-picker="detail" tabindex="0" role="group" aria-label="公開するおおよその位置を地図から選択" aria-describedby="detail-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
             <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
             <output data-location-output="detail">位置は未選択です</output>
           </fieldset>
@@ -177,7 +190,7 @@
         <div class="sensor-kicker">ESP32 STARTER KIT</div>
         <h1>HTTPSで、直接つなぐ。</h1>
         <ol>
-          <li><span>01</span><p><strong>Webで登録</strong>Google Login後、国とセンサー名を登録します。</p></li>
+          <li><span>01</span><p><strong>Webで登録</strong>Google Login後、国・地域とセンサー名を登録します。</p></li>
           <li><span>02</span><p><strong>Pairing</strong>10分間有効な一回限りコードをESP32へ設定します。</p></li>
           <li><span>03</span><p><strong>NVSへ保存</strong>Device ID・Token・seqはESP32内に保存します。</p></li>
           <li><span>04</span><p><strong>HTTPS POST</strong>Root CAで証明書を検証し、測定値だけを送ります。</p></li>
