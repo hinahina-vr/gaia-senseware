@@ -31,6 +31,7 @@ const currentStepId = "festival_concept_004";
 const expectedLogIds = [...readStepIds, currentStepId];
 const commentStorageKey = "gaiaSensewareNovel:log-comments:v1";
 const progressKey = "gaiaSensewareNovel:progress";
+const manualSaveKey = "gaiaSensewareNovel:manual-saves";
 const settingsKey = "gaiaSensewareNovel:config:v2";
 
 const { chromium } = await import(pathToFileURL(path.join(moduleRoot, "index.mjs")));
@@ -76,13 +77,20 @@ const ensureNovelOpen = async (page) => {
 };
 
 const bootAtLogState = async (page) => {
-  await page.evaluate(({ storedProgress, storageKey, configKey }) => {
+  await page.evaluate(({ storedProgress, storageKey, manualKey, configKey }) => {
     localStorage.setItem(storageKey, JSON.stringify(storedProgress));
+    localStorage.setItem(manualKey, JSON.stringify([{
+      progress: storedProgress,
+      savedAt: Date.now(),
+      meta: { title: "LOG QA", excerpt: storedProgress.stepId },
+    }]));
     localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
-  }, { storedProgress: baseState(), storageKey: progressKey, configKey: settingsKey });
+  }, { storedProgress: baseState(), storageKey: progressKey, manualKey: manualSaveKey, configKey: settingsKey });
   await page.reload({ waitUntil: "domcontentloaded" });
   await ensureNovelOpen(page);
   await page.locator("#novel-resume-button").click();
+  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
+  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, currentStepId, { timeout: 15_000 });
   await page.locator("#novel-log-button").click();
   await page.locator("#novel-log-panel").waitFor({ state: "visible" });
