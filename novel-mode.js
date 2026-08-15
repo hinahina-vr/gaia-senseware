@@ -197,7 +197,6 @@
     runtime: layer.querySelector("#novel-runtime"),
     start: layer.querySelector("#novel-start-button"),
     resume: layer.querySelector("#novel-resume-button"),
-    titleLoad: layer.querySelector("#novel-title-load-button"),
     titleGallery: layer.querySelector("#novel-title-gallery-button"),
     titleGalleryProgress: layer.querySelector("#novel-title-gallery-progress"),
     close: layer.querySelector("#novel-close-button"),
@@ -390,6 +389,7 @@
   let temporalTransitionActive = false;
   let previousFocus = null;
   let galleryPreviousFocus = null;
+  let archivePreviousFocus = null;
   let archiveMode = "save";
   let pendingSlotAction = "";
   let pendingSlotTimer = 0;
@@ -1053,7 +1053,7 @@
     elements.galleryButton.hidden = true;
     closeGallery({ restoreFocus: false });
     renderGalleryControls();
-    elements.resume.hidden = !getStoredProgress();
+    elements.resume.hidden = !getStoredProgress() && !getManualSaves().some(Boolean);
     requestAnimationFrame(() => elements.start.focus({ preventScroll: true }));
   };
 
@@ -2470,11 +2470,11 @@
   };
 
   const SLACK_SYMBOLS = Object.freeze({
-    amane: Object.freeze({ id: "cloud", label: "あめの雲", src: "./assets/visuals-07/slack-avatar-amane-v1.webp" }),
-    mizuha: Object.freeze({ id: "water", label: "みずの水滴", src: "./assets/visuals-07/slack-avatar-mizuha-v1.webp" }),
+    amane: Object.freeze({ id: "cloud", label: "あめの雲", src: "./assets/visuals-07/slack-avatar-amane-v2.webp" }),
+    mizuha: Object.freeze({ id: "water", label: "みずの水滴", src: "./assets/visuals-07/slack-avatar-mizuha-v2.webp" }),
     sakuya: Object.freeze({ id: "flower", label: "sakuの花", src: "./assets/visuals-07/slack-avatar-sakuya-flower-v3.webp" }),
-    visitor: Object.freeze({ id: "blue-apple", label: "あなたの青りんご", src: "./assets/visuals-07/slack-symbol-blue-apple-v1.svg" }),
-    bluecat: Object.freeze({ id: "blue-apple", label: "あなたの青りんご", src: "./assets/visuals-07/slack-symbol-blue-apple-v1.svg" }),
+    visitor: Object.freeze({ id: "green-apple", label: "青猫の緑のりんご", kind: "green-apple" }),
+    bluecat: Object.freeze({ id: "green-apple", label: "青猫の緑のりんご", kind: "green-apple" }),
   });
   const createSlackSymbol = (speakerId) => {
     const avatar = document.createElement("span");
@@ -2483,7 +2483,9 @@
     avatar.dataset.symbol = symbol?.id || "system";
     avatar.setAttribute("role", "img");
     avatar.setAttribute("aria-label", symbol?.label || "SYSTEMの記号");
-    if (symbol) {
+    if (symbol?.kind === "green-apple") {
+      avatar.innerHTML = `<svg class="novel-slack-symbol novel-slack-symbol--green-apple" viewBox="0 0 48 48" aria-hidden="true"><path class="novel-slack-apple-body" d="M24 15c-4.2-4.1-12.8-2.2-15.1 4.9-3.2 9.7 3.2 20.5 10.1 20.5 2.2 0 3.5-1 5-1s2.8 1 5 1c6.9 0 13.3-10.8 10.1-20.5C36.8 12.8 28.2 10.9 24 15Z"/><path class="novel-slack-apple-leaf" d="M25.3 12.7c2.5-5.2 7.2-7.1 11.8-5.5-1.6 4.6-5.3 7.2-11.8 5.5Z"/><path class="novel-slack-apple-stem" d="M24.4 14.7c-.5-4.2.6-7 2.5-9"/><ellipse class="novel-slack-apple-highlight" cx="15.3" cy="22.4" rx="2.6" ry="4.4" transform="rotate(24 15.3 22.4)"/></svg>`;
+    } else if (symbol) {
       const image = document.createElement("img");
       image.className = "novel-slack-symbol";
       image.src = symbol.src;
@@ -2603,9 +2605,10 @@
         setCharacterPresentation(step.speaker, expressionForStep(step));
         setSlackCastVisibility(step);
       }
-      elements.dialogue.hidden = false;
-      elements.speaker.textContent = speakerDisplayName(step);
-      renderDialoguePages(String(step.text || "").replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目"), { reveal: false });
+      elements.dialogue.hidden = true;
+      elements.speaker.textContent = "";
+      elements.text.replaceChildren();
+      elements.text.removeAttribute("aria-label");
       elements.sourceButton.hidden = true;
       elements.slackSurface.hidden = false;
       layer.classList.add("is-slack");
@@ -3402,17 +3405,6 @@
     renderSectionSeparator();
   };
 
-  const resumeStory = async () => {
-    exitDebugJumpSession();
-    const stored = getStoredProgress();
-    if (!stored) return startNewSession();
-    state = stored;
-    await revealRuntimeForStep(currentStep(), () => {
-      renderEves();
-      renderCurrentStep();
-    });
-  };
-
   const jumpToSceneStart = (sceneId) => {
     const entry = sceneJumpEntries.find((candidate) => candidate.sceneId === sceneId);
     const target = entry ? stepMap.get(entry.firstStepId) : null;
@@ -3926,7 +3918,7 @@
     exitDebugJumpSession();
     state = saved.progress;
     seedGalleryFromProgress(state);
-    closeManualArchive();
+    closeManualArchive({ restoreFocus: false });
     await revealRuntimeForStep(currentStep(), () => {
       renderEves();
       saveProgress();
@@ -3944,18 +3936,25 @@
   };
   const openManualArchive = (mode) => {
     closeGallery({ restoreFocus: false });
+    archivePreviousFocus = document.activeElement;
     setArchiveMode(mode);
     elements.saveButton.setAttribute("aria-expanded", String(archiveMode === "save"));
     elements.loadButton.setAttribute("aria-expanded", String(archiveMode === "load"));
+    elements.resume.setAttribute("aria-expanded", String(!hasStarted && archiveMode === "load"));
     elements.savePanel.hidden = false;
     elements.savePanel.setAttribute("aria-hidden", "false");
     requestAnimationFrame(() => elements.saveSlots.querySelector('.novel-save-slot[tabindex="0"]')?.focus({ preventScroll: true }));
   };
-  const closeManualArchive = () => {
+  const closeManualArchive = ({ restoreFocus = true } = {}) => {
     elements.savePanel.hidden = true;
     elements.savePanel.setAttribute("aria-hidden", "true");
     elements.saveButton.setAttribute("aria-expanded", "false");
     elements.loadButton.setAttribute("aria-expanded", "false");
+    elements.resume.setAttribute("aria-expanded", "false");
+    if (restoreFocus && archivePreviousFocus?.isConnected && !archivePreviousFocus.hidden) {
+      archivePreviousFocus.focus({ preventScroll: true });
+    }
+    archivePreviousFocus = null;
   };
 
   const openConfig = () => {
@@ -4068,8 +4067,7 @@
   window.addEventListener("gaia:space-return-to-novel", () => completePendingInteraction());
 
   elements.start.addEventListener("click", startNewSession);
-  elements.resume.addEventListener("click", resumeStory);
-  elements.titleLoad.addEventListener("click", () => openManualArchive("load"));
+  elements.resume.addEventListener("click", () => openManualArchive("load"));
   elements.titleGallery?.addEventListener("click", openGallery);
   elements.close.addEventListener("click", (event) => closeNovel(event));
   elements.restart.addEventListener("click", restartStory);
@@ -4219,7 +4217,7 @@
   });
   layer.addEventListener("click", (event) => {
     if (event.target.closest("button, a, input, select, textarea, details, summary, [role='button']")) return;
-    if (layer.classList.contains("is-slack")) return;
+    if (layer.classList.contains("is-slack") && performance.now() < slackScrollGuardUntil) return;
     advance();
   });
   layer.addEventListener("wheel", (event) => {

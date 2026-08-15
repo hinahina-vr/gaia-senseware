@@ -74,16 +74,16 @@ const expectedBoundaries = [
   ["festival_concept", 1, 7, "festival-main-entrance-reception", assets.entrance, "push-in", "scenic"],
   ["festival_concept", 8, 9, "festival-b-hall-overview", assets.bHallOverview, "push-in", "scenic"],
   ["festival_concept", 10, 12, "festival-gaia-five-plane-projection", assets.fivePlaneProjection, "push-in", "scenic"],
-  ["festival_concept", 13, 14, "festival-gaia-booth-approach", assets.boothClose, "drift-left", "scenic"],
+  ["festival_concept", 13, 14, "festival-gaia-booth-approach", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["festival_concept", 15, 20, "festival-first-encounter-cg", assets.firstEncounter, "event-focus", "event-cg"],
   ["festival_concept", 21, 22, "festival-amane-closeup-cg", assets.amaneCloseup, "event-focus", "event-cg"],
   ["festival_concept", 23, 26, "festival-mizuha-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
-  ["festival_concept", 27, 75, "festival-gaia-booth-conversation", assets.projectionConversation, "drift-left", "scenic"],
+  ["festival_concept", 27, 75, "festival-gaia-booth-conversation", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["festival_concept", 76, 76, "festival-map-transition", assets.mapTransition, "event-focus", "event-cg"],
   ["map_mode01", 1, 14, "map01-co2-observation", assets.modeMap, "drift-right", "scenic"],
   ["map_mode01", 15, 28, "map01-temperature-observation", assets.modis, "push-in", "scenic"],
   ["map_mode01", 29, 40, "map01-data-architecture", assets.system, "drift-left", "scenic"],
-  ["map_mode01", 41, 43, "map01-exhibition-return", assets.boothWide, "drift-right", "scenic"],
+  ["map_mode01", 41, 43, "map01-exhibition-return", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["gx_experience", 1, 16, "gx-ocean-entry", assets.gxAncientOcean, "push-in", "scenic"],
   ["gx_experience", 17, 29, "gx-ancient-ocean", assets.abstract, "drift-right", "scenic"],
   ["gx_experience", 30, 41, "gx-coevolution", assets.gxBreathingPoints, "drift-left", "scenic"],
@@ -100,13 +100,13 @@ const expectedBoundaries = [
   ["circle_invitation", 29, 47, "circle-shared-future", assets.shared, "drift-right", "scenic"],
   ["circle_invitation", 48, 69, "circle-welcome-cg", assets.circleWelcome, "event-focus", "event-cg"],
   ["circle_invitation", 70, 81, "circle-after-welcome", assets.boothClose, "drift-right", "scenic"],
-  ["welcome_chat", 1, 20, "welcome-online-arrival", assets.onlineNight, "drift-left", "scenic"],
-  ["welcome_chat", 21, 40, "welcome-online-esp32-thread", assets.productionNight, "drift-right", "scenic"],
-  ["welcome_chat", 41, 54, "welcome-co-created-future", assets.future, "push-in", "scenic"],
-  ["welcome_chat", 55, 68, "welcome-physical-booth", assets.boothWide, "drift-left", "scenic"],
-  ["welcome_chat", 69, 73, "welcome-booth-packdown", assets.boothClose, "drift-right", "scenic"],
+  ["welcome_chat", 1, 20, "welcome-online-arrival", assets.fivePlaneProjection, "drift-left", "scenic"],
+  ["welcome_chat", 21, 40, "welcome-online-esp32-thread", assets.fivePlaneProjection, "drift-right", "scenic"],
+  ["welcome_chat", 41, 54, "welcome-co-created-future", assets.fivePlaneProjection, "push-in", "scenic"],
+  ["welcome_chat", 55, 68, "welcome-physical-booth", assets.fivePlaneProjection, "drift-left", "scenic"],
+  ["welcome_chat", 69, 73, "welcome-booth-packdown", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["welcome_chat", 74, 83, "welcome-night-exit-mobile", assets.coastNight, "drift-left", "scenic"],
-  ["welcome_chat", 84, 91, "welcome-earth-partner-reflection", assets.partner, "push-in", "scenic"],
+  ["welcome_chat", 84, 91, "welcome-earth-partner-reflection", assets.fivePlaneProjection, "push-in", "scenic"],
   ["welcome_chat", 92, 95, "welcome-exhibition-finale-cg", assets.finale, "event-focus", "event-cg"],
 ];
 
@@ -128,7 +128,7 @@ const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(ste
 assert.equal(resolved.length, 396);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 28, "background-art cut must use twenty-eight distinct scene assets");
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 24, "background-art cut must use twenty-four distinct scene assets");
 assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 50);
 
 assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
@@ -154,7 +154,7 @@ const festivalAfterEncounter = festivalResolved.filter(({ step }) => {
   const number = Number(step.id.slice(-3));
   return number >= 27 && number <= 75;
 });
-assert(festivalAfterEncounter.every(({ cue: resolvedCue }) => resolvedCue.assetPath === assets.projectionConversation));
+assert(festivalAfterEncounter.every(({ cue: resolvedCue }) => resolvedCue.assetPath === assets.fivePlaneProjection));
 assert.equal(festivalResolved.find(({ step }) => step.id === "festival_concept_076")?.cue.assetPath, assets.mapTransition);
 const forbiddenFestivalAssets = [
   "assets/visuals-07/novel-bg-exhibition-v2.png",
@@ -164,6 +164,32 @@ const forbiddenFestivalAssets = [
 assert(festivalResolved.slice(26).every(({ cue: resolvedCue }) => !forbiddenFestivalAssets.includes(resolvedCue.assetPath)), "festival 027-076 still references a superseded fantasy/flat asset");
 assert(resolved.every(({ cue: resolvedCue }) => !/portrait/iu.test(resolvedCue.assetPath)), "mobile portrait asset must never be requested");
 
+const forbiddenConsistencyAssets = new Set([
+  assets.boothClose,
+  assets.boothWide,
+  assets.projectionConversation,
+  assets.onlineNight,
+  assets.productionNight,
+  assets.future,
+  assets.partner,
+]);
+const boothRanges = [
+  ["festival_concept", 13, 14],
+  ["festival_concept", 27, 75],
+  ["map_mode01", 41, 43],
+  ["welcome_chat", 1, 73],
+  ["welcome_chat", 84, 91],
+];
+for (const [sceneId, from, to] of boothRanges) {
+  const range = resolved.filter(({ step }) => {
+    const number = Number(step.id.slice(-3));
+    return step.sceneId === sceneId && number >= from && number <= to;
+  });
+  assert.equal(range.length, to - from + 1, `${sceneId} ${from}-${to}: audited booth range is incomplete`);
+  assert(range.every(({ cue: resolvedCue }) => resolvedCue.assetPath === assets.fivePlaneProjection), `${sceneId} ${from}-${to}: canonical booth asset mismatch`);
+  assert(range.every(({ cue: resolvedCue }) => !forbiddenConsistencyAssets.has(resolvedCue.assetPath)), `${sceneId} ${from}-${to}: forbidden inconsistent asset remains`);
+}
+
 const cue = (stepId) => backgroundCues.forStep(allSteps.find((step) => step.id === stepId));
 assert.equal(cue("festival_concept_001").assetPath, assets.entrance);
 assert.equal(cue("festival_concept_008").assetPath, assets.bHallOverview);
@@ -171,18 +197,19 @@ assert.equal(cue("festival_concept_009").assetPath, assets.bHallOverview);
 assert.equal(cue("festival_concept_010").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("festival_concept_011").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("festival_concept_012").assetPath, assets.fivePlaneProjection);
-assert.equal(cue("festival_concept_013").assetPath, assets.boothClose);
-assert.equal(cue("festival_concept_014").assetPath, assets.boothClose);
+assert.equal(cue("festival_concept_013").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_014").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("festival_concept_015").presentation, "event-cg");
 assert.equal(cue("festival_concept_019").assetPath, assets.firstEncounter);
 assert.equal(cue("festival_concept_021").assetPath, assets.amaneCloseup);
 assert.equal(cue("festival_concept_023").assetPath, assets.mizuhaCloseup);
-assert.equal(cue("festival_concept_027").assetPath, assets.projectionConversation);
-assert.equal(cue("festival_concept_063").assetPath, assets.projectionConversation);
-assert.equal(cue("festival_concept_075").assetPath, assets.projectionConversation);
+assert.equal(cue("festival_concept_027").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_063").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_075").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("festival_concept_076").assetPath, assets.mapTransition);
 assert.equal(cue("festival_concept_076").presentation, "event-cg");
 assert.equal(cue("map_mode01_015").assetPath, assets.modis);
+assert.equal(cue("map_mode01_043").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("gx_experience_017").assetPath, assets.abstract);
 assert.equal(cue("gx_experience_011").assetPath, assets.gxAncientOcean);
 assert.equal(cue("gx_experience_030").assetPath, assets.gxBreathingPoints);
@@ -197,7 +224,10 @@ assert.equal(cue("welcome_chat_020").id, "welcome-online-arrival");
 assert.equal(cue("welcome_chat_021").id, "welcome-online-esp32-thread");
 assert.equal(cue("welcome_chat_055").id, "welcome-physical-booth");
 assert.equal(cue("welcome_chat_074").assetPath, assets.coastNight);
-assert.equal(cue("welcome_chat_091").assetPath, assets.partner);
+assert.equal(cue("welcome_chat_002").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("welcome_chat_041").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("welcome_chat_084").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("welcome_chat_091").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("welcome_chat_092").presentation, "event-cg");
 assert.equal(cue("welcome_chat_095").assetPath, assets.finale);
 assert.throws(() => backgroundCues.forStep({ sceneId: "welcome_chat", id: "welcome_chat_999" }), /Missing contest-v10 background cue/);
@@ -212,5 +242,5 @@ console.log(JSON.stringify({
   assets: [...new Set(resolved.map(({ cue }) => cue.assetPath))],
   eventCgSteps: resolved.filter(({ cue }) => cue.presentation === "event-cg").length,
   gallery: backgroundCues.gallery.map(({ id, unlockStepId }) => ({ id, unlockStepId })),
-  welcomeBoundaries: ["001-020 online arrival", "021-040 online ESP32", "041-054 future concept", "055-073 physical venue", "074-083 mobile/night exit", "084-091 reflection", "092-095 finale CG"],
+  welcomeBoundaries: ["001-073 five-plane booth", "074-083 explicit hall exit/mobile night", "084-091 five-plane booth continuity", "092-095 finale event CG"],
 }, null, 2));
