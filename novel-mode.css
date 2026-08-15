@@ -2867,10 +2867,77 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   box-shadow: 0 12px 34px rgba(0, 8, 28, 0.18);
 }
 
-.novel-log-panel header div { display: grid; gap: 7px; }
-.novel-log-panel header span { color: rgba(var(--novel-log-blue-soft), 0.82); font: 700 9px/1 Consolas, monospace; letter-spacing: 0.24em; }
-.novel-log-panel header strong { color: rgba(246, 249, 255, 0.97); font: 600 clamp(20px, 2vw, 30px)/1.4 var(--novel-font); letter-spacing: 0.04em; text-shadow: 0 1px 18px rgba(6, 24, 63, 0.42); }
-.novel-log-panel header button {
+.novel-log-heading {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.novel-log-heading > span {
+  color: rgba(var(--novel-log-blue-soft), 0.82);
+  font: 700 9px/1 Consolas, monospace;
+  letter-spacing: 0.24em;
+}
+
+.novel-log-heading > strong {
+  color: rgba(246, 249, 255, 0.97);
+  font: 600 clamp(20px, 2vw, 30px)/1.4 var(--novel-font);
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 18px rgba(6, 24, 63, 0.42);
+}
+
+.novel-log-tools {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.novel-log-comment-count,
+.novel-log-status {
+  color: rgba(var(--novel-log-blue-soft), 0.82);
+  font: 700 10px/1.5 Consolas, monospace;
+  letter-spacing: 0.08em;
+}
+
+.novel-log-status {
+  min-width: 0;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.novel-log-status[data-state="success"] { color: rgba(152, 244, 210, 0.92); }
+.novel-log-status[data-state="error"] { color: rgba(255, 180, 180, 0.94); }
+
+.novel-log-panel .novel-log-export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 164px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-color: rgba(var(--novel-log-blue), 0.42);
+  border-radius: 10px;
+  color: rgba(239, 247, 255, 0.92);
+  background: rgba(34, 82, 158, 0.24);
+  font: 700 11px/1.2 var(--novel-font);
+  letter-spacing: 0.08em;
+}
+
+.novel-log-panel .novel-log-export:disabled {
+  color: rgba(210, 226, 246, 0.34);
+  border-color: rgba(var(--novel-log-blue), 0.14);
+  background: rgba(22, 50, 102, 0.12);
+  cursor: not-allowed;
+}
+
+.novel-log-panel .novel-log-close {
   position: relative;
   display: grid;
   flex: 0 0 44px;
@@ -2887,8 +2954,8 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   box-shadow: inset 0 0 0 1px rgba(203, 226, 255, 0.025);
 }
 
-.novel-log-panel header button::before,
-.novel-log-panel header button::after {
+.novel-log-panel .novel-log-close::before,
+.novel-log-panel .novel-log-close::after {
   content: "";
   position: absolute;
   width: 14px;
@@ -2898,29 +2965,29 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   transition: width 160ms ease, background-color 160ms ease;
 }
 
-.novel-log-panel header button::before { transform: rotate(45deg); }
-.novel-log-panel header button::after { transform: rotate(-45deg); }
+.novel-log-panel .novel-log-close::before { transform: rotate(45deg); }
+.novel-log-panel .novel-log-close::after { transform: rotate(-45deg); }
 
-.novel-log-panel header button:hover,
-.novel-log-panel header button:focus-visible {
+.novel-log-panel .novel-log-close:hover,
+.novel-log-panel .novel-log-close:focus-visible {
   border-color: rgba(var(--novel-log-blue), 0.4);
   background: rgba(42, 104, 207, 0.2);
 }
 
-.novel-log-panel header button:hover::before,
-.novel-log-panel header button:hover::after,
-.novel-log-panel header button:focus-visible::before,
-.novel-log-panel header button:focus-visible::after {
+.novel-log-panel .novel-log-close:hover::before,
+.novel-log-panel .novel-log-close:hover::after,
+.novel-log-panel .novel-log-close:focus-visible::before,
+.novel-log-panel .novel-log-close:focus-visible::after {
   width: 16px;
   background: rgba(244, 248, 255, 0.98);
 }
 
-.novel-log-panel header button:focus-visible {
+.novel-log-panel .novel-log-close:focus-visible {
   outline: 1px solid rgba(var(--novel-log-blue-soft), 0.7);
   outline-offset: 3px;
 }
 
-.novel-log-panel header button:active {
+.novel-log-panel .novel-log-close:active {
   background: rgba(42, 104, 207, 0.28);
   transform: scale(0.97);
 }
@@ -2954,6 +3021,12 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   margin: 0 auto;
   padding: 0 0 clamp(24px, 3vh, 38px) clamp(18px, 2vw, 30px);
   border-left: 1px solid rgba(var(--novel-log-speaker), 0.58);
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+#novel-log-content article.has-comment {
+  border-left-color: rgba(139, 241, 212, 0.9);
+  background: linear-gradient(90deg, rgba(62, 178, 151, 0.07), transparent 46%);
 }
 
 #novel-log-content article[data-speaker="mizuha"] { --novel-log-speaker: 112, 210, 255; }
@@ -2961,16 +3034,26 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
 #novel-log-content article[data-speaker="sakuya"] { --novel-log-speaker: 255, 145, 184; }
 #novel-log-content article[data-speaker="visitor"] { --novel-log-speaker: 203, 174, 255; }
 #novel-log-content article[data-speaker="system"] { --novel-log-speaker: 179, 166, 255; }
-#novel-log-content article p:first-child {
+.novel-log-entry-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 9px;
+}
+
+#novel-log-content .novel-log-entry-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  margin: 0 0 9px;
+  min-width: 0;
+  margin: 0;
   color: rgba(var(--novel-log-speaker), 0.9);
   font: 700 9px/1.4 Consolas, monospace;
   letter-spacing: 0.14em;
 }
-#novel-log-content article p:first-child::before {
+#novel-log-content .novel-log-entry-meta::before {
   width: 7px;
   height: 7px;
   flex: 0 0 auto;
@@ -2979,29 +3062,92 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   content: "";
   opacity: 0.9;
 }
-#novel-log-content article[data-speaker="narrator"] p:first-child::before {
+#novel-log-content article[data-speaker="narrator"] .novel-log-entry-meta::before {
   width: 11px;
   height: 2px;
   border-radius: 999px;
 }
-#novel-log-content article[data-speaker="amane"] p:first-child::before {
+#novel-log-content article[data-speaker="amane"] .novel-log-entry-meta::before {
   border-radius: 0;
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
-#novel-log-content article[data-speaker="sakuya"] p:first-child::before {
+#novel-log-content article[data-speaker="sakuya"] .novel-log-entry-meta::before {
   border-radius: 1px;
   transform: rotate(45deg);
 }
-#novel-log-content article[data-speaker="visitor"] p:first-child::before {
+#novel-log-content article[data-speaker="visitor"] .novel-log-entry-meta::before {
   border-radius: 0;
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
 }
-#novel-log-content article[data-speaker="system"] p:first-child::before {
+#novel-log-content article[data-speaker="system"] .novel-log-entry-meta::before {
   border: 1px solid currentColor;
   border-radius: 2px;
   background: transparent;
 }
-#novel-log-content article p:last-child { margin: 0; color: rgba(239, 245, 255, 0.92); font: 500 clamp(15px, 1.15vw, 19px)/1.9 var(--novel-font); text-shadow: 0 1px 12px rgba(2, 10, 31, 0.4); }
+.novel-log-entry-id {
+  color: rgba(237, 247, 255, 0.94);
+  font: inherit;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+}
+
+.novel-log-entry-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 7px;
+}
+
+.novel-log-panel .novel-log-copy {
+  min-height: 44px;
+  padding: 0 12px;
+  border-color: rgba(var(--novel-log-speaker), 0.28);
+  border-radius: 8px;
+  color: rgba(224, 238, 255, 0.78);
+  background: rgba(8, 27, 65, 0.36);
+  font: 700 10px/1.2 var(--novel-font);
+  letter-spacing: 0.05em;
+}
+
+#novel-log-content .novel-log-entry-text {
+  margin: 0;
+  color: rgba(239, 245, 255, 0.92);
+  font: 500 clamp(15px, 1.15vw, 19px)/1.9 var(--novel-font);
+  text-shadow: 0 1px 12px rgba(2, 10, 31, 0.4);
+}
+
+.novel-log-comment-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.novel-log-comment-field > span {
+  color: rgba(var(--novel-log-blue-soft), 0.68);
+  font: 700 10px/1.4 var(--novel-font);
+  letter-spacing: 0.08em;
+}
+
+.novel-log-comment-field textarea {
+  width: 100%;
+  min-height: 78px;
+  resize: vertical;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid rgba(var(--novel-log-blue), 0.26);
+  border-radius: 9px;
+  color: rgba(245, 249, 255, 0.96);
+  background: rgba(3, 14, 38, 0.56);
+  font: 500 14px/1.7 var(--novel-font);
+  caret-color: rgb(148, 228, 208);
+  box-shadow: inset 0 1px rgba(219, 235, 255, 0.025);
+}
+
+.novel-log-comment-field textarea::placeholder { color: rgba(194, 213, 238, 0.38); }
+.novel-log-comment-field textarea:focus-visible {
+  outline: 1px solid rgba(147, 225, 255, 0.8);
+  outline-offset: 2px;
+  border-color: rgba(147, 225, 255, 0.54);
+}
 
 @keyframes novel-log-fullscreen-in {
   from { opacity: 0; filter: blur(5px); transform: scale(1.012); }
@@ -3188,8 +3334,30 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
     line-height: 1.5;
   }
   .novel-log-panel { width: 100%; }
-  .novel-log-panel header { padding: 24px 20px 18px; }
-  #novel-log-content { padding: 22px 20px 60px; }
+  .novel-log-panel header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 14px 10px;
+    padding: max(18px, env(safe-area-inset-top)) 16px 16px;
+  }
+  .novel-log-heading { grid-column: 1; grid-row: 1; }
+  .novel-log-heading > strong { font-size: clamp(18px, 5.6vw, 24px); }
+  .novel-log-tools {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+  .novel-log-panel .novel-log-close { grid-column: 2; grid-row: 1; }
+  .novel-log-panel .novel-log-export { min-width: 158px; }
+  .novel-log-status { flex: 1 1 160px; max-width: none; }
+  #novel-log-content { padding: 22px 14px 60px; }
+  #novel-log-content article { padding-left: 14px; }
+  .novel-log-entry-header { display: grid; gap: 10px; }
+  .novel-log-entry-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .novel-log-panel .novel-log-copy { width: 100%; padding-inline: 8px; }
+  .novel-log-comment-field textarea { min-height: 92px; font-size: 15px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4214,6 +4382,14 @@ body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {
   top: max(18px, env(safe-area-inset-top)) !important;
   right: max(146px, calc(env(safe-area-inset-right) + 146px)) !important;
   left: auto !important;
+}
+
+/* The persistent audio control otherwise overlaps the LOG heading on narrow
+   viewports. LOG is already a modal surface, so temporarily remove the dock
+   from both the visual and pointer layers while it is open. */
+body.gaia-log-open .gaia-audio-dock {
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 body.novel-open .novel-topbar #novel-close-button {

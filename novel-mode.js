@@ -13,6 +13,7 @@
   const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
   const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
   const GALLERY_KEY = "gaiaSensewareNovel:cg-gallery:v1";
+  const LOG_COMMENT_KEY = "gaiaSensewareNovel:log-comments:v1";
   const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
   const LEGACY_MANUAL_KEYS = ["gaia_novel_manual_saves_v6", "gaiaSensewareNovel:manual-saves:v1"];
   const SLOT_COUNT = 6;
@@ -213,6 +214,9 @@
     logPanel: layer.querySelector("#novel-log-panel"),
     logClose: layer.querySelector("#novel-log-close"),
     logContent: layer.querySelector("#novel-log-content"),
+    logCommentCount: layer.querySelector("#novel-log-comment-count"),
+    logExport: layer.querySelector("#novel-log-export"),
+    logStatus: layer.querySelector("#novel-log-status"),
     saveButton: layer.querySelector("#novel-save-button"),
     loadButton: layer.querySelector("#novel-load-button"),
     savePanel: layer.querySelector("#novel-save-panel"),
@@ -573,6 +577,25 @@
       return false;
     }
   };
+  const readSessionStorage = (key) => {
+    try { return window.sessionStorage.getItem(key); } catch { return null; }
+  };
+  const writeSessionStorage = (key, value) => {
+    try {
+      window.sessionStorage.setItem(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const normalizeLogComments = (candidate) => {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return {};
+    return Object.fromEntries(Object.entries(candidate)
+      .filter(([id, comment]) => stepMap.has(id) && typeof comment === "string" && comment.trim())
+      .map(([id, comment]) => [id, comment]));
+  };
+  let logComments = normalizeLogComments(safeJson(readSessionStorage(LOG_COMMENT_KEY)));
+  const persistLogComments = () => writeSessionStorage(LOG_COMMENT_KEY, JSON.stringify(logComments));
   const getGalleryUnlocks = () => {
     const candidate = safeJson(readStorage(GALLERY_KEY));
     const ids = Array.isArray(candidate) ? candidate : candidate?.unlocked;
@@ -2396,6 +2419,17 @@
     return copied;
   };
 
+  const writeClipboardText = async (payload) => {
+    let copied = false;
+    try {
+      await navigator.clipboard?.writeText?.(payload);
+      copied = Boolean(navigator.clipboard?.writeText);
+    } catch {
+      copied = false;
+    }
+    return copied || fallbackClipboardWrite(payload);
+  };
+
   const setScriptCopyFeedback = (copied) => {
     clearScriptCopyFeedback();
     const debug = getScriptDebugElements();
@@ -2419,14 +2453,7 @@
     const header = `SCRIPT #${number}｜${stepId}`;
     const body = canonicalStepTextForCopy(step);
     const payload = body ? `${header}\n${body}` : header;
-    let copied = false;
-    try {
-      await navigator.clipboard?.writeText?.(payload);
-      copied = Boolean(navigator.clipboard?.writeText);
-    } catch {
-      copied = false;
-    }
-    if (!copied) copied = fallbackClipboardWrite(payload);
+    const copied = await writeClipboardText(payload);
     setScriptCopyFeedback(copied);
     return copied;
   };
@@ -3440,23 +3467,143 @@
     return true;
   };
 
+  const logStepText = (step) => String(step?.text || "")
+    .replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目");
+  const commentedLogEntries = () => allSteps
+    .filter((step) => typeof logComments[step.id] === "string" && logComments[step.id].trim())
+    .map((step) => ({ step, comment: logComments[step.id].trim() }));
+  const setLogStatus = (message, stateName = "") => {
+    elements.logStatus.textContent = message;
+    if (stateName) elements.logStatus.dataset.state = stateName;
+    else delete elements.logStatus.dataset.state;
+  };
+  const syncLogCommentSummary = () => {
+    const count = commentedLogEntries().length;
+    elements.logCommentCount.textContent = `コメント ${count}件`;
+    elements.logExport.disabled = count === 0;
+    elements.logExport.setAttribute("aria-label", count
+      ? `コメント済み${count}件をCodex用Markdownで出力`
+      : "コメントを入力するとCodex用Markdownを出力できます");
+  };
+  const markdownBlockquote = (value) => String(value).split("\n").map((line) => `> ${line}`).join("\n");
+  const buildLogCommentMarkdown = () => {
+    const entries = commentedLogEntries();
+    const sections = entries.map(({ step, comment }, index) => [
+      `## ${index + 1}. \`${step.id}\``,
+      "",
+      `- LOG ID: \`${step.id}\``,
+      `- 話者: ${speakerDisplayName(step) || step.type.toUpperCase()}`,
+      "",
+      "### 現在の本文",
+      "",
+      markdownBlockquote(logStepText(step)),
+      "",
+      "### 修正指示",
+      "",
+      comment,
+    ].join("\n"));
+    return [
+      "# GAIA SENSEWARE Codex修正指示",
+      "",
+      "以下はOBSERVATION LOGで指定したstep別の修正指示です。各LOG IDの現在の本文を確認し、修正指示を反映してください。",
+      "",
+      `- 出力日時: ${new Date().toISOString()}`,
+      `- 対象件数: ${entries.length}`,
+      "",
+      sections.join("\n\n---\n\n"),
+      "",
+    ].join("\n");
+  };
+  const exportLogComments = () => {
+    const entries = commentedLogEntries();
+    if (!entries.length) {
+      setLogStatus("コメント済みの項目がありません", "error");
+      return false;
+    }
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+    const blob = new Blob(["\uFEFF", buildLogCommentMarkdown()], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `gaia-codex-log-comments-${stamp}.md`;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    setLogStatus(`${entries.length}件を書き出しました`, "success");
+    return true;
+  };
   const renderLog = () => {
     elements.logContent.replaceChildren();
     state.readStepIds.forEach((id) => {
       const step = stepMap.get(id);
       if (!step?.text) return;
       const article = document.createElement("article");
+      const entryHeader = document.createElement("div");
       const header = document.createElement("p");
+      const actions = document.createElement("div");
+      const copyId = document.createElement("button");
+      const copyEntry = document.createElement("button");
       const text = document.createElement("p");
+      const commentField = document.createElement("label");
+      const commentLabel = document.createElement("span");
+      const comment = document.createElement("textarea");
       const speaker = speakerDisplayName(step) || step.type.toUpperCase();
+      const displayText = logStepText(step);
       article.dataset.stepId = id;
       article.dataset.kind = step.recordType || "SOURCE";
       article.dataset.speaker = step.speaker || "system";
-      header.textContent = `${speaker || "観測記録"} / ${RECORD_LABELS[step.recordType] || step.type}`;
-      text.textContent = String(step.text).replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目");
-      article.append(header, text);
+      article.classList.toggle("has-comment", Boolean(logComments[id]?.trim()));
+      entryHeader.className = "novel-log-entry-header";
+      header.className = "novel-log-entry-meta";
+      header.textContent = `${speaker || "観測記録"} / ${RECORD_LABELS[step.recordType] || step.type} / `;
+      const visibleId = document.createElement("code");
+      visibleId.className = "novel-log-entry-id";
+      visibleId.textContent = id;
+      header.append(visibleId);
+      actions.className = "novel-log-entry-actions";
+      copyId.type = "button";
+      copyId.className = "novel-log-copy";
+      copyId.textContent = "IDをコピー";
+      copyId.setAttribute("aria-label", `${id}のLOG IDをコピー`);
+      copyEntry.type = "button";
+      copyEntry.className = "novel-log-copy";
+      copyEntry.textContent = "ID＋本文";
+      copyEntry.setAttribute("aria-label", `${id}のLOG IDと本文をコピー`);
+      copyId.addEventListener("click", async () => {
+        const copied = await writeClipboardText(id);
+        setLogStatus(copied ? `${id} のIDをコピーしました` : "コピーできませんでした", copied ? "success" : "error");
+      });
+      copyEntry.addEventListener("click", async () => {
+        const copied = await writeClipboardText(`${id}\n${displayText}`);
+        setLogStatus(copied ? `${id} のIDと本文をコピーしました` : "コピーできませんでした", copied ? "success" : "error");
+      });
+      actions.append(copyId, copyEntry);
+      entryHeader.append(header, actions);
+      text.className = "novel-log-entry-text";
+      text.textContent = displayText;
+      commentField.className = "novel-log-comment-field";
+      commentLabel.textContent = "このstepへの修正指示";
+      comment.rows = 3;
+      comment.value = logComments[id] || "";
+      comment.dataset.stepId = id;
+      comment.placeholder = "例：語尾を短くする／背景との整合を確認する";
+      comment.setAttribute("aria-label", `${id}への修正コメント`);
+      comment.addEventListener("input", () => {
+        const value = comment.value;
+        if (value.trim()) logComments[id] = value;
+        else delete logComments[id];
+        article.classList.toggle("has-comment", Boolean(value.trim()));
+        const persisted = persistLogComments();
+        syncLogCommentSummary();
+        setLogStatus(persisted ? `${id} のコメントを保存しました` : "コメントを保存できませんでした", persisted ? "success" : "error");
+      });
+      commentField.append(commentLabel, comment);
+      article.append(entryHeader, text, commentField);
       elements.logContent.append(article);
     });
+    syncLogCommentSummary();
   };
   const logDistanceFromBottom = () => Math.max(0,
     elements.logContent.scrollHeight - elements.logContent.clientHeight - elements.logContent.scrollTop);
@@ -3472,6 +3619,7 @@
     requestAnimationFrame(scrollLogToLatest);
   }).observe(elements.logContent, { childList: true });
   const closeLog = () => {
+    document.body.classList.remove("gaia-log-open");
     elements.logPanel.hidden = true;
     elements.logPanel.setAttribute("aria-hidden", "true");
     elements.logButton.setAttribute("aria-expanded", "false");
@@ -3481,8 +3629,10 @@
     closeGallery({ restoreFocus: false });
     closeEves();
     closeSourceDetails();
+    setLogStatus("");
     logFollowLatest = true;
     renderLog();
+    document.body.classList.add("gaia-log-open");
     elements.logPanel.hidden = false;
     elements.logPanel.setAttribute("aria-hidden", "false");
     elements.logButton.setAttribute("aria-expanded", "true");
@@ -3925,6 +4075,7 @@
   elements.restart.addEventListener("click", restartStory);
   elements.logButton.addEventListener("click", toggleLog);
   elements.logClose.addEventListener("click", closeLog);
+  elements.logExport.addEventListener("click", exportLogComments);
   elements.saveButton.addEventListener("click", () => openManualArchive("save"));
   elements.loadButton.addEventListener("click", () => openManualArchive("load"));
   elements.saveClose.addEventListener("click", closeManualArchive);
