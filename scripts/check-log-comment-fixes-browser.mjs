@@ -75,7 +75,7 @@ const expectedAssets = new Map([
 assert.equal(allSteps.length, 396);
 assert.equal(new Set(allSteps.map((step) => step.id)).size, 396);
 assert.equal(expectedText.size, 31);
-assert.equal(story.sourceSha256, "d610b1154dec27d335e282db6d31f1f3b138c73524fe4d8631db10769430cfd9");
+assert.equal(story.sourceSha256, "1d7c9d76afc20d167fe0000596672b2a1cb2808d481d67b1855e347c9b71f2ff");
 assert.deepEqual(story.requiredInteractions, ["map01", "gx"]);
 assert(story.saveFields.includes("stepId") && story.saveFields.includes("readStepIds") && story.saveFields.includes("demoInterest"));
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);

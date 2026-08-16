@@ -23,7 +23,7 @@ assert.match(runtimeSource, /gaia-log-open/u, "LOG open state class is missing")
 assert.match(runtimeSource, /className = "novel-log-delete"/u, "LOG comment delete control is missing");
 assert.match(runtimeSource, /window\.confirm\(/u, "LOG comment deletion confirmation is missing");
 assert.match(runtimeSource, /deleteAllLogComments/u, "LOG comment delete-all action is missing");
-assert.match(htmlSource, /gaia-log-round2-1/gu, "LOG comment delete-all cache key is missing");
+assert.match(htmlSource, /gaia-log-round3-1/gu, "LOG comment delete-all cache key is missing");
 
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?log-comments=${Date.now()}`);

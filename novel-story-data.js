@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "d610b1154dec27d335e282db6d31f1f3b138c73524fe4d8631db10769430cfd9",
+  "sourceSha256": "1d7c9d76afc20d167fe0000596672b2a1cb2808d481d67b1855e347c9b71f2ff",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -1079,14 +1079,15 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「ここのGXは、Green Transformationの略ではありません」"
+          "text": "「GXという言葉は、どこかで見たことがありますか？」"
         },
         {
           "id": "gx_experience_009",
           "sceneId": "gx_experience",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "私はGXという文字から、企業の広告で見る言葉を想像していた。あめは、それを先回りするように否定した。"
+          "type": "dialogue",
+          "speaker": "visitor",
+          "speakerLabel": "プレイヤー",
+          "text": "「企業の広告で見たことがあります。Green Transformation、ですよね」"
         },
         {
           "id": "gx_experience_010",
@@ -1094,7 +1095,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "mizuha",
           "speakerLabel": "みず",
-          "text": "「『GAIA Transformation』は、私たち『惑星の放課後』が、このシステムのためにつくった言葉ですの。生命が地球を変え、変わった地球がまた生命を変えてきた。その相互作用を表していますわ」"
+          "text": "「一般にはそうですわ。でも、この画面のGXは『GAIA Transformation』。生命が地球を変え、変わった海や大気がまた生命の条件を変えてきた、その相互作用を表す言葉ですの」"
         },
         {
           "id": "gx_experience_011",
@@ -1102,7 +1103,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「このGXでは、その関係を時間をさかのぼりながら見ていきます」"
+          "text": "「ここでは、生命と地球が互いを変えてきた過程を、時間をさかのぼりながら見ていきます」"
         },
         {
           "id": "gx_experience_012",
@@ -1268,7 +1269,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「触れたことで生命が増えたわけではありません。触れた場所で、当時起きた変化を表示しています」"
+          "text": "「これはシアノバクテリアです。海で光合成を行い、酸素を生み出した微小な細菌です。触れたことで増えたのではなく、触れた場所で当時の活動を表示しています」"
         },
         {
           "id": "gx_experience_034",
@@ -1349,7 +1350,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "最初に聞いた「共進化」という言葉が、ようやく画面の変化と結びついた。変化は一方通行ではない。誰かに触れたものが、その誰かを変え、また別の誰かへ返っていく。"
+          "text": "生命が地球を変え、変わった地球が次の生命の条件を変える。画面を行き来する光を見て、変化は一方通行ではないのだと分かった。"
         },
         {
           "id": "gx_experience_045",
@@ -1389,14 +1390,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "選んだ項目が一度だけ明るくなる。続いて、三本の棒グラフが画面に現れた。太古の海、CO2の季節変動、気温偏差の地図。それぞれの横に、今日ここで選ばれた人数と割合が並んでいる。"
+          "text": "選んだ項目が一度だけ明るくなったあと、画面は三本の棒グラフへ切り替わる。太古の海、CO2の季節変動、気温偏差の地図。それぞれの横に、今日この端末で選ばれた人数と割合が並んでいる。"
         },
         {
           "id": "gx_experience_048",
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "私が触れた「{{demo_interest}}」の棒が、ひと目盛りだけ伸びた。小さな選択でも、先にここへ来た人たちの選択と同じ画面に加わる。一人分の反応が消えずに残ることが、不思議にうれしかった。"
+          "text": "私が触れた「{{demo_interest}}」の棒へ、一人分が加わった。小さな選択でも、今日この端末で選ばれた票と同じ画面に並ぶ。その一人分が数字に残ることが、不思議にうれしかった。"
         },
         {
           "id": "gx_experience_049",
@@ -1981,7 +1982,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「そこ、見てもいいですか」"
+          "text": "「その相談、学内チャットで見せてもらえますか」"
         },
         {
           "id": "circle_invitation_021",
@@ -2046,7 +2047,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "それを見てから、みずは机の端から小さな案内カードを取り出した。丸い惑星の絵と、「惑星の放課後」という文字が印刷されている。カードの縁を親指で一度なぞり、こちらへ文字が見える向きに持ち直した。"
+          "text": "それを見てから、みずは机の端から小さな案内カードを取り出した。丸い惑星の絵と、「惑星の放課後」という文字が印刷されている。こちらへ文字が見える向きに差し出したが、手元で止めて次の言葉を待った。"
         },
         {
           "id": "circle_invitation_030",
@@ -2112,7 +2113,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "みずも何も足さない。案内カードを両手で持ったまま、胸の前で止めている。差し出せば答えを急がせてしまうと思っているようだった。"
+          "text": "みずも何も足さない。案内カードを差し出したまま、返事を待っている。急かす言葉は一つも足さなかった。"
         },
         {
           "id": "circle_invitation_039",
@@ -2141,7 +2142,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "みずはカードをこちらへ向け、今度は途中で止めなかった。"
+          "text": "返事を聞くと、みずはカードをもう一歩こちらへ近づけた。"
         },
         {
           "id": "circle_invitation_043",
@@ -2163,7 +2164,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "喉が乾いて、最初の一音だけがうまく出なかった。もう一度息を吸う。"
+          "text": "二人へ向き直り、今度は迷わず答えた。"
         },
         {
           "id": "circle_invitation_046",
@@ -2171,14 +2172,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「参加したいです」"
+          "text": "「これから、よろしくお願いします」"
         },
         {
           "id": "circle_invitation_047",
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "答えると、あめの肩からわずかに力が抜けた。断られる可能性を考えていたらしい。みずは隠すことなく笑みを深くし、案内カードを差し出した。"
+          "text": "答えると、あめの肩からわずかに力が抜けた。断られる可能性を考えていたらしい。みずは隠すことなく笑みを深くし、カードを手渡す距離まで差し出した。"
         },
         {
           "id": "circle_invitation_048",
@@ -2220,7 +2221,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "「あ」と、あめが小さく声を漏らした。"
+          "text": "通知音に、あめがこちらを見た。"
         },
         {
           "id": "circle_invitation_054",
@@ -2235,14 +2236,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「……やった」"
+          "text": "「ええ。参加できています」"
         },
         {
           "id": "circle_invitation_056",
           "sceneId": "circle_invitation",
           "type": "narration",
           "speaker": "narrator",
-          "text": "あめは自分の声に気づいたように一度まばたきをしたが、笑みは戻さなかった。"
+          "text": "そう告げる声は落ち着いていたが、あめは笑みを隠さなかった。"
         },
         {
           "id": "circle_invitation_057",
@@ -2604,7 +2605,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "まだ顔も声も知らない。けれど、説明しなくていいことが一つあるだけで、画面の向こうが少し近くなった。"
+          "text": "sakuの短い返事で、画面越しの距離が縮まった。初めてのチャットなのに、このまま話を続けられる気がした。"
         },
         {
           "id": "welcome_chat_021",
@@ -3068,7 +3069,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "新しい投稿が二つ届いていた。"
+          "text": "新しい投稿が届いていた。"
         },
         {
           "id": "welcome_chat_081",
@@ -3077,7 +3078,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:41",
           "speaker": "sakuya",
           "speakerLabel": "saku",
-          "text": "「まず一台」\nいいと思う。"
+          "text": "次に測る場所、決まったら教えて。"
         },
         {
           "id": "welcome_chat_082",
@@ -3179,7 +3180,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "その選択の中に、今日から私たちもいる。"
+          "text": "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。"
         }
       ],
       "nextSceneId": null

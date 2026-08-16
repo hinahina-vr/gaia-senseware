@@ -32,7 +32,7 @@ const scans = [
   ["source mirrors match", source === mirror],
   ["no escape hard breaks in changed prose", !source.includes("<br") && !source.includes("\\n")],
   ["forbidden verb absent", !/(?:置く|置いた|置いて|置か|置き|置け|置こう)/u.test(source)],
-  ["scenario cache keys", (html.match(/gaia-log-round2-1/gu) || []).length === 3 && html.includes("gaia-enter-dialogue-1")],
+  ["scenario cache keys", (html.match(/gaia-log-round3-1/gu) || []).length === 4],
 ];
 
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);
@@ -41,9 +41,9 @@ assert.equal(failures.length, 0, `VN typography checks failed: ${failures.join("
 const paginationSafeBoundary = /[。！？!?、，,・：:；;\s][」』）】］〉》〕]*$/u;
 [
   {
-    source: "「『GAIA Transformation』は、私たち『惑星の放課後』が、このシステムのためにつくった言葉ですの。生命が地球を変え、変わった地球がまた生命を変えてきた。その相互作用を表していますわ」",
-    boundary: "「『GAIA Transformation』は、私たち『惑星の放課後』が、このシステムのためにつくった言葉ですの。",
-    next: "生命が地球を変え、変わった地球がまた生命を変えてきた。その相互作用を表していますわ」",
+    source: "「一般にはそうですわ。でも、この画面のGXは『GAIA Transformation』。生命が地球を変え、変わった海や大気がまた生命の条件を変えてきた、その相互作用を表す言葉ですの」",
+    boundary: "「一般にはそうですわ。でも、この画面のGXは『GAIA Transformation』。",
+    next: "生命が地球を変え、変わった海や大気がまた生命の条件を変えてきた、その相互作用を表す言葉ですの」",
   },
   {
     source: "「温度、湿度、明るさ、気圧、空気中の粒子、音、振動。センサーを替えれば、もっといろいろ測れます。いくつか組み合わせて、その場所の環境をまとめて記録することもできます」",
@@ -65,7 +65,7 @@ const paginationSafeBoundary = /[。！？!?、，,・：:；;\s][」』）】�
   ["pc-1920", "esp32_pitch_015", "拾ったり、", "いくつか"],
   ["pc-1440", "esp32_pitch_015", "拾ったり、", "いくつか"],
   ["mobile-390", "festival_concept_016", "気候の変化まで、", "画面に触れながら"],
-  ["mobile-390", "gx_experience_010", "『惑星の放課後』が、", "このシステム"],
+  ["mobile-390", "gx_experience_010", "『GAIA Transformation』。", "生命が地球を"],
   ["mobile-390", "esp32_pitch_015", "拾ったり、", "いくつか"],
 ].forEach(([viewport, id, left, right]) => {
   assert(paginationSafeBoundary.test(left), `${viewport} ${id} fixture left side must be a safe pagination boundary`);

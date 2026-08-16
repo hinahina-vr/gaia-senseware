@@ -17,8 +17,8 @@ const retained = read("contest-limited/story/機能限定版台本.md");
 const generated = read("novel-story-data.js");
 const builder = read("scripts/build-novel-story.mjs");
 
-assert.match(index, /novel-mode\.css\?v=gaia-first-frame-1/u);
-assert.match(index, /novel-mode\.js\?v=gaia-map01-auto-open-1/u);
+assert.match(index, /novel-mode\.css\?v=gaia-log-round3-1/u);
+assert.match(index, /novel-mode\.js\?v=gaia-log-round3-1/u);
 assert.match(index, /app\.js\?v=gaia-map-compositor-fix-1/u);
 assert.match(index, /gx-mode\.css\?v=gaia-story-modal-1/u);
 assert.match(index, /gx-mode\.js\?v=gaia-story-detour-fix-1/u);
@@ -34,7 +34,7 @@ const reveal = runtime.indexOf("reveal();", revealStart);
 assert(revealStart >= 0 && preload > revealStart && applyCue > preload && paint > applyCue && reveal > paint);
 assert.match(runtime.slice(revealStart, reveal), /backgroundCues\?\.forStep\?\.\(target\)/u);
 assert.match(runtime, /const startNewSession = async/u);
-assert.match(runtime, /const resumeStory = async/u);
+assert.match(runtime, /elements\.resume\.addEventListener\("click", \(\) => openManualArchive\("load"\)\)/u);
 assert.match(runtime, /async function loadManualSlot/u);
 assert.match(runtime, /elements\.location\.classList\.add\("is-signal-reveal"\)/u);
 
@@ -64,7 +64,7 @@ assert.match(css, /0 1px 2px rgba\(0, 5, 18, 0\.86\),\s*\n\s*1px 0 1px rgba\(0, 
 
 assert.equal(canon, retained);
 const expectedHash = sha256(canon);
-assert.equal(expectedHash, "4875cae7eef0a748d4124c15e32b15c97a23ee1649ac2289f1680c8c8e1d05a1");
+assert.equal(expectedHash, "1d7c9d76afc20d167fe0000596672b2a1cb2808d481d67b1855e347c9b71f2ff");
 assert(builder.includes(expectedHash));
 assert.match(canon, /［会場案内｜国際展示場 8ホール　学生作品・体験展示］/u);
 assert.doesNotMatch(canon, /Bホール/u);

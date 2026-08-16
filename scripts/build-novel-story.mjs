@@ -8,7 +8,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "d610b1154dec27d335e282db6d31f1f3b138c73524fe4d8631db10769430cfd9";
+const EXPECTED_SOURCE_SHA256 = "1d7c9d76afc20d167fe0000596672b2a1cb2808d481d67b1855e347c9b71f2ff";
 
 const sourceBytes = fs.readFileSync(canonPath);
 const characterSourceBytes = fs.readFileSync(characterCanonPath);
