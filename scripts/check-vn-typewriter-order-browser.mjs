@@ -27,7 +27,8 @@ const modes = ["normal", "high", "speed-change", "click-skip", "space-skip", "au
   .filter((mode) => !modeFilter || mode === modeFilter);
 assert(viewports.length > 0 && modes.length > 0, "unknown viewport or mode filter");
 const storageKey = "gaiaSensewareNovel:progress";
-const configKey = "gaiaSensewareNovel:config:v2";
+const manualSaveKey = "gaiaSensewareNovel:manual-saves";
+const configKey = "gaiaSensewareNovel:config:v3";
 const routeUrl = new URL("/story", baseUrl).href;
 const report = { status: "running", baseUrl, stepId: targetStep.id, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath, args: ["--no-first-run", "--disable-background-networking"] });
@@ -103,7 +104,7 @@ const readTrace = async (page) => {
   return page.evaluate(() => structuredClone(globalThis.__vnRevealTrace));
 };
 
-const assertTrace = (trace, tag, { allowJump = false } = {}) => {
+const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false } = {}) => {
   const uniqueCounts = trace.samples.map((sample) => sample.visibleCount)
     .filter((value, index, values) => index === 0 || value !== values[index - 1]);
   const deltas = uniqueCounts.slice(1).map((value, index) => value - uniqueCounts[index]);
@@ -112,7 +113,32 @@ const assertTrace = (trace, tag, { allowJump = false } = {}) => {
   assert.equal(trace.samples.at(-1)?.visible, trace.source, `${tag}: completion text mismatch`);
   assert(deltas.every((delta) => delta >= 0), `${tag}: reveal moved backwards`);
   if (!allowJump) assert(deltas.every((delta) => delta <= 1), `${tag}: glyph block jump ${Math.max(...deltas)}`);
-  return { samples: trace.samples.length, uniqueCounts: uniqueCounts.length, maxDelta: deltas.length ? Math.max(...deltas) : 0, sourceLength: Array.from(trace.source).length };
+  const revealEvents = [];
+  let previousVisibleCount = -1;
+  for (const sample of trace.samples) {
+    if (sample.visibleCount <= previousVisibleCount) continue;
+    revealEvents.push({ time: sample.time, visibleCount: sample.visibleCount });
+    previousVisibleCount = sample.visibleCount;
+  }
+  const sourceGlyphs = Array.from(trace.source);
+  const revealIntervals = revealEvents.slice(1).map((event, index) => ({
+    duration: event.time - revealEvents[index].time,
+    previousGlyph: sourceGlyphs[Math.max(0, revealEvents[index].visibleCount - 1)] || "",
+  })).filter((entry) => entry.duration > 0 && entry.duration < 250);
+  const punctuationIntervals = revealIntervals.filter((entry) => /[。！？、…―]/u.test(entry.previousGlyph)).map((entry) => entry.duration);
+  const ordinaryIntervals = revealIntervals.filter((entry) => !/[。！？、…―]/u.test(entry.previousGlyph)).map((entry) => entry.duration).sort((a, b) => a - b);
+  const ordinaryMedian = ordinaryIntervals.length ? ordinaryIntervals[Math.floor(ordinaryIntervals.length / 2)] : 0;
+  const punctuationMax = punctuationIntervals.length ? Math.max(...punctuationIntervals) : 0;
+  if (steadyCadence && punctuationIntervals.length && ordinaryMedian) {
+    assert(punctuationMax <= ordinaryMedian * 2.2 + 1, `${tag}: punctuation pause ${punctuationMax.toFixed(1)}ms exceeds steady cadence median ${ordinaryMedian.toFixed(1)}ms`);
+  }
+  return {
+    samples: trace.samples.length,
+    uniqueCounts: uniqueCounts.length,
+    maxDelta: deltas.length ? Math.max(...deltas) : 0,
+    sourceLength: sourceGlyphs.length,
+    cadence: { ordinaryMedian, punctuationMax, measuredIntervals: revealIntervals.length },
+  };
 };
 
 const pressStorySpace = async (page) => {
@@ -137,20 +163,31 @@ try {
       page.on("pageerror", (error) => report.pageErrors.push(`${tag}: ${error.message}`));
       page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${tag}: ${response.url()}`); });
       await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
-      await page.evaluate(({ progressKey, settingsKey, progress, settings }) => {
+      await page.evaluate(({ progressKey, manualKey, settingsKey, progress, settings }) => {
         localStorage.setItem(progressKey, JSON.stringify(progress));
+        localStorage.setItem(manualKey, JSON.stringify([{
+          progress,
+          savedAt: 1786597200000,
+          meta: { title: "GX展示", excerpt: "文字送り検証地点" },
+        }]));
         localStorage.setItem(settingsKey, JSON.stringify(settings));
       }, {
         progressKey: storageKey,
+        manualKey: manualSaveKey,
         settingsKey: configKey,
         progress: { ...baseState, sessionId: `vn-typewriter-${tag}` },
-        settings: { messageSpeedPercent: mode === "high" ? 400 : mode === "speed-change" ? 50 : 200, reducedMotion: mode === "reduced" },
+        settings: { messageSpeedPercent: mode === "speed-change" ? 50 : mode === "normal" || mode === "high" || mode === "auto" ? 400 : 200, reducedMotion: mode === "reduced" },
       });
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.open));
       await page.evaluate(() => globalThis.GaiaNovel.open());
       if (mode === "auto") await page.locator("#novel-auto-button").click();
       await page.locator("#novel-resume-button").click();
+      await page.waitForFunction(() => {
+        const panel = document.querySelector("#novel-save-panel");
+        return panel && !panel.hidden && getComputedStyle(panel).display !== "none";
+      });
+      await page.locator(".novel-save-slot[data-slot-index='0']").click();
       await page.waitForFunction((stepId) => {
         const layer = document.querySelector("#novel-layer");
         const runtime = document.querySelector("#novel-runtime");
@@ -180,7 +217,8 @@ try {
 
       const trace = await readTrace(page);
       const explicitSkip = ["click-skip", "space-skip", "fast", "reduced"].includes(mode);
-      const pageTraces = [assertTrace(trace, `${tag}-page1`, { allowJump: explicitSkip })];
+      const steadyCadence = ["normal", "high", "auto"].includes(mode);
+      const pageTraces = [assertTrace(trace, `${tag}-page1`, { allowJump: explicitSkip, steadyCadence })];
       if (mode === "auto") await page.locator("#novel-auto-button").click();
       if (mode === "fast") await page.locator("#novel-fast-forward-button").click();
       await page.locator("#novel-dialogue").click({ position: { x: 20, y: 20 } });
@@ -197,7 +235,7 @@ try {
         await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete", null, { timeout: 1_000 });
       }
       const secondTrace = await readTrace(page);
-      pageTraces.push(assertTrace(secondTrace, `${tag}-page2`, { allowJump: ["click-skip", "space-skip", "reduced"].includes(mode) }));
+      pageTraces.push(assertTrace(secondTrace, `${tag}-page2`, { allowJump: ["click-skip", "space-skip", "reduced"].includes(mode), steadyCadence }));
       const pageInfo = await page.evaluate(() => ({
         text: document.querySelector("#novel-text")?.textContent || "",
         aria: document.querySelector("#novel-text")?.getAttribute("aria-label") || "",

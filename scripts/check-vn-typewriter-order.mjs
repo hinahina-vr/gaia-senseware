@@ -21,11 +21,13 @@ check("glyphs are nested after pagination measurement", runtime.indexOf("const m
 check("glyphs preserve source order", runtime.includes('span.dataset.revealIndex = String(glyphs.length)') && runtime.includes("glyphs.push(span)"));
 check("single RAF reveals one glyph per callback", runtime.includes('glyph.classList.add("is-visible")') && runtime.includes("nextGlyphIndex += 1") && runtime.includes("window.requestAnimationFrame(revealNextGlyph)"));
 check("live speed is sampled per glyph", runtime.includes("const revealDelayForGlyph") && runtime.includes("100 / config.messageSpeedPercent"));
+check("every glyph uses the same cadence", runtime.includes("const revealDelayForGlyph = () => REVEAL_BASE_MS * (100 / config.messageSpeedPercent)") && !runtime.includes("REVEAL_PUNCTUATION_MS"));
+check("default speed is four times", runtime.includes("const DEFAULT_MESSAGE_SPEED_PERCENT = 400") && runtime.includes('const CONFIG_KEY = "gaiaSensewareNovel:config:v3"'));
 check("actual reveal progress is observable", runtime.includes('elements.text.dataset.revealCount = String(nextGlyphIndex)') && runtime.includes('elements.text.dataset.revealState = "complete"'));
 check("preparing state cannot inherit a completed frame", runtime.includes('elements.text.dataset.revealState = "preparing"') && runtime.includes('elements.text.dataset.revealCount = "0"'));
 check("initial resize reflow cannot replace the reveal DOM", runtime.includes("window.clearTimeout(dialogueResizeTimer)") && runtime.includes("dialogueObservedWidth = elements.text.getBoundingClientRect().width"));
 check("CSS hides only unrevealed glyphs", css.includes(".novel-text.is-revealing .novel-reveal-glyph") && css.includes(".novel-reveal-glyph.is-visible"));
 check("scramble fade is disabled during reveal", /\.novel-text\.is-revealing\s*\{\s*animation:\s*none;/u.test(css));
-check("cache keys match", (html.match(/gaia-vn-typewriter-order-1/gu) || []).length === 2);
+check("cache key is current", html.includes("gaia-constant-message-cadence-1"));
 
 console.log(JSON.stringify({ status: "passed", checks: checks.length, names: checks }, null, 2));

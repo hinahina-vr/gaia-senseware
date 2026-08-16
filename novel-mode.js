@@ -11,7 +11,8 @@
 
   const STORAGE_KEY = "gaiaSensewareNovel:progress";
   const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
-  const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
+  const CONFIG_KEY = "gaiaSensewareNovel:config:v3";
+  const LEGACY_CONFIG_KEY = "gaiaSensewareNovel:config:v2";
   const GALLERY_KEY = "gaiaSensewareNovel:cg-gallery:v1";
   const LOG_COMMENT_KEY = "gaiaSensewareNovel:log-comments:v1";
   const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
@@ -69,7 +70,7 @@
   const TEMPORAL_TRANSITION_MS = 2400;
   const REVEAL_BASE_MS = 24;
   const REVEAL_MIN_LINE_MS = 120;
-  const REVEAL_PUNCTUATION_MS = 84;
+  const DEFAULT_MESSAGE_SPEED_PERCENT = 400;
   const TEXT_PAGE_MAX_LINES = 3;
   const TEXT_PAGE_HEIGHT_BUFFER_PX = 4;
   const TEXT_PAGE_INDICATOR_SAFETY_PX = 12;
@@ -405,7 +406,7 @@
   let debugJumpActive = false;
   let jumpOutsidePointerBlocked = false;
   let scriptCopyFeedbackTimer = 0;
-  let config = { messageSpeedPercent: 200, reducedMotion: false };
+  let config = { messageSpeedPercent: DEFAULT_MESSAGE_SPEED_PERCENT, reducedMotion: false };
 
   const getScriptDebugElements = () => ({
     root: document.querySelector("#novel-script-debug"),
@@ -956,9 +957,10 @@
 
   const loadConfig = () => {
     const candidate = safeJson(readStorage(CONFIG_KEY));
+    const legacy = candidate ? null : safeJson(readStorage(LEGACY_CONFIG_KEY));
     config = {
-      messageSpeedPercent: Math.max(50, Math.min(400, Number(candidate?.messageSpeedPercent) || 200)),
-      reducedMotion: Boolean(candidate?.reducedMotion),
+      messageSpeedPercent: Math.max(50, Math.min(400, Number(candidate?.messageSpeedPercent) || DEFAULT_MESSAGE_SPEED_PERCENT)),
+      reducedMotion: Boolean(candidate?.reducedMotion ?? legacy?.reducedMotion),
     };
   };
   const saveConfig = () => writeStorage(CONFIG_KEY, JSON.stringify(config));
@@ -2045,10 +2047,7 @@
     return glyphs;
   };
 
-  const revealDelayForGlyph = (glyph) => {
-    const speedScale = 100 / config.messageSpeedPercent;
-    return (REVEAL_BASE_MS + (/[。！？、…―]/u.test(glyph) ? REVEAL_PUNCTUATION_MS : 0)) * speedScale;
-  };
+  const revealDelayForGlyph = () => REVEAL_BASE_MS * (100 / config.messageSpeedPercent);
 
   const revealText = (text, preparedLayout = null) => {
     clearTimers();
@@ -2099,7 +2098,7 @@
               revealTimer = 0;
               if (generation !== revealGeneration || !isRevealing) return;
               revealFrame = window.requestAnimationFrame(revealNextGlyph);
-            }, revealDelayForGlyph(glyph.textContent || ""));
+            }, revealDelayForGlyph());
           };
           revealFrame = window.requestAnimationFrame(revealNextGlyph);
         });
@@ -4082,7 +4081,7 @@
   elements.configButton.addEventListener("click", openConfig);
   elements.configClose.addEventListener("click", closeConfig);
   elements.configReset.addEventListener("click", () => {
-    config = { messageSpeedPercent: 200, reducedMotion: false };
+    config = { messageSpeedPercent: DEFAULT_MESSAGE_SPEED_PERCENT, reducedMotion: false };
     saveConfig();
     syncConfig();
   });

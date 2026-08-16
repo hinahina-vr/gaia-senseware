@@ -44,7 +44,7 @@
     <script src="./novel-background-cues.js?v=gaia-five-plane-combined-1" defer></script>
     <script src="./novel-back-half-cues.js?v=back-half-1" defer></script>
     <script src="./novel-temporal.js?v=gaia-temporal-1" defer></script>
-    <script src="./novel-mode.js?v=gaia-log-debug-comments-1" defer></script>
+    <script src="./novel-mode.js?v=gaia-constant-message-cadence-1" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-04" defer></script>
@@ -1910,7 +1910,7 @@
                     <span>MESSAGE SPEED</span>
                     <h3 id="novel-message-speed-title">メッセージ表示速度</h3>
                   </div>
-                  <output id="novel-message-speed-value" for="novel-message-speed">2.0×</output>
+                  <output id="novel-message-speed-value" for="novel-message-speed">4.0×</output>
                 </div>
                 <label class="novel-config-range" for="novel-message-speed">
                   <span>ゆっくり</span>
@@ -1920,12 +1920,12 @@
                     min="50"
                     max="400"
                     step="10"
-                    value="200"
+                    value="400"
                     aria-describedby="novel-message-speed-hint"
                   />
                   <span>速い</span>
                 </label>
-                <p id="novel-message-speed-hint">初期値はこれまでの2倍速です。次に表示するメッセージから反映されます。</p>
+                <p id="novel-message-speed-hint">初期値は4倍速です。文字の種類によらず一定の間隔で表示されます。</p>
               </section>
               <section class="novel-config-setting" aria-labelledby="novel-motion-title">
                 <div class="novel-config-setting-header">
