@@ -5965,11 +5965,11 @@ body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] {
   overflow: hidden;
 }
 
-body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .signal-console-map {
-  top: auto !important;
+body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
+  top: 72px !important;
   right: auto !important;
-  bottom: clamp(118px, 15vh, 150px) !important;
-  left: max(18px, env(safe-area-inset-left)) !important;
+  bottom: auto !important;
+  left: 18px !important;
   display: block !important;
   width: min(420px, calc(100vw - 36px)) !important;
   opacity: 1 !important;
@@ -6125,8 +6125,8 @@ body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .signal-
     overscroll-behavior: contain;
   }
 
-  body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] .signal-console-map {
-    top: 214px !important;
+  body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
+    top: 72px !important;
     bottom: auto !important;
     left: 12px !important;
     width: calc(100vw - 24px) !important;

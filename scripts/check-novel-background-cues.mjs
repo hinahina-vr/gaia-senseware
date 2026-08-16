@@ -33,6 +33,7 @@ const assets = Object.freeze({
   tenWindows: "assets/concept/concept-02-ten-windows.png",
   modeMap: "assets/visuals-07/mode-map-v1.webp",
   modis: "assets/data/modis-land-cover-2023.png",
+  map01Provenance: "assets/visuals-07/novel-bg-map01-data-provenance-five-plane-v1.png",
   system: "assets/architecture/gaia-system-architecture.png",
   gxAncientOcean: "assets/visuals-07/novel-bg-gx-ancient-ocean-five-plane-v1.png",
   abstract: "assets/visuals-07/mode-abstract-v1.webp",
@@ -58,6 +59,7 @@ const approvedAssetHashes = Object.freeze({
   [assets.gxAncientOcean]: "b7529e8e40e7100a00359c51180a6d943d331e229170c82192c71877fd32ad45",
   [assets.gxBreathingPoints]: "20b7d0534c48ecf96b598d87ac5a23d00409f89ce08edc396689af4adf2a3188",
   [assets.gxTemperatureAnomaly]: "98ac244431d127b46638e5fe4a706693d1095d39b55e4e81063cb6e05dc05052",
+  [assets.map01Provenance]: "fd2fd342831c928de5fd8e7b59f5c18f9604dbe0f5b41eaba3f350f2f5439210",
 });
 const sha256 = async (assetPath) => createHash("sha256")
   .update(await readFile(path.join(projectRoot, assetPath)))
@@ -82,7 +84,7 @@ const expectedBoundaries = [
   ["festival_concept", 76, 76, "festival-map-transition", assets.mapTransition, "event-focus", "event-cg"],
   ["map_mode01", 1, 14, "map01-co2-observation", assets.modeMap, "drift-right", "scenic"],
   ["map_mode01", 15, 28, "map01-temperature-observation", assets.modis, "push-in", "scenic"],
-  ["map_mode01", 29, 40, "map01-data-architecture", assets.system, "drift-left", "scenic"],
+  ["map_mode01", 29, 40, "map01-data-provenance", assets.map01Provenance, "drift-left", "scenic"],
   ["map_mode01", 41, 43, "map01-exhibition-return", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["gx_experience", 1, 16, "gx-ocean-entry", assets.gxAncientOcean, "push-in", "scenic"],
   ["gx_experience", 17, 29, "gx-ancient-ocean", assets.abstract, "drift-right", "scenic"],
@@ -128,7 +130,7 @@ const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(ste
 assert.equal(resolved.length, 396);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 24, "background-art cut must use twenty-four distinct scene assets");
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 25, "background-art cut must use twenty-five distinct scene assets");
 assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 50);
 
 assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
@@ -209,6 +211,8 @@ assert.equal(cue("festival_concept_075").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("festival_concept_076").assetPath, assets.mapTransition);
 assert.equal(cue("festival_concept_076").presentation, "event-cg");
 assert.equal(cue("map_mode01_015").assetPath, assets.modis);
+assert.equal(cue("map_mode01_029").assetPath, assets.map01Provenance);
+assert.equal(cue("map_mode01_040").assetPath, assets.map01Provenance);
 assert.equal(cue("map_mode01_043").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("gx_experience_017").assetPath, assets.abstract);
 assert.equal(cue("gx_experience_011").assetPath, assets.gxAncientOcean);

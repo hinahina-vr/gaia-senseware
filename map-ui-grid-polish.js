@@ -122,6 +122,13 @@
     const gap = Math.max(9, Math.min(14, innerWidth * 0.0075));
     const railWidth = Math.max(390, Math.min(530, innerWidth * 0.28));
 
+    const isStoryMap01 = document.body.classList.contains("novel-mode-detour")
+      && document.querySelector("#japan-layer")?.dataset.storyMode === "map01";
+    if (isStoryMap01) {
+      place(panels.data, gutter, 72, railWidth);
+      return;
+    }
+
     place(panels.intro, gutter, gutter, railWidth);
 
     requestAnimationFrame(() => {

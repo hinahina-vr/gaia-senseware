@@ -128,6 +128,7 @@
   });
   const INTRODUCTION_STEPS = Object.freeze({ amane: 21, mizuha: 23 });
   const ANONYMOUS_SPEAKER_NAMES = Object.freeze({ amane: "短髪の女性", mizuha: "長髪の女性" });
+  const ABSTRACT_AVATAR_SUPPRESSED_STEP_IDS = new Set(["festival_concept_048", "gx_experience_001"]);
   const speakerDisplayName = (step) => {
     const speaker = step?.speaker || "narrator";
     if (speaker === "visitor") return SPEAKERS.visitor.name;
@@ -2582,7 +2583,7 @@
       elements.speaker.textContent = "";
     } else {
       setCharacterPresentation(speaker, expressionForStep(step));
-      if (speaker === "visitor") elements.avatar.hidden = true;
+      if (speaker === "visitor" || ABSTRACT_AVATAR_SUPPRESSED_STEP_IDS.has(step.id)) elements.avatar.hidden = true;
       elements.speaker.textContent = speakerDisplayName(step);
     }
     renderDialoguePages(String(step.text || "").replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目"));

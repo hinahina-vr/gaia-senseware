@@ -134,6 +134,11 @@ const bootAt = async (page, stepId, extra = {}) => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate((candidate) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{
+      progress: candidate,
+      savedAt: Date.now(),
+      meta: { title: "MAP/GX P1 QA", excerpt: candidate.stepId },
+    }]));
     localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
     localStorage.setItem("gaia-senseware-bgm-volume", String(candidate.audio.volume));
   }, stateFor(stepId, extra));
@@ -141,6 +146,8 @@ const bootAt = async (page, stepId, extra = {}) => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
+  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
+  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
   await page.evaluate(() => {
     globalThis.__p1Steps = [document.querySelector("#novel-layer")?.dataset.stepId || ""];

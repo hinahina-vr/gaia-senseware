@@ -26,18 +26,31 @@ const expectedText = new Map([
   ["festival_concept_021", "「改めまして、私は『あめ』です」"],
   ["festival_concept_029", "「これ、すごいね。ソフトウェアも演出も、映像の迫力も。学生作品って聞いていたから、ここまで本格的だと思わなかった」"],
   ["festival_concept_037", "みずの言い方には、設営の日にあめや叔父と試行錯誤した時間を、誰かへ伝えたかったような弾みがあった。"],
-  ["festival_concept_039", "「あめは、電気工事士の資格も持っていますの」"],
-  ["festival_concept_041", "「ご家庭の電気工事はもちろん。資格の上では、五万ボルトぐらいまでお世話できるよ」"],
-  ["festival_concept_043", "「さすがに六百ボルトを超える高圧は、触ったことないけどね。ペーパーなんだ」"],
+  ["festival_concept_039", "「あめは、電気工事士の資格も持っていますの。今日の配線も、あめと叔父さまが安全を確認しましたわ」"],
+  ["festival_concept_041", "「資格で扱えるのは、六百ボルト以下の低圧設備だよ。このブースの配線も、その範囲で確認してる」"],
+  ["festival_concept_043", "「でも、私はまだ現場経験が少ないからね。資格を持っているだけで、叔父さんには全然かなわないよ」"],
+  ["festival_concept_047", "みずは「そのお話、あとで詳しく」と言うようにタブレットを胸元へ寄せた。あめも短くうなずく。自分の未完成のセンサーについて話したのに、隠したい気持ちより、続きを話したい気持ちが少しだけ勝っていた。"],
   ["festival_concept_048", "「GAIA SENSEWAREって、何をするシステムなんですか？」"],
-  ["festival_concept_057", "「みず、最初から視座が大きいね」"],
-  ["festival_concept_071", "あめは画面下の出典欄を指し、データごとに提供元を確かめていく。誰でも使えるデータだからこそ、どこから受け取った数字なのかを見失わないための説明だった。"],
-  ["festival_concept_075", "あめが何かを押したようには見えなかった。それでも地球の輪郭は静かに平面へ広がり、世界地図へ変わった。"],
+  ["festival_concept_057", "「みずは最初から、地球全体を見渡すところから話すんだね」"],
+  ["festival_concept_060", "「そして、生命に変えられた地球が、今度は生命の進化に影響してきました。私たち人間も、その往復の中にいます」"],
+  ["festival_concept_067", "画面上のCO2濃度が切り替わるたび、短い低音が一度鳴る。数値が更新されたことを、画面を見ていなくても知らせるための音だった。"],
+  ["festival_concept_068", "あめは画面下の出典欄に視線を移し、表示中の数値と提供元が合っているかを確かめた。"],
+  ["festival_concept_071", "あめは画面下の出典欄を指し、NASA、JAXA、気象庁のどのデータを使っているか説明した。"],
+  ["festival_concept_075", "あめが何かを押したようには見えなかった。それでも球体だった地球は静かに開き、世界地図へ切り替わった。"],
+  ["map_mode01_002", "地図を見るだけだと思っていたが、画面は私が触れるのを待っている。あめは操作せず、年代を動かすスライダーを指で示した。"],
   ["map_mode01_003", "「こちらがMODE 01です。年代のスライダーを動かしてから、地図の気になる場所を押してみてください」"],
   ["map_mode01_005", "年代を動かすと、観測時点が切り替わり、画面上のCO2濃度と気温偏差の数値も連動して変わった。"],
   ["map_mode01_006", "スライダーを過去へ戻し、また現在へ進める。地球の明るさと背景の色が、数値に合わせて少しずつ変わる。"],
   ["map_mode01_007", "次に地図を押すと、触れた場所から光の輪が広がった。画面の案内が「物語へ戻る」へ進み、操作を保存するボタンが使えるようになる。"],
-  ["map_mode01_008", "自分で記録した部屋の温度も、一点だけではただの数字だった。年代を動かして前後を比べると、同じ場所の変化として読める。その感覚なら分かった。"],
+  ["map_mode01_008", "年代を動かすと、同じ場所でも値が変わる。自宅のセンサーも、測った時刻を並べれば変化が分かる。そういうことか。"],
+  ["map_mode01_018", "「気温の説明は長くしないでね」"],
+  ["map_mode01_028", "「ええ。高くなった時期と場所を比べれば、一時的な暑さなのか、続いている変化なのかを見分けられますわ」"],
+  ["map_mode01_029", "画面の端に、使われているデータの情報が開く。"],
+  ["map_mode01_030", "カードには、提供元、観測期間、単位が並んでいた。地図の色が、どのデータから作られたのか確認できる。"],
+  ["map_mode01_031", "「これはNASAなどが公開しているオープンデータです。提供元、観測期間、単位はこちらで確認できます。デモでは保存済みのデータを使っています」"],
+  ["map_mode01_035", "入力欄には「参加者の温度・湿度データ」とある。自宅のセンサーで測った値も、ここから地図に加えられるのだろうか。"],
+  ["map_mode01_039", "自宅の机で動かしている小さなセンサーなら、いまも温度と湿度を記録できる。観測場所や時刻を添えて送れば、この地図に表示できるデータになるかもしれない。"],
+  ["gx_experience_001", "表示は現在の地球から、約二十七億年前の海を再現した映像へ自動で切り替わる。"],
 ]);
 
 const expectedSpeakers = new Map([
@@ -49,12 +62,20 @@ const expectedSpeakers = new Map([
   ["festival_concept_048", "あなた"],
   ["festival_concept_057", "あめ"],
   ["map_mode01_003", "あめ"],
+  ["map_mode01_018", "あめ"],
+  ["map_mode01_028", "みず"],
+  ["map_mode01_031", "あめ"],
+]);
+
+const expectedAssets = new Map([
+  ["map_mode01_029", "novel-bg-map01-data-provenance-five-plane-v1.png"],
+  ["gx_experience_001", "novel-bg-gx-ancient-ocean-five-plane-v1.png"],
 ]);
 
 assert.equal(allSteps.length, 396);
 assert.equal(new Set(allSteps.map((step) => step.id)).size, 396);
-assert.equal(expectedText.size, 18);
-assert.equal(story.sourceSha256, "ea23b125c7942429b57fd7cca04f3dc8a9c959a4b77d3cb22fd02c6de879a049");
+assert.equal(expectedText.size, 31);
+assert.equal(story.sourceSha256, "d610b1154dec27d335e282db6d31f1f3b138c73524fe4d8631db10769430cfd9");
 assert.deepEqual(story.requiredInteractions, ["map01", "gx"]);
 assert(story.saveFields.includes("stepId") && story.saveFields.includes("readStepIds") && story.saveFields.includes("demoInterest"));
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
@@ -180,9 +201,12 @@ const scanStep = async (page, viewport, stepId) => {
   assert(scan.dialogueRect.left >= 0 && scan.dialogueRect.right <= viewport.width + 1, `${viewport.name} ${stepId}: dialogue leaves viewport`);
   assert(scan.textRect.left >= scan.dialogueRect.left && scan.textRect.right <= scan.dialogueRect.right + 1, `${viewport.name} ${stepId}: text leaves dialogue`);
   if (expectedSpeakers.has(stepId)) assert.equal(scan.speaker, expectedSpeakers.get(stepId), `${viewport.name} ${stepId}: speaker differs`);
-  if (stepId === "festival_concept_048") {
-    assert.equal(scan.avatarHidden, true, `${viewport.name}: visitor atom-like avatar is not hidden`);
-    assert.equal(scan.avatarVisible, false, `${viewport.name}: visitor atom-like avatar remains visible`);
+  if (expectedAssets.has(stepId)) {
+    assert.match(scan.backgroundImage, new RegExp(expectedAssets.get(stepId).replaceAll(".", "\\."), "u"), `${viewport.name} ${stepId}: expected background asset is missing`);
+  }
+  if (["festival_concept_048", "gx_experience_001"].includes(stepId)) {
+    assert.equal(scan.avatarHidden, true, `${viewport.name} ${stepId}: atom-like avatar is not hidden`);
+    assert.equal(scan.avatarVisible, false, `${viewport.name} ${stepId}: atom-like avatar remains visible`);
   }
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${stepId}.png`), animations: "disabled" });
   report.scans.push({ viewport: viewport.name, ...scan, passed: true });
@@ -209,13 +233,23 @@ const performMapInteraction = async (page, viewport) => {
     };
     const guide = document.querySelector(".story-map-guide");
     const input = document.querySelector("#japan-layer [data-signal-time]");
+    const signalConsole = document.querySelector("#japan-layer .signal-console-map");
+    const dock = document.querySelector("#japan-layer .story-detour-dock");
     const returnButton = document.querySelector("#story-detour-return");
+    const signalConsoleRect = signalConsole?.getBoundingClientRect();
+    const guideRect = guide?.getBoundingClientRect();
+    const dockRect = dock?.getBoundingClientRect();
+    const overlaps = (a, b) => Boolean(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
     return {
       stepId: globalThis.GaiaNovel.getState().stepId,
       guideStage: guide?.dataset.stage,
       guideText: guide?.innerText || "",
       inputVisible: isVisible(input),
       inputDisabled: input?.disabled,
+      signalConsoleVisible: isVisible(signalConsole),
+      signalConsoleRect: signalConsoleRect?.toJSON(),
+      signalConsoleOverlapsGuide: overlaps(signalConsoleRect, guideRect),
+      signalConsoleOverlapsDock: overlaps(signalConsoleRect, dockRect),
       returnText: returnButton?.textContent || "",
       returnEnabled: !returnButton?.disabled,
       overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -226,6 +260,11 @@ const performMapInteraction = async (page, viewport) => {
   });
   assert.match(open.guideText, /年代を動かす[\s\S]*地図を押す[\s\S]*物語へ戻る/u);
   assert.equal(open.returnText, "操作を保存して物語へ戻る");
+  assert.equal(open.signalConsoleVisible, true, `${viewport.name}: MAP slider console is hidden`);
+  assert(open.signalConsoleRect.left >= 0 && open.signalConsoleRect.left <= 25, `${viewport.name}: MAP slider console is not left-aligned`);
+  assert(open.signalConsoleRect.top >= 0 && open.signalConsoleRect.top <= 100, `${viewport.name}: MAP slider console is not at the top: ${JSON.stringify(open.signalConsoleRect)}`);
+  assert.equal(open.signalConsoleOverlapsGuide, false, `${viewport.name}: MAP slider console overlaps the guide`);
+  assert.equal(open.signalConsoleOverlapsDock, false, `${viewport.name}: MAP slider console overlaps the return dock`);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-map-stage-1.png`), animations: "disabled" });
 
   const timeInput = page.locator("#japan-layer [data-signal-time]").first();
@@ -282,8 +321,8 @@ try {
     const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
     const page = await context.newPage();
     attachDiagnostics(page, viewport.name);
-    for (const stepId of expectedText.keys()) await scanStep(page, viewport, stepId);
     await performMapInteraction(page, viewport);
+    for (const stepId of expectedText.keys()) await scanStep(page, viewport, stepId);
     await context.close();
   }
   assert.equal(report.scans.length, expectedText.size * viewports.length);
