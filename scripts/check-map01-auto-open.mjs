@@ -53,7 +53,7 @@ check("launcher fallback and optional contract remain available without current 
 });
 
 check("runtime cache key is advanced", () => {
-  assert.match(html, /novel-mode\.js\?v=gaia-log-round2-1/u);
+  assert.match(html, /novel-mode\.js\?v=gaia-enter-dialogue-1/u);
 });
 
 console.log(JSON.stringify({ status: "passed", checks, sceneCount: story.scenes.length, stepCount: steps.length, interactions }, null, 2));

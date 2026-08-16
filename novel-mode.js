@@ -3362,6 +3362,26 @@
     if (event.ctrlKey && (fastForwardState.controlDown || fastForwardState.keyActive)) endControlFastForward();
   };
 
+  const isVisibleKeyboardControl = (target) => {
+    const control = target?.closest?.("button, a, input, select, textarea, summary, [role='button'], [contenteditable='true']");
+    if (!control || control.closest("[hidden], [inert], [aria-hidden='true']")) return false;
+    const style = getComputedStyle(control);
+    return style.display !== "none"
+      && style.visibility !== "hidden"
+      && Number(style.opacity || 1) > 0
+      && control.getClientRects().length > 0;
+  };
+
+  const handleDocumentDialogueEnter = (event) => {
+    if (event.key !== "Enter" || event.repeat || event.isComposing || event.defaultPrevented) return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (!isOpen || !hasStarted || pendingInteraction || backgroundTransitionPending || !progressionPanelsClosed()) return;
+    if (layer.contains(event.target) || isVisibleKeyboardControl(event.target)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    advance();
+  };
+
   function advance() {
     if (!isOpen || !hasStarted || pendingInteraction || backgroundTransitionPending) return;
     if (!progressionPanelsClosed()) return;
@@ -4249,6 +4269,7 @@
     }
   });
   document.addEventListener("keydown", handleFastForwardKeyDown, true);
+  document.addEventListener("keydown", handleDocumentDialogueEnter, true);
   document.addEventListener("keyup", endControlFastForward, true);
   window.addEventListener("blur", () => endControlFastForward());
   document.addEventListener("visibilitychange", () => endControlFastForward());
@@ -4298,11 +4319,18 @@
       return;
     }
     if (!elements.jumpPanel?.hidden) return;
-    if ((event.key === " " || event.key === "Enter") && !event.target.closest("button, textarea, input, summary")) {
+    const dialogueAdvanceKey = (event.key === " " || event.key === "Enter")
+      && !(event.key === "Enter" && event.repeat)
+      && !event.isComposing
+      && !event.altKey
+      && !event.ctrlKey
+      && !event.metaKey
+      && !event.shiftKey;
+    if (dialogueAdvanceKey && !isVisibleKeyboardControl(event.target)) {
       event.preventDefault();
       advance();
     }
-    if (event.key.toLowerCase() === "l" && !event.target.closest("textarea, input")) {
+    if (event.key.toLowerCase() === "l" && !isVisibleKeyboardControl(event.target)) {
       event.preventDefault();
       toggleLog();
     }
