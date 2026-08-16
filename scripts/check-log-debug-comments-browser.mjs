@@ -20,6 +20,9 @@ assert.match(runtimeSource, /sessionStorage/u, "LOG comments must use sessionSto
 assert.match(runtimeSource, /gaiaSensewareNovel:log-comments:v1/u, "LOG comment storage key is missing");
 assert.match(runtimeSource, /text\/markdown;charset=utf-8/u, "UTF-8 Markdown export is missing");
 assert.match(runtimeSource, /gaia-log-open/u, "LOG open state class is missing");
+assert.match(runtimeSource, /className = "novel-log-delete"/u, "LOG comment delete control is missing");
+assert.match(runtimeSource, /window\.confirm\(/u, "LOG comment deletion confirmation is missing");
+assert.match(htmlSource, /gaia-log-comment-delete-1/gu, "LOG comment deletion cache key is missing");
 
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?log-comments=${Date.now()}`);
@@ -37,10 +40,10 @@ const settingsKey = "gaiaSensewareNovel:config:v2";
 const { chromium } = await import(pathToFileURL(path.join(moduleRoot, "index.mjs")));
 const routeUrl = new URL("/story", baseUrl).href;
 const viewports = [
-  { name: "pc-1440", width: 1440, height: 900 },
-  { name: "mobile-390", width: 390, height: 844 },
+  { name: "pc-1440", width: 1440, height: 900, hasTouch: false },
+  { name: "mobile-390", width: 390, height: 844, hasTouch: true },
 ];
-const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 fs.mkdirSync(outputDir, { recursive: true });
 
 const baseState = () => ({
@@ -105,6 +108,8 @@ const geometry = (page) => page.evaluate(() => {
   const audioRect = audioDock?.getBoundingClientRect();
   const audioStyle = audioDock ? getComputedStyle(audioDock) : null;
   const entries = [...content.querySelectorAll("article")];
+  const intersects = (first, second) => first.left < second.right && first.right > second.left
+    && first.top < second.bottom && first.bottom > second.top;
   return {
     panel: { left: panel.left, top: panel.top, right: panel.right, bottom: panel.bottom, width: panel.width, height: panel.height },
     exportButton: { width: exportButton.width, height: exportButton.height },
@@ -121,13 +126,57 @@ const geometry = (page) => page.evaluate(() => {
       width: entry.querySelector("textarea")?.getBoundingClientRect().width || 0,
       visible: Boolean(entry.querySelector("textarea")?.offsetParent),
     })),
+    deleteButtons: entries.map((entry) => {
+      const button = entry.querySelector(".novel-log-delete");
+      const rect = button?.getBoundingClientRect();
+      const visible = Boolean(button && !button.hidden && button.offsetParent);
+      const copyRects = [...entry.querySelectorAll(".novel-log-copy")].map((copy) => copy.getBoundingClientRect());
+      return {
+        id: entry.dataset.stepId,
+        visible,
+        width: rect?.width || 0,
+        height: rect?.height || 0,
+        overlapsCopy: Boolean(visible && copyRects.some((copyRect) => intersects(rect, copyRect))),
+      };
+    }),
   };
 });
+
+const readStoredComments = async (page) => JSON.parse(await page.evaluate(
+  (key) => sessionStorage.getItem(key) || "{}",
+  commentStorageKey,
+));
+
+const downloadMarkdown = async (page) => {
+  const downloadPromise = page.waitForEvent("download");
+  await page.locator("#novel-log-export").click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  const buffer = fs.readFileSync(downloadPath);
+  return { download, buffer, markdown: buffer.toString("utf8") };
+};
+
+const activateDelete = async (page, viewport, id, decision, method) => {
+  const button = page.getByRole("button", { name: `${id}のコメントを削除` });
+  const dialogPromise = page.waitForEvent("dialog");
+  const actionPromise = method === "keyboard"
+    ? button.focus().then(() => button.press("Enter"))
+    : method === "tap"
+      ? button.tap()
+      : button.click();
+  const dialog = await dialogPromise;
+  assert.match(dialog.message(), new RegExp(id, "u"), `${viewport.name}: confirmation does not identify the step`);
+  assert.match(dialog.message(), /本文・step ID・ほかのコメントは変更されません/u,
+    `${viewport.name}: confirmation does not explain deletion scope`);
+  if (decision === "accept") await dialog.accept();
+  else await dialog.dismiss();
+  await actionPromise;
+};
 
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
   for (const viewport of viewports) {
-    const context = await browser.newContext({ viewport, reducedMotion: "reduce", acceptDownloads: true });
+    const context = await browser.newContext({ viewport, hasTouch: viewport.hasTouch, reducedMotion: "reduce", acceptDownloads: true });
     const page = await context.newPage();
     attachDiagnostics(page, viewport.name);
     await page.addInitScript(() => {
@@ -149,6 +198,10 @@ try {
     assert.equal(initial.headingAudioCollision, false, `${viewport.name}: audio control overlaps the LOG heading`);
     assert.equal(initial.audioVisible, false, `${viewport.name}: persistent audio control remains visible over LOG`);
     assert(initial.textareas.every((item) => item.visible && item.width > 0), `${viewport.name}: a comment field is unavailable`);
+    assert.equal(initial.deleteButtons.filter((item) => item.visible).length, 0,
+      `${viewport.name}: delete buttons are visible without comments`);
+    assert.equal(await page.locator("#novel-log-export").isEnabled(), true,
+      `${viewport.name}: zero-comment export is unavailable`);
 
     const firstEntry = page.locator(`article[data-step-id="${readStepIds[0]}"]`);
     await firstEntry.getByRole("button", { name: `${readStepIds[0]}のLOG IDをコピー` }).click();
@@ -164,8 +217,30 @@ try {
       await page.getByRole("textbox", { name: `${id}への修正コメント` }).fill(value);
     }
     assert.equal(await page.locator("#novel-log-comment-count").textContent(), "コメント 2件", `${viewport.name}: comment count failed`);
-    const stored = JSON.parse(await page.evaluate((key) => sessionStorage.getItem(key), commentStorageKey));
+    const stored = await readStoredComments(page);
     assert.deepEqual(stored, comments, `${viewport.name}: sessionStorage comments differ`);
+    const afterAdd = await geometry(page);
+    const visibleDeleteButtons = afterAdd.deleteButtons.filter((item) => item.visible);
+    assert.deepEqual(visibleDeleteButtons.map((item) => item.id), Object.keys(comments),
+      `${viewport.name}: delete button visibility does not match commented entries`);
+    assert(visibleDeleteButtons.every((item) => item.width >= 44 && item.height >= 44),
+      `${viewport.name}: a delete button has less than a 44px hit area`);
+    assert(visibleDeleteButtons.every((item) => !item.overlapsCopy),
+      `${viewport.name}: a delete button overlaps another LOG action`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-log-comments-added.png`), animations: "disabled" });
+
+    const deletedId = readStepIds[0];
+    const retainedId = readStepIds[1];
+    const deletedEntry = page.locator(`article[data-step-id="${deletedId}"]`);
+    const deletedEntrySnapshot = await deletedEntry.evaluate((entry) => ({
+      id: entry.querySelector(".novel-log-entry-id")?.textContent,
+      text: entry.querySelector(".novel-log-entry-text")?.textContent,
+    }));
+    await activateDelete(page, viewport, deletedId, "dismiss", viewport.hasTouch ? "tap" : "keyboard");
+    assert.deepEqual(await readStoredComments(page), comments, `${viewport.name}: cancellation changed sessionStorage`);
+    assert.equal(await page.getByRole("textbox", { name: `${deletedId}への修正コメント` }).inputValue(), comments[deletedId],
+      `${viewport.name}: cancellation cleared the comment`);
+    assert.equal(await page.locator("#novel-log-status").textContent(), `${deletedId} のコメント削除をキャンセルしました`);
 
     await page.locator("#novel-log-close").click();
     assert.equal(await page.evaluate(() => document.body.classList.contains("gaia-log-open")), false,
@@ -176,32 +251,81 @@ try {
       assert.equal(await page.getByRole("textbox", { name: `${id}への修正コメント` }).inputValue(), value, `${viewport.name}: comment did not survive reopen`);
     }
 
-    const downloadPromise = page.waitForEvent("download");
-    await page.locator("#novel-log-export").click();
-    const download = await downloadPromise;
-    const downloadPath = await download.path();
-    const markdownBuffer = fs.readFileSync(downloadPath);
-    const markdown = markdownBuffer.toString("utf8");
-    assert(markdownBuffer.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])), `${viewport.name}: Markdown has no UTF-8 BOM`);
-    assert.match(download.suggestedFilename(), /^gaia-codex-log-comments-\d{8}T\d{6}Z\.md$/u);
-    for (const [id, value] of Object.entries(comments)) {
-      assert(markdown.includes(`\`${id}\``) && markdown.includes(stepMap.get(id).text) && markdown.includes(value), `${viewport.name}: exported Markdown misses ${id}`);
-    }
-    assert.equal(markdown.includes(readStepIds[2]), false, `${viewport.name}: uncommented step was exported`);
-    assert.equal(await page.locator("#novel-log-status").textContent(), "2件を書き出しました");
+    await activateDelete(page, viewport, deletedId, "accept", viewport.hasTouch ? "tap" : "click");
+    const remainingComments = { [retainedId]: comments[retainedId] };
+    assert.deepEqual(await readStoredComments(page), remainingComments,
+      `${viewport.name}: confirmed deletion changed the wrong sessionStorage comments`);
+    assert.equal(await page.getByRole("textbox", { name: `${deletedId}への修正コメント` }).inputValue(), "",
+      `${viewport.name}: confirmed deletion left the target comment`);
+    assert.equal(await page.getByRole("textbox", { name: `${retainedId}への修正コメント` }).inputValue(), comments[retainedId],
+      `${viewport.name}: confirmed deletion changed another comment`);
+    assert.deepEqual(await deletedEntry.evaluate((entry) => ({
+      id: entry.querySelector(".novel-log-entry-id")?.textContent,
+      text: entry.querySelector(".novel-log-entry-text")?.textContent,
+    })), deletedEntrySnapshot, `${viewport.name}: deletion changed the LOG ID or body text`);
+    assert.equal(await deletedEntry.locator(".novel-log-delete").isHidden(), true,
+      `${viewport.name}: target delete button remained visible after deletion`);
+    assert.equal(await page.locator(`article[data-step-id="${retainedId}"] .novel-log-delete`).isVisible(), true,
+      `${viewport.name}: another entry lost its delete button`);
+    assert.equal(await page.locator("#novel-log-comment-count").textContent(), "コメント 1件");
+
+    const oneCommentExport = await downloadMarkdown(page);
+    assert(oneCommentExport.buffer.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])), `${viewport.name}: Markdown has no UTF-8 BOM`);
+    assert.match(oneCommentExport.download.suggestedFilename(), /^gaia-codex-log-comments-\d{8}T\d{6}Z\.md$/u);
+    assert(oneCommentExport.markdown.includes(`\`${retainedId}\``)
+      && oneCommentExport.markdown.includes(stepMap.get(retainedId).text)
+      && oneCommentExport.markdown.includes(comments[retainedId]), `${viewport.name}: retained comment is missing from export`);
+    assert.equal(oneCommentExport.markdown.includes(`\`${deletedId}\``), false,
+      `${viewport.name}: deleted comment remained in export`);
+    assert.match(oneCommentExport.markdown, /- 対象件数: 1/u);
+    assert.equal(await page.locator("#novel-log-status").textContent(), "1件を書き出しました");
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await ensureNovelOpen(page);
     await bootAtLogState(page);
+    assert.equal(await page.getByRole("textbox", { name: `${deletedId}への修正コメント` }).inputValue(), "",
+      `${viewport.name}: deleted comment returned after reload`);
+    assert.equal(await page.getByRole("textbox", { name: `${retainedId}への修正コメント` }).inputValue(), comments[retainedId],
+      `${viewport.name}: retained comment did not survive reload`);
+    assert.deepEqual(await readStoredComments(page), remainingComments, `${viewport.name}: reload changed remaining comments`);
+
+    await activateDelete(page, viewport, retainedId, "accept", viewport.hasTouch ? "tap" : "keyboard");
+    assert.deepEqual(await readStoredComments(page), {}, `${viewport.name}: all-delete did not leave an empty comment object`);
+    assert.equal(await page.locator("#novel-log-comment-count").textContent(), "コメント 0件");
+    assert.equal(await page.locator("#novel-log-export").isEnabled(), true,
+      `${viewport.name}: all-delete disabled the zero-count export`);
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await ensureNovelOpen(page);
+    await bootAtLogState(page);
+    assert.deepEqual(await readStoredComments(page), {}, `${viewport.name}: all-delete did not survive reload`);
+    assert.equal(await page.locator("#novel-log-comment-count").textContent(), "コメント 0件");
+    const zeroCommentExport = await downloadMarkdown(page);
+    assert(zeroCommentExport.buffer.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])), `${viewport.name}: zero-count Markdown has no UTF-8 BOM`);
+    assert.match(zeroCommentExport.markdown, /- 対象件数: 0/u, `${viewport.name}: zero-count export does not state 0 entries`);
     for (const [id, value] of Object.entries(comments)) {
-      assert.equal(await page.getByRole("textbox", { name: `${id}への修正コメント` }).inputValue(), value, `${viewport.name}: comment did not survive reload`);
+      assert.equal(zeroCommentExport.markdown.includes(`\`${id}\``), false, `${viewport.name}: zero-count export includes ${id}`);
+      assert.equal(zeroCommentExport.markdown.includes(value), false, `${viewport.name}: zero-count export includes a deleted comment`);
     }
+    assert.equal(await page.locator("#novel-log-status").textContent(), "0件を書き出しました");
     const finalGeometry = await geometry(page);
     assert.equal(finalGeometry.overflowX, 0);
     assert.equal(finalGeometry.contentOverflowX, 0);
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-log-comments.png`), animations: "disabled" });
+    assert.equal(finalGeometry.deleteButtons.filter((item) => item.visible).length, 0,
+      `${viewport.name}: delete buttons remain visible after all comments are deleted`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-log-comments-deleted.png`), animations: "disabled" });
 
-    report.scans.push({ viewport, initial, finalGeometry, stored, download: download.suggestedFilename(), passed: true });
+    report.scans.push({
+      viewport,
+      initial,
+      afterAdd,
+      finalGeometry,
+      stored,
+      remainingComments,
+      oneCommentDownload: oneCommentExport.download.suggestedFilename(),
+      zeroCommentDownload: zeroCommentExport.download.suggestedFilename(),
+      passed: true,
+    });
     await context.close();
   }
   assert.equal(report.consoleErrors.length, 0, `console errors: ${report.consoleErrors.join("\n")}`);

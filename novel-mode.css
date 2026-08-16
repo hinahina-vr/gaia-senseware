@@ -3102,6 +3102,30 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   letter-spacing: 0.05em;
 }
 
+.novel-log-panel .novel-log-delete {
+  min-width: 132px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-color: rgba(255, 154, 166, 0.48);
+  border-radius: 8px;
+  color: rgba(255, 221, 225, 0.94);
+  background: rgba(96, 21, 38, 0.44);
+  font: 700 10px/1.2 var(--novel-font);
+  letter-spacing: 0.05em;
+}
+
+.novel-log-panel .novel-log-delete:hover,
+.novel-log-panel .novel-log-delete:focus-visible {
+  border-color: rgba(255, 190, 199, 0.88);
+  color: #fff;
+  background: rgba(135, 32, 53, 0.62);
+}
+
+.novel-log-panel .novel-log-delete:focus-visible {
+  outline: 2px solid rgba(255, 213, 219, 0.9);
+  outline-offset: 2px;
+}
+
 #novel-log-content .novel-log-entry-text {
   margin: 0;
   color: rgba(239, 245, 255, 0.92);
@@ -3351,6 +3375,7 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   .novel-log-entry-header { display: grid; gap: 10px; }
   .novel-log-entry-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .novel-log-panel .novel-log-copy { width: 100%; padding-inline: 8px; }
+  .novel-log-panel .novel-log-delete { grid-column: 1 / -1; width: 100%; }
   .novel-log-comment-field textarea { min-height: 92px; font-size: 15px; }
 }
 

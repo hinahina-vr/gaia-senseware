@@ -3472,10 +3472,8 @@
   const syncLogCommentSummary = () => {
     const count = commentedLogEntries().length;
     elements.logCommentCount.textContent = `コメント ${count}件`;
-    elements.logExport.disabled = count === 0;
-    elements.logExport.setAttribute("aria-label", count
-      ? `コメント済み${count}件をCodex用Markdownで出力`
-      : "コメントを入力するとCodex用Markdownを出力できます");
+    elements.logExport.disabled = false;
+    elements.logExport.setAttribute("aria-label", `コメント済み${count}件をCodex用Markdownで出力`);
   };
   const markdownBlockquote = (value) => String(value).split("\n").map((line) => `> ${line}`).join("\n");
   const buildLogCommentMarkdown = () => {
@@ -3508,10 +3506,6 @@
   };
   const exportLogComments = () => {
     const entries = commentedLogEntries();
-    if (!entries.length) {
-      setLogStatus("コメント済みの項目がありません", "error");
-      return false;
-    }
     const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
     const blob = new Blob(["\uFEFF", buildLogCommentMarkdown()], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -3537,6 +3531,7 @@
       const actions = document.createElement("div");
       const copyId = document.createElement("button");
       const copyEntry = document.createElement("button");
+      const deleteComment = document.createElement("button");
       const text = document.createElement("p");
       const commentField = document.createElement("label");
       const commentLabel = document.createElement("span");
@@ -3563,6 +3558,11 @@
       copyEntry.className = "novel-log-copy";
       copyEntry.textContent = "ID＋本文";
       copyEntry.setAttribute("aria-label", `${id}のLOG IDと本文をコピー`);
+      deleteComment.type = "button";
+      deleteComment.className = "novel-log-delete";
+      deleteComment.textContent = "コメントを削除";
+      deleteComment.setAttribute("aria-label", `${id}のコメントを削除`);
+      deleteComment.hidden = !Boolean(logComments[id]?.trim());
       copyId.addEventListener("click", async () => {
         const copied = await writeClipboardText(id);
         setLogStatus(copied ? `${id} のIDをコピーしました` : "コピーできませんでした", copied ? "success" : "error");
@@ -3571,7 +3571,30 @@
         const copied = await writeClipboardText(`${id}\n${displayText}`);
         setLogStatus(copied ? `${id} のIDと本文をコピーしました` : "コピーできませんでした", copied ? "success" : "error");
       });
-      actions.append(copyId, copyEntry);
+      deleteComment.addEventListener("click", () => {
+        const previous = logComments[id];
+        if (typeof previous !== "string" || !previous.trim()) return;
+        const confirmed = window.confirm([
+          `${id} のコメントを削除しますか？`,
+          "本文・step ID・ほかのコメントは変更されません。",
+        ].join("\n"));
+        if (!confirmed) {
+          setLogStatus(`${id} のコメント削除をキャンセルしました`);
+          return;
+        }
+        delete logComments[id];
+        if (!persistLogComments()) {
+          logComments[id] = previous;
+          setLogStatus("コメントを削除できませんでした", "error");
+          return;
+        }
+        comment.value = "";
+        article.classList.remove("has-comment");
+        deleteComment.hidden = true;
+        syncLogCommentSummary();
+        setLogStatus(`${id} のコメントを削除しました`, "success");
+      });
+      actions.append(copyId, copyEntry, deleteComment);
       entryHeader.append(header, actions);
       text.className = "novel-log-entry-text";
       text.textContent = displayText;
@@ -3587,6 +3610,7 @@
         if (value.trim()) logComments[id] = value;
         else delete logComments[id];
         article.classList.toggle("has-comment", Boolean(value.trim()));
+        deleteComment.hidden = !Boolean(value.trim());
         const persisted = persistLogComments();
         syncLogCommentSummary();
         setLogStatus(persisted ? `${id} のコメントを保存しました` : "コメントを保存できませんでした", persisted ? "success" : "error");
