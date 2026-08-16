@@ -215,6 +215,7 @@
     logClose: layer.querySelector("#novel-log-close"),
     logContent: layer.querySelector("#novel-log-content"),
     logCommentCount: layer.querySelector("#novel-log-comment-count"),
+    logDeleteAll: layer.querySelector("#novel-log-delete-all"),
     logExport: layer.querySelector("#novel-log-export"),
     logStatus: layer.querySelector("#novel-log-status"),
     saveButton: layer.querySelector("#novel-save-button"),
@@ -3472,6 +3473,9 @@
   const syncLogCommentSummary = () => {
     const count = commentedLogEntries().length;
     elements.logCommentCount.textContent = `コメント ${count}件`;
+    elements.logDeleteAll.hidden = count === 0;
+    elements.logDeleteAll.disabled = count === 0;
+    elements.logDeleteAll.setAttribute("aria-label", `コメント済み${count}件をすべて削除`);
     elements.logExport.disabled = false;
     elements.logExport.setAttribute("aria-label", `コメント済み${count}件をCodex用Markdownで出力`);
   };
@@ -3518,6 +3522,30 @@
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
     setLogStatus(`${entries.length}件を書き出しました`, "success");
+    return true;
+  };
+  const deleteAllLogComments = () => {
+    const entries = commentedLogEntries();
+    if (!entries.length) return false;
+    const ids = entries.map(({ step }) => step.id);
+    const confirmed = window.confirm([
+      `${entries.length}件のコメントをすべて削除しますか？`,
+      `対象step: ${ids.join("、")}`,
+      "本文・step IDは変更されません。",
+    ].join("\n"));
+    if (!confirmed) {
+      setLogStatus(`${entries.length}件のコメント全削除をキャンセルしました`);
+      return false;
+    }
+    const previous = logComments;
+    logComments = {};
+    if (!persistLogComments()) {
+      logComments = previous;
+      setLogStatus("コメントを全削除できませんでした", "error");
+      return false;
+    }
+    renderLog();
+    setLogStatus(`${entries.length}件のコメントをすべて削除しました`, "success");
     return true;
   };
   const renderLog = () => {
@@ -4097,6 +4125,7 @@
   elements.restart.addEventListener("click", restartStory);
   elements.logButton.addEventListener("click", toggleLog);
   elements.logClose.addEventListener("click", closeLog);
+  elements.logDeleteAll.addEventListener("click", deleteAllLogComments);
   elements.logExport.addEventListener("click", exportLogComments);
   elements.saveButton.addEventListener("click", () => openManualArchive("save"));
   elements.loadButton.addEventListener("click", () => openManualArchive("load"));

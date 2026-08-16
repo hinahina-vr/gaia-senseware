@@ -3102,6 +3102,36 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   letter-spacing: 0.05em;
 }
 
+.novel-log-panel .novel-log-delete-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 132px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-color: rgba(255, 154, 166, 0.5);
+  border-radius: 10px;
+  color: rgba(255, 225, 229, 0.96);
+  background: rgba(111, 24, 43, 0.42);
+  font: 700 11px/1.2 var(--novel-font);
+  letter-spacing: 0.06em;
+}
+
+.novel-log-panel .novel-log-delete-all[hidden] { display: none; }
+
+.novel-log-panel .novel-log-delete-all:hover,
+.novel-log-panel .novel-log-delete-all:focus-visible {
+  border-color: rgba(255, 193, 202, 0.9);
+  color: #fff;
+  background: rgba(145, 33, 55, 0.62);
+}
+
+.novel-log-panel .novel-log-delete-all:focus-visible {
+  outline: 2px solid rgba(255, 215, 221, 0.92);
+  outline-offset: 2px;
+}
+
 .novel-log-panel .novel-log-delete {
   min-width: 132px;
   min-height: 44px;

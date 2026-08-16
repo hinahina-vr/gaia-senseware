@@ -13,7 +13,7 @@ if (!moduleRoot || !executablePath) throw new Error("GAIA_PLAYWRIGHT_PATH and GA
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const htmlSource = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 const runtimeSource = fs.readFileSync(path.join(projectRoot, "novel-mode.js"), "utf8");
-for (const id of ["novel-log-comment-count", "novel-log-export", "novel-log-status"]) {
+for (const id of ["novel-log-comment-count", "novel-log-delete-all", "novel-log-export", "novel-log-status"]) {
   assert.equal((htmlSource.match(new RegExp(`id=["']${id}["']`, "gu")) || []).length, 1, `${id} must exist exactly once`);
 }
 assert.match(runtimeSource, /sessionStorage/u, "LOG comments must use sessionStorage");
@@ -22,7 +22,8 @@ assert.match(runtimeSource, /text\/markdown;charset=utf-8/u, "UTF-8 Markdown exp
 assert.match(runtimeSource, /gaia-log-open/u, "LOG open state class is missing");
 assert.match(runtimeSource, /className = "novel-log-delete"/u, "LOG comment delete control is missing");
 assert.match(runtimeSource, /window\.confirm\(/u, "LOG comment deletion confirmation is missing");
-assert.match(htmlSource, /gaia-log-comment-delete-1/gu, "LOG comment deletion cache key is missing");
+assert.match(runtimeSource, /deleteAllLogComments/u, "LOG comment delete-all action is missing");
+assert.match(htmlSource, /gaia-log-comment-delete-all-1/gu, "LOG comment delete-all cache key is missing");
 
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?log-comments=${Date.now()}`);
@@ -103,6 +104,8 @@ const geometry = (page) => page.evaluate(() => {
   const panel = document.querySelector("#novel-log-panel").getBoundingClientRect();
   const content = document.querySelector("#novel-log-content");
   const exportButton = document.querySelector("#novel-log-export").getBoundingClientRect();
+  const deleteAllButton = document.querySelector("#novel-log-delete-all");
+  const deleteAllRect = deleteAllButton.getBoundingClientRect();
   const heading = document.querySelector("#novel-log-title")?.getBoundingClientRect();
   const audioDock = document.querySelector("#gaia-audio-dock");
   const audioRect = audioDock?.getBoundingClientRect();
@@ -113,6 +116,12 @@ const geometry = (page) => page.evaluate(() => {
   return {
     panel: { left: panel.left, top: panel.top, right: panel.right, bottom: panel.bottom, width: panel.width, height: panel.height },
     exportButton: { width: exportButton.width, height: exportButton.height },
+    deleteAllButton: {
+      visible: Boolean(!deleteAllButton.hidden && deleteAllButton.offsetParent),
+      width: deleteAllRect.width,
+      height: deleteAllRect.height,
+      overlapsExport: intersects(deleteAllRect, exportButton),
+    },
     entryCount: entries.length,
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
     contentOverflowX: Math.max(0, content.scrollWidth - content.clientWidth),
@@ -173,6 +182,26 @@ const activateDelete = async (page, viewport, id, decision, method) => {
   await actionPromise;
 };
 
+const activateDeleteAll = async (page, viewport, ids, decision, method) => {
+  const button = page.getByRole("button", { name: `コメント済み${ids.length}件をすべて削除` });
+  const dialogPromise = page.waitForEvent("dialog");
+  const actionPromise = method === "keyboard"
+    ? button.focus().then(() => button.press("Enter"))
+    : method === "tap"
+      ? button.tap()
+      : button.click();
+  const dialog = await dialogPromise;
+  assert.match(dialog.message(), new RegExp(`${ids.length}件のコメントをすべて削除`, "u"),
+    `${viewport.name}: delete-all confirmation does not identify the count`);
+  for (const id of ids) assert.match(dialog.message(), new RegExp(id, "u"),
+    `${viewport.name}: delete-all confirmation does not identify ${id}`);
+  assert.match(dialog.message(), /本文・step IDは変更されません/u,
+    `${viewport.name}: delete-all confirmation does not explain preserved data`);
+  if (decision === "accept") await dialog.accept();
+  else await dialog.dismiss();
+  await actionPromise;
+};
+
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
   for (const viewport of viewports) {
@@ -200,6 +229,8 @@ try {
     assert(initial.textareas.every((item) => item.visible && item.width > 0), `${viewport.name}: a comment field is unavailable`);
     assert.equal(initial.deleteButtons.filter((item) => item.visible).length, 0,
       `${viewport.name}: delete buttons are visible without comments`);
+    assert.equal(initial.deleteAllButton.visible, false,
+      `${viewport.name}: delete-all button is visible without comments`);
     assert.equal(await page.locator("#novel-log-export").isEnabled(), true,
       `${viewport.name}: zero-comment export is unavailable`);
 
@@ -227,6 +258,11 @@ try {
       `${viewport.name}: a delete button has less than a 44px hit area`);
     assert(visibleDeleteButtons.every((item) => !item.overlapsCopy),
       `${viewport.name}: a delete button overlaps another LOG action`);
+    assert.equal(afterAdd.deleteAllButton.visible, true, `${viewport.name}: delete-all button is not visible with comments`);
+    assert(afterAdd.deleteAllButton.width >= 44 && afterAdd.deleteAllButton.height >= 44,
+      `${viewport.name}: delete-all button has less than a 44px hit area`);
+    assert.equal(afterAdd.deleteAllButton.overlapsExport, false,
+      `${viewport.name}: delete-all button overlaps export`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-log-comments-added.png`), animations: "disabled" });
 
     const deletedId = readStepIds[0];
@@ -236,6 +272,9 @@ try {
       id: entry.querySelector(".novel-log-entry-id")?.textContent,
       text: entry.querySelector(".novel-log-entry-text")?.textContent,
     }));
+    await activateDeleteAll(page, viewport, Object.keys(comments), "dismiss", viewport.hasTouch ? "tap" : "keyboard");
+    assert.deepEqual(await readStoredComments(page), comments, `${viewport.name}: delete-all cancellation changed sessionStorage`);
+    assert.equal(await page.locator("#novel-log-status").textContent(), "2件のコメント全削除をキャンセルしました");
     await activateDelete(page, viewport, deletedId, "dismiss", viewport.hasTouch ? "tap" : "keyboard");
     assert.deepEqual(await readStoredComments(page), comments, `${viewport.name}: cancellation changed sessionStorage`);
     assert.equal(await page.getByRole("textbox", { name: `${deletedId}への修正コメント` }).inputValue(), comments[deletedId],
@@ -289,9 +328,27 @@ try {
       `${viewport.name}: retained comment did not survive reload`);
     assert.deepEqual(await readStoredComments(page), remainingComments, `${viewport.name}: reload changed remaining comments`);
 
-    await activateDelete(page, viewport, retainedId, "accept", viewport.hasTouch ? "tap" : "keyboard");
+    await page.getByRole("textbox", { name: `${deletedId}への修正コメント` }).fill(comments[deletedId]);
+    assert.deepEqual(await readStoredComments(page), comments, `${viewport.name}: comments were not restored for delete-all QA`);
+    assert.equal(await page.locator("#novel-log-comment-count").textContent(), "コメント 2件");
+    const beforeDeleteAllEntries = await page.locator("#novel-log-content article").evaluateAll((entries) => entries.map((entry) => ({
+      id: entry.querySelector(".novel-log-entry-id")?.textContent,
+      text: entry.querySelector(".novel-log-entry-text")?.textContent,
+    })));
+    await activateDeleteAll(page, viewport, Object.keys(comments), "accept", viewport.hasTouch ? "tap" : "click");
     assert.deepEqual(await readStoredComments(page), {}, `${viewport.name}: all-delete did not leave an empty comment object`);
     assert.equal(await page.locator("#novel-log-comment-count").textContent(), "コメント 0件");
+    for (const id of Object.keys(comments)) {
+      assert.equal(await page.getByRole("textbox", { name: `${id}への修正コメント` }).inputValue(), "",
+        `${viewport.name}: delete-all left ${id}'s comment`);
+    }
+    assert.deepEqual(await page.locator("#novel-log-content article").evaluateAll((entries) => entries.map((entry) => ({
+      id: entry.querySelector(".novel-log-entry-id")?.textContent,
+      text: entry.querySelector(".novel-log-entry-text")?.textContent,
+    }))), beforeDeleteAllEntries, `${viewport.name}: delete-all changed LOG IDs or body text`);
+    assert.equal(await page.locator("#novel-log-status").textContent(), "2件のコメントをすべて削除しました");
+    assert.equal(await page.locator("#novel-log-delete-all").isHidden(), true,
+      `${viewport.name}: delete-all button remained visible after deletion`);
     assert.equal(await page.locator("#novel-log-export").isEnabled(), true,
       `${viewport.name}: all-delete disabled the zero-count export`);
 
@@ -313,6 +370,8 @@ try {
     assert.equal(finalGeometry.contentOverflowX, 0);
     assert.equal(finalGeometry.deleteButtons.filter((item) => item.visible).length, 0,
       `${viewport.name}: delete buttons remain visible after all comments are deleted`);
+    assert.equal(finalGeometry.deleteAllButton.visible, false,
+      `${viewport.name}: delete-all button remains visible after reload`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-log-comments-deleted.png`), animations: "disabled" });
 
     report.scans.push({

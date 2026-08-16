@@ -32,7 +32,7 @@ const scans = [
   ["source mirrors match", source === mirror],
   ["no escape hard breaks in changed prose", !source.includes("<br") && !source.includes("\\n")],
   ["forbidden verb absent", !/(?:置く|置いた|置いて|置か|置き|置け|置こう)/u.test(source)],
-  ["scenario cache key", (html.match(/gaia-log-comment-delete-1/gu) || []).length === 2],
+  ["scenario cache key", (html.match(/gaia-log-comment-delete-all-1/gu) || []).length === 2],
 ];
 
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);
