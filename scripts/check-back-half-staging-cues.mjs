@@ -55,7 +55,7 @@ assert(resolved.every(({ staging: cue }) => cue.temporal.date === ""), "contest 
 assert(resolved.every(({ staging: cue }) => cue.audio === "none"), "contest cue added character or archive audio");
 
 for (const assetPath of new Set(resolved.map(({ background }) => background.assetPath))) {
-  assert(assetPath.startsWith("assets/visuals-07/"), `background escaped approved assets: ${assetPath}`);
+  assert(/^assets\/(?:visuals-07|data|architecture|concept)\//u.test(assetPath), `background escaped approved assets: ${assetPath}`);
   await access(path.join(projectRoot, assetPath));
 }
 

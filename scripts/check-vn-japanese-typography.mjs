@@ -32,7 +32,7 @@ const scans = [
   ["source mirrors match", source === mirror],
   ["no escape hard breaks in changed prose", !source.includes("<br") && !source.includes("\\n")],
   ["forbidden verb absent", !/(?:置く|置いた|置いて|置か|置き|置け|置こう)/u.test(source)],
-  ["scenario cache key", (html.match(/gaia-vn-typewriter-order-1/gu) || []).length === 2],
+  ["scenario cache key", (html.match(/gaia-log-comment-fixes-1/gu) || []).length === 2],
 ];
 
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);
@@ -59,7 +59,7 @@ const paginationSafeBoundary = /[。！？!?、，,・：:；;\s][」』）】�
 [
   ["pc-2048", "festival_concept_070", "NASAやJAXA、", "気象庁"],
   ["pc-2048", "esp32_pitch_015", "拾ったり、", "いくつか"],
-  ["pc-1920", "festival_concept_029", "設備も、", "プロジェクターも"],
+  ["pc-1920", "festival_concept_029", "ソフトウェアも演出も、", "映像の迫力も"],
   ["pc-1920", "festival_concept_064", "聞いたり、", "触れたり"],
   ["pc-1920", "festival_concept_070", "NASAやJAXA、", "気象庁"],
   ["pc-1920", "esp32_pitch_015", "拾ったり、", "いくつか"],

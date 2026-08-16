@@ -285,8 +285,8 @@ const scanMetadataAndRuntimeGallery = async (viewport, stepId) => {
 
 const scanIntroductionSequence = async (viewport) => {
   const expected = [
-    ["festival_concept_020", "narration", "narrator", "", "返事を聞くと、青い髪の学生はわずかに目を細めた。止めていた手をケーブルから離し、体ごとこちらへ向き直る。"],
-    ["festival_concept_021", "dialogue", "amane", "短髪の女性", "私は「あめ」といいます。"],
+    ["festival_concept_020", "narration", "narrator", "", "返事を聞くと、青い髪の学生はわずかに目を細めた。画面の端へ触れると、地球が一度だけゆっくり明滅し、海から都市までの光が短くつながった。最初のデモを終えてから、彼女はケーブルを離し、体ごとこちらへ向き直る。"],
+    ["festival_concept_021", "dialogue", "amane", "短髪の女性", "「改めまして、私は『あめ』です」"],
     ["festival_concept_022", "narration", "narrator", "", "「あめ」と名乗っても、照れたり笑ったりはしなかった。柔らかな響きとは対照的に、言葉は簡潔だった。"],
     ["festival_concept_023", "dialogue", "mizuha", "長髪の女性", "「みず」と申します。あなたも、うちの大学の方ですの？"],
     ["festival_concept_024", "narration", "narrator", "", "あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。"],
@@ -448,7 +448,7 @@ const scanRuntimeStoryContract = async () => {
       },
     };
   });
-  assert.equal(scan.sourceSha256, "4875cae7eef0a748d4124c15e32b15c97a23ee1649ac2289f1680c8c8e1d05a1");
+  assert.equal(scan.sourceSha256, "ea23b125c7942429b57fd7cca04f3dc8a9c959a4b77d3cb22fd02c6de879a049");
   assert.equal(scan.sceneCount, 6);
   assert.equal(scan.stepCount, 396);
   assert.deepEqual(scan.userVisiblePlacementVerbStepIds, []);

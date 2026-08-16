@@ -2581,6 +2581,7 @@
       elements.speaker.textContent = "";
     } else {
       setCharacterPresentation(speaker, expressionForStep(step));
+      if (speaker === "visitor") elements.avatar.hidden = true;
       elements.speaker.textContent = speakerDisplayName(step);
     }
     renderDialoguePages(String(step.text || "").replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目"));
@@ -2893,8 +2894,8 @@
   const detourDefinitions = Object.freeze({
     map01: {
       kicker: "MODE 01 / MAP",
-      title: "長い時間の変化を見る",
-      guide: "年表示を動かして長期変化を開き、地図へ触れて気温偏差の色を確認してください。",
+      title: "年代を動かして変化を見る",
+      guide: "年代のスライダーを動かし、地図の気になる場所へ触れてください。",
     },
     gx: {
       kicker: "GX / DEEP TIME",
@@ -2941,7 +2942,7 @@
     if (!pendingInteraction) return "";
     const kind = pendingInteraction.interaction.kind;
     if (kind === "map01") {
-      return `長期表示 ${detourState?.views?.has("long_term") ? "✓" : "○"}　気温偏差 ${detourState?.views?.has("temperature_anomaly") ? "✓" : "○"}`;
+      return `年代を操作 ${detourState?.views?.has("long_term") ? "✓" : "○"}　地図に触れる ${detourState?.views?.has("temperature_anomaly") ? "✓" : "○"}`;
     }
     if (kind === "gx") return state.viewed.gxDeepTime ? "操作完了 / 海の変化を確認しました" : `水面の操作 ${detourState?.gestureCount || 0} / 3`;
     if (kind === "map03") return `森林 ${state.viewed.mode03Forest ? "✓" : "○"}　降水量 ${state.viewed.mode03Rain ? "✓" : "○"}　重ね合わせ ${state.viewed.mode03Overlay ? "✓" : "○"}`;

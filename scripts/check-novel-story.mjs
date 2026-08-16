@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "4875cae7eef0a748d4124c15e32b15c97a23ee1649ac2289f1680c8c8e1d05a1";
+const expectedHash = "ea23b125c7942429b57fd7cca04f3dc8a9c959a4b77d3cb22fd02c6de879a049";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 58, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 55161, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 55787, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
@@ -51,13 +51,14 @@ assert.deepEqual(
 );
 const festival = story.scenes.find((scene) => scene.id === "festival_concept");
 const storyText = steps.map((step) => String(step.text || "")).join("\n");
+assert.doesNotMatch(storyText, /ものづくり|ほどけ/u, "今回の対象文脈で使用しない表現が残っています");
 assert.equal(storyText.split("あめと、みず。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 0, "旧festival_concept_024全文が残っています");
 assert.equal(storyText.split("あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 1, "festival_concept_024決定稿はexact1件必要です");
 assert.equal(storyText.split("雨が降って、水になる。二人の名前を並べると、偶然にしては出来すぎていた。").length - 1, 0, "撤回された所感が残っています");
 assert.deepEqual(
   festival.steps.slice(20, 27).map((step) => [step.id, step.type, step.speaker || null, step.speakerLabel || null, step.text]),
   [
-    ["festival_concept_021", "dialogue", "amane", "女の子", "私は「あめ」といいます。"],
+    ["festival_concept_021", "dialogue", "amane", "女の子", "「改めまして、私は『あめ』です」"],
     ["festival_concept_022", "narration", "narrator", null, "「あめ」と名乗っても、照れたり笑ったりはしなかった。柔らかな響きとは対照的に、言葉は簡潔だった。"],
     ["festival_concept_023", "dialogue", "mizuha", "もう一人の女の子", "「みず」と申します。あなたも、うちの大学の方ですの？"],
     ["festival_concept_024", "narration", "narrator", null, "あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。"],

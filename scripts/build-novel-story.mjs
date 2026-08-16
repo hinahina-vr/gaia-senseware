@@ -8,7 +8,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "4875cae7eef0a748d4124c15e32b15c97a23ee1649ac2289f1680c8c8e1d05a1";
+const EXPECTED_SOURCE_SHA256 = "ea23b125c7942429b57fd7cca04f3dc8a9c959a4b77d3cb22fd02c6de879a049";
 
 const sourceBytes = fs.readFileSync(canonPath);
 const characterSourceBytes = fs.readFileSync(characterCanonPath);
@@ -45,7 +45,7 @@ const INTERACTION_CONFIG = Object.freeze({
     modeIndex: 0,
     modeId: "breathing-earth",
     requiredViews: Object.freeze(["long_term", "temperature_anomaly"]),
-    afterText: "「こちらがMODE 01です。まず、表示を『一年』から『長期』へ切り替えてみてください」",
+    afterText: "「こちらがMODE 01です。年代のスライダーを動かしてから、地図の気になる場所を押してみてください」",
   }),
   gx_experience: Object.freeze({
     kind: "gx",
@@ -85,7 +85,7 @@ const parseBlock = (block, sceneId) => {
   const dialogue = block.match(/^(ミズハ|アマネ|プレイヤー)：\n([\s\S]+)$/u);
   if (dialogue) {
     const [rawSpeaker, text] = dialogue.slice(1);
-    const speakerLabel = rawSpeaker === "アマネ" && /私は「あめ」といいます。|体験してみませんか/u.test(text)
+    const speakerLabel = rawSpeaker === "アマネ" && /私は[『「]あめ[』」]|体験してみませんか/u.test(text)
       ? "女の子"
       : rawSpeaker === "ミズハ" && /「みず」と申します。/u.test(text)
         ? "もう一人の女の子"
