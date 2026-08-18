@@ -76,7 +76,7 @@
     { id: "map01-data-provenance", sceneId: "map_mode01", from: 29, to: 40, assetPath: "assets/visuals-07/novel-bg-map01-data-provenance-five-plane-v1.png", motion: "drift-left" },
     { id: "map01-exhibition-return", sceneId: "map_mode01", from: 41, to: 43, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-v1.png", motion: "drift-right" },
     { id: "gx-ocean-entry", sceneId: "gx_experience", from: 1, to: 16, assetPath: "assets/visuals-07/novel-bg-gx-ancient-ocean-five-plane-v1.png", motion: "push-in" },
-    { id: "gx-native-deep-time", sceneId: "gx_experience", from: 17, to: 17, assetPath: "assets/visuals-07/mode-abstract-v1.webp", motion: "drift-right" },
+    { id: "gx-native-deep-time", sceneId: "gx_experience", from: 17, to: 17, assetPath: "assets/visuals-07/novel-bg-exhibition-v3.png", motion: "drift-right" },
     { id: "gx-exhibition-return", sceneId: "gx_experience", from: 18, to: 18, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-v1.png", motion: "push-in" },
     { id: "gx-ancient-ocean", sceneId: "gx_experience", from: 19, to: 29, assetPath: "assets/visuals-07/mode-abstract-v1.webp", motion: "drift-right" },
     { id: "gx-coevolution", sceneId: "gx_experience", from: 30, to: 41, assetPath: "assets/visuals-07/novel-bg-gx-breathing-points-five-plane-v1.png", motion: "drift-left" },

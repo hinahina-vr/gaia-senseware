@@ -91,7 +91,7 @@ const expectedBoundaries = [
   ["map_mode01", 29, 40, "map01-data-provenance", assets.map01Provenance, "drift-left", "scenic"],
   ["map_mode01", 41, 43, "map01-exhibition-return", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["gx_experience", 1, 16, "gx-ocean-entry", assets.gxAncientOcean, "push-in", "scenic"],
-  ["gx_experience", 17, 17, "gx-native-deep-time", assets.abstract, "drift-right", "scenic"],
+  ["gx_experience", 17, 17, "gx-native-deep-time", assets.boothClose, "drift-right", "scenic"],
   ["gx_experience", 18, 18, "gx-exhibition-return", assets.fivePlaneProjection, "push-in", "scenic"],
   ["gx_experience", 19, 29, "gx-ancient-ocean", assets.abstract, "drift-right", "scenic"],
   ["gx_experience", 30, 41, "gx-coevolution", assets.gxBreathingPoints, "drift-left", "scenic"],
@@ -220,7 +220,7 @@ assert.equal(cue("map_mode01_015").assetPath, assets.modis);
 assert.equal(cue("map_mode01_029").assetPath, assets.map01Provenance);
 assert.equal(cue("map_mode01_040").assetPath, assets.map01Provenance);
 assert.equal(cue("map_mode01_043").assetPath, assets.fivePlaneProjection);
-assert.equal(cue("gx_experience_017").assetPath, assets.abstract);
+assert.equal(cue("gx_experience_017").assetPath, assets.boothClose);
 assert.equal(cue("gx_experience_011").assetPath, assets.gxAncientOcean);
 assert.equal(cue("gx_experience_018").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("gx_experience_030").assetPath, assets.gxBreathingPoints);

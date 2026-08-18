@@ -7750,6 +7750,51 @@ body.gx-story-open .novel-script-debug-copy {
   box-shadow: none;
 }
 
+/* A native GX interaction is the exhibit itself. Keep the exhibition hall as
+   its setting, but remove the story portraits so the guides are not duplicated
+   behind the instrument. */
+body.gx-story-open .novel-cast {
+  display: none !important;
+}
+
+/* GX already carries its title, explanation and live phase status. Its story
+   dock therefore keeps only the two actionable controls and never covers the
+   exhibit record with a second block of duplicate copy. */
+body.gx-story-open .story-detour-dock {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  max-height: none;
+  padding: 9px max(14px, env(safe-area-inset-right)) max(9px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  gap: 8px;
+  overflow: hidden;
+}
+
+body.gx-story-open .story-detour-dock header,
+body.gx-story-open .story-detour-dock > p {
+  display: none;
+}
+
+body.gx-story-open .story-detour-controls {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  justify-content: stretch;
+}
+
+body.gx-story-open .story-detour-controls button,
+body.gx-story-open .story-detour-dock > #story-detour-return {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+body.gx-story-open .story-detour-dock > #story-detour-return {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: stretch;
+}
+
 @media (max-width: 600px) {
   .novel-script-debug {
     top: max(112px, calc(env(safe-area-inset-top) + 100px));

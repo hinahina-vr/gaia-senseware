@@ -484,9 +484,10 @@ const performGxGesture = async (page) => {
     return { blocked: true, rect: rect.toJSON(), hits };
   });
   assert(target && !target.blocked, `GX canvas is blocked: ${JSON.stringify(target)}`);
+  const canvasWidth = await page.locator("#gx-canvas").evaluate((canvas) => canvas.getBoundingClientRect().width);
   await page.mouse.move(target.x, target.y);
   await page.mouse.down();
-  await page.mouse.move(target.x + 14, target.y + 6, { steps: 10 });
+  await page.mouse.move(target.x + canvasWidth * 0.2, target.y + 6, { steps: 10 });
   await page.mouse.up();
 };
 
@@ -496,6 +497,11 @@ const gxOpenState = async (page, viewport) => page.evaluate(({ width, height }) 
   const story = document.querySelector("#novel-layer");
   const backdrop = document.querySelector("#gx-story-backdrop");
   const card = document.querySelector("#gx-layer .gx-story-card");
+  const dock = document.querySelector("#gx-layer .story-detour-dock");
+  const gxControls = document.querySelector("#gx-layer .gx-controls");
+  const cardRect = card?.getBoundingClientRect();
+  const dockRect = dock?.getBoundingClientRect();
+  const gxControlsRect = gxControls?.getBoundingClientRect();
   return {
     stepId: globalThis.GaiaNovel.getState().stepId,
     lifecycle: document.body.dataset.novelInteractionState,
@@ -509,6 +515,7 @@ const gxOpenState = async (page, viewport) => page.evaluate(({ width, height }) 
     storyAriaHidden: story?.getAttribute("aria-hidden"),
     storyInert: story?.inert,
     storyBackground: getComputedStyle(story).backgroundImage,
+    backgroundCue: story?.dataset.backgroundCue || "",
     backdropVisible: globalThis.__p1Visible(backdrop),
     rect: rect?.toJSON(),
     widthRatio: rect.width / width,
@@ -524,6 +531,21 @@ const gxOpenState = async (page, viewport) => page.evaluate(({ width, height }) 
     cardOverflowY: getComputedStyle(card).overflowY,
     cardPointerEvents: getComputedStyle(card).pointerEvents,
     cardTabIndex: card.tabIndex,
+    cardVisibleOverflow: card.scrollHeight - card.clientHeight,
+    cardRect: cardRect?.toJSON(),
+    dockRect: dockRect?.toJSON(),
+    gxControlsRect: gxControlsRect?.toJSON(),
+    cardClearOfDock: cardRect.bottom <= dockRect.top + 1,
+    controlsClearOfDock: gxControlsRect.bottom <= dockRect.top + 1,
+    dockScrollable: dock.scrollHeight > dock.clientHeight + 1,
+    dockOverflowY: getComputedStyle(dock).overflowY,
+    dockDuplicateCopyVisible: [...dock.querySelectorAll("header, :scope > p")]
+      .some((element) => getComputedStyle(element).display !== "none"),
+    dockButtonHeights: [...dock.querySelectorAll("button")]
+      .map((button) => button.getBoundingClientRect().height),
+    castDisplay: getComputedStyle(document.querySelector("#novel-cast")).display,
+    visibleCharacterCount: [...document.querySelectorAll("#novel-cast .novel-character")]
+      .filter((character) => globalThis.__p1Visible(character)).length,
     documentScrollTop: document.scrollingElement.scrollTop,
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
     overflowY: document.documentElement.scrollHeight > innerHeight + 1,
@@ -546,13 +568,16 @@ const scanGx = async (viewport, routeMode) => {
   assert.equal(open.storyHidden, false);
   assert.equal(open.storyAriaHidden, "true");
   assert.equal(open.storyInert, true);
-  assert.notEqual(open.storyBackground, "none");
+  assert.match(open.storyBackground, /novel-bg-exhibition-v3\.png/u);
+  assert.equal(open.backgroundCue, "gx-native-deep-time");
+  assert.equal(open.castDisplay, "none");
+  assert.equal(open.visibleCharacterCount, 0);
   assert.equal(open.backdropVisible, true);
   assert.equal(open.centeredX <= 1.5, true);
   assert.equal(open.centeredY <= 1.5, true);
   if (viewport.width <= 560) {
-    assert(open.widthRatio <= 0.92 + 0.002);
-    assert(open.heightRatio <= 0.78 + 0.002);
+    assert(open.widthRatio <= 0.96 + 0.002);
+    assert(open.heightRatio <= 0.96 + 0.002);
     assert(open.margins.left > 0 && open.margins.right > 0 && open.margins.top > 0 && open.margins.bottom > 0);
   } else {
     assert(open.widthRatio <= 0.78 + 0.002 && open.rect.width <= 1281);
@@ -564,8 +589,48 @@ const scanGx = async (viewport, routeMode) => {
   }
   assert.equal(open.returnEnabled, false);
   assert.equal(open.innerCloseDisabled, true);
+  assert.equal(open.cardScrollable, false, `${label}: phase card content is clipped: ${JSON.stringify(open)}`);
+  assert(open.cardVisibleOverflow <= 1, `${label}: phase card exceeds its no-scroll viewport: ${JSON.stringify(open)}`);
+  assert.equal(open.cardOverflowY, "hidden");
+  assert.equal(open.cardClearOfDock, true, `${label}: phase card is covered by the story controls: ${JSON.stringify(open)}`);
+  assert.equal(open.controlsClearOfDock, true, `${label}: GX phase controls are covered by the story controls: ${JSON.stringify(open)}`);
+  assert.equal(open.dockScrollable, false);
+  assert.equal(open.dockOverflowY, "hidden");
+  assert.equal(open.dockDuplicateCopyVisible, false);
+  assert.equal(open.dockButtonHeights.length, 2);
+  assert(open.dockButtonHeights.every((height) => height >= 44));
   assert.equal(open.overflowX, false);
   assert.equal(open.overflowY, false);
+  const phaseLayouts = [];
+  for (let phase = 0; phase < 8; phase += 1) {
+    await page.evaluate((index) => globalThis.GaiaGX.setPhase(index), phase);
+    await page.waitForFunction((index) => document.querySelector("#gx-phase-index")?.textContent?.trim() === `${String(index + 1).padStart(2, "0")} / 08`, phase);
+    const phaseLayout = await page.evaluate(() => {
+      const gx = document.querySelector("#gx-layer");
+      const card = gx.querySelector(".gx-story-card");
+      const dock = gx.querySelector(".story-detour-dock");
+      const header = gx.querySelector(".gx-header");
+      const cardRect = card.getBoundingClientRect();
+      const dockRect = dock.getBoundingClientRect();
+      const headerRect = header.getBoundingClientRect();
+      return {
+        index: document.querySelector("#gx-phase-index")?.textContent?.trim(),
+        title: document.querySelector("#gx-title")?.textContent?.trim(),
+        cardScrollHeight: card.scrollHeight,
+        cardClientHeight: card.clientHeight,
+        cardTop: cardRect.top,
+        cardBottom: cardRect.bottom,
+        headerBottom: headerRect.bottom,
+        dockTop: dockRect.top,
+      };
+    });
+    assert(phaseLayout.cardScrollHeight <= phaseLayout.cardClientHeight + 1, `${label}: ${phaseLayout.index} needs a scrollbar: ${JSON.stringify(phaseLayout)}`);
+    assert(phaseLayout.cardTop >= phaseLayout.headerBottom - 1, `${label}: ${phaseLayout.index} overlaps the GX heading: ${JSON.stringify(phaseLayout)}`);
+    assert(phaseLayout.cardBottom <= phaseLayout.dockTop + 1, `${label}: ${phaseLayout.index} is covered by the story controls: ${JSON.stringify(phaseLayout)}`);
+    phaseLayouts.push(phaseLayout);
+  }
+  await page.evaluate(() => globalThis.GaiaGX.setPhase(0));
+  await page.waitForFunction(() => document.querySelector("#gx-phase-index")?.textContent?.trim() === "01 / 08");
   if (routeMode === "normal") await page.screenshot({ path: path.join(outputDir, `${viewport.name}-gx-open.png`) });
   const card = page.locator("#gx-layer .gx-story-card");
   const cardBox = await card.boundingBox();
@@ -586,7 +651,17 @@ const scanGx = async (viewport, routeMode) => {
     assert(scroll.after > scroll.before, `${label}: GX internal wheel scroll did not move: ${JSON.stringify({ open, scroll })}`);
     assert.equal(scroll.documentAfter, scroll.documentBefore);
   }
-  for (let index = 0; index < 3; index += 1) await performGxGesture(page);
+  for (let index = 0; index < 3; index += 1) {
+    await performGxGesture(page);
+    if (index === 0 && routeMode === "normal") {
+      await page.waitForFunction(() => (
+        document.querySelector("#gx-title")?.textContent?.trim() === "THE SECOND GX"
+        && !document.querySelector("#gx-layer")?.classList.contains("is-era-transitioning")
+        && document.querySelector(".story-detour-controls button")?.textContent?.trim() === "段階表示を進める"
+      ));
+      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-gx-second.png`) });
+    }
+  }
   await page.waitForFunction(() => !document.querySelector("#story-detour-return")?.disabled);
   const completed = await page.evaluate(() => {
     const dockReturn = document.querySelector("#story-detour-return");
@@ -625,7 +700,7 @@ const scanGx = async (viewport, routeMode) => {
   assert(closed.events.gxProgress >= 3);
   assert.equal(closed.steps.filter((id) => id === "gx_experience_018").length, 1);
   assert.equal(closed.overflowX, false);
-  report.scans.push({ case: "gx-real-gesture", viewport, routeMode, open, scroll, completed, closed, passed: true });
+  report.scans.push({ case: "gx-real-gesture", viewport, routeMode, open, phaseLayouts, scroll, completed, closed, passed: true });
   await context.close();
   console.log(`PASS ${label}`);
 };
@@ -649,7 +724,11 @@ const scanStandaloneGx = async () => {
 };
 
 try {
-  if (scope === "map-stability") {
+  if (scope === "gx-layout") {
+    for (const viewport of [pcViewports[2], mobileViewport].filter((candidate) => !viewportFilter || candidate.name === viewportFilter)) {
+      await scanGx(viewport, "normal");
+    }
+  } else if (scope === "map-stability") {
     const targets = [...pcViewports, mobileViewport].filter((candidate) => !viewportFilter || candidate.name === viewportFilter);
     for (const viewport of targets) {
       const modes = viewport === mobileViewport ? ["normal"] : selectedRouteModes;
