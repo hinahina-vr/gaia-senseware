@@ -29,7 +29,7 @@ body.gaia-opening-active .novel-layer {
   z-index: 60;
   inset: 0;
   display: grid;
-  grid-template-rows: auto auto auto auto auto;
+  grid-template-rows: auto auto auto auto;
   align-content: center;
   justify-items: center;
   padding: 32px;
@@ -46,52 +46,6 @@ body.gaia-opening-active .novel-layer {
   opacity: 0;
   filter: blur(8px);
   pointer-events: none;
-}
-
-.gaia-preload-mark {
-  position: relative;
-  width: 94px;
-  height: 94px;
-  margin-bottom: 30px;
-}
-
-.gaia-preload-mark::before,
-.gaia-preload-mark::after,
-.gaia-preload-mark i {
-  position: absolute;
-  border: 1px solid rgba(var(--opening-mint), 0.35);
-  border-radius: 50%;
-  content: "";
-}
-
-.gaia-preload-mark::before {
-  inset: 0;
-  animation: gaia-preload-orbit 2.8s linear infinite;
-}
-
-.gaia-preload-mark::after {
-  inset: 20px;
-  border-style: dashed;
-  opacity: 0.6;
-  animation: gaia-preload-orbit 2s linear reverse infinite;
-}
-
-.gaia-preload-mark i {
-  top: 44px;
-  left: 44px;
-  width: 6px;
-  height: 6px;
-  border: 0;
-  background: rgb(var(--opening-mint));
-  box-shadow: 0 0 22px 7px rgba(var(--opening-mint), 0.45);
-}
-
-.gaia-preload-mark i:nth-child(2) {
-  transform: translate(42px, -12px) scale(0.45);
-}
-
-.gaia-preload-mark i:nth-child(3) {
-  transform: translate(-32px, 28px) scale(0.3);
 }
 
 .gaia-opening-preload > p:first-of-type {
@@ -1500,10 +1454,6 @@ body.gaia-opening-active .novel-layer {
 
 @keyframes opening-away { 0%, 55% { opacity: 1; } 100% { opacity: 0; } }
 
-@keyframes gaia-preload-orbit {
-  to { transform: rotate(360deg); }
-}
-
 @media (max-width: 720px) {
   .gaia-opening-preload { padding: 22px; }
   .gaia-opening-sound-gate { padding: 18px; }
@@ -1514,11 +1464,6 @@ body.gaia-opening-active .novel-layer {
   .gaia-opening-sound-actions button { min-height: 50px; padding: 10px 12px; }
   .gaia-opening-sound-actions span { font-size: 14px; }
   .gaia-opening-sound-actions small { font-size: 8px; }
-  .gaia-preload-mark { width: 76px; height: 76px; margin-bottom: 24px; }
-  .gaia-preload-mark::after { inset: 16px; }
-  .gaia-preload-mark i { top: 35px; left: 35px; }
-  .gaia-preload-mark i:nth-child(2) { transform: translate(33px, -10px) scale(0.45); }
-  .gaia-preload-mark i:nth-child(3) { transform: translate(-26px, 22px) scale(0.3); }
   .gaia-opening-preload > p:last-child { max-width: 82vw; text-align: center; }
   .gaia-vn-project {
     top: max(22px, env(safe-area-inset-top));
