@@ -26,12 +26,18 @@ const report = {
   consoleErrors: [],
   pageErrors: [],
   responses404: [],
+  audioResponses: [],
 };
 
 const attachDiagnostics = (page, label) => {
   page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`); });
   page.on("pageerror", (error) => report.pageErrors.push(`${label}: ${error.message}`));
-  page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`); });
+  page.on("response", (response) => {
+    if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`);
+    if (/\/assets\/audio\/.*\.mp3(?:\?|$)/u.test(response.url())) {
+      report.audioResponses.push({ label, status: response.status(), url: response.url() });
+    }
+  });
 };
 
 const bootAtEnding = async (page, reducedMotion = false) => {
@@ -153,6 +159,9 @@ try {
     const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
     const page = await context.newPage();
     attachDiagnostics(page, viewport.name);
+    const audioRuntimeResponse = await page.request.get(new URL("/opening-audio.js", baseUrl).href);
+    assert.equal(audioRuntimeResponse.ok(), true, `${viewport.name}: opening-audio.js was not available`);
+    assert.match(await audioRuntimeResponse.text(), /ending:\s*"\.\/assets\/audio\/satellite-forecast-hope\.mp3"/u, `${viewport.name}: ending is not mapped to TRACK 01`);
     await bootAtEnding(page, false);
 
     const initial = await scanEnding(page);
@@ -172,6 +181,7 @@ try {
       "OpenAI ImageGen",
       "背景美術",
       "音楽",
+      "Planet Forecast — Hope",
       "Suno AI",
       "ZEN大学『共創地球論』",
       "JAXA / NASA / NOAA",
@@ -204,6 +214,8 @@ try {
     await page.waitForTimeout(650);
     const afterY = await page.locator(".novel-staff-roll-track").evaluate((node) => node.getBoundingClientRect().y);
     assert(afterY < beforeY - 2, `${viewport.name}: credits did not move upward (${beforeY} -> ${afterY})`);
+    assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/satellite-forecast-hope.mp3") && [200, 206].includes(response.status)), `${viewport.name}: TRACK 01 audio was not requested`);
+    assert(!report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/planet-forecast-first-light.mp3")), `${viewport.name}: previous ending track is still requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-rolling.png`) });
 
     await page.locator(".novel-staff-roll-track").evaluate((node) => {

@@ -12,7 +12,7 @@
     moonbook: "./assets/audio/moonlit-observation-notebook.mp3",
     moonsave: "./assets/audio/moonlit-source-save.mp3",
     moonreopen: "./assets/audio/moonlit-reopen.mp3",
-    ending: "./assets/audio/planet-forecast-first-light.mp3",
+    ending: "./assets/audio/satellite-forecast-hope.mp3",
   });
   const DEFAULT_VOLUME = 0.1;
   const VOLUME_STORAGE_KEY = "gaia-senseware-bgm-volume";
