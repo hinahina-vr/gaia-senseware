@@ -174,11 +174,10 @@ try {
       await page.evaluate(() => globalThis.GaiaNovel.open());
 
       await page.evaluate(() => document.querySelector("#novel-start-button").click());
-      await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "opening-sequence");
-      const openingStep = await page.locator("#novel-layer").getAttribute("data-step-id");
-      await page.locator("#novel-opening-sequence").press("Enter");
+      await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "section-separator");
+      const firstStep = await page.locator("#novel-layer").getAttribute("data-step-id");
       await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
-      assert.equal(await page.locator("#novel-layer").getAttribute("data-step-id"), openingStep, `${label}: opening skipped the first story step`);
+      assert.equal(await page.locator("#novel-layer").getAttribute("data-step-id"), firstStep, `${label}: initial chapter card skipped the first story step`);
 
       const startedAt = await page.evaluate(() => {
         const started = performance.now();
