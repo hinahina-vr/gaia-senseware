@@ -16,8 +16,11 @@
   });
   const DEFAULT_VOLUME = 0.1;
   const VOLUME_STORAGE_KEY = "gaia-senseware-bgm-volume";
+  const NAVIGATION_STATE_KEY = "gaia-senseware-bgm-navigation:v1";
+  const NAVIGATION_STATE_MAX_AGE_MS = 30_000;
   const TRACK_SWITCH_FADE_MULTIPLIER = 2;
   const TRACK_SWITCH_FADE_IN_SECONDS = 0.8 * TRACK_SWITCH_FADE_MULTIPLIER;
+  const scriptBaseUrl = new URL("./", document.currentScript?.src || document.baseURI);
 
   let audio = null;
   let activeTrack = "opening";
@@ -28,6 +31,7 @@
   let switchSerial = 0;
   let preferredVolume = DEFAULT_VOLUME;
   let muted = true;
+  let navigationStatePersisted = false;
   // Keep the visitor's choice separate from the instantaneous player state.
   // A scene transition may pause a player for a moment; that must not be
   // mistaken for the visitor choosing "sound off".
@@ -64,7 +68,7 @@
     if (!TRACKS[track]) throw new Error(`Unknown BGM track: ${track}`);
     if (players.has(track)) return players.get(track);
 
-    const player = new Audio(new URL(TRACKS[track], document.baseURI).href);
+    const player = new Audio(new URL(TRACKS[track], scriptBaseUrl).href);
     player.preload = "auto";
     player.playsInline = true;
     // The soundtrack belongs to the whole experience, not only the opening.
@@ -287,6 +291,77 @@
     return true;
   };
 
+  const persistNavigationState = () => {
+    if (navigationStatePersisted) return true;
+    try {
+      window.sessionStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify({
+        savedAt: Date.now(),
+        track: activeTrack,
+        currentTime: Number.isFinite(audio?.currentTime) ? audio.currentTime : 0,
+        volume: preferredVolume,
+        muted,
+        playing: Boolean(audio && !audio.paused),
+        playbackRequested,
+      }));
+      navigationStatePersisted = true;
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const restoreNavigationState = async () => {
+    let snapshot = null;
+    try {
+      snapshot = JSON.parse(window.sessionStorage.getItem(NAVIGATION_STATE_KEY) || "null");
+      window.sessionStorage.removeItem(NAVIGATION_STATE_KEY);
+    } catch {
+      snapshot = null;
+    }
+    if (!snapshot || !TRACKS[snapshot.track] || Date.now() - Number(snapshot.savedAt || 0) > NAVIGATION_STATE_MAX_AGE_MS) {
+      emitState();
+      return { restored: false, playing: false, blocked: false };
+    }
+
+    activeTrack = snapshot.track;
+    audio = ensureAudio(activeTrack);
+    preferredVolume = Math.max(0, Math.min(1, Number(snapshot.volume) || 0));
+    muted = Boolean(snapshot.muted);
+    playbackRequested = Boolean(snapshot.playbackRequested || snapshot.playing) && !muted;
+    const resumeAt = Math.max(0, Number(snapshot.currentTime) || 0);
+    const applyResumeTime = () => {
+      try {
+        audio.currentTime = Number.isFinite(audio.duration) && audio.duration > 0 ? resumeAt % audio.duration : resumeAt;
+      } catch {
+        // A browser may defer seeking until metadata is ready.
+      }
+    };
+    if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) applyResumeTime();
+    else audio.addEventListener("loadedmetadata", applyResumeTime, { once: true });
+
+    if (!playbackRequested) {
+      audio.volume = 0;
+      emitState();
+      return { restored: true, playing: false, blocked: false };
+    }
+
+    audio.volume = 0;
+    try {
+      await audio.play();
+      applyResumeTime();
+      fadeTo(preferredVolume, 0.28, emitState);
+      emitState();
+      return { restored: true, playing: true, blocked: false };
+    } catch {
+      // Keep the visitor's sound-on intent. A visible control on the destination
+      // page can resume playback with the next click if autoplay is restricted.
+      playbackRequested = true;
+      muted = false;
+      emitState();
+      return { restored: true, playing: false, blocked: true };
+    }
+  };
+
   const stop = (fadeSeconds = 1.1) => {
     if (!audio) return;
     const player = audio;
@@ -299,6 +374,13 @@
 
   // Begin buffering while the visitor is reading the sound-choice dialog.
   void preload();
+  document.addEventListener("click", (event) => {
+    const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;
+    if (!(anchor instanceof HTMLAnchorElement)) return;
+    const destination = new URL(anchor.href, document.baseURI);
+    if (destination.origin === location.origin && destination.pathname !== location.pathname) persistNavigationState();
+  }, { capture: true });
+  window.addEventListener("pagehide", persistNavigationState);
 
   window.GaiaOpeningAudio = Object.freeze({
     preload,
@@ -312,5 +394,7 @@
     getState,
     getPlaybackState,
     seek,
+    persistNavigationState,
+    restoreNavigationState,
   });
 })();

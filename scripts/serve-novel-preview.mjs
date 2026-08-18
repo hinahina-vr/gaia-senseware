@@ -20,6 +20,10 @@ const resolveRequest = (requestUrl) => {
   const candidate = path.resolve(root, relative);
   if (!candidate.startsWith(`${root}${path.sep}`)) return null;
   if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+  if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+    const index = path.join(candidate, "index.html");
+    if (fs.existsSync(index) && fs.statSync(index).isFile()) return index;
+  }
   return null;
 };
 
@@ -35,10 +39,31 @@ const server = http.createServer((request, response) => {
     response.end("Not found");
     return;
   }
-  response.writeHead(200, {
+  const stats = fs.statSync(file);
+  const baseHeaders = {
     "Content-Type": mime.get(path.extname(file).toLowerCase()) || "application/octet-stream",
     "Cache-Control": "no-store",
-  });
+    "Accept-Ranges": "bytes",
+  };
+  const rangeMatch = String(request.headers.range || "").match(/^bytes=(\d*)-(\d*)$/u);
+  if (rangeMatch) {
+    const start = rangeMatch[1] ? Number(rangeMatch[1]) : 0;
+    const end = rangeMatch[2] ? Math.min(Number(rangeMatch[2]), stats.size - 1) : stats.size - 1;
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || start >= stats.size) {
+      response.writeHead(416, { ...baseHeaders, "Content-Range": `bytes */${stats.size}` });
+      response.end();
+      return;
+    }
+    response.writeHead(206, {
+      ...baseHeaders,
+      "Content-Length": end - start + 1,
+      "Content-Range": `bytes ${start}-${end}/${stats.size}`,
+    });
+    if (request.method === "HEAD") response.end();
+    else fs.createReadStream(file, { start, end }).pipe(response);
+    return;
+  }
+  response.writeHead(200, { ...baseHeaders, "Content-Length": stats.size });
   if (request.method === "HEAD") response.end();
   else fs.createReadStream(file).pipe(response);
 });

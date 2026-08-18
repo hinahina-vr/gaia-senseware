@@ -49,10 +49,22 @@ button, a { touch-action: manipulation; }
 .sensor-brand::before { position: absolute; top: 4px; left: 0; width: 6px; height: 6px; border: 1px solid var(--mint); content: ""; transform: rotate(45deg); box-shadow: 0 0 14px rgba(var(--mint-rgb),.55); }
 .sensor-brand span { display: block; color: var(--mint); font: 700 10px/1.2 var(--font-console); letter-spacing: .24em; }
 .sensor-brand strong { display: block; margin-top: 5px; font: 500 8px/1 Consolas, monospace; letter-spacing: .14em; opacity: .58; }
+.sensor-topbar-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 18px; }
 .sensor-topbar nav { display: flex; flex-wrap: wrap; gap: 5px 20px; justify-content: flex-end; }
 .sensor-topbar nav a { min-height: 44px; padding: 13px 2px; color: rgba(233,246,248,.66); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-decoration: none; }
 .sensor-topbar nav a:hover, .sensor-topbar nav a:focus-visible, .sensor-topbar nav a[aria-current] { color: var(--mint); outline: none; }
 .sensor-topbar nav a[aria-current] { box-shadow: inset 0 -1px var(--mint); }
+.sensor-audio-toggle { display: grid; flex: 0 0 58px; width: 58px; min-height: 44px; padding: 5px 7px; border: 1px solid rgba(var(--mint-rgb),.3); color: rgba(224,248,244,.74); background: rgba(3,18,26,.72); cursor: pointer; place-items: center; grid-template-columns: 18px auto; gap: 5px; }
+.sensor-audio-toggle span { font: 700 7px/1 var(--font-console); letter-spacing: .08em; }
+.sensor-audio-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.25; }
+.sensor-audio-icon path:first-child { fill: currentColor; stroke: none; }
+.sensor-audio-icon--muted { display: none; }
+.sensor-audio-toggle[data-muted="true"] .sensor-audio-icon--playing,
+.sensor-audio-toggle[data-playing="false"] .sensor-audio-icon--playing { display: none; }
+.sensor-audio-toggle[data-muted="true"] .sensor-audio-icon--muted,
+.sensor-audio-toggle[data-playing="false"] .sensor-audio-icon--muted { display: block; }
+.sensor-audio-toggle[data-playing="true"] { border-color: rgba(var(--mint-rgb),.62); color: var(--mint); box-shadow: 0 0 18px rgba(var(--mint-rgb),.08); }
+.sensor-audio-toggle[data-needs-action="true"] { border-color: rgba(142,216,255,.58); color: var(--blue); }
 
 .sensor-shell { position: relative; z-index: 2; width: min(1840px, calc(100% - 8vw)); min-height: calc(100vh - 76px); margin: 0 auto; padding: clamp(48px, 7vh, 82px) 0 80px; }
 .sensor-view { animation: sensor-enter .4s ease both; }
@@ -306,9 +318,11 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
   .sensor-topbar { display: grid; grid-template-columns: 1fr; gap: 3px; align-items: start; min-height: 106px; padding: 12px 15px 7px; }
   .sensor-brand { padding-top: 3px; }
   .sensor-brand strong { display: none; }
-  .sensor-topbar nav { width: 100%; max-width: 100%; flex-wrap: nowrap; gap: 0 18px; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+  .sensor-topbar-actions { width: 100%; gap: 8px; }
+  .sensor-topbar nav { min-width: 0; flex: 1 1 auto; width: 100%; max-width: 100%; flex-wrap: nowrap; gap: 0 18px; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
   .sensor-topbar nav::-webkit-scrollbar { display: none; }
   .sensor-topbar nav a { flex: 0 0 auto; min-height: 42px; padding-block: 13px 11px; font-size: 9px; white-space: nowrap; }
+  .sensor-audio-toggle { flex-basis: 52px; width: 52px; min-height: 44px; }
   .sensor-shell { width: min(100% - 28px, 600px); min-height: calc(100vh - 106px); padding-top: 32px; }
   .sensor-login { min-height: calc(100dvh - 138px); padding: 24px 0 24px 18px; }
   .sensor-login h1, .sensor-panel > h1, .sensor-guide > h1 { font-size: clamp(34px, 12vw, 50px); }
