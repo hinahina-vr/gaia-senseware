@@ -5261,7 +5261,7 @@ body.novel-reduced-motion .story-detour-dock * {
 
 .novel-slack-workspace {
   display: grid;
-  grid-template: 44px minmax(0, 1fr) / clamp(154px, 15vw, 214px) minmax(0, 1fr);
+  grid-template: 44px minmax(0, 1fr) / clamp(200px, 17.5vw, 248px) minmax(0, 1fr);
   width: min(1180px, 100%);
   height: 100%;
   margin: 0 auto;
@@ -5332,7 +5332,15 @@ body.novel-reduced-motion .story-detour-dock * {
 
 .novel-slack-workspace > aside strong { padding: 0 8px 10px; color: #fff; font-size: 14px; }
 .novel-slack-workspace > aside small { margin: 7px 8px 2px; color: #cdb7cb; font-size: 10px; }
-.novel-slack-workspace > aside span { padding: 5px 8px; border-radius: 4px; font-size: 12px; }
+.novel-slack-workspace > aside span {
+  min-width: 0;
+  padding: 5px 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .novel-slack-workspace > aside span.is-current { background: #1264a3; color: #fff; }
 
 .novel-slack-workspace > main {
@@ -6398,7 +6406,7 @@ body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
   .novel-layer.is-title { background-position: center, center, 64% center; }
   .novel-layer.is-title .novel-title-screen { left: 24px; width: min(600px, 60vw); }
   .novel-slack-surface { padding: 0 28px; }
-  .novel-slack-workspace { grid-template-columns: 154px minmax(0, 1fr); }
+  .novel-slack-workspace { grid-template-columns: minmax(190px, 24vw) minmax(0, 1fr); }
   .novel-reflection-grid button strong { font-size: 10px; line-height: 1.35; }
   .story-detour-dock { grid-template-columns: 1fr auto; }
   .story-detour-dock header { grid-column: 1; grid-row: 1; }
@@ -6603,6 +6611,14 @@ body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
     line-height: 12px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .novel-layer.is-slack .novel-slack-workspace > aside .novel-slack-school-channel {
+    height: auto;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .novel-layer.is-slack .novel-slack-workspace > main,
