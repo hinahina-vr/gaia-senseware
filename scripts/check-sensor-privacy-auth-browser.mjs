@@ -29,7 +29,7 @@ try {
     page.on("console", (message) => {
       if (message.type() !== "error") return;
       const text = message.text();
-      if (text === "Failed to load resource: the server responded with a status of 401 (Unauthorized)") report.expectedAuth401.push(`${label}: session probe`);
+      if (/Failed to load resource: the server responded with a status of 401\b/u.test(text)) report.expectedAuth401.push(`${label}: session probe`);
       else report.consoleErrors.push(`${label}: ${text}`);
     });
     page.on("pageerror", (error) => report.pageErrors.push(`${label}: ${error.message}`));
