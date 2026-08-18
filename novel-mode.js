@@ -1098,6 +1098,9 @@
     setSceneJumpAvailability(true);
     elements.saveButton.hidden = false;
     elements.loadButton.hidden = false;
+    elements.logButton.hidden = false;
+    elements.configButton.hidden = false;
+    elements.auto.hidden = false;
     elements.galleryButton.hidden = false;
     renderGalleryControls();
   };
@@ -1115,6 +1118,9 @@
     setSceneJumpAvailability(false);
     elements.saveButton.hidden = true;
     elements.loadButton.hidden = true;
+    elements.logButton.hidden = true;
+    elements.configButton.hidden = true;
+    elements.auto.hidden = true;
     elements.galleryButton.hidden = true;
     closeGallery({ restoreFocus: false });
     renderGalleryControls();
