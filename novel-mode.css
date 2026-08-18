@@ -4430,6 +4430,10 @@ body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {
   left: auto !important;
 }
 
+body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
+  right: max(212px, calc(env(safe-area-inset-right) + 212px)) !important;
+}
+
 /* The persistent audio control otherwise overlaps the LOG heading on narrow
    viewports. LOG is already a modal surface, so temporarily remove the dock
    from both the visual and pointer layers while it is open. */
@@ -4470,6 +4474,10 @@ body.novel-open .novel-topbar #novel-close-button span:last-child {
     top: max(12px, env(safe-area-inset-top)) !important;
     right: max(116px, calc(env(safe-area-inset-right) + 116px)) !important;
     left: auto !important;
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
+    right: max(184px, calc(env(safe-area-inset-right) + 184px)) !important;
   }
 
   body.novel-open .gaia-audio-dock.is-expanded {

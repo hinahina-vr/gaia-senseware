@@ -398,6 +398,7 @@
   let slackScrollGuardUntil = 0;
   let sectionSeparatorTimer = 0;
   let sectionSeparatorActive = false;
+  let sectionSkipPending = false;
   let temporalTransitionTimer = 0;
   let temporalTransitionActive = false;
   let previousFocus = null;
@@ -1102,6 +1103,8 @@
     elements.configButton.hidden = false;
     elements.auto.hidden = false;
     elements.galleryButton.hidden = false;
+    elements.close.hidden = false;
+    syncSectionSkipControl();
     renderGalleryControls();
   };
 
@@ -1122,6 +1125,8 @@
     elements.configButton.hidden = true;
     elements.auto.hidden = true;
     elements.galleryButton.hidden = true;
+    elements.close.hidden = false;
+    syncSectionSkipControl();
     closeGallery({ restoreFocus: false });
     renderGalleryControls();
     elements.resume.hidden = !getStoredProgress() && !getManualSaves().some(Boolean);
@@ -1130,6 +1135,26 @@
 
   const currentStep = () => stepMap.get(state.stepId) || null;
   const currentScene = () => sceneMap.get(currentStep()?.sceneId) || null;
+  const syncSectionSkipControl = () => {
+    const label = elements.close.querySelector("span:first-child");
+    const arrow = elements.close.querySelector("span:last-child");
+    if (!hasStarted || layer.classList.contains("is-title")) {
+      if (label) label.textContent = "戻る";
+      if (arrow) arrow.textContent = "←";
+      elements.close.setAttribute("aria-label", "ストーリーメニューを閉じる");
+      elements.close.title = "ストーリーメニューを閉じる";
+      return;
+    }
+    const scene = currentScene();
+    const nextScene = sceneMap.get(scene?.nextSceneId) || null;
+    const description = nextScene
+      ? `現在のセクションをスキップして「${nextScene.title}」へ進む`
+      : "現在のセクションをスキップしてエンディングへ進む";
+    if (label) label.textContent = "セクションスキップ";
+    if (arrow) arrow.textContent = "→";
+    elements.close.setAttribute("aria-label", description);
+    elements.close.title = description;
+  };
   const conditionMatches = (step) => !step.condition || state[step.condition.key] === step.condition.value;
   const chatDeviceForStep = (step) => {
     const cueDevice = backHalfCues.forStep(step)?.device || "";
@@ -3302,6 +3327,7 @@
   const renderStaffRoll = (step) => {
     prepareStepFrame(step);
     clearTimers();
+    elements.close.hidden = true;
     suppressCharacterPresentation();
     elements.dialogue.hidden = true;
     elements.sourceButton.hidden = true;
@@ -3385,6 +3411,7 @@
   const renderEnd = (step) => {
     prepareStepFrame(step);
     clearTimers();
+    elements.close.hidden = true;
     setCharacterPresentation("system");
     state.clear = true;
     state.archivesUnlocked = true;
@@ -4267,6 +4294,8 @@
     void window.GaiaOpeningAudio?.switchTrack?.("opening");
     isOpen = false;
     setInteractionLifecycle("idle");
+    sectionSkipPending = false;
+    elements.close.disabled = false;
     clearScriptDebug();
     setSceneJumpAvailability(false);
     layer.classList.remove("is-open", "is-mode-detour");
@@ -4279,6 +4308,41 @@
     previousFocus?.focus?.({ preventScroll: true });
   }
   const closeNovel = (event = null) => isOpen && runSceneTransition(closeNovelNow, event);
+
+  const skipCurrentSection = (event = null) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    if (!isOpen || !hasStarted || sectionSkipPending || runtimeRevealPending || backgroundTransitionPending || pendingInteraction) return;
+    const scene = currentScene();
+    if (!scene) return;
+    const nextScene = sceneMap.get(scene.nextSceneId) || null;
+    const target = nextScene
+      ? resolveVisibleStep(firstStepForScene(nextScene.id))
+      : resolveVisibleStep(scene.steps.at(-1)?.id);
+    if (!target) return;
+
+    sectionSkipPending = true;
+    elements.close.disabled = true;
+    resetFastForward();
+    disableAutoForFastForward();
+    const swapSection = () => {
+      if (!state.reachedSceneIds.includes(scene.id)) state.reachedSceneIds.push(scene.id);
+      state.stepId = target.id;
+      saveProgress();
+      if (nextScene) renderSectionSeparator(target);
+      else renderCurrentStep();
+    };
+    Promise.resolve(runSceneTransition(swapSection, event)).finally(() => {
+      sectionSkipPending = false;
+      elements.close.disabled = false;
+      syncSectionSkipControl();
+    });
+  };
+
+  const handleStoryExitControl = (event) => {
+    if (hasStarted && !layer.classList.contains("is-title")) skipCurrentSection(event);
+    else closeNovel(event);
+  };
 
   document.querySelectorAll("[data-novel-open]").forEach((button) => {
     button.addEventListener("click", (event) => runSceneTransition(() => openNovel(event), event));
@@ -4340,7 +4404,7 @@
   elements.start.addEventListener("click", startNewSession);
   elements.resume.addEventListener("click", () => openManualArchive("load"));
   elements.titleGallery?.addEventListener("click", openGallery);
-  elements.close.addEventListener("click", (event) => closeNovel(event));
+  elements.close.addEventListener("click", handleStoryExitControl);
   elements.restart.addEventListener("click", restartStory);
   elements.logButton.addEventListener("click", toggleLog);
   elements.logClose.addEventListener("click", closeLog);
