@@ -1,0 +1,180 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
+const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4173"] = process.argv.slice(2);
+if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
+const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
+  ? path.join(moduleRoot, "index.mjs")
+  : path.join(moduleRoot, "playwright", "index.mjs");
+const { chromium } = await import(pathToFileURL(playwrightEntry).href);
+const outputDir = path.resolve(outputArgument || "artifacts/ending-data-skip-browser");
+fs.mkdirSync(outputDir, { recursive: true });
+
+const STORAGE_KEY = "gaiaSensewareNovel:progress";
+const CONFIG_KEY = "gaiaSensewareNovel:config:v3";
+const viewports = [
+  { name: "pc-1440", width: 1440, height: 900 },
+  { name: "mobile-390", width: 390, height: 844 },
+];
+const report = {
+  status: "running",
+  baseUrl,
+  scans: [],
+  consoleErrors: [],
+  pageErrors: [],
+  responses404: [],
+};
+
+const attachDiagnostics = (page, label) => {
+  page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`); });
+  page.on("pageerror", (error) => report.pageErrors.push(`${label}: ${error.message}`));
+  page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`); });
+};
+
+const bootAtEnding = async (page, label) => {
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
+  await page.evaluate(({ storageKey, configKey, sessionId }) => {
+    const state = {
+      storyVersion: globalThis.GAIA_NOVEL_STORY.storyVersion,
+      stepId: "welcome_chat_095",
+      reachedSceneIds: ["welcome_chat"],
+      viewed: {},
+      metCharacters: { mizuha: true, amane: true, sakuya: true },
+      evesRoute: [],
+      observationOrder: "LOCAL_FIRST",
+      editorialChoice: null,
+      reflectionIds: [],
+      resultTone: null,
+      demoInterest: "太古の海",
+      audio: { muted: true, volume: 0 },
+      readStepIds: [],
+      clear: false,
+      archivesUnlocked: false,
+      sessionId,
+    };
+    localStorage.setItem(storageKey, JSON.stringify(state));
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{
+      progress: state,
+      savedAt: Date.now(),
+      meta: { title: "Ending data skip QA", excerpt: state.stepId },
+    }]));
+    localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 400, reducedMotion: false }));
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, sessionId: `ending-data-skip-${label}` });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+  await page.evaluate(() => globalThis.GaiaNovel.open());
+  await page.locator("#novel-resume-button").click();
+  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
+  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  await page.locator(".novel-staff-roll-data-skip").waitFor({ state: "visible", timeout: 15_000 });
+};
+
+const scanEnding = (page) => page.evaluate(() => {
+  const button = document.querySelector(".novel-staff-roll-data-skip");
+  const audioDock = document.querySelector(".gaia-audio-dock");
+  const buttonRect = button?.getBoundingClientRect();
+  const audioRect = audioDock?.getBoundingClientRect();
+  const overlapsAudio = Boolean(buttonRect && audioRect
+    && buttonRect.left < audioRect.right
+    && buttonRect.right > audioRect.left
+    && buttonRect.top < audioRect.bottom
+    && buttonRect.bottom > audioRect.top);
+  return {
+    stepId: document.querySelector("#novel-layer")?.dataset.stepId,
+    text: button?.textContent?.trim() || "",
+    title: button?.title || "",
+    ariaLabel: button?.getAttribute("aria-label") || "",
+    top: buttonRect?.top ?? -1,
+    rightGap: buttonRect ? innerWidth - buttonRect.right : -1,
+    width: buttonRect?.width || 0,
+    height: buttonRect?.height || 0,
+    overlapsAudio,
+    overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
+    overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
+  };
+});
+
+const scanDestination = (page) => page.evaluate((storageKey) => {
+  const intro = document.querySelector("#intro-layer");
+  const stage = document.querySelector("#intro-path-stage");
+  const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+  return {
+    introVisible: Boolean(intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false"),
+    stageVisible: Boolean(stage && !stage.hidden),
+    heading: stage?.querySelector(".intro-exploration-heading h3")?.textContent?.trim() || "",
+    pathCount: stage?.querySelectorAll(".intro-path-card").length || 0,
+    novelHidden: document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "true",
+    hash: location.hash,
+    clear: globalThis.GaiaNovel?.getState?.().clear,
+    archivesUnlocked: globalThis.GaiaNovel?.getState?.().archivesUnlocked,
+    savedClear: saved.clear,
+    savedArchivesUnlocked: saved.archivesUnlocked,
+    overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
+    overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
+  };
+}, STORAGE_KEY);
+
+const browser = await chromium.launch({ headless: true, executablePath });
+try {
+  for (const viewport of viewports) {
+    const context = await browser.newContext({ viewport });
+    const page = await context.newPage();
+    attachDiagnostics(page, viewport.name);
+    await bootAtEnding(page, viewport.name);
+
+    const ending = await scanEnding(page);
+    assert.equal(ending.stepId, "welcome_chat_095");
+    assert.equal(ending.text, "スキップ");
+    assert.equal(ending.title, "データを見てみる");
+    assert.match(ending.ariaLabel, /データを見てみる/u);
+    assert(ending.top >= 0 && ending.top <= 40, `${viewport.name}: skip is not at the upper edge (${ending.top})`);
+    assert(ending.rightGap >= 0 && ending.rightGap <= 40, `${viewport.name}: skip is not at the right edge (${ending.rightGap})`);
+    assert(ending.width >= 110, `${viewport.name}: skip width is too small (${ending.width})`);
+    assert(ending.height >= 44, `${viewport.name}: skip hit area is under 44px (${ending.height})`);
+    assert.equal(ending.overlapsAudio, false, `${viewport.name}: skip overlaps the audio control`);
+    assert.equal(ending.overflowX, 0);
+    assert.equal(ending.overflowY, 0);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-ending-skip.png`), animations: "disabled" });
+
+    await page.locator(".novel-staff-roll-data-skip").click();
+    await page.waitForFunction(() => {
+      const intro = document.querySelector("#intro-layer");
+      return Boolean(intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false");
+    });
+    await page.waitForFunction(() => globalThis.GaiaNovel?.getState?.().clear === true);
+    const destination = await scanDestination(page);
+    assert.equal(destination.introVisible, true, `${viewport.name}: free exploration did not open`);
+    assert.equal(destination.stageVisible, true);
+    assert.equal(destination.heading, "観測モードを選ぶ");
+    assert(destination.pathCount >= 5, `${viewport.name}: observation mode choices are missing`);
+    assert.equal(destination.novelHidden, true);
+    assert.equal(destination.hash, "");
+    assert.equal(destination.clear, true);
+    assert.equal(destination.archivesUnlocked, true);
+    assert.equal(destination.savedClear, true);
+    assert.equal(destination.savedArchivesUnlocked, true);
+    assert.equal(destination.overflowX, 0);
+    assert.equal(destination.overflowY, 0);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-data-page.png`), animations: "disabled" });
+    report.scans.push({ viewport: viewport.name, ending, destination, passed: true });
+    await context.close();
+  }
+
+  assert.equal(report.consoleErrors.length, 0, `console errors: ${report.consoleErrors.join("\n")}`);
+  assert.equal(report.pageErrors.length, 0, `page errors: ${report.pageErrors.join("\n")}`);
+  assert.equal(report.responses404.length, 0, `404 responses: ${report.responses404.join("\n")}`);
+  report.status = "passed";
+} catch (error) {
+  report.status = "failed";
+  report.error = error.stack || String(error);
+  throw error;
+} finally {
+  fs.writeFileSync(path.join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
+  await browser.close();
+}
+
+console.log(`Ending data skip browser check passed: ${report.scans.length} viewports`);

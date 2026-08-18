@@ -8904,6 +8904,61 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   animation: novel-staff-roll-whiteout 3.2s cubic-bezier(0.42, 0, 0.23, 1) both;
 }
 
+.novel-staff-roll > .novel-staff-roll-data-skip {
+  position: absolute;
+  z-index: 6;
+  top: max(18px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  min-height: 46px;
+  width: auto;
+  gap: 18px;
+  margin: 0;
+  padding: 0 17px 0 20px;
+  border: 1px solid rgba(37, 102, 111, 0.34);
+  border-radius: 999px;
+  background: rgba(244, 251, 249, 0.76);
+  box-shadow: 0 9px 26px rgba(35, 82, 89, 0.12);
+  color: rgba(19, 67, 76, 0.9);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.novel-staff-roll > .novel-staff-roll-data-skip::after {
+  color: rgba(27, 91, 100, 0.72);
+  content: "→";
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.novel-staff-roll > .novel-staff-roll-data-skip:hover,
+.novel-staff-roll > .novel-staff-roll-data-skip:focus-visible {
+  border-color: rgba(25, 91, 102, 0.72);
+  background: rgba(255, 255, 252, 0.94);
+  box-shadow: 0 12px 34px rgba(35, 82, 89, 0.18);
+  outline: 2px solid rgba(35, 111, 122, 0.2);
+  outline-offset: 3px;
+  transform: translateY(-1px);
+}
+
+.novel-staff-roll > .novel-staff-roll-data-skip:disabled {
+  cursor: default;
+  opacity: 0.58;
+  transform: none;
+}
+
 .novel-staff-roll-stage {
   position: absolute;
   z-index: 1;
@@ -9164,6 +9219,16 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
     width: min(520px, calc(100% - 28px));
   }
 
+  .novel-staff-roll > .novel-staff-roll-data-skip {
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    min-width: 112px;
+    min-height: 44px;
+    gap: 13px;
+    padding-inline: 16px 14px;
+    font-size: 11px;
+  }
+
   .novel-staff-roll-title {
     min-height: 92dvh;
     gap: 14px;
@@ -9265,6 +9330,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .novel-staff-roll > .novel-staff-roll-data-skip,
   .novel-staff-roll-whiteout,
   .novel-staff-roll-stage,
   .novel-staff-roll-track,

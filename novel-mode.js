@@ -3436,6 +3436,22 @@
     whiteout.className = "novel-staff-roll-whiteout";
     whiteout.setAttribute("aria-hidden", "true");
 
+    const dataSkip = document.createElement("button");
+    dataSkip.type = "button";
+    dataSkip.className = "novel-staff-roll-data-skip";
+    dataSkip.textContent = "スキップ";
+    dataSkip.title = "データを見てみる";
+    dataSkip.setAttribute("aria-label", "エンディングをスキップして「データを見てみる」へ進む");
+    dataSkip.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      dataSkip.disabled = true;
+      state.clear = true;
+      state.archivesUnlocked = true;
+      saveProgress();
+      closeNovelNow();
+    });
+
     const stage = document.createElement("div");
     stage.className = "novel-staff-roll-stage";
     const viewport = document.createElement("div");
@@ -3505,7 +3521,7 @@
     track.append(heading, credits, closing);
     viewport.append(track);
     stage.append(viewport, skipHint, finale);
-    shell.append(whiteout, stage);
+    shell.append(whiteout, stage, dataSkip);
     elements.resultSurface.append(shell);
 
     let completed = false;
