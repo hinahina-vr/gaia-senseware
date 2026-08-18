@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "1d7c9d76afc20d167fe0000596672b2a1cb2808d481d67b1855e347c9b71f2ff",
+  "sourceSha256": "150ed7b00481fab2bf1fbe801356f2b83eee6e342c86040a32fa97b4a0dd0ea6",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -2504,7 +2504,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:07",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "ESP32に詳しい。参加する人の観測を、GAIA SENSEWAREに加える案をくれたよ。"
+          "text": "ESP32に詳しい。参加者が測った温度や湿度をGAIA SENSEWAREに表示する案を出してくれたよ。"
         },
         {
           "id": "welcome_chat_008",

@@ -13,6 +13,7 @@ const outputDir = path.resolve(outputArgument || "artifacts/chat-current-marker-
 fs.mkdirSync(outputDir, { recursive: true });
 
 const stepId = "welcome_chat_006";
+const expectedWelcomeCopy = "ESP32に詳しい。参加者が測った温度や湿度をGAIA SENSEWAREに表示する案を出してくれたよ。";
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
@@ -96,7 +97,24 @@ try {
     assert.equal(scan.avatarVisible, true, `${viewport.name}: mizuha avatar disappeared`);
     assert.equal(scan.postVisible, true, `${viewport.name}: current message disappeared`);
     assert.equal(scan.overflowX, 0, `${viewport.name}: horizontal overflow`);
-    report.scans.push({ viewport: viewport.name, ...scan, passed: true });
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "welcome_chat_007");
+    const introduction = page.locator('.novel-slack-post.is-new[data-speaker="amane"]');
+    await introduction.waitFor({ state: "visible" });
+    const introductionScan = await introduction.evaluate((post) => {
+      const rect = post.getBoundingClientRect();
+      return {
+        stepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
+        text: post.querySelector(".novel-slack-message")?.textContent || "",
+        postVisible: rect.width > 0 && rect.height > 0,
+        overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
+      };
+    });
+    assert.equal(introductionScan.stepId, "welcome_chat_007", `${viewport.name}: welcome_chat_007 did not render`);
+    assert.equal(introductionScan.text, expectedWelcomeCopy, `${viewport.name}: welcome_chat_007 copy differs`);
+    assert.equal(introductionScan.postVisible, true, `${viewport.name}: welcome_chat_007 post is hidden`);
+    assert.equal(introductionScan.overflowX, 0, `${viewport.name}: welcome_chat_007 horizontal overflow`);
+    report.scans.push({ viewport: viewport.name, marker: scan, introduction: introductionScan, passed: true });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`), animations: "disabled" });
     await context.close();
   }
