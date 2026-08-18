@@ -48,7 +48,8 @@
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-04" defer></script>
-  <link rel="stylesheet" href="./map-ui-grid-polish.css?v=4">
+    <link rel="stylesheet" href="./map-ui-grid-polish.css?v=4" />
+    <link rel="stylesheet" href="./mode-exit.css?v=gaia-mode-exit-1" />
 </head>
   <body>
     <main class="experience">
@@ -297,7 +298,7 @@
             <p><span>GAIA SENSEWARE</span> / SOUND ARCHIVE</p>
             <h2 id="sound-mode-title">サウンド鑑賞モード</h2>
           </div>
-          <button class="sound-close" id="sound-close" type="button" aria-label="サウンド鑑賞モードを閉じる">×</button>
+          <button class="sound-close mode-exit-control" id="sound-close" type="button" aria-label="サウンド鑑賞モードを閉じて戻る">戻る</button>
         </header>
 
         <div class="sound-layout">
@@ -651,7 +652,7 @@
             <div class="intro-footer">
               <div class="intro-choices intro-choices--back-only">
                 <button
-                  class="intro-enter intro-enter-secondary"
+                  class="intro-enter intro-enter-secondary mode-exit-control"
                   id="intro-path-back"
                   type="button"
                 >
@@ -673,7 +674,7 @@
               <p>BEHIND THE SENSES / 01</p>
               <h2 id="architecture-title">観測データが、<br />この画面に届くまで。</h2>
             </div>
-            <button id="intro-architecture-back" type="button">
+            <button class="mode-exit-control" id="intro-architecture-back" type="button">
               戻る
             </button>
           </header>
@@ -1283,7 +1284,7 @@
         </article>
 
         <button
-          class="japan-close"
+          class="japan-close mode-exit-control"
           id="japan-close"
           type="button"
           aria-label="トップの感覚器選択画面へ戻る"
@@ -1426,7 +1427,7 @@
           <p id="gx-subtitle">GX = 人間と地球が、ともに変わるための転換</p>
         </header>
 
-        <button class="gx-close" id="gx-close" type="button" hidden>戻る</button>
+        <button class="gx-close mode-exit-control" id="gx-close" type="button" hidden>戻る</button>
 
         <div class="gx-time" data-counter="4,600,000,000" aria-label="現在まで、あと46億年">
           <span class="gx-time-kicker">現在からさかのぼる</span>
@@ -1561,11 +1562,12 @@
             ><svg class="novel-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5v5h5M19 19v-5h-5M6 10a7 7 0 0 1 12-2M18 14A7 7 0 0 1 6 16"></path></svg><span class="novel-nav-label">JUMP</span></button>
             <button id="novel-restart-button" type="button" aria-hidden="true" tabindex="-1" hidden>RESTART</button>
             <button
+              class="mode-exit-control"
               id="novel-close-button"
               type="button"
               aria-label="ストーリーメニューを閉じる"
               title="ストーリーメニューを閉じる"
-            ><span>戻る</span><span aria-hidden="true">←</span></button>
+            >戻る</button>
           </nav>
           <button
             class="novel-gallery-button"
@@ -2055,7 +2057,7 @@
           <p id="space-description">指先の動きが太陽から届く粒子に触れ、地球の磁気圏へ波として伝わります。</p>
         </header>
 
-        <button class="space-close" id="space-close" type="button" aria-label="宇宙モードを閉じてトップへ戻る">
+        <button class="space-close mode-exit-control" id="space-close" type="button" aria-label="宇宙モードを閉じてトップへ戻る">
           戻る
         </button>
 
@@ -2127,7 +2129,7 @@
 
       <div class="status">
         <button
-          class="status-home-button"
+          class="status-home-button mode-exit-control"
           id="intro-button"
           type="button"
           aria-haspopup="dialog"

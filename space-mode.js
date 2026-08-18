@@ -1132,7 +1132,7 @@
     layer.dataset.returnTo = returnToNovel ? "novel" : "intro";
     if (storyMode) layer.dataset.storyMode = storyMode;
     else delete layer.dataset.storyMode;
-    ui.close.textContent = returnToNovel ? "ストーリーへ戻る" : "×";
+    ui.close.textContent = returnToNovel ? "ストーリーへ戻る" : "戻る";
     ui.close.setAttribute("aria-label", returnToNovel ? "ストーリーへ戻る" : "宇宙モードを閉じてトップへ戻る");
     ui.close.disabled = storyMode === "v6";
     state.open = true;

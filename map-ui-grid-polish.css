@@ -143,7 +143,7 @@ body.map-grid-desktop .map-grid-scale:hover {
 /* Keep persistent audio beside the exit instead of covering it. */
 body:has(.experience.japan-open) .gaia-audio-dock {
   top: max(18px, env(safe-area-inset-top)) !important;
-  right: max(96px, calc(env(safe-area-inset-right) + 96px)) !important;
+  right: max(114px, calc(env(safe-area-inset-right) + 114px)) !important;
   left: auto !important;
 }
 

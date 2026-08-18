@@ -1,0 +1,186 @@
+/* A single, compact exit language across every GAIA mode. */
+.mode-exit-control.mode-exit-control,
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control {
+  --mode-exit-rgb: 156, 232, 215;
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 30px auto;
+  flex: 0 0 auto;
+  gap: 9px;
+  align-items: center;
+  justify-content: start;
+  width: auto;
+  min-width: 0;
+  max-width: calc(100vw - 24px);
+  height: 46px;
+  min-height: 46px;
+  padding: 0 15px 0 8px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  color: rgba(242, 252, 250, 0.82);
+  text-align: left;
+  background:
+    linear-gradient(112deg, rgba(var(--mode-exit-rgb), 0.12), transparent 54%),
+    rgba(3, 13, 20, 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--mode-exit-rgb), 0.3),
+    inset 0 1px rgba(255, 255, 255, 0.06),
+    0 10px 28px rgba(0, 5, 12, 0.2);
+  -webkit-backdrop-filter: blur(13px) saturate(1.14);
+  backdrop-filter: blur(13px) saturate(1.14);
+  cursor: pointer;
+  font: 650 11px/1 var(--font-ja, "Yu Gothic UI", sans-serif);
+  letter-spacing: 0.11em;
+  white-space: nowrap;
+  isolation: isolate;
+  transition:
+    color 220ms ease,
+    background-color 220ms ease,
+    box-shadow 260ms ease,
+    transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.mode-exit-control.mode-exit-control::before,
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control::before,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control::before {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  border: 1px solid rgba(var(--mode-exit-rgb), 0.28);
+  color: rgb(var(--mode-exit-rgb));
+  background: rgba(var(--mode-exit-rgb), 0.07);
+  content: "←";
+  font: 500 15px/1 ui-monospace, Consolas, monospace;
+  letter-spacing: 0;
+  place-items: center;
+  transition: color 220ms ease, background-color 220ms ease, transform 240ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.mode-exit-control.mode-exit-control::after,
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control::after,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control::after {
+  position: absolute;
+  right: 9px;
+  bottom: 0;
+  width: 30%;
+  height: 1px;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(var(--mode-exit-rgb), 0.92));
+  pointer-events: none;
+  transition: width 260ms ease;
+}
+
+.mode-exit-control.mode-exit-control:hover,
+.mode-exit-control.mode-exit-control:focus-visible,
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control:hover,
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control:focus-visible,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control:hover,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control:focus-visible {
+  color: #fff;
+  background:
+    linear-gradient(112deg, rgba(var(--mode-exit-rgb), 0.2), transparent 62%),
+    rgba(5, 21, 30, 0.88);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--mode-exit-rgb), 0.68),
+    inset 0 1px rgba(255, 255, 255, 0.1),
+    0 14px 34px rgba(0, 5, 12, 0.3),
+    0 0 24px rgba(var(--mode-exit-rgb), 0.08);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.mode-exit-control.mode-exit-control:hover::before,
+.mode-exit-control.mode-exit-control:focus-visible::before,
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control:hover::before,
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control:focus-visible::before,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control:hover::before,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control:focus-visible::before {
+  color: #fff;
+  background: rgba(var(--mode-exit-rgb), 0.16);
+  transform: translateX(-2px);
+}
+
+.mode-exit-control.mode-exit-control:hover::after,
+.mode-exit-control.mode-exit-control:focus-visible::after,
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control:hover::after,
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control:focus-visible::after,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control:hover::after,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control:focus-visible::after {
+  width: 68%;
+}
+
+.mode-exit-control.mode-exit-control:focus-visible {
+  outline: 2px solid rgba(var(--mode-exit-rgb), 0.72);
+  outline-offset: 3px;
+}
+
+.mode-exit-control.mode-exit-control:active {
+  transform: translateY(0) scale(0.98);
+}
+
+#intro-path-back,
+#intro-architecture-back,
+#sound-close { --mode-exit-rgb: 140, 233, 207; }
+#status-home-button { --mode-exit-rgb: var(--accent-rgb, 142, 216, 255); }
+#japan-close { --mode-exit-rgb: var(--map-accent-rgb, 148, 234, 209); }
+#gx-close { --mode-exit-rgb: 162, 241, 220; }
+#space-close { --mode-exit-rgb: var(--space-rgb, 151, 190, 255); }
+#novel-close-button { --mode-exit-rgb: var(--novel-cyan, 135, 226, 244); }
+
+#japan-close,
+#gx-close,
+#space-close {
+  position: absolute;
+}
+
+#novel-close-button {
+  position: fixed;
+}
+
+.gx-layer[data-return-to="novel"] .gx-close.mode-exit-control {
+  --mode-exit-rgb: 162, 241, 220;
+  position: absolute;
+}
+
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control {
+  --mode-exit-rgb: var(--novel-cyan, 135, 226, 244);
+  position: fixed;
+}
+
+body.sound-mode-open .status {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .mode-exit-control.mode-exit-control,
+  .gx-layer[data-return-to="novel"] .gx-close.mode-exit-control,
+  body.novel-open .novel-topbar #novel-close-button.mode-exit-control {
+    grid-template-columns: 28px auto;
+    gap: 8px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 12px 0 7px;
+    font-size: 10px;
+  }
+
+  .mode-exit-control.mode-exit-control::before,
+  .gx-layer[data-return-to="novel"] .gx-close.mode-exit-control::before,
+  body.novel-open .novel-topbar #novel-close-button.mode-exit-control::before {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-exit-control.mode-exit-control,
+  .mode-exit-control.mode-exit-control::before,
+  .mode-exit-control.mode-exit-control::after {
+    transition-duration: 0.01ms;
+  }
+}
