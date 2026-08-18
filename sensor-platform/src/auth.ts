@@ -21,6 +21,7 @@ type SessionRow = {
   session_id: string;
   user_id: string;
   display_name: string;
+  account_kind: AccountKind;
   csrf_hash: string;
   expires_at: string;
 };
@@ -33,12 +34,8 @@ type OAuthFlowRow = {
   return_path: string;
 };
 
-type GoogleIdentity = {
-  sub: string;
-  name: string;
-  email: string | null;
-  emailVerified: boolean;
-};
+type AccountKind = "google" | "trial";
+type GoogleIdentity = { sub: string };
 
 type GoogleTokenResponse = { id_token?: unknown };
 type JsonWebKeySet = { keys?: unknown };
@@ -47,6 +44,7 @@ type GoogleJwk = JsonWebKey & { kid?: string; alg?: string; use?: string };
 export type AuthenticatedUser = {
   id: string;
   displayName: string;
+  accountKind: AccountKind;
   sessionId: string;
   csrfHash: string;
   expiresAt: string;
@@ -82,7 +80,7 @@ export const startGoogleLogin = async (request: Request, env: Env): Promise<Resp
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri(env),
     response_type: "code",
-    scope: "openid email profile",
+    scope: "openid",
     state,
     nonce,
     code_challenge: await pkceChallenge(verifier),
@@ -155,10 +153,10 @@ export const finishGoogleLogin = async (request: Request, env: Env): Promise<Res
 
 export const getAuthenticatedUser = async (request: Request, env: Env): Promise<AuthenticatedUser> => {
   const token = parseCookies(request).get(SESSION_COOKIE);
-  if (!token || token.length > 256) throw new ApiError(401, "AUTHENTICATION_REQUIRED", "Google login is required.");
+  if (!token || token.length > 256) throw new ApiError(401, "AUTHENTICATION_REQUIRED", "Login is required.");
   const now = new Date().toISOString();
   const row = await env.DB.prepare(
-    `SELECT s.id AS session_id, s.user_id, u.display_name, s.csrf_hash, s.expires_at
+    `SELECT s.id AS session_id, s.user_id, u.display_name, u.account_kind, s.csrf_hash, s.expires_at
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ?1 AND s.revoked_at IS NULL AND s.expires_at > ?2`,
@@ -167,6 +165,7 @@ export const getAuthenticatedUser = async (request: Request, env: Env): Promise<
   return {
     id: row.user_id,
     displayName: row.display_name,
+    accountKind: row.account_kind,
     sessionId: row.session_id,
     csrfHash: row.csrf_hash,
     expiresAt: row.expires_at,
@@ -196,24 +195,62 @@ export const sessionResponse = async (request: Request, env: Env): Promise<Respo
   if (rotated.meta.changes !== 1) throw new ApiError(401, "AUTHENTICATION_REQUIRED", "Session is no longer active.");
   const remainingSeconds = Math.max(1, Math.floor((Date.parse(user.expiresAt) - now.getTime()) / 1000));
   const headers = new Headers({ "Set-Cookie": sessionCookie(rotatedToken, remainingSeconds) });
-  return json({ user: { id: user.id, displayName: user.displayName }, expiresAt: user.expiresAt }, 200, headers);
+  return json({ user: { id: user.id, displayName: user.displayName, accountKind: user.accountKind }, expiresAt: user.expiresAt }, 200, headers);
+};
+
+export const startTrialSession = async (request: Request, env: Env): Promise<Response> => {
+  if (request.headers.get("Origin") !== env.WEB_ORIGIN) {
+    throw new ApiError(403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed.");
+  }
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    `DELETE FROM users
+     WHERE account_kind = 'trial'
+       AND NOT EXISTS (
+         SELECT 1 FROM sessions
+         WHERE sessions.user_id = users.id
+           AND sessions.revoked_at IS NULL
+           AND sessions.expires_at > ?1
+       )`,
+  ).bind(now).run();
+
+  const userId = crypto.randomUUID();
+  const publicId = createPublicId();
+  const displayName = anonymousDisplayName("おためし参加者", publicId);
+  await env.DB.prepare(
+    `INSERT INTO users (id, public_id, display_name, account_kind, created_at, updated_at)
+     VALUES (?1, ?2, ?3, 'trial', ?4, ?4)`,
+  ).bind(userId, publicId, displayName, now).run();
+  const session = await createSession(env, userId, now);
+  const headers = new Headers();
+  headers.append("Set-Cookie", sessionCookie(session.token, session.ttl));
+  headers.append("Set-Cookie", csrfCookie(session.csrfToken, session.ttl));
+  return json({
+    user: { id: userId, displayName, accountKind: "trial" },
+    expiresAt: session.expiresAt,
+  }, 201, headers);
 };
 
 export const logout = async (request: Request, env: Env): Promise<Response> => {
   const user = await getAuthenticatedUser(request, env);
   await requireCsrf(request, user);
-  await env.DB.prepare("UPDATE sessions SET revoked_at = ?1 WHERE id = ?2 AND user_id = ?3")
-    .bind(new Date().toISOString(), user.sessionId, user.id).run();
+  if (user.accountKind === "trial") {
+    await env.DB.prepare("DELETE FROM users WHERE id = ?1 AND account_kind = 'trial'").bind(user.id).run();
+  } else {
+    await env.DB.prepare("UPDATE sessions SET revoked_at = ?1 WHERE id = ?2 AND user_id = ?3")
+      .bind(new Date().toISOString(), user.sessionId, user.id).run();
+  }
   const headers = new Headers();
   headers.append("Set-Cookie", clearCookie(SESSION_COOKIE, true));
   headers.append("Set-Cookie", clearCookie(CSRF_COOKIE, false));
-  return json({ ok: true }, 200, headers);
+  return json({ ok: true, accountDeleted: user.accountKind === "trial" }, 200, headers);
 };
 
-const createSession = async (env: Env, userId: string, now: string): Promise<{ token: string; csrfToken: string; ttl: number }> => {
+const createSession = async (env: Env, userId: string, now: string): Promise<{ token: string; csrfToken: string; ttl: number; expiresAt: string }> => {
   const ttl = boundedInteger(env.SESSION_TTL_SECONDS, 900, 86_400, 28_800);
   const token = randomToken("gs_");
   const csrfToken = randomToken("csrf_");
+  const expiresAt = new Date(Date.parse(now) + ttl * 1000).toISOString();
   await env.DB.prepare(
     `INSERT INTO sessions (id, token_hash, user_id, csrf_hash, expires_at, created_at, last_seen_at)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)`,
@@ -222,10 +259,10 @@ const createSession = async (env: Env, userId: string, now: string): Promise<{ t
     await sha256Hex(token),
     userId,
     await sha256Hex(csrfToken),
-    new Date(Date.parse(now) + ttl * 1000).toISOString(),
+    expiresAt,
     now,
   ).run();
-  return { token, csrfToken, ttl };
+  return { token, csrfToken, ttl, expiresAt };
 };
 
 const upsertGoogleUser = async (db: D1Database, identity: GoogleIdentity, now: string): Promise<string> => {
@@ -237,22 +274,22 @@ const upsertGoogleUser = async (db: D1Database, identity: GoogleIdentity, now: s
       db.prepare("UPDATE users SET updated_at = ?1 WHERE id = ?2")
         .bind(now, existing.user_id),
       db.prepare(
-        "UPDATE user_identities SET email = ?1, email_verified = ?2, updated_at = ?3 WHERE provider = 'google' AND provider_subject = ?4",
-      ).bind(identity.email, identity.emailVerified ? 1 : 0, now, identity.sub),
+        "UPDATE user_identities SET email = NULL, email_verified = 0, updated_at = ?1 WHERE provider = 'google' AND provider_subject = ?2",
+      ).bind(now, identity.sub),
     ]);
     return existing.user_id;
   }
   const userId = crypto.randomUUID();
-  const publicId = `usr_${randomToken().replace(/[^A-Za-z0-9]/gu, "").slice(0, 24).toLowerCase()}`;
+  const publicId = createPublicId();
   try {
     await db.batch([
-      db.prepare("INSERT INTO users (id, public_id, display_name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)")
-        .bind(userId, publicId, identity.name, now),
+      db.prepare("INSERT INTO users (id, public_id, display_name, account_kind, created_at, updated_at) VALUES (?1, ?2, ?3, 'google', ?4, ?4)")
+        .bind(userId, publicId, anonymousDisplayName("GAIA参加者", publicId), now),
       db.prepare(
         `INSERT INTO user_identities
           (id, user_id, provider, provider_subject, email, email_verified, created_at, updated_at)
-         VALUES (?1, ?2, 'google', ?3, ?4, ?5, ?6, ?6)`,
-      ).bind(crypto.randomUUID(), userId, identity.sub, identity.email, identity.emailVerified ? 1 : 0, now),
+         VALUES (?1, ?2, 'google', ?3, NULL, 0, ?4, ?4)`,
+      ).bind(crypto.randomUUID(), userId, identity.sub, now),
     ]);
     return userId;
   } catch {
@@ -295,9 +332,7 @@ const verifyGoogleIdToken = async (token: string, audience: string, nonceHash: s
     throw new ApiError(401, "INVALID_ID_TOKEN_NONCE", "ID token nonce is invalid.");
   }
   if (typeof claims.sub !== "string" || claims.sub.length < 1 || claims.sub.length > 255) throw new ApiError(401, "INVALID_ID_TOKEN_SUBJECT", "ID token subject is invalid.");
-  const name = typeof claims.name === "string" && claims.name.trim() ? claims.name.trim().slice(0, 120) : "GAIA participant";
-  const email = typeof claims.email === "string" ? claims.email.slice(0, 320) : null;
-  return { sub: claims.sub, name, email, emailVerified: claims.email_verified === true };
+  return { sub: claims.sub };
 };
 
 const decodeJwtPart = (part: string): unknown => {
@@ -310,6 +345,8 @@ const decodeJwtPart = (part: string): unknown => {
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const isGoogleTokenResponse = (value: unknown): value is GoogleTokenResponse => isObject(value);
+const createPublicId = (): string => `usr_${randomToken().replace(/[^A-Za-z0-9]/gu, "").slice(0, 24).toLowerCase()}`;
+const anonymousDisplayName = (prefix: string, publicId: string): string => `${prefix} ${publicId.slice(-4).toUpperCase()}`;
 const normalizeReturnPath = (value: string | null): string => value === "/sensors/" ? value : "/sensors/";
 const redirectUri = (env: Env): string => new URL("/api/auth/google/callback", env.PUBLIC_ORIGIN).toString();
 const boundedInteger = (value: string, minimum: number, maximum: number, fallback: number): number => {

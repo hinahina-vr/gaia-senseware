@@ -38,6 +38,8 @@ const server = spawn(nodePath, [
   wranglerPath,
   "dev", "--local", "--port", "8791", `--persist-to=${persistPath}`,
   ...Object.entries(testSecrets).flatMap(([name, value]) => ["--var", `${name}:${value}`]),
+  "--var", `PUBLIC_ORIGIN:${origin}`,
+  "--var", `WEB_ORIGIN:${origin}`,
 ], {
   cwd: root,
   env: process.env,
@@ -74,7 +76,9 @@ try {
   });
   await test("migrations are sequential and safe to reapply", async () => {
     assert.match(migrationReapplyOutput, /No migrations to apply/u);
-    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "5");
+    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "6");
+    assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name = 'account_kind'"), "1");
+    assert.equal(await scalar("SELECT COUNT(*) FROM user_identities WHERE email IS NOT NULL OR email_verified <> 0"), "0");
   });
   await test("OIDC flow cookie binds callback to the starting browser", async () => {
     const start = await fetch(`${origin}/api/auth/google/start`, { redirect: "manual" });
@@ -85,6 +89,7 @@ try {
     assert.match(cookie, /; HttpOnly;/u);
     assert.match(cookie, /; SameSite=Lax/u);
     const location = new URL(start.headers.get("location"));
+    assert.equal(location.searchParams.get("scope"), "openid");
     const state = location.searchParams.get("state");
     assert(state);
     const wrongBrowser = await fetch(`${origin}/api/auth/google/callback?state=${encodeURIComponent(state)}&code=not-exchanged`, {
@@ -95,6 +100,29 @@ try {
     assert.match(wrongBrowser.headers.get("set-cookie") ?? "", /__Host-gaia_sensor_oidc=.*Max-Age=0/u);
     const stillUnused = await query("SELECT consumed_at FROM oauth_flows ORDER BY created_at DESC LIMIT 1");
     assert.match(stillUnused, /consumed_at.*null/isu);
+  });
+
+  await test("anonymous trial requires same origin, stores no identity, and deletes its data on logout", async () => {
+    const blocked = await fetch(`${origin}/api/auth/trial`, { method: "POST", headers: { Origin: "https://attacker.example" } });
+    assert.equal(blocked.status, 403);
+    const started = await fetch(`${origin}/api/auth/trial`, { method: "POST", headers: { Origin: origin } });
+    assert.equal(started.status, 201);
+    const startedBody = await started.json();
+    assert.equal(startedBody.user.accountKind, "trial");
+    assert.match(startedBody.user.displayName, /^おためし参加者 [A-Z0-9]{4}$/u);
+    const trialAuth = authFromResponse(started);
+    assert.equal(await scalar(`SELECT account_kind FROM users WHERE id = '${startedBody.user.id}'`), "trial");
+    assert.equal(await scalar(`SELECT COUNT(*) FROM user_identities WHERE user_id = '${startedBody.user.id}'`), "0");
+    assert.equal((await webFetch("/api/web/v1/devices", trialAuth)).status, 200);
+    assert.equal((await webFetch("/api/web/v1/devices/pairing", trialAuth, { method: "POST", body: deviceDraft() })).status, 201);
+    const noCsrf = await webFetch("/api/web/v1/logout", trialAuth, { method: "POST", includeCsrf: false });
+    assert.equal(noCsrf.status, 403);
+    const logoutResponse = await webFetch("/api/web/v1/logout", trialAuth, { method: "POST" });
+    assert.equal(logoutResponse.status, 200);
+    assert.deepEqual(await logoutResponse.json(), { ok: true, accountDeleted: true });
+    assert.equal(await scalar(`SELECT COUNT(*) FROM users WHERE id = '${startedBody.user.id}'`), "0");
+    assert.equal(await scalar(`SELECT COUNT(*) FROM device_pairing_codes WHERE user_id = '${startedBody.user.id}'`), "0");
+    assert.match(logoutResponse.headers.get("set-cookie") ?? "", /__Host-gaia_sensor_session=.*Max-Age=0/u);
   });
 
   const auth = await createLocalSession("user_test_owner");
@@ -407,6 +435,14 @@ async function webFetch(path, auth, options = {}) {
     body = options.rawBody;
   }
   return fetch(`${origin}${path}`, { method: options.method ?? "GET", headers, body });
+}
+
+function authFromResponse(response) {
+  const cookies = response.headers.get("set-cookie") ?? "";
+  const token = cookies.match(/__Host-gaia_sensor_session=([^;,]+)/u)?.[1];
+  const csrf = cookies.match(/__Host-gaia_sensor_csrf=([^;,]+)/u)?.[1];
+  assert(token && csrf, "trial response must set session and CSRF cookies");
+  return { token: decodeURIComponent(token), csrf: decodeURIComponent(csrf) };
 }
 
 function telemetryFetch(id, token, seq, observedAt) {

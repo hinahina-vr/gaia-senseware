@@ -9,6 +9,7 @@ let pairingIssued = false;
 let deviceCreated = false;
 let latestPolls = 0;
 let avatarUploaded = false;
+let sessionKind = null;
 let lastPairingDraft = null;
 let lastDeviceDraft = null;
 const initialProfile = () => ({
@@ -48,10 +49,12 @@ const server = http.createServer(async (request, response) => {
   try {
     if (url.pathname === "/__qa/report") return sendJson(response, 200, { requests, latestPolls, avatarUploaded, lastPairingDraft, lastDeviceDraft, profile });
     if (url.pathname === "/__qa/reset" && request.method === "POST") {
+      requests.length = 0;
       pairingIssued = false;
       deviceCreated = false;
       latestPolls = 0;
       avatarUploaded = false;
+      sessionKind = null;
       lastPairingDraft = null;
       lastDeviceDraft = null;
       profile = initialProfile();
@@ -91,8 +94,40 @@ async function handleApi(request, response, url) {
     return response.end(avatarPng);
   }
   if (url.pathname === "/api/web/v1/session") {
-    if (!referer.includes("authenticated=1")) return sendJson(response, 401, { error: { code: "AUTHENTICATION_REQUIRED", message: "Google login is required." } });
-    return sendJson(response, 200, { user: { id: "user_browser_qa", displayName: "QA参加者" }, expiresAt: "2026-08-13T00:00:00.000Z" });
+    const accountKind = referer.includes("authenticated=1") ? "google" : sessionKind;
+    if (!accountKind) return sendJson(response, 401, { error: { code: "AUTHENTICATION_REQUIRED", message: "Login is required." } });
+    return sendJson(response, 200, {
+      user: {
+        id: accountKind === "trial" ? "user_trial_qa" : "user_browser_qa",
+        displayName: accountKind === "trial" ? "おためし参加者 7A9C" : "GAIA参加者 B2D4",
+        accountKind,
+      },
+      expiresAt: "2026-08-13T00:00:00.000Z",
+    });
+  }
+  if (url.pathname === "/api/auth/trial" && request.method === "POST") {
+    sessionKind = "trial";
+    return sendJson(response, 201, {
+      user: { id: "user_trial_qa", displayName: "おためし参加者 7A9C", accountKind: "trial" },
+      expiresAt: "2026-08-13T00:00:00.000Z",
+    }, {
+      "Set-Cookie": [
+        "__Host-gaia_sensor_session=qa; Path=/; HttpOnly; Secure; SameSite=Lax",
+        "__Host-gaia_sensor_csrf=qa; Path=/; Secure; SameSite=Strict",
+      ],
+    });
+  }
+  if (url.pathname === "/api/web/v1/logout" && request.method === "POST") {
+    const accountDeleted = sessionKind === "trial";
+    sessionKind = null;
+    pairingIssued = false;
+    deviceCreated = false;
+    return sendJson(response, 200, { ok: true, accountDeleted }, {
+      "Set-Cookie": [
+        "__Host-gaia_sensor_session=; Path=/; HttpOnly; Secure; Max-Age=0",
+        "__Host-gaia_sensor_csrf=; Path=/; Secure; Max-Age=0",
+      ],
+    });
   }
   if (url.pathname === "/api/web/v1/countries") {
     return sendJson(response, 200, { countries: [{ code: "JP", nameEn: "Japan", nameLocal: "日本" }, { code: "US", nameEn: "United States", nameLocal: "アメリカ合衆国" }] });
@@ -172,8 +207,8 @@ async function handleApi(request, response, url) {
 function telemetry(seq) {
   return { seq, observedAt: new Date(Date.now() - (4 - seq) * 10000).toISOString(), receivedAt: new Date().toISOString(), data: { temperature: 24 + seq / 10, humidity: 58.2, pm25: 9.1 } };
 }
-function sendJson(response, status, body) {
-  response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+function sendJson(response, status, body, headers = {}) {
+  response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...headers });
   response.end(JSON.stringify(body));
 }
 async function readJson(request) {

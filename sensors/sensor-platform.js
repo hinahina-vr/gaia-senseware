@@ -1,6 +1,10 @@
 const views = new Map(Array.from(document.querySelectorAll("[data-view]"), (element) => [element.dataset.view, element]));
 const statusRegion = document.querySelector("#sensor-status");
 const loginButton = document.querySelector("#google-login");
+const trialLoginButton = document.querySelector("#trial-login");
+const logoutButton = document.querySelector("#sensor-logout");
+const profileNav = document.querySelector("#profile-nav");
+const accountNote = document.querySelector("#sensor-account-note");
 const showAddButton = document.querySelector("#show-add");
 const deviceList = document.querySelector("#device-list");
 const emptyState = document.querySelector("#device-empty");
@@ -31,6 +35,7 @@ let selectedDevice = null;
 let publicSensors = [];
 let currentProfile = null;
 let authenticated = false;
+let sessionUser = null;
 let pollTimer = 0;
 let statusTimer = 0;
 
@@ -84,12 +89,18 @@ const boot = async () => {
   initRegionFields();
   await loadPublicSensors().catch((error) => showStatus(error.message, "error"));
   try {
-    await api("../api/web/v1/session");
+    const session = await api("../api/web/v1/session");
     authenticated = true;
-    await Promise.all([loadCountries(), loadDevices(), loadProfile()]);
+    sessionUser = session.user;
+    syncAccountUi();
+    const accountLoads = [loadCountries(), loadDevices()];
+    if (sessionUser.accountKind !== "trial") accountLoads.push(loadProfile());
+    await Promise.all(accountLoads);
     routeFromHash();
   } catch (error) {
     authenticated = false;
+    sessionUser = null;
+    syncAccountUi();
     if (error.status === 401) {
       if (location.hash === "#map") showView("map");
       else showView("login");
@@ -342,13 +353,53 @@ const showDevices = async () => {
 const routeFromHash = () => {
   if (location.hash === "#map") showView("map");
   else if (!authenticated) showView("login");
-  else if (location.hash === "#profile") showView("profile");
+  else if (location.hash === "#profile" && sessionUser?.accountKind !== "trial") showView("profile");
   else if (location.hash === "#guide") showView("guide");
   else if (location.hash.startsWith("#device=")) openDetail(decodeURIComponent(location.hash.slice(8)));
   else showView("devices");
 };
 
 loginButton.addEventListener("click", () => { location.assign("../api/auth/google/start?returnTo=%2Fsensors%2F"); });
+trialLoginButton.addEventListener("click", async () => {
+  trialLoginButton.disabled = true;
+  loginButton.disabled = true;
+  try {
+    const session = await api("../api/auth/trial", { method: "POST" });
+    authenticated = true;
+    sessionUser = session.user;
+    syncAccountUi();
+    await Promise.all([loadCountries(), loadDevices()]);
+    history.replaceState(null, "", "#devices");
+    showView("devices");
+    showStatus("匿名のおためし利用を開始しました。");
+  } catch (error) {
+    showStatus(error.message, "error");
+  } finally {
+    trialLoginButton.disabled = false;
+    loginButton.disabled = false;
+  }
+});
+logoutButton.addEventListener("click", async () => {
+  const isTrial = sessionUser?.accountKind === "trial";
+  if (isTrial && !confirm("おためし利用をログアウトすると、登録したセンサーと観測データをすべて削除します。ログアウトしますか？")) return;
+  logoutButton.disabled = true;
+  try {
+    await api("../api/web/v1/logout", { method: "POST" });
+    authenticated = false;
+    sessionUser = null;
+    devices = [];
+    selectedDevice = null;
+    currentProfile = null;
+    syncAccountUi();
+    history.replaceState(null, "", "#login");
+    showView("login");
+    showStatus(isTrial ? "おためしデータを削除してログアウトしました。" : "ログアウトしました。");
+  } catch (error) {
+    showStatus(error.message, "error");
+  } finally {
+    logoutButton.disabled = false;
+  }
+});
 showAddButton.addEventListener("click", () => showView("add"));
 document.querySelectorAll("[data-action='show-add']").forEach((button) => button.addEventListener("click", () => showView("add")));
 document.querySelectorAll("[data-action='devices']").forEach((button) => button.addEventListener("click", showDevices));
@@ -357,6 +408,7 @@ document.querySelectorAll("[data-nav]").forEach((link) => link.addEventListener(
   event.preventDefault();
   const destination = link.dataset.nav;
   if (destination !== "map" && !authenticated) { showView("login"); history.replaceState(null, "", "#login"); return; }
+  if (destination === "profile" && sessionUser?.accountKind === "trial") { void showDevices(); return; }
   if (destination === "devices") showDevices();
   else { showView(destination); history.replaceState(null, "", `#${destination}`); }
 }));
@@ -455,6 +507,16 @@ document.querySelector("#revoke-device").addEventListener("click", async () => {
 
 window.addEventListener("hashchange", routeFromHash);
 void boot();
+
+function syncAccountUi() {
+  logoutButton.hidden = !authenticated;
+  const trial = sessionUser?.accountKind === "trial";
+  profileNav.hidden = trial;
+  accountNote.hidden = !authenticated;
+  accountNote.textContent = trial
+    ? `${sessionUser?.displayName || "匿名参加者"}としておためし利用中。ログアウトすると、この利用で登録したデータを削除します。`
+    : `${sessionUser?.displayName || "GAIA参加者"}としてGoogle連携中。Googleの名前・メールアドレスは保存していません。`;
+}
 
 function formDevice(form) {
   const data = new FormData(form);

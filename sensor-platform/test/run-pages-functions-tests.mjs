@@ -76,6 +76,14 @@ try {
     assert.equal((await response.json()).service, "gaia-senseware-sensor-platform");
     assert.match(response.headers.get("x-request-id") ?? "", /.+/u);
   });
+  await test("anonymous trial session is available through the Pages Function", async () => {
+    const response = await fetch(`${origin}/api/auth/trial`, { method: "POST", headers: { Origin: origin } });
+    assert.equal(response.status, 201);
+    assert.equal((await response.json()).user.accountKind, "trial");
+    const cookies = response.headers.get("set-cookie") ?? "";
+    assert.match(cookies, /__Host-gaia_sensor_session=/u);
+    assert.match(cookies, /__Host-gaia_sensor_csrf=/u);
+  });
   for (const staticPath of ["/story", "/sensors/", "/novel-mode.js", "/sensors/sensor-platform.js"]) {
     await test(`${staticPath} remains static`, async () => {
       const response = await fetch(`${origin}${staticPath}`);

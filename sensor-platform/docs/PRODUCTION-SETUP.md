@@ -16,8 +16,8 @@ production D1:
 
 1. `gaia-senseware-sensors` を作成済み
 2. UUID `6a386d6a-2858-4673-b396-6c340f9ea6d7` をroot `wrangler.jsonc` のD1 bindingへ設定済み
-3. remote migration `0001_initial.sql` / `0002_iso_3166_1_alpha2.sql` / `0003_public_sensor_profiles.sql` / `0004_d1_profile_avatars.sql` を適用済み（2026-08-14 handoff時点）
-4. `0005_region_codes.sql` はlocal実装であり、production D1には未適用。公開承認後、Pages deployより先にremoteへ適用する
+3. remote migration `0001_initial.sql` から `0005_region_codes.sql` まで適用済み
+4. `0006_privacy_first_accounts.sql` はGoogle由来の保存済みname/emailを匿名名/NULLへ移行し、匿名おためしアカウント種別を追加する。Pages deployより先にremoteへ適用する
 
 以後のschema変更は追加migrationとして適用し、既存migrationを書き換えません。
 
@@ -28,6 +28,8 @@ production D1:
 Google Cloud ConsoleでWeb application OAuth clientを作成し、次のAuthorized redirect URIを完全一致で登録します。
 
 `https://gaia-senseware.pages.dev/api/auth/google/callback`
+
+Google authorization scopeは`openid`だけを要求し、ID tokenからは`sub`だけを利用します。Googleのname/email claimは要求・保存しません。
 
 Pages projectへ登録するsecret（全て別値）:
 
@@ -43,13 +45,14 @@ Pages projectへ登録するsecret（全て別値）:
 
 1. local checker / API / browser focused QA
 2. 公開対象に内部handoff文書が含まれないことを確認し、push・remote migration・deployの承認を確認
-3. `wrangler d1 migrations list gaia-senseware-sensors --remote` で差分が`0005_region_codes.sql`だけであることをread-only確認
-4. `0005_region_codes.sql`をproduction D1へ適用
+3. `wrangler d1 migrations list DB --remote --config wrangler.jsonc` で未適用migrationをread-only確認
+4. 未適用の追加migrationをproduction D1へ適用
 5. Google callback URIと必要secret名の存在を確認（secret値は表示しない）
 6. candidateを通常FF pushし、同一tracked snapshotをPages Productionへdeploy
 7. `GET /api/health`、`/story`、`/sensors/`、主要assetを最小smoke
 8. production TLS chainを再確認し、Starter KitのRoot CAと一致を確認
-9. login → device追加 → pairing → telemetry → latestの最小smoke
+9. Google login導線と匿名おためし開始 → 再読込 → logout削除の最小smoke
+10. login → device追加 → pairing → telemetry → latestの最小smoke
 
 ## 4. Rollback
 

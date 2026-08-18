@@ -87,7 +87,7 @@ try {
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
-    assert.match(login.cta, /GoogleでログインしてESP32を登録/u);
+    assert.match(login.cta, /Googleで続ける/u);
     assert.equal(login.previewVisible, true);
     assert.equal(login.steps.length, 3);
     assert(login.steps[2].includes("CITY-SENSOR-XXXX"));

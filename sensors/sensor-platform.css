@@ -54,8 +54,9 @@ button, a { touch-action: manipulation; }
 .sensor-brand strong { display: block; margin-top: 6px; color: rgba(181,224,236,.58); font: 700 7px/1 var(--font-console); letter-spacing: .2em; }
 .sensor-topbar-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 18px; }
 .sensor-topbar nav { display: flex; flex-wrap: wrap; gap: 5px 20px; justify-content: flex-end; }
-.sensor-topbar nav a { min-height: 44px; padding: 13px 2px; color: rgba(233,239,252,.66); font: 560 11px/1.45 var(--font-ja); letter-spacing: .08em; text-decoration: none; }
-.sensor-topbar nav a:hover, .sensor-topbar nav a:focus-visible, .sensor-topbar nav a[aria-current] { color: var(--mint); outline: none; }
+.sensor-topbar nav a, .sensor-nav-logout { min-height: 44px; padding: 13px 2px; color: rgba(233,239,252,.66); font: 560 11px/1.45 var(--font-ja); letter-spacing: .08em; text-decoration: none; }
+.sensor-nav-logout { border: 0; background: none; cursor: pointer; }
+.sensor-topbar nav a:hover, .sensor-topbar nav a:focus-visible, .sensor-topbar nav a[aria-current], .sensor-nav-logout:hover, .sensor-nav-logout:focus-visible { color: var(--mint); outline: none; box-shadow: inset 0 -1px var(--mint); transform: none; }
 .sensor-topbar nav a[aria-current] { box-shadow: inset 0 -1px var(--mint); }
 .sensor-audio-toggle { display: grid; flex: 0 0 58px; width: 58px; min-height: 44px; padding: 5px 7px; border: 1px solid rgba(var(--mint-rgb),.3); color: rgba(224,248,244,.74); background: rgba(3,18,26,.72); cursor: pointer; place-items: center; grid-template-columns: 18px auto; gap: 5px; }
 .sensor-audio-toggle span { font: 700 7px/1 var(--font-console); letter-spacing: .08em; }
@@ -79,6 +80,14 @@ button, a { touch-action: manipulation; }
 .sensor-login h1, .sensor-panel > h1, .sensor-guide > h1 { margin: 0; font-family: var(--font-ja); font-size: clamp(38px, 7vw, 78px); font-weight: 400; letter-spacing: .08em; line-height: 1.3; text-shadow: 0 15px 50px rgba(0,8,22,.48), 0 0 45px rgba(142,216,255,.08); }
 .sensor-login > p { max-width: 610px; margin: 25px 0 29px; color: rgba(232,243,250,.74); font-family: var(--font-ja); font-size: 13px; font-weight: 520; letter-spacing: .075em; line-height: 2.05; text-shadow: 0 4px 18px rgba(0,6,12,.62); }
 .sensor-login > small { display: block; margin-top: 16px; color: rgba(233,239,252,.43); font-family: var(--font-ja); font-size: 10px; letter-spacing: .06em; }
+.sensor-login-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: min(100%, 610px); }
+.sensor-login-actions > button { width: 100%; min-width: 0; }
+.sensor-trial-login span { display: inline-grid; width: 24px; height: 24px; margin-right: 10px; border: 1px solid rgba(var(--mint-rgb),.35); border-radius: 50%; place-items: center; }
+.sensor-privacy-note { width: min(100%, 610px); margin-top: 13px; padding: 15px 17px; border: 1px solid rgba(var(--mint-rgb),.22); background: rgba(3,15,24,.66); font-family: var(--font-ja); }
+.sensor-privacy-note strong { display: block; margin-bottom: 9px; color: rgba(238,251,248,.88); font-size: 11px; letter-spacing: .07em; }
+.sensor-privacy-note p { margin: 5px 0 0; color: rgba(226,239,244,.62); font-size: 10px; letter-spacing: .035em; line-height: 1.7; }
+.sensor-privacy-note b { color: var(--mint); font-weight: 600; }
+.sensor-public-map-link { width: min(100%, 610px); margin-top: 10px; }
 .sensor-register-preview, .sensor-setup-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 34px 0 0; padding: 1px; border: 1px solid var(--line); background: var(--line); list-style: none; }
 .sensor-register-preview li, .sensor-setup-steps li { display: grid; grid-template-columns: 38px minmax(0, 1fr); min-width: 0; background: rgba(5,19,28,.92); }
 .sensor-register-preview li > span, .sensor-setup-steps li > span { display: grid; place-items: center; color: var(--mint); font: 700 10px/1 Consolas, monospace; }
@@ -109,6 +118,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-page-head, .sensor-detail-head, .sensor-history header { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
 .sensor-page-head h1, .sensor-detail-head h1 { margin: 0; font-family: var(--font-ja); font-size: clamp(36px, 4.6vw, 66px); font-weight: 400; letter-spacing: .09em; line-height: 1.18; text-shadow: 0 14px 42px rgba(0,7,14,.46); }
 .sensor-page-lead { max-width: 590px; margin: 18px 0 0 !important; color: rgba(232,243,250,.7) !important; font: 520 12px/1.95 var(--font-ja) !important; letter-spacing: .075em !important; }
+.sensor-account-note { max-width: 650px; margin: 13px 0 0 !important; padding-left: 12px; border-left: 1px solid rgba(var(--mint-rgb),.55); color: rgba(218,242,238,.6) !important; font: 520 10px/1.8 var(--font-ja) !important; letter-spacing: .045em !important; }
 .sensor-device-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 36px; }
 .sensor-device-card { position: relative; min-height: 220px; padding: 20px; border: 1px solid var(--line); background: var(--panel); box-shadow: inset 0 1px rgba(255,255,255,.05); }
 .sensor-device-card::before, .sensor-avatar-panel::before { position: absolute; top: -1px; left: 18px; width: 84px; height: 1px; content: ""; background: var(--mint); box-shadow: 0 0 14px rgba(var(--mint-rgb),.45); }
@@ -226,6 +236,7 @@ select:disabled, input:disabled { color: rgba(233,251,248,.38); cursor: not-allo
 .sensor-detail > .sensor-danger { margin-top: 34px; }
 
 .sensor-profile { max-width: 900px; margin: 0 auto; }
+.sensor-profile-privacy { margin: 22px 0 0; padding: 13px 15px; border-left: 2px solid rgba(var(--mint-rgb),.58); color: rgba(226,239,244,.7); background: rgba(5,27,35,.45); font-family: var(--font-ja); font-size: 11px; letter-spacing: .045em; line-height: 1.8; }
 .sensor-profile-layout { display: grid; grid-template-columns: minmax(260px,.85fr) minmax(320px,1.15fr); gap: 40px; margin-top: 34px; }
 .sensor-profile-layout form { margin-top: 0; }
 .sensor-avatar-panel { position: relative; align-content: start; display: grid; gap: 16px; padding: 24px; border: 1px solid var(--line); background: var(--panel); }
@@ -324,13 +335,15 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
   .sensor-topbar-actions { width: 100%; }
   .sensor-topbar nav { min-width: 0; flex: 1 1 auto; width: 100%; max-width: 100%; flex-wrap: nowrap; gap: 4px; justify-content: space-between; overflow-x: auto; scrollbar-width: none; }
   .sensor-topbar nav::-webkit-scrollbar { display: none; }
-  .sensor-topbar nav a { flex: 0 0 auto; min-height: 44px; padding: 13px 1px 11px; font-size: 9px; letter-spacing: .035em; white-space: nowrap; }
+  .sensor-topbar nav a, .sensor-nav-logout { flex: 0 0 auto; min-height: 44px; padding: 13px 1px 11px; font-size: 9px; letter-spacing: .035em; white-space: nowrap; }
   .sensor-audio-toggle { position: absolute; top: 8px; right: 15px; width: 52px; min-height: 44px; }
   .sensor-shell { width: min(100% - 28px, 600px); min-height: calc(100vh - 106px); padding-top: 32px; }
   .sensor-login { min-height: calc(100dvh - 138px); padding: 24px 0 24px 18px; }
   .sensor-login h1, .sensor-panel > h1, .sensor-guide > h1 { font-size: clamp(32px, 9.5vw, 42px); letter-spacing: .055em; }
   .sensor-login > p { margin-block: 22px 28px; font-size: 12px; line-height: 1.9; }
-  .sensor-login .sensor-primary { width: 100%; min-width: 0; padding-inline: 14px; font-size: 11px; }
+  .sensor-login-actions { grid-template-columns: 1fr; }
+  .sensor-login-actions button { padding-inline: 14px; font-size: 11px; }
+  .sensor-privacy-note { padding: 13px 14px; }
   .sensor-register-preview, .sensor-setup-steps { grid-template-columns: 1fr; margin-top: 24px; }
   .sensor-register-preview li, .sensor-setup-steps li { grid-template-columns: 42px minmax(0, 1fr); }
   .sensor-register-preview p, .sensor-setup-steps p { padding: 13px 12px; }

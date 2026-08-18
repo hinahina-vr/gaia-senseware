@@ -7,10 +7,10 @@
     <link rel="icon" href="data:," />
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
-    <link rel="stylesheet" href="./sensor-platform.css?v=6" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=7" />
     <script src="../opening-audio.js?v=gaia-sensor-audio-continuity-1" defer></script>
     <script src="./sensor-audio.js?v=1" defer></script>
-    <script src="./sensor-platform.js?v=3" type="module"></script>
+    <script src="./sensor-platform.js?v=4" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -27,8 +27,9 @@
         <nav aria-label="センサープラットフォーム">
           <a href="#map" data-nav="map">みんなのセンサー</a>
           <a href="#devices" data-nav="devices">マイセンサー</a>
-          <a href="#profile" data-nav="profile">プロフィール</a>
+          <a href="#profile" data-nav="profile" id="profile-nav">プロフィール</a>
           <a href="#guide" data-nav="guide">接続ガイド</a>
+          <button class="sensor-nav-logout" id="sensor-logout" type="button" hidden>ログアウト</button>
           <a href="../">地図へ戻る</a>
         </nav>
         <button class="sensor-audio-toggle" id="sensor-audio-toggle" type="button" aria-label="BGMを再生" data-muted="true" data-playing="false" data-audio-ready="false">
@@ -75,13 +76,23 @@
         <div class="sensor-kicker">YOUR SENSOR / PLANETARY SIGNAL</div>
         <h1>測ることから、<br />地球へ参加する。</h1>
         <p>国と地域コードを選び、自分のESP32を登録します。GPSや住所は使いません。温度・湿度・PM2.5など、あなたが測った値だけをHTTPSで届けます。</p>
-        <button class="sensor-primary" id="google-login" type="button">
-          <span aria-hidden="true">G</span>GoogleでログインしてESP32を登録
-        </button>
+        <div class="sensor-login-actions">
+          <button class="sensor-primary" id="google-login" type="button">
+            <span aria-hidden="true">G</span>Googleで続ける
+          </button>
+          <button class="sensor-secondary sensor-trial-login" id="trial-login" type="button">
+            <span aria-hidden="true">◇</span>名前・メールなしでおためし
+          </button>
+        </div>
+        <aside class="sensor-privacy-note" aria-label="参加方法と保存する情報">
+          <strong>名前・メールアドレスを預からない参加方法です。</strong>
+          <p><b>Google</b> 名前・メールアドレスは要求・保存せず、再ログイン用のGoogle識別子だけを保存します。</p>
+          <p><b>おためし</b> Google連携なし・自動生成名で8時間利用できます。ログアウトすると、登録したセンサーと観測データも削除します。</p>
+        </aside>
         <button class="sensor-secondary sensor-public-map-link" type="button" data-action="map">ログインせず地図を見る</button>
-        <small>ログイン情報とDevice Tokenは別々に管理されます。</small>
+        <small>どちらもGPS・住所は使いません。機能上必要な地域コード、センサー名、観測値だけを保存します。</small>
         <ol class="sensor-register-preview" aria-label="ESP32登録の3ステップ">
-          <li><span>01</span><p><strong>Googleでログイン</strong>所有する端末だけを安全に管理します。</p></li>
+          <li><span>01</span><p><strong>参加方法を選ぶ</strong>Google連携または匿名のおためし利用を選びます。</p></li>
           <li><span>02</span><p><strong>端末を追加</strong>国・地域と名前を登録し、Pairing Codeを取得します。</p></li>
           <li><span>03</span><p><strong>Setup APへ入力</strong><code>CITY-SENSOR-XXXX</code>へ接続し、Wi-FiとPairing Codeを入力します。</p></li>
         </ol>
@@ -98,6 +109,7 @@
             <p>MY SENSORS / OBSERVATION NODE</p>
             <h1>マイセンサー</h1>
             <p class="sensor-page-lead">あなたのESP32を、地球の感覚器へ。身近な環境の変化をひとつの観測点として届けます。</p>
+            <p class="sensor-account-note" id="sensor-account-note" hidden></p>
           </div>
           <button class="sensor-primary sensor-add" id="show-add" type="button">＋ センサーを追加</button>
         </header>
@@ -203,6 +215,7 @@
 
       <section class="sensor-view sensor-profile" data-view="profile" id="profile" hidden>
         <header class="sensor-page-head"><div><p>PUBLIC PROFILE</p><h1>プロフィール</h1></div></header>
+        <p class="sensor-profile-privacy">Googleの名前・メールアドレスは保存していません。ここで入力する表示名・画像・SNSだけが任意の公開プロフィールです。</p>
         <div class="sensor-profile-layout">
           <section class="sensor-avatar-panel">
             <div class="sensor-avatar-preview" id="profile-avatar-preview" aria-label="現在のアイコン"><span aria-hidden="true">◌</span></div>
@@ -215,7 +228,7 @@
             <label>X <small>任意</small><input name="xUrl" type="url" maxlength="240" placeholder="https://x.com/yourname" /></label>
             <label>GitHub <small>任意</small><input name="githubUrl" type="url" maxlength="240" placeholder="https://github.com/yourname" /></label>
             <label>Instagram <small>任意</small><input name="instagramUrl" type="url" maxlength="240" placeholder="https://instagram.com/yourname" /></label>
-            <p class="sensor-form-note">入力したSNSは、公開センサーの持ち主カードにだけ表示されます。メールアドレスは公開しません。</p>
+            <p class="sensor-form-note">入力したSNSは、公開センサーの持ち主カードにだけ表示されます。入力は任意で、Googleのメールアドレスは取得・表示しません。</p>
             <button class="sensor-primary" type="submit">プロフィールを保存</button>
           </form>
         </div>
@@ -225,7 +238,7 @@
         <div class="sensor-kicker">ESP32 STARTER KIT</div>
         <h1>HTTPSで、直接つなぐ。</h1>
         <ol>
-          <li><span>01</span><p><strong>Webで登録</strong>Google Login後、国・地域とセンサー名を登録します。</p></li>
+          <li><span>01</span><p><strong>Webで登録</strong>Google連携または匿名のおためし利用で、国・地域とセンサー名を登録します。</p></li>
           <li><span>02</span><p><strong>Pairing</strong>10分間有効な一回限りコードをESP32へ設定します。</p></li>
           <li><span>03</span><p><strong>NVSへ保存</strong>Device ID・Token・seqはESP32内に保存します。</p></li>
           <li><span>04</span><p><strong>HTTPS POST</strong>Root CAで証明書を検証し、測定値だけを送ります。</p></li>

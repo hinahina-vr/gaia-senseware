@@ -1,4 +1,4 @@
-import { finishGoogleLogin, getAuthenticatedUser, logout, OIDC_FLOW_COOKIE, sessionResponse, startGoogleLogin } from "./auth";
+import { finishGoogleLogin, getAuthenticatedUser, logout, OIDC_FLOW_COOKIE, sessionResponse, startGoogleLogin, startTrialSession } from "./auth";
 import {
   acceptTelemetry,
   createPairing,
@@ -47,6 +47,7 @@ const route = async (request: Request, env: Env, url: URL): Promise<Response> =>
   if (request.method === "GET" && url.pathname === "/api/health") return json({ ok: true, service: "gaia-senseware-sensor-platform" });
   if (request.method === "GET" && url.pathname === "/api/auth/google/start") return startGoogleLogin(request, env);
   if (request.method === "GET" && url.pathname === "/api/auth/google/callback") return finishGoogleLogin(request, env);
+  if (request.method === "POST" && url.pathname === "/api/auth/trial") return startTrialSession(request, env);
   if (request.method === "GET" && url.pathname === "/api/web/v1/session") return sessionResponse(request, env);
   if (request.method === "POST" && url.pathname === "/api/web/v1/logout") return logout(request, env);
   if (request.method === "POST" && url.pathname === "/api/v1/device/pair") return pairDevice(request, env);
