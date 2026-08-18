@@ -1315,6 +1315,7 @@
     const currentIndex = stepIndexMap.get(step.id) ?? -1;
     const followingStep = resolveVisibleStep(allSteps[currentIndex + 1]?.id);
     if (!followingStep) return;
+    if (followingStep.id === "welcome_chat_095") void window.GaiaOpeningAudio?.preloadTrack?.("ending");
     const followingPresentation = backgroundPresentationForStep(followingStep);
     if (currentPresentation.image === followingPresentation.image) return;
     const nextBackground = followingPresentation.image;
@@ -3334,14 +3335,33 @@
     elements.resultSurface.hidden = false;
     elements.resultSurface.setAttribute("aria-label", "GAIA SENSEWARE スタッフロール");
     layer.classList.add("is-result", "is-staff-roll");
+    layer.dataset.storyAudioCue = "ending-credits";
+    requestStoryTrack("ending", 1.35);
 
     const shell = document.createElement("section");
     shell.className = "novel-staff-roll";
+    shell.tabIndex = 0;
+    shell.setAttribute("role", "region");
+    shell.setAttribute("aria-label", "エンディングスタッフロール。クリック、Enterキー、またはスペースキーで最後まで送れます");
+    shell.dataset.phase = motionReduced() ? "reduced" : "whiteout";
+
+    const whiteout = document.createElement("div");
+    whiteout.className = "novel-staff-roll-whiteout";
+    whiteout.setAttribute("aria-hidden", "true");
+
+    const stage = document.createElement("div");
+    stage.className = "novel-staff-roll-stage";
+    const viewport = document.createElement("div");
+    viewport.className = "novel-staff-roll-viewport";
+    const track = document.createElement("div");
+    track.className = "novel-staff-roll-track";
+
     const heading = document.createElement("header");
+    heading.className = "novel-staff-roll-title";
     const kicker = document.createElement("span");
     const title = document.createElement("h2");
     const subtitle = document.createElement("p");
-    kicker.textContent = "GAIA SENSEWARE / END CREDITS";
+    kicker.textContent = "AN ORIGINAL DATA FICTION";
     title.textContent = "GAIA SENSEWARE";
     subtitle.textContent = "地球の声を聴く、10の感覚器";
     heading.append(kicker, title, subtitle);
@@ -3365,19 +3385,80 @@
       credits.append(row);
     });
 
-    const closing = document.createElement("p");
+    const closing = document.createElement("footer");
     closing.className = "novel-staff-roll-closing";
-    closing.textContent = "その選択の中に、今日から私たちもいる。";
+    const closingLead = document.createElement("p");
+    const closingLine = document.createElement("strong");
+    const closingMark = document.createElement("span");
+    closingLead.textContent = "その選択の中に、今日から私たちもいる。";
+    closingLine.textContent = "物語は、ここからも続いていく。";
+    closingMark.textContent = "END";
+    closing.append(closingLead, closingLine, closingMark);
+
+    const skipHint = document.createElement("p");
+    skipHint.className = "novel-staff-roll-skip-hint";
+    skipHint.setAttribute("aria-hidden", "true");
+    skipHint.textContent = "CLICK / ENTER — CREDITSを送る";
+
+    const finale = document.createElement("div");
+    finale.className = "novel-staff-roll-finale";
+    finale.hidden = true;
+    finale.setAttribute("aria-hidden", "true");
     const next = document.createElement("button");
     next.type = "button";
-    next.textContent = "ENDへ";
+    next.tabIndex = -1;
+    next.textContent = "物語を閉じる";
+    next.setAttribute("aria-label", "スタッフロールを終えて物語を閉じる");
     next.addEventListener("click", (event) => {
       event.stopPropagation();
       moveToFollowingStep(step);
     });
-    shell.append(heading, credits, closing, next);
+    finale.append(next);
+
+    track.append(heading, credits, closing);
+    viewport.append(track);
+    stage.append(viewport, skipHint, finale);
+    shell.append(whiteout, stage);
     elements.resultSurface.append(shell);
-    requestAnimationFrame(() => next.focus({ preventScroll: true }));
+
+    let completed = false;
+    const revealFinalAction = ({ focus = true } = {}) => {
+      if (completed) return;
+      completed = true;
+      shell.dataset.phase = "complete";
+      shell.classList.add("is-complete");
+      skipHint.hidden = true;
+      finale.hidden = false;
+      finale.setAttribute("aria-hidden", "false");
+      next.tabIndex = 0;
+      if (focus) requestAnimationFrame(() => next.focus({ preventScroll: true }));
+    };
+
+    track.addEventListener("animationend", (event) => {
+      if (event.animationName === "novel-staff-roll-rise") revealFinalAction();
+    });
+    whiteout.addEventListener("animationend", (event) => {
+      if (event.animationName === "novel-staff-roll-whiteout" && !completed) shell.dataset.phase = "rolling";
+    });
+    shell.addEventListener("click", (event) => {
+      if (event.target.closest("button") || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
+      event.preventDefault();
+      event.stopPropagation();
+      revealFinalAction();
+    });
+    shell.addEventListener("keydown", (event) => {
+      if (!["Enter", " "].includes(event.key) || event.repeat || event.isComposing || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
+      event.preventDefault();
+      event.stopPropagation();
+      revealFinalAction();
+    });
+
+    if (motionReduced()) {
+      shell.classList.add("is-reduced-motion");
+      whiteout.hidden = true;
+      revealFinalAction({ focus: false });
+    }
+    requestAnimationFrame(() => shell.focus({ preventScroll: true }));
   };
 
   const renderResult = (step) => {

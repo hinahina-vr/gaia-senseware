@@ -8859,3 +8859,429 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
     min-height: 44px;
   }
 }
+
+/* Ending sequence: the final scene washes to white before a dedicated,
+   full-screen credit roll. This deliberately leaves the normal VN HUD behind. */
+.novel-layer.is-staff-roll > .novel-topbar,
+.novel-layer.is-staff-roll > .novel-progress,
+.novel-layer.is-staff-roll > .novel-script-debug,
+.novel-layer.is-staff-roll > .novel-particles,
+.novel-layer.is-staff-roll > .novel-veil,
+.novel-layer.is-staff-roll > .novel-scanlines,
+.novel-layer.is-staff-roll .novel-runtime::before {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.novel-layer.is-staff-roll .novel-result-surface {
+  position: absolute;
+  z-index: 40;
+  inset: 0 !important;
+  display: block;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  color: #163843;
+  scrollbar-gutter: auto;
+}
+
+.novel-staff-roll {
+  --novel-staff-roll-duration: 54s;
+  position: absolute;
+  inset: 0;
+  width: auto !important;
+  height: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #163843;
+  text-align: center;
+  animation: none !important;
+  outline: none;
+  isolation: isolate;
+}
+
+.novel-staff-roll-whiteout {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+  background: #fffefa;
+  opacity: 0;
+  animation: novel-staff-roll-whiteout 3.2s cubic-bezier(0.42, 0, 0.23, 1) both;
+}
+
+.novel-staff-roll-stage {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 252, 0.93), rgba(239, 249, 248, 0.9) 54%, rgba(226, 243, 245, 0.95)),
+    var(--novel-scene-background);
+  background-position: center;
+  background-size: cover;
+  opacity: 0;
+  animation: novel-staff-roll-stage-reveal 3.2s ease-in-out both;
+}
+
+.novel-staff-roll-stage::before,
+.novel-staff-roll-stage::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+}
+
+.novel-staff-roll-stage::before {
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.88), transparent 34%),
+    linear-gradient(90deg, rgba(242, 250, 248, 0.64), transparent 28% 72%, rgba(242, 250, 248, 0.64));
+}
+
+.novel-staff-roll-stage::after {
+  opacity: 0.28;
+  background-image: repeating-linear-gradient(90deg, transparent 0 18vw, rgba(57, 117, 126, 0.055) 18vw calc(18vw + 1px));
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 16% 84%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 16% 84%, transparent);
+}
+
+.novel-staff-roll-viewport {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 7%, #000 92%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 7%, #000 92%, transparent 100%);
+}
+
+.novel-staff-roll-track {
+  display: block;
+  width: min(720px, calc(100% - 48px));
+  margin: 0 auto;
+  will-change: transform;
+  animation: novel-staff-roll-rise var(--novel-staff-roll-duration) 2.65s linear both;
+}
+
+.novel-staff-roll-title {
+  display: grid;
+  align-content: start;
+  min-height: 96dvh;
+  gap: 18px;
+  padding: 8vh 0 10vh;
+}
+
+.novel-staff-roll-title > span {
+  color: rgba(31, 91, 100, 0.72);
+  font: 700 10px/1.5 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.32em;
+}
+
+.novel-staff-roll-title h2 {
+  margin: 0;
+  color: #143b45;
+  font-family: Georgia, "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(38px, 6.2vw, 88px);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px rgba(255, 255, 255, 0.88);
+}
+
+.novel-staff-roll-title > p {
+  margin: 0;
+  color: rgba(22, 56, 67, 0.74);
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(13px, 1.3vw, 18px);
+  letter-spacing: 0.14em;
+}
+
+.novel-staff-roll-credits {
+  display: block;
+  margin: 0;
+}
+
+.novel-staff-roll-credits > div {
+  position: relative;
+  display: grid;
+  align-content: center;
+  min-height: 31dvh;
+  gap: 15px;
+  padding: 6vh 16px;
+  border: 0;
+  text-align: center;
+}
+
+.novel-staff-roll-credits > div::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(420px, 72vw);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(38, 104, 113, 0.18), transparent);
+  content: "";
+  transform: translate(-50%, 52px);
+}
+
+.novel-staff-roll-credits dt {
+  color: rgba(28, 93, 103, 0.68);
+  font: 700 10px/1.6 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.18em;
+}
+
+.novel-staff-roll-credits dd {
+  margin: 0;
+  color: #183d45;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(17px, 2vw, 28px);
+  line-height: 1.65;
+  letter-spacing: 0.08em;
+}
+
+.novel-staff-roll-closing {
+  display: grid;
+  align-content: center;
+  min-height: 100dvh;
+  margin: 0;
+  gap: 20px;
+  padding: 12vh 20px;
+  color: #173d46;
+}
+
+.novel-staff-roll-closing p {
+  margin: 0;
+  color: rgba(23, 61, 70, 0.72);
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(13px, 1.4vw, 19px);
+  letter-spacing: 0.1em;
+}
+
+.novel-staff-roll-closing strong {
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: clamp(18px, 2.2vw, 30px);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+.novel-staff-roll-closing span {
+  margin-top: 8vh;
+  color: #245e68;
+  font: 400 clamp(42px, 7vw, 96px)/1 Georgia, "Yu Mincho", serif;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+}
+
+.novel-staff-roll-skip-hint {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 0;
+  margin: 0;
+  color: rgba(26, 79, 87, 0.52);
+  font: 700 9px/1.4 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.18em;
+  opacity: 0;
+  animation: novel-staff-roll-hint 700ms 3.4s ease-out forwards;
+}
+
+.novel-staff-roll-finale {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: max(5vh, env(safe-area-inset-bottom));
+  left: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 900ms ease, transform 900ms ease;
+}
+
+.novel-staff-roll-finale[hidden] {
+  visibility: hidden;
+}
+
+.novel-staff-roll.is-complete .novel-staff-roll-track {
+  animation: none;
+  transform: translateY(calc(-100% + 100dvh));
+}
+
+.novel-staff-roll.is-complete .novel-staff-roll-finale {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.novel-staff-roll-finale > button {
+  min-width: 180px;
+  min-height: 48px;
+  padding: 0 26px;
+  border: 1px solid rgba(30, 101, 111, 0.46);
+  background: rgba(248, 253, 250, 0.72);
+  box-shadow: 0 12px 40px rgba(41, 91, 96, 0.12);
+  color: #16424b;
+  cursor: pointer;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.novel-staff-roll-finale > button:hover,
+.novel-staff-roll-finale > button:focus-visible {
+  border-color: rgba(21, 90, 102, 0.86);
+  background: rgba(255, 255, 252, 0.96);
+  outline: 2px solid rgba(35, 111, 122, 0.24);
+  outline-offset: 4px;
+  transform: translateY(-2px);
+}
+
+@keyframes novel-staff-roll-whiteout {
+  0%, 18% { opacity: 0; }
+  52%, 66% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes novel-staff-roll-stage-reveal {
+  0%, 54% { opacity: 0; }
+  72%, 100% { opacity: 1; }
+}
+
+@keyframes novel-staff-roll-rise {
+  from { transform: translateY(100dvh); }
+  to { transform: translateY(calc(-100% + 100dvh)); }
+}
+
+@keyframes novel-staff-roll-hint {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 720px) {
+  .novel-staff-roll {
+    --novel-staff-roll-duration: 50s;
+    padding: 0 !important;
+  }
+
+  .novel-staff-roll-track {
+    width: min(520px, calc(100% - 28px));
+  }
+
+  .novel-staff-roll-title {
+    min-height: 92dvh;
+    gap: 14px;
+  }
+
+  .novel-staff-roll-title h2 {
+    font-size: clamp(34px, 12vw, 52px);
+    line-height: 1.12;
+    letter-spacing: 0.04em;
+  }
+
+  .novel-staff-roll-title > p {
+    font-size: 12px;
+  }
+
+  .novel-staff-roll-credits {
+    margin: 0;
+  }
+
+  .novel-staff-roll-credits > div {
+    grid-template-columns: 1fr;
+    min-height: 29dvh;
+    gap: 10px;
+    padding: 5vh 10px;
+    text-align: center;
+  }
+
+  .novel-staff-roll-credits dt {
+    font-size: 9px;
+  }
+
+  .novel-staff-roll-credits dd {
+    font-size: clamp(15px, 4.8vw, 20px);
+  }
+
+  .novel-staff-roll-closing {
+    gap: 16px;
+    padding-inline: 10px;
+  }
+
+  .novel-staff-roll-closing p {
+    font-size: 12px;
+    line-height: 1.9;
+  }
+
+  .novel-staff-roll-closing strong {
+    font-size: 18px;
+    line-height: 1.9;
+  }
+
+  .novel-staff-roll-skip-hint {
+    bottom: max(12px, env(safe-area-inset-bottom));
+    font-size: 8px;
+  }
+
+  .novel-staff-roll-finale {
+    bottom: max(24px, env(safe-area-inset-bottom));
+  }
+
+  .novel-staff-roll-finale > button {
+    min-width: 176px;
+    min-height: 48px;
+  }
+}
+
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-stage {
+  opacity: 1;
+  animation: none;
+}
+
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-viewport {
+  bottom: max(82px, calc(env(safe-area-inset-bottom) + 76px));
+  overflow-y: auto;
+  -webkit-mask-image: none;
+  mask-image: none;
+  scrollbar-color: rgba(39, 105, 115, 0.34) transparent;
+}
+
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-track,
+.novel-staff-roll.is-reduced-motion.is-complete .novel-staff-roll-track {
+  width: min(720px, calc(100% - 32px));
+  animation: none;
+  transform: none;
+}
+
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-title,
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-closing {
+  min-height: min(72dvh, 640px);
+}
+
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-credits > div {
+  min-height: min(240px, 31dvh);
+}
+
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-finale {
+  pointer-events: auto;
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-staff-roll-whiteout,
+  .novel-staff-roll-stage,
+  .novel-staff-roll-track,
+  .novel-staff-roll-skip-hint,
+  .novel-staff-roll-finale {
+    animation: none !important;
+    transition: none !important;
+  }
+}
