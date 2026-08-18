@@ -12,7 +12,7 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/campus-chat-channels-browser");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const stepId = "welcome_chat_023";
+const stepId = "welcome_chat_022";
 const expectedChannels = [
   "大学からのお知らせ_公式",
   "class_ネットワーク産業論",
@@ -98,12 +98,21 @@ try {
       });
       const current = aside?.querySelector(".is-current");
       const currentRect = current?.getBoundingClientRect();
+      const sensorChannel = aside?.querySelector(".novel-slack-circle-channel");
+      const sensorChannelRect = sensorChannel?.getBoundingClientRect();
       return {
         stepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
         channels,
         currentText: current?.textContent?.trim() || "",
         currentAria: current?.getAttribute("aria-current") || "",
         currentVisible: Boolean(currentRect && currentRect.width > 0 && currentRect.height > 0),
+        sensorChannel: {
+          text: sensorChannel?.textContent?.trim() || "",
+          channel: sensorChannel?.dataset.channel || "",
+          title: sensorChannel?.getAttribute("title") || "",
+          visible: Boolean(sensorChannelRect && sensorChannelRect.width > 0 && sensorChannelRect.height > 0),
+          fullyInsideSidebar: Boolean(asideRect && sensorChannelRect && sensorChannelRect.top >= asideRect.top && sensorChannelRect.bottom <= asideRect.bottom && sensorChannelRect.left >= asideRect.left && sensorChannelRect.right <= asideRect.right),
+        },
         sidebarOverflowX: aside ? Math.max(0, aside.scrollWidth - aside.clientWidth) : -1,
         overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
         currentMessage: document.querySelector(".novel-slack-post.is-new .novel-slack-message")?.textContent || "",
@@ -119,9 +128,16 @@ try {
     assert.equal(scan.currentText, "# 惑星の放課後", `${viewport.name}: story channel lost selection`);
     assert.equal(scan.currentAria, "page", `${viewport.name}: selected channel semantics are missing`);
     assert.equal(scan.currentVisible, true, `${viewport.name}: selected story channel is hidden`);
+    assert.deepEqual(scan.sensorChannel, {
+      text: "#GSW-esp32",
+      channel: "GSW-esp32",
+      title: "GSW-esp32",
+      visible: true,
+      fullyInsideSidebar: true,
+    }, `${viewport.name}: GSW-esp32 channel is missing from the sidebar`);
     assert.equal(scan.sidebarOverflowX, 0, `${viewport.name}: sidebar has horizontal overflow`);
     assert.equal(scan.overflowX, 0, `${viewport.name}: page has horizontal overflow`);
-    assert.equal(scan.currentMessage, "青猫さんが会場で話してくださった、ESP32の案ですの。", `${viewport.name}: current story message changed`);
+    assert.equal(scan.currentMessage, "あめが #GSW-esp32 を作成しました。", `${viewport.name}: current story message changed`);
     assert(scan.avatarImagesLoaded >= 3, `${viewport.name}: symbolic chat avatars did not load`);
     report.scans.push({ viewport: viewport.name, ...scan, passed: true });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`), animations: "disabled" });

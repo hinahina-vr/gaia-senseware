@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "8bb9b30ecfb423f5f6f8c6f9b42207aff71fe30b988c952adb5facd4e414fc03",
+  "sourceSha256": "d66b55436fe441f57768f5c8a9e9c37c96bbd3ac764dc7a25c24bda75690b1cc",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -2623,7 +2623,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:17",
           "speaker": "system",
           "speakerLabel": "SYSTEM",
-          "text": "あめが #esp32-sensor を作成しました。"
+          "text": "あめが #GSW-esp32 を作成しました。"
         },
         {
           "id": "welcome_chat_023",
@@ -2781,14 +2781,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:25",
           "speaker": "sakuya",
           "speakerLabel": "saku",
-          "text": "続きは、#esp32-sensor で。"
+          "text": "続きは、#GSW-esp32 で。"
         },
         {
           "id": "welcome_chat_041",
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "新しくできた #esp32-sensor を開く。投稿はまだ一件もない。最初の一行を任された空白が、もう怖いものには見えなかった。"
+          "text": "新しくできた #GSW-esp32 を開く。投稿はまだ一件もない。最初の一行を任された空白が、もう怖いものには見えなかった。"
         },
         {
           "id": "welcome_chat_042",
