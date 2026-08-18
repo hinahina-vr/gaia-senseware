@@ -6369,7 +6369,6 @@ body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
 
 .novel-layer.is-slack .novel-slack-post.is-new {
   scroll-margin-bottom: 22px;
-  box-shadow: inset 3px 0 rgba(18, 100, 163, 0.78);
 }
 
 @media (max-width: 600px) {
