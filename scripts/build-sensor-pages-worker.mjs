@@ -59,6 +59,7 @@ function findGeneratedModule(directory) {
 
 function validateGenerated(source) {
   if (!source.includes("env.ASSETS.fetch(request)")) throw new Error("Generated worker lost the static ASSETS fallback.");
+  if (!source.includes("Accept-Ranges") || !source.includes("Content-Range")) throw new Error("Generated worker lost audio byte-range support.");
   if (/\b(?:from|import)\s*\(?["'][^"']+\.ts["']/u.test(source)) throw new Error("Generated worker still imports TypeScript.");
   if (/sourceMappingURL/u.test(source)) throw new Error("Generated worker must not reference a local source map.");
   for (const secret of ["GOOGLE_CLIENT_SECRET", "SESSION_SECRET", "DEVICE_TOKEN_PEPPER", "PAIRING_CODE_PEPPER"]) {

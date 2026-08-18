@@ -32,6 +32,9 @@ check("Pages routes invoke Functions only for API", () => {
 
 check("advanced mode entrypoint delegates API and has one static fallback", () => {
   assert.match(pagesEntry, /url\.pathname\.startsWith\("\/api\/"\)/u);
+  assert.match(pagesEntry, /Accept-Ranges/u);
+  assert.match(pagesEntry, /Content-Range/u);
+  assert.match(pagesEntry, /status: 206/u);
   assert.equal((entrypoint.match(/env\.ASSETS\.fetch\(request\)/gu) ?? []).length, 1);
   assert.doesNotMatch(entrypoint, /(?:from|import)\s*\(?["'][^"']+\.ts["']/u);
   assert.doesNotMatch(entrypoint, /sourceMappingURL/u);
