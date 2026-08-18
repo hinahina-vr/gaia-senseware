@@ -54,6 +54,7 @@ const baseState = {
 
 const installFrameTrace = async (page) => page.evaluate(() => {
   const text = document.querySelector("#novel-text");
+  const cursor = document.querySelector("#novel-cursor");
   const source = text.getAttribute("aria-label") || "";
   const sourceGlyphs = Array.from(source);
   const samples = [];
@@ -72,7 +73,10 @@ const installFrameTrace = async (page) => page.evaluate(() => {
     const outOfOrder = flags.slice(visibleCount).some(Boolean);
     const state = text.dataset.revealState || "";
     const stepId = document.querySelector("#novel-layer")?.dataset.stepId || "";
-    samples.push({ time: performance.now(), visibleCount, visible, outOfOrder, state, stepId });
+    const cursorStyle = getComputedStyle(cursor);
+    const cursorVisible = !cursor.hidden && cursorStyle.display !== "none" && cursorStyle.visibility !== "hidden" && Number(cursorStyle.opacity || 1) > 0;
+    samples.push({ time: performance.now(), visibleCount, visible, outOfOrder, cursorVisible, state, stepId });
+    if (cursorVisible) globalThis.__vnRevealTrace.errors.push("block cursor became visible");
     if (outOfOrder) globalThis.__vnRevealTrace.errors.push("later glyph became visible before an earlier glyph");
     if (visible !== sourceGlyphs.slice(0, visibleCount).join("")) globalThis.__vnRevealTrace.errors.push("visible text is not a source prefix");
     if (previousCount > visibleCount) globalThis.__vnRevealTrace.errors.push("visible prefix moved backwards");

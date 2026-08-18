@@ -2345,10 +2345,7 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
 }
 
 .novel-cursor {
-  display: inline-block;
-  margin-left: 3px;
-  color: rgba(var(--novel-cyan), 0.75);
-  animation: novel-cursor-blink 680ms steps(1) infinite;
+  display: none !important;
 }
 
 .novel-cursor[hidden] {
@@ -5518,7 +5515,6 @@ body.novel-reduced-motion .story-detour-dock * {
   opacity: 0;
   pointer-events: none;
 }
-.novel-layer.is-slack .novel-cursor { display: block; }
 
 .novel-layer.is-slack[data-slack-device="mobile"] {
   --novel-slack-height: min(82dvh, 810px, calc(100dvh - var(--novel-slack-top) - 18px));
