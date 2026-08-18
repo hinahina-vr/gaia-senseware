@@ -106,6 +106,30 @@ const scanEnding = (page) => page.evaluate(() => {
   };
 });
 
+const scanReturnedTitle = (page) => page.evaluate((storageKey) => {
+  const layer = document.querySelector("#novel-layer");
+  const title = document.querySelector("#novel-title-screen");
+  const runtime = document.querySelector("#novel-runtime");
+  const start = document.querySelector("#novel-start-button");
+  const startRect = start?.getBoundingClientRect();
+  const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+  return {
+    titleVisible: Boolean(layer?.classList.contains("is-title") && title && !title.hidden),
+    runtimeHidden: Boolean(runtime?.hidden),
+    staffRollCount: document.querySelectorAll(".novel-staff-roll").length,
+    obsoleteEndCount: document.querySelectorAll(".novel-end-v6").length,
+    obsoleteCopyVisible: layer?.innerText?.includes("END OF PLAYER STORY") || layer?.innerText?.includes("次の来場者を待っています") || false,
+    clear: globalThis.GaiaNovel?.getState?.().clear,
+    archivesUnlocked: globalThis.GaiaNovel?.getState?.().archivesUnlocked,
+    savedClear: saved.clear,
+    savedArchivesUnlocked: saved.archivesUnlocked,
+    audioTrack: globalThis.GaiaOpeningAudio?.getState?.().track || "",
+    startHeight: startRect?.height || 0,
+    overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
+    overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
+  };
+}, STORAGE_KEY);
+
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
   for (const viewport of viewports) {
@@ -153,8 +177,25 @@ try {
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-complete.png`), animations: "disabled" });
 
     await page.locator(".novel-staff-roll-finale button").click();
-    await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true);
-    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, beforeY, afterY, completed, passed: true });
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-title") && !document.querySelector("#novel-title-screen")?.hidden);
+    await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true && globalThis.GaiaNovel.getState().archivesUnlocked === true);
+    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "story", null, { timeout: 6_500 });
+    const returnedTitle = await scanReturnedTitle(page);
+    assert.equal(returnedTitle.titleVisible, true, `${viewport.name}: credits did not return directly to title`);
+    assert.equal(returnedTitle.runtimeHidden, true);
+    assert.equal(returnedTitle.staffRollCount, 0);
+    assert.equal(returnedTitle.obsoleteEndCount, 0);
+    assert.equal(returnedTitle.obsoleteCopyVisible, false);
+    assert.equal(returnedTitle.clear, true);
+    assert.equal(returnedTitle.archivesUnlocked, true);
+    assert.equal(returnedTitle.savedClear, true);
+    assert.equal(returnedTitle.savedArchivesUnlocked, true);
+    assert.equal(returnedTitle.audioTrack, "story");
+    assert(returnedTitle.startHeight >= 44, `${viewport.name}: title START hit area is under 44px`);
+    assert.equal(returnedTitle.overflowX, 0);
+    assert.equal(returnedTitle.overflowY, 0);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-returned-title.png`), animations: "disabled" });
+    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, beforeY, afterY, completed, returnedTitle, passed: true });
     await context.close();
   }
 
@@ -169,7 +210,16 @@ try {
   assert(reduced.buttonHeight >= 44);
   assert.equal(reduced.overflowX, 0);
   await reducedPage.screenshot({ path: path.join(outputDir, "mobile-390-reduced.png"), animations: "disabled" });
-  report.reducedMotion = { ...reduced, passed: true };
+  await reducedPage.locator(".novel-staff-roll-finale button").click();
+  await reducedPage.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-title"));
+  const reducedReturnedTitle = await scanReturnedTitle(reducedPage);
+  assert.equal(reducedReturnedTitle.titleVisible, true);
+  assert.equal(reducedReturnedTitle.obsoleteEndCount, 0);
+  assert.equal(reducedReturnedTitle.clear, true);
+  assert.equal(reducedReturnedTitle.savedClear, true);
+  assert.equal(reducedReturnedTitle.overflowX, 0);
+  assert.equal(reducedReturnedTitle.overflowY, 0);
+  report.reducedMotion = { ...reduced, returnedTitle: reducedReturnedTitle, passed: true };
   await reducedContext.close();
 
   assert.equal(report.consoleErrors.length, 0, `console errors: ${report.consoleErrors.join("\n")}`);

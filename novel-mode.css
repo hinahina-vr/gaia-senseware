@@ -4912,8 +4912,7 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 .novel-text:has(.obsolete-inline-card),
 .novel-text:has(.novel-generation-details),
 .novel-text:has(.obsolete-visitor-input),
-.novel-text:has(.novel-final-result),
-.novel-text:has(.novel-end-v6) {
+.novel-text:has(.novel-final-result) {
   height: 100%;
   overflow: auto;
   scrollbar-width: thin;
@@ -4922,8 +4921,7 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 .obsolete-inline-card,
 .novel-generation-details,
 .obsolete-visitor-input,
-.novel-final-result,
-.novel-end-v6 {
+.novel-final-result {
   max-width: 980px;
   margin: 0 auto;
   color: rgba(238, 249, 251, 0.92);
@@ -4950,8 +4948,7 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 
 .obsolete-inline-card p,
 .obsolete-visitor-input p,
-.novel-final-result p,
-.novel-end-v6 p { margin: 0; }
+.novel-final-result p { margin: 0; }
 
 .novel-record-label,
 .novel-final-result article > strong {
@@ -5023,8 +5020,7 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 .obsolete-visitor-input > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
 .obsolete-visitor-input button,
-.novel-final-result button,
-.novel-end-v6 button {
+.novel-final-result button {
   min-height: 44px;
   padding: 9px 15px;
   border: 1px solid rgba(169, 221, 239, 0.3);
@@ -5041,11 +5037,6 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
 .novel-final-result article[data-kind="VISITOR_POST"] { border-left-color: #f6d54c; }
 .novel-final-result small { display: block; margin-top: 5px; color: rgba(196, 224, 233, 0.68); }
 .novel-final-trace { padding: 9px 12px; border: 1px dashed rgba(246, 213, 76, 0.42); color: rgba(255, 237, 160, 0.9); font: 700 10px/1.6 Consolas, monospace; }
-
-.novel-end-v6 { display: grid; gap: 14px; text-align: center; }
-.novel-end-v6 h3 { margin: 0; color: rgba(240, 251, 252, 0.96); font-size: clamp(17px, 1.6vw, 25px); }
-.novel-archive-doors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.novel-archive-doors span { min-height: 58px; padding: 12px 8px; border: 1px solid rgba(159, 218, 237, 0.24); background: rgba(5, 22, 39, 0.56); color: rgba(190, 229, 241, 0.82); font-size: 11px; }
 
 .story-detour-dock {
   position: fixed;
@@ -5096,11 +5087,8 @@ body.novel-reduced-motion .story-detour-dock * {
   .novel-text:has(.obsolete-inline-card),
   .novel-text:has(.novel-generation-details),
   .novel-text:has(.obsolete-visitor-input),
-  .novel-text:has(.novel-final-result),
-  .novel-text:has(.novel-end-v6) { font-size: 13px; line-height: 1.55; }
+  .novel-text:has(.novel-final-result) { font-size: 13px; line-height: 1.55; }
   .novel-generation-details dl > div { grid-template-columns: 1fr; gap: 2px; }
-  .novel-archive-doors { grid-template-columns: 1fr; }
-  .novel-archive-doors span { min-height: 44px; }
   .story-detour-dock { right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); width: calc(100vw - 20px); max-height: min(54dvh, 430px); padding: 14px; overflow-y: auto; }
   .story-detour-dock-controls button { flex: 1 1 42%; }
 }

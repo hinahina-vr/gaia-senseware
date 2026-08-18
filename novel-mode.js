@@ -3573,43 +3573,13 @@
     requestAnimationFrame(() => next.focus({ preventScroll: true }));
   };
 
-  const renderEnd = (step) => {
-    prepareStepFrame(step);
+  const renderEnd = () => {
     clearTimers();
-    elements.close.hidden = true;
-    setCharacterPresentation("system");
     state.clear = true;
     state.archivesUnlocked = true;
     saveProgress();
-    elements.speaker.textContent = "END OF PLAYER STORY";
-    elements.cursor.hidden = true;
-    elements.continueMark.classList.remove("is-visible");
-    const end = document.createElement("section");
-    end.className = "novel-end-v6";
-    const title = document.createElement("h3");
-    const copy = document.createElement("p");
-    title.textContent = "STARTへ戻した端末が、次の来場者を待っています。";
-    copy.textContent = "観測した現在地と選択は、この端末に保存されています。属性や得点を表示せず、選び直せる記録として残ります。";
-    const archive = document.createElement("div");
-    archive.className = "novel-archive-doors";
-    [
-      ["A", "三人が会うまで"],
-      ["B", "GAIA SENSEWAREを作った一年"],
-      ["C", "データと科学の補足"],
-    ].forEach(([code, label]) => {
-      const item = document.createElement("span");
-      item.textContent = `${code}｜${label}`;
-      archive.append(item);
-    });
-    const start = document.createElement("button");
-    start.type = "button";
-    start.textContent = "STARTへ戻る";
-    start.addEventListener("click", () => {
-      showTitle();
-    });
-    end.append(title, copy, archive, start);
-    elements.text.replaceChildren(end);
-    requestAnimationFrame(() => start.focus({ preventScroll: true }));
+    requestStoryTrack("story", 1.1);
+    showTitle();
   };
 
   function renderCurrentStep() {

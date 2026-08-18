@@ -142,8 +142,10 @@ try {
     assert.equal(await page.evaluate(() => globalThis.GaiaNovel.getState().stepId), "welcome_chat_095");
     assert.equal(await page.locator("#novel-close-button").isHidden(), true, `${viewport.name}: duplicate section control remained on credits`);
     await page.locator(".novel-staff-roll button").click();
-    await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true);
-    assert.equal(await page.locator("#novel-close-button").isHidden(), true, `${viewport.name}: section control remained on END`);
+    await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true && document.querySelector("#novel-layer")?.classList.contains("is-title"));
+    assert.equal(await page.locator("#novel-title-screen").isVisible(), true, `${viewport.name}: credits did not return to title`);
+    assert.equal(await page.locator(".novel-end-v6").count(), 0, `${viewport.name}: obsolete END panel remained`);
+    assert.equal(await page.locator("#novel-close-button span:first-child").textContent(), "戻る");
 
     const finalScan = await layoutScan(page);
     assert.equal(finalScan.overflowX, 0, `${viewport.name}: ending overflows horizontally`);

@@ -165,7 +165,7 @@ try {
     await startPage.waitForFunction(() => Boolean(globalThis.GaiaNovel));
     await startPage.evaluate(() => {
       localStorage.removeItem("gaiaSensewareNovel:progress");
-      localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+          localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
       globalThis.GaiaNovel.open();
     });
     await startPage.locator("#novel-start-button").click();
@@ -449,11 +449,10 @@ try {
     const endLabel = `${viewport.name}-end`;
     const { context: endContext, page: endPage } = await createPage(viewport, endLabel);
     await bootAt(endPage, "welcome_chat_095");
-    for (let attempt = 0; attempt < 4 && await endPage.locator(".novel-end-v6").count() === 0; attempt += 1) {
-      await endPage.locator("#novel-dialogue").click({ position: { x: 20, y: 20 } });
-      await endPage.waitForTimeout(80);
-    }
-    assert.equal(await endPage.locator(".novel-end-v6").count(), 1, `${endLabel}: END was not reached`);
+    await endPage.locator(".novel-staff-roll-finale button").click();
+    await endPage.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-title"));
+    assert.equal(await endPage.locator("#novel-title-screen").isVisible(), true, `${endLabel}: title was not restored`);
+    assert.equal(await endPage.locator(".novel-end-v6").count(), 0, `${endLabel}: obsolete END panel remained`);
     const endScan = { ...(await layoutSnapshot(endPage)), clear: await endPage.evaluate(() => globalThis.GaiaNovel.getState().clear) };
     assert.equal(endScan.clear, true);
     assert.equal(endScan.overflow, false);
