@@ -55,6 +55,7 @@ const baseState = {
 const installFrameTrace = async (page) => page.evaluate(() => {
   const text = document.querySelector("#novel-text");
   const cursor = document.querySelector("#novel-cursor");
+  const scriptDebug = document.querySelector("#novel-script-debug");
   const source = text.getAttribute("aria-label") || "";
   const sourceGlyphs = Array.from(source);
   const samples = [];
@@ -75,8 +76,11 @@ const installFrameTrace = async (page) => page.evaluate(() => {
     const stepId = document.querySelector("#novel-layer")?.dataset.stepId || "";
     const cursorStyle = getComputedStyle(cursor);
     const cursorVisible = !cursor.hidden && cursorStyle.display !== "none" && cursorStyle.visibility !== "hidden" && Number(cursorStyle.opacity || 1) > 0;
-    samples.push({ time: performance.now(), visibleCount, visible, outOfOrder, cursorVisible, state, stepId });
+    const scriptDebugStyle = getComputedStyle(scriptDebug);
+    const scriptDebugVisible = scriptDebugStyle.display !== "none" && scriptDebugStyle.visibility !== "hidden" && Number(scriptDebugStyle.opacity || 1) > 0;
+    samples.push({ time: performance.now(), visibleCount, visible, outOfOrder, cursorVisible, scriptDebugVisible, state, stepId });
     if (cursorVisible) globalThis.__vnRevealTrace.errors.push("block cursor became visible");
+    if (scriptDebugVisible) globalThis.__vnRevealTrace.errors.push("SCRIPT debug overlay became visible");
     if (outOfOrder) globalThis.__vnRevealTrace.errors.push("later glyph became visible before an earlier glyph");
     if (visible !== sourceGlyphs.slice(0, visibleCount).join("")) globalThis.__vnRevealTrace.errors.push("visible text is not a source prefix");
     if (previousCount > visibleCount) globalThis.__vnRevealTrace.errors.push("visible prefix moved backwards");
@@ -248,6 +252,10 @@ try {
         lines: Number(document.querySelector("#novel-text")?.dataset.measuredLineCount || 0),
         tokenCount: document.querySelectorAll("#novel-text .novel-phrase-token, #novel-text .novel-space-token").length,
         glyphCount: document.querySelectorAll("#novel-text .novel-reveal-glyph").length,
+        scriptDebugRect: (() => {
+          const rect = document.querySelector("#novel-script-debug").getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        })(),
         overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       }));
       assert.equal(pageInfo.text, pageInfo.aria, `${tag}: DOM/source mismatch`);
@@ -255,6 +263,7 @@ try {
       assert.equal(pageInfo.pageIndex, 2, `${tag}: second page was not rendered`);
       assert(pageInfo.lines <= 3, `${tag}: page exceeds three lines`);
       assert(pageInfo.tokenCount > 0, `${tag}: phrase token DOM missing`);
+      assert.deepEqual(pageInfo.scriptDebugRect, { width: 0, height: 0 }, `${tag}: SCRIPT debug hit area remains`);
       assert(pageInfo.overflowX <= 1, `${tag}: horizontal overflow`);
       if (mode === "normal") await page.screenshot({ path: path.join(outputDir, `${tag}.png`), fullPage: true });
       report.scans.push({ tag, pages: pageTraces, pageInfo });

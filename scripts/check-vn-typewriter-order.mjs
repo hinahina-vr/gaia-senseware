@@ -29,6 +29,7 @@ check("initial resize reflow cannot replace the reveal DOM", runtime.includes("w
 check("CSS hides only unrevealed glyphs", css.includes(".novel-text.is-revealing .novel-reveal-glyph") && css.includes(".novel-reveal-glyph.is-visible"));
 check("scramble fade is disabled during reveal", /\.novel-text\.is-revealing\s*\{\s*animation:\s*none;/u.test(css));
 check("block cursor is removed", !html.includes(">▌</span>") && /\.novel-cursor\s*\{\s*display:\s*none !important;/u.test(css));
+check("SCRIPT debug overlay is removed", /\.novel-script-debug\s*\{[\s\S]*?display:\s*none !important;/u.test(css));
 check("runtime cache key is current", html.includes("gaia-log-round3-1"));
 
 console.log(JSON.stringify({ status: "passed", checks: checks.length, names: checks }, null, 2));

@@ -7618,7 +7618,7 @@ body:not(.gx-story-open) .novel-layer.is-central-entrance-distance[data-step-typ
   .novel-operations-phone-view { transition: none; }
 }
 
-/* Debug locator: the runtime binds the flattened story number and raw step ID. */
+/* Keep the internal script locator out of the reader-facing interface. */
 .novel-script-debug[hidden] {
   display: none !important;
 }
@@ -7630,7 +7630,7 @@ body:not(.gx-story-open) .novel-layer.is-central-entrance-distance[data-step-typ
   left: max(14px, env(safe-area-inset-left));
   max-width: calc(100vw - 28px);
   box-sizing: border-box;
-  display: inline-flex;
+  display: none !important;
   align-items: center;
   gap: 4px;
   margin: 0;
