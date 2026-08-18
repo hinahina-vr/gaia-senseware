@@ -32,11 +32,11 @@ assert.match(cssSource, /flex-wrap: wrap;/u);
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?section-separator=1`);
 const story = globalThis.GAIA_NOVEL_STORY;
-assert.equal(story.scenes.length, 23, "section separator scope must cover all 23 scenes");
+assert.equal(story.scenes.length, 6, "section separator scope must cover all 6 contest-v10 scenes");
 const transitionSeparators = story.scenes.flatMap((scene) => [scene.temporal?.entryTransition, ...(scene.temporal?.transitions || [])]
   .filter((transition) => transition?.fromTemporalContext && transition?.toTemporalContext)
   .map((transition) => ({ kind: "transition", id: transition.stepId, title: transition.displayTitle })));
-assert.equal(transitionSeparators.length, 6, "transition separator scope changed");
+assert.equal(transitionSeparators.length, 0, "contest-v10 introduced an unexpected temporal transition separator");
 const separatorCases = [
   ...story.scenes.map((scene) => ({ kind: "scene", id: scene.id, title: scene.title, chapter: scene.chapter })),
   ...transitionSeparators,
@@ -46,6 +46,7 @@ const { chromium } = await import(pathToFileURL(path.join(moduleRoot, "index.mjs
 const browser = await chromium.launch({ executablePath, headless: true, args: ["--no-first-run", "--disable-background-networking"] });
 const routeUrl = new URL("/story", baseUrl).href;
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
+const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
 const CONFIG_KEY = "gaiaSensewareNovel:config:v2";
 const errors = [];
 const responses404 = [];
@@ -172,9 +173,16 @@ try {
       await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
       await page.evaluate(() => globalThis.GaiaNovel.open());
 
+      await page.evaluate(() => document.querySelector("#novel-start-button").click());
+      await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "opening-sequence");
+      const openingStep = await page.locator("#novel-layer").getAttribute("data-step-id");
+      await page.locator("#novel-opening-sequence").press("Enter");
+      await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
+      assert.equal(await page.locator("#novel-layer").getAttribute("data-step-id"), openingStep, `${label}: opening skipped the first story step`);
+
       const startedAt = await page.evaluate(() => {
         const started = performance.now();
-        document.querySelector("#novel-start-button").click();
+        document.querySelector("#novel-restart-button").click();
         return started;
       });
       await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "section-separator");
@@ -210,15 +218,22 @@ try {
       await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType !== "section-separator");
       assert.equal(await page.locator("#novel-layer").getAttribute("data-step-id"), restartStep, `${label}: manual dismiss skipped the first step`);
 
-      await page.evaluate(({ storageKey, configKey, stateValue, reduced }) => {
+      await page.evaluate(({ storageKey, manualSaveKey, configKey, stateValue, reduced }) => {
         localStorage.setItem(storageKey, JSON.stringify(stateValue));
+        localStorage.setItem(manualSaveKey, JSON.stringify([{
+          progress: stateValue,
+          savedAt: Date.now(),
+          meta: { title: "Section separator QA", excerpt: stateValue.stepId },
+        }]));
         localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 200, reducedMotion: reduced }));
-      }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, stateValue: baseState("opening_empty_seat_005"), reduced: reducedMotion });
+      }, { storageKey: STORAGE_KEY, manualSaveKey: MANUAL_SAVE_KEY, configKey: CONFIG_KEY, stateValue: baseState("festival_concept_005"), reduced: reducedMotion });
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
       await page.evaluate(() => globalThis.GaiaNovel.open());
       await page.locator("#novel-resume-button").click();
-      await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "opening_empty_seat_005");
+      await page.locator("#novel-save-panel").waitFor({ state: "visible" });
+      await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+      await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "festival_concept_005");
       assert.notEqual(await page.locator("#novel-layer").getAttribute("data-step-type"), "section-separator", `${label}: RESUME incorrectly replayed the scene title`);
 
       await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", { detail: { index: 2, source: "separator-check" } })));
@@ -256,10 +271,10 @@ try {
       if (viewport.width >= 1024) assert.equal(layout.lineCount, 1, `${viewport.name}/${item.id}: PC separator is not one line ${JSON.stringify(layout.lines)}`);
       report.scans.push({ viewport: viewport.name, ...item, layout, passed: true });
     }
-    const evidenceItem = separatorCases.find((item) => item.id === "current_exhibition");
+    const evidenceItem = separatorCases.find((item) => item.id === story.startSceneId);
     await renderSeparatorCase(page, evidenceItem);
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-current-exhibition.png`), animations: "disabled", timeout: 90000 });
-    if (viewport.width === 390) {
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-festival-concept.png`), animations: "disabled", timeout: 90000 });
+    if (viewport.width === 390 && transitionSeparators.length) {
       const transitionEvidence = transitionSeparators.reduce((longest, item) => item.title.length > longest.title.length ? item : longest);
       await renderSeparatorCase(page, transitionEvidence);
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-transition-wrap.png`), animations: "disabled", timeout: 90000 });
@@ -269,7 +284,7 @@ try {
   assert.equal(errors.length, 0, `browser errors: ${errors.join(" | ")}`);
   assert.equal(responses404.length, 0, `404 responses: ${responses404.join(" | ")}`);
   report.status = "passed";
-  console.log("section separator browser check passed: 23 scenes + 6 transitions, 2048/1440/1280/1024/390 layout, normal/reduced timing, NEW GAME/RESTART/RESUME/mode entry, manual dismiss");
+  console.log("section separator browser check passed: 6 scenes, 2048/1440/1280/1024/390 layout, normal/reduced timing, OPENING/RESTART/RESUME/mode entry, manual dismiss");
 } catch (error) {
   report.status = "failed";
   report.failure = error instanceof Error ? error.message : String(error);

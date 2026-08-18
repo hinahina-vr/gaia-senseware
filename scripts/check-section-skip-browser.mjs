@@ -97,7 +97,9 @@ try {
     assert.equal(await page.locator("#novel-close-button").getAttribute("aria-label"), "ストーリーメニューを閉じる");
 
     await page.locator("#novel-start-button").click();
-    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "section-separator");
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "opening-sequence");
+    await page.locator("#novel-opening-sequence").press("Enter");
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
     const before = await layoutScan(page);
     assert.equal(before.label, "セクションスキップ");
     assert.match(before.ariaLabel || "", /地球温暖化を地図で見る/u);

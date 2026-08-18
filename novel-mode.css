@@ -1988,6 +1988,7 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
 
 .novel-title-screen[hidden],
 .novel-runtime[hidden],
+.novel-opening-sequence[hidden],
 .novel-chapter-card[hidden],
 .novel-dialogue[hidden],
 .novel-log-panel[hidden] {
@@ -9282,6 +9283,232 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   .novel-staff-roll-skip-hint,
   .novel-staff-roll-finale {
     animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* New-game opening: a short breath between the title menu and the first line. */
+.novel-opening-sequence {
+  position: absolute;
+  z-index: 24;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: rgba(245, 252, 255, 0.96);
+  cursor: pointer;
+  isolation: isolate;
+  outline: none;
+}
+
+.novel-opening-sequence-shade {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(10, 27, 48, 0.1), rgba(2, 7, 16, 0.86) 68%),
+    #020711;
+  opacity: 1;
+  transition: opacity 1.5s cubic-bezier(0.2, 0.7, 0.2, 1), background-color 1.5s ease;
+}
+
+.novel-opening-sequence::before,
+.novel-opening-sequence::after {
+  position: absolute;
+  z-index: 1;
+  right: clamp(24px, 7vw, 112px);
+  left: clamp(24px, 7vw, 112px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(197, 235, 255, 0.2) 22%, rgba(197, 235, 255, 0.64) 50%, rgba(197, 235, 255, 0.2) 78%, transparent);
+  content: "";
+  opacity: 0;
+  transform: scaleX(0.08);
+  transition: opacity 900ms ease, transform 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.novel-opening-sequence::before { top: 23%; }
+.novel-opening-sequence::after { bottom: 23%; }
+
+.novel-opening-sequence-title,
+.novel-opening-sequence-scene {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: min(920px, calc(100vw - 48px));
+  text-align: center;
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(14px) scale(0.99);
+  transition: opacity 1.05s ease, filter 1.05s ease, transform 1.05s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.novel-opening-sequence-title > span,
+.novel-opening-sequence-scene > span {
+  color: rgba(175, 231, 242, 0.78);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+}
+
+.novel-opening-sequence-title > strong {
+  margin-top: 24px;
+  font-family: var(--novel-font);
+  font-size: clamp(34px, 5.4vw, 78px);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.32;
+  text-shadow: 0 4px 38px rgba(0, 7, 18, 0.94), 0 0 28px rgba(131, 209, 235, 0.12);
+}
+
+.novel-opening-sequence-title > small {
+  margin-top: 24px;
+  color: rgba(228, 244, 249, 0.56);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+}
+
+.novel-opening-sequence-scene > strong {
+  margin-top: 22px;
+  font-family: var(--novel-font);
+  font-size: clamp(34px, 4.6vw, 64px);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1.35;
+  text-shadow: 0 4px 38px rgba(0, 7, 18, 0.94), 0 0 28px rgba(131, 209, 235, 0.16);
+}
+
+.novel-opening-sequence-scene > small {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  color: rgba(224, 244, 249, 0.7);
+  font-family: var(--novel-font);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+
+.novel-opening-sequence-scene > small::before,
+.novel-opening-sequence-scene > small::after {
+  width: clamp(28px, 6vw, 80px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(174, 229, 241, 0.44));
+  content: "";
+}
+
+.novel-opening-sequence-scene > small::after { transform: scaleX(-1); }
+
+.novel-opening-sequence-hint {
+  position: absolute;
+  z-index: 3;
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 18px));
+  margin: 0;
+  color: rgba(217, 240, 246, 0.42);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 8px;
+  letter-spacing: 0.28em;
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+
+.novel-layer.is-opening-sequence .novel-topbar,
+.novel-layer.is-opening-sequence .novel-progress,
+.novel-layer.is-opening-sequence .novel-script-debug,
+.novel-layer.is-opening-sequence .novel-gallery-button,
+.novel-layer.is-opening-sequence .novel-footer,
+.novel-layer.is-opening-sequence .novel-cast,
+.novel-layer.is-opening-sequence .novel-avatar,
+.novel-layer.is-opening-sequence .novel-signal-caption,
+.novel-layer.is-opening-sequence .novel-dialogue,
+.novel-layer.is-opening-sequence .novel-choices {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.novel-layer[data-opening-phase="title"] .novel-opening-sequence-title {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
+}
+
+.novel-layer[data-opening-phase="title"] .novel-opening-sequence::before,
+.novel-layer[data-opening-phase="title"] .novel-opening-sequence::after,
+.novel-layer[data-opening-phase="scene"] .novel-opening-sequence::before,
+.novel-layer[data-opening-phase="scene"] .novel-opening-sequence::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.novel-layer[data-opening-phase="title"] .novel-opening-sequence-hint,
+.novel-layer[data-opening-phase="scene"] .novel-opening-sequence-hint {
+  opacity: 1;
+}
+
+.novel-layer[data-opening-phase="scene"] .novel-opening-sequence-shade,
+.novel-layer[data-opening-phase="depart"] .novel-opening-sequence-shade {
+  opacity: 0.28;
+}
+
+.novel-layer[data-opening-phase="scene"] .novel-opening-sequence-title {
+  opacity: 0;
+  filter: blur(7px);
+  transform: translateY(-12px) scale(1.01);
+}
+
+.novel-layer[data-opening-phase="scene"] .novel-opening-sequence-scene {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
+}
+
+.novel-layer[data-opening-phase="depart"] .novel-opening-sequence-title,
+.novel-layer[data-opening-phase="depart"] .novel-opening-sequence-scene,
+.novel-layer[data-opening-phase="depart"] .novel-opening-sequence-hint,
+.novel-layer[data-opening-phase="depart"] .novel-opening-sequence::before,
+.novel-layer[data-opening-phase="depart"] .novel-opening-sequence::after {
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(-8px) scale(1.01);
+}
+
+@media (max-width: 720px) {
+  .novel-opening-sequence::before { top: 19%; }
+  .novel-opening-sequence::after { bottom: 19%; }
+
+  .novel-opening-sequence-title,
+  .novel-opening-sequence-scene {
+    width: calc(100vw - 34px);
+  }
+
+  .novel-opening-sequence-title > strong {
+    margin-top: 20px;
+    font-size: clamp(31px, 11vw, 46px);
+    letter-spacing: 0.045em;
+  }
+
+  .novel-opening-sequence-scene > strong {
+    margin-top: 18px;
+    font-size: clamp(31px, 10.2vw, 44px);
+    letter-spacing: 0.08em;
+  }
+
+  .novel-opening-sequence-title > small,
+  .novel-opening-sequence-scene > small {
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novel-opening-sequence-shade,
+  .novel-opening-sequence::before,
+  .novel-opening-sequence::after,
+  .novel-opening-sequence-title,
+  .novel-opening-sequence-scene,
+  .novel-opening-sequence-hint {
     transition: none !important;
   }
 }

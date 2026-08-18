@@ -26,7 +26,7 @@
     <link rel="stylesheet" href="./opening.css?v=gaia-current-ui-hotfix-1" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-ending-roll-1" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-opening-sequence-1" />
     <link rel="stylesheet" href="./gx-mode.css?v=gaia-story-modal-1" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-07" />
@@ -44,7 +44,7 @@
     <script src="./novel-background-cues.js?v=gaia-log-round3-1" defer></script>
     <script src="./novel-back-half-cues.js?v=back-half-1" defer></script>
     <script src="./novel-temporal.js?v=gaia-temporal-1" defer></script>
-    <script src="./novel-mode.js?v=gaia-ending-roll-1" defer></script>
+    <script src="./novel-mode.js?v=gaia-opening-sequence-1" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-04" defer></script>
@@ -1633,6 +1633,30 @@
         </section>
 
         <section class="novel-runtime" id="novel-runtime" hidden aria-live="polite">
+          <div
+            class="novel-opening-sequence"
+            id="novel-opening-sequence"
+            role="button"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="オープニングを送って本編へ進む"
+            tabindex="-1"
+            hidden
+          >
+            <div class="novel-opening-sequence-shade" aria-hidden="true"></div>
+            <div class="novel-opening-sequence-title">
+              <span>AN ORIGINAL DATA FICTION</span>
+              <strong>今日、はじめまして。</strong>
+              <small>GAIA SENSATION</small>
+            </div>
+            <div class="novel-opening-sequence-scene">
+              <span>01 / CONCEPT</span>
+              <strong>地球の感覚器</strong>
+              <small>海沿いの展示会場</small>
+            </div>
+            <p class="novel-opening-sequence-hint" aria-hidden="true">CLICK / ENTER</p>
+          </div>
+
           <div class="novel-chapter-card" id="novel-chapter-card" hidden>
             <span id="novel-chapter-index">CHAPTER 01</span>
             <strong id="novel-chapter-title"></strong>

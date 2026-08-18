@@ -78,6 +78,8 @@
   const TEXT_PAGE_INDICATOR_SAFETY_PX = 12;
   const SECTION_SEPARATOR_MS = 2200;
   const SECTION_SEPARATOR_REDUCED_MOTION_MS = 2900;
+  const OPENING_SEQUENCE_TIMING = Object.freeze({ title: 760, scene: 2760, depart: 4960, complete: 5840 });
+  const OPENING_SEQUENCE_REDUCED_TIMING = Object.freeze({ title: 260, scene: 1360, depart: 2860, complete: 3460 });
   const FAST_FORWARD_HOLD_DELAY_MS = 180;
   const FAST_FORWARD_STEP_MS = 90;
   const SLACK_ENTER_MS = 760;
@@ -199,6 +201,7 @@
     particles: layer.querySelector("#novel-particles"),
     titleScreen: layer.querySelector("#novel-title-screen"),
     runtime: layer.querySelector("#novel-runtime"),
+    openingSequence: layer.querySelector("#novel-opening-sequence"),
     start: layer.querySelector("#novel-start-button"),
     resume: layer.querySelector("#novel-resume-button"),
     titleGallery: layer.querySelector("#novel-title-gallery-button"),
@@ -261,6 +264,7 @@
     galleryViewerTitle: layer.querySelector("#novel-gallery-viewer-title"),
     modeReadout: layer.querySelector("#novel-mode-readout"),
     progress: layer.querySelector("#novel-progress-bar"),
+    temporalTransition: layer.querySelector("#novel-temporal-transition"),
     chapterCard: layer.querySelector("#novel-chapter-card"),
     chapterIndex: layer.querySelector("#novel-chapter-index"),
     chapterTitle: layer.querySelector("#novel-chapter-title"),
@@ -398,6 +402,8 @@
   let slackScrollGuardUntil = 0;
   let sectionSeparatorTimer = 0;
   let sectionSeparatorActive = false;
+  let openingSequenceActive = false;
+  let openingSequenceTimers = [];
   let sectionSkipPending = false;
   let temporalTransitionTimer = 0;
   let temporalTransitionActive = false;
@@ -1039,6 +1045,19 @@
     layer.classList.toggle("is-motion-reduced", motionReduced());
   };
 
+  const clearOpeningSequenceTimers = () => {
+    openingSequenceTimers.forEach((timer) => window.clearTimeout(timer));
+    openingSequenceTimers = [];
+  };
+
+  const resetOpeningSequence = () => {
+    clearOpeningSequenceTimers();
+    openingSequenceActive = false;
+    layer.classList.remove("is-opening-sequence");
+    delete layer.dataset.openingPhase;
+    if (elements.openingSequence) elements.openingSequence.hidden = true;
+  };
+
   const clearTimers = () => {
     revealGeneration += 1;
     window.clearTimeout(revealTimer);
@@ -1046,6 +1065,7 @@
     window.clearTimeout(autoTimer);
     window.clearTimeout(sectionSeparatorTimer);
     window.clearTimeout(temporalTransitionTimer);
+    clearOpeningSequenceTimers();
     revealTimer = 0;
     revealFrame = 0;
     autoTimer = 0;
@@ -1109,6 +1129,7 @@
   };
 
   const showTitle = () => {
+    resetOpeningSequence();
     hasStarted = false;
     resetFastForward();
     clearScriptDebug();
@@ -2224,6 +2245,9 @@
     isRevealing = false;
     elements.text.classList.remove("is-preparing", "is-revealing", "is-revealed");
     elements.text.replaceChildren(layout);
+    elements.text.classList.add("is-revealed");
+    elements.text.dataset.revealState = "complete";
+    elements.text.dataset.revealCount = String(Array.from(page).length);
     elements.text.dataset.measuredNodeIdentity = layout.dataset.layoutIdentity || "";
     elements.text.setAttribute("aria-label", page);
     elements.cursor.hidden = true;
@@ -2323,6 +2347,66 @@
     else renderCurrentStep();
     return true;
   }
+
+  const setOpeningSequencePhase = (phase) => {
+    if (!openingSequenceActive) return;
+    layer.dataset.openingPhase = phase;
+    window.dispatchEvent(new CustomEvent("gaia:novel-opening-phase", { detail: { phase } }));
+  };
+
+  function finishOpeningSequence() {
+    if (!openingSequenceActive) return false;
+    clearOpeningSequenceTimers();
+    openingSequenceActive = false;
+    elements.openingSequence.hidden = true;
+    layer.classList.remove("is-opening-sequence");
+    delete layer.dataset.openingPhase;
+    requestTrackForBackground(backgroundPresentationForStep(currentStep()), 0.42);
+    renderCurrentStep();
+    return true;
+  }
+
+  const renderOpeningSequence = (step = currentStep()) => {
+    if (!step || !elements.openingSequence) return renderCurrentStep();
+    clearTimers();
+    closeLog();
+    closeSourceDetails();
+    showRuntime();
+    clearScriptDebug();
+    hideSpecialSurfaces();
+    resetDialoguePagination();
+    isRevealing = false;
+    sectionSeparatorActive = false;
+    layer.dataset.sceneId = step.sceneId;
+    layer.dataset.stepId = step.id;
+    layer.dataset.stepType = "opening-sequence";
+    layer.classList.add("is-opening-sequence");
+    elements.chapterCard.hidden = true;
+    elements.temporalTransition.hidden = true;
+    elements.dialogue.hidden = true;
+    elements.choices.replaceChildren();
+    elements.choices.classList.remove("is-visible");
+    elements.sourceButton.hidden = true;
+    setCharacterPresentation("chapter");
+    updateProgress();
+    requestStoryTrack("opening", 0.28);
+    elements.openingSequence.hidden = false;
+    openingSequenceActive = true;
+    setOpeningSequencePhase("silence");
+    const timing = motionReduced() ? OPENING_SEQUENCE_REDUCED_TIMING : OPENING_SEQUENCE_TIMING;
+    const schedulePhase = (phase, delay, callback = null) => {
+      openingSequenceTimers.push(window.setTimeout(() => {
+        if (!openingSequenceActive) return;
+        setOpeningSequencePhase(phase);
+        callback?.();
+      }, delay));
+    };
+    schedulePhase("title", timing.title);
+    schedulePhase("scene", timing.scene);
+    schedulePhase("depart", timing.depart);
+    schedulePhase("complete", timing.complete, finishOpeningSequence);
+    requestAnimationFrame(() => elements.openingSequence.focus({ preventScroll: true }));
+  };
 
   function renderChapterTitleUnits(value) {
     const title = String(value || "");
@@ -3691,6 +3775,7 @@
   function advance() {
     if (!isOpen || !hasStarted || pendingInteraction || backgroundTransitionPending) return;
     if (!progressionPanelsClosed()) return;
+    if (finishOpeningSequence()) return;
     if (finishSectionSeparator()) return;
     if (finishTemporalTransitionCard()) return;
     const step = currentStep();
@@ -3716,11 +3801,12 @@
     await revealRuntimeForStep(currentStep(), () => {
       renderEves();
       saveProgress();
-      renderSectionSeparator();
+      renderOpeningSequence();
     });
   };
 
   const restartStory = () => {
+    resetOpeningSequence();
     exitDebugJumpSession();
     const sessionId = state.sessionId || `${Date.now().toString(36)}-restart`;
     state = defaultState();
@@ -4368,6 +4454,7 @@
     }
   }
   function closeNovelNow() {
+    resetOpeningSequence();
     clearTimers();
     resetFastForward();
     closeDetourDock();
@@ -4483,6 +4570,17 @@
   window.addEventListener("gaia:space-return-to-novel", () => completePendingInteraction());
 
   elements.start.addEventListener("click", startNewSession);
+  elements.openingSequence?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    finishOpeningSequence();
+  });
+  elements.openingSequence?.addEventListener("keydown", (event) => {
+    if (!["Enter", " "].includes(event.key) || event.repeat || event.isComposing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    finishOpeningSequence();
+  });
   elements.resume.addEventListener("click", () => openManualArchive("load"));
   elements.titleGallery?.addEventListener("click", openGallery);
   elements.close.addEventListener("click", handleStoryExitControl);
