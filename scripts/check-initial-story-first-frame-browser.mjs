@@ -48,6 +48,7 @@ const report = {
   pageErrors: [],
   responses404: [],
 };
+const focus = process.env.GAIA_FOCUS || "";
 const browser = await chromium.launch({ headless: true, executablePath });
 
 const attachMonitoring = async (page, label) => {
@@ -354,32 +355,68 @@ const scanMetadata = async (viewport, stepId) => {
 const scan009to010 = async (viewport) => {
   const label = `${viewport.name}-festival-009-010`;
   const { context, page } = await createPage(viewport, label);
+  const progress = progressFixture("festival_concept_009");
   await openTitle(page, {
     clear: true,
-    progress: progressFixture("festival_concept_009"),
+    progress,
+    manual: [{
+      progress,
+      savedAt: 1786982400000,
+      meta: { title: "会場案内", excerpt: "操作列のフェード検証" },
+    }],
     config: { messageSpeedPercent: 400, reducedMotion: true },
   });
   await page.locator("#novel-resume-button").click();
+  await page.waitForFunction(() => !document.querySelector("#novel-save-panel")?.hidden);
+  await page.locator(".novel-save-slot[data-slot-index='0']").click();
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "festival_concept_009");
   await page.waitForFunction(() => document.querySelector("#novel-text")?.textContent.trim().length > 0);
   await page.waitForTimeout(140);
-  const before = await page.evaluate(() => ({
-    id: document.querySelector("#novel-layer").dataset.stepId,
-    text: document.querySelector("#novel-text").textContent.trim(),
-    cue: document.querySelector("#novel-layer").dataset.backgroundCue,
-    lines: Math.max(1, Math.round(
-      document.querySelector("#novel-text").getBoundingClientRect().height
-      / Number.parseFloat(getComputedStyle(document.querySelector("#novel-text")).lineHeight),
-    )),
-  }));
-  assert.deepEqual(before, {
-    id: "festival_concept_009",
-    text: "会場案内｜国際展示場 8ホール　学生作品・体験展示",
-    cue: "festival-b-hall-overview",
-    lines: before.lines,
+  const before = await page.evaluate(() => {
+    const dialogue = document.querySelector("#novel-dialogue");
+    const nav = document.querySelector(".novel-topbar nav");
+    const text = document.querySelector("#novel-text");
+    const dialogueRect = dialogue.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+    const pseudo = getComputedStyle(dialogue, "::after");
+    const pseudoBottom = dialogueRect.bottom - Number.parseFloat(pseudo.bottom || "0");
+    const visibleButtons = [...nav.querySelectorAll(":scope > button")].filter((button) => {
+      const style = getComputedStyle(button);
+      const rect = button.getBoundingClientRect();
+      return !button.hidden && style.display !== "none" && rect.width > 0 && rect.height > 0;
+    });
+    return {
+      id: document.querySelector("#novel-layer").dataset.stepId,
+      text: text.textContent.trim(),
+      cue: document.querySelector("#novel-layer").dataset.backgroundCue,
+      lines: Math.max(1, Math.round(
+        text.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(text).lineHeight),
+      )),
+      gradient: pseudo.backgroundImage,
+      gradientBottom: pseudoBottom,
+      navTop: navRect.top,
+      navBottom: navRect.bottom,
+      navTargetMinimum: Math.min(...visibleButtons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return Math.min(rect.width, rect.height);
+      })),
+      overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
   });
+  assert.equal(before.id, "festival_concept_009");
+  assert.equal(before.text, "会場案内｜国際展示場 8ホール　学生作品・体験展示");
+  assert.equal(before.cue, "festival-b-hall-overview");
   assert(before.lines >= 1 && before.lines <= 3);
+  assert(before.gradient.includes("linear-gradient"));
+  assert(before.gradientBottom >= before.navBottom, `${label}: message fade ends before the controls`);
+  assert(before.navTop < before.gradientBottom, `${label}: controls are outside the message fade`);
+  assert(before.navTargetMinimum >= 44, `${label}: control target below 44px`);
+  assert(before.overflowX <= 1, `${label}: horizontal overflow`);
   await page.screenshot({ path: path.join(outputDir, `${label}-009.png`) });
+  await page.locator("#novel-save-button").click();
+  await page.locator("#novel-save-panel").waitFor({ state: "visible" });
+  await page.locator("#novel-save-close").click();
+  await page.locator("#novel-save-panel").waitFor({ state: "hidden" });
   await page.locator("#novel-dialogue").click();
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "festival_concept_010");
   const after = await page.evaluate(() => ({
@@ -390,7 +427,7 @@ const scan009to010 = async (viewport) => {
   }));
   assert.equal(after.id, "festival_concept_010");
   assert(!after.overflowX && !after.overflowY);
-  report.scans.push({ viewport: viewport.name, case: "festival-009-to-010", before, after, passed: true });
+  report.scans.push({ viewport: viewport.name, case: "festival-009-to-010", before, primaryOperation: "SAVE open/close", after, passed: true });
   await context.close();
 };
 
@@ -481,6 +518,25 @@ const scanMapCompositorContract = async (viewport) => {
   report.scans.push({ viewport: viewport.name, case: "map-gpu-compositor-contract", originalGlobalState, open, closed, passed: true });
   await context.close();
 };
+
+if (focus === "festival-009-toolbar") {
+  try {
+    for (const viewport of [viewports[2], viewports[3]]) await scan009to010(viewport);
+    assert.deepEqual(report.consoleErrors, []);
+    assert.deepEqual(report.pageErrors, []);
+    assert.deepEqual(report.responses404, []);
+    report.status = "passed";
+  } catch (error) {
+    report.status = "failed";
+    report.failure = { message: error.message, stack: error.stack };
+    throw error;
+  } finally {
+    fs.writeFileSync(path.join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
+    await browser.close();
+  }
+  console.log(JSON.stringify({ status: report.status, scans: report.scans.length, outputDir }, null, 2));
+  process.exit(0);
+}
 
 try {
   for (const viewport of [viewports[0], viewports[2], viewports[3]]) {

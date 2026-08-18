@@ -7858,15 +7858,17 @@ body.gx-story-open .novel-script-debug-copy {
 }
 
 .novel-dialogue::after {
-  inset: -32px clamp(-54px, -4vw, -28px) -12px !important;
+  inset: -32px clamp(-54px, -4vw, -28px) calc(-1 * (var(--novel-say-bottom) + 10px)) !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(4, 20, 48, 0.14) 18%,
-    rgba(3, 17, 42, 0.58) 54%,
-    rgba(1, 9, 27, 0.92) 100%
+    rgba(4, 20, 48, 0.14) 16%,
+    rgba(3, 17, 42, 0.62) 48%,
+    rgba(1, 9, 27, 0.9) 68%,
+    rgba(2, 12, 31, 0.72) 84%,
+    transparent 100%
   ) !important;
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
@@ -7881,7 +7883,7 @@ body.gx-story-open .novel-script-debug-copy {
 
 @media (max-width: 720px) {
   .novel-dialogue::after {
-    inset: -20px -12px -10px !important;
+    inset: -20px -12px calc(-1 * (var(--novel-say-bottom) + 10px)) !important;
   }
   .novel-text {
     transform: translateY(10px);
@@ -7939,7 +7941,7 @@ body.gx-story-open .novel-script-debug-copy {
   border-radius: 4px !important;
   background: transparent !important;
   box-shadow: none !important;
-  color: rgba(207, 228, 246, 0.72) !important;
+  color: rgba(207, 228, 246, 0.62) !important;
   font-size: inherit !important;
   letter-spacing: 0 !important;
 }
