@@ -23,8 +23,8 @@ const starterConfig = read("smartcity-sensor-starter-kit/esp32-arduino/SmartCity
 const pagesEntry = read("sensor-platform/src/pages-entry.ts");
 const buildScript = read("scripts/build-sensor-pages-worker.mjs");
 
-check("Pages routes invoke Functions only for API", () => {
-  assert.deepEqual(routes, { version: 1, include: ["/api/*"], exclude: [] });
+check("Pages routes invoke Functions for API and ranged audio", () => {
+  assert.deepEqual(routes, { version: 1, include: ["/api/*", "/assets/audio/*"], exclude: [] });
   for (const staticPath of ["/story", "/sensors/", "/novel-mode.js", "/styles.css"]) {
     assert.equal(routes.include.includes(staticPath), false);
   }
