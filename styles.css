@@ -993,8 +993,10 @@ button {
   z-index: 10;
   inset: 0;
   display: block;
-  overflow: hidden auto;
-  scrollbar-width: none;
+  overflow: hidden scroll;
+  scrollbar-color: rgba(var(--intro-rgb), 0.94) rgba(4, 13, 22, 0.88);
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
   color: #f8fbff;
   background: #02060b;
   opacity: 1;
@@ -1011,7 +1013,30 @@ button {
 .intro-layer[data-preview="sound"] { --intro-rgb: 145, 235, 211; }
 
 .intro-layer::-webkit-scrollbar {
-  display: none;
+  display: block;
+  width: 14px;
+}
+
+.intro-layer::-webkit-scrollbar-track {
+  background: rgba(4, 13, 22, 0.88);
+}
+
+.intro-layer::-webkit-scrollbar-thumb {
+  min-height: 72px;
+  border: 2px solid rgba(4, 13, 22, 0.88);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(var(--intro-rgb), 0.9), rgba(var(--intro-rgb), 0.44));
+  box-shadow: 0 0 12px rgba(var(--intro-rgb), 0.24);
+}
+
+.intro-layer::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--intro-rgb), 0.92);
+}
+
+@media (max-width: 720px) {
+  .intro-layer::-webkit-scrollbar {
+    width: 10px;
+  }
 }
 
 .intro-layer[hidden] {
