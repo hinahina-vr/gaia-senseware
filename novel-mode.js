@@ -3464,7 +3464,7 @@
     const kicker = document.createElement("span");
     const title = document.createElement("h2");
     const subtitle = document.createElement("p");
-    kicker.textContent = "AN ORIGINAL DATA FICTION";
+    kicker.textContent = "STAFF & CREDITS";
     title.textContent = "GAIA SENSEWARE";
     subtitle.textContent = "地球の声を聴く、10の感覚器";
     heading.append(kicker, title, subtitle);
@@ -3472,18 +3472,40 @@
     const credits = document.createElement("dl");
     credits.className = "novel-staff-roll-credits";
     [
-      ["企画・制作", "ひなひな"],
-      ["WEB DESIGN / DEVELOPMENT", "HTML・CSS・JavaScript"],
-      ["AI制作支援", "OpenAI Codex"],
-      ["背景美術", "OpenAI ImageGen"],
-      ["参照講義", "ZEN大学『共創地球論』"],
-      ["OPEN DATA", "JAXA・NASA・NOAA・気象庁ほか"],
-    ].forEach(([label, value]) => {
+      { role: "原案・企画・制作", department: "ORIGINAL CONCEPT / DIRECTION / PRODUCTION", names: ["ひなひな"] },
+      { role: "シナリオ", department: "SCENARIO", names: ["ひなひな"] },
+      { role: "WEBデザイン・開発", department: "WEB DESIGN / DEVELOPMENT", names: ["ひなひな"], note: "HTML / CSS / JavaScript" },
+      { role: "AI開発支援", department: "AI DEVELOPMENT SUPPORT", names: ["OpenAI Codex"] },
+      { role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["ひなひな", "OpenAI ImageGen"] },
+      { role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] },
+      { role: "音楽", department: "MUSIC", names: ["Suno AI"] },
+      { role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』"] },
+      { role: "データ提供", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] },
+    ].forEach(({ role, department, names, note = "" }) => {
       const row = document.createElement("div");
+      row.className = "novel-staff-roll-credit";
+      row.dataset.creditRole = department;
       const term = document.createElement("dt");
+      const roleLabel = document.createElement("span");
+      const departmentLabel = document.createElement("small");
       const description = document.createElement("dd");
-      term.textContent = label;
-      description.textContent = value;
+      roleLabel.className = "novel-staff-roll-credit-role";
+      departmentLabel.className = "novel-staff-roll-credit-department";
+      roleLabel.textContent = role;
+      departmentLabel.textContent = department;
+      term.append(roleLabel, departmentLabel);
+      names.forEach((name) => {
+        const creditName = document.createElement("span");
+        creditName.className = "novel-staff-roll-credit-name";
+        creditName.textContent = name;
+        description.append(creditName);
+      });
+      if (note) {
+        const creditNote = document.createElement("small");
+        creditNote.className = "novel-staff-roll-credit-note";
+        creditNote.textContent = note;
+        description.append(creditNote);
+      }
       row.append(term, description);
       credits.append(row);
     });
@@ -3492,16 +3514,18 @@
     closing.className = "novel-staff-roll-closing";
     const closingLead = document.createElement("p");
     const closingLine = document.createElement("strong");
+    const closingCopyright = document.createElement("small");
     const closingMark = document.createElement("span");
     closingLead.textContent = "その選択の中に、今日から私たちもいる。";
     closingLine.textContent = "物語は、ここからも続いていく。";
+    closingCopyright.textContent = "© 2026 GAIA SENSEWARE";
     closingMark.textContent = "END";
-    closing.append(closingLead, closingLine, closingMark);
+    closing.append(closingLead, closingLine, closingCopyright, closingMark);
 
     const skipHint = document.createElement("p");
     skipHint.className = "novel-staff-roll-skip-hint";
     skipHint.setAttribute("aria-hidden", "true");
-    skipHint.textContent = "CLICK / ENTER — CREDITSを送る";
+    skipHint.textContent = "CLICK / ENTER — スタッフロールを送る";
 
     const finale = document.createElement("div");
     finale.className = "novel-staff-roll-finale";

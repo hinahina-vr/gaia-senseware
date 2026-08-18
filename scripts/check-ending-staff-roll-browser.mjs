@@ -87,6 +87,22 @@ const scanEnding = (page) => page.evaluate(() => {
   const stageStyle = getComputedStyle(stage);
   const toolbarStyle = getComputedStyle(toolbar);
   const buttonRect = button?.getBoundingClientRect();
+  const trackRect = track?.getBoundingClientRect();
+  const trackCenterX = trackRect ? trackRect.left + (trackRect.width / 2) : 0;
+  const creditRows = [...document.querySelectorAll(".novel-staff-roll-credit")].map((row) => {
+    const term = row.querySelector("dt");
+    const description = row.querySelector("dd");
+    const rowRect = row.getBoundingClientRect();
+    const termRect = term?.getBoundingClientRect();
+    const descriptionRect = description?.getBoundingClientRect();
+    return {
+      role: row.dataset.creditRole || "",
+      textAlign: getComputedStyle(row).textAlign,
+      rowCenterDelta: Math.abs((rowRect.left + (rowRect.width / 2)) - trackCenterX),
+      termCenterDelta: termRect ? Math.abs((termRect.left + (termRect.width / 2)) - trackCenterX) : null,
+      descriptionCenterDelta: descriptionRect ? Math.abs((descriptionRect.left + (descriptionRect.width / 2)) - trackCenterX) : null,
+    };
+  });
   return {
     stepId: layer?.dataset.stepId,
     phase: shell?.dataset.phase,
@@ -103,6 +119,7 @@ const scanEnding = (page) => page.evaluate(() => {
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
     overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
     bodyOverflowX: Math.max(0, document.body.scrollWidth - innerWidth),
+    creditRows,
   };
 });
 
@@ -146,8 +163,30 @@ try {
     assert.equal(initial.buttonHidden, true, `${viewport.name}: END action was shown before the roll`);
     assert.equal(initial.toolbarHidden, true, `${viewport.name}: normal VN toolbar remained over the ending`);
     assert.match(initial.stageBackground, /event-cg-exhibition-finale-v1\.png/u);
-    ["ひなひな", "OpenAI Codex", "OpenAI ImageGen", "ZEN大学『共創地球論』", "JAXA・NASA・NOAA・気象庁", "物語は、ここからも続いていく。"].forEach((text) => {
-      assert.match(initial.text, new RegExp(text, "u"), `${viewport.name}: missing credit ${text}`);
+    [
+      "原案・企画・制作",
+      "シナリオ",
+      "WEBデザイン・開発",
+      "OpenAI Codex",
+      "キャラクターデザイン",
+      "OpenAI ImageGen",
+      "背景美術",
+      "音楽",
+      "Suno AI",
+      "ZEN大学『共創地球論』",
+      "JAXA / NASA / NOAA",
+      "気象庁 ほか",
+      "物語は、ここからも続いていく。",
+      "© 2026 GAIA SENSEWARE",
+    ].forEach((text) => {
+      assert(initial.text.includes(text), `${viewport.name}: missing credit ${text}`);
+    });
+    assert.equal(initial.creditRows.length, 9, `${viewport.name}: unexpected staff credit row count`);
+    initial.creditRows.forEach((row) => {
+      assert.equal(row.textAlign, "center", `${viewport.name}: ${row.role} is not center aligned`);
+      assert(row.rowCenterDelta <= 1, `${viewport.name}: ${row.role} row is off center by ${row.rowCenterDelta}px`);
+      assert(row.termCenterDelta <= 1, `${viewport.name}: ${row.role} label is off center by ${row.termCenterDelta}px`);
+      assert(row.descriptionCenterDelta <= 1, `${viewport.name}: ${row.role} name is off center by ${row.descriptionCenterDelta}px`);
     });
     assert.equal(initial.overflowX, 0);
     assert.equal(initial.overflowY, 0);
@@ -166,6 +205,25 @@ try {
     const afterY = await page.locator(".novel-staff-roll-track").evaluate((node) => node.getBoundingClientRect().y);
     assert(afterY < beforeY - 2, `${viewport.name}: credits did not move upward (${beforeY} -> ${afterY})`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-rolling.png`) });
+
+    await page.locator(".novel-staff-roll-track").evaluate((node) => {
+      const animation = node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-rise") || node.getAnimations()[0];
+      if (!animation) throw new Error("staff roll animation was not found");
+      animation.pause();
+      animation.currentTime = 34_000;
+    });
+    await page.waitForTimeout(80);
+    const creditsFrame = await scanEnding(page);
+    creditsFrame.creditRows.forEach((row) => {
+      assert(row.rowCenterDelta <= 1, `${viewport.name}: ${row.role} shifted off center during the roll`);
+    });
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-credits.png`) });
+    await page.locator(".novel-staff-roll-track").evaluate((node) => {
+      const animation = node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-rise") || node.getAnimations()[0];
+      animation.currentTime = 50_000;
+    });
+    await page.waitForTimeout(80);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-credits-late.png`) });
 
     await page.locator(".novel-staff-roll").focus();
     await page.keyboard.press("Enter");
