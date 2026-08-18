@@ -308,6 +308,14 @@
   const stepIndexMap = new Map(allSteps.map((step, index) => [step.id, index]));
   const galleryEntries = Object.freeze([...(backgroundCues.gallery || [])]);
   const galleryEntryMap = new Map(galleryEntries.map((entry) => [entry.id, entry]));
+  const galleryPresentations = Object.freeze([
+    Object.freeze({ tone: "arrival", label: "FIRST LIGHT" }),
+    Object.freeze({ tone: "halo", label: "TURNING LIGHT" }),
+    Object.freeze({ tone: "tide", label: "OCEAN GAZE" }),
+    Object.freeze({ tone: "circuit", label: "SHARED PROTOTYPE" }),
+    Object.freeze({ tone: "orbit", label: "SAME CIRCLE" }),
+    Object.freeze({ tone: "horizon", label: "NEXT HORIZON" }),
+  ]);
   if (!galleryEntries.length || galleryEntryMap.size !== galleryEntries.length) {
     throw new Error("[GAIA novel] CG gallery data is unavailable or contains duplicate IDs");
   }
@@ -394,6 +402,7 @@
   let temporalTransitionActive = false;
   let previousFocus = null;
   let galleryPreviousFocus = null;
+  let galleryViewerPreviousFocus = null;
   let archivePreviousFocus = null;
   let archiveMode = "save";
   let pendingSlotAction = "";
@@ -663,14 +672,19 @@
     if (elements.galleryProgressCopy) elements.galleryProgressCopy.textContent = `${count} / ${total} UNLOCKED`;
     if (elements.galleryProgressBar) elements.galleryProgressBar.style.width = `${percentage}%`;
   };
-  const closeGalleryViewer = () => {
+  const closeGalleryViewer = ({ restoreFocus = true } = {}) => {
     if (!elements.galleryViewer) return;
+    const wasOpen = !elements.galleryViewer.hidden;
     elements.galleryViewer.hidden = true;
     elements.galleryViewerImage?.removeAttribute("src");
     if (elements.galleryViewerImage) elements.galleryViewerImage.alt = "";
+    if (wasOpen && restoreFocus) galleryViewerPreviousFocus?.focus?.({ preventScroll: true });
+    galleryViewerPreviousFocus = null;
   };
   const openGalleryViewer = (entry) => {
     if (!entry || !elements.galleryViewer || !getGalleryUnlocks().has(entry.id)) return;
+    galleryViewerPreviousFocus = document.activeElement;
+    elements.galleryViewer.dataset.galleryId = entry.id;
     elements.galleryViewerImage.src = `./${entry.assetPath}`;
     elements.galleryViewerImage.alt = entry.alt;
     elements.galleryViewerChapter.textContent = entry.chapter;
@@ -684,21 +698,27 @@
     const fragment = document.createDocumentFragment();
     galleryEntries.forEach((entry, index) => {
       const available = unlocked.has(entry.id);
+      const presentation = galleryPresentations[index] || { tone: "memory", label: "VISUAL MEMORY" };
       const card = document.createElement("button");
       const visual = document.createElement("span");
       const number = document.createElement("small");
+      const stateLabel = document.createElement("span");
       const copy = document.createElement("span");
       const chapter = document.createElement("small");
       const title = document.createElement("strong");
       card.type = "button";
-      card.className = "novel-gallery-card";
+      card.className = `novel-gallery-card ${available ? "is-unlocked" : "is-locked"}`;
       card.dataset.galleryId = entry.id;
+      card.dataset.galleryTone = presentation.tone;
       card.dataset.unlocked = String(available);
+      card.style.setProperty("--gallery-order", String(index));
       card.setAttribute("aria-label", available ? `${entry.title}を拡大表示` : `CG ${index + 1}、未解放`);
       visual.className = "novel-gallery-card-visual";
       number.className = "novel-gallery-card-number";
       number.textContent = String(index + 1).padStart(2, "0");
-      visual.append(number);
+      stateLabel.className = "novel-gallery-card-state";
+      stateLabel.textContent = available ? presentation.label : "SIGNAL LOCKED";
+      visual.append(number, stateLabel);
       if (available) {
         const image = document.createElement("img");
         image.src = `./${entry.assetPath}`;
@@ -708,7 +728,7 @@
         visual.prepend(image);
       } else {
         const lock = document.createElement("i");
-        lock.textContent = "◇";
+        lock.className = "novel-gallery-lock-symbol";
         lock.setAttribute("aria-hidden", "true");
         visual.append(lock);
       }
@@ -756,7 +776,7 @@
   const closeGallery = ({ restoreFocus = true } = {}) => {
     if (!elements.galleryPanel) return;
     const wasOpen = !elements.galleryPanel.hidden;
-    closeGalleryViewer();
+    closeGalleryViewer({ restoreFocus: false });
     elements.galleryPanel.hidden = true;
     elements.galleryPanel.setAttribute("aria-hidden", "true");
     elements.galleryButton?.setAttribute("aria-expanded", "false");
