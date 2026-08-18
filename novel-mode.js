@@ -20,6 +20,18 @@
   const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
   const LEGACY_MANUAL_KEYS = ["gaia_novel_manual_saves_v6", "gaiaSensewareNovel:manual-saves:v1"];
   const SLOT_COUNT = 6;
+  const PC_CANVAS_WIDTH = 1920;
+  const PC_CANVAS_HEIGHT = 1080;
+  const syncPcCanvas = () => {
+    const enabled = window.innerWidth >= PC_CANVAS_WIDTH && window.innerHeight >= PC_CANVAS_HEIGHT;
+    const scale = enabled
+      ? Math.min(window.innerWidth / PC_CANVAS_WIDTH, window.innerHeight / PC_CANVAS_HEIGHT)
+      : 1;
+    document.body.classList.toggle("novel-pc-canvas", enabled);
+    document.body.style.setProperty("--novel-pc-scale", scale.toFixed(6));
+    layer.dataset.pcCanvas = enabled ? `${PC_CANVAS_WIDTH}x${PC_CANVAS_HEIGHT}` : "fluid";
+  };
+  syncPcCanvas();
   const BASE_INTERFACE_SELECTOR = [
     "#gaia-canvas",
     ".abstract-mode-background",
@@ -4727,6 +4739,7 @@
   document.addEventListener("keyup", endControlFastForward, true);
   window.addEventListener("blur", () => endControlFastForward());
   document.addEventListener("visibilitychange", () => endControlFastForward());
+  window.addEventListener("resize", syncPcCanvas, { passive: true });
   window.addEventListener("resize", repaginateVisibleDialogue, { passive: true });
   document.fonts?.addEventListener?.("loadingdone", repaginateVisibleDialogue);
   if (globalThis.ResizeObserver) {
