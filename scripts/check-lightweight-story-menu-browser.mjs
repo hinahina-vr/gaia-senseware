@@ -448,7 +448,7 @@ const scanRuntimeStoryContract = async () => {
       },
     };
   });
-  assert.equal(scan.sourceSha256, "e0204b52dda9c0b94f45d59a3ff436257c23d3cf35852f1a0a9cf03a7b9c9f13");
+  assert.equal(scan.sourceSha256, "8bb9b30ecfb423f5f6f8c6f9b42207aff71fe30b988c952adb5facd4e414fc03");
   assert.equal(scan.sceneCount, 6);
   assert.equal(scan.stepCount, 396);
   assert.deepEqual(scan.userVisiblePlacementVerbStepIds, []);
