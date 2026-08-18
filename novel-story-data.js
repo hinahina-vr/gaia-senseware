@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "0caa42fb73d5d20145264158305dabbe0aeef5a2d39b839cce1da73637a7ca35",
+  "sourceSha256": "e0204b52dda9c0b94f45d59a3ff436257c23d3cf35852f1a0a9cf03a7b9c9f13",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -2711,7 +2711,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:22",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "saku、今日は返事が早いね。"
+          "text": "saku、ESP32の話になると返事が早いね。"
         },
         {
           "id": "welcome_chat_033",
@@ -2720,7 +2720,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:22",
           "speaker": "mizuha",
           "speakerLabel": "みず",
-          "text": "では、観測項目と単位、測定間隔、設置条件、欠測時の表示を順に決めますわ。"
+          "text": "それでは、まず一台で試しましょう。温度と湿度を、何分おきに測るか決めたいですわ。"
         },
         {
           "id": "welcome_chat_034",
@@ -2736,7 +2736,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:23",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "読んだ。長い。まず一台分にして。"
+          "text": "じゃあ、一分おきで。センサーの場所はあとで考えよう。"
         },
         {
           "id": "welcome_chat_036",
@@ -2745,7 +2745,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:23",
           "speaker": "mizuha",
           "speakerLabel": "みず",
-          "text": "一台分でも、決めることは減りませんの。"
+          "text": "データが届かなかったときの表示も、あとで決めましょう。"
         },
         {
           "id": "welcome_chat_037",
@@ -2754,7 +2754,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:23",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "分かってる。消さなくていい。順番だけ。"
+          "text": "了解。青猫さん、その設定でつなげそう？"
         },
         {
           "id": "welcome_chat_038",
@@ -2772,7 +2772,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:24",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "ええ。動いたら次だね。どんどんやろう。"
+          "text": "お願い。動いたら、照度も足してみよう。"
         },
         {
           "id": "welcome_chat_040",
@@ -2781,7 +2781,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "18:25",
           "speaker": "sakuya",
           "speakerLabel": "saku",
-          "text": "続きは、新しいスレッドで。"
+          "text": "続きは、#esp32-sensor で。"
         },
         {
           "id": "welcome_chat_041",
