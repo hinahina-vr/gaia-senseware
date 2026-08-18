@@ -27,6 +27,7 @@
 
   void audio.restoreNavigationState().then((result) => {
     needsAction = Boolean(result?.blocked);
+    button.dataset.audioReady = "true";
     sync();
   });
 })();

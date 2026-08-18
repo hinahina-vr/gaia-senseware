@@ -60,7 +60,7 @@ try {
     await page.locator("#sensor-audio-qa-link").click();
     await page.waitForURL(/\/sensors\/?$/u);
     await page.waitForFunction(() => Boolean(globalThis.GaiaOpeningAudio && document.querySelector("#sensor-audio-toggle")));
-    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().playing === true, null, { timeout: 10_000 });
+    await page.waitForFunction(() => document.querySelector("#sensor-audio-toggle")?.dataset.audioReady === "true" && globalThis.GaiaOpeningAudio?.getState?.().playing === true, null, { timeout: 10_000 });
     const after = await page.evaluate(() => {
       const state = globalThis.GaiaOpeningAudio.getPlaybackState();
       const button = document.querySelector("#sensor-audio-toggle");
@@ -89,7 +89,7 @@ try {
     await page.locator("#sensor-audio-toggle").click();
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().playing === true && globalThis.GaiaOpeningAudio?.getState?.().muted === false);
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => document.querySelector("#sensor-audio-toggle")?.dataset.needsAction === "true" || globalThis.GaiaOpeningAudio?.getState?.().playing === true, null, { timeout: 10_000 });
+    await page.waitForFunction(() => document.querySelector("#sensor-audio-toggle")?.dataset.audioReady === "true", null, { timeout: 10_000 });
     const resumeRequired = await page.locator("#sensor-audio-toggle").getAttribute("data-needs-action") === "true";
     if (resumeRequired) await page.locator("#sensor-audio-toggle").click();
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().playing === true, null, { timeout: 10_000 });
