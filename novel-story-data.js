@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "d66b55436fe441f57768f5c8a9e9c37c96bbd3ac764dc7a25c24bda75690b1cc",
+  "sourceSha256": "20079297fbb8395f69579e38ba0a43384b3d43b581cdbcac527df76cfa4060e5",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -3103,7 +3103,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "返事の遅い人が、今日の話を二行で作品の中心へ戻した。"
+          "text": "その二行が、今日の展示で見てきたものと、これから始める観測をつないだ。"
         },
         {
           "id": "welcome_chat_085",
@@ -3159,7 +3159,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面を閉じ、機材箱を抱えた二人へ顔を上げる。"
+          "text": "スマートフォンをポケットへ戻す。顔を上げると、隣を歩く二人と目が合った。"
         },
         {
           "id": "welcome_chat_093",
