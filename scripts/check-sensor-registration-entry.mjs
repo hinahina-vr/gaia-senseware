@@ -53,4 +53,13 @@ check("responsive styles preserve readable three-step layouts", () => {
   assert.match(css, /\.sensor-login \.sensor-primary \{ width: 100%; min-width: 0;/u);
 });
 
+check("sensor workspace uses the same typographic roles as the GAIA main UI", () => {
+  assert.match(css, /--font-ja: "Yu Mincho"/u);
+  assert.match(css, /--font-ui: "Arial Narrow"/u);
+  assert.match(css, /--font-display: Georgia/u);
+  assert.match(css, /body \{[\s\S]*font-family: var\(--font-ui\)/u);
+  assert.match(css, /\.sensor-login h1,[\s\S]*font-family: var\(--font-ja\)/u);
+  assert.match(css, /\.sensor-primary,[\s\S]*font-family: var\(--font-ja\)/u);
+});
+
 console.log(JSON.stringify({ status: "passed", scans: report.length, report }, null, 2));
