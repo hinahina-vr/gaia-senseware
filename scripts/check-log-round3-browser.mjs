@@ -36,6 +36,7 @@ const expectedText = new Map([
   ["circle_invitation_046", "「これから、よろしくお願いします」"],
   ["circle_invitation_053", "通知音に、あめがこちらを見た。"],
   ["circle_invitation_055", "「ええ。参加できています」"],
+  ["welcome_chat_015", "まだ会ったことのないsakuから、短いメッセージが届いた。"],
   ["welcome_chat_020", "sakuの短い返事で、画面越しの距離が縮まった。初めてのチャットなのに、このまま話を続けられる気がした。"],
   ["welcome_chat_081", "次に測る場所、決まったら教えて。"],
   ["welcome_chat_095", "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。"],
@@ -50,10 +51,10 @@ const expectedAssets = new Map([
   ["circle_invitation_029", "event-cg-circle-invitation-card-v2.png"],
 ]);
 const specialIds = new Set(["gx_experience_047", "welcome_chat_081", "welcome_chat_095"]);
-assert.equal(expectedText.size, 21);
+assert.equal(expectedText.size, 22);
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
 assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 396);
-assert.equal(story.sourceSha256, "150ed7b00481fab2bf1fbe801356f2b83eee6e342c86040a32fa97b4a0dd0ea6");
+assert.equal(story.sourceSha256, "0caa42fb73d5d20145264158305dabbe0aeef5a2d39b839cce1da73637a7ca35");
 
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },

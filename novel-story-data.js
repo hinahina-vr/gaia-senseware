@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "150ed7b00481fab2bf1fbe801356f2b83eee6e342c86040a32fa97b4a0dd0ea6",
+  "sourceSha256": "0caa42fb73d5d20145264158305dabbe0aeef5a2d39b839cce1da73637a7ca35",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -2564,7 +2564,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "表示されたのは、まだ会ったことのないsakuというハンドルネームだった。人物画像は出ない。短い文章だけが届く。"
+          "text": "まだ会ったことのないsakuから、短いメッセージが届いた。"
         },
         {
           "id": "welcome_chat_016",

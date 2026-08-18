@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "150ed7b00481fab2bf1fbe801356f2b83eee6e342c86040a32fa97b4a0dd0ea6";
+const expectedHash = "0caa42fb73d5d20145264158305dabbe0aeef5a2d39b839cce1da73637a7ca35";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 58, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 55753, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 55675, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
@@ -113,6 +113,7 @@ assert.equal(story.scenes.some((scene) => scene.id === "current_exhibition"), fa
 const welcome = story.scenes.find((scene) => scene.id === "welcome_chat");
 assert.equal(welcome.steps[0].type, "chatSurface");
 assert.equal(welcome.steps[6].text, "ESP32に詳しい。参加者が測った温度や湿度をGAIA SENSEWAREに表示する案を出してくれたよ。", "welcome_chat_007の紹介文が決定稿と一致しません");
+assert.equal(welcome.steps[14].text, "まだ会ったことのないsakuから、短いメッセージが届いた。", "welcome_chat_015の導入文が決定稿と一致しません");
 assert.ok(welcome.steps.slice(3, 40).some((step) => step.type === "chat"), "welcome_chat wide chat区間がありません");
 assert.ok(welcome.steps.slice(54, 77).some((step) => step.type === "dialogue"), "welcome_chat物理会話区間がありません");
 assert.deepEqual(welcome.steps.slice(80, 83).map((step) => [step.id, step.type, step.speaker]), [
