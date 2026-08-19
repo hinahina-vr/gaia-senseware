@@ -29,6 +29,7 @@ const scan = (page) => page.evaluate(() => {
     openingNodePresent: Boolean(document.querySelector("#novel-opening-sequence")),
     openingClass: layer?.classList.contains("is-opening-sequence") || false,
     openingPhase: layer?.dataset.openingPhase || "",
+    runtimeTransition: layer?.dataset.runtimeTransition || "",
     chapterVisible: Boolean(chapterCard && !chapterCard.hidden),
     dialogueVisible: Boolean(dialogue && !dialogue.hidden),
     text: text?.textContent.trim() || "",
@@ -40,7 +41,7 @@ const scan = (page) => page.evaluate(() => {
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
   for (const viewport of viewports) {
-    const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
+    const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
     const page = await context.newPage();
     page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
@@ -50,17 +51,38 @@ try {
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
     await page.evaluate(() => {
       localStorage.clear();
-      localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+      localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: false }));
       localStorage.setItem("gaia-senseware-bgm-volume", "0");
       globalThis.GaiaNovel.open();
     });
     await page.locator("#novel-start-button").click();
+    await page.waitForFunction(() => document.body.classList.contains("scene-transitioning"));
+    await page.waitForTimeout(220);
+    const transition = await page.evaluate(() => ({
+      active: document.body.classList.contains("scene-transitioning"),
+      canvasVisible: !document.querySelector("#scene-transition")?.hidden,
+      titleVisible: !document.querySelector("#novel-title-screen")?.hidden,
+      runtimeHidden: document.querySelector("#novel-runtime")?.hidden,
+      startDisabled: document.querySelector("#novel-start-button")?.disabled,
+      phase: document.querySelector("#novel-layer")?.dataset.runtimeTransition || "",
+    }));
+    assert.deepEqual(transition, {
+      active: true,
+      canvasVisible: true,
+      titleVisible: true,
+      runtimeHidden: true,
+      startDisabled: true,
+      phase: "covering",
+    }, `${viewport.name}: story start transition did not cover the title before the runtime swap`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-transition.png`) });
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "section-separator");
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.runtimeReveal === "revealed");
     const chapter = await scan(page);
     assert.equal(chapter.stepId, "festival_concept_001", `${viewport.name}: first step changed`);
     assert.equal(chapter.openingNodePresent, false, `${viewport.name}: removed opening markup remains`);
     assert.equal(chapter.openingClass, false, `${viewport.name}: removed opening class remains`);
     assert.equal(chapter.openingPhase, "", `${viewport.name}: removed opening phase remains`);
+    assert.equal(chapter.runtimeTransition, "complete", `${viewport.name}: story start transition did not finish`);
     assert.equal(chapter.chapterVisible, true, `${viewport.name}: initial chapter card is missing`);
     assert.equal(chapter.dialogueVisible, false, `${viewport.name}: dialogue appeared under the chapter card`);
 
@@ -74,8 +96,43 @@ try {
     assert.equal(firstLine.overflowX, 0, `${viewport.name}: horizontal overflow`);
     assert.equal(firstLine.overflowY, 0, `${viewport.name}: vertical overflow`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-first-line.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, chapter, firstLine, passed: true });
+    report.scans.push({ viewport: viewport.name, transition, chapter, firstLine, passed: true });
     await context.close();
+
+    const reducedContext = await browser.newContext({ viewport, reducedMotion: "reduce" });
+    const reducedPage = await reducedContext.newPage();
+    const reducedLabel = `${viewport.name}-reduced`;
+    reducedPage.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${reducedLabel}: ${message.text()}`); });
+    reducedPage.on("pageerror", (error) => report.pageErrors.push(`${reducedLabel}: ${error.message}`));
+    reducedPage.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${reducedLabel}: ${response.url()}`); });
+    await reducedPage.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await reducedPage.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
+    await reducedPage.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+      localStorage.setItem("gaia-senseware-bgm-volume", "0");
+      globalThis.GaiaNovel.open();
+    });
+    await reducedPage.locator("#novel-start-button").click();
+    await reducedPage.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.runtimeReveal === "revealed");
+    const reduced = await reducedPage.evaluate(() => ({
+      active: document.body.classList.contains("scene-transitioning"),
+      canvasHidden: document.querySelector("#scene-transition")?.hidden,
+      titleHidden: document.querySelector("#novel-title-screen")?.hidden,
+      runtimeVisible: !document.querySelector("#novel-runtime")?.hidden,
+      phase: document.querySelector("#novel-layer")?.dataset.runtimeTransition || "",
+      stepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
+    }));
+    assert.deepEqual(reduced, {
+      active: false,
+      canvasHidden: true,
+      titleHidden: true,
+      runtimeVisible: true,
+      phase: "reduced",
+      stepId: "festival_concept_001",
+    }, `${viewport.name}: reduced motion did not use the immediate story start path`);
+    report.scans.at(-1).reduced = reduced;
+    await reducedContext.close();
   }
 
   assert.deepEqual(report.consoleErrors, []);

@@ -1223,6 +1223,7 @@
     resetFastForward();
     clearScriptDebug();
     hideSpecialSurfaces();
+    delete layer.dataset.runtimeTransition;
     layer.classList.add("is-title");
     elements.titleScreen.hidden = false;
     elements.runtime.hidden = true;
@@ -1386,11 +1387,12 @@
 
   const nextPaint = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
-  const revealRuntimeForStep = async (step, reveal) => {
+  const revealRuntimeForStep = async (step, reveal, { transition = false } = {}) => {
     const target = resolveVisibleStep(step?.id) || step;
     if (!target || runtimeRevealPending) return false;
     runtimeRevealPending = true;
     layer.dataset.runtimeReveal = "preparing";
+    layer.dataset.runtimeTransition = transition ? "preparing" : "none";
     layer.setAttribute("aria-busy", "true");
     [elements.start, elements.resume].forEach((control) => { control.disabled = true; });
     try {
@@ -1406,11 +1408,36 @@
       requestTrackForBackground(presentation);
       layer.dataset.runtimeReveal = "paint-ready";
       await nextPaint();
-      reveal();
-      await nextPaint();
+      let revealed = false;
+      const revealOnce = () => {
+        if (revealed) return;
+        revealed = true;
+        reveal();
+      };
+      if (transition && !motionReduced()) {
+        layer.dataset.runtimeTransition = "covering";
+        await runSceneTransition(async () => {
+          revealOnce();
+          layer.dataset.runtimeTransition = "revealing";
+          await nextPaint();
+        }, null, "novel");
+        if (!revealed) {
+          revealOnce();
+          await nextPaint();
+        }
+        layer.dataset.runtimeTransition = "complete";
+      } else {
+        revealOnce();
+        await nextPaint();
+        layer.dataset.runtimeTransition = transition ? "reduced" : "none";
+      }
       layer.dataset.runtimeReveal = "revealed";
       window.dispatchEvent(new CustomEvent("gaia:novel-runtime-revealed", {
-        detail: { stepId: target.id, backgroundCue: layer.dataset.backgroundCue || "" },
+        detail: {
+          stepId: target.id,
+          backgroundCue: layer.dataset.backgroundCue || "",
+          transition: layer.dataset.runtimeTransition,
+        },
       }));
       return true;
     } finally {
@@ -3832,7 +3859,7 @@
       renderEves();
       saveProgress();
       renderSectionSeparator();
-    });
+    }, { transition: true });
   };
 
   const restartStory = () => {
