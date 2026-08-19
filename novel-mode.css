@@ -9462,7 +9462,7 @@ body:not(.gx-story-open) .novel-layer:has(.novel-dialogue:not([hidden])):not(.is
 }
 
 .novel-dialogue::after {
-  inset: -8px clamp(-72px, -5vw, -34px) calc(-1 * (var(--novel-say-bottom) + 12px)) !important;
+  inset: -8px clamp(-72px, -5vw, -34px) calc(-1 * var(--novel-say-bottom)) !important;
   background: linear-gradient(
     180deg,
     rgba(54, 109, 176, 0.08) 0%,
@@ -9513,12 +9513,12 @@ body:not(.gx-story-open) .novel-layer:has(.novel-dialogue:not([hidden])):not(.is
 
   .novel-dialogue::before {
     top: -6px !important;
-    right: -18px !important;
-    left: -18px !important;
+    right: -12px !important;
+    left: -12px !important;
   }
 
   .novel-dialogue::after {
-    inset: -6px -18px calc(-1 * (var(--novel-say-bottom) + 12px)) !important;
+    inset: -6px -12px calc(-1 * var(--novel-say-bottom)) !important;
     -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%) !important;
     mask-image: linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%) !important;
   }
