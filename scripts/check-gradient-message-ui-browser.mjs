@@ -57,6 +57,7 @@ const snapshot = (page) => page.evaluate(() => {
   const overlaps = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
   const dialogue = document.querySelector("#novel-dialogue");
   const speaker = document.querySelector("#novel-speaker");
+  const text = document.querySelector("#novel-text");
   const layer = document.querySelector("#novel-layer");
   const activeCharacter = [...document.querySelectorAll(".novel-character")].find((character) => {
     const style = getComputedStyle(character);
@@ -100,6 +101,7 @@ const snapshot = (page) => page.evaluate(() => {
     speaker: speakerRect,
     speakerText: speaker.textContent,
     speakerDisplay: getComputedStyle(speaker).display,
+    textShadow: getComputedStyle(text).textShadow,
     speakerCenterDelta: speakerRect ? Math.abs(((speakerRect.left + speakerRect.right) / 2) - ((dialogueRect.left + dialogueRect.right) / 2)) : 0,
     speakerBorder: getComputedStyle(speaker).borderWidth,
     nav: navButtons,
@@ -146,6 +148,8 @@ try {
     assert.equal(dialogue.portraitMask, "none");
     assert.equal(dialogue.portraitFadeDisplay, "none");
     assert(dialogue.speaker && dialogue.speakerText && dialogue.speakerBorder === "0px");
+    assert.match(dialogue.textShadow, /rgba\(0, 5, 22, 0\.98\)/u);
+    assert.match(dialogue.textShadow, /rgba\(0, 3, 14, 0\.88\)/u);
     assert.deepEqual(dialogue.visibleNav, expectedNav);
     assert(dialogue.targetMinimum >= 44 && dialogue.iconCount === 7 && !dialogue.navDialogueOverlap && !dialogue.navSelfOverlap && dialogue.navViewportContained && !dialogue.horizontalOverflow, `${viewport.name}: dialogue/nav geometry ${JSON.stringify(dialogue)}`);
     const restart = dialogue.nav.find((button) => button.id === "novel-restart-button");

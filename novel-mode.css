@@ -9434,7 +9434,9 @@ body:not(.gx-story-open) .novel-layer:has(.novel-dialogue:not([hidden])):not(.is
 }
 
 .novel-text {
-  text-shadow: 0 2px 12px rgba(0, 10, 32, 0.82) !important;
+  text-shadow:
+    0 2px 5px rgba(0, 5, 22, 0.98),
+    0 5px 18px rgba(0, 3, 14, 0.88) !important;
 }
 
 .novel-topbar nav > button:not(#novel-close-button):not(#novel-home-button):not(#novel-restart-button) {
