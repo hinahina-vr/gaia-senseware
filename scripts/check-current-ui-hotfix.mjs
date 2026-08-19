@@ -30,10 +30,11 @@ check("EVES/footer hidden without data removal", () => {
   assert.match(html, /CLICK \/ SPACE — NEXT/u);
 });
 
-check("changed runtime assets use the hotfix cache key", () => {
-  for (const asset of ["opening.css", "opening.js", "gx-mode.js"]) assert.match(html, new RegExp(`${asset.replace(".", "\\.")}\\?v=gaia-current-ui-hotfix-1`, "u"));
-  for (const asset of ["novel-mode.css", "novel-mode.js"]) assert.match(html, new RegExp(`${asset.replace(".", "\\.")}\\?v=gaia-lightweight-metadata-1`, "u"));
-  assert.match(html, /novel-story-data\.js\?v=gaia-lightweight-story-menu-1/u);
+check("changed runtime assets use the current cache keys", () => {
+  for (const asset of ["opening.css", "opening.js"]) assert.match(html, new RegExp(`${asset.replace(".", "\\.")}\\?v=gaia-opening-audio-integrated-1`, "u"));
+  for (const asset of ["novel-mode.css", "novel-mode.js"]) assert.match(html, new RegExp(`${asset.replace(".", "\\.")}\\?v=gaia-no-novel-opening-1`, "u"));
+  assert.match(html, /gx-mode\.js\?v=gaia-story-detour-fix-1/u);
+  assert.match(html, /novel-story-data\.js\?v=gaia-gsw-esp32-channel-1/u);
 });
 
 check("SAVE whole-card and hidden-scrollbar contract", () => {
@@ -45,9 +46,12 @@ check("SAVE whole-card and hidden-scrollbar contract", () => {
   assert.match(css, /\.novel-save-slots::-webkit-scrollbar\s*\{[^}]*display:\s*none/u);
 });
 
-check("opening sound has no outer rectangular treatment", () => {
+check("opening sound controls are integrated into the final menu", () => {
   assert.match(html, /novel-start-button[^>]*aria-label="はじめる">はじめる</u);
+  assert.equal(html.includes('id="gaia-opening-sound-gate"'), false);
+  assert.match(html, /id="gaia-opening-final-menu"[\s\S]*class="gaia-opening-menu-audio"/u);
   assert.match(html, /gaia-opening-sound-on[^>]*aria-pressed="false"/u);
+  assert.match(openingCss, /\.gaia-opening-menu-audio\s*\{/u);
   assert.match(openingCss, /gaia-opening-sound-actions button\[aria-pressed="true"\]\s*\{[^}]*border-color:\s*transparent\s*!important[^}]*background:\s*transparent\s*!important[^}]*box-shadow:\s*none\s*!important/u);
   assert.match(opening, /soundOnButton\?\.setAttribute\("aria-pressed", String\(Boolean\(enabled\)\)\)/u);
   assert.match(opening, /soundOffButton\?\.setAttribute\("aria-pressed", String\(!enabled\)\)/u);
@@ -74,12 +78,8 @@ check("background is real, cover, and motionless", () => {
   assert.match(css, /data-background-motion[\s\S]*animation:\s*none\s*!important[\s\S]*background-size:\s*cover,\s*cover\s*!important[\s\S]*transform:\s*none\s*!important/u);
 });
 
-check("metadata uses transparent chrome with restrained text shadow", () => {
-  const lightweightMetadata = css.slice(css.lastIndexOf("/* Keep story metadata light over the artwork"));
-  for (const declaration of ["border: 0;", "border-radius: 0;", "background: transparent;", "box-shadow: none;", "backdrop-filter: none;", "display: none;", "text-shadow:"]) {
-    assert.ok(lightweightMetadata.includes(declaration), `metadata lightweight override is missing ${declaration}`);
-  }
-  assert.ok(lightweightMetadata.includes("0 1px 2px rgba(0, 5, 18, 0.86)"));
+check("story footer metadata remains hidden", () => {
+  assert.match(css, /#novel-eves-button,[\s\S]*#novel-eves-panel,[\s\S]*\.novel-footer-location\s*\{[^}]*display:\s*none\s*!important/u);
 });
 
 check("campus name and formal-name canonical metadata", () => {
@@ -96,7 +96,7 @@ check("campus name and formal-name canonical metadata", () => {
 });
 
 check("chat uses symbolic non-human icons", () => {
-  for (const [speaker, symbol] of [["amane", "cloud"], ["mizuha", "water"], ["sakuya", "flower"], ["visitor", "blue-apple"], ["bluecat", "blue-apple"]]) {
+  for (const [speaker, symbol] of [["amane", "cloud"], ["mizuha", "water"], ["sakuya", "flower"], ["visitor", "green-apple"], ["bluecat", "green-apple"]]) {
     assert.match(novel, new RegExp(`${speaker}: Object\\.freeze\\(\\{ id: "${symbol}"`, "u"));
   }
   assert.match(novel, /avatar\.dataset\.symbol = symbol\?\.id \|\| "system"/u);

@@ -7,7 +7,6 @@
   const preloadPercent = document.querySelector("#gaia-preload-percent");
   const preloadBar = document.querySelector("#gaia-preload-bar");
   const preloadStatus = document.querySelector("#gaia-preload-status");
-  const soundGate = document.querySelector("#gaia-opening-sound-gate");
   const soundOnButton = document.querySelector("#gaia-opening-sound-on");
   const soundOffButton = document.querySelector("#gaia-opening-sound-off");
   const particleCanvas = document.querySelector("#gaia-opening-particles");
@@ -36,6 +35,8 @@
     if (audioVolume instanceof HTMLInputElement) audioVolume.value = String(volume);
     if (openingVolumeValue) openingVolumeValue.textContent = `${volume}%`;
     if (audioVolumeValue) audioVolumeValue.textContent = `${volume}%`;
+    soundOnButton?.setAttribute("aria-pressed", String(!isMuted));
+    soundOffButton?.setAttribute("aria-pressed", String(isMuted));
     if (audioDock) audioDock.dataset.muted = String(isMuted);
     if (audioToggle) {
       audioToggle.setAttribute("aria-pressed", String(isMuted));
@@ -152,7 +153,6 @@
   let exitTimer = 0;
   let finished = false;
   let openingStarted = false;
-  let soundChoiceResolved = false;
   let preloadReady = false;
   let settledPreloads = 0;
   const preloadStartedAt = performance.now();
@@ -431,6 +431,7 @@
       opening.classList.remove("is-active", "is-leaving");
       document.body.classList.remove("gaia-opening-active");
       particleSystem.stop();
+      revealAudioDock();
       if (destination === "story") {
         requestAnimationFrame(() => {
           window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
@@ -448,8 +449,6 @@
     opening.inert = true;
     opening.setAttribute("aria-hidden", "true");
     opening.classList.add("is-leaving");
-    soundGate?.setAttribute("aria-hidden", "true");
-    if (soundGate instanceof HTMLElement) soundGate.hidden = true;
     if (finalMenu instanceof HTMLElement) {
       finalMenu.classList.remove("is-visible");
       finalMenu.hidden = true;
@@ -459,6 +458,7 @@
       opening.hidden = true;
       opening.classList.remove("is-active", "is-leaving");
       document.body.classList.remove("gaia-opening-active");
+      revealAudioDock();
     }, reducedMotion ? 0 : 260);
   };
   window.addEventListener("gaia:novel-open", retireOpeningForStory);
@@ -467,6 +467,7 @@
     if (finished || !(finalMenu instanceof HTMLElement)) return;
     finalMenu.hidden = false;
     opening.classList.add("is-menu-ready");
+    syncAudioControls();
     requestAnimationFrame(() => {
       finalMenu.classList.add("is-visible");
       finalStoryButton?.focus({ preventScroll: true });
@@ -482,7 +483,7 @@
   };
 
   const start = () => {
-    if (openingStarted || !soundChoiceResolved || !preloadReady) return;
+    if (openingStarted || !preloadReady) return;
     openingStarted = true;
     opening.hidden = false;
     opening.classList.add("is-preloaded");
@@ -501,17 +502,13 @@
   };
 
   const tryStart = () => {
-    if (!soundChoiceResolved || !preloadReady || openingStarted) return;
+    if (!preloadReady || openingStarted) return;
     requestAnimationFrame(start);
   };
 
   const chooseSound = async (enabled) => {
-    if (soundChoiceResolved) return;
-    soundChoiceResolved = true;
     soundOnButton?.setAttribute("aria-pressed", String(Boolean(enabled)));
     soundOffButton?.setAttribute("aria-pressed", String(!enabled));
-    opening.classList.remove("is-awaiting-sound");
-    soundGate?.classList.add("is-decided");
 
     const selectedVolume = Number(openingVolume?.value ?? 10) / 100;
     window.GaiaOpeningAudio?.setVolume?.(selectedVolume);
@@ -527,13 +524,7 @@
     }
 
     syncAudioControls();
-    revealAudioDock();
     void window.GaiaOpeningAudio?.preloadTrack?.("story");
-
-    window.setTimeout(() => {
-      if (soundGate) soundGate.hidden = true;
-    }, 390);
-    tryStart();
   };
 
   skipButton?.addEventListener("click", skipToFinalMenu);

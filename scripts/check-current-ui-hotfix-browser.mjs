@@ -217,7 +217,9 @@ const scanTitleAndOpening = async (viewport) => {
 
   const root = await createPage(viewport, `${viewport.name}-sound`, { reducedMotion: "no-preference" });
   await root.page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await root.page.waitForSelector("#gaia-opening-sound-on", { state: "visible" });
+  await root.page.waitForFunction(() => !document.querySelector("#gaia-opening")?.classList.contains("is-preloading"), null, { timeout: 10000 });
+  await root.page.locator("#gaia-opening-skip").click();
+  await root.page.waitForSelector(".gaia-opening-menu-audio #gaia-opening-sound-on", { state: "visible" });
   const soundStates = [];
   for (const selector of ["#gaia-opening-sound-on", "#gaia-opening-sound-off"]) {
     await root.page.locator(selector).focus();

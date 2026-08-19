@@ -89,7 +89,8 @@ try {
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-    await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-off")), null, { timeout: 10000 });
+    await page.waitForFunction(() => !document.querySelector("#gaia-opening")?.classList.contains("is-preloading"), null, { timeout: 10000 });
+    await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-skip")));
     const opening = await page.evaluate(() => {
       const copy = [...document.querySelectorAll(".gaia-vn-panel-character .gaia-vn-character-copy")];
       const byName = (name) => copy.find((node) => node.querySelector("h2")?.textContent.trim() === name);
@@ -103,7 +104,7 @@ try {
       return {
         mizuha: read("ミズハ"),
         amane: read("アマネ"),
-        soundGateVisible: __qaVisible(document.querySelector("#gaia-opening-sound-gate")),
+        soundGateCount: document.querySelectorAll("#gaia-opening-sound-gate").length,
         overflowX: document.documentElement.scrollWidth - innerWidth,
         overflowY: document.documentElement.scrollHeight - innerHeight,
       };
@@ -116,14 +117,14 @@ try {
       quote: "「変わらないものって、変わり続けていることだけなのかもね。」",
       reply: "変化の連なりを、時間の中で見る。",
     });
-    assert(opening.soundGateVisible && opening.overflowX <= 1 && opening.overflowY <= 1);
+    assert.equal(opening.soundGateCount, 0);
+    assert(opening.overflowX <= 1 && opening.overflowY <= 1);
 
-    await page.locator("#gaia-opening-sound-off").click();
-    await page.waitForFunction(() => !document.querySelector("#gaia-opening")?.classList.contains("is-preloading"), null, { timeout: 10000 });
-    await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-skip")));
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-opening.png`), animations: "disabled" });
     await page.locator("#gaia-opening-skip").click();
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-route-story")));
+    await page.waitForFunction(() => __qaVisible(document.querySelector(".gaia-opening-menu-audio")));
+    await page.locator("#gaia-opening-sound-off").click();
     await page.locator("#gaia-opening-route-story").click();
     await page.waitForFunction(() => __qaVisible(document.querySelector("#novel-title-screen")), null, { timeout: 10000 });
     const title = await page.evaluate(() => ({

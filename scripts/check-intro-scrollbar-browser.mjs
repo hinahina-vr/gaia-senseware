@@ -28,8 +28,6 @@ const openFreeExploration = async (page) => {
     };
   });
   await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-off")), null, { timeout: 10_000 });
-  await page.locator("#gaia-opening-sound-off").click();
   await page.waitForFunction(() => !document.querySelector("#gaia-opening")?.classList.contains("is-preloading"), null, { timeout: 10_000 });
   await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-skip")));
   await page.locator("#gaia-opening-skip").click();

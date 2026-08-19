@@ -372,7 +372,8 @@
     });
   };
 
-  // Begin buffering while the visitor is reading the sound-choice dialog.
+  // Begin buffering while the visual opening runs, before the title menu's
+  // integrated sound controls become available.
   void preload();
   document.addEventListener("click", (event) => {
     const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;

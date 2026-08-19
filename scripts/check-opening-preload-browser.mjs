@@ -57,10 +57,8 @@ try {
     await page.evaluate(() => {
       const opening = document.querySelector("#gaia-opening");
       const preload = document.querySelector("#gaia-opening-preload");
-      const soundGate = document.querySelector("#gaia-opening-sound-gate");
       opening.classList.remove("is-preloaded");
       preload.hidden = false;
-      soundGate.hidden = true;
     });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`) });
     report.scans.push({ viewport: viewport.name, ...scan, passed: true });
