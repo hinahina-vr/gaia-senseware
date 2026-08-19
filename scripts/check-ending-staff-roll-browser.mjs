@@ -185,6 +185,7 @@ try {
       "AfterSchool Afterglow",
       "glitchyeventdj664",
       "ZEN大学『共創地球論』",
+      "ZEN大学『人新世の人類学』",
       "JAXA / NASA / NOAA",
       "気象庁 ほか",
       "物語は、ここからも続いていく。",
