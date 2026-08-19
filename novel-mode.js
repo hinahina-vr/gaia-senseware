@@ -3544,7 +3544,7 @@
       { role: "AI開発支援", department: "AI DEVELOPMENT SUPPORT", names: ["OpenAI Codex"] },
       { role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["ひなひな", "OpenAI ImageGen"] },
       { role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] },
-      { role: "音楽", department: "MUSIC", names: ["Planet Forecast — Hope", "Suno AI"] },
+      { role: "音楽", department: "MUSIC", names: ["AfterSchool Afterglow", "glitchyeventdj664"] },
       { role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』"] },
       { role: "データ提供", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] },
     ].forEach(({ role, department, names, note = "" }) => {

@@ -90,6 +90,13 @@
       planet: "PLANET 10",
       signal: "REOPENED MEMORY",
     },
+    ending: {
+      number: "TRACK 11 / ENDING THEME",
+      title: "AfterSchool Afterglow",
+      description: "スタッフロールとともに、物語の余韻を次の観測へつなぐエンディングテーマ。",
+      planet: "PLANET 11",
+      signal: "AFTERGLOW SIGNAL",
+    },
   });
 
   let isOpen = false;

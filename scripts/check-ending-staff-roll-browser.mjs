@@ -162,7 +162,7 @@ try {
     attachDiagnostics(page, viewport.name);
     const audioRuntimeResponse = await page.request.get(new URL("/opening-audio.js", baseUrl).href);
     assert.equal(audioRuntimeResponse.ok(), true, `${viewport.name}: opening-audio.js was not available`);
-    assert.match(await audioRuntimeResponse.text(), /ending:\s*"\.\/assets\/audio\/satellite-forecast-hope\.mp3"/u, `${viewport.name}: ending is not mapped to TRACK 01`);
+    assert.match(await audioRuntimeResponse.text(), /ending:\s*"\.\/assets\/audio\/after-school-afterglow\.mp3"/u, `${viewport.name}: ending is not mapped to AfterSchool Afterglow`);
     await bootAtEnding(page, false);
 
     const initial = await scanEnding(page);
@@ -182,8 +182,8 @@ try {
       "OpenAI ImageGen",
       "背景美術",
       "音楽",
-      "Planet Forecast — Hope",
-      "Suno AI",
+      "AfterSchool Afterglow",
+      "glitchyeventdj664",
       "ZEN大学『共創地球論』",
       "JAXA / NASA / NOAA",
       "気象庁 ほか",
@@ -209,13 +209,28 @@ try {
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-whiteout.png`) });
 
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 6_500 });
+    const playbackBeforeToggle = await page.evaluate(() => globalThis.GaiaOpeningAudio?.getPlaybackState?.());
+    if (!playbackBeforeToggle?.playing || playbackBeforeToggle.muted) {
+      await page.evaluate(() => globalThis.GaiaOpeningAudio?.setVolume?.(0.1, 0));
+      await page.locator("#gaia-audio-toggle").click();
+      await page.waitForTimeout(120);
+      const playbackAfterExpand = await page.evaluate(() => globalThis.GaiaOpeningAudio?.getPlaybackState?.());
+      if (!playbackAfterExpand?.playing || playbackAfterExpand.muted) {
+        await page.locator("#gaia-audio-toggle").click();
+      }
+    }
+    await page.waitForFunction(() => {
+      const playback = globalThis.GaiaOpeningAudio?.getPlaybackState?.();
+      return playback?.track === "ending" && playback.playing && !playback.muted && playback.duration > 0;
+    }, null, { timeout: 10_000 });
+    const endingPlayback = await page.evaluate(() => globalThis.GaiaOpeningAudio.getPlaybackState());
     const endingTrack = await page.evaluate(() => globalThis.GaiaOpeningAudio.getState().track);
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "rolling", null, { timeout: 6_000 });
     const beforeY = await page.locator(".novel-staff-roll-track").evaluate((node) => node.getBoundingClientRect().y);
     await page.waitForTimeout(650);
     const afterY = await page.locator(".novel-staff-roll-track").evaluate((node) => node.getBoundingClientRect().y);
     assert(afterY < beforeY - 2, `${viewport.name}: credits did not move upward (${beforeY} -> ${afterY})`);
-    assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/satellite-forecast-hope.mp3") && [200, 206].includes(response.status)), `${viewport.name}: TRACK 01 audio was not requested`);
+    assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/after-school-afterglow.mp3") && [200, 206].includes(response.status)), `${viewport.name}: AfterSchool Afterglow was not requested`);
     assert(!report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/planet-forecast-first-light.mp3")), `${viewport.name}: previous ending track is still requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-rolling.png`) });
 
@@ -271,7 +286,7 @@ try {
     assert.equal(dataDestination.overflowX, 0);
     assert.equal(dataDestination.overflowY, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-data-page.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, beforeY, afterY, completed, dataDestination, passed: true });
+    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, completed, dataDestination, passed: true });
     await context.close();
   }
 
