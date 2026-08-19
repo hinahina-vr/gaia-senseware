@@ -40,17 +40,32 @@ const baseState = (storyVersion, stepId, reachedSceneIds = []) => ({
 });
 
 const layoutScan = (page) => page.evaluate(() => {
-  const close = document.querySelector("#novel-close-button").getBoundingClientRect();
+  const closeButton = document.querySelector("#novel-close-button");
+  const homeButton = document.querySelector("#novel-home-button");
+  const close = closeButton.getBoundingClientRect();
+  const home = homeButton.getBoundingClientRect();
   const audio = document.querySelector(".gaia-audio-dock")?.getBoundingClientRect();
+  const overlaps = (first, second) => !(
+    first.right <= second.left
+    || first.left >= second.right
+    || first.bottom <= second.top
+    || first.top >= second.bottom
+  );
   return {
-    label: document.querySelector("#novel-close-button span")?.textContent,
-    ariaLabel: document.querySelector("#novel-close-button")?.getAttribute("aria-label"),
+    label: closeButton.textContent.trim(),
+    ariaLabel: closeButton.getAttribute("aria-label"),
+    closeArrow: getComputedStyle(closeButton, "::before").content,
+    closeRect: close.toJSON(),
+    homeLabel: homeButton.textContent.trim(),
+    homeAriaLabel: homeButton.getAttribute("aria-label"),
+    homeHidden: homeButton.hidden,
+    homeRect: home.toJSON(),
     layerOpen: document.querySelector("#novel-layer")?.classList.contains("is-open"),
     titleVisible: !document.querySelector("#novel-title-screen")?.hidden,
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
-    closeAudioOverlap: audio
-      ? !(close.right <= audio.left || close.left >= audio.right || close.bottom <= audio.top || close.top >= audio.bottom)
-      : false,
+    closeHomeOverlap: !homeButton.hidden && overlaps(close, home),
+    closeAudioOverlap: audio ? overlaps(close, audio) : false,
+    homeAudioOverlap: !homeButton.hidden && audio ? overlaps(home, audio) : false,
   };
 });
 
@@ -93,17 +108,44 @@ try {
       localStorage.clear();
       globalThis.GaiaNovel.open();
     });
-    assert.equal(await page.locator("#novel-close-button span:first-child").textContent(), "戻る");
+    assert.equal((await page.locator("#novel-close-button").textContent()).trim(), "戻る");
     assert.equal(await page.locator("#novel-close-button").getAttribute("aria-label"), "ストーリーメニューを閉じる");
+    assert.equal(await page.locator("#novel-home-button").isHidden(), true, `${viewport.name}: duplicate top return is visible on title`);
 
     await page.locator("#novel-start-button").click();
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
     const before = await layoutScan(page);
     assert.equal(before.label, "セクションスキップ");
+    assert(before.closeArrow.includes("→"), `${viewport.name}: section skip direction is not forward`);
     assert.match(before.ariaLabel || "", /地球温暖化を地図で見る/u);
+    assert.equal(before.homeLabel, "トップへ戻る");
+    assert.equal(before.homeAriaLabel, "物語を閉じてトップページへ戻る");
+    assert.equal(before.homeHidden, false, `${viewport.name}: real top return is hidden in runtime`);
+    assert(before.closeRect.height >= 44, `${viewport.name}: section skip hit area is under 44px`);
+    assert(before.homeRect.height >= 44, `${viewport.name}: top return hit area is under 44px`);
+    assert.equal(before.closeHomeOverlap, false, `${viewport.name}: section skip overlaps top return`);
     assert.equal(before.closeAudioOverlap, false, `${viewport.name}: audio control overlaps section skip`);
+    assert.equal(before.homeAudioOverlap, false, `${viewport.name}: audio control overlaps top return`);
     assert.equal(before.overflowX, 0, `${viewport.name}: runtime overflows horizontally`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-section-skip.png`), animations: "disabled" });
+
+    await page.locator("#novel-home-button").focus();
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(() => (
+      document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "true"
+      && !document.querySelector("#intro-layer")?.hidden
+    ));
+    assert.notEqual(new URL(page.url()).hash, "#story", `${viewport.name}: top return kept the story route`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-top-return.png`), animations: "disabled" });
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
+    await page.evaluate(() => {
+      localStorage.clear();
+      globalThis.GaiaNovel.open();
+    });
+    await page.locator("#novel-start-button").click();
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
 
     await page.locator("#novel-close-button").focus();
     await page.keyboard.press("Enter");
@@ -139,11 +181,12 @@ try {
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-staff-roll"));
     assert.equal(await page.evaluate(() => globalThis.GaiaNovel.getState().stepId), "welcome_chat_095");
     assert.equal(await page.locator("#novel-close-button").isHidden(), true, `${viewport.name}: duplicate section control remained on credits`);
-    await page.locator(".novel-staff-roll button").click();
+    await page.locator('.novel-staff-roll button[aria-label="スタッフロールを終えて物語を閉じる"]').click();
     await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true && document.querySelector("#novel-layer")?.classList.contains("is-title"));
     assert.equal(await page.locator("#novel-title-screen").isVisible(), true, `${viewport.name}: credits did not return to title`);
     assert.equal(await page.locator(".novel-end-v6").count(), 0, `${viewport.name}: obsolete END panel remained`);
-    assert.equal(await page.locator("#novel-close-button span:first-child").textContent(), "戻る");
+    assert.equal((await page.locator("#novel-close-button").textContent()).trim(), "戻る");
+    assert.equal(await page.locator("#novel-home-button").isHidden(), true, `${viewport.name}: top return remained on title`);
 
     const finalScan = await layoutScan(page);
     assert.equal(finalScan.overflowX, 0, `${viewport.name}: ending overflows horizontally`);

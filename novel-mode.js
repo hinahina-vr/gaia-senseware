@@ -216,6 +216,7 @@
     titleGallery: layer.querySelector("#novel-title-gallery-button"),
     titleGalleryProgress: layer.querySelector("#novel-title-gallery-progress"),
     close: layer.querySelector("#novel-close-button"),
+    home: layer.querySelector("#novel-home-button"),
     restart: layer.querySelector("#novel-restart-button"),
     auto: layer.querySelector("#novel-auto-button"),
     fastForward: layer.querySelector("#novel-fast-forward-button"),
@@ -1149,11 +1150,11 @@
   const currentStep = () => stepMap.get(state.stepId) || null;
   const currentScene = () => sceneMap.get(currentStep()?.sceneId) || null;
   const syncSectionSkipControl = () => {
-    const label = elements.close.querySelector("span:first-child");
-    const arrow = elements.close.querySelector("span:last-child");
-    if (!hasStarted || layer.classList.contains("is-title")) {
-      if (label) label.textContent = "戻る";
-      if (arrow) arrow.textContent = "←";
+    const isRuntime = hasStarted && !layer.classList.contains("is-title");
+    elements.home.hidden = !isRuntime;
+    if (!isRuntime) {
+      elements.close.textContent = "戻る";
+      elements.close.dataset.controlMode = "return";
       elements.close.setAttribute("aria-label", "ストーリーメニューを閉じる");
       elements.close.title = "ストーリーメニューを閉じる";
       return;
@@ -1163,8 +1164,8 @@
     const description = nextScene
       ? `現在のセクションをスキップして「${nextScene.title}」へ進む`
       : "現在のセクションをスキップしてエンディングへ進む";
-    if (label) label.textContent = "セクションスキップ";
-    if (arrow) arrow.textContent = "→";
+    elements.close.textContent = "セクションスキップ";
+    elements.close.dataset.controlMode = "skip";
     elements.close.setAttribute("aria-label", description);
     elements.close.title = description;
   };
@@ -3348,6 +3349,7 @@
     prepareStepFrame(step);
     clearTimers();
     elements.close.hidden = true;
+    elements.home.hidden = true;
     suppressCharacterPresentation();
     elements.dialogue.hidden = true;
     elements.sourceButton.hidden = true;
@@ -4515,6 +4517,7 @@
   elements.resume.addEventListener("click", () => openManualArchive("load"));
   elements.titleGallery?.addEventListener("click", openGallery);
   elements.close.addEventListener("click", handleStoryExitControl);
+  elements.home.addEventListener("click", closeNovel);
   elements.restart.addEventListener("click", restartStory);
   elements.logButton.addEventListener("click", toggleLog);
   elements.logClose.addEventListener("click", closeLog);

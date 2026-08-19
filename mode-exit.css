@@ -129,7 +129,8 @@ body.novel-open .novel-topbar #novel-close-button.mode-exit-control:focus-visibl
 #japan-close { --mode-exit-rgb: var(--map-accent-rgb, 148, 234, 209); }
 #gx-close { --mode-exit-rgb: 162, 241, 220; }
 #space-close { --mode-exit-rgb: var(--space-rgb, 151, 190, 255); }
-#novel-close-button { --mode-exit-rgb: var(--novel-cyan, 135, 226, 244); }
+#novel-close-button,
+#novel-home-button { --mode-exit-rgb: var(--novel-cyan, 135, 226, 244); }
 
 #japan-close,
 #gx-close,
@@ -137,8 +138,32 @@ body.novel-open .novel-topbar #novel-close-button.mode-exit-control:focus-visibl
   position: absolute;
 }
 
-#novel-close-button {
+#novel-close-button,
+#novel-home-button {
   position: fixed;
+}
+
+#novel-home-button[hidden] {
+  display: none !important;
+}
+
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control[data-control-mode="skip"]::before {
+  content: "→";
+}
+
+body.novel-open .novel-topbar #novel-home-button.mode-exit-control {
+  z-index: 522;
+  top: max(18px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+  width: 118px;
+}
+
+body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
+  right: max(148px, calc(env(safe-area-inset-right) + 148px));
+}
+
+body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
+  right: max(322px, calc(env(safe-area-inset-right) + 322px)) !important;
 }
 
 .gx-layer[data-return-to="novel"] .gx-close.mode-exit-control {
@@ -174,6 +199,20 @@ body.sound-mode-open .status {
     width: 28px;
     height: 28px;
     font-size: 14px;
+  }
+
+  body.novel-open .novel-topbar #novel-home-button.mode-exit-control {
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    width: 116px;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
+    right: max(140px, calc(env(safe-area-inset-right) + 140px));
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
+    right: max(302px, calc(env(safe-area-inset-right) + 302px)) !important;
   }
 }
 
