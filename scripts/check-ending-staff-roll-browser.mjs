@@ -119,6 +119,7 @@ const scanEnding = (page) => page.evaluate(() => {
     whiteoutAnimation: whiteoutStyle.animationName,
     stageBackground: stageStyle.backgroundImage,
     toolbarHidden: toolbarStyle.visibility === "hidden" && Number(toolbarStyle.opacity) === 0,
+    skipHintCount: document.querySelectorAll(".novel-staff-roll-skip-hint").length,
     buttonHidden: button?.closest(".novel-staff-roll-finale")?.hidden ?? true,
     buttonText: button?.textContent?.trim() || "",
     buttonAriaLabel: button?.getAttribute("aria-label") || "",
@@ -171,6 +172,7 @@ try {
     assert.equal(initial.whiteoutAnimation, "novel-staff-roll-whiteout");
     assert.equal(initial.trackAnimation, "novel-staff-roll-rise");
     assert.equal(initial.buttonHidden, true, `${viewport.name}: END action was shown before the roll`);
+    assert.equal(initial.skipHintCount, 0, `${viewport.name}: obsolete staff-roll skip hint remains`);
     assert.equal(initial.toolbarHidden, true, `${viewport.name}: normal VN toolbar remained over the ending`);
     assert.match(initial.stageBackground, /event-cg-exhibition-finale-v1\.png/u);
     [
@@ -299,6 +301,7 @@ try {
   assert.equal(reduced.phase, "complete");
   assert.equal(reduced.trackAnimation, "none");
   assert.equal(reduced.buttonHidden, false);
+  assert.equal(reduced.skipHintCount, 0);
   assert.equal(reduced.buttonText, "世界の続きを紡ぐ");
   assert.match(reduced.buttonAriaLabel, /データで見る/u);
   assert(reduced.buttonHeight >= 44);

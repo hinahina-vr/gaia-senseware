@@ -9029,20 +9029,6 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   text-indent: 0.24em;
 }
 
-.novel-staff-roll-skip-hint {
-  position: absolute;
-  z-index: 3;
-  right: 0;
-  bottom: max(16px, env(safe-area-inset-bottom));
-  left: 0;
-  margin: 0;
-  color: rgba(26, 79, 87, 0.52);
-  font: 700 9px/1.4 ui-monospace, "SFMono-Regular", Consolas, monospace;
-  letter-spacing: 0.18em;
-  opacity: 0;
-  animation: novel-staff-roll-hint 700ms 3.4s ease-out forwards;
-}
-
 .novel-staff-roll-finale {
   position: absolute;
   z-index: 3;
@@ -9192,11 +9178,6 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
     line-height: 1.9;
   }
 
-  .novel-staff-roll-skip-hint {
-    bottom: max(12px, env(safe-area-inset-bottom));
-    font-size: 8px;
-  }
-
   .novel-staff-roll-finale {
     bottom: max(24px, env(safe-area-inset-bottom));
   }
@@ -9247,7 +9228,6 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   .novel-staff-roll-whiteout,
   .novel-staff-roll-stage,
   .novel-staff-roll-track,
-  .novel-staff-roll-skip-hint,
   .novel-staff-roll-finale {
     animation: none !important;
     transition: none !important;

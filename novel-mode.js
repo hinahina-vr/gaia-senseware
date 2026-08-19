@@ -3588,11 +3588,6 @@
     closingMark.textContent = "END";
     closing.append(closingLead, closingLine, closingCopyright, closingMark);
 
-    const skipHint = document.createElement("p");
-    skipHint.className = "novel-staff-roll-skip-hint";
-    skipHint.setAttribute("aria-hidden", "true");
-    skipHint.textContent = "CLICK / ENTER — スタッフロールを送る";
-
     const finale = document.createElement("div");
     finale.className = "novel-staff-roll-finale";
     finale.hidden = true;
@@ -3611,7 +3606,7 @@
 
     track.append(heading, credits, closing);
     viewport.append(track);
-    stage.append(viewport, skipHint, finale);
+    stage.append(viewport, finale);
     shell.append(whiteout, stage, dataSkip);
     elements.resultSurface.append(shell);
 
@@ -3621,7 +3616,6 @@
       completed = true;
       shell.dataset.phase = "complete";
       shell.classList.add("is-complete");
-      skipHint.hidden = true;
       finale.hidden = false;
       finale.setAttribute("aria-hidden", "false");
       next.tabIndex = 0;
