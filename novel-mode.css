@@ -9509,3 +9509,42 @@ body:not(.gx-story-open) .novel-layer:has(.novel-dialogue:not([hidden])):not(.is
     font-size: 6.5px !important;
   }
 }
+
+/* Keep the scene heading on the same top rail as the fixed corner controls.
+   This prevents the heading band from sitting over faces and foreground art. */
+body.novel-open .novel-layer:not(.is-title) .novel-signal-caption,
+body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-temporal-range="true"],
+body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-crosses-year="true"],
+body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+  top: max(18px, env(safe-area-inset-top));
+}
+
+@media (min-width: 721px) and (max-width: 1393px) {
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption,
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-temporal-range="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-crosses-year="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+    left: calc(50vw + 122px);
+    width: min(760px, calc(100vw - 396px));
+    max-width: min(760px, calc(100vw - 396px));
+  }
+}
+
+@media (max-width: 720px) {
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption,
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-temporal-range="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-crosses-year="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+    top: max(12px, env(safe-area-inset-top));
+    left: calc(50vw + 46px);
+    width: calc(100vw - 222px);
+    max-width: calc(100vw - 222px);
+    padding: 5px 0 4px;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption strong {
+    padding-inline: 0;
+    font-size: clamp(8px, 2.2vw, 9.5px);
+    line-height: 1.35;
+  }
+}
