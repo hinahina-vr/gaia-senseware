@@ -54,15 +54,21 @@ const assets = Object.freeze({
   finale: "assets/visuals-07/event-cg-exhibition-finale-v1.png",
 });
 const approvedAssetHashes = Object.freeze({
+  [assets.entrance]: "d74de25f0db8f94602bccd2e34bd76848bc93b37ef2612bcc714d8b2fb105d09",
+  [assets.bHallOverview]: "9e7511c2b7c201d4cfa381fc60cee67db2c7d65b2ea31dcbfdb0b74cb6b09b2b",
+  [assets.fivePlaneProjection]: "d9d791231fcd6c4e0f18a0b61176e26d40e858e6c750238a76838b96a6f908a6",
+  [assets.boothClose]: "9b40f633dcb6a6e5393e5b211d107d607a3c235c8d4e4f5817509823de1ec510",
+  [assets.boothWide]: "84dd216e66ca181b859303bf2d769b90b3711c8c8b9faa8b0b3ff4cafaa6281a",
   [assets.firstEncounter]: "b6b51146df739b3150f5c0d126e53eb5f85f471ec788ba74de65e09d272a1c10",
   [assets.amaneCloseup]: "f7a0eaacaca94dc8d52ffbdc626ecb5a2a5535ba433319b71194d3e06a5ea967",
   [assets.mizuhaCloseup]: "0ad34c323b01a9f51e3bab9a7f7d30a2dd2be3f99a30b4e9657717bf8e1e3544",
   [assets.mapTransition]: "1702eaba7fdabf3b916c437743dbb3e2d0482d937e2090b7fa54598f6142438a",
-  [assets.gxAncientOcean]: "b7529e8e40e7100a00359c51180a6d943d331e229170c82192c71877fd32ad45",
-  [assets.gxBreathingPoints]: "20b7d0534c48ecf96b598d87ac5a23d00409f89ce08edc396689af4adf2a3188",
-  [assets.gxTemperatureAnomaly]: "98ac244431d127b46638e5fe4a706693d1095d39b55e4e81063cb6e05dc05052",
-  [assets.map01Provenance]: "fd2fd342831c928de5fd8e7b59f5c18f9604dbe0f5b41eaba3f350f2f5439210",
-  [assets.gxModeGateway]: "d8f67d824172928c269a21a8022734145d4760775e9ce75c6573b354ca1f2a31",
+  [assets.gxAncientOcean]: "8efd0de8a9d756ac8d4b20d69871f4ff1b1b7dec917c812dde55e6f39ae3da7f",
+  [assets.gxBreathingPoints]: "c2fd98293f53d9c4390f8cf6ceaf1f7d329cf6d2b27bbe1647dc476111311495",
+  [assets.gxTemperatureAnomaly]: "e2dcae00e0ce417f99768214e7694690386f60cc1f4b61eb90c91e6d21fb1dae",
+  [assets.map01Provenance]: "4b739542ed246c13862236fc135e8eccbd482ad2c853865a067257cd33fa9a29",
+  [assets.gxModeGateway]: "87183da72698185baa3874548b1fa7c2e8d1baca5c265d547e0ba7bd280961db",
+  [assets.coastNight]: "a99ec8e9d9c4f03667c44fdd9e8d581f78c6e8de4468572c038d126d8ef82643",
   [assets.circleInvitationCard]: "9110b5fde651e6c31a8f9fbe63d723334a6ec05dc8cd8deb92b49ec069c7ae7a",
 });
 const sha256 = async (assetPath) => createHash("sha256")
