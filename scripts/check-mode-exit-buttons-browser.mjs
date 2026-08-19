@@ -76,8 +76,13 @@ const inspectButton = async (page, selector, viewport, surface) => {
   assert(data.rect.height >= 44, `${viewport}/${surface}: hit area is under 44px`);
   assert(data.rect.width < 220, `${viewport}/${surface}: return control is still oversized`);
   assert.equal(data.hit, true, `${viewport}/${surface}: center hit is obstructed (${JSON.stringify(data)})`);
-  assert.notEqual(data.clipPath, "none", `${viewport}/${surface}: geometric silhouette is missing`);
-  assert.equal(data.borderRadius, "0px", `${viewport}/${surface}: old capsule silhouette remains`);
+  if (surface === "story") {
+    assert.equal(data.clipPath, "none", `${viewport}/${surface}: story control retained the angular mode silhouette`);
+    assert(parseFloat(data.borderRadius) >= 10, `${viewport}/${surface}: compact story glass radius is missing`);
+  } else {
+    assert.notEqual(data.clipPath, "none", `${viewport}/${surface}: geometric silhouette is missing`);
+    assert.equal(data.borderRadius, "0px", `${viewport}/${surface}: old capsule silhouette remains`);
+  }
   assert(data.arrow.includes("←"), `${viewport}/${surface}: directional cue is missing`);
   assert.equal(data.overflowX, 0, `${viewport}/${surface}: horizontal overflow`);
   await locator.focus();

@@ -55,6 +55,9 @@ const layoutScan = (page) => page.evaluate(() => {
     label: closeButton.textContent.trim(),
     ariaLabel: closeButton.getAttribute("aria-label"),
     closeArrow: getComputedStyle(closeButton, "::before").content,
+    closeClipPath: getComputedStyle(closeButton).clipPath,
+    closeBorderRadius: getComputedStyle(closeButton).borderRadius,
+    closeArrowBorderWidth: getComputedStyle(closeButton, "::before").borderWidth,
     closeRect: close.toJSON(),
     homeLabel: homeButton.textContent.trim(),
     homeAriaLabel: homeButton.getAttribute("aria-label"),
@@ -137,6 +140,9 @@ try {
     assert.equal(before.homeLabel, "トップへ戻る");
     assert.equal(before.homeAriaLabel, "物語を閉じてトップページへ戻る");
     assert.equal(before.homeHidden, false, `${viewport.name}: real top return is hidden in runtime`);
+    assert.equal(before.closeClipPath, "none", `${viewport.name}: story skip retained the angular mode silhouette`);
+    assert(parseFloat(before.closeBorderRadius) >= 10, `${viewport.name}: story skip is not using the compact glass radius`);
+    assert.equal(before.closeArrowBorderWidth, "0px", `${viewport.name}: story skip retained the boxed arrow`);
     assert(before.closeRect.height >= 44, `${viewport.name}: section skip hit area is under 44px`);
     assert(before.homeRect.height >= 44, `${viewport.name}: top return hit area is under 44px`);
     assert.equal(before.closeHomeOverlap, false, `${viewport.name}: section skip overlaps top return`);

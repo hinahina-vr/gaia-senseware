@@ -187,6 +187,67 @@ body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mo
   left: max(148px, calc(env(safe-area-inset-left) + 148px));
 }
 
+/* Story corner actions belong to the VN glass system, not the angular mode
+   selectors used elsewhere. Keep the labels readable while removing the
+   heavy cut-corner panel and the boxed arrow that competed with the scene. */
+body.novel-open .novel-topbar #novel-home-button.mode-exit-control,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control {
+  display: inline-flex;
+  grid-template-columns: none;
+  width: auto;
+  height: 44px;
+  min-height: 44px;
+  gap: 7px;
+  padding: 0 14px 0 12px;
+  border: 1px solid rgba(169, 218, 246, 0.2);
+  border-radius: 12px;
+  clip-path: none;
+  color: rgba(231, 244, 252, 0.84);
+  background:
+    linear-gradient(180deg, rgba(95, 159, 205, 0.12), rgba(21, 61, 103, 0.08)),
+    rgba(7, 25, 50, 0.34);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.055),
+    0 8px 24px rgba(0, 12, 34, 0.14);
+  -webkit-backdrop-filter: blur(12px) saturate(1.08);
+  backdrop-filter: blur(12px) saturate(1.08);
+  font: 600 11px/1 var(--font-ja, "Yu Gothic UI", sans-serif);
+  letter-spacing: 0.055em;
+}
+
+body.novel-open .novel-topbar #novel-home-button.mode-exit-control::before,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control::before {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border: 0;
+  color: rgba(157, 224, 245, 0.9);
+  background: transparent;
+  font: 500 16px/1 ui-monospace, Consolas, monospace;
+  place-items: center;
+}
+
+body.novel-open .novel-topbar #novel-home-button.mode-exit-control::after,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control::after {
+  display: none;
+}
+
+body.novel-open .novel-topbar #novel-home-button.mode-exit-control:hover,
+body.novel-open .novel-topbar #novel-home-button.mode-exit-control:focus-visible,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control:hover,
+body.novel-open .novel-topbar #novel-close-button.mode-exit-control:focus-visible {
+  border-color: rgba(157, 224, 245, 0.46);
+  color: #f8fcff;
+  background:
+    linear-gradient(180deg, rgba(96, 170, 218, 0.19), rgba(24, 75, 119, 0.12)),
+    rgba(8, 30, 57, 0.5);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.08),
+    0 9px 26px rgba(0, 12, 34, 0.2),
+    0 0 20px rgba(100, 194, 237, 0.06);
+}
+
 body.sound-mode-open .status {
   visibility: hidden;
   pointer-events: none;
@@ -229,6 +290,26 @@ body.sound-mode-open .status {
     top: max(68px, calc(env(safe-area-inset-top) + 56px));
     right: auto;
     left: max(12px, env(safe-area-inset-left));
+  }
+
+  body.novel-open .novel-topbar #novel-home-button.mode-exit-control,
+  body.novel-open .novel-topbar #novel-close-button.mode-exit-control {
+    grid-template-columns: none;
+    height: 44px;
+    min-height: 44px;
+    gap: 6px;
+    padding: 0 12px 0 10px;
+    font-size: 10px;
+    letter-spacing: 0.045em;
+  }
+
+  body.novel-open .novel-topbar #novel-home-button.mode-exit-control::before,
+  body.novel-open .novel-topbar #novel-close-button.mode-exit-control::before {
+    width: 17px;
+    height: 17px;
+    flex-basis: 17px;
+    border: 0;
+    font-size: 15px;
   }
 
   body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {
