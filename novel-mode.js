@@ -1712,7 +1712,7 @@
       minamo: elements.characterMinamo,
       sakuya: elements.characterSakuya,
     }[legacySpeaker];
-    elements.avatar.hidden = Boolean(figure);
+    elements.avatar.hidden = true;
     if (figure && figure.dataset.expression !== expression) {
       figure.classList.remove("is-changing");
       figure.dataset.expression = expression;

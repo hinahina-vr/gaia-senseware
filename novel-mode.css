@@ -2120,6 +2120,7 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
 }
 
 .novel-avatar {
+  display: none !important;
   position: absolute;
   z-index: 2;
   top: 46%;

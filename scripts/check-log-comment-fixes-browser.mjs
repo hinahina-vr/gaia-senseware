@@ -75,7 +75,7 @@ const expectedAssets = new Map([
 assert.equal(allSteps.length, 396);
 assert.equal(new Set(allSteps.map((step) => step.id)).size, 396);
 assert.equal(expectedText.size, 31);
-assert.equal(story.sourceSha256, "8bb9b30ecfb423f5f6f8c6f9b42207aff71fe30b988c952adb5facd4e414fc03");
+assert.equal(story.sourceSha256, "402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4");
 assert.deepEqual(story.requiredInteractions, ["map01", "gx"]);
 assert(story.saveFields.includes("stepId") && story.saveFields.includes("readStepIds") && story.saveFields.includes("demoInterest"));
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
@@ -204,10 +204,8 @@ const scanStep = async (page, viewport, stepId) => {
   if (expectedAssets.has(stepId)) {
     assert.match(scan.backgroundImage, new RegExp(expectedAssets.get(stepId).replaceAll(".", "\\."), "u"), `${viewport.name} ${stepId}: expected background asset is missing`);
   }
-  if (["festival_concept_048", "gx_experience_001"].includes(stepId)) {
-    assert.equal(scan.avatarHidden, true, `${viewport.name} ${stepId}: atom-like avatar is not hidden`);
-    assert.equal(scan.avatarVisible, false, `${viewport.name} ${stepId}: atom-like avatar remains visible`);
-  }
+  assert.equal(scan.avatarHidden, true, `${viewport.name} ${stepId}: abstract avatar is not hidden`);
+  assert.equal(scan.avatarVisible, false, `${viewport.name} ${stepId}: abstract avatar remains visible`);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${stepId}.png`), animations: "disabled" });
   report.scans.push({ viewport: viewport.name, ...scan, passed: true });
 };
