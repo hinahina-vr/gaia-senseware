@@ -154,16 +154,19 @@ body.novel-open .novel-topbar #novel-close-button.mode-exit-control[data-control
 body.novel-open .novel-topbar #novel-home-button.mode-exit-control {
   z-index: 522;
   top: max(18px, env(safe-area-inset-top));
-  right: max(18px, env(safe-area-inset-right));
+  right: auto;
+  left: max(18px, env(safe-area-inset-left));
   width: 118px;
 }
 
-body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
-  right: max(148px, calc(env(safe-area-inset-right) + 148px));
+body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {
+  top: max(18px, env(safe-area-inset-top)) !important;
+  right: max(18px, env(safe-area-inset-right)) !important;
+  left: auto !important;
 }
 
 body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
-  right: max(322px, calc(env(safe-area-inset-right) + 322px)) !important;
+  right: max(18px, env(safe-area-inset-right)) !important;
 }
 
 .gx-layer[data-return-to="novel"] .gx-close.mode-exit-control {
@@ -174,6 +177,14 @@ body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
 body.novel-open .novel-topbar #novel-close-button.mode-exit-control {
   --mode-exit-rgb: var(--novel-cyan, 135, 226, 244);
   position: fixed;
+  top: max(18px, env(safe-area-inset-top));
+  right: auto;
+  left: max(18px, env(safe-area-inset-left));
+}
+
+body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
+  right: auto;
+  left: max(148px, calc(env(safe-area-inset-left) + 148px));
 }
 
 body.sound-mode-open .status {
@@ -203,16 +214,35 @@ body.sound-mode-open .status {
 
   body.novel-open .novel-topbar #novel-home-button.mode-exit-control {
     top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
+    right: auto;
+    left: max(12px, env(safe-area-inset-left));
     width: 116px;
   }
 
+  body.novel-open .novel-topbar #novel-close-button.mode-exit-control {
+    top: max(12px, env(safe-area-inset-top));
+    right: auto;
+    left: max(12px, env(safe-area-inset-left));
+  }
+
   body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
-    right: max(140px, calc(env(safe-area-inset-right) + 140px));
+    top: max(68px, calc(env(safe-area-inset-top) + 56px));
+    right: auto;
+    left: max(12px, env(safe-area-inset-left));
+  }
+
+  body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {
+    top: max(12px, env(safe-area-inset-top)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: auto !important;
   }
 
   body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
-    right: max(302px, calc(env(safe-area-inset-right) + 302px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock.is-expanded {
+    width: min(320px, calc(100vw - 152px));
   }
 }
 

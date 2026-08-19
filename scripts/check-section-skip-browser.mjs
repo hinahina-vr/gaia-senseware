@@ -60,6 +60,8 @@ const layoutScan = (page) => page.evaluate(() => {
     homeAriaLabel: homeButton.getAttribute("aria-label"),
     homeHidden: homeButton.hidden,
     homeRect: home.toJSON(),
+    audioRect: audio?.toJSON() || null,
+    audioExpanded: document.querySelector(".gaia-audio-dock")?.classList.contains("is-expanded") || false,
     layerOpen: document.querySelector("#novel-layer")?.classList.contains("is-open"),
     titleVisible: !document.querySelector("#novel-title-screen")?.hidden,
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -108,9 +110,23 @@ try {
       localStorage.clear();
       globalThis.GaiaNovel.open();
     });
+    await page.locator("#gaia-audio-dock").waitFor({ state: "visible" });
     assert.equal((await page.locator("#novel-close-button").textContent()).trim(), "戻る");
     assert.equal(await page.locator("#novel-close-button").getAttribute("aria-label"), "ストーリーメニューを閉じる");
     assert.equal(await page.locator("#novel-home-button").isHidden(), true, `${viewport.name}: duplicate top return is visible on title`);
+    const titleLayout = await layoutScan(page);
+    assert(titleLayout.closeRect.left <= 40, `${viewport.name}: title return is not pinned left: ${JSON.stringify(titleLayout.closeRect)}`);
+    assert(titleLayout.closeRect.top <= 40, `${viewport.name}: title return is not pinned top: ${JSON.stringify(titleLayout.closeRect)}`);
+    assert(titleLayout.audioRect && viewport.width - titleLayout.audioRect.right <= 40, `${viewport.name}: title audio is not pinned right: ${JSON.stringify(titleLayout.audioRect)}`);
+    assert(titleLayout.audioRect.top <= 40, `${viewport.name}: title audio is not pinned top: ${JSON.stringify(titleLayout.audioRect)}`);
+    assert.equal(titleLayout.closeAudioOverlap, false, `${viewport.name}: title return overlaps audio`);
+    await page.locator("#gaia-audio-toggle").click();
+    await page.waitForFunction(() => document.querySelector("#gaia-audio-dock")?.classList.contains("is-expanded"));
+    const expandedTitleLayout = await layoutScan(page);
+    assert.equal(expandedTitleLayout.closeAudioOverlap, false, `${viewport.name}: expanded title audio overlaps return`);
+    assert(viewport.width - expandedTitleLayout.audioRect.right <= 40, `${viewport.name}: expanded title audio moved away from right edge`);
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.querySelector("#gaia-audio-dock")?.classList.contains("is-expanded"));
 
     await page.locator("#novel-start-button").click();
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
@@ -126,7 +142,22 @@ try {
     assert.equal(before.closeHomeOverlap, false, `${viewport.name}: section skip overlaps top return`);
     assert.equal(before.closeAudioOverlap, false, `${viewport.name}: audio control overlaps section skip`);
     assert.equal(before.homeAudioOverlap, false, `${viewport.name}: audio control overlaps top return`);
+    assert(before.homeRect.left <= 40, `${viewport.name}: runtime return is not pinned left: ${JSON.stringify(before.homeRect)}`);
+    assert(before.audioRect && viewport.width - before.audioRect.right <= 40, `${viewport.name}: runtime audio is not pinned right: ${JSON.stringify(before.audioRect)}`);
+    if (viewport.width <= 720) {
+      assert(before.closeRect.top >= before.homeRect.bottom + 6, `${viewport.name}: section skip did not move below the top return`);
+    } else {
+      assert(before.closeRect.left >= before.homeRect.right + 6, `${viewport.name}: section skip is not placed after the top return`);
+    }
     assert.equal(before.overflowX, 0, `${viewport.name}: runtime overflows horizontally`);
+    await page.locator("#gaia-audio-toggle").click();
+    await page.waitForFunction(() => document.querySelector("#gaia-audio-dock")?.classList.contains("is-expanded"));
+    const expandedRuntime = await layoutScan(page);
+    assert.equal(expandedRuntime.closeAudioOverlap, false, `${viewport.name}: expanded runtime audio overlaps section skip`);
+    assert.equal(expandedRuntime.homeAudioOverlap, false, `${viewport.name}: expanded runtime audio overlaps top return`);
+    assert(viewport.width - expandedRuntime.audioRect.right <= 40, `${viewport.name}: expanded runtime audio moved away from right edge`);
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.querySelector("#gaia-audio-dock")?.classList.contains("is-expanded"));
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-section-skip.png`), animations: "disabled" });
 
     await page.locator("#novel-home-button").focus();
@@ -190,7 +221,7 @@ try {
 
     const finalScan = await layoutScan(page);
     assert.equal(finalScan.overflowX, 0, `${viewport.name}: ending overflows horizontally`);
-    report.scans.push({ viewport: viewport.name, before, skipped, skippedTargets, finalScan, passed: true });
+    report.scans.push({ viewport: viewport.name, titleLayout, expandedTitleLayout, before, expandedRuntime, skipped, skippedTargets, finalScan, passed: true });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-ending.png`), animations: "disabled" });
     await context.close();
   }
