@@ -2339,9 +2339,7 @@
     elements.text.dataset.pageIndex = String(dialoguePageIndex + 1);
     elements.text.dataset.measuredLineCount = String(metrics.measuredLines.length);
     elements.text.dataset.maxLineCount = String(metrics.maxLines);
-    elements.continueMark.textContent = dialoguePages.length > 1
-      ? `${dialoguePageIndex + 1} / ${dialoguePages.length}　▼`
-      : "▼";
+    elements.continueMark.textContent = "▼";
     if (dialoguePageReveal) {
       revealText(page, layout);
       return;
