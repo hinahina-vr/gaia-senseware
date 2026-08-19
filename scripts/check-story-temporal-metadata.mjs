@@ -15,12 +15,17 @@ for (const [index, meta] of sourceMetadata.entries()) {
   const scene = story.scenes[index];
   assert.equal(scene.chapter, meta.chapter);
   assert.equal(scene.duration, meta.duration);
+  assert.equal(scene.date, meta.date);
+  assert.equal(scene.time, meta.time);
   assert.equal(scene.location, meta.location);
-  assert.equal(scene.temporal.displayTitle, `${meta.duration}｜${meta.location}`);
+  assert.equal(scene.temporal.displayTitle, `${meta.date} ${meta.time}｜${meta.location}`);
+  assert.equal(scene.temporal.date, meta.date);
+  assert.equal(scene.temporal.time, meta.time);
+  assert.equal(scene.temporal.duration, meta.duration);
   assert.equal(scene.temporal.temporalContext, "CURRENT");
-  assert.equal(scene.temporal.timePrecision, "APPROXIMATE");
+  assert.equal(scene.temporal.timePrecision, "MINUTE");
   assert.equal(Object.hasOwn(scene.temporal, "startAt"), false, `${scene.id}: absolute date must not be invented`);
 }
 assert.deepEqual(story.temporal.sceneOrder, sourceMetadata.map((meta) => meta.id));
 assert.deepEqual(story.temporal.archives, []);
-console.log("contest v10 scene-meta check passed: 6 scenes, source duration/location preserved");
+console.log("contest v10 scene-meta check passed: 6 scenes, Saturday PM clock and playback duration preserved");

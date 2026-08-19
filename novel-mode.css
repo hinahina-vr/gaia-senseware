@@ -6513,6 +6513,22 @@ body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
     max-width: calc(100vw - 24px);
     padding: 9px 18px 8px;
   }
+
+  .novel-signal-caption .novel-temporal-heading-tail {
+    flex: 1 1 100%;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .novel-signal-caption .novel-temporal-heading-unit[data-temporal-heading-unit="location"] {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 1em);
+    white-space: normal;
+    text-align: center;
+    text-wrap: balance;
+  }
 }
 
 /* Soft-edged story message HUD and icon-only controls. */

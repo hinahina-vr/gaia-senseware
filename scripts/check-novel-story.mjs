@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "20079297fbb8395f69579e38ba0a43384b3d43b581cdbcac527df76cfa4060e5";
+const expectedHash = "402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 58, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 55958, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 56264, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
@@ -69,11 +69,16 @@ assert.deepEqual(
   "festival_concept_021–027の決定稿または順序が変わりました",
 );
 story.scenes.forEach((scene, sceneIndex) => {
+  const expectedDates = Array(6).fill("8月1日（土）");
+  const expectedTimes = ["PM 5:20–5:40", "PM 5:40–5:45", "PM 5:45–5:53", "PM 5:53–6:00", "PM 6:00–6:07", "PM 6:07–6:30"];
   assert.equal(scene.nextSceneId, story.scenes[sceneIndex + 1]?.id || null, `${scene.id}: nextSceneIdが不正です`);
   assert.equal(scene.duration, ["0:00–1:45", "1:45–3:25", "3:25–5:35", "5:35–7:15", "7:15–9:05", "9:05–11:30"][sceneIndex]);
+  assert.equal(scene.date, expectedDates[sceneIndex]);
+  assert.equal(scene.time, expectedTimes[sceneIndex]);
+  assert.equal(scene.temporal.displayTitle, `${expectedDates[sceneIndex]} ${expectedTimes[sceneIndex]}｜${scene.location}`);
   assert.equal(scene.temporal.temporalContext, "CURRENT");
-  assert.equal(scene.temporal.timePrecision, "APPROXIMATE");
-  assert.equal(Object.hasOwn(scene.temporal, "startAt"), false, `${scene.id}: freeze入力にない絶対日時を補完してはいけません`);
+  assert.equal(scene.temporal.timePrecision, "MINUTE");
+  assert.equal(Object.hasOwn(scene.temporal, "startAt"), false, `${scene.id}: 表示時刻から未定義のISO日時を補完してはいけません`);
   scene.steps.forEach((step, index) => {
     assert.equal(step.id, `${scene.id}_${String(index + 1).padStart(3, "0")}`);
     assert.equal(step.sceneId, scene.id);

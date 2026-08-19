@@ -8,7 +8,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "20079297fbb8395f69579e38ba0a43384b3d43b581cdbcac527df76cfa4060e5";
+const EXPECTED_SOURCE_SHA256 = "402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4";
 
 const sourceBytes = fs.readFileSync(canonPath);
 const characterSourceBytes = fs.readFileSync(characterCanonPath);
@@ -138,6 +138,8 @@ const scenes = matches.map((match, index) => {
   if (!metaMatch) throw new Error(`${match[0]}: scene-metaがありません`);
   const meta = JSON.parse(metaMatch[1]);
   if (meta.id !== EXPECTED_SCENE_IDS[index]) throw new Error(`${match[0]}: scene idがfreeze順と一致しません`);
+  if (typeof meta.date !== "string" || !meta.date.trim()) throw new Error(`${meta.id}: dateがありません`);
+  if (!/^PM\s/u.test(meta.time || "")) throw new Error(`${meta.id}: timeはAM/PM表記が必要です`);
   body = body.slice(metaMatch[0].length).replace(/\n---\s*$/u, "").trim();
   const blocks = body.split(/\n{2,}/u).map((block) => block.trim()).filter(Boolean);
   const steps = [];
@@ -163,13 +165,18 @@ const scenes = matches.map((match, index) => {
     title: match[2],
     chapter: meta.chapter,
     duration: meta.duration,
+    date: meta.date,
+    time: meta.time,
     location: meta.location,
     modeIndex: 0,
     ...(interaction ? { interaction: Object.fromEntries(Object.entries(interaction).filter(([key]) => key !== "afterText")) } : {}),
     temporal: {
       temporalContext: "CURRENT",
-      timePrecision: "APPROXIMATE",
-      displayTitle: `${meta.duration}｜${meta.location}`,
+      timePrecision: "MINUTE",
+      displayTitle: `${meta.date} ${meta.time}｜${meta.location}`,
+      date: meta.date,
+      time: meta.time,
+      duration: meta.duration,
       location: meta.location,
     },
     steps,

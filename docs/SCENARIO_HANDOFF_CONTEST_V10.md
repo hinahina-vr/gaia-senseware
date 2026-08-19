@@ -4,22 +4,22 @@
 
 - 入力: `contest-limited/story/機能限定版台本.md`
 - 正本: `story/物語台本.md`
-- UTF-8 / LF / 53,597 bytes / 1,019 lines
-- SHA-256: `b59f43f536d727d73fcf95d19298f1750f66092a6dbcbd207fedad9b3cb1aa8d`
-- 本文・scene ID・scene-metaは入力から変更しない。
+- UTF-8 / LF / 56,264 bytes / 1,019 content lines
+- SHA-256: `402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4`
+- 本文・scene IDは維持する。scene-metaの日付・時刻は2026-08-19 owner指示で更新済み。
 
 ## scene順とmetadata
 
-| sceneId | chapter | duration | location | step |
-|---|---|---|---|---:|
-| `festival_concept` | `01 / CONCEPT` | `0:00–1:45` | オンライン大学・年次対面イベント／学生作品・体験展示ホール | 76 |
-| `map_mode01` | `02 / MAP 01` | `1:45–3:25` | 展示端末・地図MODE 01 | 43 |
-| `gx_experience` | `03 / DEEP TIME` | `3:25–5:35` | 展示端末・GX／太古の海 | 58 |
-| `esp32_pitch` | `04 / PROPOSAL` | `5:35–7:15` | 年次対面イベント・GAIA SENSEWARE展示ブース | 43 |
-| `circle_invitation` | `05 / AFTER SCHOOL` | `7:15–9:05` | 年次対面イベント・GAIA SENSEWARE展示ブース | 81 |
-| `welcome_chat` | `06 / WELCOME` | `9:05–11:30` | 学内チャット「惑星の放課後」／閉場後の展示ホール | 95 |
+| sceneId | chapter | playback duration | in-world date/time | location | step |
+|---|---|---|---|---|---:|
+| `festival_concept` | `01 / CONCEPT` | `0:00–1:45` | `8月1日（土） PM 5:20–5:40` | オンライン大学・年次対面イベント／学生作品・体験展示ホール | 76 |
+| `map_mode01` | `02 / MAP 01` | `1:45–3:25` | `8月1日（土） PM 5:40–5:45` | 展示端末・地図MODE 01 | 43 |
+| `gx_experience` | `03 / DEEP TIME` | `3:25–5:35` | `8月1日（土） PM 5:45–5:53` | 展示端末・GX／太古の海 | 58 |
+| `esp32_pitch` | `04 / PROPOSAL` | `5:35–7:15` | `8月1日（土） PM 5:53–6:00` | 年次対面イベント・GAIA SENSEWARE展示ブース | 43 |
+| `circle_invitation` | `05 / AFTER SCHOOL` | `7:15–9:05` | `8月1日（土） PM 6:00–6:07` | 年次対面イベント・GAIA SENSEWARE展示ブース | 81 |
+| `welcome_chat` | `06 / WELCOME` | `9:05–11:30` | `8月1日（土） PM 6:07–6:30` | 学内チャット「惑星の放課後」／閉場後の展示ホール | 95 |
 
-絶対日付はfreeze正本にないため補完しない。各sceneは`CURRENT / APPROXIMATE`とし、可視見出しはscene-metaの`duration｜location`から生成する。
+`duration`は10〜12分版の再生尺であり、作中の時計ではない。可視見出しはowner指定の土曜日とPM時刻を持つscene-metaから`date time｜location`として生成し、各sceneは`CURRENT / MINUTE`とする。welcome chatの18:07以降の投稿と閉場時刻へ連続させる。
 
 ## interaction境界
 

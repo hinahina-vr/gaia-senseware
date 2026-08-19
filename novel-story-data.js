@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "20079297fbb8395f69579e38ba0a43384b3d43b581cdbcac527df76cfa4060e5",
+  "sourceSha256": "402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -80,12 +80,17 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "地球の感覚器",
       "chapter": "01 / CONCEPT",
       "duration": "0:00–1:45",
+      "date": "8月1日（土）",
+      "time": "PM 5:20–5:40",
       "location": "オンライン大学・年次対面イベント／学生作品・体験展示ホール",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
-        "timePrecision": "APPROXIMATE",
-        "displayTitle": "0:00–1:45｜オンライン大学・年次対面イベント／学生作品・体験展示ホール",
+        "timePrecision": "MINUTE",
+        "displayTitle": "8月1日（土） PM 5:20–5:40｜オンライン大学・年次対面イベント／学生作品・体験展示ホール",
+        "date": "8月1日（土）",
+        "time": "PM 5:20–5:40",
+        "duration": "0:00–1:45",
         "location": "オンライン大学・年次対面イベント／学生作品・体験展示ホール"
       },
       "steps": [
@@ -653,6 +658,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "地球温暖化を地図で見る",
       "chapter": "02 / MAP 01",
       "duration": "1:45–3:25",
+      "date": "8月1日（土）",
+      "time": "PM 5:40–5:45",
       "location": "展示端末・地図MODE 01",
       "modeIndex": 0,
       "interaction": {
@@ -666,8 +673,11 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       },
       "temporal": {
         "temporalContext": "CURRENT",
-        "timePrecision": "APPROXIMATE",
-        "displayTitle": "1:45–3:25｜展示端末・地図MODE 01",
+        "timePrecision": "MINUTE",
+        "displayTitle": "8月1日（土） PM 5:40–5:45｜展示端末・地図MODE 01",
+        "date": "8月1日（土）",
+        "time": "PM 5:40–5:45",
+        "duration": "1:45–3:25",
         "location": "展示端末・地図MODE 01"
       },
       "steps": [
@@ -1008,6 +1018,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "太古の海に触れる",
       "chapter": "03 / DEEP TIME",
       "duration": "3:25–5:35",
+      "date": "8月1日（土）",
+      "time": "PM 5:45–5:53",
       "location": "展示端末・GX／太古の海",
       "modeIndex": 0,
       "interaction": {
@@ -1016,8 +1028,11 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       },
       "temporal": {
         "temporalContext": "CURRENT",
-        "timePrecision": "APPROXIMATE",
-        "displayTitle": "3:25–5:35｜展示端末・GX／太古の海",
+        "timePrecision": "MINUTE",
+        "displayTitle": "8月1日（土） PM 5:45–5:53｜展示端末・GX／太古の海",
+        "date": "8月1日（土）",
+        "time": "PM 5:45–5:53",
+        "duration": "3:25–5:35",
         "location": "展示端末・GX／太古の海"
       },
       "steps": [
@@ -1485,12 +1500,17 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "もう一つの感覚器",
       "chapter": "04 / PROPOSAL",
       "duration": "5:35–7:15",
+      "date": "8月1日（土）",
+      "time": "PM 5:53–6:00",
       "location": "年次対面イベント・GAIA SENSEWARE展示ブース",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
-        "timePrecision": "APPROXIMATE",
-        "displayTitle": "5:35–7:15｜年次対面イベント・GAIA SENSEWARE展示ブース",
+        "timePrecision": "MINUTE",
+        "displayTitle": "8月1日（土） PM 5:53–6:00｜年次対面イベント・GAIA SENSEWARE展示ブース",
+        "date": "8月1日（土）",
+        "time": "PM 5:53–6:00",
+        "duration": "5:35–7:15",
         "location": "年次対面イベント・GAIA SENSEWARE展示ブース"
       },
       "steps": [
@@ -1828,12 +1848,17 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "惑星の放課後",
       "chapter": "05 / AFTER SCHOOL",
       "duration": "7:15–9:05",
+      "date": "8月1日（土）",
+      "time": "PM 6:00–6:07",
       "location": "年次対面イベント・GAIA SENSEWARE展示ブース",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
-        "timePrecision": "APPROXIMATE",
-        "displayTitle": "7:15–9:05｜年次対面イベント・GAIA SENSEWARE展示ブース",
+        "timePrecision": "MINUTE",
+        "displayTitle": "8月1日（土） PM 6:00–6:07｜年次対面イベント・GAIA SENSEWARE展示ブース",
+        "date": "8月1日（土）",
+        "time": "PM 6:00–6:07",
+        "duration": "7:15–9:05",
         "location": "年次対面イベント・GAIA SENSEWARE展示ブース"
       },
       "steps": [
@@ -2443,12 +2468,17 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "新しい試作スレッド",
       "chapter": "06 / WELCOME",
       "duration": "9:05–11:30",
+      "date": "8月1日（土）",
+      "time": "PM 6:07–6:30",
       "location": "学内チャット「惑星の放課後」／閉場後の展示ホール",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
-        "timePrecision": "APPROXIMATE",
-        "displayTitle": "9:05–11:30｜学内チャット「惑星の放課後」／閉場後の展示ホール",
+        "timePrecision": "MINUTE",
+        "displayTitle": "8月1日（土） PM 6:07–6:30｜学内チャット「惑星の放課後」／閉場後の展示ホール",
+        "date": "8月1日（土）",
+        "time": "PM 6:07–6:30",
+        "duration": "9:05–11:30",
         "location": "学内チャット「惑星の放課後」／閉場後の展示ホール"
       },
       "steps": [

@@ -36,7 +36,7 @@ assert.deepEqual(staging.expectedSceneCounts, Object.fromEntries(expectedSceneId
 
 for (const scene of story.scenes) {
   assert.equal(scene.temporal?.temporalContext, "CURRENT", `${scene.id}: temporal context changed`);
-  assert.equal(scene.temporal?.timePrecision, "APPROXIMATE", `${scene.id}: temporal precision changed`);
+  assert.equal(scene.temporal?.timePrecision, "MINUTE", `${scene.id}: temporal precision changed`);
   scene.steps.forEach((step, index) => {
     assert.equal(step.id, `${scene.id}_${String(index + 1).padStart(3, "0")}`, `${scene.id}: non-canonical step id`);
   });
@@ -50,8 +50,9 @@ const resolved = allSteps.map((step) => ({
 assert(resolved.every(({ background }) => background?.assetPath), "every contest step needs an approved background");
 assert(resolved.every(({ staging: cue }) => cue?.temporal), "every contest step needs a temporal cue");
 assert(resolved.every(({ staging: cue }) => cue.temporal.context === "CURRENT"), "contest route must stay CURRENT");
-assert(resolved.every(({ staging: cue }) => cue.temporal.precision === "APPROXIMATE"), "contest route must stay APPROXIMATE");
-assert(resolved.every(({ staging: cue }) => cue.temporal.date === ""), "contest cue invented an absolute date");
+assert(resolved.every(({ staging: cue }) => cue.temporal.precision === "MINUTE"), "contest route must keep authored minute precision");
+assert(resolved.every(({ staging: cue }) => cue.temporal.date === "8月1日（土）"), "contest cue lost the authored Saturday date");
+assert(resolved.every(({ staging: cue }) => /^PM\s/u.test(cue.temporal.time)), "contest cue lost AM/PM notation");
 assert(resolved.every(({ staging: cue }) => cue.audio === "none"), "contest cue added character or archive audio");
 
 for (const assetPath of new Set(resolved.map(({ background }) => background.assetPath))) {

@@ -17,15 +17,14 @@
     (_, index) => `${sceneId}_${String(from + index).padStart(3, "0")}`,
   ));
 
-  // Contest v10 is a timed presentation, not an in-world absolute chronology.
-  // Keep the source-authored duration and location without inventing a calendar date.
+  // The playback duration remains separate from the owner-authored in-world festival clock.
   const temporal = freezeRows([
-    { id: "festival-concept-current", sceneId: "festival_concept", from: 1, to: 76, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "0:00–1:45", duration: "0:00–1:45", dayPeriod: "", location: "オンライン大学・年次対面イベント／学生作品・体験展示ホール" },
-    { id: "map01-current", sceneId: "map_mode01", from: 1, to: 43, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "1:45–3:25", duration: "1:45–3:25", dayPeriod: "", location: "展示端末・地図MODE 01" },
-    { id: "gx-current", sceneId: "gx_experience", from: 1, to: 58, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "3:25–5:35", duration: "3:25–5:35", dayPeriod: "", location: "展示端末・GX／太古の海" },
-    { id: "esp32-current", sceneId: "esp32_pitch", from: 1, to: 43, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "5:35–7:15", duration: "5:35–7:15", dayPeriod: "", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
-    { id: "circle-invitation-current", sceneId: "circle_invitation", from: 1, to: 81, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "7:15–9:05", duration: "7:15–9:05", dayPeriod: "", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
-    { id: "welcome-current", sceneId: "welcome_chat", from: 1, to: 95, context: "CURRENT", precision: "APPROXIMATE", date: "", time: "9:05–11:30", duration: "9:05–11:30", dayPeriod: "", location: "学内チャット『惑星の放課後』／閉場後の展示ホール" },
+    { id: "festival-concept-current", sceneId: "festival_concept", from: 1, to: 76, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 5:20–5:40", duration: "0:00–1:45", dayPeriod: "PM", location: "オンライン大学・年次対面イベント／学生作品・体験展示ホール" },
+    { id: "map01-current", sceneId: "map_mode01", from: 1, to: 43, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 5:40–5:45", duration: "1:45–3:25", dayPeriod: "PM", location: "展示端末・地図MODE 01" },
+    { id: "gx-current", sceneId: "gx_experience", from: 1, to: 58, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 5:45–5:53", duration: "3:25–5:35", dayPeriod: "PM", location: "展示端末・GX／太古の海" },
+    { id: "esp32-current", sceneId: "esp32_pitch", from: 1, to: 43, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 5:53–6:00", duration: "5:35–7:15", dayPeriod: "PM", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
+    { id: "circle-invitation-current", sceneId: "circle_invitation", from: 1, to: 81, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 6:00–6:07", duration: "7:15–9:05", dayPeriod: "PM", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
+    { id: "welcome-current", sceneId: "welcome_chat", from: 1, to: 95, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 6:07–6:30", duration: "9:05–11:30", dayPeriod: "PM", location: "学内チャット『惑星の放課後』／閉場後の展示ホール" },
   ]);
 
   const interactions = freezeRows([
