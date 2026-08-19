@@ -15,7 +15,10 @@ fs.mkdirSync(outputDir, { recursive: true });
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "pc-4k", width: 3840, height: 2160 },
+  { name: "mobile-360", width: 360, height: 800, mobile: true },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
+  { name: "mobile-short", width: 390, height: 667, mobile: true },
+  { name: "mobile-landscape", width: 844, height: 390, mobile: true },
 ];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const visible = (element) => {
@@ -73,6 +76,8 @@ try {
         dockVisible: __qaVisible(document.querySelector("#gaia-audio-dock")),
         menuRect: readRect("#gaia-opening-final-menu"),
         routeRect: readRect(".gaia-opening-route-grid"),
+        storyRect: readRect("#gaia-opening-route-story"),
+        otherRect: readRect("#gaia-opening-route-other"),
         audioRect: readRect(".gaia-opening-menu-audio"),
         soundOnRect: readRect("#gaia-opening-sound-on"),
         soundOffRect: readRect("#gaia-opening-sound-off"),
@@ -89,6 +94,9 @@ try {
     assert(initial.menuRect.left >= -1 && initial.menuRect.right <= viewport.width + 1, `${viewport.name}: menu is outside the viewport`);
     assert(initial.menuRect.top >= -1 && initial.menuRect.bottom <= viewport.height + 1, `${viewport.name}: menu is outside the viewport vertically`);
     assert.equal(overlapArea(initial.routeRect, initial.audioRect), 0, `${viewport.name}: route and sound controls overlap`);
+    for (const rect of [initial.storyRect, initial.otherRect]) {
+      assert(rect.width >= 44 && rect.height >= 64, `${viewport.name}: route hit area is too small`);
+    }
     for (const rect of [initial.soundOnRect, initial.soundOffRect]) {
       assert(rect.width >= 44 && rect.height >= 44, `${viewport.name}: sound action hit area is smaller than 44px`);
     }
