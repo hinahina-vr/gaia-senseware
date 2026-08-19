@@ -25,6 +25,7 @@ const sceneEntries = story.scenes.map((scene, index) => ({
   scriptIndex: stepIndex.get(scene.steps[0]?.id),
 }));
 assert(sceneEntries.every((entry) => entry.firstStepId && entry.scriptIndex), "scene first step missing");
+const jumpEntryIds = [...sceneEntries.map((entry) => entry.id), "ending"];
 
 const { chromium } = await import(pathToFileURL(path.join(moduleRoot, "index.mjs")));
 const routeUrl = new URL("/story", baseUrl).href;
@@ -101,8 +102,8 @@ try {
       text: item.textContent,
       current: item.getAttribute("aria-current"),
     })));
-    assert.equal(jumpItems.length, sceneEntries.length, `${viewport.name}: scene count`);
-    assert.deepEqual(jumpItems.map((item) => item.id), sceneEntries.map((entry) => entry.id), `${viewport.name}: scene order`);
+    assert.equal(jumpItems.length, jumpEntryIds.length, `${viewport.name}: jump entry count`);
+    assert.deepEqual(jumpItems.map((item) => item.id), jumpEntryIds, `${viewport.name}: jump entry order`);
     assert.equal(jumpItems.filter((item) => item.text.includes(item.id)).length, 0, `${viewport.name}: scene IDs became visible`);
 
     const jumpList = page.locator("#novel-jump-list");

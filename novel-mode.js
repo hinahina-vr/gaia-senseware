@@ -342,13 +342,30 @@
     throw new Error(`[GAIA novel] Duplicate story step IDs: ${[...new Set(duplicateStepIds)].join(", ")}`);
   }
   const scriptIndexMap = new Map(allSteps.map((step, index) => [step.id, index + 1]));
-  const sceneJumpEntries = scenes.map((scene, index) => {
+  const ENDING_JUMP_ID = "ending";
+  const ENDING_STEP_ID = "welcome_chat_095";
+  const storySceneJumpEntries = scenes.map((scene, index) => {
     const firstStep = scene.steps?.[0];
     const scriptIndex = scriptIndexMap.get(firstStep?.id);
     if (!firstStep || !Number.isInteger(scriptIndex)) throw new Error(`[GAIA novel] Scene has no valid first step: ${scene.id}`);
     return Object.freeze({ scene, sceneId: scene.id, firstStepId: firstStep.id, scriptIndex, index: index + 1 });
   });
-  if (new Set(sceneJumpEntries.map((entry) => entry.sceneId)).size !== scenes.length) {
+  const endingScriptIndex = scriptIndexMap.get(ENDING_STEP_ID);
+  if (!stepMap.has(ENDING_STEP_ID) || !Number.isInteger(endingScriptIndex)) {
+    throw new Error(`[GAIA novel] Ending jump target is unavailable: ${ENDING_STEP_ID}`);
+  }
+  const sceneJumpEntries = Object.freeze([
+    ...storySceneJumpEntries,
+    Object.freeze({
+      scene: Object.freeze({ id: ENDING_JUMP_ID, chapter: "07 / ENDING", title: "エンディング" }),
+      sceneId: ENDING_JUMP_ID,
+      firstStepId: ENDING_STEP_ID,
+      scriptIndex: endingScriptIndex,
+      index: scenes.length + 1,
+      isEnding: true,
+    }),
+  ]);
+  if (new Set(sceneJumpEntries.map((entry) => entry.sceneId)).size !== sceneJumpEntries.length) {
     throw new Error("[GAIA novel] Duplicate scene IDs in debug jump map");
   }
   if (!globalThis.GaiaNovelTemporal?.create) throw new Error("[GAIA temporal metadata] runtime is not loaded");
@@ -465,15 +482,17 @@
   const syncSceneJumpCurrent = (step) => {
     if (!elements.jumpList || !elements.jumpCurrent) return;
     const scene = sceneMap.get(step?.sceneId);
-    const entry = sceneJumpEntries.find((candidate) => candidate.sceneId === scene?.id);
+    const entry = step?.id === ENDING_STEP_ID
+      ? sceneJumpEntries.find((candidate) => candidate.isEnding)
+      : sceneJumpEntries.find((candidate) => candidate.sceneId === scene?.id);
     elements.jumpList.querySelectorAll(".novel-jump-item").forEach((button) => {
-      const current = button.dataset.sceneId === scene?.id;
+      const current = button.dataset.sceneId === entry?.sceneId;
       button.classList.toggle("is-current", current);
       if (current) button.setAttribute("aria-current", "true");
       else button.removeAttribute("aria-current");
     });
     elements.jumpCurrent.textContent = entry
-      ? `${String(entry.index).padStart(2, "0")} / ${scene.chapter}｜${scene.title} / SCRIPT #${String(entry.scriptIndex).padStart(4, "0")}`
+      ? `${String(entry.index).padStart(2, "0")} / ${entry.scene.chapter}｜${entry.scene.title} / SCRIPT #${String(entry.scriptIndex).padStart(4, "0")}`
       : "現在位置を特定できません";
   };
 
@@ -3909,7 +3928,7 @@
       ...state,
       stepId: target.id,
       reachedSceneIds: sceneJumpEntries
-        .filter((candidate) => stepIndexMap.get(candidate.firstStepId) <= targetIndex)
+        .filter((candidate) => !candidate.isEnding && stepIndexMap.get(candidate.firstStepId) <= targetIndex)
         .map((candidate) => candidate.sceneId),
       readStepIds: priorReadableSteps,
       metCharacters: Object.fromEntries(Object.entries(CHAT_CAST_MEETING_GATES).map(([speaker, gate]) => [
@@ -3922,7 +3941,8 @@
     showRuntime();
     renderEves();
     applyBackgroundCueForStep(target);
-    renderSectionSeparator(target);
+    if (entry.isEnding) renderCurrentStep();
+    else renderSectionSeparator(target);
     return true;
   };
 
