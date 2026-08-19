@@ -30,6 +30,15 @@ const cases = [
   ["gx_experience_055", "gx-ten-mode-gateway", "novel-bg-gx-mode-gateway-autumn-morning-v3.png"],
   ["circle_invitation_011", "circle-private-invitation", "novel-bg-exhibition-autumn-morning-wide-v4.png"],
   ["welcome_chat_074", "welcome-night-exit-mobile", "novel-bg-zushi-coast-autumn-day-v3.png"],
+  ["festival_concept_015", "festival-first-encounter-cg", "event-cg-first-encounter-five-plane-v2.png"],
+  ["festival_concept_021", "festival-amane-closeup-cg", "event-cg-amane-closeup-five-plane-v2.png"],
+  ["festival_concept_023", "festival-mizuha-closeup-cg", "event-cg-mizuha-closeup-five-plane-v2.png"],
+  ["festival_concept_076", "festival-map-transition", "event-cg-festival-map-transition-five-plane-v2.png"],
+  ["map_mode01_001", "map01-co2-observation", "mode-map-v1.webp"],
+  ["gx_experience_019", "gx-ancient-ocean", "mode-abstract-v1.webp"],
+  ["circle_invitation_029", "circle-invitation-card-cg", "event-cg-circle-invitation-card-v2.png"],
+  ["circle_invitation_048", "circle-welcome-cg", "event-cg-circle-welcome-v1.png"],
+  ["welcome_chat_092", "welcome-exhibition-finale-cg", "event-cg-exhibition-finale-v1.png"],
 ];
 const selectedCases = scanScope === "smoke" ? [cases[0], cases[2], cases[10]] : cases;
 

@@ -12,7 +12,7 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/opening-title-load-integration");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const canonicalFile = "novel-bg-festival-five-plane-projection-v1.png";
+const canonicalFile = "novel-bg-festival-five-plane-projection-autumn-morning-v2.png";
 const forbiddenFiles = [
   "novel-bg-exhibition-v3.png",
   "novel-bg-exhibition-v2.png",
