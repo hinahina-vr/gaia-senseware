@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4";
+const expectedHash = "56b2fc6a593715690816f4cc2ddb378da5dd1f712ea6e81e6e30d3fa64f5d5c5";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 58, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 56264, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 56356, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
@@ -69,8 +69,8 @@ assert.deepEqual(
   "festival_concept_021–027の決定稿または順序が変わりました",
 );
 story.scenes.forEach((scene, sceneIndex) => {
-  const expectedDates = Array(6).fill("8月1日（土）");
-  const expectedTimes = ["PM 5:20–5:40", "PM 5:40–5:45", "PM 5:45–5:53", "PM 5:53–6:00", "PM 6:00–6:07", "PM 6:07–6:30"];
+  const expectedDates = Array(6).fill("10月3日（土）");
+  const expectedTimes = ["AM 9:20–9:40", "AM 9:40–9:45", "AM 9:45–9:53", "AM 9:53–10:00", "AM 10:00–10:07", "AM 10:07–10:45"];
   assert.equal(scene.nextSceneId, story.scenes[sceneIndex + 1]?.id || null, `${scene.id}: nextSceneIdが不正です`);
   assert.equal(scene.duration, ["0:00–1:45", "1:45–3:25", "3:25–5:35", "5:35–7:15", "7:15–9:05", "9:05–11:30"][sceneIndex]);
   assert.equal(scene.date, expectedDates[sceneIndex]);
@@ -119,7 +119,7 @@ const welcome = story.scenes.find((scene) => scene.id === "welcome_chat");
 assert.equal(welcome.steps[0].type, "chatSurface");
 assert.equal(welcome.steps[6].text, "ESP32に詳しい。参加者が測った温度や湿度をGAIA SENSEWAREに表示する案を出してくれたよ。", "welcome_chat_007の紹介文が決定稿と一致しません");
 assert.equal(welcome.steps[14].text, "まだ会ったことのないsakuから、短いメッセージが届いた。", "welcome_chat_015の導入文が決定稿と一致しません");
-assert.equal(welcome.steps[62].text, "地球の未来を考えたい。ESP32をつなぎたい。二人にまた会いたい。どれも同じくらい本当だった。周囲では、展示を終えた学生たちが機材を箱へ戻し始めていた。", "welcome_chat_063の閉場へのつなぎが決定稿と一致しません");
+assert.equal(welcome.steps[62].text, "地球の未来を考えたい。ESP32をつなぎたい。二人にまた会いたい。どれも同じくらい本当だった。周囲では、午前枠を終えた学生たちが機材を箱へ戻し始めていた。", "welcome_chat_063の午前展示枠終了へのつなぎが決定稿と一致しません");
 assert.equal(welcome.steps[63].text, "「私たちも、そろそろ片づけます。展示画面を消しますね」", "welcome_chat_064の終了案内が決定稿と一致しません");
 assert.equal(welcome.steps[83].text, "その二行が、今日の展示で見てきたものと、これから始める観測をつないだ。", "welcome_chat_084の受けが決定稿と一致しません");
 assert.equal(welcome.steps[91].text, "スマートフォンをポケットへ戻す。顔を上げると、隣を歩く二人と目が合った。", "welcome_chat_092の動作が決定稿と一致しません");
@@ -129,7 +129,7 @@ assert.deepEqual(welcome.steps.slice(80, 83).map((step) => [step.id, step.type, 
   ["welcome_chat_081", "chat", "sakuya"],
   ["welcome_chat_082", "chat", "sakuya"],
   ["welcome_chat_083", "chat", "sakuya"],
-], "閉場後展示ホールのmobile chat境界が変わりました");
+], "午前展示枠終了後のmobile chat境界が変わりました");
 
 const novelModeSource = fs.readFileSync(path.join(projectRoot, "novel-mode.js"), "utf8");
 assert.match(novelModeSource, /Number\(sourceVersion\) < 10\) return firstStepForScene\(story\.startSceneId\)/u, "v9以前はfestival_concept_001へ安全移行する必要があります");

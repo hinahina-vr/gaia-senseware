@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4",
+  "sourceSha256": "56b2fc6a593715690816f4cc2ddb378da5dd1f712ea6e81e6e30d3fa64f5d5c5",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -80,16 +80,16 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "地球の感覚器",
       "chapter": "01 / CONCEPT",
       "duration": "0:00–1:45",
-      "date": "8月1日（土）",
-      "time": "PM 5:20–5:40",
+      "date": "10月3日（土）",
+      "time": "AM 9:20–9:40",
       "location": "オンライン大学・年次対面イベント／学生作品・体験展示ホール",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
         "timePrecision": "MINUTE",
-        "displayTitle": "8月1日（土） PM 5:20–5:40｜オンライン大学・年次対面イベント／学生作品・体験展示ホール",
-        "date": "8月1日（土）",
-        "time": "PM 5:20–5:40",
+        "displayTitle": "10月3日（土） AM 9:20–9:40｜オンライン大学・年次対面イベント／学生作品・体験展示ホール",
+        "date": "10月3日（土）",
+        "time": "AM 9:20–9:40",
         "duration": "0:00–1:45",
         "location": "オンライン大学・年次対面イベント／学生作品・体験展示ホール"
       },
@@ -658,8 +658,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "地球温暖化を地図で見る",
       "chapter": "02 / MAP 01",
       "duration": "1:45–3:25",
-      "date": "8月1日（土）",
-      "time": "PM 5:40–5:45",
+      "date": "10月3日（土）",
+      "time": "AM 9:40–9:45",
       "location": "展示端末・地図MODE 01",
       "modeIndex": 0,
       "interaction": {
@@ -674,9 +674,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "temporal": {
         "temporalContext": "CURRENT",
         "timePrecision": "MINUTE",
-        "displayTitle": "8月1日（土） PM 5:40–5:45｜展示端末・地図MODE 01",
-        "date": "8月1日（土）",
-        "time": "PM 5:40–5:45",
+        "displayTitle": "10月3日（土） AM 9:40–9:45｜展示端末・地図MODE 01",
+        "date": "10月3日（土）",
+        "time": "AM 9:40–9:45",
         "duration": "1:45–3:25",
         "location": "展示端末・地図MODE 01"
       },
@@ -1018,8 +1018,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "太古の海に触れる",
       "chapter": "03 / DEEP TIME",
       "duration": "3:25–5:35",
-      "date": "8月1日（土）",
-      "time": "PM 5:45–5:53",
+      "date": "10月3日（土）",
+      "time": "AM 9:45–9:53",
       "location": "展示端末・GX／太古の海",
       "modeIndex": 0,
       "interaction": {
@@ -1029,9 +1029,9 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "temporal": {
         "temporalContext": "CURRENT",
         "timePrecision": "MINUTE",
-        "displayTitle": "8月1日（土） PM 5:45–5:53｜展示端末・GX／太古の海",
-        "date": "8月1日（土）",
-        "time": "PM 5:45–5:53",
+        "displayTitle": "10月3日（土） AM 9:45–9:53｜展示端末・GX／太古の海",
+        "date": "10月3日（土）",
+        "time": "AM 9:45–9:53",
         "duration": "3:25–5:35",
         "location": "展示端末・GX／太古の海"
       },
@@ -1500,16 +1500,16 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "もう一つの感覚器",
       "chapter": "04 / PROPOSAL",
       "duration": "5:35–7:15",
-      "date": "8月1日（土）",
-      "time": "PM 5:53–6:00",
+      "date": "10月3日（土）",
+      "time": "AM 9:53–10:00",
       "location": "年次対面イベント・GAIA SENSEWARE展示ブース",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
         "timePrecision": "MINUTE",
-        "displayTitle": "8月1日（土） PM 5:53–6:00｜年次対面イベント・GAIA SENSEWARE展示ブース",
-        "date": "8月1日（土）",
-        "time": "PM 5:53–6:00",
+        "displayTitle": "10月3日（土） AM 9:53–10:00｜年次対面イベント・GAIA SENSEWARE展示ブース",
+        "date": "10月3日（土）",
+        "time": "AM 9:53–10:00",
         "duration": "5:35–7:15",
         "location": "年次対面イベント・GAIA SENSEWARE展示ブース"
       },
@@ -1848,16 +1848,16 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "惑星の放課後",
       "chapter": "05 / AFTER SCHOOL",
       "duration": "7:15–9:05",
-      "date": "8月1日（土）",
-      "time": "PM 6:00–6:07",
+      "date": "10月3日（土）",
+      "time": "AM 10:00–10:07",
       "location": "年次対面イベント・GAIA SENSEWARE展示ブース",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
         "timePrecision": "MINUTE",
-        "displayTitle": "8月1日（土） PM 6:00–6:07｜年次対面イベント・GAIA SENSEWARE展示ブース",
-        "date": "8月1日（土）",
-        "time": "PM 6:00–6:07",
+        "displayTitle": "10月3日（土） AM 10:00–10:07｜年次対面イベント・GAIA SENSEWARE展示ブース",
+        "date": "10月3日（土）",
+        "time": "AM 10:00–10:07",
         "duration": "7:15–9:05",
         "location": "年次対面イベント・GAIA SENSEWARE展示ブース"
       },
@@ -2468,18 +2468,18 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "title": "新しい試作スレッド",
       "chapter": "06 / WELCOME",
       "duration": "9:05–11:30",
-      "date": "8月1日（土）",
-      "time": "PM 6:07–6:30",
-      "location": "学内チャット「惑星の放課後」／閉場後の展示ホール",
+      "date": "10月3日（土）",
+      "time": "AM 10:07–10:45",
+      "location": "学内チャット「惑星の放課後」／午前展示枠終了後の展示ホール",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
         "timePrecision": "MINUTE",
-        "displayTitle": "8月1日（土） PM 6:07–6:30｜学内チャット「惑星の放課後」／閉場後の展示ホール",
-        "date": "8月1日（土）",
-        "time": "PM 6:07–6:30",
+        "displayTitle": "10月3日（土） AM 10:07–10:45｜学内チャット「惑星の放課後」／午前展示枠終了後の展示ホール",
+        "date": "10月3日（土）",
+        "time": "AM 10:07–10:45",
         "duration": "9:05–11:30",
-        "location": "学内チャット「惑星の放課後」／閉場後の展示ホール"
+        "location": "学内チャット「惑星の放課後」／午前展示枠終了後の展示ホール"
       },
       "steps": [
         {
@@ -2506,7 +2506,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_004",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:06",
+          "time": "10:06",
           "speaker": "system",
           "speakerLabel": "SYSTEM",
           "text": "青猫が「惑星の放課後」に参加しました。"
@@ -2522,7 +2522,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_006",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:06",
+          "time": "10:06",
           "speaker": "mizuha",
           "speakerLabel": "みず",
           "text": "みなさま、新しい仲間をご紹介しますわ。今日の展示に来てくださった、青猫さんですの。"
@@ -2531,7 +2531,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_007",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:07",
+          "time": "10:07",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "text": "ESP32に詳しい。参加者が測った温度や湿度をGAIA SENSEWAREに表示する案を出してくれたよ。"
@@ -2540,7 +2540,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_008",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:07",
+          "time": "10:07",
           "speaker": "mizuha",
           "speakerLabel": "みず",
           "text": "青猫さん、どうぞよろしくお願いいたしますわ。"
@@ -2563,7 +2563,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_011",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:08",
+          "time": "10:08",
           "speaker": "visitor",
           "speakerLabel": "青猫",
           "text": "はじめまして、青猫です。よろしくお願いします。"
@@ -2600,7 +2600,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_016",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:14",
+          "time": "10:14",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "「青猫」\nいい名前。"
@@ -2609,7 +2609,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_017",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:14",
+          "time": "10:14",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "エーテルに満たされてる。"
@@ -2618,7 +2618,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_018",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:15",
+          "time": "10:15",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "よろしくね、青猫さん。"
@@ -2641,7 +2641,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_021",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:17",
+          "time": "10:17",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "text": "さっきの続き、スレッドにしたよ。"
@@ -2650,7 +2650,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_022",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:17",
+          "time": "10:17",
           "speaker": "system",
           "speakerLabel": "SYSTEM",
           "text": "あめが #GSW-esp32 を作成しました。"
@@ -2659,7 +2659,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_023",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:18",
+          "time": "10:18",
           "speaker": "mizuha",
           "speakerLabel": "みず",
           "text": "青猫さんが会場で話してくださった、ESP32の案ですの。"
@@ -2668,7 +2668,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_024",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:19",
+          "time": "10:19",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "ESP32、いいね。"
@@ -2677,7 +2677,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_025",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:19",
+          "time": "10:19",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "「広い地域の記録と、青猫さんのいる場所の記録」\n並べて見たい。"
@@ -2686,7 +2686,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_026",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:20",
+          "time": "10:20",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "同じ町でも、日なたと日陰では違うから。"
@@ -2695,7 +2695,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_027",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:20",
+          "time": "10:20",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "記録と記憶は違う。記憶に残ることをしていれば、きっとそれは記録になる。"
@@ -2704,7 +2704,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_028",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:21",
+          "time": "10:21",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "text": "また出たね。sakuのポエム。"
@@ -2713,7 +2713,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_029",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:21",
+          "time": "10:21",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "まだ一行しか書いてない。これからが本番。"
@@ -2722,7 +2722,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_030",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:21",
+          "time": "10:21",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "text": "本番はやめてね。"
@@ -2738,7 +2738,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_032",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:22",
+          "time": "10:22",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "text": "saku、ESP32の話になると返事が早いね。"
@@ -2747,7 +2747,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_033",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:22",
+          "time": "10:22",
           "speaker": "mizuha",
           "speakerLabel": "みず",
           "text": "それでは、まず一台で試しましょう。温度と湿度を、何分おきに測るか決めたいですわ。"
@@ -2763,7 +2763,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_035",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:23",
+          "time": "10:23",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "text": "じゃあ、一分おきで。センサーの場所はあとで考えよう。"
@@ -2772,7 +2772,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_036",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:23",
+          "time": "10:23",
           "speaker": "mizuha",
           "speakerLabel": "みず",
           "text": "データが届かなかったときの表示も、あとで決めましょう。"
@@ -2781,7 +2781,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_037",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:23",
+          "time": "10:23",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "text": "了解。青猫さん、その設定でつなげそう？"
@@ -2790,7 +2790,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_038",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:23",
+          "time": "10:23",
           "speaker": "visitor",
           "speakerLabel": "青猫",
           "text": "まず一台つなぎます。"
@@ -2799,7 +2799,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_039",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:24",
+          "time": "10:24",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "text": "お願い。動いたら、照度も足してみよう。"
@@ -2808,7 +2808,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_040",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:25",
+          "time": "10:25",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "続きは、#GSW-esp32 で。"
@@ -2832,7 +2832,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ガラス張りの壁の向こうでは、日が落ちかけていた。海と空の境目が群青に沈み、会場の灯りだけが内側から浮かんでいる。"
+          "text": "ガラス張りの壁の向こうには、澄んだ秋の青空と海が広がっていた。高い雲がゆっくり流れ、午前の日差しが会場の床へ淡く反射している。"
         },
         {
           "id": "welcome_chat_044",
@@ -2860,7 +2860,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "閉場時刻を告げるアナウンスが流れ、周囲のブースが一つずつ照明を落としていく。"
+          "text": "午前展示枠の終了を告げるアナウンスが流れ、周囲の一部のブースが休止表示へ切り替わっていく。"
         },
         {
           "id": "welcome_chat_048",
@@ -2976,7 +2976,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "地球の未来を考えたい。ESP32をつなぎたい。二人にまた会いたい。どれも同じくらい本当だった。周囲では、展示を終えた学生たちが機材を箱へ戻し始めていた。"
+          "text": "地球の未来を考えたい。ESP32をつなぎたい。二人にまた会いたい。どれも同じくらい本当だった。周囲では、午前枠を終えた学生たちが機材を箱へ戻し始めていた。"
         },
         {
           "id": "welcome_chat_064",
@@ -3064,7 +3064,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ガラス張りの通路の外では、海と空が同じ群青へ沈んでいた。昼間は大きく鳴っていた大学旗が、夜の風の中で細く揺れている。"
+          "text": "ガラス張りの通路の外では、海と空が鮮やかな青を重ねていた。朝から大きく鳴っていた大学旗が、秋の海風の中で軽やかに揺れている。"
         },
         {
           "id": "welcome_chat_076",
@@ -3105,7 +3105,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_081",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:41",
+          "time": "10:41",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "次に測る場所、決まったら教えて。"
@@ -3114,7 +3114,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_082",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:42",
+          "time": "10:42",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "一台から、いままで見えなかった変化が見える。"
@@ -3123,7 +3123,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_083",
           "sceneId": "welcome_chat",
           "type": "chat",
-          "time": "18:42",
+          "time": "10:42",
           "speaker": "sakuya",
           "speakerLabel": "saku",
           "text": "見えたものは、次の選択を変える。\n観測する私たちも、地球の外にはいないから。"
@@ -3203,7 +3203,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人の会話は、閉場後の展示ホールでも終わらなかった。画面の向こうには、まだ顔を知らないsakuがいる。"
+          "text": "三人の会話は、午前展示枠を終えたホールでも終わらなかった。画面の向こうには、まだ顔を知らないsakuがいる。"
         },
         {
           "id": "welcome_chat_095",

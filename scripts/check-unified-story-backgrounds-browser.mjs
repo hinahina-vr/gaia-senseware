@@ -19,17 +19,17 @@ const viewports = [
 ];
 
 const cases = [
-  ["festival_concept_001", "festival-main-entrance-reception", "novel-bg-coastal-venue-v3.png"],
-  ["festival_concept_008", "festival-b-hall-overview", "novel-bg-festival-b-hall-overview-v1.png"],
-  ["festival_concept_010", "festival-gaia-five-plane-projection", "novel-bg-festival-five-plane-projection-v1.png"],
-  ["map_mode01_029", "map01-data-provenance", "novel-bg-map01-data-provenance-five-plane-v1.png"],
-  ["gx_experience_001", "gx-ocean-entry", "novel-bg-gx-ancient-ocean-five-plane-v1.png"],
-  ["circle_invitation_070", "circle-after-welcome", "novel-bg-exhibition-v3.png"],
-  ["gx_experience_030", "gx-coevolution", "novel-bg-gx-breathing-points-five-plane-v1.png"],
-  ["gx_experience_045", "gx-human-choice", "novel-bg-gx-temperature-anomaly-five-plane-v1.png"],
-  ["gx_experience_055", "gx-ten-mode-gateway", "novel-bg-gx-mode-gateway-five-plane-v2.png"],
-  ["circle_invitation_011", "circle-private-invitation", "novel-bg-exhibition-v2.png"],
-  ["welcome_chat_074", "welcome-night-exit-mobile", "novel-bg-zushi-coast-night-v2.png"],
+  ["festival_concept_001", "festival-main-entrance-reception", "novel-bg-coastal-venue-autumn-morning-v1.png"],
+  ["festival_concept_008", "festival-b-hall-overview", "novel-bg-festival-b-hall-autumn-morning-v1.png"],
+  ["festival_concept_010", "festival-gaia-five-plane-projection", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
+  ["map_mode01_029", "map01-data-provenance", "novel-bg-map01-data-provenance-autumn-morning-v2.png"],
+  ["gx_experience_001", "gx-ocean-entry", "novel-bg-gx-ancient-ocean-autumn-morning-v2.png"],
+  ["circle_invitation_070", "circle-after-welcome", "novel-bg-exhibition-autumn-morning-close-v4.png"],
+  ["gx_experience_030", "gx-coevolution", "novel-bg-gx-breathing-points-autumn-morning-v2.png"],
+  ["gx_experience_045", "gx-human-choice", "novel-bg-gx-temperature-anomaly-autumn-morning-v2.png"],
+  ["gx_experience_055", "gx-ten-mode-gateway", "novel-bg-gx-mode-gateway-autumn-morning-v3.png"],
+  ["circle_invitation_011", "circle-private-invitation", "novel-bg-exhibition-autumn-morning-wide-v4.png"],
+  ["welcome_chat_074", "welcome-night-exit-mobile", "novel-bg-zushi-coast-autumn-day-v3.png"],
 ];
 const selectedCases = scanScope === "smoke" ? [cases[0], cases[2], cases[10]] : cases;
 

@@ -16,4 +16,4 @@ for (const scene of story.scenes) {
   }
 }
 assert.throws(() => runtime.presentationForStep({ id: "unknown", sceneId: "unknown" }), /has no scene temporal metadata/u);
-console.log("contest v10 temporal runtime check passed: 6 Saturday PM scene-meta presentations");
+console.log("contest v10 temporal runtime check passed: 6 autumn Saturday AM scene-meta presentations");

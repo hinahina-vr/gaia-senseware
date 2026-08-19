@@ -51,8 +51,8 @@ assert(resolved.every(({ background }) => background?.assetPath), "every contest
 assert(resolved.every(({ staging: cue }) => cue?.temporal), "every contest step needs a temporal cue");
 assert(resolved.every(({ staging: cue }) => cue.temporal.context === "CURRENT"), "contest route must stay CURRENT");
 assert(resolved.every(({ staging: cue }) => cue.temporal.precision === "MINUTE"), "contest route must keep authored minute precision");
-assert(resolved.every(({ staging: cue }) => cue.temporal.date === "8月1日（土）"), "contest cue lost the authored Saturday date");
-assert(resolved.every(({ staging: cue }) => /^PM\s/u.test(cue.temporal.time)), "contest cue lost AM/PM notation");
+assert(resolved.every(({ staging: cue }) => cue.temporal.date === "10月3日（土）"), "contest cue lost the authored autumn Saturday date");
+assert(resolved.every(({ staging: cue }) => /^AM\s/u.test(cue.temporal.time)), "contest cue lost autumn-morning AM notation");
 assert(resolved.every(({ staging: cue }) => cue.audio === "none"), "contest cue added character or archive audio");
 
 for (const assetPath of new Set(resolved.map(({ background }) => background.assetPath))) {

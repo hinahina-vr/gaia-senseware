@@ -28,4 +28,4 @@ for (const [index, meta] of sourceMetadata.entries()) {
 }
 assert.deepEqual(story.temporal.sceneOrder, sourceMetadata.map((meta) => meta.id));
 assert.deepEqual(story.temporal.archives, []);
-console.log("contest v10 scene-meta check passed: 6 scenes, Saturday PM clock and playback duration preserved");
+console.log("contest v10 scene-meta check passed: 6 scenes, autumn Saturday AM clock and playback duration preserved");

@@ -19,12 +19,12 @@
 
   // The playback duration remains separate from the owner-authored in-world festival clock.
   const temporal = freezeRows([
-    { id: "festival-concept-current", sceneId: "festival_concept", from: 1, to: 76, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 5:20–5:40", duration: "0:00–1:45", dayPeriod: "PM", location: "オンライン大学・年次対面イベント／学生作品・体験展示ホール" },
-    { id: "map01-current", sceneId: "map_mode01", from: 1, to: 43, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 5:40–5:45", duration: "1:45–3:25", dayPeriod: "PM", location: "展示端末・地図MODE 01" },
-    { id: "gx-current", sceneId: "gx_experience", from: 1, to: 58, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 5:45–5:53", duration: "3:25–5:35", dayPeriod: "PM", location: "展示端末・GX／太古の海" },
-    { id: "esp32-current", sceneId: "esp32_pitch", from: 1, to: 43, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 5:53–6:00", duration: "5:35–7:15", dayPeriod: "PM", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
-    { id: "circle-invitation-current", sceneId: "circle_invitation", from: 1, to: 81, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 6:00–6:07", duration: "7:15–9:05", dayPeriod: "PM", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
-    { id: "welcome-current", sceneId: "welcome_chat", from: 1, to: 95, context: "CURRENT", precision: "MINUTE", date: "8月1日（土）", time: "PM 6:07–6:30", duration: "9:05–11:30", dayPeriod: "PM", location: "学内チャット『惑星の放課後』／閉場後の展示ホール" },
+    { id: "festival-concept-current", sceneId: "festival_concept", from: 1, to: 76, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 9:20–9:40", duration: "0:00–1:45", dayPeriod: "AM", location: "オンライン大学・年次対面イベント／学生作品・体験展示ホール" },
+    { id: "map01-current", sceneId: "map_mode01", from: 1, to: 43, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 9:40–9:45", duration: "1:45–3:25", dayPeriod: "AM", location: "展示端末・地図MODE 01" },
+    { id: "gx-current", sceneId: "gx_experience", from: 1, to: 58, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 9:45–9:53", duration: "3:25–5:35", dayPeriod: "AM", location: "展示端末・GX／太古の海" },
+    { id: "esp32-current", sceneId: "esp32_pitch", from: 1, to: 43, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 9:53–10:00", duration: "5:35–7:15", dayPeriod: "AM", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
+    { id: "circle-invitation-current", sceneId: "circle_invitation", from: 1, to: 81, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 10:00–10:07", duration: "7:15–9:05", dayPeriod: "AM", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
+    { id: "welcome-current", sceneId: "welcome_chat", from: 1, to: 95, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 10:07–10:45", duration: "9:05–11:30", dayPeriod: "AM", location: "学内チャット『惑星の放課後』／午前展示枠終了後の展示ホール" },
   ]);
 
   const interactions = freezeRows([

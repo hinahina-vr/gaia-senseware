@@ -8,7 +8,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4";
+const EXPECTED_SOURCE_SHA256 = "56b2fc6a593715690816f4cc2ddb378da5dd1f712ea6e81e6e30d3fa64f5d5c5";
 
 const sourceBytes = fs.readFileSync(canonPath);
 const characterSourceBytes = fs.readFileSync(characterCanonPath);
@@ -139,7 +139,7 @@ const scenes = matches.map((match, index) => {
   const meta = JSON.parse(metaMatch[1]);
   if (meta.id !== EXPECTED_SCENE_IDS[index]) throw new Error(`${match[0]}: scene idがfreeze順と一致しません`);
   if (typeof meta.date !== "string" || !meta.date.trim()) throw new Error(`${meta.id}: dateがありません`);
-  if (!/^PM\s/u.test(meta.time || "")) throw new Error(`${meta.id}: timeはAM/PM表記が必要です`);
+  if (!/^(?:AM|PM)\s/u.test(meta.time || "")) throw new Error(`${meta.id}: timeはAM/PM表記が必要です`);
   body = body.slice(metaMatch[0].length).replace(/\n---\s*$/u, "").trim();
   const blocks = body.split(/\n{2,}/u).map((block) => block.trim()).filter(Boolean);
   const steps = [];
