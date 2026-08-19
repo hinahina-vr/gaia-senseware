@@ -88,6 +88,11 @@ check("story footer metadata remains hidden", () => {
   assert.match(css, /#novel-eves-button,[\s\S]*#novel-eves-panel,[\s\S]*\.novel-footer-location\s*\{[^}]*display:\s*none\s*!important/u);
 });
 
+check("title copy states the story's central record ethic", () => {
+  assert.equal(html.includes("『今日、はじめまして。』"), false);
+  assert.match(html, /class="novel-title-sub">『記録にないことを、勝手に事実へ変えない。』<\/p>/u);
+});
+
 check("campus name and formal-name canonical metadata", () => {
   assert.equal(canon, retained);
   assert.equal(canon.includes("あまあま"), false);
