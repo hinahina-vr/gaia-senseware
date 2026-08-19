@@ -1888,7 +1888,7 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
 }
 
 .novel-character--sora .novel-character-portrait {
-  background-image: url("./assets/characters/amane-calm-07-v2.png");
+  background-image: url("./assets/characters/amane-calm-07-v3.png");
   background-position: 50% 100%;
   background-size: contain;
 }
@@ -1916,22 +1916,22 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
 
 /* Both characters use full-resolution standalone sprites. */
 .novel-character--sora[data-expression="calm"] .novel-character-portrait {
-  background-image: url("./assets/characters/amane-calm-07-v2.png");
+  background-image: url("./assets/characters/amane-calm-07-v3.png");
 }
 
 .novel-character--sora[data-expression="teasing"] .novel-character-portrait,
 .novel-character--sora[data-expression="startled"] .novel-character-portrait {
-  background-image: url("./assets/characters/amane-startled-07-v2.png");
+  background-image: url("./assets/characters/amane-startled-07-v3.png");
 }
 
 .novel-character--sora[data-expression="worried"] .novel-character-portrait,
 .novel-character--sora[data-expression="exasperated"] .novel-character-portrait {
-  background-image: url("./assets/characters/amane-exasperated-07-v2.png");
+  background-image: url("./assets/characters/amane-exasperated-07-v3.png");
 }
 
 .novel-character--sora[data-expression="sad"] .novel-character-portrait,
 .novel-character--sora[data-expression="soft"] .novel-character-portrait {
-  background-image: url("./assets/characters/amane-soft-07-v2.png");
+  background-image: url("./assets/characters/amane-soft-07-v3.png");
 }
 
 .novel-character--sora .novel-character-portrait {
@@ -9528,5 +9528,19 @@ body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-
     padding-inline: 0;
     font-size: clamp(8px, 2.2vw, 9.5px);
     line-height: 1.35;
+  }
+}
+
+/* Portrait event-CG compositions keep every featured face inside the mobile
+   stage instead of cropping a landscape illustration down to its center. */
+@media (max-width: 720px) {
+  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="festival-first-encounter-cg"] {
+    --novel-scene-background: url("./assets/visuals-07/event-cg-first-encounter-five-plane-mobile-v1.png") !important;
+    background-position: center, center !important;
+  }
+
+  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="festival-mizuha-closeup-cg"] {
+    --novel-scene-background: url("./assets/visuals-07/event-cg-mizuha-closeup-five-plane-mobile-v1.png") !important;
+    background-position: center, center !important;
   }
 }

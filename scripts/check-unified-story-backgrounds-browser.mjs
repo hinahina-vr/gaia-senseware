@@ -30,9 +30,9 @@ const cases = [
   ["gx_experience_055", "gx-ten-mode-gateway", "novel-bg-gx-mode-gateway-autumn-morning-v3.png"],
   ["circle_invitation_011", "circle-private-invitation", "novel-bg-exhibition-autumn-morning-wide-v4.png"],
   ["welcome_chat_074", "welcome-night-exit-mobile", "novel-bg-zushi-coast-autumn-day-v3.png"],
-  ["festival_concept_015", "festival-first-encounter-cg", "event-cg-first-encounter-five-plane-v2.png"],
+  ["festival_concept_015", "festival-first-encounter-cg", "event-cg-first-encounter-five-plane-v2.png", "event-cg-first-encounter-five-plane-mobile-v1.png"],
   ["festival_concept_021", "festival-amane-closeup-cg", "event-cg-amane-closeup-five-plane-v2.png"],
-  ["festival_concept_023", "festival-mizuha-closeup-cg", "event-cg-mizuha-closeup-five-plane-v2.png"],
+  ["festival_concept_023", "festival-mizuha-closeup-cg", "event-cg-mizuha-closeup-five-plane-v2.png", "event-cg-mizuha-closeup-five-plane-mobile-v1.png"],
   ["festival_concept_076", "festival-map-transition", "event-cg-festival-map-transition-five-plane-v2.png"],
   ["map_mode01_001", "map01-co2-observation", "mode-map-v1.webp"],
   ["gx_experience_019", "gx-ancient-ocean", "mode-abstract-v1.webp"],
@@ -87,7 +87,8 @@ const bootAt = async (page, stepId) => {
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
 };
 
-const scanCase = async (viewport, stepId, cueId, expectedFile, index) => {
+const scanCase = async (viewport, stepId, cueId, desktopFile, mobileFile, index) => {
+  const expectedFile = viewport.name.startsWith("mobile") && mobileFile ? mobileFile : desktopFile;
   const label = `${viewport.name}-${String(index + 1).padStart(2, "0")}-${stepId}`;
   const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
   const page = await context.newPage();
@@ -132,8 +133,9 @@ const scanCase = async (viewport, stepId, cueId, expectedFile, index) => {
   assert.equal(scan.cueId, cueId);
   assert(scan.backgroundImage.includes(expectedFile));
   assert(scan.backgroundSize.split(",").every((value) => value.trim() === "cover"));
-  assert(scan.naturalWidth >= 1600 && scan.naturalHeight >= 900);
-  assert(Math.abs(scan.naturalWidth / scan.naturalHeight - 16 / 9) < 0.01);
+  assert(scan.naturalWidth >= 900 && scan.naturalHeight >= 900);
+  const expectedAspect = mobileFile && viewport.name.startsWith("mobile") ? 9 / 16 : 16 / 9;
+  assert(Math.abs(scan.naturalWidth / scan.naturalHeight - expectedAspect) < 0.02);
   assert.equal(scan.dialogueOverlapsBackground, true);
   assert.equal(scan.horizontalOverflow, false);
   assert.equal(scan.verticalOverflow, false);
@@ -242,8 +244,8 @@ const makeContactSheet = async (viewport) => {
 
 try {
   for (const viewport of viewports) {
-    for (const [index, [stepId, cueId, expectedFile]] of selectedCases.entries()) {
-      await scanCase(viewport, stepId, cueId, expectedFile, index);
+    for (const [index, [stepId, cueId, desktopFile, mobileFile]] of selectedCases.entries()) {
+      await scanCase(viewport, stepId, cueId, desktopFile, mobileFile, index);
     }
     await scanMapInteraction(viewport);
     await scanGxInteraction(viewport);

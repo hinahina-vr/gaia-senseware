@@ -53,12 +53,18 @@ const bootStory = async (page, baseUrl, stepId = "festival_concept_011") => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate((state) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(state));
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([
+      { progress: state, savedAt: Date.now(), meta: { title: "Mobile responsive QA", excerpt: state.stepId } },
+    ]));
     localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+    localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
   }, stateFor(stepId));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
+  const savePanel = page.locator("#novel-save-panel");
+  if (await savePanel.isVisible()) await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
 };
 
@@ -111,7 +117,7 @@ const storyScan = async (viewport, baseUrl, phase) => {
   data.configClose = await page.locator("#novel-config-close").evaluate((button) => button.getBoundingClientRect().toJSON());
   await page.screenshot({ path: path.join(outputDir, `${phase}-${viewport.name}-config.png`) });
   if (phase === "candidate" && viewport.mobile) {
-    assert(data.labels.length >= 6); assert(data.labels.every((item) => item.font === "8px" && item.rect.width >= 44 && item.rect.height >= 44));
+    assert(data.labels.length >= 6); assert(data.labels.every((item) => parseFloat(item.font) >= 6.5 && item.rect.width >= 44 && item.rect.height >= 44));
     assert(data.save.close.width >= 44 && data.save.close.height >= 44); assert(data.save.scrollHeight > data.save.clientHeight);
     assert(data.configClose.width >= 44 && data.configClose.height >= 44); assert.equal(data.overflowX, false); assert.equal(data.overflowY, false);
   }

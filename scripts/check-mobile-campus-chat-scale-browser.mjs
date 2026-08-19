@@ -18,9 +18,9 @@ const viewports = [
   { name: "pc-1440", width: 1440, height: 900, mobile: false },
 ];
 const chatCases = [
-  { stepId: "welcome_chat_004", nextStepId: "welcome_chat_005", speaker: "SYSTEM" },
-  { stepId: "welcome_chat_024", nextStepId: "welcome_chat_025", speaker: "saku" },
-  { stepId: "welcome_chat_083", nextStepId: "welcome_chat_084", speaker: "saku" },
+  { stepId: "welcome_chat_004", nextStepId: "welcome_chat_005", speakerId: "system" },
+  { stepId: "welcome_chat_024", nextStepId: "welcome_chat_025", speakerId: "sakuya", typingSpeakerId: "sakuya", typingSymbol: "flower" },
+  { stepId: "welcome_chat_083", nextStepId: "welcome_chat_084", speakerId: "sakuya" },
 ];
 const report = { status: "running", viewports, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
@@ -66,6 +66,9 @@ const bootAt = async (page, stepId) => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate((candidate) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([
+      { progress: candidate, savedAt: Date.now(), meta: { title: "Mobile chat QA", excerpt: candidate.stepId } },
+    ]));
     localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
     localStorage.setItem("gaia-senseware-bgm-volume", String(candidate.audio.volume));
   }, stateFor(stepId));
@@ -73,6 +76,8 @@ const bootAt = async (page, stepId) => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
+  const savePanel = page.locator("#novel-save-panel");
+  if (await savePanel.isVisible()) await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
   await page.waitForTimeout(180);
 };
@@ -137,6 +142,7 @@ const scanChatLayout = async (viewport, testCase) => {
       speaker: speaker?.textContent || "",
       vnText: text?.textContent || "",
       slackText: current?.querySelector(".novel-slack-message")?.textContent || "",
+      currentPostSpeaker: current?.dataset.speaker || "",
       currentPostVisible: __chatVisible(current),
       currentPostInThread: activeInThread,
       continueVisible: __chatVisible(continueMark),
@@ -155,34 +161,37 @@ const scanChatLayout = async (viewport, testCase) => {
       symbolicAvatarDomCount: humanAvatars.length,
       symbolicAvatarVisibleCount: humanAvatars.filter(__chatVisible).length,
       humanSlackAvatarDomCount: document.querySelectorAll(".novel-slack-avatar[data-human-avatar], .novel-slack-avatar img[src*='/characters/']").length,
-      sakuTypingSymbolVisible: __chatVisible(document.querySelector(".novel-slack-typing[data-speaker='sakuya'] .novel-slack-avatar[data-symbol='flower']")),
+      typingSpeaker: document.querySelector(".novel-slack-typing")?.dataset.speaker || "",
+      typingSymbol: document.querySelector(".novel-slack-typing .novel-slack-avatar")?.dataset.symbol || "",
       overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       overflowY: document.documentElement.scrollHeight > innerHeight + 1,
     };
   });
 
-  assert.equal(scan.dialogueVisible, true);
-  assert.equal(scan.speaker, testCase.speaker);
-  assert.equal(scan.vnText.replace(/\s+/gu, ""), scan.slackText.replace(/\s+/gu, ""));
+  assert.equal(scan.dialogueVisible, false);
+  assert.equal(scan.speaker, "");
+  assert.equal(scan.vnText, "");
+  assert.equal(scan.currentPostSpeaker, testCase.speakerId);
+  assert(scan.slackText.trim().length > 0, `${label}: current chat post is empty`);
   assert.equal(scan.currentPostVisible, true);
   assert.equal(scan.currentPostInThread, true);
-  assert.equal(scan.continueVisible, true);
+  assert.equal(scan.continueVisible, false);
   assert.equal(scan.topbarVisible, true);
   assert.equal(rectInViewport(scan.workspaceRect, viewport), true);
-  assert.equal(rectInViewport(scan.dialogueRect, viewport), true);
+  assert.equal(rectInViewport(scan.surfaceRect, viewport), true);
   assert.equal(rectInViewport(scan.topbarRect, viewport), true);
-  assert(scan.workspaceDialogueGap >= 20, `${label}: workspace competes with the VN dialogue`);
-  assert.equal(scan.textFits, true);
-  assert(scan.estimatedLines <= 3, `${label}: VN dialogue exceeds three lines (${scan.estimatedLines})`);
   assert.equal(scan.humanSlackAvatarDomCount, 0);
-  assert(scan.symbolicAvatarDomCount > 0);
+  if (testCase.speakerId === "system") assert.equal(scan.symbolicAvatarDomCount, 0);
+  else assert(scan.symbolicAvatarDomCount > 0);
   assert.equal(scan.symbolicAvatarVisibleCount, scan.symbolicAvatarDomCount);
+  assert.equal(scan.typingSpeaker, testCase.typingSpeakerId || "");
+  assert.equal(scan.typingSymbol, testCase.typingSymbol || "");
   assert.equal(scan.overflowX, false);
   assert.equal(scan.overflowY, false);
   assert.notEqual(scan.backgroundImage, "none");
   if (viewport.mobile) {
     assert(scan.workspaceWidthRatio >= 0.88 && scan.workspaceWidthRatio <= 0.94, `${label}: mobile workspace width ratio ${scan.workspaceWidthRatio}`);
-    assert(scan.workspaceHeightRatio <= 0.39, `${label}: mobile workspace is too tall (${scan.workspaceHeightRatio})`);
+    assert(scan.workspaceHeightRatio >= 0.55 && scan.workspaceHeightRatio <= 0.59, `${label}: mobile workspace height ratio regressed (${scan.workspaceHeightRatio})`);
     assert(scan.leftGap >= 10 && scan.rightGap >= 10 && scan.topGap >= 68, `${label}: background margins are too small`);
     assert.equal(scan.sidebarVisible, true);
     assert(scan.sidebarWidth >= 80, `${label}: sidebar is too narrow`);
@@ -191,9 +200,9 @@ const scanChatLayout = async (viewport, testCase) => {
     assert.equal(scan.threadOverscroll, "contain");
     assert.equal(scan.workspaceTransform, "none", `${label}: workspace must not be transform-scaled`);
   } else {
-    const expectedWidth = scan.device === "mobile" ? 430 : 980;
+    const expectedWidth = scan.device === "mobile" ? 830 : 1180;
     assert(Math.abs(scan.workspaceRect.width - expectedWidth) <= 1, `${label}: PC workspace width regressed`);
-    assert(scan.workspaceRect.height >= 440 && scan.workspaceRect.height <= 522, `${label}: PC workspace height regressed`);
+    assert(Math.abs(scan.workspaceRect.height - 612) <= 1, `${label}: PC workspace height regressed`);
     assert(scan.messageFontSize >= 13, `${label}: PC message font regressed`);
   }
 
@@ -211,7 +220,7 @@ const scanChatLayout = async (viewport, testCase) => {
   }
 
   await page.screenshot({ path: path.join(outputDir, `${label}.png`) });
-  await page.locator("#novel-dialogue").click({ position: { x: 24, y: 24 } });
+  await page.keyboard.press("Enter");
   await page.waitForFunction((id) => globalThis.GaiaNovel.getState().stepId === id, testCase.nextStepId);
   await page.waitForTimeout(220);
   assert.equal(await page.evaluate(() => globalThis.GaiaNovel.getState().stepId), testCase.nextStepId);
@@ -234,7 +243,10 @@ const scanInput = async (viewport, input) => {
 };
 
 const inputs = [
-  { name: "space", stepId: "welcome_chat_024", nextStepId: "welcome_chat_025", run: (page) => page.locator("#novel-dialogue").press("Space") },
+  { name: "click", stepId: "welcome_chat_024", nextStepId: "welcome_chat_025", run: async (page) => {
+    await page.waitForTimeout(260);
+    await page.locator("#novel-layer").click({ position: { x: 2, y: 400 } });
+  } },
   { name: "auto", stepId: "welcome_chat_025", nextStepId: "welcome_chat_026", run: (page) => page.locator("#novel-auto-button").click() },
   { name: "fast-forward", stepId: "welcome_chat_026", nextStepId: "welcome_chat_027", run: async (page) => {
     await page.locator("#novel-fast-forward-button").click();

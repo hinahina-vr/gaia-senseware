@@ -10,7 +10,7 @@ const require = createRequire(path.join(dependencyRoot, "package.json"));
 const sharp = require("sharp");
 
 const spriteFiles = [
-  "amane-calm-07-v2.png", "amane-exasperated-07-v2.png", "amane-soft-07-v2.png", "amane-startled-07-v2.png",
+  "amane-calm-07-v3.png", "amane-exasperated-07-v3.png", "amane-soft-07-v3.png", "amane-startled-07-v3.png",
   "mizuha-calm-07-v2.png", "mizuha-sad-07-v2.png", "mizuha-teasing-07-v2.png", "mizuha-worried-07-v2.png",
   "sakuya-calm-07-v1.png", "sakuya-sad-07-v1.png", "sakuya-teasing-07-v1.png", "sakuya-worried-07-v1.png",
 ];
@@ -54,6 +54,11 @@ const sceneFiles = [
   "opening-keyvisual-v1.webp",
 ];
 
+const mobileSceneFiles = [
+  "event-cg-first-encounter-five-plane-mobile-v1.png",
+  "event-cg-mizuha-closeup-five-plane-mobile-v1.png",
+];
+
 const report = { sprites: [], scenes: [] };
 
 for (const file of spriteFiles) {
@@ -76,6 +81,13 @@ for (const file of sceneFiles) {
 
 const sceneDimensionFailures = report.scenes.filter(({ width, height }) => width !== 1672 || height !== 941);
 assert.deepEqual(sceneDimensionFailures, [], `scene dimensions changed: ${JSON.stringify(sceneDimensionFailures)}`);
+
+for (const file of mobileSceneFiles) {
+  const metadata = await sharp(path.join(root, "assets", "visuals-07", file)).metadata();
+  assert.equal(metadata.width, 941, `${file}: mobile width changed`);
+  assert.equal(metadata.height, 1672, `${file}: mobile height changed`);
+  report.scenes.push({ file, width: metadata.width, height: metadata.height, format: metadata.format, mobile: true });
+}
 
 await fs.mkdir(path.join(root, "artifacts"), { recursive: true });
 await fs.writeFile(path.join(root, "artifacts", "illustration-v8-assets-report.json"), `${JSON.stringify(report, null, 2)}\n`);
