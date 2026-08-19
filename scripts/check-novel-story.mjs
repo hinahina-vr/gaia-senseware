@@ -9,19 +9,21 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "56b2fc6a593715690816f4cc2ddb378da5dd1f712ea6e81e6e30d3fa64f5d5c5";
+const expectedHash = "d9f81434a1fe5d24397e60e887cbc15f071cf2badb1ed3bd734d936f312e68c0";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 58, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 56356, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 56353, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
 assert.equal(canonSource.split("\n").length, 1020, "freeze正本は1019 content lines + trailing LFである必要があります");
 assert.equal(canonSource.endsWith("\n"), true, "freeze正本のtrailing LFがありません");
+const prohibitedRemainingPhrase = ["だけが", "残った"].join("");
+assert.equal(canonSource.includes(prohibitedRemainingPhrase), false, "指定NG表現がfreeze正本に残っています");
 
 delete globalThis.GAIA_NOVEL_STORY;
 delete globalThis.GAIA_NOVEL_STORY_V6;
@@ -51,6 +53,7 @@ assert.deepEqual(
 );
 const festival = story.scenes.find((scene) => scene.id === "festival_concept");
 const storyText = steps.map((step) => String(step.text || "")).join("\n");
+assert.equal(storyText.includes(prohibitedRemainingPhrase), false, "指定NG表現が生成済みストーリーに残っています");
 assert.doesNotMatch(storyText, /ものづくり|ほどけ/u, "今回の対象文脈で使用しない表現が残っています");
 assert.equal(storyText.split("あめと、みず。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 0, "旧festival_concept_024全文が残っています");
 assert.equal(storyText.split("あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 1, "festival_concept_024決定稿はexact1件必要です");
@@ -121,6 +124,7 @@ assert.equal(welcome.steps[6].text, "ESP32に詳しい。参加者が測った�
 assert.equal(welcome.steps[14].text, "まだ会ったことのないsakuから、短いメッセージが届いた。", "welcome_chat_015の導入文が決定稿と一致しません");
 assert.equal(welcome.steps[62].text, "地球の未来を考えたい。ESP32をつなぎたい。二人にまた会いたい。どれも同じくらい本当だった。周囲では、午前枠を終えた学生たちが機材を箱へ戻し始めていた。", "welcome_chat_063の午前展示枠終了へのつなぎが決定稿と一致しません");
 assert.equal(welcome.steps[63].text, "「私たちも、そろそろ片づけます。展示画面を消しますね」", "welcome_chat_064の終了案内が決定稿と一致しません");
+assert.equal(welcome.steps[67].text, "黒い画面の中で、私たち三人の視線が交わった。", "welcome_chat_068の決定稿が一致しません");
 assert.equal(welcome.steps[83].text, "その二行が、今日の展示で見てきたものと、これから始める観測をつないだ。", "welcome_chat_084の受けが決定稿と一致しません");
 assert.equal(welcome.steps[91].text, "スマートフォンをポケットへ戻す。顔を上げると、隣を歩く二人と目が合った。", "welcome_chat_092の動作が決定稿と一致しません");
 assert.ok(welcome.steps.slice(3, 40).some((step) => step.type === "chat"), "welcome_chat wide chat区間がありません");

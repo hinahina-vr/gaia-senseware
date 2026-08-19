@@ -13,6 +13,7 @@ const outputDir = path.resolve(outputArgument || "artifacts/welcome-chat-finale-
 fs.mkdirSync(outputDir, { recursive: true });
 
 const cases = [
+  { stepId: "welcome_chat_068", text: "黒い画面の中で、私たち三人の視線が交わった。" },
   { stepId: "welcome_chat_084", text: "その二行が、今日の展示で見てきたものと、これから始める観測をつないだ。" },
   { stepId: "welcome_chat_092", text: "スマートフォンをポケットへ戻す。顔を上げると、隣を歩く二人と目が合った。" },
 ];

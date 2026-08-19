@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "56b2fc6a593715690816f4cc2ddb378da5dd1f712ea6e81e6e30d3fa64f5d5c5",
+  "sourceSha256": "d9f81434a1fe5d24397e60e887cbc15f071cf2badb1ed3bd734d936f312e68c0",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -3012,7 +3012,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "地球が見えなくなったあとに、人間だけが残った。"
+          "text": "黒い画面の中で、私たち三人の視線が交わった。"
         },
         {
           "id": "welcome_chat_069",
