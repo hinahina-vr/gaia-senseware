@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4387"] = process.argv.slice(2);
+const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4387", scanScope = "full"] = process.argv.slice(2);
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
@@ -31,8 +31,9 @@ const cases = [
   ["circle_invitation_011", "circle-private-invitation", "novel-bg-exhibition-v2.png"],
   ["welcome_chat_074", "welcome-night-exit-mobile", "novel-bg-zushi-coast-night-v2.png"],
 ];
+const selectedCases = scanScope === "smoke" ? [cases[0], cases[2], cases[10]] : cases;
 
-const report = { status: "running", viewports, cases: [], interactions: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { status: "running", scanScope, viewports, cases: [], interactions: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath, args: ["--no-first-run", "--disable-background-networking"] });
 
 const stateFor = (stepId) => ({
@@ -81,13 +82,17 @@ const scanCase = async (viewport, stepId, cueId, expectedFile, index) => {
   const label = `${viewport.name}-${String(index + 1).padStart(2, "0")}-${stepId}`;
   const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
   const page = await context.newPage();
-  page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`); });
+  const onConsole = (message) => {
+    if (message.type() !== "error") return;
+    const location = message.location();
+    report.consoleErrors.push(`${label}: ${message.text()} (${location.url || "inline"}:${location.lineNumber || 0})`);
+  };
+  page.on("console", onConsole);
   page.on("pageerror", (error) => report.pageErrors.push(`${label}: ${error.message}`));
   page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`); });
 
   await bootAt(page, stepId);
   await page.waitForFunction((file) => getComputedStyle(document.querySelector("#novel-layer")).backgroundImage.includes(file), expectedFile);
-  await page.waitForTimeout(120);
   const scan = await page.evaluate(async ({ expectedFile: file }) => {
     const layer = document.querySelector("#novel-layer");
     const dialogue = document.querySelector("#novel-dialogue");
@@ -126,6 +131,7 @@ const scanCase = async (viewport, stepId, cueId, expectedFile, index) => {
 
   const screenshotPath = path.join(outputDir, `${label}.png`);
   await page.screenshot({ path: screenshotPath });
+  page.off("console", onConsole);
   await context.close();
   report.cases.push({ viewport: viewport.name, screenshotPath, ...scan, passed: true });
 };
@@ -133,7 +139,12 @@ const scanCase = async (viewport, stepId, cueId, expectedFile, index) => {
 const prepareInteractionPage = async (viewport, label, reducedMotion = "reduce") => {
   const context = await browser.newContext({ viewport, reducedMotion });
   const page = await context.newPage();
-  page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`); });
+  const onConsole = (message) => {
+    if (message.type() !== "error") return;
+    const location = message.location();
+    report.consoleErrors.push(`${label}: ${message.text()} (${location.url || "inline"}:${location.lineNumber || 0})`);
+  };
+  page.on("console", onConsole);
   page.on("pageerror", (error) => report.pageErrors.push(`${label}: ${error.message}`));
   page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`); });
   await page.addInitScript(() => {
@@ -144,12 +155,12 @@ const prepareInteractionPage = async (viewport, label, reducedMotion = "reduce")
       return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0 && rect.width > 0 && rect.height > 0;
     };
   });
-  return { context, page };
+  return { context, page, onConsole };
 };
 
 const scanMapInteraction = async (viewport) => {
   const label = `${viewport.name}-map-progression`;
-  const { context, page } = await prepareInteractionPage(viewport, label);
+  const { context, page, onConsole } = await prepareInteractionPage(viewport, label);
   await bootAt(page, "map_mode01_004");
   await page.waitForFunction(() => document.body.dataset.novelInteractionState === "open" && __backgroundQaVisible(document.querySelector("#japan-layer")));
   const input = page.locator("#japan-layer [data-signal-time]").first();
@@ -169,12 +180,13 @@ const scanMapInteraction = async (viewport) => {
   assert.deepEqual(scan, { stepId: "map_mode01_005", lifecycle: "idle", modalVisible: false, horizontalOverflow: false });
   await page.screenshot({ path: path.join(outputDir, `${label}.png`) });
   report.interactions.push({ viewport: viewport.name, interaction: "MAP01", ...scan, passed: true });
+  page.off("console", onConsole);
   await context.close();
 };
 
 const scanGxInteraction = async (viewport) => {
   const label = `${viewport.name}-gx-progression`;
-  const { context, page } = await prepareInteractionPage(viewport, label);
+  const { context, page, onConsole } = await prepareInteractionPage(viewport, label);
   await bootAt(page, "gx_experience_017");
   await page.waitForFunction(() => document.body.dataset.novelInteractionState === "open" && __backgroundQaVisible(document.querySelector("#gx-layer")));
   const stepControl = page.locator('.story-detour-dock[data-kind="gx"] .story-detour-controls button');
@@ -195,6 +207,7 @@ const scanGxInteraction = async (viewport) => {
   assert.deepEqual(scan, { stepId: "gx_experience_018", lifecycle: "idle", modalVisible: false, horizontalOverflow: false });
   await page.screenshot({ path: path.join(outputDir, `${label}.png`) });
   report.interactions.push({ viewport: viewport.name, interaction: "GX", ...scan, passed: true });
+  page.off("console", onConsole);
   await context.close();
 };
 
@@ -220,7 +233,7 @@ const makeContactSheet = async (viewport) => {
 
 try {
   for (const viewport of viewports) {
-    for (const [index, [stepId, cueId, expectedFile]] of cases.entries()) {
+    for (const [index, [stepId, cueId, expectedFile]] of selectedCases.entries()) {
       await scanCase(viewport, stepId, cueId, expectedFile, index);
     }
     await scanMapInteraction(viewport);
@@ -233,7 +246,7 @@ try {
   assert.deepEqual(report.responses404, []);
   report.status = "passed";
   fs.writeFileSync(path.join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`unified story background browser check passed: ${report.cases.length} background scans, ${report.interactions.length} interaction scans, ${cases.length} assets`);
+  console.log(`unified story background browser check passed: ${report.cases.length} background scans, ${report.interactions.length} interaction scans, ${selectedCases.length} assets (${scanScope})`);
   console.log(report.contactSheets.join("\n"));
 } finally {
   await browser.close();
