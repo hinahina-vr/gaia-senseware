@@ -1412,18 +1412,15 @@ body.novel-reduced-motion .novel-layer:not(.is-title) {
   }
 }
 
-/* Clickable provenance card for the story signal label. */
+/* Static scene metadata: this heading is intentionally not interactive. */
 .novel-signal-caption {
-  appearance: none;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
   font: inherit;
   text-align: left;
-  pointer-events: auto !important;
-  cursor: pointer;
-  transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease;
+  pointer-events: none !important;
 }
 
 .novel-signal-caption small {
@@ -1433,253 +1430,6 @@ body.novel-reduced-motion .novel-layer:not(.is-title) {
   font-size: 7px;
   font-weight: 700;
   letter-spacing: 0.18em;
-  transition: color 180ms ease, transform 180ms ease;
-}
-
-.novel-signal-caption:hover,
-.novel-signal-caption[aria-expanded="true"] {
-  opacity: 1;
-  filter: brightness(1.12);
-  transform: translateX(-50%) translateY(-2px);
-}
-
-.novel-signal-caption:hover small,
-.novel-signal-caption[aria-expanded="true"] small {
-  color: rgba(221, 248, 255, 0.9);
-  transform: translateX(3px);
-}
-
-.novel-signal-caption:focus-visible {
-  border-radius: 4px;
-  outline: 1px solid rgba(var(--novel-cyan), 0.55);
-  outline-offset: 7px;
-  opacity: 1;
-}
-
-.novel-source-panel {
-  position: absolute;
-  z-index: 14;
-  top: clamp(150px, 18vh, 190px);
-  left: 50%;
-  width: min(580px, calc(100vw - 48px));
-  max-height: min(500px, calc(100vh - 250px));
-  overflow: auto;
-  border: 1px solid rgba(174, 224, 248, 0.34);
-  border-radius: 14px;
-  background:
-    linear-gradient(135deg, rgba(12, 50, 91, 0.7), rgba(3, 19, 48, 0.78) 58%, rgba(2, 11, 31, 0.84)),
-    radial-gradient(circle at 14% 0%, rgba(118, 202, 238, 0.15), transparent 42%);
-  box-shadow:
-    0 28px 90px rgba(0, 5, 24, 0.46),
-    inset 0 1px rgba(230, 248, 255, 0.16),
-    0 0 34px rgba(78, 177, 225, 0.08);
-  -webkit-backdrop-filter: blur(24px) saturate(1.26);
-  backdrop-filter: blur(24px) saturate(1.26);
-  color: rgba(239, 249, 255, 0.92);
-  transform: translateX(-50%);
-  animation: novel-source-panel-in 220ms ease-out both;
-}
-
-.novel-source-panel[hidden] {
-  display: none;
-}
-
-.novel-source-panel::before {
-  position: absolute;
-  top: 0;
-  right: 18%;
-  left: 18%;
-  height: 1px;
-  content: "";
-  background: linear-gradient(90deg, transparent, rgba(220, 247, 255, 0.8), transparent);
-  box-shadow: 0 0 15px rgba(137, 215, 244, 0.36);
-}
-
-.novel-source-panel header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid rgba(166, 213, 238, 0.14);
-}
-
-.novel-source-panel header > div {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.novel-source-panel header p {
-  margin: 0;
-  color: rgba(205, 231, 244, 0.6);
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 9px;
-  letter-spacing: 0.13em;
-}
-
-.novel-source-kind {
-  padding: 5px 8px;
-  border: 1px solid rgba(143, 231, 215, 0.4);
-  color: #9bead8;
-  background: rgba(4, 31, 45, 0.54);
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-}
-
-.novel-source-kind[data-kind="DERIVED"] {
-  border-color: rgba(247, 201, 139, 0.4);
-  color: #f7c98b;
-}
-
-.novel-source-kind[data-kind="SCENARIO"] {
-  border-color: rgba(215, 185, 255, 0.42);
-  color: #d7b9ff;
-}
-
-.novel-source-panel header button {
-  display: grid;
-  flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: 1px solid rgba(184, 226, 246, 0.24);
-  border-radius: 50%;
-  background: rgba(2, 15, 35, 0.42);
-  color: rgba(235, 249, 255, 0.84);
-  font-size: 19px;
-  line-height: 1;
-  place-items: center;
-  cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
-}
-
-.novel-source-panel header button:hover,
-.novel-source-panel header button:focus-visible {
-  border-color: rgba(203, 242, 255, 0.62);
-  background: rgba(24, 72, 105, 0.54);
-  outline: none;
-  transform: rotate(7deg);
-}
-
-.novel-source-panel-body {
-  padding: 22px 24px 24px;
-}
-
-.novel-source-panel-body h3 {
-  margin: 0 0 12px;
-  color: rgba(248, 253, 255, 0.98);
-  font-family: var(--novel-font);
-  font-size: clamp(17px, 1.35vw, 21px);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  line-height: 1.6;
-  text-shadow: 0 2px 15px rgba(0, 5, 20, 0.8);
-}
-
-.novel-source-panel-body > p {
-  margin: 0;
-  color: rgba(225, 240, 248, 0.76);
-  font-size: 13px;
-  line-height: 1.8;
-}
-
-.novel-source-panel dl {
-  display: grid;
-  gap: 1px;
-  margin: 18px 0;
-  overflow: hidden;
-  border: 1px solid rgba(154, 209, 236, 0.14);
-  border-radius: 7px;
-  background: rgba(144, 205, 234, 0.12);
-}
-
-.novel-source-panel dl > div {
-  display: grid;
-  grid-template-columns: 108px 1fr;
-  gap: 14px;
-  padding: 12px 14px;
-  background: rgba(2, 16, 39, 0.55);
-}
-
-.novel-source-panel dt,
-.novel-source-panel dd {
-  margin: 0;
-  line-height: 1.65;
-}
-
-.novel-source-panel dt {
-  color: rgba(159, 218, 241, 0.66);
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-}
-
-.novel-source-panel dd {
-  color: rgba(234, 246, 251, 0.84);
-  font-size: 12px;
-}
-
-.novel-source-panel-body .novel-source-fiction-note {
-  padding-left: 12px;
-  border-left: 2px solid rgba(178, 132, 220, 0.5);
-  color: rgba(218, 208, 234, 0.64);
-  font-size: 10px;
-  line-height: 1.8;
-}
-
-@keyframes novel-source-panel-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-8px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .novel-source-panel {
-    animation: none;
-  }
-}
-
-@media (max-width: 720px) {
-  .novel-signal-caption small {
-    display: none;
-  }
-
-  .novel-source-panel {
-    top: 128px;
-    width: calc(100vw - 24px);
-    max-height: calc(100vh - 164px);
-    border-radius: 10px;
-  }
-
-  .novel-source-panel header {
-    gap: 12px;
-    padding: 17px 16px 14px;
-  }
-
-  .novel-source-panel header > div {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 7px;
-  }
-
-  .novel-source-panel-body {
-    padding: 17px 16px 20px;
-  }
-
-  .novel-source-panel dl > div {
-    grid-template-columns: 1fr;
-    gap: 4px;
-    padding: 11px 12px;
-  }
 }
 
 .novel-layer:has(.novel-runtime:not([hidden])) {
@@ -3788,17 +3538,6 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
 
 .novel-signal-caption small {
   color: rgba(193, 228, 242, 0.62);
-}
-
-.novel-signal-caption:focus-visible {
-  outline: none;
-}
-
-.novel-signal-caption:focus-visible::before,
-.novel-signal-caption:hover::before,
-.novel-signal-caption[aria-expanded="true"]::before {
-  border-top-color: rgba(198, 242, 252, 0.6);
-  opacity: 1;
 }
 
 .novel-signal-caption.is-signal-reveal::before {

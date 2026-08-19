@@ -115,7 +115,7 @@ const bootAt = async (page, stepId) => {
 
 const renderHeadingCase = (page, item) => page.evaluate((current) => {
   const heading = document.querySelector("#novel-location");
-  const button = document.querySelector("#novel-source-button");
+  const label = document.querySelector("#novel-source-label");
   const [temporal = "", ...locationParts] = String(current.title || "").split("｜");
   const unit = (text, kind) => {
     const node = document.createElement("span");
@@ -135,13 +135,13 @@ const renderHeadingCase = (page, item) => page.evaluate((current) => {
   }
   heading.setAttribute("aria-label", current.title);
   heading.replaceChildren(...units);
-  button.hidden = false;
-  button.classList.remove("is-signal-reveal");
-  button.style.animation = "none";
+  label.hidden = false;
+  label.classList.remove("is-signal-reveal");
+  label.style.animation = "none";
 }, item);
 
 const headingLayout = (page) => page.locator("#novel-location").evaluate((heading) => {
-  const button = heading.closest("#novel-source-button");
+  const button = heading.closest("#novel-source-label");
   const directUnits = [...heading.children];
   const groupedLines = [];
   directUnits.forEach((unit) => {
@@ -226,7 +226,7 @@ try {
     const pageShot = path.join(outputDir, `${viewport.name}-current-exhibition.png`);
     const headingShot = path.join(outputDir, `${viewport.name}-heading.png`);
     await page.screenshot({ path: pageShot, animations: "disabled", timeout: 90000 });
-    await page.locator("#novel-source-button").screenshot({ path: headingShot, animations: "disabled", timeout: 90000 });
+    await page.locator("#novel-source-label").screenshot({ path: headingShot, animations: "disabled", timeout: 90000 });
     headingShots.push(headingShot);
     report.evidence.push({ viewport: viewport.name, kind: "current", path: pageShot, layout: await headingLayout(page) });
     if (viewport.width === 390) {

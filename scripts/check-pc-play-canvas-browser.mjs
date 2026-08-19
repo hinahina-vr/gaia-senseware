@@ -70,7 +70,7 @@ const scanPage = async (page, target) => page.evaluate((kind) => {
   const experience = document.querySelector(".experience");
   const dialogue = document.querySelector("#novel-dialogue");
   const text = document.querySelector("#novel-text");
-  const signal = document.querySelector("#novel-source-button");
+  const signal = document.querySelector("#novel-source-label");
   const nav = document.querySelector(".novel-topbar nav");
   const audio = document.querySelector("#gaia-audio-dock");
   const workspace = document.querySelector(".novel-slack-workspace");

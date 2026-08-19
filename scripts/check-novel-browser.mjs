@@ -745,7 +745,11 @@ try {
       speaker: document.querySelector("#novel-speaker").textContent,
       text: document.querySelector("#novel-text").textContent,
       paginationApplied: Boolean(document.querySelector("#novel-text").dataset.pageCount),
-      sourceDetailsAvailable: !document.querySelector("#novel-source-button").hidden,
+      sceneLabelVisible: !document.querySelector("#novel-source-label").hidden,
+      sourcePanelAbsent: !document.querySelector("#novel-source-panel"),
+      sceneLabelStatic: document.querySelector("#novel-source-label").tagName === "DIV"
+        && !document.querySelector("#novel-source-label").hasAttribute("tabindex")
+        && getComputedStyle(document.querySelector("#novel-source-label")).pointerEvents === "none",
       castSpeaker: document.querySelector("#novel-cast").dataset.speaker,
       avatarHidden: document.querySelector("#novel-avatar").hidden,
       locationText: location.textContent,
@@ -755,11 +759,12 @@ try {
       signalTitleHidden: Boolean(document.querySelector("#novel-signal-title")?.hidden),
     };
   });
-  assert(inlineRecordPresentation.dialogueVisible && inlineRecordPresentation.evidenceHidden && inlineRecordPresentation.speaker === "観測メモ" && inlineRecordPresentation.sourceDetailsAvailable, `record did not use the normal novel presentation: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.dialogueVisible && inlineRecordPresentation.evidenceHidden && inlineRecordPresentation.speaker === "観測メモ" && inlineRecordPresentation.sceneLabelVisible, `record did not use the normal novel presentation: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.sourcePanelAbsent && inlineRecordPresentation.sceneLabelStatic, `obsolete clickable observation details remain: ${JSON.stringify(inlineRecordPresentation)}`);
   assert(!inlineRecordPresentation.paginationApplied, `special record UI incorrectly used normal-text pagination: ${JSON.stringify(inlineRecordPresentation)}`);
   assert(inlineRecordPresentation.castSpeaker === "narrator" && inlineRecordPresentation.avatarHidden, `source record unexpectedly displayed a character portrait: ${JSON.stringify(inlineRecordPresentation)}`);
   assert(inlineRecordPresentation.text.includes("サクヤ本人から届いた文章") && inlineRecordPresentation.text.includes("すぐに意味を決めるんじゃなくて") && !/LOCAL SOURCE|SOURCE|観測記録\s*\//.test(inlineRecordPresentation.text), `record exposed internal labels or lost canonical copy: ${JSON.stringify(inlineRecordPresentation)}`);
-  assert(inlineRecordPresentation.locationText === "10月31日（土） 23:00｜最終画面の確認" && inlineRecordPresentation.locationParent === "novel-source-button" && inlineRecordPresentation.obsoleteFooterLocation === 0 && inlineRecordPresentation.signalTitleHidden && inlineRecordPresentation.locationShadow !== "none", `dated scene location was not moved into the readable upper caption: ${JSON.stringify(inlineRecordPresentation)}`);
+  assert(inlineRecordPresentation.locationText === "10月31日（土） 23:00｜最終画面の確認" && inlineRecordPresentation.locationParent === "novel-source-label" && inlineRecordPresentation.obsoleteFooterLocation === 0 && inlineRecordPresentation.signalTitleHidden && inlineRecordPresentation.locationShadow !== "none", `dated scene location was not moved into the readable upper caption: ${JSON.stringify(inlineRecordPresentation)}`);
   assert(await page.locator(".novel-evidence-card").count() === 0, "obsolete full-screen record card remains");
   await screenshot(page, "record-note");
 

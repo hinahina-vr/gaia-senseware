@@ -146,7 +146,7 @@ const readLayout = (page) => page.evaluate(() => {
   const copyStatus = document.querySelector("#novel-script-debug-copy-status");
   const debugRect = root.getBoundingClientRect();
   const selectors = [
-    "#novel-source-button:not([hidden])",
+    "#novel-source-label:not([hidden])",
     "#novel-dialogue:not([hidden])",
     ".novel-choices button",
     ".novel-topbar nav button:not([hidden])",

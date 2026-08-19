@@ -290,15 +290,7 @@
     avatarGlyph: layer.querySelector("#novel-avatar-glyph"),
     dataKind: layer.querySelector("#novel-data-kind"),
     signalTitle: layer.querySelector("#novel-signal-title"),
-    sourceButton: layer.querySelector("#novel-source-button"),
-    sourcePanel: layer.querySelector("#novel-source-panel"),
-    sourceClose: layer.querySelector("#novel-source-close"),
-    sourcePanelKind: layer.querySelector("#novel-source-panel-kind"),
-    sourcePanelTitle: layer.querySelector("#novel-source-panel-title"),
-    sourcePanelDescription: layer.querySelector("#novel-source-panel-description"),
-    sourcePanelRule: layer.querySelector("#novel-source-panel-rule"),
-    sourcePanelLocation: layer.querySelector("#novel-source-panel-location"),
-    sourcePanelNote: layer.querySelector("#novel-source-panel-note"),
+    sourceLabel: layer.querySelector("#novel-source-label"),
     dialogue: layer.querySelector("#novel-dialogue"),
     speaker: layer.querySelector("#novel-speaker"),
     text: layer.querySelector("#novel-text"),
@@ -528,7 +520,6 @@
     closeManualArchive();
     closeConfig();
     closeEves();
-    closeSourceDetails();
     resetFastForward();
     syncSceneJumpCurrent(currentStep());
     elements.jumpPanel.hidden = false;
@@ -914,7 +905,6 @@
     closeManualArchive();
     closeConfig();
     closeEves();
-    closeSourceDetails();
     closeGallery({ restoreFocus: false });
     renderGallery();
     elements.galleryPanel.hidden = false;
@@ -1632,7 +1622,6 @@
     if (!step || !transition) return renderCurrentStep();
     clearTimers();
     closeLog();
-    closeSourceDetails();
     showRuntime();
     syncScriptDebug(step);
     hideSpecialSurfaces();
@@ -1644,7 +1633,7 @@
     elements.dialogue.hidden = true;
     elements.choices.replaceChildren();
     elements.choices.classList.remove("is-visible");
-    elements.sourceButton.hidden = true;
+    elements.sourceLabel.hidden = true;
     elements.chapterIndex.textContent = `${transition.fromTemporalContext} → ${transition.toTemporalContext}`;
     renderChapterTitleUnits(transition.displayTitle);
     elements.chapterCard.dataset.transitionFrom = transition.fromTemporalContext;
@@ -1717,21 +1706,12 @@
     elements.cast.dataset.slackCast = visible ? "visible" : "hidden";
   };
 
-  const updateSourceDetails = (step) => {
+  const updateSignalLabel = (step) => {
     const kind = step.recordType || (step.type === "choice" ? "VISITOR_TRACE" : "SOURCE");
     const label = RECORD_LABELS[kind] || RECORD_LABELS.SOURCE;
     elements.dataKind.textContent = label;
     elements.dataKind.dataset.kind = kind;
     elements.signalTitle.textContent = step.type === "record" ? "記録の分類と作者を分けて表示しています。" : "物語台本に記録された場面です。";
-    elements.sourcePanelKind.textContent = label;
-    elements.sourcePanelKind.dataset.kind = kind;
-    elements.sourcePanelTitle.textContent = label;
-    elements.sourcePanelDescription.textContent = step.type === "record"
-      ? "SOURCE、DERIVED、VISITOR TRACE、VISITOR POSTは、同じ作者や同じ種類の記録として扱いません。"
-      : "この文章は『物語台本.md』の順序と文面を保って表示しています。";
-    elements.sourcePanelRule.textContent = "色だけでなく、日本語と英語の分類ラベル、話者名、カード形状で区別します。";
-    elements.sourcePanelLocation.textContent = currentScene()?.title || "GAIA SENSATION";
-    elements.sourcePanelNote.textContent = "記録にないことを、本人の事実や発話へ置き換えません。";
   };
 
   const finishReveal = () => {
@@ -2488,7 +2468,6 @@
     endControlFastForward();
     clearTimers();
     closeLog();
-    closeSourceDetails();
     showRuntime();
     syncScriptDebug(step);
     requestTrackForBackground(backgroundPresentationForStep(step));
@@ -2501,7 +2480,7 @@
     elements.dialogue.hidden = true;
     elements.choices.replaceChildren();
     elements.choices.classList.remove("is-visible");
-    elements.sourceButton.hidden = true;
+    elements.sourceLabel.hidden = true;
     elements.modeReadout.textContent = `${scene.chapter} — ${scene.title}`;
     renderTemporalHeading(scene.title);
     elements.chapterIndex.textContent = scene.chapter;
@@ -2587,12 +2566,12 @@
     elements.choices.classList.remove("is-visible", "is-mode08-optional");
     delete elements.choices.dataset.interactionKind;
     delete elements.choices.dataset.interactionOptional;
-    elements.sourceButton.hidden = false;
+    elements.sourceLabel.hidden = false;
     resetDialoguePagination();
     applyTemporalPresentation(step);
     selectMode(scene.modeIndex);
     updateProgress();
-    updateSourceDetails(step);
+    updateSignalLabel(step);
     markRead(step);
   };
 
@@ -2827,7 +2806,7 @@
       elements.speaker.textContent = "";
       elements.text.replaceChildren();
       elements.text.removeAttribute("aria-label");
-      elements.sourceButton.hidden = true;
+      elements.sourceLabel.hidden = true;
       elements.slackSurface.hidden = false;
       layer.classList.add("is-slack");
       const workspace = document.createElement("div");
@@ -2865,7 +2844,7 @@
       setCharacterPresentation(presenter);
       if (presenter === "narrator") elements.avatar.hidden = true;
       elements.dialogue.hidden = false;
-      elements.sourceButton.hidden = false;
+      elements.sourceLabel.hidden = false;
       elements.speaker.textContent = presenter === "amane"
         ? "あめの観測メモ"
         : RECORD_SPEAKER_LABELS[step.recordType] || "記録メモ";
@@ -2937,7 +2916,7 @@
     prepareStepFrame(step);
     clearTimers();
     elements.dialogue.hidden = true;
-    elements.sourceButton.hidden = true;
+    elements.sourceLabel.hidden = true;
     elements.evidenceSurface.hidden = false;
     layer.classList.add("is-evidence", "is-editorial-evidence");
     const compare = document.createElement("div");
@@ -3029,7 +3008,7 @@
     prepareStepFrame(step);
     clearTimers();
     elements.dialogue.hidden = true;
-    elements.sourceButton.hidden = true;
+    elements.sourceLabel.hidden = true;
     elements.reflectionSurface.hidden = false;
     layer.classList.add("is-reflection");
 
@@ -3383,7 +3362,7 @@
     clearTimers();
     suppressCharacterPresentation();
     elements.dialogue.hidden = true;
-    elements.sourceButton.hidden = true;
+    elements.sourceLabel.hidden = true;
     elements.resultSurface.hidden = false;
     elements.resultSurface.setAttribute("aria-label", "本日の展示選択結果");
     layer.classList.add("is-result", "is-demo-results");
@@ -3458,7 +3437,7 @@
     elements.home.hidden = true;
     suppressCharacterPresentation();
     elements.dialogue.hidden = true;
-    elements.sourceButton.hidden = true;
+    elements.sourceLabel.hidden = true;
     elements.resultSurface.hidden = false;
     elements.resultSurface.setAttribute("aria-label", "GAIA SENSEWARE スタッフロール");
     layer.classList.add("is-result", "is-staff-roll");
@@ -3634,7 +3613,7 @@
     state.resultTone = state.resultTone || scoreReflection(state.reflectionIds);
     saveProgress();
     elements.dialogue.hidden = true;
-    elements.sourceButton.hidden = true;
+    elements.sourceLabel.hidden = true;
     elements.resultSurface.hidden = false;
     layer.classList.add("is-result");
     const result = document.createElement("div");
@@ -3668,7 +3647,6 @@
   function renderCurrentStep() {
     clearTimers();
     closeLog();
-    closeSourceDetails();
     let step = currentStep();
     let guard = 0;
     while (step && (!conditionMatches(step) || ["phase", "chatSurface"].includes(step.type)) && guard < allSteps.length) {
@@ -3697,7 +3675,7 @@
   }
 
   const canAdvanceStep = (step) => ["narration", "dialogue", "chat", "record", "ui", "transition", "details"].includes(step?.type);
-  const progressionPanelsClosed = () => [elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel, elements.jumpPanel]
+  const progressionPanelsClosed = () => [elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.jumpPanel]
     .concat(elements.galleryPanel ? [elements.galleryPanel] : [])
     .every((panel) => panel.hidden);
 
@@ -3893,7 +3871,6 @@
     closeManualArchive();
     closeConfig();
     closeEves();
-    closeSourceDetails();
     hideSpecialSurfaces();
     clearTimers();
     window.clearTimeout(slackTransitionTimer);
@@ -4136,7 +4113,6 @@
     if (!elements.logPanel.hidden) return;
     closeGallery({ restoreFocus: false });
     closeEves();
-    closeSourceDetails();
     setLogStatus("");
     logFollowLatest = true;
     renderLog();
@@ -4150,24 +4126,6 @@
   const toggleLog = () => {
     if (elements.logPanel.hidden) openLog();
     else closeLog();
-  };
-
-  const closeSourceDetails = ({ restoreFocus = false } = {}) => {
-    elements.sourcePanel.hidden = true;
-    elements.sourcePanel.setAttribute("aria-hidden", "true");
-    elements.sourceButton.setAttribute("aria-expanded", "false");
-    if (restoreFocus) elements.sourceButton.focus({ preventScroll: true });
-  };
-  const toggleSourceDetails = () => {
-    if (elements.sourcePanel.hidden) {
-      closeGallery({ restoreFocus: false });
-      closeLog();
-      closeEves();
-      elements.sourcePanel.hidden = false;
-      elements.sourcePanel.setAttribute("aria-hidden", "false");
-      elements.sourceButton.setAttribute("aria-expanded", "true");
-      elements.sourceClose.focus({ preventScroll: true });
-    } else closeSourceDetails({ restoreFocus: true });
   };
 
   const evesEditorialLabel = (choice) => ({
@@ -4677,11 +4635,6 @@
   });
   elements.galleryPanel?.addEventListener("pointerdown", (event) => event.stopPropagation());
   elements.galleryPanel?.addEventListener("click", (event) => event.stopPropagation());
-  elements.sourceButton.addEventListener("click", (event) => {
-    event.stopPropagation();
-    toggleSourceDetails();
-  });
-  elements.sourceClose.addEventListener("click", () => closeSourceDetails({ restoreFocus: true }));
   elements.jumpButton?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -4795,7 +4748,7 @@
   layer.addEventListener("wheel", (event) => {
     if (!elements.jumpPanel?.hidden || event.target.closest?.("#novel-jump-panel")) return;
     if (event.deltaY >= 0 || event.ctrlKey || !hasStarted || elements.runtime.hidden || !elements.logPanel.hidden) return;
-    if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.sourcePanel, elements.jumpPanel, elements.galleryPanel].every((panel) => panel.hidden)) return;
+    if (![elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.jumpPanel, elements.galleryPanel].every((panel) => panel.hidden)) return;
     event.preventDefault();
     event.stopPropagation();
     openLog();
@@ -4809,7 +4762,6 @@
       else if (!elements.jumpPanel?.hidden) closeSceneJump();
       else if (!elements.configPanel.hidden) closeConfig();
       else if (!elements.savePanel.hidden) closeManualArchive();
-      else if (!elements.sourcePanel.hidden) closeSourceDetails({ restoreFocus: true });
       else if (!elements.evesPanel.hidden) closeEves();
       else if (!elements.logPanel.hidden) closeLog();
       else closeNovel();
