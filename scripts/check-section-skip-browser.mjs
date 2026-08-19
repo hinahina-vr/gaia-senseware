@@ -218,12 +218,15 @@ try {
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-staff-roll"));
     assert.equal(await page.evaluate(() => globalThis.GaiaNovel.getState().stepId), "welcome_chat_095");
     assert.equal(await page.locator("#novel-close-button").isHidden(), true, `${viewport.name}: duplicate section control remained on credits`);
-    await page.locator('.novel-staff-roll button[aria-label="スタッフロールを終えて物語を閉じる"]').click();
-    await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true && document.querySelector("#novel-layer")?.classList.contains("is-title"));
-    assert.equal(await page.locator("#novel-title-screen").isVisible(), true, `${viewport.name}: credits did not return to title`);
+    await page.locator('.novel-staff-roll button[aria-label="スタッフロールを終えて「データで見る」へ進む"]').click();
+    await page.waitForFunction(() => {
+      const intro = document.querySelector("#intro-layer");
+      return globalThis.GaiaNovel.getState().clear === true && Boolean(intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false");
+    });
+    assert.equal((await page.locator("#intro-path-stage .intro-exploration-heading h3").textContent()).trim(), "観測モードを選ぶ", `${viewport.name}: credits did not open free exploration`);
     assert.equal(await page.locator(".novel-end-v6").count(), 0, `${viewport.name}: obsolete END panel remained`);
-    assert.equal((await page.locator("#novel-close-button").textContent()).trim(), "戻る");
-    assert.equal(await page.locator("#novel-home-button").isHidden(), true, `${viewport.name}: top return remained on title`);
+    assert.equal(await page.locator("#novel-close-button").isHidden(), true, `${viewport.name}: hidden story controls remained visible over free exploration`);
+    assert.equal(await page.locator("#novel-layer").getAttribute("aria-hidden"), "true", `${viewport.name}: story remained visible over free exploration`);
 
     const finalScan = await layoutScan(page);
     assert.equal(finalScan.overflowX, 0, `${viewport.name}: ending overflows horizontally`);

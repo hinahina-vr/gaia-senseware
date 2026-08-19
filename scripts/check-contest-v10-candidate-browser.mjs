@@ -449,9 +449,13 @@ try {
     const endLabel = `${viewport.name}-end`;
     const { context: endContext, page: endPage } = await createPage(viewport, endLabel);
     await bootAt(endPage, "welcome_chat_095");
+    assert.equal((await endPage.locator(".novel-staff-roll-finale button").textContent()).trim(), "世界の続きを紡ぐ");
     await endPage.locator(".novel-staff-roll-finale button").click();
-    await endPage.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-title"));
-    assert.equal(await endPage.locator("#novel-title-screen").isVisible(), true, `${endLabel}: title was not restored`);
+    await endPage.waitForFunction(() => {
+      const intro = document.querySelector("#intro-layer");
+      return Boolean(intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false");
+    });
+    assert.equal((await endPage.locator("#intro-path-stage .intro-exploration-heading h3").textContent()).trim(), "観測モードを選ぶ", `${endLabel}: free exploration was not opened`);
     assert.equal(await endPage.locator(".novel-end-v6").count(), 0, `${endLabel}: obsolete END panel remained`);
     const endScan = { ...(await layoutSnapshot(endPage)), clear: await endPage.evaluate(() => globalThis.GaiaNovel.getState().clear) };
     assert.equal(endScan.clear, true);

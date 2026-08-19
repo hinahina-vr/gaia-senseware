@@ -120,6 +120,8 @@ const scanEnding = (page) => page.evaluate(() => {
     stageBackground: stageStyle.backgroundImage,
     toolbarHidden: toolbarStyle.visibility === "hidden" && Number(toolbarStyle.opacity) === 0,
     buttonHidden: button?.closest(".novel-staff-roll-finale")?.hidden ?? true,
+    buttonText: button?.textContent?.trim() || "",
+    buttonAriaLabel: button?.getAttribute("aria-label") || "",
     buttonHeight: buttonRect?.height || 0,
     audioTrack: globalThis.GaiaOpeningAudio?.getState?.().track || "",
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -129,25 +131,24 @@ const scanEnding = (page) => page.evaluate(() => {
   };
 });
 
-const scanReturnedTitle = (page) => page.evaluate((storageKey) => {
+const scanDataDestination = (page) => page.evaluate((storageKey) => {
   const layer = document.querySelector("#novel-layer");
-  const title = document.querySelector("#novel-title-screen");
-  const runtime = document.querySelector("#novel-runtime");
-  const start = document.querySelector("#novel-start-button");
-  const startRect = start?.getBoundingClientRect();
+  const intro = document.querySelector("#intro-layer");
+  const stage = document.querySelector("#intro-path-stage");
   const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
   return {
-    titleVisible: Boolean(layer?.classList.contains("is-title") && title && !title.hidden),
-    runtimeHidden: Boolean(runtime?.hidden),
+    introVisible: Boolean(intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false"),
+    stageVisible: Boolean(stage && !stage.hidden),
+    heading: stage?.querySelector(".intro-exploration-heading h3")?.textContent?.trim() || "",
+    pathCount: stage?.querySelectorAll(".intro-path-card").length || 0,
+    novelHidden: layer?.getAttribute("aria-hidden") === "true",
     staffRollCount: document.querySelectorAll(".novel-staff-roll").length,
     obsoleteEndCount: document.querySelectorAll(".novel-end-v6").length,
-    obsoleteCopyVisible: layer?.innerText?.includes("END OF PLAYER STORY") || layer?.innerText?.includes("次の来場者を待っています") || false,
     clear: globalThis.GaiaNovel?.getState?.().clear,
     archivesUnlocked: globalThis.GaiaNovel?.getState?.().archivesUnlocked,
     savedClear: saved.clear,
     savedArchivesUnlocked: saved.archivesUnlocked,
     audioTrack: globalThis.GaiaOpeningAudio?.getState?.().track || "",
-    startHeight: startRect?.height || 0,
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
     overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
   };
@@ -242,30 +243,35 @@ try {
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "complete");
     const completed = await scanEnding(page);
     assert.equal(completed.buttonHidden, false);
+    assert.equal(completed.buttonText, "世界の続きを紡ぐ");
+    assert.match(completed.buttonAriaLabel, /データで見る/u);
     assert(completed.buttonHeight >= 44, `${viewport.name}: END action hit area is under 44px`);
     assert.equal(completed.overflowX, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-complete.png`), animations: "disabled" });
 
     await page.locator(".novel-staff-roll-finale button").click();
-    await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-title") && !document.querySelector("#novel-title-screen")?.hidden);
+    await page.waitForFunction(() => {
+      const intro = document.querySelector("#intro-layer");
+      return Boolean(intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false");
+    });
     await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true && globalThis.GaiaNovel.getState().archivesUnlocked === true);
-    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "story", null, { timeout: 6_500 });
-    const returnedTitle = await scanReturnedTitle(page);
-    assert.equal(returnedTitle.titleVisible, true, `${viewport.name}: credits did not return directly to title`);
-    assert.equal(returnedTitle.runtimeHidden, true);
-    assert.equal(returnedTitle.staffRollCount, 0);
-    assert.equal(returnedTitle.obsoleteEndCount, 0);
-    assert.equal(returnedTitle.obsoleteCopyVisible, false);
-    assert.equal(returnedTitle.clear, true);
-    assert.equal(returnedTitle.archivesUnlocked, true);
-    assert.equal(returnedTitle.savedClear, true);
-    assert.equal(returnedTitle.savedArchivesUnlocked, true);
-    assert.equal(returnedTitle.audioTrack, "story");
-    assert(returnedTitle.startHeight >= 44, `${viewport.name}: title START hit area is under 44px`);
-    assert.equal(returnedTitle.overflowX, 0);
-    assert.equal(returnedTitle.overflowY, 0);
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-returned-title.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, beforeY, afterY, completed, returnedTitle, passed: true });
+    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "opening", null, { timeout: 6_500 });
+    const dataDestination = await scanDataDestination(page);
+    assert.equal(dataDestination.introVisible, true, `${viewport.name}: credits did not open free exploration`);
+    assert.equal(dataDestination.stageVisible, true);
+    assert.equal(dataDestination.heading, "観測モードを選ぶ");
+    assert(dataDestination.pathCount >= 5, `${viewport.name}: observation mode choices are missing`);
+    assert.equal(dataDestination.novelHidden, true);
+    assert.equal(dataDestination.obsoleteEndCount, 0);
+    assert.equal(dataDestination.clear, true);
+    assert.equal(dataDestination.archivesUnlocked, true);
+    assert.equal(dataDestination.savedClear, true);
+    assert.equal(dataDestination.savedArchivesUnlocked, true);
+    assert.equal(dataDestination.audioTrack, "opening");
+    assert.equal(dataDestination.overflowX, 0);
+    assert.equal(dataDestination.overflowY, 0);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-data-page.png`), animations: "disabled" });
+    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, beforeY, afterY, completed, dataDestination, passed: true });
     await context.close();
   }
 
@@ -277,19 +283,25 @@ try {
   assert.equal(reduced.phase, "complete");
   assert.equal(reduced.trackAnimation, "none");
   assert.equal(reduced.buttonHidden, false);
+  assert.equal(reduced.buttonText, "世界の続きを紡ぐ");
+  assert.match(reduced.buttonAriaLabel, /データで見る/u);
   assert(reduced.buttonHeight >= 44);
   assert.equal(reduced.overflowX, 0);
   await reducedPage.screenshot({ path: path.join(outputDir, "mobile-390-reduced.png"), animations: "disabled" });
   await reducedPage.locator(".novel-staff-roll-finale button").click();
-  await reducedPage.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-title"));
-  const reducedReturnedTitle = await scanReturnedTitle(reducedPage);
-  assert.equal(reducedReturnedTitle.titleVisible, true);
-  assert.equal(reducedReturnedTitle.obsoleteEndCount, 0);
-  assert.equal(reducedReturnedTitle.clear, true);
-  assert.equal(reducedReturnedTitle.savedClear, true);
-  assert.equal(reducedReturnedTitle.overflowX, 0);
-  assert.equal(reducedReturnedTitle.overflowY, 0);
-  report.reducedMotion = { ...reduced, returnedTitle: reducedReturnedTitle, passed: true };
+  await reducedPage.waitForFunction(() => {
+    const intro = document.querySelector("#intro-layer");
+    return Boolean(intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false");
+  });
+  const reducedDataDestination = await scanDataDestination(reducedPage);
+  assert.equal(reducedDataDestination.introVisible, true);
+  assert.equal(reducedDataDestination.heading, "観測モードを選ぶ");
+  assert.equal(reducedDataDestination.obsoleteEndCount, 0);
+  assert.equal(reducedDataDestination.clear, true);
+  assert.equal(reducedDataDestination.savedClear, true);
+  assert.equal(reducedDataDestination.overflowX, 0);
+  assert.equal(reducedDataDestination.overflowY, 0);
+  report.reducedMotion = { ...reduced, dataDestination: reducedDataDestination, passed: true };
   await reducedContext.close();
 
   assert.equal(report.consoleErrors.length, 0, `console errors: ${report.consoleErrors.join("\n")}`);

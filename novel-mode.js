@@ -3487,6 +3487,13 @@
     layer.classList.add("is-result", "is-staff-roll");
     layer.dataset.storyAudioCue = "ending-credits";
     requestStoryTrack("ending", 1.35);
+    const continueIntoData = (control) => {
+      control.disabled = true;
+      state.clear = true;
+      state.archivesUnlocked = true;
+      saveProgress();
+      closeNovelNow();
+    };
 
     const shell = document.createElement("section");
     shell.className = "novel-staff-roll";
@@ -3508,11 +3515,7 @@
     dataSkip.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      dataSkip.disabled = true;
-      state.clear = true;
-      state.archivesUnlocked = true;
-      saveProgress();
-      closeNovelNow();
+      continueIntoData(dataSkip);
     });
 
     const stage = document.createElement("div");
@@ -3597,11 +3600,12 @@
     const next = document.createElement("button");
     next.type = "button";
     next.tabIndex = -1;
-    next.textContent = "物語を閉じる";
-    next.setAttribute("aria-label", "スタッフロールを終えて物語を閉じる");
+    next.textContent = "世界の続きを紡ぐ";
+    next.setAttribute("aria-label", "スタッフロールを終えて「データで見る」へ進む");
     next.addEventListener("click", (event) => {
+      event.preventDefault();
       event.stopPropagation();
-      moveToFollowingStep(step);
+      continueIntoData(next);
     });
     finale.append(next);
 
