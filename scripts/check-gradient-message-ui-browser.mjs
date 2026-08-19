@@ -13,36 +13,42 @@ const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
 ];
-const expectedNav = ["novel-eves-button", "novel-log-button", "novel-save-button", "novel-load-button", "novel-config-button", "novel-auto-button", "novel-fast-forward-button", "novel-jump-button"];
+const expectedNav = ["novel-log-button", "novel-save-button", "novel-load-button", "novel-config-button", "novel-auto-button", "novel-fast-forward-button", "novel-jump-button"];
 const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
 
 const bootAt = async (page, stepId) => {
   await page.evaluate((id) => {
     const story = globalThis.GAIA_NOVEL_STORY;
-    localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify({
+    const progress = {
       storyVersion: story.storyVersion,
       stepId: id,
-      reachedSceneIds: [],
+      reachedSceneIds: [id.replace(/_\d{3}$/u, "")],
       viewed: {},
       evesRoute: [],
-      observationOrder: null,
+      observationOrder: "LOCAL_FIRST",
       editorialChoice: null,
       reflectionIds: [],
       resultTone: null,
-      metCharacters: { mizuha: false, amane: false, sakuya: false },
+      demoInterest: "",
+      metCharacters: { mizuha: true, amane: true, sakuya: true },
       audio: { muted: true, volume: 0 },
-      readStepIds: [],
+      readStepIds: [id],
       clear: false,
       archivesUnlocked: false,
       sessionId: "gradient-message-ui",
-    }));
-    localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+    };
+    localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(progress));
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{ progress, savedAt: Date.now(), meta: { title: "Message UI QA", excerpt: id } }]));
+    localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
   }, stepId);
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
+  await page.locator("#novel-save-panel").waitFor({ state: "visible" });
+  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
 };
 
@@ -51,8 +57,17 @@ const snapshot = (page) => page.evaluate(() => {
   const overlaps = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
   const dialogue = document.querySelector("#novel-dialogue");
   const speaker = document.querySelector("#novel-speaker");
+  const layer = document.querySelector("#novel-layer");
+  const activeCharacter = [...document.querySelectorAll(".novel-character")].find((character) => {
+    const style = getComputedStyle(character);
+    const bounds = character.getBoundingClientRect();
+    return Number.parseFloat(style.opacity) > 0.5 && style.display !== "none" && bounds.width > 0 && bounds.height > 0;
+  });
+  const activePortrait = activeCharacter?.querySelector(".novel-character-portrait") || null;
   const dialogueRect = rect(dialogue);
   const speakerRect = speaker.getClientRects().length ? rect(speaker) : null;
+  const layerRect = rect(layer);
+  const characterRect = activeCharacter ? rect(activeCharacter) : null;
   const navButtons = [...document.querySelectorAll(".novel-topbar nav > button")].map((button) => {
     const style = getComputedStyle(button);
     const buttonRect = rect(button);
@@ -69,11 +84,19 @@ const snapshot = (page) => page.evaluate(() => {
   const visible = navButtons.filter((button) => button.id !== "novel-close-button" && !button.hidden && button.display !== "none" && button.rect.width > 0 && button.rect.height > 0);
   const choices = [...document.querySelectorAll("#novel-choices > button")].filter((button) => getComputedStyle(button).display !== "none").map(rect);
   return {
-    stepType: document.querySelector("#novel-layer").dataset.stepType,
+    stepType: layer.dataset.stepType,
     dialogue: dialogueRect,
     dialogueBorder: getComputedStyle(dialogue).borderWidth,
     dialogueBackground: getComputedStyle(dialogue).backgroundImage,
     gradientBoundary: getComputedStyle(dialogue, "::after").backgroundImage,
+    gradientBackdropFilter: getComputedStyle(dialogue, "::after").backdropFilter,
+    topHairlineDisplay: getComputedStyle(dialogue, "::before").display,
+    layer: layerRect,
+    character: characterRect,
+    characterEndsAtStage: Boolean(characterRect && Math.abs(characterRect.bottom - layerRect.bottom) <= 2),
+    characterDialogueOverlap: Boolean(characterRect && characterRect.bottom > dialogueRect.top + (dialogueRect.height * 0.7)),
+    portraitMask: activePortrait ? getComputedStyle(activePortrait).maskImage : null,
+    portraitFadeDisplay: activePortrait ? getComputedStyle(activePortrait, "::after").display : null,
     speaker: speakerRect,
     speakerText: speaker.textContent,
     speakerDisplay: getComputedStyle(speaker).display,
@@ -115,10 +138,16 @@ try {
     const dialogue = await snapshot(page);
     assert.equal(dialogue.dialogueBorder, "0px");
     assert.equal(dialogue.dialogueBackground, "none");
-    assert.match(dialogue.gradientBoundary, /radial-gradient/);
-    assert(dialogue.speaker && dialogue.speakerText && dialogue.speakerCenterDelta <= 1 && dialogue.speakerBorder === "0px");
+    assert.match(dialogue.gradientBoundary, /linear-gradient/);
+    assert.match(dialogue.gradientBoundary, /rgba\(17, 49, 111, 0\.58\)/);
+    assert.match(dialogue.gradientBackdropFilter, /blur\(2px\)/);
+    assert.equal(dialogue.topHairlineDisplay, "block");
+    assert(dialogue.character && dialogue.characterEndsAtStage && dialogue.characterDialogueOverlap, `${viewport.name}: character does not continue behind the message glass ${JSON.stringify(dialogue)}`);
+    assert.equal(dialogue.portraitMask, "none");
+    assert.equal(dialogue.portraitFadeDisplay, "none");
+    assert(dialogue.speaker && dialogue.speakerText && dialogue.speakerBorder === "0px");
     assert.deepEqual(dialogue.visibleNav, expectedNav);
-    assert(dialogue.targetMinimum >= 44 && dialogue.iconCount === 8 && !dialogue.navDialogueOverlap && !dialogue.navSelfOverlap && dialogue.navViewportContained && !dialogue.horizontalOverflow, `${viewport.name}: dialogue/nav geometry ${JSON.stringify(dialogue)}`);
+    assert(dialogue.targetMinimum >= 44 && dialogue.iconCount === 7 && !dialogue.navDialogueOverlap && !dialogue.navSelfOverlap && dialogue.navViewportContained && !dialogue.horizontalOverflow, `${viewport.name}: dialogue/nav geometry ${JSON.stringify(dialogue)}`);
     const restart = dialogue.nav.find((button) => button.id === "novel-restart-button");
     assert(restart.hidden && restart.display === "none" && restart.pointerEvents === "none" && restart.rect.width === 0 && restart.rect.height === 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-dialogue.png`), animations: "disabled" });

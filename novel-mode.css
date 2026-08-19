@@ -7086,9 +7086,9 @@ body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
   background-image: url("./assets/characters/sakuya-sad-07-v1.png");
 }
 
-/* Normal dialogue uses non-destructive bust crops; Slack and full-body cues retain v1. */
+/* Normal dialogue keeps the full-height source so the body continues behind the message glass. */
 body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya .novel-character-portrait {
-  background-image: url("./assets/characters/sakuya-calm-bust-07-v2.png");
+  background-image: url("./assets/characters/sakuya-calm-07-v1.png");
   background-position: 50% 0;
   background-repeat: no-repeat;
   background-size: auto clamp(960px, 135vh, 1500px);
@@ -7096,17 +7096,17 @@ body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) 
 
 body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="teasing"] .novel-character-portrait,
 body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="startled"] .novel-character-portrait {
-  background-image: url("./assets/characters/sakuya-teasing-bust-07-v2.png");
+  background-image: url("./assets/characters/sakuya-teasing-07-v1.png");
 }
 
 body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="worried"] .novel-character-portrait,
 body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="exasperated"] .novel-character-portrait {
-  background-image: url("./assets/characters/sakuya-worried-bust-07-v2.png");
+  background-image: url("./assets/characters/sakuya-worried-07-v1.png");
 }
 
 body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="sad"] .novel-character-portrait,
 body:not(.gx-story-open) .novel-layer[data-step-type="dialogue"]:not(.is-slack) .novel-cast[data-speaker="sakuya"] .novel-character--sakuya[data-expression="soft"] .novel-character-portrait {
-  background-image: url("./assets/characters/sakuya-sad-bust-07-v2.png");
+  background-image: url("./assets/characters/sakuya-sad-07-v1.png");
 }
 
 @media (max-width: 720px) {
@@ -9427,5 +9427,114 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 
   body.novel-open.novel-pc-canvas .novel-staff-roll-finale {
     bottom: 54px;
+  }
+}
+
+/* Full-height VN portrait + lower glass message treatment.
+   The character layer reaches the viewport edge and remains intact behind the UI. */
+body:not(.gx-story-open) .novel-layer:has(.novel-dialogue:not([hidden])):not(.is-slack):not(.is-evidence):not(.is-reflection):not(.is-result) .novel-character {
+  top: clamp(54px, 7vh, 76px);
+  bottom: -1px;
+  height: auto;
+}
+
+body:not(.gx-story-open) .novel-layer:has(.novel-dialogue:not([hidden])):not(.is-slack):not(.is-evidence):not(.is-reflection):not(.is-result) .novel-character-portrait {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body:not(.gx-story-open) .novel-layer:has(.novel-dialogue:not([hidden])):not(.is-slack):not(.is-evidence):not(.is-reflection):not(.is-result) .novel-character-portrait::after {
+  display: none;
+}
+
+.novel-dialogue::before {
+  top: -8px !important;
+  right: clamp(-72px, -5vw, -34px) !important;
+  left: clamp(-72px, -5vw, -34px) !important;
+  display: block !important;
+  width: auto !important;
+  height: 1px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(90deg, transparent, rgba(141, 208, 244, 0.34) 18%, rgba(192, 231, 251, 0.52) 50%, rgba(141, 208, 244, 0.34) 82%, transparent) !important;
+  box-shadow: 0 1px 14px rgba(72, 154, 214, 0.14) !important;
+  opacity: 1 !important;
+}
+
+.novel-dialogue::after {
+  inset: -8px clamp(-72px, -5vw, -34px) calc(-1 * (var(--novel-say-bottom) + 12px)) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(54, 109, 176, 0.08) 0%,
+    rgba(40, 91, 161, 0.26) 24%,
+    rgba(27, 70, 139, 0.46) 58%,
+    rgba(17, 49, 111, 0.58) 100%
+  ) !important;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.82) 6%, #000 12%, #000 88%, rgba(0, 0, 0, 0.82) 94%, transparent 100%) !important;
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.82) 6%, #000 12%, #000 88%, rgba(0, 0, 0, 0.82) 94%, transparent 100%) !important;
+  -webkit-backdrop-filter: blur(2px) saturate(1.04) brightness(0.92) !important;
+  backdrop-filter: blur(2px) saturate(1.04) brightness(0.92) !important;
+}
+
+.novel-speaker {
+  background: linear-gradient(90deg, transparent 0%, rgba(43, 104, 168, 0.18) 14%, rgba(54, 119, 184, 0.34) 50%, rgba(43, 104, 168, 0.18) 86%, transparent 100%) !important;
+  color: rgba(244, 251, 255, 0.98) !important;
+  text-shadow: 0 2px 9px rgba(0, 13, 38, 0.72) !important;
+}
+
+.novel-text {
+  text-shadow: 0 2px 12px rgba(0, 10, 32, 0.82) !important;
+}
+
+.novel-topbar nav > button:not(#novel-close-button):not(#novel-home-button):not(#novel-restart-button) {
+  color: rgba(219, 237, 250, 0.76) !important;
+}
+
+.novel-topbar nav {
+  left: max(12px, calc((100vw - 560px) / 2)) !important;
+  grid-template-columns: repeat(7, minmax(44px, 1fr));
+  width: min(560px, calc(100vw - 24px));
+}
+
+.novel-nav-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.novel-nav-label {
+  font-size: 8px !important;
+}
+
+@media (max-width: 720px) {
+  body:not(.gx-story-open) .novel-layer:has(.novel-dialogue:not([hidden])):not(.is-slack):not(.is-evidence):not(.is-reflection):not(.is-result) .novel-character {
+    top: clamp(90px, 11vh, 104px);
+    bottom: -1px;
+  }
+
+  .novel-dialogue::before {
+    top: -6px !important;
+    right: -18px !important;
+    left: -18px !important;
+  }
+
+  .novel-dialogue::after {
+    inset: -6px -18px calc(-1 * (var(--novel-say-bottom) + 12px)) !important;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%) !important;
+    mask-image: linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%) !important;
+  }
+
+  .novel-topbar nav {
+    left: 8px !important;
+    grid-template-columns: repeat(7, minmax(44px, 1fr));
+    width: calc(100vw - 16px);
+  }
+
+  .novel-nav-icon {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  .novel-nav-label {
+    font-size: 6.5px !important;
   }
 }
