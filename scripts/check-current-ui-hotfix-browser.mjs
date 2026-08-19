@@ -229,6 +229,9 @@ const scanTitleAndOpening = async (viewport) => {
   assert(soundStates.every((s) => s.iconBorder !== "rgba(0, 0, 0, 0)"));
   await screenshot(root.page, `${viewport.name}-sound-focus`); await root.page.locator("#gaia-opening-sound-off").press("Space");
   assert.equal(await root.page.locator("#gaia-opening-sound-off").getAttribute("aria-pressed"), "true");
+  assert.equal(await root.page.evaluate(() => globalThis.GaiaOpeningAudio.getState().muted), true);
+  await root.page.locator("#gaia-opening-sound-start").click();
+  await root.page.waitForFunction(() => document.querySelector("#gaia-opening-final-menu")?.inert === false);
   report.scans.push({ viewport: viewport.name, case: "sound-choice", soundStates, passed: true }); await root.context.close();
 };
 

@@ -31,8 +31,8 @@ check("EVES/footer hidden without data removal", () => {
 });
 
 check("changed runtime assets use the current cache keys", () => {
-  assert.match(html, /opening\.css\?v=gaia-opening-mobile-polish-1/u);
-  assert.match(html, /opening\.js\?v=gaia-opening-audio-integrated-1/u);
+  assert.match(html, /opening\.css\?v=gaia-opening-sound-modal-1/u);
+  assert.match(html, /opening\.js\?v=gaia-opening-sound-modal-1/u);
   for (const asset of ["novel-mode.css", "novel-mode.js"]) assert.match(html, new RegExp(`${asset.replace(".", "\\.")}\\?v=gaia-no-novel-opening-1`, "u"));
   assert.match(html, /gx-mode\.js\?v=gaia-story-detour-fix-1/u);
   assert.match(html, /novel-story-data\.js\?v=gaia-gsw-esp32-channel-1/u);
@@ -47,15 +47,20 @@ check("SAVE whole-card and hidden-scrollbar contract", () => {
   assert.match(css, /\.novel-save-slots::-webkit-scrollbar\s*\{[^}]*display:\s*none/u);
 });
 
-check("opening sound controls are integrated into the final menu", () => {
+check("opening sound setup blocks route choice until explicit confirmation", () => {
   assert.match(html, /novel-start-button[^>]*aria-label="はじめる">はじめる</u);
   assert.equal(html.includes('id="gaia-opening-sound-gate"'), false);
-  assert.match(html, /id="gaia-opening-final-menu"[\s\S]*class="gaia-opening-menu-audio"/u);
+  assert.match(html, /id="gaia-opening-final-menu"[\s\S]*id="gaia-opening-route-story"[\s\S]*id="gaia-opening-route-other"/u);
+  assert.match(html, /id="gaia-opening-sound-modal"[\s\S]*role="dialog"[\s\S]*id="gaia-opening-sound-start"/u);
+  assert.equal(/id="gaia-opening-final-menu"[\s\S]*class="gaia-opening-menu-audio"[\s\S]*id="gaia-opening-sound-modal"/u.test(html), false);
   assert.match(html, /gaia-opening-sound-on[^>]*aria-pressed="false"/u);
   assert.match(openingCss, /\.gaia-opening-menu-audio\s*\{/u);
+  assert.match(openingCss, /\.gaia-opening-sound-modal\s*\{/u);
+  assert.match(openingCss, /\.gaia-opening\.is-sound-modal-open \.gaia-opening-final-menu\.is-visible/u);
   assert.match(openingCss, /gaia-opening-sound-actions button\[aria-pressed="true"\]\s*\{[^}]*border-color:\s*transparent\s*!important[^}]*background:\s*transparent\s*!important[^}]*box-shadow:\s*none\s*!important/u);
-  assert.match(opening, /soundOnButton\?\.setAttribute\("aria-pressed", String\(Boolean\(enabled\)\)\)/u);
-  assert.match(opening, /soundOffButton\?\.setAttribute\("aria-pressed", String\(!enabled\)\)/u);
+  assert.match(opening, /pendingSoundEnabled = Boolean\(enabled\)/u);
+  assert.match(opening, /finalMenu\.inert = true/u);
+  assert.match(opening, /await chooseSound\(pendingSoundEnabled\)/u);
 });
 
 check("story isolation and opening retirement", () => {

@@ -21,9 +21,16 @@
   const finalMenu = document.querySelector("#gaia-opening-final-menu");
   const finalStoryButton = document.querySelector("#gaia-opening-route-story");
   const finalOtherButton = document.querySelector("#gaia-opening-route-other");
+  const soundModal = document.querySelector("#gaia-opening-sound-modal");
+  const soundDialog = soundModal?.querySelector(".gaia-opening-sound-dialog");
+  const soundStartButton = document.querySelector("#gaia-opening-sound-start");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const AUDIO_DOCK_COLLAPSE_DELAY_MS = 6000;
   let audioDockCollapseTimer = 0;
+  let soundModalRevealTimer = 0;
+  let soundModalHideTimer = 0;
+  let soundModalOpen = false;
+  let pendingSoundEnabled = false;
   const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#story"].includes(
     window.location.hash,
   ) || /\/story\/?$/i.test(window.location.pathname);
@@ -31,12 +38,13 @@
   const syncAudioControls = (state = window.GaiaOpeningAudio?.getState?.()) => {
     const volume = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
     const isMuted = state?.muted ?? true;
+    const controlSoundEnabled = soundModalOpen ? pendingSoundEnabled : !isMuted;
     if (openingVolume instanceof HTMLInputElement) openingVolume.value = String(volume);
     if (audioVolume instanceof HTMLInputElement) audioVolume.value = String(volume);
     if (openingVolumeValue) openingVolumeValue.textContent = `${volume}%`;
     if (audioVolumeValue) audioVolumeValue.textContent = `${volume}%`;
-    soundOnButton?.setAttribute("aria-pressed", String(!isMuted));
-    soundOffButton?.setAttribute("aria-pressed", String(isMuted));
+    soundOnButton?.setAttribute("aria-pressed", String(controlSoundEnabled));
+    soundOffButton?.setAttribute("aria-pressed", String(!controlSoundEnabled));
     if (audioDock) audioDock.dataset.muted = String(isMuted);
     if (audioToggle) {
       audioToggle.setAttribute("aria-pressed", String(isMuted));
@@ -407,11 +415,77 @@
     focusTargets.forEach((target) => target.classList.remove("is-opening-focus-pending"));
   };
 
+  const selectSoundPreference = (enabled) => {
+    pendingSoundEnabled = Boolean(enabled);
+    syncAudioControls();
+  };
+
+  const closeSoundModalImmediately = () => {
+    window.clearTimeout(soundModalRevealTimer);
+    window.clearTimeout(soundModalHideTimer);
+    soundModalOpen = false;
+    opening.classList.remove("is-sound-modal-open");
+    if (soundModal instanceof HTMLElement) {
+      soundModal.classList.remove("is-visible");
+      soundModal.hidden = true;
+      soundModal.inert = true;
+      soundModal.setAttribute("aria-hidden", "true");
+    }
+    if (finalMenu instanceof HTMLElement) {
+      finalMenu.inert = false;
+      finalMenu.removeAttribute("aria-hidden");
+    }
+  };
+
+  const hideSoundModal = () => {
+    if (!soundModalOpen || !(soundModal instanceof HTMLElement)) return;
+    soundModalOpen = false;
+    opening.classList.remove("is-sound-modal-open");
+    soundModal.classList.remove("is-visible");
+    soundModal.inert = true;
+    soundModal.setAttribute("aria-hidden", "true");
+    if (finalMenu instanceof HTMLElement) {
+      finalMenu.inert = false;
+      finalMenu.removeAttribute("aria-hidden");
+    }
+    soundModalHideTimer = window.setTimeout(() => {
+      soundModal.hidden = true;
+      finalStoryButton?.focus({ preventScroll: true });
+    }, reducedMotion ? 0 : 220);
+  };
+
+  const showSoundModal = () => {
+    if (!(soundModal instanceof HTMLElement) || !(soundStartButton instanceof HTMLButtonElement)) {
+      finalStoryButton?.focus({ preventScroll: true });
+      return;
+    }
+
+    window.clearTimeout(soundModalHideTimer);
+    const state = window.GaiaOpeningAudio?.getState?.();
+    pendingSoundEnabled = !(state?.muted ?? true);
+    soundModalOpen = true;
+    syncAudioControls(state);
+    if (finalMenu instanceof HTMLElement) {
+      finalMenu.inert = true;
+      finalMenu.setAttribute("aria-hidden", "true");
+    }
+    soundModal.hidden = false;
+    soundModal.inert = false;
+    soundModal.setAttribute("aria-hidden", "false");
+    opening.classList.add("is-sound-modal-open");
+    requestAnimationFrame(() => {
+      soundModal.classList.add("is-visible");
+      const selectedButton = pendingSoundEnabled ? soundOnButton : soundOffButton;
+      selectedButton?.focus({ preventScroll: true });
+    });
+  };
+
   const finish = (destination = "menu") => {
     if (finished) return;
     if (typeof destination !== "string") destination = "menu";
     finished = true;
     window.clearTimeout(finishTimer);
+    closeSoundModalImmediately();
     settleFocusText();
     if (destination === "story") {
       history.replaceState(null, "", `${window.location.pathname}${window.location.search}#story`);
@@ -445,6 +519,7 @@
   const retireOpeningForStory = () => {
     window.clearTimeout(finishTimer);
     window.clearTimeout(exitTimer);
+    closeSoundModalImmediately();
     settleFocusText();
     opening.inert = true;
     opening.setAttribute("aria-hidden", "true");
@@ -470,7 +545,7 @@
     syncAudioControls();
     requestAnimationFrame(() => {
       finalMenu.classList.add("is-visible");
-      finalStoryButton?.focus({ preventScroll: true });
+      soundModalRevealTimer = window.setTimeout(showSoundModal, reducedMotion ? 0 : 240);
     });
   };
 
@@ -527,17 +602,51 @@
     void window.GaiaOpeningAudio?.preloadTrack?.("story");
   };
 
+  const confirmSoundSetup = async () => {
+    if (!soundModalOpen || !(soundStartButton instanceof HTMLButtonElement)) return;
+    soundStartButton.disabled = true;
+    await chooseSound(pendingSoundEnabled);
+    soundStartButton.disabled = false;
+    hideSoundModal();
+  };
+
   skipButton?.addEventListener("click", skipToFinalMenu);
   finalStoryButton?.addEventListener("click", () => finish("story"));
   finalOtherButton?.addEventListener("click", () => finish("menu"));
-  soundOnButton?.addEventListener("click", () => chooseSound(true));
-  soundOffButton?.addEventListener("click", () => chooseSound(false));
+  soundOnButton?.addEventListener("click", () => selectSoundPreference(true));
+  soundOffButton?.addEventListener("click", () => selectSoundPreference(false));
+  soundStartButton?.addEventListener("click", confirmSoundSetup);
+  soundModal?.addEventListener("keydown", (event) => {
+    if (!soundModalOpen) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      (pendingSoundEnabled ? soundOnButton : soundOffButton)?.focus({ preventScroll: true });
+      return;
+    }
+    if (event.key !== "Tab" || !(soundDialog instanceof HTMLElement)) return;
+    const focusable = Array.from(
+      soundDialog.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+    ).filter((element) => element instanceof HTMLElement && element.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !opening.hidden && !opening.classList.contains("is-preloading")) skipToFinalMenu();
   });
   window.addEventListener("pagehide", () => {
     window.clearTimeout(finishTimer);
     window.clearTimeout(exitTimer);
+    window.clearTimeout(soundModalRevealTimer);
+    window.clearTimeout(soundModalHideTimer);
     textTimers.forEach((timer) => window.clearTimeout(timer));
     particleSystem.stop();
     window.GaiaOpeningAudio?.stop(0.05);
