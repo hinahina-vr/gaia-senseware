@@ -3477,6 +3477,7 @@
   const renderStaffRoll = (step) => {
     prepareStepFrame(step);
     clearTimers();
+    resetFastForward();
     elements.close.hidden = true;
     elements.home.hidden = true;
     suppressCharacterPresentation();
@@ -3629,13 +3630,13 @@
       if (event.animationName === "novel-staff-roll-whiteout" && !completed) shell.dataset.phase = "rolling";
     });
     shell.addEventListener("click", (event) => {
-      if (event.target.closest("button") || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
+      if (event.ctrlKey || event.target.closest("button") || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
       event.preventDefault();
       event.stopPropagation();
       revealFinalAction();
     });
     shell.addEventListener("keydown", (event) => {
-      if (!["Enter", " "].includes(event.key) || event.repeat || event.isComposing || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
+      if (event.ctrlKey || !["Enter", " "].includes(event.key) || event.repeat || event.isComposing || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
       event.preventDefault();
       event.stopPropagation();
       revealFinalAction();
@@ -3802,7 +3803,7 @@
   };
 
   const beginControlFastForward = (event) => {
-    if (event.key !== "Control" || event.repeat || fastForwardState.controlDown || !isOpen || !hasStarted) return;
+    if (event.key !== "Control" || event.repeat || fastForwardState.controlDown || !isOpen || !hasStarted || layer.classList.contains("is-staff-roll")) return;
     if (event.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
     fastForwardState.controlDown = true;
     clearFastForwardHoldTimer();

@@ -119,6 +119,7 @@ const scanEnding = (page) => page.evaluate(() => {
     whiteoutAnimation: whiteoutStyle.animationName,
     stageBackground: stageStyle.backgroundImage,
     toolbarHidden: toolbarStyle.visibility === "hidden" && Number(toolbarStyle.opacity) === 0,
+    fastForwarding: layer?.classList.contains("is-fast-forwarding") ?? false,
     skipHintCount: document.querySelectorAll(".novel-staff-roll-skip-hint").length,
     buttonHidden: button?.closest(".novel-staff-roll-finale")?.hidden ?? true,
     buttonText: button?.textContent?.trim() || "",
@@ -237,6 +238,17 @@ try {
     assert(!report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/planet-forecast-first-light.mp3")), `${viewport.name}: previous ending track is still requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-rolling.png`) });
 
+    await page.locator(".novel-staff-roll").focus();
+    await page.keyboard.down("Control");
+    await page.waitForTimeout(360);
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(100);
+    const controlAttempt = await scanEnding(page);
+    assert.equal(controlAttempt.phase, "rolling", `${viewport.name}: Control skipped the staff roll`);
+    assert.equal(controlAttempt.buttonHidden, true, `${viewport.name}: Control revealed the final action`);
+    assert.equal(controlAttempt.fastForwarding, false, `${viewport.name}: normal-story Control fast-forward leaked into the staff roll`);
+    await page.keyboard.up("Control");
+
     await page.locator(".novel-staff-roll-track").evaluate((node) => {
       const animation = node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-rise") || node.getAnimations()[0];
       if (!animation) throw new Error("staff roll animation was not found");
@@ -289,7 +301,7 @@ try {
     assert.equal(dataDestination.overflowX, 0);
     assert.equal(dataDestination.overflowY, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-data-page.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, completed, dataDestination, passed: true });
+    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, controlAttempt, completed, dataDestination, passed: true });
     await context.close();
   }
 
