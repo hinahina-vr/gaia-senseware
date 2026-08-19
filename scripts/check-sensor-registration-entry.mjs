@@ -17,14 +17,15 @@ check("ESP32 registration card follows map and links to the sensor SPA", () => {
   assert(map >= 0 && map < sensor && sensor < space);
   const card = index.slice(index.lastIndexOf("<a", sensor), index.indexOf("</a>", sensor) + 4);
   assert.match(card, /href="\.\/sensors\/"/u);
-  assert.match(card, /<strong>ESP32センサーを登録<\/strong>/u);
-  assert.match(card, /class="intro-path-enter">ESP32センサーを登録/u);
+  assert.match(card, /<strong>センサーを登録<\/strong>/u);
+  assert.match(card, /<p>地球の観測データを送る<\/p>/u);
+  assert.match(card, /class="intro-path-enter">センサーを登録/u);
 });
 
 check("logged-out registration CTA and three-step preview are explicit", () => {
-  assert.match(sensors, /GoogleでログインしてESP32を登録/u);
+  assert.match(sensors, /Googleで続ける/u);
   const preview = sensors.slice(sensors.indexOf("sensor-register-preview"), sensors.indexOf("</ol>", sensors.indexOf("sensor-register-preview")));
-  for (const fragment of ["Googleでログイン", "端末を追加", "Pairing Code", "CITY-SENSOR-XXXX", "Setup APへ入力"]) assert(preview.includes(fragment), fragment);
+  for (const fragment of ["参加方法を選ぶ", "端末を追加", "Pairing Code", "CITY-SENSOR-XXXX", "Setup APへ入力"]) assert(preview.includes(fragment), fragment);
 });
 
 check("sensor workspace shares the exhibition scene and observation-node onboarding", () => {
@@ -50,7 +51,7 @@ check("registration uses canonical region selectors and the shared Natural Earth
 check("responsive styles preserve readable three-step layouts", () => {
   for (const selector of [".sensor-register-preview", ".sensor-setup-steps"]) assert(css.includes(selector));
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sensor-register-preview, \.sensor-setup-steps \{ grid-template-columns: 1fr;/u);
-  assert.match(css, /\.sensor-login \.sensor-primary \{ width: 100%; min-width: 0;/u);
+  assert.match(css, /\.sensor-login-actions > button \{ width: 100%; min-width: 0;/u);
 });
 
 check("sensor workspace uses the same typographic roles as the GAIA main UI", () => {

@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4397"] = process.argv.slice(2);
+const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4397", runMode = "full"] = process.argv.slice(2);
+const entryOnly = runMode === "entry-only";
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -60,6 +61,7 @@ try {
         sensorIndex: cards.indexOf(card),
         href: card.getAttribute("href"),
         label: card.querySelector("strong")?.textContent.trim(),
+        description: card.querySelector("p")?.textContent.trim(),
         enter: card.querySelector(".intro-path-enter")?.textContent.replace("→", "").trim(),
         visible: rect.width > 0 && rect.height > 0,
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
@@ -67,12 +69,19 @@ try {
     });
     assert.equal(entrance.labels[1], "世界を読む");
     assert.equal(entrance.sensorIndex, 2);
-    assert.equal(entrance.label, "ESP32センサーを登録");
-    assert.equal(entrance.enter, "ESP32センサーを登録");
+    assert.equal(entrance.label, "センサーを登録");
+    assert.equal(entrance.description, "地球の観測データを送る");
+    assert.equal(entrance.enter, "センサーを登録");
     assert.equal(entrance.href, "./sensors/");
     assert.equal(entrance.visible, true);
     assert.equal(entrance.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-entrance.png`), fullPage: true });
+
+    if (entryOnly) {
+      report.scans.push({ viewport: label, entrance, passed: true });
+      await context.close();
+      continue;
+    }
 
     await sensorCard.click();
     await page.waitForURL(/\/sensors\/$/u);
@@ -145,7 +154,8 @@ try {
     await context.close();
   }
   assert.deepEqual(report.consoleErrors, []);
-  assert.equal(report.expectedAuth401.length, viewports.length);
+  if (entryOnly) assert.deepEqual(report.expectedAuth401, []);
+  else assert.equal(report.expectedAuth401.length, viewports.length);
   assert.deepEqual(report.pageErrors, []);
   assert.deepEqual(report.responses404, []);
   report.status = "passed";

@@ -33,7 +33,7 @@ check("global nav inserts sensor immediately after map", () => {
   const sensor = index.indexOf("data-sensor-platform-link");
   const space = index.indexOf('data-intro-path="space"');
   assert(map >= 0 && map < sensor && sensor < space);
-  assert.match(index.slice(sensor, space), /<strong>ESP32センサーを登録<\/strong>/u);
+  assert.match(index.slice(sensor, space), /<strong>センサーを登録<\/strong>[\s\S]*<p>地球の観測データを送る<\/p>/u);
 });
 
 check("SPA exposes required views and web operations", () => {
