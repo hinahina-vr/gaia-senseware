@@ -8606,6 +8606,26 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   animation: novel-gallery-viewer-in 300ms both ease-out;
 }
 
+.novel-gallery-viewer::after {
+  position: absolute;
+  z-index: 3;
+  inset: -18%;
+  content: "";
+  background: linear-gradient(108deg, transparent 36%, rgba(var(--gallery-accent), 0.12) 48%, rgba(233, 250, 255, 0.3) 50%, transparent 63%);
+  opacity: 0;
+  transform: translateX(-34%);
+  pointer-events: none;
+}
+
+.novel-gallery-viewer.is-closing {
+  pointer-events: none;
+  animation: novel-gallery-viewer-out 360ms both cubic-bezier(0.4, 0, 1, 1);
+}
+
+.novel-gallery-viewer.is-closing::after {
+  animation: novel-gallery-viewer-wipe-out 360ms both ease-in;
+}
+
 .novel-gallery-viewer::before {
   position: absolute;
   z-index: -1;
@@ -8625,6 +8645,77 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   box-shadow: 0 10px 28px rgba(0, 5, 18, 0.42), inset 0 0 18px rgba(var(--gallery-accent), 0.09);
 }
 
+.novel-gallery-viewer > .novel-gallery-viewer-nav {
+  top: 50%;
+  display: inline-grid;
+  grid-auto-flow: column;
+  place-items: center;
+  gap: 5px;
+  width: auto;
+  min-width: 56px;
+  height: 56px;
+  min-height: 56px;
+  padding: 0 13px;
+  border-radius: 4px;
+  background: rgba(2, 21, 39, 0.72);
+  color: #e9faff;
+  transform: translateY(-50%);
+  backdrop-filter: blur(12px);
+  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.novel-gallery-viewer > .novel-gallery-viewer-nav.is-previous {
+  right: auto;
+  left: max(18px, env(safe-area-inset-left));
+}
+
+.novel-gallery-viewer > .novel-gallery-viewer-nav.is-next {
+  right: max(18px, env(safe-area-inset-right));
+}
+
+.novel-gallery-viewer-nav span {
+  font: 300 34px/1 var(--novel-font);
+}
+
+.novel-gallery-viewer-nav small {
+  font: 600 8px/1 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.14em;
+}
+
+.novel-gallery-viewer-nav:not(:disabled):hover,
+.novel-gallery-viewer-nav:not(:disabled):focus-visible {
+  border-color: rgba(var(--gallery-accent), 0.76);
+  background: rgba(var(--gallery-accent), 0.2);
+  color: #fff;
+}
+
+.novel-gallery-viewer-nav.is-previous:not(:disabled):hover,
+.novel-gallery-viewer-nav.is-previous:not(:disabled):focus-visible {
+  transform: translate(-4px, -50%);
+}
+
+.novel-gallery-viewer-nav.is-next:not(:disabled):hover,
+.novel-gallery-viewer-nav.is-next:not(:disabled):focus-visible {
+  transform: translate(4px, -50%);
+}
+
+.novel-gallery-viewer-nav:disabled {
+  opacity: 0.22;
+  cursor: default;
+}
+
+.novel-gallery-viewer-count {
+  position: absolute;
+  z-index: 4;
+  top: max(24px, calc(env(safe-area-inset-top) + 6px));
+  left: 50%;
+  margin: 0;
+  color: rgba(211, 241, 252, 0.72);
+  font: 600 9px/1 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.18em;
+  transform: translateX(-50%);
+}
+
 .novel-gallery-viewer figure {
   position: relative;
   display: grid;
@@ -8632,7 +8723,12 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   height: min(94vh, 980px);
   margin: 0;
   grid-template-rows: minmax(0, 1fr) auto;
+  touch-action: pan-y;
   animation: novel-gallery-figure-in 620ms both cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.novel-gallery-viewer.is-closing figure {
+  animation: novel-gallery-figure-out 360ms both cubic-bezier(0.4, 0, 1, 1);
 }
 
 .novel-gallery-viewer img {
@@ -8642,6 +8738,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   object-fit: contain;
   filter: drop-shadow(0 22px 46px rgba(0, 4, 15, 0.7));
   animation: novel-gallery-viewer-image-in 720ms both cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .novel-gallery-viewer figcaption {
@@ -8703,9 +8801,26 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   to { opacity: 1; }
 }
 
+@keyframes novel-gallery-viewer-out {
+  0% { opacity: 1; }
+  58% { opacity: 0.86; }
+  100% { opacity: 0; }
+}
+
+@keyframes novel-gallery-viewer-wipe-out {
+  0% { opacity: 0; transform: translateX(-34%); }
+  38% { opacity: 0.7; }
+  100% { opacity: 0; transform: translateX(34%); }
+}
+
 @keyframes novel-gallery-figure-in {
   from { opacity: 0; transform: scale(0.965); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes novel-gallery-figure-out {
+  from { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+  to { opacity: 0; filter: blur(4px); transform: translateY(8px) scale(0.968); }
 }
 
 @keyframes novel-gallery-viewer-image-in {
@@ -8763,6 +8878,24 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
     box-sizing: border-box;
     padding: 10px 12px;
   }
+  .novel-gallery-viewer > .novel-gallery-viewer-nav {
+    top: auto;
+    bottom: max(18px, env(safe-area-inset-bottom));
+    min-width: 48px;
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    transform: none;
+  }
+  .novel-gallery-viewer > .novel-gallery-viewer-nav.is-previous { left: max(12px, env(safe-area-inset-left)); }
+  .novel-gallery-viewer > .novel-gallery-viewer-nav.is-next { right: max(12px, env(safe-area-inset-right)); }
+  .novel-gallery-viewer-nav small { display: none; }
+  .novel-gallery-viewer-nav.is-previous:not(:disabled):hover,
+  .novel-gallery-viewer-nav.is-previous:not(:disabled):focus-visible { transform: translateX(-3px); }
+  .novel-gallery-viewer-nav.is-next:not(:disabled):hover,
+  .novel-gallery-viewer-nav.is-next:not(:disabled):focus-visible { transform: translateX(3px); }
 }
 
 @media (max-width: 430px) {
@@ -8786,6 +8919,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   .novel-gallery-viewer figcaption {
     animation: none;
   }
+  .novel-gallery-viewer > .novel-gallery-viewer-nav { transition: none; }
 }
 
 /* Restore the original lightweight signal ornament while retaining the stronger type shadow. */

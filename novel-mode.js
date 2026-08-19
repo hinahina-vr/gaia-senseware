@@ -269,6 +269,10 @@
     galleryGrid: layer.querySelector("#novel-gallery-grid"),
     galleryViewer: layer.querySelector("#novel-gallery-viewer"),
     galleryViewerClose: layer.querySelector("#novel-gallery-viewer-close"),
+    galleryViewerPrevious: layer.querySelector("#novel-gallery-viewer-previous"),
+    galleryViewerNext: layer.querySelector("#novel-gallery-viewer-next"),
+    galleryViewerCount: layer.querySelector("#novel-gallery-viewer-count"),
+    galleryViewerFigure: layer.querySelector("#novel-gallery-viewer-figure"),
     galleryViewerImage: layer.querySelector("#novel-gallery-viewer-image"),
     galleryViewerChapter: layer.querySelector("#novel-gallery-viewer-chapter"),
     galleryViewerTitle: layer.querySelector("#novel-gallery-viewer-title"),
@@ -418,6 +422,9 @@
   let previousFocus = null;
   let galleryPreviousFocus = null;
   let galleryViewerPreviousFocus = null;
+  let galleryViewerCloseTimer = 0;
+  let galleryViewerTransitionGeneration = 0;
+  let galleryViewerPointerStart = null;
   let archivePreviousFocus = null;
   let archiveMode = "save";
   let pendingSlotAction = "";
@@ -687,23 +694,122 @@
     if (elements.galleryProgressCopy) elements.galleryProgressCopy.textContent = `${count} / ${total} UNLOCKED`;
     if (elements.galleryProgressBar) elements.galleryProgressBar.style.width = `${percentage}%`;
   };
-  const closeGalleryViewer = ({ restoreFocus = true } = {}) => {
-    if (!elements.galleryViewer) return;
-    const wasOpen = !elements.galleryViewer.hidden;
-    elements.galleryViewer.hidden = true;
-    elements.galleryViewerImage?.removeAttribute("src");
-    if (elements.galleryViewerImage) elements.galleryViewerImage.alt = "";
-    if (wasOpen && restoreFocus) galleryViewerPreviousFocus?.focus?.({ preventScroll: true });
-    galleryViewerPreviousFocus = null;
+  const unlockedGalleryEntries = () => {
+    const unlocked = getGalleryUnlocks();
+    return galleryEntries.filter((entry) => unlocked.has(entry.id));
   };
-  const openGalleryViewer = (entry) => {
-    if (!entry || !elements.galleryViewer || !getGalleryUnlocks().has(entry.id)) return;
-    galleryViewerPreviousFocus = document.activeElement;
+  const syncGalleryViewerNavigation = () => {
+    if (!elements.galleryViewer) return;
+    const entries = unlockedGalleryEntries();
+    const index = entries.findIndex((entry) => entry.id === elements.galleryViewer.dataset.galleryId);
+    const previousEntry = index > 0 ? entries[index - 1] : null;
+    const nextEntry = index >= 0 && index < entries.length - 1 ? entries[index + 1] : null;
+    const activeControl = document.activeElement;
+    if (elements.galleryViewerPrevious) {
+      elements.galleryViewerPrevious.disabled = !previousEntry;
+      elements.galleryViewerPrevious.setAttribute("aria-label", previousEntry ? `前のCG「${previousEntry.title}」へ` : "前のCGはありません");
+    }
+    if (elements.galleryViewerNext) {
+      elements.galleryViewerNext.disabled = !nextEntry;
+      elements.galleryViewerNext.setAttribute("aria-label", nextEntry ? `次のCG「${nextEntry.title}」へ` : "次のCGはありません");
+    }
+    if (activeControl === elements.galleryViewerPrevious && !previousEntry) {
+      (nextEntry ? elements.galleryViewerNext : elements.galleryViewerClose)?.focus({ preventScroll: true });
+    } else if (activeControl === elements.galleryViewerNext && !nextEntry) {
+      (previousEntry ? elements.galleryViewerPrevious : elements.galleryViewerClose)?.focus({ preventScroll: true });
+    }
+    if (elements.galleryViewerCount) {
+      const current = index >= 0 ? index + 1 : 0;
+      elements.galleryViewerCount.textContent = `${String(current).padStart(2, "0")} / ${String(entries.length).padStart(2, "0")}`;
+    }
+  };
+  const renderGalleryViewerEntry = (entry) => {
+    if (!entry || !elements.galleryViewer) return;
     elements.galleryViewer.dataset.galleryId = entry.id;
     elements.galleryViewerImage.src = `./${entry.assetPath}`;
     elements.galleryViewerImage.alt = entry.alt;
     elements.galleryViewerChapter.textContent = entry.chapter;
     elements.galleryViewerTitle.textContent = entry.title;
+    syncGalleryViewerNavigation();
+  };
+  const finishGalleryViewerClose = ({ restoreFocus = true } = {}) => {
+    if (!elements.galleryViewer) return;
+    window.clearTimeout(galleryViewerCloseTimer);
+    galleryViewerCloseTimer = 0;
+    elements.galleryViewer.hidden = true;
+    elements.galleryViewer.classList.remove("is-closing");
+    delete elements.galleryViewer.dataset.transitionState;
+    delete elements.galleryViewer.dataset.galleryId;
+    elements.galleryViewerImage?.removeAttribute("src");
+    if (elements.galleryViewerImage) elements.galleryViewerImage.alt = "";
+    if (restoreFocus) galleryViewerPreviousFocus?.focus?.({ preventScroll: true });
+    galleryViewerPreviousFocus = null;
+  };
+  const closeGalleryViewer = ({ restoreFocus = true, immediate = false } = {}) => {
+    if (!elements.galleryViewer) return;
+    const wasOpen = !elements.galleryViewer.hidden;
+    if (!wasOpen) return;
+    if (elements.galleryViewer.classList.contains("is-closing") && !immediate) return;
+    galleryViewerTransitionGeneration += 1;
+    elements.galleryViewerFigure?.getAnimations?.().forEach((animation) => animation.cancel());
+    if (immediate || motionReduced()) {
+      finishGalleryViewerClose({ restoreFocus });
+      return;
+    }
+    elements.galleryViewer.classList.add("is-closing");
+    elements.galleryViewer.dataset.transitionState = "closing";
+    galleryViewerCloseTimer = window.setTimeout(() => finishGalleryViewerClose({ restoreFocus }), 380);
+  };
+  const turnGalleryViewer = async (offset) => {
+    if (!elements.galleryViewer || elements.galleryViewer.hidden || elements.galleryViewer.classList.contains("is-closing")) return;
+    if (elements.galleryViewer.dataset.transitionState === "turning") return;
+    const entries = unlockedGalleryEntries();
+    const currentIndex = entries.findIndex((entry) => entry.id === elements.galleryViewer.dataset.galleryId);
+    const nextEntry = entries[currentIndex + offset];
+    if (!nextEntry) return;
+    const generation = ++galleryViewerTransitionGeneration;
+    const figure = elements.galleryViewerFigure;
+    const direction = offset > 0 ? 1 : -1;
+    elements.galleryViewer.dataset.transitionState = "turning";
+    elements.galleryViewer.dataset.turnDirection = direction > 0 ? "next" : "previous";
+    if (!motionReduced() && figure?.animate) {
+      let outgoingAnimation;
+      try {
+        outgoingAnimation = figure.animate([
+          { opacity: 1, transform: "translateX(0) scale(1)", filter: "blur(0)" },
+          { opacity: 0, transform: `translateX(${-18 * direction}px) scale(0.992)`, filter: "blur(2px)" },
+        ], { duration: 150, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" });
+        await outgoingAnimation.finished;
+      } catch {}
+      outgoingAnimation?.cancel();
+    }
+    if (generation !== galleryViewerTransitionGeneration || elements.galleryViewer.hidden) return;
+    renderGalleryViewerEntry(nextEntry);
+    if (!motionReduced() && figure?.animate) {
+      let incomingAnimation;
+      try {
+        incomingAnimation = figure.animate([
+          { opacity: 0, transform: `translateX(${22 * direction}px) scale(0.992)`, filter: "blur(2px)" },
+          { opacity: 1, transform: "translateX(0) scale(1)", filter: "blur(0)" },
+        ], { duration: 260, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" });
+        await incomingAnimation.finished;
+      } catch {}
+      incomingAnimation?.cancel();
+    }
+    if (generation === galleryViewerTransitionGeneration) {
+      delete elements.galleryViewer.dataset.transitionState;
+      delete elements.galleryViewer.dataset.turnDirection;
+    }
+  };
+  const openGalleryViewer = (entry) => {
+    if (!entry || !elements.galleryViewer || !getGalleryUnlocks().has(entry.id)) return;
+    galleryViewerPreviousFocus = document.activeElement;
+    window.clearTimeout(galleryViewerCloseTimer);
+    galleryViewerCloseTimer = 0;
+    galleryViewerTransitionGeneration += 1;
+    elements.galleryViewer.classList.remove("is-closing");
+    delete elements.galleryViewer.dataset.transitionState;
+    renderGalleryViewerEntry(entry);
     elements.galleryViewer.hidden = false;
     requestAnimationFrame(() => elements.galleryViewerClose.focus({ preventScroll: true }));
   };
@@ -791,7 +897,7 @@
   const closeGallery = ({ restoreFocus = true } = {}) => {
     if (!elements.galleryPanel) return;
     const wasOpen = !elements.galleryPanel.hidden;
-    closeGalleryViewer({ restoreFocus: false });
+    closeGalleryViewer({ restoreFocus: false, immediate: true });
     elements.galleryPanel.hidden = true;
     elements.galleryPanel.setAttribute("aria-hidden", "true");
     elements.galleryButton?.setAttribute("aria-expanded", "false");
@@ -4551,6 +4657,21 @@
   elements.galleryButton?.addEventListener("click", openGallery);
   elements.galleryClose?.addEventListener("click", () => closeGallery());
   elements.galleryViewerClose?.addEventListener("click", closeGalleryViewer);
+  elements.galleryViewerPrevious?.addEventListener("click", () => { void turnGalleryViewer(-1); });
+  elements.galleryViewerNext?.addEventListener("click", () => { void turnGalleryViewer(1); });
+  elements.galleryViewerFigure?.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary || event.button > 0) return;
+    galleryViewerPointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  });
+  elements.galleryViewerFigure?.addEventListener("pointerup", (event) => {
+    if (!galleryViewerPointerStart || galleryViewerPointerStart.id !== event.pointerId) return;
+    const deltaX = event.clientX - galleryViewerPointerStart.x;
+    const deltaY = event.clientY - galleryViewerPointerStart.y;
+    galleryViewerPointerStart = null;
+    if (Math.abs(deltaX) < 44 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.25) return;
+    void turnGalleryViewer(deltaX < 0 ? 1 : -1);
+  });
+  elements.galleryViewerFigure?.addEventListener("pointercancel", () => { galleryViewerPointerStart = null; });
   elements.galleryViewer?.addEventListener("click", (event) => {
     if (event.target === elements.galleryViewer) closeGalleryViewer();
   });
@@ -4692,6 +4813,11 @@
       else if (!elements.evesPanel.hidden) closeEves();
       else if (!elements.logPanel.hidden) closeLog();
       else closeNovel();
+      return;
+    }
+    if (!elements.galleryViewer?.hidden && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      event.preventDefault();
+      void turnGalleryViewer(event.key === "ArrowRight" ? 1 : -1);
       return;
     }
     if (!elements.jumpPanel?.hidden) return;

@@ -2023,9 +2023,16 @@
               <span>LOCAL PROFILE / PERMANENT UNLOCK</span>
             </footer>
           </div>
-          <section class="novel-gallery-viewer" id="novel-gallery-viewer" aria-labelledby="novel-gallery-viewer-title" hidden>
-            <button id="novel-gallery-viewer-close" type="button" aria-label="拡大CGを閉じる">×</button>
-            <figure>
+          <section class="novel-gallery-viewer" id="novel-gallery-viewer" role="dialog" aria-modal="true" aria-labelledby="novel-gallery-viewer-title" hidden>
+            <button class="novel-gallery-viewer-close" id="novel-gallery-viewer-close" type="button" aria-label="拡大CGを閉じる">×</button>
+            <button class="novel-gallery-viewer-nav is-previous" id="novel-gallery-viewer-previous" type="button" aria-label="前のCGへ">
+              <span aria-hidden="true">‹</span><small>PREV</small>
+            </button>
+            <button class="novel-gallery-viewer-nav is-next" id="novel-gallery-viewer-next" type="button" aria-label="次のCGへ">
+              <small>NEXT</small><span aria-hidden="true">›</span>
+            </button>
+            <p class="novel-gallery-viewer-count" id="novel-gallery-viewer-count" aria-live="polite">1 / 1</p>
+            <figure id="novel-gallery-viewer-figure">
               <img id="novel-gallery-viewer-image" alt="" />
               <figcaption>
                 <span id="novel-gallery-viewer-chapter"></span>
