@@ -33,7 +33,8 @@ check("EVES/footer hidden without data removal", () => {
 check("changed runtime assets use the current cache keys", () => {
   assert.match(html, /opening\.css\?v=gaia-opening-sound-modal-1/u);
   assert.match(html, /opening\.js\?v=gaia-opening-sound-modal-1/u);
-  for (const asset of ["novel-mode.css", "novel-mode.js"]) assert.match(html, new RegExp(`${asset.replace(".", "\\.")}\\?v=gaia-no-novel-opening-1`, "u"));
+  assert.match(html, /novel-mode\.css\?v=gaia-title-copy-removal-1/u);
+  assert.match(html, /novel-mode\.js\?v=gaia-ending-afterglow-1/u);
   assert.match(html, /gx-mode\.js\?v=gaia-story-detour-fix-1/u);
   assert.match(html, /novel-story-data\.js\?v=gaia-gsw-esp32-channel-1/u);
 });
@@ -80,7 +81,7 @@ check("gallery typography follows archive hierarchy", () => {
 
 check("background is real, cover, and motionless", () => {
   const cues = read("novel-background-cues.js");
-  assert.match(cues, /festival-main-entrance-reception[^\n]*from:\s*1[^\n]*to:\s*7[^\n]*novel-bg-coastal-venue-v3\.png/u);
+  assert.match(cues, /festival-main-entrance-reception[^\n]*from:\s*1[^\n]*to:\s*7[^\n]*novel-bg-coastal-venue-autumn-morning-v1\.png/u);
   assert.match(css, /data-background-motion[\s\S]*animation:\s*none\s*!important[\s\S]*background-size:\s*cover,\s*cover\s*!important[\s\S]*transform:\s*none\s*!important/u);
 });
 
@@ -88,9 +89,10 @@ check("story footer metadata remains hidden", () => {
   assert.match(css, /#novel-eves-button,[\s\S]*#novel-eves-panel,[\s\S]*\.novel-footer-location\s*\{[^}]*display:\s*none\s*!important/u);
 });
 
-check("title copy states the story's central record ethic", () => {
+check("title omits promotional catchphrases", () => {
   assert.equal(html.includes("『今日、はじめまして。』"), false);
-  assert.match(html, /class="novel-title-sub">『記録にないことを、勝手に事実へ変えない。』<\/p>/u);
+  assert.equal(html.includes("『記録にないことを、勝手に事実へ変えない。』"), false);
+  assert.equal(html.includes('class="novel-title-sub"'), false);
 });
 
 check("campus name and formal-name canonical metadata", () => {

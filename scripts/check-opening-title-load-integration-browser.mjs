@@ -132,7 +132,7 @@ try {
     const title = await page.evaluate(() => ({
       titleVisible: __qaVisible(document.querySelector("#novel-title-screen")),
       runtimeVisible: __qaVisible(document.querySelector("#novel-runtime")),
-      subtitle: document.querySelector(".novel-title-sub")?.textContent.trim(),
+      subtitleCount: document.querySelectorAll(".novel-title-sub").length,
       resumeVisible: __qaVisible(document.querySelector("#novel-resume-button")),
       resumeText: document.querySelector("#novel-resume-button")?.textContent.trim(),
       resumeExpanded: document.querySelector("#novel-resume-button")?.getAttribute("aria-expanded"),
@@ -142,7 +142,7 @@ try {
       overflowY: document.documentElement.scrollHeight - innerHeight,
     }));
     assert(title.titleVisible && !title.runtimeVisible && title.resumeVisible);
-    assert.equal(title.subtitle, "『記録にないことを、勝手に事実へ変えない。』");
+    assert.equal(title.subtitleCount, 0);
     assert.equal(title.resumeText, "続きから");
     assert.equal(title.resumeExpanded, "false");
     assert.equal(title.obsoleteTitleLoadCount, 0);
