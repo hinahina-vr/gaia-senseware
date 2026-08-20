@@ -66,7 +66,8 @@
   ].map((entry) => Object.freeze(entry)));
 
   const limitedStory = Object.freeze([
-    { id: "festival-main-entrance-reception", sceneId: "festival_concept", from: 1, to: 7, assetPath: "assets/visuals-07/novel-bg-coastal-venue-autumn-morning-v1.png", motion: "push-in" },
+    { id: "festival-main-entrance-reception", sceneId: "festival_concept", from: 1, to: 1, assetPath: "assets/visuals-07/novel-bg-coastal-venue-autumn-morning-v1.png", motion: "push-in" },
+    { id: "festival-convention-hall-entrance", sceneId: "festival_concept", from: 2, to: 7, assetPath: "assets/visuals-07/novel-bg-convention-hall-entrance-autumn-morning-v1.png", motion: "push-in" },
     { id: "festival-b-hall-overview", sceneId: "festival_concept", from: 8, to: 9, assetPath: "assets/visuals-07/novel-bg-festival-b-hall-autumn-morning-v1.png", motion: "push-in" },
     { id: "festival-gaia-five-plane-projection", sceneId: "festival_concept", from: 10, to: 12, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "push-in" },
     { id: "festival-gaia-booth-approach", sceneId: "festival_concept", from: 13, to: 14, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },

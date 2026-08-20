@@ -93,7 +93,8 @@ const scanBackground = async (viewport, stepId, shot = false) => {
   assert(samples.every((s) => s.backgroundPosition === samples[0].backgroundPosition && s.transform === "none" && s.animationName === "none"));
   assert(samples.every((s) => s.rect.left === 0 && s.rect.top === 0 && Math.abs(s.rect.width - viewport.width) <= 1 && Math.abs(s.rect.height - viewport.height) <= 1));
   assert(samples.every((s) => !s.overflowX && !s.openingVisible && s.openingHidden && s.novelVisibleCount === 1));
-  if (/festival_concept_00[1-7]/u.test(stepId)) assert(samples.every((s) => /novel-bg-coastal-venue-autumn-morning-v1\.png/u.test(s.backgroundImage)));
+  if (stepId === "festival_concept_001") assert(samples.every((s) => /novel-bg-coastal-venue-autumn-morning-v1\.png/u.test(s.backgroundImage)));
+  if (/festival_concept_00[2-7]/u.test(stepId)) assert(samples.every((s) => /novel-bg-convention-hall-entrance-autumn-morning-v1\.png/u.test(s.backgroundImage)));
   const asset = await page.evaluate(async () => {
     const url = /url\(["']?([^"')]+)/u.exec(getComputedStyle(document.querySelector("#novel-layer")).backgroundImage)?.[1];
     const image = new Image(); image.src = url; await image.decode(); return { url, naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight };
@@ -273,7 +274,7 @@ const scanTitleAndOpening = async (viewport) => {
 
 try {
   for (const viewport of viewports) {
-    for (const step of ["festival_concept_001", "festival_concept_007", "festival_concept_008", "festival_concept_010", "festival_concept_015"]) await scanBackground(viewport, step, ["festival_concept_001", "festival_concept_008"].includes(step));
+    for (const step of ["festival_concept_001", "festival_concept_002", "festival_concept_007", "festival_concept_008", "festival_concept_010", "festival_concept_015"]) await scanBackground(viewport, step, ["festival_concept_001", "festival_concept_002", "festival_concept_008"].includes(step));
     await scanTitleAndOpening(viewport);
     if (["pc-1440", "mobile-390"].includes(viewport.name)) {
       await scanChromeAndNames(viewport);

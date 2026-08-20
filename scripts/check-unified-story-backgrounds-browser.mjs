@@ -20,6 +20,7 @@ const viewports = [
 
 const cases = [
   ["festival_concept_001", "festival-main-entrance-reception", "novel-bg-coastal-venue-autumn-morning-v1.png"],
+  ["festival_concept_002", "festival-convention-hall-entrance", "novel-bg-convention-hall-entrance-autumn-morning-v1.png"],
   ["festival_concept_008", "festival-b-hall-overview", "novel-bg-festival-b-hall-autumn-morning-v1.png"],
   ["festival_concept_010", "festival-gaia-five-plane-projection", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
   ["map_mode01_029", "map01-data-provenance", "novel-bg-map01-data-provenance-autumn-morning-v3.png"],
@@ -41,7 +42,7 @@ const cases = [
   ["circle_invitation_048", "circle-welcome-cg", "event-cg-circle-welcome-v2.png", "event-cg-circle-welcome-mobile-v1.png"],
   ["welcome_chat_092", "welcome-exhibition-finale-cg", "event-cg-exhibition-finale-v2.png", "event-cg-exhibition-finale-mobile-v1.png"],
 ];
-const selectedCases = scanScope === "smoke" ? [cases[0], cases[2], cases[10]] : cases;
+const selectedCases = scanScope === "smoke" ? [cases[0], cases[1], cases[3], cases[11]] : cases;
 
 const report = { status: "running", scanScope, viewports, cases: [], interactions: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath, args: ["--no-first-run", "--disable-background-networking"] });

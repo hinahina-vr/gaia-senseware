@@ -21,6 +21,7 @@ const expectedSceneIds = [
 const expectedCounts = [76, 43, 58, 43, 81, 95];
 const assets = Object.freeze({
   entrance: "assets/visuals-07/novel-bg-coastal-venue-autumn-morning-v1.png",
+  conventionHallEntrance: "assets/visuals-07/novel-bg-convention-hall-entrance-autumn-morning-v1.png",
   bHallOverview: "assets/visuals-07/novel-bg-festival-b-hall-autumn-morning-v1.png",
   fivePlaneProjection: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png",
   boothClose: "assets/visuals-07/novel-bg-exhibition-autumn-morning-close-v4.png",
@@ -55,6 +56,7 @@ const assets = Object.freeze({
 });
 const approvedAssetHashes = Object.freeze({
   [assets.entrance]: "972adf6beac6b3ac51e9e132b81c7ca61acb24e9f795600153ec021b7c9d1654",
+  [assets.conventionHallEntrance]: "c54278de22f4de6695130845bbb4cdf461d842d546ec53ca039bb8fd02def35c",
   [assets.bHallOverview]: "47c4b03ca464db0df64b5a0f055f862bc63f7bc697d40ffe374cdce4d6dac519",
   [assets.fivePlaneProjection]: "42821b8efb82deb36075a9164d04d60bb52e284a2ca0ad3ac72d9f0b1a65ee1f",
   [assets.boothClose]: "7395fdf68129209f51e2eb1fea26e478627b4fbf03525a7ecb9cdc3d58c45f69",
@@ -89,7 +91,8 @@ assert.deepEqual(backgroundCues.expectedSceneCounts, Object.fromEntries(expected
 assert.equal(backgroundCues.productionYear.length, 0, "legacy production registry must be empty");
 
 const expectedBoundaries = [
-  ["festival_concept", 1, 7, "festival-main-entrance-reception", assets.entrance, "push-in", "scenic"],
+  ["festival_concept", 1, 1, "festival-main-entrance-reception", assets.entrance, "push-in", "scenic"],
+  ["festival_concept", 2, 7, "festival-convention-hall-entrance", assets.conventionHallEntrance, "push-in", "scenic"],
   ["festival_concept", 8, 9, "festival-b-hall-overview", assets.bHallOverview, "push-in", "scenic"],
   ["festival_concept", 10, 12, "festival-gaia-five-plane-projection", assets.fivePlaneProjection, "push-in", "scenic"],
   ["festival_concept", 13, 14, "festival-gaia-booth-approach", assets.fivePlaneProjection, "drift-left", "scenic"],
@@ -148,7 +151,7 @@ const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(ste
 assert.equal(resolved.length, 396);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 22, "background-art cut must use twenty-two distinct scene assets");
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 23, "background-art cut must use twenty-three distinct scene assets");
 assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 69);
 
 assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
@@ -212,6 +215,8 @@ for (const [sceneId, from, to] of boothRanges) {
 
 const cue = (stepId) => backgroundCues.forStep(allSteps.find((step) => step.id === stepId));
 assert.equal(cue("festival_concept_001").assetPath, assets.entrance);
+assert.equal(cue("festival_concept_002").assetPath, assets.conventionHallEntrance);
+assert.equal(cue("festival_concept_007").assetPath, assets.conventionHallEntrance);
 assert.equal(cue("festival_concept_008").assetPath, assets.bHallOverview);
 assert.equal(cue("festival_concept_009").assetPath, assets.bHallOverview);
 assert.equal(cue("festival_concept_010").assetPath, assets.fivePlaneProjection);
