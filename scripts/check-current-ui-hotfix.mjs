@@ -87,7 +87,7 @@ check("gallery typography follows archive hierarchy", () => {
 
 check("background is real, cover, and motionless", () => {
   const cues = read("novel-background-cues.js");
-  assert.match(cues, /festival-convention-hall-entrance[^\n]*from:\s*1[^\n]*to:\s*7[^\n]*novel-bg-convention-hall-entrance-autumn-morning-v1\.png/u);
+  assert.match(cues, /festival-convention-hall-entrance[^\n]*from:\s*1[^\n]*to:\s*7[^\n]*novel-bg-convention-hall-entrance-autumn-morning-v2\.png/u);
   assert.match(css, /data-background-motion[\s\S]*animation:\s*none\s*!important[\s\S]*background-size:\s*cover,\s*cover\s*!important[\s\S]*transform:\s*none\s*!important/u);
 });
 

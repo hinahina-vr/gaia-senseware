@@ -12,7 +12,7 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/initial-story-first-frame-hotfix");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const START_BACKGROUND = "novel-bg-convention-hall-entrance-autumn-morning-v1.png";
+const START_BACKGROUND = "novel-bg-convention-hall-entrance-autumn-morning-v2.png";
 const EXHIBITION = "novel-bg-exhibition-v3.png";
 const progressFixture = (stepId) => ({
   storyVersion: 10,

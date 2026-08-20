@@ -93,7 +93,7 @@ const scanBackground = async (viewport, stepId, shot = false) => {
   assert(samples.every((s) => s.backgroundPosition === samples[0].backgroundPosition && s.transform === "none" && s.animationName === "none"));
   assert(samples.every((s) => s.rect.left === 0 && s.rect.top === 0 && Math.abs(s.rect.width - viewport.width) <= 1 && Math.abs(s.rect.height - viewport.height) <= 1));
   assert(samples.every((s) => !s.overflowX && !s.openingVisible && s.openingHidden && s.novelVisibleCount === 1));
-  if (/festival_concept_00[1-7]/u.test(stepId)) assert(samples.every((s) => /novel-bg-convention-hall-entrance-autumn-morning-v1\.png/u.test(s.backgroundImage)));
+  if (/festival_concept_00[1-7]/u.test(stepId)) assert(samples.every((s) => /novel-bg-convention-hall-entrance-autumn-morning-v2\.png/u.test(s.backgroundImage)));
   const asset = await page.evaluate(async () => {
     const url = /url\(["']?([^"')]+)/u.exec(getComputedStyle(document.querySelector("#novel-layer")).backgroundImage)?.[1];
     const image = new Image(); image.src = url; await image.decode(); return { url, naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight };

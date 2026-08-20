@@ -29,7 +29,7 @@ const sceneFiles = [
   "mode-map-v1.webp",
   "novel-background-v1.webp",
   "novel-bg-coastal-venue-autumn-morning-v1.png",
-  "novel-bg-convention-hall-entrance-autumn-morning-v1.png",
+  "novel-bg-convention-hall-entrance-autumn-morning-v2.png",
   "novel-bg-coastal-venue-v3.png",
   "novel-bg-exhibition-autumn-morning-close-v4.png",
   "novel-bg-exhibition-autumn-morning-wide-v4.png",

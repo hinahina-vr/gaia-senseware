@@ -19,8 +19,8 @@ const viewports = [
 ];
 
 const cases = [
-  ["festival_concept_001", "festival-convention-hall-entrance", "novel-bg-convention-hall-entrance-autumn-morning-v1.png"],
-  ["festival_concept_002", "festival-convention-hall-entrance", "novel-bg-convention-hall-entrance-autumn-morning-v1.png"],
+  ["festival_concept_001", "festival-convention-hall-entrance", "novel-bg-convention-hall-entrance-autumn-morning-v2.png"],
+  ["festival_concept_002", "festival-convention-hall-entrance", "novel-bg-convention-hall-entrance-autumn-morning-v2.png"],
   ["festival_concept_008", "festival-b-hall-overview", "novel-bg-festival-b-hall-autumn-morning-v1.png"],
   ["festival_concept_010", "festival-gaia-five-plane-projection", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
   ["map_mode01_029", "map01-data-provenance", "novel-bg-map01-data-provenance-autumn-morning-v3.png"],

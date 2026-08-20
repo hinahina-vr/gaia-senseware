@@ -26,8 +26,8 @@ const welcomeCases = [
   { name: "mobile", stepId: "welcome_chat_081", device: "mobile", slack: true },
 ];
 const cinematicCases = [
-  { name: "festival-start", stepId: "festival_concept_001", cue: "festival-convention-hall-entrance", asset: "novel-bg-convention-hall-entrance-autumn-morning-v1.png", motion: "push-in", mobile: true },
-  { name: "festival-convention-hall", stepId: "festival_concept_002", cue: "festival-convention-hall-entrance", asset: "novel-bg-convention-hall-entrance-autumn-morning-v1.png", motion: "push-in", mobile: true },
+  { name: "festival-start", stepId: "festival_concept_001", cue: "festival-convention-hall-entrance", asset: "novel-bg-convention-hall-entrance-autumn-morning-v2.png", motion: "push-in", mobile: true },
+  { name: "festival-convention-hall", stepId: "festival_concept_002", cue: "festival-convention-hall-entrance", asset: "novel-bg-convention-hall-entrance-autumn-morning-v2.png", motion: "push-in", mobile: true },
   { name: "b-hall-overview", stepId: "festival_concept_008", cue: "festival-b-hall-overview", asset: "novel-bg-festival-b-hall-autumn-morning-v1.png", motion: "push-in" },
   { name: "first-encounter-cg", stepId: "festival_concept_015", cue: "festival-first-encounter-cg", asset: "event-cg-first-encounter-five-plane-v3.png", mobileAsset: "event-cg-first-encounter-five-plane-mobile-v2.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "amane-closeup-cg", stepId: "festival_concept_021", cue: "festival-amane-closeup-cg", asset: "event-cg-amane-closeup-five-plane-v3.png", motion: "event-focus", eventCg: true, mobile: true },

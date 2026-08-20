@@ -21,7 +21,7 @@ const expectedSceneIds = [
 const expectedCounts = [76, 43, 48, 43, 81, 95];
 const assets = Object.freeze({
   entrance: "assets/visuals-07/novel-bg-coastal-venue-autumn-morning-v1.png",
-  conventionHallEntrance: "assets/visuals-07/novel-bg-convention-hall-entrance-autumn-morning-v1.png",
+  conventionHallEntrance: "assets/visuals-07/novel-bg-convention-hall-entrance-autumn-morning-v2.png",
   bHallOverview: "assets/visuals-07/novel-bg-festival-b-hall-autumn-morning-v1.png",
   fivePlaneProjection: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png",
   boothClose: "assets/visuals-07/novel-bg-exhibition-autumn-morning-close-v4.png",
@@ -54,7 +54,7 @@ const assets = Object.freeze({
 });
 const approvedAssetHashes = Object.freeze({
   [assets.entrance]: "972adf6beac6b3ac51e9e132b81c7ca61acb24e9f795600153ec021b7c9d1654",
-  [assets.conventionHallEntrance]: "c54278de22f4de6695130845bbb4cdf461d842d546ec53ca039bb8fd02def35c",
+  [assets.conventionHallEntrance]: "5c3483fa1b584672e0138b1a04176ff939b1ad2dffd79d25509f82c78edb3679",
   [assets.bHallOverview]: "47c4b03ca464db0df64b5a0f055f862bc63f7bc697d40ffe374cdce4d6dac519",
   [assets.fivePlaneProjection]: "42821b8efb82deb36075a9164d04d60bb52e284a2ca0ad3ac72d9f0b1a65ee1f",
   [assets.boothClose]: "7395fdf68129209f51e2eb1fea26e478627b4fbf03525a7ecb9cdc3d58c45f69",
