@@ -3176,7 +3176,7 @@
     gx: {
       kicker: "GX / DEEP TIME",
       title: "太古の海へ触れる",
-      guide: "水面を三回以上なぞり、生命の活動が海と大気を変えた長い時間を確認してください。",
+      guide: "八つの時代を順にたどります。最後のGXを完了すると、自動で物語へ戻ります。",
     },
     map03: {
       kicker: "MODE 03 / MAP",
@@ -3220,7 +3220,10 @@
     if (kind === "map01") {
       return detourState?.views?.has("timeline_complete") ? "自動再生が完了しました" : "年代を自動再生中";
     }
-    if (kind === "gx") return state.viewed.gxDeepTime ? "操作完了 / 海の変化を確認しました" : `水面の操作 ${detourState?.gestureCount || 0} / 3`;
+    if (kind === "gx") {
+      if (state.viewed.gxDeepTime) return "全時代の観察が完了しました";
+      return `時代 ${detourState?.phaseIndex || 1} / ${detourState?.phaseCount || 8}`;
+    }
     if (kind === "map03") return `森林 ${state.viewed.mode03Forest ? "✓" : "○"}　降水量 ${state.viewed.mode03Rain ? "✓" : "○"}　重ね合わせ ${state.viewed.mode03Overlay ? "✓" : "○"}`;
     if (kind === "abstract07") return `観測点 ${state.viewed.mode07AbstractPoint ? "✓" : "○"}　SOURCE ${state.viewed.mode07Source ? "✓" : "○"}　DERIVED ${state.viewed.mode07Derived ? "✓" : "○"}`;
     if (kind === "map08") return `自然環境 ${state.viewed.mode08Nature ? "✓" : "○"}　人の暮らし ${state.viewed.mode08Life ? "✓" : "○"}　土地の記憶 ${state.viewed.mode08Memory ? "✓" : "○"}`;
@@ -3241,7 +3244,8 @@
     if (!pendingInteraction || !detourDock) return;
     const kind = pendingInteraction.interaction.kind;
     detourDock.querySelector(".story-detour-progress").textContent = detourProgressText();
-    detourDock.querySelector("#story-detour-return").disabled = !detourCompletion();
+    const returnButton = detourDock.querySelector("#story-detour-return");
+    if (returnButton) returnButton.disabled = !detourCompletion();
     detourDock.querySelector(".story-detour-controls").replaceChildren();
     if (kind === "map03") {
       const controls = [
@@ -3278,14 +3282,6 @@
         saveProgress();
         updateDetourDock();
       }, state.viewed[key]));
-    } else if (kind === "gx" && motionReduced()) {
-      addDetourControl("段階表示を進める", () => {
-        detourState.gestureCount = Math.min(3, (detourState.gestureCount || 0) + 1);
-        window.dispatchEvent(new CustomEvent("gaia:gx-story-key-step"));
-        if (detourState.gestureCount >= 3) state.viewed.gxDeepTime = true;
-        saveProgress();
-        updateDetourDock();
-      }, state.viewed.gxDeepTime);
     }
   };
 
@@ -3340,10 +3336,10 @@
   const openDetour = (step) => {
     if (pendingInteraction || interactionLifecycle !== "prep") return;
     pendingInteraction = step;
-    detourState = { gestureCount: 0, views: new Set() };
+    detourState = { gestureCount: 0, phaseIndex: 1, phaseCount: 8, views: new Set() };
     const definition = detourDefinitions[step.interaction.kind];
     closeDetourDock();
-    if (step.interaction.kind !== "map01") {
+    if (!["map01", "gx"].includes(step.interaction.kind)) {
       detourDock = document.createElement("aside");
       detourDock.className = "story-detour-dock";
       detourDock.dataset.kind = step.interaction.kind;
@@ -4640,7 +4636,9 @@
   window.addEventListener("gaia:gx-story-progress", (event) => {
     if (pendingInteraction?.interaction.kind !== "gx") return;
     detourState.gestureCount = Math.max(detourState.gestureCount || 0, Number(event.detail?.count) || 0);
-    if (event.detail?.complete || detourState.gestureCount >= 3) state.viewed.gxDeepTime = true;
+    detourState.phaseIndex = Math.max(detourState.phaseIndex || 1, Number(event.detail?.phase) || 1);
+    detourState.phaseCount = Math.max(1, Number(event.detail?.phaseCount) || 8);
+    if (event.detail?.complete === true) state.viewed.gxDeepTime = true;
     saveProgress();
     updateDetourDock();
   });

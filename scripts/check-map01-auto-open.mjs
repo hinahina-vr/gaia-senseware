@@ -59,7 +59,7 @@ check("launcher fallback and optional contract remain available without current 
 
 check("map01 uses a modal, triple-speed playback, and automatic return", () => {
   assert.match(runtime, /\["gx", "map01"\]\.includes\(pendingInteraction\?\.interaction\?\.kind\)/u);
-  assert.match(runtime, /if \(step\.interaction\.kind !== "map01"\) \{/u);
+  assert.match(runtime, /if \(!\["map01", "gx"\]\.includes\(step\.interaction\.kind\)\) \{/u);
   assert.match(runtime, /gaia:story-mode-auto-complete/u);
   assert.match(runtime, /requestDetourReturn\(\);/u);
   assert.match(app, /const STORY_MAP_TIMELINE_SPEED = 3;/u);
@@ -85,7 +85,8 @@ check("runtime cache keys are advanced", () => {
   assert.match(html, /novel-background-cues\.js\?v=gaia-gx-ocean-crossfade-1/u);
   assert.match(html, /app\.js\?v=gaia-story-map-autoplay-1/u);
   assert.match(html, /novel-mode\.css\?v=gaia-character-distance-1/u);
-  assert.match(html, /novel-mode\.js\?v=gaia-gx-ocean-crossfade-1/u);
+  assert.match(html, /gx-mode\.js\?v=gaia-gx-auto-return-1/u);
+  assert.match(html, /novel-mode\.js\?v=gaia-gx-auto-return-1/u);
   assert.match(html, /novel-story-data\.js\?v=gaia-story-map-autoplay-1/u);
 });
 

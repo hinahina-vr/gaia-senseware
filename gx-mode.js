@@ -215,6 +215,7 @@
   let storyDetourActive = false;
   let storyModeVersion = "";
   let storyGestureCount = 0;
+  let storySequenceComplete = false;
   let storyPointerActive = false;
   let width = 0;
   let height = 0;
@@ -388,6 +389,18 @@
     return progress;
   };
 
+  const emitStoryProgress = (complete = storySequenceComplete) => {
+    if (!storyDetourActive) return;
+    window.dispatchEvent(new CustomEvent("gaia:gx-story-progress", {
+      detail: {
+        count: storyGestureCount,
+        phase: phaseIndex + 1,
+        phaseCount: exhibit.phases.length,
+        complete,
+      },
+    }));
+  };
+
   const beginEraTransition = () => {
     if (eraTransitionPending) return;
     const completedPhase = phaseIndex;
@@ -402,6 +415,10 @@
     layer.classList.add("is-era-transitioning");
     elements.eraTransition.classList.add("is-visible");
     elements.eraTransition.setAttribute("aria-hidden", "false");
+    if (isFinalPhase && storyDetourActive) {
+      storySequenceComplete = true;
+      emitStoryProgress(true);
+    }
     eraTransitionTimer = window.setTimeout(() => {
       eraTransitionTimer = 0;
       layer.classList.remove("is-era-transitioning");
@@ -665,6 +682,7 @@
     layer.dataset.phase = phase.id;
     updateStoryConversation();
     seedWorld();
+    emitStoryProgress(false);
   };
 
   const addInteraction = (normalizedX, normalizedY, motion = 0) => {
@@ -1954,6 +1972,7 @@
     storyDetourActive = returnTo === "novel";
     storyModeVersion = storyDetourActive ? String(options.storyMode || "") : "";
     storyGestureCount = 0;
+    storySequenceComplete = false;
     storyPointerActive = false;
     layer.dataset.returnTo = returnTo;
     if (storyModeVersion) layer.dataset.storyMode = storyModeVersion;
@@ -1986,7 +2005,7 @@
 
   const closeGX = () => {
     if (!isOpen) return;
-    if (storyDetourActive && storyGestureCount < 3) return;
+    if (storyDetourActive && !storySequenceComplete) return;
     storyPointerActive = false;
     closeDataPanel();
     window.clearTimeout(eraTransitionTimer);
@@ -2041,12 +2060,25 @@
 
   const recordStoryGesture = () => {
     if (!storyDetourActive || !isOpen) return;
-    storyGestureCount = Math.min(3, storyGestureCount + 1);
-    const complete = storyGestureCount >= 3;
-    elements.close.disabled = !complete;
-    window.dispatchEvent(new CustomEvent("gaia:gx-story-progress", {
-      detail: { count: storyGestureCount, complete },
-    }));
+    storyGestureCount += 1;
+    elements.close.disabled = true;
+    emitStoryProgress();
+  };
+
+  const advanceStoryPhaseFromKeyboard = () => {
+    if (!storyDetourActive || !isOpen || eraTransitionPending) return;
+    const { centerX, centerY, radius } = getPlanetGeometry();
+    const maxAttempts = 80;
+    let attempt = 0;
+    while (interactionProgress() < 1 && attempt < maxAttempts && !eraTransitionPending) {
+      const angle = attempt * 2.399963229728653;
+      const distance = radius * (0.18 + 0.62 * Math.sqrt((attempt % 32) / 31));
+      const x = (centerX + Math.cos(angle) * distance) / width;
+      const y = (centerY + Math.sin(angle) * distance) / height;
+      addInteraction(x, y, 0.18);
+      attempt += 1;
+    }
+    recordStoryGesture();
   };
 
   openButton.addEventListener("click", (event) => {
@@ -2097,9 +2129,15 @@
   canvas.addEventListener("pointercancel", releasePointer);
   window.addEventListener("resize", () => { if (isOpen) resize(); });
   window.addEventListener("gaia:gx-open", (event) => openGX(event.detail || {}));
-  window.addEventListener("gaia:gx-story-key-step", recordStoryGesture);
+  window.addEventListener("gaia:gx-story-key-step", advanceStoryPhaseFromKeyboard);
   window.addEventListener("keydown", (event) => {
     if (!isOpen) return;
+    if (storyDetourActive && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      event.stopPropagation();
+      advanceStoryPhaseFromKeyboard();
+      return;
+    }
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
