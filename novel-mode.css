@@ -4864,7 +4864,7 @@ body.novel-reduced-motion .story-detour-dock * {
   background-image:
     linear-gradient(90deg, rgba(2, 10, 23, 0.16) 0%, rgba(2, 10, 23, 0.02) 58%, rgba(2, 10, 23, 0.08) 100%),
     linear-gradient(180deg, rgba(1, 7, 15, 0.02), rgba(1, 7, 15, 0.3)),
-    url("./assets/visuals-07/novel-title-keyvisual-v2.png");
+    url("./assets/visuals-07/novel-title-keyvisual-v3.png");
   background-position: center, center, center;
   background-size: cover, cover, cover;
 }
@@ -6200,7 +6200,13 @@ body.novel-open .japan-layer[data-story-mode="map01"] .japan-close {
 
 @media (max-width: 600px) {
   .novel-layer.is-reflection .novel-topbar nav { display: none; }
-  .novel-layer.is-title { background-position: center, center, 68% center; }
+  .novel-layer.is-title {
+    background-image:
+      linear-gradient(90deg, rgba(2, 10, 23, 0.16) 0%, rgba(2, 10, 23, 0.02) 58%, rgba(2, 10, 23, 0.08) 100%),
+      linear-gradient(180deg, rgba(1, 7, 15, 0.02), rgba(1, 7, 15, 0.3)),
+      url("./assets/visuals-07/novel-title-keyvisual-mobile-v1.png");
+    background-position: center, center, center;
+  }
   .novel-layer.is-title .novel-veil { background: linear-gradient(180deg, rgba(1, 7, 18, 0.22), rgba(1, 7, 18, 0.78)); }
   .novel-layer.is-title .novel-title-screen { top: auto; right: 18px; bottom: max(34px, env(safe-area-inset-bottom)); left: 18px; width: auto; max-height: none; padding: 0; overflow: visible; transform: none; }
   .novel-layer.is-title .novel-title-screen > p:first-of-type { margin-bottom: 12px; }

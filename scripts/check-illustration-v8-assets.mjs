@@ -51,7 +51,7 @@ const sceneFiles = [
   "novel-bg-map01-data-provenance-five-plane-v1.png",
   "novel-bg-zushi-coast-autumn-day-v3.png",
   "novel-bg-zushi-coast-night-v2.png",
-  "novel-title-keyvisual-v2.png",
+  "novel-title-keyvisual-v3.png",
   "opening-keyvisual-v1.webp",
 ];
 
@@ -62,6 +62,7 @@ const mobileSceneFiles = [
   "event-cg-circle-invitation-card-mobile-v1.png",
   "event-cg-circle-welcome-mobile-v1.png",
   "event-cg-exhibition-finale-mobile-v1.png",
+  "novel-title-keyvisual-mobile-v1.png",
 ];
 
 const report = { sprites: [], scenes: [] };
