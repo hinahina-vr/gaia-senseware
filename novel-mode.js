@@ -444,6 +444,7 @@
   let detourDockObserver = null;
   let interactionLifecycle = "idle";
   let backgroundTransitionPending = false;
+  let deferredSectionBackgroundTransition = null;
   let deferredOpeningBackground = null;
   let requestedStoryTrack = null;
   let logFollowLatest = true;
@@ -1333,13 +1334,14 @@
     try {
       layer.dataset.sceneId = step.sceneId;
       layer.dataset.stepId = step.id;
-      applyBackgroundCueForStep(step);
+      const cue = applyBackgroundCueForStep(step);
       const computed = getComputedStyle(layer);
       return {
         image: computed.backgroundImage,
         position: computed.backgroundPosition,
         size: computed.backgroundSize,
         repeat: computed.backgroundRepeat,
+        transition: cue?.transition || "scene",
       };
     } finally {
       if (previousSceneId) layer.dataset.sceneId = previousSceneId;
@@ -1481,7 +1483,7 @@
     else window.setTimeout(warm, 0);
   };
 
-  const runBackgroundTransition = async (currentBackground, nextBackground, swapStep) => {
+  const runBackgroundTransition = async (currentBackground, nextBackground, swapStep, { crossfadeOnly = false } = {}) => {
     if (backgroundTransitionPending) return;
     backgroundTransitionPending = true;
     try {
@@ -1492,7 +1494,14 @@
       layer.style.setProperty("--novel-transition-background-repeat", currentBackground.repeat);
       layer.classList.remove("is-background-releasing");
       layer.classList.add("is-background-buffered");
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await nextPaint();
+      if (crossfadeOnly) {
+        swapStep();
+        await nextPaint();
+        layer.classList.add("is-background-releasing");
+        await new Promise((resolve) => window.setTimeout(resolve, 860));
+        return true;
+      }
       return await runSceneTransition(() => {
         swapStep();
         layer.classList.add("is-background-releasing");
@@ -1581,6 +1590,7 @@
     const currentBackground = backgroundPresentationForStep(step);
     const nextBackground = backgroundPresentationForStep(nextStep);
     const backgroundChanges = currentBackground.image !== nextBackground.image;
+    const crossfadeOnly = nextBackground.transition === "crossfade";
     if (backgroundChanges && nextStep?.id === "opening_empty_seat_001") {
       deferredOpeningBackground = { stepId: nextStep.id, current: currentBackground, next: nextBackground };
       layer.dataset.openingTransitionStage = "awaiting-record";
@@ -1591,7 +1601,12 @@
     const shouldTransitionBackground = rawNextStep?.type !== "phase" && backgroundChanges;
     if (shouldTransitionBackground && !motionReduced()) {
       if (backgroundTransitionPending) return;
-      return runBackgroundTransition(currentBackground, nextBackground, swapStep);
+      if (crossfadeOnly && step.sceneId !== nextStep?.sceneId) {
+        deferredSectionBackgroundTransition = { stepId: next, currentBackground, nextBackground };
+        swapStep();
+        return;
+      }
+      return runBackgroundTransition(currentBackground, nextBackground, swapStep, { crossfadeOnly });
     }
     swapStep();
   };
@@ -2471,7 +2486,19 @@
     elements.chapterCard.hidden = true;
     const step = currentStep();
     if (temporalRuntime.contextTransitionForStep(step)) renderTemporalTransitionCard(step);
-    else renderCurrentStep();
+    else if (deferredSectionBackgroundTransition?.stepId === step?.id && !motionReduced()) {
+      const transition = deferredSectionBackgroundTransition;
+      deferredSectionBackgroundTransition = null;
+      void runBackgroundTransition(
+        transition.currentBackground,
+        transition.nextBackground,
+        renderCurrentStep,
+        { crossfadeOnly: true },
+      );
+    } else {
+      deferredSectionBackgroundTransition = null;
+      renderCurrentStep();
+    }
     return true;
   }
 
@@ -4537,6 +4564,7 @@
     isOpen = false;
     setInteractionLifecycle("idle");
     sectionSkipPending = false;
+    deferredSectionBackgroundTransition = null;
     elements.close.disabled = false;
     clearScriptDebug();
     setSceneJumpAvailability(false);

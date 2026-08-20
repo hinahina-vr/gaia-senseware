@@ -238,6 +238,7 @@ assert.equal(cue("map_mode01_015").assetPath, assets.modis);
 assert.equal(cue("map_mode01_029").assetPath, assets.map01Provenance);
 assert.equal(cue("map_mode01_040").assetPath, assets.map01Provenance);
 assert.equal(cue("map_mode01_043").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("gx_experience_001").transition, "crossfade", "the ancient-ocean entry must dissolve from the current-Earth display");
 assert.equal(cue("gx_experience_017").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("gx_experience_011").assetPath, assets.gxAncientOcean);
 assert.equal(cue("gx_experience_018").assetPath, assets.fivePlaneProjection);

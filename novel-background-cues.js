@@ -80,7 +80,7 @@
     { id: "map01-temperature-observation", sceneId: "map_mode01", from: 15, to: 28, assetPath: "assets/data/modis-land-cover-2023.png", motion: "push-in" },
     { id: "map01-data-provenance", sceneId: "map_mode01", from: 29, to: 40, assetPath: "assets/visuals-07/novel-bg-map01-data-provenance-autumn-morning-v3.png", motion: "drift-left" },
     { id: "map01-exhibition-return", sceneId: "map_mode01", from: 41, to: 43, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-right" },
-    { id: "gx-ocean-entry", sceneId: "gx_experience", from: 1, to: 16, assetPath: "assets/visuals-07/novel-bg-gx-ancient-ocean-autumn-morning-v3.png", motion: "push-in" },
+    { id: "gx-ocean-entry", sceneId: "gx_experience", from: 1, to: 16, assetPath: "assets/visuals-07/novel-bg-gx-ancient-ocean-autumn-morning-v3.png", motion: "push-in", transition: "crossfade" },
     { id: "gx-native-deep-time", sceneId: "gx_experience", from: 17, to: 17, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-right" },
     { id: "gx-exhibition-return", sceneId: "gx_experience", from: 18, to: 18, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "push-in" },
     { id: "gx-ancient-ocean", sceneId: "gx_experience", from: 19, to: 29, assetPath: "assets/visuals-07/mode-abstract-v1.webp", motion: "drift-right" },
