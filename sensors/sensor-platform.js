@@ -27,8 +27,14 @@ const publicSensorCount = document.querySelector("#public-sensor-count");
 const pollIntervalMs = 2_000;
 const naturalEarthUrl = "../data/natural-earth-50m-land.geojson?v=gaia-27";
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
+const worldMapView = Object.freeze({ west: -180, east: 180, south: -90, north: 90, key: "WORLD" });
+const countryMapViews = Object.freeze({
+  JP: Object.freeze({ west: 122, east: 154, south: 20, north: 48, key: "JP" }),
+});
 const regionCache = new Map();
 const mapObservers = [];
+const mapViewports = new WeakMap();
+const mapRenderers = new WeakMap();
 let countries = [];
 let devices = [];
 let selectedDevice = null;
@@ -295,6 +301,7 @@ const renderDetail = ({ device, latest }, telemetry) => {
     locationForm.elements.admin1Code.value = device.admin1Code || "";
     locationForm.elements.localityName.value = device.localityName || "";
     locationForm.elements.isPublic.checked = Boolean(device.isPublic);
+    syncPickerViewport(locationForm, device.countryCode);
     setPickerLocation(locationForm, device.publicLatitude, device.publicLongitude);
     syncPickerEnabled(locationForm);
     void populateRegionFields(locationForm, {
@@ -543,6 +550,7 @@ function initRegionFields() {
       form.elements.municipalityCode.value = "";
       form.elements.admin1Code.value = "";
       form.elements.localityName.value = "";
+      syncPickerViewport(form, form.elements.countryCode.value, { ensureLocation: true });
       void populateRegionFields(form);
     });
     form.elements.subdivisionCode.addEventListener("change", () => {
@@ -636,17 +644,52 @@ function initLocationPickers() {
     picker.addEventListener("pointerdown", (event) => {
       if (!form.elements.isPublic.checked) return;
       const rect = picker.getBoundingClientRect();
-      setPickerLocation(form, 90 - ((event.clientY - rect.top) / rect.height) * 180, ((event.clientX - rect.left) / rect.width) * 360 - 180);
+      const view = mapViewFor(picker);
+      setPickerLocation(
+        form,
+        view.north - ((event.clientY - rect.top) / rect.height) * (view.north - view.south),
+        view.west + ((event.clientX - rect.left) / rect.width) * (view.east - view.west),
+      );
     });
     picker.addEventListener("keydown", (event) => {
       if (!form.elements.isPublic.checked || !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
       event.preventDefault();
-      const latitude = numberOrNull(form.elements.publicLatitude.value) ?? 35.7;
-      const longitude = numberOrNull(form.elements.publicLongitude.value) ?? 139.7;
-      setPickerLocation(form, latitude + (event.key === "ArrowUp" ? 1 : event.key === "ArrowDown" ? -1 : 0), longitude + (event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0));
+      const view = mapViewFor(picker);
+      const latitude = numberOrNull(form.elements.publicLatitude.value) ?? ((view.north + view.south) / 2);
+      const longitude = numberOrNull(form.elements.publicLongitude.value) ?? ((view.east + view.west) / 2);
+      setPickerLocation(
+        form,
+        Math.max(view.south, Math.min(view.north, latitude + (event.key === "ArrowUp" ? 1 : event.key === "ArrowDown" ? -1 : 0))),
+        Math.max(view.west, Math.min(view.east, longitude + (event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0))),
+      );
     });
+    syncPickerViewport(form, form.elements.countryCode.value);
     syncPickerEnabled(form);
   });
+}
+
+function syncPickerViewport(form, countryCode, { ensureLocation = false } = {}) {
+  const picker = form.querySelector("[data-location-picker]");
+  if (!picker) return;
+  const view = countryMapViews[countryCode] || worldMapView;
+  mapViewports.set(picker, view);
+  picker.dataset.mapView = view.key;
+  const basis = picker.querySelector("[data-map-basis]");
+  if (basis) basis.textContent = view.key === "WORLD" ? "BASEMAP / NATURAL EARTH 1:50m" : `BASEMAP / NATURAL EARTH / ${view.key}`;
+  const latitude = numberOrNull(form.elements.publicLatitude.value);
+  const longitude = numberOrNull(form.elements.publicLongitude.value);
+  const outsideView = latitude !== null && longitude !== null
+    && (latitude < view.south || latitude > view.north || longitude < view.west || longitude > view.east);
+  if (ensureLocation && form.elements.isPublic.checked && (latitude === null || longitude === null || outsideView)) {
+    setPickerLocation(form, (view.north + view.south) / 2, (view.east + view.west) / 2);
+  } else {
+    setPickerLocation(form, latitude, longitude);
+  }
+  mapRenderers.get(picker)?.();
+}
+
+function mapViewFor(surface) {
+  return mapViewports.get(surface) || worldMapView;
 }
 
 function syncPickerEnabled(form) {
@@ -667,8 +710,9 @@ function setPickerLocation(form, rawLatitude, rawLongitude) {
   if (latitude === null || longitude === null) { output.textContent = "位置は未選択です"; return; }
   const pin = document.createElement("i");
   pin.className = "sensor-picker-pin";
-  pin.style.left = `${longitudeToPercent(longitude)}%`;
-  pin.style.top = `${latitudeToPercent(latitude)}%`;
+  const view = mapViewFor(picker);
+  pin.style.left = `${longitudeToPercent(longitude, view)}%`;
+  pin.style.top = `${latitudeToPercent(latitude, view)}%`;
   picker.append(pin);
   output.textContent = `公開位置 ${latitude.toFixed(1)}, ${longitude.toFixed(1)}（約10km単位）`;
 }
@@ -706,7 +750,8 @@ function mountMapCanvas(surface, rings) {
   canvas.className = "sensor-map-canvas";
   canvas.setAttribute("aria-hidden", "true");
   surface.prepend(canvas);
-  const render = () => renderMapCanvas(canvas, rings);
+  const render = () => renderMapCanvas(canvas, rings, mapViewFor(surface));
+  mapRenderers.set(surface, render);
   if (typeof ResizeObserver === "function") {
     const observer = new ResizeObserver(render);
     observer.observe(surface);
@@ -718,7 +763,7 @@ function mountMapCanvas(surface, rings) {
   render();
 }
 
-function renderMapCanvas(canvas, rings) {
+function renderMapCanvas(canvas, rings, view = worldMapView) {
   const { width, height } = canvas.parentElement.getBoundingClientRect();
   if (width < 1 || height < 1) return;
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -732,12 +777,14 @@ function renderMapCanvas(canvas, rings) {
   context.strokeStyle = "rgba(126, 230, 214, .16)";
   context.lineWidth = 1;
   context.setLineDash([2, 7]);
-  for (let longitude = -150; longitude <= 150; longitude += 30) {
-    const x = ((longitude + 180) / 360) * width;
+  const longitudeStep = view.key === "WORLD" ? 30 : 5;
+  const latitudeStep = view.key === "WORLD" ? 30 : 5;
+  for (let longitude = Math.ceil(view.west / longitudeStep) * longitudeStep; longitude < view.east; longitude += longitudeStep) {
+    const x = ((longitude - view.west) / (view.east - view.west)) * width;
     context.beginPath(); context.moveTo(x, 0); context.lineTo(x, height); context.stroke();
   }
-  for (let latitude = -60; latitude <= 60; latitude += 30) {
-    const y = ((90 - latitude) / 180) * height;
+  for (let latitude = Math.ceil(view.south / latitudeStep) * latitudeStep; latitude < view.north; latitude += latitudeStep) {
+    const y = ((view.north - latitude) / (view.north - view.south)) * height;
     context.beginPath(); context.moveTo(0, y); context.lineTo(width, y); context.stroke();
   }
   context.restore();
@@ -750,8 +797,8 @@ function renderMapCanvas(canvas, rings) {
       const longitude = Number(coordinate?.[0]);
       const latitude = Number(coordinate?.[1]);
       if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) continue;
-      const x = ((longitude + 180) / 360) * width;
-      const y = ((90 - latitude) / 180) * height;
+      const x = ((longitude - view.west) / (view.east - view.west)) * width;
+      const y = ((view.north - latitude) / (view.north - view.south)) * height;
       if (!started || (previousLongitude !== null && Math.abs(longitude - previousLongitude) > 180)) {
         land.moveTo(x, y);
         started = true;
@@ -786,8 +833,8 @@ async function normalizeAvatar(file) {
 }
 
 function numberOrNull(value) { const number = Number(value); return value === null || value === "" || !Number.isFinite(number) ? null : number; }
-function longitudeToPercent(longitude) { return ((Number(longitude) + 180) / 360) * 100; }
-function latitudeToPercent(latitude) { return ((90 - Number(latitude)) / 180) * 100; }
+function longitudeToPercent(longitude, view = worldMapView) { return ((Number(longitude) - view.west) / (view.east - view.west)) * 100; }
+function latitudeToPercent(latitude, view = worldMapView) { return ((view.north - Number(latitude)) / (view.north - view.south)) * 100; }
 
 function readCookie(name) {
   const prefix = `${name}=`;

@@ -98,6 +98,9 @@ try {
     await page.locator("[data-action='show-add']").click();
     await page.locator("#device-form input[name='name']").fill("校庭ESP32");
     await page.locator("#device-form select[name='countryCode']").selectOption("JP");
+    await page.waitForFunction(() => document.querySelector("#device-form [data-location-picker]")?.dataset.mapView === "JP");
+    assert.equal(await page.locator("#device-form [data-location-picker] [data-map-basis]").textContent(), "BASEMAP / NATURAL EARTH / JP");
+    await page.screenshot({ path: path.join(outputDir, `${label}-japan-zoom.png`), fullPage: true });
     await page.waitForFunction(() => !document.querySelector("#device-form select[name='subdivisionCode']")?.disabled);
     await page.locator("#device-form select[name='subdivisionCode']").selectOption("JP-13");
     await page.waitForFunction(() => !document.querySelector("#device-form select[name='municipalityCode']")?.disabled);
@@ -119,6 +122,8 @@ try {
     }));
     assert.notEqual(picked.latitude, "");
     assert.notEqual(picked.longitude, "");
+    assert(Number(picked.latitude) >= 20 && Number(picked.latitude) <= 48);
+    assert(Number(picked.longitude) >= 122 && Number(picked.longitude) <= 154);
     await page.locator("#device-form button[type='submit']").click();
     await page.locator("[data-view='pairing']").waitFor({ state: "visible" });
     const qa = await (await fetch(new URL("/__qa/report", baseUrl))).json();
