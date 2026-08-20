@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "fed88965250d118d3db17392a6e4dbd9c853633311a116beb69a2d264f40365d",
+  "sourceSha256": "98e33e266083ec479a55249c5bfeba392596803db4c885e6bf5f6a10df7459b2",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -2370,7 +2370,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
     {
       "id": "welcome_chat",
       "number": 6,
-      "title": "新しい試作スレッド",
+      "title": "つながる世界",
       "chapter": "06 / WELCOME",
       "duration": "9:05–11:30",
       "date": "10月3日（土）",

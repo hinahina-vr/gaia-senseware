@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "fed88965250d118d3db17392a6e4dbd9c853633311a116beb69a2d264f40365d";
+const expectedHash = "98e33e266083ec479a55249c5bfeba392596803db4c885e6bf5f6a10df7459b2";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 48, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 56377, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 56368, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
@@ -36,6 +36,7 @@ assert.equal(story.startSceneId, "festival_concept");
 assert.deepEqual(story.requiredSceneIds, expectedSceneIds);
 assert.deepEqual(story.temporal.sceneOrder, expectedSceneIds);
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds);
+assert.equal(story.scenes.at(-1).title, "つながる世界", "最終sceneの余韻を持つタイトルが変わりました");
 assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedSceneCounts);
 
 const sourceSceneIds = [...canonSource.matchAll(/^<!-- scene-meta\n([\s\S]*?)\n-->/gmu)].map((match) => JSON.parse(match[1]).id);

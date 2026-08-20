@@ -4,8 +4,8 @@
 
 - 入力: `contest-limited/story/機能限定版台本.md`
 - 正本: `story/物語台本.md`
-- UTF-8 / LF / 56,377 bytes / 992 content lines
-- SHA-256: `fed88965250d118d3db17392a6e4dbd9c853633311a116beb69a2d264f40365d`
+- UTF-8 / LF / 56,368 bytes / 992 content lines
+- SHA-256: `98e33e266083ec479a55249c5bfeba392596803db4c885e6bf5f6a10df7459b2`
 - scene IDと後続step IDを維持したまま、展開へ影響しないGX後の三択・端末内投票を2026-08-20 owner指示で撤去済み。
 
 ## scene順とmetadata
