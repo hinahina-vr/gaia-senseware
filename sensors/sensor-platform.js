@@ -109,6 +109,7 @@ const boot = async () => {
     syncAccountUi();
     if (error.status === 401) {
       if (location.hash === "#map") showView("map");
+      else if (location.hash === "#guide") showView("guide");
       else showView("login");
     }
     else {
@@ -359,9 +360,9 @@ const showDevices = async () => {
 
 const routeFromHash = () => {
   if (location.hash === "#map") showView("map");
+  else if (location.hash === "#guide") showView("guide");
   else if (!authenticated) showView("login");
   else if (location.hash === "#profile" && sessionUser?.accountKind !== "trial") showView("profile");
-  else if (location.hash === "#guide") showView("guide");
   else if (location.hash.startsWith("#device=")) openDetail(decodeURIComponent(location.hash.slice(8)));
   else showView("devices");
 };
@@ -414,7 +415,7 @@ document.querySelectorAll("[data-action='map']").forEach((button) => button.addE
 document.querySelectorAll("[data-nav]").forEach((link) => link.addEventListener("click", (event) => {
   event.preventDefault();
   const destination = link.dataset.nav;
-  if (destination !== "map" && !authenticated) { showView("login"); history.replaceState(null, "", "#login"); return; }
+  if (!new Set(["map", "guide"]).has(destination) && !authenticated) { showView("login"); history.replaceState(null, "", "#login"); return; }
   if (destination === "profile" && sessionUser?.accountKind === "trial") { void showDevices(); return; }
   if (destination === "devices") showDevices();
   else { showView(destination); history.replaceState(null, "", `#${destination}`); }

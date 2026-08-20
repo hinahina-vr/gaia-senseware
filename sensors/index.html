@@ -7,10 +7,10 @@
     <link rel="icon" href="data:," />
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
-    <link rel="stylesheet" href="./sensor-platform.css?v=7" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=8" />
     <script src="../opening-audio.js?v=gaia-sensor-audio-continuity-1" defer></script>
     <script src="./sensor-audio.js?v=1" defer></script>
-    <script src="./sensor-platform.js?v=5" type="module"></script>
+    <script src="./sensor-platform.js?v=6" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -91,10 +91,12 @@
         </aside>
         <button class="sensor-secondary sensor-public-map-link" type="button" data-action="map">ログインせず地図を見る</button>
         <small>どちらもGPS・住所は使いません。機能上必要な地域コード、センサー名、観測値だけを保存します。</small>
-        <ol class="sensor-register-preview" aria-label="ESP32登録の3ステップ">
-          <li><span>01</span><p><strong>参加方法を選ぶ</strong>Google連携または匿名のおためし利用を選びます。</p></li>
-          <li><span>02</span><p><strong>端末を追加</strong>国・地域と名前を登録し、Pairing Codeを取得します。</p></li>
-          <li><span>03</span><p><strong>Setup APへ入力</strong><code>CITY-SENSOR-XXXX</code>へ接続し、Wi-FiとPairing Codeを入力します。</p></li>
+        <a class="sensor-guide-cta" href="#guide" data-nav="guide"><span>ESP32が初めてでも大丈夫</span><strong>コードの準備から順番に見る <b aria-hidden="true">→</b></strong></a>
+        <ol class="sensor-register-preview" aria-label="ESP32登録の4ステップ">
+          <li><span>01</span><p><strong>ESP32を準備</strong>Arduino IDEとUSBデータケーブルを用意します。</p></li>
+          <li><span>02</span><p><strong>コードを書き込む</strong>配布する3ファイルを同じフォルダへ入れてアップロードします。</p></li>
+          <li><span>03</span><p><strong>Webで端末を追加</strong>国・地域と名前を登録し、Pairing Codeを取得します。</p></li>
+          <li><span>04</span><p><strong>Wi-Fiを設定</strong><code>CITY-SENSOR-XXXX</code>を開き、コードと2.4GHz Wi-Fiを入力します。</p></li>
         </ol>
       </section>
 
@@ -137,6 +139,11 @@
         <button class="sensor-back" type="button" data-action="devices">← マイセンサー</button>
         <div class="sensor-kicker">REGISTER / USER DECLARED LOCATION</div>
         <h1>センサーを追加</h1>
+        <aside class="sensor-before-register">
+          <span>この画面は手順の後半です</span>
+          <p>先にESP32へスタータースケッチを書き込んでおくと、この次に表示されるPairing Codeをすぐ入力できます。</p>
+          <a href="#guide" data-nav="guide">書き込み手順を別画面で確認する →</a>
+        </aside>
         <form id="device-form">
           <label>センサー名 *<input name="name" required maxlength="80" autocomplete="off" placeholder="ベランダ環境センサー" /></label>
           <label>国 *<select name="countryCode" required><option value="">選択してください</option></select></label>
@@ -161,17 +168,21 @@
         <button class="sensor-back" type="button" data-action="devices">← マイセンサー</button>
         <div class="sensor-kicker">ONE-TIME PAIRING</div>
         <h1>ESP32にコードを入力</h1>
-        <p>このコードは10分間・一回だけ使えます。Device Tokenはpairing成功時にESP32へ一度だけ返されます。</p>
-        <ol class="sensor-setup-steps" aria-label="Setup APへの入力手順">
-          <li><span>01</span><p>PCまたはスマホをWi-Fi <code>CITY-SENSOR-XXXX</code>へ接続</p></li>
-          <li><span>02</span><p><a href="http://192.168.4.1/" target="_blank" rel="noopener">http://192.168.4.1/</a> をブラウザで開く</p></li>
-          <li><span>03</span><p>自宅・会場のWi-Fiと、このPairing Codeを入力</p></li>
-        </ol>
+        <p>Web側の登録はできました。次はESP32を自宅・会場のWi-Fiへつなぎます。このコードは10分間・一回だけ使えます。</p>
+        <aside class="sensor-pairing-help"><strong>まだESP32へコードを書き込んでいない場合</strong><span>この画面は閉じず、<a href="./#guide" target="_blank" rel="noopener">書き込みガイドを別タブで開いて</a>先に準備してください。10分を過ぎたら、センサーを削除して新しいコードを発行します。</span></aside>
         <output id="pairing-code" aria-label="Pairing Code">—</output>
         <p id="pairing-expiry">有効期限を確認しています。</p>
+        <ol class="sensor-setup-steps" aria-label="Setup APへの入力手順">
+          <li><span>01</span><p><strong>ESP32へ電源を入れる</strong>書き込み済みのESP32をUSBにつなぎ、30秒ほど待ちます。</p></li>
+          <li><span>02</span><p><strong>設定用Wi-Fiを選ぶ</strong>PCまたはスマホのWi-Fi設定で <code>CITY-SENSOR-XXXX</code> を選びます。「インターネットなし」と出ても正常です。</p></li>
+          <li><span>03</span><p><strong>設定画面を開く</strong>接続したままChromeやSafariで <a href="http://192.168.4.1/" target="_blank" rel="noopener">http://192.168.4.1/</a> を開きます。</p></li>
+          <li><span>04</span><p><strong>3項目を入力する</strong>普段使う<b>2.4GHz Wi-Fi名</b>、そのパスワード、上のPairing Codeを入力します。</p></li>
+          <li><span>05</span><p><strong>「接続して登録」を押す</strong>ESP32が再起動します。PC・スマホは普段のWi-Fiへ戻してください。</p></li>
+          <li><span>06</span><p><strong>Webで確認する</strong>1分ほど待ってから下のボタンを押し、センサーが <b>ONLINE</b> になれば完了です。</p></li>
+        </ol>
         <div class="sensor-pair-actions">
           <button class="sensor-secondary" id="copy-pairing" type="button">コードをコピー</button>
-          <button class="sensor-primary" id="pairing-complete" type="button">登録完了を確認</button>
+          <button class="sensor-primary" id="pairing-complete" type="button">マイセンサーで接続を確認</button>
         </div>
       </section>
 
@@ -235,19 +246,61 @@
       </section>
 
       <section class="sensor-view sensor-guide" data-view="guide" id="guide" hidden>
-        <div class="sensor-kicker">ESP32 STARTER KIT</div>
-        <h1>HTTPSで、直接つなぐ。</h1>
-        <ol>
-          <li><span>01</span><p><strong>Webで登録</strong>Google連携または匿名のおためし利用で、国・地域とセンサー名を登録します。</p></li>
-          <li><span>02</span><p><strong>Pairing</strong>10分間有効な一回限りコードをESP32へ設定します。</p></li>
-          <li><span>03</span><p><strong>NVSへ保存</strong>Device ID・Token・seqはESP32内に保存します。</p></li>
-          <li><span>04</span><p><strong>HTTPS POST</strong>Root CAで証明書を検証し、測定値だけを送ります。</p></li>
+        <div class="sensor-kicker">ESP32 / FIRST CONNECTION</div>
+        <h1>はじめてでも、<br />ここだけ見ればつながります。</h1>
+        <p class="sensor-guide-lead">コードを書いたことがなくても大丈夫です。上から順に進めてください。最初は実センサーなしでも、ESP32がつくるテスト値で接続を確認できます。</p>
+
+        <section class="sensor-guide-section" aria-labelledby="sensor-kit-title">
+          <div class="sensor-guide-heading"><span>PREPARE</span><h2 id="sensor-kit-title">用意するもの</h2></div>
+          <ul class="sensor-kit-list">
+            <li><b>ESP32 / ESP32-S3</b><span>一般的な開発ボードでOK</span></li>
+            <li><b>USBデータケーブル</b><span>充電専用ケーブルは不可</span></li>
+            <li><b>Windows / Mac</b><span>Arduino IDEを書き込めるPC</span></li>
+            <li><b>2.4GHz Wi-Fi</b><span>SSIDとパスワードを確認</span></li>
+          </ul>
+        </section>
+
+        <ol class="sensor-guide-path" aria-label="ESP32を接続する7ステップ">
+          <li>
+            <span>01</span>
+            <div><strong>Arduino IDEをPCへ入れる</strong><p><a href="https://www.arduino.cc/en/software" target="_blank" rel="noopener">Arduino公式サイト</a>からArduino IDE 2をインストールして起動します。</p></div>
+          </li>
+          <li>
+            <span>02</span>
+            <div><strong>ESP32とArduinoJsonを追加する</strong><p>Arduino IDEの「ファイル → 基本設定 → 追加のボードマネージャのURL」に次のURLを貼ります。</p><code class="sensor-copy-line">https://espressif.github.io/arduino-esp32/package_esp32_index.json</code><p>次に左側の<b>ボードマネージャ</b>で「esp32」を検索し、<b>esp32 by Espressif Systems</b>をインストールします。左側の<b>ライブラリマネージャ</b>では「ArduinoJson」を検索し、<b>ArduinoJson 7.x</b>をインストールします。</p></div>
+          </li>
+          <li>
+            <span>03</span>
+            <div><strong>スターターコード3ファイルを保存する</strong><p>下の3つをダウンロードし、PCに <code>SmartCitySensorDemo</code> というフォルダを作って、3ファイルともその中へ移動します。ファイル名は変えません。</p><div class="sensor-code-downloads"><a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino" download="SmartCitySensorDemo.ino"><small>1 / MAIN</small>SmartCitySensorDemo.ino</a><a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/config.example.h" download="config.h"><small>2 / CONFIG</small>config.h</a><a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/root_ca.example.h" download="root_ca.h"><small>3 / HTTPS</small>root_ca.h</a></div><p class="sensor-guide-note"><b>コードの中身はまだ変更しなくてOK。</b>最初はテスト用の温度・湿度・PM2.5が自動で送られます。</p></div>
+          </li>
+          <li>
+            <span>04</span>
+            <div><strong>ESP32へ書き込む</strong><p><code>SmartCitySensorDemo.ino</code>をArduino IDEで開き、ESP32をUSBでPCへつなぎます。「ツール → ボード」で自分の機種を選び、分からなければ<b>ESP32 Dev Module</b>を選択。「ツール → ポート」で新しく現れたCOM/USBポートを選び、左上の<b>→（アップロード）</b>を押します。</p><p class="sensor-guide-note">「Connecting...」で止まる場合は、ESP32の<b>BOOT</b>ボタンを押したままアップロードし、書き込みが始まったら離してください。ポートが出ない場合は、別のUSBケーブルを試します。</p></div>
+          </li>
+          <li>
+            <span>05</span>
+            <div><strong>このWebでPairing Codeを発行する</strong><p>書き込みが終わったらESP32はUSBにつないだままにします。<a href="#login">参加方法を選び</a>、「マイセンサー → センサーを追加」で名前と地域を登録すると、9文字のPairing Codeが表示されます。</p></div>
+          </li>
+          <li>
+            <span>06</span>
+            <div><strong>ESP32へWi-Fiとコードを教える</strong><p>PCまたはスマホのWi-Fi設定から <code>CITY-SENSOR-XXXX</code> を選びます。「インターネットなし」は正常です。その接続のままブラウザで <a href="http://192.168.4.1/" target="_blank" rel="noopener">http://192.168.4.1/</a> を開き、<b>2.4GHz Wi-Fi名・Wi-Fiパスワード・Pairing Code</b>を入力して「接続して登録」を押します。</p></div>
+          </li>
+          <li>
+            <span>07</span>
+            <div><strong>ONLINEを確認して完了</strong><p>ESP32が再起動したら、PC・スマホを普段のWi-Fiへ戻します。約1分後に「マイセンサー」を開き、ONLINEと測定値が見えれば登録完了です。</p></div>
+          </li>
         </ol>
-        <div class="sensor-guide-links">
-          <a href="../smartcity-sensor-starter-kit/README.md">Starter Kit README</a>
-          <a href="../smartcity-sensor-starter-kit/openapi.yaml">OpenAPI 3.1</a>
-          <a href="../smartcity-sensor-starter-kit/curl-examples.sh">curl examples</a>
-        </div>
+
+        <section class="sensor-troubleshooting" aria-labelledby="sensor-trouble-title">
+          <div class="sensor-guide-heading"><span>IF IT STOPS</span><h2 id="sensor-trouble-title">うまくいかないとき</h2></div>
+          <details><summary><code>CITY-SENSOR-XXXX</code> が見つからない</summary><p>ESP32をUSBから抜いて挿し直し、30秒待ちます。それでも出なければBOOTボタンを5秒長押しすると、保存済み設定を消して設定用Wi-Fiへ戻ります。</p></details>
+          <details><summary><code>192.168.4.1</code> が開かない</summary><p>PC・スマホが普段のWi-Fiへ自動で戻っていないか確認し、<code>CITY-SENSOR-XXXX</code>へ再接続します。モバイル通信を一時的にOFFにすると開きやすくなります。</p></details>
+          <details><summary>Pairing Codeが期限切れになった</summary><p>Pairing Codeは10分・1回限りです。「マイセンサー」で未接続の端末を削除し、「センサーを追加」から新しいコードを発行してください。</p></details>
+          <details><summary>登録したのにOFFLINEのまま</summary><p>2.4GHz Wi-FiのSSIDとパスワードを確認します。5GHz専用Wi-Fiには接続できません。Serial Monitorを115200 baudで開くと、秘密情報を表示せず接続状態だけ確認できます。</p></details>
+        </section>
+
+        <div class="sensor-guide-finish"><span>NEXT</span><strong>準備ができたらWeb側の登録へ</strong><a href="#login">参加方法を選ぶ →</a></div>
+        <details class="sensor-developer-links"><summary>開発者向け資料</summary><div><a href="../smartcity-sensor-starter-kit/openapi.yaml">OpenAPI 3.1</a><a href="../smartcity-sensor-starter-kit/curl-examples.sh">curl examples</a></div></details>
       </section>
     </main>
 

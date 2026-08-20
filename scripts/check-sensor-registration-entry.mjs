@@ -22,10 +22,11 @@ check("ESP32 registration card follows map and links to the sensor SPA", () => {
   assert.match(card, /class="intro-path-enter">センサーを登録/u);
 });
 
-check("logged-out registration CTA and three-step preview are explicit", () => {
+check("logged-out registration CTA and four-step preview are explicit", () => {
   assert.match(sensors, /Googleで続ける/u);
   const preview = sensors.slice(sensors.indexOf("sensor-register-preview"), sensors.indexOf("</ol>", sensors.indexOf("sensor-register-preview")));
-  for (const fragment of ["参加方法を選ぶ", "端末を追加", "Pairing Code", "CITY-SENSOR-XXXX", "Setup APへ入力"]) assert(preview.includes(fragment), fragment);
+  for (const fragment of ["ESP32を準備", "コードを書き込む", "Webで端末を追加", "Pairing Code", "CITY-SENSOR-XXXX", "2.4GHz Wi-Fi"]) assert(preview.includes(fragment), fragment);
+  assert.match(sensors, /コードの準備から順番に見る/u);
 });
 
 check("sensor workspace shares the exhibition scene and observation-node onboarding", () => {
@@ -39,7 +40,15 @@ check("sensor workspace shares the exhibition scene and observation-node onboard
 
 check("pairing view contains complete Setup AP instructions", () => {
   const pairing = sensors.slice(sensors.indexOf('data-view="pairing"'), sensors.indexOf("</section>", sensors.indexOf('data-view="pairing"')));
-  for (const fragment of ["PCまたはスマホ", "CITY-SENSOR-XXXX", "http://192.168.4.1/", "Wi-Fi", "このPairing Codeを入力"]) assert(pairing.includes(fragment), fragment);
+  for (const fragment of ["ESP32へ電源を入れる", "PCまたはスマホ", "CITY-SENSOR-XXXX", "http://192.168.4.1/", "インターネットなし", "2.4GHz Wi-Fi", "Pairing Code", "ONLINE"]) assert(pairing.includes(fragment), fragment);
+});
+
+check("public guide teaches the Arduino workflow without sending beginners to a README", () => {
+  const guide = sensors.slice(sensors.indexOf('data-view="guide"'), sensors.indexOf("</section>\n    </main>", sensors.indexOf('data-view="guide"')));
+  for (const fragment of ["Arduino IDE", "esp32 by Espressif Systems", "ArduinoJson 7.x", "SmartCitySensorDemo.ino", "config.h", "root_ca.h", "ESP32 Dev Module", "BOOT", "CITY-SENSOR-XXXX", "192.168.4.1", "ONLINE", "うまくいかないとき"]) assert(guide.includes(fragment), fragment);
+  assert.doesNotMatch(guide, />Starter Kit README</u);
+  const script = read("sensors/sensor-platform.js");
+  assert.match(script, /location\.hash === "#guide"\) showView\("guide"\)/u);
 });
 
 check("registration uses canonical region selectors and the shared Natural Earth map", () => {
@@ -48,9 +57,10 @@ check("registration uses canonical region selectors and the shared Natural Earth
   assert.doesNotMatch(read("sensors/sensor-platform.js"), /mapSvg|<svg viewBox/u);
 });
 
-check("responsive styles preserve readable three-step layouts", () => {
+check("responsive styles preserve readable setup layouts", () => {
   for (const selector of [".sensor-register-preview", ".sensor-setup-steps"]) assert(css.includes(selector));
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sensor-register-preview, \.sensor-setup-steps \{ grid-template-columns: 1fr;/u);
+  assert.match(css, /\.sensor-code-downloads \{ grid-template-columns: 1fr;/u);
   assert.match(css, /\.sensor-login-actions > button \{ width: 100%; min-width: 0;/u);
 });
 

@@ -92,16 +92,38 @@ try {
       return {
         cta: document.querySelector("#google-login")?.textContent.replace(/\s+/gu, " ").trim(),
         steps: steps.map((step) => step.textContent.replace(/\s+/gu, " ").trim()),
-        previewVisible: steps.length === 3 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
+        previewVisible: steps.length === 4 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
     assert.match(login.cta, /Googleで続ける/u);
     assert.equal(login.previewVisible, true);
-    assert.equal(login.steps.length, 3);
-    assert(login.steps[2].includes("CITY-SENSOR-XXXX"));
+    assert.equal(login.steps.length, 4);
+    assert(login.steps[3].includes("CITY-SENSOR-XXXX"));
     assert.equal(login.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-login.png`), fullPage: true });
+
+    await page.goto(new URL("/sensors/#guide", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.locator("[data-view='guide']").waitFor({ state: "visible" });
+    const guide = await page.evaluate(() => {
+      const view = document.querySelector("[data-view='guide']");
+      const steps = [...view.querySelectorAll(".sensor-guide-path > li")];
+      const downloads = [...view.querySelectorAll(".sensor-code-downloads a")];
+      return {
+        steps: steps.map((step) => step.textContent.replace(/\s+/gu, " ").trim()),
+        downloads: downloads.map((link) => ({ name: link.getAttribute("download"), href: link.getAttribute("href") })),
+        visible: steps.length === 7 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
+        overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+      };
+    });
+    assert.equal(guide.visible, true);
+    assert.equal(guide.downloads.length, 3);
+    assert.deepEqual(guide.downloads.map(({ name }) => name), ["SmartCitySensorDemo.ino", "config.h", "root_ca.h"]);
+    assert(guide.steps.join(" ").includes("esp32 by Espressif Systems"));
+    assert(guide.steps.join(" ").includes("ArduinoJson 7.x"));
+    assert(guide.steps.join(" ").includes("BOOT"));
+    assert.equal(guide.overflowX, false);
+    await page.screenshot({ path: path.join(outputDir, `${label}-guide.png`), fullPage: true });
 
     await page.goto(new URL("/sensors/?authenticated=1", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.locator("[data-view='devices']").waitFor({ state: "visible" });
@@ -132,7 +154,7 @@ try {
       return {
         code: document.querySelector("#pairing-code")?.textContent.trim(),
         steps: steps.map((step) => step.textContent.replace(/\s+/gu, " ").trim()),
-        instructionsVisible: steps.length === 3 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
+        instructionsVisible: steps.length === 6 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
@@ -150,7 +172,7 @@ try {
     assert.equal(qa.lastPairingDraft.admin1Code, null);
     assert.equal(qa.lastPairingDraft.localityName, null);
     await page.screenshot({ path: path.join(outputDir, `${label}-pairing.png`), fullPage: true });
-    report.scans.push({ viewport: label, entrance, login, pairing, regionDraft: qa.lastPairingDraft, passed: true });
+    report.scans.push({ viewport: label, entrance, login, guide, pairing, regionDraft: qa.lastPairingDraft, passed: true });
     await context.close();
   }
   assert.deepEqual(report.consoleErrors, []);

@@ -93,19 +93,19 @@ String setupPage(const String& message = "") {
   const bool pairingRequired = deviceId.length() == 0 || deviceToken.length() == 0;
   return String(F(
     "<!doctype html><html lang='ja'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-    "<title>ESP32 SENSOR SETUP</title><style>body{font:16px system-ui;background:#071727;color:#eef9ff;"
-    "max-width:34rem;margin:0 auto;padding:2rem}form{display:grid;gap:1rem;background:#102a40;padding:1.4rem;"
+    "<title>GAIA SENSEWARE 接続設定</title><style>body{font:16px system-ui;background:#071727;color:#eef9ff;"
+    "max-width:34rem;margin:0 auto;padding:2rem;line-height:1.7}p{color:#b8cbd8}form{display:grid;gap:1rem;background:#102a40;padding:1.4rem;"
     "border-radius:1rem}label{display:grid;gap:.4rem}input,button{font:inherit;padding:.85rem;border-radius:.6rem;"
-    "border:1px solid #80e7e0}button{background:#80e7e0;color:#071727;font-weight:700}</style>"
-    "<h1>ESP32 SENSOR SETUP</h1>")) +
+    "border:1px solid #80e7e0}button{background:#80e7e0;color:#071727;font-weight:700}small{color:#9bb1bd}</style>"
+    "<h1>ESP32をWi-Fiへ接続</h1><p>普段使う2.4GHz Wi-Fiと、GAIA SENSEWAREに表示されたPairing Codeを入力してください。</p>")) +
     (message.length() ? "<p role='status'>" + htmlEscape(message) + "</p>" : "") +
     "<form method='post' action='/save'>"
-    "<label>Wi-Fi SSID<input name='ssid' maxlength='32' required value='" + htmlEscape(wifiSsid) + "'></label>"
-    "<label>Wi-Fi Password<input name='password' type='password' maxlength='63' required autocomplete='new-password'></label>"
-    "<label>Pairing Code" + String(pairingRequired ? " *" : "（Wi-Fi変更だけなら空欄）") +
+    "<label>1. Wi-Fi名（SSID）<input name='ssid' maxlength='32' required value='" + htmlEscape(wifiSsid) + "' placeholder='例：Home-WiFi'></label>"
+    "<label>2. Wi-Fiパスワード<input name='password' type='password' minlength='8' maxlength='63' required autocomplete='new-password'></label>"
+    "<label>3. Pairing Code" + String(pairingRequired ? " *" : "（Wi-Fi変更だけなら空欄）") +
     "<input name='pairing' maxlength='9' pattern='[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}' " +
-    String(pairingRequired ? "required " : "") + "autocomplete='off'></label>"
-    "<button type='submit'>Connect &amp; Register</button></form></html>";
+    String(pairingRequired ? "required " : "") + "autocomplete='off' placeholder='ABCD-EFGH'></label>"
+    "<button type='submit'>接続して登録</button><small>押すとESP32が再起動します。PC・スマホは普段のWi-Fiへ戻してください。</small></form></html>";
 }
 
 void startSetupMode() {
