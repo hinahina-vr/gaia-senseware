@@ -6086,6 +6086,27 @@ body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
   overflow-y: auto;
 }
 
+body.novel-open .japan-layer[data-story-mode="map01"][data-story-phase="temperature-anomaly"] .signal-console-map label {
+  padding: 12px;
+  border: 1px solid rgba(143, 229, 239, 0.42);
+  border-radius: 10px;
+  background: rgba(4, 35, 48, 0.72);
+}
+
+body.novel-open .japan-layer[data-story-mode="map01"][data-story-phase="temperature-anomaly"] [data-signal-time] {
+  cursor: ew-resize;
+  accent-color: #8fe5ef;
+}
+
+body.novel-open .japan-layer[data-story-mode="map01"][data-story-phase="temperature-anomaly"] [data-signal-note] {
+  color: #dffcff;
+  font-weight: 700;
+}
+
+body.novel-open .japan-layer[data-story-mode="map01"][data-story-phase="temperature-anomaly"] .japan-map {
+  cursor: crosshair;
+}
+
 body.novel-open .japan-layer[data-story-mode="map01"] .story-map-guide,
 body.novel-open .japan-layer[data-story-mode="map01"] .story-detour-dock,
 body.novel-open .japan-layer[data-story-mode="map01"] .map-reading-guide,

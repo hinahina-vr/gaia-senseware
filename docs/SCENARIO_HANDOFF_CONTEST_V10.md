@@ -4,8 +4,8 @@
 
 - 入力: `contest-limited/story/機能限定版台本.md`
 - 正本: `story/物語台本.md`
-- UTF-8 / LF / 56,540 bytes / 992 content lines
-- SHA-256: `5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13`
+- UTF-8 / LF / 56,528 bytes / 992 content lines
+- SHA-256: `27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c`
 - scene IDと後続step IDを維持したまま、展開へ影響しないGX後の三択・端末内投票を2026-08-20 owner指示で撤去済み。
 
 ## scene順とmetadata
@@ -25,10 +25,11 @@
 
 | scene | PREP | interaction | return | POST | kind / target |
 |---|---|---|---|---|---|
-| `map_mode01` | `_001`〜`_003` | `map_mode01_004` | `_005` | `_005`〜`_043` | `map01` / MODE index 0 / `breathing-earth` / `#japan-layer` |
+| `map_mode01` | `_001`〜`_003` | `map_mode01_004` | `_005` | `_005`〜`_022` | `map01` / MODE index 0 / `breathing-earth` / 3倍速自動再生 / `#japan-layer` |
+| `map_mode01` | `_015`〜`_022` | `map_mode01_023` | `_024` | `_024`〜`_043` | `map01` / `temperature-anomaly` / 年代＋地点操作 / `#japan-layer` |
 | `gx_experience` | `_001`〜`_016` | `gx_experience_017` | `_018` | `_018`〜`_044`, `_055`〜`_058` | `gx` / `#gx-layer` |
 
-interaction stepは本文を追加しないmetadata-only step。PREPの人物台詞後に実clickで開き、CLOSE後にfreeze本文へ戻る。自動openしない。ほかのinteraction kindは本編に置かない。
+`map_mode01_004`は生成時に挿入するmetadata-only step、`map_mode01_023`は正本の`［操作｜気温偏差を重ねる］`から生成する。どちらも物語の上にモーダルとして自動openし、前者は2050年到達、後者は年代スライダーと地点タップの完了後に、保存・戻るボタンなしで本文へ自動復帰する。ほかのinteraction kindは本編に置かない。
 
 旧`gx_experience_045`〜`_054`の三択・端末内投票は撤去済み。`_044`から`_055`へ直接進み、旧saveが撤去範囲を指す場合も`_055`へ安全復帰する。
 

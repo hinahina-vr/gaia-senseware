@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13",
+  "sourceSha256": "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -853,16 +853,25 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         {
           "id": "map_mode01_023",
           "sceneId": "map_mode01",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "世界地図が、青から黄色、赤へと場所ごとに塗り分けられる。年を進めると、赤く表示される範囲が少しずつ広がっていく。"
+          "type": "interaction",
+          "text": "",
+          "interaction": {
+            "kind": "map01",
+            "modeIndex": 0,
+            "modeId": "breathing-earth",
+            "phase": "temperature-anomaly",
+            "requiredViews": [
+              "long_term",
+              "temperature_anomaly"
+            ]
+          }
         },
         {
           "id": "map_mode01_024",
           "sceneId": "map_mode01",
           "type": "narration",
           "speaker": "narrator",
-          "text": "年を送るたびに色の配置は変わる。ある年の一枚だけなら、赤と青はまだらに見える。ところが同じ基準で年代を重ねると、赤い側へ移る場所が増えていった。"
+          "text": "年代のスライダーを動かして地図の気になる場所に触れると、青から黄色、赤へ塗り分けられた色の配置が切り替わった。ある年の一枚だけなら、赤と青はまだらに見える。ところが同じ基準で年代を重ねると、赤い側へ移る場所が増えていった。"
         },
         {
           "id": "map_mode01_025",

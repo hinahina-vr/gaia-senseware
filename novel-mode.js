@@ -441,6 +441,7 @@
   let detourState = null;
   let detourDock = null;
   let detourDockObserver = null;
+  let detourAutoReturnTimer = 0;
   let interactionLifecycle = "idle";
   let backgroundTransitionPending = false;
   let deferredSectionBackgroundTransition = null;
@@ -3178,6 +3179,11 @@
     if (!pendingInteraction) return "";
     const kind = pendingInteraction.interaction.kind;
     if (kind === "map01") {
+      if (pendingInteraction.interaction.phase === "temperature-anomaly") {
+        const moved = detourState?.views?.has("long_term");
+        const touched = detourState?.views?.has("temperature_anomaly");
+        return `年代 ${moved ? "✓" : "○"}　地点 ${touched ? "✓" : "○"}`;
+      }
       return detourState?.views?.has("timeline_complete") ? "自動再生が完了しました" : "年代を自動再生中";
     }
     if (kind === "gx") {
@@ -3284,6 +3290,8 @@
 
   const requestDetourReturn = () => {
     if (!pendingInteraction || !detourCompletion()) return;
+    window.clearTimeout(detourAutoReturnTimer);
+    detourAutoReturnTimer = 0;
     const kind = pendingInteraction.interaction.kind;
     setInteractionLifecycle("closing");
     if (kind === "gx") window.GaiaGX?.close?.();
@@ -3295,6 +3303,8 @@
 
   const openDetour = (step) => {
     if (pendingInteraction || interactionLifecycle !== "prep") return;
+    window.clearTimeout(detourAutoReturnTimer);
+    detourAutoReturnTimer = 0;
     pendingInteraction = step;
     detourState = { gestureCount: 0, phaseIndex: 1, phaseCount: 8, views: new Set() };
     const definition = detourDefinitions[step.interaction.kind];
@@ -3315,6 +3325,7 @@
       kind: step.interaction.kind,
       index: Number.isInteger(step.interaction.modeIndex) ? step.interaction.modeIndex : (currentScene()?.modeIndex || 0),
       modeId: step.interaction.modeId || null,
+      phase: step.interaction.phase || null,
       returnTo: "novel",
       storyMode: `v${story.storyVersion}`,
       reducedMotion: motionReduced(),
@@ -3331,6 +3342,8 @@
 
   const completePendingInteraction = () => {
     if (!pendingInteraction || !detourCompletion()) return;
+    window.clearTimeout(detourAutoReturnTimer);
+    detourAutoReturnTimer = 0;
     const step = pendingInteraction;
     pendingInteraction = null;
     detourState = null;
@@ -3352,8 +3365,7 @@
     elements.cursor.hidden = true;
     elements.continueMark.classList.remove("is-visible");
     setInteractionLifecycle("prep");
-    const autoOpenInteraction = step.interaction?.kind === "gx"
-      || (step.id === "map_mode01_004" && step.interaction?.kind === "map01");
+    const autoOpenInteraction = ["gx", "map01"].includes(step.interaction?.kind);
     if (autoOpenInteraction) {
       requestAnimationFrame(() => {
         if (currentStep()?.id === step.id && interactionLifecycle === "prep" && !pendingInteraction) openDetour(step);
@@ -4537,6 +4549,10 @@
     if (pendingInteraction.interaction.kind === "map01") {
       const view = String(event.detail?.view || "");
       if ((pendingInteraction.interaction.requiredViews || []).includes(view)) detourState?.views?.add(view);
+      if (detourCompletion() && pendingInteraction.interaction.phase === "temperature-anomaly") {
+        window.clearTimeout(detourAutoReturnTimer);
+        detourAutoReturnTimer = window.setTimeout(requestDetourReturn, motionReduced() ? 0 : 520);
+      }
     }
     updateDetourDock();
   });

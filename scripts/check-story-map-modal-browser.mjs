@@ -32,8 +32,14 @@ const stateForMap = () => ({
   archivesUnlocked: false,
   sessionId: `story-map-modal-${Date.now()}`,
 });
+const stateForTemperatureMap = () => ({
+  ...stateForMap(),
+  stepId: "map_mode01_023",
+  readStepIds: Array.from({ length: 22 }, (_, index) => `map_mode01_${String(index + 1).padStart(3, "0")}`),
+  sessionId: `story-temperature-modal-${Date.now()}`,
+});
 
-const bootAtMap = async (viewport, label) => {
+const bootAtMap = async (viewport, label, state = stateForMap()) => {
   const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
   const page = await context.newPage();
   page.on("console", (message) => {
@@ -53,7 +59,7 @@ const bootAtMap = async (viewport, label) => {
       messageSpeedPercent: 400,
       reducedMotion: false,
     }));
-  }, stateForMap());
+  }, state);
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
@@ -90,13 +96,16 @@ const scanOpenModal = async (page) => page.evaluate(() => {
     nativeCloseDisplay: getComputedStyle(map?.querySelector(".japan-close")).display,
     readingGuideDisplay: getComputedStyle(map?.querySelector(".map-reading-guide")).display,
     label: map?.querySelector("[data-signal-time-label]")?.textContent || "",
+    note: map?.querySelector("[data-signal-note]")?.textContent || "",
+    phase: map?.dataset.storyPhase || "",
+    sliderDisabled: Boolean(slider?.disabled),
     sliderValue: Number(slider?.value || 0),
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
     overflowY: document.documentElement.scrollHeight > innerHeight + 1,
   };
 });
 
-const assertModal = (scan, mobile = false) => {
+const assertModal = (scan, mobile = false, expectedPhase = "timeline") => {
   assert.equal(scan.mapPosition, "fixed");
   assert.equal(scan.mapRole, "dialog");
   assert.equal(scan.mapAriaModal, "true");
@@ -108,7 +117,14 @@ const assertModal = (scan, mobile = false) => {
   assert.equal(scan.returnCount, 0);
   assert.equal(scan.nativeCloseDisplay, "none");
   assert.equal(scan.readingGuideDisplay, "none");
-  assert.match(scan.label, /3×/u);
+  assert.equal(scan.sliderDisabled, false);
+  assert.equal(scan.phase, expectedPhase);
+  if (expectedPhase === "temperature-anomaly") {
+    assert.match(scan.label, /年代を動かす \/ DRAG/u);
+    assert.match(scan.note, /操作 1\/2/u);
+  } else {
+    assert.match(scan.label, /3×/u);
+  }
   assert.equal(scan.overflowX, false);
   assert.equal(scan.overflowY, false);
   assert(scan.rect && scan.rect.width < scan.viewport.width && scan.rect.height < scan.viewport.height);
@@ -151,6 +167,41 @@ assert.deepEqual(desktopClosed, {
 await desktop.page.screenshot({ path: path.join(outputDir, "desktop-return.png") });
 await desktop.context.close();
 
+const temperatureDesktop = await bootAtMap({ width: 1440, height: 900 }, "temperature-desktop", stateForTemperatureMap());
+const temperatureDesktopOpen = await scanOpenModal(temperatureDesktop.page);
+assertModal(temperatureDesktopOpen, false, "temperature-anomaly");
+await temperatureDesktop.page.screenshot({ path: path.join(outputDir, "desktop-temperature-open.png") });
+const temperatureSlider = temperatureDesktop.page.locator("#japan-layer [data-signal-time]").first();
+await temperatureSlider.fill("67");
+await temperatureSlider.dispatchEvent("input");
+const afterYear = await temperatureDesktop.page.evaluate(() => ({
+  stepId: globalThis.GaiaNovel.getState().stepId,
+  note: document.querySelector("#japan-layer [data-signal-note]")?.textContent || "",
+  mapHidden: document.querySelector("#japan-layer")?.hidden,
+}));
+assert.deepEqual(afterYear, {
+  stepId: "map_mode01_023",
+  note: "操作 2/2｜地図の気になる場所へ触れてください。",
+  mapHidden: false,
+});
+await temperatureDesktop.page.locator("#japan-map").press("Enter");
+await temperatureDesktop.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_024", { timeout: 5_000 });
+await temperatureDesktop.page.waitForFunction(() => document.querySelector("#japan-layer")?.hidden === true, { timeout: 5_000 });
+const temperatureDesktopClosed = await temperatureDesktop.page.evaluate(() => ({
+  stepId: globalThis.GaiaNovel.getState().stepId,
+  lifecycle: document.body.dataset.novelInteractionState || "idle",
+  dockCount: document.querySelectorAll('.story-detour-dock[data-kind="map01"]').length,
+  returnCount: document.querySelectorAll("#story-detour-return").length,
+}));
+assert.deepEqual(temperatureDesktopClosed, {
+  stepId: "map_mode01_024",
+  lifecycle: "idle",
+  dockCount: 0,
+  returnCount: 0,
+});
+await temperatureDesktop.page.screenshot({ path: path.join(outputDir, "desktop-temperature-return.png") });
+await temperatureDesktop.context.close();
+
 const mobile = await bootAtMap({ width: 390, height: 844 }, "mobile");
 const mobileOpen = await scanOpenModal(mobile.page);
 assertModal(mobileOpen, true);
@@ -161,17 +212,32 @@ await mobile.page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:stor
 await mobile.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_005", { timeout: 5_000 });
 await mobile.context.close();
 
+const temperatureMobile = await bootAtMap({ width: 390, height: 844 }, "temperature-mobile", stateForTemperatureMap());
+const temperatureMobileOpen = await scanOpenModal(temperatureMobile.page);
+assertModal(temperatureMobileOpen, true, "temperature-anomaly");
+await temperatureMobile.page.screenshot({ path: path.join(outputDir, "mobile-temperature-open.png") });
+await temperatureMobile.page.locator("#japan-layer [data-signal-time]").fill("67");
+await temperatureMobile.page.locator("#japan-layer [data-signal-time]").dispatchEvent("input");
+await temperatureMobile.page.locator("#japan-map").press("Enter");
+await temperatureMobile.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_024", { timeout: 5_000 });
+await temperatureMobile.context.close();
+
 await browser.close();
 assert.deepEqual(errors, []);
 console.log(JSON.stringify({
   status: "passed",
   desktopOpen,
   desktopClosed,
+  temperatureDesktopOpen,
+  temperatureDesktopClosed,
   autoReturnWaitMs: remainingMs,
   mobileOpen,
   screenshots: [
     path.join(outputDir, "desktop-open.png"),
     path.join(outputDir, "desktop-return.png"),
     path.join(outputDir, "mobile-open.png"),
+    path.join(outputDir, "desktop-temperature-open.png"),
+    path.join(outputDir, "desktop-temperature-return.png"),
+    path.join(outputDir, "mobile-temperature-open.png"),
   ],
 }, null, 2));

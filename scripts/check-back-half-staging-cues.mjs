@@ -61,23 +61,33 @@ for (const assetPath of new Set(resolved.map(({ background }) => background.asse
   await access(path.join(projectRoot, assetPath));
 }
 
-assert.deepEqual(staging.interactions.map((entry) => entry.stepId), ["map_mode01_004", "gx_experience_017"]);
+assert.deepEqual(staging.interactions.map((entry) => entry.stepId), ["map_mode01_004", "map_mode01_023", "gx_experience_017"]);
 assert.deepEqual(
   allSteps.filter((step) => step.type === "interaction").map((step) => step.id),
   staging.interactions.map((entry) => entry.stepId),
-  "interaction registry must contain exactly MAP01 and GX",
+  "interaction registry must contain both MAP01 phases and GX",
 );
 
 const mapInteraction = staging.interactions[0];
 assert.deepEqual(mapInteraction.prepStepIds, range("map_mode01", 1, 3));
-assert.deepEqual(mapInteraction.postStepIds, range("map_mode01", 5, 43));
+assert.deepEqual(mapInteraction.postStepIds, range("map_mode01", 5, 22));
 assert.equal(mapInteraction.returnStepId, "map_mode01_005");
 assert.equal(mapInteraction.kind, "map01");
 assert.equal(mapInteraction.modeIndex, 0);
 assert.equal(mapInteraction.modeId, "breathing-earth");
 assert.equal(mapInteraction.target, "#japan-layer");
 
-const gxInteraction = staging.interactions[1];
+const temperatureInteraction = staging.interactions[1];
+assert.deepEqual(temperatureInteraction.prepStepIds, range("map_mode01", 15, 22));
+assert.deepEqual(temperatureInteraction.postStepIds, range("map_mode01", 24, 43));
+assert.equal(temperatureInteraction.returnStepId, "map_mode01_024");
+assert.equal(temperatureInteraction.kind, "map01");
+assert.equal(temperatureInteraction.modeIndex, 0);
+assert.equal(temperatureInteraction.modeId, "breathing-earth");
+assert.equal(temperatureInteraction.phase, "temperature-anomaly");
+assert.equal(temperatureInteraction.target, "#japan-layer");
+
+const gxInteraction = staging.interactions[2];
 assert.deepEqual(gxInteraction.prepStepIds, range("gx_experience", 1, 16));
 assert.deepEqual(gxInteraction.postStepIds, [
   ...range("gx_experience", 18, 44),
@@ -105,6 +115,11 @@ assert.equal(cue("map_mode01_004").devicePhase, "open");
 assert.equal(cue("map_mode01_004").castMode, "interaction-no-cast");
 assert.equal(cue("map_mode01_005").device, "none");
 assert.equal(cue("map_mode01_005").castMode, "normal");
+assert.equal(cue("map_mode01_023").device, "native-mode-overlay");
+assert.equal(cue("map_mode01_023").devicePhase, "temperature-anomaly");
+assert.equal(cue("map_mode01_023").castMode, "interaction-no-cast");
+assert.equal(cue("map_mode01_024").device, "none");
+assert.equal(cue("map_mode01_024").castMode, "normal");
 assert.equal(cue("gx_experience_016").castMode, "normal");
 assert.equal(cue("gx_experience_017").device, "native-mode-overlay");
 assert.equal(cue("gx_experience_017").castMode, "interaction-no-cast");

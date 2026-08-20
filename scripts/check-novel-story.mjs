@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13";
+const expectedHash = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 48, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 56540, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 56528, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
@@ -43,7 +43,7 @@ const sourceSceneIds = [...canonSource.matchAll(/^<!-- scene-meta\n([\s\S]*?)\n-
 assert.deepEqual(sourceSceneIds, expectedSceneIds, "scene-meta IDまたは順序がfreeze入力と一致しません");
 assert.equal(story.scenes.length, 6);
 const steps = story.scenes.flatMap((scene) => scene.steps);
-assert.equal(steps.length, 386, "短尺正本は384 source block + 2 interaction stepである必要があります");
+assert.equal(steps.length, 386, "短尺正本は384 source block + 2 generated interaction stepである必要があります");
 assert.equal(new Set(steps.map((step) => step.id)).size, steps.length, "step IDが重複しています");
 const userVisibleSteps = steps.filter((step) => ["dialogue", "narration", "ui"].includes(step.type));
 const prohibitedPlacementVerb = /置(?:く|か(?:ない|な|せ|ず|ぬ|れ|ろ|ん|せる|れる)?|き|け|こ|い(?:た|て|てある|ていた|ておく)?)/u;
@@ -96,6 +96,7 @@ story.scenes.forEach((scene, sceneIndex) => {
 const interactions = steps.filter((step) => step.type === "interaction");
 assert.deepEqual(interactions.map((step) => [step.id, step.interaction.kind]), [
   ["map_mode01_004", "map01"],
+  ["map_mode01_023", "map01"],
   ["gx_experience_017", "gx"],
 ]);
 assert.deepEqual(story.requiredInteractions, ["map01", "gx"]);
@@ -104,6 +105,13 @@ assert.deepEqual(interactions[0].interaction, {
   modeIndex: 0,
   modeId: "breathing-earth",
   requiredViews: ["timeline_complete"],
+});
+assert.deepEqual(interactions[1].interaction, {
+  kind: "map01",
+  modeIndex: 0,
+  modeId: "breathing-earth",
+  phase: "temperature-anomaly",
+  requiredViews: ["long_term", "temperature_anomaly"],
 });
 assert.equal(story.scenes.find((scene) => scene.id === "map_mode01").steps[2].speaker, "amane", "MAP01 PREPはアマネの操作案内です");
 assert.equal(story.scenes.find((scene) => scene.id === "map_mode01").steps[4].type, "narration", "MAP01 return stepがありません");

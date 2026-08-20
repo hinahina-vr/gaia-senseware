@@ -3851,13 +3851,16 @@
   const updateSignalInterface = () => {
     const signalMode = getActiveSignalMode();
     const readout = getSignalReadout(signalMode);
+    const isStoryTemperatureInteraction = storyModeDetour?.kind === "map01"
+      && storyModeDetour.phase === "temperature-anomaly";
     const isBreathingTimeline = signalMode?.id === "breathing-earth";
     const isCirculationTimeline = signalMode?.id === "blue-circulation";
     const sequenceState = !isBreathingTimeline && !isCirculationTimeline
       ? getMapSequenceState(signalMode)
       : null;
+    const breathingState = isBreathingTimeline ? getBreathingEarthState(signalMode) : null;
     const timelineState = isBreathingTimeline
-      ? getBreathingEarthState(signalMode).timeline
+      ? breathingState.timeline
       : isCirculationTimeline
         ? getBlueCirculationState(signalMode)
         : sequenceState;
@@ -3889,15 +3892,27 @@
       consoleElement.querySelector("[data-signal-act]").textContent = signalMode
         ? `ACT ${signalMode.act.number} / ${signalMode.act.title}`
         : "DATA SNAPSHOT";
-      consoleElement.querySelector("[data-signal-value]").textContent = readout.value;
+      consoleElement.querySelector("[data-signal-value]").textContent = isStoryTemperatureInteraction
+        ? `${breathingState?.timeline?.referencePpm?.toFixed(1) || "—"} ppm / 気温偏差 ${breathingState?.temperature?.anomalyC?.toFixed(2) ?? "—"} ℃`
+        : readout.value;
       consoleElement.querySelector("[data-signal-time-output]").textContent = readout.output;
-      consoleElement.querySelector("[data-signal-note]").textContent = storyModeDetour?.kind === "map01"
-        ? "1958年から2050年まで、実測・補完・試算の変化を自動で再生します。"
-        : readout.note;
+      const movedYear = storyModeDetour?.views?.has("long_term");
+      const touchedMap = storyModeDetour?.views?.has("temperature_anomaly");
+      consoleElement.querySelector("[data-signal-note]").textContent = isStoryTemperatureInteraction
+        ? !movedYear
+          ? "操作 1/2｜年代のスライダーを動かしてください。"
+          : !touchedMap
+            ? "操作 2/2｜地図の気になる場所へ触れてください。"
+            : "年代と場所を同じ時点で確認しました。物語へ戻ります。"
+        : storyModeDetour?.kind === "map01"
+          ? "1958年から2050年まで、実測・補完・試算の変化を自動で再生します。"
+          : readout.note;
       consoleElement.querySelector("[data-signal-time-label]").textContent = showTimeline
-        ? timelineState.timeLabel || (isCirculationTimeline
-          ? "移流時間 / AUTO 0→14 DAYS"
-          : `時点 / AUTO 1958→2050${storyModeDetour?.kind === "map01" ? " · 3×" : ""}`)
+        ? isStoryTemperatureInteraction
+          ? "年代を動かす / DRAG"
+          : timelineState.timeLabel || (isCirculationTimeline
+            ? "移流時間 / AUTO 0→14 DAYS"
+            : `時点 / AUTO 1958→2050${storyModeDetour?.kind === "map01" ? " · 3×" : ""}`)
         : "観測時点";
       const input = consoleElement.querySelector("[data-signal-time]");
       input.value = String(signalTimePosition);
@@ -3939,30 +3954,33 @@
           );
           setEncodingValue("resolution", `NASA POWER CLIMATOLOGY · ${signalMode.signals.climate?.length || 0} sites`);
         } else {
-          setEncodingLabel("heatmap", "色 / CO₂濃度");
-          setEncodingLabel("nodata", "斜線 / まわりから補った値");
-          setEncodingLabel("estimate", "表示 / データの種類");
-          setEncodingLabel("resolution", "1セル / 2.5°");
+          setEncodingLabel("heatmap", isStoryTemperatureInteraction ? "背景色 / 気温偏差" : "色 / CO₂濃度");
+          setEncodingLabel("nodata", isStoryTemperatureInteraction ? "地図セル / CO₂濃度" : "斜線 / まわりから補った値");
+          setEncodingLabel("estimate", isStoryTemperatureInteraction ? "年代 / 同じ時点" : "表示 / データの種類");
+          setEncodingLabel("resolution", isStoryTemperatureInteraction ? "地点 / 地図に触れる" : "1セル / 2.5°");
           const state = getBreathingEarthState(signalMode);
           const timeline = state.timeline;
           const grid = state.gosat;
           const totalCells = (grid?.width || 0) * (grid?.height || 0);
-          setEncodingValue(
-            "heatmap",
-            timeline
+          setEncodingValue("heatmap", isStoryTemperatureInteraction
+            ? `NASA GISTEMP · ΔT ${state.temperature?.anomalyC?.toFixed(2) ?? "—"} ℃`
+            : timeline
               ? `300–500 ppm FIXED · ${timeline.dateLabel}`
-              : "LOADING",
-          );
+              : "LOADING");
           setEncodingValue(
             "nodata",
             timeline
               ? `${timeline.imputedCells || 0} / ${totalCells} マス · 近くの8地点を参照`
               : "—",
           );
-          setEncodingValue("estimate", timeline?.phaseLabel || "—");
+          setEncodingValue("estimate", isStoryTemperatureInteraction
+            ? `${state.selectedYear || "—"} / ${timeline?.phaseLabel || "—"}`
+            : timeline?.phaseLabel || "—");
           setEncodingValue(
             "resolution",
-            timeline?.kind === "scenario"
+            isStoryTemperatureInteraction
+              ? `${grid?.resolutionDegrees || 2.5}°セルを選んで値を確認`
+              : timeline?.kind === "scenario"
               ? `${grid?.resolutionDegrees || 2.5}° / 予想の幅 ${timeline.lower95Ppm.toFixed(1)}–${timeline.upper95Ppm.toFixed(1)} ppm`
               : `${grid?.resolutionDegrees || 2.5}° / 実測 ${timeline?.observedCells || 0} + 補完 ${timeline?.imputedCells || 0}`,
           );
@@ -3978,13 +3996,13 @@
       : id === "blue-circulation"
         ? CIRCULATION_TIMELINE_DURATION_MS
         : MODE_SEQUENCE_DURATION_MS;
-    return storyModeDetour?.kind === "map01"
+    return storyModeDetour?.kind === "map01" && storyModeDetour.phase !== "temperature-anomaly"
       ? baseDuration / STORY_MAP_TIMELINE_SPEED
       : baseDuration;
   };
 
   const completeStoryMapTimeline = ({ finalFrameMs = STORY_MAP_FINAL_FRAME_MS } = {}) => {
-    if (storyModeDetour?.kind !== "map01" || storyMapTimelineCompleted) return;
+    if (storyModeDetour?.kind !== "map01" || storyModeDetour.phase === "temperature-anomaly" || storyMapTimelineCompleted) return;
     storyMapTimelineCompleted = true;
     signalTimePosition = 100;
     co2TimelineLastStep = -1;
@@ -4043,7 +4061,7 @@
         ? CIRCULATION_TIMELINE_STEPS
         : MODE_SEQUENCE_STEPS;
     const elapsed = now - co2TimelineStartedAt;
-    if (storyModeDetour?.kind === "map01" && elapsed >= duration) {
+    if (storyModeDetour?.kind === "map01" && storyModeDetour.phase !== "temperature-anomaly" && elapsed >= duration) {
       completeStoryMapTimeline();
       return;
     }
@@ -4266,13 +4284,14 @@ drawAudienceMemory(audienceTraces);
     input.addEventListener("input", () => {
       signalTimePosition = Number(input.value);
       if (japanIsOpen) {
-        co2TimelineHeld = false;
+        co2TimelineHeld = storyModeDetour?.phase === "temperature-anomaly";
         co2TimelinePausedUntil = performance.now() + CO2_TIMELINE_MANUAL_PAUSE_MS;
         co2TimelineLastStep = -1;
       }
       signalTimeInputs.forEach((peer) => {
         if (peer !== input) peer.value = input.value;
       });
+      if (storyModeDetour?.kind === "map01") storyModeDetour.views.add("long_term");
       updateSignalInterface();
       if (storyModeDetour?.kind === "map01") {
         window.dispatchEvent(new CustomEvent("gaia:story-map-interaction", {
@@ -4866,6 +4885,8 @@ drawAudienceMemory(audienceTraces);
     japanView.pinchDistance = 0;
     japanMap.classList.remove("is-dragging");
     if (createPulse && ["map01", "map03", "map08"].includes(storyModeDetour?.kind)) {
+      if (storyModeDetour.kind === "map01") storyModeDetour.views.add("temperature_anomaly");
+      updateSignalInterface();
       window.dispatchEvent(new CustomEvent("gaia:story-map-interaction", {
         detail: {
           kind: storyModeDetour.kind,
@@ -4920,6 +4941,8 @@ drawAudienceMemory(audienceTraces);
       const rect = japanMap.getBoundingClientRect();
       addJapanPulse(rect.left + rect.width / 2, rect.top + rect.height / 2);
       if (["map01", "map03", "map08"].includes(storyModeDetour?.kind)) {
+        if (storyModeDetour.kind === "map01") storyModeDetour.views.add("temperature_anomaly");
+        updateSignalInterface();
         window.dispatchEvent(new CustomEvent("gaia:story-map-interaction", {
           detail: {
             kind: storyModeDetour.kind,
@@ -5329,9 +5352,10 @@ drawAudienceMemory(audienceTraces);
   window.addEventListener("gaia:story-mode-open", (event) => {
     const kind = event.detail?.kind;
     const index = Number(event.detail?.index);
+    const phase = String(event.detail?.phase || "timeline");
     if (!["map01", "map03", "abstract07", "map08"].includes(kind) || !Number.isInteger(index)) return;
     if (kind === "map01" && (index !== 0 || event.detail?.modeId !== "breathing-earth")) return;
-    storyModeDetour = { kind, index };
+    storyModeDetour = { kind, index, phase, views: new Set() };
     storyMapTimelineCompleted = false;
     window.clearTimeout(storyMapReturnTimer);
     storyMapReturnTimer = 0;
@@ -5361,14 +5385,24 @@ drawAudienceMemory(audienceTraces);
     }
     japanClose.disabled = true;
     japanLayer.dataset.storyMode = kind;
+    japanLayer.dataset.storyPhase = phase;
     if (kind === "map01") {
       japanLayer.setAttribute("role", "dialog");
       japanLayer.setAttribute("aria-modal", "true");
-      if (reducedMotion) {
+      if (phase === "temperature-anomaly") {
+        restartCo2Timeline(50);
+        co2TimelineHeld = true;
+        updateSignalInterface();
+      } else if (reducedMotion) {
         requestAnimationFrame(() => completeStoryMapTimeline({ finalFrameMs: 900 }));
       }
     }
-    requestAnimationFrame(() => japanMap.focus({ preventScroll: true }));
+    requestAnimationFrame(() => {
+      const focusTarget = phase === "temperature-anomaly"
+        ? japanLayer.querySelector("[data-signal-time]")
+        : japanMap;
+      focusTarget?.focus({ preventScroll: true });
+    });
   });
 
   window.addEventListener("gaia:story-mode-layer", (event) => {
@@ -5392,6 +5426,7 @@ drawAudienceMemory(audienceTraces);
     if (japanIsOpen) closeJapan({ restoreFocus: false, updateHash: false });
     japanClose.disabled = false;
     delete japanLayer.dataset.storyLayer;
+    delete japanLayer.dataset.storyPhase;
     window.clearTimeout(storyMapReturnTimer);
     storyMapReturnTimer = 0;
     storyMapTimelineCompleted = false;

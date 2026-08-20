@@ -22,6 +22,7 @@ const interactions = steps
     kind: step.interaction?.kind,
     optional: step.interaction?.optional === true,
     modeId: step.interaction?.modeId || "",
+    phase: step.interaction?.phase || "",
     requiredViews: step.interaction?.requiredViews || [],
   }));
 const checks = [];
@@ -30,22 +31,22 @@ const check = (name, fn) => {
   checks.push({ name, passed: true });
 };
 
-check("only current map01 and gx interaction data exist", () => {
+check("both map01 phases and gx interaction data exist", () => {
   assert.equal(story.scenes.length, 6);
   assert.equal(steps.length, 386);
   assert.deepEqual(interactions, [
-    { id: "map_mode01_004", kind: "map01", optional: false, modeId: "breathing-earth", requiredViews: ["timeline_complete"] },
-    { id: "gx_experience_017", kind: "gx", optional: false, modeId: "", requiredViews: [] },
+    { id: "map_mode01_004", kind: "map01", optional: false, modeId: "breathing-earth", phase: "", requiredViews: ["timeline_complete"] },
+    { id: "map_mode01_023", kind: "map01", optional: false, modeId: "breathing-earth", phase: "temperature-anomaly", requiredViews: ["long_term", "temperature_anomaly"] },
+    { id: "gx_experience_017", kind: "gx", optional: false, modeId: "", phase: "", requiredViews: [] },
   ]);
   for (const retiredId of ["gx_deep_time_003", "mode03_map_003", "mode07_abstract_003", "mode08_map_layers_003", "mode10_space_003"]) {
     assert.equal(steps.some((step) => step.id === retiredId), false, `${retiredId} must not be reintroduced`);
   }
 });
 
-check("map01 exact step joins the existing guarded auto-open path", () => {
-  assert.match(runtime, /const autoOpenInteraction = step\.interaction\?\.kind === "gx"\s*\|\| \(step\.id === "map_mode01_004" && step\.interaction\?\.kind === "map01"\);/u);
+check("both map01 phases join the guarded auto-open path", () => {
+  assert.match(runtime, /const autoOpenInteraction = \["gx", "map01"\]\.includes\(step\.interaction\?\.kind\);/u);
   assert.match(runtime, /if \(autoOpenInteraction\) \{\s*requestAnimationFrame\(\(\) => \{\s*if \(currentStep\(\)\?\.id === step\.id && interactionLifecycle === "prep" && !pendingInteraction\) openDetour\(step\);/u);
-  assert.equal((runtime.match(/map_mode01_004/gu) || []).length, 1);
   const autoOpenDeclaration = runtime.match(/const autoOpenInteraction =[^;]+;/u)?.[0] || "";
   for (const retiredKind of ["map03", "abstract07", "space10", "map08"]) assert.equal(autoOpenDeclaration.includes(retiredKind), false);
 });
@@ -67,6 +68,10 @@ check("map01 uses a modal, triple-speed playback, and automatic return", () => {
   assert.match(app, /1958年から2050年まで、実測・補完・試算の変化を自動で再生します。/u);
   assert.match(app, /completeStoryMapTimeline/u);
   assert.match(app, /detail: \{ kind: "map01", view: "timeline_complete" \}/u);
+  assert.match(app, /phase === "temperature-anomaly"/u);
+  assert.match(app, /操作 1\/2｜年代のスライダーを動かしてください。/u);
+  assert.match(app, /操作 2\/2｜地図の気になる場所へ触れてください。/u);
+  assert.match(runtime, /detourAutoReturnTimer = window\.setTimeout\(requestDetourReturn, motionReduced\(\) \? 0 : 520\);/u);
   assert.doesNotMatch(app, /mountStoryMapGuide/u);
   assert.match(styles, /\.japan-layer\[data-story-mode="map01"\][\s\S]+position: fixed;[\s\S]+width: min\(1260px/u);
   assert.match(styles, /\.japan-layer\[data-story-mode="map01"\] \.story-map-guide,[\s\S]+\.japan-layer\[data-story-mode="map01"\] \.story-detour-dock,[\s\S]+display: none !important;/u);
@@ -83,11 +88,11 @@ check("story copy describes automatic playback without retired controls", () => 
 check("runtime cache keys are advanced", () => {
   assert.match(html, /styles\.css\?v=gaia-map-no-tabletop-1/u);
   assert.match(html, /novel-background-cues\.js\?v=gaia-no-double-cast-1/u);
-  assert.match(html, /app\.js\?v=gaia-story-map-autoplay-1/u);
-  assert.match(html, /novel-mode\.css\?v=gaia-no-double-cast-1/u);
+  assert.match(html, /app\.js\?v=gaia-story-temp-modal-1/u);
+  assert.match(html, /novel-mode\.css\?v=gaia-story-temp-modal-1/u);
   assert.match(html, /gx-mode\.js\?v=gaia-gx-auto-return-1/u);
-  assert.match(html, /novel-mode\.js\?v=gaia-no-double-cast-1/u);
-  assert.match(html, /novel-story-data\.js\?v=gaia-outdoor-exhibition-copy-1/u);
+  assert.match(html, /novel-mode\.js\?v=gaia-story-temp-modal-1/u);
+  assert.match(html, /novel-story-data\.js\?v=gaia-story-temp-modal-1/u);
 });
 
 check("tabletop map artwork is absent from story and map runtime", () => {

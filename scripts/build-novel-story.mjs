@@ -8,7 +8,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13";
+const EXPECTED_SOURCE_SHA256 = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
 const LEGACY_STEP_ID_GAPS = Object.freeze({
   gx_experience: Object.freeze({ after: 44, size: 10 }),
 });
@@ -54,6 +54,16 @@ const INTERACTION_CONFIG = Object.freeze({
     kind: "gx",
     requiredGestures: 3,
     afterText: "「ええ。いまの海や大気とは、まったく違う地球まで戻りますの」",
+  }),
+});
+
+const INLINE_INTERACTION_CONFIG = Object.freeze({
+  "map_mode01:気温偏差を重ねる": Object.freeze({
+    kind: "map01",
+    modeIndex: 0,
+    modeId: "breathing-earth",
+    phase: "temperature-anomaly",
+    requiredViews: Object.freeze(["long_term", "temperature_anomaly"]),
   }),
 });
 
@@ -113,6 +123,11 @@ const parseBlock = (block, sceneId) => {
     if (marker === "選択") {
       throw new Error(`${sceneId}: 展開へ影響しない選択画面は短尺本編へ追加できません`);
     }
+    if (marker === "操作") {
+      const interaction = INLINE_INTERACTION_CONFIG[`${sceneId}:${text}`];
+      if (!interaction || body.trim()) throw new Error(`${sceneId}: 未定義または本文付きの操作です（${text}）`);
+      return { type: "interaction", text: "", interaction };
+    }
     if (marker === "学内チャット") return { type: "chatSurface", text };
     return { type: "ui", text: `${marker}｜${text}` };
   }
@@ -154,8 +169,10 @@ const scenes = matches.map((match, index) => {
       pushStep({ type: "interaction", text: "", interaction: interactionMetadata });
     }
   }
-  if (interaction && steps.filter((step) => step.type === "interaction").length !== 1) {
-    throw new Error(`${meta.id}: interactionはexact1件必要です`);
+  const inlineInteractionCount = blocks.filter((block) => /^［操作｜/u.test(block)).length;
+  const expectedInteractionCount = (interaction ? 1 : 0) + inlineInteractionCount;
+  if (steps.filter((step) => step.type === "interaction").length !== expectedInteractionCount) {
+    throw new Error(`${meta.id}: interactionはexact${expectedInteractionCount}件必要です`);
   }
   return {
     id: meta.id,

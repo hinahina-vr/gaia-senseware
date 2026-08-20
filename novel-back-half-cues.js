@@ -37,7 +37,19 @@
       modeId: "breathing-earth",
       target: "#japan-layer",
       returnStepId: "map_mode01_005",
-      postStepIds: stepIds("map_mode01", 5, 43),
+      postStepIds: stepIds("map_mode01", 5, 22),
+    },
+    {
+      sceneId: "map_mode01",
+      prepStepIds: stepIds("map_mode01", 15, 22),
+      stepId: "map_mode01_023",
+      kind: "map01",
+      modeIndex: 0,
+      modeId: "breathing-earth",
+      phase: "temperature-anomaly",
+      target: "#japan-layer",
+      returnStepId: "map_mode01_024",
+      postStepIds: stepIds("map_mode01", 24, 43),
     },
     {
       sceneId: "gx_experience",
@@ -57,6 +69,7 @@
 
   const devices = freezeRows([
     { id: "map01-native-overlay", sceneId: "map_mode01", from: 4, to: 4, device: "native-mode-overlay", phase: "open" },
+    { id: "map01-temperature-overlay", sceneId: "map_mode01", from: 23, to: 23, device: "native-mode-overlay", phase: "temperature-anomaly" },
     { id: "gx-native-overlay", sceneId: "gx_experience", from: 17, to: 17, device: "native-mode-overlay", phase: "open" },
     { id: "welcome-wide-chat", sceneId: "welcome_chat", from: 1, to: 54, device: "wide-campus-chat", phase: "wide" },
     { id: "welcome-physical", sceneId: "welcome_chat", from: 55, to: 77, device: "none", phase: "physical" },

@@ -16,6 +16,7 @@ const viewports = [
 ];
 const interactions = [
   { name: "map01", stepId: "map_mode01_004", nextStepId: "map_mode01_005", modal: "#japan-layer" },
+  { name: "map01-temperature", stepId: "map_mode01_023", nextStepId: "map_mode01_024", modal: "#japan-layer" },
   { name: "gx", stepId: "gx_experience_017", nextStepId: "gx_experience_018", modal: "#gx-layer" },
 ];
 const welcomeCases = [
@@ -128,7 +129,7 @@ try {
       storyVersion: 10,
       sceneIds: ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"],
       stepCount: 386,
-      interactions: [["map_mode01_004", "map01"], ["gx_experience_017", "gx"]],
+      interactions: [["map_mode01_004", "map01"], ["map_mode01_023", "map01"], ["gx_experience_017", "gx"]],
       requiredInteractions: ["map01", "gx"],
     });
     await staticContext.close();
