@@ -87,8 +87,7 @@ assert.deepEqual(backgroundCues.expectedSceneCounts, Object.fromEntries(expected
 assert.equal(backgroundCues.productionYear.length, 0, "legacy production registry must be empty");
 
 const expectedBoundaries = [
-  ["festival_concept", 1, 1, "festival-main-entrance-reception", assets.entrance, "push-in", "scenic"],
-  ["festival_concept", 2, 7, "festival-convention-hall-entrance", assets.conventionHallEntrance, "push-in", "scenic"],
+  ["festival_concept", 1, 7, "festival-convention-hall-entrance", assets.conventionHallEntrance, "push-in", "scenic"],
   ["festival_concept", 8, 9, "festival-b-hall-overview", assets.bHallOverview, "push-in", "scenic"],
   ["festival_concept", 10, 12, "festival-gaia-five-plane-projection", assets.fivePlaneProjection, "push-in", "scenic"],
   ["festival_concept", 13, 14, "festival-gaia-booth-approach", assets.fivePlaneProjection, "drift-left", "scenic"],
@@ -148,7 +147,7 @@ const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(ste
 assert.equal(resolved.length, 386);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 21, "background-art cut must keep the intentional exhibition-map continuity");
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 20, "background-art cut must keep the intentional exhibition-map continuity");
 assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 83);
 assert(
   backgroundCues.limitedStory
@@ -218,7 +217,8 @@ for (const [sceneId, from, to] of boothRanges) {
 }
 
 const cue = (stepId) => backgroundCues.forStep(allSteps.find((step) => step.id === stepId));
-assert.equal(cue("festival_concept_001").assetPath, assets.entrance);
+assert.equal(cue("festival_concept_001").assetPath, assets.conventionHallEntrance);
+assert.equal(cue("festival_concept_001").id, "festival-convention-hall-entrance");
 assert.equal(cue("festival_concept_002").assetPath, assets.conventionHallEntrance);
 assert.equal(cue("festival_concept_007").assetPath, assets.conventionHallEntrance);
 assert.equal(cue("festival_concept_008").assetPath, assets.bHallOverview);

@@ -12,7 +12,7 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/initial-story-first-frame-hotfix");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const COASTAL = "novel-bg-coastal-venue-autumn-morning-v1.png";
+const START_BACKGROUND = "novel-bg-convention-hall-entrance-autumn-morning-v1.png";
 const EXHIBITION = "novel-bg-exhibition-v3.png";
 const progressFixture = (stepId) => ({
   storyVersion: 10,
@@ -125,7 +125,7 @@ const openTitle = async (page, seed = null) => {
   await page.waitForFunction(() => __qaVisible(document.querySelector("#novel-title-screen")));
 };
 
-const scanRuntime = async (page) => page.evaluate(async ({ coastal, exhibition }) => {
+const scanRuntime = async (page) => page.evaluate(async ({ startBackground, exhibition }) => {
   const layer = document.querySelector("#novel-layer");
   const runtime = document.querySelector("#novel-runtime");
   const source = getComputedStyle(layer).backgroundImage;
@@ -136,7 +136,7 @@ const scanRuntime = async (page) => page.evaluate(async ({ coastal, exhibition }
     stepId: layer.dataset.stepId,
     cueId: layer.dataset.backgroundCue,
     backgroundImage: source,
-    backgroundHasCoastal: source.includes(coastal),
+    backgroundHasStart: source.includes(startBackground),
     backgroundHasExhibition: source.includes(exhibition),
     decodedNaturalWidth: image.naturalWidth,
     frames: globalThis.__qaFrames.slice(),
@@ -151,7 +151,7 @@ const scanRuntime = async (page) => page.evaluate(async ({ coastal, exhibition }
     bodyOverflowY: document.documentElement.scrollHeight > innerHeight + 1,
     text: document.querySelector("#novel-text")?.textContent.trim(),
   };
-}, { coastal: COASTAL, exhibition: EXHIBITION });
+}, { startBackground: START_BACKGROUND, exhibition: EXHIBITION });
 
 const assertRuntime = (scan, expectedStep, expectedAsset) => {
   assert.equal(scan.stepId, expectedStep);
@@ -179,7 +179,7 @@ const scanFreshStart = async (viewport, cacheMode) => {
   await page.waitForFunction(() => document.querySelector("#novel-text")?.textContent.trim().length > 0);
   await page.waitForTimeout(500);
   const scan = await scanRuntime(page);
-  assertRuntime(scan, "festival_concept_001", COASTAL);
+  assertRuntime(scan, "festival_concept_001", START_BACKGROUND);
   assert(scan.text.includes("海から吹く風"));
   const startRequests = requests.slice(requestOffset);
   assert.equal(
@@ -187,10 +187,10 @@ const scanFreshStart = async (viewport, cacheMode) => {
     0,
     JSON.stringify(startRequests.filter((url) => url.includes(EXHIBITION)), null, 2),
   );
-  assert(startRequests.some((url) => url.includes(COASTAL)));
+  assert(startRequests.some((url) => url.includes(START_BACKGROUND)));
   await page.screenshot({ path: path.join(outputDir, `${label}-revealed.png`) });
   report.scans.push({ viewport: viewport.name, case: `fresh-start-${cacheMode}`, requests: {
-    coastal: startRequests.filter((url) => url.includes(COASTAL)),
+    startBackground: startRequests.filter((url) => url.includes(START_BACKGROUND)),
     exhibition: startRequests.filter((url) => url.includes(EXHIBITION)),
   }, ...scan, passed: true });
   await context.close();
@@ -571,7 +571,7 @@ try {
   }
   await scanStoredEntry(viewports[2], "resume", "festival_concept_023", "event-cg-mizuha-closeup-v1.png");
   await scanStoredEntry(viewports[3], "manual-load", "festival_concept_021", "event-cg-amane-closeup-v1.png");
-  await scanStoredEntry(viewports[2], "unknown-fallback", "unknown", COASTAL);
+  await scanStoredEntry(viewports[2], "unknown-fallback", "unknown", START_BACKGROUND);
 
   for (const viewport of [viewports[2], viewports[3]]) {
     for (const stepId of ["festival_concept_011", "festival_concept_021", "festival_concept_022", "festival_concept_023", "festival_concept_024", "welcome_chat_024"]) {
