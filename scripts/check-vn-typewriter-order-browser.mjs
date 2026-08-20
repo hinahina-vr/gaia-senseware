@@ -129,7 +129,7 @@ const readTrace = async (page) => {
   return page.evaluate(() => structuredClone(globalThis.__vnRevealTrace));
 };
 
-const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false, expectedDelay = 0 } = {}) => {
+const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false, visualUniform = false, expectedDelay = 0 } = {}) => {
   const uniqueCounts = trace.samples.map((sample) => sample.visibleCount)
     .filter((value, index, values) => index === 0 || value !== values[index - 1]);
   const deltas = uniqueCounts.slice(1).map((value, index) => value - uniqueCounts[index]);
@@ -157,9 +157,16 @@ const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false, exp
   // The trace can attach partway through the current interval, so its first
   // observed duration is not a complete cadence sample.
   const cadenceDurations = revealIntervals.slice(1).map((entry) => entry.duration);
+  const sortedCadenceDurations = [...cadenceDurations].sort((a, b) => a - b);
   const cadenceMin = cadenceDurations.length ? Math.min(...cadenceDurations) : 0;
   const cadenceMax = cadenceDurations.length ? Math.max(...cadenceDurations) : 0;
   const cadenceSpread = cadenceMax - cadenceMin;
+  const cadenceMedian = sortedCadenceDurations.length
+    ? sortedCadenceDurations[Math.floor(sortedCadenceDurations.length / 2)]
+    : 0;
+  const cadenceP90 = sortedCadenceDurations.length
+    ? sortedCadenceDurations[Math.floor((sortedCadenceDurations.length - 1) * 0.9)]
+    : 0;
   const timerDurations = trace.revealEvents.slice(1)
     .map((event, index) => ({
       duration: event.time - trace.revealEvents[index].time,
@@ -174,16 +181,21 @@ const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false, exp
     assert(punctuationMax <= ordinaryMedian * 2.2 + 1, `${tag}: punctuation pause ${punctuationMax.toFixed(1)}ms exceeds steady cadence median ${ordinaryMedian.toFixed(1)}ms`);
   }
   if (steadyCadence && expectedDelay) {
-    assert(timerDurations.length >= 3, `${tag}: insufficient fixed-timer samples`);
-    assert(Math.abs(timerMedian - expectedDelay) <= Math.max(6, expectedDelay * 0.25), `${tag}: timer median ${timerMedian.toFixed(1)}ms differs from ${expectedDelay.toFixed(1)}ms`);
-    assert(timerP90 <= expectedDelay * 1.6 + 8, `${tag}: timer p90 ${timerP90.toFixed(1)}ms is not steady`);
+    assert(timerDurations.length >= 3, `${tag}: insufficient frame-gated samples`);
+    assert(timerMedian >= expectedDelay - 2, `${tag}: painted cadence ${timerMedian.toFixed(1)}ms is faster than ${expectedDelay.toFixed(1)}ms`);
+    assert(timerMedian <= expectedDelay + 20, `${tag}: painted cadence ${timerMedian.toFixed(1)}ms is too far from ${expectedDelay.toFixed(1)}ms`);
+    assert(timerP90 <= timerMedian + 18, `${tag}: painted cadence p90 ${timerP90.toFixed(1)}ms is not steady`);
+    if (visualUniform) {
+      assert(cadenceDurations.length >= 3, `${tag}: insufficient painted-frame samples`);
+      assert(cadenceP90 <= cadenceMedian * 1.3 + 2, `${tag}: visible cadence alternates between frames (median ${cadenceMedian.toFixed(1)}ms, p90 ${cadenceP90.toFixed(1)}ms)`);
+    }
   }
   return {
     samples: trace.samples.length,
     uniqueCounts: uniqueCounts.length,
     maxDelta: deltas.length ? Math.max(...deltas) : 0,
     sourceLength: sourceGlyphs.length,
-    cadence: { ordinaryMedian, punctuationMax, cadenceMin, cadenceMax, cadenceSpread, measuredIntervals: revealIntervals.length, timerMedian, timerP90, timerIntervals: timerDurations.length },
+    cadence: { ordinaryMedian, punctuationMax, cadenceMin, cadenceMax, cadenceSpread, cadenceMedian, cadenceP90, measuredIntervals: revealIntervals.length, timerMedian, timerP90, timerIntervals: timerDurations.length },
   };
 };
 
@@ -282,7 +294,8 @@ try {
       const trace = await readTrace(page);
       const explicitSkip = ["click-skip", "space-skip", "fast", "reduced"].includes(mode);
       const steadyCadence = ["normal", "high", "slow", "auto"].includes(mode);
-      const pageTraces = [assertTrace(trace, `${tag}-page1`, { allowJump: explicitSkip, steadyCadence, expectedDelay })];
+      const visualUniform = mode === "normal";
+      const pageTraces = [assertTrace(trace, `${tag}-page1`, { allowJump: explicitSkip, steadyCadence, visualUniform, expectedDelay })];
       if (mode === "auto") await page.locator("#novel-auto-button").click();
       if (mode === "fast") await page.locator("#novel-fast-forward-button").click();
       await page.locator("#novel-dialogue").click({ position: { x: 20, y: 20 } });
@@ -299,7 +312,7 @@ try {
         await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete", null, { timeout: 1_000 });
       }
       const secondTrace = await readTrace(page);
-      pageTraces.push(assertTrace(secondTrace, `${tag}-page2`, { allowJump: ["click-skip", "space-skip", "reduced"].includes(mode), steadyCadence, expectedDelay }));
+      pageTraces.push(assertTrace(secondTrace, `${tag}-page2`, { allowJump: ["click-skip", "space-skip", "reduced"].includes(mode), steadyCadence, visualUniform, expectedDelay }));
       const pageInfo = await page.evaluate(() => ({
         text: document.querySelector("#novel-text")?.textContent || "",
         aria: document.querySelector("#novel-text")?.getAttribute("aria-label") || "",
@@ -320,7 +333,7 @@ try {
       assert.equal(pageInfo.pageIndex, 2, `${tag}: second page was not rendered`);
       assert(pageInfo.lines <= 3, `${tag}: page exceeds three lines`);
       assert(pageInfo.tokenCount > 0, `${tag}: phrase token DOM missing`);
-      if (mode !== "reduced") assert.equal(pageInfo.revealCadence, "fixed-timer", `${tag}: reveal cadence is not fixed-timer`);
+      if (mode !== "reduced") assert.equal(pageInfo.revealCadence, "frame-gated", `${tag}: reveal cadence is not frame-gated`);
       assert.deepEqual(pageInfo.scriptDebugRect, { width: 0, height: 0 }, `${tag}: SCRIPT debug hit area remains`);
       assert(pageInfo.overflowX <= 1, `${tag}: horizontal overflow`);
       if (mode === "normal") await page.screenshot({ path: path.join(outputDir, `${tag}.png`), fullPage: true });

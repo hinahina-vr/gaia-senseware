@@ -2306,27 +2306,34 @@
           const glyphs = buildMeasuredLineLayout(text, preparedLayout);
           elements.text.classList.remove("is-preparing");
           elements.text.classList.add("is-revealing");
-          elements.text.dataset.revealCadence = "fixed-timer";
+          elements.text.dataset.revealCadence = "frame-gated";
           elements.cursor.hidden = false;
           let nextGlyphIndex = 0;
-          const revealNextGlyph = () => {
-            revealTimer = 0;
+          let previousRevealFrameTime = Number.NaN;
+          const revealNextGlyph = (frameTime) => {
+            revealFrame = 0;
             if (generation !== revealGeneration || !isRevealing) return;
+            if (Number.isFinite(previousRevealFrameTime)
+              && frameTime - previousRevealFrameTime < revealDelayForGlyph()) {
+              revealFrame = window.requestAnimationFrame(revealNextGlyph);
+              return;
+            }
             const glyph = glyphs[nextGlyphIndex];
             if (!glyph) {
               finishReveal();
               return;
             }
             glyph.classList.add("is-visible");
+            previousRevealFrameTime = frameTime;
             nextGlyphIndex += 1;
             elements.text.dataset.revealCount = String(nextGlyphIndex);
             if (nextGlyphIndex >= glyphs.length) {
               revealTimer = window.setTimeout(finishReveal, REVEAL_MIN_LINE_MS);
               return;
             }
-            revealTimer = window.setTimeout(revealNextGlyph, revealDelayForGlyph());
+            revealFrame = window.requestAnimationFrame(revealNextGlyph);
           };
-          revealNextGlyph();
+          revealFrame = window.requestAnimationFrame(revealNextGlyph);
         });
       });
     };
