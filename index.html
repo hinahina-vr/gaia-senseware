@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="./opening.css?v=gaia-opening-sound-choice-2" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-ending-action-delay-1" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-story-map-skip-1" />
     <link rel="stylesheet" href="./true-end.css?v=gaia-true-end-1" />
     <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-transition-nowrap-1" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
@@ -40,7 +40,7 @@
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
     <script src="./app-content.js?v=gaia-101" defer></script>
-    <script src="./app.js?v=gaia-story-temp-modal-1" defer></script>
+    <script src="./app.js?v=gaia-story-map-skip-1" defer></script>
     <script src="./gx-mode.js?v=gaia-gx-auto-return-1" defer></script>
     <script src="./novel-story-data.js?v=gaia-story-temp-modal-1" defer></script>
     <script src="./true-end-data.js?v=gaia-true-end-1" defer></script>
@@ -48,7 +48,7 @@
     <script src="./novel-background-cues.js?v=gaia-no-double-cast-1" defer></script>
     <script src="./novel-back-half-cues.js?v=gaia-story-temp-modal-1" defer></script>
     <script src="./novel-temporal.js?v=gaia-temporal-1" defer></script>
-    <script src="./novel-mode.js?v=gaia-frame-gated-typewriter-1" defer></script>
+    <script src="./novel-mode.js?v=gaia-story-map-skip-1" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-true-end-score-1" defer></script>
@@ -1150,6 +1150,17 @@
           <canvas class="japan-overlay" id="japan-overlay" aria-hidden="true"></canvas>
           <div class="japan-map-shade" aria-hidden="true"></div>
         </div>
+
+        <button
+          class="story-map-modal-skip"
+          id="story-map-modal-skip"
+          type="button"
+          aria-label="地図の操作をスキップして物語へ戻る"
+        >
+          <span>SKIP</span>
+          <strong>物語へ戻る</strong>
+          <b aria-hidden="true">→</b>
+        </button>
 
         <header class="japan-heading">
           <p class="japan-kicker">

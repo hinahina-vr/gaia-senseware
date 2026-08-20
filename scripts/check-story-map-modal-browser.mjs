@@ -76,15 +76,23 @@ const bootAtMap = async (viewport, label, state = stateForMap()) => {
 const scanOpenModal = async (page) => page.evaluate(() => {
   const map = document.querySelector("#japan-layer");
   const novel = document.querySelector("#novel-layer");
+  const mapSurface = map?.querySelector(":scope > .japan-map");
+  const skip = map?.querySelector("#story-map-modal-skip");
   const slider = map?.querySelector("[data-signal-time]");
   const rect = map?.getBoundingClientRect();
+  const skipRect = skip?.getBoundingClientRect();
   const mapStyle = map ? getComputedStyle(map) : null;
+  const mapSurfaceStyle = mapSurface ? getComputedStyle(mapSurface) : null;
+  const skipStyle = skip ? getComputedStyle(skip) : null;
   const novelStyle = novel ? getComputedStyle(novel) : null;
   return {
     viewport: { width: innerWidth, height: innerHeight },
     rect: rect?.toJSON(),
     mapPosition: mapStyle?.position,
     mapRadius: mapStyle?.borderRadius,
+    mapBackground: mapStyle?.backgroundColor,
+    mapBoxShadow: mapStyle?.boxShadow,
+    mapSurfaceOpacity: Number(mapSurfaceStyle?.opacity || 0),
     mapRole: map?.getAttribute("role"),
     mapAriaModal: map?.getAttribute("aria-modal"),
     novelHidden: novel?.hidden,
@@ -93,6 +101,10 @@ const scanOpenModal = async (page) => page.evaluate(() => {
     guideCount: document.querySelectorAll(".story-map-guide").length,
     dockCount: document.querySelectorAll('.story-detour-dock[data-kind="map01"]').length,
     returnCount: document.querySelectorAll("#story-detour-return").length,
+    skipCount: document.querySelectorAll("#story-map-modal-skip").length,
+    skipDisplay: skipStyle?.display,
+    skipDisabled: Boolean(skip?.disabled),
+    skipRect: skipRect?.toJSON(),
     nativeCloseDisplay: getComputedStyle(map?.querySelector(".japan-close")).display,
     readingGuideDisplay: getComputedStyle(map?.querySelector(".map-reading-guide")).display,
     label: map?.querySelector("[data-signal-time-label]")?.textContent || "",
@@ -115,6 +127,12 @@ const assertModal = (scan, mobile = false, expectedPhase = "timeline") => {
   assert.equal(scan.guideCount, 0);
   assert.equal(scan.dockCount, 0);
   assert.equal(scan.returnCount, 0);
+  assert.equal(scan.skipCount, 1);
+  assert.notEqual(scan.skipDisplay, "none");
+  assert.equal(scan.skipDisabled, false);
+  assert.match(scan.mapBackground, /rgba\(2, 9, 12, 0\.48\)/u);
+  assert.match(scan.mapBoxShadow, /rgba\(1, 6, 17, 0\.38\)/u);
+  assert(scan.mapSurfaceOpacity >= 0.88 && scan.mapSurfaceOpacity <= 0.92);
   assert.equal(scan.nativeCloseDisplay, "none");
   assert.equal(scan.readingGuideDisplay, "none");
   assert.equal(scan.sliderDisabled, false);
@@ -131,6 +149,10 @@ const assertModal = (scan, mobile = false, expectedPhase = "timeline") => {
   assert(Math.abs((scan.rect.x + scan.rect.width / 2) - scan.viewport.width / 2) <= 2);
   assert(Math.abs((scan.rect.y + scan.rect.height / 2) - scan.viewport.height / 2) <= 2);
   assert(parseFloat(scan.mapRadius) >= (mobile ? 12 : 16));
+  assert(scan.skipRect && scan.skipRect.width >= 44 && scan.skipRect.height >= 44);
+  assert(scan.skipRect.x >= scan.rect.x && scan.skipRect.y >= scan.rect.y);
+  assert(scan.skipRect.x + scan.skipRect.width <= scan.rect.x + scan.rect.width + 1);
+  assert(scan.skipRect.y + scan.skipRect.height <= scan.rect.y + scan.rect.height + 1);
 };
 
 const desktop = await bootAtMap({ width: 1440, height: 900 }, "desktop");
@@ -166,6 +188,24 @@ assert.deepEqual(desktopClosed, {
 });
 await desktop.page.screenshot({ path: path.join(outputDir, "desktop-return.png") });
 await desktop.context.close();
+
+const desktopSkip = await bootAtMap({ width: 1440, height: 900 }, "desktop-skip");
+await desktopSkip.page.evaluate(() => {
+  const dispatchEvent = window.dispatchEvent.bind(window);
+  window.dispatchEvent = (event) => {
+    if (event?.type === "gaia:story-mode-return-to-novel") return true;
+    return dispatchEvent(event);
+  };
+});
+const desktopSkipStartedAt = Date.now();
+await desktopSkip.page.locator("#story-map-modal-skip").click();
+await desktopSkip.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_005", { timeout: 4_000 });
+const desktopSkipWaitMs = Date.now() - desktopSkipStartedAt;
+assert(desktopSkipWaitMs >= 1_000 && desktopSkipWaitMs < 3_000, `skip fallback timing was ${desktopSkipWaitMs}ms`);
+await desktopSkip.page.waitForFunction(() => document.querySelector("#japan-layer")?.hidden === true, { timeout: 4_000 });
+assert.equal(await desktopSkip.page.locator("#story-map-modal-skip").isDisabled(), true);
+await desktopSkip.page.screenshot({ path: path.join(outputDir, "desktop-skip-return.png") });
+await desktopSkip.context.close();
 
 const temperatureDesktop = await bootAtMap({ width: 1440, height: 900 }, "temperature-desktop", stateForTemperatureMap());
 const temperatureDesktopOpen = await scanOpenModal(temperatureDesktop.page);
@@ -216,10 +256,9 @@ const temperatureMobile = await bootAtMap({ width: 390, height: 844 }, "temperat
 const temperatureMobileOpen = await scanOpenModal(temperatureMobile.page);
 assertModal(temperatureMobileOpen, true, "temperature-anomaly");
 await temperatureMobile.page.screenshot({ path: path.join(outputDir, "mobile-temperature-open.png") });
-await temperatureMobile.page.locator("#japan-layer [data-signal-time]").fill("67");
-await temperatureMobile.page.locator("#japan-layer [data-signal-time]").dispatchEvent("input");
-await temperatureMobile.page.locator("#japan-map").press("Enter");
+await temperatureMobile.page.locator("#story-map-modal-skip").click();
 await temperatureMobile.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_024", { timeout: 5_000 });
+await temperatureMobile.page.waitForFunction(() => document.querySelector("#japan-layer")?.hidden === true, { timeout: 5_000 });
 await temperatureMobile.context.close();
 
 await browser.close();
@@ -231,10 +270,12 @@ console.log(JSON.stringify({
   temperatureDesktopOpen,
   temperatureDesktopClosed,
   autoReturnWaitMs: remainingMs,
+  desktopSkipWaitMs,
   mobileOpen,
   screenshots: [
     path.join(outputDir, "desktop-open.png"),
     path.join(outputDir, "desktop-return.png"),
+    path.join(outputDir, "desktop-skip-return.png"),
     path.join(outputDir, "mobile-open.png"),
     path.join(outputDir, "desktop-temperature-open.png"),
     path.join(outputDir, "desktop-temperature-return.png"),

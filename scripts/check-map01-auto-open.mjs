@@ -72,8 +72,14 @@ check("map01 uses a modal, triple-speed playback, and automatic return", () => {
   assert.match(app, /操作 1\/2｜年代のスライダーを動かしてください。/u);
   assert.match(app, /操作 2\/2｜地図の気になる場所へ触れてください。/u);
   assert.match(runtime, /detourAutoReturnTimer = window\.setTimeout\(requestDetourReturn, motionReduced\(\) \? 0 : 520\);/u);
+  assert.match(runtime, /const storyMapModalSkip = document\.querySelector\("#story-map-modal-skip"\);/u);
+  assert.match(runtime, /detourSkipFallbackTimer = window\.setTimeout\(\(\) => \{/u);
+  assert.match(html, /id="story-map-modal-skip"[\s\S]{0,240}<strong>物語へ戻る<\/strong>/u);
   assert.doesNotMatch(app, /mountStoryMapGuide/u);
-  assert.match(styles, /\.japan-layer\[data-story-mode="map01"\][\s\S]+position: fixed;[\s\S]+width: min\(1260px/u);
+  assert.match(styles, /\.japan-layer\[data-story-mode="map01"\][\s\S]+position: fixed;[\s\S]+width: min\(1260px[\s\S]+background: rgba\(2, 9, 12, 0\.48\);/u);
+  assert.match(styles, /0 0 0 100vmax rgba\(1, 6, 17, 0\.38\)/u);
+  assert.match(styles, /\.japan-layer\[data-story-mode="map01"\] > \.japan-map \{\s*opacity: 0\.9;/u);
+  assert.match(styles, /\.japan-layer\[data-story-mode="map01"\] \.story-map-modal-skip \{[\s\S]+display: inline-flex;[\s\S]+min-height: 48px;/u);
   assert.match(styles, /\.japan-layer\[data-story-mode="map01"\] \.story-map-guide,[\s\S]+\.japan-layer\[data-story-mode="map01"\] \.story-detour-dock,[\s\S]+display: none !important;/u);
 });
 
@@ -88,10 +94,10 @@ check("story copy describes automatic playback without retired controls", () => 
 check("runtime cache keys are advanced", () => {
   assert.match(html, /styles\.css\?v=gaia-map-no-tabletop-1/u);
   assert.match(html, /novel-background-cues\.js\?v=gaia-no-double-cast-1/u);
-  assert.match(html, /app\.js\?v=gaia-story-temp-modal-1/u);
-  assert.match(html, /novel-mode\.css\?v=gaia-story-temp-modal-1/u);
+  assert.match(html, /app\.js\?v=gaia-story-map-skip-1/u);
+  assert.match(html, /novel-mode\.css\?v=gaia-story-map-skip-1/u);
   assert.match(html, /gx-mode\.js\?v=gaia-gx-auto-return-1/u);
-  assert.match(html, /novel-mode\.js\?v=gaia-story-temp-modal-1/u);
+  assert.match(html, /novel-mode\.js\?v=gaia-story-map-skip-1/u);
   assert.match(html, /novel-story-data\.js\?v=gaia-story-temp-modal-1/u);
 });
 

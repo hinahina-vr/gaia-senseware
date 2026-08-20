@@ -443,6 +443,7 @@
   let detourDock = null;
   let detourDockObserver = null;
   let detourAutoReturnTimer = 0;
+  let detourSkipFallbackTimer = 0;
   let interactionLifecycle = "idle";
   let backgroundTransitionPending = false;
   let deferredSectionBackgroundTransition = null;
@@ -3311,12 +3312,36 @@
     }
   };
 
+  const clearDetourSkipFallback = () => {
+    window.clearTimeout(detourSkipFallbackTimer);
+    detourSkipFallbackTimer = 0;
+  };
+
+  const storyMapModalSkip = document.querySelector("#story-map-modal-skip");
+  storyMapModalSkip?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (pendingInteraction?.interaction?.kind !== "map01" || interactionLifecycle !== "open") return;
+    storyMapModalSkip.disabled = true;
+    (pendingInteraction.interaction.requiredViews || []).forEach((view) => detourState?.views?.add(view));
+    const skippedStepId = pendingInteraction.id;
+    clearDetourSkipFallback();
+    requestDetourReturn();
+    detourSkipFallbackTimer = window.setTimeout(() => {
+      detourSkipFallbackTimer = 0;
+      if (pendingInteraction?.id !== skippedStepId || interactionLifecycle !== "closing") return;
+      completePendingInteraction();
+    }, 1100);
+  });
+
   const openDetour = (step) => {
     if (pendingInteraction || interactionLifecycle !== "prep") return;
     window.clearTimeout(detourAutoReturnTimer);
     detourAutoReturnTimer = 0;
+    clearDetourSkipFallback();
     pendingInteraction = step;
     detourState = { gestureCount: 0, phaseIndex: 1, phaseCount: 8, views: new Set() };
+    if (storyMapModalSkip) storyMapModalSkip.disabled = false;
     const definition = detourDefinitions[step.interaction.kind];
     closeDetourDock();
     if (!["map01", "gx"].includes(step.interaction.kind)) {
@@ -3354,6 +3379,7 @@
     if (!pendingInteraction || !detourCompletion()) return;
     window.clearTimeout(detourAutoReturnTimer);
     detourAutoReturnTimer = 0;
+    clearDetourSkipFallback();
     const step = pendingInteraction;
     pendingInteraction = null;
     detourState = null;

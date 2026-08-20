@@ -5458,7 +5458,10 @@ drawAudienceMemory(audienceTraces);
     if (!storyModeDetour || event.key !== "Escape") return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    document.querySelector("#story-detour-return")?.focus({ preventScroll: true });
+    const fallbackControl = storyModeDetour.kind === "map01"
+      ? document.querySelector("#story-map-modal-skip")
+      : document.querySelector("#story-detour-return");
+    fallbackControl?.focus({ preventScroll: true });
   }, true);
 
   window.addEventListener("gaia:opening-complete", () => {
