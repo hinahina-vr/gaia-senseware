@@ -45,12 +45,16 @@ const expectedText = new Map([
 ]);
 const expectedAssets = new Map([
   ["gx_experience_018", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
-  ["gx_experience_055", "novel-bg-gx-mode-gateway-autumn-morning-v3.png"],
+  ["gx_experience_055", "novel-bg-gx-mode-gateway-autumn-morning-v4.png"],
   ["esp32_pitch_001", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
-  ["esp32_pitch_008", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
+  ["esp32_pitch_008", "event-cg-esp32-collaboration-v2.png"],
   ["esp32_pitch_027", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
   ["circle_invitation_001", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
-  ["circle_invitation_029", "event-cg-circle-invitation-card-v2.png"],
+  ["circle_invitation_029", "event-cg-circle-invitation-card-v3.png"],
+]);
+const mobileExpectedAssets = new Map([
+  ["esp32_pitch_008", "event-cg-esp32-collaboration-mobile-v1.png"],
+  ["circle_invitation_029", "event-cg-circle-invitation-card-mobile-v1.png"],
 ]);
 const specialIds = new Set(["gx_experience_047", "welcome_chat_081", "welcome_chat_095"]);
 assert.equal(expectedText.size, 24);
@@ -166,7 +170,12 @@ const scanSimpleStep = async (page, viewport, stepId) => {
   assert.equal(scan.overflowX, 0);
   assert.equal(scan.bodyOverflowX, 0);
   assert(scan.measuredLineCount > 0 && scan.measuredLineCount <= scan.maxLineCount);
-  if (expectedAssets.has(stepId)) assert.match(scan.backgroundImage, new RegExp(expectedAssets.get(stepId).replaceAll(".", "\\."), "u"));
+  if (expectedAssets.has(stepId)) {
+    const expectedAsset = viewport.name.startsWith("mobile")
+      ? mobileExpectedAssets.get(stepId) || expectedAssets.get(stepId)
+      : expectedAssets.get(stepId);
+    assert.match(scan.backgroundImage, new RegExp(expectedAsset.replaceAll(".", "\\."), "u"));
+  }
   if (stepId === "circle_invitation_029") assert.equal(scan.castSuppressed, true);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${stepId}.png`), animations: "disabled" });
   report.scans.push({ viewport: viewport.name, stepId, kind: "dialogue", ...scan, passed: true });

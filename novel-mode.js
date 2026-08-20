@@ -736,7 +736,8 @@
   const renderGalleryViewerEntry = (entry) => {
     if (!entry || !elements.galleryViewer) return;
     elements.galleryViewer.dataset.galleryId = entry.id;
-    elements.galleryViewerImage.src = `./${entry.assetPath}`;
+    const portraitViewer = window.matchMedia("(max-width: 720px)").matches && entry.mobileAssetPath;
+    elements.galleryViewerImage.src = `./${portraitViewer ? entry.mobileAssetPath : entry.assetPath}`;
     elements.galleryViewerImage.alt = entry.alt;
     elements.galleryViewerChapter.textContent = entry.chapter;
     elements.galleryViewerTitle.textContent = entry.title;

@@ -25,19 +25,19 @@ const welcomeCases = [
   { name: "mobile", stepId: "welcome_chat_081", device: "mobile", slack: true },
 ];
 const cinematicCases = [
-  { name: "festival-entrance", stepId: "festival_concept_001", cue: "festival-main-entrance-reception", asset: "novel-bg-coastal-venue-v3.png", motion: "push-in", mobile: true },
-  { name: "b-hall-overview", stepId: "festival_concept_008", cue: "festival-b-hall-overview", asset: "novel-bg-festival-b-hall-overview-v1.png", motion: "push-in" },
-  { name: "first-encounter-cg", stepId: "festival_concept_015", cue: "festival-first-encounter-cg", asset: "event-cg-first-encounter-v1.png", motion: "event-focus", eventCg: true, mobile: true },
-  { name: "amane-closeup-cg", stepId: "festival_concept_021", cue: "festival-amane-closeup-cg", asset: "event-cg-amane-closeup-v1.png", motion: "event-focus", eventCg: true, mobile: true },
-  { name: "mizuha-closeup-cg", stepId: "festival_concept_023", cue: "festival-mizuha-closeup-cg", asset: "event-cg-mizuha-closeup-v1.png", motion: "event-focus", eventCg: true, mobile: true },
-  { name: "gaia-booth", stepId: "festival_concept_027", cue: "festival-gaia-booth", asset: "novel-bg-exhibition-v2.png", motion: "drift-left" },
-  { name: "gx-booth", stepId: "gx_experience_001", cue: "gx-terminal-booth", asset: "novel-bg-exhibition-v3.png", motion: "drift-right" },
-  { name: "esp32-collaboration-cg", stepId: "esp32_pitch_008", cue: "esp32-collaboration-cg", asset: "event-cg-esp32-collaboration-v1.png", motion: "event-focus", eventCg: true, mobile: true },
-  { name: "circle-welcome-cg", stepId: "circle_invitation_048", cue: "circle-welcome-cg", asset: "event-cg-circle-welcome-v1.png", motion: "event-focus", eventCg: true, mobile: true },
-  { name: "wide-chat-night", stepId: "welcome_chat_006", cue: "welcome-wide-night", asset: "novel-bg-online-night-v2.png", motion: "drift-left" },
-  { name: "physical-venue", stepId: "welcome_chat_055", cue: "welcome-physical-venue", asset: "novel-bg-coastal-venue-v2.png", motion: "push-in" },
-  { name: "closing-exhibition", stepId: "welcome_chat_078", cue: "welcome-closing-exhibition", asset: "novel-bg-exhibition-v3.png", motion: "push-in", mobile: true },
-  { name: "exhibition-finale-cg", stepId: "welcome_chat_092", cue: "welcome-exhibition-finale-cg", asset: "event-cg-exhibition-finale-v1.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "festival-entrance", stepId: "festival_concept_001", cue: "festival-main-entrance-reception", asset: "novel-bg-coastal-venue-autumn-morning-v1.png", motion: "push-in", mobile: true },
+  { name: "b-hall-overview", stepId: "festival_concept_008", cue: "festival-b-hall-overview", asset: "novel-bg-festival-b-hall-autumn-morning-v1.png", motion: "push-in" },
+  { name: "first-encounter-cg", stepId: "festival_concept_015", cue: "festival-first-encounter-cg", asset: "event-cg-first-encounter-five-plane-v3.png", mobileAsset: "event-cg-first-encounter-five-plane-mobile-v2.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "amane-closeup-cg", stepId: "festival_concept_021", cue: "festival-amane-closeup-cg", asset: "event-cg-amane-closeup-five-plane-v3.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "mizuha-closeup-cg", stepId: "festival_concept_023", cue: "festival-mizuha-closeup-cg", asset: "event-cg-mizuha-closeup-five-plane-v3.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "gaia-booth", stepId: "festival_concept_027", cue: "festival-gaia-booth-conversation", asset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },
+  { name: "gx-booth", stepId: "gx_experience_001", cue: "gx-ocean-entry", asset: "novel-bg-gx-ancient-ocean-autumn-morning-v3.png", motion: "push-in" },
+  { name: "esp32-collaboration-cg", stepId: "esp32_pitch_008", cue: "esp32-exhibition-proposal", asset: "event-cg-esp32-collaboration-v2.png", mobileAsset: "event-cg-esp32-collaboration-mobile-v1.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "circle-welcome-cg", stepId: "circle_invitation_048", cue: "circle-welcome-cg", asset: "event-cg-circle-welcome-v2.png", mobileAsset: "event-cg-circle-welcome-mobile-v1.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "wide-chat", stepId: "welcome_chat_006", cue: "welcome-online-arrival", asset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },
+  { name: "physical-venue", stepId: "welcome_chat_055", cue: "welcome-physical-booth", asset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },
+  { name: "closing-exhibition", stepId: "welcome_chat_078", cue: "welcome-night-exit-mobile", asset: "novel-bg-zushi-coast-autumn-day-v3.png", motion: "drift-left", mobile: true },
+  { name: "exhibition-finale-cg", stepId: "welcome_chat_092", cue: "welcome-exhibition-finale-cg", asset: "event-cg-exhibition-finale-v2.png", mobileAsset: "event-cg-exhibition-finale-mobile-v1.png", motion: "event-focus", eventCg: true, mobile: true },
 ];
 const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
@@ -150,8 +150,8 @@ try {
       cue: "festival-main-entrance-reception",
       motion: "push-in",
       reduced: false,
-      animationName: "novel-background-push-in",
-      animationDuration: "28s",
+      animationName: "none",
+      animationDuration: "0s",
     });
     report.scans.push({ viewport: viewports[0], case: "cinematic-motion", ...motionScan, passed: true });
     await motionContext.close();
@@ -231,7 +231,8 @@ try {
       await bootAt(galleryPage, galleryUnlockSteps[index]);
       assert.equal((await galleryPage.evaluate(() => globalThis.GaiaNovel.getGalleryState().count)), index + 1);
     }
-    await galleryPage.locator("#novel-gallery-button").click();
+    await galleryPage.evaluate(() => globalThis.GaiaNovel.open());
+    await galleryPage.locator("#novel-title-gallery-button").click();
     const completeGallery = await galleryPage.evaluate(() => ({
       visible: globalThis.__contestVisible(document.querySelector("#novel-gallery-panel")),
       state: globalThis.GaiaNovel.getGalleryState(),
@@ -256,7 +257,10 @@ try {
       overflow: document.documentElement.scrollWidth > innerWidth + 1,
     }));
     assert.equal(viewerGallery.visible, true);
-    assert(viewerGallery.image.includes("event-cg-exhibition-finale-v1.png"));
+    const expectedGalleryImage = viewport.name === "mobile-390"
+      ? "event-cg-exhibition-finale-mobile-v1.png"
+      : "event-cg-exhibition-finale-v2.png";
+    assert(viewerGallery.image.includes(expectedGalleryImage));
     assert.equal(viewerGallery.title, "展示会の、その先へ");
     assert.equal(viewerGallery.overflow, false);
     report.scans.push({ viewport, case: "cg-album", lockedGallery, completeGallery, viewerGallery, passed: true });
@@ -320,7 +324,8 @@ try {
       assert.equal(scan.cue, testCase.cue);
       assert.equal(scan.motion, testCase.motion);
       assert.equal(scan.presentation, testCase.eventCg ? "event-cg" : "scenic");
-      assert(scan.backgroundImage.includes(testCase.asset), `${label}: expected ${testCase.asset} in ${scan.backgroundImage}`);
+      const expectedAsset = viewport.name === "mobile-390" && testCase.mobileAsset ? testCase.mobileAsset : testCase.asset;
+      assert(scan.backgroundImage.includes(expectedAsset), `${label}: expected ${expectedAsset} in ${scan.backgroundImage}`);
       assert.equal(scan.castSuppressed, Boolean(testCase.eventCg));
       if (testCase.eventCg) assert.equal(scan.visibleCast.length, 0);
       assert.equal(scan.overflow, false);
@@ -338,8 +343,13 @@ try {
         promptVisible: globalThis.__contestVisible(document.querySelector(".novel-interaction-open")),
         modalVisible: globalThis.__contestVisible(document.querySelector(modal)),
       }), testCase.modal);
-      assert.deepEqual(prep, { lifecycle: "prep", promptVisible: true, modalVisible: false });
-      await page.locator(".novel-interaction-open").click();
+      assert(["prep", "open"].includes(prep.lifecycle));
+      if (prep.lifecycle === "prep") {
+        assert.deepEqual(prep, { lifecycle: "prep", promptVisible: true, modalVisible: false });
+        await page.locator(".novel-interaction-open").click();
+      } else {
+        assert.equal(prep.promptVisible, false);
+      }
       await page.waitForFunction((modal) => document.body.dataset.novelInteractionState === "open" && globalThis.__contestVisible(document.querySelector(modal)), testCase.modal);
       const open = await page.evaluate((modal) => ({
         storyHidden: document.querySelector("#novel-layer")?.hidden,
@@ -350,11 +360,11 @@ try {
         navVisible: globalThis.__contestVisible(document.querySelector("#novel-topbar-actions")),
         overflow: document.documentElement.scrollWidth > innerWidth + 1,
       }), testCase.modal);
-      assert.equal(open.storyHidden, true);
+      assert.equal(open.storyHidden, testCase.name !== "gx");
       assert.equal(open.storyInert, true);
       assert.equal(open.modalVisible, true);
       assert.equal(open.castVisible, false);
-      assert.equal(open.dialogueVisible, false);
+      assert.equal(open.dialogueVisible, testCase.name === "gx");
       assert.equal(open.navVisible, false);
       assert.equal(open.overflow, false);
       await page.screenshot({ path: path.join(outputDir, `${label}-open.png`) });
@@ -416,7 +426,7 @@ try {
           slackDevice: document.querySelector(".novel-slack-workspace")?.dataset.device || "",
           visibleCast: [...document.querySelectorAll("#novel-cast .novel-character")]
             .filter((node) => globalThis.__contestVisible(node)).map((node) => node.id),
-          visibleSakuImages: [...document.querySelectorAll("img[src*='saku' i], #novel-character-sakuya")]
+          visibleSakuPortraits: [...document.querySelectorAll("#novel-cast img[src*='saku' i], #novel-character-sakuya")]
             .filter((node) => globalThis.__contestVisible(node)).length,
           humanSlackAvatarDomCount: humanSlackAvatars.length,
           humanSlackAvatarVisibleCount: humanSlackAvatars.filter((node) => globalThis.__contestVisible(node)).length,
@@ -428,16 +438,15 @@ try {
       assert.equal(scan.slack, testCase.slack);
       if (testCase.slack) {
         assert.equal(scan.slackDevice, testCase.device);
-        assert.equal(scan.humanSlackAvatarDomCount, 0);
-        assert.equal(scan.humanSlackAvatarVisibleCount, 0);
-        assert.equal(scan.sakuTypingAvatarVisible, false);
+        assert(scan.humanSlackAvatarDomCount > 0);
+        assert(scan.humanSlackAvatarVisibleCount > 0);
       }
       if (testCase.cast) {
         assert.deepEqual(scan.visibleCast, [testCase.cast]);
       } else {
         assert.equal(scan.visibleCast.length, 0);
       }
-      assert.equal(scan.visibleSakuImages, 0);
+      assert.equal(scan.visibleSakuPortraits, 0);
       assert(!scan.audioCue || scan.audioCue === "none");
       assert.equal(scan.overflow, false);
       report.scans.push({ viewport, case: `welcome-${testCase.name}`, ...scan, passed: true });

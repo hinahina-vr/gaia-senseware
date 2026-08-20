@@ -26,32 +26,32 @@ const assets = Object.freeze({
   boothClose: "assets/visuals-07/novel-bg-exhibition-autumn-morning-close-v4.png",
   boothWide: "assets/visuals-07/novel-bg-exhibition-autumn-morning-wide-v4.png",
   projectionConversation: "assets/visuals-07/novel-bg-festival-projection-conversation-v1.png",
-  firstEncounter: "assets/visuals-07/event-cg-first-encounter-five-plane-v2.png",
-  amaneCloseup: "assets/visuals-07/event-cg-amane-closeup-five-plane-v2.png",
-  mizuhaCloseup: "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v2.png",
-  mapTransition: "assets/visuals-07/event-cg-festival-map-transition-five-plane-v2.png",
+  firstEncounter: "assets/visuals-07/event-cg-first-encounter-five-plane-v3.png",
+  amaneCloseup: "assets/visuals-07/event-cg-amane-closeup-five-plane-v3.png",
+  mizuhaCloseup: "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v3.png",
+  mapTransition: "assets/visuals-07/event-cg-festival-map-transition-five-plane-v3.png",
   tenWindows: "assets/concept/concept-02-ten-windows.png",
   modeMap: "assets/visuals-07/mode-map-v1.webp",
   modis: "assets/data/modis-land-cover-2023.png",
-  map01Provenance: "assets/visuals-07/novel-bg-map01-data-provenance-autumn-morning-v2.png",
+  map01Provenance: "assets/visuals-07/novel-bg-map01-data-provenance-autumn-morning-v3.png",
   system: "assets/architecture/gaia-system-architecture.png",
-  gxAncientOcean: "assets/visuals-07/novel-bg-gx-ancient-ocean-autumn-morning-v2.png",
+  gxAncientOcean: "assets/visuals-07/novel-bg-gx-ancient-ocean-autumn-morning-v3.png",
   abstract: "assets/visuals-07/mode-abstract-v1.webp",
-  gxBreathingPoints: "assets/visuals-07/novel-bg-gx-breathing-points-autumn-morning-v2.png",
+  gxBreathingPoints: "assets/visuals-07/novel-bg-gx-breathing-points-autumn-morning-v3.png",
   observatory: "assets/architecture/observatory-architecture-v2.png",
   partner: "assets/concept/concept-01-earth-as-partner.png",
-  gxTemperatureAnomaly: "assets/visuals-07/novel-bg-gx-temperature-anomaly-autumn-morning-v2.png",
-  gxModeGateway: "assets/visuals-07/novel-bg-gx-mode-gateway-autumn-morning-v3.png",
-  esp32Collaboration: "assets/visuals-07/event-cg-esp32-collaboration-v1.png",
+  gxTemperatureAnomaly: "assets/visuals-07/novel-bg-gx-temperature-anomaly-autumn-morning-v3.png",
+  gxModeGateway: "assets/visuals-07/novel-bg-gx-mode-gateway-autumn-morning-v4.png",
+  esp32Collaboration: "assets/visuals-07/event-cg-esp32-collaboration-v2.png",
   future: "assets/concept/concept-04-co-created-future.png",
   shared: "assets/visuals-07/novel-background-v1.webp",
-  circleWelcome: "assets/visuals-07/event-cg-circle-welcome-v1.png",
-  circleInvitationCard: "assets/visuals-07/event-cg-circle-invitation-card-v2.png",
+  circleWelcome: "assets/visuals-07/event-cg-circle-welcome-v2.png",
+  circleInvitationCard: "assets/visuals-07/event-cg-circle-invitation-card-v3.png",
   onlineNight: "assets/visuals-07/novel-bg-online-night-v2.png",
   productionNight: "assets/visuals-07/novel-bg-production-night-v2.png",
   venue: "assets/visuals-07/novel-bg-coastal-venue-v2.png",
   coastNight: "assets/visuals-07/novel-bg-zushi-coast-autumn-day-v3.png",
-  finale: "assets/visuals-07/event-cg-exhibition-finale-v1.png",
+  finale: "assets/visuals-07/event-cg-exhibition-finale-v2.png",
 });
 const approvedAssetHashes = Object.freeze({
   [assets.entrance]: "972adf6beac6b3ac51e9e132b81c7ca61acb24e9f795600153ec021b7c9d1654",
@@ -59,23 +59,23 @@ const approvedAssetHashes = Object.freeze({
   [assets.fivePlaneProjection]: "42821b8efb82deb36075a9164d04d60bb52e284a2ca0ad3ac72d9f0b1a65ee1f",
   [assets.boothClose]: "7395fdf68129209f51e2eb1fea26e478627b4fbf03525a7ecb9cdc3d58c45f69",
   [assets.boothWide]: "9dc2b6db1bb35274842128b81a4e0bf09257be43727b472ec0ff5b06d7ad5ea4",
-  [assets.firstEncounter]: "973828ebd5492793dbbfa1938dc9db17dd68649bd76eb79bbf50fe28262a8d2d",
-  [assets.amaneCloseup]: "484e717473011c20095439c4734a302893b4aca8c786717e439746690a079207",
-  [assets.mizuhaCloseup]: "8c30befac59efa86c3e35472881e5243b01987a107d177eeaf5531fe5094ed54",
-  [assets.mapTransition]: "191548edc687bd13167fbb8051382e244ec0baa045305d2f80d0955713376e12",
+  [assets.firstEncounter]: "62984fd5ea1bbca86bf985be02c06b61d3680aae19ec2af932ae8dc4240efaa6",
+  [assets.amaneCloseup]: "ae7b03317515a741ae231d82be7be28076d44213c208f3c4c080439b499b16ea",
+  [assets.mizuhaCloseup]: "440c8c71df5cc82a142994fc2757b24f2be874272a1067da9a9a5b872b946672",
+  [assets.mapTransition]: "9eae1fce4e79ce8d32961dce29c348fe1ed0df329e70684b2fdb1cde657ce380",
   [assets.modeMap]: "1a245a6af41d7b4dd5621cf0673b5b44284932c64d7b12c192c885c0f579e1d5",
-  [assets.gxAncientOcean]: "4c1ad6438f49230df897c9eb39db0a2c1b224274022b391a4cf26ca2c0994727",
+  [assets.gxAncientOcean]: "f219a47c1b5d24ab780dedf492f807515b9ecc6a088f7d5f803fff584903699f",
   [assets.abstract]: "be589ad2fd084284d967e2fd873c8565ac4ceb468820a4eca9b87d6815b67b68",
-  [assets.gxBreathingPoints]: "c1730e84c3728c021ada5f5c92360492cf70fed76a1b8cb64235c7d651ece381",
-  [assets.gxTemperatureAnomaly]: "4937a2451e9da1df89675e2c074f6a3fb4f5f40cdf135d1c4aa138d6d9bca30b",
-  [assets.map01Provenance]: "f8d790382472b9f0c77bad60e48ca17a943a5f0b34099fe939b58b692396a6fc",
-  [assets.gxModeGateway]: "85c3bd80ca39983f911183a5822fed0d0702663c7bf190d32e574434830037eb",
-  [assets.esp32Collaboration]: "bc057bb723e9f79c990777c3bff3be86196fe9720aa55b53ced422a925888292",
+  [assets.gxBreathingPoints]: "d468bdcead823a16b9847dce49c8945bf011b48c82ce9f933dfe6602f39ad0e7",
+  [assets.gxTemperatureAnomaly]: "f03f821c95cc0ccd4c3b62d1f5e7b08f8a0fb7c741fd2c210edb600b2ffd0050",
+  [assets.map01Provenance]: "90316d1300c7b5a19ed04eca347ad8bd702d476e2d5bb03e8ef207784160e206",
+  [assets.gxModeGateway]: "6cb628c79e74496fd7393c6844c0a0fd8d91e5bd682f5567065c5218fb826514",
+  [assets.esp32Collaboration]: "9dac8e247d2fc37fc86b57a49be249c0cd73da84f02fe803d9c6f802c83c68fd",
   [assets.shared]: "933900ea6c5d9dca04861d551d25e67fb7fffd33085f3a4abe43ff102a8b4d02",
-  [assets.circleWelcome]: "0d191c928ccd36c4d0e1d38ff0eaff32ede4e204aa98972759aaf918bb79d1f1",
+  [assets.circleWelcome]: "525634c93527c677b8afa337e89a5d00ed46e1b64b349bfa123efb220ff7dfbd",
   [assets.coastNight]: "f8017fc5902cbae1df2f9e037b7009179a5bf924e5d943f73e76005d60c1467e",
-  [assets.finale]: "2c99d899bcb5ab7c51a345069683ca0899f9881ac4962ad2a949e932148b3f14",
-  [assets.circleInvitationCard]: "04c631338a496b0de06660357cfa0c5967ec8595aeafaa7a4f8e45ce9c5c7c26",
+  [assets.finale]: "343579e6a2af3cfbc8c1e2d1314dc852ef69d2a742e432f3f8ce7fa49fae2262",
+  [assets.circleInvitationCard]: "0333bec3f7b6d0af5b3dca51913ede5f87dc30ffe81df28b4520bc1c7cb2f04b",
 });
 const sha256 = async (assetPath) => createHash("sha256")
   .update(await readFile(path.join(projectRoot, assetPath)))
@@ -103,7 +103,7 @@ const expectedBoundaries = [
   ["map_mode01", 29, 40, "map01-data-provenance", assets.map01Provenance, "drift-left", "scenic"],
   ["map_mode01", 41, 43, "map01-exhibition-return", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["gx_experience", 1, 16, "gx-ocean-entry", assets.gxAncientOcean, "push-in", "scenic"],
-  ["gx_experience", 17, 17, "gx-native-deep-time", assets.boothClose, "drift-right", "scenic"],
+  ["gx_experience", 17, 17, "gx-native-deep-time", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["gx_experience", 18, 18, "gx-exhibition-return", assets.fivePlaneProjection, "push-in", "scenic"],
   ["gx_experience", 19, 29, "gx-ancient-ocean", assets.abstract, "drift-right", "scenic"],
   ["gx_experience", 30, 41, "gx-coevolution", assets.gxBreathingPoints, "drift-left", "scenic"],
@@ -111,15 +111,15 @@ const expectedBoundaries = [
   ["gx_experience", 45, 54, "gx-human-choice", assets.gxTemperatureAnomaly, "drift-right", "scenic"],
   ["gx_experience", 55, 58, "gx-ten-mode-gateway", assets.gxModeGateway, "push-in", "scenic"],
   ["esp32_pitch", 1, 7, "esp32-exhibition-opening", assets.fivePlaneProjection, "drift-left", "scenic"],
-  ["esp32_pitch", 8, 18, "esp32-exhibition-proposal", assets.fivePlaneProjection, "drift-right", "scenic"],
+  ["esp32_pitch", 8, 18, "esp32-exhibition-proposal", assets.esp32Collaboration, "event-focus", "event-cg"],
   ["esp32_pitch", 19, 26, "esp32-system-design", assets.system, "drift-left", "scenic"],
   ["esp32_pitch", 27, 38, "esp32-co-created-prototype", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["esp32_pitch", 39, 43, "esp32-exhibition-return", assets.fivePlaneProjection, "push-in", "scenic"],
   ["circle_invitation", 1, 10, "circle-closing-exhibition", assets.fivePlaneProjection, "push-in", "scenic"],
-  ["circle_invitation", 11, 28, "circle-private-invitation", assets.boothWide, "drift-left", "scenic"],
+  ["circle_invitation", 11, 28, "circle-private-invitation", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["circle_invitation", 29, 47, "circle-invitation-card-cg", assets.circleInvitationCard, "event-focus", "event-cg"],
   ["circle_invitation", 48, 69, "circle-welcome-cg", assets.circleWelcome, "event-focus", "event-cg"],
-  ["circle_invitation", 70, 81, "circle-after-welcome", assets.boothClose, "drift-right", "scenic"],
+  ["circle_invitation", 70, 81, "circle-after-welcome", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["welcome_chat", 1, 20, "welcome-online-arrival", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["welcome_chat", 21, 40, "welcome-online-esp32-thread", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["welcome_chat", 41, 54, "welcome-co-created-future", assets.fivePlaneProjection, "push-in", "scenic"],
@@ -148,8 +148,8 @@ const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(ste
 assert.equal(resolved.length, 396);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 23, "background-art cut must use twenty-three distinct scene assets");
-assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 58);
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 22, "background-art cut must use twenty-two distinct scene assets");
+assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 69);
 
 assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
 assert.equal(new Set(backgroundCues.gallery.map((entry) => entry.id)).size, 6, "CG album IDs must be unique");
@@ -232,20 +232,21 @@ assert.equal(cue("map_mode01_015").assetPath, assets.modis);
 assert.equal(cue("map_mode01_029").assetPath, assets.map01Provenance);
 assert.equal(cue("map_mode01_040").assetPath, assets.map01Provenance);
 assert.equal(cue("map_mode01_043").assetPath, assets.fivePlaneProjection);
-assert.equal(cue("gx_experience_017").assetPath, assets.boothClose);
+assert.equal(cue("gx_experience_017").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("gx_experience_011").assetPath, assets.gxAncientOcean);
 assert.equal(cue("gx_experience_018").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("gx_experience_030").assetPath, assets.gxBreathingPoints);
 assert.equal(cue("gx_experience_054").assetPath, assets.gxTemperatureAnomaly);
 assert.equal(cue("esp32_pitch_007").assetPath, assets.fivePlaneProjection);
-assert.equal(cue("esp32_pitch_008").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("esp32_pitch_008").assetPath, assets.esp32Collaboration);
+assert.equal(cue("esp32_pitch_008").presentation, "event-cg");
 assert.equal(cue("esp32_pitch_019").assetPath, assets.system);
 assert.equal(cue("esp32_pitch_027").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("circle_invitation_001").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("circle_invitation_029").assetPath, assets.circleInvitationCard);
 assert.equal(cue("circle_invitation_047").assetPath, assets.circleInvitationCard);
 assert.equal(cue("circle_invitation_048").presentation, "event-cg");
-assert.equal(cue("circle_invitation_070").assetPath, assets.boothClose);
+assert.equal(cue("circle_invitation_070").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("welcome_chat_020").id, "welcome-online-arrival");
 assert.equal(cue("welcome_chat_021").id, "welcome-online-esp32-thread");
 assert.equal(cue("welcome_chat_055").id, "welcome-physical-booth");

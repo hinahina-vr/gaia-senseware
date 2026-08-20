@@ -22,13 +22,14 @@ const cases = [
   { name: "mizuha-normal", stepId: "festival_concept_036", cast: "novel-character-minamo" },
   { name: "mizuha-physical", stepId: "welcome_chat_055", cast: "novel-character-minamo" },
   { name: "amane-physical", stepId: "welcome_chat_060", cast: "novel-character-sora", portraitAsset: "amane-calm-07-v3.png" },
-  { name: "first-encounter-cg", stepId: "festival_concept_015", eventCg: true, mobileAsset: "event-cg-first-encounter-five-plane-mobile-v1.png" },
+  { name: "first-encounter-cg", stepId: "festival_concept_015", eventCg: true, mobileAsset: "event-cg-first-encounter-five-plane-mobile-v2.png" },
   { name: "amane-closeup-cg", stepId: "festival_concept_021", eventCg: true },
-  { name: "mizuha-closeup-cg", stepId: "festival_concept_023", eventCg: true, mobileAsset: "event-cg-mizuha-closeup-five-plane-mobile-v1.png" },
-  { name: "festival-map-transition-cg", stepId: "festival_concept_076", eventCg: true },
-  { name: "invitation-card-cg", stepId: "circle_invitation_029", eventCg: true },
-  { name: "circle-welcome-cg", stepId: "circle_invitation_048", eventCg: true },
-  { name: "exhibition-finale-cg", stepId: "welcome_chat_092", eventCg: true },
+  { name: "mizuha-closeup-cg", stepId: "festival_concept_023", eventCg: true },
+  { name: "festival-map-transition-cg", stepId: "festival_concept_076", eventCg: true, mobileAsset: "event-cg-festival-map-transition-five-plane-mobile-v1.png" },
+  { name: "esp32-collaboration-cg", stepId: "esp32_pitch_008", eventCg: true, mobileAsset: "event-cg-esp32-collaboration-mobile-v1.png" },
+  { name: "invitation-card-cg", stepId: "circle_invitation_029", eventCg: true, mobileAsset: "event-cg-circle-invitation-card-mobile-v1.png" },
+  { name: "circle-welcome-cg", stepId: "circle_invitation_048", eventCg: true, mobileAsset: "event-cg-circle-welcome-mobile-v1.png" },
+  { name: "exhibition-finale-cg", stepId: "welcome_chat_092", eventCg: true, mobileAsset: "event-cg-exhibition-finale-mobile-v1.png" },
 ];
 const report = { status: "running", viewports, cases: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath, args: ["--no-first-run", "--disable-background-networking"] });

@@ -2,7 +2,10 @@ import { createRequire } from "node:module";
 import { mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 
-const require = createRequire(import.meta.url);
+const dependencyRoot = process.env.CODEX_NODE_MODULES;
+const require = dependencyRoot
+  ? createRequire(path.join(dependencyRoot, "package.json"))
+  : createRequire(import.meta.url);
 const sharp = require("sharp");
 
 const root = process.cwd();

@@ -175,7 +175,7 @@ try {
     assert.equal(initial.buttonHidden, true, `${viewport.name}: END action was shown before the roll`);
     assert.equal(initial.skipHintCount, 0, `${viewport.name}: obsolete staff-roll skip hint remains`);
     assert.equal(initial.toolbarHidden, true, `${viewport.name}: normal VN toolbar remained over the ending`);
-    assert.match(initial.stageBackground, /event-cg-exhibition-finale-v1\.png/u);
+    assert.match(initial.stageBackground, /event-cg-exhibition-finale-(?:v2|mobile-v1)\.png/u);
     [
       "原案・企画・制作",
       "シナリオ",

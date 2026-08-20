@@ -9535,12 +9535,32 @@ body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-
    stage instead of cropping a landscape illustration down to its center. */
 @media (max-width: 720px) {
   .novel-layer:not(.is-title)[data-background-motion][data-background-cue="festival-first-encounter-cg"] {
-    --novel-scene-background: url("./assets/visuals-07/event-cg-first-encounter-five-plane-mobile-v1.png") !important;
+    --novel-scene-background: url("./assets/visuals-07/event-cg-first-encounter-five-plane-mobile-v2.png") !important;
     background-position: center, center !important;
   }
 
-  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="festival-mizuha-closeup-cg"] {
-    --novel-scene-background: url("./assets/visuals-07/event-cg-mizuha-closeup-five-plane-mobile-v1.png") !important;
+  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="festival-map-transition"] {
+    --novel-scene-background: url("./assets/visuals-07/event-cg-festival-map-transition-five-plane-mobile-v1.png") !important;
+    background-position: center, center !important;
+  }
+
+  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="esp32-exhibition-proposal"] {
+    --novel-scene-background: url("./assets/visuals-07/event-cg-esp32-collaboration-mobile-v1.png") !important;
+    background-position: center, center !important;
+  }
+
+  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="circle-invitation-card-cg"] {
+    --novel-scene-background: url("./assets/visuals-07/event-cg-circle-invitation-card-mobile-v1.png") !important;
+    background-position: center, center !important;
+  }
+
+  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="circle-welcome-cg"] {
+    --novel-scene-background: url("./assets/visuals-07/event-cg-circle-welcome-mobile-v1.png") !important;
+    background-position: center, center !important;
+  }
+
+  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="welcome-exhibition-finale-cg"] {
+    --novel-scene-background: url("./assets/visuals-07/event-cg-exhibition-finale-mobile-v1.png") !important;
     background-position: center, center !important;
   }
 }
