@@ -2775,8 +2775,9 @@ button {
   content: "";
   pointer-events: none;
   opacity: 0.3;
-  background: url("./assets/visuals-07/mode-map-v1.webp") center / cover no-repeat;
-  filter: brightness(0.72) saturate(0.84) contrast(1.05);
+  background:
+    radial-gradient(circle at 52% 42%, rgba(81, 195, 213, 0.16), transparent 38%),
+    linear-gradient(135deg, rgba(5, 26, 42, 0.18), rgba(20, 57, 75, 0.08) 52%, rgba(2, 16, 28, 0.24));
 }
 
 .japan-map.is-dragging {

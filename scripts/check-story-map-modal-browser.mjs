@@ -134,6 +134,8 @@ const desktopClosed = await desktop.page.evaluate(() => ({
   stepId: globalThis.GaiaNovel.getState().stepId,
   mapHidden: document.querySelector("#japan-layer")?.hidden,
   novelHidden: document.querySelector("#novel-layer")?.hidden,
+  usesExhibitionMapBackground: getComputedStyle(document.querySelector("#novel-layer")).backgroundImage.includes("event-cg-festival-map-transition-five-plane-v3.png"),
+  usesTabletopMapBackground: getComputedStyle(document.querySelector("#novel-layer")).backgroundImage.includes("mode-map-v1.webp"),
   guideCount: document.querySelectorAll(".story-map-guide").length,
   returnCount: document.querySelectorAll("#story-detour-return").length,
 }));
@@ -141,9 +143,12 @@ assert.deepEqual(desktopClosed, {
   stepId: "map_mode01_005",
   mapHidden: true,
   novelHidden: false,
+  usesExhibitionMapBackground: true,
+  usesTabletopMapBackground: false,
   guideCount: 0,
   returnCount: 0,
 });
+await desktop.page.screenshot({ path: path.join(outputDir, "desktop-return.png") });
 await desktop.context.close();
 
 const mobile = await bootAtMap({ width: 390, height: 844 }, "mobile");
@@ -166,6 +171,7 @@ console.log(JSON.stringify({
   mobileOpen,
   screenshots: [
     path.join(outputDir, "desktop-open.png"),
+    path.join(outputDir, "desktop-return.png"),
     path.join(outputDir, "mobile-open.png"),
   ],
 }, null, 2));

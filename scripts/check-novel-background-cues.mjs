@@ -32,7 +32,6 @@ const assets = Object.freeze({
   mizuhaCloseup: "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v3.png",
   mapTransition: "assets/visuals-07/event-cg-festival-map-transition-five-plane-v3.png",
   tenWindows: "assets/concept/concept-02-ten-windows.png",
-  modeMap: "assets/visuals-07/mode-map-v1.webp",
   modis: "assets/data/modis-land-cover-2023.png",
   map01Provenance: "assets/visuals-07/novel-bg-map01-data-provenance-autumn-morning-v3.png",
   system: "assets/architecture/gaia-system-architecture.png",
@@ -65,7 +64,6 @@ const approvedAssetHashes = Object.freeze({
   [assets.amaneCloseup]: "ae7b03317515a741ae231d82be7be28076d44213c208f3c4c080439b499b16ea",
   [assets.mizuhaCloseup]: "440c8c71df5cc82a142994fc2757b24f2be874272a1067da9a9a5b872b946672",
   [assets.mapTransition]: "9eae1fce4e79ce8d32961dce29c348fe1ed0df329e70684b2fdb1cde657ce380",
-  [assets.modeMap]: "1a245a6af41d7b4dd5621cf0673b5b44284932c64d7b12c192c885c0f579e1d5",
   [assets.gxAncientOcean]: "f219a47c1b5d24ab780dedf492f807515b9ecc6a088f7d5f803fff584903699f",
   [assets.abstract]: "be589ad2fd084284d967e2fd873c8565ac4ceb468820a4eca9b87d6815b67b68",
   [assets.gxBreathingPoints]: "d468bdcead823a16b9847dce49c8945bf011b48c82ce9f933dfe6602f39ad0e7",
@@ -101,7 +99,7 @@ const expectedBoundaries = [
   ["festival_concept", 23, 26, "festival-mizuha-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
   ["festival_concept", 27, 75, "festival-gaia-booth-conversation", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["festival_concept", 76, 76, "festival-map-transition", assets.mapTransition, "event-focus", "event-cg"],
-  ["map_mode01", 1, 14, "map01-co2-observation", assets.modeMap, "drift-right", "scenic"],
+  ["map_mode01", 1, 14, "map01-co2-observation", assets.mapTransition, "drift-right", "scenic"],
   ["map_mode01", 15, 28, "map01-temperature-observation", assets.modis, "push-in", "scenic"],
   ["map_mode01", 29, 40, "map01-data-provenance", assets.map01Provenance, "drift-left", "scenic"],
   ["map_mode01", 41, 43, "map01-exhibition-return", assets.fivePlaneProjection, "drift-right", "scenic"],
@@ -151,7 +149,7 @@ const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(ste
 assert.equal(resolved.length, 396);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 23, "background-art cut must use twenty-three distinct scene assets");
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 22, "background-art cut must keep the intentional exhibition-map continuity");
 assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 69);
 
 assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
@@ -185,6 +183,7 @@ const forbiddenFestivalAssets = [
   "assets/concept/concept-02-ten-windows.png",
 ];
 assert(festivalResolved.slice(26).every(({ cue: resolvedCue }) => !forbiddenFestivalAssets.includes(resolvedCue.assetPath)), "festival 027-076 still references a superseded fantasy/flat asset");
+assert(resolved.every(({ cue: resolvedCue }) => resolvedCue.assetPath !== "assets/visuals-07/mode-map-v1.webp"), "tabletop map artwork must not appear in story playback");
 assert(resolved.every(({ cue: resolvedCue }) => !/portrait/iu.test(resolvedCue.assetPath)), "mobile portrait asset must never be requested");
 
 const forbiddenConsistencyAssets = new Set([
@@ -233,6 +232,8 @@ assert.equal(cue("festival_concept_063").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("festival_concept_075").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("festival_concept_076").assetPath, assets.mapTransition);
 assert.equal(cue("festival_concept_076").presentation, "event-cg");
+assert.equal(cue("map_mode01_001").assetPath, assets.mapTransition);
+assert.equal(cue("map_mode01_005").assetPath, assets.mapTransition);
 assert.equal(cue("map_mode01_015").assetPath, assets.modis);
 assert.equal(cue("map_mode01_029").assetPath, assets.map01Provenance);
 assert.equal(cue("map_mode01_040").assetPath, assets.map01Provenance);

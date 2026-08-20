@@ -8,6 +8,8 @@ const read = (name) => fs.readFileSync(path.join(root, name), "utf8");
 const html = read("index.html");
 const app = read("app.js");
 const styles = read("novel-mode.css");
+const baseStyles = read("styles.css");
+const backgroundCues = read("novel-background-cues.js");
 const runtime = read("novel-mode.js");
 await import(`${pathToFileURL(path.join(root, "novel-story-data.js")).href}?map01=${Date.now()}`);
 
@@ -79,10 +81,19 @@ check("story copy describes automatic playback without retired controls", () => 
 });
 
 check("runtime cache keys are advanced", () => {
+  assert.match(html, /styles\.css\?v=gaia-map-no-tabletop-1/u);
+  assert.match(html, /novel-background-cues\.js\?v=gaia-map-no-tabletop-1/u);
   assert.match(html, /app\.js\?v=gaia-story-map-autoplay-1/u);
   assert.match(html, /novel-mode\.css\?v=gaia-story-map-modal-1/u);
   assert.match(html, /novel-mode\.js\?v=gaia-story-map-autoreturn-1/u);
   assert.match(html, /novel-story-data\.js\?v=gaia-story-map-autoplay-1/u);
+});
+
+check("tabletop map artwork is absent from story and map runtime", () => {
+  assert.doesNotMatch(backgroundCues, /mode-map-v1\.webp/u);
+  assert.doesNotMatch(baseStyles, /mode-map-v1\.webp/u);
+  assert.doesNotMatch(html, /data-intro-visual="map"[\s\S]{0,180}mode-map-v1\.webp/u);
+  assert.match(backgroundCues, /map01-co2-observation[\s\S]{0,180}event-cg-festival-map-transition-five-plane-v3\.png/u);
 });
 
 console.log(JSON.stringify({ status: "passed", checks, sceneCount: story.scenes.length, stepCount: steps.length, interactions }, null, 2));
