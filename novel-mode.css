@@ -4505,6 +4505,14 @@ body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-charact
   body:not(.gx-story-open) .novel-character.novel-character--minamo .novel-character-portrait {
     background-size: auto clamp(840px, 186vh, 1420px);
   }
+
+  /* Mizuha's source PNG has substantially more transparent canvas than
+     Amane's. Compensate only in mobile VN dialogue so both guides feel like
+     they are standing at the same conversational distance. */
+  body:not(.gx-story-open) .novel-layer:not(.is-slack) .novel-character.novel-character--minamo .novel-character-portrait {
+    background-position: 50% -60px;
+    background-size: auto 1900px;
+  }
 }
 
 /* Pull the active GX guide into the conversation instead of leaving a vacant

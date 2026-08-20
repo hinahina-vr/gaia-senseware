@@ -166,9 +166,26 @@ const makeContactSheet = async (viewport) => {
   return outputPath;
 };
 
+const assertMobileDialogueDistanceMatch = (viewport) => {
+  const scans = report.cases.filter((entry) => entry.viewport === viewport.name);
+  const amane = scans.find((entry) => entry.name === "amane-normal");
+  const mizuhaScans = scans.filter((entry) => entry.name === "mizuha-normal" || entry.name === "mizuha-physical");
+  const backgroundHeight = (entry) => Number(/auto\s+([\d.]+)px/u.exec(entry?.portraitBackgroundSize || "")?.[1]);
+  const amaneHeight = backgroundHeight(amane);
+  assert(Number.isFinite(amaneHeight), `${viewport.name}: Amane portrait height was not measurable`);
+  for (const mizuha of mizuhaScans) {
+    const mizuhaHeight = backgroundHeight(mizuha);
+    assert(Number.isFinite(mizuhaHeight), `${viewport.name}/${mizuha.name}: Mizuha portrait height was not measurable`);
+    const ratio = mizuhaHeight / amaneHeight;
+    assert(ratio >= 1.32 && ratio <= 1.36, `${viewport.name}/${mizuha.name}: Mizuha distance compensation ratio was ${ratio}`);
+    assert.equal(mizuha.portraitBackgroundPosition, "50% -60px", `${viewport.name}/${mizuha.name}: Mizuha head alignment drifted`);
+  }
+};
+
 try {
   for (const viewport of viewports) {
     for (const [index, testCase] of cases.entries()) await scanCase(viewport, testCase, index);
+    assertMobileDialogueDistanceMatch(viewport);
   }
   report.contactSheets = [];
   for (const viewport of viewports) report.contactSheets.push(await makeContactSheet(viewport));
