@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "98e33e266083ec479a55249c5bfeba392596803db4c885e6bf5f6a10df7459b2";
+const expectedHash = "5ef472299c702c464c60a84dbeadc2034ae083dc986fa609bcfbfc97a4013da5";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 48, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 56368, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 56423, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
@@ -56,6 +56,8 @@ const festival = story.scenes.find((scene) => scene.id === "festival_concept");
 const storyText = steps.map((step) => String(step.text || "")).join("\n");
 assert.equal(storyText.includes(prohibitedRemainingPhrase), false, "指定NG表現が生成済みストーリーに残っています");
 assert.doesNotMatch(storyText, /ものづくり|ほどけ/u, "今回の対象文脈で使用しない表現が残っています");
+assert.equal(storyText.includes("#GSW-esp32"), false, "旧ESP32チャネル名が残っています");
+assert.equal(storyText.split("# 惑星の放課後_esp32").length - 1, 3, "ESP32チャネル名は作成通知・誘導・空チャネル描写の3件必要です");
 assert.equal(storyText.split("あめと、みず。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 0, "旧festival_concept_024全文が残っています");
 assert.equal(storyText.split("あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 1, "festival_concept_024決定稿はexact1件必要です");
 assert.equal(storyText.split("雨が降って、水になる。二人の名前を並べると、偶然にしては出来すぎていた。").length - 1, 0, "撤回された所感が残っています");

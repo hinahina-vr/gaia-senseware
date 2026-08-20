@@ -8,7 +8,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "98e33e266083ec479a55249c5bfeba392596803db4c885e6bf5f6a10df7459b2";
+const EXPECTED_SOURCE_SHA256 = "5ef472299c702c464c60a84dbeadc2034ae083dc986fa609bcfbfc97a4013da5";
 const LEGACY_STEP_ID_GAPS = Object.freeze({
   gx_experience: Object.freeze({ after: 44, size: 10 }),
 });

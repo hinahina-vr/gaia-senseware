@@ -23,7 +23,7 @@ const expectedAtStart = [
 const expectedFollowing = [
   ["welcome_chat_038", "まず一台つなぎます。"],
   ["welcome_chat_039", "お願い。動いたら、照度も足してみよう。"],
-  ["welcome_chat_040", "続きは、#GSW-esp32 で。"],
+  ["welcome_chat_040", "続きは、# 惑星の放課後_esp32 で。"],
 ];
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },

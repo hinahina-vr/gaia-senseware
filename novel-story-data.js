@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "98e33e266083ec479a55249c5bfeba392596803db4c885e6bf5f6a10df7459b2",
+  "sourceSha256": "5ef472299c702c464c60a84dbeadc2034ae083dc986fa609bcfbfc97a4013da5",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -2391,7 +2391,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_001",
           "sceneId": "welcome_chat",
           "type": "chatSurface",
-          "text": "# はじめまして／人物画像は表示しない"
+          "text": "# 惑星の放課後_雑談／人物画像は表示しない"
         },
         {
           "id": "welcome_chat_002",
@@ -2558,7 +2558,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "10:17",
           "speaker": "system",
           "speakerLabel": "SYSTEM",
-          "text": "あめが #GSW-esp32 を作成しました。"
+          "text": "あめが # 惑星の放課後_esp32 を作成しました。"
         },
         {
           "id": "welcome_chat_023",
@@ -2716,14 +2716,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "10:25",
           "speaker": "sakuya",
           "speakerLabel": "saku",
-          "text": "続きは、#GSW-esp32 で。"
+          "text": "続きは、# 惑星の放課後_esp32 で。"
         },
         {
           "id": "welcome_chat_041",
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "新しくできた #GSW-esp32 を開く。投稿はまだ一件もない。最初の一行を任された空白が、もう怖いものには見えなかった。"
+          "text": "新しくできた # 惑星の放課後_esp32 を開く。投稿はまだ一件もない。最初の一行を任された空白が、もう怖いものには見えなかった。"
         },
         {
           "id": "welcome_chat_042",

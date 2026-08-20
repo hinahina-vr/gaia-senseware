@@ -125,19 +125,19 @@ try {
     assert.deepEqual(scan.channels.map((channel) => channel.text), expectedChannels.map((channel) => `# ${channel}`), `${viewport.name}: displayed channel labels differ`);
     assert(scan.channels.every((channel) => channel.visible && channel.fullyInsideSidebar), `${viewport.name}: a school channel is outside the sidebar`);
     if (viewport.name === "pc-1440") assert(scan.channels.every((channel) => !channel.clippedInline), "pc-1440: a school channel label is truncated");
-    assert.equal(scan.currentText, "# 惑星の放課後", `${viewport.name}: story channel lost selection`);
+    assert.equal(scan.currentText, "# 惑星の放課後_雑談", `${viewport.name}: story channel lost selection`);
     assert.equal(scan.currentAria, "page", `${viewport.name}: selected channel semantics are missing`);
     assert.equal(scan.currentVisible, true, `${viewport.name}: selected story channel is hidden`);
     assert.deepEqual(scan.sensorChannel, {
-      text: "#GSW-esp32",
-      channel: "GSW-esp32",
-      title: "GSW-esp32",
+      text: "# 惑星の放課後_esp32",
+      channel: "惑星の放課後_esp32",
+      title: "惑星の放課後_esp32",
       visible: true,
       fullyInsideSidebar: true,
-    }, `${viewport.name}: GSW-esp32 channel is missing from the sidebar`);
+    }, `${viewport.name}: 惑星の放課後_esp32 channel is missing from the sidebar`);
     assert.equal(scan.sidebarOverflowX, 0, `${viewport.name}: sidebar has horizontal overflow`);
     assert.equal(scan.overflowX, 0, `${viewport.name}: page has horizontal overflow`);
-    assert.equal(scan.currentMessage, "あめが #GSW-esp32 を作成しました。", `${viewport.name}: current story message changed`);
+    assert.equal(scan.currentMessage, "あめが # 惑星の放課後_esp32 を作成しました。", `${viewport.name}: current story message changed`);
     assert(scan.avatarImagesLoaded >= 3, `${viewport.name}: symbolic chat avatars did not load`);
     report.scans.push({ viewport: viewport.name, ...scan, passed: true });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`), animations: "disabled" });

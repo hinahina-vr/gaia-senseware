@@ -4,8 +4,8 @@
 
 - 入力: `contest-limited/story/機能限定版台本.md`
 - 正本: `story/物語台本.md`
-- UTF-8 / LF / 56,368 bytes / 992 content lines
-- SHA-256: `98e33e266083ec479a55249c5bfeba392596803db4c885e6bf5f6a10df7459b2`
+- UTF-8 / LF / 56,423 bytes / 992 content lines
+- SHA-256: `5ef472299c702c464c60a84dbeadc2034ae083dc986fa609bcfbfc97a4013da5`
 - scene IDと後続step IDを維持したまま、展開へ影響しないGX後の三択・端末内投票を2026-08-20 owner指示で撤去済み。
 
 ## scene順とmetadata
@@ -35,6 +35,7 @@ interaction stepは本文を追加しないmetadata-only step。PREPの人物台
 ## welcome_chat presentation境界
 
 - `_001`〜`_054`: 学内chat surface（wide）。人物のlarge cast / portrait / voiceは出さない。
+- 学内chatのサークル名は「惑星の放課後」、チャネル名は `# 惑星の放課後_雑談` と `# 惑星の放課後_esp32`。
 - `_055`〜`_077`: 会場で隣にいるミズハ／アマネとの物理会話。通常の展示画面へ戻す。
 - `_078`〜`_095`: 帰路のスマートフォン（mobile）。desktopでも縦型、390pxでは二重frameを作らない。
 - sakuは`chat` stepだけ。cast / portrait / avatar / voiceは全区間0。
