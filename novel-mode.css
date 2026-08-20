@@ -9564,7 +9564,8 @@ body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-
     background-position: center, center !important;
   }
 
-  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="festival-map-transition"] {
+  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="festival-map-transition"],
+  .novel-layer:not(.is-title)[data-background-motion][data-background-cue="map01-co2-observation"] {
     --novel-scene-background: url("./assets/visuals-07/event-cg-festival-map-transition-five-plane-mobile-v1.png") !important;
     background-position: center, center !important;
   }

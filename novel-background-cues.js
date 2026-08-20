@@ -76,7 +76,7 @@
     { id: "festival-mizuha-closeup-cg", sceneId: "festival_concept", from: 23, to: 26, assetPath: "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v3.png", motion: "event-focus", presentation: "event-cg", galleryId: "mizuha-closeup" },
     { id: "festival-gaia-booth-conversation", sceneId: "festival_concept", from: 27, to: 75, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },
     { id: "festival-map-transition", sceneId: "festival_concept", from: 76, to: 76, assetPath: "assets/visuals-07/event-cg-festival-map-transition-five-plane-v3.png", motion: "event-focus", presentation: "event-cg" },
-    { id: "map01-co2-observation", sceneId: "map_mode01", from: 1, to: 14, assetPath: "assets/visuals-07/event-cg-festival-map-transition-five-plane-v3.png", motion: "drift-right" },
+    { id: "map01-co2-observation", sceneId: "map_mode01", from: 1, to: 14, assetPath: "assets/visuals-07/event-cg-festival-map-transition-five-plane-v3.png", motion: "drift-right", presentation: "event-cg" },
     { id: "map01-temperature-observation", sceneId: "map_mode01", from: 15, to: 28, assetPath: "assets/data/modis-land-cover-2023.png", motion: "push-in" },
     { id: "map01-data-provenance", sceneId: "map_mode01", from: 29, to: 40, assetPath: "assets/visuals-07/novel-bg-map01-data-provenance-autumn-morning-v3.png", motion: "drift-left" },
     { id: "map01-exhibition-return", sceneId: "map_mode01", from: 41, to: 43, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-right" },

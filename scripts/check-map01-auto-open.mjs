@@ -82,12 +82,12 @@ check("story copy describes automatic playback without retired controls", () => 
 
 check("runtime cache keys are advanced", () => {
   assert.match(html, /styles\.css\?v=gaia-map-no-tabletop-1/u);
-  assert.match(html, /novel-background-cues\.js\?v=gaia-gx-ocean-crossfade-1/u);
+  assert.match(html, /novel-background-cues\.js\?v=gaia-no-double-cast-1/u);
   assert.match(html, /app\.js\?v=gaia-story-map-autoplay-1/u);
-  assert.match(html, /novel-mode\.css\?v=gaia-character-distance-1/u);
+  assert.match(html, /novel-mode\.css\?v=gaia-no-double-cast-1/u);
   assert.match(html, /gx-mode\.js\?v=gaia-gx-auto-return-1/u);
-  assert.match(html, /novel-mode\.js\?v=gaia-gx-auto-return-1/u);
-  assert.match(html, /novel-story-data\.js\?v=gaia-story-map-autoplay-1/u);
+  assert.match(html, /novel-mode\.js\?v=gaia-no-double-cast-1/u);
+  assert.match(html, /novel-story-data\.js\?v=gaia-outdoor-exhibition-copy-1/u);
 });
 
 check("tabletop map artwork is absent from story and map runtime", () => {

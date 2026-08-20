@@ -97,7 +97,7 @@ const expectedBoundaries = [
   ["festival_concept", 23, 26, "festival-mizuha-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
   ["festival_concept", 27, 75, "festival-gaia-booth-conversation", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["festival_concept", 76, 76, "festival-map-transition", assets.mapTransition, "event-focus", "event-cg"],
-  ["map_mode01", 1, 14, "map01-co2-observation", assets.mapTransition, "drift-right", "scenic"],
+  ["map_mode01", 1, 14, "map01-co2-observation", assets.mapTransition, "drift-right", "event-cg"],
   ["map_mode01", 15, 28, "map01-temperature-observation", assets.modis, "push-in", "scenic"],
   ["map_mode01", 29, 40, "map01-data-provenance", assets.map01Provenance, "drift-left", "scenic"],
   ["map_mode01", 41, 43, "map01-exhibition-return", assets.fivePlaneProjection, "drift-right", "scenic"],
@@ -149,7 +149,13 @@ assert.equal(resolved.length, 386);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
 assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 21, "background-art cut must keep the intentional exhibition-map continuity");
-assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 69);
+assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 83);
+assert(
+  backgroundCues.limitedStory
+    .filter((cue) => /(?:^|\/)event-cg-/u.test(cue.assetPath))
+    .every((cue) => cue.presentation === "event-cg"),
+  "every character-composited event CG must suppress the standalone cast",
+);
 
 assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
 assert.equal(new Set(backgroundCues.gallery.map((entry) => entry.id)).size, 6, "CG album IDs must be unique");
@@ -233,6 +239,7 @@ assert.equal(cue("festival_concept_076").assetPath, assets.mapTransition);
 assert.equal(cue("festival_concept_076").presentation, "event-cg");
 assert.equal(cue("map_mode01_001").assetPath, assets.mapTransition);
 assert.equal(cue("map_mode01_005").assetPath, assets.mapTransition);
+assert.equal(cue("map_mode01_005").presentation, "event-cg");
 assert.equal(cue("map_mode01_015").assetPath, assets.modis);
 assert.equal(cue("map_mode01_029").assetPath, assets.map01Provenance);
 assert.equal(cue("map_mode01_040").assetPath, assets.map01Provenance);

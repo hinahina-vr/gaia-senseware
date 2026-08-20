@@ -18,6 +18,7 @@ await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).hre
 const story = globalThis.GAIA_NOVEL_STORY;
 const stepMap = new Map(story.scenes.flatMap((scene) => scene.steps).map((step) => [step.id, step]));
 const expectedText = new Map([
+  ["map_mode01_003", "「こちらがMODE 01です。1958年から2050年まで、地球の変化を続けて見てください」"],
   ["gx_experience_008", "「GXという言葉は、どこかで見たことがありますか？」"],
   ["gx_experience_010", "「一般にはそうですわ。でも、この画面のGXは『GAIA Transformation』。生命が地球を変え、変わった海や大気がまた生命の条件を変えてきた、その相互作用を表す言葉ですの」"],
   ["gx_experience_011", "「ここでは、生命と地球が互いを変えてきた過程を、時間をさかのぼりながら見ていきます」"],
@@ -43,6 +44,7 @@ const expectedText = new Map([
   ["welcome_chat_095", "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。"],
 ]);
 const expectedAssets = new Map([
+  ["map_mode01_003", "event-cg-festival-map-transition-five-plane-v3.png"],
   ["gx_experience_018", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
   ["gx_experience_055", "novel-bg-gx-mode-gateway-autumn-morning-v4.png"],
   ["esp32_pitch_001", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
@@ -52,11 +54,12 @@ const expectedAssets = new Map([
   ["circle_invitation_029", "event-cg-circle-invitation-card-v3.png"],
 ]);
 const mobileExpectedAssets = new Map([
+  ["map_mode01_003", "event-cg-festival-map-transition-five-plane-mobile-v1.png"],
   ["esp32_pitch_008", "event-cg-esp32-collaboration-mobile-v1.png"],
   ["circle_invitation_029", "event-cg-circle-invitation-card-mobile-v1.png"],
 ]);
 const specialIds = new Set(["welcome_chat_081", "welcome_chat_095"]);
-assert.equal(expectedText.size, 23);
+assert.equal(expectedText.size, 24);
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
 assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 386);
 assert.equal(story.sourceSha256, "5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13");
@@ -176,7 +179,7 @@ const scanSimpleStep = async (page, viewport, stepId) => {
       : expectedAssets.get(stepId);
     assert.match(scan.backgroundImage, new RegExp(expectedAsset.replaceAll(".", "\\."), "u"));
   }
-  if (stepId === "circle_invitation_029") assert.equal(scan.castSuppressed, true);
+  if (["map_mode01_003", "circle_invitation_029"].includes(stepId)) assert.equal(scan.castSuppressed, true);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${stepId}.png`), animations: "disabled" });
   report.scans.push({ viewport: viewport.name, stepId, kind: "dialogue", ...scan, passed: true });
 };

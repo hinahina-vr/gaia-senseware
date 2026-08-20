@@ -1285,7 +1285,8 @@
     layer.style.setProperty("--novel-scene-background", `url("./${cue.assetPath}")`);
     layer.dataset.backgroundCue = cue.id;
     layer.dataset.backgroundMotion = cue.motion;
-    if (cue.presentation) layer.dataset.backgroundPresentation = cue.presentation;
+    const presentation = cue.presentation || (/(?:^|\/)event-cg-/u.test(cue.assetPath) ? "event-cg" : "");
+    if (presentation) layer.dataset.backgroundPresentation = presentation;
     else delete layer.dataset.backgroundPresentation;
     return cue;
   };

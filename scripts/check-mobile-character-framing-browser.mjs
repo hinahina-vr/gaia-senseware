@@ -26,6 +26,7 @@ const cases = [
   { name: "amane-closeup-cg", stepId: "festival_concept_021", eventCg: true },
   { name: "mizuha-closeup-cg", stepId: "festival_concept_023", eventCg: true },
   { name: "festival-map-transition-cg", stepId: "festival_concept_076", eventCg: true, mobileAsset: "event-cg-festival-map-transition-five-plane-mobile-v1.png" },
+  { name: "map01-character-background-cg", stepId: "map_mode01_003", eventCg: true, mobileAsset: "event-cg-festival-map-transition-five-plane-mobile-v1.png" },
   { name: "esp32-collaboration-cg", stepId: "esp32_pitch_008", eventCg: true, mobileAsset: "event-cg-esp32-collaboration-mobile-v1.png" },
   { name: "invitation-card-cg", stepId: "circle_invitation_029", eventCg: true, mobileAsset: "event-cg-circle-invitation-card-mobile-v1.png" },
   { name: "circle-welcome-cg", stepId: "circle_invitation_048", eventCg: true, mobileAsset: "event-cg-circle-welcome-mobile-v1.png" },
