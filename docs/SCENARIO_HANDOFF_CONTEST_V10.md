@@ -4,20 +4,20 @@
 
 - 入力: `contest-limited/story/機能限定版台本.md`
 - 正本: `story/物語台本.md`
-- UTF-8 / LF / 56,423 bytes / 992 content lines
-- SHA-256: `5ef472299c702c464c60a84dbeadc2034ae083dc986fa609bcfbfc97a4013da5`
+- UTF-8 / LF / 56,540 bytes / 992 content lines
+- SHA-256: `5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13`
 - scene IDと後続step IDを維持したまま、展開へ影響しないGX後の三択・端末内投票を2026-08-20 owner指示で撤去済み。
 
 ## scene順とmetadata
 
 | sceneId | chapter | playback duration | in-world date/time | location | step |
 |---|---|---|---|---|---:|
-| `festival_concept` | `01 / CONCEPT` | `0:00–1:45` | `10月3日（土） AM 9:20–9:40` | オンライン大学・年次対面イベント／学生作品・体験展示ホール | 76 |
+| `festival_concept` | `01 / CONCEPT` | `0:00–1:45` | `10月3日（土） AM 9:20–9:40` | オンライン大学・年次対面イベント／海側広場・学生作品展示 | 76 |
 | `map_mode01` | `02 / MAP 01` | `1:45–3:25` | `10月3日（土） AM 9:40–9:45` | 展示端末・地図MODE 01 | 43 |
 | `gx_experience` | `03 / DEEP TIME` | `3:25–5:35` | `10月3日（土） AM 9:45–9:53` | 展示端末・GX／太古の海 | 48 |
 | `esp32_pitch` | `04 / PROPOSAL` | `5:35–7:15` | `10月3日（土） AM 9:53–10:00` | 年次対面イベント・GAIA SENSEWARE展示ブース | 43 |
 | `circle_invitation` | `05 / AFTER SCHOOL` | `7:15–9:05` | `10月3日（土） AM 10:00–10:07` | 年次対面イベント・GAIA SENSEWARE展示ブース | 81 |
-| `welcome_chat` | `06 / WELCOME` | `9:05–11:30` | `10月3日（土） AM 10:07–10:45` | 学内チャット「惑星の放課後」／午前展示枠終了後の展示ホール | 95 |
+| `welcome_chat` | `06 / WELCOME` | `9:05–11:30` | `10月3日（土） AM 10:07–10:45` | 学内チャット「惑星の放課後」／午前展示枠終了後の海側広場 | 95 |
 
 `duration`は10〜12分版の再生尺であり、作中の時計ではない。可視見出しはowner指定の土曜日とAM時刻を持つscene-metaから`date time｜location`として生成し、各sceneは`CURRENT / MINUTE`とする。
 

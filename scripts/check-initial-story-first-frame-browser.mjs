@@ -12,7 +12,7 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/initial-story-first-frame-hotfix");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const COASTAL = "novel-bg-coastal-venue-v3.png";
+const COASTAL = "novel-bg-coastal-venue-autumn-morning-v1.png";
 const EXHIBITION = "novel-bg-exhibition-v3.png";
 const progressFixture = (stepId) => ({
   storyVersion: 10,
@@ -404,7 +404,7 @@ const scan009to010 = async (viewport) => {
     };
   });
   assert.equal(before.id, "festival_concept_009");
-  assert.equal(before.text, "会場案内｜国際展示場 8ホール　学生作品・体験展示");
+  assert.equal(before.text, "会場案内｜海側広場　学生作品・体験展示");
   assert.equal(before.cue, "festival-b-hall-overview");
   assert(before.lines >= 1 && before.lines <= 3);
   assert(before.gradient.includes("linear-gradient"));
@@ -419,15 +419,41 @@ const scan009to010 = async (viewport) => {
   await page.locator("#novel-save-panel").waitFor({ state: "hidden" });
   await page.locator("#novel-dialogue").click();
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "festival_concept_010");
+  await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete");
   const after = await page.evaluate(() => ({
     id: document.querySelector("#novel-layer").dataset.stepId,
+    text: document.querySelector("#novel-text")?.textContent.trim(),
+    pageIndex: Number(document.querySelector("#novel-text")?.dataset.pageIndex || 1),
+    pageCount: Number(document.querySelector("#novel-text")?.dataset.pageCount || 1),
     cue: document.querySelector("#novel-layer").dataset.backgroundCue,
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
     overflowY: document.documentElement.scrollHeight > innerHeight + 1,
   }));
   assert.equal(after.id, "festival_concept_010");
   assert(!after.overflowX && !after.overflowY);
-  report.scans.push({ viewport: viewport.name, case: "festival-009-to-010", before, primaryOperation: "SAVE open/close", after, passed: true });
+  await page.screenshot({ path: path.join(outputDir, `${label}-010-outdoor-copy-1.png`) });
+  const outdoorPages = [after];
+  while (outdoorPages.at(-1).pageIndex < outdoorPages.at(-1).pageCount) {
+    const previousIndex = outdoorPages.at(-1).pageIndex;
+    await page.locator("#novel-dialogue").click();
+    await page.waitForFunction((index) => document.querySelector("#novel-layer")?.dataset.stepId === "festival_concept_010"
+      && Number(document.querySelector("#novel-text")?.dataset.pageIndex || 0) === index + 1
+      && document.querySelector("#novel-text")?.dataset.revealState === "complete", previousIndex);
+    const nextPage = await page.evaluate(() => ({
+      id: document.querySelector("#novel-layer").dataset.stepId,
+      text: document.querySelector("#novel-text")?.textContent.trim(),
+      pageIndex: Number(document.querySelector("#novel-text")?.dataset.pageIndex || 1),
+      pageCount: Number(document.querySelector("#novel-text")?.dataset.pageCount || 1),
+      cue: document.querySelector("#novel-layer").dataset.backgroundCue,
+      overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+      overflowY: document.documentElement.scrollHeight > innerHeight + 1,
+    }));
+    assert(!nextPage.overflowX && !nextPage.overflowY);
+    outdoorPages.push(nextPage);
+    await page.screenshot({ path: path.join(outputDir, `${label}-010-outdoor-copy-${nextPage.pageIndex}.png`) });
+  }
+  assert.equal(outdoorPages.map((entry) => entry.text).join(""), "歓声と呼び込みが海風に混じる。誰かと一緒なら、この景色を見て何と言っただろう。答える相手のいないまま展示の列を歩いていると、海に面したテントの下で、青緑の地球と海岸線を映すパネルが目に留まった。");
+  report.scans.push({ viewport: viewport.name, case: "festival-009-to-010", before, primaryOperation: "SAVE open/close", outdoorPages, passed: true });
   await context.close();
 };
 

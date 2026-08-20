@@ -14,7 +14,7 @@
     {
       id: "first-encounter",
       title: "はじめまして",
-      chapter: "01｜学園祭の展示ホール",
+      chapter: "01｜海辺の屋外展示",
       unlockStepId: "festival_concept_015",
       assetPath: "assets/visuals-07/event-cg-first-encounter-five-plane-v3.png",
       mobileAssetPath: "assets/visuals-07/event-cg-first-encounter-five-plane-mobile-v2.png",
@@ -23,7 +23,7 @@
     {
       id: "amane-closeup",
       title: "振り向いた光",
-      chapter: "01｜学園祭の展示ホール",
+      chapter: "01｜海辺の屋外展示",
       unlockStepId: "festival_concept_021",
       assetPath: "assets/visuals-07/event-cg-amane-closeup-five-plane-v3.png",
       alt: "ケーブルから手を離し、穏やかに振り向くアマネ",
@@ -31,7 +31,7 @@
     {
       id: "mizuha-closeup",
       title: "海色のまなざし",
-      chapter: "01｜学園祭の展示ホール",
+      chapter: "01｜海辺の屋外展示",
       unlockStepId: "festival_concept_023",
       assetPath: "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v3.png",
       alt: "タブレット越しにこちらを見つめるミズハ",

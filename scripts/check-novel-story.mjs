@@ -9,14 +9,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "5ef472299c702c464c60a84dbeadc2034ae083dc986fa609bcfbfc97a4013da5";
+const expectedHash = "5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [76, 43, 48, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 56423, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 56540, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
@@ -56,6 +56,7 @@ const festival = story.scenes.find((scene) => scene.id === "festival_concept");
 const storyText = steps.map((step) => String(step.text || "")).join("\n");
 assert.equal(storyText.includes(prohibitedRemainingPhrase), false, "指定NG表現が生成済みストーリーに残っています");
 assert.doesNotMatch(storyText, /ものづくり|ほどけ/u, "今回の対象文脈で使用しない表現が残っています");
+assert.doesNotMatch(storyText, /照明を落とした一角|単管と暗幕|左右の暗幕|天井のプロジェクター|暗幕の張り方|展示ホールの白い光|ガラス張りの壁の向こう|三人で展示ホールを出る|午前展示枠を終えたホール/u, "屋外展示と矛盾する旧本文が残っています");
 assert.equal(storyText.includes("#GSW-esp32"), false, "旧ESP32チャネル名が残っています");
 assert.equal(storyText.split("# 惑星の放課後_esp32").length - 1, 3, "ESP32チャネル名は作成通知・誘導・空チャネル描写の3件必要です");
 assert.equal(storyText.split("あめと、みず。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 0, "旧festival_concept_024全文が残っています");
@@ -70,7 +71,7 @@ assert.deepEqual(
     ["festival_concept_024", "narration", "narrator", null, "あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。"],
     ["festival_concept_025", "narration", "narrator", null, "長い髪の学生もタブレットから顔を上げた。表情は落ち着いているが、「うちの大学」と言ったところで眉が少し上がる。答えを予想するより、こちらの返事を楽しみにしているように見えた。"],
     ["festival_concept_026", "narration", "narrator", null, "あめは名乗ったあとも、机の端のケーブルを指先で確かめている。みずはタブレットを両手で持ち、返事を待つあいだ、わずかに首を傾けていた。地球の青い光が、長い髪の内側へ薄く映っている。"],
-    ["festival_concept_027", "dialogue", "visitor", "プレイヤー", "「はい。同じ大学の学生です。今日は学生作品を見に来ました。通路から見えた、この地球が気になって」"],
+    ["festival_concept_027", "dialogue", "visitor", "プレイヤー", "「はい。同じ大学の学生です。今日は学生作品を見に来ました。広場から見えた、この地球が気になって」"],
   ],
   "festival_concept_021–027の決定稿または順序が変わりました",
 );

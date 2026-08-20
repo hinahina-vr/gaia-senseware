@@ -300,7 +300,7 @@ const scanIntroductionSequence = async (viewport) => {
     ["festival_concept_024", "narration", "narrator", "", "あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。"],
     ["festival_concept_025", "narration", "narrator", "", "長い髪の学生もタブレットから顔を上げた。表情は落ち着いているが、「うちの大学」と言ったところで眉が少し上がる。答えを予想するより、こちらの返事を楽しみにしているように見えた。"],
     ["festival_concept_026", "narration", "narrator", "", "あめは名乗ったあとも、机の端のケーブルを指先で確かめている。みずはタブレットを両手で持ち、返事を待つあいだ、わずかに首を傾けていた。地球の青い光が、長い髪の内側へ薄く映っている。"],
-    ["festival_concept_027", "dialogue", "visitor", "あなた", "「はい。同じ大学の学生です。今日は学生作品を見に来ました。通路から見えた、この地球が気になって」"],
+    ["festival_concept_027", "dialogue", "visitor", "あなた", "「はい。同じ大学の学生です。今日は学生作品を見に来ました。広場から見えた、この地球が気になって」"],
   ];
   const { context, page } = await createPage(viewport, `${viewport.name}-introduction-sequence`);
   const scans = [];
@@ -464,7 +464,7 @@ const scanRuntimeStoryContract = async () => {
       },
     };
   });
-  assert.equal(scan.sourceSha256, "5ef472299c702c464c60a84dbeadc2034ae083dc986fa609bcfbfc97a4013da5");
+  assert.equal(scan.sourceSha256, "5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13");
   assert.equal(scan.sceneCount, 6);
   assert.equal(scan.stepCount, 386);
   assert.deepEqual(scan.userVisiblePlacementVerbStepIds, []);

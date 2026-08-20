@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "5ef472299c702c464c60a84dbeadc2034ae083dc986fa609bcfbfc97a4013da5",
+  "sourceSha256": "5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -82,16 +82,16 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "duration": "0:00–1:45",
       "date": "10月3日（土）",
       "time": "AM 9:20–9:40",
-      "location": "オンライン大学・年次対面イベント／学生作品・体験展示ホール",
+      "location": "オンライン大学・年次対面イベント／海側広場・学生作品展示",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
         "timePrecision": "MINUTE",
-        "displayTitle": "10月3日（土） AM 9:20–9:40｜オンライン大学・年次対面イベント／学生作品・体験展示ホール",
+        "displayTitle": "10月3日（土） AM 9:20–9:40｜オンライン大学・年次対面イベント／海側広場・学生作品展示",
         "date": "10月3日（土）",
         "time": "AM 9:20–9:40",
         "duration": "0:00–1:45",
-        "location": "オンライン大学・年次対面イベント／学生作品・体験展示ホール"
+        "location": "オンライン大学・年次対面イベント／海側広場・学生作品展示"
       },
       "steps": [
         {
@@ -106,7 +106,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ガラス張りの展示場へ入ると、空調の冷気が頬に当たる。コーヒーと揚げものの匂いが混じり、ステージの低音が床から靴底へ伝わってきた。"
+          "text": "受付棟を抜けて海側の広場へ出ると、秋の日差しと潮風が頬に当たった。コーヒーと揚げものの匂いが混じり、ステージの低音が地面から靴底へ伝わってきた。"
         },
         {
           "id": "festival_concept_003",
@@ -148,34 +148,34 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "長い連絡通路を渡り、学生作品が集まる国際展示場の8ホールへ入る。エスカレーターの先に、無数のブースと人の流れが一望できた。想像していた学園祭より、ずっと大きい。"
+          "text": "受付から海沿いの通路を進むと、広場いっぱいにテントと展示パネルが並び、その間を大勢の学生が行き交っていた。想像していた学園祭より、ずっと大きい。"
         },
         {
           "id": "festival_concept_009",
           "sceneId": "festival_concept",
           "type": "ui",
-          "text": "会場案内｜国際展示場 8ホール　学生作品・体験展示"
+          "text": "会場案内｜海側広場　学生作品・体験展示"
         },
         {
           "id": "festival_concept_010",
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "歓声と呼び込みが天井へ反響する。誰かと一緒なら、この景色を見て何と言っただろう。答える相手のいないまま歩いていると、照明を落とした一角で、深い紺色の地球が光っていた。"
+          "text": "歓声と呼び込みが海風に混じる。誰かと一緒なら、この景色を見て何と言っただろう。答える相手のいないまま展示の列を歩いていると、海に面したテントの下で、青緑の地球と海岸線を映すパネルが目に留まった。"
         },
         {
           "id": "festival_concept_011",
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "雲のような白い筋が五つの面を渡り、ところどころで光が脈を打っている。単管と暗幕で作られた小さなブースなのに、入口から一歩入るだけで、巨大な地球の内側へ沈むようだった。私は歩く速度を落とした。"
+          "text": "雲のような白い筋と海岸線が五つの面を渡り、ところどころで光が脈を打っている。黒いフレームに囲まれた小さな展示なのに、背後に広がる本物の海まで画面の続きに見えた。私は歩く速度を落とした。"
         },
         {
           "id": "festival_concept_012",
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "壁の札には、白い文字で「GAIA SENSEWARE｜地球の声、聴いてみませんか」と書かれている。"
+          "text": "テント脇の案内板には、白い文字で「GAIA SENSEWARE｜地球の声、聴いてみませんか」と書かれている。"
         },
         {
           "id": "festival_concept_013",
@@ -285,14 +285,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「はい。同じ大学の学生です。今日は学生作品を見に来ました。通路から見えた、この地球が気になって」"
+          "text": "「はい。同じ大学の学生です。今日は学生作品を見に来ました。広場から見えた、この地球が気になって」"
         },
         {
           "id": "festival_concept_028",
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "みずの眉が元の位置へ戻り、目元が少し柔らかくなった。私は改めてブースを見回す。投影は奥壁だけでなく、左右の暗幕と天井、床まで切れ目なく続いていた。"
+          "text": "みずの眉が元の位置へ戻り、目元が少し柔らかくなった。私は改めてブースを見回す。表示は一枚だけではなく、テントの奥から左右のパネルへ切れ目なく続いていた。"
         },
         {
           "id": "festival_concept_029",
@@ -329,7 +329,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "あめは壁際の単管を指でたどり、最後に天井のプロジェクターを示した。借り物だと打ち明けても、その声には自分たちで作り上げた場所への誇らしさがあった。"
+          "text": "あめはテントの支柱に沿うケーブルを指でたどり、最後に展示台脇のプロジェクターを示した。借り物だと打ち明けても、その声には自分たちで作り上げた場所への誇らしさがあった。"
         },
         {
           "id": "festival_concept_034",
@@ -352,7 +352,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "mizuha",
           "speakerLabel": "みず",
-          "text": "「ええ。暗幕の張り方も、光が漏れない角度も、あめと一緒に考えてくださいましたの」"
+          "text": "「ええ。日差しの中でも見やすい画面の向きも、海風でケーブルが揺れない留め方も、あめと一緒に考えてくださいましたの」"
         },
         {
           "id": "festival_concept_037",
@@ -1424,7 +1424,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "esp32_pitch",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面に展示ホールの白い光が戻る。暗い海を見ていた目には、天井の照明が少しまぶしい。"
+          "text": "画面に秋の日差しと海辺の会場が戻る。暗い海を見ていた目には、パネルへ差す光が少しまぶしい。"
         },
         {
           "id": "esp32_pitch_002",
@@ -2375,16 +2375,16 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
       "duration": "9:05–11:30",
       "date": "10月3日（土）",
       "time": "AM 10:07–10:45",
-      "location": "学内チャット「惑星の放課後」／午前展示枠終了後の展示ホール",
+      "location": "学内チャット「惑星の放課後」／午前展示枠終了後の海側広場",
       "modeIndex": 0,
       "temporal": {
         "temporalContext": "CURRENT",
         "timePrecision": "MINUTE",
-        "displayTitle": "10月3日（土） AM 10:07–10:45｜学内チャット「惑星の放課後」／午前展示枠終了後の展示ホール",
+        "displayTitle": "10月3日（土） AM 10:07–10:45｜学内チャット「惑星の放課後」／午前展示枠終了後の海側広場",
         "date": "10月3日（土）",
         "time": "AM 10:07–10:45",
         "duration": "9:05–11:30",
-        "location": "学内チャット「惑星の放課後」／午前展示枠終了後の展示ホール"
+        "location": "学内チャット「惑星の放課後」／午前展示枠終了後の海側広場"
       },
       "steps": [
         {
@@ -2737,7 +2737,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ガラス張りの壁の向こうには、澄んだ秋の青空と海が広がっていた。高い雲がゆっくり流れ、午前の日差しが会場の床へ淡く反射している。"
+          "text": "テントの向こうには、澄んだ秋の青空と海が広がっていた。高い雲がゆっくり流れ、午前の日差しが展示パネルの縁へ淡く反射している。"
         },
         {
           "id": "welcome_chat_044",
@@ -2962,14 +2962,14 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人で展示ホールを出る。"
+          "text": "三人で展示ブースを離れる。"
         },
         {
           "id": "welcome_chat_075",
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "ガラス張りの通路の外では、海と空が鮮やかな青を重ねていた。朝から大きく鳴っていた大学旗が、秋の海風の中で軽やかに揺れている。"
+          "text": "海沿いの通路では、海と空が鮮やかな青を重ねていた。朝から大きく鳴っていた大学旗が、秋の海風の中で軽やかに揺れている。"
         },
         {
           "id": "welcome_chat_076",
@@ -3108,7 +3108,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "三人の会話は、午前展示枠を終えたホールでも終わらなかった。画面の向こうには、まだ顔を知らないsakuがいる。"
+          "text": "三人の会話は、午前展示枠を終えた広場でも終わらなかった。画面の向こうには、まだ顔を知らないsakuがいる。"
         },
         {
           "id": "welcome_chat_095",

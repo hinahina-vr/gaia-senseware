@@ -25,7 +25,7 @@ const expectedText = new Map([
   ["gx_experience_033", "「これはシアノバクテリアです。海で光合成を行い、酸素を生み出した微小な細菌です。触れたことで増えたのではなく、触れた場所で当時の活動を表示しています」"],
   ["gx_experience_044", "生命が環境を変え、変わった環境が生命の条件を変える。画面を行き来する光を見て、共進化とは、完成へ向かう一本道ではなく影響を返し合うことなのだと分かった。"],
   ["gx_experience_055", "画面の端に、まだ開いていない機能の入口がいくつか並ぶ。"],
-  ["esp32_pitch_001", "画面に展示ホールの白い光が戻る。暗い海を見ていた目には、天井の照明が少しまぶしい。"],
+  ["esp32_pitch_001", "画面に秋の日差しと海辺の会場が戻る。暗い海を見ていた目には、パネルへ差す光が少しまぶしい。"],
   ["esp32_pitch_008", "あめも、みずも、すぐには答えなかった。失敗したと思いかけたとき、二人が続きを待っているのだと気づいた。"],
   ["esp32_pitch_027", "あめはもう、説明用タブレットに新しい提案メモを作り始めていた。"],
   ["circle_invitation_001", "展示終了まで、あと三十分だというアナウンスが流れた。隣のブースでは、配布物を箱へ戻し始めている。"],
@@ -59,7 +59,7 @@ const specialIds = new Set(["welcome_chat_081", "welcome_chat_095"]);
 assert.equal(expectedText.size, 23);
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
 assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 386);
-assert.equal(story.sourceSha256, "5ef472299c702c464c60a84dbeadc2034ae083dc986fa609bcfbfc97a4013da5");
+assert.equal(story.sourceSha256, "5a2c23f871ef2ebbb224282059a7dcdda84fad82d37a7104163e22b2960f4c13");
 
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },

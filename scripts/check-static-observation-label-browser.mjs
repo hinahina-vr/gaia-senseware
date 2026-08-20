@@ -13,12 +13,12 @@ const outputDir = path.resolve(outputArgument || "artifacts/static-observation-l
 fs.mkdirSync(outputDir, { recursive: true });
 
 const sceneCases = [
-  { stepId: "festival_concept_001", sceneId: "festival_concept", title: "10月3日（土） AM 9:20–9:40｜オンライン大学・年次対面イベント／学生作品・体験展示ホール", time: "AM 9:20–9:40" },
+  { stepId: "festival_concept_001", sceneId: "festival_concept", title: "10月3日（土） AM 9:20–9:40｜オンライン大学・年次対面イベント／海側広場・学生作品展示", time: "AM 9:20–9:40" },
   { stepId: "map_mode01_001", sceneId: "map_mode01", title: "10月3日（土） AM 9:40–9:45｜展示端末・地図MODE 01", time: "AM 9:40–9:45" },
   { stepId: "gx_experience_001", sceneId: "gx_experience", title: "10月3日（土） AM 9:45–9:53｜展示端末・GX／太古の海", time: "AM 9:45–9:53" },
   { stepId: "esp32_pitch_001", sceneId: "esp32_pitch", title: "10月3日（土） AM 9:53–10:00｜年次対面イベント・GAIA SENSEWARE展示ブース", time: "AM 9:53–10:00" },
   { stepId: "circle_invitation_001", sceneId: "circle_invitation", title: "10月3日（土） AM 10:00–10:07｜年次対面イベント・GAIA SENSEWARE展示ブース", time: "AM 10:00–10:07" },
-  { stepId: "welcome_chat_002", sceneId: "welcome_chat", title: "10月3日（土） AM 10:07–10:45｜学内チャット「惑星の放課後」／午前展示枠終了後の展示ホール", time: "AM 10:07–10:45" },
+  { stepId: "welcome_chat_002", sceneId: "welcome_chat", title: "10月3日（土） AM 10:07–10:45｜学内チャット「惑星の放課後」／午前展示枠終了後の海側広場", time: "AM 10:07–10:45" },
 ];
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900, mobile: false },
