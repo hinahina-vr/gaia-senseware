@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (name) => fs.readFileSync(path.join(root, name), "utf8");
 const html = read("index.html");
 const gx = read("gx-mode.js");
+const gxStyles = read("gx-mode.css");
 const novel = read("novel-mode.js");
 
 assert.match(novel, /if \(!\["map01", "gx"\]\.includes\(step\.interaction\.kind\)\) \{/u);
@@ -25,5 +26,7 @@ assert.match(gx, /event\.key === "Enter" \|\| event\.key === " "/u);
 
 assert.match(html, /gx-mode\.js\?v=gaia-gx-auto-return-1/u);
 assert.match(html, /novel-mode\.js\?v=gaia-gx-auto-return-1/u);
+assert.match(html, /gx-mode\.css\?v=gaia-gx-transition-nowrap-1/u);
+assert.match(gxStyles, /\.gx-era-transition strong \{[\s\S]*?font-size: clamp\(12px, 2vw, 38px\);[\s\S]*?white-space: nowrap;/u);
 
 console.log(JSON.stringify({ status: "passed", behavior: "gx-final-phase-auto-return" }, null, 2));

@@ -105,6 +105,32 @@ try {
     }, `${viewport.name}: GX did not open as a dockless, guarded story modal`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-gx-dockless.png`), fullPage: false });
 
+    const transitionTitle = await page.evaluate(() => {
+      const transition = document.querySelector("#gx-era-transition");
+      const title = document.querySelector("#gx-era-transition-title");
+      title.textContent = "埋められた炭素の上に、新しい生命圏が広がる。";
+      transition.classList.add("is-visible");
+      const range = document.createRange();
+      range.selectNodeContents(title);
+      const titleRect = title.getBoundingClientRect();
+      const transitionRect = transition.getBoundingClientRect();
+      const lineTops = new Set([...range.getClientRects()].map((rect) => Math.round(rect.top)));
+      return {
+        lineCount: lineTops.size,
+        whiteSpace: getComputedStyle(title).whiteSpace,
+        insideLeft: titleRect.left >= transitionRect.left - 1,
+        insideRight: titleRect.right <= transitionRect.right + 1,
+      };
+    });
+    assert.deepEqual(transitionTitle, {
+      lineCount: 1,
+      whiteSpace: "nowrap",
+      insideLeft: true,
+      insideRight: true,
+    }, `${viewport.name}: the long era-transition title did not stay on one line`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-gx-transition-nowrap.png`), fullPage: false });
+    await page.evaluate(() => document.querySelector("#gx-era-transition")?.classList.remove("is-visible"));
+
     await page.keyboard.press("Escape");
     await page.waitForTimeout(160);
     assert.equal(await page.evaluate(() => document.body.classList.contains("gx-story-open")), true, `${viewport.name}: GX closed before the final phase`);

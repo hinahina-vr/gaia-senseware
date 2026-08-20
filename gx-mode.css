@@ -689,10 +689,13 @@ body.gx-open {
 }
 
 .gx-era-transition strong {
+  display: block;
   font-family: var(--gaia-serif, serif);
-  font-size: clamp(26px, 4vw, 58px);
+  font-size: clamp(12px, 2vw, 38px);
   font-weight: 400;
-  letter-spacing: 0.05em;
+  line-height: 1.35;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
   text-shadow: 0 0 34px rgba(165, 255, 229, 0.28);
 }
 
