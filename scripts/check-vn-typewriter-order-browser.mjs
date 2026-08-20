@@ -26,11 +26,18 @@ const viewports = [
 const modes = ["normal", "high", "slow", "speed-change", "click-skip", "space-skip", "auto", "fast", "reduced"]
   .filter((mode) => !modeFilter || mode === modeFilter);
 assert(viewports.length > 0 && modes.length > 0, "unknown viewport or mode filter");
+const speedForMode = (mode) => mode === "speed-change" || mode === "slow"
+  ? 50
+  : mode === "high"
+    ? 400
+    : mode === "normal" || mode === "auto" || mode === "reduced"
+      ? 270
+      : 200;
 const storageKey = "gaiaSensewareNovel:progress";
 const manualSaveKey = "gaiaSensewareNovel:manual-saves";
-const configKey = "gaiaSensewareNovel:config:v3";
+const configKey = "gaiaSensewareNovel:config:v4";
 const routeUrl = new URL("/story", baseUrl).href;
-const report = { status: "running", baseUrl, stepId: targetStep.id, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { status: "running", baseUrl, stepId: targetStep.id, migration: null, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath, args: ["--no-first-run", "--disable-background-networking"] });
 
 const baseState = {
@@ -59,10 +66,19 @@ const installFrameTrace = async (page) => page.evaluate(() => {
   const source = text.getAttribute("aria-label") || "";
   const sourceGlyphs = Array.from(source);
   const samples = [];
+  const revealEvents = [];
   let previousCount = -1;
+  let previousMutationCount = Number(text.dataset.revealCount || 0);
   let completeFrames = 0;
   let stopped = false;
-  globalThis.__vnRevealTrace = { samples, source, errors: [], done: false };
+  const observer = new MutationObserver(() => {
+    const count = Number(text.dataset.revealCount || 0);
+    if (count <= previousMutationCount) return;
+    revealEvents.push({ time: performance.now(), count });
+    previousMutationCount = count;
+  });
+  observer.observe(text, { attributes: true, attributeFilter: ["data-reveal-count"] });
+  globalThis.__vnRevealTrace = { samples, revealEvents, source, errors: [], done: false };
   const sample = () => {
     if (stopped) return;
     const glyphs = [...text.querySelectorAll(".novel-reveal-glyph")];
@@ -88,6 +104,7 @@ const installFrameTrace = async (page) => page.evaluate(() => {
     if (state === "complete") completeFrames += 1;
     if (completeFrames >= 2 || stepId !== document.querySelector("#novel-layer")?.dataset.stepId) {
       stopped = true;
+      observer.disconnect();
       globalThis.__vnRevealTrace.done = true;
       return;
     }
@@ -112,7 +129,7 @@ const readTrace = async (page) => {
   return page.evaluate(() => structuredClone(globalThis.__vnRevealTrace));
 };
 
-const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false } = {}) => {
+const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false, expectedDelay = 0 } = {}) => {
   const uniqueCounts = trace.samples.map((sample) => sample.visibleCount)
     .filter((value, index, values) => index === 0 || value !== values[index - 1]);
   const deltas = uniqueCounts.slice(1).map((value, index) => value - uniqueCounts[index]);
@@ -143,15 +160,30 @@ const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false } = 
   const cadenceMin = cadenceDurations.length ? Math.min(...cadenceDurations) : 0;
   const cadenceMax = cadenceDurations.length ? Math.max(...cadenceDurations) : 0;
   const cadenceSpread = cadenceMax - cadenceMin;
+  const timerDurations = trace.revealEvents.slice(1)
+    .map((event, index) => ({
+      duration: event.time - trace.revealEvents[index].time,
+      delta: event.count - trace.revealEvents[index].count,
+    }))
+    .filter((entry) => entry.delta === 1 && entry.duration > 0 && entry.duration < 500)
+    .map((entry) => entry.duration)
+    .sort((a, b) => a - b);
+  const timerMedian = timerDurations.length ? timerDurations[Math.floor(timerDurations.length / 2)] : 0;
+  const timerP90 = timerDurations.length ? timerDurations[Math.floor((timerDurations.length - 1) * 0.9)] : 0;
   if (steadyCadence && punctuationIntervals.length && ordinaryMedian) {
     assert(punctuationMax <= ordinaryMedian * 2.2 + 1, `${tag}: punctuation pause ${punctuationMax.toFixed(1)}ms exceeds steady cadence median ${ordinaryMedian.toFixed(1)}ms`);
+  }
+  if (steadyCadence && expectedDelay) {
+    assert(timerDurations.length >= 3, `${tag}: insufficient fixed-timer samples`);
+    assert(Math.abs(timerMedian - expectedDelay) <= Math.max(6, expectedDelay * 0.25), `${tag}: timer median ${timerMedian.toFixed(1)}ms differs from ${expectedDelay.toFixed(1)}ms`);
+    assert(timerP90 <= expectedDelay * 1.6 + 8, `${tag}: timer p90 ${timerP90.toFixed(1)}ms is not steady`);
   }
   return {
     samples: trace.samples.length,
     uniqueCounts: uniqueCounts.length,
     maxDelta: deltas.length ? Math.max(...deltas) : 0,
     sourceLength: sourceGlyphs.length,
-    cadence: { ordinaryMedian, punctuationMax, cadenceMin, cadenceMax, cadenceSpread, measuredIntervals: revealIntervals.length },
+    cadence: { ordinaryMedian, punctuationMax, cadenceMin, cadenceMax, cadenceSpread, measuredIntervals: revealIntervals.length, timerMedian, timerP90, timerIntervals: timerDurations.length },
   };
 };
 
@@ -165,6 +197,22 @@ const pressStorySpace = async (page) => {
 };
 
 try {
+  const migrationContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "no-preference" });
+  const migrationPage = await migrationContext.newPage();
+  await migrationPage.goto(routeUrl, { waitUntil: "domcontentloaded" });
+  await migrationPage.evaluate(() => {
+    localStorage.removeItem("gaiaSensewareNovel:config:v4");
+    localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: false }));
+  });
+  await migrationPage.reload({ waitUntil: "domcontentloaded" });
+  await migrationPage.waitForFunction(() => Boolean(globalThis.GaiaNovel?.open));
+  report.migration = await migrationPage.evaluate(() => ({
+    speed: document.querySelector("#novel-message-speed")?.value || "",
+    label: document.querySelector("#novel-message-speed-value")?.textContent || "",
+  }));
+  assert.deepEqual(report.migration, { speed: "270", label: "2.7×" }, "legacy 4.0x setting did not migrate to 2.7x");
+  await migrationContext.close();
+
   for (const viewport of viewports) {
     for (const mode of modes) {
       const context = await browser.newContext({
@@ -173,6 +221,8 @@ try {
       });
       const page = await context.newPage();
       const tag = `${viewport.name}-${mode}`;
+      const configuredMessageSpeed = speedForMode(mode);
+      const expectedDelay = 64 * (100 / configuredMessageSpeed);
       page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${tag}: ${message.text()}`); });
       page.on("pageerror", (error) => report.pageErrors.push(`${tag}: ${error.message}`));
       page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${tag}: ${response.url()}`); });
@@ -190,7 +240,7 @@ try {
         manualKey: manualSaveKey,
         settingsKey: configKey,
         progress: { ...baseState, sessionId: `vn-typewriter-${tag}` },
-        settings: { messageSpeedPercent: mode === "speed-change" || mode === "slow" ? 50 : mode === "normal" || mode === "high" || mode === "auto" ? 400 : 200, reducedMotion: mode === "reduced" },
+        settings: { messageSpeedPercent: configuredMessageSpeed, reducedMotion: mode === "reduced" },
       });
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.open));
@@ -232,7 +282,7 @@ try {
       const trace = await readTrace(page);
       const explicitSkip = ["click-skip", "space-skip", "fast", "reduced"].includes(mode);
       const steadyCadence = ["normal", "high", "slow", "auto"].includes(mode);
-      const pageTraces = [assertTrace(trace, `${tag}-page1`, { allowJump: explicitSkip, steadyCadence })];
+      const pageTraces = [assertTrace(trace, `${tag}-page1`, { allowJump: explicitSkip, steadyCadence, expectedDelay })];
       if (mode === "auto") await page.locator("#novel-auto-button").click();
       if (mode === "fast") await page.locator("#novel-fast-forward-button").click();
       await page.locator("#novel-dialogue").click({ position: { x: 20, y: 20 } });
@@ -249,7 +299,7 @@ try {
         await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete", null, { timeout: 1_000 });
       }
       const secondTrace = await readTrace(page);
-      pageTraces.push(assertTrace(secondTrace, `${tag}-page2`, { allowJump: ["click-skip", "space-skip", "reduced"].includes(mode), steadyCadence }));
+      pageTraces.push(assertTrace(secondTrace, `${tag}-page2`, { allowJump: ["click-skip", "space-skip", "reduced"].includes(mode), steadyCadence, expectedDelay }));
       const pageInfo = await page.evaluate(() => ({
         text: document.querySelector("#novel-text")?.textContent || "",
         aria: document.querySelector("#novel-text")?.getAttribute("aria-label") || "",
@@ -270,7 +320,7 @@ try {
       assert.equal(pageInfo.pageIndex, 2, `${tag}: second page was not rendered`);
       assert(pageInfo.lines <= 3, `${tag}: page exceeds three lines`);
       assert(pageInfo.tokenCount > 0, `${tag}: phrase token DOM missing`);
-      if (mode !== "reduced") assert.equal(pageInfo.revealCadence, "frame-locked", `${tag}: reveal cadence is not frame locked`);
+      if (mode !== "reduced") assert.equal(pageInfo.revealCadence, "fixed-timer", `${tag}: reveal cadence is not fixed-timer`);
       assert.deepEqual(pageInfo.scriptDebugRect, { width: 0, height: 0 }, `${tag}: SCRIPT debug hit area remains`);
       assert(pageInfo.overflowX <= 1, `${tag}: horizontal overflow`);
       if (mode === "normal") await page.screenshot({ path: path.join(outputDir, `${tag}.png`), fullPage: true });

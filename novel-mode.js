@@ -11,8 +11,8 @@
 
   const STORAGE_KEY = "gaiaSensewareNovel:progress";
   const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
-  const CONFIG_KEY = "gaiaSensewareNovel:config:v3";
-  const LEGACY_CONFIG_KEY = "gaiaSensewareNovel:config:v2";
+  const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
+  const LEGACY_CONFIG_KEYS = ["gaiaSensewareNovel:config:v3", "gaiaSensewareNovel:config:v2"];
   const GALLERY_KEY = "gaiaSensewareNovel:cg-gallery:v1";
   const LOG_COMMENT_KEY = "gaiaSensewareNovel:log-comments:v1";
   const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
@@ -80,9 +80,10 @@
   const SYSTEM_REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const AUTO_DELAY_MS = 3600;
   const TEMPORAL_TRANSITION_MS = 2400;
-  const REVEAL_BASE_MS = 24;
+  const REVEAL_BASE_MS = 64;
   const REVEAL_MIN_LINE_MS = 120;
-  const DEFAULT_MESSAGE_SPEED_PERCENT = 400;
+  const DEFAULT_MESSAGE_SPEED_PERCENT = 270;
+  const LEGACY_MESSAGE_SPEED_SCALE = 2 / 3;
   const TEXT_PAGE_MAX_LINES = 3;
   const TEXT_PAGE_HEIGHT_BUFFER_PX = 4;
   const TEXT_PAGE_INDICATOR_SAFETY_PX = 12;
@@ -1112,9 +1113,15 @@
 
   const loadConfig = () => {
     const candidate = safeJson(readStorage(CONFIG_KEY));
-    const legacy = candidate ? null : safeJson(readStorage(LEGACY_CONFIG_KEY));
+    const legacy = candidate
+      ? null
+      : LEGACY_CONFIG_KEYS.map((key) => safeJson(readStorage(key))).find(Boolean);
+    const legacySpeed = Number(legacy?.messageSpeedPercent);
+    const migratedLegacySpeed = Number.isFinite(legacySpeed)
+      ? Math.round((legacySpeed * LEGACY_MESSAGE_SPEED_SCALE) / 10) * 10
+      : DEFAULT_MESSAGE_SPEED_PERCENT;
     config = {
-      messageSpeedPercent: Math.max(50, Math.min(400, Number(candidate?.messageSpeedPercent) || DEFAULT_MESSAGE_SPEED_PERCENT)),
+      messageSpeedPercent: Math.max(50, Math.min(400, Number(candidate?.messageSpeedPercent) || migratedLegacySpeed)),
       reducedMotion: Boolean(candidate?.reducedMotion ?? legacy?.reducedMotion),
     };
   };
@@ -2294,33 +2301,27 @@
           const glyphs = buildMeasuredLineLayout(text, preparedLayout);
           elements.text.classList.remove("is-preparing");
           elements.text.classList.add("is-revealing");
-          elements.text.dataset.revealCadence = "frame-locked";
+          elements.text.dataset.revealCadence = "fixed-timer";
           elements.cursor.hidden = false;
           let nextGlyphIndex = 0;
-          let lastRevealAt = Number.NEGATIVE_INFINITY;
-          const revealNextGlyph = (frameTime) => {
-            revealFrame = 0;
+          const revealNextGlyph = () => {
+            revealTimer = 0;
             if (generation !== revealGeneration || !isRevealing) return;
-            if (nextGlyphIndex > 0 && frameTime - lastRevealAt + 0.5 < revealDelayForGlyph()) {
-              revealFrame = window.requestAnimationFrame(revealNextGlyph);
-              return;
-            }
             const glyph = glyphs[nextGlyphIndex];
             if (!glyph) {
               finishReveal();
               return;
             }
             glyph.classList.add("is-visible");
-            lastRevealAt = frameTime;
             nextGlyphIndex += 1;
             elements.text.dataset.revealCount = String(nextGlyphIndex);
             if (nextGlyphIndex >= glyphs.length) {
               revealTimer = window.setTimeout(finishReveal, REVEAL_MIN_LINE_MS);
               return;
             }
-            revealFrame = window.requestAnimationFrame(revealNextGlyph);
+            revealTimer = window.setTimeout(revealNextGlyph, revealDelayForGlyph());
           };
-          revealFrame = window.requestAnimationFrame(revealNextGlyph);
+          revealNextGlyph();
         });
       });
     };
