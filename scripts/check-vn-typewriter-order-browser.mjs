@@ -23,7 +23,7 @@ const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
 ].filter((viewport) => !viewportFilter || viewport.name === viewportFilter);
-const modes = ["normal", "high", "speed-change", "click-skip", "space-skip", "auto", "fast", "reduced"]
+const modes = ["normal", "high", "slow", "speed-change", "click-skip", "space-skip", "auto", "fast", "reduced"]
   .filter((mode) => !modeFilter || mode === modeFilter);
 assert(viewports.length > 0 && modes.length > 0, "unknown viewport or mode filter");
 const storageKey = "gaiaSensewareNovel:progress";
@@ -137,6 +137,12 @@ const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false } = 
   const ordinaryIntervals = revealIntervals.filter((entry) => !/[。！？、…―]/u.test(entry.previousGlyph)).map((entry) => entry.duration).sort((a, b) => a - b);
   const ordinaryMedian = ordinaryIntervals.length ? ordinaryIntervals[Math.floor(ordinaryIntervals.length / 2)] : 0;
   const punctuationMax = punctuationIntervals.length ? Math.max(...punctuationIntervals) : 0;
+  // The trace can attach partway through the current interval, so its first
+  // observed duration is not a complete cadence sample.
+  const cadenceDurations = revealIntervals.slice(1).map((entry) => entry.duration);
+  const cadenceMin = cadenceDurations.length ? Math.min(...cadenceDurations) : 0;
+  const cadenceMax = cadenceDurations.length ? Math.max(...cadenceDurations) : 0;
+  const cadenceSpread = cadenceMax - cadenceMin;
   if (steadyCadence && punctuationIntervals.length && ordinaryMedian) {
     assert(punctuationMax <= ordinaryMedian * 2.2 + 1, `${tag}: punctuation pause ${punctuationMax.toFixed(1)}ms exceeds steady cadence median ${ordinaryMedian.toFixed(1)}ms`);
   }
@@ -145,7 +151,7 @@ const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false } = 
     uniqueCounts: uniqueCounts.length,
     maxDelta: deltas.length ? Math.max(...deltas) : 0,
     sourceLength: sourceGlyphs.length,
-    cadence: { ordinaryMedian, punctuationMax, measuredIntervals: revealIntervals.length },
+    cadence: { ordinaryMedian, punctuationMax, cadenceMin, cadenceMax, cadenceSpread, measuredIntervals: revealIntervals.length },
   };
 };
 
@@ -184,12 +190,11 @@ try {
         manualKey: manualSaveKey,
         settingsKey: configKey,
         progress: { ...baseState, sessionId: `vn-typewriter-${tag}` },
-        settings: { messageSpeedPercent: mode === "speed-change" ? 50 : mode === "normal" || mode === "high" || mode === "auto" ? 400 : 200, reducedMotion: mode === "reduced" },
+        settings: { messageSpeedPercent: mode === "speed-change" || mode === "slow" ? 50 : mode === "normal" || mode === "high" || mode === "auto" ? 400 : 200, reducedMotion: mode === "reduced" },
       });
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.open));
       await page.evaluate(() => globalThis.GaiaNovel.open());
-      if (mode === "auto") await page.locator("#novel-auto-button").click();
       await page.locator("#novel-resume-button").click();
       await page.waitForFunction(() => {
         const panel = document.querySelector("#novel-save-panel");
@@ -204,6 +209,7 @@ try {
           && getComputedStyle(runtime).display !== "none"
           && (text?.dataset.revealState === "complete" || text?.querySelectorAll(".novel-reveal-glyph").length > 0);
       }, targetStep.id, { timeout: 15_000 });
+      if (mode === "auto") await page.locator("#novel-auto-button").click();
       await installFrameTrace(page);
 
       if (mode === "speed-change") {
@@ -225,7 +231,7 @@ try {
 
       const trace = await readTrace(page);
       const explicitSkip = ["click-skip", "space-skip", "fast", "reduced"].includes(mode);
-      const steadyCadence = ["normal", "high", "auto"].includes(mode);
+      const steadyCadence = ["normal", "high", "slow", "auto"].includes(mode);
       const pageTraces = [assertTrace(trace, `${tag}-page1`, { allowJump: explicitSkip, steadyCadence })];
       if (mode === "auto") await page.locator("#novel-auto-button").click();
       if (mode === "fast") await page.locator("#novel-fast-forward-button").click();
@@ -252,6 +258,7 @@ try {
         lines: Number(document.querySelector("#novel-text")?.dataset.measuredLineCount || 0),
         tokenCount: document.querySelectorAll("#novel-text .novel-phrase-token, #novel-text .novel-space-token").length,
         glyphCount: document.querySelectorAll("#novel-text .novel-reveal-glyph").length,
+        revealCadence: document.querySelector("#novel-text")?.dataset.revealCadence || "",
         scriptDebugRect: (() => {
           const rect = document.querySelector("#novel-script-debug").getBoundingClientRect();
           return { width: rect.width, height: rect.height };
@@ -263,6 +270,7 @@ try {
       assert.equal(pageInfo.pageIndex, 2, `${tag}: second page was not rendered`);
       assert(pageInfo.lines <= 3, `${tag}: page exceeds three lines`);
       assert(pageInfo.tokenCount > 0, `${tag}: phrase token DOM missing`);
+      if (mode !== "reduced") assert.equal(pageInfo.revealCadence, "frame-locked", `${tag}: reveal cadence is not frame locked`);
       assert.deepEqual(pageInfo.scriptDebugRect, { width: 0, height: 0 }, `${tag}: SCRIPT debug hit area remains`);
       assert(pageInfo.overflowX <= 1, `${tag}: horizontal overflow`);
       if (mode === "normal") await page.screenshot({ path: path.join(outputDir, `${tag}.png`), fullPage: true });
