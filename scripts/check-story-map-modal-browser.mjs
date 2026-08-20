@@ -187,6 +187,31 @@ assert.deepEqual(desktopClosed, {
   returnCount: 0,
 });
 await desktop.page.screenshot({ path: path.join(outputDir, "desktop-return.png") });
+
+const desktopTopReturnHit = await desktop.page.evaluate(() => {
+  const button = document.querySelector("#novel-home-button");
+  const rect = button.getBoundingClientRect();
+  const target = document.elementFromPoint(
+    rect.left + (rect.width / 2),
+    rect.top + (rect.height / 2),
+  );
+  return target?.closest?.("#novel-home-button")?.id || "";
+});
+assert.equal(
+  desktopTopReturnHit,
+  "novel-home-button",
+  "top return is outside the pointer hit layer after map modal",
+);
+await desktop.page.locator("#novel-home-button").click();
+await desktop.page.waitForFunction(() => (
+  document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "true"
+  && !document.querySelector("#intro-layer")?.hidden
+));
+assert.notEqual(
+  new URL(desktop.page.url()).hash,
+  "#story",
+  "top return kept the story route after map modal",
+);
 await desktop.context.close();
 
 const desktopSkip = await bootAtMap({ width: 1440, height: 900 }, "desktop-skip");

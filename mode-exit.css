@@ -157,6 +157,7 @@ body.novel-open .novel-topbar #novel-home-button.mode-exit-control {
   right: auto;
   left: max(18px, env(safe-area-inset-left));
   width: 118px;
+  pointer-events: auto;
 }
 
 body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {

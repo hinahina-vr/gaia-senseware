@@ -166,8 +166,21 @@ try {
     await page.waitForFunction(() => !document.querySelector("#gaia-audio-dock")?.classList.contains("is-expanded"));
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-section-skip.png`), animations: "disabled" });
 
-    await page.locator("#novel-home-button").focus();
-    await page.keyboard.press("Enter");
+    const homeHitTarget = await page.evaluate(() => {
+      const button = document.querySelector("#novel-home-button");
+      const rect = button.getBoundingClientRect();
+      const target = document.elementFromPoint(
+        rect.left + (rect.width / 2),
+        rect.top + (rect.height / 2),
+      );
+      return target?.closest?.("#novel-home-button")?.id || "";
+    });
+    assert.equal(
+      homeHitTarget,
+      "novel-home-button",
+      `${viewport.name}: top return is outside the pointer hit layer`,
+    );
+    await page.locator("#novel-home-button").click();
     await page.waitForFunction(() => (
       document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "true"
       && !document.querySelector("#intro-layer")?.hidden

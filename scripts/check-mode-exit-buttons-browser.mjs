@@ -76,7 +76,7 @@ const inspectButton = async (page, selector, viewport, surface) => {
   assert(data.rect.height >= 44, `${viewport}/${surface}: hit area is under 44px`);
   assert(data.rect.width < 220, `${viewport}/${surface}: return control is still oversized`);
   assert.equal(data.hit, true, `${viewport}/${surface}: center hit is obstructed (${JSON.stringify(data)})`);
-  if (surface === "story") {
+  if (surface.startsWith("story")) {
     assert.equal(data.clipPath, "none", `${viewport}/${surface}: story control retained the angular mode silhouette`);
     assert(parseFloat(data.borderRadius) >= 10, `${viewport}/${surface}: compact story glass radius is missing`);
   } else {
@@ -108,6 +108,27 @@ try {
       await page.locator(surface.ready).waitFor({ state: "hidden", timeout: 15_000 });
       report.scans.at(-1).keyboardActivated = true;
     }
+
+    await page.goto(new URL("/#story", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.open));
+    await page.evaluate(() => {
+      localStorage.clear();
+      globalThis.GaiaNovel.open();
+    });
+    await page.locator("#novel-start-button").click();
+    await page.waitForFunction(() => (
+      document.querySelector("#novel-home-button")?.hidden === false
+      && document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "false"
+    ));
+    await page.waitForFunction(() => !window.GaiaSceneTransition?.running);
+    await inspectButton(page, "#novel-home-button", viewport.name, "story-home");
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-story-home.png`) });
+    await page.locator("#novel-home-button").click();
+    await page.waitForFunction(() => (
+      document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "true"
+      && !document.querySelector("#intro-layer")?.hidden
+    ));
+    report.scans.at(-1).pointerActivated = true;
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
     await bypassOpening(page);
