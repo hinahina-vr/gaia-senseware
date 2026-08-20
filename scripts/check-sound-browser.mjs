@@ -19,6 +19,7 @@ const expectedTracks = [
   ["moonsave", "月下のSOURCE保存"],
   ["moonreopen", "月下、もう一度ひらく"],
   ["ending", "AfterSchool Afterglow"],
+  ["trueend", "Sensory Horizon"],
 ];
 const report = { status: "running", tracks: [], errors: [], responses404: [] };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -37,8 +38,8 @@ try {
   attachDiagnostics(page);
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
   await page.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
-  assert(await page.locator("[data-sound-track]").count() === 11, "sound archive does not contain 11 unique tracks");
-  assert((await page.locator(".sound-track-heading strong").innerText()) === "11 TRACKS", "track count heading is stale");
+  assert(await page.locator("[data-sound-track]").count() === 12, "sound archive does not contain 12 unique tracks");
+  assert((await page.locator(".sound-track-heading strong").innerText()) === "12 TRACKS", "track count heading is stale");
 
   const panelGeometry = await page.locator(".sound-track-panel").evaluate((panel) => {
     const rect = panel.getBoundingClientRect();
@@ -75,11 +76,11 @@ try {
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
     layoutScrolls: document.querySelector(".sound-layout").scrollHeight > document.querySelector(".sound-layout").clientHeight + 1,
   }));
-  assert(mobileGeometry.count === 11 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
-  const lastTrack = mobile.locator('[data-sound-track="ending"]');
+  assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
+  const lastTrack = mobile.locator('[data-sound-track="trueend"]');
   await lastTrack.scrollIntoViewIfNeeded();
   await lastTrack.click();
-  await mobile.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 10000 });
+  await mobile.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "trueend", null, { timeout: 10000 });
   await mobile.screenshot({ path: path.join(outputDir, "sound-mobile.png"), fullPage: false });
   await context.close();
 

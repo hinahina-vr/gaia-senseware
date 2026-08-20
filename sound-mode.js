@@ -97,6 +97,13 @@
       planet: "PLANET 11",
       signal: "AFTERGLOW SIGNAL",
     },
+    trueend: {
+      number: "TRACK 12 / TRUE END",
+      title: "Sensory Horizon",
+      description: "二百七十万年後、星々へ広がった感覚の系譜をたどるトゥルーエンド専用曲。",
+      planet: "PLANET 12",
+      signal: "SENSORY HORIZON",
+    },
   });
 
   let isOpen = false;

@@ -13,6 +13,7 @@
     moonsave: "./assets/audio/moonlit-source-save.mp3",
     moonreopen: "./assets/audio/moonlit-reopen.mp3",
     ending: "./assets/audio/after-school-afterglow.mp3",
+    trueend: "./assets/audio/sensory-horizon.wav",
   });
   const DEFAULT_VOLUME = 0.1;
   const VOLUME_STORAGE_KEY = "gaia-senseware-bgm-volume";

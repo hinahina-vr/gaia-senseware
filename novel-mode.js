@@ -1185,7 +1185,7 @@
       surface.replaceChildren();
     });
     if (elements.operationsPhoneSurface) elements.operationsPhoneSurface.hidden = true;
-    layer.classList.remove("is-slack", "is-evidence", "is-editorial-evidence", "is-reflection", "is-result", "is-demo-results", "is-staff-roll");
+    layer.classList.remove("is-slack", "is-evidence", "is-editorial-evidence", "is-reflection", "is-result", "is-demo-results", "is-staff-roll", "is-true-end");
   };
 
   const showRuntime = () => {
@@ -3417,12 +3417,41 @@
     layer.classList.add("is-result", "is-staff-roll");
     layer.dataset.storyAudioCue = "ending-credits";
     requestStoryTrack("ending", 1.35);
+    void window.GaiaOpeningAudio?.preloadTrack?.("trueend");
     const continueIntoData = (control) => {
       control.disabled = true;
       state.clear = true;
       state.archivesUnlocked = true;
       saveProgress();
       closeNovelNow();
+    };
+    const continueIntoTrueEnd = (control) => {
+      control.disabled = true;
+      state.clear = true;
+      state.archivesUnlocked = true;
+      saveProgress();
+      layer.classList.remove("is-staff-roll");
+      layer.classList.add("is-true-end");
+      layer.dataset.storyAudioCue = "true-end-sensory-horizon";
+      elements.resultSurface.setAttribute("aria-label", "GAIA SENSEWARE トゥルーエンド");
+      requestStoryTrack("trueend", 1.45);
+      const runtime = window.GaiaTrueEnd?.start?.({
+        host: elements.resultSurface,
+        layer,
+        onComplete: () => {
+          state.trueEndComplete = true;
+          saveProgress();
+        },
+        onExit: () => {
+          runtime?.destroy?.();
+          requestStoryTrack("story", 1.1);
+          showTitle();
+        },
+      });
+      if (!runtime) {
+        layer.classList.remove("is-true-end");
+        continueIntoData(control);
+      }
     };
 
     const shell = document.createElement("section");
@@ -3526,11 +3555,11 @@
     next.type = "button";
     next.tabIndex = -1;
     next.textContent = "世界の続きを紡ぐ";
-    next.setAttribute("aria-label", "スタッフロールを終えて「データで見る」へ進む");
+    next.setAttribute("aria-label", "スタッフロールを終えてトゥルーエンドへ進む");
     next.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      continueIntoData(next);
+      continueIntoTrueEnd(next);
     });
     finale.append(next);
 
@@ -4461,7 +4490,7 @@
     elements.close.disabled = false;
     clearScriptDebug();
     setSceneJumpAvailability(false);
-    layer.classList.remove("is-open", "is-mode-detour");
+    layer.classList.remove("is-open", "is-mode-detour", "is-true-end", "is-staff-roll");
     layer.setAttribute("aria-hidden", "true");
     document.body.classList.remove("novel-open", "novel-mode-detour");
     restoreBaseInterface();
