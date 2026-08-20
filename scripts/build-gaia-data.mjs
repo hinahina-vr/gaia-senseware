@@ -850,8 +850,8 @@ const modes = [
 ];
 
 const output = enrichSnapshotWithStatistics({
-  title: "GAIA SENSEWARE",
-  subtitle: "地球の声を聴く、10の感覚器",
+  title: "惑星の放課後",
+  subtitle: "GAIA SENSATION",
   generatedAt: retrievedAt,
   snapshotPolicy: "Runtime visualization uses this bundled JSON. External links are provenance, not live dependencies.",
   legend: {

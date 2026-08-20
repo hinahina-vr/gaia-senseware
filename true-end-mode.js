@@ -49,7 +49,7 @@
     const shell = createElement("section", "true-end-shell");
     shell.tabIndex = 0;
     shell.setAttribute("role", "region");
-    shell.setAttribute("aria-label", "GAIA SENSEWARE トゥルーエンド。クリック、Enterキー、またはスペースキーで進みます");
+    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION トゥルーエンド。クリック、Enterキー、またはスペースキーで進みます");
 
     const backdropA = createElement("div", "true-end-backdrop true-end-backdrop--a");
     const backdropB = createElement("div", "true-end-backdrop true-end-backdrop--b");

@@ -1764,6 +1764,25 @@ body.novel-open.novel-mode-detour .experience > .signal-console-main[hidden] {
   text-shadow: 0 3px 40px rgba(0, 0, 0, 0.8);
 }
 
+.novel-work-title > span,
+.novel-work-title > small {
+  display: block;
+}
+
+.novel-work-title > span {
+  white-space: nowrap;
+}
+
+.novel-work-title > small {
+  margin-top: clamp(12px, 1.8vh, 20px);
+  color: rgba(var(--novel-cyan), 0.72);
+  font-family: "Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(13px, 1.25vw, 20px);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  line-height: 1;
+}
+
 .novel-title-note {
   max-width: 600px;
   margin: 34px 0 0;
@@ -4892,6 +4911,10 @@ body.novel-reduced-motion .story-detour-dock * {
   letter-spacing: -0.055em;
 }
 
+.novel-layer.is-title .novel-work-title > small {
+  letter-spacing: 0.22em;
+}
+
 .novel-layer.is-title .novel-title-actions {
   margin-top: clamp(30px, 5vh, 58px);
 }
@@ -6211,6 +6234,7 @@ body.novel-open .japan-layer[data-story-mode="map01"] .japan-close {
   .novel-layer.is-title .novel-title-screen { top: auto; right: 18px; bottom: max(34px, env(safe-area-inset-bottom)); left: 18px; width: auto; max-height: none; padding: 0; overflow: visible; transform: none; }
   .novel-layer.is-title .novel-title-screen > p:first-of-type { margin-bottom: 12px; }
   .novel-layer.is-title .novel-title-screen h2 { max-width: 350px; font-size: clamp(43px, 13vw, 58px); }
+  .novel-layer.is-title .novel-work-title > small { margin-top: 10px; font-size: clamp(11px, 3.4vw, 14px); letter-spacing: 0.17em; }
   .novel-layer.is-title .novel-title-actions { display: grid; grid-template-columns: 1fr 1fr; margin-top: 18px; }
   .novel-layer.is-title #novel-start-button { grid-column: 1 / -1; }
   .novel-slack-surface,

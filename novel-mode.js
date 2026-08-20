@@ -3413,7 +3413,7 @@
     elements.dialogue.hidden = true;
     elements.sourceLabel.hidden = true;
     elements.resultSurface.hidden = false;
-    elements.resultSurface.setAttribute("aria-label", "GAIA SENSEWARE スタッフロール");
+    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION スタッフロール");
     layer.classList.add("is-result", "is-staff-roll");
     layer.dataset.storyAudioCue = "ending-credits";
     requestStoryTrack("ending", 1.35);
@@ -3433,7 +3433,7 @@
       layer.classList.remove("is-staff-roll");
       layer.classList.add("is-true-end");
       layer.dataset.storyAudioCue = "true-end-sensory-horizon";
-      elements.resultSurface.setAttribute("aria-label", "GAIA SENSEWARE トゥルーエンド");
+      elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION トゥルーエンド");
       requestStoryTrack("trueend", 1.45);
       const runtime = window.GaiaTrueEnd?.start?.({
         host: elements.resultSurface,
@@ -3490,8 +3490,8 @@
     const title = document.createElement("h2");
     const subtitle = document.createElement("p");
     kicker.textContent = "STAFF & CREDITS";
-    title.textContent = "GAIA SENSEWARE";
-    subtitle.textContent = "地球の声を聴く、10の感覚器";
+    title.textContent = "惑星の放課後";
+    subtitle.textContent = "GAIA SENSATION";
     heading.append(kicker, title, subtitle);
 
     const credits = document.createElement("dl");
@@ -3543,7 +3543,7 @@
     const closingMark = document.createElement("span");
     closingLead.textContent = "その選択の中に、今日から私たちもいる。";
     closingLine.textContent = "物語は、ここからも続いていく。";
-    closingCopyright.textContent = "© 2026 GAIA SENSEWARE";
+    closingCopyright.textContent = "© 2026 惑星の放課後 / GAIA SENSATION";
     closingMark.textContent = "END";
     closing.append(closingLead, closingLine, closingCopyright, closingMark);
 
@@ -4382,7 +4382,7 @@
       progress: { ...state, audio: readAudioState() },
       savedAt: Date.now(),
       meta: {
-        title: currentScene()?.title || "GAIA SENSATION",
+        title: currentScene()?.title || "惑星の放課後",
         excerpt: String(step?.text || step?.prompt || "物語の現在地").slice(0, 120),
       },
     };

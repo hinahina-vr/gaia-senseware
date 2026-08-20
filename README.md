@@ -1,11 +1,11 @@
-# GAIA SENSEWARE
+# 惑星の放課後
 
-**地球の声を聴く、10の感覚器**
+**GAIA SENSATION**
 
 > 物語・キャラクター・GX・演出方針の正本は
 > [`docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md`](docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md) を参照してください。
 
-GAIA SENSEWAREは、世界の研究機関が公開している観測データを、色や動きに置き換えた
+『惑星の放課後 ～GAIA SENSATION～』は、世界の研究機関が公開している観測データを、色や動きに置き換えた
 ブラウザ作品です。空気、海、森、生きもの、ごみ、都市、地震、暮らし、エネルギーの
 10テーマを、抽象表現と世界地図の二つの見方で展示します。
 

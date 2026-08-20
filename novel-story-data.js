@@ -1,9 +1,9 @@
 // Generated from story/物語台本.md by scripts/build-novel-story.mjs. Do not edit by hand.
 globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "storyVersion": 10,
-  "title": "GAIA SENSATION",
+  "title": "惑星の放課後",
   "systemTitle": "GAIA SENSEWARE",
-  "subtitle": "コンテスト機能限定版",
+  "subtitle": "GAIA SENSATION",
   "estimatedDuration": "10〜12分",
   "sourceSha256": "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",

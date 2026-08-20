@@ -202,9 +202,9 @@ scenes.forEach((scene, index) => { scene.nextSceneId = scenes[index + 1]?.id || 
 const sceneOrder = scenes.map((scene) => scene.id);
 const story = {
   storyVersion: 10,
-  title: "GAIA SENSATION",
+  title: "惑星の放課後",
   systemTitle: "GAIA SENSEWARE",
-  subtitle: "コンテスト機能限定版",
+  subtitle: "GAIA SENSATION",
   estimatedDuration: "10〜12分",
   sourceSha256: EXPECTED_SOURCE_SHA256,
   characterSourceSha256: sha256(characterSourceBytes),

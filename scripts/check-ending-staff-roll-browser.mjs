@@ -216,7 +216,7 @@ try {
       "JAXA / NASA / NOAA",
       "気象庁 ほか",
       "物語は、ここからも続いていく。",
-      "© 2026 GAIA SENSEWARE",
+      "© 2026 惑星の放課後 / GAIA SENSATION",
     ].forEach((text) => {
       assert(initial.text.includes(text), `${viewport.name}: missing credit ${text}`);
     });

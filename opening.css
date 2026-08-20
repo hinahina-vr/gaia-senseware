@@ -824,6 +824,22 @@ body.gaia-opening-active .novel-layer {
   line-height: 1.16;
 }
 
+.gaia-vn-work-title > span,
+.gaia-vn-work-title > small {
+  display: block;
+  white-space: nowrap;
+}
+
+.gaia-vn-work-title > small {
+  margin-top: clamp(10px, 1.25vw, 18px);
+  color: rgba(var(--opening-mint), 0.74);
+  font-family: "Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(14px, 1.25vw, 22px);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  line-height: 1;
+}
+
 .gaia-vn-final-choice > strong {
   display: block;
   inline-size: 100%;
@@ -2372,6 +2388,12 @@ body.gaia-opening-active .gaia-opening-skip {
     word-break: keep-all;
     overflow-wrap: normal;
     text-wrap: balance;
+  }
+
+  .gaia-vn-work-title > small {
+    margin-top: 9px;
+    font-size: clamp(11px, 3.2vw, 14px);
+    letter-spacing: 0.18em;
   }
 
   .gaia-vn-final-choice > strong {

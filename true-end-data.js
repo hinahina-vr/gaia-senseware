@@ -9,7 +9,7 @@
   globalThis.GAIA_TRUE_END_STORY = Object.freeze({
     storyVersion: "true-end-sensory-horizon-v1",
     title: "星々の放課後",
-    subtitle: "GAIA SENSEWARE TRUE END",
+    subtitle: "惑星の放課後 / GAIA SENSATION — TRUE END",
     elapsed: "2,704,118 YEARS",
     scenes: Object.freeze([
       freezeScene({
