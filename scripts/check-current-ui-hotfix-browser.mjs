@@ -48,12 +48,18 @@ const bootAt = async (page, stepId, extra = {}) => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate((candidate) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([
+      { progress: candidate, savedAt: Date.now(), meta: { title: "Current UI QA", excerpt: candidate.stepId } },
+    ]));
     localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: false }));
+    localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: false }));
   }, stateFor(stepId, extra));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
+  const savePanel = page.locator("#novel-save-panel");
+  if (await savePanel.isVisible()) await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
   await page.waitForTimeout(180);
 };
@@ -87,7 +93,7 @@ const scanBackground = async (viewport, stepId, shot = false) => {
   assert(samples.every((s) => s.backgroundPosition === samples[0].backgroundPosition && s.transform === "none" && s.animationName === "none"));
   assert(samples.every((s) => s.rect.left === 0 && s.rect.top === 0 && Math.abs(s.rect.width - viewport.width) <= 1 && Math.abs(s.rect.height - viewport.height) <= 1));
   assert(samples.every((s) => !s.overflowX && !s.openingVisible && s.openingHidden && s.novelVisibleCount === 1));
-  if (/festival_concept_00[1-7]/u.test(stepId)) assert(samples.every((s) => /novel-bg-coastal-venue-v3\.png/u.test(s.backgroundImage)));
+  if (/festival_concept_00[1-7]/u.test(stepId)) assert(samples.every((s) => /novel-bg-coastal-venue-autumn-morning-v1\.png/u.test(s.backgroundImage)));
   const asset = await page.evaluate(async () => {
     const url = /url\(["']?([^"')]+)/u.exec(getComputedStyle(document.querySelector("#novel-layer")).backgroundImage)?.[1];
     const image = new Image(); image.src = url; await image.decode(); return { url, naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight };
@@ -144,7 +150,7 @@ const scanChat = async (viewport, stepId, shot = false) => {
   });
   assert(scan.symbolCount > 0 && scan.symbolVisibleCount === scan.symbolCount && scan.humanAvatarCount === 0 && scan.images.every((i) => i.complete && i.naturalWidth > 0));
   assert.equal(scan.oldNameCount, 0); assert.equal(scan.currentVisible, true); assert.equal(scan.overflowX, false); assert.equal(scan.overflowY, false);
-  const expected = { amane: "cloud", mizuha: "water", sakuya: "flower", visitor: "blue-apple", bluecat: "blue-apple", system: "system" };
+  const expected = { amane: "cloud", mizuha: "water", sakuya: "flower", visitor: "green-apple", bluecat: "green-apple", system: "system" };
   for (const [speaker, symbol] of Object.entries(scan.mapping)) assert.equal(symbol, expected[speaker] || "system");
   if (shot) await screenshot(page, `${viewport.name}-chat-${stepId}`);
   report.scans.push({ viewport: viewport.name, case: `chat-symbol-${stepId}`, ...scan, passed: true });
@@ -175,11 +181,10 @@ const scanSaveAndGallery = async (viewport) => {
   await page.locator("#novel-save-close").click(); await page.locator("#novel-save-button").click();
   const fourth = page.locator(".novel-save-slot").nth(3); await fourth.focus(); await fourth.press("Enter");
   assert.equal(await page.evaluate(() => Boolean(JSON.parse(localStorage.getItem("gaiaSensewareNovel:manual-saves") || "[]")[3])), true);
-  await page.locator("#novel-save-close").click(); await page.locator("#novel-title-gallery-button, #novel-gallery-button").first().click();
-  const fonts = await page.evaluate(() => { const pick = (s) => { const e = document.querySelector(s); const c = getComputedStyle(e); return { family: c.fontFamily, weight: c.fontWeight, spacing: c.letterSpacing, lineHeight: c.lineHeight }; }; return { saveHeading: pick(".novel-save-header h2"), galleryHeading: pick(".novel-gallery-header h2"), galleryProgress: pick(".novel-gallery-progress strong"), galleryCard: pick(".novel-gallery-card strong") }; });
-  assert.equal(fonts.galleryHeading.family, fonts.saveHeading.family); assert(!/sans-serif/iu.test(fonts.galleryHeading.family));
-  await screenshot(page, `${viewport.name}-gallery-font`);
-  report.scans.push({ viewport: viewport.name, case: "save-gallery", scroll, fonts, passed: true });
+  const runtimeGalleryDomCount = await page.locator("#novel-gallery-button,#novel-gallery-count").count();
+  assert.equal(runtimeGalleryDomCount, 0);
+  await screenshot(page, `${viewport.name}-save-keyboard`);
+  report.scans.push({ viewport: viewport.name, case: "save-runtime-gallery-absent", scroll, runtimeGalleryDomCount, passed: true });
   await context.close();
 };
 
@@ -196,6 +201,38 @@ const scanLegacySave = async (viewport) => {
   const restored = await page.evaluate(() => { const s = globalThis.GaiaNovel.getState(); return { stepId: s.stepId, audio: s.audio, unknownLegacyField: s.unknownLegacyField, evesRoute: s.evesRoute, amaneInternalSteps: globalThis.GAIA_NOVEL_STORY.scenes.flatMap((scene) => scene.steps).filter((step) => step.speaker === "amane").length, bodyOldName: document.body.innerText.includes("あまあま") }; });
   assert.equal(restored.stepId, "festival_concept_001"); assert.equal(restored.unknownLegacyField, "preserved"); assert.equal(restored.evesRoute.length, 0); assert(restored.amaneInternalSteps > 0); assert.equal(restored.bodyOldName, false);
   report.scans.push({ viewport: viewport.name, case: "legacy-save", restored, passed: true }); await context.close();
+};
+
+const scanAutosaveResume = async (viewport) => {
+  const { context, page } = await createPage(viewport, `${viewport.name}-autosave-resume`);
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+  await page.evaluate((candidate) => {
+    localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
+    localStorage.removeItem("gaiaSensewareNovel:manual-saves");
+    localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+  }, stateFor("welcome_chat_038", { unknownAutosaveField: "preserved" }));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+  await page.evaluate(() => globalThis.GaiaNovel.open());
+  await page.locator("#novel-resume-button").click();
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "welcome_chat_038");
+  const restored = await page.evaluate(() => ({
+    stepId: globalThis.GaiaNovel.getState().stepId,
+    unknownAutosaveField: globalThis.GaiaNovel.getState().unknownAutosaveField,
+    runtimeHidden: document.querySelector("#novel-runtime")?.hidden,
+    titleHidden: document.querySelector("#novel-title-screen")?.hidden,
+    loadPanelHidden: document.querySelector("#novel-save-panel")?.hidden,
+  }));
+  assert.deepEqual(restored, {
+    stepId: "welcome_chat_038",
+    unknownAutosaveField: "preserved",
+    runtimeHidden: false,
+    titleHidden: true,
+    loadPanelHidden: true,
+  });
+  report.scans.push({ viewport: viewport.name, case: "autosave-resume", restored, passed: true });
+  await context.close();
 };
 
 const scanTitleAndOpening = async (viewport) => {
@@ -244,6 +281,7 @@ try {
       for (const step of ["welcome_chat_004", "welcome_chat_011", "welcome_chat_024", "welcome_chat_083"]) await scanChat(viewport, step, true);
       await scanSaveAndGallery(viewport);
       await scanLegacySave(viewport);
+      await scanAutosaveResume(viewport);
     }
   }
   assert.equal(report.consoleErrors.length, 0); assert.equal(report.pageErrors.length, 0); assert.equal(report.responses404.length, 0); report.status = "passed";

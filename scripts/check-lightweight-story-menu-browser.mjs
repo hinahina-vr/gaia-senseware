@@ -141,9 +141,9 @@ const cardScan = async (page) => page.evaluate(() => {
 });
 
 const assertCards = (scan) => {
-  assert.equal(scan.cardCount, 4);
-  assert.deepEqual(scan.cards.map((card) => card.title), ["光に触れる", "世界を読む", "宇宙から見る", "音を聴く"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["数字を光へ。", "変化を地図へ。", "宇宙の記録へ。", "物語の音楽へ。"]);
+  assert.equal(scan.cardCount, 5);
+  assert.deepEqual(scan.cards.map((card) => card.title), ["光に触れる", "世界を読む", "センサーを登録", "宇宙から見る", "音を聴く"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["数字を光へ。", "変化を地図へ。", "地球の観測データを送る", "宇宙の記録へ。", "物語の音楽へ。"]);
   assert(scan.cards.every((card) => card.glyphVisible && card.focusable && card.rect.width > 0 && card.rect.height >= 90));
   assert.equal(scan.hiddenDetailVisibleCount, 0);
   assert(scan.hiddenDetailCount > 0);
@@ -178,7 +178,7 @@ const titleState = async (page) => page.evaluate(() => ({
 const assertTitle = (state) => {
   assert(state.titleVisible && !state.runtimeVisible && !state.openingVisible && !state.introVisible);
   assert.equal(state.novelVisibleCount, 1);
-  assert.deepEqual(state.actionVisible, { start: true, resume: true, load: true, gallery: true });
+  assert.deepEqual(state.actionVisible, { start: true, resume: true, load: false, gallery: true });
   assert.equal(state.runtimeGalleryDomCount, 0);
   assert.equal(state.openAtCount, 1);
   assert.equal(state.novelOpenCount, 1);
@@ -232,9 +232,17 @@ const scanMetadataAndRuntimeGallery = async (viewport, stepId) => {
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await seedStorage(page, stepId);
+  await page.evaluate(() => {
+    const progress = JSON.parse(localStorage.getItem("gaiaSensewareNovel:progress") || "null");
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([
+      { progress, savedAt: Date.now(), meta: { title: "Story menu QA", excerpt: progress.stepId } },
+    ]));
+  });
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+  await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
+  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
   await page.waitForTimeout(120);
   const scan = await page.evaluate(() => {
@@ -300,9 +308,17 @@ const scanIntroductionSequence = async (viewport) => {
     await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
     await seedStorage(page, stepId);
+    await page.evaluate(() => {
+      const progress = JSON.parse(localStorage.getItem("gaiaSensewareNovel:progress") || "null");
+      localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([
+        { progress, savedAt: Date.now(), meta: { title: "Introduction QA", excerpt: progress.stepId } },
+      ]));
+    });
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+    await page.evaluate(() => globalThis.GaiaNovel.open());
     await page.locator("#novel-resume-button").click();
+    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
     await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
     await page.waitForTimeout(100);
     const scan = await page.evaluate(() => {
@@ -448,11 +464,11 @@ const scanRuntimeStoryContract = async () => {
       },
     };
   });
-  assert.equal(scan.sourceSha256, "8bb9b30ecfb423f5f6f8c6f9b42207aff71fe30b988c952adb5facd4e414fc03");
+  assert.equal(scan.sourceSha256, "1314cc8914daaef1df6611bf4e9f4efa53a48c05a0356790f733b36d4432828d");
   assert.equal(scan.sceneCount, 6);
   assert.equal(scan.stepCount, 396);
   assert.deepEqual(scan.userVisiblePlacementVerbStepIds, []);
-  assert.deepEqual(scan.excludedNounOccurrences.map((entry) => entry.stepId), ["festival_concept_028", "map_mode01_024"]);
+  assert.deepEqual(scan.excludedNounOccurrences.map((entry) => entry.stepId), ["festival_concept_028", "map_mode01_024", "esp32_pitch_016", "esp32_pitch_030"]);
   assert.deepEqual(scan.exactCounts, { old024: 0, final024: 1, withdrawn: 0 });
   report.scans.push({ viewport: viewport.name, case: "runtime-story-contract", ...scan, passed: true });
   await context.close();

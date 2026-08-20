@@ -23,7 +23,7 @@ const expectedText = new Map([
   ["gx_experience_011", "「ここでは、生命と地球が互いを変えてきた過程を、時間をさかのぼりながら見ていきます」"],
   ["gx_experience_018", "時間軸へ触れ、左へ引く。指を少し動かすだけで、画面の上では何千万年もの時間が過ぎていく。"],
   ["gx_experience_033", "「これはシアノバクテリアです。海で光合成を行い、酸素を生み出した微小な細菌です。触れたことで増えたのではなく、触れた場所で当時の活動を表示しています」"],
-  ["gx_experience_044", "生命が地球を変え、変わった地球が次の生命の条件を変える。画面を行き来する光を見て、変化は一方通行ではないのだと分かった。"],
+  ["gx_experience_044", "生命が環境を変え、変わった環境が生命の条件を変える。画面を行き来する光を見て、共進化とは、完成へ向かう一本道ではなく影響を返し合うことなのだと分かった。"],
   ["gx_experience_047", "選んだ項目が一度だけ明るくなったあと、画面は三本の棒グラフへ切り替わる。太古の海、CO2の季節変動、気温偏差の地図。それぞれの横に、今日この端末で選ばれた人数と割合が並んでいる。"],
   ["gx_experience_055", "画面の端に、まだ開いていない機能の入口がいくつか並ぶ。"],
   ["esp32_pitch_001", "画面に展示ホールの白い光が戻る。暗い海を見ていた目には、天井の照明が少しまぶしい。"],
@@ -38,25 +38,25 @@ const expectedText = new Map([
   ["circle_invitation_055", "「ええ。参加できています」"],
   ["welcome_chat_015", "まだ会ったことのないsakuから、短いメッセージが届いた。"],
   ["welcome_chat_020", "sakuの短い返事で、画面越しの距離が縮まった。初めてのチャットなのに、このまま話を続けられる気がした。"],
-  ["welcome_chat_063", "地球の未来を考えたい。ESP32をつなぎたい。二人にまた会いたい。どれも同じくらい本当だった。周囲では、展示を終えた学生たちが機材を箱へ戻し始めていた。"],
+  ["welcome_chat_063", "地球の未来を考えたい。ESP32をつなぎたい。二人にまた会いたい。どれも同じくらい本当だった。周囲では、午前枠を終えた学生たちが機材を箱へ戻し始めていた。"],
   ["welcome_chat_064", "「私たちも、そろそろ片づけます。展示画面を消しますね」"],
   ["welcome_chat_081", "次に測る場所、決まったら教えて。"],
   ["welcome_chat_095", "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。"],
 ]);
 const expectedAssets = new Map([
-  ["gx_experience_018", "novel-bg-festival-five-plane-projection-v1.png"],
-  ["gx_experience_055", "novel-bg-gx-mode-gateway-five-plane-v2.png"],
-  ["esp32_pitch_001", "novel-bg-festival-five-plane-projection-v1.png"],
-  ["esp32_pitch_008", "novel-bg-festival-five-plane-projection-v1.png"],
-  ["esp32_pitch_027", "novel-bg-festival-five-plane-projection-v1.png"],
-  ["circle_invitation_001", "novel-bg-festival-five-plane-projection-v1.png"],
+  ["gx_experience_018", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
+  ["gx_experience_055", "novel-bg-gx-mode-gateway-autumn-morning-v3.png"],
+  ["esp32_pitch_001", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
+  ["esp32_pitch_008", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
+  ["esp32_pitch_027", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
+  ["circle_invitation_001", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
   ["circle_invitation_029", "event-cg-circle-invitation-card-v2.png"],
 ]);
 const specialIds = new Set(["gx_experience_047", "welcome_chat_081", "welcome_chat_095"]);
 assert.equal(expectedText.size, 24);
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
 assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 396);
-assert.equal(story.sourceSha256, "8bb9b30ecfb423f5f6f8c6f9b42207aff71fe30b988c952adb5facd4e414fc03");
+assert.equal(story.sourceSha256, "1314cc8914daaef1df6611bf4e9f4efa53a48c05a0356790f733b36d4432828d");
 
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
@@ -246,7 +246,7 @@ const performGxInteraction = async (page, viewport) => {
   assert.equal(closed.stepId, "gx_experience_018");
   assert.equal(closed.lifecycle, "idle");
   assert.equal(closed.gxVisible, false);
-  assert.match(closed.backgroundImage, /novel-bg-festival-five-plane-projection-v1\.png/u);
+  assert.match(closed.backgroundImage, /novel-bg-festival-five-plane-projection-autumn-morning-v2\.png/u);
   assert.equal(closed.overflowX, 0);
   report.gxInteractions.push({ viewport: viewport.name, reducedMotionControlUsed, ...closed, passed: true });
 };
@@ -322,11 +322,11 @@ const scanStaffRoll = async (page, viewport) => {
   });
   assert.equal(scan.stepId, stepId);
   assert.equal(scan.visible, true);
-  ["ひなひな", "OpenAI Codex", "OpenAI ImageGen", "ZEN大学『共創地球論』", "JAXA・NASA・NOAA・気象庁"].forEach((text) => assert.match(scan.text, new RegExp(text, "u")));
+  ["ひなひな", "OpenAI Codex", "OpenAI ImageGen", "ZEN大学『共創地球論』", "JAXA / NASA / NOAA", "気象庁"].forEach((text) => assert.match(scan.text, new RegExp(text, "u")));
   assert(scan.buttonHeight >= 44 && scan.overflowX === 0);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${stepId}.png`), animations: "disabled" });
   report.scans.push({ viewport: viewport.name, stepId, kind: "staff-roll", ...scan, passed: true });
-  await page.locator(".novel-staff-roll button").focus();
+  await page.locator(".novel-staff-roll button:not(.novel-staff-roll-data-skip)").focus();
   await page.keyboard.press("Enter");
   await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true);
 };

@@ -568,7 +568,7 @@ const scanGx = async (viewport, routeMode) => {
   assert.equal(open.storyHidden, false);
   assert.equal(open.storyAriaHidden, "true");
   assert.equal(open.storyInert, true);
-  assert.match(open.storyBackground, /novel-bg-exhibition-v3\.png/u);
+  assert.match(open.storyBackground, /novel-bg-exhibition-autumn-morning-close-v4\.png/u);
   assert.equal(open.backgroundCue, "gx-native-deep-time");
   assert.equal(open.castDisplay, "none");
   assert.equal(open.visibleCharacterCount, 0);

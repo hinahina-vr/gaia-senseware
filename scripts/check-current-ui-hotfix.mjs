@@ -33,8 +33,8 @@ check("EVES/footer hidden without data removal", () => {
 check("changed runtime assets use the current cache keys", () => {
   assert.match(html, /opening\.css\?v=gaia-opening-sound-modal-1/u);
   assert.match(html, /opening\.js\?v=gaia-opening-sound-modal-1/u);
-  assert.match(html, /novel-mode\.css\?v=gaia-title-copy-removal-1/u);
-  assert.match(html, /novel-mode\.js\?v=gaia-ending-afterglow-1/u);
+  assert.match(html, /novel-mode\.css\?v=gaia-message-shadow-1/u);
+  assert.match(html, /novel-mode\.js\?v=gaia-autosave-resume-1/u);
   assert.match(html, /gx-mode\.js\?v=gaia-story-detour-fix-1/u);
   assert.match(html, /novel-story-data\.js\?v=gaia-gsw-esp32-channel-1/u);
 });

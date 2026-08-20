@@ -3878,6 +3878,21 @@
     }, { transition: true });
   };
 
+  const resumeStoredSession = async () => {
+    const stored = getStoredProgress();
+    if (!stored || getManualSaves().some(Boolean)) {
+      openManualArchive("load");
+      return;
+    }
+    exitDebugJumpSession();
+    state = stored;
+    await revealRuntimeForStep(currentStep(), () => {
+      renderEves();
+      saveProgress();
+      renderCurrentStep();
+    });
+  };
+
   const restartStory = () => {
     exitDebugJumpSession();
     const sessionId = state.sessionId || `${Date.now().toString(36)}-restart`;
@@ -4622,7 +4637,7 @@
   window.addEventListener("gaia:space-return-to-novel", () => completePendingInteraction());
 
   elements.start.addEventListener("click", startNewSession);
-  elements.resume.addEventListener("click", () => openManualArchive("load"));
+  elements.resume.addEventListener("click", () => { void resumeStoredSession(); });
   elements.titleGallery?.addEventListener("click", openGallery);
   elements.close.addEventListener("click", handleStoryExitControl);
   elements.home.addEventListener("click", closeNovel);
