@@ -19,7 +19,7 @@ const expectedSceneIds = [
   "circle_invitation",
   "welcome_chat",
 ];
-const expectedCounts = [76, 43, 58, 43, 81, 95];
+const expectedCounts = [76, 43, 48, 43, 81, 95];
 const allSteps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(allSteps.map((step) => [step.id, step]));
 const range = (sceneId, from, to) => Array.from(
@@ -30,7 +30,7 @@ const range = (sceneId, from, to) => Array.from(
 assert.equal(story.storyVersion, 10, "contest story version changed");
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds, "contest scene order changed");
 assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedCounts, "contest scene counts changed");
-assert.equal(allSteps.length, 396, "contest story must keep 396 steps");
+assert.equal(allSteps.length, 386, "contest story must keep 386 steps after retiring the demo poll");
 assert.deepEqual(staging.sceneIds, expectedSceneIds, "staging scene registry changed");
 assert.deepEqual(staging.expectedSceneCounts, Object.fromEntries(expectedSceneIds.map((id, index) => [id, expectedCounts[index]])));
 
@@ -38,7 +38,8 @@ for (const scene of story.scenes) {
   assert.equal(scene.temporal?.temporalContext, "CURRENT", `${scene.id}: temporal context changed`);
   assert.equal(scene.temporal?.timePrecision, "MINUTE", `${scene.id}: temporal precision changed`);
   scene.steps.forEach((step, index) => {
-    assert.equal(step.id, `${scene.id}_${String(index + 1).padStart(3, "0")}`, `${scene.id}: non-canonical step id`);
+    const stepNumber = scene.id === "gx_experience" && index >= 44 ? index + 11 : index + 1;
+    assert.equal(step.id, `${scene.id}_${String(stepNumber).padStart(3, "0")}`, `${scene.id}: non-canonical step id`);
   });
 }
 
@@ -78,7 +79,10 @@ assert.equal(mapInteraction.target, "#japan-layer");
 
 const gxInteraction = staging.interactions[1];
 assert.deepEqual(gxInteraction.prepStepIds, range("gx_experience", 1, 16));
-assert.deepEqual(gxInteraction.postStepIds, range("gx_experience", 18, 58));
+assert.deepEqual(gxInteraction.postStepIds, [
+  ...range("gx_experience", 18, 44),
+  ...range("gx_experience", 55, 58),
+]);
 assert.equal(gxInteraction.returnStepId, "gx_experience_018");
 assert.equal(gxInteraction.kind, "gx");
 assert.equal(gxInteraction.target, "#gx-layer");
@@ -90,15 +94,8 @@ for (const interaction of staging.interactions) {
   assert(stepMap.has(interaction.returnStepId), `${interaction.stepId}: return step is missing`);
 }
 
-assert.deepEqual(staging.choices, [{
-  id: "demo-interest",
-  sceneId: "gx_experience",
-  stepId: "gx_experience_046",
-  type: "choice",
-  scope: "scene-local-demo",
-  resultToken: "demo_interest",
-}]);
-assert.equal(stepMap.get("gx_experience_046")?.type, "choice");
+assert.deepEqual(staging.choices, []);
+assert.equal(stepMap.has("gx_experience_046"), false);
 
 const cue = (stepId) => staging.forStep(stepMap.get(stepId));
 assert.equal(cue("map_mode01_003").device, "none");

@@ -18,7 +18,7 @@ const expectedSceneIds = [
   "circle_invitation",
   "welcome_chat",
 ];
-const expectedCounts = [76, 43, 58, 43, 81, 95];
+const expectedCounts = [76, 43, 48, 43, 81, 95];
 const assets = Object.freeze({
   entrance: "assets/visuals-07/novel-bg-coastal-venue-autumn-morning-v1.png",
   conventionHallEntrance: "assets/visuals-07/novel-bg-convention-hall-entrance-autumn-morning-v1.png",
@@ -40,7 +40,6 @@ const assets = Object.freeze({
   gxBreathingPoints: "assets/visuals-07/novel-bg-gx-breathing-points-autumn-morning-v3.png",
   observatory: "assets/architecture/observatory-architecture-v2.png",
   partner: "assets/concept/concept-01-earth-as-partner.png",
-  gxTemperatureAnomaly: "assets/visuals-07/novel-bg-gx-temperature-anomaly-autumn-morning-v3.png",
   gxModeGateway: "assets/visuals-07/novel-bg-gx-mode-gateway-autumn-morning-v4.png",
   esp32Collaboration: "assets/visuals-07/event-cg-esp32-collaboration-v2.png",
   future: "assets/concept/concept-04-co-created-future.png",
@@ -67,7 +66,6 @@ const approvedAssetHashes = Object.freeze({
   [assets.gxAncientOcean]: "f219a47c1b5d24ab780dedf492f807515b9ecc6a088f7d5f803fff584903699f",
   [assets.abstract]: "be589ad2fd084284d967e2fd873c8565ac4ceb468820a4eca9b87d6815b67b68",
   [assets.gxBreathingPoints]: "d468bdcead823a16b9847dce49c8945bf011b48c82ce9f933dfe6602f39ad0e7",
-  [assets.gxTemperatureAnomaly]: "f03f821c95cc0ccd4c3b62d1f5e7b08f8a0fb7c741fd2c210edb600b2ffd0050",
   [assets.map01Provenance]: "90316d1300c7b5a19ed04eca347ad8bd702d476e2d5bb03e8ef207784160e206",
   [assets.gxModeGateway]: "6cb628c79e74496fd7393c6844c0a0fd8d91e5bd682f5567065c5218fb826514",
   [assets.esp32Collaboration]: "9dac8e247d2fc37fc86b57a49be249c0cd73da84f02fe803d9c6f802c83c68fd",
@@ -109,7 +107,6 @@ const expectedBoundaries = [
   ["gx_experience", 19, 29, "gx-ancient-ocean", assets.abstract, "drift-right", "scenic"],
   ["gx_experience", 30, 41, "gx-coevolution", assets.gxBreathingPoints, "drift-left", "scenic"],
   ["gx_experience", 42, 44, "gx-present-return", assets.observatory, "push-in", "scenic"],
-  ["gx_experience", 45, 54, "gx-human-choice", assets.gxTemperatureAnomaly, "drift-right", "scenic"],
   ["gx_experience", 55, 58, "gx-ten-mode-gateway", assets.gxModeGateway, "push-in", "scenic"],
   ["esp32_pitch", 1, 7, "esp32-exhibition-opening", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["esp32_pitch", 8, 18, "esp32-exhibition-proposal", assets.esp32Collaboration, "event-focus", "event-cg"],
@@ -140,16 +137,18 @@ for (let index = 0; index < expectedBoundaries.length; index += 1) {
     [sceneId, from, to, id, assetPath, motion, presentation],
   );
   if (index > 0 && expectedBoundaries[index - 1][0] === sceneId) {
-    assert.equal(from, expectedBoundaries[index - 1][2] + 1, `${id}: background ranges overlap or leave a gap`);
+    const previousTo = expectedBoundaries[index - 1][2];
+    const expectedFrom = sceneId === "gx_experience" && previousTo === 44 ? 55 : previousTo + 1;
+    assert.equal(from, expectedFrom, `${id}: background ranges overlap or leave an unexpected gap`);
   }
 }
 
 const allSteps = story.scenes.flatMap((scene) => scene.steps);
 const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(step) }));
-assert.equal(resolved.length, 396);
+assert.equal(resolved.length, 386);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 22, "background-art cut must keep the intentional exhibition-map continuity");
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 21, "background-art cut must keep the intentional exhibition-map continuity");
 assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 69);
 
 assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
@@ -243,7 +242,7 @@ assert.equal(cue("gx_experience_017").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("gx_experience_011").assetPath, assets.gxAncientOcean);
 assert.equal(cue("gx_experience_018").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("gx_experience_030").assetPath, assets.gxBreathingPoints);
-assert.equal(cue("gx_experience_054").assetPath, assets.gxTemperatureAnomaly);
+assert.throws(() => backgroundCues.forStep({ sceneId: "gx_experience", id: "gx_experience_054" }), /Missing contest-v10 background cue/);
 assert.equal(cue("esp32_pitch_007").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("esp32_pitch_008").assetPath, assets.esp32Collaboration);
 assert.equal(cue("esp32_pitch_008").presentation, "event-cg");

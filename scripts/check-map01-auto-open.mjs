@@ -32,7 +32,7 @@ const check = (name, fn) => {
 
 check("only current map01 and gx interaction data exist", () => {
   assert.equal(story.scenes.length, 6);
-  assert.equal(steps.length, 396);
+  assert.equal(steps.length, 386);
   assert.deepEqual(interactions, [
     { id: "map_mode01_004", kind: "map01", optional: false, modeId: "breathing-earth", requiredViews: ["timeline_complete"] },
     { id: "gx_experience_017", kind: "gx", optional: false, modeId: "", requiredViews: [] },

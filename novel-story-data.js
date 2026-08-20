@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "671516e4d915e0f1548e78fd4ef82f7ebe73b9cc06062f2e46998152aaae09c3",
+  "sourceSha256": "fed88965250d118d3db17392a6e4dbd9c853633311a116beb69a2d264f40365d",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -1366,99 +1366,6 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "生命が環境を変え、変わった環境が生命の条件を変える。画面を行き来する光を見て、共進化とは、完成へ向かう一本道ではなく影響を返し合うことなのだと分かった。"
         },
         {
-          "id": "gx_experience_045",
-          "sceneId": "gx_experience",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "三つの項目が画面の手前へ浮かぶ。"
-        },
-        {
-          "id": "gx_experience_046",
-          "sceneId": "gx_experience",
-          "type": "choice",
-          "choiceId": "demo_interest",
-          "variable": "demo_interest",
-          "prompt": "二つのデモで、いちばん気になったものを一つ選ぶ",
-          "trackedByEves": false,
-          "options": [
-            {
-              "label": "太古の海",
-              "value": "太古の海",
-              "next": "esp32_pitch"
-            },
-            {
-              "label": "CO2の季節変動",
-              "value": "CO2の季節変動",
-              "next": "esp32_pitch"
-            },
-            {
-              "label": "気温偏差の地図",
-              "value": "気温偏差の地図",
-              "next": "esp32_pitch"
-            }
-          ]
-        },
-        {
-          "id": "gx_experience_047",
-          "sceneId": "gx_experience",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "選んだ項目が一度だけ明るくなったあと、画面は三本の棒グラフへ切り替わる。太古の海、CO2の季節変動、気温偏差の地図。それぞれの横に、今日この端末で選ばれた人数と割合が並んでいる。"
-        },
-        {
-          "id": "gx_experience_048",
-          "sceneId": "gx_experience",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "私が触れた「{{demo_interest}}」の棒へ、一人分が加わった。小さな選択でも、今日この端末で選ばれた票と同じ画面に並ぶ。その一人分が数字に残ることが、不思議にうれしかった。"
-        },
-        {
-          "id": "gx_experience_049",
-          "sceneId": "gx_experience",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "speakerLabel": "みず",
-          "text": "「あめ、一つ増えましたわ」"
-        },
-        {
-          "id": "gx_experience_050",
-          "sceneId": "gx_experience",
-          "type": "dialogue",
-          "speaker": "amane",
-          "speakerLabel": "あめ",
-          "text": "「ええ。ちゃんと入ってるね」"
-        },
-        {
-          "id": "gx_experience_051",
-          "sceneId": "gx_experience",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "あめはみずに答えてから、こちらへ向き直った。声も表情も、また来場者へ説明するものに戻る。"
-        },
-        {
-          "id": "gx_experience_052",
-          "sceneId": "gx_experience",
-          "type": "dialogue",
-          "speaker": "amane",
-          "speakerLabel": "あめ",
-          "text": "「いまの一票を、今日ここで体験した皆さんの結果に加えています」"
-        },
-        {
-          "id": "gx_experience_053",
-          "sceneId": "gx_experience",
-          "type": "dialogue",
-          "speaker": "mizuha",
-          "speakerLabel": "みず",
-          "text": "「最後に、どの展示が人気だったのか、全員分をまとめて見られますの」"
-        },
-        {
-          "id": "gx_experience_054",
-          "sceneId": "gx_experience",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "数字の向こうに、自分とは違う場所で足を止めた人たちがいる。隣で同じ変化を見ている二人もいる。私は一人で画面を見ているときより、地球を少し近く感じていた。"
-        },
-        {
           "id": "gx_experience_055",
           "sceneId": "gx_experience",
           "type": "narration",
@@ -1524,7 +1431,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "esp32_pitch",
           "type": "narration",
           "speaker": "narrator",
-          "text": "選んだ「{{demo_interest}}」は、画面の端に小さな履歴として表示されている。その下には、「参加者が測ったデータ」と書かれた空欄があった。"
+          "text": "画面の端には、「参加者が測ったデータ」と書かれた空欄があった。"
         },
         {
           "id": "esp32_pitch_003",

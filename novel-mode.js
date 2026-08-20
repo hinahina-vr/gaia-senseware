@@ -15,8 +15,6 @@
   const LEGACY_CONFIG_KEY = "gaiaSensewareNovel:config:v2";
   const GALLERY_KEY = "gaiaSensewareNovel:cg-gallery:v1";
   const LOG_COMMENT_KEY = "gaiaSensewareNovel:log-comments:v1";
-  const DEMO_INTEREST_TALLY_KEY = "gaiaSensewareNovel:demo-interest-daily:v1";
-  const DEMO_INTEREST_OPTIONS = Object.freeze(["太古の海", "CO2の季節変動", "気温偏差の地図"]);
   const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
   const LEGACY_MANUAL_KEYS = ["gaia_novel_manual_saves_v6", "gaiaSensewareNovel:manual-saves:v1"];
   const SLOT_COUNT = 6;
@@ -635,45 +633,6 @@
       return false;
     }
   };
-  const currentJapanDateKey = () => {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Tokyo",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(new Date());
-    const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-    return `${value.year}-${value.month}-${value.day}`;
-  };
-  const emptyDemoInterestTally = (date = currentJapanDateKey()) => ({
-    version: 1,
-    date,
-    counts: Object.fromEntries(DEMO_INTEREST_OPTIONS.map((label) => [label, 0])),
-    voters: {},
-  });
-  const normalizeDemoInterestTally = (candidate) => {
-    const date = currentJapanDateKey();
-    if (!candidate || candidate.date !== date || candidate.version !== 1) return emptyDemoInterestTally(date);
-    const voters = Object.fromEntries(Object.entries(candidate.voters || {})
-      .filter(([sessionId, label]) => sessionId && DEMO_INTEREST_OPTIONS.includes(label))
-      .slice(-10000));
-    const counts = Object.fromEntries(DEMO_INTEREST_OPTIONS.map((label) => [label, 0]));
-    Object.values(voters).forEach((label) => { counts[label] += 1; });
-    return { version: 1, date, counts, voters };
-  };
-  const getDemoInterestTally = () => normalizeDemoInterestTally(safeJson(readStorage(DEMO_INTEREST_TALLY_KEY)));
-  const recordDemoInterestVote = (label) => {
-    if (!DEMO_INTEREST_OPTIONS.includes(label)) return getDemoInterestTally();
-    if (!state.sessionId) state.sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    const tally = getDemoInterestTally();
-    const previous = tally.voters[state.sessionId];
-    if (previous === label) return tally;
-    if (DEMO_INTEREST_OPTIONS.includes(previous)) tally.counts[previous] = Math.max(0, tally.counts[previous] - 1);
-    tally.voters[state.sessionId] = label;
-    tally.counts[label] += 1;
-    writeStorage(DEMO_INTEREST_TALLY_KEY, JSON.stringify(tally));
-    return tally;
-  };
   const normalizeLogComments = (candidate) => {
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return {};
     return Object.fromEntries(Object.entries(candidate)
@@ -1050,6 +1009,7 @@
     if (Number(sourceVersion) < 9 && version8To9StepIds.has(migratedStepId)) {
       migratedStepId = version8To9StepIds.get(migratedStepId);
     }
+    if (/^gx_experience_0(?:4[5-9]|5[0-4])$/u.test(migratedStepId)) return "gx_experience_055";
     if (migratedStepId === "current_exhibition_017") return "opening_empty_seat_001";
     if (stepMap.has(migratedStepId)) return migratedStepId;
     const mappings = [
@@ -2856,7 +2816,7 @@
       if (speaker === "visitor" || ABSTRACT_AVATAR_SUPPRESSED_STEP_IDS.has(step.id)) elements.avatar.hidden = true;
       elements.speaker.textContent = speakerDisplayName(step);
     }
-    renderDialoguePages(String(step.text || "").replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目"));
+    renderDialoguePages(String(step.text || ""));
   };
 
   const renderRichStep = (step) => {
@@ -2984,7 +2944,6 @@
   const choiceStateKey = (choiceId) => ({
     observation_order: "observationOrder",
     editorial_choice: "editorialChoice",
-    demo_interest: "demoInterest",
   })[choiceId];
 
   const renderEditorialChoice = (step) => {
@@ -3047,7 +3006,6 @@
         event.stopPropagation();
         const key = choiceStateKey(step.choiceId);
         if (key) state[key] = option.value;
-        if (step.choiceId === "demo_interest") recordDemoInterestVote(option.value);
         if (step.trackedByEves) {
           state.evesRoute = state.evesRoute.filter((entry) => entry.decisionId !== step.choiceId);
           state.evesRoute.push({ decisionId: step.choiceId, value: option.value, label: option.label, stepId: step.id });
@@ -3431,79 +3389,6 @@
     requestAnimationFrame(() => button.focus({ preventScroll: true }));
   };
 
-  const renderDemoInterestResults = (step) => {
-    prepareStepFrame(step);
-    clearTimers();
-    suppressCharacterPresentation();
-    elements.dialogue.hidden = true;
-    elements.sourceLabel.hidden = true;
-    elements.resultSurface.hidden = false;
-    elements.resultSurface.setAttribute("aria-label", "本日の展示選択結果");
-    layer.classList.add("is-result", "is-demo-results");
-
-    const selected = DEMO_INTEREST_OPTIONS.includes(state.demoInterest) ? state.demoInterest : "";
-    const tally = selected ? recordDemoInterestVote(selected) : getDemoInterestTally();
-    const total = DEMO_INTEREST_OPTIONS.reduce((sum, label) => sum + tally.counts[label], 0);
-    const shell = document.createElement("section");
-    shell.className = "novel-demo-results-shell";
-    shell.dataset.selected = selected;
-    shell.dataset.total = String(total);
-
-    const header = document.createElement("header");
-    const kicker = document.createElement("span");
-    const heading = document.createElement("h2");
-    const date = document.createElement("p");
-    kicker.textContent = "TODAY'S DEMO INTEREST";
-    heading.textContent = "今日、この端末で選ばれたもの";
-    date.textContent = `${tally.date.replaceAll("-", ".")}　合計 ${total}人`;
-    header.append(kicker, heading, date);
-
-    const flash = document.createElement("p");
-    flash.className = "novel-demo-selection-flash";
-    flash.textContent = selected ? `あなたの選択　${selected}` : "選択記録を確認できませんでした";
-
-    const list = document.createElement("div");
-    list.className = "novel-demo-results-list";
-    DEMO_INTEREST_OPTIONS.forEach((label) => {
-      const count = tally.counts[label];
-      const percentage = total ? Math.round((count / total) * 100) : 0;
-      const row = document.createElement("article");
-      row.className = "novel-demo-result-row";
-      row.dataset.label = label;
-      row.dataset.count = String(count);
-      row.dataset.percentage = String(percentage);
-      if (label === selected) row.classList.add("is-selected");
-      const labelLine = document.createElement("div");
-      const name = document.createElement("strong");
-      const value = document.createElement("span");
-      const track = document.createElement("div");
-      const bar = document.createElement("i");
-      name.textContent = label;
-      value.className = "novel-demo-count";
-      value.textContent = `${count}人 / ${percentage}%`;
-      track.className = "novel-demo-bar-track";
-      bar.style.setProperty("--demo-share", `${percentage}%`);
-      track.append(bar);
-      labelLine.append(name, value);
-      row.append(labelLine, track);
-      list.append(row);
-    });
-
-    const note = document.createElement("p");
-    note.className = "novel-demo-results-note";
-    note.textContent = "同じ展示端末で、本日選ばれた一人一票を集計しています。選び直した場合は、同じ一票の行き先だけが変わります。";
-    const next = document.createElement("button");
-    next.type = "button";
-    next.textContent = "物語を続ける";
-    next.addEventListener("click", (event) => {
-      event.stopPropagation();
-      moveToFollowingStep(step);
-    });
-    shell.append(header, flash, list, note, next);
-    elements.resultSurface.append(shell);
-    requestAnimationFrame(() => next.focus({ preventScroll: true }));
-  };
-
   const renderStaffRoll = (step) => {
     prepareStepFrame(step);
     clearTimers();
@@ -3734,7 +3619,6 @@
     syncScriptDebug(step);
     if (!canAdvanceStep(step) && fastForwardEnabled()) stopFastForwardAtBarrier();
     saveProgress();
-    if (step.id === "gx_experience_047") return renderDemoInterestResults(step);
     if (step.id === "welcome_chat_095") return renderStaffRoll(step);
     if (["narration", "dialogue"].includes(step.type)) return renderSimpleStep(step);
     if (["chat", "record", "ui", "transition"].includes(step.type)) return renderRichStep(step);
@@ -3990,8 +3874,7 @@
     return true;
   };
 
-  const logStepText = (step) => String(step?.text || "")
-    .replaceAll("{{demo_interest}}", state.demoInterest || "選んだ項目");
+  const logStepText = (step) => String(step?.text || "");
   const commentedLogEntries = () => allSteps
     .filter((step) => typeof logComments[step.id] === "string" && logComments[step.id].trim())
     .map((step) => ({ step, comment: logComments[step.id].trim() }));
@@ -4903,7 +4786,6 @@
       const { unlocked, total, count, percentage } = galleryProgress();
       return { unlocked: [...unlocked], total, count, percentage };
     },
-    getDemoInterestTally: () => structuredClone(getDemoInterestTally()),
     inspectDialoguePagination: (text, { forceFallback = false } = {}) => {
       const source = String(text || "");
       dialogueForceFallbackForInspection = forceFallback;

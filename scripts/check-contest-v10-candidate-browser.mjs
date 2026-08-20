@@ -127,7 +127,7 @@ try {
     assert.deepEqual(canonical, {
       storyVersion: 10,
       sceneIds: ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"],
-      stepCount: 396,
+      stepCount: 386,
       interactions: [["map_mode01_004", "map01"], ["gx_experience_017", "gx"]],
       requiredInteractions: ["map01", "gx"],
     });

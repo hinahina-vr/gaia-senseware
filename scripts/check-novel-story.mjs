@@ -9,18 +9,18 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
-const expectedHash = "671516e4d915e0f1548e78fd4ef82f7ebe73b9cc06062f2e46998152aaae09c3";
+const expectedHash = "fed88965250d118d3db17392a6e4dbd9c853633311a116beb69a2d264f40365d";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
-const expectedSceneCounts = [76, 43, 58, 43, 81, 95];
+const expectedSceneCounts = [76, 43, 48, 43, 81, 95];
 
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 const canonBytes = fs.readFileSync(canonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
-assert.equal(canonBytes.length, 57878, "freeze正本のbytesが変わりました");
+assert.equal(canonBytes.length, 56377, "freeze正本のbytesが変わりました");
 assert.equal(sha256(canonBytes), expectedHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版が正本と一致しません");
 const canonSource = new TextDecoder("utf-8", { fatal: true }).decode(canonBytes);
-assert.equal(canonSource.split("\n").length, 1020, "freeze正本は1019 content lines + trailing LFである必要があります");
+assert.equal(canonSource.split("\n").length, 993, "freeze正本は992 content lines + trailing LFである必要があります");
 assert.equal(canonSource.endsWith("\n"), true, "freeze正本のtrailing LFがありません");
 const prohibitedRemainingPhrase = ["だけが", "残った"].join("");
 assert.equal(canonSource.includes(prohibitedRemainingPhrase), false, "指定NG表現がfreeze正本に残っています");
@@ -42,7 +42,7 @@ const sourceSceneIds = [...canonSource.matchAll(/^<!-- scene-meta\n([\s\S]*?)\n-
 assert.deepEqual(sourceSceneIds, expectedSceneIds, "scene-meta IDまたは順序がfreeze入力と一致しません");
 assert.equal(story.scenes.length, 6);
 const steps = story.scenes.flatMap((scene) => scene.steps);
-assert.equal(steps.length, 396, "短尺正本は394 source block + 2 interaction stepである必要があります");
+assert.equal(steps.length, 386, "短尺正本は384 source block + 2 interaction stepである必要があります");
 assert.equal(new Set(steps.map((step) => step.id)).size, steps.length, "step IDが重複しています");
 const userVisibleSteps = steps.filter((step) => ["dialogue", "narration", "ui"].includes(step.type));
 const prohibitedPlacementVerb = /置(?:く|か(?:ない|な|せ|ず|ぬ|れ|ろ|ん|せる|れる)?|き|け|こ|い(?:た|て|てある|ていた|ておく)?)/u;
@@ -83,7 +83,8 @@ story.scenes.forEach((scene, sceneIndex) => {
   assert.equal(scene.temporal.timePrecision, "MINUTE");
   assert.equal(Object.hasOwn(scene.temporal, "startAt"), false, `${scene.id}: 表示時刻から未定義のISO日時を補完してはいけません`);
   scene.steps.forEach((step, index) => {
-    assert.equal(step.id, `${scene.id}_${String(index + 1).padStart(3, "0")}`);
+    const stepNumber = scene.id === "gx_experience" && index >= 44 ? index + 11 : index + 1;
+    assert.equal(step.id, `${scene.id}_${String(stepNumber).padStart(3, "0")}`);
     assert.equal(step.sceneId, scene.id);
   });
 });
@@ -105,9 +106,15 @@ assert.equal(story.scenes.find((scene) => scene.id === "map_mode01").steps[4].ty
 assert.equal(story.scenes.find((scene) => scene.id === "gx_experience").steps[15].speaker, "mizuha", "GX PREPはミズハの案内です");
 assert.equal(story.scenes.find((scene) => scene.id === "gx_experience").steps[17].type, "narration", "GX return stepがありません");
 
-const choice = steps.find((step) => step.choiceId === "demo_interest");
-assert.equal(choice.id, "gx_experience_046");
-assert.deepEqual(choice.options.map((option) => option.label), ["太古の海", "CO2の季節変動", "気温偏差の地図"]);
+assert.equal(steps.some((step) => step.type === "choice" || step.choiceId === "demo_interest"), false, "意味のないデモ三択が本編へ残っています");
+assert.deepEqual(story.scenes.find((scene) => scene.id === "gx_experience").steps.slice(-5).map((step) => step.id), [
+  "gx_experience_044",
+  "gx_experience_055",
+  "gx_experience_056",
+  "gx_experience_057",
+  "gx_experience_058",
+], "削除した三択を飛ばす安定IDの接続が変わりました");
+assert.equal(story.scenes.find((scene) => scene.id === "esp32_pitch").steps[1].text, "画面の端には、「参加者が測ったデータ」と書かれた空欄があった。", "次sceneに旧選択履歴が残っています");
 assert.equal(steps.some((step) => ["reflectionChoice", "result", "end"].includes(step.type)), false, "旧後半の選択・結果stepが本編へ残っています");
 assert.equal(steps.some((step) => ["map03", "abstract07", "map08", "space10"].includes(step.interaction?.kind)), false, "旧MODE interactionが本編へ残っています");
 
@@ -139,8 +146,8 @@ const novelModeSource = fs.readFileSync(path.join(projectRoot, "novel-mode.js"),
 assert.match(novelModeSource, /Number\(sourceVersion\) < 10\) return firstStepForScene\(story\.startSceneId\)/u, "v9以前はfestival_concept_001へ安全移行する必要があります");
 assert.match(novelModeSource, /const resetsLegacyProgress = sourceVersion < 10/u, "旧進行を新routeへ持ち込んではいけません");
 assert.match(novelModeSource, /normalized\.audio = \{[\s\S]*?candidate\.audio/u, "旧saveの音量・mute設定を保持する必要があります");
-assert.match(novelModeSource, /demo_interest:\s*"demoInterest"/u, "短尺3択の保存fieldがありません");
-assert.match(novelModeSource, /replaceAll\("\{\{demo_interest\}\}"/u, "選択結果placeholderの表示処理がありません");
-assert.ok(story.saveFields.includes("demoInterest"));
+assert.match(novelModeSource, /\^gx_experience_0\(\?:4\[5-9\]\|5\[0-4\]\)\$/u, "削除した三択を参照する旧saveの移行処理がありません");
+assert.doesNotMatch(novelModeSource, /DEMO_INTEREST_TALLY_KEY|renderDemoInterestResults|recordDemoInterestVote/u, "削除したデモ投票処理がruntimeへ残っています");
+assert.ok(story.saveFields.includes("demoInterest"), "旧saveの読み込み互換fieldは維持する必要があります");
 
 console.log(`contest v10 story check passed: ${story.scenes.length} scenes, ${steps.length} steps, freeze ${expectedHash}`);

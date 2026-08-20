@@ -4,7 +4,7 @@
   const expectedSceneCounts = Object.freeze({
     festival_concept: 76,
     map_mode01: 43,
-    gx_experience: 58,
+    gx_experience: 48,
     esp32_pitch: 43,
     circle_invitation: 81,
     welcome_chat: 95,
@@ -86,7 +86,6 @@
     { id: "gx-ancient-ocean", sceneId: "gx_experience", from: 19, to: 29, assetPath: "assets/visuals-07/mode-abstract-v1.webp", motion: "drift-right" },
     { id: "gx-coevolution", sceneId: "gx_experience", from: 30, to: 41, assetPath: "assets/visuals-07/novel-bg-gx-breathing-points-autumn-morning-v3.png", motion: "drift-left" },
     { id: "gx-present-return", sceneId: "gx_experience", from: 42, to: 44, assetPath: "assets/architecture/observatory-architecture-v2.png", motion: "push-in" },
-    { id: "gx-human-choice", sceneId: "gx_experience", from: 45, to: 54, assetPath: "assets/visuals-07/novel-bg-gx-temperature-anomaly-autumn-morning-v3.png", motion: "drift-right" },
     { id: "gx-ten-mode-gateway", sceneId: "gx_experience", from: 55, to: 58, assetPath: "assets/visuals-07/novel-bg-gx-mode-gateway-autumn-morning-v4.png", motion: "push-in" },
     { id: "esp32-exhibition-opening", sceneId: "esp32_pitch", from: 1, to: 7, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },
     { id: "esp32-exhibition-proposal", sceneId: "esp32_pitch", from: 8, to: 18, assetPath: "assets/visuals-07/event-cg-esp32-collaboration-v2.png", motion: "event-focus", presentation: "event-cg", galleryId: "esp32-collaboration" },

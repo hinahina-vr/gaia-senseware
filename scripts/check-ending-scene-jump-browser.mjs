@@ -105,7 +105,7 @@ try {
     assert.equal(jumpItems.at(-1).id, "ending", `${viewport.name}: ending entry is not last`);
     assert.match(jumpItems.at(-1).text, /07\s*\/\s*ENDING/u, `${viewport.name}: ending chapter label`);
     assert.match(jumpItems.at(-1).text, /エンディング/u, `${viewport.name}: ending title`);
-    assert.match(jumpItems.at(-1).text, /SCRIPT #0396/u, `${viewport.name}: ending script label`);
+    assert.match(jumpItems.at(-1).text, /SCRIPT #0386/u, `${viewport.name}: ending script label`);
     assert.equal(jumpItems.filter((item) => item.current === "true").length, 1, `${viewport.name}: current scene marker count`);
 
     const endingButton = page.locator('button.novel-jump-item[data-scene-id="ending"]');

@@ -27,7 +27,6 @@ const cases = [
   ["gx_experience_001", "gx-ocean-entry", "novel-bg-gx-ancient-ocean-autumn-morning-v3.png"],
   ["circle_invitation_070", "circle-after-welcome", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
   ["gx_experience_030", "gx-coevolution", "novel-bg-gx-breathing-points-autumn-morning-v3.png"],
-  ["gx_experience_045", "gx-human-choice", "novel-bg-gx-temperature-anomaly-autumn-morning-v3.png"],
   ["gx_experience_055", "gx-ten-mode-gateway", "novel-bg-gx-mode-gateway-autumn-morning-v4.png"],
   ["circle_invitation_011", "circle-private-invitation", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
   ["welcome_chat_074", "welcome-night-exit-mobile", "novel-bg-zushi-coast-autumn-day-v3.png"],

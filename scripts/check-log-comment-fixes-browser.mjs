@@ -72,8 +72,8 @@ const expectedAssets = new Map([
   ["gx_experience_001", "novel-bg-gx-ancient-ocean-five-plane-v1.png"],
 ]);
 
-assert.equal(allSteps.length, 396);
-assert.equal(new Set(allSteps.map((step) => step.id)).size, 396);
+assert.equal(allSteps.length, 386);
+assert.equal(new Set(allSteps.map((step) => step.id)).size, 386);
 assert.equal(expectedText.size, 31);
 assert.equal(story.sourceSha256, "402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4");
 assert.deepEqual(story.requiredInteractions, ["map01", "gx"]);

@@ -177,7 +177,7 @@ try {
     assertMatchedPair(viewport.name, "dialogue");
   }
   assert.equal(report.inventory.sceneCount, 6);
-  assert.equal(report.inventory.stepCount, 396);
+  assert.equal(report.inventory.stepCount, 386);
   assert(report.inventory.guideStepCount > 100);
   assert.equal(report.inventory.byType.dialogue, 103);
   assert.equal(report.inventory.byType.chat, 13);

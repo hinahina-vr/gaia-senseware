@@ -4,7 +4,7 @@
   const expectedSceneCounts = Object.freeze({
     festival_concept: 76,
     map_mode01: 43,
-    gx_experience: 58,
+    gx_experience: 48,
     esp32_pitch: 43,
     circle_invitation: 81,
     welcome_chat: 95,
@@ -46,20 +46,14 @@
       kind: "gx",
       target: "#gx-layer",
       returnStepId: "gx_experience_018",
-      postStepIds: stepIds("gx_experience", 18, 58),
+      postStepIds: Object.freeze([
+        ...stepIds("gx_experience", 18, 44),
+        ...stepIds("gx_experience", 55, 58),
+      ]),
     },
   ]);
 
-  const choices = freezeRows([
-    {
-      id: "demo-interest",
-      sceneId: "gx_experience",
-      stepId: "gx_experience_046",
-      type: "choice",
-      scope: "scene-local-demo",
-      resultToken: "demo_interest",
-    },
-  ]);
+  const choices = Object.freeze([]);
 
   const devices = freezeRows([
     { id: "map01-native-overlay", sceneId: "map_mode01", from: 4, to: 4, device: "native-mode-overlay", phase: "open" },

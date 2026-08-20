@@ -24,7 +24,6 @@ const expectedText = new Map([
   ["gx_experience_018", "時間軸へ触れ、左へ引く。指を少し動かすだけで、画面の上では何千万年もの時間が過ぎていく。"],
   ["gx_experience_033", "「これはシアノバクテリアです。海で光合成を行い、酸素を生み出した微小な細菌です。触れたことで増えたのではなく、触れた場所で当時の活動を表示しています」"],
   ["gx_experience_044", "生命が環境を変え、変わった環境が生命の条件を変える。画面を行き来する光を見て、共進化とは、完成へ向かう一本道ではなく影響を返し合うことなのだと分かった。"],
-  ["gx_experience_047", "選んだ項目が一度だけ明るくなったあと、画面は三本の棒グラフへ切り替わる。太古の海、CO2の季節変動、気温偏差の地図。それぞれの横に、今日この端末で選ばれた人数と割合が並んでいる。"],
   ["gx_experience_055", "画面の端に、まだ開いていない機能の入口がいくつか並ぶ。"],
   ["esp32_pitch_001", "画面に展示ホールの白い光が戻る。暗い海を見ていた目には、天井の照明が少しまぶしい。"],
   ["esp32_pitch_008", "あめも、みずも、すぐには答えなかった。失敗したと思いかけたとき、二人が続きを待っているのだと気づいた。"],
@@ -56,11 +55,11 @@ const mobileExpectedAssets = new Map([
   ["esp32_pitch_008", "event-cg-esp32-collaboration-mobile-v1.png"],
   ["circle_invitation_029", "event-cg-circle-invitation-card-mobile-v1.png"],
 ]);
-const specialIds = new Set(["gx_experience_047", "welcome_chat_081", "welcome_chat_095"]);
-assert.equal(expectedText.size, 24);
+const specialIds = new Set(["welcome_chat_081", "welcome_chat_095"]);
+assert.equal(expectedText.size, 23);
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
-assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 396);
-assert.equal(story.sourceSha256, "671516e4d915e0f1548e78fd4ef82f7ebe73b9cc06062f2e46998152aaae09c3");
+assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 386);
+assert.equal(story.sourceSha256, "fed88965250d118d3db17392a6e4dbd9c853633311a116beb69a2d264f40365d");
 
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
@@ -72,7 +71,7 @@ const report = {
   targetStepCount: expectedText.size,
   scans: [],
   gxInteractions: [],
-  demoTallies: [],
+  retiredDemoPolls: [],
   consoleErrors: [],
   pageErrors: [],
   responses404: [],
@@ -81,7 +80,7 @@ const report = {
 const stateFor = (stepId, extra = {}) => ({
   storyVersion: story.storyVersion,
   stepId,
-  reachedSceneIds: [stepMap.get(stepId).sceneId],
+  reachedSceneIds: [stepMap.get(stepId)?.sceneId || "gx_experience"],
   viewed: {},
   metCharacters: { mizuha: true, amane: true, sakuya: true },
   evesRoute: [],
@@ -105,6 +104,7 @@ const attachDiagnostics = (page, label) => {
 };
 
 const bootAt = async (page, stepId, extra = {}) => {
+  const expectedStepId = /^gx_experience_0(?:4[5-9]|5[0-4])$/u.test(stepId) ? "gx_experience_055" : stepId;
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate((candidate) => {
@@ -119,7 +119,7 @@ const bootAt = async (page, stepId, extra = {}) => {
   await page.locator("#novel-resume-button").click();
   await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
   await page.locator('.novel-save-slot[data-slot-index="0"]').click();
-  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId, { timeout: 15_000 });
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, expectedStepId, { timeout: 15_000 });
   await page.waitForTimeout(150);
 };
 
@@ -226,20 +226,19 @@ const performGxInteraction = async (page, viewport) => {
     await page.mouse.move(target.x + 18, target.y + 8, { steps: 8 });
     await page.mouse.up();
   }
-  let reducedMotionControlUsed = false;
-  try {
-    await page.waitForFunction(() => !document.querySelector("#story-detour-return")?.disabled, null, { timeout: 1_500 });
-  } catch {
-    const progressButton = page.getByRole("button", { name: "段階表示を進める" });
-    assert.equal(await progressButton.isVisible(), true, `${viewport.name}: GX reduced-motion control is missing`);
-    const progressBox = await progressButton.boundingBox();
-    assert(progressBox && progressBox.height >= 44, `${viewport.name}: GX reduced-motion control hit area is below 44px`);
-    for (let index = 0; index < 3; index += 1) await progressButton.click();
-    reducedMotionControlUsed = true;
+  let keyboardPhaseAdvances = 0;
+  for (; keyboardPhaseAdvances < 10; keyboardPhaseAdvances += 1) {
+    const completed = await page.evaluate(() => globalThis.GaiaNovel.getState().stepId === "gx_experience_018");
+    if (completed) break;
+    const previousPhase = await page.locator("#gx-phase-index").textContent();
+    await page.keyboard.press("Enter");
+    await page.waitForFunction((phase) => (
+      globalThis.GaiaNovel.getState().stepId === "gx_experience_018"
+      || (document.querySelector("#gx-phase-index")?.textContent !== phase
+        && !document.querySelector("#gx-layer")?.classList.contains("is-era-transitioning"))
+    ), previousPhase, { timeout: 5_000 });
   }
-  await page.waitForFunction(() => !document.querySelector("#story-detour-return")?.disabled, null, { timeout: 10_000 });
-  await page.locator("#story-detour-return").click();
-  await page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "gx_experience_018");
+  await page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "gx_experience_018", null, { timeout: 5_000 });
   const closed = await page.evaluate(() => {
     const element = document.querySelector("#gx-layer");
     const style = getComputedStyle(element);
@@ -257,56 +256,33 @@ const performGxInteraction = async (page, viewport) => {
   assert.equal(closed.gxVisible, false);
   assert.match(closed.backgroundImage, /novel-bg-festival-five-plane-projection-autumn-morning-v2\.png/u);
   assert.equal(closed.overflowX, 0);
-  report.gxInteractions.push({ viewport: viewport.name, reducedMotionControlUsed, ...closed, passed: true });
+  report.gxInteractions.push({ viewport: viewport.name, keyboardPhaseAdvances, ...closed, passed: true });
 };
 
-const readDemoResult = (page) => page.evaluate(() => {
-  const shell = document.querySelector(".novel-demo-results-shell");
-  const button = shell?.querySelector("button");
-  return {
+const scanRetiredDemoPoll = async (page, viewport) => {
+  await bootAt(page, "gx_experience_046", { demoInterest: "太古の海" });
+  const migrated = await page.evaluate(() => ({
     stepId: document.querySelector("#novel-layer")?.dataset.stepId,
-    selected: shell?.dataset.selected || "",
-    total: Number(shell?.dataset.total || 0),
-    rows: [...document.querySelectorAll(".novel-demo-result-row")].map((row) => ({ label: row.dataset.label, count: Number(row.dataset.count), percentage: Number(row.dataset.percentage), selected: row.classList.contains("is-selected") })),
-    flash: document.querySelector(".novel-demo-selection-flash")?.textContent || "",
-    note: document.querySelector(".novel-demo-results-note")?.textContent || "",
-    buttonHeight: button?.getBoundingClientRect().height || 0,
+    text: document.querySelector("#novel-text")?.getAttribute("aria-label") || "",
+    choiceCount: document.querySelectorAll("#novel-choices button").length,
+    hasTally: Boolean(document.querySelector(".novel-demo-results-shell")),
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
-  };
-});
+  }));
+  assert.equal(migrated.stepId, "gx_experience_055");
+  assert.equal(migrated.text, expectedText.get("gx_experience_055"));
+  assert.equal(migrated.choiceCount, 0);
+  assert.equal(migrated.hasTally, false);
+  assert.equal(migrated.overflowX, 0);
 
-const scanDemoResults = async (page, viewport) => {
-  const sessionId = `round3-demo-${viewport.name}`;
-  await page.evaluate(() => localStorage.removeItem("gaiaSensewareNovel:demo-interest-daily:v1"));
-  await bootAt(page, "gx_experience_046", { sessionId, demoInterest: null });
-  const choices = page.locator("#novel-choices button");
-  assert.equal(await choices.count(), 3);
-  assert((await choices.first().boundingBox()).height >= 44);
-  await choices.first().click();
-  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "gx_experience_047");
-  const initial = await readDemoResult(page);
-  assert.equal(initial.selected, "太古の海");
-  assert.equal(initial.total, 1);
-  assert.equal(initial.rows.length, 3);
-  assert.deepEqual(initial.rows.map((row) => row.count), [1, 0, 0]);
-  assert.deepEqual(initial.rows.map((row) => row.percentage), [100, 0, 0]);
-  assert.match(initial.flash, /あなたの選択　太古の海/u);
-  assert(initial.note.includes("同じ展示端末") && initial.note.includes("一人一票") && initial.note.includes("選び直した場合"));
-  assert(initial.buttonHeight >= 44 && initial.overflowX === 0);
-  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-gx_experience_047.png`), animations: "disabled" });
-  report.scans.push({ viewport: viewport.name, stepId: "gx_experience_047", kind: "daily-tally", ...initial, passed: true });
-
-  await bootAt(page, "gx_experience_047", { sessionId, demoInterest: "太古の海" });
-  const reloaded = await readDemoResult(page);
-  assert.equal(reloaded.total, 1, `${viewport.name}: reload doubled the session vote`);
-  await bootAt(page, "gx_experience_046", { sessionId, demoInterest: "太古の海" });
-  await choices.nth(1).focus();
-  await page.keyboard.press("Enter");
-  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "gx_experience_047");
-  const reselection = await readDemoResult(page);
-  assert.equal(reselection.total, 1, `${viewport.name}: reselection created an extra vote`);
-  assert.deepEqual(reselection.rows.map((row) => row.count), [0, 1, 0]);
-  report.demoTallies.push({ viewport: viewport.name, initial, reloaded, reselection, passed: true });
+  await bootAt(page, "gx_experience_044");
+  for (let index = 0; index < 5; index += 1) {
+    if (await page.evaluate(() => document.querySelector("#novel-layer")?.dataset.stepId === "gx_experience_055")) break;
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(120);
+  }
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "gx_experience_055");
+  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-gx-demo-poll-retired.png`), animations: "disabled" });
+  report.retiredDemoPolls.push({ viewport: viewport.name, ...migrated, directNext: "gx_experience_055", passed: true });
 };
 
 const scanStaffRoll = async (page, viewport) => {
@@ -349,13 +325,13 @@ try {
     await performGxInteraction(page, viewport);
     for (const stepId of expectedText.keys()) if (!specialIds.has(stepId)) await scanSimpleStep(page, viewport, stepId);
     await scanChat(page, viewport);
-    await scanDemoResults(page, viewport);
+    await scanRetiredDemoPoll(page, viewport);
     await scanStaffRoll(page, viewport);
     await context.close();
   }
   assert.equal(report.scans.length, expectedText.size * viewports.length);
   assert.equal(report.gxInteractions.length, viewports.length);
-  assert.equal(report.demoTallies.length, viewports.length);
+  assert.equal(report.retiredDemoPolls.length, viewports.length);
   assert.equal(report.consoleErrors.length, 0, `console errors: ${report.consoleErrors.join("\n")}`);
   assert.equal(report.pageErrors.length, 0, `page errors: ${report.pageErrors.join("\n")}`);
   assert.equal(report.responses404.length, 0, `404 responses: ${report.responses404.join("\n")}`);

@@ -8,7 +8,10 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "671516e4d915e0f1548e78fd4ef82f7ebe73b9cc06062f2e46998152aaae09c3";
+const EXPECTED_SOURCE_SHA256 = "fed88965250d118d3db17392a6e4dbd9c853633311a116beb69a2d264f40365d";
+const LEGACY_STEP_ID_GAPS = Object.freeze({
+  gx_experience: Object.freeze({ after: 44, size: 10 }),
+});
 
 const sourceBytes = fs.readFileSync(canonPath);
 const characterSourceBytes = fs.readFileSync(characterCanonPath);
@@ -108,16 +111,7 @@ const parseBlock = (block, sceneId) => {
   if (cue) {
     const [, marker, text, body = ""] = cue;
     if (marker === "選択") {
-      const labels = body.split("\n").map((line) => line.match(/^\d+\.\s*(.+)$/u)?.[1]).filter(Boolean);
-      if (labels.length !== 3) throw new Error(`${sceneId}: demo_interestには3択が必要です`);
-      return {
-        type: "choice",
-        choiceId: "demo_interest",
-        variable: "demo_interest",
-        prompt: text,
-        trackedByEves: false,
-        options: labels.map((label) => ({ label, value: label, next: "esp32_pitch" })),
-      };
+      throw new Error(`${sceneId}: 展開へ影響しない選択画面は短尺本編へ追加できません`);
     }
     if (marker === "学内チャット") return { type: "chatSurface", text };
     return { type: "ui", text: `${marker}｜${text}` };
@@ -143,8 +137,12 @@ const scenes = matches.map((match, index) => {
   body = body.slice(metaMatch[0].length).replace(/\n---\s*$/u, "").trim();
   const blocks = body.split(/\n{2,}/u).map((block) => block.trim()).filter(Boolean);
   const steps = [];
+  let stepNumber = 0;
   const pushStep = (step) => {
-    const id = `${meta.id}_${String(steps.length + 1).padStart(3, "0")}`;
+    stepNumber += 1;
+    const legacyGap = LEGACY_STEP_ID_GAPS[meta.id];
+    if (legacyGap && stepNumber === legacyGap.after + 1) stepNumber += legacyGap.size;
+    const id = `${meta.id}_${String(stepNumber).padStart(3, "0")}`;
     steps.push({ id, sceneId: meta.id, ...step });
   };
   const interaction = INTERACTION_CONFIG[meta.id] || null;

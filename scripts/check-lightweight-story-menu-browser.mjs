@@ -464,9 +464,9 @@ const scanRuntimeStoryContract = async () => {
       },
     };
   });
-  assert.equal(scan.sourceSha256, "671516e4d915e0f1548e78fd4ef82f7ebe73b9cc06062f2e46998152aaae09c3");
+  assert.equal(scan.sourceSha256, "fed88965250d118d3db17392a6e4dbd9c853633311a116beb69a2d264f40365d");
   assert.equal(scan.sceneCount, 6);
-  assert.equal(scan.stepCount, 396);
+  assert.equal(scan.stepCount, 386);
   assert.deepEqual(scan.userVisiblePlacementVerbStepIds, []);
   assert.deepEqual(scan.excludedNounOccurrences.map((entry) => entry.stepId), ["festival_concept_028", "map_mode01_024", "esp32_pitch_016", "esp32_pitch_030"]);
   assert.deepEqual(scan.exactCounts, { old024: 0, final024: 1, withdrawn: 0 });
