@@ -3143,8 +3143,8 @@
   const detourDefinitions = Object.freeze({
     map01: {
       kicker: "MODE 01 / MAP",
-      title: "年代を動かして変化を見る",
-      guide: "年代のスライダーを動かし、地図の気になる場所へ触れてください。",
+      title: "年代の変化を続けて見る",
+      guide: "1958年から2050年まで自動再生します。終了すると物語へ戻ります。",
     },
     gx: {
       kicker: "GX / DEEP TIME",
@@ -3191,7 +3191,7 @@
     if (!pendingInteraction) return "";
     const kind = pendingInteraction.interaction.kind;
     if (kind === "map01") {
-      return `年代を操作 ${detourState?.views?.has("long_term") ? "✓" : "○"}　地図に触れる ${detourState?.views?.has("temperature_anomaly") ? "✓" : "○"}`;
+      return detourState?.views?.has("timeline_complete") ? "自動再生が完了しました" : "年代を自動再生中";
     }
     if (kind === "gx") return state.viewed.gxDeepTime ? "操作完了 / 海の変化を確認しました" : `水面の操作 ${detourState?.gestureCount || 0} / 3`;
     if (kind === "map03") return `森林 ${state.viewed.mode03Forest ? "✓" : "○"}　降水量 ${state.viewed.mode03Rain ? "✓" : "○"}　重ね合わせ ${state.viewed.mode03Overlay ? "✓" : "○"}`;
@@ -3272,7 +3272,8 @@
   const setInteractionLifecycle = (phase) => {
     interactionLifecycle = phase;
     const exclusive = phase === "open" || phase === "closing";
-    const preservesStoryUnderlay = exclusive && pendingInteraction?.interaction?.kind === "gx";
+    const preservesStoryUnderlay = exclusive
+      && ["gx", "map01"].includes(pendingInteraction?.interaction?.kind);
     if (phase === "idle") {
       delete layer.dataset.interactionState;
       delete document.body.dataset.novelInteractionState;
@@ -3315,12 +3316,14 @@
     detourState = { gestureCount: 0, views: new Set() };
     const definition = detourDefinitions[step.interaction.kind];
     closeDetourDock();
-    detourDock = document.createElement("aside");
-    detourDock.className = "story-detour-dock";
-    detourDock.dataset.kind = step.interaction.kind;
-    detourDock.innerHTML = `<header><span>${definition.kicker}</span><h2>${definition.title}</h2></header><p>${definition.guide}</p><p class="story-detour-progress" role="status" aria-live="polite"></p><div class="story-detour-controls"></div><button id="story-detour-return" type="button" disabled>操作を保存して物語へ戻る</button>`;
-    detourDock.querySelector("#story-detour-return").addEventListener("click", requestDetourReturn);
-    detourParent(step.interaction.kind)?.append(detourDock);
+    if (step.interaction.kind !== "map01") {
+      detourDock = document.createElement("aside");
+      detourDock.className = "story-detour-dock";
+      detourDock.dataset.kind = step.interaction.kind;
+      detourDock.innerHTML = `<header><span>${definition.kicker}</span><h2>${definition.title}</h2></header><p>${definition.guide}</p><p class="story-detour-progress" role="status" aria-live="polite"></p><div class="story-detour-controls"></div><button id="story-detour-return" type="button" disabled>操作を保存して物語へ戻る</button>`;
+      detourDock.querySelector("#story-detour-return").addEventListener("click", requestDetourReturn);
+      detourParent(step.interaction.kind)?.append(detourDock);
+    }
     document.body.classList.add("novel-mode-detour");
     layer.classList.add("is-mode-detour");
     updateDetourDock();
@@ -4625,6 +4628,12 @@
       if ((pendingInteraction.interaction.requiredViews || []).includes(view)) detourState?.views?.add(view);
     }
     updateDetourDock();
+  });
+  window.addEventListener("gaia:story-mode-auto-complete", (event) => {
+    if (pendingInteraction?.interaction.kind !== "map01" || event.detail?.kind !== "map01") return;
+    const view = String(event.detail?.view || "timeline_complete");
+    if ((pendingInteraction.interaction.requiredViews || []).includes(view)) detourState?.views?.add(view);
+    requestDetourReturn();
   });
   window.addEventListener("gaia:story-abstract-interaction", () => {
     if (pendingInteraction?.interaction.kind !== "abstract07") return;

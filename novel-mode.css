@@ -6053,6 +6053,61 @@ body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
   .story-map-guide li span { font-size: 9px; }
 }
 
+/* In story mode MODE 01 is a focused modal over the current novel frame.
+   Playback owns completion, so no step guide or return dock is mounted. */
+body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] {
+  position: fixed;
+  z-index: 640;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: min(1260px, calc(100vw - 96px));
+  height: min(760px, calc(100dvh - 112px));
+  overflow: hidden;
+  border: 1px solid rgba(153, 224, 242, 0.58);
+  border-radius: 18px;
+  background: #02090c;
+  box-shadow:
+    0 0 0 100vmax rgba(1, 6, 17, 0.72),
+    0 30px 90px rgba(0, 4, 16, 0.68),
+    inset 0 1px rgba(231, 253, 255, 0.1);
+  isolation: isolate;
+  transform: translate(-50%, -50%);
+}
+
+body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
+  top: 24px !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: 24px !important;
+  width: min(430px, calc(100% - 48px)) !important;
+  max-height: calc(100% - 48px);
+  overflow-y: auto;
+}
+
+body.novel-open .japan-layer[data-story-mode="map01"] .story-map-guide,
+body.novel-open .japan-layer[data-story-mode="map01"] .story-detour-dock,
+body.novel-open .japan-layer[data-story-mode="map01"] .map-reading-guide,
+body.novel-open .japan-layer[data-story-mode="map01"] .japan-close {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  body.novel-open.novel-mode-detour .japan-layer[data-story-mode="map01"] {
+    width: calc(100vw - 20px);
+    height: calc(100dvh - 28px);
+    border-radius: 14px;
+  }
+
+  body.novel-open .japan-layer[data-story-mode="map01"] .signal-console-map {
+    top: 14px !important;
+    left: 14px !important;
+    width: calc(100% - 28px) !important;
+    max-height: 44%;
+  }
+}
+
 /* Chat owns the readable message surface while the layer itself remains the
    progression hit area. Keep the workspace centered with scenic edges visible. */
 .novel-layer.is-slack {

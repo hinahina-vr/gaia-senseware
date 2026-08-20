@@ -60,7 +60,7 @@ const specialIds = new Set(["gx_experience_047", "welcome_chat_081", "welcome_ch
 assert.equal(expectedText.size, 24);
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
 assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 396);
-assert.equal(story.sourceSha256, "1314cc8914daaef1df6611bf4e9f4efa53a48c05a0356790f733b36d4432828d");
+assert.equal(story.sourceSha256, "671516e4d915e0f1548e78fd4ef82f7ebe73b9cc06062f2e46998152aaae09c3");
 
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },

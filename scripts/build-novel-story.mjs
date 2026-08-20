@@ -8,7 +8,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
-const EXPECTED_SOURCE_SHA256 = "1314cc8914daaef1df6611bf4e9f4efa53a48c05a0356790f733b36d4432828d";
+const EXPECTED_SOURCE_SHA256 = "671516e4d915e0f1548e78fd4ef82f7ebe73b9cc06062f2e46998152aaae09c3";
 
 const sourceBytes = fs.readFileSync(canonPath);
 const characterSourceBytes = fs.readFileSync(characterCanonPath);
@@ -44,8 +44,8 @@ const INTERACTION_CONFIG = Object.freeze({
     kind: "map01",
     modeIndex: 0,
     modeId: "breathing-earth",
-    requiredViews: Object.freeze(["long_term", "temperature_anomaly"]),
-    afterText: "「こちらがMODE 01です。年代のスライダーを動かしてから、地図の気になる場所を押してみてください」",
+    requiredViews: Object.freeze(["timeline_complete"]),
+    afterText: "「こちらがMODE 01です。1958年から2050年まで、地球の変化を続けて見てください」",
   }),
   gx_experience: Object.freeze({
     kind: "gx",

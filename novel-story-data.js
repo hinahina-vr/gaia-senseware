@@ -5,7 +5,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "systemTitle": "GAIA SENSEWARE",
   "subtitle": "コンテスト機能限定版",
   "estimatedDuration": "10〜12分",
-  "sourceSha256": "1314cc8914daaef1df6611bf4e9f4efa53a48c05a0356790f733b36d4432828d",
+  "sourceSha256": "671516e4d915e0f1548e78fd4ef82f7ebe73b9cc06062f2e46998152aaae09c3",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -667,8 +667,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
         "modeIndex": 0,
         "modeId": "breathing-earth",
         "requiredViews": [
-          "long_term",
-          "temperature_anomaly"
+          "timeline_complete"
         ]
       },
       "temporal": {
@@ -693,7 +692,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "map_mode01",
           "type": "narration",
           "speaker": "narrator",
-          "text": "地図を見るだけだと思っていたが、画面は私が触れるのを待っている。あめは操作せず、年代を動かすスライダーを指で示した。"
+          "text": "地図を見るだけだと思っていたが、世界地図は物語の上に小さな窓として開き、1958年から年代を自動で送り始めた。"
         },
         {
           "id": "map_mode01_003",
@@ -701,7 +700,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「こちらがMODE 01です。年代のスライダーを動かしてから、地図の気になる場所を押してみてください」"
+          "text": "「こちらがMODE 01です。1958年から2050年まで、地球の変化を続けて見てください」"
         },
         {
           "id": "map_mode01_004",
@@ -713,8 +712,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
             "modeIndex": 0,
             "modeId": "breathing-earth",
             "requiredViews": [
-              "long_term",
-              "temperature_anomaly"
+              "timeline_complete"
             ]
           }
         },
@@ -723,28 +721,28 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "map_mode01",
           "type": "narration",
           "speaker": "narrator",
-          "text": "年代を動かすと、観測時点が切り替わり、画面上のCO2濃度と気温偏差の数値も連動して変わった。"
+          "text": "年代が自動で進むたび、観測時点が切り替わり、画面上のCO2濃度と気温偏差の数値も連動して変わった。"
         },
         {
           "id": "map_mode01_006",
           "sceneId": "map_mode01",
           "type": "narration",
           "speaker": "narrator",
-          "text": "スライダーを過去へ戻し、また現在へ進める。地球の明るさと背景の色が、数値に合わせて少しずつ変わる。"
+          "text": "1958年の過去から現在を通り、2050年の試算へ進む。地球の明るさと背景の色が、数値に合わせて少しずつ変わる。"
         },
         {
           "id": "map_mode01_007",
           "sceneId": "map_mode01",
           "type": "narration",
           "speaker": "narrator",
-          "text": "次に地図を押すと、触れた場所から光の輪が広がった。画面の案内が「物語へ戻る」へ進み、操作を保存するボタンが使えるようになる。"
+          "text": "2050年まで届くと、地図の窓は最後の色を一度だけ残し、静かに閉じて物語へ戻った。"
         },
         {
           "id": "map_mode01_008",
           "sceneId": "map_mode01",
           "type": "narration",
           "speaker": "narrator",
-          "text": "年代を動かすと、同じ場所でも値が変わる。自宅のセンサーも、測った時刻を並べれば変化が分かる。そういうことか。"
+          "text": "年代ごとの値を並べると、同じ場所でも変化が見える。自宅のセンサーも、測った時刻を並べれば変化が分かる。そういうことか。"
         },
         {
           "id": "map_mode01_009",
