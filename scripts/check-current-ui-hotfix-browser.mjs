@@ -255,19 +255,21 @@ const scanTitleAndOpening = async (viewport) => {
 
   const root = await createPage(viewport, `${viewport.name}-sound`, { reducedMotion: "no-preference" });
   await root.page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await root.page.waitForSelector(".gaia-opening-menu-audio #gaia-opening-sound-on", { state: "visible" });
+  await root.page.waitForSelector("#gaia-opening-sound-modal #gaia-opening-sound-on", { state: "visible" });
   assert.equal(await root.page.evaluate(() => document.querySelector("#gaia-opening")?.classList.contains("is-active")), false);
   const soundStates = [];
   for (const selector of ["#gaia-opening-sound-on", "#gaia-opening-sound-off"]) {
     await root.page.locator(selector).focus();
-    soundStates.push(await root.page.locator(selector).evaluate((button) => { const c = getComputedStyle(button); const icon = getComputedStyle(button.querySelector(".gaia-opening-sound-icon-shell")); return { border: c.borderStyle, borderColor: c.borderColor, background: c.backgroundColor, shadow: c.boxShadow, radius: c.borderRadius, iconBorder: icon.borderColor }; }));
+    soundStates.push(await root.page.locator(selector).evaluate((button) => {
+      const rect = button.getBoundingClientRect();
+      const icon = button.querySelector(".gaia-opening-sound-icon-shell")?.getBoundingClientRect();
+      return { label: button.textContent.trim(), width: rect.width, height: rect.height, iconWidth: icon?.width, iconHeight: icon?.height };
+    }));
   }
-  assert(soundStates.every((s) => s.borderColor === "rgba(0, 0, 0, 0)" && s.background === "rgba(0, 0, 0, 0)" && s.shadow === "none" && s.radius === "0px"));
-  assert(soundStates.every((s) => s.iconBorder !== "rgba(0, 0, 0, 0)"));
+  assert(soundStates.every((s) => s.width >= 44 && s.height >= 44 && s.iconWidth >= 40 && s.iconHeight >= 40));
+  assert.match(soundStates[0].label, /音ありで始める/u);
+  assert.match(soundStates[1].label, /音なしで始める/u);
   await screenshot(root.page, `${viewport.name}-sound-focus`); await root.page.locator("#gaia-opening-sound-off").press("Space");
-  assert.equal(await root.page.locator("#gaia-opening-sound-off").getAttribute("aria-pressed"), "true");
-  assert.equal(await root.page.evaluate(() => globalThis.GaiaOpeningAudio.getState().muted), true);
-  await root.page.locator("#gaia-opening-sound-start").click();
   await root.page.waitForFunction(() => document.querySelector("#gaia-opening")?.classList.contains("is-active"), null, { timeout: 10000 });
   report.scans.push({ viewport: viewport.name, case: "sound-choice", soundStates, passed: true }); await root.context.close();
 };

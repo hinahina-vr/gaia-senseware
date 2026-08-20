@@ -66,8 +66,8 @@ try {
       return {
         menuVisible: __qaVisible(document.querySelector("#gaia-opening-final-menu")),
         modalVisible: __qaVisible(document.querySelector("#gaia-opening-sound-modal")),
-        audioVisible: __qaVisible(document.querySelector(".gaia-opening-menu-audio")),
-        audioInsideModal: Boolean(document.querySelector("#gaia-opening-sound-modal .gaia-opening-menu-audio")),
+        choicesVisible: __qaVisible(document.querySelector(".gaia-opening-sound-choices")),
+        choicesInsideModal: Boolean(document.querySelector("#gaia-opening-sound-modal .gaia-opening-sound-choices")),
         audioInsideMenu: Boolean(document.querySelector("#gaia-opening-final-menu .gaia-opening-menu-audio")),
         menuInert: document.querySelector("#gaia-opening-final-menu")?.inert,
         modalHiddenFromA11y: document.querySelector("#gaia-opening-sound-modal")?.getAttribute("aria-hidden"),
@@ -86,15 +86,14 @@ try {
         particleZIndex: Number.parseInt(getComputedStyle(document.querySelector("#gaia-opening-particles")).zIndex, 10),
         modalRect: readRect("#gaia-opening-sound-modal"),
         dialogRect: readRect(".gaia-opening-sound-dialog"),
-        audioRect: readRect(".gaia-opening-menu-audio"),
+        choicesRect: readRect(".gaia-opening-sound-choices"),
         soundOnRect: readRect("#gaia-opening-sound-on"),
         soundOffRect: readRect("#gaia-opening-sound-off"),
-        startRect: readRect("#gaia-opening-sound-start"),
         overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
         overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
       };
     });
-    assert(!initial.menuVisible && initial.modalVisible && initial.audioVisible && initial.audioInsideModal, `${viewport.name}: sound setup is not the first screen`);
+    assert(!initial.menuVisible && initial.modalVisible && initial.choicesVisible && initial.choicesInsideModal, `${viewport.name}: sound setup is not the first screen`);
     assert.equal(initial.audioInsideMenu, false, `${viewport.name}: sound controls remain embedded in the route menu`);
     assert.equal(initial.menuInert, true, `${viewport.name}: routes are interactive behind the modal`);
     assert.equal(initial.modalHiddenFromA11y, "false");
@@ -113,7 +112,7 @@ try {
     assert(initial.modalRect.top >= -1 && initial.modalRect.bottom <= viewport.height + 1, `${viewport.name}: modal is outside the viewport vertically`);
     assert(initial.dialogRect.left >= -1 && initial.dialogRect.right <= viewport.width + 1, `${viewport.name}: sound dialog is outside the viewport`);
     assert(initial.dialogRect.top >= -1 && initial.dialogRect.bottom <= viewport.height + 1, `${viewport.name}: sound dialog is outside the viewport vertically`);
-    for (const rect of [initial.soundOnRect, initial.soundOffRect, initial.startRect]) {
+    for (const rect of [initial.soundOnRect, initial.soundOffRect]) {
       assert(rect.width >= 44 && rect.height >= 44, `${viewport.name}: sound action hit area is smaller than 44px`);
     }
     assert.equal(overlapArea(initial.soundOnRect, initial.soundOffRect), 0, `${viewport.name}: sound actions overlap`);
@@ -127,27 +126,14 @@ try {
     assert.equal(storedVolume, "0.37", `${viewport.name}: volume was not persisted`);
     assert.equal(await page.locator("#gaia-opening-volume-value").textContent(), "37%");
 
-    if (viewport.mobile) await page.locator("#gaia-opening-sound-on").tap();
-    else await page.locator("#gaia-opening-sound-on").click();
-    await page.waitForFunction(() => document.querySelector("#gaia-opening-sound-on")?.getAttribute("aria-pressed") === "true");
-    const stagedOn = await page.evaluate(() => globalThis.GaiaOpeningAudio.getState());
-    assert.equal(stagedOn.muted, true, `${viewport.name}: sound started before the confirmation button`);
-    assert.equal(await page.locator("#gaia-opening-sound-on").getAttribute("aria-pressed"), "true");
-
     await page.locator("#gaia-opening-sound-off").focus();
-    await page.locator("#gaia-opening-sound-off").press("Enter");
-    assert.equal(await page.locator("#gaia-opening-sound-off").getAttribute("aria-pressed"), "true");
-    assert.equal((await page.evaluate(() => globalThis.GaiaOpeningAudio.getState().muted)), true);
+    await page.locator("#gaia-opening-sound-off").press("Tab");
+    assert.equal(await page.evaluate(() => document.activeElement?.id), "gaia-opening-sound-on", `${viewport.name}: modal focus did not wrap`);
 
     const startWithSound = ["pc-1440", "mobile-390", "mobile-landscape"].includes(viewport.name);
-    if (startWithSound) {
-      if (viewport.mobile) await page.locator("#gaia-opening-sound-on").tap();
-      else await page.locator("#gaia-opening-sound-on").click();
-    }
-    await page.locator("#gaia-opening-sound-start").focus();
-    await page.locator("#gaia-opening-sound-start").press("Tab");
-    assert.equal(await page.evaluate(() => document.activeElement?.id), "gaia-opening-volume", `${viewport.name}: modal focus did not wrap`);
-    await page.locator("#gaia-opening-sound-start").click();
+    const choice = page.locator(startWithSound ? "#gaia-opening-sound-on" : "#gaia-opening-sound-off");
+    if (viewport.mobile) await choice.tap();
+    else await choice.click();
     await page.waitForFunction(() => !__qaVisible(document.querySelector("#gaia-opening-sound-modal")));
     if (viewport.reduced) {
       await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-route-story")));
@@ -225,7 +211,7 @@ try {
     assert(Math.abs(destination.volume - 0.37) < 0.001);
     assert.equal(destination.overflowX, 0);
     assert.equal(destination.overflowY, 0);
-    report.scans.push({ viewport: viewport.name, route: useDataRoute ? "data" : "story", initial, stagedOn, confirmed, routeReady, destination, passed: true });
+    report.scans.push({ viewport: viewport.name, route: useDataRoute ? "data" : "story", initial, confirmed, routeReady, destination, passed: true });
     await context.close();
   }
 

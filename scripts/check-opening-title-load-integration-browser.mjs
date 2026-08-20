@@ -91,7 +91,6 @@ try {
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-modal")));
     await page.locator("#gaia-opening-sound-off").click();
-    await page.locator("#gaia-opening-sound-start").click();
     await page.waitForFunction(() => !__qaVisible(document.querySelector("#gaia-opening-sound-modal")));
     await page.waitForFunction(() => !document.querySelector("#gaia-opening")?.classList.contains("is-preloading"), null, { timeout: 10000 });
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-skip")));

@@ -23,7 +23,6 @@
   const finalOtherButton = document.querySelector("#gaia-opening-route-other");
   const soundModal = document.querySelector("#gaia-opening-sound-modal");
   const soundDialog = soundModal?.querySelector(".gaia-opening-sound-dialog");
-  const soundStartButton = document.querySelector("#gaia-opening-sound-start");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const AUDIO_DOCK_COLLAPSE_DELAY_MS = 6000;
   let audioDockCollapseTimer = 0;
@@ -31,6 +30,7 @@
   let soundModalHideTimer = 0;
   let soundModalOpen = false;
   let soundSetupConfirmed = false;
+  let soundSetupSubmitting = false;
   let pendingSoundEnabled = false;
   const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#story"].includes(
     window.location.hash,
@@ -415,11 +415,6 @@
     focusTargets.forEach((target) => target.classList.remove("is-opening-focus-pending"));
   };
 
-  const selectSoundPreference = (enabled) => {
-    pendingSoundEnabled = Boolean(enabled);
-    syncAudioControls();
-  };
-
   const closeSoundModalImmediately = () => {
     window.clearTimeout(soundModalRevealTimer);
     window.clearTimeout(soundModalHideTimer);
@@ -455,7 +450,11 @@
   };
 
   const showSoundModal = () => {
-    if (!(soundModal instanceof HTMLElement) || !(soundStartButton instanceof HTMLButtonElement)) {
+    if (
+      !(soundModal instanceof HTMLElement)
+      || !(soundOnButton instanceof HTMLButtonElement)
+      || !(soundOffButton instanceof HTMLButtonElement)
+    ) {
       finalStoryButton?.focus({ preventScroll: true });
       return;
     }
@@ -624,14 +623,26 @@
     void window.GaiaOpeningAudio?.preloadTrack?.("story");
   };
 
-  const confirmSoundSetup = async () => {
-    if (!soundModalOpen || !(soundStartButton instanceof HTMLButtonElement)) return;
-    soundStartButton.disabled = true;
-    await chooseSound(pendingSoundEnabled);
-    soundStartButton.disabled = false;
+  const confirmSoundSetup = async (enabled) => {
+    if (!soundModalOpen || soundSetupSubmitting) return;
+    soundSetupSubmitting = true;
+    pendingSoundEnabled = Boolean(enabled);
+    if (soundOnButton instanceof HTMLButtonElement) soundOnButton.disabled = true;
+    if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = true;
+    if (openingVolume instanceof HTMLInputElement) openingVolume.disabled = true;
+    syncAudioControls();
+    try {
+      await chooseSound(pendingSoundEnabled);
+    } catch {
+      // Sound remains optional; never block the experience on playback setup.
+    }
     soundSetupConfirmed = true;
     opening.classList.remove("is-awaiting-sound");
     hideSoundModal();
+    soundSetupSubmitting = false;
+    if (soundOnButton instanceof HTMLButtonElement) soundOnButton.disabled = false;
+    if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = false;
+    if (openingVolume instanceof HTMLInputElement) openingVolume.disabled = false;
     if (reducedMotion) showReducedMotionMenu();
     else tryStart();
   };
@@ -639,9 +650,8 @@
   skipButton?.addEventListener("click", skipToFinalMenu);
   finalStoryButton?.addEventListener("click", () => finish("story"));
   finalOtherButton?.addEventListener("click", () => finish("menu"));
-  soundOnButton?.addEventListener("click", () => selectSoundPreference(true));
-  soundOffButton?.addEventListener("click", () => selectSoundPreference(false));
-  soundStartButton?.addEventListener("click", confirmSoundSetup);
+  soundOnButton?.addEventListener("click", () => void confirmSoundSetup(true));
+  soundOffButton?.addEventListener("click", () => void confirmSoundSetup(false));
   soundModal?.addEventListener("keydown", (event) => {
     if (!soundModalOpen) return;
     if (event.key === "Escape") {
