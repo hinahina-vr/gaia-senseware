@@ -89,6 +89,10 @@ try {
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+    await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-modal")));
+    await page.locator("#gaia-opening-sound-off").click();
+    await page.locator("#gaia-opening-sound-start").click();
+    await page.waitForFunction(() => !__qaVisible(document.querySelector("#gaia-opening-sound-modal")));
     await page.waitForFunction(() => !document.querySelector("#gaia-opening")?.classList.contains("is-preloading"), null, { timeout: 10000 });
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-skip")));
     const opening = await page.evaluate(() => {
@@ -123,10 +127,6 @@ try {
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-opening.png`), animations: "disabled" });
     await page.locator("#gaia-opening-skip").click();
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-route-story")));
-    await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-modal")));
-    await page.locator("#gaia-opening-sound-off").click();
-    await page.locator("#gaia-opening-sound-start").click();
-    await page.waitForFunction(() => !__qaVisible(document.querySelector("#gaia-opening-sound-modal")));
     await page.locator("#gaia-opening-route-story").click();
     await page.waitForFunction(() => __qaVisible(document.querySelector("#novel-title-screen")), null, { timeout: 10000 });
     const title = await page.evaluate(() => ({

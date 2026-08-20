@@ -42,6 +42,18 @@ body.gaia-opening-active .novel-layer {
 
 .gaia-opening-preload[hidden] { display: none; }
 
+/* The sound choice is the first meaningful frame. Keep every opening layer
+   quiet underneath it until the visitor explicitly starts the experience. */
+.gaia-opening.is-awaiting-sound .gaia-opening-preload,
+.gaia-opening.is-awaiting-sound .gaia-opening-particles,
+.gaia-opening.is-awaiting-sound .gaia-vn-track,
+.gaia-opening.is-awaiting-sound .gaia-opening-hud,
+.gaia-opening.is-awaiting-sound .gaia-vn-light-sweep,
+.gaia-opening.is-awaiting-sound .gaia-opening-skip,
+.gaia-opening.is-awaiting-sound .gaia-opening-wipe {
+  visibility: hidden;
+}
+
 .gaia-opening.is-preloaded .gaia-opening-preload {
   opacity: 0;
   filter: blur(8px);
@@ -3333,7 +3345,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 }
 
 .gaia-opening-menu-audio .gaia-opening-sound-actions button:focus-visible {
-  box-shadow: inset 0 0 0 1px rgba(var(--opening-mint), 0.56) !important;
+  box-shadow: none !important;
 }
 
 .gaia-opening-menu-audio .gaia-opening-sound-actions .gaia-opening-sound-icon-shell {
@@ -3721,11 +3733,10 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 }
 
-/* Sound confirmation appears only after the two routes have arrived. The
-   routes remain visible as context, but stay inert until START is confirmed. */
+/* Sound confirmation owns the first frame, above preload and particle layers. */
 .gaia-opening-sound-modal {
   position: absolute;
-  z-index: 44;
+  z-index: 100;
   inset: 0;
   display: grid;
   padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));

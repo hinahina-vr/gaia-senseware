@@ -30,6 +30,7 @@
   let soundModalRevealTimer = 0;
   let soundModalHideTimer = 0;
   let soundModalOpen = false;
+  let soundSetupConfirmed = false;
   let pendingSoundEnabled = false;
   const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#story"].includes(
     window.location.hash,
@@ -135,7 +136,7 @@
     revealAudioDock();
     return;
   }
-  if (reducedMotion || directDestination) {
+  if (directDestination) {
     opening.hidden = true;
     revealAudioDock();
     return;
@@ -359,7 +360,6 @@
     variant: "opening",
     intensity: 1,
   }) || createOpeningParticles(particleCanvas);
-  particleSystem.start();
 
   const updatePreload = (message = "") => {
     const total = OPENING_ASSET_COUNT;
@@ -439,6 +439,7 @@
 
   const hideSoundModal = () => {
     if (!soundModalOpen || !(soundModal instanceof HTMLElement)) return;
+    window.clearTimeout(soundModalRevealTimer);
     soundModalOpen = false;
     opening.classList.remove("is-sound-modal-open");
     soundModal.classList.remove("is-visible");
@@ -450,7 +451,6 @@
     }
     soundModalHideTimer = window.setTimeout(() => {
       soundModal.hidden = true;
-      finalStoryButton?.focus({ preventScroll: true });
     }, reducedMotion ? 0 : 220);
   };
 
@@ -473,10 +473,17 @@
     soundModal.inert = false;
     soundModal.setAttribute("aria-hidden", "false");
     opening.classList.add("is-sound-modal-open");
-    requestAnimationFrame(() => {
-      soundModal.classList.add("is-visible");
+    const focusSelectedSound = () => {
+      if (!soundModalOpen) return;
       const selectedButton = pendingSoundEnabled ? soundOnButton : soundOffButton;
       selectedButton?.focus({ preventScroll: true });
+    };
+    requestAnimationFrame(() => {
+      soundModal.classList.add("is-visible");
+      focusSelectedSound();
+      // Later deferred modules initialize the hidden title screen and may try
+      // to claim focus. Reassert the modal once after that boot work settles.
+      soundModalRevealTimer = window.setTimeout(focusSelectedSound, 180);
     });
   };
 
@@ -545,7 +552,9 @@
     syncAudioControls();
     requestAnimationFrame(() => {
       finalMenu.classList.add("is-visible");
-      soundModalRevealTimer = window.setTimeout(showSoundModal, reducedMotion ? 0 : 240);
+      soundModalRevealTimer = window.setTimeout(() => {
+        finalStoryButton?.focus({ preventScroll: true });
+      }, reducedMotion ? 80 : 240);
     });
   };
 
@@ -558,8 +567,9 @@
   };
 
   const start = () => {
-    if (openingStarted || !preloadReady) return;
+    if (openingStarted || !preloadReady || !soundSetupConfirmed) return;
     openingStarted = true;
+    particleSystem.start();
     opening.hidden = false;
     opening.classList.add("is-preloaded");
     window.setTimeout(() => {
@@ -577,8 +587,20 @@
   };
 
   const tryStart = () => {
-    if (!preloadReady || openingStarted) return;
+    if (!soundSetupConfirmed || !preloadReady || openingStarted) return;
     requestAnimationFrame(start);
+  };
+
+  const showReducedMotionMenu = () => {
+    if (openingStarted || finished) return;
+    openingStarted = true;
+    opening.hidden = false;
+    opening.classList.add("is-preloaded");
+    opening.classList.add("is-skipping-to-menu");
+    if (preloadPanel) preloadPanel.hidden = true;
+    opening.classList.remove("is-preloading");
+    settleFocusText();
+    showFinalMenu();
   };
 
   const chooseSound = async (enabled) => {
@@ -607,7 +629,11 @@
     soundStartButton.disabled = true;
     await chooseSound(pendingSoundEnabled);
     soundStartButton.disabled = false;
+    soundSetupConfirmed = true;
+    opening.classList.remove("is-awaiting-sound");
     hideSoundModal();
+    if (reducedMotion) showReducedMotionMenu();
+    else tryStart();
   };
 
   skipButton?.addEventListener("click", skipToFinalMenu);
@@ -652,9 +678,7 @@
     window.GaiaOpeningAudio?.stop(0.05);
   });
 
-  // Avoid focusing a moving button during the first paint. Chromium can leave
-  // its pre-layout focus outline behind as an empty glowing rectangle.
-
+  showSoundModal();
   updatePreload();
   Promise.race([
     Promise.all([...OPENING_ART.map(preloadOpeningArt), preloadOpeningAudio()]),

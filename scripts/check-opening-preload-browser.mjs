@@ -24,6 +24,12 @@ try {
       await route.continue();
     });
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.locator("#gaia-opening-sound-modal").waitFor({ state: "visible" });
+    assert.equal(await page.locator("#gaia-opening-preload").isVisible(), false, `${viewport.name}: preload appeared before sound setup`);
+    assert.equal(await page.evaluate(() => document.querySelector("#gaia-opening")?.classList.contains("is-active")), false, `${viewport.name}: opening started before sound setup`);
+    await page.locator("#gaia-opening-sound-off").click();
+    await page.locator("#gaia-opening-sound-start").click();
+    await page.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden" });
     await page.locator("#gaia-opening-preload").waitFor({ state: "visible" });
     const scan = await page.evaluate(() => {
       const preload = document.querySelector("#gaia-opening-preload");

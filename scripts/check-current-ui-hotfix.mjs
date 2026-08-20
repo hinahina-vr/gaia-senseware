@@ -31,8 +31,8 @@ check("EVES/footer hidden without data removal", () => {
 });
 
 check("changed runtime assets use the current cache keys", () => {
-  assert.match(html, /opening\.css\?v=gaia-opening-sound-modal-1/u);
-  assert.match(html, /opening\.js\?v=gaia-opening-sound-modal-1/u);
+  assert.match(html, /opening\.css\?v=gaia-opening-sound-first-1/u);
+  assert.match(html, /opening\.js\?v=gaia-opening-sound-first-1/u);
   assert.match(html, /novel-mode\.css\?v=gaia-message-shadow-1/u);
   assert.match(html, /novel-mode\.js\?v=gaia-autosave-resume-1/u);
   assert.match(html, /gx-mode\.js\?v=gaia-story-detour-fix-1/u);
@@ -48,9 +48,10 @@ check("SAVE whole-card and hidden-scrollbar contract", () => {
   assert.match(css, /\.novel-save-slots::-webkit-scrollbar\s*\{[^}]*display:\s*none/u);
 });
 
-check("opening sound setup blocks route choice until explicit confirmation", () => {
+check("opening sound setup owns the first frame and blocks cinematic start", () => {
   assert.match(html, /novel-start-button[^>]*aria-label="はじめる">はじめる</u);
   assert.equal(html.includes('id="gaia-opening-sound-gate"'), false);
+  assert.match(html, /class="gaia-opening is-preloading is-awaiting-sound"/u);
   assert.match(html, /id="gaia-opening-final-menu"[\s\S]*id="gaia-opening-route-story"[\s\S]*id="gaia-opening-route-other"/u);
   assert.match(html, /id="gaia-opening-sound-modal"[\s\S]*role="dialog"[\s\S]*id="gaia-opening-sound-start"/u);
   assert.equal(/id="gaia-opening-final-menu"[\s\S]*class="gaia-opening-menu-audio"[\s\S]*id="gaia-opening-sound-modal"/u.test(html), false);
@@ -62,6 +63,9 @@ check("opening sound setup blocks route choice until explicit confirmation", () 
   assert.match(opening, /pendingSoundEnabled = Boolean\(enabled\)/u);
   assert.match(opening, /finalMenu\.inert = true/u);
   assert.match(opening, /await chooseSound\(pendingSoundEnabled\)/u);
+  assert.match(opening, /soundSetupConfirmed = true;[\s\S]*opening\.classList\.remove\("is-awaiting-sound"\);[\s\S]*hideSoundModal\(\);/u);
+  assert.match(opening, /if \(!soundSetupConfirmed \|\| !preloadReady \|\| openingStarted\) return;/u);
+  assert.match(opening, /showSoundModal\(\);\s*updatePreload\(\);/u);
 });
 
 check("story isolation and opening retirement", () => {
