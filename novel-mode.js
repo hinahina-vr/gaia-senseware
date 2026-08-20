@@ -423,6 +423,7 @@
   let slackTransitionTimer = 0;
   let slackScrollGuardUntil = 0;
   let sectionSeparatorTimer = 0;
+  let staffRollFinaleTimer = 0;
   let sectionSeparatorActive = false;
   let sectionSkipPending = false;
   let temporalTransitionTimer = 0;
@@ -1144,11 +1145,13 @@
     window.cancelAnimationFrame(revealFrame);
     window.clearTimeout(autoTimer);
     window.clearTimeout(sectionSeparatorTimer);
+    window.clearTimeout(staffRollFinaleTimer);
     window.clearTimeout(temporalTransitionTimer);
     revealTimer = 0;
     revealFrame = 0;
     autoTimer = 0;
     sectionSeparatorTimer = 0;
+    staffRollFinaleTimer = 0;
     temporalTransitionTimer = 0;
     temporalTransitionActive = false;
   };
@@ -3569,6 +3572,7 @@
     shell.append(whiteout, stage, dataSkip);
     elements.resultSurface.append(shell);
 
+    let endingReached = false;
     let completed = false;
     const revealFinalAction = ({ focus = true } = {}) => {
       if (completed) return;
@@ -3581,8 +3585,23 @@
       if (focus) requestAnimationFrame(() => next.focus({ preventScroll: true }));
     };
 
+    const holdOnEnd = ({ delay = true, focus = true } = {}) => {
+      if (endingReached) return;
+      endingReached = true;
+      shell.dataset.phase = delay ? "end-hold" : "complete";
+      shell.classList.add("is-at-end");
+      if (!delay) {
+        revealFinalAction({ focus });
+        return;
+      }
+      staffRollFinaleTimer = window.setTimeout(() => {
+        staffRollFinaleTimer = 0;
+        revealFinalAction({ focus });
+      }, 3_000);
+    };
+
     track.addEventListener("animationend", (event) => {
-      if (event.animationName === "novel-staff-roll-rise") revealFinalAction();
+      if (event.animationName === "novel-staff-roll-rise") holdOnEnd();
     });
     whiteout.addEventListener("animationend", (event) => {
       if (event.animationName === "novel-staff-roll-whiteout" && !completed) shell.dataset.phase = "rolling";
@@ -3591,19 +3610,19 @@
       if (event.ctrlKey || event.target.closest("button") || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
       event.preventDefault();
       event.stopPropagation();
-      revealFinalAction();
+      holdOnEnd();
     });
     shell.addEventListener("keydown", (event) => {
       if (event.ctrlKey || !["Enter", " "].includes(event.key) || event.repeat || event.isComposing || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
       event.preventDefault();
       event.stopPropagation();
-      revealFinalAction();
+      holdOnEnd();
     });
 
     if (motionReduced()) {
       shell.classList.add("is-reduced-motion");
       whiteout.hidden = true;
-      revealFinalAction({ focus: false });
+      holdOnEnd({ delay: false, focus: false });
     }
     requestAnimationFrame(() => shell.focus({ preventScroll: true }));
   };

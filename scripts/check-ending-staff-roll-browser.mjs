@@ -296,7 +296,14 @@ try {
 
     await page.locator(".novel-staff-roll").focus();
     await page.keyboard.press("Enter");
-    await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "complete");
+    await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "end-hold");
+    const endHold = await scanEnding(page);
+    assert.equal(endHold.buttonHidden, true, `${viewport.name}: final action appeared before the END hold`);
+    await page.waitForTimeout(2_650);
+    const beforeFinale = await scanEnding(page);
+    assert.equal(beforeFinale.phase, "end-hold", `${viewport.name}: END hold was shorter than about three seconds`);
+    assert.equal(beforeFinale.buttonHidden, true, `${viewport.name}: final action appeared during the END hold`);
+    await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "complete", null, { timeout: 1_000 });
     const completed = await scanEnding(page);
     assert.equal(completed.buttonHidden, false);
     assert.equal(completed.buttonText, "世界の続きを紡ぐ");
@@ -329,7 +336,7 @@ try {
     assert.equal(trueEndDestination.overflowY, 0);
     assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/sensory-horizon.wav") && [200, 206].includes(response.status)), `${viewport.name}: dedicated true-end score was not requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, controlAttempt, completed, trueEndPlayback, trueEndDestination, passed: true });
+    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, controlAttempt, endHold, beforeFinale, completed, trueEndPlayback, trueEndDestination, passed: true });
     await context.close();
   }
 
