@@ -9627,3 +9627,14 @@ body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-
     background-position: center, center !important;
   }
 }
+
+/* Amane and Mizuha must read at one conversational distance. Their source
+   canvases place the painted figure at different offsets, so equal CSS boxes
+   alone put Amane visibly closer. Calibrate the painted head line to Mizuha's
+   established framing in every live-character presentation. */
+@media (min-width: 721px) {
+  body.novel-open.novel-pc-canvas:not(.gx-story-open) .novel-layer:not(.is-slack) .novel-character.novel-character--sora .novel-character-portrait {
+    background-position: 50% 64px;
+    background-size: auto 1539px;
+  }
+}

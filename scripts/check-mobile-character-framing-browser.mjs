@@ -173,6 +173,7 @@ const assertMobileDialogueDistanceMatch = (viewport) => {
   const backgroundHeight = (entry) => Number(/auto\s+([\d.]+)px/u.exec(entry?.portraitBackgroundSize || "")?.[1]);
   const amaneHeight = backgroundHeight(amane);
   assert(Number.isFinite(amaneHeight), `${viewport.name}: Amane portrait height was not measurable`);
+  assert.equal(amane.portraitBackgroundPosition, "50% 0px", `${viewport.name}: Amane head alignment drifted`);
   for (const mizuha of mizuhaScans) {
     const mizuhaHeight = backgroundHeight(mizuha);
     assert(Number.isFinite(mizuhaHeight), `${viewport.name}/${mizuha.name}: Mizuha portrait height was not measurable`);
