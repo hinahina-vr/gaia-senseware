@@ -3755,18 +3755,59 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 }
 
-/* Sound confirmation owns the first frame, above preload and particle layers. */
+/* Sound confirmation opens on the story's first key visual. */
 .gaia-opening-sound-modal {
+  --sound-gold: 247, 207, 110;
+  --sound-coral: 238, 151, 121;
   position: absolute;
   z-index: 100;
   inset: 0;
   display: grid;
-  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  overflow: hidden;
+  padding:
+    max(clamp(28px, 5vh, 58px), env(safe-area-inset-top))
+    max(clamp(28px, 5vw, 76px), env(safe-area-inset-right))
+    max(clamp(28px, 6vh, 68px), env(safe-area-inset-bottom))
+    max(clamp(28px, 5vw, 76px), env(safe-area-inset-left));
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  place-items: center;
+  isolation: isolate;
+  place-items: end start;
+  background: #0a1a2a;
   transition: opacity 320ms ease, visibility 320ms ease;
+}
+
+.gaia-opening-sound-modal::before,
+.gaia-opening-sound-modal::after {
+  position: absolute;
+  inset: -3%;
+  content: "";
+  pointer-events: none;
+}
+
+.gaia-opening-sound-modal::before {
+  z-index: -3;
+  background:
+    linear-gradient(180deg, rgba(8, 24, 40, 0.02), rgba(5, 17, 30, 0.24)),
+    url("./assets/visuals-07/opening-keyvisual-v1.webp") 54% center / cover no-repeat;
+  filter: saturate(0.88) contrast(1.02);
+  transform: scale(1.035);
+  animation: opening-sound-scene-drift 16s ease-in-out infinite alternate;
+}
+
+.gaia-opening-sound-modal::after {
+  z-index: -1;
+  inset: -35%;
+  opacity: 0.62;
+  background:
+    radial-gradient(circle at 34% 60%, rgba(var(--sound-gold), 0.2), transparent 15%),
+    radial-gradient(circle at 65% 28%, rgba(116, 204, 225, 0.22), transparent 18%),
+    conic-gradient(from 205deg at 62% 52%, transparent 0 23%, rgba(242, 251, 255, 0.11) 29%, transparent 35% 100%);
+  filter: blur(34px);
+  mix-blend-mode: screen;
+  transform: rotate(-4deg) scale(1.04);
+  animation: opening-sound-light-breathe 11s ease-in-out infinite alternate;
 }
 
 .gaia-opening-sound-modal[hidden] {
@@ -3781,26 +3822,32 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
 .gaia-opening-sound-modal-scrim {
   position: absolute;
+  z-index: -2;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 48%, rgba(115, 208, 199, 0.08), transparent 36%),
-    rgba(2, 10, 20, 0.66);
-  -webkit-backdrop-filter: blur(7px) saturate(0.84);
-  backdrop-filter: blur(7px) saturate(0.84);
+    linear-gradient(90deg, rgba(4, 15, 28, 0.78) 0%, rgba(4, 15, 28, 0.46) 38%, rgba(4, 15, 28, 0.06) 73%),
+    linear-gradient(0deg, rgba(3, 12, 24, 0.48), transparent 52%),
+    radial-gradient(circle at 78% 23%, rgba(251, 212, 120, 0.09), transparent 28%);
 }
 
 .gaia-opening-sound-dialog {
   position: relative;
-  width: min(560px, calc(100vw - 48px));
+  width: min(600px, calc(100vw - 56px));
   overflow: hidden;
-  padding: clamp(26px, 3vw, 34px);
-  border: 1px solid rgba(var(--opening-mint), 0.34);
-  color: rgb(var(--opening-paper));
+  padding: clamp(24px, 3.1vw, 38px);
+  border: 1px solid rgba(255, 247, 225, 0.3);
+  border-radius: 2px 30px 2px 2px;
+  color: rgba(255, 251, 240, 0.96);
   background:
-    linear-gradient(135deg, rgba(12, 37, 52, 0.97), rgba(4, 20, 34, 0.98)),
-    rgba(3, 17, 29, 0.98);
-  box-shadow: 0 30px 100px rgba(0, 5, 14, 0.58), inset 0 1px rgba(232, 255, 250, 0.08);
-  transform: translateY(12px) scale(0.985);
+    linear-gradient(128deg, rgba(7, 23, 39, 0.86), rgba(9, 28, 45, 0.68)),
+    rgba(4, 17, 31, 0.72);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+  backdrop-filter: blur(18px) saturate(1.12);
+  box-shadow:
+    0 28px 90px rgba(0, 7, 18, 0.38),
+    inset 0 1px rgba(255, 255, 255, 0.12),
+    inset 4px 0 rgba(var(--sound-gold), 0.82);
+  transform: translateY(22px);
   transition: transform 440ms cubic-bezier(0.2, 0.76, 0.2, 1);
 }
 
@@ -3811,58 +3858,107 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 .gaia-opening-sound-dialog::before {
   position: absolute;
   top: 0;
-  right: 0;
-  left: 0;
-  height: 2px;
+  right: 30px;
+  left: 4px;
+  height: 1px;
   content: "";
-  background: linear-gradient(90deg, rgb(var(--opening-mint)), rgba(124, 179, 221, 0.58), transparent 88%);
-  box-shadow: 0 0 22px rgba(var(--opening-mint), 0.24);
+  background: linear-gradient(90deg, rgba(var(--sound-gold), 0.94), rgba(255, 247, 225, 0.22), transparent 84%);
+  box-shadow: 0 0 22px rgba(var(--sound-gold), 0.22);
 }
 
-.gaia-opening-sound-dialog h2 {
+.gaia-opening-sound-dialog::after {
+  position: absolute;
+  top: clamp(25px, 3vw, 38px);
+  right: clamp(22px, 3vw, 36px);
+  content: "GS / 00";
+  color: rgba(255, 248, 227, 0.38);
+  font: 650 8px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.18em;
+}
+
+.gaia-opening-sound-heading > p {
+  margin: 0 0 12px;
+  color: rgba(var(--sound-gold), 0.9);
+  font: 700 8px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.22em;
+}
+
+.gaia-opening-sound-heading > h2 {
   margin: 0;
-  color: rgba(var(--opening-paper), 0.96);
+  max-width: 13em;
+  color: rgba(255, 252, 244, 0.98);
   font-family: var(--font-ja);
-  font-size: clamp(22px, 2.2vw, 28px);
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  line-height: 1.3;
+  font-size: clamp(27px, 3.15vw, 42px);
+  font-weight: 520;
+  letter-spacing: 0.035em;
+  line-height: 1.34;
+  text-shadow: 0 2px 26px rgba(1, 8, 17, 0.48);
+}
+
+.gaia-opening-sound-heading > span {
+  display: block;
+  margin-top: 10px;
+  color: rgba(245, 246, 238, 0.66);
+  font-family: var(--font-ja);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  line-height: 1.7;
 }
 
 .gaia-opening-sound-choices {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 22px;
+  gap: 10px;
+  margin-top: 24px;
 }
 
 .gaia-opening-sound-option {
+  position: relative;
   display: grid;
   overflow: hidden;
-  border: 1px solid rgba(var(--opening-paper), 0.16);
-  background: rgba(4, 18, 31, 0.62);
+  border: 1px solid rgba(255, 250, 236, 0.2);
+  border-radius: 2px 13px 2px 2px;
+  background: rgba(7, 22, 38, 0.46);
   transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.gaia-opening-sound-option::after {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  color: rgba(255, 250, 236, 0.3);
+  font: 700 8px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+.gaia-opening-sound-option--on::after { content: "01 / LISTEN"; }
+.gaia-opening-sound-option--off::after { content: "02 / SILENT"; }
+
+.gaia-opening-sound-option--on {
+  border-color: rgba(var(--sound-gold), 0.42);
+  background: linear-gradient(135deg, rgba(var(--sound-gold), 0.12), rgba(7, 22, 38, 0.48) 48%);
 }
 
 .gaia-opening-sound-option:focus-within,
 .gaia-opening-sound-option:hover {
-  border-color: rgba(var(--opening-mint), 0.68);
-  background: rgba(var(--opening-mint), 0.08);
-  box-shadow: 0 0 30px rgba(var(--opening-mint), 0.1);
-  transform: translateY(-2px);
+  border-color: rgba(var(--sound-gold), 0.78);
+  background-color: rgba(var(--sound-gold), 0.1);
+  box-shadow: 0 12px 36px rgba(1, 9, 18, 0.24), inset 0 0 22px rgba(var(--sound-gold), 0.06);
+  transform: translateY(-3px);
 }
 
 .gaia-opening-sound-option-button {
   position: relative;
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) auto;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   width: 100%;
-  min-height: 116px;
-  padding: 20px 18px;
+  min-height: 86px;
+  padding: 22px 15px 15px;
   border: 0;
-  color: rgba(var(--opening-paper), 0.92);
+  color: rgba(255, 251, 241, 0.94);
   text-align: left;
   background: transparent;
   cursor: pointer;
@@ -3874,7 +3970,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 }
 
 .gaia-opening-sound-option-button:focus-visible {
-  outline: 2px solid rgba(var(--opening-mint), 0.88);
+  outline: 2px solid rgba(var(--sound-gold), 0.94);
   outline-offset: -3px;
 }
 
@@ -3886,37 +3982,37 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 .gaia-opening-sound-option-button .gaia-opening-sound-icon-shell {
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
-  border: 1px solid rgba(var(--opening-mint), 0.48);
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(var(--sound-gold), 0.56);
   border-radius: 50%;
-  color: rgba(var(--opening-mint), 0.94);
-  background: rgba(var(--opening-mint), 0.08);
-  box-shadow: inset 0 0 18px rgba(var(--opening-mint), 0.06);
+  color: rgba(255, 226, 156, 0.96);
+  background: rgba(var(--sound-gold), 0.1);
+  box-shadow: inset 0 0 18px rgba(var(--sound-gold), 0.06);
   transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .gaia-opening-sound-option-button:is(:hover, :focus-visible) .gaia-opening-sound-icon-shell {
-  background: rgba(var(--opening-mint), 0.16);
-  box-shadow: 0 0 24px rgba(var(--opening-mint), 0.18);
+  background: rgba(var(--sound-gold), 0.2);
+  box-shadow: 0 0 24px rgba(var(--sound-gold), 0.22);
   transform: scale(1.06);
 }
 
 .gaia-opening-sound-option-button .gaia-opening-sound-icon {
-  width: 27px;
-  height: 27px;
+  width: 23px;
+  height: 23px;
 }
 
 .gaia-opening-sound-option-label {
   font-family: var(--font-ja);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.055em;
+  letter-spacing: 0.04em;
   line-height: 1.45;
 }
 
 .gaia-opening-sound-option-arrow {
-  color: rgba(var(--opening-mint), 0.72);
+  color: rgba(var(--sound-gold), 0.78);
   font: 400 17px/1 Consolas, "Courier New", monospace;
 }
 
@@ -3926,15 +4022,15 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   align-items: center;
   gap: 9px;
   width: auto;
-  margin: 0 16px;
-  padding: 12px 2px 14px;
-  border-top: 1px solid rgba(var(--opening-paper), 0.13);
+  margin: 0 14px;
+  padding: 10px 2px 13px;
+  border-top: 1px solid rgba(255, 250, 236, 0.14);
 }
 
 .gaia-opening-volume-icon {
   display: grid;
   place-items: center;
-  color: rgba(var(--opening-mint), 0.72);
+  color: rgba(var(--sound-gold), 0.82);
 }
 
 .gaia-opening-volume-icon svg {
@@ -3950,6 +4046,39 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 .gaia-opening-sound-option .gaia-opening-volume-choice output {
   justify-self: end;
   font-size: 9px;
+  color: rgba(var(--sound-gold), 0.92);
+}
+
+.gaia-opening-sound-option .gaia-opening-volume-choice input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, rgba(var(--sound-gold), 0.9), rgba(var(--sound-coral), 0.64));
+  box-shadow: 0 0 14px rgba(var(--sound-gold), 0.15);
+}
+
+.gaia-opening-sound-option .gaia-opening-volume-choice input[type="range"]::-moz-range-track {
+  background: linear-gradient(90deg, rgba(var(--sound-gold), 0.9), rgba(var(--sound-coral), 0.64));
+  box-shadow: 0 0 14px rgba(var(--sound-gold), 0.15);
+}
+
+.gaia-opening-sound-option .gaia-opening-volume-choice input[type="range"]::-webkit-slider-thumb {
+  border-color: rgba(255, 250, 235, 0.96);
+  background: rgb(var(--sound-gold));
+  box-shadow: 0 0 0 4px rgba(var(--sound-gold), 0.13), 0 0 18px rgba(var(--sound-gold), 0.46);
+}
+
+.gaia-opening-sound-option .gaia-opening-volume-choice input[type="range"]::-moz-range-thumb {
+  border-color: rgba(255, 250, 235, 0.96);
+  background: rgb(var(--sound-gold));
+  box-shadow: 0 0 0 4px rgba(var(--sound-gold), 0.13), 0 0 18px rgba(var(--sound-gold), 0.46);
+}
+
+@keyframes opening-sound-scene-drift {
+  from { transform: scale(1.035) translate3d(-0.25%, 0, 0); }
+  to { transform: scale(1.06) translate3d(0.35%, -0.4%, 0); }
+}
+
+@keyframes opening-sound-light-breathe {
+  from { opacity: 0.42; transform: rotate(-4deg) scale(1.01); }
+  to { opacity: 0.7; transform: rotate(3deg) scale(1.08); }
 }
 
 .gaia-opening.is-sound-modal-open .gaia-opening-final-menu.is-visible {
@@ -3960,29 +4089,60 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
 @media (max-width: 720px) {
   .gaia-opening-sound-modal {
-    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    padding:
+      max(20px, env(safe-area-inset-top))
+      max(14px, env(safe-area-inset-right))
+      max(18px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+  }
+
+  .gaia-opening-sound-modal::before {
+    background-position: 65% center;
+  }
+
+  .gaia-opening-sound-modal-scrim {
+    background:
+      linear-gradient(0deg, rgba(3, 13, 26, 0.88) 0%, rgba(3, 13, 26, 0.5) 48%, rgba(3, 13, 26, 0.08) 82%),
+      linear-gradient(90deg, rgba(3, 13, 26, 0.25), transparent 74%);
   }
 
   .gaia-opening-sound-dialog {
-    width: min(520px, calc(100vw - 32px));
-    padding: 20px 16px 16px;
+    width: min(520px, calc(100vw - 28px));
+    padding: 20px 16px 15px;
+    border-radius: 2px 22px 2px 2px;
   }
 
-  .gaia-opening-sound-dialog h2 {
-    font-size: clamp(20px, 5.8vw, 24px);
-    line-height: 1.3;
+  .gaia-opening-sound-dialog::after {
+    top: 21px;
+    right: 18px;
+  }
+
+  .gaia-opening-sound-heading > p {
+    margin-bottom: 9px;
+    font-size: 7px;
+  }
+
+  .gaia-opening-sound-heading > h2 {
+    font-size: clamp(24px, 7.2vw, 31px);
+    line-height: 1.32;
+  }
+
+  .gaia-opening-sound-heading > span {
+    margin-top: 7px;
+    font-size: 9px;
+    letter-spacing: 0.055em;
   }
 
   .gaia-opening-sound-choices {
-    gap: 8px;
-    margin-top: 15px;
+    gap: 7px;
+    margin-top: 14px;
   }
 
   .gaia-opening-sound-option-button {
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 8px;
-    min-height: 96px;
-    padding: 14px 10px;
+    min-height: 72px;
+    padding: 20px 9px 10px;
   }
 
   .gaia-opening-sound-option-button .gaia-opening-sound-icon-shell {
@@ -3991,12 +4151,12 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 
   .gaia-opening-sound-option-button .gaia-opening-sound-icon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
 
   .gaia-opening-sound-option-label {
-    font-size: 12px;
+    font-size: 11px;
     letter-spacing: 0.025em;
   }
 
@@ -4010,17 +4170,31 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     margin-inline: 9px;
     padding: 9px 1px 11px;
   }
+
+  .gaia-opening-sound-option::after {
+    top: 7px;
+    right: 7px;
+    font-size: 6px;
+  }
 }
 
 @media (orientation: landscape) and (max-width: 960px) and (max-height: 520px) {
   .gaia-opening-sound-dialog {
     width: min(560px, calc(100vw - 48px));
-    padding: 16px 20px 14px;
+    padding: 15px 20px 13px;
   }
 
-  .gaia-opening-sound-dialog h2 {
-    font-size: 19px;
-    line-height: 1.3;
+  .gaia-opening-sound-heading > p {
+    margin-bottom: 6px;
+  }
+
+  .gaia-opening-sound-heading > h2 {
+    font-size: 22px;
+    line-height: 1.25;
+  }
+
+  .gaia-opening-sound-heading > span {
+    margin-top: 5px;
   }
 
   .gaia-opening-sound-choices {
@@ -4039,7 +4213,11 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
 @media (prefers-reduced-motion: reduce) {
   .gaia-opening-sound-modal,
-  .gaia-opening-sound-dialog {
+  .gaia-opening-sound-dialog,
+  .gaia-opening-sound-modal::before,
+  .gaia-opening-sound-modal::after {
     transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
   }
 }

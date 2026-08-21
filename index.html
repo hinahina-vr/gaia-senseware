@@ -24,7 +24,7 @@
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="stylesheet" href="./styles.css?v=gaia-map-no-tabletop-1" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-opening-sound-choice-2" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-opening-sound-choice-3" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
     <link rel="stylesheet" href="./novel-mode.css?v=gaia-story-map-skip-1" />
@@ -184,11 +184,16 @@
           aria-modal="true"
           aria-hidden="true"
           aria-labelledby="gaia-opening-sound-title"
+          aria-describedby="gaia-opening-sound-description"
           hidden
         >
           <div class="gaia-opening-sound-modal-scrim" aria-hidden="true"></div>
           <div class="gaia-opening-sound-dialog">
-            <h2 id="gaia-opening-sound-title">音を選ぶ</h2>
+            <div class="gaia-opening-sound-heading">
+              <p>GAIA SENSATION / SOUND SETTING</p>
+              <h2 id="gaia-opening-sound-title">この放課後を、<br />どんな音で始めますか。</h2>
+              <span id="gaia-opening-sound-description">音楽と環境音は、物語の途中でも変更できます。</span>
+            </div>
             <section class="gaia-opening-sound-choices" aria-label="開始時の音">
               <div class="gaia-opening-sound-option gaia-opening-sound-option--on">
                 <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-on" type="button" aria-label="音ありで始める" aria-pressed="false">
