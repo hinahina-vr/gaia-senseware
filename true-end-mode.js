@@ -111,9 +111,8 @@
     dialogue.append(speaker, speakerCode, message, nextMark);
 
     const footer = createElement("footer", "true-end-footer");
-    const location = createElement("span", "", "2.7 MILLION YEARS AFTER THE ANTHROPOCENE");
     const counter = createElement("span");
-    footer.append(location, counter);
+    footer.append(counter);
 
     const logButton = createElement("button", "true-end-log-button", "LOG");
     logButton.type = "button";

@@ -288,7 +288,7 @@
   bottom: max(18px, env(safe-area-inset-bottom));
   left: clamp(26px, 4vw, 76px);
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   color: rgba(167, 224, 230, 0.48);
 }
 
@@ -664,10 +664,6 @@
     left: 15px;
     font-size: 6px;
     letter-spacing: 0.12em;
-  }
-
-  .true-end-footer span:first-child {
-    max-width: 70%;
   }
 
   .true-end-finale h2 {

@@ -100,6 +100,8 @@ const scanFrame = (page) => page.evaluate(() => {
     visibleThoughtform: visibleThoughtform?.dataset.speaker || "",
     title: document.querySelector(".true-end-scene-heading strong")?.textContent?.trim() || "",
     counter: document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() || "",
+    footerText: document.querySelector(".true-end-footer")?.textContent?.trim() || "",
+    footerSpanCount: document.querySelectorAll(".true-end-footer span").length,
     message: message?.textContent || "",
     messageFontSize: Number.parseFloat(getComputedStyle(message).fontSize),
     readoutVisible: Boolean(readout && !readout.hidden),
@@ -228,6 +230,8 @@ try {
     assert.equal(initial.dialogueVisible, true);
     assert.equal(initial.logButtonVisible, true);
     assert.equal(initial.logButtonText, "LOG");
+    assert.equal(initial.footerSpanCount, 1);
+    assert.doesNotMatch(initial.footerText, /ANTHROPOCENE/u);
     assert.equal(initial.overflowX, 0);
     assert.equal(initial.overflowY, 0);
     assert(initial.dialogueRect.height >= 44, `${viewport.name}: dialogue hit area is under 44px`);
