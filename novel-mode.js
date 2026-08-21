@@ -114,6 +114,9 @@
   });
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
   const BACKGROUND_SOUNDTRACK = Object.freeze([
+    ["event-cg-first-encounter-five-plane", "windowlight"],
+    ["event-cg-amane-closeup-five-plane", "windowlight"],
+    ["event-cg-mizuha-closeup-five-plane", "windowlight"],
     ["novel-bg-workroom-v2.png", "windowlight"],
     ["novel-bg-online-night-v2.png", "moonbook"],
     ["novel-bg-garden-center-v2.png", "firstlight"],
@@ -1469,6 +1472,9 @@
     if (!followingStep) return;
     if (followingStep.id === "welcome_chat_095") void window.GaiaOpeningAudio?.preloadTrack?.("ending");
     const followingPresentation = backgroundPresentationForStep(followingStep);
+    const currentTrack = soundtrackForBackground(currentPresentation.image);
+    const followingTrack = soundtrackForBackground(followingPresentation.image);
+    if (followingTrack !== currentTrack) void window.GaiaOpeningAudio?.preloadTrack?.(followingTrack);
     if (currentPresentation.image === followingPresentation.image) return;
     const nextBackground = followingPresentation.image;
     const warm = () => { void preloadBackground(nextBackground); };
@@ -2624,6 +2630,7 @@
     if (step.type !== "chat") delete elements.cast.dataset.slackCast;
     const backgroundCue = applyBackgroundCueForStep(step);
     unlockGalleryCue(backgroundCue);
+    requestTrackForBackground({ image: getComputedStyle(layer).backgroundImage });
     sectionSeparatorActive = false;
     showRuntime();
     warmUpcomingBackground(step);
@@ -4615,6 +4622,7 @@
     previousFocus = document.activeElement;
     suppressBaseInterface();
     particleSystem.start();
+    requestedStoryTrack = "story";
     void window.GaiaOpeningAudio?.switchTrack?.("story");
     window.dispatchEvent(new CustomEvent("gaia:novel-open"));
     isOpen = true;
@@ -4638,6 +4646,7 @@
     resetFastForward();
     closeDetourDock();
     particleSystem.stop();
+    requestedStoryTrack = null;
     void window.GaiaOpeningAudio?.switchTrack?.("opening");
     isOpen = false;
     setInteractionLifecycle("idle");

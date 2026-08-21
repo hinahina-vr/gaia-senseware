@@ -193,10 +193,12 @@ try {
     await page.waitForFunction(() => document.querySelector("#gaia-opening")?.hidden === true, null, { timeout: 10_000 });
     await page.waitForFunction((dataRoute) => dataRoute
       ? __qaVisible(document.querySelector("#intro-layer"))
-      : __qaVisible(document.querySelector("#novel-title-screen")), useDataRoute, { timeout: 10_000 });
+      : __qaVisible(document.querySelector("#novel-runtime")), useDataRoute, { timeout: 10_000 });
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-audio-dock")), null, { timeout: 10_000 });
     const destination = await page.evaluate(() => ({
       titleVisible: __qaVisible(document.querySelector("#novel-title-screen")),
+      runtimeVisible: __qaVisible(document.querySelector("#novel-runtime")),
+      stepId: globalThis.GaiaNovel?.getState?.().stepId,
       introVisible: __qaVisible(document.querySelector("#intro-layer")),
       dockVisible: __qaVisible(document.querySelector("#gaia-audio-dock")),
       muted: globalThis.GaiaOpeningAudio.getState().muted,
@@ -204,7 +206,9 @@ try {
       overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
       overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
     }));
-    assert.equal(destination.titleVisible, !useDataRoute, `${viewport.name}: wrong destination after route choice`);
+    assert.equal(destination.titleVisible, false, `${viewport.name}: true first access stopped at the story title`);
+    assert.equal(destination.runtimeVisible, !useDataRoute, `${viewport.name}: story did not begin immediately on true first access`);
+    if (!useDataRoute) assert.equal(destination.stepId, "festival_concept_001", `${viewport.name}: story began at the wrong first step`);
     assert.equal(destination.introVisible, useDataRoute, `${viewport.name}: data menu did not open`);
     assert(destination.dockVisible, `${viewport.name}: destination audio control is missing`);
     assert.equal(destination.muted, !startWithSound);
