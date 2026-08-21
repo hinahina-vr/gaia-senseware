@@ -88,12 +88,16 @@ const scanEnding = (page) => page.evaluate(() => {
   const track = document.querySelector(".novel-staff-roll-track");
   const button = document.querySelector(".novel-staff-roll-finale button");
   const toolbar = document.querySelector(".novel-topbar");
+  const closing = document.querySelector(".novel-staff-roll-closing");
+  const lastCredit = document.querySelector(".novel-staff-roll-credit:last-child");
   const trackStyle = getComputedStyle(track);
   const whiteoutStyle = getComputedStyle(whiteout);
   const stageStyle = getComputedStyle(stage);
   const toolbarStyle = getComputedStyle(toolbar);
   const buttonRect = button?.getBoundingClientRect();
   const trackRect = track?.getBoundingClientRect();
+  const closingRect = closing?.getBoundingClientRect();
+  const lastCreditRect = lastCredit?.getBoundingClientRect();
   const trackCenterX = trackRect ? trackRect.left + (trackRect.width / 2) : 0;
   const creditRows = [...document.querySelectorAll(".novel-staff-roll-credit")].map((row) => {
     const term = row.querySelector("dt");
@@ -116,6 +120,7 @@ const scanEnding = (page) => page.evaluate(() => {
     trackY: track?.getBoundingClientRect().y || 0,
     trackAnimation: trackStyle.animationName,
     trackDuration: trackStyle.animationDuration,
+    closingGap: closingRect && lastCreditRect ? closingRect.top - lastCreditRect.bottom : 0,
     whiteoutAnimation: whiteoutStyle.animationName,
     stageBackground: stageStyle.backgroundImage,
     toolbarHidden: toolbarStyle.visibility === "hidden" && Number(toolbarStyle.opacity) === 0,
@@ -194,6 +199,8 @@ try {
     assert.equal(initial.phase, "whiteout", `${viewport.name}: ending did not begin with whiteout`);
     assert.equal(initial.whiteoutAnimation, "novel-staff-roll-whiteout");
     assert.equal(initial.trackAnimation, "novel-staff-roll-rise");
+    assert.equal(initial.trackDuration, viewport.name === "mobile-390" ? "70s" : "76s");
+    assert(initial.closingGap >= viewport.height * 0.5, `${viewport.name}: closing poem gap is too short (${initial.closingGap}px)`);
     assert.equal(initial.buttonHidden, true, `${viewport.name}: END action was shown before the roll`);
     assert.equal(initial.skipHintCount, 0, `${viewport.name}: obsolete staff-roll skip hint remains`);
     assert.equal(initial.toolbarHidden, true, `${viewport.name}: normal VN toolbar remained over the ending`);

@@ -8880,7 +8880,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll {
-  --novel-staff-roll-duration: 68s;
+  --novel-staff-roll-duration: 76s;
+  --novel-staff-roll-closing-gap: 55dvh;
   --novel-staff-roll-viewport-height: 100dvh;
   position: absolute;
   inset: 0;
@@ -9138,7 +9139,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   display: grid;
   align-content: center;
   min-height: 100dvh;
-  margin: 0;
+  margin: var(--novel-staff-roll-closing-gap) 0 0;
   gap: 20px;
   padding: 12vh 20px;
   color: #173d46;
@@ -9267,7 +9268,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 
 @media (max-width: 720px) {
   .novel-staff-roll {
-    --novel-staff-roll-duration: 62s;
+    --novel-staff-roll-duration: 70s;
     padding: 0 !important;
   }
 
@@ -9372,6 +9373,10 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 .novel-staff-roll.is-reduced-motion .novel-staff-roll-title,
 .novel-staff-roll.is-reduced-motion .novel-staff-roll-closing {
   min-height: min(72dvh, 640px);
+}
+
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-closing {
+  margin-top: 0;
 }
 
 .novel-staff-roll.is-reduced-motion .novel-staff-roll-credits > div {
@@ -9504,6 +9509,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   }
 
   body.novel-open.novel-pc-canvas .novel-staff-roll {
+    --novel-staff-roll-closing-gap: 594px;
     --novel-staff-roll-viewport-height: 1080px;
   }
 
