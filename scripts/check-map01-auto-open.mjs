@@ -97,7 +97,7 @@ check("runtime cache keys are advanced", () => {
   assert.match(html, /app\.js\?v=gaia-story-map-skip-1/u);
   assert.match(html, /novel-mode\.css\?v=gaia-story-map-skip-1/u);
   assert.match(html, /gx-mode\.js\?v=gaia-gx-auto-return-1/u);
-  assert.match(html, /novel-mode\.js\?v=gaia-true-end-jump-1/u);
+  assert.match(html, /novel-mode\.js\?v=gaia-reference-data-credit-1/u);
   assert.match(html, /novel-story-data\.js\?v=gaia-story-temp-modal-1/u);
 });
 

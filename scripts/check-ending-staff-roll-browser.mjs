@@ -213,6 +213,7 @@ try {
       "glitchyeventdj664",
       "ZEN大学『共創地球論』",
       "ZEN大学『人新世の人類学』",
+      "参照データ",
       "JAXA / NASA / NOAA",
       "気象庁 ほか",
       "物語は、ここからも続いていく。",
@@ -222,6 +223,7 @@ try {
     });
     assert.equal(initial.text.includes("AI開発支援"), false, `${viewport.name}: obsolete AI開発支援 credit remains`);
     assert.equal(initial.text.includes("AI DEVELOPMENT SUPPORT"), false, `${viewport.name}: obsolete AI DEVELOPMENT SUPPORT credit remains`);
+    assert.equal(initial.text.includes("データ提供"), false, `${viewport.name}: obsolete データ提供 credit remains`);
     assert.equal(initial.creditRows.length, 9, `${viewport.name}: unexpected staff credit row count`);
     initial.creditRows.forEach((row) => {
       assert.equal(row.textAlign, "center", `${viewport.name}: ${row.role} is not center aligned`);
