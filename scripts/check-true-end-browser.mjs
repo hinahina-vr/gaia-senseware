@@ -108,6 +108,9 @@ const scanFrame = (page) => page.evaluate(() => {
     speakerName: document.querySelector(".true-end-speaker")?.textContent?.trim() || "",
     speakerCode: document.querySelector(".true-end-speaker-code")?.textContent?.trim() || "",
     speakerCodeLang: document.querySelector(".true-end-speaker-code")?.lang || "",
+    readoutHeader: document.querySelector(".true-end-readout-signal")?.textContent?.trim() || "",
+    readoutCount: document.querySelector(".true-end-readout-count")?.textContent?.trim() || "",
+    readoutRowCount: document.querySelectorAll(".true-end-readout-row").length,
     readoutLines: [...document.querySelectorAll(".true-end-readout code")].map((node) => node.textContent?.trim() || ""),
     messageFontSize: Number.parseFloat(getComputedStyle(message).fontSize),
     readoutVisible: Boolean(readout && !readout.hidden),
@@ -244,6 +247,9 @@ try {
     assert.equal(initial.message, "DORA SEV·EN");
     assert.equal(initial.speakerName, "AIVA");
     assert.equal(initial.speakerCode, "KAR·MIR");
+    assert.equal(initial.readoutHeader, "SÆL·MIR");
+    assert.equal(initial.readoutCount, "KAR 02");
+    assert.equal(initial.readoutRowCount, 2);
     assert.deepEqual(initial.readoutLines, ["AL MIR: KAR·EN", "THEL: 2,704,118 HARA"]);
     assert.equal(initial.audioTrack, "trueend");
     assert.equal(initial.audioPlayback.duration, 72, `${viewport.name}: dedicated score has the wrong duration`);

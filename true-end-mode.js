@@ -183,11 +183,35 @@
 
     const renderReadout = (lines = []) => {
       readout.replaceChildren();
-      lines.forEach((line) => {
-        const code = createElement("code", "", line);
-        code.lang = /[\u3040-\u30ff\u3400-\u9fff]/u.test(line) ? "ja" : SYSTEM_LANGUAGE;
-        readout.append(code);
-      });
+      if (lines.length > 0) {
+        const readoutHeader = createElement("div", "true-end-readout-header");
+        readoutHeader.lang = SYSTEM_LANGUAGE;
+        const readoutSignal = createElement("span", "true-end-readout-signal", "SÆL·MIR");
+        const readoutTrace = createElement("i", "true-end-readout-trace");
+        readoutTrace.setAttribute("aria-hidden", "true");
+        const readoutCount = createElement("small", "true-end-readout-count", `KAR ${String(lines.length).padStart(2, "0")}`);
+        readoutHeader.append(readoutSignal, readoutTrace, readoutCount);
+
+        const readoutList = createElement("div", "true-end-readout-list");
+        lines.forEach((line, index) => {
+          const row = createElement("div", "true-end-readout-row");
+          row.style.setProperty("--readout-index", index);
+          const marker = createElement("span", "true-end-readout-marker", String(index + 1).padStart(2, "0"));
+          marker.setAttribute("aria-hidden", "true");
+          const code = createElement("code", "", line);
+          code.lang = /[\u3040-\u30ff\u3400-\u9fff]/u.test(line) ? "ja" : SYSTEM_LANGUAGE;
+          const separator = line.indexOf(":");
+          if (separator >= 0) {
+            code.replaceChildren(
+              createElement("span", "true-end-readout-key", line.slice(0, separator + 1)),
+              createElement("span", "true-end-readout-value", line.slice(separator + 1)),
+            );
+          }
+          row.append(marker, code);
+          readoutList.append(row);
+        });
+        readout.append(readoutHeader, readoutList);
+      }
       readout.hidden = lines.length === 0;
       shell.classList.toggle("has-readout", lines.length > 0);
     };
