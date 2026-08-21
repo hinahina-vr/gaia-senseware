@@ -99,10 +99,16 @@ const scanFrame = (page) => page.evaluate(() => {
     speaker: shell?.dataset.speaker || "",
     visibleThoughtform: visibleThoughtform?.dataset.speaker || "",
     title: document.querySelector(".true-end-scene-heading strong")?.textContent?.trim() || "",
+    sceneCode: document.querySelector(".true-end-scene-heading span")?.textContent?.trim() || "",
     counter: document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() || "",
     footerText: document.querySelector(".true-end-footer")?.textContent?.trim() || "",
     footerSpanCount: document.querySelectorAll(".true-end-footer span").length,
     message: message?.textContent || "",
+    messageLang: message?.lang || "",
+    speakerName: document.querySelector(".true-end-speaker")?.textContent?.trim() || "",
+    speakerCode: document.querySelector(".true-end-speaker-code")?.textContent?.trim() || "",
+    speakerCodeLang: document.querySelector(".true-end-speaker-code")?.lang || "",
+    readoutLines: [...document.querySelectorAll(".true-end-readout code")].map((node) => node.textContent?.trim() || ""),
     messageFontSize: Number.parseFloat(getComputedStyle(message).fontSize),
     readoutVisible: Boolean(readout && !readout.hidden),
     louLoaded: Boolean(louImage?.complete && louImage.naturalWidth > 0),
@@ -172,6 +178,7 @@ try {
     const story = await page.evaluate(() => ({
       title: globalThis.GAIA_TRUE_END_STORY.title,
       subtitle: globalThis.GAIA_TRUE_END_STORY.subtitle,
+      language: globalThis.GAIA_TRUE_END_STORY.language,
       scenes: globalThis.GAIA_TRUE_END_STORY.scenes.map((scene) => ({
         id: scene.id,
         number: scene.number,
@@ -184,6 +191,9 @@ try {
     }));
     assert.equal(story.title, "Beyond");
     assert.equal(story.subtitle, "惑星の放課後 / GAIA SENSATION — Beyond");
+    assert.equal(story.language.name, "SÆLIVA");
+    assert.equal(story.language.japaneseName, "セイリヴァ");
+    assert.equal(story.language.htmlLang, "art-x-saeliva");
     assert.equal(story.scenes.length, 9, `${viewport.name}: true end does not have nine scenes`);
     assert.deepEqual(story.scenes.map(({ number }) => number), ["01", "02", "03", "04", "05", "06", "07", "08", "09"]);
     assert.equal(story.totalSteps, 135, `${viewport.name}: total step count mismatch`);
@@ -205,6 +215,7 @@ try {
 
     const initial = await scanFrame(page);
     const seenSpeakers = new Set();
+    const seenSystemPhrases = new Set();
     const validateSpeakerVisual = (frame) => {
       seenSpeakers.add(frame.speaker);
       const expectedScene = story.scenes.find(({ id }) => id === frame.scene);
@@ -220,10 +231,20 @@ try {
       if (frame.speaker === "lou") {
         assert.equal(frame.louVisible, true, `${viewport.name}: Lou visual is not visible`);
       }
+      if (frame.speaker === "system") {
+        seenSystemPhrases.add(frame.message);
+        assert.equal(frame.messageLang, "art-x-saeliva", `${viewport.name}: SÆLIVA message language metadata is missing`);
+        assert.equal(frame.speakerCodeLang, "art-x-saeliva", `${viewport.name}: SÆLIVA speaker-code language metadata is missing`);
+      }
     };
     validateSpeakerVisual(initial);
     assert.equal(initial.scene, story.scenes[0].id);
     assert.equal(initial.title, story.scenes[0].title);
+    assert.equal(initial.sceneCode, "VENA 01");
+    assert.equal(initial.message, "DORA SEV·EN");
+    assert.equal(initial.speakerName, "AIVA");
+    assert.equal(initial.speakerCode, "KAR·MIR");
+    assert.deepEqual(initial.readoutLines, ["AL MIR: KAR·EN", "THEL: 2,704,118 HARA"]);
     assert.equal(initial.audioTrack, "trueend");
     assert.equal(initial.audioPlayback.duration, 72, `${viewport.name}: dedicated score has the wrong duration`);
     assert.equal(initial.toolbarHidden, true);
@@ -254,7 +275,7 @@ try {
     }));
     assert.deepEqual(initialBeyondLog.ids, ["beyond_01_001"], `${viewport.name}: first Beyond line was not persisted`);
     assert.equal(initialBeyondLog.entries.length, 1, `${viewport.name}: first Beyond line is absent from LOG`);
-    assert.equal(initialBeyondLog.entries[0].text, "STORY COMPLETE");
+    assert.equal(initialBeyondLog.entries[0].text, "DORA SEV·EN");
     await page.locator("#novel-log-close").click();
     await page.locator("#novel-log-panel").waitFor({ state: "hidden" });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-01.png`), animations: "disabled" });
@@ -288,6 +309,9 @@ try {
     for (const speaker of ["lou", "mizuha", "amane", "sakuya"]) {
       assert(seenSpeakers.has(speaker), `${viewport.name}: ${speaker} was never rendered`);
     }
+    for (const phrase of ["DORA SEV·EN", "NETH·IR SÆL·ORAI", "ESHA SÆL·TIR: KAR·EN"]) {
+      assert(seenSystemPhrases.has(phrase), `${viewport.name}: SÆLIVA system phrase was never rendered: ${phrase}`);
+    }
     const rasterBackgroundResources = await page.evaluate(() => performance
       .getEntriesByType("resource")
       .map(({ name }) => name)
@@ -302,13 +326,15 @@ try {
       overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
       overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
       logButtonVisible: Boolean(document.querySelector(".true-end-log-button")?.getClientRects().length),
+      readoutLang: document.querySelector(".true-end-finale div")?.lang || "",
     }));
     assert.equal(finale.title, "Beyond");
-    assert(finale.text.includes("PHYSICAL DEPTH: PRE-GEOMETRIC"));
-    assert(finale.text.includes("CIVILIZATIONAL POWER: K 2.700"));
-    assert(finale.text.includes("SENSORY HORIZON: 2,641,903 SYSTEMS"));
-    assert(finale.text.includes("ANCESTRAL NODE: REGISTERED"));
-    assert(finale.text.includes("NEXT OBSERVATION: UNDECIDED"));
+    assert(finale.text.includes("DÆM UL: ESHA·GEMA"));
+    assert(finale.text.includes("IVARA KERA: K 2.700"));
+    assert(finale.text.includes("SÆL·ORAI: 2,641,903 NETH"));
+    assert(finale.text.includes("ESHA SÆL·TIR: KAR·EN"));
+    assert(finale.text.includes("NÆI MIR: REA·AI"));
+    assert.equal(finale.readoutLang, "art-x-saeliva");
     assert.equal(finale.button, "タイトルへ戻る");
     assert.equal(finale.completed, true);
     assert.equal(finale.stateCompleted, true);
@@ -336,7 +362,7 @@ try {
     assert.equal(beyondLog.entries.length, 135, `${viewport.name}: Beyond LOG does not contain all 135 lines`);
     assert.deepEqual(beyondLog.entries.map(({ id }) => id), expectedBeyondIds, `${viewport.name}: Beyond rendered LOG order mismatch`);
     assert.match(beyondLog.entries[0].meta, /Beyond/u);
-    assert.equal(beyondLog.entries[0].text, "STORY COMPLETE");
+    assert.equal(beyondLog.entries[0].text, "DORA SEV·EN");
     assert.equal(beyondLog.entries.at(-1).text, "ルウたちは新しい倫理を教わったのではない。自分たちが、どこから続いているのかを発見した。");
     await page.locator("#novel-log-close").click();
     await page.locator("#novel-log-panel").waitFor({ state: "hidden" });

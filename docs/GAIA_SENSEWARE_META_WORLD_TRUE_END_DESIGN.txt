@@ -1,6 +1,10 @@
 GAIA SENSEWARE
 メタ世界設定／トゥルーエンド設計
 
+現行Beyond世界のCANON（星間共感記法SÆLIVAを含む）は、
+docs/GAIA_SENSEWARE_BEYOND_SAELIVA_CANON.md を優先参照する。
+本書後半の旧トゥルーエンド案は制作履歴として保持する。
+
 状態：台本へ未反映の設計資料
 対象台本：docs/GAIA_SENSEWARE_STORY_SCRIPT.txt
 

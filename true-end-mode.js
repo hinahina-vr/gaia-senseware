@@ -3,15 +3,16 @@
 
   const story = globalThis.GAIA_TRUE_END_STORY;
   if (!story) return;
+  const SYSTEM_LANGUAGE = story.language?.htmlLang || "art-x-saeliva";
 
   const SPEAKERS = Object.freeze({
-    narrator: Object.freeze({ name: "", code: "OBSERVATION" }),
-    system: Object.freeze({ name: "SYSTEM", code: "ARCHIVAL READOUT" }),
-    lou: Object.freeze({ name: "ルウ", code: "K2.7 CONTACT FORM" }),
+    narrator: Object.freeze({ name: "", code: "MIR", language: SYSTEM_LANGUAGE }),
+    system: Object.freeze({ name: "AIVA", code: "KAR·MIR", language: SYSTEM_LANGUAGE }),
+    lou: Object.freeze({ name: "ルウ", code: "K 2.7 / TIR·DÆM", language: SYSTEM_LANGUAGE }),
     mizuha: Object.freeze({ name: "みず", code: "MIZUHA" }),
     amane: Object.freeze({ name: "あめ", code: "AMANE" }),
     sakuya: Object.freeze({ name: "saku", code: "SAKUYA" }),
-    visitor: Object.freeze({ name: "あなた", code: "LOCAL OBSERVER" }),
+    visitor: Object.freeze({ name: "あなた", code: "AL MIR", language: SYSTEM_LANGUAGE }),
   });
   const STORAGE_KEY = "gaiaSensewareTrueEnd:complete:v1";
   const CHARACTER_DELAY_MS = 29;
@@ -129,6 +130,7 @@
     const finaleLabel = createElement("span", "", story.finale.label);
     const finaleTitle = createElement("h2", "", story.finale.title);
     const finaleReadout = createElement("div");
+    finaleReadout.lang = SYSTEM_LANGUAGE;
     story.finale.readout.forEach((line) => finaleReadout.append(createElement("code", "", line)));
     const finaleNote = createElement("p", "", "感じ取れる世界は、まだ増えていく。");
     const finaleExit = createElement("button", "", "タイトルへ戻る");
@@ -181,7 +183,11 @@
 
     const renderReadout = (lines = []) => {
       readout.replaceChildren();
-      lines.forEach((line) => readout.append(createElement("code", "", line)));
+      lines.forEach((line) => {
+        const code = createElement("code", "", line);
+        code.lang = /[\u3040-\u30ff\u3400-\u9fff]/u.test(line) ? "ja" : SYSTEM_LANGUAGE;
+        readout.append(code);
+      });
       readout.hidden = lines.length === 0;
       shell.classList.toggle("has-readout", lines.length > 0);
     };
@@ -226,9 +232,11 @@
     const syncScene = ({ immediate = false } = {}) => {
       const current = scene();
       if (!current) return;
-      sceneNumber.textContent = `SCENE ${current.number}`;
+      sceneNumber.textContent = `VENA ${current.number}`;
+      sceneNumber.lang = SYSTEM_LANGUAGE;
       sceneTitle.textContent = current.title;
-      sceneCardNumber.textContent = `SCENE ${current.number}`;
+      sceneCardNumber.textContent = `VENA ${current.number}`;
+      sceneCardNumber.lang = SYSTEM_LANGUAGE;
       sceneCardTitle.textContent = current.title;
       shell.dataset.scene = current.id;
       setBackdrop(current.backdrop, immediate);
@@ -245,8 +253,11 @@
       shell.dataset.speaker = current.speaker || "narrator";
       shell.classList.toggle("is-emphasis", current.emphasis === true);
       speaker.textContent = currentSpeaker.name;
+      speaker.lang = currentSpeaker.language || "ja";
       speaker.hidden = !currentSpeaker.name;
       speakerCode.textContent = currentSpeaker.code;
+      speakerCode.lang = currentSpeaker.language || "ja";
+      message.lang = current.speaker === "system" ? SYSTEM_LANGUAGE : "ja";
       renderReadout(current.readout || []);
       onStepRead?.(current);
       startReveal(current.text);
