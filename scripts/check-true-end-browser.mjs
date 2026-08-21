@@ -227,7 +227,9 @@ try {
     assert(initial.dialogueRect.x >= 0 && initial.dialogueRect.bottom <= viewport.height + 1, `${viewport.name}: dialogue is outside viewport`);
     assert(initial.messageFontSize >= (viewport.width <= 500 ? 16 : 20), `${viewport.name}: dialogue text is too small`);
     await page.emulateMedia({ reducedMotion: "no-preference" });
-    await page.waitForTimeout(260);
+    await page.waitForFunction((initialFrame) => (
+      Number(document.querySelector(".true-end-universe")?.dataset.webglFrame || 0) > initialFrame
+    ), initial.universeFrame, { timeout: 5_000 });
     const animatedFrame = await scanFrame(page);
     assert(animatedFrame.universeFrame > initial.universeFrame, `${viewport.name}: WebGL universe is not animating`);
     await page.emulateMedia({ reducedMotion: "reduce" });
