@@ -3608,12 +3608,16 @@
     const closingLead = document.createElement("p");
     const closingLine = document.createElement("strong");
     const closingCopyright = document.createElement("small");
+    const closingAction = document.createElement("div");
     const closingMark = document.createElement("span");
+    closingAction.className = "novel-staff-roll-closing-action";
+    closingMark.className = "novel-staff-roll-closing-mark";
     closingLead.textContent = "その選択の中に、今日から私たちもいる。";
     closingLine.textContent = "物語は、ここからも続いていく。";
     closingCopyright.textContent = "© 2026 惑星の放課後 / GAIA SENSATION";
-    closingMark.textContent = "END";
-    closing.append(closingLead, closingLine, closingCopyright, closingMark);
+    closingMark.textContent = "Thank you for playing";
+    closingAction.append(closingMark);
+    closing.append(closingLead, closingLine, closingCopyright, closingAction);
 
     const finale = document.createElement("div");
     finale.className = "novel-staff-roll-finale";
@@ -3630,10 +3634,11 @@
       continueIntoTrueEnd(next);
     });
     finale.append(next);
+    closingAction.append(finale);
 
     track.append(heading, credits, closing);
     viewport.append(track);
-    stage.append(viewport, finale);
+    stage.append(viewport);
     shell.append(whiteout, stage, dataSkip);
     elements.resultSurface.append(shell);
 
@@ -3646,8 +3651,18 @@
       shell.classList.add("is-complete");
       finale.hidden = false;
       finale.setAttribute("aria-hidden", "false");
+      closingMark.setAttribute("aria-hidden", "true");
       next.tabIndex = 0;
       if (focus) requestAnimationFrame(() => next.focus({ preventScroll: true }));
+    };
+
+    const beginFinalActionTransition = ({ focus = true } = {}) => {
+      shell.dataset.phase = "finalizing";
+      shell.classList.add("is-finalizing");
+      staffRollFinaleTimer = window.setTimeout(() => {
+        staffRollFinaleTimer = 0;
+        revealFinalAction({ focus });
+      }, 640);
     };
 
     const holdOnEnd = ({ delay = true, focus = true } = {}) => {
@@ -3661,8 +3676,8 @@
       }
       staffRollFinaleTimer = window.setTimeout(() => {
         staffRollFinaleTimer = 0;
-        revealFinalAction({ focus });
-      }, 3_000);
+        beginFinalActionTransition({ focus });
+      }, 5_000);
     };
 
     track.addEventListener("animationend", (event) => {

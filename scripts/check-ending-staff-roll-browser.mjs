@@ -87,6 +87,8 @@ const scanEnding = (page) => page.evaluate(() => {
   const stage = document.querySelector(".novel-staff-roll-stage");
   const track = document.querySelector(".novel-staff-roll-track");
   const button = document.querySelector(".novel-staff-roll-finale button");
+  const closingAction = document.querySelector(".novel-staff-roll-closing-action");
+  const closingMark = document.querySelector(".novel-staff-roll-closing-mark");
   const toolbar = document.querySelector(".novel-topbar");
   const closing = document.querySelector(".novel-staff-roll-closing");
   const lastCredit = document.querySelector(".novel-staff-roll-credit:last-child");
@@ -95,6 +97,7 @@ const scanEnding = (page) => page.evaluate(() => {
   const stageStyle = getComputedStyle(stage);
   const toolbarStyle = getComputedStyle(toolbar);
   const buttonRect = button?.getBoundingClientRect();
+  const closingMarkRect = closingMark?.getBoundingClientRect();
   const trackRect = track?.getBoundingClientRect();
   const closingRect = closing?.getBoundingClientRect();
   const lastCreditRect = lastCredit?.getBoundingClientRect();
@@ -130,6 +133,15 @@ const scanEnding = (page) => page.evaluate(() => {
     buttonText: button?.textContent?.trim() || "",
     buttonAriaLabel: button?.getAttribute("aria-label") || "",
     buttonHeight: buttonRect?.height || 0,
+    buttonMarkCenterDelta: buttonRect && closingMarkRect
+      ? Math.hypot(
+        (buttonRect.left + (buttonRect.width / 2)) - (closingMarkRect.left + (closingMarkRect.width / 2)),
+        (buttonRect.top + (buttonRect.height / 2)) - (closingMarkRect.top + (closingMarkRect.height / 2)),
+      )
+      : null,
+    closingMarkText: closingMark?.textContent?.trim() || "",
+    closingMarkAnimation: closingMark ? getComputedStyle(closingMark).animationName : "",
+    closingActionFlashAnimation: closingAction ? getComputedStyle(closingAction, "::before").animationName : "",
     audioTrack: globalThis.GaiaOpeningAudio?.getState?.().track || "",
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
     overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
@@ -202,6 +214,8 @@ try {
     assert.equal(initial.trackDuration, viewport.name === "mobile-390" ? "70s" : "76s");
     assert(initial.closingGap >= viewport.height * 0.5, `${viewport.name}: closing poem gap is too short (${initial.closingGap}px)`);
     assert.equal(initial.buttonHidden, true, `${viewport.name}: END action was shown before the roll`);
+    assert.equal(initial.closingMarkText, "Thank you for playing");
+    assert.equal(initial.text.includes("\nEND"), false, `${viewport.name}: obsolete END mark remains`);
     assert.equal(initial.skipHintCount, 0, `${viewport.name}: obsolete staff-roll skip hint remains`);
     assert.equal(initial.toolbarHidden, true, `${viewport.name}: normal VN toolbar remained over the ending`);
     assert.match(initial.stageBackground, /event-cg-exhibition-finale-(?:v2|mobile-v1)\.png/u);
@@ -309,18 +323,29 @@ try {
     await page.locator(".novel-staff-roll").focus();
     await page.keyboard.press("Enter");
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "end-hold");
+    const holdObservedAt = Date.now();
     const endHold = await scanEnding(page);
-    assert.equal(endHold.buttonHidden, true, `${viewport.name}: final action appeared before the END hold`);
-    await page.waitForTimeout(2_650);
+    assert.equal(endHold.buttonHidden, true, `${viewport.name}: final action appeared before the thank-you hold`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-thank-you.png`) });
+    await page.waitForTimeout(Math.max(0, 4_650 - (Date.now() - holdObservedAt)));
     const beforeFinale = await scanEnding(page);
-    assert.equal(beforeFinale.phase, "end-hold", `${viewport.name}: END hold was shorter than about three seconds`);
-    assert.equal(beforeFinale.buttonHidden, true, `${viewport.name}: final action appeared during the END hold`);
+    assert.equal(beforeFinale.phase, "end-hold", `${viewport.name}: thank-you hold was shorter than about five seconds`);
+    assert.equal(beforeFinale.buttonHidden, true, `${viewport.name}: final action appeared during the thank-you hold`);
+    await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "finalizing", null, { timeout: 750 });
+    const finalizing = await scanEnding(page);
+    assert.equal(finalizing.buttonHidden, true, `${viewport.name}: final action appeared before the flash finished`);
+    assert.equal(finalizing.closingMarkAnimation, "novel-staff-roll-mark-flicker");
+    assert.equal(finalizing.closingActionFlashAnimation, "novel-staff-roll-action-flash");
+    await page.waitForTimeout(110);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-flash.png`) });
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "complete", null, { timeout: 1_000 });
+    await page.waitForTimeout(480);
     const completed = await scanEnding(page);
     assert.equal(completed.buttonHidden, false);
     assert.equal(completed.buttonText, "世界の続きを紡ぐ");
     assert.match(completed.buttonAriaLabel, /トゥルーエンド/u);
     assert(completed.buttonHeight >= 44, `${viewport.name}: END action hit area is under 44px`);
+    assert(completed.buttonMarkCenterDelta <= 3, `${viewport.name}: final action did not replace the thank-you mark in place (${completed.buttonMarkCenterDelta}px)`);
     assert.equal(completed.overflowX, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-complete.png`), animations: "disabled" });
 

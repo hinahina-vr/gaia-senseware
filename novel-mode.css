@@ -9167,20 +9167,28 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   letter-spacing: 0.2em;
 }
 
-.novel-staff-roll-closing span {
+.novel-staff-roll-closing-action {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 96px;
   margin-top: 8vh;
+}
+
+.novel-staff-roll-closing-mark,
+.novel-staff-roll-finale {
+  grid-area: 1 / 1;
+}
+
+.novel-staff-roll-closing-mark {
   color: #245e68;
-  font: 400 clamp(42px, 7vw, 96px)/1 Georgia, "Yu Mincho", serif;
-  letter-spacing: 0.24em;
-  text-indent: 0.24em;
+  font: 400 clamp(24px, 3.7vw, 52px)/1.18 Georgia, "Yu Mincho", serif;
+  letter-spacing: 0.12em;
+  text-indent: 0.12em;
+  white-space: nowrap;
 }
 
 .novel-staff-roll-finale {
-  position: absolute;
-  z-index: 3;
-  right: 0;
-  bottom: max(5vh, env(safe-area-inset-bottom));
-  left: 0;
   display: grid;
   place-items: center;
   pointer-events: none;
@@ -9200,6 +9208,27 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 .novel-staff-roll.is-complete .novel-staff-roll-finale {
   pointer-events: auto;
   animation: novel-staff-roll-finale-swish 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.novel-staff-roll.is-finalizing .novel-staff-roll-closing-action::before {
+  grid-area: 1 / 1;
+  width: min(520px, 82vw);
+  height: 76px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.96), rgba(130, 225, 226, 0.4) 34%, transparent 72%);
+  filter: blur(5px);
+  content: "";
+  pointer-events: none;
+  animation: novel-staff-roll-action-flash 640ms ease-out both;
+}
+
+.novel-staff-roll.is-finalizing .novel-staff-roll-closing-mark {
+  animation: novel-staff-roll-mark-flicker 640ms linear both;
+}
+
+.novel-staff-roll.is-complete .novel-staff-roll-closing-mark {
+  visibility: hidden;
+  opacity: 0;
 }
 
 .novel-staff-roll-finale > button {
@@ -9259,6 +9288,23 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
     opacity: 1;
     transform: translateY(0) scaleX(1);
   }
+}
+
+@keyframes novel-staff-roll-mark-flicker {
+  0% { opacity: 1; filter: brightness(1); }
+  20% { opacity: 0.16; filter: brightness(2.4); }
+  38% { opacity: 1; filter: brightness(1.25); }
+  58% { opacity: 0.08; filter: brightness(3); }
+  78% { opacity: 0.88; filter: brightness(1.5); }
+  100% { opacity: 0; filter: brightness(3); }
+}
+
+@keyframes novel-staff-roll-action-flash {
+  0%, 100% { opacity: 0; transform: scaleX(0.42); }
+  18% { opacity: 0.72; transform: scaleX(0.9); }
+  34% { opacity: 0; transform: scaleX(1.08); }
+  56% { opacity: 0.96; transform: scaleX(1); }
+  78% { opacity: 0.18; transform: scaleX(1.16); }
 }
 
 @keyframes novel-staff-roll-hint {
@@ -9340,10 +9386,6 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
     line-height: 1.9;
   }
 
-  .novel-staff-roll-finale {
-    bottom: max(24px, env(safe-area-inset-bottom));
-  }
-
   .novel-staff-roll-finale > button {
     min-width: 176px;
     min-height: 48px;
@@ -9387,6 +9429,10 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   pointer-events: auto;
   opacity: 1;
   transform: none;
+}
+
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-closing-mark {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -9539,12 +9585,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
     margin-top: 43.2px;
   }
 
-  body.novel-open.novel-pc-canvas .novel-staff-roll-closing span {
+  body.novel-open.novel-pc-canvas .novel-staff-roll-closing-action {
     margin-top: 86.4px;
-  }
-
-  body.novel-open.novel-pc-canvas .novel-staff-roll-finale {
-    bottom: 54px;
   }
 }
 
