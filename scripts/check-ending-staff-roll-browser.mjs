@@ -202,8 +202,8 @@ try {
       "原案・企画・制作",
       "シナリオ",
       "WEBデザイン・開発",
-      "開発支援",
-      "DEVELOPMENT SUPPORT",
+      "制作支援",
+      "PRODUCTION SUPPORT",
       "OpenAI Codex",
       "キャラクターデザイン",
       "OpenAI ImageGen",
@@ -223,6 +223,8 @@ try {
     });
     assert.equal(initial.text.includes("AI開発支援"), false, `${viewport.name}: obsolete AI開発支援 credit remains`);
     assert.equal(initial.text.includes("AI DEVELOPMENT SUPPORT"), false, `${viewport.name}: obsolete AI DEVELOPMENT SUPPORT credit remains`);
+    assert.equal(initial.text.includes("開発支援"), false, `${viewport.name}: obsolete 開発支援 credit remains`);
+    assert.equal(initial.text.includes("DEVELOPMENT SUPPORT"), false, `${viewport.name}: obsolete DEVELOPMENT SUPPORT credit remains`);
     assert.equal(initial.text.includes("データ提供"), false, `${viewport.name}: obsolete データ提供 credit remains`);
     assert.equal(initial.text.includes("HTML / CSS / JavaScript"), false, `${viewport.name}: implementation note remains in staff credits`);
     assert.equal(initial.creditRows.length, 9, `${viewport.name}: unexpected staff credit row count`);

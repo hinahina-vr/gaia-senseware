@@ -3568,7 +3568,7 @@
       { role: "原案・企画・制作", department: "ORIGINAL CONCEPT / DIRECTION / PRODUCTION", names: ["ひなひな"] },
       { role: "シナリオ", department: "SCENARIO", names: ["ひなひな"] },
       { role: "WEBデザイン・開発", department: "WEB DESIGN / DEVELOPMENT", names: ["ひなひな"] },
-      { role: "開発支援", department: "DEVELOPMENT SUPPORT", names: ["OpenAI Codex"] },
+      { role: "制作支援", department: "PRODUCTION SUPPORT", names: ["OpenAI Codex"] },
       { role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["ひなひな", "OpenAI ImageGen"] },
       { role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] },
       { role: "音楽", department: "MUSIC", names: ["AfterSchool Afterglow", "glitchyeventdj664"] },
