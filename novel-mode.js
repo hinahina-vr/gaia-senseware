@@ -343,6 +343,7 @@
   const scriptIndexMap = new Map(allSteps.map((step, index) => [step.id, index + 1]));
   const ENDING_JUMP_ID = "ending";
   const ENDING_STEP_ID = "welcome_chat_095";
+  const TRUE_END_JUMP_ID = "true-end";
   const storySceneJumpEntries = scenes.map((scene, index) => {
     const firstStep = scene.steps?.[0];
     const scriptIndex = scriptIndexMap.get(firstStep?.id);
@@ -362,6 +363,14 @@
       scriptIndex: endingScriptIndex,
       index: scenes.length + 1,
       isEnding: true,
+    }),
+    Object.freeze({
+      scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / TRUE END", title: globalThis.GAIA_TRUE_END_STORY?.title || "星々の放課後" }),
+      sceneId: TRUE_END_JUMP_ID,
+      scriptIndex: endingScriptIndex + 1,
+      scriptLabel: "TRUE END #001",
+      index: scenes.length + 2,
+      isTrueEnd: true,
     }),
   ]);
   if (new Set(sceneJumpEntries.map((entry) => entry.sceneId)).size !== sceneJumpEntries.length) {
@@ -520,7 +529,7 @@
       title.textContent = entry.scene.title;
       label.append(chapter, title);
       script.className = "novel-jump-script";
-      script.textContent = `SCRIPT #${String(entry.scriptIndex).padStart(4, "0")}`;
+      script.textContent = entry.scriptLabel || `SCRIPT #${String(entry.scriptIndex).padStart(4, "0")}`;
       button.append(index, label, script);
       item.append(button);
       fragment.append(item);
@@ -3439,6 +3448,53 @@
     requestAnimationFrame(() => button.focus({ preventScroll: true }));
   };
 
+  let activeTrueEndRuntime = null;
+  const launchTrueEnd = ({ persistClear = true } = {}) => {
+    state.clear = true;
+    state.archivesUnlocked = true;
+    if (persistClear) saveProgress();
+    activeTrueEndRuntime?.destroy?.();
+    activeTrueEndRuntime = null;
+    clearTimers();
+    resetFastForward();
+    closeSceneJump({ restoreFocus: false });
+    setSceneJumpAvailability(false);
+    hideSpecialSurfaces();
+    elements.close.hidden = true;
+    elements.home.hidden = true;
+    suppressCharacterPresentation();
+    elements.chapterCard.hidden = true;
+    elements.dialogue.hidden = true;
+    elements.choices.replaceChildren();
+    elements.choices.classList.remove("is-visible", "is-mode08-optional");
+    elements.sourceLabel.hidden = true;
+    elements.resultSurface.hidden = false;
+    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION トゥルーエンド");
+    layer.classList.add("is-result", "is-true-end");
+    layer.dataset.sceneId = TRUE_END_JUMP_ID;
+    layer.dataset.stepType = "true-end";
+    layer.dataset.storyAudioCue = "true-end-sensory-horizon";
+    requestStoryTrack("trueend", 1.45);
+    activeTrueEndRuntime = window.GaiaTrueEnd?.start?.({
+      host: elements.resultSurface,
+      layer,
+      onComplete: () => {
+        state.trueEndComplete = true;
+        saveProgress();
+      },
+      onExit: () => {
+        activeTrueEndRuntime?.destroy?.();
+        activeTrueEndRuntime = null;
+        requestStoryTrack("story", 1.1);
+        showTitle();
+      },
+    }) || null;
+    if (activeTrueEndRuntime) return true;
+    layer.classList.remove("is-true-end");
+    requestStoryTrack("story", 1.1);
+    return false;
+  };
+
   const renderStaffRoll = (step) => {
     prepareStepFrame(step);
     clearTimers();
@@ -3463,31 +3519,7 @@
     };
     const continueIntoTrueEnd = (control) => {
       control.disabled = true;
-      state.clear = true;
-      state.archivesUnlocked = true;
-      saveProgress();
-      layer.classList.remove("is-staff-roll");
-      layer.classList.add("is-true-end");
-      layer.dataset.storyAudioCue = "true-end-sensory-horizon";
-      elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION トゥルーエンド");
-      requestStoryTrack("trueend", 1.45);
-      const runtime = window.GaiaTrueEnd?.start?.({
-        host: elements.resultSurface,
-        layer,
-        onComplete: () => {
-          state.trueEndComplete = true;
-          saveProgress();
-        },
-        onExit: () => {
-          runtime?.destroy?.();
-          requestStoryTrack("story", 1.1);
-          showTitle();
-        },
-      });
-      if (!runtime) {
-        layer.classList.remove("is-true-end");
-        continueIntoData(control);
-      }
+      if (!launchTrueEnd()) continueIntoData(control);
     };
 
     const shell = document.createElement("section");
@@ -3917,12 +3949,11 @@
 
   const jumpToSceneStart = (sceneId) => {
     const entry = sceneJumpEntries.find((candidate) => candidate.sceneId === sceneId);
-    const target = entry ? stepMap.get(entry.firstStepId) : null;
-    if (!entry || !target) {
+    const target = entry?.isTrueEnd ? null : stepMap.get(entry?.firstStepId);
+    if (!entry || (!entry.isTrueEnd && !target)) {
       console.error(`[GAIA novel] Unknown debug scene jump target: ${String(sceneId)}`);
       return false;
     }
-    const targetIndex = stepIndexMap.get(target.id);
     const detourKind = pendingInteraction?.interaction?.kind;
     pendingInteraction = null;
     detourState = null;
@@ -3943,6 +3974,19 @@
     window.clearTimeout(slackTransitionTimer);
     slackTransitionTimer = 0;
     layer.classList.remove("is-slack-entering", "is-slack-exiting");
+    if (entry.isTrueEnd) {
+      const previousClear = state.clear;
+      const previousArchivesUnlocked = state.archivesUnlocked;
+      debugJumpActive = true;
+      if (launchTrueEnd({ persistClear: false })) return true;
+      state.clear = previousClear;
+      state.archivesUnlocked = previousArchivesUnlocked;
+      debugJumpActive = false;
+      showRuntime();
+      renderCurrentStep();
+      return false;
+    }
+    const targetIndex = stepIndexMap.get(target.id);
     const priorReadableSteps = allSteps
       .slice(Math.max(0, targetIndex - 260), targetIndex)
       .filter((step) => step.text && !["choice", "reflectionChoice", "interaction", "result", "end"].includes(step.type))
@@ -3951,7 +3995,7 @@
       ...state,
       stepId: target.id,
       reachedSceneIds: sceneJumpEntries
-        .filter((candidate) => !candidate.isEnding && stepIndexMap.get(candidate.firstStepId) <= targetIndex)
+        .filter((candidate) => !candidate.isEnding && !candidate.isTrueEnd && stepIndexMap.get(candidate.firstStepId) <= targetIndex)
         .map((candidate) => candidate.sceneId),
       readStepIds: priorReadableSteps,
       metCharacters: Object.fromEntries(Object.entries(CHAT_CAST_MEETING_GATES).map(([speaker, gate]) => [
