@@ -224,6 +224,7 @@ try {
     assert.equal(initial.text.includes("AI開発支援"), false, `${viewport.name}: obsolete AI開発支援 credit remains`);
     assert.equal(initial.text.includes("AI DEVELOPMENT SUPPORT"), false, `${viewport.name}: obsolete AI DEVELOPMENT SUPPORT credit remains`);
     assert.equal(initial.text.includes("データ提供"), false, `${viewport.name}: obsolete データ提供 credit remains`);
+    assert.equal(initial.text.includes("HTML / CSS / JavaScript"), false, `${viewport.name}: implementation note remains in staff credits`);
     assert.equal(initial.creditRows.length, 9, `${viewport.name}: unexpected staff credit row count`);
     initial.creditRows.forEach((row) => {
       assert.equal(row.textAlign, "center", `${viewport.name}: ${row.role} is not center aligned`);
