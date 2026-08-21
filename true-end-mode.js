@@ -17,6 +17,7 @@
   const STORAGE_KEY = "gaiaSensewareTrueEnd:complete:v1";
   const CHARACTER_DELAY_MS = 29;
   const SCENE_CROSSFADE_MS = 720;
+  const SCENE_SEPARATOR_MS = 1500;
   const segmenter = typeof Intl?.Segmenter === "function"
     ? new Intl.Segmenter("ja", { granularity: "grapheme" })
     : null;
@@ -47,6 +48,7 @@
     let transitioning = false;
     let complete = false;
     let universeRuntime = null;
+    let sceneCardTimer = 0;
 
     const shell = createElement("section", "true-end-shell");
     shell.tabIndex = 0;
@@ -253,6 +255,32 @@
       universeRuntime?.setScene?.(name, { immediate });
     };
 
+    const showSceneSeparator = () => new Promise((resolve) => {
+      sceneCard.classList.remove("is-visible");
+      void sceneCard.offsetWidth;
+      if (reducedMotion()) {
+        resolve();
+        return;
+      }
+
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(sceneCardTimer);
+        sceneCardTimer = 0;
+        sceneCard.removeEventListener("animationend", onAnimationEnd);
+        sceneCard.classList.remove("is-visible");
+        resolve();
+      };
+      const onAnimationEnd = (event) => {
+        if (event.target === sceneCard && event.animationName === "true-end-scene-card") finish();
+      };
+      sceneCard.addEventListener("animationend", onAnimationEnd);
+      sceneCard.classList.add("is-visible");
+      sceneCardTimer = window.setTimeout(finish, SCENE_SEPARATOR_MS + 120);
+    });
+
     const syncScene = ({ immediate = false } = {}) => {
       const current = scene();
       if (!current) return;
@@ -264,10 +292,17 @@
       sceneCardTitle.textContent = current.title;
       shell.dataset.scene = current.id;
       setBackdrop(current.backdrop, immediate);
-      sceneCard.classList.remove("is-visible");
-      void sceneCard.offsetWidth;
-      sceneCard.classList.add("is-visible");
-      window.setTimeout(() => sceneCard.classList.remove("is-visible"), reducedMotion() ? 0 : 1500);
+    };
+
+    const revealSceneAfterSeparator = () => {
+      showSceneSeparator().then(() => {
+        if (!shell.isConnected || complete) return;
+        renderStep();
+        requestAnimationFrame(() => {
+          shell.classList.remove("is-scene-separating");
+          transitioning = false;
+        });
+      });
     };
 
     const renderStep = () => {
@@ -324,16 +359,16 @@
       }
 
       transitioning = true;
-      shell.classList.add("is-scene-changing");
+      stopReveal();
+      shell.classList.add("is-scene-changing", "is-scene-separating");
       const delay = reducedMotion() ? 0 : SCENE_CROSSFADE_MS / 2;
       window.setTimeout(() => {
         sceneIndex += 1;
         stepIndex = 0;
         syncScene();
-        renderStep();
+        revealSceneAfterSeparator();
         requestAnimationFrame(() => {
           shell.classList.remove("is-scene-changing");
-          window.setTimeout(() => { transitioning = false; }, reducedMotion() ? 0 : SCENE_CROSSFADE_MS / 2);
         });
       }, delay);
     };
@@ -351,14 +386,18 @@
     });
     finaleExit.addEventListener("click", () => onExit?.());
 
+    transitioning = true;
+    shell.classList.add("is-scene-separating");
     syncScene({ immediate: true });
-    renderStep();
+    revealSceneAfterSeparator();
     requestAnimationFrame(() => shell.focus({ preventScroll: true }));
 
     return Object.freeze({
       shell,
       destroy() {
         stopReveal();
+        window.clearTimeout(sceneCardTimer);
+        sceneCardTimer = 0;
         universeRuntime?.destroy?.();
         universeRuntime = null;
         shell.remove();

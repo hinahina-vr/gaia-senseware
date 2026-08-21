@@ -80,6 +80,11 @@ const bootAtTrueEnd = async (page, name) => {
   await page.locator(".novel-staff-roll-finale button").click();
   await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")), null, { timeout: 15_000 });
   await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "trueend", null, { timeout: 10_000 });
+  await page.waitForFunction(() => {
+    const shell = document.querySelector(".true-end-shell");
+    return shell && !shell.classList.contains("is-scene-separating")
+      && Boolean(document.querySelector(".true-end-message")?.textContent);
+  }, null, { timeout: 5_000 });
 };
 
 const scanFrame = (page) => page.evaluate(() => {
@@ -129,6 +134,10 @@ const scanFrame = (page) => page.evaluate(() => {
     overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
     toolbarHidden: getComputedStyle(document.querySelector(".novel-topbar")).visibility === "hidden",
     dialogueVisible: getComputedStyle(dialogue).visibility !== "hidden",
+    separatorActive: shell?.classList.contains("is-scene-separating") || false,
+    sceneCardVisible: document.querySelector(".true-end-scene-card")?.classList.contains("is-visible") || false,
+    sceneCardOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".true-end-scene-card")).opacity),
+    sceneCardAnimation: getComputedStyle(document.querySelector(".true-end-scene-card")).animationName,
     finaleVisible: Boolean(document.querySelector(".true-end-finale:not([hidden])")),
     logButtonVisible: Boolean(document.querySelector(".true-end-log-button")?.getClientRects().length),
     logButtonText: document.querySelector(".true-end-log-button")?.textContent?.trim() || "",
@@ -406,6 +415,49 @@ try {
     });
     await context.close();
   }
+
+  const separatorContext = await browser.newContext({ viewport: viewports[0], reducedMotion: "no-preference" });
+  const separatorPage = await separatorContext.newPage();
+  attachDiagnostics(separatorPage, "pc-1440-separator-order");
+  await bootAtTrueEnd(separatorPage, "pc-1440-separator-order");
+  const firstSceneSteps = await separatorPage.evaluate(() => globalThis.GAIA_TRUE_END_STORY.scenes[0].steps.length);
+  for (let index = 1; index < firstSceneSteps; index += 1) {
+    const currentCounter = (await scanFrame(separatorPage)).counter;
+    await separatorPage.locator(".true-end-dialogue").click();
+    await separatorPage.waitForTimeout(30);
+    if ((await scanFrame(separatorPage)).counter === currentCounter) {
+      await separatorPage.locator(".true-end-dialogue").click();
+    }
+    await separatorPage.waitForFunction((before) => document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() !== before, currentCounter);
+  }
+  if (await separatorPage.evaluate(() => document.querySelector(".true-end-shell")?.classList.contains("is-revealing"))) {
+    await separatorPage.locator(".true-end-dialogue").click();
+    await separatorPage.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-revealing"));
+  }
+  const beforeSeparator = await scanFrame(separatorPage);
+  assert.equal(beforeSeparator.scene, "after-ending", "separator test overshot the first scene");
+  assert.equal(beforeSeparator.counter, `${String(firstSceneSteps).padStart(3, "0")} / 135`, "separator test did not stop at the scene boundary");
+  await separatorPage.locator(".true-end-dialogue").click();
+  await separatorPage.waitForTimeout(700);
+  const duringSeparator = await scanFrame(separatorPage);
+  assert.equal(duringSeparator.separatorActive, true, "separator state ended before its visual");
+  assert.equal(duringSeparator.dialogueVisible, false, "dialogue remained visible under the separator");
+  assert.equal(duringSeparator.sceneCardVisible, true, "separator card state never became active");
+  assert.equal(duringSeparator.sceneCardAnimation, "true-end-scene-card", "separator animation did not start");
+  assert.equal(duringSeparator.message, beforeSeparator.message, "next message rendered before the separator faded out");
+  await separatorPage.screenshot({ path: path.join(outputDir, "pc-1440-separator.png") });
+  await separatorPage.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-scene-separating"), null, { timeout: 4_000 });
+  const afterSeparator = await scanFrame(separatorPage);
+  assert.equal(afterSeparator.dialogueVisible, true, "dialogue did not return after the separator");
+  assert.notEqual(afterSeparator.message, beforeSeparator.message, "next message was not rendered after the separator");
+  assert.equal(afterSeparator.scene, "post-anthropocene", "separator did not advance to the next scene");
+  report.separatorOrder = {
+    before: beforeSeparator.message,
+    during: duringSeparator.message,
+    after: afterSeparator.message,
+    passed: true,
+  };
+  await separatorContext.close();
 
   assert(report.audioResponses.some(({ url, status }) => url.endsWith("/assets/audio/sensory-horizon.wav") && [200, 206].includes(status)), "dedicated true-end score was never requested");
   assert.equal(report.consoleErrors.length, 0, `console errors: ${report.consoleErrors.join("\n")}`);

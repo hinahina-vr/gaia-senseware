@@ -200,6 +200,19 @@
   outline-offset: 4px;
 }
 
+.true-end-shell.is-scene-separating :is(
+  .true-end-header,
+  .true-end-progress,
+  .true-end-readout,
+  .true-end-dialogue,
+  .true-end-footer,
+  .true-end-log-button
+) {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .true-end-speaker {
   color: var(--te-accent);
   font-size: clamp(18px, 1.55vw, 26px);
