@@ -237,6 +237,7 @@ try {
       assert(frame.universeFrame > 0, `${viewport.name}: WebGL universe did not render a frame`);
       assert(frame.universeSize.width > 0 && frame.universeSize.height > 0, `${viewport.name}: WebGL canvas has no drawable area`);
       assert.equal(frame.backdropCount, 0, `${viewport.name}: retired raster backdrop DOM remains`);
+      assert(frame.dialogueRect && frame.dialogueRect.y >= 0 && frame.dialogueRect.bottom <= viewport.height + 1, `${viewport.name}: dialogue escaped the viewport`);
       if (["mizuha", "amane", "sakuya"].includes(frame.speaker)) {
         assert.equal(frame.visibleThoughtform, frame.speaker, `${viewport.name}: ${frame.speaker} thoughtform is not visible`);
       }
@@ -378,6 +379,9 @@ try {
     assert.deepEqual(beyondLog.entries.map(({ id }) => id), expectedBeyondIds, `${viewport.name}: Beyond rendered LOG order mismatch`);
     assert.match(beyondLog.entries[0].meta, /Beyond/u);
     assert.equal(beyondLog.entries[0].text, "DORA SEV·EN");
+    assert(beyondLog.entries.some(({ text }) => text.includes("演算の最小目盛りに点を一つ打てない")), `${viewport.name}: sub-particle computing-scale analogy is missing`);
+    assert(beyondLog.entries.some(({ text }) => text.includes("現代人にとっての素粒子一つよりも")), `${viewport.name}: final ESP32 scale comparison is missing`);
+    assert.doesNotMatch(beyondLog.entries.map(({ text }) => text).join("\n"), /子どもの玩具以下|性能は玩具以下/u, `${viewport.name}: retired toy-scale comparison remains`);
     assert.equal(beyondLog.entries.at(-1).text, "ルウたちは新しい倫理を教わったのではない。自分たちが、どこから続いているのかを発見した。");
     await page.locator("#novel-log-close").click();
     await page.locator("#novel-log-panel").waitFor({ state: "hidden" });
