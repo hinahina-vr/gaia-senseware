@@ -343,7 +343,7 @@ try {
     const completed = await scanEnding(page);
     assert.equal(completed.buttonHidden, false);
     assert.equal(completed.buttonText, "世界の続きを紡ぐ");
-    assert.match(completed.buttonAriaLabel, /トゥルーエンド/u);
+    assert.match(completed.buttonAriaLabel, /Beyond/u);
     assert(completed.buttonHeight >= 44, `${viewport.name}: END action hit area is under 44px`);
     assert(completed.buttonMarkCenterDelta <= 3, `${viewport.name}: final action did not replace the thank-you mark in place (${completed.buttonMarkCenterDelta}px)`);
     assert.equal(completed.overflowX, 0);
@@ -387,7 +387,7 @@ try {
   assert.equal(reduced.buttonHidden, false);
   assert.equal(reduced.skipHintCount, 0);
   assert.equal(reduced.buttonText, "世界の続きを紡ぐ");
-  assert.match(reduced.buttonAriaLabel, /トゥルーエンド/u);
+  assert.match(reduced.buttonAriaLabel, /Beyond/u);
   assert(reduced.buttonHeight >= 44);
   assert.equal(reduced.overflowX, 0);
   await reducedPage.screenshot({ path: path.join(outputDir, "mobile-390-reduced.png"), animations: "disabled" });

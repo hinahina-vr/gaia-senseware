@@ -119,6 +119,8 @@ const scanFrame = (page) => page.evaluate(() => {
     toolbarHidden: getComputedStyle(document.querySelector(".novel-topbar")).visibility === "hidden",
     dialogueVisible: getComputedStyle(dialogue).visibility !== "hidden",
     finaleVisible: Boolean(document.querySelector(".true-end-finale:not([hidden])")),
+    logButtonVisible: Boolean(document.querySelector(".true-end-log-button")?.getClientRects().length),
+    logButtonText: document.querySelector(".true-end-log-button")?.textContent?.trim() || "",
   };
 });
 
@@ -167,16 +169,19 @@ try {
 
     const story = await page.evaluate(() => ({
       title: globalThis.GAIA_TRUE_END_STORY.title,
+      subtitle: globalThis.GAIA_TRUE_END_STORY.subtitle,
       scenes: globalThis.GAIA_TRUE_END_STORY.scenes.map((scene) => ({
         id: scene.id,
         number: scene.number,
         title: scene.title,
         backdrop: scene.backdrop,
         steps: scene.steps.length,
+        stepIds: scene.steps.map((step) => step.id),
       })),
       totalSteps: globalThis.GAIA_TRUE_END_STORY.scenes.reduce((sum, scene) => sum + scene.steps.length, 0),
     }));
-    assert.equal(story.title, "星々の放課後");
+    assert.equal(story.title, "Beyond");
+    assert.equal(story.subtitle, "惑星の放課後 / GAIA SENSATION — Beyond");
     assert.equal(story.scenes.length, 9, `${viewport.name}: true end does not have nine scenes`);
     assert.deepEqual(story.scenes.map(({ number }) => number), ["01", "02", "03", "04", "05", "06", "07", "08", "09"]);
     assert.equal(story.totalSteps, 135, `${viewport.name}: total step count mismatch`);
@@ -221,6 +226,8 @@ try {
     assert.equal(initial.audioPlayback.duration, 72, `${viewport.name}: dedicated score has the wrong duration`);
     assert.equal(initial.toolbarHidden, true);
     assert.equal(initial.dialogueVisible, true);
+    assert.equal(initial.logButtonVisible, true);
+    assert.equal(initial.logButtonText, "LOG");
     assert.equal(initial.overflowX, 0);
     assert.equal(initial.overflowY, 0);
     assert(initial.dialogueRect.height >= 44, `${viewport.name}: dialogue hit area is under 44px`);
@@ -234,6 +241,18 @@ try {
     assert(animatedFrame.universeFrame > initial.universeFrame, `${viewport.name}: WebGL universe is not animating`);
     await page.emulateMedia({ reducedMotion: "reduce" });
     const initialOutsideGuard = await assertOutsideClickIgnored(page, `${viewport.name}: initial message`);
+    await page.locator(".true-end-log-button").click();
+    await page.locator("#novel-log-panel").waitFor({ state: "visible" });
+    const initialBeyondLog = await page.evaluate(() => ({
+      ids: globalThis.GaiaNovel.getState().readStepIds.filter((id) => id.startsWith("beyond_")),
+      entries: [...document.querySelectorAll('#novel-log-content article[data-step-id^="beyond_"]')]
+        .map((entry) => ({ id: entry.dataset.stepId, text: entry.querySelector(".novel-log-entry-text")?.textContent || "" })),
+    }));
+    assert.deepEqual(initialBeyondLog.ids, ["beyond_01_001"], `${viewport.name}: first Beyond line was not persisted`);
+    assert.equal(initialBeyondLog.entries.length, 1, `${viewport.name}: first Beyond line is absent from LOG`);
+    assert.equal(initialBeyondLog.entries[0].text, "STORY COMPLETE");
+    await page.locator("#novel-log-close").click();
+    await page.locator("#novel-log-panel").waitFor({ state: "hidden" });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-01.png`), animations: "disabled" });
 
     const visited = [{ scene: initial.scene, title: initial.title }];
@@ -278,8 +297,9 @@ try {
       stateCompleted: globalThis.GaiaNovel?.getState?.().trueEndComplete === true,
       overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
       overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
+      logButtonVisible: Boolean(document.querySelector(".true-end-log-button")?.getClientRects().length),
     }));
-    assert.equal(finale.title, "星々の放課後");
+    assert.equal(finale.title, "Beyond");
     assert(finale.text.includes("PHYSICAL DEPTH: PRE-GEOMETRIC"));
     assert(finale.text.includes("CIVILIZATIONAL POWER: K 2.700"));
     assert(finale.text.includes("SENSORY HORIZON: 2,641,903 SYSTEMS"));
@@ -290,7 +310,32 @@ try {
     assert.equal(finale.stateCompleted, true);
     assert.equal(finale.overflowX, 0);
     assert.equal(finale.overflowY, 0);
+    assert.equal(finale.logButtonVisible, true, `${viewport.name}: LOG is unavailable from the Beyond finale`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-finale.png`), animations: "disabled" });
+
+    await page.locator(".true-end-log-button").click();
+    await page.locator("#novel-log-panel").waitFor({ state: "visible" });
+    const beyondLog = await page.evaluate(() => ({
+      stateIds: globalThis.GaiaNovel.getState().readStepIds.filter((id) => id.startsWith("beyond_")),
+      storedIds: (JSON.parse(localStorage.getItem("gaiaSensewareNovel:progress") || "{}").readStepIds || [])
+        .filter((id) => id.startsWith("beyond_")),
+      entries: [...document.querySelectorAll('#novel-log-content article[data-step-id^="beyond_"]')]
+        .map((entry) => ({
+          id: entry.dataset.stepId,
+          meta: entry.querySelector(".novel-log-entry-meta")?.textContent || "",
+          text: entry.querySelector(".novel-log-entry-text")?.textContent || "",
+        })),
+    }));
+    const expectedBeyondIds = story.scenes.flatMap((scene) => scene.stepIds);
+    assert.deepEqual(beyondLog.stateIds, expectedBeyondIds, `${viewport.name}: Beyond state LOG order/count mismatch`);
+    assert.deepEqual(beyondLog.storedIds, expectedBeyondIds, `${viewport.name}: Beyond persisted LOG order/count mismatch`);
+    assert.equal(beyondLog.entries.length, 135, `${viewport.name}: Beyond LOG does not contain all 135 lines`);
+    assert.deepEqual(beyondLog.entries.map(({ id }) => id), expectedBeyondIds, `${viewport.name}: Beyond rendered LOG order mismatch`);
+    assert.match(beyondLog.entries[0].meta, /Beyond/u);
+    assert.equal(beyondLog.entries[0].text, "STORY COMPLETE");
+    assert.equal(beyondLog.entries.at(-1).text, "ルウたちは新しい倫理を教わったのではない。自分たちが、どこから続いているのかを発見した。");
+    await page.locator("#novel-log-close").click();
+    await page.locator("#novel-log-panel").waitFor({ state: "hidden" });
 
     await page.locator(".true-end-finale button").click();
     await page.waitForFunction(() => !document.querySelector(".true-end-shell")
@@ -298,6 +343,17 @@ try {
       && document.querySelector("#novel-title-screen")
       && !document.querySelector("#novel-title-screen").hidden);
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "story", null, { timeout: 10_000 });
+
+    await page.evaluate(() => localStorage.removeItem("gaiaSensewareNovel:manual-saves"));
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+    await page.evaluate(() => globalThis.GaiaNovel.open());
+    await page.locator("#novel-resume-button").click();
+    await page.waitForFunction(() => globalThis.GaiaNovel.getState().readStepIds
+      .filter((id) => id.startsWith("beyond_")).length === 135);
+    const restoredBeyondIds = await page.evaluate(() => globalThis.GaiaNovel.getState().readStepIds
+      .filter((id) => id.startsWith("beyond_")));
+    assert.deepEqual(restoredBeyondIds, expectedBeyondIds, `${viewport.name}: Beyond LOG did not survive reload`);
 
     report.viewports.push({
       viewport: viewport.name,
@@ -308,6 +364,8 @@ try {
       rasterBackgroundResources,
       visited,
       finale,
+      beyondLog: { count: beyondLog.entries.length, first: beyondLog.entries[0].id, last: beyondLog.entries.at(-1).id },
+      restoredBeyondLogCount: restoredBeyondIds.length,
       passed: true,
     });
     await context.close();

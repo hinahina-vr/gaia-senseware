@@ -3,13 +3,20 @@
 
   const freezeScene = (scene) => Object.freeze({
     ...scene,
-    steps: Object.freeze(scene.steps.map((step) => Object.freeze(step))),
+    steps: Object.freeze(scene.steps.map((step, index) => Object.freeze({
+      ...step,
+      id: `beyond_${scene.number}_${String(index + 1).padStart(3, "0")}`,
+      sceneId: scene.id,
+      sceneTitle: scene.title,
+      type: "beyond",
+      recordType: "BEYOND",
+    }))),
   });
 
   globalThis.GAIA_TRUE_END_STORY = Object.freeze({
     storyVersion: "true-end-sensory-horizon-v1",
-    title: "星々の放課後",
-    subtitle: "惑星の放課後 / GAIA SENSATION — TRUE END",
+    title: "Beyond",
+    subtitle: "惑星の放課後 / GAIA SENSATION — Beyond",
     elapsed: "2,704,118 YEARS",
     scenes: Object.freeze([
       freezeScene({
@@ -221,8 +228,8 @@
       }),
     ]),
     finale: Object.freeze({
-      label: "TRUE END",
-      title: "星々の放課後",
+      label: "Beyond",
+      title: "Beyond",
       readout: Object.freeze([
         "PHYSICAL DEPTH: PRE-GEOMETRIC",
         "CIVILIZATIONAL POWER: K 2.700",

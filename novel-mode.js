@@ -137,6 +137,7 @@
     amane: { name: "あめ", formalName: "雨音", reading: "アマネ", glyph: "△" },
     sakuya: { name: "saku", formalName: "咲弥", reading: "サクヤ", glyph: "＊" },
     visitor: { name: "あなた", glyph: "◇" },
+    lou: { name: "ルウ", glyph: "∞" },
     system: { name: "GAIA SENSEWARE", glyph: "◎" },
   });
   const INTRODUCTION_STEPS = Object.freeze({ amane: 21, mizuha: 23 });
@@ -161,6 +162,7 @@
     DERIVED: "計算・解釈 / DERIVED",
     SCENARIO: "仮定 / SCENARIO",
     VISITOR_TRACE: "操作記録 / VISITOR TRACE",
+    BEYOND: "遠未来観測 / Beyond",
   });
   const RECORD_SPEAKER_LABELS = Object.freeze({
     SOURCE: "観測メモ",
@@ -315,6 +317,12 @@
   const allSteps = scenes.flatMap((scene) => scene.steps);
   const stepMap = new Map(allSteps.map((step) => [step.id, step]));
   const stepIndexMap = new Map(allSteps.map((step, index) => [step.id, index]));
+  const beyondSteps = Object.freeze((globalThis.GAIA_TRUE_END_STORY?.scenes || [])
+    .flatMap((scene) => scene.steps || []));
+  const beyondStepMap = new Map(beyondSteps.map((step) => [step.id, step]));
+  const logSteps = Object.freeze([...allSteps, ...beyondSteps]);
+  const logStepMap = new Map(logSteps.map((step) => [step.id, step]));
+  if (logStepMap.size !== logSteps.length) throw new Error("[GAIA novel] Duplicate story/Beyond LOG step IDs");
   const galleryEntries = Object.freeze([...(backgroundCues.gallery || [])]);
   const galleryEntryMap = new Map(galleryEntries.map((entry) => [entry.id, entry]));
   const galleryPresentations = Object.freeze([
@@ -365,10 +373,10 @@
       isEnding: true,
     }),
     Object.freeze({
-      scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / TRUE END", title: globalThis.GAIA_TRUE_END_STORY?.title || "星々の放課後" }),
+      scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / Beyond", title: globalThis.GAIA_TRUE_END_STORY?.title || "Beyond" }),
       sceneId: TRUE_END_JUMP_ID,
       scriptIndex: endingScriptIndex + 1,
-      scriptLabel: "TRUE END #001",
+      scriptLabel: "Beyond #001",
       index: scenes.length + 2,
       isTrueEnd: true,
     }),
@@ -1051,8 +1059,11 @@
     if (!candidate || !stepId) return null;
     const migratedReadStepIds = !resetsLegacyProgress && Array.isArray(candidate.readStepIds)
       ? [...new Set(candidate.readStepIds
-        .map((id) => (id === "current_exhibition_017" ? null : migrateStepId(id, sourceVersion)))
-        .filter((id) => stepMap.has(id) && stepMap.get(id)?.type !== "phase"))].slice(-260)
+        .map((id) => {
+          if (id === "current_exhibition_017") return null;
+          return beyondStepMap.has(id) ? id : migrateStepId(id, sourceVersion);
+        })
+        .filter((id) => logStepMap.has(id) && logStepMap.get(id)?.type !== "phase"))].slice(-260)
       : [];
     const normalized = defaultState();
     normalized.stepId = stepId;
@@ -3320,6 +3331,13 @@
       window.dispatchEvent(new CustomEvent("gaia:story-mode-close", { detail: { kind } }));
     }
   };
+  const markBeyondRead = (step) => {
+    if (!step?.id || !beyondStepMap.has(step.id) || state.readStepIds.includes(step.id)) return;
+    state.readStepIds.push(step.id);
+    state.readStepIds = state.readStepIds.slice(-260);
+    saveProgress();
+    if (!elements.logPanel.hidden) renderLog();
+  };
 
   const clearDetourSkipFallback = () => {
     window.clearTimeout(detourSkipFallbackTimer);
@@ -3469,7 +3487,7 @@
     elements.choices.classList.remove("is-visible", "is-mode08-optional");
     elements.sourceLabel.hidden = true;
     elements.resultSurface.hidden = false;
-    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION トゥルーエンド");
+    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION Beyond");
     layer.classList.add("is-result", "is-true-end");
     layer.dataset.sceneId = TRUE_END_JUMP_ID;
     layer.dataset.stepType = "true-end";
@@ -3478,6 +3496,8 @@
     activeTrueEndRuntime = window.GaiaTrueEnd?.start?.({
       host: elements.resultSurface,
       layer,
+      onStepRead: markBeyondRead,
+      onLogOpen: () => openLog(),
       onComplete: () => {
         state.trueEndComplete = true;
         saveProgress();
@@ -3627,7 +3647,7 @@
     next.type = "button";
     next.tabIndex = -1;
     next.textContent = "世界の続きを紡ぐ";
-    next.setAttribute("aria-label", "スタッフロールを終えてトゥルーエンドへ進む");
+    next.setAttribute("aria-label", "スタッフロールを終えてBeyondへ進む");
     next.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -4029,7 +4049,7 @@
   };
 
   const logStepText = (step) => String(step?.text || "");
-  const commentedLogEntries = () => allSteps
+  const commentedLogEntries = () => logSteps
     .filter((step) => typeof logComments[step.id] === "string" && logComments[step.id].trim())
     .map((step) => ({ step, comment: logComments[step.id].trim() }));
   const setLogStatus = (message, stateName = "") => {
@@ -4118,7 +4138,7 @@
   const renderLog = () => {
     elements.logContent.replaceChildren();
     state.readStepIds.forEach((id) => {
-      const step = stepMap.get(id);
+      const step = logStepMap.get(id);
       if (!step?.text) return;
       const article = document.createElement("article");
       const entryHeader = document.createElement("div");

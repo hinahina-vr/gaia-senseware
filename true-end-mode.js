@@ -34,7 +34,7 @@
     return node;
   };
 
-  const createRuntime = ({ host, layer, onComplete, onExit }) => {
+  const createRuntime = ({ host, layer, onComplete, onExit, onStepRead, onLogOpen }) => {
     if (!(host instanceof HTMLElement) || !(layer instanceof HTMLElement)) return null;
 
     let sceneIndex = 0;
@@ -50,7 +50,7 @@
     const shell = createElement("section", "true-end-shell");
     shell.tabIndex = 0;
     shell.setAttribute("role", "region");
-    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION トゥルーエンド。メッセージウィンドウ、Enterキー、またはスペースキーで進みます");
+    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION Beyond。メッセージウィンドウ、Enterキー、またはスペースキーで進みます");
 
     const universe = createElement("canvas", "true-end-universe");
     universe.setAttribute("aria-hidden", "true");
@@ -115,6 +115,10 @@
     const counter = createElement("span");
     footer.append(location, counter);
 
+    const logButton = createElement("button", "true-end-log-button", "LOG");
+    logButton.type = "button";
+    logButton.setAttribute("aria-label", "Beyondの会話履歴を開く");
+
     const sceneCard = createElement("div", "true-end-scene-card");
     sceneCard.setAttribute("aria-hidden", "true");
     const sceneCardNumber = createElement("span");
@@ -143,6 +147,7 @@
       readout,
       dialogue,
       footer,
+      logButton,
       sceneCard,
       finale,
     );
@@ -244,6 +249,7 @@
       speaker.hidden = !currentSpeaker.name;
       speakerCode.textContent = currentSpeaker.code;
       renderReadout(current.readout || []);
+      onStepRead?.(current);
       startReveal(current.text);
       counter.textContent = `${String(absoluteStep()).padStart(3, "0")} / ${String(totalSteps).padStart(3, "0")}`;
       progressFill.style.width = `${(absoluteStep() / totalSteps) * 100}%`;
@@ -299,6 +305,10 @@
     };
 
     dialogue.addEventListener("click", advance);
+    logButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      onLogOpen?.();
+    });
     shell.addEventListener("click", (event) => event.stopPropagation());
     shell.addEventListener("keydown", (event) => {
       if (!(["Enter", " "].includes(event.key)) || event.repeat || event.isComposing || event.target.closest("button")) return;

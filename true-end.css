@@ -26,6 +26,10 @@
   color: #f5fbff;
 }
 
+.novel-layer.is-true-end > .novel-log-panel {
+  z-index: 60;
+}
+
 .true-end-shell {
   --te-accent: #9af7e4;
   --te-blue: #8bdcff;
@@ -286,6 +290,35 @@
   display: flex;
   justify-content: space-between;
   color: rgba(167, 224, 230, 0.48);
+}
+
+.true-end-log-button {
+  position: absolute;
+  z-index: 35;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  min-width: 66px;
+  min-height: 30px;
+  padding: 0 18px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(151, 235, 228, 0.28);
+  border-radius: 999px;
+  background: rgba(5, 24, 36, 0.76);
+  color: rgba(199, 246, 241, 0.82);
+  cursor: pointer;
+  font: 700 9px/1 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.true-end-log-button:hover,
+.true-end-log-button:focus-visible {
+  border-color: rgba(161, 255, 236, 0.72);
+  background: rgba(13, 53, 65, 0.88);
+  outline: 2px solid rgba(149, 240, 226, 0.18);
+  outline-offset: 3px;
 }
 
 .true-end-lou {
