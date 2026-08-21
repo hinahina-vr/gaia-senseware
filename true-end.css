@@ -464,71 +464,6 @@
   outline-offset: 3px;
 }
 
-.true-end-lou {
-  position: absolute;
-  z-index: 1;
-  top: 14%;
-  left: 10%;
-  width: clamp(150px, 19vw, 300px);
-  aspect-ratio: 0.78;
-  border: 1px solid rgba(165, 255, 233, 0.14);
-  border-radius: 50% 50% 45% 45% / 35% 35% 60% 60%;
-  background:
-    radial-gradient(circle at 38% 30%, rgba(238, 255, 250, 0.82) 0 1.2%, transparent 1.7%),
-    radial-gradient(circle at 62% 30%, rgba(238, 255, 250, 0.82) 0 1.2%, transparent 1.7%),
-    radial-gradient(ellipse at 50% 32%, rgba(119, 243, 217, 0.28), transparent 25%),
-    radial-gradient(ellipse at 50% 60%, rgba(99, 192, 255, 0.18), transparent 54%);
-  box-shadow: inset 0 0 55px rgba(138, 251, 225, 0.11), 0 0 80px rgba(82, 207, 221, 0.08);
-  opacity: 0.65;
-  transform: translateY(0);
-  transition: opacity 700ms ease, transform 1.4s ease;
-}
-
-.true-end-shell[data-speaker="lou"] .true-end-lou {
-  opacity: 1;
-  transform: translateY(-5px);
-}
-
-.true-end-lou::before,
-.true-end-lou::after {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(210, 255, 245, 0.72);
-  box-shadow: 0 0 14px rgba(135, 245, 224, 0.85);
-  content: "";
-}
-
-.true-end-lou::before {
-  top: 29%;
-  left: 37%;
-  width: 5px;
-  height: 5px;
-}
-
-.true-end-lou::after {
-  top: 29%;
-  right: 37%;
-  width: 5px;
-  height: 5px;
-}
-
-.true-end-lou-core,
-.true-end-lou-orbit {
-  position: absolute;
-  inset: 11%;
-  border: 1px solid rgba(142, 245, 225, 0.16);
-  border-radius: 48%;
-  animation: true-end-lou-orbit 18s linear infinite;
-}
-
-.true-end-lou-orbit {
-  inset: 23% -12%;
-  border-color: rgba(126, 210, 255, 0.13);
-  transform: rotate(58deg);
-  animation-duration: 23s;
-  animation-direction: reverse;
-}
-
 .true-end-relic {
   position: absolute;
   z-index: 2;
@@ -696,10 +631,6 @@
   to { opacity: 1; transform: translateY(4px); }
 }
 
-@keyframes true-end-lou-orbit {
-  to { transform: rotate(360deg); }
-}
-
 @keyframes true-end-scene-card {
   0%, 100% { opacity: 0; }
   16%, 76% { opacity: 1; }
@@ -745,13 +676,6 @@
   .true-end-brand span,
   .true-end-scene-heading span {
     font-size: 7px;
-  }
-
-  .true-end-lou {
-    top: 14%;
-    left: 5%;
-    width: 43vw;
-    opacity: 0.48;
   }
 
   .true-end-relic {
@@ -852,7 +776,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .true-end-progress i,
-  .true-end-lou,
   .true-end-relic,
   .true-end-scene-card,
   .true-end-readout,
@@ -864,89 +787,7 @@
     transition: none !important;
   }
 
-  .true-end-lou-core,
-  .true-end-lou-orbit,
   .true-end-next {
     animation: none !important;
-  }
-}
-
-.true-end-lou {
-  top: 10%;
-  left: 5%;
-  width: clamp(190px, 24vw, 390px);
-  aspect-ratio: 1;
-  border: 0;
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
-  filter: drop-shadow(0 18px 38px rgba(67, 218, 225, 0.22));
-  opacity: 0.72;
-}
-
-.true-end-lou::before,
-.true-end-lou::after {
-  display: none;
-}
-
-.true-end-lou-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.true-end-lou-core,
-.true-end-lou-orbit {
-  opacity: 0.42;
-}
-
-.true-end-thoughtforms {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.true-end-thoughtform {
-  position: absolute;
-  right: 4%;
-  bottom: 15%;
-  width: clamp(220px, 31vw, 520px);
-  max-height: 72vh;
-  object-fit: contain;
-  opacity: 0;
-  transform: translate3d(24px, 12px, 0) scale(0.97);
-  filter: drop-shadow(0 18px 42px rgba(99, 235, 238, 0.2));
-  transition: opacity 440ms ease, transform 760ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.true-end-shell[data-speaker="mizuha"] .true-end-thoughtform-mizuha,
-.true-end-shell[data-speaker="amane"] .true-end-thoughtform-amane,
-.true-end-shell[data-speaker="sakuya"] .true-end-thoughtform-sakuya {
-  opacity: 0.93;
-  transform: translate3d(0, 0, 0) scale(1);
-}
-
-@media (max-width: 720px) {
-  .true-end-lou {
-    top: 12%;
-    left: -2%;
-    width: min(54vw, 270px);
-  }
-
-  .true-end-thoughtform {
-    right: -9%;
-    bottom: 24%;
-    width: min(62vw, 340px);
-    max-height: 58vh;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .true-end-thoughtform {
-    transition: none;
   }
 }

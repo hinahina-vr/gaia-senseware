@@ -63,27 +63,6 @@
     const relic = createElement("div", "true-end-relic");
     relic.setAttribute("aria-hidden", "true");
     relic.append(createElement("i"), createElement("i"), createElement("i"), createElement("i"));
-    const lou = createElement("div", "true-end-lou");
-    lou.setAttribute("aria-hidden", "true");
-    const louImage = createElement("img", "true-end-lou-image");
-    louImage.src = "./assets/true-end/true-end-luu-cute-v1.webp";
-    louImage.alt = "";
-    lou.append(louImage, createElement("i", "true-end-lou-core"), createElement("i", "true-end-lou-orbit"));
-
-    const thoughtforms = createElement("div", "true-end-thoughtforms");
-    thoughtforms.setAttribute("aria-hidden", "true");
-    [
-      ["mizuha", "./assets/true-end/true-end-mizuha-thoughtform-v1.webp"],
-      ["amane", "./assets/true-end/true-end-amane-thoughtform-v1.webp"],
-      ["sakuya", "./assets/true-end/true-end-sakuya-thoughtform-v1.webp"],
-    ].forEach(([speakerName, src]) => {
-      const image = createElement("img", `true-end-thoughtform true-end-thoughtform-${speakerName}`);
-      image.src = src;
-      image.alt = "";
-      image.dataset.speaker = speakerName;
-      thoughtforms.append(image);
-    });
-
     const header = createElement("header", "true-end-header");
     const brand = createElement("div", "true-end-brand");
     brand.append(
@@ -143,8 +122,6 @@
       universe,
       weave,
       relic,
-      lou,
-      thoughtforms,
       header,
       progress,
       readout,
@@ -311,6 +288,10 @@
       const currentSpeaker = SPEAKERS[current.speaker || "narrator"] || SPEAKERS.narrator;
       shell.dataset.speaker = current.speaker || "narrator";
       shell.classList.toggle("is-emphasis", current.emphasis === true);
+      universeRuntime?.setPresence?.(current.speaker || "narrator", {
+        emphasis: current.emphasis === true,
+        signal: current.id,
+      });
       speaker.textContent = currentSpeaker.name;
       speaker.lang = currentSpeaker.language || "ja";
       speaker.hidden = !currentSpeaker.name;
@@ -329,6 +310,7 @@
       stopReveal();
       complete = true;
       shell.classList.add("is-finale");
+      universeRuntime?.setPresence?.("narrator", { signal: "beyond-finale" });
       dialogue.hidden = true;
       readout.hidden = true;
       footer.hidden = true;

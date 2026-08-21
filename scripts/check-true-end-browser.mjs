@@ -40,7 +40,7 @@ const attachDiagnostics = (page, label) => {
 };
 
 const bootAtTrueEnd = async (page, name) => {
-  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY && globalThis.GAIA_TRUE_END_STORY));
   await page.evaluate(({ storageKey, configKey, label }) => {
     const state = {
@@ -70,7 +70,7 @@ const bootAtTrueEnd = async (page, name) => {
     localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 100, reducedMotion: true }));
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
   }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, label: name });
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
@@ -92,17 +92,12 @@ const scanFrame = (page) => page.evaluate(() => {
   const dialogue = document.querySelector(".true-end-dialogue");
   const message = document.querySelector(".true-end-message");
   const readout = document.querySelector(".true-end-readout");
-  const louNode = document.querySelector(".true-end-lou");
-  const louImage = document.querySelector(".true-end-lou-image");
   const universe = document.querySelector(".true-end-universe");
-  const visibleThoughtform = [...document.querySelectorAll(".true-end-thoughtform")]
-    .find((node) => Number.parseFloat(getComputedStyle(node).opacity) > 0.5);
   const rect = dialogue?.getBoundingClientRect();
   const headerRect = document.querySelector(".true-end-header")?.getBoundingClientRect();
   return {
     scene: shell?.dataset.scene || "",
     speaker: shell?.dataset.speaker || "",
-    visibleThoughtform: visibleThoughtform?.dataset.speaker || "",
     title: document.querySelector(".true-end-scene-heading strong")?.textContent?.trim() || "",
     sceneCode: document.querySelector(".true-end-scene-heading span")?.textContent?.trim() || "",
     counter: document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() || "",
@@ -119,12 +114,15 @@ const scanFrame = (page) => page.evaluate(() => {
     readoutLines: [...document.querySelectorAll(".true-end-readout code")].map((node) => node.textContent?.trim() || ""),
     messageFontSize: Number.parseFloat(getComputedStyle(message).fontSize),
     readoutVisible: Boolean(readout && !readout.hidden),
-    louLoaded: Boolean(louImage?.complete && louImage.naturalWidth > 0),
-    louVisible: Boolean(louNode && Number.parseFloat(getComputedStyle(louNode).opacity) > 0.5),
     universeState: universe?.dataset.webglState || "",
     universeScene: universe?.dataset.webglScene || "",
+    universeSpeaker: universe?.dataset.webglSpeaker || "",
+    universeManifestation: universe?.dataset.webglManifestation || "",
+    universeSignal: Number(universe?.dataset.webglSignal || 0),
+    universeEmphasis: universe?.dataset.webglEmphasis || "",
     universeFrame: Number(universe?.dataset.webglFrame || 0),
     universeSize: { width: universe?.width || 0, height: universe?.height || 0 },
+    characterImageCount: document.querySelectorAll(".true-end-shell img").length,
     backdropCount: document.querySelectorAll(".true-end-backdrop").length,
     dialogueRect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height, bottom: rect.bottom } : null,
     headerBottom: headerRect?.bottom || 0,
@@ -179,7 +177,14 @@ try {
   assert.match(runtimeSource, /ending:\s*"\.\/assets\/audio\/after-school-afterglow\.mp3"/u);
   assert.match(runtimeSource, /trueend:\s*"\.\/assets\/audio\/sensory-horizon\.wav"/u);
   const trueEndStyleSource = await (await fetch(new URL("/true-end.css", baseUrl))).text();
+  const trueEndModeSource = await (await fetch(new URL("/true-end-mode.js", baseUrl))).text();
+  const trueEndWebGLSource = await (await fetch(new URL("/true-end-webgl.js", baseUrl))).text();
   assert.doesNotMatch(trueEndStyleSource, /true-end-bg-/u, "retired raster background remains in true-end.css");
+  assert.doesNotMatch(trueEndStyleSource, /true-end-(?:lou|thoughtform)/u, "retired character-image styling remains in true-end.css");
+  assert.doesNotMatch(trueEndModeSource, /true-end-(?:luu-cute|mizuha-thoughtform|amane-thoughtform|sakuya-thoughtform)/u, "retired character-image asset remains in true-end-mode.js");
+  assert.doesNotMatch(trueEndModeSource, /createElement\("img"/u, "Beyond still creates a raster image element");
+  assert.match(trueEndWebGLSource, /setPresence\(name/u, "WebGL presence controller is missing");
+  assert.match(trueEndWebGLSource, /u_speaker_mix/u, "WebGL presence crossfade is missing");
 
   for (const viewport of viewports) {
     const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
@@ -210,40 +215,34 @@ try {
     assert.deepEqual(story.scenes.map(({ number }) => number), ["01", "02", "03", "04", "05", "06", "07", "08", "09"]);
     assert.equal(story.totalSteps, 135, `${viewport.name}: total step count mismatch`);
 
-    await page.waitForFunction(() => {
-      const elements = [...document.querySelectorAll(".true-end-lou-image,.true-end-thoughtform")];
-      return elements.length === 4 && elements.every((element) => element.complete && element.naturalWidth > 0);
-    });
-    const generatedVisuals = await page.evaluate(() => (
-      [...document.querySelectorAll(".true-end-lou-image,.true-end-thoughtform")]
-        .map((element) => ({
-          src: element.getAttribute("src"),
-          complete: element.complete,
-          width: element.naturalWidth,
-        }))
-    ));
-    assert.equal(generatedVisuals.length, 4, `${viewport.name}: generated character visuals are incomplete`);
-    assert(generatedVisuals.every((visual) => visual.complete && visual.width > 0), `${viewport.name}: generated character asset failed to load`);
-
     const initial = await scanFrame(page);
     const seenSpeakers = new Set();
+    const seenManifestations = new Map();
     const seenSystemPhrases = new Set();
+    const manifestations = {
+      narrator: "quiet-field",
+      system: "measure-grid",
+      lou: "orbit-seed",
+      mizuha: "tide-memory",
+      amane: "time-arc",
+      sakuya: "crystal-trace",
+      visitor: "witness-lens",
+    };
     const validateSpeakerVisual = (frame) => {
       seenSpeakers.add(frame.speaker);
+      seenManifestations.set(frame.speaker, frame.universeManifestation);
       const expectedScene = story.scenes.find(({ id }) => id === frame.scene);
       assert(expectedScene, `${viewport.name}: unknown true-end scene ${frame.scene}`);
       assert.equal(frame.universeState, "active", `${viewport.name}: WebGL universe is not active`);
       assert.equal(frame.universeScene, expectedScene.backdrop, `${viewport.name}: WebGL palette is out of sync`);
       assert(frame.universeFrame > 0, `${viewport.name}: WebGL universe did not render a frame`);
       assert(frame.universeSize.width > 0 && frame.universeSize.height > 0, `${viewport.name}: WebGL canvas has no drawable area`);
+      assert.equal(frame.universeSpeaker, frame.speaker, `${viewport.name}: WebGL presence is out of sync with ${frame.speaker}`);
+      assert.equal(frame.universeManifestation, manifestations[frame.speaker], `${viewport.name}: ${frame.speaker} has the wrong WebGL manifestation`);
+      assert(Number.isFinite(frame.universeSignal) && frame.universeSignal >= 0 && frame.universeSignal <= 1, `${viewport.name}: WebGL signal seed is invalid`);
+      assert.equal(frame.characterImageCount, 0, `${viewport.name}: raster character image DOM remains in Beyond`);
       assert.equal(frame.backdropCount, 0, `${viewport.name}: retired raster backdrop DOM remains`);
       assert(frame.dialogueRect && frame.dialogueRect.y >= 0 && frame.dialogueRect.bottom <= viewport.height + 1, `${viewport.name}: dialogue escaped the viewport`);
-      if (["mizuha", "amane", "sakuya"].includes(frame.speaker)) {
-        assert.equal(frame.visibleThoughtform, frame.speaker, `${viewport.name}: ${frame.speaker} thoughtform is not visible`);
-      }
-      if (frame.speaker === "lou") {
-        assert.equal(frame.louVisible, true, `${viewport.name}: Lou visual is not visible`);
-      }
       if (frame.speaker === "system") {
         seenSystemPhrases.add(frame.message);
         assert.equal(frame.messageLang, "art-x-saeliva", `${viewport.name}: SÆLIVA message language metadata is missing`);
@@ -322,8 +321,9 @@ try {
     }
 
     assert.deepEqual(visited, story.scenes.map(({ id, title }) => ({ scene: id, title })), `${viewport.name}: scene order changed`);
-    for (const speaker of ["lou", "mizuha", "amane", "sakuya"]) {
+    for (const speaker of ["narrator", "system", "lou", "mizuha", "amane", "sakuya", "visitor"]) {
       assert(seenSpeakers.has(speaker), `${viewport.name}: ${speaker} was never rendered`);
+      assert.equal(seenManifestations.get(speaker), manifestations[speaker], `${viewport.name}: ${speaker} WebGL manifestation was never rendered`);
     }
     for (const phrase of ["DORA SEV·EN", "NETH·IR SÆL·ORAI", "ESHA SÆL·TIR: KAR·EN"]) {
       assert(seenSystemPhrases.has(phrase), `${viewport.name}: SÆLIVA system phrase was never rendered: ${phrase}`);
@@ -333,6 +333,11 @@ try {
       .map(({ name }) => name)
       .filter((url) => url.includes("true-end-bg-")));
     assert.deepEqual(rasterBackgroundResources, [], `${viewport.name}: retired raster background was requested`);
+    const rasterCharacterResources = await page.evaluate(() => performance
+      .getEntriesByType("resource")
+      .map(({ name }) => name)
+      .filter((url) => /true-end-(?:luu-cute|mizuha-thoughtform|amane-thoughtform|sakuya-thoughtform)/u.test(url)));
+    assert.deepEqual(rasterCharacterResources, [], `${viewport.name}: retired raster character was requested`);
     const finale = await page.evaluate(() => ({
       title: document.querySelector(".true-end-finale h2")?.textContent?.trim() || "",
       text: document.querySelector(".true-end-finale")?.innerText || "",
@@ -411,6 +416,8 @@ try {
       animatedFrame: animatedFrame.universeFrame,
       initialOutsideGuard,
       rasterBackgroundResources,
+      rasterCharacterResources,
+      manifestations: Object.fromEntries(seenManifestations),
       visited,
       finale,
       beyondLog: { count: beyondLog.entries.length, first: beyondLog.entries[0].id, last: beyondLog.entries.at(-1).id },
@@ -441,9 +448,28 @@ try {
   const beforeSeparator = await scanFrame(separatorPage);
   assert.equal(beforeSeparator.scene, "after-ending", "separator test overshot the first scene");
   assert.equal(beforeSeparator.counter, `${String(firstSceneSteps).padStart(3, "0")} / 135`, "separator test did not stop at the scene boundary");
+  await separatorPage.evaluate(() => {
+    globalThis.__gaiaSeparatorObservation = null;
+    const card = document.querySelector(".true-end-scene-card");
+    const observer = new MutationObserver(() => {
+      if (!card?.classList.contains("is-visible")) return;
+      const shell = document.querySelector(".true-end-shell");
+      const dialogue = document.querySelector(".true-end-dialogue");
+      globalThis.__gaiaSeparatorObservation = {
+        separatorActive: shell?.classList.contains("is-scene-separating") || false,
+        dialogueVisible: getComputedStyle(dialogue).visibility !== "hidden",
+        sceneCardVisible: true,
+        sceneCardOpacity: Number.parseFloat(getComputedStyle(card).opacity),
+        sceneCardAnimation: getComputedStyle(card).animationName,
+        message: document.querySelector(".true-end-message")?.textContent || "",
+      };
+      observer.disconnect();
+    });
+    observer.observe(card, { attributes: true, attributeFilter: ["class"] });
+  });
   await separatorPage.locator(".true-end-dialogue").click();
-  await separatorPage.waitForTimeout(700);
-  const duringSeparator = await scanFrame(separatorPage);
+  await separatorPage.waitForFunction(() => Boolean(globalThis.__gaiaSeparatorObservation), null, { timeout: 5_000 });
+  const duringSeparator = await separatorPage.evaluate(() => globalThis.__gaiaSeparatorObservation);
   assert.equal(duringSeparator.separatorActive, true, "separator state ended before its visual");
   assert.equal(duringSeparator.dialogueVisible, false, "dialogue remained visible under the separator");
   assert.equal(duringSeparator.sceneCardVisible, true, "separator card state never became active");
