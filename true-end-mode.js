@@ -73,7 +73,24 @@
     relic.append(createElement("i"), createElement("i"), createElement("i"), createElement("i"));
     const lou = createElement("div", "true-end-lou");
     lou.setAttribute("aria-hidden", "true");
-    lou.append(createElement("i", "true-end-lou-core"), createElement("i", "true-end-lou-orbit"));
+    const louImage = createElement("img", "true-end-lou-image");
+    louImage.src = "./assets/true-end/true-end-luu-cute-v1.webp";
+    louImage.alt = "";
+    lou.append(louImage, createElement("i", "true-end-lou-core"), createElement("i", "true-end-lou-orbit"));
+
+    const thoughtforms = createElement("div", "true-end-thoughtforms");
+    thoughtforms.setAttribute("aria-hidden", "true");
+    [
+      ["mizuha", "./assets/true-end/true-end-mizuha-thoughtform-v1.webp"],
+      ["amane", "./assets/true-end/true-end-amane-thoughtform-v1.webp"],
+      ["sakuya", "./assets/true-end/true-end-sakuya-thoughtform-v1.webp"],
+    ].forEach(([speakerName, src]) => {
+      const image = createElement("img", `true-end-thoughtform true-end-thoughtform-${speakerName}`);
+      image.src = src;
+      image.alt = "";
+      image.dataset.speaker = speakerName;
+      thoughtforms.append(image);
+    });
 
     const header = createElement("header", "true-end-header");
     const brand = createElement("div", "true-end-brand");
@@ -133,6 +150,7 @@
       weave,
       relic,
       lou,
+      thoughtforms,
       header,
       progress,
       readout,
