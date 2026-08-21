@@ -40,109 +40,24 @@
   isolation: isolate;
 }
 
-.true-end-backdrop {
+.true-end-universe {
   position: absolute;
   z-index: -7;
-  inset: -4%;
-  background-color: #020611;
-  background-position: center;
-  background-size: cover;
-  opacity: 0;
-  filter: saturate(0.82) brightness(0.72);
-  transform: scale(1.035);
-  transition: opacity 1.25s ease, filter 1.25s ease, transform 8s ease;
-}
-
-.true-end-backdrop.is-active {
-  opacity: 1;
-  filter: saturate(1) brightness(0.94);
-  transform: scale(1);
-}
-
-.true-end-backdrop[data-backdrop="awakening"] {
-  background-image:
-    radial-gradient(ellipse at 50% 48%, rgba(155, 245, 225, 0.2), transparent 25%),
-    radial-gradient(ellipse at 16% 20%, rgba(102, 164, 255, 0.38), transparent 36%),
-    radial-gradient(ellipse at 82% 76%, rgba(84, 238, 218, 0.28), transparent 32%),
-    linear-gradient(145deg, #020613 4%, #071932 50%, #07111f 100%);
-}
-
-.true-end-backdrop[data-backdrop="many-senses"] {
-  background-image:
-    radial-gradient(circle at 22% 68%, rgba(72, 212, 155, 0.42), transparent 23%),
-    radial-gradient(circle at 73% 38%, rgba(91, 157, 255, 0.34), transparent 28%),
-    radial-gradient(circle at 80% 84%, rgba(255, 183, 109, 0.2), transparent 30%),
-    linear-gradient(125deg, #031319, #09283a 48%, #151a35);
-}
-
-.true-end-backdrop[data-backdrop="excavation"] {
-  background-image:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 11vh),
-    linear-gradient(180deg, #08202d 0 22%, #264238 22% 36%, #695942 36% 49%, #403329 49% 62%, #151a21 62% 100%);
-}
-
-.true-end-backdrop[data-backdrop="loom"] {
-  background-image:
-    repeating-linear-gradient(68deg, transparent 0 7vw, rgba(138, 236, 255, 0.1) 7vw calc(7vw + 1px)),
-    repeating-linear-gradient(112deg, transparent 0 9vw, rgba(151, 255, 218, 0.08) 9vw calc(9vw + 1px)),
-    radial-gradient(circle at 50% 47%, rgba(131, 205, 255, 0.26), transparent 31%),
-    linear-gradient(130deg, #030713, #0b1632 51%, #05191e);
-}
-
-.true-end-backdrop[data-backdrop="reconstruction"] {
-  background-image:
-    radial-gradient(circle at 34% 52%, rgba(85, 255, 220, 0.24), transparent 18%),
-    radial-gradient(circle at 66% 52%, rgba(113, 183, 255, 0.23), transparent 18%),
-    linear-gradient(90deg, transparent 49.92%, rgba(221, 255, 250, 0.25) 50%, transparent 50.08%),
-    linear-gradient(135deg, #06111d, #0b2931 48%, #091327);
-}
-
-.true-end-backdrop[data-backdrop="galaxy"] {
-  background-image:
-    radial-gradient(ellipse at 58% 50%, rgba(188, 235, 255, 0.5) 0 1%, rgba(96, 187, 255, 0.18) 4%, transparent 27%),
-    conic-gradient(from 12deg at 58% 50%, transparent, rgba(104, 205, 255, 0.16), transparent 12%, transparent 28%, rgba(142, 255, 213, 0.12), transparent 41%, transparent),
-    linear-gradient(155deg, #01040c, #07142d 52%, #071b20);
-}
-
-.true-end-backdrop[data-backdrop="lineage"] {
-  background-image:
-    repeating-radial-gradient(ellipse at 15% 52%, transparent 0 52px, rgba(143, 244, 221, 0.065) 53px 54px, transparent 55px 92px),
-    linear-gradient(110deg, #030711, #0c1d34 44%, #0c302c);
-}
-
-.true-end-backdrop[data-backdrop="fossil"] {
-  background-image:
-    radial-gradient(circle at 50% 48%, rgba(255, 222, 152, 0.23), transparent 21%),
-    repeating-linear-gradient(170deg, transparent 0 8vh, rgba(244, 226, 190, 0.05) 8vh calc(8vh + 2px)),
-    linear-gradient(145deg, #071017, #29312e 55%, #0b1d24);
-}
-
-.true-end-backdrop[data-backdrop="shore"] {
-  background-image:
-    radial-gradient(ellipse at 72% 14%, rgba(116, 211, 255, 0.2), transparent 35%),
-    linear-gradient(180deg, transparent 0 58%, rgba(123, 227, 221, 0.11) 58% 60%, transparent 60%),
-    linear-gradient(180deg, #020817 0 45%, #081a2d 45% 58%, #0c3542 58% 73%, #07131c 73% 100%);
-}
-
-.true-end-cosmos {
-  position: absolute;
-  z-index: -5;
   inset: 0;
-  overflow: hidden;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #020611;
   pointer-events: none;
 }
 
-.true-end-cosmos i {
-  position: absolute;
-  top: var(--y);
-  left: var(--x);
-  width: calc(2px * var(--s));
-  height: calc(2px * var(--s));
-  border-radius: 50%;
-  background: #dcffff;
-  box-shadow: 0 0 calc(12px * var(--s)) rgba(134, 237, 255, 0.85);
-  opacity: 0.22;
-  animation: true-end-star var(--d) ease-in-out infinite alternate;
+.true-end-universe.is-fallback {
+  background:
+    radial-gradient(circle at 72% 28%, rgba(145, 237, 255, 0.22), transparent 2%),
+    radial-gradient(ellipse at 63% 42%, rgba(48, 118, 164, 0.3), transparent 27%),
+    radial-gradient(ellipse at 24% 68%, rgba(46, 176, 161, 0.24), transparent 34%),
+    conic-gradient(from 32deg at 54% 48%, transparent, rgba(129, 221, 235, 0.12), transparent 14%, transparent 64%, rgba(110, 130, 236, 0.12), transparent 79%),
+    #020611;
 }
 
 .true-end-weave {
@@ -735,7 +650,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .true-end-backdrop,
   .true-end-progress i,
   .true-end-lou,
   .true-end-relic,
@@ -746,44 +660,11 @@
     transition: none !important;
   }
 
-  .true-end-cosmos i,
   .true-end-lou-core,
   .true-end-lou-orbit,
   .true-end-next {
     animation: none !important;
   }
-}
-
-/* Generated true-end imagery. Keep the procedural layers as overlays so the
-   physical relic and the pre-geometric weave remain legible behind dialogue. */
-.true-end-backdrop[data-backdrop="awakening"],
-.true-end-backdrop[data-backdrop="many-senses"],
-.true-end-backdrop[data-backdrop="galaxy"],
-.true-end-backdrop[data-backdrop="lineage"],
-.true-end-backdrop[data-backdrop="shore"] {
-  background-image:
-    linear-gradient(135deg, rgba(4, 15, 35, 0.54), rgba(5, 41, 58, 0.24)),
-    url("./assets/true-end/true-end-bg-galactic-senses-v1.webp");
-  background-position: center;
-  background-size: cover;
-}
-
-.true-end-backdrop[data-backdrop="excavation"],
-.true-end-backdrop[data-backdrop="reconstruction"],
-.true-end-backdrop[data-backdrop="fossil"] {
-  background-image:
-    linear-gradient(135deg, rgba(3, 15, 31, 0.5), rgba(40, 22, 18, 0.24)),
-    url("./assets/true-end/true-end-bg-fossil-sensor-v1.webp");
-  background-position: center;
-  background-size: cover;
-}
-
-.true-end-backdrop[data-backdrop="loom"] {
-  background-image:
-    linear-gradient(135deg, rgba(3, 12, 30, 0.48), rgba(21, 17, 54, 0.2)),
-    url("./assets/true-end/true-end-bg-pregeometry-loom-v1.webp");
-  background-position: center;
-  background-size: cover;
 }
 
 .true-end-lou {

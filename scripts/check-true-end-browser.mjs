@@ -89,7 +89,7 @@ const scanFrame = (page) => page.evaluate(() => {
   const readout = document.querySelector(".true-end-readout");
   const louNode = document.querySelector(".true-end-lou");
   const louImage = document.querySelector(".true-end-lou-image");
-  const activeBackdrop = document.querySelector(".true-end-backdrop.is-active");
+  const universe = document.querySelector(".true-end-universe");
   const visibleThoughtform = [...document.querySelectorAll(".true-end-thoughtform")]
     .find((node) => Number.parseFloat(getComputedStyle(node).opacity) > 0.5);
   const rect = dialogue?.getBoundingClientRect();
@@ -105,7 +105,11 @@ const scanFrame = (page) => page.evaluate(() => {
     readoutVisible: Boolean(readout && !readout.hidden),
     louLoaded: Boolean(louImage?.complete && louImage.naturalWidth > 0),
     louVisible: Boolean(louNode && Number.parseFloat(getComputedStyle(louNode).opacity) > 0.5),
-    backdropImage: activeBackdrop ? getComputedStyle(activeBackdrop).backgroundImage : "",
+    universeState: universe?.dataset.webglState || "",
+    universeScene: universe?.dataset.webglScene || "",
+    universeFrame: Number(universe?.dataset.webglFrame || 0),
+    universeSize: { width: universe?.width || 0, height: universe?.height || 0 },
+    backdropCount: document.querySelectorAll(".true-end-backdrop").length,
     dialogueRect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height, bottom: rect.bottom } : null,
     headerBottom: headerRect?.bottom || 0,
     audioTrack: globalThis.GaiaOpeningAudio?.getState?.().track || "",
@@ -114,15 +118,46 @@ const scanFrame = (page) => page.evaluate(() => {
     overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
     toolbarHidden: getComputedStyle(document.querySelector(".novel-topbar")).visibility === "hidden",
     dialogueVisible: getComputedStyle(dialogue).visibility !== "hidden",
+    finaleVisible: Boolean(document.querySelector(".true-end-finale:not([hidden])")),
   };
 });
 
-const browser = await chromium.launch({ headless: true, executablePath });
+const assertOutsideClickIgnored = async (page, label) => {
+  const before = await scanFrame(page);
+  const point = await page.evaluate(() => {
+    const x = innerWidth * 0.5;
+    const y = innerHeight * 0.38;
+    const target = document.elementFromPoint(x, y);
+    return {
+      x,
+      y,
+      target: target?.className || target?.tagName || "unknown",
+      outsideDialogue: !target?.closest?.(".true-end-dialogue"),
+    };
+  });
+  assert.equal(point.outsideDialogue, true, `${label}: outside-click test point landed in the message window`);
+  await page.mouse.click(point.x, point.y);
+  await page.waitForTimeout(140);
+  const after = await scanFrame(page);
+  assert.equal(after.scene, before.scene, `${label}: outside click changed the scene`);
+  assert.equal(after.counter, before.counter, `${label}: outside click advanced the counter`);
+  assert.equal(after.message, before.message, `${label}: outside click changed the message`);
+  assert.equal(after.finaleVisible, before.finaleVisible, `${label}: outside click opened the finale`);
+  return { point, counter: before.counter, scene: before.scene };
+};
+
+const browser = await chromium.launch({
+  headless: true,
+  executablePath,
+  args: ["--enable-webgl", "--ignore-gpu-blocklist", "--use-angle=swiftshader"],
+});
 try {
   const runtimeSource = await (await fetch(new URL("/opening-audio.js", baseUrl))).text();
   assert.match(runtimeSource, /story:\s*"\.\/assets\/audio\/satellite-forecast-calm\.mp3"/u);
   assert.match(runtimeSource, /ending:\s*"\.\/assets\/audio\/after-school-afterglow\.mp3"/u);
   assert.match(runtimeSource, /trueend:\s*"\.\/assets\/audio\/sensory-horizon\.wav"/u);
+  const trueEndStyleSource = await (await fetch(new URL("/true-end.css", baseUrl))).text();
+  assert.doesNotMatch(trueEndStyleSource, /true-end-bg-/u, "retired raster background remains in true-end.css");
 
   for (const viewport of viewports) {
     const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
@@ -136,6 +171,7 @@ try {
         id: scene.id,
         number: scene.number,
         title: scene.title,
+        backdrop: scene.backdrop,
         steps: scene.steps.length,
       })),
       totalSteps: globalThis.GAIA_TRUE_END_STORY.scenes.reduce((sum, scene) => sum + scene.steps.length, 0),
@@ -164,7 +200,13 @@ try {
     const seenSpeakers = new Set();
     const validateSpeakerVisual = (frame) => {
       seenSpeakers.add(frame.speaker);
-      assert.match(frame.backdropImage, /assets\/true-end/u, `${viewport.name}: generated backdrop is not active`);
+      const expectedScene = story.scenes.find(({ id }) => id === frame.scene);
+      assert(expectedScene, `${viewport.name}: unknown true-end scene ${frame.scene}`);
+      assert.equal(frame.universeState, "active", `${viewport.name}: WebGL universe is not active`);
+      assert.equal(frame.universeScene, expectedScene.backdrop, `${viewport.name}: WebGL palette is out of sync`);
+      assert(frame.universeFrame > 0, `${viewport.name}: WebGL universe did not render a frame`);
+      assert(frame.universeSize.width > 0 && frame.universeSize.height > 0, `${viewport.name}: WebGL canvas has no drawable area`);
+      assert.equal(frame.backdropCount, 0, `${viewport.name}: retired raster backdrop DOM remains`);
       if (["mizuha", "amane", "sakuya"].includes(frame.speaker)) {
         assert.equal(frame.visibleThoughtform, frame.speaker, `${viewport.name}: ${frame.speaker} thoughtform is not visible`);
       }
@@ -184,6 +226,12 @@ try {
     assert(initial.dialogueRect.height >= 44, `${viewport.name}: dialogue hit area is under 44px`);
     assert(initial.dialogueRect.x >= 0 && initial.dialogueRect.bottom <= viewport.height + 1, `${viewport.name}: dialogue is outside viewport`);
     assert(initial.messageFontSize >= (viewport.width <= 500 ? 16 : 20), `${viewport.name}: dialogue text is too small`);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.waitForTimeout(260);
+    const animatedFrame = await scanFrame(page);
+    assert(animatedFrame.universeFrame > initial.universeFrame, `${viewport.name}: WebGL universe is not animating`);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const initialOutsideGuard = await assertOutsideClickIgnored(page, `${viewport.name}: initial message`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-01.png`), animations: "disabled" });
 
     const visited = [{ scene: initial.scene, title: initial.title }];
@@ -192,6 +240,7 @@ try {
       const currentScene = story.scenes[sceneIndex];
       for (let index = 0; index < currentScene.steps; index += 1) {
         const isFinalStep = absoluteStep === story.totalSteps;
+        if (isFinalStep) await assertOutsideClickIgnored(page, `${viewport.name}: final message`);
         await page.locator(".true-end-dialogue").click();
         if (isFinalStep) {
           await page.waitForFunction(() => Boolean(document.querySelector(".true-end-finale:not([hidden])")));
@@ -214,6 +263,11 @@ try {
     for (const speaker of ["lou", "mizuha", "amane", "sakuya"]) {
       assert(seenSpeakers.has(speaker), `${viewport.name}: ${speaker} was never rendered`);
     }
+    const rasterBackgroundResources = await page.evaluate(() => performance
+      .getEntriesByType("resource")
+      .map(({ name }) => name)
+      .filter((url) => url.includes("true-end-bg-")));
+    assert.deepEqual(rasterBackgroundResources, [], `${viewport.name}: retired raster background was requested`);
     const finale = await page.evaluate(() => ({
       title: document.querySelector(".true-end-finale h2")?.textContent?.trim() || "",
       text: document.querySelector(".true-end-finale")?.innerText || "",
@@ -243,7 +297,17 @@ try {
       && !document.querySelector("#novel-title-screen").hidden);
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "story", null, { timeout: 10_000 });
 
-    report.viewports.push({ viewport: viewport.name, story, initial, visited, finale, passed: true });
+    report.viewports.push({
+      viewport: viewport.name,
+      story,
+      initial,
+      animatedFrame: animatedFrame.universeFrame,
+      initialOutsideGuard,
+      rasterBackgroundResources,
+      visited,
+      finale,
+      passed: true,
+    });
     await context.close();
   }
 

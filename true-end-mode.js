@@ -45,26 +45,15 @@
     let revealing = false;
     let transitioning = false;
     let complete = false;
+    let universeRuntime = null;
 
     const shell = createElement("section", "true-end-shell");
     shell.tabIndex = 0;
     shell.setAttribute("role", "region");
-    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION トゥルーエンド。クリック、Enterキー、またはスペースキーで進みます");
+    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION トゥルーエンド。メッセージウィンドウ、Enterキー、またはスペースキーで進みます");
 
-    const backdropA = createElement("div", "true-end-backdrop true-end-backdrop--a");
-    const backdropB = createElement("div", "true-end-backdrop true-end-backdrop--b");
-    backdropA.setAttribute("aria-hidden", "true");
-    backdropB.setAttribute("aria-hidden", "true");
-    const cosmos = createElement("div", "true-end-cosmos");
-    cosmos.setAttribute("aria-hidden", "true");
-    for (let index = 0; index < 36; index += 1) {
-      const star = createElement("i");
-      star.style.setProperty("--x", `${(index * 37) % 101}%`);
-      star.style.setProperty("--y", `${(index * 61) % 97}%`);
-      star.style.setProperty("--d", `${2.4 + (index % 7) * 0.65}s`);
-      star.style.setProperty("--s", String(0.55 + (index % 5) * 0.24));
-      cosmos.append(star);
-    }
+    const universe = createElement("canvas", "true-end-universe");
+    universe.setAttribute("aria-hidden", "true");
     const weave = createElement("div", "true-end-weave");
     weave.setAttribute("aria-hidden", "true");
     for (let index = 0; index < 8; index += 1) weave.append(createElement("i"));
@@ -144,9 +133,7 @@
     finale.append(finaleLabel, finaleTitle, finaleReadout, finaleNote, finaleExit);
 
     shell.append(
-      backdropA,
-      backdropB,
-      cosmos,
+      universe,
       weave,
       relic,
       lou,
@@ -160,6 +147,11 @@
       finale,
     );
     host.replaceChildren(shell);
+    universeRuntime = globalThis.GaiaTrueEndWebGL?.create?.({ canvas: universe, shell }) || null;
+    if (!universeRuntime) {
+      universe.classList.add("is-fallback");
+      universe.dataset.webglState = "fallback";
+    }
 
     const scene = () => story.scenes[sceneIndex];
     const step = () => scene()?.steps?.[stepIndex];
@@ -223,18 +215,8 @@
     };
 
     const setBackdrop = (name, immediate = false) => {
-      const active = shell.dataset.backdropLayer === "b" ? backdropB : backdropA;
-      const incoming = active === backdropA ? backdropB : backdropA;
-      incoming.dataset.backdrop = name;
-      if (immediate) {
-        active.classList.remove("is-active");
-        incoming.classList.add("is-active");
-      } else {
-        incoming.classList.add("is-active");
-        active.classList.remove("is-active");
-      }
-      shell.dataset.backdropLayer = incoming === backdropA ? "a" : "b";
       shell.dataset.backdrop = name;
+      universeRuntime?.setScene?.(name, { immediate });
     };
 
     const syncScene = ({ immediate = false } = {}) => {
@@ -317,10 +299,7 @@
     };
 
     dialogue.addEventListener("click", advance);
-    shell.addEventListener("click", (event) => {
-      if (event.target.closest("button") || complete) return;
-      advance();
-    });
+    shell.addEventListener("click", (event) => event.stopPropagation());
     shell.addEventListener("keydown", (event) => {
       if (!(["Enter", " "].includes(event.key)) || event.repeat || event.isComposing || event.target.closest("button")) return;
       event.preventDefault();
@@ -336,6 +315,8 @@
       shell,
       destroy() {
         stopReveal();
+        universeRuntime?.destroy?.();
+        universeRuntime = null;
         shell.remove();
       },
     });
