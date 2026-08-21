@@ -32,6 +32,6 @@ check("CSS hides only unrevealed glyphs", css.includes(".novel-text.is-revealing
 check("scramble fade is disabled during reveal", /\.novel-text\.is-revealing\s*\{\s*animation:\s*none;/u.test(css));
 check("block cursor is removed", !html.includes(">▌</span>") && /\.novel-cursor\s*\{\s*display:\s*none !important;/u.test(css));
 check("SCRIPT debug overlay is removed", /\.novel-script-debug\s*\{[\s\S]*?display:\s*none !important;/u.test(css));
-check("runtime cache key is current", html.includes("novel-mode.js?v=gaia-story-map-skip-1"));
+check("runtime cache key is current", html.includes("novel-mode.js?v=gaia-fresh-auto-start-1"));
 
 console.log(JSON.stringify({ status: "passed", checks: checks.length, names: checks }, null, 2));

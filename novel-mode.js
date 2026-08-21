@@ -4511,8 +4511,28 @@
     elements.configPanel.setAttribute("aria-hidden", "true");
     elements.configButton.setAttribute("aria-expanded", "false");
   };
-  function openNovel(event = null) {
+  const hasStoryRecord = () => Boolean(getStoredProgress() || getManualSaves().some(Boolean));
+
+  const prepareFreshRuntime = () => {
+    hasStarted = false;
+    layer.classList.remove("is-title");
+    elements.titleScreen.hidden = true;
+    elements.runtime.hidden = true;
+    elements.restart.hidden = true;
+    if (elements.fastForward) elements.fastForward.hidden = true;
+    setSceneJumpAvailability(false);
+    elements.saveButton.hidden = true;
+    elements.loadButton.hidden = true;
+    elements.logButton.hidden = true;
+    elements.configButton.hidden = true;
+    elements.auto.hidden = true;
+    elements.galleryButton.hidden = true;
+    elements.close.hidden = true;
+  };
+
+  function openNovel(event = null, { autoStartFresh = false } = {}) {
     event?.preventDefault?.();
+    const shouldAutoStart = autoStartFresh && !hasStoryRecord();
     previousFocus = document.activeElement;
     suppressBaseInterface();
     particleSystem.start();
@@ -4523,7 +4543,12 @@
     layer.hidden = false;
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("novel-open");
-    showTitle();
+    if (shouldAutoStart) {
+      prepareFreshRuntime();
+      void startNewSession();
+    } else {
+      showTitle();
+    }
     requestAnimationFrame(() => layer.classList.add("is-open"));
     if (window.location.hash !== "#story" && !/\/story\/?$/i.test(window.location.pathname)) {
       history.replaceState(null, "", "#story");
@@ -4589,15 +4614,15 @@
   };
 
   document.querySelectorAll("[data-novel-open]").forEach((button) => {
-    button.addEventListener("click", (event) => runSceneTransition(() => openNovel(event), event));
+    button.addEventListener("click", (event) => runSceneTransition(() => openNovel(event, { autoStartFresh: true }), event));
   });
   window.addEventListener("gaia:novel-open-at-mode", (event) => {
     if (event.detail?.source === "opening") {
-      openNovel();
+      openNovel(null, { autoStartFresh: true });
       return;
     }
     if (event.detail?.source === "title-menu") {
-      openNovel();
+      openNovel(null, { autoStartFresh: true });
       return;
     }
     const index = Number(event.detail?.index);
@@ -4957,5 +4982,5 @@
     if (opening) opening.hidden = true;
     document.body.classList.remove("gaia-opening-active");
   }
-  if (window.location.hash === "#story" || directStoryRoute) openNovel();
+  if (window.location.hash === "#story" || directStoryRoute) openNovel(null, { autoStartFresh: true });
 })();

@@ -70,11 +70,14 @@ const attachMonitoring = async (page, label) => {
         && rect.width > 0 && rect.height > 0;
     };
     globalThis.__qaFrames = [];
+    globalThis.__qaTitleFrames = 0;
     globalThis.__qaRevealEvents = 0;
     window.addEventListener("gaia:novel-runtime-revealed", () => { globalThis.__qaRevealEvents += 1; }, true);
     const sample = (time) => {
       const layer = document.querySelector("#novel-layer");
       const runtime = document.querySelector("#novel-runtime");
+      const title = document.querySelector("#novel-title-screen");
+      if (layer && __qaVisible(title)) globalThis.__qaTitleFrames += 1;
       if (layer && __qaVisible(runtime)) {
         const style = getComputedStyle(layer);
         globalThis.__qaFrames.push({
@@ -141,6 +144,7 @@ const scanRuntime = async (page) => page.evaluate(async ({ startBackground, exhi
     decodedNaturalWidth: image.naturalWidth,
     frames: globalThis.__qaFrames.slice(),
     revealEvents: globalThis.__qaRevealEvents,
+    titleFrames: globalThis.__qaTitleFrames,
     runtimeVisible: __qaVisible(runtime),
     runtimeVisibleCount: [...document.querySelectorAll("#novel-runtime")].filter(__qaVisible).length,
     titleVisible: __qaVisible(document.querySelector("#novel-title-screen")),
@@ -170,16 +174,16 @@ const assertRuntime = (scan, expectedStep, expectedAsset) => {
 const scanFreshStart = async (viewport, cacheMode) => {
   const label = `${viewport.name}-fresh-${cacheMode}`;
   const { context, page, requests } = await createPage(viewport, label, cacheMode === "cold");
-  await openTitle(page, { clear: true });
-  await page.screenshot({ path: path.join(outputDir, `${label}-before.png`) });
-  const start = page.locator("#novel-start-button");
+  await page.addInitScript(() => localStorage.clear());
   const requestOffset = requests.length;
-  await start.click();
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.runtimeReveal === "revealed");
   await page.waitForFunction(() => document.querySelector("#novel-text")?.textContent.trim().length > 0);
   await page.waitForTimeout(500);
   const scan = await scanRuntime(page);
   assertRuntime(scan, "festival_concept_001", START_BACKGROUND);
+  assert.equal(scan.titleFrames, 0);
   assert(scan.text.includes("海から吹く風"));
   const startRequests = requests.slice(requestOffset);
   assert.equal(
@@ -193,6 +197,31 @@ const scanFreshStart = async (viewport, cacheMode) => {
     startBackground: startRequests.filter((url) => url.includes(START_BACKGROUND)),
     exhibition: startRequests.filter((url) => url.includes(EXHIBITION)),
   }, ...scan, passed: true });
+  await context.close();
+};
+
+const scanFreshOpeningEntry = async (viewport) => {
+  const label = `${viewport.name}-fresh-opening-entry`;
+  const { context, page, requests } = await createPage(viewport, label);
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+  const requestOffset = requests.length;
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
+    detail: { source: "opening" },
+  })));
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.runtimeReveal === "revealed");
+  await page.waitForFunction(() => document.querySelector("#novel-text")?.textContent.trim().length > 0);
+  await page.waitForTimeout(160);
+  const scan = await scanRuntime(page);
+  assertRuntime(scan, "festival_concept_001", START_BACKGROUND);
+  assert.equal(scan.titleFrames, 0);
+  assert(scan.text.includes("海から吹く風"));
+  const entryRequests = requests.slice(requestOffset);
+  assert.equal(entryRequests.filter((url) => url.includes(EXHIBITION)).length, 0);
+  assert(entryRequests.some((url) => url.includes(START_BACKGROUND)));
+  await page.screenshot({ path: path.join(outputDir, `${label}-revealed.png`) });
+  report.scans.push({ viewport: viewport.name, case: "fresh-opening-entry", ...scan, passed: true });
   await context.close();
 };
 
@@ -216,7 +245,7 @@ const scanStoredEntry = async (viewport, kind, stepId, expectedAsset) => {
       clear: true,
       manual: [{ progress: fixture, savedAt: Date.now(), meta: { title: "QA" } }],
     });
-    await page.locator("#novel-title-load-button").click();
+    await page.locator("#novel-resume-button").click();
     requestOffset = requests.length;
     await page.locator(".novel-save-slot[data-slot-index='0']").click();
   }
@@ -545,6 +574,31 @@ const scanMapCompositorContract = async (viewport) => {
   await context.close();
 };
 
+if (focus === "fresh-auto-start") {
+  try {
+    for (const viewport of [viewports[2], viewports[3]]) {
+      await scanFreshStart(viewport, "cold");
+      await scanFreshStart(viewport, "warm");
+      await scanFreshOpeningEntry(viewport);
+    }
+    await scanStoredEntry(viewports[2], "resume", "festival_concept_023", "event-cg-mizuha-closeup-five-plane-v3.png");
+    await scanStoredEntry(viewports[3], "manual-load", "festival_concept_021", "event-cg-amane-closeup-five-plane-v3.png");
+    assert.deepEqual(report.consoleErrors, []);
+    assert.deepEqual(report.pageErrors, []);
+    assert.deepEqual(report.responses404, []);
+    report.status = "passed";
+  } catch (error) {
+    report.status = "failed";
+    report.failure = { message: error.message, stack: error.stack };
+    throw error;
+  } finally {
+    fs.writeFileSync(path.join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
+    await browser.close();
+  }
+  console.log(JSON.stringify({ status: report.status, scans: report.scans.length, outputDir }, null, 2));
+  process.exit(0);
+}
+
 if (focus === "festival-009-toolbar") {
   try {
     for (const viewport of [viewports[2], viewports[3]]) await scan009to010(viewport);
@@ -569,8 +623,8 @@ try {
     await scanFreshStart(viewport, "cold");
     await scanFreshStart(viewport, "warm");
   }
-  await scanStoredEntry(viewports[2], "resume", "festival_concept_023", "event-cg-mizuha-closeup-v1.png");
-  await scanStoredEntry(viewports[3], "manual-load", "festival_concept_021", "event-cg-amane-closeup-v1.png");
+  await scanStoredEntry(viewports[2], "resume", "festival_concept_023", "event-cg-mizuha-closeup-five-plane-v3.png");
+  await scanStoredEntry(viewports[3], "manual-load", "festival_concept_021", "event-cg-amane-closeup-five-plane-v3.png");
   await scanStoredEntry(viewports[2], "unknown-fallback", "unknown", START_BACKGROUND);
 
   for (const viewport of [viewports[2], viewports[3]]) {
