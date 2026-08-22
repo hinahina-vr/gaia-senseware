@@ -823,8 +823,8 @@ body.gaia-opening-active .novel-layer {
   color: rgba(var(--opening-paper), 0.96);
   font-family: var(--font-ja);
   font-size: clamp(40px, 4.8vw, 70px);
-  font-weight: 400;
-  letter-spacing: 0.025em;
+  font-weight: 500;
+  letter-spacing: -0.055em;
   line-height: 1.16;
 }
 

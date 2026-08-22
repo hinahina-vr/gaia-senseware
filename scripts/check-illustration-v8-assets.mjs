@@ -16,7 +16,7 @@ const spriteFiles = [
 ];
 
 const sceneFiles = [
-  "event-cg-amane-closeup-five-plane-v3.png",
+  "event-cg-amane-closeup-five-plane-v4.png",
   "event-cg-circle-invitation-card-v3.png",
   "event-cg-circle-welcome-v2.png",
   "event-cg-esp32-collaboration-v2.png",

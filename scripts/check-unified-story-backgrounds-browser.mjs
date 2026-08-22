@@ -32,7 +32,7 @@ const cases = [
   ["welcome_chat_074", "welcome-night-exit-mobile", "event-cg-exhibition-finale-sunset-v1.png", "event-cg-exhibition-finale-sunset-mobile-v1.png"],
   ["welcome_chat_084", "welcome-earth-partner-reflection", "event-cg-exhibition-finale-sunset-v1.png", "event-cg-exhibition-finale-sunset-mobile-v1.png"],
   ["festival_concept_015", "festival-first-encounter-cg", "event-cg-first-encounter-five-plane-v3.png", "event-cg-first-encounter-five-plane-mobile-v2.png"],
-  ["festival_concept_021", "festival-amane-closeup-cg", "event-cg-amane-closeup-five-plane-v3.png"],
+  ["festival_concept_021", "festival-amane-closeup-cg", "event-cg-amane-closeup-five-plane-v4.png"],
   ["festival_concept_023", "festival-mizuha-closeup-cg", "event-cg-mizuha-closeup-five-plane-v3.png"],
   ["festival_concept_076", "festival-map-transition", "event-cg-festival-map-transition-five-plane-v3.png", "event-cg-festival-map-transition-five-plane-mobile-v1.png"],
   ["map_mode01_001", "map01-co2-observation", "event-cg-festival-map-transition-five-plane-v3.png"],

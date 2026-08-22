@@ -582,7 +582,7 @@ if (focus === "fresh-auto-start") {
       await scanFreshOpeningEntry(viewport);
     }
     await scanStoredEntry(viewports[2], "resume", "festival_concept_023", "event-cg-mizuha-closeup-five-plane-v3.png");
-    await scanStoredEntry(viewports[3], "manual-load", "festival_concept_021", "event-cg-amane-closeup-five-plane-v3.png");
+    await scanStoredEntry(viewports[3], "manual-load", "festival_concept_021", "event-cg-amane-closeup-five-plane-v4.png");
     assert.deepEqual(report.consoleErrors, []);
     assert.deepEqual(report.pageErrors, []);
     assert.deepEqual(report.responses404, []);
@@ -624,7 +624,7 @@ try {
     await scanFreshStart(viewport, "warm");
   }
   await scanStoredEntry(viewports[2], "resume", "festival_concept_023", "event-cg-mizuha-closeup-five-plane-v3.png");
-  await scanStoredEntry(viewports[3], "manual-load", "festival_concept_021", "event-cg-amane-closeup-five-plane-v3.png");
+  await scanStoredEntry(viewports[3], "manual-load", "festival_concept_021", "event-cg-amane-closeup-five-plane-v4.png");
   await scanStoredEntry(viewports[2], "unknown-fallback", "unknown", START_BACKGROUND);
 
   for (const viewport of [viewports[2], viewports[3]]) {
