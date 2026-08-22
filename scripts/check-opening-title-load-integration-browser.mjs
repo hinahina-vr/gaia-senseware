@@ -22,10 +22,13 @@ const forbiddenFiles = [
   "concept-04-co-created-future.png",
   "concept-01-earth-as-partner.png",
 ];
+const viewportFlags = process.argv.slice(6);
+const mobileOnly = viewportFlags.includes("--mobile-only");
+const pcOnly = viewportFlags.includes("--pc-only");
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
-];
+].filter(({ name }) => (!mobileOnly || name === "mobile-390") && (!pcOnly || name === "pc-1440"));
 const savedProgress = {
   storyVersion: 10,
   stepId: "welcome_chat_038",
@@ -87,7 +90,7 @@ try {
       };
     });
 
-    await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-modal")));
     await page.locator("#gaia-opening-sound-off").click();
@@ -107,6 +110,14 @@ try {
       return {
         mizuha: read("ミズハ"),
         amane: read("アマネ"),
+        mizuhaArt: getComputedStyle(document.querySelector(".gaia-vn-panel-minamo")).backgroundImage,
+        amaneArt: getComputedStyle(document.querySelector(".gaia-vn-panel-sora")).backgroundImage,
+        characterSpriteCount: document.querySelectorAll(".gaia-vn-character-focus, .gaia-vn-character-image").length,
+        montageLabel: document.querySelector(".gaia-vn-montage-label")?.textContent.trim(),
+        montageHeading: document.querySelector(".gaia-vn-path-copy h2")?.textContent.trim(),
+        montageBody: document.querySelector(".gaia-vn-path-copy > p")?.textContent.trim(),
+        montageDuration: getComputedStyle(document.querySelector(".gaia-vn-panel-montage")).animationDuration,
+        montageDelay: getComputedStyle(document.querySelector(".gaia-vn-panel-montage")).animationDelay,
         soundGateCount: document.querySelectorAll("#gaia-opening-sound-gate").length,
         overflowX: document.documentElement.scrollWidth - innerWidth,
         overflowY: document.documentElement.scrollHeight - innerHeight,
@@ -120,10 +131,39 @@ try {
       quote: "「変わらないものって、変わり続けていることだけなのかもね。」",
       reply: "変化の連なりを、時間の中で見る。",
     });
+    assert.match(opening.mizuhaArt, /opening-mizuha-keyvisual-v1\.png/u);
+    assert.match(opening.amaneArt, /opening-amane-keyvisual-v1\.png/u);
+    assert.equal(opening.characterSpriteCount, 0);
+    assert.equal(opening.montageLabel, "SENSES / MEASURES / TRACES / CHOICES");
+    assert.equal(opening.montageHeading, "未来は、ひとつの視点には宿らない。");
+    assert.equal(opening.montageBody, "感じ、測り、残し、選ぶ。その重なりから、まだ名のない未来が立ち上がる。");
+    assert.equal(opening.montageDuration, "2.72s");
+    assert.equal(opening.montageDelay, "6.545s");
     assert.equal(opening.soundGateCount, 0);
     assert(opening.overflowX <= 1 && opening.overflowY <= 1);
 
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-opening.png`), animations: "disabled" });
+    for (const panelName of ["minamo", "sora", "montage"]) {
+      await page.evaluate((name) => {
+        document.querySelector(".gaia-opening-hud")?.setAttribute("hidden", "");
+        document.querySelectorAll("[data-opening-focus]").forEach((node) => node.classList.remove("is-opening-focus-pending"));
+        document.querySelectorAll(".gaia-vn-panel").forEach((panel) => {
+          panel.style.animation = "none";
+          panel.style.opacity = "0";
+          panel.style.visibility = "hidden";
+        });
+        const panel = document.querySelector(`.gaia-vn-panel-${name}`);
+        panel.style.opacity = "1";
+        panel.style.visibility = "visible";
+        panel.style.filter = "none";
+        panel.style.transform = "none";
+      }, panelName);
+      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-opening-${panelName}.png`), animations: "disabled" });
+    }
+    await page.evaluate(() => {
+      document.querySelector(".gaia-opening-hud")?.removeAttribute("hidden");
+      document.querySelectorAll(".gaia-vn-panel").forEach((panel) => panel.removeAttribute("style"));
+    });
     await page.locator("#gaia-opening-skip").click();
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-route-story")));
     await page.locator("#gaia-opening-route-story").click();
@@ -218,7 +258,11 @@ try {
     assert(restored.dialogueHidden && restored.vnText === "" && restored.vnSpeaker === "");
     assert.equal(restored.appleColor, "rgb(88, 168, 76)");
     assert.equal(restored.appleImageCount, 0);
-    assert(restored.v2Mascots.length > 0 && restored.v2Mascots.every((image) => image.complete && image.naturalWidth === 512 && image.naturalHeight === 512 && image.rect.width >= 24));
+    assert(
+      restored.v2Mascots.length > 0
+        && restored.v2Mascots.every((image) => image.complete && image.naturalWidth === 512 && image.naturalHeight === 512 && image.rect.width >= 24),
+      `${viewport.name}: invalid mascot render ${JSON.stringify(restored.v2Mascots)}`,
+    );
     assert.equal(restored.v1Mascots, 0);
     assert.equal(restored.humanAvatars, 0);
     assert(restored.overflowX <= 1 && restored.overflowY <= 1);

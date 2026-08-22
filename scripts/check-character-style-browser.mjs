@@ -67,8 +67,13 @@ try {
   await page.locator(".intro-path-card--sound").hover();
   await capture("sound");
 
-  const openingResponse = await page.request.get(new URL("/assets/visuals-07/opening-keyvisual-v2.png", baseUrl).href);
-  assert.equal(openingResponse.status(), 200, "opening character art is unavailable");
+  for (const asset of [
+    "/assets/visuals-08/opening-mizuha-keyvisual-v1.png",
+    "/assets/visuals-08/opening-amane-keyvisual-v1.png",
+  ]) {
+    const openingResponse = await page.request.get(new URL(asset, baseUrl).href);
+    assert.equal(openingResponse.status(), 200, `opening character art is unavailable: ${asset}`);
+  }
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);
   assert.deepEqual(report.responses404, []);

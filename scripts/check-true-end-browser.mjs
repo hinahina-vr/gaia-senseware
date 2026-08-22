@@ -20,7 +20,7 @@ fs.mkdirSync(outputDir, { recursive: true });
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
 const CONFIG_KEY = "gaiaSensewareNovel:config:v3";
 const OPENING_MESSAGE = "DORA SEV·EN――二百七十万年の沈黙を越え、休眠記憶を再結合。観測者たちよ、目を覚まして。";
-const FINAL_MESSAGE = "ルウは基板を抱き、星々へ問う。『次はどこを感じたい？』返事が灯る。二百七十万年後も放課後は終わらない。";
+const FINAL_MESSAGE = "ルウは基板を抱き、星々へ問う。『次はどこを感じたい？』返事が灯る。放課後は終わらない。";
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
@@ -116,8 +116,14 @@ const scanFrame = (page) => page.evaluate(() => {
   const sceneCardContent = document.querySelector(".true-end-scene-card-content");
   const audioDock = document.querySelector(".gaia-audio-dock");
   const rect = dialogue?.getBoundingClientRect();
+  const mainDialogueReference = document.createElement("div");
+  mainDialogueReference.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;width:var(--novel-say-width);height:var(--novel-say-height)";
+  shell?.append(mainDialogueReference);
+  const mainDialogueRect = mainDialogueReference.getBoundingClientRect();
+  mainDialogueReference.remove();
   const messageRect = message?.getBoundingClientRect();
   const dialogueStyle = dialogue ? getComputedStyle(dialogue) : null;
+  const messageStyle = message ? getComputedStyle(message) : null;
   const headerRect = document.querySelector(".true-end-header")?.getBoundingClientRect();
   const readoutRect = readout?.getBoundingClientRect();
   const messageRange = document.createRange();
@@ -167,9 +173,29 @@ const scanFrame = (page) => page.evaluate(() => {
     characterImageCount: document.querySelectorAll(".true-end-shell img").length,
     backdropCount: document.querySelectorAll(".true-end-backdrop").length,
     dialogueRect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height, bottom: rect.bottom } : null,
+    mainDialogueRect: mainDialogueRect ? {
+      x: mainDialogueRect.x,
+      y: mainDialogueRect.y,
+      width: mainDialogueRect.width,
+      height: mainDialogueRect.height,
+      bottom: mainDialogueRect.bottom,
+    } : null,
+    dialogueBorderWidth: dialogueStyle ? Number.parseFloat(dialogueStyle.borderTopWidth) : null,
+    dialogueBackground: dialogueStyle?.backgroundImage || "",
+    dialogueGlowBackground: dialogue ? getComputedStyle(dialogue, "::after").backgroundImage : "",
     messageTopOffset: rect && messageRect && dialogueStyle
       ? messageRect.top - (rect.top + Number.parseFloat(dialogueStyle.paddingTop))
       : null,
+    messageLayoutDebug: {
+      dialoguePaddingTop: dialogueStyle?.paddingTop || "",
+      dialogueLineHeight: dialogueStyle?.lineHeight || "",
+      dialogueFontSize: dialogueStyle?.fontSize || "",
+      messageTop: messageStyle?.top || "",
+      messageMarginTop: messageStyle?.marginTop || "",
+      messageLineHeight: messageStyle?.lineHeight || "",
+      messagePosition: messageStyle?.position || "",
+      messageTransform: messageStyle?.transform || "",
+    },
     headerBottom: headerRect?.bottom || 0,
     audioTrack: globalThis.GaiaOpeningAudio?.getState?.().track || "",
     audioPlayback: globalThis.GaiaOpeningAudio?.getPlaybackState?.() || null,
@@ -286,32 +312,16 @@ try {
   assert.match(trueEndWebGLSource, /presenceField\(p, u_speaker_from\)[\s\S]*presenceFadeOut[\s\S]*presenceField\(p, u_speaker_to\)[\s\S]*presenceFadeIn/u, "presence shader does not fade the old character out and the new character in");
   assert.match(trueEndWebGLSource, /signalStateAt\(now\)/u, "per-line presence signal still changes in one frame");
   assert.doesNotMatch(trueEndWebGLSource, /0\.52 \+ 0\.48 \* u_speaker_mix/u, "new character still appears at partial strength on its first frame");
-  assert.match(trueEndWebGLSource, /float fieldEnvelope\(vec2 p\)/u, "full-frame presence envelope is missing");
-  assert.doesNotMatch(
-    trueEndWebGLSource,
-    /distanceToCore|satelliteA|satelliteB|ringA|ringB|ringC|radialBranches|shellA|shellB|\biris\b|\baperture\b|beaconDistance|ringRadius|\bspiral\b|\bhalo\b/u,
-    "retired atomic, circular, converging, radial-symbol, or eye geometry remains in the presence shader",
-  );
-  assert.doesNotMatch(trueEndWebGLSource, /atan\(|log\(|float\s+ripple\s*=/u, "TRANSMISSION still contains a circular or point-converging field");
-  assert.doesNotMatch(
-    trueEndWebGLSource,
-    /softLine|scanA|scanB|contours|wakeA|wakeB|currentA|currentB|currentC|caustic|arcA|arcB|arcC|horizon|zigA|zigB|shardA|shardB|facetA|facetB|curtainA|curtainB|curtainGlow|verticalGrain|crossDust|broadFlowA|broadFlowB|filament/u,
-    "TRANSMISSION still contains geometric lines, arcs, rings, shards, curtains, or filaments",
-  );
-  assert.match(trueEndWebGLSource, /macroMist[\s\S]*softDetail/u, "organic full-frame mist replacement is missing");
+  assert.match(trueEndWebGLSource, /vec3 measureGrid[\s\S]*float scan[\s\S]*float columns[\s\S]*float rings/u, "system measurement geometry was not restored");
+  assert.match(trueEndWebGLSource, /vec3 orbitSeed[\s\S]*ringA[\s\S]*ringB[\s\S]*ringC[\s\S]*satelliteA[\s\S]*satelliteB/u, "Lou's previous orbit-seed Presence was not restored");
+  assert.match(trueEndWebGLSource, /vec3 tideMemory[\s\S]*float ripple[\s\S]*float current[\s\S]*float caustic/u, "Mizuha's previous tide Presence was not restored");
+  assert.match(trueEndWebGLSource, /vec3 timeArc[\s\S]*arcA[\s\S]*arcB[\s\S]*arcC[\s\S]*float horizon/u, "Amane's previous time-arc Presence was not restored");
+  assert.match(trueEndWebGLSource, /vec3 crystalTrace[\s\S]*shellA[\s\S]*shellB[\s\S]*radialBranches[\s\S]*twigs/u, "Sakuya's previous crystal Presence was not restored");
+  assert.match(trueEndWebGLSource, /vec3 witnessLens[\s\S]*float lens[\s\S]*float iris[\s\S]*float aperture/u, "the visitor's previous witness-lens Presence was not restored");
+  assert.match(trueEndWebGLSource, /float ridge[\s\S]*float spiral[\s\S]*float filament[\s\S]*vec2 beacon/u, "the previous dimensional universe field was not restored");
   assert.doesNotMatch(trueEndModeSource, /true-end-weave/u, "TRANSMISSION still creates the full-screen ellipse weave");
   assert.doesNotMatch(trueEndStyleSource, /\.true-end-weave|conic-gradient/u, "TRANSMISSION still styles ellipse or vortex decoration");
-  assert.match(trueEndWebGLSource, /vec3 orbitSeed[\s\S]*pearlMist[\s\S]*pearlGrain[\s\S]*vec3 pearl/u, "Lou must retain a pearl mist identity without orbit geometry");
-  assert.match(trueEndWebGLSource, /vec3 crystalTrace[\s\S]*lavenderMist[\s\S]*mineralGrain[\s\S]*vec3 lavender/u, "saku must retain a lavender mineral-mist identity without crystal geometry");
-  assert.match(trueEndWebGLSource, /vec3 witnessLens[\s\S]*amberMist[\s\S]*warmGrain[\s\S]*vec3 amber/u, "the visitor must retain an amber mist identity without lens geometry");
-  assert.doesNotMatch(trueEndWebGLSource, /p \+= u_pointer/u, "pointer input still moves the presence away from center");
-  for (const field of ["quietField", "measureGrid", "orbitSeed", "tideMemory", "timeArc", "crystalTrace", "witnessLens"]) {
-    assert.match(
-      trueEndWebGLSource,
-      new RegExp(`vec3 ${field}\\(vec2 p\\) \\{[\\s\\S]*?vec2 g = p;`, "u"),
-      `${field} is not centered on the viewport`,
-    );
-  }
+  assert.match(trueEndWebGLSource, /p \+= u_pointer/u, "the restored field no longer follows pointer parallax");
 
   for (const viewport of separatorOnly ? [] : viewports) {
     const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
@@ -333,8 +343,8 @@ try {
       })),
       totalSteps: globalThis.GAIA_TRUE_END_STORY.scenes.reduce((sum, scene) => sum + scene.steps.length, 0),
     }));
-    assert.equal(story.title, "TRANSMISSION");
-    assert.equal(story.subtitle, "惑星の放課後 / GAIA SENSATION — TRANSMISSION");
+    assert.equal(story.title, "NOVACENE");
+    assert.equal(story.subtitle, "惑星の放課後 / GAIA SENSATION — NOVACENE");
     assert.equal(story.language.name, "SÆLIVA");
     assert.equal(story.language.japaneseName, "セイリヴァ");
     assert.equal(story.language.htmlLang, "art-x-saeliva");
@@ -413,7 +423,13 @@ try {
     assert.equal(initial.overflowY, 0);
     assert(initial.dialogueRect.height >= 44, `${viewport.name}: dialogue hit area is under 44px`);
     assert(initial.dialogueRect.x >= 0 && initial.dialogueRect.bottom <= viewport.height + 1, `${viewport.name}: dialogue is outside viewport`);
-    assert(Math.abs(initial.messageTopOffset) <= 1, `${viewport.name}: initial message is not top-aligned (${initial.messageTopOffset})`);
+    assert(initial.mainDialogueRect, `${viewport.name}: main-story dialogue reference is unavailable`);
+    assert(Math.abs(initial.dialogueRect.width - initial.mainDialogueRect.width) <= 1, `${viewport.name}: TRANSMISSION width does not match the main story (${initial.dialogueRect.width} / ${initial.mainDialogueRect.width})`);
+    assert(Math.abs(initial.dialogueRect.height - initial.mainDialogueRect.height) <= 1, `${viewport.name}: TRANSMISSION height does not match the main story (${initial.dialogueRect.height} / ${initial.mainDialogueRect.height})`);
+    assert.equal(initial.dialogueBorderWidth, 0, `${viewport.name}: TRANSMISSION retained its separate framed box`);
+    assert.equal(initial.dialogueBackground, "none", `${viewport.name}: TRANSMISSION retained its separate panel background`);
+    assert.match(initial.dialogueGlowBackground, /linear-gradient/u, `${viewport.name}: main-story lower glass fade is missing`);
+    assert(Math.abs(initial.messageTopOffset) <= 1, `${viewport.name}: initial message is not top-aligned (${initial.messageTopOffset}; ${JSON.stringify(initial.messageLayoutDebug)})`);
     assert(initial.messageFontSize >= (viewport.width <= 500 ? 16 : 20), `${viewport.name}: dialogue text is too small`);
     assert(initial.readoutRect && initial.readoutRect.right <= viewport.width + 1, `${viewport.name}: readout escaped the viewport`);
     assert(initial.readoutRect.width <= (viewport.width <= 500 ? viewport.width - 24 : 420), `${viewport.name}: readout is still too wide (${initial.readoutRect.width}px)`);
@@ -525,7 +541,7 @@ try {
       logButtonVisible: Boolean(document.querySelector(".true-end-log-button")?.getClientRects().length),
       readoutLang: document.querySelector(".true-end-finale div")?.lang || "",
     }));
-    assert.equal(finale.title, "TRANSMISSION");
+    assert.equal(finale.title, "NOVACENE");
     assert(finale.text.includes("DÆM UL: ESHA·GEMA"));
     assert(finale.text.includes("IVARA KERA: K 2.700"));
     assert(finale.text.includes("SÆL·ORAI: 2,641,903 NETH"));
@@ -558,10 +574,10 @@ try {
     assert.deepEqual(beyondLog.storedIds, expectedBeyondIds, `${viewport.name}: TRANSMISSION persisted LOG order/count mismatch`);
     assert.equal(beyondLog.entries.length, 135, `${viewport.name}: TRANSMISSION LOG does not contain all 135 lines`);
     assert.deepEqual(beyondLog.entries.map(({ id }) => id), expectedBeyondIds, `${viewport.name}: TRANSMISSION rendered LOG order mismatch`);
-    assert.match(beyondLog.entries[0].meta, /TRANSMISSION/u);
+    assert.match(beyondLog.entries[0].meta, /NOVACENE/u);
     assert.equal(beyondLog.entries[0].text, OPENING_MESSAGE);
-    assert(beyondLog.entries.some(({ text }) => text.includes("演算の最小目盛りに点を一つ打てない")), `${viewport.name}: sub-particle computing-scale analogy is missing`);
-    assert(beyondLog.entries.some(({ text }) => text.includes("現代人にとっての素粒子一つよりも")), `${viewport.name}: final ESP32 scale comparison is missing`);
+    assert(beyondLog.entries.some(({ text }) => text.includes("演算の最小目盛りに点を打てない")), `${viewport.name}: sub-particle computing-scale analogy is missing`);
+    assert(beyondLog.entries.some(({ text }) => text.includes("現代人の素粒子一つより")), `${viewport.name}: final ESP32 scale comparison is missing`);
     assert.doesNotMatch(beyondLog.entries.map(({ text }) => text).join("\n"), /子どもの玩具以下|性能は玩具以下/u, `${viewport.name}: retired toy-scale comparison remains`);
     assert.equal(beyondLog.entries.at(-1).text, FINAL_MESSAGE);
     await page.locator("#novel-log-close").click();

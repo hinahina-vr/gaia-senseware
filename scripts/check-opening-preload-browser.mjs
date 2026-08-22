@@ -19,7 +19,7 @@ try {
     page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
-    await page.route("**/minamo-expression-sheet-07-alpha.png", async (route) => {
+    await page.route("**/opening-mizuha-keyvisual-v1.png", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 3000));
       await route.continue();
     });

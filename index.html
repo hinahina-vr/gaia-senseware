@@ -24,18 +24,18 @@
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="stylesheet" href="./styles.css?v=gaia-map-no-tabletop-1" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-character-style-1" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-opening-keyvisual-2" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
     <link rel="stylesheet" href="./novel-mode.css?v=gaia-finale-transition-chat-1" />
-    <link rel="stylesheet" href="./true-end.css?v=gaia-transmission-layout-2" />
+    <link rel="stylesheet" href="./true-end.css?v=gaia-transmission-story-ui-2" />
     <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-card-one-line-1" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-character-style-1" />
     <script src="./gaia-particles.js?v=gaia-19" defer></script>
     <script src="./opening-audio.js?v=gaia-true-end-score-1" defer></script>
     <script src="./ui-sound.js?v=gaia-01" defer></script>
-    <script src="./opening.js?v=gaia-character-style-1" defer></script>
+    <script src="./opening.js?v=gaia-opening-keyvisual-2" defer></script>
     <script src="./data-ledger.js?v=gaia-31" defer></script>
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
@@ -43,13 +43,13 @@
     <script src="./app.js?v=gaia-story-map-skip-1" defer></script>
     <script src="./gx-mode.js?v=gaia-gx-transition-skip-1" defer></script>
     <script src="./novel-story-data.js?v=gaia-story-temp-modal-1" defer></script>
-    <script src="./true-end-data.js?v=gaia-transmission-2" defer></script>
-    <script src="./true-end-webgl.js?v=gaia-true-end-scene-draw-ready-1" defer></script>
-    <script src="./true-end-mode.js?v=gaia-transmission-entry-ready-2" defer></script>
+    <script src="./true-end-data.js?v=gaia-novacene-title-1" defer></script>
+    <script src="./true-end-webgl.js?v=gaia-webgl-presence-restored-3" defer></script>
+    <script src="./true-end-mode.js?v=gaia-novacene-title-1" defer></script>
     <script src="./novel-background-cues.js?v=gaia-finale-sunset-1" defer></script>
     <script src="./novel-back-half-cues.js?v=gaia-finale-sunset-1" defer></script>
     <script src="./novel-temporal.js?v=gaia-temporal-1" defer></script>
-    <script src="./novel-mode.js?v=gaia-finale-transition-chat-1" defer></script>
+    <script src="./novel-mode.js?v=gaia-novacene-title-1" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-beyond-log-1" defer></script>
@@ -83,7 +83,7 @@
             <div class="gaia-vn-prologue-lines"></div>
             <p class="gaia-vn-project">PROLOGUE / ZUSHI COAST</p>
             <div class="gaia-vn-prologue-lockup">
-              <small>THREE STUDENTS / ONE UNFINISHED WORK</small>
+              <small>VOICES ACROSS DISTANCE / ONE UNFINISHED WORK</small>
               <h2 data-opening-focus>「はじめまして。」</h2>
               <p data-opening-focus>画面越しでは、何度も話していた。同じ風の中で会うのは、今日が初めてだった。</p>
             </div>
@@ -93,9 +93,6 @@
           <section class="gaia-vn-panel gaia-vn-panel-character gaia-vn-panel-minamo">
             <div class="gaia-vn-character-grid"></div>
             <div class="gaia-vn-character-echoes" aria-hidden="true"><i></i><i></i><i></i></div>
-            <figure class="gaia-vn-character-focus">
-              <div class="gaia-vn-character-image" role="img" aria-label="海をイメージした少女、ミズハ"></div>
-            </figure>
             <div class="gaia-vn-character-copy">
               <p><span>01</span> MIZUHA / FEEL</p>
               <h2 data-opening-focus>ミズハ</h2>
@@ -109,9 +106,6 @@
           <section class="gaia-vn-panel gaia-vn-panel-character gaia-vn-panel-sora">
             <div class="gaia-vn-character-grid"></div>
             <div class="gaia-vn-character-echoes" aria-hidden="true"><i></i><i></i><i></i></div>
-            <figure class="gaia-vn-character-focus">
-              <div class="gaia-vn-character-image" role="img" aria-label="青空をイメージした少女、アマネ"></div>
-            </figure>
             <div class="gaia-vn-character-copy">
               <p><span>02</span> AMANE / MEASURE</p>
               <h2 data-opening-focus>アマネ</h2>
@@ -124,11 +118,11 @@
 
           <section class="gaia-vn-panel gaia-vn-panel-montage">
             <div class="gaia-vn-montage-dots"></div>
-            <p class="gaia-vn-montage-label">THREE VOICES / ONE UNFINISHED WORK</p>
+            <p class="gaia-vn-montage-label">SENSES / MEASURES / TRACES / CHOICES</p>
             <div class="gaia-vn-path-copy">
               <small>GAIA TRANSFORMATION / BEFORE THE NAME</small>
-              <h2 data-opening-focus>三人は、同じ未来を見ていなかった。</h2>
-              <p>足りない視点を重ねるために、この作品をつくった。</p>
+              <h2 data-opening-focus>未来は、<span class="gaia-vn-word-keep">ひとつ</span>の視点には宿らない。</h2>
+              <p>感じ、測り、残し、選ぶ。その重なりから、まだ名のない未来が立ち上がる。</p>
             </div>
             <div class="gaia-vn-word-rails" aria-label="四つの声">
               <p><span>01</span><strong data-opening-focus>感じる。</strong><small>MIZUHA</small></p>

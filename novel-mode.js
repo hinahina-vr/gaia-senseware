@@ -206,7 +206,7 @@
     DERIVED: "計算・解釈 / DERIVED",
     SCENARIO: "仮定 / SCENARIO",
     VISITOR_TRACE: "操作記録 / VISITOR TRACE",
-    BEYOND: "遠未来観測 / TRANSMISSION",
+    BEYOND: "遠未来観測 / NOVACENE",
   });
   const RECORD_SPEAKER_LABELS = Object.freeze({
     SOURCE: "観測メモ",
@@ -417,10 +417,10 @@
       isEnding: true,
     }),
     Object.freeze({
-      scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / TRANSMISSION", title: globalThis.GAIA_TRUE_END_STORY?.title || "TRANSMISSION" }),
+      scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / NOVACENE", title: globalThis.GAIA_TRUE_END_STORY?.title || "NOVACENE" }),
       sceneId: TRUE_END_JUMP_ID,
       scriptIndex: endingScriptIndex + 1,
-      scriptLabel: "TRANSMISSION #001",
+      scriptLabel: "NOVACENE #001",
       index: scenes.length + 2,
       isTrueEnd: true,
     }),
@@ -3713,7 +3713,7 @@
     elements.choices.classList.remove("is-visible", "is-mode08-optional");
     elements.sourceLabel.hidden = true;
     elements.resultSurface.hidden = false;
-    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION TRANSMISSION");
+    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION NOVACENE");
     layer.classList.add("is-result", "is-true-end");
     layer.dataset.sceneId = TRUE_END_JUMP_ID;
     layer.dataset.stepType = "true-end";
@@ -3869,7 +3869,7 @@
     next.type = "button";
     next.tabIndex = -1;
     next.textContent = "世界の続きを紡ぐ";
-    next.setAttribute("aria-label", "スタッフロールを終えてTRANSMISSIONへ進む");
+    next.setAttribute("aria-label", "スタッフロールを終えてNOVACENEへ進む");
     const continueIntoTrueEnd = (control) => {
       if (shell.dataset.phase === "departing") return;
       control.disabled = true;

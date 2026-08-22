@@ -60,7 +60,7 @@
     const shell = createElement("section", "true-end-shell");
     shell.tabIndex = 0;
     shell.setAttribute("role", "region");
-    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION TRANSMISSION。画面をクリックまたはタップするか、Enterキーまたはスペースキーで進みます");
+    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION NOVACENE。画面をクリックまたはタップするか、Enterキーまたはスペースキーで進みます");
 
     const universe = createElement("canvas", "true-end-universe");
     universe.setAttribute("aria-hidden", "true");
@@ -99,7 +99,7 @@
 
     const logButton = createElement("button", "true-end-log-button", "LOG");
     logButton.type = "button";
-    logButton.setAttribute("aria-label", "TRANSMISSIONの会話履歴を開く");
+    logButton.setAttribute("aria-label", "NOVACENEの会話履歴を開く");
 
     const sceneCard = createElement("div", "true-end-scene-card");
     sceneCard.setAttribute("aria-hidden", "true");
