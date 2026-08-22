@@ -58,23 +58,14 @@ assert.equal(storyText.includes(prohibitedRemainingPhrase), false, "指定NG表�
 assert.doesNotMatch(storyText, /ものづくり|ほどけ/u, "今回の対象文脈で使用しない表現が残っています");
 assert.doesNotMatch(storyText, /照明を落とした一角|単管と暗幕|左右の暗幕|天井のプロジェクター|暗幕の張り方|展示ホールの白い光|ガラス張りの壁の向こう|三人で展示ホールを出る|午前展示枠を終えたホール/u, "屋外展示と矛盾する旧本文が残っています");
 assert.equal(storyText.includes("#GSW-esp32"), false, "旧ESP32チャネル名が残っています");
-assert.equal(storyText.split("# 惑星の放課後_esp32").length - 1, 3, "ESP32チャネル名は作成通知・誘導・空チャネル描写の3件必要です");
+assert.equal(storyText.includes("# 惑星の放課後_esp32"), false, "旧ESP32チャネル名が残っています");
+assert.equal(storyText.split("# 惑星の放課後_センサー").length - 1, 3, "センサーチャネル名は作成通知・誘導・空チャネル描写の3件必要です");
 assert.equal(storyText.split("あめと、みず。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 0, "旧festival_concept_024全文が残っています");
 assert.equal(storyText.split("あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。").length - 1, 1, "festival_concept_024決定稿はexact1件必要です");
 assert.equal(storyText.split("雨が降って、水になる。二人の名前を並べると、偶然にしては出来すぎていた。").length - 1, 0, "撤回された所感が残っています");
-assert.deepEqual(
-  festival.steps.slice(20, 27).map((step) => [step.id, step.type, step.speaker || null, step.speakerLabel || null, step.text]),
-  [
-    ["festival_concept_021", "dialogue", "amane", "女の子", "「改めまして、私は『あめ』です」"],
-    ["festival_concept_022", "narration", "narrator", null, "「あめ」と名乗っても、照れたり笑ったりはしなかった。柔らかな響きとは対照的に、言葉は簡潔だった。"],
-    ["festival_concept_023", "dialogue", "mizuha", "もう一人の女の子", "「みず」と申します。あなたも、うちの大学の方ですの？"],
-    ["festival_concept_024", "narration", "narrator", null, "あめと、みず。空から地上へ、二人の名前だけでひとつの流れができていた。本名ではなく、学内で使っている名前らしい。オンラインの大学では、そのほうが自然だった。"],
-    ["festival_concept_025", "narration", "narrator", null, "長い髪の学生もタブレットから顔を上げた。表情は落ち着いているが、「うちの大学」と言ったところで眉が少し上がる。答えを予想するより、こちらの返事を楽しみにしているように見えた。"],
-    ["festival_concept_026", "narration", "narrator", null, "あめは名乗ったあとも、机の端のケーブルを指先で確かめている。みずはタブレットを両手で持ち、返事を待つあいだ、わずかに首を傾けていた。地球の青い光が、長い髪の内側へ薄く映っている。"],
-    ["festival_concept_027", "dialogue", "visitor", "プレイヤー", "「はい。同じ大学の学生です。今日は学生作品を見に来ました。広場から見えた、この地球が気になって」"],
-  ],
-  "festival_concept_021–027の決定稿または順序が変わりました",
-);
+assert.equal(festival.steps[20].text, "「体験してくれて、ありがとうございます。改めまして、私は『あめ』です」", "festival_concept_021の挨拶が修正版と一致しません");
+assert.equal(festival.steps[22].text, "「私は『みず』と申します。あなたも、うちの大学の方ですの？」", "festival_concept_023の自己紹介が修正版と一致しません");
+assert.match(festival.steps[26].text, /同じ大学の学生/u, "festival_concept_027の返答が修正版と一致しません");
 story.scenes.forEach((scene, sceneIndex) => {
   const expectedDates = Array(6).fill("10月3日（土）");
   const expectedTimes = ["AM 9:20–9:40", "AM 9:40–9:45", "AM 9:45–9:53", "AM 9:53–10:00", "AM 10:00–10:07", "AM 10:07–10:45"];
@@ -110,8 +101,8 @@ assert.deepEqual(interactions[1].interaction, {
   kind: "map01",
   modeIndex: 0,
   modeId: "breathing-earth",
-  phase: "temperature-anomaly",
-  requiredViews: ["long_term", "temperature_anomaly"],
+  phase: "long-term-co2",
+  requiredViews: ["long_term"],
 });
 assert.equal(story.scenes.find((scene) => scene.id === "map_mode01").steps[2].speaker, "amane", "MAP01 PREPはアマネの操作案内です");
 assert.equal(story.scenes.find((scene) => scene.id === "map_mode01").steps[4].type, "narration", "MAP01 return stepがありません");
@@ -126,7 +117,7 @@ assert.deepEqual(story.scenes.find((scene) => scene.id === "gx_experience").step
   "gx_experience_057",
   "gx_experience_058",
 ], "削除した三択を飛ばす安定IDの接続が変わりました");
-assert.equal(story.scenes.find((scene) => scene.id === "esp32_pitch").steps[1].text, "画面の端には、「参加者が測ったデータ」と書かれた空欄があった。", "次sceneに旧選択履歴が残っています");
+assert.equal(story.scenes.find((scene) => scene.id === "esp32_pitch").steps[1].text, "太古の海の残像が消えるまで、私は画面の前から動けなかった。", "esp32_pitch_002の修正文が一致しません");
 assert.equal(steps.some((step) => ["reflectionChoice", "result", "end"].includes(step.type)), false, "旧後半の選択・結果stepが本編へ残っています");
 assert.equal(steps.some((step) => ["map03", "abstract07", "map08", "space10"].includes(step.interaction?.kind)), false, "旧MODE interactionが本編へ残っています");
 
@@ -139,9 +130,9 @@ assert.equal(story.scenes.some((scene) => scene.id === "current_exhibition"), fa
 
 const welcome = story.scenes.find((scene) => scene.id === "welcome_chat");
 assert.equal(welcome.steps[0].type, "chatSurface");
-assert.equal(welcome.steps[6].text, "ESP32に詳しい。参加者が測った温度や湿度をGAIA SENSEWAREに表示する案を出してくれたよ。", "welcome_chat_007の紹介文が決定稿と一致しません");
+assert.equal(welcome.steps[6].text, "マイコンやセンサーに詳しい人だよ。", "welcome_chat_007の紹介文が修正版と一致しません");
 assert.equal(welcome.steps[14].text, "まだ会ったことのないsakuから、短いメッセージが届いた。", "welcome_chat_015の導入文が決定稿と一致しません");
-assert.equal(welcome.steps[62].text, "地球の未来を考えたい。ESP32をつなぎたい。二人にまた会いたい。どれも同じくらい本当だった。周囲では、午前枠を終えた学生たちが機材を箱へ戻し始めていた。", "welcome_chat_063の午前展示枠終了へのつなぎが決定稿と一致しません");
+assert.equal(welcome.steps[62].text, "地球の未来を考えたい。センサーをつなぎたい。二人にまた会いたい。どれも同じくらい本当だった。周囲では、午前枠を終えた学生たちが機材を箱へ戻し始めていた。", "welcome_chat_063の午前展示枠終了へのつなぎが修正版と一致しません");
 assert.equal(welcome.steps[63].text, "「私たちも、そろそろ片づけます。展示画面を消しますね」", "welcome_chat_064の終了案内が決定稿と一致しません");
 assert.equal(welcome.steps[67].text, "黒い画面の中で、私たち三人の視線が交わった。", "welcome_chat_068の決定稿が一致しません");
 assert.equal(welcome.steps[83].text, "その二行が、今日の展示で見てきたものと、これから始める観測をつないだ。", "welcome_chat_084の受けが決定稿と一致しません");

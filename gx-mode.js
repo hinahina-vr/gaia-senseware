@@ -70,6 +70,7 @@
     eraTransition: layer.querySelector("#gx-era-transition"),
     eraTransitionLabel: layer.querySelector("#gx-era-transition-label"),
     eraTransitionTitle: layer.querySelector("#gx-era-transition-title"),
+    eraTransitionSkip: layer.querySelector("#gx-era-transition-skip"),
     restart: layer.querySelector("#gx-restart"),
     data: layer.querySelector("#gx-data"),
     dataPanel: layer.querySelector("#gx-data-panel"),
@@ -331,6 +332,7 @@
     layer.classList.remove("is-era-transitioning");
     elements.eraTransition.classList.remove("is-visible");
     elements.eraTransition.setAttribute("aria-hidden", "true");
+    elements.eraTransitionSkip.hidden = true;
     colonies.length = 0;
     bubbles.length = 0;
     rust.length = 0;
@@ -401,6 +403,20 @@
     }));
   };
 
+  const completeEraTransition = (completedPhase = phaseIndex) => {
+    if (!eraTransitionPending) return;
+    window.clearTimeout(eraTransitionTimer);
+    eraTransitionTimer = 0;
+    layer.classList.remove("is-era-transitioning");
+    elements.eraTransition.classList.remove("is-visible");
+    elements.eraTransition.setAttribute("aria-hidden", "true");
+    elements.eraTransitionSkip.hidden = true;
+    eraTransitionPending = false;
+    if (!isOpen || phaseIndex !== completedPhase) return;
+    if (completedPhase === exhibit.phases.length - 1) closeGX();
+    else setPhase(completedPhase + 1);
+  };
+
   const beginEraTransition = () => {
     if (eraTransitionPending) return;
     const completedPhase = phaseIndex;
@@ -415,20 +431,12 @@
     layer.classList.add("is-era-transitioning");
     elements.eraTransition.classList.add("is-visible");
     elements.eraTransition.setAttribute("aria-hidden", "false");
+    elements.eraTransitionSkip.hidden = false;
     if (isFinalPhase && storyDetourActive) {
       storySequenceComplete = true;
       emitStoryProgress(true);
     }
-    eraTransitionTimer = window.setTimeout(() => {
-      eraTransitionTimer = 0;
-      layer.classList.remove("is-era-transitioning");
-      elements.eraTransition.classList.remove("is-visible");
-      elements.eraTransition.setAttribute("aria-hidden", "true");
-      eraTransitionPending = false;
-      if (!isOpen || phaseIndex !== completedPhase) return;
-      if (isFinalPhase) closeGX();
-      else setPhase(completedPhase + 1);
-    }, ERA_TRANSITION_MS);
+    eraTransitionTimer = window.setTimeout(() => completeEraTransition(completedPhase), ERA_TRANSITION_MS);
   };
 
   const addRustParticle = (x, y, strength = 1) => {
@@ -2020,6 +2028,7 @@
     layer.classList.remove("is-era-transitioning");
     elements.eraTransition.classList.remove("is-visible");
     elements.eraTransition.setAttribute("aria-hidden", "true");
+    elements.eraTransitionSkip.hidden = true;
     isOpen = false;
     cancelAnimationFrame(animationFrame);
     cancelAnimationFrame(eraCounterFrame);
@@ -2090,6 +2099,10 @@
   elements.next.addEventListener("click", () => {
     if (phaseIndex === exhibit.phases.length - 1) closeGX();
     else setPhase(phaseIndex + 1);
+  });
+  elements.eraTransitionSkip.addEventListener("click", (event) => {
+    event.stopPropagation();
+    completeEraTransition(phaseIndex);
   });
   elements.restart.addEventListener("click", resetWorld);
   elements.data.addEventListener("click", openDataPanel);

@@ -29,7 +29,8 @@ const cases = [
   ["gx_experience_030", "gx-coevolution", "novel-bg-gx-breathing-points-autumn-morning-v3.png"],
   ["gx_experience_055", "gx-ten-mode-gateway", "novel-bg-gx-mode-gateway-autumn-morning-v4.png"],
   ["circle_invitation_011", "circle-private-invitation", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
-  ["welcome_chat_074", "welcome-night-exit-mobile", "novel-bg-zushi-coast-autumn-day-v3.png"],
+  ["welcome_chat_074", "welcome-night-exit-mobile", "event-cg-exhibition-finale-sunset-v1.png", "event-cg-exhibition-finale-sunset-mobile-v1.png"],
+  ["welcome_chat_084", "welcome-earth-partner-reflection", "event-cg-exhibition-finale-sunset-v1.png", "event-cg-exhibition-finale-sunset-mobile-v1.png"],
   ["festival_concept_015", "festival-first-encounter-cg", "event-cg-first-encounter-five-plane-v3.png", "event-cg-first-encounter-five-plane-mobile-v2.png"],
   ["festival_concept_021", "festival-amane-closeup-cg", "event-cg-amane-closeup-five-plane-v3.png"],
   ["festival_concept_023", "festival-mizuha-closeup-cg", "event-cg-mizuha-closeup-five-plane-v3.png"],
@@ -39,7 +40,7 @@ const cases = [
   ["esp32_pitch_008", "esp32-exhibition-proposal", "event-cg-esp32-collaboration-v2.png", "event-cg-esp32-collaboration-mobile-v1.png"],
   ["circle_invitation_029", "circle-invitation-card-cg", "event-cg-circle-invitation-card-v3.png", "event-cg-circle-invitation-card-mobile-v1.png"],
   ["circle_invitation_048", "circle-welcome-cg", "event-cg-circle-welcome-v2.png", "event-cg-circle-welcome-mobile-v1.png"],
-  ["welcome_chat_092", "welcome-exhibition-finale-cg", "event-cg-exhibition-finale-v2.png", "event-cg-exhibition-finale-mobile-v1.png"],
+  ["welcome_chat_092", "welcome-exhibition-finale-cg", "event-cg-exhibition-finale-sunset-v1.png", "event-cg-exhibition-finale-sunset-mobile-v1.png"],
 ];
 const selectedCases = scanScope === "start" ? cases.slice(0, 2) : scanScope === "smoke" ? [cases[0], cases[1], cases[3], cases[11]] : cases;
 

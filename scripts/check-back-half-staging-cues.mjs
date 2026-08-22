@@ -53,7 +53,11 @@ assert(resolved.every(({ staging: cue }) => cue?.temporal), "every contest step 
 assert(resolved.every(({ staging: cue }) => cue.temporal.context === "CURRENT"), "contest route must stay CURRENT");
 assert(resolved.every(({ staging: cue }) => cue.temporal.precision === "MINUTE"), "contest route must keep authored minute precision");
 assert(resolved.every(({ staging: cue }) => cue.temporal.date === "10月3日（土）"), "contest cue lost the authored autumn Saturday date");
-assert(resolved.every(({ staging: cue }) => /^AM\s/u.test(cue.temporal.time)), "contest cue lost autumn-morning AM notation");
+assert(resolved.every(({ step, staging: cue }) => {
+  const stepNumber = Number(step.id.slice(-3));
+  const isSunsetWalk = step.sceneId === "welcome_chat" && stepNumber >= 74;
+  return isSunsetWalk ? /^PM\s/u.test(cue.temporal.time) : /^AM\s/u.test(cue.temporal.time);
+}), "contest cue lost its authored morning-to-sunset time notation");
 assert(resolved.every(({ staging: cue }) => cue.audio === "none"), "contest cue added character or archive audio");
 
 for (const assetPath of new Set(resolved.map(({ background }) => background.assetPath))) {
@@ -133,6 +137,10 @@ assert.equal(cue("welcome_chat_055").castMode, "normal");
 assert.equal(cue("welcome_chat_055").character.cast, "mizuha-amane");
 assert.equal(cue("welcome_chat_055").character.portrait, "normal");
 assert.equal(cue("welcome_chat_077").castMode, "normal");
+assert.equal(cue("welcome_chat_073").temporal.time, "AM 10:07–10:45");
+assert.equal(cue("welcome_chat_074").temporal.time, "PM 5:10–5:45");
+assert.equal(cue("welcome_chat_074").temporal.dayPeriod, "PM");
+assert.equal(cue("welcome_chat_092").temporal.location, "海沿いの帰り道／夕暮れの遊歩道");
 assert.equal(cue("welcome_chat_078").device, "mobile-campus-chat");
 assert.equal(cue("welcome_chat_078").character.avatar, "none");
 assert.equal(cue("welcome_chat_095").castMode, "chat-text-only-no-cast");

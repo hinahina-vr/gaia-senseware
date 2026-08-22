@@ -16,8 +16,11 @@
   });
   const STORAGE_KEY = "gaiaSensewareTrueEnd:complete:v1";
   const CHARACTER_DELAY_MS = 29;
-  const SCENE_CROSSFADE_MS = 720;
-  const SCENE_SEPARATOR_MS = 1500;
+  const SCENE_BLACKOUT_MS = 360;
+  const SCENE_TITLE_FADE_MS = 220;
+  const SCENE_TITLE_HOLD_MS = 520;
+  const SCENE_TITLE_OUT_MS = 180;
+  const SCENE_REVEAL_MS = 460;
   const segmenter = typeof Intl?.Segmenter === "function"
     ? new Intl.Segmenter("ja", { granularity: "grapheme" })
     : null;
@@ -36,7 +39,7 @@
     return node;
   };
 
-  const createRuntime = ({ host, layer, onComplete, onExit, onStepRead, onLogOpen }) => {
+  const createRuntime = ({ host, layer, onComplete, onExit, onStepRead, onLogOpen, onReady }) => {
     if (!(host instanceof HTMLElement) || !(layer instanceof HTMLElement)) return null;
 
     let sceneIndex = 0;
@@ -49,20 +52,18 @@
     let complete = false;
     let universeRuntime = null;
     let sceneCardTimer = 0;
+    let sceneCardTimerResolve = null;
+    let sceneCardFadeTimer = 0;
+    let sceneCardFadeResolve = null;
+    let renderRevision = 0;
 
     const shell = createElement("section", "true-end-shell");
     shell.tabIndex = 0;
     shell.setAttribute("role", "region");
-    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION Beyond。メッセージウィンドウ、Enterキー、またはスペースキーで進みます");
+    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION TRANSMISSION。画面をクリックまたはタップするか、Enterキーまたはスペースキーで進みます");
 
     const universe = createElement("canvas", "true-end-universe");
     universe.setAttribute("aria-hidden", "true");
-    const weave = createElement("div", "true-end-weave");
-    weave.setAttribute("aria-hidden", "true");
-    for (let index = 0; index < 8; index += 1) weave.append(createElement("i"));
-    const relic = createElement("div", "true-end-relic");
-    relic.setAttribute("aria-hidden", "true");
-    relic.append(createElement("i"), createElement("i"), createElement("i"), createElement("i"));
     const header = createElement("header", "true-end-header");
     const brand = createElement("div", "true-end-brand");
     brand.append(
@@ -98,13 +99,19 @@
 
     const logButton = createElement("button", "true-end-log-button", "LOG");
     logButton.type = "button";
-    logButton.setAttribute("aria-label", "Beyondの会話履歴を開く");
+    logButton.setAttribute("aria-label", "TRANSMISSIONの会話履歴を開く");
 
     const sceneCard = createElement("div", "true-end-scene-card");
     sceneCard.setAttribute("aria-hidden", "true");
+    sceneCard.dataset.phase = "idle";
+    const sceneCardContent = createElement("div", "true-end-scene-card-content");
     const sceneCardNumber = createElement("span");
     const sceneCardTitle = createElement("strong");
-    sceneCard.append(sceneCardNumber, sceneCardTitle);
+    sceneCardContent.append(sceneCardNumber, sceneCardTitle);
+    sceneCard.append(sceneCardContent);
+
+    const interfaceLayer = createElement("div", "true-end-interface");
+    interfaceLayer.append(header, progress, readout, dialogue, footer);
 
     const finale = createElement("section", "true-end-finale");
     finale.hidden = true;
@@ -114,19 +121,13 @@
     finaleReadout.lang = SYSTEM_LANGUAGE;
     story.finale.readout.forEach((line) => finaleReadout.append(createElement("code", "", line)));
     const finaleNote = createElement("p", "", "感じ取れる世界は、まだ増えていく。");
-    const finaleExit = createElement("button", "", "タイトルへ戻る");
+    const finaleExit = createElement("button", "", "世界を拡げる");
     finaleExit.type = "button";
     finale.append(finaleLabel, finaleTitle, finaleReadout, finaleNote, finaleExit);
 
     shell.append(
       universe,
-      weave,
-      relic,
-      header,
-      progress,
-      readout,
-      dialogue,
-      footer,
+      interfaceLayer,
       logButton,
       sceneCard,
       finale,
@@ -229,36 +230,107 @@
 
     const setBackdrop = (name, immediate = false) => {
       shell.dataset.backdrop = name;
-      universeRuntime?.setScene?.(name, { immediate });
+      return universeRuntime?.setScene?.(name, { immediate }) || Promise.resolve();
     };
 
-    const showSceneSeparator = () => new Promise((resolve) => {
-      sceneCard.classList.remove("is-visible");
-      void sceneCard.offsetWidth;
-      if (reducedMotion()) {
-        resolve();
-        return;
+    const setSceneTransitionPhase = (phase) => {
+      sceneCard.dataset.phase = phase;
+      shell.dataset.sectionTransitionPhase = phase;
+      document.body.classList.toggle("true-end-section-transition", phase !== "idle");
+      const sharedAudioDock = document.querySelector(".gaia-audio-dock");
+      if (phase === "idle") sharedAudioDock?.style.removeProperty("opacity");
+      else sharedAudioDock?.style.setProperty("opacity", "0", "important");
+    };
+
+    const stopSceneCardDelay = () => {
+      window.clearTimeout(sceneCardTimer);
+      sceneCardTimer = 0;
+      const resolve = sceneCardTimerResolve;
+      sceneCardTimerResolve = null;
+      resolve?.();
+    };
+
+    const waitForSceneCard = (duration) => {
+      stopSceneCardDelay();
+      if (reducedMotion() || duration <= 0) return Promise.resolve();
+      return new Promise((resolve) => {
+        sceneCardTimerResolve = resolve;
+        sceneCardTimer = window.setTimeout(() => {
+          sceneCardTimer = 0;
+          sceneCardTimerResolve = null;
+          resolve();
+        }, duration);
+      });
+    };
+
+    const stopSceneCardFade = () => {
+      window.clearTimeout(sceneCardFadeTimer);
+      sceneCardFadeTimer = 0;
+      const resolve = sceneCardFadeResolve;
+      sceneCardFadeResolve = null;
+      resolve?.();
+    };
+
+    const animateSceneOpacity = (target, from, to, duration) => {
+      stopSceneCardFade();
+      target.style.opacity = String(from);
+      if (reducedMotion() || duration <= 0) {
+        target.style.opacity = String(to);
+        return Promise.resolve();
       }
+      return new Promise((resolve) => {
+        sceneCardFadeResolve = resolve;
+        const startedAt = performance.now();
+        const drawSceneOpacity = (now) => {
+          const progress = Math.min(1, (now - startedAt) / duration);
+          const eased = progress * progress * (3 - 2 * progress);
+          target.style.opacity = String(from + (to - from) * eased);
+          if (progress < 1) {
+            sceneCardFadeTimer = window.setTimeout(() => drawSceneOpacity(performance.now()), 16);
+            return;
+          }
+          sceneCardFadeTimer = 0;
+          sceneCardFadeResolve = null;
+          resolve();
+        };
+        drawSceneOpacity(startedAt);
+      });
+    };
 
-      let settled = false;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(sceneCardTimer);
-        sceneCardTimer = 0;
-        sceneCard.removeEventListener("animationend", onAnimationEnd);
-        sceneCard.classList.remove("is-visible");
-        resolve();
-      };
-      const onAnimationEnd = (event) => {
-        if (event.target === sceneCard && event.animationName === "true-end-scene-card") finish();
-      };
-      sceneCard.addEventListener("animationend", onAnimationEnd);
-      sceneCard.classList.add("is-visible");
-      sceneCardTimer = window.setTimeout(finish, SCENE_SEPARATOR_MS + 120);
-    });
+    const showSceneSeparator = async ({ prepareScene, switchScene, onSceneReady } = {}) => {
+      sceneCard.classList.add("is-active");
+      sceneCardContent.style.opacity = "0";
+      setSceneTransitionPhase("blackout");
+      await animateSceneOpacity(sceneCard, 0, 1, SCENE_BLACKOUT_MS);
+      if (!shell.isConnected || complete) return;
 
-    const syncScene = ({ immediate = false } = {}) => {
+      setSceneTransitionPhase("black");
+      prepareScene?.();
+      setSceneTransitionPhase("title");
+      await animateSceneOpacity(sceneCardContent, 0, 1, SCENE_TITLE_FADE_MS);
+      if (!shell.isConnected || complete) return;
+
+      setSceneTransitionPhase("switching");
+      await Promise.all([
+        Promise.resolve().then(() => switchScene?.()),
+        waitForSceneCard(SCENE_TITLE_HOLD_MS),
+      ]);
+      if (!shell.isConnected || complete) return;
+
+      setSceneTransitionPhase("ready");
+      onSceneReady?.({ shell });
+      await animateSceneOpacity(sceneCardContent, 1, 0, SCENE_TITLE_OUT_MS);
+      if (!shell.isConnected || complete) return;
+
+      setSceneTransitionPhase("reveal");
+      await animateSceneOpacity(sceneCard, 1, 0, SCENE_REVEAL_MS);
+      sceneCard.classList.remove("is-active");
+      sceneCard.style.removeProperty("opacity");
+      sceneCardContent.style.removeProperty("opacity");
+      setSceneTransitionPhase("idle");
+    };
+
+    const syncSceneMetadata = () => {
       const current = scene();
       if (!current) return;
       sceneNumber.textContent = `VENA ${current.number}`;
@@ -268,30 +340,33 @@
       sceneCardNumber.lang = SYSTEM_LANGUAGE;
       sceneCardTitle.textContent = current.title;
       shell.dataset.scene = current.id;
-      setBackdrop(current.backdrop, immediate);
     };
 
-    const revealSceneAfterSeparator = () => {
-      showSceneSeparator().then(() => {
-        if (!shell.isConnected || complete) return;
-        renderStep();
-        requestAnimationFrame(() => {
-          shell.classList.remove("is-scene-separating");
-          transitioning = false;
-        });
-      });
+    const syncSceneBackdrop = ({ immediate = false } = {}) => {
+      const current = scene();
+      if (!current) return Promise.resolve();
+      return setBackdrop(current.backdrop, immediate);
     };
 
-    const renderStep = () => {
+    const revealSceneAfterSeparator = async (options) => {
+      await showSceneSeparator(options);
+      if (!shell.isConnected || complete) return;
+      shell.classList.remove("is-scene-separating");
+      transitioning = false;
+    };
+
+    const renderStep = async () => {
       const current = step();
-      if (!current) return;
+      if (!current) return false;
+      const revision = ++renderRevision;
       const currentSpeaker = SPEAKERS[current.speaker || "narrator"] || SPEAKERS.narrator;
-      shell.dataset.speaker = current.speaker || "narrator";
-      shell.classList.toggle("is-emphasis", current.emphasis === true);
-      universeRuntime?.setPresence?.(current.speaker || "narrator", {
+      await (universeRuntime?.setPresence?.(current.speaker || "narrator", {
         emphasis: current.emphasis === true,
         signal: current.id,
-      });
+      }) || Promise.resolve());
+      if (revision !== renderRevision || !shell.isConnected || complete) return false;
+      shell.dataset.speaker = current.speaker || "narrator";
+      shell.classList.toggle("is-emphasis", current.emphasis === true);
       speaker.textContent = currentSpeaker.name;
       speaker.lang = currentSpeaker.language || "ja";
       speaker.hidden = !currentSpeaker.name;
@@ -301,9 +376,11 @@
       renderReadout(current.readout || []);
       onStepRead?.(current);
       startReveal(current.text);
+      shell.dataset.messageCommittedAt = performance.now().toFixed(3);
       counter.textContent = `${String(absoluteStep()).padStart(3, "0")} / ${String(totalSteps).padStart(3, "0")}`;
       progressFill.style.width = `${(absoluteStep() / totalSteps) * 100}%`;
       dialogue.setAttribute("aria-label", `${currentSpeaker.name ? `${currentSpeaker.name}。` : ""}${current.text}。次へ進む`);
+      return true;
     };
 
     const showFinale = () => {
@@ -331,8 +408,12 @@
       if (finishReveal()) return;
       const currentScene = scene();
       if (stepIndex < currentScene.steps.length - 1) {
+        transitioning = true;
         stepIndex += 1;
-        renderStep();
+        renderStep().finally(() => {
+          if (!shell.isConnected || complete) return;
+          transitioning = false;
+        });
         return;
       }
       if (sceneIndex >= story.scenes.length - 1) {
@@ -342,25 +423,63 @@
 
       transitioning = true;
       stopReveal();
-      shell.classList.add("is-scene-changing", "is-scene-separating");
-      const delay = reducedMotion() ? 0 : SCENE_CROSSFADE_MS / 2;
-      window.setTimeout(() => {
-        sceneIndex += 1;
-        stepIndex = 0;
-        syncScene();
-        revealSceneAfterSeparator();
-        requestAnimationFrame(() => {
-          shell.classList.remove("is-scene-changing");
-        });
-      }, delay);
+      shell.classList.add("is-scene-separating");
+      void revealSceneAfterSeparator({
+        prepareScene: () => {
+          sceneIndex += 1;
+          stepIndex = 0;
+          syncSceneMetadata();
+        },
+        switchScene: async () => {
+          await syncSceneBackdrop({ immediate: true });
+          await renderStep();
+        },
+      });
     };
 
-    dialogue.addEventListener("click", advance);
+    let dialoguePointerOrigin = null;
+    let suppressDialogueClick = false;
+    dialogue.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      dialoguePointerOrigin = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      suppressDialogueClick = false;
+    });
+    dialogue.addEventListener("pointermove", (event) => {
+      if (!dialoguePointerOrigin || event.pointerId !== dialoguePointerOrigin.id) return;
+      if (Math.hypot(event.clientX - dialoguePointerOrigin.x, event.clientY - dialoguePointerOrigin.y) > 6) {
+        suppressDialogueClick = true;
+      }
+    });
+    dialogue.addEventListener("pointerup", (event) => {
+      if (!dialoguePointerOrigin || event.pointerId !== dialoguePointerOrigin.id) return;
+      dialoguePointerOrigin = null;
+      window.setTimeout(() => { suppressDialogueClick = false; }, 0);
+    });
+    dialogue.addEventListener("pointercancel", () => {
+      dialoguePointerOrigin = null;
+      suppressDialogueClick = false;
+    });
+    dialogue.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (suppressDialogueClick) {
+        event.preventDefault();
+        suppressDialogueClick = false;
+        return;
+      }
+      advance();
+    });
     logButton.addEventListener("click", (event) => {
       event.stopPropagation();
       onLogOpen?.();
     });
-    shell.addEventListener("click", (event) => event.stopPropagation());
+    shell.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const interactiveTarget = event.target instanceof Element
+        ? event.target.closest(".true-end-dialogue, .true-end-log-button, .true-end-finale")
+        : null;
+      if (interactiveTarget) return;
+      advance();
+    });
     shell.addEventListener("keydown", (event) => {
       if (!(["Enter", " "].includes(event.key)) || event.repeat || event.isComposing || event.target.closest("button")) return;
       event.preventDefault();
@@ -370,16 +489,25 @@
 
     transitioning = true;
     shell.classList.add("is-scene-separating");
-    syncScene({ immediate: true });
-    revealSceneAfterSeparator();
+    syncSceneMetadata();
+    void revealSceneAfterSeparator({
+      switchScene: async () => {
+        await syncSceneBackdrop({ immediate: true });
+        await renderStep();
+      },
+      onSceneReady: onReady,
+    });
     requestAnimationFrame(() => shell.focus({ preventScroll: true }));
 
     return Object.freeze({
       shell,
       destroy() {
+        renderRevision += 1;
+        document.body.classList.remove("true-end-section-transition");
+        document.querySelector(".gaia-audio-dock")?.style.removeProperty("opacity");
         stopReveal();
-        window.clearTimeout(sceneCardTimer);
-        sceneCardTimer = 0;
+        stopSceneCardDelay();
+        stopSceneCardFade();
         universeRuntime?.destroy?.();
         universeRuntime = null;
         shell.remove();

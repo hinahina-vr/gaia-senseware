@@ -2,13 +2,14 @@
 
 `character-designs-restart/07-jumper-skirt.png` を基準にした本番用ビジュアルセット。
 
-- `opening-keyvisual-v1.webp`: オープニング終盤のキービジュアル
-- `gateway-keyvisual-v1.webp`: 四つの入口の通常背景
+- `opening-keyvisual-v2.png`: オープニング終盤のキービジュアル。キャラクターをタイトル画面準拠の淡いセル塗りへ統一
+- `gateway-keyvisual-v2.png`: 四つの入口の通常背景。キャラクターをタイトル画面準拠の淡いセル塗りへ統一
 - `mode-abstract-v1.webp`: 抽象モードのプレビュー背景
 - `mode-map-v1.webp`: 地図モードのプレビュー背景
 - `novel-background-v1.webp`: 旧ストーリーモード背景（差し替え前）
 - `zushi-campus-story-bg-v1.webp`: ZEN大学逗子キャンパスの実景的特徴をもとに描き起こした、ストーリーモード用の背景美術
-- `mode-space-v1.webp`: 宇宙モードのプレビュー背景
+- `mode-space-v2.png`: 宇宙モードのプレビュー背景。キャラクターをタイトル画面準拠の淡いセル塗りへ統一
+- `sound-archive-bg-v2.png`: サウンドモードのプレビュー背景。キャラクターをタイトル画面準拠の淡いセル塗りへ統一
 - `../characters/minamo-expression-sheet-07-alpha.png`: ミナモ4表情
 - `../characters/sora-expression-sheet-07-alpha.png`: ソラ4表情
 

@@ -341,7 +341,7 @@ const scanNamesAndBackgrounds = async (viewport) => {
   const backgroundSteps = [
     ["festival_concept_014", "festival-gaia-booth-approach"],
     ["festival_concept_015", "festival-first-encounter-cg"],
-    ["festival_concept_027", "festival-gaia-booth-conversation"],
+    ["festival_concept_027", "festival-mizuha-closeup-cg"],
     ["gx_experience_016", "gx-ocean-entry"],
     ["gx_experience_018", "gx-ancient-ocean"],
     ["welcome_chat_073", "welcome-booth-packdown"],

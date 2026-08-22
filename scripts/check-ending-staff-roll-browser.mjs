@@ -101,6 +101,7 @@ const scanEnding = (page) => page.evaluate(() => {
   const trackRect = track?.getBoundingClientRect();
   const closingRect = closing?.getBoundingClientRect();
   const lastCreditRect = lastCredit?.getBoundingClientRect();
+  const buttonStyle = button ? getComputedStyle(button) : null;
   const trackCenterX = trackRect ? trackRect.left + (trackRect.width / 2) : 0;
   const creditRows = [...document.querySelectorAll(".novel-staff-roll-credit")].map((row) => {
     const term = row.querySelector("dt");
@@ -133,6 +134,10 @@ const scanEnding = (page) => page.evaluate(() => {
     buttonText: button?.textContent?.trim() || "",
     buttonAriaLabel: button?.getAttribute("aria-label") || "",
     buttonHeight: buttonRect?.height || 0,
+    buttonBackground: buttonStyle?.background || "",
+    buttonBorderColor: buttonStyle?.borderColor || "",
+    buttonColor: buttonStyle?.color || "",
+    buttonDisabled: button?.disabled ?? false,
     buttonMarkCenterDelta: buttonRect && closingMarkRect
       ? Math.hypot(
         (buttonRect.left + (buttonRect.width / 2)) - (closingMarkRect.left + (closingMarkRect.width / 2)),
@@ -142,6 +147,9 @@ const scanEnding = (page) => page.evaluate(() => {
     closingMarkText: closingMark?.textContent?.trim() || "",
     closingMarkAnimation: closingMark ? getComputedStyle(closingMark).animationName : "",
     closingActionFlashAnimation: closingAction ? getComputedStyle(closingAction, "::before").animationName : "",
+    closingActionFlashDuration: closingAction ? getComputedStyle(closingAction, "::before").animationDuration : "",
+    transitionPhase: layer?.dataset.trueEndTransitionPhase || "",
+    transitionVeilCount: document.querySelectorAll(".novel-staff-roll-transition-veil").length,
     audioTrack: globalThis.GaiaOpeningAudio?.getState?.().track || "",
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
     overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
@@ -218,7 +226,7 @@ try {
     assert.equal(initial.text.includes("\nEND"), false, `${viewport.name}: obsolete END mark remains`);
     assert.equal(initial.skipHintCount, 0, `${viewport.name}: obsolete staff-roll skip hint remains`);
     assert.equal(initial.toolbarHidden, true, `${viewport.name}: normal VN toolbar remained over the ending`);
-    assert.match(initial.stageBackground, /event-cg-exhibition-finale-(?:v2|mobile-v1)\.png/u);
+    assert.match(initial.stageBackground, /event-cg-exhibition-finale-sunset-(?:v1|mobile-v1)\.png/u);
     [
       "原案・企画・制作",
       "シナリオ",
@@ -290,6 +298,14 @@ try {
     assert(!report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/planet-forecast-first-light.mp3")), `${viewport.name}: previous ending track is still requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-rolling.png`) });
 
+    const stepBeforeBackgroundClick = await page.locator("#novel-layer").getAttribute("data-step-id");
+    await page.locator(".novel-staff-roll-stage").click({ position: { x: 20, y: 20 } });
+    await page.waitForTimeout(180);
+    const afterBackgroundClick = await scanEnding(page);
+    assert.equal(afterBackgroundClick.phase, "rolling", `${viewport.name}: background click skipped the staff roll`);
+    assert.equal(afterBackgroundClick.buttonHidden, true, `${viewport.name}: background click revealed the final action`);
+    assert.equal(await page.locator("#novel-layer").getAttribute("data-step-id"), stepBeforeBackgroundClick, `${viewport.name}: background click advanced the story`);
+
     await page.locator(".novel-staff-roll").focus();
     await page.keyboard.down("Control");
     await page.waitForTimeout(360);
@@ -320,8 +336,13 @@ try {
     await page.waitForTimeout(80);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-credits-late.png`) });
 
-    await page.locator(".novel-staff-roll").focus();
-    await page.keyboard.press("Enter");
+    await page.locator(".novel-staff-roll-track").evaluate((node) => {
+      const animation = node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-rise") || node.getAnimations()[0];
+      if (!animation) throw new Error("staff roll animation was not found at completion");
+      animation.pause();
+      animation.currentTime = Number.parseFloat(getComputedStyle(node).animationDuration) * 1_000;
+      node.dispatchEvent(new AnimationEvent("animationend", { animationName: "novel-staff-roll-rise" }));
+    });
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "end-hold");
     const holdObservedAt = Date.now();
     const endHold = await scanEnding(page);
@@ -336,6 +357,7 @@ try {
     assert.equal(finalizing.buttonHidden, true, `${viewport.name}: final action appeared before the flash finished`);
     assert.equal(finalizing.closingMarkAnimation, "novel-staff-roll-mark-flicker");
     assert.equal(finalizing.closingActionFlashAnimation, "novel-staff-roll-action-flash");
+    assert.equal(finalizing.closingActionFlashDuration, "0.36s");
     await page.waitForTimeout(110);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-flash.png`) });
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "complete", null, { timeout: 1_000 });
@@ -343,14 +365,31 @@ try {
     const completed = await scanEnding(page);
     assert.equal(completed.buttonHidden, false);
     assert.equal(completed.buttonText, "世界の続きを紡ぐ");
-    assert.match(completed.buttonAriaLabel, /Beyond/u);
+    assert.match(completed.buttonAriaLabel, /TRANSMISSION/u);
     assert(completed.buttonHeight >= 44, `${viewport.name}: END action hit area is under 44px`);
     assert(completed.buttonMarkCenterDelta <= 3, `${viewport.name}: final action did not replace the thank-you mark in place (${completed.buttonMarkCenterDelta}px)`);
+    assert.match(completed.buttonBackground, /rgba\(2, 10, 16, 0\.92\)/u, `${viewport.name}: final action is not dark (${completed.buttonBackground})`);
     assert.equal(completed.overflowX, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-complete.png`), animations: "disabled" });
 
     await page.locator(".novel-staff-roll-finale button").click();
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "covering");
+    const transitionStartedAt = Date.now();
+    const departure = await scanEnding(page);
+    assert.equal(departure.phase, "departing", `${viewport.name}: transition did not enter departing state`);
+    assert.equal(departure.buttonDisabled, true, `${viewport.name}: final action remained enabled during transition`);
+    assert.equal(departure.transitionVeilCount, 1, `${viewport.name}: transition veil was not mounted exactly once`);
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "switching");
+    const switchObservedAt = Date.now();
     await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")));
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "revealing", null, { timeout: 5_000 });
+    const revealObservedAt = Date.now();
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "complete", null, { timeout: 2_000 });
+    const transitionCompletedAt = Date.now();
+    assert(switchObservedAt >= transitionStartedAt, `${viewport.name}: switch preceded transition start`);
+    assert(revealObservedAt >= switchObservedAt, `${viewport.name}: reveal preceded DOM switch`);
+    assert(transitionCompletedAt > revealObservedAt, `${viewport.name}: transition completed before reveal`);
+    assert.equal(await page.locator(".novel-staff-roll-transition-veil").count(), 0, `${viewport.name}: transition veil remained after completion`);
     await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true && globalThis.GaiaNovel.getState().archivesUnlocked === true);
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "trueend", null, { timeout: 6_500 });
     await page.waitForFunction(() => {
@@ -373,7 +412,7 @@ try {
     assert.equal(trueEndDestination.overflowY, 0);
     assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/sensory-horizon.wav") && [200, 206].includes(response.status)), `${viewport.name}: dedicated true-end score was not requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, controlAttempt, endHold, beforeFinale, completed, trueEndPlayback, trueEndDestination, passed: true });
+    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, afterBackgroundClick, controlAttempt, endHold, beforeFinale, completed, transition: { transitionStartedAt, switchObservedAt, revealObservedAt, transitionCompletedAt }, trueEndPlayback, trueEndDestination, passed: true });
     await context.close();
   }
 
@@ -387,7 +426,7 @@ try {
   assert.equal(reduced.buttonHidden, false);
   assert.equal(reduced.skipHintCount, 0);
   assert.equal(reduced.buttonText, "世界の続きを紡ぐ");
-  assert.match(reduced.buttonAriaLabel, /Beyond/u);
+  assert.match(reduced.buttonAriaLabel, /TRANSMISSION/u);
   assert(reduced.buttonHeight >= 44);
   assert.equal(reduced.overflowX, 0);
   await reducedPage.screenshot({ path: path.join(outputDir, "mobile-390-reduced.png"), animations: "disabled" });

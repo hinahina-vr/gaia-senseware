@@ -345,7 +345,7 @@ body.gaia-opening-active .novel-layer {
     radial-gradient(circle at 72% 46%, rgba(111, 183, 186, 0.18), transparent 16%),
     radial-gradient(circle at 72% 46%, transparent 0 12%, rgba(148, 211, 202, 0.13) 12.2% 12.35%, transparent 12.6% 20%, rgba(148, 211, 202, 0.08) 20.2% 20.35%, transparent 20.6%),
     linear-gradient(115deg, rgba(6, 17, 31, 0.92), rgba(11, 28, 44, 0.7) 56%, rgba(18, 42, 59, 0.3)),
-    url("./assets/visuals-07/opening-keyvisual-v1.webp") center / cover no-repeat;
+    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
 }
 
 .gaia-vn-panel-prologue::before {
@@ -788,7 +788,7 @@ body.gaia-opening-active .novel-layer {
 
 .gaia-vn-final-photo {
   inset: -2%;
-  background: url("./assets/visuals-07/opening-keyvisual-v1.webp") center / cover no-repeat;
+  background: url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
   transform: scale(1.035);
 }
 
@@ -1715,7 +1715,7 @@ body.gaia-opening-active .novel-layer {
   padding: 24px;
   background:
     linear-gradient(180deg, rgba(2, 9, 18, 0.35), rgba(2, 9, 18, 0.68)),
-    url("./assets/visuals-07/opening-keyvisual-v1.webp") center / cover no-repeat;
+    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
   backdrop-filter: none;
 }
 
@@ -1864,7 +1864,7 @@ body.gaia-opening-active .novel-layer {
   background:
     linear-gradient(90deg, rgba(3, 12, 24, 0.93) 0%, rgba(3, 12, 24, 0.76) 36%, rgba(3, 12, 24, 0.12) 68%, transparent),
     linear-gradient(180deg, rgba(3, 12, 24, 0.12), transparent 56%, rgba(3, 12, 24, 0.42)),
-    url("./assets/visuals-07/opening-keyvisual-v1.webp") center / cover no-repeat;
+    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
 }
 
 .gaia-vn-panel-prologue::before,
@@ -2065,7 +2065,7 @@ body.gaia-opening-active .novel-layer {
     padding: 18px;
     background:
       linear-gradient(180deg, rgba(3, 12, 24, 0.32), rgba(3, 12, 24, 0.72)),
-      url("./assets/visuals-07/opening-keyvisual-v1.webp") 65% center / cover no-repeat;
+      url("./assets/visuals-07/opening-keyvisual-v2.png") 65% center / cover no-repeat;
   }
 
   .gaia-opening-sound-card {
@@ -2093,7 +2093,7 @@ body.gaia-opening-active .novel-layer {
   .gaia-vn-panel-prologue {
     background:
       linear-gradient(180deg, rgba(3, 12, 24, 0.16), rgba(3, 12, 24, 0.35) 48%, rgba(3, 12, 24, 0.94) 75%),
-      url("./assets/visuals-07/opening-keyvisual-v1.webp") 64% center / cover no-repeat;
+      url("./assets/visuals-07/opening-keyvisual-v2.png") 64% center / cover no-repeat;
   }
 
   .gaia-vn-prologue-lockup {
@@ -2605,7 +2605,7 @@ body.gaia-opening-active .gaia-opening-skip {
   background:
     radial-gradient(ellipse 62% 64% at 50% 51%, rgba(144, 231, 221, 0.1), rgba(45, 110, 142, 0.055) 42%, transparent 76%),
     linear-gradient(180deg, rgba(3, 12, 24, 0.04), rgba(3, 12, 24, 0.22)),
-    url("./assets/visuals-07/opening-keyvisual-v1.webp") center / cover no-repeat;
+    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
   -webkit-backdrop-filter: blur(1.5px) saturate(1.12);
   backdrop-filter: blur(1.5px) saturate(1.12);
 }
@@ -2759,7 +2759,7 @@ body.gaia-opening-active .gaia-opening-skip {
     background:
       radial-gradient(ellipse 92% 60% at 50% 50%, rgba(132, 225, 217, 0.1), transparent 76%),
       linear-gradient(180deg, rgba(3, 12, 24, 0.04), rgba(3, 12, 24, 0.28)),
-      url("./assets/visuals-07/opening-keyvisual-v1.webp") 65% center / cover no-repeat;
+      url("./assets/visuals-07/opening-keyvisual-v2.png") 65% center / cover no-repeat;
   }
 
   .gaia-opening-sound-card {
@@ -3093,7 +3093,7 @@ body.novel-open:has(#novel-eves-panel:not([hidden])) .novel-topbar #novel-close-
     radial-gradient(ellipse 58% 70% at 29% 52%, rgba(9, 42, 61, 0.22), rgba(5, 26, 43, 0.08) 54%, transparent 82%),
     linear-gradient(90deg, rgba(3, 12, 24, 0.16), rgba(3, 12, 24, 0.025) 68%, transparent),
     linear-gradient(180deg, rgba(3, 12, 24, 0.025), rgba(3, 12, 24, 0.18)),
-    url("./assets/visuals-07/opening-keyvisual-v1.webp") center / cover no-repeat;
+    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
   -webkit-backdrop-filter: saturate(1.06);
   backdrop-filter: saturate(1.06);
 }
@@ -3125,7 +3125,7 @@ body.novel-open:has(#novel-eves-panel:not([hidden])) .novel-topbar #novel-close-
     background:
       radial-gradient(ellipse 94% 64% at 50% 50%, rgba(8, 39, 58, 0.17), transparent 82%),
       linear-gradient(180deg, rgba(3, 12, 24, 0.04), rgba(3, 12, 24, 0.24)),
-      url("./assets/visuals-07/opening-keyvisual-v1.webp") 65% center / cover no-repeat;
+      url("./assets/visuals-07/opening-keyvisual-v2.png") 65% center / cover no-repeat;
   }
 
   .gaia-opening-sound-card {
@@ -3790,7 +3790,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   z-index: -3;
   background:
     linear-gradient(180deg, rgba(8, 24, 40, 0.02), rgba(5, 17, 30, 0.24)),
-    url("./assets/visuals-07/opening-keyvisual-v1.webp") 54% center / cover no-repeat;
+    url("./assets/visuals-07/opening-keyvisual-v2.png") 54% center / cover no-repeat;
   filter: saturate(0.88) contrast(1.02);
   transform: scale(1.035);
   animation: opening-sound-scene-drift 16s ease-in-out infinite alternate;

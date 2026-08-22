@@ -14,6 +14,9 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const canonicalAsset = "assets/visuals-07/novel-bg-festival-five-plane-projection-v1.png";
 const canonicalFile = "novel-bg-festival-five-plane-projection-v1.png";
+const sunsetAsset = "assets/visuals-07/event-cg-exhibition-finale-sunset-v1.png";
+const sunsetDesktopFile = "event-cg-exhibition-finale-sunset-v1.png";
+const sunsetMobileFile = "event-cg-exhibition-finale-sunset-mobile-v1.png";
 const forbiddenFiles = [
   "novel-bg-exhibition-v3.png",
   "novel-bg-exhibition-v2.png",
@@ -42,11 +45,11 @@ const backgroundCases = [
   { stepId: "welcome_chat_002", kind: "booth" },
   { stepId: "welcome_chat_041", kind: "booth" },
   { stepId: "welcome_chat_073", kind: "booth" },
-  { stepId: "welcome_chat_074", kind: "exit" },
-  { stepId: "welcome_chat_083", kind: "exit-chat" },
-  { stepId: "welcome_chat_084", kind: "booth" },
-  { stepId: "welcome_chat_091", kind: "booth" },
-  { stepId: "welcome_chat_092", kind: "event" },
+  { stepId: "welcome_chat_074", kind: "sunset" },
+  { stepId: "welcome_chat_083", kind: "sunset-chat" },
+  { stepId: "welcome_chat_084", kind: "sunset" },
+  { stepId: "welcome_chat_091", kind: "sunset" },
+  { stepId: "welcome_chat_092", kind: "sunset" },
 ];
 const chatCases = [
   { stepId: "welcome_chat_004", label: "start", nextStepId: "welcome_chat_005" },
@@ -60,9 +63,9 @@ const report = {
   canonicalAsset,
   forbiddenFiles,
   locationAudit: {
-    boothRanges: ["festival_concept 013-014", "festival_concept 027-075", "map_mode01 041-043", "welcome_chat 001-073", "welcome_chat 084-091"],
-    explicitLocationException: "welcome_chat_074 explicitly says the three leave the exhibition hall; 074-083 remains the night exit/mobile range",
-    preservedEventCg: ["festival_concept 015-026/076", "welcome_chat 092-095"],
+    boothRanges: ["festival_concept 013-014", "festival_concept 027-075", "map_mode01 041-043", "welcome_chat 001-073"],
+    explicitLocationException: "welcome_chat_074 explicitly says the three leave the exhibition hall; 074-095 remains the sunset promenade range",
+    preservedEventCg: ["festival_concept 015-026/076", "welcome_chat 074-095"],
   },
   backgroundScans: [],
   chatScans: [],
@@ -163,7 +166,7 @@ const scanBackground = async (browser, viewport, testCase) => {
   assert(actual.backgroundSize.split(",").every((value) => value.trim() === "cover"), `${viewport.name}/${testCase.stepId}: background is not cover`);
   assert(actual.backgroundRepeat.split(",").every((value) => value.trim() === "no-repeat"), `${viewport.name}/${testCase.stepId}: background repeats`);
   assert(actual.documentOverflowX <= 1 && actual.documentOverflowY <= 1 && actual.layerOverflowX <= 1, `${viewport.name}/${testCase.stepId}: viewport overflow ${JSON.stringify(actual)}`);
-  if (testCase.kind !== "exit-chat") assert(actual.layerOverflowY <= 1, `${viewport.name}/${testCase.stepId}: non-chat layer overflow ${JSON.stringify(actual)}`);
+  if (testCase.kind !== "sunset-chat") assert(actual.layerOverflowY <= 1, `${viewport.name}/${testCase.stepId}: non-chat layer overflow ${JSON.stringify(actual)}`);
   if (["booth", "reference"].includes(testCase.kind)) {
     assert.equal(actual.cue.assetPath, canonicalAsset, `${viewport.name}/${testCase.stepId}: wrong booth cue`);
     assert(actual.backgroundImage.includes(canonicalFile), `${viewport.name}/${testCase.stepId}: canonical booth is not visible`);
@@ -171,6 +174,12 @@ const scanBackground = async (browser, viewport, testCase) => {
   if (testCase.kind === "booth") {
     const forbiddenRequests = requests.filter((url) => forbiddenFiles.some((file) => url.includes(file)));
     assert.equal(forbiddenRequests.length, 0, `${viewport.name}/${testCase.stepId}: forbidden asset requested: ${forbiddenRequests}`);
+  }
+  if (testCase.kind.startsWith("sunset")) {
+    const expectedFile = viewport.name.startsWith("mobile") ? sunsetMobileFile : sunsetDesktopFile;
+    assert.equal(actual.cue.assetPath, sunsetAsset, `${viewport.name}/${testCase.stepId}: sunset promenade cue mismatch`);
+    assert(actual.backgroundImage.includes(expectedFile), `${viewport.name}/${testCase.stepId}: sunset promenade is not visible`);
+    assert.deepEqual(actual.visibleCharacters, [], `${viewport.name}/${testCase.stepId}: standalone cast overlaps the sunset event CG`);
   }
   if (testCase.cast) assert(actual.visibleCharacters.some((className) => className.includes(`novel-character--${testCase.cast}`)), `${viewport.name}/${testCase.stepId}: character CG disappeared`);
   const screenshot = path.join(outputDir, `${viewport.name}-${testCase.stepId}.png`);

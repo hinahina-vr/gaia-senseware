@@ -20,11 +20,11 @@ const sceneFiles = [
   "event-cg-circle-invitation-card-v3.png",
   "event-cg-circle-welcome-v2.png",
   "event-cg-esp32-collaboration-v2.png",
-  "event-cg-exhibition-finale-v2.png",
+  "event-cg-exhibition-finale-sunset-v1.png",
   "event-cg-festival-map-transition-five-plane-v3.png",
   "event-cg-first-encounter-five-plane-v3.png",
   "event-cg-mizuha-closeup-five-plane-v3.png",
-  "gateway-keyvisual-v1.webp",
+  "gateway-keyvisual-v2.png",
   "mode-abstract-v1.webp",
   "mode-map-v1.webp",
   "novel-background-v1.webp",
@@ -52,7 +52,7 @@ const sceneFiles = [
   "novel-bg-zushi-coast-autumn-day-v3.png",
   "novel-bg-zushi-coast-night-v2.png",
   "novel-title-keyvisual-v3.png",
-  "opening-keyvisual-v1.webp",
+  "opening-keyvisual-v2.png",
 ];
 
 const mobileSceneFiles = [
@@ -61,7 +61,7 @@ const mobileSceneFiles = [
   "event-cg-esp32-collaboration-mobile-v1.png",
   "event-cg-circle-invitation-card-mobile-v1.png",
   "event-cg-circle-welcome-mobile-v1.png",
-  "event-cg-exhibition-finale-mobile-v1.png",
+  "event-cg-exhibition-finale-sunset-mobile-v1.png",
   "novel-title-keyvisual-mobile-v1.png",
 ];
 

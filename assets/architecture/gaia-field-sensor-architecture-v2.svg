@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="945" viewBox="0 0 1680 945" role="img" aria-labelledby="title desc">
+  <title id="title">GAIA SENSEWARE field sensor proposal</title>
+  <desc id="desc">Public wide-area observation and a local ESP32 sensor point remain separate while participant measurement conditions are added as a new layer.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#02070d"/>
+      <stop offset="0.58" stop-color="#06121c"/>
+      <stop offset="1" stop-color="#02050a"/>
+    </linearGradient>
+    <linearGradient id="cyanBus" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#55e5d2" stop-opacity="0.12"/>
+      <stop offset="0.55" stop-color="#8ef7e9" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#55e5d2" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="amberBus" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffb45a" stop-opacity="0.08"/>
+      <stop offset="0.55" stop-color="#ffc46c" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffb45a" stop-opacity="0.18"/>
+    </linearGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#63dccc" stroke-opacity="0.055" stroke-width="1"/>
+    </pattern>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
+      <path d="M0 1.5H1680" stroke="#dffef8" stroke-opacity="0.022"/>
+    </pattern>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <style>
+      .mono{font-family:"IBM Plex Mono","Noto Sans Mono CJK JP","Yu Gothic UI",monospace;letter-spacing:.12em}
+      .jp{font-family:"Noto Sans JP","Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif}
+      .hair{fill:none;stroke:#86eadb;stroke-opacity:.28;stroke-width:1}
+      .hair-a{fill:none;stroke:#ffc46c;stroke-opacity:.3;stroke-width:1}
+      .panel{fill:#07131d;fill-opacity:.82;stroke:#70dccc;stroke-opacity:.34;stroke-width:1.5}
+      .panel-a{fill:#10120f;fill-opacity:.72;stroke:#ffb65d;stroke-opacity:.4;stroke-width:1.5}
+      .tiny{font-size:11px;fill:#8aa8ad}
+      .label{font-size:13px;fill:#96eee1}
+      .label-a{font-size:13px;fill:#ffc577}
+      .value{font-size:16px;fill:#e3f4f2}
+    </style>
+  </defs>
+
+  <rect width="1680" height="945" fill="url(#bg)"/>
+  <rect width="1680" height="945" fill="url(#grid)"/>
+  <rect width="1680" height="945" fill="url(#scan)"/>
+  <path d="M0 132H1680M0 818H1680" stroke="#8ceade" stroke-opacity="0.12"/>
+  <path d="M0 0L220 0L76 945H0ZM1680 0H1534L1600 945H1680Z" fill="#0b1b27" fill-opacity="0.44"/>
+
+  <g class="mono">
+    <text x="76" y="66" font-size="28" fill="#d8e9eb" letter-spacing=".22em">GAIA SENSEWARE</text>
+    <text x="78" y="95" font-size="12" fill="#5de2d0">FIELD PROPOSAL / PARTICIPANT SENSOR LAYER</text>
+    <text x="1603" y="66" font-size="11" fill="#76949a" text-anchor="end">BOOTH LIVE // AM 09:53</text>
+  </g>
+
+  <g transform="translate(70 176)">
+    <path class="panel" d="M0 18L18 0H448L466 18V246L448 264H18L0 246Z"/>
+    <path d="M0 54H466" stroke="#73e7d7" stroke-opacity=".3"/>
+    <text class="mono label" x="24" y="34">01 / PUBLIC OBSERVATION</text>
+    <text class="jp" x="442" y="34" font-size="12" fill="#77949b" text-anchor="end">広域を観測する公開データ</text>
+
+    <g transform="translate(24 78)">
+      <path d="M0 22H310" stroke="#70dccc" stroke-opacity=".18"/>
+      <path d="M0 72H310" stroke="#70dccc" stroke-opacity=".18"/>
+      <path d="M0 122H310" stroke="#70dccc" stroke-opacity=".18"/>
+      <path d="M0 172H310" stroke="#70dccc" stroke-opacity=".18"/>
+      <text class="mono tiny" x="0" y="12">ATMOSPHERE</text>
+      <text class="mono tiny" x="0" y="62">OCEAN</text>
+      <text class="mono tiny" x="0" y="112">LAND</text>
+      <text class="mono tiny" x="0" y="162">CLIMATE</text>
+      <path d="M112 10L138 4L158 17L184 8L211 13L237 3L265 14L294 7" fill="none" stroke="#7cebdc" stroke-width="2"/>
+      <path d="M112 61Q142 39 171 64T230 62T294 58" fill="none" stroke="#67bdd7" stroke-width="2"/>
+      <path d="M112 110L139 98L165 114L194 91L223 105L250 84L294 102" fill="none" stroke="#8bd9b0" stroke-width="2"/>
+      <path d="M112 160L139 152L165 154L194 143L223 135L250 129L294 116" fill="none" stroke="#ffc46c" stroke-width="2"/>
+      <path d="M330 7V188" stroke="#70dccc" stroke-opacity=".35"/>
+      <text class="mono" x="352" y="24" font-size="10" fill="#637f86">AREA</text>
+      <text class="mono value" x="352" y="45">WIDE</text>
+      <text class="mono" x="352" y="88" font-size="10" fill="#637f86">SOURCE</text>
+      <text class="mono value" x="352" y="109">AGENCY</text>
+      <text class="mono" x="352" y="152" font-size="10" fill="#637f86">STATUS</text>
+      <text class="mono" x="352" y="174" font-size="13" fill="#64ddaa">VERIFIED</text>
+    </g>
+  </g>
+
+  <g transform="translate(70 492)">
+    <path class="panel-a" d="M0 18L18 0H448L466 18V286L448 304H18L0 286Z"/>
+    <path d="M0 54H466" stroke="#ffc46c" stroke-opacity=".34"/>
+    <text class="mono label-a" x="24" y="34">02 / LOCAL SENSOR</text>
+    <text class="jp" x="442" y="34" font-size="12" fill="#a9967b" text-anchor="end">身近な一点を細かく測る</text>
+
+    <g transform="translate(26 82)">
+      <path d="M10 18L28 0H202L220 18V182L202 200H28L10 182Z" fill="#071019" stroke="#ffbd68" stroke-opacity=".55"/>
+      <rect x="56" y="38" width="118" height="94" rx="3" fill="#0c1720" stroke="#ffcf83" stroke-opacity=".5"/>
+      <rect x="78" y="56" width="74" height="52" rx="2" fill="#111c22" stroke="#70dccc" stroke-opacity=".62"/>
+      <text class="mono" x="115" y="78" font-size="16" fill="#e9f5f2" text-anchor="middle">ESP32</text>
+      <text class="mono" x="115" y="96" font-size="9" fill="#75d9ca" text-anchor="middle">EDGE NODE</text>
+      <g fill="#ffca79"><rect x="34" y="44" width="8" height="8"/><rect x="34" y="67" width="8" height="8"/><rect x="34" y="90" width="8" height="8"/><rect x="34" y="113" width="8" height="8"/><rect x="34" y="136" width="8" height="8"/><rect x="188" y="44" width="8" height="8"/><rect x="188" y="67" width="8" height="8"/><rect x="188" y="90" width="8" height="8"/><rect x="188" y="113" width="8" height="8"/><rect x="188" y="136" width="8" height="8"/></g>
+      <path d="M220 42H390M220 74H390M220 106H390M220 138H390M220 170H390" stroke="#ffbd68" stroke-opacity=".3"/>
+      <text class="mono tiny" x="244" y="35">TEMP / HUM</text>
+      <text class="mono tiny" x="244" y="67">LIGHT / PRESS</text>
+      <text class="mono tiny" x="244" y="99">PM / AIR</text>
+      <text class="mono tiny" x="244" y="131">SOUND</text>
+      <text class="mono tiny" x="244" y="163">VIBRATION</text>
+      <g fill="#ffbd68" filter="url(#glow)"><rect x="383" y="37" width="7" height="7"/><rect x="383" y="69" width="7" height="7"/><rect x="383" y="101" width="7" height="7"/><rect x="383" y="133" width="7" height="7"/><rect x="383" y="165" width="7" height="7"/></g>
+    </g>
+  </g>
+
+  <g transform="translate(580 184)">
+    <path d="M0 0H518L540 22V556L518 578H0L-22 556V22Z" fill="#050b11" fill-opacity=".7" stroke="#77decf" stroke-opacity=".16"/>
+    <path d="M-22 78H540M-22 500H540" stroke="#78dace" stroke-opacity=".11"/>
+    <text class="mono" x="8" y="36" font-size="12" fill="#617f85">PROPOSAL BUS / SEPARATE SOURCES</text>
+    <text class="mono" x="510" y="36" font-size="10" fill="#596d73" text-anchor="end">DRAFT 01</text>
+    <path d="M-44 206H92L124 238H386L418 206H562" stroke="url(#cyanBus)" stroke-width="3" fill="none" filter="url(#glow)"/>
+    <path d="M-44 354H82L124 312H386L430 354H562" stroke="url(#amberBus)" stroke-width="3" fill="none" filter="url(#glow)"/>
+    <g transform="translate(110 168)">
+      <path d="M0 18L18 0H260L278 18V224L260 242H18L0 224Z" fill="#09151e" stroke="#7be5d6" stroke-opacity=".45"/>
+      <text class="mono label" x="24" y="35">EDGE PROCESS</text>
+      <path d="M24 62H254" stroke="#74decf" stroke-opacity=".24"/>
+      <text class="mono tiny" x="24" y="92">AVG</text><path d="M82 86H232" stroke="#6de3d4" stroke-opacity=".6"/><path d="M82 86L108 82L135 89L162 84L188 86L214 80L232 83" fill="none" stroke="#7ff0e1" stroke-width="2"/>
+      <text class="mono tiny" x="24" y="136">Δ CHANGE</text><path d="M104 130H232" stroke="#ffbf6b" stroke-opacity=".5"/><path d="M104 130L148 130L161 101L177 154L190 128H232" fill="none" stroke="#ffc46c" stroke-width="2"/>
+      <text class="mono tiny" x="24" y="180">LOCAL RULE</text><path d="M124 174H232" stroke="#b989de" stroke-opacity=".5"/><path d="M124 174H157V158H194V174H232" fill="none" stroke="#caa0ef" stroke-width="2"/>
+      <text class="jp" x="139" y="218" font-size="11" fill="#889fa3" text-anchor="middle">平均・急な変化・簡単な判定</text>
+    </g>
+  </g>
+
+  <g transform="translate(1160 176)">
+    <path class="panel" d="M0 18L18 0H426L444 18V300L426 318H18L0 300Z"/>
+    <path d="M0 54H444" stroke="#70dccc" stroke-opacity=".3"/>
+    <text class="mono label" x="24" y="34">NEW LAYER / LOCAL POINT</text>
+    <text class="jp" x="24" y="92" font-size="24" fill="#ecf7f5">参加者が測ったデータ</text>
+    <rect x="24" y="116" width="396" height="1" fill="#73dfd0" fill-opacity=".26"/>
+    <g transform="translate(24 144)">
+      <text class="mono tiny" x="0" y="0">TIME</text><text class="mono value" x="142" y="0">ATTACHED</text>
+      <text class="mono tiny" x="0" y="43">AREA</text><text class="mono value" x="142" y="43">COARSE / SAFE</text>
+      <text class="mono tiny" x="0" y="86">SENSOR TYPE</text><text class="mono value" x="142" y="86">IDENTIFIED</text>
+      <text class="mono tiny" x="0" y="129">CONDITION</text><text class="mono value" x="142" y="129">RECORDED</text>
+      <path d="M126 -8V143" stroke="#70dccc" stroke-opacity=".25"/>
+      <g fill="#66dfad" filter="url(#glow)"><rect x="375" y="-8" width="8" height="8"/><rect x="375" y="35" width="8" height="8"/><rect x="375" y="78" width="8" height="8"/><rect x="375" y="121" width="8" height="8"/></g>
+    </g>
+  </g>
+
+  <g transform="translate(1160 548)">
+    <path class="panel-a" d="M0 18L18 0H426L444 18V210L426 228H18L0 210Z"/>
+    <text class="mono label-a" x="24" y="38">GAIA SENSEWARE / INPUT POLICY</text>
+    <path d="M24 64H420" stroke="#ffbf6c" stroke-opacity=".3"/>
+    <text class="jp" x="24" y="102" font-size="15" fill="#d7e8e6">公開観測と混ぜず、由来を残す。</text>
+    <text class="jp" x="24" y="135" font-size="15" fill="#d7e8e6">通信断では、この層だけを止める。</text>
+    <text class="jp" x="24" y="168" font-size="15" fill="#d7e8e6">再接続後、観測条件ごと再開する。</text>
+    <path d="M24 194H364" stroke="#ffbf6c" stroke-opacity=".2"/>
+    <path d="M364 188L392 194L364 200Z" fill="#ffc46c" filter="url(#glow)"/>
+  </g>
+
+  <g opacity=".45">
+    <path d="M536 308H576M536 650H576M1120 390H1154M1120 670H1154" stroke="#a1f7ea" stroke-width="2"/>
+    <rect x="558" y="302" width="8" height="12" fill="#77e4d4"/>
+    <rect x="558" y="644" width="8" height="12" fill="#ffc46c"/>
+    <rect x="1134" y="384" width="8" height="12" fill="#77e4d4"/>
+    <rect x="1134" y="664" width="8" height="12" fill="#ffc46c"/>
+  </g>
+
+  <ellipse cx="846" cy="450" rx="320" ry="250" fill="#4dcfbd" fill-opacity=".018" filter="url(#soft)"/>
+  <text class="mono" x="80" y="884" font-size="10" fill="#536d72">PUBLIC DATA ≠ PARTICIPANT DATA  /  PROVENANCE AND CONDITIONS REMAIN VISIBLE</text>
+  <text class="mono" x="1600" y="884" font-size="10" fill="#536d72" text-anchor="end">PROPOSAL SAVED // 01</text>
+</svg>

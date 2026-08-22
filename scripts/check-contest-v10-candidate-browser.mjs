@@ -32,14 +32,15 @@ const cinematicCases = [
   { name: "first-encounter-cg", stepId: "festival_concept_015", cue: "festival-first-encounter-cg", asset: "event-cg-first-encounter-five-plane-v3.png", mobileAsset: "event-cg-first-encounter-five-plane-mobile-v2.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "amane-closeup-cg", stepId: "festival_concept_021", cue: "festival-amane-closeup-cg", asset: "event-cg-amane-closeup-five-plane-v3.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "mizuha-closeup-cg", stepId: "festival_concept_023", cue: "festival-mizuha-closeup-cg", asset: "event-cg-mizuha-closeup-five-plane-v3.png", motion: "event-focus", eventCg: true, mobile: true },
-  { name: "gaia-booth", stepId: "festival_concept_027", cue: "festival-gaia-booth-conversation", asset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },
+  { name: "mizuha-reply-cg", stepId: "festival_concept_027", cue: "festival-mizuha-closeup-cg", asset: "event-cg-mizuha-closeup-five-plane-v3.png", motion: "event-focus", eventCg: true },
   { name: "gx-booth", stepId: "gx_experience_001", cue: "gx-ocean-entry", asset: "novel-bg-gx-ancient-ocean-autumn-morning-v3.png", motion: "push-in" },
   { name: "esp32-collaboration-cg", stepId: "esp32_pitch_008", cue: "esp32-exhibition-proposal", asset: "event-cg-esp32-collaboration-v2.png", mobileAsset: "event-cg-esp32-collaboration-mobile-v1.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "circle-welcome-cg", stepId: "circle_invitation_048", cue: "circle-welcome-cg", asset: "event-cg-circle-welcome-v2.png", mobileAsset: "event-cg-circle-welcome-mobile-v1.png", motion: "event-focus", eventCg: true, mobile: true },
   { name: "wide-chat", stepId: "welcome_chat_006", cue: "welcome-online-arrival", asset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },
   { name: "physical-venue", stepId: "welcome_chat_055", cue: "welcome-physical-booth", asset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },
-  { name: "closing-exhibition", stepId: "welcome_chat_078", cue: "welcome-night-exit-mobile", asset: "novel-bg-zushi-coast-autumn-day-v3.png", motion: "drift-left", mobile: true },
-  { name: "exhibition-finale-cg", stepId: "welcome_chat_092", cue: "welcome-exhibition-finale-cg", asset: "event-cg-exhibition-finale-v2.png", mobileAsset: "event-cg-exhibition-finale-mobile-v1.png", motion: "event-focus", eventCg: true, mobile: true },
+  { name: "closing-exhibition", stepId: "welcome_chat_078", cue: "welcome-night-exit-mobile", asset: "event-cg-exhibition-finale-sunset-v1.png", mobileAsset: "event-cg-exhibition-finale-sunset-mobile-v1.png", motion: "drift-left", eventCg: true, mobile: true },
+  { name: "earth-partner-reflection", stepId: "welcome_chat_084", cue: "welcome-earth-partner-reflection", asset: "event-cg-exhibition-finale-sunset-v1.png", mobileAsset: "event-cg-exhibition-finale-sunset-mobile-v1.png", motion: "push-in", eventCg: true, mobile: true },
+  { name: "exhibition-finale-cg", stepId: "welcome_chat_092", cue: "welcome-exhibition-finale-cg", asset: "event-cg-exhibition-finale-sunset-v1.png", mobileAsset: "event-cg-exhibition-finale-sunset-mobile-v1.png", motion: "event-focus", eventCg: true, mobile: true },
 ];
 const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
@@ -260,8 +261,8 @@ try {
     }));
     assert.equal(viewerGallery.visible, true);
     const expectedGalleryImage = viewport.name === "mobile-390"
-      ? "event-cg-exhibition-finale-mobile-v1.png"
-      : "event-cg-exhibition-finale-v2.png";
+      ? "event-cg-exhibition-finale-sunset-mobile-v1.png"
+      : "event-cg-exhibition-finale-sunset-v1.png";
     assert(viewerGallery.image.includes(expectedGalleryImage));
     assert.equal(viewerGallery.title, "展示会の、その先へ");
     assert.equal(viewerGallery.overflow, false);

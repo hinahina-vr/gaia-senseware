@@ -151,7 +151,7 @@
   const OPENING_ART = [
     "./assets/characters/minamo-expression-sheet-07-alpha.png",
     "./assets/characters/sora-expression-sheet-07-alpha.png",
-    "./assets/visuals-07/opening-keyvisual-v1.webp",
+    "./assets/visuals-07/opening-keyvisual-v2.png",
     "./assets/visuals-07/open-data-archive-bg-v1.png",
   ];
   const OPENING_ASSET_COUNT = OPENING_ART.length + 1;

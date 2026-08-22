@@ -30,7 +30,7 @@ const cases = [
   { name: "esp32-collaboration-cg", stepId: "esp32_pitch_008", eventCg: true, mobileAsset: "event-cg-esp32-collaboration-mobile-v1.png" },
   { name: "invitation-card-cg", stepId: "circle_invitation_029", eventCg: true, mobileAsset: "event-cg-circle-invitation-card-mobile-v1.png" },
   { name: "circle-welcome-cg", stepId: "circle_invitation_048", eventCg: true, mobileAsset: "event-cg-circle-welcome-mobile-v1.png" },
-  { name: "exhibition-finale-cg", stepId: "welcome_chat_092", eventCg: true, mobileAsset: "event-cg-exhibition-finale-mobile-v1.png" },
+  { name: "exhibition-finale-cg", stepId: "welcome_chat_092", eventCg: true, mobileAsset: "event-cg-exhibition-finale-sunset-mobile-v1.png" },
 ];
 const report = { status: "running", viewports, cases: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath, args: ["--no-first-run", "--disable-background-networking"] });

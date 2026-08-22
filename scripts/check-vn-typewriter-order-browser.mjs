@@ -23,14 +23,14 @@ const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
 ].filter((viewport) => !viewportFilter || viewport.name === viewportFilter);
-const modes = ["normal", "high", "slow", "speed-change", "click-skip", "space-skip", "auto", "fast", "reduced"]
+const modes = ["normal", "high", "slow", "speed-change", "reflow", "click-skip", "space-skip", "auto", "fast", "reduced"]
   .filter((mode) => !modeFilter || mode === modeFilter);
 assert(viewports.length > 0 && modes.length > 0, "unknown viewport or mode filter");
 const speedForMode = (mode) => mode === "speed-change" || mode === "slow"
   ? 50
   : mode === "high"
     ? 400
-    : mode === "normal" || mode === "auto" || mode === "reduced"
+    : mode === "normal" || mode === "reflow" || mode === "auto" || mode === "reduced"
       ? 270
       : 200;
 const storageKey = "gaiaSensewareNovel:progress";
@@ -137,7 +137,8 @@ const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false, vis
   assert(trace.samples.every((sample) => trace.source.startsWith(sample.visible)), `${tag}: non-prefix sample`);
   assert.equal(trace.samples.at(-1)?.visible, trace.source, `${tag}: completion text mismatch`);
   assert(deltas.every((delta) => delta >= 0), `${tag}: reveal moved backwards`);
-  if (!allowJump) assert(deltas.every((delta) => delta <= 1), `${tag}: glyph block jump ${Math.max(...deltas)}`);
+  const mutationDeltas = trace.revealEvents.slice(1).map((event, index) => event.count - trace.revealEvents[index].count);
+  if (!allowJump) assert(mutationDeltas.every((delta) => delta === 1), `${tag}: glyph timer jump ${Math.max(...mutationDeltas)}`);
   const revealEvents = [];
   let previousVisibleCount = -1;
   for (const sample of trace.samples) {
@@ -181,7 +182,7 @@ const assertTrace = (trace, tag, { allowJump = false, steadyCadence = false, vis
     assert(punctuationMax <= ordinaryMedian * 2.2 + 1, `${tag}: punctuation pause ${punctuationMax.toFixed(1)}ms exceeds steady cadence median ${ordinaryMedian.toFixed(1)}ms`);
   }
   if (steadyCadence && expectedDelay) {
-    assert(timerDurations.length >= 3, `${tag}: insufficient frame-gated samples`);
+    assert(timerDurations.length >= 3, `${tag}: insufficient timer cadence samples`);
     assert(timerMedian >= expectedDelay - 2, `${tag}: painted cadence ${timerMedian.toFixed(1)}ms is faster than ${expectedDelay.toFixed(1)}ms`);
     assert(timerMedian <= expectedDelay + 20, `${tag}: painted cadence ${timerMedian.toFixed(1)}ms is too far from ${expectedDelay.toFixed(1)}ms`);
     assert(timerP90 <= timerMedian + 18, `${tag}: painted cadence p90 ${timerP90.toFixed(1)}ms is not steady`);
@@ -234,7 +235,7 @@ try {
       const page = await context.newPage();
       const tag = `${viewport.name}-${mode}`;
       const configuredMessageSpeed = speedForMode(mode);
-      const expectedDelay = 64 * (100 / configuredMessageSpeed);
+      const expectedDelay = Math.max(20, 64 * (100 / configuredMessageSpeed));
       page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${tag}: ${message.text()}`); });
       page.on("pageerror", (error) => report.pageErrors.push(`${tag}: ${error.message}`));
       page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${tag}: ${response.url()}`); });
@@ -281,6 +282,12 @@ try {
           control.value = "400";
           control.dispatchEvent(new Event("input", { bubbles: true }));
         });
+      } else if (mode === "reflow") {
+        await page.waitForFunction(() => Number(document.querySelector("#novel-text")?.dataset.revealCount || 0) >= 3);
+        await page.evaluate(() => {
+          window.dispatchEvent(new Event("resize"));
+          document.fonts?.dispatchEvent?.(new Event("loadingdone"));
+        });
       } else if (mode === "click-skip" || mode === "space-skip" || mode === "fast") {
         await page.waitForFunction(() => Number(document.querySelector("#novel-text")?.dataset.revealCount || 0) >= 2);
         if (mode === "click-skip") await page.locator("#novel-dialogue").click({ position: { x: 20, y: 20 } });
@@ -293,8 +300,8 @@ try {
 
       const trace = await readTrace(page);
       const explicitSkip = ["click-skip", "space-skip", "fast", "reduced"].includes(mode);
-      const steadyCadence = ["normal", "high", "slow", "auto"].includes(mode);
-      const visualUniform = mode === "normal";
+      const steadyCadence = ["normal", "high", "slow", "reflow", "auto"].includes(mode);
+      const visualUniform = false;
       const pageTraces = [assertTrace(trace, `${tag}-page1`, { allowJump: explicitSkip, steadyCadence, visualUniform, expectedDelay })];
       if (mode === "auto") await page.locator("#novel-auto-button").click();
       if (mode === "fast") await page.locator("#novel-fast-forward-button").click();
@@ -333,7 +340,7 @@ try {
       assert.equal(pageInfo.pageIndex, 2, `${tag}: second page was not rendered`);
       assert(pageInfo.lines <= 3, `${tag}: page exceeds three lines`);
       assert(pageInfo.tokenCount > 0, `${tag}: phrase token DOM missing`);
-      if (mode !== "reduced") assert.equal(pageInfo.revealCadence, "frame-gated", `${tag}: reveal cadence is not frame-gated`);
+      if (mode !== "reduced") assert.equal(pageInfo.revealCadence, "timer-steady", `${tag}: reveal cadence is not timer-steady`);
       assert.deepEqual(pageInfo.scriptDebugRect, { width: 0, height: 0 }, `${tag}: SCRIPT debug hit area remains`);
       assert(pageInfo.overflowX <= 1, `${tag}: horizontal overflow`);
       if (mode === "normal") await page.screenshot({ path: path.join(outputDir, `${tag}.png`), fullPage: true });

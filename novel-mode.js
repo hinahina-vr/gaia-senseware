@@ -25,9 +25,14 @@
     const scale = enabled
       ? Math.min(window.innerWidth / PC_CANVAS_WIDTH, window.innerHeight / PC_CANVAS_HEIGHT)
       : 1;
+    const stageWidth = enabled ? window.innerWidth / scale : PC_CANVAS_WIDTH;
+    const stageHeight = enabled ? window.innerHeight / scale : PC_CANVAS_HEIGHT;
     document.body.classList.toggle("novel-pc-canvas", enabled);
     document.body.style.setProperty("--novel-pc-scale", scale.toFixed(6));
+    document.body.style.setProperty("--novel-pc-stage-width", `${stageWidth.toFixed(3)}px`);
+    document.body.style.setProperty("--novel-pc-stage-height", `${stageHeight.toFixed(3)}px`);
     layer.dataset.pcCanvas = enabled ? `${PC_CANVAS_WIDTH}x${PC_CANVAS_HEIGHT}` : "fluid";
+    layer.dataset.pcCanvasFrame = enabled ? `${Math.round(stageWidth)}x${Math.round(stageHeight)}` : "fluid";
   };
   syncPcCanvas();
   const BASE_INTERFACE_SELECTOR = [
@@ -81,6 +86,7 @@
   const AUTO_DELAY_MS = 3600;
   const TEMPORAL_TRANSITION_MS = 2400;
   const REVEAL_BASE_MS = 64;
+  const REVEAL_MIN_GLYPH_MS = 20;
   const REVEAL_MIN_LINE_MS = 120;
   const DEFAULT_MESSAGE_SPEED_PERCENT = 270;
   const LEGACY_MESSAGE_SPEED_SCALE = 2 / 3;
@@ -93,6 +99,9 @@
   const FAST_FORWARD_STEP_MS = 90;
   const SLACK_ENTER_MS = 760;
   const SLACK_EXIT_MS = 460;
+  const STAFF_ROLL_FINALIZE_MS = 360;
+  const STAFF_ROLL_EXIT_COVER_MS = 280;
+  const STAFF_ROLL_EXIT_REVEAL_MS = 360;
   const LOG_FOLLOW_THRESHOLD_PX = 72;
   const SLACK_ATTACHMENT_ASSETS = Object.freeze({
     BASIL: {
@@ -111,6 +120,38 @@
       src: "./assets/visuals-07/slack-attachment-venue-v1.webp",
       label: "entrance-reference.jpg",
     },
+    GAIA_CONNECTION_DIAGRAM: {
+      src: "./assets/visuals-08/campus-chat-gaia-senseware-connection-diagram-v1.png",
+      label: "ESP32_GAIA_SENSEWARE_接続図.png",
+    },
+  });
+  const CAMPUS_CHAT_SCHOOL_CHANNELS = Object.freeze([
+    Object.freeze({ id: "大学からのお知らせ_公式", label: "大学からのお知らせ_公式" }),
+    Object.freeze({ id: "class_ネットワーク産業論", label: "class_ネットワーク産業論" }),
+    Object.freeze({ id: "class_数理構造の発見と活用", label: "class_数理構造の発見と活用" }),
+    Object.freeze({
+      id: "26_2年春21クラス",
+      label: "26_2年春21クラス",
+      private: true,
+      description: "春21クラスのメンバーだけが参加するプライベートチャネル",
+      memberLabel: "21 members",
+      notice: "このチャネルは、26_2年春21クラスのメンバーだけが閲覧できます。",
+    }),
+  ]);
+  const CAMPUS_CHAT_DIRECT_MESSAGES = Object.freeze([
+    Object.freeze({ id: "cc_hinahina", label: "cc_hinahina", presence: "online" }),
+  ]);
+  const CAMPUS_CHAT_STORY_CHANNEL = Object.freeze({
+    id: "惑星の放課後_雑談",
+    label: "惑星の放課後_雑談",
+    description: "まだ名前のない変化を見つけて、記録する場所",
+    memberLabel: "9 members",
+  });
+  const CAMPUS_CHAT_SENSOR_CHANNEL = Object.freeze({
+    id: "惑星の放課後_センサー",
+    label: "惑星の放課後_センサー",
+    description: "センサー観測とGAIA SENSEWARE接続の試作相談",
+    memberLabel: "9 members",
   });
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
   const BACKGROUND_SOUNDTRACK = Object.freeze([
@@ -165,7 +206,7 @@
     DERIVED: "計算・解釈 / DERIVED",
     SCENARIO: "仮定 / SCENARIO",
     VISITOR_TRACE: "操作記録 / VISITOR TRACE",
-    BEYOND: "遠未来観測 / Beyond",
+    BEYOND: "遠未来観測 / TRANSMISSION",
   });
   const RECORD_SPEAKER_LABELS = Object.freeze({
     SOURCE: "観測メモ",
@@ -325,7 +366,7 @@
   const beyondStepMap = new Map(beyondSteps.map((step) => [step.id, step]));
   const logSteps = Object.freeze([...allSteps, ...beyondSteps]);
   const logStepMap = new Map(logSteps.map((step) => [step.id, step]));
-  if (logStepMap.size !== logSteps.length) throw new Error("[GAIA novel] Duplicate story/Beyond LOG step IDs");
+  if (logStepMap.size !== logSteps.length) throw new Error("[GAIA novel] Duplicate story/TRANSMISSION LOG step IDs");
   const galleryEntries = Object.freeze([...(backgroundCues.gallery || [])]);
   const galleryEntryMap = new Map(galleryEntries.map((entry) => [entry.id, entry]));
   const galleryPresentations = Object.freeze([
@@ -376,10 +417,10 @@
       isEnding: true,
     }),
     Object.freeze({
-      scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / Beyond", title: globalThis.GAIA_TRUE_END_STORY?.title || "Beyond" }),
+      scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / TRANSMISSION", title: globalThis.GAIA_TRUE_END_STORY?.title || "TRANSMISSION" }),
       sceneId: TRUE_END_JUMP_ID,
       scriptIndex: endingScriptIndex + 1,
-      scriptLabel: "Beyond #001",
+      scriptLabel: "TRANSMISSION #001",
       index: scenes.length + 2,
       isTrueEnd: true,
     }),
@@ -427,6 +468,7 @@
   let dialogueResizeTimer = 0;
   let dialogueObservedWidth = 0;
   let dialogueReflowActive = false;
+  let dialogueReflowPending = false;
   let dialogueForceFallbackForInspection = false;
   let revealTimer = 0;
   let revealFrame = 0;
@@ -1189,6 +1231,7 @@
     dialoguePageLayouts = [];
     dialoguePageIndex = 0;
     dialoguePageReveal = true;
+    dialogueReflowPending = false;
     delete elements.text.dataset.characterCount;
     delete elements.text.dataset.explicitLineCount;
     delete elements.text.dataset.measuredLineCount;
@@ -1644,13 +1687,17 @@
   const applyTemporalPresentation = (step) => {
     const scene = sceneMap.get(step.sceneId);
     const presentation = temporalRuntime.presentationForStep(step);
+    const cueTemporal = backHalfCues.forStep(step)?.temporal;
+    const displayTitle = cueTemporal?.time && cueTemporal.time !== scene.time
+      ? `${cueTemporal.date} ${cueTemporal.time}｜${cueTemporal.location}`
+      : presentation.displayTitle;
     layer.dataset.temporalContext = presentation.temporalContext;
     layer.dataset.timePrecision = presentation.timePrecision;
     layer.dataset.temporalPeriod = String(presentation.isPeriod);
     layer.dataset.temporalSource = presentation.source;
-    elements.modeReadout.textContent = `${scene.chapter} — ${presentation.displayTitle}`;
-    renderTemporalHeading(presentation.displayTitle);
-    return presentation;
+    elements.modeReadout.textContent = `${scene.chapter} — ${displayTitle}`;
+    renderTemporalHeading(displayTitle);
+    return { ...presentation, displayTitle };
   };
 
   function finishTemporalTransitionCard() {
@@ -1794,6 +1841,10 @@
     elements.cursor.hidden = true;
     elements.continueMark.classList.add("is-visible");
     scheduleAutoAdvance();
+    if (dialogueReflowPending) {
+      dialogueReflowPending = false;
+      window.requestAnimationFrame(repaginateVisibleDialogue);
+    }
   };
 
   const DIALOGUE_PARTICLES = new Set(["は", "が", "を", "に", "へ", "と", "で", "の", "も", "や", "か", "ね", "よ"]);
@@ -2303,7 +2354,10 @@
     return glyphs;
   };
 
-  const revealDelayForGlyph = () => REVEAL_BASE_MS * (100 / config.messageSpeedPercent);
+  const revealDelayForGlyph = () => Math.max(
+    REVEAL_MIN_GLYPH_MS,
+    REVEAL_BASE_MS * (100 / config.messageSpeedPercent),
+  );
 
   const revealText = (text, preparedLayout = null) => {
     clearTimers();
@@ -2330,37 +2384,31 @@
       revealFrame = window.requestAnimationFrame(() => {
         revealFrame = window.requestAnimationFrame(() => {
           if (generation !== revealGeneration || !isRevealing) return;
+          revealFrame = 0;
           const glyphs = buildMeasuredLineLayout(text, preparedLayout);
           elements.text.classList.remove("is-preparing");
           elements.text.classList.add("is-revealing");
-          elements.text.dataset.revealCadence = "frame-gated";
+          elements.text.dataset.revealCadence = "timer-steady";
           elements.cursor.hidden = false;
           let nextGlyphIndex = 0;
-          let previousRevealFrameTime = Number.NaN;
-          const revealNextGlyph = (frameTime) => {
-            revealFrame = 0;
+          const revealNextGlyph = () => {
+            revealTimer = 0;
             if (generation !== revealGeneration || !isRevealing) return;
-            if (Number.isFinite(previousRevealFrameTime)
-              && frameTime - previousRevealFrameTime < revealDelayForGlyph()) {
-              revealFrame = window.requestAnimationFrame(revealNextGlyph);
-              return;
-            }
             const glyph = glyphs[nextGlyphIndex];
             if (!glyph) {
               finishReveal();
               return;
             }
             glyph.classList.add("is-visible");
-            previousRevealFrameTime = frameTime;
             nextGlyphIndex += 1;
             elements.text.dataset.revealCount = String(nextGlyphIndex);
             if (nextGlyphIndex >= glyphs.length) {
               revealTimer = window.setTimeout(finishReveal, REVEAL_MIN_LINE_MS);
               return;
             }
-            revealFrame = window.requestAnimationFrame(revealNextGlyph);
+            revealTimer = window.setTimeout(revealNextGlyph, revealDelayForGlyph());
           };
-          revealFrame = window.requestAnimationFrame(revealNextGlyph);
+          revealNextGlyph();
         });
       });
     };
@@ -2437,7 +2485,14 @@
   };
 
   const repaginateVisibleDialogue = () => {
+    if (isRevealing
+      || elements.text.dataset.revealState === "preparing"
+      || elements.text.classList.contains("is-preparing")) {
+      dialogueReflowPending = true;
+      return;
+    }
     if (dialogueReflowActive) return;
+    dialogueReflowPending = false;
     window.clearTimeout(dialogueResizeTimer);
     dialogueResizeTimer = window.setTimeout(() => {
       dialogueResizeTimer = 0;
@@ -2841,19 +2896,204 @@
       message.attachments.forEach((attachment) => attachments.append(createSlackAttachment(attachment)));
       body.append(attachments);
     }
+    if (Array.isArray(message.reactions) && message.reactions.length > 0) {
+      const reactions = document.createElement("div");
+      reactions.className = "novel-slack-reactions";
+      reactions.setAttribute("aria-label", "メッセージへのリアクション");
+      message.reactions.forEach((reaction) => {
+        const item = document.createElement("span");
+        item.className = "novel-slack-reaction";
+        item.setAttribute("aria-label", `${reaction.emoji} ${reaction.count}件`);
+        item.textContent = `${reaction.emoji} ${reaction.count}`;
+        reactions.append(item);
+      });
+      body.append(reactions);
+    }
     article.append(createSlackSymbol(message.speaker || "system"));
     article.append(body);
     return article;
   };
 
+  const createCampusSidebarEntry = (channel, { current = false, interactive = false } = {}) => {
+    const entry = document.createElement(interactive ? "button" : "span");
+    if (interactive) entry.type = "button";
+    entry.className = "novel-slack-channel";
+    entry.classList.toggle("novel-slack-school-channel", CAMPUS_CHAT_SCHOOL_CHANNELS.includes(channel));
+    entry.classList.toggle("is-private", channel.private === true);
+    entry.classList.toggle("is-current", current);
+    entry.dataset.channel = channel.id;
+    entry.title = channel.private ? `${channel.label}（プライベート）` : channel.label;
+    if (current) entry.setAttribute("aria-current", "page");
+    if (channel.private) entry.setAttribute("aria-label", `${channel.label}、鍵付きプライベートチャネル`);
+    const icon = document.createElement("i");
+    const label = document.createElement("span");
+    icon.className = "novel-slack-channel-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = channel.private ? "🔒 " : "# ";
+    label.className = "novel-slack-channel-label";
+    label.textContent = channel.label;
+    entry.append(icon, label);
+    return entry;
+  };
+
+  const createCampusChatWorkspace = ({ timeline, step, mobileDevice = false }) => {
+    const workspace = document.createElement("div");
+    workspace.className = "novel-slack-workspace";
+    workspace.classList.toggle("is-mobile-device", mobileDevice);
+    workspace.dataset.device = mobileDevice ? "mobile" : "wide";
+    workspace.innerHTML = `<header><b><span class="novel-slack-app-name">学内チャット</span><i aria-hidden="true">◀　▶　◷</i></b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside aria-label="学内チャットのチャンネル一覧"></aside><main><header><div><strong class="novel-slack-channel-title"></strong><small class="novel-slack-channel-description"></small></div><span class="novel-slack-channel-members"></span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span class="novel-slack-compose-target"></span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
+
+    const aside = workspace.querySelector("aside");
+    const thread = workspace.querySelector(".novel-slack-thread");
+    const title = workspace.querySelector(".novel-slack-channel-title");
+    const description = workspace.querySelector(".novel-slack-channel-description");
+    const members = workspace.querySelector(".novel-slack-channel-members");
+    const composeTarget = workspace.querySelector(".novel-slack-compose-target");
+    const schoolHeading = document.createElement("small");
+    const circleHeading = document.createElement("small");
+    const directHeading = document.createElement("small");
+    const workspaceName = document.createElement("strong");
+    workspaceName.textContent = "惑星の放課後";
+    schoolHeading.textContent = "大学・授業";
+    circleHeading.textContent = "サークル";
+    directHeading.textContent = "ダイレクトメッセージ";
+    aside.append(workspaceName, schoolHeading);
+
+    const selectableChannels = new Map();
+    CAMPUS_CHAT_SCHOOL_CHANNELS.forEach((channel) => {
+      const entry = createCampusSidebarEntry(channel, { interactive: channel.private === true });
+      aside.append(entry);
+      if (channel.private) selectableChannels.set(channel.id, entry);
+    });
+
+    aside.append(circleHeading);
+    ["general"].forEach((label) => {
+      const entry = document.createElement("span");
+      entry.textContent = `# ${label}`;
+      aside.append(entry);
+    });
+    const storyEntry = createCampusSidebarEntry(CAMPUS_CHAT_STORY_CHANNEL, { current: true, interactive: true });
+    storyEntry.classList.add("novel-slack-story-channel");
+    aside.insertBefore(storyEntry, aside.lastElementChild);
+    selectableChannels.set(CAMPUS_CHAT_STORY_CHANNEL.id, storyEntry);
+
+    const sensorChannelVisible = timeline.messages.some((message) => message.id === "welcome_chat_022");
+    if (sensorChannelVisible) {
+      const sensorEntry = createCampusSidebarEntry(CAMPUS_CHAT_SENSOR_CHANNEL, { interactive: true });
+      sensorEntry.classList.add("novel-slack-circle-channel");
+      aside.append(sensorEntry);
+      selectableChannels.set(CAMPUS_CHAT_SENSOR_CHANNEL.id, sensorEntry);
+    }
+
+    aside.append(directHeading);
+    CAMPUS_CHAT_DIRECT_MESSAGES.forEach((directMessage) => {
+      const entry = document.createElement("span");
+      const status = document.createElement("i");
+      const label = document.createElement("b");
+      entry.className = "novel-slack-dm";
+      entry.dataset.directMessage = directMessage.id;
+      status.className = "novel-slack-dm-presence";
+      status.dataset.presence = directMessage.presence;
+      status.setAttribute("aria-hidden", "true");
+      label.textContent = directMessage.label;
+      entry.append(status, label);
+      aside.append(entry);
+    });
+
+    const messageSequence = (message) => Number(message.id?.match(/^welcome_chat_(\d{3})$/u)?.[1]) || 0;
+    const messageBelongsToSensorChannel = (message) => messageSequence(message) >= 23;
+    const renderChannelMessages = (messages, typingMessage = null) => {
+      thread.replaceChildren();
+      messages.forEach((message, index) => {
+        thread.append(createSlackPost(message, { root: index === 0, current: message.id === step.id }));
+      });
+      if (typingMessage) {
+        const typingNode = document.createElement("div");
+        typingNode.className = "novel-slack-typing";
+        typingNode.dataset.speaker = typingMessage.speaker || "system";
+        typingNode.setAttribute("role", "status");
+        typingNode.innerHTML = `<span><b>${speakerDisplayName(typingMessage) || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
+        typingNode.prepend(createSlackSymbol(typingMessage.speaker || "system"));
+        thread.append(typingNode);
+      }
+      requestAnimationFrame(() => { thread.scrollTop = thread.scrollHeight; });
+    };
+
+    const renderStoryChannel = () => renderChannelMessages(
+      timeline.messages.filter((message) => !messageBelongsToSensorChannel(message)),
+      timeline.typing && !messageBelongsToSensorChannel(timeline.typing) ? timeline.typing : null,
+    );
+
+    const renderSensorChannel = () => renderChannelMessages(
+      timeline.messages.filter(messageBelongsToSensorChannel),
+      timeline.typing && messageBelongsToSensorChannel(timeline.typing) ? timeline.typing : null,
+    );
+
+    const renderPrivateChannel = (channel) => {
+      const notice = document.createElement("article");
+      const icon = document.createElement("span");
+      const heading = document.createElement("strong");
+      const copy = document.createElement("p");
+      notice.className = "novel-slack-private-notice";
+      notice.setAttribute("role", "status");
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = "🔒";
+      heading.textContent = channel.label;
+      copy.textContent = channel.notice;
+      notice.append(icon, heading, copy);
+      thread.replaceChildren(notice);
+      thread.scrollTop = 0;
+    };
+
+    const selectChannel = (channel) => {
+      selectableChannels.forEach((entry, channelId) => {
+        const selected = channelId === channel.id;
+        entry.classList.toggle("is-current", selected);
+        if (selected) entry.setAttribute("aria-current", "page");
+        else entry.removeAttribute("aria-current");
+      });
+      workspace.dataset.activeChannel = channel.id;
+      title.textContent = `${channel.private ? "🔒" : "#"} ${channel.label}`;
+      description.textContent = channel.description || "";
+      members.textContent = channel.private ? `🔒 ${channel.memberLabel}` : `♟ ${channel.memberLabel.replace(/\D+/gu, "")}　⌕`;
+      composeTarget.textContent = `${channel.private ? "🔒" : "#"} ${channel.label} へのメッセージ`;
+      thread.setAttribute("aria-label", `${channel.label}のメッセージスレッド`);
+      if (channel.private) renderPrivateChannel(channel);
+      else if (channel.id === CAMPUS_CHAT_SENSOR_CHANNEL.id) renderSensorChannel();
+      else renderStoryChannel();
+    };
+
+    selectableChannels.forEach((entry, channelId) => {
+      const channel = channelId === CAMPUS_CHAT_STORY_CHANNEL.id
+        ? CAMPUS_CHAT_STORY_CHANNEL
+        : channelId === CAMPUS_CHAT_SENSOR_CHANNEL.id
+          ? CAMPUS_CHAT_SENSOR_CHANNEL
+        : CAMPUS_CHAT_SCHOOL_CHANNELS.find((candidate) => candidate.id === channelId);
+      entry.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (channel) selectChannel(channel);
+      });
+    });
+    thread.addEventListener("scroll", () => {
+      slackScrollGuardUntil = performance.now() + 220;
+    }, { passive: true });
+    const currentSequence = Number(step.id?.match(/^welcome_chat_(\d{3})$/u)?.[1]) || 0;
+    selectChannel(sensorChannelVisible && currentSequence >= 23
+      ? CAMPUS_CHAT_SENSOR_CHANNEL
+      : CAMPUS_CHAT_STORY_CHANNEL);
+    return workspace;
+  };
+
   const renderSimpleStep = (step) => {
     prepareStepFrame(step);
     const speaker = step.speaker || "narrator";
+    const visualSpeaker = step.visualSpeaker || speaker;
     if (isPreMeetingRecordPresentation(step)) {
       suppressCharacterPresentation();
       elements.speaker.textContent = "";
     } else {
-      setCharacterPresentation(speaker, expressionForStep(step));
+      setCharacterPresentation(visualSpeaker, expressionForStep(step));
       if (speaker === "visitor" || ABSTRACT_AVATAR_SUPPRESSED_STEP_IDS.has(step.id)) elements.avatar.hidden = true;
       elements.speaker.textContent = speakerDisplayName(step);
     }
@@ -2885,32 +3125,12 @@
       elements.sourceLabel.hidden = true;
       elements.slackSurface.hidden = false;
       layer.classList.add("is-slack");
-      const workspace = document.createElement("div");
-      workspace.className = "novel-slack-workspace";
-      workspace.classList.toggle("is-mobile-device", layer.dataset.slackDevice === "mobile");
-      workspace.dataset.device = layer.dataset.slackDevice;
-      const sensorChannel = timeline.messages.some((message) => message.id === "welcome_chat_022")
-        ? `<span class="novel-slack-circle-channel" data-channel="惑星の放課後_esp32" title="惑星の放課後_esp32"># 惑星の放課後_esp32</span>`
-        : "";
-      workspace.innerHTML = `<header><b><span class="novel-slack-app-name">学内チャット</span><i aria-hidden="true">◀　▶　◷</i></b><span>⌕　惑星の放課後を検索</span><i aria-hidden="true">?　◉</i></header><aside aria-label="学内チャットのチャンネル一覧"><strong>惑星の放課後</strong><small>大学・授業</small><span class="novel-slack-school-channel" data-channel="大学からのお知らせ_公式" title="大学からのお知らせ_公式"># 大学からのお知らせ_公式</span><span class="novel-slack-school-channel" data-channel="class_ネットワーク産業論" title="class_ネットワーク産業論"># class_ネットワーク産業論</span><span class="novel-slack-school-channel" data-channel="class_数理構造の発見と活用" title="class_数理構造の発見と活用"># class_数理構造の発見と活用</span><small>サークル</small><span># general</span><span class="is-current" aria-current="page"># 惑星の放課後_雑談</span><span># 観測メモ</span>${sensorChannel}<small>ダイレクトメッセージ</small><span>● みず</span><span>● あめ</span><span>○ saku</span></aside><main><header><div><strong># 惑星の放課後_雑談</strong><small>まだ名前のない変化を見つけて、記録する場所</small></div><span>♟ 3　⌕</span></header><section class="novel-slack-thread" aria-label="メッセージスレッド" aria-live="polite"></section><footer><span>＋</span><span># 惑星の放課後_雑談 へのメッセージ</span><b aria-hidden="true">Aa　☺　🎙</b></footer></main>`;
-      const thread = workspace.querySelector(".novel-slack-thread");
-      thread.addEventListener("scroll", () => {
-        slackScrollGuardUntil = performance.now() + 220;
-      }, { passive: true });
-      timeline.messages.forEach((message, index) => {
-        thread.append(createSlackPost(message, { root: index === 0, current: message.id === step.id }));
+      const workspace = createCampusChatWorkspace({
+        timeline,
+        step,
+        mobileDevice: layer.dataset.slackDevice === "mobile",
       });
-      if (timeline.typing) {
-        const typing = document.createElement("div");
-        typing.className = "novel-slack-typing";
-        typing.dataset.speaker = timeline.typing.speaker || "system";
-        typing.setAttribute("role", "status");
-        typing.innerHTML = `<span><b>${speakerDisplayName(timeline.typing) || "誰か"}</b> が入力しています</span><i aria-hidden="true"><b></b><b></b><b></b></i>`;
-        typing.prepend(createSlackSymbol(timeline.typing.speaker || "system"));
-        thread.append(typing);
-      }
       elements.slackSurface.append(workspace);
-      requestAnimationFrame(() => { thread.scrollTop = thread.scrollHeight; });
       scheduleAutoAdvance();
       return;
     }
@@ -3367,7 +3587,6 @@
       completePendingInteraction();
     }, 1100);
   });
-
   const openDetour = (step) => {
     if (pendingInteraction || interactionLifecycle !== "prep") return;
     window.clearTimeout(detourAutoReturnTimer);
@@ -3474,7 +3693,7 @@
   };
 
   let activeTrueEndRuntime = null;
-  const launchTrueEnd = ({ persistClear = true } = {}) => {
+  const launchTrueEnd = ({ persistClear = true, onReady } = {}) => {
     state.clear = true;
     state.archivesUnlocked = true;
     if (persistClear) saveProgress();
@@ -3494,7 +3713,7 @@
     elements.choices.classList.remove("is-visible", "is-mode08-optional");
     elements.sourceLabel.hidden = true;
     elements.resultSurface.hidden = false;
-    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION Beyond");
+    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION TRANSMISSION");
     layer.classList.add("is-result", "is-true-end");
     layer.dataset.sceneId = TRUE_END_JUMP_ID;
     layer.dataset.stepType = "true-end";
@@ -3505,6 +3724,7 @@
       layer,
       onStepRead: markBeyondRead,
       onLogOpen: () => openLog(),
+      onReady,
       onComplete: () => {
         state.trueEndComplete = true;
         saveProgress();
@@ -3512,8 +3732,7 @@
       onExit: () => {
         activeTrueEndRuntime?.destroy?.();
         activeTrueEndRuntime = null;
-        requestStoryTrack("story", 1.1);
-        showTitle();
+        closeNovelNow();
       },
     }) || null;
     if (activeTrueEndRuntime) return true;
@@ -3544,16 +3763,12 @@
       saveProgress();
       closeNovelNow();
     };
-    const continueIntoTrueEnd = (control) => {
-      control.disabled = true;
-      if (!launchTrueEnd()) continueIntoData(control);
-    };
 
     const shell = document.createElement("section");
     shell.className = "novel-staff-roll";
     shell.tabIndex = 0;
     shell.setAttribute("role", "region");
-    shell.setAttribute("aria-label", "エンディングスタッフロール。クリック、Enterキー、またはスペースキーで最後まで送れます");
+    shell.setAttribute("aria-label", "エンディングスタッフロール。右上のスキップボタンでデータ画面へ進めます");
     shell.dataset.phase = motionReduced() ? "reduced" : "whiteout";
 
     const whiteout = document.createElement("div");
@@ -3654,7 +3869,58 @@
     next.type = "button";
     next.tabIndex = -1;
     next.textContent = "世界の続きを紡ぐ";
-    next.setAttribute("aria-label", "スタッフロールを終えてBeyondへ進む");
+    next.setAttribute("aria-label", "スタッフロールを終えてTRANSMISSIONへ進む");
+    const continueIntoTrueEnd = (control) => {
+      if (shell.dataset.phase === "departing") return;
+      control.disabled = true;
+      dataSkip.disabled = true;
+      shell.dataset.phase = "departing";
+      shell.classList.add("is-departing");
+      layer.classList.add("is-true-end-transitioning");
+      layer.dataset.trueEndTransitionPhase = "covering";
+
+      const veil = document.createElement("div");
+      veil.className = "novel-staff-roll-transition-veil";
+      veil.setAttribute("aria-hidden", "true");
+      layer.append(veil);
+
+      const finishTransition = () => {
+        veil.remove();
+        layer.classList.remove("is-true-end-transitioning");
+        layer.dataset.trueEndTransitionPhase = "complete";
+      };
+      const revealTrueEnd = () => {
+        if (!veil.isConnected) return;
+        layer.dataset.trueEndTransitionPhase = "revealing";
+        if (motionReduced()) {
+          finishTransition();
+          return;
+        }
+        veil.classList.remove("is-covering");
+        veil.classList.add("is-revealing");
+        staffRollFinaleTimer = window.setTimeout(() => {
+          staffRollFinaleTimer = 0;
+          finishTransition();
+        }, STAFF_ROLL_EXIT_REVEAL_MS);
+      };
+      const switchToTrueEnd = () => {
+        staffRollFinaleTimer = 0;
+        layer.dataset.trueEndTransitionPhase = "switching";
+        const launched = launchTrueEnd({ onReady: revealTrueEnd });
+        if (launched) return;
+        veil.remove();
+        layer.classList.remove("is-true-end-transitioning");
+        delete layer.dataset.trueEndTransitionPhase;
+        continueIntoData(control);
+      };
+
+      if (motionReduced()) {
+        switchToTrueEnd();
+        return;
+      }
+      requestAnimationFrame(() => veil.classList.add("is-covering"));
+      staffRollFinaleTimer = window.setTimeout(switchToTrueEnd, STAFF_ROLL_EXIT_COVER_MS);
+    };
     next.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -3689,7 +3955,7 @@
       staffRollFinaleTimer = window.setTimeout(() => {
         staffRollFinaleTimer = 0;
         revealFinalAction({ focus });
-      }, 640);
+      }, STAFF_ROLL_FINALIZE_MS);
     };
 
     const holdOnEnd = ({ delay = true, focus = true } = {}) => {
@@ -3713,17 +3979,14 @@
     whiteout.addEventListener("animationend", (event) => {
       if (event.animationName === "novel-staff-roll-whiteout" && !completed) shell.dataset.phase = "rolling";
     });
-    shell.addEventListener("click", (event) => {
-      if (event.ctrlKey || event.target.closest("button") || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
-      event.preventDefault();
+    shell.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("button")) return;
       event.stopPropagation();
-      holdOnEnd();
     });
-    shell.addEventListener("keydown", (event) => {
-      if (event.ctrlKey || !["Enter", " "].includes(event.key) || event.repeat || event.isComposing || completed || motionReduced() || shell.dataset.phase !== "rolling") return;
+    shell.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
       event.preventDefault();
       event.stopPropagation();
-      holdOnEnd();
     });
 
     if (motionReduced()) {

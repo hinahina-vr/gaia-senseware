@@ -17,6 +17,7 @@ const expectedChannels = [
   "大学からのお知らせ_公式",
   "class_ネットワーク産業論",
   "class_数理構造の発見と活用",
+  "26_2年春21クラス",
 ];
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
@@ -100,6 +101,12 @@ try {
       const currentRect = current?.getBoundingClientRect();
       const sensorChannel = aside?.querySelector(".novel-slack-circle-channel");
       const sensorChannelRect = sensorChannel?.getBoundingClientRect();
+      const directMessages = [...aside.querySelectorAll(".novel-slack-dm")].map((entry) => ({
+        id: entry.dataset.directMessage || "",
+        text: entry.textContent?.trim() || "",
+        presence: entry.querySelector(".novel-slack-dm-presence")?.dataset.presence || "",
+      }));
+      const privateChannel = aside?.querySelector('.novel-slack-school-channel[data-channel="26_2年春21クラス"]');
       return {
         stepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
         channels,
@@ -113,6 +120,13 @@ try {
           visible: Boolean(sensorChannelRect && sensorChannelRect.width > 0 && sensorChannelRect.height > 0),
           fullyInsideSidebar: Boolean(asideRect && sensorChannelRect && sensorChannelRect.top >= asideRect.top && sensorChannelRect.bottom <= asideRect.bottom && sensorChannelRect.left >= asideRect.left && sensorChannelRect.right <= asideRect.right),
         },
+        directMessages,
+        privateChannel: {
+          tagName: privateChannel?.tagName || "",
+          locked: privateChannel?.classList.contains("is-private") || false,
+          lockIcon: privateChannel?.querySelector(".novel-slack-channel-icon")?.textContent?.trim() || "",
+          ariaLabel: privateChannel?.getAttribute("aria-label") || "",
+        },
         sidebarOverflowX: aside ? Math.max(0, aside.scrollWidth - aside.clientWidth) : -1,
         overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
         currentMessage: document.querySelector(".novel-slack-post.is-new .novel-slack-message")?.textContent || "",
@@ -121,26 +135,68 @@ try {
     });
     assert.equal(scan.stepId, stepId, `${viewport.name}: target step did not render`);
     assert.deepEqual(scan.channels.map((channel) => channel.channel), expectedChannels, `${viewport.name}: school channel IDs differ`);
-    assert.deepEqual(scan.channels.map((channel) => channel.title), expectedChannels, `${viewport.name}: full channel labels are unavailable`);
-    assert.deepEqual(scan.channels.map((channel) => channel.text), expectedChannels.map((channel) => `# ${channel}`), `${viewport.name}: displayed channel labels differ`);
+    assert.deepEqual(scan.channels.slice(0, 3).map((channel) => channel.title), expectedChannels.slice(0, 3), `${viewport.name}: full public channel labels are unavailable`);
+    assert.match(scan.channels[3].title, /26_2年春21クラス.*プライベート/u, `${viewport.name}: private channel title does not announce its state`);
+    assert.deepEqual(scan.channels.slice(0, 3).map((channel) => channel.text), expectedChannels.slice(0, 3).map((channel) => `# ${channel}`), `${viewport.name}: displayed public channel labels differ`);
+    assert.match(scan.channels[3].text, /🔒\s*26_2年春21クラス/u, `${viewport.name}: private channel lacks a visible lock`);
     assert(scan.channels.every((channel) => channel.visible && channel.fullyInsideSidebar), `${viewport.name}: a school channel is outside the sidebar`);
     if (viewport.name === "pc-1440") assert(scan.channels.every((channel) => !channel.clippedInline), "pc-1440: a school channel label is truncated");
     assert.equal(scan.currentText, "# 惑星の放課後_雑談", `${viewport.name}: story channel lost selection`);
     assert.equal(scan.currentAria, "page", `${viewport.name}: selected channel semantics are missing`);
     assert.equal(scan.currentVisible, true, `${viewport.name}: selected story channel is hidden`);
+    assert.deepEqual(scan.directMessages, [{ id: "cc_hinahina", text: "cc_hinahina", presence: "online" }], `${viewport.name}: direct-message list is not limited to cc_hinahina`);
+    assert.deepEqual(scan.privateChannel, {
+      tagName: "BUTTON",
+      locked: true,
+      lockIcon: "🔒",
+      ariaLabel: "26_2年春21クラス、鍵付きプライベートチャネル",
+    }, `${viewport.name}: locked class channel is not an accessible selectable control`);
     assert.deepEqual(scan.sensorChannel, {
-      text: "# 惑星の放課後_esp32",
-      channel: "惑星の放課後_esp32",
-      title: "惑星の放課後_esp32",
+      text: "# 惑星の放課後_センサー",
+      channel: "惑星の放課後_センサー",
+      title: "惑星の放課後_センサー",
       visible: true,
       fullyInsideSidebar: true,
-    }, `${viewport.name}: 惑星の放課後_esp32 channel is missing from the sidebar`);
+    }, `${viewport.name}: 惑星の放課後_センサー channel is missing from the sidebar`);
     assert.equal(scan.sidebarOverflowX, 0, `${viewport.name}: sidebar has horizontal overflow`);
     assert.equal(scan.overflowX, 0, `${viewport.name}: page has horizontal overflow`);
-    assert.equal(scan.currentMessage, "あめが # 惑星の放課後_esp32 を作成しました。", `${viewport.name}: current story message changed`);
+    assert.equal(scan.currentMessage, "あめが # 惑星の放課後_センサー を作成しました。", `${viewport.name}: current story message changed`);
     assert(scan.avatarImagesLoaded >= 3, `${viewport.name}: symbolic chat avatars did not load`);
-    report.scans.push({ viewport: viewport.name, ...scan, passed: true });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`), animations: "disabled" });
+
+    await page.locator('.novel-slack-school-channel[data-channel="26_2年春21クラス"]').click();
+    const privateSelection = await page.evaluate(() => ({
+      activeChannel: document.querySelector(".novel-slack-workspace")?.dataset.activeChannel || "",
+      currentChannel: document.querySelector(".novel-slack-workspace > aside .is-current")?.dataset.channel || "",
+      currentAria: document.querySelector(".novel-slack-workspace > aside .is-current")?.getAttribute("aria-current") || "",
+      title: document.querySelector(".novel-slack-channel-title")?.textContent?.trim() || "",
+      description: document.querySelector(".novel-slack-channel-description")?.textContent?.trim() || "",
+      notice: document.querySelector(".novel-slack-private-notice p")?.textContent?.trim() || "",
+      currentPostCount: document.querySelectorAll(".novel-slack-post.is-new").length,
+      stepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
+    }));
+    assert.equal(privateSelection.activeChannel, "26_2年春21クラス");
+    assert.equal(privateSelection.currentChannel, "26_2年春21クラス");
+    assert.equal(privateSelection.currentAria, "page");
+    assert.equal(privateSelection.title, "🔒 26_2年春21クラス");
+    assert.match(privateSelection.description, /プライベートチャネル/u);
+    assert.match(privateSelection.notice, /メンバーだけが閲覧/u);
+    assert.equal(privateSelection.currentPostCount, 0, `${viewport.name}: story posts leaked into the private channel`);
+    assert.equal(privateSelection.stepId, stepId, `${viewport.name}: channel selection advanced the story`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-private.png`), animations: "disabled" });
+
+    await page.locator('.novel-slack-story-channel[data-channel="惑星の放課後_雑談"]').click();
+    const restoredStory = await page.evaluate(() => ({
+      activeChannel: document.querySelector(".novel-slack-workspace")?.dataset.activeChannel || "",
+      currentChannel: document.querySelector(".novel-slack-workspace > aside .is-current")?.dataset.channel || "",
+      currentMessage: document.querySelector(".novel-slack-post.is-new .novel-slack-message")?.textContent || "",
+      stepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
+    }));
+    assert.equal(restoredStory.activeChannel, "惑星の放課後_雑談");
+    assert.equal(restoredStory.currentChannel, "惑星の放課後_雑談");
+    assert.equal(restoredStory.currentMessage, scan.currentMessage, `${viewport.name}: current/read position was not restored`);
+    assert.equal(restoredStory.stepId, stepId, `${viewport.name}: returning to the story channel advanced the story`);
+    report.scans.push({ viewport: viewport.name, ...scan, privateSelection, restoredStory, passed: true });
     await context.close();
   }
   assert.equal(report.consoleErrors.length, 0, `console errors: ${report.consoleErrors.join("\n")}`);

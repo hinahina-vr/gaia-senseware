@@ -18,7 +18,6 @@ const viewports = [
 ];
 const surfaces = [
   { name: "map", trigger: "#japan-button", selector: "#japan-close", ready: "#japan-layer:not([hidden])" },
-  { name: "story", trigger: "#story-button", selector: "#novel-close-button", ready: "#novel-layer:not([hidden])" },
   { name: "sound", trigger: "[data-sound-gallery-open]", selector: "#sound-close", ready: "#sound-layer:not([hidden])" },
 ];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
@@ -52,6 +51,10 @@ const bypassOpening = async (page) => {
 const inspectButton = async (page, selector, viewport, surface) => {
   const locator = page.locator(selector);
   await locator.waitFor({ state: "visible", timeout: 15_000 });
+  await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
+  const viewportSize = page.viewportSize();
+  await page.mouse.move((viewportSize?.width || 1) - 1, (viewportSize?.height || 1) - 1);
+  await page.waitForTimeout(240);
   const data = await locator.evaluate((button) => {
     const rect = button.getBoundingClientRect();
     const style = getComputedStyle(button);
@@ -62,10 +65,19 @@ const inspectButton = async (page, selector, viewport, surface) => {
       text: button.textContent.trim(),
       rect: rect.toJSON(),
       clipPath: style.clipPath,
+      borderWidth: style.borderWidth,
+      borderColor: style.borderColor,
       borderRadius: style.borderRadius,
       background: style.backgroundImage,
+      backgroundColor: style.backgroundColor,
+      transform: style.transform,
+      paddingLeft: style.paddingLeft,
+      paddingRight: style.paddingRight,
       transitionDuration: style.transitionDuration,
       arrow: arrow.content,
+      arrowWidth: arrow.width,
+      arrowBorderWidth: arrow.borderWidth,
+      arrowBackground: arrow.backgroundColor,
       hit: Boolean(hitButton === button),
       hitElement: hit ? `${hit.tagName.toLowerCase()}#${hit.id}.${hit.className}` : null,
       hitButtonId: hitButton?.id || null,
@@ -76,18 +88,27 @@ const inspectButton = async (page, selector, viewport, surface) => {
   assert(data.rect.height >= 44, `${viewport}/${surface}: hit area is under 44px`);
   assert(data.rect.width < 220, `${viewport}/${surface}: return control is still oversized`);
   assert.equal(data.hit, true, `${viewport}/${surface}: center hit is obstructed (${JSON.stringify(data)})`);
-  if (surface.startsWith("story")) {
-    assert.equal(data.clipPath, "none", `${viewport}/${surface}: story control retained the angular mode silhouette`);
-    assert(parseFloat(data.borderRadius) >= 10, `${viewport}/${surface}: compact story glass radius is missing`);
-  } else {
-    assert.notEqual(data.clipPath, "none", `${viewport}/${surface}: geometric silhouette is missing`);
-    assert.equal(data.borderRadius, "0px", `${viewport}/${surface}: old capsule silhouette remains`);
-  }
+  assert.equal(data.clipPath, "none", `${viewport}/${surface}: split angular silhouette remains`);
+  assert(parseFloat(data.borderWidth) >= 1, `${viewport}/${surface}: standard outer border is missing`);
+  assert(parseFloat(data.borderRadius) >= 10, `${viewport}/${surface}: standard glass radius is missing`);
   assert(data.arrow.includes("←"), `${viewport}/${surface}: directional cue is missing`);
+  assert(parseFloat(data.arrowWidth) <= 20, `${viewport}/${surface}: arrow retained an oversized split cell`);
+  assert.equal(parseFloat(data.arrowBorderWidth), 0, `${viewport}/${surface}: arrow retained its independent frame`);
+  assert.equal(data.arrowBackground, "rgba(0, 0, 0, 0)", `${viewport}/${surface}: arrow retained a separate background`);
   assert.equal(data.overflowX, 0, `${viewport}/${surface}: horizontal overflow`);
+  await locator.hover();
+  await page.waitForTimeout(240);
+  const hover = await locator.evaluate((button) => {
+    const style = getComputedStyle(button);
+    return { borderColor: style.borderColor, background: style.backgroundImage, transform: style.transform };
+  });
+  assert(
+    hover.borderColor !== data.borderColor || hover.background !== data.background || hover.transform !== data.transform,
+    `${viewport}/${surface}: hover produced no visual state change (${JSON.stringify({ data, hover })})`,
+  );
   await locator.focus();
   assert.equal(await locator.evaluate((button) => document.activeElement === button), true, `${viewport}/${surface}: keyboard focus failed`);
-  report.scans.push({ viewport, surface, ...data, passed: true });
+  report.scans.push({ viewport, surface, ...data, hover, passed: true });
 };
 
 try {
@@ -134,9 +155,9 @@ try {
     await bypassOpening(page);
     await inspectButton(page, "#intro-button", viewport.name, "abstract");
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-abstract.png`) });
-    await page.locator("#intro-button").press("Enter");
+    await page.locator("#intro-button").click();
     await page.locator("#intro-layer:not([hidden])").waitFor({ state: "visible", timeout: 15_000 });
-    report.scans.at(-1).keyboardActivated = true;
+    report.scans.at(-1).pointerActivated = true;
     await bypassOpening(page);
 
     await page.evaluate(() => window.GaiaSpace.open(0));

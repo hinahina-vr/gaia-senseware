@@ -16,8 +16,9 @@ const STORAGE_KEY = "gaiaSensewareNovel:progress";
 const MANUAL_SAVE_KEY = "gaiaSensewareNovel:manual-saves";
 const CONFIG_KEY = "gaiaSensewareNovel:config:v3";
 const desktopViewports = [
-  { name: "pc-1080p", width: 1920, height: 1080, expectedScale: 1 },
-  { name: "pc-4k", width: 3840, height: 2160, expectedScale: 2 },
+  { name: "pc-1080p", width: 1920, height: 1080, expectedScale: 1, expectedFrame: "1920x1080" },
+  { name: "pc-4k", width: 3840, height: 2160, expectedScale: 2, expectedFrame: "1920x1080" },
+  { name: "pc-4k-browser-chrome", width: 3840, height: 1920, expectedScale: 1920 / 1080, expectedFrame: "2160x1080" },
 ];
 const mobileViewport = { name: "mobile-390", width: 390, height: 844 };
 const targets = [
@@ -89,6 +90,7 @@ const scanPage = async (page, target) => page.evaluate((kind) => {
     kind,
     stepId: layer?.dataset.stepId || "",
     pcCanvas: layer?.dataset.pcCanvas || "",
+    pcCanvasFrame: layer?.dataset.pcCanvasFrame || "",
     bodyPcCanvas: document.body.classList.contains("novel-pc-canvas"),
     scale: Number.parseFloat(getComputedStyle(document.body).getPropertyValue("--novel-pc-scale")) || 1,
     experience: nodeRect(experience),
@@ -163,6 +165,7 @@ try {
       const scan = await scanPage(page, target);
       assert.equal(scan.stepId, target.stepId);
       assert.equal(scan.pcCanvas, "1920x1080");
+      assert.equal(scan.pcCanvasFrame, viewport.expectedFrame);
       assert.equal(scan.bodyPcCanvas, true);
       near(scan.scale, viewport.expectedScale, `${viewport.name}: scale`, 0.001);
       assert.equal(scan.overflowX, 0, `${viewport.name}/${target.name}: horizontal overflow`);
@@ -174,7 +177,7 @@ try {
       await context.close();
     }
 
-    const [fullHd, fourK] = targetScans;
+    const [fullHd, fourK, browserChrome] = targetScans;
     compareScaledRect(fullHd, fourK, "experience");
     compareScaledRect(fullHd, fourK, "nav");
     compareScaledRect(fullHd, fourK, "audio");
@@ -186,6 +189,19 @@ try {
       compareScaledRect(fullHd, fourK, "workspace");
       assert.equal(fourK.workspaceFontFamily, fullHd.workspaceFontFamily, "campus chat typography changed at 4K");
     }
+    near(browserChrome.experience.x, 0, `${target.name}: browser-chrome stage x`);
+    near(browserChrome.experience.y, 0, `${target.name}: browser-chrome stage y`);
+    near(browserChrome.experience.width, desktopViewports[2].width, `${target.name}: browser-chrome stage width`);
+    near(browserChrome.experience.height, desktopViewports[2].height, `${target.name}: browser-chrome stage height`);
+    for (const key of target.name === "dialogue"
+      ? ["nav", "audio", "dialogue", "text", "signal", "character"]
+      : ["nav", "audio", "workspace"]) {
+      const box = browserChrome[key];
+      if (!box) continue;
+      const edgeTolerance = key === "character" ? 2.25 : 1.25;
+      assert(box.x >= -edgeTolerance && box.y >= -edgeTolerance, `${target.name}/${key}: browser-chrome frame starts outside the viewport`);
+      assert(box.right <= desktopViewports[2].width + edgeTolerance && box.bottom <= desktopViewports[2].height + edgeTolerance, `${target.name}/${key}: browser-chrome frame ends outside the viewport`);
+    }
   }
 
   const mobileContext = await browser.newContext({ viewport: mobileViewport, reducedMotion: "reduce" });
@@ -196,6 +212,7 @@ try {
   await bootTarget(mobilePage, targets[0], mobileViewport);
   const mobileScan = await scanPage(mobilePage, targets[0]);
   assert.equal(mobileScan.pcCanvas, "fluid");
+  assert.equal(mobileScan.pcCanvasFrame, "fluid");
   assert.equal(mobileScan.bodyPcCanvas, false);
   assert.equal(mobileScan.scale, 1);
   assert.equal(mobileScan.overflowX, 0, "mobile: horizontal overflow");

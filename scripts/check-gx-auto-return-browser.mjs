@@ -69,7 +69,7 @@ const bootAtGX = async (page) => {
 
 try {
   for (const viewport of viewports) {
-    const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "reduce" });
+    const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: "no-preference" });
     const page = await context.newPage();
     await page.addInitScript(() => {
       globalThis.__gxAutoReturnEvents = { progress: [], returns: 0 };
@@ -131,20 +131,142 @@ try {
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-gx-transition-nowrap.png`), fullPage: false });
     await page.evaluate(() => document.querySelector("#gx-era-transition")?.classList.remove("is-visible"));
 
+    await page.keyboard.press("Enter");
+    await page.locator("#gx-era-transition-skip").waitFor({ state: "visible", timeout: 3000 });
+    const skipControl = await page.evaluate(() => {
+      const transition = document.querySelector("#gx-era-transition");
+      const skip = document.querySelector("#gx-era-transition-skip");
+      const title = document.querySelector("#gx-era-transition-title");
+      const header = document.querySelector("#gx-layer .gx-header");
+      const timePanel = document.querySelector("#gx-layer .gx-time");
+      const audioDock = document.querySelector("#gaia-audio-dock");
+      const transitionRect = transition.getBoundingClientRect();
+      const skipRect = skip.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const headerRect = header.getBoundingClientRect();
+      const timeRect = timePanel.getBoundingClientRect();
+      const audioRect = audioDock?.getBoundingClientRect();
+      const overlaps = (first, second) => !(
+        first.right <= second.left
+        || first.left >= second.right
+        || first.bottom <= second.top
+        || first.top >= second.bottom
+      );
+      const overlapsTitle = overlaps(skipRect, titleRect);
+      const overlapsHeader = overlaps(skipRect, headerRect);
+      const overlapsTime = overlaps(skipRect, timeRect);
+      const overlapsAudio = audioRect && audioRect.width > 0 && audioRect.height > 0
+        ? overlaps(skipRect, audioRect)
+        : false;
+      return {
+        text: skip.querySelector("span")?.textContent?.trim(),
+        ariaLabel: skip.getAttribute("aria-label"),
+        width: Math.round(skipRect.width),
+        height: Math.round(skipRect.height),
+        topGap: Math.round(skipRect.top - transitionRect.top),
+        rightGap: Math.round(transitionRect.right - skipRect.right),
+        inside: skipRect.top >= transitionRect.top - 1
+          && skipRect.right <= transitionRect.right + 1
+          && skipRect.bottom <= transitionRect.bottom + 1
+          && skipRect.left >= transitionRect.left - 1,
+        overlapsTitle,
+        overlapsHeader,
+        overlapsTime,
+        overlapsAudio,
+        transitionVisible: transition.classList.contains("is-visible")
+          && transition.getAttribute("aria-hidden") === "false",
+      };
+    });
+    assert.equal(skipControl.text, "スキップ", `${viewport.name}: era transition skip label changed`);
+    assert.equal(skipControl.ariaLabel, "時代切り替え演出をスキップ", `${viewport.name}: era transition skip accessible label changed`);
+    assert(skipControl.width >= 110 && skipControl.height >= 44, `${viewport.name}: era transition skip hit area is too small`);
+    assert(skipControl.topGap >= 0 && skipControl.rightGap >= 0 && skipControl.inside, `${viewport.name}: era transition skip is outside the GX card`);
+    assert.equal(skipControl.overlapsTitle, false, `${viewport.name}: era transition skip overlaps the transition title`);
+    assert.equal(skipControl.overlapsHeader, false, `${viewport.name}: era transition skip overlaps the GX heading`);
+    assert.equal(skipControl.overlapsTime, false, `${viewport.name}: era transition skip overlaps the era counter`);
+    assert.equal(skipControl.overlapsAudio, false, `${viewport.name}: era transition skip overlaps the audio control`);
+    assert.equal(skipControl.transitionVisible, true, `${viewport.name}: era transition skip appeared outside the transition`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-gx-transition-skip.png`), fullPage: false });
+
+    const skipStartedAt = Date.now();
+    await page.locator("#gx-era-transition-skip").click();
+    await page.waitForFunction(() => (
+      document.querySelector("#gx-phase-index")?.textContent?.trim() === "02 / 08"
+      && !document.querySelector("#gx-layer")?.classList.contains("is-era-transitioning")
+      && document.querySelector("#gx-era-transition-skip")?.hidden === true
+    ), null, { timeout: 1500 });
+    const skipElapsedMs = Date.now() - skipStartedAt;
+    assert(skipElapsedMs < 1200, `${viewport.name}: era transition skip took ${skipElapsedMs}ms`);
+
     await page.keyboard.press("Escape");
     await page.waitForTimeout(160);
     assert.equal(await page.evaluate(() => document.body.classList.contains("gx-story-open")), true, `${viewport.name}: GX closed before the final phase`);
 
-    const phases = ["02 / 08", "03 / 08", "04 / 08", "05 / 08", "06 / 08", "07 / 08", "08 / 08"];
+    const phases = ["03 / 08", "04 / 08", "05 / 08", "06 / 08", "07 / 08", "08 / 08"];
     for (const phase of phases) {
       await page.keyboard.press("Enter");
+      await page.locator("#gx-era-transition-skip").waitFor({ state: "visible", timeout: 3000 });
+      await page.locator("#gx-era-transition-skip").click();
       await page.waitForFunction((value) => (
         document.querySelector("#gx-phase-index")?.textContent?.trim() === value
         && !document.querySelector("#gx-layer")?.classList.contains("is-era-transitioning")
       ), phase, { timeout: 5000 });
     }
+    await page.waitForFunction(() => (
+      document.querySelector("#gx-title")?.textContent?.trim() === "THE UNWRITTEN GX"
+      && !document.querySelector("#gx-title")?.classList.contains("is-changing")
+    ), null, { timeout: 3000 });
+    const phase8Layout = await page.evaluate(() => {
+      const card = document.querySelector("#gx-layer .gx-story-card");
+      const title = card.querySelector("h3");
+      const lowerNotes = [
+        card.querySelector(".gx-strata-marker strong"),
+        ...card.querySelectorAll(".gx-guide b"),
+      ];
+      const controls = document.querySelector("#gx-layer .gx-controls");
+      const lineCount = (element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return new Set([...range.getClientRects()]
+          .filter((rect) => rect.width > 0 && rect.height > 0)
+          .map((rect) => Math.round(rect.top))).size;
+      };
+      const cardRect = card.getBoundingClientRect();
+      const controlsRect = controls.getBoundingClientRect();
+      const overlapsControls = !(
+        cardRect.right <= controlsRect.left
+        || cardRect.left >= controlsRect.right
+        || cardRect.bottom <= controlsRect.top
+        || cardRect.top >= controlsRect.bottom
+      );
+      return {
+        chapterTitle: document.querySelector("#gx-title")?.textContent?.trim(),
+        titleLines: lineCount(title),
+        lowerNoteLines: lowerNotes.map(lineCount),
+        cardWidth: Math.round(cardRect.width),
+        cardClientWidth: card.clientWidth,
+        cardScrollWidth: card.scrollWidth,
+        contentWidths: [title, ...lowerNotes].map((element) => ({
+          client: element.clientWidth,
+          scroll: element.scrollWidth,
+        })),
+        cardHorizontalOverflow: card.scrollWidth > card.clientWidth + 1,
+        overlapsControls,
+        pageHorizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+      };
+    });
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-gx-phase8-card.png`), fullPage: false });
+    assert.equal(phase8Layout.cardHorizontalOverflow, false, `${viewport.name}: final GX card scrolls horizontally: ${JSON.stringify(phase8Layout)}`);
+    assert.equal(phase8Layout.pageHorizontalOverflow, false, `${viewport.name}: final GX card overflows the page`);
+    assert.equal(phase8Layout.overlapsControls, false, `${viewport.name}: final GX card overlaps its controls`);
+    if (viewport.width >= 1600) {
+      assert.equal(phase8Layout.titleLines, 1, `${viewport.name}: final GX title wraps`);
+      assert.deepEqual(phase8Layout.lowerNoteLines, [1, 1, 1], `${viewport.name}: final GX lower notes wrap`);
+    }
     assert.equal(await page.locator("#story-detour-return").count(), 0, `${viewport.name}: return button appeared before final completion`);
     await page.keyboard.press("Enter");
+    await page.locator("#gx-era-transition-skip").waitFor({ state: "visible", timeout: 3000 });
+    await page.locator("#gx-era-transition-skip").click();
     await page.waitForFunction(() => (
       globalThis.GaiaNovel.getState().stepId === "gx_experience_018"
       && !document.body.classList.contains("gx-story-open")
@@ -167,7 +289,7 @@ try {
     assert(closed.finalCompleteEvents >= 1, `${viewport.name}: final completion was not announced`);
     assert.equal(closed.finalPhase, 8);
     assert.equal(closed.horizontalOverflow, false);
-    report.scans.push({ viewport: viewport.name, open, closed, passed: true });
+    report.scans.push({ viewport: viewport.name, open, skipControl, skipElapsedMs, phase8Layout, closed, passed: true });
     await context.close();
   }
   assert.equal(report.consoleErrors.length, 0, `console errors: ${JSON.stringify(report.consoleErrors)}`);

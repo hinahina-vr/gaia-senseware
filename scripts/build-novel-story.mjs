@@ -1,13 +1,14 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
+const revisionsPath = path.join(projectRoot, "story", "observation-log-revisions-20260822.js");
 const EXPECTED_SOURCE_SHA256 = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
 const LEGACY_STEP_ID_GAPS = Object.freeze({
   gx_experience: Object.freeze({ after: 44, size: 10 }),
@@ -32,6 +33,8 @@ for (const profile of Object.values(characters)) {
 }
 const source = sourceBytes.toString("utf8").replace(/\r\n?/gu, "\n");
 if (Buffer.from(source, "utf8").length !== sourceBytes.length) throw new Error("正本はUTF-8/LFである必要があります");
+const { default: observationLogRevisions } = await import(`${pathToFileURL(revisionsPath).href}?build=${Date.now()}`);
+const appliedRevisionIds = new Set();
 
 const EXPECTED_SCENE_IDS = Object.freeze([
   "festival_concept",
@@ -158,7 +161,9 @@ const scenes = matches.map((match, index) => {
     const legacyGap = LEGACY_STEP_ID_GAPS[meta.id];
     if (legacyGap && stepNumber === legacyGap.after + 1) stepNumber += legacyGap.size;
     const id = `${meta.id}_${String(stepNumber).padStart(3, "0")}`;
-    steps.push({ id, sceneId: meta.id, ...step });
+    const revision = observationLogRevisions[id];
+    if (revision) appliedRevisionIds.add(id);
+    steps.push({ id, sceneId: meta.id, ...step, ...(revision || {}) });
   };
   const interaction = INTERACTION_CONFIG[meta.id] || null;
   for (const block of blocks) {
@@ -198,6 +203,9 @@ const scenes = matches.map((match, index) => {
   };
 });
 
+const unusedRevisionIds = Object.keys(observationLogRevisions).filter((id) => !appliedRevisionIds.has(id));
+if (unusedRevisionIds.length > 0) throw new Error(`未適用のOBSERVATION LOG修正があります: ${unusedRevisionIds.join(", ")}`);
+
 scenes.forEach((scene, index) => { scene.nextSceneId = scenes[index + 1]?.id || null; });
 const sceneOrder = scenes.map((scene) => scene.id);
 const story = {
@@ -207,6 +215,7 @@ const story = {
   subtitle: "GAIA SENSATION",
   estimatedDuration: "10〜12分",
   sourceSha256: EXPECTED_SOURCE_SHA256,
+  revisionId: "observation-log-20260822T114453Z",
   characterSourceSha256: sha256(characterSourceBytes),
   characters,
   startSceneId: "festival_concept",

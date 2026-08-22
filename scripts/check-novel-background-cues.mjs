@@ -34,7 +34,7 @@ const assets = Object.freeze({
   tenWindows: "assets/concept/concept-02-ten-windows.png",
   modis: "assets/data/modis-land-cover-2023.png",
   map01Provenance: "assets/visuals-07/novel-bg-map01-data-provenance-autumn-morning-v3.png",
-  system: "assets/architecture/gaia-system-architecture.png",
+  system: "assets/architecture/gaia-field-sensor-architecture-v2.svg",
   gxAncientOcean: "assets/visuals-07/novel-bg-gx-ancient-ocean-autumn-morning-v3.png",
   abstract: "assets/visuals-07/mode-abstract-v1.webp",
   gxBreathingPoints: "assets/visuals-07/novel-bg-gx-breathing-points-autumn-morning-v3.png",
@@ -49,8 +49,7 @@ const assets = Object.freeze({
   onlineNight: "assets/visuals-07/novel-bg-online-night-v2.png",
   productionNight: "assets/visuals-07/novel-bg-production-night-v2.png",
   venue: "assets/visuals-07/novel-bg-coastal-venue-v2.png",
-  coastNight: "assets/visuals-07/novel-bg-zushi-coast-autumn-day-v3.png",
-  finale: "assets/visuals-07/event-cg-exhibition-finale-v2.png",
+  finaleSunset: "assets/visuals-07/event-cg-exhibition-finale-sunset-v1.png",
 });
 const approvedAssetHashes = Object.freeze({
   [assets.entrance]: "972adf6beac6b3ac51e9e132b81c7ca61acb24e9f795600153ec021b7c9d1654",
@@ -71,8 +70,7 @@ const approvedAssetHashes = Object.freeze({
   [assets.esp32Collaboration]: "9dac8e247d2fc37fc86b57a49be249c0cd73da84f02fe803d9c6f802c83c68fd",
   [assets.shared]: "933900ea6c5d9dca04861d551d25e67fb7fffd33085f3a4abe43ff102a8b4d02",
   [assets.circleWelcome]: "525634c93527c677b8afa337e89a5d00ed46e1b64b349bfa123efb220ff7dfbd",
-  [assets.coastNight]: "f8017fc5902cbae1df2f9e037b7009179a5bf924e5d943f73e76005d60c1467e",
-  [assets.finale]: "343579e6a2af3cfbc8c1e2d1314dc852ef69d2a742e432f3f8ce7fa49fae2262",
+  [assets.finaleSunset]: "7428259fd4f926d842d72765b15ff12698e5f19456802c8c5f6cd9b502909f0b",
   [assets.circleInvitationCard]: "0333bec3f7b6d0af5b3dca51913ede5f87dc30ffe81df28b4520bc1c7cb2f04b",
 });
 const sha256 = async (assetPath) => createHash("sha256")
@@ -93,8 +91,8 @@ const expectedBoundaries = [
   ["festival_concept", 13, 14, "festival-gaia-booth-approach", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["festival_concept", 15, 20, "festival-first-encounter-cg", assets.firstEncounter, "event-focus", "event-cg"],
   ["festival_concept", 21, 22, "festival-amane-closeup-cg", assets.amaneCloseup, "event-focus", "event-cg"],
-  ["festival_concept", 23, 26, "festival-mizuha-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
-  ["festival_concept", 27, 75, "festival-gaia-booth-conversation", assets.fivePlaneProjection, "drift-left", "scenic"],
+  ["festival_concept", 23, 27, "festival-mizuha-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
+  ["festival_concept", 28, 75, "festival-gaia-booth-conversation", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["festival_concept", 76, 76, "festival-map-transition", assets.mapTransition, "event-focus", "event-cg"],
   ["map_mode01", 1, 14, "map01-co2-observation", assets.mapTransition, "drift-right", "event-cg"],
   ["map_mode01", 15, 28, "map01-temperature-observation", assets.modis, "push-in", "scenic"],
@@ -105,7 +103,7 @@ const expectedBoundaries = [
   ["gx_experience", 18, 18, "gx-exhibition-return", assets.fivePlaneProjection, "push-in", "scenic"],
   ["gx_experience", 19, 29, "gx-ancient-ocean", assets.abstract, "drift-right", "scenic"],
   ["gx_experience", 30, 41, "gx-coevolution", assets.gxBreathingPoints, "drift-left", "scenic"],
-  ["gx_experience", 42, 44, "gx-present-return", assets.observatory, "push-in", "scenic"],
+  ["gx_experience", 42, 44, "gx-present-return", assets.fivePlaneProjection, "push-in", "scenic"],
   ["gx_experience", 55, 58, "gx-ten-mode-gateway", assets.gxModeGateway, "push-in", "scenic"],
   ["esp32_pitch", 1, 7, "esp32-exhibition-opening", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["esp32_pitch", 8, 18, "esp32-exhibition-proposal", assets.esp32Collaboration, "event-focus", "event-cg"],
@@ -115,16 +113,16 @@ const expectedBoundaries = [
   ["circle_invitation", 1, 10, "circle-closing-exhibition", assets.fivePlaneProjection, "push-in", "scenic"],
   ["circle_invitation", 11, 28, "circle-private-invitation", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["circle_invitation", 29, 47, "circle-invitation-card-cg", assets.circleInvitationCard, "event-focus", "event-cg"],
-  ["circle_invitation", 48, 69, "circle-welcome-cg", assets.circleWelcome, "event-focus", "event-cg"],
-  ["circle_invitation", 70, 81, "circle-after-welcome", assets.fivePlaneProjection, "drift-right", "scenic"],
+  ["circle_invitation", 48, 66, "circle-welcome-cg", assets.circleWelcome, "event-focus", "event-cg"],
+  ["circle_invitation", 67, 81, "circle-after-welcome", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["welcome_chat", 1, 20, "welcome-online-arrival", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["welcome_chat", 21, 40, "welcome-online-esp32-thread", assets.fivePlaneProjection, "drift-right", "scenic"],
   ["welcome_chat", 41, 54, "welcome-co-created-future", assets.fivePlaneProjection, "push-in", "scenic"],
   ["welcome_chat", 55, 68, "welcome-physical-booth", assets.fivePlaneProjection, "drift-left", "scenic"],
   ["welcome_chat", 69, 73, "welcome-booth-packdown", assets.fivePlaneProjection, "drift-right", "scenic"],
-  ["welcome_chat", 74, 83, "welcome-night-exit-mobile", assets.coastNight, "drift-left", "scenic"],
-  ["welcome_chat", 84, 91, "welcome-earth-partner-reflection", assets.fivePlaneProjection, "push-in", "scenic"],
-  ["welcome_chat", 92, 95, "welcome-exhibition-finale-cg", assets.finale, "event-focus", "event-cg"],
+  ["welcome_chat", 74, 83, "welcome-night-exit-mobile", assets.finaleSunset, "drift-left", "event-cg"],
+  ["welcome_chat", 84, 91, "welcome-earth-partner-reflection", assets.finaleSunset, "push-in", "event-cg"],
+  ["welcome_chat", 92, 95, "welcome-exhibition-finale-cg", assets.finaleSunset, "event-focus", "event-cg"],
 ];
 
 assert.equal(backgroundCues.limitedStory.length, expectedBoundaries.length);
@@ -147,8 +145,8 @@ const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(ste
 assert.equal(resolved.length, 386);
 assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
 assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 20, "background-art cut must keep the intentional exhibition-map continuity");
-assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 83);
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 18, "background-art cut must keep the intentional exhibition-map continuity");
+assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 99);
 assert(
   backgroundCues.limitedStory
     .filter((cue) => /(?:^|\/)event-cg-/u.test(cue.assetPath))
@@ -177,7 +175,7 @@ for (const [assetPath, expectedHash] of Object.entries(approvedAssetHashes)) {
 const festivalResolved = resolved.filter(({ step }) => step.sceneId === "festival_concept");
 const festivalAfterEncounter = festivalResolved.filter(({ step }) => {
   const number = Number(step.id.slice(-3));
-  return number >= 27 && number <= 75;
+  return number >= 28 && number <= 75;
 });
 assert(festivalAfterEncounter.every(({ cue: resolvedCue }) => resolvedCue.assetPath === assets.fivePlaneProjection));
 assert.equal(festivalResolved.find(({ step }) => step.id === "festival_concept_076")?.cue.assetPath, assets.mapTransition);
@@ -201,10 +199,9 @@ const forbiddenConsistencyAssets = new Set([
 ]);
 const boothRanges = [
   ["festival_concept", 13, 14],
-  ["festival_concept", 27, 75],
+  ["festival_concept", 28, 75],
   ["map_mode01", 41, 43],
   ["welcome_chat", 1, 73],
-  ["welcome_chat", 84, 91],
 ];
 for (const [sceneId, from, to] of boothRanges) {
   const range = resolved.filter(({ step }) => {
@@ -232,7 +229,8 @@ assert.equal(cue("festival_concept_015").presentation, "event-cg");
 assert.equal(cue("festival_concept_019").assetPath, assets.firstEncounter);
 assert.equal(cue("festival_concept_021").assetPath, assets.amaneCloseup);
 assert.equal(cue("festival_concept_023").assetPath, assets.mizuhaCloseup);
-assert.equal(cue("festival_concept_027").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_027").assetPath, assets.mizuhaCloseup);
+assert.equal(cue("festival_concept_027").presentation, "event-cg");
 assert.equal(cue("festival_concept_063").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("festival_concept_075").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("festival_concept_076").assetPath, assets.mapTransition);
@@ -259,17 +257,18 @@ assert.equal(cue("circle_invitation_001").assetPath, assets.fivePlaneProjection)
 assert.equal(cue("circle_invitation_029").assetPath, assets.circleInvitationCard);
 assert.equal(cue("circle_invitation_047").assetPath, assets.circleInvitationCard);
 assert.equal(cue("circle_invitation_048").presentation, "event-cg");
-assert.equal(cue("circle_invitation_070").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("circle_invitation_067").assetPath, assets.fivePlaneProjection);
+assert.notEqual(cue("circle_invitation_067").presentation, "event-cg");
 assert.equal(cue("welcome_chat_020").id, "welcome-online-arrival");
 assert.equal(cue("welcome_chat_021").id, "welcome-online-esp32-thread");
 assert.equal(cue("welcome_chat_055").id, "welcome-physical-booth");
-assert.equal(cue("welcome_chat_074").assetPath, assets.coastNight);
+assert.equal(cue("welcome_chat_074").assetPath, assets.finaleSunset);
 assert.equal(cue("welcome_chat_002").assetPath, assets.fivePlaneProjection);
 assert.equal(cue("welcome_chat_041").assetPath, assets.fivePlaneProjection);
-assert.equal(cue("welcome_chat_084").assetPath, assets.fivePlaneProjection);
-assert.equal(cue("welcome_chat_091").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("welcome_chat_084").assetPath, assets.finaleSunset);
+assert.equal(cue("welcome_chat_091").assetPath, assets.finaleSunset);
 assert.equal(cue("welcome_chat_092").presentation, "event-cg");
-assert.equal(cue("welcome_chat_095").assetPath, assets.finale);
+assert.equal(cue("welcome_chat_095").assetPath, assets.finaleSunset);
 assert.throws(() => backgroundCues.forStep({ sceneId: "welcome_chat", id: "welcome_chat_999" }), /Missing contest-v10 background cue/);
 assert.throws(() => backgroundCues.forStep({ sceneId: "unknown", id: "unknown_001" }), /Unknown contest-v10 background scene/);
 
@@ -282,5 +281,5 @@ console.log(JSON.stringify({
   assets: [...new Set(resolved.map(({ cue }) => cue.assetPath))],
   eventCgSteps: resolved.filter(({ cue }) => cue.presentation === "event-cg").length,
   gallery: backgroundCues.gallery.map(({ id, unlockStepId }) => ({ id, unlockStepId })),
-  welcomeBoundaries: ["001-073 five-plane booth", "074-083 explicit autumn-day hall exit/mobile", "084-091 five-plane booth continuity", "092-095 finale event CG"],
+  welcomeBoundaries: ["001-073 five-plane booth", "074-083 sunset promenade departure", "084-091 sunset promenade reflection", "092-095 sunset promenade finale event CG"],
 }, null, 2));

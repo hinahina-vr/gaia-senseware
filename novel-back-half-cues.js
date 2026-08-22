@@ -24,7 +24,8 @@
     { id: "gx-current", sceneId: "gx_experience", from: 1, to: 58, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 9:45–9:53", duration: "3:25–5:35", dayPeriod: "AM", location: "展示端末・GX／太古の海" },
     { id: "esp32-current", sceneId: "esp32_pitch", from: 1, to: 43, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 9:53–10:00", duration: "5:35–7:15", dayPeriod: "AM", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
     { id: "circle-invitation-current", sceneId: "circle_invitation", from: 1, to: 81, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 10:00–10:07", duration: "7:15–9:05", dayPeriod: "AM", location: "年次対面イベント・GAIA SENSEWARE展示ブース" },
-    { id: "welcome-current", sceneId: "welcome_chat", from: 1, to: 95, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 10:07–10:45", duration: "9:05–11:30", dayPeriod: "AM", location: "学内チャット『惑星の放課後』／午前展示枠終了後の海側広場" },
+    { id: "welcome-current", sceneId: "welcome_chat", from: 1, to: 73, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "AM 10:07–10:45", duration: "9:05–11:30", dayPeriod: "AM", location: "学内チャット『惑星の放課後』／午前展示枠終了後の海側広場" },
+    { id: "welcome-sunset-walk", sceneId: "welcome_chat", from: 74, to: 95, context: "CURRENT", precision: "MINUTE", date: "10月3日（土）", time: "PM 5:10–5:45", duration: "9:05–11:30", dayPeriod: "PM", location: "海沿いの帰り道／夕暮れの遊歩道" },
   ]);
 
   const interactions = freezeRows([
