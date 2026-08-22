@@ -54,8 +54,11 @@ const requiredStaffRollLiterals = [
 for (const literal of requiredStaffRollLiterals) {
   if (!novelModeSource.includes(literal)) throw new Error(`スタッフロールの現行実装から「${literal}」を確認できません`);
 }
-if (!/step\.id === "welcome_chat_095"\) return renderStaffRoll\(step\)/u.test(novelModeSource)) {
-  throw new Error("本編最終行からスタッフロールへの接続を確認できません");
+if (!/step\.id === "welcome_chat_095"\) return renderIntermission\(step\)/u.test(novelModeSource)) {
+  throw new Error("本編最終行から第一の終端への接続を確認できません");
+}
+if (!/renderStaffRoll\(stepMap\.get\(ENDING_STEP_ID\), \{ afterTrueEnd: true \}\)/u.test(novelModeSource)) {
+  throw new Error("NOVACENE完了後から正式スタッフロールへの接続を確認できません");
 }
 
 const typeLabels = Object.freeze({
@@ -97,6 +100,7 @@ const describeStep = (step, { trueEndStep = false } = {}) => {
 };
 
 const mainStepCount = story.scenes.reduce((count, scene) => count + scene.steps.length, 0);
+const mainVisibleStepCount = story.scenes.reduce((count, scene) => count + scene.steps.filter((step) => step.type !== "phase").length, 0);
 const trueEndStepCount = trueEnd.scenes.reduce((count, scene) => count + scene.steps.length, 0);
 const revisionCount = Object.keys(observationLogRevisions).length;
 const lines = [
@@ -113,7 +117,7 @@ const lines = [
   "",
   "## 現行スナップショット",
   "",
-  `- 本編: ${story.scenes.length}シーン / ${mainStepCount}ステップ`,
+  `- 本編: ${story.scenes.length}シーン / ${mainVisibleStepCount}表示ビート（安定IDスロット ${mainStepCount}）`,
   `- OBSERVATION LOG差し替え: ${revisionCount}件（すべて適用後の本文を掲載）`,
   `- スタッフロール: ${staffRoll.credits.length}クレジット区分`,
   `- NOVACENE: ${trueEnd.scenes.length}シーン / ${trueEndStepCount}メッセージ`,
@@ -138,17 +142,47 @@ for (const scene of story.scenes) {
     `- ステップ数: ${scene.steps.length}`,
     "",
   );
-  for (const step of scene.steps) lines.push(describeStep(step), "");
+  for (const step of scene.steps.filter((item) => item.type !== "phase")) lines.push(describeStep(step), "");
   lines.push("---", "");
 }
 
 lines.push(
-  "# PART II｜スタッフロールと分岐",
+  "# PART II｜第一の終端とNOVACENE",
   "",
-  `- 発火条件: \`${staffRoll.triggerStepId}\`を表示すると、通常メッセージではなくスタッフロールへ接続`,
+  `- 発火条件: \`${staffRoll.triggerStepId}\`でPART Iの海辺を残したまま第一の終端を表示`,
+  "- 表示: AFTER SCHOOL SESSION 01 / COMPLETE",
+  "- 正規操作: 続ける → NOVACENE",
+  "- 一時停止: ここで休む → 現在位置を保存してデータ画面",
+  "",
+  "",
+  `- タイトル: ${trueEnd.title}`,
+  `- サブタイトル: ${trueEnd.subtitle}`,
+  `- 経過時間: ${trueEnd.elapsed}`,
+  `- 記録基盤: ${trueEnd.language.name}（${trueEnd.language.japaneseName}）`,
+  `- 役割: ${trueEnd.language.role}`,
+  "",
+);
+
+for (const scene of trueEnd.scenes) {
+  lines.push(
+    `## NOVACENE ${scene.number}｜${scene.title}`,
+    "",
+    `- シーンID: \`${scene.id}\``,
+    `- 背景シグネチャ: \`${scene.backdrop}\``,
+    `- メッセージ数: ${scene.steps.length}`,
+    "",
+  );
+  for (const step of scene.steps) lines.push(describeStep(step, { trueEndStep: true }), "");
+  lines.push("---", "");
+}
+
+lines.push(
+  "# PART III｜正式スタッフロール",
+  "",
+  "- 発火条件: NOVACENE 09完了後の明示ボタン「正式エンディングへ」",
   `- 見出し: ${staffRoll.kicker} / ${staffRoll.title} / ${staffRoll.subtitle}`,
   `- 明示的な短絡操作: ${staffRoll.skipLabel} → データ画面`,
-  `- 正規操作: ${staffRoll.continueLabel} → NOVACENE`,
+  "- 背景・メッセージ領域のクリックではスキップしない",
   "",
   "## クレジット",
   "",
@@ -166,39 +200,17 @@ lines.push(
   "",
   `- ${staffRoll.copyright}`,
   `- ${staffRoll.thanks}`,
-  `- 約5秒後に「${staffRoll.continueLabel}」へ切り替え`,
-  "",
-  "---",
-  "",
-  "# PART III｜NOVACENE",
-  "",
-  `- タイトル: ${trueEnd.title}`,
-  `- サブタイトル: ${trueEnd.subtitle}`,
-  `- 経過時間: ${trueEnd.elapsed}`,
-  `- 統一言語: ${trueEnd.language.name}（${trueEnd.language.japaneseName}）`,
+  "- 最終操作: データを見てみる",
   "",
 );
-
-for (const scene of trueEnd.scenes) {
-  lines.push(
-    `## NOVACENE ${scene.number}｜${scene.title}`,
-    "",
-    `- シーンID: \`${scene.id}\``,
-    `- 背景シグネチャ: \`${scene.backdrop}\``,
-    `- メッセージ数: ${scene.steps.length}`,
-    "",
-  );
-  for (const step of scene.steps) lines.push(describeStep(step, { trueEndStep: true }), "");
-  lines.push("---", "");
-}
 
 const output = `${lines.join("\n").trimEnd()}\n`;
 if (checkOnly) {
   if (!fs.existsSync(outputPath)) throw new Error("story/現行統合台本.mdがありません。npm run story:exportを実行してください");
   const current = fs.readFileSync(outputPath, "utf8");
   if (current !== output) throw new Error("story/現行統合台本.mdが現行実行データと一致しません。実行ソースへ修正を反映後、npm run story:exportで再生成してください");
-  console.log(`current story script ok: ${mainStepCount} main + ${trueEndStepCount} NOVACENE steps`);
+  console.log(`current story script ok: ${mainVisibleStepCount} visible main + ${trueEndStepCount} NOVACENE steps`);
 } else {
   fs.writeFileSync(outputPath, output, "utf8");
-  console.log(`wrote ${path.relative(projectRoot, outputPath)} (${mainStepCount} main + ${trueEndStepCount} NOVACENE steps)`);
+  console.log(`wrote ${path.relative(projectRoot, outputPath)} (${mainVisibleStepCount} visible main + ${trueEndStepCount} NOVACENE steps)`);
 }

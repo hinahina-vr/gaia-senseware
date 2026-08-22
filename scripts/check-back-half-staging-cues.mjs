@@ -27,7 +27,7 @@ const range = (sceneId, from, to) => Array.from(
   (_, index) => `${sceneId}_${String(from + index).padStart(3, "0")}`,
 );
 
-assert.equal(story.storyVersion, 10, "contest story version changed");
+assert.equal(story.storyVersion, 11, "revised story version changed");
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds, "contest scene order changed");
 assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedCounts, "contest scene counts changed");
 assert.equal(allSteps.length, 386, "contest story must keep 386 steps after retiring the demo poll");
@@ -132,16 +132,19 @@ assert.equal(cue("welcome_chat_001").device, "wide-campus-chat");
 assert.equal(cue("welcome_chat_001").character.avatar, "none");
 assert.equal(cue("welcome_chat_001").character.cast, "none");
 assert.equal(cue("welcome_chat_054").castMode, "chat-text-only-no-cast");
-assert.equal(cue("welcome_chat_055").devicePhase, "physical");
-assert.equal(cue("welcome_chat_055").castMode, "normal");
-assert.equal(cue("welcome_chat_055").character.cast, "mizuha-amane");
-assert.equal(cue("welcome_chat_055").character.portrait, "normal");
-assert.equal(cue("welcome_chat_077").castMode, "normal");
+assert.equal(cue("welcome_chat_055").devicePhase, "wide");
+assert.equal(cue("welcome_chat_055").castMode, "chat-text-only-no-cast");
+assert.equal(cue("welcome_chat_074").devicePhase, "physical");
+assert.equal(cue("welcome_chat_074").castMode, "normal");
+assert.equal(cue("welcome_chat_074").character.cast, "mizuha-amane");
+assert.equal(cue("welcome_chat_074").character.portrait, "normal");
+assert.equal(cue("welcome_chat_077").devicePhase, "ending");
+assert.equal(cue("welcome_chat_077").castMode, "chat-text-only-no-cast");
 assert.equal(cue("welcome_chat_073").temporal.time, "AM 10:07–10:45");
 assert.equal(cue("welcome_chat_074").temporal.time, "PM 5:10–5:45");
 assert.equal(cue("welcome_chat_074").temporal.dayPeriod, "PM");
 assert.equal(cue("welcome_chat_092").temporal.location, "海沿いの帰り道／夕暮れの遊歩道");
-assert.equal(cue("welcome_chat_078").device, "mobile-campus-chat");
+assert.equal(cue("welcome_chat_078").device, "none");
 assert.equal(cue("welcome_chat_078").character.avatar, "none");
 assert.equal(cue("welcome_chat_095").castMode, "chat-text-only-no-cast");
 assert.equal(staging.audio.length, 0, "contest route must not add Sakuya voice/audio cues");
@@ -149,7 +152,7 @@ assert(staging.characters.every((entry) => entry.voice === "none"), "welcome rou
 
 const sakuyaSteps = allSteps.filter((step) => step.speaker === "sakuya");
 assert(sakuyaSteps.length > 0, "Sakuya text chat is missing");
-assert(sakuyaSteps.every((step) => step.sceneId === "welcome_chat" && step.type === "chat"), "Sakuya escaped text-only chat");
+assert(sakuyaSteps.filter((step) => step.type !== "phase").every((step) => step.type === "chat"), "Sakuya escaped text-only chat");
 assert.throws(() => staging.forStep({ sceneId: "welcome_chat", id: "welcome_chat_999" }), /Missing contest-v10 temporal cue/);
 assert.throws(() => staging.forStep({ sceneId: "unknown", id: "unknown_001" }), /Unknown contest-v10 staging scene/);
 
@@ -164,5 +167,5 @@ console.log(JSON.stringify({
   deviceCues: staging.devices.length,
   characterCues: staging.characters.length,
   audioCues: staging.audio.length,
-  welcomePresentation: ["001-054 wide", "055-077 physical", "078-095 mobile"],
+  welcomePresentation: ["001-073 wide", "074-076 physical", "077-095 ending"],
 }, null, 2));
