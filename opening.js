@@ -144,10 +144,10 @@
 
   document.body.classList.add("gaia-opening-active");
 
-  const OPENING_TIME_SCALE = 0.85;
+  const OPENING_TIME_SCALE = 1.275;
   const openingMs = (value) => Math.round(value * OPENING_TIME_SCALE);
   const OPENING_DURATION = openingMs(14500);
-  const EXIT_DURATION = openingMs(1080);
+  const EXIT_DURATION = Math.round(1080 * 0.85);
   const OPENING_ART = [
     "./assets/visuals-08/opening-mizuha-keyvisual-v1.png",
     "./assets/visuals-08/opening-amane-keyvisual-v1.png",

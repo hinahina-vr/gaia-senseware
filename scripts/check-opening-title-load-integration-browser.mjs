@@ -103,13 +103,16 @@ try {
       const read = (name) => {
         const node = byName(name);
         return {
+          meta: node?.querySelector("p")?.textContent.replace(/\s+/gu, " ").trim(),
           quote: node?.querySelector("strong")?.textContent.trim(),
           reply: node?.querySelector(".gaia-vn-character-reply")?.textContent.trim(),
         };
       };
       return {
-        mizuha: read("ミズハ"),
-        amane: read("アマネ"),
+        mizu: read("みず"),
+        ame: read("あめ"),
+        characterBands: [...document.querySelectorAll(".gaia-vn-character-band")].map((node) => node.textContent.trim()),
+        montageNames: [...document.querySelectorAll(".gaia-vn-word-rails small")].map((node) => node.textContent.trim()),
         mizuhaArt: getComputedStyle(document.querySelector(".gaia-vn-panel-minamo")).backgroundImage,
         amaneArt: getComputedStyle(document.querySelector(".gaia-vn-panel-sora")).backgroundImage,
         characterSpriteCount: document.querySelectorAll(".gaia-vn-character-focus, .gaia-vn-character-image").length,
@@ -123,22 +126,26 @@ try {
         overflowY: document.documentElement.scrollHeight - innerHeight,
       };
     });
-    assert.deepEqual(opening.mizuha, {
+    assert.deepEqual(opening.mizu, {
+      meta: "01 MIZU / FEEL",
       quote: "「海も、空も、生命も。互いに変え合って、今の地球になりましたの。」",
       reply: "生命のつながりを、ひとつの地球として感じる。",
     });
-    assert.deepEqual(opening.amane, {
+    assert.deepEqual(opening.ame, {
+      meta: "02 AME / MEASURE",
       quote: "「変わらないものって、変わり続けていることだけなのかもね。」",
       reply: "変化の連なりを、時間の中で見る。",
     });
+    assert.deepEqual(opening.characterBands, ["MIZU　MIZU　MIZU", "AME　AME　AME　AME"]);
+    assert.deepEqual(opening.montageNames, ["MIZU", "AME", "SAKUYA", "YOU"]);
     assert.match(opening.mizuhaArt, /opening-mizuha-keyvisual-v1\.png/u);
     assert.match(opening.amaneArt, /opening-amane-keyvisual-v1\.png/u);
     assert.equal(opening.characterSpriteCount, 0);
     assert.equal(opening.montageLabel, "SENSES / MEASURES / TRACES / CHOICES");
     assert.equal(opening.montageHeading, "未来は、ひとつの視点には宿らない。");
     assert.equal(opening.montageBody, "感じ、測り、残し、選ぶ。その重なりから、まだ名のない未来が立ち上がる。");
-    assert.equal(opening.montageDuration, "2.72s");
-    assert.equal(opening.montageDelay, "6.545s");
+    assert.equal(opening.montageDuration, "4.08s");
+    assert.equal(opening.montageDelay, "9.8175s");
     assert.equal(opening.soundGateCount, 0);
     assert(opening.overflowX <= 1 && opening.overflowY <= 1);
 

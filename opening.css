@@ -1264,100 +1264,100 @@ body.gaia-opening-active .novel-layer {
 
 /* timeline */
 .gaia-opening.is-active .gaia-vn-panel-prologue {
-  animation: opening-panel-calm 2.295s 0s ease-in-out both;
+  animation: opening-panel-calm 3.4425s 0s ease-in-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-minamo {
-  animation: opening-panel-calm 2.72s 1.955s ease-in-out both;
+  animation: opening-panel-calm 4.08s 2.9325s ease-in-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-sora {
-  animation: opening-panel-calm 2.72s 4.25s ease-in-out both;
+  animation: opening-panel-calm 4.08s 6.375s ease-in-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-montage {
-  animation: opening-panel-calm 2.72s 6.545s ease-in-out both;
+  animation: opening-panel-calm 4.08s 9.8175s ease-in-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-final {
-  animation: opening-panel-final 3.4s 8.84s ease-in-out both;
+  animation: opening-panel-final 5.1s 13.26s ease-in-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-prologue-lines {
-  animation: opening-ripple 1.2325s 0.068s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: opening-ripple 1.84875s 0.102s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 .gaia-opening.is-active .gaia-vn-prologue-lockup {
-  animation: opening-copy-calm 0.765s 0.068s ease-out both;
+  animation: opening-copy-calm 1.1475s 0.102s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-project,
 .gaia-opening.is-active .gaia-vn-season {
-  animation: opening-detail-calm 0.68s 0.153s ease-out both;
+  animation: opening-detail-calm 1.02s 0.2295s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-minamo .gaia-vn-character-focus {
-  animation: opening-character-right 1.02s 2.023s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+  animation: opening-character-right 1.53s 3.0345s cubic-bezier(0.2, 0.72, 0.2, 1) both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-sora .gaia-vn-character-focus {
-  animation: opening-character-left 1.02s 4.318s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+  animation: opening-character-left 1.53s 6.477s cubic-bezier(0.2, 0.72, 0.2, 1) both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-minamo .gaia-vn-character-image {
-  animation: opening-breathe 2.38s 2.023s ease-in-out both;
+  animation: opening-breathe 3.57s 3.0345s ease-in-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-sora .gaia-vn-character-image {
-  animation: opening-breathe 2.38s 4.318s ease-in-out both;
+  animation: opening-breathe 3.57s 6.477s ease-in-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-minamo .gaia-vn-character-copy {
-  animation: opening-copy-right 0.8075s 2.142s ease-out both;
+  animation: opening-copy-right 1.21125s 3.213s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-panel-sora .gaia-vn-character-copy {
-  animation: opening-copy-right 0.8075s 4.437s ease-out both;
+  animation: opening-copy-right 1.21125s 6.6555s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-montage-dots {
-  animation: opening-dots 2.38s 6.545s ease-out both;
+  animation: opening-dots 3.57s 9.8175s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-montage-label {
-  animation: opening-detail-calm 0.68s 6.664s ease-out both;
+  animation: opening-detail-calm 1.02s 9.996s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-path-copy {
-  animation: opening-copy-left 0.8075s 6.749s ease-out both;
+  animation: opening-copy-left 1.21125s 10.1235s ease-out both;
 }
 
-.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(1) { animation: opening-row 0.595s 6.834s ease-out both; }
-.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(2) { animation: opening-row 0.595s 6.987s ease-out both; }
-.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(3) { animation: opening-row 0.595s 7.14s ease-out both; }
-.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(4) { animation: opening-row 0.595s 7.293s ease-out both; }
+.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(1) { animation: opening-row 0.8925s 10.251s ease-out both; }
+.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(2) { animation: opening-row 0.8925s 10.4805s ease-out both; }
+.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(3) { animation: opening-row 0.8925s 10.71s ease-out both; }
+.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(4) { animation: opening-row 0.8925s 10.9395s ease-out both; }
 
 .gaia-opening.is-active .gaia-vn-final-photo {
-  animation: opening-photo 3.4s 8.84s ease-out both;
+  animation: opening-photo 5.1s 13.26s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-final-shade {
-  animation: opening-shade 1.105s 8.908s ease-out both;
+  animation: opening-shade 1.6575s 13.362s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-final-copy {
-  animation: opening-copy-left 0.935s 9.027s ease-out both;
+  animation: opening-copy-left 1.4025s 13.5405s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-opening-progress i {
-  animation: opening-progress 12.24s linear both;
+  animation: opening-progress 18.36s linear both;
 }
 
-.gaia-opening.is-active .gaia-opening-steps span:nth-child(1) { animation: opening-count 2.295s 0s ease both; }
-.gaia-opening.is-active .gaia-opening-steps span:nth-child(2) { animation: opening-count 2.72s 1.955s ease both; }
-.gaia-opening.is-active .gaia-opening-steps span:nth-child(3) { animation: opening-count 2.72s 4.25s ease both; }
-.gaia-opening.is-active .gaia-opening-steps span:nth-child(4) { animation: opening-count 2.72s 6.545s ease both; }
-.gaia-opening.is-active .gaia-opening-steps span:nth-child(5) { animation: opening-count 3.4s 8.84s ease both; }
+.gaia-opening.is-active .gaia-opening-steps span:nth-child(1) { animation: opening-count 3.4425s 0s ease both; }
+.gaia-opening.is-active .gaia-opening-steps span:nth-child(2) { animation: opening-count 4.08s 2.9325s ease both; }
+.gaia-opening.is-active .gaia-opening-steps span:nth-child(3) { animation: opening-count 4.08s 6.375s ease both; }
+.gaia-opening.is-active .gaia-opening-steps span:nth-child(4) { animation: opening-count 4.08s 9.8175s ease both; }
+.gaia-opening.is-active .gaia-opening-steps span:nth-child(5) { animation: opening-count 5.1s 13.26s ease both; }
 
 .gaia-opening.is-leaving .gaia-opening-wipe {
   animation: opening-leave-glow 1.836s cubic-bezier(0.2, 0.72, 0.18, 1) both;
