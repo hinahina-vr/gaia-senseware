@@ -243,7 +243,7 @@
     abstract: {
       kicker: "Abstract mode / Touch the signal",
       title: "どの感覚に、<br />触れますか？",
-      lead: "地球が発している10の信号から、最初に触れるものを選んでください。指やマウスの動きに、光が応答します。",
+      lead: "10の観測テーマを二つの演出で見比べられます。20の入口から選んでください。",
       prompt: "最初に触れる感覚器を選ぶ",
       note: "マウスを重ねると説明が変わります。クリックすると、選んだ光をすぐに始めます。",
     },
@@ -331,6 +331,21 @@
       code: "ALL SIGNALS",
       copy: "ここまで見てきた九つのデータと、触れた跡を一つに重ねる。",
     },
+    {
+      label: "呼吸・実装比較",
+      cue: "CO₂・気温・GOSAT",
+      code: "DATA BREATH",
+      copy: "CO₂で伸縮し、気温とGOSATで色と模様が変わる。",
+    },
+    { label: "海流・演出版", cue: "海流と風", code: "CURRENT RUSH", copy: "海流を光のリボン、風を走る粒子として見る。" },
+    { label: "森林・演出版", cue: "森林と雨", code: "RAIN PULSE", copy: "森林・雨・雲を、発光する樹冠と雷雨へ変える。" },
+    { label: "送粉・演出版", cue: "花と昆虫", code: "POLLEN CONSTELLATION", copy: "花と送粉者の記録を、出会う星座として見る。" },
+    { label: "循環・演出版", cue: "資源の行方", code: "CIRCULAR FOUNDRY", copy: "再資源化率を、分岐して戻る光の流れとして見る。" },
+    { label: "都市・演出版", cue: "光と排出", code: "SCAR CITY", copy: "夜間光と排出量を、都市グリッドと赤い亀裂で見る。" },
+    { label: "地震・演出版", cue: "P波とS波", code: "SEISMIC CHORUS", copy: "P波とS波を、速度の違う光輪として見る。" },
+    { label: "生態・演出版", cue: "三つの層", code: "ECOLOGY PRISM", copy: "森林・都市・文化を、交差する三色の場として見る。" },
+    { label: "電力・演出版", cue: "太陽と風", code: "LIVING GRID", copy: "太陽・風・再エネ比率を、脈動する回路として見る。" },
+    { label: "統合・演出版", cue: "九つのデータ", code: "GAIA SYNAPSE", copy: "九つの信号を、合計せず神経星座として見る。" },
   ];
 
   const SPACE_MODE_CHOICES = [
@@ -739,6 +754,526 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
 }
 `.trim(),
     },
+    {
+      id: "breathing-earth-data",
+      dataModeId: "breathing-earth",
+      title: "Measured Earth Breath",
+      titleJa: "データで息づく地球",
+      description: "CO₂で球体が伸縮し、気温とGOSATで色と模様が変わります。",
+      accent: "#ff8f74",
+      rgb: "255, 143, 116",
+      source: `
+vec3 modeBreathingEarthData(vec2 p, float t, vec2 response, float memory) {
+  float seasonal = (uSignal.y - 0.5) * 2.0;
+  float longTerm = uSignal.x;
+  float temperature = uSignal.z;
+
+  vec2 center = vec2(0.16, 0.015);
+  float earthRadius = 0.57 + seasonal * 0.052;
+  vec2 q = (p - center) / earthRadius;
+  float radius = length(q);
+  float sphere = smoothstep(1.0, 0.955, radius);
+  float core = smoothstep(0.98, 0.18, radius);
+  float limb = lineGlow(radius - 1.0, 0.026);
+  float z = sqrt(max(0.0, 1.0 - radius * radius));
+
+  float longitude = atan(q.x, z) / 6.2831853 + 0.5 + t * 0.006;
+  float latitude = asin(clamp(q.y, -1.0, 1.0)) / 3.1415926 + 0.5;
+  float gosat = mix(0.45, texture(uGosatTexture, vec2(fract(longitude), 1.0 - latitude)).r, uGosatReady);
+  float gosatRelief = smoothstep(0.28, 0.88, gosat + fbm(q * 5.5 + vec2(t * 0.015, 0.0)) * 0.16);
+  float gosatContour = lineGlow(sin(gosat * 25.0 + q.x * 2.4 - q.y * 1.7), 0.05) * sphere;
+
+  vec3 cold = vec3(0.055, 0.28, 0.82);
+  vec3 neutral = vec3(0.08, 0.72, 0.72);
+  vec3 warm = vec3(1.0, 0.18, 0.055);
+  vec3 temperatureColor = temperature < 0.5
+    ? mix(cold, neutral, temperature * 2.0)
+    : mix(neutral, warm, (temperature - 0.5) * 2.0);
+
+  float meridians = (
+    lineGlow(sin(longitude * 37.699), 0.055)
+    + lineGlow(sin(latitude * 31.416), 0.065)
+  ) * sphere * 0.13;
+  float weather = smoothstep(
+    0.57,
+    0.82,
+    fbm(q * vec2(4.2, 2.7) + vec2(t * 0.025, -t * 0.012))
+  ) * sphere;
+  float atmosphere = limb * (0.45 + longTerm * 1.15);
+  float dataLight = (0.18 + longTerm * 0.92)
+    * (0.42 + gosatRelief * 0.72 + gosatContour * 0.2);
+
+  vec3 background = baseGradient(p, vec3(0.018, 0.07, 0.13));
+  vec3 surface = mix(temperatureColor * 0.24, temperatureColor, gosatRelief);
+  vec3 color = background
+    + surface * sphere * dataLight
+    + temperatureColor * gosatContour * (0.12 + longTerm * 0.28)
+    + vec3(0.55, 0.92, 1.0) * weather * (0.08 + longTerm * 0.18)
+    + vec3(0.65, 0.94, 1.0) * meridians
+    + mix(vec3(0.22, 0.62, 1.0), temperatureColor, 0.46) * atmosphere;
+
+  float orbitalDust = 0.0;
+  for (int i = 0; i < 7; i++) {
+    float fi = float(i);
+    vec2 mote = center + vec2(
+      sin(t * (0.12 + fi * 0.013) + fi * 1.73),
+      cos(t * (0.09 + fi * 0.011) + fi * 2.11)
+    ) * vec2(0.82 + fi * 0.035, 0.48 + fi * 0.018);
+    orbitalDust += exp(-dot(p - mote, p - mote) * 360.0);
+  }
+
+  color += mix(vec3(0.42, 0.82, 1.0), temperatureColor, temperature)
+    * orbitalDust * (0.12 + longTerm * 0.32);
+  color += vec3(0.78, 0.96, 1.0) * response.x * (0.35 + core * 0.42);
+  color += temperatureColor * response.y * 0.2;
+  color += vec3(0.24, 0.66, 0.82) * memory * sphere * 0.08;
+  return color;
+}
+`.trim(),
+    },
+    {
+      id: "blue-circulation-live",
+      dataModeId: "blue-circulation",
+      title: "Current Rush",
+      titleJa: "奔流する青",
+      description: "海流の平均速度・向きを青いリボン、風の平均速度・向きを白い粒子へ反映します。",
+      accent: "#3ce9ff",
+      rgb: "60, 233, 255",
+      source: `
+vec3 modeBlueCirculationLive(vec2 p, float t, vec2 response, float memory) {
+  float speed = 0.3 + uSignal.x * 1.5;
+  float windSpeed = 0.25 + uSignal.y * 1.8;
+  float currentAngle = (uSignal.z - 0.5) * 6.2831853;
+  float windAngle = (uSignal.w - 0.5) * 6.2831853;
+  vec2 q = rot(-currentAngle) * p;
+  float field = fbm(q * 2.2 + vec2(t * 0.08 * speed, -t * 0.045));
+  float ribbons = 0.0;
+  for (int i = 0; i < 5; i++) {
+    float fi = float(i);
+    float path = q.y - (fi - 2.0) * 0.17
+      - sin(q.x * (2.4 + fi * 0.34) + t * speed + fi * 1.7) * (0.11 + field * 0.1);
+    ribbons += lineGlow(path, 0.018 + fi * 0.002) * (0.36 + fi * 0.1);
+  }
+  vec2 vortexCenter = vec2(0.34 * sin(t * 0.22), 0.22 * cos(t * 0.17));
+  vec2 v = q - vortexCenter;
+  float vortex = lineGlow(
+    sin(atan(v.y, v.x) * 4.0 + length(v) * 25.0 - t * (2.0 + speed)),
+    0.035
+  ) * exp(-length(v) * 1.35);
+  vec2 windQ = rot(-windAngle) * p;
+  vec2 sparkGrid = windQ * vec2(12.0, 8.0) - vec2(t * windSpeed * 2.1, 0.0);
+  vec2 sparkCell = fract(sparkGrid) - 0.5;
+  float sparkSeed = hash21(floor(sparkGrid));
+  float sparks = exp(-dot(sparkCell, sparkCell) * 95.0) * smoothstep(0.72, 0.96, sparkSeed);
+  float wake = lineGlow(sin((q.x + q.y) * 18.0 - t * 2.4), 0.026) * field;
+  vec3 background = baseGradient(p, vec3(0.0, 0.045, 0.15));
+  vec3 cyan = mix(vec3(0.0, 0.25, 0.95), vec3(0.2, 1.0, 0.92), field);
+  return background
+    + cyan * ribbons * (0.34 + speed * 0.28)
+    + vec3(0.72, 0.98, 1.0) * vortex * 0.52
+    + vec3(0.9, 1.0, 1.0) * sparks * (0.2 + uSignal.y * 0.72)
+    + vec3(0.24, 0.56, 1.0) * wake * 0.18
+    + vec3(0.4, 0.94, 1.0) * response.x * 0.82
+    + vec3(0.18, 0.72, 0.9) * memory * ribbons * 0.12;
+}
+`.trim(),
+    },
+    {
+      id: "forest-cloud-engine-live",
+      dataModeId: "forest-cloud-engine",
+      title: "Rainforest Pulse",
+      titleJa: "森を走る雨",
+      description: "MODIS土地被覆を背景へ写し、選択地点の降水量で雨粒の密度を変えます。",
+      accent: "#69ff9d",
+      rgb: "105, 255, 157",
+      source: `
+vec3 modeForestCloudEngineLive(vec2 p, float t, vec2 response, float memory) {
+  float rain = 0.18 + uSignal.x * 1.35;
+  vec2 q = p;
+  vec2 landUv = vec2(fract(p.x * 0.29 + 0.5), clamp(0.5 - p.y * 0.48, 0.0, 1.0));
+  vec3 landRaster = texture(uLandCoverTexture, landUv).rgb * uLandCoverReady;
+  float landStrength = max(landRaster.g, max(landRaster.r, landRaster.b) * 0.45);
+  vec2 selectedSite = vec2((uSignal.y * 2.0 - 1.0) * 1.45, (uSignal.z * 2.0 - 1.0) * 0.78);
+  float siteField = exp(-dot(p - selectedSite, p - selectedSite) * 2.8);
+  float terrain = fbm(q * 2.1 + vec2(0.0, t * 0.025));
+  vec2 cells = q * 6.0;
+  vec2 local = fract(cells) - 0.5;
+  float seed = hash21(floor(cells));
+  float crown = lineGlow(length(local) - (0.16 + seed * 0.14), 0.028)
+    * smoothstep(0.28, 0.82, seed + terrain * 0.25);
+  float canopy = smoothstep(0.5, 0.76, fbm(q * vec2(4.5, 2.7) + vec2(t * 0.035, 0.0)));
+  float roots = lineGlow(
+    sin(q.x * 18.0 + q.y * 8.0 + terrain * 5.0 + t * 0.2),
+    0.026
+  ) * smoothstep(0.1, -0.82, q.y);
+  vec2 rainGrid = vec2(q.x * 18.0 + t * 0.3, q.y * 7.0 + t * (1.4 + rain));
+  vec2 dropCell = fract(rainGrid) - 0.5;
+  float drops = exp(-abs(dropCell.x) * 55.0 - abs(dropCell.y) * 8.0)
+    * smoothstep(0.55, 0.92, hash21(floor(rainGrid))) * siteField;
+  float cloud = smoothstep(0.52, 0.77, fbm(q * vec2(1.7, 3.4) + vec2(t * 0.08, -t * 0.03)))
+    * smoothstep(-0.1, 0.88, q.y);
+  float lightning = lineGlow(
+    q.x - sin(q.y * 12.0 + floor(t * 1.7)) * 0.035,
+    0.012
+  ) * cloud * smoothstep(0.78, 0.98, sin(t * 3.4) * 0.5 + 0.5);
+  float siteRing = lineGlow(length(p - selectedSite) - (0.12 + rain * 0.08), 0.022);
+  vec3 background = baseGradient(p, vec3(0.01, 0.095, 0.055))
+    + landRaster * (0.08 + landStrength * 0.22);
+  return background
+    + mix(vec3(0.03, 0.42, 0.18), vec3(0.5, 1.0, 0.42), seed) * crown * 0.7
+    + vec3(0.08, 0.72, 0.34) * canopy * 0.25
+    + vec3(0.2, 1.0, 0.65) * roots * 0.3
+    + vec3(0.38, 0.86, 1.0) * drops * rain * 0.56
+    + vec3(0.32, 0.65, 0.78) * cloud * 0.24
+    + vec3(0.9, 1.0, 0.92) * lightning
+    + vec3(0.5, 0.94, 1.0) * siteRing * (0.35 + uSignal.x * 0.65)
+    + vec3(0.58, 1.0, 0.72) * response.x * 0.76
+    + vec3(0.2, 0.8, 0.48) * memory * canopy * 0.13;
+}
+`.trim(),
+    },
+    {
+      id: "pollination-protocol-live",
+      dataModeId: "pollination-protocol",
+      title: "Pollination Constellation",
+      titleJa: "花粉の星座",
+      description: "GloBI関係数を線の密度、GBIF記録数と選択地点を点の密度・位置へ反映します。",
+      accent: "#ffe05f",
+      rgb: "255, 224, 95",
+      source: `
+vec3 modePollinationProtocolLive(vec2 p, float t, vec2 response, float memory) {
+  float evidence = 0.3 + uSignal.x * 0.7;
+  float sightings = 0.3 + uSignal.y * 0.7;
+  vec2 selectedRecord = vec2((uSignal.z * 2.0 - 1.0) * 1.45, (uSignal.w * 2.0 - 1.0) * 0.78);
+  float flowerField = 0.0;
+  float links = 0.0;
+  float bees = 0.0;
+  for (int i = 0; i < 7; i++) {
+    float fi = float(i);
+    vec2 flower = (hash22(vec2(fi, 18.4)) - 0.5) * vec2(1.55, 0.98);
+    float petalAngle = atan((p - flower).y, (p - flower).x);
+    float petalRadius = 0.055 + 0.025 * cos(petalAngle * (5.0 + mod(fi, 3.0)) + t * 0.45);
+    flowerField += lineGlow(length(p - flower) - petalRadius, 0.018);
+    vec2 bee = flower + vec2(
+      sin(t * (0.7 + fi * 0.035) + fi * 1.4),
+      cos(t * (0.55 + fi * 0.027) + fi * 1.9)
+    ) * vec2(0.22, 0.13);
+    bees += exp(-dot(p - bee, p - bee) * 520.0);
+    links += lineGlow(sdSegment(p, flower, bee), 0.012) * (0.1 + evidence * 0.22);
+  }
+  float pollen = smoothstep(0.64, 0.9, noise(p * 20.0 + vec2(t * 0.5, -t * 0.35)));
+  float halo = lineGlow(length(p) - (0.3 + sin(t * 0.7) * 0.06), 0.025);
+  float selectedPoint = exp(-dot(p - selectedRecord, p - selectedRecord) * 240.0);
+  float selectedRing = lineGlow(length(p - selectedRecord) - 0.1, 0.018);
+  vec3 background = baseGradient(p, vec3(0.11, 0.025, 0.09));
+  vec3 petal = mix(vec3(1.0, 0.22, 0.52), vec3(1.0, 0.9, 0.18), sightings);
+  return background
+    + petal * flowerField * (0.52 + evidence * 0.34)
+    + vec3(1.0, 0.96, 0.52) * bees * (0.5 + sightings * 0.75)
+    + vec3(0.65, 1.0, 0.42) * links
+    + vec3(1.0, 0.7, 0.18) * pollen * 0.24
+    + vec3(1.0, 0.98, 0.72) * (selectedPoint + selectedRing * 0.58)
+    + vec3(0.9, 0.4, 1.0) * halo * 0.18
+    + vec3(1.0, 0.84, 0.36) * response.x * 0.9
+    + vec3(0.82, 0.54, 1.0) * memory * links * 0.25;
+}
+`.trim(),
+    },
+    {
+      id: "nothing-is-waste-live",
+      dataModeId: "nothing-is-waste",
+      title: "Circular Foundry",
+      titleJa: "循環する工房",
+      description: "日本の三処理比率を光の分岐、選択国の再資源化率を外周へ反映します。",
+      accent: "#c9ff4f",
+      rgb: "201, 255, 79",
+      source: `
+vec3 modeNothingIsWasteLive(vec2 p, float t, vec2 response, float memory) {
+  float recycle = uSignal.x;
+  float incineration = uSignal.y;
+  float disposal = uSignal.z;
+  float countryRecycle = uSignal.w;
+  float angle = atan(p.y, p.x);
+  float radius = length(p);
+  float wheel = lineGlow(radius - (0.34 + 0.035 * sin(angle * 3.0 + t)), 0.025);
+  float outer = lineGlow(radius - 0.7, 0.021);
+  float spokes = lineGlow(sin(angle * 3.0 + t * 0.65), 0.025)
+    * smoothstep(0.72, 0.18, radius);
+  float conveyor = lineGlow(
+    sin(angle * 6.0 - radius * 18.0 + t * (1.2 + recycle)),
+    0.032
+  ) * smoothstep(0.92, 0.16, radius);
+  vec2 shardGrid = p * 9.0 + vec2(cos(t * 0.4), sin(t * 0.34)) * 2.0;
+  vec2 shardCell = fract(shardGrid) - 0.5;
+  float shards = exp(-abs(shardCell.x) * 16.0 - abs(shardCell.y) * 34.0)
+    * smoothstep(0.68, 0.96, hash21(floor(shardGrid)));
+  float furnace = exp(-radius * radius * (8.0 + recycle * 8.0));
+  float sector = fract((angle + 3.1415926) / 6.2831853);
+  float recycleBranch = 1.0 - smoothstep(recycle, recycle + 0.025, sector);
+  float incinerationBranch = smoothstep(recycle - 0.015, recycle + 0.015, sector)
+    * (1.0 - smoothstep(recycle + incineration, recycle + incineration + 0.025, sector));
+  float disposalBranch = smoothstep(recycle + incineration - 0.015, recycle + incineration + 0.015, sector);
+  vec3 branchColor = vec3(0.18, 1.0, 0.42) * recycleBranch
+    + vec3(1.0, 0.48, 0.08) * incinerationBranch
+    + vec3(0.58, 0.42, 1.0) * disposalBranch;
+  float countryRing = lineGlow(radius - (0.56 + countryRecycle * 0.18), 0.022);
+  vec3 background = baseGradient(p, vec3(0.075, 0.085, 0.015));
+  return background
+    + branchColor * (wheel * 0.7 + conveyor * 0.42)
+    + vec3(0.96, 1.0, 0.55) * spokes * (0.18 + recycle * 0.5)
+    + branchColor * outer * 0.42
+    + branchColor * shards * 0.28
+    + vec3(0.86, 1.0, 0.72) * countryRing * 0.52
+    + vec3(1.0, 0.75, 0.18) * furnace * 0.25
+    + vec3(0.62, 1.0, 0.28) * response.x * 0.86
+    + vec3(0.35, 0.9, 0.4) * memory * wheel * 0.22;
+}
+`.trim(),
+    },
+    {
+      id: "anthropocene-scar-live",
+      dataModeId: "anthropocene-scar",
+      title: "Scar City",
+      titleJa: "傷跡の都市",
+      description: "VIIRS夜間光を白い地表、選択国のEDGAR排出量を位置と大きさの違う赤い傷へ反映します。",
+      accent: "#ff644e",
+      rgb: "255, 100, 78",
+      source: `
+vec3 modeAnthropoceneScarLive(vec2 p, float t, vec2 response, float memory) {
+  float emission = uSignal.x;
+  float lightVisible = uSignal.w;
+  vec2 selectedCountry = vec2((uSignal.y * 2.0 - 1.0) * 1.45, (uSignal.z * 2.0 - 1.0) * 0.78);
+  vec2 q = rot(0.08) * p;
+  vec2 nightUv = vec2(fract(p.x * 0.29 + 0.5), clamp(0.5 - p.y * 0.48, 0.0, 1.0));
+  vec3 nightRaster = texture(uNightLightsTexture, nightUv).rgb * uNightLightsReady;
+  float nightLight = max(nightRaster.r, max(nightRaster.g, nightRaster.b));
+  float cityX = lineGlow(sin(q.x * 28.0 + floor(q.y * 5.0) * 1.7), 0.018);
+  float cityY = lineGlow(sin(q.y * 23.0 + floor(q.x * 6.0) * 1.2), 0.018);
+  float blocks = mix((cityX + cityY) * 0.2, nightLight, uNightLightsReady) * lightVisible;
+  float terrain = fbm(q * 2.0 + vec2(t * 0.03, -t * 0.02));
+  float scar = lineGlow(
+    q.y - sin(q.x * 4.0 + t * 0.3) * 0.15 - (terrain - 0.5) * 0.4,
+    0.023
+  );
+  float scarEcho = lineGlow(
+    q.y + q.x * 0.38 - sin(q.y * 8.0 - t * 0.48) * 0.06,
+    0.016
+  );
+  float flare = exp(-dot(p - selectedCountry, p - selectedCountry) * (5.0 + emission * 9.0));
+  float emissionRing = lineGlow(length(p - selectedCountry) - (0.1 + emission * 0.24), 0.02);
+  vec2 trafficGrid = q * vec2(15.0, 9.0) + vec2(t * 1.4, 0.0);
+  float traffic = exp(-dot(fract(trafficGrid) - 0.5, fract(trafficGrid) - 0.5) * 80.0)
+    * smoothstep(0.72, 0.96, hash21(floor(trafficGrid)));
+  float scan = lineGlow(q.y - fract(t * 0.22) * 2.2 + 1.1, 0.025);
+  vec3 background = baseGradient(p, vec3(0.08, 0.018, 0.025));
+  return background
+    + vec3(0.72, 0.82, 1.0) * blocks * 0.25
+    + vec3(1.0, 0.12, 0.035) * (scar * 0.72 + scarEcho * 0.4) * (0.5 + emission)
+    + vec3(1.0, 0.28, 0.06) * flare * emission * 0.62
+    + vec3(1.0, 0.16, 0.04) * emissionRing * (0.35 + emission * 0.65)
+    + vec3(1.0, 0.78, 0.42) * traffic * lightVisible * 0.3
+    + vec3(0.2, 0.78, 0.82) * scan * 0.15
+    + vec3(1.0, 0.34, 0.18) * response.x * 0.82
+    + vec3(0.16, 0.72, 0.66) * memory * terrain * 0.13;
+}
+`.trim(),
+    },
+    {
+      id: "rhythm-of-disaster-live",
+      dataModeId: "rhythm-of-disaster",
+      title: "Seismic Chorus",
+      titleJa: "震動のコーラス",
+      description: "選択地震の位置・規模・深さを震源へ置き、P波7km/sとS波4km/sの比率で光輪を広げます。",
+      accent: "#ff9d3d",
+      rgb: "255, 157, 61",
+      source: `
+vec3 modeRhythmOfDisasterLive(vec2 p, float t, vec2 response, float memory) {
+  float magnitude = 0.55 + uSignal.x * 0.9;
+  float depth = uSignal.y;
+  vec2 origin = vec2((uSignal.z * 2.0 - 1.0) * 1.45, (uSignal.w * 2.0 - 1.0) * 0.78);
+  float radius = length(p - origin);
+  float phase = fract(t * (0.18 + magnitude * 0.045));
+  float pWave = lineGlow(radius - phase * 1.75, 0.018) * (1.0 - phase * 0.55);
+  float sPhase = max(0.0, phase - 0.12);
+  float sWave = lineGlow(radius - sPhase * 1.0, 0.03) * (1.0 - sPhase * 0.48);
+  float aftershock = lineGlow(radius - fract(phase + 0.48) * 1.45, 0.014) * 0.42;
+  float strataNoise = fbm(p * 2.4 + vec2(depth * 5.0, t * 0.018));
+  float strata = lineGlow(sin((p.y + strataNoise * 0.11) * 24.0), 0.034);
+  float fault = lineGlow(
+    p.y + p.x * 0.32 - sin(p.x * 7.0 + t * 0.2) * 0.055,
+    0.018
+  );
+  float debris = smoothstep(0.75, 0.96, noise(p * 24.0 + floor(t * 4.0))) * (pWave + sWave);
+  float epicenter = exp(-dot(p - origin, p - origin) * 180.0) * (0.7 + sin(t * 8.0) * 0.3);
+  vec3 background = baseGradient(p, vec3(0.095, 0.025, 0.012));
+  return background
+    + vec3(1.0, 0.86, 0.35) * pWave * (0.45 + magnitude * 0.45)
+    + vec3(1.0, 0.22, 0.05) * sWave * (0.5 + magnitude * 0.52)
+    + vec3(0.45, 0.72, 1.0) * aftershock
+    + vec3(0.42, 0.16, 0.05) * strata * (0.16 + depth * 0.2)
+    + vec3(1.0, 0.42, 0.08) * fault * 0.55
+    + vec3(1.0, 0.92, 0.58) * (debris * 0.32 + epicenter)
+    + vec3(1.0, 0.55, 0.15) * response.x * 0.9
+    + vec3(0.72, 0.95, 0.62) * memory * fault * 0.14;
+}
+`.trim(),
+    },
+    {
+      id: "three-ecologies-live",
+      dataModeId: "three-ecologies",
+      title: "Ecology Prism",
+      titleJa: "三層のプリズム",
+      description: "MODIS土地被覆、31か国の都市人口平均、24件の世界遺産標本を緑・青・紫の別層へ反映します。",
+      accent: "#d88dff",
+      rgb: "216, 141, 255",
+      source: `
+vec3 modeThreeEcologiesLive(vec2 p, float t, vec2 response, float memory) {
+  float urbanMean = uSignal.x;
+  float cultureCount = uSignal.y;
+  float stage = uSignal.z;
+  vec2 landUv = vec2(fract(p.x * 0.29 + 0.5), clamp(0.5 - p.y * 0.48, 0.0, 1.0));
+  vec3 landRaster = texture(uLandCoverTexture, landUv).rgb * uLandCoverReady;
+  float landField = max(landRaster.g, max(landRaster.r, landRaster.b) * 0.35);
+  vec2 a = vec2(-0.34, 0.12) + vec2(sin(t * 0.34), cos(t * 0.27)) * 0.09;
+  vec2 b = vec2(0.34, 0.13) + vec2(cos(t * 0.29), sin(t * 0.31)) * 0.09;
+  vec2 c = vec2(0.0, -0.34) + vec2(sin(t * 0.23), cos(t * 0.25)) * 0.08;
+  float fa = lineGlow(length(p - a) - (0.34 + sin(t * 0.7) * 0.03), 0.026);
+  float fb = lineGlow(length(p - b) - (0.34 + cos(t * 0.66) * 0.03), 0.026);
+  float fc = lineGlow(length(p - c) - (0.34 + sin(t * 0.58 + 1.0) * 0.03), 0.026);
+  float fieldA = exp(-length(p - a) * 2.2);
+  float fieldB = exp(-length(p - b) * 2.2);
+  float fieldC = exp(-length(p - c) * 2.2);
+  float interference = min(1.0, fieldA * fieldB + fieldB * fieldC + fieldC * fieldA);
+  float weave = lineGlow(
+    sin(p.x * 13.0 + fbm(p * 3.0 + t * 0.03) * 5.0)
+      + sin(p.y * 15.0 - t * 0.4),
+    0.04
+  ) * interference;
+  vec2 prismGrid = p * 10.0 + vec2(t * 0.2, -t * 0.15);
+  float motes = exp(-dot(fract(prismGrid) - 0.5, fract(prismGrid) - 0.5) * 90.0)
+    * smoothstep(0.72 + (1.0 - cultureCount) * 0.18, 0.98, hash21(floor(prismGrid)));
+  float ecoStage = 0.3 + (1.0 - smoothstep(0.12, 0.36, stage)) * 0.7 + step(0.95, stage) * 0.7;
+  float socialStage = 0.3 + (1.0 - smoothstep(0.2, 0.25, abs(stage - 0.333))) * 0.7 + step(0.95, stage) * 0.7;
+  float cultureStage = 0.3 + (1.0 - smoothstep(0.2, 0.25, abs(stage - 0.666))) * 0.7 + step(0.95, stage) * 0.7;
+  vec3 background = baseGradient(p, vec3(0.045, 0.025, 0.12))
+    + landRaster * landField * 0.16 * ecoStage;
+  vec3 color = background
+    + vec3(0.12, 1.0, 0.52) * (fa * 0.62 + fieldA * 0.13) * ecoStage
+    + vec3(0.12, 0.52, 1.0) * (fb * 0.62 + fieldB * (0.05 + urbanMean * 0.16)) * socialStage
+    + vec3(0.92, 0.28, 1.0) * (fc * 0.62 + fieldC * 0.13) * cultureStage;
+  return color
+    + vec3(0.92, 0.98, 1.0) * interference * 0.3
+    + vec3(1.0, 0.76, 0.92) * weave * 0.46
+    + vec3(0.72, 0.88, 1.0) * motes * (0.12 + cultureCount * 0.2)
+    + vec3(0.72, 0.58, 1.0) * response.x * 0.9
+    + vec3(0.5, 1.0, 0.85) * memory * interference * 0.16;
+}
+`.trim(),
+    },
+    {
+      id: "earth-organ-live",
+      dataModeId: "earth-organ",
+      title: "Living Grid",
+      titleJa: "生きている電力網",
+      description: "選択地点の日射・風速と同じ国の再エネ比率を黄・青・緑へ分け、二地点選択だけを仮想回路にします。",
+      accent: "#56ffd2",
+      rgb: "86, 255, 210",
+      source: `
+vec3 modeEarthOrganLive(vec2 p, float t, vec2 response, float memory) {
+  float solar = uSignal.x;
+  float wind = uSignal.y;
+  float renewable = uSignal.z;
+  float connected = uSignal.w;
+  float radius = length(p);
+  float angle = atan(p.y, p.x);
+  float sun = exp(-radius * radius * 8.0) + lineGlow(radius - 0.22, 0.023);
+  float rays = lineGlow(sin(angle * 18.0 + t * (0.45 + solar)), 0.032)
+    * smoothstep(0.82, 0.12, radius);
+  float windArc = lineGlow(
+    sin(p.y * 9.0 + p.x * 2.2 + fbm(p * 2.3) * 3.0 - t * (0.8 + wind)),
+    0.034
+  );
+  float circuitX = lineGlow(sin(p.x * 17.0 + floor(p.y * 5.0)), 0.022);
+  float circuitY = lineGlow(sin(p.y * 13.0 - floor(p.x * 6.0)), 0.022);
+  float circuits = (circuitX + circuitY) * (0.12 + renewable * 0.5);
+  float nodes = 0.0;
+  float links = 0.0;
+  for (int i = 0; i < 8; i++) {
+    float fi = float(i);
+    vec2 node = (hash22(vec2(fi, 51.7)) - 0.5) * vec2(1.5, 0.96);
+    nodes += exp(-dot(p - node, p - node) * 190.0) * (0.7 + 0.3 * sin(t * 2.0 + fi));
+    links += lineGlow(sdSegment(p, node, node * -0.28), 0.012) * (0.05 + renewable * 0.18 + connected * 0.18);
+  }
+  float pulse = lineGlow(radius - fract(t * 0.34) * 1.2, 0.018);
+  vec3 background = baseGradient(p, vec3(0.005, 0.075, 0.075));
+  return background
+    + vec3(1.0, 0.74, 0.16) * (sun * (0.2 + solar * 0.5) + rays * solar * 0.32)
+    + vec3(0.22, 0.82, 1.0) * windArc * (0.18 + wind * 0.48)
+    + vec3(0.18, 1.0, 0.62) * circuits
+    + vec3(0.82, 1.0, 0.88) * nodes * 0.56
+    + vec3(0.34, 1.0, 0.72) * links
+    + vec3(0.55, 0.96, 1.0) * pulse * 0.16
+    + vec3(0.38, 1.0, 0.78) * response.x * 0.9
+    + vec3(0.2, 0.72, 0.66) * memory * links * 0.2;
+}
+`.trim(),
+    },
+    {
+      id: "senseware-2050-live",
+      dataModeId: "senseware-2050",
+      title: "Gaia Synapse",
+      titleJa: "地球の神経星座",
+      description: "01〜09の代表値を九節点の明るさへ、観客の接触記憶を外周へ重ね、合計点にはしません。",
+      accent: "#e0fbff",
+      rgb: "224, 251, 255",
+      source: `
+vec3 modeSenseware2050Live(vec2 p, float t, vec2 response, float memory) {
+  float radius = length(p);
+  float globe = smoothstep(0.82, 0.7, radius);
+  float horizon = lineGlow(radius - 0.76, 0.024);
+  float neural = 0.0;
+  float nodes = 0.0;
+  vec3 signalColor = vec3(0.0);
+  for (int i = 0; i < 9; i++) {
+    float fi = float(i);
+    float dataValue = uSourceSignals[i];
+    float contribution = 0.18 + dataValue * 1.25;
+    float touchMemory = uModeMemory[i];
+    float orbitAngle = fi * 0.6981317 + t * (0.035 + fi * 0.003);
+    vec2 node = vec2(cos(orbitAngle), sin(orbitAngle)) * (0.44 + mod(fi, 3.0) * 0.1);
+    node.y *= 0.72;
+    float nodeGlow = exp(-dot(p - node, p - node) * 210.0) * contribution;
+    nodes += nodeGlow;
+    neural += lineGlow(sdSegment(p, node, node * -0.22), 0.012) * (0.08 + dataValue * 0.3);
+    signalColor += mix(
+      vec3(0.2, 0.86, 1.0),
+      vec3(0.92, 0.35, 1.0),
+      fract(fi * 0.37)
+    ) * nodeGlow;
+    signalColor += vec3(0.35, 1.0, 0.78) * touchMemory
+      * lineGlow(length(p - node) - (0.06 + touchMemory * 0.08), 0.016);
+  }
+  float latitude = lineGlow(sin(p.y * 15.0 + t * 0.35), 0.042) * globe;
+  float longitude = lineGlow(sin(atan(p.y, p.x) * 10.0 - t * 0.24), 0.042) * globe;
+  float core = exp(-radius * radius * 12.0) * (0.68 + 0.32 * sin(t * 1.7));
+  float synapseWave = lineGlow(radius - fract(t * 0.28) * 0.82, 0.018) * globe;
+  vec2 starGrid = p * 14.0 + vec2(t * 0.08, -t * 0.05);
+  float stars = exp(-dot(fract(starGrid) - 0.5, fract(starGrid) - 0.5) * 130.0)
+    * smoothstep(0.78, 0.98, hash21(floor(starGrid)));
+  vec3 background = baseGradient(p, vec3(0.018, 0.055, 0.13));
+  return background
+    + signalColor * 0.65
+    + vec3(0.28, 0.94, 0.75) * neural * 0.32
+    + vec3(0.72, 0.96, 1.0) * (latitude + longitude) * 0.22
+    + vec3(0.9, 0.62, 1.0) * core * 0.46
+    + vec3(0.32, 0.78, 1.0) * synapseWave * 0.4
+    + vec3(0.84, 0.96, 1.0) * stars * 0.25
+    + vec3(0.8, 0.98, 1.0) * horizon * 0.42
+    + vec3(0.78, 0.7, 1.0) * response.x * 0.95
+    + vec3(0.45, 1.0, 0.82) * memory * nodes * 0.18;
+}
+`.trim(),
+    },
   ];
 
   const modeConcepts = {
@@ -852,6 +1387,76 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
         "授業「地球大の感覚神経系を獲得した人類」が、この作品の出発点です。人工衛星や観測所の記録を集めると、地球規模の変化が見えてきます。ただし、データが私たちの行動まで決めてくれるわけではありません。",
       question: "九つのデータを見たあと、どの変化がいちばん気になりましたか。",
     },
+    "breathing-earth-data": {
+      lead: "01を、観測値と直接つながる呼吸へ作り直しました。",
+      seeing: "半径＝CO₂季節成分、光＝長期CO₂、色＝気温、模様＝GOSATです。",
+      touch: "時間を動かすと、その年月の形と色へ切り替わります。",
+      context: "呼吸の大きさは周期演出ではなく、月別CO₂で決まります。",
+      question: "01と11を見比べたとき、どちらが『地球の呼吸』として伝わるでしょうか。",
+    },
+    "blue-circulation-live": {
+      lead: "02を、海流と風の平均ベクトルへ直接つなぎました。",
+      seeing: "海流の平均速度・向きが青いリボン、風の平均速度・向きが白い粒子を決めます。",
+      touch: "触れると流れが強く発光します。",
+      context: "海流と風は別々に平均し、一つの値へ混ぜません。",
+      question: "02と12では、どちらが流れを感じられますか。",
+    },
+    "forest-cloud-engine-live": {
+      lead: "03を、土地被覆画像と選択地点の雨量へ直接つなぎました。",
+      seeing: "MODIS画像が地表、NASA POWERの降水量が雨粒の密度と地点の輪を決めます。",
+      touch: "触れると森全体へ光が走ります。",
+      context: "森林と雨の重なりを見せ、因果関係までは断定しません。",
+      question: "03と13では、森と雨の関係が伝わりますか。",
+    },
+    "pollination-protocol-live": {
+      lead: "04を、関係数・観察数・選択地点へ直接つなぎました。",
+      seeing: "GloBI件数が線、GBIF件数が点の密度、選択した観察地点が白い輪を決めます。",
+      touch: "触れると花粉の光が広がります。",
+      context: "記録にない関係は勝手に結びません。",
+      question: "04と14では、出会いの動きが見えますか。",
+    },
+    "nothing-is-waste-live": {
+      lead: "05を、三つの処理比率と国別再資源化率へ直接つなぎました。",
+      seeing: "緑＝再資源化、橙＝焼却等、紫＝最終処分。外周は選択国の再資源化率です。",
+      touch: "触れると分岐した光が中心へ戻ります。",
+      context: "操作で変わる値は試算で、統計そのものではありません。",
+      question: "05と15では、循環の行き先が見えますか。",
+    },
+    "anthropocene-scar-live": {
+      lead: "06を、夜間光画像と選択国の排出量へ直接つなぎました。",
+      seeing: "VIIRS画像が白い地表、EDGARの国別排出量と位置が赤い傷を決めます。",
+      touch: "長押しすると都市の光だけが薄くなります。",
+      context: "夜間光を排出量へ換算してはいません。",
+      question: "06と16では、二つの違いが見分けられますか。",
+    },
+    "rhythm-of-disaster-live": {
+      lead: "07を、選択地震の位置・規模・深さへ直接つなぎました。",
+      seeing: "黄色はP波7km/s、赤はS波4km/s。震源位置と明るさは選択記録で変わります。",
+      touch: "触れると震源から新しい波が広がります。",
+      context: "波の到達は学習用の単純化した計算です。",
+      question: "07と17では、二つの速さの差が見えますか。",
+    },
+    "three-ecologies-live": {
+      lead: "08を、生態・社会・文化の三資料へ直接つなぎました。",
+      seeing: "MODIS土地被覆＝緑、都市人口平均＝青、世界遺産標本数＝紫です。",
+      touch: "触れると三層の重なりが白く光ります。",
+      context: "文化や記憶を一つの点数にはしません。",
+      question: "08と18では、三層を同時に読めますか。",
+    },
+    "earth-organ-live": {
+      lead: "09を、選択地点の日射・風と同じ国の電力統計へ直接つなぎました。",
+      seeing: "黄＝日射、青＝風速、緑＝再エネ比率。二地点選択だけが仮想リンクです。",
+      touch: "地点を選ぶと回路の結びつきが強まります。",
+      context: "光の線は実在の送電網ではありません。",
+      question: "09と19では、分散する力が伝わりますか。",
+    },
+    "senseware-2050-live": {
+      lead: "10を、01〜09の代表値と接触記憶へ直接つなぎました。",
+      seeing: "九つの代表値が各節点の明るさ、観客の接触が節点の外周を決めます。",
+      touch: "触れると節点のあいだへ光が走ります。",
+      context: "合計点や地球健康度にはまとめません。",
+      question: "10と20では、違いを残したつながりが見えますか。",
+    },
   };
 
   const modeDataNarratives = Object.freeze({
@@ -865,6 +1470,16 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     "three-ecologies": "地図の見方：緑は土地の種類、青は都市人口、紫は各地域から選んだ世界遺産です。三つは意味の違う資料です。重ねても、文化や心を点数にはしません。",
     "earth-organ": "地図の見方：外側は31地点の日差しと風、内側はその国の再生可能電力の割合です。二地点を結ぶ破線だけが、この展示で作る試算です。",
     "senseware-2050": "地図の見方：01〜09のデータを48秒で順番に表示し、ここまでに触れた跡を重ねます。単位が違うため、合計や平均にはしていません。",
+    "breathing-earth-data": "描画の見方：半径＝NOAA月別CO₂の季節成分、光量＝NOAAの長期増加、青〜赤＝NASA気温偏差、球面の濃淡＝GOSAT XCO₂です。GOSAT観測期間外は最寄りの格子模様へNOAAとの差分を加えたDERIVED表示です。",
+    "blue-circulation-live": "描画：NOAA海流79ベクトルの平均速度・向き＝青、NASA POWER 31地点の平均風速・向き＝白。",
+    "forest-cloud-engine-live": "描画：MODIS土地被覆画像＝地表、選択したNASA POWER地点の降水量＝雨粒と輪。",
+    "pollination-protocol-live": "描画：GloBI関係数＝線密度、GBIF観察数＝点密度、選択観察地点＝白い輪。資料間は接続しません。",
+    "nothing-is-waste-live": "描画：日本2024年度の再資源化・焼却等・最終処分比率＝三色分岐、選択国の再資源化率＝外周。",
+    "anthropocene-scar-live": "描画：VIIRS 2016夜間光画像＝白、選択国のEDGAR排出量・代表位置＝赤い傷。長押しは白だけを弱めます。",
+    "rhythm-of-disaster-live": "描画：USGS選択地震の経緯度＝震源、規模＝光量、深さ＝地層。P/S波は7:4の速度比です。",
+    "three-ecologies-live": "描画：MODIS土地被覆＝緑、31か国の都市人口平均＝青、24件の世界遺産標本＝紫。合計しません。",
+    "earth-organ-live": "描画：選択地点の日射＝黄、風速＝青、同じ国の再エネ比率＝緑。二地点選択のみSCENARIOです。",
+    "senseware-2050-live": "描画：01〜09の代表値＝九節点の明るさ、接触記憶＝外周。単位を足し合わせません。",
   });
 
   const lectureResumeLinks = Object.freeze({
@@ -878,6 +1493,16 @@ vec3 modeSenseware2050(vec2 p, float t, vec2 response, float memory) {
     "three-ecologies": "授業とのつながり：『三つのエコロジー――生態・社会・精神』",
     "earth-organ": "授業とのつながり：『地球の変動リズムと同期しうる文明設計』",
     "senseware-2050": "授業とのつながり：『地球大の感覚神経系を獲得した人類――未完の地球センスウェア創生にむけて』",
+    "breathing-earth-data": "授業とのつながり：『なぜ風は吹くのか？――宇宙船地球号の循環系を理解する』／01の説明と実装を照合する比較展示",
+    "blue-circulation-live": "授業：宇宙船地球号の循環系／02との比較版",
+    "forest-cloud-engine-live": "授業：森は地球の気候安定装置／03との比較版",
+    "pollination-protocol-live": "授業：花と昆虫の共進化／04との比較版",
+    "nothing-is-waste-live": "授業：自然界にはゴミもうんちも存在しない／05との比較版",
+    "anthropocene-scar-live": "授業：人類世3.0／06との比較版",
+    "rhythm-of-disaster-live": "授業：地球の変動リズム／07との比較版",
+    "three-ecologies-live": "授業：三つのエコロジー／08との比較版",
+    "earth-organ-live": "授業：地球の変動リズム／09との比較版",
+    "senseware-2050-live": "授業：地球大の感覚神経系／10との比較版",
   });
 
   window.GaiaAppContent = Object.freeze({

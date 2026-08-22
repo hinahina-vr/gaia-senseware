@@ -33,8 +33,8 @@ const requiredKeys = [
 assert.ok(content, "GaiaAppContent was not published on window");
 assert.ok(Object.isFrozen(content), "GaiaAppContent must be frozen");
 assert.deepEqual(Object.keys(content), requiredKeys);
-assert.equal(content.modes.length, 10, "Earth mode catalog must contain 10 modes");
-assert.equal(content.INTRO_MODE_CHOICES.length, 10, "Entrance catalog must contain 10 choices");
+assert.equal(content.modes.length, 20, "Earth mode catalog must contain 20 modes");
+assert.equal(content.INTRO_MODE_CHOICES.length, 20, "Entrance catalog must contain 20 choices");
 assert.equal(content.SPACE_MODE_CHOICES.length, 10, "Space catalog must contain 10 choices");
 
 const modeIds = content.modes.map(({ id }) => id);

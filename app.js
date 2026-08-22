@@ -234,7 +234,7 @@
   const dataLedger = window.GaiaDataLedger.create();
 
   const TRAIL_COUNT = 16;
-  const MODE_COUNT = 10;
+  const MODE_COUNT = 20;
   const TRANSITION_DURATION = 1500;
   const AUTO_INTERVAL = 18000;
   const CO2_TIMELINE_START_YEAR = 1958;
@@ -413,6 +413,13 @@
     uniform int uModeTo;
     uniform float uTransition;
     uniform vec4 uSignal;
+    uniform float uSourceSignals[9];
+    uniform sampler2D uGosatTexture;
+    uniform float uGosatReady;
+    uniform sampler2D uLandCoverTexture;
+    uniform float uLandCoverReady;
+    uniform sampler2D uNightLightsTexture;
+    uniform float uNightLightsReady;
 
     mat2 rot(float angle) {
       float s = sin(angle);
@@ -517,7 +524,17 @@
       if (mode == 6) return modeRhythmOfDisaster(p, t, response, uModeMemory[6]);
       if (mode == 7) return modeThreeEcologies(p, t, response, uModeMemory[7]);
       if (mode == 8) return modeEarthOrgan(p, t, response, uModeMemory[8]);
-      return modeSenseware2050(p, t, response, uModeMemory[9]);
+      if (mode == 9) return modeSenseware2050(p, t, response, uModeMemory[9]);
+      if (mode == 10) return modeBreathingEarthData(p, t, response, uModeMemory[10]);
+      if (mode == 11) return modeBlueCirculationLive(p, t, response, uModeMemory[11]);
+      if (mode == 12) return modeForestCloudEngineLive(p, t, response, uModeMemory[12]);
+      if (mode == 13) return modePollinationProtocolLive(p, t, response, uModeMemory[13]);
+      if (mode == 14) return modeNothingIsWasteLive(p, t, response, uModeMemory[14]);
+      if (mode == 15) return modeAnthropoceneScarLive(p, t, response, uModeMemory[15]);
+      if (mode == 16) return modeRhythmOfDisasterLive(p, t, response, uModeMemory[16]);
+      if (mode == 17) return modeThreeEcologiesLive(p, t, response, uModeMemory[17]);
+      if (mode == 18) return modeEarthOrganLive(p, t, response, uModeMemory[18]);
+      return modeSenseware2050Live(p, t, response, uModeMemory[19]);
     }
 
     void main() {
@@ -608,7 +625,62 @@
     modeTo: gl.getUniformLocation(program, "uModeTo"),
     transition: gl.getUniformLocation(program, "uTransition"),
     signal: gl.getUniformLocation(program, "uSignal"),
+    sourceSignals: gl.getUniformLocation(program, "uSourceSignals[0]"),
+    gosatTexture: gl.getUniformLocation(program, "uGosatTexture"),
+    gosatReady: gl.getUniformLocation(program, "uGosatReady"),
+    landCoverTexture: gl.getUniformLocation(program, "uLandCoverTexture"),
+    landCoverReady: gl.getUniformLocation(program, "uLandCoverReady"),
+    nightLightsTexture: gl.getUniformLocation(program, "uNightLightsTexture"),
+    nightLightsReady: gl.getUniformLocation(program, "uNightLightsReady"),
   };
+
+  const gosatWebglTexture = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, gosatWebglTexture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.R8,
+    1,
+    1,
+    0,
+    gl.RED,
+    gl.UNSIGNED_BYTE,
+    new Uint8Array([0]),
+  );
+  let gosatWebglTextureKey = "";
+  let gosatWebglTextureReady = 0;
+
+  const createWebglRasterTexture = (textureUnit) => {
+    const texture = gl.createTexture();
+    gl.activeTexture(textureUnit);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      1,
+      1,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array([0, 0, 0, 255]),
+    );
+    return texture;
+  };
+  const landCoverWebglTexture = createWebglRasterTexture(gl.TEXTURE1);
+  const nightLightsWebglTexture = createWebglRasterTexture(gl.TEXTURE2);
+  let landCoverWebglTextureReady = 0;
+  let nightLightsWebglTextureReady = 0;
 
   const pointer = {
     id: null,
@@ -707,6 +779,8 @@
   let modeFromIndex = initialModeIndex;
   let modeToIndex = initialModeIndex;
   let transitionStartedAt = performance.now();
+  const getThemeIndex = (index = modeToIndex) => index >= 10 ? index - 10 : index;
+  const isTheme = (themeIndex, index = modeToIndex) => getThemeIndex(index) === themeIndex;
   const japanView = {
     zoom: JAPAN_ZOOM,
     centerX: 0,
@@ -1503,6 +1577,35 @@
   landCoverImage.src = "./assets/data/modis-land-cover-2023.png";
   const geographicRasterCache = new WeakMap();
 
+  const uploadWebglRaster = (image, texture, textureUnit, datasetKey) => {
+    if (!image.complete || !image.naturalWidth || canvas.dataset[datasetKey] === "ready") return 0;
+    gl.activeTexture(textureUnit);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    canvas.dataset[datasetKey] = "ready";
+    return 1;
+  };
+
+  const updateWebglRasterTextures = () => {
+    if (!landCoverWebglTextureReady) {
+      landCoverWebglTextureReady = uploadWebglRaster(
+        landCoverImage,
+        landCoverWebglTexture,
+        gl.TEXTURE1,
+        "landCoverTexture",
+      );
+    }
+    if (!nightLightsWebglTextureReady) {
+      nightLightsWebglTextureReady = uploadWebglRaster(
+        nightLightsImage,
+        nightLightsWebglTexture,
+        gl.TEXTURE2,
+        "nightLightsTexture",
+      );
+    }
+  };
+
   const getGeographicRaster = (image) => {
     if (!image.complete || !image.naturalWidth) return null;
     const aspectRatio = image.naturalWidth / image.naturalHeight;
@@ -1853,6 +1956,66 @@
         getJmaCo2Observation(signalMode?.signals?.japanCo2, site, selectedYear),
       ),
     };
+  };
+
+  const updateMeasuredBreathGosatTexture = () => {
+    if (modes[modeToIndex]?.id !== "breathing-earth-data") {
+      gosatWebglTextureReady = 0;
+      delete canvas.dataset.gosatTexture;
+      delete canvas.dataset.gosatFrame;
+      return;
+    }
+
+    const signalMode = getActiveSignalMode();
+    const state = getBreathingEarthState(signalMode);
+    const gosat = state?.gosat;
+    const frame = state?.gosatFrame;
+    const width = gosat?.width;
+    const height = gosat?.height;
+    const values = frame?.values;
+    if (!Number.isInteger(width) || !Number.isInteger(height) || !Array.isArray(values) || values.length !== width * height) {
+      gosatWebglTextureReady = 0;
+      canvas.dataset.gosatTexture = "unavailable";
+      return;
+    }
+
+    const timeline = state.timeline;
+    const cacheKey = `${timeline?.cacheKey || frame.date || "snapshot"}:${width}x${height}`;
+    if (cacheKey === gosatWebglTextureKey) {
+      gosatWebglTextureReady = 1;
+      canvas.dataset.gosatTexture = "ready";
+      canvas.dataset.gosatFrame = cacheKey;
+      return;
+    }
+
+    const minimumPpm = gosat.scale?.minimumPpm ?? 370;
+    const maximumPpm = gosat.scale?.maximumPpm ?? 435;
+    const spanPpm = Math.max(1, maximumPpm - minimumPpm);
+    const pixels = new Uint8Array(values.length);
+    for (let index = 0; index < values.length; index += 1) {
+      const value = timeline ? getTimelineCellValue(timeline, index) : values[index];
+      pixels[index] = Number.isFinite(value)
+        ? Math.round(clamp((value - minimumPpm) / spanPpm, 0, 1) * 255)
+        : 0;
+    }
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, gosatWebglTexture);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.R8,
+      width,
+      height,
+      0,
+      gl.RED,
+      gl.UNSIGNED_BYTE,
+      pixels,
+    );
+    gosatWebglTextureKey = cacheKey;
+    gosatWebglTextureReady = 1;
+    canvas.dataset.gosatTexture = "ready";
+    canvas.dataset.gosatFrame = cacheKey;
   };
 
   const getBlueCirculationState = (signalMode) => {
@@ -2732,7 +2895,7 @@
     ctx.lineJoin = "round";
     renderCachedReferenceWorldModel(ctx, rect, left, top);
 
-    if (mapScope === "japan" && modeToIndex === 6) {
+    if (mapScope === "japan" && isTheme(6)) {
       const plateCenter = { x: rect.width * 0.6, y: rect.height * 0.52 };
       const plateVectors = [
         { label: "CONTINENTAL", x: rect.width * 0.08, y: rect.height * 0.63 },
@@ -2774,7 +2937,7 @@
 
     renderMapInstallationEffect(ctx, rect, nodePoints, now);
 
-    if (modeToIndex === 6) {
+    if (isTheme(6)) {
       renderJapanHistoryReplay(ctx, rect, left, top, now);
 
       if (japanDataLayer === "snapshot") {
@@ -2853,7 +3016,7 @@
       }
     }
 
-    if (modeToIndex !== 0) nodePoints.forEach((node, index) => {
+    if (!isTheme(0)) nodePoints.forEach((node, index) => {
       if (
         node.x < -40 ||
         node.x > rect.width + 40 ||
@@ -3033,7 +3196,7 @@
     if (japanTileErrors > 0) {
       return "MAP TILE OFFLINE / VECTOR EARTH MODEL ACTIVE";
     }
-    if (modeToIndex !== 6) {
+    if (!isTheme(6)) {
       const readout = getSignalReadout(getActiveSignalMode());
       return `${modes[modeToIndex].title.toUpperCase()} / ${readout.value}`;
     }
@@ -3148,18 +3311,18 @@
   };
 
   const updateMapObservationNarrative = () => {
-    const signalMode = gaiaModeById.get(modes[modeToIndex].id);
-    const guide = MAP_READING_GUIDES[modeToIndex];
+    const signalMode = getActiveSignalMode();
+    const guide = MAP_READING_GUIDES[getThemeIndex()];
     if (guide) {
       mapGuideTitle.textContent = guide.title || modes[modeToIndex].titleJa;
       mapGuideSubject.textContent =
-        modeToIndex === 6 && japanDataLayer === "snapshot"
+        isTheme(6) && japanDataLayer === "snapshot"
           ? "作品内に保存した、2000〜2026年の世界のM7.5以上の地震を読む地図です。"
           : guide.subject;
       mapGuideReading.textContent = guide.reading;
       mapGuideAction.textContent = guide.action;
     }
-    if (modeToIndex !== 6) {
+    if (!isTheme(6)) {
       if (signalMode?.id === "breathing-earth") {
         japanObservationKicker.textContent = "CO₂ TIMELINE / 1958 → 2050 / 60 SEC LOOP";
         japanObservationCopy.textContent =
@@ -3328,7 +3491,7 @@
       japanPoiTitle.textContent = record.title;
       japanPoiMeta.textContent = record.meta;
       japanPoiDescription.textContent = record.description;
-      if (modeToIndex === 8) {
+      if (isTheme(8)) {
         const existingIndex = selectedEnergyRegions.findIndex((entry) => entry.title === record.title);
         if (existingIndex >= 0) selectedEnergyRegions.splice(existingIndex, 1);
         else {
@@ -3420,7 +3583,7 @@
       considerCandidate({ type: "data", record, index }, point, hitRadii.node);
     });
 
-    if (modeToIndex === 6) {
+    if (isTheme(6)) {
       if (japanDataLayer === "history") {
         japanHistoryEvents.forEach((event, index) => {
           const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
@@ -3661,7 +3824,10 @@
     }
   };
 
-  const getActiveSignalMode = () => gaiaModeById.get(modes[modeToIndex].id) || null;
+  const getActiveSignalMode = () => {
+    const visualMode = modes[modeToIndex];
+    return gaiaModeById.get(visualMode.dataModeId || visualMode.id) || null;
+  };
 
   const pickByPosition = (values, position = signalTimePosition) => {
     if (!Array.isArray(values) || values.length === 0) return null;
@@ -3685,6 +3851,7 @@
     if (signalMode.id === "breathing-earth") {
       const state = getBreathingEarthState(signalMode);
       const { co2, temperature } = state;
+      const isMeasuredBreath = modes[modeToIndex]?.id === "breathing-earth-data";
       if (japanIsOpen) {
         const timeline = state.timeline;
         const grid = state.gosat;
@@ -3706,7 +3873,9 @@
       return {
         output: `${co2.year}-${String(co2.month).padStart(2, "0")}`,
         value: `${co2.averagePpm.toFixed(2)} ppm / ΔT ${temperature?.anomalyC?.toFixed(2) ?? "—"} ℃`,
-        note: "球体の動きはCO₂の季節変化、明るさは長期的な増加、背景色はNASAがまとめた気温の変化です。",
+        note: isMeasuredBreath
+          ? `半径＝季節成分 ${state.seasonalPpm >= 0 ? "+" : ""}${state.seasonalPpm.toFixed(2)} ppm / 光量＝長期CO₂ / 色＝NASA気温偏差 / 球面＝GOSAT XCO₂。`
+          : "球体の動きはCO₂の季節変化、明るさは長期的な増加、背景色はNASAがまとめた気温の変化です。",
         temporal: true,
       };
     }
@@ -3804,12 +3973,16 @@
     const signalMode = getActiveSignalMode();
     if (!signalMode) return [0.35, 0.25, 0.15, 0.1];
     const { signals } = signalMode;
+    const directVersion = modeToIndex >= 10;
+    const normalizeLongitude = (longitude = 0) => clamp((longitude + 180) / 360, 0, 1);
+    const normalizeLatitude = (latitude = 0) => clamp((latitude + 90) / 180, 0, 1);
     if (signalMode.id === "breathing-earth") {
-      const row = pickByPosition(signals.co2);
-      const temperature = signals.temperature?.find((entry) => entry.year === row?.year);
+      const state = getBreathingEarthState(signalMode);
+      const row = state.co2;
+      const temperature = state.temperature;
       return [
         clamp(((row?.deseasonalizedPpm || 315) - 315) / 120, 0, 1),
-        clamp(((row?.averagePpm || 0) - (row?.deseasonalizedPpm || 0) + 5) / 10, 0, 1),
+        state.seasonalUnit * 0.5 + 0.5,
         clamp(((temperature?.anomalyC || 0) + 0.5) / 2, 0, 1),
         0.2,
       ];
@@ -3817,35 +3990,121 @@
     if (signalMode.id === "blue-circulation") {
       const rows = signals.currents || [];
       const mean = rows.length ? rows.reduce((sum, row) => sum + Math.hypot(row.uMs, row.vMs), 0) / rows.length : 0;
-      return [clamp(mean / 0.7, 0, 1), 0.35, clamp(rows.length / 24, 0, 1), 0.45];
+      if (!directVersion) return [clamp(mean / 0.7, 0, 1), 0.35, clamp(rows.length / 24, 0, 1), 0.45];
+      const meanU = rows.length ? rows.reduce((sum, row) => sum + row.uMs, 0) / rows.length : 0;
+      const meanV = rows.length ? rows.reduce((sum, row) => sum + row.vMs, 0) / rows.length : 0;
+      const windRows = signals.climate || [];
+      const meanWindSpeed = windRows.length
+        ? windRows.reduce((sum, row) => sum + (row.windSpeedMs || 0), 0) / windRows.length
+        : 0;
+      const windVector = windRows.reduce((sum, row) => {
+        const radians = ((row.windDirectionDeg || 0) * Math.PI) / 180;
+        sum.x += Math.cos(radians) * (row.windSpeedMs || 0);
+        sum.y += Math.sin(radians) * (row.windSpeedMs || 0);
+        return sum;
+      }, { x: 0, y: 0 });
+      return [
+        clamp(mean / 0.7, 0, 1),
+        clamp(meanWindSpeed / 10, 0, 1),
+        (Math.atan2(meanV, meanU) / (Math.PI * 2) + 1) % 1,
+        (Math.atan2(windVector.y, windVector.x) / (Math.PI * 2) + 1) % 1,
+      ];
     }
     if (signalMode.id === "forest-cloud-engine") {
-      const row = pickByPosition(signals.precipitation);
-      return [clamp((row?.precipitationMmDay || 0) / 8, 0, 1), 0.42, 0.7, 0.25];
+      const row = getMapSequenceState(signalMode)?.selected || pickByPosition(signals.precipitation);
+      return directVersion
+        ? [clamp((row?.precipitationMmDay || 0) / 8, 0, 1), normalizeLongitude(row?.lon), normalizeLatitude(row?.lat), 1]
+        : [clamp((row?.precipitationMmDay || 0) / 8, 0, 1), 0.42, 0.7, 0.25];
     }
     if (signalMode.id === "pollination-protocol") {
-      return [clamp((signals.interactions?.length || 0) / 30, 0, 1), clamp((signals.occurrences?.length || 0) / 30, 0, 1), 0.55, 0.35];
+      const row = getMapSequenceState(signalMode)?.selected;
+      return directVersion
+        ? [clamp((signals.interactions?.length || 0) / 30, 0, 1), clamp((signals.occurrences?.length || 0) / 80, 0, 1), normalizeLongitude(row?.lon), normalizeLatitude(row?.lat)]
+        : [clamp((signals.interactions?.length || 0) / 30, 0, 1), clamp((signals.occurrences?.length || 0) / 30, 0, 1), 0.55, 0.35];
     }
     if (signalMode.id === "nothing-is-waste") {
       const recycling = getMapSequenceState(signalMode)?.sourceRecycle || 0;
-      return [recycling / 100, signalTimePosition / 100, 0.46, 0.24];
+      if (!directVersion) return [recycling / 100, signalTimePosition / 100, 0.46, 0.24];
+      const routeValue = (route) => signals.routes?.find((row) => row.route === route)?.value || 0;
+      return [
+        routeValue("recycling") / 100,
+        routeValue("incineration_and_other_reduction") / 100,
+        routeValue("final_disposal_share") / 100,
+        recycling / 100,
+      ];
     }
     if (signalMode.id === "anthropocene-scar") {
       const row = getMapSequenceState(signalMode)?.selected;
-      return [clamp(Math.log10(Math.max(1, row?.emissionsMtCo2e || 1)) / 4, 0, 1), 0.78, anthropocenePeelUntil > performance.now() ? 0.05 : 0.8, 0.18];
+      const emission = clamp(Math.log10(Math.max(1, row?.emissionsMtCo2e || 1)) / 4, 0, 1);
+      return directVersion
+        ? [emission, normalizeLongitude(row?.lon), normalizeLatitude(row?.lat), anthropocenePeelUntil > performance.now() ? 0.05 : 1]
+        : [emission, 0.78, anthropocenePeelUntil > performance.now() ? 0.05 : 0.8, 0.18];
     }
     if (signalMode.id === "rhythm-of-disaster") {
       const event = getMapSequenceState(signalMode)?.selected;
-      return [clamp(((event?.magnitude || 7.5) - 7.5) / 2, 0, 1), clamp((event?.depthKm || 0) / 700, 0, 1), 0.84, 0.22];
+      return directVersion
+        ? [clamp(((event?.magnitude || 7.5) - 7.5) / 2, 0, 1), clamp((event?.depthKm || 0) / 700, 0, 1), normalizeLongitude(event?.longitude), normalizeLatitude(event?.latitude)]
+        : [clamp(((event?.magnitude || 7.5) - 7.5) / 2, 0, 1), clamp((event?.depthKm || 0) / 700, 0, 1), 0.84, 0.22];
     }
     if (signalMode.id === "three-ecologies") {
-      return [0.62, clamp((signals.social?.length || 0) / 10, 0, 1), clamp((signals.culture?.length || 0) / 10, 0, 1), 0.5];
+      if (!directVersion) return [0.62, clamp((signals.social?.length || 0) / 10, 0, 1), clamp((signals.culture?.length || 0) / 10, 0, 1), 0.5];
+      const social = signals.social || [];
+      const meanUrban = social.length
+        ? social.reduce((sum, row) => sum + (row.urbanPercent || 0), 0) / social.length
+        : 0;
+      return [
+        clamp(meanUrban / 100, 0, 1),
+        clamp((signals.culture?.length || 0) / 32, 0, 1),
+        (getMapSequenceState(signalMode)?.selectedIndex || 0) / 3,
+        1,
+      ];
     }
     if (signalMode.id === "earth-organ") {
-      const row = pickByPosition(signals.potential);
-      return [clamp((row?.solarKwhM2Day || 0) / 7, 0, 1), clamp((row?.windSpeedMs || 0) / 10, 0, 1), selectedEnergyRegions.length / 2, 0.4];
+      const state = getMapSequenceState(signalMode);
+      const row = state?.selected || pickByPosition(signals.potential);
+      if (!directVersion) return [clamp((row?.solarKwhM2Day || 0) / 7, 0, 1), clamp((row?.windSpeedMs || 0) / 10, 0, 1), selectedEnergyRegions.length / 2, 0.4];
+      const current = (signals.current || []).find((entry) => entry.iso3 === row?.iso3);
+      return [
+        clamp((row?.solarKwhM2Day || 0) / 7, 0, 1),
+        clamp((row?.windSpeedMs || 0) / 10, 0, 1),
+        clamp((current?.renewablePercent || 0) / 100, 0, 1),
+        selectedEnergyRegions.length / 2,
+      ];
     }
     return [0.72, 0.48, pointer.energy, modeMemory[modeToIndex]];
+  };
+
+  let sourceSignalSnapshot = null;
+  const sourceSignalVector = new Float32Array(9);
+  const getSourceSignalVector = () => {
+    if (!gaiaSnapshot || sourceSignalSnapshot === gaiaSnapshot) return sourceSignalVector;
+    const modeSignals = (id) => gaiaModeById.get(id)?.signals || {};
+    const mean = (rows, selector) => rows.length
+      ? rows.reduce((sum, row) => sum + selector(row), 0) / rows.length
+      : 0;
+    const air = modeSignals("breathing-earth");
+    const currents = modeSignals("blue-circulation");
+    const forest = modeSignals("forest-cloud-engine");
+    const pollination = modeSignals("pollination-protocol");
+    const waste = modeSignals("nothing-is-waste");
+    const city = modeSignals("anthropocene-scar");
+    const quake = modeSignals("rhythm-of-disaster");
+    const ecologies = modeSignals("three-ecologies");
+    const energy = modeSignals("earth-organ");
+    const latestCo2 = air.co2?.at(-1)?.deseasonalizedPpm || 315;
+    sourceSignalVector.set([
+      clamp((latestCo2 - 315) / 120, 0, 1),
+      clamp(mean(currents.currents || [], (row) => Math.hypot(row.uMs, row.vMs)) / 0.7, 0, 1),
+      clamp(mean(forest.precipitation || [], (row) => row.precipitationMmDay || 0) / 8, 0, 1),
+      clamp(((pollination.interactions?.length || 0) + (pollination.occurrences?.length || 0)) / 100, 0, 1),
+      clamp(mean(waste.countryWaste || [], (row) => row.recyclePercent || 0) / 100, 0, 1),
+      clamp(mean(city.emissions || [], (row) => Math.log10(Math.max(1, row.emissionsMtCo2e || 1))) / 4, 0, 1),
+      clamp((Math.max(...(quake.globalEvents || []).map((row) => row.magnitude || 7.5), 7.5) - 7.5) / 2, 0, 1),
+      clamp(mean(ecologies.social || [], (row) => row.urbanPercent || 0) / 100, 0, 1),
+      clamp(mean(energy.current || [], (row) => row.renewablePercent || 0) / 100, 0, 1),
+    ]);
+    sourceSignalSnapshot = gaiaSnapshot;
+    return sourceSignalVector;
   };
 
   const updateSignalInterface = () => {
@@ -4039,9 +4298,10 @@
   const updateCo2TimelineAnimation = (now) => {
     const signalMode = getActiveSignalMode();
     const isTimelineMode = Boolean(signalMode);
+    const isMeasuredBreath = modes[modeToIndex]?.id === "breathing-earth-data";
     if (
       reducedMotion ||
-      !japanIsOpen ||
+      (!japanIsOpen && !isMeasuredBreath) ||
       !isTimelineMode ||
       co2TimelineHeld
     ) return;
@@ -4157,6 +4417,18 @@ scenarioLinks.push([selectedRegionA, selectedRegionB]); // SCENARIO, not a grid 
 drawSelectedBranch(selectedSignal);
 drawAudienceMemory(audienceTraces);
 // Deliberately no averaging across units and no "Earth health score".`,
+    "breathing-earth-data": `const row = noaaMonthlyCo2[timeIndex];
+const seasonalPpm = row.averagePpm - row.deseasonalizedPpm;
+earthRadius = map(seasonalPpm, -5, 5, 0.518, 0.622); // OBSERVED monthly component
+earthLight = map(row.deseasonalizedPpm, 315, 435, 0.18, 1.10); // OBSERVED long-term level
+
+const anomaly = closestYear(nasaGlobalTemperature, row.year).anomalyC;
+earthColor = blueToRed(anomaly, -0.5, 1.5); // OBSERVED annual anomaly
+
+const gosatGrid = interpolateOrOffsetGosat(timeIndex); // SOURCE / DERIVED / SCENARIO
+uploadR8Texture(gosatGrid, { fixedScalePpm: [370, 435] });
+shadeSphere({ earthRadius, earthLight, earthColor, gosatTexture });
+// Decorative clouds and pointer light animate, but they do not change these four data mappings.`,
   });
 
   const renderCodeLines = (text) => {
@@ -4179,7 +4451,7 @@ drawAudienceMemory(audienceTraces);
       tab.setAttribute("aria-selected", tab.dataset.sourceTab === activeSourceTab ? "true" : "false"),
     );
     if (activeSourceTab === "transform") {
-      renderCodeLines(DATA_TRANSFORMS[mode.id] || "// No transform registered.");
+      renderCodeLines(DATA_TRANSFORMS[mode.id] || DATA_TRANSFORMS[mode.dataModeId] || "// No transform registered.");
       sourceFile.textContent = `${formatModeNumber(modeToIndex)}-${mode.id}.transform.js`;
       sourceLanguage.textContent = "VANILLA JAVASCRIPT";
     } else if (activeSourceTab === "raw") {
@@ -4283,7 +4555,7 @@ drawAudienceMemory(audienceTraces);
   signalTimeInputs.forEach((input) => {
     input.addEventListener("input", () => {
       signalTimePosition = Number(input.value);
-      if (japanIsOpen) {
+      if (japanIsOpen || modes[modeToIndex]?.id === "breathing-earth-data") {
         co2TimelineHeld = storyModeDetour?.phase === "temperature-anomaly";
         co2TimelinePausedUntil = performance.now() + CO2_TIMELINE_MANUAL_PAUSE_MS;
         co2TimelineLastStep = -1;
@@ -4389,7 +4661,8 @@ drawAudienceMemory(audienceTraces);
     requestAnimationFrame(() => {
       const target = showingPath
         ? introPathButtons[0]
-        : introModeButtons[modeToIndex] || introPathBack;
+        : introModeButtons.find((button) => button.getAttribute("aria-selected") === "true" && !button.hidden)
+          || introPathBack;
       target?.focus({ preventScroll: true });
       if (showingPath) setIntroVisual("default");
     });
@@ -4429,7 +4702,7 @@ drawAudienceMemory(audienceTraces);
       if (selectedPath === "space") {
         closeIntro({ restoreFocus: false });
         window.dispatchEvent(new CustomEvent("gaia:space-open-at-mode", {
-          detail: { index: modeToIndex },
+          detail: { index: modeToIndex % SPACE_MODE_CHOICES.length },
         }));
         return;
       }
@@ -4514,8 +4787,8 @@ drawAudienceMemory(audienceTraces);
   };
 
   const updateIntroSelection = (previewIndex = modeToIndex) => {
-    const normalizedIndex = (previewIndex + MODE_COUNT) % MODE_COUNT;
     const choices = introSelectedPath === "space" ? SPACE_MODE_CHOICES : INTRO_MODE_CHOICES;
+    const normalizedIndex = ((previewIndex % choices.length) + choices.length) % choices.length;
     const choice = choices[normalizedIndex];
     if (!choice) return;
 
@@ -4529,6 +4802,8 @@ drawAudienceMemory(audienceTraces);
       const option = choices[index];
       const label = button.querySelector("strong");
       const cue = button.querySelector("small");
+      button.hidden = !option;
+      button.disabled = !option;
       if (option && label && cue) {
         label.textContent = option.label;
         cue.textContent = option.cue;
@@ -4537,8 +4812,8 @@ drawAudienceMemory(audienceTraces);
           `${formatModeNumber(index)} ${option.label}、${option.cue}`,
         );
       }
-      button.setAttribute("aria-selected", index === normalizedIndex ? "true" : "false");
-      button.tabIndex = index === normalizedIndex ? 0 : -1;
+      button.setAttribute("aria-selected", option && index === normalizedIndex ? "true" : "false");
+      button.tabIndex = option && index === normalizedIndex ? 0 : -1;
     });
   };
 
@@ -4552,7 +4827,7 @@ drawAudienceMemory(audienceTraces);
     experience.style.setProperty("--accent-rgb", mode.rgb);
     japanLayer.style.setProperty("--map-accent", mode.accent);
     japanLayer.style.setProperty("--map-accent-rgb", mode.rgb);
-    japanLayer.classList.toggle("is-earthquake-mode", modeToIndex === 6);
+    japanLayer.classList.toggle("is-earthquake-mode", isTheme(6));
     japanModeNumber.textContent = formatModeNumber(modeToIndex);
     japanModeTitle.textContent = mode.titleJa;
     document.querySelector('meta[name="theme-color"]').setAttribute("content", "#03070d");
@@ -4587,7 +4862,7 @@ drawAudienceMemory(audienceTraces);
     if (normalizedIndex === modeToIndex) {
       if (japanIsOpen) {
         restartCo2Timeline(0);
-        if (normalizedIndex === 6) setJapanDataLayer("history");
+        if (isTheme(6, normalizedIndex)) setJapanDataLayer("history");
       }
       if (resetAutoTimer) {
         nextAutoAt = performance.now() + AUTO_INTERVAL;
@@ -4598,13 +4873,16 @@ drawAudienceMemory(audienceTraces);
     modeFromIndex = modeToIndex;
     modeToIndex = normalizedIndex;
     transitionStartedAt = performance.now();
+    if (modes[normalizedIndex]?.id === "breathing-earth-data") {
+      restartCo2Timeline(0);
+    }
     if (resetAutoTimer) {
       nextAutoAt = transitionStartedAt + AUTO_INTERVAL;
     }
     updateModeInterface();
     if (japanIsOpen) {
       restartCo2Timeline(0);
-      if (normalizedIndex === 6) setJapanDataLayer("history");
+      if (isTheme(6, normalizedIndex)) setJapanDataLayer("history");
     }
     if (conceptIsOpen) {
       conceptScroll.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
@@ -4851,7 +5129,7 @@ drawAudienceMemory(audienceTraces);
         createPulse &&
         !japanView.dragged &&
         !japanView.gesture &&
-        modeToIndex === 5 &&
+        isTheme(5) &&
         pressDuration >= 650
       ) {
         anthropocenePeelUntil = performance.now() + 6000;
@@ -5227,7 +5505,7 @@ drawAudienceMemory(audienceTraces);
       setJapanDataLayer(requestedDataLayer);
     } else if (requestedDataLayer === "live") {
       setJapanDataLayer("snapshot");
-    } else if (modeToIndex === 6) {
+    } else if (isTheme(6)) {
       setJapanDataLayer("history");
     }
     updateJapanDataInterface();
@@ -5590,7 +5868,8 @@ drawAudienceMemory(audienceTraces);
         (introStage === "path" ? introPathButtons : introModeButtons).includes(document.activeElement)
       ) {
         event.preventDefault();
-        const activeButtons = introStage === "path" ? introPathButtons : introModeButtons;
+        const activeButtons = (introStage === "path" ? introPathButtons : introModeButtons)
+          .filter((button) => !button.hidden && !button.disabled);
         const currentIndex = activeButtons.indexOf(document.activeElement);
         const direction = event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
         const nextIndex = (currentIndex + direction + activeButtons.length) % activeButtons.length;
@@ -5757,6 +6036,21 @@ drawAudienceMemory(audienceTraces);
     gl.uniform1f(uniforms.transition, transition);
     const signalVector = getShaderSignalVector();
     gl.uniform4f(uniforms.signal, signalVector[0], signalVector[1], signalVector[2], signalVector[3]);
+    gl.uniform1fv(uniforms.sourceSignals, getSourceSignalVector());
+    updateMeasuredBreathGosatTexture();
+    updateWebglRasterTextures();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, gosatWebglTexture);
+    gl.uniform1i(uniforms.gosatTexture, 0);
+    gl.uniform1f(uniforms.gosatReady, gosatWebglTextureReady);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, landCoverWebglTexture);
+    gl.uniform1i(uniforms.landCoverTexture, 1);
+    gl.uniform1f(uniforms.landCoverReady, landCoverWebglTextureReady);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, nightLightsWebglTexture);
+    gl.uniform1i(uniforms.nightLightsTexture, 2);
+    gl.uniform1f(uniforms.nightLightsReady, nightLightsWebglTextureReady);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     animationFrame = requestAnimationFrame(render);

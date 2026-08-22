@@ -24,7 +24,7 @@
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="stylesheet" href="./styles.css?v=gaia-map-no-tabletop-1" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-opening-campus-names-timing-1" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-sound-world-ui-1" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
     <link rel="stylesheet" href="./novel-mode.css?v=gaia-finale-transition-chat-1" />
@@ -39,8 +39,8 @@
     <script src="./data-ledger.js?v=gaia-31" defer></script>
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
-    <script src="./app-content.js?v=gaia-101" defer></script>
-    <script src="./app.js?v=gaia-story-map-skip-1" defer></script>
+    <script src="./app-content.js?v=gaia-remix-20-1" defer></script>
+    <script src="./app.js?v=gaia-remix-20-1" defer></script>
     <script src="./gx-mode.js?v=gaia-gx-transition-skip-1" defer></script>
     <script src="./novel-story-data.js?v=gaia-story-temp-modal-1" defer></script>
     <script src="./true-end-data.js?v=gaia-novacene-title-1" defer></script>
@@ -472,7 +472,7 @@
       <canvas
         id="gaia-canvas"
         tabindex="0"
-        aria-label="指やマウスで動きを変えながら見る、地球観測データの10の展示"
+        aria-label="指やマウスで動きを変えながら見る、地球観測データの20の展示"
       >
         お使いのブラウザはCanvasに対応していません。
       </canvas>
@@ -660,7 +660,7 @@
 
             <h2 id="intro-sense-title">どの感覚に、<br />触れますか？</h2>
             <p class="intro-lead" id="intro-sense-lead">
-              地球が発している10の信号から、最初に触れるものを選んでください。
+              10の観測テーマを二つの演出で見比べられます。20の入口から選んでください。
             </p>
 
             <p class="intro-selection-prompt" id="intro-selection-prompt">最初に触れる感覚器を選ぶ</p>
@@ -691,7 +691,7 @@
                   戻る
                 </button>
               </div>
-              <p id="intro-path-note">選んだ演出は、あとから01〜10のバンクで切り替えられます。</p>
+              <p id="intro-path-note">選んだ演出は、あとから01〜20のバンクで切り替えられます。</p>
             </div>
           </section>
         </div>
@@ -715,7 +715,7 @@
             <div
               class="architecture-scene"
               role="img"
-              aria-label="地球と宇宙の公開記録をローカルJSONへ保存し、SOURCE、DERIVED、SCENARIOを分けて、10の感覚器と四つの体験へ変換する作品構成図"
+              aria-label="地球と宇宙の公開記録をローカルJSONへ保存し、SOURCE、DERIVED、SCENARIOを分けて、10テーマ20演出の感覚器と四つの体験へ変換する作品構成図"
             >
               <img
                 class="architecture-scene-art"
@@ -752,10 +752,12 @@
 
               <section class="architecture-node architecture-node-senses">
                 <p><span>04</span> 数字を感覚へ</p>
-                <h3>10の感覚器</h3>
-                <ol aria-label="10の感覚器">
+                <h3>10テーマ・20演出</h3>
+                <ol aria-label="20の感覚器演出">
                   <li>01</li><li>02</li><li>03</li><li>04</li><li>05</li>
                   <li>06</li><li>07</li><li>08</li><li>09</li><li>10</li>
+                  <li>11</li><li>12</li><li>13</li><li>14</li><li>15</li>
+                  <li>16</li><li>17</li><li>18</li><li>19</li><li>20</li>
                 </ol>
               </section>
 
@@ -1276,15 +1278,15 @@
           LOCAL VECTOR LOADING
         </p>
 
-        <section class="map-mode-bank" aria-label="世界地図に重ねる10の感覚器を切り替える">
+        <section class="map-mode-bank" aria-label="世界地図に重ねる20の感覚器演出を切り替える">
           <div class="map-mode-bank-heading">
-            <p>INSTALLATION BANK / 01—10</p>
+            <p>INSTALLATION BANK / 01—20</p>
             <div>
               <span id="japan-mode-number">01</span>
               <strong id="japan-mode-title">地球の一呼吸</strong>
             </div>
           </div>
-          <p class="map-mode-bank-guide">01〜10を押すと、地図に表示するテーマが変わります</p>
+          <p class="map-mode-bank-guide">01〜20を押すと、地図に表示する演出が変わります</p>
           <div class="map-mode-list" id="japan-mode-list"></div>
         </section>
 
@@ -2160,7 +2162,7 @@
         <div class="mode-index">
           <span id="mode-number">01</span>
           <span aria-hidden="true">/</span>
-          <span aria-hidden="true">10</span>
+          <span aria-hidden="true">20</span>
         </div>
         <div class="mode-copy">
                 <h2 id="mode-title">Breathing Earth</h2>
@@ -2285,7 +2287,7 @@
       >
         <header class="concept-header">
           <div>
-            <p class="concept-kicker">PLANETARY SENSE ORGAN <span id="concept-number">01 / 10</span></p>
+            <p class="concept-kicker">PLANETARY SENSE ORGAN <span id="concept-number">01 / 20</span></p>
             <h2 id="concept-title">地球の一呼吸</h2>
             <p class="concept-title-en" id="concept-title-en">Breathing Earth</p>
           </div>
@@ -2332,7 +2334,7 @@
             <span aria-hidden="true">←</span>
             <span>PREVIOUS</span>
           </button>
-          <span id="concept-position">01 / 10</span>
+          <span id="concept-position">01 / 20</span>
           <button id="concept-next" type="button" aria-label="次の演出の解説">
             <span>NEXT</span>
             <span aria-hidden="true">→</span>

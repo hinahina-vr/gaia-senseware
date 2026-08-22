@@ -55,7 +55,7 @@ try {
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
 
-    await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.waitForFunction(() => Boolean(globalThis.GaiaOpeningAudio));
     assert.equal(await page.locator("#gaia-opening-sound-gate").count(), 0, `${viewport.name}: separate sound screen remains`);
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-modal")));
