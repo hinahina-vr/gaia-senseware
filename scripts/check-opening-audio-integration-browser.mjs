@@ -72,6 +72,10 @@ try {
         menuInert: document.querySelector("#gaia-opening-final-menu")?.inert,
         modalHiddenFromA11y: document.querySelector("#gaia-opening-sound-modal")?.getAttribute("aria-hidden"),
         activeId: document.activeElement?.id,
+        title: document.querySelector("#gaia-opening-sound-title")?.textContent.trim(),
+        description: document.querySelector("#gaia-opening-sound-description")?.textContent.trim(),
+        soundOnLabel: document.querySelector("#gaia-opening-sound-on .gaia-opening-sound-option-label")?.textContent.trim(),
+        soundOffLabel: document.querySelector("#gaia-opening-sound-off .gaia-opening-sound-option-label")?.textContent.trim(),
         sliderValue: document.querySelector("#gaia-opening-volume")?.value,
         output: document.querySelector("#gaia-opening-volume-value")?.textContent.trim(),
         soundOnPressed: document.querySelector("#gaia-opening-sound-on")?.getAttribute("aria-pressed"),
@@ -98,6 +102,10 @@ try {
     assert.equal(initial.menuInert, true, `${viewport.name}: routes are interactive behind the modal`);
     assert.equal(initial.modalHiddenFromA11y, "false");
     assert.equal(initial.activeId, "gaia-opening-sound-off", `${viewport.name}: initial focus escaped the sound setup`);
+    assert.equal(initial.title, "サウンド設定");
+    assert.equal(initial.description, "サウンドのオン／オフはゲーム中でも変更できます。");
+    assert.equal(initial.soundOnLabel, "サウンドあり");
+    assert.equal(initial.soundOffLabel, "サウンドなし");
     assert.equal(initial.sliderValue, "23");
     assert.equal(initial.output, "23%");
     assert.equal(initial.soundOnPressed, "false");

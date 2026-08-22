@@ -266,8 +266,8 @@ const scanTitleAndOpening = async (viewport) => {
     }));
   }
   assert(soundStates.every((s) => s.width >= 44 && s.height >= 44 && s.iconWidth >= 40 && s.iconHeight >= 40));
-  assert.match(soundStates[0].label, /音ありで始める/u);
-  assert.match(soundStates[1].label, /音なしで始める/u);
+  assert.match(soundStates[0].label, /サウンドあり/u);
+  assert.match(soundStates[1].label, /サウンドなし/u);
   await screenshot(root.page, `${viewport.name}-sound-focus`); await root.page.locator("#gaia-opening-sound-off").press("Space");
   await root.page.waitForFunction(() => document.querySelector("#gaia-opening")?.classList.contains("is-active"), null, { timeout: 10000 });
   report.scans.push({ viewport: viewport.name, case: "sound-choice", soundStates, passed: true }); await root.context.close();
