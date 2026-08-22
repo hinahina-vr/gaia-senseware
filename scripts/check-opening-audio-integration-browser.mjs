@@ -60,6 +60,7 @@ try {
     assert.equal(await page.locator("#gaia-opening-sound-gate").count(), 0, `${viewport.name}: separate sound screen remains`);
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-modal")));
     await page.waitForFunction(() => document.activeElement?.id === "gaia-opening-sound-off");
+    await page.waitForTimeout(viewport.reduced ? 20 : 500);
 
     const initial = await page.evaluate(() => {
       const readRect = (selector) => document.querySelector(selector)?.getBoundingClientRect().toJSON();
@@ -90,6 +91,8 @@ try {
         particleZIndex: Number.parseInt(getComputedStyle(document.querySelector("#gaia-opening-particles")).zIndex, 10),
         modalRect: readRect("#gaia-opening-sound-modal"),
         dialogRect: readRect(".gaia-opening-sound-dialog"),
+        scrimBackground: getComputedStyle(document.querySelector(".gaia-opening-sound-modal-scrim")).backgroundColor,
+        modalPlaceItems: getComputedStyle(document.querySelector("#gaia-opening-sound-modal")).placeItems,
         choicesRect: readRect(".gaia-opening-sound-choices"),
         soundOnRect: readRect("#gaia-opening-sound-on"),
         soundOffRect: readRect("#gaia-opening-sound-off"),
@@ -120,6 +123,10 @@ try {
     assert(initial.modalRect.top >= -1 && initial.modalRect.bottom <= viewport.height + 1, `${viewport.name}: modal is outside the viewport vertically`);
     assert(initial.dialogRect.left >= -1 && initial.dialogRect.right <= viewport.width + 1, `${viewport.name}: sound dialog is outside the viewport`);
     assert(initial.dialogRect.top >= -1 && initial.dialogRect.bottom <= viewport.height + 1, `${viewport.name}: sound dialog is outside the viewport vertically`);
+    assert.equal(initial.scrimBackground, "rgba(0, 0, 0, 0.68)", `${viewport.name}: sound backdrop is not a uniform translucent blackout`);
+    assert.equal(initial.modalPlaceItems, "center", `${viewport.name}: sound dialog is not centered by the modal layout`);
+    assert(Math.abs((initial.dialogRect.left + initial.dialogRect.right) / 2 - viewport.width / 2) <= 1, `${viewport.name}: sound dialog is not horizontally centered`);
+    assert(Math.abs((initial.dialogRect.top + initial.dialogRect.bottom) / 2 - viewport.height / 2) <= 6, `${viewport.name}: sound dialog is not vertically centered`);
     for (const rect of [initial.soundOnRect, initial.soundOffRect]) {
       assert(rect.width >= 44 && rect.height >= 44, `${viewport.name}: sound action hit area is smaller than 44px`);
     }
