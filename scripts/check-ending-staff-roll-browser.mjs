@@ -401,7 +401,7 @@ try {
     assert.equal(trueEndDestination.trueEndVisible, true, `${viewport.name}: credits did not open the true ending`);
     assert.equal(trueEndDestination.layerActive, true);
     assert.equal(trueEndDestination.scene, "after-ending");
-    assert.equal(trueEndDestination.heading, "エンディングの、その先");
+    assert.equal(trueEndDestination.heading, "ずっと昔の人たち");
     assert(trueEndDestination.dialogueHeight >= 44, `${viewport.name}: true-end dialogue hit area is under 44px`);
     assert.equal(trueEndDestination.clear, true);
     assert.equal(trueEndDestination.archivesUnlocked, true);

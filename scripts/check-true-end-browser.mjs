@@ -168,6 +168,7 @@ const scanFrame = (page) => page.evaluate(() => {
     universePresenceDuration: Number(universe?.dataset.webglPresenceDuration || 0),
     universePresenceCompletedAt: Number(universe?.dataset.webglPresenceCompletedAt || 0),
     messageCommittedAt: Number(shell?.dataset.messageCommittedAt || 0),
+    sectionTransitionCompletedAt: Number(shell?.dataset.sectionTransitionCompletedAt || 0),
     universeFrame: Number(universe?.dataset.webglFrame || 0),
     universeSize: { width: universe?.width || 0, height: universe?.height || 0 },
     characterImageCount: document.querySelectorAll(".true-end-shell img").length,
@@ -295,14 +296,16 @@ try {
   assert.match(trueEndModeSource, /const SCENE_BLACKOUT_MS = 360/u, "full-black curtain timing is missing");
   assert.match(trueEndModeSource, /await animateSceneOpacity\(sceneCard, 0, 1, SCENE_BLACKOUT_MS\)/u, "section transition does not close to black first");
   assert.match(trueEndModeSource, /setSceneTransitionPhase\("black"\)[\s\S]*prepareScene\?\.\(\)[\s\S]*setSceneTransitionPhase\("title"\)/u, "section metadata is not prepared only after full blackout");
-  assert.match(trueEndModeSource, /setSceneTransitionPhase\("switching"\)[\s\S]*Promise\.resolve\(\)\.then\(\(\) => switchScene\?\.\(\)\)[\s\S]*setSceneTransitionPhase\("ready"\)/u, "background preparation is not completed behind the black curtain");
+  assert.match(trueEndModeSource, /setSceneTransitionPhase\("switching"\)[\s\S]*Promise\.resolve\(\)\.then\(async \(\) => \{[\s\S]*preparedStep = await switchScene\?\.\(\)[\s\S]*setSceneTransitionPhase\("ready"\)/u, "background preparation is not completed behind the black curtain");
   assert.match(trueEndModeSource, /setSceneTransitionPhase\("reveal"\)[\s\S]*animateSceneOpacity\(sceneCard, 1, 0, SCENE_REVEAL_MS\)/u, "new section does not reveal from full black");
   assert.match(trueEndStyleSource, /\.true-end-scene-card\s*\{[\s\S]*background:\s*#000/u, "section curtain is not pure black");
   assert.doesNotMatch(trueEndModeSource, /animateInterfaceOpacity/u, "interface still fades independently from the black curtain");
   assert.doesNotMatch(trueEndModeSource, /is-scene-changing/u, "retired second scene-fade state remains in true-end-mode.js");
   assert.doesNotMatch(trueEndWebGLSource, /classList\.contains\("is-scene-separating"\)/u, "WebGL still freezes during the scene separator");
   assert.match(trueEndWebGLSource, /if \(sceneCompletionResolve\) settleSceneDraw\(false\)/u, "WebGL scene switching does not report an actual completed draw");
-  assert.match(trueEndModeSource, /await syncSceneBackdrop\(\{ immediate: true \}\)[\s\S]*await renderStep\(\)/u, "section preparation does not wait for the background draw before the message");
+  assert.match(trueEndModeSource, /await syncSceneBackdrop\(\{ immediate: true \}\)[\s\S]*return prepareStep\(\)/u, "section preparation does not wait for the background draw and character presence");
+  assert.match(trueEndModeSource, /animateSceneOpacity\(sceneCard, 1, 0, SCENE_REVEAL_MS\)[\s\S]*sectionTransitionCompletedAt[\s\S]*commitPreparedStep\(result\.preparedStep\)/u, "the next message is not committed strictly after the section curtain finishes fading out");
+  assert.match(trueEndStyleSource, /\.true-end-shell\.is-scene-separating\s+:is\(\.true-end-dialogue, \.true-end-readout\)\s*\{\s*visibility:\s*hidden;/u, "message UI is not hidden throughout the section separator");
   assert.doesNotMatch(trueEndModeSource, /createElement\("img"/u, "TRANSMISSION still creates a raster image element");
   assert.match(trueEndWebGLSource, /setPresence\(name/u, "WebGL presence controller is missing");
   assert.match(trueEndWebGLSource, /u_speaker_mix/u, "WebGL presence crossfade is missing");
@@ -707,13 +710,17 @@ try {
 
     const beforeSeparator = await scanFrame(separatorPage);
     assert.equal(beforeSeparator.scene, "after-ending", `${viewport.name}: separator test overshot the first scene`);
+    assert.equal(beforeSeparator.title, "ずっと昔の人たち", `${viewport.name}: renamed first section title is missing`);
     assert.equal(beforeSeparator.counter, `${String(firstSceneSteps).padStart(3, "0")} / 052`, `${viewport.name}: separator test did not stop at the scene boundary`);
     assert.equal(beforeSeparator.interfaceOpacity, 1, `${viewport.name}: interface was not fully visible before the separator`);
     assert.equal(beforeSeparator.motionReduced, false, `${viewport.name}: separator timing test unexpectedly prefers reduced motion`);
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-separator-00-before.png`) });
 
     const separatorTriggeredAt = await separatorPage.evaluate(() => {
-      document.querySelector(".true-end-dialogue")?.click();
+      const dialogue = document.querySelector(".true-end-dialogue");
+      dialogue?.click();
+      dialogue?.click();
+      dialogue?.click();
       return performance.now();
     });
     await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "blackout", null, { timeout: 2_000 });
@@ -726,6 +733,7 @@ try {
     assert.equal(blackout.scene, "after-ending", `${viewport.name}: section metadata changed before full black`);
     assert.equal(blackout.universeScene, beforeSeparator.universeScene, `${viewport.name}: WebGL background changed before full black`);
     assert.equal(blackout.message, beforeSeparator.message, `${viewport.name}: message changed before full black`);
+    assert.equal(blackout.dialogueVisible, false, `${viewport.name}: message UI remained visible during blackout`);
 
     await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "title", null, { timeout: 2_000, polling: 10 });
     await separatorPage.waitForTimeout(90);
@@ -733,13 +741,14 @@ try {
     assert(title.sceneCardOpacity >= 0.99, `${viewport.name}: section title appeared without a fully opaque curtain (${title.sceneCardOpacity})`);
     assert.equal(title.sceneCardBackground, "rgb(0, 0, 0)", `${viewport.name}: section curtain is not pure black (${title.sceneCardBackground})`);
     assert(title.audioDockOpacity <= 0.01, `${viewport.name}: global audio UI remained visible over the black title card (${JSON.stringify({ opacity: title.audioDockOpacity, inlineOpacity: title.audioDockInlineOpacity, inlinePriority: title.audioDockInlinePriority, hidden: title.audioDockHidden, bodyTransitionClass: title.bodyTransitionClass })})`);
-    assert.equal(title.scene, "post-anthropocene", `${viewport.name}: next section metadata was not prepared under black`);
-    assert.equal(title.sceneCardTitle, "ポスト人新世", `${viewport.name}: next section title was not shown over black`);
+    assert.equal(title.scene, "electronic-civilization", `${viewport.name}: next section metadata was not prepared under black`);
+    assert.equal(title.sceneCardTitle, "電子を使っていた文明", `${viewport.name}: next section title was not shown over black`);
     assert(title.sceneCardTitleOpacity > 0 && title.sceneCardTitleOpacity < 1, `${viewport.name}: section title did not fade in (${title.sceneCardTitleOpacity})`);
     assert.equal(title.universeScene, beforeSeparator.universeScene, `${viewport.name}: WebGL background switched before the title appeared`);
     assert.equal(title.message, beforeSeparator.message, `${viewport.name}: next message rendered before background preparation`);
+    assert.equal(title.dialogueVisible, false, `${viewport.name}: message UI became visible behind the section title`);
     await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "switching", null, { timeout: 2_000, polling: 10 });
-    await separatorPage.waitForFunction(() => document.querySelector(".true-end-universe")?.dataset.webglScene === "many-senses", null, { timeout: 2_000, polling: 10 });
+    await separatorPage.waitForFunction(() => document.querySelector(".true-end-universe")?.dataset.webglScene === "reconstruction", null, { timeout: 2_000, polling: 10 });
     const switching = await scanFrame(separatorPage);
     assert(switching.sceneCardOpacity >= 0.99, `${viewport.name}: black curtain opened while the WebGL background was switching`);
     assert.equal(switching.sceneCardBackground, "rgb(0, 0, 0)", `${viewport.name}: switching phase lost its pure-black cover`);
@@ -748,33 +757,46 @@ try {
     await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "ready", null, { timeout: 3_000, polling: 10 });
     const ready = await scanFrame(separatorPage);
     assert(ready.sceneCardOpacity >= 0.99, `${viewport.name}: curtain opened before section preparation completed`);
-    assert.equal(ready.universeScene, "many-senses", `${viewport.name}: next WebGL background was not ready before reveal`);
+    assert.equal(ready.universeScene, "reconstruction", `${viewport.name}: next WebGL background was not ready before reveal`);
     assert.equal(ready.universePresenceState, "steady", `${viewport.name}: character presence was not fully displayed before reveal`);
-    assert.notEqual(ready.message, beforeSeparator.message, `${viewport.name}: next message was not committed while the screen was black`);
-    assert(ready.messageCommittedAt >= ready.universePresenceCompletedAt, `${viewport.name}: message committed before character presence completed`);
+    assert.equal(ready.message, beforeSeparator.message, `${viewport.name}: next message was committed while the screen was black`);
+    assert.equal(ready.messageCommittedAt, beforeSeparator.messageCommittedAt, `${viewport.name}: message timestamp changed before curtain reveal`);
+    assert.equal(ready.dialogueVisible, false, `${viewport.name}: message UI became visible before curtain reveal`);
     await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "reveal", null, { timeout: 2_000, polling: 10 });
     await separatorPage.waitForTimeout(150);
     const reveal = await scanFrame(separatorPage);
     assert(reveal.sceneCardOpacity > 0 && reveal.sceneCardOpacity < 1, `${viewport.name}: new section did not fade in from black (${reveal.sceneCardOpacity})`);
     assert.equal(reveal.interfaceOpacity, 1, `${viewport.name}: prepared UI faded separately during reveal`);
-    assert.equal(reveal.universeScene, "many-senses", `${viewport.name}: background changed during reveal`);
-    assert(reveal.message.startsWith(ready.message), `${viewport.name}: reveal replaced the prepared message instead of continuing its typewriter`);
-    assert.equal(reveal.messageCommittedAt, ready.messageCommittedAt, `${viewport.name}: a different message was committed during reveal`);
+    assert.equal(reveal.universeScene, "reconstruction", `${viewport.name}: background changed during reveal`);
+    assert.equal(reveal.message, beforeSeparator.message, `${viewport.name}: next message was committed before curtain fade-out completed`);
+    assert.equal(reveal.messageCommittedAt, beforeSeparator.messageCommittedAt, `${viewport.name}: message timestamp changed during curtain fade-out`);
+    assert.equal(reveal.sectionTransitionCompletedAt, 0, `${viewport.name}: section completion was recorded before curtain fade-out completed`);
+    assert.equal(reveal.dialogueVisible, false, `${viewport.name}: message UI was visible during curtain fade-out`);
 
-    await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "idle", null, { timeout: 3_000, polling: 10 });
+    await separatorPage.waitForFunction(() => {
+      const shell = document.querySelector(".true-end-shell");
+      const message = document.querySelector(".true-end-message");
+      return shell?.dataset.sectionTransitionPhase === "idle"
+        && Number(shell.dataset.messageCommittedAt || 0) >= Number(shell.dataset.sectionTransitionCompletedAt || 0)
+        && Boolean(message?.textContent);
+    }, null, { timeout: 3_000, polling: 10 });
     const afterSeparator = await scanFrame(separatorPage);
     assert.equal(afterSeparator.separatorActive, false, `${viewport.name}: separating state remained after reveal`);
     assert.equal(afterSeparator.interfaceOpacity, 1, `${viewport.name}: prepared interface was not fully visible after reveal`);
     assert.equal(afterSeparator.sceneCardOpacity, 0, `${viewport.name}: separator remained visible after the interface returned`);
-    assert.equal(afterSeparator.scene, "post-anthropocene", `${viewport.name}: separator did not advance to the next scene`);
-    assert(afterSeparator.message.startsWith(ready.message), `${viewport.name}: revealed message differs from the prepared message`);
-    assert.equal(afterSeparator.messageCommittedAt, ready.messageCommittedAt, `${viewport.name}: revealed message was committed after black opened`);
+    assert.equal(afterSeparator.scene, "electronic-civilization", `${viewport.name}: separator did not advance to the next scene`);
+    assert.equal(afterSeparator.counter, `${String(firstSceneSteps + 1).padStart(3, "0")} / 052`, `${viewport.name}: click burst advanced more than one message`);
+    assert.notEqual(afterSeparator.message, beforeSeparator.message, `${viewport.name}: next message did not appear after curtain fade-out`);
+    assert.equal(afterSeparator.dialogueVisible, true, `${viewport.name}: message UI stayed hidden after curtain fade-out`);
+    assert(afterSeparator.sectionTransitionCompletedAt > separatorTriggeredAt, `${viewport.name}: section completion timestamp is missing`);
+    assert(afterSeparator.messageCommittedAt >= afterSeparator.sectionTransitionCompletedAt, `${viewport.name}: next message committed before section fade-out completed (${JSON.stringify({ section: afterSeparator.sectionTransitionCompletedAt, message: afterSeparator.messageCommittedAt })})`);
+    assert(afterSeparator.messageCommittedAt > beforeSeparator.messageCommittedAt, `${viewport.name}: next message did not receive a new commit timestamp`);
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-separator-05-after.png`) });
 
     report.separatorOrder.push({
       viewport: viewport.name,
       before: beforeSeparator.message,
-      during: ready.message,
+      during: reveal.message,
       after: afterSeparator.message,
       webglFramesDuringTransition: ready.universeFrame - beforeSeparator.universeFrame,
       passed: true,

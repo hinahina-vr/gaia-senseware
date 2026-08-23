@@ -255,6 +255,10 @@
   pointer-events: none;
 }
 
+.true-end-shell.is-scene-separating :is(.true-end-dialogue, .true-end-readout) {
+  visibility: hidden;
+}
+
 body:has(.true-end-shell[data-section-transition-phase]:not([data-section-transition-phase="idle"])) .gaia-audio-dock {
   opacity: 0 !important;
   pointer-events: none !important;

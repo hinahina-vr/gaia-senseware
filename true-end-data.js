@@ -16,8 +16,8 @@
   });
 
   const source = {
-  "storyVersion": "true-end-approved-script-v2",
-  "approvedSourceSha256": "e4160101302fa6390fd816e53f124a78c2245933247d18afd2c308456990c66f",
+  "storyVersion": "true-end-approved-script-v3",
+  "approvedSourceSha256": "911818f6eff7c59fcc2b2ee352c90d6a4710785fb3a6afe113862081516ee628",
   "title": "NOVACENE",
   "subtitle": "惑星の放課後 / GAIA SENSATION — NOVACENE",
   "language": {
@@ -32,7 +32,7 @@
     {
       "id": "after-ending",
       "number": "01",
-      "title": "エンディングの、その先",
+      "title": "ずっと昔の人たち",
       "backdrop": "awakening",
       "steps": [
         {

@@ -297,37 +297,41 @@
       });
     };
 
-    const showSceneSeparator = async ({ prepareScene, switchScene, onSceneReady } = {}) => {
+    const showSceneSeparator = async ({ prepareScene, switchScene } = {}) => {
+      delete shell.dataset.sectionTransitionCompletedAt;
       sceneCard.classList.add("is-active");
       sceneCardContent.style.opacity = "0";
       setSceneTransitionPhase("blackout");
       await animateSceneOpacity(sceneCard, 0, 1, SCENE_BLACKOUT_MS);
-      if (!shell.isConnected || complete) return;
+      if (!shell.isConnected || complete) return null;
 
       setSceneTransitionPhase("black");
       prepareScene?.();
       setSceneTransitionPhase("title");
       await animateSceneOpacity(sceneCardContent, 0, 1, SCENE_TITLE_FADE_MS);
-      if (!shell.isConnected || complete) return;
+      if (!shell.isConnected || complete) return null;
 
       setSceneTransitionPhase("switching");
+      let preparedStep = null;
       await Promise.all([
-        Promise.resolve().then(() => switchScene?.()),
+        Promise.resolve().then(async () => {
+          preparedStep = await switchScene?.();
+        }),
         waitForSceneCard(SCENE_TITLE_HOLD_MS),
       ]);
-      if (!shell.isConnected || complete) return;
+      if (!shell.isConnected || complete) return null;
 
       setSceneTransitionPhase("ready");
-      onSceneReady?.({ shell });
       await animateSceneOpacity(sceneCardContent, 1, 0, SCENE_TITLE_OUT_MS);
-      if (!shell.isConnected || complete) return;
+      if (!shell.isConnected || complete) return null;
 
       setSceneTransitionPhase("reveal");
       await animateSceneOpacity(sceneCard, 1, 0, SCENE_REVEAL_MS);
       sceneCard.classList.remove("is-active");
       sceneCard.style.removeProperty("opacity");
       sceneCardContent.style.removeProperty("opacity");
-      setSceneTransitionPhase("idle");
+      shell.dataset.sectionTransitionCompletedAt = performance.now().toFixed(3);
+      return { preparedStep };
     };
 
     const syncSceneMetadata = () => {
@@ -348,23 +352,33 @@
       return setBackdrop(current.backdrop, immediate);
     };
 
-    const revealSceneAfterSeparator = async (options) => {
-      await showSceneSeparator(options);
+    const revealSceneAfterSeparator = async ({ onSceneReady, ...options } = {}) => {
+      const result = await showSceneSeparator(options);
+      if (!result || !shell.isConnected || complete) return;
+      commitPreparedStep(result.preparedStep);
       if (!shell.isConnected || complete) return;
       shell.classList.remove("is-scene-separating");
       transitioning = false;
+      setSceneTransitionPhase("idle");
+      onSceneReady?.({ shell });
     };
 
-    const renderStep = async () => {
+    const prepareStep = async () => {
       const current = step();
-      if (!current) return false;
+      if (!current) return null;
       const revision = ++renderRevision;
       const currentSpeaker = SPEAKERS[current.speaker || "narrator"] || SPEAKERS.narrator;
       await (universeRuntime?.setPresence?.(current.speaker || "narrator", {
         emphasis: current.emphasis === true,
         signal: current.id,
       }) || Promise.resolve());
-      if (revision !== renderRevision || !shell.isConnected || complete) return false;
+      if (revision !== renderRevision || !shell.isConnected || complete) return null;
+      return { current, currentSpeaker, revision };
+    };
+
+    const commitPreparedStep = (prepared) => {
+      if (!prepared || prepared.revision !== renderRevision || !shell.isConnected || complete) return false;
+      const { current, currentSpeaker } = prepared;
       shell.dataset.speaker = current.speaker || "narrator";
       shell.classList.toggle("is-emphasis", current.emphasis === true);
       speaker.textContent = currentSpeaker.name;
@@ -382,6 +396,8 @@
       dialogue.setAttribute("aria-label", `${currentSpeaker.name ? `${currentSpeaker.name}。` : ""}${current.text}。次へ進む`);
       return true;
     };
+
+    const renderStep = async () => commitPreparedStep(await prepareStep());
 
     const showFinale = () => {
       stopReveal();
@@ -432,7 +448,7 @@
         },
         switchScene: async () => {
           await syncSceneBackdrop({ immediate: true });
-          await renderStep();
+          return prepareStep();
         },
       });
     };
@@ -493,7 +509,7 @@
     void revealSceneAfterSeparator({
       switchScene: async () => {
         await syncSceneBackdrop({ immediate: true });
-        await renderStep();
+        return prepareStep();
       },
       onSceneReady: onReady,
     });
