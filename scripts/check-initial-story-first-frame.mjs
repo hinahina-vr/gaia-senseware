@@ -42,7 +42,7 @@ assert.match(app, /globalSignalConsole\.hidden = true;\s*\n\s*globalSignalConsol
 assert.match(app, /const activeSignalConsoles = storyModeDetour && japanIsOpen[\s\S]{0,240}classList\.contains\("signal-console-map"\)/u);
 assert.match(app, /activeSignalConsoles\.forEach\(\(consoleElement\) =>/u);
 assert.doesNotMatch(app.slice(app.indexOf("const activeSignalConsoles"), app.indexOf("const DATA_TRANSFORMS")), /signalConsoles\.forEach/u);
-assert.match(css, /body\.novel-open\.novel-mode-detour \.experience > \.signal-console-main\[hidden\][\s\S]{0,180}display:\s*none !important;/u);
+assert.match(css, /body\.novel-open\.novel-mode-detour \.experience \.signal-console-main\[hidden\][\s\S]{0,180}display:\s*none !important;/u);
 assert.match(mapPolishCss, /\.signal-console-heading\.map-grid-data\s*\{\s*pointer-events:\s*none !important;/u);
 assert.match(app, /className = "story-map-guide"/u);
 assert.match(app, /storyMapGuideProgress = \{ timeline: false, map: false \}/u);

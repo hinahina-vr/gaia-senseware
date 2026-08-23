@@ -180,7 +180,7 @@ const reachInteraction = async (page, routeMode, previousStepId, interactionStep
 };
 
 const installMapTrace = async (page) => page.evaluate(() => {
-  const globalPanel = document.querySelector(".experience > .signal-console-main");
+  const globalPanel = document.querySelector(".experience .signal-console-main");
   const mapPanel = document.querySelector("#japan-layer .signal-console-map");
   const layer = document.querySelector("#japan-layer");
   const guide = document.querySelector(".story-map-guide");
@@ -205,7 +205,7 @@ const installMapTrace = async (page) => page.evaluate(() => {
   const frame = () => {
     trace.frames += 1;
     if (
-      document.querySelector(".experience > .signal-console-main") !== trace.initialGlobalPanel
+      document.querySelector(".experience .signal-console-main") !== trace.initialGlobalPanel
       || document.querySelector("#japan-layer .signal-console-map") !== trace.initialMapPanel
       || document.querySelector(".story-map-guide") !== trace.initialGuide
       || !trace.initialGlobalPanel.isConnected
@@ -313,7 +313,7 @@ const stopMapPolishTrace = async (page) => page.evaluate(() => {
 });
 
 const mapOpenState = async (page) => page.evaluate(() => {
-  const globalPanel = document.querySelector(".experience > .signal-console-main");
+  const globalPanel = document.querySelector(".experience .signal-console-main");
   const mapPanel = document.querySelector("#japan-layer .signal-console-map");
   const guide = document.querySelector(".story-map-guide");
   const returnButton = document.querySelector("#story-detour-return");
@@ -445,7 +445,7 @@ const scanMap = async (viewport, routeMode, traceDurationMs) => {
     lifecycle: document.body.dataset.novelInteractionState || "idle",
     mapVisible: globalThis.__p1Visible(document.querySelector("#japan-layer")),
     guideCount: document.querySelectorAll(".story-map-guide").length,
-    globalHidden: document.querySelector(".experience > .signal-console-main")?.hidden,
+    globalHidden: document.querySelector(".experience .signal-console-main")?.hidden,
     events: { ...globalThis.__p1Events },
     steps: [...globalThis.__p1Steps],
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,

@@ -4011,8 +4011,9 @@ h1 {
 .status {
   position: absolute;
   z-index: 3;
-  top: max(82px, calc(env(safe-area-inset-top) + 64px));
-  right: max(28px, env(safe-area-inset-right));
+  top: max(24px, env(safe-area-inset-top));
+  right: auto;
+  left: max(28px, env(safe-area-inset-left));
   display: flex;
   gap: 8px;
   align-items: center;
@@ -4475,9 +4476,13 @@ h1 {
 }
 
 .signal-console-main {
-  position: absolute;
-  top: 122px;
-  right: max(30px, env(safe-area-inset-right));
+  position: relative;
+  top: auto;
+  right: auto;
+  width: min(330px, 100%);
+  margin: 0 0 18px;
+  pointer-events: auto;
+  text-shadow: none;
 }
 
 .japan-open .signal-console-main,
@@ -4831,9 +4836,10 @@ h1 {
 
 @media (max-width: 900px) {
   .signal-console-main {
-    top: max(106px, calc(env(safe-area-inset-top) + 86px));
-    right: 18px;
-    width: min(290px, calc(100vw - 36px));
+    top: auto;
+    right: auto;
+    width: min(290px, 100%);
+    margin-bottom: 14px;
   }
 
   .signal-console-map {
@@ -4856,9 +4862,9 @@ h1 {
   }
 
   .signal-console-main {
-    top: max(98px, calc(env(safe-area-inset-top) + 76px));
-    right: 14px;
-    width: calc(100vw - 28px);
+    top: auto;
+    right: auto;
+    width: 100%;
     padding: 9px 11px;
   }
 
@@ -5790,8 +5796,9 @@ h1 {
   }
 
   .status {
-    top: max(68px, calc(env(safe-area-inset-top) + 56px));
-    right: max(20px, env(safe-area-inset-right));
+    top: max(20px, env(safe-area-inset-top));
+    right: auto;
+    left: max(20px, env(safe-area-inset-left));
     display: flex;
   }
 

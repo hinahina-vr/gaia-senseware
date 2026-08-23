@@ -22,12 +22,12 @@
     <link rel="preload" as="image" href="./assets/visuals-07/novel-bg-festival-five-plane-projection-v1.png" />
     <link rel="preload" as="image" href="./assets/visuals-07/sound-archive-bg-v2.png" />
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
-    <link rel="stylesheet" href="./styles.css?v=gaia-intro-path-row-1" />
+    <link rel="stylesheet" href="./styles.css?v=gaia-main-overlay-layout-1" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
     <link rel="stylesheet" href="./opening.css?v=gaia-sound-world-ui-1" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-suno-credit-1" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-main-overlay-layout-1" />
     <link rel="stylesheet" href="./true-end.css?v=gaia-finale-webgl-1" />
     <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-modal-skip-1" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
@@ -40,7 +40,7 @@
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
     <script src="./app-content.js?v=gaia-map-exhibits-10-1" defer></script>
-    <script src="./app.js?v=gaia-map-smooth-stall-1" defer></script>
+    <script src="./app.js?v=gaia-main-overlay-layout-1" defer></script>
     <script src="./gx-mode.js?v=gaia-gx-modal-skip-1" defer></script>
     <script src="./novel-story-data.js?v=gaia-approved-script-14" defer></script>
     <script src="./true-end-data.js?v=gaia-finale-webgl-1" defer></script>
@@ -49,7 +49,7 @@
     <script src="./novel-background-cues.js?v=gaia-amane-no-plug-1" defer></script>
     <script src="./novel-back-half-cues.js?v=gaia-finale-sunset-1" defer></script>
     <script src="./novel-temporal.js?v=gaia-temporal-1" defer></script>
-    <script src="./novel-mode.js?v=gaia-suno-credit-1" defer></script>
+    <script src="./novel-mode.js?v=gaia-main-overlay-layout-1" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-suno-credit-1" defer></script>
@@ -2128,12 +2128,6 @@
         </aside>
       </section>
 
-      <header class="masthead">
-        <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Planetary interface</p>
-        <h1>惑星の放課後</h1>
-        <p class="title-subtitle">GAIA SENSATION</p>
-      </header>
-
       <div class="status">
         <button
           class="status-home-button mode-exit-control"
@@ -2163,7 +2157,19 @@
           <span aria-hidden="true">20</span>
         </div>
         <div class="mode-copy">
-                <h2 id="mode-title">Breathing Earth</h2>
+          <section class="signal-console signal-console-main" data-signal-console aria-label="選択中の観測データ">
+            <div class="signal-console-heading">
+              <span data-signal-act>ACT 1 / 循環を知る</span>
+              <strong data-signal-value>DATA SNAPSHOT LOADING</strong>
+            </div>
+            <label>
+              <span data-signal-time-label>観測時点</span>
+              <input data-signal-time type="range" min="0" max="100" value="100" step="1" />
+              <output data-signal-time-output>—</output>
+            </label>
+            <p data-signal-note>同梱した公開データのスナップショットを読み込んでいます。</p>
+          </section>
+          <h2 id="mode-title">Breathing Earth</h2>
                 <p class="mode-title-ja" id="mode-title-ja">地球の一呼吸</p>
                 <p class="mode-reading-label">DATA → VISUAL / データと表現の関係</p>
                 <p class="mode-description" id="mode-description">
@@ -2181,19 +2187,6 @@
           </button>
         </div>
       </article>
-
-      <section class="signal-console signal-console-main" data-signal-console aria-label="選択中の観測データ">
-        <div class="signal-console-heading">
-          <span data-signal-act>ACT 1 / 循環を知る</span>
-          <strong data-signal-value>DATA SNAPSHOT LOADING</strong>
-        </div>
-        <label>
-          <span data-signal-time-label>観測時点</span>
-          <input data-signal-time type="range" min="0" max="100" value="100" step="1" />
-          <output data-signal-time-output>—</output>
-        </label>
-        <p data-signal-note>同梱した公開データのスナップショットを読み込んでいます。</p>
-      </section>
 
       <nav class="mode-nav" aria-label="地球を読む感覚器を切り替える">
         <button class="mode-arrow" id="previous-mode" type="button" aria-label="前の感覚器">

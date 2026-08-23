@@ -501,14 +501,14 @@ const scanMapCompositorContract = async (viewport) => {
   });
   assert.deepEqual(eventCounts, { open: 0, close: 0, returned: 0 });
   const originalGlobalState = await page.evaluate(() => {
-    const panel = document.querySelector(".experience > .signal-console-main");
+    const panel = document.querySelector(".experience .signal-console-main");
     return { hidden: panel.hidden, inert: panel.inert, ariaHidden: panel.getAttribute("aria-hidden") };
   });
   await page.locator(".novel-interaction-open").click();
   await page.waitForFunction(() => document.body.dataset.novelInteractionState === "open");
   await page.waitForTimeout(3200);
   const open = await page.evaluate(() => {
-    const globalPanel = document.querySelector(".experience > .signal-console-main");
+    const globalPanel = document.querySelector(".experience .signal-console-main");
     const mapPanel = document.querySelector("#japan-layer .signal-console-map");
     const globalStyle = getComputedStyle(globalPanel);
     return {
@@ -521,7 +521,7 @@ const scanMapCompositorContract = async (viewport) => {
       globalVisible: __qaVisible(globalPanel),
       mapVisible: __qaVisible(mapPanel),
       mapPanelCount: document.querySelectorAll("#japan-layer .signal-console-map").length,
-      globalPanelCount: document.querySelectorAll(".experience > .signal-console-main").length,
+      globalPanelCount: document.querySelectorAll(".experience .signal-console-main").length,
       dockCount: document.querySelectorAll(".story-detour-dock").length,
       stepId: globalThis.GaiaNovel.getState().stepId,
       lifecycle: document.body.dataset.novelInteractionState,
@@ -553,7 +553,7 @@ const scanMapCompositorContract = async (viewport) => {
   await page.locator("#story-detour-return").click();
   await page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_005");
   const closed = await page.evaluate(() => {
-    const globalPanel = document.querySelector(".experience > .signal-console-main");
+    const globalPanel = document.querySelector(".experience .signal-console-main");
     return {
       events: { ...globalThis.__mapCompositorEvents },
       globalHidden: globalPanel.hidden,

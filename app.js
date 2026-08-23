@@ -5711,7 +5711,7 @@ drawAudienceMemory(audienceTraces);
     window.clearTimeout(storyMapReturnTimer);
     storyMapReturnTimer = 0;
     experience.dataset.storyMode = kind;
-    const globalSignalConsole = experience.querySelector(":scope > .signal-console-main");
+    const globalSignalConsole = experience.querySelector(".signal-console-main");
     if (globalSignalConsole) {
       storyModeGlobalSignalConsoleState = {
         hidden: globalSignalConsole.hidden,
@@ -5783,7 +5783,7 @@ drawAudienceMemory(audienceTraces);
     storyMapTimelineCompleted = false;
     delete experience.dataset.storyMode;
     storyModeDetour = null;
-    const globalSignalConsole = experience.querySelector(":scope > .signal-console-main");
+    const globalSignalConsole = experience.querySelector(".signal-console-main");
     if (globalSignalConsole && storyModeGlobalSignalConsoleState) {
       globalSignalConsole.hidden = storyModeGlobalSignalConsoleState.hidden;
       globalSignalConsole.inert = storyModeGlobalSignalConsoleState.inert;

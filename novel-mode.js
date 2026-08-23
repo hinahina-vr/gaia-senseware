@@ -48,7 +48,6 @@
     "#gaia-canvas",
     ".abstract-mode-background",
     "#intro-layer",
-    ".masthead",
     ".status",
     "#guide",
     "#mode-caption",

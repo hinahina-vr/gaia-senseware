@@ -136,7 +136,16 @@ try {
       localStorage.clear();
       globalThis.GaiaNovel.open();
     });
-    await page.locator("#novel-start-button").click();
+    await page.waitForFunction(() => (
+      document.querySelector("#novel-home-button")?.hidden === false
+      || (
+        document.querySelector("#novel-start-button")?.disabled === false
+        && document.querySelector("#novel-start-button")?.offsetParent !== null
+      )
+    ));
+    if (await page.locator("#novel-start-button").isVisible()) {
+      await page.locator("#novel-start-button").click();
+    }
     await page.waitForFunction(() => (
       document.querySelector("#novel-home-button")?.hidden === false
       && document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "false"
