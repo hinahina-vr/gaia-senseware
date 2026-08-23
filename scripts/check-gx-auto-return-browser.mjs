@@ -56,7 +56,9 @@ const bootAtGX = async (page) => {
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
+  if (await page.locator("#novel-resume-button").isVisible()) {
+    await page.locator("#novel-resume-button").click();
+  }
   if (await page.locator("#novel-save-panel").isVisible()) {
     await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   }
@@ -200,8 +202,37 @@ try {
     assert.equal(transitionSkip.transitionVisible, true, `${viewport.name}: era transition did not start`);
     assert.equal(transitionSkip.phase, "01 / 08", `${viewport.name}: era advanced before the modal skip was clicked`);
 
+    const readLayerGeometry = () => page.evaluate(() => {
+      const layer = document.querySelector("#gx-layer");
+      const rect = layer.getBoundingClientRect();
+      return {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+        opacity: Number.parseFloat(getComputedStyle(layer).opacity),
+        transform: getComputedStyle(layer).transform,
+        hidden: layer.hidden,
+        open: layer.classList.contains("is-open"),
+        storyGeometryActive: document.body.classList.contains("gx-story-open"),
+      };
+    });
+    const beforeClose = await readLayerGeometry();
     const skipStartedAt = Date.now();
     await page.locator("#gx-modal-skip").click();
+    await page.waitForTimeout(120);
+    const duringClose = await readLayerGeometry();
+    for (const property of ["top", "left", "width", "height"]) {
+      assert(
+        Math.abs(duringClose[property] - beforeClose[property]) <= 1,
+        `${viewport.name}: GX moved during its closing fade (${property}: ${beforeClose[property]} -> ${duringClose[property]})`,
+      );
+    }
+    assert.equal(duringClose.transform, beforeClose.transform, `${viewport.name}: GX transform changed during its closing fade`);
+    assert.equal(duringClose.hidden, false, `${viewport.name}: GX was hidden before its fade completed`);
+    assert.equal(duringClose.open, false, `${viewport.name}: GX retained its open state while closing`);
+    assert.equal(duringClose.storyGeometryActive, true, `${viewport.name}: story modal geometry was released before the fade completed`);
+    assert(duringClose.opacity > 0 && duringClose.opacity < beforeClose.opacity, `${viewport.name}: GX did not fade in place`);
     await page.waitForFunction(() => (
       globalThis.GaiaNovel.getState().stepId === "gx_experience_018"
       && !document.body.classList.contains("gx-story-open")
@@ -250,7 +281,7 @@ try {
       gxOpen: document.body.classList.contains("gx-open"),
     }));
     assert.deepEqual(introClosed, { storyStep: "gx_experience_018", returns: 1, gxOpen: false });
-    report.scans.push({ viewport: viewport.name, open, initialSkip, transitionSkip, skipElapsedMs, closed, introSkip, introClosed, passed: true });
+    report.scans.push({ viewport: viewport.name, open, initialSkip, transitionSkip, beforeClose, duringClose, skipElapsedMs, closed, introSkip, introClosed, passed: true });
     await context.close();
   }
   assert.equal(report.consoleErrors.length, 0, `console errors: ${JSON.stringify(report.consoleErrors)}`);

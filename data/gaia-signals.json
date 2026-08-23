@@ -1,7 +1,7 @@
 {
   "title": "惑星の放課後",
   "subtitle": "GAIA SENSATION",
-  "generatedAt": "2026-08-02T03:22:22.175Z",
+  "generatedAt": "2026-08-23T18:53:53.624Z",
   "snapshotPolicy": "Runtime visualization uses this bundled JSON. External links are provenance, not live dependencies.",
   "legend": {
     "SOURCE": "公開データそのもの",
@@ -24,7 +24,7 @@
           "organisation": "JAXA / NIES / MOE",
           "title": "GOSAT FTS SWIR Level 3 XCO₂ monthly maps V03.05",
           "url": "https://data2.gosat.nies.go.jp/gallery/fts_l3_swir_co2_gallery_en.html",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2010-03–2025-12（同梱16時点）",
           "unit": "ppm XCO₂",
           "resolution": "月次・2.5°格子・クリギング推定",
@@ -109,7 +109,7 @@
           "organisation": "GAIA SENSEWARE",
           "title": "GOSAT公式閲覧画像から復元したXCO₂色階級",
           "url": "./data/gaia-signals.json",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2010-03–2025-12",
           "unit": "approx. ppm XCO₂",
           "resolution": "2.5°格子・0.1 ppm表示",
@@ -184,7 +184,7 @@
           "organisation": "GAIA SENSEWARE",
           "title": "1958–2009 CO₂空間再構成",
           "url": "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "1958–2009",
           "unit": "approx. ppm",
           "resolution": "年次表示・2.5°空間テンプレート",
@@ -248,7 +248,7 @@
           "organisation": "NOAA Global Monitoring Laboratory",
           "title": "Mauna Loa CO₂ monthly mean",
           "url": "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "1958–2026",
           "unit": "ppm",
           "resolution": "月次・単一観測地点",
@@ -323,7 +323,7 @@
           "organisation": "NASA GISS",
           "title": "GISTEMP v4 global temperature anomaly",
           "url": "https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.csv",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "1880–2025",
           "unit": "℃ anomaly",
           "resolution": "年次・全球平均",
@@ -332,7 +332,7 @@
           "preview": [
             {
               "year": 1880,
-              "anomalyC": -0.18
+              "anomalyC": -0.17
             },
             {
               "year": 1881,
@@ -344,7 +344,7 @@
             },
             {
               "year": 1883,
-              "anomalyC": -0.18
+              "anomalyC": -0.17
             },
             {
               "year": 1884,
@@ -352,7 +352,7 @@
             },
             {
               "year": 1885,
-              "anomalyC": -0.34
+              "anomalyC": -0.33
             },
             {
               "year": 1886,
@@ -378,12 +378,12 @@
           "organisation": "気象庁",
           "title": "国内3地点の年平均CO₂濃度",
           "url": "https://www.data.jma.go.jp/ghg/kanshi/obs/co2_yearave.csv",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "1987–2025",
           "unit": "ppm",
           "resolution": "年次・綾里／南鳥島／与那国島",
-          "transformation": "GOSATとの観測量の違いを確認する比較資料として台帳に収録。世界ヒートマップには混合・補間しない",
-          "caveat": "衛星XCO₂は大気柱平均、JMAは地上付近の背景大気で同じ観測量ではない。地点ごとに観測開始年が異なり欠測を含む。与那国島の観測は2024年3月末で終了。「*」は月平均11個以下、「)」は速報値。",
+          "transformation": "GOSATとの観測量の違いを確認する比較資料として台帳に収録。観測開始前・終了後は構造的欠測として補完しない",
+          "caveat": "衛星XCO₂は大気柱平均、JMAは地上付近の背景大気で同じ観測量ではない。地点ごとに観測期間が異なる。与那国島の観測は2024年3月末で終了。「*」は月平均11個以下、「)」は速報値。",
           "preview": [
             {
               "year": 1987,
@@ -483,59 +483,59 @@
           "organisation": "GAIA SENSEWARE / statistics layer",
           "title": "NOAA直近120か月によるCO₂最小二乗トレンド投影",
           "url": "./scripts/statistics.mjs",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2026–2050",
           "unit": "ppm / 95% prediction interval",
           "resolution": "年次表示・回帰学習は月次120標本",
-          "transformation": "直近120か月を一本の傾向線にまとめました。年あたりの増加は2.538523 ppm、当てはまりの指標R²は0.99543です。予想には幅も添えます。",
+          "transformation": "直近120か月を一本の傾向線にまとめました。年あたりの増加は2.536558 ppm、当てはまりの指標R²は0.995353です。予想には幅も添えます。",
           "caveat": "時間の流れだけを使った単純な計算です。政策や排出量の変化は含まないため、気候モデルによる未来予測ではありません。",
           "preview": [
             {
               "year": 2026,
-              "predictedPpm": 428.143,
-              "lower95Ppm": 427.138,
-              "upper95Ppm": 429.149,
-              "predictionHalfWidth95Ppm": 1.006,
+              "predictedPpm": 428.128,
+              "lower95Ppm": 427.115,
+              "upper95Ppm": 429.141,
+              "predictionHalfWidth95Ppm": 1.013,
               "type": "SCENARIO_OLS_PROJECTION"
             },
             {
               "year": 2030,
-              "predictedPpm": 438.297,
-              "lower95Ppm": 437.266,
-              "upper95Ppm": 439.328,
-              "predictionHalfWidth95Ppm": 1.031,
+              "predictedPpm": 438.274,
+              "lower95Ppm": 437.236,
+              "upper95Ppm": 439.312,
+              "predictionHalfWidth95Ppm": 1.038,
               "type": "SCENARIO_OLS_PROJECTION"
             },
             {
               "year": 2035,
-              "predictedPpm": 450.99,
-              "lower95Ppm": 449.908,
-              "upper95Ppm": 452.072,
-              "predictionHalfWidth95Ppm": 1.082,
+              "predictedPpm": 450.957,
+              "lower95Ppm": 449.867,
+              "upper95Ppm": 452.046,
+              "predictionHalfWidth95Ppm": 1.09,
               "type": "SCENARIO_OLS_PROJECTION"
             },
             {
               "year": 2040,
-              "predictedPpm": 463.683,
-              "lower95Ppm": 462.53,
-              "upper95Ppm": 464.835,
-              "predictionHalfWidth95Ppm": 1.153,
+              "predictedPpm": 463.64,
+              "lower95Ppm": 462.479,
+              "upper95Ppm": 464.8,
+              "predictionHalfWidth95Ppm": 1.16,
               "type": "SCENARIO_OLS_PROJECTION"
             },
             {
               "year": 2045,
-              "predictedPpm": 476.375,
-              "lower95Ppm": 475.136,
-              "upper95Ppm": 477.614,
-              "predictionHalfWidth95Ppm": 1.239,
+              "predictedPpm": 476.322,
+              "lower95Ppm": 475.075,
+              "upper95Ppm": 477.57,
+              "predictionHalfWidth95Ppm": 1.247,
               "type": "SCENARIO_OLS_PROJECTION"
             },
             {
               "year": 2050,
-              "predictedPpm": 489.068,
-              "lower95Ppm": 487.729,
-              "upper95Ppm": 490.406,
-              "predictionHalfWidth95Ppm": 1.339,
+              "predictedPpm": 489.005,
+              "lower95Ppm": 487.658,
+              "upper95Ppm": 490.352,
+              "predictionHalfWidth95Ppm": 1.347,
               "type": "SCENARIO_OLS_PROJECTION"
             }
           ]
@@ -546,7 +546,7 @@
           "organisation": "GAIA SENSEWARE / statistics layer",
           "title": "GOSAT欠測セルの空間k近傍IDW補完",
           "url": "./scripts/statistics.mjs",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2010-03–2025-12",
           "unit": "approx. ppm XCO₂",
           "resolution": "2.5°格子 / k=8 / 距離指数p=2",
@@ -251038,8 +251038,8 @@
           {
             "year": 1975,
             "month": 12,
-            "averagePpm": 330.76,
-            "deseasonalizedPpm": 331.73
+            "averagePpm": 330.77,
+            "deseasonalizedPpm": 331.74
           },
           {
             "year": 1976,
@@ -251543,7 +251543,7 @@
             "year": 1982,
             "month": 12,
             "averagePpm": 340.78,
-            "deseasonalizedPpm": 341.71
+            "deseasonalizedPpm": 341.7
           },
           {
             "year": 1983,
@@ -252449,7 +252449,7 @@
             "year": 1995,
             "month": 7,
             "averagePpm": 361.78,
-            "deseasonalizedPpm": 361.11
+            "deseasonalizedPpm": 361.1
           },
           {
             "year": 1995,
@@ -254429,61 +254429,61 @@
             "year": 2023,
             "month": 1,
             "averagePpm": 419.47,
-            "deseasonalizedPpm": 419.18
+            "deseasonalizedPpm": 419.19
           },
           {
             "year": 2023,
             "month": 2,
             "averagePpm": 420.31,
-            "deseasonalizedPpm": 419.36
+            "deseasonalizedPpm": 419.35
           },
           {
             "year": 2023,
             "month": 3,
             "averagePpm": 421,
-            "deseasonalizedPpm": 419.55
+            "deseasonalizedPpm": 419.54
           },
           {
             "year": 2023,
             "month": 4,
             "averagePpm": 423.3,
-            "deseasonalizedPpm": 420.79
+            "deseasonalizedPpm": 420.8
           },
           {
             "year": 2023,
             "month": 5,
             "averagePpm": 424.01,
-            "deseasonalizedPpm": 420.76
+            "deseasonalizedPpm": 420.71
           },
           {
             "year": 2023,
             "month": 6,
             "averagePpm": 423.68,
-            "deseasonalizedPpm": 421.3
+            "deseasonalizedPpm": 421.28
           },
           {
             "year": 2023,
             "month": 7,
             "averagePpm": 421.83,
-            "deseasonalizedPpm": 421.45
+            "deseasonalizedPpm": 421.54
           },
           {
             "year": 2023,
             "month": 8,
             "averagePpm": 419.68,
-            "deseasonalizedPpm": 421.55
+            "deseasonalizedPpm": 421.59
           },
           {
             "year": 2023,
             "month": 9,
             "averagePpm": 418.5,
-            "deseasonalizedPpm": 421.91
+            "deseasonalizedPpm": 421.88
           },
           {
             "year": 2023,
             "month": 10,
             "averagePpm": 418.82,
-            "deseasonalizedPpm": 422.05
+            "deseasonalizedPpm": 422.06
           },
           {
             "year": 2023,
@@ -254495,67 +254495,67 @@
             "year": 2023,
             "month": 12,
             "averagePpm": 421.86,
-            "deseasonalizedPpm": 422.6
+            "deseasonalizedPpm": 422.58
           },
           {
             "year": 2024,
             "month": 1,
             "averagePpm": 422.8,
-            "deseasonalizedPpm": 422.51
+            "deseasonalizedPpm": 422.52
           },
           {
             "year": 2024,
             "month": 2,
             "averagePpm": 424.55,
-            "deseasonalizedPpm": 423.6
+            "deseasonalizedPpm": 423.59
           },
           {
             "year": 2024,
             "month": 3,
             "averagePpm": 425.38,
-            "deseasonalizedPpm": 423.94
+            "deseasonalizedPpm": 423.93
           },
           {
             "year": 2024,
             "month": 4,
             "averagePpm": 426.51,
-            "deseasonalizedPpm": 424
+            "deseasonalizedPpm": 424.02
           },
           {
             "year": 2024,
             "month": 5,
             "averagePpm": 426.9,
-            "deseasonalizedPpm": 423.65
+            "deseasonalizedPpm": 423.6
           },
           {
             "year": 2024,
             "month": 6,
             "averagePpm": 426.91,
-            "deseasonalizedPpm": 424.54
+            "deseasonalizedPpm": 424.51
           },
           {
             "year": 2024,
             "month": 7,
             "averagePpm": 425.55,
-            "deseasonalizedPpm": 425.17
+            "deseasonalizedPpm": 425.26
           },
           {
             "year": 2024,
             "month": 8,
             "averagePpm": 422.99,
-            "deseasonalizedPpm": 424.86
+            "deseasonalizedPpm": 424.9
           },
           {
             "year": 2024,
             "month": 9,
             "averagePpm": 422.03,
-            "deseasonalizedPpm": 425.44
+            "deseasonalizedPpm": 425.41
           },
           {
             "year": 2024,
             "month": 10,
             "averagePpm": 422.38,
-            "deseasonalizedPpm": 425.61
+            "deseasonalizedPpm": 425.62
           },
           {
             "year": 2024,
@@ -254567,67 +254567,67 @@
             "year": 2024,
             "month": 12,
             "averagePpm": 425.4,
-            "deseasonalizedPpm": 426.15
+            "deseasonalizedPpm": 426.13
           },
           {
             "year": 2025,
             "month": 1,
             "averagePpm": 426.65,
-            "deseasonalizedPpm": 426.36
+            "deseasonalizedPpm": 426.37
           },
           {
             "year": 2025,
             "month": 2,
             "averagePpm": 427.09,
-            "deseasonalizedPpm": 426.14
+            "deseasonalizedPpm": 426.12
           },
           {
             "year": 2025,
             "month": 3,
             "averagePpm": 428.15,
-            "deseasonalizedPpm": 426.7
+            "deseasonalizedPpm": 426.69
           },
           {
             "year": 2025,
             "month": 4,
             "averagePpm": 429.64,
-            "deseasonalizedPpm": 427.13
+            "deseasonalizedPpm": 427.14
           },
           {
             "year": 2025,
             "month": 5,
             "averagePpm": 430.51,
-            "deseasonalizedPpm": 427.26
+            "deseasonalizedPpm": 427.21
           },
           {
             "year": 2025,
             "month": 6,
             "averagePpm": 429.61,
-            "deseasonalizedPpm": 427.23
+            "deseasonalizedPpm": 427.21
           },
           {
             "year": 2025,
             "month": 7,
             "averagePpm": 427.87,
-            "deseasonalizedPpm": 427.49
+            "deseasonalizedPpm": 427.58
           },
           {
             "year": 2025,
             "month": 8,
             "averagePpm": 425.48,
-            "deseasonalizedPpm": 427.35
+            "deseasonalizedPpm": 427.4
           },
           {
             "year": 2025,
             "month": 9,
             "averagePpm": 424.37,
-            "deseasonalizedPpm": 427.78
+            "deseasonalizedPpm": 427.75
           },
           {
             "year": 2025,
             "month": 10,
             "averagePpm": 424.87,
-            "deseasonalizedPpm": 428.1
+            "deseasonalizedPpm": 428.11
           },
           {
             "year": 2025,
@@ -254639,49 +254639,55 @@
             "year": 2025,
             "month": 12,
             "averagePpm": 427.49,
-            "deseasonalizedPpm": 428.23
+            "deseasonalizedPpm": 428.21
           },
           {
             "year": 2026,
             "month": 1,
             "averagePpm": 428.62,
-            "deseasonalizedPpm": 428.33
+            "deseasonalizedPpm": 428.34
           },
           {
             "year": 2026,
             "month": 2,
             "averagePpm": 429.35,
-            "deseasonalizedPpm": 428.4
+            "deseasonalizedPpm": 428.39
           },
           {
             "year": 2026,
             "month": 3,
             "averagePpm": 430.15,
-            "deseasonalizedPpm": 428.7
+            "deseasonalizedPpm": 428.69
           },
           {
             "year": 2026,
             "month": 4,
             "averagePpm": 431.12,
-            "deseasonalizedPpm": 428.61
+            "deseasonalizedPpm": 428.62
           },
           {
             "year": 2026,
             "month": 5,
             "averagePpm": 432.34,
-            "deseasonalizedPpm": 429.1
+            "deseasonalizedPpm": 429.05
           },
           {
             "year": 2026,
             "month": 6,
             "averagePpm": 431.44,
-            "deseasonalizedPpm": 429.06
+            "deseasonalizedPpm": 429.04
+          },
+          {
+            "year": 2026,
+            "month": 7,
+            "averagePpm": 429.12,
+            "deseasonalizedPpm": 428.83
           }
         ],
         "temperature": [
           {
             "year": 1880,
-            "anomalyC": -0.18
+            "anomalyC": -0.17
           },
           {
             "year": 1881,
@@ -254693,7 +254699,7 @@
           },
           {
             "year": 1883,
-            "anomalyC": -0.18
+            "anomalyC": -0.17
           },
           {
             "year": 1884,
@@ -254701,7 +254707,7 @@
           },
           {
             "year": 1885,
-            "anomalyC": -0.34
+            "anomalyC": -0.33
           },
           {
             "year": 1886,
@@ -254725,7 +254731,7 @@
           },
           {
             "year": 1891,
-            "anomalyC": -0.23
+            "anomalyC": -0.22
           },
           {
             "year": 1892,
@@ -254849,11 +254855,11 @@
           },
           {
             "year": 1922,
-            "anomalyC": -0.29
+            "anomalyC": -0.28
           },
           {
             "year": 1923,
-            "anomalyC": -0.27
+            "anomalyC": -0.26
           },
           {
             "year": 1924,
@@ -254885,7 +254891,7 @@
           },
           {
             "year": 1931,
-            "anomalyC": -0.1
+            "anomalyC": -0.09
           },
           {
             "year": 1932,
@@ -255081,7 +255087,7 @@
           },
           {
             "year": 1980,
-            "anomalyC": 0.25
+            "anomalyC": 0.26
           },
           {
             "year": 1981,
@@ -255125,7 +255131,7 @@
           },
           {
             "year": 1991,
-            "anomalyC": 0.41
+            "anomalyC": 0.4
           },
           {
             "year": 1992,
@@ -255173,7 +255179,7 @@
           },
           {
             "year": 2003,
-            "anomalyC": 0.61
+            "anomalyC": 0.62
           },
           {
             "year": 2004,
@@ -255201,7 +255207,7 @@
           },
           {
             "year": 2010,
-            "anomalyC": 0.72
+            "anomalyC": 0.73
           },
           {
             "year": 2011,
@@ -255229,7 +255235,7 @@
           },
           {
             "year": 2017,
-            "anomalyC": 0.91
+            "anomalyC": 0.92
           },
           {
             "year": 2018,
@@ -255622,13 +255628,13 @@
           "equation": "y_hat(t) = y_bar + beta_1 * (t - t_bar)",
           "response": "NOAA Mauna Loa monthly deseasonalized CO2",
           "trainingMonths": 120,
-          "trainingPeriod": "2016-07–2026-06",
-          "referenceYear": 2021.458333,
-          "levelAtReferencePpm": 416.614083,
-          "slopePpmYear": 2.538523,
+          "trainingPeriod": "2016-08–2026-07",
+          "referenceYear": 2021.541667,
+          "levelAtReferencePpm": 416.818917,
+          "slopePpmYear": 2.536558,
           "sxx": 999.930556,
-          "residualStandardErrorPpm": 0.500713,
-          "rSquared": 0.99543,
+          "residualStandardErrorPpm": 0.504551,
+          "rSquared": 0.995353,
           "tCritical95": 1.98,
           "intervalType": "95% prediction interval for a future monthly observation under the unchanged linear model"
         }
@@ -255676,7 +255682,7 @@
         "title": "循環を知る",
         "en": "READ THE CYCLES"
       },
-      "question": "この海流が同じ速さで続いたら、14日後にどこまで進むでしょう。",
+      "question": "色付きの点を一つ選び、同じ速さと向きが14日続いた場合の移動距離を確かめましょう。",
       "datasets": [
         {
           "id": "oscar",
@@ -255684,7 +255690,7 @@
           "organisation": "NASA/JPL PO.DAAC",
           "title": "OSCAR near-surface ocean currents",
           "url": "https://podaac.jpl.nasa.gov/dataset/oscar_l4_oc_nrt_v2.0",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "1993–present",
           "unit": "m/s",
           "resolution": "約1/3°・5日平均",
@@ -255704,7 +255710,7 @@
           "organisation": "NOAA CoastWatch",
           "title": "Blended NRT surface currents",
           "url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwBLENDEDNRTcurrentsDaily.csv?u_current%5B3345%5D%5B120:120:600%5D%5B0:240:1200%5D,v_current%5B3345%5D%5B120:120:600%5D%5B0:240:1200%5D",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2026-07-30T00:00:00Z",
           "unit": "m/s",
           "resolution": "0.25°原データを全球30°×60°、日本周辺4°へ間引き",
@@ -255789,7 +255795,7 @@
           "organisation": "GAIA SENSEWARE",
           "title": "0–14 day constant-vector local transport",
           "url": "./scripts/build-gaia-data.mjs",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2026-07-30T00:00:00Z + 0–14 days",
           "unit": "km",
           "resolution": "3-hour display steps / source-vector locations",
@@ -255884,7 +255890,7 @@
           "organisation": "NASA POWER",
           "title": "10 m wind climatology",
           "url": "https://power.larc.nasa.gov/api/temporal/climatology/point",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "Climatology",
           "unit": "m/s, degree",
           "resolution": "選択31地点・年平均",
@@ -257036,7 +257042,7 @@
         "title": "循環を知る",
         "en": "READ THE CYCLES"
       },
-      "question": "森林の分布と雨の量には、どんな重なりがあるでしょう。",
+      "question": "大きな水色円で示す降水量と、緑の森林分布はどこで重なるでしょう。",
       "datasets": [
         {
           "id": "nasa-modis-land-cover",
@@ -257044,7 +257050,7 @@
           "organisation": "NASA GIBS / MODIS",
           "title": "MCD12Q1 IGBP Land Cover Type",
           "url": "https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/MODIS_Combined_L3_IGBP_Land_Cover_Type_Annual.json",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2023 annual",
           "unit": "IGBP land-cover class",
           "resolution": "500 m source / 1024×1024 Web Mercator display snapshot",
@@ -257065,12 +257071,12 @@
           "organisation": "NASA POWER",
           "title": "Precipitation climatology / global stratified sample",
           "url": "https://power.larc.nasa.gov/api/temporal/climatology/point",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "Climatology",
           "unit": "mm/day",
           "resolution": "選択31地点・年平均",
-          "transformation": "世界31地点の降水量を、円の大きさと上昇する粒子の多さへ変えました。",
-          "caveat": "世界全体を埋めた地図ではなく、選んだ31地点の値です。森林との重なりだけで、原因と結果を決めることはできません。",
+          "transformation": "世界31代表地点の降水量を、最大直径約108pxの水色円へ変換しました。直径が大きいほど雨が多く、雨の多い地点は円内にもmm/dayを表示します。",
+          "caveat": "円のない場所にも雨は降ります。この地図は31代表地点だけで、地点間の補間、相関係数の計算、因果関係の判定はしていません。",
           "preview": [
             {
               "name": "Canada",
@@ -257593,7 +257599,7 @@
         "title": "循環を知る",
         "en": "READ THE CYCLES"
       },
-      "question": "花と虫の関係は、どのような記録として残っているでしょう。",
+      "question": "観察記録の点は生息分布と言えるでしょうか。場所を持たない花との関係網からは、何が見えるでしょう。",
       "datasets": [
         {
           "id": "globi",
@@ -257601,12 +257607,12 @@
           "organisation": "Global Biotic Interactions",
           "title": "Documented pollination interactions",
           "url": "https://api.globalbioticinteractions.org/interaction.csv?sourceTaxon=Apis%20mellifera&interactionType=pollinates&limit=24",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "literature aggregation",
           "unit": "interaction records",
           "resolution": "文献・標本単位",
-          "transformation": "文献で確認された花と送粉者の関係を示します。場所の記録がないため、GBIFの観察地点へは結びません。",
-          "caveat": "関係が記録されたことは分かりますが、関係の強さや頻度、その場所で起きたかどうかまでは分かりません。",
+          "transformation": "場所を持たない花との関係を、太平洋上の非地理ネットワークとして表示します。枝の位置・長さは場所・頻度・強さを表しません。",
+          "caveat": "関係が記録されたことは分かりますが、頻度、強さ、発生場所は分かりません。GBIFの観察地点へは結びません。",
           "preview": [
             {
               "sourceTaxon": "Apis mellifera",
@@ -257696,12 +257702,12 @@
           "organisation": "GBIF",
           "title": "Apis mellifera occurrences / global stratified sample",
           "url": "https://api.gbif.org/v1/occurrence/search",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "latest API snapshot",
           "unit": "occurrence records",
           "resolution": "最大2記録 × 31選択国",
-          "transformation": "世界の偏りを抑えるため、選んだ31か国から、位置が確かな新しい記録を最大2件ずつ表示します。",
-          "caveat": "展示用に選んだ一部の記録です。点の多さは生息数を表さず、点がない場所にミツバチがいないという意味でもありません。",
+          "transformation": "観察点、各国最大2件という標本制約、花との非地理関係網の3段階で表示します。",
+          "caveat": "展示用に選んだ一部の記録です。点の多さは生息数や観察努力を表さず、点がない場所にミツバチがいないという意味でもありません。",
           "preview": [
             {
               "key": 5938121181,
@@ -257973,14 +257979,6 @@
           {
             "sourceTaxon": "Apis mellifera",
             "interaction": "pollinates",
-            "targetTaxon": "Abundance\"",
-            "latitude": null,
-            "longitude": null,
-            "study": null
-          },
-          {
-            "sourceTaxon": "Apis mellifera",
-            "interaction": "pollinates",
             "targetTaxon": "Tourneortia argentea",
             "latitude": null,
             "longitude": null,
@@ -258189,22 +258187,22 @@
             "sampling": "two latest coordinate records per selected country"
           },
           {
-            "key": 5198499065,
+            "key": 6481146382,
             "species": "Apis mellifera",
-            "eventDate": "2025-06-13T11:16:27Z",
-            "lat": 64.136948,
-            "lon": -20.312019,
+            "eventDate": "2026-07-28T13:55:40Z",
+            "lat": 64.020339,
+            "lon": -16.979445,
             "country": "Iceland",
             "countryCode": "IS",
             "basisOfRecord": "HUMAN_OBSERVATION",
             "sampling": "two latest coordinate records per selected country"
           },
           {
-            "key": 5935394693,
+            "key": 6480224657,
             "species": "Apis mellifera",
-            "eventDate": "2025-06-26T11:38Z",
-            "lat": 64.326631,
-            "lon": -20.281528,
+            "eventDate": "2026-08-04T07:27Z",
+            "lat": 64.133583,
+            "lon": -21.74871,
             "country": "Iceland",
             "countryCode": "IS",
             "basisOfRecord": "HUMAN_OBSERVATION",
@@ -258596,11 +258594,11 @@
             "sampling": "two latest coordinate records per selected country"
           },
           {
-            "key": 5858378208,
+            "key": 6479226268,
             "species": "Apis mellifera",
-            "eventDate": "2025-01-12T18:19Z",
-            "lat": -8.45724,
-            "lon": 115.262987,
+            "eventDate": "2026-07-29T07:10:15",
+            "lat": -6.912326,
+            "lon": 107.615034,
             "country": "Indonesia",
             "countryCode": "ID",
             "basisOfRecord": "HUMAN_OBSERVATION",
@@ -258713,12 +258711,12 @@
           "organisation": "United Nations Statistics Division",
           "title": "SDG 12.5.1 / municipal waste recycled",
           "url": "https://unstats.un.org/SDGAPI/v1/sdg/Series/Data?seriesCode=EN_MWT_RCYR",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2012–2022",
           "unit": "% municipal waste recycled",
           "resolution": "17 country values / latest available year",
-          "transformation": "選択31か国から最新の非欠測値を取り、国代表点へ配置。円の大きさを再資源化率へ対応",
-          "caveat": "COUNTRY VALUE。国ごとに報告年・制度・廃棄物定義が異なるため、厳密な順位表には使わない。",
+          "transformation": "選択31か国から最新の非欠測値を取り、国代表点へ配置。同じ直径の円グラフで緑を再資源化率、橙をそれ以外の割合として表示",
+          "caveat": "COUNTRY VALUE。国ごとに報告年・制度・廃棄物定義が異なるため、厳密な順位表には使わない。橙の内訳を焼却・埋立などへ分解する資料ではない。",
           "preview": [
             {
               "id": "canada",
@@ -258878,11 +258876,11 @@
           "organisation": "Audience / local browser",
           "title": "再資源化率の仮想経路",
           "url": "about:local",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "current session",
           "unit": "%",
           "resolution": "slider input / selected country",
-          "transformation": "観客がスライダーを動かした分だけ、外側の破線を動かします。内側の公式値は変えません。",
+          "transformation": "観客がスライダーを動かした分だけ、選択国の外周リングを動かします。内側の現在値の円グラフは変えません。",
           "caveat": "公式統計でも未来予測でもない、観客がつくる『もしも』です。焼却や埋立の割合も推測していません。",
           "preview": [
             {
@@ -258898,7 +258896,7 @@
           "organisation": "GAIA SENSEWARE / statistics layer",
           "title": "UN SDG欠測国の地理的5近傍中央値補完",
           "url": "./scripts/statistics.mjs",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "同梱スナップショット時点",
           "unit": "% municipal waste recycled",
           "resolution": "14 imputed / 17 observed countries",
@@ -259974,7 +259972,7 @@
           "organisation": "World Bank / European Commission JRC EDGAR",
           "title": "Total GHG excluding LULUCF (AR5)",
           "url": "https://data.worldbank.org/indicator/EN.GHG.ALL.MT.CE.AR5",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2024–2024",
           "unit": "Mt CO₂e",
           "resolution": "31 country values at representative coordinates",
@@ -260109,12 +260107,12 @@
           "organisation": "NASA GIBS",
           "title": "VIIRS Night Lights / Black Marble",
           "url": "https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/VIIRS_Night_Lights.json",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2016 annual",
           "unit": "rendered radiance",
           "resolution": "1024×1024 Web Mercator snapshot",
-          "transformation": "公式GIBS WMSの全球画像を白い可視面として同梱表示。長押し時だけ透明化",
-          "caveat": "夜間光は排出量そのものではない。画像は観測放射輝度の表示用レンダリングで数値解析には使わない。",
+          "transformation": "公式GIBS WMSの全球画像をWeb Mercatorから地理投影へ変換し、画素位置を保った白い発光面として表示。視認性のため発光ゲインを加え、長押し後の6秒間だけ透明化",
+          "caveat": "夜間光は排出量そのものではない。明るさの強調は表示だけで、排出量への変換や数値解析には使わない。",
           "preview": [
             {
               "layer": "VIIRS_Night_Lights",
@@ -260902,7 +260900,7 @@
         "title": "人間の影響を見る",
         "en": "SEE HUMAN IMPACT"
       },
-      "question": "地震の波は各地へいつ届き、どれくらいの揺れが記録されたでしょう。",
+      "question": "世界のM7.5以上は、年ごとにどこで起き、波の重なりはどう変わるでしょう。",
       "datasets": [
         {
           "id": "jma-shindo",
@@ -260910,7 +260908,7 @@
           "organisation": "気象庁",
           "title": "震度データベース検索",
           "url": "https://www.data.jma.go.jp/eqdb/data/shindo/",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2011–2024 representative events",
           "unit": "JMA seismic intensity",
           "resolution": "観測点",
@@ -262908,12 +262906,12 @@
           "organisation": "USGS",
           "title": "FDSN Event Web Service / global M7.5+",
           "url": "https://earthquake.usgs.gov/fdsnws/event/1/query",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2000–snapshot date",
           "unit": "magnitude, km",
-          "resolution": "142 events",
-          "transformation": "M7.5以上の全142震源を全球表示し、年代から均等抽出した24件だけを48秒で案内",
-          "caveat": "Mと震度は別の尺度。USGSイベントに日本の震度を割り当てない。P=7 km/s、S=4 km/sはJMA詳細記録側の均質地殻モデル。",
+          "resolution": "143 events",
+          "transformation": "M7.5以上の全143震源を年度別に分け、一度に一年度だけ世界表示。年度切替時に全震源の表示波を同時開始し、M7.5を最大半径の48%、M9.1を地図幅の約半分へ対応",
+          "caveat": "表示波はMagnitudeを比較する演出で、実際の揺れの到達範囲ではない。Mと震度は別の尺度。USGSイベントに日本の震度を割り当てない。P=7 km/s、S=4 km/sは別層のJMA詳細記録だけに使う。",
           "preview": [
             {
               "id": "usp0009qb4",
@@ -266417,13 +266415,23 @@
           },
           {
             "id": "us6000t7zp",
-            "occurredAt": "2026-06-24T22:05:03.992Z",
-            "name": "17 km W of Catia La Mar, Venezuela",
+            "occurredAt": "2026-06-24T22:05:04.012Z",
+            "name": "20 km W of Catia La Mar, Venezuela",
             "magnitude": 7.5,
-            "longitude": -67.1935,
-            "latitude": 10.6221,
+            "longitude": -67.2167,
+            "latitude": 10.6054,
             "depthKm": 10,
             "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000t7zp"
+          },
+          {
+            "id": "us6000tkt2",
+            "occurredAt": "2026-08-14T21:58:21.564Z",
+            "name": "68 km NNW of Ende, Indonesia",
+            "magnitude": 7.7,
+            "longitude": 121.3517,
+            "latitude": -8.3101,
+            "depthKm": 10,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tkt2"
           }
         ],
         "featuredEvents": [
@@ -266458,14 +266466,14 @@
             "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000ar78"
           },
           {
-            "id": "usp000be54",
-            "occurredAt": "2002-10-10T10:50:20.570Z",
-            "name": "102 km SSE of Manokwari, Indonesia",
-            "magnitude": 7.6,
-            "longitude": 134.297,
-            "latitude": -1.757,
-            "depthKm": 10,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000be54"
+            "id": "ak002e435qpj",
+            "occurredAt": "2002-11-03T22:12:41.518Z",
+            "name": "2002 Denali Fault, Alaska Earthquake",
+            "magnitude": 7.9,
+            "longitude": -147.4529,
+            "latitude": 63.5141,
+            "depthKm": 4.2,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/ak002e435qpj"
           },
           {
             "id": "usp000d85g",
@@ -266518,34 +266526,34 @@
             "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000gbc0"
           },
           {
-            "id": "usp000h237",
-            "occurredAt": "2009-09-30T10:16:09.250Z",
-            "name": "30 km WSW of Pariaman, Indonesia",
-            "magnitude": 7.6,
-            "longitude": 99.867,
-            "latitude": -0.72,
-            "depthKm": 81,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000h237"
+            "id": "usp000h2g9",
+            "occurredAt": "2009-10-07T22:03:14.470Z",
+            "name": "148 km NW of Sola, Vanuatu",
+            "magnitude": 7.7,
+            "longitude": 166.51,
+            "latitude": -13.006,
+            "depthKm": 45,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000h2g9"
           },
           {
-            "id": "usp000hgmh",
-            "occurredAt": "2010-07-23T22:51:11.840Z",
-            "name": "61 km W of Bantogon, Philippines",
-            "magnitude": 7.6,
-            "longitude": 123.48,
-            "latitude": 6.497,
-            "depthKm": 578,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000hgmh"
+            "id": "usp000hgmq",
+            "occurredAt": "2010-07-23T23:15:10.190Z",
+            "name": "72 km S of Panubigan, Philippines",
+            "magnitude": 7.5,
+            "longitude": 123.259,
+            "latitude": 6.776,
+            "depthKm": 640.6,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000hgmq"
           },
           {
-            "id": "usp000j48h",
-            "occurredAt": "2011-07-06T19:03:18.260Z",
-            "name": "Kermadec Islands region",
-            "magnitude": 7.6,
-            "longitude": -176.34,
-            "latitude": -29.539,
-            "depthKm": 17,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000j48h"
+            "id": "official20120411083836720_20",
+            "occurredAt": "2012-04-11T08:38:36.720Z",
+            "name": "2012 Wharton Basin Earthquake",
+            "magnitude": 8.6,
+            "longitude": 93.063,
+            "latitude": 2.327,
+            "depthKm": 20,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/official20120411083836720_20"
           },
           {
             "id": "ak0138esnzr",
@@ -266578,54 +266586,54 @@
             "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us20002926"
           },
           {
-            "id": "us100040x6",
-            "occurredAt": "2015-11-24T22:50:54.370Z",
-            "name": "185 km WNW of Iñapari, Peru",
+            "id": "us10004u1y",
+            "occurredAt": "2016-03-02T12:49:48.110Z",
+            "name": "southwest of Sumatra, Indonesia",
+            "magnitude": 7.8,
+            "longitude": 94.3299,
+            "latitude": -4.9521,
+            "depthKm": 24,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us10004u1y"
+          },
+          {
+            "id": "us10007mn3",
+            "occurredAt": "2016-12-25T14:22:27.010Z",
+            "name": "41 km SW of Quellón, Chile",
             "magnitude": 7.6,
-            "longitude": -71.0184,
-            "latitude": -10.0598,
-            "depthKm": 620.56,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us100040x6"
+            "longitude": -73.9413,
+            "latitude": -43.4064,
+            "depthKm": 38,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us10007mn3"
           },
           {
-            "id": "us200081v8",
-            "occurredAt": "2016-12-17T10:51:10.500Z",
-            "name": "140 km E of Kokopo, Papua New Guinea",
-            "magnitude": 7.9,
-            "longitude": 153.5216,
-            "latitude": -4.5049,
-            "depthKm": 94.54,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us200081v8"
-          },
-          {
-            "id": "us2000cmy3",
-            "occurredAt": "2018-01-23T09:31:40.890Z",
-            "name": "261 km SE of Chiniak, Alaska",
-            "magnitude": 7.9,
-            "longitude": -149.1658,
-            "latitude": 56.0039,
-            "depthKm": 14.06,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us2000cmy3"
-          },
-          {
-            "id": "us2000jlfv",
-            "occurredAt": "2019-02-22T10:17:23.770Z",
-            "name": "115 km ESE of Palora, Ecuador",
+            "id": "us2000d7q6",
+            "occurredAt": "2018-02-25T17:44:44.140Z",
+            "name": "32 km SW of Tari, Papua New Guinea",
             "magnitude": 7.5,
-            "longitude": -77.0505,
-            "latitude": -2.1862,
-            "depthKm": 145,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us2000jlfv"
+            "longitude": 142.7536,
+            "latitude": -6.0699,
+            "depthKm": 25.21,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us2000d7q6"
           },
           {
-            "id": "us6000c9hg",
-            "occurredAt": "2020-10-19T20:54:38.950Z",
-            "name": "2020 Sand Point, Alaska Earthquake",
+            "id": "us70003kyy",
+            "occurredAt": "2019-05-14T12:58:25.939Z",
+            "name": "48 km NE of Kokopo, Papua New Guinea",
             "magnitude": 7.6,
-            "longitude": -159.6258,
-            "latitude": 54.602,
-            "depthKm": 28.37,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000c9hg"
+            "longitude": 152.5967,
+            "latitude": -4.051,
+            "depthKm": 10,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us70003kyy"
+          },
+          {
+            "id": "us6000dg77",
+            "occurredAt": "2021-02-10T13:19:55.530Z",
+            "name": "southeast of the Loyalty Islands",
+            "magnitude": 7.7,
+            "longitude": 171.6566,
+            "latitude": -23.0511,
+            "depthKm": 10,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000dg77"
           },
           {
             "id": "us6000iitd",
@@ -266638,34 +266646,34 @@
             "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000iitd"
           },
           {
-            "id": "us6000kd0n",
-            "occurredAt": "2023-05-19T02:57:03.172Z",
-            "name": "southeast of the Loyalty Islands",
+            "id": "us7000lff4",
+            "occurredAt": "2023-12-02T14:37:04.454Z",
+            "name": "19 km E of Gamut, Philippines",
+            "magnitude": 7.6,
+            "longitude": 126.4161,
+            "latitude": 8.5266,
+            "depthKm": 40,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000lff4"
+          },
+          {
+            "id": "us7000qx2g",
+            "occurredAt": "2025-09-18T18:58:14.939Z",
+            "name": "140 km E of Petropavlovsk-Kamchatsky, Russia",
+            "magnitude": 7.8,
+            "longitude": 160.7206,
+            "latitude": 53.1426,
+            "depthKm": 27,
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000qx2g"
+          },
+          {
+            "id": "us6000tkt2",
+            "occurredAt": "2026-08-14T21:58:21.564Z",
+            "name": "68 km NNW of Ende, Indonesia",
             "magnitude": 7.7,
-            "longitude": 170.7423,
-            "latitude": -23.2063,
-            "depthKm": 18.053,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000kd0n"
-          },
-          {
-            "id": "us6000r2xq",
-            "occurredAt": "2025-08-22T02:16:18.246Z",
-            "name": "2025 Southern Drake Passage Earthquake",
-            "magnitude": 7.5,
-            "longitude": -61.9221,
-            "latitude": -60.3187,
+            "longitude": 121.3517,
+            "latitude": -8.3101,
             "depthKm": 10,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000r2xq"
-          },
-          {
-            "id": "us6000t7zp",
-            "occurredAt": "2026-06-24T22:05:03.992Z",
-            "name": "17 km W of Catia La Mar, Venezuela",
-            "magnitude": 7.5,
-            "longitude": -67.1935,
-            "latitude": 10.6221,
-            "depthKm": 10,
-            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000t7zp"
+            "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tkt2"
           }
         ],
         "pWaveKmS": 7,
@@ -266680,7 +266688,7 @@
         "title": "関係を編み直す",
         "en": "REWEAVE RELATIONSHIPS"
       },
-      "question": "自然、都市、文化の記録を重ねると、暮らす場所はどう見えるでしょう。",
+      "question": "都市で暮らす人が多い国ほど、森林の割合は本当に低いのでしょうか。",
       "datasets": [
         {
           "id": "nasa-modis-ecological-layer",
@@ -266688,17 +266696,152 @@
           "organisation": "NASA GIBS / MODIS",
           "title": "MCD12Q1 IGBP Land Cover Type",
           "url": "https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/MODIS_Combined_L3_IGBP_Land_Cover_Type_Annual.json",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "2023 annual",
           "unit": "IGBP land-cover class",
           "resolution": "500 m source / 1024×1024 display snapshot",
-          "transformation": "森林、草地、都市、水面など、地表の種類を色分けした生態レイヤーとして表示します。",
-          "caveat": "土地の種類だけで、生物多様性や生態系の健康、心の豊かさを測ることはできません。",
+          "transformation": "森林域だけを薄い背景として表示し、国別の相関計算には使いません。",
+          "caveat": "表示PNGは土地被覆の位置を見る背景です。国別森林率や生物多様性の数値ではありません。",
           "preview": [
             {
-              "layer": "ECOLOGICAL",
+              "layer": "ECOLOGICAL CONTEXT",
               "localAsset": "assets/data/modis-land-cover-2023.png",
               "displayed": true
+            }
+          ]
+        },
+        {
+          "id": "worldbank-forest",
+          "kind": "SOURCE",
+          "organisation": "World Bank / FAO",
+          "title": "Forest area (% of land area)",
+          "url": "https://data.worldbank.org/indicator/AG.LND.FRST.ZS",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
+          "period": "latest available by country",
+          "unit": "% of land area",
+          "resolution": "31 paired country values",
+          "transformation": "同じ国の都市人口率と組にし、緑の内側リングと散布図の縦軸へ変換",
+          "caveat": "COUNTRY VALUE。森林の質、生物多様性、都市内の緑地を表さない。国ごとに最新年が異なる。",
+          "preview": [
+            {
+              "id": "argentina",
+              "name": "Argentina",
+              "iso2": "AR",
+              "iso3": "ARG",
+              "m49": "032",
+              "lat": -34,
+              "lon": -64,
+              "country": "Argentina",
+              "year": 2023,
+              "forestPercent": 10.3212951412107
+            },
+            {
+              "id": "australia",
+              "name": "Australia",
+              "iso2": "AU",
+              "iso3": "AUS",
+              "m49": "036",
+              "lat": -25,
+              "lon": 134,
+              "country": "Australia",
+              "year": 2023,
+              "forestPercent": 17.4213145571644
+            },
+            {
+              "id": "bangladesh",
+              "name": "Bangladesh",
+              "iso2": "BD",
+              "iso3": "BGD",
+              "m49": "050",
+              "lat": 24,
+              "lon": 90,
+              "country": "Bangladesh",
+              "year": 2023,
+              "forestPercent": 14.4899215263887
+            },
+            {
+              "id": "brazil",
+              "name": "Brazil",
+              "iso2": "BR",
+              "iso3": "BRA",
+              "m49": "076",
+              "lat": -10,
+              "lon": -55,
+              "country": "Brazil",
+              "year": 2023,
+              "forestPercent": 58.9818729765235
+            },
+            {
+              "id": "canada",
+              "name": "Canada",
+              "iso2": "CA",
+              "iso3": "CAN",
+              "m49": "124",
+              "lat": 55,
+              "lon": -110,
+              "country": "Canada",
+              "year": 2023,
+              "forestPercent": 39.4617117321106
+            },
+            {
+              "id": "chile",
+              "name": "Chile",
+              "iso2": "CL",
+              "iso3": "CHL",
+              "m49": "152",
+              "lat": -33,
+              "lon": -71,
+              "country": "Chile",
+              "year": 2023,
+              "forestPercent": 25.0116461113584
+            },
+            {
+              "id": "china",
+              "name": "China",
+              "iso2": "CN",
+              "iso3": "CHN",
+              "m49": "156",
+              "lat": 35,
+              "lon": 103,
+              "country": "China",
+              "year": 2023,
+              "forestPercent": 24.0319389958256
+            },
+            {
+              "id": "drc",
+              "name": "DR Congo",
+              "iso2": "CD",
+              "iso3": "COD",
+              "m49": "180",
+              "lat": -3,
+              "lon": 23,
+              "country": "Congo, Dem. Rep.",
+              "year": 2023,
+              "forestPercent": 54.1898572594341
+            },
+            {
+              "id": "cuba",
+              "name": "Cuba",
+              "iso2": "CU",
+              "iso3": "CUB",
+              "m49": "192",
+              "lat": 21.5,
+              "lon": -79.5,
+              "country": "Cuba",
+              "year": 2023,
+              "forestPercent": 31.233140655106
+            },
+            {
+              "id": "egypt",
+              "name": "Egypt",
+              "iso2": "EG",
+              "iso3": "EGY",
+              "m49": "818",
+              "lat": 27,
+              "lon": 30,
+              "country": "Egypt, Arab Rep.",
+              "year": 2023,
+              "forestPercent": 0.0451855944547692
             }
           ]
         },
@@ -266708,12 +266851,12 @@
           "organisation": "World Bank / UN Population Division",
           "title": "Urban population (% of total)",
           "url": "https://data.worldbank.org/indicator/SP.URB.TOTL.IN.ZS",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "latest available by country",
-          "unit": "%",
-          "resolution": "31 country values",
-          "transformation": "社会レイヤーとして青い環へ変換",
-          "caveat": "COUNTRY VALUE。社会の豊かさや幸福度を表さない。",
+          "unit": "% of population",
+          "resolution": "31 paired country values",
+          "transformation": "同じ国の森林率と組にし、青の外側リングと散布図の横軸へ変換",
+          "caveat": "COUNTRY VALUE。都市の密度、幸福度、暮らしやすさを表さない。国ごとに最新年が異なる。",
           "preview": [
             {
               "id": "argentina",
@@ -266838,12 +266981,177 @@
           ]
         },
         {
+          "id": "forest-urban-correlation",
+          "kind": "DERIVED",
+          "organisation": "GAIA SENSEWARE",
+          "title": "Paired-country forest × urban comparison",
+          "url": "./scripts/build-gaia-data.mjs",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
+          "period": "latest non-missing value for each indicator",
+          "unit": "Pearson r / percentage-point residual",
+          "resolution": "31 countries with both values",
+          "transformation": "同じ国の二つの割合からPearson相関と単回帰線を計算し、全体傾向と国ごとの外れ方を同時に表示",
+          "caveat": "相関は因果関係ではない。標本は選択国だけで、指標の基準年も一致しない場合がある。",
+          "preview": [
+            {
+              "id": "argentina",
+              "name": "Argentina",
+              "iso2": "AR",
+              "iso3": "ARG",
+              "m49": "032",
+              "lat": -34,
+              "lon": -64,
+              "country": "Argentina",
+              "year": 2025,
+              "urbanPercent": 92.3519221615173,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 10.3212951412107
+            },
+            {
+              "id": "australia",
+              "name": "Australia",
+              "iso2": "AU",
+              "iso3": "AUS",
+              "m49": "036",
+              "lat": -25,
+              "lon": 134,
+              "country": "Australia",
+              "year": 2025,
+              "urbanPercent": 87.7192672666333,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 17.4213145571644
+            },
+            {
+              "id": "bangladesh",
+              "name": "Bangladesh",
+              "iso2": "BD",
+              "iso3": "BGD",
+              "m49": "050",
+              "lat": 24,
+              "lon": 90,
+              "country": "Bangladesh",
+              "year": 2025,
+              "urbanPercent": 33.2395847043975,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 14.4899215263887
+            },
+            {
+              "id": "brazil",
+              "name": "Brazil",
+              "iso2": "BR",
+              "iso3": "BRA",
+              "m49": "076",
+              "lat": -10,
+              "lon": -55,
+              "country": "Brazil",
+              "year": 2025,
+              "urbanPercent": 88.1772996487898,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 58.9818729765235
+            },
+            {
+              "id": "canada",
+              "name": "Canada",
+              "iso2": "CA",
+              "iso3": "CAN",
+              "m49": "124",
+              "lat": 55,
+              "lon": -110,
+              "country": "Canada",
+              "year": 2025,
+              "urbanPercent": 82.8757020253886,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 39.4617117321106
+            },
+            {
+              "id": "chile",
+              "name": "Chile",
+              "iso2": "CL",
+              "iso3": "CHL",
+              "m49": "152",
+              "lat": -33,
+              "lon": -71,
+              "country": "Chile",
+              "year": 2025,
+              "urbanPercent": 89.1772830019223,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 25.0116461113584
+            },
+            {
+              "id": "china",
+              "name": "China",
+              "iso2": "CN",
+              "iso3": "CHN",
+              "m49": "156",
+              "lat": 35,
+              "lon": 103,
+              "country": "China",
+              "year": 2025,
+              "urbanPercent": 66.3429910348272,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 24.0319389958256
+            },
+            {
+              "id": "drc",
+              "name": "DR Congo",
+              "iso2": "CD",
+              "iso3": "COD",
+              "m49": "180",
+              "lat": -3,
+              "lon": 23,
+              "country": "Congo, Dem. Rep.",
+              "year": 2025,
+              "urbanPercent": 45.1135633042151,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 54.1898572594341
+            },
+            {
+              "id": "cuba",
+              "name": "Cuba",
+              "iso2": "CU",
+              "iso3": "CUB",
+              "m49": "192",
+              "lat": 21.5,
+              "lon": -79.5,
+              "country": "Cuba",
+              "year": 2025,
+              "urbanPercent": 77.2270774821152,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 31.233140655106
+            },
+            {
+              "id": "egypt",
+              "name": "Egypt",
+              "iso2": "EG",
+              "iso3": "EGY",
+              "m49": "818",
+              "lat": 27,
+              "lon": 30,
+              "country": "Egypt, Arab Rep.",
+              "year": 2025,
+              "urbanPercent": 42.9043204925248,
+              "urbanYear": 2025,
+              "forestYear": 2023,
+              "forestPercent": 0.0451855944547692
+            }
+          ]
+        },
+        {
           "id": "unesco-whc",
           "kind": "SOURCE",
           "organisation": "UNESCO World Heritage Centre",
           "title": "World Heritage List / global curated sample",
           "url": "https://whc.unesco.org/en/list/",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "current catalogue reference",
           "unit": "site",
           "resolution": "24 curated sites across world regions",
@@ -266925,6 +267233,847 @@
       ],
       "signals": {
         "ecologicalRaster": "./assets/data/modis-land-cover-2023.png",
+        "pairedCountries": [
+          {
+            "id": "argentina",
+            "name": "Argentina",
+            "iso2": "AR",
+            "iso3": "ARG",
+            "m49": "032",
+            "lat": -34,
+            "lon": -64,
+            "country": "Argentina",
+            "year": 2025,
+            "urbanPercent": 92.3519221615173,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 10.3212951412107
+          },
+          {
+            "id": "australia",
+            "name": "Australia",
+            "iso2": "AU",
+            "iso3": "AUS",
+            "m49": "036",
+            "lat": -25,
+            "lon": 134,
+            "country": "Australia",
+            "year": 2025,
+            "urbanPercent": 87.7192672666333,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 17.4213145571644
+          },
+          {
+            "id": "bangladesh",
+            "name": "Bangladesh",
+            "iso2": "BD",
+            "iso3": "BGD",
+            "m49": "050",
+            "lat": 24,
+            "lon": 90,
+            "country": "Bangladesh",
+            "year": 2025,
+            "urbanPercent": 33.2395847043975,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 14.4899215263887
+          },
+          {
+            "id": "brazil",
+            "name": "Brazil",
+            "iso2": "BR",
+            "iso3": "BRA",
+            "m49": "076",
+            "lat": -10,
+            "lon": -55,
+            "country": "Brazil",
+            "year": 2025,
+            "urbanPercent": 88.1772996487898,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 58.9818729765235
+          },
+          {
+            "id": "canada",
+            "name": "Canada",
+            "iso2": "CA",
+            "iso3": "CAN",
+            "m49": "124",
+            "lat": 55,
+            "lon": -110,
+            "country": "Canada",
+            "year": 2025,
+            "urbanPercent": 82.8757020253886,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 39.4617117321106
+          },
+          {
+            "id": "chile",
+            "name": "Chile",
+            "iso2": "CL",
+            "iso3": "CHL",
+            "m49": "152",
+            "lat": -33,
+            "lon": -71,
+            "country": "Chile",
+            "year": 2025,
+            "urbanPercent": 89.1772830019223,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 25.0116461113584
+          },
+          {
+            "id": "china",
+            "name": "China",
+            "iso2": "CN",
+            "iso3": "CHN",
+            "m49": "156",
+            "lat": 35,
+            "lon": 103,
+            "country": "China",
+            "year": 2025,
+            "urbanPercent": 66.3429910348272,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 24.0319389958256
+          },
+          {
+            "id": "drc",
+            "name": "DR Congo",
+            "iso2": "CD",
+            "iso3": "COD",
+            "m49": "180",
+            "lat": -3,
+            "lon": 23,
+            "country": "Congo, Dem. Rep.",
+            "year": 2025,
+            "urbanPercent": 45.1135633042151,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 54.1898572594341
+          },
+          {
+            "id": "cuba",
+            "name": "Cuba",
+            "iso2": "CU",
+            "iso3": "CUB",
+            "m49": "192",
+            "lat": 21.5,
+            "lon": -79.5,
+            "country": "Cuba",
+            "year": 2025,
+            "urbanPercent": 77.2270774821152,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 31.233140655106
+          },
+          {
+            "id": "egypt",
+            "name": "Egypt",
+            "iso2": "EG",
+            "iso3": "EGY",
+            "m49": "818",
+            "lat": 27,
+            "lon": 30,
+            "country": "Egypt, Arab Rep.",
+            "year": 2025,
+            "urbanPercent": 42.9043204925248,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 0.0451855944547692
+          },
+          {
+            "id": "spain",
+            "name": "Spain",
+            "iso2": "ES",
+            "iso3": "ESP",
+            "m49": "724",
+            "lat": 40,
+            "lon": -4,
+            "country": "Spain",
+            "year": 2025,
+            "urbanPercent": 80.5149251039138,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 37.1925889548355
+          },
+          {
+            "id": "uk",
+            "name": "United Kingdom",
+            "iso2": "GB",
+            "iso3": "GBR",
+            "m49": "826",
+            "lat": 54,
+            "lon": -2,
+            "country": "United Kingdom",
+            "year": 2025,
+            "urbanPercent": 83.323608078271,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 13.2907130161617
+          },
+          {
+            "id": "indonesia",
+            "name": "Indonesia",
+            "iso2": "ID",
+            "iso3": "IDN",
+            "m49": "360",
+            "lat": -2,
+            "lon": 118,
+            "country": "Indonesia",
+            "year": 2025,
+            "urbanPercent": 59.3929063969984,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 47.7220336902463
+          },
+          {
+            "id": "india",
+            "name": "India",
+            "iso2": "IN",
+            "iso3": "IND",
+            "m49": "356",
+            "lat": 22,
+            "lon": 79,
+            "country": "India",
+            "year": 2025,
+            "urbanPercent": 35.689155772396,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 24.5390304689576
+          },
+          {
+            "id": "iceland",
+            "name": "Iceland",
+            "iso2": "IS",
+            "iso3": "ISL",
+            "m49": "352",
+            "lat": 65,
+            "lon": -19,
+            "country": "Iceland",
+            "year": 2025,
+            "urbanPercent": 94.2179320191117,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 0.528744421303184
+          },
+          {
+            "id": "japan",
+            "name": "Japan",
+            "iso2": "JP",
+            "iso3": "JPN",
+            "m49": "392",
+            "lat": 36,
+            "lon": 138,
+            "country": "Japan",
+            "year": 2025,
+            "urbanPercent": 92.3001449420786,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 68.3957811364628
+          },
+          {
+            "id": "kenya",
+            "name": "Kenya",
+            "iso2": "KE",
+            "iso3": "KEN",
+            "m49": "404",
+            "lat": 0.5,
+            "lon": 37.5,
+            "country": "Kenya",
+            "year": 2025,
+            "urbanPercent": 32.2121192871745,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 6.21662477880402
+          },
+          {
+            "id": "morocco",
+            "name": "Morocco",
+            "iso2": "MA",
+            "iso3": "MAR",
+            "m49": "504",
+            "lat": 32,
+            "lon": -6,
+            "country": "Morocco",
+            "year": 2025,
+            "urbanPercent": 63.1278612260269,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 12.9371068787811
+          },
+          {
+            "id": "mexico",
+            "name": "Mexico",
+            "iso2": "MX",
+            "iso3": "MEX",
+            "m49": "484",
+            "lat": 23,
+            "lon": -102,
+            "country": "Mexico",
+            "year": 2025,
+            "urbanPercent": 80.0408930629723,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 33.5959176419147
+          },
+          {
+            "id": "mongolia",
+            "name": "Mongolia",
+            "iso2": "MN",
+            "iso3": "MNG",
+            "m49": "496",
+            "lat": 47,
+            "lon": 104,
+            "country": "Mongolia",
+            "year": 2025,
+            "urbanPercent": 71.1450719126123,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 9.09172405879304
+          },
+          {
+            "id": "nigeria",
+            "name": "Nigeria",
+            "iso2": "NG",
+            "iso3": "NGA",
+            "m49": "566",
+            "lat": 9,
+            "lon": 8,
+            "country": "Nigeria",
+            "year": 2025,
+            "urbanPercent": 63.7754180467872,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 23.2078900271199
+          },
+          {
+            "id": "new-zealand",
+            "name": "New Zealand",
+            "iso2": "NZ",
+            "iso3": "NZL",
+            "m49": "554",
+            "lat": -41,
+            "lon": 174,
+            "country": "New Zealand",
+            "year": 2025,
+            "urbanPercent": 83.9978515774731,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 37.7892841137822
+          },
+          {
+            "id": "peru",
+            "name": "Peru",
+            "iso2": "PE",
+            "iso3": "PER",
+            "m49": "604",
+            "lat": -9,
+            "lon": -75,
+            "country": "Peru",
+            "year": 2025,
+            "urbanPercent": 85.5963484845463,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 56.103020234375
+          },
+          {
+            "id": "philippines",
+            "name": "Philippines",
+            "iso2": "PH",
+            "iso3": "PHL",
+            "m49": "608",
+            "lat": 13,
+            "lon": 122,
+            "country": "Philippines",
+            "year": 2025,
+            "urbanPercent": 55.7732907605332,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 24.4600731126539
+          },
+          {
+            "id": "saudi-arabia",
+            "name": "Saudi Arabia",
+            "iso2": "SA",
+            "iso3": "SAU",
+            "m49": "682",
+            "lat": 24,
+            "lon": 45,
+            "country": "Saudi Arabia",
+            "year": 2025,
+            "urbanPercent": 84.6123121062185,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 0.454484134921779
+          },
+          {
+            "id": "senegal",
+            "name": "Senegal",
+            "iso2": "SN",
+            "iso3": "SEN",
+            "m49": "686",
+            "lat": 14.5,
+            "lon": -14.5,
+            "country": "Senegal",
+            "year": 2025,
+            "urbanPercent": 55.7672494455246,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 41.2827091881785
+          },
+          {
+            "id": "sweden",
+            "name": "Sweden",
+            "iso2": "SE",
+            "iso3": "SWE",
+            "m49": "752",
+            "lat": 62,
+            "lon": 15,
+            "country": "Sweden",
+            "year": 2025,
+            "urbanPercent": 89.0778677789555,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 68.7013529108454
+          },
+          {
+            "id": "thailand",
+            "name": "Thailand",
+            "iso2": "TH",
+            "iso3": "THA",
+            "m49": "764",
+            "lat": 15,
+            "lon": 101,
+            "country": "Thailand",
+            "year": 2025,
+            "urbanPercent": 62.7993377136296,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 38.6873886746658
+          },
+          {
+            "id": "turkiye",
+            "name": "Türkiye",
+            "iso2": "TR",
+            "iso3": "TUR",
+            "m49": "792",
+            "lat": 39,
+            "lon": 35,
+            "country": "Turkiye",
+            "year": 2025,
+            "urbanPercent": 89.494060002186,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 29.4795681041539
+          },
+          {
+            "id": "usa",
+            "name": "United States",
+            "iso2": "US",
+            "iso3": "USA",
+            "m49": "840",
+            "lat": 39,
+            "lon": -98,
+            "country": "United States",
+            "year": 2025,
+            "urbanPercent": 80.1921733027869,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 33.8669264120375
+          },
+          {
+            "id": "south-africa",
+            "name": "South Africa",
+            "iso2": "ZA",
+            "iso3": "ZAF",
+            "m49": "710",
+            "lat": -30,
+            "lon": 25,
+            "country": "South Africa",
+            "year": 2025,
+            "urbanPercent": 63.8154011002522,
+            "urbanYear": 2025,
+            "forestYear": 2023,
+            "forestPercent": 13.965072665672
+          }
+        ],
+        "ecological": [
+          {
+            "id": "argentina",
+            "name": "Argentina",
+            "iso2": "AR",
+            "iso3": "ARG",
+            "m49": "032",
+            "lat": -34,
+            "lon": -64,
+            "country": "Argentina",
+            "year": 2023,
+            "forestPercent": 10.3212951412107
+          },
+          {
+            "id": "australia",
+            "name": "Australia",
+            "iso2": "AU",
+            "iso3": "AUS",
+            "m49": "036",
+            "lat": -25,
+            "lon": 134,
+            "country": "Australia",
+            "year": 2023,
+            "forestPercent": 17.4213145571644
+          },
+          {
+            "id": "bangladesh",
+            "name": "Bangladesh",
+            "iso2": "BD",
+            "iso3": "BGD",
+            "m49": "050",
+            "lat": 24,
+            "lon": 90,
+            "country": "Bangladesh",
+            "year": 2023,
+            "forestPercent": 14.4899215263887
+          },
+          {
+            "id": "brazil",
+            "name": "Brazil",
+            "iso2": "BR",
+            "iso3": "BRA",
+            "m49": "076",
+            "lat": -10,
+            "lon": -55,
+            "country": "Brazil",
+            "year": 2023,
+            "forestPercent": 58.9818729765235
+          },
+          {
+            "id": "canada",
+            "name": "Canada",
+            "iso2": "CA",
+            "iso3": "CAN",
+            "m49": "124",
+            "lat": 55,
+            "lon": -110,
+            "country": "Canada",
+            "year": 2023,
+            "forestPercent": 39.4617117321106
+          },
+          {
+            "id": "chile",
+            "name": "Chile",
+            "iso2": "CL",
+            "iso3": "CHL",
+            "m49": "152",
+            "lat": -33,
+            "lon": -71,
+            "country": "Chile",
+            "year": 2023,
+            "forestPercent": 25.0116461113584
+          },
+          {
+            "id": "china",
+            "name": "China",
+            "iso2": "CN",
+            "iso3": "CHN",
+            "m49": "156",
+            "lat": 35,
+            "lon": 103,
+            "country": "China",
+            "year": 2023,
+            "forestPercent": 24.0319389958256
+          },
+          {
+            "id": "drc",
+            "name": "DR Congo",
+            "iso2": "CD",
+            "iso3": "COD",
+            "m49": "180",
+            "lat": -3,
+            "lon": 23,
+            "country": "Congo, Dem. Rep.",
+            "year": 2023,
+            "forestPercent": 54.1898572594341
+          },
+          {
+            "id": "cuba",
+            "name": "Cuba",
+            "iso2": "CU",
+            "iso3": "CUB",
+            "m49": "192",
+            "lat": 21.5,
+            "lon": -79.5,
+            "country": "Cuba",
+            "year": 2023,
+            "forestPercent": 31.233140655106
+          },
+          {
+            "id": "egypt",
+            "name": "Egypt",
+            "iso2": "EG",
+            "iso3": "EGY",
+            "m49": "818",
+            "lat": 27,
+            "lon": 30,
+            "country": "Egypt, Arab Rep.",
+            "year": 2023,
+            "forestPercent": 0.0451855944547692
+          },
+          {
+            "id": "spain",
+            "name": "Spain",
+            "iso2": "ES",
+            "iso3": "ESP",
+            "m49": "724",
+            "lat": 40,
+            "lon": -4,
+            "country": "Spain",
+            "year": 2023,
+            "forestPercent": 37.1925889548355
+          },
+          {
+            "id": "uk",
+            "name": "United Kingdom",
+            "iso2": "GB",
+            "iso3": "GBR",
+            "m49": "826",
+            "lat": 54,
+            "lon": -2,
+            "country": "United Kingdom",
+            "year": 2023,
+            "forestPercent": 13.2907130161617
+          },
+          {
+            "id": "indonesia",
+            "name": "Indonesia",
+            "iso2": "ID",
+            "iso3": "IDN",
+            "m49": "360",
+            "lat": -2,
+            "lon": 118,
+            "country": "Indonesia",
+            "year": 2023,
+            "forestPercent": 47.7220336902463
+          },
+          {
+            "id": "india",
+            "name": "India",
+            "iso2": "IN",
+            "iso3": "IND",
+            "m49": "356",
+            "lat": 22,
+            "lon": 79,
+            "country": "India",
+            "year": 2023,
+            "forestPercent": 24.5390304689576
+          },
+          {
+            "id": "iceland",
+            "name": "Iceland",
+            "iso2": "IS",
+            "iso3": "ISL",
+            "m49": "352",
+            "lat": 65,
+            "lon": -19,
+            "country": "Iceland",
+            "year": 2023,
+            "forestPercent": 0.528744421303184
+          },
+          {
+            "id": "japan",
+            "name": "Japan",
+            "iso2": "JP",
+            "iso3": "JPN",
+            "m49": "392",
+            "lat": 36,
+            "lon": 138,
+            "country": "Japan",
+            "year": 2023,
+            "forestPercent": 68.3957811364628
+          },
+          {
+            "id": "kenya",
+            "name": "Kenya",
+            "iso2": "KE",
+            "iso3": "KEN",
+            "m49": "404",
+            "lat": 0.5,
+            "lon": 37.5,
+            "country": "Kenya",
+            "year": 2023,
+            "forestPercent": 6.21662477880402
+          },
+          {
+            "id": "morocco",
+            "name": "Morocco",
+            "iso2": "MA",
+            "iso3": "MAR",
+            "m49": "504",
+            "lat": 32,
+            "lon": -6,
+            "country": "Morocco",
+            "year": 2023,
+            "forestPercent": 12.9371068787811
+          },
+          {
+            "id": "mexico",
+            "name": "Mexico",
+            "iso2": "MX",
+            "iso3": "MEX",
+            "m49": "484",
+            "lat": 23,
+            "lon": -102,
+            "country": "Mexico",
+            "year": 2023,
+            "forestPercent": 33.5959176419147
+          },
+          {
+            "id": "mongolia",
+            "name": "Mongolia",
+            "iso2": "MN",
+            "iso3": "MNG",
+            "m49": "496",
+            "lat": 47,
+            "lon": 104,
+            "country": "Mongolia",
+            "year": 2023,
+            "forestPercent": 9.09172405879304
+          },
+          {
+            "id": "nigeria",
+            "name": "Nigeria",
+            "iso2": "NG",
+            "iso3": "NGA",
+            "m49": "566",
+            "lat": 9,
+            "lon": 8,
+            "country": "Nigeria",
+            "year": 2023,
+            "forestPercent": 23.2078900271199
+          },
+          {
+            "id": "new-zealand",
+            "name": "New Zealand",
+            "iso2": "NZ",
+            "iso3": "NZL",
+            "m49": "554",
+            "lat": -41,
+            "lon": 174,
+            "country": "New Zealand",
+            "year": 2023,
+            "forestPercent": 37.7892841137822
+          },
+          {
+            "id": "peru",
+            "name": "Peru",
+            "iso2": "PE",
+            "iso3": "PER",
+            "m49": "604",
+            "lat": -9,
+            "lon": -75,
+            "country": "Peru",
+            "year": 2023,
+            "forestPercent": 56.103020234375
+          },
+          {
+            "id": "philippines",
+            "name": "Philippines",
+            "iso2": "PH",
+            "iso3": "PHL",
+            "m49": "608",
+            "lat": 13,
+            "lon": 122,
+            "country": "Philippines",
+            "year": 2023,
+            "forestPercent": 24.4600731126539
+          },
+          {
+            "id": "saudi-arabia",
+            "name": "Saudi Arabia",
+            "iso2": "SA",
+            "iso3": "SAU",
+            "m49": "682",
+            "lat": 24,
+            "lon": 45,
+            "country": "Saudi Arabia",
+            "year": 2023,
+            "forestPercent": 0.454484134921779
+          },
+          {
+            "id": "senegal",
+            "name": "Senegal",
+            "iso2": "SN",
+            "iso3": "SEN",
+            "m49": "686",
+            "lat": 14.5,
+            "lon": -14.5,
+            "country": "Senegal",
+            "year": 2023,
+            "forestPercent": 41.2827091881785
+          },
+          {
+            "id": "sweden",
+            "name": "Sweden",
+            "iso2": "SE",
+            "iso3": "SWE",
+            "m49": "752",
+            "lat": 62,
+            "lon": 15,
+            "country": "Sweden",
+            "year": 2023,
+            "forestPercent": 68.7013529108454
+          },
+          {
+            "id": "thailand",
+            "name": "Thailand",
+            "iso2": "TH",
+            "iso3": "THA",
+            "m49": "764",
+            "lat": 15,
+            "lon": 101,
+            "country": "Thailand",
+            "year": 2023,
+            "forestPercent": 38.6873886746658
+          },
+          {
+            "id": "turkiye",
+            "name": "Türkiye",
+            "iso2": "TR",
+            "iso3": "TUR",
+            "m49": "792",
+            "lat": 39,
+            "lon": 35,
+            "country": "Turkiye",
+            "year": 2023,
+            "forestPercent": 29.4795681041539
+          },
+          {
+            "id": "usa",
+            "name": "United States",
+            "iso2": "US",
+            "iso3": "USA",
+            "m49": "840",
+            "lat": 39,
+            "lon": -98,
+            "country": "United States",
+            "year": 2023,
+            "forestPercent": 33.8669264120375
+          },
+          {
+            "id": "south-africa",
+            "name": "South Africa",
+            "iso2": "ZA",
+            "iso3": "ZAF",
+            "m49": "710",
+            "lat": -30,
+            "lon": 25,
+            "country": "South Africa",
+            "year": 2023,
+            "forestPercent": 13.965072665672
+          }
+        ],
         "social": [
           {
             "id": "argentina",
@@ -267480,20 +268629,155 @@
         "title": "関係を編み直す",
         "en": "REWEAVE RELATIONSHIPS"
       },
-      "question": "日差しや風の条件と、現在の再生可能電力にはどんな差があるでしょう。",
+      "question": "再生可能電力は、どの国でどれくらい使われているでしょう。",
       "datasets": [
+        {
+          "id": "worldbank-renewable",
+          "kind": "SOURCE",
+          "organisation": "World Bank",
+          "title": "Renewable electricity output (% of total)",
+          "url": "https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
+          "period": "latest available by country",
+          "unit": "%",
+          "resolution": "31 country values",
+          "transformation": "31か国の国土を同じ0〜100%尺度で、暗い青から明るい水色へ塗り分けます。スライダーは比率の低い国から高い国へ移動します。",
+          "caveat": "COUNTRY VALUE。国によって最新年が異なります。",
+          "preview": [
+            {
+              "id": "argentina",
+              "name": "Argentina",
+              "iso2": "AR",
+              "iso3": "ARG",
+              "m49": "032",
+              "lat": -34,
+              "lon": -64,
+              "country": "Argentina",
+              "year": 2021,
+              "renewablePercent": 25.5361113468556
+            },
+            {
+              "id": "australia",
+              "name": "Australia",
+              "iso2": "AU",
+              "iso3": "AUS",
+              "m49": "036",
+              "lat": -25,
+              "lon": 134,
+              "country": "Australia",
+              "year": 2021,
+              "renewablePercent": 26.6608674695166
+            },
+            {
+              "id": "bangladesh",
+              "name": "Bangladesh",
+              "iso2": "BD",
+              "iso3": "BGD",
+              "m49": "050",
+              "lat": 24,
+              "lon": 90,
+              "country": "Bangladesh",
+              "year": 2021,
+              "renewablePercent": 1.50701993704092
+            },
+            {
+              "id": "brazil",
+              "name": "Brazil",
+              "iso2": "BR",
+              "iso3": "BRA",
+              "m49": "076",
+              "lat": -10,
+              "lon": -55,
+              "country": "Brazil",
+              "year": 2021,
+              "renewablePercent": 77.3753492178891
+            },
+            {
+              "id": "canada",
+              "name": "Canada",
+              "iso2": "CA",
+              "iso3": "CAN",
+              "m49": "124",
+              "lat": 55,
+              "lon": -110,
+              "country": "Canada",
+              "year": 2021,
+              "renewablePercent": 67.0163805768966
+            },
+            {
+              "id": "chile",
+              "name": "Chile",
+              "iso2": "CL",
+              "iso3": "CHL",
+              "m49": "152",
+              "lat": -33,
+              "lon": -71,
+              "country": "Chile",
+              "year": 2021,
+              "renewablePercent": 48.0821990956395
+            },
+            {
+              "id": "china",
+              "name": "China",
+              "iso2": "CN",
+              "iso3": "CHN",
+              "m49": "156",
+              "lat": 35,
+              "lon": 103,
+              "country": "China",
+              "year": 2021,
+              "renewablePercent": 28.427997926748
+            },
+            {
+              "id": "drc",
+              "name": "DR Congo",
+              "iso2": "CD",
+              "iso3": "COD",
+              "m49": "180",
+              "lat": -3,
+              "lon": 23,
+              "country": "Congo, Dem. Rep.",
+              "year": 2021,
+              "renewablePercent": 90.4325595509028
+            },
+            {
+              "id": "cuba",
+              "name": "Cuba",
+              "iso2": "CU",
+              "iso3": "CUB",
+              "m49": "192",
+              "lat": 21.5,
+              "lon": -79.5,
+              "country": "Cuba",
+              "year": 2021,
+              "renewablePercent": 4.77073999691024
+            },
+            {
+              "id": "egypt",
+              "name": "Egypt",
+              "iso2": "EG",
+              "iso3": "EGY",
+              "m49": "818",
+              "lat": 27,
+              "lon": 30,
+              "country": "Egypt, Arab Rep.",
+              "year": 2021,
+              "renewablePercent": 12.1959401781537
+            }
+          ]
+        },
         {
           "id": "nasa-power-renewable",
           "kind": "SOURCE",
           "organisation": "NASA POWER",
           "title": "Solar and wind climatology / global stratified sample",
           "url": "https://power.larc.nasa.gov/api/temporal/climatology/point",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
           "period": "climatology",
           "unit": "kWh/m²/day, m/s",
           "resolution": "選択31地点",
-          "transformation": "太陽光と風が豊かな地点ほど、外側の環を強く表示します。",
-          "caveat": "31地点の自然条件だけを見た値です。土地、設備、送電網、費用など、実際に発電するための条件は含みません。",
+          "transformation": "選択国の代表地点について、日射を黄色い円、風を緑の矢印で補足表示します。",
+          "caveat": "31地点の自然条件だけを見た値です。現在の再生可能電力比率を説明する因果モデルや導入可能量ではありません。",
           "preview": [
             {
               "id": "canada",
@@ -267634,160 +268918,6 @@
               "temperatureC": 8.18,
               "solarKwhM2Day": 2.6237,
               "precipitationMmDay": 2.76
-            }
-          ]
-        },
-        {
-          "id": "worldbank-renewable",
-          "kind": "SOURCE",
-          "organisation": "World Bank",
-          "title": "Renewable electricity output (% of total)",
-          "url": "https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
-          "period": "latest available by country",
-          "unit": "%",
-          "resolution": "31 country values",
-          "transformation": "各NASA POWER地点と同じ国の現在供給比率を内側へ表示",
-          "caveat": "COUNTRY VALUE。潜在量とは定義が異なり、直接比較しない。",
-          "preview": [
-            {
-              "id": "argentina",
-              "name": "Argentina",
-              "iso2": "AR",
-              "iso3": "ARG",
-              "m49": "032",
-              "lat": -34,
-              "lon": -64,
-              "country": "Argentina",
-              "year": 2021,
-              "renewablePercent": 25.5361113468556
-            },
-            {
-              "id": "australia",
-              "name": "Australia",
-              "iso2": "AU",
-              "iso3": "AUS",
-              "m49": "036",
-              "lat": -25,
-              "lon": 134,
-              "country": "Australia",
-              "year": 2021,
-              "renewablePercent": 26.6608674695166
-            },
-            {
-              "id": "bangladesh",
-              "name": "Bangladesh",
-              "iso2": "BD",
-              "iso3": "BGD",
-              "m49": "050",
-              "lat": 24,
-              "lon": 90,
-              "country": "Bangladesh",
-              "year": 2021,
-              "renewablePercent": 1.50701993704092
-            },
-            {
-              "id": "brazil",
-              "name": "Brazil",
-              "iso2": "BR",
-              "iso3": "BRA",
-              "m49": "076",
-              "lat": -10,
-              "lon": -55,
-              "country": "Brazil",
-              "year": 2021,
-              "renewablePercent": 77.3753492178891
-            },
-            {
-              "id": "canada",
-              "name": "Canada",
-              "iso2": "CA",
-              "iso3": "CAN",
-              "m49": "124",
-              "lat": 55,
-              "lon": -110,
-              "country": "Canada",
-              "year": 2021,
-              "renewablePercent": 67.0163805768966
-            },
-            {
-              "id": "chile",
-              "name": "Chile",
-              "iso2": "CL",
-              "iso3": "CHL",
-              "m49": "152",
-              "lat": -33,
-              "lon": -71,
-              "country": "Chile",
-              "year": 2021,
-              "renewablePercent": 48.0821990956395
-            },
-            {
-              "id": "china",
-              "name": "China",
-              "iso2": "CN",
-              "iso3": "CHN",
-              "m49": "156",
-              "lat": 35,
-              "lon": 103,
-              "country": "China",
-              "year": 2021,
-              "renewablePercent": 28.427997926748
-            },
-            {
-              "id": "drc",
-              "name": "DR Congo",
-              "iso2": "CD",
-              "iso3": "COD",
-              "m49": "180",
-              "lat": -3,
-              "lon": 23,
-              "country": "Congo, Dem. Rep.",
-              "year": 2021,
-              "renewablePercent": 90.4325595509028
-            },
-            {
-              "id": "cuba",
-              "name": "Cuba",
-              "iso2": "CU",
-              "iso3": "CUB",
-              "m49": "192",
-              "lat": 21.5,
-              "lon": -79.5,
-              "country": "Cuba",
-              "year": 2021,
-              "renewablePercent": 4.77073999691024
-            },
-            {
-              "id": "egypt",
-              "name": "Egypt",
-              "iso2": "EG",
-              "iso3": "EGY",
-              "m49": "818",
-              "lat": 27,
-              "lon": 30,
-              "country": "Egypt, Arab Rep.",
-              "year": 2021,
-              "renewablePercent": 12.1959401781537
-            }
-          ]
-        },
-        {
-          "id": "distributed-link-scenario",
-          "kind": "SCENARIO",
-          "organisation": "Audience / local browser",
-          "title": "二地域の分散型接続",
-          "url": "about:local",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
-          "period": "current session",
-          "unit": "two selected points",
-          "resolution": "audience selection",
-          "transformation": "選択した二地域を破線で結ぶ",
-          "caveat": "実在の送電線、系統計画、事業可能性評価ではない。",
-          "preview": [
-            {
-              "selectedRegions": [],
-              "transmitted": false
             }
           ]
         }
@@ -268602,8 +269732,7 @@
             "year": 2021,
             "renewablePercent": 6.44786393924166
           }
-        ],
-        "scenarioLinks": []
+        ]
       },
       "statisticalMethods": []
     },
@@ -268614,66 +269743,65 @@
         "title": "関係を編み直す",
         "en": "REWEAVE RELATIONSHIPS"
       },
-      "question": "九つのデータの中で、あなたがいちばん気になった変化はどれでしょう。",
+      "question": "地球を、ひとつの点数で表せるでしょうか。",
       "datasets": [
         {
-          "id": "nine-signals",
+          "id": "nine-measure-atlas",
           "kind": "DERIVED",
           "organisation": "GAIA SENSEWARE",
-          "title": "01–09 signal identity sequence",
+          "title": "01–09 measure / representative value / unit atlas",
           "url": "./data/gaia-signals.json",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
-          "period": "same snapshot / 48-second loop",
-          "unit": "mode identity; no numeric score",
-          "resolution": "one branch per sense organ",
-          "transformation": "01〜09を一本ずつ光らせ、各モードで観客が触れた記憶を、別の明るさとして重ねます。",
-          "caveat": "意味も単位も違う数値は、足したり平均したりしません。架空の『地球健康度』もつくりません。",
+          "retrievedAt": "2026-08-23T18:53:53.624Z",
+          "period": "same bundled snapshot",
+          "unit": "ppm, m/s, mm/day, %, count, Pearson r",
+          "resolution": "nine simultaneous cards",
+          "transformation": "各展示の測るもの、保存データから取り出した代表値、単位または標本数を3×3で同時表示します。",
+          "caveat": "意味も単位も違う数値は、足したり平均したり順位づけしたりしません。架空の『地球健康度』もつくりません。",
           "preview": [
             {
-              "signal": "01 CO2/temp"
+              "signal": "01",
+              "measure": "大気CO2濃度",
+              "unit": "ppm"
             },
             {
-              "signal": "02 current/wind"
+              "signal": "02",
+              "measure": "海流の速さ",
+              "unit": "m/s"
             },
             {
-              "signal": "03 forest/rain"
+              "signal": "03",
+              "measure": "森林域と降水量",
+              "unit": "mm/day"
             },
             {
-              "signal": "04 interactions"
+              "signal": "04",
+              "measure": "ミツバチと花の関係",
+              "unit": "relationship count"
             },
             {
-              "signal": "05 waste routes"
+              "signal": "05",
+              "measure": "都市ごみ再資源化率",
+              "unit": "%"
             },
             {
-              "signal": "06 emissions/DID reference"
+              "signal": "06",
+              "measure": "夜間光と国別排出量",
+              "unit": "radiance / Mt CO2e"
             },
             {
-              "signal": "07 earthquakes"
+              "signal": "07",
+              "measure": "M7.5以上の地震",
+              "unit": "event count / magnitude"
             },
             {
-              "signal": "08 three layers"
+              "signal": "08",
+              "measure": "森林率と都市人口率",
+              "unit": "% / Pearson r"
             },
             {
-              "signal": "09 energy potential/current"
-            }
-          ]
-        },
-        {
-          "id": "audience-traces",
-          "kind": "SCENARIO",
-          "organisation": "Audience / local browser",
-          "title": "Touch traces and choices",
-          "url": "about:local",
-          "retrievedAt": "2026-08-02T03:22:22.175Z",
-          "period": "current session",
-          "unit": "non-evaluative traces",
-          "resolution": "pointer samples",
-          "transformation": "軌跡を神経網の新しい枝へ変換",
-          "caveat": "外部送信・保存を行わない。正解点へ換算しない。",
-          "preview": [
-            {
-              "storage": "memory only",
-              "transmitted": false
+              "signal": "09",
+              "measure": "再生可能電力比率",
+              "unit": "%"
             }
           ]
         }
@@ -268700,5 +269828,5 @@
     "structuralMissingness": "Do not fill periods before station opening, after station closure, absent categorical metadata, or unobserved biological relationships.",
     "uncertainty": "Show holdout error or prediction interval where the model permits; neither is measurement uncertainty."
   },
-  "statisticsAppliedAt": "2026-08-02T06:55:06.320Z"
+  "statisticsAppliedAt": "2026-08-23T18:54:32.323Z"
 }

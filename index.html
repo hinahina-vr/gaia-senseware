@@ -22,14 +22,14 @@
     <link rel="preload" as="image" href="./assets/visuals-07/novel-bg-festival-five-plane-projection-v1.png" />
     <link rel="preload" as="image" href="./assets/visuals-07/sound-archive-bg-v2.png" />
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
-    <link rel="stylesheet" href="./styles.css?v=gaia-main-overlay-layout-1" />
+    <link rel="stylesheet" href="./styles.css?v=gaia-map03-rain-clarity-1" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
     <link rel="stylesheet" href="./opening.css?v=gaia-sound-world-ui-1" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
     <link rel="stylesheet" href="./novel-mode.css?v=gaia-main-overlay-layout-1" />
     <link rel="stylesheet" href="./true-end.css?v=gaia-finale-webgl-1" />
-    <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-modal-skip-1" />
+    <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-stationary-fade-1" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-intro-path-row-1" />
     <script src="./gaia-particles.js?v=gaia-19" defer></script>
@@ -39,9 +39,9 @@
     <script src="./data-ledger.js?v=gaia-31" defer></script>
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
-    <script src="./app-content.js?v=gaia-map-exhibits-10-1" defer></script>
-    <script src="./app.js?v=gaia-main-overlay-layout-1" defer></script>
-    <script src="./gx-mode.js?v=gaia-gx-modal-skip-1" defer></script>
+    <script src="./app-content.js?v=gaia-map10-nine-measure-atlas-1" defer></script>
+    <script src="./app.js?v=gaia-map10-nine-measure-atlas-1" defer></script>
+    <script src="./gx-mode.js?v=gaia-gx-stationary-fade-1" defer></script>
     <script src="./novel-story-data.js?v=gaia-approved-script-14" defer></script>
     <script src="./true-end-data.js?v=gaia-finale-webgl-1" defer></script>
     <script src="./true-end-webgl.js?v=gaia-webgl-presence-restored-3" defer></script>
@@ -53,7 +53,7 @@
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-suno-credit-1" defer></script>
-    <link rel="stylesheet" href="./map-ui-grid-polish.css?v=4" />
+    <link rel="stylesheet" href="./map-ui-grid-polish.css?v=6" />
     <link rel="stylesheet" href="./mode-exit.css?v=gaia-standard-glass-return-1" />
 </head>
   <body>
@@ -771,8 +771,8 @@
               </section>
 
               <p class="architecture-memory">
-                <span>観客の軌跡</span>
-                触れた記憶は、10番目の感覚器へ戻る
+                <span>九つの測定</span>
+                10番目の展示では、単位の違いを3×3で並べる
               </p>
             </div>
             <figcaption>
@@ -1007,7 +1007,7 @@
                   自治体が集めたごみのうち、どれくらいが再び資源として使われたかを示す国連の統計です。
                   国によって調査年や集計方法が違うため、単純な順位表にはできません。
                 </p>
-                <p class="data-source-use"><strong>展示では</strong> 再資源化率を粒子の割合にしました。公式値がない地域は近い5か国から仮の値を計算し、破線とDERIVEDの文字で区別します。</p>
+                <p class="data-source-use"><strong>展示では</strong> 同じ大きさの円グラフにし、緑を再資源化率、橙をそれ以外として表示します。公式値がない地域は近い5か国から仮の値を計算し、破線とDERIVEDの文字で区別します。</p>
                 <a href="https://unstats.un.org/sdgs/metadata/?Goal=12&amp;Target=12.5" target="_blank" rel="noopener">国連の指標説明を見る ↗</a>
               </article>
 
@@ -1019,7 +1019,7 @@
                   EDGARは、国や産業ごとの温室効果ガス排出量をまとめたデータベースです。
                   World Bankからは、都市で暮らす人の割合や、電力に占める再生可能エネルギーの割合を使います。
                 </p>
-                <p class="data-source-use"><strong>展示では</strong> 排出量、都市人口、再生可能電力を別々の色と形で示します。地図の点は国を示す目印で、その地点だけの数値ではありません。</p>
+                <p class="data-source-use"><strong>展示では</strong> 排出量と都市人口は国を示す目印で表示し、再生可能電力は31か国の国土を暗い青から明るい水色へ塗り分けます。</p>
                 <div class="data-source-links"><a href="https://edgar.jrc.ec.europa.eu/emissions_data_and_maps" target="_blank" rel="noopener">EDGAR ↗</a><a href="https://data.worldbank.org/indicator/SP.URB.TOTL.IN.ZS" target="_blank" rel="noopener">都市人口 ↗</a><a href="https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS" target="_blank" rel="noopener">再エネ比率 ↗</a></div>
               </article>
 
@@ -1195,14 +1195,6 @@
             <span aria-hidden="true">▶</span>
           </button>
         </header>
-
-        <div class="map-scope-switch" aria-label="世界地図を表示中">
-          <p>MAP SCALE</p>
-          <div class="map-scope-static">
-            <span>EARTH</span>
-            <strong>世界地図</strong>
-          </div>
-        </div>
 
         <div class="japan-observation" aria-live="polite">
           <div class="co2-timeline-display" id="co2-timeline-display" hidden>
@@ -2509,7 +2501,7 @@
       }
     })();
   </script>
-  <script src="./map-ui-grid-polish.js?v=3"></script>
+  <script src="./map-ui-grid-polish.js?v=5"></script>
 <style id="close-control-color-refinement">
   /* Keep close controls inside the same translucent blue-green visual system. */
   .gs-close-refined {

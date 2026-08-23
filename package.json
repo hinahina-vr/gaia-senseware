@@ -13,6 +13,7 @@
     "story:export": "node scripts/export-current-story-script.mjs",
     "check:user-script": "node scripts/import-plain-story.mjs story/USER_SCRIPT_2026-08-24.txt story/APPROVED_SCRIPT_2026-08-24.md --check",
     "check:main-overlay": "node --check scripts/check-main-overlay-layout-browser.mjs",
+    "check:map-overlay": "node --check scripts/check-map-overlay-layout-browser.mjs",
     "audio:trueend": "node scripts/build-true-end-score.mjs",
     "preview:novel": "node scripts/serve-novel-preview.mjs 4173",
     "check:ending-data-skip": "node --check scripts/check-ending-data-skip-browser.mjs",

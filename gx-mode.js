@@ -14,6 +14,7 @@
   const STORY_LINE_HOLD_MS = 4600;
   const TITLE_TRANSITION_SWAP_MS = 280;
   const TITLE_TRANSITION_MS = 940;
+  const CLOSE_TRANSITION_MS = reducedMotion ? 0 : 340;
   const PHASE = Object.freeze({
     HADEAN: 0,
     ARCHEAN: 1,
@@ -207,6 +208,7 @@
 
   let exhibit = FALLBACK;
   let isOpen = false;
+  let isClosing = false;
   let loaded = false;
   let phaseIndex = 0;
   let animationFrame = 0;
@@ -238,6 +240,7 @@
   let eraTransitionTimer = 0;
   let storyLineTimer = 0;
   let titleTransitionTimer = 0;
+  let closeTransitionTimer = 0;
   let eraTransitionPending = false;
   let eraCounterFrame = 0;
   let displayedYears = ERA_YEARS_BEFORE_PRESENT.hadean;
@@ -1972,7 +1975,7 @@
   };
 
   const openGX = async (options = {}) => {
-    if (isOpen) return;
+    if (isOpen || isClosing) return;
     previousFocus = document.activeElement;
     returnTo = options.returnTo === "novel" ? "novel" : "intro";
     storyDetourActive = returnTo === "novel";
@@ -2034,6 +2037,7 @@
     elements.eraTransition.setAttribute("aria-hidden", "true");
     elements.modalSkip.hidden = true;
     isOpen = false;
+    isClosing = true;
     cancelAnimationFrame(animationFrame);
     cancelAnimationFrame(eraCounterFrame);
     eraCounterFrame = 0;
@@ -2041,14 +2045,16 @@
     storyBackdrop?.classList.remove("is-open");
     layer.setAttribute("aria-hidden", "true");
     document.body.classList.remove("gx-open");
-    document.body.classList.remove("gx-story-open");
     elements.storyDialogue?.classList.remove("is-visible");
     if (elements.storyDialogue) elements.storyDialogue.hidden = true;
     document.querySelector(".novel-cast")?.removeAttribute("data-gx-speaker");
     setUnderlayHidden(false);
     const returningToNovel = returnTo === "novel";
-    window.setTimeout(() => {
+    closeTransitionTimer = window.setTimeout(() => {
+      closeTransitionTimer = 0;
+      isClosing = false;
       if (!isOpen) {
+        document.body.classList.remove("gx-story-open");
         layer.hidden = true;
         delete layer.dataset.returnTo;
         delete layer.dataset.storyMode;
@@ -2056,8 +2062,8 @@
         layer.style.removeProperty("--gx-story-character-image");
       }
       if (storyBackdrop && !storyBackdrop.classList.contains("is-open")) storyBackdrop.hidden = true;
-      if (returningToNovel) window.dispatchEvent(new CustomEvent("gaia:gx-return-to-novel"));
-    }, reducedMotion ? 0 : 340);
+      if (!isOpen && returningToNovel) window.dispatchEvent(new CustomEvent("gaia:gx-return-to-novel"));
+    }, CLOSE_TRANSITION_MS);
     if (!returningToNovel) {
       previousFocus?.focus?.({ preventScroll: true });
     }

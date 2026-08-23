@@ -4774,7 +4774,23 @@ h1 {
 }
 
 .signal-encoding-legend[data-mode="forest"] [data-encoding-mark="heatmap"] {
-  background: linear-gradient(90deg, #123b2a, #32b978, #9affca, #b8f5ff);
+  width: 18px !important;
+  height: 18px;
+  border: 1px solid rgba(204, 248, 255, 0.9);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #f2feff 0 9%, #64dcff 16% 38%, rgba(28, 121, 255, 0.72) 58%, rgba(12, 56, 116, 0.22) 76%);
+  box-shadow: 0 0 8px rgba(74, 195, 255, 0.56);
+}
+
+.signal-encoding-legend[data-mode="forest"] [data-encoding-mark="nodata"] {
+  border: 1px solid rgba(111, 240, 177, 0.5);
+  background: linear-gradient(135deg, #0b3d2b, #31b87a 52%, #8ff0bd);
+}
+
+.signal-encoding-legend[data-mode="forest"] [data-encoding-mark="estimate"] {
+  border: 1px solid rgba(222, 250, 255, 0.72);
+  border-radius: 50%;
+  background: radial-gradient(circle, #eafcff 0 16%, #55ccfa 20% 42%, rgba(24, 112, 220, 0.45) 46% 70%, transparent 74%);
 }
 
 .signal-encoding-legend[data-mode="pollination"] [data-encoding-mark="heatmap"] {
@@ -4782,11 +4798,37 @@ h1 {
 }
 
 .signal-encoding-legend[data-mode="waste"] [data-encoding-mark="heatmap"] {
-  background: linear-gradient(90deg, #70ffbe 0 34%, #ffb45c 34% 82%, #ff6776 82%);
+  border: 1px solid rgba(224, 255, 239, 0.86);
+  border-radius: 50%;
+  background: conic-gradient(#70ffbe 0 34%, #ff916f 34% 100%);
+}
+
+.signal-encoding-legend[data-mode="waste"] [data-encoding-mark="nodata"] {
+  border: 2px dashed #d7ff67;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.signal-encoding-legend[data-mode="waste"] [data-encoding-mark="estimate"] {
+  border-color: rgba(112, 255, 190, 0.9);
+  background: #70ffbe;
+}
+
+.signal-encoding-legend[data-mode="waste"] [data-encoding-mark="resolution"] {
+  border-color: rgba(255, 145, 111, 0.9);
+  background: #ff916f;
 }
 
 .signal-encoding-legend[data-mode="anthropocene"] [data-encoding-mark="heatmap"] {
-  background: radial-gradient(circle, #fff 0 18%, #ff4438 24% 42%, transparent 66%);
+  border: 1px solid rgba(255, 124, 102, 0.88);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 80, 62, 0.48) 0 58%, transparent 62%);
+}
+
+.signal-encoding-legend[data-mode="anthropocene"] [data-encoding-mark="nodata"] {
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 12%, rgba(220, 242, 255, 0.9) 16%, rgba(167, 217, 255, 0.28) 36%, transparent 68%);
 }
 
 .signal-encoding-legend[data-mode="earthquake"] [data-encoding-mark="heatmap"] {

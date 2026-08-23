@@ -2,12 +2,11 @@
   "use strict";
 
   const DESKTOP_MIN = 901;
-  const ROLES = ["intro", "bank", "data", "scale"];
+  const ROLES = ["intro", "bank", "data"];
   const STABLE_SELECTORS = Object.freeze({
     intro: "#japan-layer > .japan-heading",
     bank: "#japan-layer > .map-mode-bank",
-    data: "#japan-layer > .signal-console-map",
-    scale: "#japan-layer > .map-scope-switch"
+    data: "#japan-layer > .signal-console-map"
   });
   let scheduled = 0;
   let markedPanels = null;
@@ -62,17 +61,13 @@
     const bankSeed = deepestMatch(/INSTALLATION\s+BANK\s*\/\s*01[–—-]10/i);
     const dataSeed = deepestMatch(/ACT\s*\d+\s*\/[^/]{0,30}(循環|影響|再編|観測|知る|見る)/i)
       || deepestMatch(/\d{2,4}(?:\.\d+)?\s*ppm\s*\/\s*(?:実測|予想|補完)/i);
-    const scaleSeed = deepestMatch(/MAP\s*SCALE/i);
-
     return {
       intro: document.querySelector(STABLE_SELECTORS.intro)
         || panelFrom(introSeed, { minWidth: 260, minHeight: 120, maxWidth: 900, maxHeight: 590 }),
       bank: document.querySelector(STABLE_SELECTORS.bank)
         || panelFrom(bankSeed, { minWidth: 170, minHeight: 90, maxWidth: 610, maxHeight: 290 }),
       data: document.querySelector(STABLE_SELECTORS.data)
-        || panelFrom(dataSeed, { minWidth: 220, minHeight: 120, maxWidth: 760, maxHeight: 430 }),
-      scale: document.querySelector(STABLE_SELECTORS.scale)
-        || panelFrom(scaleSeed, { minWidth: 120, minHeight: 36, maxWidth: 560, maxHeight: 180 })
+        || panelFrom(dataSeed, { minWidth: 220, minHeight: 120, maxWidth: 760, maxHeight: 430 })
     };
   }
 
@@ -129,7 +124,8 @@
       return;
     }
 
-    place(panels.intro, gutter, gutter, railWidth);
+    const topClearance = Math.max(82, Math.min(108, innerHeight * 0.09));
+    place(panels.intro, gutter, topClearance, railWidth);
 
     requestAnimationFrame(() => {
       const introRect = panels.intro.getBoundingClientRect();
@@ -141,11 +137,6 @@
       }
 
       if (panels.data) place(panels.data, gutter, cursorTop, railWidth);
-
-      if (panels.scale) {
-        const scaleWidth = Math.max(220, Math.min(286, innerWidth * 0.155));
-        place(panels.scale, gutter + railWidth + gap, gutter, scaleWidth);
-      }
     });
   }
 

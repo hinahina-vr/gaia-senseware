@@ -91,18 +91,9 @@ body.map-grid-desktop .signal-console-heading.map-grid-data {
   pointer-events: none !important;
 }
 
-body.map-grid-desktop .map-grid-scale {
-  width: clamp(220px, 15.5vw, 286px) !important;
-  min-height: 68px !important;
-  padding: 10px 13px !important;
-  display: grid !important;
-  align-content: center !important;
-}
-
 body.map-grid-desktop .map-grid-intro,
 body.map-grid-desktop .map-grid-bank,
-body.map-grid-desktop .map-grid-data,
-body.map-grid-desktop .map-grid-scale {
+body.map-grid-desktop .map-grid-data {
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease,
@@ -111,8 +102,7 @@ body.map-grid-desktop .map-grid-scale {
 
 body.map-grid-desktop .map-grid-intro:hover,
 body.map-grid-desktop .map-grid-bank:hover,
-body.map-grid-desktop .map-grid-data:hover,
-body.map-grid-desktop .map-grid-scale:hover {
+body.map-grid-desktop .map-grid-data:hover {
   border-color: var(--map-grid-panel-line-strong) !important;
   box-shadow:
     0 20px 48px rgba(0, 7, 14, 0.34),
@@ -127,44 +117,60 @@ body.map-grid-desktop .map-grid-scale:hover {
   }
 }
 
-/* The map exit always owns the top-right corner. */
+/* The map exit owns the same top-left home position as the main exhibit view.
+   The map panels begin below this row, so the exit stays visually independent. */
 .experience.japan-open .japan-close {
   position: fixed !important;
   z-index: 700 !important;
   top: max(18px, env(safe-area-inset-top)) !important;
-  right: max(18px, env(safe-area-inset-right)) !important;
+  right: auto !important;
   bottom: auto !important;
-  left: auto !important;
+  left: max(18px, env(safe-area-inset-left)) !important;
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
 }
 
-/* Keep persistent audio beside the exit instead of covering it. */
+/* Audio can remain on the opposite side of the shared top row. */
 body:has(.experience.japan-open) .gaia-audio-dock {
   top: max(18px, env(safe-area-inset-top)) !important;
-  right: max(114px, calc(env(safe-area-inset-right) + 114px)) !important;
+  right: max(18px, env(safe-area-inset-right)) !important;
   left: auto !important;
 }
 
-/* The data drawer keeps its own close action, offset from the global exit. */
+/* The data drawer keeps its own close action in the opposite corner. */
 .japan-layer.japan-data-open .japan-data-header button {
-  margin-right: 72px;
+  margin-right: 0;
 }
 
 @media (max-width: 720px) {
   .experience.japan-open .japan-close {
     top: max(12px, env(safe-area-inset-top)) !important;
-    right: max(12px, env(safe-area-inset-right)) !important;
+    right: auto !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
   }
 
   body:has(.experience.japan-open) .gaia-audio-dock {
-    top: calc(max(12px, env(safe-area-inset-top)) + 64px) !important;
+    top: max(12px, env(safe-area-inset-top)) !important;
     right: max(12px, env(safe-area-inset-right)) !important;
     left: auto !important;
   }
 
+  .experience.japan-open .japan-heading {
+    top: max(72px, calc(env(safe-area-inset-top) + 60px)) !important;
+  }
+
+  .experience.japan-open .signal-console-map {
+    top: max(328px, calc(env(safe-area-inset-top) + 316px)) !important;
+    bottom: auto !important;
+  }
+
+  .experience.japan-open .map-mode-bank {
+    top: max(564px, calc(env(safe-area-inset-top) + 552px)) !important;
+    bottom: auto !important;
+  }
+
   .japan-layer.japan-data-open .japan-data-header button {
-    margin-right: 62px;
+    margin-right: 0;
   }
 }

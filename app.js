@@ -260,9 +260,13 @@
   const P_WAVE_SPEED_KM_S = 7;
   const S_WAVE_SPEED_KM_S = 4;
   const JAPAN_WAVE_VISUAL_LIMIT_KM = 2500;
+  const GLOBAL_EARTHQUAKE_WAVE_DURATION_MS = 1500;
+  const GLOBAL_EARTHQUAKE_MIN_MAGNITUDE = 7.5;
+  const GLOBAL_EARTHQUAKE_MAX_MAGNITUDE = 9.1;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
   const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-31";
   const NATURAL_EARTH_LAND_DATA = "./data/natural-earth-50m-land.geojson?v=gaia-27";
+  const NATURAL_EARTH_COUNTRY_DATA = "./data/natural-earth-50m-countries.geojson?v=gaia-1";
 
   const MAP_READING_GUIDES = [
     {
@@ -272,58 +276,58 @@
       action: "年表示を動かすかマスを押すと、その時点の濃度と、実測・補完・試算の区分を確認できます。",
     },
     {
-      title: "風と海は、どこへ運ぶのか？",
-      subject: "海流・風・海面水温を一枚に重ねた、世界の循環図です。",
-      reading: "青い光は海流の速さ、シアンの線は同じ流れが14日続いた場合の移動距離、白い矢印は風です。",
-      action: "青い点を押すと動きが止まり、その地点の流速・方向・水温を読めます。",
+      title: "この海流は、14日でどこまで進む？",
+      subject: "色付きの矢印が海流です。点から伸びる線は、同じ速さと向きが続くと仮定した移動先です。右下の「○日後」と一緒に読みます。",
+      reading: "青→水色→黄→橙の順に海流が速くなります。白い矢印は別資料の平均風で、海流の移動距離の計算には使いません。",
+      action: "色付きの点を押すと自動再生が止まり、その地点の速さ・向き・○日後の計算距離を読めます。スライダーでも日数を動かせます。",
     },
     {
-      title: "森林と雨は、どこで重なるのか？",
-      subject: "森林域だけを緑で強調し、雨の多い観測地点と同じ世界地図で比べます。森林が雨を起こすと断定する図ではありません。",
-      reading: "緑はMODISから抜き出した森林域、水色の円は31地点の平均降水量です。円が大きいほど雨が多く、地点間には値を入れていません。",
-      action: "水色の地点を押すと自動走査が止まり、地点名とmm/dayが地図上とカードに表示されます。別の地点を押して重なりを比べられます。",
+      title: "森林と、雨の多い場所はどこで重なる？",
+      subject: "緑の森林分布と、31代表地点の平均降水量を同じ世界地図で見比べます。相関係数や、森林が雨を起こす因果関係を示す図ではありません。",
+      reading: "大きな水色円が降水量です。直径が大きいほど雨が多く、雨の多い円にはmm/dayを直接表示します。ブラジルのアマゾン付近は5.33 mm/dayです。",
+      action: "水色円を押すと自動走査が止まり、代表地点名と平均降水量をカードで読めます。円のない場所は『雨がない』のではなく、この31地点では測っていない場所です。",
     },
     {
-      title: "ミツバチは、どこで記録されたのか？",
-      subject: "GBIFに登録されたミツバチの観察場所をたどる地図です。花との文献関係は場所を持たないため、地図の点とは結びません。",
-      reading: "黄色い点はGBIFの観察記録です。GloBIの花と送粉者の関係は件数を凡例に示すだけで、観察地点へ線を引きません。",
-      action: "黄色い点を押すと自動走査が止まり、生きもの・国・観察日・GBIF記録番号を地図上とカードで読めます。",
+      title: "点がない場所に、ミツバチはいないのか？",
+      subject: "いいえ。黄色い点は生息分布ではなく、人がGBIFへ登録した観察記録です。空白は『いない』ではなく、この標本に記録がない場所です。",
+      reading: "3段階で、①62観察点、②31か国から最大2件ずつに揃えた標本の制約、③場所を持たない花との23文献関係を見ます。最後の網は地理ではありません。",
+      action: "スライダーで3段階を切り替えます。黄色い点を押すと一件のGBIF記録を読めます。花との関係網では、光る枝の植物名が順に変わります。",
     },
     {
       title: "再資源化率は、国ごとにどう違うのか？",
-      subject: "国ごとの都市ごみ再資源化率を、公開値・補完値・自分で動かす仮想値に分けて比べる地図です。",
-      reading: "実線は国連の公開値、内側の破線は近い5か国から補った値、外側の破線は観客が動かす仮想値です。",
-      action: "国の円を押すと現在値で停止します。スライダーを動かすと外側の破線と『現在→もしも』だけが変わり、記録は固定されます。",
+      subject: "各国の都市ごみ100%を同じ大きさの円グラフにし、再資源化された割合と、それ以外を地図上で比べます。",
+      reading: "緑の扇形が再資源化率、橙が再資源化として報告されなかった残りです。実線は国連の公開値、破線は近い5か国から補った値です。",
+      action: "円グラフを押すと拡大して現在値を表示します。スライダーを動かすと選択国の外周だけが『もしも』に変わり、内側の統計は固定されます。",
     },
     {
-      title: "都市の光の下に、何が隠れているのか？",
-      subject: "国ごとの温室効果ガス排出量と、人工衛星が見た夜の明かりを比較する地図です。",
-      reading: "赤い円が排出量、白い光が夜間光です。夜の明るさを、排出量そのものとして扱ってはいません。",
-      action: "地図を長押しすると白い光だけが薄れ、環境負荷の層と見比べられます。",
+      title: "夜の光と国別排出量は、どこで重なるのか？",
+      subject: "NASA VIIRSが2016年に捉えた夜間光を、衛星画像の位置のまま白く発光させ、国ごとの温室効果ガス排出量を赤い円で重ねます。",
+      reading: "白い発光は都市周辺の夜間光画素です。赤い円は国全体の排出量で、円の中心が排出源という意味ではありません。明るさから排出量を計算してもいません。",
+      action: "地図を0.65秒以上長押しすると、白い夜間光だけが6秒間薄れます。赤い国別排出量が別の層であることを確認できます。",
     },
     {
-      title: "地震は、世界をどう伝わるのか？",
-      subject: "USGSが記録した世界のM7.5以上の地震（2000〜2026）を表示します。日本では、気象庁の震度6弱以上の観測点まで詳しく重ねています。",
-      reading: "世界の点は震源の位置・規模・深さ、日本の細かな点は実際に観測された震度です。二つの輪はP波とS波の到達目安で、速さは簡略化した地殻モデルです。",
-      action: "海外の震源を押すと発生時刻・深さ・マグニチュードを、日本の地震を選ぶと波の到達後に各地の震度を読めます。",
+      title: "大地震は、年ごとに世界のどこで起きたのか？",
+      subject: "世界表示を基準に、USGSが記録した2000〜2026年のM7.5以上を年度ごとに切り替えます。別年度の震源は同時表示しません。",
+      reading: "橙の点がその年の震源です。年度が変わるたび全点から同心円が一斉に広がり、Magnitudeが大きいほど遠くまで、M9.1では地図幅の約半分まで広がります。",
+      action: "スライダーで年度を切り替えるか、震源を押して日付・深さ・Magnitudeを読めます。同心円は比較用の演出で、実際の揺れの範囲や震度ではありません。日本の実測震度は別層です。",
     },
     {
-      title: "自然・暮らし・記憶は、どこで重なるのか？",
-      subject: "森林、都市で暮らす人の割合、文化と記憶の場所を三つの層で見る地図です。",
-      reading: "緑は森林、青は都市人口、紫は各地域から選んだ世界遺産です。文化の価値を件数で順位づけはしていません。",
-      action: "時点を動かすと三つの層が順に現れ、最後に重なります。点を押すと出典と意味を読めます。",
+      title: "都市化が進むほど、森林は減るのか？",
+      subject: "同じ31か国の森林面積率と都市人口率を一組にして、地図の二重円と散布図で同時に比べます。",
+      reading: "内側の緑が森林率、外側の青が都市人口率です。右上の散布図と回帰線が全31か国の関係を示し、相関係数rを直接表示します。紫の菱形は世界遺産例で、計算には含めません。",
+      action: "スライダーで都市人口率が低い国から高い国へ移動し、黄色い散布点と地図上の二重円を追います。円を押すと、全体傾向から何ポイント外れる国か読めます。",
     },
     {
-      title: "自然の力を、どこで分かち合えるか？",
-      subject: "自然エネルギーの条件と、各国の現在の再生可能電力比率を分けて見る地図です。",
-      reading: "黄色は31地点の日差しと風、緑は国全体の再生可能電力比率。二地点を結ぶ破線だけが展示上の仮想案です。",
-      action: "二地点を選ぶと、地域を結ぶ分散型ネットワークのシナリオが生まれます。",
+      title: "再生可能電力は、どの国で多く使われているか？",
+      subject: "31か国の電力に占める再生可能エネルギー比率を、国土の青い濃淡で直接比べる地図です。",
+      reading: "暗い青ほど比率が低く、明るい水色ほど高い国です。黄色い輪と緑の矢印は選択国の代表地点の日射・風で、国の青色とは別の自然条件です。",
+      action: "スライダーで比率の低い国から高い国へ移動するか、青く塗られた国の代表点を押して現在値を読めます。二地点を結ぶ仮想線は廃止しました。",
     },
     {
-      title: "九つの信号で、何が違って見えるか？",
-      subject: "01〜09の信号を番号つきの九本の枝で一つずつ見比べ、互いに矛盾する変化もそのまま残す地図です。",
-      reading: "選択中の番号と信号名を中央に表示します。単位の違うデータは合計せず、架空の『地球健康度』にはまとめません。",
-      action: "スライダーで01〜09を切り替え、各枝の名前を確かめられます。地図に触れた軌跡は別のレイヤーとして残ります。",
+      title: "地球を、ひとつの点数で表せるか？",
+      subject: "できません。9枚のカードが、01〜09で測っているもの・実際の代表値・単位を同時に示します。",
+      reading: "ppm、m/s、mm/day、件数、%、相関係数は意味が違います。3×3のカードは同じ大きさでも、値を足したり順位づけしたりするための図ではありません。",
+      action: "まず9枚を同時に見比べます。スライダーを動かすと黄色い枠が01〜09へ移り、左下と右下にも選択中の実値が出ます。",
     },
   ];
   const JMA_HISTORY_DATA = "./data/jma-intensity-history.json";
@@ -688,6 +692,10 @@
   let naturalEarthLandError = null;
   let naturalEarthLandRings = [];
   const naturalEarthPathCache = new Map();
+  let naturalEarthCountryState = "loading";
+  let naturalEarthCountryError = null;
+  let naturalEarthCountryRings = new Map();
+  const naturalEarthCountryPathCache = new Map();
   let signalTimePosition = 100;
   let co2TimelineStartedAt = performance.now();
   let co2TimelinePausedUntil = 0;
@@ -699,7 +707,8 @@
     : "visual";
   let anthropocenePeelUntil = 0;
   let wasteSelectedIndex = 0;
-  const selectedEnergyRegions = [];
+  let globalEarthquakeWaveYear = "";
+  let globalEarthquakeWaveStartedAt = 0;
   let japanPoiRevealTimer = 0;
   let japanDeepLinkHandled = false;
   let earthViewAnimationFrame = 0;
@@ -740,6 +749,20 @@
   };
 
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+  const FOREST_RAIN_REFERENCE_MAX_MM_DAY = 6.5;
+  const FOREST_RAIN_MIN_RADIUS = 10;
+  const FOREST_RAIN_MAX_RADIUS = 54;
+  const getForestRainRadius = (precipitationMmDay) => {
+    const ratio = Math.sqrt(clamp(
+      (Number(precipitationMmDay) || 0) / FOREST_RAIN_REFERENCE_MAX_MM_DAY,
+      0,
+      1,
+    ));
+    return FOREST_RAIN_MIN_RADIUS + ratio * (FOREST_RAIN_MAX_RADIUS - FOREST_RAIN_MIN_RADIUS);
+  };
+  const getForestRainSiteName = (row) => row?.id === "brazil"
+    ? `${row.name}（アマゾン付近）`
+    : row?.name || "代表地点";
   const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
   const earthLongitudeToMapX = (longitude) =>
     wrapLongitude(longitude - EARTH_INITIAL_CENTER_LONGITUDE) + 180;
@@ -1121,6 +1144,62 @@
     }
     naturalEarthPathCache.set(cacheKey, path);
     return path;
+  };
+
+  const getNaturalEarthCountryGeographicPath = (iso3) => {
+    if (naturalEarthCountryState !== "ready" || typeof Path2D === "undefined") return null;
+    const cacheKey = `earth-country-${iso3}`;
+    if (naturalEarthCountryPathCache.has(cacheKey)) return naturalEarthCountryPathCache.get(cacheKey);
+    const rings = naturalEarthCountryRings.get(iso3) || [];
+    if (!rings.length) return null;
+    const path = new Path2D();
+    for (const ring of rings) {
+      if (ring.length < 3) continue;
+      ring.forEach(([longitude, latitude], pointIndex) => {
+        const x = longitude + 180;
+        const y = 90 - latitude;
+        if (pointIndex === 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
+      });
+      path.closePath();
+    }
+    naturalEarthCountryPathCache.set(cacheKey, path);
+    return path;
+  };
+
+  const drawRenewableCountryChoropleth = (ctx, rect, rows, selectedIso3) => {
+    if (mapScope !== "earth" || naturalEarthCountryState !== "ready") return 0;
+    const projection = japanView.earthProjection || getEarthProjection(rect);
+    const { originX, originY, width, height, scale } = projection;
+    const worldCopies = getEarthWorldCopies(projection);
+    let filledCount = 0;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(originX, originY, width, height);
+    ctx.clip();
+    for (const row of rows) {
+      const path = getNaturalEarthCountryGeographicPath(row.iso3);
+      if (!path) continue;
+      filledCount += 1;
+      const ratio = clamp((row.renewablePercent || 0) / 100, 0, 1);
+      const selected = row.iso3 === selectedIso3;
+      const red = Math.round(14 + ratio * 32);
+      const green = Math.round(72 + ratio * 158);
+      const blue = Math.round(150 + ratio * 105);
+      for (const copy of worldCopies) {
+        ctx.save();
+        ctx.translate(copy.x, copy.y);
+        ctx.scale(scale, scale);
+        ctx.fillStyle = `rgba(${red},${green},${blue},${selected ? 0.94 : 0.38 + ratio * 0.5})`;
+        ctx.fill(path, "evenodd");
+        ctx.strokeStyle = selected ? "rgba(255,239,146,.98)" : `rgba(110,210,255,${0.28 + ratio * 0.5})`;
+        ctx.lineWidth = (selected ? 2.8 : 0.8) / scale;
+        ctx.stroke(path);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+    return filledCount;
   };
 
   const renderReferenceLand = (ctx, repeatOffset, left, top) => {
@@ -2048,12 +2127,12 @@
     const day = horizonHours / 24;
     return {
       kind: "transport",
-      phaseLabel: "SOURCE CURRENT × DERIVED TRANSPORT",
-      yearLabel: `DAY ${day.toFixed(1).padStart(4, "0")}`,
+      phaseLabel: "ある1日の海流 × 移動距離の計算",
+      yearLabel: `${day.toFixed(1)}日後`,
       dateLabel: `${sourceDate} UTC`,
-      methodLabel: "NOAA u/v × CONSTANT-VECTOR LOCAL ADVECTION",
+      methodLabel: "海流の速さ × 経過時間（風は計算に未使用）",
       warning:
-        "一日の海流が同じ速さと向きで続くと仮定した移動距離です。14日後の海況や漂流を予報するものではありません。",
+        "ある一日の海流が同じ速さと向きで続くと仮定した距離です。実際の14日後を予報するものではありません。",
       horizonHours,
       meanSpeedMs,
       maximumSpeedMs,
@@ -2068,6 +2147,129 @@
     return Math.min(length - 1, Math.floor((clamp(signalTimePosition, 0, 99.999) / 100) * length));
   };
 
+  const describeCorrelation = (value) => {
+    const magnitude = Math.abs(value);
+    const strength = magnitude >= 0.7
+      ? "強い"
+      : magnitude >= 0.4
+        ? "中程度の"
+        : magnitude >= 0.2
+          ? "弱い"
+          : "ほぼない";
+    if (magnitude < 0.1) return `${strength}相関`;
+    return `${strength}${value < 0 ? "負" : "正"}の相関`;
+  };
+
+  const getThreeEcologiesComparison = (signals) => {
+    const pairedRows = (signals.pairedCountries || []).length
+      ? signals.pairedCountries
+      : (signals.social || []).map((urban) => {
+        const forest = (signals.ecological || []).find((row) => row.iso3 === urban.iso3);
+        return forest
+          ? {
+            ...urban,
+            urbanYear: urban.year,
+            forestYear: forest.year,
+            forestPercent: forest.forestPercent,
+          }
+          : null;
+      }).filter(Boolean);
+    if (pairedRows.length < 2) return null;
+
+    const meanUrban = pairedRows.reduce((sum, row) => sum + row.urbanPercent, 0) / pairedRows.length;
+    const meanForest = pairedRows.reduce((sum, row) => sum + row.forestPercent, 0) / pairedRows.length;
+    const sums = pairedRows.reduce((result, row) => {
+      const urbanDelta = row.urbanPercent - meanUrban;
+      const forestDelta = row.forestPercent - meanForest;
+      result.covariance += urbanDelta * forestDelta;
+      result.urbanVariance += urbanDelta ** 2;
+      result.forestVariance += forestDelta ** 2;
+      return result;
+    }, { covariance: 0, urbanVariance: 0, forestVariance: 0 });
+    const correlation = sums.covariance / Math.sqrt(sums.urbanVariance * sums.forestVariance);
+    const slope = sums.urbanVariance ? sums.covariance / sums.urbanVariance : 0;
+    const intercept = meanForest - slope * meanUrban;
+    const rows = pairedRows
+      .map((row) => {
+        const expectedForestPercent = intercept + slope * row.urbanPercent;
+        return {
+          ...row,
+          expectedForestPercent,
+          residualPercent: row.forestPercent - expectedForestPercent,
+        };
+      })
+      .sort((a, b) => a.urbanPercent - b.urbanPercent);
+    const selectedIndex = getSequenceIndex(rows.length);
+    return {
+      rows,
+      selectedIndex,
+      selected: rows[selectedIndex],
+      correlation,
+      correlationLabel: describeCorrelation(correlation),
+      slope,
+      intercept,
+      meanUrban,
+      meanForest,
+    };
+  };
+
+  let nineSignalCardSnapshot = null;
+  let nineSignalCardCache = [];
+  const getNineSignalCards = () => {
+    if (!gaiaSnapshot) return [];
+    if (nineSignalCardSnapshot === gaiaSnapshot) return nineSignalCardCache;
+    const modeSignals = (id) => gaiaModeById.get(id)?.signals || {};
+    const air = modeSignals("breathing-earth");
+    const currents = modeSignals("blue-circulation");
+    const forest = modeSignals("forest-cloud-engine");
+    const pollination = modeSignals("pollination-protocol");
+    const waste = modeSignals("nothing-is-waste");
+    const city = modeSignals("anthropocene-scar");
+    const quake = modeSignals("rhythm-of-disaster");
+    const ecologies = modeSignals("three-ecologies");
+    const energy = modeSignals("earth-organ");
+    const latestCo2 = air.co2?.at(-1);
+    const currentSpeeds = (currents.currents || []).map((row) => Math.hypot(row.uMs, row.vMs));
+    const meanCurrentSpeed = currentSpeeds.length
+      ? currentSpeeds.reduce((sum, value) => sum + value, 0) / currentSpeeds.length
+      : 0;
+    const rainRows = forest.precipitation || [];
+    const maximumRain = Math.max(...rainRows.map((row) => row.precipitationMmDay || 0), 0);
+    const wasteRows = waste.countryWaste || [];
+    const wasteSourceCount = wasteRows.filter((row) => row.valueStatus === "SOURCE").length;
+    const wasteImputedCount = wasteRows.filter((row) => row.valueStatus === "IMPUTED").length;
+    const quakeRows = quake.globalEvents || [];
+    const quakeYears = quakeRows.map((row) => Number(String(row.occurredAt || "").slice(0, 4))).filter(Number.isFinite);
+    const ecologyComparison = getThreeEcologiesComparison(ecologies);
+    const renewableRows = energy.current || [];
+    const renewableValues = renewableRows.map((row) => row.renewablePercent).filter(Number.isFinite);
+    const renewableMinimum = renewableValues.length ? Math.min(...renewableValues) : 0;
+    const renewableMaximum = renewableValues.length ? Math.max(...renewableValues) : 0;
+    const card = (index, metric, value, scope) => ({
+      index,
+      number: String(index + 1).padStart(2, "0"),
+      title: modes[index].titleJa,
+      rgb: modes[index].rgb,
+      metric,
+      value,
+      scope,
+    });
+
+    nineSignalCardCache = [
+      card(0, "大気CO₂濃度", latestCo2 ? `${latestCo2.deseasonalizedPpm.toFixed(1)} ppm` : "— ppm", latestCo2 ? `${latestCo2.year}.${String(latestCo2.month).padStart(2, "0")} / 月平均` : "月平均"),
+      card(1, "海流の速さ", `平均 ${meanCurrentSpeed.toFixed(2)} m/s`, `${currentSpeeds.length}観測点 / 同一日時`),
+      card(2, "森林域 × 降水量", `最大 ${maximumRain.toFixed(2)} mm/day`, `${rainRows.length}代表地点`),
+      card(3, "ミツバチ × 花", `${pollination.interactions?.length || 0} 関係`, `${pollination.occurrences?.length || 0}観察記録とは別`),
+      card(4, "都市ごみ再資源化", `${wasteSourceCount}公開 + ${wasteImputedCount}補完`, `${wasteRows.length}か国 / %`),
+      card(5, "夜間光 × 排出量", `${city.emissions?.length || 0} か国`, "2016夜間光 / 2024排出"),
+      card(6, "M7.5以上の地震", `${quakeRows.length} 件`, quakeYears.length ? `${Math.min(...quakeYears)}–${Math.max(...quakeYears)}` : "年度別"),
+      card(7, "森林率 × 都市人口率", ecologyComparison ? `r ${ecologyComparison.correlation.toFixed(2)}` : "r —", `${ecologyComparison?.rows.length || 0}か国 / 相関`),
+      card(8, "再生可能電力比率", renewableValues.length ? `${renewableMinimum.toFixed(1)}–${renewableMaximum.toFixed(1)}%` : "—%", `${renewableRows.length}か国`),
+    ];
+    nineSignalCardSnapshot = gaiaSnapshot;
+    return nineSignalCardCache;
+  };
+
   const getMapSequenceState = (signalMode) => {
     if (!signalMode) return null;
     const { signals } = signalMode;
@@ -2079,42 +2281,83 @@
       if (!row) return null;
       return {
         kind: "forest",
-        phaseLabel: `GLOBAL SAMPLE / SITE ${String(index + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
+        phaseLabel: `31代表地点 / ${String(index + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
         yearLabel: row.precipitationMmDay?.toFixed(2) || "—",
-        valueLabel: `mm/day · ${row.name}`,
-        methodLabel: "NASA POWER POINTS × MODIS GLOBAL LAND COVER",
-        timeLabel: `観測地点 / AUTO 01→${String(rows.length).padStart(2, "0")}`,
+        valueLabel: `mm/day · ${getForestRainSiteName(row)}`,
+        methodLabel: "大きな水色円＝降水量 × 緑＝森林分布",
+        timeLabel: `代表地点 / AUTO 01→${String(rows.length).padStart(2, "0")}`,
         selectedIndex: index,
         selected: row,
         legend: [
-          ["水色円 / 降水", `${row.name} ${row.precipitationMmDay?.toFixed(2) || "—"} mm/day`],
-          ["緑 / 森林域", "MODIS IGBP 2023から緑系クラスを抽出"],
-          ["地点名 / 選択", "押した点の名称とmm/dayを地図上に表示"],
-          ["範囲 / 標本", `${rows.length}地点。世界全体を埋めた地図ではない`],
+          ["大きな水色円 / 降水量", `${getForestRainSiteName(row)} ${row.precipitationMmDay?.toFixed(2) || "—"} mm/day`],
+          ["緑の面 / 森林域", "MODIS IGBP 2023から森林域を抽出"],
+          ["円内の数字 / mm/day", "雨の多い代表地点は値を直接表示"],
+          ["31地点 / 標本", "地点間は補間しない・相関係数ではない"],
         ],
       };
     }
 
     if (signalMode.id === "pollination-protocol") {
-      const rows = signals.occurrences || [];
-      const index = getSequenceIndex(rows.length);
-      const row = rows[index];
-      if (!row) return null;
+      const occurrences = signals.occurrences || [];
+      const relations = (signals.interactions || []).filter((row) => row.targetTaxon);
+      const stageIndex = getSequenceIndex(3);
+      const stages = [
+        {
+          key: "records",
+          yearLabel: String(occurrences.length),
+          valueLabel: "GBIF観察記録",
+          methodLabel: "黄色い点＝人が登録した記録（生息分布ではない）",
+          note: "点はミツバチの個体数や生息域ではありません。点がない場所にもミツバチはいる可能性があります。",
+          legend: [
+            ["黄点 / GBIF記録", `${occurrences.length}件の人による観察`],
+            ["空白 / 不在ではない", "この標本に記録がないだけ"],
+            ["押す / 1件を読む", "国・日付・GBIF番号を表示"],
+            ["次へ / 標本の制約", "点が選ばれた方法を確認"],
+          ],
+        },
+        {
+          key: "sampling",
+          yearLabel: "2",
+          valueLabel: "1か国あたり最大件数",
+          methodLabel: "31か国 × 最大2件に揃えた展示用標本",
+          note: "国ごとの点数を最大2件に揃えています。点の多さから、ミツバチの多さや観察活動の差は比較できません。",
+          legend: [
+            ["線で結ぶ2点 / 同じ国", "各国から新しい記録を最大2件"],
+            ["31か国 / 選択標本", "世界全体・全記録ではない"],
+            ["点の数 / 比較不可", "生息数も観察努力も表さない"],
+            ["次へ / 花との関係", "場所を持たない別資料へ"],
+          ],
+        },
+        {
+          key: "relations",
+          yearLabel: String(relations.length),
+          valueLabel: "花との記録関係",
+          methodLabel: "GloBI文献関係網（地理配置ではない）",
+          note: "枝はGloBIに残るミツバチと植物の関係です。場所・頻度・強さを持たないため、地図の観察点へは結びません。",
+          legend: [
+            ["中央 / Apis mellifera", "セイヨウミツバチ"],
+            ["外側 / 植物名", `${relations.length}件の記録関係`],
+            ["枝 / pollinates", "関係の頻度や強さではない"],
+            ["配置 / 非地理", "太平洋上の位置に意味はない"],
+          ],
+        },
+      ];
+      const stage = stages[stageIndex];
       return {
         kind: "pollination",
-        phaseLabel: `GLOBAL SAMPLE / GBIF RECORD ${String(index + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
-        yearLabel: `REC ${String(index + 1).padStart(2, "0")}`,
-        valueLabel: `${String(row.eventDate || "DATE UNKNOWN").slice(0, 10)} · ${row.country || "country unknown"}`,
-        methodLabel: "OBSERVATION LOCATIONS ≠ LITERATURE RELATION LOCATIONS",
-        timeLabel: `観察記録 / AUTO 01→${String(rows.length).padStart(2, "0")}`,
-        selectedIndex: index,
-        selected: row,
-        legend: [
-          ["黄点 / 観察", `GBIF ${rows.length} records / max 2 per country`],
-          ["輪 / 選択記録", row.species || "Apis mellifera"],
-          ["文献 / GloBI", `${signals.interactions?.length || 0} relations / 場所情報なし`],
-          ["重要 / 非接続", "GloBI関係をGBIF観察地点へ結ばない"],
-        ],
+        phaseLabel: `3つの読み方 / STEP ${stageIndex + 1} OF 3`,
+        yearLabel: stage.yearLabel,
+        valueLabel: stage.valueLabel,
+        methodLabel: stage.methodLabel,
+        timeLabel: "読み方 / ①観察点 → ②標本 → ③関係網",
+        selectedIndex: stageIndex,
+        selected: stage,
+        stageIndex,
+        stageKey: stage.key,
+        note: stage.note,
+        occurrences,
+        relations,
+        legend: stage.legend,
       };
     }
 
@@ -2131,18 +2374,18 @@
         yearLabel: `${sourceRecycle.toFixed(1)}%`,
         valueLabel: `${selected?.country || "—"} · ${imputed ? "STATISTICAL ESTIMATE" : selected?.year || "—"}`,
         methodLabel: imputed
-          ? "近くの5か国から、真ん中の値を使う"
-          : "国連に報告された値",
+          ? "破線円 / 近くの5か国から補完"
+          : "実線円 / 国連に報告された値",
         timeLabel: "仮想値 / DRAG LEFT↔RIGHT",
         sourceRecycle,
         scenarioRecycle,
         selectedIndex: index,
         selected,
         legend: [
-          [imputed ? "破線円 / 補完値" : "実線円 / 公開値", `${selected?.country || "—"} ${imputed ? "DERIVED" : selected?.year || "—"} ${sourceRecycle.toFixed(1)}%`],
-          ["破線 / 仮想", `SCENARIO ${scenarioRecycle.toFixed(1)}%`],
-          ["残り / 未分類", `${(100 - sourceRecycle).toFixed(1)}%は埋立・焼却を推定しない`],
-          ["比較 / 注意", "報告年・制度・定義が国ごとに異なる"],
+          ["円グラフ / 現在値", `${selected?.country || "—"} ${sourceRecycle.toFixed(1)}% · ${imputed ? "破線＝補完" : "実線＝公式"}`],
+          ["外周 / もしも", `SCENARIO ${scenarioRecycle.toFixed(1)}% · 内側の現在値は固定`],
+          ["緑 / 再資源化", `${sourceRecycle.toFixed(1)}%が再び資源になった割合`],
+          ["橙 / それ以外", `${(100 - sourceRecycle).toFixed(1)}% · 焼却・埋立などの内訳は不明`],
         ],
       };
     }
@@ -2162,105 +2405,125 @@
         selectedIndex: index,
         selected: row,
         legend: [
-          ["赤い環 / 排出", `${row.country} ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e`],
-          ["白画像 / 夜間光", "NASA VIIRS 2016 rendered radiance"],
-          ["長押し / 比較", "世界の白い夜間光だけを一時的に薄くする"],
-          ["重要 / 非同一", "夜間光を排出量へ変換しない"],
+          ["赤い円 / 国別排出", `${row.country} ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e`],
+          ["白い発光 / 夜間光", "NASA VIIRS 2016 · 衛星画素を地図投影"],
+          ["長押し / 6秒比較", "白い夜間光だけを薄くし、赤い円は残す"],
+          ["重要 / 別の尺度", "夜の明るさを排出量へ変換しない"],
         ],
       };
     }
 
     if (signalMode.id === "rhythm-of-disaster") {
-      const rows = signals.featuredEvents || signals.globalEvents || signals.events || [];
-      const index = getSequenceIndex(rows.length);
-      const row = rows[index];
-      if (!row) return null;
+      const rows = signals.globalEvents || [];
+      const years = [...new Set(rows.map((row) => String(row.occurredAt || "").slice(0, 4)).filter(Boolean))]
+        .sort((a, b) => Number(a) - Number(b));
+      const index = getSequenceIndex(years.length);
+      const year = years[index];
+      const yearEvents = rows.filter((row) => String(row.occurredAt || "").startsWith(year));
+      const strongest = yearEvents.reduce(
+        (current, row) => !current || row.magnitude > current.magnitude ? row : current,
+        null,
+      );
+      if (!year || !strongest) return null;
       return {
         kind: "earthquake",
-        phaseLabel: `USGS GLOBAL M7.5+ / ${String(index + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
-        yearLabel: String(row.occurredAt || "").slice(0, 4),
-        valueLabel: `M${row.magnitude.toFixed(1)} · DEPTH ${row.depthKm?.toFixed(0) || "—"} km · ${row.name}`,
-        methodLabel: "GLOBAL EPICENTRE / MAGNITUDE ≠ JMA INTENSITY",
-        timeLabel: `地震記録 / AUTO 01→${String(rows.length).padStart(2, "0")}`,
+        phaseLabel: `USGS YEARLY M7.5+ / ${String(index + 1).padStart(2, "0")} OF ${String(years.length).padStart(2, "0")}`,
+        yearLabel: year,
+        valueLabel: `${yearEvents.length} EVENTS · MAX M${strongest.magnitude.toFixed(1)}`,
+        methodLabel: "YEAR SNAPSHOT / ALL WAVES START TOGETHER",
+        timeLabel: `年度 / ${years[0]} → ${years.at(-1)}`,
         selectedIndex: index,
-        selected: row,
+        selected: strongest,
+        selectedYear: year,
+        yearEvents,
+        years,
         legend: [
-          ["震源 / USGS", String(row.occurredAt).replace("T", " ").slice(0, 19)],
-          ["輪 / M7.5+", "震源位置と規模を年代順に走査"],
-          ["速度 / 別実装", "JMA詳細記録ではP 7 / S 4 km/s"],
-          ["重要 / 非変換", "Magnitudeを震度へ変換しない"],
+          ["橙点 / この年の震源", `${year}年 · M7.5以上 ${yearEvents.length}件`],
+          ["同心円 / 一斉拡大", `MAX M${strongest.magnitude.toFixed(1)} · 年度切替で同時開始`],
+          ["広がり / Magnitude", "M9.1で地図幅の約半分まで拡大"],
+          ["重要 / 非変換", "Magnitudeを震度や実際の到達範囲へ変換しない"],
         ],
       };
     }
 
     if (signalMode.id === "three-ecologies") {
-      const stages = [
-        { code: "LAYER 01", name: "ECOLOGICAL / 生態", method: "COUNTRY FOREST AREA" },
-        { code: "LAYER 02", name: "SOCIAL / 社会", method: "COUNTRY URBAN POPULATION" },
-        { code: "LAYER 03", name: "MEMORY / 文化・記憶", method: "UNESCO GLOBAL SAMPLE" },
-        { code: "ALL 03", name: "COEXIST / 三層を分けたまま重ねる", method: "NO MENTAL-ECOLOGY SCORE" },
-      ];
-      const index = getSequenceIndex(stages.length);
-      const stage = stages[index];
+      const comparison = getThreeEcologiesComparison(signals);
+      if (!comparison) return null;
+      const { rows, selectedIndex, selected, correlation, correlationLabel } = comparison;
+      const residualDirection = selected.residualPercent >= 0 ? "回帰線より森林が多い" : "回帰線より森林が少ない";
       return {
         kind: "ecologies",
-        phaseLabel: `THREE ECOLOGIES / PHASE ${String(index + 1).padStart(2, "0")} OF 04`,
-        yearLabel: stage.code,
-        valueLabel: stage.name,
-        methodLabel: stage.method,
-        timeLabel: "表示層 / AUTO ECO→SOCIAL→MEMORY→ALL",
-        selectedIndex: index,
-        selected: stage,
+        phaseLabel: `FOREST × URBAN / ${String(selectedIndex + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
+        yearLabel: selected.country,
+        valueLabel: `FOREST ${selected.forestPercent.toFixed(1)}% · URBAN ${selected.urbanPercent.toFixed(1)}%`,
+        methodLabel: `PAIRED COUNTRY VALUES / PEARSON r ${correlation.toFixed(2)}`,
+        timeLabel: `比較国 / 都市人口率が低い → 高い ${String(selectedIndex + 1).padStart(2, "0")}/${String(rows.length).padStart(2, "0")}`,
+        selectedIndex,
+        selected,
+        rows,
+        correlation,
+        correlationLabel,
+        slope: comparison.slope,
+        intercept: comparison.intercept,
         legend: [
-          ["地表色 / 生態", "MODIS IGBP 2023 global land cover"],
-          ["青 / 社会", `${signals.social?.length || 0} country urban values`],
-          ["紫 / 記憶", `${signals.culture?.length || 0} UNESCO global sample`],
-          ["非数値 / 記憶", "文化財の件数で心の豊かさを点数にしない"],
+          ["緑の内円 / 森林", `${selected.forestYear || selected.year}年 · 国土の${selected.forestPercent.toFixed(1)}%`],
+          ["青の外円 / 都市", `${selected.urbanYear || selected.year}年 · 人口の${selected.urbanPercent.toFixed(1)}%`],
+          ["散布図 / 31か国", `r ${correlation.toFixed(2)} · ${correlationLabel}`],
+          ["紫の菱形 / 記憶", `${signals.culture?.length || 0}世界遺産例 · 相関計算には含めない`],
+          ["平均との差 / 例外", `${residualDirection} ${Math.abs(selected.residualPercent).toFixed(1)}pt`],
         ],
       };
     }
 
     if (signalMode.id === "earth-organ") {
-      const rows = signals.potential || [];
+      const rows = (signals.current || [])
+        .map((current) => ({
+          ...current,
+          potential: (signals.potential || []).find((row) => row.iso3 === current.iso3) || null,
+        }))
+        .sort((a, b) => a.renewablePercent - b.renewablePercent);
       const index = getSequenceIndex(rows.length);
       const row = rows[index];
-      const current = (signals.current || []).find((entry) => entry.iso3 === row?.iso3);
       if (!row) return null;
       return {
         kind: "energy",
-        phaseLabel: `GLOBAL SAMPLE / SITE ${String(index + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
-        yearLabel: `SITE ${String(index + 1).padStart(2, "0")}`,
-        valueLabel: `${row.name} · SOLAR ${row.solarKwhM2Day?.toFixed(2) || "—"} · WIND ${row.windSpeedMs?.toFixed(2) || "—"}`,
-        methodLabel: "POTENTIAL ≠ CURRENT SUPPLY / TWO POINTS = SCENARIO",
-        timeLabel: `自然条件地点 / AUTO 01→${String(rows.length).padStart(2, "0")}`,
+        phaseLabel: `RENEWABLE ELECTRICITY / ${String(index + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
+        yearLabel: `${row.renewablePercent.toFixed(1)}%`,
+        valueLabel: `${row.country || row.name} · RENEWABLE ${row.renewablePercent.toFixed(1)}%`,
+        methodLabel: "COUNTRY CHOROPLETH / CURRENT ELECTRICITY SHARE",
+        timeLabel: `国 / 再生可能電力比率が低い → 高い ${String(index + 1).padStart(2, "0")}/${String(rows.length).padStart(2, "0")}`,
         selectedIndex: index,
         selected: row,
+        rows,
         legend: [
-          ["黄円 / 太陽", `${row.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day`],
-          ["緑矢印 / 風", `${row.windSpeedMs?.toFixed(2) || "—"} m/s`],
-          ["現在 / 同じ国", `${current?.year || "—"} renewables ${current?.renewablePercent?.toFixed(1) || "—"}%`],
-          ["破線 / 二地点", `SCENARIO selection ${selectedEnergyRegions.length}/2`],
+          ["青い国土 / 現在値", `${row.year || "—"}年 · 再生可能電力 ${row.renewablePercent.toFixed(1)}%`],
+          ["明るさ / 比率", "暗い青 0% → 明るい水色 100%"],
+          ["黄円 / 日射条件", `${row.potential?.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day`],
+          ["緑矢印 / 風条件", `${row.potential?.windSpeedMs?.toFixed(2) || "—"} m/s · 自然条件だけで比率は決まらない`],
         ],
       };
     }
 
     if (signalMode.id === "senseware-2050") {
-      const index = getSequenceIndex(9);
-      const mode = modes[index];
+      const cards = getNineSignalCards();
+      const index = getSequenceIndex(cards.length);
+      const selected = cards[index];
+      if (!selected) return null;
       return {
         kind: "senseware",
-        phaseLabel: `UNRESOLVED SIGNAL / ${String(index + 1).padStart(2, "0")} OF 09`,
-        yearLabel: `SIGNAL ${String(index + 1).padStart(2, "0")}`,
-        valueLabel: mode.titleJa,
-        methodLabel: "NINE BRANCHES / NO AGGREGATE EARTH SCORE",
-        timeLabel: "表示データ / AUTO 01→09",
+        phaseLabel: `NINE-MEASURE ATLAS / ${selected.number} OF 09`,
+        yearLabel: selected.value,
+        valueLabel: `${selected.number} ${selected.metric} · ${selected.value}`,
+        methodLabel: "9 MEASUREMENTS ≠ 1 EARTH SCORE",
+        timeLabel: "測定カード / AUTO 01→09",
         selectedIndex: index,
-        selected: mode,
+        selected,
+        cards,
         legend: [
-          ["枝 / 各データ", "単位が違うため別々に表示"],
-          ["明るさ / 接触", "観客の軌跡による一時的な記憶"],
-          ["中心 / 未完", "矛盾を平均せず並置"],
-          ["総合点 / なし", "地球健康度へ換算しない"],
+          ["9枚 / 同時表示", "測るもの・代表値・単位"],
+          ["黄色枠 / 選択中", "スライダーで01→09"],
+          ["値 / 比較しない", "ppm・m/s・%・件数・相関"],
+          ["総合点 / なし", "異なる単位を足し算しない"],
         ],
       };
     }
@@ -2465,15 +2728,20 @@
       return (signals.currents || []).map((row) => {
         const speed = Math.hypot(row.uMs, row.vMs);
         const distanceKm = speed * (state?.horizonHours || 0) * 3.6;
+        const bearing = (toDegrees(Math.atan2(row.uMs, row.vMs)) + 360) % 360;
+        const direction = ["北", "北東", "東", "南東", "南", "南西", "西", "北西"][
+          Math.round(bearing / 45) % 8
+        ];
+        const elapsedDays = (state?.horizonHours || 0) / 24;
         return {
           kind: "current-vector",
           lon: row.lon,
           lat: row.lat,
-          title: "海流の速さ・向き / 計算上の移動",
-          meta: `${state?.dateLabel || row.time} / ${speed.toFixed(2)} m/s / u ${row.uMs.toFixed(2)} / v ${row.vMs.toFixed(2)}`,
-          description: `この地点の海流は、東西と南北の速さを合わせて表示しています。同じ流れが${((state?.horizonHours || 0) / 24).toFixed(1)}日続くと、計算上は約${distanceKm.toFixed(1)} km進みます。`,
+          title: "この地点の海流が続いたら",
+          meta: `${state?.dateLabel || row.time} / 海流 ${speed.toFixed(2)} m/s / ${direction}方向`,
+          description: `スライダーで選んだ${elapsedDays.toFixed(1)}日後の計算です。速さと向きが変わらないと仮定すると、開始点から約${distanceKm.toFixed(1)} km先まで進みます。`,
           relation:
-            "青い点はNOAA CoastWatchの記録です。シアンの線と距離は、その速さと向きが変わらないと仮定して計算しました。航海や漂流の予報には使えません。",
+            "色付きの矢印と点はNOAA CoastWatchの海流です。白い矢印はNASA POWERの平均風で、この距離計算には使っていません。航海や漂流の予報には使えません。",
         };
       });
     }
@@ -2486,25 +2754,23 @@
         sequenceLength: rows.length,
         lon: row.lon,
         lat: row.lat,
-        title: `${row.name}の降水気候値`,
-        meta: `${row.precipitationMmDay?.toFixed(2) || "—"} mm/day / NASA POWER CLIMATOLOGY`,
-        description: "この地点の平均的な雨の量を、円の大きさと数字で示しています。",
-        relation: `NASA POWERから選んだ${signals.precipitation?.length || 0}地点の一つです。世界中のすき間を埋めた地図ではありません。森林との重なりは見られますが、原因・結果までは分かりません。`,
+        title: `${getForestRainSiteName(row)}の平均降水量`,
+        meta: `年平均 ${row.precipitationMmDay?.toFixed(2) || "—"} mm/day / NASA POWER`,
+        description: "この代表地点の雨量を、大きな水色円の直径と数字で示しています。直径が大きいほど平均降水量が多い地点です。",
+        relation: `NASA POWERから選んだ${signals.precipitation?.length || 0}代表地点の一つです。円のない場所にも雨は降りますが、この地図では地点間を推測で埋めていません。森林との重なりは見られても、相関係数や原因・結果を示すものではありません。`,
       }));
     }
     if (signalMode.id === "pollination-protocol") {
       const rows = signals.occurrences || [];
-      return rows.map((row, sequenceIndex) => ({
+      return rows.map((row) => ({
         ...row,
         kind: "sequence-poi",
-        sequenceIndex,
-        sequenceLength: rows.length,
         lon: row.lon,
         lat: row.lat,
-        title: row.species,
-        meta: `${row.eventDate?.slice(0, 10) || "date unknown"} / GBIF ${row.key}`,
-        description: `${row.country || "地域不明"}で、実際にこの生物が記録された場所です。`,
-        relation: "この点はGBIFの観察記録です。花と送粉者の関係はGloBIという別の資料なので、この場所で送粉が起きたとは限りません。",
+        title: "この点は、一件の観察記録",
+        meta: `${row.species || "Apis mellifera"} / ${row.eventDate?.slice(0, 10) || "date unknown"} / GBIF ${row.key}`,
+        description: `${row.country || "地域不明"}で人が観察し、GBIFへ登録した記録です。この点だけで周辺の生息数や分布範囲は分かりません。`,
+        relation: "選んだ31か国から新しい記録を最大2件ずつ抜き出した展示用標本です。点がない場所にミツバチがいないとは言えません。花との関係は場所を持たないGloBIの別資料なので、この点へ線で結びません。",
       }));
     }
     if (signalMode.id === "nothing-is-waste") {
@@ -2521,8 +2787,8 @@
             ? `計算で補った値 / ${row.recyclePercent.toFixed(1)}% / 近くの5か国を参照`
             : `${row.year} / ${row.recyclePercent.toFixed(1)}% / 国連の公式データ`,
           description: imputed
-            ? `この地域には公式の数字がありませんでした。そこで、近くの5か国（${row.donorIso3?.join(" / ") || "—"}）を参考にし、真ん中の値を置いています。破線は「計算で補った値」の印です。`
-            : "国連に報告された、この国の最新値です。実線の円が実際の統計、外側の破線は観客が動かす「もしも」です。",
+            ? `この地域には公式の数字がありませんでした。そこで、近くの5か国（${row.donorIso3?.join(" / ") || "—"}）を参考にし、真ん中の値を置いています。破線の円グラフは「計算で補った値」の印です。緑が${row.recyclePercent.toFixed(1)}%、橙が残り${(100 - row.recyclePercent).toFixed(1)}%です。`
+            : `国連に報告された、この国の最新値です。実線の円グラフの緑が再資源化${row.recyclePercent.toFixed(1)}%、橙が残り${(100 - row.recyclePercent).toFixed(1)}%です。選択中だけ外周に観客の「もしも」が出ます。`,
           relation: imputed
             ? "近い国でも、ごみの制度や暮らし方は違います。この数字は公式統計ではなく、空白を仮に補った目安です。"
             : "円は国の目印で、ごみ処理施設の位置ではありません。この資料だけでは、残りのごみが焼却か埋立かも分かりません。",
@@ -2542,34 +2808,51 @@
       }));
     }
     if (signalMode.id === "rhythm-of-disaster") {
-      return (signals.globalEvents || []).map((row) => ({
+      if (japanDataLayer === "history") return [];
+      const state = getMapSequenceState(signalMode);
+      return (state?.yearEvents || []).map((row) => ({
         ...row,
         lon: row.longitude,
         lat: row.latitude,
         kind: "sequence-poi",
         title: row.name,
         meta: `${String(row.occurredAt).slice(0, 10)} / M${row.magnitude.toFixed(1)} / DEPTH ${row.depthKm?.toFixed(0) || "—"} km`,
-        description: "USGSが記録した、2000年以降のM7.5以上の地震です。データは作品内に保存しています。",
-        relation: "マグニチュードは地震の規模、震度は各地の揺れです。日本の代表例だけ、実測震度とP波・S波が届く目安を表示します。",
+        description: `USGSが記録した${state?.selectedYear || String(row.occurredAt).slice(0, 4)}年のM7.5以上の地震です。この年度の${state?.yearEvents.length || 0}件だけを地図に表示しています。`,
+        relation: "同心円の最終サイズはMagnitudeに応じた展示上の強調です。実際の揺れの到達範囲や震度を表す円ではありません。日本の実測震度は左下の切替から別層で確認できます。",
       }));
     }
     if (signalMode.id === "three-ecologies") {
-      const stage = getMapSequenceState(signalMode)?.selectedIndex ?? 3;
+      const state = getMapSequenceState(signalMode);
       return [
-        ...(stage === 0 || stage === 3 ? (signals.ecological || []).map((row) => ({ ...row, kind: "sequence-poi", title: `${row.country} / FOREST`, meta: `ECOLOGICAL / ${row.year} / ${row.forestPercent.toFixed(1)}%`, description: "国土のうち森林が占める割合を、緑の大きさで示しています。", relation: "国全体の数字です。森の質や生きものの豊かさまでは分かりません。" })) : []),
-        ...(stage === 1 || stage === 3 ? (signals.social || []).map((row) => ({ ...row, kind: "sequence-poi", title: `${row.country} / URBAN`, meta: `SOCIAL / ${row.year} / ${row.urbanPercent.toFixed(1)}%`, description: "人口のうち都市で暮らす人の割合を、青い円で示しています。", relation: "国全体の数字です。幸福度や暮らしやすさを表すものではありません。" })) : []),
-        ...(stage === 2 || stage === 3 ? (signals.culture || []).map((row) => ({ ...row, kind: "sequence-poi", title: row.name, meta: `CULTURE / ${row.category} / ${row.region}`, description: "各地域から選んだUNESCO世界遺産の一つです。", relation: "展示用に選んだ例で、全世界遺産の一覧ではありません。点の数で文化の価値を比べることもできません。" })) : []),
+        ...(state?.rows || []).map((row) => ({
+          ...row,
+          kind: "sequence-poi",
+          title: `${row.country} / 森林×都市`,
+          meta: `FOREST ${row.forestPercent.toFixed(1)}% / URBAN ${row.urbanPercent.toFixed(1)}%`,
+          description: `${row.country}の国土に占める森林は${row.forestPercent.toFixed(1)}%、人口に占める都市居住者は${row.urbanPercent.toFixed(1)}%です。二つを同じ国の組として比較しています。`,
+          relation: `31か国のPearson相関は r ${state.correlation.toFixed(2)}（${state.correlationLabel}）です。この国は回帰線より森林率が${Math.abs(row.residualPercent).toFixed(1)}ポイント${row.residualPercent >= 0 ? "高い" : "低い"}側にあります。相関は因果関係ではありません。`,
+        })),
+        ...(signals.culture || []).map((row) => ({
+          ...row,
+          kind: "sequence-poi",
+          title: row.name,
+          meta: `MEMORY CONTEXT / ${row.category} / ${row.region}`,
+          description: "各地域から選んだUNESCO世界遺産の一例です。紫の菱形として、森林率と都市人口率の数値だけでは表せない文化・記憶の場所を示します。",
+          relation: "展示用の例で全件ではなく、相関係数や国の順位には含めません。文化や心を点数化するための点ではありません。",
+        })),
       ];
     }
     if (signalMode.id === "earth-organ") {
-      return (signals.potential || []).map((row) => ({
+      const state = getMapSequenceState(signalMode);
+      return (state?.rows || []).map((row) => ({
+        ...row,
         kind: "sequence-poi",
         lon: row.lon,
         lat: row.lat,
-        title: `${row.name}の自然エネルギー条件`,
-        meta: `SOLAR ${row.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day / WIND ${row.windSpeedMs?.toFixed(2) || "—"} m/s`,
-        description: "NASA POWERがまとめた、この場所の日差しと風の平均的な値です。発電設備や土地、費用は含みません。",
-        relation: `${signals.potential?.length || 0}地点から選んだ一つです。内側の円は国全体の現在の電力統計です。二地点を結ぶ破線だけが、この展示で作る試算です。`,
+        title: `${row.country || row.name}の再生可能電力`,
+        meta: `${row.year || "—"} / RENEWABLE ${row.renewablePercent.toFixed(1)}% OF ELECTRICITY`,
+        description: `この国の総発電量に占める再生可能エネルギーの割合は${row.renewablePercent.toFixed(1)}%です。国土の青が明るいほど比率が高くなります。`,
+        relation: `黄色い輪と緑の矢印は代表地点の平均日射${row.potential?.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day・風速${row.potential?.windSpeedMs?.toFixed(2) || "—"} m/sです。自然条件だけで現在の電力比率や導入可能性が決まるわけではありません。`,
       }));
     }
     return [];
@@ -2646,6 +2929,26 @@
       }
       ctx.globalAlpha = 1;
     };
+    const drawNightLightsLayer = (image, dimmed) => {
+      if (!image.complete || !image.naturalWidth) {
+        japanOverlay.dataset.nightLightsLayer = "loading";
+        return;
+      }
+      japanOverlay.dataset.nightLightsLayer = dimmed ? "dimmed" : "visible";
+      japanOverlay.dataset.nightLightsSource = "NASA-VIIRS-2016";
+      japanOverlay.dataset.nightLightsProjection = "web-mercator-to-geographic";
+      japanOverlay.dataset.nightLightsDisplay = "glow-plus-radiance-core";
+
+      ctx.save();
+      ctx.filter = "brightness(3.4) contrast(1.25) blur(2.6px)";
+      drawGlobalRaster(image, dimmed ? 0.015 : 0.78);
+      ctx.restore();
+
+      ctx.save();
+      ctx.filter = "brightness(2.7) contrast(1.45)";
+      drawGlobalRaster(image, dimmed ? 0.03 : 1);
+      ctx.restore();
+    };
 
     ctx.save();
     ctx.globalCompositeOperation = "screen";
@@ -2718,105 +3021,378 @@
       }
     } else if (signalMode.id === "forest-cloud-engine") {
       const sequence = getMapSequenceState(signalMode);
-      drawGlobalRaster(landCoverImage, 0.66, { forestOnly: true });
-      (signalMode.signals.precipitation || []).forEach((row, index) => {
+      const precipitationRows = signalMode.signals.precipitation || [];
+      const brazilRain = precipitationRows.find((row) => row.id === "brazil");
+      japanOverlay.dataset.forestRainCircleRange = `${FOREST_RAIN_MIN_RADIUS}-${FOREST_RAIN_MAX_RADIUS}px radius`;
+      japanOverlay.dataset.forestRainBrazil = brazilRain
+        ? `${brazilRain.precipitationMmDay.toFixed(2)} mm/day`
+        : "missing";
+      drawGlobalRaster(landCoverImage, 0.5, { forestOnly: true });
+      const drawRainCircle = (row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
-        const rain = clamp((row.precipitationMmDay || 0) / 8, 0, 1);
+        const precipitationMmDay = Number(row.precipitationMmDay) || 0;
+        const rain = clamp(precipitationMmDay / FOREST_RAIN_REFERENCE_MAX_MM_DAY, 0, 1);
+        const radius = getForestRainRadius(precipitationMmDay);
         const selected = index === sequence?.selectedIndex;
+        ctx.save();
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 5 + rain * (selected ? 20 : 12), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(74,176,255,${selected ? 0.38 + rain * 0.38 : 0.1 + rain * 0.22})`;
+        ctx.arc(point.x, point.y, radius + 4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,18,35,${selected ? 0.82 : 0.62})`;
         ctx.fill();
+
+        const fill = ctx.createRadialGradient(
+          point.x - radius * 0.24,
+          point.y - radius * 0.28,
+          Math.max(2, radius * 0.08),
+          point.x,
+          point.y,
+          radius,
+        );
+        fill.addColorStop(0, `rgba(226,252,255,${selected ? 0.98 : 0.9})`);
+        fill.addColorStop(0.18, `rgba(91,218,255,${selected ? 0.9 : 0.78})`);
+        fill.addColorStop(1, `rgba(25,125,255,${selected ? 0.52 : 0.3 + rain * 0.25})`);
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.strokeStyle = selected ? "rgba(222,251,255,.98)" : "rgba(151,225,255,.82)";
+        ctx.lineWidth = selected ? 2.4 : 1.4;
+        ctx.stroke();
+
         if (selected) {
           ctx.beginPath();
-          ctx.arc(point.x, point.y, 22 + rain * 22 + Math.sin(time * 2.2) * 3, 0, Math.PI * 2);
+          ctx.arc(point.x, point.y, radius + 10 + Math.sin(time * 2.2) * 3, 0, Math.PI * 2);
           ctx.strokeStyle = "rgba(153,220,255,.88)";
-          ctx.lineWidth = 1.4;
+          ctx.lineWidth = 1.8;
           ctx.stroke();
+        }
+
+        if (selected || precipitationMmDay >= 3.5) {
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.shadowColor = "rgba(0,10,24,.96)";
+          ctx.shadowBlur = 7;
+          ctx.fillStyle = "rgba(240,253,255,.98)";
+          ctx.font = `700 ${selected ? 11 : 10}px Consolas, "Courier New", monospace`;
+          ctx.fillText(precipitationMmDay.toFixed(1), point.x, point.y - 4);
+          ctx.font = '700 7px Consolas, "Courier New", monospace';
+          ctx.fillText(row.id === "brazil" ? "BRA / AMAZON" : row.iso3 || "RAIN", point.x, point.y + 8);
+        } else {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 2.6, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(236,253,255,.94)";
+          ctx.fill();
+        }
+        ctx.restore();
+
+        if (selected) {
           drawSelectionLabel(
             point,
-            row.name,
+            getForestRainSiteName(row),
             `${row.precipitationMmDay?.toFixed(2) || "—"} mm/day · NASA POWER`,
             "rgba(151,220,255,.96)",
           );
         }
+      };
+      precipitationRows.forEach((row, index) => {
+        if (index !== sequence?.selectedIndex) drawRainCircle(row, index);
       });
+      if (sequence?.selected) drawRainCircle(sequence.selected, sequence.selectedIndex);
     } else if (signalMode.id === "pollination-protocol") {
       const sequence = getMapSequenceState(signalMode);
-      getModeDataPois().forEach((row, index) => {
-        const point = pointFor(row);
+      const records = getModeDataPois();
+      const stageKey = sequence?.stageKey || "records";
+      const relations = sequence?.relations || [];
+      japanOverlay.dataset.pollinationStage = stageKey;
+      japanOverlay.dataset.pollinationOccurrenceCount = String(records.length);
+      japanOverlay.dataset.pollinationRelationCount = String(relations.length);
+      japanOverlay.dataset.pollinationSampling = "max-2-per-country";
+      const points = records.map((row, index) => ({ row, index, point: pointFor(row) }));
+
+      if (stageKey === "sampling") {
+        const byCountry = new Map();
+        points.forEach((entry) => {
+          const key = entry.row.countryCode || entry.row.country || "unknown";
+          const group = byCountry.get(key) || [];
+          group.push(entry);
+          byCountry.set(key, group);
+        });
+        ctx.save();
+        ctx.setLineDash([4, 5]);
+        byCountry.forEach((group) => {
+          if (group.length < 2 || !visible(group[0].point) || !visible(group[1].point)) return;
+          ctx.beginPath();
+          ctx.moveTo(group[0].point.x, group[0].point.y);
+          ctx.lineTo(group[1].point.x, group[1].point.y);
+          ctx.strokeStyle = "rgba(255,210,112,.48)";
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      const activeRecordIndex = records.length
+        ? Math.floor(time * 0.72) % records.length
+        : -1;
+      points.forEach(({ row, index, point }) => {
         if (!visible(point)) return;
-        const selected = index === sequence?.selectedIndex;
-        ctx.fillStyle = "rgba(255,219,109,.84)";
-        ctx.fillRect(point.x - (selected ? 2.5 : 1.5), point.y - (selected ? 2.5 : 1.5), selected ? 5 : 3, selected ? 5 : 3);
-        if (selected) {
+        const active = stageKey === "records" && index === activeRecordIndex;
+        const radius = stageKey === "sampling" ? 4.2 : active ? 4.8 : 2.4;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = stageKey === "relations"
+          ? "rgba(255,219,109,.16)"
+          : active
+            ? "rgba(255,247,190,.98)"
+            : "rgba(255,219,109,.8)";
+        ctx.fill();
+        if (stageKey === "sampling") {
+          ctx.strokeStyle = "rgba(255,245,192,.86)";
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+        if (active) {
           for (let ring = 0; ring < 3; ring += 1) {
             ctx.beginPath();
             ctx.arc(point.x, point.y, 12 + ring * 8 + Math.sin(time * 2 + ring) * 2, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255,${190 - ring * 20},220,${0.54 - ring * 0.12})`;
+            ctx.strokeStyle = `rgba(255,${210 - ring * 18},112,${0.58 - ring * 0.13})`;
             ctx.stroke();
           }
+        }
+        ctx.restore();
+        if (active) {
           drawSelectionLabel(
             point,
-            row.country || "観察地域不明",
+            `${row.country || "観察地域不明"}の一件の記録`,
             `${row.species || "Apis"} · ${row.eventDate?.slice(0, 10) || "DATE UNKNOWN"}`,
             "rgba(255,223,112,.96)",
           );
         }
       });
+
+      const drawEvidencePanel = (code, title, copy) => {
+        if (rect.width < 760) return;
+        const width = Math.min(430, rect.width * 0.34);
+        const x = clamp(rect.width * 0.62 - width / 2, 24, rect.width - width - 24);
+        const y = Math.max(94, rect.height * 0.15);
+        ctx.save();
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "rgba(2,15,24,.88)";
+        ctx.fillRect(x, y, width, 88);
+        ctx.strokeStyle = "rgba(255,211,112,.42)";
+        ctx.strokeRect(x, y, width, 88);
+        ctx.fillStyle = "rgba(255,220,126,.9)";
+        ctx.font = '700 8px Consolas, "Courier New", monospace';
+        ctx.fillText(code, x + 16, y + 20);
+        ctx.fillStyle = "rgba(246,252,247,.96)";
+        ctx.font = '600 16px "Noto Sans JP", sans-serif';
+        ctx.fillText(title, x + 16, y + 46, width - 32);
+        ctx.fillStyle = "rgba(218,235,232,.68)";
+        ctx.font = '10px "Noto Sans JP", sans-serif';
+        ctx.fillText(copy, x + 16, y + 69, width - 32);
+        ctx.restore();
+      };
+
+      if (stageKey === "records") {
+        drawEvidencePanel(
+          "STEP 1 / POINT ≠ HABITAT",
+          "点は、ミツバチではなく観察記録",
+          `${records.length}件のGBIF記録。空白は「いない場所」を意味しません。`,
+        );
+      } else if (stageKey === "sampling") {
+        drawEvidencePanel(
+          "STEP 2 / SAMPLING LIMIT",
+          "各国から最大2件に揃えた標本",
+          "線で結ばれた二点は同じ国。点の数では生息数を比較できません。",
+        );
+      } else if (stageKey === "relations" && relations.length) {
+        const centerX = rect.width * (rect.width >= 1000 ? 0.64 : 0.56);
+        const centerY = rect.height * 0.47;
+        const networkRadius = Math.min(190, Math.max(100, Math.min(rect.width * 0.15, rect.height * 0.21)));
+        const activeRelationIndex = Math.floor(time * 0.45) % relations.length;
+        const rotation = reducedMotion ? -Math.PI / 2 : time * 0.025;
+        let activeNode = null;
+        ctx.save();
+        ctx.globalCompositeOperation = "source-over";
+        relations.forEach((relation, index) => {
+          const angle = rotation + (index / relations.length) * Math.PI * 2;
+          const radius = networkRadius * (0.78 + (index % 3) * 0.1);
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius;
+          const active = index === activeRelationIndex;
+          ctx.beginPath();
+          ctx.moveTo(centerX, centerY);
+          ctx.lineTo(x, y);
+          ctx.strokeStyle = active ? "rgba(255,226,120,.92)" : "rgba(139,232,178,.24)";
+          ctx.lineWidth = active ? 2.2 : 0.9;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x, y, active ? 7 : 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = active ? "rgba(255,230,134,.98)" : "rgba(118,235,173,.78)";
+          ctx.fill();
+          if (active) activeNode = { x, y, relation };
+        });
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 34, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(24,34,25,.95)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,221,116,.92)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.textAlign = "center";
+        ctx.fillStyle = "rgba(255,231,146,.98)";
+        ctx.font = '700 10px Consolas, "Courier New", monospace';
+        ctx.fillText("Apis", centerX, centerY - 3);
+        ctx.fillStyle = "rgba(235,246,226,.82)";
+        ctx.font = '8px Consolas, "Courier New", monospace';
+        ctx.fillText("mellifera", centerX, centerY + 11);
+        ctx.fillStyle = "rgba(255,220,118,.92)";
+        ctx.font = '700 9px Consolas, "Courier New", monospace';
+        ctx.fillText("NON-GEOGRAPHIC / GloBI RELATION NETWORK", centerX, centerY - networkRadius - 28);
+        ctx.fillStyle = "rgba(218,236,224,.66)";
+        ctx.font = '9px "Noto Sans JP", sans-serif';
+        ctx.fillText("枝の位置・長さは、場所・頻度・強さを表しません", centerX, centerY - networkRadius - 12);
+        if (activeNode) {
+          const labelWidth = Math.min(360, rect.width - 40);
+          const labelX = clamp(centerX - labelWidth / 2, 20, rect.width - labelWidth - 20);
+          const labelY = Math.min(rect.height - 72, centerY + networkRadius + 18);
+          ctx.fillStyle = "rgba(2,15,20,.9)";
+          ctx.fillRect(labelX, labelY, labelWidth, 48);
+          ctx.strokeStyle = "rgba(142,236,179,.42)";
+          ctx.strokeRect(labelX, labelY, labelWidth, 48);
+          ctx.fillStyle = "rgba(151,239,185,.9)";
+          ctx.font = '700 8px Consolas, "Courier New", monospace';
+          ctx.fillText(`POLLINATES / ${activeRelationIndex + 1} OF ${relations.length}`, centerX, labelY + 17);
+          ctx.fillStyle = "rgba(242,250,236,.96)";
+          ctx.font = '600 12px "Noto Sans JP", sans-serif';
+          ctx.fillText(activeNode.relation.targetTaxon, centerX, labelY + 35, labelWidth - 24);
+        }
+        ctx.restore();
+      }
     } else if (signalMode.id === "nothing-is-waste") {
       const sequence = getMapSequenceState(signalMode);
-      (signalMode.signals.countryWaste || []).forEach((row, index) => {
+      const rows = signalMode.signals.countryWaste || [];
+      const selectedIndex = sequence?.selectedIndex ?? 0;
+      const orderedRows = rows
+        .map((row, index) => ({ row, index }))
+        .sort((a, b) => Number(a.index === selectedIndex) - Number(b.index === selectedIndex));
+      const officialCount = rows.filter((row) => row.valueStatus !== "IMPUTED").length;
+      const baseRadius = clamp(rect.width / 78, 20, 29);
+      const selectedRadius = clamp(rect.width / 34, 46, 62);
+      japanOverlay.dataset.recyclingEncoding = "fixed-diameter-pie";
+      japanOverlay.dataset.recyclingPieCount = String(rows.length);
+      japanOverlay.dataset.recyclingOfficialCount = String(officialCount);
+      japanOverlay.dataset.recyclingImputedCount = String(rows.length - officialCount);
+      japanOverlay.dataset.recyclingSelectedRate = sequence?.sourceRecycle.toFixed(1) || "0.0";
+      japanOverlay.dataset.recyclingScenarioRate = sequence?.scenarioRecycle.toFixed(1) || "0.0";
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      orderedRows.forEach(({ row, index }) => {
         const point = pointFor(row);
-        if (!visible(point)) return;
+        if (!visible(point, selectedRadius + 20)) return;
         const rate = clamp(row.recyclePercent / 100, 0, 1);
-        const selected = index === sequence?.selectedIndex;
+        const selected = index === selectedIndex;
         const imputed = row.valueStatus === "IMPUTED";
-        const radius = 4 + Math.sqrt(rate) * (selected ? 27 : 15);
+        const radius = selected ? selectedRadius : baseRadius;
+        const startAngle = -Math.PI / 2;
+        const endAngle = startAngle + rate * Math.PI * 2;
+
+        ctx.save();
+        ctx.globalAlpha = imputed && !selected ? 0.72 : 1;
+        ctx.shadowColor = selected ? "rgba(118,255,194,.52)" : "rgba(34,224,153,.22)";
+        ctx.shadowBlur = selected ? 22 : 8;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = selected ? "rgba(255,137,103,.92)" : "rgba(226,116,88,.78)";
+        ctx.fill();
+
+        if (rate > 0.0001) {
+          ctx.beginPath();
+          ctx.moveTo(point.x, point.y);
+          ctx.arc(point.x, point.y, radius, startAngle, endAngle);
+          ctx.closePath();
+          ctx.fillStyle = selected ? "rgba(91,245,169,.98)" : "rgba(76,225,157,.9)";
+          ctx.fill();
+        }
+
+        ctx.shadowBlur = 0;
         ctx.setLineDash(imputed ? [3, 3] : []);
         ctx.beginPath();
         ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = selected ? "rgba(118,255,194,.94)" : `rgba(98,239,177,${0.18 + rate * 0.42})`;
-        ctx.lineWidth = selected ? 2 : 1;
+        ctx.strokeStyle = selected ? "rgba(238,255,247,.98)" : "rgba(202,255,230,.78)";
+        ctx.lineWidth = selected ? 2.4 : 1.4;
         ctx.stroke();
         ctx.setLineDash([]);
+
         ctx.beginPath();
-        ctx.arc(point.x, point.y, Math.max(2, radius * rate), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(74,225,158,${imputed ? (selected ? 0.18 : 0.07 + rate * 0.08) : (selected ? 0.38 : 0.12 + rate * 0.16)})`;
+        ctx.arc(point.x, point.y, selected ? radius * 0.43 : radius * 0.34, 0, Math.PI * 2);
+        ctx.fillStyle = selected ? "rgba(3,18,22,.94)" : "rgba(3,18,22,.82)";
         ctx.fill();
+
+        if (selected || rect.width >= 900) {
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "rgba(244,255,250,.98)";
+          ctx.font = selected
+            ? '700 15px Consolas, "Courier New", monospace'
+            : '700 8px Consolas, "Courier New", monospace';
+          ctx.fillText(`${Math.round(row.recyclePercent)}%`, point.x, point.y + (selected ? -1 : 0));
+        }
+
         if (selected) {
-          ctx.setLineDash([3, 6]);
+          const scenarioRate = clamp(sequence.scenarioRecycle / 100, 0, 1);
+          const scenarioRadius = radius + 11;
+          ctx.lineWidth = 7;
           ctx.beginPath();
-          ctx.arc(point.x, point.y, 8 + sequence.scenarioRecycle * 0.31, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(236,255,245,.82)";
+          ctx.arc(point.x, point.y, scenarioRadius, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(126,91,73,.72)";
+          ctx.stroke();
+          if (scenarioRate > 0.0001) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, scenarioRadius, startAngle, startAngle + scenarioRate * Math.PI * 2);
+            ctx.strokeStyle = "rgba(218,255,103,.98)";
+            ctx.stroke();
+          }
+          ctx.lineWidth = 1.3;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, scenarioRadius + 5, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(230,255,191,.72)";
           ctx.stroke();
           ctx.setLineDash([]);
-          for (let particle = 0; particle < 20; particle += 1) {
-            const angle = (particle / 20) * Math.PI * 2 + time * 0.45;
-            const orbit = radius + 7 + (particle % 3) * 4;
-            ctx.fillStyle = `rgba(156,255,211,${0.24 + rate * 0.5})`;
-            ctx.fillRect(point.x + Math.cos(angle) * orbit, point.y + Math.sin(angle) * orbit, 1.4, 1.4);
-          }
+          ctx.textBaseline = "alphabetic";
           drawSelectionLabel(
-            point,
+            { x: point.x + radius + 7, y: point.y },
             row.country,
-            `${imputed ? "補完値" : "公開値"} ${row.recyclePercent.toFixed(1)}% → もしも ${sequence.scenarioRecycle.toFixed(1)}%`,
+            `内円 ${imputed ? "補完" : "公式"} ${row.recyclePercent.toFixed(1)}% / 外周 もしも ${sequence.scenarioRecycle.toFixed(1)}%`,
             "rgba(138,255,202,.96)",
           );
         }
+        ctx.restore();
       });
+      ctx.restore();
     } else if (signalMode.id === "anthropocene-scar") {
       const sequence = getMapSequenceState(signalMode);
-      const emission = sequence?.selected;
-      drawGlobalRaster(nightLightsImage, now < anthropocenePeelUntil ? 0.04 : 0.5);
-      (signalMode.signals.emissions || []).forEach((row, index) => {
+      const nightLightsDimmed = now < anthropocenePeelUntil;
+      drawNightLightsLayer(nightLightsImage, nightLightsDimmed);
+      const emissionRows = signalMode.signals.emissions || [];
+      japanOverlay.dataset.emissionsCircleCount = String(emissionRows.length);
+      japanOverlay.dataset.emissionsEncoding = "country-total-log-area";
+      emissionRows.forEach((row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
         const load = clamp(Math.log10(Math.max(1, row.emissionsMtCo2e)) / 4, 0, 1);
         const selected = index === sequence?.selectedIndex;
+        const radius = 5 + load * (selected ? 48 : 25);
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 5 + load * (selected ? 48 : 25), 0, Math.PI * 2);
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,70,57,${selected ? 0.16 : 0.025 + load * 0.055})`;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
         ctx.strokeStyle = `rgba(255,72,59,${selected ? 0.94 : 0.2 + load * 0.46})`;
         ctx.lineWidth = selected ? 2.2 : 1;
         ctx.stroke();
@@ -2825,142 +3401,418 @@
           ctx.arc(point.x, point.y, 12 + load * 56 + Math.sin(time * 2.2) * 4, 0, Math.PI * 2);
           ctx.strokeStyle = "rgba(255,143,103,.42)";
           ctx.stroke();
+          drawSelectionLabel(
+            { x: point.x + radius + 7, y: point.y },
+            row.country,
+            `COUNTRY TOTAL ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e · 点排出源ではない`,
+            "rgba(255,151,126,.96)",
+          );
         }
       });
     } else if (signalMode.id === "rhythm-of-disaster") {
       const sequence = getMapSequenceState(signalMode);
-      (signalMode.signals.globalEvents || []).forEach((event) => {
-        const point = pointFor({ lon: event.longitude, lat: event.latitude });
-        if (!visible(point)) return;
-        const selected = event.id === sequence?.selected?.id;
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, selected ? 3.8 : 1.7, 0, Math.PI * 2);
-        ctx.fillStyle = selected ? "rgba(255,206,112,.98)" : "rgba(255,143,90,.38)";
-        ctx.fill();
-      });
-      const selected = sequence?.selected;
-      if (selected) {
-        const point = japanWorldToScreen(selected.longitude, selected.latitude, left, top);
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 16 + Math.sin(time * 2.4) * 4, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255,177,86,.88)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
+      const selectedYear = sequence?.selectedYear || "";
+      const yearEvents = sequence?.yearEvents || [];
+      if (japanDataLayer === "history") {
+        japanOverlay.dataset.earthquakeLayer = "japan-history";
+      } else {
+        if (globalEarthquakeWaveYear !== selectedYear) {
+          globalEarthquakeWaveYear = selectedYear;
+          globalEarthquakeWaveStartedAt = now;
+        }
+        const waveProgress = reducedMotion
+          ? 1
+          : clamp((now - globalEarthquakeWaveStartedAt) / GLOBAL_EARTHQUAKE_WAVE_DURATION_MS, 0, 1);
+        const easedProgress = 1 - (1 - waveProgress) ** 3;
+        const waveOpacity = 0.92 - waveProgress * 0.54;
+        const viewportWaveLimit = Math.min(rect.width * 0.47, rect.height * 0.78);
+        const strongestMagnitude = sequence?.selected?.magnitude || GLOBAL_EARTHQUAKE_MIN_MAGNITUDE;
+        const strongestMagnitudeScale = clamp(
+          (strongestMagnitude - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE) /
+            (GLOBAL_EARTHQUAKE_MAX_MAGNITUDE - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE),
+          0,
+          1,
+        );
+        const strongestTargetRadius = viewportWaveLimit * (0.48 + strongestMagnitudeScale * 0.52);
+        japanOverlay.dataset.earthquakeLayer = "world-year";
+        japanOverlay.dataset.earthquakeYear = selectedYear;
+        japanOverlay.dataset.earthquakeYearEventCount = String(yearEvents.length);
+        japanOverlay.dataset.earthquakeTotalEventCount = String(signalMode.signals.globalEvents?.length || 0);
+        japanOverlay.dataset.earthquakeWaveSync = "annual-simultaneous";
+        japanOverlay.dataset.earthquakeWaveProgress = waveProgress.toFixed(3);
+        japanOverlay.dataset.earthquakeWaveViewportLimitPx = viewportWaveLimit.toFixed(1);
+        japanOverlay.dataset.earthquakeWaveRadiusMaxPx = strongestTargetRadius.toFixed(1);
+
+        yearEvents.forEach((event) => {
+          const point = pointFor({ lon: event.longitude, lat: event.latitude });
+          if (!visible(point, viewportWaveLimit)) return;
+          const magnitudeScale = clamp(
+            (event.magnitude - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE) /
+              (GLOBAL_EARTHQUAKE_MAX_MAGNITUDE - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE),
+            0,
+            1,
+          );
+          const targetRadius = viewportWaveLimit * (0.48 + magnitudeScale * 0.52);
+          const radius = targetRadius * easedProgress;
+          const strongest = event.id === sequence?.selected?.id;
+
+          if (radius > 2) {
+            [1, 0.72, 0.44].forEach((ringScale, ringIndex) => {
+              ctx.beginPath();
+              ctx.arc(point.x, point.y, radius * ringScale, 0, Math.PI * 2);
+              ctx.strokeStyle = ringIndex === 0
+                ? `rgba(255,177,86,${waveOpacity * (strongest ? 0.96 : 0.72)})`
+                : `rgba(255,116,76,${waveOpacity * (ringIndex === 1 ? 0.38 : 0.2)})`;
+              ctx.lineWidth = ringIndex === 0 ? 1.4 + magnitudeScale * 1.8 : 0.8 + magnitudeScale;
+              ctx.stroke();
+            });
+          }
+
+          const sourceRadius = 3.5 + magnitudeScale * 4.5;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, sourceRadius, 0, Math.PI * 2);
+          ctx.fillStyle = strongest ? "rgba(255,232,151,.98)" : "rgba(255,151,89,.9)";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, sourceRadius + 7 + Math.sin(time * 3 + magnitudeScale) * 2, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(255,197,108,${0.22 + magnitudeScale * 0.24})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = "rgba(255,224,173,.88)";
+          ctx.font = '700 8px Consolas, "Courier New", monospace';
+          ctx.fillText(`M${event.magnitude.toFixed(1)}`, point.x + sourceRadius + 5, point.y - 5);
+        });
+
+        const strongest = sequence?.selected;
+        if (strongest) {
+          const point = pointFor({ lon: strongest.longitude, lat: strongest.latitude });
+          if (visible(point, 80)) {
+            drawSelectionLabel(
+              { x: point.x + 14, y: point.y },
+              `${selectedYear} / ${yearEvents.length} EVENTS`,
+              `MAX M${strongest.magnitude.toFixed(1)} · 全震源の波は年度切替で同時開始`,
+              "rgba(255,203,126,.96)",
+            );
+          }
+        }
       }
       ctx.fillStyle = "rgba(255,190,108,.74)";
       ctx.font = '8px Consolas, "Courier New", monospace';
-      ctx.fillText("USGS GLOBAL M7.5+ / JMA DETAIL KEEPS OBSERVED INTENSITY", 22, rect.height - 26);
+      ctx.fillText("USGS YEARLY M7.5+ / SYNCHRONIZED DISPLAY WAVES / JMA DETAIL IS A SEPARATE LAYER", 22, rect.height - 26);
     } else if (signalMode.id === "three-ecologies") {
-      const stage = getMapSequenceState(signalMode)?.selectedIndex ?? 3;
-      if (stage === 0 || stage === 3) drawGlobalRaster(landCoverImage, 0.42);
-      getModeDataPois().forEach((row, index) => {
+      const state = getMapSequenceState(signalMode);
+      const rows = state?.rows || [];
+      const selected = state?.selected;
+      drawGlobalRaster(landCoverImage, 0.16, { forestOnly: true });
+      japanOverlay.dataset.ecologiesPlot = "paired-country-scatter";
+      japanOverlay.dataset.ecologiesPairCount = String(rows.length);
+      japanOverlay.dataset.ecologiesCorrelation = Number.isFinite(state?.correlation)
+        ? state.correlation.toFixed(3)
+        : "";
+      japanOverlay.dataset.ecologiesSelectedCountry = selected?.country || "";
+      japanOverlay.dataset.ecologiesCultureCount = String(signalMode.signals.culture?.length || 0);
+
+      (signalMode.signals.culture || []).forEach((row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
-        const ecological = row.meta.startsWith("ECOLOGICAL");
-        const social = row.meta.startsWith("SOCIAL");
-        const scale = ecological
-          ? clamp((row.forestPercent || 0) / 100, 0, 1)
-          : social
-            ? clamp((row.urbanPercent || 0) / 100, 0, 1)
-            : 0.45;
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, ecological ? 4 + scale * 13 : social ? 5 + scale * 11 : 5, 0, Math.PI * 2);
-        ctx.strokeStyle = ecological
-          ? "rgba(92,242,145,.62)"
-          : social
-            ? "rgba(86,181,255,.62)"
-            : "rgba(219,143,255,.72)";
-        ctx.lineWidth = ecological || social ? 1.6 : 1;
-        ctx.stroke();
-        if (!ecological && !social) {
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, 13 + Math.sin(time + index) * 3, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(219,143,255,.22)";
-          ctx.stroke();
-        }
-      });
-    } else if (signalMode.id === "earth-organ") {
-      const sequence = getMapSequenceState(signalMode);
-      const potential = signalMode.signals.potential || [];
-      const points = potential.map((row) => ({ ...row, ...pointFor(row) })).filter((point) => visible(point));
-      points.forEach((row, index) => {
-        const solar = clamp((row.solarKwhM2Day || 0) / 7, 0, 1);
-        const selected = potential.indexOf(row) === sequence?.selectedIndex || row.id === sequence?.selected?.id;
-        const current = (signalMode.signals.current || []).find((entry) => entry.iso3 === row.iso3);
-        const radius = 6 + solar * (selected ? 25 : 14);
-        ctx.beginPath();
-        ctx.arc(row.x, row.y, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = selected ? "rgba(255,239,129,.95)" : "rgba(255,223,100,.42)";
-        ctx.lineWidth = selected ? 2 : 1;
-        ctx.stroke();
-        if (Number.isFinite(current?.renewablePercent)) {
-          ctx.beginPath();
-          ctx.arc(row.x, row.y, 2 + current.renewablePercent * (selected ? 0.2 : 0.11), 0, Math.PI * 2);
-          ctx.fillStyle = selected ? "rgba(104,255,202,.48)" : "rgba(104,255,202,.2)";
-          ctx.fill();
-        }
-        drawVectorArrow(ctx, row.x, row.y, row.windSpeedMs || 0, 0.1, "rgba(121,255,218,.62)", 4);
-      });
-      if (selectedEnergyRegions.length === 2) {
-        const first = pointFor(selectedEnergyRegions[0]);
-        const second = pointFor(selectedEnergyRegions[1]);
-        ctx.setLineDash([3, 8]);
-        ctx.lineDashOffset = -(now / 90);
-        ctx.beginPath();
-        ctx.moveTo(first.x, first.y);
-        ctx.lineTo(second.x, second.y);
-        ctx.strokeStyle = "rgba(200,255,236,.72)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = "rgba(225,255,245,.86)";
-        ctx.font = '8px Consolas, "Courier New", monospace';
-        ctx.fillText("SCENARIO / DISTRIBUTED LINK", (first.x + second.x) / 2 + 8, (first.y + second.y) / 2 - 8);
-      }
-    } else {
-      const sequence = getMapSequenceState(signalMode);
-      const nine = modes.slice(0, 9).map((entry, index) => {
-        const angle = (index / 9) * Math.PI * 2 - Math.PI / 2;
-        return {
-          entry,
-          x: center.x + Math.cos(angle) * rect.width * 0.27,
-          y: center.y + Math.sin(angle) * rect.height * 0.31,
-          memory: modeMemory[index],
-        };
-      });
-      nine.forEach((node, index) => {
-        const selected = index === sequence?.selectedIndex;
-        ctx.beginPath();
-        ctx.moveTo(center.x, center.y);
-        ctx.lineTo(node.x, node.y);
-        ctx.strokeStyle = `rgba(${modes[index].rgb},${selected ? 0.92 : 0.12 + node.memory * 0.58})`;
-        ctx.lineWidth = selected ? 3.2 : 0.7 + node.memory * 2.2;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, selected ? 12 : 3 + node.memory * 8, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${modes[index].rgb},${selected ? 0.96 : 0.45 + node.memory * 0.45})`;
-        ctx.fill();
+        const pulse = reducedMotion ? 0 : Math.sin(time * 1.15 + index) * 1.5;
         ctx.save();
-        ctx.globalCompositeOperation = "source-over";
-        ctx.fillStyle = selected ? "rgba(255,255,255,.98)" : "rgba(218,241,244,.68)";
-        ctx.font = selected
-          ? '700 10px Consolas, "Courier New", monospace'
-          : '8px Consolas, "Courier New", monospace';
-        ctx.textAlign = node.x < center.x ? "right" : "left";
-        ctx.fillText(
-          `${String(index + 1).padStart(2, "0")} ${rect.width >= 760 ? node.entry.titleJa : ""}`.trim(),
-          node.x + (node.x < center.x ? -12 : 12),
-          node.y + 4,
-        );
+        ctx.translate(point.x, point.y);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = "rgba(214,145,255,.74)";
+        ctx.fillRect(-3.5, -3.5, 7, 7);
+        ctx.strokeStyle = "rgba(231,190,255,.46)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-8 - pulse, -8 - pulse, 16 + pulse * 2, 16 + pulse * 2);
         ctx.restore();
       });
-      const selectedSignal = nine[sequence?.selectedIndex || 0]?.entry || modes[0];
-      drawSelectionLabel(
-        center,
-        `${String((sequence?.selectedIndex || 0) + 1).padStart(2, "0")} ${selectedSignal.titleJa}`,
-        "九つを合計しない · NO TOTAL SCORE",
-        "rgba(225,251,255,.96)",
-      );
+
+      rows.forEach((row) => {
+        const point = pointFor(row);
+        if (!visible(point)) return;
+        const isSelected = row.iso3 === selected?.iso3;
+        const outerRadius = isSelected ? 22 : 12;
+        const innerRadius = isSelected ? 15 : 7;
+        const start = -Math.PI / 2;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, outerRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(86,181,255,.12)";
+        ctx.lineWidth = isSelected ? 5 : 3;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, outerRadius, start, start + Math.PI * 2 * clamp(row.urbanPercent / 100, 0, 1));
+        ctx.strokeStyle = isSelected ? "rgba(92,203,255,.98)" : "rgba(86,181,255,.72)";
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, innerRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(92,242,145,.12)";
+        ctx.lineWidth = isSelected ? 5 : 3;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, innerRadius, start, start + Math.PI * 2 * clamp(row.forestPercent / 100, 0, 1));
+        ctx.strokeStyle = isSelected ? "rgba(104,255,164,.98)" : "rgba(92,242,145,.72)";
+        ctx.stroke();
+        const residualStrength = clamp(Math.abs(row.residualPercent) / 35, 0.15, 1);
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, isSelected ? 5 : 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = row.residualPercent >= 0
+          ? `rgba(122,255,174,${0.28 + residualStrength * 0.62})`
+          : `rgba(255,174,112,${0.28 + residualStrength * 0.62})`;
+        ctx.fill();
+        ctx.lineCap = "butt";
+        if (isSelected) {
+          drawSelectionLabel(
+            { x: point.x + 26, y: point.y },
+            `${row.country} / FOREST ${row.forestPercent.toFixed(1)}%`,
+            `URBAN ${row.urbanPercent.toFixed(1)}% · 回帰線との差 ${row.residualPercent >= 0 ? "+" : ""}${row.residualPercent.toFixed(1)}pt`,
+            "rgba(216,255,232,.98)",
+          );
+        }
+      });
+
+      if (state && rows.length) {
+        const compact = rect.width < 680;
+        const chartWidth = Math.min(compact ? rect.width - 28 : 360, rect.width * 0.46);
+        const chartHeight = compact ? 190 : 250;
+        const chartX = compact ? 14 : rect.width - chartWidth - 30;
+        const chartY = compact ? Math.max(150, rect.height - chartHeight - 112) : 56;
+        const padding = { left: 42, right: 18, top: 48, bottom: 34 };
+        const plotLeft = chartX + padding.left;
+        const plotRight = chartX + chartWidth - padding.right;
+        const plotTop = chartY + padding.top;
+        const plotBottom = chartY + chartHeight - padding.bottom;
+        const plotX = (value) => plotLeft + clamp(value / 100, 0, 1) * (plotRight - plotLeft);
+        const plotY = (value) => plotBottom - clamp(value / 100, 0, 1) * (plotBottom - plotTop);
+        ctx.save();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgba(3,18,27,.88)";
+        ctx.strokeStyle = "rgba(174,224,221,.28)";
+        ctx.lineWidth = 1;
+        ctx.fillRect(chartX, chartY, chartWidth, chartHeight);
+        ctx.strokeRect(chartX + 0.5, chartY + 0.5, chartWidth - 1, chartHeight - 1);
+        ctx.strokeStyle = "rgba(174,224,221,.2)";
+        ctx.beginPath();
+        ctx.moveTo(plotLeft, plotTop);
+        ctx.lineTo(plotLeft, plotBottom);
+        ctx.lineTo(plotRight, plotBottom);
+        ctx.stroke();
+
+        const forestAtZero = state.intercept;
+        const forestAtHundred = state.intercept + state.slope * 100;
+        ctx.beginPath();
+        ctx.moveTo(plotX(0), plotY(forestAtZero));
+        ctx.lineTo(plotX(100), plotY(forestAtHundred));
+        ctx.strokeStyle = "rgba(241,245,212,.72)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        rows.forEach((row) => {
+          const isSelected = row.iso3 === selected?.iso3;
+          ctx.beginPath();
+          ctx.arc(plotX(row.urbanPercent), plotY(row.forestPercent), isSelected ? 5.5 : 2.7, 0, Math.PI * 2);
+          ctx.fillStyle = isSelected ? "rgba(255,238,155,.98)" : "rgba(145,233,211,.7)";
+          ctx.fill();
+          if (isSelected) {
+            ctx.fillStyle = "rgba(255,244,199,.95)";
+            ctx.font = '600 8px Consolas, "Courier New", monospace';
+            ctx.textAlign = "left";
+            ctx.fillText(row.country.toUpperCase(), plotX(row.urbanPercent) + 8, plotY(row.forestPercent) - 7);
+          }
+        });
+
+        ctx.fillStyle = "rgba(224,246,239,.96)";
+        ctx.font = '600 12px "Noto Sans JP", sans-serif';
+        ctx.textAlign = "left";
+        ctx.fillText("森林率 × 都市人口率", chartX + 16, chartY + 20);
+        ctx.fillStyle = "rgba(199,162,255,.96)";
+        ctx.font = '600 10px Consolas, "Courier New", monospace';
+        ctx.fillText(`r ${state.correlation.toFixed(2)} / ${state.correlationLabel}`, chartX + 16, chartY + 37);
+        ctx.fillStyle = "rgba(143,219,203,.76)";
+        ctx.font = '8px "Noto Sans JP", sans-serif';
+        ctx.fillText("森林率 %", chartX + 8, plotTop - 8);
+        ctx.textAlign = "right";
+        ctx.fillText("都市人口率 % →", plotRight, chartY + chartHeight - 11);
+        ctx.restore();
+      }
+    } else if (signalMode.id === "earth-organ") {
+      const state = getMapSequenceState(signalMode);
+      const rows = state?.rows || [];
+      const selected = state?.selected;
+      const filledCount = drawRenewableCountryChoropleth(ctx, rect, rows, selected?.iso3);
+      japanOverlay.dataset.renewableCountryFillCount = String(filledCount);
+      japanOverlay.dataset.renewableFillScale = "country-blue-0-100";
+      japanOverlay.dataset.renewableSelectedCountry = selected?.country || "";
+      japanOverlay.dataset.renewableSelectedPercent = Number.isFinite(selected?.renewablePercent)
+        ? selected.renewablePercent.toFixed(1)
+        : "";
+      japanOverlay.dataset.energyConnectionRemoved = "true";
+      japanOverlay.dataset.countryGeometryState = naturalEarthCountryState;
+
+      if (selected) {
+        const point = pointFor(selected);
+        const potential = selected.potential;
+        if (visible(point) && potential) {
+          const solar = clamp((potential.solarKwhM2Day || 0) / 7, 0, 1);
+          const radius = 18 + solar * 28;
+          const pulse = 1 + Math.sin(now / 520) * 0.08;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, radius * pulse, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,222,86,.12)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,236,126,.98)";
+          ctx.lineWidth = 2.4;
+          ctx.stroke();
+          drawVectorArrow(
+            ctx,
+            point.x,
+            point.y,
+            potential.windSpeedMs || 0,
+            0.12,
+            "rgba(113,255,211,.96)",
+            8,
+          );
+          drawSelectionLabel(
+            { x: point.x + radius + 14, y: point.y - 5 },
+            `${selected.country} / RENEWABLE ${selected.renewablePercent.toFixed(1)}%`,
+            `SOLAR ${potential.solarKwhM2Day.toFixed(2)} · WIND ${potential.windSpeedMs.toFixed(2)}`,
+            "rgba(224,255,249,.98)",
+          );
+        }
+      }
+
+      if (state) {
+        const compact = rect.width < 680;
+        const panelWidth = compact ? Math.min(180, rect.width - 28) : 330;
+        const panelHeight = compact ? 92 : 104;
+        const panelX = compact ? rect.width - panelWidth - 14 : rect.width - panelWidth - 30;
+        const panelY = compact ? 92 : 54;
+        const gradientX = panelX + 16;
+        const gradientY = panelY + (compact ? 48 : 54);
+        const gradientWidth = panelWidth - 32;
+        ctx.save();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgba(3,18,31,.9)";
+        ctx.strokeStyle = "rgba(111,218,255,.38)";
+        ctx.lineWidth = 1;
+        ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+        ctx.strokeRect(panelX + 0.5, panelY + 0.5, panelWidth - 1, panelHeight - 1);
+        ctx.fillStyle = "rgba(222,249,255,.96)";
+        ctx.font = '600 11px "Noto Sans JP", sans-serif';
+        ctx.textAlign = "left";
+        ctx.fillText("再生可能電力比率 / 国別", panelX + 16, panelY + 21);
+        ctx.fillStyle = "rgba(139,229,255,.9)";
+        ctx.font = '600 9px Consolas, "Courier New", monospace';
+        ctx.fillText(`${selected?.country?.toUpperCase() || "—"}  ${selected?.renewablePercent?.toFixed(1) || "—"}%`, panelX + 16, panelY + 38);
+        const gradient = ctx.createLinearGradient(gradientX, 0, gradientX + gradientWidth, 0);
+        gradient.addColorStop(0, "rgb(14,72,150)");
+        gradient.addColorStop(0.5, "rgb(30,151,203)");
+        gradient.addColorStop(1, "rgb(46,230,255)");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(gradientX, gradientY, gradientWidth, 12);
+        const markerX = gradientX + clamp((selected?.renewablePercent || 0) / 100, 0, 1) * gradientWidth;
+        ctx.fillStyle = "rgba(255,240,152,.98)";
+        ctx.fillRect(markerX - 1.5, gradientY - 3, 3, 18);
+        ctx.fillStyle = "rgba(180,225,238,.82)";
+        ctx.font = '8px Consolas, "Courier New", monospace';
+        ctx.textAlign = "left";
+        ctx.fillText("0%", gradientX, gradientY + 27);
+        ctx.textAlign = "center";
+        ctx.fillText("50", gradientX + gradientWidth / 2, gradientY + 27);
+        ctx.textAlign = "right";
+        ctx.fillText("100%", gradientX + gradientWidth, gradientY + 27);
+        ctx.restore();
+      }
+    } else {
+      const state = getMapSequenceState(signalMode);
+      const cards = state?.cards || [];
+      const compact = rect.width < 680;
+      const dashboardX = compact ? 14 : Math.max(440, rect.width * 0.28);
+      const dashboardWidth = compact
+        ? Math.max(280, rect.width - 28)
+        : Math.min(820, rect.width - dashboardX - Math.max(300, rect.width * 0.16));
+      const dashboardY = compact ? 92 : 82;
+      const dashboardHeight = compact ? 480 : Math.min(450, rect.height - 380);
+      const padding = compact ? 10 : 16;
+      const headerHeight = compact ? 68 : 82;
+      const gap = compact ? 6 : 9;
+      const cardWidth = (dashboardWidth - padding * 2 - gap * 2) / 3;
+      const cardHeight = (dashboardHeight - headerHeight - padding * 2 - gap * 2) / 3;
+      japanOverlay.dataset.sensewareDisplay = "nine-data-cards";
+      japanOverlay.dataset.sensewareCardCount = String(cards.length);
+      japanOverlay.dataset.sensewareSelectedCard = state?.selected?.number || "";
+      japanOverlay.dataset.sensewareSelectedMetric = state?.selected?.metric || "";
+      japanOverlay.dataset.sensewareAudienceTraces = "removed";
+
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "rgba(2,16,27,.91)";
+      ctx.strokeStyle = "rgba(151,226,235,.34)";
+      ctx.lineWidth = 1;
+      ctx.fillRect(dashboardX, dashboardY, dashboardWidth, dashboardHeight);
+      ctx.strokeRect(dashboardX + 0.5, dashboardY + 0.5, dashboardWidth - 1, dashboardHeight - 1);
+      ctx.fillStyle = "rgba(231,252,255,.98)";
+      ctx.font = compact
+        ? '700 15px "Noto Sans JP", sans-serif'
+        : '700 22px "Noto Sans JP", sans-serif';
+      ctx.textAlign = "left";
+      ctx.fillText("9つの測定 ≠ 1つの地球スコア", dashboardX + padding, dashboardY + (compact ? 24 : 31));
+      ctx.fillStyle = "rgba(151,222,230,.86)";
+      ctx.font = compact
+        ? '9px "Noto Sans JP", sans-serif'
+        : '11px "Noto Sans JP", sans-serif';
+      ctx.fillText("同時に見て、単位は足さない。黄色い枠が選択中。", dashboardX + padding, dashboardY + (compact ? 45 : 55));
+      ctx.fillStyle = "rgba(255,231,139,.92)";
+      ctx.font = compact
+        ? '700 8px Consolas, "Courier New", monospace'
+        : '700 10px Consolas, "Courier New", monospace';
+      ctx.textAlign = "right";
+      ctx.fillText("NO SINGLE SCORE", dashboardX + dashboardWidth - padding, dashboardY + (compact ? 59 : 70));
+
+      cards.forEach((card, index) => {
+        const column = index % 3;
+        const row = Math.floor(index / 3);
+        const x = dashboardX + padding + column * (cardWidth + gap);
+        const y = dashboardY + headerHeight + padding + row * (cardHeight + gap);
+        const selected = index === state?.selectedIndex;
+        ctx.save();
+        if (selected) {
+          ctx.shadowColor = "rgba(255,232,133,.42)";
+          ctx.shadowBlur = compact ? 8 : 16;
+        }
+        ctx.fillStyle = selected ? "rgba(18,44,52,.97)" : "rgba(5,27,39,.88)";
+        ctx.strokeStyle = selected ? "rgba(255,235,143,.98)" : `rgba(${card.rgb},.42)`;
+        ctx.lineWidth = selected ? 2.4 : 1;
+        ctx.fillRect(x, y, cardWidth, cardHeight);
+        ctx.strokeRect(x + 0.5, y + 0.5, cardWidth - 1, cardHeight - 1);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = selected ? "rgba(255,235,143,.98)" : `rgba(${card.rgb},.88)`;
+        ctx.fillRect(x, y, selected ? 6 : 3, cardHeight);
+        ctx.fillStyle = selected ? "rgba(255,239,160,.98)" : `rgba(${card.rgb},.9)`;
+        ctx.font = compact
+          ? '700 8px Consolas, "Courier New", monospace'
+          : '700 11px Consolas, "Courier New", monospace';
+        ctx.textAlign = "left";
+        ctx.fillText(card.number, x + (compact ? 8 : 13), y + (compact ? 15 : 21));
+        ctx.fillStyle = "rgba(222,247,247,.94)";
+        ctx.font = compact
+          ? '600 8px "Noto Sans JP", sans-serif'
+          : '600 12px "Noto Sans JP", sans-serif';
+        ctx.fillText(card.metric, x + (compact ? 8 : 13), y + (compact ? 32 : 44), cardWidth - (compact ? 14 : 24));
+        ctx.fillStyle = selected ? "rgba(255,247,207,.99)" : "rgba(237,252,255,.96)";
+        ctx.font = compact
+          ? '700 10px Consolas, "Courier New", monospace'
+          : '700 19px Consolas, "Courier New", monospace';
+        ctx.fillText(card.value, x + (compact ? 8 : 13), y + (compact ? 55 : 76), cardWidth - (compact ? 14 : 24));
+        ctx.fillStyle = "rgba(145,205,210,.82)";
+        ctx.font = compact
+          ? '7px "Noto Sans JP", sans-serif'
+          : '9px "Noto Sans JP", sans-serif';
+        ctx.fillText(card.scope, x + (compact ? 8 : 13), y + (compact ? 74 : 99), cardWidth - (compact ? 14 : 24));
+        ctx.restore();
+      });
+      ctx.restore();
     }
 
     ctx.restore();
@@ -3033,50 +3885,9 @@
 
     renderMapInstallationEffect(ctx, rect, nodePoints, now);
 
-    if (isTheme(6)) {
+    if (isTheme(6) && japanDataLayer === "history") {
       renderJapanHistoryReplay(ctx, rect, left, top, now);
-
-      if (japanDataLayer === "snapshot") {
-      const visibleEarthquakes = getVisibleEarthquakes();
-      const strongestEarthquake = visibleEarthquakes.reduce(
-        (strongest, event) =>
-          !strongest || event.magnitude > strongest.magnitude ? event : strongest,
-        null,
-      );
-
-      for (const [index, event] of visibleEarthquakes.entries()) {
-        const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
-        if (
-          point.x < -30 ||
-          point.x > rect.width + 30 ||
-          point.y < -30 ||
-          point.y > rect.height + 30
-        ) {
-          continue;
-        }
-
-        const radius = 2.4 + clamp(event.magnitude - 2.5, 0, 4.5) * 1.35;
-        const depthOpacity = 0.56 - clamp(event.depthKm / 650, 0, 1) * 0.28;
-        const phase = reducedMotion ? 0.5 : 0.5 + Math.sin(now * 0.001 + index) * 0.5;
-
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 174, 112, ${depthOpacity})`;
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, radius + 4 + phase * 3, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255, 166, 101, ${0.12 + phase * 0.1})`;
-        ctx.lineWidth = 0.7;
-        ctx.stroke();
-
-        if (event === strongestEarthquake && event.magnitude >= 5.5) {
-          ctx.fillStyle = "rgba(255, 204, 166, 0.62)";
-          ctx.font = '7px Consolas, "Courier New", monospace';
-          ctx.fillText(`M${event.magnitude.toFixed(1)}`, point.x + radius + 5, point.y - 5);
-        }
-      }
-      } else {
-        japanHistoryEvents.forEach((event, index) => {
+      japanHistoryEvents.forEach((event, index) => {
         const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
         if (
           point.x < -34 ||
@@ -3108,11 +3919,10 @@
           point.x + radius + 6,
           point.y - 6,
         );
-        });
-      }
+      });
     }
 
-    if (!isTheme(0)) nodePoints.forEach((node, index) => {
+    if (!isTheme(0) && !isTheme(9)) nodePoints.forEach((node, index) => {
       if (
         node.x < -40 ||
         node.x > rect.width + 40 ||
@@ -3148,6 +3958,7 @@
         japanPulses.splice(index, 1);
         continue;
       }
+      if (isTheme(9)) continue;
 
       const progress = clamp(age / pulseLifetime, 0, 1);
       const x = pulse.worldX - left;
@@ -3200,7 +4011,7 @@
 
     if (japanTileErrors === 0) {
       const latestPulse = japanPulses.at(-1);
-      if (!latestPulse) {
+      if (isTheme(9) || !latestPulse) {
         japanMapStatus.textContent = getJapanObservationStatus();
       } else if (now - latestPulse.bornAt < pulseLifetime * 0.24) {
         japanMapStatus.textContent = "QUESTION SENT / CONNECTING TO A LISTENING NODE";
@@ -3324,16 +4135,10 @@
       }
       return "JMA HISTORY / STANDBY";
     }
-    if (japanEarthquakeDataState === "loading") {
-      return "USGS LOCAL SNAPSHOT / LOADING BUNDLED OBSERVATIONS";
-    }
-    if (japanEarthquakeDataState === "snapshot") {
-      return `USGS LOCAL SNAPSHOT / ${getVisibleEarthquakes().length} OBSERVATIONS / M7.5+ / 2000–2026`;
-    }
-    if (japanEarthquakeDataState === "offline") {
-      return "SEISMIC DATA OFFLINE / INTERACTION SIGNAL ACTIVE";
-    }
-    return "4 PLATE CONTACT ZONE / EARTH RHYTHM ACTIVE";
+    const annualState = getMapSequenceState(getActiveSignalMode());
+    return annualState
+      ? `USGS ${annualState.selectedYear} / ${annualState.yearEvents.length} EVENTS / MAX M${annualState.selected.magnitude.toFixed(1)} / WORLD VIEW`
+      : "USGS YEARLY M7.5+ / LOADING";
   };
 
   const formatJapanDataTime = (value) => {
@@ -3411,10 +4216,7 @@
     const guide = MAP_READING_GUIDES[getThemeIndex()];
     if (guide) {
       mapGuideTitle.textContent = guide.title || modes[modeToIndex].titleJa;
-      mapGuideSubject.textContent =
-        isTheme(6) && japanDataLayer === "snapshot"
-          ? "作品内に保存した、2000〜2026年の世界のM7.5以上の地震を読む地図です。"
-          : guide.subject;
+      mapGuideSubject.textContent = guide.subject;
       mapGuideReading.textContent = guide.reading;
       mapGuideAction.textContent = guide.action;
     }
@@ -3424,18 +4226,18 @@
         japanObservationCopy.textContent =
           "色はCO₂濃度です。斜線のマスは近くの8地点から計算しました。2026年以降は、最近10年と同じ増え方が続いた場合の試算です。マスを押すと詳しい数字が出ます。";
       } else if (signalMode?.id === "blue-circulation") {
-        japanObservationKicker.textContent = "OCEAN TRANSPORT / DAY 0 → 14 / 45 SEC LOOP";
+        japanObservationKicker.textContent = "海流の速さを0〜14日まで延長 / 45秒ループ";
         japanObservationCopy.textContent =
-          "青は海流の速さ、シアンの線は同じ流れが続いた場合の移動距離です。白い矢印は風です。青い点を押すと動きが止まり、詳しい数字が出ます。";
+          "色付きの矢印が海流です。点から伸びる線は、その流れが変わらないと仮定した移動距離です。白い矢印は比較用の風で、距離計算には使いません。色付きの点を押すと詳しい数字が出ます。";
       } else if (signalMode) {
         const narratives = {
-          "forest-cloud-engine": ["FOREST × RAIN / FOREST MASK + 31 SITES", "緑は森林域だけ、水色は31地点の平均降水量です。点を押すと名称とmm/dayが地図上に出ます。地点間の補間はしていません。"],
-          "pollination-protocol": ["BEE OBSERVATIONS / GBIF POINTS + GLOBI REFERENCE", "黄色はGBIFのミツバチ観察点です。場所を持たないGloBI文献関係は、件数だけを示して地図上では結びません。"],
-          "nothing-is-waste": ["RECYCLING / PUBLISHED, FILLED, WHAT-IF", "実線は国連の公開値、内側の破線は補完値、外側の破線は自分で動かす仮想値です。選択国の現在→もしもを併記します。"],
-          "anthropocene-scar": ["ANTHROPOCENE / GLOBAL COUNTRY GHG / 48 SEC LOOP", "赤い円は国ごとの温室効果ガス排出量、白は人工衛星が見た夜の明かりです。二つは別々のデータです。"],
-          "three-ecologies": ["THREE ECOLOGIES / GLOBAL LAYERS / 48 SEC LOOP", "森林、都市人口、各地域から選んだ世界遺産を順番に表示し、最後に三つを重ねます。"],
-          "earth-organ": ["ENERGY CONDITIONS / 31 GLOBAL SITES / 48 SEC LOOP", "黄色は地点ごとの日差しと風、緑はその国の再生可能電力の割合です。二地点を結ぶ破線は展示上の試算です。"],
-          "senseware-2050": ["NINE SIGNALS / NUMBERED BRANCHES / 48 SEC LOOP", "01〜09を番号つきの枝で順番に表示し、選択名を中央へ出します。単位が違うため合計や平均にはしません。"],
+          "forest-cloud-engine": ["FOREST × RAIN / FOREST MASK + 31 SITES", "緑は森林域、大きな水色円は31代表地点の平均降水量です。直径が大きいほど雨が多く、ブラジルのアマゾン付近は5.33 mm/dayです。円のない場所を雨量ゼロとは扱いません。"],
+          "pollination-protocol": ["OBSERVATION ≠ DISTRIBUTION / 3 STEPS", "①黄色はGBIF観察点、②各国最大2件の標本制約、③場所のないGloBI花関係を非地理ネットワークで示します。点の空白はミツバチの不在ではありません。"],
+          "nothing-is-waste": ["RECYCLING / FIXED-DIAMETER PIE CHARTS", "同じ大きさの円グラフで、緑は再資源化率、橙はそれ以外です。実線は国連の公開値、破線は補完値。選択国の外周だけが自分で動かす『もしも』です。"],
+          "anthropocene-scar": ["VIIRS NIGHT LIGHTS × COUNTRY GHG", "白い発光はNASA VIIRS 2016の夜間光画素を地図上の位置へ投影したものです。赤い円は国別排出量で、円の中心が排出源という意味ではありません。"],
+          "three-ecologies": ["FOREST × URBAN / 31 PAIRED COUNTRIES", "同じ31か国の森林率と都市人口率を二重円と散布図で比較します。回帰線と相関係数が全体傾向、選択国の中心色が傾向からの外れ方を示します。紫の世界遺産例は数値計算へ含めません。"],
+          "earth-organ": ["RENEWABLE ELECTRICITY / 31 COUNTRY CHOROPLETH", "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。スライダーは低い国から高い国へ移動します。黄色の日射と緑の風は選択国の補足で、比率を決める因果表示ではありません。"],
+          "senseware-2050": ["NINE MEASUREMENTS / 3×3 DATA ATLAS", "9枚のカードが、各展示で測るもの・代表値・単位を同時に示します。ppm、m/s、%、件数、相関係数は意味が違うため、総合点にはしません。黄色い枠が選択中です。"],
         };
         const [kicker, copy] = narratives[signalMode.id] || [
           `ACT ${signalMode.act.number} / ${signalMode.act.en}`,
@@ -3451,14 +4253,15 @@
       japanObservationCopy.textContent =
         "日本の代表6地震と、震度6弱以上を記録した地点を表示します。地震を選ぶと、P波とS波が届く目安を再生します。";
     } else {
-      japanObservationKicker.textContent = "USGS SNAPSHOT / M7.5+ / 2000–2026";
+      japanObservationKicker.textContent = "USGS YEARLY WAVES / M7.5+ / 2000–2026";
       japanObservationCopy.textContent =
-        "作品内に保存したUSGSの世界のM7.5以上を表示します。閲覧中はAPIへ接続せず、点を押すと位置・規模・深さ・発生時刻を読めます。";
+        "年度ごとに世界のM7.5以上だけを表示し、切替の瞬間に全震源の同心円が一斉に広がります。円の最大サイズはMagnitudeに応じますが、実際の揺れの範囲ではありません。";
     }
   };
 
   const setJapanDataLayer = (layer) => {
     japanDataLayer = layer === "snapshot" ? "snapshot" : "history";
+    if (japanDataLayer === "snapshot") globalEarthquakeWaveYear = "";
     japanHistoryLayerButton.setAttribute(
       "aria-pressed",
       japanDataLayer === "history" ? "true" : "false",
@@ -3602,17 +4405,7 @@
       japanPoiTitle.textContent = record.title;
       japanPoiMeta.textContent = record.meta;
       japanPoiDescription.textContent = record.description;
-      if (isTheme(8)) {
-        const existingIndex = selectedEnergyRegions.findIndex((entry) => entry.title === record.title);
-        if (existingIndex >= 0) selectedEnergyRegions.splice(existingIndex, 1);
-        else {
-          if (selectedEnergyRegions.length >= 2) selectedEnergyRegions.shift();
-          selectedEnergyRegions.push(record);
-        }
-        japanPoiRelation.textContent = `${record.relation} / SCENARIO選択 ${selectedEnergyRegions.length}/2。二地点で仮想分散リンクを描きます。`;
-      } else {
-        japanPoiRelation.textContent = record.relation;
-      }
+      japanPoiRelation.textContent = record.relation;
       japanWaveReplay = null;
       showJapanPoiCard(clientX, clientY);
     } else if (poi.type === "history") {
@@ -3691,7 +4484,10 @@
 
     getModeDataPois().forEach((record, index) => {
       const point = japanWorldToScreen(record.lon, record.lat, left, top);
-      considerCandidate({ type: "data", record, index }, point, hitRadii.node);
+      const hitRadius = getActiveSignalMode()?.id === "forest-cloud-engine"
+        ? Math.max(hitRadii.node, getForestRainRadius(record.precipitationMmDay))
+        : hitRadii.node;
+      considerCandidate({ type: "data", record, index }, point, hitRadius);
     });
 
     if (isTheme(6)) {
@@ -3699,15 +4495,6 @@
         japanHistoryEvents.forEach((event, index) => {
           const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
           considerCandidate({ type: "history", event, index }, point, hitRadii.history);
-        });
-      } else {
-        getVisibleEarthquakes().forEach((event, index) => {
-          const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
-          considerCandidate(
-            { type: "earthquake", event, index },
-            point,
-            hitRadii.earthquake,
-          );
         });
       }
     }
@@ -3990,9 +4777,9 @@
     if (signalMode.id === "blue-circulation") {
       const state = getBlueCirculationState(signalMode);
       return {
-        output: `${state?.dateLabel || "SNAPSHOT"} / DAY ${((state?.horizonHours || 0) / 24).toFixed(1)}`,
-        value: `MEAN ${state?.meanSpeedMs.toFixed(2) || "—"} m/s / ${state?.vectorCount || 0} VECTORS`,
-        note: `${state?.warning || "海流を読み込んでいます。"} 青は海流の速さ、白い矢印は別データの年平均風です。`,
+        output: `${state?.dateLabel || "SNAPSHOT"} / 計算 ${((state?.horizonHours || 0) / 24).toFixed(1)}日後`,
+        value: `海流 ${state?.vectorCount || 0}地点 / 平均 ${state?.meanSpeedMs.toFixed(2) || "—"} m/s`,
+        note: `${state?.warning || "海流を読み込んでいます。"} 色付きは海流、白い矢印は比較用の平均風です。風は距離計算に使いません。`,
         temporal: true,
       };
     }
@@ -4001,18 +4788,17 @@
       const rain = state?.selected;
       return {
         output: state?.phaseLabel || "GLOBAL SAMPLE",
-        value: `PRECIP ${rain?.precipitationMmDay?.toFixed(2) ?? "—"} mm/day / MODIS LAND COVER 2023`,
-        note: "緑はMODISから抜き出した森林域、水色は31地点の雨量です。選択点の名称とmm/dayを地図上に表示し、地点間は補間しません。",
+        value: `降水量 ${rain?.precipitationMmDay?.toFixed(2) ?? "—"} mm/day / ${getForestRainSiteName(rain)}`,
+        note: "大きな水色円が降水量、緑が森林域です。円の直径で雨量を比べ、地点間は推測で埋めません。相関係数や因果関係を示す図ではありません。",
         temporal: true,
       };
     }
     if (signalMode.id === "pollination-protocol") {
       const state = getMapSequenceState(signalMode);
-      const occurrence = state?.selected;
       return {
-        output: state?.phaseLabel || "GBIF RECORD",
-        value: `${signals.interactions?.length || 0} RELATIONS / ${signals.occurrences?.length || 0} OCCURRENCES`,
-        note: occurrence ? `${occurrence.species} / ${occurrence.country || "地域不明"}。黄色はGBIF観察点です。場所のないGloBI文献関係は地図上で結びません。` : "記録を読み込んでいます。",
+        output: state?.phaseLabel || "3つの読み方",
+        value: `${state?.yearLabel || "—"} / ${state?.valueLabel || "記録を読み込み中"}`,
+        note: state?.note || "観察記録と生息分布の違いを読み込んでいます。",
         temporal: true,
       };
     }
@@ -4021,10 +4807,10 @@
       const imputed = state?.selected?.valueStatus === "IMPUTED";
       return {
         output: state?.phaseLabel || "COUNTRY VALUE",
-        value: `${imputed ? "補った値" : "公式値"} ${state?.sourceRecycle.toFixed(1) || "—"}% → もしも ${state?.scenarioRecycle.toFixed(1) || "—"}%`,
+        value: `現在 ${state?.sourceRecycle.toFixed(1) || "—"}% / 残り ${(100 - (state?.sourceRecycle || 0)).toFixed(1)}% → もしも ${state?.scenarioRecycle.toFixed(1) || "—"}%`,
         note: imputed
-          ? `${state?.selected?.country || "国"}には公式値がないため、近くの5か国の真ん中の値を置きました。内側の破線が補完、外側の破線が観客の「もしも」です。`
-          : `${state?.selected?.country || "国"} ${state?.selected?.year || "—"}。実線は国連の公式値、外側の破線は観客が動かす「もしも」です。`,
+          ? `${state?.selected?.country || "国"}には公式値がないため、近くの5か国の真ん中の値を置きました。破線の内円が補完値、外周が観客の「もしも」です。`
+          : `${state?.selected?.country || "国"} ${state?.selected?.year || "—"}。内円の緑が国連の再資源化率、橙が残り、外周が観客の「もしも」です。`,
         temporal: true,
       };
     }
@@ -4034,45 +4820,51 @@
       return {
         output: state?.phaseLabel || "COUNTRY VALUE",
         value: `${emission?.country || "—"} / ${emission?.emissionsMtCo2e?.toFixed(1) || "—"} Mt CO₂e`,
-        note: "赤い円は国ごとの排出量、白は夜の明かりです。長押しすると白だけが薄くなります。",
+        note: "白い発光はNASA VIIRSの夜間光画素、赤い円は国ごとの排出量です。0.65秒以上長押しすると白だけが6秒間薄くなります。",
         temporal: true,
       };
     }
     if (signalMode.id === "rhythm-of-disaster") {
       const state = getMapSequenceState(signalMode);
-      const event = state?.selected;
       return {
         output: state?.phaseLabel || "USGS GLOBAL HISTORY",
-        value: event ? `M${event.magnitude.toFixed(1)} / DEPTH ${event.depthKm?.toFixed(0) || "—"} km` : "NO EVENT",
-        note: "2000年以降のM7.5以上を年代順に表示します。日本の代表例では、実測震度とP波・S波が届く目安も見られます。",
+        value: state ? `${state.selectedYear} / ${state.yearEvents.length} EVENTS / MAX M${state.selected.magnitude.toFixed(1)}` : "NO YEAR",
+        note: "この年度の震源だけを世界表示し、切替時に全同心円が一斉に広がります。円の大きさはMagnitude比較用で、実際の揺れの範囲ではありません。",
         temporal: true,
       };
     }
     if (signalMode.id === "three-ecologies") {
       const state = getMapSequenceState(signalMode);
       return {
-        output: state?.phaseLabel || "THREE LAYERS",
-        value: state?.selected?.name || "ECOLOGICAL / SOCIAL / MEMORY",
-        note: "森林、都市人口、世界遺産を順番に表示し、最後に三つを重ねます。",
+        output: state?.phaseLabel || "FOREST × URBAN",
+        value: state
+          ? `${state.selected.country} / FOREST ${state.selected.forestPercent.toFixed(1)}% / URBAN ${state.selected.urbanPercent.toFixed(1)}%`
+          : "NO PAIRED COUNTRY DATA",
+        note: state
+          ? `緑と青の二重円は同じ国の割合です。散布図の r ${state.correlation.toFixed(2)} は${state.correlationLabel}。紫の世界遺産例は相関計算へ含めません。`
+          : "同じ国の森林率と都市人口率を組にして比較します。",
         temporal: true,
       };
     }
     if (signalMode.id === "earth-organ") {
       const state = getMapSequenceState(signalMode);
-      const potential = state?.selected;
-      const current = (signals.current || []).find((row) => row.iso3 === potential?.iso3);
+      const current = state?.selected;
       return {
-        output: state?.phaseLabel || potential?.name || "REGION",
-        value: `${potential?.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day / CURRENT ${current?.renewablePercent?.toFixed(1) || "—"}%`,
-        note: "外側は日差しと風、内側は現在の再生可能電力の割合です。二地点を結ぶ破線は、この展示で作る試算です。",
+        output: state?.phaseLabel || "RENEWABLE ELECTRICITY",
+        value: `${current?.country || "—"} / 再生可能電力 ${current?.renewablePercent?.toFixed(1) || "—"}%`,
+        note: "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。黄色の日射と緑の風は選択国の補足で、現在の比率を決める因果表示ではありません。",
         temporal: true,
       };
     }
     const state = getMapSequenceState(signalMode);
     return {
-      output: state?.phaseLabel || "NO TOTAL SCORE",
-      value: "9 SIGNALS + AUDIENCE TRACES",
-      note: `${state?.selected?.titleJa || "九つのデータ"}を表示中。単位が違うため、平均せず九本の枝として並べています。`,
+      output: state?.phaseLabel || "NINE-MEASURE ATLAS",
+      value: state?.selected
+        ? `${state.selected.number} ${state.selected.metric} / ${state.selected.value}`
+        : "9 MEASUREMENTS ≠ 1 SCORE",
+      note: state?.selected
+        ? `${state.selected.scope}。9枚は同時表示しますが、単位と意味が違うため足し算や総合順位にはしません。`
+        : "各展示の測るもの・代表値・単位を同時に並べます。",
       temporal: true,
     };
   };
@@ -4130,21 +4922,22 @@
       ];
     }
     if (signalMode.id === "three-ecologies") {
+      const state = getMapSequenceState(signalMode);
       return [
-        0.62,
-        clamp((signals.social?.length || 0) / 10, 0, 1),
-        clamp((signals.culture?.length || 0) / 10, 0, 1),
-        0.5,
+        clamp((state?.selected?.forestPercent || 0) / 100, 0, 1),
+        clamp((state?.selected?.urbanPercent || 0) / 100, 0, 1),
+        clamp(((state?.correlation || 0) + 1) / 2, 0, 1),
+        clamp((signals.culture?.length || 0) / 30, 0, 1),
       ];
     }
     if (signalMode.id === "earth-organ") {
       const state = getMapSequenceState(signalMode);
-      const row = state?.selected || pickByPosition(signals.potential);
+      const row = state?.selected;
       return [
-        clamp((row?.solarKwhM2Day || 0) / 7, 0, 1),
-        clamp((row?.windSpeedMs || 0) / 10, 0, 1),
-        selectedEnergyRegions.length / 2,
-        0.4,
+        clamp((row?.renewablePercent || 0) / 100, 0, 1),
+        clamp((row?.potential?.solarKwhM2Day || 0) / 7, 0, 1),
+        clamp((row?.potential?.windSpeedMs || 0) / 10, 0, 1),
+        1,
       ];
     }
     return [0.72, 0.48, pointer.energy, modeMemory[modeToIndex]];
@@ -4246,7 +5039,7 @@
         ? isStoryTemperatureInteraction
           ? "年代を動かす / DRAG"
           : timelineState.timeLabel || (isCirculationTimeline
-            ? "移流時間 / AUTO 0→14 DAYS"
+            ? "経過日数 / 0→14日（自動）"
             : `時点 / AUTO 1958→2050${storyModeDetour?.kind === "map01" ? " · 3×" : ""}`)
         : "観測時点";
       const input = consoleElement.querySelector("[data-signal-time]");
@@ -4277,17 +5070,17 @@
             setEncodingValue(keys[index], value);
           });
         } else if (isCirculationTimeline) {
-          setEncodingLabel("heatmap", "色 / 海流速度");
-          setEncodingLabel("nodata", "暗部 / 未補間");
-          setEncodingLabel("estimate", "線 / 計算上の移動距離");
-          setEncodingLabel("resolution", "白矢印 / 風");
-          setEncodingValue("heatmap", `0–1.5 m/s FIXED · MAX ${timelineState.maximumSpeedMs.toFixed(2)}`);
-          setEncodingValue("nodata", "観測点間と陸域を値で埋めない");
+          setEncodingLabel("heatmap", "色付き矢印 / 海流");
+          setEncodingLabel("nodata", "暗い場所 / データなし");
+          setEncodingLabel("estimate", "点から伸びる線 / 仮定の移動");
+          setEncodingLabel("resolution", "白い矢印 / 風（比較用）");
+          setEncodingValue("heatmap", `青→水色→黄→橙ほど速い · 最大 ${timelineState.maximumSpeedMs.toFixed(2)} m/s`);
+          setEncodingValue("nodata", "陸地・記録のない場所は表示しない");
           setEncodingValue(
             "estimate",
-            `${(timelineState.horizonHours / 24).toFixed(1)} DAYS · MEAN ${timelineState.meanDistanceKm.toFixed(1)} km`,
+            `${(timelineState.horizonHours / 24).toFixed(1)}日後 · 平均 ${timelineState.meanDistanceKm.toFixed(1)} km`,
           );
-          setEncodingValue("resolution", `NASA POWER CLIMATOLOGY · ${signalMode.signals.climate?.length || 0} sites`);
+          setEncodingValue("resolution", `NASA POWER ${signalMode.signals.climate?.length || 0}地点 · 距離計算には未使用`);
         } else {
           setEncodingLabel("heatmap", isStoryTemperatureInteraction ? "背景色 / 気温偏差" : "色 / CO₂濃度");
           setEncodingLabel("nodata", isStoryTemperatureInteraction ? "地図セル / CO₂濃度" : "斜線 / まわりから補った値");
@@ -4367,6 +5160,7 @@
     co2TimelinePausedUntil = 0;
     co2TimelineLastStep = -1;
     co2TimelineHeld = false;
+    globalEarthquakeWaveYear = "";
     gosatHeatmapCacheKey = "";
     updateSignalInterface();
   };
@@ -4448,15 +5242,16 @@ drawActualScaleTrack(lon, lat, lon + deltaLon, lat + deltaLat);
 // This is not an ocean forecast or a drift prediction.`,
     "forest-cloud-engine": `const selectedSite = precipitationSites[sequenceIndex];
 const vaporDensity = normalize(selectedSite.precipitationMmDay, 0, 8);
-drawRainSignal(selectedSite, vaporDensity); // SOURCE value → DERIVED particles
+drawLargeRainCircle(selectedSite, vaporDensity); // larger diameter = more mm/day
 drawMercatorRaster(modisIgbpLandCover2023); // GLOBAL rendered classification
-// Rain is a 31-point GLOBAL SAMPLE: no interpolation and no causal claim.`,
-    "pollination-protocol": `const occurrence = gbifOccurrences[sequenceIndex];
-drawGeographicPoint(occurrence.lat, occurrence.lon); // SOURCE location
+// 31 representative points only: no interpolation, correlation coefficient, or causal claim.`,
+    "pollination-protocol": `const stages = ["records", "sampling", "relations"];
+drawGbifObservationPoints(gbifOccurrences); // records, not a habitat map
+showSamplingRule("31 selected countries", "max 2 records per country");
 
 const documented = globi.filter(row => row.interaction === "pollinates");
-showRelationCount(documented.length); // literature evidence, non-geographic
-// Never connect a GloBI plant relation to a GBIF point without matching evidence.`,
+drawNonGeographicRelationNetwork(documented); // no location, frequency, or strength
+// A blank map area is not absence. Never connect a GloBI relation to a GBIF point.`,
     "nothing-is-waste": `const observed = unSdgCountryValues; // SOURCE / 17 reported regions
 const missingCountry = selectedSites.filter(site => !observed.has(site.iso3));
 for (const country of missingCountry) {
@@ -4466,32 +5261,41 @@ for (const country of missingCountry) {
 }
 
 const country = allCountryValues[sequenceIndex];
-drawRecycleCircle(country.recyclePercent);
+drawFixedDiameterPie({ recycled: country.recyclePercent, other: 100 - country.recyclePercent });
 drawOutline(country.valueStatus === "IMPUTED" ? "DASHED" : "SOLID");
 // Geographic proximity does not explain policy or reporting-definition differences.
 
 const scenarioRecycle = clamp(country.recyclePercent + scenarioSweep, 0, 100); // SCENARIO
-drawOuterDashedScenario(scenarioRecycle); // SOURCE and DERIVED base values remain visible`,
-    "anthropocene-scar": `for (const country of edgarCountryValues) {
+drawOuterScenarioRing(scenarioRecycle); // SOURCE and DERIVED base values remain visible`,
+    "anthropocene-scar": `const viirsGeographic = projectWebMercatorRasterToGeographic(viirsNightLights2016);
+drawRadianceGlow(viirsGeographic); // DISPLAY GAIN ONLY; pixel positions remain geographic
+
+for (const country of edgarCountryValues) {
   drawEmissionRing(Math.log10(country.emissionsMtCo2e)); // COUNTRY VALUE
 }
-drawMercatorRaster(viirsNightLights2016); // separate observed-radiance layer
 const nightLightOpacity = longPress ? 0.04 : 0.5;
 // Night-light radiance is never converted to emissions.`,
-    "rhythm-of-disaster": `drawGlobalEpicentres(usgsM75Since2000); // Magnitude, depth, time\n// Only a selected JMA detailed event owns observed intensity stations:\nconst distanceKm = Math.hypot(greatCircleKm(epicenter, station), depthKm);\nconst pArrivalSec = distanceKm / 7.0;\nconst sArrivalSec = distanceKm / 4.0;\nif (elapsedSec >= sArrivalSec) drawObservedJmaIntensity(station.intensity);`,
-    "three-ecologies": `const layers = [modisGlobalLandCover, countryUrbanPercent, unescoGlobalSample];
-drawLayer(layers[sequencePhase]); // ECO → SOCIAL → MEMORY → ALL
-// Keep source definitions separate; do not turn culture counts into a mental score.
-memories.push({ lon, lat, label: audienceText }); // non-numeric`,
-    "earth-organ": `const site = nasaPowerSites[sequenceIndex];
-drawPotential(site.solarKwhM2Day, site.windSpeedMs); // SOURCE climate conditions
-const current = countryRenewableShare.find(v => v.iso3 === site.iso3);
-drawCurrent(current.renewablePercent); // COUNTRY VALUE, separate adoption indicator
-scenarioLinks.push([selectedRegionA, selectedRegionB]); // SCENARIO, not a grid plan`,
-    "senseware-2050": `const selectedSignal = nineSignals[sequenceIndex];
-drawSelectedBranch(selectedSignal);
-drawAudienceMemory(audienceTraces);
-// Deliberately no averaging across units and no "Earth health score".`,
+    "rhythm-of-disaster": `const years = groupByYear(usgsM75Since2000); // 2000–2026\nconst events = years[selectedYear]; // this year only; default view is global\nfor (const event of events) {\n  const radius = magnitudeDisplayRadius(event.magnitude, { m7_5: 0.48, m9_1: 1.0 });\n  drawSynchronizedDisplayWave(event, radius); // all start together on year change\n}\n// Display radius is not observed shaking extent. Only the optional JMA detail layer owns observed intensity:\nconst distanceKm = Math.hypot(greatCircleKm(epicenter, station), depthKm);\nconst pArrivalSec = distanceKm / 7.0;\nconst sArrivalSec = distanceKm / 4.0;\nif (elapsedSec >= sArrivalSec) drawObservedJmaIntensity(station.intensity);`,
+    "three-ecologies": `const paired = joinByIso3(countryForestPercent, countryUrbanPercent); // same countries only
+const relation = pearson(paired.map(row => [row.urbanPercent, row.forestPercent]));
+const trend = linearRegression(paired); // display the tendency and each residual
+drawPairedMapGlyphs(paired, { inner: "forest", outer: "urban", center: "residual" });
+drawScatterPlot(paired, trend, relation); // x = urban %, y = forest %
+
+drawForestRaster(modisIgbp2023, { opacity: 0.16 }); // geographic context, not correlation input
+drawMemoryContext(unescoGlobalSample); // purple sites; deliberately excluded from r
+// COUNTRY VALUES with different latest years. Correlation is not causation.`,
+    "earth-organ": `const countries = joinByIso3(countryRenewableShare, naturalEarthCountries);
+drawCountryChoropleth(countries, { scale: "dark-blue 0% → cyan 100%" });
+const selected = countries.sort(byRenewableShare)[sequenceIndex];
+drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
+// Solar and wind are context, not a causal model of the current electricity share.`,
+    "senseware-2050": `const cards = nineDatasets.map(({ measure, representativeValue, unit }) => ({
+  measure, representativeValue, unit,
+}));
+drawThreeByThreeAtlas(cards); // all nine remain visible at once
+highlight(cards[sequenceIndex]);
+// ppm, m/s, mm/day, %, counts and r are never added into one score.`,
   });
 
   const renderCodeLines = (text) => {
@@ -4602,6 +5406,48 @@ drawAudienceMemory(audienceTraces);
       naturalEarthLandError = error instanceof Error ? error.message : String(error);
       naturalEarthLandState = "error";
       updateMapBasisNote();
+    }
+  };
+
+  const loadNaturalEarthCountries = async () => {
+    try {
+      naturalEarthCountryState = "loading";
+      naturalEarthCountryError = null;
+      const response = await fetch(NATURAL_EARTH_COUNTRY_DATA, { cache: "force-cache" });
+      if (!response.ok) throw new Error(`Natural Earth countries ${response.status}`);
+      const geojson = await response.json();
+      const countryRings = new Map();
+
+      for (const feature of geojson.features || []) {
+        const { geometry, properties = {} } = feature;
+        if (!geometry) continue;
+        const iso3 = [properties.ADM0_A3, properties.ISO_A3, properties.SOV_A3, properties.BRK_A3, properties.WB_A3]
+          .find((code) => typeof code === "string" && /^[A-Z]{3}$/.test(code) && code !== "-99");
+        if (!iso3) continue;
+        const polygons = geometry.type === "Polygon"
+          ? [geometry.coordinates]
+          : geometry.type === "MultiPolygon"
+            ? geometry.coordinates
+            : [];
+        const rings = countryRings.get(iso3) || [];
+        for (const polygon of polygons) {
+          for (const ring of polygon) {
+            if (Array.isArray(ring) && ring.length >= 3) rings.push(ring);
+          }
+        }
+        if (rings.length) countryRings.set(iso3, rings);
+      }
+
+      if (countryRings.size < 200) {
+        throw new Error(`Natural Earth country geometry incomplete (${countryRings.size} countries)`);
+      }
+      naturalEarthCountryRings = countryRings;
+      naturalEarthCountryPathCache.clear();
+      naturalEarthCountryState = "ready";
+    } catch (error) {
+      console.error(error);
+      naturalEarthCountryError = error instanceof Error ? error.message : String(error);
+      naturalEarthCountryState = "error";
     }
   };
 
@@ -4925,7 +5771,7 @@ drawAudienceMemory(audienceTraces);
     if (normalizedIndex === modeToIndex) {
       if (japanIsOpen) {
         restartCo2Timeline(0);
-        if (isTheme(6, normalizedIndex)) setJapanDataLayer("history");
+        if (isTheme(6, normalizedIndex)) setJapanDataLayer("snapshot");
         animateEarthViewForMode(normalizedIndex);
       }
       if (resetAutoTimer) {
@@ -4943,7 +5789,7 @@ drawAudienceMemory(audienceTraces);
     updateModeInterface();
     if (japanIsOpen) {
       restartCo2Timeline(0);
-      if (isTheme(6, normalizedIndex)) setJapanDataLayer("history");
+      if (isTheme(6, normalizedIndex)) setJapanDataLayer("snapshot");
       animateEarthViewForMode(normalizedIndex);
     }
     if (conceptIsOpen) {
@@ -5577,7 +6423,7 @@ drawAudienceMemory(audienceTraces);
     } else if (requestedDataLayer === "live") {
       setJapanDataLayer("snapshot");
     } else if (isTheme(6)) {
-      setJapanDataLayer("history");
+      setJapanDataLayer("snapshot");
     }
     updateJapanDataInterface();
     void loadJapanHistory();
@@ -6157,6 +7003,7 @@ drawAudienceMemory(audienceTraces);
   startRendering();
   loadGaiaSignals();
   loadNaturalEarthLand();
+  loadNaturalEarthCountries();
 
   if (window.location.hash === "#source") {
     openSource({ updateHash: false });

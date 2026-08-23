@@ -8,6 +8,10 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptDirectory, "..");
 const outputPath = resolve(projectDirectory, "data", "gaia-signals.json");
 const retrievedAt = new Date().toISOString();
+const previousSnapshot = await readFile(outputPath, "utf8").then(JSON.parse).catch(() => null);
+const previousSignalRows = (modeId, signalKey) => previousSnapshot?.modes
+  ?.find((entry) => entry.id === modeId)
+  ?.signals?.[signalKey] || [];
 
 const URLS = Object.freeze({
   noaaCo2: "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv",
@@ -532,7 +536,7 @@ const powerRows = await mapInBatches(climateSites, 4, async (site) => {
   };
 });
 
-const globiRows = parseCsv(await fetchText(URLS.globi))
+const fetchedGlobiRows = parseCsv(await fetchText(URLS.globi))
   .slice(1)
   .filter((row) => row[0] && row[9] && row[11])
   .map((row) => ({
@@ -543,6 +547,11 @@ const globiRows = parseCsv(await fetchText(URLS.globi))
     longitude: numeric(row[20]),
     study: row[21] || null,
   }));
+const globiRows = (fetchedGlobiRows.length
+  ? fetchedGlobiRows
+  : previousSignalRows("pollination-protocol", "interactions"))
+  .filter((row) => row.targetTaxon
+    && row.targetTaxon.replaceAll("\\", "").replaceAll('"', "").trim().toLowerCase() !== "abundance");
 
 const gbifRows = (await mapInBatches(climateSites, 4, async (site) => {
   const query = new URLSearchParams({
@@ -600,11 +609,23 @@ const fetchWorldBankLatest = async (indicator, valueKey) => {
 };
 
 // Bulk CSV is faster and more stable than long multi-country Indicators API URLs.
-const [renewableRows, urbanRows, globalEmissionsRows] = await Promise.all([
+const [renewableRows, urbanRows, forestRows, globalEmissionsRows] = await Promise.all([
   fetchWorldBankLatest("EG.ELC.RNEW.ZS", "renewablePercent"),
   fetchWorldBankLatest("SP.URB.TOTL.IN.ZS", "urbanPercent"),
+  fetchWorldBankLatest("AG.LND.FRST.ZS", "forestPercent"),
   fetchWorldBankLatest("EN.GHG.ALL.MT.CE.AR5", "emissionsMtCo2e"),
 ]);
+
+const forestUrbanRows = urbanRows.map((urban) => {
+  const forest = forestRows.find((row) => row.iso3 === urban.iso3);
+  if (!forest) return null;
+  return {
+    ...urban,
+    urbanYear: urban.year,
+    forestYear: forest.year,
+    forestPercent: forest.forestPercent,
+  };
+}).filter(Boolean);
 
 const recyclingAreaQuery = climateSites.map((site) => `areaCode=${site.m49}`).join("&");
 const unRecyclingPayload = await fetchJson(
@@ -756,7 +777,7 @@ const modes = [
   mode(
     "blue-circulation",
     { number: 1, title: "循環を知る", en: "READ THE CYCLES" },
-    "この海流が同じ速さで続いたら、14日後にどこまで進むでしょう。",
+    "色付きの点を一つ選び、同じ速さと向きが14日続いた場合の移動距離を確かめましょう。",
     [
       source({ id: "oscar", organisation: "NASA/JPL PO.DAAC", title: "OSCAR near-surface ocean currents", url: URLS.oscar, period: "1993–present", unit: "m/s", resolution: "約1/3°・5日平均", transformation: "OSCARを取得できなかったため、展示にはNOAA CoastWatchの海流データを使いました。", caveat: "画面に表示している値はOSCARではありません。代替データを使ったことを、ここに明記しています。", rows: [{ status: "catalogued", runtimeSnapshot: "NOAA Blended NRT currents", reason: "OSCAR ERDDAP timeout at build" }] }),
       source({ id: "noaa-current-fallback", organisation: "NOAA CoastWatch", title: "Blended NRT surface currents", url: URLS.currents, period: currentRows[0]?.time || "2026-07-30", unit: "m/s", resolution: "0.25°原データを全球30°×60°、日本周辺4°へ間引き", transformation: "東西と南北の速度から、海流の速さと向きを計算しました。速さは青の濃さ、向きは線で示します。", caveat: "陸地と欠測地点は除き、観測点の間を推測で塗りつぶしていません。", rows: currentRows }),
@@ -768,20 +789,20 @@ const modes = [
   mode(
     "forest-cloud-engine",
     { number: 1, title: "循環を知る", en: "READ THE CYCLES" },
-    "森林の分布と雨の量には、どんな重なりがあるでしょう。",
+    "大きな水色円で示す降水量と、緑の森林分布はどこで重なるでしょう。",
     [
       source({ id: "nasa-modis-land-cover", organisation: "NASA GIBS / MODIS", title: "MCD12Q1 IGBP Land Cover Type", url: "https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/MODIS_Combined_L3_IGBP_Land_Cover_Type_Annual.json", period: "2023 annual", unit: "IGBP land-cover class", resolution: "500 m source / 1024×1024 Web Mercator display snapshot", transformation: "公式GIBS WMSの全球分類画像を同梱し、森林5分類を含む土地被覆の背景層として表示", caveat: "表示PNGは解析用画素値ではなく、公式カラーマップでレンダリングされた分類画像。森林以外の土地被覆も含む。", rows: [{ layer: "MODIS_Combined_L3_IGBP_Land_Cover_Type_Annual", date: "2023-01-01", localAsset: "assets/data/modis-land-cover-2023.png", displayed: true }] }),
-      source({ id: "nasa-power-precip", organisation: "NASA POWER", title: "Precipitation climatology / global stratified sample", url: URLS.power, period: "Climatology", unit: "mm/day", resolution: `選択${powerRows.length}地点・年平均`, transformation: "世界31地点の降水量を、円の大きさと上昇する粒子の多さへ変えました。", caveat: "世界全体を埋めた地図ではなく、選んだ31地点の値です。森林との重なりだけで、原因と結果を決めることはできません。", rows: powerRows.map(({ name, iso3, lat, lon, precipitationMmDay }) => ({ name, iso3, lat, lon, precipitationMmDay })) }),
+      source({ id: "nasa-power-precip", organisation: "NASA POWER", title: "Precipitation climatology / global stratified sample", url: URLS.power, period: "Climatology", unit: "mm/day", resolution: `選択${powerRows.length}地点・年平均`, transformation: "世界31代表地点の降水量を、最大直径約108pxの水色円へ変換しました。直径が大きいほど雨が多く、雨の多い地点は円内にもmm/dayを表示します。", caveat: "円のない場所にも雨は降ります。この地図は31代表地点だけで、地点間の補間、相関係数の計算、因果関係の判定はしていません。", rows: powerRows.map(({ name, iso3, lat, lon, precipitationMmDay }) => ({ name, iso3, lat, lon, precipitationMmDay })) }),
     ],
     { forestRaster: "./assets/data/modis-land-cover-2023.png", precipitation: powerRows },
   ),
   mode(
     "pollination-protocol",
     { number: 1, title: "循環を知る", en: "READ THE CYCLES" },
-    "花と虫の関係は、どのような記録として残っているでしょう。",
+    "観察記録の点は生息分布と言えるでしょうか。場所を持たない花との関係網からは、何が見えるでしょう。",
     [
-      source({ id: "globi", organisation: "Global Biotic Interactions", title: "Documented pollination interactions", url: URLS.globi, period: "literature aggregation", unit: "interaction records", resolution: "文献・標本単位", transformation: "文献で確認された花と送粉者の関係を示します。場所の記録がないため、GBIFの観察地点へは結びません。", caveat: "関係が記録されたことは分かりますが、関係の強さや頻度、その場所で起きたかどうかまでは分かりません。", rows: globiRows }),
-      source({ id: "gbif", organisation: "GBIF", title: "Apis mellifera occurrences / global stratified sample", url: URLS.gbif, period: "latest API snapshot", unit: "occurrence records", resolution: `最大2記録 × ${climateSites.length}選択国`, transformation: "世界の偏りを抑えるため、選んだ31か国から、位置が確かな新しい記録を最大2件ずつ表示します。", caveat: "展示用に選んだ一部の記録です。点の多さは生息数を表さず、点がない場所にミツバチがいないという意味でもありません。", rows: gbifRows }),
+      source({ id: "globi", organisation: "Global Biotic Interactions", title: "Documented pollination interactions", url: URLS.globi, period: "literature aggregation", unit: "interaction records", resolution: "文献・標本単位", transformation: "場所を持たない花との関係を、太平洋上の非地理ネットワークとして表示します。枝の位置・長さは場所・頻度・強さを表しません。", caveat: "関係が記録されたことは分かりますが、頻度、強さ、発生場所は分かりません。GBIFの観察地点へは結びません。", rows: globiRows }),
+      source({ id: "gbif", organisation: "GBIF", title: "Apis mellifera occurrences / global stratified sample", url: URLS.gbif, period: "latest API snapshot", unit: "occurrence records", resolution: `最大2記録 × ${climateSites.length}選択国`, transformation: "観察点、各国最大2件という標本制約、花との非地理関係網の3段階で表示します。", caveat: "展示用に選んだ一部の記録です。点の多さは生息数や観察努力を表さず、点がない場所にミツバチがいないという意味でもありません。", rows: gbifRows }),
     ],
     { interactions: globiRows, occurrences: gbifRows },
   ),
@@ -790,8 +811,8 @@ const modes = [
     { number: 2, title: "人間の影響を見る", en: "SEE HUMAN IMPACT" },
     "国ごとのごみは、どれくらい次の資源に戻っているでしょう。",
     [
-      source({ id: "un-sdg", organisation: "United Nations Statistics Division", title: "SDG 12.5.1 / municipal waste recycled", url: `${URLS.unSdgMunicipalRecycling}?seriesCode=EN_MWT_RCYR`, period: `${Math.min(...globalWasteRows.map((row) => row.year))}–${Math.max(...globalWasteRows.map((row) => row.year))}`, unit: "% municipal waste recycled", resolution: `${globalWasteRows.length} country values / latest available year`, transformation: "選択31か国から最新の非欠測値を取り、国代表点へ配置。円の大きさを再資源化率へ対応", caveat: "COUNTRY VALUE。国ごとに報告年・制度・廃棄物定義が異なるため、厳密な順位表には使わない。", rows: globalWasteRows }),
-      source({ id: "waste-route-scenario", kind: "SCENARIO", organisation: "Audience / local browser", title: "再資源化率の仮想経路", url: "about:local", period: "current session", unit: "%", resolution: "slider input / selected country", transformation: "観客がスライダーを動かした分だけ、外側の破線を動かします。内側の公式値は変えません。", caveat: "公式統計でも未来予測でもない、観客がつくる『もしも』です。焼却や埋立の割合も推測していません。", rows: [{ base: "selected country SOURCE", audienceDeltaRange: "-20 to +20", transmitted: false }] }),
+      source({ id: "un-sdg", organisation: "United Nations Statistics Division", title: "SDG 12.5.1 / municipal waste recycled", url: `${URLS.unSdgMunicipalRecycling}?seriesCode=EN_MWT_RCYR`, period: `${Math.min(...globalWasteRows.map((row) => row.year))}–${Math.max(...globalWasteRows.map((row) => row.year))}`, unit: "% municipal waste recycled", resolution: `${globalWasteRows.length} country values / latest available year`, transformation: "選択31か国から最新の非欠測値を取り、国代表点へ配置。同じ直径の円グラフで緑を再資源化率、橙をそれ以外の割合として表示", caveat: "COUNTRY VALUE。国ごとに報告年・制度・廃棄物定義が異なるため、厳密な順位表には使わない。橙の内訳を焼却・埋立などへ分解する資料ではない。", rows: globalWasteRows }),
+      source({ id: "waste-route-scenario", kind: "SCENARIO", organisation: "Audience / local browser", title: "再資源化率の仮想経路", url: "about:local", period: "current session", unit: "%", resolution: "slider input / selected country", transformation: "観客がスライダーを動かした分だけ、選択国の外周リングを動かします。内側の現在値の円グラフは変えません。", caveat: "公式統計でも未来予測でもない、観客がつくる『もしも』です。焼却や埋立の割合も推測していません。", rows: [{ base: "selected country SOURCE", audienceDeltaRange: "-20 to +20", transmitted: false }] }),
     ],
     { routes: wasteRows, countryWaste: globalWasteRows, scenario: { recycleDelta: 0, type: "SCENARIO" } },
   ),
@@ -801,49 +822,59 @@ const modes = [
     "夜の明かりと温室効果ガス排出量は、地図上でどう重なるでしょう。",
     [
       source({ id: "edgar", organisation: "World Bank / European Commission JRC EDGAR", title: "Total GHG excluding LULUCF (AR5)", url: "https://data.worldbank.org/indicator/EN.GHG.ALL.MT.CE.AR5", period: `${Math.min(...globalEmissionsRows.map((row) => row.year))}–${Math.max(...globalEmissionsRows.map((row) => row.year))}`, unit: "Mt CO₂e", resolution: `${globalEmissionsRows.length} country values at representative coordinates`, transformation: "国全体の排出量が多いほど、赤い環を大きくしました。差が大きすぎるため、面積は対数という縮尺で調整しています。", caveat: "点の位置は国を示す目印で、排出源の場所ではありません。土地利用と森林による増減を除いた国全体の値です。", rows: globalEmissionsRows }),
-      source({ id: "nasa-gibs-night", organisation: "NASA GIBS", title: "VIIRS Night Lights / Black Marble", url: URLS.gibs, period: "2016 annual", unit: "rendered radiance", resolution: "1024×1024 Web Mercator snapshot", transformation: "公式GIBS WMSの全球画像を白い可視面として同梱表示。長押し時だけ透明化", caveat: "夜間光は排出量そのものではない。画像は観測放射輝度の表示用レンダリングで数値解析には使わない。", rows: [{ layer: "VIIRS_Night_Lights", date: "2016-01-01", localAsset: "assets/data/viirs-night-lights-2016.png", displayed: true }] }),
+      source({ id: "nasa-gibs-night", organisation: "NASA GIBS", title: "VIIRS Night Lights / Black Marble", url: URLS.gibs, period: "2016 annual", unit: "rendered radiance", resolution: "1024×1024 Web Mercator snapshot", transformation: "公式GIBS WMSの全球画像をWeb Mercatorから地理投影へ変換し、画素位置を保った白い発光面として表示。視認性のため発光ゲインを加え、長押し後の6秒間だけ透明化", caveat: "夜間光は排出量そのものではない。明るさの強調は表示だけで、排出量への変換や数値解析には使わない。", rows: [{ layer: "VIIRS_Night_Lights", date: "2016-01-01", localAsset: "assets/data/viirs-night-lights-2016.png", displayed: true }] }),
     ],
     { emissions: globalEmissionsRows, nightLightsRaster: "./assets/data/viirs-night-lights-2016.png", japanEmissions: emissionsRows, nightLights: urbanRows },
   ),
   mode(
     "rhythm-of-disaster",
     { number: 2, title: "人間の影響を見る", en: "SEE HUMAN IMPACT" },
-    "地震の波は各地へいつ届き、どれくらいの揺れが記録されたでしょう。",
+    "世界のM7.5以上は、年ごとにどこで起き、波の重なりはどう変わるでしょう。",
     [
       source({ id: "jma-shindo", organisation: "気象庁", title: "震度データベース検索", url: URLS.jmaQuake, period: "2011–2024 representative events", unit: "JMA seismic intensity", resolution: "観測点", transformation: "震度6弱以上を実際に観測した地点を、S波が計算上到着したあとに表示します。", caveat: "P波は秒速7km、S波は秒速4kmとした単純な近似です。実際の到着時刻や防災情報ではありません。", rows: jmaHistory.events || [] }),
-      source({ id: "usgs-earthquakes", organisation: "USGS", title: "FDSN Event Web Service / global M7.5+", url: URLS.usgs, period: "2000–snapshot date", unit: "magnitude, km", resolution: `${globalEarthquakeRows.length} events`, transformation: `M7.5以上の全${globalEarthquakeRows.length}震源を全球表示し、年代から均等抽出した${featuredEarthquakeRows.length}件だけを48秒で案内`, caveat: "Mと震度は別の尺度。USGSイベントに日本の震度を割り当てない。P=7 km/s、S=4 km/sはJMA詳細記録側の均質地殻モデル。", rows: globalEarthquakeRows }),
+      source({ id: "usgs-earthquakes", organisation: "USGS", title: "FDSN Event Web Service / global M7.5+", url: URLS.usgs, period: "2000–snapshot date", unit: "magnitude, km", resolution: `${globalEarthquakeRows.length} events`, transformation: `M7.5以上の全${globalEarthquakeRows.length}震源を年度別に分け、一度に一年度だけ世界表示。年度切替時に全震源の表示波を同時開始し、M7.5を最大半径の48%、M9.1を地図幅の約半分へ対応`, caveat: "表示波はMagnitudeを比較する演出で、実際の揺れの到達範囲ではない。Mと震度は別の尺度。USGSイベントに日本の震度を割り当てない。P=7 km/s、S=4 km/sは別層のJMA詳細記録だけに使う。", rows: globalEarthquakeRows }),
     ],
     { events: jmaHistory.events || [], globalEvents: globalEarthquakeRows, featuredEvents: featuredEarthquakeRows, pWaveKmS: 7, sWaveKmS: 4 },
   ),
   mode(
     "three-ecologies",
     { number: 3, title: "関係を編み直す", en: "REWEAVE RELATIONSHIPS" },
-    "自然、都市、文化の記録を重ねると、暮らす場所はどう見えるでしょう。",
+    "都市で暮らす人が多い国ほど、森林の割合は本当に低いのでしょうか。",
     [
-      source({ id: "nasa-modis-ecological-layer", organisation: "NASA GIBS / MODIS", title: "MCD12Q1 IGBP Land Cover Type", url: "https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/MODIS_Combined_L3_IGBP_Land_Cover_Type_Annual.json", period: "2023 annual", unit: "IGBP land-cover class", resolution: "500 m source / 1024×1024 display snapshot", transformation: "森林、草地、都市、水面など、地表の種類を色分けした生態レイヤーとして表示します。", caveat: "土地の種類だけで、生物多様性や生態系の健康、心の豊かさを測ることはできません。", rows: [{ layer: "ECOLOGICAL", localAsset: "assets/data/modis-land-cover-2023.png", displayed: true }] }),
-      source({ id: "worldbank-urban", organisation: "World Bank / UN Population Division", title: "Urban population (% of total)", url: "https://data.worldbank.org/indicator/SP.URB.TOTL.IN.ZS", period: "latest available by country", unit: "%", resolution: `${urbanRows.length} country values`, transformation: "社会レイヤーとして青い環へ変換", caveat: "COUNTRY VALUE。社会の豊かさや幸福度を表さない。", rows: urbanRows }),
+      source({ id: "nasa-modis-ecological-layer", organisation: "NASA GIBS / MODIS", title: "MCD12Q1 IGBP Land Cover Type", url: "https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/MODIS_Combined_L3_IGBP_Land_Cover_Type_Annual.json", period: "2023 annual", unit: "IGBP land-cover class", resolution: "500 m source / 1024×1024 display snapshot", transformation: "森林域だけを薄い背景として表示し、国別の相関計算には使いません。", caveat: "表示PNGは土地被覆の位置を見る背景です。国別森林率や生物多様性の数値ではありません。", rows: [{ layer: "ECOLOGICAL CONTEXT", localAsset: "assets/data/modis-land-cover-2023.png", displayed: true }] }),
+      source({ id: "worldbank-forest", organisation: "World Bank / FAO", title: "Forest area (% of land area)", url: "https://data.worldbank.org/indicator/AG.LND.FRST.ZS", period: "latest available by country", unit: "% of land area", resolution: `${forestUrbanRows.length} paired country values`, transformation: "同じ国の都市人口率と組にし、緑の内側リングと散布図の縦軸へ変換", caveat: "COUNTRY VALUE。森林の質、生物多様性、都市内の緑地を表さない。国ごとに最新年が異なる。", rows: forestRows }),
+      source({ id: "worldbank-urban", organisation: "World Bank / UN Population Division", title: "Urban population (% of total)", url: "https://data.worldbank.org/indicator/SP.URB.TOTL.IN.ZS", period: "latest available by country", unit: "% of population", resolution: `${forestUrbanRows.length} paired country values`, transformation: "同じ国の森林率と組にし、青の外側リングと散布図の横軸へ変換", caveat: "COUNTRY VALUE。都市の密度、幸福度、暮らしやすさを表さない。国ごとに最新年が異なる。", rows: urbanRows }),
+      source({ id: "forest-urban-correlation", kind: "DERIVED", organisation: "GAIA SENSEWARE", title: "Paired-country forest × urban comparison", url: "./scripts/build-gaia-data.mjs", period: "latest non-missing value for each indicator", unit: "Pearson r / percentage-point residual", resolution: `${forestUrbanRows.length} countries with both values`, transformation: "同じ国の二つの割合からPearson相関と単回帰線を計算し、全体傾向と国ごとの外れ方を同時に表示", caveat: "相関は因果関係ではない。標本は選択国だけで、指標の基準年も一致しない場合がある。", rows: forestUrbanRows }),
       source({ id: "unesco-whc", organisation: "UNESCO World Heritage Centre", title: "World Heritage List / global curated sample", url: URLS.unesco, period: "current catalogue reference", unit: "site", resolution: `${heritageNodes.length} curated sites across world regions`, transformation: "地域の広がりが見えるよう各大地域から既登録物件を選び、文化・記憶レイヤーへ配置", caveat: "GLOBAL SAMPLEで全件ではない。件数を精神性の数値にせず、選定は展示上のキュレーション。", rows: heritageNodes }),
     ],
-    { ecologicalRaster: "./assets/data/modis-land-cover-2023.png", social: urbanRows, culture: heritageNodes, memories: [] },
+    { ecologicalRaster: "./assets/data/modis-land-cover-2023.png", pairedCountries: forestUrbanRows, ecological: forestRows, social: urbanRows, culture: heritageNodes, memories: [] },
   ),
   mode(
     "earth-organ",
     { number: 3, title: "関係を編み直す", en: "REWEAVE RELATIONSHIPS" },
-    "日差しや風の条件と、現在の再生可能電力にはどんな差があるでしょう。",
+    "再生可能電力は、どの国でどれくらい使われているでしょう。",
     [
-      source({ id: "nasa-power-renewable", organisation: "NASA POWER", title: "Solar and wind climatology / global stratified sample", url: URLS.power, period: "climatology", unit: "kWh/m²/day, m/s", resolution: `選択${powerRows.length}地点`, transformation: "太陽光と風が豊かな地点ほど、外側の環を強く表示します。", caveat: "31地点の自然条件だけを見た値です。土地、設備、送電網、費用など、実際に発電するための条件は含みません。", rows: powerRows }),
-      source({ id: "worldbank-renewable", organisation: "World Bank", title: "Renewable electricity output (% of total)", url: "https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS", period: "latest available by country", unit: "%", resolution: `${renewableRows.length} country values`, transformation: "各NASA POWER地点と同じ国の現在供給比率を内側へ表示", caveat: "COUNTRY VALUE。潜在量とは定義が異なり、直接比較しない。", rows: renewableRows }),
-      source({ id: "distributed-link-scenario", kind: "SCENARIO", organisation: "Audience / local browser", title: "二地域の分散型接続", url: "about:local", period: "current session", unit: "two selected points", resolution: "audience selection", transformation: "選択した二地域を破線で結ぶ", caveat: "実在の送電線、系統計画、事業可能性評価ではない。", rows: [{ selectedRegions: [], transmitted: false }] }),
+      source({ id: "worldbank-renewable", organisation: "World Bank", title: "Renewable electricity output (% of total)", url: "https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS", period: "latest available by country", unit: "%", resolution: `${renewableRows.length} country values`, transformation: "31か国の国土を同じ0〜100%尺度で、暗い青から明るい水色へ塗り分けます。スライダーは比率の低い国から高い国へ移動します。", caveat: "COUNTRY VALUE。国によって最新年が異なります。", rows: renewableRows }),
+      source({ id: "nasa-power-renewable", organisation: "NASA POWER", title: "Solar and wind climatology / global stratified sample", url: URLS.power, period: "climatology", unit: "kWh/m²/day, m/s", resolution: `選択${powerRows.length}地点`, transformation: "選択国の代表地点について、日射を黄色い円、風を緑の矢印で補足表示します。", caveat: "31地点の自然条件だけを見た値です。現在の再生可能電力比率を説明する因果モデルや導入可能量ではありません。", rows: powerRows }),
     ],
-    { potential: powerRows, current: renewableRows, scenarioLinks: [] },
+    { potential: powerRows, current: renewableRows },
   ),
   mode(
     "senseware-2050",
     { number: 3, title: "関係を編み直す", en: "REWEAVE RELATIONSHIPS" },
-    "九つのデータの中で、あなたがいちばん気になった変化はどれでしょう。",
+    "地球を、ひとつの点数で表せるでしょうか。",
     [
-      source({ id: "nine-signals", kind: "DERIVED", organisation: "GAIA SENSEWARE", title: "01–09 signal identity sequence", url: "./data/gaia-signals.json", period: "same snapshot / 48-second loop", unit: "mode identity; no numeric score", resolution: "one branch per sense organ", transformation: "01〜09を一本ずつ光らせ、各モードで観客が触れた記憶を、別の明るさとして重ねます。", caveat: "意味も単位も違う数値は、足したり平均したりしません。架空の『地球健康度』もつくりません。", rows: [{ signal: "01 CO2/temp" }, { signal: "02 current/wind" }, { signal: "03 forest/rain" }, { signal: "04 interactions" }, { signal: "05 waste routes" }, { signal: "06 emissions/DID reference" }, { signal: "07 earthquakes" }, { signal: "08 three layers" }, { signal: "09 energy potential/current" }] }),
-      source({ id: "audience-traces", kind: "SCENARIO", organisation: "Audience / local browser", title: "Touch traces and choices", url: "about:local", period: "current session", unit: "non-evaluative traces", resolution: "pointer samples", transformation: "軌跡を神経網の新しい枝へ変換", caveat: "外部送信・保存を行わない。正解点へ換算しない。", rows: [{ storage: "memory only", transmitted: false }] }),
+      source({ id: "nine-measure-atlas", kind: "DERIVED", organisation: "GAIA SENSEWARE", title: "01–09 measure / representative value / unit atlas", url: "./data/gaia-signals.json", period: "same bundled snapshot", unit: "ppm, m/s, mm/day, %, count, Pearson r", resolution: "nine simultaneous cards", transformation: "各展示の測るもの、保存データから取り出した代表値、単位または標本数を3×3で同時表示します。", caveat: "意味も単位も違う数値は、足したり平均したり順位づけしたりしません。架空の『地球健康度』もつくりません。", rows: [
+        { signal: "01", measure: "大気CO2濃度", unit: "ppm" },
+        { signal: "02", measure: "海流の速さ", unit: "m/s" },
+        { signal: "03", measure: "森林域と降水量", unit: "mm/day" },
+        { signal: "04", measure: "ミツバチと花の関係", unit: "relationship count" },
+        { signal: "05", measure: "都市ごみ再資源化率", unit: "%" },
+        { signal: "06", measure: "夜間光と国別排出量", unit: "radiance / Mt CO2e" },
+        { signal: "07", measure: "M7.5以上の地震", unit: "event count / magnitude" },
+        { signal: "08", measure: "森林率と都市人口率", unit: "% / Pearson r" },
+        { signal: "09", measure: "再生可能電力比率", unit: "%" },
+      ] }),
     ],
     { reuse: ["breathing-earth", "blue-circulation", "forest-cloud-engine", "pollination-protocol", "nothing-is-waste", "anthropocene-scar", "rhythm-of-disaster", "three-ecologies", "earth-organ"] },
   ),
