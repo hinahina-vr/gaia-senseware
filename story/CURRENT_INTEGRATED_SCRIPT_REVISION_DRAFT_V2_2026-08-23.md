@@ -1,7 +1,7 @@
 # 『惑星の放課後 ～GAIA SENSATION～』全編改善案台本・第2稿
 
 > **比較検討用・非CANON・実装未反映**
-> 現行正本 `story/現行統合台本.md`、実行データ、第1稿 `story/現行統合台本_改善案_2026-08-23.md` は変更しない。
+> 現行正本 `story/現行統合台本.md`、実行データ、第1稿 `story/CURRENT_INTEGRATED_SCRIPT_REVISION_DRAFT_2026-08-23.md` は変更しない。
 > 本稿は第1稿へのフィードバックを反映した再改稿案であり、採否決定後に初めて実装用IDへ分解する。
 
 - 比較元: `dd29ee48b53ebfe307fe053adb87fd9e0530adbe`

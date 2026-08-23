@@ -13,7 +13,7 @@ const gxRuntime = read("gx-mode.js");
 const gxCss = read("gx-mode.css");
 const mapPolishCss = read("map-ui-grid-polish.css");
 const canon = read("story/物語台本.md");
-const retained = read("contest-limited/story/機能限定版台本.md");
+const retained = read("contest-limited/story/limited-feature-script.md");
 const generated = read("novel-story-data.js");
 const builder = read("scripts/build-novel-story.mjs");
 

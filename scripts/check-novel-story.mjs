@@ -7,7 +7,7 @@ import { readApprovedStoryScript } from "./approved-story-script.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
-const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
+const retainedPath = path.join(projectRoot, "contest-limited", "story", "limited-feature-script.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
 const expectedFreezeHash = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
 const expectedApprovedHash = "31f84f224fd85e03eeea22fce4f675529c7232b9f114f0ce50a3013e41b22e49";

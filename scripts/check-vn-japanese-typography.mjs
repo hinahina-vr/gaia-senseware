@@ -9,7 +9,7 @@ const runtime = read("novel-mode.js");
 const css = read("novel-mode.css");
 const html = read("index.html");
 const source = read(path.join("story", "物語台本.md"));
-const mirror = read(path.join("contest-limited", "story", "機能限定版台本.md"));
+const mirror = read(path.join("contest-limited", "story", "limited-feature-script.md"));
 
 const scans = [
   ["Intl.Segmenter Japanese word segmentation", /new Intl\.Segmenter\("ja", \{ granularity: "word" \}\)/u.test(runtime)],

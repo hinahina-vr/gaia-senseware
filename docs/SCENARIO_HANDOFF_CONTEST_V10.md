@@ -2,7 +2,7 @@
 
 ## freeze正本
 
-- 入力: `contest-limited/story/機能限定版台本.md`
+- 入力: `contest-limited/story/limited-feature-script.md`
 - 正本: `story/物語台本.md`
 - UTF-8 / LF / 56,528 bytes / 992 content lines
 - SHA-256: `27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c`

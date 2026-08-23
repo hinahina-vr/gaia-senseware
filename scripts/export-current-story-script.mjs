@@ -108,7 +108,7 @@ const lines = [
   "",
   "- 修正指示では、各見出しの安定ID（例: `festival_concept_021`、`beyond_01_001`）を指定してください。",
   "- 本ファイルへ直接書いた案は、実行ソースへ反映して再生成するまで製品表示には入りません。未反映のままなら `npm run check` が差分を検出します。",
-  "- 旧 `story/物語台本.md` と `contest-limited/story/機能限定版台本.md` は本編の凍結入力であり、単独では現行表示を表しません。",
+  "- 旧 `story/物語台本.md` と `contest-limited/story/limited-feature-script.md` は本編の凍結入力であり、単独では現行表示を表しません。",
   "- 管理構造の詳細は `story/README.md` を参照してください。",
   "",
   "## 現行スナップショット",

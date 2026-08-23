@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const approvedStoryPath = path.join(projectRoot, "story", "台本修正版_2026-08-23.md");
+export const approvedStoryPath = path.join(projectRoot, "story", "APPROVED_SCRIPT_2026-08-23.md");
 const EXPECTED_SHA256 = "31f84f224fd85e03eeea22fce4f675529c7232b9f114f0ce50a3013e41b22e49";
 const EXPECTED_MAIN_SCENES = Object.freeze([
   "festival_concept",
@@ -129,7 +129,7 @@ const assertUniqueIds = (scenes, label) => {
 export const readApprovedStoryScript = () => {
   const bytes = fs.readFileSync(approvedStoryPath);
   const digest = crypto.createHash("sha256").update(bytes).digest("hex");
-  if (digest !== EXPECTED_SHA256) throw new Error("story/台本修正版_2026-08-23.mdが承認済み入力と一致しません");
+  if (digest !== EXPECTED_SHA256) throw new Error("story/APPROVED_SCRIPT_2026-08-23.mdが承認済み入力と一致しません");
   const source = bytes.toString("utf8").replace(/\r\n?/gu, "\n");
   const mainScenes = parseScenes(source, {
     startMarker: "# PART I｜本編",

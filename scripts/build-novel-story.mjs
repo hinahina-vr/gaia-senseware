@@ -6,8 +6,8 @@ import { readApprovedStoryScript } from "./approved-story-script.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
-const characterCanonPath = path.join(projectRoot, "story", "キャラクター設定.md");
-const retainedPath = path.join(projectRoot, "contest-limited", "story", "機能限定版台本.md");
+const characterCanonPath = path.join(projectRoot, "story", "CHARACTER_SETTINGS.md");
+const retainedPath = path.join(projectRoot, "contest-limited", "story", "limited-feature-script.md");
 const outputPath = path.join(projectRoot, "novel-story-data.js");
 const revisionsPath = path.join(projectRoot, "story", "observation-log-revisions-20260822.js");
 const EXPECTED_SOURCE_SHA256 = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
@@ -29,7 +29,7 @@ const characters = Object.freeze({
 });
 for (const profile of Object.values(characters)) {
   if (!characterSource.includes(`【${profile.formalName}（${profile.reading}）】`)) {
-    throw new Error(`story/キャラクター設定.mdに正式名 ${profile.formalName}（${profile.reading}）がありません`);
+    throw new Error(`story/CHARACTER_SETTINGS.mdに正式名 ${profile.formalName}（${profile.reading}）がありません`);
   }
 }
 const source = sourceBytes.toString("utf8").replace(/\r\n?/gu, "\n");

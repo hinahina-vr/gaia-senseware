@@ -1,4 +1,4 @@
-// Generated from story/台本修正版_2026-08-23.md by scripts/build-true-end-story.mjs. Do not edit by hand.
+// Generated from story/APPROVED_SCRIPT_2026-08-23.md by scripts/build-true-end-story.mjs. Do not edit by hand.
 (() => {
   "use strict";
 
