@@ -350,9 +350,9 @@ try {
     assert.equal(story.language.name, "SÆLIVA");
     assert.equal(story.language.japaneseName, "セイリヴァ");
     assert.equal(story.language.htmlLang, "art-x-saeliva");
-    assert.equal(story.scenes.length, 9, `${viewport.name}: true end does not have nine scenes`);
-    assert.deepEqual(story.scenes.map(({ number }) => number), ["01", "02", "03", "04", "05", "06", "07", "08", "09"]);
-    assert.equal(story.totalSteps, 135, `${viewport.name}: total step count mismatch`);
+    assert.equal(story.scenes.length, 3, `${viewport.name}: approved true end must have three scenes`);
+    assert.deepEqual(story.scenes.map(({ number }) => number), ["01", "02", "03"]);
+    assert.equal(story.totalSteps, 52, `${viewport.name}: total step count mismatch`);
 
     const initial = await scanFrame(page);
     const seenSpeakers = new Set();
@@ -574,7 +574,7 @@ try {
     const expectedBeyondIds = story.scenes.flatMap((scene) => scene.stepIds);
     assert.deepEqual(beyondLog.stateIds, expectedBeyondIds, `${viewport.name}: TRANSMISSION state LOG order/count mismatch`);
     assert.deepEqual(beyondLog.storedIds, expectedBeyondIds, `${viewport.name}: TRANSMISSION persisted LOG order/count mismatch`);
-    assert.equal(beyondLog.entries.length, 135, `${viewport.name}: TRANSMISSION LOG does not contain all 135 lines`);
+    assert.equal(beyondLog.entries.length, 52, `${viewport.name}: TRANSMISSION LOG does not contain all 52 lines`);
     assert.deepEqual(beyondLog.entries.map(({ id }) => id), expectedBeyondIds, `${viewport.name}: TRANSMISSION rendered LOG order mismatch`);
     assert.match(beyondLog.entries[0].meta, /NOVACENE/u);
     assert.equal(beyondLog.entries[0].text, OPENING_MESSAGE);
@@ -599,7 +599,7 @@ try {
     await page.evaluate(() => globalThis.GaiaNovel.open());
     await page.locator("#novel-resume-button").click();
     await page.waitForFunction(() => globalThis.GaiaNovel.getState().readStepIds
-      .filter((id) => id.startsWith("beyond_")).length === 135);
+      .filter((id) => id.startsWith("beyond_")).length === 52);
     const restoredBeyondIds = await page.evaluate(() => globalThis.GaiaNovel.getState().readStepIds
       .filter((id) => id.startsWith("beyond_")));
     assert.deepEqual(restoredBeyondIds, expectedBeyondIds, `${viewport.name}: TRANSMISSION LOG did not survive reload`);
@@ -707,7 +707,7 @@ try {
 
     const beforeSeparator = await scanFrame(separatorPage);
     assert.equal(beforeSeparator.scene, "after-ending", `${viewport.name}: separator test overshot the first scene`);
-    assert.equal(beforeSeparator.counter, `${String(firstSceneSteps).padStart(3, "0")} / 135`, `${viewport.name}: separator test did not stop at the scene boundary`);
+    assert.equal(beforeSeparator.counter, `${String(firstSceneSteps).padStart(3, "0")} / 052`, `${viewport.name}: separator test did not stop at the scene boundary`);
     assert.equal(beforeSeparator.interfaceOpacity, 1, `${viewport.name}: interface was not fully visible before the separator`);
     assert.equal(beforeSeparator.motionReduced, false, `${viewport.name}: separator timing test unexpectedly prefers reduced motion`);
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-separator-00-before.png`) });
@@ -796,4 +796,4 @@ try {
   await browser.close();
 }
 
-console.log(`True-end browser check passed: ${report.viewports.length} viewports / nine scenes / dedicated score`);
+console.log(`True-end browser check passed: ${report.viewports.length} viewports / three approved scenes / dedicated score`);

@@ -1069,7 +1069,7 @@
 
   const migrateStepId = (stepId, sourceVersion = story.storyVersion) => {
     if (typeof stepId !== "string") return null;
-    if (Number(sourceVersion) < 10) return firstStepForScene(story.startSceneId);
+    if (Number(sourceVersion) < 12) return firstStepForScene(story.startSceneId);
     let migratedStepId = stepId;
     if (Number(sourceVersion) < 8 && version7To8StepIds.has(stepId)) {
       migratedStepId = version7To8StepIds.get(stepId);
@@ -1098,7 +1098,7 @@
 
   const normalizeState = (candidate) => {
     const sourceVersion = Number.isFinite(Number(candidate?.storyVersion)) ? Number(candidate.storyVersion) : 7;
-    const resetsLegacyProgress = sourceVersion < 10;
+    const resetsLegacyProgress = sourceVersion < 12;
     const legacyIndexStep = Number.isInteger(candidate?.stepIndex)
       ? allSteps[Math.max(0, Math.min(allSteps.length - 1, candidate.stepIndex))]?.id
       : null;

@@ -32,7 +32,7 @@ assert.match(html, /id="gx-modal-skip"[\s\S]{0,240}aria-label="GXモーダルを
 assert.match(gx, /elements\.modalSkip\.setAttribute\([\s\S]*?GXモーダルをスキップして\$\{returnTo === "novel" \? "ストーリー" : "入口"\}へ戻る/u);
 assert.doesNotMatch(html, /id="gx-era-transition-skip"/u);
 assert.match(html, /gx-mode\.js\?v=gaia-gx-modal-skip-1/u);
-assert.match(html, /novel-mode\.js\?v=gaia-novacene-title-1/u);
+assert.match(html, /novel-mode\.js\?v=gaia-approved-script-12/u);
 assert.match(html, /gx-mode\.css\?v=gaia-gx-modal-skip-1/u);
 assert.match(gxStyles, /\.gx-era-transition strong \{[\s\S]*?font-size: clamp\(12px, 2vw, 38px\);[\s\S]*?white-space: nowrap;/u);
 assert.match(gxStyles, /\.gx-modal-skip \{[\s\S]*?top: max\(24px,[\s\S]*?right: clamp\(22px,[\s\S]*?min-height: 48px;/u);

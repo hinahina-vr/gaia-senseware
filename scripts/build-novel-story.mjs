@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { readApprovedStoryScript } from "./approved-story-script.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const canonPath = path.join(projectRoot, "story", "物語台本.md");
@@ -206,16 +207,89 @@ const scenes = matches.map((match, index) => {
 const unusedRevisionIds = Object.keys(observationLogRevisions).filter((id) => !appliedRevisionIds.has(id));
 if (unusedRevisionIds.length > 0) throw new Error(`未適用のOBSERVATION LOG修正があります: ${unusedRevisionIds.join(", ")}`);
 
+const approvedScript = readApprovedStoryScript();
+const approvedSceneMap = new Map(approvedScript.mainScenes.map((scene) => [scene.id, scene]));
+const baseStepMap = new Map(scenes.flatMap((scene) => scene.steps).map((step) => [step.id, step]));
+const endingStep = baseStepMap.get("welcome_chat_095");
+const speakerForLabel = Object.freeze({
+  "女の子": "amane",
+  "もう一人の女の子": "mizuha",
+  あめ: "amane",
+  みず: "mizuha",
+  プレイヤー: "visitor",
+  青猫: "visitor",
+  saku: "sakuya",
+  SYSTEM: "system",
+  "—": null,
+  地の文: "narrator",
+});
+const typeForKind = Object.freeze({
+  地の文: "narration",
+  会話: "dialogue",
+  学内チャット: "chat",
+  チャット画面: "chatSurface",
+  操作: "interaction",
+});
+const approvedMissingBaseIds = [];
+for (const scene of scenes) {
+  const approvedScene = approvedSceneMap.get(scene.id);
+  if (!approvedScene) throw new Error(`${scene.id}: 承認済み本編シーンがありません`);
+  Object.assign(scene, {
+    chapter: approvedScene.chapter,
+    date: approvedScene.date,
+    time: approvedScene.time,
+    location: approvedScene.location,
+    temporal: {
+      ...scene.temporal,
+      displayTitle: `${approvedScene.date} ${approvedScene.time}｜${approvedScene.location}`,
+      date: approvedScene.date,
+      time: approvedScene.time,
+      location: approvedScene.location,
+    },
+  });
+  scene.steps = approvedScene.entries.map((entry) => {
+    const base = baseStepMap.get(entry.id);
+    if (!base) approvedMissingBaseIds.push(entry.id);
+    const type = typeForKind[entry.kind];
+    if (!type) throw new Error(`${entry.id}: 未対応の本編種別です（${entry.kind}）`);
+    const speaker = speakerForLabel[entry.speakerLabel];
+    if (speaker === undefined) throw new Error(`${entry.id}: 未対応の話者です（${entry.speakerLabel}）`);
+    const step = {
+      ...(base || {}),
+      id: entry.id,
+      sceneId: scene.id,
+      type,
+      text: type === "interaction" ? "" : entry.text,
+      ...(speaker ? { speaker } : {}),
+      ...(type === "dialogue" || type === "chat" ? { speakerLabel: entry.speakerLabel } : {}),
+      ...(entry.time ? { time: entry.time } : {}),
+      ...(entry.metadata || {}),
+    };
+    if (type === "narration") {
+      step.speaker = "narrator";
+      delete step.speakerLabel;
+    }
+    return step;
+  });
+}
+const expectedInjectedIds = Object.freeze(Array.from({ length: 9 }, (_, index) => `esp32_pitch_016${String.fromCharCode(97 + index)}`));
+if (approvedMissingBaseIds.join("|") !== expectedInjectedIds.join("|")) {
+  throw new Error(`承認済み本編の新規IDが想定外です: ${approvedMissingBaseIds.join(", ")}`);
+}
+if (!endingStep) throw new Error("スタッフロール接続ステップ welcome_chat_095 がありません");
+scenes.find((scene) => scene.id === "welcome_chat").steps.push(endingStep);
+
 scenes.forEach((scene, index) => { scene.nextSceneId = scenes[index + 1]?.id || null; });
 const sceneOrder = scenes.map((scene) => scene.id);
 const story = {
-  storyVersion: 10,
+  storyVersion: 12,
   title: "惑星の放課後",
   systemTitle: "GAIA SENSEWARE",
   subtitle: "GAIA SENSATION",
   estimatedDuration: "10〜12分",
   sourceSha256: EXPECTED_SOURCE_SHA256,
-  revisionId: "observation-log-20260822T114453Z",
+  revisionId: "approved-script-20260823",
+  approvedSourceSha256: approvedScript.sha256,
   characterSourceSha256: sha256(characterSourceBytes),
   characters,
   startSceneId: "festival_concept",

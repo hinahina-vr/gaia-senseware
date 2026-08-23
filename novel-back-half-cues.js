@@ -2,12 +2,12 @@
   "use strict";
 
   const expectedSceneCounts = Object.freeze({
-    festival_concept: 76,
-    map_mode01: 43,
-    gx_experience: 48,
-    esp32_pitch: 43,
-    circle_invitation: 81,
-    welcome_chat: 95,
+    festival_concept: 40,
+    map_mode01: 34,
+    gx_experience: 46,
+    esp32_pitch: 41,
+    circle_invitation: 51,
+    welcome_chat: 60,
   });
 
   const sceneIds = Object.freeze(Object.keys(expectedSceneCounts));
@@ -87,7 +87,7 @@
   const audio = Object.freeze([]);
 
   const stepNumber = (step) => {
-    const match = new RegExp(`^${step?.sceneId}_(\\d{3})$`).exec(String(step?.id || ""));
+    const match = new RegExp(`^${step?.sceneId}_(\\d{3})(?:[a-z])?$`).exec(String(step?.id || ""));
     return match ? Number(match[1]) : null;
   };
   const ranged = (rows, step) => {
