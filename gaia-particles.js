@@ -23,6 +23,8 @@
     let motes = [];
     let pointerX = 0.5;
     let pointerY = 0.5;
+    const spriteSize = 448;
+    const spriteRadius = 100;
 
     const random = (min, max) => min + Math.random() * (max - min);
     const pickHue = () => palette[Math.floor(Math.random() * palette.length)];
@@ -40,11 +42,48 @@
           { x: 0.88, spread: 0.07, hue: 202 },
         ];
 
+    const createMoteSprite = (mote) => {
+      const sprite = typeof OffscreenCanvas === "function"
+        ? new OffscreenCanvas(spriteSize, spriteSize)
+        : document.createElement("canvas");
+      sprite.width = spriteSize;
+      sprite.height = spriteSize;
+      const spriteContext = sprite.getContext("2d", { alpha: true });
+      if (!spriteContext) return null;
+      const center = spriteSize / 2;
+      spriteContext.translate(center, center);
+      spriteContext.shadowColor = `hsla(${mote.hue}, 98%, 86%, 0.68)`;
+      spriteContext.shadowBlur = spriteRadius * 0.58;
+      mote.lobes.forEach((lobe, index) => {
+        const lobeRadius = spriteRadius * lobe.scale;
+        const lobeX = lobe.x * spriteRadius;
+        const lobeY = lobe.y * spriteRadius;
+        const glow = spriteContext.createRadialGradient(
+          lobeX - lobeRadius * 0.14,
+          lobeY - lobeRadius * 0.18,
+          0,
+          lobeX,
+          lobeY,
+          lobeRadius,
+        );
+        const lobeAlpha = index === 0 ? 1 : 0.64;
+        glow.addColorStop(0, `hsla(${mote.hue}, 100%, 96%, ${lobeAlpha})`);
+        glow.addColorStop(0.28, `hsla(${mote.hue}, 98%, 86%, ${lobeAlpha * 0.72})`);
+        glow.addColorStop(0.68, `hsla(${mote.hue}, 92%, 72%, ${lobeAlpha * 0.24})`);
+        glow.addColorStop(1, `hsla(${mote.hue}, 86%, 62%, 0)`);
+        spriteContext.fillStyle = glow;
+        spriteContext.beginPath();
+        spriteContext.arc(lobeX, lobeY, lobeRadius, 0, Math.PI * 2);
+        spriteContext.fill();
+      });
+      return sprite;
+    };
+
     const makeMote = (entering = false) => {
       const zone = riseZones[Math.floor(Math.random() * riseZones.length)];
       const depth = random(0.18, 1);
       const radius = random(34, variant === "story" ? 108 : 96) * (0.68 + depth * 0.5);
-      return {
+      const mote = {
         baseX: (zone.x + random(-zone.spread, zone.spread)) * width,
         y: entering ? height + random(radius * 0.6, height * 0.18 + radius) : random(height * 0.06, height * 1.12),
         vy: -random(16, variant === "story" ? 38 : 34) * (0.7 + depth * 0.42),
@@ -63,6 +102,8 @@
           scale: index === 0 ? random(0.78, 1) : random(0.42, 0.72),
         })),
       };
+      mote.sprite = createMoteSprite(mote);
+      return mote;
     };
 
     const rebuild = () => {
@@ -120,31 +161,12 @@
         context.translate(x + parallaxX, mote.y + parallaxY);
         context.rotate(Math.sin(wave * 0.61) * 0.045);
         context.scale(1, mote.aspect);
-        context.shadowColor = `hsla(${mote.hue}, 98%, 86%, ${alpha * 0.68})`;
-        context.shadowBlur = puffRadius * 0.58;
-
-        mote.lobes.forEach((lobe, index) => {
-          const lobeRadius = puffRadius * lobe.scale;
-          const lobeX = lobe.x * puffRadius;
-          const lobeY = lobe.y * puffRadius;
-          const glow = context.createRadialGradient(
-            lobeX - lobeRadius * 0.14,
-            lobeY - lobeRadius * 0.18,
-            0,
-            lobeX,
-            lobeY,
-            lobeRadius,
-          );
-          const lobeAlpha = alpha * (index === 0 ? 1 : 0.64);
-          glow.addColorStop(0, `hsla(${mote.hue}, 100%, 96%, ${lobeAlpha})`);
-          glow.addColorStop(0.28, `hsla(${mote.hue}, 98%, 86%, ${lobeAlpha * 0.72})`);
-          glow.addColorStop(0.68, `hsla(${mote.hue}, 92%, 72%, ${lobeAlpha * 0.24})`);
-          glow.addColorStop(1, `hsla(${mote.hue}, 86%, 62%, 0)`);
-          context.fillStyle = glow;
-          context.beginPath();
-          context.arc(lobeX, lobeY, lobeRadius, 0, Math.PI * 2);
-          context.fill();
-        });
+        if (mote.sprite && alpha > 0.0001) {
+          const drawSize = spriteSize * (puffRadius / spriteRadius);
+          context.globalAlpha = alpha;
+          context.drawImage(mote.sprite, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+          context.globalAlpha = 1;
+        }
         context.restore();
       });
 

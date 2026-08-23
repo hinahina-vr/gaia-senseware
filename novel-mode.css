@@ -1499,6 +1499,29 @@ body.novel-open .japan-credits {
   pointer-events: none;
 }
 
+/* The ESP32 field note is an information drawing rather than a photographic
+   backdrop. Keep the complete sheet in frame, and on narrow screens leave a
+   readable notebook column beside the speaking character. */
+.novel-layer:not(.is-title)[data-background-motion][data-background-cue="esp32-system-design"] {
+  background-color: #183447;
+  background-position: center, center !important;
+  background-repeat: no-repeat, no-repeat;
+  background-size: cover, contain !important;
+}
+
+@media (max-width: 720px) {
+  body:not(.gx-story-open) .novel-layer[data-background-cue="esp32-system-design"] .novel-character {
+    top: 104px;
+    left: 92%;
+    transform-origin: 50% 0;
+  }
+
+  body:not(.gx-story-open) .novel-layer[data-background-cue="esp32-system-design"] .novel-cast[data-speaker="sora"] .novel-character--sora,
+  body:not(.gx-story-open) .novel-layer[data-background-cue="esp32-system-design"] .novel-cast[data-speaker="minamo"] .novel-character--minamo {
+    transform: translate3d(-50%, 0, 0) scale(0.62);
+  }
+}
+
 body.novel-open .experience > .status,
 body.novel-open .experience > .guide,
 body.novel-open .experience > .mode-caption,
@@ -5330,6 +5353,7 @@ body.novel-reduced-motion .story-detour-dock * {
   gap: 6px;
   margin-top: 8px;
 }
+.novel-slack-reactions[hidden] { display: none; }
 .novel-slack-reaction {
   display: inline-flex;
   align-items: center;
@@ -5342,6 +5366,21 @@ body.novel-reduced-motion .story-detour-dock * {
   font-size: 12px;
   line-height: 1;
   text-shadow: none;
+}
+.novel-slack-reaction.is-arriving {
+  animation: novel-slack-reaction-arrive 260ms cubic-bezier(0.2, 0.82, 0.3, 1) both;
+}
+.novel-slack-reaction.is-counting {
+  animation: novel-slack-reaction-count 220ms ease-out both;
+}
+@keyframes novel-slack-reaction-arrive {
+  from { opacity: 0; transform: translateY(5px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes novel-slack-reaction-count {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
 .novel-slack-message { overflow-wrap: anywhere; }
 .novel-slack-typing { display: flex; align-items: center; gap: 9px; margin: 7px 8px 2px 36px; color: #616061; font-size: 11px; }

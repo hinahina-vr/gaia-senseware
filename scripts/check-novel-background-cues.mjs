@@ -31,6 +31,9 @@ assert(
 for (const assetPath of new Set(resolved.map(({ cue }) => cue.assetPath))) {
   await access(path.join(projectRoot, assetPath));
 }
+for (const mobileAssetPath of new Set(resolved.map(({ cue }) => cue.mobileAssetPath).filter(Boolean))) {
+  await access(path.join(projectRoot, mobileAssetPath));
+}
 for (const entry of cues.gallery) {
   const step = stepMap.get(entry.unlockStepId);
   assert(step, `${entry.id}: unlock stepがありません`);

@@ -280,6 +280,7 @@
 
   const getPlaybackState = () => ({
     ...getState(),
+    outputVolume: Number.isFinite(audio?.volume) ? audio.volume : 0,
     currentTime: Number.isFinite(audio?.currentTime) ? audio.currentTime : 0,
     duration: Number.isFinite(audio?.duration) ? audio.duration : 0,
   });
@@ -329,7 +330,10 @@
     preferredVolume = Math.max(0, Math.min(1, Number(snapshot.volume) || 0));
     muted = Boolean(snapshot.muted);
     playbackRequested = Boolean(snapshot.playbackRequested || snapshot.playing) && !muted;
-    const resumeAt = Math.max(0, Number(snapshot.currentTime) || 0);
+    const navigationElapsedSeconds = snapshot.playing && !muted
+      ? Math.max(0, Math.min(NAVIGATION_STATE_MAX_AGE_MS, Date.now() - Number(snapshot.savedAt || 0))) / 1000
+      : 0;
+    const resumeAt = Math.max(0, Number(snapshot.currentTime) || 0) + navigationElapsedSeconds;
     const applyResumeTime = () => {
       try {
         audio.currentTime = Number.isFinite(audio.duration) && audio.duration > 0 ? resumeAt % audio.duration : resumeAt;
@@ -350,7 +354,7 @@
     try {
       await audio.play();
       applyResumeTime();
-      fadeTo(preferredVolume, 0.28, emitState);
+      audio.volume = preferredVolume;
       emitState();
       return { restored: true, playing: true, blocked: false };
     } catch {

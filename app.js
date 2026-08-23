@@ -1,4 +1,4 @@
-(() => {
+(async () => {
   "use strict";
 
   // Keep the highlight independent from each button's own pseudo-elements.
@@ -393,6 +393,7 @@
     errorPanel.hidden = false;
     return;
   }
+  const parallelShaderCompile = gl.getExtension("KHR_parallel_shader_compile");
 
   const vertexSource = `#version 300 es
     in vec2 aPosition;
@@ -553,17 +554,10 @@
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      const message = gl.getShaderInfoLog(shader) || "Shader compilation failed.";
-      gl.deleteShader(shader);
-      throw new Error(message);
-    }
-
     return shader;
   };
 
-  const createProgram = () => {
+  const createProgram = async () => {
     const vertexShader = compileShader(gl.VERTEX_SHADER, vertexSource);
     const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fragmentSource);
     const nextProgram = gl.createProgram();
@@ -571,22 +565,45 @@
     gl.attachShader(nextProgram, vertexShader);
     gl.attachShader(nextProgram, fragmentShader);
     gl.linkProgram(nextProgram);
-    gl.deleteShader(vertexShader);
-    gl.deleteShader(fragmentShader);
 
-    if (!gl.getProgramParameter(nextProgram, gl.LINK_STATUS)) {
-      const message = gl.getProgramInfoLog(nextProgram) || "Shader link failed.";
+    // Querying COMPILE_STATUS or LINK_STATUS immediately forces Chromium to
+    // wait for the GPU process. The full ten-mode shader can take seconds on
+    // software or older GPUs, freezing the sound prompt before first input.
+    // KHR_parallel_shader_compile lets the browser finish in the background;
+    // yielding a timer turn also keeps parsing, layout, and input responsive.
+    if (parallelShaderCompile) {
+      while (!gl.getProgramParameter(nextProgram, parallelShaderCompile.COMPLETION_STATUS_KHR)) {
+        await new Promise((resolve) => window.setTimeout(resolve, 16));
+      }
+    }
+
+    const shaderError = [vertexShader, fragmentShader]
+      .find((shader) => !gl.getShaderParameter(shader, gl.COMPILE_STATUS));
+    if (shaderError) {
+      const message = gl.getShaderInfoLog(shaderError) || "Shader compilation failed.";
+      gl.deleteShader(vertexShader);
+      gl.deleteShader(fragmentShader);
       gl.deleteProgram(nextProgram);
       throw new Error(message);
     }
 
+    if (!gl.getProgramParameter(nextProgram, gl.LINK_STATUS)) {
+      const message = gl.getProgramInfoLog(nextProgram) || "Shader link failed.";
+      gl.deleteShader(vertexShader);
+      gl.deleteShader(fragmentShader);
+      gl.deleteProgram(nextProgram);
+      throw new Error(message);
+    }
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
     return nextProgram;
   };
 
   let program;
 
   try {
-    program = createProgram();
+    program = await createProgram();
   } catch (error) {
     console.error(error);
     errorPanel.querySelector("p").textContent = "シェーダーの初期化に失敗しました。";
@@ -1806,10 +1823,30 @@
     return canvas;
   };
 
+  let forestRasterPreparationScheduled = false;
+  let forestRasterPreparationAwaitingImage = false;
   const scheduleForestRasterPreparation = () => {
+    if (
+      japanOverlay.dataset.forestMask === "ready"
+      || japanOverlay.dataset.forestMask === "fallback"
+      || forestRasterPreparationScheduled
+    ) return;
+    if (!landCoverImage.complete || !landCoverImage.naturalWidth) {
+      if (!forestRasterPreparationAwaitingImage) {
+        forestRasterPreparationAwaitingImage = true;
+        landCoverImage.addEventListener("load", () => {
+          forestRasterPreparationAwaitingImage = false;
+          scheduleForestRasterPreparation();
+        }, { once: true });
+      }
+      return;
+    }
+    forestRasterPreparationScheduled = true;
     const prepare = () => {
-      if (landCoverImage.complete && landCoverImage.naturalWidth) {
+      try {
         getForestGeographicRaster(landCoverImage);
+      } finally {
+        forestRasterPreparationScheduled = false;
       }
     };
     if ("requestIdleCallback" in window) {
@@ -1818,8 +1855,21 @@
       window.setTimeout(prepare, 0);
     }
   };
-  landCoverImage.addEventListener("load", scheduleForestRasterPreparation, { once: true });
-  if (landCoverImage.complete && landCoverImage.naturalWidth) scheduleForestRasterPreparation();
+  let forestPreparationQueuedForOpening = false;
+  const scheduleForestRasterWhenUncovered = () => {
+    if (document.body.classList.contains("gaia-opening-active")) {
+      if (forestPreparationQueuedForOpening) return;
+      forestPreparationQueuedForOpening = true;
+      window.addEventListener("gaia:opening-complete", () => {
+        forestPreparationQueuedForOpening = false;
+        scheduleForestRasterPreparation();
+      }, { once: true });
+      return;
+    }
+    scheduleForestRasterPreparation();
+  };
+  landCoverImage.addEventListener("load", scheduleForestRasterWhenUncovered, { once: true });
+  if (landCoverImage.complete && landCoverImage.naturalWidth) scheduleForestRasterWhenUncovered();
 
   const drawVectorArrow = (ctx, x, y, u, v, color, scale = 34) => {
     const speed = Math.hypot(u, v);
@@ -5756,6 +5806,13 @@ highlight(cards[sequenceIndex]);
     renderConcept();
     updateSignalInterface();
     const signalMode = getActiveSignalMode();
+    if (
+      signalMode?.id === "forest-cloud-engine"
+      && japanOverlay.dataset.forestMask !== "ready"
+      && japanOverlay.dataset.forestMask !== "fallback"
+    ) {
+      scheduleForestRasterPreparation();
+    }
     if (signalMode && gaiaSnapshot) {
       updateMapObservationNarrative();
       dataLedger.updateMode(
@@ -6537,6 +6594,7 @@ highlight(cards[sequenceIndex]);
   };
 
   window.addEventListener("gaia:novel-open", () => {
+    stopRendering();
     if (introIsOpen) closeIntro({ restoreFocus: false });
     if (sourceIsOpen) closeSource({ restoreFocus: false });
     if (conceptIsOpen) closeConcept({ restoreFocus: false });
@@ -6553,6 +6611,7 @@ highlight(cards[sequenceIndex]);
     if (!["map01", "map03", "abstract07", "map08"].includes(kind) || !Number.isInteger(index)) return;
     if (kind === "map01" && (index !== 0 || event.detail?.modeId !== "breathing-earth")) return;
     storyModeDetour = { kind, index, phase, views: new Set() };
+    startRendering();
     storyMapTimelineCompleted = false;
     window.clearTimeout(storyMapReturnTimer);
     storyMapReturnTimer = 0;
@@ -6648,6 +6707,7 @@ highlight(cards[sequenceIndex]);
       window.dispatchEvent(new CustomEvent("gaia:story-mode-return-to-novel", {
         detail: { kind: closedDetour.kind },
       }));
+      stopRendering();
     }, storyReturnDelay);
   });
 
@@ -6671,6 +6731,7 @@ highlight(cards[sequenceIndex]);
   }, { once: true });
 
   window.addEventListener("gaia:return-to-intro", () => {
+    startRendering();
     openIntro({ restoreFocusOnClose: false });
   });
 
@@ -6961,16 +7022,25 @@ highlight(cards[sequenceIndex]);
     animationFrame = requestAnimationFrame(render);
   };
 
-  const startRendering = () => {
+  let renderingEnabled = false;
+
+  function startRendering() {
+    renderingEnabled = true;
     cancelAnimationFrame(animationFrame);
     animationFrame = requestAnimationFrame(render);
-  };
+  }
+
+  function stopRendering() {
+    renderingEnabled = false;
+    cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
+  }
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       hiddenAt = performance.now();
       cancelAnimationFrame(animationFrame);
-    } else {
+    } else if (renderingEnabled) {
       if (hiddenAt > 0) {
         const hiddenElapsed = performance.now() - hiddenAt;
         hiddenDuration += hiddenElapsed;
@@ -7000,7 +7070,20 @@ highlight(cards[sequenceIndex]);
   updateModeInterface();
   updateAutoInterface();
   resize();
-  startRendering();
+  const openingCoversCanvas = document.body.classList.contains("gaia-opening-active");
+  const novelCoversCanvas = document.body.classList.contains("novel-open")
+    && !document.body.classList.contains("novel-mode-detour");
+  if (!openingCoversCanvas && !novelCoversCanvas) {
+    startRendering();
+  } else if (openingCoversCanvas) {
+    window.addEventListener("gaia:opening-complete", () => {
+      const coveredByNovel = document.body.classList.contains("novel-open")
+        && !document.body.classList.contains("novel-mode-detour");
+      if (!coveredByNovel) startRendering();
+    }, { once: true });
+  }
+  document.documentElement.dataset.gaiaAppReady = "true";
+  window.dispatchEvent(new CustomEvent("gaia:app-ready"));
   loadGaiaSignals();
   loadNaturalEarthLand();
   loadNaturalEarthCountries();
@@ -7016,7 +7099,12 @@ highlight(cards[sequenceIndex]);
   ) {
     openJapan({ updateHash: false, restoreFocusOnClose: false });
     if (window.location.hash === "#data") openJapanData();
-  } else if (!openingLayer || openingLayer.hidden) {
+  } else if (
+    (!openingLayer || openingLayer.hidden)
+    && window.location.hash !== "#story"
+    && !/\/story\/?$/iu.test(window.location.pathname)
+    && !new URLSearchParams(window.location.search).has("space")
+  ) {
     openIntro({ restoreFocusOnClose: false });
   }
 })();

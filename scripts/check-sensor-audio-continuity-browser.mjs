@@ -11,6 +11,10 @@ const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
 const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/sensor-audio-continuity-browser");
 fs.mkdirSync(outputDir, { recursive: true });
+const openingSource = fs.readFileSync(path.resolve("opening.js"), "utf8");
+const audioSource = fs.readFileSync(path.resolve("opening-audio.js"), "utf8");
+assert(!openingSource.includes("window.GaiaOpeningAudio?.stop(0.05)"), "pagehide must not fade out the soundtrack before navigation");
+assert(audioSource.includes("navigationElapsedSeconds"), "navigation handoff must keep the soundtrack timeline moving");
 
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
@@ -46,7 +50,10 @@ try {
     await page.evaluate(() => globalThis.GaiaOpeningAudio.switchTrack("story", 0));
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "story" && globalThis.GaiaOpeningAudio?.getState?.().playing === true);
     await page.waitForTimeout(900);
-    const before = await page.evaluate(() => globalThis.GaiaOpeningAudio.getPlaybackState());
+    const before = await page.evaluate(() => ({
+      ...globalThis.GaiaOpeningAudio.getPlaybackState(),
+      sampledAt: Date.now(),
+    }));
 
     await page.evaluate(() => {
       const source = document.querySelector("[data-sensor-platform-link]");
@@ -67,6 +74,7 @@ try {
       const rect = button.getBoundingClientRect();
       return {
         ...state,
+        sampledAt: Date.now(),
         buttonHeight: rect.height,
         buttonWidth: rect.width,
         buttonLabel: button.getAttribute("aria-label"),
@@ -78,7 +86,15 @@ try {
     assert.equal(after.muted, false, `${viewport.name}: BGM became muted on sensor navigation`);
     assert.equal(after.playing, true, `${viewport.name}: BGM stopped on sensor navigation`);
     assert(Math.abs(after.volume - before.volume) < 0.001, `${viewport.name}: BGM volume changed`);
-    assert(after.currentTime >= Math.max(0, before.currentTime - 0.25), `${viewport.name}: BGM position was reset (${before.currentTime} -> ${after.currentTime})`);
+    assert(Math.abs(after.outputVolume - before.volume) < 0.001, `${viewport.name}: BGM faded in instead of resuming immediately`);
+    const wallElapsed = Math.max(0, (after.sampledAt - before.sampledAt) / 1000);
+    const playbackElapsed = after.currentTime >= before.currentTime
+      ? after.currentTime - before.currentTime
+      : Math.max(0, before.duration - before.currentTime) + after.currentTime;
+    assert(
+      Math.abs(playbackElapsed - wallElapsed) < 0.75,
+      `${viewport.name}: BGM timeline paused during navigation (wall ${wallElapsed}s / playback ${playbackElapsed}s)`,
+    );
     assert(after.buttonHeight >= 44 && after.buttonWidth >= 44, `${viewport.name}: audio control hit area is under 44px`);
     assert.equal(after.buttonLabel, "BGMを消音");
     assert.equal(after.needsAction, "false");

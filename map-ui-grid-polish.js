@@ -57,16 +57,25 @@
   }
 
   function locatePanels() {
-    const introSeed = deepestMatch(/PLANETARY\s+LENS\s*\/\s*OPEN\s+MAP|世界のデータを見る/i);
-    const bankSeed = deepestMatch(/INSTALLATION\s+BANK\s*\/\s*01[–—-]10/i);
-    const dataSeed = deepestMatch(/ACT\s*\d+\s*\/[^/]{0,30}(循環|影響|再編|観測|知る|見る)/i)
-      || deepestMatch(/\d{2,4}(?:\.\d+)?\s*ppm\s*\/\s*(?:実測|予想|補完)/i);
+    const stable = Object.fromEntries(
+      ROLES.map((role) => [role, document.querySelector(STABLE_SELECTORS[role])]),
+    );
+    const introSeed = stable.intro
+      ? null
+      : deepestMatch(/PLANETARY\s+LENS\s*\/\s*OPEN\s+MAP|世界のデータを見る/i);
+    const bankSeed = stable.bank
+      ? null
+      : deepestMatch(/INSTALLATION\s+BANK\s*\/\s*01[–—-]10/i);
+    const dataSeed = stable.data
+      ? null
+      : deepestMatch(/ACT\s*\d+\s*\/[^/]{0,30}(循環|影響|再編|観測|知る|見る)/i)
+        || deepestMatch(/\d{2,4}(?:\.\d+)?\s*ppm\s*\/\s*(?:実測|予想|補完)/i);
     return {
-      intro: document.querySelector(STABLE_SELECTORS.intro)
+      intro: stable.intro
         || panelFrom(introSeed, { minWidth: 260, minHeight: 120, maxWidth: 900, maxHeight: 590 }),
-      bank: document.querySelector(STABLE_SELECTORS.bank)
+      bank: stable.bank
         || panelFrom(bankSeed, { minWidth: 170, minHeight: 90, maxWidth: 610, maxHeight: 290 }),
-      data: document.querySelector(STABLE_SELECTORS.data)
+      data: stable.data
         || panelFrom(dataSeed, { minWidth: 220, minHeight: 120, maxWidth: 760, maxHeight: 430 })
     };
   }

@@ -128,10 +128,20 @@ const bootTarget = async (page, target, viewport) => {
   }, { progress, storageKey: STORAGE_KEY, manualSaveKey: MANUAL_SAVE_KEY, configKey: CONFIG_KEY });
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  await page.locator("#novel-save-panel").waitFor({ state: "visible" });
-  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  const resumedDirectly = await page.waitForFunction(
+    (id) => document.querySelector("#novel-layer")?.dataset.stepId === id,
+    target.stepId,
+    { timeout: 20_000 },
+  ).then(() => true, () => false);
+  if (!resumedDirectly) {
+    const resume = page.locator("#novel-resume-button");
+    if (!(await resume.isVisible())) {
+      throw new Error(`${target.name}/${viewport.name}: saved step did not resume`);
+    }
+    await resume.click();
+    await page.locator("#novel-save-panel").waitFor({ state: "visible" });
+    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  }
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, target.stepId);
   await page.locator(target.ready).waitFor({ state: "visible" });
   await page.waitForTimeout(80);

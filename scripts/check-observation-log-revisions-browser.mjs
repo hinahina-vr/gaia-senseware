@@ -38,7 +38,7 @@ const progressFor = (storyVersion, stepId, label) => ({
 });
 
 const bootAt = async (page, stepId, label) => {
-  const progress = progressFor(10, stepId, label);
+  const progress = progressFor(13, stepId, label);
   await page.addInitScript((candidate) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
     localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{
@@ -56,10 +56,26 @@ const bootAt = async (page, stepId, label) => {
     return resources.some((name) => name.includes("/data/gaia-signals.json"))
       && resources.some((name) => name.includes("/data/natural-earth-50m-land.geojson"));
   }, null, { timeout: 30_000 });
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  const resumedDirectly = await page.waitForFunction(
+    (expected) => document.querySelector("#novel-layer")?.dataset.stepId === expected,
+    stepId,
+    { timeout: 20_000 },
+  ).then(() => true, () => false);
+  if (!resumedDirectly) {
+    const resume = page.locator("#novel-resume-button");
+    if (await resume.isVisible()) {
+      await resume.click();
+      await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
+      await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+    } else {
+      const actual = await page.evaluate(() => ({
+        stateStepId: globalThis.GaiaNovel?.getState?.().stepId || "",
+        layerStepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
+        stepType: document.querySelector("#novel-layer")?.dataset.stepType || "",
+      }));
+      throw new Error(`${label}: direct resume did not reach ${stepId}: ${JSON.stringify(actual)}`);
+    }
+  }
   await page.waitForFunction((expected) => document.querySelector("#novel-layer")?.dataset.stepId === expected, stepId);
 };
 
@@ -81,8 +97,9 @@ try {
   {
     const viewport = viewports[0];
     const { context, page } = await createPage(browser, viewport, "welcome-reactions");
-    await bootAt(page, "welcome_chat_012", "welcome-reactions");
+    await bootAt(page, "welcome_chat_011", "welcome-reactions");
     await page.locator(".novel-slack-workspace").waitFor({ state: "visible" });
+    await page.waitForFunction(() => document.querySelector(".novel-slack-post.is-new")?.dataset.reactions === "complete", null, { timeout: 8_000 });
     const scan = await page.evaluate(() => ({
       stepId: document.querySelector("#novel-layer")?.dataset.stepId || "",
       memberLabel: document.querySelector(".novel-slack-channel-members")?.textContent?.trim() || "",
@@ -92,7 +109,7 @@ try {
       directMessages: [...document.querySelectorAll(".novel-slack-dm")].map((node) => node.dataset.directMessage),
       currentMessage: document.querySelector(".novel-slack-post.is-new .novel-slack-message")?.textContent || "",
     }));
-    assert.equal(scan.stepId, "welcome_chat_012");
+    assert.equal(scan.stepId, "welcome_chat_011");
     assert.match(scan.memberLabel, /9/u);
     assert.deepEqual(scan.reactions, ["🎉 4", "🌍 3", "🫶 2"]);
     assert.equal(scan.observationMemoCount, 0);
@@ -196,7 +213,7 @@ try {
   for (const target of [
     { stepId: "festival_concept_027", cue: "festival-mizuha-closeup-cg", presentation: "event-cg", cast: null },
     { stepId: "gx_experience_042", cue: "gx-present-return", asset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png", cast: null },
-    { stepId: "circle_invitation_067", cue: "circle-after-welcome", asset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png", cast: "minamo" },
+    { stepId: "circle_invitation_068", cue: "circle-after-welcome", asset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png", cast: "minamo" },
   ]) {
     const { context, page } = await createPage(browser, viewports[0], target.stepId);
     await bootAt(page, target.stepId, target.stepId);

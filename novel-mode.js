@@ -107,6 +107,8 @@
   const BACKGROUND_RELEASE_FALLBACK_MS = BACKGROUND_RELEASE_MS + 160;
   const FAST_FORWARD_HOLD_DELAY_MS = 180;
   const FAST_FORWARD_STEP_MS = 90;
+  const REACTION_STAGE_INITIAL_MS = 1200;
+  const REACTION_STAGE_STEP_MS = 320;
   const SLACK_ENTER_MS = 760;
   const SLACK_EXIT_MS = 460;
   const STAFF_ROLL_FINALIZE_MS = 360;
@@ -487,6 +489,7 @@
   let revealFrame = 0;
   let revealGeneration = 0;
   let autoTimer = 0;
+  const reactionTimers = new Set();
   const fastForwardState = {
     timer: 0,
     holdTimer: 0,
@@ -1219,11 +1222,17 @@
     layer.classList.toggle("is-motion-reduced", motionReduced());
   };
 
+  const clearReactionTimers = () => {
+    reactionTimers.forEach((timer) => window.clearTimeout(timer));
+    reactionTimers.clear();
+  };
+
   const clearTimers = () => {
     revealGeneration += 1;
     window.clearTimeout(revealTimer);
     window.cancelAnimationFrame(revealFrame);
     window.clearTimeout(autoTimer);
+    clearReactionTimers();
     window.clearTimeout(sectionSeparatorTimer);
     window.clearTimeout(staffRollFinaleTimer);
     window.clearTimeout(temporalTransitionTimer);
@@ -1364,6 +1373,12 @@
     return firstStepForScene(scene.nextSceneId);
   };
 
+  const backgroundAssetForCue = (cue) => (
+    window.matchMedia("(max-width: 720px)").matches && cue?.mobileAssetPath
+      ? cue.mobileAssetPath
+      : cue?.assetPath
+  );
+
   const applyBackgroundCueForStep = (step) => {
     const cue = backgroundCues.forStep(step);
     if (!cue) {
@@ -1373,10 +1388,11 @@
       delete layer.dataset.backgroundPresentation;
       return null;
     }
-    layer.style.setProperty("--novel-scene-background", `url("./${cue.assetPath}")`);
+    const assetPath = backgroundAssetForCue(cue);
+    layer.style.setProperty("--novel-scene-background", `url("./${assetPath}")`);
     layer.dataset.backgroundCue = cue.id;
     layer.dataset.backgroundMotion = cue.motion;
-    const presentation = cue.presentation || (/(?:^|\/)event-cg-/u.test(cue.assetPath) ? "event-cg" : "");
+    const presentation = cue.presentation || (/(?:^|\/)event-cg-/u.test(assetPath) ? "event-cg" : "");
     if (presentation) layer.dataset.backgroundPresentation = presentation;
     else delete layer.dataset.backgroundPresentation;
     return cue;
@@ -1512,7 +1528,7 @@
     try {
       const cue = backgroundCues?.forStep?.(target);
       const presentation = cue?.assetPath
-        ? { image: `url("./${cue.assetPath}")`, cueId: cue.id }
+        ? { image: `url("./${backgroundAssetForCue(cue)}")`, cueId: cue.id }
         : backgroundPresentationForStep(target);
       await preloadBackground(presentation.image);
       layer.dataset.sceneId = target.sceneId;
@@ -3003,7 +3019,85 @@
     return figure;
   };
 
-  const createSlackPost = (message, { root = false, current = false } = {}) => {
+  const chatMessagePresentation = (message) => {
+    if (Array.isArray(message.reactions) && message.reactions.length > 0) {
+      return { text: String(message.text || ""), reactions: message.reactions };
+    }
+    const lines = String(message.text || "").split("\n");
+    const reactionTokens = String(lines.at(-1) || "").trim().split(/\s{2,}|\u3000+/u).filter(Boolean);
+    const reactions = reactionTokens.map((token) => {
+      const match = token.match(/^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s+(\d+)$/u);
+      return match ? { emoji: match[1], count: Number(match[2]) } : null;
+    });
+    if (reactions.length < 2 || reactions.some((reaction) => !reaction)) {
+      return { text: String(message.text || ""), reactions: [] };
+    }
+    return { text: lines.slice(0, -1).join("\n"), reactions };
+  };
+
+  const createSlackReactionItem = (reaction) => {
+    const item = document.createElement("span");
+    item.className = "novel-slack-reaction";
+    item.dataset.emoji = reaction.emoji;
+    item.setAttribute("aria-label", `${reaction.emoji} ${reaction.count}件`);
+    item.textContent = `${reaction.emoji} ${reaction.count}`;
+    return item;
+  };
+
+  const renderSlackReactionFrame = (container, frame, frameIndex, frameCount) => {
+    const thread = container.closest(".novel-slack-thread");
+    const followsLatest = Boolean(thread && (thread.scrollHeight - thread.scrollTop - thread.clientHeight) <= LOG_FOLLOW_THRESHOLD_PX);
+    container.hidden = frame.length === 0;
+    frame.forEach((reaction, index) => {
+      let item = container.children[index];
+      if (!item) {
+        item = createSlackReactionItem(reaction);
+        item.classList.add("is-arriving");
+        container.append(item);
+      } else if (item.textContent !== `${reaction.emoji} ${reaction.count}`) {
+        item.setAttribute("aria-label", `${reaction.emoji} ${reaction.count}件`);
+        item.textContent = `${reaction.emoji} ${reaction.count}`;
+        item.classList.add("is-counting");
+      }
+    });
+    while (container.children.length > frame.length) container.lastElementChild.remove();
+    container.dataset.reactionStage = frameIndex === frameCount - 1 ? "complete" : `${frameIndex + 1}/${frameCount}`;
+    if (followsLatest && thread) requestAnimationFrame(() => { thread.scrollTop = thread.scrollHeight; });
+  };
+
+  const reactionFramesFor = (reactions) => {
+    const frames = [];
+    const settled = [];
+    reactions.forEach((reaction) => {
+      const count = Math.max(1, Number(reaction.count) || 1);
+      frames.push([...settled, { ...reaction, count: 1 }]);
+      if (count > 1) frames.push([...settled, { ...reaction, count: Math.min(2, count) }]);
+      if (count > 2) frames.push([...settled, { ...reaction, count }]);
+      settled.push({ ...reaction, count });
+    });
+    const finalFrame = reactions.map((reaction) => ({ ...reaction, count: Math.max(1, Number(reaction.count) || 1) }));
+    if (JSON.stringify(frames.at(-1)) !== JSON.stringify(finalFrame)) frames.push(finalFrame);
+    return frames;
+  };
+
+  const stageSlackReactions = (article, reactions) => {
+    const container = article.querySelector(".novel-slack-reactions");
+    if (!container) return;
+    const frames = reactionFramesFor(reactions);
+    article.dataset.reactions = "staging";
+    frames.forEach((frame, index) => {
+      const timer = window.setTimeout(() => {
+        reactionTimers.delete(timer);
+        if (!article.isConnected) return;
+        renderSlackReactionFrame(container, frame, index, frames.length);
+        if (index === frames.length - 1) article.dataset.reactions = "complete";
+      }, REACTION_STAGE_INITIAL_MS + (index * REACTION_STAGE_STEP_MS));
+      reactionTimers.add(timer);
+    });
+  };
+
+  const createSlackPost = (message, { root = false, current = false, stageReactions = false } = {}) => {
+    const presentation = chatMessagePresentation(message);
     const article = document.createElement("article");
     article.className = `novel-slack-post ${root ? "is-root" : "is-reply"}${current ? " is-new" : ""}`;
     article.dataset.speaker = message.speaker || "system";
@@ -3016,7 +3110,7 @@
     speaker.textContent = speakerDisplayName(message) || "SYSTEM";
     time.textContent = message.time || "";
     text.className = "novel-slack-message";
-    appendLines(text, message.text || "");
+    appendLines(text, presentation.text);
     meta.append(speaker, time);
     body.append(meta, text);
     if (Array.isArray(message.attachments) && message.attachments.length > 0) {
@@ -3025,18 +3119,16 @@
       message.attachments.forEach((attachment) => attachments.append(createSlackAttachment(attachment)));
       body.append(attachments);
     }
-    if (Array.isArray(message.reactions) && message.reactions.length > 0) {
+    if (presentation.reactions.length > 0) {
       const reactions = document.createElement("div");
       reactions.className = "novel-slack-reactions";
       reactions.setAttribute("aria-label", "メッセージへのリアクション");
-      message.reactions.forEach((reaction) => {
-        const item = document.createElement("span");
-        item.className = "novel-slack-reaction";
-        item.setAttribute("aria-label", `${reaction.emoji} ${reaction.count}件`);
-        item.textContent = `${reaction.emoji} ${reaction.count}`;
-        reactions.append(item);
-      });
+      reactions.setAttribute("aria-live", "polite");
+      reactions.hidden = stageReactions;
+      if (!stageReactions) presentation.reactions.forEach((reaction) => reactions.append(createSlackReactionItem(reaction)));
       body.append(reactions);
+      article.dataset.reactions = stageReactions ? "pending" : "complete";
+      if (stageReactions) article.dataset.stagedReactionValues = JSON.stringify(presentation.reactions);
     }
     article.append(createSlackSymbol(message.speaker || "system"));
     article.append(body);
@@ -3065,7 +3157,7 @@
     return entry;
   };
 
-  const createCampusChatWorkspace = ({ timeline, step, mobileDevice = false }) => {
+  const createCampusChatWorkspace = ({ timeline, step, mobileDevice = false, stageCurrentReactions = false }) => {
     const workspace = document.createElement("div");
     workspace.className = "novel-slack-workspace";
     workspace.classList.toggle("is-mobile-device", mobileDevice);
@@ -3131,10 +3223,19 @@
 
     const messageSequence = (message) => Number(message.id?.match(/^welcome_chat_(\d{3})$/u)?.[1]) || 0;
     const messageBelongsToSensorChannel = (message) => messageSequence(message) >= 23;
+    let reactionSequenceStarted = false;
     const renderChannelMessages = (messages, typingMessage = null) => {
       thread.replaceChildren();
       messages.forEach((message, index) => {
-        thread.append(createSlackPost(message, { root: index === 0, current: message.id === step.id }));
+        const current = message.id === step.id;
+        const stageReactions = current && stageCurrentReactions && !reactionSequenceStarted;
+        const article = createSlackPost(message, { root: index === 0, current, stageReactions });
+        thread.append(article);
+        if (stageReactions) {
+          reactionSequenceStarted = true;
+          stageSlackReactions(article, JSON.parse(article.dataset.stagedReactionValues || "[]"));
+          delete article.dataset.stagedReactionValues;
+        }
       });
       if (typingMessage) {
         const typingNode = document.createElement("div");
@@ -3201,6 +3302,7 @@
       entry.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
+        if (reactionSequenceStarted && reactionTimers.size > 0) clearReactionTimers();
         if (channel) selectChannel(channel);
       });
     });
@@ -3230,6 +3332,9 @@
   };
 
   const renderRichStep = (step) => {
+    const stageCurrentReactions = step.type === "chat"
+      && !state.readStepIds.includes(step.id)
+      && !fastForwardEnabled();
     prepareStepFrame(step);
     clearTimers();
     isRevealing = false;
@@ -3258,6 +3363,7 @@
         timeline,
         step,
         mobileDevice: layer.dataset.slackDevice === "mobile",
+        stageCurrentReactions,
       });
       elements.slackSurface.append(workspace);
       scheduleAutoAdvance();

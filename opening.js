@@ -685,7 +685,6 @@
     window.clearTimeout(soundModalHideTimer);
     textTimers.forEach((timer) => window.clearTimeout(timer));
     particleSystem.stop();
-    window.GaiaOpeningAudio?.stop(0.05);
   });
 
   showSoundModal();

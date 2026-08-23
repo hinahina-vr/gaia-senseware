@@ -88,7 +88,7 @@
     { id: "gx-ten-mode-gateway", sceneId: "gx_experience", from: 55, to: 58, assetPath: "assets/visuals-07/novel-bg-gx-mode-gateway-autumn-morning-v4.png", motion: "push-in" },
     { id: "esp32-exhibition-opening", sceneId: "esp32_pitch", from: 1, to: 7, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-left" },
     { id: "esp32-exhibition-proposal", sceneId: "esp32_pitch", from: 8, to: 18, assetPath: "assets/visuals-07/event-cg-esp32-collaboration-v2.png", motion: "event-focus", presentation: "event-cg", galleryId: "esp32-collaboration" },
-    { id: "esp32-system-design", sceneId: "esp32_pitch", from: 19, to: 26, assetPath: "assets/architecture/gaia-field-sensor-architecture-v2.svg", motion: "drift-left" },
+    { id: "esp32-system-design", sceneId: "esp32_pitch", from: 19, to: 26, assetPath: "assets/architecture/gaia-field-sensor-architecture-v2.svg", mobileAssetPath: "assets/architecture/gaia-field-sensor-architecture-mobile-v1.svg", motion: "drift-left" },
     { id: "esp32-co-created-prototype", sceneId: "esp32_pitch", from: 27, to: 38, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "drift-right" },
     { id: "esp32-exhibition-return", sceneId: "esp32_pitch", from: 39, to: 43, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "push-in" },
     { id: "circle-closing-exhibition", sceneId: "circle_invitation", from: 1, to: 10, assetPath: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png", motion: "push-in" },

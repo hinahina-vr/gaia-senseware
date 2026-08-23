@@ -21,7 +21,6 @@ const browser = await chromium.launch({
   headless: true,
   executablePath,
   args: [
-    "--use-angle=swiftshader",
     "--enable-webgl",
     "--ignore-gpu-blocklist",
     "--disable-background-timer-throttling",
@@ -147,6 +146,7 @@ const boot = async (viewport) => {
   await page.goto(new URL("/?mode=1", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => window.GaiaAppContent?.modes?.length === 10);
   await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
+  await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
   assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").count(), 10);
   assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").last().locator("span").nth(1).innerText(), "10");
   await page.evaluate(() => {
@@ -164,6 +164,7 @@ const boot = async (viewport) => {
   await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
   await page.waitForFunction(() => document.querySelector("#scene-transition")?.hidden
     && !document.body.classList.contains("scene-transitioning"));
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:opening-complete")));
   await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) >= 1);
   assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 10);
   assert.equal(await page.locator("#concept-mode-list .concept-mode-button").count(), 10);
@@ -258,12 +259,17 @@ try {
     );
     assert(zoomOut.every((sample, index) => index === 0 || sample.zoom <= zoomOut[index - 1].zoom + 0.01), `${viewport.name}: world return is not monotonic`);
     assert(worldView.zoom <= 1.03, `${viewport.name}: world view did not return (${worldView.zoom})`);
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector("#japan-overlay");
-      return overlay?.dataset.forestMask === "ready"
-        && overlay.dataset.vectorWorldCopies
-        && overlay.dataset.vectorWorldCopies === overlay.dataset.rasterWorldCopies;
-    });
+    try {
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.forestMask === "ready"
+          && overlay.dataset.vectorWorldCopies
+          && overlay.dataset.vectorWorldCopies === overlay.dataset.rasterWorldCopies;
+      });
+    } catch (error) {
+      const stalledAlignment = await readMapState(page);
+      throw new Error(`${viewport.name}: forest/vector/raster alignment timed out (${JSON.stringify(stalledAlignment)})`, { cause: error });
+    }
     const alignment = await readMapState(page);
     assert.equal(alignment.vectorCopies, alignment.rasterCopies);
     const forestUi = await page.evaluate(() => ({
