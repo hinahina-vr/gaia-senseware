@@ -17,18 +17,26 @@ const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
 const cases = [
   {
     id: "normal-background",
-    fromStepId: "festival_concept_009",
+    fromStepId: "festival_concept_008",
     toStepId: "festival_concept_010",
     fromAsset: "novel-bg-festival-b-hall-autumn-morning-v1.png",
     toAsset: "novel-bg-festival-five-plane-projection-autumn-morning-v2.png",
   },
   {
     id: "event-cg",
-    fromStepId: "festival_concept_020",
+    fromStepId: "festival_concept_019",
     toStepId: "festival_concept_021",
     fromAsset: "event-cg-first-encounter-five-plane-v3.png",
     fromMobileAsset: "event-cg-first-encounter-five-plane-mobile-v2.png",
     toAsset: "event-cg-amane-closeup-five-plane-v4.png",
+  },
+  {
+    id: "character-to-narration",
+    fromStepId: "map_mode01_028",
+    toStepId: "map_mode01_030",
+    fromAsset: "modis-land-cover-2023.png",
+    toAsset: "novel-bg-map01-data-provenance-autumn-morning-v3.png",
+    expectNoCastAfterTransition: true,
   },
 ];
 const viewports = [
@@ -68,6 +76,7 @@ const bootAt = async (page, stepId) => {
   }, stepId);
   assert(boot, `unknown transition start step: ${stepId}`);
   await page.evaluate(({ storageKey, configKey, progress }) => {
+    localStorage.clear();
     localStorage.setItem(storageKey, JSON.stringify(progress));
     localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 400, reducedMotion: false }));
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
@@ -78,12 +87,51 @@ const bootAt = async (page, stepId) => {
   });
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
-  await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 10000 });
+  await page.waitForFunction((id) => (
+    document.querySelector("#novel-layer")?.dataset.stepId === id
+    && document.querySelector("#novel-runtime")?.hidden === false
+  ), stepId, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete", null, { timeout: 10000 });
   await page.evaluate(() => {
     globalThis.__gaiaBackgroundOrderEvents = [];
+    globalThis.__gaiaCharacterTransitionFrames = [];
+    const layer = document.querySelector("#novel-layer");
+    let wasTransitioning = layer?.classList.contains("is-background-transitioning") || false;
+    const sampleCharacters = (phase) => {
+      const cast = document.querySelector("#novel-cast");
+      const castStyle = getComputedStyle(cast);
+      const figures = [
+        document.querySelector("#novel-character-sora"),
+        document.querySelector("#novel-character-minamo"),
+      ].filter(Boolean);
+      const castPainted = castStyle.display !== "none" && castStyle.visibility !== "hidden";
+      const castOpacity = castPainted ? Number.parseFloat(castStyle.opacity || "1") : 0;
+      const characterOpacities = figures.map((figure) => Number.parseFloat(getComputedStyle(figure).opacity || "0"));
+      globalThis.__gaiaCharacterTransitionFrames.push({
+        at: performance.now(),
+        phase,
+        speaker: cast?.dataset.speaker || "",
+        castVisibility: castStyle.visibility,
+        castOpacity,
+        characterOpacities,
+        effectiveOpacity: castOpacity * Math.max(0, ...characterOpacities),
+      });
+    };
+    const observer = new MutationObserver(() => {
+      const transitioning = layer?.classList.contains("is-background-transitioning") || false;
+      if (wasTransitioning && !transitioning) {
+        sampleCharacters("transition-class-removed");
+        let frame = 0;
+        const sampleFrame = () => {
+          sampleCharacters(`post-transition-${frame}`);
+          frame += 1;
+          if (frame < 36) requestAnimationFrame(sampleFrame);
+        };
+        requestAnimationFrame(sampleFrame);
+      }
+      wasTransitioning = transitioning;
+    });
+    if (layer) observer.observe(layer, { attributes: true, attributeFilter: ["class"] });
     window.addEventListener("gaia:novel-background-transition-complete", (event) => {
       const layer = document.querySelector("#novel-layer");
       globalThis.__gaiaBackgroundOrderEvents.push({
@@ -154,7 +202,7 @@ try {
       assert(targetText, `${transitionCase.id}: target message is empty`);
       const before = await presentation(page);
       assert(before.stepId === transitionCase.fromStepId && before.backgroundImage.includes(expectedFromAsset), `${viewport.name}/${transitionCase.id}: invalid starting frame: ${JSON.stringify(before)}`);
-      assert(before.messageVisible && before.markerVisible, `${viewport.name}/${transitionCase.id}: starting message is not ready`);
+      assert(before.messageVisible, `${viewport.name}/${transitionCase.id}: starting message is not ready: ${JSON.stringify(before)}`);
 
       for (let pageTurn = 0; pageTurn < 4; pageTurn += 1) {
         await page.locator("#novel-dialogue").click();
@@ -180,21 +228,31 @@ try {
         return layer?.dataset.backgroundTransitionPhase === "complete"
           && !layer.classList.contains("is-background-transitioning");
       }, null, { timeout: 10000 });
-      await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 10000 });
+      await page.waitForFunction((previousText) => {
+        const rendered = document.querySelector("#novel-text")?.textContent?.trim() || "";
+        return Boolean(rendered) && rendered !== previousText;
+      }, before.text, { timeout: 10000 });
+      await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete", null, { timeout: 10000 });
       await page.waitForFunction((text) => {
         const rendered = document.querySelector("#novel-text")?.textContent?.trim() || "";
         return Boolean(rendered) && text.includes(rendered);
       }, targetText, { timeout: 10000 });
       const after = await presentation(page);
       const events = await page.evaluate(() => globalThis.__gaiaBackgroundOrderEvents || []);
+      await page.waitForTimeout(650);
+      const characterFrames = await page.evaluate(() => globalThis.__gaiaCharacterTransitionFrames || []);
       assert(after.stepId === transitionCase.toStepId, `${viewport.name}/${transitionCase.id}: click burst advanced more than one step`);
       assert(after.backgroundImage.includes(transitionCase.toAsset) && after.outgoingImage === "none", `${viewport.name}/${transitionCase.id}: final background state is wrong`);
       assert(!after.transitioning && !after.buffered && !after.releasing && after.busy === "", `${viewport.name}/${transitionCase.id}: transition lock was not released`);
-      assert(targetText.includes(after.text) && after.messageVisible && after.markerVisible, `${viewport.name}/${transitionCase.id}: incoming message did not appear after release`);
+      assert(targetText.includes(after.text) && after.messageVisible, `${viewport.name}/${transitionCase.id}: incoming message did not appear after release`);
       assert(events.length === 1 && events[0].detail.fromStepId === transitionCase.fromStepId && events[0].detail.toStepId === transitionCase.toStepId, `${viewport.name}/${transitionCase.id}: completion event order is wrong`);
       assert(events[0].at > during.at && after.at >= events[0].at, `${viewport.name}/${transitionCase.id}: message/background timestamps are out of order`);
+      if (transitionCase.expectNoCastAfterTransition) {
+        const maxEffectiveOpacity = Math.max(0, ...characterFrames.map((frame) => frame.effectiveOpacity));
+        assert(maxEffectiveOpacity <= 0.01, `${viewport.name}/${transitionCase.id}: fading cast leaked after the background transition (${maxEffectiveOpacity})`);
+      }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${transitionCase.id}-after.png`), animations: "disabled" });
-      report.scans.push({ viewport: viewport.name, case: transitionCase.id, before, during, completed: events[0], after, passed: true });
+      report.scans.push({ viewport: viewport.name, case: transitionCase.id, before, during, completed: events[0], after, characterFrames, passed: true });
     }
     await context.close();
   }

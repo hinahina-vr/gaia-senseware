@@ -6688,6 +6688,28 @@ h1 {
   border-radius: 8px;
 }
 
+@media (min-width: 1280px) {
+  .intro-lp-hero .intro-path-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .intro-lp-hero .intro-path-card,
+  .intro-lp-hero .intro-path-card:not(.intro-path-card--featured) {
+    grid-template-columns: minmax(0, 1fr) 32px;
+    padding: 16px 14px;
+  }
+
+  .intro-lp-hero .intro-path-card .intro-path-glyph--map,
+  .intro-lp-hero .intro-path-card .intro-path-glyph--sensor {
+    width: 32px;
+    height: 24px;
+  }
+
+  .intro-lp-hero .intro-path-card > strong {
+    font-size: clamp(14px, 1vw, 17px);
+  }
+}
+
 @media (max-width: 720px) {
   .intro-lp-hero .intro-path-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

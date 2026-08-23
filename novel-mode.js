@@ -17,6 +17,15 @@
   const LOG_COMMENT_KEY = "gaiaSensewareNovel:log-comments:v1";
   const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
   const LEGACY_MANUAL_KEYS = ["gaia_novel_manual_saves_v6", "gaiaSensewareNovel:manual-saves:v1"];
+  const explicitBuildProfile = globalThis.GAIA_BUILD_PROFILE;
+  const isProductionPagesHost = (
+    location.hostname === "gaia-senseware.pages.dev"
+    || location.hostname.endsWith(".gaia-senseware.pages.dev")
+  );
+  const BUILD_PROFILE = explicitBuildProfile === "release" || explicitBuildProfile === "debug"
+    ? explicitBuildProfile
+    : (document.documentElement.dataset.buildProfile === "release" || isProductionPagesHost ? "release" : "debug");
+  const NOVACENE_SCENE_JUMP_ENABLED = BUILD_PROFILE !== "release";
   const SLOT_COUNT = 6;
   const PC_CANVAS_WIDTH = 1920;
   const PC_CANVAS_HEIGHT = 1080;
@@ -102,8 +111,9 @@
   const SLACK_ENTER_MS = 760;
   const SLACK_EXIT_MS = 460;
   const STAFF_ROLL_FINALIZE_MS = 360;
-  const STAFF_ROLL_EXIT_COVER_MS = 280;
-  const STAFF_ROLL_EXIT_REVEAL_MS = 360;
+  const STAFF_ROLL_EXIT_COVER_MS = 720;
+  const STAFF_ROLL_EXIT_HOLD_MS = 900;
+  const STAFF_ROLL_EXIT_REVEAL_MS = 720;
   const LOG_FOLLOW_THRESHOLD_PX = 72;
   const SLACK_ATTACHMENT_ASSETS = Object.freeze({
     BASIL: {
@@ -408,24 +418,26 @@
   if (!stepMap.has(ENDING_STEP_ID) || !Number.isInteger(endingScriptIndex)) {
     throw new Error(`[GAIA novel] Ending jump target is unavailable: ${ENDING_STEP_ID}`);
   }
+  const endingSceneJumpEntry = Object.freeze({
+    scene: Object.freeze({ id: ENDING_JUMP_ID, chapter: "07 / ENDING", title: "エンディング" }),
+    sceneId: ENDING_JUMP_ID,
+    firstStepId: ENDING_STEP_ID,
+    scriptIndex: endingScriptIndex,
+    index: scenes.length + 1,
+    isEnding: true,
+  });
+  const trueEndSceneJumpEntry = Object.freeze({
+    scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / NOVACENE", title: globalThis.GAIA_TRUE_END_STORY?.title || "NOVACENE" }),
+    sceneId: TRUE_END_JUMP_ID,
+    scriptIndex: endingScriptIndex + 1,
+    scriptLabel: "NOVACENE #001",
+    index: scenes.length + 2,
+    isTrueEnd: true,
+  });
   const sceneJumpEntries = Object.freeze([
     ...storySceneJumpEntries,
-    Object.freeze({
-      scene: Object.freeze({ id: ENDING_JUMP_ID, chapter: "07 / ENDING", title: "エンディング" }),
-      sceneId: ENDING_JUMP_ID,
-      firstStepId: ENDING_STEP_ID,
-      scriptIndex: endingScriptIndex,
-      index: scenes.length + 1,
-      isEnding: true,
-    }),
-    Object.freeze({
-      scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / NOVACENE", title: globalThis.GAIA_TRUE_END_STORY?.title || "NOVACENE" }),
-      sceneId: TRUE_END_JUMP_ID,
-      scriptIndex: endingScriptIndex + 1,
-      scriptLabel: "NOVACENE #001",
-      index: scenes.length + 2,
-      isTrueEnd: true,
-    }),
+    endingSceneJumpEntry,
+    ...(NOVACENE_SCENE_JUMP_ENABLED ? [trueEndSceneJumpEntry] : []),
   ]);
   if (new Set(sceneJumpEntries.map((entry) => entry.sceneId)).size !== sceneJumpEntries.length) {
     throw new Error("[GAIA novel] Duplicate scene IDs in debug jump map");
@@ -690,6 +702,7 @@
       return false;
     }
   };
+  const isTitleUnlocked = () => Boolean(window.GaiaTrueEnd?.isReached?.());
   const readSessionStorage = (key) => {
     try { return window.sessionStorage.getItem(key); } catch { return null; }
   };
@@ -1280,6 +1293,11 @@
   };
 
   const showTitle = () => {
+    if (!isTitleUnlocked()) {
+      elements.titleScreen.hidden = true;
+      layer.classList.remove("is-title");
+      return false;
+    }
     hasStarted = false;
     resetFastForward();
     clearScriptDebug();
@@ -1303,6 +1321,7 @@
     renderGalleryControls();
     elements.resume.hidden = !getStoredProgress() && !getManualSaves().some(Boolean);
     requestAnimationFrame(() => elements.start.focus({ preventScroll: true }));
+    return true;
   };
 
   const currentStep = () => stepMap.get(state.stepId) || null;
@@ -3812,6 +3831,7 @@
     activeTrueEndRuntime?.destroy?.();
     activeTrueEndRuntime = null;
     clearTimers();
+    resetDialoguePagination();
     resetFastForward();
     closeSceneJump({ restoreFocus: false });
     setSceneJumpAvailability(false);
@@ -3836,7 +3856,10 @@
       layer,
       onStepRead: markBeyondRead,
       onLogOpen: () => openLog(),
-      onReady,
+      onReady: () => {
+        if (persistClear) window.GaiaTrueEnd?.markReached?.();
+        onReady?.();
+      },
       onComplete: () => {
         state.trueEndComplete = true;
         saveProgress();
@@ -3925,7 +3948,7 @@
       { role: "制作支援", department: "PRODUCTION SUPPORT", names: ["OpenAI Codex"] },
       { role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["ひなひな", "OpenAI ImageGen"] },
       { role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] },
-      { role: "音楽", department: "MUSIC", names: ["AfterSchool Afterglow", "glitchyeventdj664"] },
+      { role: "音楽", department: "MUSIC", names: ["オープニングテーマ曲『Planet Forecast - Hope』", "エンディングテーマ曲『AfterSchool,AfterGlow』", "by Suno.ai"] },
       { role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』", "ZEN大学『人新世の人類学』"] },
       { role: "参照データ", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] },
     ].forEach(({ role, department, names, note = "" }) => {
@@ -3953,7 +3976,10 @@
         creditNote.textContent = note;
         description.append(creditNote);
       }
-      row.append(term, description);
+      const divider = document.createElement("span");
+      divider.className = "novel-staff-roll-credit-divider";
+      divider.setAttribute("aria-hidden", "true");
+      row.append(term, description, divider);
       credits.append(row);
     });
 
@@ -4025,13 +4051,18 @@
         delete layer.dataset.trueEndTransitionPhase;
         continueIntoData(control);
       };
+      const holdBeforeTrueEnd = () => {
+        staffRollFinaleTimer = 0;
+        layer.dataset.trueEndTransitionPhase = "holding";
+        staffRollFinaleTimer = window.setTimeout(switchToTrueEnd, STAFF_ROLL_EXIT_HOLD_MS);
+      };
 
       if (motionReduced()) {
         switchToTrueEnd();
         return;
       }
       requestAnimationFrame(() => veil.classList.add("is-covering"));
-      staffRollFinaleTimer = window.setTimeout(switchToTrueEnd, STAFF_ROLL_EXIT_COVER_MS);
+      staffRollFinaleTimer = window.setTimeout(holdBeforeTrueEnd, STAFF_ROLL_EXIT_COVER_MS);
     };
     next.addEventListener("click", (event) => {
       event.preventDefault();
@@ -4143,7 +4174,7 @@
     state.archivesUnlocked = true;
     saveProgress();
     requestStoryTrack("story", 1.1);
-    showTitle();
+    if (!showTitle()) closeNovelNow();
   };
 
   function renderCurrentStep() {
@@ -4344,6 +4375,25 @@
     }
     exitDebugJumpSession();
     state = stored;
+    await revealRuntimeForStep(currentStep(), () => {
+      renderEves();
+      saveProgress();
+      renderCurrentStep();
+    });
+  };
+
+  const resumeWithoutTitle = async () => {
+    const stored = getStoredProgress();
+    const latestManual = getManualSaves()
+      .filter(Boolean)
+      .sort((left, right) => right.savedAt - left.savedAt)[0]?.progress || null;
+    const progress = stored || latestManual;
+    if (!progress) {
+      await startNewSession();
+      return;
+    }
+    exitDebugJumpSession();
+    state = progress;
     await revealRuntimeForStep(currentStep(), () => {
       renderEves();
       saveProgress();
@@ -4972,8 +5022,6 @@
     elements.configPanel.setAttribute("aria-hidden", "true");
     elements.configButton.setAttribute("aria-expanded", "false");
   };
-  const hasStoryRecord = () => Boolean(getStoredProgress() || getManualSaves().some(Boolean));
-
   const prepareFreshRuntime = () => {
     hasStarted = false;
     layer.classList.remove("is-title");
@@ -4991,25 +5039,24 @@
     elements.close.hidden = true;
   };
 
-  function openNovel(event = null, { autoStartFresh = false } = {}) {
+  function openNovel(event = null) {
     event?.preventDefault?.();
-    const shouldAutoStart = autoStartFresh && !hasStoryRecord();
     previousFocus = document.activeElement;
     suppressBaseInterface();
     particleSystem.start();
     requestedStoryTrack = "story";
-    void window.GaiaOpeningAudio?.switchTrack?.("story");
+    void window.GaiaOpeningAudio?.switchTrack?.("story", 0.16);
     window.dispatchEvent(new CustomEvent("gaia:novel-open"));
     isOpen = true;
     setInteractionLifecycle("idle");
     layer.hidden = false;
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("novel-open");
-    if (shouldAutoStart) {
-      prepareFreshRuntime();
-      void startNewSession();
-    } else {
+    if (isTitleUnlocked()) {
       showTitle();
+    } else {
+      prepareFreshRuntime();
+      void resumeWithoutTitle();
     }
     requestAnimationFrame(() => layer.classList.add("is-open"));
     if (window.location.hash !== "#story" && !/\/story\/?$/i.test(window.location.pathname)) {
@@ -5430,6 +5477,7 @@
       }
     },
     storageKey: STORAGE_KEY,
+    buildProfile: BUILD_PROFILE,
   });
 
   loadConfig();
@@ -5438,12 +5486,13 @@
   renderManualSlots();
   renderEves();
   renderGalleryControls();
-  showTitle();
+  if (isTitleUnlocked()) showTitle();
+  else prepareFreshRuntime();
   const directStoryRoute = /\/story\/?$/i.test(window.location.pathname);
   if (directStoryRoute) {
     const opening = document.querySelector("#gaia-opening");
     if (opening) opening.hidden = true;
     document.body.classList.remove("gaia-opening-active");
   }
-  if (window.location.hash === "#story" || directStoryRoute) openNovel(null, { autoStartFresh: true });
+  if (window.location.hash === "#story" || directStoryRoute) openNovel();
 })();

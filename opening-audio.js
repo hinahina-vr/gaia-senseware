@@ -3,8 +3,8 @@
 
   const TRACKS = Object.freeze({
     opening: "./assets/audio/satellite-forecast-hope.mp3",
-    story: "./assets/audio/satellite-forecast-calm.mp3",
-    windowlight: "./assets/audio/planet-forecast-windowlight.mp3",
+    story: "./assets/audio/planet-forecast-windowlight.mp3",
+    windowlight: "./assets/audio/satellite-forecast-calm.mp3",
     firstlight: "./assets/audio/planet-forecast-first-light.mp3",
     foldedwind: "./assets/audio/folded-wind-message.mp3",
     snowfire: "./assets/audio/snowfire-signal.mp3",

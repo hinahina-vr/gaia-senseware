@@ -50,6 +50,13 @@
   pointer-events: none !important;
 }
 
+/* Speaker changes are committed while the runtime is concealed. Snap the
+   figures to that incoming state so an outgoing portrait cannot finish its
+   opacity transition after the new background has already been revealed. */
+.novel-layer.is-background-transitioning .novel-character {
+  transition: none !important;
+}
+
 /* Story art is a stable observation surface. Motion cue metadata remains in
    saves/cue data, but runtime backgrounds never zoom, pan, or expose gutters. */
 .novel-layer:not(.is-title)[data-background-motion] {
@@ -9221,15 +9228,13 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   text-align: center;
 }
 
-.novel-staff-roll-credits > div::before {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+.novel-staff-roll-credit-divider {
+  display: block;
+  justify-self: center;
   width: min(150px, 34vw);
   height: 1px;
+  margin-top: clamp(4px, 1vh, 10px);
   background: linear-gradient(90deg, transparent, rgba(38, 104, 113, 0.18), transparent);
-  content: "";
-  transform: translate(-50%, 58px);
 }
 
 .novel-staff-roll-credits dt,
@@ -9436,7 +9441,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll.is-departing .novel-staff-roll-stage {
-  animation: novel-staff-roll-depart 280ms steps(7, end) both;
+  animation: novel-staff-roll-depart 720ms steps(7, end) both;
 }
 
 .novel-staff-roll-transition-veil {
@@ -9471,20 +9476,20 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll-transition-veil.is-covering {
-  animation: novel-staff-roll-exit-cover 280ms steps(7, end) both;
+  animation: novel-staff-roll-exit-cover 720ms steps(7, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-covering::before {
-  animation: novel-staff-roll-exit-bands 280ms steps(8, end) both;
+  animation: novel-staff-roll-exit-bands 720ms steps(8, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-covering::after {
-  animation: novel-staff-roll-exit-strobe 280ms steps(8, end) both;
+  animation: novel-staff-roll-exit-strobe 720ms steps(8, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-revealing {
   opacity: 1;
-  animation: novel-staff-roll-exit-reveal 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: novel-staff-roll-exit-reveal 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transition-phase="complete"])) .gaia-audio-dock {

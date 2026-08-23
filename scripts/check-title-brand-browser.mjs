@@ -32,6 +32,7 @@ try {
     await page.evaluate(() => {
       localStorage.clear();
       localStorage.setItem("gaia-senseware-bgm-volume", "0");
+      localStorage.setItem("gaiaSensewareTrueEnd:reached:v1", new Date().toISOString());
       globalThis.GaiaNovel.open();
     });
     await page.locator("#novel-title-screen").waitFor({ state: "visible" });

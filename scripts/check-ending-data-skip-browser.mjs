@@ -63,13 +63,11 @@ const bootAtEnding = async (page, label) => {
     }]));
     localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 400, reducedMotion: false }));
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
+    localStorage.removeItem("gaiaSensewareTrueEnd:reached:v1");
+    localStorage.removeItem("gaiaSensewareTrueEnd:complete:v1");
   }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, sessionId: `ending-data-skip-${label}` });
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.locator(".novel-staff-roll-data-skip").waitFor({ state: "visible", timeout: 15_000 });
 };
 
@@ -113,6 +111,8 @@ const scanDestination = (page) => page.evaluate((storageKey) => {
     archivesUnlocked: globalThis.GaiaNovel?.getState?.().archivesUnlocked,
     savedClear: saved.clear,
     savedArchivesUnlocked: saved.archivesUnlocked,
+    titleUnlocked: globalThis.GaiaTrueEnd?.isReached?.() ?? false,
+    reachedMarkerStored: Boolean(localStorage.getItem("gaiaSensewareTrueEnd:reached:v1")),
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
     overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
   };
@@ -157,6 +157,8 @@ try {
     assert.equal(destination.archivesUnlocked, true);
     assert.equal(destination.savedClear, true);
     assert.equal(destination.savedArchivesUnlocked, true);
+    assert.equal(destination.titleUnlocked, false, `${viewport.name}: data skip unlocked the title`);
+    assert.equal(destination.reachedMarkerStored, false, `${viewport.name}: data skip persisted a NOVACENE marker`);
     assert.equal(destination.overflowX, 0);
     assert.equal(destination.overflowY, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-data-page.png`), animations: "disabled" });

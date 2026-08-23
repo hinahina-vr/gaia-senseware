@@ -20,7 +20,7 @@ const outputDir = path.resolve(outputArgument || "artifacts/true-end-browser");
 fs.mkdirSync(outputDir, { recursive: true });
 
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
-const CONFIG_KEY = "gaiaSensewareNovel:config:v3";
+const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
 const OPENING_MESSAGE = "DORA SEV·EN（二百七十万年の沈黙を越え、休眠記憶を再結合）――観測者たちよ、目を覚まして。";
 const FINAL_MESSAGE = "返事が灯る。放課後は終わらない。";
 const viewports = [
@@ -55,7 +55,7 @@ const attachDiagnostics = (page, label) => {
 };
 
 const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
-  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY && globalThis.GAIA_TRUE_END_STORY));
   await page.waitForFunction(() => {
     const resources = performance.getEntriesByType("resource").map(({ name }) => name);
@@ -63,6 +63,7 @@ const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
       && resources.some((name) => name.includes("/data/natural-earth-50m-land.geojson"));
   }, null, { timeout: 30_000 });
   await page.evaluate(({ storageKey, configKey, label, reducedMotion: motionPreference }) => {
+    localStorage.clear();
     const state = {
       storyVersion: globalThis.GAIA_NOVEL_STORY.storyVersion,
       stepId: "welcome_chat_095",
@@ -89,13 +90,11 @@ const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
     }]));
     localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 100, reducedMotion: motionPreference }));
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
+    localStorage.removeItem("gaiaSensewareTrueEnd:reached:v1");
+    localStorage.removeItem("gaiaSensewareTrueEnd:complete:v1");
   }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, label: name, reducedMotion });
-  await page.reload({ waitUntil: "domcontentloaded", timeout: 90_000 });
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "complete", null, { timeout: 15_000 });
   await page.locator(".novel-staff-roll-finale button").click();
   await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")), null, { timeout: 15_000 });
@@ -105,6 +104,7 @@ const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
     return shell && !shell.classList.contains("is-scene-separating")
       && Boolean(document.querySelector(".true-end-message")?.textContent);
   }, null, { timeout: 5_000 });
+  await page.waitForFunction(() => globalThis.GaiaTrueEnd?.isReached?.() === true);
 };
 
 const scanFrame = (page) => page.evaluate(() => {
@@ -206,6 +206,8 @@ const scanFrame = (page) => page.evaluate(() => {
     },
     headerBottom: headerRect?.bottom || 0,
     audioTrack: globalThis.GaiaOpeningAudio?.getState?.().track || "",
+    titleUnlocked: globalThis.GaiaTrueEnd?.isReached?.() ?? false,
+    reachedMarkerStored: Boolean(localStorage.getItem("gaiaSensewareTrueEnd:reached:v1")),
     audioPlayback: globalThis.GaiaOpeningAudio?.getPlaybackState?.() || null,
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
     overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
@@ -289,7 +291,7 @@ const browser = await chromium.launch({
 });
 try {
   const runtimeSource = await (await fetch(new URL("/opening-audio.js", baseUrl))).text();
-  assert.match(runtimeSource, /story:\s*"\.\/assets\/audio\/satellite-forecast-calm\.mp3"/u);
+  assert.match(runtimeSource, /story:\s*"\.\/assets\/audio\/planet-forecast-windowlight\.mp3"/u);
   assert.match(runtimeSource, /ending:\s*"\.\/assets\/audio\/after-school-afterglow\.mp3"/u);
   assert.match(runtimeSource, /trueend:\s*"\.\/assets\/audio\/sensory-horizon\.wav"/u);
   const trueEndStyleSource = await (await fetch(new URL("/true-end.css", baseUrl))).text();
@@ -301,7 +303,11 @@ try {
   assert.doesNotMatch(trueEndStyleSource, /true-end-relic/u, "retired green relic styling remains in true-end.css");
   assert.doesNotMatch(trueEndModeSource, /true-end-relic/u, "retired green relic element remains in true-end-mode.js");
   assert.match(trueEndModeSource, /createElement\("div", "true-end-interface"\)/u, "unified true-end interface layer is missing");
-  assert.match(trueEndModeSource, /const SCENE_BLACKOUT_MS = 360/u, "full-black curtain timing is missing");
+  assert.match(trueEndModeSource, /const SCENE_BLACKOUT_MS = 720/u, "full-black curtain timing is missing");
+  assert.match(trueEndModeSource, /const SCENE_TITLE_FADE_MS = 440/u, "section-title fade timing is missing");
+  assert.match(trueEndModeSource, /const SCENE_TITLE_HOLD_MS = 1040/u, "section-title hold timing is missing");
+  assert.match(trueEndModeSource, /const SCENE_TITLE_OUT_MS = 360/u, "section-title exit timing is missing");
+  assert.match(trueEndModeSource, /const SCENE_REVEAL_MS = 920/u, "section reveal timing is missing");
   assert.match(trueEndModeSource, /await animateSceneOpacity\(sceneCard, 0, 1, SCENE_BLACKOUT_MS\)/u, "section transition does not close to black first");
   assert.match(trueEndModeSource, /setSceneTransitionPhase\("black"\)[\s\S]*prepareScene\?\.\(\)[\s\S]*setSceneTransitionPhase\("title"\)/u, "section metadata is not prepared only after full blackout");
   assert.match(trueEndModeSource, /setSceneTransitionPhase\("switching"\)[\s\S]*Promise\.resolve\(\)\.then\(async \(\) => \{[\s\S]*preparedStep = await switchScene\?\.\(\)[\s\S]*setSceneTransitionPhase\("ready"\)/u, "background preparation is not completed behind the black curtain");
@@ -470,6 +476,8 @@ try {
     assert.equal(initial.readoutRowCount, 1);
     assert.deepEqual(initial.readoutLines, ["THEL: 2,704,118 HARA"]);
     assert.equal(initial.audioTrack, "trueend");
+    assert.equal(initial.titleUnlocked, true, `${viewport.name}: canonical NOVACENE entry did not unlock the title`);
+    assert.equal(initial.reachedMarkerStored, true, `${viewport.name}: canonical NOVACENE entry did not persist its reached marker`);
     assert.equal(initial.audioPlayback.duration, 72, `${viewport.name}: dedicated score has the wrong duration`);
     assert.equal(initial.toolbarHidden, true);
     assert.equal(initial.dialogueVisible, true);
@@ -903,6 +911,7 @@ try {
     assert.notEqual(afterSeparator.message, beforeSeparator.message, `${viewport.name}: next message did not appear after curtain fade-out`);
     assert.equal(afterSeparator.dialogueVisible, true, `${viewport.name}: message UI stayed hidden after curtain fade-out`);
     assert(afterSeparator.sectionTransitionCompletedAt > separatorTriggeredAt, `${viewport.name}: section completion timestamp is missing`);
+    assert(afterSeparator.sectionTransitionCompletedAt - separatorTriggeredAt >= 3_200, `${viewport.name}: section separator was not held long enough (${(afterSeparator.sectionTransitionCompletedAt - separatorTriggeredAt).toFixed(1)}ms)`);
     assert(afterSeparator.messageCommittedAt >= afterSeparator.sectionTransitionCompletedAt, `${viewport.name}: next message committed before section fade-out completed (${JSON.stringify({ section: afterSeparator.sectionTransitionCompletedAt, message: afterSeparator.messageCommittedAt })})`);
     assert(afterSeparator.messageCommittedAt > beforeSeparator.messageCommittedAt, `${viewport.name}: next message did not receive a new commit timestamp`);
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-separator-05-after.png`) });
@@ -912,6 +921,7 @@ try {
       before: beforeSeparator.message,
       during: reveal.message,
       after: afterSeparator.message,
+      durationMs: afterSeparator.sectionTransitionCompletedAt - separatorTriggeredAt,
       webglFramesDuringTransition: ready.universeFrame - beforeSeparator.universeFrame,
       passed: true,
     });

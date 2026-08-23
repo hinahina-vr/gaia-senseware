@@ -51,9 +51,13 @@ try {
       };
     });
     const page = await context.newPage();
+    const audioResponses = [];
     page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
-    page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
+    page.on("response", (response) => {
+      if (/\/assets\/audio\//u.test(response.url())) audioResponses.push({ url: response.url(), status: response.status() });
+      if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`);
+    });
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.waitForFunction(() => Boolean(globalThis.GaiaOpeningAudio));
@@ -204,11 +208,18 @@ try {
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-route-ready.png`), animations: "disabled" });
 
     const useDataRoute = ["pc-4k", "mobile-360"].includes(viewport.name);
+    const routeStartedAt = Date.now();
     await page.locator(useDataRoute ? "#gaia-opening-route-other" : "#gaia-opening-route-story").click();
     await page.waitForFunction(() => document.querySelector("#gaia-opening")?.hidden === true, null, { timeout: 10_000 });
     await page.waitForFunction((dataRoute) => dataRoute
       ? __qaVisible(document.querySelector("#intro-layer"))
       : __qaVisible(document.querySelector("#novel-runtime")), useDataRoute, { timeout: 10_000 });
+    const destinationVisibleMs = Date.now() - routeStartedAt;
+    if (!useDataRoute) {
+      await page.waitForFunction(() => globalThis.GaiaOpeningAudio.getState().track === "story", null, { timeout: 2_500 });
+    }
+    const trackSwitchMs = useDataRoute ? null : Date.now() - routeStartedAt;
+    const trackSwitchAfterDestinationMs = useDataRoute ? null : trackSwitchMs - destinationVisibleMs;
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-audio-dock")), null, { timeout: 10_000 });
     const destination = await page.evaluate(() => ({
       titleVisible: __qaVisible(document.querySelector("#novel-title-screen")),
@@ -216,6 +227,7 @@ try {
       stepId: globalThis.GaiaNovel?.getState?.().stepId,
       introVisible: __qaVisible(document.querySelector("#intro-layer")),
       dockVisible: __qaVisible(document.querySelector("#gaia-audio-dock")),
+      track: globalThis.GaiaOpeningAudio.getState().track,
       muted: globalThis.GaiaOpeningAudio.getState().muted,
       volume: globalThis.GaiaOpeningAudio.getState().volume,
       overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -223,14 +235,20 @@ try {
     }));
     assert.equal(destination.titleVisible, false, `${viewport.name}: true first access stopped at the story title`);
     assert.equal(destination.runtimeVisible, !useDataRoute, `${viewport.name}: story did not begin immediately on true first access`);
-    if (!useDataRoute) assert.equal(destination.stepId, "festival_concept_001", `${viewport.name}: story began at the wrong first step`);
+    if (!useDataRoute) {
+      assert.equal(destination.stepId, "festival_concept_001", `${viewport.name}: story began at the wrong first step`);
+      assert.equal(destination.track, "story", `${viewport.name}: opening BGM remained active after the story began`);
+      assert(trackSwitchMs <= 2_500, `${viewport.name}: story BGM switch took ${trackSwitchMs}ms`);
+      assert(trackSwitchAfterDestinationMs <= 600, `${viewport.name}: opening BGM remained for ${trackSwitchAfterDestinationMs}ms after the story became visible`);
+      assert(audioResponses.some(({ url, status }) => url.includes("planet-forecast-windowlight.mp3") && [200, 206].includes(status)), `${viewport.name}: story BGM was not fetched successfully`);
+    }
     assert.equal(destination.introVisible, useDataRoute, `${viewport.name}: data menu did not open`);
     assert(destination.dockVisible, `${viewport.name}: destination audio control is missing`);
     assert.equal(destination.muted, !startWithSound);
     assert(Math.abs(destination.volume - 0.37) < 0.001);
     assert.equal(destination.overflowX, 0);
     assert.equal(destination.overflowY, 0);
-    report.scans.push({ viewport: viewport.name, route: useDataRoute ? "data" : "story", initial, confirmed, routeReady, destination, passed: true });
+    report.scans.push({ viewport: viewport.name, route: useDataRoute ? "data" : "story", destinationVisibleMs, trackSwitchMs, trackSwitchAfterDestinationMs, audioResponses, initial, confirmed, routeReady, destination, passed: true });
     await context.close();
   }
 

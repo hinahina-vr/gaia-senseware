@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4417"] = process.argv.slice(2);
+const cardsOnly = process.argv.slice(6).includes("--cards-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -34,7 +35,7 @@ const visibleSource = `(element) => {
   return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0 && rect.width > 0 && rect.height > 0;
 }`;
 const progressFixture = {
-  storyVersion: 10,
+  storyVersion: 12,
   stepId: "festival_concept_032",
   reachedSceneIds: ["festival_concept"],
   viewed: {},
@@ -89,7 +90,8 @@ const createPage = async (viewport, label) => {
 const seedStorage = async (page, stepId = progressFixture.stepId) => page.evaluate(({ progress, ids, targetStepId }) => {
   localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify({ ...progress, stepId: targetStepId }));
   localStorage.setItem("gaiaSensewareNovel:cg-gallery:v1", JSON.stringify({ version: 1, unlocked: ids }));
-  localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+  localStorage.setItem("gaiaSensewareNovel:config:v4", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+  localStorage.setItem("gaiaSensewareTrueEnd:reached:v1", new Date().toISOString());
 }, { progress: progressFixture, ids: unlockedGallery, targetStepId: stepId });
 
 const openIntro = async (page) => {
@@ -105,11 +107,13 @@ const openIntro = async (page) => {
     window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
   });
   await page.waitForFunction(() => __qaVisible(document.querySelector("#intro-layer")));
-  await page.waitForTimeout(80);
+  await page.waitForFunction(() => [...document.querySelectorAll(".intro-path-card")]
+    .every((card) => !card.classList.contains("is-awaiting-reveal") && !card.classList.contains("is-depth-arriving")), null, { timeout: 3_000 });
 };
 
 const cardScan = async (page) => page.evaluate(() => {
   const cards = [...document.querySelectorAll(".intro-path-card")];
+  const grid = document.querySelector(".intro-path-grid");
   const hiddenDetails = [...document.querySelectorAll(
     ".intro-path-card .intro-card-reveal-fx,.intro-path-card .intro-border-glint,.intro-path-card .intro-path-index,.intro-path-card .intro-path-enter",
   )];
@@ -117,6 +121,9 @@ const cardScan = async (page) => page.evaluate(() => {
   const primaryStyle = getComputedStyle(primary);
   return {
     cardCount: cards.length,
+    viewportWidth: innerWidth,
+    wideRowMedia: matchMedia("(min-width: 1280px)").matches,
+    gridTemplateColumns: grid ? getComputedStyle(grid).gridTemplateColumns : "",
     cards: cards.map((card) => ({
       path: card.dataset.introPath || (card.hasAttribute("data-sound-gallery-open") ? "sound" : ""),
       title: card.querySelector(":scope > strong")?.textContent.trim(),
@@ -140,7 +147,7 @@ const cardScan = async (page) => page.evaluate(() => {
   };
 });
 
-const assertCards = (scan) => {
+const assertCards = (scan, viewport) => {
   assert.equal(scan.cardCount, 5);
   assert.deepEqual(scan.cards.map((card) => card.title), ["光に触れる", "世界を読む", "センサーを登録", "宇宙から見る", "音を聴く"]);
   assert.deepEqual(scan.cards.map((card) => card.copy), ["数字を光へ。", "変化を地図へ。", "地球の観測データを送る", "宇宙の記録へ。", "物語の音楽へ。"]);
@@ -153,6 +160,10 @@ const assertCards = (scan) => {
   assert.notEqual(scan.primaryBackground, "none");
   assert.equal(scan.overflowX, false);
   assert.equal(scan.overflowY, false);
+  if (!viewport.mobile) {
+    const cardTops = scan.cards.map(({ rect }) => rect.top);
+    assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the five observation cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
+  }
 };
 
 const titleState = async (page) => page.evaluate(() => ({
@@ -192,7 +203,7 @@ const scanIntroReturn = async (viewport) => {
   const { context, page } = await createPage(viewport, `${viewport.name}-intro-return`);
   await openIntro(page);
   const before = await cardScan(page);
-  assertCards(before);
+  assertCards(before, viewport);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-intro-simple.png`) });
   const returnButton = page.locator(".intro-story-return[data-primary-action='true']");
   if (viewport.action === "click") await returnButton.click();
@@ -476,14 +487,16 @@ const scanRuntimeStoryContract = async () => {
 
 try {
   for (const viewport of viewports) await scanIntroReturn(viewport);
-  await scanMetadataAndRuntimeGallery(viewports[0], "festival_concept_001");
-  await scanMetadataAndRuntimeGallery(viewports[1], "festival_concept_008");
-  await scanMetadataAndRuntimeGallery(viewports[2], "festival_concept_015");
-  await scanMetadataAndRuntimeGallery(viewports[3], "festival_concept_001");
-  await scanIntroductionSequence(viewports[2]);
-  await scanIntroductionSequence(viewports[3]);
-  await scanRuntimeStoryContract();
-  await scanRepeatAndBack();
+  if (!cardsOnly) {
+    await scanMetadataAndRuntimeGallery(viewports[0], "festival_concept_001");
+    await scanMetadataAndRuntimeGallery(viewports[1], "festival_concept_008");
+    await scanMetadataAndRuntimeGallery(viewports[2], "festival_concept_015");
+    await scanMetadataAndRuntimeGallery(viewports[3], "festival_concept_001");
+    await scanIntroductionSequence(viewports[2]);
+    await scanIntroductionSequence(viewports[3]);
+    await scanRuntimeStoryContract();
+    await scanRepeatAndBack();
+  }
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);
   assert.deepEqual(report.responses404, []);

@@ -18,7 +18,7 @@ const viewports = [
 ];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], failedResponses: [] };
 const progressFor = (stepId) => ({
-  storyVersion: 10,
+  storyVersion: 12,
   stepId,
   reachedSceneIds: ["festival_concept"],
   viewed: {},
@@ -51,14 +51,10 @@ const bootAt = async (page, stepId) => {
   }, progressFor(stepId));
   await page.reload({ waitUntil: "commit", timeout: 60_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GaiaOpeningAudio));
-  await page.evaluate(() => {
-    const layer = document.querySelector("#novel-layer");
-    if (layer?.hidden || !layer.classList.contains("is-open")) globalThis.GaiaNovel.open();
-  });
-  await page.locator("#novel-resume-button").click();
-  await page.waitForFunction(() => document.querySelector("#novel-save-panel")?.hidden === false);
-  await page.locator(".novel-save-slot[data-slot-index='0']").click();
-  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
+  await page.waitForFunction((id) => (
+    document.querySelector("#novel-layer")?.dataset.stepId === id
+    && document.querySelector("#novel-runtime")?.hidden === false
+  ), stepId, { timeout: 15_000 });
 };
 
 const waitForTrack = (page, track) => page.waitForFunction(
@@ -68,7 +64,7 @@ const waitForTrack = (page, track) => page.waitForFunction(
 );
 
 const advanceTo = async (page, nextStepId) => {
-  for (let pageIndex = 0; pageIndex < 8; pageIndex += 1) {
+  for (let pageIndex = 0; pageIndex < 24; pageIndex += 1) {
     if (await page.evaluate((id) => globalThis.GaiaNovel.getState().stepId === id, nextStepId)) return;
     await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete");
     await page.locator("#novel-dialogue").click({ position: { x: 24, y: 24 } });
@@ -100,8 +96,6 @@ try {
 
     await bootAt(page, "festival_concept_014");
     await waitForTrack(page, "story");
-    await page.waitForFunction(() => performance.getEntriesByType("resource")
-      .some((entry) => entry.name.includes("planet-forecast-windowlight.mp3")));
     const approach = await page.evaluate(() => ({
       stepId: globalThis.GaiaNovel.getState().stepId,
       track: globalThis.GaiaOpeningAudio.getState().track,
@@ -126,9 +120,9 @@ try {
     assert.equal(debut.backgroundCue, "festival-first-encounter-cg");
     const screenshot = path.join(outputDir, `${viewport.name}-first-encounter.png`);
     await page.screenshot({ path: screenshot, animations: "disabled" });
-    for (let stepNumber = 16; stepNumber <= 27; stepNumber += 1) {
+    for (const stepNumber of [16, 19, 21, 23, 24, 27, 29]) {
       await advanceTo(page, `festival_concept_${String(stepNumber).padStart(3, "0")}`);
-      if (stepNumber <= 26) assert.equal(
+      if (stepNumber !== 29) assert.equal(
         await page.evaluate(() => globalThis.GaiaOpeningAudio.getState().track),
         "windowlight",
         `${viewport.name}: first-encounter theme ended before the introductions were complete`,
@@ -142,7 +136,8 @@ try {
     }));
     assert.equal(returnToStory.track, "story", `${viewport.name}: normal story theme did not return after the introductions`);
     assert.equal(returnToStory.backgroundCue, "festival-gaia-booth-conversation");
-    assert(audioResponses.some(({ url, status }) => url.includes("planet-forecast-windowlight.mp3") && [200, 206].includes(status)), `${viewport.name}: first-encounter theme was not fetched successfully`);
+    assert(audioResponses.some(({ url, status }) => url.includes("planet-forecast-windowlight.mp3") && [200, 206].includes(status)), `${viewport.name}: story theme was not fetched successfully`);
+    assert(audioResponses.some(({ url, status }) => url.includes("satellite-forecast-calm.mp3") && [200, 206].includes(status)), `${viewport.name}: first-encounter theme was not fetched successfully`);
 
     report.scans.push({ viewport: viewport.name, approach, debut, returnToStory, audioResponses, screenshot, passed: true });
     await context.close();

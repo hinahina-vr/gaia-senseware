@@ -22,21 +22,21 @@
   const tracks = Object.freeze({
     opening: {
       number: "TRACK 01 / OPENING THEME",
-      title: "Planet Forecast — Hope",
+      title: "Planet Forecast - Hope",
       description: "物語が始まる直前、観測の扉が開く場面の音楽。",
       planet: "PLANET 01",
       signal: "FORECAST SIGNAL",
     },
     story: {
       number: "TRACK 02 / STORY THEME",
-      title: "Planet Forecast — Calm",
+      title: "Planet Forecast — Windowlight",
       description: "三人の記録を読み、残された言葉へ近づいていく場面の音楽。",
       planet: "PLANET 02",
       signal: "STORY RESONANCE",
     },
     windowlight: {
       number: "TRACK 03 / OBSERVATION ROOM",
-      title: "Planet Forecast — Windowlight",
+      title: "Planet Forecast — Calm",
       description: "制作室の窓へ午後の光が差し、三人の観測が静かに重なり始める場面の音楽。",
       planet: "PLANET 03",
       signal: "WINDOWLIGHT TRACE",
@@ -92,7 +92,7 @@
     },
     ending: {
       number: "TRACK 11 / ENDING THEME",
-      title: "AfterSchool Afterglow",
+      title: "AfterSchool,AfterGlow",
       description: "スタッフロールとともに、物語の余韻を次の観測へつなぐエンディングテーマ。",
       planet: "PLANET 11",
       signal: "AFTERGLOW SIGNAL",

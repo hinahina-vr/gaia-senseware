@@ -15,14 +15,15 @@
     visitor: Object.freeze({ name: "あなた", code: "AL MIR", language: SYSTEM_LANGUAGE }),
   });
   const STORAGE_KEY = "gaiaSensewareTrueEnd:complete:v1";
+  const REACHED_STORAGE_KEY = "gaiaSensewareTrueEnd:reached:v1";
   const CHARACTER_DELAY_MS = 29;
   const FUTURE_SHORE_SCENE_ID = "after-school-stars";
   const FUTURE_SHORE_START_STEP_ID = "beyond_03_007";
-  const SCENE_BLACKOUT_MS = 360;
-  const SCENE_TITLE_FADE_MS = 220;
-  const SCENE_TITLE_HOLD_MS = 520;
-  const SCENE_TITLE_OUT_MS = 180;
-  const SCENE_REVEAL_MS = 460;
+  const SCENE_BLACKOUT_MS = 720;
+  const SCENE_TITLE_FADE_MS = 440;
+  const SCENE_TITLE_HOLD_MS = 1040;
+  const SCENE_TITLE_OUT_MS = 360;
+  const SCENE_REVEAL_MS = 920;
   const segmenter = typeof Intl?.Segmenter === "function"
     ? new Intl.Segmenter("ja", { granularity: "grapheme" })
     : null;
@@ -550,6 +551,24 @@
     start(options) {
       return createRuntime(options || {});
     },
+    markReached() {
+      try {
+        window.localStorage.setItem(REACHED_STORAGE_KEY, new Date().toISOString());
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    isReached() {
+      try {
+        return Boolean(
+          window.localStorage.getItem(REACHED_STORAGE_KEY)
+          || window.localStorage.getItem(STORAGE_KEY),
+        );
+      } catch {
+        return false;
+      }
+    },
     isComplete() {
       try {
         return Boolean(window.localStorage.getItem(STORAGE_KEY));
@@ -557,5 +576,6 @@
         return false;
       }
     },
+    reachedStorageKey: REACHED_STORAGE_KEY,
   });
 })();

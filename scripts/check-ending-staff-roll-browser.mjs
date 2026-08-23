@@ -4,6 +4,9 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4173"] = process.argv.slice(2);
+const extraArguments = process.argv.slice(6);
+const pcOnly = extraArguments.includes("--pc-only");
+const mobileOnly = extraArguments.includes("--mobile-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -13,11 +16,11 @@ const outputDir = path.resolve(outputArgument || "artifacts/ending-staff-roll-br
 fs.mkdirSync(outputDir, { recursive: true });
 
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
-const CONFIG_KEY = "gaiaSensewareNovel:config:v3";
+const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
-];
+].filter(({ name }) => (!pcOnly || name === "pc-1440") && (!mobileOnly || name === "mobile-390"));
 const report = {
   status: "running",
   baseUrl,
@@ -41,9 +44,10 @@ const attachDiagnostics = (page, label) => {
 };
 
 const bootAtEnding = async (page, reducedMotion = false) => {
-  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate(({ storageKey, configKey, reduced }) => {
+    localStorage.clear();
     const state = {
       storyVersion: globalThis.GAIA_NOVEL_STORY.storyVersion,
       stepId: "welcome_chat_095",
@@ -71,13 +75,10 @@ const bootAtEnding = async (page, reducedMotion = false) => {
     localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 400, reducedMotion: reduced }));
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
   }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, reduced: reducedMotion });
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-staff-roll"), null, { timeout: 15_000 });
+  await page.evaluate(() => document.fonts.ready);
 };
 
 const scanEnding = (page) => page.evaluate(() => {
@@ -109,12 +110,21 @@ const scanEnding = (page) => page.evaluate(() => {
     const rowRect = row.getBoundingClientRect();
     const termRect = term?.getBoundingClientRect();
     const descriptionRect = description?.getBoundingClientRect();
+    const nameElements = [...row.querySelectorAll(".novel-staff-roll-credit-name")];
+    const dividerTopOffset = row.querySelector(".novel-staff-roll-credit-divider")?.offsetTop || 0;
+    const namesBottomOffset = description ? description.offsetTop + description.offsetHeight : 0;
     return {
       role: row.dataset.creditRole || "",
       textAlign: getComputedStyle(row).textAlign,
       rowCenterDelta: Math.abs((rowRect.left + (rowRect.width / 2)) - trackCenterX),
       termCenterDelta: termRect ? Math.abs((termRect.left + (termRect.width / 2)) - trackCenterX) : null,
       descriptionCenterDelta: descriptionRect ? Math.abs((descriptionRect.left + (descriptionRect.width / 2)) - trackCenterX) : null,
+      dividerClearance: dividerTopOffset - namesBottomOffset,
+      rowHeight: row.offsetHeight,
+      dividerTopOffset,
+      namesBottomOffset,
+      names: nameElements.map((name) => name.textContent.trim()),
+      nameOverflow: nameElements.some((name) => name.scrollWidth > name.clientWidth + 1),
     };
   });
   return {
@@ -210,7 +220,7 @@ try {
     attachDiagnostics(page, viewport.name);
     const audioRuntimeResponse = await page.request.get(new URL("/opening-audio.js", baseUrl).href);
     assert.equal(audioRuntimeResponse.ok(), true, `${viewport.name}: opening-audio.js was not available`);
-    assert.match(await audioRuntimeResponse.text(), /ending:\s*"\.\/assets\/audio\/after-school-afterglow\.mp3"/u, `${viewport.name}: ending is not mapped to AfterSchool Afterglow`);
+    assert.match(await audioRuntimeResponse.text(), /ending:\s*"\.\/assets\/audio\/after-school-afterglow\.mp3"/u, `${viewport.name}: ending is not mapped to AfterSchool,AfterGlow`);
     assert.match(await audioRuntimeResponse.text(), /trueend:\s*"\.\/assets\/audio\/sensory-horizon\.wav"/u, `${viewport.name}: true end is not mapped to its dedicated score`);
     await bootAtEnding(page, false);
 
@@ -238,8 +248,9 @@ try {
       "OpenAI ImageGen",
       "背景美術",
       "音楽",
-      "AfterSchool Afterglow",
-      "glitchyeventdj664",
+      "オープニングテーマ曲『Planet Forecast - Hope』",
+      "エンディングテーマ曲『AfterSchool,AfterGlow』",
+      "by Suno.ai",
       "ZEN大学『共創地球論』",
       "ZEN大学『人新世の人類学』",
       "参照データ",
@@ -262,7 +273,15 @@ try {
       assert(row.rowCenterDelta <= 1, `${viewport.name}: ${row.role} row is off center by ${row.rowCenterDelta}px`);
       assert(row.termCenterDelta <= 1, `${viewport.name}: ${row.role} label is off center by ${row.termCenterDelta}px`);
       assert(row.descriptionCenterDelta <= 1, `${viewport.name}: ${row.role} name is off center by ${row.descriptionCenterDelta}px`);
+      assert(row.dividerClearance >= 8, `${viewport.name}: ${row.role} divider overlaps its names (${row.dividerClearance}px clearance)`);
     });
+    const musicCredit = initial.creditRows.find((row) => row.role === "MUSIC");
+    assert.deepEqual(musicCredit?.names, [
+      "オープニングテーマ曲『Planet Forecast - Hope』",
+      "エンディングテーマ曲『AfterSchool,AfterGlow』",
+      "by Suno.ai",
+    ], `${viewport.name}: music credit wording or order is incorrect`);
+    assert.equal(musicCredit?.nameOverflow, false, `${viewport.name}: music credit overflows horizontally`);
     assert.equal(initial.overflowX, 0);
     assert.equal(initial.overflowY, 0);
     assert.equal(initial.bodyOverflowX, 0);
@@ -294,7 +313,7 @@ try {
     await page.waitForTimeout(650);
     const afterY = await page.locator(".novel-staff-roll-track").evaluate((node) => node.getBoundingClientRect().y);
     assert(afterY < beforeY - 2, `${viewport.name}: credits did not move upward (${beforeY} -> ${afterY})`);
-    assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/after-school-afterglow.mp3") && [200, 206].includes(response.status)), `${viewport.name}: AfterSchool Afterglow was not requested`);
+    assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/after-school-afterglow.mp3") && [200, 206].includes(response.status)), `${viewport.name}: AfterSchool,AfterGlow was not requested`);
     assert(!report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/planet-forecast-first-light.mp3")), `${viewport.name}: previous ending track is still requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-rolling.png`) });
 
@@ -327,6 +346,7 @@ try {
     const creditsFrame = await scanEnding(page);
     creditsFrame.creditRows.forEach((row) => {
       assert(row.rowCenterDelta <= 1, `${viewport.name}: ${row.role} shifted off center during the roll`);
+      assert(row.dividerClearance >= 8, `${viewport.name}: ${row.role} divider overlaps its names during the roll (${JSON.stringify(row)})`);
     });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-credits.png`) });
     await page.locator(".novel-staff-roll-track").evaluate((node) => {
@@ -379,16 +399,20 @@ try {
     assert.equal(departure.phase, "departing", `${viewport.name}: transition did not enter departing state`);
     assert.equal(departure.buttonDisabled, true, `${viewport.name}: final action remained enabled during transition`);
     assert.equal(departure.transitionVeilCount, 1, `${viewport.name}: transition veil was not mounted exactly once`);
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "holding", null, { timeout: 2_000 });
+    const transitionHoldObservedAt = Date.now();
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "switching");
     const switchObservedAt = Date.now();
     await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")));
-    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "revealing", null, { timeout: 5_000 });
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "revealing", null, { timeout: 8_000 });
     const revealObservedAt = Date.now();
-    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "complete", null, { timeout: 2_000 });
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "complete", null, { timeout: 3_000 });
     const transitionCompletedAt = Date.now();
-    assert(switchObservedAt >= transitionStartedAt, `${viewport.name}: switch preceded transition start`);
-    assert(revealObservedAt >= switchObservedAt, `${viewport.name}: reveal preceded DOM switch`);
-    assert(transitionCompletedAt > revealObservedAt, `${viewport.name}: transition completed before reveal`);
+    assert(transitionHoldObservedAt - transitionStartedAt >= 600, `${viewport.name}: NOVACENE cover was too short (${transitionHoldObservedAt - transitionStartedAt}ms)`);
+    assert(switchObservedAt - transitionHoldObservedAt >= 800, `${viewport.name}: full-black NOVACENE hold was too short (${switchObservedAt - transitionHoldObservedAt}ms)`);
+    assert(switchObservedAt - transitionStartedAt >= 1_450, `${viewport.name}: NOVACENE entry did not build enough anticipation (${switchObservedAt - transitionStartedAt}ms)`);
+    assert(revealObservedAt - switchObservedAt >= 3_200, `${viewport.name}: initial NOVACENE separator was too short (${revealObservedAt - switchObservedAt}ms)`);
+    assert(transitionCompletedAt - revealObservedAt >= 600, `${viewport.name}: NOVACENE reveal was too short (${transitionCompletedAt - revealObservedAt}ms)`);
     assert.equal(await page.locator(".novel-staff-roll-transition-veil").count(), 0, `${viewport.name}: transition veil remained after completion`);
     await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true && globalThis.GaiaNovel.getState().archivesUnlocked === true);
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "trueend", null, { timeout: 6_500 });
@@ -412,7 +436,7 @@ try {
     assert.equal(trueEndDestination.overflowY, 0);
     assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/sensory-horizon.wav") && [200, 206].includes(response.status)), `${viewport.name}: dedicated true-end score was not requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, afterBackgroundClick, controlAttempt, endHold, beforeFinale, completed, transition: { transitionStartedAt, switchObservedAt, revealObservedAt, transitionCompletedAt }, trueEndPlayback, trueEndDestination, passed: true });
+    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, afterBackgroundClick, controlAttempt, endHold, beforeFinale, completed, transition: { transitionStartedAt, holdObservedAt: transitionHoldObservedAt, switchObservedAt, revealObservedAt, transitionCompletedAt }, trueEndPlayback, trueEndDestination, passed: true });
     await context.close();
   }
 

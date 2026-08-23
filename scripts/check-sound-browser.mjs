@@ -12,13 +12,17 @@ const outputDir = path.resolve(outputArg);
 await mkdir(outputDir, { recursive: true });
 
 const expectedTracks = [
+  ["opening", "Planet Forecast - Hope"],
+  ["story", "Planet Forecast — Windowlight"],
+  ["windowlight", "Planet Forecast — Calm"],
+  ["firstlight", "Planet Forecast — First Light"],
   ["foldedwind", "折り目の向こうの風"],
   ["snowfire", "雪火の観測信号"],
   ["snowafter", "雪火、軌道の外へ"],
   ["moonbook", "月明かりの観測ノート"],
   ["moonsave", "月下のSOURCE保存"],
   ["moonreopen", "月下、もう一度ひらく"],
-  ["ending", "AfterSchool Afterglow"],
+  ["ending", "AfterSchool,AfterGlow"],
   ["trueend", "Sensory Horizon"],
 ];
 const report = { status: "running", tracks: [], errors: [], responses404: [] };
