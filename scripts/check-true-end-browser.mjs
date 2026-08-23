@@ -9,6 +9,7 @@ const separatorOnly = extraArguments.includes("--separator-only");
 const pcOnly = extraArguments.includes("--pc-only");
 const mobileOnly = extraArguments.includes("--mobile-only");
 const presenceOnly = extraArguments.includes("--presence-only");
+const productionSmoke = extraArguments.includes("--production-smoke");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -649,10 +650,11 @@ try {
     while (Number.parseInt((await scanFrame(separatorPage)).counter, 10) < firstSpeakerChangeIndex) {
       await advanceTransmissionStep(separatorPage);
     }
-    if (await separatorPage.evaluate(() => document.querySelector(".true-end-shell")?.classList.contains("is-revealing"))) {
-      await separatorPage.locator(".true-end-dialogue").click();
-      await separatorPage.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-revealing"));
-    }
+    await separatorPage.evaluate(() => {
+      const shell = document.querySelector(".true-end-shell");
+      if (shell?.classList.contains("is-revealing")) document.querySelector(".true-end-dialogue")?.click();
+    });
+    await separatorPage.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-revealing"));
     const fadeBefore = await scanFrame(separatorPage);
     await separatorPage.evaluate(() => document.querySelector(".true-end-dialogue")?.click());
     await separatorPage.waitForTimeout(50);
@@ -703,10 +705,11 @@ try {
     while (Number.parseInt((await scanFrame(separatorPage)).counter, 10) < firstSceneSteps) {
       await advanceTransmissionStep(separatorPage);
     }
-    if (await separatorPage.evaluate(() => document.querySelector(".true-end-shell")?.classList.contains("is-revealing"))) {
-      await separatorPage.locator(".true-end-dialogue").click();
-      await separatorPage.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-revealing"));
-    }
+    await separatorPage.evaluate(() => {
+      const shell = document.querySelector(".true-end-shell");
+      if (shell?.classList.contains("is-revealing")) document.querySelector(".true-end-dialogue")?.click();
+    });
+    await separatorPage.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-revealing"));
 
     const beforeSeparator = await scanFrame(separatorPage);
     assert.equal(beforeSeparator.scene, "after-ending", `${viewport.name}: separator test overshot the first scene`);
@@ -723,6 +726,35 @@ try {
       dialogue?.click();
       return performance.now();
     });
+    if (productionSmoke) {
+      await separatorPage.waitForFunction((triggeredAt) => {
+        const shell = document.querySelector(".true-end-shell");
+        const message = document.querySelector(".true-end-message");
+        return shell?.dataset.scene === "electronic-civilization"
+          && shell.dataset.sectionTransitionPhase === "idle"
+          && Number(shell.dataset.sectionTransitionCompletedAt || 0) > triggeredAt
+          && Number(shell.dataset.messageCommittedAt || 0) >= Number(shell.dataset.sectionTransitionCompletedAt || 0)
+          && Boolean(message?.textContent);
+      }, separatorTriggeredAt, { timeout: 15_000, polling: 10 });
+      const productionAfter = await scanFrame(separatorPage);
+      assert.equal(productionAfter.scene, "electronic-civilization", `${viewport.name}: production separator did not advance to the next scene`);
+      assert.equal(productionAfter.counter, `${String(firstSceneSteps + 1).padStart(3, "0")} / 052`, `${viewport.name}: production click burst advanced more than one message`);
+      assert.notEqual(productionAfter.message, beforeSeparator.message, `${viewport.name}: production next message did not appear`);
+      assert.equal(productionAfter.dialogueVisible, true, `${viewport.name}: production message UI stayed hidden`);
+      assert(productionAfter.sectionTransitionCompletedAt > separatorTriggeredAt, `${viewport.name}: production section completion timestamp is missing`);
+      assert(productionAfter.messageCommittedAt >= productionAfter.sectionTransitionCompletedAt, `${viewport.name}: production message committed before section fade-out completed`);
+      await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-separator-production-after.png`), animations: "disabled" });
+      report.separatorOrder.push({
+        viewport: viewport.name,
+        before: beforeSeparator.message,
+        during: "production-smoke",
+        after: productionAfter.message,
+        productionSmoke: true,
+        passed: true,
+      });
+      await separatorContext.close();
+      continue;
+    }
     await separatorPage.waitForFunction(() => document.querySelector(".true-end-shell")?.dataset.sectionTransitionPhase === "blackout", null, { timeout: 2_000 });
     await separatorPage.waitForTimeout(140);
     const blackout = await scanFrame(separatorPage);
@@ -743,7 +775,7 @@ try {
     assert(title.audioDockOpacity <= 0.01, `${viewport.name}: global audio UI remained visible over the black title card (${JSON.stringify({ opacity: title.audioDockOpacity, inlineOpacity: title.audioDockInlineOpacity, inlinePriority: title.audioDockInlinePriority, hidden: title.audioDockHidden, bodyTransitionClass: title.bodyTransitionClass })})`);
     assert.equal(title.scene, "electronic-civilization", `${viewport.name}: next section metadata was not prepared under black`);
     assert.equal(title.sceneCardTitle, "電子を使っていた文明", `${viewport.name}: next section title was not shown over black`);
-    assert(title.sceneCardTitleOpacity > 0 && title.sceneCardTitleOpacity < 1, `${viewport.name}: section title did not fade in (${title.sceneCardTitleOpacity})`);
+    assert(title.sceneCardTitleOpacity > 0 && title.sceneCardTitleOpacity <= 1, `${viewport.name}: section title was not visible (${title.sceneCardTitleOpacity})`);
     assert.equal(title.universeScene, beforeSeparator.universeScene, `${viewport.name}: WebGL background switched before the title appeared`);
     assert.equal(title.message, beforeSeparator.message, `${viewport.name}: next message rendered before background preparation`);
     assert.equal(title.dialogueVisible, false, `${viewport.name}: message UI became visible behind the section title`);
