@@ -137,6 +137,8 @@ const scanFrame = (page) => page.evaluate(() => {
     sampledAt: performance.now(),
     documentHidden: document.hidden,
     scene: shell?.dataset.scene || "",
+    stepId: shell?.dataset.step || "",
+    shoreImage: shell?.dataset.shoreImage || "",
     speaker: shell?.dataset.speaker || "",
     title: document.querySelector(".true-end-scene-heading strong")?.textContent?.trim() || "",
     sceneCode: document.querySelector(".true-end-scene-heading span")?.textContent?.trim() || "",
@@ -173,6 +175,9 @@ const scanFrame = (page) => page.evaluate(() => {
     sectionTransitionCompletedAt: Number(shell?.dataset.sectionTransitionCompletedAt || 0),
     universeFrame: Number(universe?.dataset.webglFrame || 0),
     universeSize: { width: universe?.width || 0, height: universe?.height || 0 },
+    universeOpacity: universe ? Number.parseFloat(getComputedStyle(universe).opacity) : 0,
+    universeBlendMode: universe ? getComputedStyle(universe).mixBlendMode : "",
+    universeZIndex: universe ? Number.parseInt(getComputedStyle(universe).zIndex, 10) : 0,
     characterImageCount: document.querySelectorAll(".true-end-shell img").length,
     backdropCount: document.querySelectorAll(".true-end-backdrop").length,
     dialogueRect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height, bottom: rect.bottom } : null,
@@ -235,6 +240,7 @@ const scanFrame = (page) => page.evaluate(() => {
     })),
     sceneVisualBackground: shell ? getComputedStyle(shell, "::before").backgroundImage : "",
     sceneVisualOpacity: shell ? Number.parseFloat(getComputedStyle(shell, "::before").opacity) : 0,
+    sceneVisualZIndex: shell ? Number.parseInt(getComputedStyle(shell, "::before").zIndex, 10) : 0,
     finaleVisible: Boolean(document.querySelector(".true-end-finale:not([hidden])")),
     logButtonVisible: Boolean(document.querySelector(".true-end-log-button")?.getClientRects().length),
     logButtonText: document.querySelector(".true-end-log-button")?.textContent?.trim() || "",
@@ -308,6 +314,10 @@ try {
   assert.match(trueEndModeSource, /await syncSceneBackdrop\(\{ immediate: true \}\)[\s\S]*return prepareStep\(\)/u, "section preparation does not wait for the background draw and character presence");
   assert.match(trueEndModeSource, /animateSceneOpacity\(sceneCard, 1, 0, SCENE_REVEAL_MS\)[\s\S]*sectionTransitionCompletedAt[\s\S]*commitPreparedStep\(result\.preparedStep\)/u, "the next message is not committed strictly after the section curtain finishes fading out");
   assert.match(trueEndStyleSource, /\.true-end-shell\.is-scene-separating\s+:is\(\.true-end-dialogue, \.true-end-readout\)\s*\{\s*visibility:\s*hidden;/u, "message UI is not hidden throughout the section separator");
+  assert.match(trueEndModeSource, /FUTURE_SHORE_START_STEP_ID = "beyond_03_007"/u, "future-shore image does not start at the requested narration");
+  assert.match(trueEndModeSource, /shell\.dataset\.shoreImage = shoreVisible \? "visible" : "hidden"/u, "future-shore visibility is not synchronized per step");
+  assert.match(trueEndStyleSource, /\[data-shore-image="visible"\]::before[\s\S]*opacity:\s*0\.94/u, "future-shore image is not gated behind its narration");
+  assert.match(trueEndStyleSource, /\[data-shore-image="visible"\] \.true-end-universe[\s\S]*opacity:\s*0\.84;[\s\S]*mix-blend-mode:\s*screen/u, "character WebGL is not strongly composited over the future shore");
   assert.doesNotMatch(trueEndModeSource, /createElement\("img"/u, "TRANSMISSION still creates a raster image element");
   assert.match(trueEndWebGLSource, /setPresence\(name/u, "WebGL presence controller is missing");
   assert.match(trueEndWebGLSource, /u_speaker_mix/u, "WebGL presence crossfade is missing");
@@ -418,8 +428,19 @@ try {
       assert.equal(frame.characterImageCount, 0, `${viewport.name}: raster character image DOM remains in TRANSMISSION`);
       assert.equal(frame.backdropCount, 0, `${viewport.name}: retired raster backdrop DOM remains`);
       if (frame.scene === "after-school-stars") {
+        const shoreShouldBeVisible = Number.parseInt(frame.stepId.slice(-3), 10) >= 7;
         assert.match(frame.sceneVisualBackground, /true-end-future-cosmic-shore-v1\.png/u, `${viewport.name}: generated future shore is not connected to scene 09`);
-        assert(frame.sceneVisualOpacity >= 0.9, `${viewport.name}: generated future shore is not visible in scene 09`);
+        assert.equal(frame.shoreImage, shoreShouldBeVisible ? "visible" : "hidden", `${viewport.name}: shore visibility state is wrong at ${frame.stepId}`);
+        if (shoreShouldBeVisible) {
+          assert(frame.sceneVisualOpacity >= 0.9, `${viewport.name}: future shore is not visible from beyond_03_007 onward`);
+          assert(frame.universeOpacity >= 0.8, `${viewport.name}: character WebGL became too faint over the future shore`);
+          assert.equal(frame.universeBlendMode, "screen", `${viewport.name}: character WebGL is not composited over the future shore`);
+          assert(frame.universeZIndex > frame.sceneVisualZIndex, `${viewport.name}: future shore still covers the character WebGL layer`);
+        } else {
+          assert(frame.sceneVisualOpacity <= 0.01, `${viewport.name}: future shore appeared before beyond_03_007`);
+          assert(frame.universeOpacity >= 0.99, `${viewport.name}: WebGL was dimmed before the future-shore narration`);
+          assert.equal(frame.universeBlendMode, "normal", `${viewport.name}: pre-shore WebGL inherited the image blend mode`);
+        }
       }
       assert(frame.dialogueRect && frame.dialogueRect.y >= 0 && frame.dialogueRect.bottom <= viewport.height + 1, `${viewport.name}: dialogue escaped the viewport`);
       assert(Math.abs(frame.dialogueRect.height - fixedDialogueHeight) <= 0.5, `${viewport.name}: dialogue height changed at ${frame.counter} (${fixedDialogueHeight} -> ${frame.dialogueRect.height})`);
@@ -544,8 +565,14 @@ try {
             await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-04.png`), animations: "disabled" });
           }
           if (nextFrame.scene === "after-school-stars") {
-            await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-09-future-shore.png`), animations: "disabled" });
+            await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-09-webgl-only.png`), animations: "disabled" });
           }
+        }
+        if (nextFrame.stepId === "beyond_03_007") {
+          await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-09-shore-start.png`), animations: "disabled" });
+        }
+        if (nextFrame.stepId === "beyond_03_008") {
+          await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-09-shore-with-lou.png`), animations: "disabled" });
         }
       }
     }

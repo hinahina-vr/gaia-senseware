@@ -16,6 +16,8 @@
   });
   const STORAGE_KEY = "gaiaSensewareTrueEnd:complete:v1";
   const CHARACTER_DELAY_MS = 29;
+  const FUTURE_SHORE_SCENE_ID = "after-school-stars";
+  const FUTURE_SHORE_START_STEP_ID = "beyond_03_007";
   const SCENE_BLACKOUT_MS = 360;
   const SCENE_TITLE_FADE_MS = 220;
   const SCENE_TITLE_HOLD_MS = 520;
@@ -352,6 +354,16 @@
       return setBackdrop(current.backdrop, immediate);
     };
 
+    const syncStepVisuals = (current) => {
+      shell.dataset.step = current.id;
+      const currentScene = scene();
+      const shoreStartIndex = currentScene?.steps?.findIndex(({ id }) => id === FUTURE_SHORE_START_STEP_ID) ?? -1;
+      const shoreVisible = currentScene?.id === FUTURE_SHORE_SCENE_ID
+        && shoreStartIndex >= 0
+        && stepIndex >= shoreStartIndex;
+      shell.dataset.shoreImage = shoreVisible ? "visible" : "hidden";
+    };
+
     const revealSceneAfterSeparator = async ({ onSceneReady, ...options } = {}) => {
       const result = await showSceneSeparator(options);
       if (!result || !shell.isConnected || complete) return;
@@ -379,6 +391,7 @@
     const commitPreparedStep = (prepared) => {
       if (!prepared || prepared.revision !== renderRevision || !shell.isConnected || complete) return false;
       const { current, currentSpeaker } = prepared;
+      syncStepVisuals(current);
       shell.dataset.speaker = current.speaker || "narrator";
       shell.classList.toggle("is-emphasis", current.emphasis === true);
       speaker.textContent = currentSpeaker.name;
