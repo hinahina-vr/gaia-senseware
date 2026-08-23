@@ -739,11 +739,11 @@ body.gx-open {
   backdrop-filter: blur(7px);
 }
 
-.gx-era-transition-skip {
+.gx-modal-skip {
   position: absolute;
   top: max(24px, calc(env(safe-area-inset-top) + 18px));
   right: clamp(22px, 3.2vw, 58px);
-  z-index: 2;
+  z-index: 13;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -763,11 +763,11 @@ body.gx-open {
   cursor: pointer;
 }
 
-.gx-era-transition-skip[hidden] {
+.gx-modal-skip[hidden] {
   display: none;
 }
 
-.gx-era-transition-skip b {
+.gx-modal-skip b {
   color: var(--gx-mint);
   font-size: 17px;
   font-weight: 400;
@@ -775,16 +775,16 @@ body.gx-open {
   transition: transform 180ms ease;
 }
 
-.gx-era-transition-skip:hover,
-.gx-era-transition-skip:focus-visible {
+.gx-modal-skip:hover,
+.gx-modal-skip:focus-visible {
   color: #06130f;
   border-color: var(--gx-mint);
   background: var(--gx-mint);
   outline: none;
 }
 
-.gx-era-transition-skip:hover b,
-.gx-era-transition-skip:focus-visible b {
+.gx-modal-skip:hover b,
+.gx-modal-skip:focus-visible b {
   color: inherit;
   transform: translateX(3px);
 }
@@ -1126,13 +1126,17 @@ body.gx-open {
     padding: 10px 15px;
   }
 
-  .gx-era-transition-skip {
-    top: max(150px, calc(env(safe-area-inset-top) + 140px));
+  .gx-modal-skip {
+    top: max(72px, calc(env(safe-area-inset-top) + 68px));
     right: 14px;
     min-width: 116px;
     min-height: 44px;
     padding: 9px 15px;
     font-size: 11px;
+  }
+
+  .gx-header {
+    max-width: calc(100vw - 154px);
   }
 
   .gx-layer[data-return-to="novel"] {
@@ -2796,6 +2800,14 @@ body.gx-story-open .gx-layer[data-return-to="novel"] .gx-secondary-controls {
 
   body.gx-story-open .gx-layer[data-return-to="novel"] .gx-controls {
     bottom: 76px;
+  }
+
+  .gx-layer .gx-time,
+  .gx-layer[data-return-to="novel"] .gx-time,
+  .gx-layer[data-return-to="novel"][data-phase="gaia-transformation"] .gx-time,
+  body.gx-story-open .gx-layer[data-return-to="novel"] .gx-time,
+  body.gx-story-open .gx-layer[data-return-to="novel"][data-phase="gaia-transformation"] .gx-time {
+    top: 142px;
   }
 }
 

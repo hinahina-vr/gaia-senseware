@@ -1067,7 +1067,7 @@
 
   const migrateStepId = (stepId, sourceVersion = story.storyVersion) => {
     if (typeof stepId !== "string") return null;
-    if (Number(sourceVersion) < 11) return firstStepForScene(story.startSceneId);
+    if (Number(sourceVersion) < 10) return firstStepForScene(story.startSceneId);
     let migratedStepId = stepId;
     if (Number(sourceVersion) < 8 && version7To8StepIds.has(stepId)) {
       migratedStepId = version7To8StepIds.get(stepId);
@@ -1096,7 +1096,7 @@
 
   const normalizeState = (candidate) => {
     const sourceVersion = Number.isFinite(Number(candidate?.storyVersion)) ? Number(candidate.storyVersion) : 7;
-    const resetsLegacyProgress = sourceVersion < 11;
+    const resetsLegacyProgress = sourceVersion < 10;
     const legacyIndexStep = Number.isInteger(candidate?.stepIndex)
       ? allSteps[Math.max(0, Math.min(allSteps.length - 1, candidate.stepIndex))]?.id
       : null;
@@ -1255,7 +1255,7 @@
       surface.replaceChildren();
     });
     if (elements.operationsPhoneSurface) elements.operationsPhoneSurface.hidden = true;
-    layer.classList.remove("is-slack", "is-evidence", "is-editorial-evidence", "is-reflection", "is-result", "is-demo-results", "is-intermission", "is-staff-roll", "is-true-end");
+    layer.classList.remove("is-slack", "is-evidence", "is-editorial-evidence", "is-reflection", "is-result", "is-demo-results", "is-staff-roll", "is-true-end");
   };
 
   const showRuntime = () => {
@@ -3732,7 +3732,7 @@
       onExit: () => {
         activeTrueEndRuntime?.destroy?.();
         activeTrueEndRuntime = null;
-        renderStaffRoll(stepMap.get(ENDING_STEP_ID), { afterTrueEnd: true });
+        closeNovelNow();
       },
     }) || null;
     if (activeTrueEndRuntime) return true;
@@ -3741,60 +3741,7 @@
     return false;
   };
 
-  const renderIntermission = (step) => {
-    prepareStepFrame(step);
-    clearTimers();
-    resetFastForward();
-    elements.close.hidden = true;
-    elements.home.hidden = true;
-    suppressCharacterPresentation();
-    elements.dialogue.hidden = true;
-    elements.sourceLabel.hidden = true;
-    elements.resultSurface.hidden = false;
-    elements.resultSurface.setAttribute("aria-label", "第一の終端。NOVACENEへ続く明示選択");
-    layer.classList.add("is-result", "is-intermission");
-    layer.dataset.storyAudioCue = "first-terminus";
-    void window.GaiaOpeningAudio?.preloadTrack?.("trueend");
-
-    const shell = document.createElement("section");
-    shell.className = "novel-intermission";
-    shell.setAttribute("role", "region");
-    shell.setAttribute("aria-label", "AFTER SCHOOL SESSION 01 完了");
-    const status = document.createElement("span");
-    const title = document.createElement("h2");
-    const copy = document.createElement("p");
-    const controls = document.createElement("div");
-    const continueButton = document.createElement("button");
-    const pauseButton = document.createElement("button");
-    status.textContent = "AFTER SCHOOL SESSION 01 / COMPLETE";
-    title.textContent = "世界の続きを紡ぐ";
-    copy.textContent = "この記録が届いた先へ進みます。";
-    continueButton.type = "button";
-    continueButton.textContent = "続ける";
-    pauseButton.type = "button";
-    pauseButton.textContent = "ここで休む";
-    continueButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      continueButton.disabled = true;
-      pauseButton.disabled = true;
-      if (!launchTrueEnd()) closeNovelNow();
-    });
-    pauseButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      continueButton.disabled = true;
-      pauseButton.disabled = true;
-      saveProgress();
-      closeNovelNow();
-    });
-    controls.append(continueButton, pauseButton);
-    shell.append(status, title, copy, controls);
-    elements.resultSurface.append(shell);
-    requestAnimationFrame(() => continueButton.focus({ preventScroll: true }));
-  };
-
-  const renderStaffRoll = (step, { afterTrueEnd = false } = {}) => {
+  const renderStaffRoll = (step) => {
     prepareStepFrame(step);
     clearTimers();
     resetFastForward();
@@ -3808,7 +3755,7 @@
     layer.classList.add("is-result", "is-staff-roll");
     layer.dataset.storyAudioCue = "ending-credits";
     requestStoryTrack("ending", 1.35);
-    if (!afterTrueEnd) void window.GaiaOpeningAudio?.preloadTrack?.("trueend");
+    void window.GaiaOpeningAudio?.preloadTrack?.("trueend");
     const continueIntoData = (control) => {
       control.disabled = true;
       state.clear = true;
@@ -3921,8 +3868,8 @@
     const next = document.createElement("button");
     next.type = "button";
     next.tabIndex = -1;
-    next.textContent = afterTrueEnd ? "データを見てみる" : "世界の続きを紡ぐ";
-    next.setAttribute("aria-label", afterTrueEnd ? "正式エンディングを終えてデータ画面へ進む" : "スタッフロールを終えてNOVACENEへ進む");
+    next.textContent = "世界の続きを紡ぐ";
+    next.setAttribute("aria-label", "スタッフロールを終えてNOVACENEへ進む");
     const continueIntoTrueEnd = (control) => {
       if (shell.dataset.phase === "departing") return;
       control.disabled = true;
@@ -3977,10 +3924,6 @@
     next.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      if (afterTrueEnd) {
-        continueIntoData(next);
-        return;
-      }
       continueIntoTrueEnd(next);
     });
     finale.append(next);
@@ -4108,7 +4051,7 @@
     syncScriptDebug(step);
     if (!canAdvanceStep(step) && fastForwardEnabled()) stopFastForwardAtBarrier();
     saveProgress();
-    if (step.id === "welcome_chat_095") return renderIntermission(step);
+    if (step.id === "welcome_chat_095") return renderStaffRoll(step);
     if (["narration", "dialogue"].includes(step.type)) return renderSimpleStep(step);
     if (["chat", "record", "ui", "transition"].includes(step.type)) return renderRichStep(step);
     if (step.type === "details") return renderGenerationDetails(step);
@@ -4975,7 +4918,7 @@
     elements.close.disabled = false;
     clearScriptDebug();
     setSceneJumpAvailability(false);
-    layer.classList.remove("is-open", "is-mode-detour", "is-intermission", "is-true-end", "is-staff-roll");
+    layer.classList.remove("is-open", "is-mode-detour", "is-true-end", "is-staff-roll");
     layer.setAttribute("aria-hidden", "true");
     document.body.classList.remove("novel-open", "novel-mode-detour");
     restoreBaseInterface();

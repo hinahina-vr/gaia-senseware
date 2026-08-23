@@ -6,18 +6,17 @@
 
 - `現行統合台本.md`: 現行表示の統合レビュー版。`npm run story:export`で実行データから生成します。
 - `物語台本.md`: 本編6シーンの凍結入力。これだけでは現行表示と一致しません。
-- `observation-log-revisions-20260822.js`: 凍結入力の安定IDへ第2稿を適用する現行差し替え。旧セーブ互換のため、使わないIDは自動通過する`phase`として保持します。
+- `observation-log-revisions-20260822.js`: 凍結入力へ適用する現行差し替え。本文・話者ラベル・演出メタデータを含みます。
 - `../novel-story-data.js`: 凍結入力と差し替えから生成される本編ランタイム。直接編集しません。
 - `../true-end-data.js`: NOVACENE 9シーンのランタイム台本。
 - `../novel-mode.js`: 本編最終行からスタッフロール、さらにNOVACENEへ接続する処理とクレジット本文。
-- `現行統合台本_改善案_第2稿_2026-08-23.md`: storyVersion 11の採用元。実行時の安定IDは`現行統合台本.md`で確認します。
 - `../contest-limited/story/機能限定版台本.md`: `物語台本.md`と同一の保持コピー。統合レビュー版ではありません。
 
 ## ブラッシュアップ手順
 
 1. `現行統合台本.md`で対象IDを確認する。
 2. 修正内容をID単位で決める。
-3. 本編は差し替えJS、NOVACENEは`true-end-data.js`へ反映する。凍結入力は旧IDの根として直接編集しない。
+3. 本編は凍結入力または差し替えJS、NOVACENEは`true-end-data.js`へ反映する。
 4. `npm run data:novel`と`npm run story:export`を実行する。
 5. `npm run check`で統合台本とランタイムが一致することを確認する。
 

@@ -72,15 +72,15 @@
     { id: "map01-native-overlay", sceneId: "map_mode01", from: 4, to: 4, device: "native-mode-overlay", phase: "open" },
     { id: "map01-temperature-overlay", sceneId: "map_mode01", from: 23, to: 23, device: "native-mode-overlay", phase: "temperature-anomaly" },
     { id: "gx-native-overlay", sceneId: "gx_experience", from: 17, to: 17, device: "native-mode-overlay", phase: "open" },
-    { id: "welcome-wide-chat", sceneId: "welcome_chat", from: 1, to: 73, device: "wide-campus-chat", phase: "wide" },
-    { id: "welcome-physical", sceneId: "welcome_chat", from: 74, to: 76, device: "none", phase: "physical" },
-    { id: "welcome-ending", sceneId: "welcome_chat", from: 77, to: 95, device: "none", phase: "ending" },
+    { id: "welcome-wide-chat", sceneId: "welcome_chat", from: 1, to: 54, device: "wide-campus-chat", phase: "wide" },
+    { id: "welcome-physical", sceneId: "welcome_chat", from: 55, to: 77, device: "none", phase: "physical" },
+    { id: "welcome-mobile-chat", sceneId: "welcome_chat", from: 78, to: 95, device: "mobile-campus-chat", phase: "mobile" },
   ]);
 
   const characters = freezeRows([
-    { id: "welcome-wide-text-only", sceneId: "welcome_chat", from: 1, to: 73, cast: "none", portrait: "none", avatar: "none", voice: "none" },
-    { id: "welcome-physical-mizuha-amane", sceneId: "welcome_chat", from: 74, to: 76, cast: "mizuha-amane", portrait: "normal", avatar: "none", voice: "none" },
-    { id: "welcome-ending-text-only", sceneId: "welcome_chat", from: 77, to: 95, cast: "none", portrait: "none", avatar: "none", voice: "none" },
+    { id: "welcome-wide-text-only", sceneId: "welcome_chat", from: 1, to: 54, cast: "none", portrait: "none", avatar: "none", voice: "none" },
+    { id: "welcome-physical-mizuha-amane", sceneId: "welcome_chat", from: 55, to: 77, cast: "mizuha-amane", portrait: "normal", avatar: "none", voice: "none" },
+    { id: "welcome-mobile-text-only", sceneId: "welcome_chat", from: 78, to: 95, cast: "none", portrait: "none", avatar: "none", voice: "none" },
   ]);
 
   // The short script contains no character voice or archive-recording cue.
@@ -107,9 +107,8 @@
     const isInteraction = interactions.some((entry) => entry.stepId === step.id);
     let castMode = "normal";
     if (isInteraction) castMode = "interaction-no-cast";
-    if (step.type === "chat") castMode = "chat-text-only-no-cast";
-    if (step.sceneId === "welcome_chat" && number <= 73) castMode = "chat-text-only-no-cast";
-    if (step.sceneId === "welcome_chat" && number >= 77) castMode = "chat-text-only-no-cast";
+    if (step.sceneId === "welcome_chat" && number <= 54) castMode = "chat-text-only-no-cast";
+    if (step.sceneId === "welcome_chat" && number >= 78) castMode = "chat-text-only-no-cast";
 
     return Object.freeze({
       temporal: temporalCue,

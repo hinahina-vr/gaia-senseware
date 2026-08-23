@@ -22,7 +22,7 @@ check("glyphs preserve source order", runtime.includes('span.dataset.revealIndex
 check("one glyph is revealed per timer tick", runtime.includes('glyph.classList.add("is-visible")') && runtime.includes("nextGlyphIndex += 1") && runtime.includes("window.setTimeout(revealNextGlyph, revealDelayForGlyph())"));
 check("reveal cadence is independent of display refresh rate", runtime.includes('elements.text.dataset.revealCadence = "timer-steady"') && !runtime.includes("previousRevealFrameTime"));
 check("live speed is sampled per glyph", runtime.includes("const revealDelayForGlyph") && runtime.includes("100 / config.messageSpeedPercent"));
-check("fastest cadence is clamped to a visible interval", runtime.includes("const REVEAL_MIN_GLYPH_MS = 20") && runtime.includes("Math.max(\n    REVEAL_MIN_GLYPH_MS"));
+check("fastest cadence is clamped to a visible interval", runtime.includes("const REVEAL_MIN_GLYPH_MS = 20") && /Math\.max\(\r?\n\s*REVEAL_MIN_GLYPH_MS/u.test(runtime));
 check("every glyph uses the same cadence", runtime.includes("REVEAL_BASE_MS * (100 / config.messageSpeedPercent)") && !runtime.includes("REVEAL_PUNCTUATION_MS"));
 check("default speed is two thirds of the former four times", runtime.includes("const DEFAULT_MESSAGE_SPEED_PERCENT = 270") && runtime.includes("const REVEAL_BASE_MS = 64") && runtime.includes('const CONFIG_KEY = "gaiaSensewareNovel:config:v4"'));
 check("legacy speed is reduced once", runtime.includes("const LEGACY_MESSAGE_SPEED_SCALE = 2 / 3") && runtime.includes("legacySpeed * LEGACY_MESSAGE_SPEED_SCALE"));
@@ -33,6 +33,6 @@ check("CSS hides only unrevealed glyphs", css.includes(".novel-text.is-revealing
 check("scramble fade is disabled during reveal", /\.novel-text\.is-revealing\s*\{\s*animation:\s*none;/u.test(css));
 check("block cursor is removed", !html.includes(">▌</span>") && /\.novel-cursor\s*\{\s*display:\s*none !important;/u.test(css));
 check("SCRIPT debug overlay is removed", /\.novel-script-debug\s*\{[\s\S]*?display:\s*none !important;/u.test(css));
-check("runtime cache key is current", html.includes("novel-mode.js?v=gaia-story-v11-1"));
+check("runtime cache key is current", html.includes("novel-mode.js?v=gaia-novacene-title-1"));
 
 console.log(JSON.stringify({ status: "passed", checks: checks.length, names: checks }, null, 2));

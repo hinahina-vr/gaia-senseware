@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { access } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,66 +9,277 @@ await import(new URL("../novel-story-data.js", import.meta.url));
 await import(new URL("../novel-background-cues.js", import.meta.url));
 
 const story = globalThis.GAIA_NOVEL_STORY;
-const backgrounds = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
-const sceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
-const counts = [76, 43, 48, 43, 81, 95];
-assert.equal(story.storyVersion, 11);
-assert.deepEqual(story.scenes.map((scene) => scene.id), sceneIds);
-assert.deepEqual(story.scenes.map((scene) => scene.steps.length), counts);
-assert.deepEqual(backgrounds.expectedSceneCounts, Object.fromEntries(sceneIds.map((id, index) => [id, counts[index]])));
-assert.equal(backgrounds.limitedStory.length, 37);
+const backgroundCues = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
+const expectedSceneIds = [
+  "festival_concept",
+  "map_mode01",
+  "gx_experience",
+  "esp32_pitch",
+  "circle_invitation",
+  "welcome_chat",
+];
+const expectedCounts = [76, 43, 48, 43, 81, 95];
+const assets = Object.freeze({
+  entrance: "assets/visuals-07/novel-bg-coastal-venue-autumn-morning-v1.png",
+  conventionHallEntrance: "assets/visuals-07/novel-bg-convention-hall-entrance-autumn-morning-v2.png",
+  bHallOverview: "assets/visuals-07/novel-bg-festival-b-hall-autumn-morning-v1.png",
+  fivePlaneProjection: "assets/visuals-07/novel-bg-festival-five-plane-projection-autumn-morning-v2.png",
+  boothClose: "assets/visuals-07/novel-bg-exhibition-autumn-morning-close-v4.png",
+  boothWide: "assets/visuals-07/novel-bg-exhibition-autumn-morning-wide-v4.png",
+  projectionConversation: "assets/visuals-07/novel-bg-festival-projection-conversation-v1.png",
+  firstEncounter: "assets/visuals-07/event-cg-first-encounter-five-plane-v3.png",
+  amaneCloseup: "assets/visuals-07/event-cg-amane-closeup-five-plane-v4.png",
+  mizuhaCloseup: "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v3.png",
+  mapTransition: "assets/visuals-07/event-cg-festival-map-transition-five-plane-v3.png",
+  tenWindows: "assets/concept/concept-02-ten-windows.png",
+  modis: "assets/data/modis-land-cover-2023.png",
+  map01Provenance: "assets/visuals-07/novel-bg-map01-data-provenance-autumn-morning-v3.png",
+  system: "assets/architecture/gaia-field-sensor-architecture-v2.svg",
+  gxAncientOcean: "assets/visuals-07/novel-bg-gx-ancient-ocean-autumn-morning-v3.png",
+  abstract: "assets/visuals-07/mode-abstract-v1.webp",
+  gxBreathingPoints: "assets/visuals-07/novel-bg-gx-breathing-points-autumn-morning-v3.png",
+  observatory: "assets/architecture/observatory-architecture-v2.png",
+  partner: "assets/concept/concept-01-earth-as-partner.png",
+  gxModeGateway: "assets/visuals-07/novel-bg-gx-mode-gateway-autumn-morning-v4.png",
+  esp32Collaboration: "assets/visuals-07/event-cg-esp32-collaboration-v2.png",
+  future: "assets/concept/concept-04-co-created-future.png",
+  shared: "assets/visuals-07/novel-background-v1.webp",
+  circleWelcome: "assets/visuals-07/event-cg-circle-welcome-v2.png",
+  circleInvitationCard: "assets/visuals-07/event-cg-circle-invitation-card-v3.png",
+  onlineNight: "assets/visuals-07/novel-bg-online-night-v2.png",
+  productionNight: "assets/visuals-07/novel-bg-production-night-v2.png",
+  venue: "assets/visuals-07/novel-bg-coastal-venue-v2.png",
+  finaleSunset: "assets/visuals-07/event-cg-exhibition-finale-sunset-v1.png",
+});
+const approvedAssetHashes = Object.freeze({
+  [assets.entrance]: "972adf6beac6b3ac51e9e132b81c7ca61acb24e9f795600153ec021b7c9d1654",
+  [assets.conventionHallEntrance]: "5c3483fa1b584672e0138b1a04176ff939b1ad2dffd79d25509f82c78edb3679",
+  [assets.bHallOverview]: "47c4b03ca464db0df64b5a0f055f862bc63f7bc697d40ffe374cdce4d6dac519",
+  [assets.fivePlaneProjection]: "42821b8efb82deb36075a9164d04d60bb52e284a2ca0ad3ac72d9f0b1a65ee1f",
+  [assets.boothClose]: "7395fdf68129209f51e2eb1fea26e478627b4fbf03525a7ecb9cdc3d58c45f69",
+  [assets.boothWide]: "9dc2b6db1bb35274842128b81a4e0bf09257be43727b472ec0ff5b06d7ad5ea4",
+  [assets.firstEncounter]: "62984fd5ea1bbca86bf985be02c06b61d3680aae19ec2af932ae8dc4240efaa6",
+  [assets.amaneCloseup]: "fba2b7665ec59064d7dca1d4b2f0deb88a98fb3b9549802068cf6b851f2d43b4",
+  [assets.mizuhaCloseup]: "440c8c71df5cc82a142994fc2757b24f2be874272a1067da9a9a5b872b946672",
+  [assets.mapTransition]: "9eae1fce4e79ce8d32961dce29c348fe1ed0df329e70684b2fdb1cde657ce380",
+  [assets.gxAncientOcean]: "f219a47c1b5d24ab780dedf492f807515b9ecc6a088f7d5f803fff584903699f",
+  [assets.abstract]: "be589ad2fd084284d967e2fd873c8565ac4ceb468820a4eca9b87d6815b67b68",
+  [assets.gxBreathingPoints]: "d468bdcead823a16b9847dce49c8945bf011b48c82ce9f933dfe6602f39ad0e7",
+  [assets.map01Provenance]: "90316d1300c7b5a19ed04eca347ad8bd702d476e2d5bb03e8ef207784160e206",
+  [assets.gxModeGateway]: "6cb628c79e74496fd7393c6844c0a0fd8d91e5bd682f5567065c5218fb826514",
+  [assets.esp32Collaboration]: "9dac8e247d2fc37fc86b57a49be249c0cd73da84f02fe803d9c6f802c83c68fd",
+  [assets.shared]: "933900ea6c5d9dca04861d551d25e67fb7fffd33085f3a4abe43ff102a8b4d02",
+  [assets.circleWelcome]: "525634c93527c677b8afa337e89a5d00ed46e1b64b349bfa123efb220ff7dfbd",
+  [assets.finaleSunset]: "7428259fd4f926d842d72765b15ff12698e5f19456802c8c5f6cd9b502909f0b",
+  [assets.circleInvitationCard]: "0333bec3f7b6d0af5b3dca51913ede5f87dc30ffe81df28b4520bc1c7cb2f04b",
+});
+const sha256 = async (assetPath) => createHash("sha256")
+  .update(await readFile(path.join(projectRoot, assetPath)))
+  .digest("hex");
+
+assert.equal(story.storyVersion, 10);
+assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds);
+assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedCounts);
+assert.deepEqual(backgroundCues.sceneIds, expectedSceneIds);
+assert.deepEqual(backgroundCues.expectedSceneCounts, Object.fromEntries(expectedSceneIds.map((id, index) => [id, expectedCounts[index]])));
+assert.equal(backgroundCues.productionYear.length, 0, "legacy production registry must be empty");
+
+const expectedBoundaries = [
+  ["festival_concept", 1, 7, "festival-convention-hall-entrance", assets.conventionHallEntrance, "push-in", "scenic"],
+  ["festival_concept", 8, 9, "festival-b-hall-overview", assets.bHallOverview, "push-in", "scenic"],
+  ["festival_concept", 10, 12, "festival-gaia-five-plane-projection", assets.fivePlaneProjection, "push-in", "scenic"],
+  ["festival_concept", 13, 14, "festival-gaia-booth-approach", assets.fivePlaneProjection, "drift-left", "scenic"],
+  ["festival_concept", 15, 20, "festival-first-encounter-cg", assets.firstEncounter, "event-focus", "event-cg"],
+  ["festival_concept", 21, 22, "festival-amane-closeup-cg", assets.amaneCloseup, "event-focus", "event-cg"],
+  ["festival_concept", 23, 27, "festival-mizuha-closeup-cg", assets.mizuhaCloseup, "event-focus", "event-cg"],
+  ["festival_concept", 28, 75, "festival-gaia-booth-conversation", assets.fivePlaneProjection, "drift-left", "scenic"],
+  ["festival_concept", 76, 76, "festival-map-transition", assets.mapTransition, "event-focus", "event-cg"],
+  ["map_mode01", 1, 14, "map01-co2-observation", assets.mapTransition, "drift-right", "event-cg"],
+  ["map_mode01", 15, 28, "map01-temperature-observation", assets.modis, "push-in", "scenic"],
+  ["map_mode01", 29, 40, "map01-data-provenance", assets.map01Provenance, "drift-left", "scenic"],
+  ["map_mode01", 41, 43, "map01-exhibition-return", assets.fivePlaneProjection, "drift-right", "scenic"],
+  ["gx_experience", 1, 16, "gx-ocean-entry", assets.gxAncientOcean, "push-in", "scenic"],
+  ["gx_experience", 17, 17, "gx-native-deep-time", assets.fivePlaneProjection, "drift-right", "scenic"],
+  ["gx_experience", 18, 18, "gx-exhibition-return", assets.fivePlaneProjection, "push-in", "scenic"],
+  ["gx_experience", 19, 29, "gx-ancient-ocean", assets.abstract, "drift-right", "scenic"],
+  ["gx_experience", 30, 41, "gx-coevolution", assets.gxBreathingPoints, "drift-left", "scenic"],
+  ["gx_experience", 42, 44, "gx-present-return", assets.fivePlaneProjection, "push-in", "scenic"],
+  ["gx_experience", 55, 58, "gx-ten-mode-gateway", assets.gxModeGateway, "push-in", "scenic"],
+  ["esp32_pitch", 1, 7, "esp32-exhibition-opening", assets.fivePlaneProjection, "drift-left", "scenic"],
+  ["esp32_pitch", 8, 18, "esp32-exhibition-proposal", assets.esp32Collaboration, "event-focus", "event-cg"],
+  ["esp32_pitch", 19, 26, "esp32-system-design", assets.system, "drift-left", "scenic"],
+  ["esp32_pitch", 27, 38, "esp32-co-created-prototype", assets.fivePlaneProjection, "drift-right", "scenic"],
+  ["esp32_pitch", 39, 43, "esp32-exhibition-return", assets.fivePlaneProjection, "push-in", "scenic"],
+  ["circle_invitation", 1, 10, "circle-closing-exhibition", assets.fivePlaneProjection, "push-in", "scenic"],
+  ["circle_invitation", 11, 28, "circle-private-invitation", assets.fivePlaneProjection, "drift-left", "scenic"],
+  ["circle_invitation", 29, 47, "circle-invitation-card-cg", assets.circleInvitationCard, "event-focus", "event-cg"],
+  ["circle_invitation", 48, 66, "circle-welcome-cg", assets.circleWelcome, "event-focus", "event-cg"],
+  ["circle_invitation", 67, 81, "circle-after-welcome", assets.fivePlaneProjection, "drift-right", "scenic"],
+  ["welcome_chat", 1, 20, "welcome-online-arrival", assets.fivePlaneProjection, "drift-left", "scenic"],
+  ["welcome_chat", 21, 40, "welcome-online-esp32-thread", assets.fivePlaneProjection, "drift-right", "scenic"],
+  ["welcome_chat", 41, 54, "welcome-co-created-future", assets.fivePlaneProjection, "push-in", "scenic"],
+  ["welcome_chat", 55, 68, "welcome-physical-booth", assets.fivePlaneProjection, "drift-left", "scenic"],
+  ["welcome_chat", 69, 73, "welcome-booth-packdown", assets.fivePlaneProjection, "drift-right", "scenic"],
+  ["welcome_chat", 74, 83, "welcome-night-exit-mobile", assets.finaleSunset, "drift-left", "event-cg"],
+  ["welcome_chat", 84, 91, "welcome-earth-partner-reflection", assets.finaleSunset, "push-in", "event-cg"],
+  ["welcome_chat", 92, 95, "welcome-exhibition-finale-cg", assets.finaleSunset, "event-focus", "event-cg"],
+];
+
+assert.equal(backgroundCues.limitedStory.length, expectedBoundaries.length);
+for (let index = 0; index < expectedBoundaries.length; index += 1) {
+  const [sceneId, from, to, id, assetPath, motion, presentation] = expectedBoundaries[index];
+  const cue = backgroundCues.limitedStory[index];
+  assert.deepEqual(
+    [cue.sceneId, cue.from, cue.to, cue.id, cue.assetPath, cue.motion, cue.presentation || "scenic"],
+    [sceneId, from, to, id, assetPath, motion, presentation],
+  );
+  if (index > 0 && expectedBoundaries[index - 1][0] === sceneId) {
+    const previousTo = expectedBoundaries[index - 1][2];
+    const expectedFrom = sceneId === "gx_experience" && previousTo === 44 ? 55 : previousTo + 1;
+    assert.equal(from, expectedFrom, `${id}: background ranges overlap or leave an unexpected gap`);
+  }
+}
 
 const allSteps = story.scenes.flatMap((scene) => scene.steps);
-const resolved = allSteps.map((step) => ({ step, cue: backgrounds.forStep(step) }));
+const resolved = allSteps.map((step) => ({ step, cue: backgroundCues.forStep(step) }));
 assert.equal(resolved.length, 386);
-assert(resolved.every(({ cue }) => cue?.assetPath && cue?.motion));
-assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 19);
-assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 105);
+assert(resolved.every(({ cue }) => Boolean(cue?.assetPath)), "every contest step must resolve to a background");
+assert(resolved.every(({ cue }) => Boolean(cue?.motion)), "every contest step must resolve to background motion");
+assert.equal(new Set(resolved.map(({ cue }) => cue.assetPath)).size, 18, "background-art cut must keep the intentional exhibition-map continuity");
+assert.equal(resolved.filter(({ cue }) => cue.presentation === "event-cg").length, 99);
 assert(
-  backgrounds.limitedStory
+  backgroundCues.limitedStory
     .filter((cue) => /(?:^|\/)event-cg-/u.test(cue.assetPath))
     .every((cue) => cue.presentation === "event-cg"),
-  "character-composited event CG must suppress standalone cast",
+  "every character-composited event CG must suppress the standalone cast",
 );
 
+assert.equal(backgroundCues.gallery.length, 6, "CG album must define six collectible event images");
+assert.equal(new Set(backgroundCues.gallery.map((entry) => entry.id)).size, 6, "CG album IDs must be unique");
+assert.equal(new Set(backgroundCues.gallery.map((entry) => entry.assetPath)).size, 6, "each album entry must have a distinct image");
+for (const entry of backgroundCues.gallery) {
+  assert(allSteps.some((step) => step.id === entry.unlockStepId), `${entry.id}: unlock step must exist`);
+  assert(resolved.some(({ step, cue: resolvedCue }) => step.id === entry.unlockStepId && resolvedCue.galleryId === entry.id), `${entry.id}: unlock cue must map back to album entry`);
+  await access(path.join(projectRoot, entry.assetPath));
+}
+
 for (const assetPath of new Set(resolved.map(({ cue }) => cue.assetPath))) {
-  assert(assetPath.startsWith("assets/"));
-  assert.doesNotMatch(assetPath, /portrait/iu);
+  assert(assetPath.startsWith("assets/"), `background escaped approved assets: ${assetPath}`);
   await access(path.join(projectRoot, assetPath));
 }
 
-const cue = (id) => backgrounds.forStep(allSteps.find((step) => step.id === id));
-const expected = [
-  ["festival_concept_001", "novel-bg-convention-hall-entrance-autumn-morning-v2.png"],
-  ["festival_concept_010", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
-  ["festival_concept_015", "event-cg-first-encounter-five-plane-v3.png"],
-  ["festival_concept_021", "event-cg-amane-closeup-five-plane-v4.png"],
-  ["festival_concept_023", "event-cg-mizuha-closeup-five-plane-v3.png"],
-  ["map_mode01_004", "event-cg-festival-map-transition-five-plane-v3.png"],
-  ["map_mode01_023", "modis-land-cover-2023.png"],
-  ["map_mode01_029", "novel-bg-map01-data-provenance-autumn-morning-v3.png"],
-  ["gx_experience_017", "novel-bg-festival-five-plane-projection-autumn-morning-v2.png"],
-  ["gx_experience_018", "novel-bg-gx-ancient-ocean-autumn-morning-v3.png"],
-  ["gx_experience_020", "mode-abstract-v1.webp"],
-  ["gx_experience_027", "novel-bg-gx-breathing-points-autumn-morning-v3.png"],
-  ["esp32_pitch_001", "event-cg-esp32-collaboration-v2.png"],
-  ["esp32_pitch_010", "gaia-field-sensor-architecture-v2.svg"],
-  ["circle_invitation_029", "event-cg-circle-invitation-card-v3.png"],
-  ["circle_invitation_048", "event-cg-circle-welcome-v2.png"],
-  ["welcome_chat_004", "novel-bg-online-night-v2.png"],
-  ["welcome_chat_074", "event-cg-exhibition-finale-sunset-v1.png"],
-  ["welcome_chat_095", "event-cg-exhibition-finale-sunset-v1.png"],
-];
-for (const [id, filename] of expected) assert(cue(id).assetPath.endsWith(filename), `${id} background is not synchronized`);
-
-assert.equal(backgrounds.gallery.length, 6);
-for (const entry of backgrounds.gallery) {
-  const step = allSteps.find((candidate) => candidate.id === entry.unlockStepId);
-  assert(step, `${entry.id}: gallery unlock step missing`);
-  assert.equal(backgrounds.forStep(step).galleryId, entry.id, `${entry.id}: gallery cue mismatch`);
+for (const [assetPath, expectedHash] of Object.entries(approvedAssetHashes)) {
+  assert.equal(await sha256(assetPath), expectedHash, `${assetPath}: approved asset bytes changed`);
 }
 
-assert.throws(() => backgrounds.forStep({ sceneId: "gx_experience", id: "gx_experience_054" }), /Missing contest-v10 background cue/);
-assert.throws(() => backgrounds.forStep({ sceneId: "unknown", id: "unknown_001" }), /Unknown contest-v10 background scene/);
+const festivalResolved = resolved.filter(({ step }) => step.sceneId === "festival_concept");
+const festivalAfterEncounter = festivalResolved.filter(({ step }) => {
+  const number = Number(step.id.slice(-3));
+  return number >= 28 && number <= 75;
+});
+assert(festivalAfterEncounter.every(({ cue: resolvedCue }) => resolvedCue.assetPath === assets.fivePlaneProjection));
+assert.equal(festivalResolved.find(({ step }) => step.id === "festival_concept_076")?.cue.assetPath, assets.mapTransition);
+const forbiddenFestivalAssets = [
+  "assets/visuals-07/novel-bg-exhibition-v2.png",
+  "assets/visuals-07/mode-map-v1.webp",
+  "assets/concept/concept-02-ten-windows.png",
+];
+assert(festivalResolved.slice(26).every(({ cue: resolvedCue }) => !forbiddenFestivalAssets.includes(resolvedCue.assetPath)), "festival 027-076 still references a superseded fantasy/flat asset");
+assert(resolved.every(({ cue: resolvedCue }) => resolvedCue.assetPath !== "assets/visuals-07/mode-map-v1.webp"), "tabletop map artwork must not appear in story playback");
+assert(resolved.every(({ cue: resolvedCue }) => !/portrait/iu.test(resolvedCue.assetPath)), "mobile portrait asset must never be requested");
 
-console.log(`story background sync check passed: ${backgrounds.limitedStory.length} cues, ${new Set(resolved.map(({ cue: item }) => item.assetPath)).size} assets`);
+const forbiddenConsistencyAssets = new Set([
+  assets.boothClose,
+  assets.boothWide,
+  assets.projectionConversation,
+  assets.onlineNight,
+  assets.productionNight,
+  assets.future,
+  assets.partner,
+]);
+const boothRanges = [
+  ["festival_concept", 13, 14],
+  ["festival_concept", 28, 75],
+  ["map_mode01", 41, 43],
+  ["welcome_chat", 1, 73],
+];
+for (const [sceneId, from, to] of boothRanges) {
+  const range = resolved.filter(({ step }) => {
+    const number = Number(step.id.slice(-3));
+    return step.sceneId === sceneId && number >= from && number <= to;
+  });
+  assert.equal(range.length, to - from + 1, `${sceneId} ${from}-${to}: audited booth range is incomplete`);
+  assert(range.every(({ cue: resolvedCue }) => resolvedCue.assetPath === assets.fivePlaneProjection), `${sceneId} ${from}-${to}: canonical booth asset mismatch`);
+  assert(range.every(({ cue: resolvedCue }) => !forbiddenConsistencyAssets.has(resolvedCue.assetPath)), `${sceneId} ${from}-${to}: forbidden inconsistent asset remains`);
+}
+
+const cue = (stepId) => backgroundCues.forStep(allSteps.find((step) => step.id === stepId));
+assert.equal(cue("festival_concept_001").assetPath, assets.conventionHallEntrance);
+assert.equal(cue("festival_concept_001").id, "festival-convention-hall-entrance");
+assert.equal(cue("festival_concept_002").assetPath, assets.conventionHallEntrance);
+assert.equal(cue("festival_concept_007").assetPath, assets.conventionHallEntrance);
+assert.equal(cue("festival_concept_008").assetPath, assets.bHallOverview);
+assert.equal(cue("festival_concept_009").assetPath, assets.bHallOverview);
+assert.equal(cue("festival_concept_010").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_011").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_012").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_013").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_014").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_015").presentation, "event-cg");
+assert.equal(cue("festival_concept_019").assetPath, assets.firstEncounter);
+assert.equal(cue("festival_concept_021").assetPath, assets.amaneCloseup);
+assert.equal(cue("festival_concept_023").assetPath, assets.mizuhaCloseup);
+assert.equal(cue("festival_concept_027").assetPath, assets.mizuhaCloseup);
+assert.equal(cue("festival_concept_027").presentation, "event-cg");
+assert.equal(cue("festival_concept_063").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_075").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("festival_concept_076").assetPath, assets.mapTransition);
+assert.equal(cue("festival_concept_076").presentation, "event-cg");
+assert.equal(cue("map_mode01_001").assetPath, assets.mapTransition);
+assert.equal(cue("map_mode01_005").assetPath, assets.mapTransition);
+assert.equal(cue("map_mode01_005").presentation, "event-cg");
+assert.equal(cue("map_mode01_015").assetPath, assets.modis);
+assert.equal(cue("map_mode01_029").assetPath, assets.map01Provenance);
+assert.equal(cue("map_mode01_040").assetPath, assets.map01Provenance);
+assert.equal(cue("map_mode01_043").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("gx_experience_001").transition, "crossfade", "the ancient-ocean entry must dissolve from the current-Earth display");
+assert.equal(cue("gx_experience_017").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("gx_experience_011").assetPath, assets.gxAncientOcean);
+assert.equal(cue("gx_experience_018").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("gx_experience_030").assetPath, assets.gxBreathingPoints);
+assert.throws(() => backgroundCues.forStep({ sceneId: "gx_experience", id: "gx_experience_054" }), /Missing contest-v10 background cue/);
+assert.equal(cue("esp32_pitch_007").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("esp32_pitch_008").assetPath, assets.esp32Collaboration);
+assert.equal(cue("esp32_pitch_008").presentation, "event-cg");
+assert.equal(cue("esp32_pitch_019").assetPath, assets.system);
+assert.equal(cue("esp32_pitch_027").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("circle_invitation_001").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("circle_invitation_029").assetPath, assets.circleInvitationCard);
+assert.equal(cue("circle_invitation_047").assetPath, assets.circleInvitationCard);
+assert.equal(cue("circle_invitation_048").presentation, "event-cg");
+assert.equal(cue("circle_invitation_067").assetPath, assets.fivePlaneProjection);
+assert.notEqual(cue("circle_invitation_067").presentation, "event-cg");
+assert.equal(cue("welcome_chat_020").id, "welcome-online-arrival");
+assert.equal(cue("welcome_chat_021").id, "welcome-online-esp32-thread");
+assert.equal(cue("welcome_chat_055").id, "welcome-physical-booth");
+assert.equal(cue("welcome_chat_074").assetPath, assets.finaleSunset);
+assert.equal(cue("welcome_chat_002").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("welcome_chat_041").assetPath, assets.fivePlaneProjection);
+assert.equal(cue("welcome_chat_084").assetPath, assets.finaleSunset);
+assert.equal(cue("welcome_chat_091").assetPath, assets.finaleSunset);
+assert.equal(cue("welcome_chat_092").presentation, "event-cg");
+assert.equal(cue("welcome_chat_095").assetPath, assets.finaleSunset);
+assert.throws(() => backgroundCues.forStep({ sceneId: "welcome_chat", id: "welcome_chat_999" }), /Missing contest-v10 background cue/);
+assert.throws(() => backgroundCues.forStep({ sceneId: "unknown", id: "unknown_001" }), /Unknown contest-v10 background scene/);
+
+console.log(JSON.stringify({
+  status: "passed",
+  storyVersion: story.storyVersion,
+  scenes: story.scenes.length,
+  steps: resolved.length,
+  cues: backgroundCues.limitedStory.length,
+  assets: [...new Set(resolved.map(({ cue }) => cue.assetPath))],
+  eventCgSteps: resolved.filter(({ cue }) => cue.presentation === "event-cg").length,
+  gallery: backgroundCues.gallery.map(({ id, unlockStepId }) => ({ id, unlockStepId })),
+  welcomeBoundaries: ["001-073 five-plane booth", "074-083 sunset promenade departure", "084-091 sunset promenade reflection", "092-095 sunset promenade finale event CG"],
+}, null, 2));

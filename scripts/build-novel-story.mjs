@@ -209,13 +209,13 @@ if (unusedRevisionIds.length > 0) throw new Error(`未適用のOBSERVATION LOG�
 scenes.forEach((scene, index) => { scene.nextSceneId = scenes[index + 1]?.id || null; });
 const sceneOrder = scenes.map((scene) => scene.id);
 const story = {
-  storyVersion: 11,
+  storyVersion: 10,
   title: "惑星の放課後",
   systemTitle: "GAIA SENSEWARE",
   subtitle: "GAIA SENSATION",
   estimatedDuration: "10〜12分",
   sourceSha256: EXPECTED_SOURCE_SHA256,
-  revisionId: "story-improvement-alt2-20260823",
+  revisionId: "observation-log-20260822T114453Z",
   characterSourceSha256: sha256(characterSourceBytes),
   characters,
   startSceneId: "festival_concept",

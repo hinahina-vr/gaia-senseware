@@ -27,9 +27,9 @@
     <link rel="stylesheet" href="./opening.css?v=gaia-sound-world-ui-1" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-story-v11-1" />
-    <link rel="stylesheet" href="./true-end.css?v=gaia-story-v11-1" />
-    <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-card-one-line-1" />
+    <link rel="stylesheet" href="./novel-mode.css?v=gaia-finale-transition-chat-1" />
+    <link rel="stylesheet" href="./true-end.css?v=gaia-transmission-story-ui-2" />
+    <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-modal-skip-1" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-100" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-character-style-1" />
     <script src="./gaia-particles.js?v=gaia-19" defer></script>
@@ -41,15 +41,15 @@
     <script src="./scene-transition.js?v=gaia-66" defer></script>
     <script src="./app-content.js?v=gaia-remix-20-1" defer></script>
     <script src="./app.js?v=gaia-remix-20-1" defer></script>
-    <script src="./gx-mode.js?v=gaia-gx-transition-skip-1" defer></script>
-    <script src="./novel-story-data.js?v=gaia-story-v11-1" defer></script>
-    <script src="./true-end-data.js?v=gaia-story-v11-1" defer></script>
+    <script src="./gx-mode.js?v=gaia-gx-modal-skip-1" defer></script>
+    <script src="./novel-story-data.js?v=gaia-story-temp-modal-1" defer></script>
+    <script src="./true-end-data.js?v=gaia-novacene-title-1" defer></script>
     <script src="./true-end-webgl.js?v=gaia-webgl-presence-restored-3" defer></script>
-    <script src="./true-end-mode.js?v=gaia-story-v11-1" defer></script>
-    <script src="./novel-background-cues.js?v=gaia-story-v11-1" defer></script>
-    <script src="./novel-back-half-cues.js?v=gaia-story-v11-1" defer></script>
+    <script src="./true-end-mode.js?v=gaia-novacene-title-1" defer></script>
+    <script src="./novel-background-cues.js?v=gaia-amane-no-plug-1" defer></script>
+    <script src="./novel-back-half-cues.js?v=gaia-finale-sunset-1" defer></script>
     <script src="./novel-temporal.js?v=gaia-temporal-1" defer></script>
-    <script src="./novel-mode.js?v=gaia-story-v11-1" defer></script>
+    <script src="./novel-mode.js?v=gaia-novacene-title-1" defer></script>
     <script src="./space-scenes.js?v=gaia-98" defer></script>
     <script src="./space-mode.js?v=gaia-99" defer></script>
     <script src="./sound-mode.js?v=gaia-beyond-log-1" defer></script>
@@ -1473,6 +1473,15 @@
         </header>
 
         <button class="gx-close mode-exit-control" id="gx-close" type="button" hidden>戻る</button>
+        <button
+          class="gx-modal-skip"
+          id="gx-modal-skip"
+          type="button"
+          aria-label="GXモーダルをスキップ"
+          hidden
+        >
+          <span>スキップ</span><b aria-hidden="true">→</b>
+        </button>
 
         <div class="gx-time" data-counter="4,600,000,000" aria-label="現在まで、あと46億年">
           <span class="gx-time-kicker">現在からさかのぼる</span>
@@ -1519,15 +1528,6 @@
           <span id="gx-era-transition-label">ARCHEAN → PROTEROZOIC</span>
           <strong id="gx-era-transition-title">生命の酸素が、岩石の色を変える。</strong>
           <i aria-hidden="true"></i>
-          <button
-            class="gx-era-transition-skip"
-            id="gx-era-transition-skip"
-            type="button"
-            aria-label="時代切り替え演出をスキップ"
-            hidden
-          >
-            <span>スキップ</span><b aria-hidden="true">→</b>
-          </button>
         </div>
 
         <aside class="gx-data-panel" id="gx-data-panel" aria-hidden="true">

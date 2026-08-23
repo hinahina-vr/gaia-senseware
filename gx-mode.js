@@ -70,7 +70,7 @@
     eraTransition: layer.querySelector("#gx-era-transition"),
     eraTransitionLabel: layer.querySelector("#gx-era-transition-label"),
     eraTransitionTitle: layer.querySelector("#gx-era-transition-title"),
-    eraTransitionSkip: layer.querySelector("#gx-era-transition-skip"),
+    modalSkip: layer.querySelector("#gx-modal-skip"),
     restart: layer.querySelector("#gx-restart"),
     data: layer.querySelector("#gx-data"),
     dataPanel: layer.querySelector("#gx-data-panel"),
@@ -332,7 +332,7 @@
     layer.classList.remove("is-era-transitioning");
     elements.eraTransition.classList.remove("is-visible");
     elements.eraTransition.setAttribute("aria-hidden", "true");
-    elements.eraTransitionSkip.hidden = true;
+    elements.modalSkip.hidden = !isOpen;
     colonies.length = 0;
     bubbles.length = 0;
     rust.length = 0;
@@ -410,7 +410,6 @@
     layer.classList.remove("is-era-transitioning");
     elements.eraTransition.classList.remove("is-visible");
     elements.eraTransition.setAttribute("aria-hidden", "true");
-    elements.eraTransitionSkip.hidden = true;
     eraTransitionPending = false;
     if (!isOpen || phaseIndex !== completedPhase) return;
     if (completedPhase === exhibit.phases.length - 1) closeGX();
@@ -431,7 +430,6 @@
     layer.classList.add("is-era-transitioning");
     elements.eraTransition.classList.add("is-visible");
     elements.eraTransition.setAttribute("aria-hidden", "false");
-    elements.eraTransitionSkip.hidden = false;
     if (isFinalPhase && storyDetourActive) {
       storySequenceComplete = true;
       emitStoryProgress(true);
@@ -1985,6 +1983,10 @@
     layer.dataset.returnTo = returnTo;
     if (storyModeVersion) layer.dataset.storyMode = storyModeVersion;
     if (returnTo === "novel") syncStoryGuidePortrait();
+    elements.modalSkip.setAttribute(
+      "aria-label",
+      `GXモーダルをスキップして${returnTo === "novel" ? "ストーリー" : "入口"}へ戻る`,
+    );
     elements.close.textContent = returnTo === "novel" ? "ストーリーへ戻る" : "戻る";
     elements.close.disabled = storyDetourActive;
     isOpen = true;
@@ -1993,6 +1995,7 @@
       storyBackdrop.classList.remove("is-open");
     }
     layer.hidden = false;
+    elements.modalSkip.hidden = false;
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("gx-open");
     document.body.classList.toggle("gx-story-open", returnTo === "novel");
@@ -2003,6 +2006,7 @@
       if (returnTo === "novel") storyBackdrop?.classList.add("is-open");
     });
     await loadExhibit();
+    if (!isOpen) return;
     if (storyDetourActive) resetWorld();
     setPhase(options.phase ?? 0);
     previousTime = performance.now();
@@ -2028,7 +2032,7 @@
     layer.classList.remove("is-era-transitioning");
     elements.eraTransition.classList.remove("is-visible");
     elements.eraTransition.setAttribute("aria-hidden", "true");
-    elements.eraTransitionSkip.hidden = true;
+    elements.modalSkip.hidden = true;
     isOpen = false;
     cancelAnimationFrame(animationFrame);
     cancelAnimationFrame(eraCounterFrame);
@@ -2074,6 +2078,15 @@
     emitStoryProgress();
   };
 
+  const skipGXModal = () => {
+    if (!isOpen) return;
+    if (storyDetourActive && !storySequenceComplete) {
+      storySequenceComplete = true;
+      emitStoryProgress(true);
+    }
+    closeGX();
+  };
+
   const advanceStoryPhaseFromKeyboard = () => {
     if (!storyDetourActive || !isOpen || eraTransitionPending) return;
     const { centerX, centerY, radius } = getPlanetGeometry();
@@ -2100,9 +2113,9 @@
     if (phaseIndex === exhibit.phases.length - 1) closeGX();
     else setPhase(phaseIndex + 1);
   });
-  elements.eraTransitionSkip.addEventListener("click", (event) => {
+  elements.modalSkip.addEventListener("click", (event) => {
     event.stopPropagation();
-    completeEraTransition(phaseIndex);
+    skipGXModal();
   });
   elements.restart.addEventListener("click", resetWorld);
   elements.data.addEventListener("click", openDataPanel);

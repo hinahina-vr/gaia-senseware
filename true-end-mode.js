@@ -6,13 +6,13 @@
   const SYSTEM_LANGUAGE = story.language?.htmlLang || "art-x-saeliva";
 
   const SPEAKERS = Object.freeze({
-    narrator: Object.freeze({ name: "", code: "ARCHIVE", language: SYSTEM_LANGUAGE }),
-    system: Object.freeze({ name: "SYSTEM", code: "SÆLIVA ARCHIVE", language: SYSTEM_LANGUAGE }),
-    lou: Object.freeze({ name: "ルウ", code: "K 2.7 / ARCHIVE HOST", language: SYSTEM_LANGUAGE }),
+    narrator: Object.freeze({ name: "", code: "MIR", language: SYSTEM_LANGUAGE }),
+    system: Object.freeze({ name: "AIVA", code: "KAR·MIR", language: SYSTEM_LANGUAGE }),
+    lou: Object.freeze({ name: "ルウ", code: "K 2.7 / TIR·DÆM", language: SYSTEM_LANGUAGE }),
     mizuha: Object.freeze({ name: "みず", code: "MIZUHA" }),
     amane: Object.freeze({ name: "あめ", code: "AMANE" }),
     sakuya: Object.freeze({ name: "saku", code: "SAKUYA" }),
-    visitor: Object.freeze({ name: "青猫", code: "BLUECAT", language: SYSTEM_LANGUAGE }),
+    visitor: Object.freeze({ name: "あなた", code: "AL MIR", language: SYSTEM_LANGUAGE }),
   });
   const STORAGE_KEY = "gaiaSensewareTrueEnd:complete:v1";
   const CHARACTER_DELAY_MS = 29;
@@ -120,8 +120,8 @@
     const finaleReadout = createElement("div");
     finaleReadout.lang = SYSTEM_LANGUAGE;
     story.finale.readout.forEach((line) => finaleReadout.append(createElement("code", "", line)));
-    const finaleNote = createElement("p", "", "最初の値は、まだ届いていない。");
-    const finaleExit = createElement("button", "", "正式エンディングへ");
+    const finaleNote = createElement("p", "", "感じ取れる世界は、まだ増えていく。");
+    const finaleExit = createElement("button", "", "世界を拡げる");
     finaleExit.type = "button";
     finale.append(finaleLabel, finaleTitle, finaleReadout, finaleNote, finaleExit);
 
@@ -166,10 +166,10 @@
       if (lines.length > 0) {
         const readoutHeader = createElement("div", "true-end-readout-header");
         readoutHeader.lang = SYSTEM_LANGUAGE;
-        const readoutSignal = createElement("span", "true-end-readout-signal", "SÆLIVA ARCHIVE");
+        const readoutSignal = createElement("span", "true-end-readout-signal", "SÆL·MIR");
         const readoutTrace = createElement("i", "true-end-readout-trace");
         readoutTrace.setAttribute("aria-hidden", "true");
-        const readoutCount = createElement("small", "true-end-readout-count", `TRACE ${String(lines.length).padStart(2, "0")}`);
+        const readoutCount = createElement("small", "true-end-readout-count", `KAR ${String(lines.length).padStart(2, "0")}`);
         readoutHeader.append(readoutSignal, readoutTrace, readoutCount);
 
         const readoutList = createElement("div", "true-end-readout-list");
@@ -333,10 +333,10 @@
     const syncSceneMetadata = () => {
       const current = scene();
       if (!current) return;
-      sceneNumber.textContent = `ARCHIVE ${current.number}`;
+      sceneNumber.textContent = `VENA ${current.number}`;
       sceneNumber.lang = SYSTEM_LANGUAGE;
       sceneTitle.textContent = current.title;
-      sceneCardNumber.textContent = `ARCHIVE ${current.number}`;
+      sceneCardNumber.textContent = `VENA ${current.number}`;
       sceneCardNumber.lang = SYSTEM_LANGUAGE;
       sceneCardTitle.textContent = current.title;
       shell.dataset.scene = current.id;
