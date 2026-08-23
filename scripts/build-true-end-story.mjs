@@ -49,7 +49,7 @@ const story = {
   elapsed: "2,704,118 HARA",
   scenes,
   finale: {
-    label: "NOVACENE",
+    label: "星々の放課後",
     title: "NOVACENE",
     readout: [
       "DÆM UL: ESHA·GEMA",

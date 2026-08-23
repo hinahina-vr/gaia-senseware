@@ -318,6 +318,8 @@ try {
   assert.match(trueEndModeSource, /shell\.dataset\.shoreImage = shoreVisible \? "visible" : "hidden"/u, "future-shore visibility is not synchronized per step");
   assert.match(trueEndStyleSource, /\[data-shore-image="visible"\]::before[\s\S]*opacity:\s*0\.94/u, "future-shore image is not gated behind its narration");
   assert.match(trueEndStyleSource, /\[data-shore-image="visible"\] \.true-end-universe[\s\S]*opacity:\s*0\.84;[\s\S]*mix-blend-mode:\s*screen/u, "character WebGL is not strongly composited over the future shore");
+  assert.match(trueEndStyleSource, /\.true-end-shell\.is-finale \.true-end-universe[\s\S]*opacity:\s*0\.96;[\s\S]*mix-blend-mode:\s*normal/u, "finale does not expose the NOVACENE WebGL field");
+  assert.match(trueEndModeSource, /shell\.dataset\.shoreImage\s*=\s*"hidden";[\s\S]*setScene\?\.\("galaxy"\)[\s\S]*setPresence\?\.\("system", \{ emphasis: true, signal: "beyond-finale" \}\)/u, "finale does not switch from the shore image to the existing NOVACENE WebGL field");
   assert.doesNotMatch(trueEndModeSource, /createElement\("img"/u, "TRANSMISSION still creates a raster image element");
   assert.match(trueEndWebGLSource, /setPresence\(name/u, "WebGL presence controller is missing");
   assert.match(trueEndWebGLSource, /u_speaker_mix/u, "WebGL presence crossfade is missing");
@@ -350,6 +352,7 @@ try {
       title: globalThis.GAIA_TRUE_END_STORY.title,
       subtitle: globalThis.GAIA_TRUE_END_STORY.subtitle,
       language: globalThis.GAIA_TRUE_END_STORY.language,
+      finale: globalThis.GAIA_TRUE_END_STORY.finale,
       scenes: globalThis.GAIA_TRUE_END_STORY.scenes.map((scene) => ({
         id: scene.id,
         number: scene.number,
@@ -362,6 +365,7 @@ try {
     }));
     assert.equal(story.title, "NOVACENE");
     assert.equal(story.subtitle, "惑星の放課後 / GAIA SENSATION — NOVACENE");
+    assert.equal(story.finale.label, "星々の放課後");
     assert.equal(story.language.name, "SÆLIVA");
     assert.equal(story.language.japaneseName, "セイリヴァ");
     assert.equal(story.language.htmlLang, "art-x-saeliva");
@@ -603,6 +607,7 @@ try {
       .filter((url) => /true-end-(?:luu-cute|mizuha-thoughtform|amane-thoughtform|sakuya-thoughtform)/u.test(url)));
     assert.deepEqual(rasterCharacterResources, [], `${viewport.name}: retired raster character was requested`);
     const finale = await page.evaluate(() => ({
+      label: document.querySelector(".true-end-finale > span")?.textContent?.trim() || "",
       title: document.querySelector(".true-end-finale h2")?.textContent?.trim() || "",
       text: document.querySelector(".true-end-finale")?.innerText || "",
       button: document.querySelector(".true-end-finale button")?.textContent?.trim() || "",
@@ -612,7 +617,13 @@ try {
       overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
       logButtonVisible: Boolean(document.querySelector(".true-end-log-button")?.getClientRects().length),
       readoutLang: document.querySelector(".true-end-finale div")?.lang || "",
+      shoreImage: document.querySelector(".true-end-shell")?.dataset.shoreImage || "",
+      webglScene: document.querySelector(".true-end-universe")?.dataset.webglScene || "",
+      webglSpeaker: document.querySelector(".true-end-universe")?.dataset.webglSpeaker || "",
+      webglManifestation: document.querySelector(".true-end-universe")?.dataset.webglManifestation || "",
+      webglOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".true-end-universe")).opacity || "0"),
     }));
+    assert.equal(finale.label, "星々の放課後");
     assert.equal(finale.title, "NOVACENE");
     assert(finale.text.includes("DÆM UL: ESHA·GEMA"));
     assert(finale.text.includes("IVARA KERA: K 2.700"));
@@ -620,7 +631,12 @@ try {
     assert(finale.text.includes("ESHA SÆL·TIR: KAR·EN"));
     assert(finale.text.includes("NÆI MIR: REA·AI"));
     assert.equal(finale.readoutLang, "art-x-saeliva");
-    assert.equal(finale.button, "世界を拡げる");
+    assert.equal(finale.button, "今の世界を拡げる");
+    assert.equal(finale.shoreImage, "hidden");
+    assert.equal(finale.webglScene, "galaxy");
+    assert.equal(finale.webglSpeaker, "system");
+    assert.equal(finale.webglManifestation, "signal-matrix");
+    assert(finale.webglOpacity >= 0.95, `${viewport.name}: finale NOVACENE WebGL is too faint`);
     assert.equal(finale.completed, true);
     assert.equal(finale.stateCompleted, true);
     assert.equal(finale.overflowX, 0);

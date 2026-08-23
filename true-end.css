@@ -588,10 +588,16 @@ body.true-end-section-transition .gaia-audio-dock {
   gap: clamp(14px, 2.4vh, 28px);
   padding: max(30px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(30px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
   background:
-    radial-gradient(circle at 50% 43%, rgba(102, 225, 205, 0.14), transparent 34%),
-    linear-gradient(145deg, rgba(1, 5, 13, 0.98), rgba(4, 22, 34, 0.98));
+    radial-gradient(circle at 50% 43%, rgba(102, 225, 205, 0.12), transparent 38%),
+    linear-gradient(145deg, rgba(1, 5, 13, 0.74), rgba(4, 22, 34, 0.7));
   text-align: center;
   animation: true-end-finale 1.8s ease both;
+}
+
+.true-end-shell.is-finale .true-end-universe {
+  opacity: 0.96;
+  filter: saturate(1.22) contrast(1.08);
+  mix-blend-mode: normal;
 }
 
 .true-end-finale[hidden] {

@@ -123,7 +123,7 @@
     finaleReadout.lang = SYSTEM_LANGUAGE;
     story.finale.readout.forEach((line) => finaleReadout.append(createElement("code", "", line)));
     const finaleNote = createElement("p", "", "感じ取れる世界は、まだ増えていく。");
-    const finaleExit = createElement("button", "", "世界を拡げる");
+    const finaleExit = createElement("button", "", "今の世界を拡げる");
     finaleExit.type = "button";
     finale.append(finaleLabel, finaleTitle, finaleReadout, finaleNote, finaleExit);
 
@@ -416,7 +416,9 @@
       stopReveal();
       complete = true;
       shell.classList.add("is-finale");
-      universeRuntime?.setPresence?.("narrator", { signal: "beyond-finale" });
+      shell.dataset.shoreImage = "hidden";
+      universeRuntime?.setScene?.("galaxy");
+      universeRuntime?.setPresence?.("system", { emphasis: true, signal: "beyond-finale" });
       dialogue.hidden = true;
       readout.hidden = true;
       footer.hidden = true;

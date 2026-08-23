@@ -261,7 +261,7 @@
     }
   ],
   "finale": {
-    "label": "NOVACENE",
+    "label": "星々の放課後",
     "title": "NOVACENE",
     "readout": [
       "DÆM UL: ESHA·GEMA",
