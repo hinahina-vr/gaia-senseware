@@ -98,7 +98,7 @@ check("runtime cache keys are advanced", () => {
   assert.match(html, /novel-mode\.css\?v=gaia-finale-sunset-1/u);
   assert.match(html, /gx-mode\.js\?v=gaia-gx-transition-skip-1/u);
   assert.match(html, /novel-mode\.js\?v=gaia-finale-sunset-1/u);
-  assert.match(html, /novel-story-data\.js\?v=gaia-approved-script-13/u);
+  assert.match(html, /novel-story-data\.js\?v=gaia-approved-script-14/u);
 });
 
 check("tabletop map artwork is absent from story and map runtime", () => {

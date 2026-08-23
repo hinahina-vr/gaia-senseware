@@ -16,8 +16,8 @@
   });
 
   const source = {
-  "storyVersion": "true-end-approved-script-v3",
-  "approvedSourceSha256": "911818f6eff7c59fcc2b2ee352c90d6a4710785fb3a6afe113862081516ee628",
+  "storyVersion": "true-end-approved-script-v4",
+  "approvedSourceSha256": "31f84f224fd85e03eeea22fce4f675529c7232b9f114f0ce50a3013e41b22e49",
   "title": "NOVACENE",
   "subtitle": "惑星の放課後 / GAIA SENSATION — NOVACENE",
   "language": {
@@ -181,7 +181,10 @@
           "text": "今日探してるのは、失われた数値じゃない。何を感じて、どこへ渡そうとしたか。"
         },
         {
-          "text": "新品の像が消え、発掘品だけが残る。筐体と、ケースに刻まれた設定メモから、機器ID、六十秒間隔、送信先、最初の文が現れた。測定値そのものは、送信先へ流れたまま保存されていなかった。"
+          "text": "新品の像が消え、発掘品だけが残る。筐体と、ケースに刻まれた設定メモから、機器ID、六十秒間隔、送信先、最初の文が現れた。"
+        },
+        {
+          "text": "測定値そのものは、送信先へ流れたまま保存されていなかった。"
         },
         {
           "speaker": "amane",

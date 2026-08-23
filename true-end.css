@@ -744,7 +744,7 @@ body.true-end-section-transition .gaia-audio-dock {
     bottom: var(--novel-say-bottom, max(64px, calc(env(safe-area-inset-bottom) + 56px)));
     left: 50%;
     width: var(--novel-say-width, calc(100vw - 24px));
-    height: var(--novel-say-height, clamp(176px, 26vh, 224px));
+    height: max(var(--novel-say-height, 0px), clamp(238px, 31vh, 270px));
     min-height: 0;
     max-height: none;
     padding: 52px 20px 30px;
@@ -785,7 +785,7 @@ body.true-end-section-transition .gaia-audio-dock {
   }
 
   .true-end-message {
-    max-height: 4.86em;
+    max-height: 8.1em;
     font-size: clamp(18px, 4.9vw, 22px);
     line-height: 1.62;
   }

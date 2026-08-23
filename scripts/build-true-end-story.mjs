@@ -35,7 +35,7 @@ const scenes = approved.trueEndScenes.map((scene) => ({
 }));
 
 const story = {
-  storyVersion: "true-end-approved-script-v3",
+  storyVersion: "true-end-approved-script-v4",
   approvedSourceSha256: approved.sha256,
   title: "NOVACENE",
   subtitle: "惑星の放課後 / GAIA SENSATION — NOVACENE",

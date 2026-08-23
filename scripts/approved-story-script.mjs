@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const approvedStoryPath = path.join(projectRoot, "story", "台本修正版_2026-08-23.md");
-const EXPECTED_SHA256 = "911818f6eff7c59fcc2b2ee352c90d6a4710785fb3a6afe113862081516ee628";
+const EXPECTED_SHA256 = "31f84f224fd85e03eeea22fce4f675529c7232b9f114f0ce50a3013e41b22e49";
 const EXPECTED_MAIN_SCENES = Object.freeze([
   "festival_concept",
   "map_mode01",
@@ -150,7 +150,7 @@ export const readApprovedStoryScript = () => {
   assertUniqueIds(trueEndScenes, "NOVACENE");
   const mainCount = mainScenes.reduce((count, scene) => count + scene.entries.length, 0);
   const trueEndCount = trueEndScenes.reduce((count, scene) => count + scene.entries.length, 0);
-  if (mainCount !== 271 || trueEndCount !== 52) {
+  if (mainCount !== 271 || trueEndCount !== 53) {
     throw new Error(`承認済み台本の件数が不正です: ${mainCount} main / ${trueEndCount} NOVACENE`);
   }
   return Object.freeze({ mainScenes, trueEndScenes, sha256: digest });
