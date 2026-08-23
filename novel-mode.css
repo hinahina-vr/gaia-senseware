@@ -1499,6 +1499,34 @@ body.novel-open .japan-credits {
   pointer-events: none;
 }
 
+body.novel-open .experience > .status,
+body.novel-open .experience > .guide,
+body.novel-open .experience > .mode-caption,
+body.novel-open .experience > .mode-nav,
+body.novel-open .experience > .actions {
+  visibility: hidden;
+}
+
+/* The title-to-story handoff intentionally holds on the key visual while the
+   first scene is prepared. Clear every label and control as soon as START is
+   pressed so that hold reads as artwork, never as a second title card. */
+.novel-layer.is-title[data-runtime-transition] .novel-title-screen,
+.novel-layer.is-title[data-runtime-transition] .novel-topbar {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Opening/intro copy lives underneath the story layer. It is normally hidden
+   by script, but must never be paintable during a story handoff even if a
+   delayed opening frame or browser style recalculation restores its parent. */
+body.novel-open #gaia-opening .gaia-vn-final-copy,
+body.novel-open #intro-layer .intro-shell {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
   display: none !important;
   backdrop-filter: none !important;

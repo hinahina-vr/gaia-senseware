@@ -63,7 +63,7 @@ try {
     await page.waitForFunction(() => Boolean(globalThis.GaiaOpeningAudio));
     assert.equal(await page.locator("#gaia-opening-sound-gate").count(), 0, `${viewport.name}: separate sound screen remains`);
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-modal")));
-    await page.waitForFunction(() => document.activeElement?.id === "gaia-opening-sound-off");
+    await page.waitForFunction(() => document.activeElement?.id === "gaia-opening-sound-on");
     await page.waitForTimeout(viewport.reduced ? 20 : 500);
 
     const initial = await page.evaluate(() => {
@@ -108,15 +108,15 @@ try {
     assert.equal(initial.audioInsideMenu, false, `${viewport.name}: sound controls remain embedded in the route menu`);
     assert.equal(initial.menuInert, true, `${viewport.name}: routes are interactive behind the modal`);
     assert.equal(initial.modalHiddenFromA11y, "false");
-    assert.equal(initial.activeId, "gaia-opening-sound-off", `${viewport.name}: initial focus escaped the sound setup`);
+    assert.equal(initial.activeId, "gaia-opening-sound-on", `${viewport.name}: initial focus escaped the sound-on default`);
     assert.equal(initial.title, "サウンド設定");
     assert.equal(initial.description, "サウンドのオン／オフはゲーム中でも変更できます。");
     assert.equal(initial.soundOnLabel, "サウンドあり");
     assert.equal(initial.soundOffLabel, "サウンドなし");
     assert.equal(initial.sliderValue, "23");
     assert.equal(initial.output, "23%");
-    assert.equal(initial.soundOnPressed, "false");
-    assert.equal(initial.soundOffPressed, "true");
+    assert.equal(initial.soundOnPressed, "true");
+    assert.equal(initial.soundOffPressed, "false");
     assert.equal(initial.dockVisible, false, `${viewport.name}: duplicate audio dock is visible on the title menu`);
     assert.equal(initial.preloadVisible, false, `${viewport.name}: preload appeared ahead of sound setup`);
     assert.equal(initial.skipVisible, false, `${viewport.name}: skip appeared ahead of sound setup`);

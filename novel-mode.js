@@ -2541,7 +2541,7 @@
     Promise.resolve(fontsReady).then(startMeasuredReveal, startMeasuredReveal);
   };
 
-  const renderDialoguePage = () => {
+  const renderDialoguePage = ({ reveal = dialoguePageReveal } = {}) => {
     const page = (dialoguePages[dialoguePageIndex] || "").replace(/\n+$/u, "");
     const layout = dialoguePageLayouts[dialoguePageIndex] || buildDialogueTokenLayout(page);
     const metrics = dialoguePageMetrics(page, layout);
@@ -2550,7 +2550,7 @@
     elements.text.dataset.measuredLineCount = String(metrics.measuredLines.length);
     elements.text.dataset.maxLineCount = String(metrics.maxLines);
     elements.continueMark.textContent = "▼";
-    if (dialoguePageReveal) {
+    if (reveal) {
       revealText(page, layout);
       return;
     }
@@ -2644,9 +2644,8 @@
           return layout;
         });
         dialoguePageIndex = nextIndex;
-        dialoguePageReveal = false;
         elements.text.dataset.pageCount = String(dialoguePages.length);
-        renderDialoguePage();
+        renderDialoguePage({ reveal: false });
         dialogueObservedWidth = elements.text.getBoundingClientRect().width;
         window.requestAnimationFrame(() => {
           dialogueReflowActive = false;

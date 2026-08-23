@@ -559,19 +559,6 @@
     const shell = Math.exp(-verticalDistance * verticalDistance * 1.35);
     y += side * earthInfluence * shell * scene.earthRadius * (1.25 + parameters.response * 1.2);
 
-    const pointerX = state.pointer.x * state.width;
-    const pointerY = state.pointer.y * state.height;
-    const dx = x - pointerX;
-    const dy = y - pointerY;
-    const distanceSquared = dx * dx + dy * dy;
-    const pointerRadius = Math.max(90, Math.min(state.width, state.height) * 0.14);
-    if (state.pointer.visible && distanceSquared < pointerRadius * pointerRadius) {
-      const distance = Math.sqrt(distanceSquared) || 1;
-      const influence = (1 - distance / pointerRadius) ** 2;
-      const direction = state.pointer.down ? 1 : -0.22;
-      y += (dy / distance) * influence * pointerRadius * direction;
-    }
-
     state.ripples.forEach((ripple) => {
       const age = performance.now() - ripple.born;
       const radius = age * 0.11 * ripple.strength;
@@ -588,19 +575,6 @@
     gradient.addColorStop(0.48, "#030912");
     gradient.addColorStop(1, "#02060c");
     context.fillStyle = gradient;
-    context.fillRect(0, 0, state.width, state.height);
-
-    const pointerGlow = context.createRadialGradient(
-      state.pointer.x * state.width,
-      state.pointer.y * state.height,
-      0,
-      state.pointer.x * state.width,
-      state.pointer.y * state.height,
-      Math.max(state.width, state.height) * 0.34,
-    );
-    pointerGlow.addColorStop(0, rgba(accent, state.pointer.visible ? 0.035 : 0.012));
-    pointerGlow.addColorStop(1, rgba(accent, 0));
-    context.fillStyle = pointerGlow;
     context.fillRect(0, 0, state.width, state.height);
 
     state.dust.forEach((star) => {
@@ -964,26 +938,6 @@
     state.gestures = state.gestures.filter((gesture) => now - gesture.born < 12000);
   };
 
-  const drawCursor = (time, accent) => {
-    if (!state.pointer.visible || coarsePointer) return;
-    const x = state.pointer.x * state.width;
-    const y = state.pointer.y * state.height;
-    const radius = state.pointer.down ? 18 : 9;
-    context.save();
-    context.globalCompositeOperation = "lighter";
-    context.strokeStyle = rgba([230, 249, 255], state.pointer.down ? 0.7 : 0.28);
-    context.lineWidth = 0.7;
-    context.beginPath();
-    context.arc(x, y, radius, 0, TAU);
-    context.stroke();
-    context.strokeStyle = rgba(accent, 0.22);
-    context.beginPath();
-    context.arc(x, y, radius + 6 + Math.sin(time * 2) * 2, -0.8, 0.8);
-    context.arc(x, y, radius + 6 + Math.sin(time * 2) * 2, Math.PI - 0.8, Math.PI + 0.8);
-    context.stroke();
-    context.restore();
-  };
-
   const draw = (timestamp) => {
     if (!state.open) {
       state.frame = null;
@@ -1020,8 +974,6 @@
     }
     drawRipples(timestamp, accent);
     if (!rendered || currentMode()?.id === "energetic-particles") drawGestures(timestamp, accent);
-    drawCursor(time, accent);
-
     if (currentMode()?.id === "solar-flare" && !state.pulses.length && timestamp - state.lastAutoPulse > 10500 && layer.classList.contains("has-interacted")) {
       launchSignal(0.35 + ((state.recordIndex + state.modeIndex) % 7) * 0.05, "SOURCE");
       state.recordIndex = (state.recordIndex + 1) % Math.max(1, currentMode()?.records?.length || 1);

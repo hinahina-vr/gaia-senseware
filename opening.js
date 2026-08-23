@@ -31,7 +31,7 @@
   let soundModalOpen = false;
   let soundSetupConfirmed = false;
   let soundSetupSubmitting = false;
-  let pendingSoundEnabled = false;
+  let pendingSoundEnabled = true;
   const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#story"].includes(
     window.location.hash,
   ) || /\/story\/?$/i.test(window.location.pathname);
@@ -461,7 +461,7 @@
 
     window.clearTimeout(soundModalHideTimer);
     const state = window.GaiaOpeningAudio?.getState?.();
-    pendingSoundEnabled = !(state?.muted ?? true);
+    pendingSoundEnabled = true;
     soundModalOpen = true;
     syncAudioControls(state);
     if (finalMenu instanceof HTMLElement) {
