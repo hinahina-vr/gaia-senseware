@@ -95,6 +95,8 @@
   const TEXT_PAGE_INDICATOR_SAFETY_PX = 12;
   const SECTION_SEPARATOR_MS = 2200;
   const SECTION_SEPARATOR_REDUCED_MOTION_MS = 2900;
+  const BACKGROUND_RELEASE_MS = 820;
+  const BACKGROUND_RELEASE_FALLBACK_MS = BACKGROUND_RELEASE_MS + 160;
   const FAST_FORWARD_HOLD_DELAY_MS = 180;
   const FAST_FORWARD_STEP_MS = 90;
   const SLACK_ENTER_MS = 760;
@@ -1448,6 +1450,39 @@
 
   const nextPaint = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
+  const waitForBackgroundPaint = async () => {
+    await nextPaint();
+    await nextPaint();
+  };
+
+  const waitForBackgroundRelease = () => {
+    if (motionReduced()) return Promise.resolve();
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(fallbackTimer);
+        layer.removeEventListener("transitionend", handleTransitionEnd);
+        resolve();
+      };
+      const handleTransitionEnd = (event) => {
+        if (event.target !== layer || event.propertyName !== "opacity" || event.pseudoElement !== "::before") return;
+        finish();
+      };
+      const fallbackTimer = window.setTimeout(finish, BACKGROUND_RELEASE_FALLBACK_MS);
+      layer.addEventListener("transitionend", handleTransitionEnd);
+    });
+  };
+
+  const clearBackgroundTransitionVisuals = () => {
+    layer.classList.remove("is-background-buffered", "is-background-releasing");
+    layer.style.removeProperty("--novel-transition-background");
+    layer.style.removeProperty("--novel-transition-background-position");
+    layer.style.removeProperty("--novel-transition-background-size");
+    layer.style.removeProperty("--novel-transition-background-repeat");
+  };
+
   const revealRuntimeForStep = async (step, reveal, { transition = false } = {}) => {
     const target = resolveVisibleStep(step?.id) || step;
     if (!target || runtimeRevealPending) return false;
@@ -1525,9 +1560,33 @@
     else window.setTimeout(warm, 0);
   };
 
-  const runBackgroundTransition = async (currentBackground, nextBackground, swapStep, { crossfadeOnly = false } = {}) => {
-    if (backgroundTransitionPending) return;
+  const runBackgroundTransition = async (
+    currentBackground,
+    nextBackground,
+    applyIncomingBackground,
+    revealIncomingContent,
+    { crossfadeOnly = false, fromStepId = "", toStepId = "" } = {},
+  ) => {
+    if (backgroundTransitionPending) return false;
     backgroundTransitionPending = true;
+    layer.classList.add("is-background-transitioning");
+    layer.dataset.backgroundTransitionPhase = "preloading";
+    layer.setAttribute("aria-busy", "true");
+    let incomingApplied = false;
+    const applyIncomingOnce = async () => {
+      if (incomingApplied) return;
+      applyIncomingBackground();
+      incomingApplied = true;
+      layer.dataset.backgroundTransitionPhase = "paint-pending";
+      await waitForBackgroundPaint();
+      layer.dataset.backgroundTransitionPhase = "painted";
+    };
+    const beginRelease = () => {
+      const released = waitForBackgroundRelease();
+      layer.classList.add("is-background-releasing");
+      layer.dataset.backgroundTransitionPhase = "releasing";
+      return released;
+    };
     try {
       await preloadBackground(nextBackground.image);
       layer.style.setProperty("--novel-transition-background", currentBackground.image);
@@ -1537,24 +1596,40 @@
       layer.classList.remove("is-background-releasing");
       layer.classList.add("is-background-buffered");
       await nextPaint();
-      if (crossfadeOnly) {
-        swapStep();
-        await nextPaint();
-        layer.classList.add("is-background-releasing");
-        await new Promise((resolve) => window.setTimeout(resolve, 860));
-        return true;
+      layer.dataset.backgroundTransitionPhase = "buffered";
+      if (motionReduced()) {
+        await applyIncomingOnce();
+      } else if (crossfadeOnly) {
+        await applyIncomingOnce();
+        await beginRelease();
+      } else {
+        let releaseComplete = Promise.resolve();
+        await runSceneTransition(async () => {
+          await applyIncomingOnce();
+          releaseComplete = beginRelease();
+        }, null, "novel");
+        if (!incomingApplied) {
+          await applyIncomingOnce();
+          releaseComplete = beginRelease();
+        }
+        await releaseComplete;
       }
-      return await runSceneTransition(() => {
-        swapStep();
-        layer.classList.add("is-background-releasing");
-      }, null, "novel");
+      clearBackgroundTransitionVisuals();
+      layer.dataset.backgroundTransitionPhase = "release-complete";
+      revealIncomingContent();
+      await nextPaint();
+      layer.classList.remove("is-background-transitioning");
+      layer.dataset.backgroundTransitionPhase = "complete";
+      await nextPaint();
+      window.dispatchEvent(new CustomEvent("gaia:novel-background-transition-complete", {
+        detail: { fromStepId, toStepId, crossfadeOnly, reducedMotion: motionReduced() },
+      }));
+      return true;
     } finally {
       backgroundTransitionPending = false;
-      layer.classList.remove("is-background-buffered", "is-background-releasing");
-      layer.style.removeProperty("--novel-transition-background");
-      layer.style.removeProperty("--novel-transition-background-position");
-      layer.style.removeProperty("--novel-transition-background-size");
-      layer.style.removeProperty("--novel-transition-background-repeat");
+      clearBackgroundTransitionVisuals();
+      layer.classList.remove("is-background-transitioning");
+      layer.removeAttribute("aria-busy");
     }
   };
 
@@ -1619,36 +1694,62 @@
       renderEnd(step);
       return;
     }
-    const swapStep = () => {
+    const commitStep = () => {
       Object.entries(CHAT_CAST_MEETING_GATES).forEach(([speaker, gate]) => {
         if (step.id === gate.completedAt) state.metCharacters[speaker] = true;
       });
       state.stepId = next;
       saveProgress();
+    };
+    const renderStep = () => {
       if (step.sceneId !== nextStep?.sceneId) renderSectionSeparator(nextStep);
       else if (temporalRuntime.contextTransitionForStep(nextStep)) renderTemporalTransitionCard(nextStep);
       else renderCurrentStep();
+    };
+    const applyIncomingBackground = () => {
+      layer.dataset.sceneId = nextStep.sceneId;
+      layer.dataset.stepId = nextStep.id;
+      applyBackgroundCueForStep(nextStep);
+      requestTrackForBackground({ image: getComputedStyle(layer).backgroundImage });
+    };
+    const swapStep = () => {
+      commitStep();
+      renderStep();
     };
     const currentBackground = backgroundPresentationForStep(step);
     const nextBackground = backgroundPresentationForStep(nextStep);
     const backgroundChanges = currentBackground.image !== nextBackground.image;
     const crossfadeOnly = nextBackground.transition === "crossfade";
     if (backgroundChanges && nextStep?.id === "opening_empty_seat_001") {
-      deferredOpeningBackground = { stepId: nextStep.id, current: currentBackground, next: nextBackground };
+      deferredOpeningBackground = {
+        stepId: nextStep.id,
+        fromStepId: step.id,
+        current: currentBackground,
+        next: nextBackground,
+      };
       layer.dataset.openingTransitionStage = "awaiting-record";
       layer.dataset.openingCue = "record-transition";
       swapStep();
       return;
     }
-    const shouldTransitionBackground = rawNextStep?.type !== "phase" && backgroundChanges;
-    if (shouldTransitionBackground && !motionReduced()) {
+    const shouldTransitionBackground = backgroundChanges;
+    if (shouldTransitionBackground) {
       if (backgroundTransitionPending) return;
       if (crossfadeOnly && step.sceneId !== nextStep?.sceneId) {
-        deferredSectionBackgroundTransition = { stepId: next, currentBackground, nextBackground };
+        deferredSectionBackgroundTransition = { stepId: next, fromStepId: step.id, currentBackground, nextBackground };
         swapStep();
         return;
       }
-      return runBackgroundTransition(currentBackground, nextBackground, swapStep, { crossfadeOnly });
+      return runBackgroundTransition(
+        currentBackground,
+        nextBackground,
+        () => {
+          commitStep();
+          applyIncomingBackground();
+        },
+        renderStep,
+        { crossfadeOnly, fromStepId: step.id, toStepId: nextStep.id },
+      );
     }
     swapStep();
   };
@@ -1710,15 +1811,20 @@
     if (deferred?.stepId === currentStep()?.id) {
       deferredOpeningBackground = null;
       requestTrackForBackground(deferred.next);
-      if (motionReduced()) {
-        delete layer.dataset.openingTransitionStage;
-        renderCurrentStep();
-      } else {
-        void runBackgroundTransition(deferred.current, deferred.next, () => {
+      const step = currentStep();
+      void runBackgroundTransition(
+        deferred.current,
+        deferred.next,
+        () => {
           delete layer.dataset.openingTransitionStage;
-          renderCurrentStep();
-        });
-      }
+          layer.dataset.sceneId = step.sceneId;
+          layer.dataset.stepId = step.id;
+          applyBackgroundCueForStep(step);
+          requestTrackForBackground({ image: getComputedStyle(layer).backgroundImage });
+        },
+        renderCurrentStep,
+        { fromStepId: deferred.fromStepId || "", toStepId: step.id },
+      );
     } else {
       renderCurrentStep();
     }
@@ -2541,14 +2647,20 @@
     elements.chapterCard.hidden = true;
     const step = currentStep();
     if (temporalRuntime.contextTransitionForStep(step)) renderTemporalTransitionCard(step);
-    else if (deferredSectionBackgroundTransition?.stepId === step?.id && !motionReduced()) {
+    else if (deferredSectionBackgroundTransition?.stepId === step?.id) {
       const transition = deferredSectionBackgroundTransition;
       deferredSectionBackgroundTransition = null;
       void runBackgroundTransition(
         transition.currentBackground,
         transition.nextBackground,
+        () => {
+          layer.dataset.sceneId = step.sceneId;
+          layer.dataset.stepId = step.id;
+          applyBackgroundCueForStep(step);
+          requestTrackForBackground({ image: getComputedStyle(layer).backgroundImage });
+        },
         renderCurrentStep,
-        { crossfadeOnly: true },
+        { crossfadeOnly: true, fromStepId: transition.fromStepId || "", toStepId: step.id },
       );
     } else {
       deferredSectionBackgroundTransition = null;

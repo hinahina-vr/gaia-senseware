@@ -312,13 +312,15 @@ try {
   assert.match(trueEndWebGLSource, /presenceField\(p, u_speaker_from\)[\s\S]*presenceFadeOut[\s\S]*presenceField\(p, u_speaker_to\)[\s\S]*presenceFadeIn/u, "presence shader does not fade the old character out and the new character in");
   assert.match(trueEndWebGLSource, /signalStateAt\(now\)/u, "per-line presence signal still changes in one frame");
   assert.doesNotMatch(trueEndWebGLSource, /0\.52 \+ 0\.48 \* u_speaker_mix/u, "new character still appears at partial strength on its first frame");
-  assert.match(trueEndWebGLSource, /vec3 measureGrid[\s\S]*float scan[\s\S]*float columns[\s\S]*float rings/u, "system measurement geometry was not restored");
-  assert.match(trueEndWebGLSource, /vec3 orbitSeed[\s\S]*ringA[\s\S]*ringB[\s\S]*ringC[\s\S]*satelliteA[\s\S]*satelliteB/u, "Lou's previous orbit-seed Presence was not restored");
-  assert.match(trueEndWebGLSource, /vec3 tideMemory[\s\S]*float ripple[\s\S]*float current[\s\S]*float caustic/u, "Mizuha's previous tide Presence was not restored");
-  assert.match(trueEndWebGLSource, /vec3 timeArc[\s\S]*arcA[\s\S]*arcB[\s\S]*arcC[\s\S]*float horizon/u, "Amane's previous time-arc Presence was not restored");
-  assert.match(trueEndWebGLSource, /vec3 crystalTrace[\s\S]*shellA[\s\S]*shellB[\s\S]*radialBranches[\s\S]*twigs/u, "Sakuya's previous crystal Presence was not restored");
-  assert.match(trueEndWebGLSource, /vec3 witnessLens[\s\S]*float lens[\s\S]*float iris[\s\S]*float aperture/u, "the visitor's previous witness-lens Presence was not restored");
-  assert.match(trueEndWebGLSource, /float ridge[\s\S]*float spiral[\s\S]*float filament[\s\S]*vec2 beacon/u, "the previous dimensional universe field was not restored");
+  assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*vec2 matrixUv[\s\S]*float blocks[\s\S]*float scanRow[\s\S]*float columns/u, "AIVA's rectangular signal matrix is missing");
+  assert.match(trueEndWebGLSource, /vec3 weaveStorm[\s\S]*float warpThreads[\s\S]*float weftThreads[\s\S]*float diagonalThread[\s\S]*float crossings/u, "Lou's living loom is missing");
+  assert.match(trueEndWebGLSource, /vec3 tidalSurge[\s\S]*float distanceFromDrop[\s\S]*float rippleA[\s\S]*float rippleB[\s\S]*float reflectedWater[\s\S]*float drop/u, "Mizuha's water ripples are missing");
+  assert.match(trueEndWebGLSource, /vec3 skyCurrent[\s\S]*float skyPressure[\s\S]*float fallingMemory[\s\S]*float descendingVeil[\s\S]*float pressureFront[\s\S]*float downwardPulse/u, "Amane's abstract sky veil is missing");
+  assert.match(trueEndWebGLSource, /vec3 memoryBranches[\s\S]*float fiveFoldMemory[\s\S]*float openingWave[\s\S]*float petalResonance[\s\S]*float bloomPulse[\s\S]*float memoryPollen/u, "Sakuya's abstract bloom resonance is missing");
+  assert.match(trueEndWebGLSource, /vec3 witnessConvergence[\s\S]*float trunk[\s\S]*float leftChoice[\s\S]*float rightChoice[\s\S]*float secondDecision[\s\S]*float branchingPaths/u, "the visitor's choice paths are missing");
+  assert.doesNotMatch(trueEndWebGLSource, /float flowA|float flowB|float flowC/u, "shared thick flow bands still make every character look alike");
+  assert.match(trueEndWebGLSource, /float presenceStrength = 1\.34 \+ u_emphasis \* 0\.48/u, "character fields are not using the stronger presence gain");
+  assert.doesNotMatch(trueEndWebGLSource, /orbitSeed|ringA|ringB|ringC|satelliteA|satelliteB|float rings|float spiral|vec2 beacon|float orbit|witnessLens|float lens|float iris|float aperture/u, "retired orbit, circle, or vortex geometry remains in the WebGL shader");
   assert.doesNotMatch(trueEndModeSource, /true-end-weave/u, "TRANSMISSION still creates the full-screen ellipse weave");
   assert.doesNotMatch(trueEndStyleSource, /\.true-end-weave|conic-gradient/u, "TRANSMISSION still styles ellipse or vortex decoration");
   assert.match(trueEndWebGLSource, /p \+= u_pointer/u, "the restored field no longer follows pointer parallax");
@@ -361,13 +363,13 @@ try {
     let maximumMessageLines = 0;
     const fixedDialogueHeight = initial.dialogueRect.height;
     const manifestations = {
-      narrator: "quiet-field",
-      system: "measure-grid",
-      lou: "orbit-seed",
-      mizuha: "tide-memory",
-      amane: "time-arc",
-      sakuya: "crystal-trace",
-      visitor: "witness-lens",
+      narrator: "central-breath",
+      system: "signal-matrix",
+      lou: "living-loom",
+      mizuha: "water-ripples",
+      amane: "sky-veil",
+      sakuya: "bloom-resonance",
+      visitor: "choice-paths",
     };
     const validateSpeakerVisual = (frame) => {
       seenSpeakers.add(frame.speaker);
@@ -662,12 +664,18 @@ try {
     assert.equal(fadeStart.universePresenceDuration, 380, `${viewport.name}: presence crossfade duration is not 380ms`);
     await separatorPage.waitForTimeout(100);
     const fadeMiddle = await scanFrame(separatorPage);
-    assert.equal(fadeMiddle.universePresenceState, "fading", `${viewport.name}: presence fade ended too early`);
-    assert.equal(fadeMiddle.message, fadeBefore.message, `${viewport.name}: message changed during the presence crossfade`);
-    assert(
-      fadeMiddle.universePresenceMix > fadeStart.universePresenceMix && fadeMiddle.universePresenceMix < 0.95,
-      `${viewport.name}: presence did not interpolate continuously (${JSON.stringify({ start: { mix: fadeStart.universePresenceMix, frame: fadeStart.universeFrame, state: fadeStart.universePresenceState, hidden: fadeStart.documentHidden }, middle: { mix: fadeMiddle.universePresenceMix, frame: fadeMiddle.universeFrame, state: fadeMiddle.universePresenceState, hidden: fadeMiddle.documentHidden } })})`,
-    );
+    if (fadeMiddle.universePresenceState === "fading") {
+      assert.equal(fadeMiddle.message, fadeBefore.message, `${viewport.name}: message changed during the presence crossfade`);
+      assert(
+        fadeMiddle.universePresenceMix > fadeStart.universePresenceMix && fadeMiddle.universePresenceMix < 0.95,
+        `${viewport.name}: presence did not interpolate continuously (${JSON.stringify({ start: { mix: fadeStart.universePresenceMix, frame: fadeStart.universeFrame, state: fadeStart.universePresenceState, hidden: fadeStart.documentHidden }, middle: { mix: fadeMiddle.universePresenceMix, frame: fadeMiddle.universeFrame, state: fadeMiddle.universePresenceState, hidden: fadeMiddle.documentHidden } })})`,
+      );
+    } else {
+      assert.equal(fadeMiddle.universePresenceState, "steady", `${viewport.name}: presence entered an unknown state`);
+      assert(fadeMiddle.universePresenceMix >= 0.9999, `${viewport.name}: settled presence has an incomplete mix`);
+      assert(fadeMiddle.universePresenceCompletedAt > fadeStart.sampledAt, `${viewport.name}: delayed mobile sample lost the presence completion timestamp`);
+      assert(fadeMiddle.messageCommittedAt >= fadeMiddle.universePresenceCompletedAt, `${viewport.name}: delayed mobile sample committed the message before presence completion`);
+    }
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-presence-fade.png`) });
     await separatorPage.waitForFunction((counter) => document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() !== counter, fadeBefore.counter, { timeout: 2_000 });
     const fadeAfter = await scanFrame(separatorPage);

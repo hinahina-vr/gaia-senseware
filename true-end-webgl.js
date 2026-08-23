@@ -14,13 +14,13 @@
   });
   const DEFAULT_SCENE = SCENES.awakening;
   const PRESENCES = Object.freeze({
-    narrator: Object.freeze({ index: 0, manifestation: "quiet-field" }),
-    system: Object.freeze({ index: 1, manifestation: "measure-grid" }),
-    lou: Object.freeze({ index: 2, manifestation: "orbit-seed" }),
-    mizuha: Object.freeze({ index: 3, manifestation: "tide-memory" }),
-    amane: Object.freeze({ index: 4, manifestation: "time-arc" }),
-    sakuya: Object.freeze({ index: 5, manifestation: "crystal-trace" }),
-    visitor: Object.freeze({ index: 6, manifestation: "witness-lens" }),
+    narrator: Object.freeze({ index: 0, manifestation: "central-breath" }),
+    system: Object.freeze({ index: 1, manifestation: "signal-matrix" }),
+    lou: Object.freeze({ index: 2, manifestation: "living-loom" }),
+    mizuha: Object.freeze({ index: 3, manifestation: "water-ripples" }),
+    amane: Object.freeze({ index: 4, manifestation: "sky-veil" }),
+    sakuya: Object.freeze({ index: 5, manifestation: "bloom-resonance" }),
+    visitor: Object.freeze({ index: 6, manifestation: "choice-paths" }),
   });
   const DEFAULT_PRESENCE = PRESENCES.narrator;
   const VERTEX_SOURCE = `
@@ -98,106 +98,165 @@
       return 1.0 - smoothstep(width, width * 2.6, distanceToLine);
     }
 
-    vec3 quietField(vec2 p) {
-      float breath = 0.5 + 0.5 * sin(u_time * 0.18 + u_signal * 6.2831);
-      float haze = exp(-2.8 * dot(p * vec2(0.72, 1.0), p * vec2(0.72, 1.0)));
-      return mix(u_color_b, u_color_c, 0.34) * haze * (0.015 + breath * 0.012);
+    vec3 centralBreath(vec2 p) {
+      vec2 g = p;
+      float phase = u_time * 0.34 + u_signal * 6.2831;
+      float fogA = fbm(g * 1.18 + vec2(phase * 0.08, -phase * 0.05));
+      float fogB = fbm(g * 2.05 - vec2(phase * 0.05, phase * 0.08));
+      float fog = smoothstep(0.3, 0.78, fogA * 0.7 + fogB * 0.42);
+      float center = exp(-2.4 * dot(g, g)) * (0.72 + 0.28 * sin(phase));
+      return mix(u_color_b, u_color_c, 0.44) * (fog * 0.11 + center * 0.14);
     }
 
-    vec3 measureGrid(vec2 p) {
-      vec2 center = vec2(0.54, 0.22);
-      vec2 g = p - center;
-      float scan = exp(-85.0 * abs(g.y - 0.22 * sin(g.x * 3.4 + u_time * 0.42)));
-      float columns = pow(max(0.0, cos(g.x * 28.0 + u_signal * 11.0)), 18.0);
-      columns *= (1.0 - smoothstep(0.12, 0.82, abs(g.x))) * (1.0 - smoothstep(0.04, 0.54, abs(g.y)));
-      float rings = exp(-105.0 * abs(length(g) - (0.25 + 0.025 * sin(u_time * 0.38))));
-      float pulse = exp(-8.0 * abs(g.x)) * exp(-4.0 * abs(g.y));
-      return mix(u_color_b, u_color_c, 0.74) * (scan * 0.42 + columns * 0.18 + rings * 0.34 + pulse * 0.08);
+    vec3 signalSurge(vec2 p) {
+      vec2 g = p;
+      float phase = u_time * 1.18 + u_signal * 8.0;
+      vec2 matrixUv = g * vec2(8.0, 5.0) + vec2(phase * 0.12, -phase * 0.42);
+      vec2 matrixId = floor(matrixUv);
+      vec2 cell = abs(fract(matrixUv) - 0.5);
+      float blocks = 1.0 - smoothstep(0.24, 0.43, max(cell.x, cell.y));
+      blocks *= step(0.48, hash21(matrixId + floor(phase * 0.24)));
+      float scanRow = softLine(abs(fract((g.y + 1.4) * 1.8 - phase * 0.19) - 0.5), 0.065);
+      float columns = smoothstep(0.7, 0.94, 0.5 + 0.5 * cos(g.x * 18.0 + phase * 0.7));
+      float dataNoise = smoothstep(0.42, 0.76, fbm(g * 3.2 + vec2(phase * 0.13, -phase * 0.1)));
+      float center = exp(-2.1 * dot(g, g));
+      vec3 electric = mix(vec3(0.18, 0.9, 1.0), vec3(0.92, 1.0, 1.0), center);
+      return electric * (blocks * (0.56 + dataNoise * 0.3) + scanRow * 0.72 + columns * 0.24 + center * 0.3);
     }
 
-    vec3 orbitSeed(vec2 p) {
-      vec2 center = vec2(-0.53, 0.22);
-      vec2 g = p - center;
-      float distanceToCore = length(g);
-      float core = exp(-24.0 * distanceToCore * distanceToCore);
-      float halo = 0.018 / max(0.035, distanceToCore);
-      float ringA = exp(-115.0 * abs(length(g * vec2(1.0, 1.75)) - 0.31));
-      float ringB = exp(-120.0 * abs(length(rotate2d(1.03) * g * vec2(1.0, 2.1)) - 0.39));
-      float ringC = exp(-135.0 * abs(length(rotate2d(-0.68) * g * vec2(1.0, 2.5)) - 0.46));
-      vec2 satelliteA = vec2(cos(u_time * 0.21), sin(u_time * 0.21) * 0.48) * 0.39;
-      vec2 satelliteB = vec2(cos(-u_time * 0.16 + 2.2), sin(-u_time * 0.16 + 2.2) * 0.42) * 0.48;
-      float nodes = exp(-150.0 * dot(g - satelliteA, g - satelliteA));
-      nodes += exp(-180.0 * dot(g - satelliteB, g - satelliteB));
-      vec3 pearl = mix(vec3(0.82, 0.98, 1.0), u_color_c, 0.38);
-      return pearl * (core * 0.74 + halo * 0.38 + (ringA + ringB + ringC) * 0.18 + nodes * 0.62);
+    vec3 weaveStorm(vec2 p) {
+      vec2 g = p;
+      float phase = u_time * 0.72 + u_signal * 5.2;
+      float warp = fbm(g * 1.32 + vec2(phase * 0.12, -phase * 0.08));
+      float warpThreads = smoothstep(0.66, 0.94, 0.5 + 0.5 * cos((g.x + 0.08 * sin(g.y * 2.0 + phase)) * 18.0));
+      float weftThreads = smoothstep(0.66, 0.94, 0.5 + 0.5 * cos((g.y + 0.09 * sin(g.x * 1.8 - phase * 0.82)) * 15.0));
+      float diagonalThread = smoothstep(0.72, 0.96, 0.5 + 0.5 * cos((g.x - g.y + warp * 0.18) * 13.0 + phase));
+      float crossings = warpThreads * weftThreads;
+      float center = exp(-2.0 * dot(g, g)) * (0.82 + 0.18 * sin(phase * 1.8));
+      vec3 cyan = vec3(0.24, 1.0, 0.94);
+      vec3 violet = vec3(0.55, 0.44, 1.0);
+      return mix(cyan, violet, smoothstep(-0.9, 0.9, g.y + warp - 0.5))
+        * ((warpThreads + weftThreads) * 0.38 + diagonalThread * 0.22 + crossings * 0.72 + center * 0.48);
     }
 
-    vec3 tideMemory(vec2 p) {
-      vec2 center = vec2(0.56, 0.18);
-      vec2 g = p - center;
-      float d = length(g * vec2(0.88, 1.0));
-      float phase = u_time * 0.38 + u_signal * 9.0;
-      float ripple = pow(max(0.0, sin(d * 25.0 - phase)), 12.0) * exp(-d * 1.7);
-      float current = exp(-42.0 * abs(g.y + 0.14 * sin(g.x * 5.2 - phase * 0.45)));
-      float causticWarp = sin(g.y * 9.0 - phase * 0.7) + sin((g.x + g.y) * 5.0 + phase * 0.3);
-      float caustic = pow(max(0.0, sin(g.x * 13.0 + causticWarp * 1.7 + phase)), 10.0);
-      caustic *= 1.0 - smoothstep(0.18, 0.92, d);
-      return mix(u_color_b, vec3(0.68, 1.0, 0.93), 0.62) * (ripple * 0.46 + current * 0.28 + caustic * 0.16);
+    vec3 tidalSurge(vec2 p) {
+      vec2 g = p;
+      float phase = u_time * 1.05 + u_signal * 7.0;
+      float distanceFromDrop = length(g * vec2(0.78, 1.0));
+      float rippleA = smoothstep(0.58, 0.94, 0.5 + 0.5 * cos(distanceFromDrop * 14.0 - phase * 2.4));
+      float rippleB = smoothstep(0.64, 0.96, 0.5 + 0.5 * cos(distanceFromDrop * 22.0 - phase * 3.1 + 1.7));
+      float surfaceWarp = fbm(g * 2.5 + vec2(-phase * 0.08, phase * 0.05));
+      float reflectedWater = smoothstep(0.55, 0.84, 0.5 + 0.5 * sin(g.x * 8.0 + surfaceWarp * 3.0 - phase));
+      reflectedWater *= smoothstep(0.34, 0.72, surfaceWarp);
+      float drop = exp(-18.0 * dot(g, g)) * (0.82 + 0.18 * sin(phase * 2.0));
+      float waterFade = exp(-0.42 * distanceFromDrop);
+      vec3 deep = vec3(0.02, 0.38, 0.75);
+      vec3 foam = vec3(0.45, 1.0, 0.9);
+      return mix(deep, foam, clamp(rippleA + rippleB * 0.6 + drop, 0.0, 1.0))
+        * ((rippleA * 0.7 + rippleB * 0.38) * waterFade + reflectedWater * 0.24 + drop * 0.8);
     }
 
-    vec3 timeArc(vec2 p) {
-      vec2 center = vec2(0.58, 0.2);
-      vec2 g = p - center;
-      vec2 arcA = rotate2d(-0.28) * g;
-      vec2 arcB = rotate2d(-0.04) * g;
-      vec2 arcC = rotate2d(0.2) * g;
-      float arc = softLine(abs(arcA.y + 0.24 - 0.09 * sin(arcA.x * 2.4 + u_time * 0.24)), 0.006);
-      arc += softLine(abs(arcB.y + 0.06 - 0.09 * sin(arcB.x * 2.4 + u_time * 0.24 + 1.3)), 0.0075);
-      arc += softLine(abs(arcC.y - 0.13 - 0.09 * sin(arcC.x * 2.4 + u_time * 0.24 + 2.6)), 0.009);
-      arc *= 1.0 - smoothstep(0.08, 0.9, abs(g.x));
-      float horizon = exp(-55.0 * abs(g.y + 0.02)) * (1.0 - smoothstep(0.0, 0.82, abs(g.x)));
-      float motes = starLayer(g + vec2(-u_time * 0.012, 0.0), 12.0, 93.0 + u_signal, 0.955);
-      return mix(vec3(0.62, 0.83, 1.0), u_color_c, 0.48) * (arc * 0.32 + horizon * 0.17 + motes * 0.62);
+    vec3 skyCurrent(vec2 p) {
+      vec2 g = p;
+      float phase = u_time * 0.82 + u_signal * 5.8;
+      float skyPressure = fbm(vec2(g.x * 1.18 + phase * 0.06, g.y * 0.42 + phase * 0.21));
+      float fallingMemory = fbm(vec2(g.x * 2.1 - skyPressure * 0.28, g.y * 0.34 + phase * 0.34));
+      float descendingVeil = smoothstep(0.38, 0.78, fallingMemory)
+        * (0.52 + 0.48 * smoothstep(0.24, 0.86, skyPressure));
+      float pressureFront = softLine(
+        abs(g.y + 0.2 * sin(g.x * 1.65 + phase * 0.42) + skyPressure * 0.34 - 0.2),
+        0.18
+      );
+      float downwardPulse = 0.5 + 0.5 * sin((g.y + fallingMemory * 0.42) * 5.2 + phase * 2.3);
+      downwardPulse = smoothstep(0.24, 0.84, downwardPulse) * descendingVeil;
+      float rainAfterimage = smoothstep(0.52, 0.82, fbm(vec2(g.x * 3.0 + g.y * 0.12, phase * 0.18 - g.y * 0.6)));
+      float horizonVapor = exp(-3.8 * abs(g.y + 0.72 + skyPressure * 0.08));
+      vec3 stormBlue = vec3(0.18, 0.54, 0.98);
+      vec3 vaporWhite = vec3(0.78, 0.94, 1.0);
+      return mix(stormBlue, vaporWhite, clamp(skyPressure + downwardPulse * 0.4, 0.0, 1.0))
+        * (descendingVeil * 0.62 + pressureFront * 0.58 + downwardPulse * 0.72
+          + rainAfterimage * 0.18 + horizonVapor * 0.28);
     }
 
-    vec3 crystalTrace(vec2 p) {
-      vec2 center = vec2(0.57, 0.18);
-      vec2 g = p - center;
-      float phase = u_time * 0.055 + u_signal * 0.7;
-      g = rotate2d(phase) * g;
-      float radius = length(g);
-      float angle = atan(g.y, g.x);
-      float facets = cos(angle * 6.0);
-      float shellA = exp(-92.0 * abs(radius - (0.34 + facets * 0.055)));
-      float shellB = exp(-100.0 * abs(radius - (0.2 - facets * 0.035)));
-      float radialBranches = pow(max(0.0, cos(angle * 6.0)), 28.0);
-      float branches = radialBranches * smoothstep(0.05, 0.12, radius) * (1.0 - smoothstep(0.4, 0.52, radius));
-      float twigs = pow(max(0.0, cos(angle * 12.0 + radius * 23.0)), 34.0);
-      twigs *= smoothstep(0.17, 0.24, radius) * (1.0 - smoothstep(0.38, 0.49, radius));
-      float core = exp(-35.0 * radius * radius);
-      return mix(u_color_c, vec3(0.86, 0.76, 1.0), 0.44) * ((shellA + shellB) * 0.26 + branches * 0.31 + twigs * 0.16 + core * 0.24);
+    vec3 memoryBranches(vec2 p) {
+      vec2 g = p;
+      float phase = u_time * 0.48 + u_signal * 6.4;
+      float growthNoise = fbm(g * 1.7 + vec2(phase * 0.09, -phase * 0.06));
+      vec2 bloomSpace = rotate2d(growthNoise * 0.28 - 0.14) * g;
+      float bloomRadius = length(bloomSpace * vec2(0.9, 1.04));
+      float bloomAngle = atan(bloomSpace.y, bloomSpace.x);
+      float fiveFoldMemory = 0.5 + 0.5 * cos(
+        bloomAngle * 5.0 + sin(bloomAngle * 3.0 - phase * 0.16) * 1.35
+          + growthNoise * 3.2 - phase * 0.22
+      );
+      float expandingField = fbm(
+        bloomSpace * vec2(1.42, 1.08)
+          + vec2(growthNoise * 0.38 + phase * 0.04, -phase * 0.14)
+      );
+      float openingWave = 0.5 + 0.5 * sin(
+        (bloomSpace.y * 0.7 + growthNoise * 0.58) * 5.4
+          - phase * 1.08 + fiveFoldMemory * 0.52
+      );
+      float petalResonance = smoothstep(0.46, 0.82, expandingField)
+        * (0.42 + fiveFoldMemory * 0.34)
+        * exp(-0.3 * bloomRadius);
+      float bloomPulse = smoothstep(0.38, 0.84, openingWave)
+        * (0.4 + expandingField * 0.6);
+      float memoryPollen = starLayer(
+        rotate2d(-0.18) * g - vec2(phase * 0.018, -phase * 0.012),
+        24.0,
+        173.0 + u_signal,
+        0.975
+      ) * smoothstep(0.18, 1.35, bloomRadius);
+      float germinationLight = exp(-3.2 * dot(g * vec2(0.86, 1.0), g * vec2(0.86, 1.0)))
+        * (0.72 + 0.28 * sin(phase * 1.4));
+      vec3 roseMemory = vec3(1.0, 0.24, 0.62);
+      vec3 pollenGold = vec3(1.0, 0.78, 0.34);
+      vec3 ultraviolet = vec3(0.62, 0.34, 1.0);
+      vec3 bloomColor = mix(roseMemory, ultraviolet, smoothstep(0.0, 1.35, bloomRadius));
+      return bloomColor * (bloomPulse * 0.58 + petalResonance * 0.76 + germinationLight * 0.34)
+        + pollenGold * memoryPollen * 0.74;
     }
 
-    vec3 witnessLens(vec2 p) {
-      vec2 center = vec2(-0.12, 0.18);
-      vec2 g = p - center;
-      float d = length(g * vec2(0.74, 1.0));
-      float lens = exp(-105.0 * abs(d - 0.3));
-      float iris = exp(-190.0 * abs(d - 0.115));
-      float aperture = pow(max(0.0, cos(atan(g.y, g.x) * 8.0 + u_time * 0.12)), 20.0) * exp(-d * 7.0);
-      float centerGlow = exp(-42.0 * d * d) * (0.5 + 0.5 * sin(u_time * 0.25 + u_signal * 5.0));
-      return mix(u_color_b, vec3(0.92, 0.98, 1.0), 0.62) * (lens * 0.31 + iris * 0.4 + aperture * 0.23 + centerGlow * 0.12);
+    vec3 witnessConvergence(vec2 p) {
+      vec2 g = p;
+      float phase = u_time * 0.9 + u_signal * 6.0;
+      float decisionNoise = fbm(g * 2.2 + vec2(phase * 0.08, -phase * 0.05));
+      float trunk = softLine(abs(g.x + 0.04 * sin(g.y * 4.0 - phase)), 0.035)
+        * smoothstep(-1.05, -0.08, g.y);
+      float leftChoice = softLine(
+        abs(g.y - 0.58 * abs(g.x) + 0.12 + 0.1 * sin(g.x * 4.2 + phase)),
+        0.046
+      ) * smoothstep(-0.02, 0.95, -g.x);
+      float rightChoice = softLine(
+        abs(g.y - 0.46 * abs(g.x) + 0.1 + 0.11 * sin(g.x * 3.8 - phase * 0.82)),
+        0.046
+      ) * smoothstep(-0.02, 0.95, g.x);
+      float secondDecision = softLine(
+        abs(g.y + 0.34 * abs(g.x) - 0.48 + decisionNoise * 0.14),
+        0.04
+      ) * smoothstep(0.18, 1.0, abs(g.x));
+      float branchingPaths = trunk + leftChoice + rightChoice + secondDecision;
+      float intervention = exp(-9.0 * (abs(g.x) + abs(g.y) * 0.72))
+        * (0.74 + 0.26 * sin(phase * 2.2));
+      float consequenceGlow = smoothstep(0.42, 0.8, decisionNoise)
+        * smoothstep(0.08, 0.92, abs(g.x)) * 0.28;
+      float choiceDust = starLayer(g + vec2(phase * 0.024, 0.0), 15.0, 117.0 + u_signal, 0.95);
+      vec3 choiceCyan = vec3(0.38, 0.94, 1.0);
+      vec3 choiceGold = vec3(1.0, 0.76, 0.34);
+      return mix(choiceCyan, choiceGold, smoothstep(-0.9, 0.9, g.x))
+        * (branchingPaths * 0.94 + intervention * 0.9 + consequenceGlow + choiceDust * 0.8);
     }
 
     vec3 presenceField(vec2 p, float speaker) {
       if (speaker < -0.5) return vec3(0.0);
-      if (speaker < 0.5) return quietField(p);
-      if (speaker < 1.5) return measureGrid(p);
-      if (speaker < 2.5) return orbitSeed(p);
-      if (speaker < 3.5) return tideMemory(p);
-      if (speaker < 4.5) return timeArc(p);
-      if (speaker < 5.5) return crystalTrace(p);
-      return witnessLens(p);
+      if (speaker < 0.5) return centralBreath(p);
+      if (speaker < 1.5) return signalSurge(p);
+      if (speaker < 2.5) return weaveStorm(p);
+      if (speaker < 3.5) return tidalSurge(p);
+      if (speaker < 4.5) return skyCurrent(p);
+      if (speaker < 5.5) return memoryBranches(p);
+      return witnessConvergence(p);
     }
 
     void main() {
@@ -215,27 +274,14 @@
       float ridge = pow(max(0.0, 1.0 - abs(detail * 2.0 - 1.0)), 3.4);
       float veil = smoothstep(0.28, 0.9, cloud) * (0.52 + ridge * 0.62);
 
-      float angle = atan(q.y, q.x);
-      float radius = length(q);
-      float spiral = sin(angle * (3.0 + mod(u_scene, 3.0)) - log(radius + 0.16) * 4.6 + slowTime * 6.0);
-      float arm = pow(max(0.0, spiral * 0.5 + 0.5), 5.0) * exp(-radius * 0.72);
+      float edgeDistance = dot(q * vec2(0.72, 0.9), q * vec2(0.72, 0.9));
       float filamentNoise = fbm(q * 3.8 + vec2(scenePhase, -slowTime));
-      float filament = exp(-34.0 * abs(q.y * 0.58 + 0.16 * sin(q.x * 2.8 + filamentNoise * 4.5 + scenePhase)));
+      float filament = softLine(abs(q.y * 0.58 + 0.22 * sin(q.x * 2.0 + filamentNoise * 3.8 + scenePhase)), 0.055);
 
-      vec3 color = u_color_a * (0.66 + 0.24 * (1.0 - radius));
+      vec3 color = u_color_a * (0.72 + 0.16 * (1.0 - min(1.0, edgeDistance)));
       color += u_color_b * veil * 0.72;
-      color += mix(u_color_b, u_color_c, 0.62) * ridge * 0.31;
-      color += u_color_c * arm * (0.13 + cloud * 0.19);
-      color += mix(u_color_b, u_color_c, 0.4) * filament * (0.035 + 0.08 * detail);
-
-      vec2 beacon = vec2(sin(scenePhase * 1.71) * 0.62, cos(scenePhase * 1.13) * 0.34);
-      float beaconDistance = length(p - beacon);
-      float halo = 0.014 / max(0.025, beaconDistance);
-      float ringRadius = 0.18 + 0.035 * mod(u_scene, 4.0);
-      float orbit = exp(-125.0 * abs(beaconDistance - ringRadius));
-      orbit *= 0.36 + 0.64 * smoothstep(-0.8, 0.8, sin(atan(p.y - beacon.y, p.x - beacon.x) * 3.0 + u_time * 0.11));
-      color += u_color_c * halo * 0.42;
-      color += mix(u_color_b, u_color_c, 0.72) * orbit * 0.16;
+      color += mix(u_color_b, u_color_c, 0.62) * ridge * 0.38;
+      color += mix(u_color_b, u_color_c, 0.4) * filament * (0.025 + 0.055 * detail);
 
       float stars = starLayer(p + vec2(slowTime * 0.08, 0.0), 17.0, 7.0 + u_scene, 0.972);
       stars += starLayer(rotate2d(0.24) * p - vec2(slowTime * 0.05, 0.0), 29.0, 19.0 + u_scene * 2.0, 0.982) * 0.72;
@@ -246,15 +292,15 @@
       float presenceFadeIn = smoothstep(0.42, 1.0, u_speaker_mix);
       vec3 presence = presenceField(p, u_speaker_from) * u_speaker_from_gain * presenceFadeOut
         + presenceField(p, u_speaker_to) * presenceFadeIn;
-      float presenceStrength = 0.82 + u_emphasis * 0.32;
+      float presenceStrength = 1.34 + u_emphasis * 0.48;
       color += presence * presenceStrength;
 
       float dust = hash21(gl_FragCoord.xy + floor(u_time * 0.12)) - 0.5;
       color += dust * 0.012;
-      float vignette = 1.0 - smoothstep(0.18, 1.48, length(p * vec2(0.72, 0.92)));
-      color *= 0.48 + vignette * 0.74;
-      color = vec3(1.0) - exp(-color * 1.18);
-      color = pow(max(color, 0.0), vec3(0.88));
+      float vignette = 1.0 - smoothstep(0.28, 1.62, length(p * vec2(0.68, 0.86)));
+      color *= 0.68 + vignette * 0.58;
+      color = vec3(1.0) - exp(-color * 1.42);
+      color = pow(max(color, 0.0), vec3(0.84));
       gl_FragColor = vec4(color, 1.0);
     }
   `;
