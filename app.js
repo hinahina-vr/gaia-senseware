@@ -862,8 +862,9 @@
       return;
     }
 
-    const startedAt = performance.now();
     const duration = 1150;
+    let previousFrameAt = performance.now();
+    let elapsed = 0;
     const scheduleStep = (step) => {
       const run = (now) => {
         if (!earthViewAnimationFrame && !earthViewAnimationTimer) return;
@@ -877,7 +878,10 @@
       earthViewAnimationTimer = window.setTimeout(() => run(performance.now()), 34);
     };
     const step = (now) => {
-      const progress = clamp((now - startedAt) / duration, 0, 1);
+      const frameDelta = clamp(now - previousFrameAt, 0, 64);
+      previousFrameAt = now;
+      elapsed = Math.min(duration, elapsed + frameDelta);
+      const progress = elapsed / duration;
       const eased = progress * progress * (3 - 2 * progress);
       applyEarthViewState({
         zoom: start.zoom + (target.zoom - start.zoom) * eased,

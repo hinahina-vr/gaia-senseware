@@ -72,6 +72,7 @@ assert.match(appSource, /const getForestGeographicRaster/u);
 assert.match(appSource, /forestOnly: true/u);
 assert.match(appSource, /const animateEarthViewForMode/u);
 assert.match(appSource, /duration = 1150/u);
+assert.match(appSource, /const frameDelta = clamp\(now - previousFrameAt, 0, 64\)/u);
 assert.match(appSource, /cancelEarthViewAnimation\("user-pointer"\)/u);
 assert.match(appSource, /cancelEarthViewAnimation\("user-wheel"\)/u);
 assert.match(appSource, /cancelEarthViewAnimation\("user-keyboard"\)/u);
@@ -83,6 +84,7 @@ assert.match(html, /10の観測展示/u);
 assert.match(html, /01 \/ 10/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.match(html, /gaia-map-exhibits-10-1/u);
+assert.match(html, /app\.js\?v=gaia-map-smooth-stall-1/u);
 assert.doesNotMatch(html, /gaia-remix-20/u);
 assert.doesNotMatch(packageJson, /check-remix-modes/u);
 
