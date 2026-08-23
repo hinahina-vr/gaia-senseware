@@ -18,7 +18,7 @@
   const REACHED_STORAGE_KEY = "gaiaSensewareTrueEnd:reached:v1";
   const CHARACTER_DELAY_MS = 29;
   const FUTURE_SHORE_SCENE_ID = "after-school-stars";
-  const FUTURE_SHORE_START_STEP_ID = "beyond_03_007";
+  const FUTURE_SHORE_START_STEP_ID = "beyond_03_032";
   const SCENE_BLACKOUT_MS = 720;
   const SCENE_TITLE_FADE_MS = 440;
   const SCENE_TITLE_HOLD_MS = 1040;

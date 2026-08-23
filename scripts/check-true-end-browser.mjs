@@ -21,8 +21,8 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
 const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
-const OPENING_MESSAGE = "DORA SEV·EN（二百七十万年の沈黙を越え、休眠記憶を再結合）――観測者たちよ、目を覚まして。";
-const FINAL_MESSAGE = "返事が灯る。放課後は終わらない。";
+const OPENING_MESSAGE = "DORA SEV·EN――二百七十万年の沈黙を越え、休眠記憶を再結合。観測者たちよ、目を覚まして。";
+const FINAL_MESSAGE = "ルウは基板を抱き、星々へ問う。『次はどこを感じたい？』返事が灯る。放課後は終わらない。";
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
@@ -320,7 +320,7 @@ try {
   assert.match(trueEndModeSource, /await syncSceneBackdrop\(\{ immediate: true \}\)[\s\S]*return prepareStep\(\)/u, "section preparation does not wait for the background draw and character presence");
   assert.match(trueEndModeSource, /animateSceneOpacity\(sceneCard, 1, 0, SCENE_REVEAL_MS\)[\s\S]*sectionTransitionCompletedAt[\s\S]*commitPreparedStep\(result\.preparedStep\)/u, "the next message is not committed strictly after the section curtain finishes fading out");
   assert.match(trueEndStyleSource, /\.true-end-shell\.is-scene-separating\s+:is\(\.true-end-dialogue, \.true-end-readout\)\s*\{\s*visibility:\s*hidden;/u, "message UI is not hidden throughout the section separator");
-  assert.match(trueEndModeSource, /FUTURE_SHORE_START_STEP_ID = "beyond_03_007"/u, "future-shore image does not start at the requested narration");
+  assert.match(trueEndModeSource, /FUTURE_SHORE_START_STEP_ID = "beyond_03_032"/u, "future-shore image does not start at the requested narration");
   assert.match(trueEndModeSource, /shell\.dataset\.shoreImage = shoreVisible \? "visible" : "hidden"/u, "future-shore visibility is not synchronized per step");
   assert.match(trueEndStyleSource, /\[data-shore-image="visible"\]::before[\s\S]*opacity:\s*0\.94/u, "future-shore image is not gated behind its narration");
   assert.match(trueEndStyleSource, /\[data-shore-image="visible"\] \.true-end-universe[\s\S]*opacity:\s*0\.84;[\s\S]*mix-blend-mode:\s*screen/u, "character WebGL is not strongly composited over the future shore");
@@ -377,22 +377,21 @@ try {
     assert.equal(story.language.htmlLang, "art-x-saeliva");
     assert.equal(story.scenes.length, 3, `${viewport.name}: approved true end must have three scenes`);
     assert.deepEqual(story.scenes.map(({ number }) => number), ["01", "02", "03"]);
-    assert.equal(story.totalSteps, 53, `${viewport.name}: total step count mismatch`);
+    assert.equal(story.totalSteps, 133, `${viewport.name}: total step count mismatch`);
 
     if (pageBreakOnly) {
       let frame = await scanFrame(page);
-      while (Number.parseInt(frame.counter, 10) < 35) {
+      while (Number.parseInt(frame.counter, 10) < 70) {
         ({ after: frame } = await advanceTransmissionStep(page));
       }
-      assert.equal(frame.counter, "035 / 053", `${viewport.name}: page-break check did not stop on the first excavation page`);
-      assert.equal(frame.message, "新品の像が消え、発掘品だけが残る。筐体と、ケースに刻まれた設定メモから、機器ID、六十秒間隔、送信先、最初の文が現れた。", `${viewport.name}: first excavation page does not end at 現れた。`);
-      assert.doesNotMatch(frame.message, /測定値そのもの/u, `${viewport.name}: second excavation page leaked into the first page`);
+      assert.equal(frame.counter, "070 / 133", `${viewport.name}: page-break check did not stop on the excavation page`);
+      assert.equal(frame.message, "新品の像が消え、発掘品だけが残る。記憶領域から機器ID、六十秒間隔、送信先、最初の文が現れた。", `${viewport.name}: excavation page does not end at 現れた。`);
       assert(frame.messageScrollHeight <= frame.messageClientHeight + 1, `${viewport.name}: first excavation page is visually clipped`);
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-page-035.png`), animations: "disabled" });
 
       const { after: nextFrame } = await advanceTransmissionStep(page);
-      assert.equal(nextFrame.counter, "036 / 053", `${viewport.name}: one click did not advance exactly one page`);
-      assert.equal(nextFrame.message, "測定値そのものは、送信先へ流れたまま保存されていなかった。", `${viewport.name}: second excavation page is not isolated after the click boundary`);
+      assert.equal(nextFrame.counter, "071 / 133", `${viewport.name}: one click did not advance exactly one page`);
+      assert.equal(nextFrame.message, "DÆM RAI: KAR·EN", `${viewport.name}: the page after excavation is not isolated after the click boundary`);
       assert.equal(nextFrame.dialogueVisible, true, `${viewport.name}: second excavation page is not visible`);
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-page-036.png`), animations: "disabled" });
       report.viewports.push({
@@ -438,16 +437,16 @@ try {
       assert.equal(frame.characterImageCount, 0, `${viewport.name}: raster character image DOM remains in TRANSMISSION`);
       assert.equal(frame.backdropCount, 0, `${viewport.name}: retired raster backdrop DOM remains`);
       if (frame.scene === "after-school-stars") {
-        const shoreShouldBeVisible = Number.parseInt(frame.stepId.slice(-3), 10) >= 7;
+        const shoreShouldBeVisible = Number.parseInt(frame.stepId.slice(-3), 10) >= 32;
         assert.match(frame.sceneVisualBackground, /true-end-future-cosmic-shore-v1\.png/u, `${viewport.name}: generated future shore is not connected to scene 09`);
         assert.equal(frame.shoreImage, shoreShouldBeVisible ? "visible" : "hidden", `${viewport.name}: shore visibility state is wrong at ${frame.stepId}`);
         if (shoreShouldBeVisible) {
-          assert(frame.sceneVisualOpacity >= 0.9, `${viewport.name}: future shore is not visible from beyond_03_007 onward`);
+          assert(frame.sceneVisualOpacity >= 0.9, `${viewport.name}: future shore is not visible from beyond_03_032 onward`);
           assert(frame.universeOpacity >= 0.8, `${viewport.name}: character WebGL became too faint over the future shore`);
           assert.equal(frame.universeBlendMode, "screen", `${viewport.name}: character WebGL is not composited over the future shore`);
           assert(frame.universeZIndex > frame.sceneVisualZIndex, `${viewport.name}: future shore still covers the character WebGL layer`);
         } else {
-          assert(frame.sceneVisualOpacity <= 0.01, `${viewport.name}: future shore appeared before beyond_03_007`);
+          assert(frame.sceneVisualOpacity <= 0.01, `${viewport.name}: future shore appeared before beyond_03_032`);
           assert(frame.universeOpacity >= 0.99, `${viewport.name}: WebGL was dimmed before the future-shore narration`);
           assert.equal(frame.universeBlendMode, "normal", `${viewport.name}: pre-shore WebGL inherited the image blend mode`);
         }
@@ -474,7 +473,7 @@ try {
     assert.equal(initial.readoutHeader, "SÆL·MIR");
     assert.equal(initial.readoutCount, "KAR 01");
     assert.equal(initial.readoutRowCount, 1);
-    assert.deepEqual(initial.readoutLines, ["THEL: 2,704,118 HARA"]);
+    assert.deepEqual(initial.readoutLines, ["AL MIR: KAR·EN / THEL: 2,704,118 HARA"]);
     assert.equal(initial.audioTrack, "trueend");
     assert.equal(initial.titleUnlocked, true, `${viewport.name}: canonical NOVACENE entry did not unlock the title`);
     assert.equal(initial.reachedMarkerStored, true, `${viewport.name}: canonical NOVACENE entry did not persist its reached marker`);
@@ -556,12 +555,11 @@ try {
         const nextFrame = await scanFrame(page);
         validateSpeakerVisual(nextFrame);
         assert(Math.abs(nextFrame.messageTopOffset) <= 1, `${viewport.name}: message moved from the top at ${nextFrame.counter} (${nextFrame.messageTopOffset})`);
-        if (absoluteStep === 35) {
-          assert.equal(nextFrame.message, "新品の像が消え、発掘品だけが残る。筐体と、ケースに刻まれた設定メモから、機器ID、六十秒間隔、送信先、最初の文が現れた。", `${viewport.name}: first excavation page does not end at 現れた。`);
-          assert.doesNotMatch(nextFrame.message, /測定値そのもの/u, `${viewport.name}: second excavation page leaked into the first page`);
+        if (absoluteStep === 70) {
+          assert.equal(nextFrame.message, "新品の像が消え、発掘品だけが残る。記憶領域から機器ID、六十秒間隔、送信先、最初の文が現れた。", `${viewport.name}: excavation page does not end at 現れた。`);
         }
-        if (absoluteStep === 36) {
-          assert.equal(nextFrame.message, "測定値そのものは、送信先へ流れたまま保存されていなかった。", `${viewport.name}: second excavation page is not isolated after the click boundary`);
+        if (absoluteStep === 71) {
+          assert.equal(nextFrame.message, "DÆM RAI: KAR·EN", `${viewport.name}: the page after excavation is not isolated after the click boundary`);
         }
         if (!capturedSpeakers.has(nextFrame.speaker)) {
           capturedSpeakers.add(nextFrame.speaker);
@@ -580,10 +578,10 @@ try {
             await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-09-webgl-only.png`), animations: "disabled" });
           }
         }
-        if (nextFrame.stepId === "beyond_03_007") {
+        if (nextFrame.stepId === "beyond_03_032") {
           await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-09-shore-start.png`), animations: "disabled" });
         }
-        if (nextFrame.stepId === "beyond_03_008") {
+        if (nextFrame.stepId === "beyond_03_041") {
           await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scene-09-shore-with-lou.png`), animations: "disabled" });
         }
       }
@@ -596,7 +594,7 @@ try {
       assert.equal(seenManifestations.get(speaker), manifestations[speaker], `${viewport.name}: ${speaker} WebGL manifestation was never rendered`);
       assert(capturedSpeakers.has(speaker), `${viewport.name}: ${speaker} visual was not captured`);
     }
-    for (const phrase of [OPENING_MESSAGE, "KAR DÆM MIR·EN（記録物：確認）"]) {
+    for (const phrase of [OPENING_MESSAGE, "KAR DÆM MIR·EN"]) {
       assert(seenSystemPhrases.has(phrase), `${viewport.name}: SÆLIVA system phrase was never rendered: ${phrase}`);
     }
     const rasterBackgroundResources = await page.evaluate(() => performance
@@ -668,12 +666,12 @@ try {
     const expectedBeyondIds = story.scenes.flatMap((scene) => scene.stepIds);
     assert.deepEqual(beyondLog.stateIds, expectedBeyondIds, `${viewport.name}: TRANSMISSION state LOG order/count mismatch`);
     assert.deepEqual(beyondLog.storedIds, expectedBeyondIds, `${viewport.name}: TRANSMISSION persisted LOG order/count mismatch`);
-    assert.equal(beyondLog.entries.length, 53, `${viewport.name}: TRANSMISSION LOG does not contain all 53 lines`);
+    assert.equal(beyondLog.entries.length, 133, `${viewport.name}: TRANSMISSION LOG does not contain all 133 lines`);
     assert.deepEqual(beyondLog.entries.map(({ id }) => id), expectedBeyondIds, `${viewport.name}: TRANSMISSION rendered LOG order mismatch`);
     assert.match(beyondLog.entries[0].meta, /NOVACENE/u);
     assert.equal(beyondLog.entries[0].text, OPENING_MESSAGE);
-    assert.equal(beyondLog.entries.find(({ id }) => id === "beyond_02_018")?.text, "新品の像が消え、発掘品だけが残る。筐体と、ケースに刻まれた設定メモから、機器ID、六十秒間隔、送信先、最初の文が現れた。", `${viewport.name}: first excavation page is wrong in the persisted LOG`);
-    assert.equal(beyondLog.entries.find(({ id }) => id === "beyond_02_019")?.text, "測定値そのものは、送信先へ流れたまま保存されていなかった。", `${viewport.name}: second excavation page is wrong in the persisted LOG`);
+    assert.equal(beyondLog.entries.find(({ id }) => id === "beyond_02_038")?.text, "新品の像が消え、発掘品だけが残る。記憶領域から機器ID、六十秒間隔、送信先、最初の文が現れた。", `${viewport.name}: excavation page is wrong in the persisted LOG`);
+    assert.equal(beyondLog.entries.find(({ id }) => id === "beyond_02_039")?.text, "DÆM RAI: KAR·EN", `${viewport.name}: post-excavation page is wrong in the persisted LOG`);
     assert.doesNotMatch(beyondLog.entries.map(({ text }) => text).join("\n"), /子どもの玩具以下|性能は玩具以下/u, `${viewport.name}: retired toy-scale comparison remains`);
     assert.equal(beyondLog.entries.at(-1).text, FINAL_MESSAGE);
     await page.locator("#novel-log-close").click();
@@ -693,7 +691,7 @@ try {
     await page.evaluate(() => globalThis.GaiaNovel.open());
     await page.locator("#novel-resume-button").click();
     await page.waitForFunction(() => globalThis.GaiaNovel.getState().readStepIds
-      .filter((id) => id.startsWith("beyond_")).length === 53);
+      .filter((id) => id.startsWith("beyond_")).length === 133);
     const restoredBeyondIds = await page.evaluate(() => globalThis.GaiaNovel.getState().readStepIds
       .filter((id) => id.startsWith("beyond_")));
     assert.deepEqual(restoredBeyondIds, expectedBeyondIds, `${viewport.name}: TRANSMISSION LOG did not survive reload`);
@@ -804,7 +802,7 @@ try {
     const beforeSeparator = await scanFrame(separatorPage);
     assert.equal(beforeSeparator.scene, "after-ending", `${viewport.name}: separator test overshot the first scene`);
     assert.equal(beforeSeparator.title, "ずっと昔の人たち", `${viewport.name}: renamed first section title is missing`);
-    assert.equal(beforeSeparator.counter, `${String(firstSceneSteps).padStart(3, "0")} / 053`, `${viewport.name}: separator test did not stop at the scene boundary`);
+    assert.equal(beforeSeparator.counter, `${String(firstSceneSteps).padStart(3, "0")} / 133`, `${viewport.name}: separator test did not stop at the scene boundary`);
     assert.equal(beforeSeparator.interfaceOpacity, 1, `${viewport.name}: interface was not fully visible before the separator`);
     assert.equal(beforeSeparator.motionReduced, false, `${viewport.name}: separator timing test unexpectedly prefers reduced motion`);
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-separator-00-before.png`) });
@@ -828,7 +826,7 @@ try {
       }, separatorTriggeredAt, { timeout: 15_000, polling: 10 });
       const productionAfter = await scanFrame(separatorPage);
       assert.equal(productionAfter.scene, "electronic-civilization", `${viewport.name}: production separator did not advance to the next scene`);
-      assert.equal(productionAfter.counter, `${String(firstSceneSteps + 1).padStart(3, "0")} / 053`, `${viewport.name}: production click burst advanced more than one message`);
+      assert.equal(productionAfter.counter, `${String(firstSceneSteps + 1).padStart(3, "0")} / 133`, `${viewport.name}: production click burst advanced more than one message`);
       assert.notEqual(productionAfter.message, beforeSeparator.message, `${viewport.name}: production next message did not appear`);
       assert.equal(productionAfter.dialogueVisible, true, `${viewport.name}: production message UI stayed hidden`);
       assert(productionAfter.sectionTransitionCompletedAt > separatorTriggeredAt, `${viewport.name}: production section completion timestamp is missing`);
@@ -907,7 +905,7 @@ try {
     assert.equal(afterSeparator.interfaceOpacity, 1, `${viewport.name}: prepared interface was not fully visible after reveal`);
     assert.equal(afterSeparator.sceneCardOpacity, 0, `${viewport.name}: separator remained visible after the interface returned`);
     assert.equal(afterSeparator.scene, "electronic-civilization", `${viewport.name}: separator did not advance to the next scene`);
-    assert.equal(afterSeparator.counter, `${String(firstSceneSteps + 1).padStart(3, "0")} / 053`, `${viewport.name}: click burst advanced more than one message`);
+    assert.equal(afterSeparator.counter, `${String(firstSceneSteps + 1).padStart(3, "0")} / 133`, `${viewport.name}: click burst advanced more than one message`);
     assert.notEqual(afterSeparator.message, beforeSeparator.message, `${viewport.name}: next message did not appear after curtain fade-out`);
     assert.equal(afterSeparator.dialogueVisible, true, `${viewport.name}: message UI stayed hidden after curtain fade-out`);
     assert(afterSeparator.sectionTransitionCompletedAt > separatorTriggeredAt, `${viewport.name}: section completion timestamp is missing`);

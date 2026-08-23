@@ -248,9 +248,8 @@ try {
       "OpenAI ImageGen",
       "背景美術",
       "音楽",
-      "オープニングテーマ曲『Planet Forecast - Hope』",
-      "エンディングテーマ曲『AfterSchool,AfterGlow』",
-      "by Suno.ai",
+      "AfterSchool Afterglow",
+      "glitchyeventdj664",
       "ZEN大学『共創地球論』",
       "ZEN大学『人新世の人類学』",
       "参照データ",
@@ -277,9 +276,8 @@ try {
     });
     const musicCredit = initial.creditRows.find((row) => row.role === "MUSIC");
     assert.deepEqual(musicCredit?.names, [
-      "オープニングテーマ曲『Planet Forecast - Hope』",
-      "エンディングテーマ曲『AfterSchool,AfterGlow』",
-      "by Suno.ai",
+      "AfterSchool Afterglow",
+      "glitchyeventdj664",
     ], `${viewport.name}: music credit wording or order is incorrect`);
     assert.equal(musicCredit?.nameOverflow, false, `${viewport.name}: music credit overflows horizontally`);
     assert.equal(initial.overflowX, 0);

@@ -1082,7 +1082,7 @@
 
   const migrateStepId = (stepId, sourceVersion = story.storyVersion) => {
     if (typeof stepId !== "string") return null;
-    if (Number(sourceVersion) < 12) return firstStepForScene(story.startSceneId);
+    if (Number(sourceVersion) < 13) return firstStepForScene(story.startSceneId);
     let migratedStepId = stepId;
     if (Number(sourceVersion) < 8 && version7To8StepIds.has(stepId)) {
       migratedStepId = version7To8StepIds.get(stepId);
@@ -1111,7 +1111,7 @@
 
   const normalizeState = (candidate) => {
     const sourceVersion = Number.isFinite(Number(candidate?.storyVersion)) ? Number(candidate.storyVersion) : 7;
-    const resetsLegacyProgress = sourceVersion < 12;
+    const resetsLegacyProgress = sourceVersion < 13;
     const legacyIndexStep = Number.isInteger(candidate?.stepIndex)
       ? allSteps[Math.max(0, Math.min(allSteps.length - 1, candidate.stepIndex))]?.id
       : null;
@@ -3948,7 +3948,7 @@
       { role: "制作支援", department: "PRODUCTION SUPPORT", names: ["OpenAI Codex"] },
       { role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["ひなひな", "OpenAI ImageGen"] },
       { role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] },
-      { role: "音楽", department: "MUSIC", names: ["オープニングテーマ曲『Planet Forecast - Hope』", "エンディングテーマ曲『AfterSchool,AfterGlow』", "by Suno.ai"] },
+      { role: "音楽", department: "MUSIC", names: ["AfterSchool Afterglow", "glitchyeventdj664"] },
       { role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』", "ZEN大学『人新世の人類学』"] },
       { role: "参照データ", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] },
     ].forEach(({ role, department, names, note = "" }) => {

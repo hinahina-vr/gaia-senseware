@@ -2,12 +2,12 @@
   "use strict";
 
   const expectedSceneCounts = Object.freeze({
-    festival_concept: 40,
-    map_mode01: 34,
+    festival_concept: 73,
+    map_mode01: 43,
     gx_experience: 46,
-    esp32_pitch: 41,
-    circle_invitation: 51,
-    welcome_chat: 60,
+    esp32_pitch: 50,
+    circle_invitation: 79,
+    welcome_chat: 83,
   });
 
   const gallery = Object.freeze([
@@ -116,7 +116,8 @@
     if (!sceneIds.includes(step?.sceneId)) {
       throw new Error(`[GAIA novel] Unknown contest-v10 background scene for ${step?.id || "unknown step"}`);
     }
-    const number = numberedStep(step);
+    const cueStep = step?.cueFromStepId ? { ...step, id: step.cueFromStepId } : step;
+    const number = numberedStep(cueStep);
     const cue = number === null ? null : limitedStory.find((candidate) => (
       candidate.sceneId === step.sceneId && number >= candidate.from && number <= candidate.to
     ));

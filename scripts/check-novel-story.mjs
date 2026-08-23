@@ -10,9 +10,9 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "limited-feature-script.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
 const expectedFreezeHash = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
-const expectedApprovedHash = "31f84f224fd85e03eeea22fce4f675529c7232b9f114f0ce50a3013e41b22e49";
+const expectedApprovedHash = "2ef34f5d4dda6e38227e638e76506a03072445ef55b616ff1894314816aeba3f";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
-const expectedSceneCounts = [40, 34, 46, 41, 51, 60];
+const expectedSceneCounts = [73, 43, 46, 50, 79, 83];
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 
 const canonBytes = fs.readFileSync(canonPath);
@@ -26,11 +26,11 @@ await import(`${pathToFileURL(dataPath).href}?check=${Date.now()}`);
 const story = globalThis.GAIA_NOVEL_STORY;
 const approved = readApprovedStoryScript();
 assert.ok(story, "GAIA_NOVEL_STORYを読み込めません");
-assert.equal(story.storyVersion, 12);
+assert.equal(story.storyVersion, 13);
 assert.equal(story.sourceSha256, expectedFreezeHash);
 assert.equal(story.approvedSourceSha256, expectedApprovedHash);
 assert.equal(approved.sha256, expectedApprovedHash);
-assert.equal(story.revisionId, "approved-script-20260823");
+assert.equal(story.revisionId, "approved-script-20260824");
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds);
 assert.deepEqual(story.requiredSceneIds, expectedSceneIds);
 assert.deepEqual(story.temporal.sceneOrder, expectedSceneIds);
@@ -38,7 +38,7 @@ assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedSceneC
 
 const steps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(steps.map((step) => [step.id, step]));
-assert.equal(steps.length, 272, "承認済み本文271件とスタッフロール接続1件が必要です");
+assert.equal(steps.length, 374, "承認済み本文373件とスタッフロール接続1件が必要です");
 assert.equal(stepMap.size, steps.length, "step IDが重複しています");
 assert.equal(steps.at(-1).id, "welcome_chat_095", "スタッフロール接続が末尾にありません");
 
@@ -65,8 +65,10 @@ for (const approvedScene of approved.mainScenes) {
   }
 }
 
+const esp32Steps = story.scenes.find((scene) => scene.id === "esp32_pitch").steps;
+const esp32LearningCurveStart = esp32Steps.findIndex((step) => step.id === "esp32_pitch_016");
 assert.deepEqual(
-  story.scenes.find((scene) => scene.id === "esp32_pitch").steps.slice(12, 22).map((step) => step.id),
+  esp32Steps.slice(esp32LearningCurveStart, esp32LearningCurveStart + 10).map((step) => step.id),
   ["esp32_pitch_016", "esp32_pitch_016a", "esp32_pitch_016b", "esp32_pitch_016c", "esp32_pitch_016d", "esp32_pitch_016e", "esp32_pitch_016f", "esp32_pitch_016g", "esp32_pitch_016h", "esp32_pitch_016i"],
   "ESP32反論と再提案の学習曲線が崩れています",
 );
@@ -101,8 +103,8 @@ story.scenes.forEach((scene, index) => {
 });
 
 const novelModeSource = fs.readFileSync(path.join(projectRoot, "novel-mode.js"), "utf8");
-assert.match(novelModeSource, /Number\(sourceVersion\) < 12\) return firstStepForScene\(story\.startSceneId\)/u, "旧台本saveをv12の先頭へ移行する必要があります");
-assert.match(novelModeSource, /const resetsLegacyProgress = sourceVersion < 12/u);
+assert.match(novelModeSource, /Number\(sourceVersion\) < 13\) return firstStepForScene\(story\.startSceneId\)/u, "旧台本saveをv13の先頭へ移行する必要があります");
+assert.match(novelModeSource, /const resetsLegacyProgress = sourceVersion < 13/u);
 assert.match(novelModeSource, /normalized\.audio = \{[\s\S]*?candidate\.audio/u, "旧saveの音量・mute設定は保持する必要があります");
 
 console.log(`approved story check passed: ${story.scenes.length} scenes, ${steps.length} runtime steps, source ${approved.sha256}`);

@@ -26,7 +26,7 @@ const staffRoll = Object.freeze({
     Object.freeze({ role: "制作支援", department: "PRODUCTION SUPPORT", names: ["OpenAI Codex"] }),
     Object.freeze({ role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["ひなひな", "OpenAI ImageGen"] }),
     Object.freeze({ role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] }),
-    Object.freeze({ role: "音楽", department: "MUSIC", names: ["オープニングテーマ曲『Planet Forecast - Hope』", "エンディングテーマ曲『AfterSchool,AfterGlow』", "by Suno.ai"] }),
+    Object.freeze({ role: "音楽", department: "MUSIC", names: ["AfterSchool Afterglow", "glitchyeventdj664"] }),
     Object.freeze({ role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』", "ZEN大学『人新世の人類学』"] }),
     Object.freeze({ role: "参照データ", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] }),
   ]),

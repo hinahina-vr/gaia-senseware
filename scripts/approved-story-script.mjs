@@ -4,8 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const approvedStoryPath = path.join(projectRoot, "story", "APPROVED_SCRIPT_2026-08-23.md");
-const EXPECTED_SHA256 = "31f84f224fd85e03eeea22fce4f675529c7232b9f114f0ce50a3013e41b22e49";
+export const approvedStoryPath = path.join(projectRoot, "story", "APPROVED_SCRIPT_2026-08-24.md");
+const EXPECTED_SHA256 = "2ef34f5d4dda6e38227e638e76506a03072445ef55b616ff1894314816aeba3f";
 const EXPECTED_MAIN_SCENES = Object.freeze([
   "festival_concept",
   "map_mode01",
@@ -129,7 +129,7 @@ const assertUniqueIds = (scenes, label) => {
 export const readApprovedStoryScript = () => {
   const bytes = fs.readFileSync(approvedStoryPath);
   const digest = crypto.createHash("sha256").update(bytes).digest("hex");
-  if (digest !== EXPECTED_SHA256) throw new Error("story/APPROVED_SCRIPT_2026-08-23.mdが承認済み入力と一致しません");
+  if (digest !== EXPECTED_SHA256) throw new Error("story/APPROVED_SCRIPT_2026-08-24.mdが承認済み入力と一致しません");
   const source = bytes.toString("utf8").replace(/\r\n?/gu, "\n");
   const mainScenes = parseScenes(source, {
     startMarker: "# PART I｜本編",
@@ -150,7 +150,7 @@ export const readApprovedStoryScript = () => {
   assertUniqueIds(trueEndScenes, "NOVACENE");
   const mainCount = mainScenes.reduce((count, scene) => count + scene.entries.length, 0);
   const trueEndCount = trueEndScenes.reduce((count, scene) => count + scene.entries.length, 0);
-  if (mainCount !== 271 || trueEndCount !== 53) {
+  if (mainCount !== 373 || trueEndCount !== 133) {
     throw new Error(`承認済み台本の件数が不正です: ${mainCount} main / ${trueEndCount} NOVACENE`);
   }
   return Object.freeze({ mainScenes, trueEndScenes, sha256: digest });

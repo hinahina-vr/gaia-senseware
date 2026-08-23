@@ -272,9 +272,10 @@ for (const scene of scenes) {
     return step;
   });
 }
-const expectedInjectedIds = Object.freeze(Array.from({ length: 9 }, (_, index) => `esp32_pitch_016${String.fromCharCode(97 + index)}`));
-if (approvedMissingBaseIds.join("|") !== expectedInjectedIds.join("|")) {
-  throw new Error(`承認済み本編の新規IDが想定外です: ${approvedMissingBaseIds.join(", ")}`);
+const expectedInjectedIds = new Set(Array.from({ length: 9 }, (_, index) => `esp32_pitch_016${String.fromCharCode(97 + index)}`));
+const unexpectedApprovedIds = approvedMissingBaseIds.filter((id) => !expectedInjectedIds.has(id) && !/_new_\d{3}$/u.test(id));
+if (unexpectedApprovedIds.length > 0) {
+  throw new Error(`承認済み本編の新規IDが想定外です: ${unexpectedApprovedIds.join(", ")}`);
 }
 if (!endingStep) throw new Error("スタッフロール接続ステップ welcome_chat_095 がありません");
 scenes.find((scene) => scene.id === "welcome_chat").steps.push(endingStep);
@@ -282,13 +283,13 @@ scenes.find((scene) => scene.id === "welcome_chat").steps.push(endingStep);
 scenes.forEach((scene, index) => { scene.nextSceneId = scenes[index + 1]?.id || null; });
 const sceneOrder = scenes.map((scene) => scene.id);
 const story = {
-  storyVersion: 12,
+  storyVersion: 13,
   title: "惑星の放課後",
   systemTitle: "GAIA SENSEWARE",
   subtitle: "GAIA SENSATION",
   estimatedDuration: "10〜12分",
   sourceSha256: EXPECTED_SOURCE_SHA256,
-  revisionId: "approved-script-20260823",
+  revisionId: "approved-script-20260824",
   approvedSourceSha256: approvedScript.sha256,
   characterSourceSha256: sha256(characterSourceBytes),
   characters,
@@ -311,7 +312,7 @@ const story = {
   scenes,
 };
 
-const banner = "// Generated from story/物語台本.md by scripts/build-novel-story.mjs. Do not edit by hand.\n";
+const banner = "// Generated from story/APPROVED_SCRIPT_2026-08-24.md by scripts/build-novel-story.mjs. Do not edit by hand.\n";
 const output = `${banner}globalThis.GAIA_NOVEL_STORY = Object.freeze(${JSON.stringify(story, null, 2)});\nglobalThis.GAIA_NOVEL_STORY_V6 = globalThis.GAIA_NOVEL_STORY;\n`;
 fs.writeFileSync(outputPath, output, "utf8");
 console.log(`wrote ${path.relative(projectRoot, outputPath)} (${scenes.length} scenes, ${scenes.flatMap((scene) => scene.steps).length} steps)`);

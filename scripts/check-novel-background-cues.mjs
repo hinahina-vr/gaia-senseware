@@ -10,8 +10,8 @@ await import(new URL("../novel-background-cues.js", import.meta.url));
 const story = globalThis.GAIA_NOVEL_STORY;
 const cues = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
-const expectedCounts = [40, 34, 46, 41, 51, 60];
-assert.equal(story.storyVersion, 12);
+const expectedCounts = [73, 43, 46, 50, 79, 83];
+assert.equal(story.storyVersion, 13);
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds);
 assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedCounts);
 assert.deepEqual(cues.sceneIds, expectedSceneIds);
@@ -20,7 +20,7 @@ assert.deepEqual(cues.expectedSceneCounts, Object.fromEntries(expectedSceneIds.m
 const allSteps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(allSteps.map((step) => [step.id, step]));
 const resolved = allSteps.map((step) => ({ step, cue: cues.forStep(step) }));
-assert.equal(resolved.length, 272);
+assert.equal(resolved.length, 374);
 assert(resolved.every(({ cue }) => cue?.assetPath && cue?.motion), "全runtime stepに背景とmotionが必要です");
 assert(resolved.every(({ cue }) => cue.assetPath.startsWith("assets/")), "背景がassets配下から外れています");
 assert(

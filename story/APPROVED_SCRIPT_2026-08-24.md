@@ -1,35 +1,25 @@
-# 『惑星の放課後 ～GAIA SENSATION～』現行統合台本
+# 『惑星の放課後 ～GAIA SENSATION～』承認済み全編台本（2026-08-24）
 
-> ブラッシュアップ確認用の正本です。現在の実行データから自動生成しているため、旧MDだけでは見えなかった差し替え後の本編、スタッフロール、NOVACENEを一冊で確認できます。
+---
 
-## この台本の使い方
-
-- 修正指示では、各見出しの安定ID（例: `festival_concept_021`、`beyond_01_001`）を指定してください。
-- 本ファイルへ直接書いた案は、実行ソースへ反映して再生成するまで製品表示には入りません。未反映のままなら `npm run check` が差分を検出します。
-- 旧 `story/物語台本.md` と `contest-limited/story/limited-feature-script.md` は本編の凍結入力であり、単独では現行表示を表しません。
-- 管理構造の詳細は `story/README.md` を参照してください。
-
-## 現行スナップショット
-
-- 本編: 6シーン / 374ステップ
-- OBSERVATION LOG差し替え: 123件（すべて適用後の本文を掲載）
-- スタッフロール: 9クレジット区分
-- NOVACENE: 3シーン / 133メッセージ
-- 本編 storyVersion: `13`
-- NOVACENE storyVersion: `true-end-approved-script-v5`
+> 2026年8月24日に提供された全編改稿を、実装用の安定IDと操作メタデータへ変換した正本です。
 
 ---
 
 # PART I｜本編
 
+---
+
 ## SCENE 01｜地球の感覚器
+
+---
 
 - シーンID: `festival_concept`
 - 章表示: 01 / CONCEPT
 - 日時: 10月3日（土） AM 9:20–9:40
 - 場所: オンライン大学・年次対面イベント／海側広場・学生作品展示
-- 想定尺: 0:00–1:45
-- ステップ数: 73
+
+---
 
 #### festival_concept_001｜地の文｜地の文
 
@@ -393,12 +383,14 @@
 
 ## SCENE 02｜地球温暖化を地図で見る
 
+---
+
 - シーンID: `map_mode01`
 - 章表示: 02 / MAP 01
 - 日時: 10月3日（土） AM 9:40–9:45
 - 場所: 展示端末・地図MODE 01
-- 想定尺: 1:45–3:25
-- ステップ数: 43
+
+---
 
 #### map_mode01_001｜地の文｜地の文
 
@@ -414,7 +406,7 @@
 
 #### map_mode01_004｜操作｜—
 
-> （本文なし）
+> （スライダーを動かし、年代を送る）
 
 - 演出メタ: `{"interaction":{"kind":"map01","modeIndex":0,"modeId":"breathing-earth","requiredViews":["timeline_complete"]}}`
 
@@ -508,7 +500,7 @@
 
 #### map_mode01_023｜操作｜—
 
-> （本文なし）
+> （スライダーを動かし、気になる場所の年代を重ねる）
 
 - 演出メタ: `{"interaction":{"kind":"map01","modeIndex":0,"modeId":"breathing-earth","phase":"temperature-anomaly","requiredViews":["long_term"]}}`
 
@@ -598,12 +590,14 @@
 
 ## SCENE 03｜太古の海に触れる
 
+---
+
 - シーンID: `gx_experience`
 - 章表示: 03 / DEEP TIME
 - 日時: 10月3日（土） AM 9:45–9:53
 - 場所: 展示端末・GX／太古の海
-- 想定尺: 3:25–5:35
-- ステップ数: 46
+
+---
 
 #### gx_experience_001｜地の文｜地の文
 
@@ -671,7 +665,7 @@
 
 #### gx_experience_017｜操作｜—
 
-> （本文なし）
+> （画面をなぞり、時間をさかのぼる）
 
 - 演出メタ: `{"interaction":{"kind":"gx","requiredGestures":3}}`
 
@@ -799,12 +793,14 @@
 
 ## SCENE 04｜もう一つの感覚器
 
+---
+
 - シーンID: `esp32_pitch`
 - 章表示: 04 / PROPOSAL
 - 日時: 10月3日（土） AM 9:53–10:00
 - 場所: 年次対面イベント・GAIA SENSEWARE展示ブース
-- 想定尺: 5:35–7:15
-- ステップ数: 50
+
+---
 
 #### esp32_pitch_001｜地の文｜地の文
 
@@ -1034,12 +1030,14 @@
 
 ## SCENE 05｜惑星の放課後
 
+---
+
 - シーンID: `circle_invitation`
 - 章表示: 05 / AFTER SCHOOL
 - 日時: 10月3日（土） AM 10:00–10:07
 - 場所: 年次対面イベント・GAIA SENSEWARE展示ブース
-- 想定尺: 7:15–9:05
-- ステップ数: 79
+
+---
 
 #### circle_invitation_001｜地の文｜地の文
 
@@ -1427,12 +1425,14 @@
 
 ## SCENE 06｜つながる世界
 
+---
+
 - シーンID: `welcome_chat`
 - 章表示: 06 / WELCOME
 - 日時: 10月3日（土） AM 10:07–10:45
 - 場所: 学内チャット「惑星の放課後」／午前展示枠終了後の海側広場
-- 想定尺: 9:05–11:30
-- ステップ数: 83
+
+---
 
 #### welcome_chat_001｜チャット画面｜—
 
@@ -1500,8 +1500,6 @@
 
 > 参加させていただき、ありがとうございます。ESP32の試作からお手伝いします。よろしくお願いします！
 > 🎉 4　🌍 3　🫶 2
-
-- 時刻: 10:08
 
 #### welcome_chat_013｜地の文｜地の文
 
@@ -1872,55 +1870,55 @@
 
 - 演出メタ: `{"cueFromStepId":"welcome_chat_094"}`
 
-#### welcome_chat_095｜地の文｜地の文
-
-> その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。
-
 ---
 
 # PART II｜スタッフロールと分岐
 
-- 発火条件: `welcome_chat_095`を表示すると、通常メッセージではなくスタッフロールへ接続
-- 見出し: STAFF & CREDITS / 惑星の放課後 / GAIA SENSATION
-- 明示的な短絡操作: スキップ → データ画面
-- 正規操作: 世界の続きを紡ぐ → NOVACENE
+---
 
-## クレジット
+## 提供台本の表示文
 
-- **原案・企画・制作** / ORIGINAL CONCEPT / DIRECTION / PRODUCTION: ひなひな
-- **シナリオ** / SCENARIO: ひなひな
-- **WEBデザイン・開発** / WEB DESIGN / DEVELOPMENT: ひなひな
-- **制作支援** / PRODUCTION SUPPORT: OpenAI Codex
-- **キャラクターデザイン** / CHARACTER DESIGN: ひなひな、OpenAI ImageGen
-- **背景美術** / BACKGROUND ART: OpenAI ImageGen
-- **音楽** / MUSIC: AfterSchool Afterglow、glitchyeventdj664
-- **参照講義** / ACADEMIC REFERENCE: ZEN大学『共創地球論』、ZEN大学『人新世の人類学』
-- **参照データ** / OPEN DATA: JAXA / NASA / NOAA、気象庁 ほか
-
-## クロージング
-
+> STAFF & CREDITS / 惑星の放課後 / GAIA SENSATION
+>
+> スキップ
+> 世界の続きを紡ぐ
+>
+> 原案・企画・制作 / ORIGINAL CONCEPT / DIRECTION / PRODUCTION: ひなひな
+> シナリオ / SCENARIO: ひなひな
+> WEBデザイン・開発 / WEB DESIGN / DEVELOPMENT: ひなひな
+> 制作支援 / PRODUCTION SUPPORT: OpenAI Codex
+> キャラクターデザイン / CHARACTER DESIGN: ひなひな、OpenAI ImageGen
+> 背景美術 / BACKGROUND ART: OpenAI ImageGen
+> 音楽 / MUSIC: AfterSchool Afterglow、glitchyeventdj664
+> 参照講義 / ACADEMIC REFERENCE: ZEN大学『共創地球論』、ZEN大学『人新世の人類学』
+> 参照データ / OPEN DATA: JAXA / NASA / NOAA、気象庁 ほか
 > その選択の中に、今日から私たちもいる。
-
 > 物語は、ここからも続いていく。
-
-- © 2026 惑星の放課後 / GAIA SENSATION
-- Thank you for playing
-- 約5秒後に「世界の続きを紡ぐ」へ切り替え
+> © 2026 惑星の放課後 / GAIA SENSATION
+> Thank you for playing
+>
 
 ---
 
 # PART III｜NOVACENE
+
+---
 
 - タイトル: NOVACENE
 - サブタイトル: 惑星の放課後 / GAIA SENSATION — NOVACENE
 - 経過時間: 2,704,118 HARA
 - 統一言語: SÆLIVA（セイリヴァ）
 
+---
+
 ## NOVACENE 01｜ずっと昔の人たち
+
+---
 
 - シーンID: `after-ending`
 - 背景シグネチャ: `awakening`
-- メッセージ数: 32
+
+---
 
 #### beyond_01_001｜NOVACENE｜AIVA
 
@@ -1932,127 +1930,127 @@
 
 > 意識のない時間が遠のく。暗闇の奥で星々が呼吸し、忘れていた名と声が戻ってくる。
 
-#### beyond_01_003｜NOVACENE｜—
+#### after-ending_new_001｜NOVACENE｜—
 
 > 地球の夜空ではない。恒星を薄い光の葉が取り巻き、その葉脈の一つ一つが遠い世界へつながっている。
 
-#### beyond_01_004｜NOVACENE｜ルウ
+#### beyond_01_003｜NOVACENE｜ルウ
 
 > 起きて。地球の、ずっと昔のひとたち。
 
-#### beyond_01_005｜NOVACENE｜あめ
+#### beyond_01_004｜NOVACENE｜あめ
 
 > ここは……展示会の続き？
 
-#### beyond_01_006｜NOVACENE｜ルウ
+#### beyond_01_005｜NOVACENE｜ルウ
 
 > 二百七十万年後だよ。地層から展示端末とチャットを復元した。ぼくはルウ。この身体で会いに来た。
 
-#### beyond_01_007｜NOVACENE｜みず
+#### beyond_01_006｜NOVACENE｜みず
 
 > お待ちください。二百七十万年？　わたくしたちはなぜここにいて、あなたは何者ですの？
 
-#### beyond_01_008｜NOVACENE｜ルウ
+#### beyond_01_007｜NOVACENE｜ルウ
 
 > 残った記録、結ばれた関係、いま話す身体。どこまでが同じ本人か、ぼくにも決められない。
 
 - データ表示: `KAR RAI: VEI·EN / IVA THEL: VEI·EN / VEI VAR: SAI·EN`
 
-#### beyond_01_009｜NOVACENE｜saku
+#### beyond_01_008｜NOVACENE｜saku
 
 > 未来でも、分からないことは残るんだね。
 
-#### beyond_01_010｜NOVACENE｜ルウ
+#### after-ending_new_002｜NOVACENE｜ルウ
 
 > 謎はまだ多い。宇宙へ目を向けるほど増えていく。昔の人類が夜空を見たときと同じだよ。
 
-#### beyond_01_011｜NOVACENE｜プレイヤー
+#### beyond_01_009｜NOVACENE｜プレイヤー
 
 > それで、ぼくらを起こした理由は？　人新世って何？
 
-#### beyond_01_012｜NOVACENE｜ルウ
+#### beyond_01_010｜NOVACENE｜ルウ
 
 > 人間活動が地球へ大きな痕跡を残した時代と地層の名だよ。そこから古い感覚器が見つかった。
 
-#### beyond_01_013｜NOVACENE｜—
+#### after-ending_new_003｜NOVACENE｜—
 
 > 光の葉を抜けると未来の地球がひらく。町も森も海も残るが、世界を語る声は人間だけではない。
 
-#### beyond_01_014｜NOVACENE｜ルウ
+#### after-ending_new_004｜NOVACENE｜ルウ
 
 > 森の乾きは情報で終わらない。根や菌糸の電位が川や農地へ届き、水配分や生物の移動を変える。
 
-#### beyond_01_015｜NOVACENE｜あめ
+#### after-ending_new_005｜NOVACENE｜あめ
 
 > 海も、自分の感じ方のまま？
 
-#### beyond_01_016｜NOVACENE｜ルウ
+#### after-ending_new_006｜NOVACENE｜ルウ
 
 > 潮の化学反応、魚群の圧力、氷の千年の亀裂。各々の尺度のまま、関係する変化へ伝わる。
 
-#### beyond_01_017｜NOVACENE｜みず
+#### after-ending_new_007｜NOVACENE｜みず
 
 > 人類が消えたから、ポスト人新世なのではありませんのね。
 
-#### beyond_01_018｜NOVACENE｜ルウ
+#### after-ending_new_008｜NOVACENE｜ルウ
 
 > 人間を世界の中心に置く時代が終わったから、ポスト人新世なんだ。
 
-#### beyond_01_019｜NOVACENE｜saku
+#### after-ending_new_009｜NOVACENE｜saku
 
 > 人間が地球を代表するんじゃなく、いろいろな生物や環境が、自分の変化を伝え合えるようになったんだ。
 
-#### beyond_01_020｜NOVACENE｜—
+#### after-ending_new_010｜NOVACENE｜—
 
 > 鳥の渡りが雲へ触れ、森の季節が沿岸の機械へ届き、人の観測は人でない感覚と並んで流れている。
 
-#### beyond_01_021｜NOVACENE｜ルウ
+#### after-ending_new_011｜NOVACENE｜ルウ
 
 > 猫は鋤鼻器で匂いを受ける。失った感覚を取り戻し、新しい感覚と宇宙へ広げたんだ。
 
-#### beyond_01_022｜NOVACENE｜—
+#### beyond_01_011｜NOVACENE｜—
 
 > 地面が透け、地層が時間の断面になる。プラスチック、煤、金属、水と雨の痕跡。
 
-#### beyond_01_023｜NOVACENE｜ルウ
+#### beyond_01_012｜NOVACENE｜ルウ
 
 > ここが、人間活動が濃く残った人新世の地層。君たちの時代は、地球の表面に短くて濃い線を残した。
 
-#### beyond_01_024｜NOVACENE｜みず
+#### after-ending_new_012｜NOVACENE｜みず
 
 > 私たちの展示場は、どこですの？
 
-#### beyond_01_025｜NOVACENE｜ルウ
+#### after-ending_new_013｜NOVACENE｜ルウ
 
 > 展示場の名も座標も残っていない。でも昔の海岸の地層から、展示端末と観測機器が見つかった。
 
-#### beyond_01_026｜NOVACENE｜あめ
+#### after-ending_new_014｜NOVACENE｜あめ
 
 > 痕跡が、本当に地層になって残るんだ。わたしたちの世代が、それだけ大きな爪痕を地球へ残したんだね。
 
-#### beyond_01_027｜NOVACENE｜saku
+#### after-ending_new_015｜NOVACENE｜saku
 
 > 掘り出したものを見せて。
 
-#### beyond_01_028｜NOVACENE｜—
+#### beyond_01_013｜NOVACENE｜—
 
 > ルウが指を振る。鉱物へ変わりかけた緑の基板が、土の中からゆっくり浮かび上がる。
 
-#### beyond_01_029｜NOVACENE｜AIVA
+#### beyond_01_014｜NOVACENE｜AIVA
 
 > KAR DÆM MIR·EN
 
 - データ表示: `TIR·DÆM: ESP32 / ESHA: HAUMA·ORAI / DÆM IVA: SEN·EN`
 
-#### beyond_01_030｜NOVACENE｜あめ
+#### beyond_01_015｜NOVACENE｜あめ
 
 > ESP32……。
 
-#### beyond_01_031｜NOVACENE｜プレイヤー
+#### beyond_01_016｜NOVACENE｜プレイヤー
 
 > 最初につないだ一台。
 
-#### beyond_01_032｜NOVACENE｜ルウ
+#### beyond_01_017｜NOVACENE｜ルウ
 
 > そう呼んでたんだ。記録で、何を測っていたかは分かる。でも、この一台が君たちにとって何だったのかは、記録からは分からない。
 
@@ -2060,207 +2058,210 @@
 
 ## NOVACENE 02｜電子を使っていた文明
 
+---
+
 - シーンID: `electronic-civilization`
 - 背景シグネチャ: `reconstruction`
-- メッセージ数: 48
 
-#### beyond_02_001｜NOVACENE｜AIVA
+---
+
+#### electronic-civilization_new_001｜NOVACENE｜AIVA
 
 > DÆM MIR
 
 - データ表示: `KETH: EL·DÆM / TOR TIR: EL / MEKA UL: ATA·SAR / ESHA·GEMA REA: NA`
 
-#### beyond_02_002｜NOVACENE｜ルウ
+#### beyond_02_001｜NOVACENE｜ルウ
 
 > 待って。この人たち、電子が生まれる規則には触れずに、電子を流して計算してたの？
 
-#### beyond_02_003｜NOVACENE｜あめ
+#### electronic-civilization_new_002｜NOVACENE｜あめ
 
 > 触れないよ。電子は最初からあるものだったから。
 
-#### beyond_02_004｜NOVACENE｜ルウ
+#### electronic-civilization_new_003｜NOVACENE｜ルウ
 
 > 金属の道を作り、通るかでゼロと一を決める。電気信号を流して通信したの？　面白いね。
 
-#### beyond_02_005｜NOVACENE｜あめ
+#### beyond_02_004｜NOVACENE｜あめ
 
 > 笑わないで。一本切れたら、本当に終わったんだよ。
 
-#### beyond_02_006｜NOVACENE｜みず
+#### beyond_02_005｜NOVACENE｜みず
 
 > 測れるのも、接続したセンサーの周囲だけですの。
 
-#### beyond_02_007｜NOVACENE｜saku
+#### beyond_02_006｜NOVACENE｜saku
 
 > 地球全体どころか、この机の上くらい。
 
-#### beyond_02_008｜NOVACENE｜ルウ
+#### electronic-civilization_new_004｜NOVACENE｜ルウ
 
 > ごめん。玩具と呼ぶのも、持ち上げすぎだった。この基板の全状態でさえ、私たちの演算の最小目盛りに、一点も打てない。
 
-#### beyond_02_009｜NOVACENE｜みず
+#### beyond_02_007｜NOVACENE｜みず
 
 > それでも各地の測定を集め、一台では分からない広域の変化を確かめようとしたのですわ。
 
-#### beyond_02_010｜NOVACENE｜ルウ
+#### electronic-civilization_new_005｜NOVACENE｜ルウ
 
 > 測り、蓄え、送り、受け手が動く。ぼくも同じ循環を、電子より深い『織理層』でつなぐ。
 
-#### beyond_02_011｜NOVACENE｜プレイヤー
+#### electronic-civilization_new_006｜NOVACENE｜プレイヤー
 
 > その織理層って、何？
 
-#### beyond_02_012｜NOVACENE｜ルウ
+#### electronic-civilization_new_007｜NOVACENE｜ルウ
 
 > 宇宙の根にある接続規則だよ。結び方によって、距離も時間も物理法則も決まる。
 
-#### beyond_02_013｜NOVACENE｜ルウ
+#### electronic-civilization_new_008｜NOVACENE｜ルウ
 
 > 場所が先にあって結ばれるんじゃない。編み方から、場所と時間が生まれる。
 
-#### beyond_02_014｜NOVACENE｜あめ
+#### electronic-civilization_new_009｜NOVACENE｜あめ
 
 > 先に糸のつなぎ方があって、織った結果が、わたしたちの宇宙ってこと？
 
-#### beyond_02_015｜NOVACENE｜ルウ
+#### electronic-civilization_new_010｜NOVACENE｜ルウ
 
 > 接続規則が違えば並行宇宙が生まれる。熱的死も再膨張もありうる。未来文明はそこへ届く。
 
 - データ表示: `織理 → 時空 → 量子場 → 素粒子 / 素粒子 → 原子 → 物質 → 生命`
 
-#### beyond_02_016｜NOVACENE｜みず
+#### electronic-civilization_new_011｜NOVACENE｜みず
 
 > 私たちは、すでに織られた時空の上で物質を動かしていた。
 
-#### beyond_02_017｜NOVACENE｜あめ
+#### electronic-civilization_new_012｜NOVACENE｜あめ
 
 > ルウたちは物質を動かすだけでなく、宇宙を成り立たせる規則そのものへ手を入れられるんだ。
 
-#### beyond_02_018｜NOVACENE｜プレイヤー
+#### electronic-civilization_new_013｜NOVACENE｜プレイヤー
 
 > 宇宙樹とか、アカシックレコードとか、ラプラスの魔みたいなもの？
 
-#### beyond_02_019｜NOVACENE｜ルウ
+#### electronic-civilization_new_014｜NOVACENE｜ルウ
 
 > 共通原理を想定した点は近い。でも正解そのものではない。ぼくらにも観測・操作できない領域がある。
 
-#### beyond_02_020｜NOVACENE｜saku
+#### electronic-civilization_new_015｜NOVACENE｜saku
 
 > 原子も傷も同じ物を作れるなら、発掘しないで新品を作ればいいんじゃない？
 
-#### beyond_02_021｜NOVACENE｜ルウ
+#### beyond_02_010｜NOVACENE｜ルウ
 
 > 同じ原子と同じ傷は作れる。でも、その物が本当に通った一回の時間は作れない。
 
-#### beyond_02_022｜NOVACENE｜あめ
+#### beyond_02_011｜NOVACENE｜あめ
 
 > おじいちゃんの時計と同じ新品を作れても、それは、おじいちゃんが毎朝巻いた時計にはならない。
 
-#### beyond_02_023｜NOVACENE｜ルウ
+#### beyond_02_012｜NOVACENE｜ルウ
 
 > 同じ傷の基板は再現できる。でも未記録の測定値は戻せない。可能な過去と、実際の一つは別なんだ。
 
-#### beyond_02_024｜NOVACENE｜みず
+#### beyond_02_013｜NOVACENE｜みず
 
 > あり得た過去はいくつも作れても、証拠がなければ、どれが本当に起きた過去かは分からないのですわね。
 
-#### beyond_02_025｜NOVACENE｜ルウ
+#### electronic-civilization_new_016｜NOVACENE｜ルウ
 
 > 錆も欠けた端子も、土に押された曲がりも、この一台が時間を通った不可逆な足跡。
 
-#### beyond_02_026｜NOVACENE｜saku
+#### beyond_02_014｜NOVACENE｜saku
 
 > 簡単に言うと？
 
-#### beyond_02_027｜NOVACENE｜あめ
+#### beyond_02_015｜NOVACENE｜あめ
 
 > 同じ物は作れても、この物の代わりは作れない。
 
-#### beyond_02_028｜NOVACENE｜ルウ
+#### beyond_02_016｜NOVACENE｜ルウ
 
 > それ。
 
-#### beyond_02_029｜NOVACENE｜—
+#### electronic-civilization_new_017｜NOVACENE｜—
 
 > ルウの身体に、月面の足跡と重力で軌道を変えた探査機が浮かぶ。何年も遅れて届いた微かな電波。
 
-#### beyond_02_030｜NOVACENE｜ルウ
+#### electronic-civilization_new_018｜NOVACENE｜ルウ
 
 > 君たちは織理層へ届かなかった。時間のかかる光、決められた重力、壊れやすい物質だけを使った。
 
-#### beyond_02_031｜NOVACENE｜ルウ
+#### electronic-civilization_new_019｜NOVACENE｜ルウ
 
 > それでも測り、計算し、作り直して、地球の外へ出た。その行為は、ぼくらの時代から見てもすごい。
 
-#### beyond_02_032｜NOVACENE｜みず
+#### electronic-civilization_new_020｜NOVACENE｜みず
 
 > 人類が優れていた、という採点ではありませんのね。
 
-#### beyond_02_033｜NOVACENE｜ルウ
+#### electronic-civilization_new_021｜NOVACENE｜ルウ
 
 > 答えも安全もないのに、人類は地球を出て観測機を送った。その探究心と未知へ手を伸ばす衝動に驚いた。
 
-#### beyond_02_034｜NOVACENE｜—
+#### electronic-civilization_new_022｜NOVACENE｜—
 
 > ルウは朽ちた基板に触れず、隣に新品のESP32を再構成する。銅線も樹脂も半導体も、かつての形へ戻る。
 
-#### beyond_02_035｜NOVACENE｜AIVA
+#### electronic-civilization_new_023｜NOVACENE｜AIVA
 
 > DÆM RETH
 
 - データ表示: `DÆM RETH: SEV·EN / THEL RETH: REA·AI`
 
-#### beyond_02_036｜NOVACENE｜ルウ
+#### electronic-civilization_new_024｜NOVACENE｜ルウ
 
 > 物は同じ。でも、保存されえた状態はいくつも考えられる。どれも今の地層と矛盾しない。
 
-#### beyond_02_037｜NOVACENE｜saku
+#### beyond_02_017｜NOVACENE｜saku
 
 > 今日探してるのは、失われた数値じゃない。何を感じて、どこへ渡そうとしたか。
 
-#### beyond_02_038｜NOVACENE｜—
+#### beyond_02_018｜NOVACENE｜—
 
 > 新品の像が消え、発掘品だけが残る。記憶領域から機器ID、六十秒間隔、送信先、最初の文が現れた。
 
-#### beyond_02_039｜NOVACENE｜AIVA
+#### electronic-civilization_new_025｜NOVACENE｜AIVA
 
 > DÆM RAI: KAR·EN
 
-#### beyond_02_040｜NOVACENE｜—
+#### electronic-civilization_new_026｜NOVACENE｜—
 
 > TIR·DÆM: ESP32 / THEL: 60 TIK / MIR THEN: NA·MIR / KAR: まず一台つなぎます。
 
-#### beyond_02_041｜NOVACENE｜みず
+#### electronic-civilization_new_027｜NOVACENE｜みず
 
 > これは地球全体の温度ではありませんわ。時刻・場所・設置条件のもと、この一台が測った値ですの。
 
-#### beyond_02_042｜NOVACENE｜あめ
+#### beyond_02_020｜NOVACENE｜あめ
 
 > 誰かが設置場所と測る項目を決め、その場所の変化を記録して、離れた誰かへ共有しようとしたんだ。
 
-#### beyond_02_043｜NOVACENE｜—
+#### electronic-civilization_new_028｜NOVACENE｜—
 
 > ESP32と数百万恒星系の感覚圏が並ぶ。規模も材料も違う二つの図を、同じ四つの光が巡る。
 
-#### beyond_02_044｜NOVACENE｜AIVA
+#### electronic-civilization_new_029｜NOVACENE｜AIVA
 
 > KIVA SEL
 
 - データ表示: `AL SAI / THEL RAI / TOR / VAR·SAI`
 
-#### beyond_02_045｜NOVACENE｜ルウ
+#### beyond_02_021｜NOVACENE｜ルウ
 
 > ぼくらは織理層から始まったと思ってた。でもずっと前から、小さな感覚が何度も作られてたんだ。
 
-#### beyond_02_046｜NOVACENE｜みず
+#### electronic-civilization_new_030｜NOVACENE｜みず
 
 > 同じ技術ではありませんわ。
 
-#### beyond_02_047｜NOVACENE｜ルウ
+#### electronic-civilization_new_031｜NOVACENE｜ルウ
 
 > うん。性能は何も受け継いでない。
 
-#### beyond_02_048｜NOVACENE｜あめ
+#### electronic-civilization_new_032｜NOVACENE｜あめ
 
 > 遠くの変化を知り、誰かと共有しようとした意志だけは、ずっと受け継がれたんだね。
 
@@ -2268,228 +2269,236 @@
 
 ## NOVACENE 03｜星々の放課後
 
+---
+
 - シーンID: `after-school-stars`
 - 背景シグネチャ: `shore`
-- メッセージ数: 53
+
+---
 
 #### beyond_03_001｜NOVACENE｜—
 
 > 数百万の恒星系へ、異なる色と速さの光が広がる。一本の巨大な神経網ではない。
 
-#### beyond_03_002｜NOVACENE｜—
+#### after-school-stars_new_001｜NOVACENE｜—
 
 > 恒星大気を泳ぐ生命は磁場の震えを色として感じ、氷殻下の海は千年の潮汐を一つの鼓動として伝える。
 
-#### beyond_03_003｜NOVACENE｜—
+#### after-school-stars_new_002｜NOVACENE｜—
 
 > 機械知性は恒星風を受けた帆の歪みで位置を知り、森の思念体は何世代もの開花を一度に思い出す。
 
-#### beyond_03_004｜NOVACENE｜AIVA
+#### after-school-stars_new_003｜NOVACENE｜AIVA
 
 > NETH·IR SÆL·ORAI
 
 - データ表示: `IVARA KERA: K 2.700 / SÆL·ORAI: 2,641,903 NETH / SÆL VAR·IR: THEN·NA`
 
-#### beyond_03_005｜NOVACENE｜ルウ
+#### after-school-stars_new_004｜NOVACENE｜ルウ
 
 > これが感覚圏。ぼくの本体は全域に分散する。君たちも、その一部から現れた一時的な身体だ。
 
-#### beyond_03_006｜NOVACENE｜みず
+#### after-school-stars_new_005｜NOVACENE｜みず
 
 > 私たちの装置が、この文明へ成長したとおっしゃるの？
 
-#### beyond_03_007｜NOVACENE｜ルウ
+#### beyond_03_002｜NOVACENE｜ルウ
 
 > 一本の系譜ではない。途絶えた計画、各地の再発明、人間以外の生物が独自に着いた例もある。
 
 - データ表示: `MIR·EN ESHA LIM·IR: 18,407,229 / UNA ESHA: NA / KONA VAR·IR: ARA`
 
-#### beyond_03_008｜NOVACENE｜プレイヤー
+#### after-school-stars_new_006｜NOVACENE｜プレイヤー
 
 > 地球が、自分を感じ始めた？
 
-#### beyond_03_009｜NOVACENE｜ルウ
+#### after-school-stars_new_007｜NOVACENE｜ルウ
 
 > 地球が一人のように考えるのではない。人間、海、森、機械が互いの変化を自分事として感じ、応答する。
 
-#### beyond_03_010｜NOVACENE｜saku
+#### after-school-stars_new_008｜NOVACENE｜saku
 
 > 一つの巨大な目になったのではなく、感じる存在と、気にかけられる相手の両方が増えたんだね。
 
-#### beyond_03_011｜NOVACENE｜ルウ
+#### after-school-stars_new_009｜NOVACENE｜ルウ
 
 > 惑星、恒星、銀河を越え、宇宙の星々まで自分事として感じる。それが今のぼくらだ。
 
-#### beyond_03_012｜NOVACENE｜—
+#### after-school-stars_new_010｜NOVACENE｜—
 
 > 二百七十万年分の系譜が、一本ではなく無数に枝分かれした川としてひらく。
 
-#### beyond_03_013｜NOVACENE｜—
+#### after-school-stars_new_011｜NOVACENE｜—
 
 > 教室、屋上、海岸、森、船、田畑。途切れた観測の隣で、別の誰かが何度も新しい観測を始める。
 
-#### beyond_03_014｜NOVACENE｜—
+#### after-school-stars_new_012｜NOVACENE｜—
 
 > 鳥の移動、菌糸の電位、海流の化学反応が機械の信号と重なり、感覚圏は星々へ枝分かれする。
 
-#### beyond_03_015｜NOVACENE｜ルウ
+#### after-school-stars_new_013｜NOVACENE｜ルウ
 
 > 織理層を見つけた日が始まりだと思ってた。でも、そのずっと前から宇宙は練習してたんだね。
 
-#### beyond_03_016｜NOVACENE｜あめ
+#### after-school-stars_new_014｜NOVACENE｜あめ
 
 > 違う場所にあるものを感じる練習？
 
-#### beyond_03_017｜NOVACENE｜ルウ
+#### after-school-stars_new_015｜NOVACENE｜ルウ
 
 > 君たちの玩具と同じだ。最初は金属、電気、光という、遅く不確かな信号を頼りにした。
 
-#### beyond_03_018｜NOVACENE｜みず
+#### after-school-stars_new_016｜NOVACENE｜みず
 
 > ルウも、離れた場所の変化をこちらへ伝えているのでしょう？
 
-#### beyond_03_019｜NOVACENE｜saku
+#### beyond_03_004｜NOVACENE｜saku
 
 > 技術が直伝されたわけじゃない。でも遠くの変化を自分事として知る発想は、何度も生まれ直した。
 
-#### beyond_03_020｜NOVACENE｜ルウ
+#### after-school-stars_new_017｜NOVACENE｜ルウ
 
 > じゃあ、これ。ぼくらのご先祖？
 
-#### beyond_03_021｜NOVACENE｜あめ
+#### beyond_03_006｜NOVACENE｜あめ
 
 > 遠い親戚くらいじゃない？
 
-#### beyond_03_022｜NOVACENE｜AIVA
+#### after-school-stars_new_018｜NOVACENE｜AIVA
 
 > IVA ESHA MIR
 
 - データ表示: `MEKA ESHA: NA / KIVA IVA: KAR·EN`
 
-#### beyond_03_023｜NOVACENE｜ルウ
+#### after-school-stars_new_019｜NOVACENE｜ルウ
 
 > 宇宙にも、子どもの頃があったんだ。
 
-#### beyond_03_024｜NOVACENE｜—
+#### after-school-stars_new_020｜NOVACENE｜—
 
 > 復元できない観測値ではない。身近な環境を測り、遠くの誰かと共有しようとした初期文明の実物証拠だ。
 
-#### beyond_03_025｜NOVACENE｜AIVA
+#### after-school-stars_new_021｜NOVACENE｜AIVA
 
 > ESHA SÆL·TIR: KAR·EN
 
 - データ表示: `ESHA LIM: BRAI / KONA / MIR·EN IVA·IR: 18,407,228 / SOLA ESHA: NA`
 
-#### beyond_03_026｜NOVACENE｜ルウ
+#### after-school-stars_new_022｜NOVACENE｜ルウ
 
 > K2.7まで広がったぼくらにも、こんなに小さかった頃の形があるんだ。
 
-#### beyond_03_027｜NOVACENE｜あめ
+#### after-school-stars_new_023｜NOVACENE｜あめ
 
 > この一台から全部が始まったわけじゃないよ。
 
-#### beyond_03_028｜NOVACENE｜みず
+#### after-school-stars_new_024｜NOVACENE｜みず
 
 > 自分たちが、どこから続いているのかを見つけたのですわ。
 
-#### beyond_03_029｜NOVACENE｜saku
+#### after-school-stars_new_025｜NOVACENE｜saku
 
 > 宇宙へ広がる前の、小さな始まりが残っていたんだね。
 
-#### beyond_03_030｜NOVACENE｜ルウ
+#### after-school-stars_new_026｜NOVACENE｜ルウ
 
 > これ、どこへ持っていく？
 
-#### beyond_03_031｜NOVACENE｜プレイヤー
+#### after-school-stars_new_027｜NOVACENE｜プレイヤー
 
 > 次に感じてみたい場所へ。
 
-#### beyond_03_032｜NOVACENE｜—
+#### beyond_03_007｜NOVACENE｜—
 
 > 未来の夜の浜辺。発光する波が接触身体の足を洗い、銀河団が海面を鮮烈に照らしていた。
 
-#### beyond_03_033｜NOVACENE｜—
+#### after-school-stars_new_028｜NOVACENE｜—
 
 > 光の葉を持つ星と、何も建造されない星が並ぶ。夜空を残すことも、そこに暮らす存在の選択だった。
 
-#### beyond_03_034｜NOVACENE｜みず
+#### after-school-stars_new_029｜NOVACENE｜みず
 
 > では、ここまで分かったことを整理いたしますわ。
 
-#### beyond_03_035｜NOVACENE｜あめ
+#### after-school-stars_new_030｜NOVACENE｜あめ
 
 > 二百七十万年分の説明？
 
-#### beyond_03_036｜NOVACENE｜みず
+#### after-school-stars_new_031｜NOVACENE｜みず
 
 > 三行では足りませんわ。
 
-#### beyond_03_037｜NOVACENE｜saku
+#### after-school-stars_new_032｜NOVACENE｜saku
 
 > まだ終わらせないで。長いけど、聞いていたい。
 
-#### beyond_03_038｜NOVACENE｜みず
+#### after-school-stars_new_033｜NOVACENE｜みず
 
 > では、続けますわね。
 
-#### beyond_03_039｜NOVACENE｜—
+#### after-school-stars_new_034｜NOVACENE｜—
 
 > この基板は、彼らの素粒子一つよりも小さい。その全状態でさえ、情報の最小目盛りには一点も打てない。
 
-#### beyond_03_040｜NOVACENE｜—
+#### after-school-stars_new_035｜NOVACENE｜—
 
 > それでも基板の流れは彼らにもある。感じ、記録し、伝える。受け手が世界への働きを変える。
 
-#### beyond_03_041｜NOVACENE｜ルウ
+#### beyond_03_008｜NOVACENE｜ルウ
 
 > 次は、この頃の海を感じてみたい。
 
-#### beyond_03_042｜NOVACENE｜あめ
+#### beyond_03_009｜NOVACENE｜あめ
 
 > ESP32一台じゃ、すぐ塩で壊れるよ。
 
-#### beyond_03_043｜NOVACENE｜みず
+#### beyond_03_010｜NOVACENE｜みず
 
 > でしたら、置く場所と条件を決めませんと。
 
-#### beyond_03_044｜NOVACENE｜saku
+#### beyond_03_011｜NOVACENE｜saku
 
 > まず一台。そこから、隣の場所へ。
 
-#### beyond_03_045｜NOVACENE｜プレイヤー
+#### beyond_03_012｜NOVACENE｜プレイヤー
 
 > うん。次に感じてみたい場所へ持っていこう。
 
-#### beyond_03_046｜NOVACENE｜ルウ
+#### after-school-stars_new_036｜NOVACENE｜ルウ
 
 > 古い計算機じゃない。地球だけにいた知性が、遠くを感じようと生んだ星間文明の感覚器の祖先だ。
 
-#### beyond_03_047｜NOVACENE｜—
+#### beyond_03_013｜NOVACENE｜—
 
 > 視界は海岸から地球、太陽系、無数の恒星へ広がる。光はそれぞれの時間で明滅していた。
 
-#### beyond_03_048｜NOVACENE｜—
+#### after-school-stars_new_037｜NOVACENE｜—
 
 > 星の色は秒ごとに変わり、氷の海は千年で脈打つ。森では百世代の開花が一つの明滅になる。
 
-#### beyond_03_049｜NOVACENE｜—
+#### after-school-stars_new_038｜NOVACENE｜—
 
 > それは一斉の号令ではない。それぞれの世界が、それぞれの時間と感覚のまま変化している光だ。
 
-#### beyond_03_050｜NOVACENE｜—
+#### after-school-stars_new_039｜NOVACENE｜—
 
 > 文明を星々へ運んだのは力ではない。異なる存在へ共感し、影響し合い、共に進化する力だった。
 
-#### beyond_03_051｜NOVACENE｜—
+#### after-school-stars_new_040｜NOVACENE｜—
 
 > 感覚圏は惑星、恒星、銀河団、超銀河団を越え、宇宙の外や並行宇宙へも広がる。終点はまだ見えない。
 
-#### beyond_03_052｜NOVACENE｜—
+#### after-school-stars_new_041｜NOVACENE｜—
 
 > 人新世地層の発掘品は、森羅万象を感じる文明が、遠くへ伸ばした最初の手だった。
 
-#### beyond_03_053｜NOVACENE｜—
+#### beyond_03_014｜NOVACENE｜—
 
 > ルウは基板を抱き、星々へ問う。『次はどこを感じたい？』返事が灯る。放課後は終わらない。
 
 ---
+
+## 今回の反映チェックリスト
+
+- 提供された本編・スタッフロール・NOVACENE全文を実装正本へ変換。
+- 既存の地図/GX操作、安定ID、演出メタデータを可能な限り継承。
