@@ -125,6 +125,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 
 .sensor-page-head, .sensor-detail-head, .sensor-history header { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
 .sensor-page-head h1, .sensor-detail-head h1 { margin: 0; font-family: var(--font-ja); font-size: clamp(36px, 4.6vw, 66px); font-weight: 400; letter-spacing: .09em; line-height: 1.18; text-shadow: 0 14px 42px rgba(0,7,14,.46); }
+.sensor-public-map .sensor-page-head h1 { font-size: clamp(30px, 3.4vw, 50px); letter-spacing: .065em; }
 .sensor-page-lead { max-width: 590px; margin: 18px 0 0 !important; color: rgba(232,243,250,.7) !important; font: 520 12px/1.95 var(--font-ja) !important; letter-spacing: .075em !important; }
 .sensor-account-note { max-width: 650px; margin: 13px 0 0 !important; padding-left: 12px; border-left: 1px solid rgba(var(--mint-rgb),.55); color: rgba(218,242,238,.6) !important; font: 520 10px/1.8 var(--font-ja) !important; letter-spacing: .045em !important; }
 .sensor-device-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 36px; }
@@ -399,6 +400,7 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
   .sensor-page-head { align-items: flex-start; }
   .sensor-page-head .sensor-secondary { flex: 0 0 auto; min-width: 88px; white-space: nowrap; }
   .sensor-page-head h1 { font-size: clamp(36px,11vw,48px); }
+  .sensor-public-map .sensor-page-head h1 { font-size: clamp(23px,6.8vw,29px); letter-spacing: .045em; line-height: 1.12; white-space: nowrap; }
   .sensor-page-lead { margin-top: 13px !important; font-size: 11px !important; line-height: 1.8 !important; }
   .sensor-add { min-width: 0; padding-inline: 13px; font-size: 10px; }
   .sensor-dashboard:has(.sensor-empty:not([hidden])) { width: 100%; min-height: calc(100dvh - 170px); justify-content: flex-start; }

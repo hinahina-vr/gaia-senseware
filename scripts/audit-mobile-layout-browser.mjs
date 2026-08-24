@@ -263,7 +263,7 @@ const prepareMainModePage = async (viewport, label) => {
   const { context, page } = await makePage(viewport, label, () => {
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
   });
-  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/?mode=1#earth", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
   await page.evaluate(() => {
     for (const selector of ["#gaia-opening", "#intro-layer", "#novel-layer", "#true-end-layer"]) {
@@ -275,6 +275,7 @@ const prepareMainModePage = async (viewport, label) => {
     }
     document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
     document.querySelector(".experience")?.classList.remove("intro-open");
+    window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
   });
   return { context, page };
 };
@@ -282,31 +283,52 @@ const prepareMainModePage = async (viewport, label) => {
 const scanMapMode = async (viewport) => {
   const surface = "map-mode";
   const { context, page } = await prepareMainModePage(viewport, `${viewport.name}-${surface}`);
-  await page.locator("#japan-button").click({ force: true });
   await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
   await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 10);
   await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"));
   await page.waitForTimeout(220);
   let modeSelected = false;
   for (let attempt = 0; attempt < 3 && !modeSelected; attempt += 1) {
-    await page.locator("#japan-mode-list .map-mode-button").last().click({ force: true });
+    await page.locator("#japan-mode-list .map-mode-button").first().click({ force: true });
     modeSelected = await page.waitForFunction(
-      () => document.querySelector("#japan-mode-number")?.textContent?.trim() === "10",
+      () => document.querySelector("#japan-mode-number")?.textContent?.trim() === "01",
       null,
       { timeout: 5000 },
     ).then(() => true, () => false);
     if (!modeSelected) await page.waitForTimeout(250);
   }
-  if (!modeSelected) throw new Error("地図モード10への切り替えに失敗しました");
+  if (!modeSelected) throw new Error("地図モード01への切り替えに失敗しました");
+  await page.waitForFunction(() => {
+    const overlay = document.querySelector("#japan-overlay");
+    const basis = document.querySelector("#map-scope-note")?.textContent || "";
+    const snapshot = document.querySelector(".signal-console-map [data-signal-value]")?.textContent || "";
+    return overlay instanceof HTMLCanvasElement
+      && overlay.width > 0
+      && overlay.height > 0
+      && Boolean(overlay.dataset.vectorWorldCopies)
+      && basis.includes("LOCAL GEOJSON")
+      && !snapshot.includes("LOADING");
+  });
   await page.waitForTimeout(350);
   const scan = await inspectSurface(page, ["#japan-layer", "#japan-close", ".japan-heading", "#japan-title", "#japan-data-button", ".japan-story-button", "#japan-map", ".map-scope-switch", "#japan-mode-list", ".japan-credits"]);
+  const mapRender = await page.locator("#japan-overlay").evaluate((overlay) => ({
+    width: overlay.width,
+    height: overlay.height,
+    vectorWorldCopies: overlay.dataset.vectorWorldCopies || "",
+    modeNumber: document.querySelector("#japan-mode-number")?.textContent?.trim() || "",
+    basis: document.querySelector("#map-scope-note")?.textContent?.replace(/\s+/g, " ").trim() || "",
+    snapshot: document.querySelector(".signal-console-map [data-signal-value]")?.textContent?.trim() || "",
+  }));
   await saveScreenshot(page, viewport, surface);
   reviewCommon(viewport, surface, scan);
   const modeList = scan.targets.find((target) => target.selector === "#japan-mode-list");
   if (modeList && modeList.scrollHeight > modeList.clientHeight + 2) {
     addIssue(viewport, surface, "map-mode-list-scroll", "地図モード切替UIに縦スクロールが発生", modeList);
   }
-  report.scans.push({ ...scan, viewport: viewport.name, surface });
+  if (mapRender.modeNumber !== "01" || !mapRender.vectorWorldCopies || !mapRender.basis.includes("LOCAL GEOJSON") || mapRender.snapshot.includes("LOADING")) {
+    addIssue(viewport, surface, "map-not-rendered", "世界地図が描画済みの状態になっていない", mapRender);
+  }
+  report.scans.push({ ...scan, viewport: viewport.name, surface, mapRender });
   await context.close();
 };
 
@@ -343,7 +365,7 @@ const scanSoundMode = async (viewport) => {
   await page.locator("#sound-layer").waitFor({ state: "visible" });
   await page.waitForFunction(() => document.querySelectorAll("[data-sound-track]").length === 12);
   await page.waitForTimeout(350);
-  const scan = await inspectSurface(page, ["#sound-layer", ".sound-header", ".sound-layout", ".sound-track-panel", ".sound-player", ".sound-transport", ".sound-volume"]);
+  const scan = await inspectSurface(page, ["#sound-layer", ".sound-header", ".sound-layout", ".sound-track-panel", ".sound-player", ".sound-transport", ".sound-progress-group", ".sound-volume"]);
   await saveScreenshot(page, viewport, surface);
   reviewCommon(viewport, surface, scan, { allowOffscreenControls: true });
   const layout = scan.targets.find((target) => target.selector === ".sound-layout");
@@ -381,7 +403,9 @@ const scanSensorPublicMap = async (viewport) => {
   reviewCommon(viewport, surface, scan, { allowDocumentY: true, allowOffscreenControls: true });
   const marker = scan.controls.find((control) => control.label.includes("放課後の環境センサー"));
   if (!marker?.hitSize) addIssue(viewport, surface, "sensor-marker-target", "公開センサーマーカーが44px未満", marker || null);
-  report.scans.push({ ...scan, viewport: viewport.name, surface });
+  const headingFontSize = await page.locator(".sensor-public-map .sensor-page-head h1").evaluate((heading) => parseFloat(getComputedStyle(heading).fontSize));
+  if (headingFontSize > 30) addIssue(viewport, surface, "sensor-heading-too-large", "「みんなのセンサー」の見出しが30pxを超えている", { headingFontSize });
+  report.scans.push({ ...scan, viewport: viewport.name, surface, headingFontSize });
   await context.close();
 };
 

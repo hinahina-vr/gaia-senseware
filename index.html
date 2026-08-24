@@ -23,7 +23,7 @@
     <link rel="preload" as="image" href="./assets/visuals-07/sound-archive-bg-v2.png" />
     <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="prefetch" href="./sensors/" />
-    <link rel="prefetch" as="style" href="./sensors/sensor-platform.css?v=gaia-character-style-1" />
+    <link rel="prefetch" as="style" href="./sensors/sensor-platform.css?v=gaia-public-map-heading-1" />
     <link rel="prefetch" as="script" href="./sensors/sensor-audio.js?v=2" />
     <link rel="stylesheet" href="./styles.css?v=gaia-mobile-ui-audit-1" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
@@ -34,7 +34,7 @@
     <link rel="stylesheet" href="./true-end.css?v=gaia-finale-webgl-1" />
     <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-stationary-fade-1" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-102" />
-    <link rel="stylesheet" href="./sound-mode.css?v=gaia-intro-path-row-1" />
+    <link rel="stylesheet" href="./sound-mode.css?v=gaia-player-controls-1" />
     <script src="./gaia-particles.js?v=gaia-19" defer></script>
     <script src="./opening-audio.js?v=gaia-sensor-audio-handoff-2" defer></script>
     <script src="./ui-sound.js?v=gaia-01" defer></script>
@@ -451,15 +451,18 @@
               <button class="sound-play" id="sound-play" type="button" aria-label="再生する" aria-pressed="false">
                 <span class="sound-play-icon" aria-hidden="true"></span>
               </button>
-              <div class="sound-progress-group">
-                <label for="sound-progress">再生位置</label>
+              <div class="sound-progress-group" data-sound-control="seek">
+                <div class="sound-control-heading">
+                  <label for="sound-progress">再生位置</label>
+                  <span>PLAYBACK / TIMELINE</span>
+                </div>
                 <input id="sound-progress" type="range" min="0" max="1000" step="1" value="0" />
                 <div class="sound-time"><output id="sound-current-time">0:00</output><span>LOOP</span><output id="sound-duration">0:00</output></div>
               </div>
             </div>
 
-            <label class="sound-volume" for="sound-volume">
-              <span>VOLUME</span>
+            <label class="sound-volume" for="sound-volume" data-sound-control="volume">
+              <span class="sound-volume-label"><strong>音量</strong><small>VOLUME / OUTPUT</small></span>
               <input id="sound-volume" type="range" min="0" max="100" step="1" value="10" />
               <output id="sound-volume-value" for="sound-volume">10%</output>
             </label>

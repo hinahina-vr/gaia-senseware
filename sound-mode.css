@@ -4,6 +4,8 @@
 
 .sound-layer {
   --sound-accent: #8ce9cf;
+  --sound-seek-accent: #8ce9cf;
+  --sound-volume-accent: #efc879;
   position: fixed;
   inset: 0;
   z-index: 2147483100;
@@ -515,17 +517,123 @@
   border-left: 4px solid currentColor;
 }
 
-.sound-progress-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: rgba(211, 233, 225, 0.47);
-  font-size: 9px;
+.sound-progress-group {
+  --sound-control-accent: var(--sound-seek-accent);
+  position: relative;
+  min-width: 0;
+  padding: 12px 14px 9px;
+  border: 1px solid rgba(140, 233, 207, 0.2);
+  border-left: 3px solid var(--sound-control-accent);
+  background: linear-gradient(90deg, rgba(36, 99, 86, 0.18), rgba(6, 20, 20, 0.3));
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.sound-control-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+  font-family: Consolas, "Yu Gothic UI", monospace;
+  line-height: 1;
+}
+
+.sound-control-heading label {
+  color: #e8fff8;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+.sound-control-heading span {
+  color: var(--sound-control-accent);
+  font-size: 8px;
+  letter-spacing: 0.12em;
 }
 
 .sound-progress-group input,
 .sound-volume input {
+  appearance: none;
   width: 100%;
-  accent-color: var(--sound-accent);
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sound-progress-group input { --sound-control-accent: var(--sound-seek-accent); }
+.sound-volume input { --sound-control-accent: var(--sound-volume-accent); }
+
+.sound-progress-group input::-webkit-slider-runnable-track,
+.sound-volume input::-webkit-slider-runnable-track {
+  border: 1px solid color-mix(in srgb, var(--sound-control-accent) 42%, transparent);
+  background: color-mix(in srgb, var(--sound-control-accent) 14%, rgba(1, 12, 15, 0.9));
+}
+
+.sound-progress-group input::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(140, 233, 207, 0.08);
+}
+
+.sound-volume input::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--sound-volume-accent) 36%, rgba(1, 12, 15, 0.9)) 0 7px,
+    rgba(1, 12, 15, 0.9) 7px 10px
+  );
+}
+
+.sound-progress-group input::-webkit-slider-thumb,
+.sound-volume input::-webkit-slider-thumb {
+  appearance: none;
+  background: var(--sound-control-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sound-control-accent) 16%, transparent), 0 0 14px color-mix(in srgb, var(--sound-control-accent) 32%, transparent);
+}
+
+.sound-progress-group input::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 2px solid #071511;
+  border-radius: 50%;
+}
+
+.sound-volume input::-webkit-slider-thumb {
+  width: 9px;
+  height: 17px;
+  margin-top: -8px;
+  border: 1px solid #071511;
+  border-radius: 1px;
+}
+
+.sound-progress-group input::-moz-range-track,
+.sound-volume input::-moz-range-track {
+  border: 1px solid color-mix(in srgb, var(--sound-control-accent) 42%, transparent);
+  background: color-mix(in srgb, var(--sound-control-accent) 14%, rgba(1, 12, 15, 0.9));
+}
+
+.sound-progress-group input::-moz-range-track { height: 5px; border-radius: 999px; }
+.sound-volume input::-moz-range-track { height: 2px; border-radius: 0; }
+
+.sound-progress-group input::-moz-range-thumb,
+.sound-volume input::-moz-range-thumb {
+  border: 1px solid #071511;
+  background: var(--sound-control-accent);
+}
+
+.sound-progress-group input::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; }
+.sound-volume input::-moz-range-thumb { width: 8px; height: 15px; border-radius: 1px; }
+
+.sound-progress-group input:focus-visible,
+.sound-volume input:focus-visible {
+  outline: 2px solid var(--sound-control-accent);
+  outline-offset: 3px;
 }
 
 .sound-time {
@@ -536,17 +644,50 @@
   font: 9px/1 Consolas, monospace;
 }
 
-.sound-time span { color: var(--sound-accent); }
+.sound-time span { color: var(--sound-seek-accent); letter-spacing: 0.1em; }
 
 .sound-volume {
+  --sound-control-accent: var(--sound-volume-accent);
   grid-area: volume;
   display: grid;
-  grid-template-columns: auto minmax(80px, 1fr) 42px;
-  gap: 12px;
+  grid-template-columns: minmax(118px, auto) minmax(80px, 1fr) 42px;
+  gap: 14px;
   align-items: center;
-  margin-top: 24px;
-  color: rgba(211, 233, 225, 0.5);
+  margin-top: 16px;
+  padding: 10px 14px;
+  border: 1px solid rgba(239, 200, 121, 0.24);
+  border-right: 3px solid var(--sound-control-accent);
+  color: rgba(238, 224, 192, 0.72);
+  background: linear-gradient(270deg, rgba(112, 77, 27, 0.16), rgba(6, 20, 20, 0.24));
   font: 9px/1 Consolas, monospace;
+}
+
+.sound-volume-label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sound-volume-label strong {
+  color: #fff4dd;
+  font: 650 11px/1 "Yu Gothic UI", sans-serif;
+  letter-spacing: 0.1em;
+}
+
+.sound-volume-label small {
+  color: var(--sound-control-accent);
+  font: 8px/1 Consolas, monospace;
+  letter-spacing: 0.08em;
+}
+
+.sound-volume output {
+  justify-self: end;
+  min-width: 38px;
+  padding: 5px 4px;
+  border: 1px solid rgba(239, 200, 121, 0.26);
+  color: #ffe8b9;
+  background: rgba(239, 200, 121, 0.08);
+  text-align: center;
 }
 
 .sound-footer {
@@ -646,6 +787,12 @@ body.gaia-opening-active .gaia-audio-gallery-open {
   .sound-planetarium { width: min(68vw, 280px); margin-bottom: 24px; }
   .sound-now-playing { text-align: center; }
   .sound-now-playing h3 { font-size: 27px; white-space: normal; }
+  .sound-transport { grid-template-columns: 50px minmax(0, 1fr); gap: 12px; margin-top: 22px; }
+  .sound-play { width: 50px; height: 50px; }
+  .sound-progress-group { padding: 10px 11px 8px; }
+  .sound-control-heading span { font-size: 7px; letter-spacing: 0.06em; }
+  .sound-volume { grid-template-columns: minmax(94px, auto) minmax(64px, 1fr) 38px; gap: 8px; margin-top: 12px; padding: 9px 10px; }
+  .sound-volume-label small { font-size: 7px; letter-spacing: 0.035em; }
   .sound-footer p { display: none; }
   .intro-lp-hero .intro-path-grid { grid-template-columns: 1fr; }
   .gaia-audio-dock .gaia-audio-gallery-open strong { display: none; }

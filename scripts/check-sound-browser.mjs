@@ -35,10 +35,34 @@ const attachDiagnostics = (page) => {
   page.on("response", (response) => { if (response.status() === 404) report.responses404.push(response.url()); });
 };
 
+const readControlDesign = (page) => page.evaluate(() => {
+  const seek = document.querySelector(".sound-progress-group");
+  const volume = document.querySelector(".sound-volume");
+  const seekInput = document.querySelector("#sound-progress");
+  const volumeInput = document.querySelector("#sound-volume");
+  const styleValue = (node, name) => getComputedStyle(node).getPropertyValue(name).trim();
+  return {
+    seekLabel: seek?.textContent?.replace(/\s+/g, " ").trim() || "",
+    volumeLabel: volume?.textContent?.replace(/\s+/g, " ").trim() || "",
+    seekAccent: styleValue(seekInput, "--sound-control-accent"),
+    volumeAccent: styleValue(volumeInput, "--sound-control-accent"),
+    seekBorderLeft: getComputedStyle(seek).borderLeftWidth,
+    volumeBorderRight: getComputedStyle(volume).borderRightWidth,
+  };
+});
+
+const assertControlDesign = (design, label) => {
+  assert(design.seekLabel.includes("再生位置") && design.seekLabel.includes("PLAYBACK"), `${label}: seek control label is ambiguous`);
+  assert(design.volumeLabel.includes("音量") && design.volumeLabel.includes("VOLUME"), `${label}: volume control label is ambiguous`);
+  assert(design.seekAccent && design.volumeAccent && design.seekAccent !== design.volumeAccent, `${label}: seek and volume accents are indistinguishable`);
+  assert(design.seekBorderLeft === "3px" && design.volumeBorderRight === "3px", `${label}: control shapes are not visually separated`);
+};
+
 let context;
 try {
   context = await browser.newContext({ viewport: { width: 2048, height: 1114 } });
   const page = await context.newPage();
+  page.setDefaultNavigationTimeout(90_000);
   attachDiagnostics(page);
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
   await page.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
@@ -53,6 +77,7 @@ try {
     };
   });
   assert(panelGeometry.scrolls && panelGeometry.withinViewport, `desktop track list must scroll inside the viewport: ${JSON.stringify(panelGeometry)}`);
+  assertControlDesign(await readControlDesign(page), "desktop");
 
   for (const [id, title] of expectedTracks) {
     const button = page.locator(`[data-sound-track="${id}"]`);
@@ -72,6 +97,7 @@ try {
 
   context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   const mobile = await context.newPage();
+  mobile.setDefaultNavigationTimeout(90_000);
   attachDiagnostics(mobile);
   await mobile.goto(routeUrl, { waitUntil: "domcontentloaded" });
   await mobile.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
@@ -81,6 +107,7 @@ try {
     layoutScrolls: document.querySelector(".sound-layout").scrollHeight > document.querySelector(".sound-layout").clientHeight + 1,
   }));
   assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
+  assertControlDesign(await readControlDesign(mobile), "mobile");
   const lastTrack = mobile.locator('[data-sound-track="trueend"]');
   await lastTrack.scrollIntoViewIfNeeded();
   await lastTrack.click();
