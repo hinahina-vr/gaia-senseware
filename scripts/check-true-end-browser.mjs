@@ -11,6 +11,7 @@ const mobileOnly = extraArguments.includes("--mobile-only");
 const presenceOnly = extraArguments.includes("--presence-only");
 const productionSmoke = extraArguments.includes("--production-smoke");
 const pageBreakOnly = extraArguments.includes("--page-break-only");
+const controlHoldOnly = extraArguments.includes("--control-hold-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -117,6 +118,7 @@ const scanFrame = (page) => page.evaluate(() => {
   const sceneCard = document.querySelector(".true-end-scene-card");
   const sceneCardContent = document.querySelector(".true-end-scene-card-content");
   const audioDock = document.querySelector(".gaia-audio-dock");
+  const novelLayer = document.querySelector("#novel-layer");
   const rect = dialogue?.getBoundingClientRect();
   const mainDialogueReference = document.createElement("div");
   mainDialogueReference.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;width:var(--novel-say-width);height:var(--novel-say-height)";
@@ -136,6 +138,10 @@ const scanFrame = (page) => page.evaluate(() => {
   return {
     sampledAt: performance.now(),
     documentHidden: document.hidden,
+    novelLayerOpen: Boolean(novelLayer && !novelLayer.hidden && novelLayer.classList.contains("is-open")),
+    novelLayerTrueEnd: novelLayer?.classList.contains("is-true-end") || false,
+    novelLayerFastForwarding: novelLayer?.classList.contains("is-fast-forwarding") || false,
+    novelStoryStepId: novelLayer?.dataset.stepId || "",
     scene: shell?.dataset.scene || "",
     stepId: shell?.dataset.step || "",
     shoreImage: shell?.dataset.shoreImage || "",
@@ -509,6 +515,44 @@ try {
     } else {
       assert(Math.abs(initial.dialogueRect.height - initial.mainDialogueRect.height) <= 1, `${viewport.name}: TRANSMISSION height does not match the main story (${initial.dialogueRect.height} / ${initial.mainDialogueRect.height})`);
     }
+
+    const controlHoldBefore = await scanFrame(page);
+    await page.locator(".true-end-shell").focus();
+    await page.keyboard.down("Control");
+    await page.waitForTimeout(900);
+    await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", {
+      key: "Control",
+      code: "ControlLeft",
+      ctrlKey: true,
+      repeat: true,
+      bubbles: true,
+      cancelable: true,
+    })));
+    await page.waitForTimeout(250);
+    const controlHoldAfter = await scanFrame(page);
+    await page.keyboard.up("Control");
+    assert.equal(controlHoldAfter.stepId, controlHoldBefore.stepId, `${viewport.name}: Control hold advanced the NOVACENE step`);
+    assert.equal(controlHoldAfter.counter, controlHoldBefore.counter, `${viewport.name}: Control hold changed the NOVACENE counter`);
+    assert.equal(controlHoldAfter.message, controlHoldBefore.message, `${viewport.name}: Control hold changed the NOVACENE message`);
+    assert.equal(controlHoldAfter.novelStoryStepId, controlHoldBefore.novelStoryStepId, `${viewport.name}: Control hold advanced the hidden main-story runtime`);
+    assert.equal(controlHoldAfter.novelLayerOpen, true, `${viewport.name}: Control hold returned NOVACENE to the top screen`);
+    assert.equal(controlHoldAfter.novelLayerTrueEnd, true, `${viewport.name}: Control hold removed the NOVACENE surface`);
+    assert.equal(controlHoldAfter.novelLayerFastForwarding, false, `${viewport.name}: Control hold activated hidden main-story fast-forward`);
+
+    if (controlHoldOnly) {
+      report.viewports.push({
+        viewport: viewport.name,
+        controlHold: {
+          stepId: controlHoldAfter.stepId,
+          counter: controlHoldAfter.counter,
+          novelStoryStepId: controlHoldAfter.novelStoryStepId,
+        },
+        passed: true,
+      });
+      await context.close();
+      continue;
+    }
+
     assert.equal(initial.dialogueBorderWidth, 0, `${viewport.name}: TRANSMISSION retained its separate framed box`);
     assert.equal(initial.dialogueBackground, "none", `${viewport.name}: TRANSMISSION retained its separate panel background`);
     assert.match(initial.dialogueGlowBackground, /linear-gradient/u, `${viewport.name}: main-story lower glass fade is missing`);
@@ -759,7 +803,7 @@ try {
   }
 
   report.separatorOrder = [];
-  for (const viewport of pageBreakOnly ? [] : viewports) {
+  for (const viewport of (pageBreakOnly || controlHoldOnly) ? [] : viewports) {
     const separatorContext = await browser.newContext({ viewport, reducedMotion: "no-preference" });
     const separatorPage = await separatorContext.newPage();
     attachDiagnostics(separatorPage, `${viewport.name}-separator-flow`);

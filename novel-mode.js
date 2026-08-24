@@ -4457,6 +4457,9 @@
   }
 
   const canAdvanceStep = (step) => ["narration", "dialogue", "chat", "record", "ui", "transition", "details"].includes(step?.type);
+  const endingPresentationActive = () => layer.classList.contains("is-staff-roll")
+    || layer.classList.contains("is-true-end-transitioning")
+    || layer.classList.contains("is-true-end");
   const progressionPanelsClosed = () => [elements.logPanel, elements.savePanel, elements.configPanel, elements.evesPanel, elements.jumpPanel]
     .concat(elements.galleryPanel ? [elements.galleryPanel] : [])
     .every((panel) => panel.hidden);
@@ -4511,9 +4514,17 @@
   const scheduleFastForward = (delay = FAST_FORWARD_STEP_MS) => {
     clearFastForwardTimer();
     if (!fastForwardEnabled()) return;
+    if (endingPresentationActive()) {
+      stopFastForwardAtBarrier();
+      return;
+    }
     fastForwardState.timer = window.setTimeout(() => {
       fastForwardState.timer = 0;
       if (!fastForwardEnabled()) return;
+      if (endingPresentationActive()) {
+        stopFastForwardAtBarrier();
+        return;
+      }
       if (backgroundTransitionPending) {
         scheduleFastForward();
         return;
@@ -4542,13 +4553,13 @@
   };
 
   const beginControlFastForward = (event) => {
-    if (event.key !== "Control" || event.repeat || fastForwardState.controlDown || !isOpen || !hasStarted || layer.classList.contains("is-staff-roll")) return;
+    if (event.key !== "Control" || event.repeat || fastForwardState.controlDown || !isOpen || !hasStarted || endingPresentationActive()) return;
     if (event.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
     fastForwardState.controlDown = true;
     clearFastForwardHoldTimer();
     fastForwardState.holdTimer = window.setTimeout(() => {
       fastForwardState.holdTimer = 0;
-      if (!fastForwardState.controlDown || !isOpen || !hasStarted) return;
+      if (!fastForwardState.controlDown || !isOpen || !hasStarted || endingPresentationActive()) return;
       fastForwardState.blocked = false;
       fastForwardState.keyActive = true;
       disableAutoForFastForward();
@@ -4586,7 +4597,7 @@
   };
 
   function advance() {
-    if (!isOpen || !hasStarted || pendingInteraction || backgroundTransitionPending) return;
+    if (!isOpen || !hasStarted || pendingInteraction || backgroundTransitionPending || endingPresentationActive()) return;
     if (!progressionPanelsClosed()) return;
     if (finishSectionSeparator()) return;
     if (finishTemporalTransitionCard()) return;

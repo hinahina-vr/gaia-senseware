@@ -331,7 +331,11 @@ try {
 
     await page.locator(".novel-staff-roll").focus();
     await page.keyboard.down("Control");
-    await page.waitForTimeout(360);
+    await page.waitForTimeout(900);
+    const controlHoldOnly = await scanEnding(page);
+    assert.equal(controlHoldOnly.phase, "rolling", `${viewport.name}: Control hold skipped the staff roll`);
+    assert.equal(controlHoldOnly.stepId, stepBeforeBackgroundClick, `${viewport.name}: Control hold advanced the hidden story step`);
+    assert.equal(controlHoldOnly.fastForwarding, false, `${viewport.name}: Control hold activated normal-story fast-forward during the staff roll`);
     await page.keyboard.press("Enter");
     await page.waitForTimeout(100);
     const controlAttempt = await scanEnding(page);
