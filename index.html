@@ -14,20 +14,12 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='24' fill='%2393f4d5'/%3E%3C/svg%3E"
     />
-    <link rel="preload" as="image" href="./assets/characters/mizuha-calm-07-v2.png" fetchpriority="high" />
-    <link rel="preload" as="image" href="./assets/characters/amane-calm-07-v3.png" fetchpriority="high" />
-    <link rel="preload" as="image" href="./assets/visuals-07/opening-keyvisual-v2.png" fetchpriority="high" />
-    <link rel="preload" as="image" href="./assets/visuals-07/novel-title-keyvisual-v3.png" media="(min-width: 601px)" fetchpriority="high" />
-    <link rel="preload" as="image" href="./assets/visuals-07/novel-title-keyvisual-mobile-v1.png" media="(max-width: 600px)" fetchpriority="high" />
-    <link rel="preload" as="image" href="./assets/visuals-07/novel-bg-festival-five-plane-projection-v1.png" />
-    <link rel="preload" as="image" href="./assets/visuals-07/sound-archive-bg-v2.png" />
-    <link rel="preload" as="audio" type="audio/mpeg" href="./assets/audio/satellite-forecast-hope.mp3" />
     <link rel="prefetch" href="./sensors/" />
     <link rel="prefetch" as="style" href="./sensors/sensor-platform.css?v=gaia-cross-platform-fonts-1" />
     <link rel="prefetch" as="script" href="./sensors/sensor-audio.js?v=2" />
     <link rel="stylesheet" href="./styles.css?v=gaia-cross-platform-fonts-1" />
     <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" />
-    <link rel="stylesheet" href="./opening.css?v=gaia-sound-world-ui-1" />
+    <link rel="stylesheet" href="./opening.css?v=gaia-first-screen-p0-1" />
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" />
     <link rel="stylesheet" href="./novel-mode.css?v=gaia-dialogue-wrap-1" />
@@ -36,9 +28,9 @@
     <link rel="stylesheet" href="./space-mode.css?v=gaia-102" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-cross-platform-fonts-1" />
     <script src="./gaia-particles.js?v=gaia-19" defer></script>
-    <script src="./opening-audio.js?v=gaia-sensor-audio-handoff-2" defer></script>
+    <script src="./opening-audio.js?v=gaia-first-screen-p0-1" defer></script>
     <script src="./ui-sound.js?v=gaia-01" defer></script>
-    <script src="./opening.js?v=gaia-opening-sensor-audio-handoff-1" defer></script>
+    <script src="./opening.js?v=gaia-first-screen-p0-1" defer></script>
     <script src="./data-ledger.js?v=gaia-31" defer></script>
     <script src="./data-journey.js?v=gaia-01" defer></script>
     <script src="./scene-transition.js?v=gaia-66" defer></script>
@@ -506,36 +498,54 @@
             data-intro-visual="default"
             src="./assets/visuals-07/gateway-keyvisual-v2.png"
             alt=""
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
           />
           <img
             class="intro-visual"
             data-intro-visual="abstract"
             src="./assets/visuals-07/mode-abstract-v1.webp"
             alt=""
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
           />
           <img
             class="intro-visual"
             data-intro-visual="map"
             src="./assets/visuals-07/novel-bg-map01-data-provenance-autumn-morning-v3.png"
             alt=""
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
           />
           <img
             class="intro-visual"
             data-intro-visual="novel"
             src="./assets/visuals-07/novel-background-v1.webp"
             alt=""
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
           />
           <img
             class="intro-visual"
             data-intro-visual="space"
             src="./assets/visuals-07/mode-space-v2.png"
             alt=""
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
           />
           <img
             class="intro-visual"
             data-intro-visual="sound"
             src="./assets/visuals-07/sound-archive-bg-v2.png"
             alt=""
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
           />
         </div>
         <div class="intro-shell">
@@ -2510,7 +2520,7 @@
       }
     })();
   </script>
-  <script src="./map-ui-grid-polish.js?v=5"></script>
+  <script src="./map-ui-grid-polish.js?v=5" defer></script>
 <style id="close-control-color-refinement">
   /* Keep close controls inside the same translucent blue-green visual system. */
   .gs-close-refined {
@@ -2577,6 +2587,6 @@
     }
   })();
 </script>
-  <script src="./particles-v9.js?v=20260805b"></script>
+  <script src="./particles-v9.js?v=20260805b" defer></script>
 </body>
 </html>

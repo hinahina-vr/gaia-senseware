@@ -16,9 +16,12 @@ try {
   for (const viewport of [{ name: "pc-1440", width: 1440, height: 900 }, { name: "mobile-390", width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
     const page = await context.newPage();
+    const requests = [];
+    let soundConfirmed = false;
     page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
+    page.on("request", (request) => requests.push({ url: request.url(), phase: soundConfirmed ? "after-choice" : "before-choice" }));
     await page.route("**/opening-mizuha-keyvisual-v1.png", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 3000));
       await route.continue();
@@ -27,6 +30,9 @@ try {
     await page.locator("#gaia-opening-sound-modal").waitFor({ state: "visible" });
     assert.equal(await page.locator("#gaia-opening-preload").isVisible(), false, `${viewport.name}: preload appeared before sound setup`);
     assert.equal(await page.evaluate(() => document.querySelector("#gaia-opening")?.classList.contains("is-active")), false, `${viewport.name}: opening started before sound setup`);
+    const deferredBeforeChoice = requests.filter(({ phase, url }) => phase === "before-choice" && /\/(?:assets\/audio|opening-(?:mizuha|amane)-keyvisual|open-data-archive-bg|gateway-keyvisual|mode-space-v2|sound-archive-bg|novel-title-keyvisual|novel-bg-festival-five-plane-projection)/u.test(url));
+    assert.deepEqual(deferredBeforeChoice, [], `${viewport.name}: later media started before the sound choice`);
+    soundConfirmed = true;
     await page.locator("#gaia-opening-sound-off").click();
     await page.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden" });
     await page.locator("#gaia-opening-preload").waitFor({ state: "visible" });
@@ -59,6 +65,8 @@ try {
     assert.match(scan.statusText, /オープニング/u);
     assert.equal(scan.overflowX, 0);
     assert.equal(scan.overflowY, 0);
+    assert(requests.some(({ phase, url }) => phase === "after-choice" && url.includes("opening-mizuha-keyvisual-v1.png")), `${viewport.name}: opening art did not start after the sound choice`);
+    assert.equal(requests.some(({ url }) => /\/assets\/audio\//u.test(url)), false, `${viewport.name}: muted opening fetched audio`);
     await page.evaluate(() => {
       const opening = document.querySelector("#gaia-opening");
       const preload = document.querySelector("#gaia-opening-preload");
@@ -66,7 +74,7 @@ try {
       preload.hidden = false;
     });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`) });
-    report.scans.push({ viewport: viewport.name, ...scan, passed: true });
+    report.scans.push({ viewport: viewport.name, requests, ...scan, passed: true });
     await context.close();
   }
   assert.deepEqual(report.consoleErrors, []);

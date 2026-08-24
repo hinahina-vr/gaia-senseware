@@ -154,7 +154,6 @@
     "./assets/visuals-07/opening-keyvisual-v2.png",
     "./assets/visuals-07/open-data-archive-bg-v1.png",
   ];
-  const OPENING_ASSET_COUNT = OPENING_ART.length + 1;
   const focusTargets = Array.from(opening.querySelectorAll("[data-opening-focus]"));
   focusTargets.forEach((target) => target.classList.add("is-opening-focus-pending"));
   const textTimers = [];
@@ -163,8 +162,10 @@
   let finished = false;
   let openingStarted = false;
   let preloadReady = false;
+  let preloadStarted = false;
+  let preloadAssetCount = OPENING_ART.length;
   let settledPreloads = 0;
-  const preloadStartedAt = performance.now();
+  let preloadStartedAt = 0;
 
   const schedule = [
     [260, 650],
@@ -362,7 +363,7 @@
   }) || createOpeningParticles(particleCanvas);
 
   const updatePreload = (message = "") => {
-    const total = OPENING_ASSET_COUNT;
+    const total = Math.max(1, preloadAssetCount);
     const percentage = Math.round((settledPreloads / total) * 100);
     if (preloadPercent) preloadPercent.textContent = String(percentage);
     if (preloadBar) preloadBar.style.transform = `scaleX(${percentage / 100})`;
@@ -400,6 +401,35 @@
       settledPreloads += 1;
       updatePreload();
     }
+  };
+
+  const startOpeningPreload = ({ includeAudio = true } = {}) => {
+    if (preloadStarted) return;
+    preloadStarted = true;
+    preloadAssetCount = OPENING_ART.length + (includeAudio ? 1 : 0);
+    preloadStartedAt = performance.now();
+    updatePreload();
+
+    const tasks = OPENING_ART.map(preloadOpeningArt);
+    if (includeAudio) tasks.push(preloadOpeningAudio());
+    Promise.race([
+      Promise.all(tasks),
+      new Promise((resolve) => window.setTimeout(() => resolve("timeout"), 5000)),
+    ]).then((result) => {
+      const elapsed = performance.now() - preloadStartedAt;
+      const minimumDisplay = Math.max(0, 520 - elapsed);
+      if (result === "timeout") {
+        if (preloadBar) preloadBar.style.transform = "scaleX(1)";
+        if (preloadPercent) preloadPercent.textContent = "100";
+        if (preloadStatus) preloadStatus.textContent = "準備できた素材からオープニングを開始します";
+      } else {
+        updatePreload("準備ができました。オープニングを開始します");
+      }
+      window.setTimeout(() => {
+        preloadReady = true;
+        tryStart();
+      }, minimumDisplay + 160);
+    });
   };
 
   const revealFocusText = (target, delay, duration) => {
@@ -577,6 +607,9 @@
     }, 380);
     void opening.offsetWidth;
     opening.classList.add("is-active");
+    if (!window.GaiaOpeningAudio?.getState?.().muted) {
+      window.setTimeout(() => void window.GaiaOpeningAudio?.preloadTrack?.("story"), 1000);
+    }
     focusTargets.forEach((target, index) => {
       const [delay, duration] = schedule[index] || [index * 120, 520];
       revealFocusText(target, delay, duration);
@@ -620,7 +653,6 @@
     }
 
     syncAudioControls();
-    void window.GaiaOpeningAudio?.preloadTrack?.("story");
   };
 
   const confirmSoundSetup = async (enabled) => {
@@ -631,6 +663,7 @@
     if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = true;
     if (openingVolume instanceof HTMLInputElement) openingVolume.disabled = true;
     syncAudioControls();
+    if (!reducedMotion) startOpeningPreload({ includeAudio: pendingSoundEnabled });
     try {
       await chooseSound(pendingSoundEnabled);
     } catch {
@@ -688,23 +721,4 @@
   });
 
   showSoundModal();
-  updatePreload();
-  Promise.race([
-    Promise.all([...OPENING_ART.map(preloadOpeningArt), preloadOpeningAudio()]),
-    new Promise((resolve) => window.setTimeout(() => resolve("timeout"), 5000)),
-  ]).then((result) => {
-    const elapsed = performance.now() - preloadStartedAt;
-    const minimumDisplay = Math.max(0, 520 - elapsed);
-    if (result === "timeout") {
-      if (preloadBar) preloadBar.style.transform = "scaleX(1)";
-      if (preloadPercent) preloadPercent.textContent = "100";
-      if (preloadStatus) preloadStatus.textContent = "準備できた素材からオープニングを開始します";
-    } else {
-      updatePreload("準備ができました。オープニングを開始します");
-    }
-    window.setTimeout(() => {
-      preloadReady = true;
-      tryStart();
-    }, minimumDisplay + 160);
-  });
 })();

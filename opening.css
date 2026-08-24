@@ -54,6 +54,10 @@ body.gaia-opening-active .novel-layer {
   visibility: hidden;
 }
 
+.gaia-opening.is-awaiting-sound .gaia-vn-track {
+  display: none;
+}
+
 .gaia-opening.is-preloaded .gaia-opening-preload {
   opacity: 0;
   filter: blur(8px);
