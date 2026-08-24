@@ -16,6 +16,7 @@ const viewports = [
   { name: "mobile-360x800", width: 360, height: 800 },
   { name: "mobile-375x667", width: 375, height: 667 },
   { name: "mobile-390x844", width: 390, height: 844 },
+  { name: "pixel-11-412x924-dpr2.625", width: 412, height: 924, deviceScaleFactor: 2.625 },
   { name: "mobile-430x932", width: 430, height: 932 },
 ];
 const dialogueCases = [
@@ -57,6 +58,7 @@ const attachDiagnostics = (page, label) => {
 const makePage = async (viewport, label, init = null, initArgument = undefined) => {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
+    deviceScaleFactor: viewport.deviceScaleFactor || 1,
     hasTouch: true,
     isMobile: true,
     reducedMotion: "reduce",
