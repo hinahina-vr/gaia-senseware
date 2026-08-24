@@ -32,6 +32,12 @@
   let soundSetupConfirmed = false;
   let soundSetupSubmitting = false;
   let pendingSoundEnabled = true;
+  const signalInitialViewReady = () => {
+    if (window.__gaiaInitialViewReady === true) return;
+    window.__gaiaInitialViewReady = true;
+    window.dispatchEvent(new CustomEvent("gaia:initial-view-ready"));
+    window.__gaiaBootCheck?.();
+  };
   const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#story"].includes(
     window.location.hash,
   ) || /\/story\/?$/i.test(window.location.pathname);
@@ -134,11 +140,17 @@
 
   if (!opening) {
     revealAudioDock();
+    signalInitialViewReady();
     return;
   }
   if (directDestination) {
     opening.hidden = true;
     revealAudioDock();
+    if (document.documentElement.dataset.gaiaAppReady === "true") signalInitialViewReady();
+    else {
+      window.addEventListener("gaia:app-ready", signalInitialViewReady, { once: true });
+      window.setTimeout(signalInitialViewReady, 12000);
+    }
     return;
   }
 
@@ -163,9 +175,15 @@
   let openingStarted = false;
   let preloadReady = false;
   let preloadStarted = false;
+  let artPreloadPromise = null;
+  let audioPreloadPromise = null;
   let preloadAssetCount = OPENING_ART.length;
   let settledPreloads = 0;
-  let preloadStartedAt = 0;
+  let preloadPanelShownAt = 0;
+  let preloadRevealTimer = 0;
+  let openingArtWarmTimer = 0;
+  let preloadLabel = "オープニングの光と人物";
+  if (preloadPanel instanceof HTMLElement) preloadPanel.hidden = true;
 
   const schedule = [
     [260, 650],
@@ -368,12 +386,14 @@
     if (preloadPercent) preloadPercent.textContent = String(percentage);
     if (preloadBar) preloadBar.style.transform = `scaleX(${percentage / 100})`;
     if (preloadStatus) {
-      preloadStatus.textContent = message || `オープニングの光・人物・音を準備しています　${settledPreloads} / ${total}`;
+      preloadStatus.textContent = message || `${preloadLabel}を準備しています　${settledPreloads} / ${total}`;
     }
   };
 
-  const preloadOpeningArt = (source) => new Promise((resolve) => {
+  const preloadOpeningArt = (source, fetchPriority = "low") => new Promise((resolve) => {
     const artwork = new Image();
+    artwork.decoding = "async";
+    artwork.fetchPriority = fetchPriority;
     let settled = false;
     const complete = () => {
       if (settled) return;
@@ -394,30 +414,48 @@
     artwork.src = new URL(source, document.baseURI).href;
   });
 
-  const preloadOpeningAudio = async () => {
-    try {
-      await window.GaiaOpeningAudio?.preload();
-    } finally {
-      settledPreloads += 1;
-      updatePreload();
-    }
+  const startOpeningArtPreload = ({ fetchPriority = "low" } = {}) => {
+    if (artPreloadPromise) return artPreloadPromise;
+    artPreloadPromise = Promise.all(OPENING_ART.map((source) => preloadOpeningArt(source, fetchPriority)));
+    return artPreloadPromise;
+  };
+
+  const startOpeningAudioPreload = () => {
+    if (audioPreloadPromise) return audioPreloadPromise;
+    preloadAssetCount += 1;
+    preloadLabel = "オープニングの光・人物・音";
+    updatePreload();
+    audioPreloadPromise = (async () => {
+      try {
+        await window.GaiaOpeningAudio?.preload();
+      } finally {
+        settledPreloads += 1;
+        updatePreload();
+      }
+    })();
+    return audioPreloadPromise;
   };
 
   const startOpeningPreload = ({ includeAudio = true } = {}) => {
     if (preloadStarted) return;
     preloadStarted = true;
-    preloadAssetCount = OPENING_ART.length + (includeAudio ? 1 : 0);
-    preloadStartedAt = performance.now();
+    preloadLabel = includeAudio ? "オープニングの光・人物・音" : "オープニングの光と人物";
     updatePreload();
+    window.clearTimeout(preloadRevealTimer);
+    preloadRevealTimer = window.setTimeout(() => {
+      if (preloadReady || openingStarted || !(preloadPanel instanceof HTMLElement)) return;
+      preloadPanel.hidden = false;
+      preloadPanelShownAt = performance.now();
+    }, 240);
 
-    const tasks = OPENING_ART.map(preloadOpeningArt);
-    if (includeAudio) tasks.push(preloadOpeningAudio());
+    const tasks = [startOpeningArtPreload({ fetchPriority: "high" })];
+    if (includeAudio) tasks.push(startOpeningAudioPreload());
     Promise.race([
       Promise.all(tasks),
       new Promise((resolve) => window.setTimeout(() => resolve("timeout"), 5000)),
     ]).then((result) => {
-      const elapsed = performance.now() - preloadStartedAt;
-      const minimumDisplay = Math.max(0, 520 - elapsed);
+      window.clearTimeout(preloadRevealTimer);
+      const panelWasShown = preloadPanel instanceof HTMLElement && !preloadPanel.hidden;
       if (result === "timeout") {
         if (preloadBar) preloadBar.style.transform = "scaleX(1)";
         if (preloadPercent) preloadPercent.textContent = "100";
@@ -425,10 +463,11 @@
       } else {
         updatePreload("準備ができました。オープニングを開始します");
       }
+      const minimumVisible = panelWasShown ? Math.max(0, 420 - (performance.now() - preloadPanelShownAt)) : 0;
       window.setTimeout(() => {
         preloadReady = true;
         tryStart();
-      }, minimumDisplay + 160);
+      }, minimumVisible);
     });
   };
 
@@ -510,9 +549,20 @@
     requestAnimationFrame(() => {
       soundModal.classList.add("is-visible");
       focusSelectedSound();
+      signalInitialViewReady();
+      window.clearTimeout(openingArtWarmTimer);
+      const warmOpeningArtAfterHandoff = () => {
+        focusSelectedSound();
+        window.clearTimeout(soundModalRevealTimer);
+        soundModalRevealTimer = window.setTimeout(focusSelectedSound, 180);
+        openingArtWarmTimer = window.setTimeout(() => {
+          if (!soundSetupConfirmed && !reducedMotion) void startOpeningArtPreload({ fetchPriority: "low" });
+        }, 480);
+      };
+      if (document.querySelector("#gaia-boot")?.hidden) warmOpeningArtAfterHandoff();
+      else window.addEventListener("gaia:boot-handoff", warmOpeningArtAfterHandoff, { once: true });
       // Later deferred modules initialize the hidden title screen and may try
-      // to claim focus. Reassert the modal once after that boot work settles.
-      soundModalRevealTimer = window.setTimeout(focusSelectedSound, 180);
+      // to claim focus. The boot handoff reasserts this modal after that work.
     });
   };
 
@@ -658,6 +708,7 @@
   const confirmSoundSetup = async (enabled) => {
     if (!soundModalOpen || soundSetupSubmitting) return;
     soundSetupSubmitting = true;
+    window.clearTimeout(openingArtWarmTimer);
     pendingSoundEnabled = Boolean(enabled);
     if (soundOnButton instanceof HTMLButtonElement) soundOnButton.disabled = true;
     if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = true;
@@ -716,6 +767,8 @@
     window.clearTimeout(exitTimer);
     window.clearTimeout(soundModalRevealTimer);
     window.clearTimeout(soundModalHideTimer);
+    window.clearTimeout(preloadRevealTimer);
+    window.clearTimeout(openingArtWarmTimer);
     textTimers.forEach((timer) => window.clearTimeout(timer));
     particleSystem.stop();
   });

@@ -17,22 +17,39 @@ try {
     const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
     const page = await context.newPage();
     const requests = [];
-    let soundConfirmed = false;
+    let requestPhase = "boot";
+    await page.exposeFunction("__gaiaTestBootHandoff", () => { requestPhase = "sound-choice"; });
+    await page.addInitScript(() => {
+      window.addEventListener("gaia:boot-handoff", () => void window.__gaiaTestBootHandoff?.(), { once: true });
+    });
     page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
-    page.on("request", (request) => requests.push({ url: request.url(), phase: soundConfirmed ? "after-choice" : "before-choice" }));
+    page.on("request", (request) => requests.push({ url: request.url(), phase: requestPhase }));
+    await page.route("**/opening.css*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await route.continue();
+    });
     await page.route("**/opening-mizuha-keyvisual-v1.png", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 3000));
       await route.continue();
     });
-    await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.goto(new URL("/", baseUrl).href, { waitUntil: "commit" });
+    await page.locator("#gaia-boot").waitFor({ state: "visible" });
+    assert.equal(await page.locator("#gaia-opening-sound-modal").isVisible(), false, `${viewport.name}: sound setup appeared before critical styles`);
+    assert.equal(await page.locator("#gaia-opening-preload").isVisible(), false, `${viewport.name}: opening preload replaced the lightweight boot view`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-boot.png`) });
     await page.locator("#gaia-opening-sound-modal").waitFor({ state: "visible" });
+    await page.locator("#gaia-boot").waitFor({ state: "hidden" });
+    if (requestPhase === "boot") requestPhase = "sound-choice";
     assert.equal(await page.locator("#gaia-opening-preload").isVisible(), false, `${viewport.name}: preload appeared before sound setup`);
     assert.equal(await page.evaluate(() => document.querySelector("#gaia-opening")?.classList.contains("is-active")), false, `${viewport.name}: opening started before sound setup`);
-    const deferredBeforeChoice = requests.filter(({ phase, url }) => phase === "before-choice" && /\/(?:assets\/audio|opening-(?:mizuha|amane)-keyvisual|open-data-archive-bg|gateway-keyvisual|mode-space-v2|sound-archive-bg|novel-title-keyvisual|novel-bg-festival-five-plane-projection)/u.test(url));
-    assert.deepEqual(deferredBeforeChoice, [], `${viewport.name}: later media started before the sound choice`);
-    soundConfirmed = true;
+    const deferredDuringBoot = requests.filter(({ phase, url }) => phase === "boot" && /\/(?:assets\/audio|opening-(?:mizuha|amane)-keyvisual|open-data-archive-bg|gateway-keyvisual|mode-space-v2|sound-archive-bg|novel-title-keyvisual|novel-bg-festival-five-plane-projection)/u.test(url));
+    assert.deepEqual(deferredDuringBoot, [], `${viewport.name}: later media started during the lightweight boot view`);
+    await page.waitForTimeout(650);
+    assert(requests.some(({ phase, url }) => phase === "sound-choice" && /opening-(?:mizuha|amane)-keyvisual/u.test(url)), `${viewport.name}: opening art did not warm during the sound choice`);
+    assert.equal(requests.some(({ url }) => /\/assets\/audio\//u.test(url)), false, `${viewport.name}: audio started before consent`);
+    requestPhase = "after-choice";
     await page.locator("#gaia-opening-sound-off").click();
     await page.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden" });
     await page.locator("#gaia-opening-preload").waitFor({ state: "visible" });
@@ -65,7 +82,7 @@ try {
     assert.match(scan.statusText, /オープニング/u);
     assert.equal(scan.overflowX, 0);
     assert.equal(scan.overflowY, 0);
-    assert(requests.some(({ phase, url }) => phase === "after-choice" && url.includes("opening-mizuha-keyvisual-v1.png")), `${viewport.name}: opening art did not start after the sound choice`);
+    assert(requests.some(({ phase, url }) => phase !== "boot" && url.includes("opening-mizuha-keyvisual-v1.png")), `${viewport.name}: opening art never started`);
     assert.equal(requests.some(({ url }) => /\/assets\/audio\//u.test(url)), false, `${viewport.name}: muted opening fetched audio`);
     await page.evaluate(() => {
       const opening = document.querySelector("#gaia-opening");
