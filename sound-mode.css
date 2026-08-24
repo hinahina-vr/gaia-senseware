@@ -84,7 +84,7 @@
 .sound-now-playing > p,
 .sound-progress-group label,
 .sound-volume > span {
-  font-family: Consolas, "Yu Gothic UI", monospace;
+  font-family: Consolas, var(--font-ui-ja), monospace;
   letter-spacing: 0.14em;
 }
 
@@ -100,7 +100,7 @@
 
 .sound-header h2 {
   margin: 0;
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-family: var(--font-ja);
   font-size: clamp(25px, 3.5vw, 48px);
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -187,7 +187,7 @@
 
 .sound-track strong {
   margin-bottom: 5px;
-  font-family: "Yu Gothic UI", sans-serif;
+  font-family: var(--font-ui-ja);
   font-size: clamp(13px, 1.25vw, 17px);
   letter-spacing: 0.015em;
 }
@@ -398,7 +398,7 @@
   gap: 5px;
   padding-left: 12px;
   color: rgba(204, 243, 232, 0.62);
-  font-family: Consolas, "Yu Gothic UI", monospace;
+  font-family: Consolas, var(--font-ui-ja), monospace;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -463,7 +463,7 @@
 
 .sound-now-playing h3 {
   margin: 0;
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-family: var(--font-ja);
   font-size: clamp(24px, 2.1vw, 42px);
   font-weight: 500;
   line-height: 1.2;
@@ -534,7 +534,7 @@
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 7px;
-  font-family: Consolas, "Yu Gothic UI", monospace;
+  font-family: Consolas, var(--font-ui-ja), monospace;
   line-height: 1;
 }
 
@@ -670,7 +670,7 @@
 
 .sound-volume-label strong {
   color: #fff4dd;
-  font: 650 11px/1 "Yu Gothic UI", sans-serif;
+  font: 650 11px/1 var(--font-ui-ja);
   letter-spacing: 0.1em;
 }
 

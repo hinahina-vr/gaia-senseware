@@ -147,7 +147,7 @@ assert.match(html, /app\.js\?v=gaia-map10-nine-measure-atlas-1/u);
 assert.match(appSource, /fixed-diameter-pie/u);
 assert.match(appSource, /緑 \/ 再資源化/u);
 assert.match(content.modes[4].description, /同じ大きさの円グラフ/u);
-assert.match(html, /styles\.css\?v=gaia-mobile-ui-audit-1/u);
+assert.match(html, /styles\.css\?v=gaia-cross-platform-fonts-1/u);
 assert.doesNotMatch(html, /gaia-remix-20/u);
 assert.doesNotMatch(packageJson, /check-remix-modes/u);
 

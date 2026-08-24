@@ -1,6 +1,7 @@
 :root {
   color-scheme: dark;
-  --font-ja: "Yu Mincho", "Hiragino Mincho ProN", "HGS明朝E", "Noto Serif JP", serif;
+  --font-ja: "Yu Mincho", YuMincho, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "HGS明朝E", "Noto Serif CJK JP", "Noto Serif JP", "Source Han Serif JP", serif;
+  --font-ui-ja: "Yu Gothic UI", "Yu Gothic", YuGothic, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans CJK JP", "Noto Sans JP", sans-serif;
   font-family:
     "Arial Narrow",
     "Roboto Condensed",

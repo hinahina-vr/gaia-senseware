@@ -40,6 +40,8 @@ const readControlDesign = (page) => page.evaluate(() => {
   const volume = document.querySelector(".sound-volume");
   const seekInput = document.querySelector("#sound-progress");
   const volumeInput = document.querySelector("#sound-volume");
+  const title = document.querySelector("#sound-track-title");
+  const volumeLabel = document.querySelector(".sound-volume-label strong");
   const styleValue = (node, name) => getComputedStyle(node).getPropertyValue(name).trim();
   return {
     seekLabel: seek?.textContent?.replace(/\s+/g, " ").trim() || "",
@@ -48,6 +50,8 @@ const readControlDesign = (page) => page.evaluate(() => {
     volumeAccent: styleValue(volumeInput, "--sound-control-accent"),
     seekBorderLeft: getComputedStyle(seek).borderLeftWidth,
     volumeBorderRight: getComputedStyle(volume).borderRightWidth,
+    titleFont: getComputedStyle(title).fontFamily,
+    volumeLabelFont: getComputedStyle(volumeLabel).fontFamily,
   };
 });
 
@@ -56,6 +60,8 @@ const assertControlDesign = (design, label) => {
   assert(design.volumeLabel.includes("音量") && design.volumeLabel.includes("VOLUME"), `${label}: volume control label is ambiguous`);
   assert(design.seekAccent && design.volumeAccent && design.seekAccent !== design.volumeAccent, `${label}: seek and volume accents are indistinguishable`);
   assert(design.seekBorderLeft === "3px" && design.volumeBorderRight === "3px", `${label}: control shapes are not visually separated`);
+  assert(design.titleFont.includes("Yu Mincho") && design.titleFont.includes("Noto Serif CJK JP"), `${label}: title font stack does not preserve the PC-first serif fallback`);
+  assert(design.volumeLabelFont.includes("Yu Gothic UI") && design.volumeLabelFont.includes("Noto Sans CJK JP"), `${label}: UI font stack does not preserve the PC-first sans-serif fallback`);
 };
 
 let context;

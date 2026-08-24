@@ -318,6 +318,7 @@ const scanMapMode = async (viewport) => {
     modeNumber: document.querySelector("#japan-mode-number")?.textContent?.trim() || "",
     basis: document.querySelector("#map-scope-note")?.textContent?.replace(/\s+/g, " ").trim() || "",
     snapshot: document.querySelector(".signal-console-map [data-signal-value]")?.textContent?.trim() || "",
+    headingFont: getComputedStyle(document.querySelector("#japan-title")).fontFamily,
   }));
   await saveScreenshot(page, viewport, surface);
   reviewCommon(viewport, surface, scan);
@@ -327,6 +328,9 @@ const scanMapMode = async (viewport) => {
   }
   if (mapRender.modeNumber !== "01" || !mapRender.vectorWorldCopies || !mapRender.basis.includes("LOCAL GEOJSON") || mapRender.snapshot.includes("LOADING")) {
     addIssue(viewport, surface, "map-not-rendered", "世界地図が描画済みの状態になっていない", mapRender);
+  }
+  if (!mapRender.headingFont.includes("Yu Mincho") || !mapRender.headingFont.includes("Noto Serif CJK JP")) {
+    addIssue(viewport, surface, "map-font-stack", "地図見出しがPC基準の明朝フォールバックになっていない", mapRender);
   }
   report.scans.push({ ...scan, viewport: viewport.name, surface, mapRender });
   await context.close();
@@ -404,8 +408,12 @@ const scanSensorPublicMap = async (viewport) => {
   const marker = scan.controls.find((control) => control.label.includes("放課後の環境センサー"));
   if (!marker?.hitSize) addIssue(viewport, surface, "sensor-marker-target", "公開センサーマーカーが44px未満", marker || null);
   const headingFontSize = await page.locator(".sensor-public-map .sensor-page-head h1").evaluate((heading) => parseFloat(getComputedStyle(heading).fontSize));
+  const headingFont = await page.locator(".sensor-public-map .sensor-page-head h1").evaluate((heading) => getComputedStyle(heading).fontFamily);
   if (headingFontSize > 30) addIssue(viewport, surface, "sensor-heading-too-large", "「みんなのセンサー」の見出しが30pxを超えている", { headingFontSize });
-  report.scans.push({ ...scan, viewport: viewport.name, surface, headingFontSize });
+  if (!headingFont.includes("Yu Mincho") || !headingFont.includes("Noto Serif CJK JP")) {
+    addIssue(viewport, surface, "sensor-font-stack", "センサー見出しがPC基準の明朝フォールバックになっていない", { headingFont });
+  }
+  report.scans.push({ ...scan, viewport: viewport.name, surface, headingFontSize, headingFont });
   await context.close();
 };
 

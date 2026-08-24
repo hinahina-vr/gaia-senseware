@@ -9,9 +9,10 @@
   --panel-deep: rgba(3, 11, 21, 0.9);
   --line: rgba(229, 235, 255, 0.17);
   --danger: #ff9a9a;
-  --font-ja: "Yu Mincho", "Hiragino Mincho ProN", "HGS明朝E", "Noto Serif JP", serif;
+  --font-ja: "Yu Mincho", YuMincho, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "HGS明朝E", "Noto Serif CJK JP", "Noto Serif JP", "Source Han Serif JP", serif;
+  --font-ui-ja: "Yu Gothic UI", "Yu Gothic", YuGothic, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans CJK JP", "Noto Sans JP", sans-serif;
   --font-ui: "Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif;
-  --font-display: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", serif;
+  --font-display: Georgia, "Times New Roman", var(--font-ja);
   --font-console: Consolas, "Courier New", monospace;
   font-synthesis: none;
 }
