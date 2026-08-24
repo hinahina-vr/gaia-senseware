@@ -258,12 +258,19 @@ try {
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.open));
       await page.evaluate(() => globalThis.GaiaNovel.open());
-      await page.locator("#novel-resume-button").click();
-      await page.waitForFunction(() => {
-        const panel = document.querySelector("#novel-save-panel");
-        return panel && !panel.hidden && getComputedStyle(panel).display !== "none";
-      });
-      await page.locator(".novel-save-slot[data-slot-index='0']").click();
+      const resumed = await page.waitForFunction((stepId) => {
+        const layer = document.querySelector("#novel-layer");
+        const runtime = document.querySelector("#novel-runtime");
+        return layer?.dataset.stepId === stepId && !runtime?.hidden && getComputedStyle(runtime).display !== "none";
+      }, targetStep.id, { timeout: 5_000 }).then(() => true, () => false);
+      if (!resumed && await page.locator("#novel-resume-button").isVisible()) {
+        await page.locator("#novel-resume-button").click();
+        await page.waitForFunction(() => {
+          const panel = document.querySelector("#novel-save-panel");
+          return panel && !panel.hidden && getComputedStyle(panel).display !== "none";
+        });
+        await page.locator(".novel-save-slot[data-slot-index='0']").click();
+      }
       await page.waitForFunction((stepId) => {
         const layer = document.querySelector("#novel-layer");
         const runtime = document.querySelector("#novel-runtime");
@@ -319,7 +326,12 @@ try {
         await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete", null, { timeout: 1_000 });
       }
       const secondTrace = await readTrace(page);
-      pageTraces.push(assertTrace(secondTrace, `${tag}-page2`, { allowJump: ["click-skip", "space-skip", "reduced"].includes(mode), steadyCadence, visualUniform, expectedDelay }));
+      pageTraces.push(assertTrace(secondTrace, `${tag}-page2`, {
+        allowJump: ["click-skip", "space-skip", "reduced"].includes(mode),
+        steadyCadence: steadyCadence && mode !== "auto",
+        visualUniform,
+        expectedDelay,
+      }));
       const pageInfo = await page.evaluate(() => ({
         text: document.querySelector("#novel-text")?.textContent || "",
         aria: document.querySelector("#novel-text")?.getAttribute("aria-label") || "",

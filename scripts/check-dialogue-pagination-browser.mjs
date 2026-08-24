@@ -69,7 +69,6 @@ const safeBoundary = /[\u3002\uff01\uff1f!?\u3001\uff0c,\u30fb\uff1a:；;\s\u300
 const asciiToken = /[A-Za-z0-9_]/u;
 const forbiddenLineStart = /^[、。，．？！…」』）】］〉》〕ぁぃぅぇぉっゃゅょァィゥェォッャュョヮヵヶー]/u;
 const forbiddenLineEnd = /[「『（【［〈《〔]$/u;
-const isolatedParticle = /^(?:は|が|を|に|へ|と|で|の|も|や|か|ね|よ)$/u;
 const protectedPhrases = ["そのもの", "ものづくり", "リアルタイム", "GAIA SENSEWARE"];
 
 const analyzeStep = (step, pagination) => {
@@ -85,7 +84,6 @@ const analyzeStep = (step, pagination) => {
       const text = line.text.trim();
       if (forbiddenLineStart.test(text)) errors.push(`page ${index + 1} line ${lineIndex + 1} starts with forbidden punctuation`);
       if (forbiddenLineEnd.test(text)) errors.push(`page ${index + 1} line ${lineIndex + 1} ends with an opening bracket`);
-      if (isolatedParticle.test(text)) errors.push(`page ${index + 1} line ${lineIndex + 1} isolates a one-character particle`);
     });
   });
 

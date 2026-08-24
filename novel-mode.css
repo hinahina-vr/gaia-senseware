@@ -3584,9 +3584,13 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
   font-size: clamp(22px, 1.75vw, 31px);
   font-weight: 500;
   letter-spacing: 0.02em;
+  line-break: strict;
   line-height: 1.58;
+  overflow-wrap: normal;
   text-align: left;
+  text-wrap: wrap;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.88);
+  word-break: normal;
 }
 
 .novel-text.is-preparing {
@@ -3597,11 +3601,22 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
   display: inline;
 }
 
-.novel-phrase-token,
-.novel-space-token {
-  display: inline-block;
-  white-space: pre;
+.novel-phrase-token {
+  display: inline;
+  white-space: normal;
   vertical-align: baseline;
+}
+
+.novel-space-token {
+  display: inline;
+  white-space: pre-wrap;
+  vertical-align: baseline;
+}
+
+@supports (word-break: auto-phrase) {
+  .novel-text {
+    word-break: auto-phrase;
+  }
 }
 
 .novel-text.is-revealing .novel-reveal-glyph {
@@ -3909,7 +3924,7 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
 @media (max-width: 720px) {
   .novel-layer {
     --novel-say-width: calc(100vw - 24px);
-    --novel-say-height: clamp(176px, 26vh, 224px);
+    --novel-say-height: clamp(172px, 21vh, 184px);
     --novel-say-bottom: max(14px, env(safe-area-inset-bottom));
     --novel-dialogue-right: 20px;
     --novel-dialogue-bottom: max(14px, env(safe-area-inset-bottom));
@@ -3940,7 +3955,7 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
     width: var(--novel-say-width);
     min-height: 0;
     height: var(--novel-say-height);
-    padding: 44px 20px 30px;
+    padding: 36px 18px 24px;
     transform: translateX(-50%);
   }
 
@@ -3961,8 +3976,8 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
   }
 
   .novel-text {
-    font-size: clamp(18px, 4.9vw, 22px);
-    line-height: 1.62;
+    font-size: clamp(18px, 4.6vw, 20px);
+    line-height: 1.55;
   }
 
   .novel-signal-caption {
@@ -7177,7 +7192,7 @@ body.novel-open .japan-layer[data-story-mode="map01"] .japan-close {
   }
 
   .novel-dialogue {
-    padding-top: 42px;
+    padding-top: 36px;
     border-radius: 22px;
   }
 
@@ -8147,7 +8162,7 @@ body.gx-story-open .novel-cast {
     inset: -20px -12px calc(-1 * (var(--novel-say-bottom) + 10px)) !important;
   }
   .novel-text {
-    transform: translateY(10px);
+    transform: translateY(4px);
   }
 }
 
@@ -8259,11 +8274,11 @@ body.gx-story-open .novel-cast {
 
 @media (max-width: 720px) {
   .novel-speaker {
-    top: 18px !important;
+    top: 6px !important;
     width: min(320px, 78%) !important;
-    min-height: 34px !important;
+    min-height: 30px !important;
     padding-inline: 16px !important;
-    font-size: 16px !important;
+    font-size: 14px !important;
   }
 
   .novel-topbar nav {

@@ -28,12 +28,13 @@ const scans = [
   ["font loading reflow", /loadingdone/u.test(runtime)],
   ["width-only resize guard", /Math\.abs\(width - dialogueObservedWidth\) < 0\.5/u.test(runtime)],
   ["reflow generation guard", /generation !== dialoguePaginationGeneration/u.test(runtime) && /dialogueReflowActive/u.test(runtime)],
-  ["phrase tokens do not split", /\.novel-phrase-token,[\s\S]*display: inline-block;[\s\S]*white-space: pre;/u.test(css)],
-  ["native auto-phrase disabled", !/word-break:\s*auto-phrase/u.test(css)],
+  ["phrase tokens allow native Japanese wrapping", /\.novel-phrase-token\s*\{[\s\S]*?display: inline;[\s\S]*?white-space: normal;/u.test(css)],
+  ["native strict kinsoku remains active", /\.novel-text\s*\{[\s\S]*?line-break: strict;[\s\S]*?overflow-wrap: normal;[\s\S]*?text-wrap: wrap;[\s\S]*?word-break: normal;/u.test(css)],
+  ["native auto-phrase progressively enhances wrapping", /@supports \(word-break: auto-phrase\)[\s\S]*?\.novel-text\s*\{[\s\S]*?word-break: auto-phrase;/u.test(css)],
   ["source mirrors match", source === mirror],
   ["no escape hard breaks in changed prose", !source.includes("<br") && !source.includes("\\n")],
   ["forbidden verb absent", !/(?:置く|置いた|置いて|置か|置き|置け|置こう)/u.test(source)],
-  ["mobile UI cache keys", ["styles.css", "novel-mode.css", "novel-mode.js", "mode-exit.css"].every((asset) => html.includes(`${asset}?v=gaia-mobile-ui-audit-1`))],
+  ["mobile UI cache keys", ["styles.css?v=gaia-mobile-ui-audit-1", "novel-mode.css?v=gaia-dialogue-wrap-1", "novel-mode.js?v=gaia-dialogue-wrap-1", "mode-exit.css?v=gaia-mobile-ui-audit-1"].every((asset) => html.includes(asset))],
 ];
 
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);

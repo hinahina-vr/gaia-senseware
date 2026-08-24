@@ -2187,24 +2187,45 @@
     const lines = [];
     let current = [];
     let lineTop = null;
+
+    const commitLine = () => {
+      if (current.length) lines.push(current);
+      current = [];
+      lineTop = null;
+    };
+
+    const appendGlyph = (glyph, rect) => {
+      if (rect.width > 0 || rect.height > 0) {
+        if (lineTop === null) lineTop = rect.top;
+        else if (Math.abs(rect.top - lineTop) > 2) commitLine();
+        if (lineTop === null) lineTop = rect.top;
+      }
+      current.push(glyph);
+    };
+
     layout.childNodes.forEach((node) => {
       if (node instanceof HTMLBRElement) {
-        if (current.length) lines.push(current);
-        current = [];
-        lineTop = null;
+        commitLine();
         return;
       }
       if (!(node instanceof HTMLElement)) return;
-      const top = node.getBoundingClientRect().top;
-      if (lineTop === null) lineTop = top;
-      else if (Math.abs(top - lineTop) > 2) {
-        if (current.length) lines.push(current);
-        current = [];
-        lineTop = top;
+
+      const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        const textNode = walker.currentNode;
+        let offset = 0;
+        Array.from(textNode.nodeValue || "").forEach((glyph) => {
+          const nextOffset = offset + glyph.length;
+          const range = document.createRange();
+          range.setStart(textNode, offset);
+          range.setEnd(textNode, nextOffset);
+          appendGlyph(glyph, range.getBoundingClientRect());
+          range.detach();
+          offset = nextOffset;
+        });
       }
-      current.push(...Array.from(node.textContent || ""));
     });
-    if (current.length) lines.push(current);
+    commitLine();
     return lines.length ? lines : [Array.from(text)];
   };
 
@@ -5637,6 +5658,7 @@
     },
     inspectDialoguePagination: (text, { forceFallback = false } = {}) => {
       const source = String(text || "");
+      const renderedChildren = Array.from(elements.text.childNodes);
       dialogueForceFallbackForInspection = forceFallback;
       try {
         const pages = paginateDialogueTextBalanced(source);
@@ -5658,21 +5680,23 @@
           const metrics = dialoguePageMetrics(page, layout);
           const textRect = elements.text.getBoundingClientRect();
           const indicatorRect = elements.continueMark.getBoundingClientRect();
-          const tokenRows = [];
+          const tokenRows = metrics.measuredLines.map((line, index) => ({
+            top: textRect.top + (index * (Number.parseFloat(getComputedStyle(elements.text).lineHeight) || 0)),
+            text: line.join(""),
+            tokens: [],
+          }));
           layout.querySelectorAll(".novel-phrase-token, .novel-space-token").forEach((token) => {
-            const rect = token.getBoundingClientRect();
-            let row = tokenRows.find((candidate) => Math.abs(candidate.top - rect.top) <= 2);
-            if (!row) {
-              row = { top: rect.top, text: "", tokens: [] };
-              tokenRows.push(row);
-            }
-            row.text += token.textContent || "";
-            row.tokens.push({
-              text: token.textContent || "",
-              start: Number(token.dataset.sourceStart),
-              end: Number(token.dataset.sourceEnd),
-              top: rect.top,
-              bottom: rect.bottom,
+            const rects = Array.from(token.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
+            rects.forEach((rect) => {
+              let row = tokenRows.find((candidate) => Math.abs(candidate.top - rect.top) <= 2);
+              if (!row) return;
+              row.tokens.push({
+                text: token.textContent || "",
+                start: Number(token.dataset.sourceStart),
+                end: Number(token.dataset.sourceEnd),
+                top: rect.top,
+                bottom: rect.bottom,
+              });
             });
           });
           return {
@@ -5688,6 +5712,7 @@
         }),
         };
       } finally {
+        elements.text.replaceChildren(...renderedChildren);
         dialogueForceFallbackForInspection = false;
       }
     },

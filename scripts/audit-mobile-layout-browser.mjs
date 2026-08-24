@@ -20,8 +20,20 @@ const viewports = [
   { name: "pixel-11-412x924-dpr2.625", width: 412, height: 924, deviceScaleFactor: 2.625 },
   { name: "mobile-430x932", width: 430, height: 932 },
 ];
+const viewportFilter = new Set(String(process.env.GAIA_MOBILE_AUDIT_VIEWPORTS || "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean));
+const selectedViewports = viewportFilter.size
+  ? viewports.filter((viewport) => viewportFilter.has(viewport.name))
+  : viewports;
+if (!selectedViewports.length) throw new Error(`No mobile audit viewport matched: ${[...viewportFilter].join(", ")}`);
 const dialogueCases = [
+  { name: "b-hall-crowd", stepId: "festival_concept_008" },
+  { name: "earth-installation", stepId: "festival_concept_011" },
   { name: "first-meeting", stepId: "festival_concept_016" },
+  { name: "projector", stepId: "festival_concept_032" },
+  { name: "continue-feeling", stepId: "festival_concept_047" },
   { name: "gx-explanation", stepId: "gx_experience_010" },
   { name: "sensor-explanation", stepId: "esp32_pitch_015" },
 ];
@@ -29,7 +41,7 @@ const report = {
   status: "running",
   baseUrl,
   auditScope,
-  viewports,
+  viewports: selectedViewports,
   screenshots: [],
   scans: [],
   issues: [],
@@ -441,21 +453,32 @@ const scanDialogue = async (viewport, testCase, includeConfig = false) => {
   const scan = await inspectSurface(page, ["#novel-layer", "#novel-dialogue", "#novel-text", ".novel-topbar nav", "#novel-home-button", "#novel-close-button", "#novel-source-label", "#gaia-audio-dock"]);
   const lines = await collectRenderedLines(page, "#novel-text");
   const headingLines = await collectRenderedLines(page, "#novel-location");
+  const pageCount = await page.locator("#novel-text").evaluate((node) => Number(node.dataset.pageCount || 1));
+  const renderedPages = [{ pageIndex: 1, lines }];
+  await saveScreenshot(page, viewport, `dialogue-${testCase.name}-page-1`);
+  for (let pageIndex = 2; pageIndex <= pageCount; pageIndex += 1) {
+    await page.locator("#novel-dialogue").click();
+    await page.waitForFunction((expected) => Number(document.querySelector("#novel-text")?.dataset.pageIndex || 0) === expected, pageIndex);
+    await page.locator("#novel-continue.is-visible").waitFor({ state: "visible" });
+    const pageLines = await collectRenderedLines(page, "#novel-text");
+    renderedPages.push({ pageIndex, lines: pageLines });
+    await saveScreenshot(page, viewport, `dialogue-${testCase.name}-page-${pageIndex}`);
+  }
   const pagination = await page.evaluate((stepId) => {
     const step = globalThis.GAIA_NOVEL_STORY?.scenes
       ?.flatMap((scene) => scene.steps)
       ?.find((candidate) => candidate.id === stepId);
     return step ? globalThis.GaiaNovel.inspectDialoguePagination(step.text) : null;
   }, testCase.stepId);
-  await saveScreenshot(page, viewport, `dialogue-${testCase.name}`);
   reviewCommon(viewport, `dialogue-${testCase.name}`, scan);
   const textTarget = scan.targets.find((target) => target.selector === "#novel-text");
   if (textTarget && textTarget.scrollHeight > textTarget.clientHeight + 2) {
     addIssue(viewport, `dialogue-${testCase.name}`, "dialogue-scroll", "通常会話本文に内部スクロールが発生", textTarget);
   }
-  const badStarts = lines.lines.filter((line) => /^[、。，．・：；？！）」』】]/u.test(line.text));
-  const badEnds = lines.lines.filter((line) => /[（「『【]$/u.test(line.text));
-  const oneGlyphLines = lines.lines.filter((line) => Array.from(line.text.replace(/\s+/gu, "")).length <= 1);
+  const allRenderedLines = renderedPages.flatMap((pageItem) => pageItem.lines.lines);
+  const badStarts = allRenderedLines.filter((line) => /^[、。，．・：；？！）」』】]/u.test(line.text));
+  const badEnds = allRenderedLines.filter((line) => /[（「『【]$/u.test(line.text));
+  const oneGlyphLines = allRenderedLines.filter((line) => Array.from(line.text.replace(/\s+/gu, "")).length <= 1);
   if (badStarts.length) addIssue(viewport, `dialogue-${testCase.name}`, "kinsoku-line-start", "句読点・閉じ括弧から始まる行がある", badStarts);
   if (badEnds.length) addIssue(viewport, `dialogue-${testCase.name}`, "kinsoku-line-end", "開き括弧で終わる行がある", badEnds);
   if (oneGlyphLines.length) addIssue(viewport, `dialogue-${testCase.name}`, "single-glyph-line", "1文字だけの行がある", oneGlyphLines);
@@ -484,7 +507,16 @@ const scanDialogue = async (viewport, testCase, includeConfig = false) => {
   if ((pagination?.pages?.length || 0) > 1 && sparsePages.length) {
     addIssue(viewport, `dialogue-${testCase.name}`, "sparse-dialogue-page", "複数ページの会話に1行だけのページがある", sparsePages);
   }
-  report.scans.push({ ...scan, viewport: viewport.name, surface: `dialogue-${testCase.name}`, stepId: testCase.stepId, lines, headingLines, pagination });
+  const overfullPages = pagination?.pages?.filter((candidate) => candidate.lines > 3 || !candidate.fits) || [];
+  if (overfullPages.length) {
+    addIssue(viewport, `dialogue-${testCase.name}`, "dialogue-page-overfull", "会話ページが3行または表示可能領域を超えている", overfullPages);
+  }
+  const dialogueTarget = scan.targets.find((target) => target.selector === "#novel-dialogue");
+  const dialogueHeightRatio = dialogueTarget?.box?.height ? dialogueTarget.box.height / scan.viewport.height : 0;
+  if (viewport.height >= 800 && dialogueHeightRatio > 0.23) {
+    addIssue(viewport, `dialogue-${testCase.name}`, "dialogue-panel-too-tall", "3行会話欄がスマートフォン画面を圧迫している", { dialogueHeightRatio, dialogue: dialogueTarget });
+  }
+  report.scans.push({ ...scan, viewport: viewport.name, surface: `dialogue-${testCase.name}`, stepId: testCase.stepId, lines, renderedPages, headingLines, pagination, dialogueHeightRatio });
 
   if (includeConfig) {
     await page.locator("#novel-config-button").click();
@@ -529,12 +561,16 @@ const scanSensorLogin = async (viewport) => {
 };
 
 try {
-  for (const viewport of viewports) {
+  for (const viewport of selectedViewports) {
     if (auditScope === "special-modes") {
       await scanMapMode(viewport);
       await scanSpaceMode(viewport);
       await scanSoundMode(viewport);
       await scanSensorPublicMap(viewport);
+      continue;
+    }
+    if (auditScope === "dialogue") {
+      for (const testCase of dialogueCases) await scanDialogue(viewport, testCase);
       continue;
     }
     await scanOpening(viewport);
