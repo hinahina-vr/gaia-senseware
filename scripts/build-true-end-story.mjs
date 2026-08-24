@@ -25,6 +25,15 @@ const scenes = approved.trueEndScenes.map((scene) => ({
   steps: scene.entries.map((entry) => {
     const speaker = speakerForLabel[entry.speakerLabel];
     if (speaker === undefined) throw new Error(`${entry.id}: 未対応のNOVACENE話者です（${entry.speakerLabel}）`);
+    const pages = entry.metadata?.pages;
+    if (pages !== undefined && (
+      !Array.isArray(pages)
+      || pages.length < 2
+      || pages.some((page) => typeof page !== "string" || !page)
+      || pages.join("") !== entry.text
+    )) {
+      throw new Error(`${entry.id}: pagesは本文を欠落なく分けた2ページ以上の文字列配列にしてください`);
+    }
     return {
       ...(speaker ? { speaker } : {}),
       text: entry.text,

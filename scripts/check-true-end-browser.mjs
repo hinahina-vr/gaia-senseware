@@ -158,6 +158,7 @@ const scanFrame = (page) => page.evaluate(() => {
     messageLineCount: new Set(messageLineTops).size,
     messageClientHeight: message?.clientHeight || 0,
     messageScrollHeight: message?.scrollHeight || 0,
+    messagePage: shell?.dataset.messagePage || "",
     shellUserSelect: getComputedStyle(shell).userSelect,
     readoutVisible: Boolean(readout && !readout.hidden),
     readoutRect: readoutRect ? { x: readoutRect.x, y: readoutRect.y, width: readoutRect.width, height: readoutRect.height, right: readoutRect.right } : null,
@@ -250,21 +251,25 @@ const scanFrame = (page) => page.evaluate(() => {
 });
 
 const advanceTransmissionStep = async (page) => {
-  let before = await scanFrame(page);
-  if (await page.evaluate(() => document.querySelector(".true-end-shell")?.classList.contains("is-revealing"))) {
+  const initial = await scanFrame(page);
+  let before = initial;
+  while (true) {
+    const revealing = await page.evaluate(() => document.querySelector(".true-end-shell")?.classList.contains("is-revealing"));
     await page.locator(".true-end-dialogue").click();
-    await page.waitForFunction((counter) => {
+    if (revealing) {
+      await page.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-revealing"));
+      before = await scanFrame(page);
+      continue;
+    }
+    await page.waitForFunction(({ counter, messagePage }) => {
       const shell = document.querySelector(".true-end-shell");
-      const current = document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() || "";
-      return !shell?.classList.contains("is-revealing") || current !== counter;
-    }, before.counter);
-    const afterRevealClick = await scanFrame(page);
-    if (afterRevealClick.counter !== before.counter) return { before, after: afterRevealClick };
-    before = afterRevealClick;
+      const currentCounter = document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() || "";
+      return currentCounter !== counter || shell?.dataset.messagePage !== messagePage;
+    }, { counter: before.counter, messagePage: before.messagePage });
+    const after = await scanFrame(page);
+    if (after.counter !== initial.counter) return { before: initial, after };
+    before = after;
   }
-  await page.locator(".true-end-dialogue").click();
-  await page.waitForFunction((counter) => document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() !== counter, before.counter);
-  return { before, after: await scanFrame(page) };
 };
 
 const clickOutsideDialogue = async (page, label) => {
@@ -404,12 +409,17 @@ try {
       continue;
     }
 
-    const initial = await scanFrame(page);
+    let initial = await scanFrame(page);
+    if (!initial.audioPlayback?.duration) {
+      await page.waitForFunction(() => (globalThis.GaiaOpeningAudio?.getPlaybackState?.().duration || 0) > 0, null, { timeout: 30_000 });
+      initial = await scanFrame(page);
+    }
     const seenSpeakers = new Set();
     const seenManifestations = new Map();
     const seenSystemPhrases = new Set();
     const capturedSpeakers = new Set();
     const messageLayoutViolations = [];
+    const targetMessagePages = [];
     const maximumAllowedMessageLines = viewport.width <= 720 ? 5 : 3;
     let maximumMessageLines = 0;
     const fixedDialogueHeight = initial.dialogueRect.height;
@@ -456,6 +466,9 @@ try {
       maximumMessageLines = Math.max(maximumMessageLines, frame.messageLineCount);
       if (frame.messageLineCount < 1 || frame.messageLineCount > maximumAllowedMessageLines || frame.messageScrollHeight > frame.messageClientHeight + 1) {
         messageLayoutViolations.push(`${frame.counter}: ${frame.messageLineCount} lines, ${frame.messageScrollHeight}/${frame.messageClientHeight}px — ${frame.message}`);
+      }
+      if (frame.stepId === "beyond_01_021" && targetMessagePages.at(-1) !== frame.message) {
+        targetMessagePages.push(frame.message);
       }
       if (frame.speaker === "system") {
         seenSystemPhrases.add(frame.message);
@@ -549,10 +562,32 @@ try {
           await page.waitForFunction(() => Boolean(document.querySelector(".true-end-finale:not([hidden])")));
           break;
         }
+        let beforeAdvance = await scanFrame(page);
         await page.locator(".true-end-dialogue").click();
         absoluteStep += 1;
-        await page.waitForFunction((expected) => document.querySelector(".true-end-footer span:last-child")?.textContent?.trim().startsWith(String(expected).padStart(3, "0")), absoluteStep);
-        const nextFrame = await scanFrame(page);
+        let nextFrame;
+        while (!nextFrame) {
+          await page.waitForFunction(({ expected, previousCounter, previousPage }) => {
+            const currentShell = document.querySelector(".true-end-shell");
+            const currentCounter = document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() || "";
+            return currentCounter.startsWith(String(expected).padStart(3, "0"))
+              || (currentCounter === previousCounter && currentShell?.dataset.messagePage !== previousPage);
+          }, {
+            expected: absoluteStep,
+            previousCounter: beforeAdvance.counter,
+            previousPage: beforeAdvance.messagePage,
+          });
+          const candidate = await scanFrame(page);
+          if (candidate.counter.startsWith(String(absoluteStep).padStart(3, "0"))) {
+            nextFrame = candidate;
+            break;
+          }
+          assert.equal(candidate.counter, beforeAdvance.counter, `${viewport.name}: a message page changed the story counter`);
+          assert.equal(candidate.stepId, beforeAdvance.stepId, `${viewport.name}: a message page changed the story step`);
+          validateSpeakerVisual(candidate);
+          beforeAdvance = candidate;
+          await page.locator(".true-end-dialogue").click();
+        }
         validateSpeakerVisual(nextFrame);
         assert(Math.abs(nextFrame.messageTopOffset) <= 1, `${viewport.name}: message moved from the top at ${nextFrame.counter} (${nextFrame.messageTopOffset})`);
         if (absoluteStep === 70) {
@@ -588,6 +623,11 @@ try {
     }
 
     assert.deepEqual(messageLayoutViolations, [], `${viewport.name}: messages exceeded the ${maximumAllowedMessageLines}-line dialogue design:\n${messageLayoutViolations.join("\n")}`);
+    assert.deepEqual(targetMessagePages, [
+      "この世界では、言葉というフィルターを通さず、他者の存在や意図をありのまま受け止める。",
+      "猫同士が微かな匂いや気配だけで互いのすべてを通じ合わせるように、人類が忘れ去っていた原初の感覚が息を吹き返したのだ。",
+      "自分と他者を隔てる壁が消え去ったとき、その通じ合いは静かな波紋のように広がり、やがて全宇宙のあらゆる存在と意識を分かち合う感覚へと広がっていった。",
+    ], `${viewport.name}: beyond_01_021 did not preserve all three authored pages`);
     assert.deepEqual(visited, story.scenes.map(({ id, title }) => ({ scene: id, title })), `${viewport.name}: scene order changed`);
     for (const speaker of ["narrator", "system", "lou", "mizuha", "amane", "sakuya", "visitor"]) {
       assert(seenSpeakers.has(speaker), `${viewport.name}: ${speaker} was never rendered`);

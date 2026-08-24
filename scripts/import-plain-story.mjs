@@ -260,6 +260,18 @@ const alignIds = (currentEntries, incomingEntries, sceneId, { inheritCues = fals
     }
   }
   matches.reverse();
+  const anchoredMatches = [[-1, -1], ...matches, [currentEntries.length, incomingEntries.length]];
+  for (let index = 1; index < anchoredMatches.length; index += 1) {
+    const [previousCurrent, previousIncoming] = anchoredMatches[index - 1];
+    const [nextCurrent, nextIncoming] = anchoredMatches[index];
+    const currentGap = nextCurrent - previousCurrent - 1;
+    const incomingGap = nextIncoming - previousIncoming - 1;
+    if (currentGap === 0 || currentGap !== incomingGap) continue;
+    for (let offset = 1; offset <= currentGap; offset += 1) {
+      matches.push([previousCurrent + offset, previousIncoming + offset]);
+    }
+  }
+  matches.sort((left, right) => left[1] - right[1]);
   const matchedByIncoming = new Map(matches.map(([currentIndex, incomingIndex]) => [incomingIndex, currentEntries[currentIndex]]));
   const cueSourceByIncoming = new Map();
   let previousCueSource = null;

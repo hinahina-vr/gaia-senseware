@@ -47,6 +47,7 @@
 
     let sceneIndex = 0;
     let stepIndex = 0;
+    let messagePageIndex = 0;
     let revealFrame = 0;
     let revealStartedAt = 0;
     let revealTokens = [];
@@ -151,6 +152,9 @@
 
     const scene = () => story.scenes[sceneIndex];
     const step = () => scene()?.steps?.[stepIndex];
+    const messagePages = (current = step()) => Array.isArray(current?.pages) && current.pages.length > 0
+      ? current.pages
+      : [current?.text || ""];
     const totalSteps = story.scenes.reduce((sum, item) => sum + item.steps.length, 0);
     const absoluteStep = () => story.scenes
       .slice(0, sceneIndex)
@@ -236,6 +240,14 @@
       shell.classList.add("is-revealing");
       revealStartedAt = performance.now();
       revealFrame = requestAnimationFrame(animateReveal);
+    };
+
+    const renderMessagePage = (current, currentSpeaker) => {
+      const pages = messagePages(current);
+      const pageText = pages[Math.min(messagePageIndex, pages.length - 1)];
+      shell.dataset.messagePage = `${messagePageIndex + 1}/${pages.length}`;
+      startReveal(pageText);
+      dialogue.setAttribute("aria-label", `${currentSpeaker.name ? `${currentSpeaker.name}。` : ""}${pageText}。次へ進む`);
     };
 
     const setBackdrop = (name, immediate = false) => {
@@ -410,11 +422,11 @@
       message.lang = current.speaker === "system" ? SYSTEM_LANGUAGE : "ja";
       renderReadout(current.readout || []);
       onStepRead?.(current);
-      startReveal(current.text);
+      messagePageIndex = 0;
+      renderMessagePage(current, currentSpeaker);
       shell.dataset.messageCommittedAt = performance.now().toFixed(3);
       counter.textContent = `${String(absoluteStep()).padStart(3, "0")} / ${String(totalSteps).padStart(3, "0")}`;
       progressFill.style.width = `${(absoluteStep() / totalSteps) * 100}%`;
-      dialogue.setAttribute("aria-label", `${currentSpeaker.name ? `${currentSpeaker.name}。` : ""}${current.text}。次へ進む`);
       return true;
     };
 
@@ -462,6 +474,14 @@
       if (complete || transitioning) return;
       if (finishReveal()) return;
       const currentScene = scene();
+      const current = step();
+      const pages = messagePages(current);
+      if (messagePageIndex < pages.length - 1) {
+        messagePageIndex += 1;
+        const currentSpeaker = SPEAKERS[current.speaker || "narrator"] || SPEAKERS.narrator;
+        renderMessagePage(current, currentSpeaker);
+        return;
+      }
       if (stepIndex < currentScene.steps.length - 1) {
         transitioning = true;
         stepIndex += 1;
