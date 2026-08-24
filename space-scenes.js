@@ -737,6 +737,7 @@
     drawBackdrop(ctx, state, accent);
     const scene = ensureScene(state);
     const nodes = cosmosNodes(state);
+    const compact = state.width <= 600;
     const cx = state.width * 0.55;
     const cy = state.height * 0.5;
     ctx.save();
@@ -777,7 +778,9 @@
       ctx.beginPath();
       ctx.arc(node.x, node.y, radius, 0, TAU);
       ctx.fill();
-      drawLabel(ctx, node.source.organisation, node.x + (node.x < cx ? -14 : 14), node.y - 16, accent, node.x < cx ? "right" : "left");
+      if (!compact) {
+        drawLabel(ctx, node.source.organisation, node.x + (node.x < cx ? -14 : 14), node.y - 16, accent, node.x < cx ? "right" : "left");
+      }
     });
     const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100);
     core.addColorStop(0, "rgba(241,255,249,0.76)");
@@ -788,7 +791,9 @@
     ctx.arc(cx, cy, 100, 0, TAU);
     ctx.fill();
     ctx.restore();
-    drawLabel(ctx, `${nodes.length} SOURCES · ${scene.cosmosLinks.length} SCENARIO LINKS · NO COMPOSITE SCORE`, cx, state.height * 0.1, accent, "center");
+    if (!compact) {
+      drawLabel(ctx, `${nodes.length} SOURCES · ${scene.cosmosLinks.length} SCENARIO LINKS · NO COMPOSITE SCORE`, cx, state.height * 0.1, accent, "center");
+    }
   };
 
   const render = (payload) => {

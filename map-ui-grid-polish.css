@@ -138,6 +138,13 @@ body:has(.experience.japan-open) .gaia-audio-dock {
   left: auto !important;
 }
 
+/* All main-canvas actions are replaced by map-specific controls while open.
+   Hiding the container also prevents the lone Space button from covering the
+   map heading after its sibling actions have been removed. */
+.experience.japan-open .actions {
+  display: none;
+}
+
 /* The data drawer keeps its own close action in the opposite corner. */
 .japan-layer.japan-data-open .japan-data-header button {
   margin-right: 0;
@@ -172,5 +179,131 @@ body:has(.experience.japan-open) .gaia-audio-dock {
 
   .japan-layer.japan-data-open .japan-data-header button {
     margin-right: 0;
+  }
+}
+
+/* Short portrait phones cannot afford the desktop-style vertical rail. Keep
+   every primary map action visible without scrolling the fixed map layer. */
+@media (max-width: 720px) and (max-height: 760px) {
+  .experience.japan-open .japan-heading {
+    top: max(68px, calc(env(safe-area-inset-top) + 56px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: auto;
+    padding: 10px 12px 12px;
+  }
+
+  .experience.japan-open .japan-kicker,
+  .experience.japan-open .japan-heading #japan-description {
+    display: none;
+  }
+
+  .experience.japan-open .japan-heading h2 {
+    grid-column: 1 / -1;
+    font-size: clamp(22px, 7vw, 28px);
+    letter-spacing: -0.025em;
+  }
+
+  .experience.japan-open .japan-data-button {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 0;
+    padding-inline: 9px;
+  }
+
+  .experience.japan-open .japan-data-button span:first-child {
+    display: none;
+  }
+
+  .experience.japan-open .japan-data-button span:nth-child(2) {
+    overflow: hidden;
+    font-size: 8px;
+    letter-spacing: 0.01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .experience.japan-open .signal-console-map {
+    top: max(178px, calc(env(safe-area-inset-top) + 166px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    width: auto;
+    padding: 8px 10px 9px;
+  }
+
+  .experience.japan-open .signal-console-map .signal-console-heading {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+
+  .experience.japan-open .signal-console-map .signal-console-heading span,
+  .experience.japan-open .signal-console-map .signal-console-heading strong,
+  .experience.japan-open .signal-console-map label,
+  .experience.japan-open .signal-console-map output {
+    font-size: 8px;
+  }
+
+  .experience.japan-open .signal-console-map .signal-console-heading strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .experience.japan-open .signal-console-map > p,
+  .experience.japan-open .signal-console-map .signal-encoding-legend {
+    display: none;
+  }
+
+  .experience.japan-open .map-reading-guide {
+    top: max(248px, calc(env(safe-area-inset-top) + 236px));
+    bottom: auto;
+    width: calc(100vw - 24px);
+  }
+
+  .experience.japan-open .map-reading-guide summary {
+    min-height: 52px;
+    padding-block: 8px;
+  }
+
+  .experience.japan-open .map-reading-guide summary > span {
+    font-size: 8px;
+  }
+
+  .experience.japan-open .map-reading-guide summary > strong {
+    font-size: 15px;
+  }
+
+  .experience.japan-open .map-reading-guide-body {
+    display: none;
+  }
+
+  .experience.japan-open .map-mode-bank {
+    top: max(308px, calc(env(safe-area-inset-top) + 296px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: auto !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    width: auto;
+  }
+
+  .experience.japan-open .map-mode-button {
+    height: 32px;
+  }
+
+  .experience.japan-open .japan-observation,
+  .experience.japan-open .japan-credits {
+    display: none;
+  }
+
+  .experience.japan-open .japan-layer-switch {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: max(12px, env(safe-area-inset-left));
   }
 }

@@ -10,6 +10,7 @@ const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
 const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/mobile-layout-audit");
 fs.mkdirSync(outputDir, { recursive: true });
+const auditScope = process.env.GAIA_MOBILE_AUDIT_SCOPE || "all";
 
 const viewports = [
   { name: "mobile-320x568", width: 320, height: 568 },
@@ -27,6 +28,7 @@ const dialogueCases = [
 const report = {
   status: "running",
   baseUrl,
+  auditScope,
   viewports,
   screenshots: [],
   scans: [],
@@ -71,9 +73,9 @@ const makePage = async (viewport, label, init = null, initArgument = undefined) 
   return { context, page };
 };
 
-const saveScreenshot = async (page, viewport, surface) => {
+const saveScreenshot = async (page, viewport, surface, { fullPage = false } = {}) => {
   const file = path.join(outputDir, `${viewport.name}-${surface}.png`);
-  await page.screenshot({ path: file, animations: "disabled", fullPage: false });
+  await page.screenshot({ path: file, animations: "disabled", fullPage });
   report.screenshots.push({ viewport: viewport.name, surface, file });
   return file;
 };
@@ -245,6 +247,132 @@ const scanObservation = async (viewport) => {
   await context.close();
 };
 
+const prepareMainModePage = async (viewport, label) => {
+  const { context, page } = await makePage(viewport, label, () => {
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  });
+  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
+  await page.evaluate(() => {
+    for (const selector of ["#gaia-opening", "#intro-layer", "#novel-layer", "#true-end-layer"]) {
+      const node = document.querySelector(selector);
+      if (!node) continue;
+      node.hidden = true;
+      node.inert = true;
+      node.setAttribute("aria-hidden", "true");
+    }
+    document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
+    document.querySelector(".experience")?.classList.remove("intro-open");
+  });
+  return { context, page };
+};
+
+const scanMapMode = async (viewport) => {
+  const surface = "map-mode";
+  const { context, page } = await prepareMainModePage(viewport, `${viewport.name}-${surface}`);
+  await page.locator("#japan-button").click({ force: true });
+  await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
+  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 10);
+  await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"));
+  await page.waitForTimeout(220);
+  let modeSelected = false;
+  for (let attempt = 0; attempt < 3 && !modeSelected; attempt += 1) {
+    await page.locator("#japan-mode-list .map-mode-button").last().click({ force: true });
+    modeSelected = await page.waitForFunction(
+      () => document.querySelector("#japan-mode-number")?.textContent?.trim() === "10",
+      null,
+      { timeout: 5000 },
+    ).then(() => true, () => false);
+    if (!modeSelected) await page.waitForTimeout(250);
+  }
+  if (!modeSelected) throw new Error("地図モード10への切り替えに失敗しました");
+  await page.waitForTimeout(350);
+  const scan = await inspectSurface(page, ["#japan-layer", "#japan-close", ".japan-heading", "#japan-title", "#japan-data-button", ".japan-story-button", "#japan-map", ".map-scope-switch", "#japan-mode-list", ".japan-credits"]);
+  await saveScreenshot(page, viewport, surface);
+  reviewCommon(viewport, surface, scan);
+  const modeList = scan.targets.find((target) => target.selector === "#japan-mode-list");
+  if (modeList && modeList.scrollHeight > modeList.clientHeight + 2) {
+    addIssue(viewport, surface, "map-mode-list-scroll", "地図モード切替UIに縦スクロールが発生", modeList);
+  }
+  report.scans.push({ ...scan, viewport: viewport.name, surface });
+  await context.close();
+};
+
+const scanSpaceMode = async (viewport) => {
+  const surface = "space-mode";
+  const { context, page } = await makePage(viewport, `${viewport.name}-${surface}`, () => {
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  });
+  await page.goto(new URL("/?space=1&debug=1", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.body.classList.contains("space-mode-open") && !document.querySelector("#space-layer")?.hidden);
+  await page.addStyleTag({ content: "#gaia-opening { display: none !important; }" });
+  await page.locator("#space-canvas").waitFor({ state: "visible" });
+  await page.waitForFunction(() => document.querySelectorAll("#space-mode-list button").length === 10);
+  await page.locator("#space-mode-list button").last().click({ force: true });
+  await page.waitForFunction(() => document.querySelector("#space-number")?.textContent?.trim() === "10");
+  await page.waitForTimeout(350);
+  const scan = await inspectSurface(page, ["#space-layer", "#space-close", ".space-header", ".space-readout", ".space-touch", "#space-mode-list", ".space-footer"]);
+  await saveScreenshot(page, viewport, surface);
+  reviewCommon(viewport, surface, scan);
+  const modeList = scan.targets.find((target) => target.selector === "#space-mode-list");
+  if (modeList && modeList.scrollHeight > modeList.clientHeight + 2) {
+    addIssue(viewport, surface, "space-mode-list-scroll", "宇宙モード切替UIに縦スクロールが発生", modeList);
+  }
+  report.scans.push({ ...scan, viewport: viewport.name, surface });
+  await context.close();
+};
+
+const scanSoundMode = async (viewport) => {
+  const surface = "sound-mode";
+  const { context, page } = await makePage(viewport, `${viewport.name}-${surface}`, () => {
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  });
+  await page.goto(new URL("/#sound", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.locator("#sound-layer").waitFor({ state: "visible" });
+  await page.waitForFunction(() => document.querySelectorAll("[data-sound-track]").length === 12);
+  await page.waitForTimeout(350);
+  const scan = await inspectSurface(page, ["#sound-layer", ".sound-header", ".sound-layout", ".sound-track-panel", ".sound-player", ".sound-transport", ".sound-volume"]);
+  await saveScreenshot(page, viewport, surface);
+  reviewCommon(viewport, surface, scan, { allowOffscreenControls: true });
+  const layout = scan.targets.find((target) => target.selector === ".sound-layout");
+  if (layout && layout.scrollHeight <= layout.clientHeight + 2) {
+    addIssue(viewport, surface, "sound-layout-not-scrollable", "スマートフォンの音楽一覧が必要時に内部スクロールできない", layout);
+  }
+  report.scans.push({ ...scan, viewport: viewport.name, surface });
+  await context.close();
+};
+
+const scanSensorPublicMap = async (viewport) => {
+  const surface = "sensor-public-map";
+  const { context, page } = await makePage(viewport, `${viewport.name}-${surface}`, () => {
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  });
+  await page.route("**/api/public/v1/sensors", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ sensors: [{
+      sensorName: "放課後の環境センサー",
+      state: "ONLINE",
+      location: { longitude: 139.7, latitude: 35.7 },
+      owner: { displayName: "GAIA観測部", avatarUrl: null, xUrl: null, githubUrl: null, instagramUrl: null },
+      region: { countryCode: "JP", subdivisionCode: "JP-13", subdivisionName: "東京都" },
+    }] }),
+  }));
+  await page.route("**/api/web/v1/**", (route) => route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: "unauthorized" }) }));
+  await page.goto(new URL("/sensors/#map", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.locator("[data-view='map']").waitFor({ state: "visible" });
+  await page.locator(".sensor-map-marker").waitFor({ state: "visible" });
+  await page.waitForFunction(() => window.scrollY === 0);
+  await page.waitForTimeout(350);
+  const scan = await inspectSurface(page, [".sensor-topbar", ".sensor-page-head", "#public-sensor-map", "#public-sensor-detail", "#public-sensor-list"]);
+  await saveScreenshot(page, viewport, surface);
+  reviewCommon(viewport, surface, scan, { allowDocumentY: true, allowOffscreenControls: true });
+  const marker = scan.controls.find((control) => control.label.includes("放課後の環境センサー"));
+  if (!marker?.hitSize) addIssue(viewport, surface, "sensor-marker-target", "公開センサーマーカーが44px未満", marker || null);
+  report.scans.push({ ...scan, viewport: viewport.name, surface });
+  await context.close();
+};
+
 const scanTitle = async (viewport) => {
   const label = `${viewport.name}-title`;
   const { context, page } = await makePage(viewport, label, () => {
@@ -402,8 +530,19 @@ const scanSensorLogin = async (viewport) => {
 
 try {
   for (const viewport of viewports) {
+    if (auditScope === "special-modes") {
+      await scanMapMode(viewport);
+      await scanSpaceMode(viewport);
+      await scanSoundMode(viewport);
+      await scanSensorPublicMap(viewport);
+      continue;
+    }
     await scanOpening(viewport);
     await scanObservation(viewport);
+    await scanMapMode(viewport);
+    await scanSpaceMode(viewport);
+    await scanSoundMode(viewport);
+    await scanSensorPublicMap(viewport);
     await scanTitle(viewport);
     for (let index = 0; index < dialogueCases.length; index += 1) {
       await scanDialogue(viewport, dialogueCases[index], index === 0);

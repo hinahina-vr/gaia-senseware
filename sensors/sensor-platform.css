@@ -381,9 +381,9 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
   .sensor-brand { padding-top: 3px; padding-right: 64px; }
   .sensor-brand strong { display: none; }
   .sensor-topbar-actions { width: 100%; }
-  .sensor-topbar nav { min-width: 0; flex: 1 1 auto; width: 100%; max-width: 100%; flex-wrap: nowrap; gap: 4px; justify-content: space-between; overflow-x: auto; scrollbar-width: none; }
-  .sensor-topbar nav::-webkit-scrollbar { display: none; }
-  .sensor-topbar nav a, .sensor-nav-logout { flex: 0 0 auto; min-height: 44px; padding: 13px 1px 11px; font-size: 9px; letter-spacing: .035em; white-space: nowrap; }
+  .sensor-topbar nav { display: grid; min-width: 0; flex: 1 1 auto; width: 100%; max-width: 100%; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+  .sensor-topbar nav a, .sensor-nav-logout { display: grid; min-width: 0; min-height: 44px; padding: 7px 1px; font-size: clamp(7px,2.2vw,9px); letter-spacing: 0; line-height: 1.35; text-align: center; white-space: normal; place-items: center; }
+  .sensor-nav-logout[hidden] { display: none; }
   .sensor-audio-toggle { position: absolute; top: 8px; right: 15px; width: 52px; min-height: 44px; }
   .sensor-shell { width: min(100% - 28px, 600px); min-height: calc(100vh - 106px); padding-top: 32px; }
   .sensor-login { min-height: calc(100dvh - 138px); padding: 24px 0 24px 18px; }
@@ -397,6 +397,7 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
   .sensor-register-preview p, .sensor-setup-steps p { padding: 13px 12px; }
   .sensor-setup-steps { margin-bottom: 24px; }
   .sensor-page-head { align-items: flex-start; }
+  .sensor-page-head .sensor-secondary { flex: 0 0 auto; min-width: 88px; white-space: nowrap; }
   .sensor-page-head h1 { font-size: clamp(36px,11vw,48px); }
   .sensor-page-lead { margin-top: 13px !important; font-size: 11px !important; line-height: 1.8 !important; }
   .sensor-add { min-width: 0; padding-inline: 13px; font-size: 10px; }
