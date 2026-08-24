@@ -13,6 +13,21 @@
 
 body.gaia-opening-active { overflow: hidden; }
 
+/* The observation interface is initialized behind the opening so it is ready
+   when visitors enter the free-exploration route. Keep its copy and controls
+   out of the opening dissolve; otherwise the default "Breathing Earth" state
+   reads like a broken intermediate screen through the fading artwork. */
+body.gaia-opening-active > .experience > .masthead,
+body.gaia-opening-active > .experience > .status,
+body.gaia-opening-active > .experience > .guide,
+body.gaia-opening-active > .experience > .mode-caption,
+body.gaia-opening-active > .experience > .mode-nav,
+body.gaia-opening-active > .experience > .actions {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* A direct #story load initializes the novel layer before the opening sound
    gate has finished. Keep it out of Chromium's backdrop composition so a
    title-action border cannot leak through as an empty glowing rectangle. */
@@ -1878,7 +1893,7 @@ body.gaia-opening-active .novel-layer {
 .gaia-vn-prologue-lockup {
   top: 51%;
   left: 7%;
-  width: min(46vw, 720px);
+  width: min(58vw, 760px);
   text-align: left;
   transform: translateY(-50%);
 }
@@ -1895,11 +1910,16 @@ body.gaia-opening-active .novel-layer {
 }
 
 .gaia-vn-prologue-lockup p {
-  max-width: 34em;
+  max-width: 36em;
   margin-top: 28px;
   font-size: clamp(15px, 1.45vw, 21px);
   line-height: 2;
   letter-spacing: 0.07em;
+}
+
+.gaia-vn-prologue-copy > span {
+  display: block;
+  word-break: keep-all;
 }
 
 .gaia-vn-panel-character {

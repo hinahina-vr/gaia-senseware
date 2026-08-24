@@ -12,7 +12,7 @@ const { default: observationLogRevisions } = await import("../story/observation-
 
 const story = globalThis.GAIA_NOVEL_STORY;
 const trueEnd = globalThis.GAIA_TRUE_END_STORY;
-if (!story || !trueEnd) throw new Error("現行本編またはNOVACENE台本を読み込めませんでした");
+if (!story || !trueEnd) throw new Error("現行本編またはAPEIRONCENE台本を読み込めませんでした");
 
 const staffRoll = Object.freeze({
   triggerStepId: "welcome_chat_095",
@@ -24,15 +24,16 @@ const staffRoll = Object.freeze({
     Object.freeze({ role: "シナリオ", department: "SCENARIO", names: ["ひなひな"] }),
     Object.freeze({ role: "WEBデザイン・開発", department: "WEB DESIGN / DEVELOPMENT", names: ["ひなひな"] }),
     Object.freeze({ role: "制作支援", department: "PRODUCTION SUPPORT", names: ["OpenAI Codex"] }),
-    Object.freeze({ role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["ひなひな", "OpenAI ImageGen"] }),
+    Object.freeze({ role: "キャラクター原案", department: "ORIGINAL CHARACTER CONCEPT", names: ["ひなひな"] }),
+    Object.freeze({ role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["OpenAI ImageGen"] }),
     Object.freeze({ role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] }),
     Object.freeze({
       role: "音楽",
       department: "MUSIC",
       names: [
         "オープニングテーマ『Planet Forecast - Hope』",
-        "エンディングテーマ『AterSchool, AfterGlow』",
-        "by Suno.ai",
+        "エンディングテーマ『AfterSchool, AfterGlow』",
+        "by Suno AI",
       ],
     }),
     Object.freeze({ role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』", "ZEN大学『人新世の人類学』"] }),
@@ -75,7 +76,7 @@ const typeLabels = Object.freeze({
   interaction: "操作",
   record: "記録",
   transition: "転換",
-  beyond: "NOVACENE",
+  beyond: "APEIRONCENE",
 });
 const speakerNames = Object.freeze({
   narrator: "地の文",
@@ -100,7 +101,7 @@ const describeStep = (step, { trueEndStep = false } = {}) => {
   const ignoredKeys = new Set(["id", "sceneId", "sceneTitle", "type", "speaker", "speakerLabel", "text", "time", "readout", "recordType"]);
   const metadata = Object.fromEntries(Object.entries(step).filter(([key]) => !ignoredKeys.has(key)));
   if (Object.keys(metadata).length) lines.push(`- 演出メタ: \`${inlineJson(metadata)}\``, "");
-  if (trueEndStep && step.recordType !== "BEYOND") throw new Error(`${step.id}: NOVACENEのrecordTypeが不正です`);
+  if (trueEndStep && step.recordType !== "BEYOND") throw new Error(`${step.id}: APEIRONCENEのrecordTypeが不正です`);
   return lines.join("\n").trimEnd();
 };
 
@@ -110,7 +111,7 @@ const revisionCount = Object.keys(observationLogRevisions).length;
 const lines = [
   "# 『惑星の放課後 ～GAIA SENSATION～』現行統合台本",
   "",
-  "> ブラッシュアップ確認用の正本です。現在の実行データから自動生成しているため、旧MDだけでは見えなかった差し替え後の本編、スタッフロール、NOVACENEを一冊で確認できます。",
+  "> ブラッシュアップ確認用の正本です。現在の実行データから自動生成しているため、旧MDだけでは見えなかった差し替え後の本編、スタッフロール、APEIRONCENEを一冊で確認できます。",
   "",
   "## この台本の使い方",
   "",
@@ -124,9 +125,9 @@ const lines = [
   `- 本編: ${story.scenes.length}シーン / ${mainStepCount}ステップ`,
   `- OBSERVATION LOG差し替え: ${revisionCount}件（すべて適用後の本文を掲載）`,
   `- スタッフロール: ${staffRoll.credits.length}クレジット区分`,
-  `- NOVACENE: ${trueEnd.scenes.length}シーン / ${trueEndStepCount}メッセージ`,
+  `- APEIRONCENE: ${trueEnd.scenes.length}シーン / ${trueEndStepCount}メッセージ`,
   `- 本編 storyVersion: \`${story.storyVersion}\``,
-  `- NOVACENE storyVersion: \`${trueEnd.storyVersion}\``,
+  `- APEIRONCENE storyVersion: \`${trueEnd.storyVersion}\``,
   "",
   "---",
   "",
@@ -156,7 +157,7 @@ lines.push(
   `- 発火条件: \`${staffRoll.triggerStepId}\`を表示すると、通常メッセージではなくスタッフロールへ接続`,
   `- 見出し: ${staffRoll.kicker} / ${staffRoll.title} / ${staffRoll.subtitle}`,
   `- 明示的な短絡操作: ${staffRoll.skipLabel} → データ画面`,
-  `- 正規操作: ${staffRoll.continueLabel} → NOVACENE`,
+  `- 正規操作: ${staffRoll.continueLabel} → APEIRONCENE`,
   "",
   "## クレジット",
   "",
@@ -178,7 +179,7 @@ lines.push(
   "",
   "---",
   "",
-  "# PART III｜NOVACENE",
+  "# PART III｜APEIRONCENE",
   "",
   `- タイトル: ${trueEnd.title}`,
   `- サブタイトル: ${trueEnd.subtitle}`,
@@ -189,7 +190,7 @@ lines.push(
 
 for (const scene of trueEnd.scenes) {
   lines.push(
-    `## NOVACENE ${scene.number}｜${scene.title}`,
+    `## APEIRONCENE ${scene.number}｜${scene.title}`,
     "",
     `- シーンID: \`${scene.id}\``,
     `- 背景シグネチャ: \`${scene.backdrop}\``,
@@ -205,8 +206,8 @@ if (checkOnly) {
   if (!fs.existsSync(outputPath)) throw new Error("story/現行統合台本.mdがありません。npm run story:exportを実行してください");
   const current = fs.readFileSync(outputPath, "utf8");
   if (current !== output) throw new Error("story/現行統合台本.mdが現行実行データと一致しません。実行ソースへ修正を反映後、npm run story:exportで再生成してください");
-  console.log(`current story script ok: ${mainStepCount} main + ${trueEndStepCount} NOVACENE steps`);
+  console.log(`current story script ok: ${mainStepCount} main + ${trueEndStepCount} APEIRONCENE steps`);
 } else {
   fs.writeFileSync(outputPath, output, "utf8");
-  console.log(`wrote ${path.relative(projectRoot, outputPath)} (${mainStepCount} main + ${trueEndStepCount} NOVACENE steps)`);
+  console.log(`wrote ${path.relative(projectRoot, outputPath)} (${mainStepCount} main + ${trueEndStepCount} APEIRONCENE steps)`);
 }

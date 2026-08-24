@@ -42,6 +42,11 @@
     return node;
   };
 
+  const speakerForStep = (step) => {
+    const canonical = SPEAKERS[step?.speaker || "narrator"] || SPEAKERS.narrator;
+    return step?.speakerLabel ? { ...canonical, name: step.speakerLabel } : canonical;
+  };
+
   const createRuntime = ({ host, layer, onComplete, onExit, onStepRead, onLogOpen, onReady, deferInterfaceReveal = false }) => {
     if (!(host instanceof HTMLElement) || !(layer instanceof HTMLElement)) return null;
 
@@ -65,7 +70,7 @@
     const shell = createElement("section", "true-end-shell");
     shell.tabIndex = 0;
     shell.setAttribute("role", "region");
-    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION NOVACENE。画面をクリックまたはタップするか、Enterキーまたはスペースキーで進みます");
+    shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION APEIRONCENE。画面をクリックまたはタップするか、Enterキーまたはスペースキーで進みます");
     if (deferInterfaceReveal) shell.dataset.entryPhase = "background";
 
     const universe = createElement("canvas", "true-end-universe");
@@ -86,10 +91,6 @@
     const progressFill = createElement("i");
     progress.append(progressFill);
 
-    const readout = createElement("aside", "true-end-readout");
-    readout.hidden = true;
-    readout.setAttribute("aria-label", "未来文明の走査表示");
-
     const dialogue = createElement("button", "true-end-dialogue");
     dialogue.type = "button";
     dialogue.setAttribute("aria-label", "次へ進む");
@@ -105,7 +106,7 @@
 
     const logButton = createElement("button", "true-end-log-button", "LOG");
     logButton.type = "button";
-    logButton.setAttribute("aria-label", "NOVACENEの会話履歴を開く");
+    logButton.setAttribute("aria-label", "APEIRONCENEの会話履歴を開く");
 
     const sceneCard = createElement("div", "true-end-scene-card");
     sceneCard.setAttribute("aria-hidden", "true");
@@ -117,7 +118,7 @@
     sceneCard.append(sceneCardContent);
 
     const interfaceLayer = createElement("div", "true-end-interface");
-    interfaceLayer.append(header, progress, readout, dialogue, footer);
+    interfaceLayer.append(header, progress, dialogue, footer);
     if (deferInterfaceReveal) {
       interfaceLayer.setAttribute("aria-hidden", "true");
       dialogue.disabled = true;
@@ -173,41 +174,6 @@
       message.textContent = revealTokens.join("");
       nextMark.hidden = false;
       return true;
-    };
-
-    const renderReadout = (lines = []) => {
-      readout.replaceChildren();
-      if (lines.length > 0) {
-        const readoutHeader = createElement("div", "true-end-readout-header");
-        readoutHeader.lang = SYSTEM_LANGUAGE;
-        const readoutSignal = createElement("span", "true-end-readout-signal", "SÆL·MIR");
-        const readoutTrace = createElement("i", "true-end-readout-trace");
-        readoutTrace.setAttribute("aria-hidden", "true");
-        const readoutCount = createElement("small", "true-end-readout-count", `KAR ${String(lines.length).padStart(2, "0")}`);
-        readoutHeader.append(readoutSignal, readoutTrace, readoutCount);
-
-        const readoutList = createElement("div", "true-end-readout-list");
-        lines.forEach((line, index) => {
-          const row = createElement("div", "true-end-readout-row");
-          row.style.setProperty("--readout-index", index);
-          const marker = createElement("span", "true-end-readout-marker", String(index + 1).padStart(2, "0"));
-          marker.setAttribute("aria-hidden", "true");
-          const code = createElement("code", "", line);
-          code.lang = /[\u3040-\u30ff\u3400-\u9fff]/u.test(line) ? "ja" : SYSTEM_LANGUAGE;
-          const separator = line.indexOf(":");
-          if (separator >= 0) {
-            code.replaceChildren(
-              createElement("span", "true-end-readout-key", line.slice(0, separator + 1)),
-              createElement("span", "true-end-readout-value", line.slice(separator + 1)),
-            );
-          }
-          row.append(marker, code);
-          readoutList.append(row);
-        });
-        readout.append(readoutHeader, readoutList);
-      }
-      readout.hidden = lines.length === 0;
-      shell.classList.toggle("has-readout", lines.length > 0);
     };
 
     const animateReveal = (now) => {
@@ -399,7 +365,7 @@
       const current = step();
       if (!current) return null;
       const revision = ++renderRevision;
-      const currentSpeaker = SPEAKERS[current.speaker || "narrator"] || SPEAKERS.narrator;
+      const currentSpeaker = speakerForStep(current);
       await (universeRuntime?.setPresence?.(current.speaker || "narrator", {
         emphasis: current.emphasis === true,
         signal: current.id,
@@ -420,7 +386,6 @@
       speakerCode.textContent = currentSpeaker.code;
       speakerCode.lang = currentSpeaker.language || "ja";
       message.lang = current.speaker === "system" ? SYSTEM_LANGUAGE : "ja";
-      renderReadout(current.readout || []);
       onStepRead?.(current);
       messagePageIndex = 0;
       renderMessagePage(current, currentSpeaker);
@@ -456,7 +421,6 @@
       universeRuntime?.setScene?.("galaxy");
       universeRuntime?.setPresence?.("system", { emphasis: true, signal: "beyond-finale" });
       dialogue.hidden = true;
-      readout.hidden = true;
       footer.hidden = true;
       header.hidden = true;
       progress.hidden = true;
@@ -478,7 +442,7 @@
       const pages = messagePages(current);
       if (messagePageIndex < pages.length - 1) {
         messagePageIndex += 1;
-        const currentSpeaker = SPEAKERS[current.speaker || "narrator"] || SPEAKERS.narrator;
+        const currentSpeaker = speakerForStep(current);
         renderMessagePage(current, currentSpeaker);
         return;
       }

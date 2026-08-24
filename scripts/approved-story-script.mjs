@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const approvedStoryPath = path.join(projectRoot, "story", "APPROVED_SCRIPT_2026-08-24.md");
-const EXPECTED_SHA256 = "8efaaeca664eb6b869b87ddda0b828e5ac7819d55813de6a136895ce48eae648";
+const EXPECTED_SHA256 = "7c604f070b37567ae35445292d1a70515cf70d10a5d8faa70030c2c0b1052976";
 const EXPECTED_MAIN_SCENES = Object.freeze([
   "festival_concept",
   "map_mode01",
@@ -69,7 +69,7 @@ const parseScenes = (source, { startMarker, endMarker, trueEnd = false }) => {
   let index = 0;
   while (index < lines.length) {
     const headingPattern = trueEnd
-      ? /^## NOVACENE (\d+)｜(.+)$/u
+      ? /^## APEIRONCENE (\d+)｜(.+)$/u
       : /^## SCENE (\d+)｜(.+)$/u;
     const heading = lines[index].match(headingPattern);
     if (!heading) {
@@ -136,7 +136,7 @@ export const readApprovedStoryScript = () => {
     endMarker: "# PART II｜スタッフロールと分岐",
   });
   const trueEndScenes = parseScenes(source, {
-    startMarker: "# PART III｜NOVACENE",
+    startMarker: "# PART III｜APEIRONCENE",
     endMarker: "## 今回の反映チェックリスト",
     trueEnd: true,
   });
@@ -144,14 +144,14 @@ export const readApprovedStoryScript = () => {
     throw new Error("承認済み本編のシーン順が不正です");
   }
   if (trueEndScenes.map((scene) => scene.id).join("|") !== EXPECTED_TRUE_END_SCENES.join("|")) {
-    throw new Error("承認済みNOVACENEのシーン順が不正です");
+    throw new Error("承認済みAPEIRONCENEのシーン順が不正です");
   }
   assertUniqueIds(mainScenes, "本編");
-  assertUniqueIds(trueEndScenes, "NOVACENE");
+  assertUniqueIds(trueEndScenes, "APEIRONCENE");
   const mainCount = mainScenes.reduce((count, scene) => count + scene.entries.length, 0);
   const trueEndCount = trueEndScenes.reduce((count, scene) => count + scene.entries.length, 0);
   if (mainCount !== 373 || trueEndCount !== 133) {
-    throw new Error(`承認済み台本の件数が不正です: ${mainCount} main / ${trueEndCount} NOVACENE`);
+    throw new Error(`承認済み台本の件数が不正です: ${mainCount} main / ${trueEndCount} APEIRONCENE`);
   }
   return Object.freeze({ mainScenes, trueEndScenes, sha256: digest });
 };

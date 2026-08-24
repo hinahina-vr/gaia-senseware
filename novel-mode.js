@@ -25,7 +25,7 @@
   const BUILD_PROFILE = explicitBuildProfile === "release" || explicitBuildProfile === "debug"
     ? explicitBuildProfile
     : (document.documentElement.dataset.buildProfile === "release" || isProductionPagesHost ? "release" : "debug");
-  const NOVACENE_SCENE_JUMP_ENABLED = BUILD_PROFILE !== "release";
+  const APEIRONCENE_SCENE_JUMP_ENABLED = BUILD_PROFILE !== "release";
   const SLOT_COUNT = 6;
   const PC_CANVAS_WIDTH = 1920;
   const PC_CANVAS_HEIGHT = 1080;
@@ -220,7 +220,7 @@
     DERIVED: "計算・解釈 / DERIVED",
     SCENARIO: "仮定 / SCENARIO",
     VISITOR_TRACE: "操作記録 / VISITOR TRACE",
-    BEYOND: "遠未来観測 / NOVACENE",
+    BEYOND: "遠未来観測 / APEIRONCENE",
   });
   const RECORD_SPEAKER_LABELS = Object.freeze({
     SOURCE: "観測メモ",
@@ -509,17 +509,17 @@
     isEnding: true,
   });
   const trueEndSceneJumpEntry = Object.freeze({
-    scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / NOVACENE", title: globalThis.GAIA_TRUE_END_STORY?.title || "NOVACENE" }),
+    scene: Object.freeze({ id: TRUE_END_JUMP_ID, chapter: "08 / APEIRONCENE", title: globalThis.GAIA_TRUE_END_STORY?.title || "APEIRONCENE" }),
     sceneId: TRUE_END_JUMP_ID,
     scriptIndex: endingScriptIndex + 1,
-    scriptLabel: "NOVACENE #001",
+    scriptLabel: "APEIRONCENE #001",
     index: scenes.length + 2,
     isTrueEnd: true,
   });
   const sceneJumpEntries = Object.freeze([
     ...storySceneJumpEntries,
     endingSceneJumpEntry,
-    ...(NOVACENE_SCENE_JUMP_ENABLED ? [trueEndSceneJumpEntry] : []),
+    ...(APEIRONCENE_SCENE_JUMP_ENABLED ? [trueEndSceneJumpEntry] : []),
   ]);
   if (new Set(sceneJumpEntries.map((entry) => entry.sceneId)).size !== sceneJumpEntries.length) {
     throw new Error("[GAIA novel] Duplicate scene IDs in debug jump map");
@@ -4082,7 +4082,7 @@
     elements.choices.classList.remove("is-visible", "is-mode08-optional");
     elements.sourceLabel.hidden = true;
     elements.resultSurface.hidden = false;
-    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION NOVACENE");
+    elements.resultSurface.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION APEIRONCENE");
     layer.classList.add("is-result", "is-true-end");
     layer.dataset.sceneId = TRUE_END_JUMP_ID;
     layer.dataset.stepType = "true-end";
@@ -4184,15 +4184,16 @@
       { role: "シナリオ", department: "SCENARIO", names: ["ひなひな"] },
       { role: "WEBデザイン・開発", department: "WEB DESIGN / DEVELOPMENT", names: ["ひなひな"] },
       { role: "制作支援", department: "PRODUCTION SUPPORT", names: ["OpenAI Codex"] },
-      { role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["ひなひな", "OpenAI ImageGen"] },
+      { role: "キャラクター原案", department: "ORIGINAL CHARACTER CONCEPT", names: ["ひなひな"] },
+      { role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["OpenAI ImageGen"] },
       { role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] },
       {
         role: "音楽",
         department: "MUSIC",
         names: [
           "オープニングテーマ『Planet Forecast - Hope』",
-          "エンディングテーマ『AterSchool, AfterGlow』",
-          "by Suno.ai",
+          "エンディングテーマ『AfterSchool, AfterGlow』",
+          "by Suno AI",
         ],
       },
       { role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』", "ZEN大学『人新世の人類学』"] },
@@ -4253,7 +4254,7 @@
     next.type = "button";
     next.tabIndex = -1;
     next.textContent = "世界の続きを紡ぐ";
-    next.setAttribute("aria-label", "スタッフロールを終えてNOVACENEへ進む");
+    next.setAttribute("aria-label", "スタッフロールを終えてAPEIRONCENEへ進む");
     const continueIntoTrueEnd = (control) => {
       if (shell.dataset.phase === "departing") return;
       control.disabled = true;

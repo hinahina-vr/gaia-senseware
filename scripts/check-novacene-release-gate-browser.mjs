@@ -109,14 +109,14 @@ try {
       const menu = await scanMenu(page);
       const trueEndEntries = menu.items.filter((item) => item.id === "true-end");
       assert.equal(menu.buildProfile, profile, `${label}: build profile`);
-      assert.equal(menu.titleVisible, false, `${label}: pre-NOVACENE title was visible`);
+      assert.equal(menu.titleVisible, false, `${label}: pre-APEIRONCENE title was visible`);
       assert.equal(menu.items.at(-1)?.id, profile === "debug" ? "true-end" : "ending", `${label}: final jump destination`);
-      assert.equal(trueEndEntries.length, profile === "debug" ? 1 : 0, `${label}: NOVACENE jump availability`);
+      assert.equal(trueEndEntries.length, profile === "debug" ? 1 : 0, `${label}: APEIRONCENE jump availability`);
       assert.equal(menu.items.some((item) => item.id === "ending"), true, `${label}: ending debug jump was removed`);
       assert.equal(menu.overflowX, 0, `${label}: horizontal overflow`);
       assert.equal(menu.overflowY, 0, `${label}: vertical overflow`);
       if (profile === "debug") {
-        assert.match(trueEndEntries[0].text, /NOVACENE/u, `${label}: NOVACENE label`);
+        assert.match(trueEndEntries[0].text, /APEIRONCENE/u, `${label}: APEIRONCENE label`);
         await page.locator('button.novel-jump-item[data-scene-id="true-end"]').click();
         await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")));
         await page.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-scene-separating"));
@@ -145,4 +145,4 @@ try {
   await browser.close();
 }
 
-console.log(`NOVACENE release gate browser check passed: ${report.scans.length} profiles`);
+console.log(`APEIRONCENE release gate browser check passed: ${report.scans.length} profiles`);

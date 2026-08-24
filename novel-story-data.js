@@ -7,7 +7,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "estimatedDuration": "10〜12分",
   "sourceSha256": "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c",
   "revisionId": "approved-script-20260824",
-  "approvedSourceSha256": "8efaaeca664eb6b869b87ddda0b828e5ac7819d55813de6a136895ce48eae648",
+  "approvedSourceSha256": "7c604f070b37567ae35445292d1a70515cf70d10a5d8faa70030c2c0b1052976",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {

@@ -36,6 +36,7 @@
     uniform vec2 u_resolution;
     uniform vec2 u_pointer;
     uniform float u_time;
+    uniform float u_frame;
     uniform float u_scene;
     uniform float u_speaker_from;
     uniform float u_speaker_from_gain;
@@ -98,17 +99,6 @@
       return 1.0 - smoothstep(width, width * 2.6, distanceToLine);
     }
 
-    vec2 defragSlot(vec2 id, float tick) {
-      vec2 seed = id + vec2(tick * 7.31, tick * 13.17);
-      float axisChoice = step(0.5, hash21(seed + 5.7));
-      float direction = step(0.5, hash21(seed + 17.3)) * 2.0 - 1.0;
-      float distance = mix(0.06, 0.18, hash21(seed + 29.1));
-      float crossJitter = (hash21(seed + 43.9) - 0.5) * 0.08;
-      vec2 horizontalSlot = vec2(direction * distance, crossJitter);
-      vec2 verticalSlot = vec2(crossJitter, direction * distance);
-      return mix(horizontalSlot, verticalSlot, axisChoice);
-    }
-
     vec3 centralBreath(vec2 p) {
       vec2 g = p;
       float phase = u_time * 0.34 + u_signal * 6.2831;
@@ -122,32 +112,23 @@
     vec3 signalSurge(vec2 p) {
       vec2 g = p;
       float phase = u_time * 1.18 + u_signal * 8.0;
-      vec2 matrixUv = g * vec2(8.0, 5.0);
+      vec2 matrixDrift = vec2(u_time * 0.18, -u_time * 0.18);
+      vec2 matrixUv = g * vec2(8.0, 5.0) + matrixDrift;
       vec2 matrixId = floor(matrixUv);
-      vec2 matrixCell = fract(matrixUv) - 0.5;
-      float cellSeed = hash21(matrixId + 13.7);
-      float cellTempo = mix(0.46, 0.92, hash21(matrixId + 37.1));
-      float cellClock = u_time * cellTempo + cellSeed * 23.0;
-      float cellStep = floor(cellClock);
-      float cellPhase = fract(cellClock);
-      vec2 previousSlot = defragSlot(matrixId, cellStep);
-      vec2 nextSlot = defragSlot(matrixId, cellStep + 1.0);
-      float hop = smoothstep(0.08, 0.38, cellPhase);
-      vec2 cellOffset = mix(previousSlot, nextSlot, hop);
-      vec2 cell = abs(matrixCell - cellOffset);
-      float cellSize = mix(0.18, 0.27, hash21(matrixId + 61.9));
-      float blocks = 1.0 - smoothstep(cellSize, cellSize + 0.12, max(cell.x, cell.y));
-      float previousActivity = step(0.4, hash21(matrixId + vec2(cellStep * 3.71, cellStep * 7.13) + 71.0));
-      float nextActivity = step(0.4, hash21(matrixId + vec2((cellStep + 1.0) * 3.71, (cellStep + 1.0) * 7.13) + 71.0));
-      float activity = mix(previousActivity, nextActivity, smoothstep(0.06, 0.34, cellPhase));
-      float cellPulse = 0.78 + 0.22 * step(0.48, hash21(matrixId + floor(cellClock * 5.0) + 93.0));
+      vec2 matrixFract = fract(matrixUv);
+      vec2 cell = abs(matrixFract - 0.5);
+      float blocks = 1.0 - smoothstep(0.24, 0.3, max(cell.x, cell.y));
+      float frameTick = floor(u_frame + 0.5);
+      float activity = step(0.5, hash21(matrixId + vec2(frameTick * 1.37, frameTick * 3.91) + 71.0));
+      float cellPulse = mix(0.54, 1.0, hash21(matrixId + vec2(frameTick * 5.17, frameTick * 2.63) + 93.0));
       blocks *= activity * cellPulse;
-      float scanRow = softLine(abs(fract((g.y + 1.4) * 1.8 - phase * 0.19) - 0.5), 0.065);
-      float columns = smoothstep(0.7, 0.94, 0.5 + 0.5 * cos(g.x * 18.0 + phase * 0.7));
+      vec2 boundaryDistance = min(matrixFract, 1.0 - matrixFract);
+      float gridLines = 1.0 - smoothstep(0.018, 0.055, min(boundaryDistance.x, boundaryDistance.y));
+      float scanRow = softLine(abs(fract(matrixUv.y * 0.36) - 0.5), 0.065);
       float dataNoise = smoothstep(0.42, 0.76, fbm(g * 3.2 + vec2(phase * 0.13, -phase * 0.1)));
       float center = exp(-2.1 * dot(g, g));
       vec3 electric = mix(vec3(0.18, 0.9, 1.0), vec3(0.92, 1.0, 1.0), center);
-      return electric * (blocks * (0.56 + dataNoise * 0.3) + scanRow * 0.64 + columns * 0.16 + center * 0.3);
+      return electric * (blocks * (0.62 + dataNoise * 0.22) + gridLines * 0.18 + scanRow * 0.42 + center * 0.3);
     }
 
     vec3 weaveStorm(vec2 p) {
@@ -166,20 +147,42 @@
     }
 
     vec3 tidalSurge(vec2 p) {
-      vec2 g = p;
+      vec2 g = rotate2d(-0.18) * p;
       float phase = u_time * 1.05 + u_signal * 7.0;
-      float distanceFromDrop = length(g * vec2(0.78, 1.0));
-      float rippleA = smoothstep(0.58, 0.94, 0.5 + 0.5 * cos(distanceFromDrop * 14.0 - phase * 2.4));
-      float rippleB = smoothstep(0.64, 0.96, 0.5 + 0.5 * cos(distanceFromDrop * 22.0 - phase * 3.1 + 1.7));
-      float surfaceWarp = fbm(g * 2.5 + vec2(-phase * 0.08, phase * 0.05));
-      float reflectedWater = smoothstep(0.55, 0.84, 0.5 + 0.5 * sin(g.x * 8.0 + surfaceWarp * 3.0 - phase));
-      reflectedWater *= smoothstep(0.34, 0.72, surfaceWarp);
-      float drop = exp(-18.0 * dot(g, g)) * (0.82 + 0.18 * sin(phase * 2.0));
-      float waterFade = exp(-0.42 * distanceFromDrop);
-      vec3 deep = vec3(0.02, 0.38, 0.75);
-      vec3 foam = vec3(0.45, 1.0, 0.9);
-      return mix(deep, foam, clamp(rippleA + rippleB * 0.6 + drop, 0.0, 1.0))
-        * ((rippleA * 0.7 + rippleB * 0.38) * waterFade + reflectedWater * 0.24 + drop * 0.8);
+      float currentA = fbm(g * vec2(1.38, 1.92) + vec2(-phase * 0.055, phase * 0.032));
+      float currentB = fbm(rotate2d(0.72) * g * vec2(2.18, 1.16) + vec2(phase * 0.04, -phase * 0.065));
+      vec2 waterSpace = g + vec2(currentA - 0.5, currentB - 0.5) * 0.3;
+      waterSpace.x += sin(waterSpace.y * 2.55 + phase * 0.34) * 0.12;
+      waterSpace.y += sin(waterSpace.x * 2.1 - phase * 0.27) * 0.075;
+
+      vec2 sourceA = waterSpace - vec2(-0.46, 0.16);
+      vec2 sourceB = rotate2d(0.43) * (waterSpace - vec2(0.52, -0.3));
+      float tideA = length(sourceA * vec2(0.58, 1.32));
+      float tideB = length(sourceB * vec2(1.16, 0.64));
+      float arcMaskA = fbm(vec2(atan(sourceA.y, sourceA.x) * 1.2, tideA * 2.45) + vec2(phase * 0.035, 7.3));
+      float arcMaskB = fbm(vec2(atan(sourceB.y, sourceB.x) * 1.05, tideB * 2.8) + vec2(-phase * 0.028, 13.1));
+      float brokenWaveA = smoothstep(0.77, 0.96, 0.5 + 0.5 * cos(tideA * 10.6 - phase * 1.62 + currentB * 2.7));
+      float brokenWaveB = smoothstep(0.8, 0.97, 0.5 + 0.5 * cos(tideB * 13.4 - phase * 1.94 - currentA * 2.3));
+      brokenWaveA *= smoothstep(0.4, 0.68, arcMaskA) * exp(-0.24 * tideA);
+      brokenWaveB *= smoothstep(0.44, 0.73, 1.0 - arcMaskB) * exp(-0.28 * tideB);
+
+      float interferenceVein = smoothstep(
+        0.75,
+        0.97,
+        0.5 + 0.5 * sin(waterSpace.x * 4.4 - waterSpace.y * 2.8 + (currentA - currentB) * 5.4 - phase * 0.78)
+      );
+      interferenceVein *= smoothstep(0.38, 0.76, currentA);
+      float causticFray = smoothstep(0.1, 0.38, abs(currentA - currentB))
+        * smoothstep(0.32, 0.78, fbm(waterSpace * 3.1 + vec2(phase * 0.06, -phase * 0.04)));
+      float confluence = brokenWaveA * brokenWaveB;
+      float undertow = smoothstep(0.34, 0.8, fbm(waterSpace * vec2(1.05, 2.6) - vec2(phase * 0.03, phase * 0.08)));
+
+      vec3 abyss = vec3(0.015, 0.2, 0.5);
+      vec3 mineral = vec3(0.08, 0.58, 0.78);
+      vec3 pearl = vec3(0.56, 1.0, 0.88);
+      vec3 waterColor = mix(abyss, mineral, clamp(currentA * 0.58 + currentB * 0.34, 0.0, 1.0));
+      return waterColor * (0.08 + undertow * 0.2 + brokenWaveA * 0.62 + brokenWaveB * 0.46 + causticFray * 0.2)
+        + pearl * (confluence * 0.72 + interferenceVein * 0.24);
     }
 
     vec3 skyCurrent(vec2 p) {
@@ -428,7 +431,7 @@
     gl.enableVertexAttribArray(position);
     gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
     const uniforms = Object.fromEntries([
-      "u_resolution", "u_pointer", "u_time", "u_scene", "u_speaker_from", "u_speaker_from_gain", "u_speaker_to",
+      "u_resolution", "u_pointer", "u_time", "u_frame", "u_scene", "u_speaker_from", "u_speaker_from_gain", "u_speaker_to",
       "u_speaker_mix", "u_signal", "u_emphasis", "u_color_a", "u_color_b", "u_color_c",
     ].map((name) => [name, gl.getUniformLocation(program, name)]));
 
@@ -565,6 +568,7 @@
       gl.uniform2f(uniforms.u_resolution, canvas.width, canvas.height);
       gl.uniform2f(uniforms.u_pointer, pointer[0], pointer[1]);
       gl.uniform1f(uniforms.u_time, reducedMotion.matches ? 24 + target.index * 3.7 : now * 0.001);
+      gl.uniform1f(uniforms.u_frame, frame);
       gl.uniform1f(uniforms.u_scene, target.index);
       const presenceState = presenceStateAt(now);
       const signalState = signalStateAt(now);

@@ -76,6 +76,10 @@ try {
     await page.locator("#gaia-opening-sound-modal").waitFor({ state: "visible" });
     await page.locator("#gaia-boot").waitFor({ state: "hidden" });
     if (requestPhase === "boot") requestPhase = "sound-choice";
+    assert.equal(await page.evaluate(() => document.body.classList.contains("gaia-opening-active")), true, `${viewport.name}: opening cover state was lost`);
+    for (const selector of [".status", ".guide", ".mode-caption", ".mode-nav", ".actions"]) {
+      assert.equal(await page.locator(`.experience > ${selector}`).isVisible(), false, `${viewport.name}: ${selector} leaked through the opening`);
+    }
     assert.equal(await page.locator("#gaia-opening-preload").isVisible(), false, `${viewport.name}: preload appeared before sound setup`);
     assert.equal(await page.evaluate(() => document.querySelector("#gaia-opening")?.classList.contains("is-active")), false, `${viewport.name}: opening started before sound setup`);
     const deferredDuringBoot = requests.filter(({ phase, url }) => phase === "boot" && /\/(?:assets\/audio|opening-(?:mizuha|amane)-keyvisual|open-data-archive-bg|gateway-keyvisual|mode-space-v2|sound-archive-bg|novel-title-keyvisual|novel-bg-festival-five-plane-projection)/u.test(url));
@@ -89,6 +93,8 @@ try {
     await page.locator("#gaia-opening-sound-off").click();
     await page.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden" });
     await page.locator("#gaia-opening-preload").waitFor({ state: "visible" });
+    assert.equal(await page.locator(".experience > .mode-caption").isVisible(), false, `${viewport.name}: observation copy appeared during opening preload`);
+    assert.equal(await page.locator(".experience > .guide").isVisible(), false, `${viewport.name}: observation guide appeared during opening preload`);
     const scan = await page.evaluate(() => {
       const preload = document.querySelector("#gaia-opening-preload");
       const meter = document.querySelector(".gaia-preload-meter");

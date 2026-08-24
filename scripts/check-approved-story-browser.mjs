@@ -259,4 +259,4 @@ try {
   await browser.close();
 }
 
-console.log(`Approved story browser check passed: ${report.scans.length} viewports / ${trueEndSteps.length} NOVACENE messages each`);
+console.log(`Approved story browser check passed: ${report.scans.length} viewports / ${trueEndSteps.length} APEIRONCENE messages each`);

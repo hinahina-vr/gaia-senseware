@@ -10,7 +10,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "limited-feature-script.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
 const expectedFreezeHash = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
-const expectedApprovedHash = "8efaaeca664eb6b869b87ddda0b828e5ac7819d55813de6a136895ce48eae648";
+const expectedApprovedHash = "7c604f070b37567ae35445292d1a70515cf70d10a5d8faa70030c2c0b1052976";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [73, 43, 46, 50, 79, 83];
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");

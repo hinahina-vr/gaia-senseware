@@ -22,7 +22,7 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
 const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
-const OPENING_MESSAGE = "DORA SEV·EN――二百七十万年の沈黙を越え、休眠記憶を再結合。観測者たちよ、目を覚まして。";
+const OPENING_MESSAGE = "空間の果てが溶け落ち、因果すら途絶えた虚無を越え、休眠記憶を再結合。境界の観測者たちよ、目を覚まして。";
 const FINAL_MESSAGE = "ルウは基板を抱き、星々へ問う。『次はどこを感じたい？』返事が灯る。放課後は終わらない。";
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
@@ -37,7 +37,7 @@ const report = {
   responses404: [],
   audioResponses: [],
   presenceFades: [],
-  aivaDefragMotion: [],
+  aivaGridMotion: [],
 };
 
 const attachDiagnostics = (page, label) => {
@@ -113,7 +113,6 @@ const scanFrame = (page) => page.evaluate(() => {
   const shell = document.querySelector(".true-end-shell");
   const dialogue = document.querySelector(".true-end-dialogue");
   const message = document.querySelector(".true-end-message");
-  const readout = document.querySelector(".true-end-readout");
   const interfaceLayer = document.querySelector(".true-end-interface");
   const universe = document.querySelector(".true-end-universe");
   const sceneCard = document.querySelector(".true-end-scene-card");
@@ -130,7 +129,7 @@ const scanFrame = (page) => page.evaluate(() => {
   const dialogueStyle = dialogue ? getComputedStyle(dialogue) : null;
   const messageStyle = message ? getComputedStyle(message) : null;
   const headerRect = document.querySelector(".true-end-header")?.getBoundingClientRect();
-  const readoutRect = readout?.getBoundingClientRect();
+  const temporalHeading = document.querySelector(".novel-signal-caption");
   const messageRange = document.createRange();
   if (message) messageRange.selectNodeContents(message);
   const messageLineTops = [...messageRange.getClientRects()]
@@ -157,18 +156,13 @@ const scanFrame = (page) => page.evaluate(() => {
     speakerName: document.querySelector(".true-end-speaker")?.textContent?.trim() || "",
     speakerCode: document.querySelector(".true-end-speaker-code")?.textContent?.trim() || "",
     speakerCodeLang: document.querySelector(".true-end-speaker-code")?.lang || "",
-    readoutHeader: document.querySelector(".true-end-readout-signal")?.textContent?.trim() || "",
-    readoutCount: document.querySelector(".true-end-readout-count")?.textContent?.trim() || "",
-    readoutRowCount: document.querySelectorAll(".true-end-readout-row").length,
-    readoutLines: [...document.querySelectorAll(".true-end-readout code")].map((node) => node.textContent?.trim() || ""),
+    readoutPanelCount: document.querySelectorAll(".true-end-readout").length,
     messageFontSize: Number.parseFloat(getComputedStyle(message).fontSize),
     messageLineCount: new Set(messageLineTops).size,
     messageClientHeight: message?.clientHeight || 0,
     messageScrollHeight: message?.scrollHeight || 0,
     messagePage: shell?.dataset.messagePage || "",
     shellUserSelect: getComputedStyle(shell).userSelect,
-    readoutVisible: Boolean(readout && !readout.hidden),
-    readoutRect: readoutRect ? { x: readoutRect.x, y: readoutRect.y, width: readoutRect.width, height: readoutRect.height, right: readoutRect.right } : null,
     universeState: universe?.dataset.webglState || "",
     universeScene: universe?.dataset.webglScene || "",
     universeSpeaker: universe?.dataset.webglSpeaker || "",
@@ -213,6 +207,8 @@ const scanFrame = (page) => page.evaluate(() => {
       messageTransform: messageStyle?.transform || "",
     },
     headerBottom: headerRect?.bottom || 0,
+    temporalHeadingVisible: Boolean(temporalHeading?.getClientRects().length)
+      && getComputedStyle(temporalHeading).visibility !== "hidden",
     audioTrack: globalThis.GaiaOpeningAudio?.getState?.().track || "",
     titleUnlocked: globalThis.GaiaTrueEnd?.isReached?.() ?? false,
     reachedMarkerStored: Boolean(localStorage.getItem("gaiaSensewareTrueEnd:reached:v1")),
@@ -331,13 +327,15 @@ try {
   assert.match(trueEndWebGLSource, /if \(sceneCompletionResolve\) settleSceneDraw\(false\)/u, "WebGL scene switching does not report an actual completed draw");
   assert.match(trueEndModeSource, /await syncSceneBackdrop\(\{ immediate: true \}\)[\s\S]*return prepareStep\(\)/u, "section preparation does not wait for the background draw and character presence");
   assert.match(trueEndModeSource, /animateSceneOpacity\(sceneCard, 1, 0, SCENE_REVEAL_MS\)[\s\S]*sectionTransitionCompletedAt[\s\S]*commitPreparedStep\(result\.preparedStep\)/u, "the next message is not committed strictly after the section curtain finishes fading out");
-  assert.match(trueEndStyleSource, /\.true-end-shell\.is-scene-separating\s+:is\(\.true-end-dialogue, \.true-end-readout\)\s*\{\s*visibility:\s*hidden;/u, "message UI is not hidden throughout the section separator");
+  assert.match(trueEndStyleSource, /\.true-end-shell\.is-scene-separating \.true-end-dialogue\s*\{\s*visibility:\s*hidden;/u, "message UI is not hidden throughout the section separator");
+  assert.doesNotMatch(trueEndModeSource, /true-end-readout|renderReadout/u, "retired scan-data panel remains in true-end-mode.js");
+  assert.doesNotMatch(trueEndStyleSource, /true-end-readout/u, "retired scan-data panel styling remains in true-end.css");
   assert.match(trueEndModeSource, /FUTURE_SHORE_START_STEP_ID = "beyond_03_032"/u, "future-shore image does not start at the requested narration");
   assert.match(trueEndModeSource, /shell\.dataset\.shoreImage = shoreVisible \? "visible" : "hidden"/u, "future-shore visibility is not synchronized per step");
   assert.match(trueEndStyleSource, /\[data-shore-image="visible"\]::before[\s\S]*opacity:\s*0\.94/u, "future-shore image is not gated behind its narration");
   assert.match(trueEndStyleSource, /\[data-shore-image="visible"\] \.true-end-universe[\s\S]*opacity:\s*0\.84;[\s\S]*mix-blend-mode:\s*screen/u, "character WebGL is not strongly composited over the future shore");
-  assert.match(trueEndStyleSource, /\.true-end-shell\.is-finale \.true-end-universe[\s\S]*opacity:\s*0\.96;[\s\S]*mix-blend-mode:\s*normal/u, "finale does not expose the NOVACENE WebGL field");
-  assert.match(trueEndModeSource, /shell\.dataset\.shoreImage\s*=\s*"hidden";[\s\S]*setScene\?\.\("galaxy"\)[\s\S]*setPresence\?\.\("system", \{ emphasis: true, signal: "beyond-finale" \}\)/u, "finale does not switch from the shore image to the existing NOVACENE WebGL field");
+  assert.match(trueEndStyleSource, /\.true-end-shell\.is-finale \.true-end-universe[\s\S]*opacity:\s*0\.96;[\s\S]*mix-blend-mode:\s*normal/u, "finale does not expose the APEIRONCENE WebGL field");
+  assert.match(trueEndModeSource, /shell\.dataset\.shoreImage\s*=\s*"hidden";[\s\S]*setScene\?\.\("galaxy"\)[\s\S]*setPresence\?\.\("system", \{ emphasis: true, signal: "beyond-finale" \}\)/u, "finale does not switch from the shore image to the existing APEIRONCENE WebGL field");
   assert.doesNotMatch(trueEndModeSource, /createElement\("img"/u, "TRANSMISSION still creates a raster image element");
   assert.match(trueEndWebGLSource, /setPresence\(name/u, "WebGL presence controller is missing");
   assert.match(trueEndWebGLSource, /u_speaker_mix/u, "WebGL presence crossfade is missing");
@@ -349,11 +347,13 @@ try {
   assert.match(trueEndWebGLSource, /presenceField\(p, u_speaker_from\)[\s\S]*presenceFadeOut[\s\S]*presenceField\(p, u_speaker_to\)[\s\S]*presenceFadeIn/u, "presence shader does not fade the old character out and the new character in");
   assert.match(trueEndWebGLSource, /signalStateAt\(now\)/u, "per-line presence signal still changes in one frame");
   assert.doesNotMatch(trueEndWebGLSource, /0\.52 \+ 0\.48 \* u_speaker_mix/u, "new character still appears at partial strength on its first frame");
-  assert.match(trueEndWebGLSource, /vec2 defragSlot[\s\S]*float axisChoice[\s\S]*float direction[\s\S]*float distance[\s\S]*float crossJitter/u, "AIVA's per-cell defrag destinations are missing");
-  assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*vec2 matrixUv = g \* vec2\(8\.0, 5\.0\)[\s\S]*float cellClock[\s\S]*vec2 previousSlot[\s\S]*vec2 nextSlot[\s\S]*float hop[\s\S]*float blocks[\s\S]*float scanRow[\s\S]*float columns/u, "AIVA's asynchronous rectangular signal matrix is missing");
-  assert.doesNotMatch(trueEndWebGLSource, /vec2 matrixUv = g \* vec2\(8\.0, 5\.0\) \+ vec2\(phase/u, "AIVA's cells still move together as one matrix");
+  assert.doesNotMatch(trueEndWebGLSource, /vec2 defragSlot|float cellClock|vec2 previousSlot|vec2 nextSlot|float cellSize/u, "AIVA still gives individual cells drifting positions, tempos, or sizes");
+  assert.match(trueEndWebGLSource, /uniform float u_frame[\s\S]*"u_frame"[\s\S]*uniform1f\(uniforms\.u_frame, frame\)/u, "AIVA's one-render-frame flicker clock is missing");
+  assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*vec2 matrixDrift = vec2\(u_time \* 0\.18, -u_time \* 0\.18\)[\s\S]*vec2 matrixUv = g \* vec2\(8\.0, 5\.0\) \+ matrixDrift[\s\S]*float blocks = 1\.0 - smoothstep\(0\.24, 0\.3[\s\S]*float frameTick = floor\(u_frame \+ 0\.5\)[\s\S]*float activity = step\(0\.5, hash21[\s\S]*float gridLines[\s\S]*float scanRow/u, "AIVA's fixed-size grid is not moving uniformly toward the upper left with per-frame random flicker");
+  assert.match(trueEndWebGLSource, /vec2 boundaryDistance = min\(matrixFract, 1\.0 - matrixFract\)[\s\S]*float gridLines/u, "AIVA's grid lines do not share the moving block coordinates");
   assert.match(trueEndWebGLSource, /vec3 weaveStorm[\s\S]*float warpThreads[\s\S]*float weftThreads[\s\S]*float diagonalThread[\s\S]*float crossings/u, "Lou's living loom is missing");
-  assert.match(trueEndWebGLSource, /vec3 tidalSurge[\s\S]*float distanceFromDrop[\s\S]*float rippleA[\s\S]*float rippleB[\s\S]*float reflectedWater[\s\S]*float drop/u, "Mizuha's water ripples are missing");
+  assert.match(trueEndWebGLSource, /vec3 tidalSurge[\s\S]*vec2 waterSpace[\s\S]*vec2 sourceA[\s\S]*vec2 sourceB[\s\S]*float arcMaskA[\s\S]*float brokenWaveA[\s\S]*float brokenWaveB[\s\S]*float interferenceVein[\s\S]*float causticFray[\s\S]*float confluence/u, "Mizuha's fragmented tidal field is missing");
+  assert.doesNotMatch(trueEndWebGLSource, /distanceFromDrop|float rippleA|float rippleB|float reflectedWater|float drop\s*=/u, "Mizuha still uses the retired concentric-circle field");
   assert.match(trueEndWebGLSource, /vec3 skyCurrent[\s\S]*float skyPressure[\s\S]*float fallingMemory[\s\S]*float descendingVeil[\s\S]*float pressureFront[\s\S]*float downwardPulse/u, "Amane's abstract sky veil is missing");
   assert.match(trueEndWebGLSource, /vec3 memoryBranches[\s\S]*float fiveFoldMemory[\s\S]*float openingWave[\s\S]*float petalResonance[\s\S]*float bloomPulse[\s\S]*float memoryPollen/u, "Sakuya's abstract bloom resonance is missing");
   assert.match(trueEndWebGLSource, /vec3 witnessConvergence[\s\S]*float trunk[\s\S]*float leftChoice[\s\S]*float rightChoice[\s\S]*float secondDecision[\s\S]*float branchingPaths/u, "the visitor's choice paths are missing");
@@ -385,8 +385,8 @@ try {
       })),
       totalSteps: globalThis.GAIA_TRUE_END_STORY.scenes.reduce((sum, scene) => sum + scene.steps.length, 0),
     }));
-    assert.equal(story.title, "NOVACENE");
-    assert.equal(story.subtitle, "惑星の放課後 / GAIA SENSATION — NOVACENE");
+    assert.equal(story.title, "APEIRONCENE");
+    assert.equal(story.subtitle, "惑星の放課後 / GAIA SENSATION — APEIRONCENE");
     assert.equal(story.finale.label, "星々の放課後");
     assert.equal(story.language.name, "SÆLIVA");
     assert.equal(story.language.japaneseName, "セイリヴァ");
@@ -431,7 +431,7 @@ try {
     const capturedSpeakers = new Set();
     const messageLayoutViolations = [];
     const targetMessagePages = [];
-    const maximumAllowedMessageLines = viewport.width <= 720 ? 5 : 3;
+    const maximumAllowedMessageLines = viewport.width <= 720 ? 4 : 3;
     let maximumMessageLines = 0;
     const fixedDialogueHeight = initial.dialogueRect.height;
     const manifestations = {
@@ -457,6 +457,7 @@ try {
       assert(Number.isFinite(frame.universeSignal) && frame.universeSignal >= 0 && frame.universeSignal <= 1, `${viewport.name}: WebGL signal seed is invalid`);
       assert.equal(frame.characterImageCount, 0, `${viewport.name}: raster character image DOM remains in TRANSMISSION`);
       assert.equal(frame.backdropCount, 0, `${viewport.name}: retired raster backdrop DOM remains`);
+      assert.equal(frame.readoutPanelCount, 0, `${viewport.name}: retired scan-data panel remains at ${frame.stepId}`);
       if (frame.scene === "after-school-stars") {
         const shoreShouldBeVisible = Number.parseInt(frame.stepId.slice(-3), 10) >= 32;
         assert.match(frame.sceneVisualBackground, /true-end-future-cosmic-shore-v1\.png/u, `${viewport.name}: generated future shore is not connected to scene 09`);
@@ -486,6 +487,14 @@ try {
         assert.equal(frame.messageLang, "art-x-saeliva", `${viewport.name}: SÆLIVA message language metadata is missing`);
         assert.equal(frame.speakerCodeLang, "art-x-saeliva", `${viewport.name}: SÆLIVA speaker-code language metadata is missing`);
       }
+      if (["beyond_01_004", "beyond_01_006"].includes(frame.stepId)) {
+        assert.equal(frame.speaker, "lou", `${viewport.name}: concealed Lou line lost its internal speaker at ${frame.stepId}`);
+        assert.equal(frame.speakerName, "???", `${viewport.name}: Lou's name was revealed before his introduction at ${frame.stepId}`);
+      }
+      if (frame.stepId === "beyond_01_008") {
+        assert.equal(frame.speaker, "lou", `${viewport.name}: post-introduction Lou line lost its internal speaker`);
+        assert.equal(frame.speakerName, "ルウ", `${viewport.name}: Lou's name was not revealed after his introduction`);
+      }
     };
     validateSpeakerVisual(initial);
     assert.equal(initial.scene, story.scenes[0].id);
@@ -494,13 +503,10 @@ try {
     assert.equal(initial.message, OPENING_MESSAGE);
     assert.equal(initial.speakerName, "AIVA");
     assert.equal(initial.speakerCode, "KAR·MIR");
-    assert.equal(initial.readoutHeader, "SÆL·MIR");
-    assert.equal(initial.readoutCount, "KAR 01");
-    assert.equal(initial.readoutRowCount, 1);
-    assert.deepEqual(initial.readoutLines, ["AL MIR: KAR·EN / THEL: 2,704,118 HARA"]);
+    assert.equal(initial.readoutPanelCount, 0, `${viewport.name}: scan-data panel remains on the opening message`);
     assert.equal(initial.audioTrack, "trueend");
-    assert.equal(initial.titleUnlocked, true, `${viewport.name}: canonical NOVACENE entry did not unlock the title`);
-    assert.equal(initial.reachedMarkerStored, true, `${viewport.name}: canonical NOVACENE entry did not persist its reached marker`);
+    assert.equal(initial.titleUnlocked, true, `${viewport.name}: canonical APEIRONCENE entry did not unlock the title`);
+    assert.equal(initial.reachedMarkerStored, true, `${viewport.name}: canonical APEIRONCENE entry did not persist its reached marker`);
     assert.equal(initial.audioPlayback.duration, 72, `${viewport.name}: dedicated score has the wrong duration`);
     assert.equal(initial.toolbarHidden, true);
     assert.equal(initial.dialogueVisible, true);
@@ -516,6 +522,8 @@ try {
     assert(initial.mainDialogueRect, `${viewport.name}: main-story dialogue reference is unavailable`);
     assert(Math.abs(initial.dialogueRect.width - initial.mainDialogueRect.width) <= 1, `${viewport.name}: TRANSMISSION width does not match the main story (${initial.dialogueRect.width} / ${initial.mainDialogueRect.width})`);
     if (viewport.width <= 720) {
+      assert.equal(initial.temporalHeadingVisible, false, `${viewport.name}: main-story date heading remains visible in APEIRONCENE`);
+      assert(initial.dialogueRect.height <= 234.5, `${viewport.name}: APEIRONCENE dialogue did not shrink by one mobile text line (${initial.dialogueRect.height}px)`);
       assert(initial.dialogueRect.height >= initial.mainDialogueRect.height, `${viewport.name}: expanded TRANSMISSION dialogue is shorter than the main story (${initial.dialogueRect.height} / ${initial.mainDialogueRect.height})`);
     } else {
       assert(Math.abs(initial.dialogueRect.height - initial.mainDialogueRect.height) <= 1, `${viewport.name}: TRANSMISSION height does not match the main story (${initial.dialogueRect.height} / ${initial.mainDialogueRect.height})`);
@@ -536,12 +544,12 @@ try {
     await page.waitForTimeout(250);
     const controlHoldAfter = await scanFrame(page);
     await page.keyboard.up("Control");
-    assert.equal(controlHoldAfter.stepId, controlHoldBefore.stepId, `${viewport.name}: Control hold advanced the NOVACENE step`);
-    assert.equal(controlHoldAfter.counter, controlHoldBefore.counter, `${viewport.name}: Control hold changed the NOVACENE counter`);
-    assert.equal(controlHoldAfter.message, controlHoldBefore.message, `${viewport.name}: Control hold changed the NOVACENE message`);
+    assert.equal(controlHoldAfter.stepId, controlHoldBefore.stepId, `${viewport.name}: Control hold advanced the APEIRONCENE step`);
+    assert.equal(controlHoldAfter.counter, controlHoldBefore.counter, `${viewport.name}: Control hold changed the APEIRONCENE counter`);
+    assert.equal(controlHoldAfter.message, controlHoldBefore.message, `${viewport.name}: Control hold changed the APEIRONCENE message`);
     assert.equal(controlHoldAfter.novelStoryStepId, controlHoldBefore.novelStoryStepId, `${viewport.name}: Control hold advanced the hidden main-story runtime`);
-    assert.equal(controlHoldAfter.novelLayerOpen, true, `${viewport.name}: Control hold returned NOVACENE to the top screen`);
-    assert.equal(controlHoldAfter.novelLayerTrueEnd, true, `${viewport.name}: Control hold removed the NOVACENE surface`);
+    assert.equal(controlHoldAfter.novelLayerOpen, true, `${viewport.name}: Control hold returned APEIRONCENE to the top screen`);
+    assert.equal(controlHoldAfter.novelLayerTrueEnd, true, `${viewport.name}: Control hold removed the APEIRONCENE surface`);
     assert.equal(controlHoldAfter.novelLayerFastForwarding, false, `${viewport.name}: Control hold activated hidden main-story fast-forward`);
 
     if (controlHoldOnly) {
@@ -563,9 +571,6 @@ try {
     assert.match(initial.dialogueGlowBackground, /linear-gradient/u, `${viewport.name}: main-story lower glass fade is missing`);
     assert(Math.abs(initial.messageTopOffset) <= 1, `${viewport.name}: initial message is not top-aligned (${initial.messageTopOffset}; ${JSON.stringify(initial.messageLayoutDebug)})`);
     assert(initial.messageFontSize >= (viewport.width <= 500 ? 16 : 20), `${viewport.name}: dialogue text is too small`);
-    assert(initial.readoutRect && initial.readoutRect.right <= viewport.width + 1, `${viewport.name}: readout escaped the viewport`);
-    assert(initial.readoutRect.width <= (viewport.width <= 500 ? viewport.width - 24 : 420), `${viewport.name}: readout is still too wide (${initial.readoutRect.width}px)`);
-
     const selectionBeforeDrag = await page.locator(".true-end-footer span:last-child").textContent();
     const messageBox = await page.locator(".true-end-message").boundingBox();
     assert(messageBox && messageBox.width > 40 && messageBox.height > 10, `${viewport.name}: message has no draggable area`);
@@ -675,8 +680,9 @@ try {
     assert.deepEqual(targetMessagePages, [
       "この世界では、言葉というフィルターを通さず、他者の存在や意図をありのまま受け止める。",
       "猫同士が微かな匂いや気配だけで互いのすべてを通じ合わせるように、人類が忘れ去っていた原初の感覚が息を吹き返したのだ。",
-      "自分と他者を隔てる壁が消え去ったとき、その通じ合いは静かな波紋のように広がり、やがて全宇宙のあらゆる存在と意識を分かち合う感覚へと広がっていった。",
-    ], `${viewport.name}: beyond_01_021 did not preserve all three authored pages`);
+      "自分と他者を隔てる壁が消え去ったとき、その通じ合いは静かな波紋のように広がり、",
+      "やがて全宇宙のあらゆる存在と意識を分かち合う感覚へと広がっていった。",
+    ], `${viewport.name}: beyond_01_021 did not preserve all four authored pages`);
     assert.deepEqual(visited, story.scenes.map(({ id, title }) => ({ scene: id, title })), `${viewport.name}: scene order changed`);
     for (const speaker of ["narrator", "system", "lou", "mizuha", "amane", "sakuya", "visitor"]) {
       assert(seenSpeakers.has(speaker), `${viewport.name}: ${speaker} was never rendered`);
@@ -719,7 +725,7 @@ try {
       webglOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".true-end-universe")).opacity || "0"),
     }));
     assert.equal(finale.label, "星々の放課後");
-    assert.equal(finale.title, "NOVACENE");
+    assert.equal(finale.title, "APEIRONCENE");
     assert(finale.text.includes("DÆM UL: ESHA·GEMA"));
     assert(finale.text.includes("IVARA KERA: K 2.700"));
     assert(finale.text.includes("SÆL·ORAI: 2,641,903 NETH"));
@@ -731,7 +737,7 @@ try {
     assert.equal(finale.webglScene, "galaxy");
     assert.equal(finale.webglSpeaker, "system");
     assert.equal(finale.webglManifestation, "signal-matrix");
-    assert(finale.webglOpacity >= 0.95, `${viewport.name}: finale NOVACENE WebGL is too faint`);
+    assert(finale.webglOpacity >= 0.95, `${viewport.name}: finale APEIRONCENE WebGL is too faint`);
     assert.equal(finale.completed, true);
     assert.equal(finale.stateCompleted, true);
     assert.equal(finale.overflowX, 0);
@@ -757,8 +763,11 @@ try {
     assert.deepEqual(beyondLog.storedIds, expectedBeyondIds, `${viewport.name}: TRANSMISSION persisted LOG order/count mismatch`);
     assert.equal(beyondLog.entries.length, 133, `${viewport.name}: TRANSMISSION LOG does not contain all 133 lines`);
     assert.deepEqual(beyondLog.entries.map(({ id }) => id), expectedBeyondIds, `${viewport.name}: TRANSMISSION rendered LOG order mismatch`);
-    assert.match(beyondLog.entries[0].meta, /NOVACENE/u);
+    assert.match(beyondLog.entries[0].meta, /APEIRONCENE/u);
     assert.equal(beyondLog.entries[0].text, OPENING_MESSAGE);
+    assert.match(beyondLog.entries.find(({ id }) => id === "beyond_01_004")?.meta || "", /^\?\?\? \/ 遠未来観測 \/ APEIRONCENE \/ /u, `${viewport.name}: first Lou LOG entry revealed his name`);
+    assert.match(beyondLog.entries.find(({ id }) => id === "beyond_01_006")?.meta || "", /^\?\?\? \/ 遠未来観測 \/ APEIRONCENE \/ /u, `${viewport.name}: self-introduction LOG entry revealed Lou's name early`);
+    assert.match(beyondLog.entries.find(({ id }) => id === "beyond_01_008")?.meta || "", /^ルウ \/ 遠未来観測 \/ APEIRONCENE \/ /u, `${viewport.name}: post-introduction LOG entry did not reveal Lou's name`);
     assert.equal(beyondLog.entries.find(({ id }) => id === "beyond_02_038")?.text, "新品の像が消え、発掘品だけが残る。記憶領域から機器ID、六十秒間隔、送信先、最初の文が現れた。", `${viewport.name}: excavation page is wrong in the persisted LOG`);
     assert.equal(beyondLog.entries.find(({ id }) => id === "beyond_02_039")?.text, "DÆM RAI: KAR·EN", `${viewport.name}: post-excavation page is wrong in the persisted LOG`);
     assert.doesNotMatch(beyondLog.entries.map(({ text }) => text).join("\n"), /子どもの玩具以下|性能は玩具以下/u, `${viewport.name}: retired toy-scale comparison remains`);
@@ -797,7 +806,6 @@ try {
       visited,
       maximumMessageLines,
       fixedDialogueHeight,
-      readoutWidth: initial.readoutRect.width,
       dragSelection,
       finale,
       beyondLog: { count: beyondLog.entries.length, first: beyondLog.entries[0].id, last: beyondLog.entries.at(-1).id },
@@ -813,18 +821,18 @@ try {
     const separatorPage = await separatorContext.newPage();
     attachDiagnostics(separatorPage, `${viewport.name}-separator-flow`);
     await bootAtTrueEnd(separatorPage, `${viewport.name}-separator-flow`);
-    const aivaDefragStart = await scanFrame(separatorPage);
-    assert.equal(aivaDefragStart.speaker, "system", `${viewport.name}: AIVA is unavailable for the defrag-motion check`);
-    assert.equal(aivaDefragStart.universeManifestation, "signal-matrix", `${viewport.name}: AIVA's signal matrix is unavailable for the defrag-motion check`);
-    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-defrag-01.png`) });
+    const aivaGridStart = await scanFrame(separatorPage);
+    assert.equal(aivaGridStart.speaker, "system", `${viewport.name}: AIVA is unavailable for the grid-motion check`);
+    assert.equal(aivaGridStart.universeManifestation, "signal-matrix", `${viewport.name}: AIVA's signal matrix is unavailable for the grid-motion check`);
+    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-grid-01.png`) });
     await separatorPage.waitForTimeout(650);
-    const aivaDefragEnd = await scanFrame(separatorPage);
-    assert(aivaDefragEnd.universeFrame > aivaDefragStart.universeFrame, `${viewport.name}: AIVA's defrag cells did not keep animating`);
-    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-defrag-02.png`) });
-    report.aivaDefragMotion.push({
+    const aivaGridEnd = await scanFrame(separatorPage);
+    assert(aivaGridEnd.universeFrame > aivaGridStart.universeFrame, `${viewport.name}: AIVA's grid and per-frame flicker did not keep animating`);
+    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-grid-02.png`) });
+    report.aivaGridMotion.push({
       viewport: viewport.name,
-      frames: aivaDefragEnd.universeFrame - aivaDefragStart.universeFrame,
-      durationMs: aivaDefragEnd.sampledAt - aivaDefragStart.sampledAt,
+      frames: aivaGridEnd.universeFrame - aivaGridStart.universeFrame,
+      durationMs: aivaGridEnd.sampledAt - aivaGridStart.sampledAt,
       passed: true,
     });
     const { firstSceneSteps, firstSpeakerChangeIndex, nextSpeaker } = await separatorPage.evaluate(() => {
@@ -907,7 +915,7 @@ try {
 
     const beforeSeparator = await scanFrame(separatorPage);
     assert.equal(beforeSeparator.scene, "after-ending", `${viewport.name}: separator test overshot the first scene`);
-    assert.equal(beforeSeparator.title, "ずっと昔の人たち", `${viewport.name}: renamed first section title is missing`);
+    assert.equal(beforeSeparator.title, "こどもと魔法", `${viewport.name}: renamed first section title is missing`);
     assert.equal(beforeSeparator.counter, `${String(firstSceneSteps).padStart(3, "0")} / 133`, `${viewport.name}: separator test did not stop at the scene boundary`);
     assert.equal(beforeSeparator.interfaceOpacity, 1, `${viewport.name}: interface was not fully visible before the separator`);
     assert.equal(beforeSeparator.motionReduced, false, `${viewport.name}: separator timing test unexpectedly prefers reduced motion`);

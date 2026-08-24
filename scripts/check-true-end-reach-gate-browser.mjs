@@ -86,8 +86,8 @@ try {
       reachedStored: Boolean(localStorage.getItem(reachedKey)),
     }), REACHED_KEY);
     assert.equal(before.buildProfile, "release", `${viewport.name}: release profile was not active`);
-    assert.equal(before.titleVisible, false, `${viewport.name}: title appeared before canonical NOVACENE entry`);
-    assert.equal(before.isReached, false, `${viewport.name}: ending checkpoint counted as NOVACENE reached`);
+    assert.equal(before.titleVisible, false, `${viewport.name}: title appeared before canonical APEIRONCENE entry`);
+    assert.equal(before.isReached, false, `${viewport.name}: ending checkpoint counted as APEIRONCENE reached`);
     assert.equal(before.reachedStored, false, `${viewport.name}: ending checkpoint already had a reached marker`);
 
     await page.locator(".novel-staff-roll-finale button").click();
@@ -99,10 +99,10 @@ try {
       reachedStored: Boolean(localStorage.getItem(reachedKey)),
       trueEndJumpCount: document.querySelectorAll('button.novel-jump-item[data-scene-id="true-end"]').length,
     }), REACHED_KEY);
-    assert.equal(reached.scene, "after-ending", `${viewport.name}: canonical NOVACENE opening scene`);
+    assert.equal(reached.scene, "after-ending", `${viewport.name}: canonical APEIRONCENE opening scene`);
     assert.equal(reached.isReached, true, `${viewport.name}: canonical entry did not unlock the title`);
     assert.equal(reached.reachedStored, true, `${viewport.name}: canonical entry did not persist the reached marker`);
-    assert.equal(reached.trueEndJumpCount, 0, `${viewport.name}: release build exposed a NOVACENE jump`);
+    assert.equal(reached.trueEndJumpCount, 0, `${viewport.name}: release build exposed an APEIRONCENE jump`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-canonical-entry.png`), animations: "disabled" });
 
     await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });

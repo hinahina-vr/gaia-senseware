@@ -216,7 +216,7 @@ try {
     assert.equal(trueEndScan.stepType, "true-end", `${viewport.name}: true-end step type`);
     assert.equal(trueEndScan.storyAudioCue, "true-end-sensory-horizon", `${viewport.name}: true-end audio cue`);
     assert.equal(trueEndScan.scene, "after-ending", `${viewport.name}: true-end opening scene`);
-    assert.equal(trueEndScan.heading, "ずっと昔の人たち", `${viewport.name}: true-end opening heading`);
+    assert.equal(trueEndScan.heading, "こどもと魔法", `${viewport.name}: true-end opening heading`);
     assert(trueEndScan.dialogueHeight >= 44, `${viewport.name}: true-end dialogue hit area is under 44px`);
     assert.equal(trueEndScan.jumpHidden, true, `${viewport.name}: jump panel remained over true end`);
     assert.equal(trueEndScan.toolbarHidden, true, `${viewport.name}: normal toolbar remained over true end`);

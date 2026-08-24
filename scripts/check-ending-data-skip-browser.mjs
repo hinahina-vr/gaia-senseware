@@ -158,7 +158,7 @@ try {
     assert.equal(destination.savedClear, true);
     assert.equal(destination.savedArchivesUnlocked, true);
     assert.equal(destination.titleUnlocked, false, `${viewport.name}: data skip unlocked the title`);
-    assert.equal(destination.reachedMarkerStored, false, `${viewport.name}: data skip persisted a NOVACENE marker`);
+    assert.equal(destination.reachedMarkerStored, false, `${viewport.name}: data skip persisted an APEIRONCENE marker`);
     assert.equal(destination.overflowX, 0);
     assert.equal(destination.overflowY, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-data-page.png`), animations: "disabled" });

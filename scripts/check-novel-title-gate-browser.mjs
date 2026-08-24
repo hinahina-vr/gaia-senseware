@@ -141,10 +141,10 @@ try {
         assert.equal(result.runtimeVisible, true, `${label}: fresh story did not start directly`);
         assert.equal(result.titleUnlocked, false, `${label}: fresh save unlocked the title`);
       } else if (scenario === "stored") {
-        assert.equal(result.titleVisible, false, `${label}: pre-NOVACENE save exposed the locked title`);
-        assert.equal(result.runtimeVisible, true, `${label}: pre-NOVACENE save did not resume directly`);
+        assert.equal(result.titleVisible, false, `${label}: pre-APEIRONCENE save exposed the locked title`);
+        assert.equal(result.runtimeVisible, true, `${label}: pre-APEIRONCENE save did not resume directly`);
         assert.equal(result.stepId, RESUME_STEP_ID, `${label}: autosave was not resumed directly`);
-        assert.equal(result.titleUnlocked, false, `${label}: pre-NOVACENE save unlocked the title`);
+        assert.equal(result.titleUnlocked, false, `${label}: pre-APEIRONCENE save unlocked the title`);
       } else {
         assert.equal(result.titleVisible, true, `${label}: unlocked title was not shown`);
         assert.equal(result.runtimeVisible, false, `${label}: unlocked title was bypassed`);

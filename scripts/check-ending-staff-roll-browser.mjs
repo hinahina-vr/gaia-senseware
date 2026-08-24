@@ -252,13 +252,15 @@ try {
       "制作支援",
       "PRODUCTION SUPPORT",
       "OpenAI Codex",
+      "キャラクター原案",
+      "ORIGINAL CHARACTER CONCEPT",
       "キャラクターデザイン",
       "OpenAI ImageGen",
       "背景美術",
       "音楽",
       "オープニングテーマ『Planet Forecast - Hope』",
-      "エンディングテーマ『AterSchool, AfterGlow』",
-      "by Suno.ai",
+      "エンディングテーマ『AfterSchool, AfterGlow』",
+      "by Suno AI",
       "ZEN大学『共創地球論』",
       "ZEN大学『人新世の人類学』",
       "参照データ",
@@ -275,7 +277,7 @@ try {
     assert.equal(initial.text.includes("DEVELOPMENT SUPPORT"), false, `${viewport.name}: obsolete DEVELOPMENT SUPPORT credit remains`);
     assert.equal(initial.text.includes("データ提供"), false, `${viewport.name}: obsolete データ提供 credit remains`);
     assert.equal(initial.text.includes("HTML / CSS / JavaScript"), false, `${viewport.name}: implementation note remains in staff credits`);
-    assert.equal(initial.creditRows.length, 9, `${viewport.name}: unexpected staff credit row count`);
+    assert.equal(initial.creditRows.length, 10, `${viewport.name}: unexpected staff credit row count`);
     initial.creditRows.forEach((row) => {
       assert.equal(row.textAlign, "center", `${viewport.name}: ${row.role} is not center aligned`);
       assert(row.rowCenterDelta <= 1, `${viewport.name}: ${row.role} row is off center by ${row.rowCenterDelta}px`);
@@ -283,11 +285,15 @@ try {
       assert(row.descriptionCenterDelta <= 1, `${viewport.name}: ${row.role} name is off center by ${row.descriptionCenterDelta}px`);
       assert(row.dividerClearance >= 8, `${viewport.name}: ${row.role} divider overlaps its names (${row.dividerClearance}px clearance)`);
     });
+    const originalCharacterCredit = initial.creditRows.find((row) => row.role === "ORIGINAL CHARACTER CONCEPT");
+    assert.deepEqual(originalCharacterCredit?.names, ["ひなひな"], `${viewport.name}: original character concept credit is incorrect`);
+    const characterDesignCredit = initial.creditRows.find((row) => row.role === "CHARACTER DESIGN");
+    assert.deepEqual(characterDesignCredit?.names, ["OpenAI ImageGen"], `${viewport.name}: character design credit is incorrect`);
     const musicCredit = initial.creditRows.find((row) => row.role === "MUSIC");
     assert.deepEqual(musicCredit?.names, [
       "オープニングテーマ『Planet Forecast - Hope』",
-      "エンディングテーマ『AterSchool, AfterGlow』",
-      "by Suno.ai",
+      "エンディングテーマ『AfterSchool, AfterGlow』",
+      "by Suno AI",
     ], `${viewport.name}: music credit wording or order is incorrect`);
     assert.equal(musicCredit?.nameOverflow, false, `${viewport.name}: music credit overflows horizontally`);
     assert.equal(initial.overflowX, 0);
@@ -397,7 +403,7 @@ try {
     const completed = await scanEnding(page);
     assert.equal(completed.buttonHidden, false);
     assert.equal(completed.buttonText, "世界の続きを紡ぐ");
-    assert.match(completed.buttonAriaLabel, /NOVACENE/u);
+    assert.match(completed.buttonAriaLabel, /APEIRONCENE/u);
     assert(completed.buttonHeight >= 44, `${viewport.name}: END action hit area is under 44px`);
     assert(completed.buttonMarkCenterDelta <= 3, `${viewport.name}: final action did not replace the thank-you mark in place (${completed.buttonMarkCenterDelta}px)`);
     assert.match(completed.buttonBackground, /rgba\(2, 10, 16, 0\.92\)/u, `${viewport.name}: final action is not dark (${completed.buttonBackground})`);
@@ -422,16 +428,16 @@ try {
     const backgroundFullyVisibleAt = Date.now();
     const backgroundOnly = await scanTrueEndDestination(page);
     assert.equal(backgroundOnly.entryPhase, "background", `${viewport.name}: message interface appeared before the background reveal completed`);
-    assert.equal(backgroundOnly.sectionTransitionPhase, "idle", `${viewport.name}: hidden NOVACENE scene card delayed the background reveal`);
+    assert.equal(backgroundOnly.sectionTransitionPhase, "idle", `${viewport.name}: hidden APEIRONCENE scene card delayed the background reveal`);
     assert.equal(backgroundOnly.message, "", `${viewport.name}: first message started behind the black veil`);
     assert.equal(backgroundOnly.dialogueVisibility, "hidden", `${viewport.name}: message window was visible after the background finished revealing`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end-background-only.png`) });
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "complete", null, { timeout: 2_000 });
     const transitionCompletedAt = Date.now();
-    assert(transitionHoldObservedAt - transitionStartedAt >= 600, `${viewport.name}: NOVACENE cover was too short (${transitionHoldObservedAt - transitionStartedAt}ms)`);
-    assert(switchObservedAt - transitionHoldObservedAt >= 800, `${viewport.name}: full-black NOVACENE hold was too short (${switchObservedAt - transitionHoldObservedAt}ms)`);
-    assert(switchObservedAt - transitionStartedAt >= 1_450, `${viewport.name}: NOVACENE entry did not build enough anticipation (${switchObservedAt - transitionStartedAt}ms)`);
-    assert(backgroundFullyVisibleAt - revealObservedAt >= 3_450, `${viewport.name}: NOVACENE background reveal was too short (${backgroundFullyVisibleAt - revealObservedAt}ms)`);
+    assert(transitionHoldObservedAt - transitionStartedAt >= 600, `${viewport.name}: APEIRONCENE cover was too short (${transitionHoldObservedAt - transitionStartedAt}ms)`);
+    assert(switchObservedAt - transitionHoldObservedAt >= 800, `${viewport.name}: full-black APEIRONCENE hold was too short (${switchObservedAt - transitionHoldObservedAt}ms)`);
+    assert(switchObservedAt - transitionStartedAt >= 1_450, `${viewport.name}: APEIRONCENE entry did not build enough anticipation (${switchObservedAt - transitionStartedAt}ms)`);
+    assert(backgroundFullyVisibleAt - revealObservedAt >= 3_450, `${viewport.name}: APEIRONCENE background reveal was too short (${backgroundFullyVisibleAt - revealObservedAt}ms)`);
     assert(transitionCompletedAt - backgroundFullyVisibleAt >= 350, `${viewport.name}: completed background did not hold before the message (${transitionCompletedAt - backgroundFullyVisibleAt}ms)`);
     assert.equal(await page.locator(".novel-staff-roll-transition-veil").count(), 0, `${viewport.name}: transition veil remained after completion`);
     await page.waitForFunction(() => {
@@ -449,7 +455,7 @@ try {
     assert.equal(trueEndDestination.trueEndVisible, true, `${viewport.name}: credits did not open the true ending`);
     assert.equal(trueEndDestination.layerActive, true);
     assert.equal(trueEndDestination.scene, "after-ending");
-    assert.equal(trueEndDestination.heading, "ずっと昔の人たち");
+    assert.equal(trueEndDestination.heading, "こどもと魔法");
     assert(trueEndDestination.dialogueHeight >= 44, `${viewport.name}: true-end dialogue hit area is under 44px`);
     assert.equal(trueEndDestination.clear, true);
     assert.equal(trueEndDestination.archivesUnlocked, true);
@@ -474,7 +480,7 @@ try {
   assert.equal(reduced.buttonHidden, false);
   assert.equal(reduced.skipHintCount, 0);
   assert.equal(reduced.buttonText, "世界の続きを紡ぐ");
-  assert.match(reduced.buttonAriaLabel, /NOVACENE/u);
+  assert.match(reduced.buttonAriaLabel, /APEIRONCENE/u);
   assert(reduced.buttonHeight >= 44);
   assert.equal(reduced.overflowX, 0);
   await reducedPage.screenshot({ path: path.join(outputDir, "mobile-390-reduced.png"), animations: "disabled" });

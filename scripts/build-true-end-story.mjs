@@ -8,6 +8,7 @@ const outputPath = path.join(projectRoot, "true-end-data.js");
 const checkOnly = process.argv.includes("--check");
 const speakerForLabel = Object.freeze({
   AIVA: "system",
+  "???": "lou",
   ルウ: "lou",
   あめ: "amane",
   みず: "mizuha",
@@ -24,7 +25,7 @@ const scenes = approved.trueEndScenes.map((scene) => ({
   backdrop: scene.backdrop,
   steps: scene.entries.map((entry) => {
     const speaker = speakerForLabel[entry.speakerLabel];
-    if (speaker === undefined) throw new Error(`${entry.id}: 未対応のNOVACENE話者です（${entry.speakerLabel}）`);
+    if (speaker === undefined) throw new Error(`${entry.id}: 未対応のAPEIRONCENE話者です（${entry.speakerLabel}）`);
     const pages = entry.metadata?.pages;
     if (pages !== undefined && (
       !Array.isArray(pages)
@@ -36,6 +37,7 @@ const scenes = approved.trueEndScenes.map((scene) => ({
     }
     return {
       ...(speaker ? { speaker } : {}),
+      ...(entry.speakerLabel === "???" ? { speakerLabel: entry.speakerLabel } : {}),
       text: entry.text,
       ...(entry.readout ? { readout: entry.readout } : {}),
       ...(entry.metadata || {}),
@@ -46,8 +48,8 @@ const scenes = approved.trueEndScenes.map((scene) => ({
 const story = {
   storyVersion: "true-end-approved-script-v5",
   approvedSourceSha256: approved.sha256,
-  title: "NOVACENE",
-  subtitle: "惑星の放課後 / GAIA SENSATION — NOVACENE",
+  title: "APEIRONCENE",
+  subtitle: "惑星の放課後 / GAIA SENSATION — APEIRONCENE",
   language: {
     id: "saeliva",
     name: "SÆLIVA",
@@ -59,7 +61,7 @@ const story = {
   scenes,
   finale: {
     label: "星々の放課後",
-    title: "NOVACENE",
+    title: "APEIRONCENE",
     readout: [
       "DÆM UL: ESHA·GEMA",
       "IVARA KERA: K 2.700",

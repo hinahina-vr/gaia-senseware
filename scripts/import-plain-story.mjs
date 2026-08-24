@@ -28,7 +28,7 @@ const MAIN_HEADINGS = Object.freeze([
   Object.freeze({ marker: "06 / WELCOME", id: "welcome_chat" }),
 ]);
 const MAIN_SPEAKERS = new Set(["女の子", "もう一人の女の子", "あめ", "みず", "プレイヤー", "SYSTEM", "青猫", "saku"]);
-const TRUE_END_SPEAKERS = new Set(["AIVA", "ルウ", "あめ", "みず", "saku", "プレイヤー"]);
+const TRUE_END_SPEAKERS = new Set(["AIVA", "???", "ルウ", "あめ", "みず", "saku", "プレイヤー"]);
 
 const indexOfLine = (value, from = 0) => {
   const index = lines.indexOf(value, from);
@@ -105,11 +105,11 @@ const parseTrueEndLines = (sceneLines) => {
       let blockEnd = index + 1;
       while (blockEnd < sceneLines.length && sceneLines[blockEnd].trim()) blockEnd += 1;
       const block = sceneLines.slice(index + 1, blockEnd).map((value) => value.trim()).filter(Boolean);
-      if (block.length === 0) throw new Error(`NOVACENE: ${line} の本文がありません`);
-      entries.push({ kind: "NOVACENE", speakerLabel: line, text: block[0] });
+      if (block.length === 0) throw new Error(`APEIRONCENE: ${line} の本文がありません`);
+      entries.push({ kind: "APEIRONCENE", speakerLabel: line, text: block[0] });
       for (const extra of block.slice(1)) {
         if (isReadoutLine(extra)) entries.at(-1).readout = [...(entries.at(-1).readout || []), extra];
-        else entries.push({ kind: "NOVACENE", speakerLabel: "—", text: extra });
+        else entries.push({ kind: "APEIRONCENE", speakerLabel: "—", text: extra });
       }
       index = blockEnd;
       continue;
@@ -117,7 +117,7 @@ const parseTrueEndLines = (sceneLines) => {
     if (isReadoutLine(line) && entries.length > 0) {
       entries.at(-1).readout = [...(entries.at(-1).readout || []), line];
     } else {
-      entries.push({ kind: "NOVACENE", speakerLabel: "—", text: line });
+      entries.push({ kind: "APEIRONCENE", speakerLabel: "—", text: line });
     }
     index += 1;
   }
@@ -136,13 +136,13 @@ const mainScenes = MAIN_HEADINGS.map((heading, index) => {
   };
 });
 
-const novaceneHeading = indexOfLine("NOVACENE");
+const novaceneHeading = indexOfLine("APEIRONCENE");
 const novaceneStart = novaceneHeading + 2;
 const novaceneLines = trimBlankEdges(lines.slice(novaceneStart));
 const scene2Start = novaceneLines.findIndex((line, index) => line.trim() === "AIVA" && novaceneLines[index + 1]?.trim() === "DÆM MIR");
 const scene3Start = novaceneLines.findIndex((line) => line.trim() === "数百万の恒星系へ、異なる色と速さの光が広がる。一本の巨大な神経網ではない。");
 if (scene2Start < 0 || scene3Start < 0 || scene2Start >= scene3Start) {
-  throw new Error("NOVACENEの3scene境界を確認できません");
+  throw new Error("APEIRONCENEの3scene境界を確認できません");
 }
 const trueEndRanges = [
   novaceneLines.slice(0, scene2Start),
@@ -343,14 +343,14 @@ for (const scene of mainScenes) {
 }
 output.push("# PART II｜スタッフロールと分岐");
 output.push("## 提供台本の表示文\n\n" + quoteLines(lines.slice(indexOfLine("STAFF & CREDITS / 惑星の放課後 / GAIA SENSATION"), novaceneHeading).join("\n")));
-output.push("# PART III｜NOVACENE");
-output.push("- タイトル: NOVACENE\n- サブタイトル: 惑星の放課後 / GAIA SENSATION — NOVACENE\n- 経過時間: 2,704,118 HARA\n- 統一言語: SÆLIVA（セイリヴァ）");
+output.push("# PART III｜APEIRONCENE");
+output.push("- タイトル: APEIRONCENE\n- サブタイトル: 惑星の放課後 / GAIA SENSATION — APEIRONCENE\n- 経過時間: 2,704,118 HARA\n- 統一言語: SÆLIVA（セイリヴァ）");
 for (const scene of trueEndScenes) {
-  output.push(`## NOVACENE ${String(scene.number).padStart(2, "0")}｜${scene.title}`);
+  output.push(`## APEIRONCENE ${String(scene.number).padStart(2, "0")}｜${scene.title}`);
   output.push(`- シーンID: \`${scene.id}\`\n- 背景シグネチャ: \`${scene.backdrop}\``);
   output.push(scene.entries.map(renderEntry).join("\n\n"));
 }
-output.push("## 今回の反映チェックリスト\n\n- 提供された本編・スタッフロール・NOVACENE全文を実装正本へ変換。\n- 既存の地図/GX操作、安定ID、演出メタデータを可能な限り継承。");
+output.push("## 今回の反映チェックリスト\n\n- 提供された本編・スタッフロール・APEIRONCENE全文を実装正本へ変換。\n- 既存の地図/GX操作、安定ID、演出メタデータを可能な限り継承。");
 
 const rendered = `${output.join("\n\n---\n\n")}\n`;
 const rawCopy = `${source}\n`;
@@ -361,7 +361,7 @@ if (checkOnly) {
   if (!fs.existsSync(rawCopyPath) || fs.readFileSync(rawCopyPath, "utf8") !== rawCopy) {
     throw new Error(`${path.relative(projectRoot, rawCopyPath)} が提供台本と一致しません`);
   }
-  console.log(`approved user script ok: ${mainScenes.reduce((count, scene) => count + scene.entries.length, 0)} main / ${trueEndScenes.reduce((count, scene) => count + scene.entries.length, 0)} NOVACENE entries`);
+  console.log(`approved user script ok: ${mainScenes.reduce((count, scene) => count + scene.entries.length, 0)} main / ${trueEndScenes.reduce((count, scene) => count + scene.entries.length, 0)} APEIRONCENE entries`);
 } else {
   fs.writeFileSync(outputPath, rendered, "utf8");
   fs.writeFileSync(rawCopyPath, rawCopy, "utf8");
