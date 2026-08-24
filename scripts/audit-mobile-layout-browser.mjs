@@ -1,0 +1,402 @@
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
+const [moduleRoot, executablePath, outputArgument, baseUrl = "https://gaia-senseware.pages.dev/"] = process.argv.slice(2);
+if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
+const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
+  ? path.join(moduleRoot, "index.mjs")
+  : path.join(moduleRoot, "playwright", "index.mjs");
+const { chromium } = await import(pathToFileURL(playwrightEntry).href);
+const outputDir = path.resolve(outputArgument || "artifacts/mobile-layout-audit");
+fs.mkdirSync(outputDir, { recursive: true });
+
+const viewports = [
+  { name: "mobile-320x568", width: 320, height: 568 },
+  { name: "mobile-360x800", width: 360, height: 800 },
+  { name: "mobile-375x667", width: 375, height: 667 },
+  { name: "mobile-390x844", width: 390, height: 844 },
+  { name: "mobile-430x932", width: 430, height: 932 },
+];
+const dialogueCases = [
+  { name: "first-meeting", stepId: "festival_concept_016" },
+  { name: "gx-explanation", stepId: "gx_experience_010" },
+  { name: "sensor-explanation", stepId: "esp32_pitch_015" },
+];
+const report = {
+  status: "running",
+  baseUrl,
+  viewports,
+  screenshots: [],
+  scans: [],
+  issues: [],
+  consoleErrors: [],
+  pageErrors: [],
+  responses404: [],
+};
+
+const browser = await chromium.launch({
+  headless: true,
+  executablePath,
+  args: ["--no-first-run", "--disable-background-networking"],
+});
+
+const attachDiagnostics = (page, label) => {
+  page.on("console", (message) => {
+    if (message.type() !== "error") return;
+    const value = message.text();
+    if (value.includes("status of 401")) return;
+    report.consoleErrors.push(`${label}: ${value}`);
+  });
+  page.on("pageerror", (error) => report.pageErrors.push(`${label}: ${error.message}`));
+  page.on("response", (response) => {
+    if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`);
+  });
+};
+
+const makePage = async (viewport, label, init = null, initArgument = undefined) => {
+  const context = await browser.newContext({
+    viewport: { width: viewport.width, height: viewport.height },
+    hasTouch: true,
+    isMobile: true,
+    reducedMotion: "reduce",
+  });
+  const page = await context.newPage();
+  page.setDefaultNavigationTimeout(90_000);
+  page.setDefaultTimeout(45_000);
+  attachDiagnostics(page, label);
+  if (init) await page.addInitScript(init, initArgument);
+  return { context, page };
+};
+
+const saveScreenshot = async (page, viewport, surface) => {
+  const file = path.join(outputDir, `${viewport.name}-${surface}.png`);
+  await page.screenshot({ path: file, animations: "disabled", fullPage: false });
+  report.screenshots.push({ viewport: viewport.name, surface, file });
+  return file;
+};
+
+const addIssue = (viewport, surface, code, message, evidence = null) => {
+  report.issues.push({ viewport: viewport.name, surface, code, message, evidence });
+};
+
+const inspectSurface = (page, selectors = []) => page.evaluate((targetSelectors) => {
+  const visible = (node) => {
+    if (!node || node.hidden || node.closest("[hidden]")) return false;
+    const style = getComputedStyle(node);
+    const box = node.getBoundingClientRect();
+    return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0
+      && box.width > 0 && box.height > 0;
+  };
+  const rect = (node) => node?.getBoundingClientRect().toJSON() || null;
+  const withinViewport = (box) => Boolean(box
+    && box.left >= -1 && box.top >= -1 && box.right <= innerWidth + 1 && box.bottom <= innerHeight + 1);
+  const controls = [...document.querySelectorAll("button, a[href], input, select, textarea")]
+    .filter(visible)
+    .map((node) => {
+      const box = rect(node);
+      return {
+        label: node.getAttribute("aria-label") || node.textContent?.trim().replace(/\s+/gu, " ").slice(0, 80) || node.id || node.tagName,
+        id: node.id || "",
+        tag: node.tagName,
+        box,
+        withinViewport: withinViewport(box),
+        hitSize: box.width >= 44 && box.height >= 44,
+      };
+    });
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    document: {
+      scrollWidth: document.documentElement.scrollWidth,
+      scrollHeight: document.documentElement.scrollHeight,
+      clientWidth: document.documentElement.clientWidth,
+      clientHeight: document.documentElement.clientHeight,
+      overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
+      overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
+    },
+    controls,
+    targets: targetSelectors.map((selector) => {
+      const node = document.querySelector(selector);
+      const box = rect(node);
+      const style = node ? getComputedStyle(node) : null;
+      return {
+        selector,
+        visible: visible(node),
+        box,
+        withinViewport: withinViewport(box),
+        scrollWidth: node?.scrollWidth || 0,
+        scrollHeight: node?.scrollHeight || 0,
+        clientWidth: node?.clientWidth || 0,
+        clientHeight: node?.clientHeight || 0,
+        overflowX: style?.overflowX || "",
+        overflowY: style?.overflowY || "",
+        text: node?.textContent?.trim().replace(/\s+/gu, " ").slice(0, 300) || "",
+      };
+    }),
+  };
+}, selectors);
+
+const collectRenderedLines = (page, selector) => page.evaluate((targetSelector) => {
+  const target = document.querySelector(targetSelector);
+  if (!target) return { text: "", lines: [], style: null, box: null };
+  const groups = [];
+  const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (!node.nodeValue) continue;
+    let offset = 0;
+    for (const glyph of Array.from(node.nodeValue)) {
+      const nextOffset = offset + glyph.length;
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.setEnd(node, nextOffset);
+      const box = range.getBoundingClientRect();
+      offset = nextOffset;
+      if (!box.width || !box.height) continue;
+      let line = groups.find((candidate) => Math.abs(candidate.top - box.top) < 2);
+      if (!line) {
+        line = { top: box.top, bottom: box.bottom, left: box.left, right: box.right, text: "" };
+        groups.push(line);
+      }
+      line.text += glyph;
+      line.left = Math.min(line.left, box.left);
+      line.right = Math.max(line.right, box.right);
+      line.bottom = Math.max(line.bottom, box.bottom);
+    }
+  }
+  groups.sort((a, b) => a.top - b.top || a.left - b.left);
+  const style = getComputedStyle(target);
+  return {
+    text: target.getAttribute("aria-label") || target.textContent || "",
+    lines: groups.map((line) => ({ ...line, text: line.text.trim() })).filter((line) => line.text),
+    style: { fontSize: style.fontSize, lineHeight: style.lineHeight, overflowX: style.overflowX, overflowY: style.overflowY },
+    box: target.getBoundingClientRect().toJSON(),
+    scrollWidth: target.scrollWidth,
+    scrollHeight: target.scrollHeight,
+    clientWidth: target.clientWidth,
+    clientHeight: target.clientHeight,
+  };
+}, selector);
+
+const reviewCommon = (viewport, surface, scan, { allowDocumentY = false, allowOffscreenControls = false } = {}) => {
+  if (scan.document.overflowX > 1) addIssue(viewport, surface, "document-overflow-x", "ページ全体に横スクロールが発生", scan.document);
+  if (!allowDocumentY && scan.document.overflowY > 1) addIssue(viewport, surface, "document-overflow-y", "固定画面でページ全体に縦スクロールが発生", scan.document);
+  const escaped = scan.controls.filter((control) => !control.withinViewport);
+  if (!allowOffscreenControls && escaped.length) addIssue(viewport, surface, "control-outside-viewport", "操作要素が表示領域からはみ出している", escaped);
+};
+
+const scanOpening = async (viewport) => {
+  const label = `${viewport.name}-opening`;
+  const { context, page } = await makePage(viewport, label, () => {
+    localStorage.clear();
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  });
+  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(document.querySelector("#gaia-opening")));
+  await page.waitForTimeout(900);
+  const scan = await inspectSurface(page, ["#gaia-opening", "#gaia-opening-sound-modal", "#gaia-opening-skip"]);
+  await saveScreenshot(page, viewport, "opening");
+  reviewCommon(viewport, "opening", scan);
+  report.scans.push({ ...scan, viewport: viewport.name, surface: "opening" });
+  await context.close();
+};
+
+const scanObservation = async (viewport) => {
+  const label = `${viewport.name}-observation`;
+  const { context, page } = await makePage(viewport, label, () => {
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  });
+  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
+  await page.evaluate(() => {
+    for (const selector of ["#gaia-opening", "#intro-layer"]) {
+      const node = document.querySelector(selector);
+      if (node) { node.hidden = true; node.inert = true; node.setAttribute("aria-hidden", "true"); }
+    }
+    document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
+  });
+  await page.locator("#mode-list .mode-button").last().click();
+  await page.waitForFunction(() => document.querySelector("#mode-number")?.textContent?.trim() === "10");
+  const scan = await inspectSurface(page, ["#intro-button", ".signal-console-main", "#mode-title", "#mode-caption", "#mode-list"]);
+  const titleLines = await collectRenderedLines(page, "#mode-title");
+  await saveScreenshot(page, viewport, "observation-10");
+  reviewCommon(viewport, "observation-10", scan);
+  const modeList = scan.targets.find((target) => target.selector === "#mode-list");
+  if (modeList && modeList.scrollHeight > modeList.clientHeight + 2) {
+    addIssue(viewport, "observation-10", "mode-list-scroll", "展示選択UIの内部に縦スクロールが発生", modeList);
+  }
+  const signalConsole = scan.targets.find((target) => target.selector === ".signal-console-main");
+  const observationActions = new Set(["space-button", "story-button", "japan-button", "auto-button", "source-button", "reset-button"]);
+  const overlappingActions = signalConsole?.box ? scan.controls.filter((control) => observationActions.has(control.id)
+    && control.box.left < signalConsole.box.right
+    && control.box.right > signalConsole.box.left
+    && control.box.top < signalConsole.box.bottom
+    && control.box.bottom > signalConsole.box.top) : [];
+  if (overlappingActions.length) {
+    addIssue(viewport, "observation-10", "observation-control-overlap", "観測画面の操作ボタンがデータ表示に重なっている", { signalConsole, controls: overlappingActions });
+  }
+  report.scans.push({ ...scan, viewport: viewport.name, surface: "observation-10", titleLines });
+  await context.close();
+};
+
+const scanTitle = async (viewport) => {
+  const label = `${viewport.name}-title`;
+  const { context, page } = await makePage(viewport, label, () => {
+    localStorage.clear();
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+    localStorage.setItem("gaiaSensewareTrueEnd:reached:v1", new Date().toISOString());
+  });
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.locator("#novel-title-screen").waitFor({ state: "visible" });
+  await page.evaluate(() => document.fonts.ready);
+  const scan = await inspectSurface(page, ["#novel-title-screen", "#novel-title", ".novel-title-actions", "#novel-title-gallery-button", "#novel-start-button"]);
+  const titleLines = await collectRenderedLines(page, "#novel-title");
+  await saveScreenshot(page, viewport, "title");
+  reviewCommon(viewport, "title", scan);
+  report.scans.push({ ...scan, viewport: viewport.name, surface: "title", titleLines });
+  await context.close();
+};
+
+const progressFor = (stepId, label) => ({
+  storyVersion: 13,
+  stepId,
+  reachedSceneIds: ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch"],
+  viewed: {},
+  metCharacters: { mizuha: true, amane: true, sakuya: true },
+  evesRoute: [],
+  observationOrder: "LOCAL_FIRST",
+  editorialChoice: null,
+  reflectionIds: [],
+  resultTone: null,
+  demoInterest: "",
+  audio: { muted: true, volume: 0 },
+  readStepIds: [stepId],
+  clear: false,
+  archivesUnlocked: false,
+  sessionId: `mobile-layout-audit-${label}`,
+});
+
+const scanDialogue = async (viewport, testCase, includeConfig = false) => {
+  const label = `${viewport.name}-dialogue-${testCase.name}`;
+  const progress = progressFor(testCase.stepId, label);
+  const { context, page } = await makePage(viewport, label, (candidate) => {
+    localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{
+      progress: candidate,
+      savedAt: Date.now(),
+      meta: { title: "Mobile layout audit", excerpt: candidate.stepId },
+    }]));
+    localStorage.setItem("gaiaSensewareNovel:config:v4", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  }, progress);
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
+  const resumed = await page.waitForFunction(
+    (expected) => document.querySelector("#novel-layer")?.dataset.stepId === expected,
+    testCase.stepId,
+    { timeout: 12_000 },
+  ).then(() => true, () => false);
+  if (!resumed && await page.locator("#novel-resume-button").isVisible()) {
+    await page.locator("#novel-resume-button").click();
+    await page.locator("#novel-save-panel").waitFor({ state: "visible" });
+    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  }
+  await page.waitForFunction((expected) => document.querySelector("#novel-layer")?.dataset.stepId === expected, testCase.stepId);
+  await page.waitForFunction(() => Boolean(document.querySelector("#novel-text")?.textContent?.trim()));
+  await page.waitForTimeout(250);
+  const scan = await inspectSurface(page, ["#novel-layer", "#novel-dialogue", "#novel-text", ".novel-topbar nav"]);
+  const lines = await collectRenderedLines(page, "#novel-text");
+  const pagination = await page.evaluate((stepId) => {
+    const step = globalThis.GAIA_NOVEL_STORY?.scenes
+      ?.flatMap((scene) => scene.steps)
+      ?.find((candidate) => candidate.id === stepId);
+    return step ? globalThis.GaiaNovel.inspectDialoguePagination(step.text) : null;
+  }, testCase.stepId);
+  await saveScreenshot(page, viewport, `dialogue-${testCase.name}`);
+  reviewCommon(viewport, `dialogue-${testCase.name}`, scan);
+  const textTarget = scan.targets.find((target) => target.selector === "#novel-text");
+  if (textTarget && textTarget.scrollHeight > textTarget.clientHeight + 2) {
+    addIssue(viewport, `dialogue-${testCase.name}`, "dialogue-scroll", "通常会話本文に内部スクロールが発生", textTarget);
+  }
+  const badStarts = lines.lines.filter((line) => /^[、。，．・：；？！）」』】]/u.test(line.text));
+  const badEnds = lines.lines.filter((line) => /[（「『【]$/u.test(line.text));
+  const oneGlyphLines = lines.lines.filter((line) => Array.from(line.text.replace(/\s+/gu, "")).length <= 1);
+  if (badStarts.length) addIssue(viewport, `dialogue-${testCase.name}`, "kinsoku-line-start", "句読点・閉じ括弧から始まる行がある", badStarts);
+  if (badEnds.length) addIssue(viewport, `dialogue-${testCase.name}`, "kinsoku-line-end", "開き括弧で終わる行がある", badEnds);
+  if (oneGlyphLines.length) addIssue(viewport, `dialogue-${testCase.name}`, "single-glyph-line", "1文字だけの行がある", oneGlyphLines);
+  const sparsePages = pagination?.pages?.filter((candidate) => candidate.lines < 2) || [];
+  if ((pagination?.pages?.length || 0) > 1 && sparsePages.length) {
+    addIssue(viewport, `dialogue-${testCase.name}`, "sparse-dialogue-page", "複数ページの会話に1行だけのページがある", sparsePages);
+  }
+  report.scans.push({ ...scan, viewport: viewport.name, surface: `dialogue-${testCase.name}`, stepId: testCase.stepId, lines, pagination });
+
+  if (includeConfig) {
+    await page.locator("#novel-config-button").click();
+    await page.locator("#novel-config-panel").waitFor({ state: "visible" });
+    const configScan = await inspectSurface(page, ["#novel-config-panel", ".novel-config-shell", "#novel-config-close"]);
+    await saveScreenshot(page, viewport, "config");
+    reviewCommon(viewport, "config", configScan);
+    const audioControl = configScan.controls.find((control) => control.id === "gaia-audio-toggle");
+    const closeControl = configScan.controls.find((control) => control.id === "novel-config-close");
+    if (audioControl && closeControl) {
+      const intersects = audioControl.box.left < closeControl.box.right
+        && audioControl.box.right > closeControl.box.left
+        && audioControl.box.top < closeControl.box.bottom
+        && audioControl.box.bottom > closeControl.box.top;
+      if (intersects) addIssue(viewport, "config", "modal-control-overlap", "音量ボタンと設定画面の閉じるボタンが重なっている", { audioControl, closeControl });
+    }
+    report.scans.push({ ...configScan, viewport: viewport.name, surface: "config" });
+  }
+  await context.close();
+};
+
+const scanSensorLogin = async (viewport) => {
+  const label = `${viewport.name}-sensor-login`;
+  const { context, page } = await makePage(viewport, label, () => {
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  });
+  await page.route("**/api/public/v1/sensors", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ sensors: [] }) }));
+  await page.route("**/api/web/v1/**", (route) => route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: "unauthorized" }) }));
+  await page.goto(new URL("/sensors/", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.locator("[data-view='login']").waitFor({ state: "visible" });
+  await page.waitForTimeout(300);
+  const scan = await inspectSurface(page, [".sensor-topbar", "[data-view='login']", ".sensor-login h1", "#google-login", "#sensor-audio-toggle"]);
+  const headingLines = await collectRenderedLines(page, ".sensor-login h1");
+  await saveScreenshot(page, viewport, "sensor-login");
+  reviewCommon(viewport, "sensor-login", scan, { allowDocumentY: true, allowOffscreenControls: true });
+  report.scans.push({ ...scan, viewport: viewport.name, surface: "sensor-login", headingLines });
+  await context.close();
+};
+
+try {
+  for (const viewport of viewports) {
+    await scanOpening(viewport);
+    await scanObservation(viewport);
+    await scanTitle(viewport);
+    for (let index = 0; index < dialogueCases.length; index += 1) {
+      await scanDialogue(viewport, dialogueCases[index], index === 0);
+    }
+    await scanSensorLogin(viewport);
+  }
+  report.status = report.issues.length || report.consoleErrors.length || report.pageErrors.length || report.responses404.length
+    ? "issues"
+    : "passed";
+} catch (error) {
+  report.status = "failed";
+  report.error = error.stack || String(error);
+  throw error;
+} finally {
+  fs.writeFileSync(path.join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  await browser.close();
+}
+
+console.log(JSON.stringify({
+  status: report.status,
+  scans: report.scans.length,
+  screenshots: report.screenshots.length,
+  issues: report.issues.length,
+  consoleErrors: report.consoleErrors.length,
+  pageErrors: report.pageErrors.length,
+  responses404: report.responses404.length,
+  outputDir,
+}, null, 2));

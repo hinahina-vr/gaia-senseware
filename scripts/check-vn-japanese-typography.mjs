@@ -15,13 +15,14 @@ const scans = [
   ["Intl.Segmenter Japanese word segmentation", /new Intl\.Segmenter\("ja", \{ granularity: "word" \}\)/u.test(runtime)],
   ["deterministic fallback segmenter", /fallbackDialogueSegments/u.test(runtime)],
   ["protected phrase set", ["そのもの", "ものづくり", "リアルタイム", "GAIA SENSEWARE"].every((value) => runtime.includes(value))],
-  ["Japanese inflection suffixes remain atomic", /DIALOGUE_INFLECTION_SUFFIXES/u.test(runtime) && ["た", "て", "ば", "れ", "さ", "ます"].every((value) => runtime.includes(`\"${value}\"`))],
+  ["Japanese inflection suffixes remain atomic", /DIALOGUE_INFLECTION_SUFFIXES/u.test(runtime) && ["た", "て", "ば", "れ", "さ", "たり", "ます"].every((value) => runtime.includes(`\"${value}\"`))],
   ["token-boundary pagination", /tokenBoundaries\.has/u.test(runtime) && /largestSafePrefix/u.test(runtime)],
   ["page pair enumerates existing token boundaries", /const combinedTokens = segmentDialoguePhrases\(combined\)/u.test(runtime) && /splitIndex < combinedTokens\.length/u.test(runtime)],
   ["page pair preserves source exactly", /`\$\{before\}\$\{after\}` !== combined/u.test(runtime)],
   ["page pair keeps both pages bounded", /beforeMetrics\.fits \|\| !afterMetrics\.fits/u.test(runtime)],
-  ["sentence-safe boundary outranks punctuation regardless of line count", /sentencePenalty: sentenceBoundary\.test\(before\.trimEnd\(\)\) \? 0 : 1/u.test(runtime) && /a\.sentencePenalty - b\.sentencePenalty/u.test(runtime) && /a\.unsafeBoundaryCount - b\.unsafeBoundaryCount/u.test(runtime)],
-  ["unsafe page boundaries are rebalanced", runtime.includes("const unsafeBoundary = !/[。！？!?、，,・：:；;\\s]") && runtime.includes("!orphanedFinalPage && !unsafeBoundary")],
+  ["sparse pages are avoided before boundary nicety", /a\.oneLinePageCount - b\.oneLinePageCount/u.test(runtime) && runtime.indexOf("a.oneLinePageCount - b.oneLinePageCount") < runtime.indexOf("a.sentencePenalty - b.sentencePenalty")],
+  ["safe prefixes prefer at least two rendered lines", runtime.includes("preferredMinimumLines") && runtime.includes("metrics.measuredLines.length >= preferredMinimumLines")],
+  ["unsafe or sparse page boundaries are rebalanced", runtime.includes("const sparseAdjacentPage = previousMetrics.measuredLines.length < 2 || currentMetrics.measuredLines.length < 2") && runtime.includes("!sparseAdjacentPage && !unsafeBoundary")],
   ["unbounded phrase-boundary rebalance absent", !/phraseOffsets/u.test(runtime) && !/safeCandidates\.length \? safeCandidates : candidates/u.test(runtime)],
   ["same token layout for measure and render", runtime.includes("measureNativeLines = (text, preparedLayout = null)") && runtime.includes("replaceChildren(layout)")],
   ["font loading reflow", /loadingdone/u.test(runtime)],
@@ -32,7 +33,7 @@ const scans = [
   ["source mirrors match", source === mirror],
   ["no escape hard breaks in changed prose", !source.includes("<br") && !source.includes("\\n")],
   ["forbidden verb absent", !/(?:置く|置いた|置いて|置か|置き|置け|置こう)/u.test(source)],
-  ["scenario cache keys", (html.match(/gaia-log-round3-1/gu) || []).length === 4],
+  ["mobile UI cache keys", ["styles.css", "novel-mode.css", "novel-mode.js"].every((asset) => html.includes(`${asset}?v=gaia-mobile-ui-audit-1`))],
 ];
 
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);

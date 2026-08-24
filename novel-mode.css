@@ -1120,6 +1120,12 @@ body.novel-reduced-motion .novel-layer:not(.is-title) {
   backdrop-filter: blur(24px) saturate(1.12);
 }
 
+body:has(#novel-config-panel:not([hidden])) #gaia-audio-dock {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .novel-config-shell {
   position: relative;
   width: min(760px, calc(100vw - 48px));
@@ -1376,7 +1382,10 @@ body.novel-reduced-motion .novel-layer:not(.is-title) {
   }
 
   .novel-config-shell {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     width: 100%;
+    max-height: calc(100dvh - 20px);
   }
 
   .novel-config-header {
@@ -1386,6 +1395,8 @@ body.novel-reduced-motion .novel-layer:not(.is-title) {
 
   .novel-config-content {
     padding: 18px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .novel-config-setting {
@@ -1417,6 +1428,7 @@ body.novel-reduced-motion .novel-layer:not(.is-title) {
 
   .novel-config-footer button {
     width: 100%;
+    min-height: 44px;
   }
 }
 

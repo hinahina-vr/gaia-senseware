@@ -1989,7 +1989,7 @@
 
   const DIALOGUE_PARTICLES = new Set(["は", "が", "を", "に", "へ", "と", "で", "の", "も", "や", "か", "ね", "よ"]);
   const DIALOGUE_INFLECTION_SUFFIXES = new Set([
-    "た", "だ", "て", "で", "ば", "れ", "る", "さ", "し", "え", "てい", "わ", "ない", "たい", "ます", "です", "ました", "ません", "れる", "られる",
+    "た", "だ", "て", "で", "ば", "れ", "る", "さ", "し", "たり", "したり", "え", "てい", "わ", "ない", "たい", "ます", "です", "ました", "ません", "れる", "られる",
   ]);
   const DIALOGUE_OPENING = /^[「『（【［〈《〔“‘]/u;
   const DIALOGUE_CLOSING = /^[、。，．？！…」』）】］〉》〕ぁぃぅぇぉゃゅょっァィゥェォャュョッー]/u;
@@ -2343,9 +2343,9 @@
         boundaryDistance: Math.abs(boundaryOffset - originalBoundary),
       });
     }
-    candidates.sort((a, b) => a.sentencePenalty - b.sentencePenalty
+    candidates.sort((a, b) => a.oneLinePageCount - b.oneLinePageCount
       || a.unsafeBoundaryCount - b.unsafeBoundaryCount
-      || a.oneLinePageCount - b.oneLinePageCount
+      || a.sentencePenalty - b.sentencePenalty
       || a.lineBalance - b.lineBalance
       || a.boundaryDistance - b.boundaryDistance);
     return candidates.length ? [candidates[0].before, candidates[0].after] : [left, right];
@@ -2365,12 +2365,12 @@
     for (let index = pages.length - 1; index > 0; index -= 1) {
       const previousMetrics = dialoguePageMetrics(pages[index - 1]);
       const currentMetrics = dialoguePageMetrics(pages[index]);
-      const orphanedFinalPage = currentMetrics.measuredLines.length < 2;
+      const sparseAdjacentPage = previousMetrics.measuredLines.length < 2 || currentMetrics.measuredLines.length < 2;
       const unsafeBoundary = !/[。！？!?、，,・：:；;\s][」』）】］〉》〕]*$/u.test(pages[index - 1].trimEnd());
       const explicitLineNeedsBalance = pages[index - 1].endsWith("\n")
         && previousMetrics.measuredLines.length < 3
         && currentMetrics.measuredLines.length > 2;
-      if (!orphanedFinalPage && !unsafeBoundary && !explicitLineNeedsBalance) continue;
+      if (!sparseAdjacentPage && !unsafeBoundary && !explicitLineNeedsBalance) continue;
       const balanced = balanceDialoguePagePair(
         pages[index - 1],
         pages[index],
@@ -2428,8 +2428,14 @@
         }
         if (/[\u3001\uff0c,\u30fb\uff1a:；;\s]/u.test(glyph)) safeOffsets.add(index + 1);
       });
+      const maximumMetrics = dialoguePageMetrics(glyphs.slice(0, maximum).join(""));
+      const preferredMinimumLines = maximumMetrics.measuredLines.length >= 2 ? 2 : 1;
       const fittingOffset = (offsets) => [...offsets]
-        .filter((offset) => offset > 0 && offset <= maximum && dialoguePageMetrics(glyphs.slice(0, offset).join("")).fits)
+        .filter((offset) => {
+          if (offset <= 0 || offset > maximum) return false;
+          const metrics = dialoguePageMetrics(glyphs.slice(0, offset).join(""));
+          return metrics.fits && metrics.measuredLines.length >= preferredMinimumLines;
+        })
         .sort((left, right) => right - left)[0];
       const tokenBoundarySet = new Set(tokenOffsets);
       const tokenBoundaryOffsets = (offsets) => new Set([...offsets].filter((offset) => tokenBoundarySet.has(offset)));

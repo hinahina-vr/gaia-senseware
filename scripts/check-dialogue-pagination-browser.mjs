@@ -32,7 +32,8 @@ assert(viewports.length > 0, `unknown viewport filter: ${viewportFilter}`);
 const { chromium } = await import(pathToFileURL(path.join(moduleRoot, "index.mjs")));
 const routeUrl = new URL("/story", baseUrl).href;
 const storageKey = "gaiaSensewareNovel:progress";
-const configKey = "gaiaSensewareNovel:config:v2";
+const manualSaveKey = "gaiaSensewareNovel:manual-saves";
+const configKey = "gaiaSensewareNovel:config:v4";
 const report = {
   status: "running",
   storyVersion: story.storyVersion,
@@ -125,14 +126,27 @@ try {
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
     await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.inspectDialoguePagination), null, { timeout: 15_000 });
-    await page.evaluate(({ progressKey, settingsKey, progress }) => {
+    await page.evaluate(({ progressKey, saveKey, settingsKey, progress }) => {
       localStorage.setItem(progressKey, JSON.stringify(progress));
+      localStorage.setItem(saveKey, JSON.stringify([{
+        progress,
+        savedAt: Date.now(),
+        meta: { title: "Dialogue pagination check", excerpt: progress.stepId },
+      }]));
       localStorage.setItem(settingsKey, JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
-    }, { progressKey: storageKey, settingsKey: configKey, progress: baseState });
+    }, { progressKey: storageKey, saveKey: manualSaveKey, settingsKey: configKey, progress: baseState });
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.inspectDialoguePagination), null, { timeout: 15_000 });
-    await page.evaluate(() => globalThis.GaiaNovel.open());
-    await page.locator("#novel-resume-button").click();
+    const resumed = await page.waitForFunction(
+      (expectedStepId) => document.querySelector("#novel-layer")?.dataset.stepId === expectedStepId,
+      baseState.stepId,
+      { timeout: 5_000 },
+    ).then(() => true, () => false);
+    if (!resumed && await page.locator("#novel-resume-button").isVisible()) {
+      await page.locator("#novel-resume-button").click();
+      await page.locator("#novel-save-panel").waitFor({ state: "visible" });
+      await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+    }
     await page.waitForFunction((expectedStepId) => {
       const layer = document.querySelector("#novel-layer");
       const runtime = document.querySelector("#novel-runtime");
