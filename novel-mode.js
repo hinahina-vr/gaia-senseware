@@ -251,6 +251,86 @@
     absence_004: "sad",
     mode10_space_012: "sad",
   });
+  const AMANE_STEP_EXPRESSIONS = Object.freeze({
+    festival_concept_021: "soft",
+    festival_concept_new_019: "exasperated",
+    festival_concept_057: "soft",
+    map_mode01_016: "startled",
+    map_mode01_018: "exasperated",
+    gx_experience_006: "soft",
+    gx_experience_025: "exasperated",
+    gx_experience_058: "soft",
+    esp32_pitch_011: "startled",
+    esp32_pitch_016b: "exasperated",
+    esp32_pitch_016d: "exasperated",
+    esp32_pitch_016i: "soft",
+    esp32_pitch_021: "soft",
+    circle_invitation_055: "soft",
+    circle_invitation_059: "soft",
+    circle_invitation_new_022: "startled",
+    circle_invitation_new_026: "soft",
+    circle_invitation_new_029: "soft",
+    welcome_chat_060: "soft",
+  });
+  const MIZUHA_STEP_EXPRESSIONS = Object.freeze({
+    festival_concept_023: "worried",
+    festival_concept_039: "teasing",
+    festival_concept_new_018: "teasing",
+    festival_concept_064: "worried",
+    map_mode01_017: "teasing",
+    map_mode01_019: "teasing",
+    gx_experience_014: "teasing",
+    gx_experience_022: "teasing",
+    gx_experience_026: "worried",
+    esp32_pitch_018: "worried",
+    esp32_pitch_020: "teasing",
+    circle_invitation_008: "sad",
+    circle_invitation_043: "worried",
+    circle_invitation_058: "teasing",
+    circle_invitation_060: "teasing",
+    circle_invitation_new_027: "teasing",
+    welcome_chat_055: "worried",
+    welcome_chat_058: "worried",
+    welcome_chat_072: "teasing",
+  });
+  const CHARACTER_STEP_EXPRESSIONS = Object.freeze({
+    amane: AMANE_STEP_EXPRESSIONS,
+    mizuha: MIZUHA_STEP_EXPRESSIONS,
+    sakuya: SAKUYA_STEP_EXPRESSIONS,
+  });
+  const CHARACTER_EXPRESSION_ALIASES = Object.freeze({
+    amane: Object.freeze({ bright: "calm", smile: "soft", teasing: "soft", worried: "exasperated", sad: "soft" }),
+    mizuha: Object.freeze({ bright: "teasing", smile: "teasing", soft: "calm", startled: "teasing", exasperated: "worried" }),
+  });
+  const CHARACTER_EXPRESSION_ASSETS = Object.freeze({
+    amane: Object.freeze({
+      calm: "assets/characters/amane-calm-07-v3.png",
+      startled: "assets/characters/amane-startled-07-v3.png",
+      exasperated: "assets/characters/amane-exasperated-07-v3.png",
+      soft: "assets/characters/amane-soft-07-v3.png",
+    }),
+    mizuha: Object.freeze({
+      calm: "assets/characters/mizuha-calm-07-v2.png",
+      teasing: "assets/characters/mizuha-teasing-07-v2.png",
+      worried: "assets/characters/mizuha-worried-07-v2.png",
+      sad: "assets/characters/mizuha-sad-07-v2.png",
+    }),
+    sakuya: Object.freeze({
+      calm: "assets/characters/sakuya-calm-07-v1.png",
+      teasing: "assets/characters/sakuya-teasing-07-v1.png",
+      worried: "assets/characters/sakuya-worried-07-v1.png",
+      sad: "assets/characters/sakuya-sad-07-v1.png",
+    }),
+  });
+  const expressionForStep = (step) => {
+    const scriptedExpression = step?.expression
+      || CHARACTER_STEP_EXPRESSIONS[step?.speaker]?.[step?.id]
+      || "calm";
+    return CHARACTER_EXPRESSION_ALIASES[step?.speaker]?.[scriptedExpression] || scriptedExpression;
+  };
+  const portraitAssetForStep = (step) => (
+    CHARACTER_EXPRESSION_ASSETS[step?.speaker]?.[expressionForStep(step)] || ""
+  );
   const VIEWED_DEFAULTS = Object.freeze({
     gxDeepTime: false,
     mode03Forest: false,
@@ -1482,6 +1562,11 @@
     await Promise.all(urls.map(preloadBackgroundUrl));
   };
 
+  const preloadCharacterPortrait = (step) => {
+    const assetPath = portraitAssetForStep(step);
+    return assetPath ? preloadBackgroundUrl(`./${assetPath}`) : Promise.resolve();
+  };
+
   const nextPaint = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
   const waitForBackgroundPaint = async () => {
@@ -1530,7 +1615,10 @@
       const presentation = cue?.assetPath
         ? { image: `url("./${backgroundAssetForCue(cue)}")`, cueId: cue.id }
         : backgroundPresentationForStep(target);
-      await preloadBackground(presentation.image);
+      await Promise.all([
+        preloadBackground(presentation.image),
+        preloadCharacterPortrait(target),
+      ]);
       layer.dataset.sceneId = target.sceneId;
       layer.dataset.stepId = target.id;
       layer.dataset.stepType = target.type;
@@ -1587,9 +1675,13 @@
     const currentTrack = soundtrackForBackground(currentPresentation.image);
     const followingTrack = soundtrackForBackground(followingPresentation.image);
     if (followingTrack !== currentTrack) void window.GaiaOpeningAudio?.preloadTrack?.(followingTrack);
-    if (currentPresentation.image === followingPresentation.image) return;
-    const nextBackground = followingPresentation.image;
-    const warm = () => { void preloadBackground(nextBackground); };
+    const backgroundChanged = currentPresentation.image !== followingPresentation.image;
+    const portraitAsset = portraitAssetForStep(followingStep);
+    if (!backgroundChanged && !portraitAsset) return;
+    const warm = () => {
+      if (backgroundChanged) void preloadBackground(followingPresentation.image);
+      if (portraitAsset) void preloadBackgroundUrl(`./${portraitAsset}`);
+    };
     if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(warm, { timeout: 1200 });
     else window.setTimeout(warm, 0);
   };
@@ -1906,10 +1998,6 @@
     window.dispatchEvent(new CustomEvent("gaia:select-mode", { detail: { index, source: "novel-v6" } }));
   };
 
-  const expressionForStep = (step) => step?.speaker === "sakuya"
-    ? SAKUYA_STEP_EXPRESSIONS[step.id] || "calm"
-    : "calm";
-
   const isObjectiveOpeningRecord = (step) => step?.sceneId === "opening_empty_seat";
   const isPreMeetingRecordPresentation = (step) => (
     isObjectiveOpeningRecord(step) || step?.sceneId === "prologue_online_circle"
@@ -1935,9 +2023,26 @@
     }[legacySpeaker];
     elements.avatar.hidden = true;
     if (figure && figure.dataset.expression !== expression) {
+      const portrait = figure.querySelector(".novel-character-portrait:not(.novel-character-portrait--previous)");
+      const previousPortrait = figure.querySelector(".novel-character-portrait--previous");
+      const previousExpression = figure.dataset.expression || "calm";
+      const shouldCrossfade = Boolean(portrait && previousPortrait && !motionReduced());
       figure.classList.remove("is-changing");
+      if (shouldCrossfade) {
+        const portraitStyle = getComputedStyle(portrait);
+        previousPortrait.style.backgroundImage = portraitStyle.backgroundImage;
+        previousPortrait.style.backgroundPosition = portraitStyle.backgroundPosition;
+        previousPortrait.style.backgroundSize = portraitStyle.backgroundSize;
+        previousPortrait.style.backgroundRepeat = portraitStyle.backgroundRepeat;
+      } else if (previousPortrait) {
+        previousPortrait.removeAttribute("style");
+      }
+      figure.dataset.previousExpression = previousExpression;
       figure.dataset.expression = expression;
-      requestAnimationFrame(() => figure.classList.add("is-changing"));
+      if (shouldCrossfade) {
+        void figure.offsetWidth;
+        figure.classList.add("is-changing");
+      }
     }
   };
 

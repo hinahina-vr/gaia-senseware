@@ -2069,6 +2069,16 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
   mask-composite: intersect;
 }
 
+.novel-character-portrait:not(.novel-character-portrait--previous) {
+  z-index: 2;
+}
+
+.novel-character-portrait--previous {
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .novel-character--sora .novel-character-portrait {
   background-image: url("./assets/characters/amane-calm-07-v3.png");
   background-position: 50% 100%;
@@ -2145,8 +2155,12 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
   background-size: contain;
 }
 
-.novel-character.is-changing .novel-character-portrait {
-  animation: novel-expression-in 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+.novel-character.is-changing .novel-character-portrait:not(.novel-character-portrait--previous) {
+  animation: novel-expression-current-in 420ms ease both;
+}
+
+.novel-character.is-changing .novel-character-portrait--previous {
+  animation: novel-expression-previous-out 420ms ease both;
 }
 
 .novel-cast[data-speaker="sora"] .novel-character--sora,
@@ -3138,9 +3152,13 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
   100% { opacity: 1; }
 }
 @keyframes novel-continue { 50% { transform: translateY(4px); } }
-@keyframes novel-expression-in {
-  0% { opacity: 0.38; transform: translateY(5px); }
-  100% { opacity: 1; transform: translateY(0); }
+@keyframes novel-expression-current-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes novel-expression-previous-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 @keyframes novel-orbit-drift { to { transform: translate(-50%, -50%) rotate(360deg); } }
 @keyframes novel-rings-spin { to { transform: rotate(360deg); } }

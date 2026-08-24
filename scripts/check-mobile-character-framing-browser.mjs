@@ -20,8 +20,8 @@ const viewports = [
 const cases = [
   { name: "amane-normal", stepId: "festival_concept_032", cast: "novel-character-sora", portraitAsset: "amane-calm-07-v3.png" },
   { name: "mizuha-normal", stepId: "festival_concept_036", cast: "novel-character-minamo" },
-  { name: "mizuha-physical", stepId: "welcome_chat_055", cast: "novel-character-minamo" },
-  { name: "amane-physical", stepId: "welcome_chat_060", cast: "novel-character-sora", portraitAsset: "amane-calm-07-v3.png" },
+  { name: "mizuha-physical", stepId: "welcome_chat_055", cast: "novel-character-minamo", portraitAsset: "mizuha-worried-07-v2.png" },
+  { name: "amane-physical", stepId: "welcome_chat_060", cast: "novel-character-sora", portraitAsset: "amane-soft-07-v3.png" },
   { name: "first-encounter-cg", stepId: "festival_concept_015", eventCg: true, mobileAsset: "event-cg-first-encounter-five-plane-mobile-v2.png" },
   { name: "amane-closeup-cg", stepId: "festival_concept_021", eventCg: true },
   { name: "mizuha-closeup-cg", stepId: "festival_concept_023", eventCg: true },
@@ -57,6 +57,8 @@ const stateFor = (stepId) => ({
 const bootAt = async (page, stepId) => {
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
+  const storyVersion = await page.evaluate(() => globalThis.GAIA_NOVEL_STORY.storyVersion);
+  const candidate = { ...stateFor(stepId), storyVersion };
   await page.evaluate((candidate) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
     localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([
@@ -64,13 +66,9 @@ const bootAt = async (page, stepId) => {
     ]));
     localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
     localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
-  }, stateFor(stepId));
+  }, candidate);
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  const savePanel = page.locator("#novel-save-panel");
-  if (await savePanel.isVisible()) await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
   await page.waitForTimeout(120);
 };

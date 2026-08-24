@@ -137,9 +137,6 @@ const bootAt = async (page, stepId, label) => {
   await page.setContent(buildHarness(storage), { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((expected) => document.querySelector("#novel-layer")?.dataset.stepId === expected, stepId);
   await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete");
 };
