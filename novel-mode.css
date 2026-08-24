@@ -9686,7 +9686,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 
 .novel-staff-roll-transition-veil.is-revealing {
   opacity: 1;
-  animation: novel-staff-roll-exit-reveal 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: novel-staff-roll-exit-reveal 1800ms cubic-bezier(0.42, 0, 0.2, 1) both;
 }
 
 body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transition-phase="complete"])) .gaia-audio-dock {
@@ -9795,11 +9795,8 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
 }
 
 @keyframes novel-staff-roll-exit-reveal {
-  0% { opacity: 1; filter: brightness(1); }
-  22% { opacity: 0.88; filter: brightness(1.8); }
-  38% { opacity: 0.62; filter: brightness(1); }
-  58% { opacity: 0.3; filter: brightness(1.5); }
-  100% { opacity: 0; filter: brightness(1); }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 @keyframes novel-staff-roll-hint {

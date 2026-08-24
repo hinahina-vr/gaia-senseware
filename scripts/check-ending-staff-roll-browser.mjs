@@ -195,13 +195,19 @@ const scanTrueEndDestination = (page) => page.evaluate((storageKey) => {
   const layer = document.querySelector("#novel-layer");
   const shell = document.querySelector(".true-end-shell");
   const dialogue = document.querySelector(".true-end-dialogue");
+  const dialogueStyle = dialogue ? getComputedStyle(dialogue) : null;
   const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
   return {
     trueEndVisible: Boolean(shell),
     layerActive: layer?.classList.contains("is-true-end") ?? false,
     scene: shell?.dataset.scene || "",
+    entryPhase: shell?.dataset.entryPhase || "",
+    sectionTransitionPhase: shell?.dataset.sectionTransitionPhase || "",
     heading: document.querySelector(".true-end-scene-heading strong")?.textContent?.trim() || "",
+    message: document.querySelector(".true-end-message")?.textContent || "",
     dialogueHeight: dialogue?.getBoundingClientRect().height || 0,
+    dialogueVisibility: dialogueStyle?.visibility || "",
+    dialogueOpacity: dialogueStyle?.opacity || "",
     clear: globalThis.GaiaNovel?.getState?.().clear,
     archivesUnlocked: globalThis.GaiaNovel?.getState?.().archivesUnlocked,
     savedClear: saved.clear,
@@ -404,14 +410,26 @@ try {
     await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")));
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "revealing", null, { timeout: 8_000 });
     const revealObservedAt = Date.now();
-    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "complete", null, { timeout: 3_000 });
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "background", null, { timeout: 4_000 });
+    const backgroundFullyVisibleAt = Date.now();
+    const backgroundOnly = await scanTrueEndDestination(page);
+    assert.equal(backgroundOnly.entryPhase, "background", `${viewport.name}: message interface appeared before the background reveal completed`);
+    assert.equal(backgroundOnly.sectionTransitionPhase, "idle", `${viewport.name}: hidden NOVACENE scene card delayed the background reveal`);
+    assert.equal(backgroundOnly.message, "", `${viewport.name}: first message started behind the black veil`);
+    assert.equal(backgroundOnly.dialogueVisibility, "hidden", `${viewport.name}: message window was visible after the background finished revealing`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end-background-only.png`) });
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "complete", null, { timeout: 2_000 });
     const transitionCompletedAt = Date.now();
     assert(transitionHoldObservedAt - transitionStartedAt >= 600, `${viewport.name}: NOVACENE cover was too short (${transitionHoldObservedAt - transitionStartedAt}ms)`);
     assert(switchObservedAt - transitionHoldObservedAt >= 800, `${viewport.name}: full-black NOVACENE hold was too short (${switchObservedAt - transitionHoldObservedAt}ms)`);
     assert(switchObservedAt - transitionStartedAt >= 1_450, `${viewport.name}: NOVACENE entry did not build enough anticipation (${switchObservedAt - transitionStartedAt}ms)`);
-    assert(revealObservedAt - switchObservedAt >= 3_200, `${viewport.name}: initial NOVACENE separator was too short (${revealObservedAt - switchObservedAt}ms)`);
-    assert(transitionCompletedAt - revealObservedAt >= 600, `${viewport.name}: NOVACENE reveal was too short (${transitionCompletedAt - revealObservedAt}ms)`);
+    assert(backgroundFullyVisibleAt - revealObservedAt >= 1_650, `${viewport.name}: NOVACENE background reveal was too short (${backgroundFullyVisibleAt - revealObservedAt}ms)`);
+    assert(transitionCompletedAt - backgroundFullyVisibleAt >= 350, `${viewport.name}: completed background did not hold before the message (${transitionCompletedAt - backgroundFullyVisibleAt}ms)`);
     assert.equal(await page.locator(".novel-staff-roll-transition-veil").count(), 0, `${viewport.name}: transition veil remained after completion`);
+    await page.waitForFunction(() => {
+      const shell = document.querySelector(".true-end-shell");
+      return shell?.dataset.entryPhase === "ready" && Boolean(document.querySelector(".true-end-message")?.textContent);
+    }, null, { timeout: 2_000 });
     await page.waitForFunction(() => globalThis.GaiaNovel.getState().clear === true && globalThis.GaiaNovel.getState().archivesUnlocked === true);
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "trueend", null, { timeout: 6_500 });
     await page.waitForFunction(() => {
@@ -434,7 +452,7 @@ try {
     assert.equal(trueEndDestination.overflowY, 0);
     assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/sensory-horizon.wav") && [200, 206].includes(response.status)), `${viewport.name}: dedicated true-end score was not requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, afterBackgroundClick, controlAttempt, endHold, beforeFinale, completed, transition: { transitionStartedAt, holdObservedAt: transitionHoldObservedAt, switchObservedAt, revealObservedAt, transitionCompletedAt }, trueEndPlayback, trueEndDestination, passed: true });
+    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, afterBackgroundClick, controlAttempt, endHold, beforeFinale, completed, transition: { transitionStartedAt, holdObservedAt: transitionHoldObservedAt, switchObservedAt, revealObservedAt, backgroundFullyVisibleAt, transitionCompletedAt, backgroundOnly }, trueEndPlayback, trueEndDestination, passed: true });
     await context.close();
   }
 
@@ -454,6 +472,10 @@ try {
   await reducedPage.screenshot({ path: path.join(outputDir, "mobile-390-reduced.png"), animations: "disabled" });
   await reducedPage.locator(".novel-staff-roll-finale button").click();
   await reducedPage.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")));
+  await reducedPage.waitForFunction(() => {
+    const shell = document.querySelector(".true-end-shell");
+    return shell?.dataset.entryPhase === "ready" && Boolean(document.querySelector(".true-end-message")?.textContent);
+  });
   const reducedTrueEndDestination = await scanTrueEndDestination(reducedPage);
   assert.equal(reducedTrueEndDestination.trueEndVisible, true);
   assert.equal(reducedTrueEndDestination.layerActive, true);

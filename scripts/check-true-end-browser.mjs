@@ -103,7 +103,7 @@ const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
     const shell = document.querySelector(".true-end-shell");
     return shell && !shell.classList.contains("is-scene-separating")
       && Boolean(document.querySelector(".true-end-message")?.textContent);
-  }, null, { timeout: 5_000 });
+  }, null, { timeout: 8_000 });
   await page.waitForFunction(() => globalThis.GaiaTrueEnd?.isReached?.() === true);
 };
 

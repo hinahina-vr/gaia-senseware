@@ -42,7 +42,7 @@
     return node;
   };
 
-  const createRuntime = ({ host, layer, onComplete, onExit, onStepRead, onLogOpen, onReady }) => {
+  const createRuntime = ({ host, layer, onComplete, onExit, onStepRead, onLogOpen, onReady, deferInterfaceReveal = false }) => {
     if (!(host instanceof HTMLElement) || !(layer instanceof HTMLElement)) return null;
 
     let sceneIndex = 0;
@@ -59,11 +59,13 @@
     let sceneCardFadeTimer = 0;
     let sceneCardFadeResolve = null;
     let renderRevision = 0;
+    let deferredInitialStep = null;
 
     const shell = createElement("section", "true-end-shell");
     shell.tabIndex = 0;
     shell.setAttribute("role", "region");
     shell.setAttribute("aria-label", "惑星の放課後 GAIA SENSATION NOVACENE。画面をクリックまたはタップするか、Enterキーまたはスペースキーで進みます");
+    if (deferInterfaceReveal) shell.dataset.entryPhase = "background";
 
     const universe = createElement("canvas", "true-end-universe");
     universe.setAttribute("aria-hidden", "true");
@@ -115,6 +117,11 @@
 
     const interfaceLayer = createElement("div", "true-end-interface");
     interfaceLayer.append(header, progress, readout, dialogue, footer);
+    if (deferInterfaceReveal) {
+      interfaceLayer.setAttribute("aria-hidden", "true");
+      dialogue.disabled = true;
+      logButton.disabled = true;
+    }
 
     const finale = createElement("section", "true-end-finale");
     finale.hidden = true;
@@ -413,6 +420,22 @@
 
     const renderStep = async () => commitPreparedStep(await prepareStep());
 
+    const revealEntry = () => {
+      if (!deferredInitialStep || shell.dataset.entryPhase !== "background") return false;
+      const prepared = deferredInitialStep;
+      deferredInitialStep = null;
+      shell.dataset.entryPhase = "interface";
+      interfaceLayer.removeAttribute("aria-hidden");
+      dialogue.disabled = false;
+      logButton.disabled = false;
+      const committed = commitPreparedStep(prepared);
+      transitioning = false;
+      requestAnimationFrame(() => {
+        if (shell.isConnected && shell.dataset.entryPhase === "interface") shell.dataset.entryPhase = "ready";
+      });
+      return committed;
+    };
+
     const showFinale = () => {
       stopReveal();
       complete = true;
@@ -520,19 +543,31 @@
     finaleExit.addEventListener("click", () => onExit?.());
 
     transitioning = true;
-    shell.classList.add("is-scene-separating");
     syncSceneMetadata();
-    void revealSceneAfterSeparator({
-      switchScene: async () => {
+    if (deferInterfaceReveal) {
+      void (async () => {
         await syncSceneBackdrop({ immediate: true });
-        return prepareStep();
-      },
-      onSceneReady: onReady,
-    });
+        const prepared = await prepareStep();
+        if (!prepared || !shell.isConnected || complete) return;
+        deferredInitialStep = prepared;
+        setSceneTransitionPhase("idle");
+        onReady?.({ shell });
+      })();
+    } else {
+      shell.classList.add("is-scene-separating");
+      void revealSceneAfterSeparator({
+        switchScene: async () => {
+          await syncSceneBackdrop({ immediate: true });
+          return prepareStep();
+        },
+        onSceneReady: onReady,
+      });
+    }
     requestAnimationFrame(() => shell.focus({ preventScroll: true }));
 
     return Object.freeze({
       shell,
+      revealEntry,
       destroy() {
         renderRevision += 1;
         document.body.classList.remove("true-end-section-transition");

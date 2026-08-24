@@ -97,6 +97,26 @@
   opacity: 1;
 }
 
+/* The staff-roll handoff reveals the future field by itself first. The
+   interface is released only after the black veil has completely cleared. */
+.true-end-shell[data-entry-phase] :is(.true-end-interface, .true-end-log-button) {
+  transition: opacity 560ms ease, filter 560ms ease;
+}
+
+.true-end-shell[data-entry-phase="background"] :is(.true-end-interface, .true-end-log-button) {
+  visibility: hidden;
+  opacity: 0;
+  filter: blur(5px);
+  pointer-events: none;
+}
+
+.true-end-shell[data-entry-phase="interface"] :is(.true-end-interface, .true-end-log-button),
+.true-end-shell[data-entry-phase="ready"] :is(.true-end-interface, .true-end-log-button) {
+  visibility: visible;
+  opacity: 1;
+  filter: none;
+}
+
 .true-end-header {
   position: absolute;
   z-index: 6;

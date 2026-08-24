@@ -114,7 +114,8 @@
   const STAFF_ROLL_FINALIZE_MS = 360;
   const STAFF_ROLL_EXIT_COVER_MS = 720;
   const STAFF_ROLL_EXIT_HOLD_MS = 900;
-  const STAFF_ROLL_EXIT_REVEAL_MS = 720;
+  const STAFF_ROLL_EXIT_REVEAL_MS = 1800;
+  const STAFF_ROLL_ENTRY_BACKGROUND_HOLD_MS = 480;
   const LOG_FOLLOW_THRESHOLD_PX = 72;
   const SLACK_ATTACHMENT_ASSETS = Object.freeze({
     BASIL: {
@@ -4060,7 +4061,7 @@
   };
 
   let activeTrueEndRuntime = null;
-  const launchTrueEnd = ({ persistClear = true, onReady } = {}) => {
+  const launchTrueEnd = ({ persistClear = true, onReady, deferInterfaceReveal = false } = {}) => {
     state.clear = true;
     state.archivesUnlocked = true;
     if (persistClear) saveProgress();
@@ -4096,6 +4097,7 @@
         if (persistClear) window.GaiaTrueEnd?.markReached?.();
         onReady?.();
       },
+      deferInterfaceReveal,
       onComplete: () => {
         state.trueEndComplete = true;
         saveProgress();
@@ -4263,24 +4265,36 @@
         layer.classList.remove("is-true-end-transitioning");
         layer.dataset.trueEndTransitionPhase = "complete";
       };
+      const completeTrueEndEntry = () => {
+        finishTransition();
+        activeTrueEndRuntime?.revealEntry?.();
+      };
+      const holdFullBackground = () => {
+        veil.remove();
+        layer.dataset.trueEndTransitionPhase = "background";
+        staffRollFinaleTimer = window.setTimeout(() => {
+          staffRollFinaleTimer = 0;
+          completeTrueEndEntry();
+        }, STAFF_ROLL_ENTRY_BACKGROUND_HOLD_MS);
+      };
       const revealTrueEnd = () => {
         if (!veil.isConnected) return;
         layer.dataset.trueEndTransitionPhase = "revealing";
         if (motionReduced()) {
-          finishTransition();
+          completeTrueEndEntry();
           return;
         }
         veil.classList.remove("is-covering");
         veil.classList.add("is-revealing");
         staffRollFinaleTimer = window.setTimeout(() => {
           staffRollFinaleTimer = 0;
-          finishTransition();
+          holdFullBackground();
         }, STAFF_ROLL_EXIT_REVEAL_MS);
       };
       const switchToTrueEnd = () => {
         staffRollFinaleTimer = 0;
         layer.dataset.trueEndTransitionPhase = "switching";
-        const launched = launchTrueEnd({ onReady: revealTrueEnd });
+        const launched = launchTrueEnd({ onReady: revealTrueEnd, deferInterfaceReveal: true });
         if (launched) return;
         veil.remove();
         layer.classList.remove("is-true-end-transitioning");
