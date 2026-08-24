@@ -123,22 +123,26 @@
         text-transform: uppercase;
       }
       .gaia-boot__eyebrow {
-        margin: 0 0 18px;
+        margin: 0 0 10px;
         color: rgba(var(--boot-mint), 0.68);
         font-size: clamp(8px, 1vw, 11px);
         font-weight: 700;
         letter-spacing: 0.27em;
       }
-      .gaia-boot__title {
-        margin: 0;
-        color: #edf6f4;
-        font-size: clamp(28px, 5.2vw, 64px);
-        font-weight: 300;
-        line-height: 1.18;
-        letter-spacing: 0.04em;
-        text-shadow: 0 0 28px rgba(var(--boot-mint), 0.08);
+      .gaia-boot__logo {
+        display: block;
+        width: min(100%, 590px);
+        height: auto;
+        margin: -3% 0 -4%;
+        filter: drop-shadow(0 0 18px rgba(var(--boot-blue), 0.16));
       }
-      .gaia-boot__title span { color: rgba(218, 234, 231, 0.48); }
+      .gaia-boot__tagline {
+        margin: 6px 0 0;
+        color: rgba(218, 234, 231, 0.5);
+        font-size: clamp(10px, 1.25vw, 13px);
+        font-weight: 500;
+        letter-spacing: 0.19em;
+      }
       .gaia-boot__rail {
         position: relative;
         height: 2px;
@@ -192,6 +196,7 @@
         .gaia-boot__planet { width: min(42vw, 164px); }
         .gaia-boot__copy { text-align: center; }
         .gaia-boot__eyebrow { margin-bottom: 14px; }
+        .gaia-boot__logo { width: min(100%, 520px); margin-inline: auto; }
         .gaia-boot__status { justify-content: center; }
         .gaia-boot__telemetry { font-size: 7px; }
       }
@@ -248,7 +253,16 @@
         </div>
         <div class="gaia-boot__copy">
           <p class="gaia-boot__eyebrow">GAIA SENSATION / PLANETARY LINK</p>
-          <p class="gaia-boot__title">惑星の感覚を<br /><span>接続しています</span></p>
+          <img
+            class="gaia-boot__logo"
+            src="./assets/brand/brand-logo-dark-surface.png"
+            width="2172"
+            height="724"
+            alt="惑星の放課後 — GAIA SENSATION"
+            decoding="async"
+            fetchpriority="high"
+          />
+          <p class="gaia-boot__tagline">惑星の感覚を接続しています</p>
           <div class="gaia-boot__rail" aria-hidden="true"></div>
           <div class="gaia-boot__telemetry" aria-hidden="true">
             <span>EARTH / 35.18N</span>
