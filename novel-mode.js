@@ -114,7 +114,7 @@
   const STAFF_ROLL_FINALIZE_MS = 360;
   const STAFF_ROLL_EXIT_COVER_MS = 720;
   const STAFF_ROLL_EXIT_HOLD_MS = 900;
-  const STAFF_ROLL_EXIT_REVEAL_MS = 1800;
+  const STAFF_ROLL_EXIT_REVEAL_MS = 3600;
   const STAFF_ROLL_ENTRY_BACKGROUND_HOLD_MS = 480;
   const LOG_FOLLOW_THRESHOLD_PX = 72;
   const SLACK_ATTACHMENT_ASSETS = Object.freeze({
@@ -4186,7 +4186,15 @@
       { role: "制作支援", department: "PRODUCTION SUPPORT", names: ["OpenAI Codex"] },
       { role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["ひなひな", "OpenAI ImageGen"] },
       { role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] },
-      { role: "音楽", department: "MUSIC", names: ["AfterSchool Afterglow", "glitchyeventdj664"] },
+      {
+        role: "音楽",
+        department: "MUSIC",
+        names: [
+          "オープニングテーマ『Planet Forecast - Hope』",
+          "エンディングテーマ『AterSchool, AfterGlow』",
+          "by Suno.ai",
+        ],
+      },
       { role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』", "ZEN大学『人新世の人類学』"] },
       { role: "参照データ", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] },
     ].forEach(({ role, department, names, note = "" }) => {
@@ -5361,6 +5369,11 @@
       : resolveVisibleStep(scene.steps.at(-1)?.id);
     if (!target) return;
 
+    const sourceStep = currentStep();
+    const currentBackground = backgroundPresentationForStep(sourceStep);
+    const nextBackground = backgroundPresentationForStep(target);
+    const backgroundChanges = currentBackground.image !== nextBackground.image;
+
     sectionSkipPending = true;
     elements.close.disabled = true;
     resetFastForward();
@@ -5369,7 +5382,17 @@
       if (!state.reachedSceneIds.includes(scene.id)) state.reachedSceneIds.push(scene.id);
       state.stepId = target.id;
       saveProgress();
-      if (nextScene) renderSectionSeparator(target);
+      if (nextScene) {
+        deferredSectionBackgroundTransition = backgroundChanges
+          ? {
+            stepId: target.id,
+            fromStepId: sourceStep.id,
+            currentBackground,
+            nextBackground,
+          }
+          : null;
+        renderSectionSeparator(target);
+      }
       else renderCurrentStep();
     };
     Promise.resolve(runSceneTransition(swapSection, event)).finally(() => {

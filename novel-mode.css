@@ -7443,7 +7443,6 @@ body.novel-open .japan-layer[data-story-mode="map01"] .japan-close {
 .novel-topbar .novel-jump-item[aria-current="true"] {
   color: #fff;
   background: linear-gradient(90deg, rgba(74, 159, 218, 0.2), rgba(74, 159, 218, 0.05));
-  box-shadow: inset 2px 0 rgba(137, 211, 255, 0.78);
 }
 
 .novel-jump-index {
@@ -9230,6 +9229,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 
 .novel-staff-roll {
   --novel-staff-roll-duration: 76s;
+  --novel-staff-roll-start-offset: -2.65s;
   --novel-staff-roll-closing-gap: 55dvh;
   --novel-staff-roll-viewport-height: 100dvh;
   position: absolute;
@@ -9368,7 +9368,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   width: min(680px, calc(100% - 48px));
   margin: 0 auto;
   will-change: transform;
-  animation: novel-staff-roll-rise var(--novel-staff-roll-duration) 2.65s linear both;
+  /* Skip only the offscreen lead-in; the credit velocity and readable span stay unchanged. */
+  animation: novel-staff-roll-rise var(--novel-staff-roll-duration) var(--novel-staff-roll-start-offset) linear both;
 }
 
 .novel-staff-roll-title {
@@ -9686,7 +9687,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 
 .novel-staff-roll-transition-veil.is-revealing {
   opacity: 1;
-  animation: novel-staff-roll-exit-reveal 1800ms cubic-bezier(0.42, 0, 0.2, 1) both;
+  animation: novel-staff-roll-exit-reveal 3600ms cubic-bezier(0.42, 0, 0.2, 1) both;
 }
 
 body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transition-phase="complete"])) .gaia-audio-dock {

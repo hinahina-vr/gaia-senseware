@@ -98,6 +98,17 @@
       return 1.0 - smoothstep(width, width * 2.6, distanceToLine);
     }
 
+    vec2 defragSlot(vec2 id, float tick) {
+      vec2 seed = id + vec2(tick * 7.31, tick * 13.17);
+      float axisChoice = step(0.5, hash21(seed + 5.7));
+      float direction = step(0.5, hash21(seed + 17.3)) * 2.0 - 1.0;
+      float distance = mix(0.06, 0.18, hash21(seed + 29.1));
+      float crossJitter = (hash21(seed + 43.9) - 0.5) * 0.08;
+      vec2 horizontalSlot = vec2(direction * distance, crossJitter);
+      vec2 verticalSlot = vec2(crossJitter, direction * distance);
+      return mix(horizontalSlot, verticalSlot, axisChoice);
+    }
+
     vec3 centralBreath(vec2 p) {
       vec2 g = p;
       float phase = u_time * 0.34 + u_signal * 6.2831;
@@ -111,17 +122,32 @@
     vec3 signalSurge(vec2 p) {
       vec2 g = p;
       float phase = u_time * 1.18 + u_signal * 8.0;
-      vec2 matrixUv = g * vec2(8.0, 5.0) + vec2(phase * 0.12, -phase * 0.42);
+      vec2 matrixUv = g * vec2(8.0, 5.0);
       vec2 matrixId = floor(matrixUv);
-      vec2 cell = abs(fract(matrixUv) - 0.5);
-      float blocks = 1.0 - smoothstep(0.24, 0.43, max(cell.x, cell.y));
-      blocks *= step(0.48, hash21(matrixId + floor(phase * 0.24)));
+      vec2 matrixCell = fract(matrixUv) - 0.5;
+      float cellSeed = hash21(matrixId + 13.7);
+      float cellTempo = mix(0.46, 0.92, hash21(matrixId + 37.1));
+      float cellClock = u_time * cellTempo + cellSeed * 23.0;
+      float cellStep = floor(cellClock);
+      float cellPhase = fract(cellClock);
+      vec2 previousSlot = defragSlot(matrixId, cellStep);
+      vec2 nextSlot = defragSlot(matrixId, cellStep + 1.0);
+      float hop = smoothstep(0.08, 0.38, cellPhase);
+      vec2 cellOffset = mix(previousSlot, nextSlot, hop);
+      vec2 cell = abs(matrixCell - cellOffset);
+      float cellSize = mix(0.18, 0.27, hash21(matrixId + 61.9));
+      float blocks = 1.0 - smoothstep(cellSize, cellSize + 0.12, max(cell.x, cell.y));
+      float previousActivity = step(0.4, hash21(matrixId + vec2(cellStep * 3.71, cellStep * 7.13) + 71.0));
+      float nextActivity = step(0.4, hash21(matrixId + vec2((cellStep + 1.0) * 3.71, (cellStep + 1.0) * 7.13) + 71.0));
+      float activity = mix(previousActivity, nextActivity, smoothstep(0.06, 0.34, cellPhase));
+      float cellPulse = 0.78 + 0.22 * step(0.48, hash21(matrixId + floor(cellClock * 5.0) + 93.0));
+      blocks *= activity * cellPulse;
       float scanRow = softLine(abs(fract((g.y + 1.4) * 1.8 - phase * 0.19) - 0.5), 0.065);
       float columns = smoothstep(0.7, 0.94, 0.5 + 0.5 * cos(g.x * 18.0 + phase * 0.7));
       float dataNoise = smoothstep(0.42, 0.76, fbm(g * 3.2 + vec2(phase * 0.13, -phase * 0.1)));
       float center = exp(-2.1 * dot(g, g));
       vec3 electric = mix(vec3(0.18, 0.9, 1.0), vec3(0.92, 1.0, 1.0), center);
-      return electric * (blocks * (0.56 + dataNoise * 0.3) + scanRow * 0.72 + columns * 0.24 + center * 0.3);
+      return electric * (blocks * (0.56 + dataNoise * 0.3) + scanRow * 0.64 + columns * 0.16 + center * 0.3);
     }
 
     vec3 weaveStorm(vec2 p) {
@@ -421,7 +447,9 @@
     let presenceTarget = -1;
     let presenceFromGain = 1;
     let presenceTransitionStartedAt = performance.now();
-    const presenceTransitionDuration = 380;
+    const defaultPresenceTransitionDuration = 380;
+    const aivaFadeOutDuration = 760;
+    let presenceTransitionDuration = defaultPresenceTransitionDuration;
     let presenceSignalFrom = 0;
     let presenceSignalTarget = 0;
     let presenceEmphasisFrom = 0;
@@ -633,13 +661,18 @@
         const isSamePresence = presenceTarget === next.index;
         settlePresenceTransition(true);
         if (shouldJump) {
+          presenceTransitionDuration = defaultPresenceTransitionDuration;
           presenceFrom = next.index;
           presenceTarget = next.index;
           presenceFromGain = 1;
           presenceTransitionStartedAt = now - presenceTransitionDuration;
         } else if (!isSamePresence) {
           const sourceIsTarget = currentPresence.targetGain >= currentPresence.fromGain;
-          presenceFrom = sourceIsTarget ? presenceTarget : presenceFrom;
+          const sourcePresence = sourceIsTarget ? presenceTarget : presenceFrom;
+          presenceTransitionDuration = sourcePresence === PRESENCES.system.index
+            ? aivaFadeOutDuration
+            : defaultPresenceTransitionDuration;
+          presenceFrom = sourcePresence;
           presenceFromGain = Math.max(currentPresence.targetGain, currentPresence.fromGain);
           presenceTarget = next.index;
           presenceTransitionStartedAt = now;
@@ -653,6 +686,7 @@
         canvas.dataset.webglManifestation = next.manifestation;
         canvas.dataset.webglSignal = presenceSignalTarget.toFixed(6);
         canvas.dataset.webglEmphasis = emphasis ? "true" : "false";
+        canvas.dataset.webglPresenceDuration = String(presenceTransitionDuration);
         if (shouldJump || isSamePresence) canvas.dataset.webglPresenceCompletedAt = now.toFixed(3);
         else delete canvas.dataset.webglPresenceCompletedAt;
         const completion = shouldJump || isSamePresence

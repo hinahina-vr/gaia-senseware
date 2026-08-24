@@ -134,6 +134,7 @@ const scanEnding = (page) => page.evaluate(() => {
     trackY: track?.getBoundingClientRect().y || 0,
     trackAnimation: trackStyle.animationName,
     trackDuration: trackStyle.animationDuration,
+    trackDelay: trackStyle.animationDelay,
     closingGap: closingRect && lastCreditRect ? closingRect.top - lastCreditRect.bottom : 0,
     whiteoutAnimation: whiteoutStyle.animationName,
     stageBackground: stageStyle.backgroundImage,
@@ -236,6 +237,7 @@ try {
     assert.equal(initial.whiteoutAnimation, "novel-staff-roll-whiteout");
     assert.equal(initial.trackAnimation, "novel-staff-roll-rise");
     assert.equal(initial.trackDuration, viewport.name === "mobile-390" ? "70s" : "76s");
+    assert.equal(initial.trackDelay, "-2.65s", `${viewport.name}: staff-roll offscreen lead-in was not shortened`);
     assert(initial.closingGap >= viewport.height * 0.5, `${viewport.name}: closing poem gap is too short (${initial.closingGap}px)`);
     assert.equal(initial.buttonHidden, true, `${viewport.name}: END action was shown before the roll`);
     assert.equal(initial.closingMarkText, "Thank you for playing");
@@ -254,8 +256,9 @@ try {
       "OpenAI ImageGen",
       "背景美術",
       "音楽",
-      "AfterSchool Afterglow",
-      "glitchyeventdj664",
+      "オープニングテーマ『Planet Forecast - Hope』",
+      "エンディングテーマ『AterSchool, AfterGlow』",
+      "by Suno.ai",
       "ZEN大学『共創地球論』",
       "ZEN大学『人新世の人類学』",
       "参照データ",
@@ -282,8 +285,9 @@ try {
     });
     const musicCredit = initial.creditRows.find((row) => row.role === "MUSIC");
     assert.deepEqual(musicCredit?.names, [
-      "AfterSchool Afterglow",
-      "glitchyeventdj664",
+      "オープニングテーマ『Planet Forecast - Hope』",
+      "エンディングテーマ『AterSchool, AfterGlow』",
+      "by Suno.ai",
     ], `${viewport.name}: music credit wording or order is incorrect`);
     assert.equal(musicCredit?.nameOverflow, false, `${viewport.name}: music credit overflows horizontally`);
     assert.equal(initial.overflowX, 0);
@@ -414,7 +418,7 @@ try {
     await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")));
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "revealing", null, { timeout: 8_000 });
     const revealObservedAt = Date.now();
-    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "background", null, { timeout: 4_000 });
+    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.trueEndTransitionPhase === "background", null, { timeout: 6_000 });
     const backgroundFullyVisibleAt = Date.now();
     const backgroundOnly = await scanTrueEndDestination(page);
     assert.equal(backgroundOnly.entryPhase, "background", `${viewport.name}: message interface appeared before the background reveal completed`);
@@ -427,7 +431,7 @@ try {
     assert(transitionHoldObservedAt - transitionStartedAt >= 600, `${viewport.name}: NOVACENE cover was too short (${transitionHoldObservedAt - transitionStartedAt}ms)`);
     assert(switchObservedAt - transitionHoldObservedAt >= 800, `${viewport.name}: full-black NOVACENE hold was too short (${switchObservedAt - transitionHoldObservedAt}ms)`);
     assert(switchObservedAt - transitionStartedAt >= 1_450, `${viewport.name}: NOVACENE entry did not build enough anticipation (${switchObservedAt - transitionStartedAt}ms)`);
-    assert(backgroundFullyVisibleAt - revealObservedAt >= 1_650, `${viewport.name}: NOVACENE background reveal was too short (${backgroundFullyVisibleAt - revealObservedAt}ms)`);
+    assert(backgroundFullyVisibleAt - revealObservedAt >= 3_450, `${viewport.name}: NOVACENE background reveal was too short (${backgroundFullyVisibleAt - revealObservedAt}ms)`);
     assert(transitionCompletedAt - backgroundFullyVisibleAt >= 350, `${viewport.name}: completed background did not hold before the message (${transitionCompletedAt - backgroundFullyVisibleAt}ms)`);
     assert.equal(await page.locator(".novel-staff-roll-transition-veil").count(), 0, `${viewport.name}: transition veil remained after completion`);
     await page.waitForFunction(() => {

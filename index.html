@@ -71,51 +71,8 @@
       }
       .gaia-boot__shell {
         width: min(820px, 100%);
-        display: grid;
-        grid-template-columns: minmax(156px, 0.55fr) minmax(0, 1.45fr);
-        gap: clamp(28px, 6vw, 72px);
-        align-items: center;
       }
-      .gaia-boot__planet {
-        position: relative;
-        width: min(30vw, 190px);
-        aspect-ratio: 1;
-        justify-self: center;
-      }
-      .gaia-boot__planet::before,
-      .gaia-boot__planet::after,
-      .gaia-boot__orbit,
-      .gaia-boot__core { position: absolute; border-radius: 50%; }
-      .gaia-boot__planet::before {
-        content: "";
-        inset: 8%;
-        border: 1px solid rgba(var(--boot-mint), 0.26);
-        box-shadow: inset 0 0 32px rgba(var(--boot-blue), 0.08), 0 0 38px rgba(var(--boot-mint), 0.05);
-      }
-      .gaia-boot__planet::after {
-        content: "";
-        inset: 26%;
-        background:
-          radial-gradient(circle at 35% 30%, rgba(236, 255, 250, 0.78), transparent 6%),
-          radial-gradient(circle at 50% 50%, rgba(var(--boot-mint), 0.4), rgba(var(--boot-blue), 0.12) 52%, transparent 70%);
-        box-shadow: 0 0 44px rgba(var(--boot-mint), 0.18);
-        animation: gaia-boot-breathe 2.2s ease-in-out infinite;
-      }
-      .gaia-boot__orbit { inset: 0; border: 1px solid rgba(var(--boot-blue), 0.24); animation: gaia-boot-orbit 7s linear infinite; }
-      .gaia-boot__orbit::before,
-      .gaia-boot__orbit::after {
-        content: "";
-        position: absolute;
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: rgb(var(--boot-mint));
-        box-shadow: 0 0 16px rgba(var(--boot-mint), 0.9);
-      }
-      .gaia-boot__orbit::before { top: 10%; left: 22%; }
-      .gaia-boot__orbit::after { right: 4%; bottom: 28%; width: 4px; height: 4px; opacity: 0.72; }
-      .gaia-boot__core { inset: 18%; border: 1px dashed rgba(var(--boot-mint), 0.21); animation: gaia-boot-orbit 11s linear infinite reverse; }
-      .gaia-boot__copy { min-width: 0; }
+      .gaia-boot__copy { min-width: 0; text-align: center; }
       .gaia-boot__eyebrow,
       .gaia-boot__telemetry,
       .gaia-boot__status {
@@ -133,7 +90,7 @@
         display: block;
         width: min(100%, 590px);
         height: auto;
-        margin: -3% 0 -4%;
+        margin: -3% auto -4%;
         filter: drop-shadow(0 0 18px rgba(var(--boot-blue), 0.16));
       }
       .gaia-boot__tagline {
@@ -170,6 +127,7 @@
       .gaia-boot__status {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 9px;
         margin: 26px 0 0;
         color: rgba(var(--boot-mint), 0.72);
@@ -186,25 +144,16 @@
         animation: gaia-boot-blink 1s steps(2, end) infinite;
       }
       @keyframes gaia-boot-scan { to { transform: translateX(75%); } }
-      @keyframes gaia-boot-orbit { to { transform: rotate(360deg); } }
-      @keyframes gaia-boot-breathe { 50% { transform: scale(1.08); opacity: 0.72; } }
       @keyframes gaia-boot-rail { from { transform: translateX(-105%); } to { transform: translateX(265%); } }
       @keyframes gaia-boot-blink { 50% { opacity: 0.3; } }
       @media (max-width: 620px) {
         .gaia-boot { padding: 26px; }
-        .gaia-boot__shell { grid-template-columns: 1fr; gap: 30px; }
-        .gaia-boot__planet { width: min(42vw, 164px); }
-        .gaia-boot__copy { text-align: center; }
         .gaia-boot__eyebrow { margin-bottom: 14px; }
         .gaia-boot__logo { width: min(100%, 520px); margin-inline: auto; }
-        .gaia-boot__status { justify-content: center; }
         .gaia-boot__telemetry { font-size: 7px; }
       }
       @media (prefers-reduced-motion: reduce) {
         .gaia-boot::after,
-        .gaia-boot__orbit,
-        .gaia-boot__core,
-        .gaia-boot__planet::after,
         .gaia-boot__rail::before,
         .gaia-boot__status::before { animation: none !important; }
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
@@ -247,10 +196,6 @@
   <body>
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
       <div class="gaia-boot__shell">
-        <div class="gaia-boot__planet" aria-hidden="true">
-          <i class="gaia-boot__orbit"></i>
-          <i class="gaia-boot__core"></i>
-        </div>
         <div class="gaia-boot__copy">
           <p class="gaia-boot__eyebrow">GAIA SENSATION / PLANETARY LINK</p>
           <img
@@ -386,8 +331,15 @@
             <div class="gaia-vn-final-copy">
               <p>GAIA SENSATION / INTERACTIVE SYSTEM</p>
               <h1 class="gaia-vn-work-title" data-opening-focus>
-                <span>惑星の放課後</span>
-                <small>GAIA SENSATION</small>
+                <img
+                  class="gaia-vn-work-logo"
+                  src="./assets/brand/brand-logo-dark-surface.png"
+                  width="2172"
+                  height="724"
+                  alt="惑星の放課後 — GAIA SENSATION"
+                  decoding="async"
+                  fetchpriority="high"
+                />
               </h1>
               <div class="gaia-vn-final-choice">
                 <strong data-opening-focus>人間と地球は、どんな次の関係を選べるだろう。</strong>

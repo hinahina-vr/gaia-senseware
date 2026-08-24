@@ -36,6 +36,7 @@ try {
     });
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "commit" });
     await page.locator("#gaia-boot").waitFor({ state: "visible" });
+    assert.equal(await page.locator(".gaia-boot__planet").count(), 0, `${viewport.name}: removed boot planet returned`);
     await page.waitForFunction(() => {
       const logo = document.querySelector(".gaia-boot__logo");
       return logo instanceof HTMLImageElement && logo.complete && logo.naturalWidth > 0;

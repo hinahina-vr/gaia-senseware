@@ -37,6 +37,7 @@ const report = {
   responses404: [],
   audioResponses: [],
   presenceFades: [],
+  aivaDefragMotion: [],
 };
 
 const attachDiagnostics = (page, label) => {
@@ -340,13 +341,17 @@ try {
   assert.doesNotMatch(trueEndModeSource, /createElement\("img"/u, "TRANSMISSION still creates a raster image element");
   assert.match(trueEndWebGLSource, /setPresence\(name/u, "WebGL presence controller is missing");
   assert.match(trueEndWebGLSource, /u_speaker_mix/u, "WebGL presence crossfade is missing");
-  assert.match(trueEndWebGLSource, /const presenceTransitionDuration = 380/u, "presence crossfade is not twice as fast");
+  assert.match(trueEndWebGLSource, /const defaultPresenceTransitionDuration = 380/u, "the default presence crossfade duration changed unexpectedly");
+  assert.match(trueEndWebGLSource, /const aivaFadeOutDuration = 760/u, "AIVA's longer fade-out duration is missing");
+  assert.match(trueEndWebGLSource, /sourcePresence === PRESENCES\.system\.index[\s\S]*\? aivaFadeOutDuration[\s\S]*: defaultPresenceTransitionDuration/u, "AIVA's longer fade-out is not scoped to transitions away from AIVA");
   assert.match(trueEndModeSource, /await \(universeRuntime\?\.setPresence/u, "message rendering does not await the completed presence crossfade");
   assert.match(trueEndWebGLSource, /if \(speaker < -0\.5\) return vec3\(0\.0\)/u, "first presence cannot fade in from transparent");
   assert.match(trueEndWebGLSource, /presenceField\(p, u_speaker_from\)[\s\S]*presenceFadeOut[\s\S]*presenceField\(p, u_speaker_to\)[\s\S]*presenceFadeIn/u, "presence shader does not fade the old character out and the new character in");
   assert.match(trueEndWebGLSource, /signalStateAt\(now\)/u, "per-line presence signal still changes in one frame");
   assert.doesNotMatch(trueEndWebGLSource, /0\.52 \+ 0\.48 \* u_speaker_mix/u, "new character still appears at partial strength on its first frame");
-  assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*vec2 matrixUv[\s\S]*float blocks[\s\S]*float scanRow[\s\S]*float columns/u, "AIVA's rectangular signal matrix is missing");
+  assert.match(trueEndWebGLSource, /vec2 defragSlot[\s\S]*float axisChoice[\s\S]*float direction[\s\S]*float distance[\s\S]*float crossJitter/u, "AIVA's per-cell defrag destinations are missing");
+  assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*vec2 matrixUv = g \* vec2\(8\.0, 5\.0\)[\s\S]*float cellClock[\s\S]*vec2 previousSlot[\s\S]*vec2 nextSlot[\s\S]*float hop[\s\S]*float blocks[\s\S]*float scanRow[\s\S]*float columns/u, "AIVA's asynchronous rectangular signal matrix is missing");
+  assert.doesNotMatch(trueEndWebGLSource, /vec2 matrixUv = g \* vec2\(8\.0, 5\.0\) \+ vec2\(phase/u, "AIVA's cells still move together as one matrix");
   assert.match(trueEndWebGLSource, /vec3 weaveStorm[\s\S]*float warpThreads[\s\S]*float weftThreads[\s\S]*float diagonalThread[\s\S]*float crossings/u, "Lou's living loom is missing");
   assert.match(trueEndWebGLSource, /vec3 tidalSurge[\s\S]*float distanceFromDrop[\s\S]*float rippleA[\s\S]*float rippleB[\s\S]*float reflectedWater[\s\S]*float drop/u, "Mizuha's water ripples are missing");
   assert.match(trueEndWebGLSource, /vec3 skyCurrent[\s\S]*float skyPressure[\s\S]*float fallingMemory[\s\S]*float descendingVeil[\s\S]*float pressureFront[\s\S]*float downwardPulse/u, "Amane's abstract sky veil is missing");
@@ -808,6 +813,20 @@ try {
     const separatorPage = await separatorContext.newPage();
     attachDiagnostics(separatorPage, `${viewport.name}-separator-flow`);
     await bootAtTrueEnd(separatorPage, `${viewport.name}-separator-flow`);
+    const aivaDefragStart = await scanFrame(separatorPage);
+    assert.equal(aivaDefragStart.speaker, "system", `${viewport.name}: AIVA is unavailable for the defrag-motion check`);
+    assert.equal(aivaDefragStart.universeManifestation, "signal-matrix", `${viewport.name}: AIVA's signal matrix is unavailable for the defrag-motion check`);
+    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-defrag-01.png`) });
+    await separatorPage.waitForTimeout(650);
+    const aivaDefragEnd = await scanFrame(separatorPage);
+    assert(aivaDefragEnd.universeFrame > aivaDefragStart.universeFrame, `${viewport.name}: AIVA's defrag cells did not keep animating`);
+    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-defrag-02.png`) });
+    report.aivaDefragMotion.push({
+      viewport: viewport.name,
+      frames: aivaDefragEnd.universeFrame - aivaDefragStart.universeFrame,
+      durationMs: aivaDefragEnd.sampledAt - aivaDefragStart.sampledAt,
+      passed: true,
+    });
     const { firstSceneSteps, firstSpeakerChangeIndex, nextSpeaker } = await separatorPage.evaluate(() => {
       const steps = globalThis.GAIA_TRUE_END_STORY.scenes[0].steps;
       const speakerFor = (item) => item.speaker || "narrator";
@@ -838,7 +857,7 @@ try {
     assert.equal(fadeStart.speaker, fadeBefore.speaker, `${viewport.name}: speaker label changed before the new presence was fully visible`);
     assert.equal(fadeStart.message, fadeBefore.message, `${viewport.name}: message changed before the new presence was fully visible`);
     assert.equal(fadeStart.counter, fadeBefore.counter, `${viewport.name}: message step committed before the new presence was fully visible`);
-    assert.equal(fadeStart.universePresenceDuration, 380, `${viewport.name}: presence crossfade duration is not 380ms`);
+    assert.equal(fadeStart.universePresenceDuration, 760, `${viewport.name}: AIVA fade-out duration is not 760ms`);
     await separatorPage.waitForTimeout(100);
     const fadeMiddle = await scanFrame(separatorPage);
     if (fadeMiddle.universePresenceState === "fading") {
@@ -862,10 +881,13 @@ try {
     assert.notEqual(fadeAfter.message, fadeBefore.message, `${viewport.name}: message did not update after the presence completed`);
     assert(fadeAfter.universePresenceCompletedAt > 0, `${viewport.name}: presence completion timestamp is missing`);
     assert(fadeAfter.messageCommittedAt >= fadeAfter.universePresenceCompletedAt, `${viewport.name}: message committed before presence completion (${JSON.stringify({ presence: fadeAfter.universePresenceCompletedAt, message: fadeAfter.messageCommittedAt })})`);
+    const aivaFadeElapsed = fadeAfter.universePresenceCompletedAt - fadeBefore.sampledAt;
+    assert(aivaFadeElapsed >= 700, `${viewport.name}: AIVA faded out too quickly (${aivaFadeElapsed.toFixed(1)}ms)`);
     report.presenceFades.push({
       viewport: viewport.name,
       from: fadeBefore.speaker,
       to: fadeAfter.speaker,
+      durationMs: aivaFadeElapsed,
       samples: [fadeStart.universePresenceMix, fadeMiddle.universePresenceMix, fadeAfter.universePresenceMix],
       passed: true,
     });

@@ -1889,7 +1889,7 @@
 > 制作支援 / PRODUCTION SUPPORT: OpenAI Codex
 > キャラクターデザイン / CHARACTER DESIGN: ひなひな、OpenAI ImageGen
 > 背景美術 / BACKGROUND ART: OpenAI ImageGen
-> 音楽 / MUSIC: AfterSchool Afterglow、glitchyeventdj664
+> 音楽 / MUSIC: オープニングテーマ『Planet Forecast - Hope』、エンディングテーマ『AterSchool, AfterGlow』、by Suno.ai
 > 参照講義 / ACADEMIC REFERENCE: ZEN大学『共創地球論』、ZEN大学『人新世の人類学』
 > 参照データ / OPEN DATA: JAXA / NASA / NOAA、気象庁 ほか
 > その選択の中に、今日から私たちもいる。
