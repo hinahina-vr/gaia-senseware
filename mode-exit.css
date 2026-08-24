@@ -235,6 +235,90 @@ body.sound-mode-open .status {
   body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock.is-expanded {
     width: min(320px, calc(100vw - 152px));
   }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
+    top: max(12px, env(safe-area-inset-top));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+    letter-spacing: 0;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control {
+    right: auto;
+    left: max(12px, env(safe-area-inset-left));
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
+    right: auto;
+    left: max(60px, calc(env(safe-area-inset-left) + 48px));
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control::before,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control::before {
+    flex: 0 0 auto;
+    width: auto;
+    height: auto;
+    font-size: 16px;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption,
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-temporal-range="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-crosses-year="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+    z-index: 521;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(64px, calc(env(safe-area-inset-right) + 64px));
+    left: max(108px, calc(env(safe-area-inset-left) + 108px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    max-width: none;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 5px;
+    overflow: hidden;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    text-align: center;
+    transform: none;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption::before,
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption::after,
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption > span,
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption > em,
+  body.novel-open .novel-layer:not(.is-title) .novel-temporal-heading-tail {
+    display: none;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption strong {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0;
+    overflow: hidden;
+    font-size: clamp(7.5px, 2.35vw, 9px);
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption .novel-temporal-heading-unit {
+    display: inline;
+    white-space: nowrap;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

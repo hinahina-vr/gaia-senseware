@@ -6853,8 +6853,92 @@ h1 {
   }
 }
 
-@media (max-width: 720px) and (max-height: 680px) {
+@media (max-width: 620px) {
   .actions {
     top: max(72px, calc(env(safe-area-inset-top) + 68px));
+    right: max(12px, env(safe-area-inset-right));
+    left: max(12px, env(safe-area-inset-left));
+    grid-template-columns: repeat(6, minmax(44px, 1fr));
+    gap: 0;
+    width: auto;
+    padding: 2px 4px;
+    overflow: hidden;
+    border: 1px solid rgba(229, 235, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(4, 9, 18, 0.42);
+    backdrop-filter: blur(12px);
+  }
+
+  .actions > button {
+    width: 100%;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .actions > button + button {
+    border-left: 1px solid rgba(229, 235, 255, 0.1);
+  }
+
+  .mode-reading-label,
+  .mode-description {
+    display: none;
+  }
+
+  .guide-kicker,
+  .mode-index {
+    display: none;
+  }
+
+  .guide-copy {
+    font-size: 10px;
+  }
+
+  .mode-caption {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signal-console-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 7px 9px;
+  }
+
+  .signal-console-main[hidden] {
+    display: none;
+  }
+
+  .signal-console-main .signal-console-heading {
+    display: none;
+  }
+
+  .signal-console-main label > span {
+    display: none;
+  }
+
+  .signal-console-main label {
+    grid-template-columns: minmax(54px, 1fr) auto;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .signal-console-main output {
+    min-width: 60px;
+    font-size: 7px;
+  }
+
+  .mode-title-ja {
+    margin-top: 4px;
+  }
+
+  .concept-button {
+    margin-top: 8px;
   }
 }

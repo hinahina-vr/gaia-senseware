@@ -33,7 +33,7 @@ const scans = [
   ["source mirrors match", source === mirror],
   ["no escape hard breaks in changed prose", !source.includes("<br") && !source.includes("\\n")],
   ["forbidden verb absent", !/(?:置く|置いた|置いて|置か|置き|置け|置こう)/u.test(source)],
-  ["mobile UI cache keys", ["styles.css", "novel-mode.css", "novel-mode.js"].every((asset) => html.includes(`${asset}?v=gaia-mobile-ui-audit-1`))],
+  ["mobile UI cache keys", ["styles.css", "novel-mode.css", "novel-mode.js", "mode-exit.css"].every((asset) => html.includes(`${asset}?v=gaia-mobile-ui-audit-1`))],
 ];
 
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);

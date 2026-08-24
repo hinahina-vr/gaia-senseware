@@ -217,7 +217,7 @@ const scanObservation = async (viewport) => {
   });
   await page.locator("#mode-list .mode-button").last().click();
   await page.waitForFunction(() => document.querySelector("#mode-number")?.textContent?.trim() === "10");
-  const scan = await inspectSurface(page, ["#intro-button", ".signal-console-main", "#mode-title", "#mode-caption", "#mode-list"]);
+  const scan = await inspectSurface(page, ["#intro-button", ".actions", ".signal-console-main", "#mode-title", ".mode-reading-label", ".mode-description", "#mode-caption", "#mode-list"]);
   const titleLines = await collectRenderedLines(page, "#mode-title");
   await saveScreenshot(page, viewport, "observation-10");
   reviewCommon(viewport, "observation-10", scan);
@@ -234,6 +234,10 @@ const scanObservation = async (viewport) => {
     && control.box.bottom > signalConsole.box.top) : [];
   if (overlappingActions.length) {
     addIssue(viewport, "observation-10", "observation-control-overlap", "観測画面の操作ボタンがデータ表示に重なっている", { signalConsole, controls: overlappingActions });
+  }
+  const redundantObservationCopy = scan.targets.filter((target) => [".mode-reading-label", ".mode-description"].includes(target.selector) && target.visible);
+  if (redundantObservationCopy.length) {
+    addIssue(viewport, "observation-10", "observation-copy-density", "スマートフォン表示に重複する説明文が残っている", redundantObservationCopy);
   }
   report.scans.push({ ...scan, viewport: viewport.name, surface: "observation-10", titleLines });
   await context.close();
@@ -304,8 +308,9 @@ const scanDialogue = async (viewport, testCase, includeConfig = false) => {
   await page.waitForFunction((expected) => document.querySelector("#novel-layer")?.dataset.stepId === expected, testCase.stepId);
   await page.waitForFunction(() => Boolean(document.querySelector("#novel-text")?.textContent?.trim()));
   await page.waitForTimeout(250);
-  const scan = await inspectSurface(page, ["#novel-layer", "#novel-dialogue", "#novel-text", ".novel-topbar nav"]);
+  const scan = await inspectSurface(page, ["#novel-layer", "#novel-dialogue", "#novel-text", ".novel-topbar nav", "#novel-home-button", "#novel-close-button", "#novel-source-label", "#gaia-audio-dock"]);
   const lines = await collectRenderedLines(page, "#novel-text");
+  const headingLines = await collectRenderedLines(page, "#novel-location");
   const pagination = await page.evaluate((stepId) => {
     const step = globalThis.GAIA_NOVEL_STORY?.scenes
       ?.flatMap((scene) => scene.steps)
@@ -324,16 +329,37 @@ const scanDialogue = async (viewport, testCase, includeConfig = false) => {
   if (badStarts.length) addIssue(viewport, `dialogue-${testCase.name}`, "kinsoku-line-start", "句読点・閉じ括弧から始まる行がある", badStarts);
   if (badEnds.length) addIssue(viewport, `dialogue-${testCase.name}`, "kinsoku-line-end", "開き括弧で終わる行がある", badEnds);
   if (oneGlyphLines.length) addIssue(viewport, `dialogue-${testCase.name}`, "single-glyph-line", "1文字だけの行がある", oneGlyphLines);
+  if (headingLines.lines.length > 1) {
+    addIssue(viewport, `dialogue-${testCase.name}`, "dialogue-header-wrap", "物語ヘッダーの場面情報が複数行になっている", headingLines);
+  }
+  const headerTargets = scan.targets.filter((target) => ["#novel-home-button", "#novel-close-button", "#novel-source-label", "#gaia-audio-dock"].includes(target.selector) && target.visible && target.box);
+  const headerOverlaps = [];
+  for (let leftIndex = 0; leftIndex < headerTargets.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < headerTargets.length; rightIndex += 1) {
+      const left = headerTargets[leftIndex];
+      const right = headerTargets[rightIndex];
+      if (left.box.left < right.box.right && left.box.right > right.box.left && left.box.top < right.box.bottom && left.box.bottom > right.box.top) {
+        headerOverlaps.push([left, right]);
+      }
+    }
+  }
+  if (headerOverlaps.length) addIssue(viewport, `dialogue-${testCase.name}`, "dialogue-header-overlap", "物語ヘッダーの要素同士が重なっている", headerOverlaps);
+  if (headerTargets.length > 1) {
+    const headerTops = headerTargets.map((target) => target.box.top);
+    if (Math.max(...headerTops) - Math.min(...headerTops) > 2) {
+      addIssue(viewport, `dialogue-${testCase.name}`, "dialogue-header-multiline", "物語ヘッダーの要素が同じ1段に揃っていない", headerTargets);
+    }
+  }
   const sparsePages = pagination?.pages?.filter((candidate) => candidate.lines < 2) || [];
   if ((pagination?.pages?.length || 0) > 1 && sparsePages.length) {
     addIssue(viewport, `dialogue-${testCase.name}`, "sparse-dialogue-page", "複数ページの会話に1行だけのページがある", sparsePages);
   }
-  report.scans.push({ ...scan, viewport: viewport.name, surface: `dialogue-${testCase.name}`, stepId: testCase.stepId, lines, pagination });
+  report.scans.push({ ...scan, viewport: viewport.name, surface: `dialogue-${testCase.name}`, stepId: testCase.stepId, lines, headingLines, pagination });
 
   if (includeConfig) {
     await page.locator("#novel-config-button").click();
     await page.locator("#novel-config-panel").waitFor({ state: "visible" });
-    const configScan = await inspectSurface(page, ["#novel-config-panel", ".novel-config-shell", "#novel-config-close"]);
+    const configScan = await inspectSurface(page, ["#novel-config-panel", ".novel-config-shell", ".novel-config-content", "#novel-config-close"]);
     await saveScreenshot(page, viewport, "config");
     reviewCommon(viewport, "config", configScan);
     const audioControl = configScan.controls.find((control) => control.id === "gaia-audio-toggle");
@@ -344,6 +370,10 @@ const scanDialogue = async (viewport, testCase, includeConfig = false) => {
         && audioControl.box.top < closeControl.box.bottom
         && audioControl.box.bottom > closeControl.box.top;
       if (intersects) addIssue(viewport, "config", "modal-control-overlap", "音量ボタンと設定画面の閉じるボタンが重なっている", { audioControl, closeControl });
+    }
+    const configContent = configScan.targets.find((target) => target.selector === ".novel-config-content");
+    if (configContent && configContent.scrollHeight > configContent.clientHeight + 2) {
+      addIssue(viewport, "config", "config-content-scroll", "設定項目が画面内に収まらず内部スクロールが発生", configContent);
     }
     report.scans.push({ ...configScan, viewport: viewport.name, surface: "config" });
   }
