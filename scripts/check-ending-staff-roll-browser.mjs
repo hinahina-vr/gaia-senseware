@@ -327,9 +327,14 @@ try {
     assert.equal(initial.titleHeading, "惑星の放課後 — GAIA SENSATION", `${viewport.name}: staff-roll logo has no accessible title`);
     assert.equal(initial.titleLogoCount, 1, `${viewport.name}: staff-roll title logo count is incorrect`);
     assert.equal(initial.titleLogoSrc, "./assets/brand/brand-logo-light-surface.png", `${viewport.name}: staff-roll title does not use the light-surface logo`);
-    assert.equal(initial.titleLogoLoaded, true, `${viewport.name}: staff-roll title logo failed to load`);
-    assert(initial.titleLogoRect?.width > 0 && initial.titleLogoRect?.height > 0, `${viewport.name}: staff-roll title logo has no visible size`);
-    assert(initial.titleLogoRect.left >= 0 && initial.titleLogoRect.right <= viewport.width, `${viewport.name}: staff-roll title logo overflows the viewport`);
+    await page.waitForFunction(() => {
+      const logo = document.querySelector(".novel-staff-roll-title-logo");
+      return Boolean(logo?.complete && logo.naturalWidth === 2172 && logo.naturalHeight === 724);
+    }, null, { timeout: 30_000 });
+    const loadedTitle = await scanEnding(page);
+    assert.equal(loadedTitle.titleLogoLoaded, true, `${viewport.name}: staff-roll title logo failed to load`);
+    assert(loadedTitle.titleLogoRect?.width > 0 && loadedTitle.titleLogoRect?.height > 0, `${viewport.name}: staff-roll title logo has no visible size`);
+    assert(loadedTitle.titleLogoRect.left >= 0 && loadedTitle.titleLogoRect.right <= viewport.width, `${viewport.name}: staff-roll title logo overflows the viewport`);
     [
       "原案・企画・制作",
       "シナリオ",

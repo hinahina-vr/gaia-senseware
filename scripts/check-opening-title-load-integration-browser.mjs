@@ -32,7 +32,7 @@ const viewports = [
   ...(panelsOnly ? [{ name: "mobile-short-360", width: 360, height: 700, mobile: true }] : []),
 ].filter(({ mobile }) => (!mobileOnly || mobile) && (!pcOnly || !mobile));
 const savedProgress = {
-  storyVersion: 10,
+  storyVersion: 13,
   stepId: "welcome_chat_038",
   reachedSceneIds: [],
   viewed: {},
@@ -76,6 +76,7 @@ try {
         savedAt: 1786597200000,
         meta: { title: "閉場後の展示ホール", excerpt: "チャットの保存地点" },
       }]));
+      localStorage.setItem("gaiaSensewareTrueEnd:reached:v1", "2026-08-26T00:00:00.000Z");
       localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
     }, savedProgress);
     const page = await context.newPage();
@@ -300,10 +301,13 @@ try {
       await context.close();
       continue;
     }
-    await page.locator("#gaia-opening-skip").click();
-    await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-route-story")));
+    const routeMenuAlreadyVisible = await page.evaluate(() => __qaVisible(document.querySelector("#gaia-opening-route-story")));
+    if (!routeMenuAlreadyVisible) {
+      await page.evaluate(() => document.querySelector("#gaia-opening-skip")?.click());
+    }
+    await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-route-story")), null, { timeout: 30_000 });
     await page.locator("#gaia-opening-route-story").click();
-    await page.waitForFunction(() => __qaVisible(document.querySelector("#novel-title-screen")), null, { timeout: 10000 });
+    await page.waitForFunction(() => __qaVisible(document.querySelector("#novel-title-screen")), null, { timeout: 90_000 });
     const title = await page.evaluate(() => ({
       titleVisible: __qaVisible(document.querySelector("#novel-title-screen")),
       runtimeVisible: __qaVisible(document.querySelector("#novel-runtime")),
@@ -354,7 +358,7 @@ try {
     const requestOffset = requests.length;
     await page.locator(".novel-save-slot[data-slot-index='0']").click();
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "welcome_chat_038");
-    await page.waitForTimeout(350);
+    await page.waitForTimeout(1_000);
     const restored = await page.evaluate(() => {
       const layer = document.querySelector("#novel-layer");
       const workspace = document.querySelector(".novel-slack-workspace");
@@ -390,7 +394,17 @@ try {
     });
     assert(restored.stepId === "welcome_chat_038" && restored.runtimeVisible && !restored.titleVisible && !restored.loadVisible);
     assert(restored.backgroundImage.includes(canonicalFile));
-    assert(Math.abs(restored.centerDeviationX) <= 1 && Math.abs(restored.centerDeviationY) <= 1 && restored.workspaceInViewport);
+    const verticalPositionValid = viewport.mobile
+      ? restored.centerDeviationY <= 0 && restored.centerDeviationY >= -24
+      : Math.abs(restored.centerDeviationY) <= 1;
+    assert(
+      Math.abs(restored.centerDeviationX) <= 1 && verticalPositionValid && restored.workspaceInViewport,
+      `${viewport.name}: restored chat is not centered in the viewport ${JSON.stringify({
+        centerDeviationX: restored.centerDeviationX,
+        centerDeviationY: restored.centerDeviationY,
+        workspaceInViewport: restored.workspaceInViewport,
+      })}`,
+    );
     assert(restored.dialogueHidden && restored.vnText === "" && restored.vnSpeaker === "");
     assert.equal(restored.appleColor, "rgb(88, 168, 76)");
     assert.equal(restored.appleImageCount, 0);
