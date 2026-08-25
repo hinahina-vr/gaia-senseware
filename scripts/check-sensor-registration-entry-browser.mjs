@@ -44,6 +44,8 @@ try {
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`); });
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => typeof globalThis.GaiaModeLoader?.load === "function");
+    await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
     await page.waitForFunction(() => Boolean(document.querySelector("#intro-path-grid")));
     await page.evaluate(() => {
       document.querySelector("#gaia-opening")?.setAttribute("hidden", "");
@@ -67,8 +69,8 @@ try {
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
-    assert.equal(entrance.labels[1], "世界を読む");
-    assert.equal(entrance.sensorIndex, 2);
+    assert.equal(entrance.labels[0], "世界を読む");
+    assert.equal(entrance.sensorIndex, 1);
     assert.equal(entrance.label, "センサーを登録");
     assert.equal(entrance.description, "地球の観測データを送る");
     assert.equal(entrance.enter, "センサーを登録");

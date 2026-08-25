@@ -96,6 +96,11 @@ const seedStorage = async (page, stepId = progressFixture.stepId) => page.evalua
 
 const openIntro = async (page) => {
   await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => typeof globalThis.GaiaModeLoader?.load === "function");
+  await page.evaluate(() => Promise.all([
+    globalThis.GaiaModeLoader.load("exploration"),
+    globalThis.GaiaModeLoader.load("story"),
+  ]));
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await seedStorage(page);
   await page.evaluate(() => {
@@ -129,6 +134,7 @@ const cardScan = async (page) => page.evaluate(() => {
       title: card.querySelector(":scope > strong")?.textContent.trim(),
       copy: card.querySelector(":scope > p")?.textContent.trim(),
       glyphVisible: __qaVisible(card.querySelector(".intro-path-glyph")),
+      layoutTop: card.offsetTop,
       rect: card.getBoundingClientRect().toJSON(),
       accessibleName: card.getAttribute("aria-label") || card.innerText.trim(),
       focusable: card.tabIndex >= 0,
@@ -148,9 +154,10 @@ const cardScan = async (page) => page.evaluate(() => {
 });
 
 const assertCards = (scan, viewport) => {
-  assert.equal(scan.cardCount, 5);
-  assert.deepEqual(scan.cards.map((card) => card.title), ["光に触れる", "世界を読む", "センサーを登録", "宇宙から見る", "音を聴く"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["数字を光へ。", "変化を地図へ。", "地球の観測データを送る", "宇宙の記録へ。", "物語の音楽へ。"]);
+  assert.equal(scan.cardCount, 4);
+  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "宇宙から見る", "音を聴く"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "宇宙の記録へ。", "物語の音楽へ。"]);
+  assert.equal(scan.cards.some((card) => card.path === "abstract" || card.title === "光に触れる"), false);
   assert(scan.cards.every((card) => card.glyphVisible && card.focusable && card.rect.width > 0 && card.rect.height >= 90));
   assert.equal(scan.hiddenDetailVisibleCount, 0);
   assert(scan.hiddenDetailCount > 0);
@@ -161,8 +168,8 @@ const assertCards = (scan, viewport) => {
   assert.equal(scan.overflowX, false);
   assert.equal(scan.overflowY, false);
   if (!viewport.mobile) {
-    const cardTops = scan.cards.map(({ rect }) => rect.top);
-    assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the five observation cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
+    const cardTops = scan.cards.map(({ layoutTop }) => layoutTop);
+    assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the four observation cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
   }
 };
 

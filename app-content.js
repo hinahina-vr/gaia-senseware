@@ -240,13 +240,6 @@
   };
 
   const INTRO_PATHS = {
-    abstract: {
-      kicker: "Abstract mode / Touch the signal",
-      title: "どの感覚に、<br />触れますか？",
-      lead: "意味と操作が異なる9つの観測展示から、最初に触れる入口を選んでください。",
-      prompt: "最初に触れる感覚器を選ぶ",
-      note: "マウスを重ねると説明が変わります。クリックすると、選んだ光をすぐに始めます。",
-    },
     map: {
       kicker: "Map mode / Read the planet",
       title: "どの信号を、<br />地図で読みますか？",

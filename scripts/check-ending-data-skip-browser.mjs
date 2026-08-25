@@ -150,7 +150,7 @@ try {
     assert.equal(destination.introVisible, true, `${viewport.name}: free exploration did not open`);
     assert.equal(destination.stageVisible, true);
     assert.equal(destination.heading, "観測モードを選ぶ");
-    assert(destination.pathCount >= 5, `${viewport.name}: observation mode choices are missing`);
+    assert(destination.pathCount >= 4, `${viewport.name}: observation mode choices are missing`);
     assert.equal(destination.novelHidden, true);
     assert.equal(destination.hash, "");
     assert.equal(destination.clear, true);

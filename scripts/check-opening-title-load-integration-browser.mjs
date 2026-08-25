@@ -95,6 +95,20 @@ try {
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-modal")));
+    const openingLeaks = await page.evaluate(() => [...document.querySelector(".experience").children]
+      .filter((element) => !element.matches(".gaia-opening, .gaia-audio-dock, template"))
+      .filter((element) => {
+        if (element.hidden) return false;
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== "none"
+          && style.visibility !== "hidden"
+          && Number(style.opacity || 1) > 0
+          && rect.width > 0
+          && rect.height > 0;
+      })
+      .map((element) => element.id || element.className || element.tagName));
+    assert.deepEqual(openingLeaks, [], `${viewport.name}: unstyled exploration UI leaked through the opening`);
     await page.locator("#gaia-opening-sound-off").click();
     await page.waitForFunction(() => !__qaVisible(document.querySelector("#gaia-opening-sound-modal")));
     await page.waitForFunction(() => !document.querySelector("#gaia-opening")?.classList.contains("is-preloading"), null, { timeout: 10000 });
@@ -208,10 +222,15 @@ try {
         const menu = document.querySelector("#gaia-opening-final-menu");
         const photo = document.querySelector(".gaia-vn-final-photo");
         const title = document.querySelector(".gaia-vn-work-title");
+        const logo = document.querySelector(".gaia-vn-final-logo");
+        const storyRoute = document.querySelector("#gaia-opening-route-story");
+        const hud = document.querySelector(".gaia-opening-hud");
         const copyRect = copy.getBoundingClientRect();
         const menuRect = menu.getBoundingClientRect();
         const titleRect = title.getBoundingClientRect();
+        const logoRect = logo.getBoundingClientRect();
         const photoStyle = getComputedStyle(photo);
+        const storyStyle = getComputedStyle(storyRoute);
         return {
           copy: { top: copyRect.top, bottom: copyRect.bottom, height: copyRect.height },
           menu: { top: menuRect.top, bottom: menuRect.bottom, height: menuRect.height },
@@ -221,46 +240,59 @@ try {
           photoBackgroundSize: photoStyle.backgroundSize,
           titleText: title.textContent.trim(),
           titleRect: { width: titleRect.width, height: titleRect.height },
-          duplicateLogoImages: document.querySelectorAll(".gaia-vn-work-logo").length,
+          logo: {
+            count: document.querySelectorAll(".gaia-vn-final-logo").length,
+            width: logoRect.width,
+            height: logoRect.height,
+            loaded: logo.complete && logo.naturalWidth > 0,
+          },
+          storySurface: {
+            backgroundImage: storyStyle.backgroundImage,
+            backdropFilter: storyStyle.backdropFilter,
+            opacity: storyStyle.opacity,
+          },
+          hudDisplay: getComputedStyle(hud).display,
           trailingFinalCopyCount: document.querySelectorAll(".gaia-vn-final-copy > span").length,
           routes: [...document.querySelectorAll(".gaia-opening-route")].map((route) => ({
-            guide: route.querySelector("small")?.textContent.replace(/\s+/gu, " ").trim(),
             action: route.querySelector("strong")?.textContent.trim(),
-            description: route.querySelector(":scope > span")?.textContent.replace(/\s+/gu, " ").trim(),
+            microcopyCount: route.querySelectorAll("small, :scope > span").length,
           })),
           bottomGap: innerHeight - menuRect.bottom,
           overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
           overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
         };
       });
-      assert.match(menuLayout.photoBackground, /opening-final-night-keyvisual-v1(?:-960)?\.webp/u, `${viewport.name}: new gateway artwork is missing`);
+      assert.match(menuLayout.photoBackground, /opening-final-night-keyvisual-v2(?:-960)?\.webp/u, `${viewport.name}: clean gateway artwork is missing`);
       assert.equal(menuLayout.titleText, "惑星の放課後 — GAIA SENSATION", `${viewport.name}: accessible work title changed`);
       assert.deepEqual(menuLayout.titleRect, { width: 1, height: 1 }, `${viewport.name}: duplicate HTML title is still visible`);
-      assert.equal(menuLayout.duplicateLogoImages, 0, `${viewport.name}: duplicate logo image is still downloaded`);
+      assert.equal(menuLayout.logo.count, 1, `${viewport.name}: the live brand logo must appear exactly once`);
+      assert(menuLayout.logo.loaded && menuLayout.logo.width > 0 && menuLayout.logo.height > 0, `${viewport.name}: live brand logo failed to render`);
+      assert.match(menuLayout.storySurface.backgroundImage, /0\.98/u, `${viewport.name}: story button is still too transparent`);
+      assert.equal(menuLayout.storySurface.backdropFilter, "none", `${viewport.name}: story button still relies on translucent backdrop blur`);
+      assert.equal(menuLayout.storySurface.opacity, "1", `${viewport.name}: story button opacity reduced its text contrast`);
+      assert.equal(menuLayout.hudDisplay, "none", `${viewport.name}: decorative microcopy remains visible behind the route menu`);
       assert.equal(menuLayout.trailingFinalCopyCount, 0, `${viewport.name}: obsolete explanation remains below the route choice`);
       assert.deepEqual(menuLayout.routes, [
         {
-          guide: "物語から感じる / STORY EXPERIENCE RECOMMENDED",
           action: "物語を始める",
-          description: "MIZUたちと物語をたどりながら、地球の変化を感じてみる。",
+          microcopyCount: 0,
         },
         {
-          guide: "データから触れる / OPEN DATA EXPLORATION",
           action: "データを探索する",
-          description: "実際の地球観測データから、気になるテーマを自由に探索する。",
+          microcopyCount: 0,
         },
-      ], `${viewport.name}: route wording changed`);
+      ], `${viewport.name}: route actions are not reduced to the two clear choices`);
       assert.equal(menuLayout.menuPosition, "static", `${viewport.name}: route menu is not anchored to the artwork layout`);
       if (viewport.mobile) {
         const artworkBottom = viewport.width * 941 / 1672;
-        assert(menuLayout.copy.top >= artworkBottom, `${viewport.name}: controls overlap the complete embedded-logo artwork`);
+        assert(menuLayout.copy.top >= artworkBottom, `${viewport.name}: controls overlap the complete character artwork`);
         assert.equal(menuLayout.photoBackgroundPosition, "50% 0%", `${viewport.name}: complete artwork is not top aligned`);
         assert(["100%", "100% auto"].includes(menuLayout.photoBackgroundSize), `${viewport.name}: complete artwork is cropped`);
         assert(menuLayout.menu.bottom <= viewport.height - 40, `${viewport.name}: route menu leaves the safe viewport`);
         assert.equal(menuLayout.overflowX, 0, `${viewport.name}: bottom lockup overflows horizontally`);
         assert.equal(menuLayout.overflowY, 0, `${viewport.name}: bottom lockup overflows vertically`);
       } else {
-        assert(menuLayout.copy.top >= viewport.height * 0.55, `${viewport.name}: route controls cover the embedded title`);
+        assert(menuLayout.copy.top >= viewport.height * 0.5, `${viewport.name}: route controls cover too much of the scene`);
         assert(menuLayout.copy.bottom <= viewport.height - 40, `${viewport.name}: route controls leave the viewport`);
       }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-menu.png`), animations: "disabled" });

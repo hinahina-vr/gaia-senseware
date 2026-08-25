@@ -4,7 +4,7 @@
   --opening-blue: 132, 175, 205;
   --opening-paper: 222, 232, 229;
   --opening-keyvisual-image: url("./assets/visuals-07/opening-keyvisual-v2.webp");
-  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v1.webp");
+  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v2.webp");
   --opening-archive-image: url("./assets/visuals-07/open-data-archive-bg-v1.webp");
   --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-v1.webp");
   --opening-amane-image: url("./assets/visuals-08/opening-amane-keyvisual-v1.webp");
@@ -42,7 +42,7 @@ select,
 
 html[data-gaia-artwork-quality="compact"] .gaia-opening {
   --opening-keyvisual-image: url("./assets/visuals-07/opening-keyvisual-v2-834.webp");
-  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v1-960.webp");
+  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v2-960.webp");
   --opening-archive-image: url("./assets/visuals-07/open-data-archive-bg-v1-834.webp");
   --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-v1-834.webp");
   --opening-amane-image: url("./assets/visuals-08/opening-amane-keyvisual-v1-834.webp");
@@ -52,12 +52,7 @@ html[data-gaia-artwork-quality="compact"] .gaia-opening {
    when visitors enter the free-exploration route. Keep its copy and controls
    out of the opening dissolve; otherwise the default "Breathing Earth" state
    reads like a broken intermediate screen through the fading artwork. */
-body.gaia-opening-active > .experience > .masthead,
-body.gaia-opening-active > .experience > .status,
-body.gaia-opening-active > .experience > .guide,
-body.gaia-opening-active > .experience > .mode-caption,
-body.gaia-opening-active > .experience > .mode-nav,
-body.gaia-opening-active > .experience > .actions {
+body.gaia-opening-active > .experience > :not(.gaia-opening):not(.gaia-audio-dock):not(template) {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
@@ -4405,9 +4400,8 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 }
 
-/* Final gateway artwork already carries the complete title lockup. Present it
-   intact and reserve the live HTML layer for the accessible title, prompt and
-   route controls instead of drawing a second logo over the illustration. */
+/* Keep the final illustration edge-to-edge. The typography-free artwork is
+   paired with one live logo plus the accessible hidden title and route controls. */
 .gaia-vn-panel-final .gaia-vn-final-photo {
   inset: 0;
   background: #020d27 var(--opening-final-keyvisual-image) center / cover no-repeat;
@@ -4742,4 +4736,115 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 
   .gaia-vn-real-earth-copy > em { margin-top: 12px; }
+}
+
+/* Final gateway v2: the generated background is deliberately typography-free.
+   Keep the brand sharp in HTML and reduce the choice UI to the two actions that
+   matter, using opaque surfaces that remain legible over the night scene. */
+.gaia-vn-panel-final .gaia-vn-final-logo {
+  display: block;
+  width: min(590px, 40vw);
+  height: auto;
+  margin: 0 0 clamp(16px, 2.2vh, 24px);
+  filter: drop-shadow(0 4px 18px rgba(25, 90, 255, 0.2));
+  pointer-events: none;
+  user-select: none;
+}
+
+.gaia-vn-panel-final .gaia-opening-final-menu,
+.gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+  margin-top: clamp(14px, 1.8vh, 20px);
+}
+
+.gaia-vn-panel-final .gaia-opening-route-grid {
+  gap: 10px;
+  border: 0;
+}
+
+.gaia-vn-panel-final .gaia-opening-route,
+.gaia-vn-panel-final .gaia-opening-route--other {
+  min-height: 92px;
+  padding: 20px 70px 19px 22px;
+  border: 1px solid rgba(var(--route-accent), 0.34);
+  border-radius: 3px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    inset 3px 0 0 rgba(var(--route-accent), 0.66),
+    0 14px 34px rgba(0, 5, 20, 0.28);
+}
+
+.gaia-vn-panel-final .gaia-opening-route--story {
+  background: linear-gradient(120deg, rgb(7 30 61 / 0.98), rgb(5 23 49 / 0.98));
+}
+
+.gaia-vn-panel-final .gaia-opening-route--other {
+  border-left: 1px solid rgba(var(--route-accent), 0.3);
+  background: linear-gradient(120deg, rgb(6 25 49 / 0.94), rgb(4 19 40 / 0.94));
+}
+
+.gaia-vn-panel-final .gaia-opening-route strong {
+  color: rgba(var(--opening-paper), 0.98);
+  font-size: clamp(19px, 1.45vw, 23px);
+  font-weight: 500;
+  letter-spacing: 0.065em;
+  text-shadow: 0 2px 12px rgba(0, 5, 20, 0.68);
+}
+
+.gaia-vn-panel-final .gaia-opening-route-icon {
+  right: 18px;
+  width: 43px;
+  height: 43px;
+  stroke: rgba(var(--route-accent), 0.64);
+}
+
+.gaia-vn-panel-final .gaia-opening-route:hover,
+.gaia-vn-panel-final .gaia-opening-route:focus-visible,
+.gaia-opening-final-menu.is-visible .gaia-vn-panel-final .gaia-opening-route:hover,
+.gaia-opening-final-menu.is-visible .gaia-vn-panel-final .gaia-opening-route:focus-visible {
+  border-color: rgba(var(--route-accent), 0.74);
+  background: linear-gradient(120deg, rgb(10 42 78 / 0.99), rgb(6 28 57 / 0.99));
+  box-shadow:
+    inset 3px 0 0 rgb(var(--route-accent)),
+    0 0 0 1px rgba(var(--route-accent), 0.12),
+    0 16px 38px rgba(0, 5, 20, 0.34);
+}
+
+.gaia-opening.is-menu-ready .gaia-opening-hud {
+  display: none;
+}
+
+@media (max-width: 720px) and (orientation: portrait) {
+  .gaia-vn-panel-final .gaia-vn-final-logo {
+    width: min(82vw, 470px);
+    margin-bottom: 14px;
+  }
+
+  .gaia-vn-panel-final .gaia-vn-final-choice > strong {
+    font-size: clamp(13px, 3.7vw, 16px);
+    line-height: 1.5;
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route,
+  .gaia-vn-panel-final .gaia-opening-route--other {
+    min-height: 70px;
+    padding: 14px 56px 13px 17px;
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route strong {
+    font-size: clamp(16px, 4.6vw, 19px);
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route-icon {
+    right: 11px;
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 420px) and (orientation: portrait) {
+  .gaia-vn-panel-final .gaia-opening-route--other {
+    border-top: 1px solid rgba(var(--route-accent), 0.3);
+    border-left: 1px solid rgba(var(--route-accent), 0.3);
+  }
 }

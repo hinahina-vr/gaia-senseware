@@ -5562,10 +5562,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const selectedPath = introSelectedPath;
     if (!INTRO_PATHS[selectedPath]) return;
     runSceneTransition(() => {
-      if (selectedPath === "abstract") {
-        closeIntro();
-        return;
-      }
       if (selectedPath === "map") {
         closeIntro({ restoreFocus: false });
         openJapan({ respectUrlMode: false });

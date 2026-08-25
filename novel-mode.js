@@ -4176,11 +4176,19 @@
     heading.className = "novel-staff-roll-title";
     const kicker = document.createElement("span");
     const title = document.createElement("h2");
-    const subtitle = document.createElement("p");
+    const titleLogo = document.createElement("img");
     kicker.textContent = "STAFF & CREDITS";
-    title.textContent = "惑星の放課後";
-    subtitle.textContent = "GAIA SENSATION";
-    heading.append(kicker, title, subtitle);
+    title.className = "novel-staff-roll-title-accessible";
+    title.textContent = "惑星の放課後 — GAIA SENSATION";
+    titleLogo.className = "novel-staff-roll-title-logo";
+    titleLogo.src = "./assets/brand/brand-logo-light-surface.png";
+    titleLogo.width = 2172;
+    titleLogo.height = 724;
+    titleLogo.alt = "";
+    titleLogo.setAttribute("aria-hidden", "true");
+    titleLogo.decoding = "async";
+    titleLogo.draggable = false;
+    heading.append(kicker, title, titleLogo);
 
     const credits = document.createElement("dl");
     credits.className = "novel-staff-roll-credits";

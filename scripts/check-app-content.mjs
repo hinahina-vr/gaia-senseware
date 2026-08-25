@@ -37,6 +37,9 @@ assert.deepEqual(Object.keys(content), requiredKeys);
 assert.equal(content.modes.length, 9, "Earth mode catalog must contain 9 exhibits");
 assert.equal(content.INTRO_MODE_CHOICES.length, 9, "Entrance catalog must contain 9 choices");
 assert.equal(content.SPACE_MODE_CHOICES.length, 10, "Space catalog must contain 10 choices");
+assert.deepEqual(Object.keys(content.INTRO_PATHS), ["map", "novel", "space"], "Retired abstract exhibit must not remain routable");
+assert.equal(indexHtml.includes('data-intro-path="abstract"'), false, "Retired abstract exhibit card remains in the entrance");
+assert.equal(indexHtml.includes("光に触れる"), false, "Retired abstract exhibit copy remains in the entrance");
 
 const modeIds = content.modes.map(({ id }) => id);
 assert.equal(new Set(modeIds).size, modeIds.length, "Mode ids must be unique");

@@ -1281,7 +1281,6 @@ button {
     transform 360ms cubic-bezier(0.2, 0.78, 0.24, 1);
 }
 
-.intro-path-card[data-intro-path="abstract"] { --path-rgb: 160, 246, 220; }
 .intro-path-card[data-intro-path="map"] { --path-rgb: 126, 198, 255; }
 .intro-path-card[data-intro-path="novel"] { --path-rgb: 211, 184, 255; }
 .intro-path-card[data-intro-path="space"] { --path-rgb: 151, 190, 255; }
@@ -6741,7 +6740,7 @@ h1 {
 
 @media (min-width: 1280px) {
   .intro-lp-hero .intro-path-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .intro-lp-hero .intro-path-card,

@@ -89,6 +89,8 @@ const scanEnding = (page) => page.evaluate(() => {
   const whiteout = document.querySelector(".novel-staff-roll-whiteout");
   const stage = document.querySelector(".novel-staff-roll-stage");
   const track = document.querySelector(".novel-staff-roll-track");
+  const titleHeading = document.querySelector(".novel-staff-roll-title-accessible");
+  const titleLogo = document.querySelector(".novel-staff-roll-title-logo");
   const button = document.querySelector(".novel-staff-roll-finale button");
   const closingAction = document.querySelector(".novel-staff-roll-closing-action");
   const closingMark = document.querySelector(".novel-staff-roll-closing-mark");
@@ -98,6 +100,8 @@ const scanEnding = (page) => page.evaluate(() => {
   const audioDock = document.querySelector(".gaia-audio-dock");
   const audioToggle = document.querySelector("#gaia-audio-toggle");
   const closing = document.querySelector(".novel-staff-roll-closing");
+  const closingLine = document.querySelector(".novel-staff-roll-closing > strong");
+  const closingCopyright = document.querySelector(".novel-staff-roll-closing > small");
   const lastCredit = document.querySelector(".novel-staff-roll-credit:last-child");
   const trackStyle = getComputedStyle(track);
   const whiteoutStyle = getComputedStyle(whiteout);
@@ -109,7 +113,10 @@ const scanEnding = (page) => page.evaluate(() => {
   const buttonRect = button?.getBoundingClientRect();
   const closingMarkRect = closingMark?.getBoundingClientRect();
   const trackRect = track?.getBoundingClientRect();
+  const titleLogoRect = titleLogo?.getBoundingClientRect();
   const closingRect = closing?.getBoundingClientRect();
+  const closingLineRect = closingLine?.getBoundingClientRect();
+  const closingCopyrightRect = closingCopyright?.getBoundingClientRect();
   const lastCreditRect = lastCredit?.getBoundingClientRect();
   const dataSkipRect = dataSkip?.getBoundingClientRect();
   const audioDockRect = audioDock?.getBoundingClientRect();
@@ -154,11 +161,22 @@ const scanEnding = (page) => page.evaluate(() => {
     stepId: layer?.dataset.stepId,
     phase: shell?.dataset.phase,
     text: track?.innerText || "",
+    titleHeading: titleHeading?.textContent?.trim() || "",
+    titleLogoCount: document.querySelectorAll(".novel-staff-roll-title-logo").length,
+    titleLogoSrc: titleLogo?.getAttribute("src") || "",
+    titleLogoLoaded: Boolean(titleLogo?.complete && titleLogo.naturalWidth === 2172 && titleLogo.naturalHeight === 724),
+    titleLogoRect: titleLogoRect ? {
+      left: titleLogoRect.left,
+      right: titleLogoRect.right,
+      width: titleLogoRect.width,
+      height: titleLogoRect.height,
+    } : null,
     trackY: track?.getBoundingClientRect().y || 0,
     trackAnimation: trackStyle.animationName,
     trackDuration: trackStyle.animationDuration,
     trackDelay: trackStyle.animationDelay,
     closingGap: closingRect && lastCreditRect ? closingRect.top - lastCreditRect.bottom : 0,
+    copyrightGap: closingLineRect && closingCopyrightRect ? closingCopyrightRect.top - closingLineRect.bottom : null,
     whiteoutAnimation: whiteoutStyle.animationName,
     stageBackground: stageStyle.backgroundImage,
     toolbarHidden: toolbarStyle.visibility === "hidden" && Number(toolbarStyle.opacity) === 0,
@@ -291,6 +309,7 @@ try {
     assert.equal(initial.trackDuration, viewport.name === "mobile-390" ? "70s" : "76s");
     assert.equal(initial.trackDelay, "-2.65s", `${viewport.name}: staff-roll offscreen lead-in was not shortened`);
     assert(initial.closingGap >= viewport.height * 0.5, `${viewport.name}: closing poem gap is too short (${initial.closingGap}px)`);
+    assert(initial.copyrightGap >= 8 && initial.copyrightGap <= 20, `${viewport.name}: copyright spacing is not compact (${initial.copyrightGap}px)`);
     assert.equal(initial.buttonHidden, true, `${viewport.name}: END action was shown before the roll`);
     assert.equal(initial.closingMarkText, "Thank you for playing");
     assert.equal(initial.text.includes("\nEND"), false, `${viewport.name}: obsolete END mark remains`);
@@ -305,6 +324,12 @@ try {
     assert.match(initial.audioDockBackground, /rgba?\(255, 255, 252(?:, 0\.94)?\)/u, `${viewport.name}: staff-roll audio control is not white (${initial.audioDockBackground})`);
     assert.match(initial.audioToggleColor, /rgba?\(19, 67, 76(?:, 0\.92)?\)/u, `${viewport.name}: staff-roll audio icon is not dark on white (${initial.audioToggleColor})`);
     assert.match(initial.stageBackground, /event-cg-exhibition-finale-sunset-(?:v1|mobile-v1)\.png/u);
+    assert.equal(initial.titleHeading, "惑星の放課後 — GAIA SENSATION", `${viewport.name}: staff-roll logo has no accessible title`);
+    assert.equal(initial.titleLogoCount, 1, `${viewport.name}: staff-roll title logo count is incorrect`);
+    assert.equal(initial.titleLogoSrc, "./assets/brand/brand-logo-light-surface.png", `${viewport.name}: staff-roll title does not use the light-surface logo`);
+    assert.equal(initial.titleLogoLoaded, true, `${viewport.name}: staff-roll title logo failed to load`);
+    assert(initial.titleLogoRect?.width > 0 && initial.titleLogoRect?.height > 0, `${viewport.name}: staff-roll title logo has no visible size`);
+    assert(initial.titleLogoRect.left >= 0 && initial.titleLogoRect.right <= viewport.width, `${viewport.name}: staff-roll title logo overflows the viewport`);
     [
       "原案・企画・制作",
       "シナリオ",
