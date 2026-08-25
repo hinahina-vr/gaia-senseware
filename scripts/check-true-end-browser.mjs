@@ -12,6 +12,7 @@ const presenceOnly = extraArguments.includes("--presence-only");
 const productionSmoke = extraArguments.includes("--production-smoke");
 const pageBreakOnly = extraArguments.includes("--page-break-only");
 const controlHoldOnly = extraArguments.includes("--control-hold-only");
+const skipOnly = extraArguments.includes("--skip-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -37,7 +38,8 @@ const report = {
   responses404: [],
   audioResponses: [],
   presenceFades: [],
-  aivaGridMotion: [],
+  aivaFieldMotion: [],
+  skipControls: [],
 };
 
 const attachDiagnostics = (page, label) => {
@@ -57,13 +59,15 @@ const attachDiagnostics = (page, label) => {
 };
 
 const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
-  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await page.goto(new URL("/#story", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await page.evaluate(() => globalThis.GaiaModeLoader.load("story"));
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY && globalThis.GAIA_TRUE_END_STORY));
-  await page.waitForFunction(() => {
+  const eagerExplorationResources = await page.evaluate(() => {
     const resources = performance.getEntriesByType("resource").map(({ name }) => name);
-    return resources.some((name) => name.includes("/data/gaia-signals.json"))
-      && resources.some((name) => name.includes("/data/natural-earth-50m-land.geojson"));
-  }, null, { timeout: 30_000 });
+    return resources.filter((name) => name.includes("/data/gaia-signals.json")
+      || name.includes("/data/natural-earth-50m-land.geojson"));
+  });
+  assert.deepEqual(eagerExplorationResources, [], `${name}: story route eagerly loaded exploration data`);
   await page.evaluate(({ storageKey, configKey, label, reducedMotion: motionPreference }) => {
     localStorage.clear();
     const state = {
@@ -99,7 +103,7 @@ const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "complete", null, { timeout: 15_000 });
   await page.locator(".novel-staff-roll-finale button").click();
-  await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")), null, { timeout: 15_000 });
+  await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")), null, { timeout: 30_000 });
   await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "trueend", null, { timeout: 10_000 });
   await page.waitForFunction(() => {
     const shell = document.querySelector(".true-end-shell");
@@ -121,6 +125,7 @@ const scanFrame = (page) => page.evaluate(() => {
   const novelLayer = document.querySelector("#novel-layer");
   const brand = document.querySelector(".true-end-brand");
   const sceneTitle = document.querySelector(".true-end-scene-heading strong");
+  const skipButton = document.querySelector(".true-end-skip-button");
   const sceneCardTitle = sceneCardContent?.querySelector("strong");
   const rect = dialogue?.getBoundingClientRect();
   const mainDialogueReference = document.createElement("div");
@@ -147,6 +152,8 @@ const scanFrame = (page) => page.evaluate(() => {
       .map((candidate) => Math.round(candidate.top * 2) / 2)).size;
   };
   const sceneTitleRect = sceneTitle?.getBoundingClientRect();
+  const skipRect = skipButton?.getBoundingClientRect();
+  const brandRect = brand?.getBoundingClientRect();
   return {
     sampledAt: performance.now(),
     documentHidden: document.hidden,
@@ -161,8 +168,20 @@ const scanFrame = (page) => page.evaluate(() => {
     title: document.querySelector(".true-end-scene-heading strong")?.textContent?.trim() || "",
     sceneCode: document.querySelector(".true-end-scene-heading span")?.textContent?.trim() || "",
     brandDisplay: brand ? getComputedStyle(brand).display : "",
+    brandRect: brandRect ? { left: brandRect.left, right: brandRect.right } : null,
     sceneTitleLineCount: countTextLines(sceneTitle),
     sceneTitleRect: sceneTitleRect ? { left: sceneTitleRect.left, right: sceneTitleRect.right } : null,
+    skipVisible: Boolean(skipButton?.getClientRects().length) && getComputedStyle(skipButton).visibility !== "hidden",
+    skipText: skipButton?.textContent?.trim() || "",
+    skipLabel: skipButton?.getAttribute("aria-label") || "",
+    skipRect: skipRect ? {
+      left: skipRect.left,
+      top: skipRect.top,
+      right: skipRect.right,
+      bottom: skipRect.bottom,
+      width: skipRect.width,
+      height: skipRect.height,
+    } : null,
     counter: document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() || "",
     footerText: document.querySelector(".true-end-footer")?.textContent?.trim() || "",
     footerSpanCount: document.querySelectorAll(".true-end-footer span").length,
@@ -188,6 +207,9 @@ const scanFrame = (page) => page.evaluate(() => {
     universePresenceState: universe?.dataset.webglPresenceState || "",
     universePresenceDuration: Number(universe?.dataset.webglPresenceDuration || 0),
     universePresenceCompletedAt: Number(universe?.dataset.webglPresenceCompletedAt || 0),
+    universeQuality: universe?.dataset.webglQuality || "",
+    universeQualityReason: universe?.dataset.webglQualityReason || "",
+    universeFrameP95: Number(universe?.dataset.webglFrameP95 || 0),
     messageCommittedAt: Number(shell?.dataset.messageCommittedAt || 0),
     sectionTransitionCompletedAt: Number(shell?.dataset.sectionTransitionCompletedAt || 0),
     universeFrame: Number(universe?.dataset.webglFrame || 0),
@@ -365,9 +387,14 @@ try {
   assert.doesNotMatch(trueEndWebGLSource, /0\.52 \+ 0\.48 \* u_speaker_mix/u, "new character still appears at partial strength on its first frame");
   assert.doesNotMatch(trueEndWebGLSource, /vec2 defragSlot|float cellClock|vec2 previousSlot|vec2 nextSlot|float cellSize/u, "AIVA still gives individual cells drifting positions, tempos, or sizes");
   assert.doesNotMatch(trueEndWebGLSource, /uniform float u_frame|"u_frame"|uniform1f\(uniforms\.u_frame/u, "AIVA still uses the render frame as its flicker clock");
-  assert.match(trueEndWebGLSource, /const float AIVA_GRID_DRIFT_SPEED = 0\.54[\s\S]*const float AIVA_GRID_PULSE_HZ = 0\.5/u, "AIVA's requested grid tempo constants are missing");
-  assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*vec2 matrixDrift = vec2\([\s\S]*u_time \* AIVA_GRID_DRIFT_SPEED,[\s\S]*-u_time \* AIVA_GRID_DRIFT_SPEED[\s\S]*\)[\s\S]*vec2 matrixUv = g \* vec2\(8\.0, 5\.0\) \+ matrixDrift[\s\S]*float blocks = 1\.0 - smoothstep\(0\.24, 0\.3[\s\S]*float frameTick = floor\(u_time \* AIVA_GRID_PULSE_HZ\)[\s\S]*float activity = step\(0\.5, hash21[\s\S]*float gridLines[\s\S]*float scanRow/u, "AIVA's grid does not combine three-times drift with a two-second randomized pulse");
-  assert.match(trueEndWebGLSource, /vec2 boundaryDistance = min\(matrixFract, 1\.0 - matrixFract\)[\s\S]*float gridLines/u, "AIVA's grid lines do not share the moving block coordinates");
+  assert.match(trueEndWebGLSource, /const float AIVA_FIELD_DRIFT_SPEED = 0\.18/u, "AIVA's continuous field tempo is missing");
+  assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*float signalNoiseA[\s\S]*float signalNoiseB[\s\S]*vec2 signalSpace[\s\S]*float carrierA[\s\S]*float carrierB[\s\S]*float signalVeil[\s\S]*float measureTrace[\s\S]*float responseTrace[\s\S]*float scanWave/u, "AIVA's continuous signal field is incomplete");
+  const aivaFieldSource = trueEndWebGLSource.match(/vec3 signalSurge\(vec2 p\) \{[\s\S]*?\n    \}/u)?.[0] || "";
+  assert(aivaFieldSource, "AIVA's continuous signal field source is unavailable");
+  assert.doesNotMatch(aivaFieldSource, /matrixId|matrixFract|\bblocks\b|gridLines|floor\s*\(|fract\s*\(/u, "AIVA still renders discontinuous rectangular cells");
+  assert.match(trueEndModeSource, /createElement\("button", "true-end-skip-button"\)/u, "APEIRONCENE section skip control is missing");
+  assert.match(trueEndModeSource, /const moveToNextScene = \(\) => \{[\s\S]*revealSceneAfterSeparator/u, "APEIRONCENE section skip does not reuse the canonical scene transition");
+  assert.match(trueEndStyleSource, /\.true-end-skip-button\s*\{[\s\S]*top:\s*max\(18px, env\(safe-area-inset-top\)\);[\s\S]*left:\s*max\(20px, env\(safe-area-inset-left\)\);/u, "APEIRONCENE skip control is not anchored to the upper-left safe area");
   assert.match(trueEndWebGLSource, /vec3 weaveStorm[\s\S]*float warpThreads[\s\S]*float weftThreads[\s\S]*float diagonalThread[\s\S]*float crossings/u, "Lou's living loom is missing");
   assert.match(trueEndWebGLSource, /vec3 tidalSurge[\s\S]*vec2 waterSpace[\s\S]*vec2 sourceA[\s\S]*vec2 sourceB[\s\S]*float arcMaskA[\s\S]*float brokenWaveA[\s\S]*float brokenWaveB[\s\S]*float interferenceVein[\s\S]*float causticFray[\s\S]*float confluence/u, "Mizuha's fragmented tidal field is missing");
   assert.doesNotMatch(trueEndWebGLSource, /distanceFromDrop|float rippleA|float rippleB|float reflectedWater|float drop\s*=/u, "Mizuha still uses the retired concentric-circle field");
@@ -381,8 +408,14 @@ try {
   assert.doesNotMatch(trueEndStyleSource, /\.true-end-weave|conic-gradient/u, "TRANSMISSION still styles ellipse or vortex decoration");
   assert.match(trueEndWebGLSource, /p \+= u_pointer/u, "the restored field no longer follows pointer parallax");
 
-  for (const viewport of separatorOnly ? [] : viewports) {
+  for (const viewport of (separatorOnly || skipOnly) ? [] : viewports) {
     const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
+    if (viewport.width <= 720) {
+      await context.addInitScript(() => {
+        Object.defineProperty(Navigator.prototype, "deviceMemory", { configurable: true, get: () => 2 });
+        Object.defineProperty(Navigator.prototype, "hardwareConcurrency", { configurable: true, get: () => 2 });
+      });
+    }
     const page = await context.newPage();
     attachDiagnostics(page, viewport.name);
     await bootAtTrueEnd(page, viewport.name);
@@ -442,6 +475,7 @@ try {
       await page.waitForFunction(() => (globalThis.GaiaOpeningAudio?.getPlaybackState?.().duration || 0) > 0, null, { timeout: 30_000 });
       initial = await scanFrame(page);
     }
+    report.lastFrame = { viewport: viewport.name, ...initial };
     const seenSpeakers = new Set();
     const seenManifestations = new Map();
     const seenSystemPhrases = new Set();
@@ -519,6 +553,8 @@ try {
       }
     };
     validateSpeakerVisual(initial);
+    assert.equal(initial.universeQuality, viewport.width <= 720 ? "low" : "normal", `${viewport.name}: adaptive WebGL quality tier is wrong`);
+    assert.equal(initial.universeQualityReason, viewport.width <= 720 ? "device-capability" : "default", `${viewport.name}: adaptive WebGL quality reason is wrong`);
     assert.equal(initial.scene, story.scenes[0].id);
     assert.equal(initial.title, story.scenes[0].title);
     assert.equal(initial.sceneCode, "VENA 01");
@@ -535,6 +571,12 @@ try {
     assert.equal(initial.shellUserSelect, "none", `${viewport.name}: TRANSMISSION text remains selectable`);
     assert.equal(initial.logButtonVisible, true);
     assert.equal(initial.logButtonText, "LOG");
+    assert.equal(initial.skipVisible, true, `${viewport.name}: section skip is not visible`);
+    assert.equal(initial.skipText.replace(/\s+/gu, ""), "スキップ→", `${viewport.name}: section skip label is wrong`);
+    assert.match(initial.skipLabel, /現在のセクションをスキップして/u, `${viewport.name}: section skip has no accessible description`);
+    assert(initial.skipRect && initial.skipRect.height >= 44, `${viewport.name}: section skip hit area is under 44px`);
+    assert(initial.skipRect && initial.skipRect.left >= 0 && initial.skipRect.top >= 0, `${viewport.name}: section skip escaped the viewport`);
+    assert(initial.skipRect && initial.skipRect.right <= viewport.width + 1, `${viewport.name}: section skip is clipped on the right`);
     assert.equal(initial.footerSpanCount, 1);
     assert.doesNotMatch(initial.footerText, /ANTHROPOCENE/u);
     assert.equal(initial.overflowX, 0);
@@ -846,24 +888,79 @@ try {
     await context.close();
   }
 
+  for (const viewport of (pageBreakOnly || controlHoldOnly || separatorOnly) ? [] : viewports) {
+    const skipContext = await browser.newContext({
+      viewport,
+      reducedMotion: "reduce",
+      deviceScaleFactor: viewport.width <= 720 ? 3 : 1,
+    });
+    if (viewport.width <= 720) {
+      await skipContext.addInitScript(() => {
+        Object.defineProperty(Navigator.prototype, "deviceMemory", { configurable: true, get: () => 2 });
+        Object.defineProperty(Navigator.prototype, "hardwareConcurrency", { configurable: true, get: () => 2 });
+      });
+    }
+    const skipPage = await skipContext.newPage();
+    attachDiagnostics(skipPage, `${viewport.name}-skip-flow`);
+    await bootAtTrueEnd(skipPage, `${viewport.name}-skip-flow`);
+    const beforeSkip = await scanFrame(skipPage);
+    const expected = await skipPage.evaluate(() => ({
+      scene: globalThis.GAIA_TRUE_END_STORY.scenes[1].id,
+      title: globalThis.GAIA_TRUE_END_STORY.scenes[1].title,
+      stepId: globalThis.GAIA_TRUE_END_STORY.scenes[1].steps[0].id,
+      counter: `${String(globalThis.GAIA_TRUE_END_STORY.scenes[0].steps.length + 1).padStart(3, "0")} / ${String(globalThis.GAIA_TRUE_END_STORY.scenes.reduce((sum, scene) => sum + scene.steps.length, 0)).padStart(3, "0")}`,
+    }));
+    await skipPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-continuous-field.png`), animations: "disabled" });
+    await skipPage.locator(".true-end-skip-button").click();
+    await skipPage.waitForFunction((sceneId) => {
+      const shell = document.querySelector(".true-end-shell");
+      return shell?.dataset.scene === sceneId
+        && shell.dataset.sectionTransitionPhase === "idle"
+        && !shell.classList.contains("is-scene-separating");
+    }, expected.scene, { timeout: 8_000 });
+    const afterSkip = await scanFrame(skipPage);
+    assert.equal(afterSkip.scene, expected.scene, `${viewport.name}: section skip did not reach the next scene`);
+    assert.equal(afterSkip.title, expected.title, `${viewport.name}: section skip did not update the scene title`);
+    assert.equal(afterSkip.stepId, expected.stepId, `${viewport.name}: section skip did not start at the next scene's first step`);
+    assert.equal(afterSkip.counter, expected.counter, `${viewport.name}: section skip counter is wrong`);
+    assert.equal(afterSkip.finaleVisible, false, `${viewport.name}: section skip jumped past the next scene`);
+    assert.equal(afterSkip.skipVisible, true, `${viewport.name}: section skip disappeared after one use`);
+    assert.match(afterSkip.skipLabel, /現在のセクションをスキップして/u, `${viewport.name}: section skip description was not refreshed`);
+    assert(beforeSkip.skipRect && afterSkip.skipRect, `${viewport.name}: section skip has no measurable layout`);
+    if (viewport.width <= 720) {
+      assert(beforeSkip.skipRect.left <= 16, `${viewport.name}: section skip is not at the requested left edge`);
+      assert(beforeSkip.skipRect.right + 8 <= beforeSkip.sceneTitleRect.left, `${viewport.name}: section skip overlaps the scene title`);
+    } else {
+      assert(beforeSkip.skipRect.right + 16 <= beforeSkip.brandRect.left, `${viewport.name}: section skip overlaps the APEIRONCENE brand`);
+    }
+    await skipPage.screenshot({ path: path.join(outputDir, `${viewport.name}-section-skip-after.png`), animations: "disabled" });
+    report.skipControls.push({
+      viewport: viewport.name,
+      before: { scene: beforeSkip.scene, stepId: beforeSkip.stepId, rect: beforeSkip.skipRect },
+      after: { scene: afterSkip.scene, stepId: afterSkip.stepId, counter: afterSkip.counter },
+      passed: true,
+    });
+    await skipContext.close();
+  }
+
   report.separatorOrder = [];
-  for (const viewport of (pageBreakOnly || controlHoldOnly) ? [] : viewports) {
+  for (const viewport of (pageBreakOnly || controlHoldOnly || skipOnly) ? [] : viewports) {
     const separatorContext = await browser.newContext({ viewport, reducedMotion: "no-preference" });
     const separatorPage = await separatorContext.newPage();
     attachDiagnostics(separatorPage, `${viewport.name}-separator-flow`);
     await bootAtTrueEnd(separatorPage, `${viewport.name}-separator-flow`);
-    const aivaGridStart = await scanFrame(separatorPage);
-    assert.equal(aivaGridStart.speaker, "system", `${viewport.name}: AIVA is unavailable for the grid-motion check`);
-    assert.equal(aivaGridStart.universeManifestation, "signal-matrix", `${viewport.name}: AIVA's signal matrix is unavailable for the grid-motion check`);
-    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-grid-01.png`) });
+    const aivaFieldStart = await scanFrame(separatorPage);
+    assert.equal(aivaFieldStart.speaker, "system", `${viewport.name}: AIVA is unavailable for the field-motion check`);
+    assert.equal(aivaFieldStart.universeManifestation, "signal-matrix", `${viewport.name}: AIVA's signal field is unavailable for the field-motion check`);
+    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-field-01.png`) });
     await separatorPage.waitForTimeout(650);
-    const aivaGridEnd = await scanFrame(separatorPage);
-    assert(aivaGridEnd.universeFrame > aivaGridStart.universeFrame, `${viewport.name}: AIVA's accelerated grid drift did not keep animating`);
-    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-grid-02.png`) });
-    report.aivaGridMotion.push({
+    const aivaFieldEnd = await scanFrame(separatorPage);
+    assert(aivaFieldEnd.universeFrame > aivaFieldStart.universeFrame, `${viewport.name}: AIVA's continuous field did not keep animating`);
+    await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-field-02.png`) });
+    report.aivaFieldMotion.push({
       viewport: viewport.name,
-      frames: aivaGridEnd.universeFrame - aivaGridStart.universeFrame,
-      durationMs: aivaGridEnd.sampledAt - aivaGridStart.sampledAt,
+      frames: aivaFieldEnd.universeFrame - aivaFieldStart.universeFrame,
+      durationMs: aivaFieldEnd.sampledAt - aivaFieldStart.sampledAt,
       passed: true,
     });
     const { firstSceneSteps, firstSpeakerChangeIndex, nextSpeaker } = await separatorPage.evaluate(() => {

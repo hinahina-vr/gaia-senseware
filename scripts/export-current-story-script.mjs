@@ -48,6 +48,14 @@ const staffRoll = Object.freeze({
 });
 
 const novelModeSource = fs.readFileSync(path.join(projectRoot, "novel-mode.js"), "utf8");
+const staffRollCreditSourceLiterals = staffRoll.credits.flatMap(({ role, department, names }) => [
+  role,
+  department,
+  ...names.flatMap((name) => {
+    const theme = name.match(/^(.+?テーマ)(『.+』)$/u);
+    return theme ? [theme[1], theme[2]] : [name];
+  }),
+]);
 const requiredStaffRollLiterals = [
   staffRoll.triggerStepId,
   staffRoll.kicker,
@@ -58,7 +66,7 @@ const requiredStaffRollLiterals = [
   staffRoll.copyright,
   staffRoll.thanks,
   staffRoll.continueLabel,
-  ...staffRoll.credits.flatMap(({ role, department, names }) => [role, department, ...names]),
+  ...staffRollCreditSourceLiterals,
 ];
 for (const literal of requiredStaffRollLiterals) {
   if (!novelModeSource.includes(literal)) throw new Error(`スタッフロールの現行実装から「${literal}」を確認できません`);

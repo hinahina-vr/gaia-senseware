@@ -13,6 +13,7 @@ const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
 const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument);
 const cpuRate = Math.max(1, Number(cpuRateArgument) || 1);
+const mobileProfile = /mobile/iu.test(label);
 fs.mkdirSync(outputDir, { recursive: true });
 
 const metricNames = new Set([
@@ -61,7 +62,9 @@ const report = {
   label,
   targetUrl,
   cpuRate,
-  viewport: { width: 1440, height: 900, deviceScaleFactor: 1 },
+  viewport: mobileProfile
+    ? { width: 390, height: 844, deviceScaleFactor: 1 }
+    : { width: 1440, height: 900, deviceScaleFactor: 1 },
   startedAt: new Date().toISOString(),
   errors: { console: [], page: [], responses404: [], requests: [] },
 };
@@ -106,6 +109,12 @@ try {
     serviceWorkers: "block",
   });
   const page = await context.newPage();
+  if (mobileProfile) {
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, "deviceMemory", { configurable: true, get: () => 2 });
+      Object.defineProperty(Navigator.prototype, "hardwareConcurrency", { configurable: true, get: () => 2 });
+    });
+  }
   page.on("console", (message) => {
     if (message.type() === "error") report.errors.console.push(message.text());
   });

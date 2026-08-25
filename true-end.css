@@ -99,19 +99,19 @@
 
 /* The staff-roll handoff reveals the future field by itself first. The
    interface is released only after the black veil has completely cleared. */
-.true-end-shell[data-entry-phase] :is(.true-end-interface, .true-end-log-button) {
+.true-end-shell[data-entry-phase] :is(.true-end-interface, .true-end-skip-button, .true-end-log-button) {
   transition: opacity 560ms ease, filter 560ms ease;
 }
 
-.true-end-shell[data-entry-phase="background"] :is(.true-end-interface, .true-end-log-button) {
+.true-end-shell[data-entry-phase="background"] :is(.true-end-interface, .true-end-skip-button, .true-end-log-button) {
   visibility: hidden;
   opacity: 0;
   filter: blur(5px);
   pointer-events: none;
 }
 
-.true-end-shell[data-entry-phase="interface"] :is(.true-end-interface, .true-end-log-button),
-.true-end-shell[data-entry-phase="ready"] :is(.true-end-interface, .true-end-log-button) {
+.true-end-shell[data-entry-phase="interface"] :is(.true-end-interface, .true-end-skip-button, .true-end-log-button),
+.true-end-shell[data-entry-phase="ready"] :is(.true-end-interface, .true-end-skip-button, .true-end-log-button) {
   visibility: visible;
   opacity: 1;
   filter: none;
@@ -122,7 +122,7 @@
   z-index: 6;
   top: max(25px, env(safe-area-inset-top));
   right: clamp(88px, 7vw, 122px);
-  left: clamp(26px, 4vw, 76px);
+  left: clamp(164px, 13vw, 210px);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -270,7 +270,7 @@
   outline: none;
 }
 
-.true-end-shell.is-scene-separating :is(.true-end-interface, .true-end-log-button) {
+.true-end-shell.is-scene-separating :is(.true-end-interface, .true-end-skip-button, .true-end-log-button) {
   pointer-events: none;
 }
 
@@ -404,6 +404,49 @@ body.true-end-section-transition .gaia-audio-dock {
   background: rgba(13, 53, 65, 0.88);
   outline: 2px solid rgba(149, 240, 226, 0.18);
   outline-offset: 3px;
+}
+
+.true-end-skip-button {
+  position: absolute;
+  z-index: 35;
+  top: max(18px, env(safe-area-inset-top));
+  left: max(20px, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  min-width: 108px;
+  min-height: 44px;
+  padding: 0 17px 0 19px;
+  border: 1px solid rgba(151, 235, 228, 0.34);
+  border-radius: 999px;
+  background: rgba(5, 24, 36, 0.76);
+  color: rgba(225, 252, 248, 0.92);
+  cursor: pointer;
+  font: 600 12px/1 "Yu Mincho", "Hiragino Mincho ProN", serif;
+  letter-spacing: 0.12em;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.true-end-skip-button i {
+  color: var(--te-accent);
+  font-family: sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+.true-end-skip-button:hover,
+.true-end-skip-button:focus-visible {
+  border-color: rgba(161, 255, 236, 0.76);
+  background: rgba(13, 53, 65, 0.9);
+  outline: 2px solid rgba(149, 240, 226, 0.18);
+  outline-offset: 3px;
+}
+
+.true-end-skip-button[hidden] {
+  display: none;
 }
 
 .true-end-scene-card {
@@ -548,6 +591,15 @@ body.true-end-section-transition .gaia-audio-dock {
     justify-content: flex-end;
   }
 
+  .true-end-skip-button {
+    top: max(12px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    min-width: 98px;
+    min-height: 44px;
+    padding-inline: 15px 13px;
+    font-size: 11px;
+  }
+
   .true-end-brand {
     display: none;
   }
@@ -661,6 +713,7 @@ body.true-end-section-transition .gaia-audio-dock {
   .true-end-progress i,
   .true-end-interface,
   .true-end-log-button,
+  .true-end-skip-button,
   .true-end-scene-card,
   .true-end-scene-card-content,
   .true-end-finale {

@@ -10,15 +10,19 @@
       content="地球と宇宙の公開データを、光・地図・物語・宇宙空間でたどるインタラクティブ展示。"
     />
     <title>惑星の放課後 — GAIA SENSATION</title>
+    <link rel="preload" as="image" href="./assets/brand/brand-logo-dark-surface-590.webp" fetchpriority="high" />
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='24' fill='%2393f4d5'/%3E%3C/svg%3E"
     />
     <style id="gaia-boot-critical">
-      html { background: #02070d; }
+      html, body { width: 100%; height: 100%; margin: 0; background: #02070d; }
+      *, *::before, *::after { box-sizing: border-box; }
+      button, input { font: inherit; }
       html.gaia-booting,
       html.gaia-booting body { min-height: 100%; overflow: hidden; background: #02070d; }
       html.gaia-booting .gaia-opening { visibility: hidden !important; content-visibility: hidden; }
+      .experience { position: fixed; inset: 0; overflow: hidden; }
       .gaia-boot {
         --boot-mint: 145, 229, 211;
         --boot-blue: 105, 165, 205;
@@ -159,48 +163,21 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./styles.css?v=gaia-cross-platform-fonts-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
-    <link rel="stylesheet" href="./scene-transition.css?v=gaia-52" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="preload" as="style" href="./opening.css?v=gaia-mobile-opening-layout-4" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
-    <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./data-journey.css?v=gaia-04" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./novel-mode.css?v=gaia-mobile-chat-panel-1" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./true-end.css?v=gaia-mobile-section-heading-1" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-mobile-installation-1" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./space-mode.css?v=gaia-102" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./sound-mode.css?v=gaia-cross-platform-fonts-1" media="print" onload="this.onload=null;this.media='all'" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-portrait-art-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-19" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-first-screen-p0-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-boot-sequence-1" defer fetchpriority="high"></script>
-    <script src="./data-ledger.js?v=gaia-31" defer fetchpriority="low"></script>
-    <script src="./data-journey.js?v=gaia-01" defer fetchpriority="low"></script>
-    <script src="./scene-transition.js?v=gaia-66" defer fetchpriority="low"></script>
-    <script src="./app-content.js?v=gaia-map10-nine-measure-atlas-1" defer fetchpriority="low"></script>
-    <script src="./app.js?v=gaia-map10-nine-measure-atlas-1" defer fetchpriority="low"></script>
-    <script src="./gx-mode.js?v=gaia-gx-mobile-installation-1" defer fetchpriority="low"></script>
-    <script src="./novel-story-data.js?v=gaia-approved-script-14" defer fetchpriority="low"></script>
-    <script src="./true-end-data.js?v=gaia-finale-webgl-1" defer fetchpriority="low"></script>
-    <script src="./true-end-webgl.js?v=gaia-aiva-grid-tempo-1" defer fetchpriority="low"></script>
-    <script src="./true-end-mode.js?v=gaia-novacene-entry-1" defer fetchpriority="low"></script>
-    <script src="./novel-background-cues.js?v=gaia-amane-no-plug-1" defer fetchpriority="low"></script>
-    <script src="./novel-back-half-cues.js?v=gaia-finale-sunset-1" defer fetchpriority="low"></script>
-    <script src="./novel-temporal.js?v=gaia-temporal-1" defer fetchpriority="low"></script>
-    <script src="./novel-mode.js?v=gaia-dialogue-pagination-1" defer fetchpriority="low"></script>
-    <script src="./space-scenes.js?v=gaia-98" defer fetchpriority="low"></script>
-    <script src="./space-mode.js?v=gaia-100" defer fetchpriority="low"></script>
-    <script src="./sound-mode.js?v=gaia-suno-credit-1" defer fetchpriority="low"></script>
-    <link rel="stylesheet" href="./map-ui-grid-polish.css?v=6" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./mode-exit.css?v=gaia-mobile-corner-controls-1" media="print" onload="this.onload=null;this.media='all'" />
+    <script src="./opening.js?v=gaia-opening-portrait-art-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-adaptive-performance-1" defer fetchpriority="high"></script>
 </head>
-  <body>
+  <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
       <div class="gaia-boot__shell">
         <div class="gaia-boot__copy">
           <p class="gaia-boot__eyebrow">GAIA SENSATION / PLANETARY LINK</p>
           <img
             class="gaia-boot__logo"
-            src="./assets/brand/brand-logo-dark-surface.png"
+            src="./assets/brand/brand-logo-dark-surface-590.webp"
             width="2172"
             height="724"
             alt="惑星の放課後 — GAIA SENSATION"
@@ -336,7 +313,8 @@
               <h1 class="gaia-vn-work-title" data-opening-focus>
                 <img
                   class="gaia-vn-work-logo"
-                  src="./assets/brand/brand-logo-dark-surface.png"
+                  src="./assets/brand/brand-logo-dark-surface-590.webp"
+                  srcset="./assets/brand/brand-logo-dark-surface-590.webp 1x, ./assets/brand/brand-logo-dark-surface-1180.webp 2x"
                   width="2172"
                   height="724"
                   alt="惑星の放課後 — GAIA SENSATION"
@@ -385,6 +363,7 @@
           aria-describedby="gaia-opening-sound-description"
           hidden
         >
+          <div class="gaia-opening-sound-scene" aria-hidden="true"><span></span></div>
           <div class="gaia-opening-sound-modal-scrim" aria-hidden="true"></div>
           <div class="gaia-opening-sound-dialog">
             <div class="gaia-opening-sound-heading">
@@ -499,6 +478,7 @@
         </button>
       </aside>
 
+      <template id="gaia-template-sound">
       <section
         class="sound-layer"
         id="sound-layer"
@@ -674,7 +654,9 @@
           <p>音源は作品内に保存されています。外部サービスへの接続は行いません。</p>
         </footer>
       </section>
+      </template>
 
+      <template id="gaia-template-exploration">
       <canvas
         id="gaia-canvas"
         tabindex="0"
@@ -685,6 +667,8 @@
       <img
         class="abstract-mode-background"
         src="./assets/visuals-07/mode-abstract-v1.webp"
+        width="1672"
+        height="941"
         alt=""
         aria-hidden="true"
         fetchpriority="high"
@@ -1664,7 +1648,9 @@
           </div>
         </aside>
       </section>
+      </template>
 
+      <template id="gaia-template-gx">
       <section
         class="gx-layer"
         id="gx-layer"
@@ -1790,7 +1776,9 @@
           <p></p>
         </article>
       </aside>
+      </template>
 
+      <template id="gaia-template-story">
       <section
         class="novel-layer"
         id="novel-layer"
@@ -2276,7 +2264,9 @@
           </section>
         </aside>
       </section>
+      </template>
 
+      <template id="gaia-template-space">
       <section
         class="space-layer"
         id="space-layer"
@@ -2357,6 +2347,7 @@
           <div class="space-data-scroll" id="space-data-content" tabindex="0"></div>
         </aside>
       </section>
+      </template>
 
       <div class="status">
         <button
@@ -2658,10 +2649,7 @@
 
   <script>
     (() => {
-      const endingMarkers = [
-        'THE LISTENING CONTINUES',
-        '空白を守り、観測を続ける朝'
-      ];
+      const endingMarkers = ['THE LISTENING CONTINUES', '空白を守り、観測を続ける朝'];
       let endingActive = false;
       let updateQueued = false;
 
@@ -2675,18 +2663,10 @@
 
       const updateEndingExit = () => {
         updateQueued = false;
-        const visibleEndingText = Array.from(document.querySelectorAll('body *')).some((element) => {
-          if (element.children.length > 0) return false;
-          const text = (element.textContent || '').trim();
-          if (!endingMarkers.some((marker) => text.includes(marker))) return false;
-          const style = window.getComputedStyle(element);
-          const rect = element.getBoundingClientRect();
-          return style.display !== 'none'
-            && style.visibility !== 'hidden'
-            && Number(style.opacity || 1) > 0
-            && rect.width > 0
-            && rect.height > 0;
-        });
+        const novelLayer = document.querySelector('#novel-layer');
+        const visibleEndingText = novelLayer instanceof HTMLElement
+          && !novelLayer.hidden
+          && endingMarkers.some((marker) => novelLayer.textContent.includes(marker));
         const isStoryRoute = window.location.hash.includes('story')
           || /\/story\/?$/i.test(window.location.pathname);
         const isEnding = isStoryRoute && visibleEndingText;
@@ -2716,19 +2696,16 @@
       };
 
       const startEndingGuard = () => {
-        const observer = new MutationObserver(scheduleEndingUpdate);
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-          characterData: true
-        });
-
         document.addEventListener('click', (event) => {
           if (!endingActive) return;
           if (event.target.closest('button, a, input, select, textarea, [role="button"]')) return;
           returnToEntrance();
         });
 
+        window.addEventListener('gaia:novel-step-rendered', scheduleEndingUpdate);
+        window.addEventListener('gaia:novel-open', scheduleEndingUpdate);
+        window.addEventListener('gaia:return-to-intro', scheduleEndingUpdate);
+        window.addEventListener('hashchange', scheduleEndingUpdate);
         scheduleEndingUpdate();
       };
 
@@ -2739,7 +2716,6 @@
       }
     })();
   </script>
-  <script src="./map-ui-grid-polish.js?v=5" defer></script>
 <style id="close-control-color-refinement">
   /* Keep close controls inside the same translucent blue-green visual system. */
   .gs-close-refined {
@@ -2788,15 +2764,7 @@
 
     const start = () => {
       refine(document);
-      new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.type === 'characterData') {
-            refine(mutation.target.parentElement);
-            return;
-          }
-          mutation.addedNodes.forEach((node) => refine(node));
-        });
-      }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+      window.addEventListener('gaia:mode-group-loaded', () => refine(document));
     };
 
     if (document.readyState === 'loading') {
@@ -2806,6 +2774,5 @@
     }
   })();
 </script>
-  <script src="./particles-v9.js?v=20260805b" defer></script>
 </body>
 </html>

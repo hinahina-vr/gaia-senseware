@@ -13,8 +13,16 @@ const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageE
 const browser = await chromium.launch({ headless: true, executablePath });
 
 try {
-  for (const viewport of [{ name: "pc-1440", width: 1440, height: 900 }, { name: "mobile-390", width: 390, height: 844 }]) {
-    const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
+  for (const viewport of [
+    { name: "pc-high-1440", width: 1440, height: 900, deviceMemory: 8, hardwareConcurrency: 8 },
+    { name: "mobile-high-390", width: 390, height: 844, deviceMemory: 8, hardwareConcurrency: 8 },
+    { name: "mobile-low-390", width: 390, height: 844, deviceMemory: 2, hardwareConcurrency: 2, compact: true },
+  ]) {
+    const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, reducedMotion: "no-preference" });
+    await context.addInitScript(({ deviceMemory, hardwareConcurrency }) => {
+      Object.defineProperty(navigator, "deviceMemory", { configurable: true, get: () => deviceMemory });
+      Object.defineProperty(navigator, "hardwareConcurrency", { configurable: true, get: () => hardwareConcurrency });
+    }, viewport);
     const page = await context.newPage();
     const requests = [];
     let requestPhase = "boot";
@@ -30,7 +38,7 @@ try {
       await new Promise((resolve) => setTimeout(resolve, 1200));
       await route.continue();
     });
-    await page.route("**/opening-mizuha-keyvisual-v1.png", async (route) => {
+    await page.route("**/opening-mizuha-keyvisual-*.webp", async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 3000));
       await route.continue();
     });
@@ -64,9 +72,9 @@ try {
         partialPixels: alphas.filter((alpha) => alpha > 0 && alpha < 255).length,
       };
     });
-    assert.equal(bootLogo.src, "./assets/brand/brand-logo-dark-surface.png", `${viewport.name}: boot did not select the dark-surface logo`);
+    assert.equal(bootLogo.src, "./assets/brand/brand-logo-dark-surface-590.webp", `${viewport.name}: boot did not select the optimized dark-surface logo`);
     assert.equal(bootLogo.alt, "惑星の放課後 — GAIA SENSATION", `${viewport.name}: boot logo alternative text changed`);
-    assert.deepEqual([bootLogo.naturalWidth, bootLogo.naturalHeight], [2172, 724], `${viewport.name}: boot logo source dimensions changed`);
+    assert.deepEqual([bootLogo.naturalWidth, bootLogo.naturalHeight], [590, 197], `${viewport.name}: optimized boot logo source dimensions changed`);
     assert.equal(bootLogo.cornerAlpha, 0, `${viewport.name}: boot logo background is not transparent`);
     assert(bootLogo.maximumAlpha >= 240 && bootLogo.transparentPixels > 1_000 && bootLogo.partialPixels > 1_000, `${viewport.name}: boot logo lost its solid strokes or soft alpha edges`);
     assert(bootLogo.rect.left >= 0 && bootLogo.rect.top >= 0 && bootLogo.rect.right <= viewport.width + 1 && bootLogo.rect.bottom <= viewport.height + 1, `${viewport.name}: boot logo escaped the viewport`);
@@ -84,10 +92,10 @@ try {
     assert.equal(await page.evaluate(() => document.querySelector("#gaia-opening")?.classList.contains("is-active")), false, `${viewport.name}: opening started before sound setup`);
     const deferredDuringBoot = requests.filter(({ phase, url }) => phase === "boot" && /\/(?:assets\/audio|opening-(?:mizuha|amane)-keyvisual|open-data-archive-bg|gateway-keyvisual|mode-space-v2|sound-archive-bg|novel-title-keyvisual|novel-bg-festival-five-plane-projection)/u.test(url));
     assert.deepEqual(deferredDuringBoot, [], `${viewport.name}: later media started during the lightweight boot view`);
-    assert(requests.some(({ phase, url }) => phase === "boot" && url.endsWith("/assets/brand/brand-logo-dark-surface.png")), `${viewport.name}: dark-surface logo was not requested during boot`);
+    assert(requests.some(({ phase, url }) => phase === "boot" && /\/assets\/brand\/brand-logo-dark-surface-(?:590|1180)\.webp$/u.test(url)), `${viewport.name}: optimized dark-surface logo was not requested during boot`);
     assert.equal(requests.some(({ url }) => url.endsWith("/assets/brand/brand-logo-light-surface.png")), false, `${viewport.name}: light-surface logo was unnecessarily requested on the dark boot`);
     await page.waitForTimeout(650);
-    assert(requests.some(({ phase, url }) => phase === "sound-choice" && /opening-(?:mizuha|amane)-keyvisual/u.test(url)), `${viewport.name}: opening art did not warm during the sound choice`);
+    assert.equal(requests.some(({ phase, url }) => phase === "sound-choice" && /opening-(?:mizuha|amane)-keyvisual/u.test(url)), false, `${viewport.name}: opening art started before sound confirmation`);
     assert.equal(requests.some(({ url }) => /\/assets\/audio\//u.test(url)), false, `${viewport.name}: audio started before consent`);
     requestPhase = "after-choice";
     await page.locator("#gaia-opening-sound-off").click();
@@ -124,7 +132,29 @@ try {
     assert.match(scan.statusText, /オープニング/u);
     assert.equal(scan.overflowX, 0);
     assert.equal(scan.overflowY, 0);
-    assert(requests.some(({ phase, url }) => phase !== "boot" && url.includes("opening-mizuha-keyvisual-v1.png")), `${viewport.name}: opening art never started`);
+    const timing = await page.evaluate(() => {
+      const mark = (name) => performance.getEntriesByName(name, "mark").at(-1)?.startTime ?? -1;
+      return {
+        click: mark("gaia:sound-choice-click"),
+        feedback: mark("gaia:sound-choice-feedback-painted"),
+        preload: mark("gaia:opening-preload-start"),
+      };
+    });
+    assert(timing.click >= 0 && timing.feedback >= timing.click, `${viewport.name}: sound choice paint marks are missing`);
+    assert(timing.feedback - timing.click < 100, `${viewport.name}: sound choice feedback took ${timing.feedback - timing.click}ms`);
+    assert(timing.preload >= timing.feedback, `${viewport.name}: opening preload started before feedback paint`);
+    const artwork = await page.evaluate(() => ({
+      quality: document.documentElement.dataset.gaiaArtworkQuality,
+      mizuha: getComputedStyle(document.querySelector("#gaia-opening")).getPropertyValue("--opening-mizuha-image"),
+    }));
+    assert.equal(artwork.quality, viewport.compact ? "compact" : "full", `${viewport.name}: capability tier changed`);
+    if (viewport.width <= 720) {
+      assert.match(artwork.mizuha, viewport.compact ? /portrait-v2-720\.webp/u : /portrait-v2\.webp/u, `${viewport.name}: wrong portrait art tier`);
+      assert(requests.some(({ phase, url }) => phase !== "boot" && url.includes(viewport.compact ? "opening-mizuha-keyvisual-portrait-v2-720.webp" : "opening-mizuha-keyvisual-portrait-v2.webp")), `${viewport.name}: portrait opening art never started`);
+    } else {
+      assert.match(artwork.mizuha, /opening-mizuha-keyvisual-v1\.webp/u, `${viewport.name}: desktop art changed`);
+      assert(requests.some(({ phase, url }) => phase !== "boot" && url.includes("opening-mizuha-keyvisual-v1.webp")), `${viewport.name}: desktop opening art never started`);
+    }
     assert.equal(requests.some(({ url }) => /\/assets\/audio\//u.test(url)), false, `${viewport.name}: muted opening fetched audio`);
     await page.evaluate(() => {
       const opening = document.querySelector("#gaia-opening");
@@ -133,7 +163,7 @@ try {
       preload.hidden = false;
     });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`) });
-    report.scans.push({ viewport: viewport.name, requests, ...scan, passed: true });
+    report.scans.push({ viewport: viewport.name, requests, timing, ...scan, passed: true });
     await context.close();
   }
   assert.deepEqual(report.consoleErrors, []);

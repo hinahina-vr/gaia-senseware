@@ -45,7 +45,9 @@ const attachDiagnostics = (page, label) => {
 
 const bootAtEnding = async (page, reducedMotion = false) => {
   await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
+  await page.waitForFunction(() => Boolean(globalThis.GaiaModeLoader), null, { timeout: 30_000 });
+  await page.evaluate(() => globalThis.GaiaModeLoader.load("story"));
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY), null, { timeout: 90_000 });
   await page.evaluate(({ storageKey, configKey, reduced }) => {
     localStorage.clear();
     const state = {
@@ -77,7 +79,7 @@ const bootAtEnding = async (page, reducedMotion = false) => {
   }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, reduced: reducedMotion });
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-staff-roll"), null, { timeout: 15_000 });
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-staff-roll"), null, { timeout: 30_000 });
   await page.evaluate(() => document.fonts.ready);
 };
 
@@ -91,17 +93,26 @@ const scanEnding = (page) => page.evaluate(() => {
   const closingAction = document.querySelector(".novel-staff-roll-closing-action");
   const closingMark = document.querySelector(".novel-staff-roll-closing-mark");
   const toolbar = document.querySelector(".novel-topbar");
+  const temporalCaption = document.querySelector(".novel-signal-caption");
+  const dataSkip = document.querySelector(".novel-staff-roll-data-skip");
+  const audioDock = document.querySelector(".gaia-audio-dock");
+  const audioToggle = document.querySelector("#gaia-audio-toggle");
   const closing = document.querySelector(".novel-staff-roll-closing");
   const lastCredit = document.querySelector(".novel-staff-roll-credit:last-child");
   const trackStyle = getComputedStyle(track);
   const whiteoutStyle = getComputedStyle(whiteout);
   const stageStyle = getComputedStyle(stage);
   const toolbarStyle = getComputedStyle(toolbar);
+  const temporalCaptionStyle = temporalCaption ? getComputedStyle(temporalCaption) : null;
+  const audioDockStyle = audioDock ? getComputedStyle(audioDock) : null;
+  const audioToggleStyle = audioToggle ? getComputedStyle(audioToggle) : null;
   const buttonRect = button?.getBoundingClientRect();
   const closingMarkRect = closingMark?.getBoundingClientRect();
   const trackRect = track?.getBoundingClientRect();
   const closingRect = closing?.getBoundingClientRect();
   const lastCreditRect = lastCredit?.getBoundingClientRect();
+  const dataSkipRect = dataSkip?.getBoundingClientRect();
+  const audioDockRect = audioDock?.getBoundingClientRect();
   const buttonStyle = button ? getComputedStyle(button) : null;
   const trackCenterX = trackRect ? trackRect.left + (trackRect.width / 2) : 0;
   const creditRows = [...document.querySelectorAll(".novel-staff-roll-credit")].map((row) => {
@@ -125,6 +136,18 @@ const scanEnding = (page) => page.evaluate(() => {
       namesBottomOffset,
       names: nameElements.map((name) => name.textContent.trim()),
       nameOverflow: nameElements.some((name) => name.scrollWidth > name.clientWidth + 1),
+      musicTracks: [...row.querySelectorAll(".novel-staff-roll-credit-name.is-music-track")].map((track) => {
+        const label = track.querySelector(".novel-staff-roll-music-label");
+        const title = track.querySelector(".novel-staff-roll-music-title");
+        const titleRange = document.createRange();
+        if (title) titleRange.selectNodeContents(title);
+        return {
+          label: label?.textContent?.trim() || "",
+          title: title?.textContent?.trim() || "",
+          titleLines: new Set([...titleRange.getClientRects()].map(({ top }) => Math.round(top * 2) / 2)).size,
+          titleOverflow: title ? title.scrollWidth > title.clientWidth + 1 : true,
+        };
+      }),
     };
   });
   return {
@@ -139,6 +162,31 @@ const scanEnding = (page) => page.evaluate(() => {
     whiteoutAnimation: whiteoutStyle.animationName,
     stageBackground: stageStyle.backgroundImage,
     toolbarHidden: toolbarStyle.visibility === "hidden" && Number(toolbarStyle.opacity) === 0,
+    temporalCaptionHidden: !temporalCaption?.getClientRects().length
+      || temporalCaptionStyle?.visibility === "hidden"
+      || Number(temporalCaptionStyle?.opacity) === 0,
+    dataSkipRect: dataSkipRect ? {
+      left: dataSkipRect.left,
+      top: dataSkipRect.top,
+      right: dataSkipRect.right,
+      bottom: dataSkipRect.bottom,
+      height: dataSkipRect.height,
+    } : null,
+    audioDockRect: audioDockRect ? {
+      left: audioDockRect.left,
+      top: audioDockRect.top,
+      right: audioDockRect.right,
+      bottom: audioDockRect.bottom,
+      height: audioDockRect.height,
+    } : null,
+    topControlsOverlap: Boolean(dataSkipRect && audioDockRect
+      && dataSkipRect.left < audioDockRect.right
+      && dataSkipRect.right > audioDockRect.left
+      && dataSkipRect.top < audioDockRect.bottom
+      && dataSkipRect.bottom > audioDockRect.top),
+    audioDockBackground: audioDockStyle?.backgroundColor || "",
+    audioDockExpanded: audioDock?.classList.contains("is-expanded") || false,
+    audioToggleColor: audioToggleStyle?.color || "",
     fastForwarding: layer?.classList.contains("is-fast-forwarding") ?? false,
     skipHintCount: document.querySelectorAll(".novel-staff-roll-skip-hint").length,
     buttonHidden: button?.closest(".novel-staff-roll-finale")?.hidden ?? true,
@@ -222,7 +270,11 @@ const scanTrueEndDestination = (page) => page.evaluate((storageKey) => {
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
   for (const viewport of viewports) {
-    const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
+    const context = await browser.newContext({
+      viewport,
+      reducedMotion: "no-preference",
+      deviceScaleFactor: viewport.width <= 720 ? 3 : 1,
+    });
     const page = await context.newPage();
     attachDiagnostics(page, viewport.name);
     const audioRuntimeResponse = await page.request.get(new URL("/opening-audio.js", baseUrl).href);
@@ -244,6 +296,14 @@ try {
     assert.equal(initial.text.includes("\nEND"), false, `${viewport.name}: obsolete END mark remains`);
     assert.equal(initial.skipHintCount, 0, `${viewport.name}: obsolete staff-roll skip hint remains`);
     assert.equal(initial.toolbarHidden, true, `${viewport.name}: normal VN toolbar remained over the ending`);
+    assert.equal(initial.temporalCaptionHidden, true, `${viewport.name}: story date remained over the staff roll`);
+    assert(initial.dataSkipRect && initial.dataSkipRect.height >= 44, `${viewport.name}: staff-roll skip hit area is under 44px`);
+    assert(initial.audioDockRect && initial.audioDockRect.height >= 44, `${viewport.name}: staff-roll audio hit area is under 44px`);
+    assert.equal(initial.topControlsOverlap, false, `${viewport.name}: staff-roll skip and audio controls overlap`);
+    assert(initial.dataSkipRect.left <= (viewport.width <= 720 ? 16 : 22), `${viewport.name}: staff-roll skip is not anchored on the left`);
+    assert(initial.audioDockRect.right >= viewport.width - (viewport.width <= 720 ? 16 : 22), `${viewport.name}: staff-roll audio is not anchored on the right`);
+    assert.match(initial.audioDockBackground, /rgba?\(255, 255, 252(?:, 0\.94)?\)/u, `${viewport.name}: staff-roll audio control is not white (${initial.audioDockBackground})`);
+    assert.match(initial.audioToggleColor, /rgba?\(19, 67, 76(?:, 0\.92)?\)/u, `${viewport.name}: staff-roll audio icon is not dark on white (${initial.audioToggleColor})`);
     assert.match(initial.stageBackground, /event-cg-exhibition-finale-sunset-(?:v1|mobile-v1)\.png/u);
     [
       "原案・企画・制作",
@@ -258,8 +318,10 @@ try {
       "OpenAI ImageGen",
       "背景美術",
       "音楽",
-      "オープニングテーマ『Planet Forecast - Hope』",
-      "エンディングテーマ『AfterSchool, AfterGlow』",
+      "オープニングテーマ",
+      "『Planet Forecast - Hope』",
+      "エンディングテーマ",
+      "『AfterSchool, AfterGlow』",
       "by Suno AI",
       "ZEN大学『共創地球論』",
       "ZEN大学『人新世の人類学』",
@@ -296,14 +358,31 @@ try {
       "by Suno AI",
     ], `${viewport.name}: music credit wording or order is incorrect`);
     assert.equal(musicCredit?.nameOverflow, false, `${viewport.name}: music credit overflows horizontally`);
+    assert.deepEqual(musicCredit?.musicTracks.map(({ label, title }) => ({ label, title })), [
+      { label: "オープニングテーマ", title: "『Planet Forecast - Hope』" },
+      { label: "エンディングテーマ", title: "『AfterSchool, AfterGlow』" },
+    ], `${viewport.name}: music theme labels and titles are not split into separate lines`);
+    musicCredit?.musicTracks.forEach((track) => {
+      assert.equal(track.titleLines, 1, `${viewport.name}: ${track.title} wrapped inside its title line`);
+      assert.equal(track.titleOverflow, false, `${viewport.name}: ${track.title} does not fit the credit width`);
+    });
     assert.equal(initial.overflowX, 0);
     assert.equal(initial.overflowY, 0);
     assert.equal(initial.bodyOverflowX, 0);
 
-    await page.waitForTimeout(1_750);
-    const whiteoutOpacity = await page.locator(".novel-staff-roll-whiteout").evaluate((node) => Number(getComputedStyle(node).opacity));
+    const whiteoutOpacity = await page.locator(".novel-staff-roll-whiteout").evaluate((node) => {
+      const animation = node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-whiteout");
+      if (animation) {
+        animation.pause();
+        animation.currentTime = 1_900;
+      }
+      return Number(getComputedStyle(node).opacity);
+    });
     assert(whiteoutOpacity >= 0.8, `${viewport.name}: whiteout never covered the finale (${whiteoutOpacity})`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-whiteout.png`) });
+    await page.locator(".novel-staff-roll-whiteout").evaluate((node) => {
+      node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-whiteout")?.play();
+    });
 
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 6_500 });
     const playbackBeforeToggle = await page.evaluate(() => globalThis.GaiaOpeningAudio?.getPlaybackState?.());
@@ -332,7 +411,9 @@ try {
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-rolling.png`) });
 
     const stepBeforeBackgroundClick = await page.locator("#novel-layer").getAttribute("data-step-id");
-    await page.locator(".novel-staff-roll-stage").click({ position: { x: 20, y: 20 } });
+    await page.locator(".novel-staff-roll-stage").click({
+      position: { x: viewport.width / 2, y: viewport.height / 2 },
+    });
     await page.waitForTimeout(180);
     const afterBackgroundClick = await scanEnding(page);
     assert.equal(afterBackgroundClick.phase, "rolling", `${viewport.name}: background click skipped the staff roll`);
@@ -470,7 +551,11 @@ try {
     await context.close();
   }
 
-  const reducedContext = await browser.newContext({ viewport: viewports[1], reducedMotion: "reduce" });
+  const reducedContext = await browser.newContext({
+    viewport: viewports[1],
+    reducedMotion: "reduce",
+    deviceScaleFactor: 3,
+  });
   const reducedPage = await reducedContext.newPage();
   attachDiagnostics(reducedPage, "mobile-390-reduced");
   await bootAtEnding(reducedPage, true);

@@ -5821,6 +5821,7 @@ highlight(cards[sequenceIndex]);
         gaiaSnapshot.generatedAt,
       );
     }
+    window.dispatchEvent(new CustomEvent("gaia:japan-mode-change"));
   };
 
   const selectMode = (index, { resetAutoTimer = true } = {}) => {
@@ -6490,6 +6491,7 @@ highlight(cards[sequenceIndex]);
       updateJapanHash(true);
     }
 
+    window.dispatchEvent(new CustomEvent("gaia:japan-open"));
     requestAnimationFrame(() => {
       renderJapanTiles();
       animateEarthViewForMode(modeToIndex);

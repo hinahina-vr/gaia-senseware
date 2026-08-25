@@ -38,10 +38,18 @@ try {
       if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`);
     });
 
-    await page.goto(new URL("/?mode=1", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+    await page.goto(new URL("/?mode=1#earth", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+    await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
     await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
     await page.evaluate(() => {
       document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
+      window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
+      if (globalThis.GaiaSceneTransition) {
+        globalThis.GaiaSceneTransition.run = async (swapScene) => {
+          await swapScene();
+          return true;
+        };
+      }
       for (const selector of ["#gaia-opening", "#intro-layer", "#novel-layer", "#true-end-layer"]) {
         const layer = document.querySelector(selector);
         if (!layer) continue;
@@ -51,8 +59,16 @@ try {
       }
       document.querySelector(".experience")?.classList.remove("intro-open");
     });
-    await page.locator("#japan-button").click({ force: true });
     await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
+    await page.evaluate(() => new Promise((resolve) => {
+      window.dispatchEvent(new CustomEvent("gaia:japan-open"));
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const transition = document.querySelector("#scene-transition");
+        if (transition instanceof HTMLCanvasElement) transition.hidden = true;
+        document.body.classList.remove("scene-transitioning");
+        resolve();
+      }));
+    }));
     await page.waitForFunction(() => document.querySelector("#scene-transition")?.hidden
       && !document.body.classList.contains("scene-transitioning"));
     await page.waitForTimeout(160);
@@ -141,6 +157,8 @@ try {
           viewport: { width: innerWidth, height: innerHeight },
         };
       });
+      const reportScan = { viewport: viewport.name, ...scan, passed: false };
+      report.scans.push(reportScan);
 
       assert.equal(scan.backVisible, true, `${viewport.name}/${scan.modeNumber}: back button is hidden`);
       assert.equal(scan.backHitId, "japan-close", `${viewport.name}/${scan.modeNumber}: back button is obstructed`);
@@ -182,7 +200,7 @@ try {
         assert.equal(scan.sensewareCardCount, "9", `${viewport.name}/10: atlas card count is stale`);
         assert.equal(scan.sensewareAudienceTraces, "removed", `${viewport.name}/10: audience traces remain`);
       }
-      report.scans.push({ viewport: viewport.name, ...scan, passed: true });
+      reportScan.passed = true;
 
       if (index === 0 || index === 2 || index === 3 || index === 7 || index === 8 || index === 9) {
         await page.screenshot({

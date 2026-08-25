@@ -9191,6 +9191,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 .novel-layer.is-staff-roll > .novel-particles,
 .novel-layer.is-staff-roll > .novel-veil,
 .novel-layer.is-staff-roll > .novel-scanlines,
+.novel-layer.is-staff-roll .novel-signal-caption,
 .novel-layer.is-staff-roll .novel-runtime::before {
   visibility: hidden !important;
   opacity: 0 !important;
@@ -9245,7 +9246,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   position: absolute;
   z-index: 6;
   top: max(18px, env(safe-area-inset-top));
-  right: max(18px, env(safe-area-inset-right));
+  right: auto;
+  left: max(18px, env(safe-area-inset-left));
   display: inline-grid;
   grid-template-columns: auto auto;
   align-items: center;
@@ -9455,6 +9457,26 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 
 .novel-staff-roll-credit-name {
   display: block;
+}
+
+.novel-staff-roll-credit-name.is-music-track {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  gap: 1px;
+}
+
+.novel-staff-roll-music-label {
+  font-size: 0.72em;
+  letter-spacing: 0.12em;
+}
+
+.novel-staff-roll-music-title {
+  max-width: 100%;
+  font-size: 0.82em;
+  letter-spacing: 0.04em;
+  text-indent: 0.04em;
+  white-space: nowrap;
 }
 
 .novel-staff-roll-credit-note {
@@ -9799,7 +9821,8 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
 
   .novel-staff-roll > .novel-staff-roll-data-skip {
     top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
+    right: auto;
+    left: max(12px, env(safe-area-inset-left));
     min-width: 112px;
     min-height: 44px;
     gap: 13px;
@@ -9844,6 +9867,16 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
 
   .novel-staff-roll-credits dd {
     font-size: clamp(16px, 4.8vw, 20px);
+  }
+
+  .novel-staff-roll-music-label {
+    font-size: clamp(12px, 3.4vw, 14px);
+  }
+
+  .novel-staff-roll-music-title {
+    font-size: clamp(13px, 4vw, 16px);
+    letter-spacing: 0.02em;
+    text-indent: 0.02em;
   }
 
   .novel-staff-roll-closing {

@@ -9,6 +9,7 @@
   let height = 0;
   let dpr = 1;
   let raf = 0;
+  let running = false;
   let last = performance.now();
   let stars = [];
   let motes = [];
@@ -212,6 +213,7 @@
   };
 
   const tick = (time) => {
+    if (!running) return;
     const dt = Math.min((time - last) / 1000, 0.05);
     last = time;
     draw(time, dt);
@@ -219,21 +221,52 @@
   };
 
   const start = () => {
+    if (running) return;
+    running = true;
     ensureCanvas();
     resize();
+    canvas.style.setProperty("display", "block", "important");
     cancelAnimationFrame(raf);
     if (!reduceMotion) raf = requestAnimationFrame(tick);
   };
 
-  addEventListener("resize", resize, { passive: true });
-  new MutationObserver(() => {
-    hideOldCanvases();
-    if (!document.getElementById(ID) || canvas.parentNode !== document.documentElement) {
-      ensureCanvas();
-      resize();
-    }
-  }).observe(document.documentElement, { childList: true, subtree: true });
+  const stop = () => {
+    running = false;
+    cancelAnimationFrame(raf);
+    raf = 0;
+    if (canvas) canvas.style.setProperty("display", "none", "important");
+  };
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
-  else start();
+  const shouldRun = () => !document.hidden
+    && !document.body.classList.contains("gaia-opening-active")
+    && !document.body.classList.contains("novel-open")
+    && !document.body.classList.contains("gx-open")
+    && !document.body.classList.contains("space-open")
+    && !document.body.classList.contains("true-end-open");
+
+  const refresh = () => {
+    if (shouldRun()) start();
+    else stop();
+  };
+
+  addEventListener("resize", () => {
+    if (running) resize();
+  }, { passive: true });
+  document.addEventListener("visibilitychange", refresh);
+  new MutationObserver(refresh).observe(document.body, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  [
+    "gaia:opening-complete",
+    "gaia:novel-open",
+    "gaia:return-to-intro",
+    "gaia:gx-open",
+    "gaia:gx-return-to-novel",
+    "gaia:space-open-at-mode",
+    "gaia:space-return-to-novel",
+  ].forEach((eventName) => addEventListener(eventName, () => requestAnimationFrame(refresh)));
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", refresh, { once: true });
+  else refresh();
 })();

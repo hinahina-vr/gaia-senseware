@@ -12,6 +12,8 @@
 body.map-grid-desktop .map-grid-polish {
   position: fixed !important;
   z-index: 86 !important;
+  left: var(--map-grid-gutter) !important;
+  width: var(--map-grid-rail) !important;
   box-sizing: border-box !important;
   margin: 0 !important;
   color: rgba(239, 249, 248, 0.94) !important;
@@ -59,7 +61,7 @@ body.map-grid-desktop .map-grid-polish::after {
 }
 
 body.map-grid-desktop .map-grid-intro {
-  width: var(--map-grid-rail) !important;
+  top: clamp(82px, 9vh, 108px) !important;
   padding: clamp(22px, 1.8vw, 31px) !important;
 }
 
@@ -72,16 +74,21 @@ body.map-grid-desktop .map-grid-intro #japan-title {
 
 body.map-grid-desktop .map-grid-bank,
 body.map-grid-desktop .map-grid-data {
-  width: var(--map-grid-rail) !important;
   padding: clamp(15px, 1.15vw, 21px) !important;
 }
 
 body.map-grid-desktop .map-grid-bank {
+  top: var(--map-grid-bank-top, 330px) !important;
   border-left-color: rgba(142, 224, 216, 0.48) !important;
 }
 
 body.map-grid-desktop .map-grid-data {
+  top: var(--map-grid-data-top, 460px) !important;
   border-left: 2px solid rgba(119, 190, 236, 0.52) !important;
+}
+
+body.map-grid-desktop.novel-mode-detour #japan-layer[data-story-mode="map01"] .map-grid-data {
+  top: 72px !important;
 }
 
 /* The data heading is a decorative floating plate. On wide story MAP views
@@ -168,7 +175,7 @@ body:has(.experience.japan-open) .gaia-audio-dock {
   }
 
   .experience.japan-open .signal-console-map {
-    top: max(328px, calc(env(safe-area-inset-top) + 316px)) !important;
+    top: max(340px, calc(env(safe-area-inset-top) + 328px)) !important;
     bottom: auto !important;
   }
 

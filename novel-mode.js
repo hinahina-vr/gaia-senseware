@@ -4196,8 +4196,8 @@
         role: "音楽",
         department: "MUSIC",
         names: [
-          "オープニングテーマ『Planet Forecast - Hope』",
-          "エンディングテーマ『AfterSchool, AfterGlow』",
+          { label: "オープニングテーマ", title: "『Planet Forecast - Hope』" },
+          { label: "エンディングテーマ", title: "『AfterSchool, AfterGlow』" },
           "by Suno AI",
         ],
       },
@@ -4219,7 +4219,18 @@
       names.forEach((name) => {
         const creditName = document.createElement("span");
         creditName.className = "novel-staff-roll-credit-name";
-        creditName.textContent = name;
+        if (name && typeof name === "object") {
+          creditName.classList.add("is-music-track");
+          const trackLabel = document.createElement("span");
+          const trackTitle = document.createElement("span");
+          trackLabel.className = "novel-staff-roll-music-label";
+          trackTitle.className = "novel-staff-roll-music-title";
+          trackLabel.textContent = name.label;
+          trackTitle.textContent = name.title;
+          creditName.append(trackLabel, trackTitle);
+        } else {
+          creditName.textContent = name;
+        }
         description.append(creditName);
       });
       if (note) {
@@ -4458,6 +4469,9 @@
     syncScriptDebug(step);
     if (!canAdvanceStep(step) && fastForwardEnabled()) stopFastForwardAtBarrier();
     saveProgress();
+    window.dispatchEvent(new CustomEvent("gaia:novel-step-rendered", {
+      detail: { stepId: step.id, type: step.type },
+    }));
     if (step.id === "welcome_chat_095") return renderStaffRoll(step);
     if (["narration", "dialogue"].includes(step.type)) return renderSimpleStep(step);
     if (["chat", "record", "ui", "transition"].includes(step.type)) return renderRichStep(step);

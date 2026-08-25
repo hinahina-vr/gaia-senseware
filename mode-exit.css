@@ -153,7 +153,7 @@ body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
 }
 
 body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock {
-  right: max(162px, calc(env(safe-area-inset-right) + 162px)) !important;
+  right: max(18px, env(safe-area-inset-right)) !important;
 }
 
 .gx-layer[data-return-to="novel"] .gx-close.mode-exit-control {
@@ -458,4 +458,34 @@ body.sound-mode-open .status {
     width: 14px;
     height: 14px;
   }
+}
+
+/* The bright staff roll uses opposite corners for its two persistent actions.
+   Keep audio as a white control instead of nesting its dark disc inside SKIP. */
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock,
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock:hover,
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock:focus-within,
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock:not(.is-expanded),
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock:not(.is-expanded):hover,
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock:not(.is-expanded):focus-within {
+  border-color: rgba(37, 102, 111, 0.34);
+  background: rgba(255, 255, 252, 0.94);
+  box-shadow: 0 9px 26px rgba(35, 82, 89, 0.14);
+  color: rgba(19, 67, 76, 0.92);
+  -webkit-backdrop-filter: blur(14px) saturate(1.04);
+  backdrop-filter: blur(14px) saturate(1.04);
+}
+
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock label > span,
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock output,
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock #gaia-audio-toggle {
+  color: rgba(19, 67, 76, 0.92);
+}
+
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle::before,
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle:hover::before,
+body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle:focus-visible::before {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }

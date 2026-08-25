@@ -8,6 +8,7 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const rootDirectory = path.resolve(scriptDirectory, "..");
 const source = await readFile(path.join(rootDirectory, "app-content.js"), "utf8");
 const indexHtml = await readFile(path.join(rootDirectory, "index.html"), "utf8");
+const modeLoader = await readFile(path.join(rootDirectory, "gaia-mode-loader.js"), "utf8");
 const sandbox = { window: {} };
 
 vm.createContext(sandbox);
@@ -50,10 +51,11 @@ assert.ok(content.JAPAN_NODES.length > 0, "Japan node catalog is empty");
 assert.ok(content.EARTH_NODES.length > 0, "Earth node catalog is empty");
 assert.ok(content.SIMPLE_WORLD_LANDMASSES.length > 0, "Fallback world geometry is empty");
 
-const contentScriptPosition = indexHtml.indexOf('src="./app-content.js');
-const appScriptPosition = indexHtml.indexOf('src="./app.js');
-assert.ok(contentScriptPosition >= 0, "index.html does not load app-content.js");
-assert.ok(appScriptPosition >= 0, "index.html does not load app.js");
+assert.ok(indexHtml.includes('src="./gaia-mode-loader.js'), "index.html does not load gaia-mode-loader.js");
+const contentScriptPosition = modeLoader.indexOf('"./app-content.js');
+const appScriptPosition = modeLoader.indexOf('"./app.js');
+assert.ok(contentScriptPosition >= 0, "mode loader does not load app-content.js");
+assert.ok(appScriptPosition >= 0, "mode loader does not load app.js");
 assert.ok(contentScriptPosition < appScriptPosition, "app-content.js must load before app.js");
 
 console.log(`app-content.js: ${modeIds.length} modes and ${requiredKeys.length} catalogs verified`);

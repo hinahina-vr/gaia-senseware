@@ -60,6 +60,7 @@
     let transitioning = false;
     let complete = false;
     let universeRuntime = null;
+    let restoringUniverseRuntime = false;
     let sceneCardTimer = 0;
     let sceneCardTimerResolve = null;
     let sceneCardFadeTimer = 0;
@@ -108,6 +109,13 @@
     logButton.type = "button";
     logButton.setAttribute("aria-label", "APEIRONCENEの会話履歴を開く");
 
+    const skipButton = createElement("button", "true-end-skip-button");
+    skipButton.type = "button";
+    skipButton.append(
+      createElement("span", "", "スキップ"),
+      createElement("i", "", "→"),
+    );
+
     const sceneCard = createElement("div", "true-end-scene-card");
     sceneCard.setAttribute("aria-hidden", "true");
     sceneCard.dataset.phase = "idle";
@@ -123,6 +131,7 @@
       interfaceLayer.setAttribute("aria-hidden", "true");
       dialogue.disabled = true;
       logButton.disabled = true;
+      skipButton.disabled = true;
     }
 
     const finale = createElement("section", "true-end-finale");
@@ -140,12 +149,35 @@
     shell.append(
       universe,
       interfaceLayer,
+      skipButton,
       logButton,
       sceneCard,
       finale,
     );
     host.replaceChildren(shell);
-    universeRuntime = globalThis.GaiaTrueEndWebGL?.create?.({ canvas: universe, shell }) || null;
+    const createUniverseRuntime = () => globalThis.GaiaTrueEndWebGL?.create?.({
+      canvas: universe,
+      shell,
+      onRestore: () => {
+        if (restoringUniverseRuntime) return;
+        restoringUniverseRuntime = true;
+        requestAnimationFrame(() => {
+          universeRuntime?.destroy?.();
+          universe.classList.remove("is-fallback");
+          universeRuntime = createUniverseRuntime();
+          const activeScene = story.scenes[sceneIndex];
+          const activeStep = activeScene?.steps?.[stepIndex];
+          universeRuntime?.setScene?.(activeScene?.backdrop || "awakening", { immediate: true });
+          universeRuntime?.setPresence?.(activeStep?.speaker || "narrator", {
+            emphasis: activeStep?.emphasis === true,
+            signal: activeStep?.id || "",
+            immediate: true,
+          });
+          restoringUniverseRuntime = false;
+        });
+      },
+    }) || null;
+    universeRuntime = createUniverseRuntime();
     if (!universeRuntime) {
       universe.classList.add("is-fallback");
       universe.dataset.webglState = "fallback";
@@ -332,6 +364,12 @@
       sceneCardNumber.lang = SYSTEM_LANGUAGE;
       sceneCardTitle.textContent = current.title;
       shell.dataset.scene = current.id;
+      const nextScene = story.scenes[sceneIndex + 1];
+      const skipDescription = nextScene
+        ? `現在のセクションをスキップして「${nextScene.title}」へ進む`
+        : "現在のセクションをスキップしてフィナーレへ進む";
+      skipButton.setAttribute("aria-label", skipDescription);
+      skipButton.title = skipDescription;
     };
 
     const syncSceneBackdrop = ({ immediate = false } = {}) => {
@@ -405,6 +443,7 @@
       interfaceLayer.removeAttribute("aria-hidden");
       dialogue.disabled = false;
       logButton.disabled = false;
+      skipButton.disabled = false;
       const committed = commitPreparedStep(prepared);
       transitioning = false;
       requestAnimationFrame(() => {
@@ -424,6 +463,7 @@
       footer.hidden = true;
       header.hidden = true;
       progress.hidden = true;
+      skipButton.hidden = true;
       finale.hidden = false;
       try {
         window.localStorage.setItem(STORAGE_KEY, new Date().toISOString());
@@ -432,6 +472,30 @@
       }
       onComplete?.();
       requestAnimationFrame(() => finaleExit.focus({ preventScroll: true }));
+    };
+
+    const moveToNextScene = () => {
+      if (complete || transitioning) return false;
+      if (sceneIndex >= story.scenes.length - 1) {
+        showFinale();
+        return true;
+      }
+
+      transitioning = true;
+      stopReveal();
+      shell.classList.add("is-scene-separating");
+      void revealSceneAfterSeparator({
+        prepareScene: () => {
+          sceneIndex += 1;
+          stepIndex = 0;
+          syncSceneMetadata();
+        },
+        switchScene: async () => {
+          await syncSceneBackdrop({ immediate: true });
+          return prepareStep();
+        },
+      });
+      return true;
     };
 
     const advance = () => {
@@ -455,25 +519,7 @@
         });
         return;
       }
-      if (sceneIndex >= story.scenes.length - 1) {
-        showFinale();
-        return;
-      }
-
-      transitioning = true;
-      stopReveal();
-      shell.classList.add("is-scene-separating");
-      void revealSceneAfterSeparator({
-        prepareScene: () => {
-          sceneIndex += 1;
-          stepIndex = 0;
-          syncSceneMetadata();
-        },
-        switchScene: async () => {
-          await syncSceneBackdrop({ immediate: true });
-          return prepareStep();
-        },
-      });
+      moveToNextScene();
     };
 
     let dialoguePointerOrigin = null;
@@ -511,10 +557,15 @@
       event.stopPropagation();
       onLogOpen?.();
     });
+    skipButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      moveToNextScene();
+    });
     shell.addEventListener("click", (event) => {
       event.stopPropagation();
       const interactiveTarget = event.target instanceof Element
-        ? event.target.closest(".true-end-dialogue, .true-end-log-button, .true-end-finale")
+        ? event.target.closest(".true-end-dialogue, .true-end-skip-button, .true-end-log-button, .true-end-finale")
         : null;
       if (interactiveTarget) return;
       advance();

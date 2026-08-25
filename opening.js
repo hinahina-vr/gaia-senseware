@@ -145,6 +145,7 @@
   }
   if (directDestination) {
     opening.hidden = true;
+    document.body.classList.remove("gaia-opening-active");
     revealAudioDock();
     if (document.documentElement.dataset.gaiaAppReady === "true") signalInitialViewReady();
     else {
@@ -160,18 +161,27 @@
   const openingMs = (value) => Math.round(value * OPENING_TIME_SCALE);
   const OPENING_DURATION = openingMs(14500);
   const EXIT_DURATION = Math.round(1080 * 0.85);
+  const compactArtwork = (Number(navigator.deviceMemory) > 0 && Number(navigator.deviceMemory) <= 4)
+    || (Number(navigator.hardwareConcurrency) > 0 && Number(navigator.hardwareConcurrency) <= 4);
+  const portraitOpeningArtwork = window.matchMedia("(max-width: 720px)").matches;
+  document.documentElement.dataset.gaiaArtworkQuality = compactArtwork ? "compact" : "full";
+  const artworkSource = (path) => compactArtwork ? path.replace(/\.webp$/u, "-834.webp") : path;
+  const mizuhaArtwork = portraitOpeningArtwork
+    ? `./assets/visuals-08/opening-mizuha-keyvisual-portrait-v2${compactArtwork ? "-720" : ""}.webp`
+    : artworkSource("./assets/visuals-08/opening-mizuha-keyvisual-v1.webp");
   const OPENING_ART = [
-    "./assets/visuals-08/opening-mizuha-keyvisual-v1.png",
-    "./assets/visuals-08/opening-amane-keyvisual-v1.png",
-    "./assets/visuals-07/opening-keyvisual-v2.png",
-    "./assets/visuals-07/open-data-archive-bg-v1.png",
-  ];
+    mizuhaArtwork,
+    "./assets/visuals-08/opening-amane-keyvisual-v1.webp",
+    "./assets/visuals-07/opening-keyvisual-v2.webp",
+    "./assets/visuals-07/open-data-archive-bg-v1.webp",
+  ].map((path, index) => index === 0 ? path : artworkSource(path));
   const focusTargets = Array.from(opening.querySelectorAll("[data-opening-focus]"));
   focusTargets.forEach((target) => target.classList.add("is-opening-focus-pending"));
   const textTimers = [];
   let finishTimer = 0;
   let exitTimer = 0;
   let finished = false;
+  let finishRequested = false;
   let openingStarted = false;
   let preloadReady = false;
   let preloadStarted = false;
@@ -548,27 +558,28 @@
     };
     requestAnimationFrame(() => {
       soundModal.classList.add("is-visible");
-      focusSelectedSound();
       signalInitialViewReady();
       window.clearTimeout(openingArtWarmTimer);
       const warmOpeningArtAfterHandoff = () => {
         focusSelectedSound();
-        window.clearTimeout(soundModalRevealTimer);
-        soundModalRevealTimer = window.setTimeout(focusSelectedSound, 180);
-        openingArtWarmTimer = window.setTimeout(() => {
-          if (!soundSetupConfirmed && !reducedMotion) void startOpeningArtPreload({ fetchPriority: "low" });
-        }, 480);
+        openingArtWarmTimer = 0;
       };
       if (document.querySelector("#gaia-boot")?.hidden) warmOpeningArtAfterHandoff();
       else window.addEventListener("gaia:boot-handoff", warmOpeningArtAfterHandoff, { once: true });
-      // Later deferred modules initialize the hidden title screen and may try
-      // to claim focus. The boot handoff reasserts this modal after that work.
     });
   };
 
-  const finish = (destination = "menu") => {
-    if (finished) return;
+  const finish = async (destination = "menu") => {
+    if (finished || finishRequested) return;
     if (typeof destination !== "string") destination = "menu";
+    finishRequested = true;
+    finalMenu?.setAttribute("aria-busy", "true");
+    if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = true;
+    if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = true;
+    performance.mark(`gaia:${destination}-route-load-request`);
+    const routeReady = Promise.resolve(
+      window.GaiaModeLoader?.load?.(destination === "story" ? "story" : "exploration"),
+    );
     finished = true;
     window.clearTimeout(finishTimer);
     closeSoundModalImmediately();
@@ -582,24 +593,39 @@
       finalMenu.classList.remove("is-visible");
       finalMenu.hidden = true;
     }
-    // Open the destination behind the final frame first. The opening then
-    // dissolves away while the menu cards run their own glint reveal.
-    window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
     opening.classList.add("is-leaving");
-    exitTimer = window.setTimeout(() => {
-      opening.hidden = true;
-      opening.classList.remove("is-active", "is-leaving");
-      document.body.classList.remove("gaia-opening-active");
-      particleSystem.stop();
-      revealAudioDock();
-      if (destination === "story") {
-        requestAnimationFrame(() => {
-          window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
-            detail: { index: 0, source: "opening" },
-          }));
-        });
+    const exitReady = new Promise((resolve) => {
+      exitTimer = window.setTimeout(resolve, EXIT_DURATION);
+    });
+    try {
+      await Promise.all([routeReady, exitReady]);
+    } catch (error) {
+      console.error(error);
+      finished = false;
+      finishRequested = false;
+      opening.classList.remove("is-leaving");
+      finalMenu?.removeAttribute("aria-busy");
+      if (finalMenu instanceof HTMLElement) {
+        finalMenu.hidden = false;
+        requestAnimationFrame(() => finalMenu.classList.add("is-visible"));
       }
-    }, EXIT_DURATION);
+      if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = false;
+      if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = false;
+      return;
+    }
+    window.dispatchEvent(new CustomEvent("gaia:opening-complete", { detail: { destination } }));
+    opening.hidden = true;
+    opening.classList.remove("is-active", "is-leaving");
+    document.body.classList.remove("gaia-opening-active");
+    particleSystem.stop();
+    revealAudioDock();
+    if (destination === "story") {
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
+          detail: { index: 0, source: "opening" },
+        }));
+      });
+    }
   };
 
   const retireOpeningForStory = () => {
@@ -685,7 +711,7 @@
     showFinalMenu();
   };
 
-  const chooseSound = async (enabled) => {
+  const chooseSound = (enabled) => {
     soundOnButton?.setAttribute("aria-pressed", String(Boolean(enabled)));
     soundOffButton?.setAttribute("aria-pressed", String(!enabled));
 
@@ -693,20 +719,34 @@
     window.GaiaOpeningAudio?.setVolume?.(selectedVolume);
 
     if (enabled) {
-      try {
-        await window.GaiaOpeningAudio?.start(selectedVolume);
-      } catch {
-        // Audio is optional. Continue silently if the browser refuses playback.
-      }
+      // Keep play() in the click task for autoplay permission, but do not wait
+      // for media startup before painting the selected state.
+      void window.GaiaOpeningAudio?.start(selectedVolume)?.catch?.(() => {});
     } else {
-      await window.GaiaOpeningAudio?.setMuted?.(true);
+      void window.GaiaOpeningAudio?.setMuted?.(true);
     }
 
     syncAudioControls();
   };
 
-  const confirmSoundSetup = async (enabled) => {
+  const scheduleAfterInputPaint = (callback) => {
+    requestAnimationFrame(() => {
+      performance.mark("gaia:sound-choice-feedback-painted");
+      requestAnimationFrame(() => {
+        window.setTimeout(() => {
+          if (globalThis.scheduler?.postTask) {
+            void globalThis.scheduler.postTask(callback, { priority: "background" });
+          } else {
+            callback();
+          }
+        }, 120);
+      });
+    });
+  };
+
+  const confirmSoundSetup = (enabled) => {
     if (!soundModalOpen || soundSetupSubmitting) return;
+    performance.mark("gaia:sound-choice-click");
     soundSetupSubmitting = true;
     window.clearTimeout(openingArtWarmTimer);
     pendingSoundEnabled = Boolean(enabled);
@@ -714,26 +754,28 @@
     if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = true;
     if (openingVolume instanceof HTMLInputElement) openingVolume.disabled = true;
     syncAudioControls();
-    if (!reducedMotion) startOpeningPreload({ includeAudio: pendingSoundEnabled });
-    try {
-      await chooseSound(pendingSoundEnabled);
-    } catch {
-      // Sound remains optional; never block the experience on playback setup.
-    }
-    soundSetupConfirmed = true;
-    opening.classList.remove("is-awaiting-sound");
-    hideSoundModal();
-    soundSetupSubmitting = false;
-    if (soundOnButton instanceof HTMLButtonElement) soundOnButton.disabled = false;
-    if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = false;
-    if (openingVolume instanceof HTMLInputElement) openingVolume.disabled = false;
-    if (reducedMotion) showReducedMotionMenu();
-    else tryStart();
+    chooseSound(pendingSoundEnabled);
+    scheduleAfterInputPaint(() => {
+      soundSetupConfirmed = true;
+      opening.classList.remove("is-awaiting-sound");
+      hideSoundModal();
+      soundSetupSubmitting = false;
+      if (soundOnButton instanceof HTMLButtonElement) soundOnButton.disabled = false;
+      if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = false;
+      if (openingVolume instanceof HTMLInputElement) openingVolume.disabled = false;
+      if (reducedMotion) {
+        showReducedMotionMenu();
+        return;
+      }
+      performance.mark("gaia:opening-preload-start");
+      startOpeningPreload({ includeAudio: pendingSoundEnabled });
+      tryStart();
+    });
   };
 
   skipButton?.addEventListener("click", skipToFinalMenu);
-  finalStoryButton?.addEventListener("click", () => finish("story"));
-  finalOtherButton?.addEventListener("click", () => finish("menu"));
+  finalStoryButton?.addEventListener("click", () => void finish("story"));
+  finalOtherButton?.addEventListener("click", () => void finish("menu"));
   soundOnButton?.addEventListener("click", () => void confirmSoundSetup(true));
   soundOffButton?.addEventListener("click", () => void confirmSoundSetup(false));
   soundModal?.addEventListener("keydown", (event) => {

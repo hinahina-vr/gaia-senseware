@@ -8253,6 +8253,7 @@ var pages_entry_default = {
     if (!/^\/assets\/audio\/.+\.mp3$/u.test(url.pathname) || !assetResponse.ok) return assetResponse;
     const headers = new Headers(assetResponse.headers);
     headers.set("Accept-Ranges", "bytes");
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
     const range = request.headers.get("Range")?.match(/^bytes=(\d*)-(\d*)$/u);
     if (!range || assetResponse.status === 206 || request.method === "HEAD") {
       return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });

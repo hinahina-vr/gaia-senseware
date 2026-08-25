@@ -25,10 +25,12 @@ const forbiddenFiles = [
 const viewportFlags = process.argv.slice(6);
 const mobileOnly = viewportFlags.includes("--mobile-only");
 const pcOnly = viewportFlags.includes("--pc-only");
+const panelsOnly = viewportFlags.includes("--panels-only");
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
-].filter(({ name }) => (!mobileOnly || name === "mobile-390") && (!pcOnly || name === "pc-1440"));
+  ...(panelsOnly ? [{ name: "mobile-short-360", width: 360, height: 700, mobile: true }] : []),
+].filter(({ mobile }) => (!mobileOnly || mobile) && (!pcOnly || !mobile));
 const savedProgress = {
   storyVersion: 10,
   stepId: "welcome_chat_038",
@@ -64,6 +66,7 @@ try {
       viewport: { width: viewport.width, height: viewport.height },
       hasTouch: Boolean(viewport.mobile),
       isMobile: Boolean(viewport.mobile),
+      deviceScaleFactor: viewport.mobile ? 3 : 1,
       reducedMotion: "no-preference",
     });
     await context.addInitScript((progress) => {
@@ -91,7 +94,6 @@ try {
     });
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-    await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-sound-modal")));
     await page.locator("#gaia-opening-sound-off").click();
     await page.waitForFunction(() => !__qaVisible(document.querySelector("#gaia-opening-sound-modal")));
@@ -138,8 +140,8 @@ try {
     });
     assert.deepEqual(opening.characterBands, ["MIZU　MIZU　MIZU", "AME　AME　AME　AME"]);
     assert.deepEqual(opening.montageNames, ["MIZU", "AME", "SAKUYA", "YOU"]);
-    assert.match(opening.mizuhaArt, /opening-mizuha-keyvisual-v1\.png/u);
-    assert.match(opening.amaneArt, /opening-amane-keyvisual-v1\.png/u);
+    assert.match(opening.mizuhaArt, viewport.mobile ? /opening-mizuha-keyvisual-portrait-v2(?:-720)?\.webp/u : /opening-mizuha-keyvisual-v1(?:-834)?\.webp/u);
+    assert.match(opening.amaneArt, /opening-amane-keyvisual-v1(?:-834)?\.webp/u);
     assert.equal(opening.characterSpriteCount, 0);
     assert.equal(opening.montageLabel, "SENSES / MEASURES / TRACES / CHOICES");
     assert.equal(opening.montageHeading, "未来は、ひとつの視点には宿らない。");
@@ -171,6 +173,37 @@ try {
       document.querySelector(".gaia-opening-hud")?.removeAttribute("hidden");
       document.querySelectorAll(".gaia-vn-panel").forEach((panel) => panel.removeAttribute("style"));
     });
+    if (panelsOnly) {
+      await page.locator("#gaia-opening-skip").click();
+      await page.locator("#gaia-opening-final-menu").waitFor({ state: "visible" });
+      await page.waitForFunction(() => document.querySelector("#gaia-opening-final-menu")?.classList.contains("is-visible"));
+      await page.waitForTimeout(700);
+      const menuLayout = await page.evaluate(() => {
+        const copy = document.querySelector(".gaia-vn-final-copy");
+        const menu = document.querySelector("#gaia-opening-final-menu");
+        const copyRect = copy.getBoundingClientRect();
+        const menuRect = menu.getBoundingClientRect();
+        return {
+          copy: { top: copyRect.top, bottom: copyRect.bottom, height: copyRect.height },
+          menu: { top: menuRect.top, bottom: menuRect.bottom, height: menuRect.height },
+          menuPosition: getComputedStyle(menu).position,
+          bottomGap: innerHeight - menuRect.bottom,
+          overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
+          overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
+        };
+      });
+      if (viewport.mobile) {
+        assert.equal(menuLayout.menuPosition, "static", `${viewport.name}: route menu is not in the bottom lockup flow`);
+        assert(menuLayout.copy.top >= viewport.height * 0.35, `${viewport.name}: title lockup still overlaps the face area`);
+        assert(menuLayout.bottomGap >= 40 && menuLayout.bottomGap <= 90, `${viewport.name}: title lockup is not bottom aligned`);
+        assert.equal(menuLayout.overflowX, 0, `${viewport.name}: bottom lockup overflows horizontally`);
+        assert.equal(menuLayout.overflowY, 0, `${viewport.name}: bottom lockup overflows vertically`);
+      }
+      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-menu.png`), animations: "disabled" });
+      report.flows.push({ viewport: viewport.name, opening, menuLayout, passed: true });
+      await context.close();
+      continue;
+    }
     await page.locator("#gaia-opening-skip").click();
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-route-story")));
     await page.locator("#gaia-opening-route-story").click();

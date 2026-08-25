@@ -47,8 +47,7 @@
     uniform vec3 u_color_b;
     uniform vec3 u_color_c;
 
-    const float AIVA_GRID_DRIFT_SPEED = 0.54;
-    const float AIVA_GRID_PULSE_HZ = 0.5;
+    const float AIVA_FIELD_DRIFT_SPEED = 0.18;
 
     float hash21(vec2 p) {
       p = fract(p * vec2(123.34, 456.21));
@@ -114,26 +113,43 @@
     vec3 signalSurge(vec2 p) {
       vec2 g = p;
       float phase = u_time * 1.18 + u_signal * 8.0;
-      vec2 matrixDrift = vec2(
-        u_time * AIVA_GRID_DRIFT_SPEED,
-        -u_time * AIVA_GRID_DRIFT_SPEED
+      vec2 fieldDrift = vec2(
+        u_time * AIVA_FIELD_DRIFT_SPEED,
+        -u_time * AIVA_FIELD_DRIFT_SPEED * 0.72
       );
-      vec2 matrixUv = g * vec2(8.0, 5.0) + matrixDrift;
-      vec2 matrixId = floor(matrixUv);
-      vec2 matrixFract = fract(matrixUv);
-      vec2 cell = abs(matrixFract - 0.5);
-      float blocks = 1.0 - smoothstep(0.24, 0.3, max(cell.x, cell.y));
-      float frameTick = floor(u_time * AIVA_GRID_PULSE_HZ);
-      float activity = step(0.5, hash21(matrixId + vec2(frameTick * 1.37, frameTick * 3.91) + 71.0));
-      float cellPulse = mix(0.54, 1.0, hash21(matrixId + vec2(frameTick * 5.17, frameTick * 2.63) + 93.0));
-      blocks *= activity * cellPulse;
-      vec2 boundaryDistance = min(matrixFract, 1.0 - matrixFract);
-      float gridLines = 1.0 - smoothstep(0.018, 0.055, min(boundaryDistance.x, boundaryDistance.y));
-      float scanRow = softLine(abs(fract(matrixUv.y * 0.36) - 0.5), 0.065);
-      float dataNoise = smoothstep(0.42, 0.76, fbm(g * 3.2 + vec2(phase * 0.13, -phase * 0.1)));
+      float signalNoiseA = fbm(g * vec2(1.3, 1.76) + fieldDrift);
+      float signalNoiseB = fbm(
+        rotate2d(0.64) * g * vec2(2.16, 1.22) - fieldDrift * 0.78 + vec2(5.7, 11.3)
+      );
+      vec2 signalSpace = g + vec2(signalNoiseA - 0.5, signalNoiseB - 0.5) * 0.28;
+      float carrierA = 0.5 + 0.5 * sin(
+        signalSpace.x * 5.4 + signalSpace.y * 1.7 + signalNoiseB * 3.2 - phase * 0.62
+      );
+      float carrierB = 0.5 + 0.5 * sin(
+        signalSpace.y * 4.8 - signalSpace.x * 1.35 + signalNoiseA * 3.6 + phase * 0.48
+      );
+      float signalVeil = smoothstep(0.34, 0.82, signalNoiseA * 0.62 + signalNoiseB * 0.48);
+      float carrierGlow = smoothstep(0.7, 0.96, carrierA) * 0.5
+        + smoothstep(0.74, 0.98, carrierB) * 0.42;
+      float measureTrace = softLine(
+        abs(signalSpace.y + 0.18 * sin(signalSpace.x * 2.4 + phase * 0.34) - 0.08),
+        0.052
+      );
+      float responseTrace = softLine(
+        abs(signalSpace.x - 0.34 * sin(signalSpace.y * 2.1 - phase * 0.28) + 0.14),
+        0.042
+      );
+      float scanWave = smoothstep(
+        0.76,
+        0.98,
+        0.5 + 0.5 * sin((signalSpace.y + signalNoiseA * 0.22) * 3.1 - phase * 0.44)
+      );
       float center = exp(-2.1 * dot(g, g));
       vec3 electric = mix(vec3(0.18, 0.9, 1.0), vec3(0.92, 1.0, 1.0), center);
-      return electric * (blocks * (0.62 + dataNoise * 0.22) + gridLines * 0.18 + scanRow * 0.42 + center * 0.3);
+      return electric * (
+        signalVeil * 0.54 + carrierGlow * 0.46 + measureTrace * 0.28
+          + responseTrace * 0.18 + scanWave * signalVeil * 0.2 + center * 0.3
+      );
     }
 
     vec3 weaveStorm(vec2 p) {
@@ -388,7 +404,7 @@
     });
   };
 
-  const create = ({ canvas, shell } = {}) => {
+  const create = ({ canvas, shell, onRestore } = {}) => {
     if (!(canvas instanceof HTMLCanvasElement) || !(shell instanceof HTMLElement)) return null;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let gl;
@@ -468,11 +484,52 @@
     let presenceCompletionTimer = 0;
     let presenceCompletionResolve = null;
     let sceneCompletionResolve = null;
+    const constrainedByDevice = (Number(navigator.deviceMemory) > 0 && Number(navigator.deviceMemory) <= 4)
+      || (Number(navigator.hardwareConcurrency) > 0 && Number(navigator.hardwareConcurrency) <= 4);
+    let qualityTier = constrainedByDevice ? "low" : "normal";
+    let qualityChangedAt = performance.now();
+    let frameDeltas = [];
+
+    const qualityProfile = () => {
+      const mobile = innerWidth <= 720;
+      if (qualityTier === "low") {
+        return { quality: mobile ? 0.48 : 0.52, dprCap: mobile ? 1 : 1.25, fps: mobile ? 15 : 18 };
+      }
+      return { quality: mobile ? 0.68 : 0.72, dprCap: mobile ? 1.25 : 1.6, fps: mobile ? 20 : 24 };
+    };
+
+    const setQualityTier = (nextTier, reason) => {
+      if (qualityTier === nextTier) return;
+      qualityTier = nextTier;
+      qualityChangedAt = performance.now();
+      frameDeltas = [];
+      canvas.dataset.webglQuality = qualityTier;
+      canvas.dataset.webglQualityReason = reason;
+      resize();
+    };
+
+    const adaptQuality = (now) => {
+      if (reducedMotion.matches) return;
+      if (frameDeltas.length < 45) return;
+      const sorted = frameDeltas.slice().sort((left, right) => left - right);
+      const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] || 0;
+      canvas.dataset.webglFrameP95 = p95.toFixed(2);
+      if (qualityTier === "normal" && p95 > 78) {
+        setQualityTier("low", "runtime-frame-p95");
+      } else if (
+        qualityTier === "low"
+        && !constrainedByDevice
+        && now - qualityChangedAt >= 15000
+        && p95 < 86
+      ) {
+        setQualityTier("normal", "runtime-recovered");
+      }
+    };
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const quality = innerWidth <= 720 ? 0.68 : 0.72;
-      const ratio = Math.min(devicePixelRatio || 1, innerWidth <= 720 ? 1.25 : 1.6) * quality;
+      const profile = qualityProfile();
+      const ratio = Math.min(devicePixelRatio || 1, profile.dprCap) * profile.quality;
       const targetWidth = Math.max(2, rect.width * ratio);
       const targetHeight = Math.max(2, rect.height * ratio);
       const renderScale = Math.min(1, 1440 / targetWidth, 900 / targetHeight);
@@ -559,10 +616,14 @@
 
     const draw = (now = performance.now()) => {
       if (destroyed) return;
-      const frameInterval = innerWidth <= 720 ? 1000 / 20 : 1000 / 24;
+      const frameInterval = 1000 / qualityProfile().fps;
       if (!reducedMotion.matches && lastRenderedAt > 0 && now - lastRenderedAt < frameInterval) {
         raf = requestAnimationFrame(draw);
         return;
+      }
+      if (!reducedMotion.matches && lastRenderedAt > 0) {
+        frameDeltas.push(now - lastRenderedAt);
+        if (frameDeltas.length > 90) frameDeltas.shift();
       }
       lastRenderedAt = now;
       resize();
@@ -587,6 +648,7 @@
       gl.uniform3fv(uniforms.u_color_c, colors[2]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       frame += 1;
+      if (frame % 30 === 0) adaptQuality(now);
       canvas.dataset.webglFrame = String(frame);
       if (sceneCompletionResolve) settleSceneDraw(false);
       syncPresenceStatus(now);
@@ -625,6 +687,10 @@
       canvas.dataset.webglState = "lost";
       canvas.classList.add("is-fallback");
     };
+    const onContextRestored = () => {
+      canvas.dataset.webglState = "restoring";
+      if (typeof onRestore === "function") onRestore();
+    };
     const observer = typeof ResizeObserver === "function" ? new ResizeObserver(() => start()) : null;
     observer?.observe(canvas);
     if (!observer) window.addEventListener("resize", start, { passive: true });
@@ -632,6 +698,7 @@
     document.addEventListener("visibilitychange", onVisibilityChange);
     reducedMotion.addEventListener?.("change", onMotionChange);
     canvas.addEventListener("webglcontextlost", onContextLost);
+    canvas.addEventListener("webglcontextrestored", onContextRestored);
     canvas.dataset.webglState = "active";
     canvas.dataset.webglScene = "awakening";
     canvas.dataset.webglSpeaker = "narrator";
@@ -641,6 +708,8 @@
     canvas.dataset.webglPresenceMix = "0.0000";
     canvas.dataset.webglPresenceState = "hidden";
     canvas.dataset.webglPresenceDuration = String(presenceTransitionDuration);
+    canvas.dataset.webglQuality = qualityTier;
+    canvas.dataset.webglQualityReason = constrainedByDevice ? "device-capability" : "default";
     start();
 
     return Object.freeze({
@@ -721,6 +790,7 @@
         document.removeEventListener("visibilitychange", onVisibilityChange);
         reducedMotion.removeEventListener?.("change", onMotionChange);
         canvas.removeEventListener("webglcontextlost", onContextLost);
+        canvas.removeEventListener("webglcontextrestored", onContextRestored);
         gl.deleteBuffer(buffer);
         gl.deleteProgram(program);
       },

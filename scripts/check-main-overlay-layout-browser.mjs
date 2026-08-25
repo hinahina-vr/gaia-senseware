@@ -32,6 +32,7 @@ try {
     });
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+    await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
     await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
     await page.evaluate(() => {
       const opening = document.querySelector("#gaia-opening");
@@ -40,13 +41,15 @@ try {
         opening.inert = true;
         opening.setAttribute("aria-hidden", "true");
       }
+      document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
+      window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
       const intro = document.querySelector("#intro-layer");
       if (intro) {
         intro.hidden = true;
         intro.inert = true;
         intro.setAttribute("aria-hidden", "true");
       }
-      document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
+      document.querySelector(".experience")?.classList.remove("intro-open");
     });
 
     for (let index = 0; index < 10; index += 1) {

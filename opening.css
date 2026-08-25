@@ -2,6 +2,10 @@
   --opening-mint: 150, 219, 205;
   --opening-blue: 132, 175, 205;
   --opening-paper: 222, 232, 229;
+  --opening-keyvisual-image: url("./assets/visuals-07/opening-keyvisual-v2.webp");
+  --opening-archive-image: url("./assets/visuals-07/open-data-archive-bg-v1.webp");
+  --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-v1.webp");
+  --opening-amane-image: url("./assets/visuals-08/opening-amane-keyvisual-v1.webp");
   position: fixed;
   z-index: 400;
   inset: 0;
@@ -12,6 +16,13 @@
 }
 
 body.gaia-opening-active { overflow: hidden; }
+
+html[data-gaia-artwork-quality="compact"] .gaia-opening {
+  --opening-keyvisual-image: url("./assets/visuals-07/opening-keyvisual-v2-834.webp");
+  --opening-archive-image: url("./assets/visuals-07/open-data-archive-bg-v1-834.webp");
+  --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-v1-834.webp");
+  --opening-amane-image: url("./assets/visuals-08/opening-amane-keyvisual-v1-834.webp");
+}
 
 /* The observation interface is initialized behind the opening so it is ready
    when visitors enter the free-exploration route. Keep its copy and controls
@@ -311,10 +322,8 @@ body.gaia-opening-active .novel-layer {
   inset: 0;
   content: "";
   pointer-events: none;
-  opacity: 0.32;
-  background:
-    radial-gradient(circle at 76% 28%, rgba(var(--opening-mint), 0.09), transparent 27%),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 4px);
+  opacity: 0.2;
+  background: radial-gradient(circle at 76% 28%, rgba(var(--opening-mint), 0.09), transparent 27%);
   mix-blend-mode: screen;
 }
 
@@ -364,7 +373,7 @@ body.gaia-opening-active .novel-layer {
     radial-gradient(circle at 72% 46%, rgba(111, 183, 186, 0.18), transparent 16%),
     radial-gradient(circle at 72% 46%, transparent 0 12%, rgba(148, 211, 202, 0.13) 12.2% 12.35%, transparent 12.6% 20%, rgba(148, 211, 202, 0.08) 20.2% 20.35%, transparent 20.6%),
     linear-gradient(115deg, rgba(6, 17, 31, 0.92), rgba(11, 28, 44, 0.7) 56%, rgba(18, 42, 59, 0.3)),
-    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
+    var(--opening-keyvisual-image) center / cover no-repeat;
 }
 
 .gaia-vn-panel-prologue::before {
@@ -811,7 +820,7 @@ body.gaia-opening-active .novel-layer {
 
 .gaia-vn-final-photo {
   inset: -2%;
-  background: url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
+  background: var(--opening-keyvisual-image) center / cover no-repeat;
   transform: scale(1.035);
 }
 
@@ -1735,7 +1744,7 @@ body.gaia-opening-active .novel-layer {
   padding: 24px;
   background:
     linear-gradient(180deg, rgba(2, 9, 18, 0.35), rgba(2, 9, 18, 0.68)),
-    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
+    var(--opening-keyvisual-image) center / cover no-repeat;
   backdrop-filter: none;
 }
 
@@ -1884,7 +1893,7 @@ body.gaia-opening-active .novel-layer {
   background:
     linear-gradient(90deg, rgba(3, 12, 24, 0.93) 0%, rgba(3, 12, 24, 0.76) 36%, rgba(3, 12, 24, 0.12) 68%, transparent),
     linear-gradient(180deg, rgba(3, 12, 24, 0.12), transparent 56%, rgba(3, 12, 24, 0.42)),
-    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
+    var(--opening-keyvisual-image) center / cover no-repeat;
 }
 
 .gaia-vn-panel-prologue::before,
@@ -1926,22 +1935,24 @@ body.gaia-opening-active .novel-layer {
   background:
     linear-gradient(90deg, rgba(3, 13, 25, 0.08) 0%, rgba(4, 18, 31, 0.16) 42%, rgba(3, 13, 25, 0.82) 72%, rgba(3, 13, 25, 0.97)),
     linear-gradient(180deg, rgba(3, 12, 24, 0.08), transparent 52%, rgba(3, 12, 24, 0.46)),
-    url("./assets/visuals-08/opening-mizuha-keyvisual-v1.png") center / cover no-repeat;
+    var(--opening-mizuha-image) center / cover no-repeat;
 }
 
 .gaia-vn-panel-sora {
   background:
     linear-gradient(90deg, rgba(3, 13, 25, 0.08) 0%, rgba(5, 20, 35, 0.16) 42%, rgba(3, 13, 25, 0.82) 72%, rgba(3, 13, 25, 0.97)),
     linear-gradient(180deg, rgba(3, 12, 24, 0.08), transparent 52%, rgba(3, 12, 24, 0.46)),
-    url("./assets/visuals-08/opening-amane-keyvisual-v1.png") center / cover no-repeat;
+    var(--opening-amane-image) center / cover no-repeat;
 }
 
 .gaia-vn-panel-character::before {
   inset: 0;
   width: auto;
   height: auto;
+  aspect-ratio: auto;
   border: 0;
   border-radius: 0;
+  box-shadow: none;
   background:
     radial-gradient(circle at 78% 52%, rgba(116, 210, 205, 0.2), transparent 23%),
     linear-gradient(180deg, transparent 68%, rgba(2, 9, 18, 0.42));
@@ -2011,7 +2022,7 @@ body.gaia-opening-active .novel-layer {
 .gaia-vn-panel-montage {
   background:
     linear-gradient(90deg, rgba(3, 13, 25, 0.94), rgba(3, 13, 25, 0.7) 48%, rgba(3, 13, 25, 0.84)),
-    url("./assets/visuals-07/open-data-archive-bg-v1.png") center / cover no-repeat;
+    var(--opening-archive-image) center / cover no-repeat;
 }
 
 .gaia-vn-panel-montage::before {
@@ -2085,12 +2096,20 @@ body.gaia-opening-active .novel-layer {
 }
 
 @media (max-width: 720px) {
+  .gaia-opening {
+    --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-portrait-v2.webp");
+  }
+
+  html[data-gaia-artwork-quality="compact"] .gaia-opening {
+    --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-portrait-v2-720.webp");
+  }
+
   .gaia-opening-sound-gate {
     place-items: center;
     padding: 18px;
     background:
       linear-gradient(180deg, rgba(3, 12, 24, 0.32), rgba(3, 12, 24, 0.72)),
-      url("./assets/visuals-07/opening-keyvisual-v2.png") 65% center / cover no-repeat;
+      var(--opening-keyvisual-image) 65% center / cover no-repeat;
   }
 
   .gaia-opening-sound-card {
@@ -2118,7 +2137,7 @@ body.gaia-opening-active .novel-layer {
   .gaia-vn-panel-prologue {
     background:
       linear-gradient(180deg, rgba(3, 12, 24, 0.16), rgba(3, 12, 24, 0.35) 48%, rgba(3, 12, 24, 0.94) 75%),
-      url("./assets/visuals-07/opening-keyvisual-v2.png") 64% center / cover no-repeat;
+      var(--opening-keyvisual-image) 64% center / cover no-repeat;
   }
 
   .gaia-vn-prologue-lockup {
@@ -2138,13 +2157,13 @@ body.gaia-opening-active .novel-layer {
   .gaia-vn-panel-minamo {
     background:
       linear-gradient(180deg, rgba(3, 13, 25, 0.08), rgba(3, 13, 25, 0.42) 47%, rgba(3, 13, 25, 0.98) 73%),
-      url("./assets/visuals-08/opening-mizuha-keyvisual-v1.png") 21% center / cover no-repeat;
+      var(--opening-mizuha-image) center / cover no-repeat;
   }
 
   .gaia-vn-panel-sora {
     background:
       linear-gradient(180deg, rgba(3, 13, 25, 0.08), rgba(3, 13, 25, 0.42) 47%, rgba(3, 13, 25, 0.98) 73%),
-      url("./assets/visuals-08/opening-amane-keyvisual-v1.png") 16% center / cover no-repeat;
+      var(--opening-amane-image) 16% center / cover no-repeat;
   }
 
   .gaia-vn-character-focus,
@@ -2179,7 +2198,7 @@ body.gaia-opening-active .novel-layer {
   .gaia-vn-panel-montage {
     background:
       linear-gradient(180deg, rgba(3, 13, 25, 0.82), rgba(3, 13, 25, 0.72)),
-      url("./assets/visuals-07/open-data-archive-bg-v1.png") center / cover no-repeat;
+      var(--opening-archive-image) center / cover no-repeat;
   }
 }
 
@@ -2646,7 +2665,7 @@ body.gaia-opening-active .gaia-opening-skip {
   background:
     radial-gradient(ellipse 62% 64% at 50% 51%, rgba(144, 231, 221, 0.1), rgba(45, 110, 142, 0.055) 42%, transparent 76%),
     linear-gradient(180deg, rgba(3, 12, 24, 0.04), rgba(3, 12, 24, 0.22)),
-    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
+    var(--opening-keyvisual-image) center / cover no-repeat;
   -webkit-backdrop-filter: blur(1.5px) saturate(1.12);
   backdrop-filter: blur(1.5px) saturate(1.12);
 }
@@ -2800,7 +2819,7 @@ body.gaia-opening-active .gaia-opening-skip {
     background:
       radial-gradient(ellipse 92% 60% at 50% 50%, rgba(132, 225, 217, 0.1), transparent 76%),
       linear-gradient(180deg, rgba(3, 12, 24, 0.04), rgba(3, 12, 24, 0.28)),
-      url("./assets/visuals-07/opening-keyvisual-v2.png") 65% center / cover no-repeat;
+      var(--opening-keyvisual-image) 65% center / cover no-repeat;
   }
 
   .gaia-opening-sound-card {
@@ -3154,7 +3173,7 @@ body.novel-open:has(#novel-eves-panel:not([hidden])) .novel-topbar #novel-close-
     radial-gradient(ellipse 58% 70% at 29% 52%, rgba(9, 42, 61, 0.22), rgba(5, 26, 43, 0.08) 54%, transparent 82%),
     linear-gradient(90deg, rgba(3, 12, 24, 0.16), rgba(3, 12, 24, 0.025) 68%, transparent),
     linear-gradient(180deg, rgba(3, 12, 24, 0.025), rgba(3, 12, 24, 0.18)),
-    url("./assets/visuals-07/opening-keyvisual-v2.png") center / cover no-repeat;
+    var(--opening-keyvisual-image) center / cover no-repeat;
   -webkit-backdrop-filter: saturate(1.06);
   backdrop-filter: saturate(1.06);
 }
@@ -3186,7 +3205,7 @@ body.novel-open:has(#novel-eves-panel:not([hidden])) .novel-topbar #novel-close-
     background:
       radial-gradient(ellipse 94% 64% at 50% 50%, rgba(8, 39, 58, 0.17), transparent 82%),
       linear-gradient(180deg, rgba(3, 12, 24, 0.04), rgba(3, 12, 24, 0.24)),
-      url("./assets/visuals-07/opening-keyvisual-v2.png") 65% center / cover no-repeat;
+      var(--opening-keyvisual-image) 65% center / cover no-repeat;
   }
 
   .gaia-opening-sound-card {
@@ -3818,6 +3837,29 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 }
 
+/* On portrait phones the complete title lockup belongs at the bottom. Keeping
+   the route menu in normal flow makes the logo and cards move as one unit and
+   leaves the character's face unobstructed. */
+@media (max-width: 420px) and (orientation: portrait) {
+  .gaia-opening.is-menu-ready .gaia-vn-final-copy {
+    top: auto;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(54px, calc(env(safe-area-inset-bottom) + 42px));
+    left: max(16px, env(safe-area-inset-left));
+  }
+
+  .gaia-opening.is-menu-ready .gaia-vn-final-copy > span {
+    display: none;
+  }
+
+  .gaia-opening.is-menu-ready .gaia-opening-final-menu {
+    position: static;
+    inset: auto;
+    width: 100%;
+    margin-top: 18px;
+  }
+}
+
 /* Sound confirmation opens on the story's first key visual. */
 .gaia-opening-sound-modal {
   --sound-accent: var(--opening-mint);
@@ -3842,21 +3884,36 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 }
 
 .gaia-opening-sound-modal::before,
-.gaia-opening-sound-modal::after {
+.gaia-opening-sound-modal::after,
+.gaia-opening-sound-scene,
+.gaia-opening-sound-scene > span {
   position: absolute;
   inset: -3%;
-  content: "";
   pointer-events: none;
 }
 
-.gaia-opening-sound-modal::before {
+.gaia-opening-sound-modal::before,
+.gaia-opening-sound-modal::after {
+  content: "";
+}
+
+.gaia-opening-sound-scene {
   z-index: -3;
+  overflow: hidden;
+  filter: saturate(0.88) contrast(1.02);
+}
+
+.gaia-opening-sound-scene > span {
+  display: block;
   background:
     linear-gradient(180deg, rgba(8, 24, 40, 0.02), rgba(5, 17, 30, 0.24)),
-    url("./assets/visuals-07/opening-keyvisual-v2.png") 54% center / cover no-repeat;
-  filter: saturate(0.88) contrast(1.02);
+    var(--opening-keyvisual-image) 54% center / cover no-repeat;
   transform: scale(1.035);
+}
+
+.gaia-opening-sound-modal.is-visible .gaia-opening-sound-scene > span {
   animation: opening-sound-scene-drift 16s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 .gaia-opening-sound-modal::after {
@@ -4140,6 +4197,13 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 @keyframes opening-sound-scene-drift {
   from { transform: scale(1.035) translate3d(-0.25%, 0, 0); }
   to { transform: scale(1.06) translate3d(0.35%, -0.4%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaia-opening-sound-modal.is-visible .gaia-opening-sound-scene > span {
+    animation: none;
+    will-change: auto;
+  }
 }
 
 @keyframes opening-sound-light-breathe {

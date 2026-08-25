@@ -30,6 +30,7 @@ const attachDiagnostics = (page, viewport) => {
 };
 
 const bypassOpening = async (page) => {
+  await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
   await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
   await page.evaluate(() => {
     const opening = document.querySelector("#gaia-opening");
@@ -45,6 +46,8 @@ const bypassOpening = async (page) => {
       intro.setAttribute("aria-hidden", "true");
     }
     document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
+    document.querySelector(".experience")?.classList.remove("intro-open");
+    window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
   });
 };
 
@@ -131,6 +134,7 @@ try {
     }
 
     await page.goto(new URL("/#story", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => globalThis.GaiaModeLoader.load("story"));
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.open));
     await page.evaluate(() => {
       localStorage.clear();
@@ -160,8 +164,14 @@ try {
     ));
     report.scans.at(-1).pointerActivated = true;
 
-    await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
-    await bypassOpening(page);
+    await page.goto(new URL("/#earth", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
+    await page.locator("#japan-layer:not([hidden])").waitFor({ state: "visible", timeout: 15_000 });
+    await page.locator("#japan-close").click();
+    await page.locator("#japan-layer:not([hidden])").waitFor({ state: "hidden", timeout: 15_000 });
+    await page.waitForFunction(() => !window.GaiaSceneTransition?.running);
+    await page.keyboard.press("Escape");
+    await page.locator("#intro-layer:not([hidden])").waitFor({ state: "hidden", timeout: 15_000 });
     await inspectButton(page, "#intro-button", viewport.name, "abstract");
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-abstract.png`) });
     await page.locator("#intro-button").click();
@@ -169,7 +179,10 @@ try {
     report.scans.at(-1).pointerActivated = true;
     await bypassOpening(page);
 
-    await page.evaluate(() => window.GaiaSpace.open(0));
+    await page.evaluate(async () => {
+      await globalThis.GaiaModeLoader.load("space");
+      window.GaiaSpace.open(0);
+    });
     await page.locator("#space-layer").waitFor({ state: "visible", timeout: 15_000 });
     await page.waitForFunction(() => !window.GaiaSceneTransition?.running);
     await inspectButton(page, "#space-close", viewport.name, "space");
