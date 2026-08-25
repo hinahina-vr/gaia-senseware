@@ -3001,18 +3001,26 @@ body.gaia-opening-active .gaia-opening-skip {
 @media (max-width: 720px) {
   .gaia-vn-path-copy {
     top: 22%;
+    right: 20px;
+    left: 20px;
+    width: auto;
   }
 
   .gaia-vn-path-copy h2 {
+    max-width: none;
     margin-top: 13px;
     font-size: clamp(28px, 8.5vw, 34px);
     line-height: 1.3;
+    text-wrap: wrap;
   }
 
   .gaia-vn-path-copy > p {
+    width: 100%;
+    max-width: none;
     margin-top: 12px;
     font-size: 10px;
     line-height: 1.72;
+    text-wrap: balance;
   }
 
   .gaia-vn-word-rails {
