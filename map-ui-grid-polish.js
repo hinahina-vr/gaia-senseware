@@ -16,9 +16,13 @@
     panel.classList.add("map-grid-polish", `map-grid-${role}`);
   });
 
-  const applyLayout = ({ desktop, bankTop, dataTop }) => {
+  const applyLayout = ({ desktop, bankTop, dataTop, dataHeight }) => {
     document.body.classList.toggle("map-grid-desktop", desktop);
-    if (!desktop || !Number.isFinite(bankTop) || !Number.isFinite(dataTop)) return;
+    if (!desktop) return;
+    if (Number.isFinite(dataHeight)) {
+      document.documentElement.style.setProperty("--map-grid-data-height", `${Math.ceil(dataHeight)}px`);
+    }
+    if (!Number.isFinite(bankTop) || !Number.isFinite(dataTop)) return;
     document.documentElement.style.setProperty("--map-grid-bank-top", `${Math.round(bankTop)}px`);
     document.documentElement.style.setProperty("--map-grid-data-top", `${Math.round(dataTop)}px`);
   };
@@ -34,13 +38,14 @@
     const gap = Math.max(9, Math.min(14, innerWidth * 0.0075));
     const introHeight = panels.intro?.getBoundingClientRect().height || 0;
     const bankHeight = panels.bank?.getBoundingClientRect().height || 0;
+    const dataHeight = panels.data?.getBoundingClientRect().height || 0;
     if (desktop && (!introHeight || !bankHeight)) {
       requestAnimationFrame(() => applyLayout({ desktop }));
       return;
     }
     const bankTop = top + introHeight + gap;
     const dataTop = bankTop + bankHeight + gap;
-    requestAnimationFrame(() => applyLayout({ desktop, bankTop, dataTop }));
+    requestAnimationFrame(() => applyLayout({ desktop, bankTop, dataTop, dataHeight }));
   };
 
   const schedule = () => {

@@ -1916,34 +1916,21 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
   letter-spacing: 0.27em;
 }
 
-.novel-title-screen h2 {
+.novel-work-title {
   max-width: 720px;
   margin: 0;
-  font-family: var(--novel-font);
-  font-size: clamp(42px, 6.7vw, 96px);
-  font-weight: 500;
-  letter-spacing: -0.08em;
-  line-height: 1.12;
-  text-shadow: 0 3px 40px rgba(0, 0, 0, 0.8);
 }
 
-.novel-work-title > span,
-.novel-work-title > small {
+.novel-work-title-logo {
   display: block;
-}
-
-.novel-work-title > span {
-  white-space: nowrap;
-}
-
-.novel-work-title > small {
-  margin-top: clamp(12px, 1.8vh, 20px);
-  color: rgba(var(--novel-cyan), 0.72);
-  font-family: "Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif;
-  font-size: clamp(13px, 1.25vw, 20px);
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  line-height: 1;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 3px 28px rgba(0, 0, 0, 0.68));
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .novel-title-note {
@@ -3211,7 +3198,6 @@ body.novel-open.novel-mode-detour .experience .signal-console-main[hidden] {
   }
 
   .novel-title-screen > p:first-of-type { margin-bottom: 16px; font-size: 7px; }
-  .novel-title-screen h2 { font-size: clamp(36px, 12.5vw, 58px); line-height: 1.2; }
   .novel-title-note { margin-top: 24px; font-size: 9px; line-height: 1.8; }
   .novel-title-actions { display: grid; margin-top: 24px; }
   .novel-title-actions button { min-height: 44px; }
@@ -5101,16 +5087,6 @@ body.novel-reduced-motion .story-detour-dock * {
   transform: translateY(-44%);
 }
 
-.novel-layer.is-title .novel-title-screen h2 {
-  font-size: clamp(52px, 6.1vw, 104px);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-}
-
-.novel-layer.is-title .novel-work-title > small {
-  letter-spacing: 0.22em;
-}
-
 .novel-layer.is-title .novel-title-actions {
   margin-top: clamp(30px, 5vh, 58px);
 }
@@ -6628,8 +6604,7 @@ body.novel-open .japan-layer[data-story-mode="map01"] .japan-close {
   .novel-layer.is-title .novel-veil { background: linear-gradient(180deg, rgba(1, 7, 18, 0.22), rgba(1, 7, 18, 0.78)); }
   .novel-layer.is-title .novel-title-screen { top: auto; right: 18px; bottom: max(34px, env(safe-area-inset-bottom)); left: 18px; width: auto; max-height: none; padding: 0; overflow: visible; transform: none; }
   .novel-layer.is-title .novel-title-screen > p:first-of-type { margin-bottom: 12px; }
-  .novel-layer.is-title .novel-title-screen h2 { max-width: 350px; font-size: clamp(43px, 13vw, 58px); }
-  .novel-layer.is-title .novel-work-title > small { margin-top: 10px; font-size: clamp(11px, 3.4vw, 14px); letter-spacing: 0.17em; }
+  .novel-layer.is-title .novel-work-title { max-width: 350px; }
   .novel-layer.is-title .novel-title-actions { display: grid; grid-template-columns: 1fr 1fr; margin-top: 18px; }
   .novel-layer.is-title #novel-start-button { grid-column: 1 / -1; }
   .novel-slack-surface,

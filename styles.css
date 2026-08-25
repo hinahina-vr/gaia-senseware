@@ -2391,7 +2391,7 @@ button {
 
 .architecture-node-senses ol {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  grid-template-columns: repeat(9, 1fr);
   gap: 3px;
 }
 
@@ -5665,7 +5665,7 @@ h1 {
   }
 
   .map-mode-list {
-    grid-template-columns: repeat(10, 1fr);
+    grid-template-columns: repeat(9, 1fr);
     gap: 3px;
   }
 
@@ -5981,7 +5981,7 @@ h1 {
 
 .concept-mode-list {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  grid-template-columns: repeat(9, 1fr);
   gap: 3px;
   padding: 10px 25px;
   border-bottom: 1px solid rgba(var(--accent-rgb), 0.12);

@@ -144,11 +144,13 @@ const boot = async (viewport) => {
     if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`);
   });
   await page.goto(new URL("/?mode=1", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => window.GaiaAppContent?.modes?.length === 10);
-  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
+  await page.waitForFunction(() => typeof window.GaiaModeLoader?.load === "function");
+  await page.evaluate(() => window.GaiaModeLoader.load("exploration"));
+  await page.waitForFunction(() => window.GaiaAppContent?.modes?.length === 9);
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
   await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
-  assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").count(), 10);
-  assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").last().locator("span").nth(1).innerText(), "10");
+  assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").count(), 9);
+  assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").last().locator("span").nth(1).innerText(), "09");
   await page.evaluate(() => {
     document.body.classList.remove("gaia-opening-active");
     for (const selector of ["#gaia-opening", "#intro-layer", "#novel-layer", "#true-end-layer"]) {
@@ -166,8 +168,8 @@ const boot = async (viewport) => {
     && !document.body.classList.contains("scene-transitioning"));
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:opening-complete")));
   await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) >= 1);
-  assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 10);
-  assert.equal(await page.locator("#concept-mode-list .concept-mode-button").count(), 10);
+  assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 9);
+  assert.equal(await page.locator("#concept-mode-list .concept-mode-button").count(), 9);
   assert.equal(await page.locator("#error-panel").isHidden(), true);
   return { context, page };
 };
@@ -449,6 +451,7 @@ try {
       eventCount: Number(element.dataset.earthquakeYearEventCount),
       totalCount: Number(element.dataset.earthquakeTotalEventCount),
       sync: element.dataset.earthquakeWaveSync,
+      model: element.dataset.earthquakeWaveModel,
       target: element.dataset.viewTarget,
       zoom: Number(element.dataset.earthZoom),
     }));
@@ -460,7 +463,8 @@ try {
       year: "2000",
       eventCount: 7,
       totalCount: undefined,
-      sync: "annual-simultaneous",
+      sync: "annual-simultaneous-distance-limited",
+      model: "usgs-estimated-felt-radius",
       target: "global",
       zoom: 1,
     });
@@ -477,19 +481,35 @@ try {
       year: element.dataset.earthquakeYear,
       eventCount: Number(element.dataset.earthquakeYearEventCount),
       progress: Number(element.dataset.earthquakeWaveProgress),
-      viewportLimit: Number(element.dataset.earthquakeWaveViewportLimitPx),
+      model: element.dataset.earthquakeWaveModel,
+      maxRadiusKm: Number(element.dataset.earthquakeWaveRadiusMaxKm),
       maxRadius: Number(element.dataset.earthquakeWaveRadiusMaxPx),
+      maxRadiusX: Number(element.dataset.earthquakeWaveRadiusMaxXPx),
+      durationMs: Number(element.dataset.earthquakeWaveDurationMaxMs),
     }));
     assert.equal(earthquakeWave.year, "2004");
     assert.equal(earthquakeWave.eventCount, 3);
     assert.ok(earthquakeWave.progress > waveStart);
-    assert.ok(Math.abs(earthquakeWave.maxRadius - earthquakeWave.viewportLimit) <= 0.2);
-    assert.ok(earthquakeWave.maxRadius >= viewport.width * 0.4);
+    assert.ok(earthquakeWave.progress < 0.08, `earthquake wave expanded too quickly: ${earthquakeWave.progress}`);
+    assert.equal(earthquakeWave.model, "usgs-estimated-felt-radius");
+    assert.equal(earthquakeWave.maxRadiusKm, 2000);
+    assert.equal(earthquakeWave.durationMs, 15000);
+    assert.ok(earthquakeWave.maxRadius > 40);
+    assert.ok(earthquakeWave.maxRadius < viewport.width * 0.25);
+    assert.ok(earthquakeWave.maxRadiusX >= earthquakeWave.maxRadius);
     const earthquakeReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
     assert.match(earthquakeReadout, /2004.*3 EVENTS.*MAX M9\.1/u);
     const earthquakeScreenshot = path.join(outputDir, `${viewport.name}-07-yearly-synchronized-waves.png`);
     await page.screenshot({ path: earthquakeScreenshot });
     scan.screenshots.push(earthquakeScreenshot);
+    await page.waitForFunction(
+      () => Number(document.querySelector("#japan-overlay")?.dataset.earthquakeWaveProgress) >= 0.999,
+      null,
+      { timeout: 16000 },
+    );
+    const earthquakeSettledScreenshot = path.join(outputDir, `${viewport.name}-07-estimated-felt-radius-settled.png`);
+    await page.screenshot({ path: earthquakeSettledScreenshot });
+    scan.screenshots.push(earthquakeSettledScreenshot);
 
     await selectMode(page, 7, "三つの生態系");
     await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.ecologiesPlot === "paired-country-scatter");
@@ -551,39 +571,6 @@ try {
     const renewableScreenshot = path.join(outputDir, `${viewport.name}-09-renewable-country-choropleth.png`);
     await page.screenshot({ path: renewableScreenshot });
     scan.screenshots.push(renewableScreenshot);
-
-    await selectMode(page, 9, "九つの測定は、足せない");
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector("#japan-overlay");
-      return overlay?.dataset.sensewareDisplay === "nine-data-cards"
-        && Number(overlay.dataset.sensewareCardCount) === 9;
-    });
-    const sensewareGuide = await page.locator("#map-guide-subject").textContent();
-    assert.match(sensewareGuide, /9枚のカード.*代表値.*単位/u);
-    const sensewareState = await page.locator("#japan-overlay").evaluate((element) => ({
-      display: element.dataset.sensewareDisplay,
-      cardCount: Number(element.dataset.sensewareCardCount),
-      selectedCard: element.dataset.sensewareSelectedCard,
-      selectedMetric: element.dataset.sensewareSelectedMetric,
-      audienceTraces: element.dataset.sensewareAudienceTraces,
-    }));
-    assert.equal(sensewareState.display, "nine-data-cards");
-    assert.equal(sensewareState.cardCount, 9);
-    assert.equal(sensewareState.audienceTraces, "removed");
-    assert.ok(sensewareState.selectedMetric);
-    const firstSignal = await page.locator("#japan-layer [data-signal-time-output]").first().innerText();
-    await slider.focus();
-    await slider.press("End");
-    await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.sensewareSelectedCard === "09");
-    const lastSignal = await page.locator("#japan-layer [data-signal-time-output]").first().innerText();
-    assert.notEqual(firstSignal, lastSignal);
-    assert.match(lastSignal, /09 OF 09/u);
-    assert.equal(await page.locator("#japan-overlay").getAttribute("data-senseware-selected-card"), "09");
-    const sensewareReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
-    assert.match(sensewareReadout, /09 再生可能電力比率.*%/u);
-    const sensewareScreenshot = path.join(outputDir, `${viewport.name}-10-nine-measure-atlas.png`);
-    await page.screenshot({ path: sensewareScreenshot });
-    scan.screenshots.push(sensewareScreenshot);
 
     scan.final = await readMapState(page);
     report.scans.push(scan);

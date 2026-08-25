@@ -40,7 +40,7 @@ try {
 
     await page.goto(new URL("/?mode=1#earth", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
-    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
+    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
     await page.evaluate(() => {
       document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
       window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
@@ -73,7 +73,7 @@ try {
       && !document.body.classList.contains("scene-transitioning"));
     await page.waitForTimeout(160);
 
-    for (let index = 0; index < 10; index += 1) {
+    for (let index = 0; index < 9; index += 1) {
       await page.evaluate((modeIndex) => document.querySelectorAll("#japan-mode-list .map-mode-button")[modeIndex]?.click(), index);
       await page.waitForFunction(
         (modeNumber) => document.querySelector("#japan-mode-number")?.textContent?.trim() === modeNumber,
@@ -107,13 +107,14 @@ try {
           return overlay?.dataset.countryGeometryState === "ready"
             && Number(overlay.dataset.renewableCountryFillCount) === 31;
         });
-      } else if (index === 9) {
-        await page.waitForFunction(() => {
-          const overlay = document.querySelector("#japan-overlay");
-          return overlay?.dataset.sensewareDisplay === "nine-data-cards"
-            && Number(overlay.dataset.sensewareCardCount) === 9;
-        });
       }
+
+      await page.waitForFunction((desktop) => {
+        const bank = document.querySelector("#japan-layer > .map-mode-bank")?.getBoundingClientRect();
+        const signal = document.querySelector("#japan-layer > .signal-console-map")?.getBoundingClientRect();
+        if (!bank || !signal) return false;
+        return desktop ? signal.top >= bank.bottom + 8 : bank.top >= signal.bottom + 8;
+      }, viewport.name.startsWith("pc"));
 
       const scan = await page.evaluate(() => {
         const box = (node) => node?.getBoundingClientRect().toJSON() || null;
@@ -124,9 +125,34 @@ try {
         const heading = document.querySelector("#japan-layer > .japan-heading");
         const bank = document.querySelector("#japan-layer > .map-mode-bank");
         const signal = document.querySelector("#japan-layer > .signal-console-map");
+        const openData = document.querySelector("#japan-data-button");
+        const story = document.querySelector("#japan-layer .japan-story-button");
         const backRect = back?.getBoundingClientRect();
         const hit = backRect
           ? document.elementFromPoint(backRect.left + backRect.width / 2, backRect.top + backRect.height / 2)
+          : null;
+        const hitButton = (node) => {
+          const rect = node?.getBoundingClientRect();
+          if (!rect) return "";
+          return document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+            ?.closest?.("button")?.id || document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+              ?.closest?.("button")?.className || "";
+        };
+        const mapRect = document.querySelector("#japan-map")?.getBoundingClientRect();
+        const overlay = document.querySelector("#japan-overlay");
+        const zoom = Number(overlay?.dataset.earthZoom) || 1;
+        const offsetX = Number(overlay?.dataset.earthOffsetX) || 0;
+        const offsetY = Number(overlay?.dataset.earthOffsetY) || 0;
+        const baseScale = mapRect ? Math.max(mapRect.width / 360, mapRect.height / 180) : 0;
+        const scale = baseScale * zoom;
+        const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
+        const europe = mapRect ? {
+          x: mapRect.left + (mapRect.width - 360 * scale) / 2 + offsetX
+            + (wrapLongitude(10 - 138) + 180) * scale,
+          y: mapRect.top + (mapRect.height - 180 * scale) / 2 + offsetY + (90 - 50) * scale,
+        } : null;
+        const europeHit = europe && europe.x >= 0 && europe.x < innerWidth && europe.y >= 0 && europe.y < innerHeight
+          ? document.elementFromPoint(europe.x, europe.y)
           : null;
         return {
           modeNumber: document.querySelector("#japan-mode-number")?.textContent?.trim() || "",
@@ -135,6 +161,12 @@ try {
           heading: box(heading),
           bank: box(bank),
           signal: box(signal),
+          openData: box(openData),
+          story: box(story),
+          openDataHit: hitButton(openData),
+          storyHit: hitButton(story),
+          europe,
+          europeBlocker: europeHit?.closest?.(".map-grid-polish, .japan-data-button")?.className || "",
           scaleCount: document.querySelectorAll("#japan-layer > .map-scope-switch").length,
           forestRainCircleRange: document.querySelector("#japan-overlay")?.dataset.forestRainCircleRange || "",
           forestRainBrazil: document.querySelector("#japan-overlay")?.dataset.forestRainBrazil || "",
@@ -147,9 +179,6 @@ try {
           renewableCountryFillCount: document.querySelector("#japan-overlay")?.dataset.renewableCountryFillCount || "",
           renewableFillScale: document.querySelector("#japan-overlay")?.dataset.renewableFillScale || "",
           energyConnectionRemoved: document.querySelector("#japan-overlay")?.dataset.energyConnectionRemoved || "",
-          sensewareDisplay: document.querySelector("#japan-overlay")?.dataset.sensewareDisplay || "",
-          sensewareCardCount: document.querySelector("#japan-overlay")?.dataset.sensewareCardCount || "",
-          sensewareAudienceTraces: document.querySelector("#japan-overlay")?.dataset.sensewareAudienceTraces || "",
           backVisible: visible(back),
           backHitId: hit?.closest?.("button")?.id || "",
           overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -168,13 +197,25 @@ try {
       assert.equal(scan.scaleCount, 0, `${viewport.name}/${scan.modeNumber}: redundant map scale block remains`);
       for (const [name, panelBox] of Object.entries({ heading: scan.heading, bank: scan.bank, signal: scan.signal })) {
         boxInsideViewport(panelBox, scan.viewport, `${viewport.name}/${scan.modeNumber}/${name}`);
-        assert(panelBox.top >= scan.back.bottom + 10, `${viewport.name}/${scan.modeNumber}/${name}: panel was not lowered below back`);
       }
       if (viewport.name.startsWith("pc")) {
         assert.equal(scan.desktopGrid, true, `${viewport.name}/${scan.modeNumber}: desktop map grid is inactive`);
-        assert(scan.bank.top >= scan.heading.bottom + 8, `${viewport.name}/${scan.modeNumber}: bank overlaps heading`);
-        assert(scan.signal.top >= scan.bank.bottom + 8, `${viewport.name}/${scan.modeNumber}: signal panel overlaps bank`);
+        boxInsideViewport(scan.openData, scan.viewport, `${viewport.name}/${scan.modeNumber}/open-data`);
+        boxInsideViewport(scan.story, scan.viewport, `${viewport.name}/${scan.modeNumber}/story`);
+        assert(scan.heading.top <= viewport.maxInset, `${viewport.name}/${scan.modeNumber}: title is not fixed to the top row`);
+        assert(scan.heading.left >= scan.back.right + 10, `${viewport.name}/${scan.modeNumber}: title overlaps back action`);
+        assert(scan.signal.top >= scan.bank.bottom + 8, `${viewport.name}/${scan.modeNumber}: lower bank overlaps signal panel`);
+        assert(scan.openData.top >= scan.signal.bottom + 8, `${viewport.name}/${scan.modeNumber}: OPEN DATA is outside the lower rail`);
+        assert(scan.story.top >= scan.openData.bottom + 8, `${viewport.name}/${scan.modeNumber}: STORY is outside the lower rail`);
+        assert.equal(scan.openDataHit, "japan-data-button", `${viewport.name}/${scan.modeNumber}: OPEN DATA action is obstructed`);
+        assert.match(scan.storyHit, /japan-story-button/u, `${viewport.name}/${scan.modeNumber}: STORY action is obstructed`);
+        assert(scan.story.bottom <= scan.viewport.height, `${viewport.name}/${scan.modeNumber}: lower rail is clipped`);
+        assert(scan.bank.top > scan.europe.y + 24, `${viewport.name}/${scan.modeNumber}: lower rail still covers Europe vertically`);
+        assert.equal(scan.europeBlocker, "", `${viewport.name}/${scan.modeNumber}: Europe is obscured by ${scan.europeBlocker}`);
       } else {
+        for (const [name, panelBox] of Object.entries({ heading: scan.heading, bank: scan.bank, signal: scan.signal })) {
+          assert(panelBox.top >= scan.back.bottom + 10, `${viewport.name}/${scan.modeNumber}/${name}: panel was not lowered below back`);
+        }
         assert(scan.signal.top >= scan.heading.bottom + 8, `${viewport.name}/${scan.modeNumber}: signal panel overlaps heading`);
         assert(scan.bank.top >= scan.signal.bottom + 8, `${viewport.name}/${scan.modeNumber}: bank overlaps signal panel`);
       }
@@ -195,14 +236,10 @@ try {
         assert.equal(scan.renewableCountryFillCount, "31", `${viewport.name}/09: country fills are missing`);
         assert.equal(scan.renewableFillScale, "country-blue-0-100", `${viewport.name}/09: color scale is stale`);
         assert.equal(scan.energyConnectionRemoved, "true", `${viewport.name}/09: old connection interaction remains`);
-      } else if (index === 9) {
-        assert.equal(scan.sensewareDisplay, "nine-data-cards", `${viewport.name}/10: data atlas is missing`);
-        assert.equal(scan.sensewareCardCount, "9", `${viewport.name}/10: atlas card count is stale`);
-        assert.equal(scan.sensewareAudienceTraces, "removed", `${viewport.name}/10: audience traces remain`);
       }
       reportScan.passed = true;
 
-      if (index === 0 || index === 2 || index === 3 || index === 7 || index === 8 || index === 9) {
+      if (index === 0 || index === 2 || index === 3 || index === 7 || index === 8) {
         await page.screenshot({
           path: path.join(outputDir, `${viewport.name}-${scan.modeNumber}.png`),
           animations: "disabled",

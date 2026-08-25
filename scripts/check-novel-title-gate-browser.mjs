@@ -52,7 +52,7 @@ const createScenarioPage = async (browser, viewport, scenario) => {
   page.setDefaultTimeout(45_000);
   const label = `${viewport.name}-${scenario}`;
   attachDiagnostics(page, label);
-  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
   await page.evaluate(({ progressKey, manualKey, reachedKey, completeKey, scenarioName, resumeStepId, manualStepId }) => {
     localStorage.clear();

@@ -168,7 +168,7 @@
     <script src="./opening-audio.js?v=gaia-first-screen-p0-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-opening-real-earth-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-adaptive-performance-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-map-nine-exhibits-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -658,7 +658,7 @@
       <canvas
         id="gaia-canvas"
         tabindex="0"
-        aria-label="指やマウスで動きを変えながら見る、地球観測データの10の展示"
+        aria-label="指やマウスで動きを変えながら見る、地球観測データの9つの展示"
       >
         お使いのブラウザはCanvasに対応していません。
       </canvas>
@@ -866,7 +866,7 @@
 
             <h2 id="intro-sense-title">どの感覚に、<br />触れますか？</h2>
             <p class="intro-lead" id="intro-sense-lead">
-              意味と操作が直接つながる10の観測展示から、最初に見る入口を選んでください。
+              意味と操作が直接つながる9つの観測展示から、最初に見る入口を選んでください。
             </p>
 
             <p class="intro-selection-prompt" id="intro-selection-prompt">最初に触れる感覚器を選ぶ</p>
@@ -897,7 +897,7 @@
                   戻る
                 </button>
               </div>
-              <p id="intro-path-note">選んだ展示は、あとから01〜10のバンクで切り替えられます。</p>
+              <p id="intro-path-note">選んだ展示は、あとから01〜09のバンクで切り替えられます。</p>
             </div>
           </section>
         </div>
@@ -921,7 +921,7 @@
             <div
               class="architecture-scene"
               role="img"
-              aria-label="地球と宇宙の公開記録をローカルJSONへ保存し、SOURCE、DERIVED、SCENARIOを分けて、10の感覚器展示と四つの体験へ変換する作品構成図"
+              aria-label="地球と宇宙の公開記録をローカルJSONへ保存し、SOURCE、DERIVED、SCENARIOを分けて、9つの感覚器展示と四つの体験へ変換する作品構成図"
             >
               <img
                 class="architecture-scene-art"
@@ -958,10 +958,10 @@
 
               <section class="architecture-node architecture-node-senses">
                 <p><span>04</span> 数字を感覚へ</p>
-                <h3>10の観測展示</h3>
-                <ol aria-label="10の感覚器展示">
+                <h3>9つの観測展示</h3>
+                <ol aria-label="9つの感覚器展示">
                   <li>01</li><li>02</li><li>03</li><li>04</li><li>05</li>
-                  <li>06</li><li>07</li><li>08</li><li>09</li><li>10</li>
+                  <li>06</li><li>07</li><li>08</li><li>09</li>
                 </ol>
               </section>
 
@@ -976,10 +976,6 @@
                 </ul>
               </section>
 
-              <p class="architecture-memory">
-                <span>九つの測定</span>
-                10番目の展示では、単位の違いを3×3で並べる
-              </p>
             </div>
             <figcaption>
               どの数字にも、出典と計算の記録を残しています。
@@ -1010,7 +1006,7 @@
                 </li>
                 <li>
                   <span>05</span>
-                  <div><strong>触れた跡を残す</strong><p>画面に触れた跡は少しずつ作品に残り、10番目の展示で九つのデータと重なります。</p></div>
+                  <div><strong>触れた跡を残す</strong><p>画面に触れた跡は光の変化として残りますが、公開データの観測値そのものは変えません。</p></div>
                 </li>
               </ol>
             </section>
@@ -1474,15 +1470,15 @@
           LOCAL VECTOR LOADING
         </p>
 
-        <section class="map-mode-bank" aria-label="世界地図に重ねる10の感覚器展示を切り替える">
+        <section class="map-mode-bank" aria-label="世界地図に重ねる9つの感覚器展示を切り替える">
           <div class="map-mode-bank-heading">
-            <p>INSTALLATION BANK / 01—10</p>
+            <p>INSTALLATION BANK / 01—09</p>
             <div>
               <span id="japan-mode-number">01</span>
               <strong id="japan-mode-title">地球の一呼吸</strong>
             </div>
           </div>
-          <p class="map-mode-bank-guide">01〜10を押すと、地図に表示する展示が変わります</p>
+          <p class="map-mode-bank-guide">01〜09を押すと、地図に表示する展示が変わります</p>
           <div class="map-mode-list" id="japan-mode-list"></div>
         </section>
 
@@ -1498,7 +1494,7 @@
         </div>
 
         <div class="japan-instruction" aria-hidden="true">
-          <span>01—10</span>
+          <span>01—09</span>
           <p>データを選ぶ</p>
           <span>DRAG / ZOOM</span>
           <p>移動して拡大する</p>
@@ -1897,8 +1893,16 @@
           <div class="novel-title-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
           <p>AN INTERACTIVE SYSTEM</p>
           <h2 id="novel-title" class="novel-work-title">
-            <span>惑星の放課後</span>
-            <small>GAIA SENSATION</small>
+            <img
+              class="novel-work-title-logo"
+              src="./assets/brand/brand-logo-dark-surface-590.webp"
+              srcset="./assets/brand/brand-logo-dark-surface-590.webp 590w, ./assets/brand/brand-logo-dark-surface-1180.webp 1180w"
+              sizes="(max-width: 600px) calc(100vw - 36px), min(690px, 48vw)"
+              width="2172"
+              height="724"
+              alt="惑星の放課後 — GAIA SENSATION"
+              decoding="async"
+            />
           </h2>
           <div class="novel-title-actions">
             <button id="novel-start-button" type="button" aria-label="はじめる">はじめる</button>
@@ -2497,7 +2501,7 @@
       >
         <header class="concept-header">
           <div>
-            <p class="concept-kicker">PLANETARY SENSE ORGAN <span id="concept-number">01 / 10</span></p>
+            <p class="concept-kicker">PLANETARY SENSE ORGAN <span id="concept-number">01 / 09</span></p>
             <h2 id="concept-title">地球の一呼吸</h2>
             <p class="concept-title-en" id="concept-title-en">Breathing Earth</p>
           </div>
@@ -2544,7 +2548,7 @@
             <span aria-hidden="true">←</span>
             <span>PREVIOUS</span>
           </button>
-          <span id="concept-position">01 / 10</span>
+          <span id="concept-position">01 / 09</span>
           <button id="concept-next" type="button" aria-label="次の演出の解説">
             <span>NEXT</span>
             <span aria-hidden="true">→</span>

@@ -16,7 +16,7 @@ const viewports = [
   { name: "mobile-390", width: 390, height: 844, mobile: true },
   { name: "mobile-430", width: 430, height: 932, mobile: true },
 ];
-const report = { status: "running", scope: "mobile-responsive-mq-01-08", baselineBase, candidateBase, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { status: "running", scope: "mobile-responsive-mq", baselineBase, candidateBase, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
 const visibleSource = `(element) => {
   if (!element || element.hidden) return false;
@@ -24,8 +24,8 @@ const visibleSource = `(element) => {
   return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0 && rect.width > 0 && rect.height > 0;
 }`;
 const rect = (box) => box ? ({ x: box.x, y: box.y, width: box.width, height: box.height, top: box.top, right: box.right, bottom: box.bottom, left: box.left }) : null;
-const stateFor = (stepId) => ({
-  storyVersion: 10, stepId, reachedSceneIds: [], viewed: {}, evesRoute: [], observationOrder: null,
+const stateFor = (stepId, storyVersion) => ({
+  storyVersion, stepId, reachedSceneIds: [], viewed: {}, evesRoute: [], observationOrder: null,
   editorialChoice: null, reflectionIds: [], resultTone: null, demoInterest: "気候の長期変化",
   metCharacters: { mizuha: true, amane: true, sakuya: true }, audio: { muted: true, volume: 0.3 },
   readStepIds: [], clear: false, archivesUnlocked: false, sessionId: `mobile-mq-${stepId}`,
@@ -42,15 +42,19 @@ const makePage = async (viewport, label) => {
 };
 
 const openTitle = async (page, baseUrl) => {
+  await page.addInitScript(() => {
+    localStorage.removeItem("gaiaSensewareNovel:progress");
+    localStorage.setItem("gaiaSensewareTrueEnd:reached:v1", new Date().toISOString());
+  });
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => { localStorage.removeItem("gaiaSensewareNovel:progress"); globalThis.GaiaNovel.open(); });
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-title"));
 };
 
 const bootStory = async (page, baseUrl, stepId = "festival_concept_011") => {
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
+  const storyVersion = await page.evaluate(() => globalThis.GAIA_NOVEL_STORY.storyVersion);
   await page.evaluate((state) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(state));
     localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([
@@ -58,13 +62,9 @@ const bootStory = async (page, baseUrl, stepId = "festival_concept_011") => {
     ]));
     localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
     localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
-  }, stateFor(stepId));
+  }, stateFor(stepId, storyVersion));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  const savePanel = page.locator("#novel-save-panel");
-  if (await savePanel.isVisible()) await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
 };
 
@@ -151,11 +151,13 @@ const chatScan = async (viewport, baseUrl, phase) => {
 const observationScan = async (viewport, baseUrl, phase) => {
   const { context, page } = await makePage(viewport, `${phase}-${viewport.name}-observation`);
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
+  await page.locator("#gaia-opening-sound-off").click();
+  await page.locator("#gaia-opening-route-other").waitFor({ state: "visible" });
+  await page.locator("#gaia-opening-route-other").click();
+  await page.waitForFunction(() => document.querySelector("#gaia-opening")?.hidden === true);
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length >= 9);
   await page.evaluate(() => {
-    const opening = document.querySelector("#gaia-opening"); if (opening) { opening.hidden = true; opening.inert = true; opening.setAttribute("aria-hidden", "true"); }
     const intro = document.querySelector("#intro-layer"); if (intro) { intro.hidden = true; intro.inert = true; intro.setAttribute("aria-hidden", "true"); }
-    document.body.classList.remove("opening-active");
     document.body.classList.remove("intro-open");
   });
   const data = await page.evaluate(() => {
@@ -175,7 +177,7 @@ const observationScan = async (viewport, baseUrl, phase) => {
   await page.screenshot({ path: path.join(outputDir, `${phase}-${viewport.name}-intro.png`) });
   if (phase === "candidate" && viewport.mobile) {
     assert(data.actions.every((item) => item.rect.width >= 44 && item.rect.height >= 44 && item.hit));
-    assert.equal(data.modes.length, 10); assert(data.modes.every((item) => item.rect.width >= 44 && item.rect.height >= 44 && item.hit));
+    assert.equal(data.modes.length, 9); assert(data.modes.every((item) => item.rect.width >= 44 && item.rect.height >= 44 && item.hit));
     assert(data.modeList.width <= viewport.width - 24 + 1); assert.equal(data.keyboardMode, "true");
     assert(data.concept.height >= 44); assert(data.intro.height >= 44); assert.equal(data.conceptOpened, "false");
     assert(data.introCards.length === 4 && data.introCards.every((item) => parseFloat(item.title) >= 15 && parseFloat(item.body) >= 11));
@@ -201,7 +203,10 @@ try {
       assert.equal(after.title.start.font, before.title.start.font);
       assert.deepEqual(after.story.labels.map((item) => [item.font, item.rect.width, item.rect.height]), before.story.labels.map((item) => [item.font, item.rect.width, item.rect.height]));
       assert.deepEqual(after.observation.actions.map((item) => [item.rect.width, item.rect.height]), before.observation.actions.map((item) => [item.rect.width, item.rect.height]));
-      assert.deepEqual(after.observation.modes.map((item) => [item.rect.width, item.rect.height]), before.observation.modes.map((item) => [item.rect.width, item.rect.height]));
+      assert.deepEqual(
+        after.observation.modes.map((item) => [item.rect.width, item.rect.height]),
+        before.observation.modes.slice(0, after.observation.modes.length).map((item) => [item.rect.width, item.rect.height]),
+      );
     }
   }
   assert.equal(report.consoleErrors.length, 0); assert.equal(report.pageErrors.length, 0); assert.equal(report.responses404.length, 0);

@@ -859,25 +859,6 @@ const modes = [
     ],
     { potential: powerRows, current: renewableRows },
   ),
-  mode(
-    "senseware-2050",
-    { number: 3, title: "関係を編み直す", en: "REWEAVE RELATIONSHIPS" },
-    "地球を、ひとつの点数で表せるでしょうか。",
-    [
-      source({ id: "nine-measure-atlas", kind: "DERIVED", organisation: "GAIA SENSEWARE", title: "01–09 measure / representative value / unit atlas", url: "./data/gaia-signals.json", period: "same bundled snapshot", unit: "ppm, m/s, mm/day, %, count, Pearson r", resolution: "nine simultaneous cards", transformation: "各展示の測るもの、保存データから取り出した代表値、単位または標本数を3×3で同時表示します。", caveat: "意味も単位も違う数値は、足したり平均したり順位づけしたりしません。架空の『地球健康度』もつくりません。", rows: [
-        { signal: "01", measure: "大気CO2濃度", unit: "ppm" },
-        { signal: "02", measure: "海流の速さ", unit: "m/s" },
-        { signal: "03", measure: "森林域と降水量", unit: "mm/day" },
-        { signal: "04", measure: "ミツバチと花の関係", unit: "relationship count" },
-        { signal: "05", measure: "都市ごみ再資源化率", unit: "%" },
-        { signal: "06", measure: "夜間光と国別排出量", unit: "radiance / Mt CO2e" },
-        { signal: "07", measure: "M7.5以上の地震", unit: "event count / magnitude" },
-        { signal: "08", measure: "森林率と都市人口率", unit: "% / Pearson r" },
-        { signal: "09", measure: "再生可能電力比率", unit: "%" },
-      ] }),
-    ],
-    { reuse: ["breathing-earth", "blue-circulation", "forest-cloud-engine", "pollination-protocol", "nothing-is-waste", "anthropocene-scar", "rhythm-of-disaster", "three-ecologies", "earth-organ"] },
-  ),
 ];
 
 const output = enrichSnapshotWithStatistics({

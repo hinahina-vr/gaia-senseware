@@ -25,7 +25,6 @@ const expectedIds = [
   "rhythm-of-disaster",
   "three-ecologies",
   "earth-organ",
-  "senseware-2050",
 ];
 const retiredIds = [
   "breathing-earth-data",
@@ -37,13 +36,14 @@ const retiredIds = [
   "rhythm-of-disaster-live",
   "three-ecologies-live",
   "earth-organ-live",
+  "senseware-2050",
   "senseware-2050-live",
 ];
 
-assert.equal(content.modes.length, 10, "Earth catalog must contain exactly 10 exhibits");
-assert.equal(content.INTRO_MODE_CHOICES.length, 10, "Entrance must contain exactly 10 exhibits");
+assert.equal(content.modes.length, 9, "Earth catalog must contain exactly 9 exhibits");
+assert.equal(content.INTRO_MODE_CHOICES.length, 9, "Entrance must contain exactly 9 exhibits");
 assert.deepEqual(Array.from(content.modes, ({ id }) => id), expectedIds);
-assert.equal(new Set(content.modes.map(({ id }) => id)).size, 10);
+assert.equal(new Set(content.modes.map(({ id }) => id)).size, 9);
 for (const id of expectedIds) {
   assert(content.modeConcepts[id]?.question, `${id}: question is missing`);
   assert(content.modeDataNarratives[id], `${id}: data narrative is missing`);
@@ -72,11 +72,16 @@ assert.match(content.modeConcepts["anthropocene-scar"].seeing, /都市や道路�
 assert.match(content.modeConcepts["anthropocene-scar"].touch, /0\.65秒以上.*6秒間/u);
 assert.match(appSource, /glow-plus-radiance-core/u);
 assert.match(appSource, /web-mercator-to-geographic/u);
-assert.match(content.modes[6].description, /年度ごと.*全震源.*一斉/u);
-assert.match(content.modeConcepts["rhythm-of-disaster"].seeing, /別年度の点は表示しません/u);
-assert.match(content.modeDataNarratives["rhythm-of-disaster"], /初期表示は世界.*M9\.1.*約半分/u);
-assert.match(appSource, /GLOBAL_EARTHQUAKE_WAVE_DURATION_MS = 1500/u);
-assert.match(appSource, /earthquakeWaveSync = "annual-simultaneous"/u);
+assert.match(content.modes[6].description, /年度ごと.*ゆっくり.*可感半径/u);
+assert.match(content.modeConcepts["rhythm-of-disaster"].seeing, /M7\.5.*約500km.*M9\.1.*約2,000km.*別年度の点は表示しません/u);
+assert.match(content.modeDataNarratives["rhythm-of-disaster"], /初期表示は世界.*約7〜15秒.*M7\.5約500km.*M9\.1約2,000km/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_WAVE_MIN_DURATION_MS = 7000/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS = 15000/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_YEAR_COUNT = 27/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS/u);
+assert.match(appSource, /getGlobalEarthquakeImpactRadiusKm/u);
+assert.match(appSource, /earthquakeWaveSync = "annual-simultaneous-distance-limited"/u);
+assert.match(appSource, /earthquakeWaveModel = "usgs-estimated-felt-radius"/u);
 assert.match(appSource, /setJapanDataLayer\("snapshot"\)/u);
 assert.match(content.modes[7].description, /同じ31か国.*二重円.*散布図/u);
 assert.match(content.modeConcepts["three-ecologies"].seeing, /回帰線.*相関係数r/u);
@@ -104,22 +109,12 @@ assert.equal(earthOrganData.signals.current.length, 31);
 assert.equal(earthOrganData.signals.potential.length, 31);
 assert.equal(Object.hasOwn(earthOrganData.signals, "scenarioLinks"), false);
 assert.equal(earthOrganData.datasets.some(({ id }) => id === "distributed-link-scenario"), false);
-assert.equal(content.modes[9].titleJa, "九つの測定は、足せない");
-assert.match(content.modes[9].description, /3×3のカード.*ひとつの『地球スコア』には足しません/u);
-assert.match(content.modeConcepts["senseware-2050"].seeing, /測るもの.*代表値.*単位.*同じ種類の数字ではない/u);
-assert.match(content.modeConcepts["senseware-2050"].touch, /9枚は最初から同時.*黄色い枠/u);
-assert.match(content.modeDataNarratives["senseware-2050"], /3×3の9枚すべてが同時.*総合順位にはしません/u);
-assert.match(appSource, /const getNineSignalCards/u);
-assert.match(appSource, /sensewareDisplay = "nine-data-cards"/u);
-assert.match(appSource, /sensewareAudienceTraces = "removed"/u);
-assert.doesNotMatch(appSource, /drawSelectedBranch|drawAudienceMemory|9 SIGNALS \+ AUDIENCE TRACES/u);
-const sensewareData = gaiaData.modes.find(({ id }) => id === "senseware-2050");
-assert.equal(sensewareData.datasets.length, 1);
-assert.equal(sensewareData.datasets[0].id, "nine-measure-atlas");
-assert.equal(sensewareData.datasets[0].preview.length, 9);
-assert.equal(sensewareData.datasets.some(({ id }) => id === "audience-traces"), false);
+assert.equal(content.modes.at(-1).id, "earth-organ");
+assert.equal(gaiaData.modes.length, 9);
+assert.equal(gaiaData.modes.some(({ id }) => id === "senseware-2050"), false);
+assert.doesNotMatch(appSource, /getNineSignalCards|sensewareDisplay|nine-data-cards|9つの測定 ≠ 1つの地球スコア/u);
 
-assert.match(appSource, /const MODE_COUNT = 10;/u);
+assert.match(appSource, /const MODE_COUNT = 9;/u);
 assert.doesNotMatch(appSource, /mode == (?:1[0-9]|[2-9][0-9])/u);
 assert.match(appSource, /const getEarthWorldCopies = \(projection\)/u);
 assert((appSource.match(/getEarthWorldCopies\(projection\)/gu) || []).length >= 2, "vector and raster must share getEarthWorldCopies");
@@ -135,17 +130,20 @@ assert.match(appSource, /cancelEarthViewAnimation\("user-wheel"\)/u);
 assert.match(appSource, /cancelEarthViewAnimation\("user-keyboard"\)/u);
 assert.match(appSource, /dataset\.japanScreenX/u);
 
-assert.match(html, /地球観測データの10の展示/u);
-assert.match(html, /INSTALLATION BANK \/ 01—10/u);
-assert.match(html, /10の観測展示/u);
-assert.match(html, /01 \/ 10/u);
+assert.match(html, /地球観測データの9つの展示/u);
+assert.match(html, /INSTALLATION BANK \/ 01—09/u);
+assert.match(html, /9つの観測展示/u);
+assert.match(html, /01 \/ 09/u);
+assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-adaptive-performance-1/u);
-assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-adaptive-performance-1/u);
-assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-adaptive-performance-1/u);
-assert.match(modeLoaderSource, /app-content\.js\?v=gaia-map10-nine-measure-atlas-1/u);
-assert.match(modeLoaderSource, /app\.js\?v=gaia-adaptive-performance-1/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-map-nine-exhibits-1/u);
+assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-map-europe-clear-1/u);
+assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-map-europe-clear-1/u);
+assert.match(modeLoaderSource, /app-content\.js\?v=gaia-map-nine-exhibits-1/u);
+assert.match(modeLoaderSource, /app\.js\?v=gaia-map-nine-exhibits-1/u);
+assert.match(appSource, /tier: "native", ratioCap: 3, maxPixels: 9000000/u);
+assert.match(appSource, /dataset\.renderPixelRatio/u);
 assert.match(appSource, /fixed-diameter-pie/u);
 assert.match(appSource, /緑 \/ 再資源化/u);
 assert.match(content.modes[4].description, /同じ大きさの円グラフ/u);

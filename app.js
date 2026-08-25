@@ -235,7 +235,7 @@
   const dataLedger = window.GaiaDataLedger.create();
 
   const TRAIL_COUNT = 16;
-  const MODE_COUNT = 10;
+  const MODE_COUNT = 9;
   const TRANSITION_DURATION = 1500;
   const AUTO_INTERVAL = 18000;
   const CO2_TIMELINE_START_YEAR = 1958;
@@ -260,11 +260,17 @@
   const P_WAVE_SPEED_KM_S = 7;
   const S_WAVE_SPEED_KM_S = 4;
   const JAPAN_WAVE_VISUAL_LIMIT_KM = 2500;
-  const GLOBAL_EARTHQUAKE_WAVE_DURATION_MS = 1500;
   const GLOBAL_EARTHQUAKE_MIN_MAGNITUDE = 7.5;
   const GLOBAL_EARTHQUAKE_MAX_MAGNITUDE = 9.1;
+  const GLOBAL_EARTHQUAKE_MIN_IMPACT_RADIUS_KM = 500;
+  const GLOBAL_EARTHQUAKE_MAX_IMPACT_RADIUS_KM = 2000;
+  const GLOBAL_EARTHQUAKE_WAVE_MIN_DURATION_MS = 7000;
+  const GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS = 15000;
+  const GLOBAL_EARTHQUAKE_YEAR_COUNT = 27;
+  const GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS =
+    GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS * GLOBAL_EARTHQUAKE_YEAR_COUNT;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-31";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-nine-exhibits-1";
   const NATURAL_EARTH_LAND_DATA = "./data/natural-earth-50m-land.geojson?v=gaia-27";
   const NATURAL_EARTH_COUNTRY_DATA = "./data/natural-earth-50m-countries.geojson?v=gaia-1";
 
@@ -308,8 +314,8 @@
     {
       title: "大地震は、年ごとに世界のどこで起きたのか？",
       subject: "世界表示を基準に、USGSが記録した2000〜2026年のM7.5以上を年度ごとに切り替えます。別年度の震源は同時表示しません。",
-      reading: "橙の点がその年の震源です。年度が変わるたび全点から同心円が一斉に広がり、Magnitudeが大きいほど遠くまで、M9.1では地図幅の約半分まで広がります。",
-      action: "スライダーで年度を切り替えるか、震源を押して日付・深さ・Magnitudeを読めます。同心円は比較用の演出で、実際の揺れの範囲や震度ではありません。日本の実測震度は別層です。",
+      reading: "橙の点がその年の震源です。年度が変わるたび全点から輪がゆっくり広がり、Magnitudeから見積もった可感半径の目安で止まります。M7.5は約500km、M9.1は約2,000kmです。",
+      action: "スライダーで年度を切り替えるか、震源を押して日付・深さ・Magnitudeを読めます。輪は推定可感半径で、実際の震度分布・被害範囲・津波範囲ではありません。日本の実測震度は別層です。",
     },
     {
       title: "都市化が進むほど、森林は減るのか？",
@@ -323,12 +329,6 @@
       reading: "暗い青ほど比率が低く、明るい水色ほど高い国です。黄色い輪と緑の矢印は選択国の代表地点の日射・風で、国の青色とは別の自然条件です。",
       action: "スライダーで比率の低い国から高い国へ移動するか、青く塗られた国の代表点を押して現在値を読めます。二地点を結ぶ仮想線は廃止しました。",
     },
-    {
-      title: "地球を、ひとつの点数で表せるか？",
-      subject: "できません。9枚のカードが、01〜09で測っているもの・実際の代表値・単位を同時に示します。",
-      reading: "ppm、m/s、mm/day、件数、%、相関係数は意味が違います。3×3のカードは同じ大きさでも、値を足したり順位づけしたりするための図ではありません。",
-      action: "まず9枚を同時に見比べます。スライダーを動かすと黄色い枠が01〜09へ移り、左下と右下にも選択中の実値が出ます。",
-    },
   ];
   const JMA_HISTORY_DATA = "./data/jma-intensity-history.json";
   const JAPAN_DATA_BOUNDS = {
@@ -339,6 +339,32 @@
   };
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const resolveMapOverlayQuality = () => {
+    const memory = Number(navigator.deviceMemory) || 0;
+    const cores = Number(navigator.hardwareConcurrency) || 0;
+    const saveData = navigator.connection?.saveData === true;
+    const constrained = saveData
+      || (memory > 0 && memory <= 4)
+      || (cores > 0 && cores <= 4);
+    const nativeQuality = memory >= 8 && cores >= 8;
+
+    if (constrained) {
+      return {
+        tier: "compact",
+        ratioCap: 1,
+        maxPixels: coarsePointer ? 650000 : 1600000,
+      };
+    }
+    if (nativeQuality) {
+      return { tier: "native", ratioCap: 3, maxPixels: 9000000 };
+    }
+    return {
+      tier: "balanced",
+      ratioCap: 2,
+      maxPixels: coarsePointer ? 3200000 : 5000000,
+    };
+  };
+  const mapOverlayQuality = resolveMapOverlayQuality();
   const runSceneTransition = (swapScene, tone = "default", event = null) => {
     const hasPointerOrigin = Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY) &&
       (event.clientX !== 0 || event.clientY !== 0);
@@ -523,8 +549,7 @@
       if (mode == 5) return modeAnthropoceneScar(p, t, response, uModeMemory[5]);
       if (mode == 6) return modeRhythmOfDisaster(p, t, response, uModeMemory[6]);
       if (mode == 7) return modeThreeEcologies(p, t, response, uModeMemory[7]);
-      if (mode == 8) return modeEarthOrgan(p, t, response, uModeMemory[8]);
-      return modeSenseware2050(p, t, response, uModeMemory[9]);
+      return modeEarthOrgan(p, t, response, uModeMemory[8]);
     }
 
     void main() {
@@ -766,6 +791,34 @@
   };
 
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+  const getGlobalEarthquakeImpactRadiusKm = (magnitude) => {
+    const value = clamp(Number(magnitude) || GLOBAL_EARTHQUAKE_MIN_MAGNITUDE, 7, GLOBAL_EARTHQUAKE_MAX_MAGNITUDE);
+    // USGS PP 1074 gives approximate perceptibility distances of 400 km at M7
+    // and 600 km at M8. The M9.1 anchor reflects documented cross-country felt
+    // reports for the 2004 Sumatra and 2011 Tohoku events. This remains an
+    // educational estimate, not a ShakeMap, intensity, damage, or tsunami area.
+    if (value <= 8) return 400 + (value - 7) * 200;
+    return 600 + ((value - 8) / (GLOBAL_EARTHQUAKE_MAX_MAGNITUDE - 8)) * 1400;
+  };
+  const getGlobalEarthquakeWaveDurationMs = (impactRadiusKm) => {
+    const radiusProgress = clamp(
+      (impactRadiusKm - GLOBAL_EARTHQUAKE_MIN_IMPACT_RADIUS_KM) /
+        (GLOBAL_EARTHQUAKE_MAX_IMPACT_RADIUS_KM - GLOBAL_EARTHQUAKE_MIN_IMPACT_RADIUS_KM),
+      0,
+      1,
+    );
+    return GLOBAL_EARTHQUAKE_WAVE_MIN_DURATION_MS +
+      radiusProgress * (GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS - GLOBAL_EARTHQUAKE_WAVE_MIN_DURATION_MS);
+  };
+  const getGlobalEarthquakeImpactEllipse = (event, impactRadiusKm, projection) => {
+    const radiusDegrees = (impactRadiusKm / (2 * Math.PI * EARTH_RADIUS_KM)) * 360;
+    const verticalRadius = radiusDegrees * projection.scale;
+    const latitudeScale = Math.max(0.28, Math.cos(toRadians(event.latitude)));
+    return {
+      x: verticalRadius / latitudeScale,
+      y: verticalRadius,
+    };
+  };
   const FOREST_RAIN_REFERENCE_MAX_MM_DAY = 6.5;
   const FOREST_RAIN_MIN_RADIUS = 10;
   const FOREST_RAIN_MAX_RADIUS = 54;
@@ -1085,11 +1138,12 @@
   };
 
   const resizeJapanOverlay = (rect) => {
-    const ratioCap = coarsePointer ? 1 : 1.2;
-    const nativeRatio = Math.min(window.devicePixelRatio || 1, ratioCap);
+    const deviceRatio = Math.max(1, window.devicePixelRatio || 1);
+    const nativeRatio = Math.min(deviceRatio, mapOverlayQuality.ratioCap);
     const rawWidth = Math.max(1, rect.width * nativeRatio);
     const rawHeight = Math.max(1, rect.height * nativeRatio);
-    const maxPixels = coarsePointer ? 650000 : 1600000;
+    const cssPixels = Math.max(1, rect.width * rect.height);
+    const maxPixels = Math.max(cssPixels, mapOverlayQuality.maxPixels);
     const pixelScale = Math.min(1, Math.sqrt(maxPixels / (rawWidth * rawHeight)));
     const width = Math.max(1, Math.floor(rawWidth * pixelScale));
     const height = Math.max(1, Math.floor(rawHeight * pixelScale));
@@ -1101,6 +1155,18 @@
       japanView.width = rect.width;
       japanView.height = rect.height;
       japanTilesDirty = true;
+    }
+
+    const renderedRatio = ratio.toFixed(3);
+    const deviceRatioLabel = deviceRatio.toFixed(3);
+    if (japanOverlay.dataset.renderQuality !== mapOverlayQuality.tier) {
+      japanOverlay.dataset.renderQuality = mapOverlayQuality.tier;
+    }
+    if (japanOverlay.dataset.renderPixelRatio !== renderedRatio) {
+      japanOverlay.dataset.renderPixelRatio = renderedRatio;
+    }
+    if (japanOverlay.dataset.devicePixelRatio !== deviceRatioLabel) {
+      japanOverlay.dataset.devicePixelRatio = deviceRatioLabel;
     }
 
     return ratio;
@@ -2263,63 +2329,6 @@
     };
   };
 
-  let nineSignalCardSnapshot = null;
-  let nineSignalCardCache = [];
-  const getNineSignalCards = () => {
-    if (!gaiaSnapshot) return [];
-    if (nineSignalCardSnapshot === gaiaSnapshot) return nineSignalCardCache;
-    const modeSignals = (id) => gaiaModeById.get(id)?.signals || {};
-    const air = modeSignals("breathing-earth");
-    const currents = modeSignals("blue-circulation");
-    const forest = modeSignals("forest-cloud-engine");
-    const pollination = modeSignals("pollination-protocol");
-    const waste = modeSignals("nothing-is-waste");
-    const city = modeSignals("anthropocene-scar");
-    const quake = modeSignals("rhythm-of-disaster");
-    const ecologies = modeSignals("three-ecologies");
-    const energy = modeSignals("earth-organ");
-    const latestCo2 = air.co2?.at(-1);
-    const currentSpeeds = (currents.currents || []).map((row) => Math.hypot(row.uMs, row.vMs));
-    const meanCurrentSpeed = currentSpeeds.length
-      ? currentSpeeds.reduce((sum, value) => sum + value, 0) / currentSpeeds.length
-      : 0;
-    const rainRows = forest.precipitation || [];
-    const maximumRain = Math.max(...rainRows.map((row) => row.precipitationMmDay || 0), 0);
-    const wasteRows = waste.countryWaste || [];
-    const wasteSourceCount = wasteRows.filter((row) => row.valueStatus === "SOURCE").length;
-    const wasteImputedCount = wasteRows.filter((row) => row.valueStatus === "IMPUTED").length;
-    const quakeRows = quake.globalEvents || [];
-    const quakeYears = quakeRows.map((row) => Number(String(row.occurredAt || "").slice(0, 4))).filter(Number.isFinite);
-    const ecologyComparison = getThreeEcologiesComparison(ecologies);
-    const renewableRows = energy.current || [];
-    const renewableValues = renewableRows.map((row) => row.renewablePercent).filter(Number.isFinite);
-    const renewableMinimum = renewableValues.length ? Math.min(...renewableValues) : 0;
-    const renewableMaximum = renewableValues.length ? Math.max(...renewableValues) : 0;
-    const card = (index, metric, value, scope) => ({
-      index,
-      number: String(index + 1).padStart(2, "0"),
-      title: modes[index].titleJa,
-      rgb: modes[index].rgb,
-      metric,
-      value,
-      scope,
-    });
-
-    nineSignalCardCache = [
-      card(0, "大気CO₂濃度", latestCo2 ? `${latestCo2.deseasonalizedPpm.toFixed(1)} ppm` : "— ppm", latestCo2 ? `${latestCo2.year}.${String(latestCo2.month).padStart(2, "0")} / 月平均` : "月平均"),
-      card(1, "海流の速さ", `平均 ${meanCurrentSpeed.toFixed(2)} m/s`, `${currentSpeeds.length}観測点 / 同一日時`),
-      card(2, "森林域 × 降水量", `最大 ${maximumRain.toFixed(2)} mm/day`, `${rainRows.length}代表地点`),
-      card(3, "ミツバチ × 花", `${pollination.interactions?.length || 0} 関係`, `${pollination.occurrences?.length || 0}観察記録とは別`),
-      card(4, "都市ごみ再資源化", `${wasteSourceCount}公開 + ${wasteImputedCount}補完`, `${wasteRows.length}か国 / %`),
-      card(5, "夜間光 × 排出量", `${city.emissions?.length || 0} か国`, "2016夜間光 / 2024排出"),
-      card(6, "M7.5以上の地震", `${quakeRows.length} 件`, quakeYears.length ? `${Math.min(...quakeYears)}–${Math.max(...quakeYears)}` : "年度別"),
-      card(7, "森林率 × 都市人口率", ecologyComparison ? `r ${ecologyComparison.correlation.toFixed(2)}` : "r —", `${ecologyComparison?.rows.length || 0}か国 / 相関`),
-      card(8, "再生可能電力比率", renewableValues.length ? `${renewableMinimum.toFixed(1)}–${renewableMaximum.toFixed(1)}%` : "—%", `${renewableRows.length}か国`),
-    ];
-    nineSignalCardSnapshot = gaiaSnapshot;
-    return nineSignalCardCache;
-  };
-
   const getMapSequenceState = (signalMode) => {
     if (!signalMode) return null;
     const { signals } = signalMode;
@@ -2475,12 +2484,13 @@
         null,
       );
       if (!year || !strongest) return null;
+      const strongestImpactRadiusKm = getGlobalEarthquakeImpactRadiusKm(strongest.magnitude);
       return {
         kind: "earthquake",
         phaseLabel: `USGS YEARLY M7.5+ / ${String(index + 1).padStart(2, "0")} OF ${String(years.length).padStart(2, "0")}`,
         yearLabel: year,
         valueLabel: `${yearEvents.length} EVENTS · MAX M${strongest.magnitude.toFixed(1)}`,
-        methodLabel: "YEAR SNAPSHOT / ALL WAVES START TOGETHER",
+        methodLabel: "YEAR SNAPSHOT / SLOW ESTIMATED FELT RINGS",
         timeLabel: `年度 / ${years[0]} → ${years.at(-1)}`,
         selectedIndex: index,
         selected: strongest,
@@ -2489,9 +2499,9 @@
         years,
         legend: [
           ["橙点 / この年の震源", `${year}年 · M7.5以上 ${yearEvents.length}件`],
-          ["同心円 / 一斉拡大", `MAX M${strongest.magnitude.toFixed(1)} · 年度切替で同時開始`],
-          ["広がり / Magnitude", "M9.1で地図幅の約半分まで拡大"],
-          ["重要 / 非変換", "Magnitudeを震度や実際の到達範囲へ変換しない"],
+          ["同心円 / ゆっくり伝播", `MAX M${strongest.magnitude.toFixed(1)} · 年度切替で同時開始`],
+          ["推定可感半径 / Magnitude", `約${strongestImpactRadiusKm.toLocaleString("ja-JP")} kmで停止`],
+          ["重要 / 推定値", "実際の震度・被害・津波範囲ではない"],
         ],
       };
     }
@@ -2550,30 +2560,6 @@
           ["明るさ / 比率", "暗い青 0% → 明るい水色 100%"],
           ["黄円 / 日射条件", `${row.potential?.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day`],
           ["緑矢印 / 風条件", `${row.potential?.windSpeedMs?.toFixed(2) || "—"} m/s · 自然条件だけで比率は決まらない`],
-        ],
-      };
-    }
-
-    if (signalMode.id === "senseware-2050") {
-      const cards = getNineSignalCards();
-      const index = getSequenceIndex(cards.length);
-      const selected = cards[index];
-      if (!selected) return null;
-      return {
-        kind: "senseware",
-        phaseLabel: `NINE-MEASURE ATLAS / ${selected.number} OF 09`,
-        yearLabel: selected.value,
-        valueLabel: `${selected.number} ${selected.metric} · ${selected.value}`,
-        methodLabel: "9 MEASUREMENTS ≠ 1 EARTH SCORE",
-        timeLabel: "測定カード / AUTO 01→09",
-        selectedIndex: index,
-        selected,
-        cards,
-        legend: [
-          ["9枚 / 同時表示", "測るもの・代表値・単位"],
-          ["黄色枠 / 選択中", "スライダーで01→09"],
-          ["値 / 比較しない", "ppm・m/s・%・件数・相関"],
-          ["総合点 / なし", "異なる単位を足し算しない"],
         ],
       };
     }
@@ -3470,46 +3456,62 @@
           globalEarthquakeWaveYear = selectedYear;
           globalEarthquakeWaveStartedAt = now;
         }
+        const elapsedWaveMs = Math.max(0, now - globalEarthquakeWaveStartedAt);
+        const earthProjection = japanView.earthProjection || getEarthProjection(rect);
+        const strongestMagnitude = sequence?.selected?.magnitude || GLOBAL_EARTHQUAKE_MIN_MAGNITUDE;
+        const strongestImpactRadiusKm = getGlobalEarthquakeImpactRadiusKm(strongestMagnitude);
+        const strongestDurationMs = getGlobalEarthquakeWaveDurationMs(strongestImpactRadiusKm);
         const waveProgress = reducedMotion
           ? 1
-          : clamp((now - globalEarthquakeWaveStartedAt) / GLOBAL_EARTHQUAKE_WAVE_DURATION_MS, 0, 1);
-        const easedProgress = 1 - (1 - waveProgress) ** 3;
-        const waveOpacity = 0.92 - waveProgress * 0.54;
-        const viewportWaveLimit = Math.min(rect.width * 0.47, rect.height * 0.78);
-        const strongestMagnitude = sequence?.selected?.magnitude || GLOBAL_EARTHQUAKE_MIN_MAGNITUDE;
-        const strongestMagnitudeScale = clamp(
-          (strongestMagnitude - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE) /
-            (GLOBAL_EARTHQUAKE_MAX_MAGNITUDE - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE),
-          0,
-          1,
+          : clamp(elapsedWaveMs / strongestDurationMs, 0, 1);
+        const strongestImpactEllipse = getGlobalEarthquakeImpactEllipse(
+          sequence?.selected || { latitude: 0 },
+          strongestImpactRadiusKm,
+          earthProjection,
         );
-        const strongestTargetRadius = viewportWaveLimit * (0.48 + strongestMagnitudeScale * 0.52);
         japanOverlay.dataset.earthquakeLayer = "world-year";
         japanOverlay.dataset.earthquakeYear = selectedYear;
         japanOverlay.dataset.earthquakeYearEventCount = String(yearEvents.length);
         japanOverlay.dataset.earthquakeTotalEventCount = String(signalMode.signals.globalEvents?.length || 0);
-        japanOverlay.dataset.earthquakeWaveSync = "annual-simultaneous";
+        japanOverlay.dataset.earthquakeWaveSync = "annual-simultaneous-distance-limited";
+        japanOverlay.dataset.earthquakeWaveModel = "usgs-estimated-felt-radius";
         japanOverlay.dataset.earthquakeWaveProgress = waveProgress.toFixed(3);
-        japanOverlay.dataset.earthquakeWaveViewportLimitPx = viewportWaveLimit.toFixed(1);
-        japanOverlay.dataset.earthquakeWaveRadiusMaxPx = strongestTargetRadius.toFixed(1);
+        japanOverlay.dataset.earthquakeWaveRadiusMaxKm = strongestImpactRadiusKm.toFixed(0);
+        japanOverlay.dataset.earthquakeWaveRadiusMaxPx = strongestImpactEllipse.y.toFixed(1);
+        japanOverlay.dataset.earthquakeWaveRadiusMaxXPx = strongestImpactEllipse.x.toFixed(1);
+        japanOverlay.dataset.earthquakeWaveDurationMaxMs = strongestDurationMs.toFixed(0);
 
         yearEvents.forEach((event) => {
           const point = pointFor({ lon: event.longitude, lat: event.latitude });
-          if (!visible(point, viewportWaveLimit)) return;
           const magnitudeScale = clamp(
             (event.magnitude - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE) /
               (GLOBAL_EARTHQUAKE_MAX_MAGNITUDE - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE),
             0,
             1,
           );
-          const targetRadius = viewportWaveLimit * (0.48 + magnitudeScale * 0.52);
-          const radius = targetRadius * easedProgress;
+          const impactRadiusKm = getGlobalEarthquakeImpactRadiusKm(event.magnitude);
+          const eventDurationMs = getGlobalEarthquakeWaveDurationMs(impactRadiusKm);
+          const eventProgress = reducedMotion ? 1 : clamp(elapsedWaveMs / eventDurationMs, 0, 1);
+          const easedProgress = eventProgress * eventProgress * (3 - 2 * eventProgress);
+          const targetEllipse = getGlobalEarthquakeImpactEllipse(event, impactRadiusKm, earthProjection);
+          const radiusX = targetEllipse.x * easedProgress;
+          const radiusY = targetEllipse.y * easedProgress;
+          const waveOpacity = 0.88 - eventProgress * 0.56;
           const strongest = event.id === sequence?.selected?.id;
+          if (!visible(point, Math.max(targetEllipse.x, targetEllipse.y) + 12)) return;
 
-          if (radius > 2) {
+          if (radiusX > 2 && radiusY > 2) {
             [1, 0.72, 0.44].forEach((ringScale, ringIndex) => {
               ctx.beginPath();
-              ctx.arc(point.x, point.y, radius * ringScale, 0, Math.PI * 2);
+              ctx.ellipse(
+                point.x,
+                point.y,
+                radiusX * ringScale,
+                radiusY * ringScale,
+                0,
+                0,
+                Math.PI * 2,
+              );
               ctx.strokeStyle = ringIndex === 0
                 ? `rgba(255,177,86,${waveOpacity * (strongest ? 0.96 : 0.72)})`
                 : `rgba(255,116,76,${waveOpacity * (ringIndex === 1 ? 0.38 : 0.2)})`;
@@ -3541,7 +3543,7 @@
             drawSelectionLabel(
               { x: point.x + 14, y: point.y },
               `${selectedYear} / ${yearEvents.length} EVENTS`,
-              `MAX M${strongest.magnitude.toFixed(1)} · 全震源の波は年度切替で同時開始`,
+              `MAX M${strongest.magnitude.toFixed(1)} · 推定可感半径 約${strongestImpactRadiusKm.toLocaleString("ja-JP")} km`,
               "rgba(255,203,126,.96)",
             );
           }
@@ -3549,7 +3551,7 @@
       }
       ctx.fillStyle = "rgba(255,190,108,.74)";
       ctx.font = '8px Consolas, "Courier New", monospace';
-      ctx.fillText("USGS YEARLY M7.5+ / SYNCHRONIZED DISPLAY WAVES / JMA DETAIL IS A SEPARATE LAYER", 22, rect.height - 26);
+      ctx.fillText("USGS YEARLY M7.5+ / ESTIMATED FELT RADIUS / JMA DETAIL IS A SEPARATE LAYER", 22, rect.height - 26);
     } else if (signalMode.id === "three-ecologies") {
       const state = getMapSequenceState(signalMode);
       const rows = state?.rows || [];
@@ -3774,95 +3776,6 @@
         ctx.fillText("100%", gradientX + gradientWidth, gradientY + 27);
         ctx.restore();
       }
-    } else {
-      const state = getMapSequenceState(signalMode);
-      const cards = state?.cards || [];
-      const compact = rect.width < 680;
-      const dashboardX = compact ? 14 : Math.max(440, rect.width * 0.28);
-      const dashboardWidth = compact
-        ? Math.max(280, rect.width - 28)
-        : Math.min(820, rect.width - dashboardX - Math.max(300, rect.width * 0.16));
-      const dashboardY = compact ? 92 : 82;
-      const dashboardHeight = compact ? 480 : Math.min(450, rect.height - 380);
-      const padding = compact ? 10 : 16;
-      const headerHeight = compact ? 68 : 82;
-      const gap = compact ? 6 : 9;
-      const cardWidth = (dashboardWidth - padding * 2 - gap * 2) / 3;
-      const cardHeight = (dashboardHeight - headerHeight - padding * 2 - gap * 2) / 3;
-      japanOverlay.dataset.sensewareDisplay = "nine-data-cards";
-      japanOverlay.dataset.sensewareCardCount = String(cards.length);
-      japanOverlay.dataset.sensewareSelectedCard = state?.selected?.number || "";
-      japanOverlay.dataset.sensewareSelectedMetric = state?.selected?.metric || "";
-      japanOverlay.dataset.sensewareAudienceTraces = "removed";
-
-      ctx.save();
-      ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = "rgba(2,16,27,.91)";
-      ctx.strokeStyle = "rgba(151,226,235,.34)";
-      ctx.lineWidth = 1;
-      ctx.fillRect(dashboardX, dashboardY, dashboardWidth, dashboardHeight);
-      ctx.strokeRect(dashboardX + 0.5, dashboardY + 0.5, dashboardWidth - 1, dashboardHeight - 1);
-      ctx.fillStyle = "rgba(231,252,255,.98)";
-      ctx.font = compact
-        ? '700 15px "Noto Sans JP", sans-serif'
-        : '700 22px "Noto Sans JP", sans-serif';
-      ctx.textAlign = "left";
-      ctx.fillText("9つの測定 ≠ 1つの地球スコア", dashboardX + padding, dashboardY + (compact ? 24 : 31));
-      ctx.fillStyle = "rgba(151,222,230,.86)";
-      ctx.font = compact
-        ? '9px "Noto Sans JP", sans-serif'
-        : '11px "Noto Sans JP", sans-serif';
-      ctx.fillText("同時に見て、単位は足さない。黄色い枠が選択中。", dashboardX + padding, dashboardY + (compact ? 45 : 55));
-      ctx.fillStyle = "rgba(255,231,139,.92)";
-      ctx.font = compact
-        ? '700 8px Consolas, "Courier New", monospace'
-        : '700 10px Consolas, "Courier New", monospace';
-      ctx.textAlign = "right";
-      ctx.fillText("NO SINGLE SCORE", dashboardX + dashboardWidth - padding, dashboardY + (compact ? 59 : 70));
-
-      cards.forEach((card, index) => {
-        const column = index % 3;
-        const row = Math.floor(index / 3);
-        const x = dashboardX + padding + column * (cardWidth + gap);
-        const y = dashboardY + headerHeight + padding + row * (cardHeight + gap);
-        const selected = index === state?.selectedIndex;
-        ctx.save();
-        if (selected) {
-          ctx.shadowColor = "rgba(255,232,133,.42)";
-          ctx.shadowBlur = compact ? 8 : 16;
-        }
-        ctx.fillStyle = selected ? "rgba(18,44,52,.97)" : "rgba(5,27,39,.88)";
-        ctx.strokeStyle = selected ? "rgba(255,235,143,.98)" : `rgba(${card.rgb},.42)`;
-        ctx.lineWidth = selected ? 2.4 : 1;
-        ctx.fillRect(x, y, cardWidth, cardHeight);
-        ctx.strokeRect(x + 0.5, y + 0.5, cardWidth - 1, cardHeight - 1);
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = selected ? "rgba(255,235,143,.98)" : `rgba(${card.rgb},.88)`;
-        ctx.fillRect(x, y, selected ? 6 : 3, cardHeight);
-        ctx.fillStyle = selected ? "rgba(255,239,160,.98)" : `rgba(${card.rgb},.9)`;
-        ctx.font = compact
-          ? '700 8px Consolas, "Courier New", monospace'
-          : '700 11px Consolas, "Courier New", monospace';
-        ctx.textAlign = "left";
-        ctx.fillText(card.number, x + (compact ? 8 : 13), y + (compact ? 15 : 21));
-        ctx.fillStyle = "rgba(222,247,247,.94)";
-        ctx.font = compact
-          ? '600 8px "Noto Sans JP", sans-serif'
-          : '600 12px "Noto Sans JP", sans-serif';
-        ctx.fillText(card.metric, x + (compact ? 8 : 13), y + (compact ? 32 : 44), cardWidth - (compact ? 14 : 24));
-        ctx.fillStyle = selected ? "rgba(255,247,207,.99)" : "rgba(237,252,255,.96)";
-        ctx.font = compact
-          ? '700 10px Consolas, "Courier New", monospace'
-          : '700 19px Consolas, "Courier New", monospace';
-        ctx.fillText(card.value, x + (compact ? 8 : 13), y + (compact ? 55 : 76), cardWidth - (compact ? 14 : 24));
-        ctx.fillStyle = "rgba(145,205,210,.82)";
-        ctx.font = compact
-          ? '7px "Noto Sans JP", sans-serif'
-          : '9px "Noto Sans JP", sans-serif';
-        ctx.fillText(card.scope, x + (compact ? 8 : 13), y + (compact ? 74 : 99), cardWidth - (compact ? 14 : 24));
-        ctx.restore();
-      });
-      ctx.restore();
     }
 
     ctx.restore();
@@ -4287,7 +4200,6 @@
           "anthropocene-scar": ["VIIRS NIGHT LIGHTS × COUNTRY GHG", "白い発光はNASA VIIRS 2016の夜間光画素を地図上の位置へ投影したものです。赤い円は国別排出量で、円の中心が排出源という意味ではありません。"],
           "three-ecologies": ["FOREST × URBAN / 31 PAIRED COUNTRIES", "同じ31か国の森林率と都市人口率を二重円と散布図で比較します。回帰線と相関係数が全体傾向、選択国の中心色が傾向からの外れ方を示します。紫の世界遺産例は数値計算へ含めません。"],
           "earth-organ": ["RENEWABLE ELECTRICITY / 31 COUNTRY CHOROPLETH", "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。スライダーは低い国から高い国へ移動します。黄色の日射と緑の風は選択国の補足で、比率を決める因果表示ではありません。"],
-          "senseware-2050": ["NINE MEASUREMENTS / 3×3 DATA ATLAS", "9枚のカードが、各展示で測るもの・代表値・単位を同時に示します。ppm、m/s、%、件数、相関係数は意味が違うため、総合点にはしません。黄色い枠が選択中です。"],
         };
         const [kicker, copy] = narratives[signalMode.id] || [
           `ACT ${signalMode.act.number} / ${signalMode.act.en}`,
@@ -4305,7 +4217,7 @@
     } else {
       japanObservationKicker.textContent = "USGS YEARLY WAVES / M7.5+ / 2000–2026";
       japanObservationCopy.textContent =
-        "年度ごとに世界のM7.5以上だけを表示し、切替の瞬間に全震源の同心円が一斉に広がります。円の最大サイズはMagnitudeに応じますが、実際の揺れの範囲ではありません。";
+        "年度ごとに世界のM7.5以上だけを表示します。輪は全震源からゆっくり広がり、Magnitudeから見積もった可感半径の目安で止まります。実際の震度・被害・津波範囲ではありません。";
     }
   };
 
@@ -4879,7 +4791,7 @@
       return {
         output: state?.phaseLabel || "USGS GLOBAL HISTORY",
         value: state ? `${state.selectedYear} / ${state.yearEvents.length} EVENTS / MAX M${state.selected.magnitude.toFixed(1)}` : "NO YEAR",
-        note: "この年度の震源だけを世界表示し、切替時に全同心円が一斉に広がります。円の大きさはMagnitude比較用で、実際の揺れの範囲ではありません。",
+        note: "この年度の震源だけを世界表示します。輪は約7〜15秒かけて広がり、Magnitudeから見積もった可感半径で止まります。実際の震度・被害・津波範囲ではありません。",
         temporal: true,
       };
     }
@@ -5173,6 +5085,8 @@
       ? CO2_TIMELINE_DURATION_MS
       : id === "blue-circulation"
         ? CIRCULATION_TIMELINE_DURATION_MS
+        : id === "rhythm-of-disaster"
+          ? GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS
         : MODE_SEQUENCE_DURATION_MS;
     return storyModeDetour?.kind === "map01" && storyModeDetour.phase !== "temperature-anomaly"
       ? baseDuration / STORY_MAP_TIMELINE_SPEED
@@ -5233,12 +5147,14 @@
       co2TimelinePausedUntil = 0;
     }
 
-    const totalSteps = signalMode.id === "breathing-earth"
-      ? (CO2_TIMELINE_END_YEAR - CO2_TIMELINE_START_YEAR) *
-        CO2_TIMELINE_STEPS_PER_YEAR
-      : signalMode.id === "blue-circulation"
-        ? CIRCULATION_TIMELINE_STEPS
-        : MODE_SEQUENCE_STEPS;
+      const totalSteps = signalMode.id === "breathing-earth"
+        ? (CO2_TIMELINE_END_YEAR - CO2_TIMELINE_START_YEAR) *
+          CO2_TIMELINE_STEPS_PER_YEAR
+        : signalMode.id === "blue-circulation"
+          ? CIRCULATION_TIMELINE_STEPS
+          : signalMode.id === "rhythm-of-disaster"
+            ? GLOBAL_EARTHQUAKE_YEAR_COUNT
+          : MODE_SEQUENCE_STEPS;
     const elapsed = now - co2TimelineStartedAt;
     if (storyModeDetour?.kind === "map01" && storyModeDetour.phase !== "temperature-anomaly" && elapsed >= duration) {
       completeStoryMapTimeline();
@@ -5325,7 +5241,7 @@ for (const country of edgarCountryValues) {
 }
 const nightLightOpacity = longPress ? 0.04 : 0.5;
 // Night-light radiance is never converted to emissions.`,
-    "rhythm-of-disaster": `const years = groupByYear(usgsM75Since2000); // 2000–2026\nconst events = years[selectedYear]; // this year only; default view is global\nfor (const event of events) {\n  const radius = magnitudeDisplayRadius(event.magnitude, { m7_5: 0.48, m9_1: 1.0 });\n  drawSynchronizedDisplayWave(event, radius); // all start together on year change\n}\n// Display radius is not observed shaking extent. Only the optional JMA detail layer owns observed intensity:\nconst distanceKm = Math.hypot(greatCircleKm(epicenter, station), depthKm);\nconst pArrivalSec = distanceKm / 7.0;\nconst sArrivalSec = distanceKm / 4.0;\nif (elapsedSec >= sArrivalSec) drawObservedJmaIntensity(station.intensity);`,
+    "rhythm-of-disaster": `const years = groupByYear(usgsM75Since2000); // 2000–2026\nconst events = years[selectedYear]; // this year only; default view is global\nfor (const event of events) {\n  const feltRadiusKm = estimateFeltRadiusKm(event.magnitude); // M7.5 ≈ 500 km; M9.1 ≈ 2,000 km\n  const durationMs = scale(feltRadiusKm, 500, 2000, 7000, 15000);\n  drawSlowEstimatedFeltRing(event, feltRadiusKm, durationMs); // same start; magnitude-specific stop\n}\n// Estimated felt radius is not a ShakeMap, damage zone, or tsunami extent.\n// Only the optional JMA detail layer owns observed intensity:\nconst distanceKm = Math.hypot(greatCircleKm(epicenter, station), depthKm);\nconst pArrivalSec = distanceKm / 7.0;\nconst sArrivalSec = distanceKm / 4.0;\nif (elapsedSec >= sArrivalSec) drawObservedJmaIntensity(station.intensity);`,
     "three-ecologies": `const paired = joinByIso3(countryForestPercent, countryUrbanPercent); // same countries only
 const relation = pearson(paired.map(row => [row.urbanPercent, row.forestPercent]));
 const trend = linearRegression(paired); // display the tendency and each residual
@@ -5340,12 +5256,6 @@ drawCountryChoropleth(countries, { scale: "dark-blue 0% → cyan 100%" });
 const selected = countries.sort(byRenewableShare)[sequenceIndex];
 drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 // Solar and wind are context, not a causal model of the current electricity share.`,
-    "senseware-2050": `const cards = nineDatasets.map(({ measure, representativeValue, unit }) => ({
-  measure, representativeValue, unit,
-}));
-drawThreeByThreeAtlas(cards); // all nine remain visible at once
-highlight(cards[sequenceIndex]);
-// ppm, m/s, mm/day, %, counts and r are never added into one score.`,
   });
 
   const renderCodeLines = (text) => {
@@ -5516,7 +5426,10 @@ highlight(cards[sequenceIndex]);
       signalTimePosition = Number(input.value);
       if (japanIsOpen) {
         co2TimelineHeld = storyModeDetour?.phase === "temperature-anomaly";
-        co2TimelinePausedUntil = performance.now() + CO2_TIMELINE_MANUAL_PAUSE_MS;
+        const manualPauseMs = getActiveSignalMode()?.id === "rhythm-of-disaster"
+          ? GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS + 1000
+          : CO2_TIMELINE_MANUAL_PAUSE_MS;
+        co2TimelinePausedUntil = performance.now() + manualPauseMs;
         co2TimelineLastStep = -1;
       }
       signalTimeInputs.forEach((peer) => {

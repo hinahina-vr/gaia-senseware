@@ -33,7 +33,9 @@ try {
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
-    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
+    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
+    const modeCount = await page.locator("#mode-list .mode-button").count();
+    assert.equal(modeCount, 9, `${viewport.name}: mode button count`);
     await page.evaluate(() => {
       const opening = document.querySelector("#gaia-opening");
       if (opening) {
@@ -52,7 +54,7 @@ try {
       document.querySelector(".experience")?.classList.remove("intro-open");
     });
 
-    for (let index = 0; index < 10; index += 1) {
+    for (let index = 0; index < modeCount; index += 1) {
       await page.evaluate((modeIndex) => document.querySelectorAll("#mode-list .mode-button")[modeIndex]?.click(), index);
       await page.waitForFunction(
         (modeNumber) => document.querySelector("#mode-number")?.textContent?.trim() === modeNumber,

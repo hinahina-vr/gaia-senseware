@@ -223,7 +223,7 @@ const scanObservation = async (viewport) => {
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
   });
   await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
   await page.evaluate(() => {
     for (const selector of ["#gaia-opening", "#intro-layer"]) {
       const node = document.querySelector(selector);
@@ -264,7 +264,7 @@ const prepareMainModePage = async (viewport, label) => {
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
   });
   await page.goto(new URL("/?mode=1#earth", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 10);
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
   await page.evaluate(() => {
     for (const selector of ["#gaia-opening", "#intro-layer", "#novel-layer", "#true-end-layer"]) {
       const node = document.querySelector(selector);
@@ -284,7 +284,7 @@ const scanMapMode = async (viewport) => {
   const surface = "map-mode";
   const { context, page } = await prepareMainModePage(viewport, `${viewport.name}-${surface}`);
   await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
-  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 10);
+  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 9);
   await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"));
   await page.waitForTimeout(220);
   let modeSelected = false;
@@ -365,7 +365,10 @@ const scanSoundMode = async (viewport) => {
   const { context, page } = await makePage(viewport, `${viewport.name}-${surface}`, () => {
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
   });
-  await page.goto(new URL("/#sound", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => typeof globalThis.GaiaModeLoader?.load === "function");
+  await page.evaluate(() => globalThis.GaiaModeLoader.load("sound"));
+  await page.evaluate(() => document.querySelector("[data-sound-gallery-open]")?.click());
   await page.locator("#sound-layer").waitFor({ state: "visible" });
   await page.waitForFunction(() => document.querySelectorAll("[data-sound-track]").length === 12);
   await page.waitForTimeout(350);
