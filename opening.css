@@ -3529,8 +3529,8 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 
   .gaia-opening.is-menu-ready .gaia-vn-final-copy {
-    top: clamp(136px, 20vh, 184px);
-    top: clamp(136px, 20dvh, 184px);
+    top: clamp(210px, 30vh, 260px);
+    top: clamp(210px, 30dvh, 260px);
     right: max(16px, env(safe-area-inset-right));
     bottom: auto;
     left: max(16px, env(safe-area-inset-left));
@@ -3550,15 +3550,17 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 
   .gaia-vn-final-choice > strong {
-    max-width: 22em;
-    margin-top: 14px;
-    font-size: 15px;
+    max-width: none;
+    margin-top: 22px;
+    font-size: clamp(12.5px, 3.9vw, 15px);
     line-height: 1.48;
-    letter-spacing: 0.035em;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+    text-wrap: nowrap;
   }
 
   .gaia-opening-final-menu {
-    top: calc(100% + 12px);
+    top: calc(100% + 18px);
     overflow: hidden;
     border-top-color: rgba(var(--opening-paper), 0.28);
     border-bottom-color: rgba(var(--opening-paper), 0.22);
@@ -3678,8 +3680,8 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
 @media (max-width: 420px) and (max-height: 720px) {
   .gaia-opening.is-menu-ready .gaia-vn-final-copy {
-    top: clamp(76px, 12.5vh, 92px);
-    top: clamp(76px, 12.5dvh, 92px);
+    top: clamp(148px, 28vh, 202px);
+    top: clamp(148px, 28dvh, 202px);
   }
 
   .gaia-vn-final-copy p {
@@ -3691,12 +3693,12 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 
   .gaia-vn-final-choice > strong {
-    margin-top: 10px;
-    font-size: 14px;
+    margin-top: 14px;
+    font-size: clamp(12.5px, 3.9vw, 14px);
   }
 
   .gaia-opening-final-menu {
-    top: calc(100% + 9px);
+    top: calc(100% + 12px);
   }
 
   .gaia-opening-route,
