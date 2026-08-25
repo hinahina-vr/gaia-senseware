@@ -36,7 +36,6 @@
     uniform vec2 u_resolution;
     uniform vec2 u_pointer;
     uniform float u_time;
-    uniform float u_frame;
     uniform float u_scene;
     uniform float u_speaker_from;
     uniform float u_speaker_from_gain;
@@ -47,6 +46,9 @@
     uniform vec3 u_color_a;
     uniform vec3 u_color_b;
     uniform vec3 u_color_c;
+
+    const float AIVA_GRID_DRIFT_SPEED = 0.54;
+    const float AIVA_GRID_PULSE_HZ = 0.5;
 
     float hash21(vec2 p) {
       p = fract(p * vec2(123.34, 456.21));
@@ -112,13 +114,16 @@
     vec3 signalSurge(vec2 p) {
       vec2 g = p;
       float phase = u_time * 1.18 + u_signal * 8.0;
-      vec2 matrixDrift = vec2(u_time * 0.18, -u_time * 0.18);
+      vec2 matrixDrift = vec2(
+        u_time * AIVA_GRID_DRIFT_SPEED,
+        -u_time * AIVA_GRID_DRIFT_SPEED
+      );
       vec2 matrixUv = g * vec2(8.0, 5.0) + matrixDrift;
       vec2 matrixId = floor(matrixUv);
       vec2 matrixFract = fract(matrixUv);
       vec2 cell = abs(matrixFract - 0.5);
       float blocks = 1.0 - smoothstep(0.24, 0.3, max(cell.x, cell.y));
-      float frameTick = floor(u_frame + 0.5);
+      float frameTick = floor(u_time * AIVA_GRID_PULSE_HZ);
       float activity = step(0.5, hash21(matrixId + vec2(frameTick * 1.37, frameTick * 3.91) + 71.0));
       float cellPulse = mix(0.54, 1.0, hash21(matrixId + vec2(frameTick * 5.17, frameTick * 2.63) + 93.0));
       blocks *= activity * cellPulse;
@@ -431,7 +436,7 @@
     gl.enableVertexAttribArray(position);
     gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
     const uniforms = Object.fromEntries([
-      "u_resolution", "u_pointer", "u_time", "u_frame", "u_scene", "u_speaker_from", "u_speaker_from_gain", "u_speaker_to",
+      "u_resolution", "u_pointer", "u_time", "u_scene", "u_speaker_from", "u_speaker_from_gain", "u_speaker_to",
       "u_speaker_mix", "u_signal", "u_emphasis", "u_color_a", "u_color_b", "u_color_c",
     ].map((name) => [name, gl.getUniformLocation(program, name)]));
 
@@ -568,7 +573,6 @@
       gl.uniform2f(uniforms.u_resolution, canvas.width, canvas.height);
       gl.uniform2f(uniforms.u_pointer, pointer[0], pointer[1]);
       gl.uniform1f(uniforms.u_time, reducedMotion.matches ? 24 + target.index * 3.7 : now * 0.001);
-      gl.uniform1f(uniforms.u_frame, frame);
       gl.uniform1f(uniforms.u_scene, target.index);
       const presenceState = presenceStateAt(now);
       const signalState = signalStateAt(now);

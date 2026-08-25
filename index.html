@@ -165,8 +165,8 @@
     <link rel="stylesheet" href="./data-ledger.css?v=gaia-23" media="print" onload="this.onload=null;this.media='all'" />
     <link rel="stylesheet" href="./data-journey.css?v=gaia-04" media="print" onload="this.onload=null;this.media='all'" />
     <link rel="stylesheet" href="./novel-mode.css?v=gaia-mobile-chat-panel-1" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./true-end.css?v=gaia-novacene-entry-1" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-stationary-fade-1" media="print" onload="this.onload=null;this.media='all'" />
+    <link rel="stylesheet" href="./true-end.css?v=gaia-mobile-section-heading-1" media="print" onload="this.onload=null;this.media='all'" />
+    <link rel="stylesheet" href="./gx-mode.css?v=gaia-gx-mobile-installation-1" media="print" onload="this.onload=null;this.media='all'" />
     <link rel="stylesheet" href="./space-mode.css?v=gaia-102" media="print" onload="this.onload=null;this.media='all'" />
     <link rel="stylesheet" href="./sound-mode.css?v=gaia-cross-platform-fonts-1" media="print" onload="this.onload=null;this.media='all'" />
     <script src="./gaia-particles.js?v=gaia-19" defer fetchpriority="high"></script>
@@ -178,10 +178,10 @@
     <script src="./scene-transition.js?v=gaia-66" defer fetchpriority="low"></script>
     <script src="./app-content.js?v=gaia-map10-nine-measure-atlas-1" defer fetchpriority="low"></script>
     <script src="./app.js?v=gaia-map10-nine-measure-atlas-1" defer fetchpriority="low"></script>
-    <script src="./gx-mode.js?v=gaia-gx-stationary-fade-1" defer fetchpriority="low"></script>
+    <script src="./gx-mode.js?v=gaia-gx-mobile-installation-1" defer fetchpriority="low"></script>
     <script src="./novel-story-data.js?v=gaia-approved-script-14" defer fetchpriority="low"></script>
     <script src="./true-end-data.js?v=gaia-finale-webgl-1" defer fetchpriority="low"></script>
-    <script src="./true-end-webgl.js?v=gaia-webgl-presence-restored-3" defer fetchpriority="low"></script>
+    <script src="./true-end-webgl.js?v=gaia-aiva-grid-tempo-1" defer fetchpriority="low"></script>
     <script src="./true-end-mode.js?v=gaia-novacene-entry-1" defer fetchpriority="low"></script>
     <script src="./novel-background-cues.js?v=gaia-amane-no-plug-1" defer fetchpriority="low"></script>
     <script src="./novel-back-half-cues.js?v=gaia-finale-sunset-1" defer fetchpriority="low"></script>
@@ -191,7 +191,7 @@
     <script src="./space-mode.js?v=gaia-100" defer fetchpriority="low"></script>
     <script src="./sound-mode.js?v=gaia-suno-credit-1" defer fetchpriority="low"></script>
     <link rel="stylesheet" href="./map-ui-grid-polish.css?v=6" media="print" onload="this.onload=null;this.media='all'" />
-    <link rel="stylesheet" href="./mode-exit.css?v=gaia-mobile-header-controls-1" media="print" onload="this.onload=null;this.media='all'" />
+    <link rel="stylesheet" href="./mode-exit.css?v=gaia-mobile-corner-controls-1" media="print" onload="this.onload=null;this.media='all'" />
 </head>
   <body>
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -1706,19 +1706,30 @@
           <span class="gx-time-context" id="gx-time-context">約46–40億年前 / 冥王代</span>
         </div>
 
-        <article class="gx-story-card" aria-live="polite" tabindex="0">
+        <article class="gx-story-card" id="gx-story-card" aria-live="polite" tabindex="0" data-mobile-info-open="false">
           <p class="gx-phase-meta">
             <span class="gx-kind" id="gx-kind" data-kind="DERIVED">DERIVED</span>
             <span id="gx-phase-index">01 / 08</span>
           </p>
           <h3 id="gx-phase-title">岩石より先に、水の記憶がある。</h3>
-          <p class="gx-copy" id="gx-phase-copy">地球史の記録を読み込んでいます。</p>
-          <div class="gx-strata-marker">
-            <span>地層に残るもの</span>
-            <strong id="gx-strata-marker">ジルコン / 最古の岩石</strong>
+          <button
+            class="gx-mobile-info-toggle"
+            id="gx-mobile-info-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="gx-mobile-info gx-effect-row"
+          >
+            <span>解説</span><b aria-hidden="true">＋</b>
+          </button>
+          <div class="gx-mobile-info" id="gx-mobile-info">
+            <p class="gx-copy" id="gx-phase-copy">地球史の記録を読み込んでいます。</p>
+            <div class="gx-strata-marker">
+              <span>地層に残るもの</span>
+              <strong id="gx-strata-marker">ジルコン / 最古の岩石</strong>
+            </div>
           </div>
-          <p class="gx-guide"><span>どう触る？</span><b id="gx-phase-guide">水面をなぞってください。</b></p>
-          <p class="gx-guide"><span>いまの操作</span><b id="gx-effect">まだ触れていません。</b></p>
+          <p class="gx-guide gx-guide--primary"><span>どう触る？</span><b id="gx-phase-guide">水面をなぞってください。</b></p>
+          <p class="gx-guide gx-guide--effect" id="gx-effect-row"><span>いまの操作</span><b id="gx-effect">まだ触れていません。</b></p>
         </article>
 
         <div class="gx-controls">

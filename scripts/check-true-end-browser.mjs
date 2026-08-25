@@ -119,6 +119,9 @@ const scanFrame = (page) => page.evaluate(() => {
   const sceneCardContent = document.querySelector(".true-end-scene-card-content");
   const audioDock = document.querySelector(".gaia-audio-dock");
   const novelLayer = document.querySelector("#novel-layer");
+  const brand = document.querySelector(".true-end-brand");
+  const sceneTitle = document.querySelector(".true-end-scene-heading strong");
+  const sceneCardTitle = sceneCardContent?.querySelector("strong");
   const rect = dialogue?.getBoundingClientRect();
   const mainDialogueReference = document.createElement("div");
   mainDialogueReference.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;width:var(--novel-say-width);height:var(--novel-say-height)";
@@ -135,6 +138,15 @@ const scanFrame = (page) => page.evaluate(() => {
   const messageLineTops = [...messageRange.getClientRects()]
     .filter((candidate) => candidate.width > 0 && candidate.height > 0)
     .map((candidate) => Math.round(candidate.top * 2) / 2);
+  const countTextLines = (element) => {
+    if (!element) return 0;
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return new Set([...range.getClientRects()]
+      .filter((candidate) => candidate.width > 0 && candidate.height > 0)
+      .map((candidate) => Math.round(candidate.top * 2) / 2)).size;
+  };
+  const sceneTitleRect = sceneTitle?.getBoundingClientRect();
   return {
     sampledAt: performance.now(),
     documentHidden: document.hidden,
@@ -148,6 +160,9 @@ const scanFrame = (page) => page.evaluate(() => {
     speaker: shell?.dataset.speaker || "",
     title: document.querySelector(".true-end-scene-heading strong")?.textContent?.trim() || "",
     sceneCode: document.querySelector(".true-end-scene-heading span")?.textContent?.trim() || "",
+    brandDisplay: brand ? getComputedStyle(brand).display : "",
+    sceneTitleLineCount: countTextLines(sceneTitle),
+    sceneTitleRect: sceneTitleRect ? { left: sceneTitleRect.left, right: sceneTitleRect.right } : null,
     counter: document.querySelector(".true-end-footer span:last-child")?.textContent?.trim() || "",
     footerText: document.querySelector(".true-end-footer")?.textContent?.trim() || "",
     footerSpanCount: document.querySelectorAll(".true-end-footer span").length,
@@ -233,6 +248,7 @@ const scanFrame = (page) => page.evaluate(() => {
     sceneCardBackground: getComputedStyle(sceneCard).backgroundColor,
     sceneCardTitleOpacity: Number.parseFloat(getComputedStyle(sceneCardContent).opacity),
     sceneCardTitle: sceneCardContent?.querySelector("strong")?.textContent?.trim() || "",
+    sceneCardTitleLineCount: countTextLines(sceneCardTitle),
     audioDockOpacity: Number.parseFloat(getComputedStyle(audioDock).opacity),
     audioDockInlineOpacity: audioDock?.style.getPropertyValue("opacity") || "",
     audioDockInlinePriority: audioDock?.style.getPropertyPriority("opacity") || "",
@@ -348,8 +364,9 @@ try {
   assert.match(trueEndWebGLSource, /signalStateAt\(now\)/u, "per-line presence signal still changes in one frame");
   assert.doesNotMatch(trueEndWebGLSource, /0\.52 \+ 0\.48 \* u_speaker_mix/u, "new character still appears at partial strength on its first frame");
   assert.doesNotMatch(trueEndWebGLSource, /vec2 defragSlot|float cellClock|vec2 previousSlot|vec2 nextSlot|float cellSize/u, "AIVA still gives individual cells drifting positions, tempos, or sizes");
-  assert.match(trueEndWebGLSource, /uniform float u_frame[\s\S]*"u_frame"[\s\S]*uniform1f\(uniforms\.u_frame, frame\)/u, "AIVA's one-render-frame flicker clock is missing");
-  assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*vec2 matrixDrift = vec2\(u_time \* 0\.18, -u_time \* 0\.18\)[\s\S]*vec2 matrixUv = g \* vec2\(8\.0, 5\.0\) \+ matrixDrift[\s\S]*float blocks = 1\.0 - smoothstep\(0\.24, 0\.3[\s\S]*float frameTick = floor\(u_frame \+ 0\.5\)[\s\S]*float activity = step\(0\.5, hash21[\s\S]*float gridLines[\s\S]*float scanRow/u, "AIVA's fixed-size grid is not moving uniformly toward the upper left with per-frame random flicker");
+  assert.doesNotMatch(trueEndWebGLSource, /uniform float u_frame|"u_frame"|uniform1f\(uniforms\.u_frame/u, "AIVA still uses the render frame as its flicker clock");
+  assert.match(trueEndWebGLSource, /const float AIVA_GRID_DRIFT_SPEED = 0\.54[\s\S]*const float AIVA_GRID_PULSE_HZ = 0\.5/u, "AIVA's requested grid tempo constants are missing");
+  assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*vec2 matrixDrift = vec2\([\s\S]*u_time \* AIVA_GRID_DRIFT_SPEED,[\s\S]*-u_time \* AIVA_GRID_DRIFT_SPEED[\s\S]*\)[\s\S]*vec2 matrixUv = g \* vec2\(8\.0, 5\.0\) \+ matrixDrift[\s\S]*float blocks = 1\.0 - smoothstep\(0\.24, 0\.3[\s\S]*float frameTick = floor\(u_time \* AIVA_GRID_PULSE_HZ\)[\s\S]*float activity = step\(0\.5, hash21[\s\S]*float gridLines[\s\S]*float scanRow/u, "AIVA's grid does not combine three-times drift with a two-second randomized pulse");
   assert.match(trueEndWebGLSource, /vec2 boundaryDistance = min\(matrixFract, 1\.0 - matrixFract\)[\s\S]*float gridLines/u, "AIVA's grid lines do not share the moving block coordinates");
   assert.match(trueEndWebGLSource, /vec3 weaveStorm[\s\S]*float warpThreads[\s\S]*float weftThreads[\s\S]*float diagonalThread[\s\S]*float crossings/u, "Lou's living loom is missing");
   assert.match(trueEndWebGLSource, /vec3 tidalSurge[\s\S]*vec2 waterSpace[\s\S]*vec2 sourceA[\s\S]*vec2 sourceB[\s\S]*float arcMaskA[\s\S]*float brokenWaveA[\s\S]*float brokenWaveB[\s\S]*float interferenceVein[\s\S]*float causticFray[\s\S]*float confluence/u, "Mizuha's fragmented tidal field is missing");
@@ -458,6 +475,11 @@ try {
       assert.equal(frame.characterImageCount, 0, `${viewport.name}: raster character image DOM remains in TRANSMISSION`);
       assert.equal(frame.backdropCount, 0, `${viewport.name}: retired raster backdrop DOM remains`);
       assert.equal(frame.readoutPanelCount, 0, `${viewport.name}: retired scan-data panel remains at ${frame.stepId}`);
+      if (viewport.width <= 720) {
+        assert.equal(frame.brandDisplay, "none", `${viewport.name}: redundant APEIRONCENE brand remains in the mobile header`);
+        assert.equal(frame.sceneTitleLineCount, 1, `${viewport.name}: section title wrapped in the mobile header (${frame.title})`);
+        assert(frame.sceneTitleRect && frame.sceneTitleRect.left >= 0 && frame.sceneTitleRect.right <= viewport.width + 1, `${viewport.name}: section title escaped the mobile viewport (${frame.title})`);
+      }
       if (frame.scene === "after-school-stars") {
         const shoreShouldBeVisible = Number.parseInt(frame.stepId.slice(-3), 10) >= 32;
         assert.match(frame.sceneVisualBackground, /true-end-future-cosmic-shore-v1\.png/u, `${viewport.name}: generated future shore is not connected to scene 09`);
@@ -707,25 +729,34 @@ try {
       .map(({ name }) => name)
       .filter((url) => /true-end-(?:luu-cute|mizuha-thoughtform|amane-thoughtform|sakuya-thoughtform)/u.test(url)));
     assert.deepEqual(rasterCharacterResources, [], `${viewport.name}: retired raster character was requested`);
-    const finale = await page.evaluate(() => ({
-      label: document.querySelector(".true-end-finale > span")?.textContent?.trim() || "",
-      title: document.querySelector(".true-end-finale h2")?.textContent?.trim() || "",
-      text: document.querySelector(".true-end-finale")?.innerText || "",
-      button: document.querySelector(".true-end-finale button")?.textContent?.trim() || "",
-      completed: Boolean(localStorage.getItem("gaiaSensewareTrueEnd:complete:v1")),
-      stateCompleted: globalThis.GaiaNovel?.getState?.().trueEndComplete === true,
-      overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
-      overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
-      logButtonVisible: Boolean(document.querySelector(".true-end-log-button")?.getClientRects().length),
-      readoutLang: document.querySelector(".true-end-finale div")?.lang || "",
-      shoreImage: document.querySelector(".true-end-shell")?.dataset.shoreImage || "",
-      webglScene: document.querySelector(".true-end-universe")?.dataset.webglScene || "",
-      webglSpeaker: document.querySelector(".true-end-universe")?.dataset.webglSpeaker || "",
-      webglManifestation: document.querySelector(".true-end-universe")?.dataset.webglManifestation || "",
-      webglOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".true-end-universe")).opacity || "0"),
-    }));
+    const finale = await page.evaluate(() => {
+      const finaleTitle = document.querySelector(".true-end-finale h2");
+      const finaleTitleRect = finaleTitle?.getBoundingClientRect();
+      return {
+        label: document.querySelector(".true-end-finale > span")?.textContent?.trim() || "",
+        title: finaleTitle?.textContent?.trim() || "",
+        titleRect: finaleTitleRect ? finaleTitleRect.toJSON() : null,
+        titleWhiteSpace: finaleTitle ? getComputedStyle(finaleTitle).whiteSpace : "",
+        text: document.querySelector(".true-end-finale")?.innerText || "",
+        button: document.querySelector(".true-end-finale button")?.textContent?.trim() || "",
+        completed: Boolean(localStorage.getItem("gaiaSensewareTrueEnd:complete:v1")),
+        stateCompleted: globalThis.GaiaNovel?.getState?.().trueEndComplete === true,
+        overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
+        overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
+        logButtonVisible: Boolean(document.querySelector(".true-end-log-button")?.getClientRects().length),
+        readoutLang: document.querySelector(".true-end-finale div")?.lang || "",
+        shoreImage: document.querySelector(".true-end-shell")?.dataset.shoreImage || "",
+        webglScene: document.querySelector(".true-end-universe")?.dataset.webglScene || "",
+        webglSpeaker: document.querySelector(".true-end-universe")?.dataset.webglSpeaker || "",
+        webglManifestation: document.querySelector(".true-end-universe")?.dataset.webglManifestation || "",
+        webglOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".true-end-universe")).opacity || "0"),
+      };
+    });
     assert.equal(finale.label, "星々の放課後");
     assert.equal(finale.title, "APEIRONCENE");
+    assert(finale.titleRect && finale.titleRect.left >= -0.5, `${viewport.name}: finale title is clipped on the left (${JSON.stringify(finale.titleRect)})`);
+    assert(finale.titleRect && finale.titleRect.right <= viewport.width + 0.5, `${viewport.name}: finale title is clipped on the right (${JSON.stringify(finale.titleRect)})`);
+    if (viewport.width <= 720) assert.equal(finale.titleWhiteSpace, "nowrap", `${viewport.name}: finale title no longer stays on one line`);
     assert(finale.text.includes("DÆM UL: ESHA·GEMA"));
     assert(finale.text.includes("IVARA KERA: K 2.700"));
     assert(finale.text.includes("SÆL·ORAI: 2,641,903 NETH"));
@@ -827,7 +858,7 @@ try {
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-grid-01.png`) });
     await separatorPage.waitForTimeout(650);
     const aivaGridEnd = await scanFrame(separatorPage);
-    assert(aivaGridEnd.universeFrame > aivaGridStart.universeFrame, `${viewport.name}: AIVA's grid and per-frame flicker did not keep animating`);
+    assert(aivaGridEnd.universeFrame > aivaGridStart.universeFrame, `${viewport.name}: AIVA's accelerated grid drift did not keep animating`);
     await separatorPage.screenshot({ path: path.join(outputDir, `${viewport.name}-aiva-grid-02.png`) });
     report.aivaGridMotion.push({
       viewport: viewport.name,
@@ -977,6 +1008,7 @@ try {
     assert(title.audioDockOpacity <= 0.01, `${viewport.name}: global audio UI remained visible over the black title card (${JSON.stringify({ opacity: title.audioDockOpacity, inlineOpacity: title.audioDockInlineOpacity, inlinePriority: title.audioDockInlinePriority, hidden: title.audioDockHidden, bodyTransitionClass: title.bodyTransitionClass })})`);
     assert.equal(title.scene, "electronic-civilization", `${viewport.name}: next section metadata was not prepared under black`);
     assert.equal(title.sceneCardTitle, "電子を使っていた文明", `${viewport.name}: next section title was not shown over black`);
+    if (viewport.width <= 720) assert.equal(title.sceneCardTitleLineCount, 1, `${viewport.name}: transition section title wrapped on mobile`);
     assert(title.sceneCardTitleOpacity > 0 && title.sceneCardTitleOpacity <= 1, `${viewport.name}: section title was not visible (${title.sceneCardTitleOpacity})`);
     assert.equal(title.universeScene, beforeSeparator.universeScene, `${viewport.name}: WebGL background switched before the title appeared`);
     assert.equal(title.message, beforeSeparator.message, `${viewport.name}: next message rendered before background preparation`);

@@ -58,6 +58,7 @@ const layoutScan = (page) => page.evaluate(() => {
     closeClipPath: getComputedStyle(closeButton).clipPath,
     closeBorderRadius: getComputedStyle(closeButton).borderRadius,
     closeArrowBorderWidth: getComputedStyle(closeButton, "::before").borderWidth,
+    closePosition: getComputedStyle(closeButton).position,
     closeRect: close.toJSON(),
     homeLabel: homeButton.textContent.trim(),
     homeAriaLabel: homeButton.getAttribute("aria-label"),
@@ -65,6 +66,7 @@ const layoutScan = (page) => page.evaluate(() => {
     homeRect: home.toJSON(),
     audioRect: audio?.toJSON() || null,
     audioExpanded: document.querySelector(".gaia-audio-dock")?.classList.contains("is-expanded") || false,
+    audioPosition: document.querySelector(".gaia-audio-dock") ? getComputedStyle(document.querySelector(".gaia-audio-dock")).position : null,
     layerOpen: document.querySelector("#novel-layer")?.classList.contains("is-open"),
     titleVisible: !document.querySelector("#novel-title-screen")?.hidden,
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -107,10 +109,18 @@ try {
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
 
-    await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
     await page.evaluate(() => {
       localStorage.clear();
+      localStorage.setItem("gaiaSensewareTrueEnd:reached:v1", "section-skip-browser");
+      const opening = document.querySelector("#gaia-opening");
+      if (opening) {
+        opening.hidden = true;
+        opening.inert = true;
+        opening.setAttribute("aria-hidden", "true");
+      }
+      document.body.classList.remove("gaia-opening-active", "opening-active");
       globalThis.GaiaNovel.open();
     });
     await page.locator("#gaia-audio-dock").waitFor({ state: "visible" });
@@ -148,11 +158,17 @@ try {
     assert.equal(before.closeHomeOverlap, false, `${viewport.name}: section skip overlaps top return`);
     assert.equal(before.closeAudioOverlap, false, `${viewport.name}: audio control overlaps section skip`);
     assert.equal(before.homeAudioOverlap, false, `${viewport.name}: audio control overlaps top return`);
-    assert(before.homeRect.left <= 40, `${viewport.name}: runtime return is not pinned left: ${JSON.stringify(before.homeRect)}`);
     assert(before.audioRect && viewport.width - before.audioRect.right <= 40, `${viewport.name}: runtime audio is not pinned right: ${JSON.stringify(before.audioRect)}`);
+    assert(before.audioRect.top <= 40, `${viewport.name}: runtime audio is not pinned top: ${JSON.stringify(before.audioRect)}`);
     if (viewport.width <= 720) {
-      assert(before.closeRect.top >= before.homeRect.bottom + 6, `${viewport.name}: section skip did not move below the top return`);
+      assert(before.closeRect.left <= 40, `${viewport.name}: section skip is not pinned left: ${JSON.stringify(before.closeRect)}`);
+      assert(before.closeRect.top <= 40, `${viewport.name}: section skip is not pinned top: ${JSON.stringify(before.closeRect)}`);
+      assert(Math.abs(before.closeRect.top - before.homeRect.top) <= 1, `${viewport.name}: mobile header controls are not on one row`);
+      assert(before.homeRect.left >= before.closeRect.right + 4, `${viewport.name}: top return is not placed after the section skip`);
+      assert.equal(before.closePosition, "fixed", `${viewport.name}: section skip is not viewport-fixed`);
+      assert.equal(before.audioPosition, "fixed", `${viewport.name}: audio control is not viewport-fixed`);
     } else {
+      assert(before.homeRect.left <= 40, `${viewport.name}: runtime return is not pinned left: ${JSON.stringify(before.homeRect)}`);
       assert(before.closeRect.left >= before.homeRect.right + 6, `${viewport.name}: section skip is not placed after the top return`);
     }
     assert.equal(before.overflowX, 0, `${viewport.name}: runtime overflows horizontally`);
@@ -188,14 +204,27 @@ try {
     assert.notEqual(new URL(page.url()).hash, "#story", `${viewport.name}: top return kept the story route`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-top-return.png`), animations: "disabled" });
 
-    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
     await page.evaluate(() => {
       localStorage.clear();
+      localStorage.setItem("gaiaSensewareTrueEnd:reached:v1", "section-skip-browser");
+      const opening = document.querySelector("#gaia-opening");
+      if (opening) {
+        opening.hidden = true;
+        opening.inert = true;
+        opening.setAttribute("aria-hidden", "true");
+      }
+      document.body.classList.remove("gaia-opening-active", "opening-active");
       globalThis.GaiaNovel.open();
     });
     await page.locator("#novel-start-button").click();
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
+    await page.waitForFunction(() => (
+      document.querySelector("#novel-close-button")?.dataset.controlMode === "skip"
+      && !document.querySelector("#novel-close-button")?.disabled
+      && !window.GaiaSceneTransition?.running
+    ));
 
     await page.locator("#novel-close-button").focus();
     await page.keyboard.press("Enter");
@@ -231,7 +260,7 @@ try {
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-staff-roll"));
     assert.equal(await page.evaluate(() => globalThis.GaiaNovel.getState().stepId), "welcome_chat_095");
     assert.equal(await page.locator("#novel-close-button").isHidden(), true, `${viewport.name}: duplicate section control remained on credits`);
-    await page.locator('.novel-staff-roll button[aria-label="スタッフロールを終えて「データで見る」へ進む"]').click();
+    await page.locator('.novel-staff-roll-data-skip[aria-label="エンディングをスキップして「データを見てみる」へ進む"]').click();
     await page.waitForFunction(() => {
       const intro = document.querySelector("#intro-layer");
       return globalThis.GaiaNovel.getState().clear === true && Boolean(intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false");

@@ -31,9 +31,9 @@ This workflow was agreed with the project owner to prevent silent stops and dupl
 
 ## Release default
 
-- A validated in-scope implementation is not complete until the primary task has normally fast-forwarded the same commit to the public branch, deployed that exact SHA to Cloudflare Pages Production, and completed focused production smoke checks.
-- The project owner's standing instruction authorizes this normal push-and-deploy path without asking again on each change.
-- Do not deploy only when the project owner explicitly requests local-only work, a required secret or external authority is missing, the release would create a new costly or destructive resource, or a material product choice remains unresolved.
+- Keep implementation work local unless the project owner explicitly requests a push or deployment in the current task.
+- Never push, deploy, or publish changes based on a standing assumption or an earlier release request. Each release requires a fresh, explicit instruction from the project owner.
+- A local implementation is complete after proportionate verification and a clear report of the files changed and checks run.
 - Never use force push, rebase published history, or deploy a different tree from the reviewed commit.
 
 ## Token discipline

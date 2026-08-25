@@ -62,6 +62,9 @@
     strataMarker: layer.querySelector("#gx-strata-marker"),
     guide: layer.querySelector("#gx-phase-guide"),
     effect: layer.querySelector("#gx-effect"),
+    storyCard: layer.querySelector("#gx-story-card"),
+    mobileInfoToggle: layer.querySelector("#gx-mobile-info-toggle"),
+    mobileInfoToggleIcon: layer.querySelector("#gx-mobile-info-toggle b"),
     next: layer.querySelector("#gx-next"),
     eraProgress: layer.querySelector("#gx-era-progress"),
     eraProgressLabel: layer.querySelector("#gx-era-progress-label"),
@@ -394,6 +397,13 @@
     return progress;
   };
 
+  const setMobileInfoExpanded = (expanded) => {
+    const isExpanded = Boolean(expanded);
+    elements.storyCard.dataset.mobileInfoOpen = String(isExpanded);
+    elements.mobileInfoToggle.setAttribute("aria-expanded", String(isExpanded));
+    elements.mobileInfoToggleIcon.textContent = isExpanded ? "−" : "＋";
+  };
+
   const emitStoryProgress = (complete = storySequenceComplete) => {
     if (!storyDetourActive) return;
     window.dispatchEvent(new CustomEvent("gaia:gx-story-progress", {
@@ -634,6 +644,7 @@
   };
 
   const setPhase = (index) => {
+    setMobileInfoExpanded(false);
     previousPhaseIndex = phaseIndex;
     phaseIndex = (index + exhibit.phases.length) % exhibit.phases.length;
     if (phaseIndex === PHASE.PROTEROZOIC && previousPhaseIndex !== PHASE.PROTEROZOIC) prepareIronTransition();
@@ -2122,6 +2133,10 @@
   elements.modalSkip.addEventListener("click", (event) => {
     event.stopPropagation();
     skipGXModal();
+  });
+  elements.mobileInfoToggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setMobileInfoExpanded(elements.mobileInfoToggle.getAttribute("aria-expanded") !== "true");
   });
   elements.restart.addEventListener("click", resetWorld);
   elements.data.addEventListener("click", openDataPanel);
