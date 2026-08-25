@@ -328,3 +328,132 @@ body.sound-mode-open .status {
     transition-duration: 0.01ms;
   }
 }
+
+/* Keep generous mobile hit areas while making the in-story header controls
+   visually quiet enough to stay out of the scene. */
+@media (max-width: 720px) {
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control:hover,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control:hover,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control:focus-visible,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control:focus-visible {
+    overflow: visible;
+    border-color: transparent;
+    outline: 0;
+    background: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control::after,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control::after {
+    position: absolute;
+    z-index: 0;
+    top: 50%;
+    left: 50%;
+    display: block;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(var(--mode-exit-rgb), 0.24);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(var(--mode-exit-rgb), 0.13), rgba(var(--mode-exit-rgb), 0.045)),
+      rgba(5, 18, 27, 0.58);
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.065),
+      0 5px 15px rgba(0, 5, 12, 0.18);
+    -webkit-backdrop-filter: blur(10px) saturate(1.08);
+    backdrop-filter: blur(10px) saturate(1.08);
+    content: "";
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control:hover::after,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control:hover::after,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control:focus-visible::after,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control:focus-visible::after {
+    border-color: rgba(var(--mode-exit-rgb), 0.52);
+    background:
+      linear-gradient(180deg, rgba(var(--mode-exit-rgb), 0.21), rgba(var(--mode-exit-rgb), 0.075)),
+      rgba(6, 26, 38, 0.76);
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.1),
+      0 6px 18px rgba(0, 5, 12, 0.26),
+      0 0 14px rgba(var(--mode-exit-rgb), 0.07);
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control::before,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control::before {
+    position: relative;
+    z-index: 1;
+    font-size: 12px;
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded),
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded):hover,
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded):focus-within {
+    justify-content: center;
+    padding: 0;
+    overflow: visible;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle,
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle:hover,
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle:focus-visible {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+    border-color: transparent;
+    outline: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle::before {
+    position: absolute;
+    z-index: 0;
+    top: 50%;
+    left: 50%;
+    display: block;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(var(--opening-mint), 0.26);
+    border-radius: 50%;
+    background: rgba(4, 17, 29, 0.78);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+      0 5px 15px rgba(0, 4, 12, 0.25);
+    content: "";
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle:hover::before,
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle:focus-visible::before {
+    border-color: rgba(var(--opening-mint), 0.72);
+    background: rgba(var(--opening-mint), 0.16);
+    box-shadow: 0 0 14px rgba(var(--opening-mint), 0.18);
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle .gaia-audio-toggle-icon {
+    position: relative;
+    z-index: 1;
+    width: 14px;
+    height: 14px;
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock:not(.is-expanded) #gaia-audio-toggle .gaia-audio-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
