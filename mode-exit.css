@@ -489,3 +489,132 @@ body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) 
   background: transparent;
   box-shadow: none;
 }
+
+/* Anchor the scene date to the viewport center, independently of the unequal
+   control widths on the left and right sides of the top rail. */
+body.novel-open .novel-layer:not(.is-title) .novel-signal-caption,
+body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-temporal-range="true"],
+body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-crosses-year="true"],
+body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+  right: auto;
+  left: 50%;
+  width: max-content;
+  max-width: min(760px, calc(100vw - 380px));
+  transform: translateX(-50%);
+}
+
+/* Arrow-only mobile controls were too ambiguous. Keep the two story actions
+   compact, but show their actual labels and preserve the conventional order:
+   back first, then skip. */
+@media (max-width: 720px) {
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control:hover,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control:hover,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control:focus-visible,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control:focus-visible {
+    display: inline-flex;
+    gap: 5px;
+    width: auto;
+    height: 44px;
+    padding: 0 10px;
+    overflow: hidden;
+    border: 1px solid rgba(var(--mode-exit-rgb), 0.3);
+    border-radius: 12px;
+    color: rgba(235, 249, 247, 0.92);
+    background:
+      linear-gradient(180deg, rgba(var(--mode-exit-rgb), 0.15), rgba(var(--mode-exit-rgb), 0.055)),
+      rgba(5, 18, 27, 0.7);
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.07),
+      0 7px 20px rgba(0, 5, 12, 0.22);
+    -webkit-backdrop-filter: blur(12px) saturate(1.08);
+    backdrop-filter: blur(12px) saturate(1.08);
+    font-size: 10px;
+    letter-spacing: 0.045em;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control {
+    right: auto;
+    left: max(12px, env(safe-area-inset-left));
+    min-width: 68px;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
+    right: auto;
+    left: max(84px, calc(env(safe-area-inset-left) + 72px));
+    min-width: 82px;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control::before,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control::before {
+    flex: 0 0 15px;
+    width: 15px;
+    height: 15px;
+    font-size: 14px;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control::after,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control::after {
+    display: none;
+    content: none;
+  }
+
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption,
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-temporal-range="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-crosses-year="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+    right: auto;
+    left: 50%;
+    width: max-content;
+    max-width: min(460px, calc(100vw - 222px));
+    transform: translateX(-50%);
+  }
+
+  body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock.is-expanded {
+    width: min(320px, calc(100vw - 198px));
+  }
+}
+
+/* On narrow phones the labelled back/skip controls need the first rail. Keep
+   the date centered on the viewport and give it a clear second rail. */
+@media (max-width: 520px) {
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption,
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-temporal-range="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-crosses-year="true"],
+  body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
+    top: max(64px, calc(env(safe-area-inset-top) + 52px));
+    max-width: calc(100vw - 24px);
+  }
+}
+
+/* Story navigation belongs to the same navy-blue glass family as the dialogue
+   window; keep the brighter cyan only for its border and directional cue. */
+body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control,
+body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
+  --mode-exit-rgb: 129, 194, 232;
+  border-color: rgba(174, 224, 248, 0.34);
+  color: rgba(239, 249, 255, 0.94);
+  background:
+    radial-gradient(ellipse 110% 180% at 5% -20%, rgba(74, 153, 211, 0.24), transparent 68%),
+    linear-gradient(135deg, rgba(7, 42, 88, 0.86), rgba(4, 25, 60, 0.84) 52%, rgba(2, 13, 39, 0.9));
+  box-shadow:
+    inset 0 1px rgba(224, 244, 255, 0.16),
+    0 8px 24px rgba(0, 5, 24, 0.24),
+    0 0 24px rgba(72, 158, 218, 0.06);
+}
+
+body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control:hover,
+body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control:focus-visible,
+body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control:hover,
+body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control:focus-visible {
+  border-color: rgba(174, 224, 248, 0.58);
+  color: #fff;
+  background:
+    radial-gradient(ellipse 110% 180% at 5% -20%, rgba(92, 177, 232, 0.34), transparent 68%),
+    linear-gradient(135deg, rgba(9, 52, 104, 0.92), rgba(5, 32, 73, 0.9) 52%, rgba(3, 18, 48, 0.94));
+  box-shadow:
+    inset 0 1px rgba(224, 244, 255, 0.22),
+    0 10px 28px rgba(0, 5, 24, 0.3),
+    0 0 24px rgba(72, 158, 218, 0.11);
+}

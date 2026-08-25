@@ -1430,7 +1430,7 @@
     const description = nextScene
       ? `現在のセクションをスキップして「${nextScene.title}」へ進む`
       : "現在のセクションをスキップしてエンディングへ進む";
-    elements.close.textContent = "セクションスキップ";
+    elements.close.textContent = "スキップ";
     elements.close.dataset.controlMode = "skip";
     elements.close.setAttribute("aria-label", description);
     elements.close.title = description;

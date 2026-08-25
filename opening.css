@@ -1,8 +1,10 @@
 .gaia-opening {
+  --font-ja: "Yu Mincho", YuMincho, "Hiragino Mincho ProN", "Hiragino Mincho Pro", "HGS明朝E", "Noto Serif CJK JP", "Noto Serif JP", "Source Han Serif JP", serif;
   --opening-mint: 150, 219, 205;
   --opening-blue: 132, 175, 205;
   --opening-paper: 222, 232, 229;
   --opening-keyvisual-image: url("./assets/visuals-07/opening-keyvisual-v2.webp");
+  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v1.webp");
   --opening-archive-image: url("./assets/visuals-07/open-data-archive-bg-v1.webp");
   --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-v1.webp");
   --opening-amane-image: url("./assets/visuals-08/opening-amane-keyvisual-v1.webp");
@@ -17,8 +19,30 @@
 
 body.gaia-opening-active { overflow: hidden; }
 
+/* GAIA is presented as an interactive work rather than a selectable document.
+   Keep ordinary display copy inert on desktop and mobile while preserving text
+   editing and assistive input behavior inside actual form controls. */
+html,
+body,
+body * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"],
+[contenteditable="plaintext-only"] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default;
+}
+
 html[data-gaia-artwork-quality="compact"] .gaia-opening {
   --opening-keyvisual-image: url("./assets/visuals-07/opening-keyvisual-v2-834.webp");
+  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v1-960.webp");
   --opening-archive-image: url("./assets/visuals-07/open-data-archive-bg-v1-834.webp");
   --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-v1-834.webp");
   --opening-amane-image: url("./assets/visuals-08/opening-amane-keyvisual-v1-834.webp");
@@ -363,8 +387,9 @@ body.gaia-opening-active .novel-layer {
 .gaia-vn-panel-prologue { z-index: 1; }
 .gaia-vn-panel-minamo { z-index: 2; }
 .gaia-vn-panel-sora { z-index: 3; }
-.gaia-vn-panel-montage { z-index: 4; }
-.gaia-vn-panel-final { z-index: 5; }
+.gaia-vn-panel-real-earth { z-index: 4; }
+.gaia-vn-panel-montage { z-index: 5; }
+.gaia-vn-panel-final { z-index: 6; }
 
 /* 00 / a quiet signal */
 .gaia-vn-panel-prologue {
@@ -1300,12 +1325,16 @@ body.gaia-opening-active .novel-layer {
   animation: opening-panel-calm 4.08s 6.375s ease-in-out both;
 }
 
-.gaia-opening.is-active .gaia-vn-panel-montage {
+.gaia-opening.is-active .gaia-vn-panel-real-earth {
   animation: opening-panel-calm 4.08s 9.8175s ease-in-out both;
 }
 
+.gaia-opening.is-active .gaia-vn-panel-montage {
+  animation: opening-panel-calm 4.08s 13.26s ease-in-out both;
+}
+
 .gaia-opening.is-active .gaia-vn-panel-final {
-  animation: opening-panel-final 5.1s 13.26s ease-in-out both;
+  animation: opening-panel-final 5.1s 16.7025s ease-in-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-prologue-lines {
@@ -1345,44 +1374,53 @@ body.gaia-opening-active .novel-layer {
   animation: opening-copy-right 1.21125s 6.6555s ease-out both;
 }
 
+.gaia-opening.is-active .gaia-vn-real-earth-orbit {
+  animation: opening-ripple 2.4225s 9.9195s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+.gaia-opening.is-active .gaia-vn-real-earth-copy {
+  animation: opening-copy-left 1.4025s 10.1235s ease-out both;
+}
+
 .gaia-opening.is-active .gaia-vn-montage-dots {
-  animation: opening-dots 3.57s 9.8175s ease-out both;
+  animation: opening-dots 3.57s 13.26s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-montage-label {
-  animation: opening-detail-calm 1.02s 9.996s ease-out both;
+  animation: opening-detail-calm 1.02s 13.4385s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-path-copy {
-  animation: opening-copy-left 1.21125s 10.1235s ease-out both;
+  animation: opening-copy-left 1.21125s 13.566s ease-out both;
 }
 
-.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(1) { animation: opening-row 0.8925s 10.251s ease-out both; }
-.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(2) { animation: opening-row 0.8925s 10.4805s ease-out both; }
-.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(3) { animation: opening-row 0.8925s 10.71s ease-out both; }
-.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(4) { animation: opening-row 0.8925s 10.9395s ease-out both; }
+.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(1) { animation: opening-row 0.8925s 13.6935s ease-out both; }
+.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(2) { animation: opening-row 0.8925s 13.923s ease-out both; }
+.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(3) { animation: opening-row 0.8925s 14.1525s ease-out both; }
+.gaia-opening.is-active .gaia-vn-word-rails p:nth-child(4) { animation: opening-row 0.8925s 14.382s ease-out both; }
 
 .gaia-opening.is-active .gaia-vn-final-photo {
-  animation: opening-photo 5.1s 13.26s ease-out both;
+  animation: opening-photo 5.1s 16.7025s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-final-shade {
-  animation: opening-shade 1.6575s 13.362s ease-out both;
+  animation: opening-shade 1.6575s 16.8045s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-vn-final-copy {
-  animation: opening-copy-left 1.4025s 13.5405s ease-out both;
+  animation: opening-copy-left 1.4025s 16.983s ease-out both;
 }
 
 .gaia-opening.is-active .gaia-opening-progress i {
-  animation: opening-progress 18.36s linear both;
+  animation: opening-progress 21.8025s linear both;
 }
 
 .gaia-opening.is-active .gaia-opening-steps span:nth-child(1) { animation: opening-count 3.4425s 0s ease both; }
 .gaia-opening.is-active .gaia-opening-steps span:nth-child(2) { animation: opening-count 4.08s 2.9325s ease both; }
 .gaia-opening.is-active .gaia-opening-steps span:nth-child(3) { animation: opening-count 4.08s 6.375s ease both; }
 .gaia-opening.is-active .gaia-opening-steps span:nth-child(4) { animation: opening-count 4.08s 9.8175s ease both; }
-.gaia-opening.is-active .gaia-opening-steps span:nth-child(5) { animation: opening-count 5.1s 13.26s ease both; }
+.gaia-opening.is-active .gaia-opening-steps span:nth-child(5) { animation: opening-count 4.08s 13.26s ease both; }
+.gaia-opening.is-active .gaia-opening-steps span:nth-child(6) { animation: opening-count 5.1s 16.7025s ease both; }
 
 .gaia-opening.is-leaving .gaia-opening-wipe {
   animation: opening-leave-glow 1.836s cubic-bezier(0.2, 0.72, 0.18, 1) both;
@@ -4365,4 +4403,343 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
   }
+}
+
+/* Final gateway artwork already carries the complete title lockup. Present it
+   intact and reserve the live HTML layer for the accessible title, prompt and
+   route controls instead of drawing a second logo over the illustration. */
+.gaia-vn-panel-final .gaia-vn-final-photo {
+  inset: 0;
+  background: #020d27 var(--opening-final-keyvisual-image) center / cover no-repeat;
+}
+
+.gaia-vn-panel-final .gaia-vn-final-shade,
+.gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-shade {
+  background:
+    linear-gradient(180deg, rgba(2, 8, 25, 0.02) 0 58%, rgba(2, 10, 31, 0.16) 72%, rgba(2, 10, 31, 0.72) 100%),
+    linear-gradient(90deg, rgba(2, 10, 31, 0.08), transparent 64%);
+}
+
+.gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-photo {
+  inset: 0;
+  transform: none;
+}
+
+.gaia-vn-panel-final .gaia-vn-final-copy,
+.gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
+  top: auto;
+  right: auto;
+  bottom: max(62px, 7vh);
+  left: clamp(34px, 5vw, 88px);
+  width: min(760px, 48vw);
+  transform: none;
+}
+
+.gaia-vn-panel-final .gaia-vn-final-copy > p,
+.gaia-vn-panel-final .gaia-vn-final-copy > span {
+  display: none;
+}
+
+.gaia-vn-panel-final .gaia-vn-work-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.gaia-vn-panel-final .gaia-vn-final-choice > strong {
+  max-width: 36em;
+  margin: 0;
+  color: rgba(239, 249, 255, 0.94);
+  font-size: clamp(16px, 1.25vw, 21px);
+  line-height: 1.55;
+  text-shadow: 0 2px 16px rgba(0, 5, 24, 0.72);
+}
+
+.gaia-vn-panel-final .gaia-opening-final-menu,
+.gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+  position: static;
+  inset: auto;
+  width: 100%;
+  margin-top: clamp(14px, 2vh, 22px);
+}
+
+.gaia-vn-panel-final .gaia-opening-route,
+.gaia-vn-panel-final .gaia-opening-route--other {
+  background: rgba(2, 13, 39, 0.72);
+  -webkit-backdrop-filter: blur(12px) saturate(1.12);
+  backdrop-filter: blur(12px) saturate(1.12);
+}
+
+@media (max-width: 720px) and (orientation: portrait) {
+  .gaia-vn-panel-final .gaia-vn-final-photo,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-photo {
+    inset: 0;
+    background-color: #020d27;
+    background-position: center top;
+    background-size: 100% auto;
+    transform: none;
+  }
+
+  .gaia-vn-panel-final .gaia-vn-final-shade,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-shade {
+    background:
+      linear-gradient(180deg, transparent 0 23%, rgba(2, 10, 31, 0.2) 29%, rgba(2, 10, 31, 0.88) 43%, #020d27 68%),
+      linear-gradient(90deg, rgba(2, 10, 31, 0.08), transparent 72%);
+  }
+
+  .gaia-vn-panel-final .gaia-vn-final-copy,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
+    top: calc(100vw * 941 / 1672 + 24px);
+    right: max(16px, env(safe-area-inset-right));
+    bottom: auto;
+    left: max(16px, env(safe-area-inset-left));
+    width: auto;
+  }
+
+  .gaia-vn-panel-final .gaia-vn-final-choice > strong {
+    font-size: clamp(13px, 3.7vw, 17px);
+    white-space: normal;
+    text-wrap: balance;
+  }
+}
+
+/* 03 / reveal the bridge from the fictional world to observed Earth. The
+   archive artwork is already part of the opening preload, so this extra beat
+   adds no image request or transfer weight. */
+.gaia-vn-panel-real-earth {
+  color: rgb(var(--opening-paper));
+  background:
+    linear-gradient(90deg, rgba(2, 11, 24, 0.3), rgba(2, 11, 24, 0.52) 48%, rgba(2, 11, 24, 0.92) 100%),
+    linear-gradient(180deg, rgba(2, 11, 24, 0.08), rgba(2, 11, 24, 0.5)),
+    var(--opening-archive-image) center / cover no-repeat;
+}
+
+.gaia-vn-panel-real-earth::before,
+.gaia-vn-panel-real-earth::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.gaia-vn-panel-real-earth::before {
+  opacity: 0.28;
+  background-image:
+    linear-gradient(rgba(var(--opening-mint), 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--opening-mint), 0.08) 1px, transparent 1px);
+  background-size: 54px 54px;
+  -webkit-mask-image: linear-gradient(90deg, #000, transparent 64%);
+  mask-image: linear-gradient(90deg, #000, transparent 64%);
+}
+
+.gaia-vn-panel-real-earth::after {
+  background:
+    linear-gradient(90deg, transparent 0 7%, rgba(var(--opening-mint), 0.42) 7% calc(7% + 1px), transparent calc(7% + 1px)),
+    linear-gradient(180deg, transparent 0 11%, rgba(var(--opening-mint), 0.18) 11% calc(11% + 1px), transparent calc(11% + 1px));
+}
+
+.gaia-vn-real-earth-orbit {
+  position: absolute;
+  top: 49%;
+  left: 24%;
+  z-index: 2;
+  width: min(35vw, 520px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(var(--opening-mint), 0.3);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  box-shadow:
+    0 0 0 5vw rgba(var(--opening-mint), 0.018),
+    inset 0 0 70px rgba(var(--opening-blue), 0.045);
+}
+
+.gaia-vn-real-earth-orbit i {
+  position: absolute;
+  border: 1px solid rgba(var(--opening-blue), 0.2);
+  border-radius: 50%;
+}
+
+.gaia-vn-real-earth-orbit i:nth-child(1) { inset: 13%; }
+.gaia-vn-real-earth-orbit i:nth-child(2) { inset: 29%; }
+.gaia-vn-real-earth-orbit i:nth-child(3) {
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 0;
+  background: rgb(var(--opening-mint));
+  box-shadow: 0 0 22px rgba(var(--opening-mint), 0.86);
+  transform: translate(-50%, -50%);
+}
+
+.gaia-vn-real-earth-copy {
+  position: absolute;
+  top: 50%;
+  right: 5%;
+  z-index: 4;
+  width: min(55vw, 860px);
+  transform: translateY(-50%);
+}
+
+.gaia-vn-real-earth-copy > small,
+.gaia-vn-real-earth-copy > em {
+  color: rgba(var(--opening-mint), 0.7);
+  font: 650 9px/1.5 Consolas, "Courier New", monospace;
+  font-style: normal;
+  letter-spacing: 0.24em;
+}
+
+.gaia-vn-real-earth-copy h2 {
+  margin: clamp(20px, 2.5vh, 30px) 0 0;
+  color: rgba(var(--opening-paper), 0.98);
+  font-family: var(--font-ja);
+  font-size: clamp(38px, 3.5vw, 54px);
+  font-weight: 400;
+  letter-spacing: 0.035em;
+  line-height: 1.34;
+  text-shadow: 0 5px 32px rgba(0, 6, 19, 0.72);
+}
+
+.gaia-vn-real-earth-copy h2 span,
+.gaia-vn-real-earth-copy p span,
+.gaia-vn-path-copy > p span {
+  display: block;
+}
+
+.gaia-vn-real-earth-copy p {
+  margin: clamp(20px, 3vh, 34px) 0 0;
+  color: rgba(var(--opening-paper), 0.8);
+  font-family: var(--font-ja);
+  font-size: clamp(15px, 1.35vw, 20px);
+  font-weight: 500;
+  letter-spacing: 0.055em;
+  line-height: 1.9;
+  text-shadow: 0 3px 22px rgba(0, 6, 19, 0.74);
+}
+
+.gaia-vn-real-earth-copy > em {
+  display: block;
+  margin-top: clamp(22px, 3.5vh, 38px);
+  color: rgba(var(--opening-mint), 0.48);
+  font-size: 8px;
+}
+
+.gaia-vn-path-copy > p {
+  line-height: 1.9;
+}
+
+.gaia-vn-path-copy h2 {
+  font-size: clamp(38px, 3.8vw, 58px);
+  white-space: nowrap;
+}
+
+.gaia-vn-panel-final .gaia-opening-route,
+.gaia-vn-panel-final .gaia-opening-route--other {
+  gap: 8px;
+  min-height: 144px;
+}
+
+.gaia-vn-panel-final .gaia-opening-route-guide {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.gaia-vn-panel-final .gaia-opening-route > span {
+  display: block;
+  line-height: 1.58;
+  white-space: normal;
+}
+
+@media (max-width: 720px) {
+  .gaia-vn-panel-real-earth {
+    background:
+      linear-gradient(180deg, rgba(2, 11, 24, 0.12) 0 34%, rgba(2, 11, 24, 0.68) 58%, rgba(2, 11, 24, 0.98) 100%),
+      var(--opening-archive-image) 28% center / cover no-repeat;
+  }
+
+  .gaia-vn-panel-real-earth::before {
+    background-size: 36px 36px;
+    -webkit-mask-image: linear-gradient(180deg, #000, transparent 72%);
+    mask-image: linear-gradient(180deg, #000, transparent 72%);
+  }
+
+  .gaia-vn-real-earth-orbit {
+    top: 30%;
+    left: 50%;
+    width: min(76vw, 42vh);
+  }
+
+  .gaia-vn-real-earth-copy {
+    top: auto;
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(11%, calc(env(safe-area-inset-bottom) + 62px));
+    left: max(20px, env(safe-area-inset-left));
+    width: auto;
+    transform: none;
+  }
+
+  .gaia-vn-real-earth-copy > small { font-size: 7px; }
+
+  .gaia-vn-real-earth-copy h2 {
+    margin-top: 15px;
+    font-size: clamp(28px, 8.2vw, 40px);
+    line-height: 1.42;
+  }
+
+  .gaia-vn-real-earth-copy p {
+    margin-top: 17px;
+    font-size: clamp(12px, 3.35vw, 15px);
+    line-height: 1.85;
+  }
+
+  .gaia-vn-real-earth-copy > em {
+    margin-top: 18px;
+    font-size: 6.5px;
+  }
+
+  .gaia-vn-path-copy h2 {
+    font-size: clamp(27px, 7.6vw, 33px);
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route,
+  .gaia-vn-panel-final .gaia-opening-route--other {
+    min-height: 108px;
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route small em {
+    display: inline-block;
+  }
+}
+
+@media (min-width: 721px) {
+  .gaia-vn-real-earth-copy h2 span:last-child {
+    white-space: nowrap;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .gaia-vn-real-earth-copy {
+    right: 6%;
+    width: min(52vw, 650px);
+  }
+
+  .gaia-vn-real-earth-copy h2 {
+    margin-top: 12px;
+    font-size: clamp(28px, 4.8vw, 44px);
+  }
+
+  .gaia-vn-real-earth-copy p {
+    margin-top: 12px;
+    font-size: clamp(11px, 1.55vw, 15px);
+    line-height: 1.65;
+  }
+
+  .gaia-vn-real-earth-copy > em { margin-top: 12px; }
 }

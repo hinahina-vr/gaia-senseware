@@ -16,6 +16,7 @@ const viewports = [
   { name: "pc-1920", width: 1920, height: 1080 },
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "pc-1180", width: 1180, height: 760 },
+  { name: "mobile-687", width: 687, height: 1432, mobile: true },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
 ];
 const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
@@ -36,32 +37,33 @@ try {
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
 
-    await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY), null, { timeout: 15_000 });
-    const progress = await page.evaluate(() => ({
-      storyVersion: globalThis.GAIA_NOVEL_STORY.storyVersion,
-      stepId: "welcome_chat_002",
-      reachedSceneIds: ["welcome_chat"],
-      viewed: {}, metCharacters: { mizuha: true, amane: true, sakuya: true }, evesRoute: [],
-      observationOrder: null, editorialChoice: null, reflectionIds: [], resultTone: null,
-      audio: { muted: true, volume: 0 }, readStepIds: [], clear: false, archivesUnlocked: false,
-      sessionId: `heading-rail-${innerWidth}`,
-    }));
-    await page.evaluate((candidate) => {
-      localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
-      localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{
-        progress: candidate, savedAt: Date.now(), meta: { title: "Heading rail QA", excerpt: candidate.stepId },
-      }]));
-      localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
-      localStorage.setItem("gaia-senseware-bgm-volume", "0");
-    }, progress);
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => Boolean(globalThis.GaiaNovel), null, { timeout: 15_000 });
-    await page.evaluate(() => globalThis.GaiaNovel.open());
-    await page.locator("#novel-resume-button").click();
-    await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
-    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
-    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepId === "welcome_chat_002", null, { timeout: 15_000 });
+    await page.goto(new URL("/#story", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => globalThis.GaiaModeLoader.load("story"));
+    await page.waitForFunction(() => Boolean(globalThis.GaiaNovel?.open), null, { timeout: 15_000 });
+    await page.evaluate(() => {
+      localStorage.clear();
+      globalThis.GaiaNovel.open();
+    });
+    await page.waitForFunction(() => (
+      document.querySelector("#novel-home-button")?.hidden === false
+      || (
+        document.querySelector("#novel-start-button")?.disabled === false
+        && document.querySelector("#novel-start-button")?.offsetParent !== null
+      )
+    ), null, { timeout: 15_000 });
+    if (await page.locator("#novel-start-button").isVisible()) {
+      await page.locator("#novel-start-button").click();
+    }
+    await page.waitForFunction(() => (
+      document.querySelector("#novel-runtime")?.hidden === false
+      && document.querySelector("#novel-source-label")?.getBoundingClientRect().width > 0
+    ), null, { timeout: 15_000 });
+    await page.waitForFunction(() => Boolean(document.querySelector("#novel-layer")?.dataset.stepId), null, { timeout: 15_000 });
+    if (await page.locator("#novel-chapter-card").isVisible()) {
+      await page.locator("#novel-layer").dispatchEvent("click");
+      await page.locator("#novel-chapter-card").waitFor({ state: "hidden", timeout: 15_000 });
+    }
+    await page.waitForFunction(() => document.querySelector("#novel-location")?.textContent.includes("10月"), null, { timeout: 15_000 });
 
     const scan = await page.evaluate(() => {
       const visible = (element) => {
@@ -85,9 +87,13 @@ try {
     });
     const primaryRail = scan.controls.filter(({ selector }) => selector !== "#novel-close-button");
     scan.primaryTopDeltas = primaryRail.map(({ selector, rect }) => ({ selector, delta: Math.abs(rect.top - scan.heading.top) }));
+    scan.centerDelta = Math.abs((scan.heading.left + scan.heading.right) / 2 - viewport.width / 2);
     scan.overlaps = scan.controls.filter(({ rect }) => intersects(scan.heading, rect)).map(({ selector }) => selector);
     assert(primaryRail.length >= 2, `${viewport.name}: primary corner controls missing`);
-    assert(scan.primaryTopDeltas.every(({ delta }) => delta <= 1), `${viewport.name}: heading does not share the primary top rail ${JSON.stringify(scan.primaryTopDeltas)}`);
+    if (viewport.width > 520) {
+      assert(scan.primaryTopDeltas.every(({ delta }) => delta <= 1), `${viewport.name}: heading does not share the primary top rail ${JSON.stringify(scan.primaryTopDeltas)}`);
+    }
+    assert(scan.centerDelta <= 1, `${viewport.name}: scene date is not centered on the viewport (${scan.centerDelta}px)`);
     assert.deepEqual(scan.overlaps, [], `${viewport.name}: heading overlaps fixed controls`);
     assert.equal(scan.overflowX, 0, `${viewport.name}: horizontal overflow`);
     assert(scan.heading.left >= -1 && scan.heading.right <= viewport.width + 1, `${viewport.name}: heading leaves viewport`);

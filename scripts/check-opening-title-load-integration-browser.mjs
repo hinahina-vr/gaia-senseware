@@ -110,19 +110,34 @@ try {
           reply: node?.querySelector(".gaia-vn-character-reply")?.textContent.trim(),
         };
       };
+      const lineCount = (element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return new Set([...range.getClientRects()].filter((rect) => rect.width > 0).map((rect) => Math.round(rect.top))).size;
+      };
       return {
         mizu: read("みず"),
         ame: read("あめ"),
         characterBands: [...document.querySelectorAll(".gaia-vn-character-band")].map((node) => node.textContent.trim()),
         montageNames: [...document.querySelectorAll(".gaia-vn-word-rails small")].map((node) => node.textContent.trim()),
+        montageActions: [...document.querySelectorAll(".gaia-vn-word-rails strong")].map((node) => node.textContent.trim()),
         mizuhaArt: getComputedStyle(document.querySelector(".gaia-vn-panel-minamo")).backgroundImage,
         amaneArt: getComputedStyle(document.querySelector(".gaia-vn-panel-sora")).backgroundImage,
         characterSpriteCount: document.querySelectorAll(".gaia-vn-character-focus, .gaia-vn-character-image").length,
+        realEarthLabel: document.querySelector(".gaia-vn-real-earth-copy > small")?.textContent.trim(),
+        realEarthHeading: document.querySelector(".gaia-vn-real-earth-copy h2")?.textContent.trim(),
+        realEarthBody: document.querySelector(".gaia-vn-real-earth-copy p")?.textContent.trim(),
+        realEarthDecoration: document.querySelector(".gaia-vn-real-earth-copy > em")?.textContent.trim(),
+        realEarthArt: getComputedStyle(document.querySelector(".gaia-vn-panel-real-earth")).backgroundImage,
+        realEarthDuration: getComputedStyle(document.querySelector(".gaia-vn-panel-real-earth")).animationDuration,
+        realEarthDelay: getComputedStyle(document.querySelector(".gaia-vn-panel-real-earth")).animationDelay,
         montageLabel: document.querySelector(".gaia-vn-montage-label")?.textContent.trim(),
         montageHeading: document.querySelector(".gaia-vn-path-copy h2")?.textContent.trim(),
+        montageHeadingLines: lineCount(document.querySelector(".gaia-vn-path-copy h2")),
         montageBody: document.querySelector(".gaia-vn-path-copy > p")?.textContent.trim(),
         montageDuration: getComputedStyle(document.querySelector(".gaia-vn-panel-montage")).animationDuration,
         montageDelay: getComputedStyle(document.querySelector(".gaia-vn-panel-montage")).animationDelay,
+        stepLabels: [...document.querySelectorAll(".gaia-opening-steps span")].map((node) => node.textContent.trim()),
         soundGateCount: document.querySelectorAll("#gaia-opening-sound-gate").length,
         overflowX: document.documentElement.scrollWidth - innerWidth,
         overflowY: document.documentElement.scrollHeight - innerHeight,
@@ -140,19 +155,29 @@ try {
     });
     assert.deepEqual(opening.characterBands, ["MIZU　MIZU　MIZU", "AME　AME　AME　AME"]);
     assert.deepEqual(opening.montageNames, ["MIZU", "AME", "SAKUYA", "YOU"]);
+    assert.deepEqual(opening.montageActions, ["感じる。", "測る。", "つなぐ。", "ともに選ぶ。"]);
     assert.match(opening.mizuhaArt, viewport.mobile ? /opening-mizuha-keyvisual-portrait-v2(?:-720)?\.webp/u : /opening-mizuha-keyvisual-v1(?:-834)?\.webp/u);
     assert.match(opening.amaneArt, /opening-amane-keyvisual-v1(?:-834)?\.webp/u);
     assert.equal(opening.characterSpriteCount, 0);
+    assert.equal(opening.realEarthLabel, "REAL EARTH / OPEN DATA");
+    assert.equal(opening.realEarthHeading, "この物語は、現実の地球につながっている。");
+    assert.equal(opening.realEarthBody, "実際に観測されたCO₂や気温などのオープンデータを、光・色・動きへ翻訳しています。");
+    assert.equal(opening.realEarthDecoration, "OBSERVE → TRANSLATE → FEEL");
+    assert.match(opening.realEarthArt, /open-data-archive-bg-v1(?:-834)?\.webp/u);
+    assert.equal(opening.realEarthDuration, "4.08s");
+    assert.equal(opening.realEarthDelay, "9.8175s");
     assert.equal(opening.montageLabel, "SENSES / MEASURES / TRACES / CHOICES");
-    assert.equal(opening.montageHeading, "未来は、ひとつの視点には宿らない。");
-    assert.equal(opening.montageBody, "感じ、測り、残し、選ぶ。その重なりから、まだ名のない未来が立ち上がる。");
+    assert.equal(opening.montageHeading, "未来は、ともに変わる。");
+    assert.equal(opening.montageHeadingLines, 1, `${viewport.name}: transformation heading wrapped`);
+    assert.equal(opening.montageBody, "この星の息づかいを、感じ、測り、つなぎ、ともに選ぶ。やがて、地球は静かに姿を変えていく。");
     assert.equal(opening.montageDuration, "4.08s");
-    assert.equal(opening.montageDelay, "9.8175s");
+    assert.equal(opening.montageDelay, "13.26s");
+    assert.deepEqual(opening.stepLabels, ["01", "02", "03", "04", "05", "06"]);
     assert.equal(opening.soundGateCount, 0);
     assert(opening.overflowX <= 1 && opening.overflowY <= 1);
 
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-opening.png`), animations: "disabled" });
-    for (const panelName of ["minamo", "sora", "montage"]) {
+    for (const panelName of ["minamo", "sora", "real-earth", "montage"]) {
       await page.evaluate((name) => {
         document.querySelector(".gaia-opening-hud")?.setAttribute("hidden", "");
         document.querySelectorAll("[data-opening-focus]").forEach((node) => node.classList.remove("is-opening-focus-pending"));
@@ -181,23 +206,62 @@ try {
       const menuLayout = await page.evaluate(() => {
         const copy = document.querySelector(".gaia-vn-final-copy");
         const menu = document.querySelector("#gaia-opening-final-menu");
+        const photo = document.querySelector(".gaia-vn-final-photo");
+        const title = document.querySelector(".gaia-vn-work-title");
         const copyRect = copy.getBoundingClientRect();
         const menuRect = menu.getBoundingClientRect();
+        const titleRect = title.getBoundingClientRect();
+        const photoStyle = getComputedStyle(photo);
         return {
           copy: { top: copyRect.top, bottom: copyRect.bottom, height: copyRect.height },
           menu: { top: menuRect.top, bottom: menuRect.bottom, height: menuRect.height },
           menuPosition: getComputedStyle(menu).position,
+          photoBackground: photoStyle.backgroundImage,
+          photoBackgroundPosition: photoStyle.backgroundPosition,
+          photoBackgroundSize: photoStyle.backgroundSize,
+          titleText: title.textContent.trim(),
+          titleRect: { width: titleRect.width, height: titleRect.height },
+          duplicateLogoImages: document.querySelectorAll(".gaia-vn-work-logo").length,
+          trailingFinalCopyCount: document.querySelectorAll(".gaia-vn-final-copy > span").length,
+          routes: [...document.querySelectorAll(".gaia-opening-route")].map((route) => ({
+            guide: route.querySelector("small")?.textContent.replace(/\s+/gu, " ").trim(),
+            action: route.querySelector("strong")?.textContent.trim(),
+            description: route.querySelector(":scope > span")?.textContent.replace(/\s+/gu, " ").trim(),
+          })),
           bottomGap: innerHeight - menuRect.bottom,
           overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
           overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
         };
       });
+      assert.match(menuLayout.photoBackground, /opening-final-night-keyvisual-v1(?:-960)?\.webp/u, `${viewport.name}: new gateway artwork is missing`);
+      assert.equal(menuLayout.titleText, "惑星の放課後 — GAIA SENSATION", `${viewport.name}: accessible work title changed`);
+      assert.deepEqual(menuLayout.titleRect, { width: 1, height: 1 }, `${viewport.name}: duplicate HTML title is still visible`);
+      assert.equal(menuLayout.duplicateLogoImages, 0, `${viewport.name}: duplicate logo image is still downloaded`);
+      assert.equal(menuLayout.trailingFinalCopyCount, 0, `${viewport.name}: obsolete explanation remains below the route choice`);
+      assert.deepEqual(menuLayout.routes, [
+        {
+          guide: "物語から感じる / STORY EXPERIENCE RECOMMENDED",
+          action: "物語を始める",
+          description: "MIZUたちと物語をたどりながら、地球の変化を感じてみる。",
+        },
+        {
+          guide: "データから触れる / OPEN DATA EXPLORATION",
+          action: "データを探索する",
+          description: "実際の地球観測データから、気になるテーマを自由に探索する。",
+        },
+      ], `${viewport.name}: route wording changed`);
+      assert.equal(menuLayout.menuPosition, "static", `${viewport.name}: route menu is not anchored to the artwork layout`);
       if (viewport.mobile) {
-        assert.equal(menuLayout.menuPosition, "static", `${viewport.name}: route menu is not in the bottom lockup flow`);
-        assert(menuLayout.copy.top >= viewport.height * 0.35, `${viewport.name}: title lockup still overlaps the face area`);
-        assert(menuLayout.bottomGap >= 40 && menuLayout.bottomGap <= 90, `${viewport.name}: title lockup is not bottom aligned`);
+        const artworkBottom = viewport.width * 941 / 1672;
+        assert(menuLayout.copy.top >= artworkBottom, `${viewport.name}: controls overlap the complete embedded-logo artwork`);
+        assert.equal(menuLayout.photoBackgroundPosition, "50% 0%", `${viewport.name}: complete artwork is not top aligned`);
+        assert(["100%", "100% auto"].includes(menuLayout.photoBackgroundSize), `${viewport.name}: complete artwork is cropped`);
+        assert(menuLayout.menu.bottom <= viewport.height - 40, `${viewport.name}: route menu leaves the safe viewport`);
         assert.equal(menuLayout.overflowX, 0, `${viewport.name}: bottom lockup overflows horizontally`);
         assert.equal(menuLayout.overflowY, 0, `${viewport.name}: bottom lockup overflows vertically`);
+      } else {
+        assert(menuLayout.copy.top >= viewport.height * 0.55, `${viewport.name}: route controls cover the embedded title`);
+        assert(menuLayout.copy.bottom <= viewport.height - 40, `${viewport.name}: route controls leave the viewport`);
       }
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-menu.png`), animations: "disabled" });
       report.flows.push({ viewport: viewport.name, opening, menuLayout, passed: true });

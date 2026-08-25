@@ -10,7 +10,7 @@
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-adaptive-performance-1",
-        "./mode-exit.css?v=gaia-mobile-corner-controls-1",
+        "./mode-exit.css?v=gaia-story-control-blue-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -29,7 +29,7 @@
         "./scene-transition.css?v=gaia-52",
         "./novel-mode.css?v=gaia-mobile-chat-panel-1",
         "./true-end.css?v=gaia-adaptive-performance-1",
-        "./mode-exit.css?v=gaia-mobile-corner-controls-1",
+        "./mode-exit.css?v=gaia-story-control-blue-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -49,7 +49,7 @@
         "./styles.css?v=gaia-cross-platform-fonts-1",
         "./scene-transition.css?v=gaia-52",
         "./gx-mode.css?v=gaia-gx-mobile-installation-1",
-        "./mode-exit.css?v=gaia-mobile-corner-controls-1",
+        "./mode-exit.css?v=gaia-story-control-blue-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -62,7 +62,7 @@
         "./styles.css?v=gaia-cross-platform-fonts-1",
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
-        "./mode-exit.css?v=gaia-mobile-corner-controls-1",
+        "./mode-exit.css?v=gaia-story-control-blue-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -75,7 +75,7 @@
       styles: [
         "./styles.css?v=gaia-cross-platform-fonts-1",
         "./sound-mode.css?v=gaia-cross-platform-fonts-1",
-        "./mode-exit.css?v=gaia-mobile-corner-controls-1",
+        "./mode-exit.css?v=gaia-story-control-blue-1",
       ],
       scripts: ["./sound-mode.js?v=gaia-suno-credit-1"],
     },

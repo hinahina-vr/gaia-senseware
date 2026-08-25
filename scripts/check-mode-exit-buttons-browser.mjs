@@ -77,6 +77,7 @@ const inspectButton = async (page, selector, viewport, surface) => {
       paddingLeft: style.paddingLeft,
       paddingRight: style.paddingRight,
       transitionDuration: style.transitionDuration,
+      fontSize: style.fontSize,
       arrow: arrow.content,
       arrowWidth: arrow.width,
       arrowBorderWidth: arrow.borderWidth,
@@ -88,6 +89,7 @@ const inspectButton = async (page, selector, viewport, surface) => {
     };
   });
   assert(data.text.includes("戻る"), `${viewport}/${surface}: return label is missing`);
+  assert(parseFloat(data.fontSize) > 0, `${viewport}/${surface}: return label is visually hidden`);
   assert(data.rect.height >= 44, `${viewport}/${surface}: hit area is under 44px`);
   assert(data.rect.width < 220, `${viewport}/${surface}: return control is still oversized`);
   assert.equal(data.hit, true, `${viewport}/${surface}: center hit is obstructed (${JSON.stringify(data)})`);
@@ -156,6 +158,41 @@ try {
     ));
     await page.waitForFunction(() => !window.GaiaSceneTransition?.running);
     await inspectButton(page, "#novel-home-button", viewport.name, "story-home");
+    const storyControls = await page.evaluate(() => {
+      const read = (selector) => {
+        const button = document.querySelector(selector);
+        const rect = button.getBoundingClientRect();
+        const style = getComputedStyle(button);
+        return {
+          text: button.textContent.trim(),
+          ariaLabel: button.getAttribute("aria-label"),
+          controlMode: button.dataset.controlMode || "",
+          fontSize: style.fontSize,
+          backgroundImage: style.backgroundImage,
+          borderColor: style.borderColor,
+          arrow: getComputedStyle(button, "::before").content,
+          rect: rect.toJSON(),
+        };
+      };
+      const back = read("#novel-home-button");
+      const skip = read("#novel-close-button");
+      return {
+        back,
+        skip,
+        overlap: !(back.rect.right <= skip.rect.left || skip.rect.right <= back.rect.left),
+      };
+    });
+    assert.equal(storyControls.back.text, "戻る", `${viewport.name}: story back label is unclear`);
+    assert.equal(storyControls.skip.text, "スキップ", `${viewport.name}: story skip label is unclear`);
+    assert.equal(storyControls.skip.controlMode, "skip", `${viewport.name}: skip control mode was lost`);
+    assert(storyControls.back.arrow.includes("←"), `${viewport.name}: back arrow is incorrect`);
+    assert(storyControls.skip.arrow.includes("→"), `${viewport.name}: skip arrow is incorrect`);
+    assert.match(storyControls.back.backgroundImage, /rgba?\((?:7, 42, 88|9, 52, 104)/u, `${viewport.name}: story back control is not dialogue blue`);
+    assert.match(storyControls.skip.backgroundImage, /rgba?\((?:7, 42, 88|9, 52, 104)/u, `${viewport.name}: story skip control is not dialogue blue`);
+    assert(parseFloat(storyControls.back.fontSize) > 0 && parseFloat(storyControls.skip.fontSize) > 0, `${viewport.name}: story labels are visually hidden`);
+    assert(storyControls.back.rect.left < storyControls.skip.rect.left, `${viewport.name}: story controls are in an unexpected order`);
+    assert.equal(storyControls.overlap, false, `${viewport.name}: story controls overlap`);
+    report.scans.push({ viewport: viewport.name, surface: "story-controls", ...storyControls, passed: true });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-story-home.png`) });
     await page.locator("#novel-home-button").click();
     await page.waitForFunction(() => (

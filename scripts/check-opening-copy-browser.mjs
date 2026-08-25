@@ -65,6 +65,8 @@ try {
       };
       return {
         viewport: { width: innerWidth, height: innerHeight },
+        headingFontFamily: getComputedStyle(headingElement).fontFamily,
+        copyFontFamily: getComputedStyle(copyElement).fontFamily,
         headingRect: toRect(headingElement.getBoundingClientRect()),
         copyRect: toRect(copyElement.getBoundingClientRect()),
         lineBoxes: spans.map(lineBoxes),
@@ -75,6 +77,8 @@ try {
 
     assert.equal(scan.overflowX, 0, `${viewport.name}: opening copy causes horizontal overflow`);
     assert.equal(scan.overflowY, 0, `${viewport.name}: opening copy causes vertical overflow`);
+    assert.match(scan.headingFontFamily, /Yu Mincho|YuMincho/u, `${viewport.name}: opening heading lost the Mincho font stack`);
+    assert.match(scan.copyFontFamily, /Yu Mincho|YuMincho/u, `${viewport.name}: opening copy lost the Mincho font stack`);
     for (const [label, rect] of [["heading", scan.headingRect], ["copy", scan.copyRect]]) {
       assert(rect.left >= 0 && rect.top >= 0 && rect.right <= viewport.width + 1 && rect.bottom <= viewport.height + 1, `${viewport.name}: ${label} escaped the viewport`);
     }

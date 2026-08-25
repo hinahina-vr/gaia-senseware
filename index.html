@@ -163,11 +163,11 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-portrait-art-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-real-earth-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-19" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-first-screen-p0-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-opening-portrait-art-1" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-opening-real-earth-1" defer fetchpriority="high"></script>
     <script src="./gaia-mode-loader.js?v=gaia-adaptive-performance-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
@@ -289,18 +289,28 @@
             <div class="gaia-vn-character-band">AME　AME　AME　AME</div>
           </section>
 
+          <section class="gaia-vn-panel gaia-vn-panel-real-earth">
+            <div class="gaia-vn-real-earth-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="gaia-vn-real-earth-copy">
+              <small>REAL EARTH / OPEN DATA</small>
+              <h2 data-opening-focus><span>この物語は、</span><span>現実の地球につながっている。</span></h2>
+              <p data-opening-focus><span>実際に観測されたCO₂や気温などのオープンデータを、</span><span>光・色・動きへ翻訳しています。</span></p>
+              <em>OBSERVE → TRANSLATE → FEEL</em>
+            </div>
+          </section>
+
           <section class="gaia-vn-panel gaia-vn-panel-montage">
             <div class="gaia-vn-montage-dots"></div>
             <p class="gaia-vn-montage-label">SENSES / MEASURES / TRACES / CHOICES</p>
             <div class="gaia-vn-path-copy">
               <small>GAIA TRANSFORMATION / BEFORE THE NAME</small>
-              <h2 data-opening-focus>未来は、<span class="gaia-vn-word-keep">ひとつ</span>の視点には宿らない。</h2>
-              <p>感じ、測り、残し、選ぶ。その重なりから、まだ名のない未来が立ち上がる。</p>
+              <h2 data-opening-focus>未来は、ともに変わる。</h2>
+              <p><span>この星の息づかいを、</span><span>感じ、測り、つなぎ、ともに選ぶ。</span><span>やがて、地球は静かに姿を変えていく。</span></p>
             </div>
             <div class="gaia-vn-word-rails" aria-label="四つの声">
               <p><span>01</span><strong data-opening-focus>感じる。</strong><small>MIZU</small></p>
               <p><span>02</span><strong data-opening-focus>測る。</strong><small>AME</small></p>
-              <p><span>03</span><strong data-opening-focus>残す。</strong><small>SAKUYA</small></p>
+              <p><span>03</span><strong data-opening-focus>つなぐ。</strong><small>SAKUYA</small></p>
               <p><span>04</span><strong data-opening-focus>ともに選ぶ。</strong><small>YOU</small></p>
             </div>
           </section>
@@ -310,26 +320,15 @@
             <div class="gaia-vn-final-shade"></div>
             <div class="gaia-vn-final-copy">
               <p>GAIA SENSATION / INTERACTIVE SYSTEM</p>
-              <h1 class="gaia-vn-work-title" data-opening-focus>
-                <img
-                  class="gaia-vn-work-logo"
-                  src="./assets/brand/brand-logo-dark-surface-590.webp"
-                  srcset="./assets/brand/brand-logo-dark-surface-590.webp 1x, ./assets/brand/brand-logo-dark-surface-1180.webp 2x"
-                  width="2172"
-                  height="724"
-                  alt="惑星の放課後 — GAIA SENSATION"
-                  decoding="async"
-                  fetchpriority="high"
-                />
-              </h1>
+              <h1 class="gaia-vn-work-title" data-opening-focus>惑星の放課後 — GAIA SENSATION</h1>
               <div class="gaia-vn-final-choice">
                 <strong data-opening-focus>人間と地球は、どんな次の関係を選べるだろう。</strong>
                 <div class="gaia-opening-final-menu" id="gaia-opening-final-menu" role="group" aria-label="体験の入口" hidden>
                   <div class="gaia-opening-route-grid">
                     <button class="gaia-opening-route gaia-opening-route--story" id="gaia-opening-route-story" type="button">
-                      <small class="gaia-opening-route-guide"><i>じっくり遊ぶ</i> / MAIN STORY <em>RECOMMENDED</em></small>
+                      <small class="gaia-opening-route-guide"><i>物語から感じる</i> / STORY EXPERIENCE <em>RECOMMENDED</em></small>
                       <strong>物語を始める</strong>
-                      <span>ビジュアルノベルで物語をたどる</span>
+                      <span>MIZUたちと物語をたどりながら、<br />地球の変化を感じてみる。</span>
                       <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
                         <path d="M8 14c9-2.4 17-.2 24 5.8v32c-7-5.8-15-8.2-24-5.8Z" />
                         <path d="M56 14c-9-2.4-17-.2-24 5.8v32c7-5.8 15-8.2 24-5.8Z" />
@@ -337,9 +336,9 @@
                       </svg>
                     </button>
                     <button class="gaia-opening-route gaia-opening-route--other" id="gaia-opening-route-other" type="button">
-                      <small class="gaia-opening-route-guide"><i>さらっと遊ぶ</i> / FREE EXPLORATION</small>
-                      <strong>データを見てみる</strong>
-                      <span>気になるテーマから自由に見る</span>
+                      <small class="gaia-opening-route-guide"><i>データから触れる</i> / OPEN DATA EXPLORATION</small>
+                      <strong>データを探索する</strong>
+                      <span>実際の地球観測データから、<br />気になるテーマを自由に探索する。</span>
                       <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
                         <path d="m32 10 22 12-22 12L10 22Z" />
                         <path d="m13 32 19 10 19-10M13 42l19 10 19-10" />
@@ -348,7 +347,6 @@
                   </div>
                 </div>
               </div>
-              <span data-opening-focus>公開データという地球の信号に触れ、物語の続きを共創する。</span>
             </div>
           </section>
         </div>
@@ -421,7 +419,7 @@
         <div class="gaia-opening-hud" aria-hidden="true">
           <p><span>GS</span> LISTENING TO THE PLANET</p>
           <div class="gaia-opening-progress"><i></i></div>
-          <p class="gaia-opening-steps"><span>01</span><span>02</span><span>03</span><span>04</span><span>05</span></p>
+          <p class="gaia-opening-steps"><span>01</span><span>02</span><span>03</span><span>04</span><span>05</span><span>06</span></p>
         </div>
 
         <div class="gaia-vn-light-sweep" aria-hidden="true"></div>
@@ -1843,7 +1841,7 @@
             aria-label="物語を閉じてトップページへ戻る"
             title="トップページへ戻る"
             hidden
-          >トップへ戻る</button>
+          >戻る</button>
           <button
             class="novel-gallery-button"
             id="novel-gallery-button"

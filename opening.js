@@ -32,6 +32,12 @@
   let soundSetupConfirmed = false;
   let soundSetupSubmitting = false;
   let pendingSoundEnabled = true;
+  const editableCopySelector = "input, textarea, select, [contenteditable='true'], [contenteditable='plaintext-only']";
+  document.addEventListener("copy", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest(editableCopySelector)) return;
+    event.preventDefault();
+  }, true);
   const signalInitialViewReady = () => {
     if (window.__gaiaInitialViewReady === true) return;
     window.__gaiaInitialViewReady = true;
@@ -159,7 +165,7 @@
 
   const OPENING_TIME_SCALE = 1.275;
   const openingMs = (value) => Math.round(value * OPENING_TIME_SCALE);
-  const OPENING_DURATION = openingMs(14500);
+  const OPENING_DURATION = openingMs(17200);
   const EXIT_DURATION = Math.round(1080 * 0.85);
   const compactArtwork = (Number(navigator.deviceMemory) > 0 && Number(navigator.deviceMemory) <= 4)
     || (Number(navigator.hardwareConcurrency) > 0 && Number(navigator.hardwareConcurrency) <= 4);
@@ -205,13 +211,14 @@
     [5420, 680],
     [6070, 680],
     [8050, 700],
-    [8240, 520],
-    [8460, 520],
-    [8680, 520],
-    [8900, 520],
-    [10950, 650],
-    [11500, 750],
-    [12300, 850],
+    [8420, 650],
+    [10750, 700],
+    [10940, 520],
+    [11160, 520],
+    [11380, 520],
+    [11600, 520],
+    [13650, 650],
+    [14200, 750],
   ].map(([delay, duration]) => [openingMs(delay), openingMs(duration)]);
 
   const createOpeningParticles = (canvas) => {
