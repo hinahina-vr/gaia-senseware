@@ -16,12 +16,13 @@ const scans = [
   ["deterministic fallback segmenter", /fallbackDialogueSegments/u.test(runtime)],
   ["protected phrase set", ["そのもの", "ものづくり", "リアルタイム", "GAIA SENSEWARE"].every((value) => runtime.includes(value))],
   ["Japanese inflection suffixes remain atomic", /DIALOGUE_INFLECTION_SUFFIXES/u.test(runtime) && ["た", "て", "ば", "れ", "さ", "たり", "ます"].every((value) => runtime.includes(`\"${value}\"`))],
+  ["kanji stems keep kana continuations atomic across ICU versions", /DIALOGUE_KANJI_END\.test\(previous\) && \/\^\[ぁ-んァ-ヶー\]\//u.test(runtime)],
   ["token-boundary pagination", /tokenBoundaries\.has/u.test(runtime) && /largestSafePrefix/u.test(runtime)],
   ["page pair enumerates existing token boundaries", /const combinedTokens = segmentDialoguePhrases\(combined\)/u.test(runtime) && /splitIndex < combinedTokens\.length/u.test(runtime)],
   ["page pair preserves source exactly", /`\$\{before\}\$\{after\}` !== combined/u.test(runtime)],
   ["page pair keeps both pages bounded", /beforeMetrics\.fits \|\| !afterMetrics\.fits/u.test(runtime)],
-  ["sparse pages are avoided before boundary nicety", /a\.oneLinePageCount - b\.oneLinePageCount/u.test(runtime) && runtime.indexOf("a.oneLinePageCount - b.oneLinePageCount") < runtime.indexOf("a.sentencePenalty - b.sentencePenalty")],
-  ["safe prefixes prefer at least two rendered lines", runtime.includes("preferredMinimumLines") && runtime.includes("metrics.measuredLines.length >= preferredMinimumLines")],
+  ["semantic boundaries precede sparse-page balancing", runtime.indexOf("a.sentencePenalty - b.sentencePenalty") < runtime.indexOf("a.oneLinePageCount - b.oneLinePageCount")],
+  ["safe punctuation precedes dense token fallback", runtime.indexOf("fittingOffset(tokenBoundaryOffsets(safeOffsets))") < runtime.indexOf("fittingOffset(tokenBoundarySet, preferredMinimumLines)")],
   ["unsafe or sparse page boundaries are rebalanced", runtime.includes("const sparseAdjacentPage = previousMetrics.measuredLines.length < 2 || currentMetrics.measuredLines.length < 2") && runtime.includes("!sparseAdjacentPage && !unsafeBoundary")],
   ["unbounded phrase-boundary rebalance absent", !/phraseOffsets/u.test(runtime) && !/safeCandidates\.length \? safeCandidates : candidates/u.test(runtime)],
   ["same token layout for measure and render", runtime.includes("measureNativeLines = (text, preparedLayout = null)") && runtime.includes("replaceChildren(layout)")],
@@ -34,7 +35,7 @@ const scans = [
   ["source mirrors match", source === mirror],
   ["no escape hard breaks in changed prose", !source.includes("<br") && !source.includes("\\n")],
   ["forbidden verb absent", !/(?:置く|置いた|置いて|置か|置き|置け|置こう)/u.test(source)],
-  ["mobile UI cache keys", ["styles.css?v=gaia-cross-platform-fonts-1", "novel-mode.css?v=gaia-novacene-entry-1", "novel-mode.js?v=gaia-novacene-entry-1", "mode-exit.css?v=gaia-mobile-ui-audit-1"].every((asset) => html.includes(asset))],
+  ["mobile UI cache keys", ["styles.css?v=gaia-cross-platform-fonts-1", "novel-mode.css?v=gaia-novacene-entry-1", "novel-mode.js?v=gaia-dialogue-pagination-1", "mode-exit.css?v=gaia-mobile-header-controls-1"].every((asset) => html.includes(asset))],
 ];
 
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);
@@ -52,10 +53,16 @@ const paginationSafeBoundary = /[。！？!?、，,・：:；;\s][」』）】�
     boundary: "「温度、湿度、明るさ、気圧、空気中の粒子、音、振動。",
     next: "センサーを替えれば、もっといろいろ測れます。いくつか組み合わせて、その場所の環境をまとめて記録することもできます」",
   },
+  {
+    source: "知らない誰かの輪へ入るのが怖くて、それでも何かが変わるかもしれないと、海風の中で最初の一歩を踏み出した。",
+    boundary: "知らない誰かの輪へ入るのが怖くて、",
+    next: "それでも何かが変わるかもしれないと、海風の中で最初の一歩を踏み出した。",
+  },
 ].forEach(({ source: text, boundary, next }) => {
   assert(paginationSafeBoundary.test(boundary), "expected target boundary must satisfy the pagination safe-boundary predicate");
   assert.equal(`${boundary}${next}`, text, "target boundary must preserve source exactly");
   assert(!/^いろいろ/u.test(next), "もっといろいろ測れます must remain on one page");
+  assert(!boundary.endsWith("変") && !next.startsWith("わる"), "変わる must not be split across pages");
 });
 
 [

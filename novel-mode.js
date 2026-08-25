@@ -2099,6 +2099,7 @@
   ]);
   const DIALOGUE_OPENING = /^[「『（【［〈《〔“‘]/u;
   const DIALOGUE_CLOSING = /^[、。，．？！…」』）】］〉》〕ぁぃぅぇぉゃゅょっァィゥェォャュョッー]/u;
+  const DIALOGUE_KANJI_END = /[一-龠々〆ヵヶ]$/u;
   const DIALOGUE_PROTECTED = ["GAIA SENSEWARE", "リアルタイム", "ものづくり", "そのもの"];
 
   const fallbackDialogueSegments = (source) => {
@@ -2149,6 +2150,7 @@
       if (previous && !/^\s+$/u.test(previous) && (
         DIALOGUE_CLOSING.test(value)
         || DIALOGUE_PARTICLES.has(value)
+        || (DIALOGUE_KANJI_END.test(previous) && /^[ぁ-んァ-ヶー]/u.test(inflectionCore))
         || (DIALOGUE_INFLECTION_SUFFIXES.has(inflectionCore) && /[ぁ-んァ-ヶー一-龠々〆ヵヶ]$/u.test(previous))
       )) {
         tokens[tokens.length - 1] += token;
@@ -2470,9 +2472,9 @@
         boundaryDistance: Math.abs(boundaryOffset - originalBoundary),
       });
     }
-    candidates.sort((a, b) => a.oneLinePageCount - b.oneLinePageCount
+    candidates.sort((a, b) => a.sentencePenalty - b.sentencePenalty
       || a.unsafeBoundaryCount - b.unsafeBoundaryCount
-      || a.sentencePenalty - b.sentencePenalty
+      || a.oneLinePageCount - b.oneLinePageCount
       || a.lineBalance - b.lineBalance
       || a.boundaryDistance - b.boundaryDistance);
     return candidates.length ? [candidates[0].before, candidates[0].after] : [left, right];
@@ -2557,16 +2559,19 @@
       });
       const maximumMetrics = dialoguePageMetrics(glyphs.slice(0, maximum).join(""));
       const preferredMinimumLines = maximumMetrics.measuredLines.length >= 2 ? 2 : 1;
-      const fittingOffset = (offsets) => [...offsets]
+      const fittingOffset = (offsets, minimumLines = 1) => [...offsets]
         .filter((offset) => {
           if (offset <= 0 || offset > maximum) return false;
           const metrics = dialoguePageMetrics(glyphs.slice(0, offset).join(""));
-          return metrics.fits && metrics.measuredLines.length >= preferredMinimumLines;
+          return metrics.fits && metrics.measuredLines.length >= minimumLines;
         })
         .sort((left, right) => right - left)[0];
       const tokenBoundarySet = new Set(tokenOffsets);
       const tokenBoundaryOffsets = (offsets) => new Set([...offsets].filter((offset) => tokenBoundarySet.has(offset)));
-      return fittingOffset(tokenBoundaryOffsets(sentenceOffsets)) || fittingOffset(tokenBoundaryOffsets(safeOffsets)) || maximum;
+      return fittingOffset(tokenBoundaryOffsets(sentenceOffsets))
+        || fittingOffset(tokenBoundaryOffsets(safeOffsets))
+        || fittingOffset(tokenBoundarySet, preferredMinimumLines)
+        || maximum;
     };
 
     units.forEach((unit) => {

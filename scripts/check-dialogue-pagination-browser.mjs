@@ -163,6 +163,50 @@ try {
       id: step.id,
       pagination: globalThis.GaiaNovel.inspectDialoguePagination(step.text),
     })), textSteps);
+    let mobileBoundaryRegression = null;
+    if (viewport.name === "mobile-390") {
+      const regressionStep = textSteps.find((step) => step.id === "festival_concept_001");
+      assert(regressionStep, "missing festival_concept_001 pagination regression step");
+      await page.setViewportSize({ width: 280, height: 700 });
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      mobileBoundaryRegression = await page.evaluate((text) => {
+        const NativeSegmenter = Intl.Segmenter;
+        class FragmentingSegmenter {
+          constructor(...args) {
+            this.native = new NativeSegmenter(...args);
+          }
+
+          segment(source) {
+            const parts = [];
+            for (const part of this.native.segment(source)) {
+              if (part.segment === "変わる") {
+                parts.push({ ...part, segment: "変" });
+                parts.push({ ...part, segment: "わる", index: Number(part.index || 0) + 1 });
+              } else {
+                parts.push(part);
+              }
+            }
+            return parts;
+          }
+        }
+
+        Intl.Segmenter = FragmentingSegmenter;
+        try {
+          return globalThis.GaiaNovel.inspectDialoguePagination(text);
+        } finally {
+          Intl.Segmenter = NativeSegmenter;
+        }
+      }, regressionStep.text);
+      assert(mobileBoundaryRegression.tokens.some((token) => token.includes("変わる")), "ICU fragmentation split 変わる into separate page tokens");
+      mobileBoundaryRegression.pages.slice(0, -1).forEach((pageResult, pageIndex) => {
+        assert(safeBoundary.test(pageResult.text.trimEnd()), `mobile regression boundary ${pageIndex + 1} is not punctuation-safe: ${pageResult.text}`);
+      });
+      assert(!mobileBoundaryRegression.pages.some((pageResult, pageIndex) => (
+        pageIndex < mobileBoundaryRegression.pages.length - 1
+        && pageResult.text.endsWith("変")
+        && mobileBoundaryRegression.pages[pageIndex + 1].text.startsWith("わる")
+      )), "mobile regression split 変わる across pages");
+    }
     const byId = new Map(results.map((result) => [result.id, result.pagination]));
     const failures = textSteps.flatMap((step) => {
       const pagination = byId.get(step.id);
@@ -173,6 +217,7 @@ try {
       audited: results.length,
       multiPage: results.filter((result) => result.pagination.pages.length > 1).length,
       failures,
+      mobileBoundaryRegression,
     };
     await context.close();
   }
