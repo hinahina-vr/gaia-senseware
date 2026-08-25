@@ -2135,16 +2135,16 @@ body.gaia-opening-active .novel-layer {
   .gaia-vn-prologue-lockup p { max-width: none; margin: 16px 0 0; font-size: 12px; line-height: 1.85; }
 
   .gaia-vn-panel-character,
-  .gaia-vn-panel-sora {
+  .gaia-vn-panel-minamo {
     background:
       linear-gradient(180deg, rgba(3, 13, 25, 0.08), rgba(3, 13, 25, 0.42) 47%, rgba(3, 13, 25, 0.98) 73%),
-      url("./assets/visuals-08/opening-mizuha-keyvisual-v1.png") 29% center / cover no-repeat;
+      url("./assets/visuals-08/opening-mizuha-keyvisual-v1.png") 21% center / cover no-repeat;
   }
 
   .gaia-vn-panel-sora {
     background:
       linear-gradient(180deg, rgba(3, 13, 25, 0.08), rgba(3, 13, 25, 0.42) 47%, rgba(3, 13, 25, 0.98) 73%),
-      url("./assets/visuals-08/opening-amane-keyvisual-v1.png") 29% center / cover no-repeat;
+      url("./assets/visuals-08/opening-amane-keyvisual-v1.png") 16% center / cover no-repeat;
   }
 
   .gaia-vn-character-focus,
@@ -2161,11 +2161,19 @@ body.gaia-opening-active .novel-layer {
     right: 20px;
     bottom: 10%;
     left: 20px;
+    width: auto;
   }
 
   .gaia-vn-character-copy p { margin-bottom: 10px; }
   .gaia-vn-character-copy h2 { font-size: clamp(42px, 12vw, 58px); }
-  .gaia-vn-character-copy strong { margin-top: 12px; font-size: clamp(16px, 4.5vw, 21px); line-height: 1.65; }
+  .gaia-vn-character-copy strong {
+    width: 100%;
+    max-width: none;
+    margin-top: 12px;
+    font-size: clamp(16px, 4.5vw, 21px);
+    line-height: 1.65;
+    text-wrap: wrap;
+  }
   .gaia-vn-character-reply { font-size: 11px; }
 
   .gaia-vn-panel-montage {
@@ -3062,9 +3070,22 @@ body.gaia-opening-active .gaia-audio-dock {
   body.gaia-opening-active .gaia-opening-skip {
     top: max(12px, env(safe-area-inset-top));
     right: max(12px, env(safe-area-inset-right));
-    min-width: 112px;
-    min-height: 48px;
-    padding-inline: 16px;
+    gap: 6px;
+    min-width: 68px;
+    min-height: 34px;
+    padding-inline: 10px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  body.gaia-opening-active .gaia-opening-skip::after {
+    position: absolute;
+    inset: -6px;
+    content: "";
+  }
+
+  body.gaia-opening-active .gaia-opening-skip span:last-child {
+    font-size: 12px;
   }
 
   body.gaia-opening-active .gaia-audio-dock {
