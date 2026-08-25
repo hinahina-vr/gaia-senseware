@@ -3102,14 +3102,13 @@ body.gaia-opening-active .gaia-audio-dock {
   }
 }
 
-/* The persistent BGM control shares the main chrome with the compact mobile
-   action rail. Give each one a dedicated row, and keep the second row split
-   between audio (left) and status (right). */
+/* Keep the persistent BGM control in the mobile top-right corner. The expanded
+   strip grows leftward from the same fixed anchor. */
 @media (max-width: 720px) {
   body:not(.gaia-opening-active):not(.novel-open):not(.space-mode-open):not(.gx-open) .gaia-audio-dock {
-    top: max(68px, calc(env(safe-area-inset-top) + 56px));
-    right: auto;
-    left: max(20px, env(safe-area-inset-left));
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    left: auto;
   }
 
   /* The intro has no action rail; its copy owns the left half of the frame. */
