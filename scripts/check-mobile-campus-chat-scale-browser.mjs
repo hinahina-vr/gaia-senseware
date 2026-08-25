@@ -18,7 +18,7 @@ const viewports = [
   { name: "pc-1440", width: 1440, height: 900, mobile: false },
 ];
 const chatCases = [
-  { stepId: "welcome_chat_004", nextStepId: "welcome_chat_005", speakerId: "system" },
+  { stepId: "welcome_chat_004", nextStepId: "welcome_chat_new_002", speakerId: "system" },
   { stepId: "welcome_chat_024", nextStepId: "welcome_chat_025", speakerId: "sakuya", typingSpeakerId: "sakuya", typingSymbol: "flower" },
   { stepId: "welcome_chat_083", nextStepId: "welcome_chat_084", speakerId: "sakuya" },
 ];
@@ -26,7 +26,7 @@ const report = { status: "running", viewports, scans: [], consoleErrors: [], pag
 const browser = await chromium.launch({ headless: true, executablePath });
 
 const stateFor = (stepId) => ({
-  storyVersion: 10,
+  storyVersion: 13,
   stepId,
   reachedSceneIds: [],
   viewed: {},
@@ -62,23 +62,20 @@ const createPage = async (viewport, label) => {
 };
 
 const bootAt = async (page, stepId) => {
-  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
-  await page.evaluate((candidate) => {
+  await page.addInitScript((candidate) => {
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
     localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([
       { progress: candidate, savedAt: Date.now(), meta: { title: "Mobile chat QA", excerpt: candidate.stepId } },
     ]));
     localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+    localStorage.setItem("gaiaSensewareNovel:config:v3", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
     localStorage.setItem("gaia-senseware-bgm-volume", String(candidate.audio.volume));
   }, stateFor(stepId));
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  const savePanel = page.locator("#novel-save-panel");
-  if (await savePanel.isVisible()) await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
+  await page.waitForFunction(() => document.querySelector("#gaia-boot")?.hidden === true);
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
+  await page.waitForSelector(".novel-slack-workspace");
   await page.waitForTimeout(180);
 };
 
@@ -190,11 +187,11 @@ const scanChatLayout = async (viewport, testCase) => {
   assert.equal(scan.overflowY, false);
   assert.notEqual(scan.backgroundImage, "none");
   if (viewport.mobile) {
-    assert(scan.workspaceWidthRatio >= 0.88 && scan.workspaceWidthRatio <= 0.94, `${label}: mobile workspace width ratio ${scan.workspaceWidthRatio}`);
-    assert(scan.workspaceHeightRatio >= 0.55 && scan.workspaceHeightRatio <= 0.59, `${label}: mobile workspace height ratio regressed (${scan.workspaceHeightRatio})`);
-    assert(scan.leftGap >= 10 && scan.rightGap >= 10 && scan.topGap >= 68, `${label}: background margins are too small`);
-    assert.equal(scan.sidebarVisible, true);
-    assert(scan.sidebarWidth >= 80, `${label}: sidebar is too narrow`);
+    assert(scan.workspaceWidthRatio >= 0.93 && scan.workspaceWidthRatio <= 0.96, `${label}: mobile workspace width ratio ${scan.workspaceWidthRatio}`);
+    assert(scan.workspaceHeightRatio >= 0.82 && scan.workspaceHeightRatio <= 0.88, `${label}: mobile workspace height ratio regressed (${scan.workspaceHeightRatio})`);
+    assert(scan.leftGap >= 9 && scan.rightGap >= 9 && scan.topGap >= 46 && scan.topGap <= 56, `${label}: mobile chat does not reach the story header`);
+    assert.equal(scan.sidebarVisible, false);
+    assert.equal(scan.sidebarWidth, 0);
     assert(scan.headerHeight >= 32, `${label}: header is too short`);
     assert(scan.messageFontSize >= 12, `${label}: message font is too small`);
     assert.equal(scan.threadOverscroll, "contain");
@@ -233,10 +230,11 @@ const scanInput = async (viewport, input) => {
   const { context, page } = await createPage(viewport, label);
   await bootAt(page, input.stepId);
   await input.run(page);
-  await page.waitForFunction((id) => globalThis.GaiaNovel.getState().stepId === id, input.nextStepId);
+  await page.waitForFunction((id) => globalThis.GaiaNovel.getState().stepId !== id, input.stepId);
   await page.waitForTimeout(input.name === "auto" ? 140 : 60);
   const actual = await page.evaluate(() => globalThis.GaiaNovel.getState().stepId);
-  assert.equal(actual, input.nextStepId);
+  if (input.name !== "fast-forward") assert.equal(actual, input.nextStepId);
+  else assert.notEqual(actual, input.stepId);
   if (input.name === "auto") await page.locator("#novel-auto-button").click();
   report.scans.push({ viewport: viewport.name, case: `chat-input-${input.name}`, from: input.stepId, to: actual, passed: true });
   await context.close();

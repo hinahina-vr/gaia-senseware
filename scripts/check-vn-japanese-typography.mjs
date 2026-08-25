@@ -35,7 +35,7 @@ const scans = [
   ["source mirrors match", source === mirror],
   ["no escape hard breaks in changed prose", !source.includes("<br") && !source.includes("\\n")],
   ["forbidden verb absent", !/(?:置く|置いた|置いて|置か|置き|置け|置こう)/u.test(source)],
-  ["mobile UI cache keys", ["styles.css?v=gaia-cross-platform-fonts-1", "novel-mode.css?v=gaia-novacene-entry-1", "novel-mode.js?v=gaia-dialogue-pagination-1", "mode-exit.css?v=gaia-mobile-header-controls-1"].every((asset) => html.includes(asset))],
+  ["mobile UI cache keys", ["styles.css?v=gaia-cross-platform-fonts-1", "novel-mode.css?v=gaia-mobile-chat-panel-1", "novel-mode.js?v=gaia-dialogue-pagination-1", "mode-exit.css?v=gaia-mobile-header-controls-1"].every((asset) => html.includes(asset))],
 ];
 
 const failures = scans.filter(([, pass]) => !pass).map(([name]) => name);
