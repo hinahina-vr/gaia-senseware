@@ -14,7 +14,9 @@ const legacyArguments = rawArguments[0] && !rawArguments[0].startsWith("--") ? r
 const executablePath = option("--browser") || process.env.GAIA_BROWSER_PATH || legacyArguments[1];
 const outputArgument = option("--output") || legacyArguments[2];
 const baseUrlArgument = option("--base-url") || legacyArguments[3];
+const minimumFrameRate = Number(option("--min-fps") || 55);
 if (!executablePath) throw new Error("A real Google Chrome executable is required via --browser or GAIA_BROWSER_PATH");
+if (!Number.isFinite(minimumFrameRate) || minimumFrameRate <= 0 || minimumFrameRate > 240) throw new Error("--min-fps must be between 0 and 240");
 const outputDir = path.resolve(outputArgument || "artifacts/contest-experience-browser");
 fs.mkdirSync(outputDir, { recursive: true });
 const report = { status: "running", performance: null, layouts: [], entry: {}, tour: {}, resilience: {}, consoleErrors: [], pageErrors: [], unhandledRejections: [], responses404: [] };
@@ -510,8 +512,8 @@ try {
   }));
   const sortedFrameTimes = [...frameTimes].sort((left, right) => left - right);
   const medianFrameMs = sortedFrameTimes[Math.floor(sortedFrameTimes.length / 2)];
-  report.resilience.lod = { deterministic: lodResult, medianFps: 1000 / medianFrameMs, activeLevel: await lifecyclePage.evaluate(() => document.documentElement.dataset.gaiaLod) };
-  assert(report.resilience.lod.medianFps >= 55, `median frame rate ${report.resilience.lod.medianFps.toFixed(1)}fps`);
+  report.resilience.lod = { deterministic: lodResult, medianFps: 1000 / medianFrameMs, minimumFrameRate, activeLevel: await lifecyclePage.evaluate(() => document.documentElement.dataset.gaiaLod) };
+  assert(report.resilience.lod.medianFps >= minimumFrameRate, `median frame rate ${report.resilience.lod.medianFps.toFixed(1)}fps below ${minimumFrameRate}fps floor`);
   assert.notEqual(report.resilience.lod.activeLevel, "static", "normal Chrome must not fall back to static rendering");
   await lifecycleContext.close();
 
