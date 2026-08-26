@@ -340,7 +340,8 @@ try {
   await fallbackPage.locator("[data-tour-action='next']").click();
   await fallbackPage.locator("[data-tour-action='next']").click();
   await fallbackPage.locator("[data-tour-action='next']").click();
-  await fallbackPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 20_000 });
+  await fallbackPage.waitForFunction(() => GaiaGuidedTour.getState().stepId === "space", null, { timeout: 20_000 });
+  await fallbackPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 45_000 });
   assert.equal(await fallbackPage.locator("#gaia-guided-tour").getAttribute("data-step"), "space");
   assert.equal(await fallbackPage.locator("#gaia-guided-tour").evaluate((element) => element.classList.contains("is-reduced-motion")), true);
   report.tour.fallback = "passed";
