@@ -275,8 +275,7 @@ try {
   assert(mobileTourLayout.copyFont >= 14 && mobileTourLayout.instructionFont >= 14, "tour important copy below 14px");
   assert(mobileTourLayout.controls.every((height) => height >= 44), "tour control below 44px");
   await tourPage.locator("[data-tour-action='toggle']").click();
-  await tourPage.waitForTimeout(350);
-  assert((await tourPage.evaluate(() => GaiaGuidedTour.getState().elapsed)) > 0);
+  await tourPage.waitForFunction(() => GaiaGuidedTour.getState().elapsed > 0, null, { timeout: 10_000 });
   await tourPage.evaluate(() => document.querySelector(".gaia-tour-highlight-target")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), true, "exhibit interaction must not pause autoplay");
   const visibleElapsed = await tourPage.evaluate(() => {
