@@ -367,10 +367,10 @@ try {
   await fallbackPage.route(/space-signals\.json/u, (route) => route.abort());
   await fallbackPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await fallbackPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
-  await fallbackPage.locator("[data-tour-action='next']").click();
-  await fallbackPage.locator("[data-tour-action='next']").click();
-  await fallbackPage.locator("[data-tour-action='next']").click();
-  await fallbackPage.locator("[data-tour-action='next']").click();
+  for (let targetIndex = 1; targetIndex <= 4; targetIndex += 1) {
+    await fallbackPage.locator("[data-tour-action='next']").evaluate((button) => button.click());
+    await fallbackPage.waitForFunction((expectedIndex) => GaiaGuidedTour.getState().index === expectedIndex, targetIndex, { timeout: 20_000 });
+  }
   await fallbackPage.waitForFunction(() => GaiaGuidedTour.getState().stepId === "space", null, { timeout: 20_000 });
   await fallbackPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 45_000 });
   assert.equal(await fallbackPage.locator("#gaia-guided-tour").getAttribute("data-step"), "space");
@@ -390,9 +390,14 @@ try {
   });
   await webglPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await webglPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
-  await webglPage.locator("[data-tour-action='next']").click();
+  await webglPage.locator("[data-tour-action='next']").evaluate((button) => button.click());
+  await webglPage.waitForFunction(() => GaiaGuidedTour.getState().index === 1, null, { timeout: 20_000 });
   await webglPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 20_000 });
-  for (let position = 0; position < 6; position += 1) await webglPage.locator("[data-tour-action='next']").click();
+  for (let targetIndex = 2; targetIndex <= 6; targetIndex += 1) {
+    await webglPage.locator("[data-tour-action='next']").evaluate((button) => button.click());
+    await webglPage.waitForFunction((expectedIndex) => GaiaGuidedTour.getState().index === expectedIndex, targetIndex, { timeout: 20_000 });
+  }
+  await webglPage.locator("[data-tour-action='next']").evaluate((button) => button.click());
   assert.equal(await webglPage.locator("[data-tour-finish]").isVisible(), true, "WebGL fallback must reach finish");
   assert.equal(await webglPage.locator("[data-tour-finish] [data-tour-destination='source']").isEnabled(), true);
   report.resilience.webglFallback = "passed";
