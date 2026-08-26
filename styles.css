@@ -6873,7 +6873,7 @@ h1 {
   }
 }
 
-/* Keep the complete 01–10 bank visible on narrow Chrome viewports. */
+/* Keep the complete 01–12 bank visible on narrow Chrome viewports. */
 @media (max-width: 620px) {
   .map-scope-switch {
     right: auto;

@@ -4,39 +4,60 @@
 
   const steps = Object.freeze([
     {
-      id: "concept", duration: 5, kicker: "01 / CONCEPT", title: "地球の変化を、感覚へ。",
-      copy: "公開データとして保存された地球の変化を、光・色・動き・音へ翻訳するインタラクティブ展示です。",
-      instruction: "このガイドは実際の展示を使い、60秒で自動進行します。",
+      id: "concept", duration: 6, kicker: "01 / START", title: "まず、展示を選ぶ。",
+      copy: "GAIA SENSEWAREは、地球観測データを光・色・動き・音へ変えるインタラクティブ展示です。ガイド中も実物を操作できます。",
+      instruction: "黄色く囲まれた「世界を読む」を押すと、世界地図の展示へ入ります。",
+      hint: "タッチ／クリック　・　キーボードは Tab → Enter",
+      result: "ガイド中は自動で画面を開くので、触らずに見続けても進みます。",
+      cue: "ここから展示へ",
     },
     {
       id: "map", duration: 10, kicker: "02 / BREATHING EARTH", title: "数字を、一枚の地球へ。",
       copy: "『地球の一呼吸』では、CO₂濃度と気温偏差を同じ時間軸で確認できます。",
-      instruction: "地図へ触れるか、Tabキーで地図を選んで観測地点を確かめてください。",
+      instruction: "地図をドラッグして移動し、ホイール／ピンチで拡大。地点を押すと観測値を読めます。",
+      hint: "ドラッグ＝移動　・　ホイール／ピンチ＝拡大　・　地点を押す＝詳細",
+      result: "点がない場所は、値がゼロではなく『この標本では未観測』です。",
+      cue: "地図を動かす・地点を押す",
     },
     {
-      id: "time", duration: 12, kicker: "03 / TIME & PLACE", title: "年代を動かして、変化を読む。",
+      id: "time", duration: 10, kicker: "03 / TIME & PLACE", title: "年代を動かして、変化を読む。",
       copy: "1958年から現在、そして仮定を含む将来まで、表示区分を分けてたどります。",
-      instruction: "強調された年代スライダーをドラッグするか、矢印キーで動かせます。",
+      instruction: "黄色く囲まれた水色のつまみを左右へ動かし、年代と地図の変化を比べます。",
+      hint: "ドラッグ／スワイプ　・　キーボードは ← →",
+      result: "ラベルが SOURCE・DERIVED・SCENARIO のどれかも同時に確認できます。",
+      cue: "このつまみを左右へ",
     },
     {
-      id: "transform", duration: 11, kicker: "04 / RAW → VISUAL", title: "元データから、光になるまで。",
+      id: "transform", duration: 10, kicker: "04 / RAW → VISUAL", title: "元データから、光になるまで。",
       copy: "RAW、計算・補間、画面表現を同じパネルで切り替え、どこからが作品の変換かを示します。",
-      instruction: "RAW／変換／VISUALのタブは、クリックとキーボードの両方で操作できます。",
+      instruction: "RAW → 変換 → VISUALの順にタブを押すと、元の数字と画面表現の関係を追えます。",
+      hint: "タブをクリック　・　キーボードは Tab → Enter／Space",
+      result: "ガイドでは三つのタブを自動で切り替えます。気になる所で一時停止できます。",
+      cue: "RAW・変換・VISUALを切替",
     },
     {
       id: "space", duration: 10, kicker: "05 / SOLAR FLARE", title: "観測窓を、宇宙へ広げる。",
       copy: "NASAの保存済み記録を読み、太陽フレアの等級と時刻を光の大きさや波へ変換します。",
-      instruction: "『この記録を再生』を押すと、選択中の公開記録が光として再生されます。",
+      instruction: "黄色く囲まれた『この記録を再生』を押すと、選択中の記録が光と波で再生されます。",
+      hint: "クリック／タップ　・　キーボードは Enter／Space",
+      result: "光の大きさは観測記録から計算し、あなたの操作はSCENARIOとして分けます。",
+      cue: "この記録を再生",
     },
     {
       id: "story", duration: 8, kicker: "06 / STORY", title: "物語から、データへ戻れる。",
-      copy: "登場人物が見つけた九つの観測記録は、物語の寄り道ではなく、同じ公開データ展示への入口です。",
-      instruction: "「海も、空も、生命も。互いに変え合って、今の地球になりましたの。」— ミズハ",
+      copy: "物語の中で登場人物が触れる八つの観測記録は、自由探索と同じデータ展示へつながっています。",
+      instruction: "『物語へ戻る』を押すとタイトルメニューへ戻り、最初から物語を始められます。",
+      hint: "展示から戻るときも、画面上部の『戻る』を使います",
+      result: "ストーリーの進行状況は、ガイドを見ても変更されません。",
+      cue: "ここから物語へ戻る",
     },
     {
-      id: "proof", duration: 4, kicker: "07 / HOW IT IS MADE", title: "根拠まで、作品の一部に。",
+      id: "proof", duration: 6, kicker: "07 / SOURCES", title: "出典まで、いつでも確認。",
       copy: "HTML・CSS・JavaScriptとブラウザ標準APIで制作し、外部ランタイム描画ライブラリを使っていません。",
-      instruction: "○ 公開記録　△ 計算・補間　◇ 仮定・操作を、展示内で区別しています。",
+      instruction: "黄色く囲まれた出典欄で、データ提供元・取得日・加工方法を確認できます。",
+      hint: "SOURCE＝公開記録　・　DERIVED＝計算　・　SCENARIO＝仮定／操作",
+      result: "分からない専門情報は『出典と変換を見る』を開いたときだけ表示します。",
+      cue: "出典と利用条件を見る",
     },
   ]);
   const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
@@ -50,23 +71,31 @@
   layer.setAttribute("aria-labelledby", "gaia-tour-title");
   layer.innerHTML = `
     <div class="gaia-tour-vignette" aria-hidden="true"></div>
-    <article class="gaia-tour-card">
+    <div class="gaia-tour-target-spotlight" data-tour-target-spotlight hidden aria-hidden="true"></div>
+    <article class="gaia-tour-card" aria-live="polite">
       <div class="gaia-tour-card-index"><span data-tour-step>01</span><i></i><span>07</span></div>
       <p class="gaia-tour-kicker" data-tour-kicker></p>
       <h2 id="gaia-tour-title" data-tour-title></h2>
+      <section class="gaia-tour-instruction" aria-label="この画面の操作方法">
+        <span class="gaia-tour-action-number" data-tour-action-number>1</span>
+        <div><b>いま操作する</b><strong data-tour-instruction></strong><small data-tour-hint></small></div>
+      </section>
       <p class="gaia-tour-copy" data-tour-copy></p>
-      <p class="gaia-tour-instruction" data-tour-instruction></p>
-      <article class="gaia-tour-receipt" data-tour-receipt hidden aria-label="データから表現への変換レシート">
+      <p class="gaia-tour-result" data-tour-result></p>
+      <details class="gaia-tour-receipt" data-tour-receipt hidden aria-label="データから表現への変換レシート">
+        <summary>出典と変換を見る</summary>
         <p><span>○ SOURCE / 公開記録</span><strong data-tour-receipt-source></strong><small data-tour-receipt-provider></small></p>
         <p><span>△ DERIVED / 計算・補間</span><strong data-tour-receipt-transform></strong></p>
         <p><span>◇ SCENARIO / 仮定・操作</span><strong data-tour-receipt-visual></strong></p>
-      </article>
+      </details>
       <p class="gaia-tour-fallback" data-tour-fallback hidden>表示を読み込めなかったため、同じ構成の静的な説明で続けています。</p>
+      <div class="gaia-tour-step-rail" data-tour-step-rail aria-label="ガイドの進行"></div>
     </article>
+    <div class="gaia-tour-target-cue" data-tour-target-cue hidden aria-hidden="true"><i>↘</i><span></span></div>
     <section class="gaia-tour-finish" data-tour-finish hidden aria-labelledby="gaia-tour-finish-title">
       <p>60 SECOND TOUR / COMPLETE</p><h2 id="gaia-tour-finish-title">ここから、あなたの観測へ。</h2>
       <p class="gaia-tour-finish-recommend"><span>まず見る3つ</span><strong>地球の一呼吸</strong><strong>世界地図</strong><strong>太陽の閃光</strong></p>
-      <div><button type="button" data-tour-destination="explore">13展示を探索</button><button type="button" data-tour-destination="story">物語を始める</button><a href="./sensors/">センサーを見る</a><button type="button" data-tour-destination="source">出典を見る</button></div>
+      <div><button type="button" data-tour-destination="explore">12展示を探索</button><button type="button" data-tour-destination="story">物語を始める</button><a href="./sensors/">センサーを見る</a><button type="button" data-tour-destination="source">出典を見る</button></div>
     </section>
     <nav class="gaia-tour-controls" aria-label="60秒ガイドの操作">
       <button type="button" data-tour-action="exit">終了</button><button type="button" data-tour-action="previous" aria-label="前の案内">←</button>
@@ -82,6 +111,14 @@
   const fallback = find("[data-tour-fallback]");
   const receipt = find("[data-tour-receipt]");
   const toggle = find("[data-tour-action='toggle']");
+  const targetCue = find("[data-tour-target-cue]");
+  const targetSpotlight = find("[data-tour-target-spotlight]");
+  const stepRail = find("[data-tour-step-rail]");
+  stepRail.replaceChildren(...steps.map((step, stepIndex) => {
+    const marker = document.createElement("i");
+    marker.title = `${stepIndex + 1}. ${step.title}`;
+    return marker;
+  }));
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let active = false;
   let running = false;
@@ -93,6 +130,7 @@
   let returnFocus = null;
   let returnScroll = { x: 0, y: 0 };
   let runningBeforeHidden = false;
+  let targetCueFrame = 0;
   const stepTimers = new Set();
 
   const staticReceipts = Object.freeze({
@@ -147,6 +185,70 @@
   const clearTargets = () => {
     globalThis.GaiaMapObservationAdapter?.clearFocus?.();
     globalThis.GaiaSpaceTourAdapter?.clearFocus?.();
+    cancelAnimationFrame(targetCueFrame);
+    targetCueFrame = 0;
+    targetCue.hidden = true;
+    targetSpotlight.hidden = true;
+  };
+  const positionTargetCue = () => {
+    targetCueFrame = 0;
+    if (!active || !finishPanel.hidden) { targetCue.hidden = true; targetSpotlight.hidden = true; return; }
+    const target = document.querySelector(".gaia-tour-highlight-target");
+    const step = steps[index];
+    if (!(target instanceof Element) || !step?.cue || target.getClientRects().length === 0) {
+      targetCue.hidden = true;
+      targetSpotlight.hidden = true;
+      return;
+    }
+    const bounds = target.getBoundingClientRect();
+    const viewportInset = 6;
+    const spotlightLeft = Math.max(viewportInset, bounds.left - 6);
+    const spotlightTop = Math.max(viewportInset, bounds.top - 6);
+    const spotlightRight = Math.min(innerWidth - viewportInset, bounds.right + 6);
+    const spotlightBottom = Math.min(innerHeight - viewportInset, bounds.bottom + 6);
+    targetSpotlight.hidden = false;
+    targetSpotlight.style.left = `${Math.round(spotlightLeft)}px`;
+    targetSpotlight.style.top = `${Math.round(spotlightTop)}px`;
+    targetSpotlight.style.width = `${Math.round(Math.max(0, spotlightRight - spotlightLeft))}px`;
+    targetSpotlight.style.height = `${Math.round(Math.max(0, spotlightBottom - spotlightTop))}px`;
+    targetSpotlight.style.borderRadius = getComputedStyle(target).borderRadius || "12px";
+    targetCue.querySelector("span").textContent = step.cue;
+    targetCue.hidden = false;
+    const cueBounds = targetCue.getBoundingClientRect();
+    const wideTarget = bounds.width > innerWidth * 0.55 || bounds.height > innerHeight * 0.45;
+    const preferredLeft = wideTarget ? bounds.left + 16 : bounds.left;
+    let left = Math.max(10, Math.min(innerWidth - cueBounds.width - 10, preferredLeft));
+    const above = bounds.top - cueBounds.height - 13;
+    const below = bounds.bottom + 13;
+    let top = wideTarget
+      ? Math.max(10, Math.min(innerHeight - cueBounds.height - 10, bounds.top + 16))
+      : above >= 10 ? above : Math.min(innerHeight - cueBounds.height - 10, below);
+    const cardBounds = card.getBoundingClientRect();
+    const overlapsCard = () => left < cardBounds.right + 8
+      && left + cueBounds.width > cardBounds.left - 8
+      && top < cardBounds.bottom + 8
+      && top + cueBounds.height > cardBounds.top - 8;
+    if (overlapsCard()) {
+      const candidates = [
+        { left, top: cardBounds.bottom + 12 },
+        { left, top: cardBounds.top - cueBounds.height - 12 },
+        { left: cardBounds.left - cueBounds.width - 12, top },
+      ];
+      const safe = candidates.find((candidate) => candidate.left >= 10
+        && candidate.top >= 10
+        && candidate.left + cueBounds.width <= innerWidth - 10
+        && candidate.top + cueBounds.height <= innerHeight - 76);
+      if (safe) ({ left, top } = safe);
+    }
+    targetCue.style.left = `${Math.round(left)}px`;
+    targetCue.style.top = `${Math.round(top)}px`;
+    targetCue.classList.toggle("is-inside", wideTarget);
+  };
+  const scheduleTargetCue = () => {
+    cancelAnimationFrame(targetCueFrame);
+    targetCueFrame = requestAnimationFrame(() => {
+      targetCueFrame = requestAnimationFrame(positionTargetCue);
+    });
   };
   const renderReceipt = (value) => {
     if (!value) { receipt.hidden = true; return; }
@@ -154,6 +256,7 @@
     find("[data-tour-receipt-provider]").textContent = value.provider || "保存済み公開データ";
     find("[data-tour-receipt-transform]").textContent = value.transform || "表示用の尺度へ変換";
     find("[data-tour-receipt-visual]").textContent = value.visual || "色・光・動きへ反映";
+    receipt.open = false;
     receipt.hidden = false;
   };
   const useStaticFallback = (step) => {
@@ -175,6 +278,7 @@
       if (step.id === "concept") {
         closeSpace();
         mapAdapter.showIntro();
+        mapAdapter.focusControl?.("start");
       } else if (step.id === "map") {
         closeSpace();
         mapAdapter.selectMode(0);
@@ -200,8 +304,8 @@
         if (!active || currentGeneration !== generation) return;
         mapAdapter.openSourceTab?.("raw");
         renderReceipt(mapAdapter.getTourReceipt?.() || staticReceipts.transform);
-        scheduleStepTask(() => mapAdapter.openSourceTab?.("transform"), 3600, currentGeneration);
-        scheduleStepTask(() => mapAdapter.openSourceTab?.("visual"), 7600, currentGeneration);
+        scheduleStepTask(() => { mapAdapter.openSourceTab?.("transform"); scheduleTargetCue(); }, 3200, currentGeneration);
+        scheduleStepTask(() => { mapAdapter.openSourceTab?.("visual"); scheduleTargetCue(); }, 6600, currentGeneration);
       } else if (step.id === "space") {
         mapAdapter.closeSource?.();
         mapAdapter.closeMap();
@@ -215,12 +319,21 @@
         scheduleStepTask(() => {
           try { renderReceipt(spaceAdapter.launch?.() || staticReceipts.space); } catch { useStaticFallback(step); }
         }, 2600, currentGeneration);
-      } else {
+      } else if (step.id === "story") {
         closeSpace();
         mapAdapter.showIntro();
+        mapAdapter.focusControl?.("story");
+      } else if (step.id === "proof") {
+        closeSpace();
+        mapAdapter.showIntro();
+        mapAdapter.focusControl?.("credits");
       }
+      scheduleTargetCue();
     } catch {
-      if (active && currentGeneration === generation) useStaticFallback(step);
+      if (active && currentGeneration === generation) {
+        useStaticFallback(step);
+        scheduleTargetCue();
+      }
     }
   };
 
@@ -244,6 +357,14 @@
     find("[data-tour-title]").textContent = step.title;
     find("[data-tour-copy]").textContent = step.copy;
     find("[data-tour-instruction]").textContent = step.instruction;
+    find("[data-tour-hint]").textContent = step.hint;
+    find("[data-tour-result]").textContent = step.result;
+    find("[data-tour-action-number]").textContent = String(index + 1);
+    Array.from(stepRail.children).forEach((marker, markerIndex) => {
+      marker.dataset.state = markerIndex < index ? "complete" : markerIndex === index ? "current" : "pending";
+    });
+    card.classList.remove("is-entering");
+    requestAnimationFrame(() => card.classList.add("is-entering"));
     updateClock();
     void applyStep(step, generation);
   };
@@ -343,6 +464,8 @@
     else if (runningBeforeHidden) { running = true; lastFrame = performance.now(); runningBeforeHidden = false; }
     syncToggle();
   });
+  window.addEventListener("resize", scheduleTargetCue, { passive: true });
+  window.addEventListener("scroll", scheduleTargetCue, { passive: true, capture: true });
   document.addEventListener("keydown", (event) => {
     if (!active) return;
     if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); exit(); return; }

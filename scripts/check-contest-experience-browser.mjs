@@ -239,11 +239,24 @@ try {
   await directPage.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter), null, { timeout: 30_000 });
   assert.equal(await directPage.locator("#japan-layer").count(), 1, "history/reload must not duplicate the exploration UI");
   await directPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 4, null, { timeout: 15_000 });
-  for (const number of ["10", "11", "12", "13"]) {
+  const standardExhibitNumbers = await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").allTextContents();
+  assert.deepEqual(standardExhibitNumbers.map((value) => value.trim()), ["01", "02", "03", "04", "05", "06", "07", "08"]);
+  assert.equal(await directPage.getByText(/ミツバチ/u).count(), 0, "retired bee exhibit remains visible");
+  const bankScreenshot = path.join(outputDir, "map-bank-without-bee.png");
+  await directPage.screenshot({ path: bankScreenshot, fullPage: false });
+  report.entry.mapBankScreenshot = bankScreenshot;
+  const liveExhibitTitles = new Map([
+    ["09", "風脈"],
+    ["10", "炭素の呼吸"],
+    ["11", "雨の記憶"],
+    ["12", "大気の痕跡"],
+  ]);
+  for (const [number, title] of liveExhibitTitles) {
     await directPage.locator(`#japan-mode-list [data-live-exhibit]`, { hasText: number }).click();
     assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), true, `${number}: live exhibit canvas hidden`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-readout").isVisible(), true, `${number}: live exhibit readout hidden`);
     assert.equal(await directPage.locator("#japan-mode-number").textContent(), number, `${number}: bank heading mismatch`);
+    assert.equal(await directPage.locator("#japan-title").textContent(), title, `${number}: main heading mismatch`);
   }
   const liveCanvas = await directPage.evaluate(() => {
     const canvas = document.querySelector("#gaia-live-exhibit-canvas");
@@ -270,6 +283,11 @@ try {
   });
   await tourPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await tourPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
+  await tourPage.waitForFunction(() => {
+    const spotlight = document.querySelector(".gaia-tour-target-spotlight");
+    const cue = document.querySelector(".gaia-tour-target-cue");
+    return spotlight && cue && !spotlight.hidden && !cue.hidden && document.querySelector(".gaia-tour-highlight-target");
+  }, null, { timeout: 30_000 });
   const initialTour = await tourPage.evaluate(() => ({ state: GaiaGuidedTour.getState(), hash: location.hash, modalHidden: document.querySelector("#gaia-opening")?.hidden }));
   assert.equal(initialTour.state.totalDuration, 60);
   assert.equal(await tourPage.locator(".gaia-tour-card-index span").last().textContent(), "07");
@@ -285,15 +303,71 @@ try {
   await tourPage.locator("[data-tour-action='next']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().index), pausedTourIndex + 1);
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), false, "manual navigation pauses the tour");
+  await tourPage.waitForFunction(() => {
+    const spotlight = document.querySelector(".gaia-tour-target-spotlight");
+    const target = document.querySelector(".gaia-tour-highlight-target");
+    return spotlight && !spotlight.hidden && target && target.getClientRects().length > 0;
+  }, null, { timeout: 30_000 });
   const mobileTourLayout = await tourPage.evaluate(() => {
     const card = document.querySelector(".gaia-tour-card");
     const copy = document.querySelector(".gaia-tour-copy");
     const instruction = document.querySelector(".gaia-tour-instruction");
+    const instructionText = document.querySelector("[data-tour-instruction]");
+    const hint = document.querySelector("[data-tour-hint]");
+    const result = document.querySelector("[data-tour-result]");
+    const actionNumber = document.querySelector("[data-tour-action-number]");
+    const receipt = document.querySelector("[data-tour-receipt]");
+    const spotlight = document.querySelector(".gaia-tour-target-spotlight");
+    const target = document.querySelector(".gaia-tour-highlight-target");
+    const cue = document.querySelector(".gaia-tour-target-cue");
+    const rail = Array.from(document.querySelectorAll(".gaia-tour-step-rail i"));
+    const spotlightRect = spotlight.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const viewportInset = 6;
+    const expectedSpotlight = {
+      left: Math.max(viewportInset, targetRect.left - 6),
+      top: Math.max(viewportInset, targetRect.top - 6),
+      right: Math.min(innerWidth - viewportInset, targetRect.right + 6),
+      bottom: Math.min(innerHeight - viewportInset, targetRect.bottom + 6),
+    };
+    const style = getComputedStyle(card);
     const controls = Array.from(document.querySelectorAll(".gaia-tour-controls button")).map((element) => element.getBoundingClientRect().height);
-    return { cardHeight: card.getBoundingClientRect().height, maxHeight: innerHeight * 0.35, copyFont: Number.parseFloat(getComputedStyle(copy).fontSize), instructionFont: Number.parseFloat(getComputedStyle(instruction).fontSize), controls };
+    return {
+      cardHeight: card.getBoundingClientRect().height,
+      maxHeight: innerHeight * 0.35,
+      copyFont: Number.parseFloat(getComputedStyle(copy).fontSize),
+      instructionFont: Number.parseFloat(getComputedStyle(instruction).fontSize),
+      instructionText: instructionText.textContent.trim(),
+      hint: hint.textContent.trim(),
+      result: result.textContent.trim(),
+      actionNumber: actionNumber.textContent.trim(),
+      receiptOpen: receipt.open,
+      railCount: rail.length,
+      currentRailCount: rail.filter((element) => element.dataset.state === "current").length,
+      cueText: cue.textContent.trim(),
+      cueVisible: !cue.hidden,
+      spotlightVisible: !spotlight.hidden,
+      spotlightDelta: {
+        left: Math.abs(spotlightRect.left - expectedSpotlight.left),
+        top: Math.abs(spotlightRect.top - expectedSpotlight.top),
+        width: Math.abs(spotlightRect.width - (expectedSpotlight.right - expectedSpotlight.left)),
+        height: Math.abs(spotlightRect.height - (expectedSpotlight.bottom - expectedSpotlight.top)),
+      },
+      borderWidth: Number.parseFloat(style.borderTopWidth),
+      controls,
+    };
   });
   assert(mobileTourLayout.cardHeight <= mobileTourLayout.maxHeight + 2, `tour card ${mobileTourLayout.cardHeight}px exceeds 35dvh`);
   assert(mobileTourLayout.copyFont >= 14 && mobileTourLayout.instructionFont >= 14, "tour important copy below 14px");
+  assert(mobileTourLayout.instructionText.includes("ドラッグ") && mobileTourLayout.instructionText.includes("拡大"), "tour does not explain the map operation");
+  assert(mobileTourLayout.hint.includes("ピンチ") && mobileTourLayout.result.length >= 12, "tour lacks input hints or expected result");
+  assert.equal(mobileTourLayout.actionNumber, "2", "tour action number does not follow the current step");
+  assert.equal(mobileTourLayout.receiptOpen, false, "technical receipt must be collapsed by default");
+  assert.equal(mobileTourLayout.railCount, 7, "tour progress rail must expose every step");
+  assert.equal(mobileTourLayout.currentRailCount, 1, "tour progress rail must have one current step");
+  assert(mobileTourLayout.cueVisible && mobileTourLayout.cueText.includes("地図"), "tour target cue is not visible");
+  assert(mobileTourLayout.spotlightVisible && Object.values(mobileTourLayout.spotlightDelta).every((delta) => delta <= 2), "tour spotlight does not frame the live target");
+  assert(mobileTourLayout.borderWidth >= 2, "tour card border is not visible enough");
   assert(mobileTourLayout.controls.every((height) => height >= 44), "tour control below 44px");
   await tourPage.locator("[data-tour-action='toggle']").click();
   await tourPage.waitForFunction(() => GaiaGuidedTour.getState().elapsed > 0, null, { timeout: 10_000 });

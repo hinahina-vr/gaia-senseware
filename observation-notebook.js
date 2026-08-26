@@ -357,8 +357,8 @@
   }, true);
 
   const addMapCaptureButton = () => {
-    const heading = document.querySelector("#japan-layer .japan-heading");
-    if (!heading || heading.querySelector("[data-observation-capture-map]")) return;
+    const actions = document.querySelector("#japan-layer .japan-map-actions");
+    if (!actions || actions.querySelector("[data-observation-capture-map]")) return;
     const button = Object.assign(document.createElement("button"), {
       className: "gaia-observation-capture gaia-observation-capture--map",
       type: "button",
@@ -369,7 +369,7 @@
       try { await capture("map", { openAfterSave: true }); }
       catch (error) { open(); announce(error instanceof Error ? error.message : String(error), "error"); }
     });
-    heading.append(button);
+    actions.append(button);
   };
 
   const addSensorLauncher = () => {

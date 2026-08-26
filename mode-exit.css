@@ -139,6 +139,7 @@ body.novel-open .novel-topbar #novel-home-button.mode-exit-control {
   top: max(18px, env(safe-area-inset-top));
   right: auto;
   left: max(18px, env(safe-area-inset-left));
+  width: 78px;
   pointer-events: auto;
 }
 
@@ -171,7 +172,7 @@ body.novel-open .novel-topbar #novel-close-button.mode-exit-control {
 
 body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
   right: auto;
-  left: max(148px, calc(env(safe-area-inset-left) + 148px));
+  left: max(104px, calc(env(safe-area-inset-left) + 104px));
 }
 
 body.sound-mode-open .status {

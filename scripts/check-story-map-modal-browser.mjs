@@ -15,7 +15,7 @@ fs.mkdirSync(outputDir, { recursive: true });
 const errors = [];
 const browser = await chromium.launch({ headless: true, executablePath });
 const stateForMap = () => ({
-  storyVersion: 10,
+  storyVersion: 13,
   stepId: "map_mode01_004",
   reachedSceneIds: ["festival_concept", "map_mode01"],
   viewed: {},
@@ -46,30 +46,32 @@ const bootAtMap = async (viewport, label, state = stateForMap()) => {
     if (message.type() === "error") errors.push(`${label} console: ${message.text()}`);
   });
   page.on("pageerror", (error) => errors.push(`${label} page: ${error.message}`));
-  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
-  await page.evaluate((state) => {
+  page.on("response", (response) => {
+    if (response.status() === 404) errors.push(`${label} 404: ${response.url()}`);
+  });
+  await page.addInitScript((state) => {
+    localStorage.setItem("gaiaSensewareTrueEnd:reached:v1", "browser-fixture");
     localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(state));
     localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{
       progress: state,
       savedAt: Date.now(),
       meta: { title: "STORY MAP MODAL QA", excerpt: state.stepId },
     }]));
-    localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({
+    localStorage.setItem("gaiaSensewareNovel:config:v4", JSON.stringify({
       messageSpeedPercent: 400,
       reducedMotion: false,
     }));
   }, state);
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
   await page.locator("#novel-resume-button").click();
   await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
   await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction(() => (
     document.body.dataset.novelInteractionState === "open"
     && document.querySelector("#japan-layer")?.dataset.storyMode === "map01"
-  ), { timeout: 15_000 });
+    && Number.parseFloat(getComputedStyle(document.querySelector(".story-map-aiva-backdrop")).opacity) > 0.3
+  ), undefined, { timeout: 15_000 });
   return { context, page };
 };
 
@@ -85,6 +87,9 @@ const scanOpenModal = async (page) => page.evaluate(() => {
   const mapSurfaceStyle = mapSurface ? getComputedStyle(mapSurface) : null;
   const skipStyle = skip ? getComputedStyle(skip) : null;
   const novelStyle = novel ? getComputedStyle(novel) : null;
+  const aivaBackdrop = document.querySelector(".story-map-aiva-backdrop");
+  const aivaUniverse = aivaBackdrop?.querySelector(".story-map-aiva-universe");
+  const aivaStyle = aivaBackdrop ? getComputedStyle(aivaBackdrop) : null;
   return {
     viewport: { width: innerWidth, height: innerHeight },
     rect: rect?.toJSON(),
@@ -112,6 +117,12 @@ const scanOpenModal = async (page) => page.evaluate(() => {
     phase: map?.dataset.storyPhase || "",
     sliderDisabled: Boolean(slider?.disabled),
     sliderValue: Number(slider?.value || 0),
+    aivaBackdropCount: document.querySelectorAll(".story-map-aiva-backdrop").length,
+    aivaBackdropOpacity: Number(aivaStyle?.opacity || 0),
+    aivaWebglState: aivaBackdrop?.dataset.webglState || "",
+    aivaScene: aivaUniverse?.dataset.webglScene || "",
+    aivaSpeaker: aivaUniverse?.dataset.webglSpeaker || "",
+    aivaManifestation: aivaUniverse?.dataset.webglManifestation || "",
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
     overflowY: document.documentElement.scrollHeight > innerHeight + 1,
   };
@@ -136,6 +147,12 @@ const assertModal = (scan, mobile = false, expectedPhase = "timeline") => {
   assert.equal(scan.nativeCloseDisplay, "none");
   assert.equal(scan.readingGuideDisplay, "none");
   assert.equal(scan.sliderDisabled, false);
+  assert.equal(scan.aivaBackdropCount, 1);
+  assert(scan.aivaBackdropOpacity > 0.3, "AIVA backdrop is not visible");
+  assert.equal(scan.aivaWebglState, "active");
+  assert.equal(scan.aivaScene, "reconstruction");
+  assert.equal(scan.aivaSpeaker, "system");
+  assert.equal(scan.aivaManifestation, "signal-matrix");
   assert.equal(scan.phase, expectedPhase);
   if (expectedPhase === "temperature-anomaly") {
     assert.match(scan.label, /年代を動かす \/ DRAG/u);
@@ -164,7 +181,7 @@ await desktop.page.waitForTimeout(2500);
 const advancedValue = Number(await desktop.page.locator("#japan-layer [data-signal-time]").inputValue());
 assert(advancedValue > initialValue + 5, "triple-speed timeline did not advance");
 const autoStartedAt = Date.now();
-await desktop.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_005", { timeout: 23_000 });
+await desktop.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_005", undefined, { timeout: 23_000 });
 const remainingMs = Date.now() - autoStartedAt;
 assert(remainingMs < 21_500, `automatic return took too long: ${remainingMs}ms after initial scan`);
 await desktop.page.waitForFunction(() => document.body.dataset.novelInteractionState === undefined);
@@ -176,6 +193,7 @@ const desktopClosed = await desktop.page.evaluate(() => ({
   usesTabletopMapBackground: getComputedStyle(document.querySelector("#novel-layer")).backgroundImage.includes("mode-map-v1.webp"),
   guideCount: document.querySelectorAll(".story-map-guide").length,
   returnCount: document.querySelectorAll("#story-detour-return").length,
+  aivaBackdropCount: document.querySelectorAll(".story-map-aiva-backdrop").length,
 }));
 assert.deepEqual(desktopClosed, {
   stepId: "map_mode01_005",
@@ -185,6 +203,7 @@ assert.deepEqual(desktopClosed, {
   usesTabletopMapBackground: false,
   guideCount: 0,
   returnCount: 0,
+  aivaBackdropCount: 0,
 });
 await desktop.page.screenshot({ path: path.join(outputDir, "desktop-return.png") });
 
@@ -224,10 +243,10 @@ await desktopSkip.page.evaluate(() => {
 });
 const desktopSkipStartedAt = Date.now();
 await desktopSkip.page.locator("#story-map-modal-skip").click();
-await desktopSkip.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_005", { timeout: 4_000 });
+await desktopSkip.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_005", undefined, { timeout: 4_000 });
 const desktopSkipWaitMs = Date.now() - desktopSkipStartedAt;
 assert(desktopSkipWaitMs >= 1_000 && desktopSkipWaitMs < 3_000, `skip fallback timing was ${desktopSkipWaitMs}ms`);
-await desktopSkip.page.waitForFunction(() => document.querySelector("#japan-layer")?.hidden === true, { timeout: 4_000 });
+await desktopSkip.page.waitForFunction(() => document.querySelector("#japan-layer")?.hidden === true, undefined, { timeout: 4_000 });
 assert.equal(await desktopSkip.page.locator("#story-map-modal-skip").isDisabled(), true);
 await desktopSkip.page.screenshot({ path: path.join(outputDir, "desktop-skip-return.png") });
 await desktopSkip.context.close();
@@ -250,8 +269,8 @@ assert.deepEqual(afterYear, {
   mapHidden: false,
 });
 await temperatureDesktop.page.locator("#japan-map").press("Enter");
-await temperatureDesktop.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_024", { timeout: 5_000 });
-await temperatureDesktop.page.waitForFunction(() => document.querySelector("#japan-layer")?.hidden === true, { timeout: 5_000 });
+await temperatureDesktop.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_024", undefined, { timeout: 5_000 });
+await temperatureDesktop.page.waitForFunction(() => document.querySelector("#japan-layer")?.hidden === true, undefined, { timeout: 5_000 });
 const temperatureDesktopClosed = await temperatureDesktop.page.evaluate(() => ({
   stepId: globalThis.GaiaNovel.getState().stepId,
   lifecycle: document.body.dataset.novelInteractionState || "idle",
@@ -274,7 +293,7 @@ await mobile.page.screenshot({ path: path.join(outputDir, "mobile-open.png") });
 await mobile.page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:story-mode-auto-complete", {
   detail: { kind: "map01", view: "timeline_complete" },
 })));
-await mobile.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_005", { timeout: 5_000 });
+await mobile.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_005", undefined, { timeout: 5_000 });
 await mobile.context.close();
 
 const temperatureMobile = await bootAtMap({ width: 390, height: 844 }, "temperature-mobile", stateForTemperatureMap());
@@ -282,8 +301,8 @@ const temperatureMobileOpen = await scanOpenModal(temperatureMobile.page);
 assertModal(temperatureMobileOpen, true, "temperature-anomaly");
 await temperatureMobile.page.screenshot({ path: path.join(outputDir, "mobile-temperature-open.png") });
 await temperatureMobile.page.locator("#story-map-modal-skip").click();
-await temperatureMobile.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_024", { timeout: 5_000 });
-await temperatureMobile.page.waitForFunction(() => document.querySelector("#japan-layer")?.hidden === true, { timeout: 5_000 });
+await temperatureMobile.page.waitForFunction(() => globalThis.GaiaNovel.getState().stepId === "map_mode01_024", undefined, { timeout: 5_000 });
+await temperatureMobile.page.waitForFunction(() => document.querySelector("#japan-layer")?.hidden === true, undefined, { timeout: 5_000 });
 await temperatureMobile.context.close();
 
 await browser.close();

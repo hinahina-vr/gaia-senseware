@@ -3944,12 +3944,16 @@
     detourSkipFallbackTimer = 0;
   };
 
-  const storyMapModalSkip = document.querySelector("#story-map-modal-skip");
-  storyMapModalSkip?.addEventListener("click", (event) => {
+  const storyMapModalSkip = () => document.querySelector("#story-map-modal-skip");
+  document.addEventListener("click", (event) => {
+    const control = event.target instanceof Element
+      ? event.target.closest("#story-map-modal-skip")
+      : null;
+    if (!control) return;
     event.preventDefault();
     event.stopPropagation();
     if (pendingInteraction?.interaction?.kind !== "map01" || interactionLifecycle !== "open") return;
-    storyMapModalSkip.disabled = true;
+    control.disabled = true;
     (pendingInteraction.interaction.requiredViews || []).forEach((view) => detourState?.views?.add(view));
     const skippedStepId = pendingInteraction.id;
     clearDetourSkipFallback();
@@ -3967,7 +3971,8 @@
     clearDetourSkipFallback();
     pendingInteraction = step;
     detourState = { gestureCount: 0, phaseIndex: 1, phaseCount: 8, views: new Set() };
-    if (storyMapModalSkip) storyMapModalSkip.disabled = false;
+    const mapSkipControl = storyMapModalSkip();
+    if (mapSkipControl) mapSkipControl.disabled = false;
     const definition = detourDefinitions[step.interaction.kind];
     closeDetourDock();
     if (!["map01", "gx"].includes(step.interaction.kind)) {

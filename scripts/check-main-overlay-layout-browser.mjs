@@ -33,9 +33,9 @@ try {
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
-    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
+    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 8);
     const modeCount = await page.locator("#mode-list .mode-button").count();
-    assert.equal(modeCount, 9, `${viewport.name}: mode button count`);
+    assert.equal(modeCount, 8, `${viewport.name}: mode button count`);
     await page.evaluate(() => {
       const opening = document.querySelector("#gaia-opening");
       if (opening) {
@@ -114,7 +114,7 @@ try {
       assert.equal(scan.overflowY, 0, `${viewport.name}/${scan.modeNumber}: vertical overflow`);
       report.scans.push({ viewport: viewport.name, ...scan, passed: true });
 
-      if (index === 0 || index === 9) {
+      if (index === 0 || index === 7) {
         await page.screenshot({
           path: path.join(outputDir, `${viewport.name}-${scan.modeNumber}.png`),
           animations: "disabled",

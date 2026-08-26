@@ -149,7 +149,7 @@
 .gaia-observation-card button,
 .gaia-observation-footer button,
 .gaia-observation-shared > button {
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 12px;
   border: 1px solid rgba(var(--observation-mint), 0.28);
   color: rgba(var(--observation-ink), 0.88);
@@ -191,10 +191,17 @@
   cursor: pointer;
 }
 .gaia-observation-capture--map {
-  width: min(460px, 100%);
-  margin-top: 8px;
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: rgba(2, 18, 25, 0.72);
+  backdrop-filter: blur(13px);
   pointer-events: auto;
+  white-space: nowrap;
 }
+.japan-layer.is-live-exhibit .gaia-observation-capture--map { display: none; }
 .sensor-history li { position: relative; }
 .sensor-history .gaia-observation-capture { margin-left: auto; white-space: nowrap; }
 .sensor-topbar nav [data-observation-open] { border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }

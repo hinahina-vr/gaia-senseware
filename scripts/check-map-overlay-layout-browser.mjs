@@ -40,7 +40,7 @@ try {
 
     await page.goto(new URL("/?mode=1#earth", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
-    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
+    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 8);
     await page.evaluate(() => {
       document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
       window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
@@ -73,7 +73,7 @@ try {
       && !document.body.classList.contains("scene-transitioning"));
     await page.waitForTimeout(160);
 
-    for (let index = 0; index < 9; index += 1) {
+    for (let index = 0; index < 8; index += 1) {
       await page.evaluate((modeIndex) => document.querySelectorAll("#japan-mode-list .map-mode-button")[modeIndex]?.click(), index);
       await page.waitForFunction(
         (modeNumber) => document.querySelector("#japan-mode-number")?.textContent?.trim() === modeNumber,
@@ -87,21 +87,14 @@ try {
             && overlay.dataset.forestRainCircleRange
             && overlay.dataset.forestRainBrazil;
         });
-      } else if (index === 3) {
-        await page.waitForFunction(() => {
-          const overlay = document.querySelector("#japan-overlay");
-          return overlay?.dataset.pollinationStage
-            && overlay.dataset.pollinationOccurrenceCount
-            && overlay.dataset.pollinationRelationCount;
-        });
-      } else if (index === 7) {
+      } else if (index === 6) {
         await page.waitForFunction(() => {
           const overlay = document.querySelector("#japan-overlay");
           return overlay?.dataset.ecologiesPlot === "paired-country-scatter"
             && overlay.dataset.ecologiesPairCount
             && overlay.dataset.ecologiesCorrelation;
         });
-      } else if (index === 8) {
+      } else if (index === 7) {
         await page.waitForFunction(() => {
           const overlay = document.querySelector("#japan-overlay");
           return overlay?.dataset.countryGeometryState === "ready"
@@ -170,9 +163,6 @@ try {
           scaleCount: document.querySelectorAll("#japan-layer > .map-scope-switch").length,
           forestRainCircleRange: document.querySelector("#japan-overlay")?.dataset.forestRainCircleRange || "",
           forestRainBrazil: document.querySelector("#japan-overlay")?.dataset.forestRainBrazil || "",
-          pollinationStage: document.querySelector("#japan-overlay")?.dataset.pollinationStage || "",
-          pollinationOccurrenceCount: document.querySelector("#japan-overlay")?.dataset.pollinationOccurrenceCount || "",
-          pollinationRelationCount: document.querySelector("#japan-overlay")?.dataset.pollinationRelationCount || "",
           ecologiesPlot: document.querySelector("#japan-overlay")?.dataset.ecologiesPlot || "",
           ecologiesPairCount: document.querySelector("#japan-overlay")?.dataset.ecologiesPairCount || "",
           ecologiesCorrelation: document.querySelector("#japan-overlay")?.dataset.ecologiesCorrelation || "",
@@ -224,22 +214,18 @@ try {
       if (index === 2) {
         assert.equal(scan.forestRainCircleRange, "10-54px radius", `${viewport.name}/03: rain-circle scale is stale`);
         assert.equal(scan.forestRainBrazil, "5.33 mm/day", `${viewport.name}/03: Brazil rain point is missing`);
-      } else if (index === 3) {
-        assert(["records", "sampling", "relations"].includes(scan.pollinationStage), `${viewport.name}/04: pollination stage is missing`);
-        assert.equal(scan.pollinationOccurrenceCount, "62", `${viewport.name}/04: GBIF occurrence count is stale`);
-        assert.equal(scan.pollinationRelationCount, "23", `${viewport.name}/04: GloBI relation count is stale`);
+      } else if (index === 6) {
+        assert.equal(scan.ecologiesPlot, "paired-country-scatter", `${viewport.name}/07: paired scatter plot is missing`);
+        assert.equal(scan.ecologiesPairCount, "31", `${viewport.name}/07: paired-country count is stale`);
+        assert(Number(scan.ecologiesCorrelation) > 0.2 && Number(scan.ecologiesCorrelation) < 0.3, `${viewport.name}/07: correlation is missing`);
       } else if (index === 7) {
-        assert.equal(scan.ecologiesPlot, "paired-country-scatter", `${viewport.name}/08: paired scatter plot is missing`);
-        assert.equal(scan.ecologiesPairCount, "31", `${viewport.name}/08: paired-country count is stale`);
-        assert(Number(scan.ecologiesCorrelation) > 0.2 && Number(scan.ecologiesCorrelation) < 0.3, `${viewport.name}/08: correlation is missing`);
-      } else if (index === 8) {
-        assert.equal(scan.renewableCountryFillCount, "31", `${viewport.name}/09: country fills are missing`);
-        assert.equal(scan.renewableFillScale, "country-blue-0-100", `${viewport.name}/09: color scale is stale`);
-        assert.equal(scan.energyConnectionRemoved, "true", `${viewport.name}/09: old connection interaction remains`);
+        assert.equal(scan.renewableCountryFillCount, "31", `${viewport.name}/08: country fills are missing`);
+        assert.equal(scan.renewableFillScale, "country-blue-0-100", `${viewport.name}/08: color scale is stale`);
+        assert.equal(scan.energyConnectionRemoved, "true", `${viewport.name}/08: old connection interaction remains`);
       }
       reportScan.passed = true;
 
-      if (index === 0 || index === 2 || index === 3 || index === 7 || index === 8) {
+      if (index === 0 || index === 2 || index === 3 || index === 6 || index === 7) {
         await page.screenshot({
           path: path.join(outputDir, `${viewport.name}-${scan.modeNumber}.png`),
           animations: "disabled",

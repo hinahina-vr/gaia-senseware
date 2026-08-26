@@ -13,6 +13,7 @@ const productionSmoke = extraArguments.includes("--production-smoke");
 const pageBreakOnly = extraArguments.includes("--page-break-only");
 const controlHoldOnly = extraArguments.includes("--control-hold-only");
 const skipOnly = extraArguments.includes("--skip-only");
+const motionOnly = extraArguments.includes("--motion-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -209,6 +210,7 @@ const scanFrame = (page) => page.evaluate(() => {
     universePresenceCompletedAt: Number(universe?.dataset.webglPresenceCompletedAt || 0),
     universeQuality: universe?.dataset.webglQuality || "",
     universeQualityReason: universe?.dataset.webglQualityReason || "",
+    universeAmbientMotion: universe?.dataset.webglAmbientMotion || "",
     universeFrameP95: Number(universe?.dataset.webglFrameP95 || 0),
     messageCommittedAt: Number(shell?.dataset.messageCommittedAt || 0),
     sectionTransitionCompletedAt: Number(shell?.dataset.sectionTransitionCompletedAt || 0),
@@ -388,6 +390,10 @@ try {
   assert.doesNotMatch(trueEndWebGLSource, /vec2 defragSlot|float cellClock|vec2 previousSlot|vec2 nextSlot|float cellSize/u, "AIVA still gives individual cells drifting positions, tempos, or sizes");
   assert.doesNotMatch(trueEndWebGLSource, /uniform float u_frame|"u_frame"|uniform1f\(uniforms\.u_frame/u, "AIVA still uses the render frame as its flicker clock");
   assert.match(trueEndWebGLSource, /const float AIVA_FIELD_DRIFT_SPEED = 0\.18/u, "AIVA's continuous field tempo is missing");
+  assert.match(trueEndWebGLSource, /const float AMBIENT_FLOW_SPEED = 0\.055/u, "the ambient field drift tempo is missing");
+  assert.match(trueEndWebGLSource, /const float AMBIENT_BREATH_SPEED = 0\.17/u, "the ambient breathing tempo is missing");
+  assert.match(trueEndWebGLSource, /vec2 breathingPoint[\s\S]*vec2 orbitalDrift[\s\S]*vec2 advection[\s\S]*float cloud[\s\S]*float detail/u, "the WebGL background does not combine breathing, drift, and counter-flow");
+  assert.match(trueEndWebGLSource, /vec2 starDriftA[\s\S]*vec2 starDriftB[\s\S]*vec2 starDriftC/u, "the three star layers do not have independent parallax drift");
   assert.match(trueEndWebGLSource, /vec3 signalSurge[\s\S]*float signalNoiseA[\s\S]*float signalNoiseB[\s\S]*vec2 signalSpace[\s\S]*float carrierA[\s\S]*float carrierB[\s\S]*float signalVeil[\s\S]*float measureTrace[\s\S]*float responseTrace[\s\S]*float scanWave/u, "AIVA's continuous signal field is incomplete");
   const aivaFieldSource = trueEndWebGLSource.match(/vec3 signalSurge\(vec2 p\) \{[\s\S]*?\n    \}/u)?.[0] || "";
   assert(aivaFieldSource, "AIVA's continuous signal field source is unavailable");
@@ -409,7 +415,7 @@ try {
   assert.match(trueEndWebGLSource, /p \+= u_pointer/u, "the restored field no longer follows pointer parallax");
 
   for (const viewport of (separatorOnly || skipOnly) ? [] : viewports) {
-    const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
+    const context = await browser.newContext({ viewport, reducedMotion: motionOnly ? "no-preference" : "reduce" });
     if (viewport.width <= 720) {
       await context.addInitScript(() => {
         Object.defineProperty(Navigator.prototype, "deviceMemory", { configurable: true, get: () => 2 });
@@ -444,6 +450,31 @@ try {
     assert.equal(story.scenes.length, 3, `${viewport.name}: approved true end must have three scenes`);
     assert.deepEqual(story.scenes.map(({ number }) => number), ["01", "02", "03"]);
     assert.equal(story.totalSteps, 133, `${viewport.name}: total step count mismatch`);
+
+    if (motionOnly) {
+      const beforeFrame = await scanFrame(page);
+      assert.equal(beforeFrame.universeState, "active", `${viewport.name}: WebGL universe is not active`);
+      assert.equal(beforeFrame.universeAmbientMotion, "drift-breathe-parallax", `${viewport.name}: ambient motion profile is missing`);
+      const beforePixels = await page.locator(".true-end-universe").screenshot({
+        path: path.join(outputDir, `${viewport.name}-ambient-motion-before.png`),
+      });
+      await page.waitForTimeout(4_500);
+      const afterPixels = await page.locator(".true-end-universe").screenshot({
+        path: path.join(outputDir, `${viewport.name}-ambient-motion-after.png`),
+      });
+      const afterFrame = await scanFrame(page);
+      assert(afterFrame.universeFrame > beforeFrame.universeFrame + 20, `${viewport.name}: ambient WebGL field did not keep rendering`);
+      assert.equal(beforePixels.equals(afterPixels), false, `${viewport.name}: ambient WebGL field remained pixel-identical`);
+      report.viewports.push({
+        viewport: viewport.name,
+        ambientMotion: beforeFrame.universeAmbientMotion,
+        renderedFrames: afterFrame.universeFrame - beforeFrame.universeFrame,
+        durationMs: afterFrame.sampledAt - beforeFrame.sampledAt,
+        passed: true,
+      });
+      await context.close();
+      continue;
+    }
 
     if (pageBreakOnly) {
       let frame = await scanFrame(page);
@@ -500,6 +531,7 @@ try {
       const expectedScene = story.scenes.find(({ id }) => id === frame.scene);
       assert(expectedScene, `${viewport.name}: unknown true-end scene ${frame.scene}`);
       assert.equal(frame.universeState, "active", `${viewport.name}: WebGL universe is not active`);
+      assert.equal(frame.universeAmbientMotion, "drift-breathe-parallax", `${viewport.name}: ambient WebGL motion profile is missing`);
       assert.equal(frame.universeScene, expectedScene.backdrop, `${viewport.name}: WebGL palette is out of sync`);
       assert(frame.universeFrame > 0, `${viewport.name}: WebGL universe did not render a frame`);
       assert(frame.universeSize.width > 0 && frame.universeSize.height > 0, `${viewport.name}: WebGL canvas has no drawable area`);
@@ -888,7 +920,7 @@ try {
     await context.close();
   }
 
-  for (const viewport of (pageBreakOnly || controlHoldOnly || separatorOnly) ? [] : viewports) {
+  for (const viewport of (pageBreakOnly || controlHoldOnly || separatorOnly || motionOnly) ? [] : viewports) {
     const skipContext = await browser.newContext({
       viewport,
       reducedMotion: "reduce",
@@ -944,7 +976,7 @@ try {
   }
 
   report.separatorOrder = [];
-  for (const viewport of (pageBreakOnly || controlHoldOnly || skipOnly) ? [] : viewports) {
+  for (const viewport of (pageBreakOnly || controlHoldOnly || skipOnly || motionOnly) ? [] : viewports) {
     const separatorContext = await browser.newContext({ viewport, reducedMotion: "no-preference" });
     const separatorPage = await separatorContext.newPage();
     attachDiagnostics(separatorPage, `${viewport.name}-separator-flow`);

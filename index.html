@@ -168,7 +168,7 @@
     <script src="./opening-audio.js?v=gaia-first-screen-p0-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-opening-restore-de6-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-ui-restore-de6-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-tour-tooltip-2" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -657,7 +657,7 @@
       <canvas
         id="gaia-canvas"
         tabindex="0"
-        aria-label="指やマウスで動きを変えながら見る、地球観測データの9つの展示"
+        aria-label="指やマウスで動きを変えながら見る、地球観測データの8つの展示"
       >
         お使いのブラウザはCanvasに対応していません。
       </canvas>
@@ -786,14 +786,14 @@
                   <p>地球の観測データを送る</p>
                   <span class="intro-path-enter">センサーを登録 <b aria-hidden="true">→</b></span>
                 </a>
-                <button class="intro-path-card" type="button" data-intro-path="space">
+                <button class="intro-path-card" type="button" data-intro-path="abstract">
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
                   <span class="intro-border-glint" aria-hidden="true"></span>
-                  <span class="intro-path-index">03 / SPACE</span>
-                  <span class="intro-path-glyph" aria-hidden="true">✦</span>
-                  <strong>宇宙から見る</strong>
-                  <p>宇宙の記録へ。</p>
-                  <span class="intro-path-enter">DEEP SPACE <b aria-hidden="true">→</b></span>
+                  <span class="intro-path-index">03 / ABSTRACT</span>
+                  <span class="intro-path-glyph" aria-hidden="true">◌</span>
+                  <strong>光に触れる</strong>
+                  <p>数字を光へ。</p>
+                  <span class="intro-path-enter">ABSTRACT <b aria-hidden="true">→</b></span>
                 </button>
                 <button class="intro-path-card intro-path-card--sound" type="button" data-sound-gallery-open aria-haspopup="dialog" aria-controls="sound-layer">
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
@@ -847,7 +847,7 @@
 
             <h2 id="intro-sense-title">どの感覚に、<br />触れますか？</h2>
             <p class="intro-lead" id="intro-sense-lead">
-              意味と操作が直接つながる9つの観測展示から、最初に見る入口を選んでください。
+              意味と操作が直接つながる8つの観測展示から、最初に見る入口を選んでください。
             </p>
 
             <p class="intro-selection-prompt" id="intro-selection-prompt">最初に触れる感覚器を選ぶ</p>
@@ -878,7 +878,7 @@
                   戻る
                 </button>
               </div>
-              <p id="intro-path-note">選んだ展示は、あとから01〜09のバンクで切り替えられます。</p>
+              <p id="intro-path-note">選んだ展示は、あとから01〜08のバンクで切り替えられます。</p>
             </div>
           </section>
         </div>
@@ -902,7 +902,7 @@
             <div
               class="architecture-scene"
               role="img"
-              aria-label="地球と宇宙の公開記録をローカルJSONへ保存し、SOURCE、DERIVED、SCENARIOを分けて、9つの感覚器展示と四つの体験へ変換する作品構成図"
+              aria-label="地球と宇宙の公開記録をローカルJSONへ保存し、SOURCE、DERIVED、SCENARIOを分けて、8つの感覚器展示と四つの体験へ変換する作品構成図"
             >
               <img
                 class="architecture-scene-art"
@@ -939,10 +939,10 @@
 
               <section class="architecture-node architecture-node-senses">
                 <p><span>04</span> 数字を感覚へ</p>
-                <h3>9つの観測展示</h3>
-                <ol aria-label="9つの感覚器展示">
+                <h3>8つの観測展示</h3>
+                <ol aria-label="8つの感覚器展示">
                   <li>01</li><li>02</li><li>03</li><li>04</li><li>05</li>
-                  <li>06</li><li>07</li><li>08</li><li>09</li>
+                  <li>06</li><li>07</li><li>08</li>
                 </ol>
               </section>
 
@@ -952,7 +952,7 @@
                 <ul>
                   <li>世界を読む</li>
                   <li>センサーを登録</li>
-                  <li>宇宙から見る</li>
+                  <li>光に触れる</li>
                   <li>音を聴く</li>
                 </ul>
               </section>
@@ -1146,18 +1146,6 @@
                 <div class="data-source-links"><a href="https://modis.gsfc.nasa.gov/data/dataprod/mod12.php" target="_blank" rel="noopener">MODIS ↗</a><a href="https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/VIIRS_Night_Lights.json" target="_blank" rel="noopener">VIIRS ↗</a></div>
               </article>
 
-              <article class="data-source-card">
-                <div class="data-source-card-head"><span>06 / LIFE</span><em>使用：感覚器04</em></div>
-                <h4>GloBI / GBIF</h4>
-                <p class="data-source-name">生きもの同士の関係と、生きものが記録された場所</p>
-                <p>
-                  GloBIには、論文などに記録された生きもの同士の関係が集められています。
-                  GBIFには、いつ、どこで、どんな生きものが見つかったかという観察記録があります。
-                </p>
-                <p class="data-source-use"><strong>展示では</strong> 花と送粉者の関係を線に、ミツバチの観察場所を点にしました。二つの資料は別なので、線と点を根拠なく結びません。</p>
-                <div class="data-source-links"><a href="https://www.globalbioticinteractions.org/" target="_blank" rel="noopener">GloBI ↗</a><a href="https://www.gbif.org/what-is-gbif" target="_blank" rel="noopener">GBIF ↗</a></div>
-              </article>
-
                   </div>
                 </div>
               </section>
@@ -1183,7 +1171,7 @@
                   <div class="data-chapter-cards">
 
               <article class="data-source-card">
-                <div class="data-source-card-head"><span>07 / WASTE</span><em>使用：感覚器05</em></div>
+                <div class="data-source-card-head"><span>06 / WASTE</span><em>使用：感覚器04</em></div>
                 <h4>国連 SDG 12.5.1</h4>
                 <p class="data-source-name">ごみが、どれくらい再資源化されたか</p>
                 <p>
@@ -1195,7 +1183,7 @@
               </article>
 
               <article class="data-source-card">
-                <div class="data-source-card-head"><span>08 / SOCIETY</span><em>使用：感覚器06・08・09</em></div>
+                <div class="data-source-card-head"><span>07 / SOCIETY</span><em>使用：感覚器05・07・08</em></div>
                 <h4>EDGAR / World Bank</h4>
                 <p class="data-source-name">人間活動の排出量と、都市・電力の統計</p>
                 <p>
@@ -1207,7 +1195,7 @@
               </article>
 
               <article class="data-source-card">
-                <div class="data-source-card-head"><span>09 / QUAKE</span><em>使用：感覚器07</em></div>
+                <div class="data-source-card-head"><span>08 / QUAKE</span><em>使用：感覚器06</em></div>
                 <h4>気象庁 / USGS</h4>
                 <p class="data-source-name">日本で観測した揺れと、世界の大地震</p>
                 <p>
@@ -1219,7 +1207,7 @@
               </article>
 
               <article class="data-source-card">
-                <div class="data-source-card-head"><span>10 / MEMORY</span><em>使用：感覚器08</em></div>
+                <div class="data-source-card-head"><span>09 / MEMORY</span><em>使用：感覚器07</em></div>
                 <h4>UNESCO 世界遺産</h4>
                 <p class="data-source-name">人間が未来へ残すと決めた、文化と自然の場所</p>
                 <p>
@@ -1350,7 +1338,7 @@
             <span class="japan-live-dot" aria-hidden="true"></span>
             <span id="map-scope-kicker">Planetary lens / Open map</span>
           </p>
-          <h2 id="japan-title">世界のデータを見る</h2>
+          <h2 id="japan-title" aria-live="polite">地球の一呼吸</h2>
           <p id="japan-description">
             水、熱、生きもの、大地の動きは国境で止まりません。
             世界の観測記録を一枚の地図に重ねて見てみましょう。
@@ -1477,15 +1465,15 @@
           LOCAL VECTOR LOADING
         </p>
 
-        <section class="map-mode-bank" aria-label="世界地図に重ねる13の感覚器展示を切り替える">
+        <section class="map-mode-bank" aria-label="世界地図に重ねる12の感覚器展示を切り替える">
           <div class="map-mode-bank-heading">
-            <p>INSTALLATION BANK / 01—13</p>
+            <p>INSTALLATION BANK / 01—12</p>
             <div>
               <span id="japan-mode-number">01</span>
               <strong id="japan-mode-title">地球の一呼吸</strong>
             </div>
           </div>
-          <p class="map-mode-bank-guide">01〜13を押すと、地図に表示する展示が変わります</p>
+          <p class="map-mode-bank-guide">01〜12を押すと、地図に表示する展示が変わります</p>
           <div class="map-mode-list" id="japan-mode-list"></div>
         </section>
 
@@ -1501,7 +1489,7 @@
         </div>
 
         <div class="japan-instruction" aria-hidden="true">
-          <span>01—13</span>
+          <span>01—12</span>
           <p>データを選ぶ</p>
           <span>DRAG / ZOOM</span>
           <p>移動して拡大する</p>
@@ -1527,14 +1515,16 @@
           </div>
         </article>
 
-        <button
-          class="japan-close mode-exit-control"
-          id="japan-close"
-          type="button"
-          aria-label="トップの感覚器選択画面へ戻る"
-        >
-          戻る
-        </button>
+        <div class="japan-map-actions" aria-label="地図の操作">
+          <button
+            class="japan-close mode-exit-control"
+            id="japan-close"
+            type="button"
+            aria-label="トップの感覚器選択画面へ戻る"
+          >
+            戻る
+          </button>
+        </div>
 
         <div class="japan-credits">
           <a
@@ -2508,7 +2498,7 @@
       >
         <header class="concept-header">
           <div>
-            <p class="concept-kicker">PLANETARY SENSE ORGAN <span id="concept-number">01 / 09</span></p>
+            <p class="concept-kicker">PLANETARY SENSE ORGAN <span id="concept-number">01 / 08</span></p>
             <h2 id="concept-title">地球の一呼吸</h2>
             <p class="concept-title-en" id="concept-title-en">Breathing Earth</p>
           </div>
@@ -2555,7 +2545,7 @@
             <span aria-hidden="true">←</span>
             <span>PREVIOUS</span>
           </button>
-          <span id="concept-position">01 / 09</span>
+          <span id="concept-position">01 / 08</span>
           <button id="concept-next" type="button" aria-label="次の演出の解説">
             <span>NEXT</span>
             <span aria-hidden="true">→</span>

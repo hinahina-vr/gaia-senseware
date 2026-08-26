@@ -31,7 +31,7 @@ const attachDiagnostics = (page, viewport) => {
 
 const bypassOpening = async (page) => {
   await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
-  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 8);
   await page.evaluate(() => {
     const opening = document.querySelector("#gaia-opening");
     if (opening) {
@@ -179,6 +179,7 @@ try {
       return {
         back,
         skip,
+        gap: skip.rect.left - back.rect.right,
         overlap: !(back.rect.right <= skip.rect.left || skip.rect.right <= back.rect.left),
       };
     });
@@ -192,6 +193,7 @@ try {
     assert(parseFloat(storyControls.back.fontSize) > 0 && parseFloat(storyControls.skip.fontSize) > 0, `${viewport.name}: story labels are visually hidden`);
     assert(storyControls.back.rect.left < storyControls.skip.rect.left, `${viewport.name}: story controls are in an unexpected order`);
     assert.equal(storyControls.overlap, false, `${viewport.name}: story controls overlap`);
+    assert(storyControls.gap >= 4 && storyControls.gap <= 10, `${viewport.name}: story controls have an unnatural gap (${storyControls.gap}px)`);
     report.scans.push({ viewport: viewport.name, surface: "story-controls", ...storyControls, passed: true });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-story-home.png`) });
     await page.locator("#novel-home-button").click();

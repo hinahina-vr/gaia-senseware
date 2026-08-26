@@ -103,7 +103,7 @@ try {
     await page.goto(new URL("/?mode=1", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90000 });
     await page.waitForFunction(() => typeof window.GaiaModeLoader?.load === "function");
     await page.evaluate(() => window.GaiaModeLoader.load("exploration"));
-    await page.waitForFunction(() => window.GaiaAppContent?.modes?.length === 9);
+    await page.waitForFunction(() => window.GaiaAppContent?.modes?.length === 8);
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
     await page.evaluate(() => {
       document.body.classList.remove("gaia-opening-active");
@@ -122,7 +122,7 @@ try {
       && !document.body.classList.contains("scene-transitioning"));
     await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:opening-complete")));
     await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.renderPixelRatio) >= 1);
-    await page.locator("#japan-mode-list .map-mode-button").nth(4).click({ force: true });
+    await page.locator("#japan-mode-list .map-mode-button").nth(3).click({ force: true });
     await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.recyclingEncoding === "fixed-diameter-pie");
 
     const observed = await page.evaluate(() => {

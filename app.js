@@ -235,7 +235,7 @@
   const dataLedger = window.GaiaDataLedger.create();
 
   const TRAIL_COUNT = 16;
-  const MODE_COUNT = 9;
+  const MODE_COUNT = 8;
   const TRANSITION_DURATION = 1500;
   const AUTO_INTERVAL = 18000;
   const CO2_TIMELINE_START_YEAR = 1958;
@@ -270,7 +270,7 @@
   const GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS =
     GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS * GLOBAL_EARTHQUAKE_YEAR_COUNT;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-nine-exhibits-1";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-eight-exhibits-1";
   const NATURAL_EARTH_LAND_DATA = "./data/natural-earth-50m-land.geojson?v=gaia-27";
   const NATURAL_EARTH_COUNTRY_DATA = "./data/natural-earth-50m-countries.geojson?v=gaia-1";
 
@@ -294,16 +294,10 @@
       action: "水色円を押すと自動走査が止まり、代表地点名と平均降水量をカードで読めます。円のない場所は『雨がない』のではなく、この31地点では測っていない場所です。",
     },
     {
-      title: "点がない場所に、ミツバチはいないのか？",
-      subject: "いいえ。黄色い点は生息分布ではなく、人がGBIFへ登録した観察記録です。空白は『いない』ではなく、この標本に記録がない場所です。",
-      reading: "3段階で、①62観察点、②31か国から最大2件ずつに揃えた標本の制約、③場所を持たない花との23文献関係を見ます。最後の網は地理ではありません。",
-      action: "スライダーで3段階を切り替えます。黄色い点を押すと一件のGBIF記録を読めます。花との関係網では、光る枝の植物名が順に変わります。",
-    },
-    {
       title: "再資源化率は、国ごとにどう違うのか？",
       subject: "各国の都市ごみ100%を同じ大きさの円グラフにし、再資源化された割合と、それ以外を地図上で比べます。",
       reading: "緑の扇形が再資源化率、橙が再資源化として報告されなかった残りです。実線は国連の公開値、破線は近い5か国から補った値です。",
-      action: "円グラフを押すと拡大して現在値を表示します。スライダーを動かすと選択国の外周だけが『もしも』に変わり、内側の統計は固定されます。",
+      action: "円グラフを押すと現在値を表示します。スライダーを右へ動かすと、現在値以上の『自分で決める改善目標』が黄色い外周に出ます。これは予測や公的目標ではありません。",
     },
     {
       title: "夜の光と国別排出量は、どこで重なるのか？",
@@ -562,12 +556,11 @@
       if (mode == 0) return modeBreathingEarth(p, t, response, uModeMemory[0]);
       if (mode == 1) return modeBlueCirculation(p, t, response, uModeMemory[1]);
       if (mode == 2) return modeForestCloudEngine(p, t, response, uModeMemory[2]);
-      if (mode == 3) return modePollinationProtocol(p, t, response, uModeMemory[3]);
-      if (mode == 4) return modeNothingIsWaste(p, t, response, uModeMemory[4]);
-      if (mode == 5) return modeAnthropoceneScar(p, t, response, uModeMemory[5]);
-      if (mode == 6) return modeRhythmOfDisaster(p, t, response, uModeMemory[6]);
-      if (mode == 7) return modeThreeEcologies(p, t, response, uModeMemory[7]);
-      return modeEarthOrgan(p, t, response, uModeMemory[8]);
+      if (mode == 3) return modeNothingIsWaste(p, t, response, uModeMemory[3]);
+      if (mode == 4) return modeAnthropoceneScar(p, t, response, uModeMemory[4]);
+      if (mode == 5) return modeRhythmOfDisaster(p, t, response, uModeMemory[5]);
+      if (mode == 6) return modeThreeEcologies(p, t, response, uModeMemory[6]);
+      return modeEarthOrgan(p, t, response, uModeMemory[7]);
     }
 
     void main() {
@@ -740,6 +733,8 @@
   let storyModeGlobalSignalConsoleState = null;
   let storyMapTimelineCompleted = false;
   let storyMapReturnTimer = 0;
+  let storyMapAivaBackdrop = null;
+  let storyMapAivaRuntime = null;
   let mapScope = "earth";
   let japanDataUpdatedAt = null;
   let japanHistoryUpdatedAt = null;
@@ -2446,7 +2441,12 @@
       const selected = rows[index];
       const sourceRecycle = selected?.recyclePercent || 0;
       const imputed = selected?.valueStatus === "IMPUTED";
-      const scenarioRecycle = clamp(sourceRecycle + ((signalTimePosition - 50) / 50) * 20, 0, 100);
+      const scenarioRecycle = clamp(
+        sourceRecycle + (signalTimePosition / 100) * (100 - sourceRecycle),
+        sourceRecycle,
+        100,
+      );
+      const scenarioIncrease = scenarioRecycle - sourceRecycle;
       return {
         kind: "waste",
         phaseLabel: `${imputed ? "CALCULATED / NEARBY 5 COUNTRIES" : "MEASURED / OFFICIAL VALUE"} / ${String(index + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
@@ -2455,14 +2455,15 @@
         methodLabel: imputed
           ? "破線円 / 近くの5か国から補完"
           : "実線円 / 国連に報告された値",
-        timeLabel: "仮想値 / DRAG LEFT↔RIGHT",
+        timeLabel: "自分の改善目標 / 現在→100%",
         sourceRecycle,
         scenarioRecycle,
+        scenarioIncrease,
         selectedIndex: index,
         selected,
         legend: [
-          ["円グラフ / 現在値", `${selected?.country || "—"} ${sourceRecycle.toFixed(1)}% · ${imputed ? "破線＝補完" : "実線＝公式"}`],
-          ["外周 / もしも", `SCENARIO ${scenarioRecycle.toFixed(1)}% · 内側の現在値は固定`],
+          ["内円 / 現在の基準値", `${selected?.country || "—"} ${sourceRecycle.toFixed(1)}% · ${imputed ? "破線＝補完" : "実線＝公式"}`],
+          ["黄色い外周 / 自分の改善目標", `SCENARIO ${scenarioRecycle.toFixed(1)}% · 現在から +${scenarioIncrease.toFixed(1)}ポイント`],
           ["緑 / 再資源化", `${sourceRecycle.toFixed(1)}%が再び資源になった割合`],
           ["橙 / それ以外", `${(100 - sourceRecycle).toFixed(1)}% · 焼却・埋立などの内訳は不明`],
         ],
@@ -2844,7 +2845,7 @@
             : `${row.year} / ${row.recyclePercent.toFixed(1)}% / 国連の公式データ`,
           description: imputed
             ? `この地域には公式の数字がありませんでした。そこで、近くの5か国（${row.donorIso3?.join(" / ") || "—"}）を参考にし、真ん中の値を置いています。破線の円グラフは「計算で補った値」の印です。緑が${row.recyclePercent.toFixed(1)}%、橙が残り${(100 - row.recyclePercent).toFixed(1)}%です。`
-            : `国連に報告された、この国の最新値です。実線の円グラフの緑が再資源化${row.recyclePercent.toFixed(1)}%、橙が残り${(100 - row.recyclePercent).toFixed(1)}%です。選択中だけ外周に観客の「もしも」が出ます。`,
+            : `国連に報告された、この国の最新値です。実線の円グラフの緑が再資源化${row.recyclePercent.toFixed(1)}%、橙が残り${(100 - row.recyclePercent).toFixed(1)}%です。選択中は黄色い外周に、自分で決める改善目標（SCENARIO）が出ます。予測やこの国の公的目標ではありません。`,
           relation: imputed
             ? "近い国でも、ごみの制度や暮らし方は違います。この数字は公式統計ではなく、空白を仮に補った目安です。"
             : "円は国の目印で、ごみ処理施設の位置ではありません。この資料だけでは、残りのごみが焼却か埋立かも分かりません。",
@@ -3344,6 +3345,7 @@
       japanOverlay.dataset.recyclingImputedCount = String(rows.length - officialCount);
       japanOverlay.dataset.recyclingSelectedRate = sequence?.sourceRecycle.toFixed(1) || "0.0";
       japanOverlay.dataset.recyclingScenarioRate = sequence?.scenarioRecycle.toFixed(1) || "0.0";
+      japanOverlay.dataset.recyclingScenarioIncrease = sequence?.scenarioIncrease.toFixed(1) || "0.0";
       ctx.save();
       ctx.globalCompositeOperation = "source-over";
       orderedRows.forEach(({ row, index }) => {
@@ -3423,7 +3425,7 @@
           drawSelectionLabel(
             { x: point.x + radius + 7, y: point.y },
             row.country,
-            `内円 ${imputed ? "補完" : "公式"} ${row.recyclePercent.toFixed(1)}% / 外周 もしも ${sequence.scenarioRecycle.toFixed(1)}%`,
+            `内円 ${imputed ? "補完" : "公式"} ${row.recyclePercent.toFixed(1)}% / 黄色い外周 自分の目標 ${sequence.scenarioRecycle.toFixed(1)}% (+${sequence.scenarioIncrease.toFixed(1)}pt)`,
             "rgba(138,255,202,.96)",
           );
         }
@@ -3826,7 +3828,7 @@
     ctx.lineJoin = "round";
     renderCachedReferenceWorldModel(ctx, rect, left, top);
 
-    if (mapScope === "japan" && isTheme(6)) {
+    if (mapScope === "japan" && isTheme(5)) {
       const plateCenter = { x: rect.width * 0.6, y: rect.height * 0.52 };
       const plateVectors = [
         { label: "CONTINENTAL", x: rect.width * 0.08, y: rect.height * 0.63 },
@@ -3868,7 +3870,7 @@
 
     renderMapInstallationEffect(ctx, rect, nodePoints, now);
 
-    if (isTheme(6) && japanDataLayer === "history") {
+    if (isTheme(5) && japanDataLayer === "history") {
       renderJapanHistoryReplay(ctx, rect, left, top, now);
       japanHistoryEvents.forEach((event, index) => {
         const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
@@ -4086,7 +4088,7 @@
     if (japanTileErrors > 0) {
       return "MAP TILE OFFLINE / VECTOR EARTH MODEL ACTIVE";
     }
-    if (!isTheme(6)) {
+    if (!isTheme(5)) {
       const readout = getSignalReadout(getActiveSignalMode());
       return `${modes[modeToIndex].title.toUpperCase()} / ${readout.value}`;
     }
@@ -4203,7 +4205,7 @@
       mapGuideReading.textContent = guide.reading;
       mapGuideAction.textContent = guide.action;
     }
-    if (!isTheme(6)) {
+    if (!isTheme(5)) {
       if (signalMode?.id === "breathing-earth") {
         japanObservationKicker.textContent = "CO₂ TIMELINE / 1958 → 2050 / 60 SEC LOOP";
         japanObservationCopy.textContent =
@@ -4216,7 +4218,7 @@
         const narratives = {
           "forest-cloud-engine": ["FOREST × RAIN / FOREST MASK + 31 SITES", "緑は森林域、大きな水色円は31代表地点の平均降水量です。直径が大きいほど雨が多く、ブラジルのアマゾン付近は5.33 mm/dayです。円のない場所を雨量ゼロとは扱いません。"],
           "pollination-protocol": ["OBSERVATION ≠ DISTRIBUTION / 3 STEPS", "①黄色はGBIF観察点、②各国最大2件の標本制約、③場所のないGloBI花関係を非地理ネットワークで示します。点の空白はミツバチの不在ではありません。"],
-          "nothing-is-waste": ["RECYCLING / FIXED-DIAMETER PIE CHARTS", "同じ大きさの円グラフで、緑は再資源化率、橙はそれ以外です。実線は国連の公開値、破線は補完値。選択国の外周だけが自分で動かす『もしも』です。"],
+          "nothing-is-waste": ["RECYCLING / CURRENT RATE + YOUR TARGET", "同じ大きさの円グラフで、緑は現在の再資源化率、橙はそれ以外です。実線は国連の公開値、破線は補完値。選択国の黄色い外周には、自分で決める改善目標を置けます。これは予測や公的目標ではありません。"],
           "anthropocene-scar": ["VIIRS NIGHT LIGHTS × COUNTRY GHG", "白い発光はNASA VIIRS 2016の夜間光画素を地図上の位置へ投影したものです。赤い円は国別排出量で、円の中心が排出源という意味ではありません。"],
           "three-ecologies": ["FOREST × URBAN / 31 PAIRED COUNTRIES", "同じ31か国の森林率と都市人口率を二重円と散布図で比較します。回帰線と相関係数が全体傾向、選択国の中心色が傾向からの外れ方を示します。紫の世界遺産例は数値計算へ含めません。"],
           "earth-organ": ["RENEWABLE ELECTRICITY / 31 COUNTRY CHOROPLETH", "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。スライダーは低い国から高い国へ移動します。黄色の日射と緑の風は選択国の補足で、比率を決める因果表示ではありません。"],
@@ -4261,7 +4263,7 @@
     mapScope = "earth";
     japanLayer.dataset.mapScope = mapScope;
     mapScopeKicker.textContent = "Planetary lens / Open map";
-    japanTitle.textContent = "世界のデータを見る";
+    japanTitle.textContent = modes[modeToIndex]?.titleJa || "地球の一呼吸";
     japanDescription.textContent =
       "水、熱、生きもの、大地の動きは国境で止まりません。世界の観測記録を一枚の地図に重ねています。";
     updateMapBasisNote();
@@ -4472,7 +4474,7 @@
       considerCandidate({ type: "data", record, index }, point, hitRadius);
     });
 
-    if (isTheme(6)) {
+    if (isTheme(5)) {
       if (japanDataLayer === "history") {
         japanHistoryEvents.forEach((event, index) => {
           const point = japanWorldToScreen(event.longitude, event.latitude, left, top);
@@ -4789,10 +4791,10 @@
       const imputed = state?.selected?.valueStatus === "IMPUTED";
       return {
         output: state?.phaseLabel || "COUNTRY VALUE",
-        value: `現在 ${state?.sourceRecycle.toFixed(1) || "—"}% / 残り ${(100 - (state?.sourceRecycle || 0)).toFixed(1)}% → もしも ${state?.scenarioRecycle.toFixed(1) || "—"}%`,
+        value: `現在 ${state?.sourceRecycle.toFixed(1) || "—"}% → 自分の目標 ${state?.scenarioRecycle.toFixed(1) || "—"}% (+${state?.scenarioIncrease.toFixed(1) || "0.0"}pt)`,
         note: imputed
-          ? `${state?.selected?.country || "国"}には公式値がないため、近くの5か国の真ん中の値を置きました。破線の内円が補完値、外周が観客の「もしも」です。`
-          : `${state?.selected?.country || "国"} ${state?.selected?.year || "—"}。内円の緑が国連の再資源化率、橙が残り、外周が観客の「もしも」です。`,
+          ? `${state?.selected?.country || "国"}には公式値がないため、近くの5か国の真ん中の値を置きました。破線の内円が補完値、黄色い外周は自分で決める改善目標です。予測ではありません。`
+          : `${state?.selected?.country || "国"} ${state?.selected?.year || "—"}。内円の緑が国連の再資源化率、橙が残り、黄色い外周は自分で決める改善目標です。予測や公的目標ではありません。`,
         temporal: true,
       };
     }
@@ -4840,7 +4842,7 @@
     }
     const state = getMapSequenceState(signalMode);
     return {
-      output: state?.phaseLabel || "NINE-MEASURE ATLAS",
+      output: state?.phaseLabel || "EARTH OBSERVATION ATLAS",
       value: state?.selected
         ? `${state.selected.number} ${state.selected.metric} / ${state.selected.value}`
         : "9 MEASUREMENTS ≠ 1 SCORE",
@@ -5031,7 +5033,7 @@
   };
 
   let sourceSignalSnapshot = null;
-  const sourceSignalVector = new Float32Array(9);
+  const sourceSignalVector = new Float32Array(8);
   const getSourceSignalVector = () => {
     if (!gaiaSnapshot || sourceSignalSnapshot === gaiaSnapshot) return sourceSignalVector;
     const modeSignals = (id) => gaiaModeById.get(id)?.signals || {};
@@ -5041,7 +5043,6 @@
     const air = modeSignals("breathing-earth");
     const currents = modeSignals("blue-circulation");
     const forest = modeSignals("forest-cloud-engine");
-    const pollination = modeSignals("pollination-protocol");
     const waste = modeSignals("nothing-is-waste");
     const city = modeSignals("anthropocene-scar");
     const quake = modeSignals("rhythm-of-disaster");
@@ -5052,7 +5053,6 @@
       clamp((latestCo2 - 315) / 120, 0, 1),
       clamp(mean(currents.currents || [], (row) => Math.hypot(row.uMs, row.vMs)) / 0.7, 0, 1),
       clamp(mean(forest.precipitation || [], (row) => row.precipitationMmDay || 0) / 8, 0, 1),
-      clamp(((pollination.interactions?.length || 0) + (pollination.occurrences?.length || 0)) / 100, 0, 1),
       clamp(mean(waste.countryWaste || [], (row) => row.recyclePercent || 0) / 100, 0, 1),
       clamp(mean(city.emissions || [], (row) => Math.log10(Math.max(1, row.emissionsMtCo2e || 1))) / 4, 0, 1),
       clamp((Math.max(...(quake.globalEvents || []).map((row) => row.magnitude || 7.5), 7.5) - 7.5) / 2, 0, 1),
@@ -5070,6 +5070,7 @@
       && storyModeDetour.phase === "temperature-anomaly";
     const isBreathingTimeline = signalMode?.id === "breathing-earth";
     const isCirculationTimeline = signalMode?.id === "blue-circulation";
+    const isManualRecyclingTarget = signalMode?.id === "nothing-is-waste";
     const sequenceState = !isBreathingTimeline && !isCirculationTimeline
       ? getMapSequenceState(signalMode)
       : null;
@@ -5084,7 +5085,9 @@
     japanLayer.classList.toggle("is-co2-timeline", showTimeline);
     if (showTimeline) {
       co2TimelineDisplay.dataset.phase = timelineState.kind;
-      const timelineTransport = reducedMotion
+      const timelineTransport = isManualRecyclingTarget
+        ? "MANUAL SCENARIO"
+        : reducedMotion
         ? "STATIC"
         : co2TimelineHeld || performance.now() < co2TimelinePausedUntil
           ? "PAUSED"
@@ -5132,6 +5135,13 @@
       const input = consoleElement.querySelector("[data-signal-time]");
       input.value = String(signalTimePosition);
       input.disabled = !readout.temporal;
+      if (isManualRecyclingTarget) {
+        input.setAttribute("aria-label", "選択した国の再資源化率について、自分の改善目標を設定する");
+        input.setAttribute("aria-valuetext", `自分の改善目標 ${timelineState.scenarioRecycle.toFixed(1)}%、現在からプラス${timelineState.scenarioIncrease.toFixed(1)}ポイント`);
+      } else {
+        input.removeAttribute("aria-label");
+        input.removeAttribute("aria-valuetext");
+      }
       consoleElement.classList.toggle("is-static", !readout.temporal);
     });
     if (mapSignalEncodingLegend) {
@@ -5219,6 +5229,53 @@
       : baseDuration;
   };
 
+  const destroyStoryMapAivaBackdrop = () => {
+    storyMapAivaRuntime?.destroy?.();
+    storyMapAivaRuntime = null;
+    storyMapAivaBackdrop?.remove();
+    storyMapAivaBackdrop = null;
+  };
+
+  const mountStoryMapAivaBackdrop = () => {
+    destroyStoryMapAivaBackdrop();
+    const shell = document.createElement("div");
+    const universe = document.createElement("canvas");
+    shell.className = "story-map-aiva-backdrop";
+    shell.setAttribute("aria-hidden", "true");
+    universe.className = "story-map-aiva-universe";
+    universe.setAttribute("aria-hidden", "true");
+    shell.append(universe);
+    experience.append(shell);
+    storyMapAivaBackdrop = shell;
+
+    const createRuntime = () => {
+      if (!shell.isConnected) return;
+      storyMapAivaRuntime = globalThis.GaiaTrueEndWebGL?.create?.({
+        canvas: universe,
+        shell,
+        onRestore: () => {
+          storyMapAivaRuntime?.destroy?.();
+          storyMapAivaRuntime = null;
+          createRuntime();
+        },
+      }) || null;
+      if (!storyMapAivaRuntime) {
+        shell.dataset.webglState = "fallback";
+        return;
+      }
+      shell.dataset.webglState = "active";
+      void storyMapAivaRuntime.setScene?.("reconstruction", { immediate: true });
+      void storyMapAivaRuntime.setPresence?.("system", {
+        emphasis: true,
+        signal: "map01-co2-timeline",
+        immediate: true,
+      });
+    };
+
+    createRuntime();
+    requestAnimationFrame(() => shell.classList.add("is-visible"));
+  };
+
   const completeStoryMapTimeline = ({ finalFrameMs = STORY_MAP_FINAL_FRAME_MS } = {}) => {
     if (storyModeDetour?.kind !== "map01" || storyModeDetour.phase === "temperature-anomaly" || storyMapTimelineCompleted) return;
     storyMapTimelineCompleted = true;
@@ -5262,6 +5319,7 @@
       reducedMotion ||
       !japanIsOpen ||
       !isTimelineMode ||
+      signalMode.id === "nothing-is-waste" ||
       co2TimelineHeld
     ) return;
 
@@ -5357,8 +5415,9 @@ drawFixedDiameterPie({ recycled: country.recyclePercent, other: 100 - country.re
 drawOutline(country.valueStatus === "IMPUTED" ? "DASHED" : "SOLID");
 // Geographic proximity does not explain policy or reporting-definition differences.
 
-const scenarioRecycle = clamp(country.recyclePercent + scenarioSweep, 0, 100); // SCENARIO
-drawOuterScenarioRing(scenarioRecycle); // SOURCE and DERIVED base values remain visible`,
+const target = mix(country.recyclePercent, 100, sliderPosition); // SCENARIO / visitor-defined
+drawOuterTargetRing(target); // never below the current baseline
+// This is not a forecast or an official policy target.`,
     "anthropocene-scar": `const viirsGeographic = projectWebMercatorRasterToGeographic(viirsNightLights2016);
 drawRadianceGlow(viirsGeographic); // DISPLAY GAIN ONLY; pixel positions remain geographic
 
@@ -5693,6 +5752,10 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const selectedPath = introSelectedPath;
     if (!INTRO_PATHS[selectedPath]) return;
     runSceneTransition(() => {
+      if (selectedPath === "abstract") {
+        closeIntro();
+        return;
+      }
       if (selectedPath === "map") {
         closeIntro({ restoreFocus: false });
         openJapan({ respectUrlMode: false });
@@ -5826,9 +5889,10 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     experience.style.setProperty("--accent-rgb", mode.rgb);
     japanLayer.style.setProperty("--map-accent", mode.accent);
     japanLayer.style.setProperty("--map-accent-rgb", mode.rgb);
-    japanLayer.classList.toggle("is-earthquake-mode", isTheme(6));
+    japanLayer.classList.toggle("is-earthquake-mode", isTheme(5));
     japanModeNumber.textContent = formatModeNumber(modeToIndex);
     japanModeTitle.textContent = mode.titleJa;
+    japanTitle.textContent = mode.titleJa;
     document.querySelector('meta[name="theme-color"]').setAttribute("content", "#03070d");
 
     modeButtons.forEach((button, index) => {
@@ -5869,7 +5933,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (normalizedIndex === modeToIndex) {
       if (japanIsOpen) {
         restartCo2Timeline(0);
-        if (isTheme(6, normalizedIndex)) setJapanDataLayer("snapshot");
+        if (isTheme(5, normalizedIndex)) setJapanDataLayer("snapshot");
         animateEarthViewForMode(normalizedIndex);
       }
       if (resetAutoTimer) {
@@ -5887,7 +5951,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     updateModeInterface();
     if (japanIsOpen) {
       restartCo2Timeline(0);
-      if (isTheme(6, normalizedIndex)) setJapanDataLayer("snapshot");
+      if (isTheme(5, normalizedIndex)) setJapanDataLayer("snapshot");
       animateEarthViewForMode(normalizedIndex);
     }
     if (conceptIsOpen) {
@@ -6136,7 +6200,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
         createPulse &&
         !japanView.dragged &&
         !japanView.gesture &&
-        isTheme(5) &&
+        isTheme(4) &&
         pressDuration >= 650
       ) {
         anthropocenePeelUntil = performance.now() + 6000;
@@ -6520,7 +6584,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       setJapanDataLayer(requestedDataLayer);
     } else if (requestedDataLayer === "live") {
       setJapanDataLayer("snapshot");
-    } else if (isTheme(6)) {
+    } else if (isTheme(5)) {
       setJapanDataLayer("snapshot");
     }
     updateJapanDataInterface();
@@ -6644,15 +6708,19 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   const focusTourControl = (name) => {
     clearTourFocus();
     const target = {
+      start: document.querySelector("[data-intro-path='map']"),
       map: japanMap,
       timeline: japanLayer.querySelector("[data-signal-time]"),
       source: sourcePanel.querySelector("[data-source-tab='raw']"),
       transform: sourcePanel.querySelector("[data-source-tab='transform']"),
       visual: sourcePanel.querySelector("[data-source-tab='visual']"),
+      story: document.querySelector("[data-intro-path='novel']"),
+      credits: introOpenDataExhibit,
     }[name];
-    if (!(target instanceof HTMLElement)) return false;
+    if (!(target instanceof Element)) return false;
     target.classList.add("gaia-tour-highlight-target");
     target.setAttribute("data-gaia-tour-target", name);
+    if (name === "credits") target.scrollIntoView({ block: "center", inline: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
     return true;
   };
   const getTourReceipt = () => {
@@ -6777,14 +6845,18 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanLayer.dataset.storyMode = kind;
     japanLayer.dataset.storyPhase = phase;
     if (kind === "map01") {
+      mountStoryMapAivaBackdrop();
       japanLayer.setAttribute("role", "dialog");
       japanLayer.setAttribute("aria-modal", "true");
       if (phase === "temperature-anomaly") {
         restartCo2Timeline(50);
         co2TimelineHeld = true;
         updateSignalInterface();
-      } else if (reducedMotion) {
-        requestAnimationFrame(() => completeStoryMapTimeline({ finalFrameMs: 900 }));
+      } else {
+        restartCo2Timeline(0);
+        if (reducedMotion) {
+          requestAnimationFrame(() => completeStoryMapTimeline({ finalFrameMs: 900 }));
+        }
       }
     }
     requestAnimationFrame(() => {
@@ -6820,6 +6892,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     window.clearTimeout(storyMapReturnTimer);
     storyMapReturnTimer = 0;
     storyMapTimelineCompleted = false;
+    destroyStoryMapAivaBackdrop();
     delete experience.dataset.storyMode;
     storyModeDetour = null;
     const globalSignalConsole = experience.querySelector(".signal-console-main");

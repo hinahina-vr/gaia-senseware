@@ -48,6 +48,8 @@
     uniform vec3 u_color_c;
 
     const float AIVA_FIELD_DRIFT_SPEED = 0.18;
+    const float AMBIENT_FLOW_SPEED = 0.055;
+    const float AMBIENT_BREATH_SPEED = 0.17;
 
     float hash21(vec2 p) {
       p = fract(p * vec2(123.34, 456.21));
@@ -316,26 +318,42 @@
       p += u_pointer * vec2(0.035, 0.024);
 
       float scenePhase = u_scene * 0.71;
-      float slowTime = u_time * 0.025;
-      vec2 drift = vec2(cos(scenePhase + slowTime), sin(scenePhase * 1.37 - slowTime)) * 0.22;
-      vec2 q = rotate2d(0.18 * sin(scenePhase)) * (p + drift);
-      float cloud = fbm(q * 1.16 + vec2(slowTime, -slowTime * 0.7));
-      float detail = fbm(q * 2.65 - vec2(slowTime * 0.8, scenePhase));
+      float flowTime = u_time * AMBIENT_FLOW_SPEED;
+      float breath = sin(u_time * AMBIENT_BREATH_SPEED + scenePhase * 0.73);
+      float counterBreath = cos(u_time * AMBIENT_BREATH_SPEED * 0.71 - scenePhase * 0.38);
+      vec2 breathingPoint = rotate2d(counterBreath * 0.014) * p * (1.0 + breath * 0.028);
+      vec2 orbitalDrift = vec2(
+        cos(scenePhase + flowTime * 0.72),
+        sin(scenePhase * 1.37 - flowTime * 0.58)
+      ) * 0.28;
+      vec2 advection = vec2(
+        flowTime * 0.72 + sin(flowTime * 0.64 + scenePhase) * 0.08,
+        -flowTime * 0.46 + cos(flowTime * 0.53 - scenePhase) * 0.07
+      );
+      vec2 q = rotate2d(0.18 * sin(scenePhase) + breath * 0.02) * (breathingPoint + orbitalDrift);
+      float cloud = fbm(q * 1.16 + advection);
+      float detail = fbm(rotate2d(breath * 0.06) * q * 2.65 - advection * 1.18 + vec2(0.0, -scenePhase));
       float ridge = pow(max(0.0, 1.0 - abs(detail * 2.0 - 1.0)), 3.4);
-      float veil = smoothstep(0.28, 0.9, cloud) * (0.52 + ridge * 0.62);
+      float veil = smoothstep(0.28, 0.9, cloud) * (0.52 + ridge * 0.62) * (0.96 + breath * 0.08);
 
       float edgeDistance = dot(q * vec2(0.72, 0.9), q * vec2(0.72, 0.9));
-      float filamentNoise = fbm(q * 3.8 + vec2(scenePhase, -slowTime));
-      float filament = softLine(abs(q.y * 0.58 + 0.22 * sin(q.x * 2.0 + filamentNoise * 3.8 + scenePhase)), 0.055);
+      float filamentNoise = fbm(q * 3.8 + advection * 0.52 + vec2(scenePhase, -flowTime * 0.22));
+      float filament = softLine(
+        abs(q.y * 0.58 + 0.22 * sin(q.x * 2.0 + filamentNoise * 3.8 + scenePhase + breath * 0.42)),
+        0.055
+      );
 
       vec3 color = u_color_a * (0.72 + 0.16 * (1.0 - min(1.0, edgeDistance)));
       color += u_color_b * veil * 0.72;
       color += mix(u_color_b, u_color_c, 0.62) * ridge * 0.38;
       color += mix(u_color_b, u_color_c, 0.4) * filament * (0.025 + 0.055 * detail);
 
-      float stars = starLayer(p + vec2(slowTime * 0.08, 0.0), 17.0, 7.0 + u_scene, 0.972);
-      stars += starLayer(rotate2d(0.24) * p - vec2(slowTime * 0.05, 0.0), 29.0, 19.0 + u_scene * 2.0, 0.982) * 0.72;
-      stars += starLayer(rotate2d(-0.17) * p, 46.0, 41.0 + u_scene * 3.0, 0.988) * 0.5;
+      vec2 starDriftA = vec2(flowTime * 0.055, breath * 0.012);
+      vec2 starDriftB = vec2(flowTime * 0.038, counterBreath * 0.01);
+      vec2 starDriftC = vec2(breath * 0.006, -flowTime * 0.018);
+      float stars = starLayer(p + starDriftA, 17.0, 7.0 + u_scene, 0.972);
+      stars += starLayer(rotate2d(0.24) * p - starDriftB, 29.0, 19.0 + u_scene * 2.0, 0.982) * 0.72;
+      stars += starLayer(rotate2d(-0.17) * p + starDriftC, 46.0, 41.0 + u_scene * 3.0, 0.988) * 0.5;
       color += mix(vec3(0.72, 0.88, 1.0), u_color_c, 0.32) * stars * 1.7;
 
       float presenceFadeOut = 1.0 - smoothstep(0.0, 0.58, u_speaker_mix);
@@ -709,6 +727,7 @@
     canvas.dataset.webglPresenceMix = "0.0000";
     canvas.dataset.webglPresenceState = "hidden";
     canvas.dataset.webglPresenceDuration = String(presenceTransitionDuration);
+    canvas.dataset.webglAmbientMotion = "drift-breathe-parallax";
     canvas.dataset.webglQuality = qualityTier;
     canvas.dataset.webglQualityReason = constrainedByDevice ? "device-capability" : "default";
     start();

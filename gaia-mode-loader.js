@@ -9,42 +9,42 @@
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-map-europe-clear-1",
-        "./mode-exit.css?v=gaia-story-control-blue-1",
-        "./observation-notebook.css?v=gaia-contest-notebook-2",
+        "./map-ui-grid-polish.css?v=gaia-exhibit-heading-actions-1",
+        "./mode-exit.css?v=gaia-story-control-gap-1",
+        "./observation-notebook.css?v=gaia-exhibit-heading-actions-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
         "./data-ledger.js?v=gaia-31",
         "./data-journey.js?v=gaia-01",
-        "./app-content.js?v=gaia-map-nine-exhibits-1",
-        "./app.js?v=gaia-map-live-exhibits-1-tour-layout-1",
+        "./app-content.js?v=gaia-abstract-entry-1",
+        "./app.js?v=gaia-story-map-aiva-1-tour-tooltip-2",
         "./map-ui-grid-polish.js?v=gaia-map-europe-clear-1",
         "./particles-v9.js?v=gaia-adaptive-performance-1",
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
-        "./observation-notebook.js?v=gaia-contest-notebook-2",
+        "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
       ],
-      modules: ["./src/exploration/index.js?v=gaia-live-senseware-2"],
+      modules: ["./src/exploration/index.js?v=gaia-exhibit-heading-actions-1"],
     },
     story: {
       templates: ["gaia-template-story"],
       styles: [
         "./styles.css?v=gaia-cross-platform-fonts-1-contest-entry-2",
         "./scene-transition.css?v=gaia-52",
-        "./novel-mode.css?v=gaia-mobile-chat-panel-1",
+        "./novel-mode.css?v=gaia-story-map-aiva-2",
         "./true-end.css?v=gaia-adaptive-performance-1",
-        "./mode-exit.css?v=gaia-story-control-blue-1",
+        "./mode-exit.css?v=gaia-story-control-gap-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
         "./novel-story-data.js?v=gaia-approved-script-14",
         "./true-end-data.js?v=gaia-finale-webgl-1",
-        "./true-end-webgl.js?v=gaia-adaptive-performance-1",
+        "./true-end-webgl.js?v=gaia-ambient-motion-1",
         "./true-end-mode.js?v=gaia-novacene-entry-1",
         "./novel-background-cues.js?v=gaia-amane-no-plug-1",
         "./novel-back-half-cues.js?v=gaia-finale-sunset-1",
         "./novel-temporal.js?v=gaia-temporal-1",
-        "./novel-mode.js?v=gaia-ui-restore-de6-1",
+        "./novel-mode.js?v=gaia-story-map-aiva-2",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
     },
@@ -54,7 +54,7 @@
         "./styles.css?v=gaia-cross-platform-fonts-1-contest-entry-2",
         "./scene-transition.css?v=gaia-52",
         "./gx-mode.css?v=gaia-gx-mobile-installation-1",
-        "./mode-exit.css?v=gaia-story-control-blue-1",
+        "./mode-exit.css?v=gaia-story-control-gap-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -68,7 +68,7 @@
         "./styles.css?v=gaia-cross-platform-fonts-1-contest-entry-2",
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
-        "./mode-exit.css?v=gaia-story-control-blue-1",
+        "./mode-exit.css?v=gaia-story-control-gap-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -82,23 +82,23 @@
       styles: [
         "./styles.css?v=gaia-cross-platform-fonts-1-contest-entry-2",
         "./sound-mode.css?v=gaia-cross-platform-fonts-1",
-        "./mode-exit.css?v=gaia-story-control-blue-1",
+        "./mode-exit.css?v=gaia-story-control-gap-1",
       ],
       scripts: ["./sound-mode.js?v=gaia-suno-credit-1"],
       modules: ["./src/exploration/procedural-audio.js?v=gaia-live-senseware-1"],
     },
     notebook: {
       templates: [],
-      styles: ["./observation-notebook.css?v=gaia-contest-notebook-2"],
+      styles: ["./observation-notebook.css?v=gaia-exhibit-heading-actions-1"],
       scripts: [
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
-        "./observation-notebook.js?v=gaia-contest-notebook-2",
+        "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
       ],
     },
     tour: {
       templates: [],
-      styles: ["./guided-tour.css?v=gaia-contest-tour-3"],
-      scripts: ["./guided-tour.js?v=gaia-contest-tour-3"],
+      styles: ["./guided-tour.css?v=gaia-tour-tooltip-2"],
+      scripts: ["./guided-tour.js?v=gaia-tour-tooltip-2"],
     },
   });
 
@@ -156,6 +156,23 @@
     return promise;
   };
 
+  const waitForGroupReady = (name) => {
+    if (name !== "exploration" || ["true", "fallback"].includes(document.documentElement.dataset.gaiaAppReady)) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      const timeout = window.setTimeout(() => {
+        window.removeEventListener("gaia:app-ready", onReady);
+        reject(new Error("GAIA exploration runtime did not become ready"));
+      }, 15_000);
+      const onReady = () => {
+        window.clearTimeout(timeout);
+        resolve();
+      };
+      window.addEventListener("gaia:app-ready", onReady, { once: true });
+    });
+  };
+
   const load = (name) => {
     if (loadedGroups.has(name)) return Promise.resolve();
     if (groupPromises.has(name)) return groupPromises.get(name);
@@ -168,6 +185,7 @@
       await Promise.all(group.styles.map(loadStyle));
       await Promise.all((group.modules || []).map(loadModule));
       for (const script of group.scripts) await loadScript(script);
+      await waitForGroupReady(name);
       loadedGroups.add(name);
       performance.mark(`gaia:${name}-load-end`);
       performance.measure(`gaia:${name}-load`, `gaia:${name}-load-start`, `gaia:${name}-load-end`);

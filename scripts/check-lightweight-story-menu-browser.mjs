@@ -81,8 +81,10 @@ const createPage = async (viewport, label) => {
     globalThis.__qaVisible = eval(source);
     globalThis.__qaNovelOpenAtCount = 0;
     globalThis.__qaNovelOpenCount = 0;
+    globalThis.__qaSpaceOpenAtCount = 0;
     window.addEventListener("gaia:novel-open-at-mode", () => { globalThis.__qaNovelOpenAtCount += 1; }, true);
     window.addEventListener("gaia:novel-open", () => { globalThis.__qaNovelOpenCount += 1; }, true);
+    window.addEventListener("gaia:space-open-at-mode", () => { globalThis.__qaSpaceOpenAtCount += 1; }, true);
   }, visibleSource);
   return { context, page };
 };
@@ -155,9 +157,10 @@ const cardScan = async (page) => page.evaluate(() => {
 
 const assertCards = (scan, viewport) => {
   assert.equal(scan.cardCount, 4);
-  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "宇宙から見る", "音を聴く"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "宇宙の記録へ。", "物語の音楽へ。"]);
-  assert.equal(scan.cards.some((card) => card.path === "abstract" || card.title === "光に触れる"), false);
+  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "光に触れる", "音を聴く"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "数字を光へ。", "物語の音楽へ。"]);
+  assert.equal(scan.cards.some((card) => card.path === "space" || card.title === "宇宙から見る"), false);
+  assert.equal(scan.cards.some((card) => card.path === "abstract" && card.title === "光に触れる"), true);
   assert(scan.cards.every((card) => card.glyphVisible && card.focusable && card.rect.width > 0 && card.rect.height >= 90));
   assert.equal(scan.hiddenDetailVisibleCount, 0);
   assert(scan.hiddenDetailCount > 0);
@@ -171,6 +174,36 @@ const assertCards = (scan, viewport) => {
     const cardTops = scan.cards.map(({ layoutTop }) => layoutTop);
     assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the four observation cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
   }
+};
+
+const scanAbstractEntry = async (viewport) => {
+  const { context, page } = await createPage(viewport, `${viewport.name}-abstract-entry`);
+  await openIntro(page);
+  await page.locator('[data-intro-path="abstract"]').click();
+  await page.waitForFunction(() => __qaVisible(document.querySelector("#intro-sense-stage")));
+  const selection = await page.evaluate(() => ({
+    title: document.querySelector("#intro-sense-title")?.textContent.replace(/\s+/gu, "").trim(),
+    choiceCount: document.querySelectorAll(".intro-mode-choice").length,
+  }));
+  assert.equal(selection.title, "どの感覚に、触れますか？");
+  assert.equal(selection.choiceCount, 8);
+  await page.locator(".intro-mode-choice").first().click();
+  await page.waitForFunction(() => document.querySelector("#intro-layer")?.hidden === true);
+  const entered = await page.evaluate(() => ({
+    introVisible: __qaVisible(document.querySelector("#intro-layer")),
+    canvasVisible: __qaVisible(document.querySelector("#gaia-canvas")),
+    novelOpenAtCount: globalThis.__qaNovelOpenAtCount,
+    spaceOpenAtCount: globalThis.__qaSpaceOpenAtCount,
+    overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+  }));
+  assert.equal(entered.introVisible, false);
+  assert.equal(entered.canvasVisible, true);
+  assert.equal(entered.novelOpenAtCount, 0);
+  assert.equal(entered.spaceOpenAtCount, 0);
+  assert.equal(entered.overflowX, false);
+  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-abstract-entry.png`) });
+  report.scans.push({ viewport: viewport.name, case: "abstract-entry", selection, entered, passed: true });
+  await context.close();
 };
 
 const titleState = async (page) => page.evaluate(() => ({
@@ -494,6 +527,8 @@ const scanRuntimeStoryContract = async () => {
 
 try {
   for (const viewport of viewports) await scanIntroReturn(viewport);
+  await scanAbstractEntry(viewports[2]);
+  await scanAbstractEntry(viewports[3]);
   if (!cardsOnly) {
     await scanMetadataAndRuntimeGallery(viewports[0], "festival_concept_001");
     await scanMetadataAndRuntimeGallery(viewports[1], "festival_concept_008");

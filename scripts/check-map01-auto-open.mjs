@@ -11,6 +11,7 @@ const styles = read("novel-mode.css");
 const baseStyles = read("styles.css");
 const backgroundCues = read("novel-background-cues.js");
 const runtime = read("novel-mode.js");
+const modeLoader = read("gaia-mode-loader.js");
 await import(`${pathToFileURL(path.join(root, "novel-story-data.js")).href}?map01=${Date.now()}`);
 
 const story = globalThis.GAIA_NOVEL_STORY;
@@ -33,10 +34,10 @@ const check = (name, fn) => {
 
 check("both map01 phases and gx interaction data exist", () => {
   assert.equal(story.scenes.length, 6);
-  assert.equal(steps.length, 386);
+  assert.equal(steps.length, 374);
   assert.deepEqual(interactions, [
     { id: "map_mode01_004", kind: "map01", optional: false, modeId: "breathing-earth", phase: "", requiredViews: ["timeline_complete"] },
-    { id: "map_mode01_023", kind: "map01", optional: false, modeId: "breathing-earth", phase: "temperature-anomaly", requiredViews: ["long_term", "temperature_anomaly"] },
+    { id: "map_mode01_023", kind: "map01", optional: false, modeId: "breathing-earth", phase: "temperature-anomaly", requiredViews: ["long_term"] },
     { id: "gx_experience_017", kind: "gx", optional: false, modeId: "", phase: "", requiredViews: [] },
   ]);
   for (const retiredId of ["gx_deep_time_003", "mode03_map_003", "mode07_abstract_003", "mode08_map_layers_003", "mode10_space_003"]) {
@@ -72,7 +73,8 @@ check("map01 uses a modal, triple-speed playback, and automatic return", () => {
   assert.match(app, /操作 1\/2｜年代のスライダーを動かしてください。/u);
   assert.match(app, /操作 2\/2｜地図の気になる場所へ触れてください。/u);
   assert.match(runtime, /detourAutoReturnTimer = window\.setTimeout\(requestDetourReturn, motionReduced\(\) \? 0 : 520\);/u);
-  assert.match(runtime, /const storyMapModalSkip = document\.querySelector\("#story-map-modal-skip"\);/u);
+  assert.match(runtime, /const storyMapModalSkip = \(\) => document\.querySelector\("#story-map-modal-skip"\);/u);
+  assert.match(runtime, /event\.target\.closest\("#story-map-modal-skip"\)/u);
   assert.match(runtime, /detourSkipFallbackTimer = window\.setTimeout\(\(\) => \{/u);
   assert.match(html, /id="story-map-modal-skip"[\s\S]{0,240}<strong>物語へ戻る<\/strong>/u);
   assert.doesNotMatch(app, /mountStoryMapGuide/u);
@@ -92,13 +94,14 @@ check("story copy describes automatic playback without retired controls", () => 
 });
 
 check("runtime cache keys are advanced", () => {
-  assert.match(html, /styles\.css\?v=gaia-map-no-tabletop-1/u);
-  assert.match(html, /novel-background-cues\.js\?v=gaia-finale-sunset-1/u);
-  assert.match(html, /app\.js\?v=gaia-story-map-skip-1/u);
-  assert.match(html, /novel-mode\.css\?v=gaia-finale-sunset-1/u);
-  assert.match(html, /gx-mode\.js\?v=gaia-gx-transition-skip-1/u);
-  assert.match(html, /novel-mode\.js\?v=gaia-finale-sunset-1/u);
-  assert.match(html, /novel-story-data\.js\?v=gaia-approved-script-14/u);
+  assert.match(html, /gaia-mode-loader\.js\?v=gaia-tour-tooltip-2/u);
+  assert.match(modeLoader, /styles\.css\?v=gaia-live-exhibits-1-tour-layout-1/u);
+  assert.match(modeLoader, /novel-background-cues\.js\?v=gaia-amane-no-plug-1/u);
+  assert.match(modeLoader, /app\.js\?v=gaia-story-map-aiva-1-tour-tooltip-2/u);
+  assert.match(modeLoader, /novel-mode\.css\?v=gaia-story-map-aiva-2/u);
+  assert.match(modeLoader, /gx-mode\.js\?v=gaia-gx-mobile-installation-1/u);
+  assert.match(modeLoader, /novel-mode\.js\?v=gaia-story-map-aiva-2/u);
+  assert.match(modeLoader, /novel-story-data\.js\?v=gaia-approved-script-14/u);
 });
 
 check("tabletop map artwork is absent from story and map runtime", () => {

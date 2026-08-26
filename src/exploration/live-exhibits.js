@@ -3,7 +3,7 @@ import { STATUS_LABELS } from "./transforms.js";
 const EXHIBITS = Object.freeze([
   Object.freeze({
     id: "wind-field",
-    number: "10",
+    number: "09",
     title: "風脈 — WIND FIELD",
     shortTitle: "風脈",
     key: "windSpeed",
@@ -14,7 +14,7 @@ const EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "carbon-pulse",
-    number: "11",
+    number: "10",
     title: "炭素の呼吸 — CARBON PULSE",
     shortTitle: "炭素の呼吸",
     key: "co2",
@@ -25,7 +25,7 @@ const EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "rain-chorus",
-    number: "12",
+    number: "11",
     title: "雨の記憶 — RAIN CHORUS",
     shortTitle: "雨の記憶",
     key: "precipitation",
@@ -36,7 +36,7 @@ const EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "no2-veil",
-    number: "13",
+    number: "12",
     title: "大気の痕跡 — NO₂ VEIL",
     shortTitle: "大気の痕跡",
     key: "no2",
@@ -243,6 +243,7 @@ const applyHeading = () => {
   layer.style.setProperty("--map-accent-rgb", exhibit.rgb);
   document.querySelector("#japan-mode-number").textContent = exhibit.number;
   document.querySelector("#japan-mode-title").textContent = exhibit.shortTitle;
+  document.querySelector("#japan-title").textContent = exhibit.shortTitle;
   buttons.forEach((button, index) => button.setAttribute("aria-current", String(index === activeIndex)));
   document.querySelectorAll("#japan-mode-list .map-mode-button:not([data-live-exhibit])").forEach((button) => button.setAttribute("aria-current", "false"));
 };
@@ -282,6 +283,7 @@ const deactivate = ({ number, title } = {}) => {
   if (restored) {
     document.querySelector("#japan-mode-number").textContent = restored.number;
     document.querySelector("#japan-mode-title").textContent = restored.title;
+    document.querySelector("#japan-title").textContent = restored.title;
   }
   savedHeading = null;
   dispatchEvent(new CustomEvent("gaia:live-exhibit-change", { detail: { index: -1, id: null } }));

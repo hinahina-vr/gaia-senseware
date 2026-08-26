@@ -208,18 +208,33 @@ body.map-grid-desktop .map-grid-data:hover {
   }
 }
 
-/* The map exit owns the same top-left home position as the main exhibit view.
-   The map panels begin below this row, so the exit stays visually independent. */
-.experience.japan-open .japan-close {
+/* Back and snapshot capture share one compact top-left operation row. */
+.experience.japan-open .japan-map-actions {
   position: fixed !important;
   z-index: 700 !important;
   top: max(18px, env(safe-area-inset-top)) !important;
   right: auto !important;
   bottom: auto !important;
   left: max(18px, env(safe-area-inset-left)) !important;
+  display: flex;
+  gap: 8px;
+  align-items: center;
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
+}
+
+.experience.japan-open .japan-map-actions .japan-close {
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+body.novel-open .japan-layer[data-story-mode="map01"] .japan-map-actions {
+  display: none !important;
 }
 
 /* Audio can remain on the opposite side of the shared top row. */
@@ -242,7 +257,7 @@ body:has(.experience.japan-open) .gaia-audio-dock {
 }
 
 @media (max-width: 720px) {
-  .experience.japan-open .japan-close {
+  .experience.japan-open .japan-map-actions {
     top: max(12px, env(safe-area-inset-top)) !important;
     right: auto !important;
     left: max(12px, env(safe-area-inset-left)) !important;

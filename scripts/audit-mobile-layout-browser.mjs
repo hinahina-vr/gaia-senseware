@@ -223,7 +223,7 @@ const scanObservation = async (viewport) => {
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
   });
   await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 8);
   await page.evaluate(() => {
     for (const selector of ["#gaia-opening", "#intro-layer"]) {
       const node = document.querySelector(selector);
@@ -264,7 +264,7 @@ const prepareMainModePage = async (viewport, label) => {
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
   });
   await page.goto(new URL("/?mode=1#earth", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 8);
   await page.evaluate(() => {
     for (const selector of ["#gaia-opening", "#intro-layer", "#novel-layer", "#true-end-layer"]) {
       const node = document.querySelector(selector);
@@ -284,7 +284,7 @@ const scanMapMode = async (viewport) => {
   const surface = "map-mode";
   const { context, page } = await prepareMainModePage(viewport, `${viewport.name}-${surface}`);
   await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
-  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 9);
+  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button:not([data-live-exhibit])").length === 8);
   await page.waitForFunction(() => !document.body.classList.contains("scene-transitioning"));
   await page.waitForTimeout(220);
   let modeSelected = false;
