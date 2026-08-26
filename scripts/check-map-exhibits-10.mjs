@@ -8,6 +8,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 const appContentSource = read("app-content.js");
 const appSource = read("app.js");
 const modeLoaderSource = read("gaia-mode-loader.js");
+const liveExhibitsSource = read("src/exploration/live-exhibits.js");
 const html = read("index.html");
 const packageJson = read("package.json");
 const gaiaData = JSON.parse(read("data/gaia-signals.json"));
@@ -131,9 +132,12 @@ assert.match(appSource, /cancelEarthViewAnimation\("user-keyboard"\)/u);
 assert.match(appSource, /dataset\.japanScreenX/u);
 
 assert.match(html, /地球観測データの9つの展示/u);
-assert.match(html, /INSTALLATION BANK \/ 01—09/u);
+assert.match(html, /INSTALLATION BANK \/ 01—13/u);
 assert.match(html, /9つの観測展示/u);
 assert.match(html, /01 \/ 09/u);
+for (const [number, id] of [["10", "wind-field"], ["11", "carbon-pulse"], ["12", "rain-chorus"], ["13", "no2-veil"]]) {
+  assert.match(liveExhibitsSource, new RegExp(`id: "${id}"[\\s\\S]*number: "${number}"`, "u"));
+}
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
@@ -141,13 +145,13 @@ assert.match(html, /gaia-mode-loader\.js\?v=gaia-ui-restore-de6-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-map-europe-clear-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-map-europe-clear-1/u);
 assert.match(modeLoaderSource, /app-content\.js\?v=gaia-map-nine-exhibits-1/u);
-assert.match(modeLoaderSource, /app\.js\?v=gaia-map-nine-exhibits-1/u);
+assert.match(modeLoaderSource, /app\.js\?v=gaia-map-live-exhibits-1-tour-layout-1/u);
 assert.match(appSource, /tier: "native", ratioCap: 3, maxPixels: 9000000/u);
 assert.match(appSource, /dataset\.renderPixelRatio/u);
 assert.match(appSource, /fixed-diameter-pie/u);
 assert.match(appSource, /緑 \/ 再資源化/u);
 assert.match(content.modes[4].description, /同じ大きさの円グラフ/u);
-assert.match(modeLoaderSource, /styles\.css\?v=gaia-cross-platform-fonts-1/u);
+assert.match(modeLoaderSource, /styles\.css\?v=gaia-live-exhibits-1-tour-layout-1/u);
 assert.doesNotMatch(html, /gaia-remix-20/u);
 assert.doesNotMatch(packageJson, /check-remix-modes/u);
 

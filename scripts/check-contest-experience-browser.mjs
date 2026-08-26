@@ -236,6 +236,24 @@ try {
   await directPage.reload({ waitUntil: "domcontentloaded" });
   await directPage.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter), null, { timeout: 30_000 });
   assert.equal(await directPage.locator("#japan-layer").count(), 1, "history/reload must not duplicate the exploration UI");
+  await directPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 4, null, { timeout: 15_000 });
+  for (const number of ["10", "11", "12", "13"]) {
+    await directPage.locator(`#japan-mode-list [data-live-exhibit]`, { hasText: number }).click();
+    assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), true, `${number}: live exhibit canvas hidden`);
+    assert.equal(await directPage.locator(".gaia-live-exhibit-readout").isVisible(), true, `${number}: live exhibit readout hidden`);
+    assert.equal(await directPage.locator("#japan-mode-number").textContent(), number, `${number}: bank heading mismatch`);
+  }
+  const liveCanvas = await directPage.evaluate(() => {
+    const canvas = document.querySelector("#gaia-live-exhibit-canvas");
+    const sample = canvas.getContext("2d").getImageData(0, 0, Math.min(80, canvas.width), Math.min(80, canvas.height)).data;
+    return { width: canvas.width, height: canvas.height, painted: sample.some((value, index) => index % 4 === 3 && value > 0) };
+  });
+  assert(liveCanvas.width > 0 && liveCanvas.height > 0 && liveCanvas.painted, "live exhibit canvas was not painted");
+  assert.equal(await directPage.locator(".japan-heading .japan-data-button").first().isVisible(), false, "live readout overlaps standard map actions");
+  await directPage.screenshot({ path: path.join(outputDir, "live-exhibit-no2.png"), animations: "disabled" });
+  await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").first().click();
+  assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), false, "standard exhibit did not close live canvas");
+  report.entry.liveExhibits = "passed";
   report.entry.history = "passed";
   await directContext.close();
 
@@ -310,6 +328,19 @@ try {
   await tourPage.screenshot({ path: path.join(outputDir, "tour-mobile.png"), animations: "disabled" });
   await tourPage.keyboard.press("Escape");
   await tourPage.waitForFunction(() => GaiaGuidedTour.getState().active === false);
+  await tourPage.waitForTimeout(80);
+  const exitLayout = await tourPage.evaluate(() => {
+    const intro = document.querySelector("#intro-layer").getBoundingClientRect();
+    return {
+      scrollX,
+      overflowX: document.documentElement.scrollWidth - innerWidth,
+      intro: intro.toJSON(),
+      width: innerWidth,
+    };
+  });
+  assert.equal(exitLayout.scrollX, 0, "tour exit retained horizontal scroll");
+  assert(exitLayout.overflowX <= 1, `tour exit created ${exitLayout.overflowX}px horizontal overflow`);
+  assert(exitLayout.intro.left >= -1 && exitLayout.intro.right <= exitLayout.width + 1, "tour exit intro did not fill the viewport");
   await tourPage.evaluate(() => GaiaGuidedTour.start({ source: "reentry" }));
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().active), true);
   await tourPage.evaluate(() => GaiaGuidedTour.exit());

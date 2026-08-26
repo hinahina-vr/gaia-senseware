@@ -91,7 +91,12 @@ const scheduleReconnect = () => {
 };
 
 const mergeProvider = (providerEvent) => {
-  const events = store.getState().events.filter((event) => event.provider !== providerEvent.provider);
+  // NOAA publishes independent NDBC and GML events. Replace only the same
+  // dataset so a wind update cannot erase the CO₂ value (or vice versa).
+  const events = store.getState().events.filter((event) => !(
+    event.provider === providerEvent.provider
+    && event.datasetId === providerEvent.datasetId
+  ));
   events.push(providerEvent);
   publish(events, "live", true);
 };

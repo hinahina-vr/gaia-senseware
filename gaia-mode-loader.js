@@ -5,7 +5,7 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-cross-platform-fonts-1-contest-entry-2",
+        "./styles.css?v=gaia-live-exhibits-1-tour-layout-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
@@ -18,13 +18,13 @@
         "./data-ledger.js?v=gaia-31",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-map-nine-exhibits-1",
-        "./app.js?v=gaia-map-nine-exhibits-1-contest-tour-2",
+        "./app.js?v=gaia-map-live-exhibits-1-tour-layout-1",
         "./map-ui-grid-polish.js?v=gaia-map-europe-clear-1",
         "./particles-v9.js?v=gaia-adaptive-performance-1",
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
         "./observation-notebook.js?v=gaia-contest-notebook-2",
       ],
-      modules: ["./src/exploration/index.js?v=gaia-live-senseware-1"],
+      modules: ["./src/exploration/index.js?v=gaia-live-senseware-2"],
     },
     story: {
       templates: ["gaia-template-story"],
@@ -97,8 +97,8 @@
     },
     tour: {
       templates: [],
-      styles: ["./guided-tour.css?v=gaia-contest-tour-2"],
-      scripts: ["./guided-tour.js?v=gaia-contest-tour-2"],
+      styles: ["./guided-tour.css?v=gaia-contest-tour-3"],
+      scripts: ["./guided-tour.js?v=gaia-contest-tour-3"],
     },
   });
 

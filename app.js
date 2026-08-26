@@ -5656,6 +5656,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     introPathStage.hidden = !showingPath;
     introSenseStage.hidden = showingPath;
     introLayer.scrollTop = 0;
+    introLayer.scrollLeft = 0;
     setIntroVisual(showingPath ? "default" : introSelectedPath);
     const visibleStage = showingPath ? introPathStage : introSenseStage;
     animateIntroStage(visibleStage, { revealPanels });
@@ -6652,7 +6653,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (!(target instanceof HTMLElement)) return false;
     target.classList.add("gaia-tour-highlight-target");
     target.setAttribute("data-gaia-tour-target", name);
-    target.scrollIntoView?.({ block: "nearest", inline: "nearest" });
     return true;
   };
   const getTourReceipt = () => {
@@ -6702,6 +6702,8 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       if (japanIsOpen) closeJapan({ restoreFocus: false, updateHash: false });
       if (sourceIsOpen) closeSource({ restoreFocus: false, updateHash: false });
       if (!introIsOpen) openIntro({ restoreFocusOnClose: false });
+      introLayer.scrollLeft = 0;
+      document.scrollingElement?.scrollTo?.({ left: 0, top: 0, behavior: "auto" });
     },
     focusControl: focusTourControl,
     clearFocus: clearTourFocus,

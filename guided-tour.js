@@ -66,7 +66,7 @@
     <section class="gaia-tour-finish" data-tour-finish hidden aria-labelledby="gaia-tour-finish-title">
       <p>60 SECOND TOUR / COMPLETE</p><h2 id="gaia-tour-finish-title">ここから、あなたの観測へ。</h2>
       <p class="gaia-tour-finish-recommend"><span>まず見る3つ</span><strong>地球の一呼吸</strong><strong>世界地図</strong><strong>太陽の閃光</strong></p>
-      <div><button type="button" data-tour-destination="explore">9展示を探索</button><button type="button" data-tour-destination="story">物語を始める</button><a href="./sensors/">センサーを見る</a><button type="button" data-tour-destination="source">出典を見る</button></div>
+      <div><button type="button" data-tour-destination="explore">13展示を探索</button><button type="button" data-tour-destination="story">物語を始める</button><a href="./sensors/">センサーを見る</a><button type="button" data-tour-destination="source">出典を見る</button></div>
     </section>
     <nav class="gaia-tour-controls" aria-label="60秒ガイドの操作">
       <button type="button" data-tour-action="exit">終了</button><button type="button" data-tour-action="previous" aria-label="前の案内">←</button>
@@ -91,6 +91,7 @@
   let frame = 0;
   let generation = 0;
   let returnFocus = null;
+  let returnScroll = { x: 0, y: 0 };
   let runningBeforeHidden = false;
   const stepTimers = new Set();
 
@@ -289,6 +290,7 @@
   const start = ({ source = "direct" } = {}) => {
     if (active) return;
     returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    returnScroll = { x: window.scrollX, y: window.scrollY };
     active = true;
     running = true;
     index = 0;
@@ -320,6 +322,7 @@
     document.body.classList.remove("gaia-tour-open");
     if (location.hash === "#tour") history.replaceState(null, "", `${location.pathname}${location.search}`);
     if (!keepView) globalThis.GaiaMapObservationAdapter?.showIntro?.();
+    requestAnimationFrame(() => window.scrollTo({ left: returnScroll.x, top: returnScroll.y, behavior: "auto" }));
     returnFocus?.focus?.({ preventScroll: true });
     dispatchEvent(new CustomEvent("gaia:tour-exit"));
   };
