@@ -261,8 +261,9 @@ try {
   }
   await tourPage.locator("[data-tour-action='toggle']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), false);
+  const pausedTourIndex = await tourPage.evaluate(() => GaiaGuidedTour.getState().index);
   await tourPage.locator("[data-tour-action='next']").click();
-  assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().index), 1);
+  assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().index), pausedTourIndex + 1);
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), false, "manual navigation pauses the tour");
   const mobileTourLayout = await tourPage.evaluate(() => {
     const card = document.querySelector(".gaia-tour-card");
