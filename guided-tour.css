@@ -109,3 +109,100 @@ body.gaia-tour-open { overflow: hidden; }
   .gaia-tour::before,
   .gaia-tour::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Contest 2026: keep the real exhibit visible and make the guide a compact instrument panel. */
+.gaia-tour {
+  align-items: start;
+  justify-items: end;
+  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(82px, calc(env(safe-area-inset-bottom) + 70px)) max(18px, env(safe-area-inset-left));
+}
+.gaia-tour-vignette {
+  background:
+    radial-gradient(circle at 38% 48%, transparent 0 24%, rgba(0, 7, 15, .08) 56%, rgba(0, 7, 15, .32)),
+    linear-gradient(90deg, rgba(0, 8, 17, .16), rgba(0, 8, 17, .04) 56%, rgba(0, 8, 17, .3));
+}
+.gaia-tour-card {
+  width: min(32vw, 440px);
+  max-height: calc(100dvh - max(104px, calc(env(safe-area-inset-bottom) + 92px)));
+  padding: 18px 19px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.gaia-tour-card-index { margin-bottom: 10px; }
+.gaia-tour-card h2 { font-size: clamp(22px, 2.5vw, 31px); line-height: 1.28; }
+.gaia-tour-copy { margin-top: 11px; font-size: 14px; line-height: 1.7; }
+.gaia-tour-instruction {
+  margin: 10px 0 0;
+  padding: 10px 11px;
+  border-left: 2px solid rgba(var(--tour-mint), .62);
+  color: rgba(236, 255, 252, .76);
+  background: rgba(var(--tour-mint), .06);
+  font: 500 13px/1.65 var(--font-ja, sans-serif);
+}
+.gaia-tour-receipt {
+  display: grid;
+  gap: 7px;
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(228, 252, 248, .14);
+}
+.gaia-tour-receipt[hidden] { display: none; }
+.gaia-tour-receipt p { display: grid; gap: 4px; margin: 0; }
+.gaia-tour-receipt span { color: rgba(var(--tour-mint), .74); font: 700 8px/1.3 Consolas, monospace; letter-spacing: .08em; }
+.gaia-tour-receipt strong { color: rgba(236, 255, 252, .75); font: 500 11px/1.52 var(--font-ja, sans-serif); }
+.gaia-tour-receipt small { color: rgba(228, 252, 248, .48); font: 500 9px/1.45 var(--font-ja, sans-serif); }
+.gaia-tour-fallback { font-size: 11px; }
+.gaia-tour-finish-recommend { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px 12px; margin: 16px 0 0; color: rgba(236, 255, 252, .7); font: 500 12px/1.5 var(--font-ja, sans-serif); }
+.gaia-tour-finish-recommend span { color: rgba(var(--tour-mint), .78); font: 700 8px/1.5 Consolas, monospace; letter-spacing: .12em; }
+.gaia-tour-controls button,
+.gaia-tour-finish button,
+.gaia-tour-finish a { min-width: 44px; min-height: 44px; }
+
+body.gaia-tour-open .gaia-tour-highlight-target {
+  z-index: 415 !important;
+  outline: 3px solid rgba(116, 232, 211, .94) !important;
+  outline-offset: 5px;
+  box-shadow: 0 0 0 9px rgba(116, 232, 211, .12), 0 0 34px rgba(116, 232, 211, .4) !important;
+}
+body.gaia-tour-open .gaia-tour-highlight-target:not(canvas) { position: relative; }
+
+.gaia-tour[data-step="transform"] .gaia-tour-card,
+.gaia-tour[data-step="space"] .gaia-tour-card { justify-self: start; }
+.gaia-tour[data-step="story"] .gaia-tour-instruction { font-style: italic; }
+
+@media (max-width: 760px) {
+  .gaia-tour {
+    align-items: start;
+    justify-items: stretch;
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(78px, calc(env(safe-area-inset-bottom) + 70px)) max(10px, env(safe-area-inset-left));
+  }
+  .gaia-tour-card {
+    width: 100%;
+    max-height: 35dvh;
+    margin: 0;
+    padding: 13px 14px;
+  }
+  .gaia-tour-card-index { margin-bottom: 6px; }
+  .gaia-tour-card h2 { font-size: clamp(20px, 6vw, 27px); }
+  .gaia-tour-copy { margin-top: 7px; font-size: 14px; line-height: 1.55; }
+  .gaia-tour-instruction { margin-top: 7px; padding: 7px 9px; font-size: 14px; line-height: 1.5; }
+  .gaia-tour-receipt { margin-top: 7px; padding-top: 7px; }
+  .gaia-tour-receipt strong { font-size: 11px; }
+  .gaia-tour-controls { grid-template-columns: 52px 44px 1fr 44px 52px; }
+  .gaia-tour-controls button { min-height: 44px; font-size: 9px; }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .gaia-tour-card {
+    width: min(48vw, 440px);
+    max-height: 35dvh;
+    padding: 9px 12px;
+  }
+  .gaia-tour-card-index,
+  .gaia-tour-kicker { margin-bottom: 4px; }
+  .gaia-tour-card h2 { font-size: 18px; }
+  .gaia-tour-copy,
+  .gaia-tour-instruction { font-size: 14px; line-height: 1.4; }
+  .gaia-tour-controls { min-height: 54px; }
+  .gaia-tour-controls button { min-height: 44px; }
+}

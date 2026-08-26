@@ -180,6 +180,7 @@
     layer.setAttribute("aria-hidden", "true");
     document.body.classList.remove("sound-mode-open");
     cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
     window.setTimeout(() => {
       if (!isOpen) layer.hidden = true;
     }, 260);
@@ -204,6 +205,14 @@
   openButtons.forEach((button) => button.addEventListener("click", open));
   closeButton?.addEventListener("click", close);
   playButton?.addEventListener("click", togglePlayback);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = 0;
+    } else if (isOpen && animationFrame === 0) {
+      animationFrame = requestAnimationFrame(tick);
+    }
+  });
 
   trackButtons.forEach((button) => {
     button.addEventListener("click", async () => {

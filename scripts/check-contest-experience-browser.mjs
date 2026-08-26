@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4397"] = process.argv.slice(2);
+const [moduleRoot, executablePath, outputArgument, baseUrlArgument] = process.argv.slice(2);
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -11,7 +12,28 @@ const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
 const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/contest-experience-browser");
 fs.mkdirSync(outputDir, { recursive: true });
-const report = { status: "running", performance: null, layouts: [], tour: {}, consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { status: "running", performance: null, layouts: [], entry: {}, tour: {}, resilience: {}, consoleErrors: [], pageErrors: [], responses404: [] };
+const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const mime = new Map([[".html", "text/html; charset=utf-8"], [".js", "text/javascript; charset=utf-8"], [".css", "text/css; charset=utf-8"], [".json", "application/json; charset=utf-8"], [".svg", "image/svg+xml"], [".png", "image/png"], [".webp", "image/webp"], [".mp3", "audio/mpeg"], [".woff2", "font/woff2"]]);
+let qaServer = null;
+const startLocalServer = () => new Promise((resolve) => {
+  qaServer = http.createServer((request, response) => {
+    const pathname = decodeURIComponent(new URL(request.url || "/", "http://127.0.0.1").pathname);
+    const relative = pathname === "/" || pathname === "/story" || pathname === "/story/" ? "index.html" : pathname.replace(/^\/+/, "");
+    const file = path.resolve(sourceRoot, relative);
+    if (file !== sourceRoot && !file.startsWith(`${sourceRoot}${path.sep}`)) { response.writeHead(403).end(); return; }
+    try {
+      const body = fs.readFileSync(file);
+      response.writeHead(200, { "Content-Type": mime.get(path.extname(file).toLowerCase()) || "application/octet-stream", "Cache-Control": "no-store", "Content-Length": body.length });
+      response.end(request.method === "HEAD" ? undefined : body);
+    } catch {
+      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+    }
+  });
+  qaServer.listen(0, "127.0.0.1", () => resolve(`http://127.0.0.1:${qaServer.address().port}`));
+});
+const baseUrl = baseUrlArgument || await startLocalServer();
 
 // The local QA server can be paused while a separate browser command is being
 // scheduled. Wake it before opening a clean browser context so server-process
@@ -32,6 +54,13 @@ const monitor = (page, name, { allowExpectedAbort = false } = {}) => {
 
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
+  // The first Chromium navigation includes process and renderer startup on
+  // some Windows runners. Warm that path before measuring page-load vitals.
+  const browserWarmupContext = await browser.newContext({ viewport: { width: 800, height: 600 } });
+  const browserWarmupPage = await browserWarmupContext.newPage();
+  await browserWarmupPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await browserWarmupContext.close();
+
   const performanceContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const performancePage = await performanceContext.newPage();
   monitor(performancePage, "performance");
@@ -101,6 +130,12 @@ try {
       const modal = document.querySelector("#gaia-opening-sound-modal");
       const dialog = document.querySelector(".gaia-opening-sound-dialog");
       const tour = document.querySelector("#gaia-opening-tour-start");
+      const description = document.querySelector("#gaia-opening-sound-description");
+      const actions = ["#gaia-opening-tour-start", "#gaia-opening-entry-story", "#gaia-opening-entry-explore", "#gaia-opening-entry-sound-toggle"].map((selector) => {
+        const element = document.querySelector(selector);
+        const rect = element.getBoundingClientRect();
+        return { selector, width: rect.width, height: rect.height, fontSize: Number.parseFloat(getComputedStyle(element).fontSize), visible: rect.bottom > 0 && rect.top < innerHeight };
+      });
       const modalRect = modal.getBoundingClientRect();
       const dialogRect = dialog.getBoundingClientRect();
       const tourRect = tour.getBoundingClientRect();
@@ -110,6 +145,8 @@ try {
         dialogScrollable: dialog.scrollHeight >= dialog.clientHeight,
         tourVisible: tourRect.bottom > 0 && tourRect.top < innerHeight,
         activeId: document.activeElement?.id,
+        descriptionFontSize: Number.parseFloat(getComputedStyle(description).fontSize),
+        actions,
       };
     });
     assert(layout.dialogRect.left >= -1 && layout.dialogRect.right <= viewport.width + 1, `${viewport.name}: horizontal cutoff`);
@@ -117,23 +154,92 @@ try {
     assert.equal(layout.overflowX, 0, `${viewport.name}: horizontal overflow`);
     assert.equal(layout.tourVisible, true, `${viewport.name}: tour action unreachable`);
     assert(layout.tourRect.width >= 44 && layout.tourRect.height >= 44, `${viewport.name}: tour hit target`);
+    assert(layout.descriptionFontSize >= 14, `${viewport.name}: important copy below 14px`);
+    for (const action of layout.actions) {
+      assert(action.width >= 44 && action.height >= 44, `${viewport.name}: ${action.selector} hit target`);
+      assert(action.fontSize >= 14, `${viewport.name}: ${action.selector} text below 14px`);
+      assert.equal(action.visible, true, `${viewport.name}: ${action.selector} unreachable`);
+    }
     report.layouts.push({ ...viewport, ...layout });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`), animations: "disabled" });
     await context.close();
   }
+
+  const returningContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const returningPage = await returningContext.newPage();
+  monitor(returningPage, "entry-returning");
+  await returningPage.addInitScript(() => localStorage.setItem("gaiaSenseware:entryPreference:v1", JSON.stringify({ version: 1, visited: true, lastRoute: "tour", soundEnabled: false })));
+  await returningPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await returningPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
+  await returningPage.waitForTimeout(600);
+  assert.equal(await returningPage.locator("#gaia-opening-entry-continue").isVisible(), true);
+  assert.match(await returningPage.locator("#gaia-opening-entry-continue-note").textContent(), /60秒ガイド/u);
+  assert.equal(await returningPage.locator("#gaia-opening").getAttribute("hidden"), null, "revisit must not auto-transition");
+  await returningPage.locator("#gaia-opening-entry-continue").click();
+  await returningPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
+  await returningPage.evaluate(() => GaiaGuidedTour.exit());
+  report.entry.returning = "passed";
+  await returningContext.close();
+
+  const returningStoryContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const returningStoryPage = await returningStoryContext.newPage();
+  monitor(returningStoryPage, "entry-returning-story");
+  await returningStoryPage.addInitScript(() => localStorage.setItem("gaiaSenseware:entryPreference:v1", JSON.stringify({ version: 1, visited: true, lastRoute: "story", soundEnabled: false })));
+  await returningStoryPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await returningStoryPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
+  await returningStoryPage.locator("#gaia-opening-entry-continue").click();
+  await returningStoryPage.waitForSelector("#novel-save-panel:not([hidden])", { timeout: 30_000 });
+  assert.equal(await returningStoryPage.locator("#novel-layer").getAttribute("aria-hidden"), "false");
+  assert.equal(await returningStoryPage.locator("#novel-save-panel .novel-save-slot").count(), 6);
+  report.entry.returningStorySave = "passed";
+  await returningStoryContext.close();
+
+  const storageFailureContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const storageFailurePage = await storageFailureContext.newPage();
+  monitor(storageFailurePage, "entry-storage-failure");
+  await storageFailurePage.addInitScript(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function setItem(key, value) {
+      if (key === "gaiaSenseware:entryPreference:v1") throw new DOMException("Storage unavailable", "QuotaExceededError");
+      return original.call(this, key, value);
+    };
+  });
+  await storageFailurePage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await storageFailurePage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
+  await storageFailurePage.locator("#gaia-opening-entry-sound-toggle").click();
+  await storageFailurePage.locator("#gaia-opening-sound-on").click();
+  assert.equal(await storageFailurePage.locator("#gaia-opening-sound-on").getAttribute("aria-pressed"), "false", "storage failure returns to muted");
+  assert.equal(await storageFailurePage.locator("#gaia-opening-entry-continue").isVisible(), false, "storage failure returns to first visit");
+  report.entry.storageFailure = "passed";
+  await storageFailureContext.close();
+
+  const directContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const directPage = await directContext.newPage();
+  monitor(directPage, "entry-direct-routes");
+  for (const hash of ["#earth", "#story", "#observation=e30"]) {
+    await directPage.goto(new URL(`/${hash}`, baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+    await directPage.waitForFunction(() => document.querySelector("#gaia-opening")?.hidden === true, null, { timeout: 20_000 });
+    assert.equal(await directPage.locator("#gaia-opening-sound-modal.is-visible").count(), 0, `${hash} must bypass entry`);
+  }
+  report.entry.directRoutes = "passed";
+  await directContext.close();
 
   const tourContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const tourPage = await tourContext.newPage();
   monitor(tourPage, "tour");
   const tourRequests = [];
   tourPage.on("request", (request) => tourRequests.push(new URL(request.url()).pathname));
-  await tourPage.addInitScript(() => localStorage.setItem("gaia-novel-save", "tour-must-not-change"));
+  await tourPage.addInitScript(() => {
+    localStorage.setItem("gaia-novel-save", "tour-must-not-change");
+    localStorage.setItem("gaiaSenseware:observationNotebook:v1", JSON.stringify({ version: 1, records: [{ id: "unchanged" }] }));
+  });
   await tourPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await tourPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
   await tourPage.locator("#gaia-opening-tour-start").click();
   await tourPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
   const initialTour = await tourPage.evaluate(() => ({ state: GaiaGuidedTour.getState(), hash: location.hash, modalHidden: document.querySelector("#gaia-opening")?.hidden }));
   assert.equal(initialTour.state.totalDuration, 60);
+  assert.equal(await tourPage.locator(".gaia-tour-card-index span").last().textContent(), "07");
   assert.equal(initialTour.hash, "#tour");
   assert.equal(initialTour.modalHidden, true);
   assert.equal(await tourPage.evaluate(() => document.querySelector("#gaia-guided-tour")?.contains(document.activeElement)), true);
@@ -145,9 +251,21 @@ try {
   await tourPage.locator("[data-tour-action='next']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().index), 1);
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), false, "manual navigation pauses the tour");
+  const mobileTourLayout = await tourPage.evaluate(() => {
+    const card = document.querySelector(".gaia-tour-card");
+    const copy = document.querySelector(".gaia-tour-copy");
+    const instruction = document.querySelector(".gaia-tour-instruction");
+    const controls = Array.from(document.querySelectorAll(".gaia-tour-controls button")).map((element) => element.getBoundingClientRect().height);
+    return { cardHeight: card.getBoundingClientRect().height, maxHeight: innerHeight * 0.35, copyFont: Number.parseFloat(getComputedStyle(copy).fontSize), instructionFont: Number.parseFloat(getComputedStyle(instruction).fontSize), controls };
+  });
+  assert(mobileTourLayout.cardHeight <= mobileTourLayout.maxHeight + 2, `tour card ${mobileTourLayout.cardHeight}px exceeds 35dvh`);
+  assert(mobileTourLayout.copyFont >= 14 && mobileTourLayout.instructionFont >= 14, "tour important copy below 14px");
+  assert(mobileTourLayout.controls.every((height) => height >= 44), "tour control below 44px");
   await tourPage.locator("[data-tour-action='toggle']").click();
   await tourPage.waitForTimeout(350);
   assert((await tourPage.evaluate(() => GaiaGuidedTour.getState().elapsed)) > 0);
+  await tourPage.evaluate(() => document.querySelector(".gaia-tour-highlight-target")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), true, "exhibit interaction must not pause autoplay");
   const visibleElapsed = await tourPage.evaluate(() => {
     Object.defineProperty(document, "hidden", { configurable: true, value: true });
     document.dispatchEvent(new Event("visibilitychange"));
@@ -164,6 +282,18 @@ try {
   await tourPage.locator("[data-tour-action='previous']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().index), 0);
   assert.equal(await tourPage.evaluate(() => localStorage.getItem("gaia-novel-save")), "tour-must-not-change");
+  assert.equal(await tourPage.evaluate(() => localStorage.getItem("gaiaSenseware:observationNotebook:v1")), JSON.stringify({ version: 1, records: [{ id: "unchanged" }] }));
+  await tourPage.setViewportSize({ width: 667, height: 375 });
+  await tourPage.waitForTimeout(180);
+  const rotatedLayout = await tourPage.evaluate(() => {
+    const card = document.querySelector(".gaia-tour-card").getBoundingClientRect();
+    const controls = document.querySelector(".gaia-tour-controls").getBoundingClientRect();
+    return { card: card.toJSON(), controls: controls.toJSON(), width: innerWidth, height: innerHeight };
+  });
+  assert(rotatedLayout.card.left >= 0 && rotatedLayout.card.right <= rotatedLayout.width, "rotated tour card cutoff");
+  assert(rotatedLayout.controls.left >= 0 && rotatedLayout.controls.right <= rotatedLayout.width && rotatedLayout.controls.bottom <= rotatedLayout.height, "rotated tour controls cutoff");
+  assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().active), true, "tour must survive rotation");
+  await tourPage.setViewportSize({ width: 390, height: 844 });
   await tourPage.screenshot({ path: path.join(outputDir, "tour-mobile.png"), animations: "disabled" });
   await tourPage.keyboard.press("Escape");
   await tourPage.waitForFunction(() => GaiaGuidedTour.getState().active === false);
@@ -195,11 +325,90 @@ try {
   await fallbackPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
   await fallbackPage.locator("[data-tour-action='next']").click();
   await fallbackPage.locator("[data-tour-action='next']").click();
+  await fallbackPage.locator("[data-tour-action='next']").click();
+  await fallbackPage.locator("[data-tour-action='next']").click();
   await fallbackPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 20_000 });
   assert.equal(await fallbackPage.locator("#gaia-guided-tour").getAttribute("data-step"), "space");
   assert.equal(await fallbackPage.locator("#gaia-guided-tour").evaluate((element) => element.classList.contains("is-reduced-motion")), true);
   report.tour.fallback = "passed";
   await fallbackContext.close();
+
+  const webglContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const webglPage = await webglContext.newPage();
+  monitor(webglPage, "webgl-fallback");
+  await webglPage.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function getContext(type, ...args) {
+      if (type === "webgl2") return null;
+      return original.call(this, type, ...args);
+    };
+  });
+  await webglPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await webglPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
+  await webglPage.locator("[data-tour-action='next']").click();
+  await webglPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 20_000 });
+  for (let position = 0; position < 6; position += 1) await webglPage.locator("[data-tour-action='next']").click();
+  assert.equal(await webglPage.locator("[data-tour-finish]").isVisible(), true, "WebGL fallback must reach finish");
+  assert.equal(await webglPage.locator("[data-tour-finish] [data-tour-destination='source']").isEnabled(), true);
+  report.resilience.webglFallback = "passed";
+  await webglContext.close();
+
+  const lifecycleContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const lifecyclePage = await lifecycleContext.newPage();
+  monitor(lifecyclePage, "lifecycle");
+  await lifecyclePage.goto(new URL("/#earth", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await lifecyclePage.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter), null, { timeout: 30_000 });
+  const lifecycle = await lifecyclePage.evaluate(async () => {
+    const initialCanvasCount = document.querySelectorAll("canvas").length;
+    const initialAudioCount = document.querySelectorAll("audio").length;
+    for (let position = 0; position < 10; position += 1) {
+      GaiaMapObservationAdapter.openMap();
+      GaiaMapObservationAdapter.closeMap();
+    }
+    await GaiaModeLoader.load("space");
+    for (let position = 0; position < 10; position += 1) {
+      await GaiaSpaceTourAdapter.openAtMode(0);
+      GaiaSpaceTourAdapter.close();
+    }
+    await GaiaModeLoader.load("sound");
+    for (let position = 0; position < 10; position += 1) {
+      document.querySelector("[data-sound-gallery-open]").click();
+      document.querySelector("#sound-close").click();
+    }
+    await new Promise((resolve) => setTimeout(resolve, 320));
+    return {
+      initialCanvasCount,
+      finalCanvasCount: document.querySelectorAll("canvas").length,
+      initialAudioCount,
+      finalAudioCount: document.querySelectorAll("audio").length,
+      soundLayerCount: document.querySelectorAll("#sound-layer").length,
+      soundHidden: document.querySelector("#sound-layer").hidden,
+      map: GaiaMapObservationAdapter.getState(),
+      space: GaiaSpaceTourAdapter.getState(),
+    };
+  });
+  assert.equal(lifecycle.finalCanvasCount, lifecycle.initialCanvasCount + 1, "space must create one reusable canvas only");
+  assert.equal(lifecycle.finalAudioCount, lifecycle.initialAudioCount, "sound mode must reuse the existing audio player");
+  assert.equal(lifecycle.soundLayerCount, 1, "sound mode must mount one layer only");
+  assert.equal(lifecycle.soundHidden, true);
+  assert.equal(lifecycle.map.mapOpen, false);
+  assert.equal(lifecycle.space.open, false);
+  assert.equal(lifecycle.space.frameActive, false);
+  const contextLossTriggered = await lifecyclePage.evaluate(() => {
+    const gl = document.querySelector("#gaia-canvas")?.getContext("webgl2");
+    const extension = gl?.getExtension("WEBGL_lose_context");
+    if (!extension) return false;
+    extension.loseContext();
+    return true;
+  });
+  if (contextLossTriggered) {
+    await lifecyclePage.waitForSelector("#error-panel:not([hidden])", { timeout: 10_000 });
+    assert.equal(await lifecyclePage.locator("#error-panel a[href*='#tour']").isVisible(), true, "context loss must retain the guide exit");
+    assert.equal(await lifecyclePage.locator("#error-panel a[href*='github.com']").isVisible(), true, "context loss must retain the source exit");
+  }
+  report.resilience.contextLoss = contextLossTriggered ? "passed" : "extension-unavailable";
+  report.resilience.lifecycle = lifecycle;
+  await lifecycleContext.close();
 
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);
@@ -209,4 +418,6 @@ try {
   console.log(JSON.stringify(report, null, 2));
 } finally {
   await browser.close();
+  qaServer?.closeAllConnections?.();
+  await new Promise((resolve) => qaServer ? qaServer.close(resolve) : resolve());
 }

@@ -4,17 +4,47 @@
 
 [![Contest checks](https://github.com/hinahina-vr/gaia-senseware/actions/workflows/contest-checks.yml/badge.svg)](https://github.com/hinahina-vr/gaia-senseware/actions/workflows/contest-checks.yml)
 
-審査員向け: [2026夏コンテスト提出ガイド](docs/CONTEST_2026_SUBMISSION.md) / [公開サイト](https://gaia-senseware.pages.dev/) / [60秒ガイド](https://gaia-senseware.pages.dev/#tour)
+公開データとして保存された地球の変化を、光・色・動き・音へ翻訳し、数字の向こうにある感覚を体験するインタラクティブ展示です。
+
+## 5分で審査する順序
+
+1. [60秒ガイドを開く](https://gaia-senseware.pages.dev/#tour) — 地球観測、変換過程、宇宙観測、物語の関係を実画面で確認
+2. [公開サイトを最初から開く](https://gaia-senseware.pages.dev/) — 初見の体験ルートとスマートフォン対応を確認
+3. 地図の `OPEN DATA` と「変換レシート」— 元の値、計算、色・光・動きの対応を確認
+4. 観測ノート — 地図／ESP32の値を保存し、同種の2件を比較・URL共有
+5. [GitHub](https://github.com/hinahina-vr/gaia-senseware) — Vanilla JavaScript実装、テスト、データ生成コードを確認
+
+応募情報の全体は[2026夏コンテスト提出ガイド](docs/CONTEST_2026_SUBMISSION.md)、主要モジュールとイベントは[アーキテクチャ](docs/ARCHITECTURE.md)にまとめています。
+
+| PC | スマートフォン |
+|---|---|
+| ![PC版の体験ルート画面](docs/screenshots/contest-entry-pc.png) | ![スマートフォン版の60秒ガイド](docs/screenshots/contest-tour-mobile.png) |
+
+### データが表現になる例
+
+| 区分 | 「地球の一呼吸」で表示するもの |
+|---|---|
+| `○ SOURCE / 公開記録` | NOAA・GOSAT・NASAが公開したCO₂濃度、気温偏差、日時、単位 |
+| `△ DERIVED / 計算・補間` | 欠測補完、観測時点間の線形補間、表示用の正規化。式と加工有無を併記 |
+| `◇ SCENARIO / 仮定・操作` | 年代スライダーによる試算や観客操作。観測値とは分けて表示 |
+| `VISUAL / 表現` | CO₂を明るさと呼吸速度、気温偏差を青から赤の色へ変換 |
+
+### 実装と検査
+
+基本体験はHTML、CSS、JavaScript、WebGL 2、Canvas 2D、ブラウザ標準APIだけで成立し、外部JavaScriptランタイムライブラリを読み込みません。ESP32、Pages Functions、D1は任意拡張です。データ閲覧時は外部APIへ接続せず、取得済みスナップショットを使います。
+
+```powershell
+npm run check
+npm run check:contest
+npm --prefix sensor-platform run typecheck
+npm --prefix sensor-platform run check:pages-worker
+npm --prefix sensor-platform run test:pages
+```
+
+GitHub Actionsの `Contest checks` はWeb、センサー型、Pages Worker、ローカルD1を検査し、デプロイは行いません。出典・素材権利は[提出ガイド](docs/CONTEST_2026_SUBMISSION.md#データ出典)と作品内の `OPEN DATA`、生成台帳に記録しています。背景・キャラクターはOpenAI ImageGen、音楽はSuno AI、地図はNatural Earth Public Domainです。
 
 > 物語・キャラクター・GX・演出方針の正本は
 > [`docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md`](docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md) を参照してください。
-
-『惑星の放課後 ～GAIA SENSATION～』は、世界の研究機関が公開している観測データを、色や動きに置き換えた
-ブラウザ作品です。空気、海、森、生きもの、ごみ、都市、地震、暮らし、エネルギーの
-9テーマを、抽象表現と世界地図の二つの見方で展示します。
-
-画面に触れると光の動きが変わります。`OPEN DATA`では元データと計算方法を、`CODE`では
-実際の描画コードを確認できます。
 
 ## 9つの感覚器
 

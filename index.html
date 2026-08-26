@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja" class="gaia-booting" data-build-profile="debug">
+<html lang="ja" class="gaia-booting" data-build-profile="release">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="data:," />
@@ -163,12 +163,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-real-earth-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-contest-entry-2" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-19" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-first-screen-p0-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-opening-real-earth-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-map-nine-exhibits-1" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-contest-entry-2" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-map-nine-exhibits-1-contest-tour-2" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -189,7 +189,7 @@
           <div class="gaia-boot__telemetry" aria-hidden="true">
             <span>EARTH / 35.18N</span>
             <span>ORBITAL CHANNEL 07</span>
-            <span>SIGNAL / LIVE</span>
+            <span>LOCAL DATA / SNAPSHOT</span>
           </div>
           <p class="gaia-boot__status" id="gaia-boot-status">INITIALIZING INTERFACE</p>
         </div>
@@ -367,14 +367,32 @@
           <div class="gaia-opening-sound-scene" aria-hidden="true"><span></span></div>
           <div class="gaia-opening-sound-modal-scrim" aria-hidden="true"></div>
           <div class="gaia-opening-sound-dialog">
-            <div class="gaia-opening-sound-heading">
-              <p>GAIA SENSATION / SOUND SETTING</p>
-              <h2 id="gaia-opening-sound-title">サウンド設定</h2>
-              <span id="gaia-opening-sound-description">サウンドのオン／オフはゲーム中でも変更できます。</span>
+            <div class="gaia-opening-sound-heading gaia-opening-entry-heading">
+              <p>GAIA SENSATION / CHOOSE YOUR PATH</p>
+              <h2 id="gaia-opening-sound-title">地球の声は、ひとつじゃない。</h2>
+              <span id="gaia-opening-sound-description">公開データとして保存された地球の変化を、光・色・動き・音へ翻訳し、数字の向こうにある感覚を体験するインタラクティブ展示です。</span>
             </div>
-            <section class="gaia-opening-sound-choices" aria-label="サウンド設定">
+            <button class="gaia-opening-entry-continue" id="gaia-opening-entry-continue" type="button" hidden>
+              <span><small>WELCOME BACK</small><strong>前回の続きを見る</strong><em id="gaia-opening-entry-continue-note">選んだ体験へ戻ります</em></span>
+              <b aria-hidden="true">→</b>
+            </button>
+            <button class="gaia-opening-tour-start gaia-opening-entry-primary" id="gaia-opening-tour-start" type="button">
+              <span><small>QUICK TOUR / MUTED</small><strong>60秒で地球を感じる</strong></span>
+              <b aria-hidden="true">→</b>
+            </button>
+            <button class="gaia-opening-entry-story" id="gaia-opening-entry-story" type="button">
+              <span><small>CINEMATIC STORY</small><strong>物語から始める</strong></span>
+              <b aria-hidden="true">→</b>
+            </button>
+            <nav class="gaia-opening-entry-links" aria-label="その他の体験入口">
+              <button id="gaia-opening-entry-explore" type="button">自由に探索する</button>
+              <button id="gaia-opening-entry-sound-toggle" type="button" aria-expanded="false" aria-controls="gaia-opening-entry-sound-panel">サウンド設定</button>
+            </nav>
+            <section class="gaia-opening-entry-sound-panel" id="gaia-opening-entry-sound-panel" aria-label="サウンド設定" hidden>
+              <p><strong>サウンド</strong><span>初期状態は無音です。体験中でも変更できます。</span></p>
+              <div class="gaia-opening-sound-choices" aria-label="サウンドのオンとオフ">
               <div class="gaia-opening-sound-option gaia-opening-sound-option--on">
-                <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-on" type="button" aria-label="サウンドをオンにして始める" aria-pressed="true">
+                <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-on" type="button" aria-label="サウンドをオンにする" aria-pressed="false">
                   <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
                     <svg class="gaia-opening-sound-icon" viewBox="0 0 24 24">
                       <path class="gaia-opening-sound-icon-body" d="M4 9.25h4L13 5v14l-5-4.25H4z" />
@@ -404,7 +422,7 @@
                 </div>
               </div>
               <div class="gaia-opening-sound-option gaia-opening-sound-option--off">
-                <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-off" type="button" aria-label="サウンドをオフにして始める" aria-pressed="false">
+                <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-off" type="button" aria-label="サウンドをオフにする" aria-pressed="true">
                   <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
                     <svg class="gaia-opening-sound-icon" viewBox="0 0 24 24">
                       <path class="gaia-opening-sound-icon-body" d="M4 9.25h4L13 5v14l-5-4.25H4z" />
@@ -415,11 +433,9 @@
                   <span class="gaia-opening-sound-option-arrow" aria-hidden="true">→</span>
                 </button>
               </div>
+              </div>
             </section>
-            <button class="gaia-opening-tour-start" id="gaia-opening-tour-start" type="button">
-              <span><small>QUICK TOUR / MUTED</small><strong>60秒で作品を見る</strong></span>
-              <b aria-hidden="true">→</b>
-            </button>
+            <p class="gaia-opening-entry-recommend"><span>まず見る3つ</span><strong>地球の一呼吸</strong><i>世界地図</i><i>太陽の閃光</i></p>
           </div>
         </div>
 
@@ -1389,7 +1405,7 @@
 
         <div class="japan-observation" aria-live="polite">
           <div class="co2-timeline-display" id="co2-timeline-display" hidden>
-            <span id="co2-timeline-phase">DERIVED RECONSTRUCTION</span>
+            <span id="co2-timeline-phase">△ DERIVED / 再構成</span>
             <b id="co2-timeline-year">1958</b>
             <div>
               <strong id="co2-timeline-ppm">315.7 ppm</strong>
@@ -1445,7 +1461,7 @@
             </div>
             <div>
               <dt data-encoding-label="estimate"><i data-encoding-mark="estimate"></i>塗り / 時代区分</dt>
-              <dd data-encoding-value="estimate">DERIVED / OBSERVED / SCENARIO</dd>
+              <dd data-encoding-value="estimate">△ DERIVED / ○ SOURCE / ◇ SCENARIO</dd>
             </div>
             <div>
               <dt data-encoding-label="resolution"><i data-encoding-mark="resolution"></i>1セル / 2.5°</dt>
@@ -1453,6 +1469,15 @@
             </div>
           </dl>
         </section>
+
+        <details class="transformation-receipt transformation-receipt-map" id="map-transformation-receipt">
+          <summary><span>DATA → VISUAL</span><strong>変換レシート</strong><i aria-hidden="true"></i></summary>
+          <div>
+            <p><span>○ SOURCE / 公開記録</span><strong data-map-receipt-source>公開データを読み込んでいます。</strong><small data-map-receipt-provider></small></p>
+            <p><span>△ DERIVED / 計算・補間</span><strong data-map-receipt-transform>表示用の尺度を準備しています。</strong></p>
+            <p><span>◇ SCENARIO / 仮定・操作</span><strong data-map-receipt-visual>観客操作と、光・色・動きへの対応を準備しています。</strong></p>
+          </div>
+        </details>
 
         <p class="japan-map-note" id="map-scope-note" aria-hidden="true">
           BASEMAP / NATURAL EARTH 1:50m<br />
@@ -1582,9 +1607,9 @@
             </p>
 
             <div class="data-kind-legend" aria-label="データ区分">
-              <span data-kind="SOURCE">SOURCE <small>実際に測った・集めた値</small></span>
-              <span data-kind="DERIVED">DERIVED <small>計算で補った・加工した値</small></span>
-              <span data-kind="SCENARIO">SCENARIO <small>未来や選択の「もしも」</small></span>
+              <span data-kind="SOURCE">○ SOURCE <small>公開記録・実際に測った値</small></span>
+              <span data-kind="DERIVED">△ DERIVED <small>計算で補った・加工した値</small></span>
+              <span data-kind="SCENARIO">◇ SCENARIO <small>未来や操作による「もしも」</small></span>
             </div>
 
             <section class="japan-data-section statistics-disclosure" id="data-ledger-statistics">
@@ -1677,7 +1702,7 @@
 
         <article class="gx-story-card" id="gx-story-card" aria-live="polite" tabindex="0" data-mobile-info-open="false">
           <p class="gx-phase-meta">
-            <span class="gx-kind" id="gx-kind" data-kind="DERIVED">DERIVED</span>
+            <span class="gx-kind" id="gx-kind" data-kind="DERIVED">△ DERIVED / 計算・補間</span>
             <span id="gx-phase-index">01 / 08</span>
           </p>
           <h3 id="gx-phase-title">岩石より先に、水の記憶がある。</h3>
@@ -2030,7 +2055,7 @@
             class="novel-signal-caption"
             id="novel-source-label"
           >
-            <span id="novel-data-kind">SOURCE</span>
+            <span id="novel-data-kind">○ SOURCE / 公開記録</span>
             <span id="novel-signal-title" hidden></span>
             <em class="novel-temporal-context" id="novel-temporal-context" hidden></em>
             <strong id="novel-location">GAIA SENSATION｜現在の場面</strong>
@@ -2310,6 +2335,14 @@
             <strong><b id="space-metric-value">—</b> <small id="space-metric-unit"></small></strong>
             <p id="space-metric-detail">LOCAL JSON / LOADING</p>
           </div>
+          <details class="transformation-receipt transformation-receipt-space" id="space-transformation-receipt">
+            <summary><span>DATA → LIGHT</span><strong>変換レシート</strong><i aria-hidden="true"></i></summary>
+            <div>
+              <p><span>○ SOURCE / 公開記録</span><strong data-space-receipt-source>宇宙データを読み込んでいます。</strong><small data-space-receipt-provider></small></p>
+              <p><span>△ DERIVED / 計算・補間</span><strong data-space-receipt-transform>光への変換を準備しています。</strong></p>
+              <p><span>◇ SCENARIO / 仮定・操作</span><strong data-space-receipt-visual>観客操作と、光への対応を準備しています。</strong></p>
+            </div>
+          </details>
         </article>
 
         <div class="space-touch" aria-live="polite">
@@ -2572,9 +2605,13 @@
         <pre class="source-pre" tabindex="0"><code id="source-code"></code></pre>
       </aside>
 
-      <aside class="error-panel" id="error-panel" hidden>
-        <p>この作品の表示にはWebGL2が必要です。</p>
-        <small>PC版・スマートフォン版のGoogle Chromeで開いてください。</small>
+      <aside class="error-panel" id="error-panel" role="status" hidden>
+        <p>3D表示を開始できませんでした。</p>
+        <small>この端末では静的な案内を表示しています。公開データの説明と60秒ガイドは引き続き確認できます。</small>
+        <div class="error-panel-actions">
+          <a href="./?fallback=1#tour">60秒ガイドを続ける</a>
+          <a href="https://github.com/hinahina-vr/gaia-senseware#readme" target="_blank" rel="noopener">データと実装を見る</a>
+        </div>
       </aside>
 
       <canvas

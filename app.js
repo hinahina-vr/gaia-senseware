@@ -417,6 +417,23 @@
 
   if (!gl) {
     errorPanel.hidden = false;
+    globalThis.GaiaMapObservationAdapter = Object.freeze({
+      waitSignalsReady: () => Promise.reject(new Error("WebGL2 unavailable")),
+      selectMode: () => false,
+      setSignalTime: () => 0,
+      openMap: () => false,
+      closeMap: () => false,
+      showIntro: () => { errorPanel.hidden = false; },
+      focusControl: () => false,
+      clearFocus: () => {},
+      openSourceTab: () => false,
+      closeSource: () => {},
+      getTourReceipt: () => { throw new Error("WebGL2 unavailable"); },
+      getState: () => ({ fallback: true, mapOpen: false, introOpen: false }),
+    });
+    window.dispatchEvent(new CustomEvent("gaia:map-adapter-ready", { detail: { fallback: true } }));
+    document.documentElement.dataset.gaiaAppReady = "fallback";
+    window.dispatchEvent(new CustomEvent("gaia:app-ready", { detail: { fallback: true } }));
     return;
   }
   const parallelShaderCompile = gl.getExtension("KHR_parallel_shader_compile");
@@ -4984,6 +5001,34 @@
     };
   };
 
+  const mapTransformationReceipt = document.querySelector("#map-transformation-receipt");
+  const updateMapTransformationReceipt = () => {
+    if (!(mapTransformationReceipt instanceof HTMLElement)) return;
+    const signalMode = getActiveSignalMode();
+    const visualMode = modes[modeToIndex];
+    const sourceOutput = mapTransformationReceipt.querySelector("[data-map-receipt-source]");
+    const providerOutput = mapTransformationReceipt.querySelector("[data-map-receipt-provider]");
+    const transformOutput = mapTransformationReceipt.querySelector("[data-map-receipt-transform]");
+    const visualOutput = mapTransformationReceipt.querySelector("[data-map-receipt-visual]");
+    if (!signalMode || !visualMode) {
+      sourceOutput.textContent = gaiaSnapshotError ? "公開データを読み込めませんでした。" : "公開データを読み込んでいます。";
+      providerOutput.textContent = gaiaSnapshotError || "LOCAL JSON / SNAPSHOT";
+      return;
+    }
+    try {
+      const observation = captureMapObservation();
+      sourceOutput.textContent = observation.metrics
+        .map((metric) => `${metric.label} ${formatNumber(metric.value, 2)}${metric.unit ? ` ${metric.unit}` : ""}`)
+        .join(" / ");
+      providerOutput.textContent = [...new Set((signalMode.datasets || []).map((dataset) => dataset.organisation).filter(Boolean))].join(" / ");
+      transformOutput.textContent = modeDataNarratives[visualMode.id] || "保存済みの公開記録を表示用の尺度へ変換します。";
+      visualOutput.textContent = visualMode.description;
+    } catch (error) {
+      sourceOutput.textContent = "この時点の数値を準備しています。";
+      providerOutput.textContent = error instanceof Error ? error.message : "LOCAL JSON / SNAPSHOT";
+    }
+  };
+
   let sourceSignalSnapshot = null;
   const sourceSignalVector = new Float32Array(9);
   const getSourceSignalVector = () => {
@@ -5156,6 +5201,7 @@
         }
       }
     }
+    updateMapTransformationReceipt();
   };
 
   const getActiveTimelineDuration = () => {
@@ -6587,6 +6633,43 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }, closeDelay);
   };
 
+  const clearTourFocus = () => {
+    document.querySelectorAll(".gaia-tour-highlight-target").forEach((element) => {
+      element.classList.remove("gaia-tour-highlight-target");
+      element.removeAttribute("data-gaia-tour-target");
+    });
+  };
+  const focusTourControl = (name) => {
+    clearTourFocus();
+    const target = {
+      map: japanMap,
+      timeline: japanLayer.querySelector("[data-signal-time]"),
+      source: sourcePanel.querySelector("[data-source-tab='raw']"),
+      transform: sourcePanel.querySelector("[data-source-tab='transform']"),
+      visual: sourcePanel.querySelector("[data-source-tab='visual']"),
+    }[name];
+    if (!(target instanceof HTMLElement)) return false;
+    target.classList.add("gaia-tour-highlight-target");
+    target.setAttribute("data-gaia-tour-target", name);
+    target.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    return true;
+  };
+  const getTourReceipt = () => {
+    const signalMode = getActiveSignalMode();
+    const visualMode = modes[modeToIndex];
+    if (!signalMode || !visualMode) throw new Error(gaiaSnapshotError || "公開データを読み込めませんでした。");
+    const observation = captureMapObservation();
+    return {
+      title: visualMode.titleJa,
+      source: observation.metrics.map((metric) => `${metric.label} ${formatNumber(metric.value, 2)}${metric.unit ? ` ${metric.unit}` : ""}`).join(" / "),
+      at: observation.subtitle,
+      provider: [...new Set((signalMode.datasets || []).map((dataset) => dataset.organisation).filter(Boolean))].join(" / "),
+      classification: observation.provenance.classification || "SOURCE",
+      transform: modeDataNarratives[visualMode.id] || "保存済みの公開記録を表示用の尺度へ変換します。",
+      visual: visualMode.description,
+    };
+  };
+
   const mapObservationAdapter = Object.freeze({
     waitSignalsReady: async () => {
       const result = await gaiaSignalsReady;
@@ -6616,8 +6699,24 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     },
     showIntro: () => {
       if (japanIsOpen) closeJapan({ restoreFocus: false, updateHash: false });
+      if (sourceIsOpen) closeSource({ restoreFocus: false, updateHash: false });
       if (!introIsOpen) openIntro({ restoreFocusOnClose: false });
     },
+    focusControl: focusTourControl,
+    clearFocus: clearTourFocus,
+    openSourceTab: (tab = "visual") => {
+      if (!sourceTabs.some((button) => button.dataset.sourceTab === tab)) return false;
+      activeSourceTab = tab;
+      renderSource();
+      if (!sourceIsOpen) openSource({ updateHash: false });
+      focusTourControl(tab === "raw" ? "source" : tab);
+      return true;
+    },
+    closeSource: () => {
+      clearTourFocus();
+      if (sourceIsOpen) closeSource({ restoreFocus: false, updateHash: false });
+    },
+    getTourReceipt,
     captureObservation: captureMapObservation,
     getState: () => ({ modeIndex: modeToIndex, signalTimePosition, mapOpen: japanIsOpen, introOpen: introIsOpen }),
   });

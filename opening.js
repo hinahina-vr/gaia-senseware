@@ -23,9 +23,33 @@
   const finalOtherButton = document.querySelector("#gaia-opening-route-other");
   const finalTourButton = document.querySelector("#gaia-opening-route-tour");
   const soundTourButton = document.querySelector("#gaia-opening-tour-start");
+  const entryStoryButton = document.querySelector("#gaia-opening-entry-story");
+  const entryExploreButton = document.querySelector("#gaia-opening-entry-explore");
+  const entryContinueButton = document.querySelector("#gaia-opening-entry-continue");
+  const entryContinueNote = document.querySelector("#gaia-opening-entry-continue-note");
+  const entrySoundToggle = document.querySelector("#gaia-opening-entry-sound-toggle");
+  const entrySoundPanel = document.querySelector("#gaia-opening-entry-sound-panel");
   const soundModal = document.querySelector("#gaia-opening-sound-modal");
   const soundDialog = soundModal?.querySelector(".gaia-opening-sound-dialog");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const ENTRY_PREFERENCE_KEY = "gaiaSenseware:entryPreference:v1";
+  const ENTRY_ROUTES = new Set(["tour", "story", "explore"]);
+  const EMPTY_ENTRY_PREFERENCE = Object.freeze({ version: 1, visited: false, lastRoute: "tour", soundEnabled: false });
+  const readEntryPreference = () => {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(ENTRY_PREFERENCE_KEY) || "null");
+      if (parsed?.version !== 1 || !ENTRY_ROUTES.has(parsed.lastRoute)) return { ...EMPTY_ENTRY_PREFERENCE };
+      return {
+        version: 1,
+        visited: parsed.visited === true,
+        lastRoute: parsed.lastRoute,
+        soundEnabled: parsed.soundEnabled === true,
+      };
+    } catch {
+      return { ...EMPTY_ENTRY_PREFERENCE };
+    }
+  };
+  let entryPreference = readEntryPreference();
   const AUDIO_DOCK_COLLAPSE_DELAY_MS = 6000;
   let audioDockCollapseTimer = 0;
   let soundModalRevealTimer = 0;
@@ -33,7 +57,8 @@
   let soundModalOpen = false;
   let soundSetupConfirmed = false;
   let soundSetupSubmitting = false;
-  let pendingSoundEnabled = true;
+  let pendingSoundEnabled = entryPreference.soundEnabled;
+  let storyRouteCommitted = false;
   const editableCopySelector = "input, textarea, select, [contenteditable='true'], [contenteditable='plaintext-only']";
   document.addEventListener("copy", (event) => {
     const target = event.target;
@@ -49,6 +74,41 @@
   const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#story", "#tour"].includes(
     window.location.hash,
   ) || window.location.hash.startsWith("#observation=") || /\/story\/?$/i.test(window.location.pathname);
+
+  const persistEntryPreference = (updates = {}, { markVisited = false } = {}) => {
+    const nextRoute = ENTRY_ROUTES.has(updates.lastRoute) ? updates.lastRoute : entryPreference.lastRoute;
+    const next = {
+      version: 1,
+      visited: markVisited ? true : entryPreference.visited,
+      lastRoute: nextRoute,
+      soundEnabled: typeof updates.soundEnabled === "boolean" ? updates.soundEnabled : entryPreference.soundEnabled,
+    };
+    try {
+      window.localStorage.setItem(ENTRY_PREFERENCE_KEY, JSON.stringify(next));
+      entryPreference = next;
+      return true;
+    } catch {
+      entryPreference = { ...EMPTY_ENTRY_PREFERENCE };
+      pendingSoundEnabled = false;
+      void window.GaiaOpeningAudio?.setMuted?.(true);
+      return false;
+    }
+  };
+
+  const entryRouteLabel = (route) => ({
+    tour: "60秒ガイドを最初から再生します",
+    story: "物語のセーブ選択へ戻ります",
+    explore: "展示の入口へ戻ります",
+  })[route] || "選んだ体験へ戻ります";
+
+  const syncEntryPresentation = () => {
+    const returning = entryPreference.visited && ENTRY_ROUTES.has(entryPreference.lastRoute);
+    if (entryContinueButton instanceof HTMLButtonElement) entryContinueButton.hidden = !returning;
+    if (entryContinueNote) entryContinueNote.textContent = entryRouteLabel(entryPreference.lastRoute);
+    soundModal?.toggleAttribute("data-returning", returning);
+    if (entrySoundToggle instanceof HTMLButtonElement) entrySoundToggle.setAttribute("aria-expanded", "false");
+    if (entrySoundPanel instanceof HTMLElement) entrySoundPanel.hidden = true;
+  };
 
   const syncAudioControls = (state = window.GaiaOpeningAudio?.getState?.()) => {
     const volume = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
@@ -549,8 +609,10 @@
 
     window.clearTimeout(soundModalHideTimer);
     const state = window.GaiaOpeningAudio?.getState?.();
-    pendingSoundEnabled = true;
+    pendingSoundEnabled = entryPreference.soundEnabled;
     soundModalOpen = true;
+    soundSetupSubmitting = false;
+    syncEntryPresentation();
     syncAudioControls(state);
     if (finalMenu instanceof HTMLElement) {
       finalMenu.inert = true;
@@ -560,17 +622,19 @@
     soundModal.inert = false;
     soundModal.setAttribute("aria-hidden", "false");
     opening.classList.add("is-sound-modal-open");
-    const focusSelectedSound = () => {
+    const focusEntryAction = () => {
       if (!soundModalOpen) return;
-      const selectedButton = pendingSoundEnabled ? soundOnButton : soundOffButton;
-      selectedButton?.focus({ preventScroll: true });
+      const target = entryContinueButton instanceof HTMLButtonElement && !entryContinueButton.hidden
+        ? entryContinueButton
+        : soundTourButton;
+      target?.focus({ preventScroll: true });
     };
     requestAnimationFrame(() => {
       soundModal.classList.add("is-visible");
       signalInitialViewReady();
       window.clearTimeout(openingArtWarmTimer);
       const warmOpeningArtAfterHandoff = () => {
-        focusSelectedSound();
+        focusEntryAction();
         openingArtWarmTimer = 0;
       };
       if (document.querySelector("#gaia-boot")?.hidden) warmOpeningArtAfterHandoff();
@@ -578,14 +642,19 @@
     });
   };
 
-  const finish = async (destination = "menu") => {
+  const finish = async (destination = "menu", { source = "entry" } = {}) => {
     if (finished || finishRequested) return;
     if (typeof destination !== "string") destination = "menu";
+    const startedFromEntry = soundModalOpen;
     finishRequested = true;
     finalMenu?.setAttribute("aria-busy", "true");
     if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = true;
     if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = true;
     if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = true;
+    if (soundTourButton instanceof HTMLButtonElement) soundTourButton.disabled = true;
+    if (entryStoryButton instanceof HTMLButtonElement) entryStoryButton.disabled = true;
+    if (entryExploreButton instanceof HTMLButtonElement) entryExploreButton.disabled = true;
+    if (entryContinueButton instanceof HTMLButtonElement) entryContinueButton.disabled = true;
     performance.mark(`gaia:${destination}-route-load-request`);
     const routeReady = destination === "tour"
       ? (async () => {
@@ -598,9 +667,7 @@
     window.clearTimeout(finishTimer);
     closeSoundModalImmediately();
     settleFocusText();
-    if (destination === "story") {
-      history.replaceState(null, "", `${window.location.pathname}${window.location.search}#story`);
-    } else if (destination === "tour") {
+    if (destination === "tour") {
       history.replaceState(null, "", `${window.location.pathname}${window.location.search}#tour`);
     }
     // Remove the choice cards as one completed unit. Leaving them mounted while
@@ -621,15 +688,25 @@
       finishRequested = false;
       opening.classList.remove("is-leaving");
       finalMenu?.removeAttribute("aria-busy");
-      if (finalMenu instanceof HTMLElement) {
+      if (finalMenu instanceof HTMLElement && !startedFromEntry) {
         finalMenu.hidden = false;
         requestAnimationFrame(() => finalMenu.classList.add("is-visible"));
       }
       if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = false;
       if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = false;
       if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = false;
+      if (soundTourButton instanceof HTMLButtonElement) soundTourButton.disabled = false;
+      if (entryStoryButton instanceof HTMLButtonElement) entryStoryButton.disabled = false;
+      if (entryExploreButton instanceof HTMLButtonElement) entryExploreButton.disabled = false;
+      if (entryContinueButton instanceof HTMLButtonElement) entryContinueButton.disabled = false;
+      if (startedFromEntry) showSoundModal();
       return;
     }
+    if (destination === "story") {
+      history.replaceState(null, "", `${window.location.pathname}${window.location.search}#story`);
+    }
+    const storedRoute = destination === "menu" ? "explore" : destination;
+    persistEntryPreference({ lastRoute: storedRoute, soundEnabled: pendingSoundEnabled }, { markVisited: true });
     window.dispatchEvent(new CustomEvent("gaia:opening-complete", { detail: { destination } }));
     opening.hidden = true;
     opening.classList.remove("is-active", "is-leaving");
@@ -639,7 +716,7 @@
     if (destination === "story") {
       requestAnimationFrame(() => {
         window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
-          detail: { index: 0, source: "opening" },
+          detail: { index: 0, source },
         }));
       });
     } else if (destination === "tour") {
@@ -686,6 +763,10 @@
     if (finished || opening.classList.contains("is-menu-ready")) return;
     window.clearTimeout(finishTimer);
     settleFocusText();
+    if (storyRouteCommitted) {
+      void finish("story", { source: "opening-skip" });
+      return;
+    }
     opening.classList.add("is-skipping-to-menu");
     showFinalMenu();
   };
@@ -709,7 +790,10 @@
       const [delay, duration] = schedule[index] || [index * 120, 520];
       revealFocusText(target, delay, duration);
     });
-    finishTimer = window.setTimeout(showFinalMenu, OPENING_DURATION);
+    finishTimer = window.setTimeout(
+      () => storyRouteCommitted ? void finish("story", { source: "opening" }) : showFinalMenu(),
+      OPENING_DURATION,
+    );
 
   };
 
@@ -727,7 +811,8 @@
     if (preloadPanel) preloadPanel.hidden = true;
     opening.classList.remove("is-preloading");
     settleFocusText();
-    showFinalMenu();
+    if (storyRouteCommitted) void finish("story", { source: "opening" });
+    else showFinalMenu();
   };
 
   const chooseSound = (enabled) => {
@@ -763,17 +848,25 @@
     });
   };
 
-  const confirmSoundSetup = (enabled) => {
-    if (!soundModalOpen || soundSetupSubmitting) return;
-    performance.mark("gaia:sound-choice-click");
-    soundSetupSubmitting = true;
-    window.clearTimeout(openingArtWarmTimer);
+  const setEntrySoundPreference = (enabled) => {
     pendingSoundEnabled = Boolean(enabled);
+    persistEntryPreference({ soundEnabled: pendingSoundEnabled });
+    syncAudioControls();
+  };
+
+  const startStoryOpening = () => {
+    if (!soundModalOpen || soundSetupSubmitting) return;
+    performance.mark("gaia:story-opening-choice-click");
+    soundSetupSubmitting = true;
+    storyRouteCommitted = true;
+    window.clearTimeout(openingArtWarmTimer);
     if (soundOnButton instanceof HTMLButtonElement) soundOnButton.disabled = true;
     if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = true;
     if (soundTourButton instanceof HTMLButtonElement) soundTourButton.disabled = true;
+    if (entryStoryButton instanceof HTMLButtonElement) entryStoryButton.disabled = true;
+    if (entryExploreButton instanceof HTMLButtonElement) entryExploreButton.disabled = true;
+    if (entryContinueButton instanceof HTMLButtonElement) entryContinueButton.disabled = true;
     if (openingVolume instanceof HTMLInputElement) openingVolume.disabled = true;
-    syncAudioControls();
     chooseSound(pendingSoundEnabled);
     scheduleAfterInputPaint(() => {
       soundSetupConfirmed = true;
@@ -783,6 +876,9 @@
       if (soundOnButton instanceof HTMLButtonElement) soundOnButton.disabled = false;
       if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = false;
       if (soundTourButton instanceof HTMLButtonElement) soundTourButton.disabled = false;
+      if (entryStoryButton instanceof HTMLButtonElement) entryStoryButton.disabled = false;
+      if (entryExploreButton instanceof HTMLButtonElement) entryExploreButton.disabled = false;
+      if (entryContinueButton instanceof HTMLButtonElement) entryContinueButton.disabled = false;
       if (openingVolume instanceof HTMLInputElement) openingVolume.disabled = false;
       if (reducedMotion) {
         showReducedMotionMenu();
@@ -795,15 +891,17 @@
   };
 
   skipButton?.addEventListener("click", skipToFinalMenu);
-  finalStoryButton?.addEventListener("click", () => void finish("story"));
+  finalStoryButton?.addEventListener("click", () => void finish("story", { source: "opening-menu" }));
   finalOtherButton?.addEventListener("click", () => void finish("menu"));
-  finalTourButton?.addEventListener("click", () => void finish("tour"));
-  soundOnButton?.addEventListener("click", () => void confirmSoundSetup(true));
-  soundOffButton?.addEventListener("click", () => void confirmSoundSetup(false));
+  finalTourButton?.addEventListener("click", () => {
+    void window.GaiaOpeningAudio?.setMuted?.(true);
+    void finish("tour");
+  });
+  soundOnButton?.addEventListener("click", () => setEntrySoundPreference(true));
+  soundOffButton?.addEventListener("click", () => setEntrySoundPreference(false));
   soundTourButton?.addEventListener("click", () => {
     if (!soundModalOpen || soundSetupSubmitting) return;
     soundSetupSubmitting = true;
-    pendingSoundEnabled = false;
     window.GaiaOpeningAudio?.setMuted?.(true);
     if (soundOnButton instanceof HTMLButtonElement) soundOnButton.disabled = true;
     if (soundOffButton instanceof HTMLButtonElement) soundOffButton.disabled = true;
@@ -811,12 +909,49 @@
     if (openingVolume instanceof HTMLInputElement) openingVolume.disabled = true;
     void finish("tour");
   });
+  entryStoryButton?.addEventListener("click", startStoryOpening);
+  entryExploreButton?.addEventListener("click", () => {
+    if (!soundModalOpen || soundSetupSubmitting) return;
+    soundSetupSubmitting = true;
+    chooseSound(pendingSoundEnabled);
+    void finish("menu");
+  });
+  entryContinueButton?.addEventListener("click", () => {
+    if (!soundModalOpen || soundSetupSubmitting || !entryPreference.visited) return;
+    soundSetupSubmitting = true;
+    if (entryPreference.lastRoute === "tour") {
+      void window.GaiaOpeningAudio?.setMuted?.(true);
+      void finish("tour", { source: "entry-continue" });
+    } else if (entryPreference.lastRoute === "story") {
+      chooseSound(pendingSoundEnabled);
+      void finish("story", { source: "entry-continue" });
+    } else {
+      chooseSound(pendingSoundEnabled);
+      void finish("menu", { source: "entry-continue" });
+    }
+  });
+  entrySoundToggle?.addEventListener("click", () => {
+    if (!(entrySoundPanel instanceof HTMLElement) || !(entrySoundToggle instanceof HTMLButtonElement)) return;
+    const expanded = entrySoundPanel.hidden;
+    entrySoundPanel.hidden = !expanded;
+    entrySoundToggle.setAttribute("aria-expanded", String(expanded));
+    if (expanded) requestAnimationFrame(() => (pendingSoundEnabled ? soundOnButton : soundOffButton)?.focus({ preventScroll: true }));
+  });
   soundModal?.addEventListener("keydown", (event) => {
     if (!soundModalOpen) return;
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
-      (pendingSoundEnabled ? soundOnButton : soundOffButton)?.focus({ preventScroll: true });
+      if (entrySoundPanel instanceof HTMLElement && !entrySoundPanel.hidden) {
+        entrySoundPanel.hidden = true;
+        entrySoundToggle?.setAttribute("aria-expanded", "false");
+        entrySoundToggle?.focus({ preventScroll: true });
+      } else {
+        const target = entryContinueButton instanceof HTMLButtonElement && !entryContinueButton.hidden
+          ? entryContinueButton
+          : soundTourButton;
+        target?.focus({ preventScroll: true });
+      }
       return;
     }
     if (event.key !== "Tab" || !(soundDialog instanceof HTMLElement)) return;

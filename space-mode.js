@@ -396,6 +396,37 @@
     state.effectTimer = window.setTimeout(() => ui.effectRow.classList.remove("is-updated"), 1500);
   };
 
+  const buildSpaceReceipt = () => {
+    const mode = currentMode();
+    const record = currentRecord();
+    if (!mode || !state.snapshot) throw new Error("宇宙データを読み込めませんでした。");
+    const sources = (mode.sourceIds || [])
+      .map((sourceId) => state.snapshot.sources.find((source) => source.id === sourceId))
+      .filter(Boolean);
+    return {
+      title: mode.title,
+      source: `${mode.metric?.label || "観測値"} ${formatNumber(mode.metric?.value, 2)} ${mode.metric?.unit || ""}`.trim(),
+      at: recordLabel(mode, record),
+      provider: [...new Set(sources.map((source) => source.organisation).filter(Boolean))].join(" / "),
+      classification: [...new Set(sources.map((source) => source.kind || "SOURCE"))].join(" + "),
+      transform: (scenes?.encoding(mode, record) || []).map(([label, value]) => `${label}=${value}`).join(" / ") || mode.narrative,
+      visual: mode.visualGuide || VISUAL_GUIDES[mode.id] || mode.narrative,
+    };
+  };
+  const updateSpaceTransformationReceipt = () => {
+    const root = document.querySelector("#space-transformation-receipt");
+    if (!(root instanceof HTMLElement)) return;
+    try {
+      const value = buildSpaceReceipt();
+      root.querySelector("[data-space-receipt-source]").textContent = [value.source, value.at].filter(Boolean).join(" / ");
+      root.querySelector("[data-space-receipt-provider]").textContent = value.provider || "保存済み公開データ";
+      root.querySelector("[data-space-receipt-transform]").textContent = value.transform;
+      root.querySelector("[data-space-receipt-visual]").textContent = value.visual;
+    } catch {
+      root.querySelector("[data-space-receipt-source]").textContent = "宇宙データを読み込んでいます。";
+    }
+  };
+
   const updateInterface = () => {
     const mode = currentMode();
     if (!mode) return;
@@ -433,6 +464,7 @@
       button.setAttribute("aria-current", String(index === state.modeIndex));
     });
     if (!ui.dataPanel.hidden) renderDataPanel();
+    updateSpaceTransformationReceipt();
   };
 
   function buildModeList() {
@@ -1002,7 +1034,7 @@
     const derivedKind = document.createElement("p");
     const derivedTitle = document.createElement("h4");
     const derivedList = document.createElement("dl");
-    derivedKind.textContent = "DERIVED / DATA → LIGHT";
+    derivedKind.textContent = "△ DERIVED / 計算・補間 / DATA → LIGHT";
     derivedTitle.textContent = "この数字を、どう光へ変えたか";
     addDefinition(derivedList, "公開記録", recordLabel());
     addDefinition(derivedList, "作品化", mode.narrative);
@@ -1026,7 +1058,9 @@
       const link = document.createElement("a");
       const previewTitle = document.createElement("p");
       const preview = document.createElement("pre");
-      kind.textContent = `${source.kind || "SOURCE"} / ${source.status || "SNAPSHOT"}`;
+      const kindSymbol = source.kind === "SCENARIO" ? "◇" : source.kind === "DERIVED" ? "△" : "○";
+      const kindJa = source.kind === "SCENARIO" ? "仮定・操作" : source.kind === "DERIVED" ? "計算・補間" : "公開記録";
+      kind.textContent = `${kindSymbol} ${source.kind || "SOURCE"} / ${kindJa} / ${source.status || "SNAPSHOT"}`;
       title.textContent = source.title;
       link.href = source.url;
       link.target = "_blank";
@@ -1052,7 +1086,7 @@
     const scenarioKind = document.createElement("p");
     const scenarioTitle = document.createElement("h4");
     const scenarioList = document.createElement("dl");
-    scenarioKind.textContent = "SCENARIO / YOUR TRACE";
+    scenarioKind.textContent = "◇ SCENARIO / 仮定・操作 / YOUR TRACE";
     scenarioTitle.textContent = "あなたが光へ残したもの";
     addDefinition(scenarioList, "軌跡", `${state.gestures.length}本`);
     addDefinition(scenarioList, "波", `${state.pulses.filter((pulse) => pulse.kind === "SCENARIO").length}回`);
@@ -1223,6 +1257,17 @@
   window.addEventListener("resize", () => {
     if (state.open) resize();
   });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      if (state.frame !== null) cancelAnimationFrame(state.frame);
+      state.frame = null;
+      return;
+    }
+    if (state.open && state.frame === null) {
+      state.lastTime = 0;
+      state.frame = requestAnimationFrame(draw);
+    }
+  });
 
   window.addEventListener("keydown", (event) => {
     if (!state.open) return;
@@ -1260,6 +1305,34 @@
     window.setTimeout(launchRequestedMode, 6200);
   }
 
+  const clearTourFocus = () => {
+    layer.querySelectorAll(".gaia-tour-highlight-target").forEach((element) => {
+      element.classList.remove("gaia-tour-highlight-target");
+      element.removeAttribute("data-gaia-tour-target");
+    });
+  };
+  const focusTourControl = (name) => {
+    clearTourFocus();
+    const target = { canvas, launch: ui.release, data: ui.dataButton }[name];
+    if (!(target instanceof HTMLElement)) return false;
+    target.classList.add("gaia-tour-highlight-target");
+    target.setAttribute("data-gaia-tour-target", name);
+    target.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    return true;
+  };
+  const getTourReceipt = buildSpaceReceipt;
+
   loadSnapshot().catch(() => {});
   window.GaiaSpace = { open: openSpace, close: closeSpaceNow };
+  window.GaiaSpaceTourAdapter = Object.freeze({
+    waitReady: loadSnapshot,
+    openAtMode: (index = 0) => openSpace(index, { returnToTop: false, source: "tour" }),
+    close: () => { clearTourFocus(); closeSpaceNow({ returnToTop: false }); },
+    focusControl: focusTourControl,
+    clearFocus: clearTourFocus,
+    launch: () => { ui.release.click(); return getTourReceipt(); },
+    getTourReceipt,
+    getState: () => ({ open: state.open, modeIndex: state.modeIndex, recordIndex: state.recordIndex, frameActive: state.frame !== null }),
+  });
+  window.dispatchEvent(new CustomEvent("gaia:space-tour-adapter-ready"));
 })();

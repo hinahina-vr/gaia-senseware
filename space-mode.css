@@ -713,6 +713,11 @@ body.space-mode-open { overflow: hidden; }
   .space-touch button { width: 72px; height: 72px; }
 }
 
+.transformation-receipt-space {
+  --accent-rgb: var(--space-rgb);
+  margin-top: 14px;
+}
+
 @media (max-height: 650px) and (orientation: landscape) {
   .space-header h2 { font-size: 44px; }
   .space-header > p:last-child { display: none; }

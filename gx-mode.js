@@ -2050,6 +2050,7 @@
     isOpen = false;
     isClosing = true;
     cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
     cancelAnimationFrame(eraCounterFrame);
     eraCounterFrame = 0;
     layer.classList.remove("is-open");
@@ -2175,6 +2176,17 @@
   canvas.addEventListener("pointerup", releasePointer);
   canvas.addEventListener("pointercancel", releasePointer);
   window.addEventListener("resize", () => { if (isOpen) resize(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = 0;
+      return;
+    }
+    if (isOpen && animationFrame === 0) {
+      previousTime = performance.now();
+      animationFrame = requestAnimationFrame(animate);
+    }
+  });
   window.addEventListener("gaia:gx-open", (event) => openGX(event.detail || {}));
   window.addEventListener("gaia:gx-story-key-step", advanceStoryPhaseFromKeyboard);
   window.addEventListener("keydown", (event) => {
