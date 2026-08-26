@@ -268,12 +268,21 @@
   const tick = (now) => {
     if (!active) return;
     if (!lastFrame) lastFrame = now;
-    const delta = Math.min(0.25, Math.max(0, (now - lastFrame) / 1000));
+    const delta = Math.max(0, (now - lastFrame) / 1000);
     lastFrame = now;
     if (running && !document.hidden && finishPanel.hidden) {
-      elapsed += delta;
-      if (elapsed >= steps[index].duration) setStep(index + 1);
-      else updateClock();
+      let remaining = delta;
+      while (remaining > 0 && running && finishPanel.hidden) {
+        const stepRemaining = Math.max(0, steps[index].duration - elapsed);
+        if (remaining < stepRemaining) {
+          elapsed += remaining;
+          remaining = 0;
+        } else {
+          remaining -= stepRemaining;
+          setStep(index + 1);
+        }
+      }
+      if (finishPanel.hidden) updateClock();
     }
     frame = requestAnimationFrame(tick);
   };
