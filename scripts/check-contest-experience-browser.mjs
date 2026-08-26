@@ -2,17 +2,22 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
+import { chromium } from "playwright-core";
 
-const [moduleRoot, executablePath, outputArgument, baseUrlArgument] = process.argv.slice(2);
-if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
-const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
-  ? path.join(moduleRoot, "index.mjs")
-  : path.join(moduleRoot, "playwright", "index.mjs");
-const { chromium } = await import(pathToFileURL(playwrightEntry).href);
+const rawArguments = process.argv.slice(2);
+const option = (name) => {
+  const index = rawArguments.indexOf(name);
+  return index >= 0 ? rawArguments[index + 1] : undefined;
+};
+const legacyArguments = rawArguments[0] && !rawArguments[0].startsWith("--") ? rawArguments : [];
+const executablePath = option("--browser") || process.env.GAIA_BROWSER_PATH || legacyArguments[1];
+const outputArgument = option("--output") || legacyArguments[2];
+const baseUrlArgument = option("--base-url") || legacyArguments[3];
+if (!executablePath) throw new Error("A real Google Chrome executable is required via --browser or GAIA_BROWSER_PATH");
 const outputDir = path.resolve(outputArgument || "artifacts/contest-experience-browser");
 fs.mkdirSync(outputDir, { recursive: true });
-const report = { status: "running", performance: null, layouts: [], entry: {}, tour: {}, resilience: {}, consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { status: "running", performance: null, layouts: [], entry: {}, tour: {}, resilience: {}, consoleErrors: [], pageErrors: [], unhandledRejections: [], responses404: [] };
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const mime = new Map([[".html", "text/html; charset=utf-8"], [".js", "text/javascript; charset=utf-8"], [".css", "text/css; charset=utf-8"], [".json", "application/json; charset=utf-8"], [".svg", "image/svg+xml"], [".png", "image/png"], [".webp", "image/webp"], [".mp3", "audio/mpeg"], [".woff2", "font/woff2"]]);
 let qaServer = null;
@@ -43,9 +48,16 @@ assert.equal(warmupResponse.ok, true, `QA server warmup ${warmupResponse.status}
 await warmupResponse.arrayBuffer();
 
 const monitor = (page, name, { allowExpectedAbort = false } = {}) => {
+  void page.addInitScript(() => {
+    addEventListener("unhandledrejection", (event) => {
+      const reason = event.reason instanceof Error ? event.reason.stack || event.reason.message : String(event.reason);
+      console.error(`__GAIA_UNHANDLED_REJECTION__${reason}`);
+    });
+  });
   page.on("console", (message) => {
     if (message.type() !== "error") return;
     if (allowExpectedAbort && message.text().includes("net::ERR_FAILED")) return;
+    if (message.text().startsWith("__GAIA_UNHANDLED_REJECTION__")) report.unhandledRejections.push(`${name}: ${message.text()}`);
     report.consoleErrors.push(`${name}: ${message.text()}`);
   });
   page.on("pageerror", (error) => report.pageErrors.push(`${name}: ${error.message}`));
@@ -54,6 +66,7 @@ const monitor = (page, name, { allowExpectedAbort = false } = {}) => {
 
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
+  fs.writeFileSync(path.join(outputDir, "chrome.log"), `executable=${executablePath}\nversion=${await browser.version()}\n`);
   // The first Chromium navigation includes process and renderer startup on
   // some Windows runners. Warm that path before measuring page-load vitals.
   const browserWarmupContext = await browser.newContext({ viewport: { width: 800, height: 600 } });
@@ -175,13 +188,33 @@ try {
   await storyEntryPage.locator("#gaia-opening-skip").click();
   await storyEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
   assert.equal(await storyEntryPage.locator("#gaia-opening-final-menu .gaia-opening-route").count(), 2);
+  assert.equal(await storyEntryPage.locator("#gaia-opening-tour-link").isVisible(), true, "quiet 60-second guide link must be visible below the two choices");
+  assert.match(await storyEntryPage.locator("#gaia-opening-tour-link").textContent(), /60秒ガイド/u);
+  await storyEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-pc.png"), animations: "disabled" });
   await storyEntryPage.locator("#gaia-opening-route-story").click();
   await storyEntryPage.waitForTimeout(150);
   assert.notEqual(await storyEntryPage.evaluate(() => location.hash), "#story", "story hash must wait for lazy-loaded story UI");
   await storyEntryPage.waitForFunction(() => location.hash === "#story" && document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
+  await storyEntryPage.screenshot({ path: path.join(outputDir, "story-restored-pc.png"), animations: "disabled" });
   assert.equal(await storyEntryPage.locator(".gaia-observation-launcher").count(), 0, "story route must not mount the notebook launcher");
   report.entry.soundAndStory = "passed";
   await storyEntryContext.close();
+
+  const guideEntryContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const guideEntryPage = await guideEntryContext.newPage();
+  monitor(guideEntryPage, "entry-guide-link");
+  await guideEntryPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await guideEntryPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
+  await guideEntryPage.locator("#gaia-opening-sound-off").click();
+  await guideEntryPage.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden", timeout: 20_000 });
+  await guideEntryPage.locator("#gaia-opening-skip").click();
+  await guideEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
+  await guideEntryPage.locator("#gaia-opening-tour-link").click();
+  await guideEntryPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
+  assert.equal(await guideEntryPage.evaluate(() => location.hash), "#tour");
+  await guideEntryPage.evaluate(() => globalThis.GaiaGuidedTour.exit());
+  report.entry.guideLink = "passed";
+  await guideEntryContext.close();
 
   const directContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
   const directPage = await directContext.newPage();
@@ -192,6 +225,18 @@ try {
     assert.equal(await directPage.locator("#gaia-opening-sound-modal.is-visible").count(), 0, `${hash} must bypass entry`);
   }
   report.entry.directRoutes = "passed";
+  await directPage.goto(new URL("/#earth", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await directPage.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter), null, { timeout: 30_000 });
+  await directPage.evaluate(() => { location.hash = "#japan"; });
+  await directPage.waitForFunction(() => location.hash === "#japan");
+  await directPage.goBack({ waitUntil: "domcontentloaded" });
+  assert.equal(await directPage.evaluate(() => location.hash), "#earth");
+  await directPage.goForward({ waitUntil: "domcontentloaded" });
+  assert.equal(await directPage.evaluate(() => location.hash), "#japan");
+  await directPage.reload({ waitUntil: "domcontentloaded" });
+  await directPage.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter), null, { timeout: 30_000 });
+  assert.equal(await directPage.locator("#japan-layer").count(), 1, "history/reload must not duplicate the exploration UI");
+  report.entry.history = "passed";
   await directContext.close();
 
   const tourContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
@@ -387,14 +432,51 @@ try {
   }
   report.resilience.contextLoss = contextLossTriggered ? "passed" : "extension-unavailable";
   report.resilience.lifecycle = lifecycle;
+  const lodResult = await lifecyclePage.evaluate(() => {
+    const governor = new globalThis.GaiaFrameBudgetGovernorClass({ autoStart: false, now: () => 20_000 });
+    const feed = (duration, periods) => {
+      for (let index = 0; index < periods; index += 1) governor.__testFeedWindow(Array.from({ length: 120 }, () => duration));
+    };
+    feed(19, 2);
+    const afterMedium = governor.getProfile().level;
+    feed(19, 2);
+    const afterLow = governor.getProfile().level;
+    feed(23, 3);
+    const result = { afterMedium, afterLow, afterStatic: governor.getProfile().level };
+    globalThis.GaiaFrameBudgetGovernor.publish("deterministic-test-complete");
+    return result;
+  });
+  assert.deepEqual(lodResult, { afterMedium: "medium", afterLow: "low", afterStatic: "static" });
+  const frameTimes = await lifecyclePage.evaluate(() => new Promise((resolve) => {
+    const samples = [];
+    let previous = performance.now();
+    const tick = (now) => {
+      samples.push(now - previous);
+      previous = now;
+      if (samples.length >= 120) resolve(samples);
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }));
+  const sortedFrameTimes = [...frameTimes].sort((left, right) => left - right);
+  const medianFrameMs = sortedFrameTimes[Math.floor(sortedFrameTimes.length / 2)];
+  report.resilience.lod = { deterministic: lodResult, medianFps: 1000 / medianFrameMs, activeLevel: await lifecyclePage.evaluate(() => document.documentElement.dataset.gaiaLod) };
+  assert(report.resilience.lod.medianFps >= 55, `median frame rate ${report.resilience.lod.medianFps.toFixed(1)}fps`);
+  assert.notEqual(report.resilience.lod.activeLevel, "static", "normal Chrome must not fall back to static rendering");
   await lifecycleContext.close();
 
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);
+  assert.deepEqual(report.unhandledRejections, []);
   assert.deepEqual(report.responses404, []);
   report.status = "passed";
   fs.writeFileSync(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
+} catch (error) {
+  report.status = "failed";
+  report.failure = error instanceof Error ? { message: error.message, stack: error.stack } : { message: String(error) };
+  fs.writeFileSync(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
+  throw error;
 } finally {
   await browser.close();
   qaServer?.closeAllConnections?.();

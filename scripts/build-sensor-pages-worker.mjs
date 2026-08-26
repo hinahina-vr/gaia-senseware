@@ -34,6 +34,10 @@ try {
   const generatedPath = findGeneratedModule(temp);
   const generated = fs.readFileSync(generatedPath, "utf8")
     .replace(/\r\n/gu, "\n")
+    // xml-utils ships a template literal with a literal space before a line
+    // break. Preserve the character-class semantics without release-blocking
+    // trailing whitespace in the committed Pages bundle.
+    .replace("`<${tagName}[ \n>/]`", "`<${tagName}[\\x20\\n>/]`")
     .replace(/^\/\/# sourceMappingURL=.*(?:\n|$)/gmu, "");
   validateGenerated(generated);
   if (checkOnly) {

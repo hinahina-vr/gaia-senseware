@@ -529,7 +529,7 @@
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       const profile = qualityProfile();
-      const ratio = Math.min(devicePixelRatio || 1, profile.dprCap) * profile.quality;
+      const ratio = Math.min(devicePixelRatio || 1, profile.dprCap, globalThis.GaiaFrameBudgetGovernor?.getDprCap?.() || Infinity) * profile.quality;
       const targetWidth = Math.max(2, rect.width * ratio);
       const targetHeight = Math.max(2, rect.height * ratio);
       const renderScale = Math.min(1, 1440 / targetWidth, 900 / targetHeight);
@@ -686,6 +686,7 @@
       raf = 0;
       canvas.dataset.webglState = "lost";
       canvas.classList.add("is-fallback");
+      globalThis.GaiaFrameBudgetGovernor?.reportFailure?.("context-lost");
     };
     const onContextRestored = () => {
       canvas.dataset.webglState = "restoring";

@@ -341,6 +341,9 @@
                       </svg>
                     </button>
                   </div>
+                  <button class="gaia-opening-tour-link" id="gaia-opening-tour-link" type="button">
+                    <span aria-hidden="true">60 SEC</span> 60秒ガイド
+                  </button>
                 </div>
               </div>
             </div>
@@ -1409,6 +1412,32 @@
               <h3>押すと</h3>
               <p id="map-guide-action">年表示を動かすかマスを押すと、その時点の値と、実測・補完・試算の区分を確認できます。</p>
             </section>
+          </div>
+        </details>
+
+        <details class="gaia-live-receipt" data-gaia-live-receipt>
+          <summary>
+            <span>LIVE SENSEWARE / 変換レシート</span>
+            <strong data-live-connection>SNAPSHOT / RECONNECT SAFE</strong>
+          </summary>
+          <div class="gaia-live-receipt-body">
+            <p>ハワイ島周辺の固定範囲を、出典・観測時刻・公開遅延を混同せずに表示します。</p>
+            <section data-live-provider="noaa">
+              <header><b>NOAA</b><span data-live-status>SNAPSHOT</span></header>
+              <strong data-live-value>取得待ち</strong><small data-live-time>観測時刻なし</small>
+            </section>
+            <section data-live-provider="jaxa">
+              <header><b>JAXA</b><span data-live-status>SNAPSHOT</span></header>
+              <strong data-live-value>取得待ち</strong><small data-live-time>観測時刻なし</small>
+            </section>
+            <section data-live-provider="esa">
+              <header><b>ESA / COPERNICUS</b><span data-live-status>SNAPSHOT</span></header>
+              <strong data-live-value>取得待ち</strong><small data-live-time>観測時刻なし</small>
+            </section>
+            <div class="gaia-live-sound-controls">
+              <button type="button" data-live-sound-toggle aria-pressed="false">観測音をオン</button>
+              <p><b>DERIVED / SOUND MAPPING</b><span data-live-sound-readout>観測値を読み込んでいます。</span></p>
+            </div>
           </div>
         </details>
 

@@ -3893,6 +3893,35 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 }
 
+.gaia-opening-tour-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65em;
+  min-height: 44px;
+  margin: 8px auto 0;
+  padding: 7px 16px;
+  border: 0;
+  background: transparent;
+  color: rgba(var(--opening-paper), 0.78);
+  font: 500 clamp(12px, 1vw, 14px) / 1.4 var(--font-sans);
+  letter-spacing: 0.1em;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.gaia-opening-tour-link span {
+  color: rgb(var(--route-accent));
+  font-size: 0.7em;
+  letter-spacing: 0.16em;
+}
+
+.gaia-opening-tour-link:hover,
+.gaia-opening-tour-link:focus-visible {
+  color: rgb(var(--opening-paper));
+  text-decoration: underline;
+}
+
 /* Sound confirmation opens on the story's first key visual. */
 .gaia-opening-sound-modal {
   --sound-accent: var(--opening-mint);

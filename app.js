@@ -416,6 +416,7 @@
   });
 
   if (!gl) {
+    globalThis.GaiaFrameBudgetGovernor?.reportFailure?.("webgl-unavailable");
     errorPanel.hidden = false;
     globalThis.GaiaMapObservationAdapter = Object.freeze({
       waitSignalsReady: () => Promise.reject(new Error("WebGL2 unavailable")),
@@ -1157,7 +1158,7 @@
   };
 
   const resizeJapanOverlay = (rect) => {
-    const deviceRatio = Math.max(1, window.devicePixelRatio || 1);
+    const deviceRatio = Math.min(Math.max(1, window.devicePixelRatio || 1), globalThis.GaiaFrameBudgetGovernor?.getDprCap?.() || Infinity);
     const nativeRatio = Math.min(deviceRatio, mapOverlayQuality.ratioCap);
     const rawWidth = Math.max(1, rect.width * nativeRatio);
     const rawHeight = Math.max(1, rect.height * nativeRatio);
@@ -7047,7 +7048,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
   const resize = () => {
     const rect = canvas.getBoundingClientRect();
-    const ratioCap = coarsePointer ? 1.0 : 1.35;
+    const ratioCap = Math.min(coarsePointer ? 1.0 : 1.35, globalThis.GaiaFrameBudgetGovernor?.getDprCap?.() || Infinity);
     const pixelRatio = Math.min(window.devicePixelRatio || 1, ratioCap);
     const rawWidth = Math.max(1, rect.width * pixelRatio);
     const rawHeight = Math.max(1, rect.height * pixelRatio);
@@ -7070,7 +7071,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
   const render = (now) => {
     if (japanIsOpen) {
-      const mapFrameInterval = reducedMotion ? 1000 / 15 : coarsePointer ? 1000 / 24 : 1000 / 30;
+      const lodTarget = globalThis.GaiaFrameBudgetGovernor?.getProfile?.().targetFps ?? 60;
+      if (lodTarget === 0) return;
+      const mapFrameInterval = reducedMotion ? 1000 / 15 : 1000 / lodTarget;
       if (now - lastJapanOverlayRenderAt < mapFrameInterval) {
         animationFrame = requestAnimationFrame(render);
         return;
@@ -7190,6 +7193,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       errorPanel.querySelector("p").textContent = "描画コンテキストが失われました。";
       errorPanel.querySelector("small").textContent = "ページを再読み込みしてください。";
       errorPanel.hidden = false;
+      globalThis.GaiaFrameBudgetGovernor?.reportFailure?.("context-lost");
     },
     false,
   );

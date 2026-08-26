@@ -511,7 +511,7 @@
 
   const resize = () => {
     const rectangle = layer.getBoundingClientRect();
-    state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    state.dpr = Math.min(window.devicePixelRatio || 1, globalThis.GaiaFrameBudgetGovernor?.getDprCap?.() || 2);
     state.width = Math.max(1, rectangle.width);
     state.height = Math.max(1, rectangle.height);
     canvas.width = Math.round(state.width * state.dpr);

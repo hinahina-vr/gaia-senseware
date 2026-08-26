@@ -21,6 +21,7 @@
   const finalMenu = document.querySelector("#gaia-opening-final-menu");
   const finalStoryButton = document.querySelector("#gaia-opening-route-story");
   const finalOtherButton = document.querySelector("#gaia-opening-route-other");
+  const finalTourButton = document.querySelector("#gaia-opening-tour-link");
   const soundModal = document.querySelector("#gaia-opening-sound-modal");
   const soundDialog = soundModal?.querySelector(".gaia-opening-sound-dialog");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -583,10 +584,15 @@
     finalMenu?.setAttribute("aria-busy", "true");
     if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = true;
     if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = true;
+    if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = true;
     performance.mark(`gaia:${destination}-route-load-request`);
-    const routeReady = Promise.resolve(
-      window.GaiaModeLoader?.load?.(destination === "story" ? "story" : "exploration"),
-    );
+    const routeReady = destination === "tour"
+      ? (async () => {
+          await window.GaiaModeLoader?.load?.("exploration");
+          await window.GaiaModeLoader?.load?.("notebook");
+          await window.GaiaModeLoader?.load?.("tour");
+        })()
+      : Promise.resolve(window.GaiaModeLoader?.load?.(destination === "story" ? "story" : "exploration"));
     finished = true;
     window.clearTimeout(finishTimer);
     closeSoundModalImmediately();
@@ -615,11 +621,13 @@
       }
       if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = false;
       if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = false;
+      if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = false;
       return;
     }
     if (destination === "story") {
       history.replaceState(null, "", `${window.location.pathname}${window.location.search}#story`);
     }
+    if (destination === "tour") history.replaceState(null, "", `${window.location.pathname}${window.location.search}#tour`);
     window.dispatchEvent(new CustomEvent("gaia:opening-complete", { detail: { destination } }));
     opening.hidden = true;
     opening.classList.remove("is-active", "is-leaving");
@@ -633,6 +641,7 @@
         }));
       });
     }
+    if (destination === "tour") requestAnimationFrame(() => window.GaiaGuidedTour?.start?.({ source: "opening" }));
   };
 
   const retireOpeningForStory = () => {
@@ -783,6 +792,7 @@
   skipButton?.addEventListener("click", skipToFinalMenu);
   finalStoryButton?.addEventListener("click", () => void finish("story"));
   finalOtherButton?.addEventListener("click", () => void finish("menu"));
+  finalTourButton?.addEventListener("click", () => void finish("tour"));
   soundOnButton?.addEventListener("click", () => void confirmSoundSetup(true));
   soundOffButton?.addEventListener("click", () => void confirmSoundSetup(false));
   soundModal?.addEventListener("keydown", (event) => {

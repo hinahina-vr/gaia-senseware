@@ -24,6 +24,7 @@
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
         "./observation-notebook.js?v=gaia-contest-notebook-2",
       ],
+      modules: ["./src/exploration/index.js?v=gaia-live-senseware-1"],
     },
     story: {
       templates: ["gaia-template-story"],
@@ -45,6 +46,7 @@
         "./novel-temporal.js?v=gaia-temporal-1",
         "./novel-mode.js?v=gaia-ui-restore-de6-1",
       ],
+      modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
     },
     gx: {
       templates: ["gaia-template-gx"],
@@ -58,6 +60,7 @@
         "./scene-transition.js?v=gaia-66",
         "./gx-mode.js?v=gaia-gx-mobile-installation-1",
       ],
+      modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
     },
     space: {
       templates: ["gaia-template-space"],
@@ -72,6 +75,7 @@
         "./space-scenes.js?v=gaia-98",
         "./space-mode.js?v=gaia-ui-restore-de6-1",
       ],
+      modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
     },
     sound: {
       templates: ["gaia-template-sound"],
@@ -81,6 +85,7 @@
         "./mode-exit.css?v=gaia-story-control-blue-1",
       ],
       scripts: ["./sound-mode.js?v=gaia-suno-credit-1"],
+      modules: ["./src/exploration/procedural-audio.js?v=gaia-live-senseware-1"],
     },
     notebook: {
       templates: [],
@@ -143,6 +148,14 @@
     return promise;
   };
 
+  const loadModule = (src) => {
+    const absolute = new URL(src, document.baseURI).href;
+    if (assetPromises.has(absolute)) return assetPromises.get(absolute);
+    const promise = import(absolute);
+    assetPromises.set(absolute, promise);
+    return promise;
+  };
+
   const load = (name) => {
     if (loadedGroups.has(name)) return Promise.resolve();
     if (groupPromises.has(name)) return groupPromises.get(name);
@@ -153,6 +166,7 @@
       performance.mark(`gaia:${name}-load-start`);
       group.templates.forEach(mountTemplate);
       await Promise.all(group.styles.map(loadStyle));
+      await Promise.all((group.modules || []).map(loadModule));
       for (const script of group.scripts) await loadScript(script);
       loadedGroups.add(name);
       performance.mark(`gaia:${name}-load-end`);

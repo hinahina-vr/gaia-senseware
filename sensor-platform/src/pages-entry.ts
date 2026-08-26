@@ -1,4 +1,5 @@
 import sensorPlatform from "./index";
+import { handleLiveSenseware } from "./live-senseware";
 
 interface PagesEnv extends Env {
   ASSETS: Fetcher;
@@ -52,9 +53,11 @@ const nonPublicResponse = (): Response => new Response("Not Found", {
 });
 
 export default {
-  async fetch(request: Request, env: PagesEnv): Promise<Response> {
+  async fetch(request: Request, env: PagesEnv, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     if (isNonPublicPath(url.pathname)) return nonPublicResponse();
+    const liveResponse = await handleLiveSenseware(request, env, ctx);
+    if (liveResponse) return liveResponse;
     if (url.pathname.startsWith("/api/")) return sensorPlatform.fetch(request, env);
     const assetResponse = await env.ASSETS.fetch(request);
     if (!/^\/assets\/audio\/.+\.mp3$/u.test(url.pathname) || !assetResponse.ok) return assetResponse;

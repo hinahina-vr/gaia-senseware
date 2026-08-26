@@ -17,10 +17,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
+      - run: npm ci
       - name: Contest contract
         run: npm run check:contest
       - name: Full static and data checks
         run: npm run check
+      - name: Locate installed Google Chrome
+        id: chrome
+        shell: bash
+        run: echo "path=$(command -v google-chrome || command -v google-chrome-stable)" >> "$GITHUB_OUTPUT"
+      - name: Real Chrome contest experience
+        run: node scripts/check-contest-experience-browser.mjs --browser "${{ steps.chrome.outputs.path }}" --output artifacts/contest-experience-browser
+      - name: Upload Chrome evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contest-experience-browser
+          path: artifacts/contest-experience-browser
+          retention-days: 14
 
   sensor-extension:
     runs-on: ubuntu-latest

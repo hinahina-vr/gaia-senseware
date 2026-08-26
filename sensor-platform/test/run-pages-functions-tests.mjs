@@ -27,35 +27,40 @@ const command = (argumentsList) => new Promise((resolve, reject) => {
 await test("advanced handler delegates API and calls ASSETS exactly once for non-API", async () => {
   const source = fs.readFileSync(path.join(root, "sensor-platform", "src", "pages-entry.ts"), "utf8")
     .replace(/^import sensorPlatform[^\n]+$/mu, "const sensorPlatform = globalThis.__gaiaPagesSensorHandler;")
+    .replace(/^import \{ handleLiveSenseware \}[^\n]+$/mu, "const handleLiveSenseware = globalThis.__gaiaPagesLiveHandler;")
     .replace(/interface PagesEnv extends Env \{\r?\n  ASSETS: Fetcher;\r?\n\}\r?\n\r?\n/u, "")
     .replace(/\(pathname: string\): boolean/gu, "(pathname)")
     .replace(/\(\): Response/gu, "()")
     .replace(/: Request/gu, "")
     .replace(/: PagesEnv/gu, "")
+    .replace(/: ExecutionContext/gu, "")
     .replace(/: Promise<Response>/gu, "")
     .replace(/ satisfies ExportedHandler<PagesEnv>;/u, ";");
   let apiCalls = 0;
   let assetCalls = 0;
   globalThis.__gaiaPagesSensorHandler = { fetch: async () => { apiCalls += 1; return new Response("api"); } };
+  globalThis.__gaiaPagesLiveHandler = async () => null;
   const module = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
   const env = { ASSETS: { fetch: async () => { assetCalls += 1; return new Response("static"); } } };
-  assert.equal((await module.default.fetch(new Request("https://example.test/api/health"), env)).status, 200);
+  const context = { waitUntil() {}, passThroughOnException() {} };
+  assert.equal((await module.default.fetch(new Request("https://example.test/api/health"), env, context)).status, 200);
   assert.equal(apiCalls, 1);
   assert.equal(assetCalls, 0);
-  const blocked = await module.default.fetch(new Request("https://example.test/README.md"), env);
+  const blocked = await module.default.fetch(new Request("https://example.test/README.md"), env, context);
   assert.equal(blocked.status, 404);
   assert.equal(blocked.headers.get("cache-control"), "no-store");
   assert.equal(assetCalls, 0);
-  assert.equal(await (await module.default.fetch(new Request("https://example.test/story"), env)).text(), "static");
+  assert.equal(await (await module.default.fetch(new Request("https://example.test/story"), env, context)).text(), "static");
   assert.equal(apiCalls, 1);
   assert.equal(assetCalls, 1);
-  const ranged = await module.default.fetch(new Request("https://example.test/assets/audio/test.mp3", { headers: { Range: "bytes=1-3" } }), env);
+  const ranged = await module.default.fetch(new Request("https://example.test/assets/audio/test.mp3", { headers: { Range: "bytes=1-3" } }), env, context);
   assert.equal(ranged.status, 206);
   assert.equal(ranged.headers.get("accept-ranges"), "bytes");
   assert.equal(ranged.headers.get("content-range"), "bytes 1-3/6");
   assert.equal(await ranged.text(), "tat");
   assert.equal(assetCalls, 2);
   delete globalThis.__gaiaPagesSensorHandler;
+  delete globalThis.__gaiaPagesLiveHandler;
 });
 
 await command(["d1", "migrations", "apply", "gaia-senseware-sensors", "--local", "--config", "wrangler.jsonc", `--persist-to=${persistPath}`]);
@@ -81,6 +86,37 @@ try {
     assert.equal(response.status, 200);
     assert.equal((await response.json()).service, "gaia-senseware-sensor-platform");
     assert.match(response.headers.get("x-request-id") ?? "", /.+/u);
+  });
+  await test("Live Senseware is an honest versioned snapshot while disabled", async () => {
+    const response = await fetch(`${origin}/api/live/v1/snapshot`);
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.source, "snapshot");
+    assert.match(payload.fallbackReason, /LIVE_SENSEWARE_ENABLED/u);
+    assert.deepEqual([...new Set(payload.events.map((event) => event.provider))].sort(), ["esa", "jaxa", "noaa"]);
+    assert(payload.events.every((event) => event.status === "snapshot"));
+  });
+  await test("Live Senseware SSE emits normalized snapshot and provider events", async () => {
+    const controller = new AbortController();
+    const response = await fetch(`${origin}/api/live/v1/stream`, { signal: controller.signal });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /text\/event-stream/u);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let text = "";
+    while (!text.includes("event: status")) {
+      const chunk = await Promise.race([
+        reader.read(),
+        delay(5_000).then(() => { throw new Error("SSE first events timed out"); }),
+      ]);
+      if (chunk.done) break;
+      text += decoder.decode(chunk.value, { stream: true });
+    }
+    controller.abort();
+    assert.match(text, /event: snapshot/u);
+    assert.match(text, /event: provider/u);
+    assert.match(text, /event: status/u);
+    assert.match(text, /"schemaVersion":1/u);
   });
   await test("anonymous trial session is available through the Pages Function", async () => {
     const response = await fetch(`${origin}/api/auth/trial`, { method: "POST", headers: { Origin: origin } });

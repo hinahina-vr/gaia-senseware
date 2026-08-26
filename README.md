@@ -31,17 +31,18 @@
 
 ### 実装と検査
 
-基本体験はHTML、CSS、JavaScript、WebGL 2、Canvas 2D、ブラウザ標準APIだけで成立し、外部JavaScriptランタイムライブラリを読み込みません。ESP32、Pages Functions、D1は任意拡張です。データ閲覧時は外部APIへ接続せず、取得済みスナップショットを使います。
+基本体験はHTML、CSS、JavaScript、WebGL 2、Canvas 2D、ブラウザ標準APIだけで成立し、ブラウザへ外部JavaScriptランタイムライブラリを配信しません。通常展示は取得済みスナップショットで完結し、地図内のLive Senseware変換レシートだけが、機能フラグ有効時にPages Worker経由でNOAA・JAXA・ESAの公開観測へ接続します。
 
 ```powershell
 npm run check
 npm run check:contest
+npm run check:rights
 npm --prefix sensor-platform run typecheck
 npm --prefix sensor-platform run check:pages-worker
 npm --prefix sensor-platform run test:pages
 ```
 
-GitHub Actionsの `Contest checks` はWeb、センサー型、Pages Worker、ローカルD1を検査し、デプロイは行いません。出典・素材権利は[提出ガイド](docs/CONTEST_2026_SUBMISSION.md#データ出典)と作品内の `OPEN DATA`、生成台帳に記録しています。背景・キャラクターはOpenAI ImageGen、音楽はSuno AI、地図はNatural Earth Public Domainです。
+GitHub Actionsの `Contest checks` は実Google Chrome、Web、センサー型、Pages Worker、ローカルD1を検査し、デプロイは行いません。出典・素材権利は[提出ガイド](docs/CONTEST_2026_SUBMISSION.md#データ出典)、[権利台帳](docs/MEDIA_RIGHTS_LEDGER.md)、作品内の `OPEN DATA` に記録しています。背景・キャラクターはOpenAI ImageGen、音楽はSuno AI、地図はNatural Earth Public Domainです。
 
 > 物語・キャラクター・GX・演出方針の正本は
 > [`docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md`](docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md) を参照してください。
@@ -91,13 +92,15 @@ ISAS/JAXA DARTSのはやぶさ2 LIDARを、一つのローカルJSONへ保存し
 - `SOURCE` — 公開データそのもの
 - `DERIVED` — 正規化・補間・集計した値
 - `SCENARIO` — 観客入力または明示した仮定による仮想状態
+- ライブ観測は `NEAR REAL TIME`、`LATEST PUBLISHED`、`STALE`、`SNAPSHOT` を値ごとに表示
 - 地図の `OPEN DATA` には、**現在の演出に関係するデータだけ**を表示
 - 提供機関、URL、取得日、期間、単位、空間・時間解像度、加工内容、注意事項、先頭10行を表示
 - `CODE` は `VISUAL CODE / DATA TRANSFORM / RAW DATA` の3タブ
 - 統計補完は元の`SOURCE`を上書きせず、補完値へ`DERIVED`、未来投影へ`SCENARIO`を付ける
 - `OPEN DATA`の`STATISTICS`欄で、式、採用条件、検証法、限界、画面上の区別を表示
-- 一次開発では、科学データの閲覧時API通信を行わず、描画は `data/gaia-signals.json` などの取得済みスナップショットだけを使用
-- 外部APIはスナップショットを手動更新する生成スクリプトからだけ利用し、リアルタイム連携は二次開発とする
+- 通常展示の描画は `data/gaia-signals.json` などの取得済みスナップショットだけを使用
+- Live Sensewareは地図・宇宙の変換レシート内だけに置き、NOAA NDBC、NOAA GML、JAXA GSMaP、ESA Sentinel-5Pを別の地点・期間として表示
+- ライブ取得失敗時は最後の正常値、続いて版管理スナップショットへ退避し、ライブ値を装わない
 - OSCAR取得タイムアウト時の02は、台帳に明記してNOAA CoastWatch Blended NRT海流へ代替
 
 ## 作品のしくみ／応募規約展示

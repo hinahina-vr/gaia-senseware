@@ -104,8 +104,9 @@
   });
 
   const rebuild = () => {
-    const starCount = clamp(Math.round((width * height) / 42000), 22, 52);
-    const moteCount = clamp(Math.round(width / 260), 5, 9);
+    const ratio = globalThis.GaiaFrameBudgetGovernor?.getProfile?.().particleRatio ?? 1;
+    const starCount = Math.round(clamp(Math.round((width * height) / 42000), 22, 52) * ratio);
+    const moteCount = Math.round(clamp(Math.round(width / 260), 5, 9) * ratio);
     stars = Array.from({ length: starCount }, randomStar);
     motes = Array.from({ length: moteCount }, randomMote);
     flows = Array.from({ length: 3 }, (_, i) => makeFlow(i));
@@ -113,7 +114,7 @@
 
   const resize = () => {
     ensureCanvas();
-    dpr = Math.min(devicePixelRatio || 1, 1.5);
+    dpr = Math.min(devicePixelRatio || 1, globalThis.GaiaFrameBudgetGovernor?.getDprCap?.() || 1.5);
     width = innerWidth;
     height = innerHeight;
     canvas.width = Math.round(width * dpr);
@@ -266,6 +267,7 @@
     "gaia:space-open-at-mode",
     "gaia:space-return-to-novel",
   ].forEach((eventName) => addEventListener(eventName, () => requestAnimationFrame(refresh)));
+  addEventListener("gaia:lodchange", () => requestAnimationFrame(resize));
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", refresh, { once: true });
   else refresh();

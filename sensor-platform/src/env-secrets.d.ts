@@ -4,6 +4,9 @@ interface Env {
   SESSION_SECRET: string;
   DEVICE_TOKEN_PEPPER: string;
   PAIRING_CODE_PEPPER: string;
+  LIVE_SENSEWARE_ENABLED?: string;
+  CDSE_CLIENT_ID?: string;
+  CDSE_CLIENT_SECRET?: string;
 }
 
 declare namespace Cloudflare {
@@ -13,5 +16,8 @@ declare namespace Cloudflare {
     SESSION_SECRET: string;
     DEVICE_TOKEN_PEPPER: string;
     PAIRING_CODE_PEPPER: string;
+    LIVE_SENSEWARE_ENABLED?: string;
+    CDSE_CLIENT_ID?: string;
+    CDSE_CLIENT_SECRET?: string;
   }
 }

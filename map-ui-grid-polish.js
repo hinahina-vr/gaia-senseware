@@ -9,6 +9,7 @@
     data: japanLayer?.querySelector(":scope > .signal-console-map") || null,
   });
   let scheduled = 0;
+  const measuredHeights = new Map();
 
   Object.entries(panels).forEach(([role, panel]) => {
     if (!(panel instanceof HTMLElement)) return;
@@ -36,9 +37,9 @@
     }
     const top = Math.max(82, Math.min(108, innerHeight * 0.09));
     const gap = Math.max(9, Math.min(14, innerWidth * 0.0075));
-    const introHeight = panels.intro?.getBoundingClientRect().height || 0;
-    const bankHeight = panels.bank?.getBoundingClientRect().height || 0;
-    const dataHeight = panels.data?.getBoundingClientRect().height || 0;
+    const introHeight = measuredHeights.get(panels.intro) || 0;
+    const bankHeight = measuredHeights.get(panels.bank) || 0;
+    const dataHeight = measuredHeights.get(panels.data) || 0;
     if (desktop && (!introHeight || !bankHeight)) {
       requestAnimationFrame(() => applyLayout({ desktop }));
       return;
@@ -53,7 +54,10 @@
     scheduled = requestAnimationFrame(measureLayout);
   };
 
-  const resizeObserver = new ResizeObserver(schedule);
+  const resizeObserver = new ResizeObserver((entries) => {
+    entries.forEach((entry) => measuredHeights.set(entry.target, entry.borderBoxSize?.[0]?.blockSize || entry.contentRect.height));
+    schedule();
+  });
   Object.values(panels).forEach((panel) => {
     if (panel instanceof HTMLElement) resizeObserver.observe(panel);
   });

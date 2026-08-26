@@ -486,7 +486,7 @@
     const bounds = layer.getBoundingClientRect();
     width = Math.max(1, bounds.width);
     height = Math.max(1, bounds.height);
-    dpr = Math.min(2, window.devicePixelRatio || 1);
+    dpr = Math.min(window.devicePixelRatio || 1, globalThis.GaiaFrameBudgetGovernor?.getDprCap?.() || 2);
     canvas.width = Math.floor(width * dpr);
     canvas.height = Math.floor(height * dpr);
     canvas.style.width = `${width}px`;
