@@ -28,6 +28,8 @@ await test("advanced handler delegates API and calls ASSETS exactly once for non
   const source = fs.readFileSync(path.join(root, "sensor-platform", "src", "pages-entry.ts"), "utf8")
     .replace(/^import sensorPlatform[^\n]+$/mu, "const sensorPlatform = globalThis.__gaiaPagesSensorHandler;")
     .replace(/interface PagesEnv extends Env \{\r?\n  ASSETS: Fetcher;\r?\n\}\r?\n\r?\n/u, "")
+    .replace(/\(pathname: string\): boolean/gu, "(pathname)")
+    .replace(/\(\): Response/gu, "()")
     .replace(/: Request/gu, "")
     .replace(/: PagesEnv/gu, "")
     .replace(/: Promise<Response>/gu, "")
@@ -39,6 +41,10 @@ await test("advanced handler delegates API and calls ASSETS exactly once for non
   const env = { ASSETS: { fetch: async () => { assetCalls += 1; return new Response("static"); } } };
   assert.equal((await module.default.fetch(new Request("https://example.test/api/health"), env)).status, 200);
   assert.equal(apiCalls, 1);
+  assert.equal(assetCalls, 0);
+  const blocked = await module.default.fetch(new Request("https://example.test/README.md"), env);
+  assert.equal(blocked.status, 404);
+  assert.equal(blocked.headers.get("cache-control"), "no-store");
   assert.equal(assetCalls, 0);
   assert.equal(await (await module.default.fetch(new Request("https://example.test/story"), env)).text(), "static");
   assert.equal(apiCalls, 1);
@@ -89,6 +95,14 @@ try {
       const response = await fetch(`${origin}${staticPath}`);
       assert.equal(response.status, 200);
       assert.equal(response.headers.has("x-request-id"), false);
+    });
+  }
+  for (const nonPublicPath of ["/README.md", "/docs/CONTEST_2026_SUBMISSION.md", "/scripts/check-contest-experience-browser.mjs"]) {
+    await test(`${nonPublicPath} is not public`, async () => {
+      const response = await fetch(`${origin}${nonPublicPath}`);
+      assert.equal(response.status, 404);
+      assert.equal(response.headers.get("cache-control"), "no-store");
+      assert.equal(await response.text(), "Not Found");
     });
   }
   await test("unknown API path still invokes the Function", async () => {

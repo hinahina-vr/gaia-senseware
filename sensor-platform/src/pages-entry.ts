@@ -4,9 +4,57 @@ interface PagesEnv extends Env {
   ASSETS: Fetcher;
 }
 
+const NON_PUBLIC_FILES = new Set([
+  "/.codex-write-probe",
+  "/.gitattributes",
+  "/.gitignore",
+  "/AGENTS.md",
+  "/CHARACTER-DESIGN.md",
+  "/package.json",
+  "/README.md",
+  "/wrangler.jsonc",
+].map((path) => path.toLowerCase()));
+
+const NON_PUBLIC_PREFIXES = [
+  "/.github/",
+  "/.tmp/",
+  "/.wrangler/",
+  "/artifacts/",
+  "/contest-limited/",
+  "/docs/",
+  "/node_modules/",
+  "/output/",
+  "/scripts/",
+  "/sensor-platform/",
+  "/smartcity-sensor-starter-kit/",
+  "/story/",
+  "/tests/",
+  "/tmp/",
+];
+
+const isNonPublicPath = (pathname: string): boolean => {
+  let decodedPath = pathname;
+  try {
+    decodedPath = decodeURIComponent(pathname);
+  } catch {}
+  const normalizedPath = decodedPath.toLowerCase();
+  return NON_PUBLIC_FILES.has(normalizedPath)
+    || NON_PUBLIC_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix));
+};
+
+const nonPublicResponse = (): Response => new Response("Not Found", {
+  status: 404,
+  headers: {
+    "Cache-Control": "no-store",
+    "Content-Type": "text/plain; charset=utf-8",
+    "X-Content-Type-Options": "nosniff",
+  },
+});
+
 export default {
   async fetch(request: Request, env: PagesEnv): Promise<Response> {
     const url = new URL(request.url);
+    if (isNonPublicPath(url.pathname)) return nonPublicResponse();
     if (url.pathname.startsWith("/api/")) return sensorPlatform.fetch(request, env);
     const assetResponse = await env.ASSETS.fetch(request);
     if (!/^\/assets\/audio\/.+\.mp3$/u.test(url.pathname) || !assetResponse.ok) return assetResponse;

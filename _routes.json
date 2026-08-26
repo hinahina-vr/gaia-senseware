@@ -1,5 +1,30 @@
 {
   "version": 1,
-  "include": ["/api/*", "/assets/audio/*"],
+  "include": [
+    "/api/*",
+    "/assets/audio/*",
+    "/.codex-write-probe",
+    "/.gitattributes",
+    "/.gitignore",
+    "/AGENTS.md",
+    "/CHARACTER-DESIGN.md",
+    "/package.json",
+    "/README.md",
+    "/wrangler.jsonc",
+    "/.github/*",
+    "/.tmp/*",
+    "/.wrangler/*",
+    "/artifacts/*",
+    "/contest-limited/*",
+    "/docs/*",
+    "/node_modules/*",
+    "/output/*",
+    "/scripts/*",
+    "/sensor-platform/*",
+    "/smartcity-sensor-starter-kit/*",
+    "/story/*",
+    "/tests/*",
+    "/tmp/*"
+  ],
   "exclude": []
 }

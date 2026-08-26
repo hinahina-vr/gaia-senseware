@@ -8245,9 +8245,53 @@ var secureResponse = /* @__PURE__ */ __name((response, request, env, requestId) 
 }, "secureResponse");
 
 // src/pages-entry.ts
+var NON_PUBLIC_FILES = new Set([
+  "/.codex-write-probe",
+  "/.gitattributes",
+  "/.gitignore",
+  "/AGENTS.md",
+  "/CHARACTER-DESIGN.md",
+  "/package.json",
+  "/README.md",
+  "/wrangler.jsonc"
+].map((path) => path.toLowerCase()));
+var NON_PUBLIC_PREFIXES = [
+  "/.github/",
+  "/.tmp/",
+  "/.wrangler/",
+  "/artifacts/",
+  "/contest-limited/",
+  "/docs/",
+  "/node_modules/",
+  "/output/",
+  "/scripts/",
+  "/sensor-platform/",
+  "/smartcity-sensor-starter-kit/",
+  "/story/",
+  "/tests/",
+  "/tmp/"
+];
+var isNonPublicPath = /* @__PURE__ */ __name((pathname) => {
+  let decodedPath = pathname;
+  try {
+    decodedPath = decodeURIComponent(pathname);
+  } catch {
+  }
+  const normalizedPath = decodedPath.toLowerCase();
+  return NON_PUBLIC_FILES.has(normalizedPath) || NON_PUBLIC_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix));
+}, "isNonPublicPath");
+var nonPublicResponse = /* @__PURE__ */ __name(() => new Response("Not Found", {
+  status: 404,
+  headers: {
+    "Cache-Control": "no-store",
+    "Content-Type": "text/plain; charset=utf-8",
+    "X-Content-Type-Options": "nosniff"
+  }
+}), "nonPublicResponse");
 var pages_entry_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (isNonPublicPath(url.pathname)) return nonPublicResponse();
     if (url.pathname.startsWith("/api/")) return index_default.fetch(request, env);
     const assetResponse = await env.ASSETS.fetch(request);
     if (!/^\/assets\/audio\/.+\.mp3$/u.test(url.pathname) || !assetResponse.ok) return assetResponse;
