@@ -4,7 +4,7 @@
   --opening-blue: 132, 175, 205;
   --opening-paper: 222, 232, 229;
   --opening-keyvisual-image: url("./assets/visuals-07/opening-keyvisual-v2.webp");
-  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v2.webp");
+  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v3.webp");
   --opening-archive-image: url("./assets/visuals-07/open-data-archive-bg-v1.webp");
   --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-v1.webp");
   --opening-amane-image: url("./assets/visuals-08/opening-amane-keyvisual-v1.webp");
@@ -42,7 +42,7 @@ select,
 
 html[data-gaia-artwork-quality="compact"] .gaia-opening {
   --opening-keyvisual-image: url("./assets/visuals-07/opening-keyvisual-v2-834.webp");
-  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v2-960.webp");
+  --opening-final-keyvisual-image: url("./assets/visuals-08/opening-final-night-keyvisual-v3-960.webp");
   --opening-archive-image: url("./assets/visuals-07/open-data-archive-bg-v1-834.webp");
   --opening-mizuha-image: url("./assets/visuals-08/opening-mizuha-keyvisual-v1-834.webp");
   --opening-amane-image: url("./assets/visuals-08/opening-amane-keyvisual-v1-834.webp");

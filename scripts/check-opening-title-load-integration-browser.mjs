@@ -223,13 +223,11 @@ try {
         const menu = document.querySelector("#gaia-opening-final-menu");
         const photo = document.querySelector(".gaia-vn-final-photo");
         const title = document.querySelector(".gaia-vn-work-title");
-        const logo = document.querySelector(".gaia-vn-final-logo");
         const storyRoute = document.querySelector("#gaia-opening-route-story");
         const hud = document.querySelector(".gaia-opening-hud");
         const copyRect = copy.getBoundingClientRect();
         const menuRect = menu.getBoundingClientRect();
         const titleRect = title.getBoundingClientRect();
-        const logoRect = logo.getBoundingClientRect();
         const photoStyle = getComputedStyle(photo);
         const storyStyle = getComputedStyle(storyRoute);
         return {
@@ -241,12 +239,7 @@ try {
           photoBackgroundSize: photoStyle.backgroundSize,
           titleText: title.textContent.trim(),
           titleRect: { width: titleRect.width, height: titleRect.height },
-          logo: {
-            count: document.querySelectorAll(".gaia-vn-final-logo").length,
-            width: logoRect.width,
-            height: logoRect.height,
-            loaded: logo.complete && logo.naturalWidth > 0,
-          },
+          duplicateLogoCount: document.querySelectorAll(".gaia-vn-final-logo").length,
           storySurface: {
             backgroundImage: storyStyle.backgroundImage,
             backdropFilter: storyStyle.backdropFilter,
@@ -263,11 +256,10 @@ try {
           overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
         };
       });
-      assert.match(menuLayout.photoBackground, /opening-final-night-keyvisual-v2(?:-960)?\.webp/u, `${viewport.name}: clean gateway artwork is missing`);
+      assert.match(menuLayout.photoBackground, /opening-final-night-keyvisual-v3(?:-960)?\.webp/u, `${viewport.name}: clean gateway artwork is missing`);
       assert.equal(menuLayout.titleText, "惑星の放課後 — GAIA SENSATION", `${viewport.name}: accessible work title changed`);
       assert.deepEqual(menuLayout.titleRect, { width: 1, height: 1 }, `${viewport.name}: duplicate HTML title is still visible`);
-      assert.equal(menuLayout.logo.count, 1, `${viewport.name}: the live brand logo must appear exactly once`);
-      assert(menuLayout.logo.loaded && menuLayout.logo.width > 0 && menuLayout.logo.height > 0, `${viewport.name}: live brand logo failed to render`);
+      assert.equal(menuLayout.duplicateLogoCount, 0, `${viewport.name}: a live logo duplicates the title baked into the selected artwork`);
       assert.match(menuLayout.storySurface.backgroundImage, /0\.98/u, `${viewport.name}: story button is still too transparent`);
       assert.equal(menuLayout.storySurface.backdropFilter, "none", `${viewport.name}: story button still relies on translucent backdrop blur`);
       assert.equal(menuLayout.storySurface.opacity, "1", `${viewport.name}: story button opacity reduced its text contrast`);
