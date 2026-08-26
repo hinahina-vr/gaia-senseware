@@ -360,14 +360,20 @@ try {
   await lifecyclePage.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter), null, { timeout: 30_000 });
   const lifecycle = await lifecyclePage.evaluate(async () => {
     const initialCanvasCount = document.querySelectorAll("canvas").length;
+    const initialSpaceCanvasCount = document.querySelectorAll("#space-canvas").length;
     const initialAudioCount = document.querySelectorAll("audio").length;
     for (let position = 0; position < 10; position += 1) {
       GaiaMapObservationAdapter.openMap();
       GaiaMapObservationAdapter.closeMap();
     }
     await GaiaModeLoader.load("space");
+    let spaceCanvas = null;
+    let spaceCanvasReused = true;
     for (let position = 0; position < 10; position += 1) {
       await GaiaSpaceTourAdapter.openAtMode(0);
+      const currentSpaceCanvas = document.querySelector("#space-canvas");
+      if (!spaceCanvas) spaceCanvas = currentSpaceCanvas;
+      else if (currentSpaceCanvas !== spaceCanvas) spaceCanvasReused = false;
       GaiaSpaceTourAdapter.close();
     }
     await GaiaModeLoader.load("sound");
@@ -379,6 +385,9 @@ try {
     return {
       initialCanvasCount,
       finalCanvasCount: document.querySelectorAll("canvas").length,
+      initialSpaceCanvasCount,
+      finalSpaceCanvasCount: document.querySelectorAll("#space-canvas").length,
+      spaceCanvasReused,
       initialAudioCount,
       finalAudioCount: document.querySelectorAll("audio").length,
       soundLayerCount: document.querySelectorAll("#sound-layer").length,
@@ -387,7 +396,9 @@ try {
       space: GaiaSpaceTourAdapter.getState(),
     };
   });
-  assert.equal(lifecycle.finalCanvasCount, lifecycle.initialCanvasCount + 1, "space must create one reusable canvas only");
+  assert.equal(lifecycle.initialSpaceCanvasCount, 0, "space canvas must stay lazy before space loads");
+  assert.equal(lifecycle.finalSpaceCanvasCount, 1, "space must create one canvas only");
+  assert.equal(lifecycle.spaceCanvasReused, true, "space must reuse its canvas across open and close cycles");
   assert.equal(lifecycle.finalAudioCount, lifecycle.initialAudioCount, "sound mode must reuse the existing audio player");
   assert.equal(lifecycle.soundLayerCount, 1, "sound mode must mount one layer only");
   assert.equal(lifecycle.soundHidden, true);
