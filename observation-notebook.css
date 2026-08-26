@@ -24,6 +24,8 @@
   cursor: pointer;
 }
 
+.gaia-observation-launcher[hidden] { display: none; }
+
 .gaia-observation-launcher > span { color: rgb(var(--observation-mint)); font-size: 18px; }
 .gaia-observation-launcher strong { font: 600 11px/1.2 var(--font-ja, sans-serif); letter-spacing: 0.08em; }
 .gaia-observation-launcher small {

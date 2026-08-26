@@ -1034,7 +1034,7 @@
     const derivedKind = document.createElement("p");
     const derivedTitle = document.createElement("h4");
     const derivedList = document.createElement("dl");
-    derivedKind.textContent = "△ DERIVED / 計算・補間 / DATA → LIGHT";
+    derivedKind.textContent = "DERIVED / DATA → LIGHT";
     derivedTitle.textContent = "この数字を、どう光へ変えたか";
     addDefinition(derivedList, "公開記録", recordLabel());
     addDefinition(derivedList, "作品化", mode.narrative);
@@ -1058,9 +1058,7 @@
       const link = document.createElement("a");
       const previewTitle = document.createElement("p");
       const preview = document.createElement("pre");
-      const kindSymbol = source.kind === "SCENARIO" ? "◇" : source.kind === "DERIVED" ? "△" : "○";
-      const kindJa = source.kind === "SCENARIO" ? "仮定・操作" : source.kind === "DERIVED" ? "計算・補間" : "公開記録";
-      kind.textContent = `${kindSymbol} ${source.kind || "SOURCE"} / ${kindJa} / ${source.status || "SNAPSHOT"}`;
+      kind.textContent = `${source.kind || "SOURCE"} / ${source.status || "SNAPSHOT"}`;
       title.textContent = source.title;
       link.href = source.url;
       link.target = "_blank";
@@ -1086,7 +1084,7 @@
     const scenarioKind = document.createElement("p");
     const scenarioTitle = document.createElement("h4");
     const scenarioList = document.createElement("dl");
-    scenarioKind.textContent = "◇ SCENARIO / 仮定・操作 / YOUR TRACE";
+    scenarioKind.textContent = "SCENARIO / YOUR TRACE";
     scenarioTitle.textContent = "あなたが光へ残したもの";
     addDefinition(scenarioList, "軌跡", `${state.gestures.length}本`);
     addDefinition(scenarioList, "波", `${state.pulses.filter((pulse) => pulse.kind === "SCENARIO").length}回`);

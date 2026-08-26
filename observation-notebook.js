@@ -15,6 +15,9 @@
   launcher.innerHTML = '<span aria-hidden="true">◎</span><strong>観測ノート</strong><small data-observation-count>0</small>';
   launcher.setAttribute("aria-haspopup", "dialog");
   launcher.setAttribute("aria-controls", "gaia-observation-drawer");
+  launcher.hidden = true;
+  launcher.tabIndex = -1;
+  launcher.setAttribute("aria-hidden", "true");
 
   const drawer = document.createElement("section");
   drawer.className = "gaia-observation-drawer";
@@ -363,7 +366,7 @@
     });
     button.dataset.observationCaptureMap = "";
     button.addEventListener("click", async () => {
-      try { await capture("map"); }
+      try { await capture("map", { openAfterSave: true }); }
       catch (error) { open(); announce(error instanceof Error ? error.message : String(error), "error"); }
     });
     heading.append(button);

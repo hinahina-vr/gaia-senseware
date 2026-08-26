@@ -11,7 +11,7 @@
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-map-europe-clear-1",
         "./mode-exit.css?v=gaia-story-control-blue-1",
-        "./observation-notebook.css?v=gaia-contest-notebook-1",
+        "./observation-notebook.css?v=gaia-contest-notebook-2",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -21,8 +21,8 @@
         "./app.js?v=gaia-map-nine-exhibits-1-contest-tour-2",
         "./map-ui-grid-polish.js?v=gaia-map-europe-clear-1",
         "./particles-v9.js?v=gaia-adaptive-performance-1",
-        "./observation-notebook-core.js?v=gaia-contest-notebook-1",
-        "./observation-notebook.js?v=gaia-contest-notebook-1",
+        "./observation-notebook-core.js?v=gaia-contest-notebook-2",
+        "./observation-notebook.js?v=gaia-contest-notebook-2",
       ],
     },
     story: {
@@ -43,7 +43,7 @@
         "./novel-background-cues.js?v=gaia-amane-no-plug-1",
         "./novel-back-half-cues.js?v=gaia-finale-sunset-1",
         "./novel-temporal.js?v=gaia-temporal-1",
-        "./novel-mode.js?v=gaia-dialogue-pagination-1-contest-entry-2",
+        "./novel-mode.js?v=gaia-ui-restore-de6-1",
       ],
     },
     gx: {
@@ -70,7 +70,7 @@
       scripts: [
         "./scene-transition.js?v=gaia-66",
         "./space-scenes.js?v=gaia-98",
-        "./space-mode.js?v=gaia-contest-tour-2",
+        "./space-mode.js?v=gaia-ui-restore-de6-1",
       ],
     },
     sound: {
@@ -84,10 +84,10 @@
     },
     notebook: {
       templates: [],
-      styles: ["./observation-notebook.css?v=gaia-contest-notebook-1"],
+      styles: ["./observation-notebook.css?v=gaia-contest-notebook-2"],
       scripts: [
-        "./observation-notebook-core.js?v=gaia-contest-notebook-1",
-        "./observation-notebook.js?v=gaia-contest-notebook-1",
+        "./observation-notebook-core.js?v=gaia-contest-notebook-2",
+        "./observation-notebook.js?v=gaia-contest-notebook-2",
       ],
     },
     tour: {

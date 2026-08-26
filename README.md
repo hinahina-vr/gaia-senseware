@@ -9,8 +9,8 @@
 ## 5分で審査する順序
 
 1. [60秒ガイドを開く](https://gaia-senseware.pages.dev/#tour) — 地球観測、変換過程、宇宙観測、物語の関係を実画面で確認
-2. [公開サイトを最初から開く](https://gaia-senseware.pages.dev/) — 初見の体験ルートとスマートフォン対応を確認
-3. 地図の `OPEN DATA` と「変換レシート」— 元の値、計算、色・光・動きの対応を確認
+2. [公開サイトを最初から開く](https://gaia-senseware.pages.dev/) — キービジュアル、映画的オープニング、スマートフォン対応を確認
+3. 地図の `OPEN DATA` と `CODE` — 元の値、計算、色・光・動きの対応を確認
 4. 観測ノート — 地図／ESP32の値を保存し、同種の2件を比較・URL共有
 5. [GitHub](https://github.com/hinahina-vr/gaia-senseware) — Vanilla JavaScript実装、テスト、データ生成コードを確認
 
@@ -18,7 +18,7 @@
 
 | PC | スマートフォン |
 |---|---|
-| ![PC版の体験ルート画面](docs/screenshots/contest-entry-pc.png) | ![スマートフォン版の60秒ガイド](docs/screenshots/contest-tour-mobile.png) |
+| ![PC版のサウンド選択とキービジュアル](docs/screenshots/contest-entry-pc.png) | ![スマートフォン版の60秒ガイド](docs/screenshots/contest-tour-mobile.png) |
 
 ### データが表現になる例
 

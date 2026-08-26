@@ -42,8 +42,8 @@ try {
   assert(mapRecord.metrics.some((metric) => metric.key === "co2_ppm"));
   report.checks.push("map capture");
 
-  await page.locator(".gaia-observation-launcher").click();
   await page.waitForSelector(".gaia-observation-drawer:not([hidden])");
+  assert.equal(await page.locator(".gaia-observation-launcher").isVisible(), false, "global notebook launcher must stay hidden");
   assert.equal(await page.locator(".gaia-observation-card[data-source='map']").count(), 1);
   await page.screenshot({ path: path.join(outputDir, "map-notebook.png"), animations: "disabled" });
 
@@ -68,7 +68,7 @@ try {
   assert.deepEqual(privacy, { count: 2, hasDeviceId: false, hasOwner: false, hasLocation: false });
   report.checks.push("sensor capture and privacy stripping");
 
-  await page.locator(".gaia-observation-launcher").click();
+  await page.locator("[data-observation-open]").click();
   const sensorChecks = page.locator(".gaia-observation-card[data-source='sensor'] input[type='checkbox']");
   await sensorChecks.nth(0).check();
   await sensorChecks.nth(1).check();

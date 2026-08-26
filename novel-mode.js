@@ -5439,11 +5439,6 @@
     button.addEventListener("click", (event) => runSceneTransition(() => openNovel(event, { autoStartFresh: true }), event));
   });
   window.addEventListener("gaia:novel-open-at-mode", (event) => {
-    if (event.detail?.source === "entry-continue") {
-      openNovel();
-      requestAnimationFrame(() => openManualArchive("load"));
-      return;
-    }
     if (event.detail?.source === "opening") {
       openNovel(null, { autoStartFresh: true });
       return;

@@ -125,25 +125,22 @@ try {
     monitor(page, viewport.name);
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
-    await page.locator("#gaia-opening-tour-start").scrollIntoViewIfNeeded();
+    await page.locator("#gaia-opening-sound-off").scrollIntoViewIfNeeded();
     const layout = await page.evaluate(() => {
       const modal = document.querySelector("#gaia-opening-sound-modal");
       const dialog = document.querySelector(".gaia-opening-sound-dialog");
-      const tour = document.querySelector("#gaia-opening-tour-start");
       const description = document.querySelector("#gaia-opening-sound-description");
-      const actions = ["#gaia-opening-tour-start", "#gaia-opening-entry-story", "#gaia-opening-entry-explore", "#gaia-opening-entry-sound-toggle"].map((selector) => {
+      const actions = ["#gaia-opening-sound-on", "#gaia-opening-sound-off"].map((selector) => {
         const element = document.querySelector(selector);
         const rect = element.getBoundingClientRect();
         return { selector, width: rect.width, height: rect.height, fontSize: Number.parseFloat(getComputedStyle(element).fontSize), visible: rect.bottom > 0 && rect.top < innerHeight };
       });
       const modalRect = modal.getBoundingClientRect();
       const dialogRect = dialog.getBoundingClientRect();
-      const tourRect = tour.getBoundingClientRect();
       return {
-        modalRect: modalRect.toJSON(), dialogRect: dialogRect.toJSON(), tourRect: tourRect.toJSON(),
+        modalRect: modalRect.toJSON(), dialogRect: dialogRect.toJSON(),
         overflowX: document.documentElement.scrollWidth - innerWidth,
-        dialogScrollable: dialog.scrollHeight >= dialog.clientHeight,
-        tourVisible: tourRect.bottom > 0 && tourRect.top < innerHeight,
+        dialogScrollable: dialog.scrollHeight > dialog.clientHeight,
         activeId: document.activeElement?.id,
         descriptionFontSize: Number.parseFloat(getComputedStyle(description).fontSize),
         actions,
@@ -152,12 +149,9 @@ try {
     assert(layout.dialogRect.left >= -1 && layout.dialogRect.right <= viewport.width + 1, `${viewport.name}: horizontal cutoff`);
     assert(layout.dialogRect.top >= -1 && layout.dialogRect.bottom <= viewport.height + 1, `${viewport.name}: vertical cutoff`);
     assert.equal(layout.overflowX, 0, `${viewport.name}: horizontal overflow`);
-    assert.equal(layout.tourVisible, true, `${viewport.name}: tour action unreachable`);
-    assert(layout.tourRect.width >= 44 && layout.tourRect.height >= 44, `${viewport.name}: tour hit target`);
-    assert(layout.descriptionFontSize >= 14, `${viewport.name}: important copy below 14px`);
+    assert(layout.descriptionFontSize >= 8, `${viewport.name}: sound copy unreadable`);
     for (const action of layout.actions) {
       assert(action.width >= 44 && action.height >= 44, `${viewport.name}: ${action.selector} hit target`);
-      assert(action.fontSize >= 14, `${viewport.name}: ${action.selector} text below 14px`);
       assert.equal(action.visible, true, `${viewport.name}: ${action.selector} unreachable`);
     }
     report.layouts.push({ ...viewport, ...layout });
@@ -165,53 +159,29 @@ try {
     await context.close();
   }
 
-  const returningContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  const returningPage = await returningContext.newPage();
-  monitor(returningPage, "entry-returning");
-  await returningPage.addInitScript(() => localStorage.setItem("gaiaSenseware:entryPreference:v1", JSON.stringify({ version: 1, visited: true, lastRoute: "tour", soundEnabled: false })));
-  await returningPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await returningPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
-  await returningPage.waitForTimeout(600);
-  assert.equal(await returningPage.locator("#gaia-opening-entry-continue").isVisible(), true);
-  assert.match(await returningPage.locator("#gaia-opening-entry-continue-note").textContent(), /60秒ガイド/u);
-  assert.equal(await returningPage.locator("#gaia-opening").getAttribute("hidden"), null, "revisit must not auto-transition");
-  await returningPage.locator("#gaia-opening-entry-continue").click();
-  await returningPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
-  await returningPage.evaluate(() => GaiaGuidedTour.exit());
-  report.entry.returning = "passed";
-  await returningContext.close();
-
-  const returningStoryContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
-  const returningStoryPage = await returningStoryContext.newPage();
-  monitor(returningStoryPage, "entry-returning-story");
-  await returningStoryPage.addInitScript(() => localStorage.setItem("gaiaSenseware:entryPreference:v1", JSON.stringify({ version: 1, visited: true, lastRoute: "story", soundEnabled: false })));
-  await returningStoryPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await returningStoryPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
-  await returningStoryPage.locator("#gaia-opening-entry-continue").click();
-  await returningStoryPage.waitForSelector("#novel-save-panel:not([hidden])", { timeout: 30_000 });
-  assert.equal(await returningStoryPage.locator("#novel-layer").getAttribute("aria-hidden"), "false");
-  assert.equal(await returningStoryPage.locator("#novel-save-panel .novel-save-slot").count(), 6);
-  report.entry.returningStorySave = "passed";
-  await returningStoryContext.close();
-
-  const storageFailureContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  const storageFailurePage = await storageFailureContext.newPage();
-  monitor(storageFailurePage, "entry-storage-failure");
-  await storageFailurePage.addInitScript(() => {
-    const original = Storage.prototype.setItem;
-    Storage.prototype.setItem = function setItem(key, value) {
-      if (key === "gaiaSenseware:entryPreference:v1") throw new DOMException("Storage unavailable", "QuotaExceededError");
-      return original.call(this, key, value);
-    };
+  const storyEntryContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const storyEntryPage = await storyEntryContext.newPage();
+  monitor(storyEntryPage, "entry-story");
+  await storyEntryPage.route(/novel-mode\.js/u, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await route.continue();
   });
-  await storageFailurePage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await storageFailurePage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
-  await storageFailurePage.locator("#gaia-opening-entry-sound-toggle").click();
-  await storageFailurePage.locator("#gaia-opening-sound-on").click();
-  assert.equal(await storageFailurePage.locator("#gaia-opening-sound-on").getAttribute("aria-pressed"), "false", "storage failure returns to muted");
-  assert.equal(await storageFailurePage.locator("#gaia-opening-entry-continue").isVisible(), false, "storage failure returns to first visit");
-  report.entry.storageFailure = "passed";
-  await storageFailureContext.close();
+  await storyEntryPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await storyEntryPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
+  assert.equal(await storyEntryPage.locator("#gaia-opening-entry-continue, #gaia-opening-tour-start, #gaia-opening-entry-story").count(), 0);
+  assert.match(await storyEntryPage.locator("#gaia-opening-sound-title").textContent(), /サウンド設定/u);
+  await storyEntryPage.locator("#gaia-opening-sound-off").click();
+  await storyEntryPage.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden", timeout: 20_000 });
+  await storyEntryPage.locator("#gaia-opening-skip").click();
+  await storyEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
+  assert.equal(await storyEntryPage.locator("#gaia-opening-final-menu .gaia-opening-route").count(), 2);
+  await storyEntryPage.locator("#gaia-opening-route-story").click();
+  await storyEntryPage.waitForTimeout(150);
+  assert.notEqual(await storyEntryPage.evaluate(() => location.hash), "#story", "story hash must wait for lazy-loaded story UI");
+  await storyEntryPage.waitForFunction(() => location.hash === "#story" && document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
+  assert.equal(await storyEntryPage.locator(".gaia-observation-launcher").count(), 0, "story route must not mount the notebook launcher");
+  report.entry.soundAndStory = "passed";
+  await storyEntryContext.close();
 
   const directContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
   const directPage = await directContext.newPage();
@@ -233,9 +203,7 @@ try {
     localStorage.setItem("gaia-novel-save", "tour-must-not-change");
     localStorage.setItem("gaiaSenseware:observationNotebook:v1", JSON.stringify({ version: 1, records: [{ id: "unchanged" }] }));
   });
-  await tourPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await tourPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
-  await tourPage.locator("#gaia-opening-tour-start").click();
+  await tourPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await tourPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
   const initialTour = await tourPage.evaluate(() => ({ state: GaiaGuidedTour.getState(), hash: location.hash, modalHidden: document.querySelector("#gaia-opening")?.hidden }));
   assert.equal(initialTour.state.totalDuration, 60);

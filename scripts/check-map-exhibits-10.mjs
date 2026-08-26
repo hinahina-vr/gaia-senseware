@@ -137,7 +137,7 @@ assert.match(html, /01 \/ 09/u);
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-map-nine-exhibits-1/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-ui-restore-de6-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-map-europe-clear-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-map-europe-clear-1/u);
 assert.match(modeLoaderSource, /app-content\.js\?v=gaia-map-nine-exhibits-1/u);

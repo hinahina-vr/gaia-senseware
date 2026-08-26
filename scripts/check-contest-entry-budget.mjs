@@ -21,7 +21,9 @@ for (const forbidden of ["guided-tour", "observation-notebook", "gaia-signals.js
   assert.equal(head.includes(forbidden), false, `操作前に遅延資産 ${forbidden} を参照しています`);
 }
 assert.match(head, /gaia-mode-loader\.js/u);
-assert.match(indexSource, /id="gaia-opening-tour-start"/u);
 assert.match(indexSource, /id="gaia-opening-sound-modal"/u);
+assert.match(indexSource, /id="gaia-opening-sound-on"/u);
+assert.match(indexSource, /id="gaia-opening-sound-off"/u);
+assert.doesNotMatch(indexSource, /id="gaia-opening-entry-(?:continue|story|explore|sound-toggle)"/u);
 
 console.log(JSON.stringify({ status: "passed", limitBytes: 1_000_000, totalBytes, files: report }, null, 2));
