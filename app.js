@@ -730,6 +730,8 @@
   let gaiaSnapshot = null;
   let gaiaSnapshotError = null;
   let gaiaModeById = new Map();
+  let resolveGaiaSignalsReady;
+  const gaiaSignalsReady = new Promise((resolve) => { resolveGaiaSignalsReady = resolve; });
   let naturalEarthLandState = "loading";
   let naturalEarthLandError = null;
   let naturalEarthLandRings = [];
@@ -4905,6 +4907,83 @@
     return [0.72, 0.48, pointer.energy, modeMemory[modeToIndex]];
   };
 
+  const observationMetric = (key, label, value, unit = "") => Number.isFinite(Number(value))
+    ? { key, label, value: Number(value), unit }
+    : null;
+
+  const captureMapObservation = () => {
+    const signalMode = getActiveSignalMode();
+    if (!signalMode) throw new Error(gaiaSnapshotError || "公開データを読み込んでいます。少し待ってから保存してください。");
+    const visualMode = modes[modeToIndex];
+    const readout = getSignalReadout(signalMode);
+    const sequence = getMapSequenceState(signalMode);
+    const metrics = [];
+    if (signalMode.id === "breathing-earth") {
+      const state = getBreathingEarthState(signalMode);
+      const ppm = japanIsOpen ? state.timeline?.referencePpm : state.co2?.averagePpm;
+      metrics.push(
+        observationMetric("co2_ppm", "CO₂濃度", ppm, "ppm"),
+        observationMetric("temperature_anomaly_c", "気温偏差", state.temperature?.anomalyC, "℃"),
+      );
+    } else if (signalMode.id === "blue-circulation") {
+      const state = getBlueCirculationState(signalMode);
+      metrics.push(
+        observationMetric("mean_speed_ms", "平均海流速度", state?.meanSpeedMs, "m/s"),
+        observationMetric("mean_distance_km", "計算上の平均移動距離", state?.meanDistanceKm, "km"),
+        observationMetric("horizon_hours", "経過時間", state?.horizonHours, "h"),
+      );
+    } else if (signalMode.id === "forest-cloud-engine") {
+      metrics.push(observationMetric("precipitation_mm_day", "降水量", sequence?.selected?.precipitationMmDay, "mm/day"));
+    } else if (signalMode.id === "pollination-protocol") {
+      metrics.push(sequence?.stageKey === "relations"
+        ? observationMetric("relation_count", "花との記録関係", sequence?.relations?.length, "件")
+        : observationMetric("occurrence_count", "GBIF観察記録", sequence?.occurrences?.length, "件"));
+    } else if (signalMode.id === "nothing-is-waste") {
+      metrics.push(
+        observationMetric("recycle_percent", "現在の再資源化率", sequence?.sourceRecycle, "%"),
+        observationMetric("scenario_recycle_percent", "もしもの再資源化率", sequence?.scenarioRecycle, "%"),
+      );
+    } else if (signalMode.id === "anthropocene-scar") {
+      metrics.push(observationMetric("emissions_mt_co2e", "温室効果ガス排出量", sequence?.selected?.emissionsMtCo2e, "Mt CO₂e"));
+    } else if (signalMode.id === "rhythm-of-disaster") {
+      metrics.push(
+        observationMetric("event_count", "M7.5以上の地震", sequence?.yearEvents?.length, "件"),
+        observationMetric("maximum_magnitude", "最大マグニチュード", sequence?.selected?.magnitude, "M"),
+      );
+    } else if (signalMode.id === "three-ecologies") {
+      metrics.push(
+        observationMetric("forest_percent", "森林率", sequence?.selected?.forestPercent, "%"),
+        observationMetric("urban_percent", "都市人口率", sequence?.selected?.urbanPercent, "%"),
+        observationMetric("correlation", "相関係数", sequence?.correlation, "r"),
+      );
+    } else if (signalMode.id === "earth-organ") {
+      metrics.push(
+        observationMetric("renewable_percent", "再生可能電力", sequence?.selected?.renewablePercent, "%"),
+        observationMetric("solar_kwh_m2_day", "日射条件", sequence?.selected?.potential?.solarKwhM2Day, "kWh/m²/day"),
+        observationMetric("wind_speed_ms", "風速条件", sequence?.selected?.potential?.windSpeedMs, "m/s"),
+      );
+    }
+    const normalizedMetrics = metrics.filter(Boolean);
+    if (!normalizedMetrics.length) throw new Error("この時点には保存できる数値がありません。");
+    return {
+      version: 1,
+      source: "map",
+      capturedAt: new Date().toISOString(),
+      title: visualMode.titleJa,
+      subtitle: readout.output,
+      compareKey: `map:${signalMode.id}`,
+      metrics: normalizedMetrics,
+      context: [
+        { label: "表示", value: readout.value },
+        { label: "観測位置", value: `${Math.round(signalTimePosition)}%` },
+      ],
+      provenance: {
+        classification: [...new Set((signalMode.datasets || []).map((dataset) => dataset.kind).filter(Boolean))].join(" + "),
+        datasetIds: (signalMode.datasets || []).map((dataset) => dataset.id).filter(Boolean),
+      },
+    };
+  };
+
   let sourceSignalSnapshot = null;
   const sourceSignalVector = new Float32Array(9);
   const getSourceSignalVector = () => {
@@ -5322,10 +5401,14 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       gaiaSnapshot = await response.json();
       gaiaModeById = new Map(gaiaSnapshot.modes.map((mode) => [mode.id, mode]));
       updateModeInterface();
+      resolveGaiaSignalsReady?.({ ok: true });
+      window.dispatchEvent(new CustomEvent("gaia:signals-ready"));
     } catch (error) {
       console.error(error);
       gaiaSnapshotError = error instanceof Error ? error.message : String(error);
       updateSignalInterface();
+      resolveGaiaSignalsReady?.({ ok: false, error: gaiaSnapshotError });
+      window.dispatchEvent(new CustomEvent("gaia:signals-error", { detail: { error: gaiaSnapshotError } }));
     }
   };
 
@@ -6503,6 +6586,44 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       }
     }, closeDelay);
   };
+
+  const mapObservationAdapter = Object.freeze({
+    waitSignalsReady: async () => {
+      const result = await gaiaSignalsReady;
+      if (!result.ok) throw new Error(result.error || "公開データを読み込めませんでした。");
+      return gaiaSnapshot;
+    },
+    selectMode: (index) => {
+      const requested = Number(index);
+      if (!Number.isInteger(requested) || requested < 0 || requested >= MODE_COUNT) return false;
+      selectMode(requested);
+      return true;
+    },
+    setSignalTime: (position) => {
+      signalTimePosition = clamp(Number(position) || 0, 0, 100);
+      co2TimelineHeld = false;
+      co2TimelinePausedUntil = performance.now() + CO2_TIMELINE_MANUAL_PAUSE_MS;
+      co2TimelineLastStep = -1;
+      signalTimeInputs.forEach((input) => { input.value = String(signalTimePosition); });
+      updateSignalInterface();
+      return signalTimePosition;
+    },
+    openMap: () => {
+      if (!japanIsOpen) openJapan({ updateHash: false, restoreFocusOnClose: false, respectUrlMode: false });
+    },
+    closeMap: () => {
+      if (japanIsOpen) closeJapan({ restoreFocus: false, updateHash: false });
+    },
+    showIntro: () => {
+      if (japanIsOpen) closeJapan({ restoreFocus: false, updateHash: false });
+      if (!introIsOpen) openIntro({ restoreFocusOnClose: false });
+    },
+    captureObservation: captureMapObservation,
+    getState: () => ({ modeIndex: modeToIndex, signalTimePosition, mapOpen: japanIsOpen, introOpen: introIsOpen }),
+  });
+  globalThis.GaiaMapObservationAdapter = mapObservationAdapter;
+  globalThis.GaiaObservationNotebook?.registerCaptureProvider?.("map", captureMapObservation);
+  window.dispatchEvent(new CustomEvent("gaia:map-adapter-ready"));
 
   window.addEventListener("gaia:novel-open", () => {
     stopRendering();

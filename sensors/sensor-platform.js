@@ -312,6 +312,46 @@ const renderDetail = ({ device, latest }, telemetry) => {
   }
 };
 
+const waitForObservationNotebook = () => globalThis.GaiaObservationNotebook
+  ? Promise.resolve(globalThis.GaiaObservationNotebook)
+  : new Promise((resolve, reject) => {
+      const timer = window.setTimeout(() => reject(new Error("観測ノートを読み込めませんでした。")), 4000);
+      window.addEventListener("gaia:observation-notebook-ready", () => {
+        window.clearTimeout(timer);
+        resolve(globalThis.GaiaObservationNotebook);
+      }, { once: true });
+    });
+
+const sensorObservationRecord = (entry) => {
+  const metrics = Object.entries(entry?.data || {}).map(([key, rawValue]) => ({
+    key,
+    label: labelFor(key),
+    value: Number(rawValue),
+    unit: unitFor(key),
+  })).filter((metric) => Number.isFinite(metric.value)).slice(0, 12);
+  if (!metrics.length) throw new Error("この履歴には保存できる数値がありません。");
+  return {
+    version: 1,
+    source: "sensor",
+    capturedAt: entry.observedAt || entry.receivedAt,
+    title: selectedDevice?.name || "ESP32センサー",
+    subtitle: `センサー履歴 / ${new Date(entry.receivedAt).toLocaleString("ja-JP")}`,
+    compareKey: `sensor:${metrics.map((metric) => metric.key).sort().join(",")}`,
+    metrics,
+    context: [{ label: "受信時刻", value: entry.receivedAt }],
+    provenance: {
+      classification: "SOURCE / DEVICE MEASUREMENT",
+      datasetIds: ["ESP32 HTTPS telemetry"],
+    },
+  };
+};
+
+const saveSensorObservation = async (entry) => {
+  const notebook = await waitForObservationNotebook();
+  notebook.saveRecord(sensorObservationRecord(entry));
+  showStatus("この測定値を観測ノートへ保存しました。");
+};
+
 const renderHistory = (telemetry) => {
   historyList.replaceChildren();
   telemetry.slice(0, 12).forEach((entry) => {
@@ -319,6 +359,16 @@ const renderHistory = (telemetry) => {
     const values = Object.entries(entry.data).slice(0, 3).map(([key, value]) => `${labelFor(key)} ${formatValue(value)}`).join(" / ");
     item.append(Object.assign(document.createElement("time"), { textContent: new Date(entry.receivedAt).toLocaleTimeString("ja-JP") }));
     item.append(Object.assign(document.createElement("span"), { textContent: values }));
+    const saveButton = Object.assign(document.createElement("button"), {
+      className: "gaia-observation-capture",
+      type: "button",
+      textContent: "観測ノートに保存",
+    });
+    saveButton.addEventListener("click", () => {
+      saveButton.disabled = true;
+      void saveSensorObservation(entry).catch((error) => showStatus(error.message, "error")).finally(() => { saveButton.disabled = false; });
+    });
+    item.append(saveButton);
     historyList.append(item);
   });
   const chartValues = telemetry.slice().reverse().map((entry) => Number(entry.data.temperature)).filter(Number.isFinite);

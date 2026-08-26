@@ -1216,6 +1216,10 @@
     openSpace(Number.isInteger(index) ? index : 0, event.detail || {});
   });
 
+  window.addEventListener("gaia:space-close", (event) => {
+    closeSpaceNow({ returnToTop: Boolean(event.detail?.returnToTop) });
+  });
+
   window.addEventListener("resize", () => {
     if (state.open) resize();
   });

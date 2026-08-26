@@ -11,6 +11,7 @@
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-map-europe-clear-1",
         "./mode-exit.css?v=gaia-story-control-blue-1",
+        "./observation-notebook.css?v=gaia-contest-notebook-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -20,6 +21,8 @@
         "./app.js?v=gaia-map-nine-exhibits-1",
         "./map-ui-grid-polish.js?v=gaia-map-europe-clear-1",
         "./particles-v9.js?v=gaia-adaptive-performance-1",
+        "./observation-notebook-core.js?v=gaia-contest-notebook-1",
+        "./observation-notebook.js?v=gaia-contest-notebook-1",
       ],
     },
     story: {
@@ -78,6 +81,19 @@
         "./mode-exit.css?v=gaia-story-control-blue-1",
       ],
       scripts: ["./sound-mode.js?v=gaia-suno-credit-1"],
+    },
+    notebook: {
+      templates: [],
+      styles: ["./observation-notebook.css?v=gaia-contest-notebook-1"],
+      scripts: [
+        "./observation-notebook-core.js?v=gaia-contest-notebook-1",
+        "./observation-notebook.js?v=gaia-contest-notebook-1",
+      ],
+    },
+    tour: {
+      templates: [],
+      styles: ["./guided-tour.css?v=gaia-contest-tour-1"],
+      scripts: ["./guided-tour.js?v=gaia-contest-tour-1"],
     },
   });
 
@@ -191,6 +207,7 @@
   interceptEvent("gaia:novel-open-at-mode", () => "story");
   interceptEvent("gaia:story-mode-open", () => "exploration");
   interceptEvent("gaia:return-to-intro", () => "exploration");
+  interceptEvent("gaia:observation-open-request", () => "notebook");
 
   globalThis.GaiaModeLoader = Object.freeze({
     load,
@@ -202,6 +219,12 @@
     const query = new URLSearchParams(window.location.search);
     if (hash === "#story" || /\/story\/?$/iu.test(window.location.pathname)) {
       await load("story");
+    } else if (hash === "#tour") {
+      await load("exploration");
+      await load("notebook");
+      await load("tour");
+    } else if (hash.startsWith("#observation=")) {
+      await load("notebook");
     } else if (["#source", "#concept", "#earth", "#japan", "#data"].includes(hash)) {
       await load("exploration");
     } else if (query.has("space")) {

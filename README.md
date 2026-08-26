@@ -2,6 +2,10 @@
 
 **GAIA SENSATION**
 
+[![Contest checks](https://github.com/hinahina-vr/gaia-senseware/actions/workflows/contest-checks.yml/badge.svg)](https://github.com/hinahina-vr/gaia-senseware/actions/workflows/contest-checks.yml)
+
+審査員向け: [2026夏コンテスト提出ガイド](docs/CONTEST_2026_SUBMISSION.md) / [公開サイト](https://gaia-senseware.pages.dev/) / [60秒ガイド](https://gaia-senseware.pages.dev/#tour)
+
 > 物語・キャラクター・GX・演出方針の正本は
 > [`docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md`](docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md) を参照してください。
 
