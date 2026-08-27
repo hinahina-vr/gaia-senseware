@@ -11,6 +11,41 @@
   --map-grid-panel-glow: rgba(87, 203, 198, 0.13);
 }
 
+/* Keep the map's changing exhibit title luminous against every map layer. */
+.japan-layer #japan-title {
+  color: #c9f4ff;
+  text-shadow:
+    0 0 18px rgba(111, 218, 255, 0.28),
+    0 0 42px rgba(72, 145, 255, 0.16);
+}
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  .japan-layer #japan-title {
+    background: linear-gradient(
+      105deg,
+      #f5fdff 0%,
+      #bcefff 27%,
+      #75d9ff 58%,
+      #79aaff 100%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 14px rgba(94, 199, 255, 0.3));
+  }
+}
+
+@media (forced-colors: active) {
+  .japan-layer #japan-title {
+    color: CanvasText;
+    background: none;
+    -webkit-text-fill-color: CanvasText;
+    filter: none;
+    text-shadow: none;
+  }
+}
+
 /* The bottom-centre guide is deliberately not part of this system. */
 body.map-grid-desktop .map-grid-polish {
   position: fixed !important;

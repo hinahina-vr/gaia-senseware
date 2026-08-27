@@ -189,9 +189,14 @@ try {
   await storyEntryPage.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden", timeout: 20_000 });
   await storyEntryPage.locator("#gaia-opening-skip").click();
   await storyEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
-  assert.equal(await storyEntryPage.locator("#gaia-opening-final-menu .gaia-opening-route").count(), 2);
-  assert.equal(await storyEntryPage.locator("#gaia-opening-tour-link").isVisible(), true, "quiet 60-second guide link must be visible below the two choices");
-  assert.match(await storyEntryPage.locator("#gaia-opening-tour-link").textContent(), /60秒ガイド/u);
+  assert.equal(await storyEntryPage.locator("#gaia-opening-final-menu .gaia-opening-route").count(), 3);
+  const openingTourCard = storyEntryPage.locator("#gaia-opening-tour-link");
+  assert.equal(await openingTourCard.isVisible(), true, "60-second guide route card must be visible beside the other choices");
+  assert.equal(await openingTourCard.evaluate((element) => element.tagName), "BUTTON");
+  assert.equal(await openingTourCard.evaluate((element) => element.classList.contains("gaia-opening-route")), true);
+  assert.match(await openingTourCard.textContent(), /60秒ガイド/u);
+  const openingTourCardBox = await openingTourCard.boundingBox();
+  assert(openingTourCardBox && openingTourCardBox.width >= 180 && openingTourCardBox.height >= 70, "60-second guide must render as a full route card");
   await storyEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-pc.png"), animations: "disabled" });
   await storyEntryPage.locator("#gaia-opening-route-story").click();
   await storyEntryPage.waitForTimeout(150);
@@ -202,9 +207,73 @@ try {
   report.entry.soundAndStory = "passed";
   await storyEntryContext.close();
 
+  const wideEntryContext = await browser.newContext({ viewport: { width: 2048, height: 839 } });
+  const wideEntryPage = await wideEntryContext.newPage();
+  monitor(wideEntryPage, "entry-wide-composition");
+  await wideEntryPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await wideEntryPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
+  await wideEntryPage.locator("#gaia-opening-sound-off").click();
+  await wideEntryPage.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden", timeout: 20_000 });
+  await wideEntryPage.locator("#gaia-opening-skip").click();
+  await wideEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
+  const wideComposition = await wideEntryPage.evaluate(() => {
+    const photo = document.querySelector(".gaia-vn-panel-final .gaia-vn-final-photo");
+    const menu = document.querySelector("#gaia-opening-final-menu");
+    const menuRect = menu.getBoundingClientRect();
+    const style = getComputedStyle(photo);
+    return {
+      backgroundPosition: style.backgroundPosition,
+      backgroundSize: style.backgroundSize,
+      menu: { left: menuRect.left, right: menuRect.right, bottom: menuRect.bottom },
+      viewport: { width: innerWidth, height: innerHeight },
+    };
+  });
+  assert.match(wideComposition.backgroundSize, /95% auto/u, "wide opening artwork must be slightly reduced");
+  assert.match(wideComposition.backgroundPosition, /100% 50%/u, "wide opening artwork must be anchored to the right");
+  assert(wideComposition.menu.left >= 0 && wideComposition.menu.right <= wideComposition.viewport.width && wideComposition.menu.bottom <= wideComposition.viewport.height, "wide opening menu must remain inside the viewport");
+  await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-wide.png"), animations: "disabled" });
+  report.entry.wideComposition = "passed";
+  await wideEntryContext.close();
+
+  const mobileEntryContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const mobileEntryPage = await mobileEntryContext.newPage();
+  monitor(mobileEntryPage, "entry-mobile-guide-card");
+  await mobileEntryPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await mobileEntryPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
+  await mobileEntryPage.locator("#gaia-opening-sound-off").click();
+  await mobileEntryPage.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden", timeout: 20_000 });
+  await mobileEntryPage.locator("#gaia-opening-skip").click();
+  await mobileEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
+  const mobileGuideCardLayout = await mobileEntryPage.evaluate(() => {
+    const grid = document.querySelector("#gaia-opening-final-menu .gaia-opening-route-grid");
+    const cards = [...document.querySelectorAll("#gaia-opening-final-menu .gaia-opening-route")];
+    const serialize = (element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+    };
+    return {
+      viewport: { width: innerWidth, height: innerHeight },
+      documentWidth: document.documentElement.scrollWidth,
+      grid: serialize(grid),
+      cards: cards.map(serialize),
+      guide: serialize(document.querySelector("#gaia-opening-tour-link")),
+    };
+  });
+  assert.equal(mobileGuideCardLayout.cards.length, 3);
+  assert(mobileGuideCardLayout.documentWidth <= mobileGuideCardLayout.viewport.width, "mobile opening cards caused horizontal overflow");
+  assert(mobileGuideCardLayout.cards.every((card) => (
+    card.left >= 0 && card.right <= mobileGuideCardLayout.viewport.width
+      && card.top >= 0 && card.bottom <= mobileGuideCardLayout.viewport.height
+  )), "mobile opening cards must remain inside the viewport");
+  assert(mobileGuideCardLayout.guide.width >= mobileGuideCardLayout.grid.width - 2, "mobile guide must remain a full-width route card");
+  assert(mobileGuideCardLayout.guide.height >= 70, "mobile guide route card must retain a button-sized hit target");
+  await mobileEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-mobile.png"), animations: "disabled" });
+  report.entry.mobileGuideCard = "passed";
+  await mobileEntryContext.close();
+
   const guideEntryContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
   const guideEntryPage = await guideEntryContext.newPage();
-  monitor(guideEntryPage, "entry-guide-link");
+  monitor(guideEntryPage, "entry-guide-card");
   await guideEntryPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await guideEntryPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
   await guideEntryPage.locator("#gaia-opening-sound-off").click();
@@ -215,7 +284,7 @@ try {
   await guideEntryPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
   assert.equal(await guideEntryPage.evaluate(() => location.hash), "#tour");
   await guideEntryPage.evaluate(() => globalThis.GaiaGuidedTour.exit());
-  report.entry.guideLink = "passed";
+  report.entry.guideCard = "passed";
   await guideEntryContext.close();
 
   const directContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
@@ -245,27 +314,79 @@ try {
   const bankScreenshot = path.join(outputDir, "map-bank-without-bee.png");
   await directPage.screenshot({ path: bankScreenshot, fullPage: false });
   report.entry.mapBankScreenshot = bankScreenshot;
-  const liveExhibitTitles = new Map([
-    ["09", "風脈"],
-    ["10", "炭素の呼吸"],
-    ["11", "雨の記憶"],
-    ["12", "大気の痕跡"],
+  const liveExhibitContracts = new Map([
+    ["09", { title: "風脈", caption: "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。" }],
+    ["10", { title: "炭素の呼吸", caption: "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。" }],
+    ["11", { title: "雨の記憶", caption: "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。" }],
+    ["12", { title: "大気の痕跡", caption: "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。" }],
   ]);
-  for (const [number, title] of liveExhibitTitles) {
+  let liveExhibitIndex = 0;
+  for (const [number, contract] of liveExhibitContracts) {
     await directPage.locator(`#japan-mode-list [data-live-exhibit]`, { hasText: number }).click();
     assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), true, `${number}: live exhibit canvas hidden`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-readout").isVisible(), true, `${number}: live exhibit readout hidden`);
     assert.equal(await directPage.locator("#japan-mode-number").textContent(), number, `${number}: bank heading mismatch`);
-    assert.equal(await directPage.locator("#japan-title").textContent(), title, `${number}: main heading mismatch`);
+    assert.equal(await directPage.locator("#japan-title").textContent(), contract.title, `${number}: main heading mismatch`);
+    assert.equal(await directPage.locator("[data-live-exhibit-caption]").textContent(), contract.caption, `${number}: explanatory contract changed`);
+    assert.equal(await directPage.locator(".gaia-live-exhibit-touch-hint").isVisible(), true, `${number}: integrated light-touch hint hidden`);
+    await directPage.waitForFunction((expectedMode) => (
+      document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === String(expectedMode)
+    ), liveExhibitIndex);
+    const liveGeography = await directPage.locator("#gaia-live-exhibit-canvas").evaluate((canvas) => ({
+      anchorLongitude: Number(canvas.dataset.anchorLongitude),
+      anchorLatitude: Number(canvas.dataset.anchorLatitude),
+      anchorX: Number(canvas.dataset.anchorNormalizedX),
+      anchorY: Number(canvas.dataset.anchorNormalizedY),
+      lightTouchIntegration: canvas.dataset.lightTouchIntegration,
+    }));
+    assert.equal(liveGeography.anchorLongitude, -155.576, `${number}: Mauna Loa longitude contract changed`);
+    assert.equal(liveGeography.anchorLatitude, 19.536, `${number}: Mauna Loa latitude contract changed`);
+    assert(liveGeography.anchorX >= 0 && liveGeography.anchorX <= 1 && liveGeography.anchorY >= 0 && liveGeography.anchorY <= 1, `${number}: Hawaii anchor is outside the visible map`);
+    assert.equal(liveGeography.lightTouchIntegration, "abstract-light-touch");
+    await directPage.screenshot({ path: path.join(outputDir, `live-exhibit-${number}.png`), animations: "disabled" });
+    const liveMapBox = await directPage.locator("#japan-map").boundingBox();
+    assert(liveMapBox, `${number}: live map has no hit target`);
+    await directPage.mouse.click(liveMapBox.x + liveMapBox.width * 0.76, liveMapBox.y + liveMapBox.height * 0.42);
+    await directPage.waitForFunction(() => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > 0);
+    assert.equal(await directPage.locator("#japan-poi-card").isVisible(), false, `${number}: light touch leaked into the underlying map POI interaction`);
+    await directPage.screenshot({ path: path.join(outputDir, `live-exhibit-${number}-touch.png`), animations: "disabled" });
+    liveExhibitIndex += 1;
   }
   const liveCanvas = await directPage.evaluate(() => {
     const canvas = document.querySelector("#gaia-live-exhibit-canvas");
-    const sample = canvas.getContext("2d").getImageData(0, 0, Math.min(80, canvas.width), Math.min(80, canvas.height)).data;
-    return { width: canvas.width, height: canvas.height, painted: sample.some((value, index) => index % 4 === 3 && value > 0) };
+    globalThis.GaiaLiveExhibits.redraw();
+    const gl = canvas.getContext("webgl");
+    const sampleWidth = Math.min(128, canvas.width);
+    const sampleHeight = Math.min(128, canvas.height);
+    const sample = new Uint8Array(sampleWidth * sampleHeight * 4);
+    gl.finish();
+    gl.readPixels(
+      Math.max(0, Math.floor((canvas.width - sampleWidth) / 2)),
+      Math.max(0, Math.floor((canvas.height - sampleHeight) / 2)),
+      sampleWidth,
+      sampleHeight,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      sample,
+    );
+    return {
+      width: canvas.width,
+      height: canvas.height,
+      engine: canvas.dataset.renderEngine,
+      visualLanguage: canvas.dataset.visualLanguage,
+      webglState: canvas.dataset.webglState,
+      frame: Number(canvas.dataset.webglFrame),
+      painted: sample.some((value, index) => index % 4 === 3 && value > 8),
+      error: gl.getError(),
+    };
   });
   assert(liveCanvas.width > 0 && liveCanvas.height > 0 && liveCanvas.painted, "live exhibit canvas was not painted");
+  assert.equal(liveCanvas.engine, "webgl-aiva-field");
+  assert.equal(liveCanvas.visualLanguage, "continuous-signal-field");
+  assert.equal(liveCanvas.webglState, "active");
+  assert(liveCanvas.frame > 0, "live WebGL field did not advance");
+  assert.equal(liveCanvas.error, 0, "live WebGL field reported an error");
   assert.equal(await directPage.locator(".japan-heading .japan-data-button").first().isVisible(), false, "live readout overlaps standard map actions");
-  await directPage.screenshot({ path: path.join(outputDir, "live-exhibit-no2.png"), animations: "disabled" });
   await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").first().click();
   assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), false, "standard exhibit did not close live canvas");
   report.entry.liveExhibits = "passed";

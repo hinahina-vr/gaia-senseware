@@ -163,12 +163,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-restore-de6-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-composition-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-19" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-first-screen-p0-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-opening-restore-de6-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-tour-tooltip-2" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-tour-tooltip-3" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -340,10 +340,15 @@
                         <path d="m13 32 19 10 19-10M13 42l19 10 19-10" />
                       </svg>
                     </button>
+                    <button class="gaia-opening-route gaia-opening-route--tour" id="gaia-opening-tour-link" type="button" aria-label="60秒ガイドを始める">
+                      <strong>60秒ガイド</strong>
+                      <span aria-hidden="true">60 SEC / QUICK TOUR</span>
+                      <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
+                        <circle cx="32" cy="34" r="20" />
+                        <path d="M32 14V8M24 8h16M32 34V22M32 34l10-7" />
+                      </svg>
+                    </button>
                   </div>
-                  <button class="gaia-opening-tour-link" id="gaia-opening-tour-link" type="button">
-                    <span aria-hidden="true">60 SEC</span> 60秒ガイド
-                  </button>
                 </div>
               </div>
             </div>

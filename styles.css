@@ -3399,8 +3399,35 @@ button {
   letter-spacing: 0.08em;
 }
 
+.gaia-live-exhibit-readout > .gaia-live-exhibit-touch-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  max-width: none;
+  margin: 11px 0 -3px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(var(--map-accent-rgb), 0.12);
+  color: rgba(238, 255, 253, 0.82);
+  font: 600 10px/1.2 var(--font-ja);
+  letter-spacing: 0.12em;
+}
+
+.gaia-live-exhibit-touch-hint b {
+  color: rgb(var(--map-accent-rgb));
+  font-weight: 600;
+  text-shadow: 0 0 18px rgba(var(--map-accent-rgb), 0.42);
+}
+
+.gaia-live-exhibit-touch-hint span {
+  color: rgba(218, 242, 237, 0.5);
+  font: 600 8px/1 Consolas, monospace;
+  letter-spacing: 0.16em;
+}
+
 .japan-layer.is-live-exhibit .japan-map-shade { opacity: 0.34; }
 .japan-layer.is-live-exhibit .japan-overlay { opacity: 0.18; filter: saturate(0.4) brightness(0.72); }
+.japan-layer.is-live-exhibit .japan-map { cursor: crosshair; }
 .japan-layer.is-live-exhibit :is(.japan-observation, .signal-console-map, .map-reading-guide, .japan-layer-switch, .japan-heading .japan-data-button) {
   opacity: 0;
   visibility: hidden;

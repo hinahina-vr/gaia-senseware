@@ -9,6 +9,7 @@ const appContentSource = read("app-content.js");
 const appSource = read("app.js");
 const modeLoaderSource = read("gaia-mode-loader.js");
 const liveExhibitsSource = read("src/exploration/live-exhibits.js");
+const stylesSource = read("styles.css");
 const html = read("index.html");
 const packageJson = read("package.json");
 const gaiaData = JSON.parse(read("data/gaia-signals.json"));
@@ -134,17 +135,38 @@ assert.match(html, /地球観測データの8つの展示/u);
 assert.match(html, /INSTALLATION BANK \/ 01—12/u);
 assert.match(html, /8つの観測展示/u);
 assert.match(html, /01 \/ 08/u);
-for (const [number, id] of [["09", "wind-field"], ["10", "carbon-pulse"], ["11", "rain-chorus"], ["12", "no2-veil"]]) {
+const liveContracts = [
+  ["09", "wind-field", "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。"],
+  ["10", "carbon-pulse", "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。"],
+  ["11", "rain-chorus", "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。"],
+  ["12", "no2-veil", "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。"],
+];
+for (const [number, id, caption] of liveContracts) {
   assert.match(liveExhibitsSource, new RegExp(`id: "${id}"[\\s\\S]*number: "${number}"`, "u"));
+  assert(liveExhibitsSource.includes(`caption: "${caption}"`), `${number}: explanatory contract changed`);
 }
+assert.match(liveExhibitsSource, /getContext\("webgl"[\s\S]*WEBGL_FRAGMENT_SOURCE/u);
+assert.match(liveExhibitsSource, /visualLanguage = "continuous-signal-field"/u);
+assert.match(liveExhibitsSource, /vec3 windField[\s\S]*vec3 carbonField[\s\S]*vec3 rainField[\s\S]*vec3 no2Field/u);
+assert.match(liveExhibitsSource, /HAWAII_ANCHOR = Object\.freeze\(\{ lon: -155\.576, lat: 19\.536 \}\)/u);
+assert.match(liveExhibitsSource, /windField[\s\S]*signalSpace - u_anchor[\s\S]*velocity = 0\.72 \+ u_strength \* 2\.1[\s\S]*density = mix\(7\.0, 18\.0, u_strength\)/u);
+assert.match(liveExhibitsSource, /carbonField[\s\S]*signalSpace - u_anchor[\s\S]*breathRate[\s\S]*sourceCore/u);
+assert.match(liveExhibitsSource, /rainField[\s\S]*density = mix\(12\.0, 34\.0, u_strength\)[\s\S]*rainLines[\s\S]*rippleA[\s\S]*rippleB[\s\S]*rippleC/u);
+assert.match(liveExhibitsSource, /no2Field[\s\S]*spectralVeil[\s\S]*scan/u);
+assert.match(liveExhibitsSource, /uniform vec4 u_touches\[8\][\s\S]*lightTouchField/u);
+assert.match(liveExhibitsSource, /lightTouchIntegration = "abstract-light-touch"/u);
+assert.match(liveExhibitsSource, /gaia-live-exhibit-touch-hint[\s\S]*光に触れる[\s\S]*TOUCH \/ DRAG/u);
+assert.match(stylesSource, /\.gaia-live-exhibit-touch-hint[\s\S]*cursor: crosshair/u);
+assert.doesNotMatch(liveExhibitsSource, /fillRect\(x - 2, y - 1/u, "wind field must not render sperm-like particle heads");
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-tour-tooltip-2/u);
-assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-exhibit-heading-actions-1/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-tour-tooltip-3/u);
+assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-map-title-cyan-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-map-europe-clear-1/u);
 assert.match(modeLoaderSource, /app-content\.js\?v=gaia-abstract-entry-1/u);
 assert.match(modeLoaderSource, /app\.js\?v=gaia-story-map-aiva-1-tour-tooltip-2/u);
+assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-live-description-aligned-2/u);
 assert.match(html, /id="japan-title" aria-live="polite">地球の一呼吸<\/h2>/u);
 assert.match(html, /class="japan-map-actions"[\s\S]{0,320}id="japan-close"/u);
 assert.match(appSource, /japanTitle\.textContent = mode\.titleJa;/u);
@@ -153,7 +175,7 @@ assert.match(appSource, /dataset\.renderPixelRatio/u);
 assert.match(appSource, /fixed-diameter-pie/u);
 assert.match(appSource, /緑 \/ 再資源化/u);
 assert.match(content.modes[3].description, /同じ大きさの円グラフ/u);
-assert.match(modeLoaderSource, /styles\.css\?v=gaia-live-exhibits-1-tour-layout-1/u);
+assert.match(modeLoaderSource, /styles\.css\?v=gaia-live-exhibits-2-tour-layout-1/u);
 assert.doesNotMatch(html, /gaia-remix-20/u);
 assert.doesNotMatch(packageJson, /check-remix-modes/u);
 
