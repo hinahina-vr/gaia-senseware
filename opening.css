@@ -4918,3 +4918,228 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
       #020d27 var(--opening-final-keyvisual-image) center / cover no-repeat;
   }
 }
+
+/* Keep the final question and route cards on the optical center of the title
+   baked into the artwork. opening.js calculates these two values from the
+   actual cover/95%-wide image geometry so browser zoom and ultrawide screens
+   do not pull the controls back toward the left edge. */
+@media (min-width: 961px) and (min-height: 521px) {
+  .gaia-vn-panel-final .gaia-vn-final-copy,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
+    top: var(--opening-gateway-top, 58%);
+    bottom: auto;
+  }
+
+  .gaia-vn-panel-final .gaia-vn-final-choice > strong,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-choice > strong {
+    width: 100%;
+    max-width: none;
+    margin-left: var(--opening-gateway-offset, var(--opening-gateway-nudge));
+    text-align: center;
+  }
+
+  .gaia-vn-panel-final .gaia-opening-final-menu,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+    margin-left: var(--opening-gateway-offset, var(--opening-gateway-nudge));
+  }
+}
+
+/* First-visit route guide. Its shade sits below the route menu, allowing one
+   card at a time to stay bright, while the speech bubble remains close to the
+   currently explained control like the short guided-tour cue. */
+.gaia-opening-route-guide[hidden] { display: none; }
+
+.gaia-opening-route-guide-shade {
+  position: fixed;
+  z-index: 31;
+  top: var(--route-guide-focus-top, 50%);
+  left: var(--route-guide-focus-left, 50%);
+  width: var(--route-guide-focus-width, 1px);
+  height: var(--route-guide-focus-height, 1px);
+  border-radius: 6px;
+  opacity: 0;
+  background: transparent;
+  box-shadow: 0 0 0 200vmax rgba(0, 7, 24, 0.78);
+  pointer-events: none;
+  transition: opacity 240ms ease, top 180ms ease, left 180ms ease, width 180ms ease, height 180ms ease;
+}
+
+.gaia-opening-route-guide.is-visible .gaia-opening-route-guide-shade { opacity: 1; }
+
+.gaia-opening-route-guide-bubble {
+  --route-guide-arrow-left: 50%;
+  position: fixed;
+  z-index: 40;
+  display: grid;
+  gap: 9px;
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 24px));
+  margin: 0;
+  padding: 16px 17px 15px;
+  border: 1px solid rgba(140, 236, 255, 0.9);
+  border-radius: 15px;
+  color: #f8fdff;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(86, 213, 255, 0.2), transparent 43%),
+    linear-gradient(145deg, rgba(9, 55, 113, 0.985), rgba(10, 29, 78, 0.985));
+  box-shadow:
+    0 18px 54px rgba(0, 3, 22, 0.58),
+    0 0 0 4px rgba(76, 179, 255, 0.1),
+    inset 0 1px 0 rgba(231, 251, 255, 0.14);
+  opacity: 0;
+  pointer-events: auto;
+  transform: translateY(8px) scale(0.985);
+  transition: opacity 210ms ease, transform 260ms cubic-bezier(0.2, 0.76, 0.2, 1);
+}
+
+.gaia-opening-route-guide.is-visible .gaia-opening-route-guide-bubble {
+  opacity: 1;
+  transform: none;
+}
+
+.gaia-opening-route-guide-bubble::before {
+  position: absolute;
+  left: var(--route-guide-arrow-left);
+  width: 13px;
+  height: 13px;
+  content: "";
+  background: #0a3977;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.gaia-opening-route-guide-bubble[data-placement="below"]::before {
+  top: -7px;
+  border-top: 1px solid rgba(140, 236, 255, 0.9);
+  border-left: 1px solid rgba(140, 236, 255, 0.9);
+}
+
+.gaia-opening-route-guide-bubble[data-placement="above"]::before {
+  bottom: -7px;
+  border-right: 1px solid rgba(140, 236, 255, 0.9);
+  border-bottom: 1px solid rgba(140, 236, 255, 0.9);
+}
+
+.gaia-opening-route-guide-index {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: rgba(181, 238, 255, 0.76);
+  font: 700 9px/1.2 Consolas, "Courier New", monospace;
+  letter-spacing: 0.13em;
+}
+
+.gaia-opening-route-guide-index b {
+  color: #dff9ff;
+  font-weight: 700;
+}
+
+.gaia-opening-route-guide-index i {
+  color: #8cecff;
+  font-size: 13px;
+  font-style: normal;
+}
+
+.gaia-opening-route-guide-bubble > p {
+  margin: 0;
+  color: #8cecff;
+  font: 800 10px/1.35 var(--font-ja);
+  letter-spacing: 0.12em;
+}
+
+.gaia-opening-route-guide-bubble > h2 {
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-ja);
+  font-size: clamp(18px, 1.3vw, 22px);
+  font-weight: 650;
+  letter-spacing: 0.035em;
+  line-height: 1.42;
+  text-shadow: 0 2px 16px rgba(0, 16, 70, 0.56);
+}
+
+.gaia-opening-route-guide-bubble > h2 + p {
+  color: rgba(231, 249, 255, 0.9);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  line-height: 1.65;
+}
+
+.gaia-opening-route-guide-bubble nav {
+  display: grid;
+  grid-template-columns: auto auto minmax(112px, 1fr);
+  gap: 7px;
+  margin-top: 3px;
+}
+
+.gaia-opening-route-guide-bubble button {
+  min-width: 58px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid rgba(143, 223, 255, 0.36);
+  border-radius: 9px;
+  color: rgba(238, 251, 255, 0.88);
+  background: rgba(4, 22, 58, 0.74);
+  font: 700 11px/1.25 var(--font-ja);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.gaia-opening-route-guide-bubble button:hover,
+.gaia-opening-route-guide-bubble button:focus-visible {
+  border-color: #8cecff;
+  color: #fff;
+  outline: none;
+  box-shadow: 0 0 20px rgba(84, 201, 255, 0.18);
+}
+
+.gaia-opening-route-guide-bubble button.is-primary {
+  border-color: rgba(140, 236, 255, 0.84);
+  background: linear-gradient(135deg, rgba(75, 200, 255, 0.34), rgba(75, 120, 255, 0.3));
+}
+
+.gaia-opening-route-guide-bubble button:disabled {
+  opacity: 0.34;
+  cursor: default;
+}
+
+.gaia-opening.is-route-guide-active .gaia-opening-final-menu.is-visible .gaia-opening-route {
+  opacity: 0.28;
+  filter: brightness(0.5) saturate(0.62);
+  transform: scale(0.985);
+  transition-delay: 0ms;
+}
+
+.gaia-opening.is-route-guide-active .gaia-opening-final-menu.is-visible .gaia-opening-route.is-route-guide-target {
+  z-index: 2;
+  opacity: 1;
+  filter: brightness(1.18) saturate(1.16);
+  transform: translateY(-4px);
+  box-shadow:
+    inset 3px 0 0 rgb(var(--route-accent)),
+    0 0 0 2px rgba(140, 236, 255, 0.56),
+    0 0 42px rgba(74, 191, 255, 0.58),
+    0 18px 42px rgba(0, 4, 24, 0.48);
+}
+
+@media (max-width: 720px) {
+  .gaia-opening-route-guide-bubble {
+    gap: 7px;
+    width: min(350px, calc(100vw - 20px));
+    padding: 14px 14px 13px;
+    border-radius: 13px;
+  }
+
+  .gaia-opening-route-guide-bubble > h2 { font-size: 18px; }
+  .gaia-opening-route-guide-bubble > h2 + p { font-size: 12px; line-height: 1.55; }
+  .gaia-opening-route-guide-bubble nav { grid-template-columns: 58px 58px minmax(108px, 1fr); }
+  .gaia-opening-route-guide-bubble button { min-height: 46px; padding-inline: 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaia-opening-route-guide-shade,
+  .gaia-opening-route-guide-bubble,
+  .gaia-opening.is-route-guide-active .gaia-opening-route {
+    transition: none;
+  }
+}

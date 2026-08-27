@@ -66,6 +66,53 @@ const monitor = (page, name, { allowExpectedAbort = false } = {}) => {
   page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${name}: ${response.url()}`); });
 };
 
+const startBaseExposureProbe = (page) => page.evaluate(() => {
+  const samples = [];
+  let active = true;
+  let frame = 0;
+  const inspect = (reason) => {
+    if (!active) return;
+    const opening = document.querySelector("#gaia-opening");
+    const canvas = document.querySelector("#gaia-canvas");
+    if (!(opening instanceof HTMLElement) || !(canvas instanceof HTMLElement)) return;
+    const openingStyle = getComputedStyle(opening);
+    const openingFullyCoversViewport = !opening.hidden
+      && openingStyle.display !== "none"
+      && openingStyle.visibility !== "hidden"
+      && Number.parseFloat(openingStyle.opacity || "1") >= 0.99;
+    if (openingFullyCoversViewport) return;
+    const style = getComputedStyle(canvas);
+    const visible = style.display !== "none"
+      && style.visibility !== "hidden"
+      && Number.parseFloat(style.opacity || "1") > 0.01;
+    if (visible) {
+      samples.push({
+        reason,
+        at: performance.now(),
+        body: document.body.className,
+        experience: document.querySelector(".experience")?.className || "",
+      });
+    }
+  };
+  const observer = new MutationObserver(() => inspect("mutation"));
+  observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+  const tick = () => {
+    inspect("animation-frame");
+    if (active) frame = requestAnimationFrame(tick);
+  };
+  frame = requestAnimationFrame(tick);
+  globalThis.__gaiaBaseExposureProbe = {
+    samples,
+    stop() {
+      active = false;
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      return [...samples];
+    },
+  };
+});
+const stopBaseExposureProbe = (page) => page.evaluate(() => globalThis.__gaiaBaseExposureProbe?.stop?.() || []);
+
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
   fs.writeFileSync(path.join(outputDir, "chrome.log"), `executable=${executablePath}\nversion=${await browser.version()}\n`);
@@ -194,14 +241,17 @@ try {
   assert.equal(await openingTourCard.isVisible(), true, "60-second guide route card must be visible beside the other choices");
   assert.equal(await openingTourCard.evaluate((element) => element.tagName), "BUTTON");
   assert.equal(await openingTourCard.evaluate((element) => element.classList.contains("gaia-opening-route")), true);
-  assert.match(await openingTourCard.textContent(), /60秒ガイド/u);
+  assert.match(await openingTourCard.textContent(), /30秒ガイド/u);
   const openingTourCardBox = await openingTourCard.boundingBox();
   assert(openingTourCardBox && openingTourCardBox.width >= 180 && openingTourCardBox.height >= 70, "60-second guide must render as a full route card");
   await storyEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-pc.png"), animations: "disabled" });
+  await startBaseExposureProbe(storyEntryPage);
   await storyEntryPage.locator("#gaia-opening-route-story").click();
   await storyEntryPage.waitForTimeout(150);
   assert.notEqual(await storyEntryPage.evaluate(() => location.hash), "#story", "story hash must wait for lazy-loaded story UI");
   await storyEntryPage.waitForFunction(() => location.hash === "#story" && document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
+  await storyEntryPage.waitForTimeout(320);
+  assert.deepEqual(await stopBaseExposureProbe(storyEntryPage), [], "Breathing Earth base must never enter the paint tree during the opening-to-story handoff");
   await storyEntryPage.screenshot({ path: path.join(outputDir, "story-restored-pc.png"), animations: "disabled" });
   assert.equal(await storyEntryPage.locator(".gaia-observation-launcher").count(), 0, "story route must not mount the notebook launcher");
   report.entry.soundAndStory = "passed";
@@ -216,30 +266,99 @@ try {
   await wideEntryPage.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden", timeout: 20_000 });
   await wideEntryPage.locator("#gaia-opening-skip").click();
   await wideEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
+  await wideEntryPage.waitForSelector(".gaia-opening-route-guide.is-visible .gaia-opening-route-guide-bubble", { timeout: 20_000 });
+  await wideEntryPage.waitForTimeout(320);
+  const readWideGuideAlignment = () => wideEntryPage.evaluate(() => {
+    const bubble = document.querySelector(".gaia-opening-route-guide-bubble");
+    const target = document.querySelector(".gaia-opening-route.is-route-guide-target");
+    const bubbleRect = bubble.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    return {
+      arrowX: bubbleRect.left + Number.parseFloat(getComputedStyle(bubble).getPropertyValue("--route-guide-arrow-left")),
+      targetCenterX: targetRect.left + targetRect.width / 2,
+    };
+  });
+  const assertWideGuideAlignment = async () => {
+    const alignment = await readWideGuideAlignment();
+    assert(Math.abs(alignment.arrowX - alignment.targetCenterX) <= 2, "route guide speech-bubble arrow must point to its current target button");
+  };
   const wideComposition = await wideEntryPage.evaluate(() => {
     const photo = document.querySelector(".gaia-vn-panel-final .gaia-vn-final-photo");
     const copy = document.querySelector(".gaia-vn-panel-final .gaia-vn-final-copy");
     const menu = document.querySelector("#gaia-opening-final-menu");
+    const question = document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong");
+    const guide = document.querySelector(".gaia-opening-route-guide");
+    const bubble = guide.querySelector(".gaia-opening-route-guide-bubble");
+    const target = document.querySelector(".gaia-opening-route.is-route-guide-target");
+    const cards = [...document.querySelectorAll("#gaia-opening-final-menu .gaia-opening-route")];
     const copyRect = copy.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
+    const questionRect = question.getBoundingClientRect();
+    const bubbleRect = bubble.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
     const style = getComputedStyle(photo);
+    const serialize = (rect) => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height });
     return {
       backgroundPosition: style.backgroundPosition,
       backgroundSize: style.backgroundSize,
       copy: { left: copyRect.left, bottom: copyRect.bottom },
-      menu: { left: menuRect.left, top: menuRect.top, right: menuRect.right, bottom: menuRect.bottom, width: menuRect.width },
+      menu: serialize(menuRect),
+      question: serialize(questionRect),
+      guide: {
+        step: guide.dataset.step,
+        title: guide.querySelector("[data-route-guide-title]").textContent,
+        shadeOpacity: Number.parseFloat(getComputedStyle(guide.querySelector(".gaia-opening-route-guide-shade")).opacity),
+        bubble: serialize(bubbleRect),
+        target: serialize(targetRect),
+        targetId: target.id,
+        cardOpacities: cards.map((card) => Number.parseFloat(getComputedStyle(card).opacity)),
+      },
       viewport: { width: innerWidth, height: innerHeight },
     };
   });
   assert.match(wideComposition.backgroundSize, /95% auto/u, "wide opening artwork must be slightly reduced");
   assert.match(wideComposition.backgroundPosition, /100% 50%/u, "wide opening artwork must be anchored to the right");
   assert(wideComposition.menu.left >= 0 && wideComposition.menu.right <= wideComposition.viewport.width && wideComposition.menu.bottom <= wideComposition.viewport.height, "wide opening menu must remain inside the viewport");
-  await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-wide.png"), animations: "disabled" });
   const wideMenuCenter = wideComposition.menu.left + wideComposition.menu.width / 2;
-  const wideLogoOpticalCenter = wideComposition.viewport.width * 0.282;
-  assert(Math.abs(wideMenuCenter - wideLogoOpticalCenter) <= 16, "wide opening menu must be centered beneath the title logo");
+  const wideQuestionCenter = wideComposition.question.left + wideComposition.question.width / 2;
+  const wideArtworkWidth = wideComposition.viewport.width * 0.95;
+  const wideArtworkScale = wideArtworkWidth / 1672;
+  const wideArtworkLeft = wideComposition.viewport.width - wideArtworkWidth;
+  const wideArtworkTop = (wideComposition.viewport.height - 941 * wideArtworkScale) / 2;
+  const wideLogoOpticalCenter = wideArtworkLeft + 430 * wideArtworkScale;
+  const wideTaglineBottom = wideArtworkTop + 540 * wideArtworkScale;
+  assert(Math.abs(wideMenuCenter - wideLogoOpticalCenter) <= 3, "wide opening menu must be centered beneath the title logo");
+  assert(Math.abs(wideQuestionCenter - wideMenuCenter) <= 2, "opening question must be centered to the route buttons");
+  assert(Math.abs(wideComposition.question.top - (wideTaglineBottom + 18)) <= 3, "opening question and routes must sit immediately beneath the baked tagline");
   assert(wideComposition.menu.left - wideComposition.copy.left >= 100, "wide opening menu must retain its logo-centering offset");
-  assert(wideComposition.menu.top <= 580, `wide opening menu must sit directly beneath the title logo: ${JSON.stringify(wideComposition)}`);
+  assert(wideComposition.menu.top - wideComposition.question.bottom <= 24, "opening route cards must follow the centered question without a large gap");
+  assert.equal(wideComposition.guide.step, "1");
+  assert.equal(wideComposition.guide.targetId, "gaia-opening-route-story");
+  assert.match(wideComposition.guide.title, /物語/u);
+  assert(wideComposition.guide.shadeOpacity >= 0.95, "first-visit route guide must darken the background");
+  assert(wideComposition.guide.cardOpacities[0] >= 0.95 && wideComposition.guide.cardOpacities.slice(1).every((opacity) => opacity <= 0.35), "route guide must brighten only its current target");
+  const guideTargetGap = Math.min(
+    Math.abs(wideComposition.guide.bubble.top - wideComposition.guide.target.bottom),
+    Math.abs(wideComposition.guide.target.top - wideComposition.guide.bubble.bottom),
+  );
+  assert(guideTargetGap <= 14, "route guide speech bubble must stay close to its target button");
+  await assertWideGuideAlignment();
+  await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-route-guide-story-wide.png"), animations: "disabled" });
+  await wideEntryPage.locator("[data-route-guide-action='next']").click();
+  await wideEntryPage.waitForFunction(() => document.querySelector(".gaia-opening-route-guide")?.dataset.step === "2");
+  await wideEntryPage.waitForTimeout(100);
+  assert.equal(await wideEntryPage.locator(".gaia-opening-route.is-route-guide-target").getAttribute("id"), "gaia-opening-route-other");
+  await assertWideGuideAlignment();
+  await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-route-guide-data-wide.png"), animations: "disabled" });
+  await wideEntryPage.locator("[data-route-guide-action='next']").click();
+  await wideEntryPage.waitForFunction(() => document.querySelector(".gaia-opening-route-guide")?.dataset.step === "3");
+  await wideEntryPage.waitForTimeout(100);
+  assert.equal(await wideEntryPage.locator(".gaia-opening-route.is-route-guide-target").getAttribute("id"), "gaia-opening-tour-link");
+  await assertWideGuideAlignment();
+  await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-route-guide-tour-wide.png"), animations: "disabled" });
+  await wideEntryPage.locator("[data-route-guide-action='next']").click();
+  await wideEntryPage.waitForSelector(".gaia-opening-route-guide", { state: "hidden", timeout: 20_000 });
+  await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-wide.png"), animations: "disabled" });
   report.entry.wideComposition = "passed";
   await wideEntryContext.close();
 
@@ -288,12 +407,50 @@ try {
   await guideEntryPage.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden", timeout: 20_000 });
   await guideEntryPage.locator("#gaia-opening-skip").click();
   await guideEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
+  await startBaseExposureProbe(guideEntryPage);
   await guideEntryPage.locator("#gaia-opening-tour-link").click();
   await guideEntryPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
+  await guideEntryPage.waitForTimeout(500);
+  const forbiddenBaseExposure = await stopBaseExposureProbe(guideEntryPage);
+  assert.deepEqual(forbiddenBaseExposure, [], "Breathing Earth base must never enter the paint tree during the opening-to-guide handoff");
+  assert.equal(await guideEntryPage.locator("#gaia-canvas").evaluate((canvas) => getComputedStyle(canvas).visibility), "hidden", "guided tour must keep the abstract WebGL base suppressed");
   assert.equal(await guideEntryPage.evaluate(() => location.hash), "#tour");
+  await guideEntryPage.screenshot({ path: path.join(outputDir, "opening-tour-no-breathing-frame.png"), animations: "disabled" });
   await guideEntryPage.evaluate(() => globalThis.GaiaGuidedTour.exit());
+  report.entry.noBreathingEarthFlash = "passed";
   report.entry.guideCard = "passed";
   await guideEntryContext.close();
+
+  const spaceEntryContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const spaceEntryPage = await spaceEntryContext.newPage();
+  monitor(spaceEntryPage, "entry-space-handoff");
+  await spaceEntryPage.route(/space-signals\.json/u, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await route.continue();
+  });
+  await spaceEntryPage.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await spaceEntryPage.waitForSelector("#gaia-opening-sound-modal.is-visible", { timeout: 20_000 });
+  await spaceEntryPage.locator("#gaia-opening-sound-off").click();
+  await spaceEntryPage.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden", timeout: 20_000 });
+  await spaceEntryPage.locator("#gaia-opening-skip").click();
+  await spaceEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
+  await spaceEntryPage.locator("#gaia-opening-route-other").click();
+  await spaceEntryPage.waitForFunction(() => document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
+  await spaceEntryPage.locator("[data-intro-path='abstract']").click();
+  await spaceEntryPage.waitForFunction(() => !document.querySelector("#intro-sense-stage")?.hidden && !document.body.classList.contains("scene-transitioning"), null, { timeout: 20_000 });
+  await spaceEntryPage.locator("#intro-mode-list .intro-mode-choice").first().click();
+  await spaceEntryPage.waitForFunction(() => document.querySelector("#intro-layer")?.hidden && !document.body.classList.contains("scene-transitioning"), null, { timeout: 20_000 });
+  await spaceEntryPage.locator("#space-button").click();
+  await spaceEntryPage.waitForFunction(() => document.body.classList.contains("gaia-space-preparing"), null, { timeout: 30_000 });
+  assert.equal(await spaceEntryPage.locator("#gaia-canvas").evaluate((canvas) => getComputedStyle(canvas).visibility), "hidden", "space loading must suppress the abstract WebGL base before awaiting its snapshot");
+  await startBaseExposureProbe(spaceEntryPage);
+  await spaceEntryPage.waitForFunction(() => document.body.classList.contains("space-mode-open") && document.querySelector("#space-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
+  await spaceEntryPage.waitForTimeout(420);
+  assert.deepEqual(await stopBaseExposureProbe(spaceEntryPage), [], "Breathing Earth base must never enter the paint tree while the space snapshot is loading");
+  assert.equal(await spaceEntryPage.locator("#gaia-canvas").evaluate((canvas) => getComputedStyle(canvas).visibility), "hidden", "space mode must keep the abstract WebGL base suppressed");
+  await spaceEntryPage.screenshot({ path: path.join(outputDir, "space-handoff-no-breathing-frame.png"), animations: "disabled" });
+  report.entry.noBreathingEarthSpaceFlash = "passed";
+  await spaceEntryContext.close();
 
   const directContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
   const directPage = await directContext.newPage();
@@ -559,17 +716,31 @@ try {
     const cue = document.querySelector(".gaia-tour-target-cue");
     return spotlight && cue && !spotlight.hidden && !cue.hidden && document.querySelector(".gaia-tour-highlight-target");
   }, null, { timeout: 30_000 });
+  await tourPage.waitForFunction(() => document.querySelector("#gaia-guided-tour")?.contains(document.activeElement), null, { timeout: 5_000 });
   const initialTour = await tourPage.evaluate(() => ({ state: GaiaGuidedTour.getState(), hash: location.hash, modalHidden: document.querySelector("#gaia-opening")?.hidden }));
-  assert.equal(initialTour.state.totalDuration, 60);
-  assert.equal(await tourPage.locator("[data-tour-step-total]").textContent(), "5");
+  assert.equal(initialTour.state.totalDuration, 30);
+  assert.equal(await tourPage.locator("[data-tour-step-total]").textContent(), "4");
   assert.equal(initialTour.hash, "#tour");
   assert.equal(initialTour.modalHidden, true);
   assert.equal(await tourPage.evaluate(() => document.querySelector("#gaia-guided-tour")?.contains(document.activeElement)), true);
+  assert.equal(await tourPage.locator("#gaia-canvas").evaluate((canvas) => getComputedStyle(canvas).visibility), "hidden", "direct #tour entry must suppress the abstract WebGL base");
+  assert.equal(await tourPage.evaluate(() => document.body.classList.contains("gaia-route-handoff")), false, "direct #tour handoff shield must release only after the guide owns the viewport");
   for (const pattern of [/\.mp3$/u, /opening-mizuha/u, /opening-amane/u, /open-data-archive-bg/u, /opening-final-night/u]) {
     assert.equal(tourRequests.some((resource) => pattern.test(resource)), false, `tour requested opening asset: ${pattern}`);
   }
+  const initialOperationGuide = await tourPage.evaluate(() => ({
+    title: document.querySelector("[data-tour-title]").textContent.trim(),
+    actions: [...document.querySelectorAll("[data-tour-operation-path] li")].map((item) => item.textContent.trim()),
+    cue: document.querySelector("[data-tour-target-cue]").textContent.trim(),
+  }));
+  assert.equal(initialOperationGuide.title, "ドラッグして、光を押す。", "30-second guide must start with the live map operation");
+  assert.deepEqual(initialOperationGuide.actions, ["移動ドラッグ", "拡大ホイール／ピンチ", "開く光を押す"], "map guide must explain move, zoom, and observation selection");
+  assert(initialOperationGuide.cue.includes("ドラッグ"), "map guide must begin with a concrete drag cue");
   await tourPage.locator("[data-tour-action='toggle']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), false);
+  const pausedActionStage = await tourPage.locator("#gaia-guided-tour").getAttribute("data-action");
+  await tourPage.waitForTimeout(3200);
+  assert.equal(await tourPage.locator("#gaia-guided-tour").getAttribute("data-action"), pausedActionStage, "pausing the guide must also pause its operation demonstration");
   const pausedTourIndex = await tourPage.evaluate(() => GaiaGuidedTour.getState().index);
   await tourPage.locator("[data-tour-action='next']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().index), pausedTourIndex + 1);
@@ -605,7 +776,7 @@ try {
     const controls = Array.from(document.querySelectorAll(".gaia-tour-controls button")).map((element) => element.getBoundingClientRect().height);
     return {
       cardHeight: card.getBoundingClientRect().height,
-      maxHeight: innerHeight * 0.38,
+      maxHeight: innerHeight * 0.44,
       visibleTextLength: card.innerText.replace(/\s+/gu, "").length,
       copyFont: Number.parseFloat(getComputedStyle(copy).fontSize),
       instructionFont: Number.parseFloat(getComputedStyle(instruction).fontSize),
@@ -617,6 +788,7 @@ try {
       gesture: gesture.textContent.trim(),
       receiptOpen: receipt.open,
       railCount: rail.length,
+      operationActions: [...document.querySelectorAll("[data-tour-operation-path] li")].map((item) => item.textContent.trim()),
       currentRailCount: rail.filter((element) => element.dataset.state === "current").length,
       cueText: cue.textContent.trim(),
       cueVisible: !cue.hidden,
@@ -632,24 +804,27 @@ try {
       controlLabels: [...document.querySelectorAll(".gaia-tour-controls button")].map((button) => button.textContent.trim()),
     };
   });
-  assert(mobileTourLayout.cardHeight <= mobileTourLayout.maxHeight + 2, `tour card ${mobileTourLayout.cardHeight}px exceeds 38dvh`);
+  assert(mobileTourLayout.cardHeight <= mobileTourLayout.maxHeight + 2, `tour card ${mobileTourLayout.cardHeight}px exceeds 44dvh`);
   assert(mobileTourLayout.visibleTextLength <= 150, `tour step remains text-heavy: ${mobileTourLayout.visibleTextLength} characters`);
   assert(mobileTourLayout.copyFont >= 14 && mobileTourLayout.instructionFont >= 14, "tour important copy below 14px");
   assert(mobileTourLayout.primaryActionFont >= 16, "tour primary action is not visually dominant");
-  assert.equal(mobileTourLayout.title, "地図を動かして、光を押す。", "tour map title is not a direct action");
-  assert(mobileTourLayout.instructionText.includes("光る場所") && mobileTourLayout.instructionText.includes("押す"), "tour does not provide one direct map action");
-  assert(mobileTourLayout.hint.includes("2本で拡大") && mobileTourLayout.result.length >= 12, "tour lacks a plain input hint or visible outcome");
-  assert.equal(mobileTourLayout.gesture, "↔", "tour gesture does not match the map action");
+  assert.equal(mobileTourLayout.title, "つまみを動かして、比べる。", "tour time title is not a direct action");
+  assert(mobileTourLayout.instructionText.includes("つまみ") && mobileTourLayout.instructionText.includes("左右"), "tour does not provide one direct timeline action");
+  assert(mobileTourLayout.hint.includes("左＝過去") && mobileTourLayout.result.length >= 12, "tour lacks a plain timeline hint or visible outcome");
+  assert.equal(mobileTourLayout.gesture, "⇆", "tour gesture does not match the timeline action");
   assert.equal(mobileTourLayout.receiptOpen, false, "technical receipt must be collapsed by default");
-  assert.equal(mobileTourLayout.railCount, 5, "tour progress rail must expose all five focused steps");
+  assert.equal(mobileTourLayout.railCount, 4, "tour progress rail must expose all four focused steps");
+  assert.deepEqual(mobileTourLayout.operationActions, ["つかむ青いつまみ", "動かす左＝過去・右＝未来", "読む年と地図"], "timeline guide must explain grabbing, moving, and reading the result");
   assert.equal(mobileTourLayout.currentRailCount, 1, "tour progress rail must have one current step");
-  assert(mobileTourLayout.cueVisible && mobileTourLayout.cueText.includes("光る場所"), "tour target cue is not a direct action");
+  assert(mobileTourLayout.cueVisible && mobileTourLayout.cueText.includes("つまみ"), "tour target cue is not a direct timeline action");
   assert(mobileTourLayout.spotlightVisible && Object.values(mobileTourLayout.spotlightDelta).every((delta) => delta <= 2), "tour spotlight does not frame the live target");
   assert(mobileTourLayout.borderWidth >= 2, "tour card border is not visible enough");
   assert(mobileTourLayout.controls.every((height) => height >= 48), "tour control below 48px");
   assert.deepEqual(mobileTourLayout.controlLabels, ["閉じる", "戻る", "続ける", "次へ"], "tour controls still rely on unexplained symbols");
   await tourPage.locator("[data-tour-action='toggle']").click();
   await tourPage.waitForFunction(() => GaiaGuidedTour.getState().elapsed > 0, null, { timeout: 10_000 });
+  await tourPage.waitForFunction(() => document.querySelector("#gaia-guided-tour")?.dataset.action === "2"
+    && GaiaMapObservationAdapter.getState().signalTimePosition >= 58, null, { timeout: 5_000 });
   await tourPage.evaluate(() => document.querySelector(".gaia-tour-highlight-target")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), true, "exhibit interaction must not pause autoplay");
   assert.equal(await tourPage.locator("[data-tour-result-label]").textContent(), "操作できました", "tour does not acknowledge a successful interaction");
@@ -710,7 +885,7 @@ try {
   await clarityPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
   await clarityPage.locator("[data-tour-action='toggle']").click();
   const claritySteps = [];
-  for (let expectedIndex = 0; expectedIndex < 5; expectedIndex += 1) {
+  for (let expectedIndex = 0; expectedIndex < 4; expectedIndex += 1) {
     await clarityPage.waitForFunction((value) => GaiaGuidedTour.getState().index === value, expectedIndex);
     await clarityPage.waitForTimeout(120);
     claritySteps.push(await clarityPage.evaluate(() => {
@@ -723,6 +898,7 @@ try {
         title,
         action,
         result,
+        actions: [...document.querySelectorAll("[data-tour-operation-path] li")].map((item) => item.textContent.trim()),
         visibleCharacters: visibleText.length,
         actionFont: Number.parseFloat(getComputedStyle(document.querySelector("[data-tour-instruction]")).fontSize),
         explanationCount: [...card.querySelectorAll(".gaia-tour-copy, .gaia-tour-result, .gaia-tour-fallback:not([hidden])")].filter((node) => node.getBoundingClientRect().height > 1).length,
@@ -730,16 +906,17 @@ try {
       };
     }));
     await clarityPage.screenshot({ path: path.join(outputDir, `tour-clear-step-${expectedIndex + 1}-pc.png`), animations: "disabled" });
-    if (expectedIndex < 4) await clarityPage.locator("[data-tour-action='next']").click();
+    if (expectedIndex < 3) await clarityPage.locator("[data-tour-action='next']").click();
   }
-  assert.equal(claritySteps.length, 5);
+  assert.equal(claritySteps.length, 4);
   assert(claritySteps.every((step) => step.title.length <= 18 && step.action.length <= 24 && step.result.length <= 28), "tour does not keep each message to one concise idea");
   assert(claritySteps.every((step) => step.visibleCharacters <= 165), "tour card still requires too much reading");
   assert(claritySteps.every((step) => step.actionFont >= 19), "desktop tour action is not visually dominant");
   assert(claritySteps.every((step) => step.explanationCount <= 3), "tour exposes too many simultaneous explanations");
   assert(claritySteps.every((step) => step.jargonVisible === false), "tour exposes unexplained technical jargon");
+  assert(claritySteps.every((step) => step.actions.length === 3), "every tour step must expose a three-part operation path");
   report.tour.clarity = claritySteps;
-  await clarityPage.screenshot({ path: path.join(outputDir, "tour-clear-step-05-pc.png"), animations: "disabled" });
+  await clarityPage.screenshot({ path: path.join(outputDir, "tour-clear-step-04-pc.png"), animations: "disabled" });
   await clarityPage.evaluate(() => GaiaGuidedTour.exit());
   await clarityContext.close();
 
@@ -749,9 +926,9 @@ try {
   await automaticPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await automaticPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
   const automaticStartedAt = Date.now();
-  await automaticPage.waitForSelector("[data-tour-finish]:not([hidden])", { timeout: 68_000 });
+  await automaticPage.waitForSelector("[data-tour-finish]:not([hidden])", { timeout: 40_000 });
   report.tour.autoDurationMs = Date.now() - automaticStartedAt;
-  assert(report.tour.autoDurationMs >= 58_000 && report.tour.autoDurationMs <= 66_000, `automatic tour ${report.tour.autoDurationMs}ms`);
+  assert(report.tour.autoDurationMs >= 28_000 && report.tour.autoDurationMs <= 35_000, `automatic tour ${report.tour.autoDurationMs}ms`);
   assert.equal(await automaticPage.locator("[data-tour-finish] [data-tour-destination]").count(), 3);
   assert.equal(await automaticPage.locator("[data-tour-finish] a[href='./sensors/']").count(), 1);
   await automaticPage.screenshot({ path: path.join(outputDir, "tour-finish.png"), animations: "disabled" });
@@ -768,10 +945,10 @@ try {
     const previous = document.querySelector("[data-tour-action='previous']");
     const toggle = document.querySelector("[data-tour-action='toggle']");
     if (GaiaGuidedTour.getState().running) toggle.click();
-    for (let attempt = 0; attempt < 5 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
+    for (let attempt = 0; attempt < 4 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
       (GaiaGuidedTour.getState().index < targetIndex ? next : previous).click();
     }
-  }, 4);
+  }, 3);
   await fallbackPage.waitForFunction(() => GaiaGuidedTour.getState().stepId === "space", null, { timeout: 20_000 });
   await fallbackPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 45_000 });
   assert.equal(await fallbackPage.locator("#gaia-guided-tour").getAttribute("data-step"), "space");
@@ -796,13 +973,13 @@ try {
     const previous = document.querySelector("[data-tour-action='previous']");
     const toggle = document.querySelector("[data-tour-action='toggle']");
     if (GaiaGuidedTour.getState().running) toggle.click();
-    for (let attempt = 0; attempt < 5 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
+    for (let attempt = 0; attempt < 4 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
       (GaiaGuidedTour.getState().index < targetIndex ? next : previous).click();
     }
   }, 1);
   await webglPage.waitForFunction(() => GaiaGuidedTour.getState().index === 1, null, { timeout: 20_000 });
   await webglPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 20_000 });
-  for (let targetIndex = 2; targetIndex <= 4; targetIndex += 1) {
+  for (let targetIndex = 2; targetIndex <= 3; targetIndex += 1) {
     await webglPage.locator("[data-tour-action='next']").evaluate((button) => button.click());
     await webglPage.waitForFunction((expectedIndex) => GaiaGuidedTour.getState().index === expectedIndex, targetIndex, { timeout: 20_000 });
   }

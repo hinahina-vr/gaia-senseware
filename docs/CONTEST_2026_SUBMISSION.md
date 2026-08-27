@@ -1,21 +1,21 @@
 # ZEN Study プログラミングコンテスト2026 夏 — 審査ガイド
 
-## 60秒で確認する
+## 30秒で確認する
 
 - 作品: **惑星の放課後 — GAIA SENSATION**
 - 応募区分: Webページ部門
 - 公開サイト: <https://gaia-senseware.pages.dev/>
-- 60秒ガイド: <https://gaia-senseware.pages.dev/#tour>
+- 30秒ガイド: <https://gaia-senseware.pages.dev/#tour>
 - GitHub: <https://github.com/hinahina-vr/gaia-senseware>
 - 公式要項: <https://progedu.github.io/webappcontest/2026/summer/index.html>
 
-上記の `#tour` URL、または映画的オープニング最終二択の下にある「60秒ガイド」から、「60秒で地球を感じる」体験を開始できます。実際の地球観測地図、年代スライダー、データ変換パネル、宇宙観測を操作しながら作品全体を確認できます。ガイドは60秒で自動進行し、一時停止、前後移動、終了も可能です。通常URLでは、作品のキービジュアルとサウンド選択から映画的オープニングへ入ります。
+上記の `#tour` URL、または映画的オープニング最終選択にある「30秒ガイド」から、「30秒で基本操作を覚える」体験を開始できます。地図の移動・拡大・地点選択、年代スライダー、データ変換タブ、宇宙観測の再生を実画面で確認できます。ガイドは30秒で自動進行し、一時停止、前後移動、終了も可能です。通常URLでは、作品のキービジュアルとサウンド選択から映画的オープニングへ入ります。
 
 ## 作品と実装
 
 公開データを鑑賞用の色・動き・音・物語へ変換し、地球観測を「読む」だけでなく「感じ、測り、残す」体験にしたブラウザ作品です。基本体験はHTML、CSS、JavaScript、WebGL 2、Canvas 2D、ブラウザ標準APIだけで動作し、外部JavaScriptランタイムライブラリを読み込みません。
 
-ESP32、Cloudflare Pages Functions、D1は参加型センサー機能の任意拡張です。センサー、ログイン、外部API接続がなくても、9展示、物語、宇宙モード、60秒ガイドを最後まで体験できます。TypeScriptとWranglerはセンサーAPIの開発・検査用で、応募Webページのブラウザランタイムには含まれません。
+ESP32、Cloudflare Pages Functions、D1は参加型センサー機能の任意拡張です。センサー、ログイン、外部API接続がなくても、9展示、物語、宇宙モード、30秒ガイドを最後まで体験できます。TypeScriptとWranglerはセンサーAPIの開発・検査用で、応募Webページのブラウザランタイムには含まれません。
 
 ```mermaid
 flowchart LR

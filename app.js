@@ -852,6 +852,11 @@
   const earthLongitudeToMapX = (longitude) =>
     wrapLongitude(longitude - EARTH_INITIAL_CENTER_LONGITUDE) + 180;
   const formatModeNumber = (index) => String(index + 1).padStart(2, "0");
+  const formatObservationNumber = (value, maximumFractionDigits = 2) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return "—";
+    return numeric.toLocaleString("ja-JP", { maximumFractionDigits });
+  };
   const lonLatToWorld = (lon, lat, zoom = japanView.zoom) => {
     const worldSize = MAP_TILE_SIZE * 2 ** zoom;
     const latitude = clamp(lat, -85.0511, 85.0511);
@@ -5031,7 +5036,7 @@
     try {
       const observation = captureMapObservation();
       sourceOutput.textContent = observation.metrics
-        .map((metric) => `${metric.label} ${formatNumber(metric.value, 2)}${metric.unit ? ` ${metric.unit}` : ""}`)
+        .map((metric) => `${metric.label} ${formatObservationNumber(metric.value, 2)}${metric.unit ? ` ${metric.unit}` : ""}`)
         .join(" / ");
       providerOutput.textContent = [...new Set((signalMode.datasets || []).map((dataset) => dataset.organisation).filter(Boolean))].join(" / ");
       transformOutput.textContent = modeDataNarratives[visualMode.id] || "保存済みの公開記録を表示用の尺度へ変換します。";
@@ -6740,7 +6745,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const observation = captureMapObservation();
     return {
       title: visualMode.titleJa,
-      source: observation.metrics.map((metric) => `${metric.label} ${formatNumber(metric.value, 2)}${metric.unit ? ` ${metric.unit}` : ""}`).join(" / "),
+      source: observation.metrics.map((metric) => `${metric.label} ${formatObservationNumber(metric.value, 2)}${metric.unit ? ` ${metric.unit}` : ""}`).join(" / "),
       at: observation.subtitle,
       provider: [...new Set((signalMode.datasets || []).map((dataset) => dataset.organisation).filter(Boolean))].join(" / "),
       classification: observation.provenance.classification || "SOURCE",
@@ -7326,5 +7331,8 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     && !new URLSearchParams(window.location.search).has("space")
   ) {
     openIntro({ restoreFocusOnClose: false });
+  }
+  if (openingLayer?.hidden && window.location.hash !== "#tour") {
+    requestAnimationFrame(() => document.body.classList.remove("gaia-route-handoff"));
   }
 })();

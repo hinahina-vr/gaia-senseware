@@ -84,7 +84,7 @@ try {
         description: document.querySelector("#gaia-opening-sound-description")?.textContent.trim(),
         soundOnLabel: document.querySelector("#gaia-opening-sound-on .gaia-opening-sound-option-label")?.textContent.trim(),
         soundOffLabel: document.querySelector("#gaia-opening-sound-off .gaia-opening-sound-option-label")?.textContent.trim(),
-        tourLabel: document.querySelector("#gaia-opening-tour-start strong")?.textContent.trim(),
+        tourLabel: document.querySelector("#gaia-opening-tour-link strong")?.textContent.trim(),
         sliderValue: document.querySelector("#gaia-opening-volume")?.value,
         output: document.querySelector("#gaia-opening-volume-value")?.textContent.trim(),
         soundOnPressed: document.querySelector("#gaia-opening-sound-on")?.getAttribute("aria-pressed"),
@@ -118,7 +118,7 @@ try {
     assert.equal(initial.description, "サウンドのオン／オフはゲーム中でも変更できます。");
     assert.equal(initial.soundOnLabel, "サウンドあり");
     assert.equal(initial.soundOffLabel, "サウンドなし");
-    assert.equal(initial.tourLabel, "60秒で作品を見る");
+    assert.equal(initial.tourLabel, "30秒ガイド");
     assert.equal(initial.sliderValue, "23");
     assert.equal(initial.output, "23%");
     assert.equal(initial.soundOnPressed, "true");

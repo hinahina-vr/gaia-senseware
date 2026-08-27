@@ -949,6 +949,51 @@ button {
   transition: background-color 900ms ease;
 }
 
+/*
+ * The abstract WebGL surface is a real destination, not a loading backdrop.
+ * Keep it completely out of the paint tree whenever another route, dialog,
+ * guide, or asynchronously prepared mode owns the viewport. This prevents a
+ * dim Breathing Earth frame from leaking through translucent scrims or the
+ * one-frame gap between two route handlers.
+ */
+:is(
+  body.gaia-route-handoff,
+  body.gaia-space-preparing,
+  body.gaia-tour-open,
+  body.novel-open,
+  body.space-mode-open,
+  body.gx-open,
+  body.sound-mode-open
+) .experience > :is(
+  #gaia-canvas,
+  .abstract-mode-background,
+  .masthead,
+  .status,
+  .guide,
+  .mode-caption,
+  .mode-nav,
+  .actions
+),
+.experience:is(
+  .intro-open,
+  .japan-open,
+  .source-open,
+  .concept-open
+) > :is(
+  #gaia-canvas,
+  .abstract-mode-background,
+  .masthead,
+  .status,
+  .guide,
+  .mode-caption,
+  .mode-nav,
+  .actions
+) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 #gaia-canvas {
   position: absolute;
   z-index: -2;

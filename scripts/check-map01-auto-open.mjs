@@ -97,10 +97,10 @@ check("runtime cache keys are advanced", () => {
   assert.match(html, /gaia-mode-loader\.js\?v=gaia-live-gallery-1/u);
   assert.match(modeLoader, /styles\.css\?v=gaia-live-gallery-1/u);
   assert.match(modeLoader, /novel-background-cues\.js\?v=gaia-amane-no-plug-1/u);
-  assert.match(modeLoader, /app\.js\?v=gaia-story-map-aiva-1-live-base-1/u);
+  assert.match(modeLoader, /app\.js\?v=gaia-no-breathing-flash-1/u);
   assert.match(modeLoader, /novel-mode\.css\?v=gaia-story-map-aiva-2/u);
   assert.match(modeLoader, /gx-mode\.js\?v=gaia-gx-mobile-installation-1/u);
-  assert.match(modeLoader, /novel-mode\.js\?v=gaia-story-map-aiva-2/u);
+  assert.match(modeLoader, /novel-mode\.js\?v=gaia-no-breathing-flash-1/u);
   assert.match(modeLoader, /novel-story-data\.js\?v=gaia-approved-script-14/u);
 });
 

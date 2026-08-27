@@ -11,7 +11,7 @@ flowchart LR
   Explore --> Map["地球観測<br/>app.js / WebGL 2"]
   Loader --> Space["宇宙観測<br/>space-mode.js / Canvas 2D"]
   Loader --> Story["物語<br/>novel-mode.js"]
-  Loader --> Tour["60秒ガイド<br/>guided-tour.js"]
+  Loader --> Tour["30秒ガイド<br/>guided-tour.js"]
   Map --> MapAdapter[GaiaMapObservationAdapter]
   Space --> SpaceAdapter[GaiaSpaceTourAdapter]
   MapAdapter --> Tour
@@ -30,8 +30,8 @@ flowchart LR
 
 | URL | 動作 |
 |---|---|
-| `/` | キービジュアル上のサウンド選択、映画的オープニング、物語／探索の2択と控えめな60秒ガイド入口を表示 |
-| `#tour` | 入口と映画的オープニングを迂回し、60秒ガイドを開始 |
+| `/` | キービジュアル上のサウンド選択、映画的オープニング、物語／探索の2択と30秒ガイド入口を表示 |
+| `#tour` | 入口と映画的オープニングを迂回し、30秒ガイドを開始 |
 | `#story` | 入口を迂回し、物語の入口へ移動 |
 | `#earth` ほか展示ハッシュ | 入口を迂回し、指定した展示へ移動 |
 | `#observation=<payload>` | 入口を迂回し、共有観測を読み取り専用で開く |
@@ -54,7 +54,7 @@ flowchart LR
 |---|---|
 | `GaiaMapObservationAdapter` | データ準備待機、展示選択、年代変更、地図開閉、操作対象の強調、ソースタブ表示、現在値と変換情報の取得 |
 | `GaiaSpaceTourAdapter` | 準備完了待機、宇宙展示選択、信号再生、操作対象の強調、現在値と変換情報の取得、終了 |
-| `GaiaGuidedTour` | 7工程・60秒の進行、一時停止、前後移動、終了、再入場、非表示タブ停止 |
+| `GaiaGuidedTour` | 4工程・30秒の実操作ガイド、一時停止、前後移動、終了、再入場、非表示タブ停止 |
 | `GaiaObservationNotebook` | 正規化した観測の保存、最大24件、比較、削除、共有の読込 |
 
 アダプターは既存展示の計算結果を読み取ります。ガイド専用の別計算は持たず、地図・宇宙の「変換レシート」と同じ値を表示します。

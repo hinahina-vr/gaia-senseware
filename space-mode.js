@@ -1109,7 +1109,15 @@
   };
 
   const openSpace = async (index = 0, options = {}) => {
-    await loadSnapshot();
+    // Snapshot loading may outlive the shared transition cover. Suppress the
+    // abstract WebGL base until the opaque space layer has claimed the screen.
+    document.body.classList.add("gaia-space-preparing");
+    try {
+      await loadSnapshot();
+    } catch (error) {
+      document.body.classList.remove("gaia-space-preparing");
+      throw error;
+    }
     returnToNovel = options.returnTo === "novel";
     storyMode = returnToNovel && options.storyMode === "v6" ? "v6" : "";
     storyInteractionComplete = false;
@@ -1129,6 +1137,8 @@
     layer.setAttribute("aria-hidden", "false");
     layer.classList.remove("has-interacted", "show-interface");
     document.body.classList.add("space-mode-open");
+    document.body.classList.remove("gaia-space-preparing");
+    document.body.classList.remove("gaia-route-handoff");
     resize();
     updateInterface();
     showInteractionFeedback("まだ操作していません。「図の読み方」を見ながら画面へ触れてください。白い波紋は観客の操作を示します。");

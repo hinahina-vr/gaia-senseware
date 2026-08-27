@@ -34,7 +34,7 @@ for (const required of [
   "OpenAI ImageGen",
   "Suno AI",
   "npm run check:contest",
-  "60秒で地球を感じる",
+  "30秒で基本操作を覚える",
 ]) assert(guide.includes(required), `提出ガイドに必須項目がありません: ${required}`);
 
 assert.match(readme, /docs\/CONTEST_2026_SUBMISSION\.md/u);

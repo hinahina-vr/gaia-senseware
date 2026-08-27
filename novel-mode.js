@@ -5354,6 +5354,7 @@
     layer.hidden = false;
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("novel-open");
+    document.body.classList.remove("gaia-route-handoff");
     if (isTitleUnlocked()) {
       showTitle();
     } else {

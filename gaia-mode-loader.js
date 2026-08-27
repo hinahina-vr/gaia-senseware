@@ -5,7 +5,7 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-title-only-1",
+        "./styles.css?v=gaia-no-breathing-flash-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
@@ -18,7 +18,7 @@
         "./data-ledger.js?v=gaia-31",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-abstract-entry-1",
-        "./app.js?v=gaia-story-map-aiva-1-live-base-1",
+        "./app.js?v=gaia-no-breathing-flash-1",
         "./map-ui-grid-polish.js?v=gaia-map-europe-clear-1",
         "./particles-v9.js?v=gaia-adaptive-performance-1",
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
@@ -29,7 +29,7 @@
     story: {
       templates: ["gaia-template-story"],
       styles: [
-        "./styles.css?v=gaia-cross-platform-fonts-1-contest-entry-2",
+        "./styles.css?v=gaia-no-breathing-flash-1",
         "./scene-transition.css?v=gaia-52",
         "./novel-mode.css?v=gaia-story-map-aiva-2",
         "./true-end.css?v=gaia-adaptive-performance-1",
@@ -44,14 +44,14 @@
         "./novel-background-cues.js?v=gaia-amane-no-plug-1",
         "./novel-back-half-cues.js?v=gaia-finale-sunset-1",
         "./novel-temporal.js?v=gaia-temporal-1",
-        "./novel-mode.js?v=gaia-story-map-aiva-2",
+        "./novel-mode.js?v=gaia-no-breathing-flash-1",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
     },
     gx: {
       templates: ["gaia-template-gx"],
       styles: [
-        "./styles.css?v=gaia-cross-platform-fonts-1-contest-entry-2",
+        "./styles.css?v=gaia-no-breathing-flash-1",
         "./scene-transition.css?v=gaia-52",
         "./gx-mode.css?v=gaia-gx-mobile-installation-1",
         "./mode-exit.css?v=gaia-story-control-gap-1",
@@ -65,7 +65,7 @@
     space: {
       templates: ["gaia-template-space"],
       styles: [
-        "./styles.css?v=gaia-cross-platform-fonts-1-contest-entry-2",
+        "./styles.css?v=gaia-no-breathing-flash-1",
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
         "./mode-exit.css?v=gaia-story-control-gap-1",
@@ -73,14 +73,14 @@
       scripts: [
         "./scene-transition.js?v=gaia-66",
         "./space-scenes.js?v=gaia-98",
-        "./space-mode.js?v=gaia-ui-restore-de6-1",
+        "./space-mode.js?v=gaia-no-breathing-flash-1",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
     },
     sound: {
       templates: ["gaia-template-sound"],
       styles: [
-        "./styles.css?v=gaia-cross-platform-fonts-1-contest-entry-2",
+        "./styles.css?v=gaia-no-breathing-flash-1",
         "./sound-mode.css?v=gaia-cross-platform-fonts-1",
         "./mode-exit.css?v=gaia-story-control-gap-1",
       ],
@@ -97,8 +97,8 @@
     },
     tour: {
       templates: [],
-      styles: ["./guided-tour.css?v=gaia-tour-clear-1"],
-      scripts: ["./guided-tour.js?v=gaia-tour-clear-1"],
+      styles: ["./guided-tour.css?v=gaia-tour-30sec-2"],
+      scripts: ["./guided-tour.js?v=gaia-no-breathing-flash-1"],
     },
   });
 
