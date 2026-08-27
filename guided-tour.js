@@ -4,43 +4,38 @@
 
   const steps = Object.freeze([
     {
-      id: "map", duration: 9, kicker: "地図の基本", title: "ドラッグして、光を押す。", gesture: "↔",
-      copy: "光る点＝観測地点です。",
-      instruction: "地図を動かし、光を押す",
-      hint: "ドラッグ＝移動　／　ホイール・ピンチ＝拡大",
-      result: "地点名と観測値が開きます。",
-      actions: [["移動", "ドラッグ"], ["拡大", "ホイール／ピンチ"], ["開く", "光を押す"]],
-      cues: ["ドラッグで地図を移動", "ホイール／ピンチで拡大", "光る地点を押す"],
+      id: "map", duration: 10, kicker: "地球の記録をひらく", title: "地図を動かし、観測点を選ぶ。", gesture: "↔",
+      copy: "地図上の明るい点は、地球を観測している地点です。",
+      instruction: "地図をドラッグし、観測点を選ぶ",
+      hint: "ドラッグで移動　／　ホイール・ピンチで拡大",
+      result: "地点名と最新の観測値が表示されます。",
+      actions: [["動かす", "地図をドラッグ"], ["近づく", "ホイール／ピンチ"], ["選ぶ", "明るい観測点"]],
+      cues: ["地図をゆっくりドラッグ", "見たい地域へ近づく", "明るい観測点を選ぶ"],
     },
     {
-      id: "time", duration: 7, kicker: "時間を比べる", title: "つまみを動かして、比べる。", gesture: "⇆",
-      copy: "年を変えると、同じ地点を比べられます。",
-      instruction: "青いつまみを左右へ動かす",
-      hint: "左＝過去　／　右＝現在・未来",
-      result: "年・色・観測値が一緒に変わります。",
-      actions: [["つかむ", "青いつまみ"], ["動かす", "左＝過去・右＝未来"], ["読む", "年と地図"]],
-      cues: ["青いつまみをつかむ", "左へ過去・右へ未来", "年と地図の変化を見る"],
+      id: "time", duration: 10, kicker: "時間の流れに触れる", title: "年代を動かし、変化をたどる。", gesture: "⇆",
+      copy: "同じ地点を、過去から未来へ見比べられます。",
+      instruction: "青い年代スライダーをゆっくり動かす",
+      hint: "左は過去　／　右は現在・未来",
+      result: "年代に合わせて、地図の色と観測値が変わります。",
+      actions: [["触れる", "年代スライダー"], ["たどる", "過去から未来へ"], ["見比べる", "色と観測値"]],
+      cues: ["年代スライダーに触れる", "過去から未来へたどる", "地図の色と数値を見比べる"],
     },
     {
-      id: "transform", duration: 7, kicker: "しくみを見る", title: "3つのタブを、順に押す。", gesture: "1→2→3",
-      copy: "観測値が光になる3段階です。",
-      instruction: "「元の数字 → 計算 → 光」を順に押す",
-      hint: "ガイド中も自動で切り替えます",
-      result: "元データと作品表現を分けて確認できます。",
-      actions: [["1", "元の数字"], ["2", "計算"], ["3", "光"]],
-      cues: ["1　元の数字を見る", "2　計算を見る", "3　光への変換を見る"],
-    },
-    {
-      id: "space", duration: 7, kicker: "宇宙を見る", title: "記録を選び、再生する。", gesture: "▶",
-      copy: "フレアの強さ＝開く光の大きさです。",
-      instruction: "「この記録を再生」を押す",
-      hint: "ガイド中は一度、自動再生します",
-      result: "強い記録ほど光が大きく開きます。",
-      actions: [["選ぶ", "フレア記録"], ["再生", "ボタンを押す"], ["比べる", "光の大きさ"]],
-      cues: ["再生する記録を選ぶ", "「この記録を再生」を押す", "開いた光の大きさを見る"],
+      id: "transform", duration: 10, kicker: "記録が光景になるまで", title: "観測値が光景になるまでをたどる。", gesture: "1→2→3",
+      copy: "ひとつの観測値が、計算を経て作品の光へ変わります。",
+      instruction: "「元データ → 変換 → 映像」を順に選ぶ",
+      hint: "観測から表現まで、順番に切り替わります",
+      result: "記録と演出のつながりを、段階ごとに確かめられます。",
+      actions: [["記録", "元データ"], ["変換", "計算の過程"], ["表現", "映像コード"]],
+      cues: ["「元データ」を選ぶ", "「変換」を選ぶ", "「映像コード」を選ぶ"],
     },
   ]);
   const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
+  const arrivalPhaseSeconds = 2.35;
+  const departurePhaseSeconds = 1.08;
+  const cueFadeMilliseconds = 300;
+  const cueRevealMilliseconds = 620;
   const layer = document.createElement("section");
   layer.className = "gaia-tour";
   layer.id = "gaia-guided-tour";
@@ -59,7 +54,7 @@
       <p class="gaia-tour-copy" data-tour-copy></p>
       <section class="gaia-tour-instruction" aria-label="この画面の操作方法">
         <span class="gaia-tour-gesture" data-tour-gesture aria-hidden="true">◎</span>
-        <div><b>操作</b><strong data-tour-instruction></strong><small data-tour-hint></small></div>
+        <div><b>ここに触れる</b><strong data-tour-instruction></strong><small data-tour-hint></small></div>
       </section>
       <ol class="gaia-tour-operation-path" data-tour-operation-path aria-label="操作の順序"></ol>
       <p class="gaia-tour-result"><b data-tour-result-label>こう変わる</b><span data-tour-result></span></p>
@@ -88,6 +83,7 @@
 
   const find = (selector) => layer.querySelector(selector);
   const card = find(".gaia-tour-card");
+  const controls = find(".gaia-tour-controls");
   const finishPanel = find("[data-tour-finish]");
   const fallback = find("[data-tour-fallback]");
   const receipt = find("[data-tour-receipt]");
@@ -116,6 +112,8 @@
   let returnScroll = { x: 0, y: 0 };
   let runningBeforeHidden = false;
   let targetCueFrame = 0;
+  let viewportLayoutTimer = 0;
+  let lastTargetLayoutAt = 0;
   let activeCueIndex = 0;
   let initialFocusPending = false;
   const stepTimers = new Set();
@@ -133,10 +131,6 @@
       source: "同梱JSONの先頭10件と単位・取得日", provider: "公式公開データのローカルスナップショット",
       transform: "正規化・補間・固定尺度をVanilla JavaScriptで計算", visual: "GLSLの色・光・動きへ入力。観客操作はSCENARIOとして分離",
     },
-    space: {
-      source: "太陽フレア等級と観測時刻", provider: "NASA DONKI",
-      transform: "X線等級を表示用の大きさと持続時間へ変換", visual: "フレア強度→開く光 / 観客操作→白い波紋",
-    },
   });
 
   const waitForMapAdapter = () => globalThis.GaiaMapObservationAdapter
@@ -144,12 +138,6 @@
     : new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error("map adapter timeout")), 12000);
         addEventListener("gaia:map-adapter-ready", () => { clearTimeout(timer); resolve(globalThis.GaiaMapObservationAdapter); }, { once: true });
-      });
-  const waitForSpaceAdapter = () => globalThis.GaiaSpaceTourAdapter
-    ? Promise.resolve(globalThis.GaiaSpaceTourAdapter)
-    : new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error("space adapter timeout")), 12000);
-        addEventListener("gaia:space-tour-adapter-ready", () => { clearTimeout(timer); resolve(globalThis.GaiaSpaceTourAdapter); }, { once: true });
       });
   const scheduleStepTask = (callback, delay, currentGeneration) => {
     const timer = setTimeout(() => {
@@ -174,8 +162,84 @@
     globalThis.GaiaSpaceTourAdapter?.clearFocus?.();
     cancelAnimationFrame(targetCueFrame);
     targetCueFrame = 0;
+    targetCue.classList.remove("is-switching", "is-entering");
+    targetSpotlight.classList.remove("is-switching", "is-entering");
     targetCue.hidden = true;
     targetSpotlight.hidden = true;
+    delete layer.dataset.cuePhase;
+  };
+  const clamp = (minimum, maximum, value) => Math.max(minimum, Math.min(maximum, value));
+  const overlapArea = (first, second) => Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left))
+    * Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+  const edgeDistance = (first, second) => {
+    const horizontal = Math.max(first.left - second.right, second.left - first.right, 0);
+    const vertical = Math.max(first.top - second.bottom, second.top - first.bottom, 0);
+    return Math.hypot(horizontal, vertical);
+  };
+  const positionCardNearTarget = (targetBounds = null) => {
+    if (card.hidden || !active || !finishPanel.hidden) return;
+    const viewportInset = innerWidth <= 760 ? 10 : 14;
+    const gap = innerWidth <= 760 ? 12 : 16;
+    const controlsBounds = controls.getBoundingClientRect();
+    const safeTop = viewportInset;
+    const safeBottom = Math.max(safeTop + 140, Math.min(
+      innerHeight - viewportInset,
+      controlsBounds.height > 1 ? controlsBounds.top - gap : innerHeight - viewportInset,
+    ));
+    const measured = card.getBoundingClientRect();
+    const width = Math.min(measured.width, innerWidth - viewportInset * 2);
+    const height = Math.min(measured.height, safeBottom - safeTop);
+    const maximumLeft = Math.max(viewportInset, innerWidth - viewportInset - width);
+    const maximumTop = Math.max(safeTop, safeBottom - height);
+
+    if (!targetBounds) {
+      const left = clamp(viewportInset, maximumLeft, (innerWidth - width) / 2);
+      const top = clamp(safeTop, maximumTop, safeTop + (safeBottom - safeTop - height) / 2);
+      card.style.left = `${Math.round(left)}px`;
+      card.style.top = `${Math.round(top)}px`;
+      card.dataset.placement = "standalone";
+      card.dataset.positioned = "true";
+      return;
+    }
+
+    const target = {
+      left: clamp(0, innerWidth, targetBounds.left),
+      top: clamp(0, innerHeight, targetBounds.top),
+      right: clamp(0, innerWidth, targetBounds.right),
+      bottom: clamp(0, innerHeight, targetBounds.bottom),
+    };
+    const centerX = (target.left + target.right) / 2;
+    const centerY = (target.top + target.bottom) / 2;
+    const candidates = [
+      { placement: "below", left: centerX - width / 2, top: target.bottom + gap, priority: 0 },
+      { placement: "above", left: centerX - width / 2, top: target.top - height - gap, priority: 6 },
+      { placement: "right", left: target.right + gap, top: centerY - height / 2, priority: 12 },
+      { placement: "left", left: target.left - width - gap, top: centerY - height / 2, priority: 18 },
+      { placement: "inside-top", left: centerX - width / 2, top: target.top + gap, priority: 42 },
+      { placement: "inside-bottom", left: centerX - width / 2, top: target.bottom - height - gap, priority: 48 },
+    ].map((candidate) => {
+      const left = clamp(viewportInset, maximumLeft, candidate.left);
+      const top = clamp(safeTop, maximumTop, candidate.top);
+      const rect = { left, top, right: left + width, bottom: top + height };
+      const overlapRatio = overlapArea(rect, target) / Math.max(1, width * height);
+      const clampedDistance = Math.hypot(left - candidate.left, top - candidate.top);
+      return {
+        ...candidate,
+        left,
+        top,
+        rect,
+        score: overlapRatio * 10000 + edgeDistance(rect, target) + clampedDistance * .7 + candidate.priority,
+      };
+    });
+    const placement = candidates.sort((first, second) => first.score - second.score)[0];
+    const arrowX = clamp(24, Math.max(24, width - 24), centerX - placement.left);
+    const arrowY = clamp(24, Math.max(24, height - 24), centerY - placement.top);
+    card.style.left = `${Math.round(placement.left)}px`;
+    card.style.top = `${Math.round(placement.top)}px`;
+    card.style.setProperty("--tour-card-arrow-x", `${Math.round(arrowX)}px`);
+    card.style.setProperty("--tour-card-arrow-y", `${Math.round(arrowY)}px`);
+    card.dataset.placement = placement.placement;
+    card.dataset.positioned = "true";
   };
   const positionTargetCue = () => {
     targetCueFrame = 0;
@@ -186,9 +250,11 @@
     if (!(target instanceof Element) || !cue || target.getClientRects().length === 0) {
       targetCue.hidden = true;
       targetSpotlight.hidden = true;
+      positionCardNearTarget();
       return;
     }
     const bounds = target.getBoundingClientRect();
+    positionCardNearTarget(bounds);
     const viewportInset = 6;
     const spotlightLeft = Math.max(viewportInset, bounds.left - 6);
     const spotlightTop = Math.max(viewportInset, bounds.top - 6);
@@ -239,19 +305,52 @@
       targetCueFrame = requestAnimationFrame(positionTargetCue);
     });
   };
-  const setTargetCueStage = (nextCueIndex) => {
+  const resetTargetLayout = () => {
+    if (!active) return;
+    layer.classList.add("is-layout-resetting");
+    clearTimeout(viewportLayoutTimer);
+    scheduleTargetCue();
+    viewportLayoutTimer = setTimeout(() => {
+      viewportLayoutTimer = 0;
+      scheduleTargetCue();
+      requestAnimationFrame(() => requestAnimationFrame(() => layer.classList.remove("is-layout-resetting")));
+    }, 120);
+  };
+  const revealTargetCueStage = (nextCueIndex, currentGeneration) => {
     const cues = steps[index]?.cues || [];
     activeCueIndex = Math.max(0, Math.min(cues.length - 1, nextCueIndex));
     layer.dataset.action = String(activeCueIndex + 1);
+    layer.dataset.cuePhase = "arriving";
+    targetCue.classList.remove("is-switching", "is-entering");
+    targetSpotlight.classList.remove("is-switching", "is-entering");
+    void targetCue.offsetWidth;
+    targetCue.classList.add("is-entering");
+    targetSpotlight.classList.add("is-entering");
     scheduleTargetCue();
+    scheduleStepTask(() => {
+      targetCue.classList.remove("is-entering");
+      targetSpotlight.classList.remove("is-entering");
+      if (layer.dataset.cuePhase === "arriving") layer.dataset.cuePhase = "focused";
+    }, cueRevealMilliseconds, currentGeneration);
+  };
+  const setTargetCueStage = (nextCueIndex, currentGeneration = generation, { transition = true } = {}) => {
+    const hasVisibleCue = !targetCue.hidden || !targetSpotlight.hidden;
+    if (reducedMotion || !transition || !hasVisibleCue) {
+      revealTargetCueStage(nextCueIndex, currentGeneration);
+      return;
+    }
+    layer.dataset.cuePhase = "leaving";
+    targetCue.classList.add("is-switching");
+    targetSpotlight.classList.add("is-switching");
+    scheduleStepTask(() => revealTargetCueStage(nextCueIndex, currentGeneration), cueFadeMilliseconds, currentGeneration);
   };
   const playCueSequence = (step, currentGeneration) => {
     const cues = step.cues || [];
-    setTargetCueStage(0);
+    setTargetCueStage(0, currentGeneration, { transition: false });
     if (!running || cues.length < 2) return;
     const interval = (step.duration * 1000) / cues.length;
     cues.slice(1).forEach((_, cueIndex) => {
-      scheduleStepTask(() => setTargetCueStage(cueIndex + 1), Math.round(interval * (cueIndex + 1)), currentGeneration);
+      scheduleStepTask(() => setTargetCueStage(cueIndex + 1, currentGeneration), Math.round(interval * (cueIndex + 1)), currentGeneration);
     });
   };
   const settleInitialFocus = (currentGeneration) => {
@@ -279,6 +378,9 @@
   const applyStep = async (step, currentGeneration) => {
     clearStepTasks();
     clearTargets();
+    clearTimeout(viewportLayoutTimer);
+    viewportLayoutTimer = 0;
+    layer.classList.remove("is-layout-resetting");
     fallback.hidden = true;
     receipt.hidden = true;
     delete layer.dataset.fallback;
@@ -323,22 +425,6 @@
           scheduleStepTask(() => { mapAdapter.openSourceTab?.("transform"); scheduleTargetCue(); }, 2300, currentGeneration);
           scheduleStepTask(() => { mapAdapter.openSourceTab?.("visual"); scheduleTargetCue(); }, 4600, currentGeneration);
         }
-      } else if (step.id === "space") {
-        mapAdapter.closeSource?.();
-        mapAdapter.closeMap();
-        await globalThis.GaiaModeLoader?.load?.("space");
-        const spaceAdapter = await waitForSpaceAdapter();
-        await Promise.race([spaceAdapter.waitReady(), new Promise((_, reject) => setTimeout(() => reject(new Error("space timeout")), 9000))]);
-        if (!active || currentGeneration !== generation) return;
-        await spaceAdapter.openAtMode(0);
-        spaceAdapter.focusControl?.("launch");
-        renderReceipt(spaceAdapter.getTourReceipt?.() || staticReceipts.space);
-        playCueSequence(step, currentGeneration);
-        if (running) {
-          scheduleStepTask(() => {
-            try { renderReceipt(spaceAdapter.launch?.() || staticReceipts.space); } catch { useStaticFallback(step); }
-          }, 2500, currentGeneration);
-        }
       } else if (step.id === "story") {
         closeSpace();
         mapAdapter.showIntro();
@@ -360,21 +446,40 @@
   };
 
   const completedBefore = () => steps.slice(0, index).reduce((sum, step) => sum + step.duration, 0);
+  const syncVisualPhase = () => {
+    if (!active || !finishPanel.hidden) return;
+    const step = steps[index];
+    const remaining = Math.max(0, step.duration - elapsed);
+    const arrivalWindow = Math.min(arrivalPhaseSeconds, step.duration * 0.32);
+    const phase = !running
+      ? "focused"
+      : elapsed < arrivalWindow
+        ? "arriving"
+        : remaining <= departurePhaseSeconds
+          ? "leaving"
+          : "focused";
+    layer.dataset.phase = phase;
+  };
   const updateClock = () => {
     const totalElapsed = Math.min(totalDuration, completedBefore() + elapsed);
     find("[data-tour-time]").textContent = String(Math.max(0, Math.ceil(totalDuration - totalElapsed)));
     find("[data-tour-progress]").style.transform = `scaleX(${totalElapsed / totalDuration})`;
+    syncVisualPhase();
   };
   const syncToggle = () => {
     toggle.setAttribute("aria-pressed", String(running));
     find("[data-tour-toggle-label]").textContent = running ? "止める" : "続ける";
     toggle.setAttribute("aria-label", running ? "自動案内を止める" : "自動案内を続ける");
+    layer.dataset.running = String(running);
+    syncVisualPhase();
   };
   const renderStep = () => {
     const step = steps[index];
     generation += 1;
     delete layer.dataset.finished;
     delete card.dataset.interacted;
+    delete card.dataset.positioned;
+    delete card.dataset.placement;
     card.hidden = false;
     finishPanel.hidden = true;
     find("[data-tour-step]").textContent = String(index + 1);
@@ -384,7 +489,7 @@
     find("[data-tour-instruction]").textContent = step.instruction;
     find("[data-tour-hint]").textContent = step.hint;
     find("[data-tour-result]").textContent = step.result;
-    find("[data-tour-result-label]").textContent = "こう変わる";
+    find("[data-tour-result-label]").textContent = "現れる変化";
     find("[data-tour-gesture]").textContent = step.gesture;
     operationPath.replaceChildren(...step.actions.map(([label, action]) => {
       const item = document.createElement("li");
@@ -403,7 +508,8 @@
       marker.dataset.state = markerIndex < index ? "complete" : markerIndex === index ? "current" : "pending";
     });
     card.classList.remove("is-entering");
-    requestAnimationFrame(() => card.classList.add("is-entering"));
+    void card.offsetWidth;
+    card.classList.add("is-entering");
     updateClock();
     void applyStep(step, generation);
   };
@@ -417,6 +523,10 @@
     card.hidden = true;
     finishPanel.hidden = false;
     layer.dataset.finished = "true";
+    layer.dataset.phase = "finish";
+    finishPanel.classList.remove("is-entering");
+    void finishPanel.offsetWidth;
+    finishPanel.classList.add("is-entering");
     finishPanel.querySelector("button")?.focus({ preventScroll: true });
   };
   const setStep = (nextIndex, { pause = false } = {}) => {
@@ -446,6 +556,10 @@
       }
       if (finishPanel.hidden) updateClock();
     }
+    if (!document.hidden && finishPanel.hidden && now - lastTargetLayoutAt >= 140) {
+      lastTargetLayoutAt = now;
+      scheduleTargetCue();
+    }
     frame = requestAnimationFrame(tick);
   };
   const start = ({ source = "direct" } = {}) => {
@@ -457,6 +571,7 @@
     index = 0;
     elapsed = 0;
     lastFrame = 0;
+    lastTargetLayoutAt = 0;
     initialFocusPending = true;
     layer.hidden = false;
     layer.inert = false;
@@ -477,11 +592,17 @@
     generation += 1;
     clearStepTasks();
     clearTargets();
+    clearTimeout(viewportLayoutTimer);
+    viewportLayoutTimer = 0;
+    layer.classList.remove("is-layout-resetting");
     cancelAnimationFrame(frame);
     closeSpace();
     globalThis.GaiaMapObservationAdapter?.closeSource?.();
     layer.hidden = true;
     layer.inert = true;
+    delete layer.dataset.phase;
+    delete layer.dataset.cuePhase;
+    delete layer.dataset.running;
     document.body.classList.remove("gaia-tour-open");
     if (location.hash === "#tour") history.replaceState(null, "", `${location.pathname}${location.search}`);
     if (!keepView) globalThis.GaiaMapObservationAdapter?.showIntro?.();
@@ -499,14 +620,14 @@
     generation += 1;
     clearStepTasks();
     if (running) {
-      setTargetCueStage(0);
+      setTargetCueStage(0, generation, { transition: false });
       void applyStep(steps[index], generation);
     }
     syncToggle();
   });
   const confirmTargetInteraction = (event) => {
     if (!active || !(event.target instanceof Element) || !event.target.closest(".gaia-tour-highlight-target")) return;
-    find("[data-tour-result-label]").textContent = "操作できました";
+    find("[data-tour-result-label]").textContent = "観測できました";
     card.dataset.interacted = "true";
   };
   document.addEventListener("click", confirmTargetInteraction, true);
@@ -533,7 +654,7 @@
     }
     syncToggle();
   });
-  window.addEventListener("resize", scheduleTargetCue, { passive: true });
+  window.addEventListener("resize", resetTargetLayout, { passive: true });
   window.addEventListener("scroll", scheduleTargetCue, { passive: true, capture: true });
   document.addEventListener("keydown", (event) => {
     if (!active) return;

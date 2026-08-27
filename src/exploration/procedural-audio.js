@@ -368,7 +368,7 @@ class ProceduralAudio {
     const opening = globalThis.GaiaOpeningAudio?.getState?.() || { muted: true, volume: 0.1 };
     const audible = this.enabled && Boolean(this.focus) && !document.hidden && !opening.muted;
     const volume = clamp01(opening.volume || 0.1);
-    const target = audible ? Math.min(0.22, 0.018 + Math.sqrt(volume) * 0.16) : 0;
+    const target = audible ? Math.min(0.38, 0.1 + Math.sqrt(volume) * 0.28) : 0;
     this.setTarget(this.nodes.master.gain, target, audible ? 0.45 : 0.2);
   }
 

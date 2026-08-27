@@ -5,6 +5,8 @@ import { pathToFileURL } from "node:url";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4198"] = process.argv.slice(2);
 const recyclingOnly = process.argv.slice(6).includes("--recycling-only");
+const panOnly = process.argv.slice(6).includes("--pan-only");
+const legendOnly = process.argv.slice(6).includes("--legend-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -43,6 +45,9 @@ const readMapState = (page) => page.evaluate(() => {
     target: overlay?.dataset.viewTarget || "",
     vectorCopies: overlay?.dataset.vectorWorldCopies || "",
     rasterCopies: overlay?.dataset.rasterWorldCopies || "",
+    gosatAnchorX: Number(overlay?.dataset.gosatAnchorScreenX),
+    gosatAnchorY: Number(overlay?.dataset.gosatAnchorScreenY),
+    gosatProjectionKey: overlay?.dataset.gosatProjectionKey || "",
     forestMask: overlay?.dataset.forestMask || "",
     rect: rect?.toJSON(),
   };
@@ -209,6 +214,143 @@ try {
       continue;
     }
 
+    if (legendOnly) {
+      await selectMode(page, 2, "森林と降水量を重ねる");
+      await page.waitForFunction(() => {
+        const title = document.querySelector("[data-signal-encoding-legend-title]");
+        const legend = document.querySelector("[data-signal-encoding-legend]");
+        const overlay = document.querySelector("#japan-overlay");
+        return title?.getClientRects().length > 0
+          && legend?.getClientRects().length > 0
+          && overlay?.dataset.forestMask === "ready";
+      });
+      const legend = await page.evaluate(() => ({
+        title: document.querySelector("[data-signal-encoding-legend-title]")?.textContent.trim() || "",
+        body: document.querySelector("[data-signal-encoding-legend]")?.textContent.replace(/\s+/gu, " ").trim() || "",
+      }));
+      assert.match(legend.title, /凡例\s*MAP LEGEND/u);
+      assert.match(legend.body, /大きな水色円\s*\/\s*降水量/u);
+      assert.match(legend.body, /緑の面\s*\/\s*森林域/u);
+      const screenshot = path.join(outputDir, `${viewport.name}-forest-map-legend.png`);
+      await page.screenshot({ path: screenshot, animations: "disabled" });
+      scan.screenshots.push(screenshot);
+      scan.legend = legend;
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
+    if (panOnly) {
+      await page.evaluate(() => globalThis.GaiaModeLoader.load("tour"));
+      await page.waitForFunction(() => typeof globalThis.GaiaGuidedTour?.start === "function");
+      await page.evaluate(() => globalThis.GaiaGuidedTour.start({ source: "map-pan-regression" }));
+      await page.waitForFunction(() => globalThis.GaiaGuidedTour.getState().active
+        && globalThis.GaiaGuidedTour.getState().stepId === "map"
+        && document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
+      if (await page.evaluate(() => globalThis.GaiaGuidedTour.getState().running)) {
+        await page.locator("#gaia-guided-tour [data-tour-action='toggle']").click({ force: true });
+      }
+      await page.waitForFunction(() => globalThis.GaiaGuidedTour.getState().running === false);
+    }
+
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector("#japan-overlay");
+      return overlay?.dataset.viewAnimation === "idle"
+        && Number.isFinite(Number(overlay.dataset.gosatAnchorScreenX))
+        && Number.isFinite(Number(overlay.dataset.gosatAnchorScreenY));
+    });
+    const panBefore = await readMapState(page);
+    const dragTarget = await page.evaluate(() => {
+      const map = document.querySelector("#japan-map");
+      const rect = map?.getBoundingClientRect();
+      if (!map || !rect) return null;
+      for (let yOffset = 8; yOffset <= rect.height - 8; yOffset += 16) {
+        for (let xOffset = 8; xOffset <= rect.width - 112; xOffset += 16) {
+          const x = rect.left + xOffset;
+          const y = rect.top + yOffset;
+          if (document.elementFromPoint(x, y)?.closest?.("#japan-map")) return { x, y };
+        }
+      }
+      return null;
+    });
+    assert(dragTarget, `${viewport.name}: no real map drag target was available`);
+    await page.mouse.move(dragTarget.x, dragTarget.y);
+    await page.mouse.down();
+    await page.mouse.move(dragTarget.x + 96, dragTarget.y + 34, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForFunction(
+      (previousKey) => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.gosatProjectionKey !== previousKey
+          && Math.abs(Number(overlay.dataset.gosatAnchorScreenX) - Number(overlay.dataset.japanScreenX)) <= 0.1
+          && Math.abs(Number(overlay.dataset.gosatAnchorScreenY) - Number(overlay.dataset.japanScreenY)) <= 0.1;
+      },
+      panBefore.gosatProjectionKey,
+    );
+    const panAfter = await readMapState(page);
+    const coastlineDelta = {
+      x: panAfter.japanX - panBefore.japanX,
+      y: panAfter.japanY - panBefore.japanY,
+    };
+    const gosatDelta = {
+      x: panAfter.gosatAnchorX - panBefore.gosatAnchorX,
+      y: panAfter.gosatAnchorY - panBefore.gosatAnchorY,
+    };
+    assert(Math.abs(coastlineDelta.x) >= 40, `${viewport.name}: map did not move far enough to verify alignment`);
+    assert(Math.abs(gosatDelta.x - coastlineDelta.x) <= 0.75, `${viewport.name}: GOSAT data did not follow horizontal map movement`);
+    assert(Math.abs(gosatDelta.y - coastlineDelta.y) <= 0.75, `${viewport.name}: GOSAT data did not follow vertical map movement`);
+    const panScreenshot = path.join(outputDir, `${viewport.name}-01-gosat-pan-aligned.png`);
+    await page.screenshot({ path: panScreenshot });
+    scan.screenshots.push(panScreenshot);
+    scan.gosatPan = { before: panBefore, after: panAfter, coastlineDelta, gosatDelta };
+    if (panOnly) {
+      const zoomBefore = await readMapState(page);
+      await page.locator("#japan-map").dispatchEvent("wheel", {
+        bubbles: true,
+        cancelable: true,
+        clientX: zoomBefore.rect.left + zoomBefore.rect.width * 0.72,
+        clientY: zoomBefore.rect.top + zoomBefore.rect.height * 0.44,
+        deltaY: -180,
+      });
+      await page.waitForFunction((previousKey) => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.gosatProjectionKey !== previousKey
+          && Math.abs(Number(overlay.dataset.gosatAnchorScreenX) - Number(overlay.dataset.japanScreenX)) <= 0.1
+          && Math.abs(Number(overlay.dataset.gosatAnchorScreenY) - Number(overlay.dataset.japanScreenY)) <= 0.1;
+      }, zoomBefore.gosatProjectionKey);
+      const zoomAfter = await readMapState(page);
+      assert(zoomAfter.zoom > zoomBefore.zoom + 0.1, `${viewport.name}: wheel did not zoom the map`);
+      assert(Math.abs(zoomAfter.gosatAnchorX - zoomAfter.japanX) <= 0.1, `${viewport.name}: GOSAT data separated from the coastline after zoom`);
+      assert(Math.abs(zoomAfter.gosatAnchorY - zoomAfter.japanY) <= 0.1, `${viewport.name}: GOSAT data separated vertically after zoom`);
+      const zoomScreenshot = path.join(outputDir, `${viewport.name}-01-gosat-zoom-aligned.png`);
+      await page.screenshot({ path: zoomScreenshot });
+      scan.screenshots.push(zoomScreenshot);
+      scan.gosatZoom = { before: zoomBefore, after: zoomAfter };
+
+      const resizeBefore = await readMapState(page);
+      await page.setViewportSize({ width: viewport.width + 16, height: viewport.height + 12 });
+      await page.waitForFunction((previousKey) => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.gosatProjectionKey !== previousKey
+          && Math.abs(Number(overlay.dataset.gosatAnchorScreenX) - Number(overlay.dataset.japanScreenX)) <= 0.1
+          && Math.abs(Number(overlay.dataset.gosatAnchorScreenY) - Number(overlay.dataset.japanScreenY)) <= 0.1;
+      }, resizeBefore.gosatProjectionKey);
+      const resizeAfter = await readMapState(page);
+      scan.gosatResize = { before: resizeBefore, after: resizeAfter };
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+    await page.locator("#japan-map").focus();
+    await page.locator("#japan-map").press("0");
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector("#japan-overlay");
+      return Math.abs(Number(overlay?.dataset.earthOffsetX)) < 0.01
+        && Math.abs(Number(overlay?.dataset.earthOffsetY)) < 0.01;
+    });
+
     await selectMode(page, 1, "海流が14日続いたら");
     const zoomIn = await sampleZoom(page);
     await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.viewAnimation === "idle");
@@ -310,6 +452,8 @@ try {
       guideReading: document.querySelector("#map-guide-reading")?.textContent || "",
       guideAction: document.querySelector("#map-guide-action")?.textContent || "",
       signalValue: document.querySelector("#japan-layer [data-signal-value]")?.textContent || "",
+      legendTitle: document.querySelector("#japan-layer [data-signal-encoding-legend-title]")?.textContent || "",
+      legendTitleVisible: document.querySelector("#japan-layer [data-signal-encoding-legend-title]")?.getClientRects().length > 0,
       legend: document.querySelector("#japan-layer [data-signal-encoding-legend]")?.textContent || "",
       circleRange: document.querySelector("#japan-overlay")?.dataset.forestRainCircleRange || "",
       brazilRain: document.querySelector("#japan-overlay")?.dataset.forestRainBrazil || "",
@@ -319,6 +463,8 @@ try {
     assert.match(forestUi.guideReading, /大きな水色円.*ブラジルのアマゾン付近は5\.33 mm\/day/u);
     assert.match(forestUi.guideAction, /円のない場所.*雨がない.*ではなく/u);
     assert.match(forestUi.signalValue, /降水量.*mm\/day/u);
+    assert.equal(forestUi.legendTitleVisible, true);
+    assert.match(forestUi.legendTitle, /凡例.*MAP LEGEND/u);
     assert.match(forestUi.legend, /大きな水色円\s*\/\s*降水量/u);
     assert.match(forestUi.legend, /相関係数ではない/u);
     assert.equal(forestUi.circleRange, "10-54px radius");

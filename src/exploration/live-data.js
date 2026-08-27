@@ -1,6 +1,6 @@
 import { createGaiaStore } from "./state.js";
 import { collectMeasurements, STATUS_LABELS, toSoundParameters } from "./transforms.js";
-import proceduralAudio from "./procedural-audio.js";
+import proceduralAudio from "./procedural-audio.js?v=gaia-live-explained-audio-1";
 
 const FALLBACK_URL = "./data/live-observation-fallback-v1.json";
 const RETRY_DELAYS = [1_000, 2_000, 5_000, 10_000, 30_000];
@@ -133,11 +133,19 @@ const syncSoundControls = () => {
   document.querySelectorAll("[data-live-sound-toggle]").forEach((control) => {
     control.setAttribute("aria-pressed", String(audioState.enabled));
     control.dataset.audioState = audioState.active ? "playing" : audioState.enabled ? "armed" : "off";
-    const label = audioState.enabled ? "音を閉じる" : "音をひらく";
+    const label = audioState.enabled ? "展示音を停止" : "展示音を再生";
     control.setAttribute("aria-label", label);
     const visibleLabel = control.querySelector("[data-live-sound-label]");
     if (visibleLabel) visibleLabel.textContent = label;
     else control.textContent = label;
+    const visibleStatus = control.querySelector("[data-live-sound-status]");
+    if (visibleStatus) {
+      visibleStatus.textContent = audioState.active
+        ? `再生中 · ${audioState.tempo || "—"} BPM`
+        : audioState.enabled
+          ? "音声を準備中"
+          : "クリックで観測値を音に変換";
+    }
   });
 };
 
@@ -151,8 +159,11 @@ const bindControls = () => {
         if (proceduralAudio.getState().enabled) proceduralAudio.disable();
         else {
           const openingAudio = globalThis.GaiaOpeningAudio;
-          if (openingAudio?.getState?.().muted) await openingAudio.setMuted(false);
-          await proceduralAudio.enable();
+          const proceduralAudioReady = proceduralAudio.enable();
+          const globalAudioReady = openingAudio?.getState?.().muted
+            ? openingAudio.setMuted(false)
+            : Promise.resolve(true);
+          await Promise.all([proceduralAudioReady, globalAudioReady]);
         }
         syncSoundControls();
       } catch (error) {

@@ -95,7 +95,7 @@ body.gaia-tour-open { overflow: hidden; }
 
 @media (max-height: 430px) and (orientation: landscape) {
   .gaia-tour { align-items: start; padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(66px, calc(env(safe-area-inset-bottom) + 58px)) max(10px, env(safe-area-inset-left)); }
-  .gaia-tour-card { width: min(760px, calc(100% - 8px)); max-height: calc(100dvh - 76px); margin: 0; overflow: auto; padding: 14px 18px; }
+  .gaia-tour-card { width: min(760px, calc(100% - 8px)); max-height: none; margin: 0; overflow: visible; padding: 14px 18px; }
   .gaia-tour-card-index { margin-bottom: 8px; }
   .gaia-tour-card h2 { font-size: 22px; }
   .gaia-tour-copy { margin-top: 8px; font-size: 10px; line-height: 1.55; }
@@ -125,8 +125,7 @@ body.gaia-tour-open { overflow: hidden; }
   width: min(38vw, 520px);
   max-height: calc(100dvh - max(104px, calc(env(safe-area-inset-bottom) + 92px)));
   padding: 22px 23px 18px;
-  overflow: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
   border: 2px solid #82e6ff;
   border-left-width: 2px;
   border-radius: 18px;
@@ -635,4 +634,385 @@ body.gaia-tour-open #japan-layer .japan-map-shade { opacity: .38; }
   .gaia-tour-result { font-size: 17px; }
   .gaia-tour-controls { right: 44px; bottom: 28px; width: 720px; }
   .gaia-tour-controls button { min-height: 54px; font-size: 15px; }
+}
+
+/* 30-second gaze flow: introduce one reading target at a time, then dissolve
+   the current step before the next exhibit claims attention. */
+.gaia-tour-vignette {
+  opacity: 1;
+  transition: opacity 420ms ease, background-color 420ms ease;
+}
+
+.gaia-tour:not([hidden]) .gaia-tour-vignette {
+  animation: gaia-tour-vignette-arrive 720ms ease-out backwards;
+}
+
+.gaia-tour-card.is-entering {
+  animation: gaia-tour-card-focus-in 620ms cubic-bezier(.2, .78, .22, 1) backwards;
+}
+
+.gaia-tour-card > :is(
+  .gaia-tour-card-index,
+  .gaia-tour-kicker,
+  h2,
+  .gaia-tour-copy,
+  .gaia-tour-instruction,
+  .gaia-tour-operation-path,
+  .gaia-tour-result,
+  .gaia-tour-receipt,
+  .gaia-tour-fallback,
+  .gaia-tour-step-rail
+) {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition: opacity 380ms ease, transform 440ms cubic-bezier(.2, .72, .22, 1), filter 380ms ease;
+}
+
+.gaia-tour-card.is-entering .gaia-tour-card-index {
+  animation: gaia-tour-content-focus-in 420ms 40ms ease-out backwards;
+}
+.gaia-tour-card.is-entering .gaia-tour-kicker {
+  animation: gaia-tour-content-focus-in 440ms 150ms ease-out backwards;
+}
+.gaia-tour-card.is-entering h2 {
+  animation: gaia-tour-content-focus-in 520ms 260ms ease-out backwards;
+}
+.gaia-tour-card.is-entering .gaia-tour-copy {
+  animation: gaia-tour-content-focus-in 520ms 500ms ease-out backwards;
+}
+.gaia-tour-card.is-entering .gaia-tour-instruction {
+  animation: gaia-tour-content-focus-in 560ms 760ms ease-out backwards;
+}
+.gaia-tour-card.is-entering .gaia-tour-operation-path {
+  animation: gaia-tour-content-focus-in 520ms 1030ms ease-out backwards;
+}
+.gaia-tour-card.is-entering .gaia-tour-result {
+  animation: gaia-tour-content-focus-in 500ms 1290ms ease-out backwards;
+}
+.gaia-tour-card.is-entering :is(.gaia-tour-receipt, .gaia-tour-fallback, .gaia-tour-step-rail) {
+  animation: gaia-tour-content-focus-in 480ms 1510ms ease-out backwards;
+}
+
+.gaia-tour[data-phase="leaving"] .gaia-tour-vignette { opacity: .92; }
+.gaia-tour[data-phase="leaving"] .gaia-tour-card > :is(.gaia-tour-result, .gaia-tour-receipt, .gaia-tour-fallback, .gaia-tour-step-rail) {
+  opacity: 0;
+  transform: translateY(-5px);
+  filter: blur(2px);
+}
+.gaia-tour[data-phase="leaving"] .gaia-tour-card > :is(.gaia-tour-operation-path, .gaia-tour-instruction) {
+  opacity: 0;
+  transform: translateY(-7px);
+  filter: blur(2.5px);
+  transition-delay: 90ms;
+}
+.gaia-tour[data-phase="leaving"] .gaia-tour-card > :is(.gaia-tour-card-index, .gaia-tour-kicker, h2, .gaia-tour-copy) {
+  opacity: 0;
+  transform: translateY(-9px);
+  filter: blur(3px);
+  transition-delay: 180ms;
+}
+
+.gaia-tour-operation-path li {
+  opacity: .34;
+  transform: scale(.975);
+  filter: saturate(.68);
+  transition: opacity 260ms ease, transform 320ms ease, filter 260ms ease, border-color 180ms ease, color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+.gaia-tour[data-action="1"] .gaia-tour-operation-path li:nth-child(1),
+.gaia-tour[data-action="2"] .gaia-tour-operation-path li:nth-child(2),
+.gaia-tour[data-action="3"] .gaia-tour-operation-path li:nth-child(3) {
+  opacity: 1;
+  transform: scale(1);
+  filter: none;
+}
+
+.gaia-tour-target-spotlight {
+  opacity: 1;
+  transition: left 260ms ease, top 260ms ease, width 260ms ease, height 260ms ease, opacity 180ms ease;
+}
+.gaia-tour-target-cue {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transform-origin: center;
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+.gaia-tour-target-spotlight::before {
+  position: absolute;
+  inset: -10px;
+  border: 1px solid rgba(139, 234, 255, .52);
+  border-radius: inherit;
+  content: "";
+  animation: gaia-tour-focus-ring 1.45s ease-out infinite;
+}
+.gaia-tour-target-spotlight::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(110deg, transparent 24%, rgba(183, 243, 255, .2) 48%, transparent 72%);
+  content: "";
+  animation: gaia-tour-focus-scan 1.9s ease-in-out infinite;
+}
+.gaia-tour-target-spotlight.is-switching,
+.gaia-tour[data-cue-phase="leaving"] .gaia-tour-target-spotlight,
+.gaia-tour[data-phase="leaving"] .gaia-tour-target-spotlight {
+  opacity: 0;
+}
+.gaia-tour-target-cue.is-switching,
+.gaia-tour[data-cue-phase="leaving"] .gaia-tour-target-cue,
+.gaia-tour[data-phase="leaving"] .gaia-tour-target-cue {
+  opacity: 0;
+  transform: translateY(7px) scale(.96);
+}
+.gaia-tour-target-spotlight.is-entering { animation: gaia-tour-spotlight-focus-in 460ms ease-out backwards; }
+.gaia-tour-target-cue.is-entering { animation: gaia-tour-cue-focus-in 460ms 90ms cubic-bezier(.2, .78, .22, 1) backwards; }
+
+.gaia-tour:not([hidden]) .gaia-tour-controls {
+  animation: gaia-tour-controls-arrive 560ms 820ms ease-out backwards;
+  transition: opacity 320ms ease, transform 380ms ease;
+}
+.gaia-tour[data-phase="arriving"] .gaia-tour-controls {
+  opacity: .76;
+  transform: translateY(4px);
+}
+.gaia-tour[data-phase="focused"] .gaia-tour-controls,
+.gaia-tour[data-phase="leaving"] .gaia-tour-controls,
+.gaia-tour[data-phase="finish"] .gaia-tour-controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.gaia-tour-finish.is-entering {
+  animation: gaia-tour-finish-focus-in 760ms cubic-bezier(.18, .78, .2, 1) backwards;
+}
+
+@keyframes gaia-tour-vignette-arrive {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes gaia-tour-card-focus-in {
+  from { opacity: 0; transform: translateY(18px) scale(.985); filter: blur(5px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes gaia-tour-content-focus-in {
+  from { opacity: 0; transform: translateY(11px); filter: blur(3px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes gaia-tour-spotlight-focus-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes gaia-tour-cue-focus-in {
+  from { opacity: 0; transform: translateY(9px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes gaia-tour-focus-ring {
+  0% { opacity: 0; transform: scale(.94); }
+  35% { opacity: .92; }
+  100% { opacity: 0; transform: scale(1.09); }
+}
+@keyframes gaia-tour-focus-scan {
+  0%, 28% { opacity: 0; transform: translateX(-24%); }
+  48% { opacity: .78; }
+  72%, 100% { opacity: 0; transform: translateX(24%); }
+}
+@keyframes gaia-tour-controls-arrive {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: .76; transform: translateY(4px); }
+}
+@keyframes gaia-tour-finish-focus-in {
+  from { opacity: 0; transform: translateY(18px) scale(.97); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaia-tour[data-phase="leaving"] .gaia-tour-card > *,
+  .gaia-tour[data-phase="leaving"] :is(.gaia-tour-target-spotlight, .gaia-tour-target-cue) {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Target-following explanation bubble: the guide speaks beside the live UI. */
+.gaia-tour .gaia-tour-card {
+  --tour-card-arrow-x: 50%;
+  --tour-card-arrow-y: 50%;
+  position: fixed;
+  left: 14px;
+  top: 14px;
+  z-index: 6;
+  width: min(480px, calc(100vw - 28px));
+  max-height: none !important;
+  margin: 0;
+  padding: 17px 18px 15px;
+  border-color: rgba(137, 232, 255, .9);
+  border-radius: 17px;
+  overflow: visible;
+  background:
+    radial-gradient(circle at var(--tour-card-arrow-x) var(--tour-card-arrow-y), rgba(89, 199, 255, .2), transparent 34%),
+    repeating-linear-gradient(180deg, rgba(160, 235, 255, .024) 0 1px, transparent 1px 8px),
+    linear-gradient(148deg, rgba(7, 39, 79, .96), rgba(3, 17, 46, .94) 58%, rgba(4, 27, 66, .96));
+  box-shadow: 0 26px 86px rgba(0, 4, 25, .58), 0 0 46px rgba(67, 182, 255, .2), inset 0 0 34px rgba(91, 198, 255, .08);
+  backdrop-filter: blur(22px) saturate(1.18);
+  justify-self: auto !important;
+  transition: left 520ms cubic-bezier(.18, .72, .18, 1), top 520ms cubic-bezier(.18, .72, .18, 1), opacity 360ms ease, filter 520ms ease;
+}
+
+.gaia-tour .gaia-tour-card:not([data-positioned="true"]) { opacity: 0; }
+.gaia-tour .gaia-tour-card::-webkit-scrollbar { display: none; }
+
+.gaia-tour .gaia-tour-card::before {
+  position: absolute;
+  z-index: -1;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(130, 230, 255, .86);
+  background: #062047;
+  box-shadow: 4px 4px 12px rgba(0, 5, 25, .18);
+  content: "";
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.gaia-tour .gaia-tour-card[data-placement="below"]::before,
+.gaia-tour .gaia-tour-card[data-placement="inside-top"]::before {
+  top: -9px;
+  left: var(--tour-card-arrow-x);
+  border-right: 0;
+  border-bottom: 0;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.gaia-tour .gaia-tour-card[data-placement="above"]::before,
+.gaia-tour .gaia-tour-card[data-placement="inside-bottom"]::before {
+  bottom: -9px;
+  left: var(--tour-card-arrow-x);
+  border-top: 0;
+  border-left: 0;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.gaia-tour .gaia-tour-card[data-placement="right"]::before {
+  top: var(--tour-card-arrow-y);
+  left: -9px;
+  border-top: 0;
+  border-right: 0;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.gaia-tour .gaia-tour-card[data-placement="left"]::before {
+  top: var(--tour-card-arrow-y);
+  right: -9px;
+  border-bottom: 0;
+  border-left: 0;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.gaia-tour .gaia-tour-card[data-placement="standalone"]::before { display: none; }
+
+.gaia-tour .gaia-tour-card::after {
+  position: absolute;
+  z-index: 0;
+  inset: 2px;
+  border-radius: 14px;
+  background: linear-gradient(108deg, transparent 18%, rgba(173, 239, 255, .1) 43%, rgba(89, 171, 255, .08) 50%, transparent 69%);
+  content: "";
+  opacity: .24;
+  transform: translateX(-28%);
+  animation: gaia-tour-bubble-current 6.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.gaia-tour .gaia-tour-card > * { position: relative; z-index: 1; }
+.gaia-tour .gaia-tour-receipt { display: none; }
+
+.gaia-tour .gaia-tour-card h2 { font-size: clamp(24px, 1.95vw, 27px); line-height: 1.22; }
+.gaia-tour .gaia-tour-copy { margin-top: 9px; font-size: 15px; }
+.gaia-tour .gaia-tour-instruction { grid-template-columns: 54px minmax(0, 1fr); gap: 11px; margin-top: 10px; padding: 10px 11px; }
+.gaia-tour .gaia-tour-gesture { width: 50px; height: 50px; font-size: 18px; }
+.gaia-tour .gaia-tour-instruction strong { font-size: 19px; }
+.gaia-tour .gaia-tour-operation-path { margin-top: 7px; }
+.gaia-tour .gaia-tour-result { margin-top: 8px; padding: 8px 9px; font-size: 13px; }
+.gaia-tour .gaia-tour-step-rail { margin-top: 8px; }
+.gaia-tour .gaia-tour-copy::before { content: "観測の手がかり"; }
+
+.gaia-tour .gaia-tour-vignette {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(63, 174, 255, .1), transparent 46%),
+    linear-gradient(90deg, rgba(0, 7, 20, .66), rgba(0, 11, 29, .24) 48%, rgba(0, 7, 22, .54)),
+    linear-gradient(0deg, rgba(0, 7, 20, .68), transparent 58%);
+}
+
+.gaia-tour .gaia-tour-target-spotlight {
+  border-color: rgba(144, 238, 255, .94);
+  box-shadow: 0 0 0 9999px rgba(0, 7, 22, .62), 0 0 0 8px rgba(83, 180, 255, .14), 0 0 58px rgba(88, 211, 255, .78), inset 0 0 34px rgba(113, 224, 255, .12);
+  transition: left 580ms cubic-bezier(.18, .72, .18, 1), top 580ms cubic-bezier(.18, .72, .18, 1), width 580ms cubic-bezier(.18, .72, .18, 1), height 580ms cubic-bezier(.18, .72, .18, 1), opacity 340ms ease;
+}
+
+.gaia-tour .gaia-tour-target-cue {
+  border-color: rgba(151, 238, 255, .94);
+  background: linear-gradient(135deg, rgba(8, 62, 125, .94), rgba(14, 41, 105, .94));
+  box-shadow: 0 14px 42px rgba(0, 4, 24, .48), 0 0 28px rgba(87, 199, 255, .22), inset 0 0 18px rgba(112, 219, 255, .08);
+  backdrop-filter: blur(16px) saturate(1.16);
+  transition: opacity 340ms ease, transform 480ms cubic-bezier(.18, .72, .18, 1);
+}
+
+.gaia-tour .gaia-tour-target-cue i { animation-duration: 2.8s; }
+.gaia-tour .gaia-tour-target-spotlight::before { animation-duration: 2.9s; }
+.gaia-tour .gaia-tour-target-spotlight::after { animation-duration: 4.2s; }
+.gaia-tour .gaia-tour-card.is-entering { animation: gaia-tour-card-focus-in 880ms cubic-bezier(.16, .74, .18, 1) backwards; }
+.gaia-tour[data-phase="arriving"] .gaia-tour-card { filter: saturate(.82) brightness(.93); }
+.gaia-tour[data-phase="focused"] .gaia-tour-card { filter: saturate(1) brightness(1); }
+
+.gaia-tour.is-layout-resetting :is(.gaia-tour-card, .gaia-tour-target-cue, .gaia-tour-target-spotlight) {
+  opacity: 0 !important;
+  transition: none !important;
+}
+
+@keyframes gaia-tour-bubble-current {
+  0%, 18% { opacity: .12; transform: translateX(-32%); }
+  48% { opacity: .34; }
+  78%, 100% { opacity: .12; transform: translateX(32%); }
+}
+
+@media (max-width: 760px) {
+  .gaia-tour .gaia-tour-card {
+    left: 10px;
+    top: 10px;
+    width: calc(100vw - 20px);
+    padding: 13px 14px 11px;
+    border-radius: 15px;
+  }
+  .gaia-tour .gaia-tour-card h2 { font-size: clamp(21px, 5.8vw, 24px); }
+  .gaia-tour .gaia-tour-copy { margin-top: 6px; font-size: 14px; }
+  .gaia-tour .gaia-tour-instruction { grid-template-columns: 46px minmax(0, 1fr); gap: 9px; margin-top: 7px; padding: 7px 9px; }
+  .gaia-tour .gaia-tour-gesture { width: 44px; height: 44px; font-size: 16px; }
+  .gaia-tour .gaia-tour-instruction strong { font-size: 16px; }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .gaia-tour .gaia-tour-card {
+    width: min(440px, calc(100vw - 20px));
+    padding: 9px 11px;
+  }
+  .gaia-tour .gaia-tour-card h2 { font-size: 19px; }
+  .gaia-tour .gaia-tour-copy { font-size: 12px; }
+  .gaia-tour .gaia-tour-instruction strong { font-size: 14px; }
+  .gaia-tour .gaia-tour-copy,
+  .gaia-tour .gaia-tour-operation-path,
+  .gaia-tour .gaia-tour-result { display: none; }
+  .gaia-tour .gaia-tour-card-index { margin-bottom: 3px; }
+  .gaia-tour .gaia-tour-instruction { margin-top: 6px; }
+  .gaia-tour .gaia-tour-step-rail { margin-top: 5px; }
+}
+
+@media (min-width: 2200px) {
+  .gaia-tour .gaia-tour-card {
+    width: min(560px, calc(100vw - 88px));
+    padding: 25px 27px 22px;
+  }
+  .gaia-tour .gaia-tour-card h2 { font-size: 40px; }
+  .gaia-tour .gaia-tour-copy { font-size: 19px; }
+  .gaia-tour .gaia-tour-instruction strong { font-size: 22px; }
 }

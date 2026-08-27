@@ -5,7 +5,7 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-no-breathing-flash-1",
+        "./styles.css?v=gaia-live-explained-audio-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
@@ -24,7 +24,7 @@
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
         "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
       ],
-      modules: ["./src/exploration/index.js?v=gaia-title-only-1"],
+      modules: ["./src/exploration/index.js?v=gaia-live-explained-audio-1"],
     },
     story: {
       templates: ["gaia-template-story"],
@@ -97,8 +97,8 @@
     },
     tour: {
       templates: [],
-      styles: ["./guided-tour.css?v=gaia-tour-30sec-2"],
-      scripts: ["./guided-tour.js?v=gaia-no-breathing-flash-1"],
+      styles: ["./guided-tour.css?v=gaia-tour-earth-only-1"],
+      scripts: ["./guided-tour.js?v=gaia-tour-earth-only-1"],
     },
   });
 

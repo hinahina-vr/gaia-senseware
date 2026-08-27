@@ -163,6 +163,7 @@
   const sourceTabs = Array.from(document.querySelectorAll("[data-source-tab]"));
   const signalConsoles = Array.from(document.querySelectorAll("[data-signal-console]"));
   const signalTimeInputs = Array.from(document.querySelectorAll("[data-signal-time]"));
+  const mapSignalEncodingLegendTitle = document.querySelector("[data-signal-encoding-legend-title]");
   const mapSignalEncodingLegend = document.querySelector("[data-signal-encoding-legend]");
   const introLayer = document.querySelector("#intro-layer");
   const openingLayer = document.querySelector("#gaia-opening");
@@ -2655,6 +2656,9 @@
     const grid = state.gosat;
     const timeline = state.timeline;
     if (!grid || !timeline || !gosatHeatmapContext) return;
+    const projection = mapScope === "earth"
+      ? japanView.earthProjection || getEarthProjection(rect)
+      : null;
     const cacheKey = [
       timeline.cacheKey,
       mapScope,
@@ -2663,6 +2667,9 @@
       Math.round(top * 10),
       Math.round(rect.width),
       Math.round(rect.height),
+      projection ? projection.scale.toFixed(6) : "",
+      projection ? projection.originX.toFixed(3) : "",
+      projection ? projection.originY.toFixed(3) : "",
     ].join("/");
     if (cacheKey !== gosatHeatmapCacheKey) {
       const width = Math.max(1, Math.ceil(rect.width));
@@ -2714,6 +2721,10 @@
       heatmap.lineWidth = 0.45;
       heatmap.stroke();
       gosatHeatmapCacheKey = cacheKey;
+      const anchor = japanWorldToScreen(138, 36, left, top);
+      japanOverlay.dataset.gosatAnchorScreenX = anchor.x.toFixed(2);
+      japanOverlay.dataset.gosatAnchorScreenY = anchor.y.toFixed(2);
+      japanOverlay.dataset.gosatProjectionKey = cacheKey;
     }
     ctx.save();
     ctx.globalCompositeOperation = "screen";
@@ -5161,6 +5172,7 @@
     });
     if (mapSignalEncodingLegend) {
       const showEncodingLegend = Boolean(timelineState);
+      if (mapSignalEncodingLegendTitle) mapSignalEncodingLegendTitle.hidden = !showEncodingLegend;
       mapSignalEncodingLegend.hidden = !showEncodingLegend;
       mapSignalEncodingLegend.dataset.mode = timelineState?.kind || "co2";
       if (showEncodingLegend) {

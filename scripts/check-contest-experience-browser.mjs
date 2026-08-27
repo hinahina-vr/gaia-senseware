@@ -493,6 +493,11 @@ try {
     assert.equal(await directPage.locator("#japan-mode-number").textContent(), number, `${number}: bank heading mismatch`);
     assert.equal(await directPage.locator("#japan-title").textContent(), contract.title, `${number}: main heading mismatch`);
     assert.equal(await directPage.locator("[data-live-exhibit-caption]").textContent(), contract.caption, `${number}: explanatory contract changed`);
+    assert.equal(await directPage.locator("[data-live-exhibit-caption]").isVisible(), true, `${number}: exhibit explanation is not visible`);
+    assert.equal(await directPage.locator("[data-live-exhibit-feed-state]").isVisible(), true, `${number}: live/snapshot state is not visible`);
+    assert.match(await directPage.locator("[data-live-exhibit-feed-state]").textContent(), /LIVE STREAM|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, `${number}: live/snapshot state is ambiguous`);
+    assert.match(await directPage.locator("[data-live-exhibit-feed-copy]").textContent(), /自動更新|保存済み観測データ/u, `${number}: realtime behavior is not explained`);
+    assert.match(await directPage.locator("[data-live-exhibit-sound-description]").textContent(), contract.sound, `${number}: visible sound mapping is missing`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-touch-hint").isVisible(), true, `${number}: integrated light-touch hint hidden`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-path li").count(), 4, `${number}: observation-to-sound path must have four stages`);
     for (const selector of ["[data-live-exhibit-input]", "[data-live-exhibit-location]", "[data-live-exhibit-visual-map]", "[data-live-exhibit-sound-map]"]) {
@@ -539,17 +544,20 @@ try {
     const audioBeforeTouch = await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState());
     assert.match(audioBeforeTouch.mapping, contract.sound, `${number}: sound mapping does not match the active dataset`);
     assert(audioBeforeTouch.sequenceStep > 0, `${number}: data-driven music sequence did not start`);
+    assert.equal(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").getAttribute("data-audio-state"), "playing", `${number}: sound control does not show playback`);
+    assert.equal(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-label]").textContent(), "展示音を停止", `${number}: sound control does not expose its active state`);
+    assert.match(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-status]").textContent(), /再生中.*BPM/u, `${number}: audible tempo is not visible`);
     await directPage.screenshot({ path: path.join(outputDir, `live-exhibit-${number}.png`), animations: "disabled" });
     const liveMapBox = await directPage.locator("#japan-map").boundingBox();
     assert(liveMapBox, `${number}: live map has no hit target`);
-    await directPage.mouse.click(liveMapBox.x + liveMapBox.width * 0.76, liveMapBox.y + liveMapBox.height * 0.42);
+    await directPage.mouse.click(liveMapBox.x + liveMapBox.width * 0.28, liveMapBox.y + liveMapBox.height * 0.42);
     await directPage.waitForFunction(() => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > 0);
     assert.equal(await directPage.locator("#japan-poi-card").isVisible(), false, `${number}: light touch leaked into the underlying map POI interaction`);
     await directPage.waitForFunction((previousTouchCount) => globalThis.GaiaProceduralAudio?.getState?.().touchCount > previousTouchCount, audioBeforeTouch.touchCount);
     await directPage.waitForTimeout(120);
     const audioAfterTouch = await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState());
     assert(audioAfterTouch.lastNoteFrequency > 0, `${number}: light touch did not generate a pitched note`);
-    assert(audioAfterTouch.outputLevel > 0 && audioAfterTouch.outputLevel <= 1, `${number}: generated music produced no measurable output`);
+    assert(audioAfterTouch.outputLevel > 0.006 && audioAfterTouch.outputLevel <= 1, `${number}: generated music remains effectively inaudible`);
     report.entry.liveAudio ??= [];
     report.entry.liveAudio.push({
       number,
@@ -643,6 +651,9 @@ try {
       visibleParagraphCards: [...document.querySelectorAll(".gaia-live-exhibit-path p")].some((node) => node.getBoundingClientRect().width > 1),
       stageLabels: [...document.querySelectorAll(".gaia-live-exhibit-path li > b")].map((node) => node.textContent.trim()),
       stageCues: [...document.querySelectorAll(".gaia-live-exhibit-path li > em")].map((node) => node.textContent.trim()),
+      explanationVisible: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height > 60,
+      explanationFont: fontSize(".gaia-live-exhibit-summary"),
+      feedState: document.querySelector("[data-live-exhibit-feed-state]").textContent.trim(),
     };
   });
   assert(live4kVisualContract.readout.left >= 0 && live4kVisualContract.readout.right <= 3840 && live4kVisualContract.readout.bottom <= 1960, "4K live panel overflows the viewport");
@@ -657,6 +668,8 @@ try {
   assert(live4kVisualContract.bankButtonFont >= 15, `4K mode control remains too small: ${live4kVisualContract.bankButtonFont}px`);
   assert(live4kVisualContract.anchorFont >= 17, `4K map anchor remains too small: ${live4kVisualContract.anchorFont}px`);
   assert(live4kVisualContract.symbolWidth >= 96 && live4kVisualContract.symbolCount === 4, "4K visual transformation symbols are not prominent");
+  assert(live4kVisualContract.explanationVisible && live4kVisualContract.explanationFont >= 15, "4K exhibit explanation is missing or too small");
+  assert.match(live4kVisualContract.feedState, /LIVE STREAM|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, "4K live/snapshot state is ambiguous");
   assert.equal(live4kVisualContract.hiddenDetails, true, "long explanations must remain assistive-only");
   assert.equal(live4kVisualContract.visibleParagraphCards, false, "paragraph explanation cards remain visible");
   assert.deepEqual(live4kVisualContract.stageLabels, ["観測", "地図", "光", "音"]);
@@ -684,6 +697,8 @@ try {
       descriptionHidden: descriptionRect.width <= 1 && descriptionRect.height <= 1,
       englishTitleHidden: getComputedStyle(document.querySelector("[data-live-exhibit-title-en]")).display === "none",
       compactHeader: headingRect.height <= 130,
+      explanationVisible: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height > 70,
+      explanationFont: Number.parseFloat(getComputedStyle(document.querySelector(".gaia-live-exhibit-summary")).fontSize),
     };
   });
   assert(mobileReadout && mobileReadout.x >= 0 && mobileReadout.x + mobileReadout.width <= 390, "mobile live readout overflows horizontally");
@@ -692,6 +707,7 @@ try {
   assert.equal(mobileVisualContract.descriptionHidden, true, "mobile live exhibit still displays instructional prose");
   assert.equal(mobileVisualContract.englishTitleHidden, true, "mobile exhibit title retains a space-consuming English subtitle");
   assert.equal(mobileVisualContract.compactHeader, true, "mobile live header still reserves space for hidden text controls");
+  assert(mobileVisualContract.explanationVisible && mobileVisualContract.explanationFont >= 13, "mobile exhibit explanation is missing or too small");
   assert.equal(await liveMobilePage.locator(".gaia-live-exhibit-path li").count(), 4, "mobile transformation path is incomplete");
   assert.equal(await liveMobilePage.locator(".gaia-live-stage-symbol").count(), 4, "mobile visual transformation symbols are incomplete");
   assert((await liveMobilePage.locator(".gaia-live-exhibit-primary > strong").evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize))) >= 40, "mobile live value is too small");
@@ -719,23 +735,43 @@ try {
   await tourPage.waitForFunction(() => document.querySelector("#gaia-guided-tour")?.contains(document.activeElement), null, { timeout: 5_000 });
   const initialTour = await tourPage.evaluate(() => ({ state: GaiaGuidedTour.getState(), hash: location.hash, modalHidden: document.querySelector("#gaia-opening")?.hidden }));
   assert.equal(initialTour.state.totalDuration, 30);
-  assert.equal(await tourPage.locator("[data-tour-step-total]").textContent(), "4");
+  assert.equal(await tourPage.locator("[data-tour-step-total]").textContent(), "3");
   assert.equal(initialTour.hash, "#tour");
   assert.equal(initialTour.modalHidden, true);
   assert.equal(await tourPage.evaluate(() => document.querySelector("#gaia-guided-tour")?.contains(document.activeElement)), true);
   assert.equal(await tourPage.locator("#gaia-canvas").evaluate((canvas) => getComputedStyle(canvas).visibility), "hidden", "direct #tour entry must suppress the abstract WebGL base");
   assert.equal(await tourPage.evaluate(() => document.body.classList.contains("gaia-route-handoff")), false, "direct #tour handoff shield must release only after the guide owns the viewport");
-  for (const pattern of [/\.mp3$/u, /opening-mizuha/u, /opening-amane/u, /open-data-archive-bg/u, /opening-final-night/u]) {
+  for (const pattern of [/\.mp3$/u, /opening-mizuha/u, /opening-amane/u, /open-data-archive-bg/u, /opening-final-night/u, /space-(?:signals|mode|scenes)/u]) {
     assert.equal(tourRequests.some((resource) => pattern.test(resource)), false, `tour requested opening asset: ${pattern}`);
   }
   const initialOperationGuide = await tourPage.evaluate(() => ({
     title: document.querySelector("[data-tour-title]").textContent.trim(),
     actions: [...document.querySelectorAll("[data-tour-operation-path] li")].map((item) => item.textContent.trim()),
     cue: document.querySelector("[data-tour-target-cue]").textContent.trim(),
+    phase: document.querySelector("#gaia-guided-tour").dataset.phase,
+    running: document.querySelector("#gaia-guided-tour").dataset.running,
+    cardAnimation: getComputedStyle(document.querySelector(".gaia-tour-card")).animationName,
+    cardTransition: getComputedStyle(document.querySelector(".gaia-tour-card")).transitionDuration,
+    cardCurrentAnimation: getComputedStyle(document.querySelector(".gaia-tour-card"), "::after").animationName,
+    instructionAnimation: getComputedStyle(document.querySelector(".gaia-tour-instruction")).animationName,
+    targetRingAnimation: getComputedStyle(document.querySelector(".gaia-tour-target-spotlight"), "::before").animationName,
+    targetTransition: getComputedStyle(document.querySelector(".gaia-tour-target-spotlight")).transitionDuration,
+    cueTransition: getComputedStyle(document.querySelector(".gaia-tour-target-cue")).transitionDuration,
+    actionOpacity: [...document.querySelectorAll("[data-tour-operation-path] li")].map((item) => Number.parseFloat(getComputedStyle(item).opacity)),
   }));
-  assert.equal(initialOperationGuide.title, "ドラッグして、光を押す。", "30-second guide must start with the live map operation");
-  assert.deepEqual(initialOperationGuide.actions, ["移動ドラッグ", "拡大ホイール／ピンチ", "開く光を押す"], "map guide must explain move, zoom, and observation selection");
+  assert.equal(initialOperationGuide.title, "地図を動かし、観測点を選ぶ。", "30-second guide must start with a plain live-map operation");
+  assert.deepEqual(initialOperationGuide.actions, ["動かす地図をドラッグ", "近づくホイール／ピンチ", "選ぶ明るい観測点"], "map guide must explain move, zoom, and observation selection in natural Japanese");
   assert(initialOperationGuide.cue.includes("ドラッグ"), "map guide must begin with a concrete drag cue");
+  assert(["arriving", "focused", "leaving"].includes(initialOperationGuide.phase), "tour does not expose a gaze-control phase");
+  assert.equal(initialOperationGuide.running, "true", "tour animation state is not synchronized with autoplay");
+  assert(initialOperationGuide.cardAnimation.includes("gaia-tour-card-focus-in"), "tour card lacks a full fade-in");
+  assert(initialOperationGuide.cardTransition.includes("0.52s"), "tour card still jumps abruptly between live targets");
+  assert(initialOperationGuide.cardCurrentAnimation.includes("gaia-tour-bubble-current"), "tour bubble lacks an immersive light current");
+  assert(initialOperationGuide.instructionAnimation.includes("gaia-tour-content-focus-in"), "tour content is not revealed in reading order");
+  assert(initialOperationGuide.targetRingAnimation.includes("gaia-tour-focus-ring"), "live target lacks a repeated attention ring");
+  assert(initialOperationGuide.targetTransition.includes("0.58s"), "live target framing still jumps abruptly");
+  assert(initialOperationGuide.cueTransition.includes("0.34s"), "target cue lacks a calm fade transition");
+  assert(initialOperationGuide.actionOpacity[0] > initialOperationGuide.actionOpacity[1], "operation sequence does not dim future actions");
   await tourPage.locator("[data-tour-action='toggle']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), false);
   const pausedActionStage = await tourPage.locator("#gaia-guided-tour").getAttribute("data-action");
@@ -745,11 +781,16 @@ try {
   await tourPage.locator("[data-tour-action='next']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().index), pausedTourIndex + 1);
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), false, "manual navigation must preserve an intentional pause");
+  assert.equal(await tourPage.locator("#gaia-guided-tour").getAttribute("data-phase"), "focused", "paused guide must restore fully readable content");
+  assert.equal(await tourPage.locator("#gaia-guided-tour").getAttribute("data-running"), "false", "paused visual state is not exposed");
   await tourPage.waitForFunction(() => {
     const spotlight = document.querySelector(".gaia-tour-target-spotlight");
     const target = document.querySelector(".gaia-tour-highlight-target");
-    return spotlight && !spotlight.hidden && target && target.getClientRects().length > 0;
+    const card = document.querySelector(".gaia-tour-card");
+    return spotlight && !spotlight.hidden && target && target.getClientRects().length > 0
+      && card?.dataset.positioned === "true" && document.querySelector("#gaia-guided-tour")?.dataset.step === "time";
   }, null, { timeout: 30_000 });
+  await tourPage.waitForTimeout(700);
   const mobileTourLayout = await tourPage.evaluate(() => {
     const card = document.querySelector(".gaia-tour-card");
     const copy = document.querySelector(".gaia-tour-copy");
@@ -762,9 +803,23 @@ try {
     const spotlight = document.querySelector(".gaia-tour-target-spotlight");
     const target = document.querySelector(".gaia-tour-highlight-target");
     const cue = document.querySelector(".gaia-tour-target-cue");
+    const controlsPanel = document.querySelector(".gaia-tour-controls");
     const rail = Array.from(document.querySelectorAll(".gaia-tour-step-rail i"));
+    const cardRect = card.getBoundingClientRect();
+    const cardContentContained = [...card.children]
+      .filter((element) => !element.hidden && getComputedStyle(element).display !== "none")
+      .every((element) => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.left >= cardRect.left - 1 && bounds.right <= cardRect.right + 1
+          && bounds.top >= cardRect.top - 1 && bounds.bottom <= cardRect.bottom + 1;
+      });
     const spotlightRect = spotlight.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
+    const controlsRect = controlsPanel.getBoundingClientRect();
+    const horizontalGap = Math.max(cardRect.left - targetRect.right, targetRect.left - cardRect.right, 0);
+    const verticalGap = Math.max(cardRect.top - targetRect.bottom, targetRect.top - cardRect.bottom, 0);
+    const cardTargetOverlap = cardRect.left < targetRect.right && cardRect.right > targetRect.left
+      && cardRect.top < targetRect.bottom && cardRect.bottom > targetRect.top;
     const viewportInset = 6;
     const expectedSpotlight = {
       left: Math.max(viewportInset, targetRect.left - 6),
@@ -776,7 +831,10 @@ try {
     const controls = Array.from(document.querySelectorAll(".gaia-tour-controls button")).map((element) => element.getBoundingClientRect().height);
     return {
       cardHeight: card.getBoundingClientRect().height,
-      maxHeight: innerHeight * 0.44,
+      cardClientHeight: card.clientHeight,
+      cardScrollHeight: card.scrollHeight,
+      cardOverflowY: style.overflowY,
+      cardContentContained,
       visibleTextLength: card.innerText.replace(/\s+/gu, "").length,
       copyFont: Number.parseFloat(getComputedStyle(copy).fontSize),
       instructionFont: Number.parseFloat(getComputedStyle(instruction).fontSize),
@@ -800,25 +858,38 @@ try {
         height: Math.abs(spotlightRect.height - (expectedSpotlight.bottom - expectedSpotlight.top)),
       },
       borderWidth: Number.parseFloat(style.borderTopWidth),
+      cardPlacement: card.dataset.placement,
+      cardPosition: style.position,
+      cardProximity: Math.hypot(horizontalGap, verticalGap),
+      cardTargetOverlap,
+      cardInsidePlacement: card.dataset.placement?.startsWith("inside") === true,
+      cardContained: cardRect.left >= 9 && cardRect.right <= innerWidth - 9
+        && cardRect.top >= 9 && cardRect.bottom <= controlsRect.top - 8,
+      cardArrow: getComputedStyle(card, "::before").content,
       controls,
       controlLabels: [...document.querySelectorAll(".gaia-tour-controls button")].map((button) => button.textContent.trim()),
     };
   });
-  assert(mobileTourLayout.cardHeight <= mobileTourLayout.maxHeight + 2, `tour card ${mobileTourLayout.cardHeight}px exceeds 44dvh`);
+  assert(mobileTourLayout.cardContentContained, "tour card content escapes its visible bubble");
+  assert(!["auto", "scroll"].includes(mobileTourLayout.cardOverflowY), `tour card still exposes ${mobileTourLayout.cardOverflowY} overflow`);
   assert(mobileTourLayout.visibleTextLength <= 150, `tour step remains text-heavy: ${mobileTourLayout.visibleTextLength} characters`);
   assert(mobileTourLayout.copyFont >= 14 && mobileTourLayout.instructionFont >= 14, "tour important copy below 14px");
   assert(mobileTourLayout.primaryActionFont >= 16, "tour primary action is not visually dominant");
-  assert.equal(mobileTourLayout.title, "つまみを動かして、比べる。", "tour time title is not a direct action");
-  assert(mobileTourLayout.instructionText.includes("つまみ") && mobileTourLayout.instructionText.includes("左右"), "tour does not provide one direct timeline action");
-  assert(mobileTourLayout.hint.includes("左＝過去") && mobileTourLayout.result.length >= 12, "tour lacks a plain timeline hint or visible outcome");
+  assert.equal(mobileTourLayout.title, "年代を動かし、変化をたどる。", "tour time title is not a direct, natural action");
+  assert(mobileTourLayout.instructionText.includes("年代スライダー") && mobileTourLayout.instructionText.includes("ゆっくり"), "tour does not provide one calm timeline action");
+  assert(mobileTourLayout.hint.includes("左は過去") && mobileTourLayout.result.length >= 12, "tour lacks a plain timeline hint or visible outcome");
   assert.equal(mobileTourLayout.gesture, "⇆", "tour gesture does not match the timeline action");
   assert.equal(mobileTourLayout.receiptOpen, false, "technical receipt must be collapsed by default");
-  assert.equal(mobileTourLayout.railCount, 4, "tour progress rail must expose all four focused steps");
-  assert.deepEqual(mobileTourLayout.operationActions, ["つかむ青いつまみ", "動かす左＝過去・右＝未来", "読む年と地図"], "timeline guide must explain grabbing, moving, and reading the result");
+  assert.equal(mobileTourLayout.railCount, 3, "tour progress rail must expose all three Earth-focused steps");
+  assert.deepEqual(mobileTourLayout.operationActions, ["触れる年代スライダー", "たどる過去から未来へ", "見比べる色と観測値"], "timeline guide must explain touching, tracing, and comparing the result");
   assert.equal(mobileTourLayout.currentRailCount, 1, "tour progress rail must have one current step");
-  assert(mobileTourLayout.cueVisible && mobileTourLayout.cueText.includes("つまみ"), "tour target cue is not a direct timeline action");
+  assert(mobileTourLayout.cueVisible && mobileTourLayout.cueText.includes("年代スライダー"), "tour target cue is not a direct timeline action");
   assert(mobileTourLayout.spotlightVisible && Object.values(mobileTourLayout.spotlightDelta).every((delta) => delta <= 2), "tour spotlight does not frame the live target");
   assert(mobileTourLayout.borderWidth >= 2, "tour card border is not visible enough");
+  assert.equal(mobileTourLayout.cardPosition, "fixed", "tour explanation must follow the live target instead of occupying the layout corner");
+  assert(mobileTourLayout.cardContained, "mobile tour bubble is clipped or overlaps the tour controls");
+  assert(mobileTourLayout.cardProximity <= 20 || (mobileTourLayout.cardTargetOverlap && mobileTourLayout.cardInsidePlacement), "mobile tour explanation is not adjacent to its live control");
+  assert.notEqual(mobileTourLayout.cardArrow, "none", "mobile tour explanation lacks a speech-bubble arrow");
   assert(mobileTourLayout.controls.every((height) => height >= 48), "tour control below 48px");
   assert.deepEqual(mobileTourLayout.controlLabels, ["閉じる", "戻る", "続ける", "次へ"], "tour controls still rely on unexplained symbols");
   await tourPage.locator("[data-tour-action='toggle']").click();
@@ -827,7 +898,7 @@ try {
     && GaiaMapObservationAdapter.getState().signalTimePosition >= 58, null, { timeout: 5_000 });
   await tourPage.evaluate(() => document.querySelector(".gaia-tour-highlight-target")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), true, "exhibit interaction must not pause autoplay");
-  assert.equal(await tourPage.locator("[data-tour-result-label]").textContent(), "操作できました", "tour does not acknowledge a successful interaction");
+  assert.equal(await tourPage.locator("[data-tour-result-label]").textContent(), "観測できました", "tour does not acknowledge a successful observation");
   const visibleElapsed = await tourPage.evaluate(() => {
     Object.defineProperty(document, "hidden", { configurable: true, value: true });
     document.dispatchEvent(new Event("visibilitychange"));
@@ -846,16 +917,44 @@ try {
   assert.equal(await tourPage.evaluate(() => localStorage.getItem("gaia-novel-save")), "tour-must-not-change");
   assert.equal(await tourPage.evaluate(() => localStorage.getItem("gaiaSenseware:observationNotebook:v1")), JSON.stringify({ version: 1, records: [{ id: "unchanged" }] }));
   await tourPage.setViewportSize({ width: 667, height: 375 });
-  await tourPage.waitForTimeout(180);
+  await tourPage.waitForTimeout(750);
   const rotatedLayout = await tourPage.evaluate(() => {
-    const card = document.querySelector(".gaia-tour-card").getBoundingClientRect();
+    const cardElement = document.querySelector(".gaia-tour-card");
+    const card = cardElement.getBoundingClientRect();
     const controls = document.querySelector(".gaia-tour-controls").getBoundingClientRect();
-    return { card: card.toJSON(), controls: controls.toJSON(), width: innerWidth, height: innerHeight };
+    const contentContained = [...cardElement.children]
+      .filter((element) => !element.hidden && getComputedStyle(element).display !== "none")
+      .every((element) => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.left >= card.left - 1 && bounds.right <= card.right + 1
+          && bounds.top >= card.top - 1 && bounds.bottom <= card.bottom + 1;
+      });
+    return {
+      card: card.toJSON(),
+      controls: controls.toJSON(),
+      width: innerWidth,
+      height: innerHeight,
+      contentContained,
+      overflowY: getComputedStyle(cardElement).overflowY,
+    };
   });
   assert(rotatedLayout.card.left >= 0 && rotatedLayout.card.right <= rotatedLayout.width, "rotated tour card cutoff");
+  assert(rotatedLayout.card.bottom <= rotatedLayout.controls.top - 8, "rotated tour card overlaps the controls");
+  assert(rotatedLayout.contentContained && !["auto", "scroll"].includes(rotatedLayout.overflowY), "rotated tour card exposes clipped content or a scrollbar");
   assert(rotatedLayout.controls.left >= 0 && rotatedLayout.controls.right <= rotatedLayout.width && rotatedLayout.controls.bottom <= rotatedLayout.height, "rotated tour controls cutoff");
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().active), true, "tour must survive rotation");
   await tourPage.setViewportSize({ width: 390, height: 844 });
+  await tourPage.waitForTimeout(40);
+  const resizingExposure = await tourPage.evaluate(() => {
+    const card = document.querySelector(".gaia-tour-card");
+    const bounds = card.getBoundingClientRect();
+    return {
+      safe: bounds.left >= 0 && bounds.right <= innerWidth,
+      opacity: Number.parseFloat(getComputedStyle(card).opacity),
+    };
+  });
+  assert(resizingExposure.safe || resizingExposure.opacity <= .05, "tour card is visibly clipped while returning from rotation");
+  await tourPage.waitForTimeout(700);
   await tourPage.screenshot({ path: path.join(outputDir, "tour-mobile.png"), animations: "disabled" });
   await tourPage.keyboard.press("Escape");
   await tourPage.waitForFunction(() => GaiaGuidedTour.getState().active === false);
@@ -885,15 +984,36 @@ try {
   await clarityPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
   await clarityPage.locator("[data-tour-action='toggle']").click();
   const claritySteps = [];
-  for (let expectedIndex = 0; expectedIndex < 4; expectedIndex += 1) {
+  for (let expectedIndex = 0; expectedIndex < 3; expectedIndex += 1) {
     await clarityPage.waitForFunction((value) => GaiaGuidedTour.getState().index === value, expectedIndex);
-    await clarityPage.waitForTimeout(120);
+    await clarityPage.waitForFunction(() => {
+      const card = document.querySelector(".gaia-tour-card");
+      const target = document.querySelector(".gaia-tour-highlight-target");
+      return card?.dataset.positioned === "true" && target?.getClientRects().length > 0;
+    }, null, { timeout: 30_000 });
+    await clarityPage.waitForTimeout(900);
     claritySteps.push(await clarityPage.evaluate(() => {
       const card = document.querySelector(".gaia-tour-card");
+      const target = document.querySelector(".gaia-tour-highlight-target");
+      const controls = document.querySelector(".gaia-tour-controls");
       const title = document.querySelector("[data-tour-title]").textContent.trim();
       const action = document.querySelector("[data-tour-instruction]").textContent.trim();
       const result = document.querySelector("[data-tour-result]").textContent.trim();
       const visibleText = card.innerText.replace(/\s+/gu, "");
+      const cardRect = card.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const controlsRect = controls.getBoundingClientRect();
+      const horizontalGap = Math.max(cardRect.left - targetRect.right, targetRect.left - cardRect.right, 0);
+      const verticalGap = Math.max(cardRect.top - targetRect.bottom, targetRect.top - cardRect.bottom, 0);
+      const overlapsTarget = cardRect.left < targetRect.right && cardRect.right > targetRect.left
+        && cardRect.top < targetRect.bottom && cardRect.bottom > targetRect.top;
+      const contentContained = [...card.children]
+        .filter((element) => !element.hidden && getComputedStyle(element).display !== "none")
+        .every((element) => {
+          const bounds = element.getBoundingClientRect();
+          return bounds.left >= cardRect.left - 1 && bounds.right <= cardRect.right + 1
+            && bounds.top >= cardRect.top - 1 && bounds.bottom <= cardRect.bottom + 1;
+        });
       return {
         title,
         action,
@@ -903,20 +1023,38 @@ try {
         actionFont: Number.parseFloat(getComputedStyle(document.querySelector("[data-tour-instruction]")).fontSize),
         explanationCount: [...card.querySelectorAll(".gaia-tour-copy, .gaia-tour-result, .gaia-tour-fallback:not([hidden])")].filter((node) => node.getBoundingClientRect().height > 1).length,
         jargonVisible: /RAW|DERIVED|SCENARIO|HTML|JavaScript/u.test(card.innerText),
+        vagueLanguageVisible: /光を押|光る地点|青いつまみ|元の数字|ボタンを押/u.test(card.innerText),
+        placement: card.dataset.placement,
+        cardPosition: getComputedStyle(card).position,
+        proximity: Math.hypot(horizontalGap, verticalGap),
+        overlapsTarget,
+        insidePlacement: card.dataset.placement?.startsWith("inside") === true,
+        contained: cardRect.left >= 13 && cardRect.right <= innerWidth - 13
+          && cardRect.top >= 13 && cardRect.bottom <= controlsRect.top - 10,
+        arrow: getComputedStyle(card, "::before").content,
+        contentContained,
+        overflowY: getComputedStyle(card).overflowY,
+        cardRect: cardRect.toJSON(),
+        targetRect: targetRect.toJSON(),
       };
     }));
     await clarityPage.screenshot({ path: path.join(outputDir, `tour-clear-step-${expectedIndex + 1}-pc.png`), animations: "disabled" });
-    if (expectedIndex < 3) await clarityPage.locator("[data-tour-action='next']").click();
+    if (expectedIndex < 2) await clarityPage.locator("[data-tour-action='next']").click();
   }
-  assert.equal(claritySteps.length, 4);
+  assert.equal(claritySteps.length, 3);
   assert(claritySteps.every((step) => step.title.length <= 18 && step.action.length <= 24 && step.result.length <= 28), "tour does not keep each message to one concise idea");
   assert(claritySteps.every((step) => step.visibleCharacters <= 165), "tour card still requires too much reading");
   assert(claritySteps.every((step) => step.actionFont >= 19), "desktop tour action is not visually dominant");
   assert(claritySteps.every((step) => step.explanationCount <= 3), "tour exposes too many simultaneous explanations");
   assert(claritySteps.every((step) => step.jargonVisible === false), "tour exposes unexplained technical jargon");
+  assert(claritySteps.every((step) => step.vagueLanguageVisible === false), "tour still uses vague or unnatural operation language");
   assert(claritySteps.every((step) => step.actions.length === 3), "every tour step must expose a three-part operation path");
+  assert(claritySteps.every((step) => step.cardPosition === "fixed" && step.contained), "tour explanation bubble is not safely target-positioned");
+  assert(claritySteps.every((step) => step.proximity <= 20 || (step.overlapsTarget && step.insidePlacement)), "tour explanation is detached from a live UI target");
+  assert(claritySteps.every((step) => step.arrow !== "none" && step.placement && step.placement !== "standalone"), "tour target bubble lacks an arrow or target placement");
+  assert(claritySteps.every((step) => step.contentContained && !["auto", "scroll"].includes(step.overflowY)), "a tour step exposes clipped content or a card scrollbar");
   report.tour.clarity = claritySteps;
-  await clarityPage.screenshot({ path: path.join(outputDir, "tour-clear-step-04-pc.png"), animations: "disabled" });
+  await clarityPage.screenshot({ path: path.join(outputDir, "tour-clear-step-03-final-pc.png"), animations: "disabled" });
   await clarityPage.evaluate(() => GaiaGuidedTour.exit());
   await clarityContext.close();
 
@@ -925,36 +1063,45 @@ try {
   monitor(automaticPage, "tour-automatic");
   await automaticPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await automaticPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
+  await automaticPage.evaluate(() => {
+    const layer = document.querySelector("#gaia-guided-tour");
+    globalThis.__gaiaTourGazeFlow = [];
+    const record = () => {
+      const value = {
+        step: layer.dataset.step || "pending",
+        phase: layer.dataset.phase || "pending",
+        cuePhase: layer.dataset.cuePhase || "pending",
+        action: layer.dataset.action || "pending",
+        at: performance.now(),
+      };
+      const previous = globalThis.__gaiaTourGazeFlow.at(-1);
+      if (!previous || previous.step !== value.step || previous.phase !== value.phase || previous.cuePhase !== value.cuePhase || previous.action !== value.action) {
+        globalThis.__gaiaTourGazeFlow.push(value);
+      }
+    };
+    record();
+    globalThis.__gaiaTourGazeObserver = new MutationObserver(record);
+    globalThis.__gaiaTourGazeObserver.observe(layer, { attributes: true, attributeFilter: ["data-step", "data-phase", "data-cue-phase", "data-action"] });
+  });
   const automaticStartedAt = Date.now();
   await automaticPage.waitForSelector("[data-tour-finish]:not([hidden])", { timeout: 40_000 });
   report.tour.autoDurationMs = Date.now() - automaticStartedAt;
   assert(report.tour.autoDurationMs >= 28_000 && report.tour.autoDurationMs <= 35_000, `automatic tour ${report.tour.autoDurationMs}ms`);
+  report.tour.gazeFlow = await automaticPage.evaluate(() => {
+    globalThis.__gaiaTourGazeObserver?.disconnect();
+    return globalThis.__gaiaTourGazeFlow;
+  });
+  for (const stepId of ["time", "transform"]) {
+    const phases = report.tour.gazeFlow.filter((entry) => entry.step === stepId).map((entry) => entry.phase);
+    assert(phases.includes("arriving") && phases.includes("focused") && phases.includes("leaving"), `${stepId} does not fade in, focus, and fade out in sequence`);
+  }
+  assert.equal(report.tour.gazeFlow.some((entry) => entry.step === "space"), false, "30-second guide must not enter the space mode");
+  assert(report.tour.gazeFlow.some((entry) => entry.cuePhase === "leaving"), "target cues never fade out between operations");
+  assert(report.tour.gazeFlow.some((entry) => entry.cuePhase === "arriving"), "target cues never fade in between operations");
   assert.equal(await automaticPage.locator("[data-tour-finish] [data-tour-destination]").count(), 3);
   assert.equal(await automaticPage.locator("[data-tour-finish] a[href='./sensors/']").count(), 1);
   await automaticPage.screenshot({ path: path.join(outputDir, "tour-finish.png"), animations: "disabled" });
   await automaticContext.close();
-
-  const fallbackContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
-  const fallbackPage = await fallbackContext.newPage();
-  monitor(fallbackPage, "tour-fallback", { allowExpectedAbort: true });
-  await fallbackPage.route(/space-signals\.json/u, (route) => route.abort());
-  await fallbackPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await fallbackPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
-  await fallbackPage.evaluate((targetIndex) => {
-    const next = document.querySelector("[data-tour-action='next']");
-    const previous = document.querySelector("[data-tour-action='previous']");
-    const toggle = document.querySelector("[data-tour-action='toggle']");
-    if (GaiaGuidedTour.getState().running) toggle.click();
-    for (let attempt = 0; attempt < 4 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
-      (GaiaGuidedTour.getState().index < targetIndex ? next : previous).click();
-    }
-  }, 3);
-  await fallbackPage.waitForFunction(() => GaiaGuidedTour.getState().stepId === "space", null, { timeout: 20_000 });
-  await fallbackPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 45_000 });
-  assert.equal(await fallbackPage.locator("#gaia-guided-tour").getAttribute("data-step"), "space");
-  assert.equal(await fallbackPage.locator("#gaia-guided-tour").evaluate((element) => element.classList.contains("is-reduced-motion")), true);
-  report.tour.fallback = "passed";
-  await fallbackContext.close();
 
   const webglContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
   const webglPage = await webglContext.newPage();
@@ -973,13 +1120,13 @@ try {
     const previous = document.querySelector("[data-tour-action='previous']");
     const toggle = document.querySelector("[data-tour-action='toggle']");
     if (GaiaGuidedTour.getState().running) toggle.click();
-    for (let attempt = 0; attempt < 4 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
+    for (let attempt = 0; attempt < 3 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
       (GaiaGuidedTour.getState().index < targetIndex ? next : previous).click();
     }
   }, 1);
   await webglPage.waitForFunction(() => GaiaGuidedTour.getState().index === 1, null, { timeout: 20_000 });
   await webglPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 20_000 });
-  for (let targetIndex = 2; targetIndex <= 3; targetIndex += 1) {
+  for (let targetIndex = 2; targetIndex <= 2; targetIndex += 1) {
     await webglPage.locator("[data-tour-action='next']").evaluate((button) => button.click());
     await webglPage.waitForFunction((expectedIndex) => GaiaGuidedTour.getState().index === expectedIndex, targetIndex, { timeout: 20_000 });
   }

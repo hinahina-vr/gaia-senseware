@@ -1,5 +1,5 @@
 import { STATUS_LABELS } from "./transforms.js";
-import proceduralAudio from "./procedural-audio.js";
+import proceduralAudio from "./procedural-audio.js?v=gaia-live-explained-audio-1";
 
 const EXHIBITS = Object.freeze([
   Object.freeze({
@@ -731,6 +731,14 @@ const renderReadout = () => {
   const location = observationLocation(exhibit, measurement);
   const audioState = proceduralAudio.getState();
   const status = STATUS_LABELS[measurement?.status] || (state.connected ? "NEAR REAL TIME" : "SNAPSHOT");
+  const feedState = state.connected
+    ? "LIVE STREAM / 自動更新中"
+    : state.source === "live"
+      ? "LATEST API SNAPSHOT / 再接続中"
+      : "SAVED SNAPSHOT / 保存データを再現中";
+  const observedAt = measurement?.observedAt
+    ? new Date(measurement.observedAt).toLocaleString("ja-JP")
+    : "観測時刻なし";
   readout.dataset.missing = String(missing);
   readout.dataset.exhibit = exhibit.id;
   readout.dataset.audioState = audioState.active ? "playing" : audioState.enabled ? "armed" : "off";
@@ -744,6 +752,16 @@ const renderReadout = () => {
   exhibitTitle.querySelector("[data-live-exhibit-title-en]").textContent = titleEn;
   readout.querySelector("[data-live-exhibit-value]").textContent = formatValue(measurement);
   readout.querySelector("[data-live-exhibit-caption]").textContent = exhibit.caption;
+  readout.querySelector("[data-live-exhibit-feed-state]").textContent = feedState;
+  readout.querySelector("[data-live-exhibit-feed-time]").textContent = `観測時刻 ${observedAt}`;
+  readout.querySelector("[data-live-exhibit-feed-copy]").textContent = state.connected
+    ? "公開APIの観測ストリームに接続中。新しい観測が届くたび、数値・光・音を自動更新します。"
+    : state.source === "live"
+      ? "公開APIから取得した最新値を表示中です。ストリームへ再接続すると、新しい観測ごとに自動更新します。"
+      : "現在は保存済み観測データの再現です。LIVE接続時は、同じ変換が新しい観測ごとに自動更新されます。";
+  readout.querySelector("[data-live-exhibit-sound-description]").textContent = audioState.active
+    ? `音：${exhibit.soundMap} 現在 ${audioState.tempo} BPMで再生中です。`
+    : `音：${exhibit.soundMap} 「展示音を再生」を押すと始まります。`;
   readout.querySelector("[data-live-exhibit-level]").textContent = missing ? "欠測 / STANDBY" : `${Math.round(strength * 100)}% SIGNAL`;
   readout.querySelector("[data-live-exhibit-scale]").textContent = exhibit.scaleLabel;
   readout.querySelector("[data-live-stage-signal]").textContent = missing ? "STANDBY" : formatValue(measurement);
@@ -762,9 +780,7 @@ const renderReadout = () => {
   readout.querySelector("[data-live-exhibit-source]").textContent = measurement
     ? `${measurement.provider?.toUpperCase() || "SOURCE"} · ${measurement.datasetId || "PUBLIC DATA"}`
     : "SOURCE DATA MISSING · VISUAL SCAN STANDBY";
-  readout.querySelector("[data-live-exhibit-time]").textContent = measurement?.observedAt
-    ? new Date(measurement.observedAt).toLocaleString("ja-JP")
-    : "観測時刻なし";
+  readout.querySelector("[data-live-exhibit-time]").textContent = observedAt;
 };
 
 const applyHeading = () => {
@@ -913,7 +929,15 @@ const mount = () => {
       <b data-live-exhibit-level>0% SIGNAL</b>
       <small data-live-exhibit-scale></small>
     </div>
-    <p class="gaia-live-exhibit-a11y" data-live-exhibit-caption></p>
+    <section class="gaia-live-exhibit-explanation" aria-label="展示の説明と観測状態">
+      <p class="gaia-live-exhibit-summary" data-live-exhibit-caption></p>
+      <div class="gaia-live-exhibit-freshness">
+        <strong data-live-exhibit-feed-state></strong>
+        <time data-live-exhibit-feed-time></time>
+      </div>
+      <p data-live-exhibit-feed-copy></p>
+      <p class="gaia-live-exhibit-sonification" data-live-exhibit-sound-description></p>
+    </section>
     <ol class="gaia-live-exhibit-path" aria-label="観測データから映像と音への変換経路">
       <li data-live-stage="observe">
         <span>01</span>
@@ -941,7 +965,7 @@ const mount = () => {
       </li>
     </ol>
     <div class="gaia-live-exhibit-actions">
-      <button type="button" data-live-sound-toggle aria-pressed="false"><span class="gaia-live-sound-mark" aria-hidden="true"><i></i><i></i><i></i></span><b data-live-sound-label>音をひらく</b></button>
+      <button type="button" data-live-sound-toggle aria-pressed="false"><span class="gaia-live-sound-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="gaia-live-sound-copy"><b data-live-sound-label>展示音を再生</b><small data-live-sound-status>クリックで観測値を音に変換</small></span></button>
       <p class="gaia-live-exhibit-touch-hint"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></p>
     </div>
     <footer><span data-live-exhibit-source></span><time data-live-exhibit-time></time></footer>
