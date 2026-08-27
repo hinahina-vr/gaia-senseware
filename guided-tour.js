@@ -4,60 +4,44 @@
 
   const steps = Object.freeze([
     {
-      id: "concept", duration: 6, kicker: "01 / START", title: "まず、展示を選ぶ。",
-      copy: "GAIA SENSEWAREは、地球観測データを光・色・動き・音へ変えるインタラクティブ展示です。ガイド中も実物を操作できます。",
-      instruction: "水色に囲まれた「世界を読む」を押すと、世界地図の展示へ入ります。",
-      hint: "タッチ／クリック　・　キーボードは Tab → Enter",
-      result: "ガイド中は自動で画面を開くので、触らずに見続けても進みます。",
-      cue: "ここから展示へ",
+      id: "concept", duration: 8, kicker: "展示を選ぶ", title: "見たい展示を、ひとつ選ぶ。", gesture: "◎",
+      copy: "地球のデータが、光・色・動き・音に変わります。",
+      instruction: "水色の「世界を読む」を押す",
+      hint: "タップ／クリック　・　押さなくても自動で進みます",
+      result: "世界地図の展示が開きます。",
+      cue: "ここを押す",
     },
     {
-      id: "map", duration: 10, kicker: "02 / BREATHING EARTH", title: "数字を、一枚の地球へ。",
-      copy: "『地球の一呼吸』では、CO₂濃度と気温偏差を同じ時間軸で確認できます。",
-      instruction: "地図をドラッグして移動し、ホイール／ピンチで拡大。地点を押すと観測値を読めます。",
-      hint: "ドラッグ＝移動　・　ホイール／ピンチ＝拡大　・　地点を押す＝詳細",
-      result: "点がない場所は、値がゼロではなく『この標本では未観測』です。",
-      cue: "地図を動かす・地点を押す",
+      id: "map", duration: 14, kicker: "場所を見る", title: "地図を動かして、光を押す。", gesture: "↔",
+      copy: "光る点は、観測データがある場所です。",
+      instruction: "地図を動かし、光る場所をひとつ押す",
+      hint: "指1本で移動　・　2本で拡大",
+      result: "場所の名前と観測値が開きます。",
+      cue: "光る場所を押す",
     },
     {
-      id: "time", duration: 10, kicker: "03 / TIME & PLACE", title: "年代を動かして、変化を読む。",
-      copy: "1958年から現在、そして仮定を含む将来まで、表示区分を分けてたどります。",
-      instruction: "水色に囲まれた青い光のつまみを左右へ動かし、年代と地図の変化を比べます。",
-      hint: "ドラッグ／スワイプ　・　キーボードは ← →",
-      result: "ラベルが SOURCE・DERIVED・SCENARIO のどれかも同時に確認できます。",
-      cue: "このつまみを左右へ",
+      id: "time", duration: 12, kicker: "時間を比べる", title: "時間をずらして、くらべる。", gesture: "⇆",
+      copy: "同じ場所でも、年を変えると見え方が変わります。",
+      instruction: "青いつまみを左右に動かす",
+      hint: "左＝過去　／　右＝現在・将来",
+      result: "年と地図が一緒に変わります。",
+      cue: "つまみを左右へ",
     },
     {
-      id: "transform", duration: 10, kicker: "04 / RAW → VISUAL", title: "元データから、光になるまで。",
-      copy: "RAW、計算・補間、画面表現を同じパネルで切り替え、どこからが作品の変換かを示します。",
-      instruction: "RAW → 変換 → VISUALの順にタブを押すと、元の数字と画面表現の関係を追えます。",
-      hint: "タブをクリック　・　キーボードは Tab → Enter／Space",
-      result: "ガイドでは三つのタブを自動で切り替えます。気になる所で一時停止できます。",
-      cue: "RAW・変換・VISUALを切替",
+      id: "transform", duration: 14, kicker: "しくみを見る", title: "数字が、光へ変わる。", gesture: "1→2→3",
+      copy: "画面の色や動きは、元の観測値からつくられています。",
+      instruction: "「元の数字 → 計算 → 光」を順に押す",
+      hint: "3つのタブが自動でも切り替わります",
+      result: "観測データと作品の表現を分けて確かめられます。",
+      cue: "3つを順に見る",
     },
     {
-      id: "space", duration: 10, kicker: "05 / SOLAR FLARE", title: "観測窓を、宇宙へ広げる。",
-      copy: "NASAの保存済み記録を読み、太陽フレアの等級と時刻を光の大きさや波へ変換します。",
-      instruction: "水色に囲まれた『この記録を再生』を押すと、選択中の記録が光と波で再生されます。",
-      hint: "クリック／タップ　・　キーボードは Enter／Space",
-      result: "光の大きさは観測記録から計算し、あなたの操作はSCENARIOとして分けます。",
-      cue: "この記録を再生",
-    },
-    {
-      id: "story", duration: 8, kicker: "06 / STORY", title: "物語から、データへ戻れる。",
-      copy: "物語の中で登場人物が触れる八つの観測記録は、自由探索と同じデータ展示へつながっています。",
-      instruction: "『物語へ戻る』を押すとタイトルメニューへ戻り、最初から物語を始められます。",
-      hint: "展示から戻るときも、画面上部の『戻る』を使います",
-      result: "ストーリーの進行状況は、ガイドを見ても変更されません。",
-      cue: "ここから物語へ戻る",
-    },
-    {
-      id: "proof", duration: 6, kicker: "07 / SOURCES", title: "出典まで、いつでも確認。",
-      copy: "HTML・CSS・JavaScriptとブラウザ標準APIで制作し、外部ランタイム描画ライブラリを使っていません。",
-      instruction: "水色に囲まれた出典欄で、データ提供元・取得日・加工方法を確認できます。",
-      hint: "SOURCE＝公開記録　・　DERIVED＝計算　・　SCENARIO＝仮定／操作",
-      result: "分からない専門情報は『出典と変換を見る』を開いたときだけ表示します。",
-      cue: "出典と利用条件を見る",
+      id: "space", duration: 12, kicker: "宇宙を見る", title: "宇宙の記録も、動きになる。", gesture: "▶",
+      copy: "太陽フレアの強さを、光の大きさで見ます。",
+      instruction: "「この記録を再生」を押す",
+      hint: "タップ／クリック　・　押さなくても自動で再生します",
+      result: "強い記録ほど、大きな光が開きます。",
+      cue: "ここを押して再生",
     },
   ]);
   const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
@@ -73,34 +57,34 @@
     <div class="gaia-tour-vignette" aria-hidden="true"></div>
     <div class="gaia-tour-target-spotlight" data-tour-target-spotlight hidden aria-hidden="true"></div>
     <article class="gaia-tour-card" aria-live="polite">
-      <div class="gaia-tour-card-index"><span data-tour-step>01</span><i></i><span>07</span></div>
+      <div class="gaia-tour-card-index"><span><small>STEP</small><b data-tour-step>1</b></span><i></i><span data-tour-step-total>5</span></div>
       <p class="gaia-tour-kicker" data-tour-kicker></p>
       <h2 id="gaia-tour-title" data-tour-title></h2>
-      <section class="gaia-tour-instruction" aria-label="この画面の操作方法">
-        <span class="gaia-tour-action-number" data-tour-action-number>1</span>
-        <div><b>いま操作する</b><strong data-tour-instruction></strong><small data-tour-hint></small></div>
-      </section>
       <p class="gaia-tour-copy" data-tour-copy></p>
-      <p class="gaia-tour-result" data-tour-result></p>
+      <section class="gaia-tour-instruction" aria-label="この画面の操作方法">
+        <span class="gaia-tour-gesture" data-tour-gesture aria-hidden="true">◎</span>
+        <div><b>操作</b><strong data-tour-instruction></strong><small data-tour-hint></small></div>
+      </section>
+      <p class="gaia-tour-result"><b data-tour-result-label>こう変わる</b><span data-tour-result></span></p>
       <details class="gaia-tour-receipt" data-tour-receipt hidden aria-label="データから表現への変換レシート">
         <summary>出典と変換を見る</summary>
         <p><span>○ SOURCE / 公開記録</span><strong data-tour-receipt-source></strong><small data-tour-receipt-provider></small></p>
         <p><span>△ DERIVED / 計算・補間</span><strong data-tour-receipt-transform></strong></p>
         <p><span>◇ SCENARIO / 仮定・操作</span><strong data-tour-receipt-visual></strong></p>
       </details>
-      <p class="gaia-tour-fallback" data-tour-fallback hidden>表示を読み込めなかったため、同じ構成の静的な説明で続けています。</p>
+      <p class="gaia-tour-fallback" data-tour-fallback hidden>表示を準備しています。ガイドはこのまま続けられます。</p>
       <div class="gaia-tour-step-rail" data-tour-step-rail aria-label="ガイドの進行"></div>
     </article>
-    <div class="gaia-tour-target-cue" data-tour-target-cue hidden aria-hidden="true"><i>↘</i><span></span></div>
+    <div class="gaia-tour-target-cue" data-tour-target-cue hidden aria-hidden="true"><i>◎</i><span></span></div>
     <section class="gaia-tour-finish" data-tour-finish hidden aria-labelledby="gaia-tour-finish-title">
-      <p>60 SECOND TOUR / COMPLETE</p><h2 id="gaia-tour-finish-title">ここから、あなたの観測へ。</h2>
-      <p class="gaia-tour-finish-recommend"><span>まず見る3つ</span><strong>地球の一呼吸</strong><strong>世界地図</strong><strong>太陽の閃光</strong></p>
-      <div><button type="button" data-tour-destination="explore">12展示を探索</button><button type="button" data-tour-destination="story">物語を始める</button><a href="./sensors/">センサーを見る</a><button type="button" data-tour-destination="source">出典を見る</button></div>
+      <p>60秒ガイド 完了</p><h2 id="gaia-tour-finish-title">案内はここまで。好きな展示へ。</h2>
+      <p class="gaia-tour-finish-recommend"><span>おすすめ</span><strong>まずは、気になった光をひとつ押してみてください。</strong></p>
+      <div><button class="is-primary" type="button" data-tour-destination="explore">展示を見に行く</button><button type="button" data-tour-destination="story">物語から見る</button><a href="./sensors/">センサーを見る</a><button type="button" data-tour-destination="source">データの出典</button></div>
     </section>
     <nav class="gaia-tour-controls" aria-label="60秒ガイドの操作">
-      <button type="button" data-tour-action="exit">終了</button><button type="button" data-tour-action="previous" aria-label="前の案内">←</button>
-      <button type="button" data-tour-action="toggle" aria-pressed="true"><span data-tour-toggle-label>一時停止</span></button>
-      <button type="button" data-tour-action="next" aria-label="次の案内">→</button><div class="gaia-tour-time"><span data-tour-time>60</span><small>SEC</small></div>
+      <button type="button" data-tour-action="exit">閉じる</button><button type="button" data-tour-action="previous">戻る</button>
+      <button type="button" data-tour-action="toggle" aria-pressed="true"><span data-tour-toggle-label>止める</span></button>
+      <button type="button" data-tour-action="next"><span data-tour-next-label>次へ</span></button><div class="gaia-tour-time"><small>あと</small><span data-tour-time>60</span><small>秒</small></div>
       <div class="gaia-tour-progress" aria-hidden="true"><i data-tour-progress></i></div>
     </nav>`;
   document.body.append(layer);
@@ -111,6 +95,8 @@
   const fallback = find("[data-tour-fallback]");
   const receipt = find("[data-tour-receipt]");
   const toggle = find("[data-tour-action='toggle']");
+  const previous = find("[data-tour-action='previous']");
+  const next = find("[data-tour-action='next']");
   const targetCue = find("[data-tour-target-cue]");
   const targetSpotlight = find("[data-tour-target-spotlight]");
   const stepRail = find("[data-tour-step-rail]");
@@ -345,21 +331,27 @@
   };
   const syncToggle = () => {
     toggle.setAttribute("aria-pressed", String(running));
-    find("[data-tour-toggle-label]").textContent = running ? "一時停止" : "再生";
+    find("[data-tour-toggle-label]").textContent = running ? "止める" : "続ける";
+    toggle.setAttribute("aria-label", running ? "自動案内を止める" : "自動案内を続ける");
   };
   const renderStep = () => {
     const step = steps[index];
     generation += 1;
+    delete layer.dataset.finished;
+    delete card.dataset.interacted;
     card.hidden = false;
     finishPanel.hidden = true;
-    find("[data-tour-step]").textContent = String(index + 1).padStart(2, "0");
+    find("[data-tour-step]").textContent = String(index + 1);
     find("[data-tour-kicker]").textContent = step.kicker;
     find("[data-tour-title]").textContent = step.title;
     find("[data-tour-copy]").textContent = step.copy;
     find("[data-tour-instruction]").textContent = step.instruction;
     find("[data-tour-hint]").textContent = step.hint;
     find("[data-tour-result]").textContent = step.result;
-    find("[data-tour-action-number]").textContent = String(index + 1);
+    find("[data-tour-result-label]").textContent = "こう変わる";
+    find("[data-tour-gesture]").textContent = step.gesture;
+    previous.disabled = index === 0;
+    find("[data-tour-next-label]").textContent = index === steps.length - 1 ? "完了" : "次へ";
     Array.from(stepRail.children).forEach((marker, markerIndex) => {
       marker.dataset.state = markerIndex < index ? "complete" : markerIndex === index ? "current" : "pending";
     });
@@ -377,6 +369,7 @@
     updateClock();
     card.hidden = true;
     finishPanel.hidden = false;
+    layer.dataset.finished = "true";
     finishPanel.querySelector("button")?.focus({ preventScroll: true });
   };
   const setStep = (nextIndex, { pause = false } = {}) => {
@@ -449,9 +442,16 @@
   };
 
   find("[data-tour-action='exit']").addEventListener("click", () => exit());
-  find("[data-tour-action='previous']").addEventListener("click", () => setStep(index - 1, { pause: true }));
-  find("[data-tour-action='next']").addEventListener("click", () => setStep(index + 1, { pause: true }));
+  previous.addEventListener("click", () => setStep(index - 1));
+  next.addEventListener("click", () => setStep(index + 1));
   toggle.addEventListener("click", () => { running = !running; lastFrame = performance.now(); syncToggle(); });
+  const confirmTargetInteraction = (event) => {
+    if (!active || !(event.target instanceof Element) || !event.target.closest(".gaia-tour-highlight-target")) return;
+    find("[data-tour-result-label]").textContent = "操作できました";
+    card.dataset.interacted = "true";
+  };
+  document.addEventListener("click", confirmTargetInteraction, true);
+  document.addEventListener("input", confirmTargetInteraction, true);
   layer.querySelectorAll("[data-tour-destination]").forEach((button) => button.addEventListener("click", async () => {
     const destination = button.dataset.tourDestination;
     if (destination === "explore") { exit({ keepView: true }); (await waitForMapAdapter()).openMap(); }

@@ -5,11 +5,11 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-live-exhibits-2-tour-layout-1",
+        "./styles.css?v=gaia-title-only-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-map-title-cyan-1",
+        "./map-ui-grid-polish.css?v=gaia-title-only-1",
         "./mode-exit.css?v=gaia-story-control-gap-1",
         "./observation-notebook.css?v=gaia-exhibit-heading-actions-1",
       ],
@@ -18,13 +18,13 @@
         "./data-ledger.js?v=gaia-31",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-abstract-entry-1",
-        "./app.js?v=gaia-story-map-aiva-1-tour-tooltip-2",
+        "./app.js?v=gaia-story-map-aiva-1-live-base-1",
         "./map-ui-grid-polish.js?v=gaia-map-europe-clear-1",
         "./particles-v9.js?v=gaia-adaptive-performance-1",
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
         "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
       ],
-      modules: ["./src/exploration/index.js?v=gaia-live-description-aligned-2"],
+      modules: ["./src/exploration/index.js?v=gaia-title-only-1"],
     },
     story: {
       templates: ["gaia-template-story"],
@@ -97,8 +97,8 @@
     },
     tour: {
       templates: [],
-      styles: ["./guided-tour.css?v=gaia-tour-tooltip-3"],
-      scripts: ["./guided-tour.js?v=gaia-tour-tooltip-3"],
+      styles: ["./guided-tour.css?v=gaia-tour-clear-1"],
+      scripts: ["./guided-tour.js?v=gaia-tour-clear-1"],
     },
   });
 

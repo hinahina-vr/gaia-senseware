@@ -1,4 +1,5 @@
 import { STATUS_LABELS } from "./transforms.js";
+import proceduralAudio from "./procedural-audio.js";
 
 const EXHIBITS = Object.freeze([
   Object.freeze({
@@ -11,6 +12,12 @@ const EXHIBITS = Object.freeze([
     rgb: "121, 247, 255",
     fallback: 0.14,
     caption: "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。",
+    signalLabel: "風速",
+    scaleLabel: "0—45 m/sを0—100%へ正規化",
+    location: Object.freeze({ lon: -155.056, lat: 19.73, label: "NDBC ILOH1 / ハワイ島東岸" }),
+    visualCue: "流線",
+    visualMap: "風速が高いほど、流線の本数・移動速度・光量が増えます。",
+    soundMap: "風速が高いほど、テンポ・高域・風の粒子音が増えます。",
   }),
   Object.freeze({
     id: "carbon-pulse",
@@ -22,6 +29,12 @@ const EXHIBITS = Object.freeze([
     rgb: "255, 208, 111",
     fallback: 0.4,
     caption: "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。",
+    signalLabel: "CO₂濃度",
+    scaleLabel: "280—650 ppmを0—100%へ正規化",
+    location: Object.freeze({ lon: -155.576, lat: 19.536, label: "Mauna Loa Observatory / ハワイ島" }),
+    visualCue: "光環",
+    visualMap: "CO₂濃度が高いほど、光環の呼吸が速まり、余韻が広がります。",
+    soundMap: "CO₂濃度を、maj7和音の呼吸周期と微細な音程変化へ変えます。",
   }),
   Object.freeze({
     id: "rain-chorus",
@@ -33,6 +46,12 @@ const EXHIBITS = Object.freeze([
     rgb: "130, 191, 255",
     fallback: 0.08,
     caption: "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。",
+    signalLabel: "領域平均降水量",
+    scaleLabel: "0—30 mm/hrを0—100%へ正規化",
+    location: Object.freeze({ lon: -155.45, lat: 19.55, label: "JAXA GSMaP / ハワイ固定範囲" }),
+    visualCue: "雨と波紋",
+    visualMap: "降水量が多いほど、雨線と水面の波紋が密に発生します。",
+    soundMap: "降水量を、音符密度・水滴の明るさ・残響の深さへ変えます。",
   }),
   Object.freeze({
     id: "no2-veil",
@@ -44,6 +63,12 @@ const EXHIBITS = Object.freeze([
     rgb: "212, 155, 255",
     fallback: 0.16,
     caption: "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。",
+    signalLabel: "NO₂鉛直カラム",
+    scaleLabel: "0—0.0003 mol/m²を0—100%へ正規化",
+    location: Object.freeze({ lon: -155.45, lat: 19.55, label: "Sentinel-5P / ハワイ固定範囲" }),
+    visualCue: "大気の膜",
+    visualMap: "NO₂が高いほど薄膜の明度と揺らぎが増え、欠測時は走査線だけが残ります。",
+    soundMap: "NO₂を共鳴と高域の薄膜へ変換し、欠測時は疎らな待機和音にします。",
   }),
 ]);
 
@@ -59,11 +84,11 @@ let canvas = null;
 let context = null;
 let webglRenderer = null;
 let readout = null;
+let anchorMarker = null;
 let buttons = [];
 let frame = 0;
 let lastRenderedAt = 0;
 let savedHeading = null;
-const HAWAII_ANCHOR = Object.freeze({ lon: -155.576, lat: 19.536 });
 const LIGHT_TOUCH_CAPACITY = 8;
 let lightTouches = [];
 let lightPointer = { x: 0.5, y: 0.5, active: 0, energy: 0, down: false, lastX: 0.5, lastY: 0.5 };
@@ -82,7 +107,18 @@ const profile = () => globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || { dp
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
 
-const hawaiiSceneAnchor = () => {
+const observationLocation = (exhibit, measurement) => {
+  const location = measurement?.location;
+  const lon = Number(location?.lon);
+  const lat = Number(location?.lat);
+  return {
+    lon: Number.isFinite(lon) ? lon : exhibit.location.lon,
+    lat: Number.isFinite(lat) ? lat : exhibit.location.lat,
+    label: location?.label || exhibit.location.label,
+  };
+};
+
+const projectSceneAnchor = (location) => {
   const rect = canvas?.getBoundingClientRect();
   if (!rect?.width || !rect?.height) return { scene: [0.4, 0.12], normalized: [0.7, 0.42] };
   const overlay = document.querySelector("#japan-overlay");
@@ -94,9 +130,9 @@ const hawaiiSceneAnchor = () => {
   const worldHeight = 180 * scale;
   const originX = (rect.width - worldWidth) / 2 + offsetX;
   const originY = (rect.height - worldHeight) / 2 + offsetY;
-  const mapLongitude = wrapLongitude(HAWAII_ANCHOR.lon - 138) + 180;
+  const mapLongitude = wrapLongitude(location.lon - 138) + 180;
   const screenX = originX + mapLongitude * scale;
-  const screenY = originY + (90 - HAWAII_ANCHOR.lat) * scale;
+  const screenY = originY + (90 - location.lat) * scale;
   const minimumDimension = Math.max(1, Math.min(rect.width, rect.height));
   return {
     normalized: [screenX / rect.width, screenY / rect.height],
@@ -120,9 +156,25 @@ const lightTouchUniform = (timestamp) => {
 };
 
 const addLightTouch = (x, y, strength = 1) => {
-  lightTouches.push({ x: clamp01(x), y: clamp01(y), strength, startedAt: performance.now() });
+  const normalizedX = clamp01(x);
+  const normalizedY = clamp01(y);
+  lightTouches.push({ x: normalizedX, y: normalizedY, strength, startedAt: performance.now() });
   if (lightTouches.length > LIGHT_TOUCH_CAPACITY) lightTouches.splice(0, lightTouches.length - LIGHT_TOUCH_CAPACITY);
   if (canvas) canvas.dataset.lightTouchCount = String(lightTouches.length);
+  const exhibit = EXHIBITS[activeIndex];
+  const measurement = exhibit ? currentMeasurement(exhibit) : null;
+  if (exhibit) {
+    dispatchEvent(new CustomEvent("gaia:live-touch", {
+      detail: {
+        id: exhibit.id,
+        key: exhibit.key,
+        x: normalizedX,
+        y: normalizedY,
+        strength,
+        normalized: Number.isFinite(Number(measurement?.normalized)) ? Number(measurement.normalized) : exhibit.fallback,
+      },
+    }));
+  }
 };
 
 const updateLightPointer = (event, { touch = false } = {}) => {
@@ -456,12 +508,14 @@ const line = (points, color, width = 1) => {
   context.stroke();
 };
 
-const drawWind = (width, height, time, strength, ratio) => {
+const drawWind = (width, height, time, strength, ratio, anchor) => {
   const count = Math.max(24, Math.round((54 + strength * 66) * ratio));
+  const anchorX = anchor[0] * width;
+  const anchorY = anchor[1] * height;
   context.globalCompositeOperation = "screen";
   for (let index = 0; index < count; index += 1) {
     const seed = (index * 0.61803398875) % 1;
-    const y = seed * height;
+    const y = index % 6 === 0 ? seed * height : anchorY + (seed - 0.5) * height * 0.38;
     const phase = time * (0.24 + strength * 0.72) + index * 0.47;
     const x = ((phase * 170 + seed * width * 1.3) % (width + 280)) - 140;
     const length = 90 + strength * 260 + (index % 7) * 8;
@@ -473,12 +527,18 @@ const drawWind = (width, height, time, strength, ratio) => {
     context.lineWidth = index % 9 === 0 ? 2.2 : 0.8;
     context.stroke();
   }
-  line([[width * 0.12, height * 0.5], [width * 0.88, height * 0.5]], "rgba(121,247,255,.1)");
+  const sourceGlow = context.createRadialGradient(anchorX, anchorY, 0, anchorX, anchorY, 74 + strength * 80);
+  sourceGlow.addColorStop(0, "rgba(228,255,255,.34)");
+  sourceGlow.addColorStop(0.22, "rgba(121,247,255,.16)");
+  sourceGlow.addColorStop(1, "rgba(121,247,255,0)");
+  context.fillStyle = sourceGlow;
+  context.fillRect(anchorX - 170, anchorY - 170, 340, 340);
+  line([[width * 0.08, anchorY], [width * 0.94, anchorY]], "rgba(121,247,255,.12)");
 };
 
-const drawCarbon = (width, height, time, strength, ratio) => {
-  const x = width * 0.47;
-  const y = height * 0.48;
+const drawCarbon = (width, height, time, strength, ratio, anchor) => {
+  const x = anchor[0] * width;
+  const y = anchor[1] * height;
   const pulse = 0.5 + 0.5 * Math.sin(time * (0.8 + strength * 1.6));
   const glow = context.createRadialGradient(x, y, 0, x, y, Math.min(width, height) * 0.46);
   glow.addColorStop(0, `rgba(255,225,138,${0.18 + pulse * 0.2})`);
@@ -505,8 +565,10 @@ const drawCarbon = (width, height, time, strength, ratio) => {
   }
 };
 
-const drawRain = (width, height, time, strength, ratio) => {
+const drawRain = (width, height, time, strength, ratio, anchor) => {
   const count = Math.max(34, Math.round((72 + strength * 150) * ratio));
+  const anchorX = anchor[0] * width;
+  const anchorY = anchor[1] * height;
   context.globalCompositeOperation = "screen";
   for (let index = 0; index < count; index += 1) {
     const seedX = (index * 0.754877666) % 1;
@@ -524,8 +586,8 @@ const drawRain = (width, height, time, strength, ratio) => {
   const rippleCount = Math.max(5, Math.round(11 * ratio));
   for (let index = 0; index < rippleCount; index += 1) {
     const phase = ((time * (0.28 + strength * 0.5) + index / rippleCount) % 1);
-    const x = width * (0.18 + ((index * 0.37) % 0.58));
-    const y = height * (0.57 + ((index * 0.21) % 0.28));
+    const x = anchorX + (((index * 0.37) % 1) - 0.5) * width * 0.54;
+    const y = anchorY + height * (0.12 + ((index * 0.21) % 0.28));
     context.beginPath();
     context.ellipse(x, y, 12 + phase * 72, 4 + phase * 24, 0, 0, Math.PI * 2);
     context.strokeStyle = `rgba(151,218,255,${(1 - phase) * 0.3})`;
@@ -589,6 +651,19 @@ const drawLightTouch = (width, height, timestamp, rgb) => {
   context.restore();
 };
 
+const updateAnchorMarker = (exhibit, location, anchor) => {
+  if (!anchorMarker) return;
+  const [x, y] = anchor.normalized;
+  const onScreen = x >= 0.015 && x <= 0.985 && y >= 0.04 && y <= 0.96;
+  anchorMarker.hidden = !onScreen;
+  anchorMarker.style.left = `${(x * 100).toFixed(3)}%`;
+  anchorMarker.style.top = `${(y * 100).toFixed(3)}%`;
+  anchorMarker.dataset.exhibit = exhibit.id;
+  anchorMarker.querySelector("[data-live-anchor-source]").textContent = exhibit.number === "10" ? "OBSERVATORY" : "OBSERVATION AREA";
+  anchorMarker.querySelector("[data-live-anchor-label]").textContent = location.label;
+  anchorMarker.querySelector("[data-live-anchor-coordinates]").textContent = `${Math.abs(location.lat).toFixed(3)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(3)}°${location.lon >= 0 ? "E" : "W"}`;
+};
+
 const draw = (timestamp = performance.now(), force = false) => {
   cancelAnimationFrame(frame);
   frame = 0;
@@ -606,13 +681,17 @@ const draw = (timestamp = performance.now(), force = false) => {
   const strength = missing ? exhibit.fallback : Math.max(0, Math.min(1, Number(measurement.normalized) || 0));
   const { width, height } = resizeCanvas();
   const time = reducedMotion ? 2.4 : timestamp / 1000;
-  const anchor = hawaiiSceneAnchor();
+  const location = observationLocation(exhibit, measurement);
+  const anchor = projectSceneAnchor(location);
   const touches = lightTouchUniform(timestamp);
   lightPointer.energy *= lightPointer.down ? 0.992 : 0.965;
-  canvas.dataset.anchorLongitude = String(HAWAII_ANCHOR.lon);
-  canvas.dataset.anchorLatitude = String(HAWAII_ANCHOR.lat);
+  canvas.dataset.anchorLongitude = String(location.lon);
+  canvas.dataset.anchorLatitude = String(location.lat);
   canvas.dataset.anchorNormalizedX = anchor.normalized[0].toFixed(4);
   canvas.dataset.anchorNormalizedY = anchor.normalized[1].toFixed(4);
+  canvas.dataset.signalStrength = strength.toFixed(4);
+  canvas.dataset.signalKey = exhibit.key;
+  updateAnchorMarker(exhibit, location, anchor);
   if (webglRenderer) {
     webglRenderer.render({
       time,
@@ -632,9 +711,9 @@ const draw = (timestamp = performance.now(), force = false) => {
     context.fillStyle = wash;
     context.fillRect(0, 0, width, height);
     const particleRatio = currentProfile.particleRatio || 0.25;
-    if (exhibit.id === "wind-field") drawWind(width, height, time, strength, particleRatio);
-    else if (exhibit.id === "carbon-pulse") drawCarbon(width, height, time, strength, particleRatio);
-    else if (exhibit.id === "rain-chorus") drawRain(width, height, time, strength, particleRatio);
+    if (exhibit.id === "wind-field") drawWind(width, height, time, strength, particleRatio, anchor.normalized);
+    else if (exhibit.id === "carbon-pulse") drawCarbon(width, height, time, strength, particleRatio, anchor.normalized);
+    else if (exhibit.id === "rain-chorus") drawRain(width, height, time, strength, particleRatio, anchor.normalized);
     else drawNo2(width, height, time, strength, particleRatio, missing);
     drawLightTouch(width, height, timestamp, exhibit.rgb);
     context.globalCompositeOperation = "source-over";
@@ -648,12 +727,38 @@ const renderReadout = () => {
   const state = currentState();
   const measurement = currentMeasurement(exhibit);
   const missing = !measurement || !Number.isFinite(Number(measurement.value));
+  const strength = missing ? exhibit.fallback : clamp01(measurement.normalized);
+  const location = observationLocation(exhibit, measurement);
+  const audioState = proceduralAudio.getState();
   const status = STATUS_LABELS[measurement?.status] || (state.connected ? "NEAR REAL TIME" : "SNAPSHOT");
   readout.dataset.missing = String(missing);
+  readout.dataset.exhibit = exhibit.id;
+  readout.dataset.audioState = audioState.active ? "playing" : audioState.enabled ? "armed" : "off";
+  readout.style.setProperty("--live-signal-level", String(strength));
+  readout.style.setProperty("--live-stage-duration", `${(60 / Math.max(1, audioState.tempo || 48)).toFixed(3)}s`);
   readout.querySelector("[data-live-exhibit-kicker]").textContent = `${exhibit.number} / ${status}`;
-  readout.querySelector("[data-live-exhibit-title]").textContent = exhibit.title;
+  const [titleJa, titleEn = ""] = exhibit.title.split(" — ");
+  const exhibitTitle = readout.querySelector("[data-live-exhibit-title]");
+  exhibitTitle.setAttribute("aria-label", exhibit.title);
+  exhibitTitle.querySelector("[data-live-exhibit-title-ja]").textContent = titleJa;
+  exhibitTitle.querySelector("[data-live-exhibit-title-en]").textContent = titleEn;
   readout.querySelector("[data-live-exhibit-value]").textContent = formatValue(measurement);
   readout.querySelector("[data-live-exhibit-caption]").textContent = exhibit.caption;
+  readout.querySelector("[data-live-exhibit-level]").textContent = missing ? "欠測 / STANDBY" : `${Math.round(strength * 100)}% SIGNAL`;
+  readout.querySelector("[data-live-exhibit-scale]").textContent = exhibit.scaleLabel;
+  readout.querySelector("[data-live-stage-signal]").textContent = missing ? "STANDBY" : formatValue(measurement);
+  readout.querySelector("[data-live-stage-location]").textContent = "HAWAIʻI";
+  readout.querySelector("[data-live-stage-coordinates]").textContent = `${Math.abs(location.lat).toFixed(1)}°${location.lat >= 0 ? "N" : "S"}`;
+  readout.querySelector("[data-live-stage-visual]").textContent = exhibit.visualCue;
+  readout.querySelector("[data-live-stage-sound]").textContent = `${audioState.tempo || "—"} BPM`;
+  readout.querySelector("[data-live-exhibit-input]").textContent = missing
+    ? `${exhibit.signalLabel}は欠測。値を捏造せず待機演出へ切り替えます。`
+    : `${exhibit.signalLabel} ${formatValue(measurement)}を変換の起点にします。`;
+  readout.querySelector("[data-live-exhibit-location]").textContent = `${location.label}（${location.lat.toFixed(3)}°, ${location.lon.toFixed(3)}°）を地図上の発生点として表示します。`;
+  readout.querySelector("[data-live-exhibit-visual-map]").textContent = exhibit.visualMap;
+  readout.querySelector("[data-live-exhibit-sound-map]").textContent = audioState.focus === exhibit.id
+    ? `${exhibit.soundMap} 現在 ${audioState.tempo} BPM。`
+    : exhibit.soundMap;
   readout.querySelector("[data-live-exhibit-source]").textContent = measurement
     ? `${measurement.provider?.toUpperCase() || "SOURCE"} · ${measurement.datasetId || "PUBLIC DATA"}`
     : "SOURCE DATA MISSING · VISUAL SCAN STANDBY";
@@ -683,23 +788,30 @@ const select = (index) => {
     };
   }
   activeIndex = index;
+  const exhibit = EXHIBITS[index];
+  layer.classList.add("is-live-exhibit");
+  layer.dataset.liveExhibit = exhibit.id;
+  proceduralAudio.setFocus(exhibit.id);
+  if (!globalThis.GaiaOpeningAudio?.getState?.().muted) {
+    void proceduralAudio.enable().then(renderReadout).catch((error) => console.error(error));
+  }
   lightTouches = [];
   lightPointer.energy = 0;
   canvas.dataset.lightTouchCount = "0";
-  layer.classList.add("is-live-exhibit");
-  layer.dataset.liveExhibit = EXHIBITS[index].id;
   canvas.hidden = false;
   readout.hidden = false;
   applyHeading();
   renderReadout();
   lastRenderedAt = 0;
   draw(performance.now(), true);
-  dispatchEvent(new CustomEvent("gaia:live-exhibit-change", { detail: { index, id: EXHIBITS[index].id } }));
+  dispatchEvent(new CustomEvent("gaia:live-exhibit-change", { detail: { index, id: exhibit.id } }));
 };
 
 const deactivate = ({ number, title } = {}) => {
   if (activeIndex < 0) return;
   activeIndex = -1;
+  proceduralAudio.setFocus(null);
+  proceduralAudio.disable();
   lightTouches = [];
   lightPointer.active = 0;
   lightPointer.down = false;
@@ -710,6 +822,7 @@ const deactivate = ({ number, title } = {}) => {
   delete layer.dataset.liveExhibit;
   canvas.hidden = true;
   readout.hidden = true;
+  if (anchorMarker) anchorMarker.hidden = true;
   buttons.forEach((button) => button.setAttribute("aria-current", "false"));
   layer.style.removeProperty("--map-accent");
   layer.style.removeProperty("--map-accent-rgb");
@@ -738,6 +851,12 @@ const mount = () => {
   canvas.dataset.lightTouchIntegration = "abstract-light-touch";
   canvas.dataset.lightTouchCount = "0";
   map.append(canvas);
+  anchorMarker = document.createElement("div");
+  anchorMarker.className = "gaia-live-exhibit-anchor";
+  anchorMarker.hidden = true;
+  anchorMarker.setAttribute("aria-hidden", "true");
+  anchorMarker.innerHTML = `<i></i><span><b data-live-anchor-source>OBSERVATION AREA</b><strong data-live-anchor-label>HAWAII</strong><small data-live-anchor-coordinates>19.550°N / 155.450°W</small></span>`;
+  map.append(anchorMarker);
   webglRenderer = createWebGLRenderer(canvas);
   if (webglRenderer) {
     canvas.dataset.renderEngine = "webgl-aiva-field";
@@ -778,8 +897,57 @@ const mount = () => {
   readout.className = "gaia-live-exhibit-readout";
   readout.hidden = true;
   readout.setAttribute("aria-live", "polite");
-  readout.innerHTML = `<p data-live-exhibit-kicker></p><h3 data-live-exhibit-title></h3><strong data-live-exhibit-value></strong><p data-live-exhibit-caption></p><footer><span data-live-exhibit-source></span><time data-live-exhibit-time></time></footer><p class="gaia-live-exhibit-touch-hint"><b>光に触れる</b><span>TOUCH / DRAG</span></p>`;
+  readout.innerHTML = `
+    <div class="gaia-live-exhibit-primary">
+      <div>
+        <p data-live-exhibit-kicker></p>
+        <h3 data-live-exhibit-title>
+          <span data-live-exhibit-title-ja></span>
+          <small data-live-exhibit-title-en></small>
+        </h3>
+      </div>
+      <strong data-live-exhibit-value></strong>
+    </div>
+    <div class="gaia-live-exhibit-signal" aria-label="観測値の変換強度">
+      <span><i></i></span>
+      <b data-live-exhibit-level>0% SIGNAL</b>
+      <small data-live-exhibit-scale></small>
+    </div>
+    <p class="gaia-live-exhibit-a11y" data-live-exhibit-caption></p>
+    <ol class="gaia-live-exhibit-path" aria-label="観測データから映像と音への変換経路">
+      <li data-live-stage="observe">
+        <span>01</span>
+        <i class="gaia-live-stage-symbol" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="5"/><circle cx="32" cy="32" r="16"/><circle cx="32" cy="32" r="27"/></svg></i>
+        <b>観測</b><em data-live-stage-signal>—</em>
+        <p class="gaia-live-exhibit-a11y" data-live-exhibit-input></p>
+      </li>
+      <li data-live-stage="locate">
+        <span>02</span>
+        <i class="gaia-live-stage-symbol" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="27" r="9"/><path d="M32 5c-13 0-23 10-23 23 0 17 23 31 23 31s23-14 23-31C55 15 45 5 32 5Z"/></svg></i>
+        <b>地図</b><em data-live-stage-location>HAWAIʻI</em><small data-live-stage-coordinates>19.7°N</small>
+        <p class="gaia-live-exhibit-a11y" data-live-exhibit-location></p>
+      </li>
+      <li data-live-stage="visualize">
+        <span>03</span>
+        <i class="gaia-live-stage-symbol" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M4 21c10-12 18 12 28 0s18 12 28 0M4 33c10-12 18 12 28 0s18 12 28 0M4 45c10-12 18 12 28 0s18 12 28 0"/></svg></i>
+        <b>光</b><em data-live-stage-visual>流線</em>
+        <p class="gaia-live-exhibit-a11y" data-live-exhibit-visual-map></p>
+      </li>
+      <li data-live-stage="sonify">
+        <span>04</span>
+        <i class="gaia-live-stage-symbol" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M6 35h7l5-17 8 32 7-42 8 47 7-27 5 7h5"/></svg></i>
+        <b>音</b><em data-live-stage-sound>— BPM</em>
+        <p class="gaia-live-exhibit-a11y" data-live-exhibit-sound-map></p>
+      </li>
+    </ol>
+    <div class="gaia-live-exhibit-actions">
+      <button type="button" data-live-sound-toggle aria-pressed="false"><span class="gaia-live-sound-mark" aria-hidden="true"><i></i><i></i><i></i></span><b data-live-sound-label>音をひらく</b></button>
+      <p class="gaia-live-exhibit-touch-hint"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></p>
+    </div>
+    <footer><span data-live-exhibit-source></span><time data-live-exhibit-time></time></footer>
+  `;
   layer.append(readout);
+  dispatchEvent(new CustomEvent("gaia:live-exhibit-mounted"));
 
   map.addEventListener("pointerdown", (event) => {
     if (activeIndex < 0) return;
@@ -850,6 +1018,13 @@ const mount = () => {
   addEventListener("gaia:live-update", () => {
     renderReadout();
     if (activeIndex >= 0 && !frame) draw();
+  });
+  addEventListener("gaia:procedural-audio-state", () => {
+    const audioState = proceduralAudio.getState();
+    canvas.dataset.audioState = audioState.active ? "playing" : audioState.enabled ? "armed" : "off";
+    canvas.dataset.audioFocus = audioState.focus || "none";
+    canvas.dataset.audioTempo = String(audioState.tempo || 0);
+    renderReadout();
   });
   addEventListener("gaia:japan-mode-change", () => {
     if (activeIndex < 0) return;

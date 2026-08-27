@@ -3827,6 +3827,12 @@
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     renderCachedReferenceWorldModel(ctx, rect, left, top);
+    const liveBackdropOnly = japanLayer.classList.contains("is-live-exhibit");
+    japanOverlay.dataset.liveBackdrop = liveBackdropOnly ? "reference-map-only" : "standard-mode";
+    if (liveBackdropOnly) {
+      ctx.restore();
+      return;
+    }
 
     if (mapScope === "japan" && isTheme(5)) {
       const plateCenter = { x: rect.width * 0.6, y: rect.height * 0.52 };
@@ -4016,6 +4022,10 @@
     }
     ctx.restore();
   };
+
+  window.addEventListener("gaia:live-exhibit-change", () => {
+    renderJapanOverlay(performance.now());
+  });
 
   const addJapanPulse = (clientX, clientY) => {
     const { rect, left, top } = getJapanViewport();

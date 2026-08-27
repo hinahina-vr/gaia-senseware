@@ -25,6 +25,7 @@ export const collectMeasurements = (events = []) => {
         datasetId: event.datasetId,
         status: event.status,
         observedAt: event.observedAt,
+        location: event.location ? { ...event.location } : null,
         normalized: normalizeMeasurement(measurement.key, measurement.value),
       };
     }

@@ -11,6 +11,88 @@
   --map-grid-panel-glow: rgba(87, 203, 198, 0.13);
 }
 
+/* Live exhibits use a gallery rail: large current state, large numbered pads,
+   and no instructional prose competing with the installation. */
+.japan-layer.is-live-exhibit #japan-description {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+.japan-layer.is-live-exhibit .japan-heading .japan-data-button {
+  display: none !important;
+}
+
+.japan-layer.is-live-exhibit .japan-heading .japan-kicker {
+  display: none !important;
+}
+
+@media (min-width: 901px) {
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-intro {
+    right: auto !important;
+    left: 50% !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: clamp(320px, 18vw, 520px) !important;
+    min-height: clamp(68px, 4.2vw, 92px) !important;
+    padding: clamp(12px, 0.75vw, 20px) clamp(20px, 1.2vw, 36px) !important;
+    transform: translateX(-50%) !important;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-intro #japan-title {
+    justify-self: center;
+    font-size: clamp(34px, 1.35vw, 52px) !important;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank {
+    top: auto !important;
+    right: auto !important;
+    bottom: var(--map-grid-gutter) !important;
+    left: var(--map-grid-gutter) !important;
+    width: clamp(400px, 22vw, 720px) !important;
+    padding: clamp(20px, 1.2vw, 38px) !important;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-heading > p,
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-guide {
+    display: none !important;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-heading > div {
+    gap: clamp(12px, 0.8vw, 24px);
+    margin-bottom: clamp(14px, 0.85vw, 26px);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-heading span {
+    font-size: clamp(22px, 0.82vw, 32px);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-heading strong {
+    font-size: clamp(18px, 0.7vw, 27px);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-list {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: clamp(5px, 0.4vw, 12px);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-button {
+    height: clamp(42px, 2vw, 68px);
+    border-radius: 999px;
+    font-size: clamp(12px, 0.42vw, 16px);
+  }
+}
+
+@media (max-width: 720px) {
+  .experience.japan-open .japan-layer.is-live-exhibit .japan-heading {
+    padding: 16px 20px !important;
+  }
+}
+
 /* Keep the map's changing exhibit title luminous against every map layer. */
 .japan-layer #japan-title {
   color: #c9f4ff;

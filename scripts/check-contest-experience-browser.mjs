@@ -218,13 +218,16 @@ try {
   await wideEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
   const wideComposition = await wideEntryPage.evaluate(() => {
     const photo = document.querySelector(".gaia-vn-panel-final .gaia-vn-final-photo");
+    const copy = document.querySelector(".gaia-vn-panel-final .gaia-vn-final-copy");
     const menu = document.querySelector("#gaia-opening-final-menu");
+    const copyRect = copy.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
     const style = getComputedStyle(photo);
     return {
       backgroundPosition: style.backgroundPosition,
       backgroundSize: style.backgroundSize,
-      menu: { left: menuRect.left, right: menuRect.right, bottom: menuRect.bottom },
+      copy: { left: copyRect.left, bottom: copyRect.bottom },
+      menu: { left: menuRect.left, top: menuRect.top, right: menuRect.right, bottom: menuRect.bottom, width: menuRect.width },
       viewport: { width: innerWidth, height: innerHeight },
     };
   });
@@ -232,6 +235,11 @@ try {
   assert.match(wideComposition.backgroundPosition, /100% 50%/u, "wide opening artwork must be anchored to the right");
   assert(wideComposition.menu.left >= 0 && wideComposition.menu.right <= wideComposition.viewport.width && wideComposition.menu.bottom <= wideComposition.viewport.height, "wide opening menu must remain inside the viewport");
   await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-wide.png"), animations: "disabled" });
+  const wideMenuCenter = wideComposition.menu.left + wideComposition.menu.width / 2;
+  const wideLogoOpticalCenter = wideComposition.viewport.width * 0.282;
+  assert(Math.abs(wideMenuCenter - wideLogoOpticalCenter) <= 16, "wide opening menu must be centered beneath the title logo");
+  assert(wideComposition.menu.left - wideComposition.copy.left >= 100, "wide opening menu must retain its logo-centering offset");
+  assert(wideComposition.menu.top <= 580, `wide opening menu must sit directly beneath the title logo: ${JSON.stringify(wideComposition)}`);
   report.entry.wideComposition = "passed";
   await wideEntryContext.close();
 
@@ -315,10 +323,10 @@ try {
   await directPage.screenshot({ path: bankScreenshot, fullPage: false });
   report.entry.mapBankScreenshot = bankScreenshot;
   const liveExhibitContracts = new Map([
-    ["09", { title: "風脈", caption: "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。" }],
-    ["10", { title: "炭素の呼吸", caption: "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。" }],
-    ["11", { title: "雨の記憶", caption: "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。" }],
-    ["12", { title: "大気の痕跡", caption: "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。" }],
+    ["09", { id: "wind-field", key: "windSpeed", title: "風脈", caption: "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。", longitude: -155.056, latitude: 19.73, anchor: /NDBC ILOH1/u, sound: /風速/u }],
+    ["10", { id: "carbon-pulse", key: "co2", title: "炭素の呼吸", caption: "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。", longitude: -155.576, latitude: 19.536, anchor: /Mauna Loa/u, sound: /CO₂/u }],
+    ["11", { id: "rain-chorus", key: "precipitation", title: "雨の記憶", caption: "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。", longitude: -155.45, latitude: 19.55, anchor: /Hawaii fixed bbox mean|JAXA GSMaP/u, sound: /降水量/u }],
+    ["12", { id: "no2-veil", key: "no2", title: "大気の痕跡", caption: "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。", longitude: -155.45, latitude: 19.55, anchor: /Hawaii fixed bbox|Sentinel-5P/u, sound: /NO₂/u }],
   ]);
   let liveExhibitIndex = 0;
   for (const [number, contract] of liveExhibitContracts) {
@@ -329,6 +337,23 @@ try {
     assert.equal(await directPage.locator("#japan-title").textContent(), contract.title, `${number}: main heading mismatch`);
     assert.equal(await directPage.locator("[data-live-exhibit-caption]").textContent(), contract.caption, `${number}: explanatory contract changed`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-touch-hint").isVisible(), true, `${number}: integrated light-touch hint hidden`);
+    assert.equal(await directPage.locator(".gaia-live-exhibit-path li").count(), 4, `${number}: observation-to-sound path must have four stages`);
+    for (const selector of ["[data-live-exhibit-input]", "[data-live-exhibit-location]", "[data-live-exhibit-visual-map]", "[data-live-exhibit-sound-map]"]) {
+      assert((await directPage.locator(selector).textContent()).trim().length >= 12, `${number}: ${selector} explanation is missing`);
+    }
+    assert.equal(await directPage.locator(".gaia-live-exhibit-anchor").isVisible(), true, `${number}: geographic observation anchor hidden`);
+    assert.match(await directPage.locator("[data-live-anchor-label]").textContent(), contract.anchor, `${number}: geographic observation label mismatch`);
+    assert.equal(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").isVisible(), true, `${number}: generated music control hidden`);
+    const standardOverlayStyle = await directPage.locator("#japan-overlay").evaluate((overlay) => ({
+      opacity: getComputedStyle(overlay).opacity,
+      visibility: getComputedStyle(overlay).visibility,
+      liveBackdrop: overlay.dataset.liveBackdrop,
+    }));
+    assert.deepEqual(
+      standardOverlayStyle,
+      { opacity: "0.22", visibility: "visible", liveBackdrop: "reference-map-only" },
+      `${number}: live backdrop must retain only the reference map without Breathing Earth`,
+    );
     await directPage.waitForFunction((expectedMode) => (
       document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === String(expectedMode)
     ), liveExhibitIndex);
@@ -337,18 +362,52 @@ try {
       anchorLatitude: Number(canvas.dataset.anchorLatitude),
       anchorX: Number(canvas.dataset.anchorNormalizedX),
       anchorY: Number(canvas.dataset.anchorNormalizedY),
+      signalStrength: Number(canvas.dataset.signalStrength),
+      signalKey: canvas.dataset.signalKey,
       lightTouchIntegration: canvas.dataset.lightTouchIntegration,
     }));
-    assert.equal(liveGeography.anchorLongitude, -155.576, `${number}: Mauna Loa longitude contract changed`);
-    assert.equal(liveGeography.anchorLatitude, 19.536, `${number}: Mauna Loa latitude contract changed`);
+    assert.equal(liveGeography.anchorLongitude, contract.longitude, `${number}: observation longitude contract changed`);
+    assert.equal(liveGeography.anchorLatitude, contract.latitude, `${number}: observation latitude contract changed`);
     assert(liveGeography.anchorX >= 0 && liveGeography.anchorX <= 1 && liveGeography.anchorY >= 0 && liveGeography.anchorY <= 1, `${number}: Hawaii anchor is outside the visible map`);
+    assert(liveGeography.signalStrength >= 0 && liveGeography.signalStrength <= 1, `${number}: normalized signal strength is invalid`);
+    assert.equal(liveGeography.signalKey, contract.key, `${number}: visual field is not bound to its measurement key`);
     assert.equal(liveGeography.lightTouchIntegration, "abstract-light-touch");
+    if (number === "09") {
+      await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").click();
+    }
+    await directPage.waitForFunction((expectedFocus) => {
+      const state = globalThis.GaiaProceduralAudio?.getState?.();
+      return state?.active && state.focus === expectedFocus && state.contextState === "running" && state.tempo > 0 && state.chordFrequencies?.length === 4;
+    }, contract.id, { timeout: 15_000 });
+    const audioBeforeTouch = await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState());
+    assert.match(audioBeforeTouch.mapping, contract.sound, `${number}: sound mapping does not match the active dataset`);
+    assert(audioBeforeTouch.sequenceStep > 0, `${number}: data-driven music sequence did not start`);
     await directPage.screenshot({ path: path.join(outputDir, `live-exhibit-${number}.png`), animations: "disabled" });
     const liveMapBox = await directPage.locator("#japan-map").boundingBox();
     assert(liveMapBox, `${number}: live map has no hit target`);
     await directPage.mouse.click(liveMapBox.x + liveMapBox.width * 0.76, liveMapBox.y + liveMapBox.height * 0.42);
     await directPage.waitForFunction(() => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > 0);
     assert.equal(await directPage.locator("#japan-poi-card").isVisible(), false, `${number}: light touch leaked into the underlying map POI interaction`);
+    await directPage.waitForFunction((previousTouchCount) => globalThis.GaiaProceduralAudio?.getState?.().touchCount > previousTouchCount, audioBeforeTouch.touchCount);
+    await directPage.waitForTimeout(120);
+    const audioAfterTouch = await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState());
+    assert(audioAfterTouch.lastNoteFrequency > 0, `${number}: light touch did not generate a pitched note`);
+    assert(audioAfterTouch.outputLevel > 0 && audioAfterTouch.outputLevel <= 1, `${number}: generated music produced no measurable output`);
+    report.entry.liveAudio ??= [];
+    report.entry.liveAudio.push({
+      number,
+      focus: audioAfterTouch.focus,
+      tempo: audioAfterTouch.tempo,
+      missing: audioAfterTouch.missing,
+      mapping: audioAfterTouch.mapping,
+      sequenceStep: audioAfterTouch.sequenceStep,
+      touchCount: audioAfterTouch.touchCount,
+      lastNoteFrequency: audioAfterTouch.lastNoteFrequency,
+      outputLevel: audioAfterTouch.outputLevel,
+      longitude: liveGeography.anchorLongitude,
+      latitude: liveGeography.anchorLatitude,
+      signalStrength: liveGeography.signalStrength,
+    });
     await directPage.screenshot({ path: path.join(outputDir, `live-exhibit-${number}-touch.png`), animations: "disabled" });
     liveExhibitIndex += 1;
   }
@@ -389,9 +448,100 @@ try {
   assert.equal(await directPage.locator(".japan-heading .japan-data-button").first().isVisible(), false, "live readout overlaps standard map actions");
   await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").first().click();
   assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), false, "standard exhibit did not close live canvas");
+  assert.equal((await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState())).enabled, false, "generated music stayed enabled after leaving live exhibits");
   report.entry.liveExhibits = "passed";
   report.entry.history = "passed";
   await directContext.close();
+
+  const live4kContext = await browser.newContext({ viewport: { width: 3840, height: 1960 } });
+  const live4kPage = await live4kContext.newPage();
+  monitor(live4kPage, "live-4k");
+  await live4kPage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await live4kPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 4, null, { timeout: 30_000 });
+  await live4kPage.locator("#japan-mode-list [data-live-exhibit]", { hasText: "09" }).click();
+  await live4kPage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
+  const live4kVisualContract = await live4kPage.evaluate(() => {
+    const fontSize = (selector) => Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
+    const readout = document.querySelector(".gaia-live-exhibit-readout").getBoundingClientRect();
+    const heading = document.querySelector(".japan-heading");
+    const headingRect = heading.getBoundingClientRect();
+    const hiddenDetails = [...document.querySelectorAll(".gaia-live-exhibit-a11y")].map((node) => node.getBoundingClientRect());
+    return {
+      readout: { left: readout.left, right: readout.right, top: readout.top, bottom: readout.bottom },
+      titleOnlyHeader: {
+        width: headingRect.width,
+        kickerHidden: getComputedStyle(heading.querySelector(".japan-kicker")).display === "none",
+        descriptionHidden: heading.querySelector("#japan-description").getBoundingClientRect().width <= 1,
+        controlsHidden: [...heading.querySelectorAll(".japan-data-button")].every((node) => getComputedStyle(node).display === "none"),
+      },
+      titleFont: fontSize(".gaia-live-exhibit-primary h3"),
+      valueFont: fontSize(".gaia-live-exhibit-primary > strong"),
+      stageCueFont: fontSize(".gaia-live-exhibit-path li > em"),
+      actionFont: fontSize(".gaia-live-exhibit-actions button"),
+      bankButtonFont: fontSize(".map-mode-button"),
+      anchorFont: fontSize(".gaia-live-exhibit-anchor strong"),
+      symbolWidth: document.querySelector(".gaia-live-stage-symbol").getBoundingClientRect().width,
+      symbolCount: document.querySelectorAll(".gaia-live-stage-symbol svg").length,
+      hiddenDetails: hiddenDetails.every((rect) => rect.width <= 1 && rect.height <= 1),
+      visibleParagraphCards: [...document.querySelectorAll(".gaia-live-exhibit-path p")].some((node) => node.getBoundingClientRect().width > 1),
+      stageLabels: [...document.querySelectorAll(".gaia-live-exhibit-path li > b")].map((node) => node.textContent.trim()),
+      stageCues: [...document.querySelectorAll(".gaia-live-exhibit-path li > em")].map((node) => node.textContent.trim()),
+    };
+  });
+  assert(live4kVisualContract.readout.left >= 0 && live4kVisualContract.readout.right <= 3840 && live4kVisualContract.readout.bottom <= 1960, "4K live panel overflows the viewport");
+  assert(live4kVisualContract.titleOnlyHeader.width <= 520, "4K live heading remains wider than its title");
+  assert.equal(live4kVisualContract.titleOnlyHeader.kickerHidden, true, "live heading still displays its kicker");
+  assert.equal(live4kVisualContract.titleOnlyHeader.descriptionHidden, true, "live heading still displays explanatory prose");
+  assert.equal(live4kVisualContract.titleOnlyHeader.controlsHidden, true, "live heading still reserves visible controls");
+  assert(live4kVisualContract.titleFont >= 48, `4K live title remains too small: ${live4kVisualContract.titleFont}px`);
+  assert(live4kVisualContract.valueFont >= 84, `4K live value remains too small: ${live4kVisualContract.valueFont}px`);
+  assert(live4kVisualContract.stageCueFont >= 20, `4K stage cue remains too small: ${live4kVisualContract.stageCueFont}px`);
+  assert(live4kVisualContract.actionFont >= 19, `4K action remains too small: ${live4kVisualContract.actionFont}px`);
+  assert(live4kVisualContract.bankButtonFont >= 15, `4K mode control remains too small: ${live4kVisualContract.bankButtonFont}px`);
+  assert(live4kVisualContract.anchorFont >= 17, `4K map anchor remains too small: ${live4kVisualContract.anchorFont}px`);
+  assert(live4kVisualContract.symbolWidth >= 96 && live4kVisualContract.symbolCount === 4, "4K visual transformation symbols are not prominent");
+  assert.equal(live4kVisualContract.hiddenDetails, true, "long explanations must remain assistive-only");
+  assert.equal(live4kVisualContract.visibleParagraphCards, false, "paragraph explanation cards remain visible");
+  assert.deepEqual(live4kVisualContract.stageLabels, ["観測", "地図", "光", "音"]);
+  assert(live4kVisualContract.stageCues.every((value) => value.length >= 2), "visual transformation cues are incomplete");
+  const live4kScreenshot = path.join(outputDir, "live-exhibit-09-4k.png");
+  await live4kPage.screenshot({ path: live4kScreenshot, animations: "disabled" });
+  report.entry.liveExhibit4k = { screenshot: live4kScreenshot, ...live4kVisualContract };
+  await live4kContext.close();
+
+  const liveMobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const liveMobilePage = await liveMobileContext.newPage();
+  monitor(liveMobilePage, "live-mobile");
+  await liveMobilePage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await liveMobilePage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 4, null, { timeout: 30_000 });
+  await liveMobilePage.locator("#japan-mode-list [data-live-exhibit]", { hasText: "10" }).click();
+  await liveMobilePage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "1");
+  const mobileReadout = await liveMobilePage.locator(".gaia-live-exhibit-readout").boundingBox();
+  const mobileVisualContract = await liveMobilePage.evaluate(() => {
+    const readoutRect = document.querySelector(".gaia-live-exhibit-readout").getBoundingClientRect();
+    const titleRect = document.querySelector("[data-live-exhibit-title]").getBoundingClientRect();
+    const descriptionRect = document.querySelector("#japan-description").getBoundingClientRect();
+    const headingRect = document.querySelector(".japan-heading").getBoundingClientRect();
+    return {
+      titleContained: titleRect.left >= readoutRect.left && titleRect.right <= readoutRect.right,
+      descriptionHidden: descriptionRect.width <= 1 && descriptionRect.height <= 1,
+      englishTitleHidden: getComputedStyle(document.querySelector("[data-live-exhibit-title-en]")).display === "none",
+      compactHeader: headingRect.height <= 130,
+    };
+  });
+  assert(mobileReadout && mobileReadout.x >= 0 && mobileReadout.x + mobileReadout.width <= 390, "mobile live readout overflows horizontally");
+  assert(mobileReadout.y >= 80 && mobileReadout.y + mobileReadout.height <= 844, "mobile live readout does not preserve a visible map area");
+  assert.equal(mobileVisualContract.titleContained, true, "mobile exhibit title clips outside its readout");
+  assert.equal(mobileVisualContract.descriptionHidden, true, "mobile live exhibit still displays instructional prose");
+  assert.equal(mobileVisualContract.englishTitleHidden, true, "mobile exhibit title retains a space-consuming English subtitle");
+  assert.equal(mobileVisualContract.compactHeader, true, "mobile live header still reserves space for hidden text controls");
+  assert.equal(await liveMobilePage.locator(".gaia-live-exhibit-path li").count(), 4, "mobile transformation path is incomplete");
+  assert.equal(await liveMobilePage.locator(".gaia-live-stage-symbol").count(), 4, "mobile visual transformation symbols are incomplete");
+  assert((await liveMobilePage.locator(".gaia-live-exhibit-primary > strong").evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize))) >= 40, "mobile live value is too small");
+  const liveMobileScreenshot = path.join(outputDir, "live-exhibit-10-mobile.png");
+  await liveMobilePage.screenshot({ path: liveMobileScreenshot, animations: "disabled" });
+  report.entry.liveExhibitMobile = { screenshot: liveMobileScreenshot, ...mobileVisualContract };
+  await liveMobileContext.close();
 
   const tourContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const tourPage = await tourContext.newPage();
@@ -411,7 +561,7 @@ try {
   }, null, { timeout: 30_000 });
   const initialTour = await tourPage.evaluate(() => ({ state: GaiaGuidedTour.getState(), hash: location.hash, modalHidden: document.querySelector("#gaia-opening")?.hidden }));
   assert.equal(initialTour.state.totalDuration, 60);
-  assert.equal(await tourPage.locator(".gaia-tour-card-index span").last().textContent(), "07");
+  assert.equal(await tourPage.locator("[data-tour-step-total]").textContent(), "5");
   assert.equal(initialTour.hash, "#tour");
   assert.equal(initialTour.modalHidden, true);
   assert.equal(await tourPage.evaluate(() => document.querySelector("#gaia-guided-tour")?.contains(document.activeElement)), true);
@@ -423,7 +573,7 @@ try {
   const pausedTourIndex = await tourPage.evaluate(() => GaiaGuidedTour.getState().index);
   await tourPage.locator("[data-tour-action='next']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().index), pausedTourIndex + 1);
-  assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), false, "manual navigation pauses the tour");
+  assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), false, "manual navigation must preserve an intentional pause");
   await tourPage.waitForFunction(() => {
     const spotlight = document.querySelector(".gaia-tour-target-spotlight");
     const target = document.querySelector(".gaia-tour-highlight-target");
@@ -436,7 +586,7 @@ try {
     const instructionText = document.querySelector("[data-tour-instruction]");
     const hint = document.querySelector("[data-tour-hint]");
     const result = document.querySelector("[data-tour-result]");
-    const actionNumber = document.querySelector("[data-tour-action-number]");
+    const gesture = document.querySelector("[data-tour-gesture]");
     const receipt = document.querySelector("[data-tour-receipt]");
     const spotlight = document.querySelector(".gaia-tour-target-spotlight");
     const target = document.querySelector(".gaia-tour-highlight-target");
@@ -455,13 +605,16 @@ try {
     const controls = Array.from(document.querySelectorAll(".gaia-tour-controls button")).map((element) => element.getBoundingClientRect().height);
     return {
       cardHeight: card.getBoundingClientRect().height,
-      maxHeight: innerHeight * 0.35,
+      maxHeight: innerHeight * 0.38,
+      visibleTextLength: card.innerText.replace(/\s+/gu, "").length,
       copyFont: Number.parseFloat(getComputedStyle(copy).fontSize),
       instructionFont: Number.parseFloat(getComputedStyle(instruction).fontSize),
+      primaryActionFont: Number.parseFloat(getComputedStyle(instructionText).fontSize),
+      title: document.querySelector("[data-tour-title]").textContent.trim(),
       instructionText: instructionText.textContent.trim(),
       hint: hint.textContent.trim(),
       result: result.textContent.trim(),
-      actionNumber: actionNumber.textContent.trim(),
+      gesture: gesture.textContent.trim(),
       receiptOpen: receipt.open,
       railCount: rail.length,
       currentRailCount: rail.filter((element) => element.dataset.state === "current").length,
@@ -476,24 +629,30 @@ try {
       },
       borderWidth: Number.parseFloat(style.borderTopWidth),
       controls,
+      controlLabels: [...document.querySelectorAll(".gaia-tour-controls button")].map((button) => button.textContent.trim()),
     };
   });
-  assert(mobileTourLayout.cardHeight <= mobileTourLayout.maxHeight + 2, `tour card ${mobileTourLayout.cardHeight}px exceeds 35dvh`);
+  assert(mobileTourLayout.cardHeight <= mobileTourLayout.maxHeight + 2, `tour card ${mobileTourLayout.cardHeight}px exceeds 38dvh`);
+  assert(mobileTourLayout.visibleTextLength <= 150, `tour step remains text-heavy: ${mobileTourLayout.visibleTextLength} characters`);
   assert(mobileTourLayout.copyFont >= 14 && mobileTourLayout.instructionFont >= 14, "tour important copy below 14px");
-  assert(mobileTourLayout.instructionText.includes("ドラッグ") && mobileTourLayout.instructionText.includes("拡大"), "tour does not explain the map operation");
-  assert(mobileTourLayout.hint.includes("ピンチ") && mobileTourLayout.result.length >= 12, "tour lacks input hints or expected result");
-  assert.equal(mobileTourLayout.actionNumber, "2", "tour action number does not follow the current step");
+  assert(mobileTourLayout.primaryActionFont >= 16, "tour primary action is not visually dominant");
+  assert.equal(mobileTourLayout.title, "地図を動かして、光を押す。", "tour map title is not a direct action");
+  assert(mobileTourLayout.instructionText.includes("光る場所") && mobileTourLayout.instructionText.includes("押す"), "tour does not provide one direct map action");
+  assert(mobileTourLayout.hint.includes("2本で拡大") && mobileTourLayout.result.length >= 12, "tour lacks a plain input hint or visible outcome");
+  assert.equal(mobileTourLayout.gesture, "↔", "tour gesture does not match the map action");
   assert.equal(mobileTourLayout.receiptOpen, false, "technical receipt must be collapsed by default");
-  assert.equal(mobileTourLayout.railCount, 7, "tour progress rail must expose every step");
+  assert.equal(mobileTourLayout.railCount, 5, "tour progress rail must expose all five focused steps");
   assert.equal(mobileTourLayout.currentRailCount, 1, "tour progress rail must have one current step");
-  assert(mobileTourLayout.cueVisible && mobileTourLayout.cueText.includes("地図"), "tour target cue is not visible");
+  assert(mobileTourLayout.cueVisible && mobileTourLayout.cueText.includes("光る場所"), "tour target cue is not a direct action");
   assert(mobileTourLayout.spotlightVisible && Object.values(mobileTourLayout.spotlightDelta).every((delta) => delta <= 2), "tour spotlight does not frame the live target");
   assert(mobileTourLayout.borderWidth >= 2, "tour card border is not visible enough");
-  assert(mobileTourLayout.controls.every((height) => height >= 44), "tour control below 44px");
+  assert(mobileTourLayout.controls.every((height) => height >= 48), "tour control below 48px");
+  assert.deepEqual(mobileTourLayout.controlLabels, ["閉じる", "戻る", "続ける", "次へ"], "tour controls still rely on unexplained symbols");
   await tourPage.locator("[data-tour-action='toggle']").click();
   await tourPage.waitForFunction(() => GaiaGuidedTour.getState().elapsed > 0, null, { timeout: 10_000 });
   await tourPage.evaluate(() => document.querySelector(".gaia-tour-highlight-target")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().running), true, "exhibit interaction must not pause autoplay");
+  assert.equal(await tourPage.locator("[data-tour-result-label]").textContent(), "操作できました", "tour does not acknowledge a successful interaction");
   const visibleElapsed = await tourPage.evaluate(() => {
     Object.defineProperty(document, "hidden", { configurable: true, value: true });
     document.dispatchEvent(new Event("visibilitychange"));
@@ -544,6 +703,46 @@ try {
   report.tour.controls = "passed";
   await tourContext.close();
 
+  const clarityContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
+  const clarityPage = await clarityContext.newPage();
+  monitor(clarityPage, "tour-clarity");
+  await clarityPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await clarityPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
+  await clarityPage.locator("[data-tour-action='toggle']").click();
+  const claritySteps = [];
+  for (let expectedIndex = 0; expectedIndex < 5; expectedIndex += 1) {
+    await clarityPage.waitForFunction((value) => GaiaGuidedTour.getState().index === value, expectedIndex);
+    await clarityPage.waitForTimeout(120);
+    claritySteps.push(await clarityPage.evaluate(() => {
+      const card = document.querySelector(".gaia-tour-card");
+      const title = document.querySelector("[data-tour-title]").textContent.trim();
+      const action = document.querySelector("[data-tour-instruction]").textContent.trim();
+      const result = document.querySelector("[data-tour-result]").textContent.trim();
+      const visibleText = card.innerText.replace(/\s+/gu, "");
+      return {
+        title,
+        action,
+        result,
+        visibleCharacters: visibleText.length,
+        actionFont: Number.parseFloat(getComputedStyle(document.querySelector("[data-tour-instruction]")).fontSize),
+        explanationCount: [...card.querySelectorAll(".gaia-tour-copy, .gaia-tour-result, .gaia-tour-fallback:not([hidden])")].filter((node) => node.getBoundingClientRect().height > 1).length,
+        jargonVisible: /RAW|DERIVED|SCENARIO|HTML|JavaScript/u.test(card.innerText),
+      };
+    }));
+    await clarityPage.screenshot({ path: path.join(outputDir, `tour-clear-step-${expectedIndex + 1}-pc.png`), animations: "disabled" });
+    if (expectedIndex < 4) await clarityPage.locator("[data-tour-action='next']").click();
+  }
+  assert.equal(claritySteps.length, 5);
+  assert(claritySteps.every((step) => step.title.length <= 18 && step.action.length <= 24 && step.result.length <= 28), "tour does not keep each message to one concise idea");
+  assert(claritySteps.every((step) => step.visibleCharacters <= 165), "tour card still requires too much reading");
+  assert(claritySteps.every((step) => step.actionFont >= 19), "desktop tour action is not visually dominant");
+  assert(claritySteps.every((step) => step.explanationCount <= 3), "tour exposes too many simultaneous explanations");
+  assert(claritySteps.every((step) => step.jargonVisible === false), "tour exposes unexplained technical jargon");
+  report.tour.clarity = claritySteps;
+  await clarityPage.screenshot({ path: path.join(outputDir, "tour-clear-step-05-pc.png"), animations: "disabled" });
+  await clarityPage.evaluate(() => GaiaGuidedTour.exit());
+  await clarityContext.close();
+
   const automaticContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
   const automaticPage = await automaticContext.newPage();
   monitor(automaticPage, "tour-automatic");
@@ -569,7 +768,7 @@ try {
     const previous = document.querySelector("[data-tour-action='previous']");
     const toggle = document.querySelector("[data-tour-action='toggle']");
     if (GaiaGuidedTour.getState().running) toggle.click();
-    for (let attempt = 0; attempt < 7 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
+    for (let attempt = 0; attempt < 5 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
       (GaiaGuidedTour.getState().index < targetIndex ? next : previous).click();
     }
   }, 4);
@@ -597,13 +796,13 @@ try {
     const previous = document.querySelector("[data-tour-action='previous']");
     const toggle = document.querySelector("[data-tour-action='toggle']");
     if (GaiaGuidedTour.getState().running) toggle.click();
-    for (let attempt = 0; attempt < 7 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
+    for (let attempt = 0; attempt < 5 && GaiaGuidedTour.getState().index !== targetIndex; attempt += 1) {
       (GaiaGuidedTour.getState().index < targetIndex ? next : previous).click();
     }
   }, 1);
   await webglPage.waitForFunction(() => GaiaGuidedTour.getState().index === 1, null, { timeout: 20_000 });
   await webglPage.waitForSelector("[data-tour-fallback]:not([hidden])", { timeout: 20_000 });
-  for (let targetIndex = 2; targetIndex <= 6; targetIndex += 1) {
+  for (let targetIndex = 2; targetIndex <= 4; targetIndex += 1) {
     await webglPage.locator("[data-tour-action='next']").evaluate((button) => button.click());
     await webglPage.waitForFunction((expectedIndex) => GaiaGuidedTour.getState().index === expectedIndex, targetIndex, { timeout: 20_000 });
   }

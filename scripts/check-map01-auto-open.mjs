@@ -94,10 +94,10 @@ check("story copy describes automatic playback without retired controls", () => 
 });
 
 check("runtime cache keys are advanced", () => {
-  assert.match(html, /gaia-mode-loader\.js\?v=gaia-tour-tooltip-3/u);
-  assert.match(modeLoader, /styles\.css\?v=gaia-live-exhibits-2-tour-layout-1/u);
+  assert.match(html, /gaia-mode-loader\.js\?v=gaia-live-gallery-1/u);
+  assert.match(modeLoader, /styles\.css\?v=gaia-live-gallery-1/u);
   assert.match(modeLoader, /novel-background-cues\.js\?v=gaia-amane-no-plug-1/u);
-  assert.match(modeLoader, /app\.js\?v=gaia-story-map-aiva-1-tour-tooltip-2/u);
+  assert.match(modeLoader, /app\.js\?v=gaia-story-map-aiva-1-live-base-1/u);
   assert.match(modeLoader, /novel-mode\.css\?v=gaia-story-map-aiva-2/u);
   assert.match(modeLoader, /gx-mode\.js\?v=gaia-gx-mobile-installation-1/u);
   assert.match(modeLoader, /novel-mode\.js\?v=gaia-story-map-aiva-2/u);

@@ -4878,18 +4878,18 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 }
 
-/* Final gateway placement: keep the question anchored to the artwork, then
-   nudge the actionable choices toward the visual focal point on the right. */
+/* Final gateway placement: align the route group with the optical center of
+   the baked title lockup and keep it close beneath the logo. */
 .gaia-vn-panel-final .gaia-opening-final-menu,
 .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
-  --opening-gateway-nudge: clamp(22px, 2.4vw, 46px);
+  --opening-gateway-nudge: clamp(46px, 4.3vw, 82px);
   margin-left: var(--opening-gateway-nudge);
 }
 
 @media (min-width: 961px) and (min-height: 521px) {
   .gaia-vn-panel-final .gaia-vn-final-copy,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
-    bottom: max(108px, 10vh);
+    bottom: clamp(160px, 22vh, 210px);
   }
 }
 
@@ -4905,6 +4905,11 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
    character group slightly right by showing the artwork at 95% width, while a
    darkened cover copy of the same frame softly fills the revealed left edge. */
 @media (min-width: 1200px) and (min-aspect-ratio: 19 / 10) {
+  .gaia-vn-panel-final .gaia-opening-final-menu,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+    --opening-gateway-nudge: clamp(88px, 5.4vw, 110px);
+  }
+
   .gaia-vn-panel-final .gaia-vn-final-photo,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-photo {
     background:

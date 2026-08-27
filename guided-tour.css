@@ -262,3 +262,317 @@ body.gaia-tour-open #japan-layer .japan-map-shade { opacity: .38; }
   .gaia-tour-controls { right: 42px; bottom: 28px; left: 42px; min-height: 72px; }
   .gaia-tour-controls button { min-height: 54px; font-size: 13px; }
 }
+
+/* Clear tour: one purpose, one action, one visible result per stop. */
+.gaia-tour {
+  --tour-mint: 126, 232, 255;
+  --tour-blue: 81, 145, 255;
+  align-items: end;
+  justify-items: end;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(104px, calc(env(safe-area-inset-bottom) + 92px)) max(24px, env(safe-area-inset-left));
+}
+
+.gaia-tour-vignette {
+  background:
+    linear-gradient(90deg, rgba(0, 7, 18, .7), transparent 52%),
+    linear-gradient(0deg, rgba(0, 7, 18, .64), transparent 54%);
+}
+
+.gaia-tour-card {
+  width: min(510px, calc(100vw - 48px));
+  max-height: calc(100dvh - max(124px, calc(env(safe-area-inset-bottom) + 112px)));
+  padding: 22px 24px 19px;
+  border: 2px solid rgba(130, 230, 255, .86);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(4, 31, 70, .98), rgba(3, 17, 43, .98));
+  box-shadow: 0 24px 80px rgba(0, 4, 20, .64), 0 0 34px rgba(70, 170, 255, .16);
+}
+
+.gaia-tour[data-step="transform"] .gaia-tour-card,
+.gaia-tour[data-step="space"] .gaia-tour-card { justify-self: end; }
+
+.gaia-tour-card-index {
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: rgba(209, 244, 255, .74);
+  font: 700 12px/1 Consolas, monospace;
+}
+
+.gaia-tour-card-index span { display: flex; gap: 6px; align-items: baseline; }
+.gaia-tour-card-index small { color: rgba(142, 224, 255, .65); font-size: 9px; letter-spacing: .14em; }
+.gaia-tour-card-index b { color: #fff; font-size: 17px; }
+.gaia-tour-card-index i { height: 2px; border-radius: 999px; }
+
+.gaia-tour-kicker {
+  margin: 0 0 7px;
+  color: #95eaff;
+  font: 750 12px/1.2 var(--font-ja, sans-serif);
+  letter-spacing: .12em;
+}
+
+.gaia-tour-card h2 {
+  color: #fff;
+  font: 700 clamp(29px, 2.5vw, 38px)/1.28 var(--font-ja, sans-serif);
+  letter-spacing: .015em;
+}
+
+.gaia-tour-copy {
+  margin: 12px 0 0;
+  color: rgba(242, 252, 255, .9);
+  font: 600 16px/1.55 var(--font-ja, sans-serif);
+}
+
+.gaia-tour-copy::before {
+  display: block;
+  margin-bottom: 3px;
+  color: rgba(145, 232, 255, .75);
+  content: "見るポイント";
+  font: 750 10px/1.2 var(--font-ja, sans-serif);
+  letter-spacing: .12em;
+}
+
+.gaia-tour-instruction {
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin-top: 13px;
+  padding: 12px 14px;
+  border: 2px solid rgba(134, 228, 255, .82);
+  border-left-width: 2px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgba(31, 112, 174, .42), rgba(8, 41, 95, .68));
+}
+
+.gaia-tour-gesture {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 2px solid #8beaff;
+  border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(circle, rgba(116, 227, 255, .24), rgba(28, 94, 169, .2));
+  box-shadow: 0 0 20px rgba(91, 203, 255, .32);
+  font: 800 20px/1 Consolas, monospace;
+}
+
+.gaia-tour-instruction > div { gap: 5px; }
+.gaia-tour-instruction b { color: #91e8ff; font-size: 11px; letter-spacing: .14em; }
+.gaia-tour-instruction strong { color: #fff; font-size: 19px; line-height: 1.45; }
+.gaia-tour-instruction small { color: rgba(210, 244, 255, .8); font-size: 13px; line-height: 1.4; }
+
+.gaia-tour-result {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  color: rgba(239, 253, 255, .88);
+  background: rgba(124, 218, 255, .08);
+  font: 600 14px/1.45 var(--font-ja, sans-serif);
+}
+
+.gaia-tour-result b {
+  color: #96eaff;
+  font-size: 10px;
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+
+.gaia-tour-card[data-interacted="true"] .gaia-tour-result {
+  background: rgba(112, 239, 207, .12);
+  box-shadow: inset 0 0 0 1px rgba(112, 239, 207, .3);
+}
+
+.gaia-tour-step-rail {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.gaia-tour-step-rail i { height: 6px; }
+
+.gaia-tour-receipt {
+  margin-top: 9px;
+  padding-top: 8px;
+}
+
+.gaia-tour-receipt summary { font-size: 12px; }
+
+.gaia-tour-target-cue {
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 16px;
+  border-width: 2px;
+  font-size: 15px;
+}
+
+.gaia-tour-target-cue i {
+  color: #fff;
+  font-size: 20px;
+  animation: gaia-tour-cue-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes gaia-tour-cue-pulse {
+  from { opacity: .62; transform: scale(.88); }
+  to { opacity: 1; transform: scale(1.12); }
+}
+
+.gaia-tour-controls {
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  left: auto;
+  grid-template-columns: 76px 78px minmax(106px, 1fr) 82px 86px;
+  gap: 8px;
+  width: min(570px, calc(100vw - 48px));
+  min-height: 66px;
+  padding: 8px;
+  border: 2px solid rgba(121, 219, 255, .72);
+  border-radius: 17px;
+}
+
+.gaia-tour-controls button {
+  min-height: 48px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  font-size: 13px;
+  letter-spacing: .03em;
+}
+
+.gaia-tour-controls button:disabled {
+  opacity: .3;
+  cursor: default;
+}
+
+.gaia-tour-controls [data-tour-action="next"] {
+  border-color: #8cecff;
+  background: linear-gradient(135deg, rgba(75, 200, 255, .34), rgba(75, 120, 255, .28));
+  font-size: 14px;
+}
+
+.gaia-tour-controls [data-tour-action="toggle"] { font-weight: 700; }
+
+.gaia-tour-time {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  gap: 3px;
+  justify-content: center;
+  padding: 0;
+  font-size: 23px;
+}
+
+.gaia-tour-time small {
+  align-self: end;
+  padding-bottom: 2px;
+  font: 700 10px/1 var(--font-ja, sans-serif);
+}
+
+.gaia-tour-progress { right: 10px; bottom: 4px; left: 10px; height: 3px; }
+.gaia-tour[data-finished="true"] .gaia-tour-controls { display: none; }
+
+.gaia-tour-finish {
+  width: min(700px, calc(100vw - 48px));
+  padding: clamp(28px, 4vw, 48px);
+  border: 2px solid rgba(130, 230, 255, .7);
+  border-radius: 22px;
+}
+
+.gaia-tour-finish > p:first-child { font-size: 12px; }
+.gaia-tour-finish h2 { font-size: clamp(30px, 4vw, 48px); }
+.gaia-tour-finish-recommend { margin-top: 14px; font-size: 16px; }
+.gaia-tour-finish-recommend span { font-size: 10px; }
+.gaia-tour-finish > div { gap: 10px; margin-top: 22px; }
+.gaia-tour-finish :is(button, a) { min-height: 56px; border-radius: 12px; font-size: 14px; }
+.gaia-tour-finish .is-primary { border-color: #8cecff; background: linear-gradient(135deg, rgba(75, 200, 255, .28), rgba(75, 120, 255, .25)); }
+
+@media (max-width: 760px) {
+  .gaia-tour {
+    align-items: start;
+    justify-items: stretch;
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(82px, calc(env(safe-area-inset-bottom) + 74px)) max(10px, env(safe-area-inset-left));
+  }
+
+  .gaia-tour-card {
+    width: 100%;
+    max-height: 38dvh;
+    padding: 14px 15px 12px;
+    border-radius: 16px;
+  }
+
+  .gaia-tour-card-index { margin-bottom: 4px; font-size: 10px; }
+  .gaia-tour-card-index b { font-size: 15px; }
+  .gaia-tour-kicker { margin-bottom: 4px; font-size: 10px; }
+  .gaia-tour-card h2 { font-size: clamp(22px, 6.15vw, 24px); line-height: 1.24; }
+  .gaia-tour-copy { margin-top: 7px; font-size: 14px; line-height: 1.42; }
+  .gaia-tour-copy::before { display: inline; margin: 0 8px 0 0; font-size: 9px; }
+  .gaia-tour-instruction { grid-template-columns: 48px minmax(0, 1fr); gap: 10px; margin-top: 8px; padding: 8px 10px; }
+  .gaia-tour-gesture { width: 46px; height: 46px; font-size: 16px; }
+  .gaia-tour-instruction b { font-size: 9px; }
+  .gaia-tour-instruction strong { font-size: 16px; line-height: 1.35; }
+  .gaia-tour-instruction small { font-size: 11px; }
+  .gaia-tour-result { margin-top: 7px; padding: 7px 9px; font-size: 12px; }
+  .gaia-tour-result b { font-size: 9px; }
+  .gaia-tour-receipt { display: none; }
+  .gaia-tour-step-rail { margin-top: 7px; }
+  .gaia-tour-step-rail i { height: 5px; }
+
+  .gaia-tour-controls {
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(7px, env(safe-area-inset-bottom));
+    left: max(8px, env(safe-area-inset-left));
+    grid-template-columns: 58px 62px minmax(72px, 1fr) 62px 64px;
+    gap: 5px;
+    width: auto;
+    min-height: 62px;
+    padding: 6px;
+    border-radius: 14px;
+  }
+
+  .gaia-tour-controls button { min-height: 48px; padding: 7px 4px; font-size: 12px; }
+  .gaia-tour-controls [data-tour-action="next"] { font-size: 12px; }
+  .gaia-tour-time { font-size: 19px; }
+  .gaia-tour-time small { font-size: 8px; }
+  .gaia-tour-target-cue { min-height: 44px; max-width: calc(100vw - 20px); font-size: 14px; }
+
+  .gaia-tour-finish {
+    align-self: center;
+    width: 100%;
+    padding: 24px 18px;
+  }
+  .gaia-tour-finish h2 { font-size: 28px; }
+  .gaia-tour-finish-recommend { font-size: 14px; }
+  .gaia-tour-finish > div { grid-template-columns: 1fr; }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .gaia-tour-card {
+    width: min(52vw, 470px);
+    max-height: calc(100dvh - 76px);
+    padding: 10px 12px;
+  }
+  .gaia-tour-card h2 { font-size: 20px; }
+  .gaia-tour-copy { font-size: 12px; }
+  .gaia-tour-instruction { grid-template-columns: 42px minmax(0, 1fr); }
+  .gaia-tour-gesture { width: 40px; height: 40px; }
+  .gaia-tour-instruction strong { font-size: 14px; }
+  .gaia-tour-result { font-size: 11px; }
+  .gaia-tour-controls { min-height: 58px; }
+  .gaia-tour-controls button { min-height: 44px; }
+}
+
+@media (min-width: 2200px) {
+  .gaia-tour { padding: 38px 44px 126px; }
+  .gaia-tour-card { width: min(25vw, 760px); padding: 32px 34px 28px; }
+  .gaia-tour-card h2 { font-size: 48px; }
+  .gaia-tour-copy { font-size: 21px; }
+  .gaia-tour-instruction { grid-template-columns: 78px minmax(0, 1fr); padding: 17px; }
+  .gaia-tour-gesture { width: 72px; height: 72px; font-size: 25px; }
+  .gaia-tour-instruction strong { font-size: 23px; }
+  .gaia-tour-instruction small { font-size: 16px; }
+  .gaia-tour-result { font-size: 17px; }
+  .gaia-tour-controls { right: 44px; bottom: 28px; width: 720px; }
+  .gaia-tour-controls button { min-height: 54px; font-size: 15px; }
+}

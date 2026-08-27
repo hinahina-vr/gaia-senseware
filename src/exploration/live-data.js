@@ -128,6 +128,19 @@ const connectStream = async () => {
   eventSource.onerror = scheduleReconnect;
 };
 
+const syncSoundControls = () => {
+  const audioState = proceduralAudio.getState();
+  document.querySelectorAll("[data-live-sound-toggle]").forEach((control) => {
+    control.setAttribute("aria-pressed", String(audioState.enabled));
+    control.dataset.audioState = audioState.active ? "playing" : audioState.enabled ? "armed" : "off";
+    const label = audioState.enabled ? "音を閉じる" : "音をひらく";
+    control.setAttribute("aria-label", label);
+    const visibleLabel = control.querySelector("[data-live-sound-label]");
+    if (visibleLabel) visibleLabel.textContent = label;
+    else control.textContent = label;
+  });
+};
+
 const bindControls = () => {
   ensureSpaceReceipt();
   document.querySelectorAll("[data-live-sound-toggle]").forEach((button) => {
@@ -136,17 +149,18 @@ const bindControls = () => {
     button.addEventListener("click", async () => {
       try {
         if (proceduralAudio.getState().enabled) proceduralAudio.disable();
-        else await proceduralAudio.enable();
-        const enabled = proceduralAudio.getState().enabled;
-        document.querySelectorAll("[data-live-sound-toggle]").forEach((control) => {
-          control.setAttribute("aria-pressed", String(enabled));
-          control.textContent = enabled ? "観測音をオフ" : "観測音をオン";
-        });
+        else {
+          const openingAudio = globalThis.GaiaOpeningAudio;
+          if (openingAudio?.getState?.().muted) await openingAudio.setMuted(false);
+          await proceduralAudio.enable();
+        }
+        syncSoundControls();
       } catch (error) {
         console.error(error);
       }
     });
   });
+  syncSoundControls();
 };
 
 const mount = async () => {
@@ -168,6 +182,8 @@ globalThis.addEventListener("gaia:mode-group-loaded", () => {
   bindControls();
   render(store.getState());
 });
+globalThis.addEventListener("gaia:live-exhibit-mounted", bindControls);
+globalThis.addEventListener("gaia:procedural-audio-state", syncSoundControls);
 
 globalThis.GaiaLiveData = Object.freeze({
   mount,
