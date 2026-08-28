@@ -9267,13 +9267,13 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   right: auto;
   left: max(18px, env(safe-area-inset-left));
   display: inline-grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto;
   align-items: center;
   justify-content: center;
   min-width: 132px;
   min-height: 46px;
   width: auto;
-  gap: 18px;
+  gap: 0;
   margin: 0;
   padding: 0 17px 0 20px;
   border: 1px solid rgba(37, 102, 111, 0.34);
@@ -9292,12 +9292,8 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll > .novel-staff-roll-data-skip::after {
-  color: rgba(27, 91, 100, 0.72);
-  content: "→";
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 400;
-  letter-spacing: 0;
+  display: none;
+  content: none;
 }
 
 .novel-staff-roll > .novel-staff-roll-data-skip:hover,
@@ -9410,6 +9406,10 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.74));
   pointer-events: none;
   user-select: none;
+}
+
+.novel-staff-roll-credits-heading {
+  display: none;
 }
 
 .novel-staff-roll-credits {
@@ -9850,11 +9850,15 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
     top: max(12px, env(safe-area-inset-top));
     right: auto;
     left: max(12px, env(safe-area-inset-left));
-    min-width: 112px;
-    min-height: 44px;
-    gap: 13px;
-    padding-inline: 16px 14px;
-    font-size: 11px;
+    box-sizing: border-box;
+    width: 46px;
+    min-width: 46px;
+    max-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
+    font-size: 7.5px;
+    letter-spacing: 0;
   }
 
   .novel-staff-roll-title {
@@ -9864,6 +9868,19 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
 
   .novel-staff-roll-title-logo {
     width: min(100%, 460px);
+  }
+
+  .novel-staff-roll-title > span {
+    display: none;
+  }
+
+  .novel-staff-roll-credits-heading {
+    display: block;
+    margin: 0 0 2.5vh;
+    color: rgba(31, 91, 100, 0.72);
+    font: 700 9px/1.5 ui-monospace, "SFMono-Regular", Consolas, monospace;
+    letter-spacing: 0.28em;
+    text-indent: 0.28em;
   }
 
   .novel-staff-roll-credits {

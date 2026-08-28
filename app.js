@@ -189,6 +189,9 @@
   const introSelectionNumber = document.querySelector("#intro-selection-number");
   const introSelectionTitle = document.querySelector("#intro-selection-title");
   const introSelectionCopy = document.querySelector("#intro-selection-copy");
+  const introCharacterJump = document.querySelector("#intro-character-jump");
+  const introCharacterBack = document.querySelector("#intro-character-back");
+  const introCharacterExhibit = document.querySelector("#character-exhibit");
   const introArchitectureJump = document.querySelector("#intro-architecture-jump");
   const introArchitectureBack = document.querySelector("#intro-architecture-back");
   const introOpenDataExhibit = document.querySelector("#intro-open-data-exhibit");
@@ -206,15 +209,14 @@
   const mapMobileHeadingToggle = document.querySelector("#map-mobile-heading-toggle");
   const japanModeBank = document.querySelector(".map-mode-bank");
   const mapMobileBankToggle = document.querySelector("#map-mobile-bank-toggle");
-  const mapModeBankKicker = document.querySelector("#map-mode-bank-kicker");
-  const mapModeBankGuide = document.querySelector("#map-mode-bank-guide");
-  const mapSurfaceMapButton = document.querySelector("#map-surface-map");
-  const mapSurfaceLightButton = document.querySelector("#map-surface-light");
-  const mapMode01Tooltip = document.querySelector("#map-mode-01-tooltip");
-  const mapModeLightTooltip = document.querySelector("#map-mode-light-tooltip");
-  const mapModeLightTooltipNumber = document.querySelector("#map-mode-light-tooltip-number");
-  const mapModeLightTooltipLabel = document.querySelector("#map-mode-light-tooltip-label");
-  const mapModeLightTooltipCopy = document.querySelector("#map-mode-light-tooltip-copy");
+  const mapModePreview = document.querySelector("#map-mode-preview");
+  const mapModePreviewSurface = document.querySelector("#map-mode-preview-surface");
+  const mapModePreviewTitle = document.querySelector("#map-mode-preview-title");
+  const mapModePreviewLead = document.querySelector("#map-mode-preview-lead");
+  const mapModePreviewNumber = document.querySelector("#map-mode-preview-number");
+  const mapModePreviewLabel = document.querySelector("#map-mode-preview-label");
+  const mapModePreviewCopy = document.querySelector("#map-mode-preview-copy");
+  const mapModePreviewNote = document.querySelector("#map-mode-preview-note");
   const japanModeList = document.querySelector("#japan-mode-list");
   const abstractModeList = document.querySelector("#abstract-mode-list");
   const japanModeNumber = document.querySelector("#japan-mode-number");
@@ -5949,7 +5951,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanModeNumber.textContent = formatModeNumber(modeToIndex);
     japanModeTitle.textContent = mode.titleJa;
     japanModeBank.dataset.activeMode = formatModeNumber(modeToIndex);
-    if (modeToIndex !== 0) japanModeBank.classList.remove("is-mode-01-tooltip-open");
     japanTitle.textContent = mode.titleJa;
     document.querySelector('meta[name="theme-color"]').setAttribute("content", "#03070d");
 
@@ -5966,12 +5967,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
       button.tabIndex = index === modeToIndex ? 0 : -1;
     });
-    if (mapModeLightTooltipNumber && mapModeLightTooltipLabel && mapModeLightTooltipCopy) {
-      const lightChoice = INTRO_MODE_CHOICES[modeToIndex];
-      mapModeLightTooltipNumber.textContent = `${formatModeNumber(modeToIndex)} / ${lightChoice.code}`;
-      mapModeLightTooltipLabel.textContent = lightChoice.label;
-      mapModeLightTooltipCopy.textContent = lightChoice.copy;
-    }
     updateIntroSelection();
 
     renderSource();
@@ -6129,50 +6124,66 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     window.setTimeout(position, 260);
   };
 
-  const updateMapModeLightTooltip = (index = modeToIndex) => {
+  const syncMapModePreviewContainer = () => {
+    const target = usesCompactMapUi() ? japanModeBank : japanLayer;
+    if (mapModePreview.parentElement !== target) target.append(mapModePreview);
+  };
+
+  syncMapModePreviewContainer();
+
+  const getMapModePreviewContent = (button) => {
+    const surface = button?.dataset.mapPreviewSurface === "light" ? "light" : "map";
+    if (button?.dataset.liveExhibit) {
+      const exhibit = globalThis.GaiaLiveExhibits?.definitions?.find(({ id }) => id === button.dataset.liveExhibit);
+      if (!exhibit) return null;
+      return {
+        surface: "LIVE MAP / READ THE PLANET NOW",
+        title: "いま届く信号を、地図と光で読む",
+        lead: "公開観測値を、場所・光・音へ変換するライブ展示です。保存済みスナップショットへ切り替わった場合も、その状態を明示します。",
+        number: `${exhibit.number} / ${exhibit.signalLabel}`,
+        label: exhibit.shortTitle,
+        copy: exhibit.caption,
+        note: "クリックすると、選んだライブ観測演出をすぐに開きます。",
+      };
+    }
+    const list = surface === "light" ? abstractModeButtons : japanModeButtons;
+    const index = list.indexOf(button);
     const choice = INTRO_MODE_CHOICES[index];
-    mapModeLightTooltipNumber.textContent = `${formatModeNumber(index)} / ${choice.code}`;
-    mapModeLightTooltipLabel.textContent = choice.label;
-    mapModeLightTooltipCopy.textContent = choice.copy;
+    if (!choice) return null;
+    return {
+      surface: surface === "light" ? "ABSTRACT MODE / TOUCH THE SIGNAL" : "MAP MODE / READ THE PLANET",
+      title: surface === "light" ? "どの感覚に、触れますか？" : "どの信号を、地図で読みますか？",
+      lead: surface === "light" ? INTRO_PATHS.abstract.lead : INTRO_PATHS.map.lead,
+      number: `${formatModeNumber(index)} / ${choice.code}`,
+      label: `${choice.label}の声`,
+      copy: choice.copy,
+      note: surface === "light"
+        ? "クリックすると、選んだ光をすぐに始めます。"
+        : "クリックすると、その信号の地図をすぐに開きます。",
+    };
   };
 
-  const setMapMode01TooltipOpen = (open) => {
-    const shouldOpen = open
-      && !usesCompactMapUi()
-      && mapSurface === "map"
-      && japanModeBank.dataset.activeMode === "01"
-      && !japanLayer.classList.contains("is-live-exhibit");
-    japanModeBank.classList.toggle("is-mode-01-tooltip-open", shouldOpen);
-    mapMode01Tooltip.classList.toggle("is-open", shouldOpen);
-    if (shouldOpen) {
-      mapModeLightTooltip.classList.remove("is-open");
-      scheduleMapModeTooltipPosition(mapMode01Tooltip);
+  const setMapModePreviewOpen = (open, button = null) => {
+    if (open) {
+      const content = getMapModePreviewContent(button);
+      if (!content) return;
+      mapModePreviewSurface.textContent = content.surface;
+      mapModePreviewTitle.textContent = content.title;
+      mapModePreviewLead.textContent = content.lead;
+      mapModePreviewNumber.textContent = content.number;
+      mapModePreviewLabel.textContent = content.label;
+      mapModePreviewCopy.textContent = content.copy;
+      mapModePreviewNote.textContent = content.note;
+    }
+    mapModePreview.classList.toggle("is-open", Boolean(open));
+    if (open && usesCompactMapUi()) {
+      requestAnimationFrame(() => mapModePreview.scrollIntoView({ block: "nearest", inline: "nearest" }));
+    } else if (open) {
+      scheduleMapModeTooltipPosition(mapModePreview);
     }
   };
 
-  const setMapModeLightTooltipOpen = (open, index = modeToIndex) => {
-    updateMapModeLightTooltip(index);
-    const shouldOpen = open
-      && !usesCompactMapUi()
-      && mapSurface === "light"
-      && !japanLayer.classList.contains("is-live-exhibit");
-    mapModeLightTooltip.classList.toggle("is-open", shouldOpen);
-    if (shouldOpen) {
-      japanModeBank.classList.remove("is-mode-01-tooltip-open");
-      mapMode01Tooltip.classList.remove("is-open");
-      scheduleMapModeTooltipPosition(mapModeLightTooltip);
-    }
-  };
-
-  const closeMapModeTooltips = () => {
-    setMapMode01TooltipOpen(false);
-    setMapModeLightTooltipOpen(false);
-  };
-
-  const openActiveMapModeTooltip = () => {
-    if (mapSurface === "light") setMapModeLightTooltipOpen(true);
-    else setMapMode01TooltipOpen(true);
-  };
+  const closeMapModePreview = () => setMapModePreviewOpen(false);
 
   const setMapSurface = (surface, { focusMode = true } = {}) => {
     const nextSurface = surface === "light" ? "light" : "map";
@@ -6186,26 +6197,15 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const lightIsActive = nextSurface === "light";
     japanLayer.classList.toggle("is-abstract-exhibit", lightIsActive);
     japanModeBank.dataset.mapSurface = nextSurface;
-    mapSurfaceMapButton.setAttribute("aria-pressed", String(!lightIsActive));
-    mapSurfaceLightButton.setAttribute("aria-pressed", String(lightIsActive));
-    japanModeList.hidden = lightIsActive;
-    abstractModeList.hidden = !lightIsActive;
-    mapModeBankKicker.textContent = lightIsActive
-      ? "SENSORY LIGHT / 01—08"
-      : "INSTALLATION BANK / 01—12";
-    mapModeBankGuide.textContent = lightIsActive
-      ? "01〜08を押すと、触れられる光の演出が変わります"
-      : "01〜12を押すと、地図に表示する展示が変わります";
     mapScopeKicker.textContent = lightIsActive
       ? "Abstract mode / Touch the signal"
       : "Planetary lens / Open map";
-    closeMapModeTooltips();
+    closeMapModePreview();
     selectMode(modeToIndex);
     if (focusMode) {
       requestAnimationFrame(() => {
         const activeButtons = lightIsActive ? abstractModeButtons : japanModeButtons;
         activeButtons[modeToIndex]?.focus({ preventScroll: true });
-        openActiveMapModeTooltip();
       });
     }
     window.dispatchEvent(new CustomEvent("gaia:map-surface-change", {
@@ -6213,9 +6213,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }));
   };
 
-  japanLayer.append(mapMode01Tooltip, mapModeLightTooltip);
-  mapSurfaceMapButton.addEventListener("click", () => setMapSurface("map"));
-  mapSurfaceLightButton.addEventListener("click", () => setMapSurface("light"));
   mapMobileHeadingToggle?.addEventListener("click", () => {
     setMobileMapHeadingExpanded(mapMobileHeadingToggle.getAttribute("aria-expanded") !== "true");
   });
@@ -6246,23 +6243,34 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     setMobileMapLegendExpanded(false);
     mapReadingGuide.open = false;
   });
-  japanModeBank.addEventListener("pointerenter", openActiveMapModeTooltip);
   japanModeBank.addEventListener("pointerleave", () => {
-    if (!japanModeBank.contains(document.activeElement)) closeMapModeTooltips();
+    if (!japanModeBank.contains(document.activeElement)) closeMapModePreview();
+  });
+  japanModeBank.addEventListener("pointerover", (event) => {
+    const button = event.target.closest?.(".map-mode-button");
+    if (button) setMapModePreviewOpen(true, button);
   });
   japanModeBank.addEventListener("focusin", (event) => {
-    if (event.target.closest("#abstract-mode-list, #map-surface-light")) {
-      setMapModeLightTooltipOpen(true);
-    } else {
-      setMapMode01TooltipOpen(true);
-    }
+    const button = event.target.closest?.(".map-mode-button");
+    if (button) setMapModePreviewOpen(true, button);
   });
   japanModeBank.addEventListener("focusout", (event) => {
-    if (!japanModeBank.contains(event.relatedTarget)) closeMapModeTooltips();
+    if (!japanModeBank.contains(event.relatedTarget)) closeMapModePreview();
+  });
+  japanModeBank.addEventListener("click", (event) => {
+    const button = event.target.closest?.(".map-mode-button");
+    if (!button) return;
+    setMapSurface(button.closest("#abstract-mode-list") ? "light" : "map", { focusMode: false });
+    setMapModePreviewOpen(true, button);
+  }, true);
+  window.addEventListener("gaia:live-exhibit-mounted", () => {
+    japanModeList.querySelectorAll("[data-live-exhibit]").forEach((button) => {
+      button.dataset.mapPreviewSurface = "map";
+      button.setAttribute("aria-describedby", "map-mode-preview");
+    });
   });
   window.addEventListener("gaia:live-exhibit-change", (event) => {
     if (event.detail?.id) {
-      closeMapModeTooltips();
       setMobileMapBankExpanded(false, { restoreFocus: true });
     }
   });
@@ -6272,8 +6280,8 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (compactMapUiIsActive && !compactMapUiWasActive) resetMobileMapUi();
     if (!compactMapUiIsActive && compactMapUiWasActive) resetMobileMapUi();
     compactMapUiWasActive = compactMapUiIsActive;
-    if (mapMode01Tooltip.classList.contains("is-open")) scheduleMapModeTooltipPosition(mapMode01Tooltip);
-    if (mapModeLightTooltip.classList.contains("is-open")) scheduleMapModeTooltipPosition(mapModeLightTooltip);
+    syncMapModePreviewContainer();
+    if (mapModePreview.classList.contains("is-open") && !compactMapUiIsActive) scheduleMapModeTooltipPosition(mapModePreview);
   }, { passive: true });
 
   modes.forEach((mode, index) => {
@@ -6345,15 +6353,11 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       "aria-label",
       `${formatModeNumber(index)} ${mode.titleJa}の地図演出へ切り替える`,
     );
-    if (index === 0) {
-      japanModeButton.setAttribute("aria-describedby", "map-mode-01-tooltip");
-    }
+    japanModeButton.dataset.mapPreviewSurface = "map";
+    japanModeButton.setAttribute("aria-describedby", "map-mode-preview");
     japanModeButton.setAttribute("aria-current", index === 0 ? "true" : "false");
     japanModeButton.addEventListener("click", () => {
       selectMode(index);
-      setMapMode01TooltipOpen(
-        index === 0 && (japanModeBank.contains(document.activeElement) || japanModeBank.matches(":hover")),
-      );
       setMobileMapBankExpanded(false, { restoreFocus: true });
     });
     japanModeButtons.push(japanModeButton);
@@ -6367,15 +6371,12 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       "aria-label",
       `${formatModeNumber(index)} ${introChoice.label}の光演出へ切り替える`,
     );
-    abstractModeButton.setAttribute("aria-describedby", "map-mode-light-tooltip");
+    abstractModeButton.dataset.mapPreviewSurface = "light";
+    abstractModeButton.setAttribute("aria-describedby", "map-mode-preview");
     abstractModeButton.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
     abstractModeButton.tabIndex = index === modeToIndex ? 0 : -1;
-    const previewAbstractMode = () => setMapModeLightTooltipOpen(true, index);
-    abstractModeButton.addEventListener("pointerenter", previewAbstractMode);
-    abstractModeButton.addEventListener("focus", previewAbstractMode);
     abstractModeButton.addEventListener("click", () => {
       selectMode(index);
-      setMapModeLightTooltipOpen(true, index);
       setMobileMapBankExpanded(false, { restoreFocus: true });
     });
     abstractModeButtons.push(abstractModeButton);
@@ -7409,6 +7410,17 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       introGxFeature?.focus({ preventScroll: true });
     }, reducedMotion ? 0 : 460);
   });
+  introCharacterJump.addEventListener("click", () => {
+    introCharacterExhibit.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    introCharacterExhibit.focus({ preventScroll: true });
+  });
+  introCharacterBack.addEventListener("click", () => {
+    introLayer.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+    showIntroStage("path");
+  });
   introArchitectureJump.addEventListener("click", () => {
     introOpenDataExhibit.scrollIntoView({
       behavior: reducedMotion ? "auto" : "smooth",
@@ -7478,7 +7490,14 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       } else if (event.key === "Tab") {
         event.preventDefault();
         const targets = (introStage === "path"
-          ? [...introPathButtons, introScrollCue, introArchitectureJump, introArchitectureBack]
+          ? [
+              ...introPathButtons,
+              introScrollCue,
+              introCharacterJump,
+              introArchitectureJump,
+              introCharacterBack,
+              introArchitectureBack,
+            ]
           : [...introModeButtons, introPathBack]
         ).filter((element) => !element.hidden && element.getClientRects().length > 0);
         const currentIndex = targets.indexOf(document.activeElement);

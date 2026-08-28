@@ -14,6 +14,7 @@ const pageBreakOnly = extraArguments.includes("--page-break-only");
 const controlHoldOnly = extraArguments.includes("--control-hold-only");
 const skipOnly = extraArguments.includes("--skip-only");
 const motionOnly = extraArguments.includes("--motion-only");
+const contentOnly = extraArguments.includes("--content-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -60,7 +61,7 @@ const attachDiagnostics = (page, label) => {
 };
 
 const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
-  await page.goto(new URL("/#story", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
+  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.evaluate(() => globalThis.GaiaModeLoader.load("story"));
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY && globalThis.GAIA_TRUE_END_STORY));
   const eagerExplorationResources = await page.evaluate(() => {
@@ -102,6 +103,25 @@ const bootAtTrueEnd = async (page, name, reducedMotion = true) => {
   }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, label: name, reducedMotion });
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+  await page.evaluate(() => {
+    const layer = document.querySelector("#novel-layer");
+    if (layer?.hidden || !layer.classList.contains("is-open")) globalThis.GaiaNovel.open();
+  });
+  await page.waitForFunction(() => {
+    const staffRoll = document.querySelector(".novel-staff-roll");
+    const resume = document.querySelector("#novel-resume-button");
+    return Boolean(staffRoll && !staffRoll.hidden) || Boolean(resume && !resume.hidden && !resume.disabled);
+  }, null, { timeout: 60_000 });
+  if (!await page.locator(".novel-staff-roll").isVisible()) {
+    await page.locator("#novel-resume-button").click();
+    await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
+    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  }
+  const staffRoll = page.locator(".novel-staff-roll");
+  await staffRoll.waitFor({ state: "visible", timeout: 60_000 });
+  if (await staffRoll.getAttribute("data-phase") !== "complete") {
+    await page.locator(".novel-staff-roll-data-skip").click();
+  }
   await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "complete", null, { timeout: 15_000 });
   await page.locator(".novel-staff-roll-finale button").click();
   await page.waitForFunction(() => Boolean(document.querySelector(".true-end-shell")), null, { timeout: 30_000 });
@@ -604,11 +624,14 @@ try {
     assert.equal(initial.logButtonVisible, true);
     assert.equal(initial.logButtonText, "LOG");
     assert.equal(initial.skipVisible, true, `${viewport.name}: section skip is not visible`);
-    assert.equal(initial.skipText.replace(/\s+/gu, ""), "スキップ→", `${viewport.name}: section skip label is wrong`);
+    assert.equal(initial.skipText.replace(/\s+/gu, ""), "スキップ▶", `${viewport.name}: section skip label is wrong`);
     assert.match(initial.skipLabel, /現在のセクションをスキップして/u, `${viewport.name}: section skip has no accessible description`);
     assert(initial.skipRect && initial.skipRect.height >= 44, `${viewport.name}: section skip hit area is under 44px`);
     assert(initial.skipRect && initial.skipRect.left >= 0 && initial.skipRect.top >= 0, `${viewport.name}: section skip escaped the viewport`);
     assert(initial.skipRect && initial.skipRect.right <= viewport.width + 1, `${viewport.name}: section skip is clipped on the right`);
+    if (viewport.width <= 720) {
+      assert(Math.abs(initial.skipRect.width - 46) <= 0.5 && Math.abs(initial.skipRect.height - 46) <= 0.5, `${viewport.name}: section skip does not match the mobile volume control size`);
+    }
     assert.equal(initial.footerSpanCount, 1);
     assert.doesNotMatch(initial.footerText, /ANTHROPOCENE/u);
     assert.equal(initial.overflowX, 0);
@@ -837,7 +860,9 @@ try {
     assert(finale.text.includes("ESHA SÆL·TIR: KAR·EN"));
     assert(finale.text.includes("NÆI MIR: REA·AI"));
     assert.equal(finale.readoutLang, "art-x-saeliva");
-    assert.equal(finale.button, "今の世界を拡げる");
+    assert(finale.text.includes("世界は、まだひらかれている。"));
+    assert.equal(finale.text.includes("感じ取れる世界は、まだ増えていく。"), false);
+    assert.equal(finale.button, "世界とつながる");
     assert.equal(finale.shoreImage, "hidden");
     assert.equal(finale.webglScene, "galaxy");
     assert.equal(finale.webglSpeaker, "system");
@@ -886,7 +911,7 @@ try {
       && document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "true"
       && !document.querySelector("#intro-layer")?.hidden
       && document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false");
-    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "opening", null, { timeout: 10_000 });
+    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "senseware", null, { timeout: 10_000 });
 
     await page.evaluate(() => localStorage.removeItem("gaiaSensewareNovel:manual-saves"));
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -920,7 +945,7 @@ try {
     await context.close();
   }
 
-  for (const viewport of (pageBreakOnly || controlHoldOnly || separatorOnly || motionOnly) ? [] : viewports) {
+  for (const viewport of (pageBreakOnly || controlHoldOnly || separatorOnly || motionOnly || contentOnly) ? [] : viewports) {
     const skipContext = await browser.newContext({
       viewport,
       reducedMotion: "reduce",
@@ -976,7 +1001,7 @@ try {
   }
 
   report.separatorOrder = [];
-  for (const viewport of (pageBreakOnly || controlHoldOnly || skipOnly || motionOnly) ? [] : viewports) {
+  for (const viewport of (pageBreakOnly || controlHoldOnly || skipOnly || motionOnly || contentOnly) ? [] : viewports) {
     const separatorContext = await browser.newContext({ viewport, reducedMotion: "no-preference" });
     const separatorPage = await separatorContext.newPage();
     attachDiagnostics(separatorPage, `${viewport.name}-separator-flow`);

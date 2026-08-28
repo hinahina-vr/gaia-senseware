@@ -111,10 +111,7 @@
 
     const skipButton = createElement("button", "true-end-skip-button");
     skipButton.type = "button";
-    skipButton.append(
-      createElement("span", "", "スキップ"),
-      createElement("i", "", "→"),
-    );
+    skipButton.append(createElement("span", "", "スキップ▶"));
 
     const sceneCard = createElement("div", "true-end-scene-card");
     sceneCard.setAttribute("aria-hidden", "true");
@@ -141,8 +138,8 @@
     const finaleReadout = createElement("div");
     finaleReadout.lang = SYSTEM_LANGUAGE;
     story.finale.readout.forEach((line) => finaleReadout.append(createElement("code", "", line)));
-    const finaleNote = createElement("p", "", "感じ取れる世界は、まだ増えていく。");
-    const finaleExit = createElement("button", "", "今の世界を拡げる");
+    const finaleNote = createElement("p", "", "世界は、まだひらかれている。");
+    const finaleExit = createElement("button", "", "世界とつながる");
     finaleExit.type = "button";
     finale.append(finaleLabel, finaleTitle, finaleReadout, finaleNote, finaleExit);
 

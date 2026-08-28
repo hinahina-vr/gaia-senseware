@@ -36,7 +36,16 @@ const staffRoll = Object.freeze({
         "by Suno AI",
       ],
     }),
-    Object.freeze({ role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』", "ZEN大学『人新世の人類学』"] }),
+    Object.freeze({
+      role: "参照講義",
+      department: "ACADEMIC REFERENCE",
+      names: [
+        "ZEN大学『共創地球論』",
+        "ZEN大学『人新世の人類学』",
+        "ZEN大学『統計学入門』",
+        "ZEN大学『リテラシーと応用のための物語理論』",
+      ],
+    }),
     Object.freeze({ role: "参照データ", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] }),
   ]),
   closingLead: "その選択の中に、今日から私たちもいる。",
@@ -44,7 +53,7 @@ const staffRoll = Object.freeze({
   copyright: "© 2026 惑星の放課後 / GAIA SENSATION",
   thanks: "Thank you for playing",
   continueLabel: "世界の続きを紡ぐ",
-  skipLabel: "スキップ",
+  skipLabel: "スキップ▶",
 });
 
 const novelModeSource = fs.readFileSync(path.join(projectRoot, "novel-mode.js"), "utf8");

@@ -39,9 +39,19 @@ assert.equal(content.INTRO_MODE_CHOICES.length, 8, "Entrance catalog must contai
 assert.equal(content.SPACE_MODE_CHOICES.length, 10, "Space catalog must contain 10 choices");
 assert.deepEqual(Object.keys(content.INTRO_PATHS), ["abstract", "map", "novel", "space"], "Abstract exhibit must remain routable");
 assert.equal(indexHtml.includes('data-intro-path="abstract"'), false, "Abstract exhibit must not remain a separate entrance card");
-assert.equal(indexHtml.includes('id="map-surface-light"'), true, "Integrated light surface switch is missing from the world-reading bank");
+assert.equal(indexHtml.includes('class="map-surface-switch"'), false, "Obsolete MAP/LIGHT toggle remains in the world-reading bank");
+assert.equal(indexHtml.includes('class="map-mode-groups"'), true, "Unified MAP/LIGHT button bank is missing");
 assert.equal(indexHtml.includes('id="abstract-mode-list"'), true, "Integrated eight-choice light bank is missing");
-assert.equal(indexHtml.includes('id="map-mode-light-tooltip"'), true, "Abstract exhibit explanation tooltip is missing");
+assert.equal(indexHtml.includes('id="map-mode-preview"'), true, "Restored focus explanation preview is missing");
+assert.equal(indexHtml.includes("SCROLL</b><small>他の展示を見る"), true, "Updated exhibit scroll label is missing");
+assert.equal(indexHtml.includes('id="intro-character-jump"'), true, "Character settings menu button is missing");
+assert.equal(indexHtml.includes('id="character-exhibit"'), true, "Character settings page is missing");
+assert.equal(indexHtml.includes("CHARACTER FILE / GAIA SENSEWARE CREW"), true, "Character settings heading is missing");
+for (const campusName of ["みず", "あめ", "saku"]) {
+  assert.equal(indexHtml.includes(`<h3>${campusName}</h3>`), true, `Character profile is missing for ${campusName}`);
+}
+assert.equal(indexHtml.includes("このデータの出典を表示する"), false, "Old open-data button copy remains");
+assert.equal(indexHtml.includes("この展示を統計で読み解く"), false, "Old statistics button copy remains");
 
 const modeIds = content.modes.map(({ id }) => id);
 assert.equal(new Set(modeIds).size, modeIds.length, "Mode ids must be unique");

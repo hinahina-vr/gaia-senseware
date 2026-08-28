@@ -203,7 +203,9 @@
   const ABSTRACT_AVATAR_SUPPRESSED_STEP_IDS = new Set(["festival_concept_048", "gx_experience_001"]);
   const speakerDisplayName = (step) => {
     const speaker = step?.speaker || "narrator";
-    if (speaker === "visitor") return SPEAKERS.visitor.name;
+    if (speaker === "visitor") {
+      return step?.type === "chat" ? (step.speakerLabel || "青猫") : SPEAKERS.visitor.name;
+    }
     if (speaker === "amane" || speaker === "mizuha") {
       const festivalStep = /^festival_concept_(\d+)$/.exec(String(step?.id || ""));
       if (festivalStep && Number(festivalStep[1]) <= INTRODUCTION_STEPS[speaker]) {
@@ -585,6 +587,7 @@
   let staffRollFinaleTimer = 0;
   let sectionSeparatorActive = false;
   let sectionSkipPending = false;
+  let sceneJumpTransitionPending = false;
   let temporalTransitionTimer = 0;
   let temporalTransitionActive = false;
   let previousFocus = null;
@@ -1430,7 +1433,7 @@
     const description = nextScene
       ? `現在のセクションをスキップして「${nextScene.title}」へ進む`
       : "現在のセクションをスキップしてエンディングへ進む";
-    elements.close.textContent = "スキップ";
+    elements.close.textContent = "スキップ▶";
     elements.close.dataset.controlMode = "skip";
     elements.close.setAttribute("aria-label", description);
     elements.close.title = description;
@@ -4161,7 +4164,7 @@
     const dataSkip = document.createElement("button");
     dataSkip.type = "button";
     dataSkip.className = "novel-staff-roll-data-skip";
-    dataSkip.textContent = "スキップ";
+    dataSkip.textContent = "スキップ▶";
     dataSkip.title = "データを見てみる";
     dataSkip.setAttribute("aria-label", "エンディングをスキップして「データを見てみる」へ進む");
     dataSkip.addEventListener("click", (event) => {
@@ -4195,6 +4198,10 @@
     titleLogo.draggable = false;
     heading.append(kicker, title, titleLogo);
 
+    const creditsHeading = document.createElement("p");
+    creditsHeading.className = "novel-staff-roll-credits-heading";
+    creditsHeading.textContent = "STAFF & CREDITS";
+
     const credits = document.createElement("dl");
     credits.className = "novel-staff-roll-credits";
     [
@@ -4214,7 +4221,16 @@
           "by Suno AI",
         ],
       },
-      { role: "参照講義", department: "ACADEMIC REFERENCE", names: ["ZEN大学『共創地球論』", "ZEN大学『人新世の人類学』"] },
+      {
+        role: "参照講義",
+        department: "ACADEMIC REFERENCE",
+        names: [
+          "ZEN大学『共創地球論』",
+          "ZEN大学『人新世の人類学』",
+          "ZEN大学『統計学入門』",
+          "ZEN大学『リテラシーと応用のための物語理論』",
+        ],
+      },
       { role: "参照データ", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] },
     ].forEach(({ role, department, names, note = "" }) => {
       const row = document.createElement("div");
@@ -4360,7 +4376,7 @@
     finale.append(next);
     closingAction.append(finale);
 
-    track.append(heading, credits, closing);
+    track.append(heading, creditsHeading, credits, closing);
     viewport.append(track);
     stage.append(viewport);
     shell.append(whiteout, stage, dataSkip);
@@ -4716,69 +4732,77 @@
     renderSectionSeparator();
   };
 
-  const jumpToSceneStart = (sceneId) => {
+  const jumpToSceneStart = (sceneId, event = null) => {
+    if (sceneJumpTransitionPending) return false;
     const entry = sceneJumpEntries.find((candidate) => candidate.sceneId === sceneId);
     const target = entry?.isTrueEnd ? null : stepMap.get(entry?.firstStepId);
     if (!entry || (!entry.isTrueEnd && !target)) {
       console.error(`[GAIA novel] Unknown debug scene jump target: ${String(sceneId)}`);
       return false;
     }
-    const detourKind = pendingInteraction?.interaction?.kind;
-    pendingInteraction = null;
-    detourState = null;
-    closeDetourDock();
-    setInteractionLifecycle("idle");
-    if (detourKind === "gx") window.GaiaGX?.close?.();
-    else if (detourKind === "space10") window.GaiaSpace?.close?.({ returnToTop: false });
-    else if (detourKind) window.dispatchEvent(new CustomEvent("gaia:story-mode-close", { detail: { kind: detourKind } }));
-    resetFastForward();
-    elements.auto.setAttribute("aria-pressed", "false");
-    elements.auto.classList.remove("is-active");
-    closeLog();
-    closeManualArchive();
-    closeConfig();
-    closeEves();
-    hideSpecialSurfaces();
-    clearTimers();
-    window.clearTimeout(slackTransitionTimer);
-    slackTransitionTimer = 0;
-    layer.classList.remove("is-slack-entering", "is-slack-exiting");
-    if (entry.isTrueEnd) {
-      const previousClear = state.clear;
-      const previousArchivesUnlocked = state.archivesUnlocked;
+    closeSceneJump({ restoreFocus: false });
+    sceneJumpTransitionPending = true;
+    const commitJump = () => {
+      const detourKind = pendingInteraction?.interaction?.kind;
+      pendingInteraction = null;
+      detourState = null;
+      closeDetourDock();
+      setInteractionLifecycle("idle");
+      if (detourKind === "gx") window.GaiaGX?.close?.();
+      else if (detourKind === "space10") window.GaiaSpace?.close?.({ returnToTop: false });
+      else if (detourKind) window.dispatchEvent(new CustomEvent("gaia:story-mode-close", { detail: { kind: detourKind } }));
+      resetFastForward();
+      elements.auto.setAttribute("aria-pressed", "false");
+      elements.auto.classList.remove("is-active");
+      closeLog();
+      closeManualArchive();
+      closeConfig();
+      closeEves();
+      hideSpecialSurfaces();
+      clearTimers();
+      window.clearTimeout(slackTransitionTimer);
+      slackTransitionTimer = 0;
+      layer.classList.remove("is-slack-entering", "is-slack-exiting");
+      if (entry.isTrueEnd) {
+        const previousClear = state.clear;
+        const previousArchivesUnlocked = state.archivesUnlocked;
+        debugJumpActive = true;
+        if (launchTrueEnd({ persistClear: false })) return true;
+        state.clear = previousClear;
+        state.archivesUnlocked = previousArchivesUnlocked;
+        debugJumpActive = false;
+        showRuntime();
+        renderCurrentStep();
+        return false;
+      }
+      const targetIndex = stepIndexMap.get(target.id);
+      const priorReadableSteps = allSteps
+        .slice(Math.max(0, targetIndex - 260), targetIndex)
+        .filter((step) => step.text && !["choice", "reflectionChoice", "interaction", "result", "end"].includes(step.type))
+        .map((step) => step.id);
+      state = {
+        ...state,
+        stepId: target.id,
+        reachedSceneIds: sceneJumpEntries
+          .filter((candidate) => !candidate.isEnding && !candidate.isTrueEnd && stepIndexMap.get(candidate.firstStepId) <= targetIndex)
+          .map((candidate) => candidate.sceneId),
+        readStepIds: priorReadableSteps,
+        metCharacters: Object.fromEntries(Object.entries(CHAT_CAST_MEETING_GATES).map(([speaker, gate]) => [
+          speaker,
+          targetIndex >= (stepIndexMap.get(gate.visibleFrom) ?? Number.POSITIVE_INFINITY),
+        ])),
+      };
       debugJumpActive = true;
-      if (launchTrueEnd({ persistClear: false })) return true;
-      state.clear = previousClear;
-      state.archivesUnlocked = previousArchivesUnlocked;
-      debugJumpActive = false;
       showRuntime();
-      renderCurrentStep();
-      return false;
-    }
-    const targetIndex = stepIndexMap.get(target.id);
-    const priorReadableSteps = allSteps
-      .slice(Math.max(0, targetIndex - 260), targetIndex)
-      .filter((step) => step.text && !["choice", "reflectionChoice", "interaction", "result", "end"].includes(step.type))
-      .map((step) => step.id);
-    state = {
-      ...state,
-      stepId: target.id,
-      reachedSceneIds: sceneJumpEntries
-        .filter((candidate) => !candidate.isEnding && !candidate.isTrueEnd && stepIndexMap.get(candidate.firstStepId) <= targetIndex)
-        .map((candidate) => candidate.sceneId),
-      readStepIds: priorReadableSteps,
-      metCharacters: Object.fromEntries(Object.entries(CHAT_CAST_MEETING_GATES).map(([speaker, gate]) => [
-        speaker,
-        targetIndex >= (stepIndexMap.get(gate.visibleFrom) ?? Number.POSITIVE_INFINITY),
-      ])),
+      renderEves();
+      applyBackgroundCueForStep(target);
+      if (entry.isEnding) renderCurrentStep();
+      else renderSectionSeparator(target);
+      return true;
     };
-    debugJumpActive = true;
-    closeSceneJump();
-    showRuntime();
-    renderEves();
-    applyBackgroundCueForStep(target);
-    if (entry.isEnding) renderCurrentStep();
-    else renderSectionSeparator(target);
+    Promise.resolve(runSceneTransition(commitJump, event)).finally(() => {
+      sceneJumpTransitionPending = false;
+    });
     return true;
   };
 
@@ -5592,7 +5616,7 @@
     if (!button) return;
     event.preventDefault();
     event.stopPropagation();
-    jumpToSceneStart(button.dataset.sceneId);
+    jumpToSceneStart(button.dataset.sceneId, event);
   });
   elements.jumpPanel?.addEventListener("pointerdown", (event) => event.stopPropagation());
   elements.jumpPanel?.addEventListener("click", (event) => event.stopPropagation());

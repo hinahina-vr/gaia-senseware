@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const approvedStoryPath = path.join(projectRoot, "story", "APPROVED_SCRIPT_2026-08-24.md");
-const EXPECTED_SHA256 = "f7fb17b0df92bd90d094f11a2132c64518619c867cac186aee602065493438a7";
+const EXPECTED_SHA256 = "d04c4ea96f644141bad4a77f8547da650eeeae34d22ec860f6baf298cf101a0d";
 const EXPECTED_MAIN_SCENES = Object.freeze([
   "festival_concept",
   "map_mode01",

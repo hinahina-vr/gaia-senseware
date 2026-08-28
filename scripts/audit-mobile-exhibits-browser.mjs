@@ -127,21 +127,10 @@ const selectMapMode = async (page, index) => {
 
 const selectLightMode = async (page, index) => {
   await ensureBankExpanded(page);
-  if (await page.locator("#map-surface-light").getAttribute("aria-pressed") !== "true") {
-    const surfaceButton = page.locator("#map-surface-light");
-    await surfaceButton.click({ force: true });
-    try {
-      await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"), null, { timeout: 1_200 });
-    } catch {
-      report.selectionFallbacks.push("surface-light");
-      await surfaceButton.evaluate((element) => element.click());
-      await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"), null, { timeout: 15_000 });
-    }
-  }
-  await ensureBankExpanded(page);
   const button = page.locator("#abstract-mode-list .map-mode-button").nth(index);
   const number = String(index + 1).padStart(2, "0");
   await button.click({ force: true });
+  await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"), null, { timeout: 15_000 });
   try {
     await page.waitForFunction(
       (expected) => document.querySelector("#abstract-mode-list .map-mode-button[aria-current='true']")?.textContent?.trim() === expected,

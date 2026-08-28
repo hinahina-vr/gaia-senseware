@@ -6,6 +6,8 @@ import { pathToFileURL } from "node:url";
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4417"] = process.argv.slice(2);
 const cardsOnly = process.argv.slice(6).includes("--cards-only");
 const introOnly = process.argv.slice(6).includes("--intro-only");
+const endingOnly = process.argv.slice(6).includes("--ending-only");
+const mapCopyOnly = process.argv.slice(6).includes("--map-copy-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -252,7 +254,7 @@ const useScrollCue = async (page, viewport) => {
   });
   assert.equal(before.visible, true);
   assert.match(before.text, /SCROLL/u);
-  assert.match(before.text, /次の展示を見る/u);
+  assert.match(before.text, /他の展示を見る/u);
   assert.match(before.ariaLabel, /下へスクロール/u);
   assert.match(before.arrowBorderRadius, /50%/u);
   assert(Number.parseFloat(before.arrowSize) >= 30, JSON.stringify(before));
@@ -319,6 +321,105 @@ const scanGxFeature = async (page, viewport) => {
   return scan;
 };
 
+const scanCharacterFile = async (page, viewport) => {
+  const jump = page.locator("#intro-character-jump");
+  await jump.scrollIntoViewIfNeeded();
+  const jumpCopy = await jump.evaluate((button) => ({
+    text: button.textContent.replace(/\s+/gu, " ").trim(),
+    controls: button.getAttribute("aria-controls"),
+    visible: __qaVisible(button),
+  }));
+  assert(jumpCopy.visible);
+  assert.match(jumpCopy.text, /CHARACTER FILE/u);
+  assert.match(jumpCopy.text, /キャラクター設定資料/u);
+  assert.equal(jumpCopy.controls, "character-exhibit");
+
+  await jump.click();
+  await page.waitForFunction(() => (
+    document.activeElement === document.querySelector("#character-exhibit")
+    && __qaVisible(document.querySelector("#character-exhibit"))
+  ));
+  await page.waitForFunction(() => [...document.querySelectorAll(".character-file-visual img")]
+    .every((image) => image.complete && image.naturalWidth > 0));
+
+  const scan = await page.evaluate(() => {
+    const layer = document.querySelector("#intro-layer");
+    const exhibit = document.querySelector("#character-exhibit");
+    const cards = [...document.querySelectorAll(".character-file")];
+    return {
+      visible: __qaVisible(exhibit),
+      focusedId: document.activeElement?.id,
+      heading: document.querySelector("#character-exhibit-title")?.textContent.replace(/\s+/gu, " ").trim(),
+      campusNames: cards.map((card) => card.querySelector("h3")?.textContent.trim()),
+      roles: cards.map((card) => card.querySelector(".character-file-copy > strong")?.textContent.trim()),
+      images: cards.map((card) => {
+        const image = card.querySelector("img");
+        return { loaded: image.complete && image.naturalWidth > 0, alt: image.alt };
+      }),
+      cardRects: cards.map((card) => card.getBoundingClientRect().toJSON()),
+      relationship: document.querySelector("#character-relationship-title")?.textContent.trim(),
+      pageTop: exhibit.getBoundingClientRect().top,
+      overflowX: layer.scrollWidth > layer.clientWidth + 1,
+    };
+  });
+  assert(scan.visible);
+  assert.equal(scan.focusedId, "character-exhibit");
+  assert.match(scan.heading, /三人でつくる/u);
+  assert.deepEqual(scan.campusNames, ["みず", "あめ", "saku"]);
+  assert.deepEqual(scan.roles, [
+    "生態・身体感覚・海・雨・森",
+    "社会・技術・都市・AI・エネルギー網",
+    "文化・記憶・土地の名前・物語",
+  ]);
+  assert(scan.images.every(({ loaded, alt }) => loaded && alt.length > 0));
+  assert.equal(scan.relationship, "説明する人、決める人、残す人。");
+  assert.equal(scan.overflowX, false);
+  assert(scan.cardRects.every((rect) => rect.left >= -1 && rect.right <= viewport.width + 1), JSON.stringify(scan.cardRects));
+  if (viewport.mobile) {
+    assert(scan.cardRects.every((rect, index) => index === 0 || rect.top > scan.cardRects[index - 1].bottom));
+  } else {
+    assert(Math.max(...scan.cardRects.map(({ top }) => top)) - Math.min(...scan.cardRects.map(({ top }) => top)) <= 1);
+  }
+
+  await page.screenshot({ path: path.join(outputDir, viewport.name + "-character-file.png") });
+  await page.locator("#intro-character-back").click();
+  await page.waitForFunction(() => (document.querySelector("#intro-layer")?.scrollTop || 0) <= 1);
+  return { jumpCopy, ...scan };
+};
+
+const scanMapActionCopy = async (viewport) => {
+  const { context, page } = await createPage(viewport, viewport.name + "-map-action-copy");
+  await openIntro(page);
+  await page.locator('[data-intro-path="map"]').click();
+  await page.waitForFunction(() => (
+    __qaVisible(document.querySelector("#japan-layer"))
+    && !__qaVisible(document.querySelector("#intro-layer"))
+  ), null, { timeout: 15_000 });
+  await page.waitForTimeout(850);
+  if (viewport.mobile) {
+    await page.locator("#map-mobile-heading-toggle").click();
+    await page.waitForFunction(() => document.querySelector("#map-mobile-heading-toggle")?.getAttribute("aria-expanded") === "true");
+  }
+  await page.waitForFunction(() => (
+    __qaVisible(document.querySelector("#japan-data-button"))
+    && __qaVisible(document.querySelector("#gaia-statistics-button"))
+  ));
+  const scan = await page.evaluate(() => ({
+    openDataCopy: document.querySelector("#japan-data-button")?.textContent.replace(/\s+/gu, " ").trim(),
+    statisticsCopy: document.querySelector("#gaia-statistics-button")?.textContent.replace(/\s+/gu, " ").trim(),
+    openDataVisible: __qaVisible(document.querySelector("#japan-data-button")),
+    statisticsVisible: __qaVisible(document.querySelector("#gaia-statistics-button")),
+    overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+  }));
+  assert.match(scan.openDataCopy, /OPEN DATA データの出典を表示する/u);
+  assert.match(scan.statisticsCopy, /STAT LAB データを統計分析する/u);
+  assert(scan.openDataVisible && scan.statisticsVisible);
+  assert.equal(scan.overflowX, false);
+  await page.screenshot({ path: path.join(outputDir, viewport.name + "-map-action-copy.png") });
+  report.scans.push({ viewport: viewport.name, case: "map-action-copy", ...scan, passed: true });
+  await context.close();
+};
+
 const scanDirectMapEntry = async (viewport) => {
   const { context, page } = await createPage(viewport, `${viewport.name}-direct-map-entry`);
   await openIntro(page);
@@ -329,9 +430,11 @@ const scanDirectMapEntry = async (viewport) => {
     && document.querySelector("#japan-mode-list .map-mode-button")?.getAttribute("aria-current") === "true"
   ), null, { timeout: 15_000 });
   await page.waitForFunction(() => document.activeElement === document.querySelector("#japan-mode-list .map-mode-button"));
-  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#map-mode-01-tooltip")).opacity) >= 0.99);
+  if (viewport.mobile) await page.locator("#map-mobile-bank-toggle").click();
+  await page.locator("#japan-mode-list .map-mode-button").first().focus();
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#map-mode-preview")).opacity) >= 0.99);
   const focused = await page.evaluate(() => {
-    const tooltip = document.querySelector("#map-mode-01-tooltip");
+    const tooltip = document.querySelector("#map-mode-preview");
     const tooltipStyle = getComputedStyle(tooltip);
     const tooltipRect = tooltip.getBoundingClientRect();
     tooltip.style.pointerEvents = "auto";
@@ -353,6 +456,8 @@ const scanDirectMapEntry = async (viewport) => {
       tooltipRect: tooltipRect.toJSON(),
       tooltipStack,
       tooltipText: tooltip.textContent.replace(/\s+/gu, " ").trim(),
+      openDataCopy: document.querySelector("#japan-data-button")?.textContent.replace(/\s+/gu, " ").trim(),
+      statisticsCopy: document.querySelector("#gaia-statistics-button")?.textContent.replace(/\s+/gu, " ").trim(),
       overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       overflowY: document.documentElement.scrollHeight > innerHeight + 1,
     };
@@ -360,19 +465,21 @@ const scanDirectMapEntry = async (viewport) => {
   assert(focused.mapVisible && !focused.introVisible && !focused.intermediateVisible);
   assert.deepEqual(focused.currentLabels, ["01"]);
   assert.equal(focused.focusedLabel, "01");
-  assert.equal(focused.describedBy, "map-mode-01-tooltip");
+  assert.equal(focused.describedBy, "map-mode-preview");
   assert(focused.tooltipVisible && focused.tooltipVisibility === "visible" && focused.tooltipOpacity >= 0.99, JSON.stringify(focused));
   assert(focused.tooltipRect.top >= 0 && focused.tooltipRect.bottom <= viewport.height + 1, JSON.stringify(focused.tooltipRect));
-  assert(focused.tooltipStack.slice(0, 2).some((entry) => /map-mode-01-tooltip/u.test(entry)), JSON.stringify(focused.tooltipStack));
+  assert(focused.tooltipStack.slice(0, 2).some((entry) => /map-mode-preview/u.test(entry)), JSON.stringify(focused.tooltipStack));
   assert.match(focused.tooltipText, /どの信号を、地図で読みますか？/u);
+  assert.match(focused.openDataCopy, /OPEN DATA データの出典を表示する/u);
+  assert.match(focused.statisticsCopy, /STAT LAB データを統計分析する/u);
   assert.match(focused.tooltipText, /光の意味を世界の場所へ戻します/u);
   assert.match(focused.tooltipText, /CO₂が季節ごとに上下しながら/u);
   assert.equal(focused.overflowX, false);
   assert.equal(focused.overflowY, false);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-direct-map-tooltip.png`) });
   await page.locator("#japan-close").focus();
-  await page.waitForFunction(() => getComputedStyle(document.querySelector("#map-mode-01-tooltip")).visibility === "hidden");
-  const hiddenAfterBlur = await page.locator("#map-mode-01-tooltip").evaluate((tooltip) => getComputedStyle(tooltip).visibility);
+  await page.waitForFunction(() => getComputedStyle(document.querySelector("#map-mode-preview")).visibility === "hidden");
+  const hiddenAfterBlur = await page.locator("#map-mode-preview").evaluate((tooltip) => getComputedStyle(tooltip).visibility);
   assert.equal(hiddenAfterBlur, "hidden");
   report.scans.push({ viewport: viewport.name, case: "direct-map-entry-tooltip", focused, hiddenAfterBlur, passed: true });
   await context.close();
@@ -384,16 +491,19 @@ const scanIntegratedLightEntry = async (viewport) => {
   assert.equal(await page.locator('[data-intro-path="abstract"]').count(), 0);
   await page.locator('[data-intro-path="map"]').click();
   await page.waitForFunction(() => __qaVisible(document.querySelector("#japan-layer")));
-  await page.locator("#map-surface-light").click();
+  if (viewport.mobile) await page.locator("#map-mobile-bank-toggle").click();
+  await page.locator("#abstract-mode-list .map-mode-button").first().click({ force: true });
   await page.waitForFunction(() => (
     document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit")
     && __qaVisible(document.querySelector("#gaia-canvas"))
-    && __qaVisible(document.querySelector("#abstract-mode-list"))
     && !__qaVisible(document.querySelector("#japan-map"))
   ));
-  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#map-mode-light-tooltip")).opacity) >= 0.99);
+  if (viewport.mobile) await page.locator("#map-mobile-bank-toggle").click();
   await page.locator("#abstract-mode-list .map-mode-button").nth(6).click();
   await page.waitForFunction(() => document.querySelector("#abstract-mode-list .map-mode-button:nth-child(7)")?.getAttribute("aria-current") === "true");
+  if (viewport.mobile) await page.locator("#map-mobile-bank-toggle").click();
+  await page.locator("#abstract-mode-list .map-mode-button").nth(6).focus();
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#map-mode-preview")).opacity) >= 0.99);
   const canvasPoint = await page.evaluate(() => {
     for (let y = 18; y < innerHeight - 18; y += 18) {
       for (let x = 18; x < innerWidth - 18; x += 18) {
@@ -414,8 +524,7 @@ const scanIntegratedLightEntry = async (viewport) => {
   const integrated = await page.evaluate(() => ({
     introVisible: __qaVisible(document.querySelector("#intro-layer")),
     mapLayerVisible: __qaVisible(document.querySelector("#japan-layer")),
-    mapSurfacePressed: document.querySelector("#map-surface-map")?.getAttribute("aria-pressed"),
-    lightSurfacePressed: document.querySelector("#map-surface-light")?.getAttribute("aria-pressed"),
+    activeSurface: document.querySelector(".map-mode-bank")?.dataset.mapSurface,
     abstractClass: document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"),
     mapVisible: __qaVisible(document.querySelector("#japan-map")),
     canvasVisible: __qaVisible(document.querySelector("#gaia-canvas")),
@@ -429,25 +538,24 @@ const scanIntegratedLightEntry = async (viewport) => {
     heading: document.querySelector("#japan-mode-title")?.textContent.trim(),
     bankKicker: document.querySelector("#map-mode-bank-kicker")?.textContent.trim(),
     bankGuide: document.querySelector("#map-mode-bank-guide")?.textContent.trim(),
-    tooltipVisible: __qaVisible(document.querySelector("#map-mode-light-tooltip")),
-    tooltipText: document.querySelector("#map-mode-light-tooltip")?.textContent.replace(/\s+/gu, " ").trim(),
+    tooltipVisible: __qaVisible(document.querySelector("#map-mode-preview")),
+    tooltipText: document.querySelector("#map-mode-preview")?.textContent.replace(/\s+/gu, " ").trim(),
     novelOpenAtCount: globalThis.__qaNovelOpenAtCount,
     spaceOpenAtCount: globalThis.__qaSpaceOpenAtCount,
     canvasPointerDownCount: globalThis.__qaIntegratedLightPointerDown,
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
   }));
   assert(!integrated.introVisible && integrated.mapLayerVisible && integrated.abstractClass);
-  assert.equal(integrated.mapSurfacePressed, "false");
-  assert.equal(integrated.lightSurfacePressed, "true");
+  assert.equal(integrated.activeSurface, "light");
   assert(!integrated.mapVisible && integrated.canvasVisible && integrated.canvasPointerEvents === "auto");
-  assert(!integrated.mapChoiceListVisible && integrated.lightChoiceListVisible);
-  assert.equal(integrated.mapChoiceListDisplay, "none");
+  assert(integrated.mapChoiceListVisible && integrated.lightChoiceListVisible);
+  assert.equal(integrated.mapChoiceListDisplay, "grid");
   assert.equal(integrated.lightChoiceListDisplay, "grid");
   assert.equal(integrated.lightChoiceCount, 8);
   assert.equal(integrated.currentLightChoice, "07");
   assert.equal(integrated.heading, "三つの生態系");
-  assert.equal(integrated.bankKicker, "SENSORY LIGHT / 01—08");
-  assert.match(integrated.bankGuide, /触れられる光の演出/u);
+  assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—12 + LIGHT 01—08");
+  assert.match(integrated.bankGuide, /MAP 01〜12とLIGHT 01〜08/u);
   assert(integrated.tooltipVisible);
   assert.match(integrated.tooltipText, /どの感覚に、触れますか？/u);
   assert.match(integrated.tooltipText, /地球が発している8つの信号/u);
@@ -458,21 +566,18 @@ const scanIntegratedLightEntry = async (viewport) => {
   assert.equal(integrated.canvasPointerDownCount, 1);
   assert.equal(integrated.overflowX, false);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-integrated-light-entry.png`) });
-  await page.locator("#map-surface-map").click();
+  await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").first().click();
   await page.waitForFunction(() => (
     !document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit")
     && __qaVisible(document.querySelector("#japan-map"))
-    && __qaVisible(document.querySelector("#japan-mode-list"))
-    && !__qaVisible(document.querySelector("#abstract-mode-list"))
   ));
   const restored = await page.evaluate(() => ({
     mapChoiceCount: document.querySelectorAll("#japan-mode-list .map-mode-button").length,
-    mapSurfacePressed: document.querySelector("#map-surface-map")?.getAttribute("aria-pressed"),
-    lightSurfacePressed: document.querySelector("#map-surface-light")?.getAttribute("aria-pressed"),
+    activeSurface: document.querySelector(".map-mode-bank")?.dataset.mapSurface,
     mapVisible: __qaVisible(document.querySelector("#japan-map")),
   }));
   assert.equal(restored.mapChoiceCount, 12);
-  assert.deepEqual(restored, { mapChoiceCount: 12, mapSurfacePressed: "true", lightSurfacePressed: "false", mapVisible: true });
+  assert.deepEqual(restored, { mapChoiceCount: 12, activeSurface: "map", mapVisible: true });
   report.scans.push({ viewport: viewport.name, case: "integrated-light-entry", integrated, restored, passed: true });
   await context.close();
 };
@@ -521,6 +626,7 @@ const scanIntroReturn = async (viewport) => {
   const gxScreenshot = path.join(outputDir, `${viewport.name}-gx-feature-centered.png`);
   await page.screenshot({ path: gxScreenshot, fullPage: false });
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-intro-gx-feature.png`) });
+  await scanCharacterFile(page, viewport);
   const returnButton = page.locator(".intro-story-return[data-primary-action='true']");
   if (viewport.action === "click") await returnButton.click();
   else {
@@ -802,8 +908,15 @@ const scanRuntimeStoryContract = async () => {
 };
 
 try {
-  for (const viewport of viewports) await scanIntroReturn(viewport);
-  if (!introOnly) {
+  if (mapCopyOnly) {
+    await scanMapActionCopy(viewports[2]);
+    await scanMapActionCopy(viewports[3]);
+  } else if (endingOnly) {
+    await scanEndingDestinations();
+  } else {
+    for (const viewport of viewports) await scanIntroReturn(viewport);
+  }
+  if (!mapCopyOnly && !introOnly && !endingOnly) {
     await scanEndingDestinations();
     await scanIntegratedLightEntry(viewports[2]);
     await scanIntegratedLightEntry(viewports[3]);

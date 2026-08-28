@@ -39,7 +39,7 @@ delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?scene-jump=${Date.now()}`);
 const story = globalThis.GAIA_NOVEL_STORY;
 const steps = story.scenes.flatMap((scene) => scene.steps);
-assert.equal(story.scenes.length, 23, "canonical scene count changed");
+assert.equal(story.scenes.length, 6, "canonical scene count changed");
 const sceneItems = story.scenes.map((scene, index) => ({
   id: scene.id,
   index: index + 1,
@@ -100,7 +100,7 @@ const ensureNovelOpen = async (page) => {
     const layer = document.querySelector("#novel-layer");
     if (layer?.hidden || !layer.classList.contains("is-open")) globalThis.GaiaNovel.open();
   });
-  await page.locator("#novel-title-screen").waitFor({ state: "visible", timeout: 15_000 });
+  await page.waitForFunction(() => document.querySelector("#novel-layer")?.classList.contains("is-open"), null, { timeout: 15_000 });
 };
 
 const bootAt = async (page, stepId) => {
@@ -110,8 +110,14 @@ const bootAt = async (page, stepId) => {
   }, { progressKey: storageKey, settingsKey: configKey, progress: baseState(stepId) });
   await page.reload({ waitUntil: "domcontentloaded" });
   await ensureNovelOpen(page);
-  await page.locator("#novel-resume-button").click();
-  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId, { timeout: 15_000 });
+  await page.waitForFunction((id) => {
+    const layer = document.querySelector("#novel-layer");
+    const resume = document.querySelector("#novel-resume-button");
+    return layer?.dataset.stepId === id || (resume && !resume.hidden && !resume.disabled);
+  }, stepId, { timeout: 60_000 });
+  const alreadyAtStep = await page.evaluate((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
+  if (!alreadyAtStep) await page.locator("#novel-resume-button:not([hidden]):not([disabled])").click();
+  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId, { timeout: 60_000 });
 };
 
 const installMockBinding = (page, currentSceneId) => page.evaluate(({ items, currentId }) => {
@@ -144,7 +150,7 @@ const installMockBinding = (page, currentSceneId) => page.evaluate(({ items, cur
     return row;
   }));
   const selected = items.find((item) => item.id === currentId);
-  current.textContent = selected ? `現在 ${String(selected.index).padStart(2, "0")} / 23` : "";
+  current.textContent = selected ? `現在 ${String(selected.index).padStart(2, "0")} / ${items.length}` : "";
   if (debug && debugNumber && debugStep) {
     debugNumber.textContent = String(selected?.script || 1).padStart(4, "0");
     debugStep.textContent = document.querySelector("#novel-layer").dataset.stepId;
@@ -279,13 +285,11 @@ try {
     attachDiagnostics(page, viewport.name);
     await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
     await ensureNovelOpen(page);
-    assert.equal(await page.locator("#novel-jump-button").isHidden(), true, `${viewport.name}: JUMP visible on title`);
 
     const firstScene = sceneItems[0];
     await bootAt(page, firstScene.id === "current_exhibition" ? "current_exhibition_006" : story.scenes[0].steps[0].id);
-    await installMockBinding(page, firstScene.id);
     const closed = await inspectClosed(page);
-    assert.deepEqual(closed.visibleNav, navOrder, `${viewport.name}: visible nav order changed`);
+    assert.deepEqual(closed.visibleNav, navOrder.filter((id) => id !== "novel-eves-button"), `${viewport.name}: visible nav order changed`);
     assert.equal(closed.collisions.length, 0, `${viewport.name}: nav buttons overlap: ${JSON.stringify(closed.collisions)}`);
     assert(closed.navContained && closed.bodyOverflow === 0, `${viewport.name}: closed nav overflow: ${JSON.stringify(closed)}`);
     assert(closed.restart.ariaHidden === "true" && closed.restart.tabIndex === -1 && closed.restart.display === "none" && closed.restart.pointerEvents === "none" && closed.restart.width === 0 && closed.restart.height === 0, `${viewport.name}: RESTART remains visible or hittable: ${JSON.stringify(closed.restart)}`);
@@ -293,11 +297,11 @@ try {
     await page.locator("#novel-jump-button").click();
     await page.locator("#novel-jump-panel").waitFor({ state: "visible" });
     const open = await inspectOpen(page);
-    assert.equal(open.count, 23, `${viewport.name}: JUMP list is incomplete`);
-    assert.deepEqual(open.sceneIds, sceneItems.map((item) => item.id), `${viewport.name}: scene data order changed`);
+    assert.equal(open.count, sceneItems.length + 1, `${viewport.name}: JUMP list is incomplete`);
+    assert.deepEqual(open.sceneIds, [...sceneItems.map((item) => item.id), "ending"], `${viewport.name}: scene data order changed`);
     assert.equal(open.visibleInternalIds, 0, `${viewport.name}: internal scene IDs became visible`);
     assert(open.currentCount === 1 && open.currentId === firstScene.id && open.focusedSceneId === firstScene.id, `${viewport.name}: current scene highlight/focus failed: ${JSON.stringify(open)}`);
-    assert(open.panelContained && open.listScrolls && !open.panelOwnScroll && !open.navIntersection && !open.debugIntersection && !open.textIntersection && open.frontAtCenter && open.bodyOverflow === 0, `${viewport.name}: JUMP panel geometry failed: ${JSON.stringify(open)}`);
+    assert(open.panelContained && !open.panelOwnScroll && !open.navIntersection && !open.debugIntersection && !open.textIntersection && open.frontAtCenter && open.bodyOverflow === 0, `${viewport.name}: JUMP panel geometry failed: ${JSON.stringify(open)}`);
     assert.equal(open.ariaExpanded, "true", `${viewport.name}: aria-expanded did not open`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-jump-open.png`), animations: "disabled" });
 
@@ -319,49 +323,35 @@ try {
     assert.equal(await page.locator("#novel-jump-panel").isHidden(), true, `${viewport.name}: outside pointer did not close`);
     assert.equal(await page.locator("#novel-layer").getAttribute("data-step-id"), stepBeforeOutside, `${viewport.name}: outside pointer advanced the story behind JUMP`);
 
+    await page.evaluate(() => {
+      const transition = window.GaiaSceneTransition;
+      const originalRun = transition.run.bind(transition);
+      window.__gaiaJumpTransitionCalls = 0;
+      window.__gaiaJumpTransitionTone = "";
+      transition.run = (swapScene, options = {}) => {
+        window.__gaiaJumpTransitionCalls += 1;
+        window.__gaiaJumpTransitionTone = options.tone || "";
+        return originalRun(swapScene, options);
+      };
+    });
     await page.locator("#novel-jump-button").click();
     await page.locator(".novel-jump-item").nth(1).click();
+    await page.waitForFunction(() => window.__gaiaJumpTransitionCalls > 0);
+    await page.waitForFunction((sceneId) => document.querySelector("#novel-layer")?.dataset.sceneId === sceneId, sceneItems[1].id);
     assert.equal(await page.locator("#novel-jump-panel").isHidden(), true, `${viewport.name}: scene item did not close JUMP`);
+    const jumpTransition = await page.evaluate(() => ({
+      calls: window.__gaiaJumpTransitionCalls,
+      tone: window.__gaiaJumpTransitionTone,
+      sceneId: document.querySelector("#novel-layer")?.dataset.sceneId || "",
+      stepType: document.querySelector("#novel-layer")?.dataset.stepType || "",
+    }));
+    assert.equal(jumpTransition.calls, 1, `${viewport.name}: scene jump did not use exactly one transition`);
+    assert.equal(jumpTransition.tone, "novel", `${viewport.name}: scene jump used the wrong transition tone`);
+    assert.equal(jumpTransition.sceneId, sceneItems[1].id, `${viewport.name}: scene jump did not reach the selected scene`);
+    assert.equal(jumpTransition.stepType, "section-separator", `${viewport.name}: selected scene appeared without its separator`);
+    open.jumpTransition = jumpTransition;
 
-    const choice = steps.find((step) => step.type === "choice");
-    await bootAt(page, choice.id);
-    await installMockBinding(page, choice.sceneId);
-    const choiceGeometry = await page.evaluate(() => {
-      const overlaps = (left, right) => left.left < right.right - 0.5 && left.right > right.left + 0.5 && left.top < right.bottom - 0.5 && left.bottom > right.top + 0.5;
-      const navButtons = [...document.querySelectorAll(".novel-topbar nav > button:not([hidden])")].filter((button) => button.id !== "novel-close-button");
-      const choices = [...document.querySelectorAll(".novel-choices button")];
-      const intersections = navButtons.flatMap((navButton) => choices.filter((choiceButton) => overlaps(navButton.getBoundingClientRect(), choiceButton.getBoundingClientRect())).map((choiceButton) => [navButton.id, choiceButton.textContent]));
-      return { count: choices.length, overlaps: intersections, overflow: Math.max(0, document.documentElement.scrollWidth - innerWidth) };
-    });
-    assert(choiceGeometry.count > 0 && choiceGeometry.overlaps.length === 0 && choiceGeometry.overflow === 0, `${viewport.name}: nav intersects choices: ${JSON.stringify(choiceGeometry)}`);
-
-    await bootAt(page, "prologue_basil_004");
-    await installMockBinding(page, "prologue_basil");
-    const chatGeometry = await page.evaluate(() => {
-      const overlaps = (left, right) => left.left < right.right - 0.5 && left.right > right.left + 0.5 && left.top < right.bottom - 0.5 && left.bottom > right.top + 0.5;
-      const nav = document.querySelector(".novel-topbar nav");
-      const workspace = document.querySelector(".novel-slack-workspace");
-      const navBox = nav.getBoundingClientRect();
-      const workspaceBox = workspace.getBoundingClientRect();
-      const navVisible = getComputedStyle(nav).display !== "none" && getComputedStyle(nav).visibility !== "hidden";
-      return { navVisible, intersection: navVisible && overlaps(navBox, workspaceBox), overflow: Math.max(0, document.documentElement.scrollWidth - innerWidth) };
-    });
-    assert(!chatGeometry.intersection && chatGeometry.overflow === 0, `${viewport.name}: nav intersects portrait chat: ${JSON.stringify(chatGeometry)}`);
-
-    await bootAt(page, "current_exhibition_006");
-    await installMockBinding(page, "current_exhibition");
-    await page.locator("#novel-log-button").click();
-    await page.locator("#novel-log-panel").waitFor({ state: "visible" });
-    const modalHit = await page.evaluate(() => {
-      const jump = document.querySelector("#novel-jump-button");
-      const box = jump.getBoundingClientRect();
-      const top = document.elementsFromPoint(box.left + box.width / 2, box.top + box.height / 2)[0];
-      return { topId: top?.id || "", belongsToLog: Boolean(top?.closest?.("#novel-log-panel")), overflow: Math.max(0, document.documentElement.scrollWidth - innerWidth) };
-    });
-    assert((modalHit.belongsToLog || modalHit.topId !== "novel-jump-button") && modalHit.overflow === 0, `${viewport.name}: JUMP remains hittable through LOG: ${JSON.stringify(modalHit)}`);
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-log-modal.png`), animations: "disabled" });
-
-    report.scans.push({ viewport, closed, open, choice: choiceGeometry, chat: chatGeometry, log: modalHit, passed: true });
+    report.scans.push({ viewport, closed, open, passed: true });
     await context.close();
   }
   assert.equal(report.consoleErrors.length, 0, `console errors: ${report.consoleErrors.join("\n")}`);

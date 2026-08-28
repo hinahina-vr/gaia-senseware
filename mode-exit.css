@@ -131,7 +131,8 @@ body.novel-open .novel-topbar #novel-close-button.mode-exit-control:focus-visibl
 }
 
 body.novel-open .novel-topbar #novel-close-button.mode-exit-control[data-control-mode="skip"]::before {
-  content: "→";
+  display: none;
+  content: none;
 }
 
 body.novel-open .novel-topbar #novel-home-button.mode-exit-control {
@@ -515,10 +516,14 @@ body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-
   body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control:focus-visible,
   body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control:focus-visible {
     display: inline-flex;
-    gap: 5px;
-    width: auto;
-    height: 44px;
-    padding: 0 10px;
+    box-sizing: border-box;
+    gap: 2px;
+    width: 46px;
+    min-width: 46px;
+    max-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
     overflow: hidden;
     border: 1px solid rgba(var(--mode-exit-rgb), 0.3);
     border-radius: 12px;
@@ -531,28 +536,28 @@ body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-
       0 7px 20px rgba(0, 5, 12, 0.22);
     -webkit-backdrop-filter: blur(12px) saturate(1.08);
     backdrop-filter: blur(12px) saturate(1.08);
-    font-size: 10px;
-    letter-spacing: 0.045em;
+    font-size: 8.5px;
+    letter-spacing: 0.01em;
   }
 
   body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control {
     right: auto;
     left: max(12px, env(safe-area-inset-left));
-    min-width: 68px;
   }
 
   body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
     right: auto;
-    left: max(84px, calc(env(safe-area-inset-left) + 72px));
-    min-width: 82px;
+    left: max(62px, calc(env(safe-area-inset-left) + 50px));
+    font-size: 7.5px;
+    letter-spacing: 0;
   }
 
   body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control::before,
   body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control::before {
-    flex: 0 0 15px;
-    width: 15px;
-    height: 15px;
-    font-size: 14px;
+    flex: 0 0 10px;
+    width: 10px;
+    height: 10px;
+    font-size: 10px;
   }
 
   body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control::after,
@@ -647,5 +652,9 @@ body.novel-open .novel-layer:not(.is-title) .novel-signal-caption strong {
   body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock,
   body.novel-open:has(#novel-layer.is-staff-roll .novel-staff-roll:not([hidden])) .gaia-audio-dock {
     right: max(6px, env(safe-area-inset-right)) !important;
+    box-sizing: border-box;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
   }
 }

@@ -310,7 +310,16 @@ const scanStaffRoll = async (page, viewport) => {
   });
   assert.equal(scan.stepId, stepId);
   assert.equal(scan.visible, true);
-  ["ひなひな", "OpenAI Codex", "OpenAI ImageGen", "ZEN大学『共創地球論』", "JAXA / NASA / NOAA", "気象庁"].forEach((text) => assert.match(scan.text, new RegExp(text, "u")));
+  [
+    "ひなひな",
+    "OpenAI Codex",
+    "OpenAI ImageGen",
+    "ZEN大学『共創地球論』",
+    "ZEN大学『統計学入門』",
+    "ZEN大学『リテラシーと応用のための物語理論』",
+    "JAXA / NASA / NOAA",
+    "気象庁",
+  ].forEach((text) => assert.match(scan.text, new RegExp(text, "u")));
   assert(scan.buttonHeight >= 44 && scan.overflowX === 0);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${stepId}.png`), animations: "disabled" });
   report.scans.push({ viewport: viewport.name, stepId, kind: "staff-roll", ...scan, passed: true });

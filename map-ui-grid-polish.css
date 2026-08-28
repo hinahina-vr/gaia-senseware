@@ -912,7 +912,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     bottom: max(12px, env(safe-area-inset-bottom)) !important;
     left: max(12px, env(safe-area-inset-left)) !important;
     display: grid;
-    grid-template-columns: 104px minmax(0, 1fr) 54px;
+    grid-template-columns: minmax(0, 1fr) 54px;
     gap: 6px;
     align-items: center;
     width: auto !important;
@@ -951,7 +951,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   .map-mobile-bank-toggle {
     position: relative;
     grid-row: 1;
-    grid-column: 3;
+    grid-column: 2;
     display: grid;
     width: 54px;
     height: 48px;
@@ -982,14 +982,14 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   .experience.japan-open .map-mode-bank-heading {
     grid-row: 1;
-    grid-column: 2;
+    grid-column: 1;
     display: block;
     min-width: 0;
   }
 
   .experience.japan-open .map-mode-bank-heading > p,
   .experience.japan-open .map-mode-bank-guide,
-  .experience.japan-open .map-mode-list {
+  .experience.japan-open .map-mode-groups {
     display: none !important;
   }
 
@@ -1025,8 +1025,13 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     font-size: 9px;
   }
 
-  .experience.japan-open .japan-layer.is-mobile-bank-expanded .map-mode-list:not([hidden]) {
+  .experience.japan-open .japan-layer.is-mobile-bank-expanded .map-mode-groups {
     grid-column: 1 / -1;
+    display: grid !important;
+    gap: 10px;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-bank-expanded .map-mode-list {
     display: grid !important;
     grid-template-columns: repeat(6, minmax(44px, 1fr));
     gap: 4px;
@@ -1038,8 +1043,20 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     font-size: 10px;
   }
 
-  .experience.japan-open :is(.map-mode-01-tooltip, .map-mode-light-tooltip) {
+  .experience.japan-open .map-mode-preview {
     display: none !important;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-bank-expanded .map-mode-preview.is-open {
+    position: static;
+    grid-column: 1 / -1;
+    display: grid !important;
+    width: auto !important;
+    margin: 2px 0 0;
+    padding: 12px;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
   }
 
   .experience.japan-open .japan-layer :is(.japan-instruction, .japan-map-note, .japan-credits) {

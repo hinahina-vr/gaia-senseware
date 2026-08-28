@@ -438,7 +438,7 @@ try {
   await spaceEntryPage.waitForFunction(() => document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
   await spaceEntryPage.locator("[data-intro-path='map']").click();
   await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false" && !document.body.classList.contains("scene-transitioning"), null, { timeout: 20_000 });
-  await spaceEntryPage.locator("#map-surface-light").click();
+  await spaceEntryPage.locator("#abstract-mode-list .map-mode-button").first().click();
   await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit") && getComputedStyle(document.querySelector("#gaia-canvas")).visibility === "visible", null, { timeout: 20_000 });
   await spaceEntryPage.evaluate(() => document.querySelector("#space-button")?.click());
   await spaceEntryPage.waitForFunction(() => document.body.classList.contains("gaia-space-preparing"), null, { timeout: 30_000 });

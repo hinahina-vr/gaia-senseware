@@ -594,10 +594,16 @@ body.true-end-section-transition .gaia-audio-dock {
   .true-end-skip-button {
     top: max(12px, env(safe-area-inset-top));
     left: max(12px, env(safe-area-inset-left));
-    min-width: 98px;
-    min-height: 44px;
-    padding-inline: 15px 13px;
-    font-size: 11px;
+    box-sizing: border-box;
+    width: 46px;
+    min-width: 46px;
+    max-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    gap: 0;
+    padding: 0;
+    font-size: 7.5px;
+    letter-spacing: 0;
   }
 
   .true-end-brand {

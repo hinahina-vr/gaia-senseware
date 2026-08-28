@@ -18,8 +18,8 @@ fs.mkdirSync(outputDir, { recursive: true });
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
 const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
 const viewports = [
-  { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
+  { name: "pc-1440", width: 1440, height: 900 },
 ].filter(({ name }) => (!pcOnly || name === "pc-1440") && (!mobileOnly || name === "mobile-390"));
 const report = {
   status: "running",
@@ -91,6 +91,9 @@ const scanEnding = (page) => page.evaluate(() => {
   const track = document.querySelector(".novel-staff-roll-track");
   const titleHeading = document.querySelector(".novel-staff-roll-title-accessible");
   const titleLogo = document.querySelector(".novel-staff-roll-title-logo");
+  const titleKicker = document.querySelector(".novel-staff-roll-title > span");
+  const creditsHeading = document.querySelector(".novel-staff-roll-credits-heading");
+  const firstCredit = document.querySelector(".novel-staff-roll-credit");
   const button = document.querySelector(".novel-staff-roll-finale button");
   const closingAction = document.querySelector(".novel-staff-roll-closing-action");
   const closingMark = document.querySelector(".novel-staff-roll-closing-mark");
@@ -114,6 +117,8 @@ const scanEnding = (page) => page.evaluate(() => {
   const closingMarkRect = closingMark?.getBoundingClientRect();
   const trackRect = track?.getBoundingClientRect();
   const titleLogoRect = titleLogo?.getBoundingClientRect();
+  const creditsHeadingRect = creditsHeading?.getBoundingClientRect();
+  const firstCreditRect = firstCredit?.getBoundingClientRect();
   const closingRect = closing?.getBoundingClientRect();
   const closingLineRect = closingLine?.getBoundingClientRect();
   const closingCopyrightRect = closingCopyright?.getBoundingClientRect();
@@ -165,6 +170,10 @@ const scanEnding = (page) => page.evaluate(() => {
     titleLogoCount: document.querySelectorAll(".novel-staff-roll-title-logo").length,
     titleLogoSrc: titleLogo?.getAttribute("src") || "",
     titleLogoLoaded: Boolean(titleLogo?.complete && titleLogo.naturalWidth === 2172 && titleLogo.naturalHeight === 724),
+    titleKickerDisplay: titleKicker ? getComputedStyle(titleKicker).display : "",
+    creditsHeadingText: creditsHeading?.textContent?.trim() || "",
+    creditsHeadingDisplay: creditsHeading ? getComputedStyle(creditsHeading).display : "",
+    creditsHeadingBeforeFirstCredit: Boolean(creditsHeadingRect && firstCreditRect && creditsHeadingRect.bottom <= firstCreditRect.top),
     titleLogoRect: titleLogoRect ? {
       left: titleLogoRect.left,
       right: titleLogoRect.right,
@@ -189,13 +198,16 @@ const scanEnding = (page) => page.evaluate(() => {
       top: dataSkipRect.top,
       right: dataSkipRect.right,
       bottom: dataSkipRect.bottom,
+      width: dataSkipRect.width,
       height: dataSkipRect.height,
     } : null,
+    dataSkipText: dataSkip?.textContent?.trim() || "",
     audioDockRect: audioDockRect ? {
       left: audioDockRect.left,
       top: audioDockRect.top,
       right: audioDockRect.right,
       bottom: audioDockRect.bottom,
+      width: audioDockRect.width,
       height: audioDockRect.height,
     } : null,
     topControlsOverlap: Boolean(dataSkipRect && audioDockRect
@@ -318,11 +330,23 @@ try {
     assert.equal(initial.skipHintCount, 0, `${viewport.name}: obsolete staff-roll skip hint remains`);
     assert.equal(initial.toolbarHidden, true, `${viewport.name}: normal VN toolbar remained over the ending`);
     assert.equal(initial.temporalCaptionHidden, true, `${viewport.name}: story date remained over the staff roll`);
+    assert.equal(initial.dataSkipText, "スキップ▶", `${viewport.name}: staff-roll skip label is wrong`);
     assert(initial.dataSkipRect && initial.dataSkipRect.height >= 44, `${viewport.name}: staff-roll skip hit area is under 44px`);
     assert(initial.audioDockRect && initial.audioDockRect.height >= 44, `${viewport.name}: staff-roll audio hit area is under 44px`);
     assert.equal(initial.topControlsOverlap, false, `${viewport.name}: staff-roll skip and audio controls overlap`);
     assert(initial.dataSkipRect.left <= (viewport.width <= 720 ? 16 : 22), `${viewport.name}: staff-roll skip is not anchored on the left`);
     assert(initial.audioDockRect.right >= viewport.width - (viewport.width <= 720 ? 16 : 22), `${viewport.name}: staff-roll audio is not anchored on the right`);
+    if (viewport.width <= 720) {
+      assert(Math.abs(initial.dataSkipRect.width - initial.audioDockRect.width) <= 0.5, `${viewport.name}: staff-roll skip width differs from audio control (${initial.dataSkipRect.width}px vs ${initial.audioDockRect.width}px)`);
+      assert(Math.abs(initial.dataSkipRect.height - initial.audioDockRect.height) <= 0.5, `${viewport.name}: staff-roll skip height differs from audio control (${initial.dataSkipRect.height}px vs ${initial.audioDockRect.height}px)`);
+      assert.equal(initial.titleKickerDisplay, "none", `${viewport.name}: staff heading remains before the logo`);
+      assert.equal(initial.creditsHeadingDisplay, "block", `${viewport.name}: staff heading is missing before the credits`);
+      assert.equal(initial.creditsHeadingText, "STAFF & CREDITS", `${viewport.name}: staff heading copy changed`);
+      assert.equal(initial.creditsHeadingBeforeFirstCredit, true, `${viewport.name}: staff heading is not before the first credit`);
+    } else {
+      assert.notEqual(initial.titleKickerDisplay, "none", `${viewport.name}: desktop staff heading disappeared from the logo`);
+      assert.equal(initial.creditsHeadingDisplay, "none", `${viewport.name}: duplicate desktop staff heading is visible`);
+    }
     assert.match(initial.audioDockBackground, /rgba?\(255, 255, 252(?:, 0\.94)?\)/u, `${viewport.name}: staff-roll audio control is not white (${initial.audioDockBackground})`);
     assert.match(initial.audioToggleColor, /rgba?\(19, 67, 76(?:, 0\.92)?\)/u, `${viewport.name}: staff-roll audio icon is not dark on white (${initial.audioToggleColor})`);
     assert.match(initial.stageBackground, /event-cg-exhibition-finale-sunset-(?:v1|mobile-v1)\.png/u);
@@ -382,6 +406,8 @@ try {
       "by Suno AI",
       "ZEN大学『共創地球論』",
       "ZEN大学『人新世の人類学』",
+      "ZEN大学『統計学入門』",
+      "ZEN大学『リテラシーと応用のための物語理論』",
       "参照データ",
       "JAXA / NASA / NOAA",
       "気象庁 ほか",

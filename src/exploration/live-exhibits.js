@@ -1070,7 +1070,9 @@ const mount = () => {
     button.type = "button";
     button.textContent = exhibit.number;
     button.dataset.liveExhibit = exhibit.id;
+    button.dataset.mapPreviewSurface = "map";
     button.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}のライブ観測演出へ切り替える`);
+    button.setAttribute("aria-describedby", "map-mode-preview");
     button.setAttribute("aria-current", "false");
     button.addEventListener("click", () => select(index));
     list.append(button);

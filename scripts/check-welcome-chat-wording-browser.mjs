@@ -14,16 +14,16 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const startStepId = "welcome_chat_037";
 const expectedAtStart = [
-  "saku、ESP32の話になると返事が早いね。",
-  "それでは、まず一台で試しましょう。温度と湿度を、何分おきに測るか決めたいですわ。",
+  "そこは賛成。",
+  "それでは、まず一台で試しましょう。何を確かめたいか決めてから、使うセンサーと測定間隔を選びますの。",
   "じゃあ、一分おきで。センサーの場所はあとで考えよう。",
   "データが届かなかったときの表示も、あとで決めましょう。",
   "了解。青猫さん、その設定でつなげそう？",
 ];
 const expectedFollowing = [
-  ["welcome_chat_038", "まず一台つなぎます。"],
+  ["welcome_chat_038", "いけます。"],
   ["welcome_chat_039", "お願い。動いたら、照度も足してみよう。"],
-  ["welcome_chat_040", "続きは、# 惑星の放課後_esp32 で。"],
+  ["welcome_chat_040", "続きは、# 惑星の放課後_センサー で。"],
 ];
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
@@ -75,11 +75,22 @@ try {
     }, progress);
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-    await page.evaluate(() => globalThis.GaiaNovel.open());
-    await page.locator("#novel-resume-button").click();
-    await page.locator("#novel-save-panel").waitFor({ state: "visible" });
-    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
-    await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, startStepId);
+    await page.evaluate(() => {
+      const layer = document.querySelector("#novel-layer");
+      if (layer?.hidden || !layer.classList.contains("is-open")) globalThis.GaiaNovel.open();
+    });
+    await page.waitForFunction((id) => {
+      const layer = document.querySelector("#novel-layer");
+      const resume = document.querySelector("#novel-resume-button");
+      return layer?.dataset.stepId === id || (resume && !resume.hidden && !resume.disabled);
+    }, startStepId, { timeout: 60_000 });
+    const alreadyAtStart = await page.evaluate((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, startStepId);
+    if (!alreadyAtStart) {
+      await page.locator("#novel-resume-button").click();
+      await page.locator("#novel-save-panel").waitFor({ state: "visible" });
+      await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+    }
+    await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, startStepId, { timeout: 60_000 });
     await page.locator(".novel-slack-workspace").waitFor({ state: "visible" });
     await page.waitForFunction(() => {
       const images = [...document.querySelectorAll(".novel-slack-avatar img")];
@@ -105,8 +116,10 @@ try {
       await page.keyboard.press("Enter");
       await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId);
       const current = await page.locator(".novel-slack-post.is-new .novel-slack-message").textContent();
+      const currentSpeaker = await page.locator(".novel-slack-post.is-new .novel-slack-post-body > p > strong").textContent();
       assert.equal(current, expectedText, `${viewport.name}: ${stepId} copy differs`);
-      following.push({ stepId, text: current });
+      if (stepId === "welcome_chat_038") assert.equal(currentSpeaker, "青猫", `${viewport.name}: campus chat still labels the player as あなた`);
+      following.push({ stepId, speaker: currentSpeaker, text: current });
     }
     const finalOverflow = await page.evaluate(() => ({
       page: Math.max(0, document.documentElement.scrollWidth - innerWidth),

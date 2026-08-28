@@ -125,14 +125,7 @@ const expandBank = async (page) => {
   }
 };
 
-const selectSurface = async (page, surface) => {
-  const button = page.locator(surface === "light" ? "#map-surface-light" : "#map-surface-map");
-  if (await button.getAttribute("aria-pressed") !== "true") await button.click();
-  await page.waitForFunction((expected) => document.querySelector(".map-mode-bank")?.dataset.mapSurface === expected, surface);
-};
-
 const selectExhibit = async (page, surface, index) => {
-  await selectSurface(page, surface);
   await expandBank(page);
   const list = surface === "light" ? "#abstract-mode-list" : "#japan-mode-list";
   const button = surface === "light"
@@ -141,6 +134,7 @@ const selectExhibit = async (page, surface, index) => {
       ? page.locator(`${list} .map-mode-button[data-live-exhibit]`).nth(index - 8)
       : page.locator(`${list} .map-mode-button:not([data-live-exhibit])`).nth(index);
   await button.click({ force: true });
+  await page.waitForFunction((expected) => document.querySelector(".map-mode-bank")?.dataset.mapSurface === expected, surface);
   const expected = String(index + 1).padStart(2, "0");
   if (surface === "map" && index >= 8) {
     await page.waitForFunction((number) => document.querySelector(".japan-layer")?.classList.contains("is-live-exhibit")

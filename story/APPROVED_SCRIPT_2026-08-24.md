@@ -1880,7 +1880,7 @@
 
 > STAFF & CREDITS / 惑星の放課後 / GAIA SENSATION
 >
-> スキップ
+> スキップ▶
 > 世界の続きを紡ぐ
 >
 > 原案・企画・制作 / ORIGINAL CONCEPT / DIRECTION / PRODUCTION: ひなひな
@@ -1891,7 +1891,7 @@
 > キャラクターデザイン / CHARACTER DESIGN: OpenAI ImageGen
 > 背景美術 / BACKGROUND ART: OpenAI ImageGen
 > 音楽 / MUSIC: オープニングテーマ『GAIA SENSEWARE』、エンディングテーマ『AfterSchool, AfterGlow』、by Suno AI
-> 参照講義 / ACADEMIC REFERENCE: ZEN大学『共創地球論』、ZEN大学『人新世の人類学』
+> 参照講義 / ACADEMIC REFERENCE: ZEN大学『共創地球論』、ZEN大学『人新世の人類学』、ZEN大学『統計学入門』、ZEN大学『リテラシーと応用のための物語理論』
 > 参照データ / OPEN DATA: JAXA / NASA / NOAA、気象庁 ほか
 > その選択の中に、今日から私たちもいる。
 > 物語は、ここからも続いていく。

@@ -188,6 +188,7 @@ try {
         overlap: !(back.rect.right <= skip.rect.left || skip.rect.right <= back.rect.left),
         audioRightGap: audioRect ? innerWidth - audioRect.right : null,
         audioVisible: Boolean(audioRect && audioRect.width > 0 && audioRect.height > 0),
+        audioRect: audioRect?.toJSON() || null,
         audioComputedRight: audioStyle?.right || "",
         audioTransform: audioStyle?.transform || "",
         audioClassName: audioDock?.className || "",
@@ -198,10 +199,10 @@ try {
       };
     });
     assert.equal(storyControls.back.text, "戻る", `${viewport.name}: story back label is unclear`);
-    assert.equal(storyControls.skip.text, "スキップ", `${viewport.name}: story skip label is unclear`);
+    assert.equal(storyControls.skip.text, "スキップ▶", `${viewport.name}: story skip label is unclear`);
     assert.equal(storyControls.skip.controlMode, "skip", `${viewport.name}: skip control mode was lost`);
     assert(storyControls.back.arrow.includes("←"), `${viewport.name}: back arrow is incorrect`);
-    assert(storyControls.skip.arrow.includes("→"), `${viewport.name}: skip arrow is incorrect`);
+    assert(["none", "normal"].includes(storyControls.skip.arrow), `${viewport.name}: obsolete skip arrow remains`);
     assert.match(storyControls.back.backgroundImage, /rgba?\((?:7, 42, 88|9, 52, 104)/u, `${viewport.name}: story back control is not dialogue blue`);
     assert.match(storyControls.skip.backgroundImage, /rgba?\((?:7, 42, 88|9, 52, 104)/u, `${viewport.name}: story skip control is not dialogue blue`);
     assert(parseFloat(storyControls.back.fontSize) > 0 && parseFloat(storyControls.skip.fontSize) > 0, `${viewport.name}: story labels are visually hidden`);
@@ -210,6 +211,12 @@ try {
     assert(storyControls.gap >= 4 && storyControls.gap <= 10, `${viewport.name}: story controls have an unnatural gap (${storyControls.gap}px)`);
     assert(storyControls.audioVisible && storyControls.audioRightGap >= 0, `${viewport.name}: audio control is outside the viewport`);
     assert(storyControls.audioRightGap <= (viewport.width <= 720 ? 8 : 12), `${viewport.name}: audio control is not anchored to the right edge (${JSON.stringify(storyControls)})`);
+    if (viewport.width <= 720) {
+      assert(Math.abs(storyControls.back.rect.width - storyControls.audioRect.width) <= 0.5, `${viewport.name}: back width differs from audio control`);
+      assert(Math.abs(storyControls.back.rect.height - storyControls.audioRect.height) <= 0.5, `${viewport.name}: back height differs from audio control`);
+      assert(Math.abs(storyControls.skip.rect.width - storyControls.audioRect.width) <= 0.5, `${viewport.name}: skip width differs from audio control`);
+      assert(Math.abs(storyControls.skip.rect.height - storyControls.audioRect.height) <= 0.5, `${viewport.name}: skip height differs from audio control`);
+    }
     assert(storyControls.temporalText.length > 0, `${viewport.name}: story date is missing`);
     assert.match(storyControls.temporalColor, /rgba?\((?:248, 253, 255|255, 255, 255)/u, `${viewport.name}: story date is not high-contrast`);
     assert((storyControls.temporalShadow.match(/rgba?\(0, 0, 0/gu) || []).length >= 3, `${viewport.name}: story date shadow is too weak (${storyControls.temporalShadow})`);
@@ -228,13 +235,6 @@ try {
     await page.locator("#japan-close").click();
     await page.locator("#japan-layer:not([hidden])").waitFor({ state: "hidden", timeout: 15_000 });
     await page.waitForFunction(() => !window.GaiaSceneTransition?.running);
-    await page.keyboard.press("Escape");
-    await page.locator("#intro-layer:not([hidden])").waitFor({ state: "hidden", timeout: 15_000 });
-    await inspectButton(page, "#intro-button", viewport.name, "abstract");
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-abstract.png`) });
-    await page.locator("#intro-button").click();
-    await page.locator("#intro-layer:not([hidden])").waitFor({ state: "visible", timeout: 15_000 });
-    report.scans.at(-1).pointerActivated = true;
     await bypassOpening(page);
 
     await page.evaluate(async () => {

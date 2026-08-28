@@ -168,7 +168,7 @@
     <script src="./opening-audio.js?v=gaia-route-bgm-split-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-route-bgm-split-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-sound-return-layout-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-character-file-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -814,9 +814,9 @@
                 id="intro-lp-scroll"
                 type="button"
                 aria-controls="intro-gx-feature"
-                aria-label="下へスクロールして次の展示を見る"
+                aria-label="下へスクロールして他の展示を見る"
               >
-                <span><b>SCROLL</b><small>次の展示を見る</small></span>
+                <span><b>SCROLL</b><small>他の展示を見る</small></span>
                 <i aria-hidden="true"></i>
               </button>
             </div>
@@ -833,6 +833,16 @@
               </button>
 
               <div class="intro-portal-footer">
+                <button
+                  class="intro-architecture-jump intro-character-jump"
+                  id="intro-character-jump"
+                  type="button"
+                  aria-controls="character-exhibit"
+                >
+                  <span>CHARACTER FILE</span>
+                  <strong>キャラクター設定資料</strong>
+                  <span aria-hidden="true">↓</span>
+                </button>
                 <button class="intro-architecture-jump" id="intro-architecture-jump" type="button">
                   <span>OPEN DATA</span>
                   <strong>作品を支えるデータと設計を見る</strong>
@@ -888,6 +898,123 @@
             </div>
           </section>
         </div>
+
+        <section
+          class="character-exhibit"
+          id="character-exhibit"
+          aria-labelledby="character-exhibit-title"
+          tabindex="-1"
+        >
+          <header class="architecture-header character-header">
+            <div>
+              <p>CHARACTER FILE / GAIA SENSEWARE CREW</p>
+              <h2 id="character-exhibit-title">三人でつくる、<br />地球を感じる展示。</h2>
+            </div>
+            <button class="mode-exit-control" id="intro-character-back" type="button">
+              戻る
+            </button>
+          </header>
+
+          <div class="character-exhibit-intro">
+            <p class="architecture-label">ONLINE CIRCLE / 惑星の放課後</p>
+            <p>
+              オンライン大学の学内チャットで知り合った三人。文章、公開データ、写真や記憶を持ち寄り、
+              地球の変化を光・音・地図・物語へ置き換える共同制作「GAIA SENSEWARE」を始めました。
+              顔を合わせる前から、互いの文体と返信の癖を知っています。
+            </p>
+          </div>
+
+          <div class="character-file-grid">
+            <article class="character-file character-file--mizuha">
+              <div class="character-file-visual">
+                <span aria-hidden="true">01</span>
+                <img
+                  src="./assets/characters/mizuha-calm-07-v2.png"
+                  alt="水面色の長い髪と深い青の服をまとった、みず"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div class="character-file-copy">
+                <p><span>MIZU</span> / CAMPUS NAME</p>
+                <h3>みず</h3>
+                <strong>生態・身体感覚・海・雨・森</strong>
+                <p>
+                  落ち着いた丁寧語で話し、説明を始めると長い。
+                  専門用語を使ったあとは、身近なものへ言い換えようとする。
+                  分からないことがあると、まず出典を確かめる。
+                </p>
+                <blockquote>「不明は、消していい項目ではありませんの」</blockquote>
+              </div>
+            </article>
+
+            <article class="character-file character-file--amane">
+              <div class="character-file-visual">
+                <span aria-hidden="true">02</span>
+                <img
+                  src="./assets/characters/amane-calm-07-v3.png"
+                  alt="淡い青のボブヘアと空色の服をまとった、あめ"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div class="character-file-copy">
+                <p><span>AME</span> / CAMPUS NAME</p>
+                <h3>あめ</h3>
+                <strong>社会・技術・都市・AI・エネルギー網</strong>
+                <p>
+                  文章は短く、長い投稿にはひとまず「👀」を付ける。
+                  誰かが困ると慰める言葉より先に原因を調べる。
+                  曖昧なまま優しく言うより、確かめてから答えたい。
+                </p>
+                <blockquote>「決められないなら、まだ決めないで置いとこう」</blockquote>
+              </div>
+            </article>
+
+            <article class="character-file character-file--sakuya">
+              <div class="character-file-visual">
+                <span aria-hidden="true">03</span>
+                <img
+                  src="./assets/characters/sakuya-calm-bust-07-v2.png"
+                  alt="花の髪留めを付け、カメラと押し花ノートを持ったsaku"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div class="character-file-copy">
+                <p><span>SAKU</span> / CAMPUS NAME</p>
+                <h3>saku</h3>
+                <strong>文化・記憶・土地の名前・物語</strong>
+                <p>
+                  短い文章を書き、返事は遅い。
+                  会話が流れたあとでも、気になった一言へ戻ってくる。
+                  相手の言葉を勝手に言い換えず、そのまま記録へ残す。
+                </p>
+                <blockquote>「続きはあとで。忘れてないから」</blockquote>
+              </div>
+            </article>
+          </div>
+
+          <section class="character-relationship" aria-labelledby="character-relationship-title">
+            <div>
+              <p class="architecture-label">THREE WRITING RHYTHMS / ONE PROJECT</p>
+              <h3 id="character-relationship-title">説明する人、決める人、残す人。</h3>
+            </div>
+            <p>
+              みずは例外や前提を拾い、あめは最初に伝えることを決め、sakuは流れの中で消えそうな言葉を残します。
+              意見はよく割れ、返事が止まる日もあります。それでも、戻ってきた人が前回の続きから話せることが、
+              三人の共同制作を支えています。
+            </p>
+          </section>
+
+          <footer class="character-file-note">
+            <span>VISUAL NOTE</span>
+            <p>
+              立ち絵はキャラクター設定をもとに制作した本作のビジュアルです。
+              正式名や物語の核心に触れる情報は、本編での開示順に合わせてここでは伏せています。
+            </p>
+          </footer>
+        </section>
 
         <section
           class="architecture-exhibit"
@@ -1367,7 +1494,7 @@
             aria-controls="japan-data-panel"
           >
             <span>OPEN DATA</span>
-            <span>このデータの出典を表示する</span>
+            <span>データの出典を表示する</span>
             <span aria-hidden="true">↗</span>
           </button>
           <button
@@ -1378,7 +1505,7 @@
             aria-controls="gaia-statistics-lab"
           >
             <span>STAT LAB</span>
-            <span>この展示を統計で読み解く</span>
+            <span>データを統計分析する</span>
             <span aria-hidden="true">＋</span>
           </button>
         </header>
@@ -1499,11 +1626,7 @@
           LOCAL VECTOR LOADING
         </p>
 
-        <section class="map-mode-bank" data-active-mode="01" data-map-surface="map" aria-label="地図12展示と光8演出を切り替える">
-          <div class="map-surface-switch" aria-label="展示の見せ方を選ぶ">
-            <button id="map-surface-map" type="button" aria-pressed="true"><span>MAP</span><strong>地図</strong></button>
-            <button id="map-surface-light" type="button" aria-pressed="false"><span>LIGHT</span><strong>光</strong></button>
-          </div>
+        <section class="map-mode-bank" data-active-mode="01" data-map-surface="map" aria-label="地図12展示と光8演出をまとめて選ぶ">
           <button
             class="map-mobile-bank-toggle"
             id="map-mobile-bank-toggle"
@@ -1516,36 +1639,33 @@
             <i aria-hidden="true"></i>
           </button>
           <div class="map-mode-bank-heading">
-            <p id="map-mode-bank-kicker">INSTALLATION BANK / 01—12</p>
+            <p id="map-mode-bank-kicker">INSTALLATION BANK / MAP 01—12 + LIGHT 01—08</p>
             <div>
               <span id="japan-mode-number">01</span>
               <strong id="japan-mode-title">地球の一呼吸</strong>
             </div>
           </div>
-          <p class="map-mode-bank-guide" id="map-mode-bank-guide">01〜12を押すと、地図に表示する展示が変わります</p>
-          <div class="map-mode-list" id="japan-mode-list"></div>
-          <div class="map-mode-list map-mode-list--light" id="abstract-mode-list" aria-label="光で見る8つの感覚器演出" hidden></div>
-          <aside class="map-mode-01-tooltip" id="map-mode-01-tooltip" role="tooltip" aria-labelledby="map-mode-01-tooltip-title">
-            <p>MAP MODE / READ THE PLANET</p>
-            <strong id="map-mode-01-tooltip-title">どの信号を、地図で読みますか？</strong>
-            <p>光の意味を世界の場所へ戻します。気になる信号を選び、観測値がどこで記録されたのかをたどってください。</p>
+          <p class="map-mode-bank-guide" id="map-mode-bank-guide">MAP 01〜12とLIGHT 01〜08から、見たい展示を選んでください</p>
+          <div class="map-mode-groups">
+            <section class="map-mode-group" aria-labelledby="map-mode-map-label">
+              <p class="map-mode-group-label" id="map-mode-map-label"><span>MAP</span><strong>地図</strong></p>
+              <div class="map-mode-list" id="japan-mode-list"></div>
+            </section>
+            <section class="map-mode-group" aria-labelledby="map-mode-light-label">
+              <p class="map-mode-group-label" id="map-mode-light-label"><span>LIGHT</span><strong>光</strong></p>
+              <div class="map-mode-list map-mode-list--light" id="abstract-mode-list" aria-label="光で見る8つの感覚器演出"></div>
+            </section>
+          </div>
+          <aside class="map-mode-01-tooltip map-mode-preview" id="map-mode-preview" role="tooltip" aria-labelledby="map-mode-preview-title">
+            <p id="map-mode-preview-surface">MAP MODE / READ THE PLANET</p>
+            <strong id="map-mode-preview-title">どの信号を、地図で読みますか？</strong>
+            <p id="map-mode-preview-lead">光の意味を世界の場所へ戻します。気になる信号を選び、観測値がどこで記録されたのかをたどってください。</p>
             <div>
-              <span>01 / AIR</span>
-              <b>空気の声</b>
-              <p>CO₂が季節ごとに上下しながら、長い目では増えてきた様子を見る。</p>
+              <span id="map-mode-preview-number">01 / AIR</span>
+              <b id="map-mode-preview-label">空気の声</b>
+              <p id="map-mode-preview-copy">CO₂が季節ごとに上下しながら、長い目では増えてきた様子を見る。</p>
             </div>
-            <small>マウスを重ねると説明が変わります。クリックすると、その信号の地図をすぐに開きます。</small>
-          </aside>
-          <aside class="map-mode-01-tooltip map-mode-light-tooltip" id="map-mode-light-tooltip" role="tooltip" aria-labelledby="map-mode-light-tooltip-title">
-            <p>ABSTRACT MODE / TOUCH THE SIGNAL</p>
-            <strong id="map-mode-light-tooltip-title">どの感覚に、触れますか？</strong>
-            <p>地球が発している8つの信号から、最初に触れるものを選んでください。指やマウスの動きに、光が応答します。</p>
-            <div>
-              <span id="map-mode-light-tooltip-number">01 / AIR</span>
-              <b id="map-mode-light-tooltip-label">空気の声</b>
-              <p id="map-mode-light-tooltip-copy">CO₂が季節ごとに上下しながら、長い目では増えてきた様子を見る。</p>
-            </div>
-            <small>マウスを重ねると説明が変わります。クリックすると、選んだ光をすぐに始めます。</small>
+            <small id="map-mode-preview-note">数字にフォーカスすると説明が変わります。クリックすると、その展示をすぐに開きます。</small>
           </aside>
         </section>
 
