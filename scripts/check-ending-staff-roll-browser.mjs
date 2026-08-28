@@ -376,7 +376,7 @@ try {
       "背景美術",
       "音楽",
       "オープニングテーマ",
-      "『GAIA SENSEWARE』",
+      "『Planet Forecast - Hope』",
       "エンディングテーマ",
       "『AfterSchool, AfterGlow』",
       "by Suno AI",
@@ -410,13 +410,13 @@ try {
     assert.deepEqual(characterDesignCredit?.names, ["OpenAI ImageGen"], `${viewport.name}: character design credit is incorrect`);
     const musicCredit = initial.creditRows.find((row) => row.role === "MUSIC");
     assert.deepEqual(musicCredit?.names, [
-      "オープニングテーマ『GAIA SENSEWARE』",
+      "オープニングテーマ『Planet Forecast - Hope』",
       "エンディングテーマ『AfterSchool, AfterGlow』",
       "by Suno AI",
     ], `${viewport.name}: music credit wording or order is incorrect`);
     assert.equal(musicCredit?.nameOverflow, false, `${viewport.name}: music credit overflows horizontally`);
     assert.deepEqual(musicCredit?.musicTracks.map(({ label, title }) => ({ label, title })), [
-      { label: "オープニングテーマ", title: "『GAIA SENSEWARE』" },
+      { label: "オープニングテーマ", title: "『Planet Forecast - Hope』" },
       { label: "エンディングテーマ", title: "『AfterSchool, AfterGlow』" },
     ], `${viewport.name}: music theme labels and titles are not split into separate lines`);
     musicCredit?.musicTracks.forEach((track) => {

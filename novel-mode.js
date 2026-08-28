@@ -4209,7 +4209,7 @@
         role: "音楽",
         department: "MUSIC",
         names: [
-          { label: "オープニングテーマ", title: "『GAIA SENSEWARE』" },
+          { label: "オープニングテーマ", title: "『Planet Forecast - Hope』" },
           { label: "エンディングテーマ", title: "『AfterSchool, AfterGlow』" },
           "by Suno AI",
         ],
@@ -5377,7 +5377,7 @@
     closeDetourDock();
     particleSystem.stop();
     requestedStoryTrack = null;
-    void window.GaiaOpeningAudio?.switchTrack?.("opening");
+    void window.GaiaOpeningAudio?.switchTrack?.("senseware");
     isOpen = false;
     setInteractionLifecycle("idle");
     sectionSkipPending = false;

@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4417"] = process.argv.slice(2);
 const cardsOnly = process.argv.slice(6).includes("--cards-only");
+const introOnly = process.argv.slice(6).includes("--intro-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -298,6 +299,8 @@ const scanGxFeature = async (page, viewport) => {
       copy: copy?.querySelector("p")?.textContent.trim(),
       enter: enter?.textContent.replace(/\s+/gu, " ").trim(),
       copyAlignedLeft: getComputedStyle(copy).textAlign === "left",
+      viewportCenter: element.closest(".intro-layer")?.clientWidth / 2,
+      featureCenter: rect.left + rect.width / 2,
       overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       visible: globalThis.__qaVisible(element),
     };
@@ -310,6 +313,7 @@ const scanGxFeature = async (page, viewport) => {
   assert.match(scan.enter, /THE FIRST GX/u);
   assert(scan.titleSize >= 21 && scan.titleSize <= 31, JSON.stringify(scan));
   assert.equal(scan.copyAlignedLeft, true);
+  assert(Math.abs(scan.featureCenter - scan.viewportCenter) <= 1, JSON.stringify(scan));
   assert.equal(scan.overflowX, false);
   assert(scan.rect.left >= 0 && scan.rect.right <= viewport.width + 1, JSON.stringify(scan.rect));
   return scan;
@@ -514,6 +518,8 @@ const scanIntroReturn = async (viewport) => {
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-intro-simple.png`) });
   const scrollCue = await useScrollCue(page, viewport);
   const gxFeature = await scanGxFeature(page, viewport);
+  const gxScreenshot = path.join(outputDir, `${viewport.name}-gx-feature-centered.png`);
+  await page.screenshot({ path: gxScreenshot, fullPage: false });
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-intro-gx-feature.png`) });
   const returnButton = page.locator(".intro-story-return[data-primary-action='true']");
   if (viewport.action === "click") await returnButton.click();
@@ -544,7 +550,7 @@ const scanIntroReturn = async (viewport) => {
     await page.locator("#novel-gallery-close").click();
   }
 
-  report.scans.push({ viewport: viewport.name, case: `intro-return-${viewport.action}`, before, scrollCue, gxFeature, after, album, passed: true });
+  report.scans.push({ viewport: viewport.name, case: `intro-return-${viewport.action}`, before, scrollCue, gxFeature, gxScreenshot, after, album, passed: true });
   await context.close();
 };
 
@@ -797,20 +803,22 @@ const scanRuntimeStoryContract = async () => {
 
 try {
   for (const viewport of viewports) await scanIntroReturn(viewport);
-  await scanEndingDestinations();
-  await scanIntegratedLightEntry(viewports[2]);
-  await scanIntegratedLightEntry(viewports[3]);
-  await scanDirectMapEntry(viewports[2]);
-  await scanDirectMapEntry(viewports[3]);
-  if (!cardsOnly) {
-    await scanMetadataAndRuntimeGallery(viewports[0], "festival_concept_001");
-    await scanMetadataAndRuntimeGallery(viewports[1], "festival_concept_008");
-    await scanMetadataAndRuntimeGallery(viewports[2], "festival_concept_015");
-    await scanMetadataAndRuntimeGallery(viewports[3], "festival_concept_001");
-    await scanIntroductionSequence(viewports[2]);
-    await scanIntroductionSequence(viewports[3]);
-    await scanRuntimeStoryContract();
-    await scanRepeatAndBack();
+  if (!introOnly) {
+    await scanEndingDestinations();
+    await scanIntegratedLightEntry(viewports[2]);
+    await scanIntegratedLightEntry(viewports[3]);
+    await scanDirectMapEntry(viewports[2]);
+    await scanDirectMapEntry(viewports[3]);
+    if (!cardsOnly) {
+      await scanMetadataAndRuntimeGallery(viewports[0], "festival_concept_001");
+      await scanMetadataAndRuntimeGallery(viewports[1], "festival_concept_008");
+      await scanMetadataAndRuntimeGallery(viewports[2], "festival_concept_015");
+      await scanMetadataAndRuntimeGallery(viewports[3], "festival_concept_001");
+      await scanIntroductionSequence(viewports[2]);
+      await scanIntroductionSequence(viewports[3]);
+      await scanRuntimeStoryContract();
+      await scanRepeatAndBack();
+    }
   }
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);

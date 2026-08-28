@@ -59,6 +59,13 @@ if (!lab || !openButton) {
     formula: q("#gaia-statistics-formula"),
     insights: q("#gaia-statistics-insights"),
   };
+  const chartTooltip = document.createElement("output");
+  chartTooltip.className = "gaia-statistics-chart-tooltip";
+  chartTooltip.setAttribute("role", "status");
+  chartTooltip.setAttribute("aria-live", "polite");
+  chartTooltip.hidden = true;
+  ui.visual.append(chartTooltip);
+  ui.tooltip = chartTooltip;
 
   const MODE_TITLES = {
     "breathing-earth": "Breathing Earth / 地球の一呼吸",
@@ -155,6 +162,8 @@ if (!lab || !openButton) {
     returnFocus: null,
     result: null,
     points: new Map(),
+    chartTargets: [],
+    chartMeta: null,
     animation: 0,
     renderToken: 0,
   };
@@ -189,6 +198,11 @@ if (!lab || !openButton) {
       id: `${row.year}-${pad2(row.month)}`, label: `${row.year}-${pad2(row.month)}`,
       x: row.year + (row.month - 0.5) / 12, y: Number(row.deseasonalizedPpm), value: Number(row.deseasonalizedPpm), provenance: "SOURCE", index,
     }));
+    const co2MonthSpan = co2.length
+      ? Math.round((co2.at(-1).x - co2[0].x) * 12) + 1
+      : 0;
+    const co2MissingMonths = Math.max(0, co2MonthSpan - co2.length);
+    const co2Period = co2.length ? `${co2[0].label}〜${co2.at(-1).label}` : "観測なし";
     const jma = (breathing.japanCo2 || []).filter((row) => [row.ryoriPpm, row.minamitorishimaPpm, row.yonagunijimaPpm].every((value) => finite(value) !== null)).map((row) => ({
       id: String(row.year), label: String(row.year), x: Number(row.ryoriPpm), y: Number(row.minamitorishimaPpm), value: Number(row.ryoriPpm), paired: Number(row.yonagunijimaPpm), provenance: "SOURCE",
     }));
@@ -207,7 +221,21 @@ if (!lab || !openButton) {
     const interactions = (pollination.interactions || []).map((row, index) => ({ id: `i${index}`, label: row.targetTaxon, category: row.interaction, group: row.sourceTaxon, value: index, provenance: "SOURCE", ...row }));
     const occurrences = (pollination.occurrences || []).map((row, index) => ({ id: `o${index}`, label: row.country, category: row.basisOfRecord, group: row.sampling, value: index, provenance: "SOURCE", ...row }));
     return [
-      { id: "co2-trend", modeId: "breathing-earth", title: "CO₂ 直近120か月（季節調整済み）", rows: co2, unit: "ppm", xLabel: "年", yLabel: "CO₂", reference: co2[0]?.value, provenance: ["SOURCE"] },
+      {
+        id: "co2-trend",
+        modeId: "breathing-earth",
+        title: `CO₂ 観測${co2.length}件（${co2Period} / 欠測${co2MissingMonths}か月）`,
+        rows: co2,
+        unit: "ppm",
+        xLabel: "観測月",
+        xKind: "month",
+        yLabel: "CO₂",
+        reference: co2[0]?.value,
+        provenance: ["SOURCE"],
+        periodStart: co2[0]?.label,
+        periodEnd: co2.at(-1)?.label,
+        missingPeriods: co2MissingMonths,
+      },
       { id: "jma-co2", modeId: "breathing-earth", title: "JMA CO₂ 3観測所 共通期間", rows: jma, unit: "ppm", xLabel: "綾里", yLabel: "南鳥島", pairedLabel: "与那国島", provenance: ["SOURCE"] },
       { id: "wind-climate", modeId: "blue-circulation", title: "31地点の風速と気温", rows: climate, unit: "m/s", xLabel: "気温", yLabel: "風速", provenance: ["SOURCE"] },
       { id: "rainfall", modeId: "forest-cloud-engine", title: "31地点の平均降水量", rows: rainfall, unit: "mm/day", xLabel: "経度", yLabel: "降水量", provenance: ["SOURCE"] },
@@ -764,16 +792,28 @@ if (!lab || !openButton) {
 
   const chartPoints = (result, dataset) => {
     const chart = result.chart || {}; const points = [];
-    const add = (id, x, y, group = 0, label = "") => { if (Number.isFinite(x) && Number.isFinite(y)) points.push({ id: String(id), x, y, group, label }); };
-    if (["scatter", "logistic"].includes(chart.type)) (chart.pairs || []).forEach((point, index) => add(dataset.rows[index]?.id || index, point.x ?? point[0], point.y ?? point[1], 0, dataset.rows[index]?.label));
+    const add = (id, x, y, group = 0, label = "", row = {}) => {
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        points.push({ id: String(id), x, y, group, label, provenance: row.provenance, value: row.value });
+      }
+    };
+    if (["scatter", "logistic"].includes(chart.type)) {
+      const pairedRows = rowsFor(dataset).filter((row) => Number.isFinite(row.x) && Number.isFinite(row.y));
+      (chart.pairs || []).forEach((point, index) => {
+        const row = pairedRows[index] || {};
+        add(row.id || index, point.x ?? point[0], point.y ?? point[1], 0, row.label, row);
+      });
+    }
     else if (["histogram", "distribution"].includes(chart.type)) {
       const bins = chart.bins || [];
       const stacks = new Map();
+      const numericRows = rowsFor(dataset).filter((row) => Number.isFinite(row.value));
       (chart.values || result.stats?.values || valuesFor(dataset)).forEach((value, index) => {
         const binIndex = Math.max(0, bins.findIndex((bin, candidateIndex) => value >= bin.x0 && (value < bin.x1 || candidateIndex === bins.length - 1)));
         const rank = (stacks.get(binIndex) || 0) + 1;
         stacks.set(binIndex, rank);
-        add(dataset.rows[index]?.id || index, value, rank, 0, dataset.rows[index]?.label);
+        const row = numericRows[index] || {};
+        add(row.id || index, value, rank, 0, row.label, row);
       });
     }
     else if (chart.type === "sampling") (chart.sampleMeans || chart.bins || []).forEach((value, index) => add(index, value.center ?? ((value.x0 + value.x1) / 2), value.count ?? index % 8));
@@ -786,32 +826,122 @@ if (!lab || !openButton) {
     return points;
   };
 
+  const hideChartTooltip = () => {
+    ui.tooltip.hidden = true;
+    ui.canvas.removeAttribute("aria-describedby");
+  };
+
+  const showChartTooltip = (target) => {
+    const meta = state.chartMeta;
+    if (!target || !meta) return hideChartTooltip();
+    const { chart, dataset, width } = meta;
+    const title = document.createElement("strong");
+    title.textContent = target.label || "観測値";
+    const values = document.createElement("span");
+    if (["histogram", "distribution", "sampling"].includes(chart.type)) {
+      values.textContent = `${dataset.yLabel || "観測値"}: ${format(target.x, 2)}${chart.unit || dataset.unit || ""}`;
+    } else {
+      values.textContent = `${chart.xLabel || dataset.xLabel || "X"}: ${format(target.x, 2)}${chart.xUnit || dataset.xUnit || ""} / ${chart.yLabel || dataset.yLabel || "Y"}: ${format(target.y, 2)}${chart.yUnit || dataset.unit || ""}`;
+    }
+    const provenance = document.createElement("small");
+    provenance.textContent = target.provenance || (state.includeDerived ? "SOURCE / DERIVED" : "SOURCE");
+    ui.tooltip.replaceChildren(title, values, provenance);
+    ui.tooltip.style.left = `${target.sx}px`;
+    ui.tooltip.style.top = `${target.sy}px`;
+    ui.tooltip.dataset.side = target.sx > width * 0.62 ? "left" : "right";
+    ui.tooltip.hidden = false;
+    ui.tooltip.id ||= "gaia-statistics-chart-tooltip";
+    ui.canvas.setAttribute("aria-describedby", ui.tooltip.id);
+  };
+
+  const updateChartTooltipFromPointer = (event) => {
+    if (!state.chartTargets.length || !state.chartMeta) return hideChartTooltip();
+    const rect = ui.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const { pad, width, height } = state.chartMeta;
+    if (x < pad.left || x > width - pad.right || y < pad.top || y > height - pad.bottom) return hideChartTooltip();
+    let nearest = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    state.chartTargets.forEach((target) => {
+      const distance = Math.hypot(target.sx - x, target.sy - y);
+      if (distance < nearestDistance) { nearest = target; nearestDistance = distance; }
+    });
+    const limit = event.pointerType === "touch" ? 42 : 28;
+    showChartTooltip(nearestDistance <= limit ? nearest : null);
+  };
+
   const drawChart = (result, dataset) => {
     const canvas = ui.canvas; const rect = ui.visual.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
+    hideChartTooltip();
     const ratio = Math.min(2, window.devicePixelRatio || 1);
     const pixelWidth = Math.round(rect.width * ratio);
     const pixelHeight = Math.round(rect.height * ratio);
     if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
     if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
     const ctx = canvas.getContext("2d"); ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const width = rect.width; const height = rect.height; const pad = { left: 58, right: 28, top: 32, bottom: 45 };
+    const width = rect.width; const height = rect.height; const pad = { left: width < 560 ? 53 : 66, right: 28, top: 38, bottom: 55 };
+    const chart = result.chart || {};
     const points = chartPoints(result, dataset);
     const xs = points.map((point) => point.x); const ys = points.map((point) => point.y);
-    let minX = Math.min(...xs, 0); let maxX = Math.max(...xs, 1); let minY = Math.min(...ys, 0); let maxY = Math.max(...ys, 1);
+    let minX = xs.length ? Math.min(...xs) : 0;
+    let maxX = xs.length ? Math.max(...xs) : 1;
+    let minY = ys.length ? Math.min(...ys) : 0;
+    let maxY = ys.length ? Math.max(...ys) : 1;
+    const frequencyChart = ["histogram", "distribution", "sampling", "discrete", "categorical"].includes(chart.type);
+    if (chart.bins?.length) {
+      minX = Math.min(...chart.bins.map((bin) => bin.x0));
+      maxX = Math.max(...chart.bins.map((bin) => bin.x1));
+      minY = 0;
+      maxY = Math.max(maxY, ...chart.bins.map((bin) => bin.count));
+    }
     if (minX === maxX) { minX -= 1; maxX += 1; } if (minY === maxY) { minY -= 1; maxY += 1; }
+    const xMargin = (maxX - minX) * 0.035;
+    minX -= xMargin; maxX += xMargin;
+    if (frequencyChart) minY = 0;
+    else {
+      const yMargin = (maxY - minY) * 0.08;
+      minY -= yMargin; maxY += yMargin;
+    }
+    maxY += Math.max(0.5, (maxY - minY) * 0.08);
     const xScale = (value) => pad.left + (value - minX) / (maxX - minX) * (width - pad.left - pad.right);
     const yScale = (value) => height - pad.bottom - (value - minY) / (maxY - minY) * (height - pad.top - pad.bottom);
     const targets = new Map(points.map((point) => [point.id, { ...point, sx: xScale(point.x), sy: yScale(point.y) }]));
     const starts = new Map(); targets.forEach((target, id) => starts.set(id, state.points.get(id) || { sx: width * 0.5, sy: height * 0.5, group: target.group }));
+    state.chartMeta = { chart, dataset, width, height, pad };
     cancelAnimationFrame(state.animation); const start = performance.now(); const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 560;
     const paint = (now) => {
       const t = Math.min(1, (now - start) / duration); const eased = 1 - (1 - t) ** 3;
       ctx.clearRect(0, 0, width, height);
       ctx.strokeStyle = "rgba(125,211,255,.12)"; ctx.lineWidth = 1;
-      for (let i = 0; i <= 5; i += 1) { const y = pad.top + i / 5 * (height - pad.top - pad.bottom); ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(width - pad.right, y); ctx.stroke(); }
-      ctx.fillStyle = "rgba(218,243,255,.58)"; ctx.font = "10px Consolas"; ctx.textAlign = "left"; ctx.fillText(result.chart?.xLabel || dataset.xLabel || "OBSERVATION", pad.left, height - 16); ctx.save(); ctx.translate(15, height / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(result.chart?.yLabel || dataset.yLabel || dataset.unit || "VALUE", 0, 0); ctx.restore();
-      const chart = result.chart || {};
+      const tickCount = width < 560 ? 4 : 5;
+      ctx.font = `${width < 560 ? 8 : 9}px Consolas`;
+      ctx.fillStyle = "rgba(218,243,255,.54)";
+      for (let i = 0; i <= tickCount; i += 1) {
+        const ratio = i / tickCount;
+        const x = pad.left + ratio * (width - pad.left - pad.right);
+        const y = pad.top + ratio * (height - pad.top - pad.bottom);
+        ctx.strokeStyle = "rgba(125,211,255,.12)";
+        ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, height - pad.bottom); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(width - pad.right, y); ctx.stroke();
+        const xValue = minX + ratio * (maxX - minX);
+        const yValue = maxY - ratio * (maxY - minY);
+        ctx.textAlign = "center";
+        ctx.fillText(dataset.xKind === "month" && !frequencyChart ? String(Math.round(xValue)) : format(xValue, Math.abs(maxX - minX) < 12 ? 1 : 0), x, height - pad.bottom + 18);
+        ctx.textAlign = "right";
+        ctx.fillText(format(yValue, Math.abs(maxY - minY) < 12 ? 1 : 0), pad.left - 8, y + 3);
+      }
+      const xAxisLabel = frequencyChart
+        ? `${dataset.yLabel || "観測値"}${chart.unit || dataset.unit ? ` (${chart.unit || dataset.unit})` : ""}`
+        : (chart.xLabel || dataset.xLabel || "OBSERVATION");
+      const yAxisLabel = frequencyChart ? "観測数" : (chart.yLabel || dataset.yLabel || dataset.unit || "VALUE");
+      canvas.dataset.axisX = xAxisLabel;
+      canvas.dataset.axisY = yAxisLabel;
+      canvas.dataset.domainX = `${minX},${maxX}`;
+      canvas.dataset.domainY = `${minY},${maxY}`;
+      canvas.dataset.pointCount = String(points.length);
+      ctx.fillStyle = "rgba(218,243,255,.72)"; ctx.font = "10px Consolas"; ctx.textAlign = "center"; ctx.fillText(xAxisLabel, pad.left + (width - pad.left - pad.right) / 2, height - 12); ctx.save(); ctx.translate(15, pad.top + (height - pad.top - pad.bottom) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(yAxisLabel, 0, 0); ctx.restore();
       if (["histogram", "distribution", "sampling"].includes(chart.type) && chart.bins?.length) {
         ctx.fillStyle = "rgba(65, 148, 222, .13)";
         ctx.strokeStyle = "rgba(117, 214, 255, .28)";
@@ -847,17 +977,24 @@ if (!lab || !openButton) {
       }
       if (chart.type === "bayes" && points.length > 1) { ctx.strokeStyle = "#78dcff"; ctx.lineWidth = 2; ctx.beginPath(); points.forEach((point, index) => { const x = xScale(point.x); const y = yScale(point.y); if (index) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke(); }
       if (chart.type === "discrete" && chart.expected) { ctx.strokeStyle = "rgba(242,213,155,.9)"; ctx.setLineDash([6, 5]); ctx.beginPath(); chart.expected.forEach((value, index) => { const x = xScale(index); const y = yScale(value); if (index) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]); }
+      const liveTargets = [];
       targets.forEach((target, id) => {
         const from = starts.get(id); const x = from.sx + (target.sx - from.sx) * eased; const y = from.sy + (target.sy - from.sy) * eased;
         const colors = ["#82e8ff", "#679dff", "#94f2d8", "#f2d59b", "#b692ff"];
         ctx.fillStyle = colors[target.group % colors.length]; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(x, y, chart.type === "categorical" ? Math.min(12, 4 + Math.sqrt(Math.max(0, target.y))) : 4.2, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+        liveTargets.push({ ...target, sx: x, sy: y });
         if (t === 1) state.points.set(id, { sx: target.sx, sy: target.sy, group: target.group });
       });
+      state.chartTargets = liveTargets;
       ctx.fillStyle = "rgba(226,247,255,.68)"; ctx.font = "10px var(--font-ja), sans-serif"; ctx.textAlign = "right"; ctx.fillText(`${points.length} PLOTS / ${(result.insight?.provenance || dataset.provenance).join(" + ")}`, width - pad.right, 18);
       if (t < 1) state.animation = requestAnimationFrame(paint);
     };
     state.animation = requestAnimationFrame(paint);
   };
+
+  ui.canvas.addEventListener("pointermove", updateChartTooltipFromPointer);
+  ui.canvas.addEventListener("pointerdown", updateChartTooltipFromPointer);
+  ui.canvas.addEventListener("pointerleave", hideChartTooltip);
 
   const render = () => {
     const dataset = currentDataset(); const method = METHOD_LOOKUP.get(state.methodId) || METHOD_LOOKUP.get("summary");

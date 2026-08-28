@@ -2,7 +2,7 @@
   "use strict";
 
   const TRACKS = Object.freeze({
-    opening: "./assets/audio/moonlit-source-save.mp3",
+    opening: "./assets/audio/satellite-forecast-hope.mp3",
     story: "./assets/audio/planet-forecast-windowlight.mp3",
     windowlight: "./assets/audio/satellite-forecast-calm.mp3",
     firstlight: "./assets/audio/planet-forecast-first-light.mp3",
@@ -10,7 +10,7 @@
     snowfire: "./assets/audio/snowfire-signal.mp3",
     snowafter: "./assets/audio/snowfire-afterimage.mp3",
     moonbook: "./assets/audio/moonlit-observation-notebook.mp3",
-    moonsave: "./assets/audio/satellite-forecast-hope.mp3",
+    senseware: "./assets/audio/moonlit-source-save.mp3",
     moonreopen: "./assets/audio/moonlit-reopen.mp3",
     ending: "./assets/audio/after-school-afterglow.mp3",
     trueend: "./assets/audio/sensory-horizon.wav",

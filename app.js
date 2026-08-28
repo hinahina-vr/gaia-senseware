@@ -7318,10 +7318,13 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   introLayer.inert = true;
   japanLayer.inert = true;
   japanDataPanel.inert = true;
-  japanButton.addEventListener("click", () => {
+  japanButton.addEventListener("click", (event) => {
     runSceneTransition(
-      () => japanIsOpen ? closeJapan() : openJapan(),
-      japanIsOpen ? "abstract" : "map",
+      () => japanIsOpen
+        ? openIntro({ restoreFocusOnClose: false })
+        : openJapan(),
+      "map",
+      event,
     );
   });
   japanClose.addEventListener("click", (event) => {
@@ -7338,29 +7341,49 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   japanPoiClose.addEventListener("click", () => closeJapanPoi({ restoreFocus: true }));
   japanHistoryLayerButton.addEventListener("click", () => setJapanDataLayer("history"));
   japanLiveLayerButton.addEventListener("click", () => setJapanDataLayer("snapshot"));
-  sourceButton.addEventListener("click", () => {
+  sourceButton.addEventListener("click", (event) => {
     if (sourceIsOpen) {
-      closeSource();
+      runSceneTransition(
+        () => openIntro({ restoreFocusOnClose: false }),
+        "abstract",
+        event,
+      );
     } else {
       openSource();
     }
   });
-  sourceClose.addEventListener("click", () => closeSource());
-  sourceScrim.addEventListener("click", () => {
-    if (conceptIsOpen) {
-      closeConcept();
-    } else {
-      closeSource();
-    }
+  sourceClose.addEventListener("click", (event) => {
+    runSceneTransition(
+      () => openIntro({ restoreFocusOnClose: false }),
+      "abstract",
+      event,
+    );
   });
-  conceptOpen.addEventListener("click", () => {
+  sourceScrim.addEventListener("click", (event) => {
+    runSceneTransition(
+      () => openIntro({ restoreFocusOnClose: false }),
+      "abstract",
+      event,
+    );
+  });
+  conceptOpen.addEventListener("click", (event) => {
     if (conceptIsOpen) {
-      closeConcept();
+      runSceneTransition(
+        () => openIntro({ restoreFocusOnClose: false }),
+        "abstract",
+        event,
+      );
     } else {
       openConcept();
     }
   });
-  conceptClose.addEventListener("click", () => closeConcept());
+  conceptClose.addEventListener("click", (event) => {
+    runSceneTransition(
+      () => openIntro({ restoreFocusOnClose: false }),
+      "abstract",
+      event,
+    );
+  });
   conceptPrevious.addEventListener("click", () => selectMode(modeToIndex - 1));
   conceptNext.addEventListener("click", () => selectMode(modeToIndex + 1));
   introButton.addEventListener("click", (event) => {
@@ -7422,14 +7445,25 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       closeSource({ restoreFocus: false, updateHash: false });
       closeConcept({ restoreFocus: false, updateHash: false });
       closeJapan({ restoreFocus: false, updateHash: false });
+      if (
+        window.location.hash === ""
+        && !document.body.classList.contains("novel-open")
+        && !new URLSearchParams(window.location.search).has("space")
+      ) {
+        openIntro({ restoreFocusOnClose: false });
+      }
     }
   });
 
   document.addEventListener("keydown", (event) => {
     if (introIsOpen) {
       if (event.key === "Escape") {
-        if (introStage === "sense") showIntroStage("path");
-        else closeIntro();
+        event.preventDefault();
+        if (introStage === "sense") {
+          showIntroStage("path");
+        } else {
+          introPathButtons[0]?.focus({ preventScroll: true });
+        }
       } else if (
         ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) &&
         (introStage === "path" ? introPathButtons : introModeButtons).includes(document.activeElement)
@@ -7463,7 +7497,8 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       } else if (event.key === "Escape" && selectedJapanPoi) {
         closeJapanPoi({ restoreFocus: true });
       } else if (event.key === "Escape" || event.key.toLowerCase() === "j") {
-        closeJapan();
+        event.preventDefault();
+        openIntro({ restoreFocusOnClose: false });
       } else if (/^[1-9]$/.test(event.key)) {
         selectMode(Number(event.key) - 1);
       } else if (event.key === "0") {
@@ -7472,11 +7507,13 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       return;
     }
     if (event.key === "Escape" && sourceIsOpen) {
-      closeSource();
+      event.preventDefault();
+      openIntro({ restoreFocusOnClose: false });
       return;
     }
     if (event.key === "Escape" && conceptIsOpen) {
-      closeConcept();
+      event.preventDefault();
+      openIntro({ restoreFocusOnClose: false });
       return;
     }
     if (sourceIsOpen || conceptIsOpen || event.ctrlKey || event.metaKey || event.altKey) {

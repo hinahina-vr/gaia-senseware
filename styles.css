@@ -29,11 +29,9 @@
 
 .intro-shell:has(.intro-path-stage:not([hidden])) {
   justify-content: flex-start;
-  width: min(1120px, 68vw);
+  width: 100%;
   min-height: auto;
-  padding-block: 0;
-  padding-right: 24px;
-  padding-left: clamp(42px, 4vw, 82px);
+  padding: 0;
 }
 
 .intro-lp-hero {
@@ -41,8 +39,13 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  width: min(1120px, 68vw);
   min-height: 100dvh;
-  padding: clamp(32px, 5vh, 68px) 0;
+  padding:
+    clamp(32px, 5vh, 68px)
+    24px
+    clamp(32px, 5vh, 68px)
+    clamp(42px, 4vw, 82px);
 }
 
 .intro-lp-hero::before {
@@ -657,7 +660,9 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  width: min(1120px, calc(100% - 80px));
   min-height: 0;
+  margin-inline: auto;
   padding: clamp(52px, 7vh, 78px) 0 clamp(66px, 9vh, 96px);
 }
 
@@ -912,7 +917,7 @@
 }
 
 @media (max-width: 900px) {
-  .intro-shell:has(.intro-path-stage:not([hidden])) {
+  .intro-lp-hero {
     width: min(760px, 72vw);
   }
 }
@@ -920,13 +925,18 @@
 @media (pointer: coarse), (max-width: 720px) {
   .intro-shell:has(.intro-path-stage:not([hidden])) {
     width: 100%;
-    padding: 0 max(18px, env(safe-area-inset-right)) 0 max(18px, env(safe-area-inset-left));
+    padding: 0;
   }
 
   .intro-lp-hero {
     justify-content: flex-end;
+    width: 100%;
     min-height: 100svh;
-    padding: max(36px, env(safe-area-inset-top)) 0 max(94px, calc(env(safe-area-inset-bottom) + 76px));
+    padding:
+      max(36px, env(safe-area-inset-top))
+      max(18px, env(safe-area-inset-right))
+      max(94px, calc(env(safe-area-inset-bottom) + 76px))
+      max(18px, env(safe-area-inset-left));
   }
 
   .intro-lp-hero::before,
@@ -1078,6 +1088,7 @@
   }
 
   .intro-lp-afterfold {
+    width: calc(100% - 36px);
     min-height: 0;
     padding: 48px 0 68px;
   }

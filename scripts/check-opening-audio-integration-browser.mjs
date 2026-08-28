@@ -104,7 +104,6 @@ try {
         choicesRect: readRect(".gaia-opening-sound-choices"),
         soundOnRect: readRect("#gaia-opening-sound-on"),
         soundOffRect: readRect("#gaia-opening-sound-off"),
-        tourRect: readRect("#gaia-opening-tour-start"),
         overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
         overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
       };
@@ -138,7 +137,7 @@ try {
     assert(shortLandscape ? initial.modalPlaceItems.startsWith("start") : initial.modalPlaceItems === "center", `${viewport.name}: sound dialog alignment is incorrect`);
     assert(Math.abs((initial.dialogRect.left + initial.dialogRect.right) / 2 - viewport.width / 2) <= 1, `${viewport.name}: sound dialog is not horizontally centered`);
     if (!shortLandscape) assert(Math.abs((initial.dialogRect.top + initial.dialogRect.bottom) / 2 - viewport.height / 2) <= 6, `${viewport.name}: sound dialog is not vertically centered`);
-    for (const rect of [initial.soundOnRect, initial.soundOffRect, initial.tourRect]) {
+    for (const rect of [initial.soundOnRect, initial.soundOffRect]) {
       assert(rect.width >= 44 && rect.height >= 44, `${viewport.name}: sound action hit area is smaller than 44px`);
     }
     assert.equal(overlapArea(initial.soundOnRect, initial.soundOffRect), 0, `${viewport.name}: sound actions overlap`);
@@ -154,8 +153,6 @@ try {
 
     await page.locator("#gaia-opening-sound-off").focus();
     await page.locator("#gaia-opening-sound-off").press("Tab");
-    assert.equal(await page.evaluate(() => document.activeElement?.id), "gaia-opening-tour-start", `${viewport.name}: tour action is missing from the focus order`);
-    await page.locator("#gaia-opening-tour-start").press("Tab");
     assert.equal(await page.evaluate(() => document.activeElement?.id), "gaia-opening-sound-on", `${viewport.name}: modal focus did not wrap`);
 
     const startWithSound = ["pc-1440", "mobile-390", "mobile-landscape"].includes(viewport.name);
@@ -180,6 +177,7 @@ try {
     assert.equal(confirmed.openingActive, !viewport.reduced, `${viewport.name}: opening motion state is incorrect after sound confirmation`);
     assert.equal(confirmed.awaitingSound, false, `${viewport.name}: sound gate state remained after confirmation`);
     assert.equal(confirmed.audio.muted, !startWithSound, `${viewport.name}: confirmed sound choice was not applied`);
+    assert.equal(confirmed.audio.track, "opening", `${viewport.name}: the opening did not start with Planet Forecast - Hope`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-post-sound.png`), animations: "disabled" });
 
     if (!viewport.reduced) {
@@ -224,11 +222,10 @@ try {
       ? __qaVisible(document.querySelector("#intro-layer"))
       : __qaVisible(document.querySelector("#novel-runtime")), useDataRoute, { timeout: 10_000 });
     const destinationVisibleMs = Date.now() - routeStartedAt;
-    if (!useDataRoute) {
-      await page.waitForFunction(() => globalThis.GaiaOpeningAudio.getState().track === "story", null, { timeout: 2_500 });
-    }
-    const trackSwitchMs = useDataRoute ? null : Date.now() - routeStartedAt;
-    const trackSwitchAfterDestinationMs = useDataRoute ? null : trackSwitchMs - destinationVisibleMs;
+    const expectedDestinationTrack = useDataRoute ? "senseware" : "story";
+    await page.waitForFunction((track) => globalThis.GaiaOpeningAudio.getState().track === track, expectedDestinationTrack, { timeout: 2_500 });
+    const trackSwitchMs = Date.now() - routeStartedAt;
+    const trackSwitchAfterDestinationMs = trackSwitchMs - destinationVisibleMs;
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-audio-dock")), null, { timeout: 10_000 });
     const destination = await page.evaluate(() => ({
       titleVisible: __qaVisible(document.querySelector("#novel-title-screen")),
@@ -250,6 +247,14 @@ try {
       assert(trackSwitchMs <= 2_500, `${viewport.name}: story BGM switch took ${trackSwitchMs}ms`);
       assert(trackSwitchAfterDestinationMs <= 600, `${viewport.name}: opening BGM remained for ${trackSwitchAfterDestinationMs}ms after the story became visible`);
       assert(audioResponses.some(({ url, status }) => url.includes("planet-forecast-windowlight.mp3") && [200, 206].includes(status)), `${viewport.name}: story BGM was not fetched successfully`);
+    } else {
+      assert.equal(destination.track, "senseware", `${viewport.name}: GAIA SENSEWARE BGM was not selected for the data screen`);
+      assert(trackSwitchMs <= 4_000, `${viewport.name}: GAIA SENSEWARE BGM switch took ${trackSwitchMs}ms`);
+      assert(trackSwitchAfterDestinationMs <= 600, `${viewport.name}: opening BGM remained for ${trackSwitchAfterDestinationMs}ms after the data screen became visible`);
+      assert(audioResponses.some(({ url, status }) => url.includes("moonlit-source-save.mp3") && [200, 206].includes(status)), `${viewport.name}: GAIA SENSEWARE BGM was not fetched successfully`);
+    }
+    if (startWithSound) {
+      assert(audioResponses.some(({ url, status }) => url.includes("satellite-forecast-hope.mp3") && [200, 206].includes(status)), `${viewport.name}: Planet Forecast - Hope was not fetched for the opening`);
     }
     assert.equal(destination.introVisible, useDataRoute, `${viewport.name}: data menu did not open`);
     assert(destination.dockVisible, `${viewport.name}: destination audio control is missing`);

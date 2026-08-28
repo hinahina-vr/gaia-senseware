@@ -48,6 +48,9 @@
   const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#story", "#tour"].includes(
     window.location.hash,
   ) || window.location.hash.startsWith("#observation=") || /\/story\/?$/i.test(window.location.pathname);
+  const directSensewareDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#tour"].includes(
+    window.location.hash,
+  ) || window.location.hash.startsWith("#observation=");
 
   const syncAudioControls = (state = window.GaiaOpeningAudio?.getState?.()) => {
     const volume = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
@@ -156,6 +159,7 @@
     document.body.classList.add("gaia-route-handoff");
     opening.hidden = true;
     document.body.classList.remove("gaia-opening-active");
+    if (directSensewareDestination) void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0);
     revealAudioDock();
     if (document.documentElement.dataset.gaiaAppReady === "true") signalInitialViewReady();
     else {
@@ -822,6 +826,9 @@
           await window.GaiaModeLoader?.load?.("tour");
         })()
       : Promise.resolve(window.GaiaModeLoader?.load?.(destination === "story" ? "story" : "exploration"));
+    const soundtrackReady = destination === "menu" || destination === "tour"
+      ? Promise.resolve(window.GaiaOpeningAudio?.switchTrack?.("senseware", 0.25))
+      : Promise.resolve(true);
     finished = true;
     window.clearTimeout(finishTimer);
     closeSoundModalImmediately();
@@ -840,7 +847,7 @@
       exitTimer = window.setTimeout(resolve, EXIT_DURATION);
     });
     try {
-      await Promise.all([routeReady, exitReady]);
+      await Promise.all([routeReady, exitReady, soundtrackReady]);
     } catch (error) {
       console.error(error);
       finished = false;
@@ -902,6 +909,7 @@
     if (finished || !(finalMenu instanceof HTMLElement)) return;
     finalMenu.hidden = false;
     opening.classList.add("is-menu-ready");
+    if (!window.GaiaOpeningAudio?.getState?.().muted) void window.GaiaOpeningAudio?.preloadTrack?.("senseware");
     syncAudioControls();
     requestAnimationFrame(() => {
       finalMenu.classList.add("is-visible");
@@ -972,6 +980,10 @@
       // Keep play() in the click task for autoplay permission, but do not wait
       // for media startup before painting the selected state.
       void window.GaiaOpeningAudio?.start(selectedVolume)?.catch?.(() => {});
+      // Warm both destinations while the opening or route menu is still visible,
+      // so neither route has to keep the next screen waiting for its soundtrack.
+      void window.GaiaOpeningAudio?.preloadTrack?.("story");
+      void window.GaiaOpeningAudio?.preloadTrack?.("senseware");
     } else {
       void window.GaiaOpeningAudio?.setMuted?.(true);
     }

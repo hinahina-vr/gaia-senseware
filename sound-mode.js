@@ -23,8 +23,8 @@
   const tracks = Object.freeze({
     opening: {
       number: "TRACK 01 / OPENING THEME",
-      title: "GAIA SENSEWARE",
-      description: "GAIA SENSEWAREの入口で、公開記録と地球の感覚をひとつの場へつなぐ音楽。",
+      title: "Planet Forecast - Hope",
+      description: "惑星の放課後のオープニングで、三人と地球の物語への入口をひらく音楽。",
       planet: "PLANET 01",
       signal: "FORECAST SIGNAL",
     },
@@ -77,10 +77,10 @@
       planet: "PLANET 08",
       signal: "MOONLIT NOTE",
     },
-    moonsave: {
-      number: "TRACK 09 / FORMER OPENING",
-      title: "Planet Forecast - Hope（未使用曲）",
-      description: "初期オープニング案として制作され、本編では使用していないアーカイブ曲。",
+    senseware: {
+      number: "TRACK 09 / SYSTEM THEME",
+      title: "GAIA SENSEWARE",
+      description: "データを探索するGAIA SENSEWARE画面で、公開記録と地球の感覚をひとつの場へつなぐ音楽。",
       planet: "PLANET 09",
       signal: "SOURCE SAVE",
     },

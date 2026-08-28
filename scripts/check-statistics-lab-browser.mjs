@@ -42,6 +42,37 @@ try {
     assert.equal(await trigger.isVisible(), true, `${viewport.name}: statistics entry button is not visible on the map`);
     await trigger.click();
     await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent?.includes("COMPLETE"));
+    await page.locator("#gaia-statistics-dataset").selectOption("co2-trend");
+    await page.locator("#gaia-statistics-lectures button[data-lecture='01']").click();
+    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING"
+      && document.querySelector("#gaia-statistics-canvas")?.dataset.axisX === "CO₂ (ppm)");
+    const co2Chart = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({
+      axisX: element.dataset.axisX,
+      axisY: element.dataset.axisY,
+      domainX: element.dataset.domainX?.split(",").map(Number),
+      pointCount: Number(element.dataset.pointCount),
+      selectedDataset: document.querySelector("#gaia-statistics-dataset")?.selectedOptions[0]?.textContent,
+    }));
+    assert.equal(co2Chart.axisX, "CO₂ (ppm)", `${viewport.name}: histogram x-axis label is wrong`);
+    assert.equal(co2Chart.axisY, "観測数", `${viewport.name}: histogram y-axis label is wrong`);
+    assert.equal(co2Chart.pointCount, 120, `${viewport.name}: finite monthly observations were not preserved`);
+    assert.ok(co2Chart.domainX[0] > 300, `${viewport.name}: chart domain still includes empty zero-to-data space`);
+    assert.match(co2Chart.selectedDataset, /2016-08〜2026-07 \/ 欠測0か月/u, `${viewport.name}: actual observation period is not labeled`);
+    if (viewport.name === "pc") {
+      const box = await page.locator("#gaia-statistics-canvas").boundingBox();
+      let tooltipVisible = false;
+      for (let yi = 1; yi <= 9 && !tooltipVisible; yi += 1) {
+        for (let xi = 1; xi <= 13 && !tooltipVisible; xi += 1) {
+          await page.mouse.move(box.x + box.width * xi / 14, box.y + box.height * yi / 10);
+          tooltipVisible = await page.locator(".gaia-statistics-chart-tooltip").isVisible();
+        }
+      }
+      assert.equal(tooltipVisible, true, "pc: hovering chart points does not reveal a tooltip");
+      assert.match(await page.locator(".gaia-statistics-chart-tooltip").innerText(), /20\d{2}-\d{2}[\s\S]*ppm[\s\S]*SOURCE/u);
+    }
+    await page.locator("#gaia-statistics-visual").screenshot({
+      path: path.join(outputDir, `${viewport.name}-co2-chart${viewport.name === "pc" ? "-tooltip" : ""}.png`),
+    });
     await page.locator("#gaia-statistics-dataset").selectOption("rainfall");
     await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
     assert.equal(await page.locator("#gaia-statistics-lab").getAttribute("aria-hidden"), "false");

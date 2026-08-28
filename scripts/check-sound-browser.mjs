@@ -12,7 +12,7 @@ const outputDir = path.resolve(outputArg);
 await mkdir(outputDir, { recursive: true });
 
 const expectedTracks = [
-  ["opening", "GAIA SENSEWARE"],
+  ["opening", "Planet Forecast - Hope"],
   ["story", "Planet Forecast — Windowlight"],
   ["windowlight", "Planet Forecast — Calm"],
   ["firstlight", "Planet Forecast — First Light"],
@@ -20,7 +20,7 @@ const expectedTracks = [
   ["snowfire", "雪火の観測信号"],
   ["snowafter", "雪火、軌道の外へ（未使用曲）"],
   ["moonbook", "月明かりの観測ノート"],
-  ["moonsave", "Planet Forecast - Hope（未使用曲）"],
+  ["senseware", "GAIA SENSEWARE"],
   ["moonreopen", "月下、もう一度ひらく（未使用曲）"],
   ["ending", "AfterSchool,AfterGlow"],
   ["trueend", "Sensory Horizon"],
@@ -77,8 +77,8 @@ try {
   const audioRuntime = await page.request.get(new URL("/opening-audio.js", routeUrl).href);
   assert(audioRuntime.ok(), "opening audio runtime is unavailable");
   const audioRuntimeSource = await audioRuntime.text();
-  assert(/opening:\s*"\.\/assets\/audio\/moonlit-source-save\.mp3"/u.test(audioRuntimeSource), "GAIA SENSEWARE does not use 月下のSOURCE保存");
-  assert(/moonsave:\s*"\.\/assets\/audio\/satellite-forecast-hope\.mp3"/u.test(audioRuntimeSource), "former opening track was not archived as track 09");
+  assert(/opening:\s*"\.\/assets\/audio\/satellite-forecast-hope\.mp3"/u.test(audioRuntimeSource), "Planet Forecast - Hope is not assigned to the opening");
+  assert(/senseware:\s*"\.\/assets\/audio\/moonlit-source-save\.mp3"/u.test(audioRuntimeSource), "GAIA SENSEWARE is not assigned to the data exploration screen");
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
   await page.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
   await page.waitForFunction(() => !["", "pending"].includes(document.querySelector("#sound-visualizer")?.dataset.renderer || "pending"));
@@ -90,7 +90,7 @@ try {
   assert(await page.locator("[data-sound-track]").count() === 12, "sound archive does not contain 12 unique tracks");
   assert((await page.locator(".sound-track-heading strong").innerText()) === "12 TRACKS", "track count heading is stale");
   const unusedTrackIds = await page.locator("[data-sound-track]", { hasText: "（未使用曲）" }).evaluateAll((nodes) => nodes.map((node) => node.dataset.soundTrack));
-  assert(JSON.stringify(unusedTrackIds) === JSON.stringify(["snowafter", "moonsave", "moonreopen"]), `unused track labels are incorrect: ${JSON.stringify(unusedTrackIds)}`);
+  assert(JSON.stringify(unusedTrackIds) === JSON.stringify(["snowafter", "moonreopen"]), `unused track labels are incorrect: ${JSON.stringify(unusedTrackIds)}`);
 
   const panelGeometry = await page.locator(".sound-track-panel").evaluate((panel) => {
     const rect = panel.getBoundingClientRect();
