@@ -664,7 +664,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     line-height: 1.65;
   }
 
-  .japan-layer.is-mobile-heading-expanded .japan-heading #japan-data-button {
+  .japan-layer.is-mobile-heading-expanded .japan-heading :is(#japan-data-button, #gaia-statistics-button) {
     display: grid !important;
     width: 100%;
     min-height: 44px;
@@ -1246,5 +1246,91 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     box-sizing: border-box;
     margin-block: -8px;
     padding-block: 14px;
+  }
+}
+
+/* Surface selector -------------------------------------------------------
+   MAP / LIGHT is a secondary view control, not a full-width navigation
+   banner. Keep it compact and luminous without competing with the exhibit. */
+.experience.japan-open .map-surface-switch {
+  width: min(202px, 100%);
+  box-sizing: border-box;
+  justify-self: end;
+  margin: 0 0 12px auto;
+  padding: 3px;
+  border-color: rgba(110, 205, 255, 0.28);
+  border-radius: 999px;
+  background:
+    linear-gradient(115deg, rgba(2, 13, 26, 0.92), rgba(5, 32, 54, 0.78));
+  box-shadow:
+    inset 0 1px rgba(226, 251, 255, 0.045),
+    0 8px 22px rgba(0, 7, 18, 0.18);
+}
+
+.experience.japan-open .map-surface-switch button {
+  position: relative;
+  gap: 5px;
+  border-radius: 999px;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.experience.japan-open .map-surface-switch button span {
+  color: rgba(135, 206, 239, 0.58);
+  font-size: 6px;
+  letter-spacing: 0.16em;
+}
+
+.experience.japan-open .map-surface-switch button strong {
+  color: rgba(218, 243, 255, 0.66);
+  font-size: 10px;
+}
+
+.experience.japan-open .map-surface-switch button:is(:hover, :focus-visible) {
+  border-color: rgba(125, 220, 255, 0.46);
+  background: rgba(72, 177, 231, 0.12);
+}
+
+.experience.japan-open .map-surface-switch button[aria-pressed="true"] {
+  border-color: rgba(139, 225, 255, 0.62);
+  color: #f7fdff;
+  background:
+    linear-gradient(115deg, rgba(72, 185, 234, 0.2), rgba(52, 119, 215, 0.24));
+  box-shadow:
+    inset 0 0 16px rgba(110, 220, 255, 0.1),
+    0 0 16px rgba(64, 165, 242, 0.12);
+}
+
+.experience.japan-open .map-surface-switch button[aria-pressed="true"] :is(span, strong) {
+  color: #f2fbff;
+}
+
+@media (min-width: 721px) {
+  .experience.japan-open .map-surface-switch button {
+    min-height: 34px;
+    padding-inline: 10px;
+  }
+}
+
+/* The legacy 721–900 px rule stretched the entire exhibit bank from edge to
+   edge. Restore the same compact control hierarchy used on wide displays. */
+@media (min-width: 721px) and (max-width: 900px) {
+  .experience.japan-open .map-mode-bank {
+    right: max(16px, env(safe-area-inset-right)) !important;
+    left: auto !important;
+    width: min(340px, calc(100vw - 32px)) !important;
+    padding: 13px !important;
+    overflow: visible;
+    border-color: rgba(112, 206, 246, 0.3);
+    border-radius: 13px;
+    background:
+      radial-gradient(circle at 100% 0, rgba(70, 167, 232, 0.15), transparent 52%),
+      linear-gradient(145deg, rgba(2, 14, 25, 0.94), rgba(5, 29, 43, 0.86)) !important;
+    box-shadow:
+      0 18px 42px rgba(0, 5, 15, 0.3),
+      inset 0 1px rgba(225, 250, 255, 0.035);
   }
 }
