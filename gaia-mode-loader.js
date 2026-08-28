@@ -5,11 +5,11 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-integrated-light-bank-1",
+        "./styles.css?v=gaia-scroll-cue-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-live-compact-jpt-audio-1",
+        "./map-ui-grid-polish.css?v=gaia-mobile-exhibit-hud-5",
         "./mode-exit.css?v=gaia-story-control-gap-1",
         "./observation-notebook.css?v=gaia-exhibit-heading-actions-1",
       ],
@@ -18,20 +18,20 @@
         "./data-ledger.js?v=gaia-live-compact-jpt-audio-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-abstract-entry-1",
-        "./app.js?v=gaia-integrated-light-bank-1",
-        "./map-ui-grid-polish.js?v=gaia-map-overlay-alignment-1",
+        "./app.js?v=gaia-mobile-exhibit-hud-6",
+        "./map-ui-grid-polish.js?v=gaia-mobile-exhibit-hud-5",
         "./particles-v9.js?v=gaia-adaptive-performance-1",
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
         "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
       ],
-      modules: ["./src/exploration/index.js?v=gaia-live-compact-jpt-audio-1"],
+      modules: ["./src/exploration/index.js?v=gaia-mobile-exhibit-hud-5"],
     },
     story: {
       templates: ["gaia-template-story"],
       styles: [
-        "./styles.css?v=gaia-integrated-light-bank-1",
+        "./styles.css?v=gaia-scroll-cue-1",
         "./scene-transition.css?v=gaia-52",
-        "./novel-mode.css?v=gaia-story-map-aiva-2",
+        "./novel-mode.css?v=gaia-copyright-after-thanks-1",
         "./true-end.css?v=gaia-adaptive-performance-1",
         "./mode-exit.css?v=gaia-story-control-gap-1",
       ],
@@ -44,16 +44,16 @@
         "./novel-background-cues.js?v=gaia-amane-no-plug-1",
         "./novel-back-half-cues.js?v=gaia-finale-sunset-1",
         "./novel-temporal.js?v=gaia-temporal-1",
-        "./novel-mode.js?v=gaia-no-breathing-flash-1",
+        "./novel-mode.js?v=gaia-copyright-after-thanks-1",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
     },
     gx: {
       templates: ["gaia-template-gx"],
       styles: [
-        "./styles.css?v=gaia-integrated-light-bank-1",
+        "./styles.css?v=gaia-scroll-cue-1",
         "./scene-transition.css?v=gaia-52",
-        "./gx-mode.css?v=gaia-gx-mobile-installation-1",
+        "./gx-mode.css?v=gaia-gx-feature-card-1",
         "./mode-exit.css?v=gaia-story-control-gap-1",
       ],
       scripts: [
@@ -65,7 +65,7 @@
     space: {
       templates: ["gaia-template-space"],
       styles: [
-        "./styles.css?v=gaia-integrated-light-bank-1",
+        "./styles.css?v=gaia-scroll-cue-1",
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
         "./mode-exit.css?v=gaia-story-control-gap-1",
@@ -80,7 +80,7 @@
     sound: {
       templates: ["gaia-template-sound"],
       styles: [
-        "./styles.css?v=gaia-integrated-light-bank-1",
+        "./styles.css?v=gaia-scroll-cue-1",
         "./sound-mode.css?v=gaia-sound-control-swap-1",
         "./mode-exit.css?v=gaia-story-control-gap-1",
       ],

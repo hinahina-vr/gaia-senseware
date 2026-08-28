@@ -176,11 +176,25 @@ try {
       };
       const back = read("#novel-home-button");
       const skip = read("#novel-close-button");
+      const audioDock = document.querySelector("#gaia-audio-dock");
+      const audioRect = audioDock?.getBoundingClientRect();
+      const audioStyle = audioDock ? getComputedStyle(audioDock) : null;
+      const temporalText = document.querySelector(".novel-signal-caption strong");
+      const temporalStyle = temporalText ? getComputedStyle(temporalText) : null;
       return {
         back,
         skip,
         gap: skip.rect.left - back.rect.right,
         overlap: !(back.rect.right <= skip.rect.left || skip.rect.right <= back.rect.left),
+        audioRightGap: audioRect ? innerWidth - audioRect.right : null,
+        audioVisible: Boolean(audioRect && audioRect.width > 0 && audioRect.height > 0),
+        audioComputedRight: audioStyle?.right || "",
+        audioTransform: audioStyle?.transform || "",
+        audioClassName: audioDock?.className || "",
+        bodyClassName: document.body.className,
+        temporalText: temporalText?.textContent.trim() || "",
+        temporalColor: temporalStyle?.color || "",
+        temporalShadow: temporalStyle?.textShadow || "",
       };
     });
     assert.equal(storyControls.back.text, "戻る", `${viewport.name}: story back label is unclear`);
@@ -194,6 +208,11 @@ try {
     assert(storyControls.back.rect.left < storyControls.skip.rect.left, `${viewport.name}: story controls are in an unexpected order`);
     assert.equal(storyControls.overlap, false, `${viewport.name}: story controls overlap`);
     assert(storyControls.gap >= 4 && storyControls.gap <= 10, `${viewport.name}: story controls have an unnatural gap (${storyControls.gap}px)`);
+    assert(storyControls.audioVisible && storyControls.audioRightGap >= 0, `${viewport.name}: audio control is outside the viewport`);
+    assert(storyControls.audioRightGap <= (viewport.width <= 720 ? 8 : 12), `${viewport.name}: audio control is not anchored to the right edge (${JSON.stringify(storyControls)})`);
+    assert(storyControls.temporalText.length > 0, `${viewport.name}: story date is missing`);
+    assert.match(storyControls.temporalColor, /rgba?\((?:248, 253, 255|255, 255, 255)/u, `${viewport.name}: story date is not high-contrast`);
+    assert((storyControls.temporalShadow.match(/rgba?\(0, 0, 0/gu) || []).length >= 3, `${viewport.name}: story date shadow is too weak (${storyControls.temporalShadow})`);
     report.scans.push({ viewport: viewport.name, surface: "story-controls", ...storyControls, passed: true });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-story-home.png`) });
     await page.locator("#novel-home-button").click();

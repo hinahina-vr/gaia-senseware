@@ -16,7 +16,7 @@ const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
 ];
-const finalReactions = ["🎉 4", "🌍 3", "🫶 2"];
+const finalReactions = ["🎉 3", "🌍 2", "🫶 2"];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 
 const progressFor = (stepId, label, readStepIds = []) => ({

@@ -547,3 +547,704 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     left: max(12px, env(safe-area-inset-left));
   }
 }
+
+/* Mobile exhibit HUD -----------------------------------------------------
+   The installation surface is the product. On touch-sized viewports the
+   explanatory rails become deliberate drawers and the current exhibit stays
+   available in one compact, persistent selector. */
+.map-mobile-heading-toggle,
+.map-mobile-bank-toggle,
+.map-mobile-legend-toggle,
+.gaia-live-mobile-toggle {
+  display: none;
+}
+
+.gaia-live-exhibit-details {
+  display: contents;
+}
+
+/* This control belongs only to the story detour. The story stylesheet uses a
+   more specific selector to reveal it; free exploration must never inherit an
+   unstyled SKIP button from the shared template. */
+.story-map-modal-skip {
+  display: none;
+}
+
+@media (max-width: 720px), (max-height: 520px) and (pointer: coarse) {
+  .experience.japan-open .japan-heading {
+    top: max(68px, calc(env(safe-area-inset-top) + 56px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    width: auto !important;
+    min-height: 56px;
+    max-height: 56px;
+    padding: 9px 60px 9px 13px !important;
+    overflow: hidden;
+    border-color: rgba(var(--map-accent-rgb), 0.34);
+    border-radius: 11px;
+    background: linear-gradient(105deg, rgba(1, 12, 20, 0.9), rgba(6, 31, 39, 0.72)) !important;
+    box-shadow: 0 12px 32px rgba(0, 4, 12, 0.22);
+  }
+
+  .experience.japan-open .japan-heading h2 {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: clamp(21px, 6.2vw, 27px) !important;
+    line-height: 38px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .experience.japan-open .japan-heading .japan-kicker,
+  .experience.japan-open .japan-heading #japan-description,
+  .experience.japan-open .japan-heading .japan-data-button {
+    display: none !important;
+  }
+
+  .map-mobile-heading-toggle,
+  .map-mobile-bank-toggle,
+  .map-mobile-legend-toggle,
+  .gaia-live-mobile-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    box-sizing: border-box;
+    border: 1px solid rgba(var(--map-accent-rgb), 0.38);
+    border-radius: 9px;
+    color: rgba(244, 255, 255, 0.94);
+    background: rgba(var(--map-accent-rgb), 0.1);
+    cursor: pointer;
+  }
+
+  .map-mobile-heading-toggle {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: grid;
+    width: 48px;
+    height: 46px;
+    padding: 7px 4px 5px;
+    place-items: center;
+    pointer-events: auto;
+  }
+
+  :is(.map-mobile-heading-toggle, .map-mobile-bank-toggle, .map-mobile-legend-toggle, .gaia-live-mobile-toggle) span {
+    color: rgba(var(--map-accent-rgb), 0.68);
+    font: 700 6px/1 Consolas, monospace;
+    letter-spacing: 0.12em;
+  }
+
+  :is(.map-mobile-heading-toggle, .map-mobile-bank-toggle, .map-mobile-legend-toggle, .gaia-live-mobile-toggle) strong {
+    font: 650 10px/1.1 var(--font-ja);
+    letter-spacing: 0.04em;
+  }
+
+  .japan-layer.is-mobile-heading-expanded .japan-heading {
+    z-index: 26;
+    max-height: min(54vh, 430px);
+    padding: 14px 60px 15px 15px !important;
+    overflow: auto;
+    pointer-events: auto;
+  }
+
+  .japan-layer.is-mobile-heading-expanded .japan-heading .japan-kicker {
+    display: flex !important;
+    margin-bottom: 9px;
+    font-size: 7px;
+  }
+
+  .japan-layer.is-mobile-heading-expanded .japan-heading h2 {
+    line-height: 1.2;
+  }
+
+  .japan-layer.is-mobile-heading-expanded .japan-heading #japan-description {
+    display: block !important;
+    max-width: none;
+    margin-top: 10px;
+    font-size: 11px;
+    line-height: 1.65;
+  }
+
+  .japan-layer.is-mobile-heading-expanded .japan-heading #japan-data-button {
+    display: grid !important;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-heading-expanded :is(
+    .signal-console-map,
+    .map-reading-guide,
+    .gaia-live-receipt
+  ),
+  .experience.japan-open .japan-layer:has(.map-reading-guide[open]) .gaia-live-receipt,
+  .experience.japan-open .japan-layer:has(.gaia-live-receipt[open]) .map-reading-guide,
+  .experience.japan-open .japan-layer.is-mobile-legend-expanded :is(.map-reading-guide, .gaia-live-receipt) {
+    display: none !important;
+  }
+
+  .experience.japan-open .signal-console-map {
+    top: max(132px, calc(env(safe-area-inset-top) + 120px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: auto !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    width: auto !important;
+    min-height: 72px;
+    padding: 8px 11px 9px !important;
+    border-radius: 11px;
+    background: linear-gradient(105deg, rgba(1, 12, 20, 0.86), rgba(6, 31, 39, 0.68));
+  }
+
+  .experience.japan-open .signal-console-map .signal-console-heading {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 0;
+    margin: 0 0 6px;
+    padding-right: 0;
+  }
+
+  .experience.japan-open .signal-console-map .signal-console-heading span {
+    flex: 0 0 auto;
+    font-size: 7px;
+  }
+
+  .experience.japan-open .signal-console-map .signal-console-heading strong {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.25;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .experience.japan-open .signal-console-map label {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding-right: 58px;
+    font-size: 7px;
+  }
+
+  .experience.japan-open .signal-console-map output {
+    min-width: 52px;
+    font-size: 7px;
+  }
+
+  .experience.japan-open .signal-console-map > p {
+    display: none !important;
+  }
+
+  .experience.japan-open .signal-console-map.is-static {
+    min-height: 50px;
+  }
+
+  .experience.japan-open .signal-console-map.is-static label {
+    display: none;
+  }
+
+  .map-mobile-legend-toggle:not([hidden]) {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    display: grid;
+    width: 50px;
+    height: 44px;
+    padding: 6px 3px;
+    place-items: center;
+  }
+
+  .experience.japan-open .signal-encoding-legend-dock {
+    display: none !important;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend-dock {
+    position: absolute;
+    z-index: 28;
+    top: max(212px, calc(env(safe-area-inset-top) + 200px));
+    right: max(12px, env(safe-area-inset-right));
+    left: max(12px, env(safe-area-inset-left));
+    display: block !important;
+    width: auto;
+    max-height: min(56vh, 460px);
+    overflow: auto;
+    border: 1px solid rgba(var(--map-accent-rgb), 0.42);
+    border-radius: 11px;
+    background: rgba(1, 13, 22, 0.96);
+    box-shadow: 0 18px 52px rgba(0, 3, 10, 0.46);
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend-title {
+    gap: 8px;
+    padding: 9px 11px 5px;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend-title strong {
+    font-size: 11px;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend-title span {
+    font-size: 7px;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend {
+    gap: 8px 12px;
+    padding: 7px 11px 11px;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend dt {
+    font-size: 9px;
+    line-height: 1.35;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend dd {
+    font-size: 8px;
+    line-height: 1.35;
+  }
+
+  .experience.japan-open .map-reading-guide {
+    top: max(212px, calc(env(safe-area-inset-top) + 200px)) !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    width: 96px !important;
+    border: 1px solid rgba(var(--map-accent-rgb), 0.3);
+    border-radius: 9px;
+    transform: none !important;
+  }
+
+  .experience.japan-open .map-reading-guide summary {
+    min-height: 44px;
+    padding: 0 34px 0 11px !important;
+  }
+
+  .experience.japan-open .map-reading-guide summary > :is(span, strong) {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+  }
+
+  .experience.japan-open .map-reading-guide summary::before {
+    color: rgba(245, 255, 254, 0.94);
+    content: "読み方";
+    font: 650 11px/1 var(--font-ja);
+  }
+
+  .experience.japan-open .map-reading-guide[open] {
+    z-index: 27;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    max-height: min(56vh, 460px);
+    overflow: auto;
+    background: rgba(1, 13, 22, 0.96);
+  }
+
+  .experience.japan-open .map-reading-guide[open] summary > strong {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    clip-path: none !important;
+    font-size: 14px;
+  }
+
+  .experience.japan-open .map-reading-guide[open] summary::before {
+    content: "";
+  }
+
+  .experience.japan-open .map-reading-guide[open] .map-reading-guide-body {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+
+  .experience.japan-open .gaia-live-receipt {
+    top: max(212px, calc(env(safe-area-inset-top) + 200px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 154px !important;
+    max-height: 44px;
+    border: 1px solid rgba(120, 230, 222, 0.24);
+    border-radius: 9px;
+    overflow: hidden;
+    background: rgba(1, 13, 22, 0.78);
+  }
+
+  .experience.japan-open .gaia-live-receipt > summary {
+    min-height: 44px;
+    padding: 7px 10px;
+  }
+
+  .experience.japan-open .gaia-live-receipt > summary span {
+    font-size: 7px;
+  }
+
+  .experience.japan-open .gaia-live-receipt > summary strong {
+    max-width: 132px;
+    overflow: hidden;
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .experience.japan-open .gaia-live-receipt[open] {
+    z-index: 27;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    width: auto !important;
+    max-height: min(56vh, 460px);
+    overflow: auto;
+    background: rgba(1, 13, 22, 0.96);
+  }
+
+  .experience.japan-open .gaia-live-receipt[open] .gaia-live-receipt-body {
+    max-height: calc(min(56vh, 460px) - 44px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .experience.japan-open .map-mode-bank {
+    top: auto !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr) 54px;
+    gap: 6px;
+    align-items: center;
+    width: auto !important;
+    max-height: 62px;
+    padding: 6px !important;
+    overflow: hidden;
+    border-color: rgba(var(--map-accent-rgb), 0.42);
+    border-radius: 12px;
+    background: linear-gradient(105deg, rgba(1, 12, 20, 0.94), rgba(6, 31, 39, 0.82)) !important;
+    box-shadow: 0 14px 36px rgba(0, 4, 12, 0.3);
+    pointer-events: auto;
+  }
+
+  .experience.japan-open .map-surface-switch {
+    grid-row: 1;
+    grid-column: 1;
+    gap: 2px;
+    margin: 0;
+    padding: 2px;
+  }
+
+  .experience.japan-open .map-surface-switch button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 4px;
+  }
+
+  .experience.japan-open .map-surface-switch button span {
+    display: none;
+  }
+
+  .experience.japan-open .map-surface-switch button strong {
+    font-size: 10px;
+  }
+
+  .map-mobile-bank-toggle {
+    position: relative;
+    grid-row: 1;
+    grid-column: 3;
+    display: grid;
+    width: 54px;
+    height: 48px;
+    padding: 6px 2px;
+    place-items: center;
+  }
+
+  .map-mobile-bank-toggle i,
+  .map-mobile-bank-toggle i::after {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    width: 6px;
+    height: 1px;
+    content: "";
+    background: rgba(var(--map-accent-rgb), 0.75);
+  }
+
+  .map-mobile-bank-toggle i::after {
+    inset: 0;
+    transform: rotate(90deg);
+    transition: transform 160ms ease;
+  }
+
+  .map-mobile-bank-toggle[aria-expanded="true"] i::after {
+    transform: rotate(0deg);
+  }
+
+  .experience.japan-open .map-mode-bank-heading {
+    grid-row: 1;
+    grid-column: 2;
+    display: block;
+    min-width: 0;
+  }
+
+  .experience.japan-open .map-mode-bank-heading > p,
+  .experience.japan-open .map-mode-bank-guide,
+  .experience.japan-open .map-mode-list {
+    display: none !important;
+  }
+
+  .experience.japan-open .map-mode-bank-heading > div {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 7px;
+    align-items: center;
+  }
+
+  .experience.japan-open .map-mode-bank-heading span {
+    font-size: 14px;
+  }
+
+  .experience.japan-open .map-mode-bank-heading strong {
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-bank-expanded .map-mode-bank {
+    z-index: 29;
+    max-height: min(58vh, 480px);
+    overflow: auto;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-bank-expanded .map-mode-bank-guide {
+    grid-column: 1 / -1;
+    display: block !important;
+    margin: 3px 3px 0;
+    font-size: 9px;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-bank-expanded .map-mode-list:not([hidden]) {
+    grid-column: 1 / -1;
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(44px, 1fr));
+    gap: 4px;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-bank-expanded .map-mode-button {
+    min-width: 44px;
+    height: 44px;
+    font-size: 10px;
+  }
+
+  .experience.japan-open :is(.map-mode-01-tooltip, .map-mode-light-tooltip) {
+    display: none !important;
+  }
+
+  .experience.japan-open .japan-layer :is(.japan-instruction, .japan-map-note, .japan-credits) {
+    display: none !important;
+  }
+
+  .experience.japan-open .japan-layer-switch button {
+    min-height: 44px;
+  }
+
+  .experience.japan-open .japan-layer.is-live-exhibit :is(
+    .japan-heading,
+    .signal-console-map,
+    .signal-encoding-legend-dock,
+    .map-reading-guide,
+    .gaia-live-receipt
+  ) {
+    display: none !important;
+  }
+
+  .gaia-live-exhibit-readout {
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: max(82px, calc(env(safe-area-inset-bottom) + 70px)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    width: auto !important;
+    max-height: 174px !important;
+    padding: 10px 58px 10px 12px !important;
+    overflow: hidden !important;
+    border-radius: 12px;
+  }
+
+  .gaia-live-exhibit-primary {
+    display: flex;
+    gap: 8px;
+    align-items: end;
+  }
+
+  .gaia-live-exhibit-primary p {
+    margin-bottom: 4px;
+    font-size: 7px;
+  }
+
+  .gaia-live-exhibit-primary h3 {
+    font-size: 18px !important;
+  }
+
+  .gaia-live-exhibit-primary h3 small {
+    display: none;
+  }
+
+  .gaia-live-exhibit-primary > strong {
+    font-size: clamp(24px, 8vw, 32px) !important;
+  }
+
+  .gaia-live-mobile-toggle {
+    position: absolute;
+    z-index: 3;
+    top: 7px;
+    right: 7px;
+    display: grid;
+    width: 46px;
+    height: 46px;
+    padding: 6px 3px;
+    place-items: center;
+  }
+
+  .gaia-live-exhibit-signal {
+    gap: 4px 8px;
+    margin-top: 7px !important;
+  }
+
+  .gaia-live-exhibit-signal small {
+    display: none;
+  }
+
+  .gaia-live-exhibit-details {
+    display: contents;
+  }
+
+  .gaia-live-exhibit-readout:not(.is-mobile-expanded) :is(
+    .gaia-live-exhibit-explanation,
+    .gaia-live-exhibit-path,
+    footer
+  ) {
+    display: none !important;
+  }
+
+  .gaia-live-exhibit-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+    padding-top: 8px !important;
+  }
+
+  .gaia-live-exhibit-actions button,
+  .gaia-live-exhibit-touch-hint {
+    min-height: 44px !important;
+    padding: 6px 8px !important;
+  }
+
+  .gaia-live-exhibit-actions button,
+  .gaia-live-exhibit-touch-hint b {
+    font-size: 10px !important;
+  }
+
+  .gaia-live-sound-copy small,
+  .gaia-live-exhibit-touch-hint span {
+    display: none !important;
+  }
+
+  .gaia-live-exhibit-readout.is-mobile-expanded {
+    z-index: 30;
+    max-height: calc(100vh - 164px) !important;
+    padding: 13px 58px 14px 14px !important;
+    overflow: auto !important;
+  }
+
+  .gaia-live-exhibit-readout.is-mobile-expanded .gaia-live-exhibit-explanation {
+    display: grid !important;
+  }
+
+  .gaia-live-exhibit-readout.is-mobile-expanded .gaia-live-exhibit-path {
+    display: grid !important;
+  }
+
+  .gaia-live-exhibit-readout.is-mobile-expanded footer {
+    display: grid !important;
+  }
+
+  .gaia-live-exhibit-readout.is-mobile-expanded .gaia-live-exhibit-path {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-height: 520px) and (pointer: coarse) {
+  .experience.japan-open .japan-heading {
+    top: max(8px, env(safe-area-inset-top)) !important;
+    right: max(76px, calc(env(safe-area-inset-right) + 64px)) !important;
+    left: max(208px, calc(env(safe-area-inset-left) + 196px)) !important;
+    min-height: 48px;
+    max-height: 48px;
+    padding-block: 5px !important;
+  }
+
+  .experience.japan-open .japan-heading h2 {
+    font-size: 19px !important;
+    line-height: 36px;
+  }
+
+  .map-mobile-heading-toggle {
+    top: 1px;
+    height: 44px;
+  }
+
+  .experience.japan-open .signal-console-map {
+    top: max(64px, calc(env(safe-area-inset-top) + 52px)) !important;
+    right: auto !important;
+    width: min(310px, calc(100vw - 24px)) !important;
+  }
+
+  .experience.japan-open .map-reading-guide,
+  .experience.japan-open .gaia-live-receipt {
+    top: max(144px, calc(env(safe-area-inset-top) + 132px)) !important;
+  }
+
+  .experience.japan-open .map-mode-bank {
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: auto !important;
+    width: min(430px, calc(100vw - 24px)) !important;
+  }
+
+  .experience.japan-open .japan-layer.is-mobile-heading-expanded .japan-heading {
+    right: max(76px, calc(env(safe-area-inset-right) + 64px)) !important;
+    left: max(208px, calc(env(safe-area-inset-left) + 196px)) !important;
+    max-height: calc(100vh - 24px);
+  }
+
+  .gaia-live-exhibit-readout {
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: auto !important;
+    width: min(430px, calc(100vw - 24px)) !important;
+  }
+
+  .gaia-live-exhibit-readout.is-mobile-expanded {
+    max-height: calc(100vh - 94px) !important;
+  }
+
+  .experience.japan-open .japan-layer.is-earthquake-mode .japan-layer-switch {
+    right: auto !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    width: 280px;
+  }
+}
+
+@media (max-width: 720px), (max-height: 520px) and (pointer: coarse) {
+  .experience.japan-open .story-map-modal-skip {
+    min-height: 44px !important;
+  }
+
+  .experience.japan-open .signal-console-map input[type="range"] {
+    min-width: 44px;
+    min-height: 44px;
+    box-sizing: border-box;
+    margin-block: -8px;
+    padding-block: 14px;
+  }
+}

@@ -84,6 +84,7 @@ let canvas = null;
 let context = null;
 let webglRenderer = null;
 let readout = null;
+let mobileReadoutToggle = null;
 let anchorMarker = null;
 let buttons = [];
 let frame = 0;
@@ -93,6 +94,13 @@ const LIGHT_TOUCH_CAPACITY = 8;
 let lightTouches = [];
 let lightPointer = { x: 0.5, y: 0.5, active: 0, energy: 0, down: false, lastX: 0.5, lastY: 0.5 };
 let lastLightTrailAt = 0;
+
+const setMobileReadoutExpanded = (expanded) => {
+  const shouldExpand = Boolean(expanded && (innerWidth <= 720 || (innerHeight <= 520 && matchMedia("(pointer: coarse)").matches)));
+  readout?.classList.toggle("is-mobile-expanded", shouldExpand);
+  mobileReadoutToggle?.setAttribute("aria-expanded", String(shouldExpand));
+  mobileReadoutToggle?.querySelector("strong")?.replaceChildren(shouldExpand ? "閉じる" : "詳細");
+};
 
 const formatValue = (measurement) => {
   if (!measurement || !Number.isFinite(Number(measurement.value))) return "欠測";
@@ -830,6 +838,7 @@ const select = (index) => {
   canvas.dataset.lightTouchCount = "0";
   canvas.hidden = false;
   readout.hidden = false;
+  setMobileReadoutExpanded(false);
   applyHeading();
   renderReadout();
   lastRenderedAt = 0;
@@ -852,6 +861,7 @@ const deactivate = ({ number, title } = {}) => {
   delete layer.dataset.liveExhibit;
   canvas.hidden = true;
   readout.hidden = true;
+  setMobileReadoutExpanded(false);
   if (anchorMarker) anchorMarker.hidden = true;
   buttons.forEach((button) => button.setAttribute("aria-current", "false"));
   layer.style.removeProperty("--map-accent");
@@ -938,11 +948,15 @@ const mount = () => {
       </div>
       <strong data-live-exhibit-value></strong>
     </div>
+    <button class="gaia-live-mobile-toggle" id="gaia-live-mobile-toggle" type="button" aria-expanded="false" aria-controls="gaia-live-exhibit-details">
+      <span>DETAIL</span><strong>詳細</strong><i aria-hidden="true"></i>
+    </button>
     <div class="gaia-live-exhibit-signal" aria-label="観測値の変換強度">
       <span><i></i></span>
       <b data-live-exhibit-level>0% SIGNAL</b>
       <small data-live-exhibit-scale></small>
     </div>
+    <div class="gaia-live-exhibit-details" id="gaia-live-exhibit-details">
     <section class="gaia-live-exhibit-explanation" aria-label="展示の説明と観測状態">
       <p class="gaia-live-exhibit-summary" data-live-exhibit-caption></p>
       <div class="gaia-live-exhibit-freshness">
@@ -983,8 +997,13 @@ const mount = () => {
       <button class="gaia-live-exhibit-touch-hint" type="button" data-live-light-touch aria-label="地図の光へ触れ、光と展示音を鳴らす"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></button>
     </div>
     <footer><span data-live-exhibit-source></span><time data-live-exhibit-time></time></footer>
+    </div>
   `;
   layer.append(readout);
+  mobileReadoutToggle = readout.querySelector("#gaia-live-mobile-toggle");
+  mobileReadoutToggle?.addEventListener("click", () => {
+    setMobileReadoutExpanded(mobileReadoutToggle.getAttribute("aria-expanded") !== "true");
+  });
   dispatchEvent(new CustomEvent("gaia:live-exhibit-mounted"));
 
   readout.querySelector("[data-live-light-touch]")?.addEventListener("click", (event) => {

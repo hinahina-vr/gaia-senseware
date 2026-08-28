@@ -163,7 +163,7 @@
   });
   const CAMPUS_CHAT_SENSOR_CHANNEL = Object.freeze({
     id: "惑星の放課後_センサー",
-    label: "惑星の放課後_センサー",
+    label: "惑星の放課後",
     description: "センサー観測とGAIA SENSEWARE接続の試作相談",
     memberLabel: "9 members",
   });
@@ -4209,7 +4209,7 @@
         role: "音楽",
         department: "MUSIC",
         names: [
-          { label: "オープニングテーマ", title: "『Planet Forecast - Hope』" },
+          { label: "オープニングテーマ", title: "『GAIA SENSEWARE』" },
           { label: "エンディングテーマ", title: "『AfterSchool, AfterGlow』" },
           "by Suno AI",
         ],
@@ -4272,8 +4272,8 @@
     closingLine.textContent = "物語は、ここからも続いていく。";
     closingCopyright.textContent = "© 2026 惑星の放課後 / GAIA SENSATION";
     closingMark.textContent = "Thank you for playing";
-    closingAction.append(closingMark);
-    closing.append(closingLead, closingLine, closingCopyright, closingAction);
+    closingAction.append(closingMark, closingCopyright);
+    closing.append(closingLead, closingLine, closingAction);
 
     const finale = document.createElement("div");
     finale.className = "novel-staff-roll-finale";
@@ -5366,6 +5366,11 @@
       history.replaceState(null, "", "#story");
     }
   }
+  const openTrueEnd = (event = null) => {
+    openNovel(event);
+    showRuntime();
+    if (!launchTrueEnd()) showTitle();
+  };
   function closeNovelNow() {
     clearTimers();
     resetFastForward();
@@ -5451,6 +5456,10 @@
     }
     if (event.detail?.source === "title-menu") {
       openNovel(null, { autoStartFresh: true });
+      return;
+    }
+    if (event.detail?.source === "apeironcene") {
+      openTrueEnd();
       return;
     }
     const index = Number(event.detail?.index);

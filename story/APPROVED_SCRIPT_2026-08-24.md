@@ -1499,7 +1499,7 @@
 #### welcome_chat_011｜学内チャット｜青猫
 
 > 参加させていただき、ありがとうございます。ESP32の試作からお手伝いします。よろしくお願いします！
-> 🎉 4　🌍 3　🫶 2
+> 🎉 3　🌍 2　🫶 2
 
 #### welcome_chat_013｜地の文｜地の文
 
@@ -1890,7 +1890,7 @@
 > キャラクター原案 / ORIGINAL CHARACTER CONCEPT: ひなひな
 > キャラクターデザイン / CHARACTER DESIGN: OpenAI ImageGen
 > 背景美術 / BACKGROUND ART: OpenAI ImageGen
-> 音楽 / MUSIC: オープニングテーマ『Planet Forecast - Hope』、エンディングテーマ『AfterSchool, AfterGlow』、by Suno AI
+> 音楽 / MUSIC: オープニングテーマ『GAIA SENSEWARE』、エンディングテーマ『AfterSchool, AfterGlow』、by Suno AI
 > 参照講義 / ACADEMIC REFERENCE: ZEN大学『共創地球論』、ZEN大学『人新世の人類学』
 > 参照データ / OPEN DATA: JAXA / NASA / NOAA、気象庁 ほか
 > その選択の中に、今日から私たちもいる。

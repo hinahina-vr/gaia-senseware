@@ -101,7 +101,7 @@ const scanEnding = (page) => page.evaluate(() => {
   const audioToggle = document.querySelector("#gaia-audio-toggle");
   const closing = document.querySelector(".novel-staff-roll-closing");
   const closingLine = document.querySelector(".novel-staff-roll-closing > strong");
-  const closingCopyright = document.querySelector(".novel-staff-roll-closing > small");
+  const closingCopyright = document.querySelector(".novel-staff-roll-closing-action > small");
   const lastCredit = document.querySelector(".novel-staff-roll-credit:last-child");
   const trackStyle = getComputedStyle(track);
   const whiteoutStyle = getComputedStyle(whiteout);
@@ -176,7 +176,8 @@ const scanEnding = (page) => page.evaluate(() => {
     trackDuration: trackStyle.animationDuration,
     trackDelay: trackStyle.animationDelay,
     closingGap: closingRect && lastCreditRect ? closingRect.top - lastCreditRect.bottom : 0,
-    copyrightGap: closingLineRect && closingCopyrightRect ? closingCopyrightRect.top - closingLineRect.bottom : null,
+    copyrightGap: closingMarkRect && closingCopyrightRect ? closingCopyrightRect.top - closingMarkRect.bottom : null,
+    copyrightParentClass: closingCopyright?.parentElement?.className || "",
     whiteoutAnimation: whiteoutStyle.animationName,
     stageBackground: stageStyle.backgroundImage,
     toolbarHidden: toolbarStyle.visibility === "hidden" && Number(toolbarStyle.opacity) === 0,
@@ -307,9 +308,10 @@ try {
     assert.equal(initial.whiteoutAnimation, "novel-staff-roll-whiteout");
     assert.equal(initial.trackAnimation, "novel-staff-roll-rise");
     assert.equal(initial.trackDuration, viewport.name === "mobile-390" ? "70s" : "76s");
-    assert.equal(initial.trackDelay, "-2.65s", `${viewport.name}: staff-roll offscreen lead-in was not shortened`);
+    assert.equal(initial.trackDelay, "-1.65s", `${viewport.name}: staff-roll logo was not delayed by one second`);
     assert(initial.closingGap >= viewport.height * 0.5, `${viewport.name}: closing poem gap is too short (${initial.closingGap}px)`);
-    assert(initial.copyrightGap >= 8 && initial.copyrightGap <= 20, `${viewport.name}: copyright spacing is not compact (${initial.copyrightGap}px)`);
+    assert(initial.copyrightGap >= 8 && initial.copyrightGap <= 20, `${viewport.name}: copyright is not directly below Thank you for playing (${initial.copyrightGap}px)`);
+    assert.equal(initial.copyrightParentClass, "novel-staff-roll-closing-action", `${viewport.name}: copyright is outside the thank-you group`);
     assert.equal(initial.buttonHidden, true, `${viewport.name}: END action was shown before the roll`);
     assert.equal(initial.closingMarkText, "Thank you for playing");
     assert.equal(initial.text.includes("\nEND"), false, `${viewport.name}: obsolete END mark remains`);
@@ -335,6 +337,31 @@ try {
     assert.equal(loadedTitle.titleLogoLoaded, true, `${viewport.name}: staff-roll title logo failed to load`);
     assert(loadedTitle.titleLogoRect?.width > 0 && loadedTitle.titleLogoRect?.height > 0, `${viewport.name}: staff-roll title logo has no visible size`);
     assert(loadedTitle.titleLogoRect.left >= 0 && loadedTitle.titleLogoRect.right <= viewport.width, `${viewport.name}: staff-roll title logo overflows the viewport`);
+    const titleToCreditTiming = await page.locator(".novel-staff-roll-track").evaluate((node) => {
+      const animation = node.getAnimations().find((candidate) => candidate.animationName === "novel-staff-roll-rise") || node.getAnimations()[0];
+      const logo = node.querySelector(".novel-staff-roll-title-logo");
+      const firstCredit = node.querySelector(".novel-staff-roll-credit");
+      if (!animation || !logo || !firstCredit) throw new Error("staff-roll timing targets were not found");
+      const originalTime = animation.currentTime;
+      animation.pause();
+      const duration = Number.parseFloat(getComputedStyle(node).animationDuration) * 1_000;
+      let entry = null;
+      for (let time = 0; time <= duration; time += 50) {
+        animation.currentTime = time;
+        const creditRect = firstCredit.getBoundingClientRect();
+        if (creditRect.top < innerHeight && creditRect.bottom > 0) {
+          const logoRect = logo.getBoundingClientRect();
+          entry = { time, logoBottom: logoRect.bottom, creditTop: creditRect.top };
+          break;
+        }
+      }
+      animation.currentTime = originalTime;
+      animation.play();
+      return entry;
+    });
+    assert(titleToCreditTiming, `${viewport.name}: first staff name never entered the viewport`);
+    assert(titleToCreditTiming.logoBottom <= 0, `${viewport.name}: staff names began before the logo disappeared (${JSON.stringify(titleToCreditTiming)})`);
+    initial.titleToCreditTiming = titleToCreditTiming;
     [
       "原案・企画・制作",
       "シナリオ",
@@ -349,7 +376,7 @@ try {
       "背景美術",
       "音楽",
       "オープニングテーマ",
-      "『Planet Forecast - Hope』",
+      "『GAIA SENSEWARE』",
       "エンディングテーマ",
       "『AfterSchool, AfterGlow』",
       "by Suno AI",
@@ -383,13 +410,13 @@ try {
     assert.deepEqual(characterDesignCredit?.names, ["OpenAI ImageGen"], `${viewport.name}: character design credit is incorrect`);
     const musicCredit = initial.creditRows.find((row) => row.role === "MUSIC");
     assert.deepEqual(musicCredit?.names, [
-      "オープニングテーマ『Planet Forecast - Hope』",
+      "オープニングテーマ『GAIA SENSEWARE』",
       "エンディングテーマ『AfterSchool, AfterGlow』",
       "by Suno AI",
     ], `${viewport.name}: music credit wording or order is incorrect`);
     assert.equal(musicCredit?.nameOverflow, false, `${viewport.name}: music credit overflows horizontally`);
     assert.deepEqual(musicCredit?.musicTracks.map(({ label, title }) => ({ label, title })), [
-      { label: "オープニングテーマ", title: "『Planet Forecast - Hope』" },
+      { label: "オープニングテーマ", title: "『GAIA SENSEWARE』" },
       { label: "エンディングテーマ", title: "『AfterSchool, AfterGlow』" },
     ], `${viewport.name}: music theme labels and titles are not split into separate lines`);
     musicCredit?.musicTracks.forEach((track) => {

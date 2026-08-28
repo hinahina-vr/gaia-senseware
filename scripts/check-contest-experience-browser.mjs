@@ -719,6 +719,8 @@ try {
   monitor(liveMobilePage, "live-mobile");
   await liveMobilePage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await liveMobilePage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 4, null, { timeout: 30_000 });
+  await liveMobilePage.locator("#map-mobile-bank-toggle").click();
+  await liveMobilePage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-bank-expanded"));
   await liveMobilePage.locator("#japan-mode-list [data-live-exhibit]", { hasText: "10" }).click();
   await liveMobilePage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "1");
   const mobileReadout = await liveMobilePage.locator(".gaia-live-exhibit-readout").boundingBox();
@@ -732,23 +734,44 @@ try {
       descriptionHidden: descriptionRect.width <= 1 && descriptionRect.height <= 1,
       englishTitleHidden: getComputedStyle(document.querySelector("[data-live-exhibit-title-en]")).display === "none",
       compactHeader: headingRect.height <= 130,
-      explanationVisible: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height > 70,
-      explanationFont: Number.parseFloat(getComputedStyle(document.querySelector(".gaia-live-exhibit-summary")).fontSize),
+      bankCollapsed: !document.querySelector("#japan-layer").classList.contains("is-mobile-bank-expanded"),
+      detailsToggleVisible: document.querySelector("#gaia-live-mobile-toggle").getBoundingClientRect().height >= 44,
+      detailsExpanded: document.querySelector("#gaia-live-mobile-toggle").getAttribute("aria-expanded") === "true",
+      explanationHidden: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height <= 1,
+      valueFont: Number.parseFloat(getComputedStyle(document.querySelector(".gaia-live-exhibit-primary > strong")).fontSize),
     };
   });
   assert(mobileReadout && mobileReadout.x >= 0 && mobileReadout.x + mobileReadout.width <= 390, "mobile live readout overflows horizontally");
   assert(mobileReadout.y >= 80 && mobileReadout.y + mobileReadout.height <= 844, "mobile live readout does not preserve a visible map area");
+  assert(mobileReadout.height <= 160, `mobile live readout is not compact: ${mobileReadout.height}px`);
   assert.equal(mobileVisualContract.titleContained, true, "mobile exhibit title clips outside its readout");
   assert.equal(mobileVisualContract.descriptionHidden, true, "mobile live exhibit still displays instructional prose");
   assert.equal(mobileVisualContract.englishTitleHidden, true, "mobile exhibit title retains a space-consuming English subtitle");
   assert.equal(mobileVisualContract.compactHeader, true, "mobile live header still reserves space for hidden text controls");
-  assert(mobileVisualContract.explanationVisible && mobileVisualContract.explanationFont >= 13, "mobile exhibit explanation is missing or too small");
-  assert.equal(await liveMobilePage.locator(".gaia-live-exhibit-path li").count(), 4, "mobile transformation path is incomplete");
-  assert.equal(await liveMobilePage.locator(".gaia-live-stage-symbol").count(), 4, "mobile visual transformation symbols are incomplete");
-  assert((await liveMobilePage.locator(".gaia-live-exhibit-primary > strong").evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize))) >= 40, "mobile live value is too small");
+  assert.equal(mobileVisualContract.bankCollapsed, true, "mobile exhibit bank does not collapse after selection");
+  assert.equal(mobileVisualContract.detailsToggleVisible, true, "mobile exhibit details control is not touchable");
+  assert.equal(mobileVisualContract.detailsExpanded, false, "mobile exhibit details must start collapsed");
+  assert.equal(mobileVisualContract.explanationHidden, true, "mobile exhibit explanation still hides the map when collapsed");
+  assert(mobileVisualContract.valueFont >= 24, "mobile live value is too small");
   const liveMobileScreenshot = path.join(outputDir, "live-exhibit-10-mobile.png");
   await liveMobilePage.screenshot({ path: liveMobileScreenshot, animations: "disabled" });
-  report.entry.liveExhibitMobile = { screenshot: liveMobileScreenshot, ...mobileVisualContract };
+  await liveMobilePage.locator("#gaia-live-mobile-toggle").click();
+  await liveMobilePage.waitForFunction(() => document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-mobile-expanded"));
+  const mobileExpandedContract = await liveMobilePage.evaluate(() => ({
+    explanationVisible: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height > 70,
+    explanationFont: Number.parseFloat(getComputedStyle(document.querySelector(".gaia-live-exhibit-summary")).fontSize),
+  }));
+  assert(mobileExpandedContract.explanationVisible && mobileExpandedContract.explanationFont >= 13, "mobile exhibit explanation is missing or too small when expanded");
+  assert.equal(await liveMobilePage.locator(".gaia-live-exhibit-path li").count(), 4, "mobile transformation path is incomplete");
+  assert.equal(await liveMobilePage.locator(".gaia-live-stage-symbol").count(), 4, "mobile visual transformation symbols are incomplete");
+  const liveMobileExpandedScreenshot = path.join(outputDir, "live-exhibit-10-mobile-expanded.png");
+  await liveMobilePage.screenshot({ path: liveMobileExpandedScreenshot, animations: "disabled" });
+  report.entry.liveExhibitMobile = {
+    screenshot: liveMobileScreenshot,
+    expandedScreenshot: liveMobileExpandedScreenshot,
+    ...mobileVisualContract,
+    ...mobileExpandedContract,
+  };
   await liveMobileContext.close();
 
   const tourContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

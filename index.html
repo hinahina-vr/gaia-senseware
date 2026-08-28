@@ -168,7 +168,7 @@
     <script src="./opening-audio.js?v=gaia-live-compact-jpt-audio-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-no-breathing-flash-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-integrated-light-bank-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-mobile-exhibit-hud-5" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -511,7 +511,7 @@
             <button class="sound-track" type="button" data-sound-track="opening" aria-current="true">
               <span>01</span>
               <div>
-                <strong>Planet Forecast - Hope</strong>
+                <strong>GAIA SENSEWARE</strong>
                 <small>OPENING THEME / LOOP</small>
               </div>
               <i aria-hidden="true"></i>
@@ -575,8 +575,8 @@
             <button class="sound-track" type="button" data-sound-track="moonsave" aria-current="false">
               <span>09</span>
               <div>
-                <strong>月下のSOURCE保存（未使用曲）</strong>
-                <small>SOURCE ARCHIVE / LOOP</small>
+                <strong>Planet Forecast - Hope（未使用曲）</strong>
+                <small>FORMER OPENING / ARCHIVE</small>
               </div>
               <i aria-hidden="true"></i>
             </button>
@@ -609,6 +609,7 @@
 
           <main class="sound-player">
             <div class="sound-planetarium" aria-hidden="true">
+              <canvas class="sound-visualizer" id="sound-visualizer" data-renderer="pending"></canvas>
               <span class="sound-orbit sound-orbit--outer"></span>
               <span class="sound-orbit sound-orbit--inner"></span>
               <span class="sound-orbit sound-orbit--polar"></span>
@@ -625,7 +626,7 @@
 
             <div class="sound-now-playing">
               <p id="sound-track-number">TRACK 01 / OPENING THEME</p>
-              <h3 id="sound-track-title">Planet Forecast - Hope</h3>
+              <h3 id="sound-track-title">GAIA SENSEWARE</h3>
               <p id="sound-mode-description">物語が始まる直前、観測の扉が開く場面の音楽。</p>
             </div>
 
@@ -808,7 +809,16 @@
                 <b aria-hidden="true">→</b>
               </button>
 
-              <div class="intro-lp-scroll" aria-hidden="true"><i></i><span>SCROLL / ABOUT THIS WORLD</span></div>
+              <button
+                class="intro-lp-scroll"
+                id="intro-lp-scroll"
+                type="button"
+                aria-controls="intro-gx-feature"
+                aria-label="下へスクロールして次の展示を見る"
+              >
+                <span><b>SCROLL</b><small>次の展示を見る</small></span>
+                <i aria-hidden="true"></i>
+              </button>
             </div>
 
             <div class="intro-lp-afterfold">
@@ -1335,6 +1345,16 @@
             <span id="map-scope-kicker">Planetary lens / Open map</span>
           </p>
           <h2 id="japan-title" aria-live="polite">地球の一呼吸</h2>
+          <button
+            class="map-mobile-heading-toggle"
+            id="map-mobile-heading-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="japan-description japan-data-button"
+          >
+            <span>INFO</span>
+            <strong>詳細</strong>
+          </button>
           <p id="japan-description">
             水、熱、生きもの、大地の動きは国境で止まりません。
             世界の観測記録を一枚の地図に重ねて見てみましょう。
@@ -1425,9 +1445,20 @@
             <output data-signal-time-output>—</output>
           </label>
           <p data-signal-note>同梱した公開データのスナップショットを読み込んでいます。</p>
+          <button
+            class="map-mobile-legend-toggle"
+            id="map-mobile-legend-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="map-signal-encoding-legend-dock"
+            hidden
+          >
+            <span>KEY</span>
+            <strong>凡例</strong>
+          </button>
         </section>
 
-        <aside class="signal-encoding-legend-dock" aria-label="地図の凡例">
+        <aside class="signal-encoding-legend-dock" id="map-signal-encoding-legend-dock" aria-label="地図の凡例">
           <div class="signal-encoding-legend-title" data-signal-encoding-legend-title hidden>
             <strong>凡例</strong>
             <span>MAP LEGEND</span>
@@ -1462,6 +1493,17 @@
             <button id="map-surface-map" type="button" aria-pressed="true"><span>MAP</span><strong>地図</strong></button>
             <button id="map-surface-light" type="button" aria-pressed="false"><span>LIGHT</span><strong>光</strong></button>
           </div>
+          <button
+            class="map-mobile-bank-toggle"
+            id="map-mobile-bank-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="japan-mode-list abstract-mode-list"
+          >
+            <span>SELECT</span>
+            <strong>展示一覧</strong>
+            <i aria-hidden="true"></i>
+          </button>
           <div class="map-mode-bank-heading">
             <p id="map-mode-bank-kicker">INSTALLATION BANK / 01—12</p>
             <div>

@@ -129,6 +129,7 @@ const scanChatLayout = async (viewport, testCase) => {
       workspaceHeightRatio: workspaceRect ? workspaceRect.height / innerHeight : 0,
       leftGap: workspaceRect?.left ?? -1,
       rightGap: workspaceRect ? innerWidth - workspaceRect.right : -1,
+      centerDelta: workspaceRect ? Math.abs((workspaceRect.left + workspaceRect.right) / 2 - innerWidth / 2) : -1,
       topGap: workspaceRect?.top ?? -1,
       backgroundImage: backgrounds,
       sidebarVisible: __chatVisible(workspace?.querySelector(":scope > aside")),
@@ -190,6 +191,7 @@ const scanChatLayout = async (viewport, testCase) => {
     assert(scan.workspaceWidthRatio >= 0.93 && scan.workspaceWidthRatio <= 0.96, `${label}: mobile workspace width ratio ${scan.workspaceWidthRatio}`);
     assert(scan.workspaceHeightRatio >= 0.82 && scan.workspaceHeightRatio <= 0.88, `${label}: mobile workspace height ratio regressed (${scan.workspaceHeightRatio})`);
     assert(scan.leftGap >= 9 && scan.rightGap >= 9 && scan.topGap >= 46 && scan.topGap <= 56, `${label}: mobile chat does not reach the story header`);
+    assert(scan.centerDelta <= 1, `${label}: mobile chat is not centered (${scan.centerDelta}px)`);
     assert.equal(scan.sidebarVisible, false);
     assert.equal(scan.sidebarWidth, 0);
     assert(scan.headerHeight >= 32, `${label}: header is too short`);

@@ -165,12 +165,17 @@
   const signalTimeInputs = Array.from(document.querySelectorAll("[data-signal-time]"));
   const mapSignalEncodingLegendTitle = document.querySelector("[data-signal-encoding-legend-title]");
   const mapSignalEncodingLegend = document.querySelector("[data-signal-encoding-legend]");
+  const mapMobileLegendToggle = document.querySelector("#map-mobile-legend-toggle");
   const introLayer = document.querySelector("#intro-layer");
   const openingLayer = document.querySelector("#gaia-opening");
   const introPathStage = document.querySelector("#intro-path-stage");
   const introSenseStage = document.querySelector("#intro-sense-stage");
   const introPathGrid = document.querySelector("#intro-path-grid");
   const introPathButtons = Array.from(document.querySelectorAll("[data-intro-path]"));
+  const introStoryReturn = document.querySelector(".intro-story-return[data-primary-action=\"true\"]");
+  const introScrollCue = document.querySelector("#intro-lp-scroll");
+  const introAfterfold = document.querySelector(".intro-lp-afterfold");
+  const introGxFeature = document.querySelector("#intro-gx-feature");
   const introSoundPreviewButton = document.querySelector(".intro-path-card--sound");
   const introVisuals = Array.from(document.querySelectorAll("[data-intro-visual]"));
   const introPathBack = document.querySelector("#intro-path-back");
@@ -198,7 +203,9 @@
   const mapScopeNote = document.querySelector("#map-scope-note");
   const japanTitle = document.querySelector("#japan-title");
   const japanDescription = document.querySelector("#japan-description");
+  const mapMobileHeadingToggle = document.querySelector("#map-mobile-heading-toggle");
   const japanModeBank = document.querySelector(".map-mode-bank");
+  const mapMobileBankToggle = document.querySelector("#map-mobile-bank-toggle");
   const mapModeBankKicker = document.querySelector("#map-mode-bank-kicker");
   const mapModeBankGuide = document.querySelector("#map-mode-bank-guide");
   const mapSurfaceMapButton = document.querySelector("#map-surface-map");
@@ -225,6 +232,7 @@
   const japanObservationCopy = document.querySelector("#japan-observation-copy");
   const mapGuideTitle = document.querySelector("#map-guide-title");
   const mapReadingGuide = document.querySelector("#map-reading-guide");
+  const gaiaLiveReceipt = document.querySelector("[data-gaia-live-receipt]");
   const mapGuideSubject = document.querySelector("#map-guide-subject");
   const mapGuideReading = document.querySelector("#map-guide-reading");
   const mapGuideAction = document.querySelector("#map-guide-action");
@@ -345,6 +353,7 @@
   };
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const usesCompactMapUi = () => window.innerWidth <= 720 || (window.innerHeight <= 520 && coarsePointer);
   const resolveMapOverlayQuality = () => {
     const memory = Number(navigator.deviceMemory) || 0;
     const cores = Number(navigator.hardwareConcurrency) || 0;
@@ -5187,6 +5196,13 @@
       const showEncodingLegend = Boolean(timelineState);
       if (mapSignalEncodingLegendTitle) mapSignalEncodingLegendTitle.hidden = !showEncodingLegend;
       mapSignalEncodingLegend.hidden = !showEncodingLegend;
+      if (mapMobileLegendToggle) {
+        mapMobileLegendToggle.hidden = !showEncodingLegend;
+        if (!showEncodingLegend) {
+          mapMobileLegendToggle.setAttribute("aria-expanded", "false");
+          japanLayer.classList.remove("is-mobile-legend-expanded");
+        }
+      }
       mapSignalEncodingLegend.dataset.mode = timelineState?.kind || "co2";
       if (showEncodingLegend) {
         const setEncodingLabel = (key, value) => {
@@ -5980,6 +5996,27 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     window.dispatchEvent(new CustomEvent("gaia:japan-mode-change"));
   };
 
+  const syncIntroStoryReturn = () => {
+    if (!(introStoryReturn instanceof HTMLButtonElement)) return;
+    let mainEndingComplete = false;
+    let apeironceneComplete = false;
+    try {
+      const progress = JSON.parse(window.localStorage.getItem("gaiaSensewareNovel:progress") || "null");
+      mainEndingComplete = progress?.clear === true;
+      apeironceneComplete = Boolean(window.localStorage.getItem("gaiaSensewareTrueEnd:complete:v1"));
+    } catch {
+      // Storage is optional; the ordinary story route remains available.
+    }
+    const continueToApeironcene = mainEndingComplete && !apeironceneComplete;
+    const label = continueToApeironcene ? "星々の放課後 ～APEIRONCENE～" : "物語へ戻る";
+    introStoryReturn.dataset.storyDestination = continueToApeironcene ? "apeironcene" : "story";
+    introStoryReturn.querySelector("strong").textContent = label;
+    introStoryReturn.setAttribute(
+      "aria-label",
+      continueToApeironcene ? "星々の放課後 APEIRONCENEへ進む" : "物語のタイトルメニューへ戻る",
+    );
+  };
+
   const selectMode = (index, { resetAutoTimer = true } = {}) => {
     const normalizedIndex = (index + MODE_COUNT) % MODE_COUNT;
     if (normalizedIndex === modeToIndex) {
@@ -6018,6 +6055,53 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }
   });
 
+  const setMobileMapLegendExpanded = (expanded) => {
+    const shouldExpand = Boolean(expanded && usesCompactMapUi() && !mapMobileLegendToggle?.hidden);
+    japanLayer.classList.toggle("is-mobile-legend-expanded", shouldExpand);
+    mapMobileLegendToggle?.setAttribute("aria-expanded", String(shouldExpand));
+    mapMobileLegendToggle?.querySelector("strong")?.replaceChildren(shouldExpand ? "閉じる" : "凡例");
+  };
+
+  const setMobileMapHeadingExpanded = (expanded) => {
+    const shouldExpand = Boolean(expanded && usesCompactMapUi());
+    japanLayer.classList.toggle("is-mobile-heading-expanded", shouldExpand);
+    mapMobileHeadingToggle?.setAttribute("aria-expanded", String(shouldExpand));
+    mapMobileHeadingToggle?.querySelector("strong")?.replaceChildren(shouldExpand ? "閉じる" : "詳細");
+    if (shouldExpand) {
+      japanLayer.classList.remove("is-mobile-bank-expanded");
+      mapMobileBankToggle?.setAttribute("aria-expanded", "false");
+      mapMobileBankToggle?.querySelector("strong")?.replaceChildren("展示一覧");
+      mapReadingGuide.open = false;
+      if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
+      setMobileMapLegendExpanded(false);
+    }
+  };
+
+  const setMobileMapBankExpanded = (expanded, { restoreFocus = false } = {}) => {
+    const shouldExpand = Boolean(expanded && usesCompactMapUi());
+    japanLayer.classList.toggle("is-mobile-bank-expanded", shouldExpand);
+    mapMobileBankToggle?.setAttribute("aria-expanded", String(shouldExpand));
+    mapMobileBankToggle?.querySelector("strong")?.replaceChildren(shouldExpand ? "閉じる" : "展示一覧");
+    if (shouldExpand) {
+      setMobileMapHeadingExpanded(false);
+      setMobileMapLegendExpanded(false);
+      mapReadingGuide.open = false;
+      if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
+    } else if (restoreFocus && usesCompactMapUi()) {
+      requestAnimationFrame(() => mapMobileBankToggle?.focus({ preventScroll: true }));
+    }
+  };
+
+  const resetMobileMapUi = () => {
+    setMobileMapHeadingExpanded(false);
+    setMobileMapBankExpanded(false);
+    setMobileMapLegendExpanded(false);
+    if (usesCompactMapUi()) {
+      mapReadingGuide.open = false;
+      if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
+    }
+  };
+
   const positionMapModeTooltip = (tooltip) => {
     const bankRect = japanModeBank.getBoundingClientRect();
     const mobile = innerWidth <= 900;
@@ -6054,6 +6138,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
   const setMapMode01TooltipOpen = (open) => {
     const shouldOpen = open
+      && !usesCompactMapUi()
       && mapSurface === "map"
       && japanModeBank.dataset.activeMode === "01"
       && !japanLayer.classList.contains("is-live-exhibit");
@@ -6068,6 +6153,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   const setMapModeLightTooltipOpen = (open, index = modeToIndex) => {
     updateMapModeLightTooltip(index);
     const shouldOpen = open
+      && !usesCompactMapUi()
       && mapSurface === "light"
       && !japanLayer.classList.contains("is-live-exhibit");
     mapModeLightTooltip.classList.toggle("is-open", shouldOpen);
@@ -6130,6 +6216,36 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   japanLayer.append(mapMode01Tooltip, mapModeLightTooltip);
   mapSurfaceMapButton.addEventListener("click", () => setMapSurface("map"));
   mapSurfaceLightButton.addEventListener("click", () => setMapSurface("light"));
+  mapMobileHeadingToggle?.addEventListener("click", () => {
+    setMobileMapHeadingExpanded(mapMobileHeadingToggle.getAttribute("aria-expanded") !== "true");
+  });
+  mapMobileBankToggle?.addEventListener("click", () => {
+    setMobileMapBankExpanded(mapMobileBankToggle.getAttribute("aria-expanded") !== "true");
+  });
+  mapMobileLegendToggle?.addEventListener("click", () => {
+    const expand = mapMobileLegendToggle.getAttribute("aria-expanded") !== "true";
+    if (expand) {
+      setMobileMapHeadingExpanded(false);
+      setMobileMapBankExpanded(false);
+      mapReadingGuide.open = false;
+      if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
+    }
+    setMobileMapLegendExpanded(expand);
+  });
+  mapReadingGuide.addEventListener("toggle", () => {
+    if (!usesCompactMapUi() || !mapReadingGuide.open) return;
+    setMobileMapHeadingExpanded(false);
+    setMobileMapBankExpanded(false);
+    setMobileMapLegendExpanded(false);
+    if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
+  });
+  gaiaLiveReceipt?.addEventListener("toggle", () => {
+    if (!usesCompactMapUi() || !gaiaLiveReceipt.open) return;
+    setMobileMapHeadingExpanded(false);
+    setMobileMapBankExpanded(false);
+    setMobileMapLegendExpanded(false);
+    mapReadingGuide.open = false;
+  });
   japanModeBank.addEventListener("pointerenter", openActiveMapModeTooltip);
   japanModeBank.addEventListener("pointerleave", () => {
     if (!japanModeBank.contains(document.activeElement)) closeMapModeTooltips();
@@ -6145,9 +6261,17 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (!japanModeBank.contains(event.relatedTarget)) closeMapModeTooltips();
   });
   window.addEventListener("gaia:live-exhibit-change", (event) => {
-    if (event.detail?.id) closeMapModeTooltips();
+    if (event.detail?.id) {
+      closeMapModeTooltips();
+      setMobileMapBankExpanded(false, { restoreFocus: true });
+    }
   });
+  let compactMapUiWasActive = usesCompactMapUi();
   window.addEventListener("resize", () => {
+    const compactMapUiIsActive = usesCompactMapUi();
+    if (compactMapUiIsActive && !compactMapUiWasActive) resetMobileMapUi();
+    if (!compactMapUiIsActive && compactMapUiWasActive) resetMobileMapUi();
+    compactMapUiWasActive = compactMapUiIsActive;
     if (mapMode01Tooltip.classList.contains("is-open")) scheduleMapModeTooltipPosition(mapMode01Tooltip);
     if (mapModeLightTooltip.classList.contains("is-open")) scheduleMapModeTooltipPosition(mapModeLightTooltip);
   }, { passive: true });
@@ -6230,6 +6354,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       setMapMode01TooltipOpen(
         index === 0 && (japanModeBank.contains(document.activeElement) || japanModeBank.matches(":hover")),
       );
+      setMobileMapBankExpanded(false, { restoreFocus: true });
     });
     japanModeButtons.push(japanModeButton);
     japanModeList.append(japanModeButton);
@@ -6251,6 +6376,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     abstractModeButton.addEventListener("click", () => {
       selectMode(index);
       setMapModeLightTooltipOpen(true, index);
+      setMobileMapBankExpanded(false, { restoreFocus: true });
     });
     abstractModeButtons.push(abstractModeButton);
     abstractModeList.append(abstractModeButton);
@@ -6264,10 +6390,11 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     button.addEventListener("click", (event) => {
       const path = button.dataset.introPath;
       if (path === "novel") {
+        const source = button.dataset.storyDestination === "apeironcene" ? "apeironcene" : "title-menu";
         runSceneTransition(() => {
           closeIntro({ restoreFocus: false });
           window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
-            detail: { index: 0, source: "title-menu" },
+            detail: { index: 0, source },
           }));
         }, path, event);
         return;
@@ -6514,6 +6641,8 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       const rect = japanMap.getBoundingClientRect();
       setEarthZoom(japanView.earthZoom / 1.35, rect.left + rect.width / 2, rect.top + rect.height / 2);
     } else if (event.key === "0" && mapScope === "earth") {
+      event.preventDefault();
+      event.stopPropagation();
       resetJapanView();
     } else if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -6793,7 +6922,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanLayer.inert = false;
     japanLayer.setAttribute("aria-hidden", "false");
     japanLayer.classList.remove("is-closing");
-    if (window.innerWidth <= 720) mapReadingGuide.open = false;
+    resetMobileMapUi();
     japanButton.setAttribute("aria-pressed", "true");
     japanButton.title = "Close map";
     experience.classList.add("japan-open");
@@ -6908,6 +7037,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     introSelectedPath = null;
     delete introLayer.dataset.path;
     setIntroVisual();
+    syncIntroStoryReturn();
     introPathButtons.forEach((button) => button.setAttribute("aria-pressed", "false"));
     updateIntroSelection();
     // During the opening dissolve the next screen is already visible behind it.
@@ -7247,6 +7377,15 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       event,
     );
   });
+  introScrollCue?.addEventListener("click", () => {
+    introAfterfold?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    window.setTimeout(() => {
+      introGxFeature?.focus({ preventScroll: true });
+    }, reducedMotion ? 0 : 460);
+  });
   introArchitectureJump.addEventListener("click", () => {
     introOpenDataExhibit.scrollIntoView({
       behavior: reducedMotion ? "auto" : "smooth",
@@ -7305,7 +7444,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       } else if (event.key === "Tab") {
         event.preventDefault();
         const targets = (introStage === "path"
-          ? [...introPathButtons, introArchitectureJump, introArchitectureBack]
+          ? [...introPathButtons, introScrollCue, introArchitectureJump, introArchitectureBack]
           : [...introModeButtons, introPathBack]
         ).filter((element) => !element.hidden && element.getClientRects().length > 0);
         const currentIndex = targets.indexOf(document.activeElement);

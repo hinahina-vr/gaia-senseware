@@ -31,7 +31,7 @@ const staffRoll = Object.freeze({
       role: "音楽",
       department: "MUSIC",
       names: [
-        "オープニングテーマ『Planet Forecast - Hope』",
+        "オープニングテーマ『GAIA SENSEWARE』",
         "エンディングテーマ『AfterSchool, AfterGlow』",
         "by Suno AI",
       ],

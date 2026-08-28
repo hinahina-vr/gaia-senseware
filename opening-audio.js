@@ -2,7 +2,7 @@
   "use strict";
 
   const TRACKS = Object.freeze({
-    opening: "./assets/audio/satellite-forecast-hope.mp3",
+    opening: "./assets/audio/moonlit-source-save.mp3",
     story: "./assets/audio/planet-forecast-windowlight.mp3",
     windowlight: "./assets/audio/satellite-forecast-calm.mp3",
     firstlight: "./assets/audio/planet-forecast-first-light.mp3",
@@ -10,7 +10,7 @@
     snowfire: "./assets/audio/snowfire-signal.mp3",
     snowafter: "./assets/audio/snowfire-afterimage.mp3",
     moonbook: "./assets/audio/moonlit-observation-notebook.mp3",
-    moonsave: "./assets/audio/moonlit-source-save.mp3",
+    moonsave: "./assets/audio/satellite-forecast-hope.mp3",
     moonreopen: "./assets/audio/moonlit-reopen.mp3",
     ending: "./assets/audio/after-school-afterglow.mp3",
     trueend: "./assets/audio/sensory-horizon.wav",
@@ -34,12 +34,90 @@
   let mixGain = 1;
   let muted = true;
   let navigationStatePersisted = false;
+  let analysisContext = null;
+  let analysisNode = null;
+  let analysisBins = null;
+  const analysisSources = new WeakMap();
   // Keep the visitor's choice separate from the instantaneous player state.
   // A scene transition may pause a player for a moment; that must not be
   // mistaken for the visitor choosing "sound off".
   let playbackRequested = false;
 
   const effectiveVolume = () => preferredVolume * mixGain;
+
+  const connectAnalysisSource = (player) => {
+    if (!analysisContext || !analysisNode || analysisSources.has(player)) return;
+    try {
+      const source = analysisContext.createMediaElementSource(player);
+      source.connect(analysisNode);
+      analysisSources.set(player, source);
+    } catch {
+      // Playback remains available if a browser refuses a media-element source.
+    }
+  };
+
+  const ensureAnalysis = () => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    if (!analysisContext) {
+      try {
+        analysisContext = new AudioContextClass();
+        analysisNode = analysisContext.createAnalyser();
+        analysisNode.fftSize = 256;
+        analysisNode.smoothingTimeConstant = 0.78;
+        analysisNode.connect(analysisContext.destination);
+        analysisBins = new Uint8Array(analysisNode.frequencyBinCount);
+        players.forEach(connectAnalysisSource);
+      } catch {
+        analysisContext = null;
+        analysisNode = null;
+        analysisBins = null;
+        return null;
+      }
+    }
+    return analysisContext;
+  };
+
+  const enableAnalysis = async () => {
+    const context = ensureAnalysis();
+    if (!context) return false;
+    players.forEach(connectAnalysisSource);
+    if (context.state === "suspended") {
+      try {
+        await context.resume();
+      } catch {
+        return false;
+      }
+    }
+    return context.state === "running";
+  };
+
+  const getAnalysisFrame = () => {
+    if (!analysisNode || !analysisBins) {
+      return { supported: Boolean(window.AudioContext || window.webkitAudioContext), active: false, bands: [0, 0, 0], peak: 0, rms: 0 };
+    }
+    analysisNode.getByteFrequencyData(analysisBins);
+    const average = (start, end) => {
+      let sum = 0;
+      const boundedEnd = Math.min(analysisBins.length, end);
+      for (let index = start; index < boundedEnd; index += 1) sum += analysisBins[index];
+      return boundedEnd > start ? sum / (boundedEnd - start) / 255 : 0;
+    };
+    let peak = 0;
+    let squareSum = 0;
+    analysisBins.forEach((value) => {
+      const normalized = value / 255;
+      peak = Math.max(peak, normalized);
+      squareSum += normalized * normalized;
+    });
+    return {
+      supported: true,
+      active: analysisContext?.state === "running" && Boolean(audio && !audio.paused && !muted),
+      bands: [average(0, 14), average(14, 48), average(48, analysisBins.length)],
+      peak,
+      rms: Math.sqrt(squareSum / analysisBins.length),
+    };
+  };
 
   try {
     const savedValue = window.localStorage.getItem(VOLUME_STORAGE_KEY);
@@ -81,6 +159,7 @@
     player.volume = 0;
     player.load();
     players.set(track, player);
+    connectAnalysisSource(player);
     if (track === activeTrack) audio = player;
     return player;
   };
@@ -159,6 +238,7 @@
   const start = async (volume = preferredVolume) => {
     setVolume(volume, 0);
     const player = ensureAudio();
+    void enableAnalysis();
     cancelFade();
     muted = false;
     playbackRequested = true;
@@ -206,6 +286,7 @@
 
   const switchTrack = async (track, fadeSeconds = 0.5) => {
     if (!TRACKS[track]) return false;
+    void enableAnalysis();
     const serial = ++switchSerial;
     const switchFadeOutSeconds = Math.max(0, fadeSeconds) * TRACK_SWITCH_FADE_MULTIPLIER;
     if (track === activeTrack) {
@@ -408,6 +489,8 @@
     toggleMuted,
     getState,
     getPlaybackState,
+    enableAnalysis,
+    getAnalysisFrame,
     seek,
     persistNavigationState,
     restoreNavigationState,

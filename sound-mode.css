@@ -245,6 +245,21 @@
   filter: drop-shadow(0 20px 55px rgba(0, 18, 20, 0.48));
 }
 
+.sound-visualizer {
+  position: absolute;
+  z-index: 1;
+  inset: 3%;
+  display: block;
+  width: 94%;
+  height: 94%;
+  opacity: 0.78;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 0 48%, rgba(0, 0, 0, 0.74) 68%, transparent 88%);
+  mask-image: radial-gradient(ellipse at center, #000 0 48%, rgba(0, 0, 0, 0.74) 68%, transparent 88%);
+  filter: drop-shadow(0 0 14px rgba(116, 239, 211, 0.22));
+}
+
 .sound-planetarium::before {
   content: "";
   position: absolute;
@@ -796,12 +811,32 @@ body.gaia-opening-active .gaia-audio-gallery-open {
   .sound-layout { padding: 22px 0; }
   .sound-player {
     grid-template-columns: 1fr;
-    grid-template-areas: "disc" "info" "transport" "volume";
+    grid-template-areas: "info" "disc" "transport" "volume";
   }
-  .sound-planetarium { width: min(68vw, 280px); margin-bottom: 24px; }
+  .sound-planetarium {
+    width: 100%;
+    height: 108px;
+    margin: 10px 0 0;
+    aspect-ratio: auto;
+    background: linear-gradient(90deg, transparent, rgba(66, 198, 170, 0.08) 50%, transparent);
+    filter: none;
+  }
+  .sound-planetarium::before,
+  .sound-orbit,
+  .sound-observation-line,
+  .sound-planet { display: none; }
+  .sound-visualizer {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.94;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8% 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8% 92%, transparent);
+  }
+  .sound-planet-caption { bottom: 6px; left: 0; }
   .sound-now-playing { text-align: center; }
   .sound-now-playing h3 { font-size: 27px; white-space: normal; }
-  .sound-transport { grid-template-columns: 50px minmax(0, 1fr); gap: 12px; margin-top: 22px; }
+  .sound-transport { grid-template-columns: 50px minmax(0, 1fr); gap: 12px; margin-top: 8px; }
   .sound-play { width: 50px; height: 50px; }
   .sound-progress-group { padding: 10px 11px 8px; }
   .sound-control-heading span { font-size: 7px; letter-spacing: 0.06em; }

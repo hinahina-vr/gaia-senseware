@@ -7,7 +7,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "estimatedDuration": "10〜12分",
   "sourceSha256": "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c",
   "revisionId": "approved-script-20260824",
-  "approvedSourceSha256": "7c604f070b37567ae35445292d1a70515cf70d10a5d8faa70030c2c0b1052976",
+  "approvedSourceSha256": "f7fb17b0df92bd90d094f11a2132c64518619c867cac186aee602065493438a7",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -2594,7 +2594,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "time": "10:08",
           "speaker": "visitor",
           "speakerLabel": "青猫",
-          "text": "参加させていただき、ありがとうございます。ESP32の試作からお手伝いします。よろしくお願いします！\n🎉 4　🌍 3　🫶 2"
+          "text": "参加させていただき、ありがとうございます。ESP32の試作からお手伝いします。よろしくお願いします！\n🎉 3　🌍 2　🫶 2"
         },
         {
           "id": "welcome_chat_013",

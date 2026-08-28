@@ -4344,12 +4344,12 @@ body.gx-story-open .novel-character.novel-character--minamo .novel-character-por
 body.novel-open .gaia-audio-dock,
 body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {
   top: max(18px, env(safe-area-inset-top)) !important;
-  right: max(146px, calc(env(safe-area-inset-right) + 146px)) !important;
+  right: max(10px, env(safe-area-inset-right)) !important;
   left: auto !important;
 }
 
 body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
-  right: max(212px, calc(env(safe-area-inset-right) + 212px)) !important;
+  right: max(10px, env(safe-area-inset-right)) !important;
 }
 
 /* The persistent audio control otherwise overlaps the LOG heading on narrow
@@ -4390,12 +4390,12 @@ body.novel-open .novel-topbar #novel-close-button span:last-child {
   body.novel-open .gaia-audio-dock,
   body.novel-open:has(#novel-layer.is-open) .gaia-audio-dock {
     top: max(12px, env(safe-area-inset-top)) !important;
-    right: max(116px, calc(env(safe-area-inset-right) + 116px)) !important;
+    right: max(6px, env(safe-area-inset-right)) !important;
     left: auto !important;
   }
 
   body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock {
-    right: max(184px, calc(env(safe-area-inset-right) + 184px)) !important;
+    right: max(6px, env(safe-area-inset-right)) !important;
   }
 
   body.novel-open .gaia-audio-dock.is-expanded {
@@ -9230,7 +9230,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 
 .novel-staff-roll {
   --novel-staff-roll-duration: 76s;
-  --novel-staff-roll-start-offset: -2.65s;
+  --novel-staff-roll-start-offset: -1.65s;
   --novel-staff-roll-closing-gap: 55dvh;
   --novel-staff-roll-viewport-height: 100dvh;
   position: absolute;
@@ -9381,6 +9381,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   min-height: 96dvh;
   gap: 18px;
   padding: 8vh 0 10vh;
+  margin-bottom: 72dvh;
 }
 
 .novel-staff-roll-title > span {
@@ -9533,8 +9534,9 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   letter-spacing: 0.12em;
 }
 
-.novel-staff-roll-closing > small {
-  margin-top: -4px;
+.novel-staff-roll-closing-action > small {
+  grid-area: 2 / 1;
+  margin: 0;
   color: rgba(28, 82, 91, 0.58);
   font: 700 9px/1.6 ui-monospace, "SFMono-Regular", Consolas, monospace;
   letter-spacing: 0.2em;
@@ -9543,8 +9545,11 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 .novel-staff-roll-closing-action {
   position: relative;
   display: grid;
+  grid-template-rows: auto auto;
+  row-gap: 10px;
+  align-content: center;
   place-items: center;
-  min-height: 96px;
+  min-height: 112px;
   margin-top: 8vh;
 }
 
@@ -9570,6 +9575,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll-finale[hidden] {
+  display: none;
   visibility: hidden;
 }
 
@@ -9940,6 +9946,10 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
   min-height: min(72dvh, 640px);
 }
 
+.novel-staff-roll.is-reduced-motion .novel-staff-roll-title {
+  margin-bottom: min(34dvh, 300px);
+}
+
 .novel-staff-roll.is-reduced-motion .novel-staff-roll-closing {
   margin-top: 0;
 }
@@ -10104,8 +10114,8 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
     padding-block: 129.6px;
   }
 
-  body.novel-open.novel-pc-canvas .novel-staff-roll-closing > small {
-    margin-top: -4px;
+  body.novel-open.novel-pc-canvas .novel-staff-roll-closing-action > small {
+    margin-top: 0;
   }
 
   body.novel-open.novel-pc-canvas .novel-staff-roll-closing-action {
@@ -10336,6 +10346,8 @@ body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-
   box-shadow:
     0 30px 90px rgba(0, 0, 0, 0.48),
     inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  justify-self: center;
+  margin-inline: auto;
 }
 
 .novel-layer:is(.is-slack, .is-slack-exiting)[data-slack-device="mobile"] .novel-slack-workspace.is-mobile-device::before {

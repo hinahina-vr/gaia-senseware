@@ -96,7 +96,7 @@ const seedStorage = async (page, stepId = progressFixture.stepId) => page.evalua
   localStorage.setItem("gaiaSensewareTrueEnd:reached:v1", new Date().toISOString());
 }, { progress: progressFixture, ids: unlockedGallery, targetStepId: stepId });
 
-const openIntro = async (page) => {
+const openIntro = async (page, { progressOverrides = {}, apeironceneComplete = false } = {}) => {
   await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => typeof globalThis.GaiaModeLoader?.load === "function");
   await page.evaluate(() => Promise.all([
@@ -105,17 +105,68 @@ const openIntro = async (page) => {
   ]));
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await seedStorage(page);
-  await page.evaluate(() => {
+  await page.evaluate(({ overrides, trueEndComplete }) => {
+    const progress = JSON.parse(localStorage.getItem("gaiaSensewareNovel:progress") || "null");
+    localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify({ ...progress, ...overrides }));
+    if (trueEndComplete) localStorage.setItem("gaiaSensewareTrueEnd:complete:v1", new Date().toISOString());
+    else localStorage.removeItem("gaiaSensewareTrueEnd:complete:v1");
     const opening = document.querySelector("#gaia-opening");
     opening.hidden = true;
     opening.inert = true;
     opening.setAttribute("aria-hidden", "true");
     document.body.classList.remove("gaia-opening-active");
     window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
-  });
+  }, { overrides: progressOverrides, trueEndComplete: apeironceneComplete });
   await page.waitForFunction(() => __qaVisible(document.querySelector("#intro-layer")));
   await page.waitForFunction(() => [...document.querySelectorAll(".intro-path-card")]
     .every((card) => !card.classList.contains("is-awaiting-reveal") && !card.classList.contains("is-depth-arriving")), null, { timeout: 3_000 });
+};
+
+const scanEndingDestinations = async () => {
+  const viewport = viewports.find((entry) => entry.name === "pc-1440");
+
+  const completed = await createPage(viewport, "pc-1440-apeironcene-complete");
+  await openIntro(completed.page, { progressOverrides: { clear: true }, apeironceneComplete: true });
+  const completedCta = await completed.page.locator(".intro-story-return[data-primary-action='true']").evaluate((button) => ({
+    text: button.querySelector("strong")?.textContent.trim(),
+    destination: button.dataset.storyDestination,
+    ariaLabel: button.getAttribute("aria-label"),
+  }));
+  assert.deepEqual(completedCta, {
+    text: "物語へ戻る",
+    destination: "story",
+    ariaLabel: "物語のタイトルメニューへ戻る",
+  });
+  await completed.context.close();
+
+  const pending = await createPage(viewport, "pc-1440-apeironcene-pending");
+  await openIntro(pending.page, { progressOverrides: { clear: true }, apeironceneComplete: false });
+  const pendingButton = pending.page.locator(".intro-story-return[data-primary-action='true']");
+  const pendingCta = await pendingButton.evaluate((button) => ({
+    text: button.querySelector("strong")?.textContent.trim(),
+    destination: button.dataset.storyDestination,
+    ariaLabel: button.getAttribute("aria-label"),
+  }));
+  assert.deepEqual(pendingCta, {
+    text: "星々の放課後 ～APEIRONCENE～",
+    destination: "apeironcene",
+    ariaLabel: "星々の放課後 APEIRONCENEへ進む",
+  });
+  await pendingButton.click();
+  await pending.page.waitForFunction(() => (
+    document.querySelector("#novel-layer")?.classList.contains("is-true-end")
+    && document.querySelector("#novel-layer")?.dataset.sceneId === "true-end"
+    && __qaVisible(document.querySelector(".true-end-shell"))
+  ), null, { timeout: 30_000 });
+  const launched = await pending.page.evaluate(() => ({
+    introVisible: __qaVisible(document.querySelector("#intro-layer")),
+    trueEndVisible: __qaVisible(document.querySelector(".true-end-shell")),
+    sceneId: document.querySelector("#novel-layer")?.dataset.sceneId,
+    openAtCount: globalThis.__qaNovelOpenAtCount,
+  }));
+  assert.deepEqual(launched, { introVisible: false, trueEndVisible: true, sceneId: "true-end", openAtCount: 1 });
+  report.scans.push({ viewport: viewport.name, case: "ending-destination-switch", completedCta, pendingCta, launched, passed: true });
+  await pending.context.close();
 };
 
 const cardScan = async (page) => page.evaluate(() => {
@@ -178,6 +229,90 @@ const assertCards = (scan, viewport) => {
     const cardTops = scan.cards.map(({ layoutTop }) => layoutTop);
     assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the three exploration cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
   }
+};
+
+const useScrollCue = async (page, viewport) => {
+  const cue = page.locator("#intro-lp-scroll");
+  const before = await cue.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const heroRect = element.closest(".intro-lp-hero")?.getBoundingClientRect();
+    const arrow = element.querySelector("i");
+    return {
+      rect: rect.toJSON(),
+      heroRect: heroRect?.toJSON(),
+      text: element.textContent.replace(/\s+/gu, " ").trim(),
+      ariaLabel: element.getAttribute("aria-label"),
+      arrowSize: arrow ? getComputedStyle(arrow).width : "",
+      arrowBorderRadius: arrow ? getComputedStyle(arrow).borderRadius : "",
+      arrowAnimation: arrow ? getComputedStyle(arrow, "::before").animationName : "",
+      visible: globalThis.__qaVisible(element),
+      layerScrollTop: document.querySelector("#intro-layer")?.scrollTop,
+    };
+  });
+  assert.equal(before.visible, true);
+  assert.match(before.text, /SCROLL/u);
+  assert.match(before.text, /次の展示を見る/u);
+  assert.match(before.ariaLabel, /下へスクロール/u);
+  assert.match(before.arrowBorderRadius, /50%/u);
+  assert(Number.parseFloat(before.arrowSize) >= 30, JSON.stringify(before));
+  assert(before.rect.bottom <= viewport.height + 1 && before.rect.bottom >= viewport.height - 90, JSON.stringify(before.rect));
+  const cueCenter = before.rect.left + before.rect.width / 2;
+  const heroCenter = before.heroRect.left + before.heroRect.width / 2;
+  assert(Math.abs(cueCenter - heroCenter) <= 1, JSON.stringify({ cueCenter, heroCenter }));
+
+  await cue.click();
+  await page.waitForFunction(() => (
+    document.querySelector("#intro-layer")?.scrollTop > 0
+    && document.activeElement === document.querySelector("#intro-gx-feature")
+  ));
+  const after = await page.evaluate(() => ({
+    layerScrollTop: document.querySelector("#intro-layer")?.scrollTop,
+    focusedId: document.activeElement?.id,
+    gxVisible: globalThis.__qaVisible(document.querySelector("#intro-gx-feature")),
+  }));
+  assert(after.layerScrollTop > 0 && after.gxVisible);
+  assert.equal(after.focusedId, "intro-gx-feature");
+  return { before, after };
+};
+
+const scanGxFeature = async (page, viewport) => {
+  const feature = page.locator("#intro-gx-feature");
+  await feature.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(80);
+  const scan = await feature.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const copy = element.querySelector(".intro-gx-copy");
+    const title = element.querySelector(".intro-gx-copy strong");
+    const enter = element.querySelector(".intro-gx-enter");
+    const rect = element.getBoundingClientRect();
+    return {
+      rect: rect.toJSON(),
+      backgroundImage: style.backgroundImage,
+      backgroundColor: style.backgroundColor,
+      borderRadius: Number.parseFloat(style.borderRadius),
+      borderLeftWidth: Number.parseFloat(style.borderLeftWidth),
+      color: style.color,
+      gridAreas: style.gridTemplateAreas,
+      title: title?.textContent.trim(),
+      titleSize: Number.parseFloat(getComputedStyle(title).fontSize),
+      copy: copy?.querySelector("p")?.textContent.trim(),
+      enter: enter?.textContent.replace(/\s+/gu, " ").trim(),
+      copyAlignedLeft: getComputedStyle(copy).textAlign === "left",
+      overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+      visible: globalThis.__qaVisible(element),
+    };
+  });
+  assert.equal(scan.visible, true);
+  assert.match(scan.backgroundImage, /gradient/u);
+  assert(scan.borderRadius >= 8 && scan.borderLeftWidth >= 3, JSON.stringify(scan));
+  assert.equal(scan.title, "酸素は、最初の廃棄物だった。");
+  assert.match(scan.copy, /人間と地球が、ともに変わるGX/u);
+  assert.match(scan.enter, /THE FIRST GX/u);
+  assert(scan.titleSize >= 21 && scan.titleSize <= 31, JSON.stringify(scan));
+  assert.equal(scan.copyAlignedLeft, true);
+  assert.equal(scan.overflowX, false);
+  assert(scan.rect.left >= 0 && scan.rect.right <= viewport.width + 1, JSON.stringify(scan.rect));
+  return scan;
 };
 
 const scanDirectMapEntry = async (viewport) => {
@@ -377,6 +512,9 @@ const scanIntroReturn = async (viewport) => {
   const before = await cardScan(page);
   assertCards(before, viewport);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-intro-simple.png`) });
+  const scrollCue = await useScrollCue(page, viewport);
+  const gxFeature = await scanGxFeature(page, viewport);
+  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-intro-gx-feature.png`) });
   const returnButton = page.locator(".intro-story-return[data-primary-action='true']");
   if (viewport.action === "click") await returnButton.click();
   else {
@@ -406,7 +544,7 @@ const scanIntroReturn = async (viewport) => {
     await page.locator("#novel-gallery-close").click();
   }
 
-  report.scans.push({ viewport: viewport.name, case: `intro-return-${viewport.action}`, before, after, album, passed: true });
+  report.scans.push({ viewport: viewport.name, case: `intro-return-${viewport.action}`, before, scrollCue, gxFeature, after, album, passed: true });
   await context.close();
 };
 
@@ -659,6 +797,7 @@ const scanRuntimeStoryContract = async () => {
 
 try {
   for (const viewport of viewports) await scanIntroReturn(viewport);
+  await scanEndingDestinations();
   await scanIntegratedLightEntry(viewports[2]);
   await scanIntegratedLightEntry(viewports[3]);
   await scanDirectMapEntry(viewports[2]);

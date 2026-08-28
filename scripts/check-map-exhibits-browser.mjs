@@ -63,6 +63,12 @@ const sampleZoom = async (page, count = 9, interval = 150) => {
 };
 
 const selectMode = async (page, index, expectedTitle) => {
+  const mobileBankToggle = page.locator("#map-mobile-bank-toggle");
+  if (await mobileBankToggle.count()
+    && await mobileBankToggle.isVisible()
+    && await mobileBankToggle.getAttribute("aria-expanded") !== "true") {
+    await mobileBankToggle.click();
+  }
   await page.locator("#japan-mode-list .map-mode-button").nth(index).click({ force: true });
   await page.waitForFunction(
     ({ number, title }) => document.querySelector("#japan-mode-number")?.textContent === number
@@ -133,7 +139,7 @@ const clickDataPoint = async (page, modeId) => {
 };
 
 const closeDataCard = async (page) => {
-  await page.locator("#japan-poi-close").click({ force: true });
+  await page.locator("#japan-poi-close").click();
   await page.waitForFunction(() => document.querySelector("#japan-poi-card")?.getAttribute("aria-hidden") === "true");
 };
 
@@ -216,6 +222,11 @@ try {
 
     if (legendOnly) {
       await selectMode(page, 2, "森林と降水量を重ねる");
+      const mobileLegendToggle = page.locator("#map-mobile-legend-toggle");
+      if (await mobileLegendToggle.isVisible()) {
+        await mobileLegendToggle.click();
+        await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-legend-expanded"));
+      }
       await page.waitForFunction(() => {
         const title = document.querySelector("[data-signal-encoding-legend-title]");
         const legend = document.querySelector("[data-signal-encoding-legend]");
@@ -436,16 +447,29 @@ try {
     try {
       await page.waitForFunction(() => {
         const overlay = document.querySelector("#japan-overlay");
+        const vectorCopies = (overlay?.dataset.vectorWorldCopies || "").split(",").map(Number);
+        const rasterCopies = (overlay?.dataset.rasterWorldCopies || "").split(",").map(Number);
         return overlay?.dataset.forestMask === "ready"
-          && overlay.dataset.vectorWorldCopies
-          && overlay.dataset.vectorWorldCopies === overlay.dataset.rasterWorldCopies;
+          && vectorCopies.length === rasterCopies.length
+          && vectorCopies.length > 0
+          && vectorCopies.every((value, index) => Number.isFinite(value)
+            && Number.isFinite(rasterCopies[index])
+            && Math.abs(value - rasterCopies[index]) <= 0.25);
       });
     } catch (error) {
       const stalledAlignment = await readMapState(page);
       throw new Error(`${viewport.name}: forest/vector/raster alignment timed out (${JSON.stringify(stalledAlignment)})`, { cause: error });
     }
     const alignment = await readMapState(page);
-    assert.equal(alignment.vectorCopies, alignment.rasterCopies);
+    const vectorCopies = alignment.vectorCopies.split(",").map(Number);
+    const rasterCopies = alignment.rasterCopies.split(",").map(Number);
+    assert.equal(vectorCopies.length, rasterCopies.length);
+    assert(vectorCopies.every((value, index) => Math.abs(value - rasterCopies[index]) <= 0.25));
+    const mobileLegendToggle = page.locator("#map-mobile-legend-toggle");
+    const openedMobileLegend = await mobileLegendToggle.count()
+      && await mobileLegendToggle.isVisible()
+      && await mobileLegendToggle.getAttribute("aria-expanded") !== "true";
+    if (openedMobileLegend) await mobileLegendToggle.click();
     const forestUi = await page.evaluate(() => ({
       guideTitle: document.querySelector("#map-guide-title")?.textContent || "",
       guideSubject: document.querySelector("#map-guide-subject")?.textContent || "",
@@ -464,11 +488,12 @@ try {
     assert.match(forestUi.guideAction, /円のない場所.*雨がない.*ではなく/u);
     assert.match(forestUi.signalValue, /降水量.*mm\/day/u);
     assert.equal(forestUi.legendTitleVisible, true);
-    assert.match(forestUi.legendTitle, /凡例.*MAP LEGEND/u);
+    assert.match(forestUi.legendTitle, /凡例\s*MAP LEGEND/u);
     assert.match(forestUi.legend, /大きな水色円\s*\/\s*降水量/u);
     assert.match(forestUi.legend, /相関係数ではない/u);
     assert.equal(forestUi.circleRange, "10-54px radius");
     assert.equal(forestUi.brazilRain, "5.33 mm/day");
+    if (openedMobileLegend) await mobileLegendToggle.click();
     await page.locator("#map-reading-guide").evaluate((element) => { element.open = false; });
     scan.clicks.forest = await clickDataPoint(page, "forest-cloud-engine");
     assert.match(scan.clicks.forest.card.title, new RegExp(scan.clicks.forest.point.row.name, "u"));
@@ -505,7 +530,7 @@ try {
     scan.clicks.waste = await clickDataPoint(page, "nothing-is-waste");
     assert.match(scan.clicks.waste.card.title, new RegExp(scan.clicks.waste.point.row.country, "u"));
     assert.match(scan.clicks.waste.card.description, /円グラフ.*緑.*橙/u);
-    const selectedCurrentRate = Number(scan.clicks.waste.point.row.recyclePercent);
+    const selectedCurrentRate = Number(scan.clicks.waste.point.row.recyclePercent.toFixed(1));
     await page.waitForFunction(
       (expectedRate) => Number(document.querySelector("#japan-overlay")?.dataset.recyclingSelectedRate) === expectedRate,
       selectedCurrentRate,

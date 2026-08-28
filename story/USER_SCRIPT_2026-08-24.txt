@@ -594,7 +594,7 @@ SYSTEM
 
 青猫
 参加させていただき、ありがとうございます。ESP32の試作からお手伝いします。よろしくお願いします！
-🎉 4　🌍 3　🫶 2
+🎉 3　🌍 2　🫶 2
 
 九人のメンバーから歓迎の絵文字が次々に付き、数字が増えていく。短い反応なのに、画面の向こうへ本当に入れてもらえた気がした。
 数分後、新しい未読が一件増える。
@@ -774,7 +774,7 @@ WEBデザイン・開発 / WEB DESIGN / DEVELOPMENT: ひなひな
 キャラクター原案 / ORIGINAL CHARACTER CONCEPT: ひなひな
 キャラクターデザイン / CHARACTER DESIGN: OpenAI ImageGen
 背景美術 / BACKGROUND ART: OpenAI ImageGen
-音楽 / MUSIC: オープニングテーマ『Planet Forecast - Hope』、エンディングテーマ『AfterSchool, AfterGlow』、by Suno AI
+音楽 / MUSIC: オープニングテーマ『GAIA SENSEWARE』、エンディングテーマ『AfterSchool, AfterGlow』、by Suno AI
 参照講義 / ACADEMIC REFERENCE: ZEN大学『共創地球論』、ZEN大学『人新世の人類学』
 参照データ / OPEN DATA: JAXA / NASA / NOAA、気象庁 ほか
 その選択の中に、今日から私たちもいる。
