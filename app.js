@@ -7525,6 +7525,10 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   };
 
   const render = (now) => {
+    const mapExhibitIsVisible = japanIsOpen
+      && mapSurface === "map"
+      && !japanLayer.classList.contains("is-live-exhibit");
+
     if (japanIsOpen) {
       const lodTarget = globalThis.GaiaFrameBudgetGovernor?.getProfile?.().targetFps ?? 60;
       if (lodTarget === 0) return;
@@ -7538,7 +7542,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
     resize();
     updateCo2TimelineAnimation(now);
-    if (japanIsOpen) {
+    if (mapExhibitIsVisible) {
       renderJapanTiles();
       renderJapanOverlay(now);
     }
@@ -7555,7 +7559,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       nextAutoAt = now + AUTO_INTERVAL;
     }
 
-    if (japanIsOpen) {
+    if (japanIsOpen && mapSurface !== "light") {
       const backgroundFrameInterval = reducedMotion ? 1000 : 200;
       if (now - lastBackgroundRenderAt < backgroundFrameInterval) {
         animationFrame = requestAnimationFrame(render);

@@ -238,12 +238,16 @@
     if (canvas) canvas.style.setProperty("display", "none", "important");
   };
 
+  const installationIsOpen = () => Boolean(document.querySelector(".experience.japan-open"));
+
   const shouldRun = () => !document.hidden
     && !document.body.classList.contains("gaia-opening-active")
     && !document.body.classList.contains("novel-open")
     && !document.body.classList.contains("gx-open")
     && !document.body.classList.contains("space-open")
-    && !document.body.classList.contains("true-end-open");
+    && !document.body.classList.contains("true-end-open")
+    && !document.body.classList.contains("gaia-statistics-open")
+    && !installationIsOpen();
 
   const refresh = () => {
     if (shouldRun()) start();
@@ -254,10 +258,18 @@
     if (running) resize();
   }, { passive: true });
   document.addEventListener("visibilitychange", refresh);
-  new MutationObserver(refresh).observe(document.body, {
+  const visibilityObserver = new MutationObserver(refresh);
+  visibilityObserver.observe(document.body, {
     attributes: true,
     attributeFilter: ["class"],
   });
+  const experience = document.querySelector(".experience");
+  if (experience) {
+    visibilityObserver.observe(experience, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+  }
   [
     "gaia:opening-complete",
     "gaia:novel-open",
@@ -266,6 +278,9 @@
     "gaia:gx-return-to-novel",
     "gaia:space-open-at-mode",
     "gaia:space-return-to-novel",
+    "gaia:japan-open",
+    "gaia:statistics-open",
+    "gaia:statistics-close",
   ].forEach((eventName) => addEventListener(eventName, () => requestAnimationFrame(refresh)));
   addEventListener("gaia:lodchange", () => requestAnimationFrame(resize));
 

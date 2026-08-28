@@ -168,7 +168,7 @@
     <script src="./opening-audio.js?v=gaia-live-compact-jpt-audio-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-no-breathing-flash-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-mobile-exhibit-hud-5" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-light-surface-fps-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -1350,7 +1350,7 @@
             id="map-mobile-heading-toggle"
             type="button"
             aria-expanded="false"
-            aria-controls="japan-description japan-data-button"
+            aria-controls="japan-description japan-data-button gaia-statistics-button"
           >
             <span>INFO</span>
             <strong>詳細</strong>
@@ -1369,6 +1369,17 @@
             <span>OPEN DATA</span>
             <span>このデータの出典を表示する</span>
             <span aria-hidden="true">↗</span>
+          </button>
+          <button
+            class="japan-data-button gaia-statistics-button"
+            id="gaia-statistics-button"
+            type="button"
+            aria-haspopup="dialog"
+            aria-controls="gaia-statistics-lab"
+          >
+            <span>STAT LAB</span>
+            <span>この展示を統計で読み解く</span>
+            <span aria-hidden="true">＋</span>
           </button>
         </header>
 
@@ -1585,6 +1596,17 @@
           >
             戻る
           </button>
+          <button
+            class="gaia-statistics-quick"
+            id="gaia-statistics-button-mobile"
+            type="button"
+            data-gaia-statistics-open
+            aria-haspopup="dialog"
+            aria-controls="gaia-statistics-lab"
+          >
+            <span>STAT</span>
+            <strong>統計解析</strong>
+          </button>
         </div>
 
         <div class="japan-credits">
@@ -1699,6 +1721,78 @@
             </p>
           </div>
         </aside>
+
+        <section
+          class="gaia-statistics-lab"
+          id="gaia-statistics-lab"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gaia-statistics-title"
+          aria-describedby="gaia-statistics-context"
+          aria-hidden="true"
+          hidden
+        >
+          <div class="gaia-statistics-shell">
+            <header class="gaia-statistics-header">
+              <div>
+                <p class="gaia-statistics-kicker">GAIA STATISTICS LAB / RESUME 01–15</p>
+                <h2 id="gaia-statistics-title">展示を、統計で読み解く</h2>
+                <p id="gaia-statistics-context">現在の展示データを引き継いでいます。</p>
+              </div>
+              <button class="gaia-statistics-close" id="gaia-statistics-close" type="button" aria-label="統計解析ラボを閉じる">×</button>
+            </header>
+
+            <div class="gaia-statistics-body">
+              <aside class="gaia-statistics-controls" aria-label="解析条件">
+                <section>
+                  <p class="gaia-statistics-control-label">DATASET / 展示データ</p>
+                  <select id="gaia-statistics-dataset" aria-label="解析するデータセット"></select>
+                  <div class="gaia-statistics-provenance" aria-label="使用するデータ区分">
+                    <span>SOURCE</span>
+                    <label><input id="gaia-statistics-derived" type="checkbox" /> 補完・派生値も含める</label>
+                  </div>
+                </section>
+                <section>
+                  <p class="gaia-statistics-control-label">LECTURE / レジュメ</p>
+                  <div class="gaia-statistics-lectures" id="gaia-statistics-lectures" role="list" aria-label="レジュメ01から15"></div>
+                </section>
+                <section>
+                  <p class="gaia-statistics-control-label">METHOD / 分析手法</p>
+                  <div class="gaia-statistics-methods" id="gaia-statistics-methods" role="list" aria-label="分析手法"></div>
+                </section>
+              </aside>
+
+              <main class="gaia-statistics-stage">
+                <header class="gaia-statistics-stage-header">
+                  <div>
+                    <p id="gaia-statistics-method-number">01 / DESCRIPTIVE</p>
+                    <h3 id="gaia-statistics-method-title">要約統計</h3>
+                    <p id="gaia-statistics-method-copy">中心、広がり、分布の形を同じ画面で確認します。</p>
+                  </div>
+                  <output id="gaia-statistics-status" aria-live="polite">準備中</output>
+                </header>
+
+                <div class="gaia-statistics-visual" id="gaia-statistics-visual">
+                  <canvas id="gaia-statistics-canvas" aria-label="統計解析グラフ"></canvas>
+                  <div class="gaia-statistics-transition" id="gaia-statistics-transition" aria-hidden="true"></div>
+                </div>
+
+                <details class="gaia-statistics-values">
+                  <summary>数値表と計算根拠を確認する</summary>
+                  <div class="gaia-statistics-values-scroll">
+                    <table>
+                      <thead><tr><th scope="col">指標</th><th scope="col">値</th><th scope="col">区分</th></tr></thead>
+                      <tbody id="gaia-statistics-metrics"></tbody>
+                    </table>
+                    <p id="gaia-statistics-formula"></p>
+                  </div>
+                </details>
+
+                <div class="gaia-statistics-insights" id="gaia-statistics-insights" aria-live="polite"></div>
+              </main>
+            </div>
+          </div>
+        </section>
       </section>
       </template>
 
