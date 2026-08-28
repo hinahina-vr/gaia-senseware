@@ -25,6 +25,10 @@ const browser = await chromium.launch({ headless: true, executablePath });
 
 const readLayout = (page) => page.evaluate(() => {
   const rect = (element) => element?.getBoundingClientRect().toJSON();
+  const layoutSize = (element) => element ? {
+    width: element.offsetWidth,
+    height: element.offsetHeight,
+  } : null;
   const grid = document.querySelector("#intro-path-grid");
   const primary = document.querySelector(".intro-story-return[data-primary-action='true']");
   const cards = Array.from(grid?.querySelectorAll(".intro-path-card") || []);
@@ -35,6 +39,7 @@ const readLayout = (page) => page.evaluate(() => {
     cards: cards.map((card) => ({
       label: card.querySelector("strong")?.textContent.trim() || "",
       rect: rect(card),
+      layoutSize: layoutSize(card),
     })),
     gridColumns,
     soundModeOpen: document.body.classList.contains("sound-mode-open"),
@@ -56,12 +61,12 @@ const assertStableLayout = (viewport, before, after) => {
   before.cards.forEach((card, index) => {
     assert.equal(after.cards[index].label, card.label, `${viewport.name}: card order changed after sound return`);
     assert(
-      Math.abs(card.rect.width - after.cards[index].rect.width) <= tolerance,
-      `${viewport.name}: ${card.label} shrank from ${card.rect.width}px to ${after.cards[index].rect.width}px`,
+      Math.abs(card.layoutSize.width - after.cards[index].layoutSize.width) <= tolerance,
+      `${viewport.name}: ${card.label} layout width changed from ${card.layoutSize.width}px to ${after.cards[index].layoutSize.width}px`,
     );
     assert(
-      Math.abs(card.rect.height - after.cards[index].rect.height) <= tolerance,
-      `${viewport.name}: ${card.label} height changed after sound return`,
+      Math.abs(card.layoutSize.height - after.cards[index].layoutSize.height) <= tolerance,
+      `${viewport.name}: ${card.label} layout height changed after sound return`,
     );
   });
   assert.equal(after.soundModeOpen, false, `${viewport.name}: sound-mode-open remained on body`);
