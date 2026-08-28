@@ -1,6 +1,6 @@
 import { createGaiaStore } from "./state.js";
 import { collectMeasurements, STATUS_LABELS, toSoundParameters } from "./transforms.js";
-import proceduralAudio from "./procedural-audio.js?v=gaia-live-explained-audio-1";
+import proceduralAudio from "./procedural-audio.js?v=gaia-live-compact-jpt-audio-1";
 
 const FALLBACK_URL = "./data/live-observation-fallback-v1.json";
 const RETRY_DELAYS = [1_000, 2_000, 5_000, 10_000, 30_000];
@@ -13,6 +13,21 @@ const permitsLiveEndpoint = () => location.protocol === "https:" || new URLSearc
 const formatValue = (measurement) => measurement?.quality === "missing" || !Number.isFinite(Number(measurement?.value))
   ? "欠測"
   : `${Number(measurement.value).toLocaleString("ja-JP", { maximumFractionDigits: 4 })} ${measurement.unit}`;
+const formatJptDateTime = (value) => {
+  if (!value) return "観測時刻なし";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return `${String(value)} JPT`;
+  return `${new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).format(date)} JPT`;
+};
 
 const render = (state) => {
   document.querySelectorAll("[data-gaia-live-receipt]").forEach((root) => {
@@ -27,7 +42,7 @@ const render = (state) => {
       const time = row.querySelector("[data-live-time]");
       if (badge) badge.textContent = [...new Set(events.map((candidate) => STATUS_LABELS[candidate.status] || "SNAPSHOT"))].join(" / ") || "SNAPSHOT";
       if (value) value.textContent = events.flatMap((candidate) => candidate.measurements?.map((measurement) => `${STATUS_LABELS[candidate.status] || "SNAPSHOT"} ${formatValue(measurement)}`) || []).join(" / ") || "取得待ち";
-      if (time) time.textContent = events.map((candidate) => candidate.observedAt ? new Date(candidate.observedAt).toLocaleString("ja-JP") : "観測時刻なし").join(" / ") || "観測時刻なし";
+      if (time) time.textContent = events.map((candidate) => formatJptDateTime(candidate.observedAt)).join(" / ") || "観測時刻なし";
       row.toggleAttribute("data-stale", events.some((candidate) => candidate.status === "stale" || candidate.status === "snapshot"));
     });
     const sound = root.querySelector("[data-live-sound-readout]");

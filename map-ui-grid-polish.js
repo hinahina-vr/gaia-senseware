@@ -8,6 +8,7 @@
     bank: japanLayer?.querySelector(":scope > .map-mode-bank") || null,
     data: japanLayer?.querySelector(":scope > .signal-console-map") || null,
   });
+  const legendDock = japanLayer?.querySelector(".signal-encoding-legend-dock") || null;
   let scheduled = 0;
   const measuredHeights = new Map();
 
@@ -31,6 +32,10 @@
   const measureLayout = () => {
     scheduled = 0;
     const desktop = innerWidth >= DESKTOP_MIN;
+    const legendTarget = desktop ? japanLayer : panels.data;
+    if (legendDock instanceof HTMLElement && legendTarget instanceof HTMLElement && legendDock.parentElement !== legendTarget) {
+      legendTarget.append(legendDock);
+    }
     if (desktop && (japanLayer?.hidden || !japanLayer?.getClientRects().length)) {
       requestAnimationFrame(() => applyLayout({ desktop }));
       return;

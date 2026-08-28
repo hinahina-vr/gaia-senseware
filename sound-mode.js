@@ -64,7 +64,7 @@
     },
     snowafter: {
       number: "TRACK 07 / BRANCHING LIGHT",
-      title: "雪火、軌道の外へ",
+      title: "雪火、軌道の外へ（未使用曲）",
       description: "既存の軌道から分かれた光が、まだ名のない外側へ開いていく場面の音楽。",
       planet: "PLANET 07",
       signal: "SNOWFIRE AFTERIMAGE",
@@ -78,14 +78,14 @@
     },
     moonsave: {
       number: "TRACK 09 / SOURCE ARCHIVE",
-      title: "月下のSOURCE保存",
+      title: "月下のSOURCE保存（未使用曲）",
       description: "原文、出典、変更履歴を保ったまま、記録を次へ渡す編集判断の音楽。",
       planet: "PLANET 09",
       signal: "SOURCE SAVE",
     },
     moonreopen: {
       number: "TRACK 10 / RELOAD MEMORY",
-      title: "月下、もう一度ひらく",
+      title: "月下、もう一度ひらく（未使用曲）",
       description: "保存された選択と空白を、優劣をつけずに読み直す場面の音楽。",
       planet: "PLANET 10",
       signal: "REOPENED MEMORY",
@@ -264,6 +264,10 @@
 
   render();
   if (window.location.hash === "#sound") {
-    window.addEventListener("load", () => requestAnimationFrame(open), { once: true });
+    if (document.readyState === "loading") {
+      window.addEventListener("load", () => requestAnimationFrame(open), { once: true });
+    } else {
+      requestAnimationFrame(open);
+    }
   }
 })();

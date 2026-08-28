@@ -149,6 +149,7 @@ const cardScan = async (page) => page.evaluate(() => {
     primaryText: primary.textContent.replace(/\s+/gu, "").trim(),
     primaryRole: primary.tagName.toLowerCase(),
     primaryBackground: primaryStyle.backgroundImage,
+    gridRect: grid?.getBoundingClientRect().toJSON(),
     primaryRect: primary.getBoundingClientRect().toJSON(),
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
     overflowY: document.documentElement.scrollHeight > innerHeight + 1,
@@ -156,11 +157,11 @@ const cardScan = async (page) => page.evaluate(() => {
 });
 
 const assertCards = (scan, viewport) => {
-  assert.equal(scan.cardCount, 4);
-  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "光に触れる", "音を聴く"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "数字を光へ。", "物語の音楽へ。"]);
+  assert.equal(scan.cardCount, 3);
+  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "音を聴く"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "物語の音楽へ。"]);
   assert.equal(scan.cards.some((card) => card.path === "space" || card.title === "宇宙から見る"), false);
-  assert.equal(scan.cards.some((card) => card.path === "abstract" && card.title === "光に触れる"), true);
+  assert.equal(scan.cards.some((card) => card.path === "abstract" || card.title === "光に触れる"), false);
   assert(scan.cards.every((card) => card.glyphVisible && card.focusable && card.rect.width > 0 && card.rect.height >= 90));
   assert.equal(scan.hiddenDetailVisibleCount, 0);
   assert(scan.hiddenDetailCount > 0);
@@ -168,41 +169,172 @@ const assertCards = (scan, viewport) => {
   assert(scan.primaryVisible && scan.primaryFocusable && scan.primaryRole === "button");
   assert(scan.primaryText.includes("物語へ戻る"));
   assert.notEqual(scan.primaryBackground, "none");
+  assert(Math.abs(scan.gridRect.left - scan.primaryRect.left) <= 1);
+  assert(Math.abs(scan.gridRect.right - scan.primaryRect.right) <= 1);
+  assert(Math.abs(scan.gridRect.width - scan.primaryRect.width) <= 1);
   assert.equal(scan.overflowX, false);
   assert.equal(scan.overflowY, false);
   if (!viewport.mobile) {
     const cardTops = scan.cards.map(({ layoutTop }) => layoutTop);
-    assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the four observation cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
+    assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the three exploration cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
   }
 };
 
-const scanAbstractEntry = async (viewport) => {
-  const { context, page } = await createPage(viewport, `${viewport.name}-abstract-entry`);
+const scanDirectMapEntry = async (viewport) => {
+  const { context, page } = await createPage(viewport, `${viewport.name}-direct-map-entry`);
   await openIntro(page);
-  await page.locator('[data-intro-path="abstract"]').click();
-  await page.waitForFunction(() => __qaVisible(document.querySelector("#intro-sense-stage")));
-  const selection = await page.evaluate(() => ({
-    title: document.querySelector("#intro-sense-title")?.textContent.replace(/\s+/gu, "").trim(),
-    choiceCount: document.querySelectorAll(".intro-mode-choice").length,
-  }));
-  assert.equal(selection.title, "どの感覚に、触れますか？");
-  assert.equal(selection.choiceCount, 8);
-  await page.locator(".intro-mode-choice").first().click();
-  await page.waitForFunction(() => document.querySelector("#intro-layer")?.hidden === true);
-  const entered = await page.evaluate(() => ({
+  await page.locator('[data-intro-path="map"]').click();
+  await page.waitForFunction(() => (
+    __qaVisible(document.querySelector("#japan-layer"))
+    && !__qaVisible(document.querySelector("#intro-layer"))
+    && document.querySelector("#japan-mode-list .map-mode-button")?.getAttribute("aria-current") === "true"
+  ), null, { timeout: 15_000 });
+  await page.waitForFunction(() => document.activeElement === document.querySelector("#japan-mode-list .map-mode-button"));
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#map-mode-01-tooltip")).opacity) >= 0.99);
+  const focused = await page.evaluate(() => {
+    const tooltip = document.querySelector("#map-mode-01-tooltip");
+    const tooltipStyle = getComputedStyle(tooltip);
+    const tooltipRect = tooltip.getBoundingClientRect();
+    tooltip.style.pointerEvents = "auto";
+    const tooltipStack = document.elementsFromPoint(tooltipRect.left + tooltipRect.width / 2, tooltipRect.top + 18)
+      .slice(0, 5)
+      .map((element) => `${element.tagName.toLowerCase()}#${element.id}.${element.className}`);
+    tooltip.style.removeProperty("pointer-events");
+    const current = [...document.querySelectorAll("#japan-mode-list .map-mode-button[aria-current='true']")];
+    return {
+      introVisible: __qaVisible(document.querySelector("#intro-layer")),
+      intermediateVisible: __qaVisible(document.querySelector("#intro-sense-stage")),
+      mapVisible: __qaVisible(document.querySelector("#japan-layer")),
+      currentLabels: current.map((button) => button.textContent.trim()),
+      focusedLabel: document.activeElement?.textContent.trim(),
+      describedBy: document.activeElement?.getAttribute("aria-describedby"),
+      tooltipVisible: __qaVisible(tooltip),
+      tooltipVisibility: tooltipStyle.visibility,
+      tooltipOpacity: Number(tooltipStyle.opacity),
+      tooltipRect: tooltipRect.toJSON(),
+      tooltipStack,
+      tooltipText: tooltip.textContent.replace(/\s+/gu, " ").trim(),
+      overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+      overflowY: document.documentElement.scrollHeight > innerHeight + 1,
+    };
+  });
+  assert(focused.mapVisible && !focused.introVisible && !focused.intermediateVisible);
+  assert.deepEqual(focused.currentLabels, ["01"]);
+  assert.equal(focused.focusedLabel, "01");
+  assert.equal(focused.describedBy, "map-mode-01-tooltip");
+  assert(focused.tooltipVisible && focused.tooltipVisibility === "visible" && focused.tooltipOpacity >= 0.99, JSON.stringify(focused));
+  assert(focused.tooltipRect.top >= 0 && focused.tooltipRect.bottom <= viewport.height + 1, JSON.stringify(focused.tooltipRect));
+  assert(focused.tooltipStack.slice(0, 2).some((entry) => /map-mode-01-tooltip/u.test(entry)), JSON.stringify(focused.tooltipStack));
+  assert.match(focused.tooltipText, /どの信号を、地図で読みますか？/u);
+  assert.match(focused.tooltipText, /光の意味を世界の場所へ戻します/u);
+  assert.match(focused.tooltipText, /CO₂が季節ごとに上下しながら/u);
+  assert.equal(focused.overflowX, false);
+  assert.equal(focused.overflowY, false);
+  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-direct-map-tooltip.png`) });
+  await page.locator("#japan-close").focus();
+  await page.waitForFunction(() => getComputedStyle(document.querySelector("#map-mode-01-tooltip")).visibility === "hidden");
+  const hiddenAfterBlur = await page.locator("#map-mode-01-tooltip").evaluate((tooltip) => getComputedStyle(tooltip).visibility);
+  assert.equal(hiddenAfterBlur, "hidden");
+  report.scans.push({ viewport: viewport.name, case: "direct-map-entry-tooltip", focused, hiddenAfterBlur, passed: true });
+  await context.close();
+};
+
+const scanIntegratedLightEntry = async (viewport) => {
+  const { context, page } = await createPage(viewport, `${viewport.name}-integrated-light-entry`);
+  await openIntro(page);
+  assert.equal(await page.locator('[data-intro-path="abstract"]').count(), 0);
+  await page.locator('[data-intro-path="map"]').click();
+  await page.waitForFunction(() => __qaVisible(document.querySelector("#japan-layer")));
+  await page.locator("#map-surface-light").click();
+  await page.waitForFunction(() => (
+    document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit")
+    && __qaVisible(document.querySelector("#gaia-canvas"))
+    && __qaVisible(document.querySelector("#abstract-mode-list"))
+    && !__qaVisible(document.querySelector("#japan-map"))
+  ));
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#map-mode-light-tooltip")).opacity) >= 0.99);
+  await page.locator("#abstract-mode-list .map-mode-button").nth(6).click();
+  await page.waitForFunction(() => document.querySelector("#abstract-mode-list .map-mode-button:nth-child(7)")?.getAttribute("aria-current") === "true");
+  const canvasPoint = await page.evaluate(() => {
+    for (let y = 18; y < innerHeight - 18; y += 18) {
+      for (let x = 18; x < innerWidth - 18; x += 18) {
+        if (document.elementFromPoint(x, y)?.id === "gaia-canvas") return { x, y };
+      }
+    }
+    return null;
+  });
+  assert(canvasPoint, "integrated light surface leaves no touchable WebGL area");
+  await page.evaluate(() => {
+    globalThis.__qaIntegratedLightPointerDown = 0;
+    document.querySelector("#gaia-canvas")?.addEventListener("pointerdown", () => {
+      globalThis.__qaIntegratedLightPointerDown += 1;
+    }, { once: true });
+  });
+  await page.mouse.click(canvasPoint.x, canvasPoint.y);
+  await page.waitForFunction(() => globalThis.__qaIntegratedLightPointerDown === 1);
+  const integrated = await page.evaluate(() => ({
     introVisible: __qaVisible(document.querySelector("#intro-layer")),
+    mapLayerVisible: __qaVisible(document.querySelector("#japan-layer")),
+    mapSurfacePressed: document.querySelector("#map-surface-map")?.getAttribute("aria-pressed"),
+    lightSurfacePressed: document.querySelector("#map-surface-light")?.getAttribute("aria-pressed"),
+    abstractClass: document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"),
+    mapVisible: __qaVisible(document.querySelector("#japan-map")),
     canvasVisible: __qaVisible(document.querySelector("#gaia-canvas")),
+    canvasPointerEvents: getComputedStyle(document.querySelector("#gaia-canvas")).pointerEvents,
+    mapChoiceListVisible: __qaVisible(document.querySelector("#japan-mode-list")),
+    mapChoiceListDisplay: getComputedStyle(document.querySelector("#japan-mode-list")).display,
+    lightChoiceListVisible: __qaVisible(document.querySelector("#abstract-mode-list")),
+    lightChoiceListDisplay: getComputedStyle(document.querySelector("#abstract-mode-list")).display,
+    lightChoiceCount: document.querySelectorAll("#abstract-mode-list .map-mode-button").length,
+    currentLightChoice: document.querySelector("#abstract-mode-list .map-mode-button[aria-current='true']")?.textContent.trim(),
+    heading: document.querySelector("#japan-mode-title")?.textContent.trim(),
+    bankKicker: document.querySelector("#map-mode-bank-kicker")?.textContent.trim(),
+    bankGuide: document.querySelector("#map-mode-bank-guide")?.textContent.trim(),
+    tooltipVisible: __qaVisible(document.querySelector("#map-mode-light-tooltip")),
+    tooltipText: document.querySelector("#map-mode-light-tooltip")?.textContent.replace(/\s+/gu, " ").trim(),
     novelOpenAtCount: globalThis.__qaNovelOpenAtCount,
     spaceOpenAtCount: globalThis.__qaSpaceOpenAtCount,
+    canvasPointerDownCount: globalThis.__qaIntegratedLightPointerDown,
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
   }));
-  assert.equal(entered.introVisible, false);
-  assert.equal(entered.canvasVisible, true);
-  assert.equal(entered.novelOpenAtCount, 0);
-  assert.equal(entered.spaceOpenAtCount, 0);
-  assert.equal(entered.overflowX, false);
-  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-abstract-entry.png`) });
-  report.scans.push({ viewport: viewport.name, case: "abstract-entry", selection, entered, passed: true });
+  assert(!integrated.introVisible && integrated.mapLayerVisible && integrated.abstractClass);
+  assert.equal(integrated.mapSurfacePressed, "false");
+  assert.equal(integrated.lightSurfacePressed, "true");
+  assert(!integrated.mapVisible && integrated.canvasVisible && integrated.canvasPointerEvents === "auto");
+  assert(!integrated.mapChoiceListVisible && integrated.lightChoiceListVisible);
+  assert.equal(integrated.mapChoiceListDisplay, "none");
+  assert.equal(integrated.lightChoiceListDisplay, "grid");
+  assert.equal(integrated.lightChoiceCount, 8);
+  assert.equal(integrated.currentLightChoice, "07");
+  assert.equal(integrated.heading, "三つの生態系");
+  assert.equal(integrated.bankKicker, "SENSORY LIGHT / 01—08");
+  assert.match(integrated.bankGuide, /触れられる光の演出/u);
+  assert(integrated.tooltipVisible);
+  assert.match(integrated.tooltipText, /どの感覚に、触れますか？/u);
+  assert.match(integrated.tooltipText, /地球が発している8つの信号/u);
+  assert.match(integrated.tooltipText, /07 \/ ECOLOGIES 暮らし/u);
+  assert.match(integrated.tooltipText, /同じ国の森林率と都市人口率/u);
+  assert.equal(integrated.novelOpenAtCount, 0);
+  assert.equal(integrated.spaceOpenAtCount, 0);
+  assert.equal(integrated.canvasPointerDownCount, 1);
+  assert.equal(integrated.overflowX, false);
+  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-integrated-light-entry.png`) });
+  await page.locator("#map-surface-map").click();
+  await page.waitForFunction(() => (
+    !document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit")
+    && __qaVisible(document.querySelector("#japan-map"))
+    && __qaVisible(document.querySelector("#japan-mode-list"))
+    && !__qaVisible(document.querySelector("#abstract-mode-list"))
+  ));
+  const restored = await page.evaluate(() => ({
+    mapChoiceCount: document.querySelectorAll("#japan-mode-list .map-mode-button").length,
+    mapSurfacePressed: document.querySelector("#map-surface-map")?.getAttribute("aria-pressed"),
+    lightSurfacePressed: document.querySelector("#map-surface-light")?.getAttribute("aria-pressed"),
+    mapVisible: __qaVisible(document.querySelector("#japan-map")),
+  }));
+  assert.equal(restored.mapChoiceCount, 12);
+  assert.deepEqual(restored, { mapChoiceCount: 12, mapSurfacePressed: "true", lightSurfacePressed: "false", mapVisible: true });
+  report.scans.push({ viewport: viewport.name, case: "integrated-light-entry", integrated, restored, passed: true });
   await context.close();
 };
 
@@ -527,8 +659,10 @@ const scanRuntimeStoryContract = async () => {
 
 try {
   for (const viewport of viewports) await scanIntroReturn(viewport);
-  await scanAbstractEntry(viewports[2]);
-  await scanAbstractEntry(viewports[3]);
+  await scanIntegratedLightEntry(viewports[2]);
+  await scanIntegratedLightEntry(viewports[3]);
+  await scanDirectMapEntry(viewports[2]);
+  await scanDirectMapEntry(viewports[3]);
   if (!cardsOnly) {
     await scanMetadataAndRuntimeGallery(viewports[0], "festival_concept_001");
     await scanMetadataAndRuntimeGallery(viewports[1], "festival_concept_008");

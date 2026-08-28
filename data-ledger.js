@@ -17,6 +17,22 @@
       : new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short" }).format(date);
   };
 
+  const displayJptDateTime = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return `${String(value)} JPT`;
+    return `${new Intl.DateTimeFormat("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    }).format(date)} JPT`;
+  };
+
   const previewText = (rows) => {
     const values = Array.isArray(rows) ? rows : [];
     if (!values.length) return "01 │ このデータには表示できるプレビュー行がありません。";
@@ -71,6 +87,13 @@
     sourceLink.target = "_blank";
     sourceLink.rel = "noopener noreferrer";
     links.append(sourceLink);
+    if (dataset.termsUrl) {
+      const termsLink = element("a", "", "利用条件を確認する ↗");
+      termsLink.href = dataset.termsUrl;
+      termsLink.target = "_blank";
+      termsLink.rel = "noopener noreferrer";
+      links.append(termsLink);
+    }
 
     const details = element("details", "data-preview");
     const summary = element("summary");
@@ -173,6 +196,64 @@
       elements.sources.replaceChildren(...mode.datasets.map(renderDataset));
     };
 
+    const updateLiveExhibit = (exhibit, state) => {
+      if (!exhibit) return;
+      const event = (state?.events || []).find((candidate) =>
+        candidate?.measurements?.some((measurement) => measurement?.key === exhibit.key),
+      );
+      const measurement = event?.measurements?.find((candidate) => candidate?.key === exhibit.key);
+      const providerNames = {
+        noaa: "NOAA",
+        jaxa: "JAXA Earth Observation Research Center",
+        esa: "ESA / Copernicus Data Space Ecosystem",
+      };
+      const provider = providerNames[event?.provider] || event?.provider?.toUpperCase() || "公開データ提供元";
+      const location = event?.location;
+      const bbox = Array.isArray(location?.bbox) ? ` / bbox ${location.bbox.join(", ")}` : "";
+      const status = event?.status?.toUpperCase() || "DATA MISSING";
+      const dataset = {
+        id: event?.datasetId || `${exhibit.id}-source-missing`,
+        kind: measurement?.sourceKind || "SOURCE",
+        title: event?.datasetId || `${exhibit.signalLabel}の公開観測データ`,
+        organisation: provider,
+        transformation: exhibit.caption,
+        retrievedAt: event?.retrievedAt,
+        period: event?.observedAt ? `観測時刻 ${displayJptDateTime(event.observedAt)}` : "観測時刻なし",
+        unit: measurement?.unit || "—",
+        resolution: `${location?.label || exhibit.location?.label || "ハワイ固定観測範囲"}${bbox}`,
+        caveat: state?.connected
+          ? "公開APIへ接続中です。提供元の更新周期と公開遅延が、そのまま表示へ反映されます。"
+          : `${status}。現在は保存済み観測値を再現しており、現在時刻の実況値ではありません。`,
+        url: event?.provenance?.sourceUrl || "./data/live-observation-fallback-v1.json",
+        termsUrl: event?.provenance?.licenseUrl,
+        preview: [{
+          eventId: event?.eventId || null,
+          status: event?.status || "missing",
+          observedAt: event?.observedAt || null,
+          value: measurement?.value ?? null,
+          unit: measurement?.unit || null,
+          quality: measurement?.quality || "missing",
+          location: location?.label || exhibit.location?.label || null,
+        }],
+      };
+      elements.title.textContent = `${exhibit.number} ${exhibit.shortTitle} — この画面で使っているデータ`;
+      elements.question.textContent = `${exhibit.signalLabel}の公開値を、光・動き・展示音へ変換しています。`;
+      elements.act.textContent = `LIVE SENSEWARE / ${state?.connected ? "LIVE STREAM" : "SAVED SNAPSHOT"}`;
+      elements.state.textContent = event ? `1種類のデータを使用 / ${status}` : "この観測の出典情報を取得できませんでした";
+      elements.updated.textContent = `取得日時：${displayJptDateTime(event?.retrievedAt)}`;
+      elements.statistics.hidden = false;
+      elements.statisticsMethods.replaceChildren(element(
+        "p",
+        "statistics-empty",
+        "公開値を展示用の固定尺度へ正規化しています。欠測時は値を捏造せず、待機表示へ切り替えます。",
+      ));
+      elements.historyState.hidden = true;
+      elements.historyUpdated.hidden = true;
+      elements.liveState.hidden = true;
+      elements.liveUpdated.hidden = true;
+      elements.sources.replaceChildren(renderDataset(dataset, 0));
+    };
+
     const updateOsm = () => {};
 
     const updateJma = ({ state, eventCount = 0, observationCount = 0, retrievedAt }) => {
@@ -201,6 +282,7 @@
 
     return Object.freeze({
       updateMode,
+      updateLiveExhibit,
       updateOsm,
       updateJma,
       updateUsgs,

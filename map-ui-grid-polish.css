@@ -3,7 +3,7 @@
   --map-grid-gap: clamp(9px, 0.75vw, 14px);
   --map-grid-rail: clamp(390px, 28vw, 530px);
   --map-grid-route-height: 50px;
-  --map-grid-route-stack: calc(100px + var(--map-grid-gap));
+  --map-grid-route-stack: var(--map-grid-route-height);
   --map-grid-data-height: 250px;
   --map-grid-panel-bg: linear-gradient(145deg, rgba(5, 16, 27, 0.91), rgba(8, 25, 36, 0.82));
   --map-grid-panel-line: rgba(142, 224, 216, 0.3);
@@ -24,67 +24,19 @@
   white-space: nowrap !important;
 }
 
-.japan-layer.is-live-exhibit .japan-heading .japan-data-button {
-  display: none !important;
-}
-
 .japan-layer.is-live-exhibit .japan-heading .japan-kicker {
   display: none !important;
 }
 
 @media (min-width: 901px) {
   body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-intro {
-    right: auto !important;
-    left: 50% !important;
     grid-template-columns: minmax(0, 1fr) !important;
-    width: clamp(320px, 18vw, 520px) !important;
-    min-height: clamp(68px, 4.2vw, 92px) !important;
-    padding: clamp(12px, 0.75vw, 20px) clamp(20px, 1.2vw, 36px) !important;
-    transform: translateX(-50%) !important;
   }
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-intro #japan-title {
     justify-self: center;
-    font-size: clamp(34px, 1.35vw, 52px) !important;
   }
 
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank {
-    top: auto !important;
-    right: auto !important;
-    bottom: var(--map-grid-gutter) !important;
-    left: var(--map-grid-gutter) !important;
-    width: clamp(400px, 22vw, 720px) !important;
-    padding: clamp(20px, 1.2vw, 38px) !important;
-  }
-
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-heading > p,
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-guide {
-    display: none !important;
-  }
-
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-heading > div {
-    gap: clamp(12px, 0.8vw, 24px);
-    margin-bottom: clamp(14px, 0.85vw, 26px);
-  }
-
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-heading span {
-    font-size: clamp(22px, 0.82vw, 32px);
-  }
-
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-bank-heading strong {
-    font-size: clamp(18px, 0.7vw, 27px);
-  }
-
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-list {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: clamp(5px, 0.4vw, 12px);
-  }
-
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-bank .map-mode-button {
-    height: clamp(42px, 2vw, 68px);
-    border-radius: 999px;
-    font-size: clamp(12px, 0.42vw, 16px);
-  }
 }
 
 @media (max-width: 720px) {
@@ -250,7 +202,7 @@ body.map-grid-desktop .map-grid-intro > .japan-data-button {
   z-index: 88 !important;
   top: auto !important;
   right: auto !important;
-  bottom: calc(var(--map-grid-gutter) + var(--map-grid-route-height) + var(--map-grid-gap)) !important;
+  bottom: var(--map-grid-gutter) !important;
   left: var(--map-grid-gutter) !important;
   width: var(--map-grid-rail) !important;
   min-height: var(--map-grid-route-height) !important;
@@ -265,10 +217,6 @@ body.map-grid-desktop .map-grid-intro > .japan-data-button {
   pointer-events: auto !important;
 }
 
-body.map-grid-desktop .map-grid-intro > .japan-story-button {
-  bottom: var(--map-grid-gutter) !important;
-}
-
 body.map-grid-desktop.novel-mode-detour #japan-layer[data-story-mode="map01"] .map-grid-data {
   top: auto !important;
 }
@@ -281,6 +229,15 @@ body.map-grid-desktop.novel-mode-detour #japan-layer[data-story-mode="map01"] .m
 
   body.map-grid-desktop .map-grid-intro #japan-description {
     display: none;
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1600px) {
+  body.map-grid-desktop .map-grid-intro {
+    right: auto !important;
+    left: max(110px, calc(env(safe-area-inset-left) + 110px)) !important;
+    width: min(860px, calc(100vw - 610px)) !important;
+    margin-inline: 0 !important;
   }
 }
 
@@ -361,6 +318,25 @@ body:has(.experience.japan-open) .gaia-audio-dock {
   left: auto !important;
 }
 
+/* The map key shares the upper-right instrument row with the volume control. */
+body.map-grid-desktop .signal-encoding-legend-dock {
+  position: fixed;
+  z-index: 510;
+  top: max(18px, env(safe-area-inset-top));
+  right: calc(max(18px, env(safe-area-inset-right)) + 58px);
+  width: min(410px, calc(100vw - 154px));
+  margin: 0;
+  transition: right 320ms ease;
+}
+
+body.map-grid-desktop .signal-encoding-legend-dock > .signal-encoding-legend-title {
+  margin-top: 0;
+}
+
+body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-dock {
+  right: calc(max(18px, env(safe-area-inset-right)) + min(362px, calc(100vw - 24px)));
+}
+
 /* All main-canvas actions are replaced by map-specific controls while open.
    Hiding the container also prevents the lone Space button from covering the
    map heading after its sibling actions have been removed. */
@@ -393,6 +369,47 @@ body:has(.experience.japan-open) .gaia-audio-dock {
   .experience.japan-open .signal-console-map {
     top: max(340px, calc(env(safe-area-inset-top) + 328px)) !important;
     bottom: auto !important;
+  }
+
+  .experience.japan-open .signal-console-map .signal-encoding-legend-dock {
+    margin-top: 5px;
+  }
+
+  .experience.japan-open .signal-console-map .signal-encoding-legend-title {
+    gap: 6px;
+    margin-top: 0;
+    padding: 3px 6px 2px;
+  }
+
+  .experience.japan-open .signal-console-map .signal-encoding-legend-title strong {
+    font-size: 9px;
+  }
+
+  .experience.japan-open .signal-console-map .signal-encoding-legend-title span {
+    font-size: 6px;
+  }
+
+  .experience.japan-open .signal-console-map .signal-encoding-legend {
+    gap: 2px 8px;
+    padding: 3px 6px 4px;
+  }
+
+  .experience.japan-open .signal-console-map .signal-encoding-legend dt {
+    gap: 4px;
+    font-size: 7px;
+    line-height: 1.25;
+  }
+
+  .experience.japan-open .signal-console-map .signal-encoding-legend dd {
+    display: block;
+    margin-top: 1px;
+    font-size: 6px;
+    line-height: 1.2;
+  }
+
+  .experience.japan-open .signal-console-map .signal-encoding-legend i {
+    width: 8px;
+    height: 8px;
   }
 
   .experience.japan-open .map-mode-bank {

@@ -165,10 +165,10 @@
     </style>
     <link rel="preload" as="style" href="./opening.css?v=gaia-opening-route-guide-2" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-19" defer fetchpriority="high"></script>
-    <script src="./opening-audio.js?v=gaia-first-screen-p0-1" defer fetchpriority="high"></script>
+    <script src="./opening-audio.js?v=gaia-live-compact-jpt-audio-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-no-breathing-flash-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-no-breathing-flash-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-integrated-light-bank-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -559,7 +559,7 @@
             <button class="sound-track" type="button" data-sound-track="snowafter" aria-current="false">
               <span>07</span>
               <div>
-                <strong>雪火、軌道の外へ</strong>
+                <strong>雪火、軌道の外へ（未使用曲）</strong>
                 <small>BRANCHING LIGHT / MOTIF</small>
               </div>
               <i aria-hidden="true"></i>
@@ -575,7 +575,7 @@
             <button class="sound-track" type="button" data-sound-track="moonsave" aria-current="false">
               <span>09</span>
               <div>
-                <strong>月下のSOURCE保存</strong>
+                <strong>月下のSOURCE保存（未使用曲）</strong>
                 <small>SOURCE ARCHIVE / LOOP</small>
               </div>
               <i aria-hidden="true"></i>
@@ -583,7 +583,7 @@
             <button class="sound-track" type="button" data-sound-track="moonreopen" aria-current="false">
               <span>10</span>
               <div>
-                <strong>月下、もう一度ひらく</strong>
+                <strong>月下、もう一度ひらく（未使用曲）</strong>
                 <small>RELOAD MEMORY / LOOP</small>
               </div>
               <i aria-hidden="true"></i>
@@ -791,15 +791,6 @@
                   <p>地球の観測データを送る</p>
                   <span class="intro-path-enter">センサーを登録 <b aria-hidden="true">→</b></span>
                 </a>
-                <button class="intro-path-card" type="button" data-intro-path="abstract">
-                  <span class="intro-card-reveal-fx" aria-hidden="true"></span>
-                  <span class="intro-border-glint" aria-hidden="true"></span>
-                  <span class="intro-path-index">03 / ABSTRACT</span>
-                  <span class="intro-path-glyph" aria-hidden="true">◌</span>
-                  <strong>光に触れる</strong>
-                  <p>数字を光へ。</p>
-                  <span class="intro-path-enter">ABSTRACT <b aria-hidden="true">→</b></span>
-                </button>
                 <button class="intro-path-card intro-path-card--sound" type="button" data-sound-gallery-open aria-haspopup="dialog" aria-controls="sound-layer">
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
                   <span class="intro-border-glint" aria-hidden="true"></span>
@@ -1356,19 +1347,8 @@
             aria-controls="japan-data-panel"
           >
             <span>OPEN DATA</span>
-            <span>この光の出どころを見る</span>
+            <span>このデータの出典を表示する</span>
             <span aria-hidden="true">↗</span>
-          </button>
-          <button
-            class="japan-data-button japan-story-button"
-            type="button"
-            data-novel-open
-            aria-haspopup="dialog"
-            aria-controls="novel-layer"
-          >
-            <span>STORY</span>
-            <span>物語で地球の声を聴く</span>
-            <span aria-hidden="true">▶</span>
           </button>
         </header>
 
@@ -1445,6 +1425,9 @@
             <output data-signal-time-output>—</output>
           </label>
           <p data-signal-note>同梱した公開データのスナップショットを読み込んでいます。</p>
+        </section>
+
+        <aside class="signal-encoding-legend-dock" aria-label="地図の凡例">
           <div class="signal-encoding-legend-title" data-signal-encoding-legend-title hidden>
             <strong>凡例</strong>
             <span>MAP LEGEND</span>
@@ -1467,23 +1450,50 @@
               <dd data-encoding-value="resolution">DERIVED 近似値</dd>
             </div>
           </dl>
-        </section>
+        </aside>
 
         <p class="japan-map-note" id="map-scope-note" aria-hidden="true">
           BASEMAP / NATURAL EARTH 1:50m<br />
           LOCAL VECTOR LOADING
         </p>
 
-        <section class="map-mode-bank" aria-label="世界地図に重ねる12の感覚器展示を切り替える">
+        <section class="map-mode-bank" data-active-mode="01" data-map-surface="map" aria-label="地図12展示と光8演出を切り替える">
+          <div class="map-surface-switch" aria-label="展示の見せ方を選ぶ">
+            <button id="map-surface-map" type="button" aria-pressed="true"><span>MAP</span><strong>地図</strong></button>
+            <button id="map-surface-light" type="button" aria-pressed="false"><span>LIGHT</span><strong>光</strong></button>
+          </div>
           <div class="map-mode-bank-heading">
-            <p>INSTALLATION BANK / 01—12</p>
+            <p id="map-mode-bank-kicker">INSTALLATION BANK / 01—12</p>
             <div>
               <span id="japan-mode-number">01</span>
               <strong id="japan-mode-title">地球の一呼吸</strong>
             </div>
           </div>
-          <p class="map-mode-bank-guide">01〜12を押すと、地図に表示する展示が変わります</p>
+          <p class="map-mode-bank-guide" id="map-mode-bank-guide">01〜12を押すと、地図に表示する展示が変わります</p>
           <div class="map-mode-list" id="japan-mode-list"></div>
+          <div class="map-mode-list map-mode-list--light" id="abstract-mode-list" aria-label="光で見る8つの感覚器演出" hidden></div>
+          <aside class="map-mode-01-tooltip" id="map-mode-01-tooltip" role="tooltip" aria-labelledby="map-mode-01-tooltip-title">
+            <p>MAP MODE / READ THE PLANET</p>
+            <strong id="map-mode-01-tooltip-title">どの信号を、地図で読みますか？</strong>
+            <p>光の意味を世界の場所へ戻します。気になる信号を選び、観測値がどこで記録されたのかをたどってください。</p>
+            <div>
+              <span>01 / AIR</span>
+              <b>空気の声</b>
+              <p>CO₂が季節ごとに上下しながら、長い目では増えてきた様子を見る。</p>
+            </div>
+            <small>マウスを重ねると説明が変わります。クリックすると、その信号の地図をすぐに開きます。</small>
+          </aside>
+          <aside class="map-mode-01-tooltip map-mode-light-tooltip" id="map-mode-light-tooltip" role="tooltip" aria-labelledby="map-mode-light-tooltip-title">
+            <p>ABSTRACT MODE / TOUCH THE SIGNAL</p>
+            <strong id="map-mode-light-tooltip-title">どの感覚に、触れますか？</strong>
+            <p>地球が発している8つの信号から、最初に触れるものを選んでください。指やマウスの動きに、光が応答します。</p>
+            <div>
+              <span id="map-mode-light-tooltip-number">01 / AIR</span>
+              <b id="map-mode-light-tooltip-label">空気の声</b>
+              <p id="map-mode-light-tooltip-copy">CO₂が季節ごとに上下しながら、長い目では増えてきた様子を見る。</p>
+            </div>
+            <small>マウスを重ねると説明が変わります。クリックすると、選んだ光をすぐに始めます。</small>
+          </aside>
         </section>
 
         <div class="japan-layer-switch" aria-label="表示する地震データを選ぶ">

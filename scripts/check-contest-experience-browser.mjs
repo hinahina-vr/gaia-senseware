@@ -436,11 +436,11 @@ try {
   await spaceEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
   await spaceEntryPage.locator("#gaia-opening-route-other").click();
   await spaceEntryPage.waitForFunction(() => document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
-  await spaceEntryPage.locator("[data-intro-path='abstract']").click();
-  await spaceEntryPage.waitForFunction(() => !document.querySelector("#intro-sense-stage")?.hidden && !document.body.classList.contains("scene-transitioning"), null, { timeout: 20_000 });
-  await spaceEntryPage.locator("#intro-mode-list .intro-mode-choice").first().click();
-  await spaceEntryPage.waitForFunction(() => document.querySelector("#intro-layer")?.hidden && !document.body.classList.contains("scene-transitioning"), null, { timeout: 20_000 });
-  await spaceEntryPage.locator("#space-button").click();
+  await spaceEntryPage.locator("[data-intro-path='map']").click();
+  await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false" && !document.body.classList.contains("scene-transitioning"), null, { timeout: 20_000 });
+  await spaceEntryPage.locator("#map-surface-light").click();
+  await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit") && getComputedStyle(document.querySelector("#gaia-canvas")).visibility === "visible", null, { timeout: 20_000 });
+  await spaceEntryPage.evaluate(() => document.querySelector("#space-button")?.click());
   await spaceEntryPage.waitForFunction(() => document.body.classList.contains("gaia-space-preparing"), null, { timeout: 30_000 });
   assert.equal(await spaceEntryPage.locator("#gaia-canvas").evaluate((canvas) => getComputedStyle(canvas).visibility), "hidden", "space loading must suppress the abstract WebGL base before awaiting its snapshot");
   await startBaseExposureProbe(spaceEntryPage);
@@ -496,6 +496,7 @@ try {
     assert.equal(await directPage.locator("[data-live-exhibit-caption]").isVisible(), true, `${number}: exhibit explanation is not visible`);
     assert.equal(await directPage.locator("[data-live-exhibit-feed-state]").isVisible(), true, `${number}: live/snapshot state is not visible`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-state]").textContent(), /LIVE STREAM|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, `${number}: live/snapshot state is ambiguous`);
+    if (number !== "12") assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /JPT$/u, `${number}: observation time is not labelled JPT`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-copy]").textContent(), /自動更新|保存済み観測データ/u, `${number}: realtime behavior is not explained`);
     assert.match(await directPage.locator("[data-live-exhibit-sound-description]").textContent(), contract.sound, `${number}: visible sound mapping is missing`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-touch-hint").isVisible(), true, `${number}: integrated light-touch hint hidden`);
@@ -511,11 +512,9 @@ try {
       visibility: getComputedStyle(overlay).visibility,
       liveBackdrop: overlay.dataset.liveBackdrop,
     }));
-    assert.deepEqual(
-      standardOverlayStyle,
-      { opacity: "0.22", visibility: "visible", liveBackdrop: "reference-map-only" },
-      `${number}: live backdrop must retain only the reference map without Breathing Earth`,
-    );
+    assert.equal(standardOverlayStyle.opacity, "0.58", `${number}: reference world map is too faint`);
+    assert.equal(standardOverlayStyle.visibility, "visible", `${number}: reference world map is hidden`);
+    assert.equal(standardOverlayStyle.liveBackdrop, "reference-map-only", `${number}: live backdrop leaked a standard exhibit layer`);
     await directPage.waitForFunction((expectedMode) => (
       document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === String(expectedMode)
     ), liveExhibitIndex);
@@ -535,6 +534,15 @@ try {
     assert.equal(liveGeography.signalKey, contract.key, `${number}: visual field is not bound to its measurement key`);
     assert.equal(liveGeography.lightTouchIntegration, "abstract-light-touch");
     if (number === "09") {
+      const openData = directPage.locator("#japan-data-button");
+      assert.equal(await openData.isVisible(), true, "09: OPEN DATA must use the same visible action as exhibits 01–08");
+      await openData.click();
+      await directPage.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");
+      assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^09 風脈/u, "09: live source panel shows a standard exhibit ledger");
+      assert.match(await directPage.locator("#data-ledger-updated").textContent(), /JPT$/u, "09: source retrieval time is not labelled JPT");
+      assert.match(await directPage.locator("#data-ledger-sources").textContent(), /NOAA|NDBC/u, "09: source provider is absent from the ledger");
+      assert.match(await directPage.locator("#data-ledger-sources a").first().getAttribute("href"), /ndbc\.noaa\.gov/u, "09: official source link is missing");
+      await directPage.locator("#japan-data-close").click();
       await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").click();
     }
     await directPage.waitForFunction((expectedFocus) => {
@@ -547,17 +555,37 @@ try {
     assert.equal(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").getAttribute("data-audio-state"), "playing", `${number}: sound control does not show playback`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-label]").textContent(), "展示音を停止", `${number}: sound control does not expose its active state`);
     assert.match(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-status]").textContent(), /再生中.*BPM/u, `${number}: audible tempo is not visible`);
+    assert.equal(await directPage.locator("[data-live-light-touch]").evaluate((node) => node instanceof HTMLButtonElement), true, `${number}: light interaction is not a real button`);
+    assert.equal(await directPage.evaluate(() => globalThis.GaiaOpeningAudio.getState().mixGain), 0.28, `${number}: BGM is not ducked under the exhibit sound`);
     await directPage.screenshot({ path: path.join(outputDir, `live-exhibit-${number}.png`), animations: "disabled" });
-    const liveMapBox = await directPage.locator("#japan-map").boundingBox();
-    assert(liveMapBox, `${number}: live map has no hit target`);
-    await directPage.mouse.click(liveMapBox.x + liveMapBox.width * 0.28, liveMapBox.y + liveMapBox.height * 0.42);
+    await directPage.locator("[data-live-light-touch]").click();
+    await directPage.waitForFunction((previousTouchCount) => globalThis.GaiaProceduralAudio?.getState?.().touchCount > previousTouchCount, audioBeforeTouch.touchCount);
+    const buttonTouchCount = await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState().touchCount);
+    await directPage.waitForTimeout(120);
+    const liveMapPoint = await directPage.evaluate(() => {
+      const map = document.querySelector("#japan-map");
+      if (!(map instanceof HTMLElement)) return null;
+      for (let y = 18; y < innerHeight - 18; y += 18) {
+        for (let x = 18; x < innerWidth - 18; x += 18) {
+          const target = document.elementFromPoint(x, y);
+          if (target === map || map.contains(target)) return { x, y };
+        }
+      }
+      return null;
+    });
+    assert(liveMapPoint, `${number}: live map has no unobstructed hit target`);
+    await directPage.mouse.click(liveMapPoint.x, liveMapPoint.y);
     await directPage.waitForFunction(() => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > 0);
     assert.equal(await directPage.locator("#japan-poi-card").isVisible(), false, `${number}: light touch leaked into the underlying map POI interaction`);
-    await directPage.waitForFunction((previousTouchCount) => globalThis.GaiaProceduralAudio?.getState?.().touchCount > previousTouchCount, audioBeforeTouch.touchCount);
-    await directPage.waitForTimeout(120);
+    await directPage.waitForFunction((previousTouchCount) => globalThis.GaiaProceduralAudio?.getState?.().touchCount > previousTouchCount, buttonTouchCount);
+    await directPage.waitForFunction(
+      () => globalThis.GaiaProceduralAudio?.getState?.().outputLevel > 0.01,
+      null,
+      { timeout: 2_500, polling: 50 },
+    );
     const audioAfterTouch = await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState());
     assert(audioAfterTouch.lastNoteFrequency > 0, `${number}: light touch did not generate a pitched note`);
-    assert(audioAfterTouch.outputLevel > 0.006 && audioAfterTouch.outputLevel <= 1, `${number}: generated music remains effectively inaudible`);
+    assert(audioAfterTouch.outputLevel > 0.01 && audioAfterTouch.outputLevel <= 1, `${number}: generated music remains effectively inaudible (${audioAfterTouch.outputLevel})`);
     report.entry.liveAudio ??= [];
     report.entry.liveAudio.push({
       number,
@@ -610,10 +638,11 @@ try {
   assert.equal(liveCanvas.webglState, "active");
   assert(liveCanvas.frame > 0, "live WebGL field did not advance");
   assert.equal(liveCanvas.error, 0, "live WebGL field reported an error");
-  assert.equal(await directPage.locator(".japan-heading .japan-data-button").first().isVisible(), false, "live readout overlaps standard map actions");
+  assert.equal(await directPage.locator(".japan-heading .japan-data-button").first().isVisible(), true, "live exhibit lost the standard OPEN DATA action");
   await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").first().click();
   assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), false, "standard exhibit did not close live canvas");
   assert.equal((await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState())).enabled, false, "generated music stayed enabled after leaving live exhibits");
+  assert.equal(await directPage.evaluate(() => globalThis.GaiaOpeningAudio.getState().mixGain), 1, "BGM ducking stayed active after leaving live exhibits");
   report.entry.liveExhibits = "passed";
   report.entry.history = "passed";
   await directContext.close();
@@ -632,18 +661,21 @@ try {
     const headingRect = heading.getBoundingClientRect();
     const hiddenDetails = [...document.querySelectorAll(".gaia-live-exhibit-a11y")].map((node) => node.getBoundingClientRect());
     return {
-      readout: { left: readout.left, right: readout.right, top: readout.top, bottom: readout.bottom },
+      readout: { left: readout.left, right: readout.right, top: readout.top, bottom: readout.bottom, width: readout.width, height: readout.height },
       titleOnlyHeader: {
         width: headingRect.width,
+        height: headingRect.height,
+        fontSize: fontSize("#japan-title"),
         kickerHidden: getComputedStyle(heading.querySelector(".japan-kicker")).display === "none",
         descriptionHidden: heading.querySelector("#japan-description").getBoundingClientRect().width <= 1,
-        controlsHidden: [...heading.querySelectorAll(".japan-data-button")].every((node) => getComputedStyle(node).display === "none"),
+        dataButtonVisible: [...heading.querySelectorAll(".japan-data-button")].some((node) => node.getBoundingClientRect().width > 1),
       },
       titleFont: fontSize(".gaia-live-exhibit-primary h3"),
       valueFont: fontSize(".gaia-live-exhibit-primary > strong"),
       stageCueFont: fontSize(".gaia-live-exhibit-path li > em"),
       actionFont: fontSize(".gaia-live-exhibit-actions button"),
       bankButtonFont: fontSize(".map-mode-button"),
+      standardBankButtonFont: fontSize(".map-mode-button:not([data-live-exhibit])"),
       anchorFont: fontSize(".gaia-live-exhibit-anchor strong"),
       symbolWidth: document.querySelector(".gaia-live-stage-symbol").getBoundingClientRect().width,
       symbolCount: document.querySelectorAll(".gaia-live-stage-symbol svg").length,
@@ -651,24 +683,27 @@ try {
       visibleParagraphCards: [...document.querySelectorAll(".gaia-live-exhibit-path p")].some((node) => node.getBoundingClientRect().width > 1),
       stageLabels: [...document.querySelectorAll(".gaia-live-exhibit-path li > b")].map((node) => node.textContent.trim()),
       stageCues: [...document.querySelectorAll(".gaia-live-exhibit-path li > em")].map((node) => node.textContent.trim()),
-      explanationVisible: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height > 60,
+      explanationVisible: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height > 40,
       explanationFont: fontSize(".gaia-live-exhibit-summary"),
       feedState: document.querySelector("[data-live-exhibit-feed-state]").textContent.trim(),
     };
   });
   assert(live4kVisualContract.readout.left >= 0 && live4kVisualContract.readout.right <= 3840 && live4kVisualContract.readout.bottom <= 1960, "4K live panel overflows the viewport");
-  assert(live4kVisualContract.titleOnlyHeader.width <= 520, "4K live heading remains wider than its title");
+  assert(live4kVisualContract.readout.width <= 600 && live4kVisualContract.readout.height <= 450, `4K live panel is not compact enough: ${live4kVisualContract.readout.width}×${live4kVisualContract.readout.height}`);
+  assert(live4kVisualContract.titleOnlyHeader.width >= 850 && live4kVisualContract.titleOnlyHeader.width <= 870, "4K live heading does not match the standard map heading width");
+  assert(live4kVisualContract.titleOnlyHeader.height >= 54 && live4kVisualContract.titleOnlyHeader.height <= 72, "4K live heading does not match the standard map heading height");
+  assert(live4kVisualContract.titleOnlyHeader.fontSize >= 30 && live4kVisualContract.titleOnlyHeader.fontSize <= 32, "4K live heading does not use the standard map title size");
   assert.equal(live4kVisualContract.titleOnlyHeader.kickerHidden, true, "live heading still displays its kicker");
   assert.equal(live4kVisualContract.titleOnlyHeader.descriptionHidden, true, "live heading still displays explanatory prose");
-  assert.equal(live4kVisualContract.titleOnlyHeader.controlsHidden, true, "live heading still reserves visible controls");
-  assert(live4kVisualContract.titleFont >= 48, `4K live title remains too small: ${live4kVisualContract.titleFont}px`);
-  assert(live4kVisualContract.valueFont >= 84, `4K live value remains too small: ${live4kVisualContract.valueFont}px`);
-  assert(live4kVisualContract.stageCueFont >= 20, `4K stage cue remains too small: ${live4kVisualContract.stageCueFont}px`);
-  assert(live4kVisualContract.actionFont >= 19, `4K action remains too small: ${live4kVisualContract.actionFont}px`);
-  assert(live4kVisualContract.bankButtonFont >= 15, `4K mode control remains too small: ${live4kVisualContract.bankButtonFont}px`);
+  assert.equal(live4kVisualContract.titleOnlyHeader.dataButtonVisible, true, "live exhibit does not expose OPEN DATA");
+  assert(live4kVisualContract.titleFont >= 24 && live4kVisualContract.titleFont <= 26, `4K live title is not compact: ${live4kVisualContract.titleFont}px`);
+  assert(live4kVisualContract.valueFont >= 40 && live4kVisualContract.valueFont <= 44, `4K live value is not compact: ${live4kVisualContract.valueFont}px`);
+  assert(live4kVisualContract.stageCueFont >= 10 && live4kVisualContract.stageCueFont <= 12, `4K stage cue is not compact: ${live4kVisualContract.stageCueFont}px`);
+  assert(live4kVisualContract.actionFont >= 11 && live4kVisualContract.actionFont <= 13, `4K action is not compact: ${live4kVisualContract.actionFont}px`);
+  assert.equal(live4kVisualContract.bankButtonFont, live4kVisualContract.standardBankButtonFont, "live exhibit bank controls no longer match exhibits 01–08");
   assert(live4kVisualContract.anchorFont >= 17, `4K map anchor remains too small: ${live4kVisualContract.anchorFont}px`);
-  assert(live4kVisualContract.symbolWidth >= 96 && live4kVisualContract.symbolCount === 4, "4K visual transformation symbols are not prominent");
-  assert(live4kVisualContract.explanationVisible && live4kVisualContract.explanationFont >= 15, "4K exhibit explanation is missing or too small");
+  assert(live4kVisualContract.symbolWidth >= 40 && live4kVisualContract.symbolWidth <= 44 && live4kVisualContract.symbolCount === 4, "4K visual transformation symbols are not compact");
+  assert(live4kVisualContract.explanationVisible && live4kVisualContract.explanationFont >= 12, "4K exhibit explanation is missing or unreadable");
   assert.match(live4kVisualContract.feedState, /LIVE STREAM|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, "4K live/snapshot state is ambiguous");
   assert.equal(live4kVisualContract.hiddenDetails, true, "long explanations must remain assistive-only");
   assert.equal(live4kVisualContract.visibleParagraphCards, false, "paragraph explanation cards remain visible");

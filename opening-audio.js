@@ -31,12 +31,15 @@
   let stopTimer = 0;
   let switchSerial = 0;
   let preferredVolume = DEFAULT_VOLUME;
+  let mixGain = 1;
   let muted = true;
   let navigationStatePersisted = false;
   // Keep the visitor's choice separate from the instantaneous player state.
   // A scene transition may pause a player for a moment; that must not be
   // mistaken for the visitor choosing "sound off".
   let playbackRequested = false;
+
+  const effectiveVolume = () => preferredVolume * mixGain;
 
   try {
     const savedValue = window.localStorage.getItem(VOLUME_STORAGE_KEY);
@@ -148,7 +151,7 @@
     } catch {
       // Ignore private-mode and storage-policy failures.
     }
-    if (audio && !audio.paused && !muted) fadeTo(preferredVolume, fadeSeconds);
+    if (audio && !audio.paused && !muted) fadeTo(effectiveVolume(), fadeSeconds);
     emitState();
     return preferredVolume;
   };
@@ -161,7 +164,7 @@
     playbackRequested = true;
 
     if (!player.paused) {
-      fadeTo(preferredVolume, 0.35, emitState);
+      fadeTo(effectiveVolume(), 0.35, emitState);
       emitState();
       return true;
     }
@@ -172,7 +175,7 @@
       // play() is deliberately called before awaiting anything so Chrome keeps
       // the user's click as the audio permission gesture.
       await player.play();
-      fadeTo(preferredVolume, 1.2, emitState);
+      fadeTo(effectiveVolume(), 1.2, emitState);
       emitState();
       return true;
     } catch {
@@ -194,7 +197,7 @@
 
     playbackRequested = true;
     if (!audio || audio.paused) return start(preferredVolume);
-    fadeTo(preferredVolume, 0.24, emitState);
+    fadeTo(effectiveVolume(), 0.24, emitState);
     emitState();
     return true;
   };
@@ -210,7 +213,7 @@
         try {
           audio.volume = 0;
           await audio.play();
-          fadeTo(preferredVolume, 0.45, emitState);
+          fadeTo(effectiveVolume(), 0.45, emitState);
         } catch {
           muted = true;
           playbackRequested = false;
@@ -218,8 +221,8 @@
           return false;
         }
       }
-      if (audio && !audio.paused && !muted && audio.volume < preferredVolume) {
-        fadeTo(preferredVolume, 0.25, emitState);
+      if (audio && !audio.paused && !muted && audio.volume < effectiveVolume()) {
+        fadeTo(effectiveVolume(), 0.25, emitState);
       }
       emitState();
       return true;
@@ -253,7 +256,7 @@
     try {
       await nextPlayer.play();
       if (serial !== switchSerial) return false;
-      fadeTo(preferredVolume, TRACK_SWITCH_FADE_IN_SECONDS, emitState);
+      fadeTo(effectiveVolume(), TRACK_SWITCH_FADE_IN_SECONDS, emitState);
       emitState();
       return true;
     } catch {
@@ -261,7 +264,7 @@
       audio = previousPlayer;
       try {
         await previousPlayer.play();
-        fadeTo(preferredVolume, 0.3, emitState);
+        fadeTo(effectiveVolume(), 0.3, emitState);
       } catch {
         muted = true;
         playbackRequested = false;
@@ -273,6 +276,7 @@
 
   const getState = () => ({
     volume: preferredVolume,
+    mixGain,
     muted,
     playing: Boolean(audio && !audio.paused),
     track: activeTrack,
@@ -354,7 +358,7 @@
     try {
       await audio.play();
       applyResumeTime();
-      audio.volume = preferredVolume;
+      audio.volume = effectiveVolume();
       emitState();
       return { restored: true, playing: true, blocked: false };
     } catch {
@@ -377,6 +381,13 @@
     });
   };
 
+  const setMixGain = (value, fadeSeconds = 0.35) => {
+    mixGain = Math.max(0, Math.min(1, Number(value) || 0));
+    if (audio && !audio.paused && !muted) fadeTo(effectiveVolume(), fadeSeconds, emitState);
+    else emitState();
+    return mixGain;
+  };
+
   document.addEventListener("click", (event) => {
     const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;
     if (!(anchor instanceof HTMLAnchorElement)) return;
@@ -392,6 +403,7 @@
     stop,
     switchTrack,
     setVolume,
+    setMixGain,
     setMuted,
     toggleMuted,
     getState,

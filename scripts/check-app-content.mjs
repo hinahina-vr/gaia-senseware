@@ -38,8 +38,10 @@ assert.equal(content.modes.length, 8, "Earth mode catalog must contain 8 exhibit
 assert.equal(content.INTRO_MODE_CHOICES.length, 8, "Entrance catalog must contain 8 choices");
 assert.equal(content.SPACE_MODE_CHOICES.length, 10, "Space catalog must contain 10 choices");
 assert.deepEqual(Object.keys(content.INTRO_PATHS), ["abstract", "map", "novel", "space"], "Abstract exhibit must remain routable");
-assert.equal(indexHtml.includes('data-intro-path="abstract"'), true, "Abstract exhibit card is missing from the entrance");
-assert.equal(indexHtml.includes("光に触れる"), true, "Abstract exhibit copy is missing from the entrance");
+assert.equal(indexHtml.includes('data-intro-path="abstract"'), false, "Abstract exhibit must not remain a separate entrance card");
+assert.equal(indexHtml.includes('id="map-surface-light"'), true, "Integrated light surface switch is missing from the world-reading bank");
+assert.equal(indexHtml.includes('id="abstract-mode-list"'), true, "Integrated eight-choice light bank is missing");
+assert.equal(indexHtml.includes('id="map-mode-light-tooltip"'), true, "Abstract exhibit explanation tooltip is missing");
 
 const modeIds = content.modes.map(({ id }) => id);
 assert.equal(new Set(modeIds).size, modeIds.length, "Mode ids must be unique");

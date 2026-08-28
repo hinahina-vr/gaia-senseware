@@ -80,6 +80,7 @@ class ProceduralAudio {
   async enable() {
     if (!this.context) this.createGraph();
     this.enabled = true;
+    if (this.focus) globalThis.GaiaOpeningAudio?.setMixGain?.(0.28);
     await this.syncVisibility();
     this.applyParameters();
     this.syncMaster();
@@ -88,6 +89,7 @@ class ProceduralAudio {
 
   disable() {
     this.enabled = false;
+    globalThis.GaiaOpeningAudio?.setMixGain?.(1);
     clearTimeout(this.sequenceTimer);
     this.sequenceTimer = 0;
     this.setTarget(this.nodes?.master?.gain, 0, 0.18);
@@ -98,6 +100,7 @@ class ProceduralAudio {
     const nextFocus = MODE_PROFILES[focus] ? focus : null;
     if (nextFocus === this.focus) return;
     this.focus = nextFocus;
+    globalThis.GaiaOpeningAudio?.setMixGain?.(this.enabled && this.focus ? 0.28 : 1);
     this.sequenceStep = 0;
     this.applyParameters();
     this.syncMaster();
@@ -297,7 +300,7 @@ class ProceduralAudio {
     const octave = this.focus === "rain-chorus" && this.sequenceStep % 4 === 3 ? 2 : this.sequenceStep % 6 === 5 ? 2 : 1;
     const frequency = profile.root * semitone(profile.scale[offsetIndex]) * octave;
     const pan = Math.sin(this.sequenceStep * 1.7 + level * 2) * 0.42;
-    const velocity = this.telemetry.missing ? 0.025 : 0.045 + level * (this.focus === "rain-chorus" ? 0.055 : 0.03);
+    const velocity = this.telemetry.missing ? 0.04 : 0.07 + level * (this.focus === "rain-chorus" ? 0.085 : 0.05);
     this.playTone(frequency, profile.noteLength, velocity, pan, this.focus === "rain-chorus" ? "sine" : "triangle");
     this.sequenceStep += 1;
   }
@@ -351,8 +354,8 @@ class ProceduralAudio {
     const octave = y < 0.34 ? 2 : y > 0.72 ? 0.5 : 1;
     const frequency = profile.root * semitone(degree) * octave;
     const strength = clamp(Number(detail.strength) || 1, 0.4, 1.5);
-    this.playTone(frequency, 1.4 + strength * 0.65, 0.07 + strength * 0.045, x * 1.6 - 0.8, "sine");
-    if (strength > 1.15) this.playTone(frequency * 1.5, 1.1, 0.025, x * 1.4 - 0.7, "triangle");
+    this.playTone(frequency, 1.4 + strength * 0.65, 0.11 + strength * 0.07, x * 1.6 - 0.8, "sine");
+    if (strength > 1.15) this.playTone(frequency * 1.5, 1.1, 0.045, x * 1.4 - 0.7, "triangle");
     this.touchCount += 1;
     this.emit();
   }
@@ -368,7 +371,7 @@ class ProceduralAudio {
     const opening = globalThis.GaiaOpeningAudio?.getState?.() || { muted: true, volume: 0.1 };
     const audible = this.enabled && Boolean(this.focus) && !document.hidden && !opening.muted;
     const volume = clamp01(opening.volume || 0.1);
-    const target = audible ? Math.min(0.38, 0.1 + Math.sqrt(volume) * 0.28) : 0;
+    const target = audible ? Math.min(0.56, 0.18 + Math.sqrt(volume) * 0.38) : 0;
     this.setTarget(this.nodes.master.gain, target, audible ? 0.45 : 0.2);
   }
 

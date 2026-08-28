@@ -1,5 +1,5 @@
 import { STATUS_LABELS } from "./transforms.js";
-import proceduralAudio from "./procedural-audio.js?v=gaia-live-explained-audio-1";
+import proceduralAudio from "./procedural-audio.js?v=gaia-live-compact-jpt-audio-1";
 
 const EXHIBITS = Object.freeze([
   Object.freeze({
@@ -99,6 +99,22 @@ const formatValue = (measurement) => {
   const digits = measurement.key === "no2" ? 7 : measurement.key === "co2" ? 2 : 3;
   const unit = measurement.key === "co2" ? "ppm" : measurement.unit || "";
   return `${Number(measurement.value).toLocaleString("ja-JP", { maximumFractionDigits: digits })} ${unit}`.trim();
+};
+
+const formatJptDateTime = (value) => {
+  if (!value) return "観測時刻なし";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return `${String(value)} JPT`;
+  return `${new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).format(date)} JPT`;
 };
 
 const currentState = () => globalThis.GaiaLiveData?.getState?.() || { measurements: {}, source: "snapshot", connected: false };
@@ -736,9 +752,7 @@ const renderReadout = () => {
     : state.source === "live"
       ? "LATEST API SNAPSHOT / 再接続中"
       : "SAVED SNAPSHOT / 保存データを再現中";
-  const observedAt = measurement?.observedAt
-    ? new Date(measurement.observedAt).toLocaleString("ja-JP")
-    : "観測時刻なし";
+  const observedAt = formatJptDateTime(measurement?.observedAt);
   readout.dataset.missing = String(missing);
   readout.dataset.exhibit = exhibit.id;
   readout.dataset.audioState = audioState.active ? "playing" : audioState.enabled ? "armed" : "off";
@@ -966,12 +980,26 @@ const mount = () => {
     </ol>
     <div class="gaia-live-exhibit-actions">
       <button type="button" data-live-sound-toggle aria-pressed="false"><span class="gaia-live-sound-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="gaia-live-sound-copy"><b data-live-sound-label>展示音を再生</b><small data-live-sound-status>クリックで観測値を音に変換</small></span></button>
-      <p class="gaia-live-exhibit-touch-hint"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></p>
+      <button class="gaia-live-exhibit-touch-hint" type="button" data-live-light-touch aria-label="地図の光へ触れ、光と展示音を鳴らす"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></button>
     </div>
     <footer><span data-live-exhibit-source></span><time data-live-exhibit-time></time></footer>
   `;
   layer.append(readout);
   dispatchEvent(new CustomEvent("gaia:live-exhibit-mounted"));
+
+  readout.querySelector("[data-live-light-touch]")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const touchStep = proceduralAudio.getState().touchCount % 3;
+    const [x, y] = [[0.36, 0.43], [0.52, 0.34], [0.68, 0.54]][touchStep];
+    lightPointer.x = x;
+    lightPointer.y = y;
+    lightPointer.active = 1;
+    lightPointer.energy = 1.2;
+    addLightTouch(x, y, 1.35);
+    lastRenderedAt = 0;
+    draw(performance.now(), true);
+  });
 
   map.addEventListener("pointerdown", (event) => {
     if (activeIndex < 0) return;

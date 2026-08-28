@@ -5,31 +5,31 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-live-explained-audio-1",
+        "./styles.css?v=gaia-integrated-light-bank-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-title-only-1",
+        "./map-ui-grid-polish.css?v=gaia-live-compact-jpt-audio-1",
         "./mode-exit.css?v=gaia-story-control-gap-1",
         "./observation-notebook.css?v=gaia-exhibit-heading-actions-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
-        "./data-ledger.js?v=gaia-31",
+        "./data-ledger.js?v=gaia-live-compact-jpt-audio-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-abstract-entry-1",
-        "./app.js?v=gaia-no-breathing-flash-1",
-        "./map-ui-grid-polish.js?v=gaia-map-europe-clear-1",
+        "./app.js?v=gaia-integrated-light-bank-1",
+        "./map-ui-grid-polish.js?v=gaia-map-overlay-alignment-1",
         "./particles-v9.js?v=gaia-adaptive-performance-1",
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
         "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
       ],
-      modules: ["./src/exploration/index.js?v=gaia-live-explained-audio-1"],
+      modules: ["./src/exploration/index.js?v=gaia-live-compact-jpt-audio-1"],
     },
     story: {
       templates: ["gaia-template-story"],
       styles: [
-        "./styles.css?v=gaia-no-breathing-flash-1",
+        "./styles.css?v=gaia-integrated-light-bank-1",
         "./scene-transition.css?v=gaia-52",
         "./novel-mode.css?v=gaia-story-map-aiva-2",
         "./true-end.css?v=gaia-adaptive-performance-1",
@@ -51,7 +51,7 @@
     gx: {
       templates: ["gaia-template-gx"],
       styles: [
-        "./styles.css?v=gaia-no-breathing-flash-1",
+        "./styles.css?v=gaia-integrated-light-bank-1",
         "./scene-transition.css?v=gaia-52",
         "./gx-mode.css?v=gaia-gx-mobile-installation-1",
         "./mode-exit.css?v=gaia-story-control-gap-1",
@@ -65,7 +65,7 @@
     space: {
       templates: ["gaia-template-space"],
       styles: [
-        "./styles.css?v=gaia-no-breathing-flash-1",
+        "./styles.css?v=gaia-integrated-light-bank-1",
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
         "./mode-exit.css?v=gaia-story-control-gap-1",
@@ -80,11 +80,11 @@
     sound: {
       templates: ["gaia-template-sound"],
       styles: [
-        "./styles.css?v=gaia-no-breathing-flash-1",
-        "./sound-mode.css?v=gaia-cross-platform-fonts-1",
+        "./styles.css?v=gaia-integrated-light-bank-1",
+        "./sound-mode.css?v=gaia-sound-control-swap-1",
         "./mode-exit.css?v=gaia-story-control-gap-1",
       ],
-      scripts: ["./sound-mode.js?v=gaia-suno-credit-1"],
+      scripts: ["./sound-mode.js?v=gaia-unused-track-labels-1"],
       modules: ["./src/exploration/procedural-audio.js?v=gaia-live-senseware-1"],
     },
     notebook: {
@@ -251,6 +251,8 @@
     const query = new URLSearchParams(window.location.search);
     if (hash === "#story" || /\/story\/?$/iu.test(window.location.pathname)) {
       await load("story");
+    } else if (hash === "#sound") {
+      await load("sound");
     } else if (hash === "#tour") {
       await load("exploration");
       await load("notebook");

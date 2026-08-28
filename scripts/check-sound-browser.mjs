@@ -18,10 +18,10 @@ const expectedTracks = [
   ["firstlight", "Planet Forecast — First Light"],
   ["foldedwind", "折り目の向こうの風"],
   ["snowfire", "雪火の観測信号"],
-  ["snowafter", "雪火、軌道の外へ"],
+  ["snowafter", "雪火、軌道の外へ（未使用曲）"],
   ["moonbook", "月明かりの観測ノート"],
-  ["moonsave", "月下のSOURCE保存"],
-  ["moonreopen", "月下、もう一度ひらく"],
+  ["moonsave", "月下のSOURCE保存（未使用曲）"],
+  ["moonreopen", "月下、もう一度ひらく（未使用曲）"],
   ["ending", "AfterSchool,AfterGlow"],
   ["trueend", "Sensory Horizon"],
 ];
@@ -48,6 +48,8 @@ const readControlDesign = (page) => page.evaluate(() => {
     volumeLabel: volume?.textContent?.replace(/\s+/g, " ").trim() || "",
     seekAccent: styleValue(seekInput, "--sound-control-accent"),
     volumeAccent: styleValue(volumeInput, "--sound-control-accent"),
+    seekPattern: styleValue(seekInput, "--sound-track-pattern"),
+    volumePattern: styleValue(volumeInput, "--sound-track-pattern"),
     seekBorderLeft: getComputedStyle(seek).borderLeftWidth,
     volumeBorderRight: getComputedStyle(volume).borderRightWidth,
     titleFont: getComputedStyle(title).fontFamily,
@@ -59,6 +61,8 @@ const assertControlDesign = (design, label) => {
   assert(design.seekLabel.includes("再生位置") && design.seekLabel.includes("PLAYBACK"), `${label}: seek control label is ambiguous`);
   assert(design.volumeLabel.includes("音量") && design.volumeLabel.includes("VOLUME"), `${label}: volume control label is ambiguous`);
   assert(design.seekAccent && design.volumeAccent && design.seekAccent !== design.volumeAccent, `${label}: seek and volume accents are indistinguishable`);
+  assert(design.seekAccent.toLowerCase() === "#efc879" && design.volumeAccent.toLowerCase() === "#8ce9cf", `${label}: seek and volume colors were not swapped`);
+  assert(design.seekPattern === "dashed" && design.volumePattern === "solid", `${label}: dashed and solid track designs were not swapped`);
   assert(design.seekBorderLeft === "3px" && design.volumeBorderRight === "3px", `${label}: control shapes are not visually separated`);
   assert(design.titleFont.includes("Yu Mincho") && design.titleFont.includes("Noto Serif CJK JP"), `${label}: title font stack does not preserve the PC-first serif fallback`);
   assert(design.volumeLabelFont.includes("Yu Gothic UI") && design.volumeLabelFont.includes("Noto Sans CJK JP"), `${label}: UI font stack does not preserve the PC-first sans-serif fallback`);
@@ -74,6 +78,8 @@ try {
   await page.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
   assert(await page.locator("[data-sound-track]").count() === 12, "sound archive does not contain 12 unique tracks");
   assert((await page.locator(".sound-track-heading strong").innerText()) === "12 TRACKS", "track count heading is stale");
+  const unusedTrackIds = await page.locator("[data-sound-track]", { hasText: "（未使用曲）" }).evaluateAll((nodes) => nodes.map((node) => node.dataset.soundTrack));
+  assert(JSON.stringify(unusedTrackIds) === JSON.stringify(["snowafter", "moonsave", "moonreopen"]), `unused track labels are incorrect: ${JSON.stringify(unusedTrackIds)}`);
 
   const panelGeometry = await page.locator(".sound-track-panel").evaluate((panel) => {
     const rect = panel.getBoundingClientRect();
