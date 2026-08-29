@@ -255,17 +255,19 @@ try {
     await page.waitForFunction(() => !document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-visible"));
 
     const useDataRoute = ["pc-4k", "mobile-360"].includes(viewport.name);
+    const expectedDestinationTrack = useDataRoute ? "senseware" : "story";
     const routeStartedAt = Date.now();
+    const trackSwitchPromise = page
+      .waitForFunction((track) => globalThis.GaiaOpeningAudio.getState().track === track, expectedDestinationTrack, { timeout: 10_000 })
+      .then(() => Date.now() - routeStartedAt);
     await page.locator(useDataRoute ? "#gaia-opening-route-other" : "#gaia-opening-route-story").click();
     await page.waitForFunction(() => document.querySelector("#gaia-opening")?.hidden === true, null, { timeout: 10_000 });
     await page.waitForFunction((dataRoute) => dataRoute
       ? __qaVisible(document.querySelector("#intro-layer"))
       : __qaVisible(document.querySelector("#novel-runtime")), useDataRoute, { timeout: 10_000 });
     const destinationVisibleMs = Date.now() - routeStartedAt;
-    const expectedDestinationTrack = useDataRoute ? "senseware" : "story";
-    await page.waitForFunction((track) => globalThis.GaiaOpeningAudio.getState().track === track, expectedDestinationTrack, { timeout: 2_500 });
-    const trackSwitchMs = Date.now() - routeStartedAt;
-    const trackSwitchAfterDestinationMs = trackSwitchMs - destinationVisibleMs;
+    const trackSwitchMs = await trackSwitchPromise;
+    const trackSwitchAfterDestinationMs = Math.max(0, trackSwitchMs - destinationVisibleMs);
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-audio-dock")), null, { timeout: 10_000 });
     const destination = await page.evaluate(() => ({
       titleVisible: __qaVisible(document.querySelector("#novel-title-screen")),
@@ -291,7 +293,7 @@ try {
       assert.equal(destination.track, "senseware", `${viewport.name}: GAIA SENSEWARE BGM was not selected for the data screen`);
       assert(trackSwitchMs <= 4_000, `${viewport.name}: GAIA SENSEWARE BGM switch took ${trackSwitchMs}ms`);
       assert(trackSwitchAfterDestinationMs <= 600, `${viewport.name}: opening BGM remained for ${trackSwitchAfterDestinationMs}ms after the data screen became visible`);
-      assert(audioResponses.some(({ url, status }) => url.includes("moonlit-source-save.mp3") && [200, 206].includes(status)), `${viewport.name}: GAIA SENSEWARE BGM was not fetched successfully`);
+      assert(audioResponses.some(({ url, status }) => url.includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(status)), `${viewport.name}: transparent GAIA SENSEWARE ambience was not fetched successfully`);
     }
     if (startWithSound) {
       assert(audioResponses.some(({ url, status }) => url.includes("satellite-forecast-hope.mp3") && [200, 206].includes(status)), `${viewport.name}: Planet Forecast - Hope was not fetched for the opening`);

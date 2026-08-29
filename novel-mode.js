@@ -171,6 +171,9 @@
   });
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
   const BACKGROUND_SOUNDTRACK = Object.freeze([
+    ["event-cg-festival-map-transition-five-plane", "senseware"],
+    ["modis-land-cover-2023.png", "senseware"],
+    ["novel-bg-map01-data-provenance", "senseware"],
     ["event-cg-first-encounter-five-plane", "windowlight"],
     ["event-cg-amane-closeup-five-plane", "windowlight"],
     ["event-cg-mizuha-closeup-five-plane", "windowlight"],

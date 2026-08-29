@@ -56,6 +56,19 @@
       "publicationStatus": "public"
     },
     {
+      "path": "assets/audio/gaia-map-ambient-harp-felt-piano.wav",
+      "sha256": "e1f24a9227002ce659050f1cd6bbc1a4222f791dcf0474e926cb380aa55f08d2",
+      "generationService": "In-repository procedural synthesis (Node.js)",
+      "generationDate": null,
+      "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
+      "firstRepositoryEvidenceAt": null,
+      "processing": "純粋なNode.jsによる決定的ステレオPCM合成。ハープ、フェルトピアノ、弦、低域ドローン、濾波ノイズ、拡散リバーブを生成",
+      "sourceLedger": "scripts/build-map-ambient-score.mjs",
+      "officialTermsUrl": null,
+      "accountPlan": "適用外（ローカル生成）",
+      "publicationStatus": "public"
+    },
+    {
       "path": "assets/audio/moonlit-observation-notebook.mp3",
       "sha256": "9193d997437cd4d03ed32e454de9ff0acf19c5893394a34310ec2aa6f244e149",
       "generationService": "Suno AI",

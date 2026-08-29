@@ -85,10 +85,10 @@
       templates: ["gaia-template-sound"],
       styles: [
         "./styles.css?v=gaia-character-main-card-1",
-        "./sound-mode.css?v=gaia-spectral-weave-1",
+        "./sound-mode.css?v=gaia-aurora-silk-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-mode.js?v=gaia-spectral-weave-1"],
+      scripts: ["./sound-mode.js?v=gaia-aurora-silk-1"],
       modules: ["./src/exploration/procedural-audio.js?v=gaia-live-senseware-1"],
     },
     character: {

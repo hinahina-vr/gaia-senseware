@@ -10,7 +10,7 @@
     snowfire: "./assets/audio/snowfire-signal.mp3",
     snowafter: "./assets/audio/snowfire-afterimage.mp3",
     moonbook: "./assets/audio/moonlit-observation-notebook.mp3",
-    senseware: "./assets/audio/moonlit-source-save.mp3",
+    senseware: "./assets/audio/gaia-map-ambient-harp-felt-piano.wav",
     moonreopen: "./assets/audio/moonlit-reopen.mp3",
     ending: "./assets/audio/after-school-afterglow.mp3",
     trueend: "./assets/audio/sensory-horizon.wav",
@@ -365,50 +365,60 @@
       return true;
     }
 
-    await preloadTrack(track);
-    if (serial !== switchSerial) return false;
-
     const previousTrack = activeTrack;
     const previousPlayer = ensureAudio(previousTrack);
     const nextPlayer = ensureAudio(track);
     const shouldResume = playbackRequested && !muted;
 
-    if (shouldResume && previousPlayer.volume > 0.001) {
-      await new Promise((resolve) => fadeTo(0, switchFadeOutSeconds, resolve));
-      if (serial !== switchSerial) return false;
-    }
-
-    previousPlayer.pause();
-    previousPlayer.currentTime = 0;
-    activeTrack = track;
-    audio = nextPlayer;
-    nextPlayer.currentTime = 0;
-    nextPlayer.volume = 0;
-
     if (!shouldResume) {
+      previousPlayer.pause();
+      previousPlayer.currentTime = 0;
+      activeTrack = track;
+      audio = nextPlayer;
+      nextPlayer.currentTime = 0;
+      nextPlayer.volume = 0;
       emitState();
+      void preloadTrack(track);
       return true;
     }
 
-    try {
-      await nextPlayer.play();
-      if (serial !== switchSerial) return false;
-      fadeTo(effectiveVolume(), TRACK_SWITCH_FADE_IN_SECONDS, emitState);
+    const activateNextPlayer = async () => {
+      if (serial !== switchSerial) return;
+      previousPlayer.pause();
+      previousPlayer.currentTime = 0;
+      activeTrack = track;
+      audio = nextPlayer;
+      nextPlayer.currentTime = 0;
+      nextPlayer.volume = 0;
       emitState();
-      return true;
-    } catch {
-      activeTrack = previousTrack;
-      audio = previousPlayer;
+
+      await preloadTrack(track);
+      if (serial !== switchSerial) return;
       try {
-        await previousPlayer.play();
-        fadeTo(effectiveVolume(), 0.3, emitState);
+        await nextPlayer.play();
+        if (serial !== switchSerial) return;
+        fadeTo(effectiveVolume(), TRACK_SWITCH_FADE_IN_SECONDS, emitState);
+        emitState();
       } catch {
-        muted = true;
-        playbackRequested = false;
+        activeTrack = previousTrack;
+        audio = previousPlayer;
+        try {
+          await previousPlayer.play();
+          fadeTo(effectiveVolume(), 0.3, emitState);
+        } catch {
+          muted = true;
+          playbackRequested = false;
+        }
+        emitState();
       }
-      emitState();
-      return false;
+    };
+
+    if (!previousPlayer.paused && previousPlayer.volume > 0.001) {
+      fadeTo(0, switchFadeOutSeconds, () => { void activateNextPlayer(); });
+    } else {
+      void activateNextPlayer();
     }
+    return true;
   };
 
   const getState = () => ({

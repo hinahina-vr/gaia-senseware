@@ -27,6 +27,7 @@ for (const line of history.split(/\r?\n/u)) {
 }
 
 const ledgerFor = (relative) => {
+  if (relative === "assets/audio/gaia-map-ambient-harp-felt-piano.wav") return "scripts/build-map-ambient-score.mjs";
   if (/^assets\/audio\//u.test(relative)) return "README.md#credits";
   if (/^assets\/characters\//u.test(relative)) return "assets/characters/AMANE-STYLE-V3-RIGHTS.md";
   if (/^assets\/visuals-07\//u.test(relative)) return "assets/visuals-07/README.md";
@@ -34,6 +35,7 @@ const ledgerFor = (relative) => {
 };
 
 const serviceFor = (relative) => {
+  if (relative === "assets/audio/gaia-map-ambient-harp-felt-piano.wav") return "In-repository procedural synthesis (Node.js)";
   if (/\.(?:m4a|mp3|ogg|wav)$/iu.test(relative)) return "Suno AI";
   if (/^assets\/(?:characters|visuals-07)\//u.test(relative)) return "OpenAI ImageGen";
   return "未特定（元台帳参照）";
@@ -45,6 +47,14 @@ const termsFor = (service) => {
   return null;
 };
 
+const processingFor = (relative) => relative === "assets/audio/gaia-map-ambient-harp-felt-piano.wav"
+  ? "純粋なNode.jsによる決定的ステレオPCM合成。ハープ、フェルトピアノ、弦、低域ドローン、濾波ノイズ、拡散リバーブを生成"
+  : "採用ファイル。個別の加工履歴は元台帳を参照";
+
+const accountPlanFor = (service) => service === "In-repository procedural synthesis (Node.js)"
+  ? "適用外（ローカル生成）"
+  : "確認していない";
+
 const assets = media.map((file) => {
   const relative = normalize(file);
   const service = serviceFor(relative);
@@ -55,10 +65,10 @@ const assets = media.map((file) => {
     generationDate: null,
     generationDateUnknownReason: "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
     firstRepositoryEvidenceAt: evidenceDates.get(relative) || null,
-    processing: "採用ファイル。個別の加工履歴は元台帳を参照",
+    processing: processingFor(relative),
     sourceLedger: ledgerFor(relative),
     officialTermsUrl: termsFor(service),
-    accountPlan: "確認していない",
+    accountPlan: accountPlanFor(service),
     publicationStatus: "public",
   };
 });

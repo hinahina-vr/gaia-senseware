@@ -3,7 +3,7 @@
 }
 
 .sound-layer {
-  --sound-accent: #8ce9cf;
+  --sound-accent: #a7e2d0;
   --sound-seek-accent: #efc879;
   --sound-volume-accent: #8ce9cf;
   position: fixed;
@@ -14,7 +14,7 @@
   padding: clamp(20px, 3.5vw, 52px);
   overflow: hidden;
   color: #edf9f5;
-  background: #07110f;
+  background: #030414;
   opacity: 0;
   transform: scale(1.012);
   transition: opacity 240ms ease, transform 320ms cubic-bezier(0.2, 0.75, 0.2, 1);
@@ -30,10 +30,9 @@
   inset: 0;
   z-index: -3;
   background:
-    linear-gradient(90deg, rgba(2, 10, 14, 0.9) 0%, rgba(2, 12, 15, 0.74) 42%, rgba(3, 16, 20, 0.54) 70%, rgba(2, 12, 17, 0.48) 100%),
-    linear-gradient(180deg, rgba(2, 10, 14, 0.08), rgba(1, 8, 12, 0.42)),
-    url("./assets/visuals-07/sound-archive-bg-v2.png") center / cover no-repeat;
-  filter: saturate(0.78) contrast(1.06) brightness(0.9);
+    radial-gradient(ellipse 72% 58% at 72% 38%, rgba(78, 35, 142, 0.2), transparent 72%),
+    radial-gradient(ellipse 58% 72% at 32% 78%, rgba(19, 105, 100, 0.14), transparent 74%),
+    linear-gradient(155deg, #02030f 0%, #080620 52%, #020510 100%);
 }
 
 .sound-layer::before {
@@ -42,21 +41,11 @@
   inset: -20%;
   z-index: -2;
   background:
-    radial-gradient(circle at 68% 48%, rgba(89, 226, 196, 0.16), transparent 28%),
-    radial-gradient(circle at 25% 78%, rgba(92, 144, 211, 0.12), transparent 25%);
-  animation: sound-ambient 12s ease-in-out infinite alternate;
-}
-
-.sound-layer-grid {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  opacity: 0.08;
-  background-image:
-    linear-gradient(rgba(140, 233, 207, 0.18) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(140, 233, 207, 0.18) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: linear-gradient(to right, black, transparent 72%);
+    radial-gradient(ellipse 32% 46% at 72% 42%, rgba(166, 79, 204, 0.12), transparent 74%),
+    radial-gradient(ellipse 42% 34% at 54% 78%, rgba(75, 190, 161, 0.1), transparent 76%),
+    radial-gradient(ellipse 25% 34% at 34% 32%, rgba(224, 157, 88, 0.07), transparent 78%);
+  filter: blur(24px);
+  animation: sound-ambient 18s ease-in-out infinite alternate;
 }
 
 @keyframes sound-ambient {
@@ -75,7 +64,7 @@
 
 .sound-header {
   padding-bottom: clamp(18px, 3vh, 34px);
-  border-bottom: 1px solid rgba(140, 233, 207, 0.22);
+  border-bottom: 1px solid rgba(213, 225, 255, 0.12);
 }
 
 .sound-header p,
@@ -120,9 +109,9 @@
 
 .sound-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 0.72fr) minmax(430px, 1.28fr);
+  grid-template-columns: minmax(250px, 0.56fr) minmax(520px, 1.44fr);
   align-items: start;
-  gap: clamp(32px, 6vw, 100px);
+  gap: clamp(30px, 4vw, 70px);
   min-height: 0;
   padding: clamp(28px, 5vh, 70px) 0;
 }
@@ -219,12 +208,13 @@
 
 .sound-player {
   display: grid;
-  grid-template-columns: minmax(180px, 0.7fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
-    "disc info"
-    "disc transport"
-    "disc volume";
-  column-gap: clamp(30px, 5vw, 78px);
+    "disc"
+    "info"
+    "transport"
+    "volume";
+  row-gap: 0;
   align-self: start;
   align-content: start;
 }
@@ -232,109 +222,96 @@
 .sound-planetarium {
   grid-area: disc;
   position: relative;
-  place-self: center;
-  width: min(38vw, 520px);
-  aspect-ratio: 1.22;
+  place-self: stretch;
+  width: 100%;
+  height: clamp(310px, 44vh, 530px);
   isolation: isolate;
-  overflow: visible;
-  filter: drop-shadow(0 24px 64px rgba(0, 12, 18, 0.38));
+  overflow: hidden;
+  filter: drop-shadow(0 28px 68px rgba(0, 0, 18, 0.42));
 }
 
 .sound-visualizer {
   position: absolute;
   z-index: 1;
-  inset: -13% -16%;
+  inset: 0;
   display: block;
-  width: 132%;
-  height: 126%;
-  opacity: 0.96;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
   pointer-events: none;
   mix-blend-mode: screen;
-  -webkit-mask-image: radial-gradient(ellipse 66% 59% at center, #000 0 48%, rgba(0, 0, 0, 0.82) 68%, transparent 100%);
-  mask-image: radial-gradient(ellipse 66% 59% at center, #000 0 48%, rgba(0, 0, 0, 0.82) 68%, transparent 100%);
-  filter: drop-shadow(0 0 20px rgba(100, 232, 205, 0.16));
+  -webkit-mask-image: none;
+  mask-image: none;
+  filter: saturate(1.08) contrast(1.03);
 }
 
 .sound-planetarium::before {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: -28% -34%;
-  border-radius: 50%;
+  inset: -12% -7%;
   background:
-    radial-gradient(ellipse 46% 38% at 50% 48%, rgba(60, 218, 184, 0.12), rgba(32, 119, 148, 0.055) 46%, transparent 76%),
-    radial-gradient(ellipse 64% 48% at 48% 54%, rgba(28, 98, 138, 0.07), transparent 72%);
-  opacity: 0.7;
+    radial-gradient(ellipse 72% 64% at 58% 48%, rgba(128, 80, 210, 0.16), transparent 76%),
+    radial-gradient(ellipse 54% 44% at 42% 66%, rgba(69, 202, 167, 0.12), transparent 78%);
+  opacity: 0.84;
+  filter: blur(28px);
   transition: opacity 420ms ease;
 }
 
 .sound-planetarium::after {
   content: "";
   position: absolute;
-  z-index: 0;
-  top: 50%;
-  right: -17%;
-  left: -17%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(104, 207, 204, 0.08) 18%, rgba(136, 238, 213, 0.22) 50%, rgba(80, 157, 198, 0.08) 82%, transparent);
-}
-
-.sound-spectral-grid {
-  position: absolute;
-  z-index: 0;
-  inset: -12% -18%;
+  z-index: 2;
+  inset: 0;
   pointer-events: none;
-  opacity: 0.22;
-  background-image:
-    linear-gradient(rgba(139, 235, 213, 0.11) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139, 235, 213, 0.075) 1px, transparent 1px);
-  background-size: 32px 32px;
-  -webkit-mask-image: radial-gradient(ellipse 58% 48% at center, #000 0 34%, rgba(0, 0, 0, 0.5) 58%, transparent 88%);
-  mask-image: radial-gradient(ellipse 58% 48% at center, #000 0 34%, rgba(0, 0, 0, 0.5) 58%, transparent 88%);
+  background:
+    radial-gradient(ellipse 72% 82% at 53% 47%, transparent 57%, rgba(2, 2, 16, 0.25) 82%, rgba(2, 3, 14, 0.74) 100%),
+    linear-gradient(180deg, rgba(2, 3, 18, 0.08), transparent 22%, transparent 78%, rgba(1, 3, 15, 0.35));
 }
 
 .sound-analysis-badge {
   position: absolute;
   z-index: 3;
-  top: 9%;
-  left: 7%;
+  top: 8%;
+  left: 6%;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: rgba(193, 238, 226, 0.56);
-  font: 7px/1 Consolas, monospace;
-  letter-spacing: 0.15em;
+  color: rgba(226, 231, 243, 0.58);
+  font: 500 10px/1.3 var(--font-ja);
+  letter-spacing: 0.12em;
   white-space: nowrap;
 }
 
 .sound-analysis-badge i {
   width: 5px;
   height: 5px;
-  border: 1px solid rgba(128, 231, 204, 0.72);
+  border: 0;
   border-radius: 50%;
-  background: rgba(128, 231, 204, 0.18);
+  background: rgba(209, 199, 255, 0.64);
+  box-shadow: 0 0 14px rgba(181, 145, 255, 0.36);
 }
 
 .sound-layer[data-analysis="live"] .sound-analysis-badge {
-  color: rgba(207, 255, 242, 0.78);
+  color: rgba(239, 244, 255, 0.82);
 }
 
 .sound-layer[data-analysis="live"] .sound-analysis-badge i {
-  background: #86efd2;
-  box-shadow: 0 0 12px rgba(116, 239, 207, 0.76);
-  animation: sound-analysis-pulse 1.7s ease-in-out infinite;
+  background: #f1cc91;
+  box-shadow: 0 0 16px rgba(242, 181, 115, 0.68);
+  animation: sound-analysis-pulse 2.8s ease-in-out infinite;
 }
 
 .sound-planet-caption {
   position: absolute;
   z-index: 3;
-  bottom: 7%;
-  left: 7%;
+  bottom: 8%;
+  left: 6%;
   display: grid;
   gap: 5px;
   padding-left: 12px;
-  color: rgba(204, 243, 232, 0.62);
-  font-family: Consolas, var(--font-ui-ja), monospace;
+  color: rgba(226, 233, 246, 0.58);
+  font-family: var(--font-ui-ja);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -346,11 +323,11 @@
   bottom: 1px;
   left: 0;
   width: 1px;
-  background: linear-gradient(#b6f5e2, rgba(125, 223, 198, 0.08));
+  background: linear-gradient(#e4c99e, rgba(190, 151, 225, 0.08));
 }
 
 .sound-planet-caption b {
-  color: rgba(204, 255, 239, 0.88);
+  color: rgba(244, 238, 225, 0.88);
   font-size: 9px;
   font-weight: 600;
 }
@@ -677,9 +654,9 @@ body.gaia-opening-active .gaia-audio-gallery-open {
   }
   .sound-track-panel { order: 2; max-height: none; padding-right: 0; overflow: visible; }
   .sound-player {
-    grid-template-columns: minmax(150px, 0.55fr) minmax(240px, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
-  .sound-planetarium { width: min(38vw, 300px); }
+  .sound-planetarium { width: 100%; height: clamp(300px, 52vw, 450px); }
 }
 
 @media (max-width: 620px) {
@@ -701,20 +678,19 @@ body.gaia-opening-active .gaia-audio-gallery-open {
   }
   .sound-planetarium {
     width: 100%;
-    height: 132px;
+    height: clamp(205px, 57vw, 250px);
     margin: 10px 0 0;
     aspect-ratio: auto;
     filter: none;
   }
-  .sound-planetarium::before { inset: -34% -20%; }
-  .sound-spectral-grid { inset: -16% -7%; background-size: 24px 24px; }
+  .sound-planetarium::before { inset: -18% -12%; }
   .sound-visualizer {
-    inset: -18% -10%;
-    width: 120%;
-    height: 136%;
-    opacity: 0.94;
-    -webkit-mask-image: radial-gradient(ellipse 70% 58% at center, #000 0 48%, rgba(0, 0, 0, 0.76) 72%, transparent 100%);
-    mask-image: radial-gradient(ellipse 70% 58% at center, #000 0 48%, rgba(0, 0, 0, 0.76) 72%, transparent 100%);
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
   .sound-analysis-badge { top: 7px; left: 0; }
   .sound-planet-caption { right: 0; bottom: 6px; left: auto; text-align: right; }

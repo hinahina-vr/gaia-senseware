@@ -60,7 +60,7 @@ try {
     await page.waitForFunction(() => document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 10_000 });
     const routeSwitchMs = performance.now() - routeStartedAt;
     await page.waitForTimeout(120);
-    assert(audioResponses.some(({ url, status }) => url.includes("moonlit-source-save.mp3") && [200, 206].includes(status)), `${viewport.name}: GAIA SENSEWARE was not requested by the data screen`);
+    assert(audioResponses.some(({ url, status }) => url.includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(status)), `${viewport.name}: transparent map ambience was not requested by the data screen`);
     const destination = await page.evaluate(() => ({
       track: globalThis.GaiaOpeningAudio.getState().track,
       openingHidden: document.querySelector("#gaia-opening")?.hidden,

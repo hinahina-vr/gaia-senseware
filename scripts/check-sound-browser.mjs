@@ -77,11 +77,20 @@ try {
   const audioRuntime = await page.request.get(new URL("/opening-audio.js", routeUrl).href);
   assert(audioRuntime.ok(), "opening audio runtime is unavailable");
   const audioRuntimeSource = await audioRuntime.text();
+  const visualRuntime = await page.request.get(new URL("/sound-mode.js", routeUrl).href);
+  const visualStyles = await page.request.get(new URL("/sound-mode.css", routeUrl).href);
+  assert(visualRuntime.ok() && visualStyles.ok(), "aurora visualizer runtime is unavailable");
+  const visualRuntimeSource = await visualRuntime.text();
+  const visualStyleSource = await visualStyles.text();
   assert(/opening:\s*"\.\/assets\/audio\/satellite-forecast-hope\.mp3"/u.test(audioRuntimeSource), "Planet Forecast - Hope is not assigned to the opening");
-  assert(/senseware:\s*"\.\/assets\/audio\/moonlit-source-save\.mp3"/u.test(audioRuntimeSource), "GAIA SENSEWARE is not assigned to the data exploration screen");
+  assert(/senseware:\s*"\.\/assets\/audio\/gaia-map-ambient-harp-felt-piano\.wav"/u.test(audioRuntimeSource), "GAIA SENSEWARE is not assigned to the transparent map ambience");
   assert(/ANALYSIS_FFT_SIZE\s*=\s*512/u.test(audioRuntimeSource), "sound analysis does not use the expected 512-point FFT");
   assert(/ANALYSIS_SPECTRUM_BANDS\s*=\s*32/u.test(audioRuntimeSource), "sound analysis does not expose the 32-band spectrum");
   assert(/getByteFrequencyData/u.test(audioRuntimeSource) && /getByteTimeDomainData/u.test(audioRuntimeSource), "visualizer is not backed by real frequency and waveform analysis");
+  assert(/uniform float bass;/u.test(visualRuntimeSource) && /uniform float mid;/u.test(visualRuntimeSource) && /uniform float high;/u.test(visualRuntimeSource), "three real audio bands are not connected to the shader");
+  assert(/auroraSilk/u.test(visualRuntimeSource) && /earthCenter/u.test(visualRuntimeSource) && /horizon/u.test(visualRuntimeSource) && /powderLayer/u.test(visualRuntimeSource), "the aurora, Earth, light powder, and water mirror are incomplete");
+  assert(!/gl\.LINES|spectral-weave/u.test(visualRuntimeSource), "legacy line geometry remains in the visualizer");
+  assert(!/sound-layer-grid|sound-spectral-grid/u.test(visualStyleSource), "digital grid styling remains in the sound installation");
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
   await page.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
   await page.waitForFunction(() => !["", "pending"].includes(document.querySelector("#sound-visualizer")?.dataset.renderer || "pending"));
@@ -90,20 +99,26 @@ try {
     return {
       renderer: canvas.dataset.renderer,
       visualizer: canvas.dataset.visualizer,
+      audioAnalysis: canvas.dataset.audioAnalysis,
       width: rect.width,
       height: rect.height,
       legacyPlanetCount: document.querySelectorAll(".sound-planet, .sound-orbit").length,
       analysisLabel: document.querySelector("#sound-analysis-state")?.textContent || "",
+      analysisTitle: document.querySelector("#sound-analysis-state")?.getAttribute("title") || "",
+      digitalGridCount: document.querySelectorAll(".sound-layer-grid, .sound-spectral-grid").length,
     };
   });
   assert(
     desktopVisualizer.renderer === "webgl"
-      && desktopVisualizer.visualizer === "spectral-weave"
+      && desktopVisualizer.visualizer === "aurora-silk-installation"
+      && desktopVisualizer.audioAnalysis === "web-audio-fft-three-band"
       && desktopVisualizer.width > 300
-      && desktopVisualizer.height > 200
+      && desktopVisualizer.height > 280
       && desktopVisualizer.legacyPlanetCount === 0
-      && desktopVisualizer.analysisLabel.includes("FFT"),
-    `desktop WebGL spectral weave failed: ${JSON.stringify(desktopVisualizer)}`,
+      && desktopVisualizer.digitalGridCount === 0
+      && desktopVisualizer.analysisLabel.includes("光")
+      && desktopVisualizer.analysisTitle.includes("Web Audio FFT"),
+    `desktop WebGL aurora installation failed: ${JSON.stringify(desktopVisualizer)}`,
   );
   assert(await page.locator("[data-sound-track]").count() === 12, "sound archive does not contain 12 unique tracks");
   assert((await page.locator(".sound-track-heading strong").innerText()) === "12 TRACKS", "track count heading is stale");
@@ -148,6 +163,19 @@ try {
       && analysisFrame.rms > 0,
     `Web Audio analysis is inactive: ${JSON.stringify(analysisFrame)}`,
   );
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector("#sound-visualizer");
+    return [canvas?.dataset.bass, canvas?.dataset.mid, canvas?.dataset.high]
+      .some((value) => Number(value) > 0.001);
+  }, null, { timeout: 10_000 });
+  const shaderBands = await page.locator("#sound-visualizer").evaluate((canvas) => ({
+    bass: Number(canvas.dataset.bass),
+    mid: Number(canvas.dataset.mid),
+    high: Number(canvas.dataset.high),
+    energy: Number(canvas.dataset.energy),
+  }));
+  assert(Object.values(shaderBands).some((value) => value > 0.001), `real analysis does not reach the shader: ${JSON.stringify(shaderBands)}`);
+  report.shaderBands = shaderBands;
   report.analysisFrame = analysisFrame;
   await page.locator('[data-sound-track="ending"]').click();
   await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 10000 });
@@ -170,11 +198,12 @@ try {
     renderer: document.querySelector("#sound-visualizer")?.dataset.renderer || "",
     visualizer: document.querySelector("#sound-visualizer")?.dataset.visualizer || "",
     legacyPlanetCount: document.querySelectorAll(".sound-planet, .sound-orbit").length,
+    digitalGridCount: document.querySelectorAll(".sound-layer-grid, .sound-spectral-grid").length,
     nowPlayingTop: document.querySelector(".sound-now-playing").getBoundingClientRect().top,
     visualizerTop: document.querySelector("#sound-visualizer").getBoundingClientRect().top,
   }));
   assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "spectral-weave" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.nowPlayingTop < mobileGeometry.visualizerTop, `mobile player was not raised above the WebGL spectral weave: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "aurora-silk-installation" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.digitalGridCount === 0 && mobileGeometry.nowPlayingTop < mobileGeometry.visualizerTop, `mobile player was not raised above the WebGL aurora installation: ${JSON.stringify(mobileGeometry)}`);
   assertControlDesign(await readControlDesign(mobile), "mobile");
   await mobile.screenshot({ path: path.join(outputDir, "sound-mobile.png"), fullPage: false });
   const lastTrack = mobile.locator('[data-sound-track="trueend"]');

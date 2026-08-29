@@ -42,7 +42,7 @@ npm --prefix sensor-platform run check:pages-worker
 npm --prefix sensor-platform run test:pages
 ```
 
-GitHub Actionsの `Contest checks` は実Google Chrome、Web、センサー型、Pages Worker、ローカルD1を検査し、デプロイは行いません。出典・素材権利は[提出ガイド](docs/CONTEST_2026_SUBMISSION.md#データ出典)、[権利台帳](docs/MEDIA_RIGHTS_LEDGER.md)、作品内の `OPEN DATA` に記録しています。背景・キャラクターはOpenAI ImageGen、音楽はSuno AI、地図はNatural Earth Public Domainです。
+GitHub Actionsの `Contest checks` は実Google Chrome、Web、センサー型、Pages Worker、ローカルD1を検査し、デプロイは行いません。出典・素材権利は[提出ガイド](docs/CONTEST_2026_SUBMISSION.md#データ出典)、[権利台帳](docs/MEDIA_RIGHTS_LEDGER.md)、作品内の `OPEN DATA` に記録しています。背景・キャラクターはOpenAI ImageGen、音楽は主にSuno AI（地図展示専用曲はリポジトリ内の純粋なNode.js合成）、地図はNatural Earth Public Domainです。
 
 > 物語・キャラクター・GX・演出方針の正本は
 > [`docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md`](docs/GAIA_SENSEWARE_GX_OFFICIAL_SETTING.md) を参照してください。

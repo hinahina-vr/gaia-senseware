@@ -81,7 +81,7 @@
     senseware: {
       number: "TRACK 09 / SYSTEM THEME",
       title: "GAIA SENSEWARE",
-      description: "データを探索するGAIA SENSEWARE画面で、公開記録と地球の感覚をひとつの場へつなぐ音楽。",
+      description: "ハープとフェルトピアノ、海と大気の低い呼吸が、地図に記録された地球の感覚を静かに包む音楽。",
       planet: "PLANET 09",
       signal: "SOURCE SAVE",
     },
@@ -133,49 +133,229 @@
   const createSoundVisualizer = (canvas) => {
     if (!(canvas instanceof HTMLCanvasElement)) return null;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const spectrumSize = 32;
-    const sampleCount = 72;
-    const floatsPerVertex = 7;
-    const smoothedSpectrum = new Float32Array(spectrumSize);
-    const smoothedWaveform = new Float32Array(sampleCount);
+    const smoothedBands = new Float32Array(3);
+    let smoothedEnergy = 0;
     let automaticGain = 1;
     let lastDrawAt = -Infinity;
-    const vertexSource = `
-      attribute vec2 position;
-      attribute vec4 color;
-      attribute float pointSize;
-      varying vec4 vertexColor;
-      void main() {
-        gl_Position = vec4(position, 0.0, 1.0);
-        gl_PointSize = pointSize;
-        vertexColor = color;
-      }
-    `;
-    const fragmentSource = `
-      precision mediump float;
-      varying vec4 vertexColor;
-      uniform float pointMode;
-      void main() {
-        float alpha = vertexColor.a;
-        if (pointMode > 0.5) {
-          float distanceFromCenter = length(gl_PointCoord - vec2(0.5));
-          alpha *= 1.0 - smoothstep(0.08, 0.5, distanceFromCenter);
-        }
-        gl_FragColor = vec4(vertexColor.rgb, alpha);
-      }
-    `;
     let gl = null;
     let program = null;
     let vertexBuffer = null;
-    let attributes = null;
-    let pointModeUniform = null;
+    let positionAttribute = -1;
+    let uniforms = null;
     let fallback = null;
+
+    const vertexSource = `
+      attribute vec2 position;
+      void main() {
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    const fragmentSource = `
+      precision highp float;
+
+      uniform vec2 resolution;
+      uniform float time;
+      uniform float bass;
+      uniform float mid;
+      uniform float high;
+      uniform float energy;
+      uniform float playing;
+
+      const float PI = 3.141592653589793;
+
+      float hash21(vec2 p) {
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+      }
+
+      vec2 hash22(vec2 p) {
+        float n = hash21(p);
+        return vec2(n, hash21(p + n + 17.17));
+      }
+
+      float valueNoise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(hash21(i), hash21(i + vec2(1.0, 0.0)), u.x),
+          mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x),
+          u.y
+        );
+      }
+
+      float fbm(vec2 p) {
+        float sum = 0.0;
+        float amplitude = 0.5;
+        mat2 rotation = mat2(0.82, -0.57, 0.57, 0.82);
+        for (int octave = 0; octave < 5; octave += 1) {
+          sum += amplitude * valueNoise(p);
+          p = rotation * p * 2.03 + vec2(7.1, 3.7);
+          amplitude *= 0.5;
+        }
+        return sum;
+      }
+
+      float powderLayer(vec2 uv, float scale, float drift, float threshold) {
+        float aspect = resolution.x / max(1.0, resolution.y);
+        vec2 p = vec2(uv.x * aspect, uv.y) * scale + vec2(drift, -drift * 0.37);
+        vec2 cell = floor(p);
+        vec2 local = fract(p) - 0.5;
+        vec2 offset = (hash22(cell) - 0.5) * 0.66;
+        float seed = hash21(cell + 31.7);
+        float dust = exp(-dot(local - offset, local - offset) * 280.0);
+        return dust * smoothstep(threshold, 1.0, seed);
+      }
+
+      vec3 auroraSilk(vec2 uv) {
+        float aspect = resolution.x / max(1.0, resolution.y);
+        vec2 p = vec2((uv.x - 0.5) * aspect, uv.y);
+        float motion = time * (0.034 + mid * 0.018);
+        float breath = 0.84 + 0.08 * sin(time * 0.42) + bass * 0.48;
+        float warp = fbm(vec2(p.x * 0.72 - motion, p.y * 1.42 + motion * 0.6));
+        float fine = fbm(vec2(p.x * 1.38 + motion * 0.7, p.y * 2.2 - motion));
+        float twist = (warp - 0.5) * (0.17 + mid * 0.24);
+        float sweep = sin(p.x * 0.74 + motion * 1.24) * (0.105 + mid * 0.055) + p.x * 0.025;
+        float lift = sin(p.x * 1.36 + motion * 2.2) * (0.075 + mid * 0.065);
+        float fold = 0.72 + 0.28 * sin(p.x * 5.2 - p.y * 3.1 + fine * 4.4 + motion * 2.0);
+
+        float c1 = 0.56 + sweep + lift + twist;
+        float c2 = 0.47 - sweep * 0.7 - sin(p.x * 1.06 - motion * 1.7) * 0.1 - twist * 0.72;
+        float c3 = 0.65 + sweep * 0.46 + sin(p.x * 0.82 + motion) * 0.09 + twist * 0.48;
+        float c4 = 0.39 - sweep * 0.34 + sin(p.x * 1.7 + motion * 1.35) * 0.08 - twist * 0.38;
+        float c5 = 0.75 - sweep * 0.5 - sin(p.x * 1.22 - motion * 1.15) * 0.07 + twist * 0.26;
+
+        float m1 = exp(-pow(abs(p.y - c1) / (0.085 + mid * 0.034), 2.0));
+        float m2 = exp(-pow(abs(p.y - c2) / (0.096 + mid * 0.024), 2.0));
+        float m3 = exp(-pow(abs(p.y - c3) / (0.073 + mid * 0.028), 2.0));
+        float m4 = exp(-pow(abs(p.y - c4) / (0.078 + mid * 0.02), 2.0));
+        float m5 = exp(-pow(abs(p.y - c5) / (0.062 + mid * 0.022), 2.0));
+        float s1 = exp(-pow(abs(p.y - c1) / (0.022 + mid * 0.012), 2.0));
+        float s2 = exp(-pow(abs(p.y - c2) / (0.026 + mid * 0.011), 2.0));
+        float s3 = exp(-pow(abs(p.y - c3) / (0.018 + mid * 0.01), 2.0));
+        float s4 = exp(-pow(abs(p.y - c4) / (0.021 + mid * 0.009), 2.0));
+        float s5 = exp(-pow(abs(p.y - c5) / (0.016 + mid * 0.008), 2.0));
+
+        vec3 indigo = vec3(0.055, 0.025, 0.20);
+        vec3 violet = vec3(0.39, 0.12, 0.66);
+        vec3 magenta = vec3(0.82, 0.16, 0.48);
+        vec3 gold = vec3(1.0, 0.63, 0.24);
+        vec3 emerald = vec3(0.22, 0.78, 0.56);
+        vec3 celadon = vec3(0.28, 0.77, 0.82);
+
+        vec3 color = vec3(0.0);
+        color += mix(indigo, violet, 0.72 + 0.18 * fine) * m1 * (0.38 + 0.22 * fold);
+        color += mix(violet, magenta, 0.46 + 0.24 * warp) * m2 * (0.32 + 0.18 * (1.0 - fold));
+        color += mix(magenta, gold, 0.28 + 0.26 * fine) * m3 * (0.22 + 0.16 * fold);
+        color += mix(emerald, celadon, 0.52 + 0.3 * warp) * m4 * (0.33 + 0.2 * (1.0 - fold));
+        color += mix(gold, celadon, 0.22 + 0.36 * fine) * m5 * (0.18 + 0.12 * fold);
+        float silkGrain = 0.54 + 0.46 * smoothstep(0.2, 0.8, fine + sin(p.x * 3.7 + motion) * 0.1);
+        color += mix(violet, vec3(0.82, 0.67, 1.0), fine) * s1 * silkGrain * 0.22;
+        color += mix(magenta, gold, warp * 0.5) * s2 * (1.0 - silkGrain * 0.35) * 0.18;
+        color += mix(gold, vec3(1.0, 0.84, 0.62), fine) * s3 * silkGrain * 0.16;
+        color += mix(emerald, celadon, fine) * s4 * silkGrain * 0.2;
+        color += mix(celadon, violet, warp * 0.36) * s5 * (0.7 + fold * 0.3) * 0.17;
+
+        float overlap = m1 * m2 + m2 * m3 + m3 * m5 + m1 * m4;
+        color += mix(vec3(0.68, 0.53, 1.0), vec3(0.64, 1.0, 0.89), fine) * overlap * 0.16;
+        float edgeFade = smoothstep(-0.92, -0.52, p.x) * smoothstep(1.02, 0.58, p.x);
+        return color * breath * edgeFade;
+      }
+
+      void main() {
+        vec2 uv = gl_FragCoord.xy / resolution;
+        float aspect = resolution.x / max(1.0, resolution.y);
+        vec2 centered = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
+
+        vec3 deepIndigo = vec3(0.006, 0.008, 0.035);
+        vec3 midnight = vec3(0.012, 0.015, 0.072);
+        vec3 color = mix(deepIndigo, midnight, smoothstep(0.0, 1.0, uv.y));
+        float nebula = fbm(centered * vec2(0.68, 1.12) + vec2(time * 0.006, -time * 0.004));
+        color += vec3(0.055, 0.02, 0.105) * smoothstep(0.5, 0.93, nebula) * 0.42;
+
+        vec3 silk = auroraSilk(uv);
+        float horizon = 0.285;
+        if (uv.y < horizon + 0.03) {
+          float rippleField = fbm(vec2(uv.x * 6.0 + time * 0.025, uv.y * 19.0 - time * 0.032));
+          float ripple = (rippleField - 0.5) * (0.018 + bass * 0.034);
+          vec2 reflectedUv = vec2(uv.x + ripple, horizon + (horizon - uv.y) * 0.78);
+          vec3 reflectedSilk = auroraSilk(reflectedUv);
+          float depthFade = smoothstep(0.0, horizon, uv.y);
+          float waterBreath = 0.48 + bass * 0.5 + 0.055 * sin(time * 0.52);
+          vec3 water = reflectedSilk * waterBreath * mix(0.28, 0.9, depthFade);
+          water += vec3(0.04, 0.07, 0.13) * smoothstep(0.38, 0.9, rippleField) * (0.06 + bass * 0.13);
+          vec3 sky = color + silk;
+          vec3 waterScene = color * 0.42 + water;
+          float waterMask = 1.0 - smoothstep(horizon - 0.04, horizon + 0.025, uv.y);
+          color = mix(sky, waterScene, waterMask);
+        } else {
+          color += silk;
+        }
+
+        float silverDust = powderLayer(uv, 31.0, time * 0.018, 0.92);
+        float goldDust = powderLayer(uv + vec2(0.13, 0.07), 43.0, -time * 0.013, 0.95);
+        float nearDust = powderLayer(uv + vec2(-0.21, 0.17), 19.0, time * 0.009, 0.94);
+        float dustLift = 0.16 + high * 1.35 + energy * 0.18;
+        color += vec3(0.82, 0.9, 1.0) * silverDust * dustLift;
+        color += vec3(1.0, 0.69, 0.31) * goldDust * dustLift * 0.9;
+        color += vec3(0.55, 0.96, 0.82) * nearDust * (0.08 + high * 0.62);
+
+        vec2 earthCenter = vec2(0.79, 0.78);
+        vec2 earthPoint = vec2((uv.x - earthCenter.x) * aspect, uv.y - earthCenter.y);
+        float earthRadius = 0.145;
+        float earthDistance = length(earthPoint);
+        vec2 spherePoint = earthPoint / earthRadius;
+        float sphereZ = sqrt(max(0.0, 1.0 - dot(spherePoint, spherePoint)));
+        vec3 normal = normalize(vec3(spherePoint, sphereZ));
+        float longitude = atan(normal.x, max(0.001, normal.z)) / PI;
+        float latitude = asin(clamp(normal.y, -1.0, 1.0)) / PI;
+        float landMap = fbm(vec2(longitude * 4.2 + 2.0, latitude * 6.4 - time * 0.003));
+        float coast = smoothstep(0.50, 0.59, landMap + valueNoise(vec2(longitude * 11.0, latitude * 9.0)) * 0.12);
+        float cloudMap = fbm(vec2(longitude * 7.0 - time * 0.012, latitude * 12.0 + 9.0));
+        float clouds = smoothstep(0.57, 0.76, cloudMap) * 0.72;
+        float daylight = max(0.0, dot(normal, normalize(vec3(-0.72, 0.38, 0.92))));
+        float nightGlow = pow(max(0.0, dot(normal, normalize(vec3(-0.75, -0.18, 0.65)))), 3.0);
+        vec3 ocean = mix(vec3(0.006, 0.025, 0.095), vec3(0.025, 0.20, 0.34), daylight);
+        vec3 land = mix(vec3(0.035, 0.085, 0.09), vec3(0.20, 0.34, 0.22), daylight);
+        vec3 earthSurface = mix(ocean, land, coast);
+        earthSurface += clouds * vec3(0.62, 0.72, 0.75) * (0.2 + daylight * 0.58);
+        earthSurface += vec3(0.75, 0.43, 0.15) * nightGlow * coast * 0.13;
+        earthSurface *= 0.22 + daylight * 0.9;
+        float earthDisc = 1.0 - smoothstep(earthRadius - 0.002, earthRadius + 0.002, earthDistance);
+        color = mix(color, earthSurface, earthDisc);
+
+        float rimDistance = abs(earthDistance - earthRadius);
+        float atmosphere = exp(-rimDistance * 115.0) * smoothstep(earthRadius + 0.03, earthRadius - 0.012, earthDistance);
+        float outerHalo = exp(-max(0.0, earthDistance - earthRadius) * 38.0) * smoothstep(earthRadius + 0.09, earthRadius, earthDistance);
+        float polarVeil = smoothstep(0.25, 0.82, abs(spherePoint.y)) * (0.46 + 0.54 * sin(longitude * 19.0 + time * 0.22));
+        color += vec3(0.18, 0.62, 0.92) * atmosphere * (0.4 + 0.6 * daylight);
+        color += mix(vec3(0.18, 0.8, 0.58), vec3(0.56, 0.3, 0.9), polarVeil) * atmosphere * polarVeil * 0.46;
+        color += vec3(0.12, 0.34, 0.62) * outerHalo * 0.16;
+
+        float bassBloom = bass * exp(-dot(centered - vec2(-0.12, -0.04), centered - vec2(-0.12, -0.04)) * 2.2);
+        color += mix(vec3(0.16, 0.04, 0.32), vec3(0.08, 0.38, 0.36), uv.x) * bassBloom * 0.16;
+
+        float vignette = smoothstep(1.08, 0.2, length(centered * vec2(0.82, 1.03)));
+        color *= 0.54 + 0.46 * vignette;
+        float grain = hash21(gl_FragCoord.xy + fract(time) * 71.0) - 0.5;
+        color += grain * 0.008;
+        color = 1.0 - exp(-color * (1.02 + energy * 0.14));
+        float edgeAlpha = smoothstep(0.0, 0.075, uv.x)
+          * smoothstep(0.0, 0.075, 1.0 - uv.x)
+          * smoothstep(0.0, 0.065, uv.y)
+          * smoothstep(0.0, 0.065, 1.0 - uv.y);
+        gl_FragColor = vec4(color, edgeAlpha);
+      }
+    `;
 
     const compile = (context, type, source) => {
       const shader = context.createShader(type);
       context.shaderSource(shader, source);
       context.compileShader(shader);
       if (!context.getShaderParameter(shader, context.COMPILE_STATUS)) {
+        canvas.dataset.shaderError = (context.getShaderInfoLog(shader) || "compile-failed").slice(0, 180);
         context.deleteShader(shader);
         return null;
       }
@@ -185,10 +365,10 @@
     const initWebGL = () => {
       gl = canvas.getContext("webgl", {
         alpha: true,
-        antialias: true,
+        antialias: false,
         depth: false,
         premultipliedAlpha: false,
-        powerPreference: "low-power",
+        powerPreference: "high-performance",
       });
       if (!gl) return false;
       const vertex = compile(gl, gl.VERTEX_SHADER, vertexSource);
@@ -200,32 +380,47 @@
       gl.linkProgram(program);
       gl.deleteShader(vertex);
       gl.deleteShader(fragment);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return false;
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        canvas.dataset.shaderError = (gl.getProgramInfoLog(program) || "link-failed").slice(0, 180);
+        return false;
+      }
+
       vertexBuffer = gl.createBuffer();
-      attributes = {
-        position: gl.getAttribLocation(program, "position"),
-        color: gl.getAttribLocation(program, "color"),
-        pointSize: gl.getAttribLocation(program, "pointSize"),
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+        gl.STATIC_DRAW,
+      );
+      positionAttribute = gl.getAttribLocation(program, "position");
+      uniforms = {
+        resolution: gl.getUniformLocation(program, "resolution"),
+        time: gl.getUniformLocation(program, "time"),
+        bass: gl.getUniformLocation(program, "bass"),
+        mid: gl.getUniformLocation(program, "mid"),
+        high: gl.getUniformLocation(program, "high"),
+        energy: gl.getUniformLocation(program, "energy"),
+        playing: gl.getUniformLocation(program, "playing"),
       };
-      pointModeUniform = gl.getUniformLocation(program, "pointMode");
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.disable(gl.BLEND);
       gl.disable(gl.DEPTH_TEST);
       canvas.dataset.renderer = "webgl";
-      canvas.dataset.visualizer = "spectral-weave";
+      canvas.dataset.visualizer = "aurora-silk-installation";
+      canvas.dataset.audioAnalysis = "web-audio-fft-three-band";
       return true;
     };
 
     const initFallback = () => {
       fallback = canvas.getContext("2d");
       canvas.dataset.renderer = fallback ? "canvas2d" : "unavailable";
-      canvas.dataset.visualizer = "spectral-weave";
+      canvas.dataset.visualizer = "aurora-silk-installation";
+      canvas.dataset.audioAnalysis = "web-audio-fft-three-band";
       return Boolean(fallback);
     };
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const ratio = Math.min(1.5, window.devicePixelRatio || 1);
+      const ratio = Math.min(reduced ? 1 : 1.25, window.devicePixelRatio || 1);
       const width = Math.max(1, Math.round(rect.width * ratio));
       const height = Math.max(1, Math.round(rect.height * ratio));
       if (canvas.width !== width || canvas.height !== height) {
@@ -234,164 +429,133 @@
       }
     };
 
-    const sample = (values, progress) => {
-      if (!values?.length) return 0;
-      const scaled = Math.max(0, Math.min(1, progress)) * (values.length - 1);
-      const lower = Math.floor(scaled);
-      const upper = Math.min(values.length - 1, lower + 1);
-      const mix = scaled - lower;
-      return values[lower] * (1 - mix) + values[upper] * mix;
-    };
+    const easeBand = (current, target, attack, release) => (
+      current + (target - current) * (target > current ? attack : release)
+    );
 
-    const updateAnalysisShape = (state) => {
+    const updateAudioState = (state) => {
       const active = Boolean(state.analysisActive);
-      const targetGain = active ? Math.max(1, Math.min(20, 0.14 / Math.max(0.006, state.rms || 0))) : 1;
-      automaticGain += (targetGain - automaticGain) * 0.12;
-      const smoothing = reduced ? 0.18 : 0.32;
-      for (let index = 0; index < spectrumSize; index += 1) {
-        const target = active ? Math.min(1, (state.spectrum?.[index] || 0) * automaticGain) : 0;
-        smoothedSpectrum[index] += (target - smoothedSpectrum[index]) * smoothing;
+      const targetGain = active
+        ? Math.max(0.9, Math.min(7, 0.16 / Math.max(0.01, state.rms || 0)))
+        : 1;
+      automaticGain += (targetGain - automaticGain) * 0.055;
+      for (let index = 0; index < 3; index += 1) {
+        const raw = active ? Math.min(1, Math.max(0, (state.bands?.[index] || 0) * automaticGain * 1.55)) : 0;
+        const shaped = Math.pow(raw, 0.78);
+        smoothedBands[index] = easeBand(smoothedBands[index], shaped, reduced ? 0.12 : 0.24, reduced ? 0.05 : 0.09);
       }
-      for (let index = 0; index < sampleCount; index += 1) {
-        const target = active ? Math.max(-1, Math.min(1, sample(state.waveform, index / (sampleCount - 1)) * automaticGain)) : 0;
-        smoothedWaveform[index] += (target - smoothedWaveform[index]) * smoothing;
-      }
+      const activeEnergy = active
+        ? Math.min(1, (state.rms || 0) * automaticGain * 3.4 + smoothedBands[0] * 0.3 + smoothedBands[1] * 0.16)
+        : 0;
+      smoothedEnergy = easeBand(smoothedEnergy, activeEnergy, 0.2, 0.065);
+      canvas.dataset.analysisActive = String(active);
+      canvas.dataset.bass = smoothedBands[0].toFixed(3);
+      canvas.dataset.mid = smoothedBands[1].toFixed(3);
+      canvas.dataset.high = smoothedBands[2].toFixed(3);
+      canvas.dataset.energy = smoothedEnergy.toFixed(3);
     };
 
-    const edgeEnvelope = (progress) => Math.max(0, Math.sin(Math.PI * progress)) ** 0.72;
-    const spectrumAt = (progress) => sample(smoothedSpectrum, progress);
-    const waveformAt = (progress) => sample(smoothedWaveform, progress);
-
-    const appendVertex = (vertices, x, y, color, alpha, pointSize = 1) => {
-      vertices.push(x, y, color[0], color[1], color[2], alpha, pointSize);
-    };
-
-    const createStrip = (path, halfWidth, color, opacity) => {
-      const vertices = [];
-      for (let index = 0; index < sampleCount; index += 1) {
-        const progress = index / (sampleCount - 1);
-        const edge = edgeEnvelope(progress);
-        const x = -0.98 + progress * 1.96;
-        const y = path(progress, edge);
-        const width = typeof halfWidth === "function" ? halfWidth(progress, edge) : halfWidth;
-        const alpha = opacity * edge;
-        appendVertex(vertices, x, y - width, color, alpha);
-        appendVertex(vertices, x, y + width, color, alpha);
-      }
-      return vertices;
-    };
-
-    const createTies = (upperPath, lowerPath, energy) => {
-      const vertices = [];
-      for (let index = 4; index < sampleCount - 4; index += 4) {
-        const progress = index / (sampleCount - 1);
-        const edge = edgeEnvelope(progress);
-        const level = spectrumAt(progress);
-        const x = -0.98 + progress * 1.96;
-        const color = progress < 0.52 ? [0.22, 0.62, 0.88] : [0.42, 0.94, 0.76];
-        const alpha = edge * (0.025 + level * 0.12 + energy * 0.025);
-        appendVertex(vertices, x, lowerPath(progress, edge), color, alpha);
-        appendVertex(vertices, x, upperPath(progress, edge), color, alpha);
-      }
-      return vertices;
-    };
-
-    const createPeakPoints = (upperPath, lowerPath) => {
-      const vertices = [];
-      for (let index = 2; index < spectrumSize - 2; index += 1) {
-        const progress = index / (spectrumSize - 1);
-        const level = smoothedSpectrum[index];
-        if (level < 0.13 || level < smoothedSpectrum[index - 1] || level < smoothedSpectrum[index + 1]) continue;
-        const edge = edgeEnvelope(progress);
-        const x = -0.98 + progress * 1.96;
-        const color = progress > 0.7 ? [0.96, 0.78, 0.38] : [0.68, 1, 0.91];
-        const pointSize = Math.min(10, 2.5 + level * 7);
-        appendVertex(vertices, x, upperPath(progress, edge), color, edge * (0.28 + level * 0.55), pointSize);
-        if (index % 3 === 0) appendVertex(vertices, x, lowerPath(progress, edge), color, edge * level * 0.34, pointSize * 0.72);
-      }
-      return vertices;
-    };
-
-    const drawVertices = (vertices, primitive, points = false) => {
-      if (!vertices.length) return;
-      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
-      const stride = floatsPerVertex * Float32Array.BYTES_PER_ELEMENT;
-      gl.enableVertexAttribArray(attributes.position);
-      gl.vertexAttribPointer(attributes.position, 2, gl.FLOAT, false, stride, 0);
-      gl.enableVertexAttribArray(attributes.color);
-      gl.vertexAttribPointer(attributes.color, 4, gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
-      gl.enableVertexAttribArray(attributes.pointSize);
-      gl.vertexAttribPointer(attributes.pointSize, 1, gl.FLOAT, false, stride, 6 * Float32Array.BYTES_PER_ELEMENT);
-      gl.uniform1f(pointModeUniform, points ? 1 : 0);
-      gl.drawArrays(primitive, 0, vertices.length / floatsPerVertex);
-    };
-
-    const drawFallback = (state) => {
+    const drawFallback = (state, now) => {
       if (!fallback) return;
-      fallback.clearRect(0, 0, canvas.width, canvas.height);
-      updateAnalysisShape(state);
-      const centerY = canvas.height / 2;
-      const drawTrace = (direction, color, width) => {
-        fallback.beginPath();
-        for (let index = 0; index < sampleCount; index += 1) {
-          const progress = index / (sampleCount - 1);
-          const edge = edgeEnvelope(progress);
-          const spectrum = spectrumAt(progress);
-          const waveform = waveformAt(progress);
-          const x = progress * canvas.width;
-          const y = centerY + direction * edge * spectrum * canvas.height * 0.27 + waveform * canvas.height * 0.055;
-          if (index === 0) fallback.moveTo(x, y);
-          else fallback.lineTo(x, y);
-        }
-        fallback.strokeStyle = color;
-        fallback.lineWidth = width;
-        fallback.stroke();
-      };
-      fallback.globalCompositeOperation = "lighter";
-      drawTrace(-1, "rgba(91, 230, 200, .72)", Math.max(1, canvas.height * 0.008));
-      drawTrace(1, "rgba(66, 145, 215, .56)", Math.max(1, canvas.height * 0.006));
+      updateAudioState(state);
+      const width = canvas.width;
+      const height = canvas.height;
+      const t = now * 0.0001;
+      const background = fallback.createLinearGradient(0, 0, 0, height);
+      background.addColorStop(0, "#080828");
+      background.addColorStop(0.58, "#100b31");
+      background.addColorStop(1, "#030615");
       fallback.globalCompositeOperation = "source-over";
+      fallback.fillStyle = background;
+      fallback.fillRect(0, 0, width, height);
+
+      const palette = ["#6130ba", "#cf3d91", "#f0a548", "#4fc99b", "#52c6d4"];
+      fallback.save();
+      fallback.globalCompositeOperation = "screen";
+      palette.forEach((color, index) => {
+        const phase = t * (0.9 + index * 0.13) + index * 1.7;
+        const y = height * (0.42 + index * 0.065 + Math.sin(phase) * (0.03 + smoothedBands[1] * 0.035));
+        fallback.beginPath();
+        fallback.moveTo(-width * 0.12, y + height * 0.13);
+        fallback.bezierCurveTo(width * 0.22, y - height * (0.12 + smoothedBands[1] * 0.08), width * 0.55, y + height * 0.16, width * 1.12, y - height * 0.06);
+        fallback.lineTo(width * 1.12, y + height * 0.13);
+        fallback.bezierCurveTo(width * 0.62, y + height * 0.23, width * 0.25, y + height * 0.01, -width * 0.12, y + height * 0.25);
+        fallback.closePath();
+        fallback.globalAlpha = 0.13 + smoothedEnergy * 0.08;
+        fallback.shadowColor = color;
+        fallback.shadowBlur = height * 0.08;
+        fallback.fillStyle = color;
+        fallback.fill();
+      });
+      fallback.restore();
+
+      const water = fallback.createLinearGradient(0, height * 0.7, 0, height);
+      water.addColorStop(0, "rgba(94, 130, 190, .08)");
+      water.addColorStop(1, "rgba(1, 4, 20, .78)");
+      fallback.fillStyle = water;
+      fallback.fillRect(0, height * 0.7, width, height * 0.3);
+
+      const earthX = width * 0.79;
+      const earthY = height * 0.22;
+      const earthRadius = Math.min(width, height) * 0.14;
+      const earth = fallback.createRadialGradient(
+        earthX - earthRadius * 0.34,
+        earthY - earthRadius * 0.3,
+        earthRadius * 0.08,
+        earthX,
+        earthY,
+        earthRadius,
+      );
+      earth.addColorStop(0, "#467e9a");
+      earth.addColorStop(0.55, "#153f64");
+      earth.addColorStop(1, "#03081d");
+      fallback.shadowColor = "rgba(74, 186, 222, .56)";
+      fallback.shadowBlur = earthRadius * 0.35;
+      fallback.fillStyle = earth;
+      fallback.beginPath();
+      fallback.arc(earthX, earthY, earthRadius, 0, Math.PI * 2);
+      fallback.fill();
+      fallback.shadowBlur = 0;
+
+      fallback.globalCompositeOperation = "screen";
+      for (let index = 0; index < 42; index += 1) {
+        const x = (Math.sin(index * 91.17 + t * 0.7) * 0.5 + 0.5) * width;
+        const y = (Math.sin(index * 37.73 - t * 0.41) * 0.5 + 0.5) * height * 0.72;
+        const size = 0.5 + (index % 5) * 0.24 + smoothedBands[2] * 1.8;
+        fallback.globalAlpha = 0.12 + smoothedBands[2] * 0.42;
+        fallback.fillStyle = index % 3 ? "#e7eef5" : "#f2c477";
+        fallback.beginPath();
+        fallback.arc(x, y, size, 0, Math.PI * 2);
+        fallback.fill();
+      }
+      fallback.globalCompositeOperation = "source-over";
+      fallback.globalAlpha = 1;
     };
 
     const draw = (state, now = performance.now()) => {
-      const frameInterval = reduced ? 64 : 30;
+      const frameInterval = reduced ? 84 : 32;
       if (now - lastDrawAt < frameInterval) return;
       lastDrawAt = now;
       resize();
       if (!gl || !program || gl.isContextLost()) {
-        drawFallback(state);
+        drawFallback(state, now);
         return;
       }
-      updateAnalysisShape(state);
-      const energy = state.analysisActive
-        ? Math.min(1, (state.rms || 0) * automaticGain * 3.8 + smoothedSpectrum[5] * 0.35)
-        : 0;
-      const upperPath = (progress, edge) => {
-        const spectrum = spectrumAt(progress);
-        return edge * (0.035 + spectrum * 0.48) + waveformAt(progress) * edge * 0.055;
-      };
-      const lowerPath = (progress, edge) => {
-        const spectrum = spectrumAt(progress);
-        return -edge * (0.035 + spectrum * 0.42) + waveformAt(progress) * edge * 0.045;
-      };
-      const upperInnerPath = (progress, edge) => edge * spectrumAt(progress) * 0.2 + waveformAt(progress) * edge * 0.1;
-      const lowerInnerPath = (progress, edge) => -edge * spectrumAt(progress) * 0.18 + waveformAt(progress) * edge * 0.09;
-      const waveformPath = (progress, edge) => waveformAt(progress) * edge * (0.15 + spectrumAt(progress) * 0.1);
 
+      updateAudioState(state);
       gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(program);
-      drawVertices(createTies(upperPath, lowerPath, energy), gl.LINES);
-      drawVertices(createStrip(upperPath, 0.035 + energy * 0.012, [0.18, 0.59, 0.86], 0.08 + energy * 0.08), gl.TRIANGLE_STRIP);
-      drawVertices(createStrip(lowerPath, 0.032 + energy * 0.01, [0.19, 0.52, 0.8], 0.07 + energy * 0.07), gl.TRIANGLE_STRIP);
-      drawVertices(createStrip(upperInnerPath, 0.018, [0.32, 0.92, 0.77], 0.11 + energy * 0.08), gl.TRIANGLE_STRIP);
-      drawVertices(createStrip(lowerInnerPath, 0.015, [0.31, 0.75, 0.82], 0.09 + energy * 0.06), gl.TRIANGLE_STRIP);
-      drawVertices(createStrip(upperPath, 0.0045, [0.47, 1, 0.84], 0.5 + energy * 0.22), gl.TRIANGLE_STRIP);
-      drawVertices(createStrip(lowerPath, 0.0038, [0.29, 0.67, 0.93], 0.4 + energy * 0.18), gl.TRIANGLE_STRIP);
-      drawVertices(createStrip(waveformPath, 0.005 + energy * 0.003, [0.94, 0.78, 0.38], 0.32 + energy * 0.48), gl.TRIANGLE_STRIP);
-      drawVertices(createPeakPoints(upperPath, lowerPath), gl.POINTS, true);
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+      gl.enableVertexAttribArray(positionAttribute);
+      gl.vertexAttribPointer(positionAttribute, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
+      gl.uniform1f(uniforms.time, now * 0.001 * (reduced ? 0.34 : 1));
+      gl.uniform1f(uniforms.bass, smoothedBands[0]);
+      gl.uniform1f(uniforms.mid, smoothedBands[1]);
+      gl.uniform1f(uniforms.high, smoothedBands[2]);
+      gl.uniform1f(uniforms.energy, smoothedEnergy);
+      gl.uniform1f(uniforms.playing, state.playing ? 1 : 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
     };
 
     canvas.addEventListener("webglcontextlost", (event) => {
@@ -401,8 +565,8 @@
     canvas.addEventListener("webglcontextrestored", () => {
       program = null;
       vertexBuffer = null;
-      attributes = null;
-      pointModeUniform = null;
+      positionAttribute = -1;
+      uniforms = null;
       initWebGL();
     });
     if (!initWebGL()) initFallback();
@@ -452,8 +616,11 @@
     if (planetSignal) planetSignal.textContent = metadata.signal;
     if (analysisState) {
       analysisState.textContent = analysis?.active
-        ? `LIVE FFT ${analysis.fftSize || 512} / ${analysis.spectrum?.length || 32} BANDS`
-        : (analysis?.supported ? "FFT READY / AUDIO PAUSED" : "AUDIO ANALYSIS UNAVAILABLE");
+        ? "音の呼吸を解析中"
+        : (analysis?.supported ? "静かな光の呼吸" : "光の余韻");
+      analysisState.title = analysis?.active
+        ? `Web Audio FFT ${analysis.fftSize || 512} / 低・中・高域を実測中`
+        : (analysis?.supported ? "Web Audio FFT 待機中" : "音声解析を利用できないためアンビエント表示中");
     }
     if (currentTime) currentTime.textContent = formatTime(elapsed);
     if (duration) duration.textContent = formatTime(trackDuration);
