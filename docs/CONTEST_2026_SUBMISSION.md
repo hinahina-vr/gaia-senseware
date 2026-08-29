@@ -26,9 +26,6 @@ flowchart LR
   F[ESP32 任意] -->|HTTPS| G[Pages Functions]
   G --> H[D1]
   H --> I[センサー画面]
-  E --> J[観測ノート localStorage]
-  I --> J
-  J --> K[URLフラグメント共有]
 ```
 
 通常展示はリポジトリへ保存したスナップショットだけで完結します。地図のライブ展示09〜12に限り、機能フラグ有効時はPages WorkerがNOAA・JAXA・ESAの公開観測を読み取ります。各展示の主表示では `SOURCE`（公開記録）、`DERIVED`（正規化・補間・計算）、`SCENARIO`（仮定や観客操作による状態）と、観測鮮度 `NEAR REAL TIME / LATEST PUBLISHED / STALE / SNAPSHOT` を区別しています。
@@ -41,12 +38,10 @@ flowchart LR
 |---|---|
 | 初見導線 | キービジュアル上でサウンド有無を選び、映画的オープニング後に物語／探索を選択 |
 | 再訪導線 | 毎回同じ作品入口を表示し、自動遷移や前回ルートの押し付けをしない |
-| 直接URL | `#tour`、`#story`、`#earth`、`#observation=...` は映画的オープニングを迂回 |
+| 直接URL | `#tour`、`#story`、`#earth` は映画的オープニングを迂回 |
 | 地球観測 | ガイド、または「データを探索する」→「世界を読む」 |
 | 出典・変換 | 地図の `OPEN DATA` と `CODE`、READMEのデータ開示原則 |
-| Live Senseware | 地図のライブ展示09〜12を開き、各展示の主表示で取得元、状態、観測時刻、生成音マッピングを確認 |
-| 観測の保存 | 世界地図の「この時点を保存」、ESP32履歴の「観測ノートに保存」 |
-| 比較・共有 | 観測ノートで2件を選択。共有値はURLフラグメント内だけに保存 |
+| Live Senseware | 地図のライブ展示09〜12を開き、各展示の主表示で取得元、状態、観測時刻、光への変換を確認 |
 | モバイル | Chromeの縦画面・短い横画面でサウンド選択、オープニング、ガイドを操作 |
 | GitHub・テスト | Actionsの `Contest checks` と下記コマンド |
 
@@ -59,7 +54,7 @@ npm --prefix sensor-platform run check:pages-worker
 npm --prefix sensor-platform run test:pages
 ```
 
-`check:contest`は、初期画面の保守的な未圧縮合計1MB以下、操作前の大型資産読込禁止、観測ノートの24件制限・比較・URL共有・非公開項目除去、公開メディアの権利台帳、この提出ガイドとCI設定を検査します。GitHub ActionsはUbuntuイメージの実Google ChromeでPC、4種類のスマートフォン幅、WebGL無効、履歴・再読込、直接hash、10回の開閉、JavaScriptエラー、未処理Promise、404を毎回検査し、失敗時成果物を14日間保存します。
+`check:contest`は、初期画面の保守的な未圧縮合計1MB以下、操作前の大型資産読込禁止、公開メディアの権利台帳、この提出ガイドとCI設定を検査します。GitHub ActionsはUbuntuイメージの実Google ChromeでPC、4種類のスマートフォン幅、WebGL無効、履歴・再読込、直接hash、10回の開閉、JavaScriptエラー、未処理Promise、404を毎回検査し、失敗時成果物を14日間保存します。
 
 ## データ出典
 

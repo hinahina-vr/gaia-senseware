@@ -15,6 +15,7 @@
   const LEGACY_CONFIG_KEYS = ["gaiaSensewareNovel:config:v3", "gaiaSensewareNovel:config:v2"];
   const GALLERY_KEY = "gaiaSensewareNovel:cg-gallery:v1";
   const LOG_COMMENT_KEY = "gaiaSensewareNovel:log-comments:v1";
+  const TRUE_END_PENDING_KEY = "gaiaSensewareTrueEnd:pending:v1";
   const LEGACY_PROGRESS_KEYS = ["gaia_novel_save_v6", "gaiaSensewareNovel:v5"];
   const LEGACY_MANUAL_KEYS = ["gaia_novel_manual_saves_v6", "gaiaSensewareNovel:manual-saves:v1"];
   const explicitBuildProfile = globalThis.GAIA_BUILD_PROFILE;
@@ -171,9 +172,9 @@
   });
   const CHARACTER_VIEW = Object.freeze({ mizuha: "minamo", amane: "sora" });
   const BACKGROUND_SOUNDTRACK = Object.freeze([
-    ["event-cg-festival-map-transition-five-plane", "senseware"],
-    ["modis-land-cover-2023.png", "senseware"],
-    ["novel-bg-map01-data-provenance", "senseware"],
+    ["event-cg-festival-map-transition-five-plane", "mapambient"],
+    ["modis-land-cover-2023.png", "mapambient"],
+    ["novel-bg-map01-data-provenance", "mapambient"],
     ["event-cg-first-encounter-five-plane", "windowlight"],
     ["event-cg-amane-closeup-five-plane", "windowlight"],
     ["event-cg-mizuha-closeup-five-plane", "windowlight"],
@@ -1929,9 +1930,8 @@
       node.textContent = text;
       return node;
     };
-    const temporalParts = temporal.split("〜");
-    const units = [unit(temporalParts.shift() || "", "time")];
-    if (temporalParts.length) units.push(unit(`〜${temporalParts.join("〜")}`, "range"));
+    const clockMatch = temporal.match(/(?:^|\s)([0-2]?\d:\d{2})(?=\s*(?:〜|～|–|—|-)|\s*$)/u);
+    const units = [unit(clockMatch?.[1] || temporal, "time")];
     if (locationParts.length) {
       const tail = document.createElement("span");
       tail.className = "novel-temporal-heading-tail";
@@ -4166,6 +4166,7 @@
     resetFastForward();
     state.clear = true;
     state.archivesUnlocked = true;
+    writeStorage(TRUE_END_PENDING_KEY, new Date().toISOString());
     saveProgress();
     window.dispatchEvent(new CustomEvent("gaia:story-progression-change", {
       detail: { mainEndingComplete: true, apeironceneComplete: false },

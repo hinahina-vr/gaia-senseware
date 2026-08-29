@@ -10,9 +10,9 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "limited-feature-script.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
 const expectedFreezeHash = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
-const expectedApprovedHash = "ca8806dc901bb81c28cd6e603a7dfc4e3d9f38301230738e7e940fdb89308aa3";
+const expectedApprovedHash = "c31ff287372f73a70a49ace0272154ffff9dcaaedebbb5163ae5b652a5261c5a";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
-const expectedSceneCounts = [72, 43, 46, 50, 79, 83];
+const expectedSceneCounts = [72, 43, 46, 50, 79, 82];
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 
 const canonBytes = fs.readFileSync(canonPath);
@@ -38,9 +38,12 @@ assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedSceneC
 
 const steps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(steps.map((step) => [step.id, step]));
-assert.equal(steps.length, 373, "承認済み本文372件とスタッフロール接続1件が必要です");
+assert.equal(steps.length, 372, "承認済み本文372件が必要です");
 assert.equal(stepMap.size, steps.length, "step IDが重複しています");
 assert.equal(steps.at(-1).id, "welcome_chat_095", "スタッフロール接続が末尾にありません");
+assert.equal(stepMap.get("gx_experience_024").text, "みずが画面を示そうと私のほうへ身を乗り出す。長い髪が肩のすぐ近くで揺れ、初対面の人とこんなにも急に距離が縮まることに、説明より先に心臓の音を意識した。");
+assert.equal(stepMap.get("welcome_chat_013").text, "メンバーたちから歓迎の絵文字が次々に付き、数字が増えていく。短い反応なのに、画面の向こうへ本当に入れてもらえた気がした。");
+assert.equal(steps.filter((step) => step.text === "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。").length, 1, "本編末尾の地の文が重複しています");
 
 const kindToType = Object.freeze({ 地の文: "narration", 会話: "dialogue", 学内チャット: "chat", チャット画面: "chatSurface", 操作: "interaction" });
 for (const approvedScene of approved.mainScenes) {

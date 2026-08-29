@@ -30,7 +30,7 @@ try {
     await context.addInitScript(() => {
       localStorage.clear();
       localStorage.setItem("gaia-senseware-bgm-volume", "0.2");
-      localStorage.setItem("gaia:opening-route-guide:v2", "seen");
+      localStorage.setItem("gaia:opening-route-guide:v3", "seen");
     });
     const page = await context.newPage();
     const audioResponses = [];
@@ -60,20 +60,26 @@ try {
     await page.waitForFunction(() => document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 10_000 });
     const routeSwitchMs = performance.now() - routeStartedAt;
     await page.waitForTimeout(120);
-    assert(audioResponses.some(({ url, status }) => url.includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(status)), `${viewport.name}: transparent map ambience was not requested by the data screen`);
+    assert(audioResponses.some(({ url, status }) => url.includes("moonlit-source-save.mp3") && [200, 206].includes(status)), `${viewport.name}: GAIA SENSEWARE main score was not requested by the data entrance`);
     const destination = await page.evaluate(() => ({
       track: globalThis.GaiaOpeningAudio.getState().track,
       openingHidden: document.querySelector("#gaia-opening")?.hidden,
       introVisible: document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false",
     }));
     assert.deepEqual(destination, { track: "senseware", openingHidden: true, introVisible: true });
+    const mapPath = page.locator('[data-intro-path="map"]');
+    if (viewport.mobile) await mapPath.tap();
+    else await mapPath.click();
+    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "mapambient", null, { timeout: 10_000 });
+    await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 10_000 });
+    assert(audioResponses.some(({ url, status }) => url.includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(status)), `${viewport.name}: transparent map ambience was not requested by the map`);
     const screenshot = path.join(outputDir, `${viewport.name}-senseware-destination.png`);
     await page.screenshot({ path: screenshot, animations: "disabled" });
 
     await page.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "senseware");
+    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "mapambient");
     const directTrack = await page.evaluate(() => globalThis.GaiaOpeningAudio.getState().track);
-    assert.equal(directTrack, "senseware", `${viewport.name}: direct GAIA SENSEWARE routes use the opening track`);
+    assert.equal(directTrack, "mapambient", `${viewport.name}: direct map routes do not use the map ambience`);
     report.scans.push({ viewport, routeSwitchMs, destination, directTrack, audioResponses, screenshot, passed: true });
     await context.close();
   }

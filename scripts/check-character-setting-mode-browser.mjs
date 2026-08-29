@@ -10,221 +10,149 @@ const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
   : path.join(moduleRoot, "playwright", "index.mjs");
 const { chromium } = await import(pathToFileURL(playwrightEntry).href);
-const outputDir = path.resolve(outputArgument || "artifacts/character-setting-mode-browser");
+const outputDir = path.resolve(outputArgument || "E:/CodexData/temp/gaia-character-profile-browser");
 fs.mkdirSync(outputDir, { recursive: true });
 
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900, mobile: false },
+  { name: "pc-4k", width: 3840, height: 2160, mobile: false },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
-];
-const expectedSheets = [
-  "01-three-ecologies-character-master.png",
-  "02-first-meeting-zushi-coast.png",
-  "03-gaia-senseware-installation.png",
-  "04-life-earth-coevolution.png",
-  "05-anthropocene-planetary-force.png",
-  "06-ai-earth-coevolution.png",
-  "07-three-ecologies-world.png",
-  "08-old-os-to-gx.png",
-  "09-next-stage-civilization.png",
-  "10-final-keyvisual.png",
+  { name: "reduced-motion", width: 1440, height: 900, mobile: false, reduced: true },
 ];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
 
-const attachDiagnostics = (page, name, { allowAbortedImage = false } = {}) => {
+const attachDiagnostics = (page, name) => {
   page.on("console", (message) => {
-    if (allowAbortedImage && message.type() === "error" && /Failed to load resource: net::ERR_FAILED/u.test(message.text())) return;
-    if (message.type() === "error") report.consoleErrors.push(`${name}: ${message.text()}`);
+    if (message.type() === "error") report.consoleErrors.push(name + ": " + message.text());
   });
-  page.on("pageerror", (error) => report.pageErrors.push(`${name}: ${error.message}`));
+  page.on("pageerror", (error) => report.pageErrors.push(name + ": " + error.message));
   page.on("response", (response) => {
-    if (response.status() === 404) report.responses404.push(`${name}: ${response.url()}`);
+    if (response.status() === 404) report.responses404.push(name + ": " + response.url());
   });
 };
 
-const waitForPageImage = (page, pageNumber) => page.waitForFunction((expectedPage) => {
-  const image = document.querySelector("#character-book-image");
-  const pageSurface = document.querySelector("#character-book-page");
-  return document.querySelector("#character-book-current")?.textContent.trim() === expectedPage
-    && image?.complete
-    && image.naturalWidth > 0
-    && !pageSurface?.classList.contains("is-loading")
-    && !pageSurface?.classList.contains("is-turning");
-}, pageNumber);
-
 const inspect = (page) => page.evaluate(() => {
   const layer = document.querySelector("#character-book-layer");
-  const viewer = document.querySelector(".character-book-viewer");
-  const details = document.querySelector(".character-book-details");
+  const scroller = document.querySelector("#character-book-scroll");
+  const hero = document.querySelector("#character-book-hero");
   const image = document.querySelector("#character-book-image");
-  const currentButtons = [...document.querySelectorAll("[data-character-page]")]
-    .filter((button) => button.getAttribute("aria-current") === "page");
+  const canvas = document.querySelector("#character-book-webgl");
+  const lead = document.querySelector(".character-book-lead");
   const rect = (element) => element?.getBoundingClientRect().toJSON();
   return {
     layerPosition: getComputedStyle(layer).position,
     layerRect: rect(layer),
-    viewerRect: rect(viewer),
-    detailsRect: rect(details),
+    heroRect: rect(hero),
     imageRect: rect(image),
-    imageAlt: image?.alt || "",
+    canvasRect: rect(canvas),
+    webglState: canvas?.dataset.webglState || "missing",
+    webglRendered: canvas?.dataset.webglRendered || "false",
+    webglWidth: canvas instanceof HTMLCanvasElement ? canvas.width : 0,
+    webglHeight: canvas instanceof HTMLCanvasElement ? canvas.height : 0,
+    webglOpacity: Number.parseFloat(getComputedStyle(canvas).opacity || "0"),
     imageSource: image?.currentSrc || "",
-    pageCount: document.querySelectorAll("[data-character-page]").length,
-    activePageCount: currentButtons.length,
+    imageAlt: image?.alt || "",
+    selectors: document.querySelectorAll("[data-character-select]").length,
+    activeSelectors: [...document.querySelectorAll("[data-character-select]")]
+      .filter((button) => button.getAttribute("aria-current") === "true").length,
+    profiles: document.querySelectorAll("[data-character-profile]").length,
     current: document.querySelector("#character-book-current")?.textContent.trim(),
-    title: document.querySelector("#character-book-page-title")?.textContent.trim(),
+    title: document.querySelector("#character-book-page-title")?.textContent.replace(/\s+/gu, " ").trim(),
+    characterId: layer?.dataset.characterId,
     bodyMode: document.body.classList.contains("character-mode-open"),
     ariaHidden: layer?.getAttribute("aria-hidden"),
-    dialogRole: layer?.getAttribute("role"),
+    role: layer?.getAttribute("role"),
     modal: layer?.getAttribute("aria-modal"),
-    nextDisabled: document.querySelector("#character-book-next")?.disabled,
+    scrollHeight: scroller?.scrollHeight || 0,
+    clientHeight: scroller?.clientHeight || 0,
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
+    leadOverflow: lead ? Math.max(0, lead.scrollWidth - lead.clientWidth) : -1,
   };
 });
 
 try {
   for (const viewport of viewports) {
-    const context = await browser.newContext({ viewport, hasTouch: viewport.mobile });
+    const context = await browser.newContext({
+      viewport,
+      hasTouch: viewport.mobile,
+      reducedMotion: viewport.reduced ? "reduce" : "no-preference",
+    });
     const page = await context.newPage();
     attachDiagnostics(page, viewport.name);
     await page.goto(new URL("/#character", baseUrl).href, { waitUntil: "domcontentloaded" });
-    await page.locator("#character-book-layer").waitFor({ state: "visible", timeout: 15_000 });
-    await waitForPageImage(page, "01");
+    await page.locator("#character-book-layer").waitFor({ state: "visible", timeout: 15000 });
+    await page.waitForFunction(() => {
+      const image = document.querySelector("#character-book-image");
+      return image?.complete && image.naturalWidth > 0
+        && document.querySelector("#character-book-webgl")?.dataset.webglRendered === "true";
+    });
 
     const initial = await inspect(page);
-    assert.equal(initial.layerPosition, "fixed", `${viewport.name}: character viewer is not independent of the exploration scroll`);
-    assert.equal(initial.bodyMode, true, `${viewport.name}: character mode body state is missing`);
-    assert.equal(initial.ariaHidden, "false", `${viewport.name}: dialog is hidden from accessibility APIs`);
-    assert.equal(initial.dialogRole, "dialog", `${viewport.name}: standalone viewer has no dialog role`);
-    assert.equal(initial.modal, "true", `${viewport.name}: standalone viewer is not modal`);
-    assert.equal(initial.pageCount, 10, `${viewport.name}: setting bible does not expose 10 pages`);
-    assert.equal(initial.activePageCount, 1, `${viewport.name}: page index has an invalid active state`);
-    assert.equal(initial.current, "01", `${viewport.name}: character master is not the opening page`);
-    assert.equal(initial.title, "三人の基準設定画", `${viewport.name}: character master title is incorrect`);
-    assert.match(initial.imageSource, /01-three-ecologies-character-master\.png/u, `${viewport.name}: character master image is incorrect`);
-    assert(initial.imageAlt.length >= 12, `${viewport.name}: setting image alt text is missing`);
-    assert.equal(initial.overflowX, 0, `${viewport.name}: horizontal overflow (${initial.overflowX}px)`);
-    assert(initial.imageRect.left >= -1 && initial.imageRect.right <= viewport.width + 1, `${viewport.name}: page image leaves viewport`);
-    if (viewport.mobile) {
-      assert(initial.detailsRect.top >= initial.viewerRect.bottom - 1, `${viewport.name}: details do not stack below the page`);
-    } else {
-      assert(initial.viewerRect.right <= initial.detailsRect.left, `${viewport.name}: desktop page and metadata overlap`);
-    }
-    assert.equal(await page.locator("#character-book-layer").getAttribute("data-image-state"), "ready", `${viewport.name}: opening sheet is not in a ready state`);
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-character-book.png`), fullPage: false });
+    assert.equal(initial.layerPosition, "fixed", viewport.name + ": character page is not an independent full-screen surface");
+    assert.equal(initial.bodyMode, true, viewport.name + ": character body mode is missing");
+    assert.equal(initial.ariaHidden, "false", viewport.name + ": dialog remains hidden");
+    assert.equal(initial.role, "dialog", viewport.name + ": dialog role is missing");
+    assert.equal(initial.modal, "true", viewport.name + ": modal state is missing");
+    assert.equal(initial.selectors, 3, viewport.name + ": three-character selector is incomplete");
+    assert.equal(initial.activeSelectors, 1, viewport.name + ": selector active state is ambiguous");
+    assert.equal(initial.profiles, 3, viewport.name + ": three long-form profiles are incomplete");
+    assert.equal(initial.current, "01", viewport.name + ": Mizuha is not the opening character");
+    assert.match(initial.title, /MIZUHA.*みずは/u, viewport.name + ": opening profile title is incorrect");
+    assert.match(initial.imageSource, /mizuha-calm-07-v2\.png/u, viewport.name + ": opening character art is incorrect");
+    assert(initial.imageAlt.length >= 10, viewport.name + ": hero character alt text is missing");
+    assert.equal(initial.webglState, "ready", viewport.name + ": WebGL atmosphere did not initialize");
+    assert.equal(initial.webglRendered, "true", viewport.name + ": WebGL atmosphere did not render");
+    assert(initial.webglWidth > 0 && initial.webglHeight > 0, viewport.name + ": WebGL buffer is empty");
+    assert(initial.webglOpacity > 0, viewport.name + ": WebGL atmosphere is not visible");
+    assert(initial.canvasRect.left <= 0 && initial.canvasRect.top <= 0, viewport.name + ": WebGL canvas is offset");
+    assert(initial.heroRect.height >= viewport.height * 0.9, viewport.name + ": hero does not occupy the viewport");
+    assert(initial.scrollHeight > initial.clientHeight * 2.5, viewport.name + ": long-form character document is missing");
+    assert.equal(initial.overflowX, 0, viewport.name + ": page has horizontal overflow");
+    if (!viewport.mobile) assert(initial.leadOverflow <= 1, viewport.name + ": one-line lead is clipped");
 
-    await page.locator("#character-book-page").click();
-    await waitForPageImage(page, "02");
-    assert.equal(await page.locator("#character-book-page-title").textContent(), "海辺での初対面");
-    assert.match(await page.locator("#character-book-image").getAttribute("src"), /02-first-meeting-zushi-coast\.png/u);
+    await page.screenshot({ path: path.join(outputDir, viewport.name + "-character-hero.png"), fullPage: false });
+
+    await page.locator('[data-character-select="amane"]').click();
+    await page.waitForFunction(() => document.querySelector("#character-book-layer")?.dataset.characterId === "amane"
+      && document.querySelector("#character-book-current")?.textContent.trim() === "02"
+      && /amane-calm-07-v2\.png/u.test(document.querySelector("#character-book-image")?.currentSrc || ""));
+    const amane = await inspect(page);
+    assert.match(amane.title, /AMANE.*あめ/u, viewport.name + ": Amane profile did not update");
+    assert.equal(amane.activeSelectors, 1, viewport.name + ": Amane selection produced multiple active portraits");
 
     await page.keyboard.press("ArrowRight");
-    await waitForPageImage(page, "03");
-    assert.equal(await page.locator("#character-book-page-title").textContent(), "GAIA SENSEWAREの展示空間");
+    await page.waitForFunction(() => document.querySelector("#character-book-layer")?.dataset.characterId === "sakuya"
+      && document.querySelector("#character-book-current")?.textContent.trim() === "03");
+    const sakuya = await inspect(page);
+    assert.match(sakuya.title, /SAKUYA.*saku/u, viewport.name + ": keyboard character change failed");
+    assert.match(sakuya.imageSource, /sakuya-calm-07-v1\.png/u, viewport.name + ": Sakuya art did not load");
 
-    for (let pageIndex = 0; pageIndex < expectedSheets.length; pageIndex += 1) {
-      await page.locator(`[data-character-page="${pageIndex}"]`).click();
-      await waitForPageImage(page, String(pageIndex + 1).padStart(2, "0"));
-      const sheet = await page.locator("#character-book-image").evaluate((element) => ({
-        source: element.currentSrc,
-        naturalWidth: element.naturalWidth,
-        naturalHeight: element.naturalHeight,
-        state: document.querySelector("#character-book-layer")?.dataset.imageState,
-      }));
-      assert.match(sheet.source, new RegExp(expectedSheets[pageIndex].replaceAll(".", "\\."), "u"), `${viewport.name}: sheet ${pageIndex + 1} source is wrong`);
-      assert(sheet.naturalWidth >= 1200 && sheet.naturalHeight >= 800, `${viewport.name}: sheet ${pageIndex + 1} did not decode at full resolution`);
-      assert.equal(sheet.state, "ready", `${viewport.name}: sheet ${pageIndex + 1} remained in ${sheet.state} state`);
-    }
+    await page.locator("#character-book-profiles").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(viewport.reduced ? 50 : 220);
+    const sectionState = await page.locator("[data-character-profile='mizuha']").evaluate((element) => ({
+      visible: element.classList.contains("is-visible"),
+      color: getComputedStyle(element).color,
+      width: element.getBoundingClientRect().width,
+    }));
+    assert(sectionState.width > 0, viewport.name + ": long-form profile collapsed");
+    assert.match(sectionState.color, /rgb/u, viewport.name + ": profile typography is not rendered");
 
-    await page.locator('[data-character-page="9"]').click();
-    await waitForPageImage(page, "10");
-    assert.equal(await page.locator("#character-book-next").isDisabled(), true, `${viewport.name}: next remains active on final page`);
-    assert.equal(await page.locator("#character-book-page-title").textContent(), "第四の共創者へ");
-
-    await page.keyboard.press("ArrowLeft");
-    await waitForPageImage(page, "09");
-    const finalScan = await inspect(page);
-    assert.equal(finalScan.nextDisabled, false, `${viewport.name}: next did not recover after leaving final page`);
-    report.scans.push({ viewport: viewport.name, initial, final: finalScan, passed: true });
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-character-book-page09.png`), fullPage: false });
-
-    await page.keyboard.press("Escape");
-    await page.locator("#character-book-layer").waitFor({ state: "hidden", timeout: 5_000 });
+    await page.screenshot({ path: path.join(outputDir, viewport.name + "-character-profile.png"), fullPage: false });
+    await page.locator("#character-book-close").click();
+    await page.locator("#character-book-layer").waitFor({ state: "hidden", timeout: 5000 });
     assert.equal(await page.evaluate(() => document.body.classList.contains("character-mode-open")), false);
-    assert.equal(await page.evaluate(() => window.location.hash), "", `${viewport.name}: direct-route hash was not cleared on close`);
+    report.scans.push({ viewport, initial, amane, sakuya, sectionState });
     await context.close();
   }
 
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  const page = await context.newPage();
-  attachDiagnostics(page, "trigger-return");
-  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
-  await page.waitForFunction(() => document.querySelector("#intro-character-jump"));
-  await page.evaluate(() => {
-    document.documentElement.classList.remove("gaia-booting");
-    const boot = document.querySelector("#gaia-boot");
-    if (boot) boot.hidden = true;
-    const opening = document.querySelector("#gaia-opening");
-    if (opening) {
-      opening.hidden = true;
-      opening.inert = true;
-      opening.setAttribute("aria-hidden", "true");
-    }
-    document.body.classList.remove("gaia-opening-active", "opening-active");
-    window.dispatchEvent(new CustomEvent("gaia:opening-complete", { detail: { destination: "exploration" } }));
-  });
-  const characterTrigger = page.locator("#intro-character-jump");
-  await characterTrigger.waitFor({ state: "visible", timeout: 15_000 });
-  await characterTrigger.focus();
-  await characterTrigger.click();
-  await page.locator("#character-book-layer").waitFor({ state: "visible", timeout: 15_000 });
-  await page.waitForFunction(() => document.activeElement?.id === "character-book-close");
-  await page.locator("#character-book-close").click();
-  await page.locator("#character-book-layer").waitFor({ state: "hidden", timeout: 5_000 });
-  await page.waitForFunction(() => document.activeElement?.id === "intro-character-jump");
-  await context.close();
-
-  const recoveryContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  const recoveryPage = await recoveryContext.newPage();
-  attachDiagnostics(recoveryPage, "image-recovery", { allowAbortedImage: true });
-  let interruptFinalSheet = true;
-  await recoveryPage.route("**/10-final-keyvisual.png*", async (route) => {
-    if (interruptFinalSheet) {
-      interruptFinalSheet = false;
-      await route.abort("failed");
-    } else {
-      await route.continue();
-    }
-  });
-  await recoveryPage.goto(new URL("/#character", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await recoveryPage.locator("#character-book-layer").waitFor({ state: "visible", timeout: 15_000 });
-  await waitForPageImage(recoveryPage, "01");
-  await recoveryPage.locator('[data-character-page="9"]').click();
-  await recoveryPage.waitForFunction(() => document.querySelector("#character-book-layer")?.dataset.imageState === "error");
-  const failureState = await recoveryPage.locator("#character-book-image").evaluate((element) => ({
-    naturalWidth: element.naturalWidth,
-    statusVisible: !document.querySelector("#character-book-image-state")?.hidden,
-    statusText: document.querySelector("#character-book-image-state")?.textContent.trim(),
-  }));
-  assert(failureState.naturalWidth > 0, "A failed setting sheet left the viewer visually blank");
-  assert.equal(failureState.statusVisible, true, "A failed setting sheet has no visible retry state");
-  assert.match(failureState.statusText, /クリックで再試行/u, "The image failure state does not explain recovery");
-  await recoveryPage.locator("#character-book-page").click();
-  await waitForPageImage(recoveryPage, "10");
-  assert.equal(await recoveryPage.locator("#character-book-layer").getAttribute("data-image-state"), "ready");
-  await recoveryContext.close();
-
-  assert.deepEqual(report.consoleErrors, [], `Console errors: ${JSON.stringify(report.consoleErrors)}`);
-  assert.deepEqual(report.pageErrors, [], `Page errors: ${JSON.stringify(report.pageErrors)}`);
-  assert.deepEqual(report.responses404, [], `404 responses: ${JSON.stringify(report.responses404)}`);
+  assert.deepEqual(report.consoleErrors, [], "console errors were detected");
+  assert.deepEqual(report.pageErrors, [], "page errors were detected");
+  assert.deepEqual(report.responses404, [], "404 responses were detected");
   report.status = "passed";
-  console.log(JSON.stringify(report, null, 2));
-} catch (error) {
-  report.status = "failed";
-  report.error = error.stack || String(error);
-  console.error(JSON.stringify(report, null, 2));
-  process.exitCode = 1;
 } finally {
   await browser.close();
+  fs.writeFileSync(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
 }
+
+console.log(JSON.stringify({ status: report.status, scans: report.scans.length, outputDir }, null, 2));

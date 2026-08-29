@@ -125,6 +125,8 @@
   });
 
   const canvas = document.querySelector("#gaia-canvas");
+  const canvasHomeParent = canvas.parentElement;
+  const canvasHomeNextSibling = canvas.nextElementSibling;
   const experience = document.querySelector(".experience");
   const errorPanel = document.querySelector("#error-panel");
   const modeList = document.querySelector("#mode-list");
@@ -207,6 +209,11 @@
   const mapMobileHeadingToggle = document.querySelector("#map-mobile-heading-toggle");
   const japanModeBank = document.querySelector(".map-mode-bank");
   const mapMobileBankToggle = document.querySelector("#map-mobile-bank-toggle");
+  const mapLightOverlayOpen = document.querySelector("#map-light-overlay-open");
+  const mapLightOverlay = document.querySelector("#map-light-overlay");
+  const mapLightOverlayClose = document.querySelector("#map-light-overlay-close");
+  const mapLightOverlayScrim = document.querySelector(".map-light-overlay-scrim");
+  const mapLightOverlayDisable = document.querySelector("#map-light-overlay-disable");
   const mapModePreview = document.querySelector("#map-mode-preview");
   const mapModePreviewNumber = document.querySelector("#map-mode-preview-number");
   const mapModePreviewLabel = document.querySelector("#map-mode-preview-label");
@@ -283,16 +290,19 @@
   const GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS =
     GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS * GLOBAL_EARTHQUAKE_YEAR_COUNT;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-eight-exhibits-1";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-ovation-aurora-1";
+  const OVATION_AURORA_LIVE_DATA = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json";
+  const OVATION_AURORA_FALLBACK_DATA = "./data/ovation-aurora-snapshot.json?v=gaia-ovation-aurora-1";
+  const OVATION_AURORA_REFRESH_MS = 5 * 60 * 1000;
   const NATURAL_EARTH_LAND_DATA = "./data/natural-earth-50m-land.geojson?v=gaia-27";
   const NATURAL_EARTH_COUNTRY_DATA = "./data/natural-earth-50m-countries.geojson?v=gaia-1";
 
   const MAP_READING_GUIDES = [
     {
-      title: "CO₂は、いつから増えたのか？",
-      subject: "大気中のCO₂濃度が、1958年から現在、そして2050年の試算までどう変わるかを見る地図です。",
-      reading: "地図の色がCO₂濃度です。斜線は観測がない場所を周辺8地点から補った印。2026年以降は実測ではなく試算です。",
-      action: "年表示を動かすかマスを押すと、その時点の濃度と、実測・補完・試算の区分を確認できます。",
+      title: "CO₂の長い変化と、いまのオーロラ",
+      subject: "1958年から2050年試算までのCO₂に、NOAAの30〜90分先オーロラ予報を重ねた地図です。",
+      reading: "地図色がCO₂、極域の緑〜水色〜淡金の光がオーロラ予報です。斜線はCO₂を周辺8地点から補った場所です。",
+      action: "年表示とマスはCO₂を操作します。オーロラは5分ごとに更新しますが、雲や地上から見えるかどうかは含みません。",
     },
     {
       title: "この海流は、14日でどこまで進む？",
@@ -390,6 +400,10 @@
   const japanContext = japanOverlay.getContext("2d");
   const gosatHeatmapCanvas = document.createElement("canvas");
   const gosatHeatmapContext = gosatHeatmapCanvas.getContext("2d");
+  const ovationAuroraCanvas = document.createElement("canvas");
+  const ovationAuroraContext = ovationAuroraCanvas.getContext("2d");
+  const ovationAuroraRawCanvas = document.createElement("canvas");
+  const ovationAuroraRawContext = ovationAuroraRawCanvas.getContext("2d");
   const referenceWorldCanvas = document.createElement("canvas");
   const referenceWorldContext = referenceWorldCanvas.getContext("2d");
   let gosatHeatmapCacheKey = "";
@@ -766,6 +780,15 @@
   let gaiaSnapshot = null;
   let gaiaSnapshotError = null;
   let gaiaModeById = new Map();
+  let ovationAuroraState = {
+    status: "loading",
+    source: "pending",
+    observationTime: "",
+    forecastTime: "",
+    pointCount: 0,
+    maximum: 0,
+  };
+  let ovationAuroraReloadTimer = 0;
   let resolveGaiaSignalsReady;
   const gaiaSignalsReady = new Promise((resolve) => { resolveGaiaSignalsReady = resolve; });
   let naturalEarthLandState = "loading";
@@ -801,7 +824,12 @@
     : 0;
   let modeFromIndex = initialModeIndex;
   let modeToIndex = initialModeIndex;
+  let mapModeIndex = initialModeIndex;
+  let lightModeIndex = initialModeIndex;
+  let lightModeFromIndex = initialModeIndex;
+  let lightModeToIndex = initialModeIndex;
   let transitionStartedAt = performance.now();
+  let lightTransitionStartedAt = transitionStartedAt;
   const getThemeIndex = (index = modeToIndex) => index;
   const isTheme = (themeIndex, index = modeToIndex) => getThemeIndex(index) === themeIndex;
   const japanView = {
@@ -1825,15 +1853,21 @@
   const geographicRasterCache = new WeakMap();
   const forestRasterCache = new WeakMap();
 
+  const getRasterDimensions = (image) => ({
+    width: image?.naturalWidth || image?.videoWidth || image?.width || 0,
+    height: image?.naturalHeight || image?.videoHeight || image?.height || 0,
+  });
+
   const getGeographicRaster = (image) => {
-    if (!image.complete || !image.naturalWidth) return null;
-    const aspectRatio = image.naturalWidth / image.naturalHeight;
+    const source = getRasterDimensions(image);
+    if (!source.width || !source.height) return null;
+    const aspectRatio = source.width / source.height;
     if (aspectRatio > 1.5) return image;
 
     const cached = geographicRasterCache.get(image);
     if (
-      cached?.sourceWidth === image.naturalWidth &&
-      cached?.sourceHeight === image.naturalHeight
+      cached?.sourceWidth === source.width &&
+      cached?.sourceHeight === source.height
     ) {
       return cached.canvas;
     }
@@ -1842,8 +1876,8 @@
     // Mercator rasters. Convert each one only once to the same geographic
     // 2:1 projection used by the vector coastline, then reuse that canvas.
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(2, image.naturalWidth * 2);
-    canvas.height = Math.max(1, image.naturalHeight);
+    canvas.width = Math.max(2, source.width * 2);
+    canvas.height = Math.max(1, source.height);
     const rasterContext = canvas.getContext("2d");
     if (!rasterContext) return image;
 
@@ -1859,8 +1893,8 @@
     for (let index = 0; index < latitudeBands; index += 1) {
       const latitudeTop = latitudeLimit - (index / latitudeBands) * latitudeLimit * 2;
       const latitudeBottom = latitudeLimit - ((index + 1) / latitudeBands) * latitudeLimit * 2;
-      const sourceTop = mercatorY(latitudeTop) * image.naturalHeight;
-      const sourceBottom = mercatorY(latitudeBottom) * image.naturalHeight;
+      const sourceTop = mercatorY(latitudeTop) * source.height;
+      const sourceBottom = mercatorY(latitudeBottom) * source.height;
       const targetTop = ((90 - latitudeTop) / 180) * canvas.height;
       const targetBottom = ((90 - latitudeBottom) / 180) * canvas.height;
 
@@ -1868,7 +1902,7 @@
         image,
         0,
         sourceTop,
-        image.naturalWidth,
+        source.width,
         Math.max(0.001, sourceBottom - sourceTop),
         0,
         targetTop,
@@ -1879,10 +1913,128 @@
 
     geographicRasterCache.set(image, {
       canvas,
-      sourceWidth: image.naturalWidth,
-      sourceHeight: image.naturalHeight,
+      sourceWidth: source.width,
+      sourceHeight: source.height,
     });
     return canvas;
+  };
+
+  const parseOvationAuroraPayload = (payload) => {
+    const coordinates = Array.isArray(payload?.coordinates)
+      ? payload.coordinates
+        .map((row) => [Number(row?.[0]), Number(row?.[1]), Number(row?.[2])])
+        .filter(([lon, lat, value]) =>
+          Number.isFinite(lon) && Number.isFinite(lat) && Number.isFinite(value)
+          && Math.abs(lat) >= 40 && value > 0,
+        )
+      : [];
+    if (coordinates.length < 80) throw new Error("Invalid OVATION aurora grid");
+    const maximum = Math.max(1, ...coordinates.map((row) => row[2]));
+    return {
+      coordinates,
+      maximum,
+      observationTime: String(payload["Observation Time"] || payload.observationTime || ""),
+      forecastTime: String(payload["Forecast Time"] || payload.forecastTime || ""),
+      sampleStep: payload.sampleStep || null,
+    };
+  };
+
+  const mixOvationColor = (value, maximum, alpha) => {
+    const normalized = clamp(value / Math.max(1, maximum), 0, 1);
+    const stops = normalized < 0.56
+      ? { from: [71, 255, 181], to: [105, 222, 255], mix: normalized / 0.56 }
+      : { from: [105, 222, 255], to: [255, 231, 153], mix: (normalized - 0.56) / 0.44 };
+    const color = stops.from.map((component, index) =>
+      Math.round(component + (stops.to[index] - component) * stops.mix),
+    );
+    return `rgba(${color.join(",")},${alpha})`;
+  };
+
+  const rebuildOvationAuroraRaster = (forecast) => {
+    if (!ovationAuroraContext || !ovationAuroraRawContext) return;
+    const width = 720;
+    const height = 360;
+    ovationAuroraCanvas.width = width;
+    ovationAuroraCanvas.height = height;
+    ovationAuroraRawCanvas.width = width;
+    ovationAuroraRawCanvas.height = height;
+    const longitudeStep = Math.max(1, Number(forecast.sampleStep?.longitudeDegrees) || 1);
+    const latitudeStep = Math.max(1, Number(forecast.sampleStep?.latitudeDegrees) || 1);
+
+    ovationAuroraRawContext.clearRect(0, 0, width, height);
+    ovationAuroraRawContext.globalCompositeOperation = "source-over";
+    for (const [sourceLongitude, latitude, value] of forecast.coordinates) {
+      const visibilityFloor = Math.max(2, forecast.maximum * 0.08);
+      if (value < visibilityFloor) continue;
+      const longitude = ((sourceLongitude + 540) % 360) - 180;
+      const x = ((longitude + 180) / 360) * width;
+      const y = ((90 - latitude) / 180) * height;
+      const normalized = clamp(
+        (value - visibilityFloor) / Math.max(1, forecast.maximum - visibilityFloor),
+        0,
+        1,
+      );
+      const alpha = 0.12 + Math.pow(normalized, 0.88) * 0.82;
+      const cellWidth = Math.max(2.2, longitudeStep * width / 360 + 0.8);
+      const cellHeight = Math.max(2.2, latitudeStep * height / 180 + 0.8);
+      ovationAuroraRawContext.fillStyle = mixOvationColor(value, forecast.maximum, alpha);
+      ovationAuroraRawContext.fillRect(
+        x - cellWidth / 2,
+        y - cellHeight / 2,
+        cellWidth,
+        cellHeight,
+      );
+    }
+
+    ovationAuroraContext.clearRect(0, 0, width, height);
+    ovationAuroraContext.globalCompositeOperation = "lighter";
+    ovationAuroraContext.filter = "blur(12px)";
+    ovationAuroraContext.globalAlpha = 0.76;
+    for (const offset of [-width, 0, width]) {
+      ovationAuroraContext.drawImage(ovationAuroraRawCanvas, offset, 0);
+    }
+    ovationAuroraContext.filter = "blur(3px)";
+    ovationAuroraContext.globalAlpha = 0.58;
+    for (const offset of [-width, 0, width]) {
+      ovationAuroraContext.drawImage(ovationAuroraRawCanvas, offset, 0);
+    }
+    ovationAuroraContext.filter = "none";
+    ovationAuroraContext.globalAlpha = 1;
+    ovationAuroraContext.globalCompositeOperation = "source-over";
+  };
+
+  const loadOvationAuroraForecast = async () => {
+    window.clearTimeout(ovationAuroraReloadTimer);
+    let payload;
+    let source = "live";
+    try {
+      payload = await fetchJsonWithTimeout(OVATION_AURORA_LIVE_DATA, 7000);
+    } catch {
+      source = "snapshot";
+      try {
+        payload = await fetchJsonWithTimeout(OVATION_AURORA_FALLBACK_DATA, 3500);
+      } catch {
+        payload = null;
+      }
+    }
+    try {
+      const forecast = parseOvationAuroraPayload(payload);
+      rebuildOvationAuroraRaster(forecast);
+      ovationAuroraState = {
+        status: "ready",
+        source,
+        observationTime: forecast.observationTime,
+        forecastTime: forecast.forecastTime,
+        pointCount: forecast.coordinates.length,
+        maximum: forecast.maximum,
+      };
+    } catch {
+      ovationAuroraState = { ...ovationAuroraState, status: "offline", source };
+    }
+    ovationAuroraReloadTimer = window.setTimeout(
+      loadOvationAuroraForecast,
+      OVATION_AURORA_REFRESH_MS,
+    );
   };
 
   const getForestGeographicRaster = (image) => {
@@ -2936,8 +3088,40 @@
       ctx.fillText(secondary, x + 10, y + 34, textWidth - 20);
       ctx.restore();
     };
+    delete japanOverlay.dataset.auxiliaryPanelId;
+    delete japanOverlay.dataset.auxiliaryPanelScreenLeft;
+    delete japanOverlay.dataset.auxiliaryPanelScreenTop;
+    delete japanOverlay.dataset.auxiliaryPanelScreenRight;
+    delete japanOverlay.dataset.auxiliaryPanelScreenBottom;
+    delete japanOverlay.dataset.auxiliaryPanelLegendClearance;
+    const getLegendSafePanelY = (panelX, panelWidth, defaultY, clearance = 12) => {
+      const legendDock = mapSignalEncodingLegend?.closest(".signal-encoding-legend-dock");
+      if (!legendDock?.getClientRects().length) return defaultY;
+      const legendRect = legendDock.getBoundingClientRect();
+      const panelLeft = rect.left + panelX;
+      const panelRight = panelLeft + panelWidth;
+      const overlapsHorizontally = panelLeft < legendRect.right && panelRight > legendRect.left;
+      return overlapsHorizontally
+        ? Math.max(defaultY, legendRect.bottom - rect.top + clearance)
+        : defaultY;
+    };
+    const recordAuxiliaryPanel = (id, x, y, width, height) => {
+      const legendDock = mapSignalEncodingLegend?.closest(".signal-encoding-legend-dock");
+      const legendRect = legendDock?.getClientRects().length
+        ? legendDock.getBoundingClientRect()
+        : null;
+      japanOverlay.dataset.auxiliaryPanelId = id;
+      japanOverlay.dataset.auxiliaryPanelScreenLeft = (rect.left + x).toFixed(2);
+      japanOverlay.dataset.auxiliaryPanelScreenTop = (rect.top + y).toFixed(2);
+      japanOverlay.dataset.auxiliaryPanelScreenRight = (rect.left + x + width).toFixed(2);
+      japanOverlay.dataset.auxiliaryPanelScreenBottom = (rect.top + y + height).toFixed(2);
+      japanOverlay.dataset.auxiliaryPanelLegendClearance = legendRect
+        ? (rect.top + y - legendRect.bottom).toFixed(2)
+        : "legend-hidden";
+    };
     const drawGlobalRaster = (image, alpha, { forestOnly = false } = {}) => {
-      if (!image.complete || !image.naturalWidth) return;
+      const source = getRasterDimensions(image);
+      if (!source.width || !source.height) return;
       if (mapScope === "earth") {
         if (
           forestOnly &&
@@ -2998,6 +3182,21 @@
     if (signalMode.id === "breathing-earth") {
       const state = getBreathingEarthState(signalMode);
       renderGosatHeatmap(ctx, rect, left, top, state);
+      japanOverlay.dataset.auroraForecast = ovationAuroraState.status;
+      japanOverlay.dataset.auroraForecastSource = ovationAuroraState.source;
+      japanOverlay.dataset.auroraForecastTime = ovationAuroraState.forecastTime;
+      japanOverlay.dataset.auroraForecastPointCount = String(ovationAuroraState.pointCount);
+      japanOverlay.dataset.auroraForecastMaximum = String(ovationAuroraState.maximum);
+      if (ovationAuroraState.status === "ready") {
+        const auroraBreath = reducedMotion ? 0.5 : 0.46 + Math.sin(time * 0.42) * 0.06;
+        ctx.save();
+        ctx.filter = "saturate(1.18) brightness(1.08)";
+        ctx.globalCompositeOperation = "source-over";
+        drawGlobalRaster(ovationAuroraCanvas, auroraBreath);
+        ctx.globalCompositeOperation = "screen";
+        drawGlobalRaster(ovationAuroraCanvas, auroraBreath * 0.58);
+        ctx.restore();
+      }
       ctx.textAlign = "left";
     } else if (signalMode.id === "blue-circulation") {
       const state = getBlueCirculationState(signalMode);
@@ -3634,7 +3833,9 @@
         const chartWidth = Math.min(compact ? rect.width - 28 : 360, rect.width * 0.46);
         const chartHeight = compact ? 190 : 250;
         const chartX = compact ? 14 : rect.width - chartWidth - 30;
-        const chartY = compact ? Math.max(150, rect.height - chartHeight - 112) : 56;
+        const chartBaseY = compact ? Math.max(150, rect.height - chartHeight - 112) : 56;
+        const chartY = getLegendSafePanelY(chartX, chartWidth, chartBaseY);
+        recordAuxiliaryPanel("three-ecologies-scatter", chartX, chartY, chartWidth, chartHeight);
         const padding = { left: 42, right: 18, top: 48, bottom: 34 };
         const plotLeft = chartX + padding.left;
         const plotRight = chartX + chartWidth - padding.right;
@@ -3744,10 +3945,17 @@
         const panelWidth = compact ? Math.min(180, rect.width - 28) : 330;
         const panelHeight = compact ? 92 : 104;
         const panelX = compact ? rect.width - panelWidth - 14 : rect.width - panelWidth - 30;
-        const panelY = compact ? 92 : 54;
+        const panelY = getLegendSafePanelY(panelX, panelWidth, compact ? 92 : 54);
         const gradientX = panelX + 16;
         const gradientY = panelY + (compact ? 48 : 54);
         const gradientWidth = panelWidth - 32;
+        recordAuxiliaryPanel("earth-organ-scale", panelX, panelY, panelWidth, panelHeight);
+        japanOverlay.dataset.energyPanelScreenLeft = (rect.left + panelX).toFixed(2);
+        japanOverlay.dataset.energyPanelScreenTop = (rect.top + panelY).toFixed(2);
+        japanOverlay.dataset.energyPanelScreenRight = (rect.left + panelX + panelWidth).toFixed(2);
+        japanOverlay.dataset.energyPanelScreenBottom = (rect.top + panelY + panelHeight).toFixed(2);
+        japanOverlay.dataset.energyPanelLegendClearance =
+          japanOverlay.dataset.auxiliaryPanelLegendClearance;
         ctx.save();
         ctx.globalCompositeOperation = "source-over";
         ctx.fillStyle = "rgba(3,18,31,.9)";
@@ -4724,8 +4932,8 @@
     }
   };
 
-  const getActiveSignalMode = () => {
-    const visualMode = modes[modeToIndex];
+  const getActiveSignalMode = (index = modeToIndex) => {
+    const visualMode = modes[index];
     return gaiaModeById.get(visualMode.dataModeId || visualMode.id) || null;
   };
 
@@ -4871,8 +5079,8 @@
     };
   };
 
-  const getShaderSignalVector = () => {
-    const signalMode = getActiveSignalMode();
+  const getShaderSignalVector = (modeIndex = modeToIndex) => {
+    const signalMode = getActiveSignalMode(modeIndex);
     if (!signalMode) return [0.35, 0.25, 0.15, 0.1];
     const { signals } = signalMode;
     if (signalMode.id === "breathing-earth") {
@@ -4942,7 +5150,7 @@
         1,
       ];
     }
-    return [0.72, 0.48, pointer.energy, modeMemory[modeToIndex]];
+    return [0.72, 0.48, pointer.energy, modeMemory[modeIndex]];
   };
 
   const observationMetric = (key, label, value, unit = "") => Number.isFinite(Number(value))
@@ -5350,7 +5558,14 @@ if (year < firstGosatYear) {
 drawGridCell(lon, lat, 2.5, fixedColorScale(value, 300, 500), {
   hatch: cell.wasSpatiallyImputed,
 });
-// The OLS projection assumes an unchanged linear trend; it is not a climate model.`,
+// The OLS projection assumes an unchanged linear trend; it is not a climate model.
+
+// SOURCE: NOAA SWPC OVATION 30–90 minute forecast, refreshed every five minutes.
+// The grid remains a forecast/model layer: cloud and daylight visibility are not inferred.
+drawSoftPolarRibbon(ovationAuroraGrid, {
+  palette: ["emerald", "cyan", "pale-gold"],
+  composite: "screen",
+});`,
     "blue-circulation": `// SOURCE: NOAA CoastWatch daily u/v snapshot (OSCAR timeout fallback)
 const speedMs = Math.hypot(uMs, vMs);
 drawSpeedHalo(fixedColorScale(speedMs, 0, 1.5));
@@ -5854,6 +6069,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
   const updateModeInterface = () => {
     const mode = modes[modeToIndex];
+    const selectedMapMode = modes[mapModeIndex];
     modeNumber.textContent = formatModeNumber(modeToIndex);
     modeTitle.textContent = mode.title;
     modeTitleJa.textContent = mode.titleJa;
@@ -5863,9 +6079,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanLayer.style.setProperty("--map-accent", mode.accent);
     japanLayer.style.setProperty("--map-accent-rgb", mode.rgb);
     japanLayer.classList.toggle("is-earthquake-mode", isTheme(5));
-    japanModeNumber.textContent = formatModeNumber(modeToIndex);
-    japanModeTitle.textContent = mode.titleJa;
-    japanModeBank.dataset.activeMode = formatModeNumber(modeToIndex);
+    japanModeNumber.textContent = formatModeNumber(mapModeIndex);
+    japanModeTitle.textContent = selectedMapMode.titleJa;
+    japanModeBank.dataset.activeMode = formatModeNumber(mapModeIndex);
     japanTitle.textContent = mode.titleJa;
     document.querySelector('meta[name="theme-color"]').setAttribute("content", "#03070d");
 
@@ -5876,11 +6092,11 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
     });
     japanModeButtons.forEach((button, index) => {
-      button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
+      button.setAttribute("aria-current", index === mapModeIndex ? "true" : "false");
     });
     abstractModeButtons.forEach((button, index) => {
-      button.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
-      button.tabIndex = index === modeToIndex ? 0 : -1;
+      button.setAttribute("aria-current", index === lightModeIndex ? "true" : "false");
+      button.tabIndex = index === lightModeIndex ? 0 : -1;
     });
     updateIntroSelection();
 
@@ -5910,17 +6126,20 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (!(introStoryReturn instanceof HTMLButtonElement)) return;
     let mainEndingComplete = false;
     let apeironceneComplete = false;
+    let apeironcenePending = false;
     try {
       const progress = JSON.parse(window.localStorage.getItem("gaiaSensewareNovel:progress") || "null");
       mainEndingComplete = progress?.clear === true || globalThis.GaiaNovel?.getState?.().clear === true;
       apeironceneComplete = Boolean(
-        window.localStorage.getItem("gaiaSensewareTrueEnd:complete:v1")
+        progress?.trueEndComplete === true
+        || window.localStorage.getItem("gaiaSensewareTrueEnd:complete:v1")
         || globalThis.GaiaTrueEnd?.isComplete?.(),
       );
+      apeironcenePending = Boolean(window.localStorage.getItem("gaiaSensewareTrueEnd:pending:v1"));
     } catch {
       // Storage is optional; the ordinary story route remains available.
     }
-    const continueToApeironcene = mainEndingComplete && !apeironceneComplete;
+    const continueToApeironcene = apeironcenePending || (mainEndingComplete && !apeironceneComplete);
     const label = continueToApeironcene ? "星々の放課後 ～APEIRONCENE～" : "物語へ戻る";
     introStoryReturn.dataset.storyDestination = continueToApeironcene ? "apeironcene" : "story";
     introStoryReturn.querySelector("strong")?.replaceChildren(label);
@@ -5933,7 +6152,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   window.addEventListener("gaia:story-progression-change", syncIntroStoryReturn);
   window.addEventListener("gaia:true-end-complete", syncIntroStoryReturn);
   window.addEventListener("storage", (event) => {
-    if (["gaiaSensewareNovel:progress", "gaiaSensewareTrueEnd:complete:v1"].includes(event.key)) {
+    if (["gaiaSensewareNovel:progress", "gaiaSensewareTrueEnd:complete:v1", "gaiaSensewareTrueEnd:pending:v1"].includes(event.key)) {
       syncIntroStoryReturn();
     }
   });
@@ -6020,26 +6239,39 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }
   };
 
-  const positionMapModeTooltip = (tooltip) => {
+  let mapModePreviewAnchor = null;
+
+  const positionMapModeTooltip = (tooltip, button = mapModePreviewAnchor) => {
     const bankRect = japanModeBank.getBoundingClientRect();
     const mobile = innerWidth <= 900;
     const width = mobile
       ? bankRect.width
-      : Math.min(370, Math.max(280, innerWidth - bankRect.right - 24));
+      : Math.min(430, Math.max(320, innerWidth - 24));
     tooltip.style.width = `${Math.round(width)}px`;
     const tooltipHeight = tooltip.getBoundingClientRect().height;
-    const left = mobile
-      ? bankRect.left
-      : Math.min(bankRect.right + 12, innerWidth - width - 12);
-    const top = mobile
-      ? Math.max(12, bankRect.top - tooltipHeight - 8)
-      : Math.max(12, Math.min(bankRect.bottom - tooltipHeight, innerHeight - tooltipHeight - 12));
+    const buttonRect = button?.getBoundingClientRect?.();
+    let left = bankRect.left;
+    let top = Math.max(12, bankRect.top - tooltipHeight - 8);
+    if (!mobile && buttonRect) {
+      const rightCandidate = buttonRect.right + 10;
+      const leftCandidate = buttonRect.left - width - 10;
+      left = rightCandidate + width <= innerWidth - 12
+        ? rightCandidate
+        : Math.max(12, leftCandidate);
+      top = Math.max(12, Math.min(
+        buttonRect.top + (buttonRect.height - tooltipHeight) / 2,
+        innerHeight - tooltipHeight - 12,
+      ));
+    } else if (!mobile) {
+      left = Math.min(bankRect.right + 12, innerWidth - width - 12);
+      top = Math.max(12, Math.min(bankRect.bottom - tooltipHeight, innerHeight - tooltipHeight - 12));
+    }
     tooltip.style.left = `${Math.round(left)}px`;
     tooltip.style.top = `${Math.round(top)}px`;
   };
 
-  const scheduleMapModeTooltipPosition = (tooltip) => {
-    const position = () => positionMapModeTooltip(tooltip);
+  const scheduleMapModeTooltipPosition = (tooltip, button = mapModePreviewAnchor) => {
+    const position = () => positionMapModeTooltip(tooltip, button);
     requestAnimationFrame(() => {
       position();
       requestAnimationFrame(position);
@@ -6077,22 +6309,77 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   };
 
   const setMapModePreviewOpen = (open, button = null) => {
+    const lightOverlayPanel = button?.closest?.("#map-light-overlay")
+      ?.querySelector?.(".map-light-overlay-panel");
     if (open) {
       const content = getMapModePreviewContent(button);
       if (!content) return;
+      if (lightOverlayPanel && mapModePreview.parentElement !== lightOverlayPanel) {
+        lightOverlayPanel.append(mapModePreview);
+      } else if (!lightOverlayPanel && mapModePreview.closest("#map-light-overlay")) {
+        syncMapModePreviewContainer();
+      }
+      mapModePreviewAnchor = button;
       mapModePreviewNumber.textContent = content.number;
       mapModePreviewLabel.textContent = content.label;
       mapModePreviewCopy.textContent = content.copy;
+    } else {
+      mapModePreviewAnchor = null;
     }
     mapModePreview.classList.toggle("is-open", Boolean(open));
-    if (open && usesCompactMapUi()) {
+    if (open && lightOverlayPanel) {
+      mapModePreview.style.removeProperty("width");
+      mapModePreview.style.removeProperty("left");
+      mapModePreview.style.removeProperty("top");
+    } else if (open && usesCompactMapUi()) {
+      mapModePreview.style.removeProperty("width");
+      mapModePreview.style.removeProperty("left");
+      mapModePreview.style.removeProperty("top");
       requestAnimationFrame(() => mapModePreview.scrollIntoView({ block: "nearest", inline: "nearest" }));
     } else if (open) {
-      scheduleMapModeTooltipPosition(mapModePreview);
+      scheduleMapModeTooltipPosition(mapModePreview, button);
     }
   };
 
   const closeMapModePreview = () => setMapModePreviewOpen(false);
+
+  let mapLightOverlayRestoreFocus = null;
+  const setMapLightOverlayOpen = (open, { restoreFocus = true } = {}) => {
+    const shouldOpen = Boolean(open);
+    if (shouldOpen) {
+      mapLightOverlayRestoreFocus = document.activeElement;
+      mapLightOverlay.hidden = false;
+      mapLightOverlayOpen.setAttribute("aria-expanded", "true");
+      setMobileMapBankExpanded(false);
+      closeMapModePreview();
+      requestAnimationFrame(() => {
+        if (mapLightOverlay.hidden || mapLightOverlay.contains(document.activeElement)) return;
+        const current = abstractModeButtons[lightModeIndex] || abstractModeButtons[0];
+        (current || mapLightOverlayClose)?.focus({ preventScroll: true });
+      });
+      return;
+    }
+    mapLightOverlay.hidden = true;
+    mapLightOverlayOpen.setAttribute("aria-expanded", "false");
+    closeMapModePreview();
+    syncMapModePreviewContainer();
+    if (restoreFocus) {
+      const target = mapLightOverlayRestoreFocus?.isConnected
+        ? mapLightOverlayRestoreFocus
+        : mapLightOverlayOpen;
+      requestAnimationFrame(() => target?.focus({ preventScroll: true }));
+    }
+    mapLightOverlayRestoreFocus = null;
+  };
+
+  const setLightCanvasMounted = (mounted) => {
+    if (mounted) {
+      if (canvas.parentElement !== japanLayer) japanMap.after(canvas);
+      return;
+    }
+    if (canvas.parentElement === canvasHomeParent) return;
+    canvasHomeParent.insertBefore(canvas, canvasHomeNextSibling);
+  };
 
   const setMapSurface = (surface, { focusMode = true } = {}) => {
     const nextSurface = surface === "light" ? "light" : "map";
@@ -6106,19 +6393,34 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const lightIsActive = nextSurface === "light";
     japanLayer.classList.toggle("is-abstract-exhibit", lightIsActive);
     japanModeBank.dataset.mapSurface = nextSurface;
+    setLightCanvasMounted(lightIsActive);
+    mapLightOverlayOpen.setAttribute("aria-pressed", String(lightIsActive));
+    mapLightOverlayOpen.querySelector("strong")?.replaceChildren(lightIsActive ? "光を変更する" : "光を重ねる");
+    mapLightOverlayOpen.querySelector("small")?.replaceChildren(lightIsActive
+      ? `LIGHT ${formatModeNumber(lightModeIndex)} / 地図番号とは独立`
+      : "地図番号とは独立");
     mapScopeKicker.textContent = lightIsActive
-      ? "Abstract mode / Touch the signal"
+      ? "Planetary lens / Light overlay"
       : "Planetary lens / Open map";
     closeMapModePreview();
-    selectMode(modeToIndex);
+    if (!lightIsActive) selectMode(mapModeIndex);
+    updateModeInterface();
     if (focusMode) {
       requestAnimationFrame(() => {
-        const activeButtons = lightIsActive ? abstractModeButtons : japanModeButtons;
-        activeButtons[modeToIndex]?.focus({ preventScroll: true });
+        if (lightIsActive) {
+          mapLightOverlayOpen.focus({ preventScroll: true });
+        } else {
+          japanModeButtons[mapModeIndex]?.focus({ preventScroll: true });
+        }
       });
     }
     window.dispatchEvent(new CustomEvent("gaia:map-surface-change", {
-      detail: { surface: nextSurface, index: modeToIndex },
+      detail: {
+        surface: nextSurface,
+        index: lightIsActive ? lightModeIndex : mapModeIndex,
+        mapIndex: mapModeIndex,
+        lightIndex: lightModeIndex,
+      },
     }));
   };
 
@@ -6127,6 +6429,31 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   });
   mapMobileBankToggle?.addEventListener("click", () => {
     setMobileMapBankExpanded(mapMobileBankToggle.getAttribute("aria-expanded") !== "true");
+  });
+  mapLightOverlayOpen?.addEventListener("click", () => setMapLightOverlayOpen(true));
+  mapLightOverlayClose?.addEventListener("click", () => setMapLightOverlayOpen(false));
+  mapLightOverlayScrim?.addEventListener("click", () => setMapLightOverlayOpen(false));
+  mapLightOverlayDisable?.addEventListener("click", () => {
+    setMapSurface("map", { focusMode: false });
+    setMapLightOverlayOpen(false);
+  });
+  mapLightOverlay?.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    setMapLightOverlayOpen(false);
+  });
+  mapLightOverlay?.addEventListener("pointerover", (event) => {
+    if (mapLightOverlay.contains(document.activeElement)
+      && document.activeElement?.matches?.(".map-mode-button")) return;
+    const button = event.target.closest?.(".map-mode-button");
+    if (button) setMapModePreviewOpen(true, button);
+  });
+  mapLightOverlay?.addEventListener("focusin", (event) => {
+    const button = event.target.closest?.(".map-mode-button");
+    if (button) setMapModePreviewOpen(true, button);
+  });
+  mapLightOverlay?.addEventListener("focusout", (event) => {
+    if (!mapLightOverlay.contains(event.relatedTarget)) closeMapModePreview();
   });
   mapMobileLegendToggle?.addEventListener("click", () => {
     const expand = mapMobileLegendToggle.getAttribute("aria-expanded") !== "true";
@@ -6147,6 +6474,8 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (!japanModeBank.contains(document.activeElement)) closeMapModePreview();
   });
   japanModeBank.addEventListener("pointerover", (event) => {
+    if (japanModeBank.contains(document.activeElement)
+      && document.activeElement?.matches?.(".map-mode-button")) return;
     const button = event.target.closest?.(".map-mode-button");
     if (button) setMapModePreviewOpen(true, button);
   });
@@ -6160,7 +6489,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   japanModeBank.addEventListener("click", (event) => {
     const button = event.target.closest?.(".map-mode-button");
     if (!button) return;
-    setMapSurface(button.closest("#abstract-mode-list") ? "light" : "map", { focusMode: false });
+    if (button.dataset.liveExhibit) setMapSurface("map", { focusMode: false });
     setMapModePreviewOpen(true, button);
   }, true);
   window.addEventListener("gaia:live-exhibit-mounted", () => {
@@ -6181,7 +6510,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (!compactMapUiIsActive && compactMapUiWasActive) resetMobileMapUi();
     compactMapUiWasActive = compactMapUiIsActive;
     syncMapModePreviewContainer();
-    if (mapModePreview.classList.contains("is-open") && !compactMapUiIsActive) scheduleMapModeTooltipPosition(mapModePreview);
+    if (mapModePreview.classList.contains("is-open") && !compactMapUiIsActive) {
+      scheduleMapModeTooltipPosition(mapModePreview, mapModePreviewAnchor);
+    }
   }, { passive: true });
 
   modes.forEach((mode, index) => {
@@ -6257,7 +6588,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanModeButton.setAttribute("aria-describedby", "map-mode-preview");
     japanModeButton.setAttribute("aria-current", index === 0 ? "true" : "false");
     japanModeButton.addEventListener("click", () => {
-      selectMode(index);
+      mapModeIndex = index;
+      selectMode(mapModeIndex);
+      if (mapSurface === "light") updateModeInterface();
       setMobileMapBankExpanded(false, { restoreFocus: true });
     });
     japanModeButtons.push(japanModeButton);
@@ -6269,15 +6602,19 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     abstractModeButton.textContent = formatModeNumber(index);
     abstractModeButton.setAttribute(
       "aria-label",
-      `${formatModeNumber(index)} ${introChoice.label}の光演出へ切り替える`,
+      `${formatModeNumber(index)} 独立した${introChoice.label}の光展示へ切り替える`,
     );
     abstractModeButton.dataset.mapPreviewSurface = "light";
     abstractModeButton.setAttribute("aria-describedby", "map-mode-preview");
-    abstractModeButton.setAttribute("aria-current", index === modeToIndex ? "true" : "false");
-    abstractModeButton.tabIndex = index === modeToIndex ? 0 : -1;
+    abstractModeButton.setAttribute("aria-current", index === lightModeIndex ? "true" : "false");
+    abstractModeButton.tabIndex = index === lightModeIndex ? 0 : -1;
     abstractModeButton.addEventListener("click", () => {
-      selectMode(index);
-      setMobileMapBankExpanded(false, { restoreFocus: true });
+      lightModeFromIndex = lightModeToIndex;
+      lightModeIndex = index;
+      lightModeToIndex = index;
+      lightTransitionStartedAt = performance.now();
+      setMapSurface("light", { focusMode: false });
+      setMapLightOverlayOpen(false);
     });
     abstractModeButtons.push(abstractModeButton);
     abstractModeList.append(abstractModeButton);
@@ -6806,6 +7143,11 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (japanIsOpen) {
       return;
     }
+    const usesExplorationSoundtrack = !document.body.classList.contains("novel-open")
+      && !experience.classList.contains("gx-story-open");
+    if (usesExplorationSoundtrack) {
+      void window.GaiaOpeningAudio?.switchTrack?.("mapambient", 0.6);
+    }
     if (sourceIsOpen) {
       closeSource({ restoreFocus: false, updateHash: false });
     }
@@ -6841,7 +7183,8 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       requestedMode >= 1 &&
       requestedMode <= MODE_COUNT
     ) {
-      selectMode(requestedMode - 1);
+      mapModeIndex = requestedMode - 1;
+      selectMode(mapModeIndex);
     }
     setMapScope("earth");
     restartCo2Timeline(
@@ -6885,9 +7228,16 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (!japanIsOpen) {
       return;
     }
+    const usesExplorationSoundtrack = !document.body.classList.contains("novel-open")
+      && !experience.classList.contains("gx-story-open");
+    if (usesExplorationSoundtrack) {
+      void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0.6);
+    }
 
     closeJapanData({ restoreFocus: false });
     closeJapanPoi();
+    setMapLightOverlayOpen(false, { restoreFocus: false });
+    setLightCanvasMounted(false);
     cancelEarthViewAnimation("map-closed");
     japanIsOpen = false;
     japanLayer.classList.add("is-closing");
@@ -7020,6 +7370,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     selectMode: (index) => {
       const requested = Number(index);
       if (!Number.isInteger(requested) || requested < 0 || requested >= MODE_COUNT) return false;
+      mapModeIndex = requested;
       selectMode(requested);
       return true;
     },
@@ -7064,7 +7415,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     getState: () => ({ modeIndex: modeToIndex, signalTimePosition, mapOpen: japanIsOpen, introOpen: introIsOpen }),
   });
   globalThis.GaiaMapObservationAdapter = mapObservationAdapter;
-  globalThis.GaiaObservationNotebook?.registerCaptureProvider?.("map", captureMapObservation);
   window.dispatchEvent(new CustomEvent("gaia:map-adapter-ready"));
 
   window.addEventListener("gaia:novel-open", () => {
@@ -7101,6 +7451,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       globalSignalConsole.inert = true;
       globalSignalConsole.setAttribute("aria-hidden", "true");
     }
+    if (kind !== "abstract07") mapModeIndex = index;
     selectMode(index, { resetAutoTimer: false });
     if (introIsOpen) closeIntro({ restoreFocus: false });
     if (sourceIsOpen) closeSource({ restoreFocus: false, updateHash: false });
@@ -7473,7 +7824,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
   const render = (now) => {
     const mapExhibitIsVisible = japanIsOpen
-      && mapSurface === "map"
       && !japanLayer.classList.contains("is-live-exhibit");
     const lodProfile = globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || { targetFps: 60 };
     const lodTarget = lodProfile.targetFps ?? 60;
@@ -7536,10 +7886,15 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const elapsed = Math.max(0, (now - startTime - hiddenDuration) / 1000);
     const timeScale = reducedMotion ? 0.32 : 1;
     const transitionDuration = reducedMotion ? 30 : TRANSITION_DURATION;
-    const transition = clamp((now - transitionStartedAt) / transitionDuration, 0, 1);
+    const lightOverlayIsVisible = japanIsOpen && mapSurface === "light";
+    const shaderModeFromIndex = lightOverlayIsVisible ? lightModeFromIndex : modeFromIndex;
+    const shaderModeToIndex = lightOverlayIsVisible ? lightModeToIndex : modeToIndex;
+    const shaderTransitionStartedAt = lightOverlayIsVisible ? lightTransitionStartedAt : transitionStartedAt;
+    const transition = clamp((now - shaderTransitionStartedAt) / transitionDuration, 0, 1);
 
     if (transition >= 1) {
-      modeFromIndex = modeToIndex;
+      if (lightOverlayIsVisible) lightModeFromIndex = lightModeToIndex;
+      else modeFromIndex = modeToIndex;
     }
 
     pointer.energy *= pointer.down ? 0.985 : 0.955;
@@ -7571,10 +7926,10 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const trailActive = pointer.down || trail.some((point) => point.strength > 0.001 && now - point.bornAt < 3_100);
     gl.uniform1f(uniforms.trailActive, trailActive ? 1 : 0);
     gl.uniform1fv(uniforms.modeMemory, modeMemory);
-    gl.uniform1i(uniforms.modeFrom, modeFromIndex);
-    gl.uniform1i(uniforms.modeTo, modeToIndex);
+    gl.uniform1i(uniforms.modeFrom, shaderModeFromIndex);
+    gl.uniform1i(uniforms.modeTo, shaderModeToIndex);
     gl.uniform1f(uniforms.transition, transition);
-    const signalVector = getShaderSignalVector();
+    const signalVector = getShaderSignalVector(shaderModeToIndex);
     gl.uniform4f(uniforms.signal, signalVector[0], signalVector[1], signalVector[2], signalVector[3]);
     gl.uniform1fv(uniforms.sourceSignals, getSourceSignalVector());
     gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -7646,6 +8001,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   document.documentElement.dataset.gaiaAppReady = "true";
   window.dispatchEvent(new CustomEvent("gaia:app-ready"));
   loadGaiaSignals();
+  loadOvationAuroraForecast();
   loadNaturalEarthLand();
   loadNaturalEarthCountries();
 

@@ -20,9 +20,9 @@ for (const id of ["novel-log-title", "novel-log-view-heard", "novel-log-view-scr
 assert.match(runtimeSource, /buildFullScriptMarkdown/u);
 assert.match(runtimeSource, /scriptArchiveStepCount/u);
 assert.match(runtimeSource, /GAIA_TRUE_END_STORY/u);
-assert.match(loaderSource, /novel-mode\.js\?v=gaia-log-complete-script-1/u);
-assert.match(loaderSource, /novel-mode\.css\?v=gaia-log-complete-script-1/u);
-assert.match(htmlSource, /gaia-mode-loader\.js\?v=gaia-log-comments-30-1/u);
+assert.match(loaderSource, /novel-mode\.js\?v=gaia-story-return-cycle-1/u);
+assert.match(loaderSource, /novel-mode\.css\?v=gaia-mobile-story-control-height-1/u);
+assert.match(htmlSource, /gaia-mode-loader\.js\?v=gaia-story-return-cycle-1/u);
 
 delete globalThis.GAIA_NOVEL_STORY;
 delete globalThis.GAIA_TRUE_END_STORY;
@@ -34,9 +34,9 @@ const mainSteps = story.scenes.flatMap((scene) => scene.steps);
 const trueEndSteps = trueEnd.scenes.flatMap((scene) => scene.steps);
 const expectedSteps = [...mainSteps, ...trueEndSteps];
 const expectedSectionCount = story.scenes.length + trueEnd.scenes.length;
-assert.equal(mainSteps.length, 373);
+assert.equal(mainSteps.length, 372);
 assert.equal(trueEndSteps.length, 133);
-assert.equal(expectedSteps.length, 506);
+assert.equal(expectedSteps.length, 505);
 
 const { chromium } = await import(pathToFileURL(path.join(moduleRoot, "index.mjs")));
 const routeUrl = new URL("/story", baseUrl).href;
@@ -108,7 +108,7 @@ const bootAtLogState = async (page) => {
     await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
     await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   }
-  await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, currentStepId, { timeout: 15_000 });
+  await page.waitForFunction((id) => globalThis.GaiaNovel?.getState?.().stepId === id, currentStepId, { timeout: 30_000 });
   await page.locator("#novel-log-button").click();
   await page.locator("#novel-log-panel").waitFor({ state: "visible" });
 };
@@ -197,15 +197,15 @@ try {
     const exported = await readDownload(page);
     assert(exported.buffer.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])));
     assert.match(exported.download.suggestedFilename(), /^gaia-senseware-complete-script-\d{8}T\d{6}Z\.md$/u);
-    assert.match(exported.markdown, /- 本編: 373 step/u);
+    assert.match(exported.markdown, /- 本編: 372 step/u);
     assert.match(exported.markdown, /- APEIRONCENE: 133 step/u);
-    assert.match(exported.markdown, /- 合計: 506 step/u);
+    assert.match(exported.markdown, /- 合計: 505 step/u);
     assert(exported.markdown.includes(`\`${expectedSteps[0].id}\``));
     assert(exported.markdown.includes(expectedSteps[0].text));
     assert(exported.markdown.includes(`\`${expectedSteps.at(-1).id}\``));
     assert(exported.markdown.includes(expectedSteps.at(-1).text));
     assert(exported.markdown.includes('"requiredViews"'));
-    assert.equal(await page.locator("#novel-log-status").textContent(), "全台本 506stepを書き出しました");
+    assert.equal(await page.locator("#novel-log-status").textContent(), "全台本 505stepを書き出しました");
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-full-script.png`), animations: "disabled" });
 
     await page.locator("#novel-log-view-heard").click();

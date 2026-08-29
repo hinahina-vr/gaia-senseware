@@ -127,6 +127,10 @@ const expandBank = async (page) => {
 
 const selectExhibit = async (page, surface, index) => {
   await expandBank(page);
+  if (surface === "light") {
+    await page.locator("#map-light-overlay-open").click();
+    await page.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden);
+  }
   const list = surface === "light" ? "#abstract-mode-list" : "#japan-mode-list";
   const button = surface === "light"
     ? page.locator(`${list} .map-mode-button`).nth(index)
@@ -155,6 +159,11 @@ const selectExhibit = async (page, surface, index) => {
     await page.waitForFunction((number) => document.querySelector(".japan-layer")?.classList.contains("is-live-exhibit")
       && document.querySelector("#japan-mode-number")?.textContent?.trim() === number, expected);
     await page.waitForFunction(() => document.querySelector(".gaia-live-exhibit-readout")?.getClientRects().length > 0);
+  } else if (surface === "light") {
+    await page.waitForFunction((number) => document.querySelector("#abstract-mode-list .map-mode-button[aria-current='true']")?.textContent?.trim() === number
+      && document.querySelector(".map-mode-bank")?.dataset.mapSurface === "light"
+      && document.querySelector("#japan-map")?.getClientRects().length > 0
+      && document.querySelector("#gaia-canvas")?.parentElement?.id === "japan-layer", expected);
   } else {
     await page.waitForFunction(({ number, expectedSurface }) => document.querySelector("#japan-mode-number")?.textContent?.trim() === number
       && document.querySelector(".map-mode-bank")?.dataset.mapSurface === expectedSurface, { number: expected, expectedSurface: surface });

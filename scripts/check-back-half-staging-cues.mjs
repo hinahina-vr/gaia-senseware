@@ -8,14 +8,14 @@ const story = globalThis.GAIA_NOVEL_STORY;
 const backgrounds = globalThis.GAIA_NOVEL_BACKGROUND_CUES;
 const staging = globalThis.GAIA_NOVEL_BACK_HALF_CUES;
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
-const expectedCounts = [72, 43, 46, 50, 79, 83];
+const expectedCounts = [72, 43, 46, 50, 79, 82];
 const allSteps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(allSteps.map((step) => [step.id, step]));
 
 assert.equal(story.storyVersion, 13);
 assert.deepEqual(story.scenes.map((scene) => scene.id), expectedSceneIds);
 assert.deepEqual(story.scenes.map((scene) => scene.steps.length), expectedCounts);
-assert.equal(allSteps.length, 373);
+assert.equal(allSteps.length, 372);
 assert.deepEqual(staging.sceneIds, expectedSceneIds);
 assert.deepEqual(staging.expectedSceneCounts, Object.fromEntries(expectedSceneIds.map((id, index) => [id, expectedCounts[index]])));
 

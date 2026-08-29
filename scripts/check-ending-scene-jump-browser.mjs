@@ -104,7 +104,7 @@ try {
     assert.equal(jumpItems.at(-2).id, "ending", `${viewport.name}: ending entry is not penultimate`);
     assert.match(jumpItems.at(-2).text, /07\s*\/\s*ENDING/u, `${viewport.name}: ending chapter label`);
     assert.match(jumpItems.at(-2).text, /エンディング/u, `${viewport.name}: ending title`);
-    assert.match(jumpItems.at(-2).text, /SCRIPT #0386/u, `${viewport.name}: ending script label`);
+    assert.match(jumpItems.at(-2).text, /SCRIPT #0372/u, `${viewport.name}: ending script label`);
     assert.equal(jumpItems.at(-1).id, "true-end", `${viewport.name}: true-end entry is not last`);
     assert.match(jumpItems.at(-1).text, /08\s*\/\s*Beyond/u, `${viewport.name}: Beyond chapter label`);
     assert.match(jumpItems.at(-1).text, /Beyond/u, `${viewport.name}: Beyond title`);

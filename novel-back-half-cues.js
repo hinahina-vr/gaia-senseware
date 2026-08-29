@@ -7,7 +7,7 @@
     gx_experience: 46,
     esp32_pitch: 50,
     circle_invitation: 79,
-    welcome_chat: 83,
+    welcome_chat: 82,
   });
 
   const sceneIds = Object.freeze(Object.keys(expectedSceneCounts));

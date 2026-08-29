@@ -223,6 +223,7 @@ try {
         const menu = document.querySelector("#gaia-opening-final-menu");
         const photo = document.querySelector(".gaia-vn-final-photo");
         const title = document.querySelector(".gaia-vn-work-title");
+        const logo = title.querySelector(".gaia-vn-work-logo");
         const storyRoute = document.querySelector("#gaia-opening-route-story");
         const hud = document.querySelector(".gaia-opening-hud");
         const copyRect = copy.getBoundingClientRect();
@@ -237,9 +238,10 @@ try {
           photoBackground: photoStyle.backgroundImage,
           photoBackgroundPosition: photoStyle.backgroundPosition,
           photoBackgroundSize: photoStyle.backgroundSize,
-          titleText: title.textContent.trim(),
+          titleText: logo?.alt,
+          logoSrc: logo?.currentSrc,
           titleRect: { width: titleRect.width, height: titleRect.height },
-          duplicateLogoCount: document.querySelectorAll(".gaia-vn-final-logo").length,
+          logoCount: document.querySelectorAll(".gaia-vn-panel-final .gaia-vn-work-logo").length,
           storySurface: {
             backgroundImage: storyStyle.backgroundImage,
             backdropFilter: storyStyle.backdropFilter,
@@ -256,11 +258,12 @@ try {
           overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
         };
       });
-      assert.match(menuLayout.photoBackground, /opening-final-night-keyvisual-v3(?:-960)?\.webp/u, `${viewport.name}: clean gateway artwork is missing`);
+      assert.match(menuLayout.photoBackground, /opening-final-observatory-keyvisual-v4(?:-960)?\.webp/u, `${viewport.name}: generated gateway artwork is missing`);
       assert.equal(menuLayout.titleText, "惑星の放課後 — GAIA SENSATION", `${viewport.name}: accessible work title changed`);
-      assert.deepEqual(menuLayout.titleRect, { width: 1, height: 1 }, `${viewport.name}: duplicate HTML title is still visible`);
-      assert.equal(menuLayout.duplicateLogoCount, 0, `${viewport.name}: a live logo duplicates the title baked into the selected artwork`);
-      assert.match(menuLayout.storySurface.backgroundImage, /0\.98/u, `${viewport.name}: story button is still too transparent`);
+      assert.match(menuLayout.logoSrc, /brand-logo-dark-surface-(?:590|1180)\.webp$/u, `${viewport.name}: final title does not use the default logo`);
+      assert(menuLayout.titleRect.width > 1 && menuLayout.titleRect.height > 1, `${viewport.name}: default logo is not visible`);
+      assert.equal(menuLayout.logoCount, 1, `${viewport.name}: final title does not contain exactly one live logo`);
+      assert.notEqual(menuLayout.storySurface.backgroundImage, "none", `${viewport.name}: story button is still transparent`);
       assert.equal(menuLayout.storySurface.backdropFilter, "none", `${viewport.name}: story button still relies on translucent backdrop blur`);
       assert.equal(menuLayout.storySurface.opacity, "1", `${viewport.name}: story button opacity reduced its text contrast`);
       assert.equal(menuLayout.hudDisplay, "none", `${viewport.name}: decorative microcopy remains visible behind the route menu`);
@@ -277,7 +280,7 @@ try {
       ], `${viewport.name}: route actions are not reduced to the two clear choices`);
       assert.equal(menuLayout.menuPosition, "static", `${viewport.name}: route menu is not anchored to the artwork layout`);
       if (viewport.mobile) {
-        const artworkBottom = viewport.width * 941 / 1672;
+        const artworkBottom = viewport.width * 9 / 16;
         assert(menuLayout.copy.top >= artworkBottom, `${viewport.name}: controls overlap the complete character artwork`);
         assert.equal(menuLayout.photoBackgroundPosition, "50% 0%", `${viewport.name}: complete artwork is not top aligned`);
         assert(["100%", "100% auto"].includes(menuLayout.photoBackgroundSize), `${viewport.name}: complete artwork is cropped`);

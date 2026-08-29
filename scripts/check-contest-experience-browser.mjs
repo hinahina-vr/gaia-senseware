@@ -439,6 +439,8 @@ try {
   await spaceEntryPage.waitForFunction(() => document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
   await spaceEntryPage.locator("[data-intro-path='map']").click();
   await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false" && !document.body.classList.contains("scene-transitioning"), null, { timeout: 20_000 });
+  await spaceEntryPage.locator("#map-light-overlay-open").click();
+  await spaceEntryPage.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden, null, { timeout: 20_000 });
   await spaceEntryPage.locator("#abstract-mode-list .map-mode-button").first().click();
   await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit") && getComputedStyle(document.querySelector("#gaia-canvas")).visibility === "visible", null, { timeout: 20_000 });
   await spaceEntryPage.evaluate(() => document.querySelector("#space-button")?.click());
@@ -456,7 +458,7 @@ try {
   const directContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
   const directPage = await directContext.newPage();
   monitor(directPage, "entry-direct-routes");
-  for (const hash of ["#earth", "#story", "#observation=e30"]) {
+  for (const hash of ["#earth", "#story"]) {
     await directPage.goto(new URL(`/${hash}`, baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await directPage.waitForFunction(() => document.querySelector("#gaia-opening")?.hidden === true, null, { timeout: 20_000 });
     assert.equal(await directPage.locator("#gaia-opening-sound-modal.is-visible").count(), 0, `${hash} must bypass entry`);
@@ -472,6 +474,9 @@ try {
   assert.equal(await directPage.evaluate(() => location.hash), "#japan");
   await directPage.reload({ waitUntil: "domcontentloaded" });
   await directPage.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter), null, { timeout: 30_000 });
+  assert.equal(await directPage.locator(".gaia-observation-launcher, .gaia-observation-drawer, [data-observation-capture-map]").count(), 0, "retired observation notebook UI was mounted");
+  assert.equal(await directPage.evaluate(() => typeof globalThis.GaiaObservationNotebook), "undefined", "retired observation notebook runtime was loaded");
+  assert.equal(await directPage.evaluate(() => performance.getEntriesByType("resource").some(({ name }) => /observation-notebook/u.test(name))), false, "retired observation notebook assets were requested");
   assert.equal(await directPage.locator("#japan-layer").count(), 1, "history/reload must not duplicate the exploration UI");
   await directPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 4, null, { timeout: 15_000 });
   const standardExhibitNumbers = await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").allTextContents();
@@ -481,10 +486,10 @@ try {
   await directPage.screenshot({ path: bankScreenshot, fullPage: false });
   report.entry.mapBankScreenshot = bankScreenshot;
   const liveExhibitContracts = new Map([
-    ["09", { id: "wind-field", key: "windSpeed", title: "風脈", caption: "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。", longitude: -155.056, latitude: 19.73, anchor: /NDBC ILOH1/u, sound: /風速/u }],
-    ["10", { id: "carbon-pulse", key: "co2", title: "炭素の呼吸", caption: "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。", longitude: -155.576, latitude: 19.536, anchor: /Mauna Loa/u, sound: /CO₂/u }],
-    ["11", { id: "rain-chorus", key: "precipitation", title: "雨の記憶", caption: "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。", longitude: -155.45, latitude: 19.55, anchor: /Hawaii fixed bbox mean|JAXA GSMaP/u, sound: /降水量/u }],
-    ["12", { id: "no2-veil", key: "no2", title: "大気の痕跡", caption: "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。", longitude: -155.45, latitude: 19.55, anchor: /Hawaii fixed bbox|Sentinel-5P/u, sound: /NO₂/u }],
+    ["09", { id: "wind-field", key: "windSpeed", title: "風脈", caption: "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。", longitude: -155.056, latitude: 19.73, anchor: /NDBC ILOH1/u }],
+    ["10", { id: "carbon-pulse", key: "co2", title: "炭素の呼吸", caption: "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。", longitude: -155.576, latitude: 19.536, anchor: /Mauna Loa/u }],
+    ["11", { id: "rain-chorus", key: "precipitation", title: "雨の記憶", caption: "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。", longitude: -155.45, latitude: 19.55, anchor: /Hawaii fixed bbox mean|JAXA GSMaP/u }],
+    ["12", { id: "no2-veil", key: "no2", title: "大気の痕跡", caption: "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。", longitude: -155.45, latitude: 19.55, anchor: /Hawaii fixed bbox|Sentinel-5P/u }],
   ]);
   let liveExhibitIndex = 0;
   for (const [number, contract] of liveExhibitContracts) {
@@ -499,15 +504,15 @@ try {
     assert.match(await directPage.locator("[data-live-exhibit-feed-state]").textContent(), /NEAR REAL TIME|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, `${number}: live/snapshot state is ambiguous`);
     if (number !== "12") assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /JPT$/u, `${number}: observation time is not labelled JPT`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-copy]").textContent(), /自動更新|5分ごと|保存済み観測/u, `${number}: realtime behavior is not explained`);
-    assert.match(await directPage.locator("[data-live-exhibit-sound-description]").textContent(), contract.sound, `${number}: visible sound mapping is missing`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-touch-hint").isVisible(), true, `${number}: integrated light-touch hint hidden`);
-    assert.equal(await directPage.locator(".gaia-live-exhibit-path li").count(), 4, `${number}: observation-to-sound path must have four stages`);
-    for (const selector of ["[data-live-exhibit-input]", "[data-live-exhibit-location]", "[data-live-exhibit-visual-map]", "[data-live-exhibit-sound-map]"]) {
+    assert.equal(await directPage.locator(".gaia-live-exhibit-path li").count(), 3, `${number}: observation-to-light path must have three stages`);
+    for (const selector of ["[data-live-exhibit-input]", "[data-live-exhibit-location]", "[data-live-exhibit-visual-map]"]) {
       assert((await directPage.locator(selector).textContent()).trim().length >= 12, `${number}: ${selector} explanation is missing`);
     }
     assert.equal(await directPage.locator(".gaia-live-exhibit-anchor").isVisible(), true, `${number}: geographic observation anchor hidden`);
     assert.match(await directPage.locator("[data-live-anchor-label]").textContent(), contract.anchor, `${number}: geographic observation label mismatch`);
-    assert.equal(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").isVisible(), true, `${number}: generated music control hidden`);
+    assert.equal(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").count(), 0, `${number}: retired generated sound control is still present`);
+    assert.equal(await directPage.locator(".gaia-live-exhibit-readout").getByText(/展示音|BPM/u).count(), 0, `${number}: retired generated sound copy is still present`);
     const standardOverlayStyle = await directPage.locator("#japan-overlay").evaluate((overlay) => ({
       opacity: getComputedStyle(overlay).opacity,
       visibility: getComputedStyle(overlay).visibility,
@@ -544,24 +549,15 @@ try {
       assert.match(await directPage.locator("#data-ledger-sources").textContent(), /NOAA|NDBC/u, "09: source provider is absent from the ledger");
       assert.match(await directPage.locator("#data-ledger-sources a").first().getAttribute("href"), /ndbc\.noaa\.gov/u, "09: official source link is missing");
       await directPage.locator("#japan-data-close").click();
-      await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").click();
     }
-    await directPage.waitForFunction((expectedFocus) => {
-      const state = globalThis.GaiaProceduralAudio?.getState?.();
-      return state?.active && state.focus === expectedFocus && state.contextState === "running" && state.tempo > 0 && state.chordFrequencies?.length === 4;
-    }, contract.id, { timeout: 15_000 });
-    const audioBeforeTouch = await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState());
-    assert.match(audioBeforeTouch.mapping, contract.sound, `${number}: sound mapping does not match the active dataset`);
-    assert(audioBeforeTouch.sequenceStep > 0, `${number}: data-driven music sequence did not start`);
-    assert.equal(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").getAttribute("data-audio-state"), "playing", `${number}: sound control does not show playback`);
-    assert.equal(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-label]").textContent(), "展示音を停止", `${number}: sound control does not expose its active state`);
-    assert.match(await directPage.locator(".gaia-live-exhibit-readout [data-live-sound-status]").textContent(), /再生中.*BPM/u, `${number}: audible tempo is not visible`);
     assert.equal(await directPage.locator("[data-live-light-touch]").evaluate((node) => node instanceof HTMLButtonElement), true, `${number}: light interaction is not a real button`);
-    assert.equal(await directPage.evaluate(() => globalThis.GaiaOpeningAudio.getState().mixGain), 0.28, `${number}: BGM is not ducked under the exhibit sound`);
+    assert.equal(await directPage.evaluate(() => typeof globalThis.GaiaProceduralAudio), "undefined", `${number}: retired generated sound runtime was loaded`);
+    assert.equal(await directPage.evaluate(() => globalThis.GaiaOpeningAudio.getState().mixGain), 1, `${number}: map BGM was altered by the retired exhibit sound path`);
     await directPage.screenshot({ path: path.join(outputDir, `live-exhibit-${number}.png`), animations: "disabled" });
+    const lightTouchesBeforeButton = Number(await directPage.locator("#gaia-live-exhibit-canvas").getAttribute("data-light-touch-count") || 0);
     await directPage.locator("[data-live-light-touch]").click();
-    await directPage.waitForFunction((previousTouchCount) => globalThis.GaiaProceduralAudio?.getState?.().touchCount > previousTouchCount, audioBeforeTouch.touchCount);
-    const buttonTouchCount = await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState().touchCount);
+    await directPage.waitForFunction((previousTouchCount) => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > previousTouchCount, lightTouchesBeforeButton);
+    const buttonTouchCount = Number(await directPage.locator("#gaia-live-exhibit-canvas").getAttribute("data-light-touch-count") || 0);
     await directPage.waitForTimeout(120);
     const liveMapPoint = await directPage.evaluate(() => {
       const map = document.querySelector("#japan-map");
@@ -576,28 +572,14 @@ try {
     });
     assert(liveMapPoint, `${number}: live map has no unobstructed hit target`);
     await directPage.mouse.click(liveMapPoint.x, liveMapPoint.y);
-    await directPage.waitForFunction(() => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > 0);
+    await directPage.waitForFunction((previousTouchCount) => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > previousTouchCount, buttonTouchCount);
     assert.equal(await directPage.locator("#japan-poi-card").isVisible(), false, `${number}: light touch leaked into the underlying map POI interaction`);
-    await directPage.waitForFunction((previousTouchCount) => globalThis.GaiaProceduralAudio?.getState?.().touchCount > previousTouchCount, buttonTouchCount);
-    await directPage.waitForFunction(
-      () => globalThis.GaiaProceduralAudio?.getState?.().outputLevel > 0.01,
-      null,
-      { timeout: 2_500, polling: 50 },
-    );
-    const audioAfterTouch = await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState());
-    assert(audioAfterTouch.lastNoteFrequency > 0, `${number}: light touch did not generate a pitched note`);
-    assert(audioAfterTouch.outputLevel > 0.01 && audioAfterTouch.outputLevel <= 1, `${number}: generated music remains effectively inaudible (${audioAfterTouch.outputLevel})`);
-    report.entry.liveAudio ??= [];
-    report.entry.liveAudio.push({
+    const lightTouchesAfterMap = Number(await directPage.locator("#gaia-live-exhibit-canvas").getAttribute("data-light-touch-count") || 0);
+    report.entry.liveVisual ??= [];
+    report.entry.liveVisual.push({
       number,
-      focus: audioAfterTouch.focus,
-      tempo: audioAfterTouch.tempo,
-      missing: audioAfterTouch.missing,
-      mapping: audioAfterTouch.mapping,
-      sequenceStep: audioAfterTouch.sequenceStep,
-      touchCount: audioAfterTouch.touchCount,
-      lastNoteFrequency: audioAfterTouch.lastNoteFrequency,
-      outputLevel: audioAfterTouch.outputLevel,
+      buttonTouchCount,
+      lightTouchesAfterMap,
       longitude: liveGeography.anchorLongitude,
       latitude: liveGeography.anchorLatitude,
       signalStrength: liveGeography.signalStrength,
@@ -642,7 +624,7 @@ try {
   assert.equal(await directPage.locator(".japan-heading .japan-data-button").first().isVisible(), true, "live exhibit lost the standard OPEN DATA action");
   await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").first().click();
   assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), false, "standard exhibit did not close live canvas");
-  assert.equal((await directPage.evaluate(() => globalThis.GaiaProceduralAudio.getState())).enabled, false, "generated music stayed enabled after leaving live exhibits");
+  assert.equal(await directPage.evaluate(() => typeof globalThis.GaiaProceduralAudio), "undefined", "retired generated sound runtime loaded after leaving live exhibits");
   assert.equal(await directPage.evaluate(() => globalThis.GaiaOpeningAudio.getState().mixGain), 1, "BGM ducking stayed active after leaving live exhibits");
   report.entry.liveExhibits = "passed";
   report.entry.history = "passed";
@@ -763,8 +745,8 @@ try {
     explanationFont: Number.parseFloat(getComputedStyle(document.querySelector(".gaia-live-exhibit-summary")).fontSize),
   }));
   assert(mobileExpandedContract.explanationVisible && mobileExpandedContract.explanationFont >= 13, "mobile exhibit explanation is missing or too small when expanded");
-  assert.equal(await liveMobilePage.locator(".gaia-live-exhibit-path li").count(), 4, "mobile transformation path is incomplete");
-  assert.equal(await liveMobilePage.locator(".gaia-live-stage-symbol").count(), 4, "mobile visual transformation symbols are incomplete");
+  assert.equal(await liveMobilePage.locator(".gaia-live-exhibit-path li").count(), 3, "mobile transformation path is incomplete");
+  assert.equal(await liveMobilePage.locator(".gaia-live-stage-symbol").count(), 3, "mobile visual transformation symbols are incomplete");
   const liveMobileExpandedScreenshot = path.join(outputDir, "live-exhibit-10-mobile-expanded.png");
   await liveMobilePage.screenshot({ path: liveMobileExpandedScreenshot, animations: "disabled" });
   report.entry.liveExhibitMobile = {
@@ -782,7 +764,6 @@ try {
   tourPage.on("request", (request) => tourRequests.push(new URL(request.url()).pathname));
   await tourPage.addInitScript(() => {
     localStorage.setItem("gaia-novel-save", "tour-must-not-change");
-    localStorage.setItem("gaiaSenseware:observationNotebook:v1", JSON.stringify({ version: 1, records: [{ id: "unchanged" }] }));
   });
   await tourPage.goto(new URL("/#tour", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await tourPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
@@ -974,7 +955,6 @@ try {
   await tourPage.locator("[data-tour-action='previous']").click();
   assert.equal(await tourPage.evaluate(() => GaiaGuidedTour.getState().index), 0);
   assert.equal(await tourPage.evaluate(() => localStorage.getItem("gaia-novel-save")), "tour-must-not-change");
-  assert.equal(await tourPage.evaluate(() => localStorage.getItem("gaiaSenseware:observationNotebook:v1")), JSON.stringify({ version: 1, records: [{ id: "unchanged" }] }));
   await tourPage.setViewportSize({ width: 667, height: 375 });
   await tourPage.waitForTimeout(750);
   const rotatedLayout = await tourPage.evaluate(() => {

@@ -991,6 +991,17 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     transform: none;
   }
 
+  .experience.japan-open .map-light-overlay-panel .map-mode-preview.is-open {
+    position: static;
+    display: grid !important;
+    width: 100% !important;
+    margin: 16px 0 0;
+    padding: 0;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
   .experience.japan-open .japan-layer :is(.japan-map-note, .japan-credits) {
     display: none !important;
   }

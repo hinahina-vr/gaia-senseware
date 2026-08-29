@@ -7,7 +7,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "estimatedDuration": "10〜12分",
   "sourceSha256": "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c",
   "revisionId": "approved-script-20260824",
-  "approvedSourceSha256": "ca8806dc901bb81c28cd6e603a7dfc4e3d9f38301230738e7e940fdb89308aa3",
+  "approvedSourceSha256": "c31ff287372f73a70a49ace0272154ffff9dcaaedebbb5163ae5b652a5261c5a",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -1233,7 +1233,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "gx_experience",
           "type": "narration",
           "speaker": "narrator",
-          "text": "みずが画面を示そうと私のほうへ身を乗り出す。長い髪が肩のすぐ近くで揺れ、異性とこんな距離で話した経験のない私は、説明より先に心臓の音を意識した。"
+          "text": "みずが画面を示そうと私のほうへ身を乗り出す。長い髪が肩のすぐ近くで揺れ、初対面の人とこんなにも急に距離が縮まることに、説明より先に心臓の音を意識した。"
         },
         {
           "id": "gx_experience_025",
@@ -2593,7 +2593,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "welcome_chat",
           "type": "narration",
           "speaker": "narrator",
-          "text": "九人のメンバーから歓迎の絵文字が次々に付き、数字が増えていく。短い反応なのに、画面の向こうへ本当に入れてもらえた気がした。"
+          "text": "メンバーたちから歓迎の絵文字が次々に付き、数字が増えていく。短い反応なのに、画面の向こうへ本当に入れてもらえた気がした。"
         },
         {
           "id": "welcome_chat_new_005",
@@ -3152,19 +3152,12 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "text": "次に画面を開くとき、そこには私たちが送った最初の観測点が加わっている。その未来を確かめるため、私は机の部品箱へ手を伸ばした。"
         },
         {
-          "id": "welcome_chat_new_023",
+          "id": "welcome_chat_095",
           "sceneId": "welcome_chat",
           "type": "narration",
           "text": "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。",
           "speaker": "narrator",
           "cueFromStepId": "welcome_chat_094"
-        },
-        {
-          "id": "welcome_chat_095",
-          "sceneId": "welcome_chat",
-          "type": "narration",
-          "speaker": "narrator",
-          "text": "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。"
         }
       ],
       "nextSceneId": null

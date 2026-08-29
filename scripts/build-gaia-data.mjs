@@ -21,6 +21,8 @@ const URLS = Object.freeze({
   gosatImagePage: "https://data2.gosat.nies.go.jp/gallery/fts_l3_swir_co2_gallery_en_image.html?image=1",
   gosatGalleryBase: "https://data2.gosat.nies.go.jp/gallery/",
   gosatScale: "https://data2.gosat.nies.go.jp/gallery/v0305_L3/L3_XCO2_Scale_370-435.png",
+  ovationAurora: "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json",
+  ovationAuroraPage: "https://www.swpc.noaa.gov/products/aurora-30-minute-forecast",
   oscar: "https://podaac.jpl.nasa.gov/dataset/oscar_l4_oc_nrt_v2.0",
   currents:
     "https://coastwatch.noaa.gov/erddap/griddap/noaacwBLENDEDNRTcurrentsDaily.csv?u_current%5B3345%5D%5B120:120:600%5D%5B0:240:1200%5D,v_current%5B3345%5D%5B120:120:600%5D%5B0:240:1200%5D",
@@ -750,6 +752,7 @@ const modes = [
     { number: 1, title: "循環を知る", en: "READ THE CYCLES" },
     "CO₂は季節ごとに上下しながら、長い目ではどう変わってきたのでしょう。",
     [
+      source({ id: "noaa-ovation-aurora", organisation: "NOAA / NWS Space Weather Prediction Center", title: "OVATION 2020 オーロラ30〜90分予報", url: URLS.ovationAuroraPage, period: "最新予報・5分更新", unit: "model aurora intensity", resolution: "全球1°格子・南北両半球", transformation: "高緯度の格子値をエメラルド、シアン、淡い金色の発光帯へ変換し、5分ごとに更新します。", caveat: "観測画像ではなく予報モデルです。雲、日照、地上からの見え方は含みません。取得できない場合は、取得日時を記録した同梱スナップショットへ切り替えます。", rows: [{ liveUrl: URLS.ovationAurora, fallback: "./data/ovation-aurora-snapshot.json", cadenceMinutes: 5 }] }),
       source({ id: "gosat-l3-xco2", organisation: "JAXA / NIES / MOE", title: "GOSAT FTS SWIR Level 3 XCO₂ monthly maps V03.05", url: URLS.gosatGallery, period: `${gosatFrames[0]?.date || "2010-03"}–${gosatFrames.at(-1)?.date || "2025-12"}（同梱16時点）`, unit: "ppm XCO₂", resolution: "月次・2.5°格子・クリギング推定", transformation: "公式地図の色を凡例と照らし合わせ、CO₂濃度の数値へ読み戻しました。", caveat: "この公式地図も、衛星が測った点をもとに空間を推定したものです。色のついた全地点を直接測ったわけではありません。", rows: gosatFrames.map(({ date, sourceUrl, availableCells, minimumPpm, maximumPpm }) => ({ date, sourceUrl, availableCells, minimumPpm, maximumPpm })) }),
       source({ id: "gosat-gallery-decoded", kind: "DERIVED", organisation: "GAIA SENSEWARE", title: "GOSAT公式閲覧画像から復元したXCO₂色階級", url: "./data/gaia-signals.json", period: `${gosatFrames[0]?.date || "2010-03"}–${gosatFrames.at(-1)?.date || "2025-12"}`, unit: "approx. ppm XCO₂", resolution: "2.5°格子・0.1 ppm表示", transformation: "地図の各マスの色をCO₂濃度へ変換しました。色を読めないマスは、近くの8地点から補い、斜線で区別します。", caveat: "元の数値ファイルではなく、公式の閲覧画像から読み取った近似値です。観測から読めたマスと、計算で補ったマスの数を分けて保存しています。", rows: gosatPreviewRows }),
       source({ id: "co2-past-reconstruction", kind: "DERIVED", organisation: "GAIA SENSEWARE", title: "1958–2009 CO₂空間再構成", url: URLS.noaaCo2, period: "1958–2009", unit: "approx. ppm", resolution: "年次表示・2.5°空間テンプレート", transformation: "2010年の世界分布を土台にし、NOAAが各年に測ったCO₂との差を、すべてのマスへ同じだけ足し引きしました。", caveat: "1958〜2009年の世界分布を実際に測った地図ではありません。当時の濃度水準を見るための作品内再構成です。", rows: timelineReconstructionRows }),
@@ -758,6 +761,12 @@ const modes = [
       source({ id: "jma-co2", organisation: "気象庁", title: "国内3地点の年平均CO₂濃度", url: URLS.jmaCo2, period: `${jmaCo2Rows[0]?.year || 1987}–${jmaCo2Rows.at(-1)?.year || 2025}`, unit: "ppm", resolution: "年次・綾里／南鳥島／与那国島", transformation: "GOSATとの観測量の違いを確認する比較資料として台帳に収録。観測開始前・終了後は構造的欠測として補完しない", caveat: "衛星XCO₂は大気柱平均、JMAは地上付近の背景大気で同じ観測量ではない。地点ごとに観測期間が異なる。与那国島の観測は2024年3月末で終了。「*」は月平均11個以下、「)」は速報値。", rows: jmaCo2Rows }),
     ],
     {
+      auroraForecast: {
+        type: "SOURCE_LIVE_WITH_BUNDLED_FALLBACK",
+        liveUrl: URLS.ovationAurora,
+        fallbackUrl: "./data/ovation-aurora-snapshot.json",
+        cadenceMinutes: 5,
+      },
       gosat: {
         level: "L3",
         version: "03.05",

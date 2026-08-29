@@ -19,12 +19,10 @@ flowchart LR
   Snapshot[同梱JSON / GeoJSON / 画像] --> Map
   Snapshot --> Space
   Live["NOAA / JAXA / ESA<br/>Pages Worker read-only API"] --> Explore
-  Map --> Notebook["観測ノート<br/>localStorage"]
-  Sensor["ESP32 / Pages Functions / D1<br/>任意拡張"] --> Notebook
-  Notebook --> Share["URLフラグメント共有<br/>サーバー送信なし"]
+  Sensor["ESP32 / Pages Functions / D1<br/>任意拡張"] --> SensorUI["センサー画面"]
 ```
 
-初期HTMLは入口に必要なCSS、JavaScript、ブランド画像、キービジュアルだけを読みます。音声、物語画像、地球・宇宙の観測JSON、3D／Canvas機能、ガイド、観測ノートは選択後に読み込みます。
+初期HTMLは入口に必要なCSS、JavaScript、ブランド画像、キービジュアルだけを読みます。音声、物語画像、地球・宇宙の観測JSON、3D／Canvas機能、ガイドは選択後に読み込みます。
 
 ## 公開URLと入口
 
@@ -34,7 +32,6 @@ flowchart LR
 | `#tour` | 入口と映画的オープニングを迂回し、30秒ガイドを開始 |
 | `#story` | 入口を迂回し、物語の入口へ移動 |
 | `#earth` ほか展示ハッシュ | 入口を迂回し、指定した展示へ移動 |
-| `#observation=<payload>` | 入口を迂回し、共有観測を読み取り専用で開く |
 
 入口のルート選択は保存せず、再訪時も同じ作品入口から始めます。音量は既存の保存キーを継続利用します。
 
@@ -46,7 +43,6 @@ flowchart LR
 | `space` | 宇宙10展示、保存済み宇宙データ | 宇宙を開く、ガイドの宇宙工程 |
 | `story` | 物語UI、セーブ、物語画像 | オープニング後の「物語を読む」、`#story` |
 | `tour` | ガイドUIと進行制御 | `#tour` |
-| `notebook` | 保存、比較、共有 | 観測ノートを開く、共有URL |
 
 ## 主要アダプター
 
@@ -54,8 +50,7 @@ flowchart LR
 |---|---|
 | `GaiaMapObservationAdapter` | データ準備待機、展示選択、年代変更、地図開閉、操作対象の強調、ソースタブ表示、現在値と変換情報の取得 |
 | `GaiaSpaceTourAdapter` | 準備完了待機、宇宙展示選択、信号再生、操作対象の強調、現在値と変換情報の取得、終了 |
-| `GaiaGuidedTour` | 4工程・30秒の実操作ガイド、一時停止、前後移動、終了、再入場、非表示タブ停止 |
-| `GaiaObservationNotebook` | 正規化した観測の保存、最大24件、比較、削除、共有の読込 |
+| `GaiaGuidedTour` | 3工程・30秒の実操作ガイド、一時停止、前後移動、終了、再入場、非表示タブ停止 |
 
 アダプターは既存展示の計算結果を読み取ります。ガイド専用の別計算は持たず、地図のライブ展示09〜12が主表示に使う値と同じ結果を表示します。
 
@@ -70,7 +65,7 @@ flowchart LR
 | `gaia:space-tour-adapter-ready` | 宇宙アダプター利用可能 |
 | `gaia:guided-tour-ready` | ガイド利用可能 |
 | `gaia:space-open` / `gaia:space-close` | 宇宙レイヤーの開始／破棄 |
-| `gaia:live-update` | 正規化したNOAA／JAXA／ESAイベントと音響変換値を通知 |
+| `gaia:live-update` | 正規化したNOAA／JAXA／ESAイベントを通知 |
 | `gaia:lodchange` | `high / medium / low / static` の描画品質変更を通知 |
 
 ## Live Senseware
@@ -81,11 +76,10 @@ flowchart LR
 - SSEはsnapshot、provider、statusイベントと15秒heartbeatを送り、10分で正常終了します。非表示タブでは閉じ、復帰時にsnapshot後再接続します。
 - `LIVE_SENSEWARE_ENABLED=true` とCDSE Secretが揃うまで、版管理したスナップショットを返します。
 
-## 動的LODと生成音
+## 動的LOD
 
 - `GaiaFrameBudgetGovernor` は120フレーム単位のp95を測り、DPR、粒子、効果を段階調整します。状態は `data-gaia-lod` でも確認できます。
-- 生成環境音は利用者が「観測音をオン」を押した後だけ `AudioContext` を作成します。初期値は無音で、既存ミュート・音量設定へ従います。
-- 風速、気温、CO₂、降水、NO₂から得た正規化値と音響パラメーターは各ライブ展示の主表示へ集約し、欠測したレイヤーだけをフェードアウトします。
+- 風速、気温、CO₂、降水、NO₂から得た正規化値は各ライブ展示の光と動きへ反映し、欠測したレイヤーだけをフェードアウトします。
 
 ## 耐障害性とライフサイクル
 
@@ -94,5 +88,4 @@ flowchart LR
 - `visibilitychange` で地図、宇宙、音響の描画ループを停止し、再表示時だけ再開します。
 - ライブSSEも非表示タブで閉じ、復帰時はスナップショットを取り直してから上限付きバックオフで再接続します。
 - 開閉処理は既存インスタンスを再利用し、Canvasや音声プレイヤーを追加生成せず、閉じる際に描画フレームを解除します。
-- ガイドはセーブデータと観測ノートを書き換えません。
-- 共有観測はURLフラグメント内だけに置き、端末ID、所有者、プロフィール、正確な位置情報を含めません。
+- ガイドは物語のセーブデータを書き換えません。

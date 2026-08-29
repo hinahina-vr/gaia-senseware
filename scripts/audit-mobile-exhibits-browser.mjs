@@ -127,6 +127,8 @@ const selectMapMode = async (page, index) => {
 
 const selectLightMode = async (page, index) => {
   await ensureBankExpanded(page);
+  await page.locator("#map-light-overlay-open").click();
+  await page.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden, null, { timeout: 15_000 });
   const button = page.locator("#abstract-mode-list .map-mode-button").nth(index);
   const number = String(index + 1).padStart(2, "0");
   await button.click({ force: true });
@@ -294,19 +296,15 @@ try {
           (previous) => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.lightTouchCount || 0) > previous,
           beforeSurfaceTouch,
         );
-        let audioState = "not-tested";
         if (index === 8) {
-          const soundToggle = page.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]");
-          if (await soundToggle.getAttribute("data-audio-state") !== "playing") await soundToggle.click();
-          await page.waitForFunction(() => document.querySelector(".gaia-live-exhibit-readout [data-live-sound-toggle]")?.dataset.audioState === "playing");
-          assert.match(await page.locator("[data-live-sound-status]").textContent(), /再生中.*BPM/u);
-          audioState = "playing";
+          assert.equal(await page.locator(".gaia-live-exhibit-readout [data-live-sound-toggle]").count(), 0);
+          assert.equal(await page.evaluate(() => typeof globalThis.GaiaProceduralAudio), "undefined");
         }
         scan.liveInteractions.push({
           number,
           buttonTouchCount: Number(await canvas.getAttribute("data-light-touch-count") || 0),
           surfacePoint: openSurfacePoint,
-          audioState,
+          generatedSound: "removed",
         });
       }
       if (index === 0) {

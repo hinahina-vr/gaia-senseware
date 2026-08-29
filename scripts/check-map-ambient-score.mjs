@@ -9,13 +9,14 @@ const wav = fs.readFileSync(audioPath);
 const openingAudioSource = fs.readFileSync(path.join(root, "opening-audio.js"), "utf8");
 const novelModeSource = fs.readFileSync(path.join(root, "novel-mode.js"), "utf8");
 
-assert(openingAudioSource.includes('senseware: "./assets/audio/gaia-map-ambient-harp-felt-piano.wav"'), "data-map route does not use the new ambience");
+assert(openingAudioSource.includes('senseware: "./assets/audio/moonlit-source-save.mp3"'), "GAIA SENSEWARE main route lost its original score");
+assert(openingAudioSource.includes('mapambient: "./assets/audio/gaia-map-ambient-harp-felt-piano.wav"'), "data-map route does not use the new ambience");
 [
   "event-cg-festival-map-transition-five-plane",
   "modis-land-cover-2023.png",
   "novel-bg-map01-data-provenance",
 ].forEach((background) => {
-  assert(novelModeSource.includes(`["${background}", "senseware"]`), `story MAP 01 background does not use the new ambience: ${background}`);
+  assert(novelModeSource.includes(`["${background}", "mapambient"]`), `story MAP 01 background does not use the new ambience: ${background}`);
 });
 
 assert.equal(wav.toString("ascii", 0, 4), "RIFF", "map ambience must use a RIFF container");

@@ -33,10 +33,10 @@ const attachDiagnostics = (page, label) => {
   page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${label}: ${response.url()}`); });
 };
 
-const bootAtEnding = async (page, label) => {
+const bootAtEnding = async (page, label, { priorApeironceneComplete = false } = {}) => {
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
-  await page.evaluate(({ storageKey, configKey, sessionId }) => {
+  await page.evaluate(({ storageKey, configKey, sessionId, priorApeironceneComplete }) => {
     const state = {
       storyVersion: globalThis.GAIA_NOVEL_STORY.storyVersion,
       stepId: "welcome_chat_095",
@@ -64,10 +64,20 @@ const bootAtEnding = async (page, label) => {
     localStorage.setItem(configKey, JSON.stringify({ messageSpeedPercent: 400, reducedMotion: false }));
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
     localStorage.removeItem("gaiaSensewareTrueEnd:reached:v1");
-    localStorage.removeItem("gaiaSensewareTrueEnd:complete:v1");
-  }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, sessionId: `ending-data-skip-${label}` });
+    localStorage.removeItem("gaiaSensewareTrueEnd:pending:v1");
+    if (priorApeironceneComplete) {
+      localStorage.setItem("gaiaSensewareTrueEnd:complete:v1", "previous-cycle");
+    } else {
+      localStorage.removeItem("gaiaSensewareTrueEnd:complete:v1");
+    }
+  }, { storageKey: STORAGE_KEY, configKey: CONFIG_KEY, sessionId: `ending-data-skip-${label}`, priorApeironceneComplete });
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
+  if (priorApeironceneComplete) {
+    await page.locator("#novel-resume-button").click();
+    await page.locator("#novel-save-panel").waitFor({ state: "visible" });
+    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  }
   await page.locator(".novel-staff-roll-data-skip").waitFor({ state: "visible", timeout: 15_000 });
 };
 
@@ -115,6 +125,8 @@ const scanDestination = (page) => page.evaluate((storageKey) => {
     savedArchivesUnlocked: saved.archivesUnlocked,
     titleUnlocked: globalThis.GaiaTrueEnd?.isReached?.() ?? false,
     reachedMarkerStored: Boolean(localStorage.getItem("gaiaSensewareTrueEnd:reached:v1")),
+    pendingMarkerStored: Boolean(localStorage.getItem("gaiaSensewareTrueEnd:pending:v1")),
+    completeMarkerStored: Boolean(localStorage.getItem("gaiaSensewareTrueEnd:complete:v1")),
     storyReturnLabel: storyReturn?.querySelector("strong")?.textContent?.trim() || "",
     storyDestination: storyReturn?.dataset.storyDestination || "",
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -128,7 +140,8 @@ try {
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
     attachDiagnostics(page, viewport.name);
-    await bootAtEnding(page, viewport.name);
+    const priorApeironceneComplete = viewport.width <= 720;
+    await bootAtEnding(page, viewport.name, { priorApeironceneComplete });
 
     const ending = await scanEnding(page);
     assert.equal(ending.stepId, "welcome_chat_095");
@@ -161,14 +174,16 @@ try {
     assert.equal(destination.archivesUnlocked, true);
     assert.equal(destination.savedClear, true);
     assert.equal(destination.savedArchivesUnlocked, true);
-    assert.equal(destination.titleUnlocked, false, `${viewport.name}: data skip unlocked the title`);
+    assert.equal(destination.titleUnlocked, priorApeironceneComplete, `${viewport.name}: existing APEIRONCENE achievement changed unexpectedly`);
     assert.equal(destination.reachedMarkerStored, false, `${viewport.name}: data skip persisted an APEIRONCENE marker`);
+    assert.equal(destination.pendingMarkerStored, true, `${viewport.name}: staff-roll arrival did not persist the pending APEIRONCENE cycle`);
+    assert.equal(destination.completeMarkerStored, priorApeironceneComplete, `${viewport.name}: staff-roll arrival overwrote the lifetime completion marker`);
     assert.equal(destination.storyReturnLabel, "星々の放課後 ～APEIRONCENE～", `${viewport.name}: staff-roll completion did not reveal APEIRONCENE on the GAIA page`);
     assert.equal(destination.storyDestination, "apeironcene", `${viewport.name}: GAIA story button still targets the ordinary title`);
     assert.equal(destination.overflowX, 0);
     assert.equal(destination.overflowY, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-data-page.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, ending, destination, passed: true });
+    report.scans.push({ viewport: viewport.name, priorApeironceneComplete, ending, destination, passed: true });
     await context.close();
   }
 

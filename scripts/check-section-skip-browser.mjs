@@ -45,6 +45,7 @@ const layoutScan = (page) => page.evaluate(() => {
   const close = closeButton.getBoundingClientRect();
   const home = homeButton.getBoundingClientRect();
   const audio = document.querySelector(".gaia-audio-dock")?.getBoundingClientRect();
+  const audioButton = document.querySelector("#gaia-audio-toggle")?.getBoundingClientRect();
   const overlaps = (first, second) => !(
     first.right <= second.left
     || first.left >= second.right
@@ -65,6 +66,7 @@ const layoutScan = (page) => page.evaluate(() => {
     homeHidden: homeButton.hidden,
     homeRect: home.toJSON(),
     audioRect: audio?.toJSON() || null,
+    audioButtonRect: audioButton?.toJSON() || null,
     audioExpanded: document.querySelector(".gaia-audio-dock")?.classList.contains("is-expanded") || false,
     audioPosition: document.querySelector(".gaia-audio-dock") ? getComputedStyle(document.querySelector(".gaia-audio-dock")).position : null,
     layerOpen: document.querySelector("#novel-layer")?.classList.contains("is-open"),
@@ -110,6 +112,7 @@ try {
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => globalThis.GaiaModeLoader.load("story"));
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
     await page.evaluate(() => {
       localStorage.clear();
@@ -144,10 +147,10 @@ try {
     await page.locator("#novel-start-button").click();
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
     const before = await layoutScan(page);
-    assert.equal(before.label, "セクションスキップ");
-    assert(before.closeArrow.includes("→"), `${viewport.name}: section skip direction is not forward`);
+    assert.equal(before.label, "スキップ▶");
+    assert(["none", "normal"].includes(before.closeArrow), `${viewport.name}: obsolete section-skip arrow remains`);
     assert.match(before.ariaLabel || "", /地球温暖化を地図で見る/u);
-    assert.equal(before.homeLabel, "トップへ戻る");
+    assert.equal(before.homeLabel, "戻る");
     assert.equal(before.homeAriaLabel, "物語を閉じてトップページへ戻る");
     assert.equal(before.homeHidden, false, `${viewport.name}: real top return is hidden in runtime`);
     assert.equal(before.closeClipPath, "none", `${viewport.name}: story skip retained the angular mode silhouette`);
@@ -161,10 +164,15 @@ try {
     assert(before.audioRect && viewport.width - before.audioRect.right <= 40, `${viewport.name}: runtime audio is not pinned right: ${JSON.stringify(before.audioRect)}`);
     assert(before.audioRect.top <= 40, `${viewport.name}: runtime audio is not pinned top: ${JSON.stringify(before.audioRect)}`);
     if (viewport.width <= 720) {
-      assert(before.closeRect.left <= 40, `${viewport.name}: section skip is not pinned left: ${JSON.stringify(before.closeRect)}`);
+      assert(before.audioButtonRect, `${viewport.name}: speaker button geometry is unavailable`);
+      assert(Math.abs(before.closeRect.height - before.audioButtonRect.height) <= 0.25, `${viewport.name}: section skip height differs from the speaker button`);
+      assert(Math.abs(before.homeRect.height - before.audioButtonRect.height) <= 0.25, `${viewport.name}: top return height differs from the speaker button`);
+      assert(Math.abs(before.closeRect.top - before.audioButtonRect.top) <= 0.25, `${viewport.name}: section skip is not aligned with the speaker button`);
+      assert(Math.abs(before.homeRect.top - before.audioButtonRect.top) <= 0.25, `${viewport.name}: top return is not aligned with the speaker button`);
+      assert(before.homeRect.left <= 40, `${viewport.name}: top return is not pinned left: ${JSON.stringify(before.homeRect)}`);
       assert(before.closeRect.top <= 40, `${viewport.name}: section skip is not pinned top: ${JSON.stringify(before.closeRect)}`);
       assert(Math.abs(before.closeRect.top - before.homeRect.top) <= 1, `${viewport.name}: mobile header controls are not on one row`);
-      assert(before.homeRect.left >= before.closeRect.right + 4, `${viewport.name}: top return is not placed after the section skip`);
+      assert(before.closeRect.left >= before.homeRect.right + 4, `${viewport.name}: section skip is not placed after the top return`);
       assert.equal(before.closePosition, "fixed", `${viewport.name}: section skip is not viewport-fixed`);
       assert.equal(before.audioPosition, "fixed", `${viewport.name}: audio control is not viewport-fixed`);
     } else {
@@ -205,6 +213,7 @@ try {
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-top-return.png`), animations: "disabled" });
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => globalThis.GaiaModeLoader.load("story"));
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
     await page.evaluate(() => {
       localStorage.clear();
@@ -220,6 +229,7 @@ try {
     });
     await page.locator("#novel-start-button").click();
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
+    await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete");
     await page.waitForFunction(() => (
       document.querySelector("#novel-close-button")?.dataset.controlMode === "skip"
       && !document.querySelector("#novel-close-button")?.disabled

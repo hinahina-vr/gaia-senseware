@@ -18,6 +18,7 @@
   const planetSignal = document.querySelector("#sound-planet-signal");
   const analysisState = document.querySelector("#sound-analysis-state");
   const visualizerCanvas = document.querySelector("#sound-visualizer");
+  const equalizerCanvas = document.querySelector("#sound-eq-visualizer");
   const trackButtons = Array.from(document.querySelectorAll("[data-sound-track]"));
   const openButtons = Array.from(document.querySelectorAll("[data-sound-gallery-open]"));
 
@@ -113,6 +114,7 @@
   let animationFrame = 0;
   let lastFocused = null;
   let visualizerRuntime = null;
+  let equalizerRuntime = null;
   let visualizerState = {
     playing: false,
     volume: 0.1,
@@ -212,13 +214,13 @@
       vec3 auroraSilk(vec2 uv) {
         float aspect = resolution.x / max(1.0, resolution.y);
         vec2 p = vec2((uv.x - 0.5) * aspect, uv.y);
-        float motion = time * (0.034 + mid * 0.018);
-        float breath = 0.84 + 0.08 * sin(time * 0.42) + bass * 0.48;
+        float motion = time * (0.034 + mid * 0.13);
+        float breath = 0.76 + 0.08 * sin(time * 0.42) + bass * 0.86 + energy * 0.24;
         float warp = fbm(vec2(p.x * 0.72 - motion, p.y * 1.42 + motion * 0.6));
         float fine = fbm(vec2(p.x * 1.38 + motion * 0.7, p.y * 2.2 - motion));
-        float twist = (warp - 0.5) * (0.17 + mid * 0.24);
-        float sweep = sin(p.x * 0.74 + motion * 1.24) * (0.105 + mid * 0.055) + p.x * 0.025;
-        float lift = sin(p.x * 1.36 + motion * 2.2) * (0.075 + mid * 0.065);
+        float twist = (warp - 0.5) * (0.17 + mid * 0.5);
+        float sweep = sin(p.x * 0.74 + motion * 1.24) * (0.105 + mid * 0.16) + p.x * 0.025;
+        float lift = sin(p.x * 1.36 + motion * 2.2) * (0.075 + mid * 0.18);
         float fold = 0.72 + 0.28 * sin(p.x * 5.2 - p.y * 3.1 + fine * 4.4 + motion * 2.0);
 
         float c1 = 0.56 + sweep + lift + twist;
@@ -227,9 +229,9 @@
         float c4 = 0.39 - sweep * 0.34 + sin(p.x * 1.7 + motion * 1.35) * 0.08 - twist * 0.38;
         float c5 = 0.75 - sweep * 0.5 - sin(p.x * 1.22 - motion * 1.15) * 0.07 + twist * 0.26;
 
-        float m1 = exp(-pow(abs(p.y - c1) / (0.085 + mid * 0.034), 2.0));
-        float m2 = exp(-pow(abs(p.y - c2) / (0.096 + mid * 0.024), 2.0));
-        float m3 = exp(-pow(abs(p.y - c3) / (0.073 + mid * 0.028), 2.0));
+        float m1 = exp(-pow(abs(p.y - c1) / (0.085 + mid * 0.07 + bass * 0.025), 2.0));
+        float m2 = exp(-pow(abs(p.y - c2) / (0.096 + mid * 0.06 + bass * 0.02), 2.0));
+        float m3 = exp(-pow(abs(p.y - c3) / (0.073 + mid * 0.062 + bass * 0.018), 2.0));
         float m4 = exp(-pow(abs(p.y - c4) / (0.078 + mid * 0.02), 2.0));
         float m5 = exp(-pow(abs(p.y - c5) / (0.062 + mid * 0.022), 2.0));
         float s1 = exp(-pow(abs(p.y - c1) / (0.022 + mid * 0.012), 2.0));
@@ -297,7 +299,7 @@
         float silverDust = powderLayer(uv, 31.0, time * 0.018, 0.92);
         float goldDust = powderLayer(uv + vec2(0.13, 0.07), 43.0, -time * 0.013, 0.95);
         float nearDust = powderLayer(uv + vec2(-0.21, 0.17), 19.0, time * 0.009, 0.94);
-        float dustLift = 0.16 + high * 1.35 + energy * 0.18;
+        float dustLift = 0.1 + high * 2.45 + energy * 0.42;
         color += vec3(0.82, 0.9, 1.0) * silverDust * dustLift;
         color += vec3(1.0, 0.69, 0.31) * goldDust * dustLift * 0.9;
         color += vec3(0.55, 0.96, 0.82) * nearDust * (0.08 + high * 0.62);
@@ -335,13 +337,13 @@
         color += vec3(0.12, 0.34, 0.62) * outerHalo * 0.16;
 
         float bassBloom = bass * exp(-dot(centered - vec2(-0.12, -0.04), centered - vec2(-0.12, -0.04)) * 2.2);
-        color += mix(vec3(0.16, 0.04, 0.32), vec3(0.08, 0.38, 0.36), uv.x) * bassBloom * 0.16;
+        color += mix(vec3(0.16, 0.04, 0.32), vec3(0.08, 0.38, 0.36), uv.x) * bassBloom * 0.42;
 
         float vignette = smoothstep(1.08, 0.2, length(centered * vec2(0.82, 1.03)));
         color *= 0.54 + 0.46 * vignette;
         float grain = hash21(gl_FragCoord.xy + fract(time) * 71.0) - 0.5;
         color += grain * 0.008;
-        color = 1.0 - exp(-color * (1.02 + energy * 0.14));
+        color = 1.0 - exp(-color * (1.0 + energy * 0.52));
         float edgeAlpha = smoothstep(0.0, 0.075, uv.x)
           * smoothstep(0.0, 0.075, 1.0 - uv.x)
           * smoothstep(0.0, 0.065, uv.y)
@@ -573,6 +575,140 @@
     return { draw };
   };
 
+  const createSpectrumOverlay = (canvas) => {
+    if (!(canvas instanceof HTMLCanvasElement)) return null;
+    const context = canvas.getContext("2d", { alpha: true });
+    if (!context) {
+      canvas.dataset.renderer = "unavailable";
+      return null;
+    }
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const smoothed = new Float32Array(32);
+    const heldPeaks = new Float32Array(32);
+    let automaticGain = 1;
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = Math.min(reduced ? 1 : 1.5, window.devicePixelRatio || 1);
+      const width = Math.max(1, Math.round(rect.width * ratio));
+      const height = Math.max(1, Math.round(rect.height * ratio));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      return { width, height, ratio };
+    };
+
+    const roundedBar = (x, y, width, height, radius) => {
+      const safeHeight = Math.max(radius * 2, height);
+      context.beginPath();
+      context.roundRect(x, y - safeHeight, width, safeHeight, radius);
+      context.fill();
+    };
+
+    const draw = (state) => {
+      const { width, height, ratio } = resize();
+      context.clearRect(0, 0, width, height);
+      const active = Boolean(state.analysisActive);
+      const targetGain = active
+        ? Math.max(1.1, Math.min(6, 0.12 / Math.max(0.008, state.rms || 0)))
+        : 1;
+      automaticGain += (targetGain - automaticGain) * 0.075;
+      const spectrum = Array.isArray(state.spectrum) ? state.spectrum : [];
+      const spectralMaximum = active ? Math.max(0.001, ...spectrum) : 0.001;
+      const loudness = active
+        ? Math.min(1, Math.max(0.16, (state.rms || 0) * automaticGain * 4.2))
+        : 0;
+      let maximum = 0;
+
+      for (let index = 0; index < smoothed.length; index += 1) {
+        const raw = active ? Math.min(1, Math.max(0, ((spectrum[index] || 0) / spectralMaximum) * loudness)) : 0;
+        const shaped = Math.pow(raw, 0.72);
+        const easing = shaped > smoothed[index] ? (reduced ? 0.2 : 0.38) : (reduced ? 0.08 : 0.14);
+        smoothed[index] += (shaped - smoothed[index]) * easing;
+        heldPeaks[index] = Math.max(smoothed[index], heldPeaks[index] - (reduced ? 0.025 : 0.012));
+        maximum = Math.max(maximum, smoothed[index]);
+      }
+
+      canvas.dataset.renderer = "canvas2d";
+      canvas.dataset.audioAnalysis = "web-audio-fft-32-band";
+      canvas.dataset.analysisActive = String(active);
+      canvas.dataset.maximumBand = maximum.toFixed(3);
+
+      const left = width * 0.055;
+      const usableWidth = width * 0.66;
+      const baseline = height * 0.84;
+      const gap = Math.max(2 * ratio, usableWidth * 0.0044);
+      const barWidth = (usableWidth - gap * 31) / 32;
+      const maxBarHeight = height * 0.34;
+
+      context.save();
+      context.globalCompositeOperation = "screen";
+      for (let index = 0; index < smoothed.length; index += 1) {
+        const ratioAcross = index / Math.max(1, smoothed.length - 1);
+        const value = smoothed[index];
+        const heightValue = Math.max(2 * ratio, value * maxBarHeight);
+        const x = left + index * (barWidth + gap);
+        const gradient = context.createLinearGradient(0, baseline, 0, baseline - maxBarHeight);
+        if (ratioAcross < 0.3) {
+          gradient.addColorStop(0, "rgba(53, 211, 206, 0.12)");
+          gradient.addColorStop(1, "rgba(118, 247, 230, 0.88)");
+          context.shadowColor = "rgba(66, 224, 218, 0.58)";
+        } else if (ratioAcross < 0.72) {
+          gradient.addColorStop(0, "rgba(126, 80, 214, 0.12)");
+          gradient.addColorStop(1, "rgba(219, 140, 255, 0.88)");
+          context.shadowColor = "rgba(191, 112, 242, 0.52)";
+        } else {
+          gradient.addColorStop(0, "rgba(207, 139, 76, 0.1)");
+          gradient.addColorStop(1, "rgba(255, 220, 158, 0.92)");
+          context.shadowColor = "rgba(255, 195, 118, 0.52)";
+        }
+        context.shadowBlur = (3 + value * 14) * ratio;
+        context.fillStyle = gradient;
+        roundedBar(x, baseline, barWidth, heightValue, Math.min(barWidth * 0.5, 4 * ratio));
+
+        if (active && heldPeaks[index] > 0.045) {
+          context.shadowBlur = 8 * ratio;
+          context.fillStyle = "rgba(244, 250, 255, 0.72)";
+          context.fillRect(x, baseline - heldPeaks[index] * maxBarHeight - ratio, barWidth, Math.max(1, ratio));
+        }
+      }
+      context.restore();
+
+      const waveform = Array.isArray(state.waveform) ? state.waveform : [];
+      if (waveform.length > 1) {
+        context.save();
+        context.globalCompositeOperation = "screen";
+        context.beginPath();
+        waveform.forEach((sample, index) => {
+          const x = left + (index / (waveform.length - 1)) * usableWidth;
+          const y = height * 0.48 - sample * height * (0.052 + maximum * 0.055);
+          if (index === 0) context.moveTo(x, y);
+          else context.lineTo(x, y);
+        });
+        context.strokeStyle = active ? "rgba(235, 247, 255, 0.66)" : "rgba(235, 247, 255, 0.14)";
+        context.lineWidth = Math.max(1, ratio * 0.8);
+        context.shadowColor = "rgba(144, 217, 244, 0.56)";
+        context.shadowBlur = (4 + maximum * 10) * ratio;
+        context.stroke();
+        context.restore();
+      }
+
+      context.save();
+      context.font = Math.max(7, 7 * ratio) + "px Consolas, monospace";
+      context.fillStyle = active ? "rgba(224, 240, 248, 0.48)" : "rgba(224, 240, 248, 0.2)";
+      context.letterSpacing = Math.max(1, ratio) + "px";
+      context.fillText("LOW", left, baseline + 19 * ratio);
+      context.fillText("MID", left + usableWidth * 0.36, baseline + 19 * ratio);
+      context.fillText("HIGH", left + usableWidth * 0.77, baseline + 19 * ratio);
+      context.restore();
+    };
+
+    canvas.dataset.renderer = "canvas2d";
+    canvas.dataset.audioAnalysis = "web-audio-fft-32-band";
+    return { draw };
+  };
+
   const formatTime = (seconds) => {
     if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
     const minutes = Math.floor(seconds / 60);
@@ -640,6 +776,7 @@
   const tick = () => {
     render();
     visualizerRuntime?.draw?.(visualizerState);
+    equalizerRuntime?.draw?.(visualizerState);
     if (isOpen) animationFrame = requestAnimationFrame(tick);
   };
 
@@ -652,6 +789,7 @@
     document.body.classList.add("sound-mode-open");
     void getAudio()?.enableAnalysis?.();
     visualizerRuntime ||= createSoundVisualizer(visualizerCanvas);
+    equalizerRuntime ||= createSpectrumOverlay(equalizerCanvas);
     render();
     requestAnimationFrame(() => {
       layer.classList.add("is-open");

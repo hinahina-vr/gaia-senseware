@@ -20,7 +20,7 @@ const scanViewport = async (viewport) => {
     reducedMotion: "no-preference",
   });
   await context.addInitScript(() => {
-    localStorage.setItem("gaia:opening-route-guide:v2", "seen");
+    localStorage.setItem("gaia:opening-route-guide:v3", "seen");
     globalThis.__gaiaShootingStarEvents = [];
     document.addEventListener("gaia:shooting-star", (event) => {
       globalThis.__gaiaShootingStarEvents.push({ at: performance.now(), ...event.detail });
@@ -47,6 +47,11 @@ const scanViewport = async (viewport) => {
   assert(first.startY <= viewport.height * 0.2, `${viewport.name}: shooting star did not start near the top edge`);
   assert(first.dx < 0 && first.dy > 0, `${viewport.name}: shooting star did not travel down and left`);
   assert(first.duration >= 880 && first.duration <= 1180, `${viewport.name}: shooting star duration is outside the intended range`);
+  assert(first.perspective >= 0.035 && first.perspective <= 0.065, `${viewport.name}: shooting star perspective model is outside its calibrated range`);
+  assert(first.gravity >= first.travel * 0.022 && first.gravity <= first.travel * 0.035, `${viewport.name}: shooting star atmospheric drop is outside its calibrated range`);
+  assert(first.trailFraction >= 0.17 && first.trailFraction <= 0.22, `${viewport.name}: shooting star trail persistence is outside its calibrated range`);
+  assert(first.coreWidth >= 0.52 && first.coreWidth <= 0.82, `${viewport.name}: shooting star core is too heavy`);
+  assert(first.peakAlpha >= 0.5 && first.peakAlpha <= 0.62, `${viewport.name}: shooting star opacity is outside its restrained range`);
 
   await page.waitForTimeout(320);
   const canvasPng = await page.locator("#gaia-opening-particles").evaluate((canvas) => canvas.toDataURL("image/png"));

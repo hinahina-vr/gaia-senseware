@@ -16,6 +16,7 @@
   });
   const STORAGE_KEY = "gaiaSensewareTrueEnd:complete:v1";
   const REACHED_STORAGE_KEY = "gaiaSensewareTrueEnd:reached:v1";
+  const PENDING_STORAGE_KEY = "gaiaSensewareTrueEnd:pending:v1";
   const CHARACTER_DELAY_MS = 29;
   const FUTURE_SHORE_SCENE_ID = "after-school-stars";
   const FUTURE_SHORE_START_STEP_ID = "beyond_03_032";
@@ -469,6 +470,7 @@
       finale.hidden = false;
       try {
         window.localStorage.setItem(STORAGE_KEY, new Date().toISOString());
+        window.localStorage.removeItem(PENDING_STORAGE_KEY);
       } catch {
         // The ending remains available when storage is disabled.
       }

@@ -664,9 +664,35 @@
               "holdoutMaePpm": 0.244
             }
           ]
+        },
+        {
+          "id": "noaa-ovation-aurora",
+          "kind": "SOURCE",
+          "organisation": "NOAA / NWS Space Weather Prediction Center",
+          "title": "OVATION 2020 オーロラ30〜90分予報",
+          "url": "https://www.swpc.noaa.gov/products/aurora-30-minute-forecast",
+          "retrievedAt": "2026-08-29T21:29:00Z",
+          "period": "最新予報・5分更新",
+          "unit": "model aurora intensity",
+          "resolution": "全球1°格子・南北両半球",
+          "transformation": "高緯度の格子値をエメラルド、シアン、淡い金色の発光帯へ変換し、5分ごとに更新します。",
+          "caveat": "観測画像ではなく予報モデルです。雲、日照、地上からの見え方は含みません。取得できない場合は、取得日時を記録した同梱スナップショットへ切り替えます。",
+          "preview": [
+            {
+              "liveUrl": "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json",
+              "fallback": "./data/ovation-aurora-snapshot.json",
+              "cadenceMinutes": 5
+            }
+          ]
         }
       ],
       "signals": {
+        "auroraForecast": {
+          "type": "SOURCE_LIVE_WITH_BUNDLED_FALLBACK",
+          "liveUrl": "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json",
+          "fallbackUrl": "./data/ovation-aurora-snapshot.json",
+          "cadenceMinutes": 5
+        },
         "gosat": {
           "level": "L3",
           "version": "03.05",

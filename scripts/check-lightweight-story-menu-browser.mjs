@@ -190,6 +190,13 @@ const cardScan = async (page) => page.evaluate(() => {
       path: card.dataset.introPath || (card.hasAttribute("data-sound-gallery-open") ? "sound" : ""),
       title: card.querySelector(":scope > strong")?.textContent.trim(),
       copy: card.querySelector(":scope > p")?.textContent.trim(),
+      copyLineCount: (() => {
+        const copy = card.querySelector(":scope > p");
+        if (!copy) return 0;
+        const range = document.createRange();
+        range.selectNodeContents(copy);
+        return [...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0).length;
+      })(),
       glyphVisible: __qaVisible(card.querySelector(".intro-path-glyph")),
       layoutTop: card.offsetTop,
       rect: card.getBoundingClientRect().toJSON(),
@@ -213,8 +220,9 @@ const cardScan = async (page) => page.evaluate(() => {
 
 const assertCards = (scan, viewport) => {
   assert.equal(scan.cardCount, 4);
-  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "キャラクター設定資料", "音を聴く"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "三人の役割と、共同制作の関係を見る。", "物語の音楽へ。"]);
+  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "キャラクター設定", "音を聴く"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "三人の役割と関係。", "物語の音楽へ。"]);
+  assert.equal(scan.cards.find((card) => card.title === "キャラクター設定")?.copyLineCount, 1, `${viewport.name}: character copy is not one line`);
   assert.equal(scan.cards.some((card) => card.path === "space" || card.title === "宇宙から見る"), false);
   assert.equal(scan.cards.some((card) => card.path === "abstract" || card.title === "光に触れる"), false);
   assert(scan.cards.every((card) => card.glyphVisible && card.focusable && card.rect.width > 0 && card.rect.height >= 90));
@@ -340,7 +348,8 @@ const scanCharacterFile = async (page, viewport) => {
   }));
   assert(jumpCopy.visible);
   assert.match(jumpCopy.text, /CHARACTER FILE/u);
-  assert.match(jumpCopy.text, /キャラクター設定資料/u);
+  assert.match(jumpCopy.text, /キャラクター設定/u);
+  assert.doesNotMatch(jumpCopy.text, /キャラクター設定資料/u);
   assert.equal(jumpCopy.controls, "character-book-layer");
   assert.equal(jumpCopy.hasPopup, "dialog");
   assert.equal(jumpCopy.inMainGrid, true);
@@ -375,7 +384,7 @@ const scanCharacterFile = async (page, viewport) => {
   });
   assert(scan.visible);
   assert.equal(scan.focusedId, "character-book-close");
-  assert.equal(scan.heading, "キャラクター設定資料");
+  assert.equal(scan.heading, "キャラクター設定");
   assert.equal(scan.pageTitle, "三人の基準設定画");
   assert.equal(scan.current, "01");
   assert.equal(scan.pageCount, 10);
@@ -440,7 +449,6 @@ const scanDirectMapEntry = async (viewport) => {
     && !__qaVisible(document.querySelector("#intro-layer"))
     && document.querySelector("#japan-mode-list .map-mode-button")?.getAttribute("aria-current") === "true"
   ), null, { timeout: 15_000 });
-  await page.waitForFunction(() => document.activeElement === document.querySelector("#japan-mode-list .map-mode-button"));
   if (viewport.mobile) await page.locator("#map-mobile-bank-toggle").click();
   await page.locator("#japan-mode-list .map-mode-button").first().focus();
   await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#map-mode-preview")).opacity) >= 0.99);
@@ -502,35 +510,41 @@ const scanIntegratedLightEntry = async (viewport) => {
   await page.locator('[data-intro-path="map"]').click();
   await page.waitForFunction(() => __qaVisible(document.querySelector("#japan-layer")));
   if (viewport.mobile) await page.locator("#map-mobile-bank-toggle").click();
-  await page.locator("#abstract-mode-list .map-mode-button").first().click({ force: true });
+  await page.locator("#map-light-overlay-open").click();
+  await page.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden);
+  await page.locator("#abstract-mode-list .map-mode-button").first().click();
   await page.waitForFunction(() => (
     document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit")
     && __qaVisible(document.querySelector("#gaia-canvas"))
-    && !__qaVisible(document.querySelector("#japan-map"))
+    && __qaVisible(document.querySelector("#japan-map"))
+    && document.querySelector("#gaia-canvas")?.parentElement?.id === "japan-layer"
   ));
-  if (viewport.mobile) await page.locator("#map-mobile-bank-toggle").click();
+  await page.locator("#map-light-overlay-open").click();
   await page.locator("#abstract-mode-list .map-mode-button").nth(6).click();
   await page.waitForFunction(() => document.querySelector("#abstract-mode-list .map-mode-button:nth-child(7)")?.getAttribute("aria-current") === "true");
-  if (viewport.mobile) await page.locator("#map-mobile-bank-toggle").click();
+  await page.locator("#map-light-overlay-open").click();
   await page.locator("#abstract-mode-list .map-mode-button").nth(6).focus();
   await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#map-mode-preview")).opacity) >= 0.99);
-  const canvasPoint = await page.evaluate(() => {
+  const lightOverlay = await page.evaluate(() => ({
+    visible: __qaVisible(document.querySelector("#map-light-overlay")),
+    relationshipCopy: document.querySelector("#map-light-overlay")?.textContent.replace(/\s+/gu, " ").trim(),
+    tooltipText: document.querySelector("#map-mode-preview")?.textContent.replace(/\s+/gu, " ").trim(),
+  }));
+  assert(lightOverlay.visible);
+  assert.match(lightOverlay.relationshipCopy, /地図の番号とは対応しません。/u);
+  assert.match(lightOverlay.tooltipText, /^07 \/ ECOLOGIES 暮らしの声/u);
+  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-independent-light-overlay.png`) });
+  await page.locator("#map-light-overlay-close").click();
+  await page.waitForFunction(() => document.querySelector("#map-light-overlay")?.hidden === true);
+  const mapPoint = await page.evaluate(() => {
     for (let y = 18; y < innerHeight - 18; y += 18) {
       for (let x = 18; x < innerWidth - 18; x += 18) {
-        if (document.elementFromPoint(x, y)?.id === "gaia-canvas") return { x, y };
+        if (document.elementFromPoint(x, y)?.closest?.("#japan-map")) return { x, y };
       }
     }
     return null;
   });
-  assert(canvasPoint, "integrated light surface leaves no touchable WebGL area");
-  await page.evaluate(() => {
-    globalThis.__qaIntegratedLightPointerDown = 0;
-    document.querySelector("#gaia-canvas")?.addEventListener("pointerdown", () => {
-      globalThis.__qaIntegratedLightPointerDown += 1;
-    }, { once: true });
-  });
-  await page.mouse.click(canvasPoint.x, canvasPoint.y);
-  await page.waitForFunction(() => globalThis.__qaIntegratedLightPointerDown === 1);
+  assert(mapPoint, "light overlay blocks the underlying map interaction surface");
   const integrated = await page.evaluate(() => ({
     introVisible: __qaVisible(document.querySelector("#intro-layer")),
     mapLayerVisible: __qaVisible(document.querySelector("#japan-layer")),
@@ -539,7 +553,8 @@ const scanIntegratedLightEntry = async (viewport) => {
     mapVisible: __qaVisible(document.querySelector("#japan-map")),
     canvasVisible: __qaVisible(document.querySelector("#gaia-canvas")),
     canvasPointerEvents: getComputedStyle(document.querySelector("#gaia-canvas")).pointerEvents,
-    mapChoiceListVisible: __qaVisible(document.querySelector("#japan-mode-list")),
+    mapChoiceCount: document.querySelectorAll("#japan-mode-list .map-mode-button").length,
+    currentMapChoice: document.querySelector("#japan-mode-list .map-mode-button[aria-current='true']")?.textContent.trim(),
     mapChoiceListDisplay: getComputedStyle(document.querySelector("#japan-mode-list")).display,
     lightChoiceListVisible: __qaVisible(document.querySelector("#abstract-mode-list")),
     lightChoiceListDisplay: getComputedStyle(document.querySelector("#abstract-mode-list")).display,
@@ -549,36 +564,36 @@ const scanIntegratedLightEntry = async (viewport) => {
     bankKicker: document.querySelector("#map-mode-bank-kicker")?.textContent.trim(),
     bankGuide: document.querySelector("#map-mode-bank-guide")?.textContent.trim(),
     tooltipVisible: __qaVisible(document.querySelector("#map-mode-preview")),
-    tooltipText: document.querySelector("#map-mode-preview")?.textContent.replace(/\s+/gu, " ").trim(),
     novelOpenAtCount: globalThis.__qaNovelOpenAtCount,
     spaceOpenAtCount: globalThis.__qaSpaceOpenAtCount,
-    canvasPointerDownCount: globalThis.__qaIntegratedLightPointerDown,
+    canvasParent: document.querySelector("#gaia-canvas")?.parentElement?.id,
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
   }));
   assert(!integrated.introVisible && integrated.mapLayerVisible && integrated.abstractClass);
   assert.equal(integrated.activeSurface, "light");
-  assert(!integrated.mapVisible && integrated.canvasVisible && integrated.canvasPointerEvents === "auto");
-  assert(integrated.mapChoiceListVisible && integrated.lightChoiceListVisible);
+  assert(integrated.mapVisible && integrated.canvasVisible && integrated.canvasPointerEvents === "none");
+  assert.equal(integrated.canvasParent, "japan-layer");
+  assert.equal(integrated.mapChoiceCount, 12);
+  assert.equal(integrated.currentMapChoice, "01");
+  assert.equal(integrated.lightChoiceListVisible, false);
   assert.equal(integrated.mapChoiceListDisplay, "grid");
   assert.equal(integrated.lightChoiceListDisplay, "grid");
   assert.equal(integrated.lightChoiceCount, 8);
   assert.equal(integrated.currentLightChoice, "07");
-  assert.equal(integrated.heading, "三つの生態系");
-  assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—12 + LIGHT 01—08");
-  assert.match(integrated.bankGuide, /MAP 01〜12とLIGHT 01〜08/u);
-  assert(integrated.tooltipVisible);
-  assert.match(integrated.tooltipText, /^07 \/ ECOLOGIES 暮らしの声/u);
-  assert.match(integrated.tooltipText, /同じ国の森林率と都市人口率/u);
-  assert.doesNotMatch(integrated.tooltipText, /どの感覚に|クリックすると/u);
+  assert.equal(integrated.heading, "地球の一呼吸");
+  assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—12");
+  assert.equal(integrated.bankGuide, "見たい地図展示を選んでください");
+  assert.equal(integrated.tooltipVisible, false);
   assert.equal(integrated.novelOpenAtCount, 0);
   assert.equal(integrated.spaceOpenAtCount, 0);
-  assert.equal(integrated.canvasPointerDownCount, 1);
   assert.equal(integrated.overflowX, false);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-integrated-light-entry.png`) });
-  await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").first().click();
+  await page.locator("#map-light-overlay-open").click();
+  await page.locator("#map-light-overlay-disable").click();
   await page.waitForFunction(() => (
     !document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit")
     && __qaVisible(document.querySelector("#japan-map"))
+    && document.querySelector("#gaia-canvas")?.parentElement?.classList.contains("experience")
   ));
   const restored = await page.evaluate(() => ({
     mapChoiceCount: document.querySelectorAll("#japan-mode-list .map-mode-button").length,
@@ -587,7 +602,7 @@ const scanIntegratedLightEntry = async (viewport) => {
   }));
   assert.equal(restored.mapChoiceCount, 12);
   assert.deepEqual(restored, { mapChoiceCount: 12, activeSurface: "map", mapVisible: true });
-  report.scans.push({ viewport: viewport.name, case: "integrated-light-entry", integrated, restored, passed: true });
+  report.scans.push({ viewport: viewport.name, case: "independent-light-overlay", lightOverlay, integrated, restored, passed: true });
   await context.close();
 };
 
@@ -908,7 +923,7 @@ const scanRuntimeStoryContract = async () => {
   });
   assert.equal(scan.sourceSha256, "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c");
   assert.equal(scan.sceneCount, 6);
-  assert.equal(scan.stepCount, 386);
+  assert.equal(scan.stepCount, 372);
   assert.deepEqual(scan.userVisiblePlacementVerbStepIds, []);
   assert.deepEqual(scan.excludedNounOccurrences.map((entry) => entry.stepId), ["festival_concept_028", "map_mode01_024", "esp32_pitch_016", "esp32_pitch_030"]);
   assert.deepEqual(scan.exactCounts, { old024: 0, final024: 1, withdrawn: 0 });

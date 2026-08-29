@@ -17,7 +17,7 @@
 
   const source = {
   "storyVersion": "true-end-approved-script-v5",
-  "approvedSourceSha256": "ca8806dc901bb81c28cd6e603a7dfc4e3d9f38301230738e7e940fdb89308aa3",
+  "approvedSourceSha256": "c31ff287372f73a70a49ace0272154ffff9dcaaedebbb5163ae5b652a5261c5a",
   "title": "APEIRONCENE",
   "subtitle": "惑星の放課後 / GAIA SENSATION — APEIRONCENE",
   "language": {

@@ -31,6 +31,10 @@
 
     const random = (min, max) => min + Math.random() * (max - min);
     const pickHue = () => palette[Math.floor(Math.random() * palette.length)];
+    const smoothstep = (edge0, edge1, value) => {
+      const normalized = Math.max(0, Math.min(1, (value - edge0) / Math.max(0.0001, edge1 - edge0)));
+      return normalized * normalized * (3 - 2 * normalized);
+    };
     const riseZones = variant === "story"
       ? [
           { x: 0.08, spread: 0.07, hue: 188 },
@@ -117,18 +121,28 @@
     };
 
     const launchShootingStar = (time) => {
-      const angle = random(0.48, 0.62);
+      const angle = random(0.42, 0.56);
       const travel = Math.max(360, Math.min(width * 0.58, height * 1.08));
+      const directionX = -Math.cos(angle);
+      const directionY = Math.sin(angle);
       const shootingStar = {
         startedAt: time,
         duration: random(880, 1180),
-        startX: random(width * 0.86, width * 1.02),
-        startY: random(height * 0.035, height * 0.2),
-        dx: -Math.cos(angle) * travel,
-        dy: Math.sin(angle) * travel,
-        length: Math.max(140, Math.min(300, width * 0.16)),
-        width: random(1.15, 1.8),
-        hue: random(190, 212),
+        startX: random(width * 0.88, width * 1.025),
+        startY: random(height * 0.035, height * 0.17),
+        dx: directionX * travel,
+        dy: directionY * travel,
+        directionX,
+        directionY,
+        travel,
+        perspective: random(0.035, 0.065),
+        gravity: travel * random(0.022, 0.035),
+        crosswind: travel * random(-0.005, 0.007),
+        trailFraction: random(0.17, 0.22),
+        coreWidth: random(0.52, 0.82),
+        peakAlpha: random(0.5, 0.62),
+        phase: random(0, Math.PI * 2),
+        hue: random(194, 210),
       };
       shootingStars.push(shootingStar);
       canvas.dispatchEvent(new CustomEvent("gaia:shooting-star", {
@@ -138,12 +152,34 @@
           dx: shootingStar.dx,
           dy: shootingStar.dy,
           duration: shootingStar.duration,
+          travel: shootingStar.travel,
+          perspective: shootingStar.perspective,
+          gravity: shootingStar.gravity,
+          trailFraction: shootingStar.trailFraction,
+          coreWidth: shootingStar.coreWidth,
+          peakAlpha: shootingStar.peakAlpha,
         },
       }));
       nextShootingStarAt = time + random(
         SHOOTING_STAR_INTERVAL_MS * 0.9,
         SHOOTING_STAR_INTERVAL_MS * 1.1,
       );
+    };
+
+    const positionOnShootingStarTrajectory = (star, rawProgress) => {
+      const progress = Math.max(0, Math.min(1, rawProgress));
+      const projected = (progress + star.perspective * progress * progress) / (1 + star.perspective);
+      const atmosphericBend = progress * progress;
+      const crosswind = star.crosswind * Math.sin(Math.PI * progress);
+      return {
+        x: star.startX
+          + star.dx * projected
+          + star.directionY * crosswind,
+        y: star.startY
+          + star.dy * projected
+          - star.directionX * crosswind
+          + star.gravity * atmosphericBend,
+      };
     };
 
     const drawShootingStars = (time) => {
@@ -154,47 +190,53 @@
         const progress = (time - star.startedAt) / star.duration;
         if (progress < 0 || progress >= 1) return false;
 
-        const eased = 1 - (1 - progress) ** 2;
-        const x = star.startX + star.dx * eased;
-        const y = star.startY + star.dy * eased;
-        const distance = Math.hypot(star.dx, star.dy) || 1;
-        const velocityX = star.dx / distance;
-        const velocityY = star.dy / distance;
-        const tailLength = star.length * (0.72 + Math.sin(Math.PI * progress) * 0.28);
-        const tailX = x - velocityX * tailLength;
-        const tailY = y - velocityY * tailLength;
-        const fadeIn = Math.min(1, progress / 0.12);
-        const fadeOut = Math.min(1, (1 - progress) / 0.24);
-        const alpha = fadeIn * fadeOut;
-        const tailGradient = context.createLinearGradient(tailX, tailY, x, y);
-        tailGradient.addColorStop(0, `hsla(${star.hue}, 96%, 82%, 0)`);
-        tailGradient.addColorStop(0.62, `hsla(${star.hue}, 98%, 86%, ${alpha * 0.2})`);
-        tailGradient.addColorStop(1, `hsla(${star.hue}, 100%, 98%, ${alpha * 0.96})`);
+        const head = positionOnShootingStarTrajectory(star, progress);
+        const trailFraction = star.trailFraction * (0.82 + 0.18 * Math.sin(Math.PI * progress));
+        const tailProgress = Math.max(0, progress - trailFraction);
+        const fadeIn = smoothstep(0, 0.1, progress);
+        const fadeOut = 1 - smoothstep(0.6, 1, progress);
+        const atmosphericDensity = 0.82 + progress * 0.18;
+        const microVariation = 0.95 + Math.sin(progress * 31 + star.phase) * 0.035
+          + Math.sin(progress * 73 + star.phase * 0.7) * 0.015;
+        const alpha = star.peakAlpha * fadeIn * fadeOut * atmosphericDensity * microVariation;
+        const samples = 18;
+        const trajectory = Array.from({ length: samples + 1 }, (_, index) => {
+          const sampleProgress = tailProgress + (progress - tailProgress) * (index / samples);
+          return positionOnShootingStarTrajectory(star, sampleProgress);
+        });
+
+        const drawTaperedTrail = ({ widthScale, alphaScale, saturation, lightness }) => {
+          for (let index = 1; index < trajectory.length; index += 1) {
+            const segmentProgress = index / samples;
+            const taper = smoothstep(0, 1, segmentProgress);
+            const from = trajectory[index - 1];
+            const to = trajectory[index];
+            context.beginPath();
+            context.moveTo(from.x, from.y);
+            context.lineTo(to.x, to.y);
+            context.lineWidth = Math.max(0.12, star.coreWidth * widthScale * (0.12 + taper * 0.88));
+            context.strokeStyle = `hsla(${star.hue}, ${saturation}%, ${lightness}%, ${alpha * alphaScale * taper * taper})`;
+            context.stroke();
+          }
+        };
 
         context.save();
         context.lineCap = "round";
-        context.shadowColor = `hsla(${star.hue}, 100%, 88%, ${alpha * 0.82})`;
-        context.shadowBlur = 14;
-        context.strokeStyle = tailGradient;
-        context.lineWidth = star.width * 4.8;
-        context.beginPath();
-        context.moveTo(tailX, tailY);
-        context.lineTo(x, y);
-        context.stroke();
+        drawTaperedTrail({ widthScale: 3.1, alphaScale: 0.24, saturation: 86, lightness: 87 });
+        drawTaperedTrail({ widthScale: 1, alphaScale: 0.88, saturation: 74, lightness: 98 });
 
-        context.shadowBlur = 5;
-        context.lineWidth = star.width;
-        context.strokeStyle = `hsla(${star.hue}, 100%, 98%, ${alpha})`;
-        context.stroke();
-
-        const headRadius = star.width * 7.5;
-        const headGlow = context.createRadialGradient(x, y, 0, x, y, headRadius);
-        headGlow.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-        headGlow.addColorStop(0.24, `hsla(${star.hue}, 100%, 92%, ${alpha * 0.8})`);
-        headGlow.addColorStop(1, `hsla(${star.hue}, 96%, 72%, 0)`);
+        const previous = positionOnShootingStarTrajectory(star, Math.max(0, progress - 0.004));
+        const heading = Math.atan2(head.y - previous.y, head.x - previous.x);
+        const headRadius = star.coreWidth * 2.7;
+        context.translate(head.x, head.y);
+        context.rotate(heading);
+        const headGlow = context.createRadialGradient(0, 0, 0, 0, 0, headRadius);
+        headGlow.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.82})`);
+        headGlow.addColorStop(0.34, `hsla(${star.hue}, 86%, 94%, ${alpha * 0.46})`);
+        headGlow.addColorStop(1, `hsla(${star.hue}, 80%, 76%, 0)`);
         context.fillStyle = headGlow;
         context.beginPath();
-        context.arc(x, y, headRadius, 0, Math.PI * 2);
+        context.ellipse(0, 0, headRadius * 1.7, headRadius, 0, 0, Math.PI * 2);
         context.fill();
         context.restore();
         return true;

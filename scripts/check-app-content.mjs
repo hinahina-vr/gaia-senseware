@@ -40,8 +40,9 @@ assert.equal(content.SPACE_MODE_CHOICES.length, 10, "Space catalog must contain 
 assert.deepEqual(Object.keys(content.INTRO_PATHS), ["abstract", "map", "novel", "space"], "Abstract exhibit must remain routable");
 assert.equal(indexHtml.includes('data-intro-path="abstract"'), false, "Abstract exhibit must not remain a separate entrance card");
 assert.equal(indexHtml.includes('class="map-surface-switch"'), false, "Obsolete MAP/LIGHT toggle remains in the world-reading bank");
-assert.equal(indexHtml.includes('class="map-mode-groups"'), true, "Unified MAP/LIGHT button bank is missing");
-assert.equal(indexHtml.includes('id="abstract-mode-list"'), true, "Integrated eight-choice light bank is missing");
+assert.equal(indexHtml.includes('class="map-mode-groups"'), true, "MAP-only exhibit bank is missing");
+assert.equal(indexHtml.includes('id="map-light-overlay"'), true, "Independent light overlay picker is missing");
+assert.equal(indexHtml.includes('id="abstract-mode-list"'), true, "Eight-choice light overlay bank is missing");
 assert.equal(indexHtml.includes('id="map-mode-preview"'), true, "Restored focus explanation preview is missing");
 assert.equal(indexHtml.includes("SCROLL</b><small>他の展示を見る"), true, "Updated exhibit scroll label is missing");
 assert.equal(indexHtml.includes('id="intro-character-jump"'), true, "Character settings menu button is missing");
@@ -49,8 +50,9 @@ assert.equal(indexHtml.includes('data-character-gallery-open'), true, "Character
 assert.equal(indexHtml.includes('id="gaia-template-character"'), true, "Lazy character settings template is missing");
 assert.equal(indexHtml.includes('id="character-book-layer"'), true, "Standalone character settings viewer is missing");
 assert.equal(indexHtml.includes("VISUAL MEMORY ARCHIVE"), true, "Immersive character archive heading is missing");
-assert.equal(indexHtml.includes('id="character-book-image-state"'), true, "Character archive image loading and retry state is missing");
-assert.equal((indexHtml.match(/data-character-page=/gu) || []).length, 10, "Character setting bible must expose all 10 pages");
+assert.equal(indexHtml.includes('id="character-book-webgl"'), true, "Immersive character setting atmosphere is missing");
+assert.equal((indexHtml.match(/data-character-select=/gu) || []).length, 3, "Character setting selector must expose all three characters");
+assert.equal((indexHtml.match(/data-character-profile=/gu) || []).length, 3, "Character setting profiles must expose all three characters");
 assert.equal(indexHtml.includes("01-three-ecologies-character-master.png"), true, "Character master sheet is missing");
 assert.equal(modeLoader.includes('interceptClick("[data-character-gallery-open]", "character")'), true, "Character viewer is not lazy-loaded");
 assert.equal(indexHtml.includes("このデータの出典を表示する"), false, "Old open-data button copy remains");

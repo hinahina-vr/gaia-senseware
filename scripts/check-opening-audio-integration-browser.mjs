@@ -238,7 +238,7 @@ try {
     for (const card of routeReady.cards) {
       assert.equal(card.visible, true, `${viewport.name}: ${card.id} disappeared from the title screen`);
       assert(card.english, `${viewport.name}: ${card.id} has no English label`);
-      assert.equal(card.englishVisible, !shortLandscape, `${viewport.name}: ${card.id} English-label visibility is inconsistent`);
+      assert.equal(card.englishVisible, false, `${viewport.name}: ${card.id} retains dashboard-like English metadata`);
       assert.equal(card.iconPosition, "static", `${viewport.name}: ${card.id} icon escaped its dedicated column`);
       assert.equal(card.glintDisplay, viewport.reduced ? "none" : "block", `${viewport.name}: ${card.id} glint layer is incorrect`);
       assert.equal(overlapArea(card.strongRect, card.symbolRect), 0, `${viewport.name}: ${card.id} label overlaps its icon`);
@@ -293,7 +293,7 @@ try {
       assert.equal(destination.track, "senseware", `${viewport.name}: GAIA SENSEWARE BGM was not selected for the data screen`);
       assert(trackSwitchMs <= 4_000, `${viewport.name}: GAIA SENSEWARE BGM switch took ${trackSwitchMs}ms`);
       assert(trackSwitchAfterDestinationMs <= 600, `${viewport.name}: opening BGM remained for ${trackSwitchAfterDestinationMs}ms after the data screen became visible`);
-      assert(audioResponses.some(({ url, status }) => url.includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(status)), `${viewport.name}: transparent GAIA SENSEWARE ambience was not fetched successfully`);
+      assert(audioResponses.some(({ url, status }) => url.includes("moonlit-source-save.mp3") && [200, 206].includes(status)), `${viewport.name}: GAIA SENSEWARE system theme was not fetched successfully`);
     }
     if (startWithSound) {
       assert(audioResponses.some(({ url, status }) => url.includes("satellite-forecast-hope.mp3") && [200, 206].includes(status)), `${viewport.name}: Planet Forecast - Hope was not fetched for the opening`);

@@ -48,10 +48,11 @@
   };
   const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#character", "#story", "#tour"].includes(
     window.location.hash,
-  ) || window.location.hash.startsWith("#observation=") || /\/story\/?$/i.test(window.location.pathname);
-  const directSensewareDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#tour"].includes(
+  ) || /\/story\/?$/i.test(window.location.pathname);
+  const directMapAmbientDestination = ["#japan", "#data", "#source"].includes(
     window.location.hash,
-  ) || window.location.hash.startsWith("#observation=");
+  );
+  const directSensewareDestination = ["#earth", "#concept", "#tour"].includes(window.location.hash);
 
   const syncAudioControls = (state = window.GaiaOpeningAudio?.getState?.()) => {
     const volume = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
@@ -160,7 +161,8 @@
     document.body.classList.add("gaia-route-handoff");
     opening.hidden = true;
     document.body.classList.remove("gaia-opening-active");
-    if (directSensewareDestination) void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0);
+    if (directMapAmbientDestination) void window.GaiaOpeningAudio?.switchTrack?.("mapambient", 0);
+    else if (directSensewareDestination) void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0);
     revealAudioDock();
     if (document.documentElement.dataset.gaiaAppReady === "true") signalInitialViewReady();
     else {
@@ -173,7 +175,7 @@
   document.body.classList.add("gaia-opening-active");
 
   const finalCopy = opening.querySelector(".gaia-vn-panel-final .gaia-vn-final-copy");
-  const ROUTE_GUIDE_STORAGE_KEY = "gaia:opening-route-guide:v2";
+  const ROUTE_GUIDE_STORAGE_KEY = "gaia:opening-route-guide:v3";
   const routeGuidePreference = new URLSearchParams(window.location.search).get("routeGuide");
   const routeGuideSteps = [
     {
@@ -219,6 +221,8 @@
 
   const routeGuideShade = routeGuideLayer.querySelector(".gaia-opening-route-guide-shade");
   const routeGuideBubble = routeGuideLayer.querySelector(".gaia-opening-route-guide-bubble");
+  const ROUTE_MENU_REVEAL_SETTLE_MS = reducedMotion ? 0 : 700;
+  const ROUTE_GUIDE_POST_REVEAL_HOLD_MS = 1000;
   let routeGuideActive = false;
   let routeGuideIndex = 0;
   let routeGuidePositionFrame = 0;
@@ -248,11 +252,12 @@
     if (!(target instanceof HTMLElement) || target.getClientRects().length === 0) return;
     const targetRect = target.getBoundingClientRect();
     if (routeGuideShade instanceof HTMLElement) {
-      const spotlightPad = 5;
-      routeGuideShade.style.setProperty("--route-guide-focus-left", `${Math.max(0, targetRect.left - spotlightPad)}px`);
-      routeGuideShade.style.setProperty("--route-guide-focus-top", `${Math.max(0, targetRect.top - spotlightPad)}px`);
-      routeGuideShade.style.setProperty("--route-guide-focus-width", `${Math.min(innerWidth, targetRect.right + spotlightPad) - Math.max(0, targetRect.left - spotlightPad)}px`);
-      routeGuideShade.style.setProperty("--route-guide-focus-height", `${Math.min(innerHeight, targetRect.bottom + spotlightPad) - Math.max(0, targetRect.top - spotlightPad)}px`);
+      const targetStyle = getComputedStyle(target);
+      routeGuideShade.style.setProperty("--route-guide-focus-left", `${targetRect.left}px`);
+      routeGuideShade.style.setProperty("--route-guide-focus-top", `${targetRect.top}px`);
+      routeGuideShade.style.setProperty("--route-guide-focus-width", `${targetRect.width}px`);
+      routeGuideShade.style.setProperty("--route-guide-focus-height", `${targetRect.height}px`);
+      routeGuideShade.style.setProperty("--route-guide-focus-radius", targetStyle.borderRadius);
     }
     const bubbleRect = routeGuideBubble.getBoundingClientRect();
     const gutter = 12;
@@ -282,57 +287,8 @@
   const syncFinalGatewayPlacement = () => {
     gatewayLayoutFrame = 0;
     if (!(finalCopy instanceof HTMLElement) || !(finalMenu instanceof HTMLElement)) return;
-    if (finalMenu.hidden) {
-      finalCopy.style.removeProperty("--opening-gateway-top");
-      finalCopy.style.removeProperty("--opening-gateway-offset");
-      scheduleRouteGuidePosition();
-      return;
-    }
-    const compactLandscape = matchMedia("(max-width: 960px) and (max-height: 430px) and (orientation: landscape)").matches;
-    if (compactLandscape) {
-      const copyRect = finalCopy.getBoundingClientRect();
-      finalCopy.style.removeProperty("--opening-gateway-top");
-      finalCopy.style.setProperty("--opening-gateway-offset", `${Math.round(14 - copyRect.left)}px`);
-      scheduleRouteGuidePosition();
-      return;
-    }
-    const desktopLayout = matchMedia("(min-width: 961px) and (min-height: 521px)").matches;
-    if (!desktopLayout) {
-      finalCopy.style.removeProperty("--opening-gateway-top");
-      finalCopy.style.removeProperty("--opening-gateway-offset");
-      scheduleRouteGuidePosition();
-      return;
-    }
-    const artworkWidth = 1672;
-    const artworkHeight = 941;
-    const titleOpticalX = 430;
-    const taglineBottomY = 540;
-    const cinemaWide = matchMedia("(min-width: 1200px) and (min-aspect-ratio: 19 / 10)").matches;
-    let scale;
-    let artworkLeft;
-    let artworkTop;
-    if (cinemaWide) {
-      const renderedWidth = innerWidth * 0.95;
-      const renderedHeight = renderedWidth * artworkHeight / artworkWidth;
-      scale = renderedWidth / artworkWidth;
-      artworkLeft = innerWidth - renderedWidth;
-      artworkTop = (innerHeight - renderedHeight) / 2;
-    } else {
-      scale = Math.max(innerWidth / artworkWidth, innerHeight / artworkHeight);
-      artworkLeft = (innerWidth - artworkWidth * scale) / 2;
-      artworkTop = (innerHeight - artworkHeight * scale) / 2;
-    }
-    const copyRect = finalCopy.getBoundingClientRect();
-    const menuWidth = finalMenu.getBoundingClientRect().width || finalCopy.clientWidth;
-    const titleCenter = artworkLeft + titleOpticalX * scale;
-    const desiredGatewayOffset = titleCenter - copyRect.left - menuWidth / 2;
-    const viewportInset = 14;
-    const minimumGatewayOffset = viewportInset - copyRect.left;
-    const maximumGatewayOffset = innerWidth - viewportInset - menuWidth - copyRect.left;
-    const gatewayOffset = Math.max(minimumGatewayOffset, Math.min(maximumGatewayOffset, desiredGatewayOffset));
-    const gatewayTop = Math.max(14, Math.min(innerHeight - 220, artworkTop + taglineBottomY * scale + 18));
-    finalCopy.style.setProperty("--opening-gateway-top", `${Math.round(gatewayTop)}px`);
-    finalCopy.style.setProperty("--opening-gateway-offset", `${Math.round(gatewayOffset)}px`);
+    finalCopy.style.removeProperty("--opening-gateway-top");
+    finalCopy.style.removeProperty("--opening-gateway-offset");
     scheduleRouteGuidePosition();
   };
 
@@ -376,6 +332,7 @@
 
   const openRouteGuide = () => {
     if (routeGuideActive || routeGuideSteps.length === 0 || finished) return;
+    routeGuideLayer.dataset.openedAt = performance.now().toFixed(3);
     routeGuideActive = true;
     routeGuideLayer.hidden = false;
     routeGuideLayer.inert = false;
@@ -391,7 +348,10 @@
   const maybeStartRouteGuide = () => {
     window.clearTimeout(routeGuideStartTimer);
     if (hasSeenRouteGuide()) return;
-    routeGuideStartTimer = window.setTimeout(openRouteGuide, reducedMotion ? 120 : 440);
+    routeGuideStartTimer = window.setTimeout(() => {
+      finalMenu.dataset.revealCompleteAt = performance.now().toFixed(3);
+      routeGuideStartTimer = window.setTimeout(openRouteGuide, ROUTE_GUIDE_POST_REVEAL_HOLD_MS);
+    }, ROUTE_MENU_REVEAL_SETTLE_MS);
   };
 
   const advanceRouteGuide = () => {
@@ -414,7 +374,11 @@
     if (!routeGuideActive || event.defaultPrevented) return;
     if (event.key === "Escape") { event.preventDefault(); closeRouteGuide(); }
   });
-  routeGuideReplay?.addEventListener("click", openRouteGuide);
+  routeGuideReplay?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openRouteGuide();
+  });
   window.addEventListener("resize", scheduleFinalGatewayPlacement, { passive: true });
 
   const OPENING_TIME_SCALE = 1.275;
@@ -846,7 +810,6 @@
     const routeReady = destination === "tour"
       ? (async () => {
           await window.GaiaModeLoader?.load?.("exploration");
-          await window.GaiaModeLoader?.load?.("notebook");
           await window.GaiaModeLoader?.load?.("tour");
         })()
       : Promise.resolve(window.GaiaModeLoader?.load?.(destination === "story" ? "story" : "exploration"));
@@ -939,6 +902,9 @@
     revealAudioDock();
     requestAnimationFrame(() => {
       finalMenu.classList.add("is-visible");
+      finalMenu.dataset.revealStartedAt = performance.now().toFixed(3);
+      delete finalMenu.dataset.revealCompleteAt;
+      delete routeGuideLayer.dataset.openedAt;
       scheduleFinalGatewayPlacement();
       maybeStartRouteGuide();
       soundModalRevealTimer = window.setTimeout(() => {
@@ -1100,6 +1066,7 @@
     window.clearTimeout(soundModalHideTimer);
     window.clearTimeout(preloadRevealTimer);
     window.clearTimeout(openingArtWarmTimer);
+    window.clearTimeout(routeGuideStartTimer);
     textTimers.forEach((timer) => window.clearTimeout(timer));
     particleSystem.stop();
   });

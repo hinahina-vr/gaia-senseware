@@ -278,7 +278,8 @@ if (unexpectedApprovedIds.length > 0) {
   throw new Error(`承認済み本編の新規IDが想定外です: ${unexpectedApprovedIds.join(", ")}`);
 }
 if (!endingStep) throw new Error("スタッフロール接続ステップ welcome_chat_095 がありません");
-scenes.find((scene) => scene.id === "welcome_chat").steps.push(endingStep);
+const welcomeScene = scenes.find((scene) => scene.id === "welcome_chat");
+if (!welcomeScene.steps.some((step) => step.id === endingStep.id)) welcomeScene.steps.push(endingStep);
 
 scenes.forEach((scene, index) => { scene.nextSceneId = scenes[index + 1]?.id || null; });
 const sceneOrder = scenes.map((scene) => scene.id);

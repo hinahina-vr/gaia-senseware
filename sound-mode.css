@@ -245,6 +245,35 @@
   filter: saturate(1.08) contrast(1.03);
 }
 
+.sound-character-scene {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 48%;
+  opacity: 0.78;
+  pointer-events: none;
+  mix-blend-mode: normal;
+  filter: saturate(0.92) brightness(0.84) contrast(1.04);
+  -webkit-mask-image: linear-gradient(90deg, transparent 18%, rgba(0, 0, 0, 0.14) 36%, rgba(0, 0, 0, 0.86) 57%, #000 72%);
+  mask-image: linear-gradient(90deg, transparent 18%, rgba(0, 0, 0, 0.14) 36%, rgba(0, 0, 0, 0.86) 57%, #000 72%);
+}
+
+.sound-eq-visualizer {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.94;
+  filter: saturate(1.04);
+}
+
 .sound-planetarium::before {
   content: "";
   position: absolute;
@@ -261,7 +290,7 @@
 .sound-planetarium::after {
   content: "";
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   inset: 0;
   pointer-events: none;
   background:
@@ -271,7 +300,7 @@
 
 .sound-analysis-badge {
   position: absolute;
-  z-index: 3;
+  z-index: 5;
   top: 8%;
   left: 6%;
   display: inline-flex;
@@ -304,16 +333,18 @@
 
 .sound-planet-caption {
   position: absolute;
-  z-index: 3;
+  z-index: 5;
   bottom: 8%;
-  left: 6%;
+  right: 5%;
+  left: auto;
   display: grid;
   gap: 5px;
-  padding-left: 12px;
+  padding-right: 12px;
   color: rgba(226, 233, 246, 0.58);
   font-family: var(--font-ui-ja);
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  text-align: right;
 }
 
 .sound-planet-caption::before {
@@ -321,7 +352,8 @@
   position: absolute;
   top: 1px;
   bottom: 1px;
-  left: 0;
+  right: 0;
+  left: auto;
   width: 1px;
   background: linear-gradient(#e4c99e, rgba(190, 151, 225, 0.08));
 }
@@ -692,6 +724,13 @@ body.gaia-opening-active .gaia-audio-gallery-open {
     -webkit-mask-image: none;
     mask-image: none;
   }
+  .sound-character-scene {
+    object-position: 69% center;
+    opacity: 0.82;
+    -webkit-mask-image: linear-gradient(90deg, transparent 4%, rgba(0, 0, 0, 0.2) 22%, #000 55%);
+    mask-image: linear-gradient(90deg, transparent 4%, rgba(0, 0, 0, 0.2) 22%, #000 55%);
+  }
+  .sound-eq-visualizer { opacity: 0.9; }
   .sound-analysis-badge { top: 7px; left: 0; }
   .sound-planet-caption { right: 0; bottom: 6px; left: auto; text-align: right; }
   .sound-planet-caption::before { right: -12px; left: auto; }

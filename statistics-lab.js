@@ -1105,11 +1105,10 @@ if (!lab || !openButton) {
       const button = document.createElement("button"); button.type = "button"; button.className = "gaia-statistics-evidence-button"; button.textContent = `${format(metric[1])}${metric[2] || ""}`; button.title = `${rowsFor(dataset).length}行を使用。クリックで計算根拠を開きます。`;
       button.addEventListener("click", () => { const details = button.closest("details"); details.open = true; ui.formula.focus?.(); });
       td.append(button);
-      const provenance = document.createElement("td"); provenance.textContent = (result.insight?.provenance || dataset.provenance || ["SOURCE"]).join(" + ");
-      tr.append(th, td, provenance); ui.metrics.append(tr);
+      tr.append(th, td); ui.metrics.append(tr);
     });
     const count = rowsFor(dataset).length;
-    ui.formula.textContent = `使用行: ${count} / ${dataset.rows.length}　区分: ${(result.insight?.provenance || dataset.provenance || ["SOURCE"]).join(" + ")}　計算式: ${result.formula || "各指標は表示中の有限値からブラウザ内で再計算"}`;
+    ui.formula.textContent = `使用: ${count} / ${dataset.rows.length}　計算: ${result.formula || "表示中の有限値からブラウザ内で再計算"}`;
     ui.formula.tabIndex = -1;
   };
 
@@ -1500,10 +1499,10 @@ if (!lab || !openButton) {
         if (token !== state.renderToken) return;
         state.result = result;
         renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true);
-        ui.status.textContent = result.kind === "not-applicable" ? "NOT APPLICABLE / 条件不足" : `COMPLETE / n=${rowsFor(dataset).length}`;
+        ui.status.textContent = result.kind === "not-applicable" ? "条件不足" : `${rowsFor(dataset).length}件`;
       } catch (error) {
         console.error("GAIA Statistics Lab analysis failed", error);
-        const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true); ui.status.textContent = "NOT APPLICABLE / 条件不足";
+        const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true); ui.status.textContent = "条件不足";
       }
     });
   };
@@ -1516,11 +1515,11 @@ if (!lab || !openButton) {
 
   const selectLecture = (id, preferredMethod) => {
     const group = METHOD_GROUPS.find((candidate) => candidate.id === id) || METHOD_GROUPS[0]; state.lectureId = group.id; state.methodId = group.methods.some((method) => method[0] === preferredMethod) ? preferredMethod : group.methods[0][0];
-    ui.lectures.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", button.dataset.lecture === state.lectureId ? "true" : "false")); renderMethods(); render();
+    ui.lectures.value = state.lectureId; renderMethods(); render();
   };
 
   const renderLectures = () => {
-    ui.lectures.replaceChildren(); METHOD_GROUPS.forEach((group) => { const button = document.createElement("button"); button.type = "button"; button.role = "listitem"; button.dataset.lecture = group.id; button.title = `${group.id} ${group.name}`; button.textContent = group.id; button.setAttribute("aria-pressed", group.id === state.lectureId ? "true" : "false"); button.addEventListener("click", () => selectLecture(group.id)); ui.lectures.append(button); });
+    ui.lectures.replaceChildren(); METHOD_GROUPS.forEach((group) => { const option = document.createElement("option"); option.value = group.id; option.textContent = `${group.id}　${group.name}`; ui.lectures.append(option); }); ui.lectures.value = state.lectureId;
   };
 
   const renderDatasetOptions = () => {
@@ -1535,7 +1534,7 @@ if (!lab || !openButton) {
     if (!supportsDerived) state.includeDerived = false;
     if (state.datasetId !== dataset.id) state.selectedRecordId = "";
     state.datasetId = dataset.id; state.modeId = dataset.modeId; ui.dataset.value = dataset.id; ui.derived.checked = state.includeDerived; ui.derived.disabled = !supportsDerived;
-    ui.context.textContent = `${MODE_TITLES[dataset.modeId] || dataset.modeId} — ${dataset.title}。地図のカメラと選択状態は閉じた後も保持されます。`;
+    ui.context.textContent = `${MODE_TITLES[dataset.modeId] || dataset.modeId} — ${dataset.title}`;
     if (chooseDefault) { const method = DEFAULT_METHOD[dataset.modeId] || "summary"; const group = METHOD_LOOKUP.get(method).group; state.lectureId = group.id; state.methodId = method; renderLectures(); renderMethods(); }
     render();
   };
@@ -1571,6 +1570,7 @@ if (!lab || !openButton) {
   ui.close.addEventListener("click", close);
   lab.addEventListener("pointerdown", (event) => { if (event.target === lab) close(); });
   ui.dataset.addEventListener("change", () => setDataset(ui.dataset.value, false));
+  ui.lectures.addEventListener("change", () => selectLecture(ui.lectures.value));
   ui.derived.addEventListener("change", () => { state.includeDerived = ui.derived.checked; render(); });
   ui.recordSortButtons.forEach((button) => button.addEventListener("click", () => sortRecords(button.dataset.recordSortAction)));
   ui.recordFilter.addEventListener("input", () => applyRecordQuery(ui.recordFilter.value));

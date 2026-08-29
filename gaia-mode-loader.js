@@ -5,37 +5,34 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-character-main-card-1",
+        "./styles.css?v=gaia-six-fixes-1",
         "./scene-transition.css?v=gaia-52",
-        "./data-ledger.css?v=gaia-23",
+        "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-unified-world-bank-1",
-        "./statistics-lab.css?v=gaia-statistics-bi-4",
+        "./statistics-lab.css?v=gaia-statistics-simple-workspace-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
-        "./observation-notebook.css?v=gaia-exhibit-heading-actions-1",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
-        "./data-ledger.js?v=gaia-live-free-tier-1",
+        "./data-ledger.js?v=gaia-ovation-featured-source-1",
         "./data-journey.js?v=gaia-01",
-        "./app-content.js?v=gaia-abstract-entry-1",
-        "./app.js?v=gaia-budget-devices-1",
+        "./app-content.js?v=gaia-ovation-aurora-1",
+        "./app.js?v=gaia-map-panel-collision-1",
         "./map-ui-grid-polish.js?v=gaia-mobile-exhibit-hud-5",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
-        "./observation-notebook-core.js?v=gaia-contest-notebook-2",
-        "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
       ],
       modules: [
         "./src/exploration/index.js?v=gaia-budget-devices-1",
-        "./statistics-lab.js?v=gaia-statistics-bi-4",
+        "./statistics-lab.js?v=gaia-statistics-simple-workspace-1",
       ],
     },
     story: {
       templates: ["gaia-template-story"],
       styles: [
-        "./styles.css?v=gaia-character-main-card-1",
+        "./styles.css?v=gaia-six-fixes-1",
         "./scene-transition.css?v=gaia-52",
-        "./novel-mode.css?v=gaia-log-complete-script-1",
+        "./novel-mode.css?v=gaia-mobile-story-control-height-1",
         "./true-end.css?v=gaia-apeironcene-exit-3",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
@@ -44,18 +41,18 @@
         "./novel-story-data.js?v=gaia-log-comments-30-1",
         "./true-end-data.js?v=gaia-finale-webgl-1",
         "./true-end-webgl.js?v=gaia-ambient-motion-1",
-        "./true-end-mode.js?v=gaia-apeironcene-exit-3",
+        "./true-end-mode.js?v=gaia-story-return-cycle-1",
         "./novel-background-cues.js?v=gaia-amane-no-plug-1",
         "./novel-back-half-cues.js?v=gaia-finale-sunset-1",
         "./novel-temporal.js?v=gaia-temporal-1",
-        "./novel-mode.js?v=gaia-log-complete-script-1",
+        "./novel-mode.js?v=gaia-story-return-cycle-1",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-budget-devices-1"],
     },
     gx: {
       templates: ["gaia-template-gx"],
       styles: [
-        "./styles.css?v=gaia-character-main-card-1",
+        "./styles.css?v=gaia-six-fixes-1",
         "./scene-transition.css?v=gaia-52",
         "./gx-mode.css?v=gaia-gx-feature-card-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
@@ -69,7 +66,7 @@
     space: {
       templates: ["gaia-template-space"],
       styles: [
-        "./styles.css?v=gaia-character-main-card-1",
+        "./styles.css?v=gaia-six-fixes-1",
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
         "./mode-exit.css?v=gaia-story-control-center-2",
@@ -84,29 +81,20 @@
     sound: {
       templates: ["gaia-template-sound"],
       styles: [
-        "./styles.css?v=gaia-character-main-card-1",
-        "./sound-mode.css?v=gaia-aurora-silk-1",
+        "./styles.css?v=gaia-six-fixes-1",
+        "./sound-mode.css?v=gaia-spectrum-characters-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-mode.js?v=gaia-aurora-silk-1"],
-      modules: ["./src/exploration/procedural-audio.js?v=gaia-live-senseware-1"],
+      scripts: ["./sound-mode.js?v=gaia-spectrum-characters-1"],
     },
     character: {
       templates: ["gaia-template-character"],
       styles: [
-        "./styles.css?v=gaia-character-main-card-1",
-        "./character-mode.css?v=gaia-character-archive-2",
+        "./styles.css?v=gaia-six-fixes-1",
+        "./character-mode.css?v=gaia-character-profile-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./character-mode.js?v=gaia-character-archive-2"],
-    },
-    notebook: {
-      templates: [],
-      styles: ["./observation-notebook.css?v=gaia-exhibit-heading-actions-1"],
-      scripts: [
-        "./observation-notebook-core.js?v=gaia-contest-notebook-2",
-        "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
-      ],
+      scripts: ["./character-mode.js?v=gaia-character-profile-1"],
     },
     tour: {
       templates: [],
@@ -253,7 +241,6 @@
   interceptEvent("gaia:novel-open-at-mode", () => "story");
   interceptEvent("gaia:story-mode-open", () => "exploration");
   interceptEvent("gaia:return-to-intro", () => "exploration");
-  interceptEvent("gaia:observation-open-request", () => "notebook");
 
   globalThis.GaiaModeLoader = Object.freeze({
     load,
@@ -271,10 +258,7 @@
       await load("character");
     } else if (hash === "#tour") {
       await load("exploration");
-      await load("notebook");
       await load("tour");
-    } else if (hash.startsWith("#observation=")) {
-      await load("notebook");
     } else if (["#source", "#concept", "#earth", "#japan", "#data"].includes(hash)) {
       await load("exploration");
     } else if (query.has("space")) {

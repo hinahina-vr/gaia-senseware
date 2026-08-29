@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4173"] = process.argv.slice(2);
+const tooltipOnly = process.argv.slice(6).includes("--tooltip-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -70,15 +71,16 @@ try {
     assert.equal(await page.locator(".map-surface-switch").count(), 0, `${viewport.name}: obsolete MAP/LIGHT toggle remains`);
     assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 12, `${viewport.name}: MAP button count`);
     assert.equal(await page.locator("#abstract-mode-list .map-mode-button").count(), 8, `${viewport.name}: LIGHT button count`);
+    assert.equal(await page.locator("#map-light-overlay").isHidden(), true, `${viewport.name}: independent light overlay starts open`);
 
     if (viewport.name === "mobile") await page.locator("#map-mobile-bank-toggle").click();
-    await page.waitForFunction(() => [...document.querySelectorAll(".map-mode-groups .map-mode-button")]
+    await page.waitForFunction(() => [...document.querySelectorAll("#japan-mode-list .map-mode-button")]
       .every((button) => button.getClientRects().length > 0));
 
     const scan = await page.evaluate(() => {
       const bank = document.querySelector(".map-mode-bank");
       const bankRect = bank.getBoundingClientRect();
-      const buttons = [...document.querySelectorAll(".map-mode-groups .map-mode-button")];
+      const buttons = [...document.querySelectorAll("#japan-mode-list .map-mode-button")];
       return {
         bank: bankRect.toJSON(),
         groupLabels: [...document.querySelectorAll(".map-mode-group-label")].map((label) => label.textContent.trim()),
@@ -87,8 +89,8 @@ try {
         horizontalOverflow: Math.max(0, bank.scrollWidth - bank.clientWidth),
       };
     });
-    assert.deepEqual(scan.groupLabels, ["MAP地図", "LIGHT光"], `${viewport.name}: integrated group labels`);
-    assert.equal(scan.visibleButtons, 20, `${viewport.name}: not all buttons are visible together`);
+    assert.deepEqual(scan.groupLabels, ["MAP地図"], `${viewport.name}: the main bank must contain only map choices`);
+    assert.equal(scan.visibleButtons, 12, `${viewport.name}: not all map buttons are visible together`);
     assert.ok(scan.buttonHeights.every((height) => height >= (viewport.name === "mobile" ? 44 : 30)), `${viewport.name}: button target is too short`);
     assert.ok(scan.horizontalOverflow <= 1, `${viewport.name}: bank overflows horizontally by ${scan.horizontalOverflow}px`);
     const headingScan = await page.locator("#japan-layer .japan-heading").evaluate((heading) => {
@@ -113,6 +115,9 @@ try {
       assert.equal(await page.locator("#map-mode-preview-number").textContent(), `${String(index + 1).padStart(2, "0")} / ${expectedCodes[index]}`);
     }
 
+    await page.locator("#map-light-overlay-open").click();
+    await page.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden);
+    assert.match(await page.locator("#map-light-overlay").textContent(), /地図の番号とは対応しません。/u);
     for (const index of expectedCopies.keys()) {
       await page.locator("#abstract-mode-list .map-mode-button").nth(index).focus();
       assert.equal(await page.locator("#map-mode-preview-copy").textContent(), expectedCopies[index], `${viewport.name}: LIGHT ${index + 1} copy`);
@@ -129,29 +134,77 @@ try {
     const previewScan = await page.locator("#map-mode-preview").evaluate((node) => ({
       className: node.className,
       rect: node.getBoundingClientRect().toJSON(),
+      anchorRect: document.activeElement?.matches?.(".map-mode-button")
+        ? document.activeElement.getBoundingClientRect().toJSON()
+        : null,
       display: getComputedStyle(node).display,
       visibility: getComputedStyle(node).visibility,
       opacity: getComputedStyle(node).opacity,
       position: getComputedStyle(node).position,
+      numberSize: parseFloat(getComputedStyle(node.querySelector("span")).fontSize),
+      titleSize: parseFloat(getComputedStyle(node.querySelector("b")).fontSize),
+      copySize: parseFloat(getComputedStyle(node.querySelector("p")).fontSize),
       bankOverflow: node.closest(".map-mode-bank") ? getComputedStyle(node.closest(".map-mode-bank")).overflow : "detached-for-desktop",
+      insideLightOverlay: Boolean(node.closest("#map-light-overlay")),
     }));
     assert.equal(await page.locator("#map-mode-preview").isVisible(), true, `${viewport.name}: focus preview is hidden: ${JSON.stringify(previewScan)}`);
     assert.ok(previewScan.rect.top >= -1 && previewScan.rect.bottom <= viewport.height + 1, `${viewport.name}: preview leaves the viewport: ${JSON.stringify(previewScan.rect)}`);
+    assert.ok(previewScan.numberSize >= 10 && previewScan.titleSize >= 15 && previewScan.copySize >= 13, `${viewport.name}: preview type is too small: ${JSON.stringify(previewScan)}`);
+    if (viewport.name === "pc" && !previewScan.insideLightOverlay) {
+      const horizontalGap = previewScan.rect.left >= previewScan.anchorRect.right
+        ? previewScan.rect.left - previewScan.anchorRect.right
+        : previewScan.anchorRect.left - previewScan.rect.right;
+      assert.ok(horizontalGap >= 0 && horizontalGap <= 12, `${viewport.name}: preview is too far from its button: ${JSON.stringify(previewScan)}`);
+    }
+
+    if (tooltipOnly) {
+      const screenshot = path.join(outputDir, `${viewport.name}-tooltip.png`);
+      await page.screenshot({ path: screenshot, fullPage: false });
+      report.scans.push({ viewport, screenshot, preview: previewScan, ...scan });
+      await context.close();
+      continue;
+    }
+
+    await page.locator("#map-light-overlay-close").click();
+    await page.waitForFunction(() => document.querySelector("#map-light-overlay")?.hidden === true);
+    if (viewport.name === "mobile") await page.locator("#map-mobile-bank-toggle").click();
 
     for (const [index, copy] of expectedLiveCopies.entries()) {
       await page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").nth(index).focus();
       assert.equal(await page.locator("#map-mode-preview-copy").textContent(), copy, `${viewport.name}: LIVE ${index + 9} copy`);
     }
 
-    await page.locator("#abstract-mode-list .map-mode-button").nth(2).click({ force: true });
+    await page.locator("#map-light-overlay-open").click();
+    await page.locator("#abstract-mode-list .map-mode-button").nth(2).click();
     await page.waitForFunction(() => document.querySelector(".map-mode-bank")?.dataset.mapSurface === "light"
-      && document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"));
-    if (viewport.name === "mobile") await page.locator("#map-mobile-bank-toggle").click();
-    await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(1).click({ force: true });
-    await page.waitForFunction(() => document.querySelector(".map-mode-bank")?.dataset.mapSurface === "map"
-      && !document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"));
+      && document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit")
+      && document.querySelector("#japan-map")?.getClientRects().length > 0
+      && document.querySelector("#gaia-canvas")?.parentElement?.id === "japan-layer"
+      && getComputedStyle(document.querySelector("#gaia-canvas")).pointerEvents === "none");
+    if (viewport.name === "mobile") {
+      await page.locator("#map-mobile-bank-toggle").click();
+      await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-bank-expanded"));
+    }
+    await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(1).click();
+    await page.waitForTimeout(180);
+    const independenceScan = await page.evaluate(() => ({
+      surface: document.querySelector(".map-mode-bank")?.dataset.mapSurface,
+      overlayActive: document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"),
+      currentMap: document.querySelector("#japan-mode-list .map-mode-button[aria-current='true']")?.textContent.trim(),
+      currentLight: document.querySelector("#abstract-mode-list .map-mode-button[aria-current='true']")?.textContent.trim(),
+      mapVisible: document.querySelector("#japan-map")?.getClientRects().length > 0,
+      canvasParent: document.querySelector("#gaia-canvas")?.parentElement?.id,
+    }));
+    assert.deepEqual(independenceScan, {
+      surface: "light",
+      overlayActive: true,
+      currentMap: "02",
+      currentLight: "03",
+      mapVisible: true,
+      canvasParent: "japan-layer",
+    }, `${viewport.name}: MAP and LIGHT selections are not independent`);
 
-    if (viewport.name === "mobile") await page.locator("#map-mobile-bank-toggle").click();
+    await page.locator("#map-light-overlay-open").click();
     await page.locator("#abstract-mode-list .map-mode-button").nth(2).focus();
     await page.waitForFunction(() => document.querySelector("#map-mode-preview")?.classList.contains("is-open"));
 

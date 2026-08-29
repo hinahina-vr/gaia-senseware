@@ -7130,6 +7130,17 @@ body.novel-open .japan-layer[data-story-mode="map01"] .japan-close {
   }
 }
 
+/* The visible speaker control is the 44px toggle inside its 46px dock.
+   Keep the mobile story actions on that same physical button rail. */
+@media (max-width: 720px) {
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-home-button.mode-exit-control,
+  body.novel-open .novel-layer:not(.is-title) .novel-topbar #novel-close-button.mode-exit-control {
+    top: calc(max(12px, env(safe-area-inset-top)) + 1px) !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
 /* Keep the complete date/location heading centered on the viewport, including wrapped lines. */
 .novel-signal-caption,
 .novel-signal-caption[data-temporal-range="true"],

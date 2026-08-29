@@ -1,5 +1,4 @@
 import { STATUS_LABELS } from "./transforms.js";
-import proceduralAudio from "./procedural-audio.js?v=gaia-live-compact-jpt-audio-1";
 
 const EXHIBITS = Object.freeze([
   Object.freeze({
@@ -17,7 +16,6 @@ const EXHIBITS = Object.freeze([
     location: Object.freeze({ lon: -155.056, lat: 19.73, label: "NDBC ILOH1 / ハワイ島東岸" }),
     visualCue: "流線",
     visualMap: "風速が高いほど、流線の本数・移動速度・光量が増えます。",
-    soundMap: "風速が高いほど、テンポ・高域・風の粒子音が増えます。",
   }),
   Object.freeze({
     id: "carbon-pulse",
@@ -34,7 +32,6 @@ const EXHIBITS = Object.freeze([
     location: Object.freeze({ lon: -155.576, lat: 19.536, label: "Mauna Loa Observatory / ハワイ島" }),
     visualCue: "光環",
     visualMap: "CO₂濃度が高いほど、光環の呼吸が速まり、余韻が広がります。",
-    soundMap: "CO₂濃度を、maj7和音の呼吸周期と微細な音程変化へ変えます。",
   }),
   Object.freeze({
     id: "rain-chorus",
@@ -51,7 +48,6 @@ const EXHIBITS = Object.freeze([
     location: Object.freeze({ lon: -155.45, lat: 19.55, label: "JAXA GSMaP / ハワイ固定範囲" }),
     visualCue: "雨と波紋",
     visualMap: "降水量が多いほど、雨線と水面の波紋が密に発生します。",
-    soundMap: "降水量を、音符密度・水滴の明るさ・残響の深さへ変えます。",
   }),
   Object.freeze({
     id: "no2-veil",
@@ -68,7 +64,6 @@ const EXHIBITS = Object.freeze([
     location: Object.freeze({ lon: -155.45, lat: 19.55, label: "Sentinel-5P / ハワイ固定範囲" }),
     visualCue: "大気の膜",
     visualMap: "NO₂が高いほど薄膜の明度と揺らぎが増え、欠測時は走査線だけが残ります。",
-    soundMap: "NO₂を共鳴と高域の薄膜へ変換し、欠測時は疎らな待機和音にします。",
   }),
 ]);
 
@@ -186,16 +181,14 @@ const addLightTouch = (x, y, strength = 1) => {
   if (lightTouches.length > LIGHT_TOUCH_CAPACITY) lightTouches.splice(0, lightTouches.length - LIGHT_TOUCH_CAPACITY);
   if (canvas) canvas.dataset.lightTouchCount = String(lightTouches.length);
   const exhibit = EXHIBITS[activeIndex];
-  const measurement = exhibit ? currentMeasurement(exhibit) : null;
   if (exhibit) {
-    dispatchEvent(new CustomEvent("gaia:live-touch", {
+    canvas?.dispatchEvent(new CustomEvent("gaia:live-light-touch", {
       detail: {
         id: exhibit.id,
         key: exhibit.key,
         x: normalizedX,
         y: normalizedY,
-        strength,
-        normalized: Number.isFinite(Number(measurement?.normalized)) ? Number(measurement.normalized) : exhibit.fallback,
+        energy: strength,
       },
     }));
   }
@@ -753,7 +746,6 @@ const renderReadout = () => {
   const missing = !measurement || !Number.isFinite(Number(measurement.value));
   const strength = missing ? exhibit.fallback : clamp01(measurement.normalized);
   const location = observationLocation(exhibit, measurement);
-  const audioState = proceduralAudio.getState();
   const status = STATUS_LABELS[measurement?.status] || (state.connected ? "NEAR REAL TIME" : "SNAPSHOT");
   const savedMeasurement = measurement?.status === "snapshot";
   const feedState = state.connected && !savedMeasurement
@@ -764,9 +756,7 @@ const renderReadout = () => {
   const observedAt = formatJptDateTime(measurement?.observedAt);
   readout.dataset.missing = String(missing);
   readout.dataset.exhibit = exhibit.id;
-  readout.dataset.audioState = audioState.active ? "playing" : audioState.enabled ? "armed" : "off";
   readout.style.setProperty("--live-signal-level", String(strength));
-  readout.style.setProperty("--live-stage-duration", `${(60 / Math.max(1, audioState.tempo || 48)).toFixed(3)}s`);
   readout.querySelector("[data-live-exhibit-kicker]").textContent = `${exhibit.number} / ${status}`;
   const [titleJa, titleEn = ""] = exhibit.title.split(" — ");
   const exhibitTitle = readout.querySelector("[data-live-exhibit-title]");
@@ -778,28 +768,21 @@ const renderReadout = () => {
   readout.querySelector("[data-live-exhibit-feed-state]").textContent = feedState;
   readout.querySelector("[data-live-exhibit-feed-time]").textContent = `観測時刻 ${observedAt}`;
   readout.querySelector("[data-live-exhibit-feed-copy]").textContent = state.connected && !savedMeasurement
-    ? "公開APIの最新公開値に接続中です。5分ごとの更新時に、数値・光・音へ同じ変換を反映します。"
+    ? "公開APIの最新公開値に接続中です。5分ごとの更新時に、数値と光へ同じ変換を反映します。"
     : state.source === "live"
       ? "この項目は保存済み観測値です。ライブ取得できた項目だけを5分ごとに更新し、混在状態を明示します。"
       : "現在は保存済み観測データの再現です。準リアルタイム接続時も、取得できない項目はこの状態を明示します。";
-  readout.querySelector("[data-live-exhibit-sound-description]").textContent = audioState.active
-    ? `音：${exhibit.soundMap} 現在 ${audioState.tempo} BPMで再生中です。`
-    : `音：${exhibit.soundMap} 「展示音を再生」を押すと始まります。`;
   readout.querySelector("[data-live-exhibit-level]").textContent = missing ? "欠測 / STANDBY" : `${Math.round(strength * 100)}% SIGNAL`;
   readout.querySelector("[data-live-exhibit-scale]").textContent = exhibit.scaleLabel;
   readout.querySelector("[data-live-stage-signal]").textContent = missing ? "STANDBY" : formatValue(measurement);
   readout.querySelector("[data-live-stage-location]").textContent = "HAWAIʻI";
   readout.querySelector("[data-live-stage-coordinates]").textContent = `${Math.abs(location.lat).toFixed(1)}°${location.lat >= 0 ? "N" : "S"}`;
   readout.querySelector("[data-live-stage-visual]").textContent = exhibit.visualCue;
-  readout.querySelector("[data-live-stage-sound]").textContent = `${audioState.tempo || "—"} BPM`;
   readout.querySelector("[data-live-exhibit-input]").textContent = missing
     ? `${exhibit.signalLabel}は欠測。値を捏造せず待機演出へ切り替えます。`
     : `${exhibit.signalLabel} ${formatValue(measurement)}を変換の起点にします。`;
   readout.querySelector("[data-live-exhibit-location]").textContent = `${location.label}（${location.lat.toFixed(3)}°, ${location.lon.toFixed(3)}°）を地図上の発生点として表示します。`;
   readout.querySelector("[data-live-exhibit-visual-map]").textContent = exhibit.visualMap;
-  readout.querySelector("[data-live-exhibit-sound-map]").textContent = audioState.focus === exhibit.id
-    ? `${exhibit.soundMap} 現在 ${audioState.tempo} BPM。`
-    : exhibit.soundMap;
   readout.querySelector("[data-live-exhibit-source]").textContent = measurement
     ? `${measurement.provider?.toUpperCase() || "SOURCE"} · ${measurement.datasetId || "PUBLIC DATA"}`
     : "SOURCE DATA MISSING · VISUAL SCAN STANDBY";
@@ -830,10 +813,6 @@ const select = (index) => {
   const exhibit = EXHIBITS[index];
   layer.classList.add("is-live-exhibit");
   layer.dataset.liveExhibit = exhibit.id;
-  proceduralAudio.setFocus(exhibit.id);
-  if (!globalThis.GaiaOpeningAudio?.getState?.().muted) {
-    void proceduralAudio.enable().then(renderReadout).catch((error) => console.error(error));
-  }
   lightTouches = [];
   lightPointer.energy = 0;
   canvas.dataset.lightTouchCount = "0";
@@ -850,8 +829,6 @@ const select = (index) => {
 const deactivate = ({ number, title } = {}) => {
   if (activeIndex < 0) return;
   activeIndex = -1;
-  proceduralAudio.setFocus(null);
-  proceduralAudio.disable();
   lightTouches = [];
   lightPointer.active = 0;
   lightPointer.down = false;
@@ -965,9 +942,8 @@ const mount = () => {
         <time data-live-exhibit-feed-time></time>
       </div>
       <p data-live-exhibit-feed-copy></p>
-      <p class="gaia-live-exhibit-sonification" data-live-exhibit-sound-description></p>
     </section>
-    <ol class="gaia-live-exhibit-path" aria-label="観測データから映像と音への変換経路">
+    <ol class="gaia-live-exhibit-path" aria-label="観測データから光への変換経路">
       <li data-live-stage="observe">
         <span>01</span>
         <i class="gaia-live-stage-symbol" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="5"/><circle cx="32" cy="32" r="16"/><circle cx="32" cy="32" r="27"/></svg></i>
@@ -986,16 +962,9 @@ const mount = () => {
         <b>光</b><em data-live-stage-visual>流線</em>
         <p class="gaia-live-exhibit-a11y" data-live-exhibit-visual-map></p>
       </li>
-      <li data-live-stage="sonify">
-        <span>04</span>
-        <i class="gaia-live-stage-symbol" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M6 35h7l5-17 8 32 7-42 8 47 7-27 5 7h5"/></svg></i>
-        <b>音</b><em data-live-stage-sound>— BPM</em>
-        <p class="gaia-live-exhibit-a11y" data-live-exhibit-sound-map></p>
-      </li>
     </ol>
     <div class="gaia-live-exhibit-actions">
-      <button type="button" data-live-sound-toggle aria-pressed="false"><span class="gaia-live-sound-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="gaia-live-sound-copy"><b data-live-sound-label>展示音を再生</b><small data-live-sound-status>クリックで観測値を音に変換</small></span></button>
-      <button class="gaia-live-exhibit-touch-hint" type="button" data-live-light-touch aria-label="地図の光へ触れ、光と展示音を鳴らす"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></button>
+      <button class="gaia-live-exhibit-touch-hint" type="button" data-live-light-touch aria-label="地図の光へ触れる"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></button>
     </div>
     <footer><span data-live-exhibit-source></span><time data-live-exhibit-time></time></footer>
     </div>
@@ -1010,7 +979,7 @@ const mount = () => {
   readout.querySelector("[data-live-light-touch]")?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    const touchStep = proceduralAudio.getState().touchCount % 3;
+    const touchStep = lightTouches.length % 3;
     const [x, y] = [[0.36, 0.43], [0.52, 0.34], [0.68, 0.54]][touchStep];
     lightPointer.x = x;
     lightPointer.y = y;
@@ -1092,13 +1061,6 @@ const mount = () => {
   addEventListener("gaia:live-update", () => {
     renderReadout();
     if (activeIndex >= 0 && !frame) draw();
-  });
-  addEventListener("gaia:procedural-audio-state", () => {
-    const audioState = proceduralAudio.getState();
-    canvas.dataset.audioState = audioState.active ? "playing" : audioState.enabled ? "armed" : "off";
-    canvas.dataset.audioFocus = audioState.focus || "none";
-    canvas.dataset.audioTempo = String(audioState.tempo || 0);
-    renderReadout();
   });
   addEventListener("gaia:japan-mode-change", () => {
     if (activeIndex < 0) return;

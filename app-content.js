@@ -339,7 +339,7 @@
       id: "breathing-earth",
       title: "Breathing Earth",
       titleJa: "地球の一呼吸",
-      description: "NOAAとGOSATの大気CO₂、NASAの気温偏差を重ねています。季節ごとのCO₂の上下を呼吸する動き、長期的な増加を光の強さ、気温偏差を青から赤への色として表します。",
+      description: "NOAAとGOSATの大気CO₂に、NOAA SWPCの30〜90分先オーロラ予報を重ねます。長期的な大気の変化と、太陽風に応答する極域の光を同じ地球上で見比べます。",
       accent: "#8ed8ff",
       rgb: "142, 216, 255",
       source: `

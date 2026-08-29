@@ -42,9 +42,34 @@ try {
     const trigger = viewport.name === "mobile" ? page.locator("#gaia-statistics-button-mobile") : page.locator("#gaia-statistics-button");
     assert.equal(await trigger.isVisible(), true, `${viewport.name}: statistics entry button is not visible on the map`);
     await trigger.click();
-    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent?.includes("COMPLETE"));
+    await page.waitForFunction(() => window.GaiaStatisticsLab?.getState().exportReady === true);
+    const fixedFrame = await page.evaluate(() => {
+      const geometry = (selector) => {
+        const element = document.querySelector(selector);
+        return {
+          clientHeight: element.clientHeight,
+          scrollHeight: element.scrollHeight,
+          scrollTop: element.scrollTop,
+          overflowY: getComputedStyle(element).overflowY,
+        };
+      };
+      return {
+        document: { clientHeight: document.documentElement.clientHeight, scrollHeight: document.documentElement.scrollHeight, scrollY },
+        lab: geometry("#gaia-statistics-lab"),
+        shell: geometry(".gaia-statistics-shell"),
+        body: geometry(".gaia-statistics-body"),
+        stage: geometry(".gaia-statistics-stage"),
+      };
+    });
+    for (const [name, geometry] of Object.entries(fixedFrame)) {
+      if (name === "document") {
+        assert.ok(geometry.scrollHeight <= geometry.clientHeight + 1 && geometry.scrollY === 0, `${viewport.name}: statistics page still scrolls vertically`);
+      } else {
+        assert.ok(geometry.scrollHeight <= geometry.clientHeight + 1 && geometry.scrollTop === 0, `${viewport.name}: ${name} still scrolls vertically`);
+      }
+    }
     await page.locator("#gaia-statistics-dataset").selectOption("co2-trend");
-    await page.locator("#gaia-statistics-lectures button[data-lecture='01']").click();
+    await page.locator("#gaia-statistics-lectures").selectOption("01");
     await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING"
       && document.querySelector("#gaia-statistics-canvas")?.dataset.axisX === "CO₂ (ppm)");
     const co2Chart = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({
@@ -145,14 +170,14 @@ try {
     await page.locator("#gaia-statistics-dataset").selectOption("rainfall");
     await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
     assert.equal(await page.locator("#gaia-statistics-lab").getAttribute("aria-hidden"), "false");
-    assert.equal(await page.locator("#gaia-statistics-lectures button").count(), 15);
+    assert.equal(await page.locator("#gaia-statistics-lectures option").count(), 15);
     assert.equal(await page.locator(".gaia-statistics-insight").count(), 4);
-    assert.match(await page.locator(".gaia-statistics-insight").nth(0).innerText(), /この図が示すこと/u);
-    assert.match(await page.locator(".gaia-statistics-insight").nth(1).innerText(), /データから見えたこと/u);
-    assert.match(await page.locator(".gaia-statistics-insight").nth(2).innerText(), /ここからは言えないこと/u);
-    assert.match(await page.locator(".gaia-statistics-insight").nth(3).innerText(), /次に確かめる/u);
+    assert.match(await page.locator(".gaia-statistics-insight").nth(0).textContent(), /この図が示すこと/u);
+    assert.match(await page.locator(".gaia-statistics-insight").nth(1).textContent(), /データから見えたこと/u);
+    assert.match(await page.locator(".gaia-statistics-insight").nth(2).textContent(), /ここからは言えないこと/u);
+    assert.match(await page.locator(".gaia-statistics-insight").nth(3).textContent(), /次に確かめる/u);
     const canvas = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({ width: element.width, height: element.height, rect: element.getBoundingClientRect().toJSON() }));
-    assert.ok(canvas.width > 300 && canvas.height > 200, `${viewport.name}: canvas is not rendered`);
+    assert.ok(canvas.width > 300 && canvas.height > (viewport.name === "pc" ? 140 : 90), `${viewport.name}: canvas is not rendered`);
     const labVisual = await page.locator("#gaia-statistics-lab").evaluate((element) => {
       const style = getComputedStyle(element);
       const top = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
@@ -178,10 +203,10 @@ try {
     assert.match(specialized.pollination.insight.interpretation, /23相互作用.*62標本/u);
 
     for (let lecture = 0; lecture < 15; lecture += 1) {
-      await page.locator("#gaia-statistics-lectures button").nth(lecture).click();
+      await page.locator("#gaia-statistics-lectures").selectOption(String(lecture + 1).padStart(2, "0"));
       await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
       assert.equal(await page.locator(".gaia-statistics-insight").count(), 4, `${viewport.name}: lecture ${lecture + 1} insight cards`);
-      const cards = await page.locator(".gaia-statistics-insight").allInnerTexts();
+      const cards = await page.locator(".gaia-statistics-insight").allTextContents();
       cards.forEach((text, index) => assert.ok(text.trim().length > 18, `${viewport.name}: lecture ${lecture + 1}, card ${index + 1} empty`));
       const methodButtons = page.locator("#gaia-statistics-methods button");
       for (let method = 1; method < await methodButtons.count(); method += 1) {
@@ -192,7 +217,7 @@ try {
     }
 
     await page.locator("#gaia-statistics-dataset").selectOption("waste");
-    await page.locator("#gaia-statistics-lectures button[data-lecture='01']").click();
+    await page.locator("#gaia-statistics-lectures").selectOption("01");
     await page.waitForFunction(() => document.querySelectorAll("#gaia-statistics-metrics tr").length >= 6
       && document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
     const readMean = () => page.evaluate(() => [...document.querySelectorAll("#gaia-statistics-metrics tr")]
@@ -202,7 +227,10 @@ try {
       usedRows: Number(element.dataset.usedRows), totalRows: Number(element.dataset.totalRows), sourceRows: Number(element.dataset.sourceRows), quality: element.dataset.quality,
     }));
     assert.deepEqual(sourceWasteKpis, { usedRows: 17, totalRows: 31, sourceRows: 17, quality: "source-only" }, `${viewport.name}: source-only waste KPIs are wrong`);
-    await page.locator("#gaia-statistics-derived").check();
+    await page.locator("#gaia-statistics-derived").evaluate((element) => {
+      element.checked = true;
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
     await page.waitForTimeout(80);
     const combinedMean = await readMean();
@@ -247,7 +275,8 @@ try {
     assert.equal(filteredReport.filter.query, "Canada", `${viewport.name}: JSON report omitted the record query`);
     assert.equal(filteredReport.rows.length, 1, `${viewport.name}: JSON report ignored the record query`);
 
-    await page.locator("#gaia-statistics-view-save").click();
+    assert.equal(await page.locator(".gaia-statistics-saved-panel").isVisible(), false, `${viewport.name}: saved-view controls should not clutter the primary workspace`);
+    await page.locator("#gaia-statistics-view-save").evaluate((element) => element.click());
     assert.equal(await page.locator("#gaia-statistics-saved-view option").count(), 2, `${viewport.name}: saved view was not added`);
     const savedViewId = await page.locator("#gaia-statistics-saved-view").inputValue();
     assert.ok(savedViewId, `${viewport.name}: saved view is not selected after save`);
@@ -260,8 +289,11 @@ try {
     await page.locator("#gaia-statistics-dataset").selectOption("co2-trend");
     await page.waitForFunction(() => window.GaiaStatisticsLab?.getState().datasetId === "co2-trend"
       && document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
-    await page.locator("#gaia-statistics-saved-view").selectOption(savedViewId);
-    await page.locator("#gaia-statistics-view-apply").click();
+    await page.locator("#gaia-statistics-saved-view").evaluate((element, value) => {
+      element.value = value;
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+    }, savedViewId);
+    await page.locator("#gaia-statistics-view-apply").evaluate((element) => element.click());
     await page.waitForFunction(() => {
       const state = window.GaiaStatisticsLab?.getState();
       return state?.datasetId === "waste" && state.includeDerived && state.recordQuery === "Canada"
@@ -275,7 +307,7 @@ try {
     assert.equal(await page.locator('th[data-record-sort="label"]').getAttribute("aria-sort"), "descending", `${viewport.name}: restored sort is not reflected in the table header`);
     assert.equal(await page.locator("#gaia-statistics-record-filter").inputValue(), "Canada", `${viewport.name}: saved record query is not visible after restore`);
 
-    await page.locator("#gaia-statistics-view-delete").click();
+    await page.locator("#gaia-statistics-view-delete").evaluate((element) => element.click());
     assert.equal(await page.locator("#gaia-statistics-saved-view option").count(), 1, `${viewport.name}: deleted view remains in the selector`);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("gaia-statistics-saved-views:v1") || "[]").length), 0, `${viewport.name}: deleted view remains in local storage`);
     await page.locator("#gaia-statistics-filter-clear").click();

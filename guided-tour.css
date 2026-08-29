@@ -78,7 +78,6 @@
 .gaia-tour[data-step="map"] .gaia-tour-card { border-left-color: rgba(108, 206, 255, .86); }
 .gaia-tour[data-step="space"] .gaia-tour-card { border-left-color: rgba(191, 153, 255, .88); }
 .gaia-tour[data-step="sensor"] .gaia-tour-card { border-left-color: rgba(255, 202, 105, .86); }
-.gaia-tour[data-step="notebook"] .gaia-tour-card { border-left-color: rgba(116, 232, 211, .9); }
 body.gaia-tour-open { overflow: hidden; }
 
 @media (max-width: 640px) {

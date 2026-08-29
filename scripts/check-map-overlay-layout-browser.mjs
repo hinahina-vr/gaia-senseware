@@ -80,7 +80,14 @@ try {
         String(index + 1).padStart(2, "0"),
       );
       await page.waitForTimeout(120);
-      if (index === 2) {
+      if (index === 0) {
+        await page.waitForFunction(() => {
+          const overlay = document.querySelector("#japan-overlay");
+          return overlay?.dataset.auroraForecast === "ready"
+            && Number(overlay.dataset.auroraForecastPointCount) >= 80
+            && Number(overlay.dataset.auroraForecastMaximum) > 0;
+        }, null, { timeout: 15_000 });
+      } else if (index === 2) {
         await page.waitForFunction(() => {
           const overlay = document.querySelector("#japan-overlay");
           return overlay?.dataset.forestMask === "ready"
@@ -187,6 +194,30 @@ try {
           renewableCountryFillCount: document.querySelector("#japan-overlay")?.dataset.renewableCountryFillCount || "",
           renewableFillScale: document.querySelector("#japan-overlay")?.dataset.renewableFillScale || "",
           energyConnectionRemoved: document.querySelector("#japan-overlay")?.dataset.energyConnectionRemoved || "",
+          energyPanel: overlay?.dataset.energyPanelScreenLeft
+            ? {
+              left: Number(overlay.dataset.energyPanelScreenLeft),
+              top: Number(overlay.dataset.energyPanelScreenTop),
+              right: Number(overlay.dataset.energyPanelScreenRight),
+              bottom: Number(overlay.dataset.energyPanelScreenBottom),
+            }
+            : null,
+          energyPanelLegendClearance: overlay?.dataset.energyPanelLegendClearance || "",
+          auxiliaryPanelId: overlay?.dataset.auxiliaryPanelId || "",
+          auxiliaryPanel: overlay?.dataset.auxiliaryPanelScreenLeft
+            ? {
+              left: Number(overlay.dataset.auxiliaryPanelScreenLeft),
+              top: Number(overlay.dataset.auxiliaryPanelScreenTop),
+              right: Number(overlay.dataset.auxiliaryPanelScreenRight),
+              bottom: Number(overlay.dataset.auxiliaryPanelScreenBottom),
+            }
+            : null,
+          auxiliaryPanelLegendClearance: overlay?.dataset.auxiliaryPanelLegendClearance || "",
+          auroraForecast: overlay?.dataset.auroraForecast || "",
+          auroraForecastSource: overlay?.dataset.auroraForecastSource || "",
+          auroraForecastPointCount: overlay?.dataset.auroraForecastPointCount || "",
+          auroraForecastMaximum: overlay?.dataset.auroraForecastMaximum || "",
+          auroraForecastTime: overlay?.dataset.auroraForecastTime || "",
           backVisible: visible(back),
           backHitId: hit?.closest?.("button")?.id || "",
           overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -239,6 +270,60 @@ try {
       }
       assert.equal(scan.overflowX, 0, `${viewport.name}/${scan.modeNumber}: horizontal overflow`);
       assert.equal(scan.overflowY, 0, `${viewport.name}/${scan.modeNumber}: vertical overflow`);
+      if (scan.auxiliaryPanel) {
+        const auxiliaryLegendOverlaps = scan.auxiliaryPanel.left < scan.legendDock.right
+          && scan.auxiliaryPanel.right > scan.legendDock.left
+          && scan.auxiliaryPanel.top < scan.legendDock.bottom
+          && scan.auxiliaryPanel.bottom > scan.legendDock.top;
+        assert.equal(
+          auxiliaryLegendOverlaps,
+          false,
+          `${viewport.name}/${scan.modeNumber}: map legend overlaps ${scan.auxiliaryPanelId}`,
+        );
+      }
+      if (index === 0) {
+        assert.equal(scan.auroraForecast, "ready", `${viewport.name}/01: OVATION aurora layer is not ready`);
+        assert.match(scan.auroraForecastSource, /^(live|snapshot)$/u, `${viewport.name}/01: OVATION source state is unclear`);
+        assert(Number(scan.auroraForecastPointCount) >= 80, `${viewport.name}/01: OVATION grid is empty`);
+        assert(Number(scan.auroraForecastMaximum) > 0, `${viewport.name}/01: OVATION intensity is empty`);
+        assert.match(scan.auroraForecastTime, /^\d{4}-\d{2}-\d{2}T/u, `${viewport.name}/01: OVATION forecast time is missing`);
+        await page.locator("#japan-data-button").evaluate((button) => button.click());
+        await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("japan-data-open"));
+        const sourceLayering = await page.evaluate(() => {
+          const legend = document.querySelector("#map-signal-encoding-legend-dock");
+          const panel = document.querySelector("#japan-data-panel");
+          const style = getComputedStyle(legend);
+          return {
+            legendVisibility: style.visibility,
+            legendOpacity: Number(style.opacity),
+            legendPointerEvents: style.pointerEvents,
+            panelVisible: panel?.getAttribute("aria-hidden") === "false",
+          };
+        });
+        assert.deepEqual(sourceLayering, {
+          legendVisibility: "hidden",
+          legendOpacity: 0,
+          legendPointerEvents: "none",
+          panelVisible: true,
+        }, `${viewport.name}: legend remains above the data source panel`);
+        const sourceList = await page.locator("#japan-data-panel").evaluate((panel) => ({
+          title: panel.querySelector(".japan-data-header h2")?.textContent || "",
+          cardCount: panel.querySelectorAll(".data-ledger-card").length,
+          sourceLinkCount: panel.querySelectorAll(".data-ledger-card .data-source-links a").length,
+          sourceTitles: [...panel.querySelectorAll(".data-ledger-card h3")].map((node) => node.textContent?.trim() || ""),
+          verboseBlockCount: panel.querySelectorAll(".data-kind-legend, .statistics-disclosure, .data-specs, .data-preview, .japan-data-calculation, .japan-data-caution").length,
+        }));
+        assert.equal(sourceList.title, "データの出典", `${viewport.name}: source panel title is verbose`);
+        assert.ok(sourceList.cardCount > 0 && sourceList.sourceLinkCount >= sourceList.cardCount, `${viewport.name}: compact source list is incomplete`);
+        assert(sourceList.sourceTitles.some((title) => title.includes("オーロラ")), `${viewport.name}: NOAA OVATION source is missing`);
+        assert.equal(sourceList.verboseBlockCount, 0, `${viewport.name}: verbose source explanations remain`);
+        await page.locator("#japan-data-panel").screenshot({
+          path: path.join(outputDir, `${viewport.name}-data-sources.png`),
+          animations: "disabled",
+        });
+        await page.locator("#japan-data-close").evaluate((button) => button.click());
+        await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("japan-data-open"));
+      }
       if (index === 2) {
         assert.equal(scan.forestRainCircleRange, "10-54px radius", `${viewport.name}/03: rain-circle scale is stale`);
         assert.equal(scan.forestRainBrazil, "5.33 mm/day", `${viewport.name}/03: Brazil rain point is missing`);
@@ -246,10 +331,18 @@ try {
         assert.equal(scan.ecologiesPlot, "paired-country-scatter", `${viewport.name}/07: paired scatter plot is missing`);
         assert.equal(scan.ecologiesPairCount, "31", `${viewport.name}/07: paired-country count is stale`);
         assert(Number(scan.ecologiesCorrelation) > 0.2 && Number(scan.ecologiesCorrelation) < 0.3, `${viewport.name}/07: correlation is missing`);
+        assert.equal(scan.auxiliaryPanelId, "three-ecologies-scatter", `${viewport.name}/07: scatter panel collision target is missing`);
       } else if (index === 7) {
         assert.equal(scan.renewableCountryFillCount, "31", `${viewport.name}/08: country fills are missing`);
         assert.equal(scan.renewableFillScale, "country-blue-0-100", `${viewport.name}/08: color scale is stale`);
         assert.equal(scan.energyConnectionRemoved, "true", `${viewport.name}/08: old connection interaction remains`);
+        assert.equal(scan.auxiliaryPanelId, "earth-organ-scale", `${viewport.name}/08: energy panel collision target is missing`);
+        assert(scan.energyPanel, `${viewport.name}/08: renewable comparison panel geometry is missing`);
+        const energyLegendOverlaps = scan.energyPanel.left < scan.legendDock.right
+          && scan.energyPanel.right > scan.legendDock.left
+          && scan.energyPanel.top < scan.legendDock.bottom
+          && scan.energyPanel.bottom > scan.legendDock.top;
+        assert.equal(energyLegendOverlaps, false, `${viewport.name}/08: map legend overlaps renewable comparison panel`);
       }
       reportScan.passed = true;
 

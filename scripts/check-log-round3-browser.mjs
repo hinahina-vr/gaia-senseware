@@ -61,7 +61,7 @@ const mobileExpectedAssets = new Map([
 const specialIds = new Set(["welcome_chat_081", "welcome_chat_095"]);
 assert.equal(expectedText.size, 24);
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
-assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 386);
+assert.equal(story.scenes.flatMap((scene) => scene.steps).length, 372);
 assert.equal(story.sourceSha256, "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c");
 
 const viewports = [
