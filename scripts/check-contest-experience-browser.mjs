@@ -495,7 +495,7 @@ try {
     assert.equal(await directPage.locator("[data-live-exhibit-caption]").textContent(), contract.caption, `${number}: explanatory contract changed`);
     assert.equal(await directPage.locator("[data-live-exhibit-caption]").isVisible(), true, `${number}: exhibit explanation is not visible`);
     assert.equal(await directPage.locator("[data-live-exhibit-feed-state]").isVisible(), true, `${number}: live/snapshot state is not visible`);
-    assert.match(await directPage.locator("[data-live-exhibit-feed-state]").textContent(), /LIVE STREAM|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, `${number}: live/snapshot state is ambiguous`);
+    assert.match(await directPage.locator("[data-live-exhibit-feed-state]").textContent(), /NEAR REAL TIME|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, `${number}: live/snapshot state is ambiguous`);
     if (number !== "12") assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /JPT$/u, `${number}: observation time is not labelled JPT`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-copy]").textContent(), /自動更新|保存済み観測データ/u, `${number}: realtime behavior is not explained`);
     assert.match(await directPage.locator("[data-live-exhibit-sound-description]").textContent(), contract.sound, `${number}: visible sound mapping is missing`);
@@ -704,7 +704,7 @@ try {
   assert(live4kVisualContract.anchorFont >= 17, `4K map anchor remains too small: ${live4kVisualContract.anchorFont}px`);
   assert(live4kVisualContract.symbolWidth >= 40 && live4kVisualContract.symbolWidth <= 44 && live4kVisualContract.symbolCount === 4, "4K visual transformation symbols are not compact");
   assert(live4kVisualContract.explanationVisible && live4kVisualContract.explanationFont >= 12, "4K exhibit explanation is missing or unreadable");
-  assert.match(live4kVisualContract.feedState, /LIVE STREAM|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, "4K live/snapshot state is ambiguous");
+  assert.match(live4kVisualContract.feedState, /NEAR REAL TIME|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, "4K live/snapshot state is ambiguous");
   assert.equal(live4kVisualContract.hiddenDetails, true, "long explanations must remain assistive-only");
   assert.equal(live4kVisualContract.visibleParagraphCards, false, "paragraph explanation cards remain visible");
   assert.deepEqual(live4kVisualContract.stageLabels, ["観測", "地図", "光", "音"]);

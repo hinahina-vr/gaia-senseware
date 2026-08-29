@@ -4,6 +4,7 @@ const HAWAII_BBOX = [-156.2, 18.8, -154.7, 20.3] as const;
 const HAWAII_CENTER = { lat: 19.55, lon: -155.45 } as const;
 const TRANSFORM_VERSION = "live-senseware-v1";
 const STREAM_LIFETIME_MS = 10 * 60 * 1_000;
+const STREAM_REFRESH_MS = 5 * 60 * 1_000;
 const HEARTBEAT_MS = 15_000;
 
 type Provider = "noaa" | "jaxa" | "esa";
@@ -35,6 +36,8 @@ export interface LiveObservationEvent {
 interface LiveEnv {
   ASSETS: Fetcher;
   LIVE_SENSEWARE_ENABLED?: string;
+  LIVE_SENSEWARE_JAXA_ENABLED?: string;
+  LIVE_SENSEWARE_ESA_ENABLED?: string;
   CDSE_CLIENT_ID?: string;
   CDSE_CLIENT_SECRET?: string;
 }
@@ -320,12 +323,14 @@ const loadEsa = async (env: LiveEnv): Promise<CachedEvent> => {
   };
 };
 
-const fallbackSnapshot = async (request: Request, env: LiveEnv, reason: string): Promise<{ schemaVersion: 1; source: "snapshot"; events: LiveObservationEvent[]; fallbackReason: string }> => {
+const eventIdentity = (event: LiveObservationEvent): string => `${event.provider}:${event.datasetId.includes("CO2") ? "co2" : "main"}`;
+
+const fallbackSnapshot = async (request: Request, env: LiveEnv, reason: string): Promise<{ schemaVersion: 1; source: "snapshot"; generatedAt?: string; bbox?: readonly number[]; events: LiveObservationEvent[]; fallbackReason: string }> => {
   const fallbackUrl = new URL("/data/live-observation-fallback-v1.json", request.url);
   const response = await env.ASSETS.fetch(new Request(fallbackUrl, { headers: { Accept: "application/json" } }));
   if (!response.ok) throw new Error(`Versioned live snapshot ${response.status}`);
-  const payload = await response.json<{ events: LiveObservationEvent[] }>();
-  return { schemaVersion: 1, source: "snapshot", events: payload.events, fallbackReason: reason };
+  const payload = await response.json<{ generatedAt?: string; bbox?: readonly number[]; events: LiveObservationEvent[] }>();
+  return { schemaVersion: 1, source: "snapshot", generatedAt: payload.generatedAt, bbox: payload.bbox, events: payload.events, fallbackReason: reason };
 };
 
 const liveSnapshot = async (request: Request, env: LiveEnv, ctx: ExecutionContext): Promise<{ schemaVersion: 1; source: "live" | "snapshot"; generatedAt?: string; bbox?: readonly number[]; events: LiveObservationEvent[]; errors?: string[]; fallbackReason?: string }> => {
@@ -333,19 +338,27 @@ const liveSnapshot = async (request: Request, env: LiveEnv, ctx: ExecutionContex
   const definitions: ProviderDefinition[] = [
     { cacheKey: "noaa-ndbc", ttlMs: 5 * 60 * 1_000, load: loadNdbc },
     { cacheKey: "noaa-co2", ttlMs: 60 * 60 * 1_000, load: loadCo2 },
-    { cacheKey: "jaxa-gsmap", ttlMs: 6 * 60 * 60 * 1_000, load: loadJaxa },
-    { cacheKey: "esa-no2", ttlMs: 30 * 60 * 1_000, load: () => loadEsa(env) },
   ];
+  if (env.LIVE_SENSEWARE_JAXA_ENABLED === "true") {
+    definitions.push({ cacheKey: "jaxa-gsmap", ttlMs: 6 * 60 * 60 * 1_000, load: loadJaxa });
+  }
+  if (env.LIVE_SENSEWARE_ESA_ENABLED === "true" && env.CDSE_CLIENT_ID && env.CDSE_CLIENT_SECRET) {
+    definitions.push({ cacheKey: "esa-no2", ttlMs: 30 * 60 * 1_000, load: () => loadEsa(env) });
+  }
   const settled = await Promise.allSettled(definitions.map((definition) => loadCachedProvider(definition, ctx)));
   const events = settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
   const errors = settled.flatMap((result) => result.status === "rejected" ? [result.reason instanceof Error ? result.reason.message : "provider failure"] : []);
   if (!events.length) return fallbackSnapshot(request, env, errors.join("; "));
-  if (errors.length) {
-    const fallback = await fallbackSnapshot(request, env, errors.join("; "));
-    const available = new Set(events.map((event) => `${event.provider}:${event.datasetId.includes("CO2") ? "co2" : "main"}`));
-    for (const event of fallback.events) {
-      const identity = `${event.provider}:${event.datasetId.includes("CO2") ? "co2" : "main"}`;
-      if (!available.has(identity)) events.push({ ...event, fallbackReason: errors.join("; ") });
+  const fallback = await fallbackSnapshot(request, env, "Some providers use saved snapshots");
+  const available = new Set(events.map(eventIdentity));
+  const disabledReasons = new Map<string, string>([
+    ["jaxa:main", env.LIVE_SENSEWARE_JAXA_ENABLED === "true" ? "JAXA upstream unavailable" : "JAXA live disabled for free-plan CPU safety"],
+    ["esa:main", env.LIVE_SENSEWARE_ESA_ENABLED !== "true" ? "ESA live disabled" : !env.CDSE_CLIENT_ID || !env.CDSE_CLIENT_SECRET ? "ESA credentials unavailable" : "ESA upstream unavailable"],
+  ]);
+  for (const event of fallback.events) {
+    const identity = eventIdentity(event);
+    if (!available.has(identity)) {
+      events.push({ ...event, fallbackReason: disabledReasons.get(identity) || errors.join("; ") || "provider snapshot fallback" });
     }
   }
   return { schemaVersion: 1, source: "live", generatedAt: new Date().toISOString(), bbox: HAWAII_BBOX, events, errors: errors.length ? errors : undefined };
@@ -356,30 +369,53 @@ const sseLine = (event: string, data: unknown, id?: string): string => `${id ? `
 const streamResponse = (request: Request, env: LiveEnv, ctx: ExecutionContext): Response => {
   const encoder = new TextEncoder();
   let heartbeat = 0;
+  let refresh = 0;
   let lifetime = 0;
+  let closed = false;
+  let refreshInFlight = false;
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       const close = () => {
+        if (closed) return;
+        closed = true;
         clearInterval(heartbeat);
+        clearInterval(refresh);
         clearTimeout(lifetime);
         try { controller.close(); } catch {}
       };
+      const emitSnapshot = async () => {
+        if (closed || refreshInFlight) return;
+        refreshInFlight = true;
+        try {
+          const snapshot = await liveSnapshot(request, env, ctx);
+          if (closed) return;
+          const lastEventId = request.headers.get("Last-Event-ID") || new URL(request.url).searchParams.get("lastEventId") || "";
+          const snapshotId = `snapshot:${snapshot.generatedAt || new Date().toISOString()}`;
+          controller.enqueue(encoder.encode(sseLine("snapshot", { ...snapshot, resumedAfter: lastEventId || undefined }, snapshotId)));
+          for (const event of snapshot.events) controller.enqueue(encoder.encode(sseLine("provider", event, event.eventId)));
+          controller.enqueue(encoder.encode(sseLine("status", { state: "streaming", source: snapshot.source, refreshSeconds: STREAM_REFRESH_MS / 1_000 }, `status:${Date.now()}`)));
+        } catch (error) {
+          if (!closed) controller.error(error);
+          close();
+        } finally {
+          refreshInFlight = false;
+        }
+      };
       request.signal.addEventListener("abort", close, { once: true });
-      heartbeat = setInterval(() => controller.enqueue(encoder.encode(`: heartbeat ${new Date().toISOString()}\n\n`)), HEARTBEAT_MS) as unknown as number;
+      heartbeat = setInterval(() => {
+        if (!closed) controller.enqueue(encoder.encode(`: heartbeat ${new Date().toISOString()}\n\n`));
+      }, HEARTBEAT_MS) as unknown as number;
+      refresh = setInterval(() => void emitSnapshot(), STREAM_REFRESH_MS) as unknown as number;
       lifetime = setTimeout(() => {
         controller.enqueue(encoder.encode(sseLine("status", { state: "complete", reconnect: true })));
         close();
       }, STREAM_LIFETIME_MS) as unknown as number;
-      void liveSnapshot(request, env, ctx).then((snapshot) => {
-        const lastEventId = request.headers.get("Last-Event-ID") || new URL(request.url).searchParams.get("lastEventId") || "";
-        const snapshotId = `snapshot:${snapshot.generatedAt || new Date().toISOString()}`;
-        controller.enqueue(encoder.encode(sseLine("snapshot", { ...snapshot, resumedAfter: lastEventId || undefined }, snapshotId)));
-        for (const event of snapshot.events) controller.enqueue(encoder.encode(sseLine("provider", event, event.eventId)));
-        controller.enqueue(encoder.encode(sseLine("status", { state: "streaming", source: snapshot.source }, `status:${Date.now()}`)));
-      }).catch((error) => controller.error(error));
+      void emitSnapshot();
     },
     cancel() {
+      closed = true;
       clearInterval(heartbeat);
+      clearInterval(refresh);
       clearTimeout(lifetime);
     },
   });

@@ -211,6 +211,7 @@
       const location = event?.location;
       const bbox = Array.isArray(location?.bbox) ? ` / bbox ${location.bbox.join(", ")}` : "";
       const status = event?.status?.toUpperCase() || "DATA MISSING";
+      const savedEvent = event?.status === "snapshot";
       const dataset = {
         id: event?.datasetId || `${exhibit.id}-source-missing`,
         kind: measurement?.sourceKind || "SOURCE",
@@ -221,8 +222,8 @@
         period: event?.observedAt ? `観測時刻 ${displayJptDateTime(event.observedAt)}` : "観測時刻なし",
         unit: measurement?.unit || "—",
         resolution: `${location?.label || exhibit.location?.label || "ハワイ固定観測範囲"}${bbox}`,
-        caveat: state?.connected
-          ? "公開APIへ接続中です。提供元の更新周期と公開遅延が、そのまま表示へ反映されます。"
+        caveat: state?.connected && !savedEvent
+          ? "公開APIへ接続中です。5分ごとに再取得し、提供元の更新周期と公開遅延をそのまま表示へ反映します。"
           : `${status}。現在は保存済み観測値を再現しており、現在時刻の実況値ではありません。`,
         url: event?.provenance?.sourceUrl || "./data/live-observation-fallback-v1.json",
         termsUrl: event?.provenance?.licenseUrl,
@@ -238,7 +239,7 @@
       };
       elements.title.textContent = `${exhibit.number} ${exhibit.shortTitle} — この画面で使っているデータ`;
       elements.question.textContent = `${exhibit.signalLabel}の公開値を、光・動き・展示音へ変換しています。`;
-      elements.act.textContent = `LIVE SENSEWARE / ${state?.connected ? "LIVE STREAM" : "SAVED SNAPSHOT"}`;
+      elements.act.textContent = `LIVE SENSEWARE / ${state?.connected ? "NEAR REAL TIME · 5 MIN REFRESH" : state?.source === "live" ? "LATEST API · RECONNECTING" : "SAVED SNAPSHOT"}`;
       elements.state.textContent = event ? `1種類のデータを使用 / ${status}` : "この観測の出典情報を取得できませんでした";
       elements.updated.textContent = `取得日時：${displayJptDateTime(event?.retrievedAt)}`;
       elements.statistics.hidden = false;

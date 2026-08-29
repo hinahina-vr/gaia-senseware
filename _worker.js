@@ -20315,6 +20315,7 @@ var HAWAII_BBOX = [-156.2, 18.8, -154.7, 20.3];
 var HAWAII_CENTER = { lat: 19.55, lon: -155.45 };
 var TRANSFORM_VERSION = "live-senseware-v1";
 var STREAM_LIFETIME_MS = 10 * 60 * 1e3;
+var STREAM_REFRESH_MS = 5 * 60 * 1e3;
 var HEARTBEAT_MS = 15e3;
 var jsonHeaders = Object.freeze({
   "Cache-Control": "no-store",
@@ -20561,31 +20562,40 @@ var loadEsa = /* @__PURE__ */ __name(async (env) => {
     }
   };
 }, "loadEsa");
+var eventIdentity = /* @__PURE__ */ __name((event) => `${event.provider}:${event.datasetId.includes("CO2") ? "co2" : "main"}`, "eventIdentity");
 var fallbackSnapshot = /* @__PURE__ */ __name(async (request, env, reason) => {
   const fallbackUrl = new URL("/data/live-observation-fallback-v1.json", request.url);
   const response = await env.ASSETS.fetch(new Request(fallbackUrl, { headers: { Accept: "application/json" } }));
   if (!response.ok) throw new Error(`Versioned live snapshot ${response.status}`);
   const payload = await response.json();
-  return { schemaVersion: 1, source: "snapshot", events: payload.events, fallbackReason: reason };
+  return { schemaVersion: 1, source: "snapshot", generatedAt: payload.generatedAt, bbox: payload.bbox, events: payload.events, fallbackReason: reason };
 }, "fallbackSnapshot");
 var liveSnapshot = /* @__PURE__ */ __name(async (request, env, ctx) => {
   if (env.LIVE_SENSEWARE_ENABLED !== "true") return fallbackSnapshot(request, env, "LIVE_SENSEWARE_ENABLED is not true");
   const definitions = [
     { cacheKey: "noaa-ndbc", ttlMs: 5 * 60 * 1e3, load: loadNdbc },
-    { cacheKey: "noaa-co2", ttlMs: 60 * 60 * 1e3, load: loadCo2 },
-    { cacheKey: "jaxa-gsmap", ttlMs: 6 * 60 * 60 * 1e3, load: loadJaxa },
-    { cacheKey: "esa-no2", ttlMs: 30 * 60 * 1e3, load: /* @__PURE__ */ __name(() => loadEsa(env), "load") }
+    { cacheKey: "noaa-co2", ttlMs: 60 * 60 * 1e3, load: loadCo2 }
   ];
+  if (env.LIVE_SENSEWARE_JAXA_ENABLED === "true") {
+    definitions.push({ cacheKey: "jaxa-gsmap", ttlMs: 6 * 60 * 60 * 1e3, load: loadJaxa });
+  }
+  if (env.LIVE_SENSEWARE_ESA_ENABLED === "true" && env.CDSE_CLIENT_ID && env.CDSE_CLIENT_SECRET) {
+    definitions.push({ cacheKey: "esa-no2", ttlMs: 30 * 60 * 1e3, load: /* @__PURE__ */ __name(() => loadEsa(env), "load") });
+  }
   const settled = await Promise.allSettled(definitions.map((definition) => loadCachedProvider(definition, ctx)));
   const events = settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
   const errors = settled.flatMap((result) => result.status === "rejected" ? [result.reason instanceof Error ? result.reason.message : "provider failure"] : []);
   if (!events.length) return fallbackSnapshot(request, env, errors.join("; "));
-  if (errors.length) {
-    const fallback = await fallbackSnapshot(request, env, errors.join("; "));
-    const available = new Set(events.map((event) => `${event.provider}:${event.datasetId.includes("CO2") ? "co2" : "main"}`));
-    for (const event of fallback.events) {
-      const identity = `${event.provider}:${event.datasetId.includes("CO2") ? "co2" : "main"}`;
-      if (!available.has(identity)) events.push({ ...event, fallbackReason: errors.join("; ") });
+  const fallback = await fallbackSnapshot(request, env, "Some providers use saved snapshots");
+  const available = new Set(events.map(eventIdentity));
+  const disabledReasons = /* @__PURE__ */ new Map([
+    ["jaxa:main", env.LIVE_SENSEWARE_JAXA_ENABLED === "true" ? "JAXA upstream unavailable" : "JAXA live disabled for free-plan CPU safety"],
+    ["esa:main", env.LIVE_SENSEWARE_ESA_ENABLED !== "true" ? "ESA live disabled" : !env.CDSE_CLIENT_ID || !env.CDSE_CLIENT_SECRET ? "ESA credentials unavailable" : "ESA upstream unavailable"]
+  ]);
+  for (const event of fallback.events) {
+    const identity = eventIdentity(event);
+    if (!available.has(identity)) {
+      events.push({ ...event, fallbackReason: disabledReasons.get(identity) || errors.join("; ") || "provider snapshot fallback" });
     }
   }
   return { schemaVersion: 1, source: "live", generatedAt: (/* @__PURE__ */ new Date()).toISOString(), bbox: HAWAII_BBOX, events, errors: errors.length ? errors : void 0 };
@@ -20598,35 +20608,58 @@ data: ${JSON.stringify(data)}
 var streamResponse = /* @__PURE__ */ __name((request, env, ctx) => {
   const encoder2 = new TextEncoder();
   let heartbeat = 0;
+  let refresh = 0;
   let lifetime = 0;
+  let closed = false;
+  let refreshInFlight = false;
   const stream = new ReadableStream({
     start(controller) {
       const close = /* @__PURE__ */ __name(() => {
+        if (closed) return;
+        closed = true;
         clearInterval(heartbeat);
+        clearInterval(refresh);
         clearTimeout(lifetime);
         try {
           controller.close();
         } catch {
         }
       }, "close");
+      const emitSnapshot = /* @__PURE__ */ __name(async () => {
+        if (closed || refreshInFlight) return;
+        refreshInFlight = true;
+        try {
+          const snapshot = await liveSnapshot(request, env, ctx);
+          if (closed) return;
+          const lastEventId = request.headers.get("Last-Event-ID") || new URL(request.url).searchParams.get("lastEventId") || "";
+          const snapshotId = `snapshot:${snapshot.generatedAt || (/* @__PURE__ */ new Date()).toISOString()}`;
+          controller.enqueue(encoder2.encode(sseLine("snapshot", { ...snapshot, resumedAfter: lastEventId || void 0 }, snapshotId)));
+          for (const event of snapshot.events) controller.enqueue(encoder2.encode(sseLine("provider", event, event.eventId)));
+          controller.enqueue(encoder2.encode(sseLine("status", { state: "streaming", source: snapshot.source, refreshSeconds: STREAM_REFRESH_MS / 1e3 }, `status:${Date.now()}`)));
+        } catch (error) {
+          if (!closed) controller.error(error);
+          close();
+        } finally {
+          refreshInFlight = false;
+        }
+      }, "emitSnapshot");
       request.signal.addEventListener("abort", close, { once: true });
-      heartbeat = setInterval(() => controller.enqueue(encoder2.encode(`: heartbeat ${(/* @__PURE__ */ new Date()).toISOString()}
+      heartbeat = setInterval(() => {
+        if (!closed) controller.enqueue(encoder2.encode(`: heartbeat ${(/* @__PURE__ */ new Date()).toISOString()}
 
-`)), HEARTBEAT_MS);
+`));
+      }, HEARTBEAT_MS);
+      refresh = setInterval(() => void emitSnapshot(), STREAM_REFRESH_MS);
       lifetime = setTimeout(() => {
         controller.enqueue(encoder2.encode(sseLine("status", { state: "complete", reconnect: true })));
         close();
       }, STREAM_LIFETIME_MS);
-      void liveSnapshot(request, env, ctx).then((snapshot) => {
-        const lastEventId = request.headers.get("Last-Event-ID") || new URL(request.url).searchParams.get("lastEventId") || "";
-        const snapshotId = `snapshot:${snapshot.generatedAt || (/* @__PURE__ */ new Date()).toISOString()}`;
-        controller.enqueue(encoder2.encode(sseLine("snapshot", { ...snapshot, resumedAfter: lastEventId || void 0 }, snapshotId)));
-        for (const event of snapshot.events) controller.enqueue(encoder2.encode(sseLine("provider", event, event.eventId)));
-        controller.enqueue(encoder2.encode(sseLine("status", { state: "streaming", source: snapshot.source }, `status:${Date.now()}`)));
-      }).catch((error) => controller.error(error));
+      void emitSnapshot();
     },
     cancel() {
+      closed = true;
       clearInterval(heartbeat);
+      clearInterval(refresh);
       clearTimeout(lifetime);
     }
   });

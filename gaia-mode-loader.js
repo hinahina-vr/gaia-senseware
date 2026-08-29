@@ -16,7 +16,7 @@
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
-        "./data-ledger.js?v=gaia-live-compact-jpt-audio-1",
+        "./data-ledger.js?v=gaia-live-free-tier-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-abstract-entry-1",
         "./app.js?v=gaia-character-file-1",
@@ -26,7 +26,7 @@
         "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
       ],
       modules: [
-        "./src/exploration/index.js?v=gaia-unified-world-bank-1",
+        "./src/exploration/index.js?v=gaia-live-free-tier-1",
         "./statistics-lab.js?v=gaia-statistics-chart-labels-1",
       ],
     },

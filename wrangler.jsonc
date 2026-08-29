@@ -9,7 +9,10 @@
     "PUBLIC_ORIGIN": "https://gaia-senseware.pages.dev",
     "WEB_ORIGIN": "https://gaia-senseware.pages.dev",
     "SESSION_TTL_SECONDS": "28800",
-    "ONLINE_THRESHOLD_SECONDS": "30"
+    "ONLINE_THRESHOLD_SECONDS": "30",
+    "LIVE_SENSEWARE_ENABLED": "true",
+    "LIVE_SENSEWARE_JAXA_ENABLED": "false",
+    "LIVE_SENSEWARE_ESA_ENABLED": "false"
   },
   "d1_databases": [
     {

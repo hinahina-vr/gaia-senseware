@@ -179,6 +179,8 @@ assert.match(stylesSource, /\.gaia-live-exhibit-primary > strong[\s\S]*font: 500
 assert.match(stylesSource, /\.gaia-live-exhibit-path::after[\s\S]*gaia-live-data-travel/u);
 assert.match(stylesSource, /\.gaia-live-exhibit-explanation[\s\S]*gaia-live-exhibit-summary/u);
 assert.match(liveExhibitsSource, /SAVED SNAPSHOT \/ 保存データを再現中/u);
+assert.match(liveExhibitsSource, /NEAR REAL TIME \/ 5分ごとに更新/u);
+assert.match(liveExhibitsSource, /混在状態を明示します/u);
 assert.match(proceduralAudioSource, /Math\.min\(0\.56, 0\.18 \+ Math\.sqrt\(volume\) \* 0\.38\)/u);
 assert.doesNotMatch(mapGridStylesSource, /\.japan-layer\.is-live-exhibit \.map-grid-bank[\s\S]{0,320}width: clamp\(400px, 22vw, 720px\)/u);
 assert.doesNotMatch(liveExhibitsSource, /fillRect\(x - 2, y - 1/u, "wind field must not render sperm-like particle heads");
@@ -195,7 +197,7 @@ assert.match(appSource, /const mapExhibitIsVisible = japanIsOpen[\s\S]*mapSurfac
 assert.match(appSource, /if \(japanIsOpen && mapSurface !== "light"\)/u);
 assert.match(particlesSource, /const installationIsOpen = \(\) => Boolean\(document\.querySelector\("\.experience\.japan-open"\)\)/u);
 assert.match(particlesSource, /&& !installationIsOpen\(\)/u);
-assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-unified-world-bank-1/u);
+assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-live-free-tier-1/u);
 assert.match(html, /id="japan-title" aria-live="polite">地球の一呼吸<\/h2>/u);
 assert.match(html, /class="japan-map-actions"[\s\S]{0,320}id="japan-close"/u);
 assert.match(appSource, /japanTitle\.textContent = mode\.titleJa;/u);

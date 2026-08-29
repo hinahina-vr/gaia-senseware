@@ -15,6 +15,19 @@ const origin = "http://127.0.0.1:8792";
 const persistPath = path.join(root, ".wrangler", `pages-functions-test-${process.pid}`);
 const reports = [];
 
+await test("Live Senseware uses free-plan provider gates and five-minute stream refreshes", async () => {
+  const source = fs.readFileSync(path.join(sensorRoot, "src", "live-senseware.ts"), "utf8");
+  const productionConfig = fs.readFileSync(path.join(root, "wrangler.jsonc"), "utf8");
+  assert.match(source, /STREAM_REFRESH_MS = 5 \* 60 \* 1_000/u);
+  assert.match(source, /LIVE_SENSEWARE_JAXA_ENABLED === "true"/u);
+  assert.match(source, /JAXA live disabled for free-plan CPU safety/u);
+  assert.match(source, /LIVE_SENSEWARE_ESA_ENABLED === "true" && env\.CDSE_CLIENT_ID && env\.CDSE_CLIENT_SECRET/u);
+  assert.match(source, /refresh = setInterval\(\(\) => void emitSnapshot\(\), STREAM_REFRESH_MS\)/u);
+  assert.match(productionConfig, /"LIVE_SENSEWARE_ENABLED": "true"/u);
+  assert.match(productionConfig, /"LIVE_SENSEWARE_JAXA_ENABLED": "false"/u);
+  assert.match(productionConfig, /"LIVE_SENSEWARE_ESA_ENABLED": "false"/u);
+});
+
 const command = (argumentsList) => new Promise((resolve, reject) => {
   const child = spawn(nodePath, [wranglerPath, ...argumentsList], { cwd: root, env: process.env, windowsHide: true });
   let output = "";
@@ -74,6 +87,7 @@ const server = spawn(nodePath, [
   "--binding=ENVIRONMENT=local",
   `--binding=PUBLIC_ORIGIN=${origin}`,
   `--binding=WEB_ORIGIN=${origin}`,
+  "--binding=LIVE_SENSEWARE_ENABLED=false",
 ], { cwd: root, env: process.env, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
 let serverOutput = "";
 server.stdout.on("data", (chunk) => { serverOutput += chunk; });

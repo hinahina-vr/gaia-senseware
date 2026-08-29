@@ -4,6 +4,7 @@ import proceduralAudio from "./procedural-audio.js?v=gaia-live-compact-jpt-audio
 
 const FALLBACK_URL = "./data/live-observation-fallback-v1.json";
 const RETRY_DELAYS = [1_000, 2_000, 5_000, 10_000, 30_000];
+const REFRESH_MINUTES = 5;
 const store = createGaiaStore({ events: [], measurements: {}, connected: false, source: "snapshot", lastEventId: "" });
 let eventSource = null;
 let retryIndex = 0;
@@ -32,7 +33,7 @@ const formatJptDateTime = (value) => {
 const render = (state) => {
   document.querySelectorAll("[data-gaia-live-receipt]").forEach((root) => {
     const status = root.querySelector("[data-live-connection]");
-    if (status) status.textContent = state.connected ? "LIVE STREAM CONNECTED" : `${state.source.toUpperCase()} / RECONNECT SAFE`;
+    if (status) status.textContent = state.connected ? `NEAR REAL TIME / ${REFRESH_MINUTES} MIN REFRESH` : `${state.source.toUpperCase()} / RECONNECT SAFE`;
     root.querySelectorAll("[data-live-provider]").forEach((row) => {
       const provider = row.getAttribute("data-live-provider");
       const events = state.events.filter((candidate) => candidate.provider === provider);
@@ -94,7 +95,7 @@ const closeStream = () => {
   eventSource = null;
   clearTimeout(retryTimer);
   retryTimer = 0;
-  if (store.getState().connected) store.setState({ connected: false });
+  if (store.getState().connected) render(store.setState({ connected: false }));
 };
 
 const scheduleReconnect = () => {
@@ -113,7 +114,8 @@ const mergeProvider = (providerEvent) => {
     && event.datasetId === providerEvent.datasetId
   ));
   events.push(providerEvent);
-  publish(events, "live", true);
+  const current = store.getState();
+  publish(events, current.source === "snapshot" ? "snapshot" : "live", current.connected);
 };
 
 const connectStream = async () => {
@@ -130,7 +132,9 @@ const connectStream = async () => {
   eventSource.addEventListener("snapshot", (message) => {
     const payload = JSON.parse(message.data);
     store.setState({ lastEventId: message.lastEventId || store.getState().lastEventId });
-    publish(payload.events || [], "live", true);
+    const source = payload.source || "live";
+    publish(payload.events || [], source, source !== "snapshot");
+    if (source === "snapshot") scheduleReconnect();
   });
   eventSource.addEventListener("provider", (message) => {
     store.setState({ lastEventId: message.lastEventId || store.getState().lastEventId });

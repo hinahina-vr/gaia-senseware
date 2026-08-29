@@ -755,8 +755,9 @@ const renderReadout = () => {
   const location = observationLocation(exhibit, measurement);
   const audioState = proceduralAudio.getState();
   const status = STATUS_LABELS[measurement?.status] || (state.connected ? "NEAR REAL TIME" : "SNAPSHOT");
-  const feedState = state.connected
-    ? "LIVE STREAM / 自動更新中"
+  const savedMeasurement = measurement?.status === "snapshot";
+  const feedState = state.connected && !savedMeasurement
+    ? "NEAR REAL TIME / 5分ごとに更新"
     : state.source === "live"
       ? "LATEST API SNAPSHOT / 再接続中"
       : "SAVED SNAPSHOT / 保存データを再現中";
@@ -776,11 +777,11 @@ const renderReadout = () => {
   readout.querySelector("[data-live-exhibit-caption]").textContent = exhibit.caption;
   readout.querySelector("[data-live-exhibit-feed-state]").textContent = feedState;
   readout.querySelector("[data-live-exhibit-feed-time]").textContent = `観測時刻 ${observedAt}`;
-  readout.querySelector("[data-live-exhibit-feed-copy]").textContent = state.connected
-    ? "公開APIの観測ストリームに接続中。新しい観測が届くたび、数値・光・音を自動更新します。"
+  readout.querySelector("[data-live-exhibit-feed-copy]").textContent = state.connected && !savedMeasurement
+    ? "公開APIの最新公開値に接続中です。5分ごとの更新時に、数値・光・音へ同じ変換を反映します。"
     : state.source === "live"
-      ? "公開APIから取得した最新値を表示中です。ストリームへ再接続すると、新しい観測ごとに自動更新します。"
-      : "現在は保存済み観測データの再現です。LIVE接続時は、同じ変換が新しい観測ごとに自動更新されます。";
+      ? "この項目は保存済み観測値です。ライブ取得できた項目だけを5分ごとに更新し、混在状態を明示します。"
+      : "現在は保存済み観測データの再現です。準リアルタイム接続時も、取得できない項目はこの状態を明示します。";
   readout.querySelector("[data-live-exhibit-sound-description]").textContent = audioState.active
     ? `音：${exhibit.soundMap} 現在 ${audioState.tempo} BPMで再生中です。`
     : `音：${exhibit.soundMap} 「展示音を再生」を押すと始まります。`;
