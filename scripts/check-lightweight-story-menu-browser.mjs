@@ -21,6 +21,7 @@ const viewports = [
   { name: "pc-1920", width: 1920, height: 1000, action: "Enter" },
   { name: "pc-1440", width: 1440, height: 900, action: "click" },
   { name: "mobile-390", width: 390, height: 844, mobile: true, action: "Space" },
+  { name: "mobile-landscape-568", width: 568, height: 320, mobile: true, action: "click" },
 ];
 const report = {
   status: "running",
@@ -211,9 +212,9 @@ const cardScan = async (page) => page.evaluate(() => {
 });
 
 const assertCards = (scan, viewport) => {
-  assert.equal(scan.cardCount, 3);
-  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "音を聴く"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "物語の音楽へ。"]);
+  assert.equal(scan.cardCount, 4);
+  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "キャラクター設定資料", "音を聴く"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "三人の役割と、共同制作の関係を見る。", "物語の音楽へ。"]);
   assert.equal(scan.cards.some((card) => card.path === "space" || card.title === "宇宙から見る"), false);
   assert.equal(scan.cards.some((card) => card.path === "abstract" || card.title === "光に触れる"), false);
   assert(scan.cards.every((card) => card.glyphVisible && card.focusable && card.rect.width > 0 && card.rect.height >= 90));
@@ -230,7 +231,7 @@ const assertCards = (scan, viewport) => {
   assert.equal(scan.overflowY, false);
   if (!viewport.mobile) {
     const cardTops = scan.cards.map(({ layoutTop }) => layoutTop);
-    assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the three exploration cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
+    assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the four exploration cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
   }
 };
 
@@ -258,7 +259,13 @@ const useScrollCue = async (page, viewport) => {
   assert.match(before.ariaLabel, /下へスクロール/u);
   assert.match(before.arrowBorderRadius, /50%/u);
   assert(Number.parseFloat(before.arrowSize) >= 30, JSON.stringify(before));
-  assert(before.rect.bottom <= viewport.height + 1 && before.rect.bottom >= viewport.height - 90, JSON.stringify(before.rect));
+  const shortLandscape = viewport.width > viewport.height && viewport.height <= 560;
+  if (shortLandscape) {
+    assert(before.rect.top >= viewport.height, JSON.stringify(before.rect));
+    await cue.scrollIntoViewIfNeeded();
+  } else {
+    assert(before.rect.bottom <= viewport.height + 1 && before.rect.bottom >= viewport.height - 90, JSON.stringify(before.rect));
+  }
   const cueCenter = before.rect.left + before.rect.width / 2;
   const heroCenter = before.heroRect.left + before.heroRect.width / 2;
   assert(Math.abs(cueCenter - heroCenter) <= 1, JSON.stringify({ cueCenter, heroCenter }));
@@ -328,19 +335,29 @@ const scanCharacterFile = async (page, viewport) => {
     text: button.textContent.replace(/\s+/gu, " ").trim(),
     controls: button.getAttribute("aria-controls"),
     visible: __qaVisible(button),
+    inMainGrid: button.parentElement?.id === "intro-path-grid",
   }));
   assert(jumpCopy.visible);
   assert.match(jumpCopy.text, /CHARACTER FILE/u);
   assert.match(jumpCopy.text, /キャラクター設定資料/u);
   assert.equal(jumpCopy.controls, "character-exhibit");
+  assert.equal(jumpCopy.inMainGrid, true);
 
   await jump.click();
   await page.waitForFunction(() => (
     document.activeElement === document.querySelector("#character-exhibit")
     && __qaVisible(document.querySelector("#character-exhibit"))
   ));
+  const characterImages = page.locator(".character-file-visual img");
+  for (let index = 0; index < await characterImages.count(); index += 1) {
+    await characterImages.nth(index).scrollIntoViewIfNeeded();
+  }
   await page.waitForFunction(() => [...document.querySelectorAll(".character-file-visual img")]
     .every((image) => image.complete && image.naturalWidth > 0));
+  await page.locator("#character-exhibit").evaluate((exhibit) => {
+    exhibit.scrollIntoView({ block: "start", inline: "nearest", behavior: "auto" });
+    exhibit.focus({ preventScroll: true });
+  });
 
   const scan = await page.evaluate(() => {
     const layer = document.querySelector("#intro-layer");

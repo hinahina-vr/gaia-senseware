@@ -24,6 +24,10 @@
   const SCENE_TITLE_HOLD_MS = 1040;
   const SCENE_TITLE_OUT_MS = 360;
   const SCENE_REVEAL_MS = 920;
+  const FINALE_EXIT_COVER_MS = 760;
+  const FINALE_EXIT_BLACK_HOLD_MS = 360;
+  const FINALE_EXIT_REVEAL_MS = 1_850;
+  const FINALE_EXIT_DESTINATION_WAIT_MS = 8_000;
   const segmenter = typeof Intl?.Segmenter === "function"
     ? new Intl.Segmenter("ja", { granularity: "grapheme" })
     : null;
@@ -67,6 +71,7 @@
     let sceneCardFadeResolve = null;
     let renderRevision = 0;
     let deferredInitialStep = null;
+    let finaleExiting = false;
 
     const shell = createElement("section", "true-end-shell");
     shell.tabIndex = 0;
@@ -468,6 +473,7 @@
         // The ending remains available when storage is disabled.
       }
       onComplete?.();
+      window.dispatchEvent(new CustomEvent("gaia:true-end-complete"));
       requestAnimationFrame(() => finaleExit.focus({ preventScroll: true }));
     };
 
@@ -572,7 +578,45 @@
       event.preventDefault();
       advance();
     });
-    finaleExit.addEventListener("click", () => onExit?.());
+    finaleExit.addEventListener("click", () => {
+      if (finaleExiting) return;
+      finaleExiting = true;
+      finaleExit.disabled = true;
+      const exitVeil = createElement("div", "true-end-exit-veil");
+      exitVeil.setAttribute("aria-hidden", "true");
+      exitVeil.dataset.phase = "flash";
+      document.body.append(exitVeil);
+
+      if (reducedMotion()) {
+        exitVeil.dataset.phase = "black";
+        onExit?.();
+        exitVeil.remove();
+        return;
+      }
+
+      requestAnimationFrame(() => { exitVeil.dataset.phase = "covering"; });
+      window.setTimeout(() => {
+        exitVeil.dataset.phase = "black";
+        window.setTimeout(() => {
+          onExit?.();
+          const destinationWaitStartedAt = performance.now();
+          const revealDestination = () => {
+            if (!exitVeil.isConnected) return;
+            const intro = document.querySelector("#intro-layer");
+            const destinationReady = intro instanceof HTMLElement
+              && !intro.hidden
+              && intro.getAttribute("aria-hidden") === "false";
+            if (!destinationReady && performance.now() - destinationWaitStartedAt < FINALE_EXIT_DESTINATION_WAIT_MS) {
+              requestAnimationFrame(revealDestination);
+              return;
+            }
+            exitVeil.dataset.phase = "revealing";
+            window.setTimeout(() => exitVeil.remove(), FINALE_EXIT_REVEAL_MS + 120);
+          };
+          requestAnimationFrame(revealDestination);
+        }, FINALE_EXIT_BLACK_HOLD_MS);
+      }, FINALE_EXIT_COVER_MS);
+    });
 
     transitioning = true;
     syncSceneMetadata();

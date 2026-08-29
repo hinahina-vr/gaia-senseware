@@ -87,6 +87,7 @@ const scanEnding = (page) => page.evaluate(() => {
     title: button?.title || "",
     ariaLabel: button?.getAttribute("aria-label") || "",
     top: buttonRect?.top ?? -1,
+    left: buttonRect?.left ?? -1,
     rightGap: buttonRect ? innerWidth - buttonRect.right : -1,
     width: buttonRect?.width || 0,
     height: buttonRect?.height || 0,
@@ -99,6 +100,7 @@ const scanEnding = (page) => page.evaluate(() => {
 const scanDestination = (page) => page.evaluate((storageKey) => {
   const intro = document.querySelector("#intro-layer");
   const stage = document.querySelector("#intro-path-stage");
+  const storyReturn = document.querySelector(".intro-story-return[data-primary-action='true']");
   const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
   return {
     introVisible: Boolean(intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false"),
@@ -113,6 +115,8 @@ const scanDestination = (page) => page.evaluate((storageKey) => {
     savedArchivesUnlocked: saved.archivesUnlocked,
     titleUnlocked: globalThis.GaiaTrueEnd?.isReached?.() ?? false,
     reachedMarkerStored: Boolean(localStorage.getItem("gaiaSensewareTrueEnd:reached:v1")),
+    storyReturnLabel: storyReturn?.querySelector("strong")?.textContent?.trim() || "",
+    storyDestination: storyReturn?.dataset.storyDestination || "",
     overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
     overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
   };
@@ -128,12 +132,12 @@ try {
 
     const ending = await scanEnding(page);
     assert.equal(ending.stepId, "welcome_chat_095");
-    assert.equal(ending.text, "スキップ");
+    assert.equal(ending.text, "スキップ▶");
     assert.equal(ending.title, "データを見てみる");
     assert.match(ending.ariaLabel, /データを見てみる/u);
     assert(ending.top >= 0 && ending.top <= 40, `${viewport.name}: skip is not at the upper edge (${ending.top})`);
-    assert(ending.rightGap >= 0 && ending.rightGap <= 40, `${viewport.name}: skip is not at the right edge (${ending.rightGap})`);
-    assert(ending.width >= 110, `${viewport.name}: skip width is too small (${ending.width})`);
+    assert(ending.left >= 0 && ending.left <= 40, `${viewport.name}: skip is not at the left edge (${ending.left})`);
+    assert(ending.width >= (viewport.width <= 720 ? 44 : 110), `${viewport.name}: skip width is too small (${ending.width})`);
     assert(ending.height >= 44, `${viewport.name}: skip hit area is under 44px (${ending.height})`);
     assert.equal(ending.overlapsAudio, false, `${viewport.name}: skip overlaps the audio control`);
     assert.equal(ending.overflowX, 0);
@@ -159,6 +163,8 @@ try {
     assert.equal(destination.savedArchivesUnlocked, true);
     assert.equal(destination.titleUnlocked, false, `${viewport.name}: data skip unlocked the title`);
     assert.equal(destination.reachedMarkerStored, false, `${viewport.name}: data skip persisted an APEIRONCENE marker`);
+    assert.equal(destination.storyReturnLabel, "星々の放課後 ～APEIRONCENE～", `${viewport.name}: staff-roll completion did not reveal APEIRONCENE on the GAIA page`);
+    assert.equal(destination.storyDestination, "apeironcene", `${viewport.name}: GAIA story button still targets the ordinary title`);
     assert.equal(destination.overflowX, 0);
     assert.equal(destination.overflowY, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-data-page.png`), animations: "disabled" });

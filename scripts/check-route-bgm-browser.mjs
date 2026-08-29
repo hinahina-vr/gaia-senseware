@@ -30,7 +30,7 @@ try {
     await context.addInitScript(() => {
       localStorage.clear();
       localStorage.setItem("gaia-senseware-bgm-volume", "0.2");
-      localStorage.setItem("gaia:opening-route-guide:v1", "seen");
+      localStorage.setItem("gaia:opening-route-guide:v2", "seen");
     });
     const page = await context.newPage();
     const audioResponses = [];

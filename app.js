@@ -5997,20 +5997,31 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     let apeironceneComplete = false;
     try {
       const progress = JSON.parse(window.localStorage.getItem("gaiaSensewareNovel:progress") || "null");
-      mainEndingComplete = progress?.clear === true;
-      apeironceneComplete = Boolean(window.localStorage.getItem("gaiaSensewareTrueEnd:complete:v1"));
+      mainEndingComplete = progress?.clear === true || globalThis.GaiaNovel?.getState?.().clear === true;
+      apeironceneComplete = Boolean(
+        window.localStorage.getItem("gaiaSensewareTrueEnd:complete:v1")
+        || globalThis.GaiaTrueEnd?.isComplete?.(),
+      );
     } catch {
       // Storage is optional; the ordinary story route remains available.
     }
     const continueToApeironcene = mainEndingComplete && !apeironceneComplete;
     const label = continueToApeironcene ? "星々の放課後 ～APEIRONCENE～" : "物語へ戻る";
     introStoryReturn.dataset.storyDestination = continueToApeironcene ? "apeironcene" : "story";
-    introStoryReturn.querySelector("strong").textContent = label;
+    introStoryReturn.querySelector("strong")?.replaceChildren(label);
     introStoryReturn.setAttribute(
       "aria-label",
       continueToApeironcene ? "星々の放課後 APEIRONCENEへ進む" : "物語のタイトルメニューへ戻る",
     );
   };
+
+  window.addEventListener("gaia:story-progression-change", syncIntroStoryReturn);
+  window.addEventListener("gaia:true-end-complete", syncIntroStoryReturn);
+  window.addEventListener("storage", (event) => {
+    if (["gaiaSensewareNovel:progress", "gaiaSensewareTrueEnd:complete:v1"].includes(event.key)) {
+      syncIntroStoryReturn();
+    }
+  });
 
   const selectMode = (index, { resetAutoTimer = true } = {}) => {
     const normalizedIndex = (index + MODE_COUNT) % MODE_COUNT;

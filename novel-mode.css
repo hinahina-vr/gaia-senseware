@@ -9409,7 +9409,12 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll-credits-heading {
-  display: none;
+  display: block;
+  margin: 0 0 clamp(24px, 4vh, 44px);
+  color: rgba(31, 91, 100, 0.72);
+  font: 700 10px/1.5 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
 }
 
 .novel-staff-roll-credits {
@@ -9481,6 +9486,18 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   display: block;
 }
 
+.novel-staff-roll-credit[data-credit-role="ACADEMIC REFERENCE"] dd {
+  gap: 8px;
+  font-size: clamp(13px, 1.45vw, 21px);
+  letter-spacing: 0.025em;
+  text-indent: 0.025em;
+}
+
+.novel-staff-roll-credit[data-credit-role="ACADEMIC REFERENCE"] .novel-staff-roll-credit-name {
+  max-width: 100%;
+  white-space: nowrap;
+}
+
 .novel-staff-roll-credit-name.is-music-track {
   display: grid;
   justify-items: center;
@@ -9540,6 +9557,7 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   color: rgba(28, 82, 91, 0.58);
   font: 700 9px/1.6 ui-monospace, "SFMono-Regular", Consolas, monospace;
   letter-spacing: 0.2em;
+  opacity: 0;
 }
 
 .novel-staff-roll-closing-action {
@@ -9564,6 +9582,42 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   letter-spacing: 0.12em;
   text-indent: 0.12em;
   white-space: nowrap;
+  opacity: 0;
+  transform: translateY(10px) scaleX(0.82);
+}
+
+.novel-staff-roll.is-thank-you-visible .novel-staff-roll-closing-mark {
+  animation: novel-staff-roll-thank-you-arrival 920ms steps(12, end) both;
+}
+
+.novel-staff-roll.is-thank-you-visible .novel-staff-roll-closing-action > small {
+  animation: novel-staff-roll-thank-you-caption 620ms 520ms ease-out both;
+}
+
+.novel-staff-roll.is-thank-you-visible .novel-staff-roll-closing-action::before,
+.novel-staff-roll.is-thank-you-visible .novel-staff-roll-closing-action::after {
+  position: absolute;
+  grid-area: 1 / 1;
+  content: "";
+  pointer-events: none;
+}
+
+.novel-staff-roll.is-thank-you-visible .novel-staff-roll-closing-action::before {
+  width: min(640px, 94vw);
+  height: 118px;
+  background:
+    linear-gradient(104deg, transparent 0 14%, rgba(132, 245, 244, 0.24) 15% 15.6%, transparent 16.2% 43%, #fff 49.4% 50.2%, transparent 51% 77%, rgba(74, 198, 222, 0.24) 78% 78.8%, transparent 79.5%),
+    repeating-linear-gradient(180deg, transparent 0 7px, rgba(91, 211, 222, 0.25) 8px, transparent 9px 15px);
+  mix-blend-mode: screen;
+  animation: novel-staff-roll-thank-you-shards 1.08s steps(13, end) both;
+}
+
+.novel-staff-roll.is-thank-you-visible .novel-staff-roll-closing-action::after {
+  width: min(560px, 88vw);
+  height: 86px;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.98), rgba(101, 226, 231, 0.46) 28%, transparent 68%);
+  filter: blur(3px) brightness(1.7);
+  animation: novel-staff-roll-thank-you-flare 760ms steps(9, end) both;
 }
 
 .novel-staff-roll-finale {
@@ -9694,8 +9748,10 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 
 .novel-staff-roll-transition-veil::before {
   background:
-    repeating-linear-gradient(180deg, transparent 0 9px, rgba(129, 255, 241, 0.25) 10px, transparent 11px 19px),
-    linear-gradient(90deg, transparent 0 8%, rgba(197, 255, 249, 0.92) 22%, #fff 49% 51%, rgba(102, 227, 255, 0.86) 78%, transparent 94%);
+    repeating-linear-gradient(180deg, transparent 0 5px, rgba(129, 255, 241, 0.34) 6px, transparent 7px 13px),
+    repeating-linear-gradient(93deg, transparent 0 31px, rgba(255, 255, 255, 0.18) 32px, transparent 34px 57px),
+    linear-gradient(90deg, transparent 0 5%, rgba(197, 255, 249, 0.96) 18%, #fff 47% 53%, rgba(102, 227, 255, 0.92) 82%, transparent 97%);
+  filter: contrast(1.8) brightness(1.45);
   mix-blend-mode: screen;
 }
 
@@ -9705,15 +9761,15 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
 }
 
 .novel-staff-roll-transition-veil.is-covering {
-  animation: novel-staff-roll-exit-cover 720ms steps(7, end) both;
+  animation: novel-staff-roll-exit-cover 860ms steps(11, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-covering::before {
-  animation: novel-staff-roll-exit-bands 720ms steps(8, end) both;
+  animation: novel-staff-roll-exit-bands 860ms steps(13, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-covering::after {
-  animation: novel-staff-roll-exit-strobe 720ms steps(8, end) both;
+  animation: novel-staff-roll-exit-strobe 860ms steps(14, end) both;
 }
 
 .novel-staff-roll-transition-veil.is-revealing {
@@ -9831,6 +9887,40 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
   to { opacity: 0; }
 }
 
+@keyframes novel-staff-roll-thank-you-arrival {
+  0% { clip-path: inset(0 50%); opacity: 0; filter: blur(12px) brightness(4); transform: translateY(10px) scaleX(0.55); }
+  9% { clip-path: inset(38% 4% 44% 2%); opacity: 1; filter: blur(0) brightness(3.8); transform: translate(-9px, 1px) scaleX(1.12); }
+  18% { clip-path: inset(0 0); opacity: 0.14; filter: brightness(1.2); transform: translate(7px, -2px) scaleX(0.94); }
+  31% { clip-path: inset(17% 0 26% 0); opacity: 1; filter: brightness(2.7); transform: translate(-4px, 0) scaleX(1.04); }
+  46% { clip-path: inset(0); opacity: 0.24; filter: brightness(4.2); transform: translate(3px, 1px) scaleX(0.98); }
+  62% { opacity: 1; filter: drop-shadow(0 0 16px rgba(98, 222, 227, 0.72)) brightness(1.55); transform: translate(-1px, 0) scaleX(1.015); }
+  78% { opacity: 0.68; filter: brightness(2.4); transform: translate(1px, 0) scaleX(0.995); }
+  100% { clip-path: inset(0); opacity: 1; filter: drop-shadow(0 0 12px rgba(78, 187, 202, 0.26)); transform: translateY(0) scaleX(1); }
+}
+
+@keyframes novel-staff-roll-thank-you-caption {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes novel-staff-roll-thank-you-shards {
+  0%, 100% { clip-path: inset(46% 50%); opacity: 0; transform: skewX(-12deg) scaleX(0.2); }
+  12% { clip-path: inset(16% 4% 68% 8%); opacity: 0.95; transform: translateX(-5%) skewX(8deg) scaleX(1.06); }
+  24% { clip-path: inset(64% 12% 12% 2%); opacity: 0.16; transform: translateX(7%) skewX(-5deg) scaleX(0.82); }
+  39% { clip-path: inset(34% 0 42% 0); opacity: 1; transform: translateX(-3%) skewX(4deg) scaleX(1.16); }
+  55% { clip-path: inset(8% 16% 74% 6%); opacity: 0.18; transform: translateX(4%) skewX(-3deg) scaleX(0.94); }
+  72% { clip-path: inset(72% 4% 5% 12%); opacity: 0.78; transform: translateX(-2%) skewX(2deg) scaleX(1.08); }
+  88% { clip-path: inset(28% 8% 48% 4%); opacity: 0.1; transform: scaleX(1.24); }
+}
+
+@keyframes novel-staff-roll-thank-you-flare {
+  0%, 100% { opacity: 0; transform: scaleX(0.06); }
+  18% { opacity: 1; transform: scaleX(0.78); }
+  34% { opacity: 0.08; transform: scaleX(1.26); }
+  52% { opacity: 0.92; transform: scaleX(0.96); }
+  74% { opacity: 0.16; transform: scaleX(1.42); }
+}
+
 @keyframes novel-staff-roll-hint {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
@@ -9875,7 +9965,6 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
   }
 
   .novel-staff-roll-credits-heading {
-    display: block;
     margin: 0 0 2.5vh;
     color: rgba(31, 91, 100, 0.72);
     font: 700 9px/1.5 ui-monospace, "SFMono-Regular", Consolas, monospace;
@@ -9905,6 +9994,13 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
 
   .novel-staff-roll-credits dd {
     font-size: clamp(16px, 4.8vw, 20px);
+  }
+
+  .novel-staff-roll-credit[data-credit-role="ACADEMIC REFERENCE"] dd {
+    gap: 6px;
+    font-size: clamp(10px, 2.75vw, 12.5px);
+    letter-spacing: 0;
+    text-indent: 0;
   }
 
   .novel-staff-roll-music-label {

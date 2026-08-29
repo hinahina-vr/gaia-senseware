@@ -53,8 +53,8 @@ body.novel-open .novel-topbar #novel-close-button.mode-exit-control::before {
   border: 0;
   color: rgba(var(--mode-exit-rgb), 0.94);
   background: transparent;
-  content: "←";
-  font: 500 16px/1 ui-monospace, Consolas, monospace;
+  content: "◀";
+  font: 500 11px/1 ui-monospace, Consolas, monospace;
   letter-spacing: 0;
   place-items: center;
   transition: color 180ms ease, transform 200ms cubic-bezier(0.2, 0.75, 0.25, 1);
@@ -571,10 +571,11 @@ body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-
   body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-crosses-year="true"],
   body.novel-open .novel-layer:not(.is-title) .novel-signal-caption[data-end-time-precision="APPROXIMATE"] {
     right: auto;
-    left: 50%;
+    left: 50vw !important;
     width: max-content;
     max-width: min(460px, calc(100vw - 222px));
-    transform: translateX(-50%);
+    margin-inline: 0 !important;
+    transform: translateX(-50%) !important;
   }
 
   body.novel-open:has(#novel-layer.is-open:not(.is-title)) .gaia-audio-dock.is-expanded {

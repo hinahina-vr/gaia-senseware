@@ -894,6 +894,7 @@
 }
 
 .intro-lp-afterfold .intro-portal-footer {
+  grid-template-columns: minmax(0, 1fr);
   justify-content: stretch;
   width: 100%;
   margin-top: 0;
@@ -1632,6 +1633,7 @@ button {
 .intro-path-card[data-intro-path="map"] { --path-rgb: 126, 198, 255; }
 .intro-path-card[data-intro-path="novel"] { --path-rgb: 211, 184, 255; }
 .intro-path-card[data-intro-path="space"] { --path-rgb: 151, 190, 255; }
+.intro-path-card--character { --path-rgb: 205, 187, 255; }
 
 .intro-path-card--featured {
   grid-template-columns: minmax(0, 1fr);
@@ -1797,6 +1799,31 @@ button {
   width: 100%;
   height: 100%;
   overflow: visible;
+}
+
+.intro-path-glyph--character {
+  top: 15px;
+  width: 48px;
+  height: 36px;
+}
+
+.intro-path-glyph--character svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: rgba(var(--path-rgb), 0.08);
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.35;
+  vector-effect: non-scaling-stroke;
+}
+
+.intro-path-glyph--character .intro-character-spark {
+  fill: none;
+  opacity: 0.58;
+  stroke-width: 1;
 }
 
 .intro-path-glyph--map ellipse,
@@ -8226,7 +8253,7 @@ h1 {
   }
 
   .intro-path-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
     margin-top: 10px;
   }
@@ -8243,7 +8270,9 @@ h1 {
   .intro-path-index { grid-column: auto; }
   .intro-path-glyph { top: 11px; right: 12px; font-size: 26px; }
   .intro-path-glyph--map { top: 10px; width: 38px; height: 27px; }
+  .intro-path-glyph--character { top: 9px; width: 36px; height: 27px; }
   .intro-path-card > strong { grid-column: auto; margin-top: 12px; font-size: 14px; }
+  .intro-path-card--character > strong { font-size: clamp(10px, 1.9vw, 13px); letter-spacing: 0.025em; }
   .intro-path-card > p {
     grid-column: auto;
     max-width: 90%;
@@ -8537,7 +8566,7 @@ h1 {
 
 /* Lightweight free-exploration choices: one glyph, one title, one short line. */
 .intro-lp-hero .intro-path-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -8574,6 +8603,11 @@ h1 {
   height: 28px;
 }
 
+.intro-lp-hero .intro-path-card .intro-path-glyph--character {
+  width: 38px;
+  height: 28px;
+}
+
 .intro-lp-hero .intro-path-card > strong {
   grid-row: 1;
   grid-column: 1;
@@ -8598,7 +8632,7 @@ h1 {
   border-radius: 8px;
 }
 
-/* The three exploration cards and the story return are one action stack. */
+/* The four exploration cards and the story return are one action stack. */
 .intro-lp-hero :is(.intro-path-grid, .intro-story-return[data-primary-action="true"]) {
   width: min(1000px, 100%);
   max-width: 100%;
@@ -8608,7 +8642,7 @@ h1 {
 
 @media (min-width: 1280px) {
   .intro-lp-hero .intro-path-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .intro-lp-hero .intro-path-card,
@@ -8618,13 +8652,20 @@ h1 {
   }
 
   .intro-lp-hero .intro-path-card .intro-path-glyph--map,
-  .intro-lp-hero .intro-path-card .intro-path-glyph--sensor {
+  .intro-lp-hero .intro-path-card .intro-path-glyph--sensor,
+  .intro-lp-hero .intro-path-card .intro-path-glyph--character {
     width: 32px;
     height: 24px;
   }
 
   .intro-lp-hero .intro-path-card > strong {
     font-size: clamp(14px, 1vw, 17px);
+  }
+
+  .intro-lp-hero .intro-path-card--character > strong {
+    font-size: clamp(12px, 0.86vw, 15px);
+    letter-spacing: 0.015em;
+    white-space: nowrap;
   }
 }
 
@@ -8642,6 +8683,17 @@ h1 {
   .intro-story-return[data-primary-action="true"] {
     min-height: 58px;
     padding-inline: 15px;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .intro-lp-hero .intro-path-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .intro-lp-hero .intro-path-card--character > strong {
+    font-size: clamp(10px, 1.9vw, 13px);
+    letter-spacing: 0.025em;
   }
 }
 

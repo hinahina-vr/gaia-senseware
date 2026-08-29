@@ -96,7 +96,7 @@ const inspectButton = async (page, selector, viewport, surface) => {
   assert.equal(data.clipPath, "none", `${viewport}/${surface}: split angular silhouette remains`);
   assert(parseFloat(data.borderWidth) >= 1, `${viewport}/${surface}: standard outer border is missing`);
   assert(parseFloat(data.borderRadius) >= 10, `${viewport}/${surface}: standard glass radius is missing`);
-  assert(data.arrow.includes("←"), `${viewport}/${surface}: directional cue is missing`);
+  assert(data.arrow.includes("◀"), `${viewport}/${surface}: directional cue is missing`);
   assert(parseFloat(data.arrowWidth) <= 20, `${viewport}/${surface}: arrow retained an oversized split cell`);
   assert.equal(parseFloat(data.arrowBorderWidth), 0, `${viewport}/${surface}: arrow retained its independent frame`);
   assert.equal(data.arrowBackground, "rgba(0, 0, 0, 0)", `${viewport}/${surface}: arrow retained a separate background`);
@@ -181,6 +181,8 @@ try {
       const audioStyle = audioDock ? getComputedStyle(audioDock) : null;
       const temporalText = document.querySelector(".novel-signal-caption strong");
       const temporalStyle = temporalText ? getComputedStyle(temporalText) : null;
+      const temporalCaption = document.querySelector(".novel-signal-caption");
+      const temporalRect = temporalCaption?.getBoundingClientRect();
       return {
         back,
         skip,
@@ -196,12 +198,13 @@ try {
         temporalText: temporalText?.textContent.trim() || "",
         temporalColor: temporalStyle?.color || "",
         temporalShadow: temporalStyle?.textShadow || "",
+        temporalCenterDelta: temporalRect ? Math.abs((temporalRect.left + temporalRect.width / 2) - innerWidth / 2) : null,
       };
     });
     assert.equal(storyControls.back.text, "戻る", `${viewport.name}: story back label is unclear`);
     assert.equal(storyControls.skip.text, "スキップ▶", `${viewport.name}: story skip label is unclear`);
     assert.equal(storyControls.skip.controlMode, "skip", `${viewport.name}: skip control mode was lost`);
-    assert(storyControls.back.arrow.includes("←"), `${viewport.name}: back arrow is incorrect`);
+    assert(storyControls.back.arrow.includes("◀"), `${viewport.name}: back arrow is incorrect`);
     assert(["none", "normal"].includes(storyControls.skip.arrow), `${viewport.name}: obsolete skip arrow remains`);
     assert.match(storyControls.back.backgroundImage, /rgba?\((?:7, 42, 88|9, 52, 104)/u, `${viewport.name}: story back control is not dialogue blue`);
     assert.match(storyControls.skip.backgroundImage, /rgba?\((?:7, 42, 88|9, 52, 104)/u, `${viewport.name}: story skip control is not dialogue blue`);
@@ -220,6 +223,7 @@ try {
     assert(storyControls.temporalText.length > 0, `${viewport.name}: story date is missing`);
     assert.match(storyControls.temporalColor, /rgba?\((?:248, 253, 255|255, 255, 255)/u, `${viewport.name}: story date is not high-contrast`);
     assert((storyControls.temporalShadow.match(/rgba?\(0, 0, 0/gu) || []).length >= 3, `${viewport.name}: story date shadow is too weak (${storyControls.temporalShadow})`);
+    assert(storyControls.temporalCenterDelta <= 0.5, `${viewport.name}: story date is not centered on the viewport (${storyControls.temporalCenterDelta}px)`);
     report.scans.push({ viewport: viewport.name, surface: "story-controls", ...storyControls, passed: true });
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-story-home.png`) });
     await page.locator("#novel-home-button").click();

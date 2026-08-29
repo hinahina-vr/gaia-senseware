@@ -147,6 +147,11 @@ const scanEnding = (page) => page.evaluate(() => {
       dividerTopOffset,
       namesBottomOffset,
       names: nameElements.map((name) => name.textContent.trim()),
+      nameLines: nameElements.map((name) => {
+        const range = document.createRange();
+        range.selectNodeContents(name);
+        return new Set([...range.getClientRects()].map(({ top }) => Math.round(top * 2) / 2)).size;
+      }),
       nameOverflow: nameElements.some((name) => name.scrollWidth > name.clientWidth + 1),
       musicTracks: [...row.querySelectorAll(".novel-staff-roll-credit-name.is-music-track")].map((track) => {
         const label = track.querySelector(".novel-staff-roll-music-label");
@@ -322,7 +327,7 @@ try {
     assert.equal(initial.trackDuration, viewport.name === "mobile-390" ? "70s" : "76s");
     assert.equal(initial.trackDelay, "-1.65s", `${viewport.name}: staff-roll logo was not delayed by one second`);
     assert(initial.closingGap >= viewport.height * 0.5, `${viewport.name}: closing poem gap is too short (${initial.closingGap}px)`);
-    assert(initial.copyrightGap >= 8 && initial.copyrightGap <= 20, `${viewport.name}: copyright is not directly below Thank you for playing (${initial.copyrightGap}px)`);
+    assert(initial.copyrightGap >= 0 && initial.copyrightGap <= 20, `${viewport.name}: copyright group geometry is invalid (${initial.copyrightGap}px)`);
     assert.equal(initial.copyrightParentClass, "novel-staff-roll-closing-action", `${viewport.name}: copyright is outside the thank-you group`);
     assert.equal(initial.buttonHidden, true, `${viewport.name}: END action was shown before the roll`);
     assert.equal(initial.closingMarkText, "Thank you for playing");
@@ -339,13 +344,15 @@ try {
     if (viewport.width <= 720) {
       assert(Math.abs(initial.dataSkipRect.width - initial.audioDockRect.width) <= 0.5, `${viewport.name}: staff-roll skip width differs from audio control (${initial.dataSkipRect.width}px vs ${initial.audioDockRect.width}px)`);
       assert(Math.abs(initial.dataSkipRect.height - initial.audioDockRect.height) <= 0.5, `${viewport.name}: staff-roll skip height differs from audio control (${initial.dataSkipRect.height}px vs ${initial.audioDockRect.height}px)`);
-      assert.equal(initial.titleKickerDisplay, "none", `${viewport.name}: staff heading remains before the logo`);
+      assert.equal(initial.titleKickerDisplay, "", `${viewport.name}: staff heading remains before the logo`);
       assert.equal(initial.creditsHeadingDisplay, "block", `${viewport.name}: staff heading is missing before the credits`);
       assert.equal(initial.creditsHeadingText, "STAFF & CREDITS", `${viewport.name}: staff heading copy changed`);
       assert.equal(initial.creditsHeadingBeforeFirstCredit, true, `${viewport.name}: staff heading is not before the first credit`);
     } else {
-      assert.notEqual(initial.titleKickerDisplay, "none", `${viewport.name}: desktop staff heading disappeared from the logo`);
-      assert.equal(initial.creditsHeadingDisplay, "none", `${viewport.name}: duplicate desktop staff heading is visible`);
+      assert.equal(initial.titleKickerDisplay, "", `${viewport.name}: staff heading remains before the desktop logo`);
+      assert.equal(initial.creditsHeadingDisplay, "block", `${viewport.name}: staff heading is missing before the desktop credits`);
+      assert.equal(initial.creditsHeadingText, "STAFF & CREDITS", `${viewport.name}: desktop staff heading copy changed`);
+      assert.equal(initial.creditsHeadingBeforeFirstCredit, true, `${viewport.name}: desktop staff heading is not before the first credit`);
     }
     assert.match(initial.audioDockBackground, /rgba?\(255, 255, 252(?:, 0\.94)?\)/u, `${viewport.name}: staff-roll audio control is not white (${initial.audioDockBackground})`);
     assert.match(initial.audioToggleColor, /rgba?\(19, 67, 76(?:, 0\.92)?\)/u, `${viewport.name}: staff-roll audio icon is not dark on white (${initial.audioToggleColor})`);
@@ -449,6 +456,9 @@ try {
       assert.equal(track.titleLines, 1, `${viewport.name}: ${track.title} wrapped inside its title line`);
       assert.equal(track.titleOverflow, false, `${viewport.name}: ${track.title} does not fit the credit width`);
     });
+    const academicCredit = initial.creditRows.find((row) => row.role === "ACADEMIC REFERENCE");
+    assert.deepEqual(academicCredit?.nameLines, [1, 1, 1, 1], `${viewport.name}: a reference lecture wrapped onto multiple lines`);
+    assert.equal(academicCredit?.nameOverflow, false, `${viewport.name}: reference lecture text overflows the credit width`);
     assert.equal(initial.overflowX, 0);
     assert.equal(initial.overflowY, 0);
     assert.equal(initial.bodyOverflowX, 0);
@@ -549,10 +559,17 @@ try {
     const holdObservedAt = Date.now();
     const endHold = await scanEnding(page);
     assert.equal(endHold.buttonHidden, true, `${viewport.name}: final action appeared before the thank-you hold`);
+    assert.equal(endHold.closingMarkAnimation, "none", `${viewport.name}: thank-you appeared before the pause`);
+    await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "thank-you");
+    await page.waitForTimeout(950);
+    const thankYou = await scanEnding(page);
+    assert.equal(thankYou.buttonHidden, true, `${viewport.name}: final action appeared with the thank-you reveal`);
+    assert.equal(thankYou.closingMarkAnimation, "novel-staff-roll-thank-you-arrival");
+    assert(thankYou.copyrightGap >= 8 && thankYou.copyrightGap <= 20, `${viewport.name}: copyright is not directly below the revealed Thank you for playing (${thankYou.copyrightGap}px)`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-thank-you.png`) });
-    await page.waitForTimeout(Math.max(0, 4_650 - (Date.now() - holdObservedAt)));
+    await page.waitForTimeout(Math.max(0, 3_450 - (Date.now() - holdObservedAt)));
     const beforeFinale = await scanEnding(page);
-    assert.equal(beforeFinale.phase, "end-hold", `${viewport.name}: thank-you hold was shorter than about five seconds`);
+    assert.equal(beforeFinale.phase, "thank-you", `${viewport.name}: thank-you hold was shorter than intended`);
     assert.equal(beforeFinale.buttonHidden, true, `${viewport.name}: final action appeared during the thank-you hold`);
     await page.waitForFunction(() => document.querySelector(".novel-staff-roll")?.dataset.phase === "finalizing", null, { timeout: 750 });
     const finalizing = await scanEnding(page);
@@ -630,7 +647,57 @@ try {
     assert.equal(trueEndDestination.overflowY, 0);
     assert(report.audioResponses.some((response) => response.label === viewport.name && response.url.endsWith("/assets/audio/sensory-horizon.wav") && [200, 206].includes(response.status)), `${viewport.name}: dedicated true-end score was not requested`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, afterBackgroundClick, controlAttempt, endHold, beforeFinale, completed, transition: { transitionStartedAt, holdObservedAt: transitionHoldObservedAt, switchObservedAt, revealObservedAt, backgroundFullyVisibleAt, transitionCompletedAt, backgroundOnly }, trueEndPlayback, trueEndDestination, passed: true });
+    let trueEndExit = null;
+    if (viewport.name === "mobile-390") {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      for (let scene = 0; scene < 3; scene += 1) {
+        const priorScene = await page.locator(".true-end-shell").getAttribute("data-scene");
+        await page.locator(".true-end-skip-button").click();
+        if (scene < 2) {
+          await page.waitForFunction((previous) => document.querySelector(".true-end-shell")?.dataset.scene !== previous, priorScene);
+        }
+      }
+      await page.locator(".true-end-finale:not([hidden])").waitFor({ state: "visible" });
+      assert.equal(await page.evaluate(() => Boolean(localStorage.getItem("gaiaSensewareTrueEnd:complete:v1"))), true, `${viewport.name}: APEIRONCENE completion was not persisted`);
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      await page.locator(".true-end-finale button").click();
+      await page.waitForFunction(() => document.querySelector(".true-end-exit-veil")?.dataset.phase === "covering");
+      await page.waitForFunction(() => document.querySelector(".true-end-exit-veil")?.dataset.phase === "black", null, { timeout: 2_000 });
+      const revealObserved = page.waitForFunction(() => {
+        const intro = document.querySelector("#intro-layer");
+        return document.querySelector(".true-end-exit-veil")?.dataset.phase === "revealing"
+          && intro && !intro.hidden && intro.getAttribute("aria-hidden") === "false";
+      }, null, { timeout: 6_000 }).then(() => ({ observed: true })).catch(async () => ({
+        observed: false,
+        state: await page.evaluate(() => {
+          const intro = document.querySelector("#intro-layer");
+          return {
+            phase: document.querySelector(".true-end-exit-veil")?.dataset.phase || "missing",
+            introHidden: intro?.hidden,
+            introAriaHidden: intro?.getAttribute("aria-hidden"),
+            novelAriaHidden: document.querySelector("#novel-layer")?.getAttribute("aria-hidden"),
+            bodyClass: document.body.className,
+          };
+        }),
+      }));
+      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-true-end-exit-black.png`) });
+      const revealResult = await revealObserved;
+      assert.equal(revealResult.observed, true, `${viewport.name}: true-end reveal was not observed (${JSON.stringify(revealResult.state)})`);
+      trueEndExit = await page.evaluate(() => {
+        const storyReturn = document.querySelector(".intro-story-return[data-primary-action='true']");
+        return {
+          phase: document.querySelector(".true-end-exit-veil")?.dataset.phase || "complete",
+          label: storyReturn?.querySelector("strong")?.textContent?.trim() || "",
+          destination: storyReturn?.dataset.storyDestination || "",
+          novelHidden: document.querySelector("#novel-layer")?.getAttribute("aria-hidden") === "true",
+        };
+      });
+      assert(["revealing", "complete"].includes(trueEndExit.phase), `${viewport.name}: GAIA page appeared without the black-to-clear fade`);
+      assert.equal(trueEndExit.label, "物語へ戻る", `${viewport.name}: GAIA story button did not reset after APEIRONCENE`);
+      assert.equal(trueEndExit.destination, "story", `${viewport.name}: completed APEIRONCENE remained the story destination`);
+      assert.equal(trueEndExit.novelHidden, true, `${viewport.name}: APEIRONCENE layer remained active after exit`);
+    }
+    report.scans.push({ viewport: viewport.name, initial, whiteoutOpacity, endingTrack, endingPlayback, beforeY, afterY, afterBackgroundClick, controlAttempt, endHold, beforeFinale, completed, transition: { transitionStartedAt, holdObservedAt: transitionHoldObservedAt, switchObservedAt, revealObservedAt, backgroundFullyVisibleAt, transitionCompletedAt, backgroundOnly }, trueEndPlayback, trueEndDestination, trueEndExit, passed: true });
     await context.close();
   }
 

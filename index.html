@@ -163,12 +163,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-route-guide-2" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-route-cards-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-19" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-route-bgm-split-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-route-bgm-split-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-character-file-1" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-opening-route-cards-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-character-main-card-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -324,29 +324,51 @@
               <div class="gaia-vn-final-choice">
                 <strong data-opening-focus>人間と地球は、どんな次の関係を選べるだろう。</strong>
                 <div class="gaia-opening-final-menu" id="gaia-opening-final-menu" role="group" aria-label="体験の入口" hidden>
+                  <button class="gaia-opening-route-guide-replay" id="gaia-opening-route-guide-replay" type="button" aria-label="3つの入口を順番に案内する" aria-controls="gaia-opening-route-guide">
+                    <span aria-hidden="true">?</span>
+                    <strong>入口ガイド</strong>
+                    <small aria-hidden="true">CHOICE GUIDE</small>
+                  </button>
                   <div class="gaia-opening-route-grid">
                     <button class="gaia-opening-route gaia-opening-route--story" id="gaia-opening-route-story" type="button" aria-label="物語を始める">
-                      <strong>物語を始める</strong>
-                      <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
-                        <path d="M8 14c9-2.4 17-.2 24 5.8v32c-7-5.8-15-8.2-24-5.8Z" />
-                        <path d="M56 14c-9-2.4-17-.2-24 5.8v32c7-5.8 15-8.2 24-5.8Z" />
-                        <path d="M32 20v32M14 22c4.7-.2 9 1 13 3.5M50 22c-4.7-.2-9 1-13 3.5" />
-                      </svg>
+                      <span class="gaia-opening-route-copy">
+                        <small class="gaia-opening-route-index" aria-hidden="true">01 / STORY</small>
+                        <strong>物語を始める</strong>
+                        <span class="gaia-opening-route-en" lang="en" aria-hidden="true">STORY EXPERIENCE</span>
+                      </span>
+                      <span class="gaia-opening-route-symbol" aria-hidden="true">
+                        <svg class="gaia-opening-route-icon" viewBox="0 0 64 64">
+                          <path d="M8 14c9-2.4 17-.2 24 5.8v32c-7-5.8-15-8.2-24-5.8Z" />
+                          <path d="M56 14c-9-2.4-17-.2-24 5.8v32c7-5.8 15-8.2 24-5.8Z" />
+                          <path d="M32 20v32M14 22c4.7-.2 9 1 13 3.5M50 22c-4.7-.2-9 1-13 3.5" />
+                        </svg>
+                      </span>
                     </button>
                     <button class="gaia-opening-route gaia-opening-route--other" id="gaia-opening-route-other" type="button" aria-label="データを探索する">
-                      <strong>データを探索する</strong>
-                      <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
-                        <path d="m32 10 22 12-22 12L10 22Z" />
-                        <path d="m13 32 19 10 19-10M13 42l19 10 19-10" />
-                      </svg>
+                      <span class="gaia-opening-route-copy">
+                        <small class="gaia-opening-route-index" aria-hidden="true">02 / DATA</small>
+                        <strong>データを探索する</strong>
+                        <span class="gaia-opening-route-en" lang="en" aria-hidden="true">DATA EXPLORATION</span>
+                      </span>
+                      <span class="gaia-opening-route-symbol" aria-hidden="true">
+                        <svg class="gaia-opening-route-icon" viewBox="0 0 64 64">
+                          <path d="m32 10 22 12-22 12L10 22Z" />
+                          <path d="m13 32 19 10 19-10M13 42l19 10 19-10" />
+                        </svg>
+                      </span>
                     </button>
                     <button class="gaia-opening-route gaia-opening-route--tour" id="gaia-opening-tour-link" type="button" aria-label="30秒ガイドを始める">
-                      <strong>30秒ガイド</strong>
-                      <span aria-hidden="true">30 SEC / QUICK TOUR</span>
-                      <svg class="gaia-opening-route-icon" viewBox="0 0 64 64" aria-hidden="true">
-                        <circle cx="32" cy="34" r="20" />
-                        <path d="M32 14V8M24 8h16M32 34V22M32 34l10-7" />
-                      </svg>
+                      <span class="gaia-opening-route-copy">
+                        <small class="gaia-opening-route-index" aria-hidden="true">03 / GUIDE</small>
+                        <strong>30秒ガイド</strong>
+                        <span class="gaia-opening-route-en" lang="en" aria-hidden="true">30 SEC QUICK TOUR</span>
+                      </span>
+                      <span class="gaia-opening-route-symbol" aria-hidden="true">
+                        <svg class="gaia-opening-route-icon" viewBox="0 0 64 64">
+                          <circle cx="32" cy="34" r="20" />
+                          <path d="M32 14V8M24 8h16M32 34V22M32 34l10-7" />
+                        </svg>
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -792,6 +814,27 @@
                   <p>地球の観測データを送る</p>
                   <span class="intro-path-enter">センサーを登録 <b aria-hidden="true">→</b></span>
                 </a>
+                <button
+                  class="intro-path-card intro-path-card--character"
+                  id="intro-character-jump"
+                  type="button"
+                  aria-label="キャラクター設定資料を開く"
+                  aria-controls="character-exhibit"
+                >
+                  <span class="intro-card-reveal-fx" aria-hidden="true"></span>
+                  <span class="intro-border-glint" aria-hidden="true"></span>
+                  <span class="intro-path-index">03 / CHARACTER</span>
+                  <span class="intro-path-glyph intro-path-glyph--character" aria-hidden="true">
+                    <svg viewBox="0 0 64 44" focusable="false">
+                      <circle cx="32" cy="14" r="8"></circle>
+                      <path d="M16 39c1.8-9.1 7.1-14 16-14s14.2 4.9 16 14"></path>
+                      <path class="intro-character-spark" d="M11 10h8M15 6v8M47 28h7M50.5 24.5v7"></path>
+                    </svg>
+                  </span>
+                  <strong>キャラクター設定資料</strong>
+                  <p>三人の役割と、共同制作の関係を見る。</p>
+                  <span class="intro-path-enter">CHARACTER FILE <b aria-hidden="true">→</b></span>
+                </button>
                 <button class="intro-path-card intro-path-card--sound" type="button" data-sound-gallery-open aria-haspopup="dialog" aria-controls="sound-layer">
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
                   <span class="intro-border-glint" aria-hidden="true"></span>
@@ -833,16 +876,6 @@
               </button>
 
               <div class="intro-portal-footer">
-                <button
-                  class="intro-architecture-jump intro-character-jump"
-                  id="intro-character-jump"
-                  type="button"
-                  aria-controls="character-exhibit"
-                >
-                  <span>CHARACTER FILE</span>
-                  <strong>キャラクター設定資料</strong>
-                  <span aria-hidden="true">↓</span>
-                </button>
                 <button class="intro-architecture-jump" id="intro-architecture-jump" type="button">
                   <span>OPEN DATA</span>
                   <strong>作品を支えるデータと設計を見る</strong>

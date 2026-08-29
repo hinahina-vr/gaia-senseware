@@ -111,9 +111,11 @@
   const REACTION_STAGE_STEP_MS = 320;
   const SLACK_ENTER_MS = 760;
   const SLACK_EXIT_MS = 460;
-  const STAFF_ROLL_FINALIZE_MS = 360;
-  const STAFF_ROLL_EXIT_COVER_MS = 720;
-  const STAFF_ROLL_EXIT_HOLD_MS = 900;
+  const STAFF_ROLL_THANK_YOU_DELAY_MS = 920;
+  const STAFF_ROLL_THANK_YOU_HOLD_MS = 2_900;
+  const STAFF_ROLL_FINALIZE_MS = 520;
+  const STAFF_ROLL_EXIT_COVER_MS = 860;
+  const STAFF_ROLL_EXIT_HOLD_MS = 1_000;
   const STAFF_ROLL_EXIT_REVEAL_MS = 3600;
   const STAFF_ROLL_ENTRY_BACKGROUND_HOLD_MS = 480;
   const LOG_FOLLOW_THRESHOLD_PX = 72;
@@ -4114,6 +4116,9 @@
       onComplete: () => {
         state.trueEndComplete = true;
         saveProgress();
+        window.dispatchEvent(new CustomEvent("gaia:story-progression-change", {
+          detail: { mainEndingComplete: true, apeironceneComplete: true },
+        }));
       },
       onExit: () => {
         activeTrueEndRuntime?.destroy?.();
@@ -4131,6 +4136,12 @@
     prepareStepFrame(step);
     clearTimers();
     resetFastForward();
+    state.clear = true;
+    state.archivesUnlocked = true;
+    saveProgress();
+    window.dispatchEvent(new CustomEvent("gaia:story-progression-change", {
+      detail: { mainEndingComplete: true, apeironceneComplete: false },
+    }));
     elements.close.hidden = true;
     elements.home.hidden = true;
     suppressCharacterPresentation();
@@ -4182,10 +4193,8 @@
 
     const heading = document.createElement("header");
     heading.className = "novel-staff-roll-title";
-    const kicker = document.createElement("span");
     const title = document.createElement("h2");
     const titleLogo = document.createElement("img");
-    kicker.textContent = "STAFF & CREDITS";
     title.className = "novel-staff-roll-title-accessible";
     title.textContent = "惑星の放課後 — GAIA SENSATION";
     titleLogo.className = "novel-staff-roll-title-logo";
@@ -4196,7 +4205,7 @@
     titleLogo.setAttribute("aria-hidden", "true");
     titleLogo.decoding = "async";
     titleLogo.draggable = false;
-    heading.append(kicker, title, titleLogo);
+    heading.append(title, titleLogo);
 
     const creditsHeading = document.createElement("p");
     creditsHeading.className = "novel-staff-roll-credits-heading";
@@ -4416,8 +4425,13 @@
       }
       staffRollFinaleTimer = window.setTimeout(() => {
         staffRollFinaleTimer = 0;
-        beginFinalActionTransition({ focus });
-      }, 5_000);
+        shell.dataset.phase = "thank-you";
+        shell.classList.add("is-thank-you-visible");
+        staffRollFinaleTimer = window.setTimeout(() => {
+          staffRollFinaleTimer = 0;
+          beginFinalActionTransition({ focus });
+        }, STAFF_ROLL_THANK_YOU_HOLD_MS);
+      }, STAFF_ROLL_THANK_YOU_DELAY_MS);
     };
 
     track.addEventListener("animationend", (event) => {

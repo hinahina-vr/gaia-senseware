@@ -22,6 +22,7 @@
   const finalStoryButton = document.querySelector("#gaia-opening-route-story");
   const finalOtherButton = document.querySelector("#gaia-opening-route-other");
   const finalTourButton = document.querySelector("#gaia-opening-tour-link");
+  const routeGuideReplay = document.querySelector("#gaia-opening-route-guide-replay");
   const soundModal = document.querySelector("#gaia-opening-sound-modal");
   const soundDialog = soundModal?.querySelector(".gaia-opening-sound-dialog");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -172,7 +173,7 @@
   document.body.classList.add("gaia-opening-active");
 
   const finalCopy = opening.querySelector(".gaia-vn-panel-final .gaia-vn-final-copy");
-  const ROUTE_GUIDE_STORAGE_KEY = "gaia:opening-route-guide:v1";
+  const ROUTE_GUIDE_STORAGE_KEY = "gaia:opening-route-guide:v2";
   const routeGuidePreference = new URLSearchParams(window.location.search).get("routeGuide");
   const routeGuideSteps = [
     {
@@ -196,6 +197,7 @@
   ].filter((step) => step.target instanceof HTMLButtonElement);
   const routeGuideLayer = document.createElement("section");
   routeGuideLayer.className = "gaia-opening-route-guide";
+  routeGuideLayer.id = "gaia-opening-route-guide";
   routeGuideLayer.hidden = true;
   routeGuideLayer.inert = true;
   routeGuideLayer.setAttribute("aria-hidden", "true");
@@ -284,8 +286,22 @@
   const syncFinalGatewayPlacement = () => {
     gatewayLayoutFrame = 0;
     if (!(finalCopy instanceof HTMLElement) || !(finalMenu instanceof HTMLElement)) return;
+    if (finalMenu.hidden) {
+      finalCopy.style.removeProperty("--opening-gateway-top");
+      finalCopy.style.removeProperty("--opening-gateway-offset");
+      scheduleRouteGuidePosition();
+      return;
+    }
+    const compactLandscape = matchMedia("(max-width: 960px) and (max-height: 430px) and (orientation: landscape)").matches;
+    if (compactLandscape) {
+      const copyRect = finalCopy.getBoundingClientRect();
+      finalCopy.style.removeProperty("--opening-gateway-top");
+      finalCopy.style.setProperty("--opening-gateway-offset", `${Math.round(14 - copyRect.left)}px`);
+      scheduleRouteGuidePosition();
+      return;
+    }
     const desktopLayout = matchMedia("(min-width: 961px) and (min-height: 521px)").matches;
-    if (!desktopLayout || finalMenu.hidden) {
+    if (!desktopLayout) {
       finalCopy.style.removeProperty("--opening-gateway-top");
       finalCopy.style.removeProperty("--opening-gateway-offset");
       scheduleRouteGuidePosition();
@@ -313,7 +329,11 @@
     const copyRect = finalCopy.getBoundingClientRect();
     const menuWidth = finalMenu.getBoundingClientRect().width || finalCopy.clientWidth;
     const titleCenter = artworkLeft + titleOpticalX * scale;
-    const gatewayOffset = titleCenter - copyRect.left - menuWidth / 2;
+    const desiredGatewayOffset = titleCenter - copyRect.left - menuWidth / 2;
+    const viewportInset = 14;
+    const minimumGatewayOffset = viewportInset - copyRect.left;
+    const maximumGatewayOffset = innerWidth - viewportInset - menuWidth - copyRect.left;
+    const gatewayOffset = Math.max(minimumGatewayOffset, Math.min(maximumGatewayOffset, desiredGatewayOffset));
     const gatewayTop = Math.max(14, Math.min(innerHeight - 220, artworkTop + taglineBottomY * scale + 18));
     finalCopy.style.setProperty("--opening-gateway-top", `${Math.round(gatewayTop)}px`);
     finalCopy.style.setProperty("--opening-gateway-offset", `${Math.round(gatewayOffset)}px`);
@@ -369,7 +389,7 @@
     opening.classList.add("is-route-guide-active");
     requestAnimationFrame(() => {
       routeGuideLayer.classList.add("is-visible");
-      setRouteGuideStep(0, { moveFocus: false });
+      setRouteGuideStep(0);
     });
   };
 
@@ -394,6 +414,21 @@
     if (event.key === "ArrowRight") { event.preventDefault(); setRouteGuideStep(routeGuideIndex + 1); }
     if (event.key === "ArrowLeft") { event.preventDefault(); setRouteGuideStep(routeGuideIndex - 1); }
   });
+  opening.addEventListener("keydown", (event) => {
+    if (!routeGuideActive || event.defaultPrevented) return;
+    if (event.key === "Escape") { event.preventDefault(); closeRouteGuide(); }
+    if (event.key === "ArrowRight") { event.preventDefault(); setRouteGuideStep(routeGuideIndex + 1); }
+    if (event.key === "ArrowLeft") { event.preventDefault(); setRouteGuideStep(routeGuideIndex - 1); }
+  });
+  routeGuideSteps.forEach((step, index) => {
+    step.target.addEventListener("focus", () => {
+      if (routeGuideActive && routeGuideIndex !== index) setRouteGuideStep(index, { moveFocus: false });
+    });
+    step.target.addEventListener("pointerenter", () => {
+      if (routeGuideActive && routeGuideIndex !== index) setRouteGuideStep(index, { moveFocus: false });
+    });
+  });
+  routeGuideReplay?.addEventListener("click", openRouteGuide);
   window.addEventListener("resize", scheduleFinalGatewayPlacement, { passive: true });
 
   const OPENING_TIME_SCALE = 1.275;
@@ -818,6 +853,7 @@
     if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = true;
     if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = true;
     if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = true;
+    if (routeGuideReplay instanceof HTMLButtonElement) routeGuideReplay.disabled = true;
     performance.mark(`gaia:${destination}-route-load-request`);
     const routeReady = destination === "tour"
       ? (async () => {
@@ -862,6 +898,7 @@
       if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = false;
       if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = false;
       if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = false;
+      if (routeGuideReplay instanceof HTMLButtonElement) routeGuideReplay.disabled = false;
       return;
     }
     if (destination === "story") {

@@ -188,6 +188,16 @@ try {
     await page.waitForFunction(() => document.activeElement?.id === "gaia-opening-route-story");
     const routeReady = await page.evaluate(() => {
       const readRect = (selector) => document.querySelector(selector)?.getBoundingClientRect().toJSON();
+      const cards = Array.from(document.querySelectorAll(".gaia-opening-route-grid .gaia-opening-route"), (card) => ({
+        id: card.id,
+        rect: card.getBoundingClientRect().toJSON(),
+        strongRect: card.querySelector("strong")?.getBoundingClientRect().toJSON(),
+        symbolRect: card.querySelector(".gaia-opening-route-symbol")?.getBoundingClientRect().toJSON(),
+        english: card.querySelector(".gaia-opening-route-en")?.textContent.trim(),
+        englishVisible: __qaVisible(card.querySelector(".gaia-opening-route-en")),
+        iconPosition: getComputedStyle(card.querySelector(".gaia-opening-route-icon")).position,
+        glintDisplay: getComputedStyle(card, "::after").display,
+      }));
       return {
         menuVisible: __qaVisible(document.querySelector("#gaia-opening-final-menu")),
         modalVisible: __qaVisible(document.querySelector("#gaia-opening-sound-modal")),
@@ -197,6 +207,10 @@ try {
         menuRect: readRect("#gaia-opening-final-menu"),
         storyRect: readRect("#gaia-opening-route-story"),
         otherRect: readRect("#gaia-opening-route-other"),
+        guideReplayRect: readRect("#gaia-opening-route-guide-replay"),
+        guideReplayLabel: document.querySelector("#gaia-opening-route-guide-replay strong")?.textContent.trim(),
+        guideReplayEnglish: document.querySelector("#gaia-opening-route-guide-replay small")?.textContent.trim(),
+        cards,
         overflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
         overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
       };
@@ -209,6 +223,17 @@ try {
     assert(routeReady.menuRect.top >= -1 && routeReady.menuRect.bottom <= viewport.height + 1, `${viewport.name}: menu is outside the viewport vertically`);
     for (const rect of [routeReady.storyRect, routeReady.otherRect]) {
       assert(rect.width >= 44 && rect.height >= 64, `${viewport.name}: route hit area is too small`);
+    }
+    assert.equal(routeReady.guideReplayLabel, "入口ガイド");
+    assert.equal(routeReady.guideReplayEnglish, "CHOICE GUIDE");
+    assert(routeReady.guideReplayRect.width >= 44 && routeReady.guideReplayRect.height >= 44, `${viewport.name}: guide replay hit area is smaller than 44px`);
+    assert.equal(routeReady.cards.length, 3, `${viewport.name}: the three route cards are incomplete`);
+    for (const card of routeReady.cards) {
+      assert(card.english, `${viewport.name}: ${card.id} has no English label`);
+      assert.equal(card.englishVisible, !shortLandscape, `${viewport.name}: ${card.id} English-label visibility is inconsistent`);
+      assert.equal(card.iconPosition, "static", `${viewport.name}: ${card.id} icon escaped its dedicated column`);
+      assert.equal(card.glintDisplay, viewport.reduced ? "none" : "block", `${viewport.name}: ${card.id} glint layer is incorrect`);
+      assert.equal(overlapArea(card.strongRect, card.symbolRect), 0, `${viewport.name}: ${card.id} label overlaps its icon`);
     }
     assert.equal(routeReady.overflowX, 0);
     assert.equal(routeReady.overflowY, 0);

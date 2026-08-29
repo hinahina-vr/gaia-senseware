@@ -5143,3 +5143,330 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     transition: none;
   }
 }
+
+/* Gateway route cards v3: every choice uses the same information hierarchy,
+   keeps its symbol in a dedicated column, and restores the luminous sweep used
+   by the rest of the interface. */
+.gaia-vn-panel-final .gaia-opening-final-menu,
+.gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+  gap: 8px;
+  width: min(920px, 66vw);
+  overflow: visible;
+}
+
+.gaia-opening-route-guide-replay {
+  --route-accent: 112, 220, 255;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 7px;
+  min-height: 44px;
+  overflow: hidden;
+  padding: 7px 12px 7px 9px;
+  border: 1px solid rgba(var(--route-accent), 0.34);
+  border-radius: 999px;
+  color: rgba(var(--opening-paper), 0.78);
+  background: linear-gradient(110deg, rgba(5, 28, 58, 0.9), rgba(5, 20, 44, 0.76));
+  box-shadow: inset 0 1px 0 rgba(226, 250, 255, 0.08), 0 8px 24px rgba(0, 6, 24, 0.22);
+  cursor: pointer;
+  transition: border-color 220ms ease, color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+}
+
+.gaia-opening-route-guide-replay::after {
+  position: absolute;
+  top: -65%;
+  bottom: -65%;
+  left: -42%;
+  width: 24%;
+  content: "";
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(235, 253, 255, 0.78), transparent);
+  pointer-events: none;
+  transform: skewX(-18deg);
+}
+
+.gaia-opening-route-guide-replay > span {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(var(--route-accent), 0.56);
+  border-radius: 50%;
+  color: rgb(var(--route-accent));
+  font: 700 12px/1 var(--font-ja);
+  place-items: center;
+}
+
+.gaia-opening-route-guide-replay > strong {
+  font: 600 11px/1.2 var(--font-ja);
+  letter-spacing: 0.08em;
+}
+
+.gaia-opening-route-guide-replay > small {
+  color: rgba(var(--opening-paper), 0.42);
+  font: 600 7px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.12em;
+}
+
+.gaia-opening-route-guide-replay:hover,
+.gaia-opening-route-guide-replay:focus-visible {
+  border-color: rgba(var(--route-accent), 0.86);
+  color: #fff;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(235, 253, 255, 0.14), 0 0 24px rgba(var(--route-accent), 0.2);
+  transform: translateY(-2px);
+}
+
+.gaia-opening-route-guide-replay:hover::after,
+.gaia-opening-route-guide-replay:focus-visible::after {
+  animation: opening-choice-glint 680ms ease-out both;
+}
+
+.gaia-opening-route-guide-replay:active { transform: translateY(0) scale(0.98); }
+.gaia-opening-route-guide-replay:disabled { opacity: 0.38; cursor: wait; }
+
+.gaia-vn-panel-final .gaia-opening-route-grid {
+  gap: 10px;
+  border: 0;
+}
+
+.gaia-vn-panel-final .gaia-opening-route,
+.gaia-vn-panel-final .gaia-opening-route--other {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px;
+  align-items: center;
+  align-content: center;
+  gap: 18px;
+  min-width: 0;
+  min-height: 112px;
+  padding: 18px 18px 17px 22px;
+  border: 1px solid rgba(var(--route-accent), 0.38);
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow:
+    inset 3px 0 0 rgba(var(--route-accent), 0.72),
+    inset 0 1px 0 rgba(233, 252, 255, 0.08),
+    0 16px 38px rgba(0, 5, 22, 0.3);
+  isolation: isolate;
+  transition: opacity 420ms ease, filter 220ms ease, border-color 240ms ease, background 240ms ease, box-shadow 240ms ease, transform 240ms cubic-bezier(0.2, 0.76, 0.2, 1);
+}
+
+.gaia-vn-panel-final .gaia-opening-route::after {
+  display: block;
+  top: -58%;
+  bottom: -58%;
+  left: -38%;
+  width: 23%;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(224, 250, 255, 0.08) 12%, rgba(246, 255, 255, 0.72) 50%, rgba(var(--route-accent), 0.16) 78%, transparent);
+  filter: blur(0.25px);
+  transform: skewX(-18deg);
+}
+
+.gaia-opening-final-menu.is-visible .gaia-vn-panel-final .gaia-opening-route--story::after,
+.gaia-vn-panel-final .gaia-opening-route:hover::after,
+.gaia-vn-panel-final .gaia-opening-route:focus-visible::after,
+.gaia-opening.is-route-guide-active .gaia-opening-route.is-route-guide-target::after {
+  animation: opening-choice-glint 720ms ease-out both;
+}
+
+.gaia-vn-panel-final .gaia-opening-route-copy {
+  display: grid;
+  align-content: center;
+  justify-content: stretch;
+  gap: 5px;
+  min-width: 0;
+  color: inherit;
+  white-space: normal;
+}
+
+.gaia-vn-panel-final .gaia-opening-route-index {
+  display: block;
+  color: rgba(var(--route-accent), 0.76);
+  font: 700 8px/1.15 Consolas, "Courier New", monospace;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.gaia-vn-panel-final .gaia-opening-route strong {
+  min-width: 0;
+  font-size: clamp(18px, 1.32vw, 22px);
+  font-weight: 560;
+  letter-spacing: 0.055em;
+  line-height: 1.32;
+  white-space: nowrap;
+}
+
+.gaia-vn-panel-final .gaia-opening-route-en {
+  display: block;
+  justify-content: initial;
+  overflow: hidden;
+  color: rgba(var(--opening-paper), 0.48);
+  font: 600 8px/1.2 Consolas, "Courier New", monospace;
+  letter-spacing: 0.13em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gaia-vn-panel-final .gaia-opening-route-symbol {
+  position: relative;
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid rgba(var(--route-accent), 0.28);
+  border-radius: 50%;
+  color: inherit;
+  background:
+    radial-gradient(circle at 38% 32%, rgba(var(--route-accent), 0.16), transparent 58%),
+    rgba(3, 20, 46, 0.3);
+  box-shadow: inset 0 0 18px rgba(var(--route-accent), 0.04);
+  white-space: normal;
+  transition: border-color 240ms ease, background 240ms ease, box-shadow 240ms ease, transform 240ms ease;
+}
+
+.gaia-vn-panel-final .gaia-opening-route-icon,
+.gaia-vn-panel-final .gaia-opening-route:hover .gaia-opening-route-icon,
+.gaia-vn-panel-final .gaia-opening-route:focus-visible .gaia-opening-route-icon,
+.gaia-vn-panel-final .gaia-opening-route--story:hover .gaia-opening-route-icon,
+.gaia-vn-panel-final .gaia-opening-route--story:focus-visible .gaia-opening-route-icon,
+.gaia-vn-panel-final .gaia-opening-route--other:hover .gaia-opening-route-icon,
+.gaia-vn-panel-final .gaia-opening-route--other:focus-visible .gaia-opening-route-icon {
+  position: static;
+  width: 36px;
+  height: 36px;
+  fill: rgba(var(--route-accent), 0.025);
+  stroke: rgba(var(--route-accent), 0.72);
+  filter: none;
+  transform: none;
+}
+
+.gaia-vn-panel-final .gaia-opening-route:hover,
+.gaia-vn-panel-final .gaia-opening-route:focus-visible,
+.gaia-opening-final-menu.is-visible .gaia-vn-panel-final .gaia-opening-route:hover,
+.gaia-opening-final-menu.is-visible .gaia-vn-panel-final .gaia-opening-route:focus-visible {
+  border-color: rgba(var(--route-accent), 0.88);
+  background:
+    radial-gradient(circle at 86% 50%, rgba(var(--route-accent), 0.18), transparent 76px),
+    linear-gradient(120deg, rgb(10 42 78 / 0.99), rgb(6 27 57 / 0.99));
+  box-shadow:
+    inset 3px 0 0 rgb(var(--route-accent)),
+    inset 0 1px 0 rgba(238, 253, 255, 0.13),
+    0 0 0 1px rgba(var(--route-accent), 0.12),
+    0 0 32px rgba(var(--route-accent), 0.18),
+    0 18px 42px rgba(0, 4, 24, 0.36);
+  outline: none;
+  transform: translateY(-4px) scale(1.008);
+}
+
+.gaia-vn-panel-final .gaia-opening-route:focus-visible {
+  box-shadow:
+    inset 3px 0 0 rgb(var(--route-accent)),
+    0 0 0 2px rgba(219, 251, 255, 0.94),
+    0 0 0 5px rgba(var(--route-accent), 0.18),
+    0 0 36px rgba(var(--route-accent), 0.24),
+    0 18px 42px rgba(0, 4, 24, 0.36);
+}
+
+.gaia-vn-panel-final .gaia-opening-route:hover .gaia-opening-route-symbol,
+.gaia-vn-panel-final .gaia-opening-route:focus-visible .gaia-opening-route-symbol {
+  border-color: rgba(var(--route-accent), 0.72);
+  background:
+    radial-gradient(circle at 38% 32%, rgba(var(--route-accent), 0.26), transparent 58%),
+    rgba(5, 33, 70, 0.58);
+  box-shadow: inset 0 0 22px rgba(var(--route-accent), 0.09), 0 0 20px rgba(var(--route-accent), 0.14);
+  transform: translateY(-2px) rotate(2deg) scale(1.045);
+}
+
+.gaia-vn-panel-final .gaia-opening-route:active {
+  transform: translateY(-1px) scale(0.986);
+  transition-duration: 90ms;
+}
+
+.gaia-opening.is-route-guide-active .gaia-opening-route-guide-replay {
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+@media (max-width: 960px) {
+  .gaia-vn-panel-final .gaia-opening-final-menu,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .gaia-vn-panel-final .gaia-opening-final-menu,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu { gap: 7px; }
+  .gaia-opening-route-guide-replay { min-height: 44px; padding-block: 6px; }
+  .gaia-opening-route-guide-replay > small { display: none; }
+  .gaia-vn-panel-final .gaia-opening-route,
+  .gaia-vn-panel-final .gaia-opening-route--other {
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 10px;
+    min-height: 88px;
+    padding: 13px 12px 12px 15px;
+  }
+  .gaia-vn-panel-final .gaia-opening-route strong { font-size: clamp(15px, 4vw, 18px); }
+  .gaia-vn-panel-final .gaia-opening-route-index { font-size: 7px; }
+  .gaia-vn-panel-final .gaia-opening-route-en { font-size: 7px; letter-spacing: 0.09em; }
+  .gaia-vn-panel-final .gaia-opening-route-symbol { width: 44px; height: 44px; }
+  .gaia-vn-panel-final .gaia-opening-route-icon,
+  .gaia-vn-panel-final .gaia-opening-route:hover .gaia-opening-route-icon,
+  .gaia-vn-panel-final .gaia-opening-route:focus-visible .gaia-opening-route-icon { width: 29px; height: 29px; }
+}
+
+@media (max-width: 420px) {
+  .gaia-vn-panel-final .gaia-opening-route-grid { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+  .gaia-vn-panel-final .gaia-opening-route--tour { grid-column: auto; }
+  .gaia-vn-panel-final .gaia-opening-route,
+  .gaia-vn-panel-final .gaia-opening-route--other {
+    min-height: 74px;
+    padding-block: 10px;
+  }
+  .gaia-vn-panel-final .gaia-opening-route-copy { gap: 3px; }
+  .gaia-vn-panel-final .gaia-opening-route strong { font-size: 17px; }
+  .gaia-vn-panel-final .gaia-opening-route-symbol { width: 42px; height: 42px; }
+}
+
+@media (max-height: 430px) and (orientation: landscape) {
+  .gaia-vn-panel-final .gaia-vn-final-choice > strong,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-choice > strong { display: none; }
+  .gaia-vn-panel-final .gaia-opening-final-menu,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+    width: calc(100vw - 28px);
+    margin-left: var(--opening-gateway-offset, 0px);
+  }
+  .gaia-opening-route-guide-replay { min-height: 44px; padding-block: 4px; }
+  .gaia-vn-panel-final .gaia-opening-route-grid { gap: 6px; }
+  .gaia-vn-panel-final .gaia-opening-route,
+  .gaia-vn-panel-final .gaia-opening-route--other {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 6px;
+    min-height: 66px;
+    padding: 7px 8px 7px 10px;
+  }
+  .gaia-vn-panel-final .gaia-opening-route-copy { gap: 2px; }
+  .gaia-vn-panel-final .gaia-opening-route strong {
+    overflow: hidden;
+    font-size: clamp(12px, 2.1vw, 16px);
+    letter-spacing: 0.01em;
+    text-overflow: clip;
+  }
+  .gaia-vn-panel-final .gaia-opening-route-index { font-size: 6px; letter-spacing: 0.1em; }
+  .gaia-vn-panel-final .gaia-opening-route-en { display: none; }
+  .gaia-vn-panel-final .gaia-opening-route-symbol { width: 34px; height: 34px; }
+  .gaia-vn-panel-final .gaia-opening-route-icon,
+  .gaia-vn-panel-final .gaia-opening-route:hover .gaia-opening-route-icon,
+  .gaia-vn-panel-final .gaia-opening-route:focus-visible .gaia-opening-route-icon { width: 23px; height: 23px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaia-opening-route-guide-replay::after,
+  .gaia-vn-panel-final .gaia-opening-route::after { display: none; }
+  .gaia-opening-route-guide-replay,
+  .gaia-vn-panel-final .gaia-opening-route,
+  .gaia-vn-panel-final .gaia-opening-route-symbol { transition-duration: 0.01ms; }
+}

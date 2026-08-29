@@ -5,13 +5,13 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-character-file-1",
+        "./styles.css?v=gaia-character-main-card-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-unified-world-bank-1",
         "./statistics-lab.css?v=gaia-statistics-chart-labels-1",
-        "./mode-exit.css?v=gaia-story-control-gap-1",
+        "./mode-exit.css?v=gaia-story-control-center-2",
         "./observation-notebook.css?v=gaia-exhibit-heading-actions-1",
       ],
       scripts: [
@@ -19,7 +19,7 @@
         "./data-ledger.js?v=gaia-live-free-tier-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-abstract-entry-1",
-        "./app.js?v=gaia-character-file-1",
+        "./app.js?v=gaia-story-return-state-2",
         "./map-ui-grid-polish.js?v=gaia-mobile-exhibit-hud-5",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
@@ -33,32 +33,32 @@
     story: {
       templates: ["gaia-template-story"],
       styles: [
-        "./styles.css?v=gaia-character-file-1",
+        "./styles.css?v=gaia-character-main-card-1",
         "./scene-transition.css?v=gaia-52",
-        "./novel-mode.css?v=gaia-copyright-after-thanks-1",
-        "./true-end.css?v=gaia-adaptive-performance-1",
-        "./mode-exit.css?v=gaia-story-control-gap-1",
+        "./novel-mode.css?v=gaia-staff-thanks-transition-2",
+        "./true-end.css?v=gaia-apeironcene-exit-3",
+        "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
         "./novel-story-data.js?v=gaia-approved-script-14",
         "./true-end-data.js?v=gaia-finale-webgl-1",
         "./true-end-webgl.js?v=gaia-ambient-motion-1",
-        "./true-end-mode.js?v=gaia-novacene-entry-1",
+        "./true-end-mode.js?v=gaia-apeironcene-exit-3",
         "./novel-background-cues.js?v=gaia-amane-no-plug-1",
         "./novel-back-half-cues.js?v=gaia-finale-sunset-1",
         "./novel-temporal.js?v=gaia-temporal-1",
-        "./novel-mode.js?v=gaia-staff-reference-courses-1",
+        "./novel-mode.js?v=gaia-story-progression-state-2",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
     },
     gx: {
       templates: ["gaia-template-gx"],
       styles: [
-        "./styles.css?v=gaia-character-file-1",
+        "./styles.css?v=gaia-character-main-card-1",
         "./scene-transition.css?v=gaia-52",
         "./gx-mode.css?v=gaia-gx-feature-card-1",
-        "./mode-exit.css?v=gaia-story-control-gap-1",
+        "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -69,10 +69,10 @@
     space: {
       templates: ["gaia-template-space"],
       styles: [
-        "./styles.css?v=gaia-character-file-1",
+        "./styles.css?v=gaia-character-main-card-1",
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
-        "./mode-exit.css?v=gaia-story-control-gap-1",
+        "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
@@ -84,9 +84,9 @@
     sound: {
       templates: ["gaia-template-sound"],
       styles: [
-        "./styles.css?v=gaia-character-file-1",
+        "./styles.css?v=gaia-character-main-card-1",
         "./sound-mode.css?v=gaia-sound-return-layout-1",
-        "./mode-exit.css?v=gaia-story-control-gap-1",
+        "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: ["./sound-mode.js?v=gaia-route-bgm-split-1"],
       modules: ["./src/exploration/procedural-audio.js?v=gaia-live-senseware-1"],
