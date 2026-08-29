@@ -985,7 +985,6 @@ body.gaia-opening-active .novel-layer {
   text-align: left;
   background: linear-gradient(112deg, rgba(7, 29, 43, 0.94), rgba(12, 39, 52, 0.76));
   box-shadow:
-    inset 3px 0 0 rgba(var(--route-accent), 0.86),
     inset 0 1px 0 rgba(235, 255, 251, 0.08),
     0 15px 40px rgba(0, 5, 14, 0.28);
   backdrop-filter: blur(18px) saturate(1.16);
@@ -1032,7 +1031,6 @@ body.gaia-opening-active .novel-layer {
     radial-gradient(circle at 88% 50%, rgba(var(--route-accent), 0.13), transparent 58px),
     linear-gradient(112deg, rgba(11, 48, 58, 0.96), rgba(16, 57, 68, 0.82));
   box-shadow:
-    inset 3px 0 0 rgb(var(--route-accent)),
     inset 0 1px 0 rgba(235, 255, 251, 0.15),
     0 0 0 1px rgba(var(--route-accent), 0.16),
     0 0 34px rgba(var(--route-accent), 0.18);
@@ -4787,7 +4785,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   box-shadow:
-    inset 3px 0 0 rgba(var(--route-accent), 0.66),
     0 14px 34px rgba(0, 5, 20, 0.28);
 }
 
@@ -4828,7 +4825,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   border-color: rgba(var(--route-accent), 0.74);
   background: linear-gradient(120deg, rgb(10 42 78 / 0.99), rgb(6 28 57 / 0.99));
   box-shadow:
-    inset 3px 0 0 rgb(var(--route-accent)),
     0 0 0 1px rgba(var(--route-accent), 0.12),
     0 16px 38px rgba(0, 5, 20, 0.34);
 }
@@ -5134,7 +5130,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     linear-gradient(120deg, rgb(12 51 91 / 0.995), rgb(6 30 64 / 0.995));
   transform: translateY(-4px);
   box-shadow:
-    inset 3px 0 0 rgb(var(--route-accent)),
     0 0 0 2px rgba(140, 236, 255, 0.56),
     0 0 42px rgba(74, 191, 255, 0.58),
     0 18px 42px rgba(0, 4, 24, 0.48);
@@ -5261,7 +5256,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   border-radius: 7px;
   overflow: hidden;
   box-shadow:
-    inset 3px 0 0 rgba(var(--route-accent), 0.72),
     inset 0 1px 0 rgba(233, 252, 255, 0.08),
     0 16px 38px rgba(0, 5, 22, 0.3);
   isolation: isolate;
@@ -5377,7 +5371,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     radial-gradient(circle at 86% 50%, rgba(var(--route-accent), 0.18), transparent 76px),
     linear-gradient(120deg, rgb(10 42 78 / 0.99), rgb(6 27 57 / 0.99));
   box-shadow:
-    inset 3px 0 0 rgb(var(--route-accent)),
     inset 0 1px 0 rgba(238, 253, 255, 0.13),
     0 0 0 1px rgba(var(--route-accent), 0.12),
     0 0 32px rgba(var(--route-accent), 0.18),
@@ -5392,7 +5385,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     radial-gradient(circle at 86% 50%, rgba(var(--route-accent), 0.26), transparent 82px),
     linear-gradient(120deg, rgb(14 56 98 / 0.998), rgb(7 32 68 / 0.998));
   box-shadow:
-    inset 3px 0 0 rgb(var(--route-accent)),
     0 0 0 2px rgba(219, 251, 255, 0.94),
     0 0 0 5px rgba(var(--route-accent), 0.18),
     0 0 36px rgba(var(--route-accent), 0.24),

@@ -125,6 +125,7 @@ try {
         symbolRect: readRect(card.querySelector(".gaia-opening-route-symbol")),
         iconRect: readRect(card.querySelector(".gaia-opening-route-icon")),
         iconPosition: getComputedStyle(card.querySelector(".gaia-opening-route-icon")).position,
+        boxShadow: getComputedStyle(card).boxShadow,
         glintDisplay: getComputedStyle(card, "::after").display,
         glintAnimationName: getComputedStyle(card, "::after").animationName,
         glintAnimationDuration: getComputedStyle(card, "::after").animationDuration,
@@ -155,6 +156,7 @@ try {
       assert(card.rect.left >= 13 && card.rect.right <= viewport.width - 13, `${viewport.name}: ${card.id} left the safe area`);
       assert.equal(card.englishVisible, !compactLandscape, `${viewport.name}: ${card.id} English-label visibility is inconsistent`);
       assert.equal(card.iconPosition, "static", `${viewport.name}: ${card.id} icon escaped its column`);
+      assert.equal(card.boxShadow.includes(" 3px 0px 0px 0px inset"), false, `${viewport.name}: ${card.id} retains the asymmetric left glow rail`);
       assert.equal(card.glintDisplay, viewport.reduced ? "none" : "block", `${viewport.name}: ${card.id} glint layer is incorrect`);
       if (!viewport.reduced && card.id === "gaia-opening-route-story") {
         assert.equal(card.glintAnimationName, "opening-choice-glint", `${viewport.name}: focused-card glint did not run`);
