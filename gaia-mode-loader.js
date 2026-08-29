@@ -41,7 +41,7 @@
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
-        "./novel-story-data.js?v=gaia-approved-script-14",
+        "./novel-story-data.js?v=gaia-log-comments-30-1",
         "./true-end-data.js?v=gaia-finale-webgl-1",
         "./true-end-webgl.js?v=gaia-ambient-motion-1",
         "./true-end-mode.js?v=gaia-apeironcene-exit-3",

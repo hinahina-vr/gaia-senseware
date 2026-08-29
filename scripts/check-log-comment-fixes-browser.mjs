@@ -12,6 +12,9 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDir = path.resolve(outputArgument || "artifacts/log-comment-fixes-browser");
 fs.mkdirSync(outputDir, { recursive: true });
+const loaderSource = fs.readFileSync(path.join(projectRoot, "gaia-mode-loader.js"), "utf8");
+assert.match(loaderSource, /novel-story-data\.js\?v=gaia-log-comments-30-1/u,
+  "revised LOG script data must use a fresh cache key");
 
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?log-fixes=${Date.now()}`);

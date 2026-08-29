@@ -101,7 +101,7 @@ check("runtime cache keys are advanced", () => {
   assert.match(modeLoader, /novel-mode\.css\?v=gaia-story-map-aiva-2/u);
   assert.match(modeLoader, /gx-mode\.js\?v=gaia-gx-mobile-installation-1/u);
   assert.match(modeLoader, /novel-mode\.js\?v=gaia-no-breathing-flash-1/u);
-  assert.match(modeLoader, /novel-story-data\.js\?v=gaia-approved-script-14/u);
+  assert.match(modeLoader, /novel-story-data\.js\?v=gaia-log-comments-30-1/u);
 });
 
 check("tabletop map artwork is absent from story and map runtime", () => {
