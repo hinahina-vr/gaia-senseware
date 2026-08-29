@@ -23,15 +23,15 @@ assert.match(runtimeSource, /gaia-log-open/u, "LOG open state class is missing")
 assert.match(runtimeSource, /className = "novel-log-delete"/u, "LOG comment delete control is missing");
 assert.match(runtimeSource, /window\.confirm\(/u, "LOG comment deletion confirmation is missing");
 assert.match(runtimeSource, /deleteAllLogComments/u, "LOG comment delete-all action is missing");
-assert.match(htmlSource, /gaia-log-round3-1/gu, "LOG comment delete-all cache key is missing");
+assert.match(htmlSource, /gaia-log-complete-script-1/gu, "LOG runtime cache key is missing");
 
 delete globalThis.GAIA_NOVEL_STORY;
 await import(`${pathToFileURL(path.join(projectRoot, "novel-story-data.js")).href}?log-comments=${Date.now()}`);
 const story = globalThis.GAIA_NOVEL_STORY;
 const steps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(steps.map((step) => [step.id, step]));
-const readStepIds = ["festival_concept_001", "festival_concept_002", "festival_concept_003"];
-const currentStepId = "festival_concept_004";
+const readStepIds = steps.slice(0, 3).map((step) => step.id);
+const currentStepId = steps[3].id;
 const expectedLogIds = [...readStepIds, currentStepId];
 const commentStorageKey = "gaiaSensewareNovel:log-comments:v1";
 const progressKey = "gaiaSensewareNovel:progress";
@@ -77,7 +77,10 @@ const ensureNovelOpen = async (page) => {
     const layer = document.querySelector("#novel-layer");
     if (layer?.hidden || !layer.classList.contains("is-open")) globalThis.GaiaNovel.open();
   });
-  await page.locator("#novel-title-screen").waitFor({ state: "visible", timeout: 15_000 });
+  await page.waitForFunction(() => {
+    const layer = document.querySelector("#novel-layer");
+    return Boolean(layer && !layer.hidden && layer.classList.contains("is-open"));
+  }, null, { timeout: 15_000 });
 };
 
 const bootAtLogState = async (page) => {
@@ -92,9 +95,11 @@ const bootAtLogState = async (page) => {
   }, { storedProgress: baseState(), storageKey: progressKey, manualKey: manualSaveKey, configKey: settingsKey });
   await page.reload({ waitUntil: "domcontentloaded" });
   await ensureNovelOpen(page);
-  await page.locator("#novel-resume-button").click();
-  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  if (await page.locator("#novel-title-screen").isVisible()) {
+    await page.locator("#novel-resume-button").click();
+    await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
+    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  }
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, currentStepId, { timeout: 15_000 });
   await page.locator("#novel-log-button").click();
   await page.locator("#novel-log-panel").waitFor({ state: "visible" });

@@ -375,10 +375,14 @@
     logButton: layer.querySelector("#novel-log-button"),
     logPanel: layer.querySelector("#novel-log-panel"),
     logClose: layer.querySelector("#novel-log-close"),
+    logTitle: layer.querySelector("#novel-log-title"),
+    logViewHeard: layer.querySelector("#novel-log-view-heard"),
+    logViewScript: layer.querySelector("#novel-log-view-script"),
     logContent: layer.querySelector("#novel-log-content"),
     logCommentCount: layer.querySelector("#novel-log-comment-count"),
     logDeleteAll: layer.querySelector("#novel-log-delete-all"),
     logExport: layer.querySelector("#novel-log-export"),
+    logScriptExport: layer.querySelector("#novel-log-script-export"),
     logStatus: layer.querySelector("#novel-log-status"),
     saveButton: layer.querySelector("#novel-save-button"),
     loadButton: layer.querySelector("#novel-load-button"),
@@ -462,12 +466,31 @@
   const allSteps = scenes.flatMap((scene) => scene.steps);
   const stepMap = new Map(allSteps.map((step) => [step.id, step]));
   const stepIndexMap = new Map(allSteps.map((step, index) => [step.id, index]));
-  const beyondSteps = Object.freeze((globalThis.GAIA_TRUE_END_STORY?.scenes || [])
+  const trueEndStory = globalThis.GAIA_TRUE_END_STORY;
+  const beyondSteps = Object.freeze((trueEndStory?.scenes || [])
     .flatMap((scene) => scene.steps || []));
   const beyondStepMap = new Map(beyondSteps.map((step) => [step.id, step]));
   const logSteps = Object.freeze([...allSteps, ...beyondSteps]);
   const logStepMap = new Map(logSteps.map((step) => [step.id, step]));
   if (logStepMap.size !== logSteps.length) throw new Error("[GAIA novel] Duplicate story/TRANSMISSION LOG step IDs");
+  const scriptArchiveSections = Object.freeze([
+    ...scenes.map((scene, index) => Object.freeze({
+      id: `story-${scene.id}`,
+      source: "story",
+      eyebrow: scene.chapter || `STORY ${String(index + 1).padStart(2, "0")}`,
+      title: scene.title || scene.id,
+      steps: scene.steps || [],
+    })),
+    ...(trueEndStory?.scenes || []).map((scene, index) => Object.freeze({
+      id: `apeironcene-${scene.id}`,
+      source: "apeironcene",
+      eyebrow: `APEIRONCENE ${scene.number || String(index + 1).padStart(2, "0")}`,
+      title: scene.title || scene.id,
+      steps: scene.steps || [],
+    })),
+  ]);
+  const scriptArchiveStepCount = scriptArchiveSections.reduce((count, section) => count + section.steps.length, 0);
+  if (scriptArchiveStepCount !== logSteps.length) throw new Error("[GAIA novel] Complete script archive is missing steps");
   const galleryEntries = Object.freeze([...(backgroundCues.gallery || [])]);
   const galleryEntryMap = new Map(galleryEntries.map((entry) => [entry.id, entry]));
   const galleryPresentations = Object.freeze([
@@ -617,6 +640,7 @@
   let deferredOpeningBackground = null;
   let requestedStoryTrack = null;
   let logFollowLatest = true;
+  let logView = "heard";
   let debugJumpActive = false;
   let jumpOutsidePointerBlocked = false;
   let scriptCopyFeedbackTimer = 0;
@@ -4825,6 +4849,30 @@
   };
 
   const logStepText = (step) => String(step?.text || "");
+  const scriptStepText = (step) => {
+    const text = logStepText(step).trim();
+    if (text) return text;
+    if (step?.interaction) {
+      const interaction = step.interaction;
+      const details = [
+        interaction.kind ? `展示操作 ${String(interaction.kind).toUpperCase()}` : "展示操作",
+        interaction.modeId ? `MODE ${interaction.modeId}` : "",
+        interaction.phase ? `PHASE ${interaction.phase}` : "",
+        Array.isArray(interaction.requiredViews) && interaction.requiredViews.length
+          ? `REQUIRED ${interaction.requiredViews.join(", ")}`
+          : "",
+        Number.isFinite(interaction.requiredGestures) ? `GESTURES ${interaction.requiredGestures}` : "",
+      ].filter(Boolean);
+      return `[${details.join(" / ")}]`;
+    }
+    return `[${String(step?.type || "step").toUpperCase()} / 本文なし]`;
+  };
+  const scriptStepMetadata = (step) => {
+    const metadataKeys = ["time", "expression", "cueFromStepId", "interaction", "attachments", "readout", "pages"];
+    return Object.fromEntries(metadataKeys
+      .filter((key) => step?.[key] !== undefined)
+      .map((key) => [key, step[key]]));
+  };
   const commentedLogEntries = () => logSteps
     .filter((step) => typeof logComments[step.id] === "string" && logComments[step.id].trim())
     .map((step) => ({ step, comment: logComments[step.id].trim() }));
@@ -4835,14 +4883,74 @@
   };
   const syncLogCommentSummary = () => {
     const count = commentedLogEntries().length;
+    const commentsHidden = logView !== "heard";
     elements.logCommentCount.textContent = `コメント ${count}件`;
-    elements.logDeleteAll.hidden = count === 0;
+    elements.logCommentCount.hidden = commentsHidden;
+    elements.logDeleteAll.hidden = commentsHidden || count === 0;
     elements.logDeleteAll.disabled = count === 0;
     elements.logDeleteAll.setAttribute("aria-label", `コメント済み${count}件をすべて削除`);
     elements.logExport.disabled = false;
+    elements.logExport.hidden = commentsHidden;
     elements.logExport.setAttribute("aria-label", `コメント済み${count}件をCodex用Markdownで出力`);
+    elements.logScriptExport.disabled = false;
+    elements.logScriptExport.setAttribute("aria-label", `未読とAPEIRONCENEを含む全台本${scriptArchiveStepCount}stepをMarkdownで出力`);
   };
   const markdownBlockquote = (value) => String(value).split("\n").map((line) => `> ${line}`).join("\n");
+  const buildFullScriptMarkdown = () => {
+    const sections = scriptArchiveSections.map((section) => {
+      const steps = section.steps.map((step, index) => {
+        const speaker = speakerDisplayName(step) || (step.speaker === "narrator" || !step.speaker ? "地の文" : "SYSTEM");
+        const metadata = scriptStepMetadata(step);
+        const metadataBlock = Object.keys(metadata).length
+          ? ["", "#### 演出メタデータ", "", "```json", JSON.stringify(metadata, null, 2), "```"].join("\n")
+          : "";
+        return [
+          `### ${String(index + 1).padStart(3, "0")} / \`${step.id}\``,
+          "",
+          `- 話者: ${speaker}`,
+          `- 種別: ${step.recordType || step.type || "step"}`,
+          "",
+          markdownBlockquote(scriptStepText(step)),
+          metadataBlock,
+        ].join("\n");
+      }).join("\n\n---\n\n");
+      return [
+        `## ${section.eyebrow}｜${section.title}`,
+        "",
+        `- 区分: ${section.source === "apeironcene" ? "TRUE END / APEIRONCENE" : "MAIN STORY"}`,
+        `- step数: ${section.steps.length}`,
+        "",
+        steps,
+      ].join("\n");
+    }).join("\n\n---\n\n");
+    return [
+      "# 『惑星の放課後 ～GAIA SENSATION～』全台本",
+      "",
+      "Log画面から出力した、表示進捗に左右されない現行実行データの全台本です。未読stepとTRUE END『APEIRONCENE』を含みます。",
+      "",
+      `- 出力日時: ${new Date().toISOString()}`,
+      `- 本編: ${allSteps.length} step`,
+      `- APEIRONCENE: ${beyondSteps.length} step`,
+      `- 合計: ${scriptArchiveStepCount} step`,
+      `- 本編バージョン: ${story.storyVersion}`,
+      `- TRUE ENDバージョン: ${trueEndStory?.storyVersion || "unknown"}`,
+      "",
+      sections,
+      "",
+    ].join("\n");
+  };
+  const downloadLogMarkdown = (markdown, filename) => {
+    const blob = new Blob(["\uFEFF", markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
   const buildLogCommentMarkdown = () => {
     const entries = commentedLogEntries();
     const sections = entries.map(({ step, comment }, index) => [
@@ -4874,17 +4982,14 @@
   const exportLogComments = () => {
     const entries = commentedLogEntries();
     const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-    const blob = new Blob(["\uFEFF", buildLogCommentMarkdown()], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `gaia-codex-log-comments-${stamp}.md`;
-    link.hidden = true;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    downloadLogMarkdown(buildLogCommentMarkdown(), `gaia-codex-log-comments-${stamp}.md`);
     setLogStatus(`${entries.length}件を書き出しました`, "success");
+    return true;
+  };
+  const exportFullScript = () => {
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+    downloadLogMarkdown(buildFullScriptMarkdown(), `gaia-senseware-complete-script-${stamp}.md`);
+    setLogStatus(`全台本 ${scriptArchiveStepCount}stepを書き出しました`, "success");
     return true;
   };
   const deleteAllLogComments = () => {
@@ -4911,7 +5016,7 @@
     setLogStatus(`${entries.length}件のコメントをすべて削除しました`, "success");
     return true;
   };
-  const renderLog = () => {
+  const renderHeardLog = () => {
     elements.logContent.replaceChildren();
     state.readStepIds.forEach((id) => {
       const step = logStepMap.get(id);
@@ -5012,6 +5117,121 @@
     });
     syncLogCommentSummary();
   };
+  const renderScriptArchive = () => {
+    const fragment = document.createDocumentFragment();
+    const readStepIds = new Set(state.readStepIds);
+    elements.logContent.replaceChildren();
+    scriptArchiveSections.forEach((section, sectionIndex) => {
+      const sectionElement = document.createElement("section");
+      const sectionHeader = document.createElement("div");
+      const sectionHeading = document.createElement("div");
+      const eyebrow = document.createElement("span");
+      const title = document.createElement("h2");
+      const summary = document.createElement("p");
+      const headingId = `novel-script-section-${sectionIndex + 1}`;
+      const readCount = section.steps.filter((step) => readStepIds.has(step.id)).length;
+      sectionElement.className = "novel-script-section";
+      sectionElement.dataset.source = section.source;
+      sectionElement.setAttribute("aria-labelledby", headingId);
+      sectionHeader.className = "novel-script-section-header";
+      sectionHeading.className = "novel-script-section-heading";
+      eyebrow.textContent = section.eyebrow;
+      title.id = headingId;
+      title.textContent = section.title;
+      summary.textContent = `${section.steps.length} STEP / 既読 ${readCount} / 未読 ${section.steps.length - readCount}`;
+      sectionHeading.append(eyebrow, title);
+      sectionHeader.append(sectionHeading, summary);
+      sectionElement.append(sectionHeader);
+
+      section.steps.forEach((step, index) => {
+        const article = document.createElement("article");
+        const entryHeader = document.createElement("div");
+        const meta = document.createElement("p");
+        const readState = document.createElement("span");
+        const visibleId = document.createElement("code");
+        const copy = document.createElement("button");
+        const text = document.createElement("p");
+        const details = document.createElement("ul");
+        const speaker = speakerDisplayName(step) || (step.speaker === "narrator" || !step.speaker ? "地の文" : "SYSTEM");
+        const isRead = readStepIds.has(step.id);
+        article.className = "novel-script-entry";
+        article.dataset.stepId = step.id;
+        article.dataset.kind = step.recordType || step.type || "step";
+        article.dataset.speaker = step.speaker || "narrator";
+        article.dataset.readState = isRead ? "read" : "unread";
+        entryHeader.className = "novel-log-entry-header";
+        meta.className = "novel-log-entry-meta";
+        meta.append(document.createTextNode(`${String(index + 1).padStart(3, "0")} / ${speaker} / ${step.recordType || step.type || "step"} / `));
+        visibleId.className = "novel-log-entry-id";
+        visibleId.textContent = step.id;
+        meta.append(visibleId);
+        readState.className = "novel-script-read-state";
+        readState.textContent = isRead ? "既読" : "未読";
+        copy.type = "button";
+        copy.className = "novel-log-copy novel-script-copy";
+        copy.textContent = "ID＋本文";
+        copy.setAttribute("aria-label", `${step.id}の台本IDと本文をコピー`);
+        copy.addEventListener("click", async () => {
+          const copied = await writeClipboardText(`${step.id}\n${scriptStepText(step)}`);
+          setLogStatus(copied ? `${step.id} をコピーしました` : "コピーできませんでした", copied ? "success" : "error");
+        });
+        entryHeader.append(meta, readState, copy);
+        text.className = "novel-log-entry-text";
+        text.textContent = scriptStepText(step);
+        details.className = "novel-script-entry-details";
+        const detailLines = [
+          step.time ? `TIME / ${step.time}` : "",
+          step.expression ? `EXPRESSION / ${step.expression}` : "",
+          Array.isArray(step.readout) && step.readout.length ? `READOUT / ${step.readout.join(" | ")}` : "",
+          step.interaction ? `INTERACTION / ${JSON.stringify(step.interaction)}` : "",
+          Array.isArray(step.attachments) && step.attachments.length ? `ATTACHMENT / ${JSON.stringify(step.attachments)}` : "",
+        ].filter(Boolean);
+        detailLines.forEach((line) => {
+          const item = document.createElement("li");
+          item.textContent = line;
+          details.append(item);
+        });
+        article.append(entryHeader, text);
+        if (detailLines.length) article.append(details);
+        sectionElement.append(article);
+      });
+      fragment.append(sectionElement);
+    });
+    elements.logContent.append(fragment);
+  };
+  const syncLogViewControls = () => {
+    const scriptView = logView === "script";
+    elements.logPanel.dataset.logView = logView;
+    elements.logTitle.textContent = scriptView
+      ? `全台本 ${scriptArchiveStepCount} STEP`
+      : "ここまでに聞いた言葉";
+    elements.logViewHeard.setAttribute("aria-selected", String(!scriptView));
+    elements.logViewScript.setAttribute("aria-selected", String(scriptView));
+    elements.logViewHeard.tabIndex = scriptView ? -1 : 0;
+    elements.logViewScript.tabIndex = scriptView ? 0 : -1;
+    elements.logContent.dataset.view = logView;
+    elements.logContent.setAttribute("aria-labelledby", scriptView ? "novel-log-view-script" : "novel-log-view-heard");
+  };
+  const renderLog = () => {
+    syncLogViewControls();
+    if (logView === "script") {
+      renderScriptArchive();
+      syncLogCommentSummary();
+    } else {
+      renderHeardLog();
+    }
+  };
+  const setLogView = (view) => {
+    if (!new Set(["heard", "script"]).has(view) || view === logView) return false;
+    logView = view;
+    logFollowLatest = view === "heard";
+    setLogStatus("");
+    renderLog();
+    requestAnimationFrame(() => {
+      elements.logContent.scrollTop = view === "heard" ? elements.logContent.scrollHeight : 0;
+    });
+    return true;
+  };
   const logDistanceFromBottom = () => Math.max(0,
     elements.logContent.scrollHeight - elements.logContent.clientHeight - elements.logContent.scrollTop);
   const scrollLogToLatest = () => {
@@ -5022,7 +5242,7 @@
     logFollowLatest = logDistanceFromBottom() <= LOG_FOLLOW_THRESHOLD_PX;
   }, { passive: true });
   new MutationObserver(() => {
-    if (elements.logPanel.hidden || !logFollowLatest) return;
+    if (elements.logPanel.hidden || logView !== "heard" || !logFollowLatest) return;
     requestAnimationFrame(scrollLogToLatest);
   }).observe(elements.logContent, { childList: true });
   const closeLog = () => {
@@ -5042,7 +5262,10 @@
     elements.logPanel.hidden = false;
     elements.logPanel.setAttribute("aria-hidden", "false");
     elements.logButton.setAttribute("aria-expanded", "true");
-    requestAnimationFrame(scrollLogToLatest);
+    requestAnimationFrame(() => {
+      if (logView === "heard") scrollLogToLatest();
+      else elements.logContent.scrollTop = 0;
+    });
     elements.logClose.focus({ preventScroll: true });
   };
   const toggleLog = () => {
@@ -5569,8 +5792,20 @@
   elements.restart.addEventListener("click", restartStory);
   elements.logButton.addEventListener("click", toggleLog);
   elements.logClose.addEventListener("click", closeLog);
+  elements.logViewHeard.addEventListener("click", () => setLogView("heard"));
+  elements.logViewScript.addEventListener("click", () => setLogView("script"));
+  [elements.logViewHeard, elements.logViewScript].forEach((tab) => {
+    tab.addEventListener("keydown", (event) => {
+      if (!new Set(["ArrowLeft", "ArrowRight", "Home", "End"]).has(event.key)) return;
+      event.preventDefault();
+      const view = event.key === "ArrowLeft" || event.key === "Home" ? "heard" : "script";
+      setLogView(view);
+      (view === "heard" ? elements.logViewHeard : elements.logViewScript).focus();
+    });
+  });
   elements.logDeleteAll.addEventListener("click", deleteAllLogComments);
   elements.logExport.addEventListener("click", exportLogComments);
+  elements.logScriptExport.addEventListener("click", exportFullScript);
   elements.saveButton.addEventListener("click", () => openManualArchive("save"));
   elements.loadButton.addEventListener("click", () => openManualArchive("load"));
   elements.saveClose.addEventListener("click", closeManualArchive);

@@ -168,7 +168,7 @@
     <script src="./opening-audio.js?v=gaia-map-ambient-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-character-book-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-budget-devices-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-log-complete-script-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -2450,16 +2450,24 @@
 
         <aside class="novel-log-panel" id="novel-log-panel" aria-hidden="true" hidden>
           <header>
-            <div class="novel-log-heading"><span>OBSERVATION LOG</span><strong>ここまでに聞いた言葉</strong></div>
+            <div class="novel-log-heading">
+              <span>OBSERVATION LOG / SCRIPT ARCHIVE</span>
+              <strong id="novel-log-title">ここまでに聞いた言葉</strong>
+              <div class="novel-log-view-tabs" role="tablist" aria-label="ログの表示範囲">
+                <button id="novel-log-view-heard" type="button" role="tab" aria-selected="true" aria-controls="novel-log-content">観測ログ<small>既読</small></button>
+                <button id="novel-log-view-script" type="button" role="tab" aria-selected="false" aria-controls="novel-log-content">全台本<small>本編＋APEIRONCENE</small></button>
+              </div>
+            </div>
             <div class="novel-log-tools">
               <span class="novel-log-comment-count" id="novel-log-comment-count">コメント 0件</span>
               <button class="novel-log-delete-all" id="novel-log-delete-all" type="button" hidden disabled>コメントを全削除</button>
               <button class="novel-log-export" id="novel-log-export" type="button">Codex用Markdown</button>
+              <button class="novel-log-export novel-log-script-export" id="novel-log-script-export" type="button">全台本Markdown</button>
               <span class="novel-log-status" id="novel-log-status" role="status" aria-live="polite"></span>
             </div>
             <button class="novel-log-close" id="novel-log-close" type="button" aria-label="会話履歴を閉じる">×</button>
           </header>
-          <div id="novel-log-content" tabindex="0"></div>
+          <div id="novel-log-content" role="tabpanel" aria-labelledby="novel-log-view-heard" tabindex="0"></div>
         </aside>
 
         <aside class="novel-save-panel" id="novel-save-panel" aria-hidden="true" hidden>
