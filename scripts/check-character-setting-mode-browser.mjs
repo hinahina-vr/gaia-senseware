@@ -17,11 +17,24 @@ const viewports = [
   { name: "pc-1440", width: 1440, height: 900, mobile: false },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
 ];
+const expectedSheets = [
+  "01-three-ecologies-character-master.png",
+  "02-first-meeting-zushi-coast.png",
+  "03-gaia-senseware-installation.png",
+  "04-life-earth-coevolution.png",
+  "05-anthropocene-planetary-force.png",
+  "06-ai-earth-coevolution.png",
+  "07-three-ecologies-world.png",
+  "08-old-os-to-gx.png",
+  "09-next-stage-civilization.png",
+  "10-final-keyvisual.png",
+];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
 
-const attachDiagnostics = (page, name) => {
+const attachDiagnostics = (page, name, { allowAbortedImage = false } = {}) => {
   page.on("console", (message) => {
+    if (allowAbortedImage && message.type() === "error" && /Failed to load resource: net::ERR_FAILED/u.test(message.text())) return;
     if (message.type() === "error") report.consoleErrors.push(`${name}: ${message.text()}`);
   });
   page.on("pageerror", (error) => report.pageErrors.push(`${name}: ${error.message}`));
@@ -97,6 +110,8 @@ try {
     } else {
       assert(initial.viewerRect.right <= initial.detailsRect.left, `${viewport.name}: desktop page and metadata overlap`);
     }
+    assert.equal(await page.locator("#character-book-layer").getAttribute("data-image-state"), "ready", `${viewport.name}: opening sheet is not in a ready state`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-character-book.png`), fullPage: false });
 
     await page.locator("#character-book-page").click();
     await waitForPageImage(page, "02");
@@ -106,6 +121,20 @@ try {
     await page.keyboard.press("ArrowRight");
     await waitForPageImage(page, "03");
     assert.equal(await page.locator("#character-book-page-title").textContent(), "GAIA SENSEWAREの展示空間");
+
+    for (let pageIndex = 0; pageIndex < expectedSheets.length; pageIndex += 1) {
+      await page.locator(`[data-character-page="${pageIndex}"]`).click();
+      await waitForPageImage(page, String(pageIndex + 1).padStart(2, "0"));
+      const sheet = await page.locator("#character-book-image").evaluate((element) => ({
+        source: element.currentSrc,
+        naturalWidth: element.naturalWidth,
+        naturalHeight: element.naturalHeight,
+        state: document.querySelector("#character-book-layer")?.dataset.imageState,
+      }));
+      assert.match(sheet.source, new RegExp(expectedSheets[pageIndex].replaceAll(".", "\\."), "u"), `${viewport.name}: sheet ${pageIndex + 1} source is wrong`);
+      assert(sheet.naturalWidth >= 1200 && sheet.naturalHeight >= 800, `${viewport.name}: sheet ${pageIndex + 1} did not decode at full resolution`);
+      assert.equal(sheet.state, "ready", `${viewport.name}: sheet ${pageIndex + 1} remained in ${sheet.state} state`);
+    }
 
     await page.locator('[data-character-page="9"]').click();
     await waitForPageImage(page, "10");
@@ -117,7 +146,7 @@ try {
     const finalScan = await inspect(page);
     assert.equal(finalScan.nextDisabled, false, `${viewport.name}: next did not recover after leaving final page`);
     report.scans.push({ viewport: viewport.name, initial, final: finalScan, passed: true });
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-character-book.png`), fullPage: false });
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-character-book-page09.png`), fullPage: false });
 
     await page.keyboard.press("Escape");
     await page.locator("#character-book-layer").waitFor({ state: "hidden", timeout: 5_000 });
@@ -155,6 +184,36 @@ try {
   await page.locator("#character-book-layer").waitFor({ state: "hidden", timeout: 5_000 });
   await page.waitForFunction(() => document.activeElement?.id === "intro-character-jump");
   await context.close();
+
+  const recoveryContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const recoveryPage = await recoveryContext.newPage();
+  attachDiagnostics(recoveryPage, "image-recovery", { allowAbortedImage: true });
+  let interruptFinalSheet = true;
+  await recoveryPage.route("**/10-final-keyvisual.png*", async (route) => {
+    if (interruptFinalSheet) {
+      interruptFinalSheet = false;
+      await route.abort("failed");
+    } else {
+      await route.continue();
+    }
+  });
+  await recoveryPage.goto(new URL("/#character", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await recoveryPage.locator("#character-book-layer").waitFor({ state: "visible", timeout: 15_000 });
+  await waitForPageImage(recoveryPage, "01");
+  await recoveryPage.locator('[data-character-page="9"]').click();
+  await recoveryPage.waitForFunction(() => document.querySelector("#character-book-layer")?.dataset.imageState === "error");
+  const failureState = await recoveryPage.locator("#character-book-image").evaluate((element) => ({
+    naturalWidth: element.naturalWidth,
+    statusVisible: !document.querySelector("#character-book-image-state")?.hidden,
+    statusText: document.querySelector("#character-book-image-state")?.textContent.trim(),
+  }));
+  assert(failureState.naturalWidth > 0, "A failed setting sheet left the viewer visually blank");
+  assert.equal(failureState.statusVisible, true, "A failed setting sheet has no visible retry state");
+  assert.match(failureState.statusText, /クリックで再試行/u, "The image failure state does not explain recovery");
+  await recoveryPage.locator("#character-book-page").click();
+  await waitForPageImage(recoveryPage, "10");
+  assert.equal(await recoveryPage.locator("#character-book-layer").getAttribute("data-image-state"), "ready");
+  await recoveryContext.close();
 
   assert.deepEqual(report.consoleErrors, [], `Console errors: ${JSON.stringify(report.consoleErrors)}`);
   assert.deepEqual(report.pageErrors, [], `Page errors: ${JSON.stringify(report.pageErrors)}`);

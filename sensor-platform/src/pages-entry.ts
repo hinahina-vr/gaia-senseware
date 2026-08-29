@@ -33,12 +33,26 @@ const NON_PUBLIC_PREFIXES = [
   "/tmp/",
 ];
 
+const PUBLIC_CHARACTER_BIBLE_PATHS = new Set([
+  "/artifacts/gx-setting-bible/01-three-ecologies-character-master.png",
+  "/artifacts/gx-setting-bible/02-first-meeting-zushi-coast.png",
+  "/artifacts/gx-setting-bible/03-gaia-senseware-installation.png",
+  "/artifacts/gx-setting-bible/04-life-earth-coevolution.png",
+  "/artifacts/gx-setting-bible/05-anthropocene-planetary-force.png",
+  "/artifacts/gx-setting-bible/06-ai-earth-coevolution.png",
+  "/artifacts/gx-setting-bible/07-three-ecologies-world.png",
+  "/artifacts/gx-setting-bible/08-old-os-to-gx.png",
+  "/artifacts/gx-setting-bible/09-next-stage-civilization.png",
+  "/artifacts/gx-setting-bible/10-final-keyvisual.png",
+]);
+
 const isNonPublicPath = (pathname: string): boolean => {
   let decodedPath = pathname;
   try {
     decodedPath = decodeURIComponent(pathname);
   } catch {}
   const normalizedPath = decodedPath.toLowerCase();
+  if (PUBLIC_CHARACTER_BIBLE_PATHS.has(normalizedPath)) return false;
   return NON_PUBLIC_FILES.has(normalizedPath)
     || NON_PUBLIC_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix));
 };

@@ -66,12 +66,18 @@ await test("advanced handler delegates API and calls ASSETS exactly once for non
   assert.equal(await (await module.default.fetch(new Request("https://example.test/story"), env, context)).text(), "static");
   assert.equal(apiCalls, 1);
   assert.equal(assetCalls, 1);
+  const characterSheet = await module.default.fetch(new Request("https://example.test/artifacts/gx-setting-bible/01-three-ecologies-character-master.png"), env, context);
+  assert.equal(await characterSheet.text(), "static");
+  assert.equal(assetCalls, 2);
+  const privateArtifact = await module.default.fetch(new Request("https://example.test/artifacts/gx-setting-bible/README.md"), env, context);
+  assert.equal(privateArtifact.status, 404);
+  assert.equal(assetCalls, 2);
   const ranged = await module.default.fetch(new Request("https://example.test/assets/audio/test.mp3", { headers: { Range: "bytes=1-3" } }), env, context);
   assert.equal(ranged.status, 206);
   assert.equal(ranged.headers.get("accept-ranges"), "bytes");
   assert.equal(ranged.headers.get("content-range"), "bytes 1-3/6");
   assert.equal(await ranged.text(), "tat");
-  assert.equal(assetCalls, 2);
+  assert.equal(assetCalls, 3);
   delete globalThis.__gaiaPagesSensorHandler;
   delete globalThis.__gaiaPagesLiveHandler;
 });
@@ -140,14 +146,14 @@ try {
     assert.match(cookies, /__Host-gaia_sensor_session=/u);
     assert.match(cookies, /__Host-gaia_sensor_csrf=/u);
   });
-  for (const staticPath of ["/story", "/sensors/", "/novel-mode.js", "/sensors/sensor-platform.js"]) {
+  for (const staticPath of ["/story", "/sensors/", "/novel-mode.js", "/sensors/sensor-platform.js", "/artifacts/gx-setting-bible/01-three-ecologies-character-master.png"]) {
     await test(`${staticPath} remains static`, async () => {
       const response = await fetch(`${origin}${staticPath}`);
       assert.equal(response.status, 200);
       assert.equal(response.headers.has("x-request-id"), false);
     });
   }
-  for (const nonPublicPath of ["/README.md", "/docs/CONTEST_2026_SUBMISSION.md", "/scripts/check-contest-experience-browser.mjs"]) {
+  for (const nonPublicPath of ["/README.md", "/docs/CONTEST_2026_SUBMISSION.md", "/scripts/check-contest-experience-browser.mjs", "/artifacts/gx-setting-bible/README.md"]) {
     await test(`${nonPublicPath} is not public`, async () => {
       const response = await fetch(`${origin}${nonPublicPath}`);
       assert.equal(response.status, 404);

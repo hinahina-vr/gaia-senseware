@@ -686,11 +686,14 @@
         aria-hidden="true"
         hidden
       >
-        <div class="character-book-atmosphere" aria-hidden="true"></div>
+        <div class="character-book-atmosphere" aria-hidden="true">
+          <span class="character-book-atmosphere-grid"></span>
+          <span class="character-book-atmosphere-orbit"></span>
+        </div>
 
         <header class="character-book-header">
           <div>
-            <p><span>GAIA SENSATION</span> / VISUAL SETTING BIBLE</p>
+            <p><span>GAIA SENSEWARE</span> / VISUAL MEMORY ARCHIVE</p>
             <h2 id="character-book-title">キャラクター設定資料</h2>
           </div>
           <button
@@ -703,6 +706,10 @@
 
         <div class="character-book-layout">
           <main class="character-book-viewer">
+            <div class="character-book-stage-meta" aria-hidden="true">
+              <span><i></i> ARCHIVE SIGNAL / ONLINE</span>
+              <b id="character-book-stage-page">MEMORY 01 / 10</b>
+            </div>
             <button
               class="character-book-turn character-book-turn--previous"
               id="character-book-previous"
@@ -721,12 +728,17 @@
               <span class="character-book-paper-edge" aria-hidden="true"></span>
               <img
                 id="character-book-image"
-                src="./artifacts/gx-setting-bible/01-three-ecologies-character-master.png"
+                src="/artifacts/gx-setting-bible/01-three-ecologies-character-master.png?v=gaia-character-archive-2"
                 width="1536"
                 height="1024"
                 alt="みず、あめ、sakuの三人と、それぞれの持ち物を描いた基準設定画"
                 decoding="async"
               />
+              <span class="character-book-image-state" id="character-book-image-state" aria-live="polite" hidden>
+                <i aria-hidden="true"></i><b>VISUAL MEMORY / LOADING</b>
+              </span>
+              <span class="character-book-corner character-book-corner--tl" aria-hidden="true"></span>
+              <span class="character-book-corner character-book-corner--br" aria-hidden="true"></span>
               <span class="character-book-page-glint" aria-hidden="true"></span>
             </button>
 
@@ -743,6 +755,7 @@
           </main>
 
           <aside class="character-book-details" aria-live="polite" aria-atomic="true">
+            <p class="character-book-details-kicker"><i aria-hidden="true"></i> CURATED MEMORY / GX ARCHIVE</p>
             <p class="character-book-code" id="character-book-code">GX / 01 · CHARACTER MASTER</p>
             <h3 id="character-book-page-title">三人の基準設定画</h3>
             <p id="character-book-description">
@@ -774,8 +787,8 @@
         </div>
 
         <footer class="character-book-footer">
-          <span>GX VISUAL SETTING BIBLE / 10 SHEETS</span>
-          <p><kbd>←</kbd><kbd>→</kbd> またはページをクリックしてめくる</p>
+          <span>GX VISUAL MEMORY ARCHIVE / 10 RECORDS</span>
+          <p><kbd>←</kbd><kbd>→</kbd> ページをめくる <em>·</em> 画像をクリックして次へ</p>
         </footer>
       </section>
       </template>

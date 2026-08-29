@@ -95,10 +95,10 @@
       templates: ["gaia-template-character"],
       styles: [
         "./styles.css?v=gaia-character-main-card-1",
-        "./character-mode.css?v=gaia-setting-bible-1",
+        "./character-mode.css?v=gaia-character-archive-2",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./character-mode.js?v=gaia-setting-bible-1"],
+      scripts: ["./character-mode.js?v=gaia-character-archive-2"],
     },
     notebook: {
       templates: [],

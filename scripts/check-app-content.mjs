@@ -48,7 +48,8 @@ assert.equal(indexHtml.includes('id="intro-character-jump"'), true, "Character s
 assert.equal(indexHtml.includes('data-character-gallery-open'), true, "Character settings menu is not connected to the standalone viewer");
 assert.equal(indexHtml.includes('id="gaia-template-character"'), true, "Lazy character settings template is missing");
 assert.equal(indexHtml.includes('id="character-book-layer"'), true, "Standalone character settings viewer is missing");
-assert.equal(indexHtml.includes("VISUAL SETTING BIBLE"), true, "Character setting bible heading is missing");
+assert.equal(indexHtml.includes("VISUAL MEMORY ARCHIVE"), true, "Immersive character archive heading is missing");
+assert.equal(indexHtml.includes('id="character-book-image-state"'), true, "Character archive image loading and retry state is missing");
 assert.equal((indexHtml.match(/data-character-page=/gu) || []).length, 10, "Character setting bible must expose all 10 pages");
 assert.equal(indexHtml.includes("01-three-ecologies-character-master.png"), true, "Character master sheet is missing");
 assert.equal(modeLoader.includes('interceptClick("[data-character-gallery-open]", "character")'), true, "Character viewer is not lazy-loaded");

@@ -12,8 +12,12 @@ qa-*.png
 **/.dev.vars.*
 !**/.dev.vars.example
 
-# Local visual QA artifacts and temporary working files
-/artifacts/
+# Local visual QA artifacts and temporary working files.
+# The ten curated GX setting-bible sheets are public exhibition assets.
+/artifacts/*
+!/artifacts/gx-setting-bible/
+/artifacts/gx-setting-bible/*
+!/artifacts/gx-setting-bible/*.png
 /tmp/
 
 # Python-generated caches
