@@ -46,7 +46,7 @@
     window.dispatchEvent(new CustomEvent("gaia:initial-view-ready"));
     window.__gaiaBootCheck?.();
   };
-  const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#story", "#tour"].includes(
+  const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#character", "#story", "#tour"].includes(
     window.location.hash,
   ) || window.location.hash.startsWith("#observation=") || /\/story\/?$/i.test(window.location.pathname);
   const directSensewareDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#tour"].includes(
@@ -204,25 +204,21 @@
   routeGuideLayer.setAttribute("role", "dialog");
   routeGuideLayer.setAttribute("aria-modal", "false");
   routeGuideLayer.setAttribute("aria-labelledby", "gaia-opening-route-guide-title");
+  routeGuideLayer.setAttribute("aria-describedby", "gaia-opening-route-guide-copy gaia-opening-route-guide-hint");
+  routeGuideLayer.tabIndex = 0;
   routeGuideLayer.innerHTML = `
     <div class="gaia-opening-route-guide-shade" aria-hidden="true"></div>
-    <article class="gaia-opening-route-guide-bubble" aria-live="polite">
+    <article class="gaia-opening-route-guide-bubble" aria-live="polite" aria-atomic="true">
       <div class="gaia-opening-route-guide-index"><span>入口ガイド</span><b><i data-route-guide-step>1</i> / ${routeGuideSteps.length}</b></div>
       <p data-route-guide-kicker></p>
       <h2 id="gaia-opening-route-guide-title" data-route-guide-title></h2>
-      <p data-route-guide-copy></p>
-      <nav aria-label="入口ガイドの操作">
-        <button type="button" data-route-guide-action="close">閉じる</button>
-        <button type="button" data-route-guide-action="previous">戻る</button>
-        <button class="is-primary" type="button" data-route-guide-action="next"><span>次へ</span></button>
-      </nav>
+      <p id="gaia-opening-route-guide-copy" data-route-guide-copy></p>
+      <span class="gaia-opening-route-guide-hint" id="gaia-opening-route-guide-hint"><b>CLICK / TAP</b><span data-route-guide-hint-action>次へ</span></span>
     </article>`;
   opening.append(routeGuideLayer);
 
   const routeGuideShade = routeGuideLayer.querySelector(".gaia-opening-route-guide-shade");
   const routeGuideBubble = routeGuideLayer.querySelector(".gaia-opening-route-guide-bubble");
-  const routeGuidePrevious = routeGuideLayer.querySelector("[data-route-guide-action='previous']");
-  const routeGuideNext = routeGuideLayer.querySelector("[data-route-guide-action='next']");
   let routeGuideActive = false;
   let routeGuideIndex = 0;
   let routeGuidePositionFrame = 0;
@@ -345,7 +341,7 @@
     gatewayLayoutFrame = requestAnimationFrame(syncFinalGatewayPlacement);
   };
 
-  const setRouteGuideStep = (nextIndex, { moveFocus = true } = {}) => {
+  const setRouteGuideStep = (nextIndex) => {
     if (!routeGuideActive || routeGuideSteps.length === 0) return;
     routeGuideIndex = Math.max(0, Math.min(routeGuideSteps.length - 1, nextIndex));
     clearRouteGuideTarget();
@@ -355,12 +351,10 @@
     routeGuideLayer.querySelector("[data-route-guide-kicker]").textContent = step.kicker;
     routeGuideLayer.querySelector("[data-route-guide-title]").textContent = step.title;
     routeGuideLayer.querySelector("[data-route-guide-copy]").textContent = step.copy;
-    if (routeGuidePrevious instanceof HTMLButtonElement) routeGuidePrevious.disabled = routeGuideIndex === 0;
-    if (routeGuideNext instanceof HTMLButtonElement) {
-      routeGuideNext.querySelector("span").textContent = routeGuideIndex === routeGuideSteps.length - 1 ? "案内を終える" : "次へ";
-    }
+    routeGuideLayer.querySelector("[data-route-guide-hint-action]").textContent = routeGuideIndex === routeGuideSteps.length - 1
+      ? "案内を終える"
+      : "次へ";
     routeGuideLayer.dataset.step = String(routeGuideIndex + 1);
-    if (moveFocus) step.target.focus({ preventScroll: true });
     scheduleRouteGuidePosition();
   };
 
@@ -390,6 +384,7 @@
     requestAnimationFrame(() => {
       routeGuideLayer.classList.add("is-visible");
       setRouteGuideStep(0);
+      routeGuideLayer.focus({ preventScroll: true });
     });
   };
 
@@ -399,34 +394,25 @@
     routeGuideStartTimer = window.setTimeout(openRouteGuide, reducedMotion ? 120 : 440);
   };
 
+  const advanceRouteGuide = () => {
+    if (!routeGuideActive) return;
+    if (routeGuideIndex >= routeGuideSteps.length - 1) closeRouteGuide();
+    else setRouteGuideStep(routeGuideIndex + 1);
+  };
+
   routeGuideLayer.addEventListener("click", (event) => {
-    const action = event.target.closest("[data-route-guide-action]")?.dataset.routeGuideAction;
-    if (action === "close") closeRouteGuide();
-    if (action === "previous") setRouteGuideStep(routeGuideIndex - 1);
-    if (action === "next") {
-      if (routeGuideIndex >= routeGuideSteps.length - 1) closeRouteGuide();
-      else setRouteGuideStep(routeGuideIndex + 1);
-    }
+    if (!routeGuideActive) return;
+    event.preventDefault();
+    advanceRouteGuide();
   });
   routeGuideLayer.addEventListener("keydown", (event) => {
     if (!routeGuideActive) return;
     if (event.key === "Escape") { event.preventDefault(); closeRouteGuide(); }
-    if (event.key === "ArrowRight") { event.preventDefault(); setRouteGuideStep(routeGuideIndex + 1); }
-    if (event.key === "ArrowLeft") { event.preventDefault(); setRouteGuideStep(routeGuideIndex - 1); }
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); advanceRouteGuide(); }
   });
   opening.addEventListener("keydown", (event) => {
     if (!routeGuideActive || event.defaultPrevented) return;
     if (event.key === "Escape") { event.preventDefault(); closeRouteGuide(); }
-    if (event.key === "ArrowRight") { event.preventDefault(); setRouteGuideStep(routeGuideIndex + 1); }
-    if (event.key === "ArrowLeft") { event.preventDefault(); setRouteGuideStep(routeGuideIndex - 1); }
-  });
-  routeGuideSteps.forEach((step, index) => {
-    step.target.addEventListener("focus", () => {
-      if (routeGuideActive && routeGuideIndex !== index) setRouteGuideStep(index, { moveFocus: false });
-    });
-    step.target.addEventListener("pointerenter", () => {
-      if (routeGuideActive && routeGuideIndex !== index) setRouteGuideStep(index, { moveFocus: false });
-    });
   });
   routeGuideReplay?.addEventListener("click", openRouteGuide);
   window.addEventListener("resize", scheduleFinalGatewayPlacement, { passive: true });

@@ -49,9 +49,9 @@ const readLayout = (page) => page.evaluate(() => {
 
 const assertStableLayout = (viewport, before, after) => {
   const tolerance = 1;
-  const expectedColumns = viewport.mobile ? 2 : 3;
-  assert.equal(before.cards.length, 3, `${viewport.name}: entrance does not have three exploration cards`);
-  assert.equal(after.cards.length, 3, `${viewport.name}: exploration card count changed after sound return`);
+  const expectedColumns = viewport.mobile ? 2 : 4;
+  assert.equal(before.cards.length, 4, `${viewport.name}: entrance does not have four exploration cards`);
+  assert.equal(after.cards.length, 4, `${viewport.name}: exploration card count changed after sound return`);
   assert.equal(before.gridColumns.length, expectedColumns, `${viewport.name}: entrance starts with the wrong grid: ${before.gridColumns}`);
   assert.equal(after.gridColumns.length, expectedColumns, `${viewport.name}: sound CSS changed the grid: ${after.gridColumns}`);
   assert(Math.abs(before.grid.width - before.primary.width) <= tolerance, `${viewport.name}: entrance actions do not start at the same width`);

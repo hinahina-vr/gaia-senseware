@@ -190,8 +190,6 @@
   const introSelectionTitle = document.querySelector("#intro-selection-title");
   const introSelectionCopy = document.querySelector("#intro-selection-copy");
   const introCharacterJump = document.querySelector("#intro-character-jump");
-  const introCharacterBack = document.querySelector("#intro-character-back");
-  const introCharacterExhibit = document.querySelector("#character-exhibit");
   const introArchitectureJump = document.querySelector("#intro-architecture-jump");
   const introArchitectureBack = document.querySelector("#intro-architecture-back");
   const introOpenDataExhibit = document.querySelector("#intro-open-data-exhibit");
@@ -7421,17 +7419,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       introGxFeature?.focus({ preventScroll: true });
     }, reducedMotion ? 0 : 460);
   });
-  introCharacterJump.addEventListener("click", () => {
-    introCharacterExhibit.scrollIntoView({
-      behavior: reducedMotion ? "auto" : "smooth",
-      block: "start",
-    });
-    introCharacterExhibit.focus({ preventScroll: true });
-  });
-  introCharacterBack.addEventListener("click", () => {
-    introLayer.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
-    showIntroStage("path");
-  });
   introArchitectureJump.addEventListener("click", () => {
     introOpenDataExhibit.scrollIntoView({
       behavior: reducedMotion ? "auto" : "smooth",
@@ -7506,7 +7493,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
               introScrollCue,
               introCharacterJump,
               introArchitectureJump,
-              introCharacterBack,
               introArchitectureBack,
             ]
           : [...introModeButtons, introPathBack]

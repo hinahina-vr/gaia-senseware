@@ -47,16 +47,46 @@ if (!lab || !openButton) {
     context: q("#gaia-statistics-context"),
     dataset: q("#gaia-statistics-dataset"),
     derived: q("#gaia-statistics-derived"),
+    recordFilter: q("#gaia-statistics-record-filter"),
+    filterClear: q("#gaia-statistics-filter-clear"),
+    segmentCompare: q("#gaia-statistics-segment-compare"),
+    savedView: q("#gaia-statistics-saved-view"),
+    viewSave: q("#gaia-statistics-view-save"),
+    viewApply: q("#gaia-statistics-view-apply"),
+    viewDelete: q("#gaia-statistics-view-delete"),
     lectures: q("#gaia-statistics-lectures"),
     methods: q("#gaia-statistics-methods"),
     number: q("#gaia-statistics-method-number"),
     title: q("#gaia-statistics-method-title"),
     copy: q("#gaia-statistics-method-copy"),
     status: q("#gaia-statistics-status"),
+    kpis: q("#gaia-statistics-kpis"),
+    kpiRows: q("#gaia-statistics-kpi-rows"),
+    kpiRowsNote: q("#gaia-statistics-kpi-rows-note"),
+    kpiCoverage: q("#gaia-statistics-kpi-coverage"),
+    kpiCoverageNote: q("#gaia-statistics-kpi-coverage-note"),
+    kpiPrimaryLabel: q("#gaia-statistics-kpi-primary-label"),
+    kpiPrimary: q("#gaia-statistics-kpi-primary"),
+    kpiPrimaryNote: q("#gaia-statistics-kpi-primary-note"),
+    kpiQuality: q("#gaia-statistics-kpi-quality"),
+    kpiQualityNote: q("#gaia-statistics-kpi-quality-note"),
+    filterSummary: q("#gaia-statistics-filter-summary"),
+    exportCsv: q("#gaia-statistics-export-csv"),
+    exportJson: q("#gaia-statistics-export-json"),
+    exportPng: q("#gaia-statistics-export-png"),
     canvas: q("#gaia-statistics-canvas"),
     visual: q("#gaia-statistics-visual"),
     metrics: q("#gaia-statistics-metrics"),
     formula: q("#gaia-statistics-formula"),
+    recordCount: q("#gaia-statistics-record-count"),
+    recordXHeading: q("#gaia-statistics-record-x-heading"),
+    recordYHeading: q("#gaia-statistics-record-y-heading"),
+    recordsBody: q("#gaia-statistics-records-body"),
+    recordDetails: q(".gaia-statistics-records"),
+    recordScroll: q(".gaia-statistics-records-scroll"),
+    recordDrillStatus: q("#gaia-statistics-record-drill-status"),
+    recordSortHeaders: [...document.querySelectorAll(".gaia-statistics-records thead th[data-record-sort]")],
+    recordSortButtons: [...document.querySelectorAll(".gaia-statistics-records [data-record-sort-action]")],
     insights: q("#gaia-statistics-insights"),
   };
   const chartTooltip = document.createElement("output");
@@ -149,6 +179,8 @@ if (!lab || !openButton) {
     "three-ecologies": "scatter",
     "earth-organ": "multiple",
   };
+  const SAVED_VIEWS_STORAGE_KEY = "gaia-statistics-saved-views:v1";
+  const MAX_SAVED_VIEWS = 8;
 
   const state = {
     open: false,
@@ -159,13 +191,21 @@ if (!lab || !openButton) {
     lectureId: "01",
     methodId: "summary",
     includeDerived: false,
+    recordQuery: "",
+    recordSortKey: "",
+    recordSortDirection: "ascending",
+    selectedRecordId: "",
+    filterTimer: 0,
+    savedViews: [],
     returnFocus: null,
     result: null,
     points: new Map(),
     chartTargets: [],
     chartMeta: null,
+    chartKeyboardIndex: -1,
     animation: 0,
     renderToken: 0,
+    exportReady: false,
   };
 
   const finite = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
@@ -250,11 +290,336 @@ if (!lab || !openButton) {
   };
 
   const currentDataset = () => state.datasets.find((dataset) => dataset.id === state.datasetId) || state.datasets[0];
-  const rowsFor = (dataset) => dataset.rows.filter((row) => state.includeDerived || row.provenance === "SOURCE");
+  const eligibleRowsFor = (dataset) => dataset.rows.filter((row) => state.includeDerived || row.provenance === "SOURCE");
+  const searchableTextFor = (row) => Object.values(row).flatMap((value) => {
+    if (value instanceof Date) return value.toISOString();
+    if (Array.isArray(value)) return value.map(String);
+    if (value === null || value === undefined || typeof value === "object") return [];
+    return String(value);
+  }).join(" ").toLocaleLowerCase("ja-JP");
+  const rowsFor = (dataset) => {
+    const eligible = eligibleRowsFor(dataset);
+    const tokens = state.recordQuery.trim().toLocaleLowerCase("ja-JP").split(/\s+/u).filter(Boolean);
+    if (!tokens.length) return eligible;
+    return eligible.filter((row) => {
+      const text = searchableTextFor(row);
+      return tokens.every((token) => text.includes(token));
+    });
+  };
   const valuesFor = (dataset) => rowsFor(dataset).map((row) => row.value).filter(Number.isFinite);
   const splitValues = (values) => [values.slice(0, Math.floor(values.length / 2)), values.slice(Math.ceil(values.length / 2))];
   const customInsight = ({ headline, meaning, evidence = [], interpretation, limitations, nextActions, provenance }) => ({ headline, meaning, evidence, interpretation, limitations, nextActions, provenance });
   const customResult = ({ kind = "custom", metrics = [], chart = { type: "summary" }, insight, formula = "" }) => ({ kind, metrics, chart, insight, formula });
+
+  const setExportsEnabled = (enabled) => {
+    state.exportReady = Boolean(enabled);
+    [ui.exportCsv, ui.exportJson, ui.exportPng].forEach((button) => { if (button) button.disabled = !state.exportReady; });
+  };
+
+  const primaryMetricFor = (result) => {
+    const metrics = (result.metrics || []).filter((metric) => Number.isFinite(Number(metric?.[1])));
+    const preferred = metrics.find(([label]) => /平均|中央値|相関|傾き|R²|推定|確率|オッズ比|効果量|F$|χ²/u.test(label));
+    return preferred || metrics.find(([label]) => !/^(?:n|標本数|使用行|自由度)$/u.test(label)) || metrics[0] || null;
+  };
+
+  const renderBusinessSummary = (result, dataset) => {
+    const usedRows = rowsFor(dataset);
+    const eligibleRows = eligibleRowsFor(dataset);
+    const totalRows = dataset.rows.length;
+    const sourceRows = usedRows.filter((row) => row.provenance === "SOURCE").length;
+    const coverage = totalRows ? usedRows.length / totalRows : 0;
+    const sourceShare = usedRows.length ? sourceRows / usedRows.length : 0;
+    const primary = primaryMetricFor(result);
+    const period = dataset.periodStart && dataset.periodEnd ? `${dataset.periodStart}–${dataset.periodEnd}` : "SAVED SNAPSHOT";
+
+    ui.kpiRows.textContent = format(usedRows.length, 0);
+    ui.kpiRowsNote.textContent = `${usedRows.length} / ${totalRows} ROWS`;
+    ui.kpiCoverage.textContent = `${format(coverage * 100, 1)}%`;
+    ui.kpiCoverageNote.textContent = state.recordQuery ? "QUERY SEGMENT" : (state.includeDerived ? "SOURCE + DERIVED" : "SOURCE FILTER");
+    ui.kpiPrimaryLabel.textContent = primary?.[0] || "PRIMARY KPI";
+    ui.kpiPrimary.textContent = primary ? `${format(primary[1])}${primary[2] || ""}` : "—";
+    ui.kpiPrimaryNote.textContent = primary ? `${METHOD_LOOKUP.get(state.methodId)?.group.id || "--"} / LIVE RESULT` : "数値指標なし";
+    ui.kpiQuality.textContent = sourceRows === usedRows.length ? "SOURCE ONLY" : `${format(sourceShare * 100, 1)}% SOURCE`;
+    ui.kpiQualityNote.textContent = `${sourceRows} SOURCE / ${usedRows.length - sourceRows} DERIVED`;
+    ui.kpis.dataset.usedRows = String(usedRows.length);
+    ui.kpis.dataset.totalRows = String(totalRows);
+    ui.kpis.dataset.sourceRows = String(sourceRows);
+    ui.kpis.dataset.coverage = String(coverage);
+    ui.kpis.dataset.quality = sourceRows === usedRows.length ? "source-only" : "mixed";
+    const querySummary = state.recordQuery ? ` · QUERY “${state.recordQuery}”` : "";
+    ui.filterSummary.textContent = `FILTER / ${state.includeDerived ? "SOURCE + DERIVED" : "SOURCE ONLY"}${querySummary} · ${period} · BROWSER LOCAL`;
+
+    const comparisonLabel = document.createElement("span"); comparisonLabel.textContent = "SEGMENT / ALL ELIGIBLE";
+    const comparisonValue = document.createElement("strong");
+    const comparisonNote = document.createElement("small");
+    const numericComparisonAllowed = !usedRows.some((row) => row.category !== undefined || row.group !== undefined);
+    const segmentValues = usedRows.map((row) => row.value).filter(Number.isFinite);
+    const baselineValues = eligibleRows.map((row) => row.value).filter(Number.isFinite);
+    delete ui.segmentCompare.dataset.delta;
+    delete ui.segmentCompare.dataset.segmentMean;
+    delete ui.segmentCompare.dataset.baselineMean;
+    if (!state.recordQuery) {
+      comparisonValue.textContent = "セグメント未指定";
+      comparisonNote.textContent = "検索すると、表示中平均と全体平均の差を表示します。";
+      ui.segmentCompare.dataset.status = "idle";
+    } else if (!usedRows.length) {
+      comparisonValue.textContent = "NO MATCH";
+      comparisonNote.textContent = `「${state.recordQuery}」に一致するレコードはありません。`;
+      ui.segmentCompare.dataset.status = "empty";
+    } else if (!numericComparisonAllowed || !segmentValues.length || !baselineValues.length) {
+      comparisonValue.textContent = `${usedRows.length} RECORDS`;
+      comparisonNote.textContent = "カテゴリデータは平均差を作らず、件数だけを比較します。";
+      ui.segmentCompare.dataset.status = "categorical";
+    } else {
+      const segmentMean = segmentValues.reduce((sum, value) => sum + value, 0) / segmentValues.length;
+      const baselineMean = baselineValues.reduce((sum, value) => sum + value, 0) / baselineValues.length;
+      const difference = segmentMean - baselineMean;
+      comparisonValue.textContent = `${difference >= 0 ? "+" : ""}${format(difference)}${dataset.unit}`;
+      comparisonNote.textContent = `表示中平均 ${format(segmentMean)}${dataset.unit} / 全${eligibleRows.length}行 ${format(baselineMean)}${dataset.unit}`;
+      ui.segmentCompare.dataset.status = difference > 0 ? "above" : difference < 0 ? "below" : "same";
+      ui.segmentCompare.dataset.delta = String(difference);
+      ui.segmentCompare.dataset.segmentMean = String(segmentMean);
+      ui.segmentCompare.dataset.baselineMean = String(baselineMean);
+    }
+    ui.segmentCompare.replaceChildren(comparisonLabel, comparisonValue, comparisonNote);
+  };
+
+  const normalizedExportValue = (value) => {
+    if (value instanceof Date) return value.toISOString();
+    if (Array.isArray(value) || (value && typeof value === "object")) return JSON.stringify(value);
+    return value ?? "";
+  };
+
+  const exportColumnsFor = (rows) => {
+    const preferred = ["id", "label", "value", "x", "y", "paired", "category", "group", "provenance"];
+    const keys = new Set(rows.flatMap((row) => Object.keys(row).filter((key) => typeof row[key] !== "function")));
+    return [...preferred.filter((key) => keys.has(key)), ...[...keys].filter((key) => !preferred.includes(key)).sort()];
+  };
+
+  const csvCell = (value) => {
+    let text = String(normalizedExportValue(value));
+    if (/^[=+\-@]/u.test(text) && typeof value !== "number") text = `'${text}`;
+    return `"${text.replaceAll('"', '""')}"`;
+  };
+
+  const exportBaseName = () => {
+    const date = new Date().toISOString().slice(0, 10);
+    return `gaia-${currentDataset()?.id || "statistics"}-${state.methodId}-${date}`.replace(/[^a-z0-9._-]+/giu, "-");
+  };
+
+  const createExportReport = () => {
+    const dataset = currentDataset();
+    const method = METHOD_LOOKUP.get(state.methodId);
+    const rows = rowsFor(dataset);
+    return {
+      schemaVersion: "gaia-statistics-report/v1",
+      exportedAt: new Date().toISOString(),
+      processing: "browser-local",
+      filter: { includeDerived: state.includeDerived, provenance: state.includeDerived ? dataset.provenance : ["SOURCE"], query: state.recordQuery },
+      dataset: {
+        id: dataset.id,
+        modeId: dataset.modeId,
+        title: dataset.title,
+        unit: dataset.unit,
+        periodStart: dataset.periodStart || null,
+        periodEnd: dataset.periodEnd || null,
+        usedRows: rows.length,
+        totalRows: dataset.rows.length,
+      },
+      method: { id: state.methodId, lectureId: method?.group.id || null, label: method?.label || state.methodId },
+      metrics: (state.result?.metrics || []).map(([label, value, unit]) => ({ label, value: Number.isFinite(value) ? value : normalizedExportValue(value), unit: unit || "" })),
+      formula: state.result?.formula || "",
+      insight: state.result?.insight || null,
+      rows: rows.map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, normalizedExportValue(value)]))),
+    };
+  };
+
+  const downloadBlob = (blob, filename, kind) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.hidden = true;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+    window.dispatchEvent(new CustomEvent("gaia:statistics-export", { detail: { kind, filename, datasetId: state.datasetId, methodId: state.methodId } }));
+  };
+
+  const exportCsv = () => {
+    if (!state.exportReady) return false;
+    const dataset = currentDataset();
+    const rows = rowsFor(dataset);
+    const columns = exportColumnsFor(rows);
+    const headers = ["dataset_id", "mode_id", "method_id", ...columns];
+    const csvRows = [headers.map(csvCell).join(",")];
+    rows.forEach((row) => csvRows.push([dataset.id, dataset.modeId, state.methodId, ...columns.map((column) => row[column])].map(csvCell).join(",")));
+    downloadBlob(new Blob([`\uFEFF${csvRows.join("\r\n")}\r\n`], { type: "text/csv;charset=utf-8" }), `${exportBaseName()}.csv`, "csv");
+    return true;
+  };
+
+  const exportJson = () => {
+    if (!state.exportReady) return false;
+    downloadBlob(new Blob([`${JSON.stringify(createExportReport(), null, 2)}\n`], { type: "application/json" }), `${exportBaseName()}.json`, "json");
+    return true;
+  };
+
+  const exportPng = () => new Promise((resolve) => {
+    if (!state.exportReady) { resolve(false); return; }
+    const source = ui.canvas;
+    const ratio = Math.max(1, source.width / Math.max(1, source.getBoundingClientRect().width));
+    const headerHeight = Math.round(74 * ratio);
+    const footerHeight = Math.round(42 * ratio);
+    const canvas = document.createElement("canvas");
+    canvas.width = source.width;
+    canvas.height = source.height + headerHeight + footerHeight;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#031025";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#83e7ff";
+    context.font = `700 ${Math.round(10 * ratio)}px Consolas, monospace`;
+    context.fillText("GAIA STATISTICS LAB / LOCAL ANALYSIS", Math.round(22 * ratio), Math.round(24 * ratio));
+    context.fillStyle = "#edfaff";
+    context.font = `600 ${Math.round(18 * ratio)}px sans-serif`;
+    context.fillText(`${currentDataset().title} — ${METHOD_LOOKUP.get(state.methodId)?.label || state.methodId}`, Math.round(22 * ratio), Math.round(52 * ratio));
+    context.drawImage(source, 0, headerHeight);
+    context.strokeStyle = "rgba(131,231,255,.32)";
+    context.beginPath(); context.moveTo(Math.round(22 * ratio), canvas.height - footerHeight); context.lineTo(canvas.width - Math.round(22 * ratio), canvas.height - footerHeight); context.stroke();
+    context.fillStyle = "rgba(218,243,255,.68)";
+    context.font = `600 ${Math.round(9 * ratio)}px Consolas, monospace`;
+    context.fillText(ui.filterSummary.textContent, Math.round(22 * ratio), canvas.height - Math.round(16 * ratio));
+    canvas.toBlob((blob) => {
+      if (!blob) { resolve(false); return; }
+      downloadBlob(blob, `${exportBaseName()}.png`, "png");
+      resolve(true);
+    }, "image/png");
+  });
+
+  const readSavedViews = () => {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(SAVED_VIEWS_STORAGE_KEY) || "[]");
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((view) => view && typeof view.id === "string" && typeof view.datasetId === "string" && typeof view.methodId === "string").slice(0, MAX_SAVED_VIEWS);
+    } catch {
+      return [];
+    }
+  };
+
+  const persistSavedViews = () => {
+    try {
+      window.localStorage.setItem(SAVED_VIEWS_STORAGE_KEY, JSON.stringify(state.savedViews.slice(0, MAX_SAVED_VIEWS)));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const updateSavedViewButtons = () => {
+    const selected = Boolean(ui.savedView.value && state.savedViews.some((view) => view.id === ui.savedView.value));
+    ui.viewApply.disabled = !selected;
+    ui.viewDelete.disabled = !selected;
+  };
+
+  const renderSavedViews = (selectedId = ui.savedView.value) => {
+    ui.savedView.replaceChildren();
+    const placeholder = document.createElement("option"); placeholder.value = ""; placeholder.textContent = state.savedViews.length ? "保存ビューを選択" : "保存ビューなし";
+    ui.savedView.append(placeholder);
+    state.savedViews.forEach((view) => {
+      const option = document.createElement("option");
+      option.value = view.id;
+      option.textContent = view.name;
+      ui.savedView.append(option);
+    });
+    ui.savedView.value = state.savedViews.some((view) => view.id === selectedId) ? selectedId : "";
+    updateSavedViewButtons();
+  };
+
+  const savedViewSignature = ({ datasetId, methodId, includeDerived, recordQuery, recordSortKey, recordSortDirection }) => [
+    datasetId,
+    methodId,
+    includeDerived ? "1" : "0",
+    String(recordQuery || "").trim().toLocaleLowerCase("ja-JP"),
+    String(recordSortKey || ""),
+    recordSortDirection === "descending" ? "desc" : "asc",
+  ].join("|");
+
+  const saveCurrentView = () => {
+    const dataset = currentDataset();
+    const method = METHOD_LOOKUP.get(state.methodId);
+    if (!dataset || !method) return false;
+    const snapshot = {
+      id: globalThis.crypto?.randomUUID?.() || `view-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: `${dataset.title.replace(/（.*$/u, "").trim()} · ${method.group.id} ${method.label.split("・")[0]}${state.recordQuery ? ` · ${state.recordQuery}` : ""}`,
+      datasetId: dataset.id,
+      methodId: state.methodId,
+      lectureId: method.group.id,
+      includeDerived: state.includeDerived,
+      recordQuery: state.recordQuery,
+      recordSortKey: state.recordSortKey,
+      recordSortDirection: state.recordSortDirection,
+      savedAt: new Date().toISOString(),
+    };
+    const signature = savedViewSignature(snapshot);
+    const existing = state.savedViews.find((view) => savedViewSignature(view) === signature);
+    if (existing) {
+      snapshot.id = existing.id;
+      state.savedViews = [snapshot, ...state.savedViews.filter((view) => view.id !== existing.id)];
+    } else {
+      state.savedViews = [snapshot, ...state.savedViews].slice(0, MAX_SAVED_VIEWS);
+    }
+    const persisted = persistSavedViews();
+    renderSavedViews(snapshot.id);
+    ui.status.textContent = persisted ? "VIEW SAVED / LOCAL" : "VIEW NOT SAVED / STORAGE BLOCKED";
+    window.dispatchEvent(new CustomEvent("gaia:statistics-view-save", { detail: { ...snapshot, persisted } }));
+    return persisted;
+  };
+
+  const applySavedView = () => {
+    const view = state.savedViews.find((candidate) => candidate.id === ui.savedView.value);
+    const dataset = state.datasets.find((candidate) => candidate.id === view?.datasetId);
+    const method = METHOD_LOOKUP.get(view?.methodId);
+    if (!view || !dataset || !method) return false;
+    state.includeDerived = Boolean(view.includeDerived && dataset.provenance.some((kind) => kind !== "SOURCE"));
+    state.recordQuery = String(view.recordQuery || "");
+    state.recordSortKey = ["label", "x", "y", "provenance"].includes(view.recordSortKey) ? view.recordSortKey : "";
+    state.recordSortDirection = view.recordSortDirection === "descending" ? "descending" : "ascending";
+    state.selectedRecordId = "";
+    state.lectureId = method.group.id;
+    state.methodId = method.id;
+    ui.recordFilter.value = state.recordQuery;
+    ui.filterClear.disabled = !state.recordQuery;
+    renderLectures();
+    renderMethods();
+    setDataset(dataset.id, false);
+    window.dispatchEvent(new CustomEvent("gaia:statistics-view-apply", { detail: { ...view } }));
+    return true;
+  };
+
+  const deleteSavedView = () => {
+    const id = ui.savedView.value;
+    if (!id) return false;
+    state.savedViews = state.savedViews.filter((view) => view.id !== id);
+    const persisted = persistSavedViews();
+    renderSavedViews();
+    ui.status.textContent = persisted ? "VIEW DELETED / LOCAL" : "VIEW DELETE NOT PERSISTED";
+    window.dispatchEvent(new CustomEvent("gaia:statistics-view-delete", { detail: { id, persisted } }));
+    return persisted;
+  };
+
+  const applyRecordQuery = (value, immediate = false) => {
+    window.clearTimeout(state.filterTimer);
+    const commit = () => {
+      const query = String(value || "").trim();
+      const changed = query !== state.recordQuery;
+      state.recordQuery = query;
+      ui.recordFilter.value = query;
+      ui.filterClear.disabled = !query;
+      if (changed) render();
+    };
+    if (immediate) commit();
+    else state.filterTimer = window.setTimeout(commit, 140);
+  };
 
   const analyzeMoments = (dataset) => {
     const stats = descriptive(valuesFor(dataset));
@@ -748,6 +1113,79 @@ if (!lab || !openButton) {
     ui.formula.tabIndex = -1;
   };
 
+  const recordValuesFor = (row, dataset, categorical) => ({
+    label: row.label || row.name || String(row.id ?? ""),
+    x: categorical ? (row.category ?? "") : (Number.isFinite(row.x) ? row.x : (row.index ?? row.category ?? "")),
+    y: categorical ? (row.group ?? "") : (Number.isFinite(row.y) ? row.y : (Number.isFinite(row.value) ? row.value : (row.group ?? ""))),
+    provenance: row.provenance || "UNKNOWN",
+  });
+
+  const compareRecordValues = (left, right) => {
+    if (typeof left === "number" && Number.isFinite(left) && typeof right === "number" && Number.isFinite(right)) return left - right;
+    if (left === "" || left === null || left === undefined) return right === "" || right === null || right === undefined ? 0 : 1;
+    if (right === "" || right === null || right === undefined) return -1;
+    return String(left).localeCompare(String(right), "ja-JP", { numeric: true, sensitivity: "base" });
+  };
+
+  const updateRecordSortHeaders = () => {
+    ui.recordSortHeaders.forEach((header) => {
+      const active = header.dataset.recordSort === state.recordSortKey;
+      header.setAttribute("aria-sort", active ? state.recordSortDirection : "none");
+      const button = header.querySelector("button");
+      const indicator = header.querySelector("i");
+      const label = header.querySelector("span")?.textContent || "列";
+      if (indicator) indicator.textContent = active ? (state.recordSortDirection === "ascending" ? "↑" : "↓") : "↕";
+      if (button) button.setAttribute("aria-label", active
+        ? `${label}を${state.recordSortDirection === "ascending" ? "降順" : "昇順"}に並べ替える`
+        : `${label}を昇順に並べ替える`);
+    });
+  };
+
+  const renderRecords = (dataset) => {
+    const rows = rowsFor(dataset);
+    const categorical = rows.some((row) => row.category !== undefined || row.group !== undefined) && !rows.some((row) => Number.isFinite(row.x) && Number.isFinite(row.y));
+    const displayRows = rows.map((row, sourceIndex) => ({ row, sourceIndex, values: recordValuesFor(row, dataset, categorical) }));
+    if (state.recordSortKey) {
+      const factor = state.recordSortDirection === "descending" ? -1 : 1;
+      displayRows.sort((left, right) => factor * compareRecordValues(left.values[state.recordSortKey], right.values[state.recordSortKey]) || left.sourceIndex - right.sourceIndex);
+    }
+    ui.recordCount.textContent = `${rows.length} ROWS`;
+    ui.recordXHeading.textContent = categorical ? "カテゴリ" : (dataset.xLabel || "説明変数");
+    ui.recordYHeading.textContent = categorical ? "グループ" : (dataset.yLabel || `値${dataset.unit ? ` (${dataset.unit})` : ""}`);
+    updateRecordSortHeaders();
+    ui.recordsBody.replaceChildren();
+    displayRows.forEach(({ row, sourceIndex: index, values }) => {
+      const tr = document.createElement("tr");
+      tr.dataset.recordId = String(row.id ?? index);
+      tr.tabIndex = -1;
+      if (tr.dataset.recordId === state.selectedRecordId) tr.dataset.selected = "true";
+      const record = document.createElement("th"); record.scope = "row";
+      const label = document.createElement("strong"); label.textContent = values.label || String(row.id ?? index + 1);
+      const id = document.createElement("small"); id.textContent = String(row.id ?? index + 1);
+      record.append(label, id);
+      const x = document.createElement("td");
+      const xValue = values.x === "" ? "—" : values.x;
+      x.textContent = typeof xValue === "number" ? format(xValue) : String(xValue);
+      const y = document.createElement("td");
+      const yValue = values.y === "" ? "—" : values.y;
+      y.textContent = typeof yValue === "number" ? `${format(yValue)}${dataset.unit || ""}` : String(yValue);
+      const provenance = document.createElement("td");
+      const badge = document.createElement("span"); badge.textContent = values.provenance; badge.dataset.provenance = values.provenance;
+      provenance.append(badge);
+      tr.append(record, x, y, provenance);
+      ui.recordsBody.append(tr);
+    });
+  };
+
+  const sortRecords = (key) => {
+    if (!["label", "x", "y", "provenance"].includes(key)) return false;
+    if (state.recordSortKey === key) state.recordSortDirection = state.recordSortDirection === "ascending" ? "descending" : "ascending";
+    else { state.recordSortKey = key; state.recordSortDirection = "ascending"; }
+    renderRecords(currentDataset());
+    window.dispatchEvent(new CustomEvent("gaia:statistics-record-sort", { detail: { key: state.recordSortKey, direction: state.recordSortDirection } }));
+    return true;
+  };
+
   const createInsightCard = (kind, index, title, headline, body, items = []) => {
     const article = document.createElement("article"); article.className = "gaia-statistics-insight"; article.dataset.kind = kind;
     const kicker = document.createElement("p"); kicker.textContent = `${String(index).padStart(2, "0")} / ${title}`;
@@ -794,7 +1232,7 @@ if (!lab || !openButton) {
     const chart = result.chart || {}; const points = [];
     const add = (id, x, y, group = 0, label = "", row = {}) => {
       if (Number.isFinite(x) && Number.isFinite(y)) {
-        points.push({ id: String(id), x, y, group, label, provenance: row.provenance, value: row.value });
+        points.push({ id: String(id), recordId: row.id === null || row.id === undefined ? "" : String(row.id), x, y, group, label, provenance: row.provenance, value: row.value });
       }
     };
     if (["scatter", "logistic"].includes(chart.type)) {
@@ -828,7 +1266,8 @@ if (!lab || !openButton) {
 
   const hideChartTooltip = () => {
     ui.tooltip.hidden = true;
-    ui.canvas.removeAttribute("aria-describedby");
+    state.chartActiveTarget = null;
+    ui.canvas.setAttribute("aria-describedby", "gaia-statistics-chart-help");
   };
 
   const showChartTooltip = (target) => {
@@ -850,8 +1289,35 @@ if (!lab || !openButton) {
     ui.tooltip.style.top = `${target.sy}px`;
     ui.tooltip.dataset.side = target.sx > width * 0.62 ? "left" : "right";
     ui.tooltip.hidden = false;
+    state.chartActiveTarget = target;
     ui.tooltip.id ||= "gaia-statistics-chart-tooltip";
-    ui.canvas.setAttribute("aria-describedby", ui.tooltip.id);
+    ui.canvas.setAttribute("aria-describedby", `gaia-statistics-chart-help ${ui.tooltip.id}`);
+  };
+
+  const showChartTargetByIndex = (requestedIndex) => {
+    if (!state.chartTargets.length) return hideChartTooltip();
+    const index = Math.max(0, Math.min(state.chartTargets.length - 1, requestedIndex));
+    state.chartKeyboardIndex = index;
+    ui.canvas.dataset.keyboardIndex = String(index);
+    showChartTooltip(state.chartTargets[index]);
+  };
+
+  const updateChartTooltipFromKeyboard = (event) => {
+    if (!state.chartTargets.length) return;
+    if (event.key === "Enter" || event.key === " ") {
+      if (!state.chartActiveTarget?.recordId) return;
+      event.preventDefault();
+      drillToRecord(state.chartActiveTarget);
+      return;
+    }
+    const keys = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const current = state.chartKeyboardIndex < 0 ? 0 : state.chartKeyboardIndex;
+    if (event.key === "Home") showChartTargetByIndex(0);
+    else if (event.key === "End") showChartTargetByIndex(state.chartTargets.length - 1);
+    else if (event.key === "ArrowRight" || event.key === "ArrowDown") showChartTargetByIndex(Math.min(state.chartTargets.length - 1, current + 1));
+    else showChartTargetByIndex(Math.max(0, current - 1));
   };
 
   const updateChartTooltipFromPointer = (event) => {
@@ -871,10 +1337,31 @@ if (!lab || !openButton) {
     showChartTooltip(nearestDistance <= limit ? nearest : null);
   };
 
+  const drillToRecord = (target) => {
+    const recordId = String(target?.recordId || "");
+    if (!recordId) return false;
+    const row = [...ui.recordsBody.querySelectorAll("tr")].find((candidate) => candidate.dataset.recordId === recordId);
+    if (!row) return false;
+    state.selectedRecordId = recordId;
+    ui.recordsBody.querySelectorAll("tr[data-selected]").forEach((candidate) => delete candidate.dataset.selected);
+    row.dataset.selected = "true";
+    ui.recordDetails.open = true;
+    const label = row.querySelector("th strong")?.textContent || target.label || recordId;
+    ui.recordDrillStatus.textContent = `${label}の監査レコードを表示しました。`;
+    requestAnimationFrame(() => {
+      row.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      row.focus({ preventScroll: true });
+    });
+    window.dispatchEvent(new CustomEvent("gaia:statistics-record-drill", { detail: { recordId, label } }));
+    return true;
+  };
+
   const drawChart = (result, dataset) => {
     const canvas = ui.canvas; const rect = ui.visual.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     hideChartTooltip();
+    state.chartKeyboardIndex = -1;
+    delete ui.canvas.dataset.keyboardIndex;
     const ratio = Math.min(2, window.devicePixelRatio || 1);
     const pixelWidth = Math.round(rect.width * ratio);
     const pixelHeight = Math.round(rect.height * ratio);
@@ -884,6 +1371,7 @@ if (!lab || !openButton) {
     const width = rect.width; const height = rect.height; const pad = { left: width < 560 ? 53 : 66, right: 28, top: 38, bottom: 55 };
     const chart = result.chart || {};
     const points = chartPoints(result, dataset);
+    ui.canvas.setAttribute("aria-label", `${dataset.title}の${METHOD_LOOKUP.get(state.methodId)?.label || "統計解析"}。${points.length}点。矢印キーでデータ点を確認し、Enterキーで監査レコードを開けます。`);
     const xs = points.map((point) => point.x); const ys = points.map((point) => point.y);
     let minX = xs.length ? Math.min(...xs) : 0;
     let maxX = xs.length ? Math.max(...xs) : 1;
@@ -994,12 +1482,16 @@ if (!lab || !openButton) {
 
   ui.canvas.addEventListener("pointermove", updateChartTooltipFromPointer);
   ui.canvas.addEventListener("pointerdown", updateChartTooltipFromPointer);
+  ui.canvas.addEventListener("click", () => drillToRecord(state.chartActiveTarget));
   ui.canvas.addEventListener("pointerleave", hideChartTooltip);
+  ui.canvas.addEventListener("keydown", updateChartTooltipFromKeyboard);
+  ui.canvas.addEventListener("focus", () => { if (state.chartTargets.length) showChartTargetByIndex(Math.max(0, state.chartKeyboardIndex)); });
+  ui.canvas.addEventListener("blur", hideChartTooltip);
 
   const render = () => {
     const dataset = currentDataset(); const method = METHOD_LOOKUP.get(state.methodId) || METHOD_LOOKUP.get("summary");
     if (!dataset || !method) return;
-    ui.number.textContent = `${method.group.id} / ${method.group.name.toUpperCase()}`; ui.title.textContent = method.label; ui.copy.textContent = method.copy; ui.status.textContent = "CALCULATING";
+    ui.number.textContent = `${method.group.id} / ${method.group.name.toUpperCase()}`; ui.title.textContent = method.label; ui.copy.textContent = method.copy; ui.status.textContent = "CALCULATING"; setExportsEnabled(false);
     const token = ++state.renderToken;
     requestAnimationFrame(async () => {
       if (token !== state.renderToken) return;
@@ -1007,11 +1499,11 @@ if (!lab || !openButton) {
         const result = await runAnalysis(method.id, dataset);
         if (token !== state.renderToken) return;
         state.result = result;
-        renderMetrics(result, dataset); renderInsights(result); drawChart(result, dataset);
+        renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true);
         ui.status.textContent = result.kind === "not-applicable" ? "NOT APPLICABLE / 条件不足" : `COMPLETE / n=${rowsFor(dataset).length}`;
       } catch (error) {
         console.error("GAIA Statistics Lab analysis failed", error);
-        const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderInsights(result); drawChart(result, dataset); ui.status.textContent = "NOT APPLICABLE / 条件不足";
+        const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true); ui.status.textContent = "NOT APPLICABLE / 条件不足";
       }
     });
   };
@@ -1039,7 +1531,10 @@ if (!lab || !openButton) {
 
   const setDataset = (id, chooseDefault = false) => {
     const dataset = state.datasets.find((candidate) => candidate.id === id) || state.datasets[0]; if (!dataset) return;
-    state.datasetId = dataset.id; state.modeId = dataset.modeId; ui.dataset.value = dataset.id; ui.derived.checked = state.includeDerived; ui.derived.disabled = !dataset.provenance.some((kind) => kind !== "SOURCE");
+    const supportsDerived = dataset.provenance.some((kind) => kind !== "SOURCE");
+    if (!supportsDerived) state.includeDerived = false;
+    if (state.datasetId !== dataset.id) state.selectedRecordId = "";
+    state.datasetId = dataset.id; state.modeId = dataset.modeId; ui.dataset.value = dataset.id; ui.derived.checked = state.includeDerived; ui.derived.disabled = !supportsDerived;
     ui.context.textContent = `${MODE_TITLES[dataset.modeId] || dataset.modeId} — ${dataset.title}。地図のカメラと選択状態は閉じた後も保持されます。`;
     if (chooseDefault) { const method = DEFAULT_METHOD[dataset.modeId] || "summary"; const group = METHOD_LOOKUP.get(method).group; state.lectureId = group.id; state.methodId = method; renderLectures(); renderMethods(); }
     render();
@@ -1077,8 +1572,35 @@ if (!lab || !openButton) {
   lab.addEventListener("pointerdown", (event) => { if (event.target === lab) close(); });
   ui.dataset.addEventListener("change", () => setDataset(ui.dataset.value, false));
   ui.derived.addEventListener("change", () => { state.includeDerived = ui.derived.checked; render(); });
+  ui.recordSortButtons.forEach((button) => button.addEventListener("click", () => sortRecords(button.dataset.recordSortAction)));
+  ui.recordFilter.addEventListener("input", () => applyRecordQuery(ui.recordFilter.value));
+  ui.recordFilter.addEventListener("search", () => applyRecordQuery(ui.recordFilter.value, true));
+  ui.filterClear.addEventListener("click", () => {
+    ui.recordFilter.value = "";
+    applyRecordQuery("", true);
+    ui.recordFilter.focus();
+  });
+  ui.savedView.addEventListener("change", updateSavedViewButtons);
+  ui.viewSave.addEventListener("click", saveCurrentView);
+  ui.viewApply.addEventListener("click", applySavedView);
+  ui.viewDelete.addEventListener("click", deleteSavedView);
+  ui.exportCsv.addEventListener("click", exportCsv);
+  ui.exportJson.addEventListener("click", exportJson);
+  ui.exportPng.addEventListener("click", () => void exportPng());
   new ResizeObserver(() => { if (state.open && state.result) drawChart(state.result, currentDataset()); }).observe(ui.visual);
 
-  globalThis.GaiaStatisticsLab = Object.freeze({ open, close, getState: () => ({ open: state.open, modeId: state.modeId, datasetId: state.datasetId, lectureId: state.lectureId, methodId: state.methodId, includeDerived: state.includeDerived }), run: (methodId, datasetId = state.datasetId) => runAnalysis(methodId, state.datasets.find((dataset) => dataset.id === datasetId) || currentDataset()) });
+  state.savedViews = readSavedViews();
+  renderSavedViews();
+
+  globalThis.GaiaStatisticsLab = Object.freeze({
+    open,
+    close,
+    getState: () => ({ open: state.open, modeId: state.modeId, datasetId: state.datasetId, lectureId: state.lectureId, methodId: state.methodId, includeDerived: state.includeDerived, recordQuery: state.recordQuery, recordSortKey: state.recordSortKey, recordSortDirection: state.recordSortDirection, selectedRecordId: state.selectedRecordId, savedViewCount: state.savedViews.length, exportReady: state.exportReady }),
+    run: (methodId, datasetId = state.datasetId) => runAnalysis(methodId, state.datasets.find((dataset) => dataset.id === datasetId) || currentDataset()),
+    createExportReport,
+    exportCsv,
+    exportJson,
+    exportPng,
+  });
   window.dispatchEvent(new CustomEvent("gaia:statistics-lab-ready"));
 }

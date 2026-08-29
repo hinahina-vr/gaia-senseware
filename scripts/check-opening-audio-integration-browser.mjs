@@ -217,7 +217,7 @@ try {
     });
     assert(routeReady.menuVisible && !routeReady.modalVisible, `${viewport.name}: route menu did not replace the sound setup`);
     assert.equal(routeReady.menuInert, false);
-    assert.equal(routeReady.activeId, "gaia-opening-route-story");
+    assert.equal(routeReady.activeId, "gaia-opening-route-guide");
     assert(routeReady.finalPanelOpacity > 0.99, `${viewport.name}: final route scene is visually hidden`);
     assert(routeReady.menuRect.left >= -1 && routeReady.menuRect.right <= viewport.width + 1, `${viewport.name}: menu is outside the viewport`);
     assert(routeReady.menuRect.top >= -1 && routeReady.menuRect.bottom <= viewport.height + 1, `${viewport.name}: menu is outside the viewport vertically`);
@@ -238,6 +238,13 @@ try {
     assert.equal(routeReady.overflowX, 0);
     assert.equal(routeReady.overflowY, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-route-ready.png`), animations: "disabled" });
+
+    await page.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
+    await page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.dataset.step === "2");
+    await page.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
+    await page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.dataset.step === "3");
+    await page.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
+    await page.waitForFunction(() => !document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-visible"));
 
     const useDataRoute = ["pc-4k", "mobile-360"].includes(viewport.name);
     const routeStartedAt = Date.now();

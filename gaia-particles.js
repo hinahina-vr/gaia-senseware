@@ -21,10 +21,13 @@
     let running = false;
     let lastTime = 0;
     let motes = [];
+    let shootingStars = [];
+    let nextShootingStarAt = 0;
     let pointerX = 0.5;
     let pointerY = 0.5;
     const spriteSize = 448;
     const spriteRadius = 100;
+    const SHOOTING_STAR_INTERVAL_MS = 10000;
 
     const random = (min, max) => min + Math.random() * (max - min);
     const pickHue = () => palette[Math.floor(Math.random() * palette.length)];
@@ -113,6 +116,91 @@
       motes = Array.from({ length: Math.max(5, moteCount) }, () => makeMote());
     };
 
+    const launchShootingStar = (time) => {
+      const angle = random(0.48, 0.62);
+      const travel = Math.max(360, Math.min(width * 0.58, height * 1.08));
+      const shootingStar = {
+        startedAt: time,
+        duration: random(880, 1180),
+        startX: random(width * 0.86, width * 1.02),
+        startY: random(height * 0.035, height * 0.2),
+        dx: -Math.cos(angle) * travel,
+        dy: Math.sin(angle) * travel,
+        length: Math.max(140, Math.min(300, width * 0.16)),
+        width: random(1.15, 1.8),
+        hue: random(190, 212),
+      };
+      shootingStars.push(shootingStar);
+      canvas.dispatchEvent(new CustomEvent("gaia:shooting-star", {
+        detail: {
+          startX: shootingStar.startX,
+          startY: shootingStar.startY,
+          dx: shootingStar.dx,
+          dy: shootingStar.dy,
+          duration: shootingStar.duration,
+        },
+      }));
+      nextShootingStarAt = time + random(
+        SHOOTING_STAR_INTERVAL_MS * 0.9,
+        SHOOTING_STAR_INTERVAL_MS * 1.1,
+      );
+    };
+
+    const drawShootingStars = (time) => {
+      if (variant !== "opening" || REDUCED_MOTION) return;
+      if (time >= nextShootingStarAt) launchShootingStar(time);
+
+      shootingStars = shootingStars.filter((star) => {
+        const progress = (time - star.startedAt) / star.duration;
+        if (progress < 0 || progress >= 1) return false;
+
+        const eased = 1 - (1 - progress) ** 2;
+        const x = star.startX + star.dx * eased;
+        const y = star.startY + star.dy * eased;
+        const distance = Math.hypot(star.dx, star.dy) || 1;
+        const velocityX = star.dx / distance;
+        const velocityY = star.dy / distance;
+        const tailLength = star.length * (0.72 + Math.sin(Math.PI * progress) * 0.28);
+        const tailX = x - velocityX * tailLength;
+        const tailY = y - velocityY * tailLength;
+        const fadeIn = Math.min(1, progress / 0.12);
+        const fadeOut = Math.min(1, (1 - progress) / 0.24);
+        const alpha = fadeIn * fadeOut;
+        const tailGradient = context.createLinearGradient(tailX, tailY, x, y);
+        tailGradient.addColorStop(0, `hsla(${star.hue}, 96%, 82%, 0)`);
+        tailGradient.addColorStop(0.62, `hsla(${star.hue}, 98%, 86%, ${alpha * 0.2})`);
+        tailGradient.addColorStop(1, `hsla(${star.hue}, 100%, 98%, ${alpha * 0.96})`);
+
+        context.save();
+        context.lineCap = "round";
+        context.shadowColor = `hsla(${star.hue}, 100%, 88%, ${alpha * 0.82})`;
+        context.shadowBlur = 14;
+        context.strokeStyle = tailGradient;
+        context.lineWidth = star.width * 4.8;
+        context.beginPath();
+        context.moveTo(tailX, tailY);
+        context.lineTo(x, y);
+        context.stroke();
+
+        context.shadowBlur = 5;
+        context.lineWidth = star.width;
+        context.strokeStyle = `hsla(${star.hue}, 100%, 98%, ${alpha})`;
+        context.stroke();
+
+        const headRadius = star.width * 7.5;
+        const headGlow = context.createRadialGradient(x, y, 0, x, y, headRadius);
+        headGlow.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+        headGlow.addColorStop(0.24, `hsla(${star.hue}, 100%, 92%, ${alpha * 0.8})`);
+        headGlow.addColorStop(1, `hsla(${star.hue}, 96%, 72%, 0)`);
+        context.fillStyle = headGlow;
+        context.beginPath();
+        context.arc(x, y, headRadius, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+        return true;
+      });
+    };
+
     const onPointerMove = (event) => {
       pointerX = Math.max(0, Math.min(1, event.clientX / Math.max(1, width)));
       pointerY = Math.max(0, Math.min(1, event.clientY / Math.max(1, height)));
@@ -170,6 +258,8 @@
         context.restore();
       });
 
+      drawShootingStars(time);
+
       context.restore();
       frame = requestAnimationFrame(draw);
     };
@@ -179,6 +269,8 @@
         if (running) return;
         running = true;
         lastTime = 0;
+        shootingStars = [];
+        nextShootingStarAt = performance.now() + random(2200, 3600);
         resize();
         window.addEventListener("resize", resize, { passive: true });
         if (variant === "story") window.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -189,6 +281,8 @@
         cancelAnimationFrame(frame);
         window.removeEventListener("resize", resize);
         window.removeEventListener("pointermove", onPointerMove);
+        shootingStars = [];
+        nextShootingStarAt = 0;
         context.clearRect(0, 0, width, height);
       },
     };

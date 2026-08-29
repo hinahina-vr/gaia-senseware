@@ -10,7 +10,7 @@
         "./data-ledger.css?v=gaia-23",
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-unified-world-bank-1",
-        "./statistics-lab.css?v=gaia-statistics-chart-labels-1",
+        "./statistics-lab.css?v=gaia-statistics-bi-4",
         "./mode-exit.css?v=gaia-story-control-center-2",
         "./observation-notebook.css?v=gaia-exhibit-heading-actions-1",
       ],
@@ -19,7 +19,7 @@
         "./data-ledger.js?v=gaia-live-free-tier-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-abstract-entry-1",
-        "./app.js?v=gaia-story-return-state-2",
+        "./app.js?v=gaia-character-book-1",
         "./map-ui-grid-polish.js?v=gaia-mobile-exhibit-hud-5",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
@@ -27,7 +27,7 @@
       ],
       modules: [
         "./src/exploration/index.js?v=gaia-live-free-tier-1",
-        "./statistics-lab.js?v=gaia-statistics-chart-labels-1",
+        "./statistics-lab.js?v=gaia-statistics-bi-4",
       ],
     },
     story: {
@@ -85,11 +85,20 @@
       templates: ["gaia-template-sound"],
       styles: [
         "./styles.css?v=gaia-character-main-card-1",
-        "./sound-mode.css?v=gaia-sound-return-layout-1",
+        "./sound-mode.css?v=gaia-spectral-weave-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-mode.js?v=gaia-route-bgm-split-1"],
+      scripts: ["./sound-mode.js?v=gaia-spectral-weave-1"],
       modules: ["./src/exploration/procedural-audio.js?v=gaia-live-senseware-1"],
+    },
+    character: {
+      templates: ["gaia-template-character"],
+      styles: [
+        "./styles.css?v=gaia-character-main-card-1",
+        "./character-mode.css?v=gaia-setting-bible-1",
+        "./mode-exit.css?v=gaia-story-control-center-2",
+      ],
+      scripts: ["./character-mode.js?v=gaia-setting-bible-1"],
     },
     notebook: {
       templates: [],
@@ -236,6 +245,7 @@
   };
 
   interceptClick("[data-sound-gallery-open]", "sound");
+  interceptClick("[data-character-gallery-open]", "character");
   interceptClick("#intro-gx-feature", "gx");
   interceptClick("[data-space-open]", "space");
   interceptEvent("gaia:gx-open", () => "gx");
@@ -257,6 +267,8 @@
       await load("story");
     } else if (hash === "#sound") {
       await load("sound");
+    } else if (hash === "#character") {
+      await load("character");
     } else if (hash === "#tour") {
       await load("exploration");
       await load("notebook");

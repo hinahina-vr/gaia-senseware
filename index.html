@@ -163,12 +163,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-route-cards-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
-    <script src="./gaia-particles.js?v=gaia-19" defer fetchpriority="high"></script>
-    <script src="./opening-audio.js?v=gaia-route-bgm-split-1" defer fetchpriority="high"></script>
+    <link rel="preload" as="style" href="./opening.css?v=gaia-opening-guide-click-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <script src="./gaia-particles.js?v=gaia-opening-shooting-star-1" defer fetchpriority="high"></script>
+    <script src="./opening-audio.js?v=gaia-spectral-weave-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-opening-route-cards-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-character-main-card-1" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-character-book-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-statistics-bi-4" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -630,16 +630,10 @@
           </aside>
 
           <main class="sound-player">
-            <div class="sound-planetarium" aria-hidden="true">
+            <div class="sound-planetarium sound-spectral-stage" aria-hidden="true">
               <canvas class="sound-visualizer" id="sound-visualizer" data-renderer="pending"></canvas>
-              <span class="sound-orbit sound-orbit--outer"></span>
-              <span class="sound-orbit sound-orbit--inner"></span>
-              <span class="sound-orbit sound-orbit--polar"></span>
-              <span class="sound-observation-line"></span>
-              <div class="sound-planet">
-                <span class="sound-planet-light"></span>
-                <span class="sound-planet-contours"></span>
-              </div>
+              <span class="sound-spectral-grid"></span>
+              <span class="sound-analysis-badge"><i></i><b id="sound-analysis-state">FFT READY / AUDIO PAUSED</b></span>
               <span class="sound-planet-caption">
                 <b id="sound-planet-number">PLANET 01</b>
                 <i id="sound-planet-signal">FORECAST SIGNAL</i>
@@ -677,6 +671,111 @@
         <footer class="sound-footer">
           <span>LOCAL AUDIO ARCHIVE</span>
           <p>音源は作品内に保存されています。外部サービスへの接続は行いません。</p>
+        </footer>
+      </section>
+      </template>
+
+      <template id="gaia-template-character">
+      <section
+        class="character-book-layer"
+        id="character-book-layer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="character-book-title"
+        aria-describedby="character-book-description"
+        aria-hidden="true"
+        hidden
+      >
+        <div class="character-book-atmosphere" aria-hidden="true"></div>
+
+        <header class="character-book-header">
+          <div>
+            <p><span>GAIA SENSATION</span> / VISUAL SETTING BIBLE</p>
+            <h2 id="character-book-title">キャラクター設定資料</h2>
+          </div>
+          <button
+            class="character-book-close mode-exit-control"
+            id="character-book-close"
+            type="button"
+            aria-label="キャラクター設定資料を閉じて戻る"
+          >戻る</button>
+        </header>
+
+        <div class="character-book-layout">
+          <main class="character-book-viewer">
+            <button
+              class="character-book-turn character-book-turn--previous"
+              id="character-book-previous"
+              type="button"
+              aria-label="前のページ"
+              disabled
+            ><span aria-hidden="true">‹</span></button>
+
+            <button
+              class="character-book-page"
+              id="character-book-page"
+              type="button"
+              aria-label="次のページへ進む"
+              title="クリックで次のページへ"
+            >
+              <span class="character-book-paper-edge" aria-hidden="true"></span>
+              <img
+                id="character-book-image"
+                src="./artifacts/gx-setting-bible/01-three-ecologies-character-master.png"
+                width="1536"
+                height="1024"
+                alt="みず、あめ、sakuの三人と、それぞれの持ち物を描いた基準設定画"
+                decoding="async"
+              />
+              <span class="character-book-page-glint" aria-hidden="true"></span>
+            </button>
+
+            <button
+              class="character-book-turn character-book-turn--next"
+              id="character-book-next"
+              type="button"
+              aria-label="次のページ"
+            ><span aria-hidden="true">›</span></button>
+
+            <div class="character-book-progress" aria-hidden="true">
+              <span id="character-book-progress-fill"></span>
+            </div>
+          </main>
+
+          <aside class="character-book-details" aria-live="polite" aria-atomic="true">
+            <p class="character-book-code" id="character-book-code">GX / 01 · CHARACTER MASTER</p>
+            <h3 id="character-book-page-title">三人の基準設定画</h3>
+            <p id="character-book-description">
+              みずは生態と身体、あめは社会と技術、sakuは精神と文化。三つの視点と、それぞれが記録に使う道具を一枚にまとめた設定画です。
+            </p>
+
+            <dl class="character-book-crew" aria-label="三人の担当領域">
+              <div><dt><i aria-hidden="true"></i>みず</dt><dd>生態・身体</dd></div>
+              <div><dt><i aria-hidden="true"></i>あめ</dt><dd>社会・技術</dd></div>
+              <div><dt><i aria-hidden="true"></i>saku</dt><dd>精神・文化</dd></div>
+            </dl>
+
+            <nav class="character-book-index" aria-label="設定資料のページ">
+              <p><span>PAGE INDEX</span><strong><output id="character-book-current">01</output> / 10</strong></p>
+              <div>
+                <button type="button" data-character-page="0" aria-current="page" aria-label="1ページ 三人の基準設定画"><span>01</span><small>CHARACTER</small></button>
+                <button type="button" data-character-page="1" aria-current="false" aria-label="2ページ 海辺での初対面"><span>02</span><small>MEETING</small></button>
+                <button type="button" data-character-page="2" aria-current="false" aria-label="3ページ GAIA SENSEWAREの展示空間"><span>03</span><small>SENSEWARE</small></button>
+                <button type="button" data-character-page="3" aria-current="false" aria-label="4ページ 生命と地球の共進化"><span>04</span><small>COEVOLUTION</small></button>
+                <button type="button" data-character-page="4" aria-current="false" aria-label="5ページ 人新世のスケール"><span>05</span><small>ANTHROPOCENE</small></button>
+                <button type="button" data-character-page="5" aria-current="false" aria-label="6ページ AIと地球の共進化"><span>06</span><small>AI + EARTH</small></button>
+                <button type="button" data-character-page="6" aria-current="false" aria-label="7ページ 三つのエコロジー"><span>07</span><small>3 ECOLOGIES</small></button>
+                <button type="button" data-character-page="7" aria-current="false" aria-label="8ページ 古いOSからGXへ"><span>08</span><small>OLD OS → GX</small></button>
+                <button type="button" data-character-page="8" aria-current="false" aria-label="9ページ 次段階の文明"><span>09</span><small>NEXT STAGE</small></button>
+                <button type="button" data-character-page="9" aria-current="false" aria-label="10ページ 最終キービジュアル"><span>10</span><small>KEY VISUAL</small></button>
+              </div>
+            </nav>
+          </aside>
+        </div>
+
+        <footer class="character-book-footer">
+          <span>GX VISUAL SETTING BIBLE / 10 SHEETS</span>
+          <p><kbd>←</kbd><kbd>→</kbd> またはページをクリックしてめくる</p>
         </footer>
       </section>
       </template>
@@ -818,8 +917,10 @@
                   class="intro-path-card intro-path-card--character"
                   id="intro-character-jump"
                   type="button"
+                  data-character-gallery-open
                   aria-label="キャラクター設定資料を開く"
-                  aria-controls="character-exhibit"
+                  aria-haspopup="dialog"
+                  aria-controls="character-book-layer"
                 >
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
                   <span class="intro-border-glint" aria-hidden="true"></span>
@@ -931,123 +1032,6 @@
             </div>
           </section>
         </div>
-
-        <section
-          class="character-exhibit"
-          id="character-exhibit"
-          aria-labelledby="character-exhibit-title"
-          tabindex="-1"
-        >
-          <header class="architecture-header character-header">
-            <div>
-              <p>CHARACTER FILE / GAIA SENSEWARE CREW</p>
-              <h2 id="character-exhibit-title">三人でつくる、<br />地球を感じる展示。</h2>
-            </div>
-            <button class="mode-exit-control" id="intro-character-back" type="button">
-              戻る
-            </button>
-          </header>
-
-          <div class="character-exhibit-intro">
-            <p class="architecture-label">ONLINE CIRCLE / 惑星の放課後</p>
-            <p>
-              オンライン大学の学内チャットで知り合った三人。文章、公開データ、写真や記憶を持ち寄り、
-              地球の変化を光・音・地図・物語へ置き換える共同制作「GAIA SENSEWARE」を始めました。
-              顔を合わせる前から、互いの文体と返信の癖を知っています。
-            </p>
-          </div>
-
-          <div class="character-file-grid">
-            <article class="character-file character-file--mizuha">
-              <div class="character-file-visual">
-                <span aria-hidden="true">01</span>
-                <img
-                  src="./assets/characters/mizuha-calm-07-v2.png"
-                  alt="水面色の長い髪と深い青の服をまとった、みず"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <div class="character-file-copy">
-                <p><span>MIZU</span> / CAMPUS NAME</p>
-                <h3>みず</h3>
-                <strong>生態・身体感覚・海・雨・森</strong>
-                <p>
-                  落ち着いた丁寧語で話し、説明を始めると長い。
-                  専門用語を使ったあとは、身近なものへ言い換えようとする。
-                  分からないことがあると、まず出典を確かめる。
-                </p>
-                <blockquote>「不明は、消していい項目ではありませんの」</blockquote>
-              </div>
-            </article>
-
-            <article class="character-file character-file--amane">
-              <div class="character-file-visual">
-                <span aria-hidden="true">02</span>
-                <img
-                  src="./assets/characters/amane-calm-07-v3.png"
-                  alt="淡い青のボブヘアと空色の服をまとった、あめ"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <div class="character-file-copy">
-                <p><span>AME</span> / CAMPUS NAME</p>
-                <h3>あめ</h3>
-                <strong>社会・技術・都市・AI・エネルギー網</strong>
-                <p>
-                  文章は短く、長い投稿にはひとまず「👀」を付ける。
-                  誰かが困ると慰める言葉より先に原因を調べる。
-                  曖昧なまま優しく言うより、確かめてから答えたい。
-                </p>
-                <blockquote>「決められないなら、まだ決めないで置いとこう」</blockquote>
-              </div>
-            </article>
-
-            <article class="character-file character-file--sakuya">
-              <div class="character-file-visual">
-                <span aria-hidden="true">03</span>
-                <img
-                  src="./assets/characters/sakuya-calm-bust-07-v2.png"
-                  alt="花の髪留めを付け、カメラと押し花ノートを持ったsaku"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <div class="character-file-copy">
-                <p><span>SAKU</span> / CAMPUS NAME</p>
-                <h3>saku</h3>
-                <strong>文化・記憶・土地の名前・物語</strong>
-                <p>
-                  短い文章を書き、返事は遅い。
-                  会話が流れたあとでも、気になった一言へ戻ってくる。
-                  相手の言葉を勝手に言い換えず、そのまま記録へ残す。
-                </p>
-                <blockquote>「続きはあとで。忘れてないから」</blockquote>
-              </div>
-            </article>
-          </div>
-
-          <section class="character-relationship" aria-labelledby="character-relationship-title">
-            <div>
-              <p class="architecture-label">THREE WRITING RHYTHMS / ONE PROJECT</p>
-              <h3 id="character-relationship-title">説明する人、決める人、残す人。</h3>
-            </div>
-            <p>
-              みずは例外や前提を拾い、あめは最初に伝えることを決め、sakuは流れの中で消えそうな言葉を残します。
-              意見はよく割れ、返事が止まる日もあります。それでも、戻ってきた人が前回の続きから話せることが、
-              三人の共同制作を支えています。
-            </p>
-          </section>
-
-          <footer class="character-file-note">
-            <span>VISUAL NOTE</span>
-            <p>
-              立ち絵はキャラクター設定をもとに制作した本作のビジュアルです。
-              正式名や物語の核心に触れる情報は、本編での開示順に合わせてここでは伏せています。
-            </p>
-          </footer>
-        </section>
 
         <section
           class="architecture-exhibit"
@@ -1905,6 +1889,37 @@
                     <label><input id="gaia-statistics-derived" type="checkbox" /> 補完・派生値も含める</label>
                   </div>
                 </section>
+                <section class="gaia-statistics-filter-panel">
+                  <p class="gaia-statistics-control-label">FILTER / レコード</p>
+                  <div class="gaia-statistics-search">
+                    <input
+                      id="gaia-statistics-record-filter"
+                      type="search"
+                      placeholder="国・地点・分類を検索"
+                      aria-label="分析対象レコードを検索"
+                      aria-controls="gaia-statistics-canvas gaia-statistics-records-body"
+                      autocomplete="off"
+                    />
+                    <button id="gaia-statistics-filter-clear" type="button" disabled>解除</button>
+                  </div>
+                  <output class="gaia-statistics-segment-compare" id="gaia-statistics-segment-compare" aria-live="polite">
+                    <span>COMPARE / ALL ELIGIBLE</span>
+                    <strong>セグメント未指定</strong>
+                    <small>検索すると、表示中平均と全体平均の差を表示します。</small>
+                  </output>
+                </section>
+                <section class="gaia-statistics-saved-panel">
+                  <p class="gaia-statistics-control-label">VIEW / 保存済み分析</p>
+                  <select id="gaia-statistics-saved-view" aria-label="保存済みの分析ビュー">
+                    <option value="">保存ビューなし</option>
+                  </select>
+                  <div>
+                    <button id="gaia-statistics-view-save" type="button">現在を保存</button>
+                    <button id="gaia-statistics-view-apply" type="button" disabled>適用</button>
+                    <button id="gaia-statistics-view-delete" type="button" disabled>削除</button>
+                  </div>
+                  <small>この端末のブラウザ内だけに保存します。</small>
+                </section>
                 <section>
                   <p class="gaia-statistics-control-label">LECTURE / レジュメ</p>
                   <div class="gaia-statistics-lectures" id="gaia-statistics-lectures" role="list" aria-label="レジュメ01から15"></div>
@@ -1925,10 +1940,49 @@
                   <output id="gaia-statistics-status" aria-live="polite">準備中</output>
                 </header>
 
+                <section class="gaia-statistics-bi-strip" aria-label="分析サマリーとエクスポート">
+                  <div class="gaia-statistics-kpis" id="gaia-statistics-kpis" aria-live="polite">
+                    <article data-stat-kpi="rows">
+                      <p>OBSERVATIONS</p>
+                      <strong id="gaia-statistics-kpi-rows">—</strong>
+                      <small id="gaia-statistics-kpi-rows-note">使用行 / 全行</small>
+                    </article>
+                    <article data-stat-kpi="coverage">
+                      <p>COVERAGE</p>
+                      <strong id="gaia-statistics-kpi-coverage">—</strong>
+                      <small id="gaia-statistics-kpi-coverage-note">フィルター後の利用率</small>
+                    </article>
+                    <article data-stat-kpi="primary">
+                      <p id="gaia-statistics-kpi-primary-label">PRIMARY KPI</p>
+                      <strong id="gaia-statistics-kpi-primary">—</strong>
+                      <small id="gaia-statistics-kpi-primary-note">分析完了後に表示</small>
+                    </article>
+                    <article data-stat-kpi="quality">
+                      <p>DATA QUALITY</p>
+                      <strong id="gaia-statistics-kpi-quality">—</strong>
+                      <small id="gaia-statistics-kpi-quality-note">出典カバレッジ</small>
+                    </article>
+                  </div>
+                  <div class="gaia-statistics-bi-actions">
+                    <p id="gaia-statistics-filter-summary">FILTER / SOURCE · LOCAL ANALYSIS</p>
+                    <div role="group" aria-label="分析結果をエクスポート">
+                      <button id="gaia-statistics-export-csv" type="button" disabled><span>CSV</span><small>DATA</small></button>
+                      <button id="gaia-statistics-export-json" type="button" disabled><span>JSON</span><small>REPORT</small></button>
+                      <button id="gaia-statistics-export-png" type="button" disabled><span>PNG</span><small>CHART</small></button>
+                    </div>
+                  </div>
+                </section>
+
                 <div class="gaia-statistics-visual" id="gaia-statistics-visual">
-                  <canvas id="gaia-statistics-canvas" aria-label="統計解析グラフ"></canvas>
+                  <canvas
+                    id="gaia-statistics-canvas"
+                    tabindex="0"
+                    aria-label="統計解析グラフ"
+                    aria-describedby="gaia-statistics-chart-help"
+                  ></canvas>
                   <div class="gaia-statistics-transition" id="gaia-statistics-transition" aria-hidden="true"></div>
                 </div>
+                <p class="gaia-statistics-visually-hidden" id="gaia-statistics-chart-help">グラフへフォーカスし、左右または上下の矢印キーでデータ点を順番に確認できます。Enterキーで対応する監査レコードを開きます。</p>
 
                 <details class="gaia-statistics-values">
                   <summary>数値表と計算根拠を確認する</summary>
@@ -1939,6 +1993,25 @@
                     </table>
                     <p id="gaia-statistics-formula"></p>
                   </div>
+                </details>
+
+                <details class="gaia-statistics-records">
+                  <summary>表示中のデータを監査する <output id="gaia-statistics-record-count">0 ROWS</output></summary>
+                  <div class="gaia-statistics-records-scroll">
+                    <table>
+                      <caption class="gaia-statistics-visually-hidden">現在のフィルターを適用した分析対象データ</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col" data-record-sort="label" aria-sort="none"><button type="button" data-record-sort-action="label"><span>レコード</span><i aria-hidden="true"></i></button></th>
+                          <th scope="col" data-record-sort="x" aria-sort="none"><button type="button" data-record-sort-action="x"><span id="gaia-statistics-record-x-heading">説明変数</span><i aria-hidden="true"></i></button></th>
+                          <th scope="col" data-record-sort="y" aria-sort="none"><button type="button" data-record-sort-action="y"><span id="gaia-statistics-record-y-heading">値</span><i aria-hidden="true"></i></button></th>
+                          <th scope="col" data-record-sort="provenance" aria-sort="none"><button type="button" data-record-sort-action="provenance"><span>区分</span><i aria-hidden="true"></i></button></th>
+                        </tr>
+                      </thead>
+                      <tbody id="gaia-statistics-records-body"></tbody>
+                    </table>
+                  </div>
+                  <output class="gaia-statistics-visually-hidden" id="gaia-statistics-record-drill-status" aria-live="polite"></output>
                 </details>
 
                 <div class="gaia-statistics-insights" id="gaia-statistics-insights" aria-live="polite"></div>

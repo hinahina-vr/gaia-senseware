@@ -45,11 +45,13 @@ assert.equal(indexHtml.includes('id="abstract-mode-list"'), true, "Integrated ei
 assert.equal(indexHtml.includes('id="map-mode-preview"'), true, "Restored focus explanation preview is missing");
 assert.equal(indexHtml.includes("SCROLL</b><small>他の展示を見る"), true, "Updated exhibit scroll label is missing");
 assert.equal(indexHtml.includes('id="intro-character-jump"'), true, "Character settings menu button is missing");
-assert.equal(indexHtml.includes('id="character-exhibit"'), true, "Character settings page is missing");
-assert.equal(indexHtml.includes("CHARACTER FILE / GAIA SENSEWARE CREW"), true, "Character settings heading is missing");
-for (const campusName of ["みず", "あめ", "saku"]) {
-  assert.equal(indexHtml.includes(`<h3>${campusName}</h3>`), true, `Character profile is missing for ${campusName}`);
-}
+assert.equal(indexHtml.includes('data-character-gallery-open'), true, "Character settings menu is not connected to the standalone viewer");
+assert.equal(indexHtml.includes('id="gaia-template-character"'), true, "Lazy character settings template is missing");
+assert.equal(indexHtml.includes('id="character-book-layer"'), true, "Standalone character settings viewer is missing");
+assert.equal(indexHtml.includes("VISUAL SETTING BIBLE"), true, "Character setting bible heading is missing");
+assert.equal((indexHtml.match(/data-character-page=/gu) || []).length, 10, "Character setting bible must expose all 10 pages");
+assert.equal(indexHtml.includes("01-three-ecologies-character-master.png"), true, "Character master sheet is missing");
+assert.equal(modeLoader.includes('interceptClick("[data-character-gallery-open]", "character")'), true, "Character viewer is not lazy-loaded");
 assert.equal(indexHtml.includes("このデータの出典を表示する"), false, "Old open-data button copy remains");
 assert.equal(indexHtml.includes("この展示を統計で読み解く"), false, "Old statistics button copy remains");
 

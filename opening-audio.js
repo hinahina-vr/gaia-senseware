@@ -37,6 +37,23 @@
   let analysisContext = null;
   let analysisNode = null;
   let analysisBins = null;
+  let analysisWaveformBins = null;
+  let analysisLastSampledAt = -Infinity;
+  const ANALYSIS_FFT_SIZE = 512;
+  const ANALYSIS_SPECTRUM_BANDS = 32;
+  const ANALYSIS_WAVEFORM_SAMPLES = 64;
+  const ANALYSIS_INTERVAL_MS = 30;
+  const silentAnalysisFrame = () => ({
+    supported: Boolean(window.AudioContext || window.webkitAudioContext),
+    active: false,
+    fftSize: ANALYSIS_FFT_SIZE,
+    bands: [0, 0, 0],
+    spectrum: Array(ANALYSIS_SPECTRUM_BANDS).fill(0),
+    waveform: Array(ANALYSIS_WAVEFORM_SAMPLES).fill(0),
+    peak: 0,
+    rms: 0,
+  });
+  let analysisFrame = silentAnalysisFrame();
   const analysisSources = new WeakMap();
   // Keep the visitor's choice separate from the instantaneous player state.
   // A scene transition may pause a player for a moment; that must not be
@@ -63,15 +80,21 @@
       try {
         analysisContext = new AudioContextClass();
         analysisNode = analysisContext.createAnalyser();
-        analysisNode.fftSize = 256;
-        analysisNode.smoothingTimeConstant = 0.78;
+        analysisNode.fftSize = ANALYSIS_FFT_SIZE;
+        analysisNode.minDecibels = -90;
+        analysisNode.maxDecibels = -12;
+        analysisNode.smoothingTimeConstant = 0.7;
         analysisNode.connect(analysisContext.destination);
         analysisBins = new Uint8Array(analysisNode.frequencyBinCount);
+        analysisWaveformBins = new Uint8Array(analysisNode.fftSize);
+        analysisFrame = silentAnalysisFrame();
         players.forEach(connectAnalysisSource);
       } catch {
         analysisContext = null;
         analysisNode = null;
         analysisBins = null;
+        analysisWaveformBins = null;
+        analysisFrame = silentAnalysisFrame();
         return null;
       }
     }
@@ -93,30 +116,63 @@
   };
 
   const getAnalysisFrame = () => {
-    if (!analysisNode || !analysisBins) {
-      return { supported: Boolean(window.AudioContext || window.webkitAudioContext), active: false, bands: [0, 0, 0], peak: 0, rms: 0 };
-    }
+    if (!analysisNode || !analysisBins || !analysisWaveformBins) return analysisFrame;
+    const sampledAt = performance.now();
+    if (sampledAt - analysisLastSampledAt < ANALYSIS_INTERVAL_MS) return analysisFrame;
+    analysisLastSampledAt = sampledAt;
     analysisNode.getByteFrequencyData(analysisBins);
-    const average = (start, end) => {
-      let sum = 0;
-      const boundedEnd = Math.min(analysisBins.length, end);
-      for (let index = start; index < boundedEnd; index += 1) sum += analysisBins[index];
-      return boundedEnd > start ? sum / (boundedEnd - start) / 255 : 0;
+    analysisNode.getByteTimeDomainData(analysisWaveformBins);
+
+    const frequencyStep = analysisContext.sampleRate / analysisNode.fftSize;
+    const averageFrequencyRange = (startFrequency, endFrequency) => {
+      const start = Math.max(0, Math.floor(startFrequency / frequencyStep));
+      const end = Math.min(analysisBins.length, Math.max(start + 1, Math.ceil(endFrequency / frequencyStep)));
+      let squareSum = 0;
+      for (let index = start; index < end; index += 1) {
+        const normalized = analysisBins[index] / 255;
+        squareSum += normalized * normalized;
+      }
+      return Math.sqrt(squareSum / Math.max(1, end - start));
     };
+
+    const spectrum = Array.from({ length: ANALYSIS_SPECTRUM_BANDS }, (_, index) => {
+      const startRatio = index / ANALYSIS_SPECTRUM_BANDS;
+      const endRatio = (index + 1) / ANALYSIS_SPECTRUM_BANDS;
+      const startFrequency = 38 * ((16_000 / 38) ** startRatio);
+      const endFrequency = 38 * ((16_000 / 38) ** endRatio);
+      return averageFrequencyRange(startFrequency, endFrequency);
+    });
+
+    const waveform = Array.from({ length: ANALYSIS_WAVEFORM_SAMPLES }, (_, index) => {
+      const sourceIndex = Math.min(
+        analysisWaveformBins.length - 1,
+        Math.round((index / (ANALYSIS_WAVEFORM_SAMPLES - 1)) * (analysisWaveformBins.length - 1)),
+      );
+      return (analysisWaveformBins[sourceIndex] - 128) / 128;
+    });
+
     let peak = 0;
     let squareSum = 0;
-    analysisBins.forEach((value) => {
-      const normalized = value / 255;
-      peak = Math.max(peak, normalized);
+    analysisWaveformBins.forEach((value) => {
+      const normalized = (value - 128) / 128;
+      peak = Math.max(peak, Math.abs(normalized));
       squareSum += normalized * normalized;
     });
-    return {
+    analysisFrame = {
       supported: true,
       active: analysisContext?.state === "running" && Boolean(audio && !audio.paused && !muted),
-      bands: [average(0, 14), average(14, 48), average(48, analysisBins.length)],
+      fftSize: analysisNode.fftSize,
+      bands: [
+        averageFrequencyRange(38, 250),
+        averageFrequencyRange(250, 2_500),
+        averageFrequencyRange(2_500, 16_000),
+      ],
+      spectrum,
+      waveform,
       peak,
-      rms: Math.sqrt(squareSum / analysisBins.length),
+      rms: Math.sqrt(squareSum / analysisWaveformBins.length),
     };
+    return analysisFrame;
   };
 
   try {

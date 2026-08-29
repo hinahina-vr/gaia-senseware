@@ -79,14 +79,32 @@ try {
   const audioRuntimeSource = await audioRuntime.text();
   assert(/opening:\s*"\.\/assets\/audio\/satellite-forecast-hope\.mp3"/u.test(audioRuntimeSource), "Planet Forecast - Hope is not assigned to the opening");
   assert(/senseware:\s*"\.\/assets\/audio\/moonlit-source-save\.mp3"/u.test(audioRuntimeSource), "GAIA SENSEWARE is not assigned to the data exploration screen");
+  assert(/ANALYSIS_FFT_SIZE\s*=\s*512/u.test(audioRuntimeSource), "sound analysis does not use the expected 512-point FFT");
+  assert(/ANALYSIS_SPECTRUM_BANDS\s*=\s*32/u.test(audioRuntimeSource), "sound analysis does not expose the 32-band spectrum");
+  assert(/getByteFrequencyData/u.test(audioRuntimeSource) && /getByteTimeDomainData/u.test(audioRuntimeSource), "visualizer is not backed by real frequency and waveform analysis");
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
   await page.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
   await page.waitForFunction(() => !["", "pending"].includes(document.querySelector("#sound-visualizer")?.dataset.renderer || "pending"));
   const desktopVisualizer = await page.locator("#sound-visualizer").evaluate((canvas) => {
     const rect = canvas.getBoundingClientRect();
-    return { renderer: canvas.dataset.renderer, width: rect.width, height: rect.height };
+    return {
+      renderer: canvas.dataset.renderer,
+      visualizer: canvas.dataset.visualizer,
+      width: rect.width,
+      height: rect.height,
+      legacyPlanetCount: document.querySelectorAll(".sound-planet, .sound-orbit").length,
+      analysisLabel: document.querySelector("#sound-analysis-state")?.textContent || "",
+    };
   });
-  assert(desktopVisualizer.renderer === "webgl" && desktopVisualizer.width > 200 && desktopVisualizer.height > 200, `desktop WebGL visualizer failed: ${JSON.stringify(desktopVisualizer)}`);
+  assert(
+    desktopVisualizer.renderer === "webgl"
+      && desktopVisualizer.visualizer === "spectral-weave"
+      && desktopVisualizer.width > 300
+      && desktopVisualizer.height > 200
+      && desktopVisualizer.legacyPlanetCount === 0
+      && desktopVisualizer.analysisLabel.includes("FFT"),
+    `desktop WebGL spectral weave failed: ${JSON.stringify(desktopVisualizer)}`,
+  );
   assert(await page.locator("[data-sound-track]").count() === 12, "sound archive does not contain 12 unique tracks");
   assert((await page.locator(".sound-track-heading strong").innerText()) === "12 TRACKS", "track count heading is stale");
   const unusedTrackIds = await page.locator("[data-sound-track]", { hasText: "（未使用曲）" }).evaluateAll((nodes) => nodes.map((node) => node.dataset.soundTrack));
@@ -120,8 +138,21 @@ try {
     return frame?.supported && frame.active && frame.peak > 0.002 && frame.bands.some((value) => value > 0.001);
   }, null, { timeout: 10_000 });
   const analysisFrame = await page.evaluate(() => globalThis.GaiaOpeningAudio.getAnalysisFrame());
-  assert(analysisFrame.bands.length === 3 && analysisFrame.rms > 0, `Web Audio analysis is inactive: ${JSON.stringify(analysisFrame)}`);
+  assert(
+    analysisFrame.fftSize === 512
+      && analysisFrame.bands.length === 3
+      && analysisFrame.spectrum.length === 32
+      && analysisFrame.waveform.length === 64
+      && analysisFrame.spectrum.some((value) => value > 0.001)
+      && analysisFrame.waveform.some((value) => Math.abs(value) > 0.001)
+      && analysisFrame.rms > 0,
+    `Web Audio analysis is inactive: ${JSON.stringify(analysisFrame)}`,
+  );
   report.analysisFrame = analysisFrame;
+  await page.locator('[data-sound-track="ending"]').click();
+  await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 10000 });
+  await page.evaluate(() => globalThis.GaiaOpeningAudio.seek(24));
+  await page.waitForTimeout(900);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop.png"), fullPage: true });
   await context.close();
 
@@ -137,18 +168,19 @@ try {
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
     layoutScrolls: document.querySelector(".sound-layout").scrollHeight > document.querySelector(".sound-layout").clientHeight + 1,
     renderer: document.querySelector("#sound-visualizer")?.dataset.renderer || "",
-    planetHidden: getComputedStyle(document.querySelector(".sound-planet")).display === "none",
+    visualizer: document.querySelector("#sound-visualizer")?.dataset.visualizer || "",
+    legacyPlanetCount: document.querySelectorAll(".sound-planet, .sound-orbit").length,
     nowPlayingTop: document.querySelector(".sound-now-playing").getBoundingClientRect().top,
     visualizerTop: document.querySelector("#sound-visualizer").getBoundingClientRect().top,
   }));
   assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.planetHidden && mobileGeometry.nowPlayingTop < mobileGeometry.visualizerTop, `mobile player was not raised above the WebGL visualizer: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "spectral-weave" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.nowPlayingTop < mobileGeometry.visualizerTop, `mobile player was not raised above the WebGL spectral weave: ${JSON.stringify(mobileGeometry)}`);
   assertControlDesign(await readControlDesign(mobile), "mobile");
+  await mobile.screenshot({ path: path.join(outputDir, "sound-mobile.png"), fullPage: false });
   const lastTrack = mobile.locator('[data-sound-track="trueend"]');
   await lastTrack.scrollIntoViewIfNeeded();
   await lastTrack.click();
   await mobile.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "trueend", null, { timeout: 10000 });
-  await mobile.screenshot({ path: path.join(outputDir, "sound-mobile.png"), fullPage: false });
   await context.close();
 
   assert(report.errors.length === 0, `browser errors: ${report.errors.join(" | ")}`);

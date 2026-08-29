@@ -334,73 +334,65 @@ const scanCharacterFile = async (page, viewport) => {
   const jumpCopy = await jump.evaluate((button) => ({
     text: button.textContent.replace(/\s+/gu, " ").trim(),
     controls: button.getAttribute("aria-controls"),
+    hasPopup: button.getAttribute("aria-haspopup"),
     visible: __qaVisible(button),
     inMainGrid: button.parentElement?.id === "intro-path-grid",
   }));
   assert(jumpCopy.visible);
   assert.match(jumpCopy.text, /CHARACTER FILE/u);
   assert.match(jumpCopy.text, /キャラクター設定資料/u);
-  assert.equal(jumpCopy.controls, "character-exhibit");
+  assert.equal(jumpCopy.controls, "character-book-layer");
+  assert.equal(jumpCopy.hasPopup, "dialog");
   assert.equal(jumpCopy.inMainGrid, true);
 
   await jump.click();
   await page.waitForFunction(() => (
-    document.activeElement === document.querySelector("#character-exhibit")
-    && __qaVisible(document.querySelector("#character-exhibit"))
+    document.body.classList.contains("character-mode-open")
+    && __qaVisible(document.querySelector("#character-book-layer"))
   ));
-  const characterImages = page.locator(".character-file-visual img");
-  for (let index = 0; index < await characterImages.count(); index += 1) {
-    await characterImages.nth(index).scrollIntoViewIfNeeded();
-  }
-  await page.waitForFunction(() => [...document.querySelectorAll(".character-file-visual img")]
-    .every((image) => image.complete && image.naturalWidth > 0));
-  await page.locator("#character-exhibit").evaluate((exhibit) => {
-    exhibit.scrollIntoView({ block: "start", inline: "nearest", behavior: "auto" });
-    exhibit.focus({ preventScroll: true });
+  await page.waitForFunction(() => {
+    const image = document.querySelector("#character-book-image");
+    return image?.complete && image.naturalWidth > 0;
   });
 
   const scan = await page.evaluate(() => {
-    const layer = document.querySelector("#intro-layer");
-    const exhibit = document.querySelector("#character-exhibit");
-    const cards = [...document.querySelectorAll(".character-file")];
+    const layer = document.querySelector("#character-book-layer");
+    const image = document.querySelector("#character-book-image");
+    const imageRect = image.getBoundingClientRect();
+    const pageButtons = [...document.querySelectorAll("[data-character-page]")];
     return {
-      visible: __qaVisible(exhibit),
+      visible: __qaVisible(layer),
       focusedId: document.activeElement?.id,
-      heading: document.querySelector("#character-exhibit-title")?.textContent.replace(/\s+/gu, " ").trim(),
-      campusNames: cards.map((card) => card.querySelector("h3")?.textContent.trim()),
-      roles: cards.map((card) => card.querySelector(".character-file-copy > strong")?.textContent.trim()),
-      images: cards.map((card) => {
-        const image = card.querySelector("img");
-        return { loaded: image.complete && image.naturalWidth > 0, alt: image.alt };
-      }),
-      cardRects: cards.map((card) => card.getBoundingClientRect().toJSON()),
-      relationship: document.querySelector("#character-relationship-title")?.textContent.trim(),
-      pageTop: exhibit.getBoundingClientRect().top,
-      overflowX: layer.scrollWidth > layer.clientWidth + 1,
+      heading: document.querySelector("#character-book-title")?.textContent.trim(),
+      pageTitle: document.querySelector("#character-book-page-title")?.textContent.trim(),
+      current: document.querySelector("#character-book-current")?.textContent.trim(),
+      pageCount: pageButtons.length,
+      activePages: pageButtons.filter((button) => button.getAttribute("aria-current") === "page").length,
+      image: { loaded: image.complete && image.naturalWidth > 0, alt: image.alt, src: image.currentSrc },
+      imageRect: imageRect.toJSON(),
+      overflowX: document.documentElement.scrollWidth > innerWidth + 1,
     };
   });
   assert(scan.visible);
-  assert.equal(scan.focusedId, "character-exhibit");
-  assert.match(scan.heading, /三人でつくる/u);
-  assert.deepEqual(scan.campusNames, ["みず", "あめ", "saku"]);
-  assert.deepEqual(scan.roles, [
-    "生態・身体感覚・海・雨・森",
-    "社会・技術・都市・AI・エネルギー網",
-    "文化・記憶・土地の名前・物語",
-  ]);
-  assert(scan.images.every(({ loaded, alt }) => loaded && alt.length > 0));
-  assert.equal(scan.relationship, "説明する人、決める人、残す人。");
+  assert.equal(scan.focusedId, "character-book-close");
+  assert.equal(scan.heading, "キャラクター設定資料");
+  assert.equal(scan.pageTitle, "三人の基準設定画");
+  assert.equal(scan.current, "01");
+  assert.equal(scan.pageCount, 10);
+  assert.equal(scan.activePages, 1);
+  assert(scan.image.loaded && scan.image.alt.length > 0);
+  assert.match(scan.image.src, /01-three-ecologies-character-master\.png/u);
   assert.equal(scan.overflowX, false);
-  assert(scan.cardRects.every((rect) => rect.left >= -1 && rect.right <= viewport.width + 1), JSON.stringify(scan.cardRects));
-  if (viewport.mobile) {
-    assert(scan.cardRects.every((rect, index) => index === 0 || rect.top > scan.cardRects[index - 1].bottom));
-  } else {
-    assert(Math.max(...scan.cardRects.map(({ top }) => top)) - Math.min(...scan.cardRects.map(({ top }) => top)) <= 1);
-  }
+  assert(scan.imageRect.left >= -1 && scan.imageRect.right <= viewport.width + 1, JSON.stringify(scan.imageRect));
+
+  await page.keyboard.press("ArrowRight");
+  await page.waitForFunction(() => document.querySelector("#character-book-current")?.textContent.trim() === "02");
+  assert.equal(await page.locator("#character-book-page-title").textContent(), "海辺での初対面");
 
   await page.screenshot({ path: path.join(outputDir, viewport.name + "-character-file.png") });
-  await page.locator("#intro-character-back").click();
-  await page.waitForFunction(() => (document.querySelector("#intro-layer")?.scrollTop || 0) <= 1);
+  await page.locator("#character-book-close").click();
+  await page.waitForFunction(() => document.querySelector("#character-book-layer")?.hidden === true);
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "intro-character-jump");
   return { jumpCopy, ...scan };
 };
 

@@ -19,6 +19,7 @@ const viewports = [
 const surfaces = [
   { name: "map", trigger: "#japan-button", selector: "#japan-close", ready: "#japan-layer:not([hidden])" },
   { name: "sound", trigger: "[data-sound-gallery-open]", selector: "#sound-close", ready: "#sound-layer:not([hidden])" },
+  { name: "character", trigger: "[data-character-gallery-open]", selector: "#character-book-close", ready: "#character-book-layer:not([hidden])" },
 ];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });

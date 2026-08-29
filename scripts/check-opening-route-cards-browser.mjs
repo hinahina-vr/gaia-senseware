@@ -62,10 +62,7 @@ try {
     }
     await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-route-story")), null, { timeout: 10_000 });
     await page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-visible"), null, { timeout: 10_000 });
-    // Chromium can leave the last reduced-motion context without document focus
-    // after several mobile contexts; restore test focus before keyboard checks.
-    if (viewport.reduced) await page.locator("#gaia-opening-route-story").focus();
-    await page.waitForFunction(() => document.activeElement?.id === "gaia-opening-route-story", null, { timeout: 4_000 });
+    await page.waitForFunction(() => document.activeElement?.id === "gaia-opening-route-guide", null, { timeout: 4_000 });
 
     const readGuide = () => page.evaluate(() => {
       const guide = document.querySelector("#gaia-opening-route-guide");
@@ -76,31 +73,43 @@ try {
         activeId: document.activeElement?.id,
         title: guide.querySelector("[data-route-guide-title]")?.textContent.trim(),
         copy: guide.querySelector("[data-route-guide-copy]")?.textContent.trim(),
+        hint: guide.querySelector("[data-route-guide-hint-action]")?.textContent.trim(),
+        buttonCount: guide.querySelectorAll("button").length,
         bubbleRect: bubble.getBoundingClientRect().toJSON(),
       };
     });
     const guideSteps = [await readGuide()];
     assert.equal(guideSteps[0].step, "1");
     assert.equal(guideSteps[0].targetId, "gaia-opening-route-story");
-    assert.equal(guideSteps[0].activeId, "gaia-opening-route-story");
+    assert.equal(guideSteps[0].activeId, "gaia-opening-route-guide");
+    assert.equal(guideSteps[0].buttonCount, 0, `${viewport.name}: route guide still contains operation buttons`);
+    assert.equal(guideSteps[0].hint, "次へ");
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-guide.png`), animations: "disabled" });
-    for (const [step, targetId] of [["2", "gaia-opening-route-other"], ["3", "gaia-opening-tour-link"]]) {
-      await page.keyboard.press("ArrowRight");
-      await page.waitForFunction((expected) => document.querySelector("#gaia-opening-route-guide")?.dataset.step === expected, step);
-      const guide = await readGuide();
-      assert.equal(guide.targetId, targetId, `${viewport.name}: guide step ${step} targets the wrong route`);
-      assert.equal(guide.activeId, targetId, `${viewport.name}: guide step ${step} did not focus its route`);
-      assert(guide.title && guide.copy, `${viewport.name}: guide step ${step} has no explanation`);
-      guideSteps.push(guide);
-    }
-    await page.keyboard.press("Escape");
+
+    await page.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
+    await page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.dataset.step === "2");
+    const clickAdvancedGuide = await readGuide();
+    assert.equal(clickAdvancedGuide.targetId, "gaia-opening-route-other", `${viewport.name}: click did not advance the guide`);
+    assert.equal(clickAdvancedGuide.activeId, "gaia-opening-route-guide");
+    guideSteps.push(clickAdvancedGuide);
+
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.dataset.step === "3");
+    const keyboardAdvancedGuide = await readGuide();
+    assert.equal(keyboardAdvancedGuide.targetId, "gaia-opening-tour-link", `${viewport.name}: Enter did not advance the guide`);
+    assert.equal(keyboardAdvancedGuide.activeId, "gaia-opening-route-guide");
+    assert.equal(keyboardAdvancedGuide.hint, "案内を終える");
+    guideSteps.push(keyboardAdvancedGuide);
+
+    await page.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
     await page.waitForFunction(() => !document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-visible"));
     await page.locator("#gaia-opening-route-guide-replay").click();
     await page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-visible"));
     const replayedGuide = await readGuide();
     assert.equal(replayedGuide.step, "1", `${viewport.name}: replay did not restart the guide`);
     assert.equal(replayedGuide.targetId, "gaia-opening-route-story", `${viewport.name}: replay targets the wrong route`);
-    await page.locator("[data-route-guide-action='close']").click();
+    assert.equal(replayedGuide.buttonCount, 0, `${viewport.name}: replayed guide restored removed buttons`);
+    await page.keyboard.press("Escape");
     await page.locator("#gaia-opening-route-story").focus();
 
     const layout = await page.evaluate(() => {
@@ -114,9 +123,11 @@ try {
         rect: readRect(card),
         labelRect: readRect(card.querySelector("strong")),
         symbolRect: readRect(card.querySelector(".gaia-opening-route-symbol")),
+        iconRect: readRect(card.querySelector(".gaia-opening-route-icon")),
         iconPosition: getComputedStyle(card.querySelector(".gaia-opening-route-icon")).position,
         glintDisplay: getComputedStyle(card, "::after").display,
         glintAnimationName: getComputedStyle(card, "::after").animationName,
+        glintAnimationDuration: getComputedStyle(card, "::after").animationDuration,
       }));
       return {
         menuRect: readRect(document.querySelector("#gaia-opening-final-menu")),
@@ -128,6 +139,7 @@ try {
         overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
       };
     });
+    report.scans.push({ viewport: viewport.name, guideSteps, replayedGuide, layout, passed: false });
     const compactLandscape = viewport.width > viewport.height && viewport.height <= 430;
     assert(layout.menuRect.left >= 13 && layout.menuRect.right <= viewport.width - 13, `${viewport.name}: route menu is outside its safe area`);
     assert(layout.menuRect.top >= -1 && layout.menuRect.bottom <= viewport.height + 1, `${viewport.name}: route menu is outside the viewport vertically`);
@@ -146,13 +158,16 @@ try {
       assert.equal(card.glintDisplay, viewport.reduced ? "none" : "block", `${viewport.name}: ${card.id} glint layer is incorrect`);
       if (!viewport.reduced && card.id === "gaia-opening-route-story") {
         assert.equal(card.glintAnimationName, "opening-choice-glint", `${viewport.name}: focused-card glint did not run`);
+        assert.equal(card.glintAnimationDuration, "0.24s", `${viewport.name}: focused-card glint is not three times faster`);
       }
       assert.equal(overlapArea(card.labelRect, card.symbolRect), 0, `${viewport.name}: ${card.id} label overlaps its icon`);
+      assert(Math.abs((card.iconRect.left + card.iconRect.right - card.symbolRect.left - card.symbolRect.right) / 2) <= 0.75, `${viewport.name}: ${card.id} icon is not horizontally centered`);
+      assert(Math.abs((card.iconRect.top + card.iconRect.bottom - card.symbolRect.top - card.symbolRect.bottom) / 2) <= 1.25, `${viewport.name}: ${card.id} icon is not vertically centered`);
     }
     assert.equal(layout.overflowX, 0, `${viewport.name}: horizontal overflow remains`);
     assert.equal(layout.overflowY, 0, `${viewport.name}: vertical overflow remains`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-cards-focused.png`), animations: "disabled" });
-    report.scans.push({ viewport: viewport.name, guideSteps, replayedGuide, layout, passed: true });
+    report.scans[report.scans.length - 1].passed = true;
     await context.close();
   }
 

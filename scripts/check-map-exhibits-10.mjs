@@ -187,11 +187,11 @@ assert.doesNotMatch(liveExhibitsSource, /fillRect\(x - 2, y - 1/u, "wind field m
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-character-main-card-1/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-statistics-bi-4/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-unified-world-bank-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-mobile-exhibit-hud-5/u);
 assert.match(modeLoaderSource, /app-content\.js\?v=gaia-abstract-entry-1/u);
-assert.match(modeLoaderSource, /app\.js\?v=gaia-story-return-state-2/u);
+assert.match(modeLoaderSource, /app\.js\?v=gaia-character-book-1/u);
 assert.match(modeLoaderSource, /particles-v9\.js\?v=gaia-light-surface-fps-1/u);
 assert.match(appSource, /const mapExhibitIsVisible = japanIsOpen[\s\S]*mapSurface === "map"[\s\S]*!japanLayer\.classList\.contains\("is-live-exhibit"\)/u);
 assert.match(appSource, /if \(japanIsOpen && mapSurface !== "light"\)/u);
