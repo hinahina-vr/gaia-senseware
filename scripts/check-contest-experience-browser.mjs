@@ -1271,11 +1271,18 @@ try {
     feed(19, 2);
     const afterLow = governor.getProfile().level;
     feed(23, 3);
-    const result = { afterMedium, afterLow, afterStatic: governor.getProfile().level };
+    const afterSustainedLow = governor.getProfile().level;
+    governor.reportFailure("webgl-unavailable");
+    const result = { afterMedium, afterLow, afterSustainedLow, afterFatalFailure: governor.getProfile().level };
     globalThis.GaiaFrameBudgetGovernor.publish("deterministic-test-complete");
     return result;
   });
-  assert.deepEqual(lodResult, { afterMedium: "medium", afterLow: "low", afterStatic: "static" });
+  assert.deepEqual(lodResult, {
+    afterMedium: "medium",
+    afterLow: "low",
+    afterSustainedLow: "low",
+    afterFatalFailure: "static",
+  });
   const frameTimes = await lifecyclePage.evaluate(() => new Promise((resolve) => {
     const samples = [];
     let previous = performance.now();

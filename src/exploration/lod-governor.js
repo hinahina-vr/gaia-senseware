@@ -1,18 +1,28 @@
 const LEVELS = Object.freeze(["high", "medium", "low", "static"]);
 const PROFILES = Object.freeze({
-  high: Object.freeze({ level: "high", dprCap: 1.75, particleRatio: 1, effectsRatio: 1, targetFps: 60 }),
-  medium: Object.freeze({ level: "medium", dprCap: 1.25, particleRatio: 0.65, effectsRatio: 0.5, targetFps: 60 }),
-  low: Object.freeze({ level: "low", dprCap: 1, particleRatio: 0.25, effectsRatio: 0, targetFps: 60 }),
-  static: Object.freeze({ level: "static", dprCap: 1, particleRatio: 0, effectsRatio: 0, targetFps: 0 }),
+  high: Object.freeze({ level: "high", dprCap: 1.75, renderScale: 1, particleRatio: 1, effectsRatio: 1, targetFps: 60 }),
+  medium: Object.freeze({ level: "medium", dprCap: 1.25, renderScale: 0.78, particleRatio: 0.65, effectsRatio: 0.5, targetFps: 45 }),
+  low: Object.freeze({ level: "low", dprCap: 1, renderScale: 0.38, particleRatio: 0.25, effectsRatio: 0, targetFps: 30 }),
+  static: Object.freeze({ level: "static", dprCap: 1, renderScale: 0.35, particleRatio: 0, effectsRatio: 0, targetFps: 0 }),
 });
 
+const detectInitialLevel = () => {
+  const memory = Number(globalThis.navigator?.deviceMemory);
+  const cores = Number(globalThis.navigator?.hardwareConcurrency);
+  const coarsePointer = globalThis.matchMedia?.("(pointer: coarse)")?.matches === true;
+  if ((memory > 0 && memory <= 2) || (cores > 0 && cores <= 2)) return "low";
+  if ((memory > 0 && memory <= 4) || (cores > 0 && cores <= 4)) return "medium";
+  if (coarsePointer && memory <= 0 && cores <= 0) return "medium";
+  return "high";
+};
+
 export class GaiaFrameBudgetGovernor {
-  constructor({ now = () => performance.now(), autoStart = true } = {}) {
+  constructor({ now = () => performance.now(), autoStart = true, initialLevel = detectInitialLevel() } = {}) {
     this.now = now;
-    this.levelIndex = 0;
+    this.levelIndex = Math.max(0, LEVELS.indexOf(initialLevel));
     this.samples = [];
+    this.sampleElapsed = 0;
     this.slowPeriods = 0;
-    this.criticalPeriods = 0;
     this.fastPeriods = 0;
     this.contextLosses = 0;
     this.lastChangeAt = -Infinity;
@@ -20,7 +30,7 @@ export class GaiaFrameBudgetGovernor {
     this.frame = 0;
     this.running = false;
     this.tick = this.tick.bind(this);
-    this.publish("initial");
+    this.publish(this.levelIndex > 0 ? "device-capability" : "initial");
     if (autoStart) this.start();
   }
 
@@ -56,8 +66,12 @@ export class GaiaFrameBudgetGovernor {
   addSample(duration) {
     if (!Number.isFinite(duration) || duration <= 0 || duration > 1_000) return;
     this.samples.push(duration);
-    if (this.samples.length < 120) return;
-    const windowSamples = this.samples.splice(0, 120);
+    this.sampleElapsed += duration;
+    const hasFullWindow = this.samples.length >= 120;
+    const hasTimedWindow = this.samples.length >= 12 && this.sampleElapsed >= 2_000;
+    if (!hasFullWindow && !hasTimedWindow) return;
+    const windowSamples = this.samples.splice(0, this.samples.length);
+    this.sampleElapsed = 0;
     this.evaluateWindow(windowSamples);
   }
 
@@ -66,14 +80,15 @@ export class GaiaFrameBudgetGovernor {
     const p95 = sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.95) - 1)] || 0;
     const longFrameRate = samples.filter((value) => value > 25).length / Math.max(1, samples.length);
     const level = LEVELS[this.levelIndex];
+    const severe = p95 > 34 || longFrameRate >= 0.2;
 
     this.slowPeriods = p95 > 18.5 ? this.slowPeriods + 1 : 0;
-    this.criticalPeriods = level === "low" && p95 > 22 ? this.criticalPeriods + 1 : 0;
-    this.fastPeriods = p95 < 14 ? this.fastPeriods + 1 : 0;
+    this.fastPeriods = p95 < 17.8 && longFrameRate < 0.02 ? this.fastPeriods + 1 : 0;
 
-    if (this.criticalPeriods >= 3) this.setLevel("static", "sustained-frame-budget-failure");
-    else if (this.slowPeriods >= 2 && level !== "static") this.setLevel(LEVELS[Math.min(this.levelIndex + 1, LEVELS.length - 1)], "frame-budget");
-    else if (this.fastPeriods >= 4 && this.levelIndex > 0 && this.now() - this.lastChangeAt >= 15_000) {
+    if (severe && level !== "low" && level !== "static") this.setLevel(LEVELS[this.levelIndex + 1], "severe-frame-budget");
+    else if (this.slowPeriods >= 2 && level !== "low" && level !== "static") {
+      this.setLevel(LEVELS[Math.min(this.levelIndex + 1, LEVELS.length - 1)], "frame-budget");
+    } else if (this.fastPeriods >= 12 && this.levelIndex > 0 && this.now() - this.lastChangeAt >= 30_000) {
       this.setLevel(LEVELS[this.levelIndex - 1], "recovered-frame-budget");
     }
 
@@ -86,8 +101,9 @@ export class GaiaFrameBudgetGovernor {
     if (nextIndex < 0 || nextIndex === this.levelIndex) return;
     this.levelIndex = nextIndex;
     this.slowPeriods = 0;
-    this.criticalPeriods = 0;
     this.fastPeriods = 0;
+    this.samples.length = 0;
+    this.sampleElapsed = 0;
     this.lastChangeAt = this.now();
     this.publish(reason);
     if (level === "static") this.stop();

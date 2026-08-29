@@ -1,4 +1,4 @@
-import governor from "./lod-governor.js";
+import governor from "./lod-governor.js?v=gaia-budget-devices-1";
 import { mount } from "./live-data.js?v=gaia-live-free-tier-1";
 import "./live-exhibits.js?v=gaia-live-free-tier-1";
 

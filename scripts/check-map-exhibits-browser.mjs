@@ -69,7 +69,7 @@ const selectMode = async (page, index, expectedTitle) => {
     && await mobileBankToggle.getAttribute("aria-expanded") !== "true") {
     await mobileBankToggle.click();
   }
-  await page.locator("#japan-mode-list .map-mode-button").nth(index).click({ force: true });
+  await page.locator("#japan-mode-list .map-mode-button").nth(index).evaluate((button) => button.click());
   await page.waitForFunction(
     ({ number, title }) => document.querySelector("#japan-mode-number")?.textContent === number
       && document.querySelector("#japan-mode-title")?.textContent === title
@@ -173,8 +173,22 @@ const boot = async (viewport) => {
     }
     document.querySelector(".experience")?.classList.remove("intro-open");
   });
-  await page.locator("#japan-button").click({ force: true });
-  await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
+  await page.locator("#japan-button").evaluate((button) => button.click());
+  try {
+    await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
+  } catch (error) {
+    const diagnostics = await page.evaluate(() => ({
+      appReady: document.documentElement.dataset.gaiaAppReady || "",
+      lod: document.documentElement.dataset.gaiaLod || "",
+      mapState: globalThis.GaiaMapObservationAdapter?.getState?.() || null,
+      japanHidden: document.querySelector("#japan-layer")?.hidden,
+      japanAriaHidden: document.querySelector("#japan-layer")?.getAttribute("aria-hidden"),
+      sceneHidden: document.querySelector("#scene-transition")?.hidden,
+      sceneTransitioning: document.body.classList.contains("scene-transitioning"),
+      activeElement: document.activeElement?.id || document.activeElement?.className || "",
+    }));
+    throw new Error(`${label}: map did not open: ${JSON.stringify(diagnostics)}`, { cause: error });
+  }
   await page.waitForFunction(() => document.querySelector("#scene-transition")?.hidden
     && !document.body.classList.contains("scene-transitioning"));
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:opening-complete")));

@@ -19,14 +19,14 @@
         "./data-ledger.js?v=gaia-live-free-tier-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-abstract-entry-1",
-        "./app.js?v=gaia-character-book-1",
+        "./app.js?v=gaia-budget-devices-1",
         "./map-ui-grid-polish.js?v=gaia-mobile-exhibit-hud-5",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
         "./observation-notebook-core.js?v=gaia-contest-notebook-2",
         "./observation-notebook.js?v=gaia-exhibit-heading-actions-1",
       ],
       modules: [
-        "./src/exploration/index.js?v=gaia-live-free-tier-1",
+        "./src/exploration/index.js?v=gaia-budget-devices-1",
         "./statistics-lab.js?v=gaia-statistics-bi-4",
       ],
     },
@@ -50,7 +50,7 @@
         "./novel-temporal.js?v=gaia-temporal-1",
         "./novel-mode.js?v=gaia-story-progression-state-2",
       ],
-      modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
+      modules: ["./src/exploration/lod-governor.js?v=gaia-budget-devices-1"],
     },
     gx: {
       templates: ["gaia-template-gx"],
@@ -64,7 +64,7 @@
         "./scene-transition.js?v=gaia-66",
         "./gx-mode.js?v=gaia-gx-mobile-installation-1",
       ],
-      modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
+      modules: ["./src/exploration/lod-governor.js?v=gaia-budget-devices-1"],
     },
     space: {
       templates: ["gaia-template-space"],
@@ -79,7 +79,7 @@
         "./space-scenes.js?v=gaia-98",
         "./space-mode.js?v=gaia-no-breathing-flash-1",
       ],
-      modules: ["./src/exploration/lod-governor.js?v=gaia-live-senseware-1"],
+      modules: ["./src/exploration/lod-governor.js?v=gaia-budget-devices-1"],
     },
     sound: {
       templates: ["gaia-template-sound"],

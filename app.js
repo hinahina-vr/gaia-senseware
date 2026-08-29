@@ -473,6 +473,7 @@
     uniform vec4 uPointer;
     uniform vec2 uVelocity;
     uniform vec4 uTrail[${TRAIL_COUNT}];
+    uniform float uTrailActive;
     uniform float uModeMemory[${MODE_COUNT}];
     uniform int uModeFrom;
     uniform int uModeTo;
@@ -546,6 +547,7 @@
     }
 
     vec2 trailResponse(vec2 p) {
+      if (uTrailActive < 0.5) return vec2(0.0);
       float bloomField = 0.0;
       float ringField = 0.0;
       for (int i = 0; i < ${TRAIL_COUNT}; i++) {
@@ -588,10 +590,12 @@
       vec2 uv = (gl_FragCoord.xy * 2.0 - uResolution) / uResolution.y;
       vec2 response = trailResponse(uv);
       vec2 dataResponse = response + uSignal.zw * 0.08;
-      vec3 fromColor = evaluateMode(uModeFrom, uv, uTime + uSignal.y * 1.6, dataResponse);
-      vec3 toColor = evaluateMode(uModeTo, uv, uTime + uSignal.y * 1.6, dataResponse);
-      float transition = smoothstep(0.0, 1.0, uTransition);
-      vec3 color = mix(fromColor, toColor, transition);
+      float signalTime = uTime + uSignal.y * 1.6;
+      vec3 color = evaluateMode(uModeFrom, uv, signalTime, dataResponse);
+      if (uModeFrom != uModeTo) {
+        vec3 toColor = evaluateMode(uModeTo, uv, signalTime, dataResponse);
+        color = mix(color, toColor, smoothstep(0.0, 1.0, uTransition));
+      }
       color *= 0.84 + uSignal.x * 0.32;
       color += vec3(uSignal.y * 0.025, uSignal.z * 0.02, uSignal.w * 0.025);
 
@@ -683,6 +687,7 @@
     pointer: gl.getUniformLocation(program, "uPointer"),
     velocity: gl.getUniformLocation(program, "uVelocity"),
     trail: gl.getUniformLocation(program, "uTrail[0]"),
+    trailActive: gl.getUniformLocation(program, "uTrailActive"),
     modeMemory: gl.getUniformLocation(program, "uModeMemory[0]"),
     modeFrom: gl.getUniformLocation(program, "uModeFrom"),
     modeTo: gl.getUniformLocation(program, "uModeTo"),
@@ -747,6 +752,8 @@
   let japanTilesDirty = true;
   let lastJapanOverlayRenderAt = -Infinity;
   let lastBackgroundRenderAt = -Infinity;
+  let nextShaderRenderAt = 0;
+  let lastShaderTargetFps = 60;
   let japanTileErrors = 0;
   let japanEarthquakeDataState = "idle";
   let japanHistoryDataState = "idle";
@@ -7556,11 +7563,14 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
   const resize = () => {
     const rect = canvas.getBoundingClientRect();
-    const ratioCap = Math.min(coarsePointer ? 1.0 : 1.35, globalThis.GaiaFrameBudgetGovernor?.getDprCap?.() || Infinity);
+    const lodProfile = globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || {};
+    const compactRendering = coarsePointer || window.innerWidth <= 720;
+    const ratioCap = Math.min(compactRendering ? 1.0 : 1.35, lodProfile.dprCap || Infinity);
     const pixelRatio = Math.min(window.devicePixelRatio || 1, ratioCap);
-    const rawWidth = Math.max(1, rect.width * pixelRatio);
-    const rawHeight = Math.max(1, rect.height * pixelRatio);
-    const maxPixels = coarsePointer ? 560000 : 1300000;
+    const renderScale = Math.max(compactRendering ? 0.58 : 0.35, lodProfile.renderScale || 1);
+    const rawWidth = Math.max(1, rect.width * pixelRatio * renderScale);
+    const rawHeight = Math.max(1, rect.height * pixelRatio * renderScale);
+    const maxPixels = compactRendering ? 560000 : 1300000;
     const pixelScale = Math.min(1, Math.sqrt(maxPixels / (rawWidth * rawHeight)));
     const width = Math.max(1, Math.floor(rawWidth * pixelScale));
     const height = Math.max(1, Math.floor(rawHeight * pixelScale));
@@ -7581,10 +7591,28 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const mapExhibitIsVisible = japanIsOpen
       && mapSurface === "map"
       && !japanLayer.classList.contains("is-live-exhibit");
+    const lodProfile = globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || { targetFps: 60 };
+    const lodTarget = lodProfile.targetFps ?? 60;
+
+    if (lodTarget === 0) return;
+    if (!japanIsOpen && lodTarget < 60) {
+      if (lodTarget !== lastShaderTargetFps) {
+        lastShaderTargetFps = lodTarget;
+        nextShaderRenderAt = now;
+      }
+      if (now + 0.25 < nextShaderRenderAt) {
+        animationFrame = requestAnimationFrame(render);
+        return;
+      }
+      const frameInterval = 1000 / lodTarget;
+      do nextShaderRenderAt += frameInterval;
+      while (nextShaderRenderAt <= now);
+    } else {
+      lastShaderTargetFps = lodTarget;
+      nextShaderRenderAt = now;
+    }
 
     if (japanIsOpen) {
-      const lodTarget = globalThis.GaiaFrameBudgetGovernor?.getProfile?.().targetFps ?? 60;
-      if (lodTarget === 0) return;
       const mapFrameInterval = reducedMotion ? 1000 / 15 : 1000 / lodTarget;
       if (now - lastJapanOverlayRenderAt < mapFrameInterval) {
         animationFrame = requestAnimationFrame(render);
@@ -7656,6 +7684,8 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     );
     gl.uniform2f(uniforms.velocity, pointer.velocityX, pointer.velocityY);
     gl.uniform4fv(uniforms.trail, trailData);
+    const trailActive = pointer.down || trail.some((point) => point.strength > 0.001 && now - point.bornAt < 3_100);
+    gl.uniform1f(uniforms.trailActive, trailActive ? 1 : 0);
     gl.uniform1fv(uniforms.modeMemory, modeMemory);
     gl.uniform1i(uniforms.modeFrom, modeFromIndex);
     gl.uniform1i(uniforms.modeTo, modeToIndex);
