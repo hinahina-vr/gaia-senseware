@@ -1523,9 +1523,8 @@
             aria-expanded="false"
             aria-controls="japan-data-panel"
           >
-            <span>OPEN DATA</span>
-            <span>データの出典を表示する</span>
-            <span aria-hidden="true">↗</span>
+            <span class="japan-data-button-copy">データの出典を表示する</span>
+            <span class="japan-data-button-symbol" aria-hidden="true">↗</span>
           </button>
           <button
             class="japan-data-button gaia-statistics-button"
@@ -1534,9 +1533,8 @@
             aria-haspopup="dialog"
             aria-controls="gaia-statistics-lab"
           >
-            <span>STAT LAB</span>
-            <span>データを統計分析する</span>
-            <span aria-hidden="true">＋</span>
+            <span class="japan-data-button-copy">データを統計分析する</span>
+            <span class="japan-data-button-symbol" aria-hidden="true">＋</span>
           </button>
         </header>
 
@@ -1576,32 +1574,6 @@
           </div>
         </details>
 
-        <details class="gaia-live-receipt" data-gaia-live-receipt>
-          <summary>
-            <span>LIVE SENSEWARE / 変換レシート</span>
-            <strong data-live-connection>SNAPSHOT / RECONNECT SAFE</strong>
-          </summary>
-          <div class="gaia-live-receipt-body">
-            <p>ハワイ島周辺の固定範囲を、出典・観測時刻・公開遅延を混同せずに表示します。</p>
-            <section data-live-provider="noaa">
-              <header><b>NOAA</b><span data-live-status>SNAPSHOT</span></header>
-              <strong data-live-value>取得待ち</strong><small data-live-time>観測時刻なし</small>
-            </section>
-            <section data-live-provider="jaxa">
-              <header><b>JAXA</b><span data-live-status>SNAPSHOT</span></header>
-              <strong data-live-value>取得待ち</strong><small data-live-time>観測時刻なし</small>
-            </section>
-            <section data-live-provider="esa">
-              <header><b>ESA / COPERNICUS</b><span data-live-status>SNAPSHOT</span></header>
-              <strong data-live-value>取得待ち</strong><small data-live-time>観測時刻なし</small>
-            </section>
-            <div class="gaia-live-sound-controls">
-              <button type="button" data-live-sound-toggle aria-pressed="false">観測音をオン</button>
-              <p><b>DERIVED / SOUND MAPPING</b><span data-live-sound-readout>観測値を読み込んでいます。</span></p>
-            </div>
-          </div>
-        </details>
-
         <section class="signal-console signal-console-map" data-signal-console aria-label="選択中の観測データ">
           <div class="signal-console-heading">
             <span data-signal-act>ACT 1 / 循環を知る</span>
@@ -1612,7 +1584,6 @@
             <input data-signal-time type="range" min="0" max="100" value="100" step="1" />
             <output data-signal-time-output>—</output>
           </label>
-          <p data-signal-note>同梱した公開データのスナップショットを読み込んでいます。</p>
           <button
             class="map-mobile-legend-toggle"
             id="map-mobile-legend-toggle"
@@ -1634,19 +1605,15 @@
           <dl class="signal-encoding-legend" data-signal-encoding-legend aria-label="地図の凡例" hidden>
             <div>
               <dt data-encoding-label="heatmap"><i data-encoding-mark="heatmap"></i>色 / CO₂濃度</dt>
-              <dd data-encoding-value="heatmap">300–500 ppm固定尺度</dd>
             </div>
             <div>
               <dt data-encoding-label="nodata"><i data-encoding-mark="nodata"></i>斜線 / まわりから補った値</dt>
-              <dd data-encoding-value="nodata">近くの8地点を手がかりにする</dd>
             </div>
             <div>
               <dt data-encoding-label="estimate"><i data-encoding-mark="estimate"></i>塗り / 時代区分</dt>
-              <dd data-encoding-value="estimate">DERIVED / OBSERVED / SCENARIO</dd>
             </div>
             <div>
               <dt data-encoding-label="resolution"><i data-encoding-mark="resolution"></i>1セル / 2.5°</dt>
-              <dd data-encoding-value="resolution">DERIVED 近似値</dd>
             </div>
           </dl>
         </aside>
@@ -1686,16 +1653,12 @@
               <div class="map-mode-list map-mode-list--light" id="abstract-mode-list" aria-label="光で見る8つの感覚器演出"></div>
             </section>
           </div>
-          <aside class="map-mode-01-tooltip map-mode-preview" id="map-mode-preview" role="tooltip" aria-labelledby="map-mode-preview-title">
-            <p id="map-mode-preview-surface">MAP MODE / READ THE PLANET</p>
-            <strong id="map-mode-preview-title">どの信号を、地図で読みますか？</strong>
-            <p id="map-mode-preview-lead">光の意味を世界の場所へ戻します。気になる信号を選び、観測値がどこで記録されたのかをたどってください。</p>
+          <aside class="map-mode-01-tooltip map-mode-preview" id="map-mode-preview" role="tooltip">
             <div>
               <span id="map-mode-preview-number">01 / AIR</span>
               <b id="map-mode-preview-label">空気の声</b>
               <p id="map-mode-preview-copy">CO₂が季節ごとに上下しながら、長い目では増えてきた様子を見る。</p>
             </div>
-            <small id="map-mode-preview-note">数字にフォーカスすると説明が変わります。クリックすると、その展示をすぐに開きます。</small>
           </aside>
         </section>
 
@@ -1710,15 +1673,6 @@
           </button>
         </div>
 
-        <div class="japan-instruction" aria-hidden="true">
-          <span>01—12</span>
-          <p>データを選ぶ</p>
-          <span>DRAG / ZOOM</span>
-          <p>移動して拡大する</p>
-          <span>POI</span>
-          <p>点を押して読む</p>
-        </div>
-
         <article
           class="japan-poi-card"
           id="japan-poi-card"
@@ -1728,13 +1682,17 @@
         >
           <button id="japan-poi-close" type="button" aria-label="地点の説明を閉じる">×</button>
           <p class="japan-poi-type" id="japan-poi-type">CURATED LISTENING NODE</p>
-          <h3 id="japan-poi-title"></h3>
           <p class="japan-poi-meta" id="japan-poi-meta"></p>
-          <p class="japan-poi-description" id="japan-poi-description"></p>
-          <div class="japan-poi-relation">
-            <span>表現との関係</span>
-            <strong id="japan-poi-relation"></strong>
-          </div>
+          <a
+            class="japan-poi-source"
+            id="japan-poi-source"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span>元データを確認する</span>
+            <span aria-hidden="true">↗</span>
+          </a>
         </article>
 
         <div class="japan-map-actions" aria-label="地図の操作">
@@ -2781,7 +2739,6 @@
               <input data-signal-time type="range" min="0" max="100" value="100" step="1" />
               <output data-signal-time-output>—</output>
             </label>
-            <p data-signal-note>同梱した公開データのスナップショットを読み込んでいます。</p>
           </section>
           <h2 id="mode-title">Breathing Earth</h2>
                 <p class="mode-title-ja" id="mode-title-ja">地球の一呼吸</p>

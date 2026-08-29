@@ -113,7 +113,7 @@ const scanOpenModal = async (page) => page.evaluate(() => {
     nativeCloseDisplay: getComputedStyle(map?.querySelector(".japan-close")).display,
     readingGuideDisplay: getComputedStyle(map?.querySelector(".map-reading-guide")).display,
     label: map?.querySelector("[data-signal-time-label]")?.textContent || "",
-    note: map?.querySelector("[data-signal-note]")?.textContent || "",
+    noteCount: map?.querySelectorAll("[data-signal-note]").length || 0,
     phase: map?.dataset.storyPhase || "",
     sliderDisabled: Boolean(slider?.disabled),
     sliderValue: Number(slider?.value || 0),
@@ -146,6 +146,7 @@ const assertModal = (scan, mobile = false, expectedPhase = "timeline") => {
   assert(scan.mapSurfaceOpacity >= 0.88 && scan.mapSurfaceOpacity <= 0.92);
   assert.equal(scan.nativeCloseDisplay, "none");
   assert.equal(scan.readingGuideDisplay, "none");
+  assert.equal(scan.noteCount, 0);
   assert.equal(scan.sliderDisabled, false);
   assert.equal(scan.aivaBackdropCount, 1);
   assert(scan.aivaBackdropOpacity > 0.3, "AIVA backdrop is not visible");
@@ -156,7 +157,6 @@ const assertModal = (scan, mobile = false, expectedPhase = "timeline") => {
   assert.equal(scan.phase, expectedPhase);
   if (expectedPhase === "temperature-anomaly") {
     assert.match(scan.label, /年代を動かす \/ DRAG/u);
-    assert.match(scan.note, /操作 1\/2/u);
   } else {
     assert.match(scan.label, /3×/u);
   }
@@ -260,12 +260,12 @@ await temperatureSlider.fill("67");
 await temperatureSlider.dispatchEvent("input");
 const afterYear = await temperatureDesktop.page.evaluate(() => ({
   stepId: globalThis.GaiaNovel.getState().stepId,
-  note: document.querySelector("#japan-layer [data-signal-note]")?.textContent || "",
+  noteCount: document.querySelectorAll("#japan-layer [data-signal-note]").length,
   mapHidden: document.querySelector("#japan-layer")?.hidden,
 }));
 assert.deepEqual(afterYear, {
   stepId: "map_mode01_023",
-  note: "操作 2/2｜地図の気になる場所へ触れてください。",
+  noteCount: 0,
   mapHidden: false,
 });
 await temperatureDesktop.page.locator("#japan-map").press("Enter");

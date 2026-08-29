@@ -102,10 +102,13 @@ try {
         });
       }
 
-      await page.waitForFunction(() => (
-        document.querySelector("[data-signal-encoding-legend-title]")?.getClientRects().length > 0
-        && document.querySelector("[data-signal-encoding-legend]")?.getClientRects().length > 0
-      ));
+      await page.waitForFunction((desktop) => {
+        const title = document.querySelector("[data-signal-encoding-legend-title]");
+        const legend = document.querySelector("[data-signal-encoding-legend]");
+        return Boolean(title && legend) && (!desktop || (
+          title.getClientRects().length > 0 && legend.getClientRects().length > 0
+        ));
+      }, viewport.name.startsWith("pc"));
 
       await page.waitForFunction((desktop) => {
         const bank = document.querySelector("#japan-layer > .map-mode-bank")?.getBoundingClientRect();
@@ -127,7 +130,6 @@ try {
         const audio = document.querySelector("#gaia-audio-dock");
         const legendDock = document.querySelector("#japan-layer .signal-encoding-legend-dock");
         const readingGuide = document.querySelector("#map-reading-guide");
-        const liveReceipt = document.querySelector("[data-gaia-live-receipt]");
         const backRect = back?.getBoundingClientRect();
         const hit = backRect
           ? document.elementFromPoint(backRect.left + backRect.width / 2, backRect.top + backRect.height / 2)
@@ -166,16 +168,14 @@ try {
           audio: box(audio),
           legendDock: box(legendDock),
           readingGuide: box(readingGuide),
-          liveReceipt: box(liveReceipt),
+          liveReceiptCount: document.querySelectorAll("[data-gaia-live-receipt], .gaia-live-receipt").length,
           openDataHit: hitButton(openData),
           openDataCopy: openData?.textContent?.replace(/\s+/gu, " ").trim() || "",
           storyButtonCount: document.querySelectorAll("#japan-layer .japan-story-button").length,
+          instructionCount: document.querySelectorAll("#japan-layer .japan-instruction").length,
           legendVisible: visible(legendDock),
           legendInSignalPanel: legendDock?.parentElement === signal,
           readingGuideRadius: readingGuide ? getComputedStyle(readingGuide).borderRadius : "",
-          liveReceiptColor: liveReceipt?.querySelector("summary strong")
-            ? getComputedStyle(liveReceipt.querySelector("summary strong")).color
-            : "",
           europe,
           europeBlocker: europeHit?.closest?.(".map-grid-polish, .japan-data-button")?.className || "",
           scaleCount: document.querySelectorAll("#japan-layer > .map-scope-switch").length,
@@ -204,9 +204,14 @@ try {
       assert(scan.back.width >= 44 && scan.back.height >= 44, `${viewport.name}/${scan.modeNumber}: back hit area is too small`);
       assert.equal(scan.scaleCount, 0, `${viewport.name}/${scan.modeNumber}: redundant map scale block remains`);
       assert.equal(scan.storyButtonCount, 0, `${viewport.name}/${scan.modeNumber}: retired STORY action remains`);
-      assert.match(scan.openDataCopy, /このデータの出典を表示する/u, `${viewport.name}/${scan.modeNumber}: OPEN DATA source action is unclear`);
-      assert.equal(scan.readingGuideRadius, "5px", `${viewport.name}/${scan.modeNumber}: reading guide corners are not rounded`);
-      assert.match(scan.liveReceiptColor, /248, 253, 255/u, `${viewport.name}/${scan.modeNumber}: LIVE status is not white`);
+      assert.equal(scan.instructionCount, 0, `${viewport.name}/${scan.modeNumber}: retired map instruction block remains`);
+      assert.match(scan.openDataCopy, /データの出典を表示する/u, `${viewport.name}/${scan.modeNumber}: source action is unclear`);
+      assert.equal(
+        scan.readingGuideRadius,
+        viewport.name.startsWith("pc") ? "5px" : "9px",
+        `${viewport.name}/${scan.modeNumber}: reading guide corners are not rounded`,
+      );
+      assert.equal(scan.liveReceiptCount, 0, `${viewport.name}/${scan.modeNumber}: retired LIVE receipt remains`);
       for (const [name, panelBox] of Object.entries({ heading: scan.heading, bank: scan.bank, signal: scan.signal })) {
         boxInsideViewport(panelBox, scan.viewport, `${viewport.name}/${scan.modeNumber}/${name}`);
       }
@@ -218,7 +223,6 @@ try {
         assert(scan.legendVisible, `${viewport.name}/${scan.modeNumber}: legend is hidden`);
         assert(scan.heading.right <= scan.legendDock.left - 8, `${viewport.name}/${scan.modeNumber}: title overlaps legend`);
         assert(scan.legendDock.right <= scan.audio.left - 8, `${viewport.name}/${scan.modeNumber}: legend is not left of volume`);
-        assert(scan.liveReceipt.top >= scan.heading.bottom + 8, `${viewport.name}/${scan.modeNumber}: LIVE status overlaps title`);
         assert(scan.signal.top >= scan.bank.bottom + 8, `${viewport.name}/${scan.modeNumber}: lower bank overlaps signal panel`);
         assert(scan.openData.top >= scan.signal.bottom + 8, `${viewport.name}/${scan.modeNumber}: OPEN DATA is outside the lower rail`);
         assert.equal(scan.openDataHit, "japan-data-button", `${viewport.name}/${scan.modeNumber}: OPEN DATA action is obstructed`);
@@ -227,8 +231,6 @@ try {
         assert.equal(scan.europeBlocker, "", `${viewport.name}/${scan.modeNumber}: Europe is obscured by ${scan.europeBlocker}`);
       } else {
         assert.equal(scan.legendInSignalPanel, true, `${viewport.name}/${scan.modeNumber}: compact legend left the mobile data panel`);
-        assert(scan.liveReceipt.top >= scan.heading.bottom, `${viewport.name}/${scan.modeNumber}: LIVE status overlaps title`);
-        assert(scan.liveReceipt.bottom <= scan.signal.top, `${viewport.name}/${scan.modeNumber}: LIVE status overlaps data panel`);
         for (const [name, panelBox] of Object.entries({ heading: scan.heading, bank: scan.bank, signal: scan.signal })) {
           assert(panelBox.top >= scan.back.bottom + 10, `${viewport.name}/${scan.modeNumber}/${name}: panel was not lowered below back`);
         }

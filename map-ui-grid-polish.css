@@ -11,9 +11,9 @@
   --map-grid-panel-glow: rgba(87, 203, 198, 0.13);
 }
 
-/* Live exhibits use a gallery rail: large current state, large numbered pads,
-   and no instructional prose competing with the installation. */
-.japan-layer.is-live-exhibit #japan-description {
+/* Every exhibit now follows the compact 09 header: the current title remains
+   visual while the shared explanatory copy stays available to assistive tech. */
+.japan-layer #japan-description {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -24,16 +24,18 @@
   white-space: nowrap !important;
 }
 
-.japan-layer.is-live-exhibit .japan-heading .japan-kicker {
+.japan-layer .japan-heading .japan-kicker {
   display: none !important;
 }
 
 @media (min-width: 901px) {
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-intro {
+  /* Match every exhibit header to the title-only live-exhibit treatment used
+     by 09: the changing Japanese title is the sole visual heading. */
+  body.map-grid-desktop .japan-layer .map-grid-intro {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  body.map-grid-desktop .japan-layer.is-live-exhibit .map-grid-intro #japan-title {
+  body.map-grid-desktop .japan-layer .map-grid-intro #japan-title {
     justify-self: center;
   }
 
@@ -390,21 +392,14 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 
   .experience.japan-open .signal-console-map .signal-encoding-legend {
-    gap: 2px 8px;
-    padding: 3px 6px 4px;
+    gap: 3px 8px;
+    padding: 3px 6px;
   }
 
   .experience.japan-open .signal-console-map .signal-encoding-legend dt {
     gap: 4px;
     font-size: 7px;
     line-height: 1.25;
-  }
-
-  .experience.japan-open .signal-console-map .signal-encoding-legend dd {
-    display: block;
-    margin-top: 1px;
-    font-size: 6px;
-    line-height: 1.2;
   }
 
   .experience.japan-open .signal-console-map .signal-encoding-legend i {
@@ -456,11 +451,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     padding-inline: 9px;
   }
 
-  .experience.japan-open .japan-data-button span:first-child {
-    display: none;
-  }
-
-  .experience.japan-open .japan-data-button span:nth-child(2) {
+  .experience.japan-open .japan-data-button-copy {
     overflow: hidden;
     font-size: 8px;
     letter-spacing: 0.01em;
@@ -496,7 +487,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     white-space: nowrap;
   }
 
-  .experience.japan-open .signal-console-map > p,
   .experience.japan-open .signal-console-map .signal-encoding-legend {
     display: none;
   }
@@ -673,12 +663,9 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   .experience.japan-open .japan-layer.is-mobile-heading-expanded :is(
     .signal-console-map,
-    .map-reading-guide,
-    .gaia-live-receipt
+    .map-reading-guide
   ),
-  .experience.japan-open .japan-layer:has(.map-reading-guide[open]) .gaia-live-receipt,
-  .experience.japan-open .japan-layer:has(.gaia-live-receipt[open]) .map-reading-guide,
-  .experience.japan-open .japan-layer.is-mobile-legend-expanded :is(.map-reading-guide, .gaia-live-receipt) {
+  .experience.japan-open .japan-layer.is-mobile-legend-expanded .map-reading-guide {
     display: none !important;
   }
 
@@ -729,10 +716,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   .experience.japan-open .signal-console-map output {
     min-width: 52px;
     font-size: 7px;
-  }
-
-  .experience.japan-open .signal-console-map > p {
-    display: none !important;
   }
 
   .experience.japan-open .signal-console-map.is-static {
@@ -788,17 +771,12 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 
   .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend {
-    gap: 8px 12px;
-    padding: 7px 11px 11px;
+    gap: 6px 12px;
+    padding: 7px 11px 9px;
   }
 
   .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend dt {
     font-size: 9px;
-    line-height: 1.35;
-  }
-
-  .experience.japan-open .japan-layer.is-mobile-legend-expanded .signal-encoding-legend dd {
-    font-size: 8px;
     line-height: 1.35;
   }
 
@@ -858,52 +836,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     display: grid !important;
     grid-template-columns: 1fr;
     max-height: none;
-  }
-
-  .experience.japan-open .gaia-live-receipt {
-    top: max(212px, calc(env(safe-area-inset-top) + 200px)) !important;
-    right: max(12px, env(safe-area-inset-right)) !important;
-    bottom: auto !important;
-    left: auto !important;
-    width: 154px !important;
-    max-height: 44px;
-    border: 1px solid rgba(120, 230, 222, 0.24);
-    border-radius: 9px;
-    overflow: hidden;
-    background: rgba(1, 13, 22, 0.78);
-  }
-
-  .experience.japan-open .gaia-live-receipt > summary {
-    min-height: 44px;
-    padding: 7px 10px;
-  }
-
-  .experience.japan-open .gaia-live-receipt > summary span {
-    font-size: 7px;
-  }
-
-  .experience.japan-open .gaia-live-receipt > summary strong {
-    max-width: 132px;
-    overflow: hidden;
-    font-size: 8px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .experience.japan-open .gaia-live-receipt[open] {
-    z-index: 27;
-    right: max(12px, env(safe-area-inset-right)) !important;
-    left: max(12px, env(safe-area-inset-left)) !important;
-    width: auto !important;
-    max-height: min(56vh, 460px);
-    overflow: auto;
-    background: rgba(1, 13, 22, 0.96);
-  }
-
-  .experience.japan-open .gaia-live-receipt[open] .gaia-live-receipt-body {
-    max-height: calc(min(56vh, 460px) - 44px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
   }
 
   .experience.japan-open .map-mode-bank {
@@ -1059,7 +991,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     transform: none;
   }
 
-  .experience.japan-open .japan-layer :is(.japan-instruction, .japan-map-note, .japan-credits) {
+  .experience.japan-open .japan-layer :is(.japan-map-note, .japan-credits) {
     display: none !important;
   }
 
@@ -1071,8 +1003,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     .japan-heading,
     .signal-console-map,
     .signal-encoding-legend-dock,
-    .map-reading-guide,
-    .gaia-live-receipt
+    .map-reading-guide
   ) {
     display: none !important;
   }
@@ -1217,8 +1148,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     width: min(310px, calc(100vw - 24px)) !important;
   }
 
-  .experience.japan-open .map-reading-guide,
-  .experience.japan-open .gaia-live-receipt {
+  .experience.japan-open .map-reading-guide {
     top: max(144px, calc(env(safe-area-inset-top) + 132px)) !important;
   }
 

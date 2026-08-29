@@ -420,8 +420,10 @@ const scanMapActionCopy = async (viewport) => {
     statisticsVisible: __qaVisible(document.querySelector("#gaia-statistics-button")),
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
   }));
-  assert.match(scan.openDataCopy, /OPEN DATA データの出典を表示する/u);
-  assert.match(scan.statisticsCopy, /STAT LAB データを統計分析する/u);
+  assert.match(scan.openDataCopy, /^データの出典を表示する ↗$/u);
+  assert.match(scan.statisticsCopy, /^データを統計分析する ＋$/u);
+  assert.doesNotMatch(scan.openDataCopy, /OPEN DATA/u);
+  assert.doesNotMatch(scan.statisticsCopy, /STAT LAB/u);
   assert(scan.openDataVisible && scan.statisticsVisible);
   assert.equal(scan.overflowX, false);
   await page.screenshot({ path: path.join(outputDir, viewport.name + "-map-action-copy.png") });
@@ -478,11 +480,10 @@ const scanDirectMapEntry = async (viewport) => {
   assert(focused.tooltipVisible && focused.tooltipVisibility === "visible" && focused.tooltipOpacity >= 0.99, JSON.stringify(focused));
   assert(focused.tooltipRect.top >= 0 && focused.tooltipRect.bottom <= viewport.height + 1, JSON.stringify(focused.tooltipRect));
   assert(focused.tooltipStack.slice(0, 2).some((entry) => /map-mode-preview/u.test(entry)), JSON.stringify(focused.tooltipStack));
-  assert.match(focused.tooltipText, /どの信号を、地図で読みますか？/u);
-  assert.match(focused.openDataCopy, /OPEN DATA データの出典を表示する/u);
-  assert.match(focused.statisticsCopy, /STAT LAB データを統計分析する/u);
-  assert.match(focused.tooltipText, /光の意味を世界の場所へ戻します/u);
-  assert.match(focused.tooltipText, /CO₂が季節ごとに上下しながら/u);
+  assert.match(focused.openDataCopy, /^データの出典を表示する ↗$/u);
+  assert.match(focused.statisticsCopy, /^データを統計分析する ＋$/u);
+  assert.match(focused.tooltipText, /^01 \/ AIR 空気の声 CO₂が季節ごとに上下しながら/u);
+  assert.doesNotMatch(focused.tooltipText, /どの信号を|クリックすると/u);
   assert.equal(focused.overflowX, false);
   assert.equal(focused.overflowY, false);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-direct-map-tooltip.png`) });
@@ -566,10 +567,9 @@ const scanIntegratedLightEntry = async (viewport) => {
   assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—12 + LIGHT 01—08");
   assert.match(integrated.bankGuide, /MAP 01〜12とLIGHT 01〜08/u);
   assert(integrated.tooltipVisible);
-  assert.match(integrated.tooltipText, /どの感覚に、触れますか？/u);
-  assert.match(integrated.tooltipText, /地球が発している8つの信号/u);
-  assert.match(integrated.tooltipText, /07 \/ ECOLOGIES 暮らし/u);
+  assert.match(integrated.tooltipText, /^07 \/ ECOLOGIES 暮らしの声/u);
   assert.match(integrated.tooltipText, /同じ国の森林率と都市人口率/u);
+  assert.doesNotMatch(integrated.tooltipText, /どの感覚に|クリックすると/u);
   assert.equal(integrated.novelOpenAtCount, 0);
   assert.equal(integrated.spaceOpenAtCount, 0);
   assert.equal(integrated.canvasPointerDownCount, 1);

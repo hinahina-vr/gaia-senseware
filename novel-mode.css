@@ -9377,7 +9377,9 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   min-height: 96dvh;
   gap: 18px;
   padding: 8vh 0 10vh;
-  margin-bottom: 72dvh;
+  /* Keep enough separation for the logo to clear the mask, but bring the
+     first staff introduction in immediately after it leaves the frame. */
+  margin-bottom: 58dvh;
 }
 
 .novel-staff-roll-title > span {

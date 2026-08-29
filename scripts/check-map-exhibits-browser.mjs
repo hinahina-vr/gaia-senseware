@@ -127,14 +127,21 @@ const clickDataPoint = async (page, modeId) => {
   assert(point, `${modeId}: no uncovered data point is clickable`);
   await page.mouse.click(point.clientX, point.clientY);
   await page.waitForFunction(() => document.querySelector("#japan-poi-card")?.getAttribute("aria-hidden") === "false");
+  const card = await page.evaluate(() => ({
+    type: document.querySelector("#japan-poi-type")?.textContent || "",
+    meta: document.querySelector("#japan-poi-meta")?.textContent || "",
+    sourceLabel: document.querySelector("#japan-poi-source")?.textContent?.replace(/\s+/gu, " ").trim() || "",
+    sourceHref: document.querySelector("#japan-poi-source")?.href || "",
+    sourceTarget: document.querySelector("#japan-poi-source")?.target || "",
+    retiredCopyCount: document.querySelectorAll("#japan-poi-title, #japan-poi-description, #japan-poi-relation").length,
+  }));
+  assert.equal(card.sourceLabel, "元データを確認する ↗", `${modeId}: source action label changed`);
+  assert.match(card.sourceHref, /^https?:\/\//u, `${modeId}: source action is not an external original-data URL`);
+  assert.equal(card.sourceTarget, "_blank", `${modeId}: source action must open a new window`);
+  assert.equal(card.retiredCopyCount, 0, `${modeId}: retired explanatory copy remains`);
   return {
     point,
-    card: await page.evaluate(() => ({
-      title: document.querySelector("#japan-poi-title")?.textContent || "",
-      meta: document.querySelector("#japan-poi-meta")?.textContent || "",
-      description: document.querySelector("#japan-poi-description")?.textContent || "",
-      relation: document.querySelector("#japan-poi-relation")?.textContent || "",
-    })),
+    card,
   };
 };
 
@@ -252,10 +259,12 @@ try {
       const legend = await page.evaluate(() => ({
         title: document.querySelector("[data-signal-encoding-legend-title]")?.textContent.trim() || "",
         body: document.querySelector("[data-signal-encoding-legend]")?.textContent.replace(/\s+/gu, " ").trim() || "",
+        supplementCount: document.querySelectorAll("[data-signal-encoding-legend] dd, [data-encoding-value]").length,
       }));
       assert.match(legend.title, /凡例\s*MAP LEGEND/u);
       assert.match(legend.body, /大きな水色円\s*\/\s*降水量/u);
       assert.match(legend.body, /緑の面\s*\/\s*森林域/u);
+      assert.equal(legend.supplementCount, 0);
       const screenshot = path.join(outputDir, `${viewport.name}-forest-map-legend.png`);
       await page.screenshot({ path: screenshot, animations: "disabled" });
       scan.screenshots.push(screenshot);
@@ -401,9 +410,10 @@ try {
       guideReading: document.querySelector("#map-guide-reading")?.textContent || "",
       guideAction: document.querySelector("#map-guide-action")?.textContent || "",
       signalValue: document.querySelector("#japan-layer [data-signal-value]")?.textContent || "",
-      signalNote: document.querySelector("#japan-layer [data-signal-note]")?.textContent || "",
+      signalNoteCount: document.querySelectorAll("#japan-layer [data-signal-note]").length,
       sliderLabel: document.querySelector("#japan-layer [data-signal-time-label]")?.textContent || "",
       legend: document.querySelector("#japan-layer [data-signal-encoding-legend]")?.textContent || "",
+      legendSupplementCount: document.querySelectorAll("#japan-layer [data-signal-encoding-legend] dd, #japan-layer [data-encoding-value]").length,
     }));
     assert.equal(circulationUi.title, "海流が14日続いたら");
     assert.equal(circulationUi.guideTitle, "この海流は、14日でどこまで進む？");
@@ -411,17 +421,25 @@ try {
     assert.match(circulationUi.guideReading, /白い矢印.*計算には使いません/u);
     assert.match(circulationUi.guideAction, /スライダー/u);
     assert.match(circulationUi.signalValue, /海流.*地点/u);
-    assert.match(circulationUi.signalNote, /白い矢印.*計算に使いません/u);
+    assert.equal(circulationUi.signalNoteCount, 0);
     assert.match(circulationUi.sliderLabel, /経過日数/u);
     assert.match(circulationUi.legend, /色付き矢印\s*\/\s*海流/u);
     assert.match(circulationUi.legend, /白い矢印\s*\/\s*風（比較用）/u);
-    assert.match(circulationUi.legend, /距離計算には未使用/u);
+    assert.equal(circulationUi.legendSupplementCount, 0);
     await page.locator("#map-reading-guide").evaluate((element) => { element.open = false; });
     scan.clicks.circulation = await clickDataPoint(page, "blue-circulation");
-    assert.equal(scan.clicks.circulation.card.title, "この地点の海流が続いたら");
+    assert.match(scan.clicks.circulation.card.type, /海流が14日続いたら \/ DATA POI/u);
     assert.match(scan.clicks.circulation.card.meta, /海流 \d+\.\d+ m\/s \/ (北|北東|東|南東|南|南西|西|北西)方向/u);
-    assert.match(scan.clicks.circulation.card.description, /日後の計算です。.*開始点から約.* km先/u);
-    assert.match(scan.clicks.circulation.card.relation, /白い矢印.*距離計算には使っていません/u);
+    assert.equal(scan.clicks.circulation.card.sourceLabel, "元データを確認する ↗");
+    assert.match(scan.clicks.circulation.card.sourceHref, /^https:\/\/coastwatch\.noaa\.gov\//u);
+    assert.equal(scan.clicks.circulation.card.sourceTarget, "_blank");
+    assert.equal(scan.clicks.circulation.card.retiredCopyCount, 0);
+    const sourcePopupPromise = page.waitForEvent("popup");
+    await page.locator("#japan-poi-source").click();
+    const sourcePopup = await sourcePopupPromise;
+    assert.notEqual(sourcePopup, page);
+    assert.equal(sourcePopup.isClosed(), false);
+    await sourcePopup.close();
     const circulationScreenshot = path.join(outputDir, `${viewport.name}-02-current-distance.png`);
     await page.screenshot({ path: circulationScreenshot });
     scan.screenshots.push(circulationScreenshot);
@@ -493,6 +511,7 @@ try {
       legendTitle: document.querySelector("#japan-layer [data-signal-encoding-legend-title]")?.textContent || "",
       legendTitleVisible: document.querySelector("#japan-layer [data-signal-encoding-legend-title]")?.getClientRects().length > 0,
       legend: document.querySelector("#japan-layer [data-signal-encoding-legend]")?.textContent || "",
+      legendSupplementCount: document.querySelectorAll("#japan-layer [data-signal-encoding-legend] dd, #japan-layer [data-encoding-value]").length,
       circleRange: document.querySelector("#japan-overlay")?.dataset.forestRainCircleRange || "",
       brazilRain: document.querySelector("#japan-overlay")?.dataset.forestRainBrazil || "",
     }));
@@ -504,16 +523,15 @@ try {
     assert.equal(forestUi.legendTitleVisible, true);
     assert.match(forestUi.legendTitle, /凡例\s*MAP LEGEND/u);
     assert.match(forestUi.legend, /大きな水色円\s*\/\s*降水量/u);
-    assert.match(forestUi.legend, /相関係数ではない/u);
+    assert.equal(forestUi.legendSupplementCount, 0);
     assert.equal(forestUi.circleRange, "10-54px radius");
     assert.equal(forestUi.brazilRain, "5.33 mm/day");
     if (openedMobileLegend) await mobileLegendToggle.click();
     await page.locator("#map-reading-guide").evaluate((element) => { element.open = false; });
     scan.clicks.forest = await clickDataPoint(page, "forest-cloud-engine");
-    assert.match(scan.clicks.forest.card.title, new RegExp(scan.clicks.forest.point.row.name, "u"));
+    assert.match(scan.clicks.forest.card.type, /森林と降水量を重ねる \/ DATA POI/u);
     assert.match(scan.clicks.forest.card.meta, /mm\/day/u);
-    assert.match(scan.clicks.forest.card.description, /大きな水色円の直径/u);
-    assert.match(scan.clicks.forest.card.relation, /円のない場所にも雨.*相関係数/u);
+    assert.match(scan.clicks.forest.card.sourceHref, /^https:\/\/power\.larc\.nasa\.gov\//u);
     const forestScreenshot = path.join(outputDir, `${viewport.name}-03-forest-rain.png`);
     await page.screenshot({ path: forestScreenshot });
     scan.screenshots.push(forestScreenshot);
@@ -542,8 +560,9 @@ try {
     const recyclingGuide = await page.locator("#map-guide-reading").textContent();
     assert.match(recyclingGuide, /緑の扇形.*橙/u);
     scan.clicks.waste = await clickDataPoint(page, "nothing-is-waste");
-    assert.match(scan.clicks.waste.card.title, new RegExp(scan.clicks.waste.point.row.country, "u"));
-    assert.match(scan.clicks.waste.card.description, /円グラフ.*緑.*橙/u);
+    assert.match(scan.clicks.waste.card.type, /再資源化率を比べる \/ DATA POI/u);
+    assert.match(scan.clicks.waste.card.meta, /%/u);
+    assert.match(scan.clicks.waste.card.sourceHref, /^https:\/\/unstats\.un\.org\//u);
     const selectedCurrentRate = Number(scan.clicks.waste.point.row.recyclePercent.toFixed(1));
     await page.waitForFunction(
       (expectedRate) => Number(document.querySelector("#japan-overlay")?.dataset.recyclingSelectedRate) === expectedRate,

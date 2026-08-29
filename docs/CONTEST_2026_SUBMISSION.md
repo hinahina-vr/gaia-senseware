@@ -31,7 +31,7 @@ flowchart LR
   J --> K[URLフラグメント共有]
 ```
 
-通常展示はリポジトリへ保存したスナップショットだけで完結します。地図・宇宙の変換レシート内に限り、機能フラグ有効時はPages WorkerがNOAA・JAXA・ESAの公開観測を読み取ります。表示では `SOURCE`（公開記録）、`DERIVED`（正規化・補間・計算）、`SCENARIO`（仮定や観客操作による状態）と、観測鮮度 `NEAR REAL TIME / LATEST PUBLISHED / STALE / SNAPSHOT` を区別しています。
+通常展示はリポジトリへ保存したスナップショットだけで完結します。地図のライブ展示09〜12に限り、機能フラグ有効時はPages WorkerがNOAA・JAXA・ESAの公開観測を読み取ります。各展示の主表示では `SOURCE`（公開記録）、`DERIVED`（正規化・補間・計算）、`SCENARIO`（仮定や観客操作による状態）と、観測鮮度 `NEAR REAL TIME / LATEST PUBLISHED / STALE / SNAPSHOT` を区別しています。
 
 詳細な遅延読込、主要イベント、地図・宇宙アダプター、保存キー、障害時の経路は[アーキテクチャ文書](ARCHITECTURE.md)で確認できます。
 
@@ -44,7 +44,7 @@ flowchart LR
 | 直接URL | `#tour`、`#story`、`#earth`、`#observation=...` は映画的オープニングを迂回 |
 | 地球観測 | ガイド、または「データを探索する」→「世界を読む」 |
 | 出典・変換 | 地図の `OPEN DATA` と `CODE`、READMEのデータ開示原則 |
-| Live Senseware | 地図の「LIVE SENSEWARE / 変換レシート」で3機関の状態、観測時刻、生成音マッピングを確認 |
+| Live Senseware | 地図のライブ展示09〜12を開き、各展示の主表示で取得元、状態、観測時刻、生成音マッピングを確認 |
 | 観測の保存 | 世界地図の「この時点を保存」、ESP32履歴の「観測ノートに保存」 |
 | 比較・共有 | 観測ノートで2件を選択。共有値はURLフラグメント内だけに保存 |
 | モバイル | Chromeの縦画面・短い横画面でサウンド選択、オープニング、ガイドを操作 |

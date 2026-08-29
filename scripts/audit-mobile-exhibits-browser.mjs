@@ -157,7 +157,6 @@ const measureLayout = async (page, surface, number) => page.evaluate(({ activeSu
     ".japan-heading",
     ".japan-observation",
     ".map-reading-guide",
-    ".gaia-live-receipt",
     ".signal-console-map",
     ".signal-encoding-legend-dock",
     ".map-mode-bank",
@@ -256,6 +255,11 @@ const measureLayout = async (page, surface, number) => page.evaluate(({ activeSu
 try {
   for (const viewport of selectedViewports) {
     const { context, page } = await boot(viewport);
+    assert.equal(
+      await page.locator(".gaia-live-receipt, [data-gaia-live-receipt]").count(),
+      0,
+      `${viewport.name}: retired LIVE receipt remains`,
+    );
     const scan = { viewport, map: [], light: [], optionalUi: [], liveInteractions: [] };
     for (let index = 0; index < 12; index += 1) {
       const number = await selectMapMode(page, index);

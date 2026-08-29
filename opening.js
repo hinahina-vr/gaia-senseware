@@ -419,7 +419,9 @@
 
   const OPENING_TIME_SCALE = 1.275;
   const openingMs = (value) => Math.round(value * OPENING_TIME_SCALE);
-  const OPENING_DURATION = openingMs(17200);
+  // The final title panel starts here. Reveal its three destinations with the
+  // title itself instead of leaving a several-second title-only dead zone.
+  const FINAL_MENU_REVEAL_DELAY = openingMs(13100);
   const EXIT_DURATION = Math.round(1080 * 0.85);
   const compactArtwork = (Number(navigator.deviceMemory) > 0 && Number(navigator.deviceMemory) <= 4)
     || (Number(navigator.hardwareConcurrency) > 0 && Number(navigator.hardwareConcurrency) <= 4);
@@ -934,6 +936,7 @@
     opening.classList.add("is-menu-ready");
     if (!window.GaiaOpeningAudio?.getState?.().muted) void window.GaiaOpeningAudio?.preloadTrack?.("senseware");
     syncAudioControls();
+    revealAudioDock();
     requestAnimationFrame(() => {
       finalMenu.classList.add("is-visible");
       scheduleFinalGatewayPlacement();
@@ -971,7 +974,7 @@
       const [delay, duration] = schedule[index] || [index * 120, 520];
       revealFocusText(target, delay, duration);
     });
-    finishTimer = window.setTimeout(showFinalMenu, OPENING_DURATION);
+    finishTimer = window.setTimeout(showFinalMenu, FINAL_MENU_REVEAL_DELAY);
 
   };
 

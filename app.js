@@ -208,13 +208,9 @@
   const japanModeBank = document.querySelector(".map-mode-bank");
   const mapMobileBankToggle = document.querySelector("#map-mobile-bank-toggle");
   const mapModePreview = document.querySelector("#map-mode-preview");
-  const mapModePreviewSurface = document.querySelector("#map-mode-preview-surface");
-  const mapModePreviewTitle = document.querySelector("#map-mode-preview-title");
-  const mapModePreviewLead = document.querySelector("#map-mode-preview-lead");
   const mapModePreviewNumber = document.querySelector("#map-mode-preview-number");
   const mapModePreviewLabel = document.querySelector("#map-mode-preview-label");
   const mapModePreviewCopy = document.querySelector("#map-mode-preview-copy");
-  const mapModePreviewNote = document.querySelector("#map-mode-preview-note");
   const japanModeList = document.querySelector("#japan-mode-list");
   const abstractModeList = document.querySelector("#abstract-mode-list");
   const japanModeNumber = document.querySelector("#japan-mode-number");
@@ -232,7 +228,6 @@
   const japanObservationCopy = document.querySelector("#japan-observation-copy");
   const mapGuideTitle = document.querySelector("#map-guide-title");
   const mapReadingGuide = document.querySelector("#map-reading-guide");
-  const gaiaLiveReceipt = document.querySelector("[data-gaia-live-receipt]");
   const mapGuideSubject = document.querySelector("#map-guide-subject");
   const mapGuideReading = document.querySelector("#map-guide-reading");
   const mapGuideAction = document.querySelector("#map-guide-action");
@@ -248,10 +243,8 @@
   const japanPoiCard = document.querySelector("#japan-poi-card");
   const japanPoiClose = document.querySelector("#japan-poi-close");
   const japanPoiType = document.querySelector("#japan-poi-type");
-  const japanPoiTitle = document.querySelector("#japan-poi-title");
   const japanPoiMeta = document.querySelector("#japan-poi-meta");
-  const japanPoiDescription = document.querySelector("#japan-poi-description");
-  const japanPoiRelation = document.querySelector("#japan-poi-relation");
+  const japanPoiSource = document.querySelector("#japan-poi-source");
   const dataLedger = window.GaiaDataLedger.create();
 
   const TRAIL_COUNT = 16;
@@ -2398,10 +2391,10 @@
         selectedIndex: index,
         selected: row,
         legend: [
-          ["大きな水色円 / 降水量", `${getForestRainSiteName(row)} ${row.precipitationMmDay?.toFixed(2) || "—"} mm/day`],
-          ["緑の面 / 森林域", "MODIS IGBP 2023から森林域を抽出"],
-          ["円内の数字 / mm/day", "雨の多い代表地点は値を直接表示"],
-          ["31地点 / 標本", "地点間は補間しない・相関係数ではない"],
+          "大きな水色円 / 降水量",
+          "緑の面 / 森林域",
+          "円内の数字 / mm/day",
+          "31地点 / 標本",
         ],
       };
     }
@@ -2418,10 +2411,10 @@
           methodLabel: "黄色い点＝人が登録した記録（生息分布ではない）",
           note: "点はミツバチの個体数や生息域ではありません。点がない場所にもミツバチはいる可能性があります。",
           legend: [
-            ["黄点 / GBIF記録", `${occurrences.length}件の人による観察`],
-            ["空白 / 不在ではない", "この標本に記録がないだけ"],
-            ["押す / 1件を読む", "国・日付・GBIF番号を表示"],
-            ["次へ / 標本の制約", "点が選ばれた方法を確認"],
+            "黄点 / GBIF記録",
+            "空白 / 不在ではない",
+            "押す / 1件を読む",
+            "次へ / 標本の制約",
           ],
         },
         {
@@ -2431,10 +2424,10 @@
           methodLabel: "31か国 × 最大2件に揃えた展示用標本",
           note: "国ごとの点数を最大2件に揃えています。点の多さから、ミツバチの多さや観察活動の差は比較できません。",
           legend: [
-            ["線で結ぶ2点 / 同じ国", "各国から新しい記録を最大2件"],
-            ["31か国 / 選択標本", "世界全体・全記録ではない"],
-            ["点の数 / 比較不可", "生息数も観察努力も表さない"],
-            ["次へ / 花との関係", "場所を持たない別資料へ"],
+            "線で結ぶ2点 / 同じ国",
+            "31か国 / 選択標本",
+            "点の数 / 比較不可",
+            "次へ / 花との関係",
           ],
         },
         {
@@ -2444,10 +2437,10 @@
           methodLabel: "GloBI文献関係網（地理配置ではない）",
           note: "枝はGloBIに残るミツバチと植物の関係です。場所・頻度・強さを持たないため、地図の観察点へは結びません。",
           legend: [
-            ["中央 / Apis mellifera", "セイヨウミツバチ"],
-            ["外側 / 植物名", `${relations.length}件の記録関係`],
-            ["枝 / pollinates", "関係の頻度や強さではない"],
-            ["配置 / 非地理", "太平洋上の位置に意味はない"],
+            "中央 / Apis mellifera",
+            "外側 / 植物名",
+            "枝 / pollinates",
+            "配置 / 非地理",
           ],
         },
       ];
@@ -2497,10 +2490,10 @@
         selectedIndex: index,
         selected,
         legend: [
-          ["内円 / 現在の基準値", `${selected?.country || "—"} ${sourceRecycle.toFixed(1)}% · ${imputed ? "破線＝補完" : "実線＝公式"}`],
-          ["黄色い外周 / 自分の改善目標", `SCENARIO ${scenarioRecycle.toFixed(1)}% · 現在から +${scenarioIncrease.toFixed(1)}ポイント`],
-          ["緑 / 再資源化", `${sourceRecycle.toFixed(1)}%が再び資源になった割合`],
-          ["橙 / それ以外", `${(100 - sourceRecycle).toFixed(1)}% · 焼却・埋立などの内訳は不明`],
+          "内円 / 現在の基準値",
+          "黄色い外周 / 自分の改善目標",
+          "緑 / 再資源化",
+          "橙 / それ以外",
         ],
       };
     }
@@ -2520,10 +2513,10 @@
         selectedIndex: index,
         selected: row,
         legend: [
-          ["赤い円 / 国別排出", `${row.country} ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e`],
-          ["白い発光 / 夜間光", "NASA VIIRS 2016 · 衛星画素を地図投影"],
-          ["長押し / 6秒比較", "白い夜間光だけを薄くし、赤い円は残す"],
-          ["重要 / 別の尺度", "夜の明るさを排出量へ変換しない"],
+          "赤い円 / 国別排出",
+          "白い発光 / 夜間光",
+          "長押し / 6秒比較",
+          "重要 / 別の尺度",
         ],
       };
     }
@@ -2540,7 +2533,6 @@
         null,
       );
       if (!year || !strongest) return null;
-      const strongestImpactRadiusKm = getGlobalEarthquakeImpactRadiusKm(strongest.magnitude);
       return {
         kind: "earthquake",
         phaseLabel: `USGS YEARLY M7.5+ / ${String(index + 1).padStart(2, "0")} OF ${String(years.length).padStart(2, "0")}`,
@@ -2554,10 +2546,10 @@
         yearEvents,
         years,
         legend: [
-          ["橙点 / この年の震源", `${year}年 · M7.5以上 ${yearEvents.length}件`],
-          ["同心円 / ゆっくり伝播", `MAX M${strongest.magnitude.toFixed(1)} · 年度切替で同時開始`],
-          ["推定可感半径 / Magnitude", `約${strongestImpactRadiusKm.toLocaleString("ja-JP")} kmで停止`],
-          ["重要 / 推定値", "実際の震度・被害・津波範囲ではない"],
+          "橙点 / この年の震源",
+          "同心円 / ゆっくり伝播",
+          "推定可感半径 / Magnitude",
+          "重要 / 推定値",
         ],
       };
     }
@@ -2566,7 +2558,6 @@
       const comparison = getThreeEcologiesComparison(signals);
       if (!comparison) return null;
       const { rows, selectedIndex, selected, correlation, correlationLabel } = comparison;
-      const residualDirection = selected.residualPercent >= 0 ? "回帰線より森林が多い" : "回帰線より森林が少ない";
       return {
         kind: "ecologies",
         phaseLabel: `FOREST × URBAN / ${String(selectedIndex + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
@@ -2582,11 +2573,10 @@
         slope: comparison.slope,
         intercept: comparison.intercept,
         legend: [
-          ["緑の内円 / 森林", `${selected.forestYear || selected.year}年 · 国土の${selected.forestPercent.toFixed(1)}%`],
-          ["青の外円 / 都市", `${selected.urbanYear || selected.year}年 · 人口の${selected.urbanPercent.toFixed(1)}%`],
-          ["散布図 / 31か国", `r ${correlation.toFixed(2)} · ${correlationLabel}`],
-          ["紫の菱形 / 記憶", `${signals.culture?.length || 0}世界遺産例 · 相関計算には含めない`],
-          ["平均との差 / 例外", `${residualDirection} ${Math.abs(selected.residualPercent).toFixed(1)}pt`],
+          "緑の内円 / 森林",
+          "青の外円 / 都市",
+          "散布図 / 31か国",
+          "紫の菱形 / 記憶",
         ],
       };
     }
@@ -2612,10 +2602,10 @@
         selected: row,
         rows,
         legend: [
-          ["青い国土 / 現在値", `${row.year || "—"}年 · 再生可能電力 ${row.renewablePercent.toFixed(1)}%`],
-          ["明るさ / 比率", "暗い青 0% → 明るい水色 100%"],
-          ["黄円 / 日射条件", `${row.potential?.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day`],
-          ["緑矢印 / 風条件", `${row.potential?.windSpeedMs?.toFixed(2) || "—"} m/s · 自然条件だけで比率は決まらない`],
+          "青い国土 / 現在値",
+          "明るさ / 比率",
+          "黄円 / 日射条件",
+          "緑矢印 / 風条件",
         ],
       };
     }
@@ -2777,10 +2767,6 @@
     const spatiallyImputed = timelineCellUsesSpatialImputation(timeline, cellIndex);
     const temporallyInterpolated =
       timeline.kind === "observed" && timeline.mix > 0.001 && timeline.mix < 0.999;
-    const validationRmse = Math.max(
-      timeline.frameA?.imputation?.validation?.rmsePpm || 0,
-      timeline.frameB?.imputation?.validation?.rmsePpm || 0,
-    );
     const provenance = timeline.kind === "scenario"
       ? "SCENARIO / これまでの傾向が続いた場合"
       : timeline.kind === "reconstruction"
@@ -2790,27 +2776,13 @@
           : temporallyInterpolated
             ? "DERIVED / 二つの時点のあいだ"
             : "SOURCE / 衛星地図から読み取った値";
-    const relation = timeline.kind === "reconstruction"
-      ? "この時代には世界全体を測った衛星地図がないため、昔のCO₂記録へ、後年の衛星地図の模様を重ねて再現しました。実測の世界地図ではありません。"
-      : timeline.kind === "scenario"
-        ? `直近10年の増え方を一本の線にまとめ、そのまま未来へ伸ばしました。予想のぶれ幅は${timeline.lower95Ppm.toFixed(1)}〜${timeline.upper95Ppm.toFixed(1)} ppmです。未来を言い当てる数字ではありません。`
-        : spatiallyImputed
-          ? `衛星が測れなかった場所です。近くの8地点を参考にし、近い値ほど強く反映して色を補いました。斜線が「計算で補った場所」の印です。計算の誤差目安は最大${validationRmse.toFixed(2)} ppmでした。`
-          : temporallyInterpolated
-            ? "観測した二つの時点のあいだを、まっすぐな変化でつないでいます。途中の値を実際に測ったわけではありません。"
-            : "このマスはGOSATの公式衛星地図から読み取った値です。地図の色をCO₂濃度へ戻して表示しています。";
     return {
       kind: "gosat-grid",
       lon: west + resolution / 2,
       lat: north - resolution / 2,
-      title: "CO₂ TIMELINE / 2.5° GRID",
       meta: hasValue
         ? `約 ${valuePpm.toFixed(1)} ppm / ${timeline.dateLabel} / ${provenance}`
         : `NO DATA / ${timeline.dateLabel}`,
-      description: hasValue
-        ? `この四角は、緯度 ${north - resolution}〜${north}°・経度 ${west}〜${west + resolution}°の空気を表しています。${timeline.warning}`
-        : "手がかりが足りないため、ここには無理に数字を置いていません。",
-      relation,
       valuePpm: hasValue ? valuePpm : null,
       provenance,
       frameDate: timeline.dateLabel,
@@ -2829,21 +2801,15 @@
       const state = getBlueCirculationState(signalMode);
       return (signals.currents || []).map((row) => {
         const speed = Math.hypot(row.uMs, row.vMs);
-        const distanceKm = speed * (state?.horizonHours || 0) * 3.6;
         const bearing = (toDegrees(Math.atan2(row.uMs, row.vMs)) + 360) % 360;
         const direction = ["北", "北東", "東", "南東", "南", "南西", "西", "北西"][
           Math.round(bearing / 45) % 8
         ];
-        const elapsedDays = (state?.horizonHours || 0) / 24;
         return {
           kind: "current-vector",
           lon: row.lon,
           lat: row.lat,
-          title: "この地点の海流が続いたら",
           meta: `${state?.dateLabel || row.time} / 海流 ${speed.toFixed(2)} m/s / ${direction}方向`,
-          description: `スライダーで選んだ${elapsedDays.toFixed(1)}日後の計算です。速さと向きが変わらないと仮定すると、開始点から約${distanceKm.toFixed(1)} km先まで進みます。`,
-          relation:
-            "色付きの矢印と点はNOAA CoastWatchの海流です。白い矢印はNASA POWERの平均風で、この距離計算には使っていません。航海や漂流の予報には使えません。",
         };
       });
     }
@@ -2856,10 +2822,7 @@
         sequenceLength: rows.length,
         lon: row.lon,
         lat: row.lat,
-        title: `${getForestRainSiteName(row)}の平均降水量`,
         meta: `年平均 ${row.precipitationMmDay?.toFixed(2) || "—"} mm/day / NASA POWER`,
-        description: "この代表地点の雨量を、大きな水色円の直径と数字で示しています。直径が大きいほど平均降水量が多い地点です。",
-        relation: `NASA POWERから選んだ${signals.precipitation?.length || 0}代表地点の一つです。円のない場所にも雨は降りますが、この地図では地点間を推測で埋めていません。森林との重なりは見られても、相関係数や原因・結果を示すものではありません。`,
       }));
     }
     if (signalMode.id === "pollination-protocol") {
@@ -2869,10 +2832,7 @@
         kind: "sequence-poi",
         lon: row.lon,
         lat: row.lat,
-        title: "この点は、一件の観察記録",
         meta: `${row.species || "Apis mellifera"} / ${row.eventDate?.slice(0, 10) || "date unknown"} / GBIF ${row.key}`,
-        description: `${row.country || "地域不明"}で人が観察し、GBIFへ登録した記録です。この点だけで周辺の生息数や分布範囲は分かりません。`,
-        relation: "選んだ31か国から新しい記録を最大2件ずつ抜き出した展示用標本です。点がない場所にミツバチがいないとは言えません。花との関係は場所を持たないGloBIの別資料なので、この点へ線で結びません。",
       }));
     }
     if (signalMode.id === "nothing-is-waste") {
@@ -2884,16 +2844,9 @@
           kind: "sequence-poi",
           sequenceIndex,
           sequenceLength: rows.length,
-          title: `${row.country}の都市ごみ再資源化率`,
           meta: imputed
             ? `計算で補った値 / ${row.recyclePercent.toFixed(1)}% / 近くの5か国を参照`
             : `${row.year} / ${row.recyclePercent.toFixed(1)}% / 国連の公式データ`,
-          description: imputed
-            ? `この地域には公式の数字がありませんでした。そこで、近くの5か国（${row.donorIso3?.join(" / ") || "—"}）を参考にし、真ん中の値を置いています。破線の円グラフは「計算で補った値」の印です。緑が${row.recyclePercent.toFixed(1)}%、橙が残り${(100 - row.recyclePercent).toFixed(1)}%です。`
-            : `国連に報告された、この国の最新値です。実線の円グラフの緑が再資源化${row.recyclePercent.toFixed(1)}%、橙が残り${(100 - row.recyclePercent).toFixed(1)}%です。選択中は黄色い外周に、自分で決める改善目標（SCENARIO）が出ます。予測やこの国の公的目標ではありません。`,
-          relation: imputed
-            ? "近い国でも、ごみの制度や暮らし方は違います。この数字は公式統計ではなく、空白を仮に補った目安です。"
-            : "円は国の目印で、ごみ処理施設の位置ではありません。この資料だけでは、残りのごみが焼却か埋立かも分かりません。",
         };
       });
     }
@@ -2903,10 +2856,7 @@
         kind: "sequence-poi",
         lon: row.lon,
         lat: row.lat,
-        title: `${row.country}の温室効果ガス排出量`,
         meta: `${row.year} / ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e / excl. LULUCF`,
-        description: "国全体の排出量が多いほど、赤い円が大きくなります。国どうしの差が大きいため、対数という縮尺で見やすくしています。",
-        relation: "赤い円は国全体の値です。点の場所が排出源という意味ではありません。白い夜間光とも別のデータです。",
       }));
     }
     if (signalMode.id === "rhythm-of-disaster") {
@@ -2917,10 +2867,7 @@
         lon: row.longitude,
         lat: row.latitude,
         kind: "sequence-poi",
-        title: row.name,
         meta: `${String(row.occurredAt).slice(0, 10)} / M${row.magnitude.toFixed(1)} / DEPTH ${row.depthKm?.toFixed(0) || "—"} km`,
-        description: `USGSが記録した${state?.selectedYear || String(row.occurredAt).slice(0, 4)}年のM7.5以上の地震です。この年度の${state?.yearEvents.length || 0}件だけを地図に表示しています。`,
-        relation: "同心円の最終サイズはMagnitudeに応じた展示上の強調です。実際の揺れの到達範囲や震度を表す円ではありません。日本の実測震度は左下の切替から別層で確認できます。",
       }));
     }
     if (signalMode.id === "three-ecologies") {
@@ -2929,18 +2876,12 @@
         ...(state?.rows || []).map((row) => ({
           ...row,
           kind: "sequence-poi",
-          title: `${row.country} / 森林×都市`,
           meta: `FOREST ${row.forestPercent.toFixed(1)}% / URBAN ${row.urbanPercent.toFixed(1)}%`,
-          description: `${row.country}の国土に占める森林は${row.forestPercent.toFixed(1)}%、人口に占める都市居住者は${row.urbanPercent.toFixed(1)}%です。二つを同じ国の組として比較しています。`,
-          relation: `31か国のPearson相関は r ${state.correlation.toFixed(2)}（${state.correlationLabel}）です。この国は回帰線より森林率が${Math.abs(row.residualPercent).toFixed(1)}ポイント${row.residualPercent >= 0 ? "高い" : "低い"}側にあります。相関は因果関係ではありません。`,
         })),
         ...(signals.culture || []).map((row) => ({
           ...row,
           kind: "sequence-poi",
-          title: row.name,
           meta: `MEMORY CONTEXT / ${row.category} / ${row.region}`,
-          description: "各地域から選んだUNESCO世界遺産の一例です。紫の菱形として、森林率と都市人口率の数値だけでは表せない文化・記憶の場所を示します。",
-          relation: "展示用の例で全件ではなく、相関係数や国の順位には含めません。文化や心を点数化するための点ではありません。",
         })),
       ];
     }
@@ -2951,10 +2892,7 @@
         kind: "sequence-poi",
         lon: row.lon,
         lat: row.lat,
-        title: `${row.country || row.name}の再生可能電力`,
         meta: `${row.year || "—"} / RENEWABLE ${row.renewablePercent.toFixed(1)}% OF ELECTRICITY`,
-        description: `この国の総発電量に占める再生可能エネルギーの割合は${row.renewablePercent.toFixed(1)}%です。国土の青が明るいほど比率が高くなります。`,
-        relation: `黄色い輪と緑の矢印は代表地点の平均日射${row.potential?.solarKwhM2Day?.toFixed(2) || "—"} kWh/m²/day・風速${row.potential?.windSpeedMs?.toFixed(2) || "—"} m/sです。自然条件だけで現在の電力比率や導入可能性が決まるわけではありません。`,
       }));
     }
     return [];
@@ -4385,7 +4323,7 @@
       return;
     }
     const layerRect = japanLayer.getBoundingClientRect();
-    const cardWidth = Math.min(370, layerRect.width - 40);
+    const cardWidth = Math.min(330, layerRect.width - 40);
     const cardHeight = Math.min(japanPoiCard.offsetHeight || 330, layerRect.height - 40);
     const localX = clientX - layerRect.left;
     const localY = clientY - layerRect.top;
@@ -4409,6 +4347,43 @@
         japanPoiClose.focus({ preventScroll: true });
       }
     });
+  };
+
+  const JAPAN_POI_SOURCE_DATASET_IDS = Object.freeze({
+    "breathing-earth": "gosat-l3-xco2",
+    "blue-circulation": "noaa-current-fallback",
+    "forest-cloud-engine": "nasa-power-precip",
+    "pollination-protocol": "gbif",
+    "nothing-is-waste": "un-sdg",
+    "anthropocene-scar": "edgar",
+    "rhythm-of-disaster": "usgs-earthquakes",
+    "three-ecologies": "worldbank-forest",
+    "earth-organ": "worldbank-renewable",
+  });
+
+  const getJapanPoiSourceUrl = (poi) => {
+    const signalMode = getActiveSignalMode();
+    const datasets = signalMode?.datasets || [];
+    const datasetUrl = (id) => datasets.find((dataset) => dataset.id === id)?.url || "";
+    if (poi.type === "history") return datasetUrl("jma-shindo");
+    if (poi.type === "earthquake") {
+      return poi.event?.url || datasetUrl("usgs-earthquakes");
+    }
+    if (poi.type === "data") {
+      if (poi.record?.url) return poi.record.url;
+      if (signalMode?.id === "three-ecologies" && poi.record?.category) {
+        return datasetUrl("unesco-whc");
+      }
+    }
+    return datasetUrl(JAPAN_POI_SOURCE_DATASET_IDS[signalMode?.id])
+      || datasets.find((dataset) => dataset.kind === "SOURCE" && /^https?:/u.test(dataset.url))?.url
+      || "";
+  };
+
+  const setJapanPoiSource = (poi) => {
+    const sourceUrl = getJapanPoiSourceUrl(poi);
+    japanPoiSource.hidden = !sourceUrl;
+    japanPoiSource.href = sourceUrl || "#";
   };
 
   const openJapanPoi = (poi, clientX, clientY) => {
@@ -4441,27 +4416,21 @@
         updateSignalInterface();
       }
       japanPoiType.textContent = `${modes[modeToIndex].titleJa} / DATA POI`;
-      japanPoiTitle.textContent = record.title;
       japanPoiMeta.textContent = record.meta;
-      japanPoiDescription.textContent = record.description;
-      japanPoiRelation.textContent = record.relation;
+      setJapanPoiSource(poi);
       japanWaveReplay = null;
       showJapanPoiCard(clientX, clientY);
     } else if (poi.type === "history") {
       const event = poi.event;
       co2TimelineHeld = true;
       updateSignalInterface();
-      japanPoiType.textContent = "JMA HISTORY / REAL-TIME REPRESENTATIVE MODEL";
-      japanPoiTitle.textContent = `${String(event.occurredAt).slice(0, 4)} ${getJmaEventTitle(event)}`;
+      japanPoiType.textContent = `${String(event.occurredAt).slice(0, 4)} ${getJmaEventTitle(event)} / JMA`;
       japanPoiMeta.textContent = `${formatJapanEventTime(event.occurredAt)} / M${event.magnitude.toFixed(
         1,
       )} / DEPTH ${event.depthKm} KM / 最大震度 ${getMaximumIntensityText(
         event,
       )} / P 7.0・S 4.0 KM/S`;
-      japanPoiDescription.textContent =
-        `気象庁の震度データベースから、この地震で震度6弱・6強・7を実際に観測した${event.observations.length}地点を収録しています。色は黄=6弱、橙=6強、赤紫=7です。震度はマグニチュードから推定した値ではありません。`;
-      japanPoiRelation.textContent =
-        "気象庁の一般向け解説に基づく代表速度P波7 km/s・S波4 km/sを、1秒=1秒で再生しています。震央から観測点までの地表距離と震源深さから直線的な震源距離を求め、S波の計算到達時に実測震度点を表示します。実際の速度は地質・深さ・経路で変わるため、これは観測到達時刻や緊急地震速報の予測ではありません。";
+      setJapanPoiSource(poi);
       japanWaveReplay = {
         kind: "history",
         event,
@@ -4480,26 +4449,20 @@
       const event = poi.event;
       co2TimelineHeld = true;
       updateSignalInterface();
-      japanPoiType.textContent = "USGS OBSERVATION / EARTH SIGNAL";
-      japanPoiTitle.textContent = `M${event.magnitude.toFixed(1)} / ${event.place}`;
+      japanPoiType.textContent = `M${event.magnitude.toFixed(1)} / ${event.place} / USGS`;
       japanPoiMeta.textContent = `${formatJapanEventTime(event.time)} / DEPTH ${Math.round(
         event.depthKm,
       )} KM`;
-      japanPoiDescription.textContent =
-        "橙の点はUSGSの公開記録から作成し、作品へ同梱した震源スナップショットです。円の大きさはマグニチュード、濃さは深さを手がかりにした表示ですが、揺れの強さや被害範囲を示すものではありません。";
-      japanPoiRelation.textContent =
-        "SNAPSHOTレイヤーは、2000年以降の大規模地震が地球全体へどう分布してきたかを読む層です。表示中にAPI更新は行いません。このデータには各地の震度を重ねていないため、P/S波や揺れの広がりも推測して描きません。観測されていない意味を足さないことも、センスウェアの設計に含めています。";
+      setJapanPoiSource(poi);
       japanWaveReplay = null;
       showJapanPoiCard(clientX, clientY);
     } else {
       const node = poi.node;
       co2TimelineHeld = true;
       updateSignalInterface();
-      japanPoiType.textContent = "CURATED LISTENING NODE / ARTISTIC POI";
-      japanPoiTitle.textContent = node.nameJa;
+      japanPoiType.textContent = `${node.nameJa} / MAP POI`;
       japanPoiMeta.textContent = `${node.name} / ${node.lat.toFixed(2)}°N ${node.lon.toFixed(2)}°E`;
-      japanPoiDescription.textContent = node.description;
-      japanPoiRelation.textContent = node.relation;
+      setJapanPoiSource(poi);
       japanWaveReplay = null;
       showJapanPoiCard(clientX, clientY);
     }
@@ -5169,17 +5132,6 @@
         ? `${breathingState?.timeline?.referencePpm?.toFixed(1) || "—"} ppm / 気温偏差 ${breathingState?.temperature?.anomalyC?.toFixed(2) ?? "—"} ℃`
         : readout.value;
       consoleElement.querySelector("[data-signal-time-output]").textContent = readout.output;
-      const movedYear = storyModeDetour?.views?.has("long_term");
-      const touchedMap = storyModeDetour?.views?.has("temperature_anomaly");
-      consoleElement.querySelector("[data-signal-note]").textContent = isStoryTemperatureInteraction
-        ? !movedYear
-          ? "操作 1/2｜年代のスライダーを動かしてください。"
-          : !touchedMap
-            ? "操作 2/2｜地図の気になる場所へ触れてください。"
-            : "年代と場所を同じ時点で確認しました。物語へ戻ります。"
-        : storyModeDetour?.kind === "map01"
-          ? "1958年から2050年まで、実測・補完・試算の変化を自動で再生します。"
-          : readout.note;
       consoleElement.querySelector("[data-signal-time-label]").textContent = showTimeline
         ? isStoryTemperatureInteraction
           ? "年代を動かす / DRAG"
@@ -5216,62 +5168,20 @@
           const element = mapSignalEncodingLegend.querySelector(`[data-encoding-label="${key}"]`);
           if (element) element.lastChild.textContent = value;
         };
-        const setEncodingValue = (key, value) => {
-          const element = mapSignalEncodingLegend.querySelector(`[data-encoding-value="${key}"]`);
-          if (!element) return;
-          element.textContent = value;
-          element.title = value;
-        };
 
         if (sequenceState) {
           const keys = ["heatmap", "nodata", "estimate", "resolution"];
-          sequenceState.legend.forEach(([label, value], index) => {
-            setEncodingLabel(keys[index], label);
-            setEncodingValue(keys[index], value);
-          });
+          sequenceState.legend.forEach((label, index) => setEncodingLabel(keys[index], label));
         } else if (isCirculationTimeline) {
           setEncodingLabel("heatmap", "色付き矢印 / 海流");
           setEncodingLabel("nodata", "暗い場所 / データなし");
           setEncodingLabel("estimate", "点から伸びる線 / 仮定の移動");
           setEncodingLabel("resolution", "白い矢印 / 風（比較用）");
-          setEncodingValue("heatmap", `青→水色→黄→橙ほど速い · 最大 ${timelineState.maximumSpeedMs.toFixed(2)} m/s`);
-          setEncodingValue("nodata", "陸地・記録のない場所は表示しない");
-          setEncodingValue(
-            "estimate",
-            `${(timelineState.horizonHours / 24).toFixed(1)}日後 · 平均 ${timelineState.meanDistanceKm.toFixed(1)} km`,
-          );
-          setEncodingValue("resolution", `NASA POWER ${signalMode.signals.climate?.length || 0}地点 · 距離計算には未使用`);
         } else {
           setEncodingLabel("heatmap", isStoryTemperatureInteraction ? "背景色 / 気温偏差" : "色 / CO₂濃度");
           setEncodingLabel("nodata", isStoryTemperatureInteraction ? "地図セル / CO₂濃度" : "斜線 / まわりから補った値");
           setEncodingLabel("estimate", isStoryTemperatureInteraction ? "年代 / 同じ時点" : "表示 / データの種類");
           setEncodingLabel("resolution", isStoryTemperatureInteraction ? "地点 / 地図に触れる" : "1セル / 2.5°");
-          const state = getBreathingEarthState(signalMode);
-          const timeline = state.timeline;
-          const grid = state.gosat;
-          const totalCells = (grid?.width || 0) * (grid?.height || 0);
-          setEncodingValue("heatmap", isStoryTemperatureInteraction
-            ? `NASA GISTEMP · ΔT ${state.temperature?.anomalyC?.toFixed(2) ?? "—"} ℃`
-            : timeline
-              ? `300–500 ppm FIXED · ${timeline.dateLabel}`
-              : "LOADING");
-          setEncodingValue(
-            "nodata",
-            timeline
-              ? `${timeline.imputedCells || 0} / ${totalCells} マス · 近くの8地点を参照`
-              : "—",
-          );
-          setEncodingValue("estimate", isStoryTemperatureInteraction
-            ? `${state.selectedYear || "—"} / ${timeline?.phaseLabel || "—"}`
-            : timeline?.phaseLabel || "—");
-          setEncodingValue(
-            "resolution",
-            isStoryTemperatureInteraction
-              ? `${grid?.resolutionDegrees || 2.5}°セルを選んで値を確認`
-              : timeline?.kind === "scenario"
-              ? `${grid?.resolutionDegrees || 2.5}° / 予想の幅 ${timeline.lower95Ppm.toFixed(1)}–${timeline.upper95Ppm.toFixed(1)} ppm`
-              : `${grid?.resolutionDegrees || 2.5}° / 実測 ${timeline?.observedCells || 0} + 補完 ${timeline?.imputedCells || 0}`,
-          );
         }
       }
     }
@@ -6083,7 +5993,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       mapMobileBankToggle?.setAttribute("aria-expanded", "false");
       mapMobileBankToggle?.querySelector("strong")?.replaceChildren("展示一覧");
       mapReadingGuide.open = false;
-      if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
       setMobileMapLegendExpanded(false);
     }
   };
@@ -6097,7 +6006,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       setMobileMapHeadingExpanded(false);
       setMobileMapLegendExpanded(false);
       mapReadingGuide.open = false;
-      if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
     } else if (restoreFocus && usesCompactMapUi()) {
       requestAnimationFrame(() => mapMobileBankToggle?.focus({ preventScroll: true }));
     }
@@ -6109,7 +6017,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     setMobileMapLegendExpanded(false);
     if (usesCompactMapUi()) {
       mapReadingGuide.open = false;
-      if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
     }
   };
 
@@ -6153,13 +6060,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       const exhibit = globalThis.GaiaLiveExhibits?.definitions?.find(({ id }) => id === button.dataset.liveExhibit);
       if (!exhibit) return null;
       return {
-        surface: "LIVE MAP / READ THE PLANET NOW",
-        title: "いま届く信号を、地図と光で読む",
-        lead: "公開観測値を、場所・光・音へ変換するライブ展示です。保存済みスナップショットへ切り替わった場合も、その状態を明示します。",
         number: `${exhibit.number} / ${exhibit.signalLabel}`,
         label: exhibit.shortTitle,
         copy: exhibit.caption,
-        note: "クリックすると、選んだライブ観測演出をすぐに開きます。",
       };
     }
     const list = surface === "light" ? abstractModeButtons : japanModeButtons;
@@ -6167,15 +6070,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const choice = INTRO_MODE_CHOICES[index];
     if (!choice) return null;
     return {
-      surface: surface === "light" ? "ABSTRACT MODE / TOUCH THE SIGNAL" : "MAP MODE / READ THE PLANET",
-      title: surface === "light" ? "どの感覚に、触れますか？" : "どの信号を、地図で読みますか？",
-      lead: surface === "light" ? INTRO_PATHS.abstract.lead : INTRO_PATHS.map.lead,
       number: `${formatModeNumber(index)} / ${choice.code}`,
       label: `${choice.label}の声`,
       copy: choice.copy,
-      note: surface === "light"
-        ? "クリックすると、選んだ光をすぐに始めます。"
-        : "クリックすると、その信号の地図をすぐに開きます。",
     };
   };
 
@@ -6183,13 +6080,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (open) {
       const content = getMapModePreviewContent(button);
       if (!content) return;
-      mapModePreviewSurface.textContent = content.surface;
-      mapModePreviewTitle.textContent = content.title;
-      mapModePreviewLead.textContent = content.lead;
       mapModePreviewNumber.textContent = content.number;
       mapModePreviewLabel.textContent = content.label;
       mapModePreviewCopy.textContent = content.copy;
-      mapModePreviewNote.textContent = content.note;
     }
     mapModePreview.classList.toggle("is-open", Boolean(open));
     if (open && usesCompactMapUi()) {
@@ -6241,7 +6134,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       setMobileMapHeadingExpanded(false);
       setMobileMapBankExpanded(false);
       mapReadingGuide.open = false;
-      if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
     }
     setMobileMapLegendExpanded(expand);
   });
@@ -6250,14 +6142,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     setMobileMapHeadingExpanded(false);
     setMobileMapBankExpanded(false);
     setMobileMapLegendExpanded(false);
-    if (gaiaLiveReceipt instanceof HTMLDetailsElement) gaiaLiveReceipt.open = false;
-  });
-  gaiaLiveReceipt?.addEventListener("toggle", () => {
-    if (!usesCompactMapUi() || !gaiaLiveReceipt.open) return;
-    setMobileMapHeadingExpanded(false);
-    setMobileMapBankExpanded(false);
-    setMobileMapLegendExpanded(false);
-    mapReadingGuide.open = false;
   });
   japanModeBank.addEventListener("pointerleave", () => {
     if (!japanModeBank.contains(document.activeElement)) closeMapModePreview();

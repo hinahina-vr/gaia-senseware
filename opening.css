@@ -3132,6 +3132,12 @@ body.gaia-opening-active .gaia-audio-dock {
   right: calc(max(24px, env(safe-area-inset-right)) + 140px);
 }
 
+/* Once the title gateway is reached the skip action disappears, so the volume
+   control owns the actual top-right corner of the title screen. */
+body.gaia-opening-active .gaia-opening.is-menu-ready + .gaia-audio-dock {
+  right: max(24px, env(safe-area-inset-right));
+}
+
 @media (max-width: 720px) {
   body.gaia-opening-active .gaia-opening-skip {
     top: max(12px, env(safe-area-inset-top));
@@ -3157,6 +3163,10 @@ body.gaia-opening-active .gaia-audio-dock {
   body.gaia-opening-active .gaia-audio-dock {
     top: max(12px, env(safe-area-inset-top));
     right: calc(max(12px, env(safe-area-inset-right)) + 120px);
+  }
+
+  body.gaia-opening-active .gaia-opening.is-menu-ready + .gaia-audio-dock {
+    right: max(12px, env(safe-area-inset-right));
   }
 }
 

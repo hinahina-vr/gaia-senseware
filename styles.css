@@ -3507,7 +3507,7 @@ button {
 
 .japan-data-button {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: center;
   width: min(460px, 100%);
@@ -3528,15 +3528,14 @@ button {
     background-color 180ms ease;
 }
 
-.japan-data-button span:first-child,
-.japan-data-button span:last-child {
+.japan-data-button-symbol {
   font-family: Consolas, "Courier New", monospace;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.16em;
 }
 
-.japan-data-button span:nth-child(2) {
+.japan-data-button-copy {
   font-family: var(--font-ja);
   font-size: 13px;
   letter-spacing: 0.045em;
@@ -3951,11 +3950,10 @@ button {
   right: auto;
   bottom: auto;
   left: 0;
-  display: grid;
-  gap: 9px;
+  display: block;
   width: min(370px, calc(100vw - 470px));
   box-sizing: border-box;
-  padding: 17px 18px;
+  padding: 0;
   border: 1px solid rgba(var(--map-accent-rgb), 0.38);
   border-radius: 5px;
   color: rgba(235, 250, 250, 0.82);
@@ -3982,7 +3980,6 @@ button {
   box-shadow: 0 0 10px rgba(var(--map-accent-rgb), 0.36);
 }
 
-.map-mode-01-tooltip > p:first-child,
 .map-mode-01-tooltip span {
   margin: 0;
   color: rgba(var(--map-accent-rgb), 0.76);
@@ -3990,15 +3987,7 @@ button {
   letter-spacing: 0.15em;
 }
 
-.map-mode-01-tooltip > strong {
-  color: rgba(249, 254, 255, 0.97);
-  font: 650 16px/1.45 var(--font-ja);
-  letter-spacing: 0.055em;
-}
-
-.map-mode-01-tooltip > p:not(:first-child),
-.map-mode-01-tooltip div > p,
-.map-mode-01-tooltip small {
+.map-mode-01-tooltip div > p {
   margin: 0;
   color: rgba(222, 241, 243, 0.72);
   font: 500 10px/1.72 var(--font-ja);
@@ -4009,9 +3998,9 @@ button {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 5px 10px;
-  padding: 10px 11px;
-  border-left: 2px solid rgba(var(--map-accent-rgb), 0.62);
-  background: rgba(var(--map-accent-rgb), 0.07);
+  padding: 12px 14px 13px;
+  border-left: 3px solid rgba(var(--map-accent-rgb), 0.68);
+  background: linear-gradient(90deg, rgba(var(--map-accent-rgb), 0.12), rgba(var(--map-accent-rgb), 0.055));
 }
 
 .map-mode-01-tooltip div > b {
@@ -4022,12 +4011,6 @@ button {
 
 .map-mode-01-tooltip div > p {
   grid-column: 1 / -1;
-}
-
-.map-mode-01-tooltip small {
-  padding-top: 8px;
-  border-top: 1px solid rgba(var(--map-accent-rgb), 0.16);
-  color: rgba(194, 224, 228, 0.58);
 }
 
 .map-mode-01-tooltip.is-open {
@@ -4050,7 +4033,7 @@ body.map-grid-desktop .map-mode-bank.map-grid-polish {
     width: auto;
     max-height: min(285px, calc(100vh - 92px));
     margin-top: 0;
-    padding: 12px 11px;
+    padding: 0;
     overflow: auto;
     border-width: 1px;
     opacity: 0;
@@ -5084,34 +5067,6 @@ body.map-grid-desktop .map-mode-bank.map-grid-polish {
   letter-spacing: -0.07em;
 }
 
-.japan-instruction {
-  position: absolute;
-  z-index: 3;
-  top: 50%;
-  right: max(35px, env(safe-area-inset-right));
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 7px 12px;
-  align-items: baseline;
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-
-.japan-instruction span {
-  color: #94ead1;
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 7px;
-  letter-spacing: 0.17em;
-}
-
-.japan-instruction p {
-  margin: 0;
-  color: rgba(227, 246, 241, 0.48);
-  font-family: var(--font-ja);
-  font-size: 8px;
-  letter-spacing: 0.12em;
-}
-
 .japan-close {
   position: absolute;
   z-index: 3;
@@ -5172,9 +5127,9 @@ body.map-grid-desktop .map-mode-bank.map-grid-polish {
 .japan-poi-card {
   position: absolute;
   z-index: 4;
-  width: min(370px, calc(100vw - 40px));
-  max-height: min(600px, calc(100dvh - 40px));
-  padding: 25px 27px 27px;
+  width: min(330px, calc(100vw - 40px));
+  max-height: min(360px, calc(100dvh - 40px));
+  padding: 22px 24px 24px;
   overflow: auto;
   border: 1px solid rgba(184, 248, 231, 0.25);
   border-radius: 4px;
@@ -5215,8 +5170,7 @@ body.map-grid-desktop .map-mode-bank.map-grid-polish {
 }
 
 .japan-poi-type,
-.japan-poi-meta,
-.japan-poi-relation span {
+.japan-poi-meta {
   font-family: Consolas, "Courier New", monospace;
   text-transform: uppercase;
 }
@@ -5229,55 +5183,40 @@ body.map-grid-desktop .map-mode-bank.map-grid-polish {
   letter-spacing: 0.18em;
 }
 
-.japan-poi-card h3 {
-  margin: 0;
-  font-family: var(--font-ja);
-  font-size: 21px;
-  font-weight: 560;
-  letter-spacing: -0.025em;
-  line-height: 1.4;
-}
-
 .japan-poi-meta {
-  margin: 10px 0 0;
-  color: rgba(207, 239, 231, 0.43);
-  font-size: 7px;
+  margin: 0;
+  padding-right: 38px;
+  color: rgba(223, 247, 241, 0.72);
+  font-size: 8px;
   letter-spacing: 0.1em;
   line-height: 1.7;
 }
 
-.japan-poi-description {
-  margin: 20px 0 0;
-  color: rgba(229, 247, 242, 0.68);
+.japan-poi-source {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  margin-top: 18px;
+  padding: 0 14px;
+  border: 1px solid rgba(135, 238, 209, 0.24);
+  color: rgba(239, 255, 250, 0.9);
+  background: rgba(96, 221, 186, 0.07);
   font-family: var(--font-ja);
   font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.055em;
-  line-height: 1.95;
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
-.japan-poi-relation {
-  margin-top: 19px;
-  padding: 16px 17px 17px;
-  border: 1px solid rgba(135, 238, 209, 0.15);
-  background: rgba(96, 221, 186, 0.055);
-}
-
-.japan-poi-relation span {
-  display: block;
-  margin-bottom: 8px;
-  color: rgba(132, 236, 207, 0.62);
-  font-size: 6px;
-  letter-spacing: 0.18em;
-}
-
-.japan-poi-relation strong {
-  display: block;
-  color: rgba(240, 253, 249, 0.82);
-  font-family: var(--font-ja);
-  font-size: 10px;
-  font-weight: 560;
-  letter-spacing: 0.055em;
-  line-height: 1.9;
+.japan-poi-source:hover,
+.japan-poi-source:focus-visible {
+  border-color: rgba(149, 246, 219, 0.58);
+  color: #fff;
+  background: rgba(96, 221, 186, 0.14);
+  outline: none;
 }
 
 .japan-data-scrim {
@@ -6150,12 +6089,6 @@ h1 {
   font-size: 10px;
 }
 
-.signal-console-map > p {
-  margin-top: 12px;
-  font-size: 12px;
-  line-height: 1.75;
-}
-
 .signal-encoding-legend-dock {
   margin: 0;
 }
@@ -6198,9 +6131,9 @@ h1 {
 
 .signal-console-map .signal-encoding-legend,
 .signal-encoding-legend-dock > .signal-encoding-legend {
-  gap: 10px 15px;
+  gap: 8px 15px;
   margin-top: 0;
-  padding: 7px 12px 11px;
+  padding: 7px 12px 9px;
   border: 1px solid rgba(var(--accent-rgb), 0.32);
   border-top: 0;
   border-radius: 0 0 4px 4px;
@@ -6212,14 +6145,6 @@ h1 {
   gap: 8px;
   color: rgba(239, 252, 255, 0.92);
   font-size: 11px;
-  line-height: 1.5;
-}
-
-.signal-console-map .signal-encoding-legend dd,
-.signal-encoding-legend-dock > .signal-encoding-legend dd {
-  margin-top: 4px;
-  color: rgba(205, 235, 244, 0.7);
-  font-size: 9.5px;
   line-height: 1.5;
 }
 
@@ -6367,18 +6292,10 @@ h1 {
   text-align: right;
 }
 
-.signal-console p {
-  margin: 8px 0 0;
-  color: rgba(222, 238, 245, 0.52);
-  font-family: var(--font-ja);
-  font-size: 8px;
-  line-height: 1.55;
-}
-
 .signal-encoding-legend {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px 10px;
+  gap: 5px 10px;
   margin: 10px 0 0;
   padding: 9px 0 0;
   border-top: 1px solid rgba(var(--accent-rgb), 0.15);
@@ -6392,8 +6309,7 @@ h1 {
   min-width: 0;
 }
 
-.signal-encoding-legend dt,
-.signal-encoding-legend dd {
+.signal-encoding-legend dt {
   margin: 0;
 }
 
@@ -6405,16 +6321,6 @@ h1 {
   font-family: var(--font-ja);
   font-size: 7px;
   line-height: 1.35;
-}
-
-.signal-encoding-legend dd {
-  margin-top: 3px;
-  overflow: hidden;
-  color: rgba(196, 226, 236, 0.52);
-  font-size: 6px;
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .signal-encoding-legend i {
@@ -6451,25 +6357,6 @@ h1 {
   border-radius: 50%;
   background: radial-gradient(circle at 34% 30%, #f2feff 0 9%, #64dcff 16% 38%, rgba(28, 121, 255, 0.72) 58%, rgba(12, 56, 116, 0.22) 76%);
   box-shadow: 0 0 8px rgba(74, 195, 255, 0.56);
-}
-
-/* Live Senseware stays inside the exploration receipt; story UI is untouched. */
-.gaia-live-receipt {
-  position: absolute;
-  top: max(100px, calc(env(safe-area-inset-top) + 88px));
-  right: auto;
-  bottom: auto;
-  left: max(18px, env(safe-area-inset-left));
-  z-index: 35;
-  width: min(410px, calc(100vw - 24px));
-  max-height: min(62vh, 580px);
-  overflow: auto;
-  border: 1px solid rgba(120, 230, 222, 0.28);
-  border-radius: 14px;
-  background: rgba(3, 16, 31, 0.92);
-  color: #e9fbff;
-  box-shadow: 0 20px 54px rgba(0, 4, 18, 0.38);
-  backdrop-filter: blur(16px);
 }
 
 .map-surface-switch {
@@ -6517,72 +6404,8 @@ h1 {
   box-shadow: inset 0 0 16px rgba(var(--map-accent-rgb), 0.06);
 }
 
-.gaia-live-receipt:not([open]) {
-  width: auto;
-  max-width: min(410px, calc(100vw - 36px));
-  overflow: visible;
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
-.gaia-live-receipt > summary {
-  display: grid;
-  gap: 3px;
-  min-height: 52px;
-  padding: 10px 14px;
-  cursor: pointer;
-  list-style: none;
-}
-
-.gaia-live-receipt > summary span,
-.gaia-live-receipt header span,
-.gaia-live-sound-controls b {
-  color: #75e6dc;
-  font-size: 9px;
-  letter-spacing: 0.14em;
-}
-
-.gaia-live-receipt > summary span,
-.gaia-live-receipt > summary strong {
-  color: rgba(248, 253, 255, 0.94);
-  text-shadow: 0 1px 10px rgba(0, 8, 20, 0.72);
-}
-.gaia-live-receipt > summary strong { font-size: 11px; letter-spacing: 0.08em; }
-.gaia-live-receipt-body { display: grid; gap: 9px; padding: 0 14px 14px; }
-.gaia-live-receipt-body > p { margin: 0; color: #b9cbd4; font-size: 11px; line-height: 1.65; }
-.gaia-live-receipt-body section { display: grid; gap: 4px; padding: 9px 10px; border: 1px solid rgba(120, 230, 222, 0.14); background: rgba(0, 8, 20, 0.35); }
-.gaia-live-receipt-body section header { display: flex; justify-content: space-between; gap: 12px; }
-.gaia-live-receipt-body section strong { font-size: 12px; line-height: 1.45; }
-.gaia-live-receipt-body section small { color: #94aab5; font-size: 9px; }
-.gaia-live-receipt-body section[data-stale] { border-style: dashed; }
-.gaia-live-sound-controls { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 10px; }
-.gaia-live-sound-controls button { min-height: 44px; padding: 8px 12px; border: 1px solid rgba(117, 230, 220, 0.45); border-radius: 999px; background: rgba(16, 74, 86, 0.35); color: #efffff; cursor: pointer; }
-.gaia-live-sound-controls p { display: grid; gap: 4px; margin: 0; color: #b9cbd4; font-size: 9px; line-height: 1.55; }
-#space-data-content .gaia-live-receipt { position: relative; right: auto; bottom: auto; width: 100%; max-height: none; margin: 0 0 16px; }
-
-:root[data-gaia-lod="low"] .gaia-live-receipt,
-:root[data-gaia-lod="static"] .gaia-live-receipt { backdrop-filter: none; box-shadow: none; }
 :root[data-gaia-lod="low"] #gs-particle-canvas-v9 { opacity: 0.2 !important; }
 :root[data-gaia-lod="static"] #gs-particle-canvas-v9 { display: none !important; }
-
-@media (max-width: 720px) {
-  .gaia-live-receipt {
-    position: absolute;
-    top: max(286px, calc(env(safe-area-inset-top) + 274px));
-    right: auto;
-    bottom: auto;
-    left: max(12px, env(safe-area-inset-left));
-    width: min(410px, calc(100vw - 24px));
-    max-height: 48vh;
-    margin: 0;
-  }
-
-  .japan-layer.is-live-exhibit .gaia-live-receipt {
-    top: max(160px, calc(env(safe-area-inset-top) + 148px));
-  }
-}
 
 .signal-encoding-legend[data-mode="forest"] [data-encoding-mark="nodata"] {
   border: 1px solid rgba(111, 240, 177, 0.5);
@@ -6712,20 +6535,12 @@ h1 {
     padding: 9px 11px;
   }
 
-  .signal-console-main p {
-    display: none;
-  }
-
   .signal-console-map {
     top: 292px;
     right: 12px;
     bottom: auto;
     width: calc(100vw - 24px);
     padding: 9px 11px;
-  }
-
-  .signal-console-map p {
-    display: none;
   }
 
   .map-mode-bank {
@@ -7586,14 +7401,14 @@ h1 {
   }
 
   .japan-data-button {
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto;
     width: min(310px, 100%);
     min-height: 36px;
     margin-top: 13px;
     padding-inline: 11px;
   }
 
-  .japan-data-button span:nth-child(2) {
+  .japan-data-button-copy {
     font-size: 7px;
   }
 
@@ -7627,10 +7442,6 @@ h1 {
     font-size: 6px;
   }
 
-  .japan-instruction {
-    display: none;
-  }
-
   .japan-close {
     top: auto;
     right: auto;
@@ -7660,16 +7471,6 @@ h1 {
     max-height: min(50dvh, 480px);
     padding: 22px 22px 23px;
     border-radius: 13px;
-  }
-
-  .japan-poi-card h3 {
-    font-size: 18px;
-  }
-
-  .japan-poi-description,
-  .japan-poi-relation strong {
-    font-size: 9px;
-    line-height: 1.85;
   }
 
   .japan-poi-open .japan-observation,
@@ -8888,12 +8689,10 @@ h1 {
 .japan-layer.is-abstract-exhibit :is(
   .japan-observation,
   .map-reading-guide,
-  .gaia-live-receipt,
   .signal-console-map,
   .signal-encoding-legend-dock,
   .japan-map-note,
   .japan-layer-switch,
-  .japan-instruction,
   .japan-poi-card,
   .japan-credits,
   .gaia-live-exhibit-canvas,

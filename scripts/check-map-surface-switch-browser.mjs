@@ -91,6 +91,21 @@ try {
     assert.equal(scan.visibleButtons, 20, `${viewport.name}: not all buttons are visible together`);
     assert.ok(scan.buttonHeights.every((height) => height >= (viewport.name === "mobile" ? 44 : 30)), `${viewport.name}: button target is too short`);
     assert.ok(scan.horizontalOverflow <= 1, `${viewport.name}: bank overflows horizontally by ${scan.horizontalOverflow}px`);
+    const headingScan = await page.locator("#japan-layer .japan-heading").evaluate((heading) => {
+      const title = heading.querySelector("#japan-title");
+      const titleRect = title.getBoundingClientRect();
+      const headingRect = heading.getBoundingClientRect();
+      return {
+        kickerDisplay: getComputedStyle(heading.querySelector(".japan-kicker")).display,
+        descriptionWidth: heading.querySelector("#japan-description").getBoundingClientRect().width,
+        titleCenterDelta: Math.abs((titleRect.left + titleRect.right) / 2 - (headingRect.left + headingRect.right) / 2),
+      };
+    });
+    assert.equal(headingScan.kickerDisplay, "none", `${viewport.name}: the redundant heading kicker is still visible`);
+    assert.ok(headingScan.descriptionWidth <= 1, `${viewport.name}: the redundant heading description is still visible`);
+    if (viewport.name === "pc") {
+      assert.ok(headingScan.titleCenterDelta <= 1, `${viewport.name}: the exhibit title is not centered (${headingScan.titleCenterDelta}px)`);
+    }
 
     for (const index of expectedCopies.keys()) {
       await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(index).focus();
@@ -103,7 +118,7 @@ try {
       assert.equal(await page.locator("#map-mode-preview-copy").textContent(), expectedCopies[index], `${viewport.name}: LIGHT ${index + 1} copy`);
       assert.equal(await page.locator("#map-mode-preview-number").textContent(), `${String(index + 1).padStart(2, "0")} / ${expectedCodes[index]}`);
     }
-    assert.match(await page.locator("#map-mode-preview-surface").textContent(), /ABSTRACT MODE/u);
+    assert.match(await page.locator("#map-mode-preview").textContent(), /08 \/ ENERGY\s+エネルギーの声/u);
     await page.waitForFunction(() => {
       const preview = document.querySelector("#map-mode-preview");
       return preview && getComputedStyle(preview).visibility === "visible" && Number(getComputedStyle(preview).opacity) > 0.9;

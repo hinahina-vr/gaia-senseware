@@ -133,8 +133,23 @@ const selectExhibit = async (page, surface, index) => {
     : index >= 8
       ? page.locator(`${list} .map-mode-button[data-live-exhibit]`).nth(index - 8)
       : page.locator(`${list} .map-mode-button:not([data-live-exhibit])`).nth(index);
-  await button.click({ force: true });
-  await page.waitForFunction((expected) => document.querySelector(".map-mode-bank")?.dataset.mapSurface === expected, surface);
+  await button.evaluate((element) => element.click());
+  try {
+    await page.waitForFunction((expected) => {
+      const active = document.querySelector(".map-mode-bank")?.dataset.mapSurface || "map";
+      return active === expected;
+    }, surface);
+  } catch (error) {
+    const debug = await page.evaluate(({ expectedSurface, selector, itemIndex }) => ({
+      expectedSurface,
+      activeSurface: document.querySelector(".map-mode-bank")?.dataset.mapSurface || "map",
+      experienceClasses: document.querySelector(".experience")?.className || "",
+      layerClasses: document.querySelector("#japan-layer")?.className || "",
+      layerHidden: document.querySelector("#japan-layer")?.getAttribute("aria-hidden") || "",
+      selectedButton: document.querySelectorAll(`${selector} .map-mode-button`)[itemIndex]?.outerHTML || "",
+    }), { expectedSurface: surface, selector: list, itemIndex: index });
+    throw new Error(`Exhibit surface did not switch: ${JSON.stringify(debug)}`, { cause: error });
+  }
   const expected = String(index + 1).padStart(2, "0");
   if (surface === "map" && index >= 8) {
     await page.waitForFunction((number) => document.querySelector(".japan-layer")?.classList.contains("is-live-exhibit")
@@ -209,6 +224,7 @@ const inspect = (page) => page.evaluate(() => {
     infoExpanded: document.querySelector("#map-mobile-heading-toggle")?.getAttribute("aria-expanded") === "true",
     liveExpanded: liveToggle?.getAttribute("aria-expanded") === "true",
     guideOpen: document.querySelector("#map-reading-guide")?.open || false,
+    retiredReceiptCount: document.querySelectorAll(".gaia-live-receipt, [data-gaia-live-receipt]").length,
     usableSamples: samples.filter((sample) => sample.surface).length,
     totalSamples: samples.length,
     usableRatio: samples.filter((sample) => sample.surface).length / samples.length,
@@ -217,7 +233,6 @@ const inspect = (page) => page.evaluate(() => {
       heading: box(".japan-heading"),
       signal: box(".signal-console-map"),
       guide: box("#map-reading-guide"),
-      receipt: box(".gaia-live-receipt"),
       bank: box(".map-mode-bank"),
       readout: box(".gaia-live-exhibit-readout"),
       map: box("#japan-map"),
@@ -231,6 +246,7 @@ const review = (viewport, label, scan) => {
   if (scan.usableRatio < minimumRatio) report.issues.push({ viewport: viewport.name, label, code: "insufficient-exhibit-space", minimumRatio, scan });
   if (scan.bankExpanded) report.issues.push({ viewport: viewport.name, label, code: "bank-not-collapsed", scan });
   if (scan.guideOpen) report.issues.push({ viewport: viewport.name, label, code: "guide-open-by-default", scan });
+  if (scan.retiredReceiptCount) report.issues.push({ viewport: viewport.name, label, code: "retired-live-receipt-remains", scan });
   if (scan.isLive && !scan.liveExpanded && scan.rects.readout?.height > 210) {
     report.issues.push({ viewport: viewport.name, label, code: "live-readout-too-tall", scan });
   }
@@ -298,14 +314,6 @@ try {
           () => page.locator("#map-reading-guide > summary").click(),
           () => page.locator("#map-reading-guide > summary").click(),
           { require: ["guide"] },
-        );
-        await captureDrawer(
-          page,
-          viewport,
-          "drawer-live-receipt",
-          () => page.locator(".gaia-live-receipt > summary").click(),
-          () => page.locator(".gaia-live-receipt > summary").click(),
-          { require: ["receipt"] },
         );
         if (await page.locator("#map-mobile-legend-toggle").isVisible()) {
           await captureDrawer(

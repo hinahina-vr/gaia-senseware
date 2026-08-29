@@ -392,6 +392,10 @@ try {
     });
     assert(titleToCreditTiming, `${viewport.name}: first staff name never entered the viewport`);
     assert(titleToCreditTiming.logoBottom <= 0, `${viewport.name}: staff names began before the logo disappeared (${JSON.stringify(titleToCreditTiming)})`);
+    assert(
+      titleToCreditTiming.logoBottom >= -(viewport.height * 0.06),
+      `${viewport.name}: staff names began too long after the logo disappeared (${JSON.stringify(titleToCreditTiming)})`,
+    );
     initial.titleToCreditTiming = titleToCreditTiming;
     [
       "原案・企画・制作",

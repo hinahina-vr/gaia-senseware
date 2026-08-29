@@ -31,7 +31,7 @@
 
 ### 実装と検査
 
-基本体験はHTML、CSS、JavaScript、WebGL 2、Canvas 2D、ブラウザ標準APIだけで成立し、ブラウザへ外部JavaScriptランタイムライブラリを配信しません。通常展示は取得済みスナップショットで完結し、地図内のLive Senseware変換レシートだけが、機能フラグ有効時にPages Worker経由でNOAA・JAXA・ESAの公開観測へ接続します。
+基本体験はHTML、CSS、JavaScript、WebGL 2、Canvas 2D、ブラウザ標準APIだけで成立し、ブラウザへ外部JavaScriptランタイムライブラリを配信しません。通常展示は取得済みスナップショットで完結し、地図内のライブ展示09〜12だけが、機能フラグ有効時にPages Worker経由でNOAA・JAXA・ESAの公開観測へ接続します。取得元・公開状態・観測時刻は各ライブ展示の主表示にまとめています。
 
 ```powershell
 npm run check
@@ -98,7 +98,7 @@ ISAS/JAXA DARTSのはやぶさ2 LIDARを、一つのローカルJSONへ保存し
 - 統計補完は元の`SOURCE`を上書きせず、補完値へ`DERIVED`、未来投影へ`SCENARIO`を付ける
 - `OPEN DATA`の`STATISTICS`欄で、式、採用条件、検証法、限界、画面上の区別を表示
 - 通常展示の描画は `data/gaia-signals.json` などの取得済みスナップショットだけを使用
-- Live Sensewareは地図・宇宙の変換レシート内だけに置き、NOAA NDBC、NOAA GML、JAXA GSMaP、ESA Sentinel-5Pを別の地点・期間として表示
+- Live Sensewareは地図のライブ展示09〜12に置き、NOAA NDBC、NOAA GML、JAXA GSMaP、ESA Sentinel-5Pを別の地点・期間として各展示の主表示に明記
 - ライブ取得失敗時は最後の正常値、続いて版管理スナップショットへ退避し、ライブ値を装わない
 - OSCAR取得タイムアウト時の02は、台帳に明記してNOAA CoastWatch Blended NRT海流へ代替
 

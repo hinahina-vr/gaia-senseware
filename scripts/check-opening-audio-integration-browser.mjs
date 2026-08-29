@@ -186,6 +186,8 @@ try {
       await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-route-story")));
     }
     await page.waitForFunction(() => document.activeElement?.id === "gaia-opening-route-story");
+    await page.waitForFunction(() => document.activeElement?.id === "gaia-opening-route-guide");
+    await page.waitForTimeout(600);
     const routeReady = await page.evaluate(() => {
       const readRect = (selector) => document.querySelector(selector)?.getBoundingClientRect().toJSON();
       const cards = Array.from(document.querySelectorAll(".gaia-opening-route-grid .gaia-opening-route"), (card) => ({
@@ -197,10 +199,12 @@ try {
         englishVisible: __qaVisible(card.querySelector(".gaia-opening-route-en")),
         iconPosition: getComputedStyle(card.querySelector(".gaia-opening-route-icon")).position,
         glintDisplay: getComputedStyle(card, "::after").display,
+        visible: __qaVisible(card),
       }));
       return {
         menuVisible: __qaVisible(document.querySelector("#gaia-opening-final-menu")),
         modalVisible: __qaVisible(document.querySelector("#gaia-opening-sound-modal")),
+        dockVisible: __qaVisible(document.querySelector("#gaia-audio-dock")),
         menuInert: document.querySelector("#gaia-opening-final-menu")?.inert,
         activeId: document.activeElement?.id,
         finalPanelOpacity: Number(getComputedStyle(document.querySelector(".gaia-vn-panel-final")).opacity),
@@ -208,6 +212,7 @@ try {
         storyRect: readRect("#gaia-opening-route-story"),
         otherRect: readRect("#gaia-opening-route-other"),
         guideReplayRect: readRect("#gaia-opening-route-guide-replay"),
+        dockRect: readRect("#gaia-audio-dock"),
         guideReplayLabel: document.querySelector("#gaia-opening-route-guide-replay strong")?.textContent.trim(),
         guideReplayEnglish: document.querySelector("#gaia-opening-route-guide-replay small")?.textContent.trim(),
         cards,
@@ -216,11 +221,13 @@ try {
       };
     });
     assert(routeReady.menuVisible && !routeReady.modalVisible, `${viewport.name}: route menu did not replace the sound setup`);
+    assert.equal(routeReady.dockVisible, true, `${viewport.name}: title screen volume control is hidden`);
     assert.equal(routeReady.menuInert, false);
     assert.equal(routeReady.activeId, "gaia-opening-route-guide");
     assert(routeReady.finalPanelOpacity > 0.99, `${viewport.name}: final route scene is visually hidden`);
     assert(routeReady.menuRect.left >= -1 && routeReady.menuRect.right <= viewport.width + 1, `${viewport.name}: menu is outside the viewport`);
     assert(routeReady.menuRect.top >= -1 && routeReady.menuRect.bottom <= viewport.height + 1, `${viewport.name}: menu is outside the viewport vertically`);
+    assert(routeReady.dockRect && routeReady.dockRect.right >= viewport.width - (viewport.mobile ? 13 : 25), `${viewport.name}: title volume control is not anchored to the top-right`);
     for (const rect of [routeReady.storyRect, routeReady.otherRect]) {
       assert(rect.width >= 44 && rect.height >= 64, `${viewport.name}: route hit area is too small`);
     }
@@ -229,6 +236,7 @@ try {
     assert(routeReady.guideReplayRect.width >= 44 && routeReady.guideReplayRect.height >= 44, `${viewport.name}: guide replay hit area is smaller than 44px`);
     assert.equal(routeReady.cards.length, 3, `${viewport.name}: the three route cards are incomplete`);
     for (const card of routeReady.cards) {
+      assert.equal(card.visible, true, `${viewport.name}: ${card.id} disappeared from the title screen`);
       assert(card.english, `${viewport.name}: ${card.id} has no English label`);
       assert.equal(card.englishVisible, !shortLandscape, `${viewport.name}: ${card.id} English-label visibility is inconsistent`);
       assert.equal(card.iconPosition, "static", `${viewport.name}: ${card.id} icon escaped its dedicated column`);
