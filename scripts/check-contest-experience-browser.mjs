@@ -497,7 +497,7 @@ try {
     assert.equal(await directPage.locator("[data-live-exhibit-feed-state]").isVisible(), true, `${number}: live/snapshot state is not visible`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-state]").textContent(), /NEAR REAL TIME|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, `${number}: live/snapshot state is ambiguous`);
     if (number !== "12") assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /JPT$/u, `${number}: observation time is not labelled JPT`);
-    assert.match(await directPage.locator("[data-live-exhibit-feed-copy]").textContent(), /自動更新|保存済み観測データ/u, `${number}: realtime behavior is not explained`);
+    assert.match(await directPage.locator("[data-live-exhibit-feed-copy]").textContent(), /自動更新|5分ごと|保存済み観測/u, `${number}: realtime behavior is not explained`);
     assert.match(await directPage.locator("[data-live-exhibit-sound-description]").textContent(), contract.sound, `${number}: visible sound mapping is missing`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-touch-hint").isVisible(), true, `${number}: integrated light-touch hint hidden`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-path li").count(), 4, `${number}: observation-to-sound path must have four stages`);
