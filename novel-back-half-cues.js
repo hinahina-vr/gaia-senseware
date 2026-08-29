@@ -2,7 +2,7 @@
   "use strict";
 
   const expectedSceneCounts = Object.freeze({
-    festival_concept: 73,
+    festival_concept: 72,
     map_mode01: 43,
     gx_experience: 46,
     esp32_pitch: 50,

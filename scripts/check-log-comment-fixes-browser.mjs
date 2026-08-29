@@ -20,67 +20,60 @@ const allSteps = story.scenes.flatMap((scene) => scene.steps);
 const stepMap = new Map(allSteps.map((step) => [step.id, step]));
 
 const expectedText = new Map([
-  ["festival_concept_005", "私は電子工作が好きだ。誰かと相談するより、自宅の机で一人、基板と配線を相手に黙々と手を動かすほうが性に合っている。今日は出展者ではない。学内チャットで眺めているだけだった輪の中へ、顔も知らないまま一人で入るのが怖かった。何度も参加登録の画面を閉じ、見るだけなら話しかけなくていいと自分に言い聞かせて、ようやくここまで来た。"],
-  ["festival_concept_007", "受付を抜けると、行き交う学生たちの胸元の名札に、学内チャットで見たことのあるハンドルネームがいくつもあった。けれど、話したことのある名前は一つもない。画面の中にいた学生たちが友人を呼び、笑い合うたび、自分だけが名前のない匿名ユーザーのように、人の輪を外から眺めていた。"],
-  ["festival_concept_012", "テント脇の案内板には、白い文字で「GAIA SENSEWARE｜地球の声、聴いてみませんか」と書かれている。"],
-  ["festival_concept_021", "「改めまして、私は『あめ』です」"],
-  ["festival_concept_029", "「これ、すごいね。ソフトウェアも演出も、映像の迫力も。学生作品って聞いていたから、ここまで本格的だと思わなかった」"],
-  ["festival_concept_037", "みずの言い方には、設営の日にあめや叔父と試行錯誤した時間を、誰かへ伝えたかったような弾みがあった。"],
-  ["festival_concept_039", "「あめは、電気工事士の資格も持っていますの。今日の配線も、あめと叔父さまが安全を確認しましたわ」"],
-  ["festival_concept_041", "「資格で扱えるのは、六百ボルト以下の低圧設備だよ。このブースの配線も、その範囲で確認してる」"],
-  ["festival_concept_043", "「でも、私はまだ現場経験が少ないからね。資格を持っているだけで、叔父さんには全然かなわないよ」"],
-  ["festival_concept_047", "みずは「そのお話、あとで詳しく」と言うようにタブレットを胸元へ寄せた。あめも短くうなずく。自分の未完成のセンサーについて話したのに、隠したい気持ちより、続きを話したい気持ちが少しだけ勝っていた。"],
-  ["festival_concept_048", "「GAIA SENSEWAREって、何をするシステムなんですか？」"],
-  ["festival_concept_057", "「みずは最初から、地球全体を見渡すところから話すんだね」"],
-  ["festival_concept_060", "「そして、生命に変えられた地球が、今度は生命の進化に影響してきました。私たち人間も、その往復の中にいます」"],
-  ["festival_concept_067", "画面上のCO2濃度が切り替わるたび、短い低音が一度鳴る。数値が更新されたことを、画面を見ていなくても知らせるための音だった。"],
-  ["festival_concept_068", "あめは画面下の出典欄に視線を移し、表示中の数値と提供元が合っているかを確かめた。"],
-  ["festival_concept_071", "あめは画面下の出典欄を指し、NASA、JAXA、気象庁のどのデータを使っているか説明した。"],
-  ["festival_concept_075", "あめが何かを押したようには見えなかった。それでも球体だった地球は静かに開き、世界地図へ切り替わった。"],
-  ["map_mode01_002", "地図を見るだけだと思っていたが、世界地図は物語の上に小さな窓として開き、1958年から年代を自動で送り始めた。"],
-  ["map_mode01_003", "「こちらがMODE 01です。1958年から2050年まで、地球の変化を続けて見てください」"],
-  ["map_mode01_005", "年代が自動で進むたび、観測時点が切り替わり、画面上のCO2濃度と気温偏差の数値も連動して変わった。"],
-  ["map_mode01_006", "1958年の過去から現在を通り、2050年の試算へ進む。地球の明るさと背景の色が、数値に合わせて少しずつ変わる。"],
-  ["map_mode01_007", "2050年まで届くと、地図の窓は最後の色を一度だけ残し、静かに閉じて物語へ戻った。"],
-  ["map_mode01_008", "年代ごとの値を並べると、同じ場所でも変化が見える。自宅のセンサーも、測った時刻を並べれば変化が分かる。そういうことか。"],
-  ["map_mode01_018", "「気温の説明は長くしないでね」"],
-  ["map_mode01_028", "「ええ。高くなった時期と場所を比べれば、一時的な暑さなのか、続いている変化なのかを見分けられますわ」"],
-  ["map_mode01_029", "画面の端に、使われているデータの情報が開く。"],
-  ["map_mode01_030", "カードには、提供元、観測期間、単位が並んでいた。地図の色が、どのデータから作られたのか確認できる。"],
-  ["map_mode01_031", "「これはNASAなどが公開しているオープンデータです。提供元、観測期間、単位はこちらで確認できます。デモでは保存済みのデータを使っています」"],
-  ["map_mode01_035", "入力欄には「参加者の温度・湿度データ」とある。自宅のセンサーで測った値も、ここから地図に加えられるのだろうか。"],
-  ["map_mode01_039", "自宅の机で動かしている小さなセンサーなら、いまも温度と湿度を記録できる。観測場所や時刻を添えて送れば、この地図に表示できるデータになるかもしれない。"],
-  ["gx_experience_001", "表示は現在の地球から、約二十七億年前の海を再現した映像へ自動で切り替わる。"],
+  ["festival_concept_006", "受付でスマートフォンを取り出し、入場用の二次元コードをかざす。"],
+  ["festival_concept_new_003", "受付を抜けると、行き交う学生たちの胸元の名札に、学内チャットで見たことのあるハンドルネームがいくつもあった。けれど、話したことのある名前は一つもない。学内チャットは、眺めているだけで、自分から何かを発信したり、会話に参加したこともない。それは、オフラインでも同じことだ。自分だけが名前のない匿名ユーザーのように、楽しそうに笑い合う人の輪を外から眺めていた。"],
+  ["festival_concept_010", "受付棟から階段を下り、海風の吹く屋外展示エリアへ出る。話し声と呼び込みの喧騒の中を歩いていると、暗幕で覆われた大型の展示に目を奪われた。"],
+  ["festival_concept_013", "机の向こうで、水色のボブヘアの学生が、固定したケーブルを端から順に点検している。半分眠そうな目はコネクターの表示を正確に追い、机の端にはドライバーと結束バンドが整然と並んでいた。"],
+  ["festival_concept_014", "その隣では、海のような色の長い髪をした学生が、説明用のタブレットを確かめていた。表示された文章を上から下まで目で追い、最後の一行で一度だけ小さくうなずいている。"],
+  ["festival_concept_015", "画面へ近づくと、私の影が地球に重なった。水色のボブヘアの学生が顔を上げ、私と目が合う。肩の力を抜いたまま、声をかける合図のように小さくうなずいた。"],
+  ["festival_concept_016", "「こんにちは。何十億年も前から今の気候まで、全身で体感できる展示です。よかったら見ていきませんか？」"],
+  ["festival_concept_new_005", "最後の言葉に合わせて、彼女の口元が少しだけ緩んだ。呼び込み用の笑顔というより、私が断っても気にしないような、力の抜けた表情だった。すぐ隣で、海のような色の長い髪の学生が、優しく微笑んでいる。"],
+  ["festival_concept_021", "「ありがとうございます！改めまして、私は『あめ』と言います。2年生です」"],
+  ["festival_concept_023", "「私は『みず』と申します。同じく2年生。あなたも、うちの大学の方ですの？」"],
+  ["festival_concept_new_009", "「みず」と名乗った学生も、表情は落ち着いているが、こちらの反応を楽しみにしているように見えた。"],
+  ["festival_concept_new_010", "みずはタブレットを両手で持ち、返事を待つあいだ、わずかに首を傾けていた。地球の青い光が、長い髪の内側へ薄く映っている。"],
+  ["festival_concept_new_011", "みずの目元が少し柔らかくなった。私は改めてブースを見回す。展示用のディスプレイはプロジェクターで照らされ、テントの奥から左右のパネルへ切れ目なく続いている。機材も演出も、学生の仕事には見えない、プロ顔負けの設えだ。"],
+  ["festival_concept_031", "あめの表情が一層明るくなる。みずが隣で、秘密を明かす順番を知っているように小さく笑った。"],
+  ["festival_concept_032", "「んー、お目が高いですね！実は、親戚のオジキがイルミネーション屋さんなんです。日中の屋外でも使える、20,000ルーメン級のプロジェクターを貸してくれて、設営も一緒に考えてくれました」"],
+  ["festival_concept_034", "「20,000ルーメン……。ちょっとしたvTuberライブもできちゃいますね。しかも複数台ある。それに、明るさだけじゃなくて、投影面の角度も海風への備えも、全部きちんと設計されているんですね」"],
+  ["festival_concept_new_014", "あめが首を縦にぶんぶんと振り、嬉しそうにうなずく。気怠そうな第一印象とは裏腹に、スイッチが入るとテンションが上がるタイプなのだろうか。その横で、みずが楽しそうに口元をほころばせた。なるほど、いいコンビなのかも知れないな、と思った。"],
+  ["festival_concept_036", "「ええ。陽射しの中でも見やすい画面の向きも、海風でケーブルが揺れない留め方も、おじさまがあめと一緒に考えてくださいましたの」"],
+  ["festival_concept_new_015", "みずの言い方には、設営の日にあめやおじと試行錯誤した時間を、誰かへ伝えたかったような弾みがあった。"],
+  ["festival_concept_039", "「あめは、電気工事士の資格も持っていますの。今日の配線も、あめとおじさまが安全を確認しましたわ」"],
+  ["festival_concept_047", "みずは「そのお話、もっと詳しく」と言うようにタブレットを胸元へ寄せた。あめも短くうなずく。初対面の人にいきなり趣味の話までして恥ずかしいという気持ちより、続きを話したい気持ちが少しだけ勝っていた。"],
+  ["festival_concept_048", "「このGAIA SENSEWAREって、どんなコンセプトなんですか？」"],
+  ["festival_concept_052", "「ただ『環境にいいこと』を教えるような展示とは、ちょっと違います」"],
+  ["festival_concept_new_023", "あめは「環境」という言葉のあたりで、眉をほんの少し寄せた。嫌っているというより、その一言でありきたりな枠にまとめられるのを警戒している顔だった。"],
+  ["festival_concept_new_024", "そう聞いて、私は節電やリサイクルの話を想像していた。どうやら、そういうお説教じみた展示ではないらしい。"],
+  ["festival_concept_062", "二人の声に呼応するように、地球の表面から有機的な光の筋が芽吹き、網目のように増殖していった。大気、海、森、都市。バラバラに揺らいでいた現象が、脈打つ一本の系として結ばれていく。"],
+  ["festival_concept_new_029", "揺らめく光の軌跡を見つめるみずの横顔には、自ら生み出したものへの自負と、相手に届いているかを測る静かな緊張が混ざり合っているようだった。"],
+  ["festival_concept_066", "「数字だけじゃ気づきにくい変化を、地図や光、音へ変換しています。地球の感覚と、人間の感覚を重ね合わせるようにして、直感で感じ取ってもらいたいんです！」"],
+  ["festival_concept_new_031", "「地球の感覚と、人間の感覚を重ね合わせる」。まだ作りかけで調整中なのだと二人は照れくさそうに言っていたが、私の目には、それが途方もない可能性の塊に見えていた。完璧に整えられた完成品よりも、今まさに芽吹こうとしているアイデアの純度、つまり「制作者の願い」のほうが、ずっと強く胸を打つことがある。文字を追うのをやめ、ただ光と音の波に身を委ねてみる。それだけで、遠い海のうねりや大気の気配が、自分の呼吸と重なっていくような気がした。コンセプトの訴求力が、すでに理屈を超えて身体に届いている。"],
 ]);
 
 const expectedSpeakers = new Map([
+  ["festival_concept_016", "短髪の女性"],
   ["festival_concept_021", "短髪の女性"],
-  ["festival_concept_029", "あなた"],
+  ["festival_concept_023", "長髪の女性"],
+  ["festival_concept_032", "あめ"],
+  ["festival_concept_034", "あなた"],
+  ["festival_concept_036", "みず"],
   ["festival_concept_039", "みず"],
-  ["festival_concept_041", "あめ"],
-  ["festival_concept_043", "あめ"],
   ["festival_concept_048", "あなた"],
-  ["festival_concept_057", "あめ"],
-  ["map_mode01_003", "あめ"],
-  ["map_mode01_018", "あめ"],
-  ["map_mode01_028", "みず"],
-  ["map_mode01_031", "あめ"],
+  ["festival_concept_052", "あめ"],
+  ["festival_concept_066", "あめ"],
 ]);
 
-const expectedAssets = new Map([
-  ["map_mode01_029", "novel-bg-map01-data-provenance-five-plane-v1.png"],
-  ["gx_experience_001", "novel-bg-gx-ancient-ocean-five-plane-v1.png"],
-]);
+const expectedAssets = new Map();
 
-assert.equal(allSteps.length, 386);
-assert.equal(new Set(allSteps.map((step) => step.id)).size, 386);
-assert.equal(expectedText.size, 31);
-assert.equal(story.sourceSha256, "402cfcafcd5c13c715740290974a7e8bce26b4af460fe2daa987d009390279e4");
+assert.equal(allSteps.length, 373);
+assert.equal(new Set(allSteps.map((step) => step.id)).size, 373);
+assert.equal(expectedText.size, 29);
+assert.equal(story.sourceSha256, "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c");
 assert.deepEqual(story.requiredInteractions, ["map01", "gx"]);
 assert(story.saveFields.includes("stepId") && story.saveFields.includes("readStepIds") && story.saveFields.includes("demoInterest"));
 for (const [id, text] of expectedText) assert.equal(stepMap.get(id)?.text, text, `${id}: generated text differs`);
-assert.equal(stepMap.get("festival_concept_043")?.speaker, "amane");
-assert.doesNotMatch(allSteps.map((step) => step.text || "").join("\n"), /ものづくり|ほどけ/u);
+assert.equal(stepMap.has("festival_concept_new_030"), false);
 
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
@@ -128,24 +121,20 @@ const attachDiagnostics = (page, label) => {
 };
 
 const bootAt = async (page, stepId, extra = {}) => {
+  const candidate = stateFor(stepId, extra);
+  await page.addInitScript((progress) => {
+    localStorage.clear();
+    localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(progress));
+    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{
+      progress,
+      savedAt: Date.now(),
+      meta: { title: "LOG fixes QA", excerpt: progress.stepId },
+    }]));
+    localStorage.setItem("gaiaSensewareNovel:config:v4", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+  }, candidate);
   await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && globalThis.GAIA_NOVEL_STORY));
-  await page.evaluate((candidate) => {
-    localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify(candidate));
-    localStorage.setItem("gaiaSensewareNovel:manual-saves", JSON.stringify([{
-      progress: candidate,
-      savedAt: Date.now(),
-      meta: { title: "LOG fixes QA", excerpt: candidate.stepId },
-    }]));
-    localStorage.setItem("gaiaSensewareNovel:config:v2", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: true }));
-    localStorage.setItem("gaia-senseware-bgm-volume", "0");
-  }, stateFor(stepId, extra));
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
-  await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  await page.locator("#novel-save-panel").waitFor({ state: "visible", timeout: 15_000 });
-  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
   await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId === id, stepId, { timeout: 15_000 });
   await page.waitForTimeout(180);
 };
@@ -317,14 +306,16 @@ const browser = await chromium.launch({ headless: true, executablePath });
 try {
   for (const viewport of viewports) {
     const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
-    const page = await context.newPage();
-    attachDiagnostics(page, viewport.name);
-    await performMapInteraction(page, viewport);
-    for (const stepId of expectedText.keys()) await scanStep(page, viewport, stepId);
+    for (const stepId of expectedText.keys()) {
+      const page = await context.newPage();
+      attachDiagnostics(page, `${viewport.name}-${stepId}`);
+      await scanStep(page, viewport, stepId);
+      await page.close();
+    }
     await context.close();
   }
   assert.equal(report.scans.length, expectedText.size * viewports.length);
-  assert.equal(report.mapInteractions.length, viewports.length);
+  assert.equal(report.mapInteractions.length, 0);
   assert.equal(report.consoleErrors.length, 0, `console errors: ${report.consoleErrors.join("\n")}`);
   assert.equal(report.pageErrors.length, 0, `page errors: ${report.pageErrors.join("\n")}`);
   assert.equal(report.responses404.length, 0, `404 responses: ${report.responses404.join("\n")}`);

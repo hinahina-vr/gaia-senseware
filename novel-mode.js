@@ -1179,6 +1179,7 @@
       migratedStepId = version8To9StepIds.get(migratedStepId);
     }
     if (/^gx_experience_0(?:4[5-9]|5[0-4])$/u.test(migratedStepId)) return "gx_experience_055";
+    if (migratedStepId === "festival_concept_new_030") return "festival_concept_new_031";
     if (migratedStepId === "current_exhibition_017") return "opening_empty_seat_001";
     if (stepMap.has(migratedStepId)) return migratedStepId;
     const mappings = [

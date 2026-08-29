@@ -7,7 +7,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "estimatedDuration": "10〜12分",
   "sourceSha256": "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c",
   "revisionId": "approved-script-20260824",
-  "approvedSourceSha256": "d04c4ea96f644141bad4a77f8547da650eeeae34d22ec860f6baf298cf101a0d",
+  "approvedSourceSha256": "ca8806dc901bb81c28cd6e603a7dfc4e3d9f38301230738e7e940fdb89308aa3",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -131,13 +131,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "受付で学生証をかざす。短い電子音のあと、入場証が表示された。"
+          "text": "受付でスマートフォンを取り出し、入場用の二次元コードをかざす。"
         },
         {
           "id": "festival_concept_new_003",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "受付を抜けると、行き交う学生たちの胸元の名札に、学内チャットで見たことのあるハンドルネームがいくつもあった。けれど、話したことのある名前は一つもない。画面の中にいた学生たちが友人を呼び、笑い合うたび、自分だけが名前のない匿名ユーザーのように、人の輪を外から眺めていた。",
+          "text": "受付を抜けると、行き交う学生たちの胸元の名札に、学内チャットで見たことのあるハンドルネームがいくつもあった。けれど、話したことのある名前は一つもない。学内チャットは、眺めているだけで、自分から何かを発信したり、会話に参加したこともない。それは、オフラインでも同じことだ。自分だけが名前のない匿名ユーザーのように、楽しそうに笑い合う人の輪を外から眺めていた。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_006"
         },
@@ -161,7 +161,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "受付棟から階段を下り、海風の吹く屋外展示エリアへ出る。歓声と呼び込みの間を歩いていると、五つの投影面が地球を包む没入型展示に目を奪われた。"
+          "text": "受付棟から階段を下り、海風の吹く屋外展示エリアへ出る。話し声と呼び込みの喧騒の中を歩いていると、暗幕で覆われた大型の展示に目を奪われた。"
         },
         {
           "id": "festival_concept_011",
@@ -182,21 +182,21 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "机の向こうで、淡い青のボブヘアの学生が、固定したケーブルを端から順に点検している。半分眠そうな目はコネクターの表示を正確に追い、机の端にはドライバーと結束バンドが整然と並んでいた。"
+          "text": "机の向こうで、水色のボブヘアの学生が、固定したケーブルを端から順に点検している。半分眠そうな目はコネクターの表示を正確に追い、机の端にはドライバーと結束バンドが整然と並んでいた。"
         },
         {
           "id": "festival_concept_014",
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "その隣では、水面のような色の長い髪をした学生が、説明用のタブレットを確かめていた。表示された文章を上から下まで目で追い、最後の一行で一度だけ小さくうなずく。"
+          "text": "その隣では、海のような色の長い髪をした学生が、説明用のタブレットを確かめていた。表示された文章を上から下まで目で追い、最後の一行で一度だけ小さくうなずいている。"
         },
         {
           "id": "festival_concept_015",
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "画面へ近づくと、私の影が地球に重なった。青い髪の学生が顔を上げ、私と目が合う。肩の力を抜いたまま、声をかける合図のように小さくうなずいた。"
+          "text": "画面へ近づくと、私の影が地球に重なった。水色のボブヘアの学生が顔を上げ、私と目が合う。肩の力を抜いたまま、声をかける合図のように小さくうなずいた。"
         },
         {
           "id": "festival_concept_016",
@@ -204,13 +204,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "女の子",
-          "text": "「こんにちは。太古の海から、いま起きている気候の変化まで、触れてたどる展示です。よかったら体験してみませんか？」"
+          "text": "「こんにちは。何十億年も前から今の気候まで、全身で体感できる展示です。よかったら見ていきませんか？」"
         },
         {
           "id": "festival_concept_new_005",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "最後の言葉に合わせて、彼女の口元が少しだけ緩んだ。呼び込み用の笑顔というより、私が断っても気にしないような、力の抜けた表情だった。",
+          "text": "最後の言葉に合わせて、彼女の口元が少しだけ緩んだ。呼び込み用の笑顔というより、私が断っても気にしないような、力の抜けた表情だった。すぐ隣で、海のような色の長い髪の学生が、優しく微笑んでいる。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_016"
         },
@@ -244,7 +244,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "女の子",
-          "text": "「体験してくれて、ありがとうございます。改めまして、私は『あめ』です」"
+          "text": "「ありがとうございます！改めまして、私は『あめ』と言います。2年生です」"
         },
         {
           "id": "festival_concept_new_008",
@@ -260,7 +260,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "mizuha",
           "speakerLabel": "もう一人の女の子",
-          "text": "「私は『みず』と申します。あなたも、うちの大学の方ですの？」"
+          "text": "「私は『みず』と申します。同じく2年生。あなたも、うちの大学の方ですの？」"
         },
         {
           "id": "festival_concept_024",
@@ -273,7 +273,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_009",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "長い髪の学生もタブレットから顔を上げた。表情は落ち着いているが、「うちの大学」と言ったところで眉が少し上がる。答えを予想するより、こちらの返事を楽しみにしているように見えた。",
+          "text": "「みず」と名乗った学生も、表情は落ち着いているが、こちらの反応を楽しみにしているように見えた。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_024"
         },
@@ -281,7 +281,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_010",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "あめは名乗ったあとも、机の端のケーブルを指先で確かめている。みずはタブレットを両手で持ち、返事を待つあいだ、わずかに首を傾けていた。地球の青い光が、長い髪の内側へ薄く映っている。",
+          "text": "みずはタブレットを両手で持ち、返事を待つあいだ、わずかに首を傾けていた。地球の青い光が、長い髪の内側へ薄く映っている。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_024"
         },
@@ -297,7 +297,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_011",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "みずの眉が元の位置へ戻り、目元が少し柔らかくなった。私は改めてブースを見回す。表示は一枚だけではなく、テントの奥から左右のパネルへ切れ目なく続いていた。",
+          "text": "みずの目元が少し柔らかくなった。私は改めてブースを見回す。展示用のディスプレイはプロジェクターで照らされ、テントの奥から左右のパネルへ切れ目なく続いている。機材も演出も、学生の仕事には見えない、プロ顔負けの設えだ。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_027"
         },
@@ -322,7 +322,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "あめの指がケーブルの上で止まる。みずが隣で、秘密を明かす順番を知っているように小さく笑った。"
+          "text": "あめの表情が一層明るくなる。みずが隣で、秘密を明かす順番を知っているように小さく笑った。"
         },
         {
           "id": "festival_concept_032",
@@ -330,7 +330,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「実は、親戚のおじさんがイルミネーション屋さんなんです。日中の屋外でも使える、20,000ルーメン級のプロジェクターを貸してくれて、設営も一緒に考えてくれました」"
+          "text": "「んー、お目が高いですね！実は、親戚のオジキがイルミネーション屋さんなんです。日中の屋外でも使える、20,000ルーメン級のプロジェクターを貸してくれて、設営も一緒に考えてくれました」"
         },
         {
           "id": "festival_concept_new_013",
@@ -346,13 +346,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「20,000ルーメン……。明るさだけでなく、投影面の角度も海風への備えも、全部きちんと設計されているんですね」"
+          "text": "「20,000ルーメン……。ちょっとしたvTuberライブもできちゃいますね。しかも複数台ある。それに、明るさだけじゃなくて、投影面の角度も海風への備えも、全部きちんと設計されているんですね」"
         },
         {
           "id": "festival_concept_new_014",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "あめが小さくうなずく。その横で、みずが楽しそうに口元をほころばせた。",
+          "text": "あめが首を縦にぶんぶんと振り、嬉しそうにうなずく。気怠そうな第一印象とは裏腹に、スイッチが入るとテンションが上がるタイプなのだろうか。その横で、みずが楽しそうに口元をほころばせた。なるほど、いいコンビなのかも知れないな、と思った。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_034"
         },
@@ -362,13 +362,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "mizuha",
           "speakerLabel": "みず",
-          "text": "「ええ。日差しの中でも見やすい画面の向きも、海風でケーブルが揺れない留め方も、あめと一緒に考えてくださいましたの」"
+          "text": "「ええ。陽射しの中でも見やすい画面の向きも、海風でケーブルが揺れない留め方も、おじさまがあめと一緒に考えてくださいましたの」"
         },
         {
           "id": "festival_concept_new_015",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "みずの言い方には、設営の日にあめや叔父と試行錯誤した時間を、誰かへ伝えたかったような弾みがあった。",
+          "text": "みずの言い方には、設営の日にあめやおじと試行錯誤した時間を、誰かへ伝えたかったような弾みがあった。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_036"
         },
@@ -386,7 +386,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "mizuha",
           "speakerLabel": "みず",
-          "text": "「あめは、電気工事士の資格も持っていますの。今日の配線も、あめと叔父さまが安全を確認しましたわ」"
+          "text": "「あめは、電気工事士の資格も持っていますの。今日の配線も、あめとおじさまが安全を確認しましたわ」"
         },
         {
           "id": "festival_concept_new_016",
@@ -452,7 +452,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "みずは「そのお話、あとで詳しく」と言うようにタブレットを胸元へ寄せた。あめも短くうなずく。自分の未完成のセンサーについて話したのに、隠したい気持ちより、続きを話したい気持ちが少しだけ勝っていた。"
+          "text": "みずは「そのお話、もっと詳しく」と言うようにタブレットを胸元へ寄せた。あめも短くうなずく。初対面の人にいきなり趣味の話までして恥ずかしいという気持ちより、続きを話したい気持ちが少しだけ勝っていた。"
         },
         {
           "id": "festival_concept_048",
@@ -460,7 +460,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "visitor",
           "speakerLabel": "プレイヤー",
-          "text": "「GAIA SENSEWAREって、何をするシステムなんですか？」"
+          "text": "「このGAIA SENSEWAREって、どんなコンセプトなんですか？」"
         },
         {
           "id": "festival_concept_049",
@@ -491,13 +491,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「環境にいい行動を教えるだけの、いわゆる『エコ展示』とは少し違います」"
+          "text": "「ただ『環境にいいこと』を教えるような展示とは、ちょっと違います」"
         },
         {
           "id": "festival_concept_new_023",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "あめは「エコ展示」という言葉で、眉をほんの少し寄せた。嫌っているというより、その一言で全部まとめられることを警戒している顔だった。",
+          "text": "あめは「環境」という言葉のあたりで、眉をほんの少し寄せた。嫌っているというより、その一言でありきたりな枠にまとめられるのを警戒している顔だった。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_052"
         },
@@ -505,7 +505,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_024",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "環境展示と聞いて、私は節電やリサイクルの話を想像していた。どうやら、そういう展示ではないらしい。",
+          "text": "そう聞いて、私は節電やリサイクルの話を想像していた。どうやら、そういうお説教じみた展示ではないらしい。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_052"
         },
@@ -570,7 +570,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "sceneId": "festival_concept",
           "type": "narration",
           "speaker": "narrator",
-          "text": "二人の説明に応えるように、画面の地球から十本の光が伸びた。大気、海、森、都市。離れた現象が、同じ惑星の出来事として結ばれていく。"
+          "text": "二人の声に呼応するように、地球の表面から有機的な光の筋が芽吹き、網目のように増殖していった。大気、海、森、都市。バラバラに揺らいでいた現象が、脈打つ一本の系として結ばれていく。"
         },
         {
           "id": "festival_concept_new_028",
@@ -592,7 +592,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_029",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "十本の光を見つめるみずの表情には、作ったものを見せる誇らしさと、説明が正しく届くかを気にする緊張が同時にあった。",
+          "text": "揺らめく光の軌跡を見つめるみずの横顔には、自ら生み出したものへの自負と、相手に届いているかを測る静かな緊張が混ざり合っているようだった。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_064"
         },
@@ -602,21 +602,13 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「数字のままでは見えにくい変化を、地図や光や音へ翻訳しています。ただし表示が答えを決めるわけではありません。出典と時間の幅を確かめて、自分で読み取れるようにします」"
-        },
-        {
-          "id": "festival_concept_new_030",
-          "sceneId": "festival_concept",
-          "type": "narration",
-          "text": "画面上のCO2濃度が切り替わるたび、短い低音が一度鳴る。数値が更新されたことを、画面を見ていなくても知らせるための音だった。",
-          "speaker": "narrator",
-          "cueFromStepId": "festival_concept_066"
+          "text": "「数字だけじゃ気づきにくい変化を、地図や光、音へ変換しています。地球の感覚と、人間の感覚を重ね合わせるようにして、直感で感じ取ってもらいたいんです！」"
         },
         {
           "id": "festival_concept_new_031",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "あめは画面下の出典欄に視線を移し、表示中の数値と提供元が合っているかを確かめた。",
+          "text": "「地球の感覚と、人間の感覚を重ね合わせる」。まだ作りかけで調整中なのだと二人は照れくさそうに言っていたが、私の目には、それが途方もない可能性の塊に見えていた。完璧に整えられた完成品よりも、今まさに芽吹こうとしているアイデアの純度、つまり「制作者の願い」のほうが、ずっと強く胸を打つことがある。文字を追うのをやめ、ただ光と音の波に身を委ねてみる。それだけで、遠い海のうねりや大気の気配が、自分の呼吸と重なっていくような気がした。コンセプトの訴求力が、すでに理屈を超えて身体に届いている。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_066"
         },
