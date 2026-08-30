@@ -32,7 +32,7 @@ const profileAvatarPreview = document.querySelector("#profile-avatar-preview");
 const profileAvatarInput = document.querySelector("#profile-avatar-input");
 const publicSensorCount = document.querySelector("#public-sensor-count");
 const pollIntervalMs = 2_000;
-const naturalEarthUrl = "../data/natural-earth-50m-land.geojson?v=gaia-27";
+const naturalEarthCountriesUrl = "../data/natural-earth-50m-countries.geojson?v=gaia-1";
 const japanPrefectureUrl = "../data/japan-prefectures.topojson?v=gaia-1";
 const publicMapMinZoom = 1;
 const publicMapMaxZoom = 96;
@@ -1024,17 +1024,17 @@ async function mountMapSurfaces() {
   const surfaces = [...document.querySelectorAll(".sensor-world-map, .sensor-location-picker")];
   surfaces.forEach((surface) => { surface.dataset.basemap = "loading"; });
   try {
-    const [landResponse, prefectureLines] = await Promise.all([
-      fetch(naturalEarthUrl),
+    const [countryResponse, prefectureLines] = await Promise.all([
+      fetch(naturalEarthCountriesUrl),
       fetch(japanPrefectureUrl)
         .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
         .then(extractSharedTopologyArcs)
         .catch(() => []),
     ]);
-    if (!landResponse.ok) throw new Error(`HTTP ${landResponse.status}`);
-    const landRings = prepareMapLines(extractLandRings(await landResponse.json()));
-    if (landRings.length < 1_000) throw new Error("land geometry is incomplete");
-    surfaces.forEach((surface) => mountMapCanvas(surface, landRings, prefectureLines));
+    if (!countryResponse.ok) throw new Error(`HTTP ${countryResponse.status}`);
+    const countryLines = prepareMapLines(extractLandRings(await countryResponse.json()));
+    if (countryLines.length < 200) throw new Error("country geometry is incomplete");
+    surfaces.forEach((surface) => mountMapCanvas(surface, countryLines, prefectureLines));
   } catch {
     surfaces.forEach((surface) => {
       surface.dataset.basemap = "unavailable";
@@ -1107,13 +1107,14 @@ function prepareMapLines(lines) {
   }).filter((line) => line.points.length > 1);
 }
 
-function mountMapCanvas(surface, landRings, prefectureLines) {
+function mountMapCanvas(surface, countryLines, prefectureLines) {
   const canvas = document.createElement("canvas");
   canvas.className = "sensor-map-canvas";
   canvas.setAttribute("aria-hidden", "true");
   surface.prepend(canvas);
+  surface.dataset.countryBoundaries = String(countryLines.length);
   surface.dataset.prefectureBoundaries = String(prefectureLines.length);
-  const render = () => renderMapCanvas(canvas, landRings, prefectureLines, mapViewFor(surface));
+  const render = () => renderMapCanvas(canvas, countryLines, prefectureLines, mapViewFor(surface));
   mapRenderers.set(surface, render);
   if (typeof ResizeObserver === "function") {
     const observer = new ResizeObserver(render);
@@ -1126,7 +1127,7 @@ function mountMapCanvas(surface, landRings, prefectureLines) {
   render();
 }
 
-function renderMapCanvas(canvas, landRings, prefectureLines, view = worldMapView) {
+function renderMapCanvas(canvas, countryLines, prefectureLines, view = worldMapView) {
   const { width, height } = canvas.parentElement.getBoundingClientRect();
   if (width < 1 || height < 1) return;
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -1159,7 +1160,7 @@ function renderMapCanvas(canvas, landRings, prefectureLines, view = worldMapView
   context.restore();
 
   const land = new Path2D();
-  for (const ring of landRings) {
+  for (const ring of countryLines) {
     if (ring.east < view.west || ring.west > view.east || ring.north < view.south || ring.south > view.north) continue;
     let started = false;
     let previousLongitude = null;
