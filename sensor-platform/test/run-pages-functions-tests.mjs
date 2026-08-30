@@ -78,6 +78,12 @@ await test("advanced handler delegates API and calls ASSETS exactly once for non
   assert.equal(ranged.headers.get("content-range"), "bytes 1-3/6");
   assert.equal(await ranged.text(), "tat");
   assert.equal(assetCalls, 3);
+  const rangedWav = await module.default.fetch(new Request("https://example.test/assets/audio/test.wav", { headers: { Range: "bytes=0-1" } }), env, context);
+  assert.equal(rangedWav.status, 206);
+  assert.equal(rangedWav.headers.get("accept-ranges"), "bytes");
+  assert.equal(rangedWav.headers.get("content-range"), "bytes 0-1/6");
+  assert.equal(await rangedWav.text(), "st");
+  assert.equal(assetCalls, 4);
   delete globalThis.__gaiaPagesSensorHandler;
   delete globalThis.__gaiaPagesLiveHandler;
 });

@@ -20748,7 +20748,7 @@ var pages_entry_default = {
     if (liveResponse) return liveResponse;
     if (url.pathname.startsWith("/api/")) return index_default.fetch(request, env);
     const assetResponse = await env.ASSETS.fetch(request);
-    if (!/^\/assets\/audio\/.+\.mp3$/u.test(url.pathname) || !assetResponse.ok) return assetResponse;
+    if (!/^\/assets\/audio\/.+\.(?:mp3|wav)$/u.test(url.pathname) || !assetResponse.ok) return assetResponse;
     const headers = new Headers(assetResponse.headers);
     headers.set("Accept-Ranges", "bytes");
     headers.set("Cache-Control", "public, max-age=31536000, immutable");
