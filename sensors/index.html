@@ -8,10 +8,10 @@
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-network-resonance-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-finder-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=3" defer></script>
-    <script src="./sensor-platform.js?v=gaia-network-resonance-1" type="module"></script>
+    <script src="./sensor-platform.js?v=gaia-sensor-finder-1" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -92,6 +92,7 @@
               <button id="public-map-zoom-out" type="button" aria-label="地図を縮小">−</button>
               <button id="public-map-reset" type="button">日本</button>
               <output id="public-map-zoom" aria-live="polite">4.2×</output>
+              <button class="sensor-map-directory-toggle" id="public-map-directory-toggle" type="button" aria-expanded="false" aria-controls="public-sensor-directory"><span>観測点一覧</span><b id="public-map-directory-count">0</b></button>
             </div>
             <div class="sensor-map-basis" data-map-basis aria-hidden="true">JAPAN CENTER / NATURAL EARTH 1:50m</div>
           </div>
@@ -99,8 +100,19 @@
             <small class="sensor-console-label">SELECTED SIGNAL</small>
             <p>地図上のアイコンを選んでください。</p>
           </aside>
+          <section class="sensor-map-directory" id="public-sensor-directory" data-open="false" aria-labelledby="public-sensor-directory-title">
+            <header><div><small>OBSERVATION NODES</small><strong id="public-sensor-directory-title">観測点を探す</strong></div><output id="public-sensor-results" aria-live="polite">0件</output></header>
+            <label class="sensor-map-search"><span>センサー名・参加者・地域</span><input id="public-sensor-query" type="search" inputmode="search" autocomplete="off" placeholder="名前や地域で検索" /></label>
+            <div class="sensor-map-filters" role="group" aria-label="センサーの状態で絞り込む">
+              <button type="button" data-public-filter="ALL" aria-pressed="true">すべて</button>
+              <button type="button" data-public-filter="ONLINE" aria-pressed="false">稼働中</button>
+              <button type="button" data-public-filter="DEMO" aria-pressed="false">展示</button>
+              <button type="button" data-public-filter="OFFLINE" aria-pressed="false">停止</button>
+            </div>
+            <div class="sensor-public-list" id="public-sensor-list"></div>
+            <p class="sensor-map-directory-empty" id="public-sensor-empty" hidden>条件に合う観測点はありません。</p>
+          </section>
         </div>
-        <div class="sensor-public-list" id="public-sensor-list"></div>
       </section>
 
       <section class="sensor-view sensor-login" data-view="login">

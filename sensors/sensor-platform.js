@@ -24,6 +24,12 @@ const publicSensorNetwork = document.querySelector("#public-sensor-network");
 const publicSensorMarkers = document.querySelector("#public-sensor-markers");
 const publicSensorList = document.querySelector("#public-sensor-list");
 const publicSensorDetail = document.querySelector("#public-sensor-detail");
+const publicSensorDirectory = document.querySelector("#public-sensor-directory");
+const publicSensorQuery = document.querySelector("#public-sensor-query");
+const publicSensorResults = document.querySelector("#public-sensor-results");
+const publicSensorEmpty = document.querySelector("#public-sensor-empty");
+const publicMapDirectoryToggle = document.querySelector("#public-map-directory-toggle");
+const publicMapDirectoryCount = document.querySelector("#public-map-directory-count");
 const publicMapZoomIn = document.querySelector("#public-map-zoom-in");
 const publicMapZoomOut = document.querySelector("#public-map-zoom-out");
 const publicMapReset = document.querySelector("#public-map-reset");
@@ -49,6 +55,7 @@ const publicMapOverscanRatio = .22;
 const publicMapDragRebaseRatio = .18;
 const publicMapFocusMinZoom = 7.2;
 const publicMapPollIntervalMs = 60_000;
+const publicMapCanvasPixelBudget = 12_000_000;
 const resonanceDistanceKm = 1_800;
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
 const worldMapView = Object.freeze({ west: -180, east: 180, south: -90, north: 90, key: "WORLD" });
@@ -88,6 +95,8 @@ let publicMapFocusFrame = 0;
 let publicMapFocusToken = 0;
 let publicMapHoverTimer = 0;
 let publicMapPollTimer = 0;
+let publicSensorFilter = "ALL";
+let publicSensorQueryText = "";
 let countries = [];
 let devices = [];
 let selectedDevice = null;
@@ -95,6 +104,7 @@ let publicSensors = [];
 let publicNetworkStats = { observationPackets: 0, payloadBytes: 0 };
 let publicResonancePairs = [];
 let selectedPublicSensorId = null;
+let publicSensorSelectionDismissed = false;
 let oracleDepthBoost = 0;
 let currentProfile = null;
 let authenticated = false;
@@ -157,6 +167,7 @@ const showStatus = (message, kind = "info") => {
 const boot = async () => {
   showView("loading");
   initPublicMapNavigation();
+  initPublicSensorDirectory();
   void mountMapSurfaces();
   initLocationPickers();
   initRegionFields();
@@ -253,6 +264,7 @@ const renderPublicSensors = () => {
       Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SIGNAL STATUS" }),
       Object.assign(document.createElement("p"), { textContent: "公開中のセンサーはまだありません。最初の信号を待っています。" }),
     );
+    applyPublicSensorFilters();
     return;
   }
   let initialSelection = null;
@@ -307,25 +319,137 @@ const renderPublicSensors = () => {
     });
     publicSensorList.append(card);
     if (sensor.id === selectedPublicSensorId) initialSelection = { sensor, marker };
-    else if (!initialSelection && !selectedPublicSensorId && !sensor.isDemo) initialSelection = { sensor, marker };
+    else if (!initialSelection && !selectedPublicSensorId && !publicSensorSelectionDismissed && !sensor.isDemo) initialSelection = { sensor, marker };
   });
-  if (!initialSelection && publicSensors.length) {
+  if (!initialSelection && !publicSensorSelectionDismissed && publicSensors.length) {
     const sensor = publicSensors[0];
     initialSelection = { sensor, marker: publicSensorMarkers.querySelector(`[data-sensor-id="${CSS.escape(sensor.id)}"]`) };
   }
   if (initialSelection) selectPublicSensor(initialSelection.sensor, initialSelection.marker);
-  positionPublicSensorMarkers();
+  applyPublicSensorFilters();
 };
+
+function initPublicSensorDirectory() {
+  publicSensorQuery?.addEventListener("input", () => {
+    publicSensorQueryText = publicSensorQuery.value;
+    applyPublicSensorFilters();
+  });
+  document.querySelectorAll("[data-public-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      publicSensorFilter = button.dataset.publicFilter || "ALL";
+      document.querySelectorAll("[data-public-filter]").forEach((option) => {
+        option.setAttribute("aria-pressed", String(option === button));
+      });
+      applyPublicSensorFilters();
+    });
+  });
+  publicMapDirectoryToggle?.addEventListener("click", () => {
+    setPublicSensorDirectoryOpen(publicSensorDirectory?.dataset.open !== "true", { focus: true });
+  });
+  document.addEventListener("keydown", (event) => {
+    if (views.get("map")?.hidden) return;
+    const editing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement;
+    if (event.key === "/" && !editing) {
+      event.preventDefault();
+      setPublicSensorDirectoryOpen(true);
+      publicSensorQuery?.focus();
+      return;
+    }
+    if (event.key !== "Escape") return;
+    if (publicSensorDirectory?.dataset.open === "true") {
+      event.preventDefault();
+      setPublicSensorDirectoryOpen(false);
+    } else if (publicSensorQueryText) {
+      event.preventDefault();
+      publicSensorQueryText = "";
+      if (publicSensorQuery) publicSensorQuery.value = "";
+      applyPublicSensorFilters();
+    } else if (selectedPublicSensorId) {
+      event.preventDefault();
+      clearPublicSensorSelection({ hideDetail: true });
+      publicSensorMap?.focus({ preventScroll: true });
+    }
+  });
+}
+
+function applyPublicSensorFilters() {
+  const query = normalizePublicSensorSearch(publicSensorQueryText);
+  let visibleCount = 0;
+  let selectedVisible = !selectedPublicSensorId;
+  publicSensors.forEach((sensor) => {
+    const stateMatches = publicSensorFilter === "ALL"
+      || (publicSensorFilter === "DEMO" && sensor.isDemo)
+      || (publicSensorFilter === "ONLINE" && !sensor.isDemo && sensor.state === "ONLINE")
+      || (publicSensorFilter === "OFFLINE" && !sensor.isDemo && sensor.state !== "ONLINE");
+    const searchText = normalizePublicSensorSearch([
+      sensor.sensorName,
+      sensor.owner?.displayName,
+      sensor.region?.countryCode,
+      sensor.region?.subdivisionCode,
+      sensor.region?.subdivisionName,
+      sensor.demoLocationLabel,
+      publicSensorStateLabel(sensor),
+    ].filter(Boolean).join(" "));
+    const visible = stateMatches && (!query || searchText.includes(query));
+    visibleCount += Number(visible);
+    if (visible && sensor.id === selectedPublicSensorId) selectedVisible = true;
+    const marker = publicSensorMarkers?.querySelector(`[data-sensor-id="${CSS.escape(sensor.id)}"]`);
+    const card = publicSensorList?.querySelector(`[data-sensor-id="${CSS.escape(sensor.id)}"]`);
+    if (marker) marker.dataset.filtered = String(!visible);
+    if (card) card.hidden = !visible;
+  });
+  if (!selectedVisible) clearPublicSensorSelection({ hideDetail: true });
+  if (publicSensorResults) publicSensorResults.value = `${visibleCount} / ${publicSensors.length}件`;
+  if (publicMapDirectoryCount) publicMapDirectoryCount.textContent = String(publicSensors.length);
+  if (publicSensorEmpty) publicSensorEmpty.hidden = visibleCount !== 0;
+  positionPublicSensorMarkers();
+}
+
+function normalizePublicSensorSearch(value) {
+  return String(value || "").normalize("NFKC").toLocaleLowerCase("ja").replace(/\s+/gu, " ").trim();
+}
+
+function setPublicSensorDirectoryOpen(open, { focus = false } = {}) {
+  if (!publicSensorDirectory || !publicMapDirectoryToggle) return;
+  publicSensorDirectory.dataset.open = String(open);
+  publicMapDirectoryToggle.setAttribute("aria-expanded", String(open));
+  if (open && matchMedia("(max-width: 760px)").matches) publicSensorDetail.hidden = true;
+  if (focus) requestAnimationFrame(() => publicSensorQuery?.focus({ preventScroll: true }));
+}
+
+function clearPublicSensorSelection({ hideDetail = false } = {}) {
+  selectedPublicSensorId = null;
+  publicSensorSelectionDismissed = true;
+  document.querySelectorAll(".sensor-map-marker[aria-current], .sensor-public-card[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
+  if (!publicSensorDetail) return;
+  publicSensorDetail.hidden = hideDetail;
+  publicSensorDetail.replaceChildren(
+    Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SELECTED SIGNAL" }),
+    Object.assign(document.createElement("p"), { textContent: "地図上のアイコンまたは観測点一覧から選んでください。" }),
+  );
+}
 
 const selectPublicSensor = (sensor, marker) => {
   if (!marker) return;
+  publicSensorDetail.hidden = false;
+  setPublicSensorDirectoryOpen(false);
   selectedPublicSensorId = sensor.id;
+  publicSensorSelectionDismissed = false;
   document.querySelectorAll(".sensor-map-marker[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
   document.querySelectorAll(".sensor-public-card[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
   marker.setAttribute("aria-current", "true");
   publicSensorList.querySelector(`[data-sensor-id="${CSS.escape(sensor.id)}"]`)?.setAttribute("aria-current", "true");
   publicSensorDetail.replaceChildren();
   const consoleLabel = Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SELECTED SIGNAL" });
+  const toolbar = document.createElement("header");
+  toolbar.className = "sensor-map-card-toolbar";
+  const close = Object.assign(document.createElement("button"), { type: "button", textContent: "閉じる" });
+  close.setAttribute("aria-label", "選択中のセンサー詳細を閉じる");
+  close.addEventListener("click", () => {
+    clearPublicSensorSelection({ hideDetail: true });
+    publicSensorMap?.focus({ preventScroll: true });
+  });
+  toolbar.append(consoleLabel, close);
   const owner = document.createElement("div");
   owner.className = "sensor-map-owner";
   owner.append(avatarElement(sensor.owner, "span"));
@@ -346,7 +470,7 @@ const selectPublicSensor = (sensor, marker) => {
   const note = document.createElement("p");
   const region = [sensor.region?.subdivisionName, sensor.region?.subdivisionCode].filter(Boolean).join(" / ") || sensor.region?.countryCode || "地域非公開";
   note.textContent = `${region} · 公開位置は0.1度単位へ丸めています。自治体コードと住所は公開しません。`;
-  const content = [consoleLabel, owner, createPublicMetricHud(sensor), createPublicNodeMeta(sensor), createPublicOracle(sensor)];
+  const content = [toolbar, owner, createPublicMetricHud(sensor), createPublicNodeMeta(sensor), createPublicOracle(sensor)];
   if (sensor.isDemo) {
     const disclosure = document.createElement("p");
     disclosure.className = "sensor-demo-disclosure";
@@ -870,7 +994,7 @@ function positionPublicSensorMarkers() {
     const top = latitudeToPercent(latitude, view);
     marker.style.left = `${left}%`;
     marker.style.top = `${top}%`;
-    marker.hidden = left < -3 || left > 103 || top < -3 || top > 103;
+    marker.hidden = marker.dataset.filtered === "true" || left < -3 || left > 103 || top < -3 || top > 103;
   });
   renderPublicResonanceNetwork();
 }
@@ -1618,9 +1742,14 @@ function renderMapCanvas(canvas, countryLines, prefectureLines, view = worldMapV
       north: view.north + latitudeMargin,
     };
   }
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const requestedPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelBudgetRatio = overscan ? Math.sqrt(publicMapCanvasPixelBudget / Math.max(width * height, 1)) : requestedPixelRatio;
+  const dimensionRatio = overscan ? 8_192 / Math.max(width, height, 1) : requestedPixelRatio;
+  const pixelRatio = Math.max(.35, Math.min(requestedPixelRatio, pixelBudgetRatio, dimensionRatio));
   const canvasWidth = Math.round(width * pixelRatio);
   const canvasHeight = Math.round(height * pixelRatio);
+  canvas.dataset.renderScale = pixelRatio.toFixed(3);
+  canvas.dataset.renderPixels = String(canvasWidth * canvasHeight);
   if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;

@@ -38,11 +38,33 @@ try {
     await page.waitForTimeout(900);
     assert.equal(await page.locator(".sensor-map-marker").count(), 5);
     assert.equal(await page.locator(".sensor-public-card").count(), 5);
+    assert.equal(await page.locator("#public-sensor-results").textContent(), "5 / 5件");
     assert((await page.locator(".sensor-resonance-link").count()) >= 3);
     assert.match(await page.locator("#public-sync-rate").textContent(), /^\d{2}\.\d%$/u);
     assert.notEqual(await page.locator("#public-sync-rate").textContent(), "00.0%");
     assert.equal(await page.locator(".sensor-metric-hud-grid article").count(), 3);
     assert.equal(await page.locator(".sensor-sparkline polyline").count(), 3);
+
+    if (viewport.width > 760) {
+      assert.equal(await page.locator("#public-sensor-directory").isVisible(), true);
+      await page.locator("#public-sensor-query").fill("大阪");
+      assert.equal(await page.locator(".sensor-public-card:visible").count(), 1);
+      assert.equal(await page.locator(".sensor-map-marker:visible").count(), 1);
+      assert.equal(await page.locator("#public-sensor-results").textContent(), "1 / 5件");
+      await page.locator("#public-sensor-query").fill("");
+      await page.locator("[data-public-filter='DEMO']").click();
+      assert.equal(await page.locator(".sensor-public-card:visible").count(), 4);
+      assert.equal(await page.locator("#public-sensor-results").textContent(), "4 / 5件");
+      await page.locator("[data-public-filter='ALL']").click();
+    } else {
+      const topbarHeight = await page.locator(".sensor-topbar").evaluate((element) => element.getBoundingClientRect().height);
+      assert(topbarHeight <= 110, `mobile map topbar is too tall: ${topbarHeight}`);
+      await page.locator("#public-map-directory-toggle").click();
+      assert.equal(await page.locator("#public-sensor-directory").isVisible(), true);
+      assert.equal(await page.locator("#public-map-directory-toggle").getAttribute("aria-expanded"), "true");
+      await page.keyboard.press("Escape");
+      assert.equal(await page.locator("#public-sensor-directory").isVisible(), false);
+    }
 
     if (viewport.width > 760) {
       const sakuCard = page.locator(".sensor-public-card", { hasText: "sakuセンサー" });
@@ -58,6 +80,12 @@ try {
       });
       assert(focusDelta.x < 5 && focusDelta.y < 5);
       assert.match(await page.locator("#public-sensor-detail").textContent(), /識理層シンクロ率/u);
+      assert.equal(await page.locator(".sensor-map-card-toolbar button").isVisible(), true);
+      await page.locator(".sensor-map-card-toolbar button").click();
+      assert.equal(await page.locator("#public-sensor-detail").isVisible(), false);
+      await page.locator("#refresh-map").click();
+      await page.waitForTimeout(250);
+      assert.equal(await page.locator("#public-sensor-detail").isVisible(), false);
     }
 
     if (viewport.width > 760) {
@@ -93,6 +121,22 @@ try {
     report.scans.push({ viewport: viewport.name, ...scan, passed: true });
     await context.close();
   }
+
+  await fetch(new URL("/__qa/reset", baseUrl), { method: "POST" });
+  const wideContext = await browser.newContext({ viewport: { width: 3840, height: 2160 }, reducedMotion: "reduce" });
+  const widePage = await wideContext.newPage();
+  await widePage.goto(new URL("/sensors/#map", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await widePage.locator(".sensor-map-canvas--overscan").waitFor({ state: "visible" });
+  const canvasBudget = await widePage.locator(".sensor-map-canvas--overscan").evaluate((canvas) => ({
+    pixels: canvas.width * canvas.height,
+    declaredPixels: Number(canvas.dataset.renderPixels),
+    renderScale: Number(canvas.dataset.renderScale),
+  }));
+  assert(canvasBudget.pixels <= 12_100_000, `4K map canvas exceeds its pixel budget: ${canvasBudget.pixels}`);
+  assert.equal(canvasBudget.pixels, canvasBudget.declaredPixels);
+  assert(canvasBudget.renderScale > 0 && canvasBudget.renderScale <= 1);
+  report.scans.push({ viewport: "pc-3840", ...canvasBudget, passed: true });
+  await wideContext.close();
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);
   assert.deepEqual(report.responses404, []);
