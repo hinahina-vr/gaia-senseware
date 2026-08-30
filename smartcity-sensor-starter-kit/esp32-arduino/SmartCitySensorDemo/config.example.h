@@ -4,7 +4,7 @@
 #define API_BASE_URL "https://gaia-senseware.pages.dev/api/v1"
 
 #define USE_MOCK_SENSOR true
-#define TELEMETRY_INTERVAL_MS 10000UL
+#define TELEMETRY_INTERVAL_MS 300000UL
 #define HTTP_TIMEOUT_MS 12000UL
 #define RETRY_ATTEMPTS 3
 
