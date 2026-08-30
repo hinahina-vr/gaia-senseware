@@ -36,6 +36,8 @@ const naturalEarthCountriesUrl = "../data/natural-earth-50m-countries.geojson?v=
 const japanPrefectureUrl = "../data/japan-prefectures.topojson?v=gaia-1";
 const publicMapMinZoom = 1;
 const publicMapMaxZoom = 96;
+const publicMapOverscanRatio = .22;
+const publicMapDragRebaseRatio = .18;
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
 const worldMapView = Object.freeze({ west: -180, east: 180, south: -90, north: 90, key: "WORLD" });
 const countryMapViews = Object.freeze({
@@ -346,6 +348,20 @@ function queuePublicMapDragPreview() {
   publicMapDragFrame = requestAnimationFrame(() => {
     publicMapDragFrame = 0;
     if (!publicMapDrag) return;
+    const rect = publicSensorMap.getBoundingClientRect();
+    const needsRebase = Math.abs(publicMapDrag.deltaX) > rect.width * publicMapDragRebaseRatio
+      || Math.abs(publicMapDrag.deltaY) > rect.height * publicMapDragRebaseRatio;
+    if (needsRebase) {
+      const { deltaX, deltaY } = publicMapDrag;
+      publicMapDrag.startX += deltaX;
+      publicMapDrag.startY += deltaY;
+      publicMapDrag.deltaX = 0;
+      publicMapDrag.deltaY = 0;
+      publicSensorMap.style.removeProperty("--sensor-map-drag-x");
+      publicSensorMap.style.removeProperty("--sensor-map-drag-y");
+      panPublicMap(deltaX, deltaY);
+      return;
+    }
     publicSensorMap.style.setProperty("--sensor-map-drag-x", `${publicMapDrag.deltaX}px`);
     publicSensorMap.style.setProperty("--sensor-map-drag-y", `${publicMapDrag.deltaY}px`);
   });
@@ -1110,6 +1126,7 @@ function prepareMapLines(lines) {
 function mountMapCanvas(surface, countryLines, prefectureLines) {
   const canvas = document.createElement("canvas");
   canvas.className = "sensor-map-canvas";
+  if (surface === publicSensorMap) canvas.classList.add("sensor-map-canvas--overscan");
   canvas.setAttribute("aria-hidden", "true");
   surface.prepend(canvas);
   surface.dataset.countryBoundaries = String(countryLines.length);
@@ -1128,8 +1145,20 @@ function mountMapCanvas(surface, countryLines, prefectureLines) {
 }
 
 function renderMapCanvas(canvas, countryLines, prefectureLines, view = worldMapView) {
-  const { width, height } = canvas.parentElement.getBoundingClientRect();
+  const overscan = canvas.classList.contains("sensor-map-canvas--overscan") ? publicMapOverscanRatio : 0;
+  const { width, height } = (overscan ? canvas : canvas.parentElement).getBoundingClientRect();
   if (width < 1 || height < 1) return;
+  if (overscan) {
+    const longitudeMargin = (view.east - view.west) * overscan;
+    const latitudeMargin = (view.north - view.south) * overscan;
+    view = {
+      ...view,
+      west: view.west - longitudeMargin,
+      east: view.east + longitudeMargin,
+      south: view.south - latitudeMargin,
+      north: view.north + latitudeMargin,
+    };
+  }
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
   const canvasWidth = Math.round(width * pixelRatio);
   const canvasHeight = Math.round(height * pixelRatio);
