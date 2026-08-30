@@ -302,6 +302,9 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-map-marker-state { position: absolute; top: calc(100% + 7px); left: 50%; min-width: max-content; padding: 4px 7px 3px; border: 1px solid rgba(var(--signal-rgb),.58); color: rgb(var(--signal-rgb)); background: rgba(2,12,17,.9); box-shadow: 0 7px 18px rgba(0,0,0,.35); font: 700 8px/1 var(--font-console); letter-spacing: .12em; pointer-events: none; transform: translateX(-50%); }
 .sensor-map-marker[data-state="OFFLINE"] .sensor-owner-avatar { filter: grayscale(.78); opacity: .7; }
 .sensor-map-marker[aria-current="true"] { z-index: 3; box-shadow: 0 0 0 3px rgb(var(--signal-rgb)), 0 0 30px rgba(var(--signal-rgb),.48); }
+.sensor-map-marker:is(:hover, :focus-visible) { transform: translate(-50%, -50%); }
+.sensor-map-marker .sensor-owner-avatar { transition: transform 180ms ease; }
+.sensor-map-marker:is(:hover, :focus-visible) .sensor-owner-avatar { transform: scale(1.06); }
 .sensor-owner-avatar { display: grid; overflow: hidden; width: 100%; height: 100%; border-radius: inherit; color: #05221a; background: var(--mint); font: 800 16px/1 Consolas, monospace; place-items: center; }
 .sensor-owner-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .sensor-map-card { position: absolute; z-index: 5; bottom: 28px; left: 28px; width: clamp(320px, 25vw, 430px); min-height: 126px; max-height: calc(100% - 56px); margin: 0; padding: 22px; overflow: auto; border: 1px solid rgba(var(--mint-rgb),.42); background: rgba(2, 12, 22, .9); box-shadow: 0 20px 60px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.05); backdrop-filter: blur(18px) saturate(1.12); }
