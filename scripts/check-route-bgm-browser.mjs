@@ -17,7 +17,11 @@ const viewports = [
   { name: "mobile-390", width: 390, height: 844, mobile: true },
 ];
 const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
-const browser = await chromium.launch({ headless: true, executablePath });
+const browser = await chromium.launch({
+  headless: true,
+  executablePath,
+  args: ["--autoplay-policy=no-user-gesture-required"],
+});
 
 try {
   for (const viewport of viewports) {
@@ -31,8 +35,37 @@ try {
       localStorage.clear();
       localStorage.setItem("gaia-senseware-bgm-volume", "0.2");
       localStorage.setItem("gaia:opening-route-guide:v3", "seen");
+      globalThis.__gaiaMediaElementSourceCalls = 0;
+      globalThis.__gaiaAudioContinuity = { waiting: 0, stalled: 0, errors: 0 };
+      const instrumentedMedia = new WeakSet();
+      const nativePlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function instrumentPlayback(...args) {
+        if (!instrumentedMedia.has(this)) {
+          instrumentedMedia.add(this);
+          this.addEventListener("waiting", () => { globalThis.__gaiaAudioContinuity.waiting += 1; });
+          this.addEventListener("stalled", () => { globalThis.__gaiaAudioContinuity.stalled += 1; });
+          this.addEventListener("error", () => { globalThis.__gaiaAudioContinuity.errors += 1; });
+        }
+        return nativePlay.apply(this, args);
+      };
+      const prototypes = new Set([
+        globalThis.AudioContext?.prototype,
+        globalThis.webkitAudioContext?.prototype,
+      ].filter(Boolean));
+      prototypes.forEach((prototype) => {
+        const createMediaElementSource = prototype.createMediaElementSource;
+        if (typeof createMediaElementSource !== "function") return;
+        prototype.createMediaElementSource = function instrumentMediaElementSource(...args) {
+          globalThis.__gaiaMediaElementSourceCalls += 1;
+          return createMediaElementSource.apply(this, args);
+        };
+      });
     });
     const page = await context.newPage();
+    if (viewport.mobile) {
+      const devtools = await context.newCDPSession(page);
+      await devtools.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+    }
     const audioResponses = [];
     page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
@@ -72,7 +105,29 @@ try {
     else await mapPath.click();
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "mapambient", null, { timeout: 10_000 });
     await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 10_000 });
+    if (!audioResponses.some(({ url, status }) => url.includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(status))) {
+      await page.waitForResponse((response) => response.url().includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(response.status()), { timeout: 10_000 });
+    }
     assert(audioResponses.some(({ url, status }) => url.includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(status)), `${viewport.name}: transparent map ambience was not requested by the map`);
+    const nativeRouteSourceCalls = await page.evaluate(() => globalThis.__gaiaMediaElementSourceCalls);
+    assert.equal(nativeRouteSourceCalls, 0, `${viewport.name}: ordinary route BGM was forced through Web Audio`);
+    await page.waitForFunction(() => {
+      const state = globalThis.GaiaOpeningAudio?.getPlaybackState?.();
+      return state?.track === "mapambient" && state.playing;
+    }, null, { timeout: 10_000 });
+    const continuityBefore = await page.evaluate(() => {
+      globalThis.__gaiaAudioContinuity = { waiting: 0, stalled: 0, errors: 0 };
+      return globalThis.GaiaOpeningAudio.getPlaybackState().currentTime;
+    });
+    const observationMs = viewport.mobile ? 6_000 : 3_000;
+    await page.waitForTimeout(observationMs);
+    const continuity = await page.evaluate(() => ({
+      state: globalThis.GaiaOpeningAudio.getPlaybackState(),
+      events: globalThis.__gaiaAudioContinuity,
+    }));
+    const playbackAdvance = continuity.state.currentTime - continuityBefore;
+    assert(continuity.state.playing && playbackAdvance >= observationMs / 1_000 * 0.75, `${viewport.name}: BGM did not advance continuously: ${playbackAdvance.toFixed(3)}s`);
+    assert.deepEqual(continuity.events, { waiting: 0, stalled: 0, errors: 0 }, `${viewport.name}: BGM emitted a playback interruption: ${JSON.stringify(continuity.events)}`);
     const screenshot = path.join(outputDir, `${viewport.name}-senseware-destination.png`);
     await page.screenshot({ path: screenshot, animations: "disabled" });
 
@@ -80,7 +135,9 @@ try {
     await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "mapambient");
     const directTrack = await page.evaluate(() => globalThis.GaiaOpeningAudio.getState().track);
     assert.equal(directTrack, "mapambient", `${viewport.name}: direct map routes do not use the map ambience`);
-    report.scans.push({ viewport, routeSwitchMs, destination, directTrack, audioResponses, screenshot, passed: true });
+    const directRouteSourceCalls = await page.evaluate(() => globalThis.__gaiaMediaElementSourceCalls);
+    assert.equal(directRouteSourceCalls, 0, `${viewport.name}: direct map BGM was forced through Web Audio`);
+    report.scans.push({ viewport, routeSwitchMs, destination, directTrack, nativeRouteSourceCalls, directRouteSourceCalls, playbackAdvance, continuityEvents: continuity.events, audioResponses, screenshot, passed: true });
     await context.close();
   }
 

@@ -79,7 +79,9 @@
     if (!AudioContextClass) return null;
     if (!analysisContext) {
       try {
-        analysisContext = new AudioContextClass();
+        // Analysis is opt-in from the sound archive. When it is enabled, favor
+        // a stable playback buffer over interactive latency on mobile devices.
+        analysisContext = new AudioContextClass({ latencyHint: "playback" });
         analysisNode = analysisContext.createAnalyser();
         analysisNode.fftSize = ANALYSIS_FFT_SIZE;
         analysisNode.minDecibels = -90;
@@ -295,7 +297,6 @@
   const start = async (volume = preferredVolume) => {
     setVolume(volume, 0);
     const player = ensureAudio();
-    void enableAnalysis();
     cancelFade();
     muted = false;
     playbackRequested = true;
@@ -343,7 +344,6 @@
 
   const switchTrack = async (track, fadeSeconds = 0.5) => {
     if (!TRACKS[track]) return false;
-    void enableAnalysis();
     const serial = ++switchSerial;
     const switchFadeOutSeconds = Math.max(0, fadeSeconds) * TRACK_SWITCH_FADE_MULTIPLIER;
     if (track === activeTrack) {

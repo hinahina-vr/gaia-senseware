@@ -88,6 +88,10 @@ try {
   assert(/ANALYSIS_FFT_SIZE\s*=\s*512/u.test(audioRuntimeSource), "sound analysis does not use the expected 512-point FFT");
   assert(/ANALYSIS_SPECTRUM_BANDS\s*=\s*32/u.test(audioRuntimeSource), "sound analysis does not expose the 32-band spectrum");
   assert(/getByteFrequencyData/u.test(audioRuntimeSource) && /getByteTimeDomainData/u.test(audioRuntimeSource), "visualizer is not backed by real frequency and waveform analysis");
+  assert(/new AudioContextClass\(\{\s*latencyHint:\s*"playback"\s*\}\)/u.test(audioRuntimeSource), "Web Audio analysis does not request a mobile-safe playback buffer");
+  const startRuntimeSource = audioRuntimeSource.match(/const start = async[\s\S]*?const setMuted = async/u)?.[0] || "";
+  const switchRuntimeSource = audioRuntimeSource.match(/const switchTrack = async[\s\S]*?const getState =/u)?.[0] || "";
+  assert(!startRuntimeSource.includes("enableAnalysis") && !switchRuntimeSource.includes("enableAnalysis"), "ordinary BGM playback is still forced through Web Audio analysis");
   assert(/uniform float bass;/u.test(visualRuntimeSource) && /uniform float mid;/u.test(visualRuntimeSource) && /uniform float high;/u.test(visualRuntimeSource), "three real audio bands are not connected to the shader");
   assert(/createSpectrumOverlay/u.test(visualRuntimeSource) && /web-audio-fft-32-band/u.test(visualRuntimeSource), "the real 32-band EQ overlay is missing");
   assert(/auroraSilk/u.test(visualRuntimeSource) && /earthCenter/u.test(visualRuntimeSource) && /horizon/u.test(visualRuntimeSource) && /powderLayer/u.test(visualRuntimeSource), "the aurora, Earth, light powder, and water mirror are incomplete");
