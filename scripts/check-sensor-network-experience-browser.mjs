@@ -27,7 +27,7 @@ try {
     page.on("console", (message) => {
       if (message.type() !== "error") return;
       const text = message.text();
-      if (!/401 \(Unauthorized\)/u.test(text)) report.consoleErrors.push(`${viewport.name}: ${text}`);
+      if (!/server responded with a status of 401\b/u.test(text)) report.consoleErrors.push(`${viewport.name}: ${text}`);
     });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
