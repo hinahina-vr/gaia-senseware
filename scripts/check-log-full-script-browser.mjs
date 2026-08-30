@@ -22,7 +22,7 @@ assert.match(runtimeSource, /scriptArchiveStepCount/u);
 assert.match(runtimeSource, /GAIA_TRUE_END_STORY/u);
 assert.match(loaderSource, /novel-mode\.js\?v=gaia-story-direct-runtime-1/u);
 assert.match(loaderSource, /novel-mode\.css\?v=gaia-mobile-story-control-height-1/u);
-assert.match(htmlSource, /gaia-mode-loader\.js\?v=gaia-character-profile-layout-2/u);
+assert.match(htmlSource, /gaia-mode-loader\.js\?v=gaia-title-meta-removed-1/u);
 
 delete globalThis.GAIA_NOVEL_STORY;
 delete globalThis.GAIA_TRUE_END_STORY;

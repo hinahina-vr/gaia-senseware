@@ -25,6 +25,7 @@
   const routeGuideReplay = document.querySelector("#gaia-opening-route-guide-replay");
   const soundModal = document.querySelector("#gaia-opening-sound-modal");
   const soundDialog = soundModal?.querySelector(".gaia-opening-sound-dialog");
+  const languageButtons = Array.from(soundModal?.querySelectorAll("[data-gaia-language]") || []);
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const AUDIO_DOCK_COLLAPSE_DELAY_MS = 6000;
   let audioDockCollapseTimer = 0;
@@ -46,13 +47,13 @@
     window.dispatchEvent(new CustomEvent("gaia:initial-view-ready"));
     window.__gaiaBootCheck?.();
   };
-  const directDestination = ["#earth", "#japan", "#data", "#source", "#concept", "#sound", "#character", "#story", "#tour"].includes(
+  const directDestination = ["#top", "#world", "#earth", "#japan", "#data", "#source", "#concept", "#sound", "#character", "#story", "#tour"].includes(
     window.location.hash,
   ) || /\/story\/?$/i.test(window.location.pathname);
-  const directMapAmbientDestination = ["#japan", "#data", "#source"].includes(
+  const directMapAmbientDestination = ["#world", "#japan", "#data", "#source"].includes(
     window.location.hash,
   );
-  const directSensewareDestination = ["#earth", "#concept", "#tour"].includes(window.location.hash);
+  const directSensewareDestination = ["#top", "#earth", "#concept", "#tour"].includes(window.location.hash);
 
   const syncAudioControls = (state = window.GaiaOpeningAudio?.getState?.()) => {
     const volume = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
@@ -77,6 +78,40 @@
     }
     if (audioToggleIcon) audioToggleIcon.dataset.muted = String(isMuted);
   };
+
+  const LANGUAGE_STORAGE_KEY = "gaia:language:v1";
+  const SUPPORTED_LANGUAGES = new Set(["ja", "en", "zh-CN"]);
+  const readLanguagePreference = () => {
+    try {
+      const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      return SUPPORTED_LANGUAGES.has(saved) ? saved : "ja";
+    } catch {
+      return "ja";
+    }
+  };
+  const setLanguagePreference = (language, { persist = true, notify = true } = {}) => {
+    const nextLanguage = SUPPORTED_LANGUAGES.has(language) ? language : "ja";
+    document.documentElement.dataset.gaiaLanguageCurrent = nextLanguage;
+    languageButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.gaiaLanguage === nextLanguage));
+    });
+    if (persist) {
+      try { window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage); }
+      catch { /* Storage can be unavailable in privacy-restricted browsers. */ }
+    }
+    if (notify) {
+      window.dispatchEvent(new CustomEvent("gaia:language-change", { detail: { language: nextLanguage } }));
+    }
+    return nextLanguage;
+  };
+  setLanguagePreference(readLanguagePreference(), { persist: false, notify: false });
+  languageButtons.forEach((button) => {
+    button.addEventListener("click", () => setLanguagePreference(button.dataset.gaiaLanguage));
+  });
+  window.GaiaLanguagePreference = Object.freeze({
+    get: () => document.documentElement.dataset.gaiaLanguageCurrent || "ja",
+    set: (language) => setLanguagePreference(language),
+  });
 
   const revealAudioDock = () => {
     if (!audioDock) return;
@@ -175,8 +210,6 @@
   document.body.classList.add("gaia-opening-active");
 
   const finalCopy = opening.querySelector(".gaia-vn-panel-final .gaia-vn-final-copy");
-  const ROUTE_GUIDE_STORAGE_KEY = "gaia:opening-route-guide:v3";
-  const routeGuidePreference = new URLSearchParams(window.location.search).get("routeGuide");
   const routeGuideSteps = [
     {
       target: finalStoryButton,
@@ -223,18 +256,6 @@
   let routeGuidePositionFrame = 0;
   let gatewayLayoutFrame = 0;
   let routeGuideStartTimer = 0;
-
-  const hasSeenRouteGuide = () => {
-    if (routeGuidePreference === "1") return false;
-    if (routeGuidePreference === "0") return true;
-    try { return window.localStorage.getItem(ROUTE_GUIDE_STORAGE_KEY) === "seen"; }
-    catch { return false; }
-  };
-
-  const rememberRouteGuide = () => {
-    try { window.localStorage.setItem(ROUTE_GUIDE_STORAGE_KEY, "seen"); }
-    catch { /* Storage can be unavailable in privacy-restricted browsers. */ }
-  };
 
   const clearRouteGuideTarget = () => {
     routeGuideSteps.forEach(({ target }) => target.classList.remove("is-route-guide-target"));
@@ -310,10 +331,9 @@
     scheduleRouteGuidePosition();
   };
 
-  const closeRouteGuide = ({ remember = true, restoreFocus = true } = {}) => {
+  const closeRouteGuide = ({ restoreFocus = true } = {}) => {
     window.clearTimeout(routeGuideStartTimer);
     routeGuideStartTimer = 0;
-    if (remember) rememberRouteGuide();
     routeGuideActive = false;
     clearRouteGuideTarget();
     opening.classList.remove("is-route-guide-active");
@@ -343,7 +363,6 @@
 
   const maybeStartRouteGuide = () => {
     window.clearTimeout(routeGuideStartTimer);
-    if (hasSeenRouteGuide()) return;
     routeGuideStartTimer = window.setTimeout(() => {
       finalMenu.dataset.revealCompleteAt = performance.now().toFixed(3);
       routeGuideStartTimer = window.setTimeout(openRouteGuide, ROUTE_GUIDE_POST_REVEAL_HOLD_MS);
@@ -816,11 +835,13 @@
     window.clearTimeout(finishTimer);
     closeSoundModalImmediately();
     settleFocusText();
-    // Remove the choice cards as one completed unit. Leaving them mounted while
-    // the opening dissolves can expose their borders after the copy has faded.
+    // Fade the choice cards without removing their layout box. The final lockup
+    // is bottom-anchored, so display:none here would make the logo drop by the
+    // menu height during the route handoff.
     if (finalMenu instanceof HTMLElement) {
       finalMenu.classList.remove("is-visible");
-      finalMenu.hidden = true;
+      finalMenu.inert = true;
+      finalMenu.setAttribute("aria-hidden", "true");
     }
     // Lazy route assets can finish before or after the opening dissolve. Hide
     // the abstract WebGL base for that entire interval, not only after loading.
@@ -850,6 +871,9 @@
     }
     if (destination === "story") {
       history.replaceState(null, "", `${window.location.pathname}${window.location.search}#story`);
+    }
+    if (destination === "menu") {
+      history.replaceState(null, "", `${window.location.pathname}${window.location.search}#top`);
     }
     if (destination === "tour") history.replaceState(null, "", `${window.location.pathname}${window.location.search}#tour`);
     window.dispatchEvent(new CustomEvent("gaia:opening-complete", { detail: { destination } }));
@@ -916,6 +940,41 @@
     opening.classList.add("is-skipping-to-menu");
     showFinalMenu();
   };
+
+  const returnToTitle = () => {
+    window.clearTimeout(finishTimer);
+    window.clearTimeout(exitTimer);
+    window.clearTimeout(soundModalRevealTimer);
+    closeRouteGuide({ remember: true, restoreFocus: false });
+    closeSoundModalImmediately();
+    settleFocusText();
+    finished = false;
+    finishRequested = false;
+    document.body.classList.remove("gaia-route-handoff");
+    document.body.classList.add("gaia-opening-active");
+    opening.hidden = false;
+    opening.inert = false;
+    opening.setAttribute("aria-hidden", "false");
+    opening.classList.remove("is-leaving", "is-preloading", "is-awaiting-sound");
+    opening.classList.add("is-preloaded", "is-active", "is-skipping-to-menu");
+    if (preloadPanel instanceof HTMLElement) preloadPanel.hidden = true;
+    if (finalMenu instanceof HTMLElement) {
+      finalMenu.hidden = true;
+      finalMenu.inert = false;
+      finalMenu.classList.remove("is-visible");
+      finalMenu.removeAttribute("aria-busy");
+      finalMenu.removeAttribute("aria-hidden");
+    }
+    if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = false;
+    if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = false;
+    if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = false;
+    if (routeGuideReplay instanceof HTMLButtonElement) routeGuideReplay.disabled = false;
+    particleSystem.start();
+    void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0.2);
+    requestAnimationFrame(showFinalMenu);
+  };
+
+  window.addEventListener("gaia:return-to-title", returnToTitle);
 
   const start = () => {
     if (openingStarted || !preloadReady || !soundSetupConfirmed) return;

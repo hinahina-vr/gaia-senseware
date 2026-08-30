@@ -46,6 +46,8 @@ const inspect = (page) => page.evaluate(() => {
   const lead = document.querySelector(".character-book-lead");
   const quote = document.querySelector("#character-book-quote");
   const master = document.querySelector("#character-book-master");
+  const header = document.querySelector(".character-book-header");
+  const close = document.querySelector("#character-book-close");
   const rect = (element) => element?.getBoundingClientRect().toJSON();
   return {
     layerPosition: getComputedStyle(layer).position,
@@ -63,8 +65,17 @@ const inspect = (page) => page.evaluate(() => {
     selectors: document.querySelectorAll("[data-character-select]").length,
     activeSelectors: [...document.querySelectorAll("[data-character-select]")]
       .filter((button) => button.getAttribute("aria-current") === "true").length,
+    expressions: document.querySelectorAll("[data-character-expression]").length,
+    activeExpressions: [...document.querySelectorAll("[data-character-expression]")]
+      .filter((button) => button.getAttribute("aria-pressed") === "true").length,
+    expressionName: document.querySelector("#character-book-expression-name")?.textContent.trim(),
+    expressionId: layer?.dataset.expressionId,
     profiles: document.querySelectorAll("[data-character-profile]").length,
     oldCompactProfiles: document.querySelectorAll(".character-book-hero-profile").length,
+    brandMarks: document.querySelectorAll(".character-book-mark").length,
+    headerRect: rect(header),
+    closeRect: rect(close),
+    closeText: close?.textContent.trim(),
     current: document.querySelector("#character-book-current")?.textContent.trim(),
     title: document.querySelector("#character-book-page-title")?.textContent.replace(/\s+/gu, " ").trim(),
     tagline: document.querySelector("#character-book-tagline")?.textContent.trim(),
@@ -105,7 +116,9 @@ try {
     await page.waitForFunction(() => {
       const image = document.querySelector("#character-book-image");
       return image?.complete && image.naturalWidth > 0
-        && document.querySelector("#character-book-webgl")?.dataset.webglRendered === "true";
+        && document.querySelector("#character-book-webgl")?.dataset.webglRendered === "true"
+        && document.querySelectorAll("[data-character-expression]").length === 4
+        && document.querySelector("#character-book-layer")?.dataset.expressionId === "calm";
     });
 
     const initial = await inspect(page);
@@ -116,8 +129,15 @@ try {
     assert.equal(initial.modal, "true", viewport.name + ": modal state is missing");
     assert.equal(initial.selectors, 3, viewport.name + ": three-character selector is incomplete");
     assert.equal(initial.activeSelectors, 1, viewport.name + ": selector active state is ambiguous");
+    assert.equal(initial.expressions, 4, viewport.name + ": Amane expression selector is incomplete");
+    assert.equal(initial.activeExpressions, 1, viewport.name + ": expression active state is ambiguous");
+    assert.equal(initial.expressionName, "通常", viewport.name + ": opening expression label is incorrect");
+    assert.equal(initial.expressionId, "calm", viewport.name + ": opening expression is not calm");
     assert.equal(initial.profiles, 0, viewport.name + ": duplicate lower profiles remain");
     assert.equal(initial.oldCompactProfiles, 0, viewport.name + ": old compact hero profile remains");
+    assert.equal(initial.brandMarks, 0, viewport.name + ": GAIA SENSEWARE header mark remains");
+    assert.equal(initial.closeText, "戻る", viewport.name + ": back control label is incorrect");
+    assert(initial.closeRect.left < (viewport.mobile ? 28 : 90), viewport.name + ": back control is not placed at the left edge");
     assert.equal(initial.current, "01", viewport.name + ": Amane is not the opening character");
     assert.equal(initial.title, "あめ｜雨宮 周あめみや あまね", viewport.name + ": opening profile title is incorrect");
     assert.match(initial.imageSource, /amane-calm-07-v2\.png/u, viewport.name + ": opening character art is incorrect");
@@ -143,6 +163,20 @@ try {
 
     await page.screenshot({ path: path.join(outputDir, viewport.name + "-character-hero.png"), fullPage: false });
 
+    const amaneSoft = page.locator('[data-character-expression="soft"]');
+    if (viewport.mobile) await amaneSoft.click();
+    else await amaneSoft.hover();
+    await page.waitForFunction(() => /amane-soft-07-v2\.png/u.test(document.querySelector("#character-book-image")?.currentSrc || ""));
+    if (!viewport.reduced) {
+      await page.waitForFunction(() => document.querySelector("#character-book-image")?.classList.contains("is-switching")
+        && document.querySelectorAll(".character-book-hero-ghost").length === 1);
+    }
+    const amaneExpression = await inspect(page);
+    assert.equal(amaneExpression.expressionId, "soft", viewport.name + ": Amane hover expression did not activate");
+    assert.equal(amaneExpression.expressionName, "微笑み", viewport.name + ": Amane expression label did not update");
+    assert.equal(amaneExpression.activeExpressions, 1, viewport.name + ": Amane expression selection is ambiguous");
+    assert.match(amaneExpression.imageAlt, /微笑/u, viewport.name + ": expression-specific alt text is missing");
+
     await page.locator('[data-character-select="mizuha"]').click();
     await page.waitForFunction(() => document.querySelector("#character-book-layer")?.dataset.characterId === "mizuha"
       && document.querySelector("#character-book-current")?.textContent.trim() === "02"
@@ -156,6 +190,17 @@ try {
     assert.equal(mizuha.profileLines, 3, viewport.name + ": Mizuha profile is not split at sentence endings");
     assert.equal(mizuha.quote, "「46億年、ずっと変わり続けている星ですから」");
     assert.equal(mizuha.activeSelectors, 1, viewport.name + ": Mizuha selection produced multiple active portraits");
+    assert.equal(mizuha.expressions, 4, viewport.name + ": Mizuha expression selector is incomplete");
+    assert.equal(mizuha.activeExpressions, 1, viewport.name + ": Mizuha expression selection is ambiguous");
+    assert.equal(mizuha.expressionId, "calm", viewport.name + ": character change did not reset the expression");
+
+    const mizuhaWorried = page.locator('[data-character-expression="worried"]');
+    if (viewport.mobile) await mizuhaWorried.click();
+    else await mizuhaWorried.hover();
+    await page.waitForFunction(() => /mizuha-worried-07-v2\.png/u.test(document.querySelector("#character-book-image")?.currentSrc || ""));
+    const mizuhaExpression = await inspect(page);
+    assert.equal(mizuhaExpression.expressionId, "worried", viewport.name + ": Mizuha hover expression did not activate");
+    assert.equal(mizuhaExpression.expressionName, "心配", viewport.name + ": Mizuha expression label did not update");
 
     await page.keyboard.press("ArrowRight");
     await page.waitForFunction(() => document.querySelector("#character-book-layer")?.dataset.characterId === "sakuya"
@@ -169,6 +214,8 @@ try {
     assert.equal(sakuya.profile, "海外からオンラインで参加している、サークル『惑星の放課後』のプロデューサー兼システムアーキテクト。普段のチャットでは無駄口を叩かないが、要件定義やデータ構造の議論では圧倒的な速度と解像度で仕様を組み上げる。プロジェクトの骨格を支える名付け親。");
     assert.equal(sakuya.profileLines, 3, viewport.name + ": Sakuya profile is not split at sentence endings");
     assert.equal(sakuya.quote, "「まだ気づいてないだけでしょ。世界は満ちてるよ」");
+    assert.equal(sakuya.expressions, 4, viewport.name + ": Sakuya expression selector is incomplete");
+    assert.equal(sakuya.expressionId, "calm", viewport.name + ": Sakuya did not open with the calm expression");
 
     await page.locator("#character-book-master").scrollIntoViewIfNeeded();
     await page.waitForTimeout(viewport.reduced ? 50 : 220);
@@ -183,7 +230,7 @@ try {
     await page.locator("#character-book-close").click();
     await page.locator("#character-book-layer").waitFor({ state: "hidden", timeout: 5000 });
     assert.equal(await page.evaluate(() => document.body.classList.contains("character-mode-open")), false);
-    report.scans.push({ viewport, initial, mizuha, sakuya, sectionState });
+    report.scans.push({ viewport, initial, amaneExpression, mizuha, mizuhaExpression, sakuya, sectionState });
     await context.close();
   }
 

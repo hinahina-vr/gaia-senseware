@@ -4,8 +4,29 @@
   const layer = document.querySelector("#character-book-layer");
   if (!(layer instanceof HTMLElement)) return;
 
-  const assetVersion = "gaia-character-profile-1";
+  const assetVersion = "gaia-character-expression-hover-1";
   const portrait = (filename) => "/assets/characters/" + filename + "?v=" + assetVersion;
+  const expression = (id, label, filename, alt) => Object.freeze({ id, label, src: portrait(filename), alt });
+  const expressionSets = Object.freeze({
+    amane: Object.freeze([
+      expression("calm", "通常", "amane-calm-07-v2.png", "落ち着いた表情の雨宮 周"),
+      expression("soft", "微笑み", "amane-soft-07-v2.png", "やわらかく微笑む雨宮 周"),
+      expression("startled", "驚き", "amane-startled-07-v2.png", "驚いた表情の雨宮 周"),
+      expression("exasperated", "呆れ", "amane-exasperated-07-v2.png", "少し呆れた表情の雨宮 周"),
+    ]),
+    mizuha: Object.freeze([
+      expression("calm", "通常", "mizuha-calm-07-v2.png", "穏やかな表情の青野 瑞葉"),
+      expression("sad", "悲しみ", "mizuha-sad-07-v2.png", "悲しげな表情の青野 瑞葉"),
+      expression("teasing", "からかい", "mizuha-teasing-07-v2.png", "いたずらっぽくからかう青野 瑞葉"),
+      expression("worried", "心配", "mizuha-worried-07-v2.png", "心配そうな表情の青野 瑞葉"),
+    ]),
+    sakuya: Object.freeze([
+      expression("calm", "通常", "sakuya-calm-07-v1.png", "落ち着いた表情の木下 咲弥"),
+      expression("sad", "悲しみ", "sakuya-sad-07-v1.png", "悲しげな表情の木下 咲弥"),
+      expression("teasing", "からかい", "sakuya-teasing-07-v1.png", "挑発的にからかう木下 咲弥"),
+      expression("worried", "心配", "sakuya-worried-07-v1.png", "心配そうな表情の木下 咲弥"),
+    ]),
+  });
   const characters = Object.freeze([
     {
       id: "amane",
@@ -20,8 +41,9 @@
       role: "実装・検証（PoC）",
       tool: "テスター・計測機器・配線工具",
       tone: "107, 168, 221",
-      src: portrait("amane-calm-07-v2.png"),
-      alt: "水色のショートボブと眠そうな目元が特徴のあめ（アマネ）",
+      expressions: expressionSets.amane,
+      src: expressionSets.amane[0].src,
+      alt: expressionSets.amane[0].alt,
     },
     {
       id: "mizuha",
@@ -36,8 +58,9 @@
       role: "概念設計・ナラティブ",
       tool: "フィールドノート・観測記録",
       tone: "61, 153, 186",
-      src: portrait("mizuha-calm-07-v2.png"),
-      alt: "海色の長い髪とおっとりした表情のみず（ミズハ）",
+      expressions: expressionSets.mizuha,
+      src: expressionSets.mizuha[0].src,
+      alt: expressionSets.mizuha[0].alt,
     },
     {
       id: "sakuya",
@@ -52,8 +75,9 @@
       role: "プロデュース・全体統括",
       tool: "チャットツール・仕様設計書",
       tone: "184, 129, 117",
-      src: portrait("sakuya-calm-07-v1.png"),
-      alt: "海外からオンラインで参加するsaku（サクヤ）",
+      expressions: expressionSets.sakuya,
+      src: expressionSets.sakuya[0].src,
+      alt: expressionSets.sakuya[0].alt,
     },
   ]);
 
@@ -316,6 +340,8 @@
   const reading = layer.querySelector("#character-book-reading");
   const tagline = layer.querySelector("#character-book-tagline");
   const profile = layer.querySelector("#character-book-profile");
+  const expressionList = layer.querySelector("#character-book-expression-list");
+  const expressionName = layer.querySelector("#character-book-expression-name");
   const quote = layer.querySelector("#character-book-quote");
   const current = layer.querySelector("#character-book-current");
   const atmosphere = createAtmosphere(canvas);
@@ -328,14 +354,22 @@
   let switchTimer = 0;
   let switchGeneration = 0;
   let displayedCharacterId = null;
+  let displayedExpressionId = null;
+  let expressionHoverReady = true;
 
   const imagePreloads = new Map();
-  characters.forEach(({ src }) => {
+  const ensureImagePreload = (src) => {
+    if (imagePreloads.has(src)) return imagePreloads.get(src);
     const preload = new Image();
     preload.decoding = "async";
     preload.src = src;
     imagePreloads.set(src, preload);
-  });
+    return preload;
+  };
+  characters.forEach(({ src }) => ensureImagePreload(src));
+  const preloadCharacterExpressions = (character) => {
+    character.expressions.forEach(({ src }) => ensureImagePreload(src));
+  };
 
   const suspendBackground = () => {
     backgroundStates = [];
@@ -393,10 +427,115 @@
     layer.querySelectorAll(".character-book-hero-ghost").forEach((ghost) => ghost.remove());
   };
 
+  const syncExpressionState = (expression) => {
+    displayedExpressionId = expression.id;
+    layer.dataset.expressionId = expression.id;
+    if (expressionName) expressionName.textContent = expression.label;
+    expressionList?.querySelectorAll("[data-character-expression]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.characterExpression === expression.id));
+    });
+  };
+
+  const commitHeroImage = (expression, generation) => {
+    if (generation !== switchGeneration || !(heroImage instanceof HTMLImageElement)) return;
+    const targetSource = new URL(expression.src, document.baseURI).href;
+    if (heroImage.currentSrc === targetSource || heroImage.src === targetSource) {
+      heroImage.alt = expression.alt;
+      syncExpressionState(expression);
+      layer.dataset.imageState = "ready";
+      return;
+    }
+
+    const shouldAnimate = !reducedMotion.matches && Boolean(heroImage.currentSrc);
+    clearCharacterMotion();
+    if (shouldAnimate) {
+      const ghost = heroImage.cloneNode(false);
+      ghost.removeAttribute("id");
+      ghost.removeAttribute("aria-label");
+      ghost.setAttribute("aria-hidden", "true");
+      ghost.className = "character-book-hero-ghost";
+      heroImage.before(ghost);
+    }
+
+    heroImage.src = expression.src;
+    heroImage.alt = expression.alt;
+    syncExpressionState(expression);
+    layer.dataset.imageState = "ready";
+    if (shouldAnimate) {
+      void heroImage.offsetWidth;
+      requestAnimationFrame(() => {
+        if (generation === switchGeneration) heroImage.classList.add("is-switching");
+      });
+    }
+    switchTimer = window.setTimeout(() => {
+      if (generation !== switchGeneration) return;
+      heroImage.classList.remove("is-switching");
+      layer.querySelectorAll(".character-book-hero-ghost").forEach((oldImage) => oldImage.remove());
+    }, 620);
+  };
+
+  const selectExpression = (id) => {
+    const character = characters[currentIndex];
+    if (!character || displayedCharacterId !== character.id) return;
+    const nextExpression = character.expressions.find((item) => item.id === id);
+    if (!nextExpression) return;
+    if (displayedExpressionId === nextExpression.id) {
+      syncExpressionState(nextExpression);
+      return;
+    }
+
+    const generation = ++switchGeneration;
+    syncExpressionState(nextExpression);
+    const commit = () => commitHeroImage(nextExpression, generation);
+    const preload = ensureImagePreload(nextExpression.src);
+    if (preload instanceof HTMLImageElement && !preload.complete) {
+      preload.addEventListener("load", commit, { once: true });
+      preload.addEventListener("error", commit, { once: true });
+    } else commit();
+  };
+
+  const renderExpressions = (character) => {
+    if (!(expressionList instanceof HTMLElement)) return;
+    const activeId = character.expressions[0].id;
+    expressionHoverReady = false;
+    const buttons = character.expressions.map((item) => {
+      const button = document.createElement("button");
+      const frame = document.createElement("span");
+      const image = document.createElement("img");
+      button.type = "button";
+      button.dataset.characterId = character.id;
+      button.dataset.characterExpression = item.id;
+      button.setAttribute("aria-label", `${character.native}の表情：${item.label}`);
+      button.setAttribute("aria-pressed", String(item.id === activeId));
+      button.title = item.label;
+      image.src = item.src;
+      image.alt = "";
+      image.width = 920;
+      image.height = 1840;
+      image.decoding = "async";
+      image.setAttribute("aria-hidden", "true");
+      frame.append(image);
+      button.append(frame);
+      button.addEventListener("pointerenter", () => {
+        if (expressionHoverReady) selectExpression(item.id);
+      });
+      button.addEventListener("focus", () => selectExpression(item.id));
+      button.addEventListener("click", () => selectExpression(item.id));
+      return button;
+    });
+    expressionList.setAttribute("aria-label", `${character.native}の表情を選ぶ`);
+    expressionList.replaceChildren(...buttons);
+    if (expressionName) expressionName.textContent = character.expressions[0].label;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (displayedCharacterId === character.id) expressionHoverReady = true;
+    }));
+  };
+
   const selectCharacter = (id, { moveFocus = false } = {}) => {
     const nextIndex = characters.findIndex((character) => character.id === id);
     if (nextIndex < 0) return;
     if (displayedCharacterId === id) {
+      selectExpression(characters[nextIndex].expressions[0].id);
       if (moveFocus) selectors[nextIndex]?.focus({ preventScroll: true });
       return;
     }
@@ -410,17 +549,6 @@
 
     const commit = () => {
       if (generation !== switchGeneration) return;
-      const shouldAnimate = !reducedMotion.matches;
-      clearCharacterMotion();
-      let ghost = null;
-      if (shouldAnimate && heroImage instanceof HTMLImageElement && heroImage.currentSrc) {
-        ghost = heroImage.cloneNode(false);
-        ghost.removeAttribute("id");
-        ghost.removeAttribute("aria-label");
-        ghost.setAttribute("aria-hidden", "true");
-        ghost.className = "character-book-hero-ghost";
-        heroImage.before(ghost);
-      }
       setLetterText(native, character.native, 50);
       setLetterText(fullName, character.fullName, 90);
       setLetterText(reading, character.reading, 150);
@@ -428,25 +556,12 @@
       setProfileText(character.profile);
       setLetterText(quote, character.quote, 110);
       if (current) current.textContent = String(nextIndex + 1).padStart(2, "0");
-      if (heroImage instanceof HTMLImageElement) {
-        heroImage.src = character.src;
-        heroImage.alt = character.alt;
-      }
       displayedCharacterId = character.id;
-      layer.dataset.imageState = "ready";
-      if (shouldAnimate && heroImage instanceof HTMLElement) {
-        void heroImage.offsetWidth;
-        requestAnimationFrame(() => {
-          if (generation === switchGeneration) heroImage.classList.add("is-switching");
-        });
-      }
-      switchTimer = window.setTimeout(() => {
-        if (generation !== switchGeneration) return;
-        heroImage?.classList.remove("is-switching");
-        layer.querySelectorAll(".character-book-hero-ghost").forEach((oldImage) => oldImage.remove());
-      }, 620);
+      renderExpressions(character);
+      commitHeroImage(character.expressions[0], generation);
+      window.setTimeout(() => preloadCharacterExpressions(character), 80);
     };
-    const preload = imagePreloads.get(character.src);
+    const preload = ensureImagePreload(character.src);
     if (preload instanceof HTMLImageElement && !preload.complete) {
       preload.addEventListener("load", commit, { once: true });
       preload.addEventListener("error", commit, { once: true });
@@ -456,6 +571,9 @@
 
   const open = (trigger = null) => {
     if (openState) return;
+    if (window.location.hash !== "#character") {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search + "#character");
+    }
     openState = true;
     lastFocused = trigger instanceof HTMLElement ? trigger : document.activeElement;
     suspendBackground();
@@ -471,7 +589,7 @@
       closeButton?.focus({ preventScroll: true });
     });
   };
-  const close = () => {
+  const close = ({ updateHash = true } = {}) => {
     if (!openState) return;
     openState = false;
     layer.classList.remove("is-open");
@@ -486,8 +604,8 @@
         layer.inert = true;
       }
     }, 280);
-    if (window.location.hash === "#character") {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    if (updateHash && window.location.hash === "#character") {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search + "#top");
     }
     if (lastFocused instanceof HTMLElement && lastFocused.isConnected) lastFocused.focus({ preventScroll: true });
   };
@@ -498,6 +616,10 @@
   });
   closeButton?.addEventListener("click", close);
   closeButtons.forEach((button) => button.addEventListener("click", close));
+  window.addEventListener("hashchange", () => {
+    if (window.location.hash === "#character") open(null);
+    else if (openState) close({ updateHash: false });
+  });
   selectors.forEach((button) => {
     button.addEventListener("click", () => selectCharacter(button.dataset.characterSelect));
   });

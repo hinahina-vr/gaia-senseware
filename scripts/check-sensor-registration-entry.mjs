@@ -15,8 +15,8 @@ check("ESP32 registration card follows map and links to the sensor SPA", () => {
   const sensor = index.indexOf("data-sensor-platform-link");
   assert(map >= 0 && map < sensor);
   const card = index.slice(index.lastIndexOf("<a", sensor), index.indexOf("</a>", sensor) + 4);
-  assert.match(card, /href="\.\/sensors\/"/u);
-  assert.match(card, /<strong>ESP32で地球に参加<\/strong>/u);
+  assert.match(card, /href="\.\/sensors\/#esp32"/u);
+  assert.match(card, /<strong>センサーを地球につなぐ<\/strong>/u);
   assert.match(card, /<p>実物の観測点を、地球の感覚器へ。<\/p>/u);
   assert.match(card, /class="intro-path-enter">観測点を追加/u);
 });

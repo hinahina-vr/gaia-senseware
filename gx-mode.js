@@ -5,7 +5,7 @@
   const canvas = document.querySelector("#gx-canvas");
   const openButton = document.querySelector("#intro-gx-feature");
   const storyBackdrop = document.querySelector("#gx-story-backdrop");
-  if (!layer || !canvas || !openButton) return;
+  if (!layer || !canvas) return;
 
   const context = canvas.getContext("2d", { alpha: true });
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2121,7 +2121,7 @@
     recordStoryGesture();
   };
 
-  openButton.addEventListener("click", (event) => {
+  openButton?.addEventListener("click", (event) => {
     event.stopPropagation();
     openGX({ returnTo: "intro" });
   });

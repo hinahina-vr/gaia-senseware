@@ -12,7 +12,7 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/opening-audio-integration-browser");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const viewports = [
+const allViewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "pc-4k", width: 3840, height: 2160 },
   { name: "mobile-360", width: 360, height: 800, mobile: true },
@@ -24,6 +24,10 @@ const viewports = [
   { name: "mobile-landscape", width: 844, height: 390, mobile: true },
   { name: "pc-reduced-motion", width: 1440, height: 900, reduced: true },
 ];
+const viewports = process.env.GAIA_VIEWPORT
+  ? allViewports.filter(({ name }) => name === process.env.GAIA_VIEWPORT)
+  : allViewports;
+if (viewports.length === 0) throw new Error(`Unknown GAIA_VIEWPORT: ${process.env.GAIA_VIEWPORT}`);
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const visible = (element) => {
   if (!element || element.hidden || element.closest("[hidden]")) return false;
@@ -82,6 +86,15 @@ try {
         activeId: document.activeElement?.id,
         title: document.querySelector("#gaia-opening-sound-title")?.textContent.trim(),
         description: document.querySelector("#gaia-opening-sound-description")?.textContent.trim(),
+        soundEyebrows: document.querySelectorAll(".gaia-opening-sound-heading > p").length,
+        soundCornerMeta: getComputedStyle(document.querySelector(".gaia-opening-sound-dialog"), "::after").content,
+        languageVisible: __qaVisible(document.querySelector(".gaia-opening-language")),
+        languageHeadings: document.querySelectorAll(".gaia-opening-language-label").length,
+        languageLabels: Array.from(document.querySelectorAll(".gaia-opening-language-name"), (label) => label.textContent.trim()),
+        languagePressed: Array.from(document.querySelectorAll(".gaia-opening-language-options [data-gaia-language]"), (button) => button.getAttribute("aria-pressed")),
+        languageRects: Array.from(document.querySelectorAll(".gaia-opening-language-options [data-gaia-language]"), (button) => button.getBoundingClientRect().toJSON()),
+        selectedLanguageCheckOpacity: Number(getComputedStyle(document.querySelector('.gaia-opening-language-options [aria-pressed="true"] .gaia-opening-language-check')).opacity),
+        languageValue: document.documentElement.dataset.gaiaLanguageCurrent,
         soundOnLabel: document.querySelector("#gaia-opening-sound-on .gaia-opening-sound-option-label")?.textContent.trim(),
         soundOffLabel: document.querySelector("#gaia-opening-sound-off .gaia-opening-sound-option-label")?.textContent.trim(),
         tourLabel: document.querySelector("#gaia-opening-tour-link strong")?.textContent.trim(),
@@ -115,6 +128,14 @@ try {
     assert.equal(initial.activeId, "gaia-opening-sound-on", `${viewport.name}: initial focus escaped the sound-on default`);
     assert.equal(initial.title, "サウンド設定");
     assert.equal(initial.description, "サウンドのオン／オフはゲーム中でも変更できます。");
+    assert.equal(initial.soundEyebrows, 0, `${viewport.name}: redundant sound-setting eyebrow remains`);
+    assert.equal(initial.soundCornerMeta, "none", `${viewport.name}: redundant GS / AUDIO label remains`);
+    assert.equal(initial.languageVisible, true, `${viewport.name}: language selector is not on the first screen`);
+    assert.equal(initial.languageHeadings, 0, `${viewport.name}: redundant LANGUAGE heading remains`);
+    assert.deepEqual(initial.languageLabels, ["日本語", "English", "简体字"]);
+    assert.deepEqual(initial.languagePressed, ["true", "false", "false"]);
+    assert.equal(initial.selectedLanguageCheckOpacity, 1, `${viewport.name}: selected language is not visually explicit`);
+    assert.equal(initial.languageValue, "ja");
     assert.equal(initial.soundOnLabel, "サウンドあり");
     assert.equal(initial.soundOffLabel, "サウンドなし");
     assert.equal(initial.tourLabel, "30秒ガイド");
@@ -140,10 +161,23 @@ try {
     for (const rect of [initial.soundOnRect, initial.soundOffRect]) {
       assert(rect.width >= 44 && rect.height >= 44, `${viewport.name}: sound action hit area is smaller than 44px`);
     }
+    for (const rect of initial.languageRects) {
+      assert(rect.width >= 44 && rect.height >= 44, `${viewport.name}: language card hit area is smaller than 44px`);
+    }
     assert.equal(overlapArea(initial.soundOnRect, initial.soundOffRect), 0, `${viewport.name}: sound actions overlap`);
     assert.equal(initial.overflowX, 0);
     assert.equal(initial.overflowY, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-first-sound-setup.png`), animations: "disabled" });
+
+    await page.locator('[data-gaia-language="en"]').click();
+    const languageState = await page.evaluate(() => ({
+      value: document.documentElement.dataset.gaiaLanguageCurrent,
+      stored: localStorage.getItem("gaia:language:v1"),
+      pressed: Array.from(document.querySelectorAll(".gaia-opening-language-options [data-gaia-language]"), (button) => button.getAttribute("aria-pressed")),
+    }));
+    assert.equal(languageState.value, "en");
+    assert.equal(languageState.stored, "en");
+    assert.deepEqual(languageState.pressed, ["false", "true", "false"]);
 
     await page.locator("#gaia-opening-volume").fill("37");
     await page.waitForFunction(() => Math.abs(globalThis.GaiaOpeningAudio.getState().volume - 0.37) < 0.001);
@@ -153,7 +187,7 @@ try {
 
     await page.locator("#gaia-opening-sound-off").focus();
     await page.locator("#gaia-opening-sound-off").press("Tab");
-    assert.equal(await page.evaluate(() => document.activeElement?.id), "gaia-opening-sound-on", `${viewport.name}: modal focus did not wrap`);
+    assert.equal(await page.evaluate(() => document.activeElement?.dataset.gaiaLanguage), "ja", `${viewport.name}: modal focus did not wrap`);
 
     const startWithSound = ["pc-1440", "mobile-390", "mobile-landscape"].includes(viewport.name);
     const choice = page.locator(startWithSound ? "#gaia-opening-sound-on" : "#gaia-opening-sound-off");
@@ -171,11 +205,13 @@ try {
       activeId: document.activeElement?.id,
       openingActive: document.querySelector("#gaia-opening")?.classList.contains("is-active"),
       awaitingSound: document.querySelector("#gaia-opening")?.classList.contains("is-awaiting-sound"),
+      language: document.documentElement.dataset.gaiaLanguageCurrent,
       audio: globalThis.GaiaOpeningAudio.getState(),
     }));
     assert.equal(confirmed.menuInert, false, `${viewport.name}: route menu stayed inert after confirmation`);
     assert.equal(confirmed.openingActive, !viewport.reduced, `${viewport.name}: opening motion state is incorrect after sound confirmation`);
     assert.equal(confirmed.awaitingSound, false, `${viewport.name}: sound gate state remained after confirmation`);
+    assert.equal(confirmed.language, "en", `${viewport.name}: language preference did not survive sound confirmation`);
     assert.equal(confirmed.audio.muted, !startWithSound, `${viewport.name}: confirmed sound choice was not applied`);
     assert.equal(confirmed.audio.track, "opening", `${viewport.name}: the opening did not start with Planet Forecast - Hope`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-post-sound.png`), animations: "disabled" });

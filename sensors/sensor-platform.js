@@ -2,9 +2,12 @@ const views = new Map(Array.from(document.querySelectorAll("[data-view]"), (elem
 const statusRegion = document.querySelector("#sensor-status");
 const loginButton = document.querySelector("#google-login");
 const trialLoginButton = document.querySelector("#trial-login");
+const participationInfoOpen = document.querySelector("#participation-info-open");
+const participationDialog = document.querySelector("#participation-info");
 const logoutButton = document.querySelector("#sensor-logout");
 const profileNav = document.querySelector("#profile-nav");
 const accountNote = document.querySelector("#sensor-account-note");
+const upgradeGoogleButton = document.querySelector("#upgrade-google");
 const showAddButton = document.querySelector("#show-add");
 const deviceList = document.querySelector("#device-list");
 const emptyState = document.querySelector("#device-empty");
@@ -20,6 +23,10 @@ const publicSensorMap = document.querySelector("#public-sensor-map");
 const publicSensorMarkers = document.querySelector("#public-sensor-markers");
 const publicSensorList = document.querySelector("#public-sensor-list");
 const publicSensorDetail = document.querySelector("#public-sensor-detail");
+const publicMapZoomIn = document.querySelector("#public-map-zoom-in");
+const publicMapZoomOut = document.querySelector("#public-map-zoom-out");
+const publicMapReset = document.querySelector("#public-map-reset");
+const publicMapZoomOutput = document.querySelector("#public-map-zoom");
 const profileForm = document.querySelector("#profile-form");
 const profileAvatarPreview = document.querySelector("#profile-avatar-preview");
 const profileAvatarInput = document.querySelector("#profile-avatar-input");
@@ -29,12 +36,34 @@ const naturalEarthUrl = "../data/natural-earth-50m-land.geojson?v=gaia-27";
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
 const worldMapView = Object.freeze({ west: -180, east: 180, south: -90, north: 90, key: "WORLD" });
 const countryMapViews = Object.freeze({
-  JP: Object.freeze({ west: 122, east: 154, south: 20, north: 48, key: "JP" }),
+  JP: Object.freeze({
+    west: 105, east: 173, south: 20, north: 48,
+    selectionWest: 122, selectionEast: 154, selectionSouth: 20, selectionNorth: 48,
+    key: "JP",
+  }),
+});
+const japanPrefectureCentres = Object.freeze({
+  "JP-01": [43.1,141.4], "JP-02": [40.8,140.7], "JP-03": [39.7,141.2], "JP-04": [38.3,140.9],
+  "JP-05": [39.7,140.1], "JP-06": [38.2,140.4], "JP-07": [37.8,140.5], "JP-08": [36.3,140.4],
+  "JP-09": [36.6,139.9], "JP-10": [36.4,139.1], "JP-11": [35.9,139.6], "JP-12": [35.6,140.1],
+  "JP-13": [35.7,139.7], "JP-14": [35.4,139.6], "JP-15": [37.9,139.0], "JP-16": [36.7,137.2],
+  "JP-17": [36.6,136.6], "JP-18": [36.1,136.2], "JP-19": [35.7,138.6], "JP-20": [36.7,138.2],
+  "JP-21": [35.4,136.7], "JP-22": [35.0,138.4], "JP-23": [35.2,136.9], "JP-24": [34.7,136.5],
+  "JP-25": [35.0,135.9], "JP-26": [35.0,135.8], "JP-27": [34.7,135.5], "JP-28": [34.7,135.2],
+  "JP-29": [34.7,135.8], "JP-30": [34.2,135.2], "JP-31": [35.5,134.2], "JP-32": [35.5,133.1],
+  "JP-33": [34.7,133.9], "JP-34": [34.4,132.5], "JP-35": [34.2,131.5], "JP-36": [34.1,134.6],
+  "JP-37": [34.3,134.0], "JP-38": [33.8,132.8], "JP-39": [33.6,133.5], "JP-40": [33.6,130.4],
+  "JP-41": [33.3,130.3], "JP-42": [32.8,129.9], "JP-43": [32.8,130.7], "JP-44": [33.2,131.6],
+  "JP-45": [31.9,131.4], "JP-46": [31.6,130.6], "JP-47": [26.2,127.7],
 });
 const regionCache = new Map();
+const regionLocationCache = new Map();
+const regionPlotVersions = new WeakMap();
 const mapObservers = [];
 const mapViewports = new WeakMap();
 const mapRenderers = new WeakMap();
+const publicMapCamera = { longitude: 139.7, latitude: 36, zoom: 4.2 };
+let publicMapDrag = null;
 let countries = [];
 let devices = [];
 let selectedDevice = null;
@@ -71,6 +100,7 @@ const api = async (path, options = {}) => {
 };
 
 const showView = (name) => {
+  if (participationDialog?.open && name !== "login") participationDialog.close();
   window.clearInterval(pollTimer);
   pollTimer = 0;
   for (const [key, element] of views) element.hidden = key !== name;
@@ -78,6 +108,7 @@ const showView = (name) => {
     link.toggleAttribute("aria-current", link.dataset.nav === name);
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
+  if (name === "map") requestAnimationFrame(updatePublicMapViewport);
 };
 
 const showStatus = (message, kind = "info") => {
@@ -90,6 +121,7 @@ const showStatus = (message, kind = "info") => {
 
 const boot = async () => {
   showView("loading");
+  initPublicMapNavigation();
   void mountMapSurfaces();
   initLocationPickers();
   initRegionFields();
@@ -140,9 +172,11 @@ const loadDevices = async () => {
   devices = response.devices;
   deviceList.replaceChildren();
   emptyState.hidden = devices.length > 0;
-  devices.forEach((device) => {
+  devices.forEach((device, index) => {
     const fragment = cardTemplate.content.cloneNode(true);
     const card = fragment.querySelector("article");
+    card.dataset.nodeIndex = String(index + 1).padStart(2, "0");
+    card.dataset.state = device.state;
     const state = fragment.querySelector(".sensor-state");
     state.textContent = device.state;
     state.dataset.state = device.state;
@@ -176,8 +210,8 @@ const renderPublicSensors = () => {
     const marker = document.createElement("button");
     marker.type = "button";
     marker.className = "sensor-map-marker";
-    marker.style.left = `${longitudeToPercent(sensor.location.longitude)}%`;
-    marker.style.top = `${latitudeToPercent(sensor.location.latitude)}%`;
+    marker.dataset.longitude = String(sensor.location.longitude);
+    marker.dataset.latitude = String(sensor.location.latitude);
     marker.dataset.state = sensor.state;
     marker.setAttribute("aria-label", `${sensor.owner.displayName}さんの${sensor.sensorName}`);
     marker.append(avatarElement(sensor.owner, "span"));
@@ -197,6 +231,7 @@ const renderPublicSensors = () => {
     publicSensorList.append(card);
     if (index === 0) selectPublicSensor(sensor, marker);
   });
+  positionPublicSensorMarkers();
 };
 
 const selectPublicSensor = (sensor, marker) => {
@@ -226,6 +261,115 @@ const selectPublicSensor = (sensor, marker) => {
   note.textContent = `${region} · 公開位置は0.1度単位へ丸めています。自治体コードと住所は公開しません。`;
   publicSensorDetail.append(consoleLabel, owner, note, social);
 };
+
+function initPublicMapNavigation() {
+  resetPublicMapView(false);
+  publicMapZoomIn?.addEventListener("click", () => zoomPublicMapBy(1.45));
+  publicMapZoomOut?.addEventListener("click", () => zoomPublicMapBy(1 / 1.45));
+  publicMapReset?.addEventListener("click", () => resetPublicMapView());
+  publicSensorMap.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    zoomPublicMapBy(Math.exp(-clamp(event.deltaY, -240, 240) * (event.ctrlKey ? .006 : .0024)), event.clientX, event.clientY);
+  }, { passive: false });
+  publicSensorMap.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || event.target.closest("button, a")) return;
+    publicMapDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    publicSensorMap.setPointerCapture(event.pointerId);
+    publicSensorMap.classList.add("is-dragging");
+  });
+  publicSensorMap.addEventListener("pointermove", (event) => {
+    if (!publicMapDrag || publicMapDrag.pointerId !== event.pointerId) return;
+    panPublicMap(event.clientX - publicMapDrag.x, event.clientY - publicMapDrag.y);
+    publicMapDrag.x = event.clientX;
+    publicMapDrag.y = event.clientY;
+  });
+  const release = (event) => {
+    if (!publicMapDrag || publicMapDrag.pointerId !== event.pointerId) return;
+    publicMapDrag = null;
+    publicSensorMap.classList.remove("is-dragging");
+  };
+  publicSensorMap.addEventListener("pointerup", release);
+  publicSensorMap.addEventListener("pointercancel", release);
+  publicSensorMap.addEventListener("keydown", (event) => {
+    if (["+", "="].includes(event.key)) { event.preventDefault(); zoomPublicMapBy(1.45); return; }
+    if (event.key === "-") { event.preventDefault(); zoomPublicMapBy(1 / 1.45); return; }
+    if (event.key === "Home") { event.preventDefault(); resetPublicMapView(); return; }
+    const moves = { ArrowLeft: [80, 0], ArrowRight: [-80, 0], ArrowUp: [0, 80], ArrowDown: [0, -80] };
+    if (moves[event.key]) { event.preventDefault(); panPublicMap(...moves[event.key]); }
+  });
+  window.addEventListener("resize", updatePublicMapViewport, { passive: true });
+}
+
+function resetPublicMapView(render = true) {
+  publicMapCamera.longitude = 139.7;
+  publicMapCamera.latitude = 36;
+  publicMapCamera.zoom = 4.2;
+  if (render) updatePublicMapViewport();
+}
+
+function publicMapView() {
+  const rect = publicSensorMap.getBoundingClientRect();
+  const width = Math.max(rect.width, window.innerWidth, 1);
+  const height = Math.max(rect.height, window.innerHeight, 1);
+  const verticalSpan = Math.min(180, 180 / publicMapCamera.zoom);
+  const longitudeScale = Math.max(.35, Math.cos(publicMapCamera.latitude * Math.PI / 180));
+  const horizontalSpan = Math.min(360, verticalSpan * (width / height) / longitudeScale);
+  publicMapCamera.latitude = clamp(publicMapCamera.latitude, -90 + verticalSpan / 2, 90 - verticalSpan / 2);
+  publicMapCamera.longitude = clamp(publicMapCamera.longitude, -180 + horizontalSpan / 2, 180 - horizontalSpan / 2);
+  return {
+    west: publicMapCamera.longitude - horizontalSpan / 2,
+    east: publicMapCamera.longitude + horizontalSpan / 2,
+    south: publicMapCamera.latitude - verticalSpan / 2,
+    north: publicMapCamera.latitude + verticalSpan / 2,
+    key: "PUBLIC",
+  };
+}
+
+function updatePublicMapViewport() {
+  const view = publicMapView();
+  mapViewports.set(publicSensorMap, view);
+  publicSensorMap.dataset.mapView = "PUBLIC";
+  mapRenderers.get(publicSensorMap)?.();
+  positionPublicSensorMarkers();
+  if (publicMapZoomOutput) publicMapZoomOutput.value = `${publicMapCamera.zoom.toFixed(1)}×`;
+  const basis = publicSensorMap.querySelector("[data-map-basis]");
+  if (basis) basis.textContent = `JAPAN CENTER / ZOOM ${publicMapCamera.zoom.toFixed(1)}× / NATURAL EARTH 1:50m`;
+}
+
+function positionPublicSensorMarkers() {
+  const view = mapViewFor(publicSensorMap);
+  publicSensorMarkers.querySelectorAll(".sensor-map-marker").forEach((marker) => {
+    const longitude = Number(marker.dataset.longitude);
+    const latitude = Number(marker.dataset.latitude);
+    const left = longitudeToPercent(longitude, view);
+    const top = latitudeToPercent(latitude, view);
+    marker.style.left = `${left}%`;
+    marker.style.top = `${top}%`;
+    marker.hidden = left < -3 || left > 103 || top < -3 || top > 103;
+  });
+}
+
+function zoomPublicMapBy(factor, clientX, clientY) {
+  const rect = publicSensorMap.getBoundingClientRect();
+  const before = publicMapView();
+  const xRatio = Number.isFinite(clientX) ? clamp((clientX - rect.left) / Math.max(rect.width, 1), 0, 1) : .5;
+  const yRatio = Number.isFinite(clientY) ? clamp((clientY - rect.top) / Math.max(rect.height, 1), 0, 1) : .5;
+  const anchorLongitude = before.west + xRatio * (before.east - before.west);
+  const anchorLatitude = before.north - yRatio * (before.north - before.south);
+  publicMapCamera.zoom = clamp(publicMapCamera.zoom * factor, 1, 12);
+  const after = publicMapView();
+  publicMapCamera.longitude += anchorLongitude - (after.west + xRatio * (after.east - after.west));
+  publicMapCamera.latitude += anchorLatitude - (after.north - yRatio * (after.north - after.south));
+  updatePublicMapViewport();
+}
+
+function panPublicMap(deltaX, deltaY) {
+  const rect = publicSensorMap.getBoundingClientRect();
+  const view = publicMapView();
+  publicMapCamera.longitude -= (deltaX / Math.max(rect.width, 1)) * (view.east - view.west);
+  publicMapCamera.latitude += (deltaY / Math.max(rect.height, 1)) * (view.north - view.south);
+  updatePublicMapViewport();
+}
 
 const avatarElement = (owner, tagName = "span") => {
   const wrapper = document.createElement(tagName);
@@ -370,6 +514,14 @@ const routeFromHash = () => {
 };
 
 loginButton.addEventListener("click", () => { location.assign("../api/auth/google/start?returnTo=%2Fsensors%2F"); });
+participationInfoOpen?.addEventListener("click", () => participationDialog?.showModal());
+participationDialog?.addEventListener("click", (event) => {
+  if (event.target === participationDialog) participationDialog.close();
+});
+upgradeGoogleButton.addEventListener("click", () => {
+  upgradeGoogleButton.disabled = true;
+  location.assign("../api/auth/google/start?returnTo=%2Fsensors%2F");
+});
 trialLoginButton.addEventListener("click", async () => {
   trialLoginButton.disabled = true;
   loginButton.disabled = true;
@@ -522,9 +674,11 @@ function syncAccountUi() {
   logoutButton.hidden = !authenticated;
   const trial = sessionUser?.accountKind === "trial";
   profileNav.hidden = trial;
+  upgradeGoogleButton.hidden = !authenticated || !trial;
+  upgradeGoogleButton.disabled = false;
   accountNote.hidden = !authenticated;
   accountNote.textContent = trial
-    ? `${sessionUser?.displayName || "匿名参加者"}としておためし利用中。ログアウトすると、この利用で登録したデータを削除します。`
+    ? `${sessionUser?.displayName || "匿名参加者"}としておためし利用中。修正・削除できます。Google登録するとセンサーと履歴を保持し、ログアウトすると削除します。`
     : `${sessionUser?.displayName || "GAIA参加者"}としてGoogle連携中。Googleの名前・メールアドレスは保存していません。`;
 }
 
@@ -554,16 +708,19 @@ function initRegionFields() {
       form.elements.admin1Code.value = "";
       form.elements.localityName.value = "";
       syncPickerViewport(form, form.elements.countryCode.value, { ensureLocation: true });
+      void plotSelectedRegion(form);
       void populateRegionFields(form);
     });
     form.elements.subdivisionCode.addEventListener("change", () => {
       form.elements.municipalityCode.value = "";
       form.elements.admin1Code.value = "";
       form.elements.localityName.value = "";
+      void plotSelectedRegion(form);
       void populateRegionFields(form, { subdivisionCode: form.elements.subdivisionCode.value });
     });
     form.elements.municipalityCode.addEventListener("change", () => {
       if (form.elements.municipalityCode.value) form.elements.localityName.value = "";
+      void plotSelectedRegion(form);
     });
   });
 }
@@ -629,6 +786,51 @@ async function loadRegions(countryCode, subdivisionCode = "") {
   catch (error) { regionCache.delete(key); throw error; }
 }
 
+async function plotSelectedRegion(form) {
+  const version = (regionPlotVersions.get(form) ?? 0) + 1;
+  regionPlotVersions.set(form, version);
+  const countryCode = form.elements.countryCode.value;
+  const subdivisionCode = form.elements.subdivisionCode.value;
+  const municipalityCode = form.elements.municipalityCode.value;
+  const picker = form.querySelector("[data-location-picker]");
+  if (countryCode !== "JP") {
+    picker.dataset.regionPlot = "idle";
+    return;
+  }
+  if (!subdivisionCode) {
+    setPickerLocation(form, 35.7, 139.7);
+    picker.dataset.regionPlot = "ready";
+    return;
+  }
+  const prefectureCentre = japanPrefectureCentres[subdivisionCode];
+  if (prefectureCentre) setPickerLocation(form, prefectureCentre[0], prefectureCentre[1]);
+  if (!municipalityCode) {
+    picker.dataset.regionPlot = "ready";
+    return;
+  }
+  picker.dataset.regionPlot = "loading";
+  const query = new URLSearchParams({ countryCode, subdivisionCode, municipalityCode });
+  const cacheKey = query.toString();
+  if (!regionLocationCache.has(cacheKey)) {
+    regionLocationCache.set(cacheKey, api(`../api/web/v1/region-location?${query}`));
+  }
+  try {
+    const response = await regionLocationCache.get(cacheKey);
+    if (regionPlotVersions.get(form) !== version) return;
+    setPickerLocation(form, response.location.latitude, response.location.longitude);
+    picker.dataset.regionPlot = "ready";
+  } catch {
+    regionLocationCache.delete(cacheKey);
+    if (regionPlotVersions.get(form) === version) picker.dataset.regionPlot = "fallback";
+  }
+}
+
+function cancelRegionPlot(form) {
+  regionPlotVersions.set(form, (regionPlotVersions.get(form) ?? 0) + 1);
+  const picker = form.querySelector("[data-location-picker]");
+  if (picker) picker.dataset.regionPlot = "manual";
+}
+
 function replaceOptions(select, emptyLabel, options) {
   select.replaceChildren(new Option(emptyLabel, ""));
   options.forEach((option) => select.append(new Option(`${option.name} / ${option.code}`, option.code)));
@@ -644,24 +846,28 @@ function initLocationPickers() {
     const form = fieldset.closest("form");
     const picker = fieldset.querySelector("[data-location-picker]");
     picker.addEventListener("pointerdown", (event) => {
+      cancelRegionPlot(form);
       const rect = picker.getBoundingClientRect();
       const view = mapViewFor(picker);
+      const bounds = selectionBoundsFor(view);
       setPickerLocation(
         form,
-        view.north - ((event.clientY - rect.top) / rect.height) * (view.north - view.south),
-        view.west + ((event.clientX - rect.left) / rect.width) * (view.east - view.west),
+        clamp(view.north - ((event.clientY - rect.top) / rect.height) * (view.north - view.south), bounds.south, bounds.north),
+        clamp(view.west + ((event.clientX - rect.left) / rect.width) * (view.east - view.west), bounds.west, bounds.east),
       );
     });
     picker.addEventListener("keydown", (event) => {
       if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
       event.preventDefault();
+      cancelRegionPlot(form);
       const view = mapViewFor(picker);
+      const bounds = selectionBoundsFor(view);
       const latitude = numberOrNull(form.elements.publicLatitude.value) ?? ((view.north + view.south) / 2);
       const longitude = numberOrNull(form.elements.publicLongitude.value) ?? ((view.east + view.west) / 2);
       setPickerLocation(
         form,
-        Math.max(view.south, Math.min(view.north, latitude + (event.key === "ArrowUp" ? 1 : event.key === "ArrowDown" ? -1 : 0))),
-        Math.max(view.west, Math.min(view.east, longitude + (event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0))),
+        clamp(latitude + (event.key === "ArrowUp" ? 1 : event.key === "ArrowDown" ? -1 : 0), bounds.south, bounds.north),
+        clamp(longitude + (event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0), bounds.west, bounds.east),
       );
     });
     syncPickerViewport(form, form.elements.countryCode.value);
@@ -679,10 +885,11 @@ function syncPickerViewport(form, countryCode, { ensureLocation = false } = {}) 
   if (basis) basis.textContent = view.key === "WORLD" ? "BASEMAP / NATURAL EARTH 1:50m" : `BASEMAP / NATURAL EARTH / ${view.key}`;
   const latitude = numberOrNull(form.elements.publicLatitude.value);
   const longitude = numberOrNull(form.elements.publicLongitude.value);
+  const bounds = selectionBoundsFor(view);
   const outsideView = latitude !== null && longitude !== null
-    && (latitude < view.south || latitude > view.north || longitude < view.west || longitude > view.east);
+    && (latitude < bounds.south || latitude > bounds.north || longitude < bounds.west || longitude > bounds.east);
   if (ensureLocation && (latitude === null || longitude === null || outsideView)) {
-    setPickerLocation(form, (view.north + view.south) / 2, (view.east + view.west) / 2);
+    setPickerLocation(form, (bounds.north + bounds.south) / 2, (bounds.east + bounds.west) / 2);
   } else {
     setPickerLocation(form, latitude, longitude);
   }
@@ -691,6 +898,15 @@ function syncPickerViewport(form, countryCode, { ensureLocation = false } = {}) 
 
 function mapViewFor(surface) {
   return mapViewports.get(surface) || worldMapView;
+}
+
+function selectionBoundsFor(view) {
+  return {
+    west: view.selectionWest ?? view.west,
+    east: view.selectionEast ?? view.east,
+    south: view.selectionSouth ?? view.south,
+    north: view.selectionNorth ?? view.north,
+  };
 }
 
 function syncPickerEnabled(form) {
@@ -777,8 +993,9 @@ function renderMapCanvas(canvas, rings, view = worldMapView) {
   context.strokeStyle = "rgba(126, 230, 214, .16)";
   context.lineWidth = 1;
   context.setLineDash([2, 7]);
-  const longitudeStep = view.key === "WORLD" ? 30 : 5;
-  const latitudeStep = view.key === "WORLD" ? 30 : 5;
+  const span = view.east - view.west;
+  const longitudeStep = view.key === "WORLD" ? 30 : span > 100 ? 10 : span > 35 ? 5 : span > 15 ? 2 : 1;
+  const latitudeStep = longitudeStep;
   for (let longitude = Math.ceil(view.west / longitudeStep) * longitudeStep; longitude < view.east; longitude += longitudeStep) {
     const x = ((longitude - view.west) / (view.east - view.west)) * width;
     context.beginPath(); context.moveTo(x, 0); context.lineTo(x, height); context.stroke();
@@ -833,6 +1050,7 @@ async function normalizeAvatar(file) {
 }
 
 function numberOrNull(value) { const number = Number(value); return value === null || value === "" || !Number.isFinite(number) ? null : number; }
+function clamp(value, minimum, maximum) { return Math.max(minimum, Math.min(maximum, value)); }
 function longitudeToPercent(longitude, view = worldMapView) { return ((Number(longitude) - view.west) / (view.east - view.west)) * 100; }
 function latitudeToPercent(latitude, view = worldMapView) { return ((view.north - Number(latitude)) / (view.north - view.south)) * 100; }
 

@@ -12,10 +12,14 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/intro-scrollbar-browser");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const viewports = [
+const allViewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
 ];
+const viewports = process.env.GAIA_VIEWPORT
+  ? allViewports.filter(({ name }) => name === process.env.GAIA_VIEWPORT)
+  : allViewports;
+if (viewports.length === 0) throw new Error(`Unknown GAIA_VIEWPORT: ${process.env.GAIA_VIEWPORT}`);
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 
 const openFreeExploration = async (page) => {
@@ -44,6 +48,8 @@ const scan = (page) => page.evaluate(() => {
   const layer = document.querySelector("#intro-layer");
   const style = getComputedStyle(layer);
   const rect = layer.getBoundingClientRect();
+  const titleRect = document.querySelector("#intro-title-return")?.getBoundingClientRect();
+  const audioRect = document.querySelector("#gaia-audio-dock")?.getBoundingClientRect();
   return {
     overflowY: style.overflowY,
     scrollbarWidth: style.scrollbarWidth,
@@ -55,6 +61,10 @@ const scan = (page) => page.evaluate(() => {
     rect: { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left },
     overflowX: Math.max(0, layer.scrollWidth - layer.clientWidth),
     documentOverflowX: Math.max(0, document.documentElement.scrollWidth - innerWidth),
+    titleTop: titleRect?.top,
+    audioTop: audioRect?.top,
+    titleLeft: titleRect?.left,
+    audioRightGap: audioRect ? innerWidth - audioRect.right : null,
   };
 });
 
@@ -77,6 +87,8 @@ try {
     assert(initial.scrollMax > viewport.height, `${viewport.name}: free exploration is not scrollable`);
     assert.equal(initial.overflowX, 0);
     assert.equal(initial.documentOverflowX, 0);
+    assert(Math.abs(initial.titleTop - initial.audioTop) <= 1, `${viewport.name}: title return and audio control are not vertically aligned`);
+    assert(Math.abs(initial.titleLeft - initial.audioRightGap) <= 1, `${viewport.name}: audio control does not mirror the title return edge inset`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-top.png`) });
 
     await page.locator("#intro-layer").hover({ position: { x: 40, y: Math.min(500, viewport.height - 80) } });
@@ -87,7 +99,40 @@ try {
     assert(scrolled.scrollTop < scrolled.scrollMax, `${viewport.name}: scrollbar skipped directly to the end`);
     assert.equal(scrolled.overflowX, 0);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-scrolled.png`) });
-    report.scans.push({ viewport: viewport.name, initial, scrolled, passed: true });
+
+    const legacyShell = await page.evaluate(() => ({
+      status: Boolean(document.querySelector(".status")),
+      guide: Boolean(document.querySelector(".guide")),
+      caption: Boolean(document.querySelector(".mode-caption")),
+      navigation: Boolean(document.querySelector(".mode-nav")),
+      actions: Boolean(document.querySelector(".actions")),
+    }));
+    assert.deepEqual(legacyShell, {
+      status: false,
+      guide: false,
+      caption: false,
+      navigation: false,
+      actions: false,
+    }, `${viewport.name}: removed legacy exploration shell still exists`);
+
+    await page.locator("#intro-title-return").click();
+    await page.waitForFunction(() => __qaVisible(document.querySelector("#gaia-opening-final-menu")));
+    await page.waitForFunction(() => document.querySelector("#intro-layer")?.hidden === true);
+    const returnedToTitle = await page.evaluate(() => ({
+      openingVisible: __qaVisible(document.querySelector("#gaia-opening")),
+      finalMenuVisible: __qaVisible(document.querySelector("#gaia-opening-final-menu")),
+      introVisible: __qaVisible(document.querySelector("#intro-layer")),
+      runtimeBridgeVisible: __qaVisible(document.querySelector("#exploration-runtime-bridge")),
+    }));
+    assert.deepEqual(returnedToTitle, {
+      openingVisible: true,
+      finalMenuVisible: true,
+      introVisible: false,
+      runtimeBridgeVisible: false,
+    }, `${viewport.name}: title return exposed an obsolete or intermediate screen`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-returned-title.png`) });
+
+    report.scans.push({ viewport: viewport.name, initial, scrolled, legacyShell, returnedToTitle, passed: true });
     await context.close();
   }
 

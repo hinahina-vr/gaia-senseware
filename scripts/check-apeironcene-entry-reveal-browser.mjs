@@ -80,7 +80,7 @@ try {
       };
     });
     assert.deepEqual(initial, {
-      label: "物語へ戻る",
+      label: "物語をはじめる",
       kicker: "MAIN STORY",
       destination: "story",
       awakening: false,

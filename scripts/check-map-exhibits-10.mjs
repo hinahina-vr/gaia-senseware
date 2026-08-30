@@ -205,11 +205,11 @@ assert.doesNotMatch(liveExhibitsSource, /fillRect\(x - 2, y - 1/u, "wind field m
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-character-profile-layout-2/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-title-meta-removed-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-map-title-separator-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-panel-order-1/u);
 assert.match(modeLoaderSource, /app-content\.js\?v=gaia-ovation-aurora-1/u);
-assert.match(modeLoaderSource, /app\.js\?v=gaia-blue-glass-map-1/u);
+assert.match(modeLoaderSource, /app\.js\?v=gaia-story-start-label-1/u);
 assert.match(modeLoaderSource, /particles-v9\.js\?v=gaia-light-surface-fps-1/u);
 assert.match(appSource, /const mapExhibitIsVisible = japanIsOpen\s*&& !japanLayer\.classList\.contains\("is-live-exhibit"\)/u);
 assert.match(appSource, /const setLightCanvasMounted = \(mounted\)[\s\S]*japanMap\.after\(canvas\)/u);
@@ -236,7 +236,7 @@ assert.match(mapGridStylesSource, /\.map-grid-data \{[\s\S]{0,280}var\(--map-gri
 assert.match(appSource, /fixed-diameter-pie/u);
 assert.match(appSource, /緑 \/ 再資源化/u);
 assert.match(content.modes[3].description, /同じ大きさの円グラフ/u);
-assert.match(modeLoaderSource, /styles\.css\?v=gaia-ja-wrap-polish-1/u);
+assert.match(modeLoaderSource, /styles\.css\?v=gaia-title-meta-removed-1/u);
 assert.match(appSource, /tooltip\.dataset\.placement = placement/u);
 assert.match(appSource, /--map-tooltip-anchor-y/u);
 assert.match(stylesSource, /\.map-mode-01-tooltip::after[\s\S]{0,320}clip-path: polygon/u);

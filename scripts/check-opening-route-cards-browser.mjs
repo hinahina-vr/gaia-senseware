@@ -42,7 +42,7 @@ try {
     });
     await context.addInitScript(() => {
       localStorage.clear();
-      localStorage.setItem("gaia:opening-route-guide:v2", "seen");
+      localStorage.setItem("gaia:opening-route-guide:v3", "seen");
       globalThis.__qaVisible = (element) => {
         if (!element || element.hidden || element.closest("[hidden]")) return false;
         const style = getComputedStyle(element);
@@ -170,6 +170,12 @@ try {
       assert.equal(guideStep.shadeRadius, guideStep.targetRadius, `${viewport.name}: spotlight corners do not match ${guideStep.targetId}`);
     }
     await page.keyboard.press("Escape");
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:return-to-title")));
+    await page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-visible"), null, { timeout: 10_000 });
+    const repeatedGuide = await readGuide();
+    assert.equal(repeatedGuide.step, "1", `${viewport.name}: returning to the title did not restart the guide`);
+    assert(repeatedGuide.openedAt > replayedGuide.openedAt, `${viewport.name}: returning to the title did not open a fresh guide`);
+    await page.keyboard.press("Escape");
     await page.locator("#gaia-opening-route-story").focus();
 
     const layout = await page.evaluate(() => {
@@ -202,6 +208,7 @@ try {
         logoRect: readRect(document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo")),
         poemRect: readRect(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong")),
         poemTextAlign: getComputedStyle(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong")).textAlign,
+        poemLetterSpacing: Number.parseFloat(getComputedStyle(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong")).letterSpacing),
         finalBackground: getComputedStyle(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-photo")).backgroundImage,
         forbiddenTaglinePresent: document.querySelector(".gaia-vn-panel-final").textContent.includes("感じ、記録し、未来を選ぶ"),
         cards,
@@ -209,7 +216,7 @@ try {
         overflowY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
       };
     });
-    report.scans.push({ viewport: viewport.name, guideSteps, replayedGuide, layout, passed: false });
+    report.scans.push({ viewport: viewport.name, guideSteps, replayedGuide, repeatedGuide, layout, passed: false });
     assert(layout.menuRect.left >= 13 && layout.menuRect.right <= viewport.width - 13, `${viewport.name}: route menu is outside its safe area`);
     assert(layout.menuRect.top >= -1 && layout.menuRect.bottom <= viewport.height + 1, `${viewport.name}: route menu is outside the viewport vertically`);
     assert(layout.replayRect.width >= 44 && layout.replayRect.height >= 44, `${viewport.name}: guide replay hit area is smaller than 44px`);
@@ -219,17 +226,18 @@ try {
     assert.equal(layout.logoAlt, "惑星の放課後 — GAIA SENSATION");
     assert(layout.logoRect.left >= 0 && layout.logoRect.top >= 0 && layout.logoRect.right <= viewport.width + 1 && layout.logoRect.bottom <= viewport.height + 1, `${viewport.name}: final logo escaped the viewport`);
     const expectedGatewayAxis = viewport.width >= 961 && viewport.height >= 521
-      ? Math.min(viewport.width * 0.63, viewport.width - Math.min(460, viewport.width * 0.44) - 18)
+      ? Math.max(viewport.width * 0.26, Math.min(460, viewport.width * 0.44) + 18)
       : viewport.width / 2;
     const logoAxis = (layout.logoRect.left + layout.logoRect.right) / 2;
     const menuAxis = (layout.menuRect.left + layout.menuRect.right) / 2;
-    assert(Math.abs(logoAxis - expectedGatewayAxis) <= 2, `${viewport.name}: final logo is not on the intended right-side axis`);
+    assert(Math.abs(logoAxis - expectedGatewayAxis) <= 2, `${viewport.name}: final logo is not on the intended lighthouse-side axis`);
     assert(Math.abs(menuAxis - logoAxis) <= 2, `${viewport.name}: route buttons are not centered under the logo`);
     const minimumLogoWidth = viewport.height <= 430
       ? viewport.height
       : (viewport.width >= 961 ? Math.min(900, viewport.width * 0.62) : viewport.width * 0.7);
     assert(layout.logoRect.width >= minimumLogoWidth, `${viewport.name}: final logo does not use enough horizontal space`);
     assert.equal(layout.poemTextAlign, "center", `${viewport.name}: final poem is not center-aligned`);
+    assert(layout.poemLetterSpacing >= 1.5, `${viewport.name}: final poem characters are still cramped`);
     if (layout.poemRect.width > 0) {
       assert(Math.abs((layout.poemRect.left + layout.poemRect.right) / 2 - logoAxis) <= 2, `${viewport.name}: final poem block is not centered on the logo axis`);
     }
@@ -261,6 +269,28 @@ try {
     assert.equal(layout.overflowX, 0, `${viewport.name}: horizontal overflow remains`);
     assert.equal(layout.overflowY, 0, `${viewport.name}: vertical overflow remains`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-cards-focused.png`), animations: "disabled" });
+    const beforeDataExit = await page.evaluate(() => {
+      const rect = document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo")?.getBoundingClientRect();
+      return rect?.toJSON();
+    });
+    await page.locator("#gaia-opening-route-other").click();
+    await page.waitForFunction(() => document.querySelector("#gaia-opening")?.classList.contains("is-leaving"));
+    await page.waitForTimeout(160);
+    const duringDataExit = await page.evaluate(() => {
+      const logo = document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo");
+      const menu = document.querySelector("#gaia-opening-final-menu");
+      return {
+        logoRect: logo?.getBoundingClientRect().toJSON(),
+        menuDisplay: getComputedStyle(menu).display,
+        menuVisibility: getComputedStyle(menu).visibility,
+      };
+    });
+    assert.equal(duringDataExit.menuDisplay, "grid", `${viewport.name}: data handoff removed the menu layout box`);
+    assert.equal(duringDataExit.menuVisibility, "hidden", `${viewport.name}: data handoff did not fully hide the route cards`);
+    assert(Math.abs(duringDataExit.logoRect.left - beforeDataExit.left) <= 1, `${viewport.name}: logo moved horizontally during data handoff`);
+    assert(Math.abs(duringDataExit.logoRect.top - beforeDataExit.top) <= 1, `${viewport.name}: logo dropped during data handoff`);
+    assert(Math.abs(duringDataExit.logoRect.width - beforeDataExit.width) <= 1, `${viewport.name}: logo resized during data handoff`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-data-exit.png`) });
     report.scans[report.scans.length - 1].passed = true;
     await context.close();
   }

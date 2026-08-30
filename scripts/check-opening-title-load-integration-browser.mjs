@@ -165,8 +165,8 @@ try {
     });
     assert.deepEqual(opening.ame, {
       meta: "02 AME / MEASURE",
-      quote: "「変わらないものって、変わり続けていることだけなのかもね。」",
-      reply: "変化の連なりを、時間の中で見る。",
+      quote: "「こうして見ると、地球も生きてるみたいだね。」",
+      reply: "机の上の小さなセンサーから、地球の観測を始める。",
     });
     assert.deepEqual(opening.characterBands, ["MIZU　MIZU　MIZU", "AME　AME　AME　AME"]);
     assert.deepEqual(opening.montageNames, ["MIZU", "AME", "SAKUYA", "YOU"]);

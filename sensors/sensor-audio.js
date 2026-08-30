@@ -1,33 +1,97 @@
 (() => {
   "use strict";
 
-  const button = document.querySelector("#sensor-audio-toggle");
+  const dock = document.querySelector("#gaia-audio-dock");
+  const toggle = document.querySelector("#gaia-audio-toggle");
+  const toggleIcon = document.querySelector("#gaia-audio-toggle-icon");
+  const volume = document.querySelector("#gaia-audio-volume");
+  const volumePanel = document.querySelector("#gaia-audio-volume-panel");
+  const volumeValue = document.querySelector("#gaia-audio-volume-value");
   const audio = window.GaiaOpeningAudio;
-  if (!(button instanceof HTMLButtonElement) || !audio) return;
+  if (!(dock instanceof HTMLElement) || !(toggle instanceof HTMLButtonElement) || !audio) return;
 
-  let needsAction = false;
+  const COLLAPSE_DELAY_MS = 6000;
+  let collapseTimer = 0;
+
   const sync = (state = audio.getState()) => {
-    const playing = Boolean(state?.playing && !state?.muted);
-    button.dataset.muted = String(Boolean(state?.muted));
-    button.dataset.playing = String(playing);
-    button.dataset.needsAction = String(needsAction && !playing);
-    button.setAttribute("aria-pressed", String(Boolean(state?.muted)));
-    button.setAttribute("aria-label", playing ? "BGMを消音" : (needsAction ? "BGMを再開" : "BGMを再生"));
+    const level = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
+    const muted = state?.muted ?? true;
+    const expanded = dock.classList.contains("is-expanded");
+    if (volume instanceof HTMLInputElement) {
+      volume.value = String(level);
+      volume.tabIndex = expanded ? 0 : -1;
+    }
+    if (volumeValue) volumeValue.textContent = `${level}%`;
+    dock.dataset.muted = String(muted);
+    dock.dataset.expanded = String(expanded);
+    toggle.setAttribute("aria-pressed", String(muted));
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.setAttribute("aria-label", expanded ? (muted ? "BGMを再生" : "BGMを消音") : "音量調整を開く");
+    volumePanel?.setAttribute("aria-hidden", String(!expanded));
+    if (toggleIcon instanceof HTMLElement) toggleIcon.dataset.muted = String(muted);
   };
 
-  button.addEventListener("click", async () => {
-    const state = audio.getState();
-    needsAction = false;
-    if (state.playing && !state.muted) await audio.setMuted(true);
-    else await audio.setMuted(false);
+  const clearCollapse = () => {
+    window.clearTimeout(collapseTimer);
+    collapseTimer = 0;
+  };
+
+  const setExpanded = (expanded, { focusVolume = false } = {}) => {
+    clearCollapse();
+    const nextExpanded = Boolean(expanded);
+    dock.classList.toggle("is-expanded", nextExpanded);
     sync();
+    if (!nextExpanded) return;
+    if (focusVolume && volume instanceof HTMLInputElement) {
+      window.setTimeout(() => volume.focus({ preventScroll: true }), 260);
+    }
+    collapseTimer = window.setTimeout(() => setExpanded(false), COLLAPSE_DELAY_MS);
+  };
+
+  const scheduleCollapse = (delay = COLLAPSE_DELAY_MS) => {
+    if (!dock.classList.contains("is-expanded")) return;
+    clearCollapse();
+    collapseTimer = window.setTimeout(() => setExpanded(false), delay);
+  };
+
+  toggle.addEventListener("click", async () => {
+    if (!dock.classList.contains("is-expanded")) {
+      setExpanded(true);
+      return;
+    }
+    await audio.toggleMuted();
+    sync();
+    scheduleCollapse();
+  });
+
+  volume?.addEventListener("input", () => {
+    if (!(volume instanceof HTMLInputElement)) return;
+    const nextVolume = Number(volume.value) / 100;
+    audio.setVolume(nextVolume);
+    const state = audio.getState();
+    if (nextVolume <= 0 && !state.muted) void audio.setMuted(true);
+    else if (nextVolume > 0 && state.muted) void audio.setMuted(false);
+    scheduleCollapse();
+  });
+
+  dock.addEventListener("pointerenter", clearCollapse);
+  dock.addEventListener("pointerleave", () => scheduleCollapse(2200));
+  dock.addEventListener("focusin", clearCollapse);
+  dock.addEventListener("focusout", () => scheduleCollapse(2200));
+  document.addEventListener("pointerdown", (event) => {
+    if (!dock.classList.contains("is-expanded") || dock.contains(event.target)) return;
+    setExpanded(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !dock.classList.contains("is-expanded")) return;
+    event.preventDefault();
+    setExpanded(false);
+    toggle.focus({ preventScroll: true });
   });
   window.addEventListener("gaia:audio-state", (event) => sync(event.detail));
-  sync();
 
-  void audio.restoreNavigationState().then((result) => {
-    needsAction = Boolean(result?.blocked);
-    button.dataset.audioReady = "true";
-    sync();
-  });
+  dock.hidden = false;
+  sync();
+  requestAnimationFrame(() => dock.classList.add("is-visible"));
+  void audio.restoreNavigationState().then(() => sync());
 })();

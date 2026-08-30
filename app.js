@@ -175,6 +175,7 @@
   const introPathGrid = document.querySelector("#intro-path-grid");
   const introPathButtons = Array.from(document.querySelectorAll("[data-intro-path]"));
   const introStoryReturn = document.querySelector(".intro-story-return[data-primary-action=\"true\"]");
+  const introTitleReturn = document.querySelector("#intro-title-return");
   const introScrollCue = document.querySelector("#intro-lp-scroll");
   const introAfterfold = document.querySelector(".intro-lp-afterfold");
   const introGxFeature = document.querySelector("#intro-gx-feature");
@@ -6250,11 +6251,11 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     introStoryReturn.dataset.storyDestination = destination;
     introStoryReturn.querySelector("span")?.replaceChildren(isApeironcene ? "TRUE END / UNLOCKED" : "MAIN STORY");
     introStoryReturn.querySelector("strong")?.replaceChildren(
-      isApeironcene ? "星々の放課後 ～APEIRONCENE～" : "物語へ戻る",
+      isApeironcene ? "星々の放課後 ～APEIRONCENE～" : "物語をはじめる",
     );
     introStoryReturn.setAttribute(
       "aria-label",
-      isApeironcene ? "星々の放課後 APEIRONCENEへ進む" : "物語へ戻る",
+      isApeironcene ? "星々の放課後 APEIRONCENEへ進む" : "物語をはじめる",
     );
   };
 
@@ -7116,7 +7117,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   });
 
   const updateSourceHash = (isOpen) => {
-    const nextHash = isOpen ? "#source" : "";
+    const nextHash = isOpen ? "#source" : "#top";
     if (window.location.hash === nextHash) {
       return;
     }
@@ -7170,7 +7171,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   };
 
   const updateConceptHash = (isOpen) => {
-    const nextHash = isOpen ? "#concept" : "";
+    const nextHash = isOpen ? "#concept" : "#top";
     if (window.location.hash === nextHash) {
       return;
     }
@@ -7228,7 +7229,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   };
 
   const updateJapanHash = (isOpen) => {
-    const nextHash = isOpen ? "#earth" : "";
+    const nextHash = isOpen ? "#world" : "#top";
     if (window.location.hash === nextHash) {
       return;
     }
@@ -7715,7 +7716,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
   window.addEventListener("gaia:opening-complete", () => {
     const hasDirectDestination =
-      ["#source", "#concept", "#earth", "#japan", "#data", "#story"].includes(
+      ["#source", "#concept", "#world", "#earth", "#japan", "#data", "#story"].includes(
         window.location.hash,
       ) || new URLSearchParams(window.location.search).has("space");
     if (hasDirectDestination) return;
@@ -7725,6 +7726,12 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   window.addEventListener("gaia:return-to-intro", () => {
     startRendering();
     openIntro({ restoreFocusOnClose: false });
+  });
+
+  introTitleReturn?.addEventListener("click", () => {
+    history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    window.dispatchEvent(new CustomEvent("gaia:return-to-title"));
+    closeIntro({ restoreFocus: false });
   });
 
   sourcePanel.inert = true;
@@ -7846,6 +7853,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       closeSource({ restoreFocus: false, updateHash: false });
       openConcept({ updateHash: false });
     } else if (
+      window.location.hash === "#world" ||
       window.location.hash === "#earth" ||
       window.location.hash === "#japan" ||
       window.location.hash === "#data"
@@ -7860,7 +7868,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       closeConcept({ restoreFocus: false, updateHash: false });
       closeJapan({ restoreFocus: false, updateHash: false });
       if (
-        window.location.hash === ""
+        ["", "#top"].includes(window.location.hash)
         && !document.body.classList.contains("novel-open")
         && !new URLSearchParams(window.location.search).has("space")
       ) {
@@ -8183,6 +8191,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   } else if (window.location.hash === "#concept") {
     openConcept({ updateHash: false });
   } else if (
+    window.location.hash === "#world" ||
     window.location.hash === "#earth" ||
     window.location.hash === "#japan" ||
     window.location.hash === "#data"

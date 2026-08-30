@@ -8468,8 +8468,10 @@ var startGoogleLogin = /* @__PURE__ */ __name(async (request, env) => {
   const state = randomToken("st_");
   const nonce = randomToken("no_");
   const verifier = randomToken("pkce_");
-  const browserBinding = randomToken("oidc_");
   const now = /* @__PURE__ */ new Date();
+  const trialUserId = await currentTrialUserId(request, env.DB, now.toISOString());
+  const trialBinding = trialUserId ? await encryptFlowValue(trialUserId, env.SESSION_SECRET) : "";
+  const browserBinding = `${randomToken("oidc_")}~${trialBinding}`;
   const expiresAt = new Date(now.getTime() + FLOW_TTL_SECONDS * 1e3).toISOString();
   await env.DB.prepare(
     `INSERT INTO oauth_flows
@@ -8531,6 +8533,8 @@ var finishGoogleLogin = /* @__PURE__ */ __name(async (request, env) => {
   if (!flow) throw new ApiError(400, "INVALID_OIDC_STATE", "Google login state has already been used.");
   const verifier = await decryptFlowValue(flow.verifier_ciphertext, env.SESSION_SECRET);
   if (!verifier) throw new ApiError(400, "INVALID_OIDC_FLOW", "Google login flow could not be verified.");
+  const trialBinding = browserBinding.slice(browserBinding.indexOf("~") + 1);
+  const trialUserId = trialBinding ? await decryptFlowValue(trialBinding, env.SESSION_SECRET) : null;
   const tokenResponse = await fetch(GOOGLE_TOKEN_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -8550,7 +8554,7 @@ var finishGoogleLogin = /* @__PURE__ */ __name(async (request, env) => {
     throw new ApiError(401, "INVALID_ID_TOKEN", "Google did not return a valid ID token.");
   }
   const identity = await verifyGoogleIdToken(idToken, env.GOOGLE_CLIENT_ID, flow.nonce_hash);
-  const userId = await upsertGoogleUser(env.DB, identity, now);
+  const userId = await upsertGoogleUser(env.DB, identity, now, trialUserId);
   const session = await createSession(env, userId, now);
   const headers = new Headers({ Location: new URL(flow.return_path, env.PUBLIC_ORIGIN).toString() });
   headers.append("Set-Cookie", sessionCookie(session.token, session.ttl));
@@ -8664,11 +8668,15 @@ var createSession = /* @__PURE__ */ __name(async (env, userId, now) => {
   ).run();
   return { token, csrfToken, ttl, expiresAt };
 }, "createSession");
-var upsertGoogleUser = /* @__PURE__ */ __name(async (db, identity, now) => {
+var upsertGoogleUser = /* @__PURE__ */ __name(async (db, identity, now, trialUserId) => {
   const existing = await db.prepare(
     "SELECT user_id FROM user_identities WHERE provider = 'google' AND provider_subject = ?1"
   ).bind(identity.sub).first();
   if (existing) {
+    if (trialUserId && trialUserId !== existing.user_id) {
+      await mergeTrialUserIntoGoogle(db, trialUserId, existing.user_id, identity.sub, now);
+      return existing.user_id;
+    }
     await db.batch([
       db.prepare("UPDATE users SET updated_at = ?1 WHERE id = ?2").bind(now, existing.user_id),
       db.prepare(
@@ -8676,6 +8684,34 @@ var upsertGoogleUser = /* @__PURE__ */ __name(async (db, identity, now) => {
       ).bind(now, identity.sub)
     ]);
     return existing.user_id;
+  }
+  if (trialUserId) {
+    const trial = await db.prepare(
+      "SELECT id FROM users WHERE id = ?1 AND account_kind = 'trial'"
+    ).bind(trialUserId).first();
+    if (trial) {
+      try {
+        await db.batch([
+          db.prepare("UPDATE users SET account_kind = 'google', updated_at = ?1 WHERE id = ?2 AND account_kind = 'trial'").bind(now, trialUserId),
+          db.prepare(
+            `INSERT INTO user_identities
+              (id, user_id, provider, provider_subject, email, email_verified, created_at, updated_at)
+             VALUES (?1, ?2, 'google', ?3, NULL, 0, ?4, ?4)`
+          ).bind(crypto.randomUUID(), trialUserId, identity.sub, now),
+          db.prepare("UPDATE sessions SET revoked_at = ?1 WHERE user_id = ?2 AND revoked_at IS NULL").bind(now, trialUserId)
+        ]);
+        return trialUserId;
+      } catch {
+        const winner = await db.prepare(
+          "SELECT user_id FROM user_identities WHERE provider = 'google' AND provider_subject = ?1"
+        ).bind(identity.sub).first();
+        if (winner) {
+          await mergeTrialUserIntoGoogle(db, trialUserId, winner.user_id, identity.sub, now);
+          return winner.user_id;
+        }
+        throw new ApiError(500, "IDENTITY_SAVE_FAILED", "Google identity could not be saved.");
+      }
+    }
   }
   const userId = crypto.randomUUID();
   const publicId = createPublicId();
@@ -8697,6 +8733,36 @@ var upsertGoogleUser = /* @__PURE__ */ __name(async (db, identity, now) => {
     throw new ApiError(500, "IDENTITY_SAVE_FAILED", "Google identity could not be saved.");
   }
 }, "upsertGoogleUser");
+var mergeTrialUserIntoGoogle = /* @__PURE__ */ __name(async (db, trialUserId, googleUserId, providerSubject, now) => {
+  const trial = await db.prepare(
+    "SELECT id FROM users WHERE id = ?1 AND account_kind = 'trial'"
+  ).bind(trialUserId).first();
+  if (!trial) {
+    await db.prepare("UPDATE users SET updated_at = ?1 WHERE id = ?2").bind(now, googleUserId).run();
+    return;
+  }
+  await db.batch([
+    db.prepare("UPDATE devices SET owner_user_id = ?1, updated_at = ?2 WHERE owner_user_id = ?3").bind(googleUserId, now, trialUserId),
+    db.prepare("UPDATE device_pairing_codes SET user_id = ?1 WHERE user_id = ?2").bind(googleUserId, trialUserId),
+    db.prepare("DELETE FROM sessions WHERE user_id = ?1").bind(trialUserId),
+    db.prepare("DELETE FROM users WHERE id = ?1 AND account_kind = 'trial'").bind(trialUserId),
+    db.prepare("UPDATE users SET updated_at = ?1 WHERE id = ?2").bind(now, googleUserId),
+    db.prepare(
+      "UPDATE user_identities SET email = NULL, email_verified = 0, updated_at = ?1 WHERE provider = 'google' AND provider_subject = ?2"
+    ).bind(now, providerSubject)
+  ]);
+}, "mergeTrialUserIntoGoogle");
+var currentTrialUserId = /* @__PURE__ */ __name(async (request, db, now) => {
+  const token = parseCookies(request).get(SESSION_COOKIE);
+  if (!token || token.length > 256) return null;
+  const row = await db.prepare(
+    `SELECT s.user_id
+     FROM sessions s
+     JOIN users u ON u.id = s.user_id
+     WHERE s.token_hash = ?1 AND s.revoked_at IS NULL AND s.expires_at > ?2 AND u.account_kind = 'trial'`
+  ).bind(await sha256Hex(token), now).first();
+  return row?.user_id ?? null;
+}, "currentTrialUserId");
 var verifyGoogleIdToken = /* @__PURE__ */ __name(async (token, audience, nonceHash) => {
   const parts = token.split(".");
   if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) throw new ApiError(401, "INVALID_ID_TOKEN", "ID token is malformed.");
@@ -15717,6 +15783,55 @@ var JAPAN_MUNICIPALITY_RECORDS = [
 ];
 
 // src/regions.ts
+var JAPAN_PREFECTURE_CENTRES = /* @__PURE__ */ new Map([
+  ["JP-01", [43.1, 141.4]],
+  ["JP-02", [40.8, 140.7]],
+  ["JP-03", [39.7, 141.2]],
+  ["JP-04", [38.3, 140.9]],
+  ["JP-05", [39.7, 140.1]],
+  ["JP-06", [38.2, 140.4]],
+  ["JP-07", [37.8, 140.5]],
+  ["JP-08", [36.3, 140.4]],
+  ["JP-09", [36.6, 139.9]],
+  ["JP-10", [36.4, 139.1]],
+  ["JP-11", [35.9, 139.6]],
+  ["JP-12", [35.6, 140.1]],
+  ["JP-13", [35.7, 139.7]],
+  ["JP-14", [35.4, 139.6]],
+  ["JP-15", [37.9, 139]],
+  ["JP-16", [36.7, 137.2]],
+  ["JP-17", [36.6, 136.6]],
+  ["JP-18", [36.1, 136.2]],
+  ["JP-19", [35.7, 138.6]],
+  ["JP-20", [36.7, 138.2]],
+  ["JP-21", [35.4, 136.7]],
+  ["JP-22", [35, 138.4]],
+  ["JP-23", [35.2, 136.9]],
+  ["JP-24", [34.7, 136.5]],
+  ["JP-25", [35, 135.9]],
+  ["JP-26", [35, 135.8]],
+  ["JP-27", [34.7, 135.5]],
+  ["JP-28", [34.7, 135.2]],
+  ["JP-29", [34.7, 135.8]],
+  ["JP-30", [34.2, 135.2]],
+  ["JP-31", [35.5, 134.2]],
+  ["JP-32", [35.5, 133.1]],
+  ["JP-33", [34.7, 133.9]],
+  ["JP-34", [34.4, 132.5]],
+  ["JP-35", [34.2, 131.5]],
+  ["JP-36", [34.1, 134.6]],
+  ["JP-37", [34.3, 134]],
+  ["JP-38", [33.8, 132.8]],
+  ["JP-39", [33.6, 133.5]],
+  ["JP-40", [33.6, 130.4]],
+  ["JP-41", [33.3, 130.3]],
+  ["JP-42", [32.8, 129.9]],
+  ["JP-43", [32.8, 130.7]],
+  ["JP-44", [33.2, 131.6]],
+  ["JP-45", [31.9, 131.4]],
+  ["JP-46", [31.6, 130.6]],
+  ["JP-47", [26.2, 127.7]]
+]);
 var subdivisionsByCountry = /* @__PURE__ */ new Map();
 var subdivisionsByCode = /* @__PURE__ */ new Map();
 for (const [code, countryCode, name] of SUBDIVISION_RECORDS) {
@@ -15751,6 +15866,65 @@ var listRegions = /* @__PURE__ */ __name((url) => {
   const municipalities = countryCode === "JP" && subdivisionCode ? municipalitiesBySubdivision.get(subdivisionCode) ?? [] : [];
   return json({ version: REGION_DATA_VERSION, subdivisions, municipalities });
 }, "listRegions");
+var locateRegion = /* @__PURE__ */ __name(async (url) => {
+  const countryCode = (url.searchParams.get("countryCode") ?? "").normalize("NFKC").toUpperCase();
+  const subdivisionCode = (url.searchParams.get("subdivisionCode") ?? "").normalize("NFKC").toUpperCase();
+  const municipalityCode = (url.searchParams.get("municipalityCode") ?? "").normalize("NFKC");
+  if (countryCode !== "JP") throw new ApiError(400, "UNSUPPORTED_REGION_LOCATION", "Region plotting currently supports Japan.");
+  const subdivision = subdivisionsByCode.get(subdivisionCode);
+  const prefectureCentre = JAPAN_PREFECTURE_CENTRES.get(subdivisionCode);
+  if (!subdivision || !subdivisionCode.startsWith("JP-") || !prefectureCentre) {
+    throw new ApiError(400, "INVALID_SUBDIVISION", "A current Japanese subdivisionCode is required.");
+  }
+  if (!municipalityCode) {
+    return json({
+      location: { latitude: prefectureCentre[0], longitude: prefectureCentre[1], precision: "PREFECTURE_CENTRE" }
+    });
+  }
+  const municipality = municipalitiesByCode.get(municipalityCode);
+  if (!municipality || municipality.subdivisionCode !== subdivisionCode) {
+    throw new ApiError(400, "INVALID_MUNICIPALITY", "municipalityCode must belong to subdivisionCode.");
+  }
+  const query = `${subdivision.name}${municipality.name}`;
+  const upstream = new URL("https://msearch.gsi.go.jp/address-search/AddressSearch");
+  upstream.searchParams.set("q", query);
+  let response;
+  try {
+    response = await fetch(upstream, { headers: { Accept: "application/json" } });
+  } catch {
+    throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location could not be resolved.");
+  }
+  if (!response.ok) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location could not be resolved.");
+  const declaredLength = Number(response.headers.get("Content-Length") ?? 0);
+  if (declaredLength > 64 * 1024) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location response was too large.");
+  const payload = await response.json().catch(() => null);
+  const coordinates = readCoordinates(payload);
+  if (!coordinates) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location was not found.");
+  return json({
+    location: {
+      latitude: roundPublicCoordinate(coordinates.latitude),
+      longitude: roundPublicCoordinate(coordinates.longitude),
+      precision: "APPROXIMATE_0_1_DEGREE"
+    }
+  });
+}, "locateRegion");
+var readCoordinates = /* @__PURE__ */ __name((payload) => {
+  if (!Array.isArray(payload)) return null;
+  for (const feature of payload) {
+    if (typeof feature !== "object" || feature === null) continue;
+    const geometry = feature.geometry;
+    if (typeof geometry !== "object" || geometry === null) continue;
+    const coordinates = geometry.coordinates;
+    if (!Array.isArray(coordinates) || coordinates.length < 2) continue;
+    const longitude = Number(coordinates[0]);
+    const latitude = Number(coordinates[1]);
+    if (Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= 20 && latitude <= 48 && longitude >= 122 && longitude <= 154) {
+      return { latitude, longitude };
+    }
+  }
+  return null;
+}, "readCoordinates");
+var roundPublicCoordinate = /* @__PURE__ */ __name((value) => Math.round(value * 10) / 10, "roundPublicCoordinate");
 var getSubdivision = /* @__PURE__ */ __name((code) => subdivisionsByCode.get(code) ?? null, "getSubdivision");
 var getMunicipality = /* @__PURE__ */ __name((code) => municipalitiesByCode.get(code) ?? null, "getMunicipality");
 var hasValidMunicipalityCheckDigit = /* @__PURE__ */ __name((code) => {
@@ -16391,6 +16565,7 @@ var route = /* @__PURE__ */ __name(async (request, env, url) => {
   }
   const user = await getAuthenticatedUser(request, env);
   if (request.method === "GET" && url.pathname === "/api/web/v1/regions") return listRegions(url);
+  if (request.method === "GET" && url.pathname === "/api/web/v1/region-location") return locateRegion(url);
   if (request.method === "GET" && url.pathname === "/api/web/v1/profile") return getProfile(env, user);
   if (request.method === "PATCH" && url.pathname === "/api/web/v1/profile") return updateProfile(request, env, user);
   if (request.method === "PUT" && url.pathname === "/api/web/v1/profile/avatar") return uploadAvatar(request, env, user);

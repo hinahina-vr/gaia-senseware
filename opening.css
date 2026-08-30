@@ -946,10 +946,13 @@ body.gaia-opening-active .novel-layer {
 
 .gaia-opening-final-menu[hidden] { display: none; }
 
-/* A selected route must leave as one complete card. Fading the menu here used
-   to expose the card border after its text had already disappeared. */
+/* Keep the menu's layout box through the handoff so the bottom-anchored live
+   logo cannot fall into the vacated space. Visibility removes every card edge
+   immediately while preserving the gateway geometry. */
 .gaia-opening.is-leaving .gaia-opening-final-menu {
-  display: none;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .gaia-opening-final-menu.is-visible {
@@ -3170,6 +3173,13 @@ body.gaia-opening-active .gaia-opening.is-menu-ready + .gaia-audio-dock {
   }
 }
 
+/* Mirror the title return's left inset so the persistent audio control does not
+   cling to the scrollbar on the opposite edge. */
+.intro-open .gaia-audio-dock {
+  right: clamp(24px, 2.2vw, 38px);
+  left: auto;
+}
+
 /* Keep the persistent BGM control in the mobile top-right corner. The expanded
    strip grows leftward from the same fixed anchor. */
 @media (max-width: 720px) {
@@ -3181,7 +3191,7 @@ body.gaia-opening-active .gaia-opening.is-menu-ready + .gaia-audio-dock {
 
   /* The intro has no action rail; its copy owns the left half of the frame. */
   .intro-open .gaia-audio-dock {
-    right: max(20px, env(safe-area-inset-right));
+    right: max(14px, env(safe-area-inset-right));
     left: auto;
   }
 }
@@ -3990,7 +4000,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
 .gaia-opening-sound-dialog {
   position: relative;
-  width: min(660px, calc(100vw - 56px));
+  width: min(720px, calc(100vw - 56px));
   overflow: hidden;
   padding: clamp(26px, 3vw, 36px);
   border: 1px solid rgba(var(--opening-mint), 0.24);
@@ -4024,20 +4034,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 }
 
 .gaia-opening-sound-dialog::after {
-  position: absolute;
-  top: clamp(25px, 3vw, 38px);
-  right: clamp(22px, 3vw, 36px);
-  content: "GS / AUDIO";
-  color: rgba(var(--opening-mint), 0.42);
-  font: 650 8px/1 Consolas, "Courier New", monospace;
-  letter-spacing: 0.18em;
-}
-
-.gaia-opening-sound-heading > p {
-  margin: 0 0 12px;
-  color: rgba(var(--opening-mint), 0.7);
-  font: 700 8px/1 Consolas, "Courier New", monospace;
-  letter-spacing: 0.22em;
+  display: none;
 }
 
 .gaia-opening-sound-heading > h2 {
@@ -4062,11 +4059,150 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   line-height: 1.7;
 }
 
+.gaia-opening-language {
+  margin-top: 22px;
+}
+
+.gaia-opening-language-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.gaia-opening-language-options button {
+  position: relative;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 11px;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 70px;
+  padding: 11px 12px;
+  border: 1px solid rgba(var(--opening-paper), 0.14);
+  border-radius: 12px;
+  color: rgba(var(--opening-paper), 0.68);
+  text-align: left;
+  background:
+    linear-gradient(135deg, rgba(var(--opening-paper), 0.035), transparent 54%),
+    rgba(3, 14, 25, 0.3);
+  box-shadow: inset 0 1px rgba(var(--opening-paper), 0.035);
+  cursor: pointer;
+  isolation: isolate;
+  touch-action: manipulation;
+  transition: color 190ms ease, border-color 190ms ease, background 190ms ease, box-shadow 190ms ease, transform 190ms ease;
+}
+
+.gaia-opening-language-options button::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  opacity: 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(var(--opening-mint), 0.22), transparent 48%),
+    linear-gradient(118deg, rgba(var(--opening-mint), 0.12), rgba(var(--opening-blue), 0.055));
+  transition: opacity 190ms ease;
+}
+
+.gaia-opening-language-options button:is(:hover, :focus-visible) {
+  border-color: rgba(var(--opening-mint), 0.5);
+  color: rgba(var(--opening-paper), 0.96);
+  outline: 0;
+  box-shadow: 0 12px 28px rgba(0, 8, 20, 0.24), 0 0 22px rgba(var(--opening-mint), 0.07);
+  transform: translateY(-2px);
+}
+
+.gaia-opening-language-options button[aria-pressed="true"] {
+  border-color: rgba(var(--opening-mint), 0.68);
+  color: rgba(var(--opening-paper), 0.98);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--opening-mint), 0.08),
+    0 10px 32px rgba(0, 8, 20, 0.28),
+    0 0 28px rgba(var(--opening-mint), 0.12);
+}
+
+.gaia-opening-language-options button:is(:hover, :focus-visible)::before,
+.gaia-opening-language-options button[aria-pressed="true"]::before {
+  opacity: 1;
+}
+
+.gaia-opening-language-glyph {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(var(--opening-paper), 0.16);
+  border-radius: 50%;
+  color: rgba(var(--opening-paper), 0.74);
+  background: rgba(1, 12, 23, 0.32);
+  font-family: var(--font-ja);
+  font-size: 17px;
+  line-height: 1;
+  box-shadow: inset 0 0 18px rgba(var(--opening-mint), 0.035);
+  transition: color 190ms ease, border-color 190ms ease, background 190ms ease, box-shadow 190ms ease, transform 190ms ease;
+}
+
+.gaia-opening-language-options button:is(:hover, :focus-visible, [aria-pressed="true"]) .gaia-opening-language-glyph {
+  border-color: rgba(var(--opening-mint), 0.72);
+  color: rgb(var(--opening-mint));
+  background: rgba(var(--opening-mint), 0.12);
+  box-shadow: 0 0 20px rgba(var(--opening-mint), 0.18), inset 0 0 18px rgba(var(--opening-mint), 0.06);
+  transform: scale(1.04);
+}
+
+.gaia-opening-language-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.gaia-opening-language-name {
+  overflow: hidden;
+  font-family: var(--font-ja);
+  font-size: 12px;
+  font-weight: 560;
+  letter-spacing: 0.035em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gaia-opening-language-copy small {
+  color: rgba(var(--opening-mint), 0.48);
+  font: 700 7px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.17em;
+}
+
+.gaia-opening-language-check {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(var(--opening-paper), 0.14);
+  border-radius: 50%;
+  opacity: 0.28;
+  color: transparent;
+  font: 700 10px/1 Consolas, "Courier New", monospace;
+  transform: scale(0.82);
+  transition: color 190ms ease, opacity 190ms ease, border-color 190ms ease, background 190ms ease, box-shadow 190ms ease, transform 190ms ease;
+}
+
+.gaia-opening-language-options button[aria-pressed="true"] .gaia-opening-language-check {
+  border-color: rgba(var(--opening-mint), 0.86);
+  opacity: 1;
+  color: #062330;
+  background: rgb(var(--opening-mint));
+  box-shadow: 0 0 16px rgba(var(--opening-mint), 0.3);
+  transform: scale(1);
+}
+
 .gaia-opening-sound-choices {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
-  margin-top: 24px;
+  margin-top: 14px;
   border-top: 1px solid rgba(var(--opening-paper), 0.18);
   border-bottom: 1px solid rgba(var(--opening-paper), 0.14);
 }
@@ -4289,16 +4425,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     border-radius: 14px;
   }
 
-  .gaia-opening-sound-dialog::after {
-    top: 21px;
-    right: 18px;
-  }
-
-  .gaia-opening-sound-heading > p {
-    margin-bottom: 9px;
-    font-size: 7px;
-  }
-
   .gaia-opening-sound-heading > h2 {
     font-size: clamp(24px, 7.2vw, 31px);
     line-height: 1.32;
@@ -4309,6 +4435,27 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     font-size: 9px;
     letter-spacing: 0.055em;
   }
+
+  .gaia-opening-language {
+    margin-top: 14px;
+  }
+
+  .gaia-opening-language-options {
+    gap: 7px;
+    width: 100%;
+  }
+
+  .gaia-opening-language-options button {
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+    gap: 8px;
+    min-height: 62px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .gaia-opening-language-glyph { width: 36px; height: 36px; font-size: 15px; }
+  .gaia-opening-language-name { font-size: 10px; }
+  .gaia-opening-language-check { width: 16px; height: 16px; font-size: 9px; }
 
   .gaia-opening-sound-choices {
     gap: 0;
@@ -4356,6 +4503,32 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 }
 
 @media (max-width: 420px) {
+  .gaia-opening-language-options {
+    width: 100%;
+  }
+
+  .gaia-opening-language-options button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 4px;
+    min-height: 78px;
+    padding: 7px 4px 8px;
+    text-align: center;
+  }
+
+  .gaia-opening-language-glyph { width: 30px; height: 30px; font-size: 13px; }
+  .gaia-opening-language-copy { gap: 2px; }
+  .gaia-opening-language-name { font-size: 9px; }
+  .gaia-opening-language-copy small { font-size: 5.5px; }
+  .gaia-opening-language-check {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+
   .gaia-opening-sound-choices {
     grid-template-columns: 1fr;
   }
@@ -4367,13 +4540,14 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 }
 
 @media (orientation: landscape) and (max-width: 960px) and (max-height: 520px) {
+  .gaia-opening-sound-modal {
+    overflow-y: auto;
+    place-items: start center;
+  }
+
   .gaia-opening-sound-dialog {
     width: min(560px, calc(100vw - 48px));
     padding: 15px 20px 13px;
-  }
-
-  .gaia-opening-sound-heading > p {
-    margin-bottom: 6px;
   }
 
   .gaia-opening-sound-heading > h2 {
@@ -4384,6 +4558,19 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   .gaia-opening-sound-heading > span {
     margin-top: 5px;
   }
+
+  .gaia-opening-language { margin-top: 9px; }
+  .gaia-opening-language-options { gap: 7px; }
+  .gaia-opening-language-options button {
+    grid-template-columns: 30px minmax(0, 1fr) 14px;
+    gap: 7px;
+    min-height: 52px;
+    padding: 5px 8px;
+  }
+  .gaia-opening-language-glyph { width: 30px; height: 30px; font-size: 13px; }
+  .gaia-opening-language-name { font-size: 10px; }
+  .gaia-opening-language-copy small { display: none; }
+  .gaia-opening-language-check { width: 14px; height: 14px; font-size: 8px; }
 
   .gaia-opening-sound-choices {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4409,7 +4596,11 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   .gaia-opening-sound-modal,
   .gaia-opening-sound-dialog,
   .gaia-opening-sound-modal::before,
-  .gaia-opening-sound-modal::after {
+  .gaia-opening-sound-modal::after,
+  .gaia-opening-language-options button,
+  .gaia-opening-language-options button::before,
+  .gaia-opening-language-glyph,
+  .gaia-opening-language-check {
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
@@ -4475,7 +4666,8 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   margin: 0;
   color: rgba(239, 249, 255, 0.94);
   font-size: clamp(16px, 1.25vw, 21px);
-  line-height: 1.55;
+  letter-spacing: 0.11em;
+  line-height: 1.72;
   text-shadow: 0 2px 16px rgba(0, 5, 24, 0.72);
 }
 
@@ -4905,7 +5097,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 @media (min-width: 961px) and (min-height: 521px) {
   .gaia-vn-panel-final .gaia-vn-final-copy,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
-    bottom: max(44px, 5vh);
+    bottom: clamp(242px, 20.5vh, 400px);
   }
 }
 
@@ -4924,12 +5116,13 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 }
 
-/* Desktop keeps the live logo and route group bottom-anchored as one unit. */
+/* Desktop keeps the live logo and route group together, raised into the open
+   lighthouse-side sky instead of hugging the bottom edge. */
 @media (min-width: 961px) and (min-height: 521px) {
   .gaia-vn-panel-final .gaia-vn-final-copy,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
     top: auto;
-    bottom: max(44px, 5vh);
+    bottom: clamp(242px, 20.5vh, 400px);
   }
 
   .gaia-vn-panel-final .gaia-vn-final-choice > strong,
@@ -5611,8 +5804,9 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   .gaia-vn-panel-final .gaia-opening-route-symbol { width: 34px; height: 34px; }
 }
 
-/* Keep the live title lockup on one axis, but anchor that axis in the open
-   lower-right sky rather than centering the whole gateway in the viewport. */
+/* Keep the live title lockup on one axis in the open lighthouse-side sky.
+   The reference composition puts the complete gateway left of the cast, not
+   over the characters. Clamp only when a narrower desktop needs a safe edge. */
 .gaia-vn-panel-final .gaia-vn-work-title { margin-inline: auto; }
 .gaia-vn-panel-final .gaia-vn-work-logo { margin-inline: auto; }
 .gaia-vn-panel-final .gaia-vn-final-choice > strong,
@@ -5626,7 +5820,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   .gaia-vn-panel-final .gaia-vn-final-copy,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
     right: auto;
-    left: min(63%, calc(100% - min(460px, 44vw) - 18px));
+    left: max(26%, calc(min(460px, 44vw) + 18px));
     width: min(920px, 88vw);
     text-align: center;
     transform: translateX(-50%);
@@ -5634,11 +5828,48 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
   .gaia-vn-panel-final .gaia-vn-work-title { width: 100%; }
 
+  .gaia-vn-panel-final .gaia-vn-work-title {
+    margin-bottom: -90px;
+  }
+
   .gaia-vn-panel-final .gaia-opening-final-menu,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
-    width: min(920px, 100%);
+    margin-top: 96px;
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route-grid { grid-row: 1; }
+  .gaia-vn-panel-final .gaia-opening-route-guide-replay { grid-row: 2; }
+
+  .gaia-vn-panel-final .gaia-opening-final-menu,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+    width: min(84%, 780px);
     margin-right: auto;
     margin-left: auto;
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route,
+  .gaia-vn-panel-final .gaia-opening-route--other {
+    grid-template-columns: minmax(0, 1fr) clamp(38px, 3.2vw, 44px);
+    gap: clamp(8px, 0.9vw, 13px);
+    min-height: clamp(74px, 8.6vh, 88px);
+    padding: clamp(12px, 1.55vh, 15px) clamp(13px, 1.25vw, 18px);
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route strong {
+    font-size: clamp(15px, 1.05vw, 18px);
+    letter-spacing: 0.075em;
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route-symbol {
+    width: clamp(38px, 3.2vw, 44px);
+    height: clamp(38px, 3.2vw, 44px);
+  }
+
+  .gaia-vn-panel-final .gaia-opening-route-icon,
+  .gaia-vn-panel-final .gaia-opening-route:hover .gaia-opening-route-icon,
+  .gaia-vn-panel-final .gaia-opening-route:focus-visible .gaia-opening-route-icon {
+    width: clamp(26px, 2.15vw, 31px);
+    height: clamp(26px, 2.15vw, 31px);
   }
 
   .gaia-opening.is-active .gaia-vn-panel-final .gaia-vn-final-copy {

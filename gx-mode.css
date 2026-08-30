@@ -628,13 +628,14 @@ body.gx-open {
 .gx-modal-skip {
   position: absolute;
   top: max(24px, calc(env(safe-area-inset-top) + 18px));
-  right: clamp(22px, 3.2vw, 58px);
+  right: auto;
+  left: clamp(22px, 3.2vw, 58px);
   z-index: 13;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  min-width: 132px;
+  gap: 7px;
+  min-width: 110px;
   min-height: 48px;
   padding: 10px 20px;
   color: rgba(232, 255, 248, 0.9);
@@ -672,7 +673,7 @@ body.gx-open {
 .gx-modal-skip:hover b,
 .gx-modal-skip:focus-visible b {
   color: inherit;
-  transform: translateX(3px);
+  transform: translateX(-3px);
 }
 
 .gx-era-transition.is-visible::before,
@@ -984,9 +985,10 @@ body.gx-open {
   }
 
   .gx-modal-skip {
-    top: max(72px, calc(env(safe-area-inset-top) + 68px));
-    right: 14px;
-    min-width: 116px;
+    top: max(14px, calc(env(safe-area-inset-top) + 10px));
+    right: auto;
+    left: 14px;
+    min-width: 110px;
     min-height: 44px;
     padding: 9px 15px;
     font-size: 11px;
@@ -2951,5 +2953,24 @@ body.gx-story-open .gx-layer[data-return-to="novel"] .gx-secondary-controls {
   #gx-layer #gx-data::before {
     content: "i";
     font: 700 15px/1 ui-monospace, Consolas, monospace;
+  }
+}
+
+/* The upper-left corner is reserved for the persistent return control. On
+   desktop the chapter lockup moves into the open left field; compact screens
+   keep a shorter but explicit separation below the same control. */
+@media (min-width: 901px) and (min-height: 721px) {
+  #gx-layer .gx-header,
+  #gx-layer[data-return-to="novel"] .gx-header,
+  body.gx-story-open #gx-layer[data-return-to="novel"] .gx-header {
+    top: clamp(190px, 25vh, 440px);
+  }
+}
+
+@media (max-width: 560px) {
+  #gx-layer .gx-header,
+  #gx-layer[data-return-to="novel"] .gx-header,
+  body.gx-story-open #gx-layer[data-return-to="novel"] .gx-header {
+    top: max(76px, calc(env(safe-area-inset-top) + 70px));
   }
 }

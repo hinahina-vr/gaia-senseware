@@ -71,10 +71,10 @@ try {
     });
     assert.equal(entrance.labels[0], "世界を読む");
     assert.equal(entrance.sensorIndex, 1);
-    assert.equal(entrance.label, "ESP32で地球に参加");
+    assert.equal(entrance.label, "センサーを地球につなぐ");
     assert.equal(entrance.description, "実物の観測点を、地球の感覚器へ。");
     assert.equal(entrance.enter, "観測点を追加");
-    assert.equal(entrance.href, "./sensors/");
+    assert.equal(entrance.href, "./sensors/#esp32");
     assert.equal(entrance.visible, true);
     assert.equal(entrance.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-entrance.png`), fullPage: true });

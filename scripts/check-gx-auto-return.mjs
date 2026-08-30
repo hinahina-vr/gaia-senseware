@@ -9,6 +9,7 @@ const html = read("index.html");
 const gx = read("gx-mode.js");
 const gxStyles = read("gx-mode.css");
 const novel = read("novel-mode.js");
+const loader = read("gaia-mode-loader.js");
 
 assert.match(novel, /if \(!\["map01", "gx"\]\.includes\(step\.interaction\.kind\)\) \{/u);
 assert.doesNotMatch(novel, /水面の操作[^\n]*\/ 3/u);
@@ -28,17 +29,17 @@ assert.doesNotMatch(gx, /storyGestureCount < 3/u);
 assert.doesNotMatch(gx, /storyGestureCount >= 3/u);
 assert.match(gx, /event\.key === "Enter" \|\| event\.key === " "/u);
 
-assert.match(html, /id="gx-modal-skip"[\s\S]{0,240}aria-label="GXモーダルをスキップ"[\s\S]{0,240}<span>スキップ<\/span>/u);
+assert.match(html, /id="gx-modal-skip"[\s\S]{0,240}aria-label="GXモーダルをスキップして戻る"[\s\S]{0,240}<b aria-hidden="true">◀<\/b><span>戻る<\/span>/u);
 assert.match(gx, /elements\.modalSkip\.setAttribute\([\s\S]*?GXモーダルをスキップして\$\{returnTo === "novel" \? "ストーリー" : "入口"\}へ戻る/u);
 assert.doesNotMatch(html, /id="gx-era-transition-skip"/u);
-assert.match(html, /gx-mode\.js\?v=gaia-gx-stationary-fade-1/u);
-assert.match(html, /novel-mode\.js\?v=gaia-main-overlay-layout-1/u);
-assert.match(html, /gx-mode\.css\?v=gaia-gx-stationary-fade-1/u);
+assert.match(loader, /gx-mode\.js\?v=gaia-gx-back-header-drop-1/u);
+assert.match(loader, /novel-mode\.js\?v=gaia-story-direct-runtime-1/u);
+assert.match(loader, /gx-mode\.css\?v=gaia-gx-back-header-drop-1/u);
 assert.match(gx, /const CLOSE_TRANSITION_MS = reducedMotion \? 0 : 340;/u);
 assert.match(gx, /if \(isOpen \|\| isClosing\) return;/u);
 assert.match(gx, /closeTransitionTimer = window\.setTimeout\(\(\) => \{[\s\S]*?document\.body\.classList\.remove\("gx-story-open"\);/u);
 assert.match(gxStyles, /\.gx-era-transition strong \{[\s\S]*?font-size: clamp\(12px, 2vw, 38px\);[\s\S]*?white-space: nowrap;/u);
-assert.match(gxStyles, /\.gx-modal-skip \{[\s\S]*?top: max\(24px,[\s\S]*?right: clamp\(22px,[\s\S]*?min-height: 48px;/u);
+assert.match(gxStyles, /\.gx-modal-skip \{[\s\S]*?top: max\(24px,[\s\S]*?left: clamp\(22px,[\s\S]*?min-height: 48px;/u);
 assert.match(gxStyles, /@media \(min-width: 1600px\) \{[\s\S]*?\.gx-layer\[data-return-to="novel"\] \.gx-story-card h3 \{[\s\S]*?white-space: nowrap;/u);
 assert.match(gxStyles, /body\.gx-story-open \.gx-layer\[data-return-to="novel"\]\[data-phase="gaia-transformation"\] \.gx-story-card \{\s*width: min\(54%, 720px\);/u);
 

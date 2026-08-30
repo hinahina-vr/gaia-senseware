@@ -10,6 +10,11 @@
       content="地球と宇宙の公開データを、光・地図・物語・宇宙空間でたどるインタラクティブ展示。"
     />
     <title>惑星の放課後 — GAIA SENSATION</title>
+    <script>
+      if (window.location.hash.toLowerCase() === "#esp32") {
+        window.location.replace(new URL("./sensors/#esp32", window.location.href).href);
+      }
+    </script>
     <link rel="preload" as="image" href="./assets/brand/brand-logo-dark-surface-590.webp" fetchpriority="high" />
     <link
       rel="icon"
@@ -163,12 +168,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-gateway-relative-balance-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-title-guide-lock-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-opening-shooting-star-physics-1" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-blue-glass-tide-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-title-return-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-character-motion-1" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-title-guide-lock-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-title-meta-removed-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -282,8 +287,8 @@
             <div class="gaia-vn-character-copy">
               <p><span>02</span> AME / MEASURE</p>
               <h2 data-opening-focus>あめ</h2>
-              <strong data-opening-focus>「変わらないものって、変わり続けていることだけなのかもね。」</strong>
-              <span class="gaia-vn-character-reply" data-opening-focus>変化の連なりを、時間の中で見る。</span>
+              <strong data-opening-focus>「こうして見ると、地球も生きてるみたいだね。」</strong>
+              <span class="gaia-vn-character-reply" data-opening-focus>机の上の小さなセンサーから、地球の観測を始める。</span>
               <small>SOURCE / DERIVED / SCENARIO</small>
             </div>
             <div class="gaia-vn-character-band">AME　AME　AME　AME</div>
@@ -402,9 +407,27 @@
           <div class="gaia-opening-sound-modal-scrim" aria-hidden="true"></div>
           <div class="gaia-opening-sound-dialog">
             <div class="gaia-opening-sound-heading">
-              <p>GAIA SENSATION / SOUND SETTING</p>
               <h2 id="gaia-opening-sound-title">サウンド設定</h2>
               <span id="gaia-opening-sound-description">サウンドのオン／オフはゲーム中でも変更できます。</span>
+            </div>
+            <div class="gaia-opening-language" role="group" aria-label="表示言語を選ぶ">
+              <div class="gaia-opening-language-options">
+                <button type="button" data-gaia-language="ja" lang="ja" aria-label="表示言語：日本語" aria-pressed="true">
+                  <span class="gaia-opening-language-glyph" aria-hidden="true">あ</span>
+                  <span class="gaia-opening-language-copy"><strong class="gaia-opening-language-name">日本語</strong><small>JA</small></span>
+                  <span class="gaia-opening-language-check" aria-hidden="true">✓</span>
+                </button>
+                <button type="button" data-gaia-language="en" lang="en" aria-label="Display language: English" aria-pressed="false">
+                  <span class="gaia-opening-language-glyph" aria-hidden="true">A</span>
+                  <span class="gaia-opening-language-copy"><strong class="gaia-opening-language-name">English</strong><small>EN</small></span>
+                  <span class="gaia-opening-language-check" aria-hidden="true">✓</span>
+                </button>
+                <button type="button" data-gaia-language="zh-CN" lang="zh-Hans" aria-label="显示语言：简体字" aria-pressed="false">
+                  <span class="gaia-opening-language-glyph" aria-hidden="true">简</span>
+                  <span class="gaia-opening-language-copy"><strong class="gaia-opening-language-name">简体字</strong><small>ZH-CN</small></span>
+                  <span class="gaia-opening-language-check" aria-hidden="true">✓</span>
+                </button>
+              </div>
             </div>
             <section class="gaia-opening-sound-choices" aria-label="サウンド設定">
               <div class="gaia-opening-sound-option gaia-opening-sound-option--on">
@@ -709,9 +732,6 @@
         <div class="character-book-scenery" aria-hidden="true"></div>
 
         <header class="character-book-header">
-          <a class="character-book-mark" href="#character-book-hero" aria-label="三人の観測者の先頭へ">
-            <span>GAIA</span><b>SENSEWARE</b>
-          </a>
           <button
             class="character-book-close mode-exit-control"
             id="character-book-close"
@@ -746,6 +766,10 @@
                 <span id="character-book-native">あめ</span><i aria-hidden="true">｜</i><strong id="character-book-full-name">雨宮 周</strong><small id="character-book-reading">あめみや あまね</small>
               </h3>
               <p id="character-book-profile"><span>水色のショートボブと眠そうな目元が特徴の大学2年生。</span><span>普段は無口で省エネ運転だが、配線やハードウェアの話になると途端にスイッチが入る。</span><span>電気工事士・電気主任技術者の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。</span></p>
+              <div class="character-book-expressions" aria-label="表情差分" aria-live="off">
+                <p><span>EXPRESSION</span><b id="character-book-expression-name">通常</b></p>
+                <div class="character-book-expression-list" id="character-book-expression-list" role="group" aria-label="あめの表情を選ぶ"></div>
+              </div>
             </section>
 
             <figure class="character-book-hero-figure" id="character-book-page">
@@ -868,16 +892,7 @@
         <div class="intro-shell">
           <section class="intro-stage intro-path-stage" id="intro-path-stage" data-intro-stage="path">
             <div class="intro-lp-hero">
-              <div class="intro-heading">
-                <p class="intro-kicker">
-                  <span class="intro-dot" aria-hidden="true"></span>
-                  Gaia Transformation Project
-                </p>
-                <p class="intro-chapter" aria-hidden="true">INTERACTIVE SYSTEM / 2026</p>
-              </div>
-
               <div class="intro-title-lockup">
-                <p>EARTH DATA × INTERACTIVE SYSTEM</p>
                 <h2 id="intro-title"><span>GAIA</span><span>SENSEWARE</span></h2>
                 <strong>地球の声は、ひとつじゃない。</strong>
               </div>
@@ -908,7 +923,7 @@
                   <p>変化を地図へ。</p>
                   <span class="intro-path-enter">WORLD MAP <b aria-hidden="true">→</b></span>
                 </button>
-                <a class="intro-path-card intro-path-card--sensor" href="./sensors/" data-sensor-platform-link>
+                <a class="intro-path-card intro-path-card--sensor" href="./sensors/#esp32" data-sensor-platform-link>
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
                   <span class="intro-border-glint" aria-hidden="true"></span>
                   <span class="intro-path-index">02 / SENSOR</span>
@@ -919,7 +934,7 @@
                       <circle cx="32" cy="22" r="3"></circle>
                     </svg>
                   </span>
-                  <strong>ESP32で地球に参加</strong>
+                  <strong>センサーを地球につなぐ</strong>
                   <p>実物の観測点を、地球の感覚器へ。</p>
                   <span class="intro-path-enter">観測点を追加 <b aria-hidden="true">→</b></span>
                 </a>
@@ -951,16 +966,15 @@
                   <span class="intro-border-glint" aria-hidden="true"></span>
                   <span class="intro-path-index">04 / SOUND</span>
                   <span class="intro-path-glyph intro-path-glyph--sound" aria-hidden="true">♪</span>
-                  <strong>音を聴く</strong>
+                  <strong>音楽を鑑賞する</strong>
                   <p>物語の音楽へ。</p>
                   <span class="intro-path-enter">SOUND ARCHIVE <b aria-hidden="true">→</b></span>
                 </button>
               </div>
 
-              <button class="intro-story-return" type="button" data-intro-path="novel" data-primary-action="true" aria-label="物語へ戻る">
+              <button class="intro-story-return" type="button" data-intro-path="novel" data-primary-action="true" aria-label="物語をはじめる">
                 <span>MAIN STORY</span>
-                <strong>物語へ戻る</strong>
-                <b aria-hidden="true">→</b>
+                <strong>物語をはじめる</strong>
               </button>
 
               <button
@@ -1113,7 +1127,7 @@
                   <li>世界を読む</li>
                   <li>センサーを登録</li>
                   <li>光に触れる</li>
-                  <li>音を聴く</li>
+                  <li>音楽を鑑賞する</li>
                 </ul>
               </section>
 
@@ -2008,10 +2022,10 @@
           class="gx-modal-skip"
           id="gx-modal-skip"
           type="button"
-          aria-label="GXモーダルをスキップ"
+          aria-label="GXモーダルをスキップして戻る"
           hidden
         >
-          <span>スキップ</span><b aria-hidden="true">→</b>
+          <b aria-hidden="true">◀</b><span>戻る</span>
         </button>
 
         <div class="gx-time" data-counter="4,600,000,000" aria-label="現在まで、あと46億年">
@@ -2696,136 +2710,22 @@
       </section>
       </template>
 
-      <div class="status">
-        <button
-          class="status-home-button mode-exit-control"
-          id="intro-button"
-          type="button"
-          aria-haspopup="dialog"
-          aria-controls="intro-layer"
-          aria-label="トップのモード選択画面へ戻る"
-          title="戻る"
-        >
-          戻る
-        </button>
-      </div>
-
-      <section class="guide" id="guide" aria-live="polite">
-        <p class="guide-kicker">TOUCH THE DATA</p>
-        <p class="guide-copy">
-          <span class="desktop-copy">ドラッグすると光の動きが変わります</span>
-          <span class="touch-copy">画面に触れると光の動きが変わります</span>
-        </p>
-      </section>
-
-      <article class="mode-caption" id="mode-caption" aria-live="polite">
-        <div class="mode-index">
-          <span id="mode-number">01</span>
-          <span aria-hidden="true">/</span>
-          <span aria-hidden="true">20</span>
-        </div>
-        <div class="mode-copy">
-          <section class="signal-console signal-console-main" data-signal-console aria-label="選択中の観測データ">
-            <div class="signal-console-heading">
-              <span data-signal-act>ACT 1 / 循環を知る</span>
-              <strong data-signal-value>DATA SNAPSHOT LOADING</strong>
-            </div>
-            <label>
-              <span data-signal-time-label>観測時点</span>
-              <input data-signal-time type="range" min="0" max="100" value="100" step="1" />
-              <output data-signal-time-output>—</output>
-            </label>
-          </section>
-          <h2 id="mode-title">Breathing Earth</h2>
-                <p class="mode-title-ja" id="mode-title-ja">地球の一呼吸</p>
-                <p class="mode-reading-label">DATA → VISUAL / データと表現の関係</p>
-                <p class="mode-description" id="mode-description">
-                  NOAAとGOSATの大気CO₂、NASAの気温偏差を重ねています。季節ごとのCO₂の上下を呼吸する動き、長期的な増加を光の強さ、気温偏差を青から赤への色として表します。
-                </p>
-          <button
-            class="concept-button"
-            id="concept-open"
-            type="button"
-            aria-expanded="false"
-            aria-controls="concept-panel"
-          >
-            <span>画面の見方とデータ</span>
-            <span aria-hidden="true">↗</span>
-          </button>
-        </div>
-      </article>
-
-      <nav class="mode-nav" aria-label="地球を読む感覚器を切り替える">
-        <button class="mode-arrow" id="previous-mode" type="button" aria-label="前の感覚器">
-          <span aria-hidden="true">←</span>
-        </button>
-        <div class="mode-list" id="mode-list"></div>
-        <button class="mode-arrow" id="next-mode" type="button" aria-label="次の感覚器">
-          <span aria-hidden="true">→</span>
-        </button>
-      </nav>
-
-      <div class="actions">
-        <button
-          class="space-button"
-          id="space-button"
-          type="button"
-          data-space-open
-          aria-haspopup="dialog"
-          aria-controls="space-layer"
-          title="Space observatory"
-        >
-          <span class="action-icon space-icon" aria-hidden="true">✦</span>
-          <span class="button-label">Space</span>
-        </button>
-        <button
-          class="story-button"
-          id="story-button"
-          type="button"
-          data-novel-open
-          aria-haspopup="dialog"
-          aria-controls="novel-layer"
-          title="Interactive system"
-        >
-          <span class="action-icon story-icon" aria-hidden="true">◌</span>
-          <span class="button-label">Story</span>
-        </button>
-        <button
-          class="japan-button"
-          id="japan-button"
-          type="button"
-          aria-pressed="false"
-          aria-controls="japan-layer"
-          title="Earth map"
-        >
-          <span class="action-icon japan-icon" aria-hidden="true">MAP</span>
-          <span class="button-label">Map</span>
-        </button>
-        <button
-          class="auto-button"
-          id="auto-button"
-          type="button"
-          aria-pressed="false"
-          title="Exhibition mode"
-        >
-          <span class="action-icon" aria-hidden="true">∞</span>
-          <span class="button-label">Auto</span>
-        </button>
-        <button
-          class="source-button"
-          id="source-button"
-          type="button"
-          aria-expanded="false"
-          aria-controls="source-panel"
-          aria-label="GLSLコードを表示"
-        >
-          <span class="action-icon source-icon" aria-hidden="true">&lt;/&gt;</span>
-          <span class="button-label">Code</span>
-        </button>
-        <button class="reset-button" id="reset-button" type="button">
-          <span class="action-icon reset-icon" aria-hidden="true">↺</span>
-          <span class="button-label">Reset</span>
-        </button>
+      <div id="exploration-runtime-bridge" hidden aria-hidden="true">
+        <button id="intro-button" type="button"></button>
+        <span id="mode-number"></span>
+        <span id="mode-title"></span>
+        <span id="mode-title-ja"></span>
+        <span id="mode-description"></span>
+        <button id="concept-open" type="button"></button>
+        <button id="previous-mode" type="button"></button>
+        <div id="mode-list"></div>
+        <button id="next-mode" type="button"></button>
+        <button id="space-button" type="button"></button>
+        <button id="story-button" type="button"></button>
+        <button id="japan-button" type="button" aria-pressed="false"></button>
+        <button id="auto-button" type="button" aria-pressed="false"></button>
+        <button id="source-button" type="button" aria-expanded="false"></button>
+        <button id="reset-button" type="button"></button>
       </div>
 
       <button

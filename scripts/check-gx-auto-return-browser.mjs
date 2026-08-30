@@ -165,7 +165,7 @@ try {
         width: Math.round(skipRect.width),
         height: Math.round(skipRect.height),
         topGap: Math.round(skipRect.top - layerRect.top),
-        rightGap: Math.round(layerRect.right - skipRect.right),
+        leftGap: Math.round(skipRect.left - layerRect.left),
         inside: skipRect.top >= layerRect.top - 1
           && skipRect.right <= layerRect.right + 1
           && skipRect.bottom <= layerRect.bottom + 1
@@ -180,10 +180,10 @@ try {
       };
     });
     const initialSkip = await readSkipControl();
-    assert.equal(initialSkip.text, "スキップ", `${viewport.name}: GX modal skip label changed`);
+    assert.equal(initialSkip.text, "戻る", `${viewport.name}: GX modal return label changed`);
     assert.equal(initialSkip.ariaLabel, "GXモーダルをスキップしてストーリーへ戻る", `${viewport.name}: GX modal skip accessible label changed`);
     assert(initialSkip.width >= 110 && initialSkip.height >= 44, `${viewport.name}: GX modal skip hit area is too small`);
-    assert(initialSkip.topGap >= 0 && initialSkip.rightGap >= 0 && initialSkip.inside, `${viewport.name}: GX modal skip is outside the GX modal`);
+    assert(initialSkip.topGap >= 0 && initialSkip.leftGap >= 0 && initialSkip.inside, `${viewport.name}: GX modal return is outside the GX modal`);
     assert.equal(initialSkip.overlapsHeader, false, `${viewport.name}: GX modal skip overlaps the GX heading`);
     assert.equal(initialSkip.overlapsTime, false, `${viewport.name}: GX modal skip overlaps the era counter`);
     assert.equal(initialSkip.overlapsAudio, false, `${viewport.name}: GX modal skip overlaps the audio control`);

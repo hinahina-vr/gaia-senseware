@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4417"] = process.argv.slice(2);
 const cardsOnly = process.argv.slice(6).includes("--cards-only");
+const gxFeatureOnly = process.argv.slice(6).includes("--gx-feature-only");
 const introOnly = process.argv.slice(6).includes("--intro-only");
 const endingOnly = process.argv.slice(6).includes("--ending-only");
 const mapCopyOnly = process.argv.slice(6).includes("--map-copy-only");
@@ -137,7 +138,7 @@ const scanEndingDestinations = async () => {
     ariaLabel: button.getAttribute("aria-label"),
   }));
   assert.deepEqual(completedCta, {
-    text: "物語へ戻る",
+    text: "物語をはじめる",
     destination: "story",
     ariaLabel: "物語のタイトルメニューへ戻る",
   });
@@ -184,11 +185,20 @@ const cardScan = async (page) => page.evaluate(() => {
   return {
     cardCount: cards.length,
     viewportWidth: innerWidth,
+    landingMetaCount: document.querySelectorAll(".intro-lp-hero > .intro-heading").length,
+    landingEyebrowCount: document.querySelectorAll(".intro-title-lockup > p").length,
     wideRowMedia: matchMedia("(min-width: 1280px)").matches,
     gridTemplateColumns: grid ? getComputedStyle(grid).gridTemplateColumns : "",
-    cards: cards.map((card) => ({
+    cards: cards.map((card) => {
+      const title = card.querySelector(":scope > strong");
+      const titleStyle = getComputedStyle(title);
+      return {
       path: card.dataset.introPath || (card.hasAttribute("data-sound-gallery-open") ? "sound" : ""),
-      title: card.querySelector(":scope > strong")?.textContent.trim(),
+      title: title?.textContent.trim(),
+      titleFontSize: titleStyle.fontSize,
+      titleFontWeight: titleStyle.fontWeight,
+      titleLetterSpacing: titleStyle.letterSpacing,
+      titleLineHeight: titleStyle.lineHeight,
       copy: card.querySelector(":scope > p")?.textContent.trim(),
       copyLineCount: (() => {
         const copy = card.querySelector(":scope > p");
@@ -202,7 +212,8 @@ const cardScan = async (page) => page.evaluate(() => {
       rect: card.getBoundingClientRect().toJSON(),
       accessibleName: card.getAttribute("aria-label") || card.innerText.trim(),
       focusable: card.tabIndex >= 0,
-    })),
+    };
+    }),
     hiddenDetailCount: hiddenDetails.length,
     hiddenDetailVisibleCount: hiddenDetails.filter(__qaVisible).length,
     primaryCount: document.querySelectorAll("[data-primary-action='true']").length,
@@ -219,9 +230,14 @@ const cardScan = async (page) => page.evaluate(() => {
 });
 
 const assertCards = (scan, viewport) => {
+  assert.equal(scan.landingMetaCount, 0, `${viewport.name}: obsolete landing metadata remains`);
+  assert.equal(scan.landingEyebrowCount, 0, `${viewport.name}: obsolete landing eyebrow remains`);
   assert.equal(scan.cardCount, 4);
-  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを登録", "キャラクター設定", "音を聴く"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "地球の観測データを送る", "三人の役割と関係。", "物語の音楽へ。"]);
+  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを地球につなぐ", "キャラクター設定", "音楽を鑑賞する"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "実物の観測点を、地球の感覚器へ。", "三人の役割と関係。", "物語の音楽へ。"]);
+  for (const property of ["titleFontSize", "titleFontWeight", "titleLetterSpacing", "titleLineHeight"]) {
+    assert.equal(new Set(scan.cards.map((card) => card[property])).size, 1, `${viewport.name}: card ${property} values are not unified`);
+  }
   assert.equal(scan.cards.find((card) => card.title === "キャラクター設定")?.copyLineCount, 1, `${viewport.name}: character copy is not one line`);
   assert.equal(scan.cards.some((card) => card.path === "space" || card.title === "宇宙から見る"), false);
   assert.equal(scan.cards.some((card) => card.path === "abstract" || card.title === "光に触れる"), false);
@@ -230,7 +246,8 @@ const assertCards = (scan, viewport) => {
   assert(scan.hiddenDetailCount > 0);
   assert.equal(scan.primaryCount, 1);
   assert(scan.primaryVisible && scan.primaryFocusable && scan.primaryRole === "button");
-  assert(scan.primaryText.includes("物語へ戻る"));
+  assert(scan.primaryText.includes("物語をはじめる"));
+  assert.equal(scan.primaryText.includes("→"), false);
   assert.notEqual(scan.primaryBackground, "none");
   assert(Math.abs(scan.gridRect.left - scan.primaryRect.left) <= 1);
   assert(Math.abs(scan.gridRect.right - scan.primaryRect.right) <= 1);
@@ -301,8 +318,11 @@ const scanGxFeature = async (page, viewport) => {
     const style = getComputedStyle(element);
     const copy = element.querySelector(".intro-gx-copy");
     const title = element.querySelector(".intro-gx-copy strong");
+    const description = element.querySelector(".intro-gx-copy p");
     const enter = element.querySelector(".intro-gx-enter");
     const rect = element.getBoundingClientRect();
+    const descriptionRange = document.createRange();
+    descriptionRange.selectNodeContents(description);
     return {
       rect: rect.toJSON(),
       backgroundImage: style.backgroundImage,
@@ -314,6 +334,7 @@ const scanGxFeature = async (page, viewport) => {
       title: title?.textContent.trim(),
       titleSize: Number.parseFloat(getComputedStyle(title).fontSize),
       copy: copy?.querySelector("p")?.textContent.trim(),
+      copyLineCount: [...descriptionRange.getClientRects()].length,
       enter: enter?.textContent.replace(/\s+/gu, " ").trim(),
       copyAlignedLeft: getComputedStyle(copy).textAlign === "left",
       viewportCenter: element.closest(".intro-layer")?.clientWidth / 2,
@@ -324,9 +345,10 @@ const scanGxFeature = async (page, viewport) => {
   });
   assert.equal(scan.visible, true);
   assert.match(scan.backgroundImage, /gradient/u);
-  assert(scan.borderRadius >= 8 && scan.borderLeftWidth >= 3, JSON.stringify(scan));
+  assert(scan.borderRadius >= 2 && scan.borderLeftWidth >= 1, JSON.stringify(scan));
   assert.equal(scan.title, "酸素は、最初の廃棄物だった。");
   assert.match(scan.copy, /人間と地球が、ともに変わるGX/u);
+  if (viewport.width >= 1280) assert.equal(scan.copyLineCount, 1, JSON.stringify(scan));
   assert.match(scan.enter, /THE FIRST GX/u);
   assert(scan.titleSize >= 21 && scan.titleSize <= 31, JSON.stringify(scan));
   assert.equal(scan.copyAlignedLeft, true);
@@ -334,6 +356,16 @@ const scanGxFeature = async (page, viewport) => {
   assert.equal(scan.overflowX, false);
   assert(scan.rect.left >= 0 && scan.rect.right <= viewport.width + 1, JSON.stringify(scan.rect));
   return scan;
+};
+
+const scanGxFeatureOnly = async (viewport) => {
+  const { context, page } = await createPage(viewport, `${viewport.name}-gx-feature-only`);
+  await openIntro(page);
+  const gxFeature = await scanGxFeature(page, viewport);
+  const screenshot = path.join(outputDir, `${viewport.name}-gx-feature-one-line.png`);
+  await page.screenshot({ path: screenshot, fullPage: false });
+  report.scans.push({ viewport: viewport.name, case: "gx-feature-one-line", gxFeature, screenshot, passed: true });
+  await context.close();
 };
 
 const scanCharacterFile = async (page, viewport) => {
@@ -645,6 +677,11 @@ const scanIntroReturn = async (viewport) => {
   const before = await cardScan(page);
   assertCards(before, viewport);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-intro-simple.png`) });
+  if (cardsOnly) {
+    report.scans.push({ viewport: viewport.name, case: "intro-cards-only", before, passed: true });
+    await context.close();
+    return;
+  }
   const scrollCue = await useScrollCue(page, viewport);
   const gxFeature = await scanGxFeature(page, viewport);
   const gxScreenshot = path.join(outputDir, `${viewport.name}-gx-feature-centered.png`);
@@ -932,7 +969,9 @@ const scanRuntimeStoryContract = async () => {
 };
 
 try {
-  if (mapCopyOnly) {
+  if (gxFeatureOnly) {
+    for (const viewport of viewports) await scanGxFeatureOnly(viewport);
+  } else if (mapCopyOnly) {
     await scanMapActionCopy(viewports[2]);
     await scanMapActionCopy(viewports[3]);
   } else if (endingOnly) {
@@ -940,22 +979,20 @@ try {
   } else {
     for (const viewport of viewports) await scanIntroReturn(viewport);
   }
-  if (!mapCopyOnly && !introOnly && !endingOnly) {
+  if (!gxFeatureOnly && !mapCopyOnly && !introOnly && !endingOnly && !cardsOnly) {
     await scanEndingDestinations();
     await scanIntegratedLightEntry(viewports[2]);
     await scanIntegratedLightEntry(viewports[3]);
     await scanDirectMapEntry(viewports[2]);
     await scanDirectMapEntry(viewports[3]);
-    if (!cardsOnly) {
-      await scanMetadataAndRuntimeGallery(viewports[0], "festival_concept_001");
-      await scanMetadataAndRuntimeGallery(viewports[1], "festival_concept_008");
-      await scanMetadataAndRuntimeGallery(viewports[2], "festival_concept_015");
-      await scanMetadataAndRuntimeGallery(viewports[3], "festival_concept_001");
-      await scanIntroductionSequence(viewports[2]);
-      await scanIntroductionSequence(viewports[3]);
-      await scanRuntimeStoryContract();
-      await scanRepeatAndBack();
-    }
+    await scanMetadataAndRuntimeGallery(viewports[0], "festival_concept_001");
+    await scanMetadataAndRuntimeGallery(viewports[1], "festival_concept_008");
+    await scanMetadataAndRuntimeGallery(viewports[2], "festival_concept_015");
+    await scanMetadataAndRuntimeGallery(viewports[3], "festival_concept_001");
+    await scanIntroductionSequence(viewports[2]);
+    await scanIntroductionSequence(viewports[3]);
+    await scanRuntimeStoryContract();
+    await scanRepeatAndBack();
   }
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);

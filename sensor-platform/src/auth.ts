@@ -57,8 +57,10 @@ export const startGoogleLogin = async (request: Request, env: Env): Promise<Resp
   const state = randomToken("st_");
   const nonce = randomToken("no_");
   const verifier = randomToken("pkce_");
-  const browserBinding = randomToken("oidc_");
   const now = new Date();
+  const trialUserId = await currentTrialUserId(request, env.DB, now.toISOString());
+  const trialBinding = trialUserId ? await encryptFlowValue(trialUserId, env.SESSION_SECRET) : "";
+  const browserBinding = `${randomToken("oidc_")}~${trialBinding}`;
   const expiresAt = new Date(now.getTime() + FLOW_TTL_SECONDS * 1000).toISOString();
   await env.DB.prepare(
     `INSERT INTO oauth_flows
@@ -122,6 +124,8 @@ export const finishGoogleLogin = async (request: Request, env: Env): Promise<Res
   if (!flow) throw new ApiError(400, "INVALID_OIDC_STATE", "Google login state has already been used.");
   const verifier = await decryptFlowValue(flow.verifier_ciphertext, env.SESSION_SECRET);
   if (!verifier) throw new ApiError(400, "INVALID_OIDC_FLOW", "Google login flow could not be verified.");
+  const trialBinding = browserBinding.slice(browserBinding.indexOf("~") + 1);
+  const trialUserId = trialBinding ? await decryptFlowValue(trialBinding, env.SESSION_SECRET) : null;
 
   const tokenResponse = await fetch(GOOGLE_TOKEN_ENDPOINT, {
     method: "POST",
@@ -142,7 +146,7 @@ export const finishGoogleLogin = async (request: Request, env: Env): Promise<Res
     throw new ApiError(401, "INVALID_ID_TOKEN", "Google did not return a valid ID token.");
   }
   const identity = await verifyGoogleIdToken(idToken, env.GOOGLE_CLIENT_ID, flow.nonce_hash);
-  const userId = await upsertGoogleUser(env.DB, identity, now);
+  const userId = await upsertGoogleUser(env.DB, identity, now, trialUserId);
   const session = await createSession(env, userId, now);
   const headers = new Headers({ Location: new URL(flow.return_path, env.PUBLIC_ORIGIN).toString() });
   headers.append("Set-Cookie", sessionCookie(session.token, session.ttl));
@@ -265,11 +269,20 @@ const createSession = async (env: Env, userId: string, now: string): Promise<{ t
   return { token, csrfToken, ttl, expiresAt };
 };
 
-const upsertGoogleUser = async (db: D1Database, identity: GoogleIdentity, now: string): Promise<string> => {
+const upsertGoogleUser = async (
+  db: D1Database,
+  identity: GoogleIdentity,
+  now: string,
+  trialUserId: string | null,
+): Promise<string> => {
   const existing = await db.prepare(
     "SELECT user_id FROM user_identities WHERE provider = 'google' AND provider_subject = ?1",
   ).bind(identity.sub).first<{ user_id: string }>();
   if (existing) {
+    if (trialUserId && trialUserId !== existing.user_id) {
+      await mergeTrialUserIntoGoogle(db, trialUserId, existing.user_id, identity.sub, now);
+      return existing.user_id;
+    }
     await db.batch([
       db.prepare("UPDATE users SET updated_at = ?1 WHERE id = ?2")
         .bind(now, existing.user_id),
@@ -278,6 +291,36 @@ const upsertGoogleUser = async (db: D1Database, identity: GoogleIdentity, now: s
       ).bind(now, identity.sub),
     ]);
     return existing.user_id;
+  }
+  if (trialUserId) {
+    const trial = await db.prepare(
+      "SELECT id FROM users WHERE id = ?1 AND account_kind = 'trial'",
+    ).bind(trialUserId).first<{ id: string }>();
+    if (trial) {
+      try {
+        await db.batch([
+          db.prepare("UPDATE users SET account_kind = 'google', updated_at = ?1 WHERE id = ?2 AND account_kind = 'trial'")
+            .bind(now, trialUserId),
+          db.prepare(
+            `INSERT INTO user_identities
+              (id, user_id, provider, provider_subject, email, email_verified, created_at, updated_at)
+             VALUES (?1, ?2, 'google', ?3, NULL, 0, ?4, ?4)`,
+          ).bind(crypto.randomUUID(), trialUserId, identity.sub, now),
+          db.prepare("UPDATE sessions SET revoked_at = ?1 WHERE user_id = ?2 AND revoked_at IS NULL")
+            .bind(now, trialUserId),
+        ]);
+        return trialUserId;
+      } catch {
+        const winner = await db.prepare(
+          "SELECT user_id FROM user_identities WHERE provider = 'google' AND provider_subject = ?1",
+        ).bind(identity.sub).first<{ user_id: string }>();
+        if (winner) {
+          await mergeTrialUserIntoGoogle(db, trialUserId, winner.user_id, identity.sub, now);
+          return winner.user_id;
+        }
+        throw new ApiError(500, "IDENTITY_SAVE_FAILED", "Google identity could not be saved.");
+      }
+    }
   }
   const userId = crypto.randomUUID();
   const publicId = createPublicId();
@@ -299,6 +342,46 @@ const upsertGoogleUser = async (db: D1Database, identity: GoogleIdentity, now: s
     if (winner) return winner.user_id;
     throw new ApiError(500, "IDENTITY_SAVE_FAILED", "Google identity could not be saved.");
   }
+};
+
+const mergeTrialUserIntoGoogle = async (
+  db: D1Database,
+  trialUserId: string,
+  googleUserId: string,
+  providerSubject: string,
+  now: string,
+): Promise<void> => {
+  const trial = await db.prepare(
+    "SELECT id FROM users WHERE id = ?1 AND account_kind = 'trial'",
+  ).bind(trialUserId).first<{ id: string }>();
+  if (!trial) {
+    await db.prepare("UPDATE users SET updated_at = ?1 WHERE id = ?2").bind(now, googleUserId).run();
+    return;
+  }
+  await db.batch([
+    db.prepare("UPDATE devices SET owner_user_id = ?1, updated_at = ?2 WHERE owner_user_id = ?3")
+      .bind(googleUserId, now, trialUserId),
+    db.prepare("UPDATE device_pairing_codes SET user_id = ?1 WHERE user_id = ?2")
+      .bind(googleUserId, trialUserId),
+    db.prepare("DELETE FROM sessions WHERE user_id = ?1").bind(trialUserId),
+    db.prepare("DELETE FROM users WHERE id = ?1 AND account_kind = 'trial'").bind(trialUserId),
+    db.prepare("UPDATE users SET updated_at = ?1 WHERE id = ?2").bind(now, googleUserId),
+    db.prepare(
+      "UPDATE user_identities SET email = NULL, email_verified = 0, updated_at = ?1 WHERE provider = 'google' AND provider_subject = ?2",
+    ).bind(now, providerSubject),
+  ]);
+};
+
+const currentTrialUserId = async (request: Request, db: D1Database, now: string): Promise<string | null> => {
+  const token = parseCookies(request).get(SESSION_COOKIE);
+  if (!token || token.length > 256) return null;
+  const row = await db.prepare(
+    `SELECT s.user_id
+     FROM sessions s
+     JOIN users u ON u.id = s.user_id
+     WHERE s.token_hash = ?1 AND s.revoked_at IS NULL AND s.expires_at > ?2 AND u.account_kind = 'trial'`,
+  ).bind(await sha256Hex(token), now).first<{ user_id: string }>();
+  return row?.user_id ?? null;
 };
 
 const verifyGoogleIdToken = async (token: string, audience: string, nonceHash: string): Promise<GoogleIdentity> => {

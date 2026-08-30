@@ -782,6 +782,9 @@
 
   const open = () => {
     if (isOpen) return;
+    if (window.location.hash !== "#sound") {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#sound`);
+    }
     isOpen = true;
     lastFocused = document.activeElement;
     layer.hidden = false;
@@ -799,7 +802,7 @@
     animationFrame = requestAnimationFrame(tick);
   };
 
-  const close = () => {
+  const close = ({ updateHash = true } = {}) => {
     if (!isOpen) return;
     isOpen = false;
     layer.classList.remove("is-open");
@@ -810,8 +813,8 @@
     window.setTimeout(() => {
       if (!isOpen) layer.hidden = true;
     }, 260);
-    if (window.location.hash === "#sound") {
-      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    if (updateHash && window.location.hash === "#sound") {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#top`);
     }
     if (lastFocused instanceof HTMLElement) lastFocused.focus({ preventScroll: true });
   };
@@ -830,6 +833,10 @@
 
   openButtons.forEach((button) => button.addEventListener("click", open));
   closeButton?.addEventListener("click", close);
+  window.addEventListener("hashchange", () => {
+    if (window.location.hash === "#sound") open();
+    else if (isOpen) close({ updateHash: false });
+  });
   playButton?.addEventListener("click", togglePlayback);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
