@@ -36,6 +36,7 @@ const naturalEarthCountriesUrl = "../data/natural-earth-50m-countries.geojson?v=
 const japanPrefectureUrl = "../data/japan-prefectures.topojson?v=gaia-1";
 const publicMapMinZoom = 1;
 const publicMapMaxZoom = 96;
+const publicMapLongitudeScale = Math.cos(36 * Math.PI / 180);
 const publicMapOverscanRatio = .22;
 const publicMapDragRebaseRatio = .18;
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
@@ -379,8 +380,7 @@ function publicMapView() {
   const width = Math.max(rect.width, window.innerWidth, 1);
   const height = Math.max(rect.height, window.innerHeight, 1);
   const verticalSpan = Math.min(180, 180 / publicMapCamera.zoom);
-  const longitudeScale = Math.max(.35, Math.cos(publicMapCamera.latitude * Math.PI / 180));
-  const horizontalSpan = Math.min(360, verticalSpan * (width / height) / longitudeScale);
+  const horizontalSpan = Math.min(360, verticalSpan * (width / height) / publicMapLongitudeScale);
   publicMapCamera.latitude = clamp(publicMapCamera.latitude, -90 + verticalSpan / 2, 90 - verticalSpan / 2);
   publicMapCamera.longitude = clamp(publicMapCamera.longitude, -180 + horizontalSpan / 2, 180 - horizontalSpan / 2);
   return {
