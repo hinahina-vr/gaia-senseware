@@ -178,7 +178,7 @@ const cardScan = async (page) => page.evaluate(() => {
   const cards = [...document.querySelectorAll(".intro-path-card")];
   const grid = document.querySelector(".intro-path-grid");
   const hiddenDetails = [...document.querySelectorAll(
-    ".intro-path-card .intro-card-reveal-fx,.intro-path-card .intro-border-glint,.intro-path-card .intro-path-index,.intro-path-card .intro-path-enter",
+    ".intro-path-card .intro-path-index,.intro-path-card .intro-path-enter",
   )];
   const primary = document.querySelector(".intro-story-return[data-primary-action='true']");
   const primaryStyle = getComputedStyle(primary);
@@ -216,6 +216,7 @@ const cardScan = async (page) => page.evaluate(() => {
     }),
     hiddenDetailCount: hiddenDetails.length,
     hiddenDetailVisibleCount: hiddenDetails.filter(__qaVisible).length,
+    focusEffectCount: document.querySelectorAll(".intro-path-card .intro-card-reveal-fx,.intro-path-card .intro-border-glint").length,
     primaryCount: document.querySelectorAll("[data-primary-action='true']").length,
     primaryVisible: __qaVisible(primary),
     primaryFocusable: primary.tabIndex >= 0,
@@ -233,8 +234,8 @@ const assertCards = (scan, viewport) => {
   assert.equal(scan.landingMetaCount, 0, `${viewport.name}: obsolete landing metadata remains`);
   assert.equal(scan.landingEyebrowCount, 0, `${viewport.name}: obsolete landing eyebrow remains`);
   assert.equal(scan.cardCount, 4);
-  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを地球につなぐ", "キャラクター資料", "音楽を鑑賞する"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "実物の観測点を、地球の感覚器へ。", "物語に登場する三人を知る。", "物語の音楽へ。"]);
+  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を観測する", "センサーを地球につなぐ", "キャラクター資料", "音楽を鑑賞する"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["地球の変化を描き出す。", "実物の観測点を、地球の感覚器へ。", "物語に登場する三人を知る。", "物語の音楽へ。"]);
   for (const property of ["titleFontSize", "titleFontWeight", "titleLetterSpacing", "titleLineHeight"]) {
     assert.equal(new Set(scan.cards.map((card) => card[property])).size, 1, `${viewport.name}: card ${property} values are not unified`);
   }
@@ -244,6 +245,7 @@ const assertCards = (scan, viewport) => {
   assert(scan.cards.every((card) => card.glyphVisible && card.focusable && card.rect.width > 0 && card.rect.height >= 90));
   assert.equal(scan.hiddenDetailVisibleCount, 0);
   assert(scan.hiddenDetailCount > 0);
+  assert.equal(scan.focusEffectCount, 8);
   assert.equal(scan.primaryCount, 1);
   assert(scan.primaryVisible && scan.primaryFocusable && scan.primaryRole === "button");
   assert(scan.primaryText.includes("物語をはじめる"));
@@ -258,6 +260,38 @@ const assertCards = (scan, viewport) => {
     const cardTops = scan.cards.map(({ layoutTop }) => layoutTop);
     assert(Math.max(...cardTops) - Math.min(...cardTops) <= 1, `${viewport.name}: the four exploration cards are not in one row (${JSON.stringify({ cardTops, viewportWidth: scan.viewportWidth, wideRowMedia: scan.wideRowMedia, gridTemplateColumns: scan.gridTemplateColumns })})`);
   }
+};
+
+const verifyCardFocusGlint = async (page, viewport) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const effects = [];
+  const cards = page.locator(".intro-path-card");
+  for (let index = 0; index < await cards.count(); index += 1) {
+    const card = cards.nth(index);
+    await card.focus();
+    effects.push(await card.evaluate((element) => {
+      const reveal = element.querySelector(".intro-card-reveal-fx");
+      const border = element.querySelector(".intro-border-glint");
+      return {
+        focused: element.matches(":focus-visible"),
+        revealDisplay: getComputedStyle(reveal).display,
+        revealAnimation: getComputedStyle(reveal).animationName,
+        borderDisplay: getComputedStyle(border).display,
+        borderAnimation: getComputedStyle(border, "::before").animationName,
+      };
+    }));
+  }
+  effects.forEach((effect, index) => {
+    assert.equal(effect.focused, true, `${viewport.name}: card ${index + 1} is not visibly focused`);
+    assert.notEqual(effect.revealDisplay, "none", `${viewport.name}: card ${index + 1} surface glint is hidden`);
+    assert.match(effect.revealAnimation, /intro-card-hover-glint/u, `${viewport.name}: card ${index + 1} surface glint does not animate`);
+    assert.notEqual(effect.borderDisplay, "none", `${viewport.name}: card ${index + 1} border glint is hidden`);
+    assert.match(effect.borderAnimation, /intro-border-sweep/u, `${viewport.name}: card ${index + 1} border glint does not animate`);
+  });
+  await cards.first().focus();
+  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-intro-card-focus-glint.png`), fullPage: false });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  return effects;
 };
 
 const useScrollCue = async (page, viewport) => {
@@ -676,9 +710,10 @@ const scanIntroReturn = async (viewport) => {
   await openIntro(page);
   const before = await cardScan(page);
   assertCards(before, viewport);
+  const focusGlint = await verifyCardFocusGlint(page, viewport);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-intro-simple.png`) });
   if (cardsOnly) {
-    report.scans.push({ viewport: viewport.name, case: "intro-cards-only", before, passed: true });
+    report.scans.push({ viewport: viewport.name, case: "intro-cards-only", before, focusGlint, passed: true });
     await context.close();
     return;
   }
@@ -717,7 +752,7 @@ const scanIntroReturn = async (viewport) => {
     await page.locator("#novel-gallery-close").click();
   }
 
-  report.scans.push({ viewport: viewport.name, case: `intro-return-${viewport.action}`, before, scrollCue, gxFeature, gxScreenshot, after, album, passed: true });
+  report.scans.push({ viewport: viewport.name, case: `intro-return-${viewport.action}`, before, focusGlint, scrollCue, gxFeature, gxScreenshot, after, album, passed: true });
   await context.close();
 };
 

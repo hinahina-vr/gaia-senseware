@@ -71,6 +71,11 @@ if (!lab || !openButton) {
     kpiQuality: q("#gaia-statistics-kpi-quality"),
     kpiQualityNote: q("#gaia-statistics-kpi-quality-note"),
     filterSummary: q("#gaia-statistics-filter-summary"),
+    takeaway: q("#gaia-statistics-takeaway"),
+    takeawayHeadline: q("#gaia-statistics-takeaway-title"),
+    takeawayBody: q("#gaia-statistics-takeaway-body"),
+    takeawayEvidence: q("#gaia-statistics-takeaway-evidence"),
+    takeawayCaveat: q("#gaia-statistics-takeaway-caveat"),
     exportCsv: q("#gaia-statistics-export-csv"),
     exportJson: q("#gaia-statistics-export-json"),
     exportPng: q("#gaia-statistics-export-png"),
@@ -1098,6 +1103,35 @@ if (!lab || !openButton) {
   };
 
   const metricText = ([label, value, unit]) => `${label}: ${format(value)}${unit || ""}`;
+  const renderTakeaway = (result) => {
+    const insight = result.insight;
+    ui.takeawayEvidence.replaceChildren();
+    ui.takeaway.dataset.state = insight ? "ready" : "empty";
+    ui.takeawayHeadline.textContent = insight?.headline || "この条件では、まだ結論を表示できません。";
+    ui.takeawayBody.textContent = insight?.interpretation || insight?.meaning || "データや分析方法を変えて、別の見方を試してください。";
+    ui.takeawayCaveat.textContent = insight?.limitations?.[0]
+      ? `注意：${insight.limitations[0]}`
+      : "注意：グラフだけで因果関係を判断せず、データの範囲と前提を確認してください。";
+    (insight?.evidence || []).slice(0, 3).forEach((metric) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = metricText(metric);
+      button.title = "計算結果を開いて根拠を確認";
+      button.addEventListener("click", () => {
+        const details = q(".gaia-statistics-values");
+        details.open = true;
+        details.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+        ui.formula.focus();
+      });
+      ui.takeawayEvidence.append(button);
+    });
+    if (!ui.takeawayEvidence.children.length) {
+      const note = document.createElement("span");
+      note.textContent = "数値的な根拠は計算結果で確認できます";
+      ui.takeawayEvidence.append(note);
+    }
+  };
+
   const renderMetrics = (result, dataset) => {
     ui.metrics.replaceChildren();
     (result.metrics || []).forEach((metric) => {
@@ -1516,11 +1550,11 @@ if (!lab || !openButton) {
         const result = await runAnalysis(method.id, dataset);
         if (token !== state.renderToken) return;
         state.result = result;
-        renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true);
+        renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true);
         ui.status.textContent = result.kind === "not-applicable" ? "条件不足" : `${rowsFor(dataset).length}件`;
       } catch (error) {
         console.error("GAIA Statistics Lab analysis failed", error);
-        const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true); ui.status.textContent = "条件不足";
+        const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true); ui.status.textContent = "条件不足";
       }
     });
   };

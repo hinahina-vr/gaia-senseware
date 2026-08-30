@@ -59,14 +59,24 @@ try {
         shell: geometry(".gaia-statistics-shell"),
         body: geometry(".gaia-statistics-body"),
         stage: geometry(".gaia-statistics-stage"),
+        layout: (() => {
+          const controls = document.querySelector(".gaia-statistics-controls").getBoundingClientRect();
+          const stage = document.querySelector(".gaia-statistics-stage").getBoundingClientRect();
+          return { controls: controls.toJSON(), stage: stage.toJSON() };
+        })(),
       };
     });
-    for (const [name, geometry] of Object.entries(fixedFrame)) {
-      if (name === "document") {
-        assert.ok(geometry.scrollHeight <= geometry.clientHeight + 1 && geometry.scrollY === 0, `${viewport.name}: statistics page still scrolls vertically`);
-      } else {
-        assert.ok(geometry.scrollHeight <= geometry.clientHeight + 1 && geometry.scrollTop === 0, `${viewport.name}: ${name} still scrolls vertically`);
+    assert.ok(fixedFrame.document.scrollHeight <= fixedFrame.document.clientHeight + 1 && fixedFrame.document.scrollY === 0, `${viewport.name}: background page still scrolls vertically`);
+    assert.ok(fixedFrame.lab.scrollHeight <= fixedFrame.lab.clientHeight + 1, `${viewport.name}: modal backdrop still scrolls vertically`);
+    if (viewport.name === "pc") {
+      for (const name of ["shell", "body", "stage"]) {
+        const geometry = fixedFrame[name];
+        assert.ok(geometry.scrollHeight <= geometry.clientHeight + 1 && geometry.scrollTop === 0, `pc: ${name} still scrolls vertically`);
       }
+      assert.ok(fixedFrame.layout.controls.right <= fixedFrame.layout.stage.left + 1, "pc: conditions are not arranged in a familiar left sidebar");
+    } else {
+      assert.match(fixedFrame.shell.overflowY, /^(?:auto|scroll)$/u, "mobile: the statistics workspace is not independently scrollable");
+      assert.ok(fixedFrame.layout.controls.bottom <= fixedFrame.layout.stage.top + 1, "mobile: conditions are not arranged above the results");
     }
     await page.locator("#gaia-statistics-dataset").selectOption("co2-trend");
     await page.locator("#gaia-statistics-lectures").selectOption("01");
@@ -103,6 +113,23 @@ try {
     assert.ok(co2BusinessSummary.primary && co2BusinessSummary.primary !== "—", `${viewport.name}: primary KPI is empty`);
     assert.match(co2BusinessSummary.filter, /SOURCE ONLY.*2016-08–2026-07.*BROWSER LOCAL/u, `${viewport.name}: filter lineage is not visible`);
     assert.equal(co2BusinessSummary.enabledExports, 3, `${viewport.name}: BI exports are not ready after analysis`);
+    const takeaway = await page.locator("#gaia-statistics-takeaway").evaluate((element) => ({
+      visible: Boolean(element.offsetWidth || element.offsetHeight || element.getClientRects().length),
+      state: element.dataset.state,
+      headline: document.querySelector("#gaia-statistics-takeaway-title")?.textContent?.trim() || "",
+      body: document.querySelector("#gaia-statistics-takeaway-body")?.textContent?.trim() || "",
+      caveat: document.querySelector("#gaia-statistics-takeaway-caveat")?.textContent?.trim() || "",
+      evidenceCount: document.querySelectorAll("#gaia-statistics-takeaway-evidence button").length,
+    }));
+    assert.equal(takeaway.visible, true, `${viewport.name}: concise insight is hidden from the main result screen`);
+    assert.equal(takeaway.state, "ready", `${viewport.name}: concise insight is not ready`);
+    assert.ok(takeaway.headline.length > 8 && takeaway.body.length > 16, `${viewport.name}: concise insight is empty`);
+    assert.match(takeaway.caveat, /^注意：/u, `${viewport.name}: insight limitation is not visible`);
+    assert.ok(takeaway.evidenceCount >= 1 && takeaway.evidenceCount <= 3, `${viewport.name}: concise evidence is not usable`);
+    await page.locator("#gaia-statistics-takeaway-evidence button").first().click();
+    assert.equal(await page.locator(".gaia-statistics-values").evaluate((element) => element.open), true, `${viewport.name}: insight evidence does not open its calculation result`);
+    await page.locator(".gaia-statistics-values").evaluate((element) => { element.open = false; });
+    await page.locator(".gaia-statistics-shell").evaluate((element) => { element.scrollTop = 0; });
     assert.equal(await page.locator("#gaia-statistics-records-body tr").count(), 120, `${viewport.name}: accessible CO2 record table is incomplete`);
     assert.equal(await page.locator("#gaia-statistics-record-x-heading").textContent(), "観測月", `${viewport.name}: record table X heading is wrong`);
     assert.equal(await page.locator("#gaia-statistics-record-y-heading").textContent(), "CO₂", `${viewport.name}: record table Y heading is wrong`);
@@ -334,6 +361,8 @@ try {
       await page.locator(".gaia-statistics-records").screenshot({ path: path.join(outputDir, "pc-record-audit-table.png") });
       await page.locator(".gaia-statistics-records").evaluate((element) => { element.open = false; });
     }
+    await page.locator(".gaia-statistics-stage details").evaluateAll((elements) => elements.forEach((element) => { element.open = false; }));
+    await page.locator(".gaia-statistics-shell").evaluate((element) => { element.scrollTop = 0; });
     await page.waitForTimeout(viewport.name === "pc" ? 650 : 40);
 
     const screenshot = path.join(outputDir, `${viewport.name}-statistics-lab.png`);

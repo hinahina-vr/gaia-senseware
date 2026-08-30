@@ -8861,6 +8861,34 @@ h1 {
   display: none;
 }
 
+/* Keep the lightweight cards concise while restoring their focus glint. */
+.intro-lp-hero .intro-path-card .intro-card-reveal-fx,
+.intro-lp-hero .intro-path-card .intro-border-glint {
+  display: block;
+}
+
+.intro-lp-hero .intro-path-card:is(:hover, :focus-visible) .intro-card-reveal-fx {
+  animation: intro-card-hover-glint 620ms cubic-bezier(0.2, 0.76, 0.22, 1) both;
+}
+
+.intro-lp-hero .intro-path-card:is(:hover, :focus-visible) .intro-border-glint::before {
+  animation: intro-border-sweep 760ms cubic-bezier(0.18, 0.72, 0.22, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-lp-hero .intro-path-card:is(:hover, :focus-visible) .intro-card-reveal-fx {
+    opacity: 0.16;
+    animation: none;
+    transform: none;
+  }
+
+  .intro-lp-hero .intro-path-card:is(:hover, :focus-visible) .intro-border-glint::before {
+    opacity: 0.72;
+    animation: none !important;
+    background-position: 50% 0;
+  }
+}
+
 .intro-lp-hero .intro-path-card .intro-path-glyph {
   position: static;
   grid-row: 1;

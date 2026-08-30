@@ -10,7 +10,7 @@
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-map-title-separator-1",
-        "./statistics-lab.css?v=gaia-statistics-chart-return-1",
+        "./statistics-lab.css?v=gaia-statistics-insight-workspace-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
@@ -24,7 +24,7 @@
       ],
       modules: [
         "./src/exploration/index.js?v=gaia-budget-devices-1",
-        "./statistics-lab.js?v=gaia-statistics-chart-return-1",
+        "./statistics-lab.js?v=gaia-statistics-insight-workspace-1",
       ],
     },
     story: {
