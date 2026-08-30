@@ -8,10 +8,10 @@
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-demo-sensors-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-network-resonance-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=3" defer></script>
-    <script src="./sensor-platform.js?v=gaia-demo-sensors-1" type="module"></script>
+    <script src="./sensor-platform.js?v=gaia-network-resonance-1" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -75,7 +75,18 @@
           <div class="sensor-world-map" id="public-sensor-map" role="region" tabindex="0" aria-label="日本を中心に拡大・移動できる公開センサー地図">
             <div class="sensor-map-hud sensor-map-hud-top" aria-hidden="true"><span>DRAG / WHEEL / +/-</span><span id="public-sensor-count">000 NODES</span></div>
             <div class="sensor-world-grid" aria-hidden="true"></div>
+            <svg class="sensor-resonance-network" id="public-sensor-network" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div class="sensor-map-markers" id="public-sensor-markers"></div>
+            <section class="sensor-global-sync" aria-label="GAIA分散観測ネットワークの現在値">
+              <header><span>GLOBAL GAIA SYNC</span><strong id="public-sync-rate">00.0%</strong></header>
+              <div class="sensor-sync-stats">
+                <span>ACTIVE NODES <b id="public-active-nodes">0</b></span>
+                <span>OBS PACKETS <b id="public-packet-count">0</b></span>
+                <span>DATA <b id="public-data-volume">0 B</b></span>
+              </div>
+              <div class="sensor-depth-track"><i id="public-depth-fill"></i></div>
+              <footer><span>APEIRONCENE OBSERVATION DEPTH</span><b id="public-depth-value">0%</b></footer>
+            </section>
             <div class="sensor-map-navigation" aria-label="地図の表示範囲">
               <button id="public-map-zoom-in" type="button" aria-label="地図を拡大">＋</button>
               <button id="public-map-zoom-out" type="button" aria-label="地図を縮小">−</button>
@@ -326,7 +337,20 @@
           </li>
           <li>
             <span>03</span>
-            <div><strong>検証済みGAIAファームウェアを書き込む</strong><p>Codexへ下の依頼文を送り、対応確認・バックアップ・SHA-256確認・書き込み・起動確認をまとめて依頼します。</p><code class="sensor-copy-line">このESP32をGAIA SENSEWAREへ登録して。対応確認→全容量バックアップ→SHA-256確認→検証済みファームウェア書き込み→USB設定の順で進め、秘密は会話やログへ表示しないで。</code></div>
+            <div>
+              <strong>検証済みGAIAファームウェアを書き込む</strong>
+              <p>Codexへ下の依頼文を送り、対応確認・バックアップ・SHA-256確認・書き込み・起動確認をまとめて依頼します。書き込み対象の本体は公開ソースです。</p>
+              <aside class="sensor-firmware-source" aria-label="書き込み対象ファームウェアの公開ソース">
+                <span>PUBLIC SOURCE / VERIFIED REVISION</span>
+                <code>smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino</code>
+                <div>
+                  <a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino" target="_blank" rel="noopener">ソース本体を読む</a>
+                  <a href="https://github.com/hinahina-vr/gaia-senseware/tree/de7e661dbccb151a963d755f5772db53e7d419f9/smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo" target="_blank" rel="noopener noreferrer">GitHubで構成一式を見る <small>de7e661</small></a>
+                </div>
+                <p>Wi-Fi情報とDevice Tokenはこの公開ソースには含めず、機器ごとに書き込み時に設定します。</p>
+              </aside>
+              <code class="sensor-copy-line">このESP32をGAIA SENSEWAREへ登録して。対応確認→全容量バックアップ→SHA-256確認→検証済みファームウェア書き込み→USB設定の順で進め、秘密は会話やログへ表示しないで。</code>
+            </div>
           </li>
           <li>
             <span>04</span>
@@ -351,7 +375,7 @@
         </section>
 
         <div class="sensor-guide-finish"><span>NEXT</span><strong>準備ができたらWeb側の登録へ</strong><a href="#login">参加方法を選ぶ →</a></div>
-        <details class="sensor-developer-links"><summary>開発者向け：ソースからビルドする</summary><div><a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino" download="SmartCitySensorDemo.ino">Arduinoスターターソース</a><a href="../smartcity-sensor-starter-kit/openapi.yaml">OpenAPI 3.1</a><a href="../smartcity-sensor-starter-kit/curl-examples.sh">curl examples</a><p>ArduinoはESP32とは別の機種名ではなく、ここではESP32用ファームウェアを構成・ビルドする開発環境です。通常参加者はこの手順を使う必要はありません。</p></div></details>
+        <details class="sensor-developer-links"><summary>開発者向け：ソースからビルドする</summary><div><a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino" target="_blank" rel="noopener">GAIA ESP32ファームウェア本体 (.ino)</a><a href="../smartcity-sensor-starter-kit/openapi.yaml">OpenAPI 3.1</a><a href="../smartcity-sensor-starter-kit/curl-examples.sh">curl examples</a><p>ArduinoはESP32とは別の機種名ではなく、ここではESP32用ファームウェアを構成・ビルドする開発環境です。通常参加者はこの手順を使う必要はありません。</p></div></details>
       </section>
 
       <section class="sensor-view sensor-guide sensor-terms" data-view="terms" id="terms" hidden>

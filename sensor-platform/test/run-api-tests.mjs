@@ -11,7 +11,9 @@ const nodePath = process.env.GAIA_NODE_PATH || process.execPath;
 const wranglerPath = process.env.GAIA_WRANGLER_PATH || path.join(root, "node_modules", "wrangler", "bin", "wrangler.js");
 if (!fs.existsSync(wranglerPath)) throw new Error(`Wrangler entrypoint was not found: ${wranglerPath}`);
 const origin = "http://127.0.0.1:8791";
-const persistPath = `${root}\\.wrangler\\api-test-state-${process.pid}`;
+const testStateRoot = process.env.GAIA_SENSOR_TEST_STATE_ROOT || path.join(root, ".wrangler");
+fs.mkdirSync(testStateRoot, { recursive: true });
+const persistPath = path.join(testStateRoot, `api-test-state-${process.pid}`);
 const reports = [];
 const testSecrets = {
   GOOGLE_CLIENT_ID: `local-test-${randomBytes(12).toString("hex")}`,
@@ -133,7 +135,10 @@ try {
     assert.equal(response.status, 200);
     const body = await response.json();
     assert.equal(body.sensors.length, 4);
+    assert.match(body.generatedAt, /^\d{4}-\d{2}-\d{2}T/u);
+    assert.deepEqual(body.stats, { observationPackets: 0, payloadBytes: 0 });
     assert(body.sensors.every((sensor) => sensor.isDemo === true));
+    assert(body.sensors.every((sensor) => Array.isArray(sensor.observations) && sensor.observations.length === 0));
     assert.deepEqual(body.sensors.map((sensor) => sensor.sensorName).sort(), ["sakuセンサー", "あめセンサー", "みずセンサー", "青猫センサー"].sort());
     assert.match(body.sensors.find((sensor) => sensor.sensorName === "青猫センサー").owner.avatarUrl, /slack-symbol-blue-apple-v1\.svg$/u);
     assert.deepEqual(Object.fromEntries(body.sensors.map((sensor) => [sensor.sensorName, [sensor.demoLocationLabel, sensor.location.latitude, sensor.location.longitude]])), {
@@ -393,8 +398,14 @@ try {
     assert.equal(registeredSensor.owner.displayName, "青猫センサー");
     assert.equal(registeredSensor.owner.xUrl, "https://x.com/bluecat_sensor");
     assert.equal(Object.hasOwn(registeredSensor, "lastSeenAt"), false);
+    assert(registeredSensor.observationCount >= 1);
+    assert(registeredSensor.observationSpanSeconds >= 0);
+    assert(registeredSensor.observations.length >= 1 && registeredSensor.observations.length <= 12);
+    assert.deepEqual(registeredSensor.observations[0].data, { humidity: 58.2, pm25: 9.1, temperature: 21.4 });
+    assert(publicBody.stats.observationPackets >= registeredSensor.observationCount);
+    assert(publicBody.stats.payloadBytes > 0);
     const publicJson = JSON.stringify(publicBody);
-    assert.doesNotMatch(publicJson, /user_test_owner|@|localityName|municipality|142085|逗子市/u);
+    assert.doesNotMatch(publicJson, /user_test_owner|@|lastSeenAt|receivedAt|observedAt|localityName|municipality|142085|逗子市/u);
     const forbidden = await webFetch(`/api/web/v1/devices/${deviceId}`, otherAuth, {
       method: "PATCH",
       body: deviceDraft(),

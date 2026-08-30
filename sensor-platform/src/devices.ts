@@ -52,6 +52,30 @@ type TelemetryRow = {
   payloadJson: string;
 };
 
+type PublicSensorRow = {
+  id: string;
+  sensorName: string;
+  countryCode: string;
+  subdivisionCode: string | null;
+  latitude: number;
+  longitude: number;
+  state: string;
+  isDemo: number;
+  demoLocationLabel: string | null;
+  ownerPublicId: string;
+  ownerDisplayName: string;
+  hasAvatar: number;
+  avatarKey: string | null;
+  avatarUpdatedAt: string | null;
+  xUrl: string | null;
+  githubUrl: string | null;
+  instagramUrl: string | null;
+};
+
+type PublicObservationRow = { sensorId: string; payloadJson: string };
+type PublicSensorStatsRow = { sensorId: string; observationCount: number; observationSpanSeconds: number };
+type PublicNetworkStatsRow = { observationPackets: number; payloadBytes: number };
+
 export const listCountries = async (env: Env): Promise<Response> => {
   const result = await env.DB.prepare(
     "SELECT code, name_en AS nameEn, name_local AS nameLocal FROM countries WHERE enabled = 1 ORDER BY COALESCE(name_local, name_en)",
@@ -337,28 +361,74 @@ const ownedDevice = async (env: Env, userId: string, deviceId: string): Promise<
 
 export const listPublicSensors = async (env: Env): Promise<Response> => {
   const threshold = onlineThreshold(env);
-  const result = await env.DB.prepare(
-    `SELECT d.public_id AS id, d.name AS sensorName, d.country_code AS countryCode,
-       d.subdivision_code AS subdivisionCode, d.public_latitude AS latitude,
-       d.public_longitude AS longitude,
-       CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
-       d.is_demo AS isDemo, CASE WHEN d.is_demo = 1 THEN d.locality_name ELSE NULL END AS demoLocationLabel,
-       u.public_id AS ownerPublicId, u.display_name AS ownerDisplayName,
-       CASE WHEN u.avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
-       u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
-       u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl
-     FROM devices d JOIN users u ON u.id = d.owner_user_id
-     WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
-       AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
-     ORDER BY d.created_at DESC LIMIT 500`,
-  ).bind(`-${threshold} seconds`).all<{
-    id: string; sensorName: string; countryCode: string; subdivisionCode: string | null;
-    latitude: number; longitude: number; state: string; isDemo: number; demoLocationLabel: string | null;
-    ownerPublicId: string; ownerDisplayName: string; hasAvatar: number; avatarKey: string | null; avatarUpdatedAt: string | null;
-    xUrl: string | null; githubUrl: string | null; instagramUrl: string | null;
-  }>();
+  const [sensorResult, observationResult, sensorStatsResult, networkStatsResult] = await env.DB.batch([
+    env.DB.prepare(
+      `SELECT d.public_id AS id, d.name AS sensorName, d.country_code AS countryCode,
+         d.subdivision_code AS subdivisionCode, d.public_latitude AS latitude,
+         d.public_longitude AS longitude,
+         CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
+         d.is_demo AS isDemo, CASE WHEN d.is_demo = 1 THEN d.locality_name ELSE NULL END AS demoLocationLabel,
+         u.public_id AS ownerPublicId, u.display_name AS ownerDisplayName,
+         CASE WHEN u.avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
+         u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
+         u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl
+       FROM devices d JOIN users u ON u.id = d.owner_user_id
+       WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+         AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
+       ORDER BY d.created_at DESC LIMIT 500`,
+    ).bind(`-${threshold} seconds`),
+    env.DB.prepare(
+      `WITH ranked_public_telemetry AS (
+         SELECT d.public_id AS sensorId, t.payload_json AS payloadJson,
+           ROW_NUMBER() OVER (PARTITION BY t.device_id ORDER BY t.received_at DESC, t.seq DESC) AS observationRank
+         FROM telemetry t JOIN devices d ON d.device_id = t.device_id
+         WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+           AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
+       )
+       SELECT sensorId, payloadJson FROM ranked_public_telemetry
+       WHERE observationRank <= 12 ORDER BY sensorId, observationRank`,
+    ),
+    env.DB.prepare(
+      `SELECT d.public_id AS sensorId, COUNT(t.id) AS observationCount,
+         CASE WHEN COUNT(t.id) < 2 THEN 0 ELSE CAST(
+           MAX(0, (julianday(MAX(t.received_at)) - julianday(MIN(t.received_at))) * 86400)
+           AS INTEGER) END AS observationSpanSeconds
+       FROM devices d LEFT JOIN telemetry t ON t.device_id = d.device_id
+       WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+         AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
+       GROUP BY d.public_id`,
+    ),
+    env.DB.prepare(
+      `SELECT COUNT(t.id) AS observationPackets,
+         COALESCE(SUM(length(t.payload_json)), 0) AS payloadBytes
+       FROM telemetry t JOIN devices d ON d.device_id = t.device_id
+       WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+         AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL`,
+    ),
+  ]);
+  const sensorRows = (sensorResult?.results ?? []) as PublicSensorRow[];
+  const observationRows = (observationResult?.results ?? []) as PublicObservationRow[];
+  const sensorStatsRows = (sensorStatsResult?.results ?? []) as PublicSensorStatsRow[];
+  const networkStats = (networkStatsResult?.results?.[0] ?? { observationPackets: 0, payloadBytes: 0 }) as PublicNetworkStatsRow;
+  const observationsBySensor = new Map<string, Array<{ data: Record<string, number> }>>();
+  for (const row of observationRows) {
+    const data = parsePublicMeasurements(row.payloadJson);
+    if (!data) continue;
+    const observations = observationsBySensor.get(row.sensorId) ?? [];
+    observations.push({ data });
+    observationsBySensor.set(row.sensorId, observations);
+  }
+  const statsBySensor = new Map(sensorStatsRows.map((row) => [row.sensorId, {
+    observationCount: Number(row.observationCount) || 0,
+    observationSpanSeconds: Number(row.observationSpanSeconds) || 0,
+  }]));
   return json({
-    sensors: result.results.map((row) => ({
+    generatedAt: new Date().toISOString(),
+    stats: {
+      observationPackets: Number(networkStats.observationPackets) || 0,
+      payloadBytes: Number(networkStats.payloadBytes) || 0,
+    },
+    sensors: sensorRows.map((row) => ({
       id: row.id,
       sensorName: row.sensorName,
       location: { latitude: row.latitude, longitude: row.longitude, precision: "APPROXIMATE_0_1_DEGREE" },
@@ -370,6 +440,9 @@ export const listPublicSensors = async (env: Env): Promise<Response> => {
       state: row.state,
       isDemo: row.isDemo === 1,
       demoLocationLabel: row.demoLocationLabel,
+      observations: observationsBySensor.get(row.id) ?? [],
+      observationCount: statsBySensor.get(row.id)?.observationCount ?? 0,
+      observationSpanSeconds: statsBySensor.get(row.id)?.observationSpanSeconds ?? 0,
       owner: {
         displayName: row.ownerDisplayName,
         avatarUrl: row.avatarKey && campusChatAvatarUrls[row.avatarKey]
@@ -383,6 +456,19 @@ export const listPublicSensors = async (env: Env): Promise<Response> => {
       },
     })),
   });
+};
+
+const parsePublicMeasurements = (payloadJson: string): Record<string, number> | null => {
+  try {
+    const parsed: unknown = JSON.parse(payloadJson);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    const measurements = Object.entries(parsed).filter((entry): entry is [string, number] => (
+      typeof entry[1] === "number" && Number.isFinite(entry[1])
+    ));
+    return measurements.length ? Object.fromEntries(measurements) : null;
+  } catch {
+    return null;
+  }
 };
 
 const serializeTelemetry = (row: TelemetryRow): { seq: number; observedAt: string | null; receivedAt: string; data: unknown } => ({

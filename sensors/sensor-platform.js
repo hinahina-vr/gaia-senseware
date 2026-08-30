@@ -20,6 +20,7 @@ const historyList = document.querySelector("#history-list");
 const historyChart = document.querySelector("#history-chart");
 const latestMetrics = document.querySelector("#latest-metrics");
 const publicSensorMap = document.querySelector("#public-sensor-map");
+const publicSensorNetwork = document.querySelector("#public-sensor-network");
 const publicSensorMarkers = document.querySelector("#public-sensor-markers");
 const publicSensorList = document.querySelector("#public-sensor-list");
 const publicSensorDetail = document.querySelector("#public-sensor-detail");
@@ -27,6 +28,12 @@ const publicMapZoomIn = document.querySelector("#public-map-zoom-in");
 const publicMapZoomOut = document.querySelector("#public-map-zoom-out");
 const publicMapReset = document.querySelector("#public-map-reset");
 const publicMapZoomOutput = document.querySelector("#public-map-zoom");
+const publicSyncRate = document.querySelector("#public-sync-rate");
+const publicActiveNodes = document.querySelector("#public-active-nodes");
+const publicPacketCount = document.querySelector("#public-packet-count");
+const publicDataVolume = document.querySelector("#public-data-volume");
+const publicDepthFill = document.querySelector("#public-depth-fill");
+const publicDepthValue = document.querySelector("#public-depth-value");
 const profileForm = document.querySelector("#profile-form");
 const profileAvatarPreview = document.querySelector("#profile-avatar-preview");
 const profileAvatarInput = document.querySelector("#profile-avatar-input");
@@ -40,6 +47,9 @@ const publicMapLongitudeScale = Math.cos(36 * Math.PI / 180);
 const publicMapHome = Object.freeze({ longitude: 137.5, latitude: 36, zoom: 4.2 });
 const publicMapOverscanRatio = .22;
 const publicMapDragRebaseRatio = .18;
+const publicMapFocusMinZoom = 7.2;
+const publicMapPollIntervalMs = 60_000;
+const resonanceDistanceKm = 1_800;
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
 const worldMapView = Object.freeze({ west: -180, east: 180, south: -90, north: 90, key: "WORLD" });
 const countryMapViews = Object.freeze({
@@ -74,10 +84,18 @@ let publicMapDrag = null;
 let publicMapDragFrame = 0;
 let publicMapWheelFrame = 0;
 let publicMapWheel = null;
+let publicMapFocusFrame = 0;
+let publicMapFocusToken = 0;
+let publicMapHoverTimer = 0;
+let publicMapPollTimer = 0;
 let countries = [];
 let devices = [];
 let selectedDevice = null;
 let publicSensors = [];
+let publicNetworkStats = { observationPackets: 0, payloadBytes: 0 };
+let publicResonancePairs = [];
+let selectedPublicSensorId = null;
+let oracleDepthBoost = 0;
 let currentProfile = null;
 let authenticated = false;
 let sessionUser = null;
@@ -113,12 +131,19 @@ const showView = (name) => {
   if (participationDialog?.open && name !== "login") participationDialog.close();
   window.clearInterval(pollTimer);
   pollTimer = 0;
+  window.clearInterval(publicMapPollTimer);
+  publicMapPollTimer = 0;
   for (const [key, element] of views) element.hidden = key !== name;
   document.querySelectorAll("[data-nav]").forEach((link) => {
     link.toggleAttribute("aria-current", link.dataset.nav === name);
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (name === "map") requestAnimationFrame(updatePublicMapViewport);
+  if (name === "map") {
+    requestAnimationFrame(updatePublicMapViewport);
+    publicMapPollTimer = window.setInterval(() => {
+      void loadPublicSensors({ preserveSelection: true, quiet: true }).catch(() => {});
+    }, publicMapPollIntervalMs);
+  }
 };
 
 const showStatus = (message, kind = "info") => {
@@ -199,38 +224,59 @@ const loadDevices = async () => {
   });
 };
 
-const loadPublicSensors = async () => {
+const loadPublicSensors = async ({ preserveSelection = true, quiet = false } = {}) => {
   const response = await api("../api/public/v1/sensors");
   publicSensors = response.sensors;
+  publicNetworkStats = response.stats ?? { observationPackets: 0, payloadBytes: 0 };
+  if (!preserveSelection) selectedPublicSensorId = null;
   renderPublicSensors();
+  if (!quiet && views.get("map") && !views.get("map").hidden) updatePublicMapViewport();
 };
 
 const renderPublicSensors = () => {
   publicSensorMarkers.replaceChildren();
   publicSensorList.replaceChildren();
-  let initialSelection = null;
-  const onlineCount = publicSensors.filter((sensor) => sensor.state === "ONLINE").length;
-  const offlineCount = publicSensors.length - onlineCount;
-  publicSensorCount.textContent = `${String(publicSensors.length).padStart(3, "0")} NODES · ${onlineCount} ONLINE · ${offlineCount} OFFLINE`;
+  publicSensors.forEach((sensor) => {
+    sensor.visualType = publicSensorType(sensor);
+    sensor.visualObservations = publicObservationsFor(sensor);
+  });
+  publicResonancePairs = buildPublicResonancePairs(publicSensors);
+  const onlineCount = publicSensors.filter((sensor) => !sensor.isDemo && sensor.state === "ONLINE").length;
+  const demoCount = publicSensors.filter((sensor) => sensor.isDemo).length;
+  const offlineCount = publicSensors.length - onlineCount - demoCount;
+  publicSensorCount.textContent = `${String(publicSensors.length).padStart(3, "0")} NODES · ${onlineCount} ONLINE · ${demoCount} DEMO · ${offlineCount} OFFLINE`;
+  renderPublicNetworkStats();
   if (!publicSensors.length) {
+    selectedPublicSensorId = null;
+    publicSensorNetwork?.replaceChildren();
     publicSensorDetail.replaceChildren(
       Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SIGNAL STATUS" }),
       Object.assign(document.createElement("p"), { textContent: "公開中のセンサーはまだありません。最初の信号を待っています。" }),
     );
     return;
   }
+  let initialSelection = null;
   publicSensors.forEach((sensor) => {
     const marker = document.createElement("button");
     marker.type = "button";
     marker.className = "sensor-map-marker";
+    marker.dataset.sensorId = sensor.id;
+    marker.dataset.sensorType = sensor.visualType;
     marker.dataset.longitude = String(sensor.location.longitude);
     marker.dataset.latitude = String(sensor.location.latitude);
     marker.dataset.state = sensor.state;
-    marker.setAttribute("aria-label", `${sensor.owner.displayName}さんの${sensor.sensorName}、${sensor.state}`);
+    marker.dataset.active = String(publicSensorIsActive(sensor));
+    const activity = publicSensorActivity(sensor);
+    marker.style.setProperty("--sensor-activity", String(activity));
+    marker.style.setProperty("--sensor-glow", `${Math.round(13 + activity * 22)}px`);
+    marker.style.setProperty("--sensor-pulse-duration", `${(3.1 - activity * 1.2).toFixed(2)}s`);
+    marker.style.setProperty("--sensor-pulse-scale", String(1.32 + activity * .5));
+    marker.setAttribute("aria-label", `${sensor.owner.displayName}さんの${sensor.sensorName}、${publicSensorStateLabel(sensor)}`);
     marker.append(avatarElement(sensor.owner, "span"));
+    const primaryMetric = publicPrimaryMetric(sensor);
     marker.append(Object.assign(document.createElement("span"), {
       className: "sensor-map-marker-state",
-      textContent: sensor.state,
+      textContent: [publicSensorStateLabel(sensor), primaryMetric?.compact].filter(Boolean).join(" · "),
     }));
     marker.addEventListener("click", () => selectPublicSensor(sensor, marker));
     publicSensorMarkers.append(marker);
@@ -238,23 +284,46 @@ const renderPublicSensors = () => {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "sensor-public-card";
+    card.dataset.sensorId = sensor.id;
+    card.dataset.state = sensor.state;
+    card.dataset.sensorType = sensor.visualType;
     card.append(avatarElement(sensor.owner, "span"));
     const text = document.createElement("span");
-    text.innerHTML = `<strong></strong><small></small>`;
-    text.querySelector("strong").textContent = sensor.sensorName;
-    text.querySelector("small").textContent = `${sensor.owner.displayName} / ${sensor.state}`;
+    text.append(
+      Object.assign(document.createElement("strong"), { textContent: sensor.sensorName }),
+      Object.assign(document.createElement("small"), { textContent: `${sensor.owner.displayName} / ${publicSensorStateLabel(sensor)}` }),
+    );
+    if (primaryMetric) text.append(Object.assign(document.createElement("em"), { textContent: primaryMetric.full }));
     card.append(text);
-    card.addEventListener("click", () => { selectPublicSensor(sensor, marker); publicSensorMap.scrollIntoView({ behavior: "smooth", block: "center" }); });
+    card.addEventListener("pointerenter", () => {
+      window.clearTimeout(publicMapHoverTimer);
+      publicMapHoverTimer = window.setTimeout(() => focusPublicSensor(sensor, { minimumZoom: 5.2 }), 150);
+    });
+    card.addEventListener("pointerleave", () => window.clearTimeout(publicMapHoverTimer));
+    card.addEventListener("focus", () => focusPublicSensor(sensor, { minimumZoom: 5.2 }));
+    card.addEventListener("click", () => {
+      selectPublicSensor(sensor, marker);
+      focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom });
+    });
     publicSensorList.append(card);
-    if (!initialSelection && !sensor.isDemo) initialSelection = { sensor, marker };
+    if (sensor.id === selectedPublicSensorId) initialSelection = { sensor, marker };
+    else if (!initialSelection && !selectedPublicSensorId && !sensor.isDemo) initialSelection = { sensor, marker };
   });
+  if (!initialSelection && publicSensors.length) {
+    const sensor = publicSensors[0];
+    initialSelection = { sensor, marker: publicSensorMarkers.querySelector(`[data-sensor-id="${CSS.escape(sensor.id)}"]`) };
+  }
   if (initialSelection) selectPublicSensor(initialSelection.sensor, initialSelection.marker);
   positionPublicSensorMarkers();
 };
 
 const selectPublicSensor = (sensor, marker) => {
+  if (!marker) return;
+  selectedPublicSensorId = sensor.id;
   document.querySelectorAll(".sensor-map-marker[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
+  document.querySelectorAll(".sensor-public-card[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
   marker.setAttribute("aria-current", "true");
+  publicSensorList.querySelector(`[data-sensor-id="${CSS.escape(sensor.id)}"]`)?.setAttribute("aria-current", "true");
   publicSensorDetail.replaceChildren();
   const consoleLabel = Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SELECTED SIGNAL" });
   const owner = document.createElement("div");
@@ -264,8 +333,8 @@ const selectPublicSensor = (sensor, marker) => {
   heading.append(Object.assign(document.createElement("small"), { textContent: sensor.owner.displayName }));
   heading.append(Object.assign(document.createElement("h2"), { textContent: sensor.sensorName }));
   owner.append(heading);
-  const state = Object.assign(document.createElement("span"), { className: "sensor-state", textContent: sensor.state });
-  state.dataset.state = sensor.state;
+  const state = Object.assign(document.createElement("span"), { className: "sensor-state", textContent: publicSensorStateLabel(sensor) });
+  state.dataset.state = sensor.isDemo ? "DEMO" : sensor.state;
   owner.append(state);
   const social = document.createElement("div");
   social.className = "sensor-map-socials";
@@ -277,7 +346,7 @@ const selectPublicSensor = (sensor, marker) => {
   const note = document.createElement("p");
   const region = [sensor.region?.subdivisionName, sensor.region?.subdivisionCode].filter(Boolean).join(" / ") || sensor.region?.countryCode || "地域非公開";
   note.textContent = `${region} · 公開位置は0.1度単位へ丸めています。自治体コードと住所は公開しません。`;
-  const content = [consoleLabel, owner];
+  const content = [consoleLabel, owner, createPublicMetricHud(sensor), createPublicNodeMeta(sensor), createPublicOracle(sensor)];
   if (sensor.isDemo) {
     const disclosure = document.createElement("p");
     disclosure.className = "sensor-demo-disclosure";
@@ -285,9 +354,388 @@ const selectPublicSensor = (sensor, marker) => {
     disclosure.textContent = `ネタバレ：これは${demoRegion ? `${demoRegion}に置いた` : "展示用の"}ダミーセンサーです。実機から送信された観測データではありません。`;
     content.push(disclosure);
   }
-  content.push(note, social);
+  content.push(note);
+  if (social.childElementCount) content.push(social);
   publicSensorDetail.append(...content);
 };
+
+function publicSensorType(sensor) {
+  const source = `${sensor.id} ${sensor.sensorName} ${sensor.owner?.displayName}`.toLowerCase();
+  if (/あめ|ame/u.test(source)) return "ame";
+  if (/みず|mizu/u.test(source)) return "mizu";
+  if (/saku|サクヤ|咲夜/u.test(source)) return "saku";
+  return "custom";
+}
+
+function publicSensorIsActive(sensor) {
+  return sensor.isDemo || sensor.state === "ONLINE";
+}
+
+function publicSensorStateLabel(sensor) {
+  return sensor.isDemo ? "DEMO LIVE" : sensor.state;
+}
+
+function publicObservationsFor(sensor) {
+  if (sensor.isDemo) return createDemoObservationSeries(sensor);
+  if (!Array.isArray(sensor.observations)) return [];
+  return sensor.observations
+    .map((observation) => ({ data: sanitizePublicMeasurements(observation?.data) }))
+    .filter((observation) => Object.keys(observation.data).length);
+}
+
+function sanitizePublicMeasurements(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter(([, measurement]) => Number.isFinite(Number(measurement))).map(([key, measurement]) => [key, Number(measurement)]));
+}
+
+function createDemoObservationSeries(sensor, count = 18) {
+  const seed = hashPublicSensorId(sensor.id);
+  const phase = (Math.floor(Date.now() / 300_000) + seed) * .17;
+  return Array.from({ length: count }, (_, index) => {
+    const t = count - index - 1;
+    const wave = Math.sin(phase - t * .46);
+    const slower = Math.cos(phase * .61 - t * .27);
+    const ripple = Math.sin(phase * 1.37 - t * .81);
+    if (sensor.visualType === "ame") return { data: {
+      electric_field: rounded(1.8 + wave * .72 + ripple * .18, 2),
+      pressure: rounded(1007.4 + slower * 5.6 - wave * 2.1, 1),
+      radio_noise: rounded(-72 + ripple * 8 + wave * 3, 1),
+    } };
+    if (sensor.visualType === "mizu") return { data: {
+      water_temperature: rounded(13.2 + slower * 2.4 + ripple * .3, 1),
+      humidity: rounded(78 + wave * 8 + ripple * 2, 1),
+      groundwater_level: rounded(1.62 + slower * .24 + wave * .08, 2),
+    } };
+    if (sensor.visualType === "saku") return { data: {
+      spatial_noise: rounded(.018 + Math.abs(ripple) * .024 + Math.abs(wave) * .007, 3),
+      illuminance: Math.round(470 + slower * 210 + ripple * 45),
+      sync_rate: rounded(89 + wave * 5 + slower * 2, 1),
+    } };
+    return { data: {
+      temperature: rounded(24.8 + wave * 2.2 + ripple * .35, 1),
+      humidity: rounded(54 + slower * 7 + ripple * 1.8, 1),
+      pm25: rounded(9.4 + Math.abs(wave) * 4.2 + ripple * .8, 1),
+    } };
+  });
+}
+
+function hashPublicSensorId(value) {
+  let hash = 2166136261;
+  for (const character of String(value)) hash = Math.imul(hash ^ character.codePointAt(0), 16777619);
+  return hash >>> 0;
+}
+
+function rounded(value, digits = 1) {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
+const publicMetricMetadata = Object.freeze({
+  temperature: { label: "気温", console: "TEMP", unit: "°C", digits: 1 },
+  humidity: { label: "湿度", console: "HUM", unit: "%", digits: 1 },
+  pm25: { label: "PM2.5", console: "PM2.5", unit: "µg/m³", digits: 1 },
+  pressure: { label: "気圧", console: "PRESS", unit: "hPa", digits: 1 },
+  illuminance: { label: "照度", console: "LUX", unit: "lx", digits: 0 },
+  rssi: { label: "電波強度", console: "RSSI", unit: "dBm", digits: 0 },
+  geomagnetic: { label: "地磁気変動", console: "MAG", unit: "µT", digits: 2 },
+  electric_field: { label: "電界変動", console: "E-FIELD", unit: "kV/m", digits: 2 },
+  radio_noise: { label: "電波ノイズ", console: "RF NOISE", unit: "dBm", digits: 1 },
+  water_temperature: { label: "水温", console: "WATER", unit: "°C", digits: 1 },
+  groundwater_level: { label: "地下水位", console: "GROUND", unit: "m", digits: 2 },
+  spatial_noise: { label: "空間ノイズ", console: "SPACE Δ", unit: "Δ", digits: 3 },
+  sync_rate: { label: "識理層シンクロ率", console: "SYNC", unit: "%", digits: 1 },
+});
+
+function publicMetricDefinitions(sensor) {
+  const latest = sensor.visualObservations?.[0]?.data ?? {};
+  const preferred = sensor.visualType === "ame"
+    ? ["electric_field", "pressure", "radio_noise"]
+    : sensor.visualType === "mizu"
+      ? ["water_temperature", "humidity", "groundwater_level"]
+      : sensor.visualType === "saku"
+        ? ["spatial_noise", "illuminance", "sync_rate"]
+        : ["temperature", "humidity", "pm25", "pressure", "illuminance", "rssi", "geomagnetic"];
+  const orderedKeys = [...preferred.filter((key) => key in latest), ...Object.keys(latest).filter((key) => !preferred.includes(key))];
+  return orderedKeys.slice(0, 6).map((key) => ({ key, ...(publicMetricMetadata[key] ?? { label: key, console: key.toUpperCase(), unit: "", digits: 2 }) }));
+}
+
+function formatPublicMetric(definition, value, compact = false) {
+  if (!Number.isFinite(value)) return "--";
+  const text = Number(value).toLocaleString("ja-JP", { minimumFractionDigits: definition.digits, maximumFractionDigits: definition.digits });
+  return compact ? `${text}${definition.unit}` : `${text} ${definition.unit}`.trim();
+}
+
+function publicPrimaryMetric(sensor) {
+  const definition = publicMetricDefinitions(sensor)[0];
+  if (!definition) return null;
+  const value = sensor.visualObservations?.[0]?.data?.[definition.key];
+  if (!Number.isFinite(value)) return null;
+  return {
+    compact: formatPublicMetric(definition, value, true),
+    full: `${definition.label} ${formatPublicMetric(definition, value)}`,
+  };
+}
+
+function publicSensorActivity(sensor) {
+  if (!publicSensorIsActive(sensor)) return .18;
+  const definitions = publicMetricDefinitions(sensor);
+  const latest = sensor.visualObservations?.[0]?.data ?? {};
+  const value = definitions.length ? Math.abs(Number(latest[definitions[0].key])) : 0;
+  return rounded(clamp(.48 + (value % 19) / 50, .48, .88), 2);
+}
+
+function createPublicMetricHud(sensor) {
+  const section = document.createElement("section");
+  section.className = "sensor-observation-hud";
+  const header = document.createElement("header");
+  header.append(
+    Object.assign(document.createElement("span"), { textContent: sensor.isDemo ? "SIMULATED METRICS" : "LIVE METRICS" }),
+    Object.assign(document.createElement("b"), { textContent: publicSensorTypeLabel(sensor.visualType) }),
+  );
+  section.append(header);
+  const grid = document.createElement("div");
+  grid.className = "sensor-metric-hud-grid";
+  const definitions = publicMetricDefinitions(sensor).slice(0, 3);
+  if (!definitions.length) {
+    grid.append(Object.assign(document.createElement("p"), { className: "sensor-metric-awaiting", textContent: "最初の観測値を待っています。" }));
+  }
+  definitions.forEach((definition) => {
+    const card = document.createElement("article");
+    const latest = sensor.visualObservations[0]?.data?.[definition.key];
+    card.append(
+      Object.assign(document.createElement("small"), { textContent: `${definition.console} · ${definition.label}`, title: definition.label }),
+      Object.assign(document.createElement("strong"), { textContent: formatPublicMetric(definition, latest) }),
+      createPublicSparkline(sensor.visualObservations, definition.key),
+    );
+    grid.append(card);
+  });
+  section.append(grid);
+  return section;
+}
+
+function publicSensorTypeLabel(type) {
+  return ({ ame: "ATMOSPHERIC / RF", mizu: "HYDROLOGICAL", saku: "SPATIAL SYNC", custom: "ENVIRONMENTAL" })[type] ?? "ENVIRONMENTAL";
+}
+
+function createPublicSparkline(observations, key) {
+  const namespace = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(namespace, "svg");
+  svg.classList.add("sensor-sparkline");
+  svg.setAttribute("viewBox", "0 0 100 28");
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.setAttribute("aria-hidden", "true");
+  const values = observations.slice(0, 12).map((observation) => Number(observation.data?.[key])).filter(Number.isFinite).reverse();
+  if (values.length < 2) return svg;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(max - min, Math.abs(max || 1) * .02, .001);
+  const points = values.map((value, index) => `${(index / (values.length - 1)) * 100},${24 - ((value - min) / span) * 20}`).join(" ");
+  const polyline = document.createElementNS(namespace, "polyline");
+  polyline.setAttribute("points", points);
+  polyline.setAttribute("vector-effect", "non-scaling-stroke");
+  svg.append(polyline);
+  return svg;
+}
+
+function createPublicNodeMeta(sensor) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "sensor-node-meta";
+  const resonanceCount = publicResonancePairs.filter((pair) => pair.from.id === sensor.id || pair.to.id === sensor.id).length;
+  const duration = sensor.isDemo ? 259_200 + (hashPublicSensorId(sensor.id) % 86_400) : Number(sensor.observationSpanSeconds) || 0;
+  const packetCount = sensor.isDemo ? `${sensor.visualObservations.length} SIM` : Number(sensor.observationCount || 0).toLocaleString("ja-JP");
+  [["UPTIME / 観測期間", formatPublicDuration(duration)], ["OBS WINDOW", packetCount], ["RESONANCE", `${resonanceCount} NODES`]].forEach(([label, value]) => {
+    const item = document.createElement("span");
+    item.append(Object.assign(document.createElement("small"), { textContent: label }), Object.assign(document.createElement("b"), { textContent: value }));
+    wrapper.append(item);
+  });
+  return wrapper;
+}
+
+function formatPublicDuration(seconds) {
+  const value = Math.max(0, Number(seconds) || 0);
+  if (value >= 86_400) return `${Math.floor(value / 86_400)}d ${Math.floor((value % 86_400) / 3_600)}h`;
+  if (value >= 3_600) return `${Math.floor(value / 3_600)}h ${Math.floor((value % 3_600) / 60)}m`;
+  if (value >= 60) return `${Math.floor(value / 60)}m`;
+  return value ? `${Math.floor(value)}s` : "WAITING";
+}
+
+function createPublicOracle(sensor) {
+  const section = document.createElement("section");
+  section.className = "sensor-oracle";
+  const button = Object.assign(document.createElement("button"), { type: "button", className: "sensor-oracle-trigger" });
+  button.append(
+    Object.assign(document.createElement("span"), { textContent: "OBSERVE FROM THIS NODE" }),
+    Object.assign(document.createElement("strong"), { textContent: "世界を観測する" }),
+    Object.assign(document.createElement("b"), { textContent: "→" }),
+  );
+  const receipt = Object.assign(document.createElement("output"), { className: "sensor-oracle-receipt", hidden: true });
+  button.addEventListener("click", () => {
+    button.disabled = true;
+    receipt.hidden = false;
+    receipt.classList.remove("is-received");
+    receipt.textContent = "NODE HANDSHAKE... 直近の観測ログを受信中";
+    oracleDepthBoost = Math.min(12, oracleDepthBoost + 1.5);
+    renderPublicNetworkStats();
+    window.setTimeout(() => {
+      if (!receipt.isConnected) return;
+      receipt.textContent = generatePublicOracle(sensor);
+      receipt.classList.add("is-received");
+      button.disabled = false;
+    }, 520);
+  });
+  section.append(button, receipt);
+  return section;
+}
+
+function generatePublicOracle(sensor) {
+  const data = sensor.visualObservations?.[0]?.data ?? {};
+  const prefix = sensor.isDemo ? "SIMULATION LOG" : "OBSERVATION LOG";
+  if (sensor.visualType === "ame") {
+    return `${prefix} / 気圧 ${formatOracleValue(data.pressure, 1, "hPa")}、電波ノイズ ${formatOracleValue(data.radio_noise, 1, "dBm")}。空の縁で、嵐の気配を拾っています。`;
+  }
+  if (sensor.visualType === "mizu") {
+    return `${prefix} / 水温 ${formatOracleValue(data.water_temperature, 1, "°C")}、地下水位 ${formatOracleValue(data.groundwater_level, 2, "m")}。水の層は静かに地表の変化を記録しています。`;
+  }
+  if (sensor.visualType === "saku") {
+    return `${prefix} / 識理層シンクロ率 ${formatOracleValue(data.sync_rate, 1, "%")}、空間ノイズ ${formatOracleValue(data.spatial_noise, 3, "Δ")}。座標は安定、微小なゆらぎだけを検出。`;
+  }
+  const temperature = formatOracleValue(data.temperature, 1, "°C");
+  const humidity = formatOracleValue(data.humidity, 1, "%");
+  const pm25 = formatOracleValue(data.pm25, 1, "µg/m³");
+  return `${prefix} / 気温 ${temperature}、湿度 ${humidity}、PM2.5 ${pm25}。この場所の現在が、地球の感覚器へ届きました。`;
+}
+
+function formatOracleValue(value, digits, unit) {
+  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(digits)}${unit}` : `--${unit}`;
+}
+
+function buildPublicResonancePairs(sensors) {
+  const active = sensors.filter(publicSensorIsActive);
+  const candidates = [];
+  for (let left = 0; left < active.length; left += 1) {
+    for (let right = left + 1; right < active.length; right += 1) {
+      const distance = publicSensorDistanceKm(active[left], active[right]);
+      if (distance <= resonanceDistanceKm) candidates.push({ from: active[left], to: active[right], distance });
+    }
+  }
+  const selected = new Map();
+  active.forEach((sensor) => {
+    candidates
+      .filter((pair) => pair.from === sensor || pair.to === sensor)
+      .sort((left, right) => left.distance - right.distance)
+      .slice(0, 2)
+      .forEach((pair) => {
+        const key = [pair.from.id, pair.to.id].sort().join("::");
+        selected.set(key, pair);
+      });
+  });
+  return [...selected.values()].sort((left, right) => left.distance - right.distance).slice(0, 80);
+}
+
+function publicSensorDistanceKm(left, right) {
+  const toRadians = (degrees) => degrees * Math.PI / 180;
+  const latitude1 = toRadians(left.location.latitude);
+  const latitude2 = toRadians(right.location.latitude);
+  const deltaLatitude = latitude2 - latitude1;
+  const deltaLongitude = toRadians(right.location.longitude - left.location.longitude);
+  const a = Math.sin(deltaLatitude / 2) ** 2 + Math.cos(latitude1) * Math.cos(latitude2) * Math.sin(deltaLongitude / 2) ** 2;
+  return 6_371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
+}
+
+function renderPublicResonanceNetwork() {
+  if (!publicSensorNetwork) return;
+  const namespace = "http://www.w3.org/2000/svg";
+  const markerById = new Map([...publicSensorMarkers.querySelectorAll(".sensor-map-marker")].map((marker) => [marker.dataset.sensorId, marker]));
+  const paths = [];
+  publicResonancePairs.forEach((pair, index) => {
+    const from = markerById.get(pair.from.id);
+    const to = markerById.get(pair.to.id);
+    if (!from || !to || from.hidden || to.hidden) return;
+    const x1 = Number.parseFloat(from.style.left);
+    const y1 = Number.parseFloat(from.style.top);
+    const x2 = Number.parseFloat(to.style.left);
+    const y2 = Number.parseFloat(to.style.top);
+    if (![x1, y1, x2, y2].every(Number.isFinite)) return;
+    const bend = ((hashPublicSensorId(`${pair.from.id}:${pair.to.id}`) % 11) - 5) * .35;
+    const midpointX = (x1 + x2) / 2 - (y2 - y1) * .025 + bend;
+    const midpointY = (y1 + y2) / 2 + (x2 - x1) * .025 - bend;
+    const path = document.createElementNS(namespace, "path");
+    path.classList.add("sensor-resonance-link");
+    path.toggleAttribute("data-demo", pair.from.isDemo || pair.to.isDemo);
+    path.setAttribute("d", `M ${x1} ${y1} Q ${midpointX} ${midpointY} ${x2} ${y2}`);
+    path.setAttribute("pathLength", "1");
+    path.setAttribute("vector-effect", "non-scaling-stroke");
+    path.style.setProperty("--resonance-delay", `${-(index * .43)}s`);
+    path.style.setProperty("--resonance-strength", String(clamp(1 - pair.distance / resonanceDistanceKm, .24, .88)));
+    paths.push(path);
+  });
+  publicSensorNetwork.replaceChildren(...paths);
+}
+
+function renderPublicNetworkStats() {
+  const activeNodes = publicSensors.filter(publicSensorIsActive).length;
+  const packets = Math.max(0, Number(publicNetworkStats.observationPackets) || 0);
+  const payloadBytes = Math.max(0, Number(publicNetworkStats.payloadBytes) || 0);
+  const resonance = publicResonancePairs.length;
+  const sync = publicSensors.length
+    ? clamp(16 + activeNodes * 7.2 + resonance * 3.4 + Math.log10(packets + 1) * 8 + oracleDepthBoost * .35, 0, 99.8)
+    : 0;
+  const depth = publicSensors.length
+    ? clamp(8 + Math.log10(packets + 1) * 19 + activeNodes * 3.8 + oracleDepthBoost, 0, 100)
+    : 0;
+  if (publicSyncRate) publicSyncRate.textContent = `${sync.toFixed(1)}%`;
+  if (publicActiveNodes) publicActiveNodes.textContent = `${activeNodes}/${publicSensors.length}`;
+  if (publicPacketCount) publicPacketCount.textContent = packets.toLocaleString("ja-JP");
+  if (publicDataVolume) publicDataVolume.textContent = formatPublicDataVolume(payloadBytes);
+  if (publicDepthFill) publicDepthFill.style.width = `${depth.toFixed(1)}%`;
+  if (publicDepthValue) publicDepthValue.textContent = `${depth.toFixed(1)}%`;
+}
+
+function formatPublicDataVolume(bytes) {
+  if (bytes < 1_000) return `${bytes} B`;
+  if (bytes < 1_000_000) return `${(bytes / 1_000).toFixed(1)} KB`;
+  if (bytes < 1_000_000_000) return `${(bytes / 1_000_000).toFixed(2)} MB`;
+  return `${(bytes / 1_000_000_000).toFixed(3)} GB`;
+}
+
+function focusPublicSensor(sensor, { minimumZoom = publicMapFocusMinZoom } = {}) {
+  window.clearTimeout(publicMapHoverTimer);
+  if (!sensor?.location || !publicSensorMap) return;
+  const from = { ...publicMapCamera };
+  let targetLongitude = Number(sensor.location.longitude);
+  while (targetLongitude - from.longitude > 180) targetLongitude -= 360;
+  while (targetLongitude - from.longitude < -180) targetLongitude += 360;
+  const target = {
+    longitude: targetLongitude,
+    latitude: clamp(Number(sensor.location.latitude), -85, 85),
+    zoom: Math.max(from.zoom, minimumZoom),
+  };
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const token = ++publicMapFocusToken;
+  if (publicMapFocusFrame) cancelAnimationFrame(publicMapFocusFrame);
+  if (reducedMotion) {
+    Object.assign(publicMapCamera, target);
+    updatePublicMapViewport();
+    return;
+  }
+  const startedAt = performance.now();
+  let lastPaint = -Infinity;
+  const animate = (now) => {
+    if (token !== publicMapFocusToken) return;
+    const progress = clamp((now - startedAt) / 460, 0, 1);
+    const eased = 1 - (1 - progress) ** 3;
+    if (now - lastPaint >= 30 || progress === 1) {
+      publicMapCamera.longitude = from.longitude + (target.longitude - from.longitude) * eased;
+      publicMapCamera.latitude = from.latitude + (target.latitude - from.latitude) * eased;
+      publicMapCamera.zoom = from.zoom + (target.zoom - from.zoom) * eased;
+      updatePublicMapViewport();
+      lastPaint = now;
+    }
+    if (progress < 1) publicMapFocusFrame = requestAnimationFrame(animate);
+    else publicMapFocusFrame = 0;
+  };
+  publicMapFocusFrame = requestAnimationFrame(animate);
+}
 
 function initPublicMapNavigation() {
   resetPublicMapView(false);
@@ -424,6 +872,7 @@ function positionPublicSensorMarkers() {
     marker.style.top = `${top}%`;
     marker.hidden = left < -3 || left > 103 || top < -3 || top > 103;
   });
+  renderPublicResonanceNetwork();
 }
 
 function zoomPublicMapBy(factor, clientX, clientY) {

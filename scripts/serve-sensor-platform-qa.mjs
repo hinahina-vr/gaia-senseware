@@ -82,12 +82,7 @@ async function handleApi(request, response, url) {
   const referer = request.headers.referer || "";
   if (referer.includes("error=1")) return sendJson(response, 500, { error: { code: "QA_ERROR", message: "QA用の通信エラーです。" } });
   if (url.pathname === "/api/public/v1/sensors" && request.method === "GET") {
-    return sendJson(response, 200, { sensors: [{
-      id: "sensor_browserqa", sensorName: "ベランダ環境センサー", state: "ONLINE", lastSeenAt: new Date().toISOString(),
-       location: { latitude: device.publicLatitude, longitude: device.publicLongitude, precision: "APPROXIMATE_0_1_DEGREE" },
-       region: { countryCode: device.countryCode, subdivisionCode: device.subdivisionCode, subdivisionName: device.subdivisionName },
-      owner: { displayName: profile.displayName, avatarUrl: profile.avatarUrl, xUrl: profile.xUrl, githubUrl: profile.githubUrl, instagramUrl: profile.instagramUrl },
-    }] });
+    return sendJson(response, 200, qaPublicSensorPayload());
   }
   if (url.pathname === "/api/public/v1/profiles/usr_browserqa/avatar" && request.method === "GET") {
     response.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
@@ -216,6 +211,36 @@ async function handleApi(request, response, url) {
 
 function telemetry(seq) {
   return { seq, observedAt: new Date(Date.now() - (4 - seq) * 10000).toISOString(), receivedAt: new Date().toISOString(), data: { temperature: 24 + seq / 10, humidity: 58.2, pm25: 9.1 } };
+}
+function qaPublicSensorPayload() {
+  const observations = Array.from({ length: 12 }, (_, index) => ({ data: {
+    temperature: Number((24.7 + Math.sin(index * .72) * 1.2).toFixed(1)),
+    humidity: Number((57.8 + Math.cos(index * .58) * 4.1).toFixed(1)),
+    pm25: Number((8.4 + Math.sin(index * .41 + .7) * 1.7).toFixed(1)),
+  } }));
+  const demo = (id, sensorName, displayName, avatarUrl, latitude, longitude, countryCode, subdivisionCode, subdivisionName, demoLocationLabel) => ({
+    id, sensorName, state: "OFFLINE", isDemo: true, demoLocationLabel,
+    location: { latitude, longitude, precision: "APPROXIMATE_0_1_DEGREE" },
+    region: { countryCode, subdivisionCode, subdivisionName },
+    observations: [], observationCount: 0, observationSpanSeconds: 0,
+    owner: { displayName, avatarUrl, xUrl: null, githubUrl: null, instagramUrl: null },
+  });
+  return {
+    generatedAt: new Date().toISOString(),
+    stats: { observationPackets: 245, payloadBytes: 17_860 },
+    sensors: [{
+      id: "sensor_browserqa", sensorName: "ベランダ環境センサー", state: "ONLINE", isDemo: false, demoLocationLabel: null,
+      location: { latitude: device.publicLatitude, longitude: device.publicLongitude, precision: "APPROXIMATE_0_1_DEGREE" },
+      region: { countryCode: device.countryCode, subdivisionCode: device.subdivisionCode, subdivisionName: device.subdivisionName },
+      observations, observationCount: 245, observationSpanSeconds: 72_000,
+      owner: { displayName: profile.displayName, avatarUrl: profile.avatarUrl, xUrl: profile.xUrl, githubUrl: profile.githubUrl, instagramUrl: profile.instagramUrl },
+    },
+    demo("sensor_demo_bluecat", "青猫センサー", "青猫", "/assets/visuals-07/slack-symbol-blue-apple-v1.svg", 35.7, 139.8, "JP", "JP-13", "東京都", "秋葉原"),
+    demo("sensor_demo_mizu", "みずセンサー", "みず", "/assets/visuals-07/slack-avatar-mizuha-v2.webp", 43, 140.8, "JP", "JP-01", "北海道", "余市町"),
+    demo("sensor_demo_saku", "sakuセンサー", "saku", "/assets/visuals-07/slack-avatar-sakuya-flower-v3.webp", 22.5, 114.1, "CN", "CN-GD", "広東省", "深セン"),
+    demo("sensor_demo_ame", "あめセンサー", "あめ", "/assets/visuals-07/slack-avatar-amane-v2.webp", 34.9, 135.7, "JP", "JP-27", "大阪府", "島本町"),
+    ],
+  };
 }
 function sendJson(response, status, body, headers = {}) {
   response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...headers });
