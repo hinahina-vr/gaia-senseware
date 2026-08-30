@@ -67,11 +67,13 @@ export const validateDeviceDraft = (value: unknown): DeviceDraft => {
   if (municipality && legacyLocalityName && legacyLocalityName !== municipality.name) {
     throw new ApiError(400, "REGION_FIELD_CONFLICT", "localityName conflicts with municipalityCode.");
   }
-  const isPublic = value.isPublic === true;
-  if (value.isPublic !== undefined && typeof value.isPublic !== "boolean") throw new ApiError(400, "INVALID_PUBLIC_LOCATION", "isPublic must be boolean.");
+  if (value.isPublic !== true) {
+    throw new ApiError(400, "PUBLIC_SENSOR_REQUIRED", "GAIA SENSEWARE sensors must be published with an approximate location.");
+  }
+  const isPublic = true;
   const publicLatitude = coordinate(value.publicLatitude, "publicLatitude", -90, 90);
   const publicLongitude = coordinate(value.publicLongitude, "publicLongitude", -180, 180);
-  if (isPublic && (publicLatitude === null || publicLongitude === null)) {
+  if (publicLatitude === null || publicLongitude === null) {
     throw new ApiError(400, "PUBLIC_LOCATION_REQUIRED", "Select an approximate public map location.");
   }
   return {
@@ -82,8 +84,8 @@ export const validateDeviceDraft = (value: unknown): DeviceDraft => {
     admin1Code: subdivisionCode ?? legacyAdmin1Code,
     localityName: municipality?.name ?? legacyLocalityName,
     isPublic,
-    publicLatitude: isPublic ? publicLatitude : null,
-    publicLongitude: isPublic ? publicLongitude : null,
+    publicLatitude,
+    publicLongitude,
   };
 };
 

@@ -9,12 +9,13 @@
   const characters = Object.freeze([
     {
       id: "amane",
-      roman: "AMANE",
-      native: "あめ / アマネ",
-      code: "AMANE / INFRASTRUCTURE / ELECTRICAL",
+      native: "あめ",
+      fullName: "雨宮 周",
+      reading: "あめみや あまね",
+      tagline: "20,000ルーメンを背負う電工少女",
       copy: "現場の物理的な信号を捉え、回路とセンサーで確実に具現化する。",
       quote: "「信号線とは違うの。一本飛んだら、本当に終わるよ」",
-      profile: "水色のショートボブと眠そうな目元が特徴の大学2年生。普段は無口で省エネ運転だが、配線やハードウェアの話になると途端にスイッチが入る。電気工事士・電験三種の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。",
+      profile: "水色のショートボブと眠そうな目元が特徴の大学2年生。普段は無口で省エネ運転だが、配線やハードウェアの話になると途端にスイッチが入る。電気工事士・電気主任技術者の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。",
       domain: "電力工学・施設設備",
       role: "実装・検証（PoC）",
       tool: "テスター・計測機器・配線工具",
@@ -24,9 +25,10 @@
     },
     {
       id: "mizuha",
-      roman: "MIZUHA",
-      native: "みず / ミズハ",
-      code: "MIZUHA / NARRATIVE / EARTH SCIENCE",
+      native: "みず",
+      fullName: "青野 瑞葉",
+      reading: "あおの みずは",
+      tagline: "星の呼吸を言葉にする語り部",
       copy: "生命と地球の共進化をたどり、観測された変化を言葉にする。",
       quote: "「46億年、ずっと変わり続けている星ですから」",
       profile: "海色の長い髪とおっとりした丁寧語が印象的な大学2年生。地球の歴史や生き物の共進化に関心を持ち、システム全体のナラティブと概念設計を担当する。穏やかな見た目の一方で、データの出典や数字の正確さ、観測条件の厳密さには決して妥協しない。",
@@ -39,11 +41,12 @@
     },
     {
       id: "sakuya",
-      roman: "SAKUYA",
-      native: "saku / サクヤ",
-      code: "SAKUYA / ARCHITECTURE / SYSTEM",
+      native: "saku",
+      fullName: "木下 咲弥",
+      reading: "きのした さくや",
+      tagline: "海を隔てて世界を繋ぐアーキテクト",
       copy: "遠隔から全体を俯瞰し、無数の観測データを束ねる構造を組む。",
-      quote: "「まだ気づいてないだけでしょ。世界はこんなにも満ちてるよ」",
+      quote: "「まだ気づいてないだけでしょ。世界は満ちてるよ」",
       profile: "海外からオンラインで参加している、サークル『惑星の放課後』のプロデューサー兼システムアーキテクト。普段のチャットでは無駄口を叩かないが、要件定義やデータ構造の議論では圧倒的な速度と解像度で仕様を組み上げる。プロジェクトの骨格を支える名付け親。",
       domain: "情報工学・統計学",
       role: "プロデュース・全体統括",
@@ -309,7 +312,9 @@
   const heroImage = layer.querySelector("#character-book-image");
   const heroDetail = layer.querySelector(".character-book-hero-detail");
   const native = layer.querySelector("#character-book-native");
-  const code = layer.querySelector("#character-book-code");
+  const fullName = layer.querySelector("#character-book-full-name");
+  const reading = layer.querySelector("#character-book-reading");
+  const tagline = layer.querySelector("#character-book-tagline");
   const profile = layer.querySelector("#character-book-profile");
   const quote = layer.querySelector("#character-book-quote");
   const current = layer.querySelector("#character-book-current");
@@ -321,11 +326,15 @@
   let lastFocused = null;
   let backgroundStates = [];
   let switchTimer = 0;
+  let switchGeneration = 0;
+  let displayedCharacterId = null;
 
+  const imagePreloads = new Map();
   characters.forEach(({ src }) => {
     const preload = new Image();
     preload.decoding = "async";
     preload.src = src;
+    imagePreloads.set(src, preload);
   });
 
   const suspendBackground = () => {
@@ -345,10 +354,54 @@
     backgroundStates = [];
   };
 
+  const makeLetter = (letter, index, delayBase = 0, delayStep = 17) => {
+    const glyph = document.createElement("span");
+    const seed = letter.codePointAt(0) || index;
+    glyph.className = `character-book-letter${/\s/u.test(letter) ? " is-space" : ""}`;
+    glyph.textContent = /\s/u.test(letter) ? "\u00a0" : letter;
+    glyph.setAttribute("aria-hidden", "true");
+    glyph.style.setProperty("--character-letter-delay", `${delayBase + index * delayStep}ms`);
+    glyph.style.setProperty("--character-letter-x", `${((seed + index * 5) % 13) - 6}px`);
+    glyph.style.setProperty("--character-letter-y", `${5 + ((seed + index * 3) % 9)}px`);
+    glyph.style.setProperty("--character-letter-r", `${((seed + index * 7) % 9) - 4}deg`);
+    return glyph;
+  };
+
+  const setLetterText = (element, text, delayBase = 0) => {
+    if (!(element instanceof HTMLElement)) return;
+    element.setAttribute("aria-label", text);
+    element.replaceChildren(...Array.from(text, (letter, index) => makeLetter(letter, index, delayBase)));
+  };
+
+  const setProfileText = (text) => {
+    if (!(profile instanceof HTMLElement)) return;
+    const sentences = text.match(/[^。]+。?/gu)?.filter(Boolean) || [text];
+    let letterOffset = 0;
+    profile.setAttribute("aria-label", text);
+    profile.replaceChildren(...sentences.map((sentence) => {
+      const line = document.createElement("span");
+      line.setAttribute("aria-hidden", "true");
+      line.append(...Array.from(sentence, (letter, index) => makeLetter(letter, letterOffset + index, 140, 9)));
+      letterOffset += sentence.length;
+      return line;
+    }));
+  };
+
+  const clearCharacterMotion = () => {
+    window.clearTimeout(switchTimer);
+    heroImage?.classList.remove("is-switching");
+    layer.querySelectorAll(".character-book-hero-ghost").forEach((ghost) => ghost.remove());
+  };
+
   const selectCharacter = (id, { moveFocus = false } = {}) => {
     const nextIndex = characters.findIndex((character) => character.id === id);
     if (nextIndex < 0) return;
+    if (displayedCharacterId === id) {
+      if (moveFocus) selectors[nextIndex]?.focus({ preventScroll: true });
+      return;
+    }
     const character = characters[nextIndex];
+    const generation = ++switchGeneration;
     currentIndex = nextIndex;
     layer.dataset.characterId = character.id;
     layer.style.setProperty("--character-accent-rgb", character.tone);
@@ -356,42 +409,48 @@
     selectors.forEach((button) => button.setAttribute("aria-current", String(button.dataset.characterSelect === character.id)));
 
     const commit = () => {
-      if (native) native.textContent = character.native;
-      if (code) code.textContent = character.code;
-      if (profile) {
-        const sentences = character.profile.match(/[^。]+。?/gu)?.filter(Boolean) || [character.profile];
-        profile.replaceChildren(...sentences.map((sentence) => {
-          const line = document.createElement("span");
-          line.textContent = sentence;
-          return line;
-        }));
+      if (generation !== switchGeneration) return;
+      const shouldAnimate = !reducedMotion.matches;
+      clearCharacterMotion();
+      let ghost = null;
+      if (shouldAnimate && heroImage instanceof HTMLImageElement && heroImage.currentSrc) {
+        ghost = heroImage.cloneNode(false);
+        ghost.removeAttribute("id");
+        ghost.removeAttribute("aria-label");
+        ghost.setAttribute("aria-hidden", "true");
+        ghost.className = "character-book-hero-ghost";
+        heroImage.before(ghost);
       }
-      if (quote) quote.textContent = character.quote;
+      setLetterText(native, character.native, 50);
+      setLetterText(fullName, character.fullName, 90);
+      setLetterText(reading, character.reading, 150);
+      setLetterText(tagline, character.tagline, 0);
+      setProfileText(character.profile);
+      setLetterText(quote, character.quote, 110);
       if (current) current.textContent = String(nextIndex + 1).padStart(2, "0");
       if (heroImage instanceof HTMLImageElement) {
         heroImage.src = character.src;
         heroImage.alt = character.alt;
       }
+      displayedCharacterId = character.id;
       layer.dataset.imageState = "ready";
-      window.clearTimeout(switchTimer);
+      if (shouldAnimate && heroImage instanceof HTMLElement) {
+        void heroImage.offsetWidth;
+        requestAnimationFrame(() => {
+          if (generation === switchGeneration) heroImage.classList.add("is-switching");
+        });
+      }
       switchTimer = window.setTimeout(() => {
+        if (generation !== switchGeneration) return;
         heroImage?.classList.remove("is-switching");
-        heroDetail?.classList.remove("is-switching");
-        quote?.classList.remove("is-switching");
-      }, 420);
+        layer.querySelectorAll(".character-book-hero-ghost").forEach((oldImage) => oldImage.remove());
+      }, 620);
     };
-    if (heroImage instanceof HTMLElement && !reducedMotion.matches) {
-      heroImage.classList.remove("is-switching");
-      heroDetail?.classList.remove("is-switching");
-      quote?.classList.remove("is-switching");
-      void heroImage.offsetWidth;
-      heroImage.classList.add("is-switching");
-      heroDetail?.classList.add("is-switching");
-      quote?.classList.add("is-switching");
-      window.setTimeout(commit, 80);
-    } else {
-      commit();
-    }
+    const preload = imagePreloads.get(character.src);
+    if (preload instanceof HTMLImageElement && !preload.complete) {
+      preload.addEventListener("load", commit, { once: true });
+      preload.addEventListener("error", commit, { once: true });
+    } else commit();
     if (moveFocus) selectors[nextIndex]?.focus({ preventScroll: true });
   };
 
@@ -420,7 +479,7 @@
     document.body.classList.remove("character-mode-open");
     atmosphere.stop();
     restoreBackground();
-    window.clearTimeout(switchTimer);
+    clearCharacterMotion();
     window.setTimeout(() => {
       if (!openState) {
         layer.hidden = true;

@@ -163,12 +163,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-gateway-right-axis-2" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-gateway-relative-balance-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-opening-shooting-star-physics-1" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-blue-glass-tide-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-route-guide-copy-only-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-character-profile-layout-2" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-title-return-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-character-motion-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -723,18 +723,17 @@
         <div class="character-book-scroll" id="character-book-scroll">
           <section class="character-book-hero" id="character-book-hero">
             <div class="character-book-hero-copy">
-              <p class="character-book-eyebrow">CHARACTER / GAIA TRANSFORMATION</p>
               <h2 id="character-book-title"><span>CHARACTER</span><small>キャラクター設定</small></h2>
               <p class="character-book-lead" id="character-book-description">三つの視点が、ひとつの地球を見つめている。</p>
 
               <nav class="character-book-selector" aria-label="キャラクターを選ぶ">
-                <button type="button" data-character-select="amane" aria-current="true" aria-label="あめ / アマネを表示">
+                <button type="button" data-character-select="amane" aria-current="true" aria-label="あめ｜雨宮 周を表示">
                   <span><img src="/assets/characters/amane-calm-07-v2.png?v=gaia-character-profile-1" alt="" width="920" height="1840" /></span>
                 </button>
-                <button type="button" data-character-select="mizuha" aria-current="false" aria-label="みず / ミズハを表示">
+                <button type="button" data-character-select="mizuha" aria-current="false" aria-label="みず｜青野 瑞葉を表示">
                   <span><img src="/assets/characters/mizuha-calm-07-v2.png?v=gaia-character-profile-1" alt="" width="920" height="1840" /></span>
                 </button>
-                <button type="button" data-character-select="sakuya" aria-current="false" aria-label="saku / サクヤを表示">
+                <button type="button" data-character-select="sakuya" aria-current="false" aria-label="saku｜木下 咲弥を表示">
                   <span><img src="/assets/characters/sakuya-calm-07-v1.png?v=gaia-character-profile-1" alt="" width="920" height="1840" /></span>
                 </button>
               </nav>
@@ -742,9 +741,11 @@
             </div>
 
             <section class="character-book-hero-detail" aria-live="polite" aria-atomic="true">
-              <p id="character-book-code">AMANE / INFRASTRUCTURE / ELECTRICAL</p>
-              <h3 id="character-book-page-title"><span id="character-book-native">あめ / アマネ</span></h3>
-              <p id="character-book-profile"><span>水色のショートボブと眠そうな目元が特徴の大学2年生。</span><span>普段は無口で省エネ運転だが、配線やハードウェアの話になると途端にスイッチが入る。</span><span>電気工事士・電験三種の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。</span></p>
+              <p id="character-book-tagline">20,000ルーメンを背負う電工少女</p>
+              <h3 id="character-book-page-title">
+                <span id="character-book-native">あめ</span><i aria-hidden="true">｜</i><strong id="character-book-full-name">雨宮 周</strong><small id="character-book-reading">あめみや あまね</small>
+              </h3>
+              <p id="character-book-profile"><span>水色のショートボブと眠そうな目元が特徴の大学2年生。</span><span>普段は無口で省エネ運転だが、配線やハードウェアの話になると途端にスイッチが入る。</span><span>電気工事士・電気主任技術者の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。</span></p>
             </section>
 
             <figure class="character-book-hero-figure" id="character-book-page">
@@ -814,6 +815,9 @@
         aria-hidden="true"
         hidden
       >
+        <button class="intro-title-return" id="intro-title-return" type="button" aria-label="タイトル画面へ戻る">
+          <span aria-hidden="true">◀</span><strong>タイトル</strong>
+        </button>
         <div class="intro-visual-stack" aria-hidden="true">
           <img
             class="intro-visual is-active"
@@ -915,9 +919,9 @@
                       <circle cx="32" cy="22" r="3"></circle>
                     </svg>
                   </span>
-                  <strong>センサーを登録</strong>
-                  <p>地球の観測データを送る</p>
-                  <span class="intro-path-enter">センサーを登録 <b aria-hidden="true">→</b></span>
+                  <strong>ESP32で地球に参加</strong>
+                  <p>実物の観測点を、地球の感覚器へ。</p>
+                  <span class="intro-path-enter">観測点を追加 <b aria-hidden="true">→</b></span>
                 </a>
                 <button
                   class="intro-path-card intro-path-card--character"

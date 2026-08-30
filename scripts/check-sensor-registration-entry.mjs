@@ -13,19 +13,18 @@ const check = (name, run) => { run(); report.push({ name, status: "passed" }); }
 check("ESP32 registration card follows map and links to the sensor SPA", () => {
   const map = index.indexOf('data-intro-path="map"');
   const sensor = index.indexOf("data-sensor-platform-link");
-  const space = index.indexOf('data-intro-path="space"');
-  assert(map >= 0 && map < sensor && sensor < space);
+  assert(map >= 0 && map < sensor);
   const card = index.slice(index.lastIndexOf("<a", sensor), index.indexOf("</a>", sensor) + 4);
   assert.match(card, /href="\.\/sensors\/"/u);
-  assert.match(card, /<strong>センサーを登録<\/strong>/u);
-  assert.match(card, /<p>地球の観測データを送る<\/p>/u);
-  assert.match(card, /class="intro-path-enter">センサーを登録/u);
+  assert.match(card, /<strong>ESP32で地球に参加<\/strong>/u);
+  assert.match(card, /<p>実物の観測点を、地球の感覚器へ。<\/p>/u);
+  assert.match(card, /class="intro-path-enter">観測点を追加/u);
 });
 
 check("logged-out registration CTA and four-step preview are explicit", () => {
   assert.match(sensors, /Googleで続ける/u);
   const preview = sensors.slice(sensors.indexOf("sensor-register-preview"), sensors.indexOf("</ol>", sensors.indexOf("sensor-register-preview")));
-  for (const fragment of ["ESP32を準備", "コードを書き込む", "Webで端末を追加", "Pairing Code", "CITY-SENSOR-XXXX", "2.4GHz Wi-Fi"]) assert(preview.includes(fragment), fragment);
+  for (const fragment of ["対応確認とバックアップ", "GAIAファームウェアを書き込む", "公開観測点を追加", "Pairing Code", "USBで設定", "ONLINE"]) assert(preview.includes(fragment), fragment);
   assert.match(sensors, /コードの準備から順番に見る/u);
 });
 
@@ -33,22 +32,30 @@ check("sensor workspace shares the exhibition scene and observation-node onboard
   for (const fragment of ["sensor-atmosphere-visual", "OBSERVATION NODE", "FIRST OBSERVATION", "WAITING FOR SIGNAL", "DECLARE", "PAIR", "OBSERVE"]) {
     assert(sensors.includes(fragment), fragment);
   }
-  assert.match(css, /gateway-keyvisual-v1\.webp/u);
+  assert.match(css, /gateway-keyvisual-v2\.png/u);
   assert.match(css, /\.sensor-dashboard:has\(\.sensor-empty:not\(\[hidden\]\)\)/u);
   assert.match(css, /\.sensor-empty-flow \{[\s\S]*grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/u);
 });
 
-check("pairing view contains complete Setup AP instructions", () => {
+check("pairing view presents USB first and Setup AP as fallback", () => {
   const pairing = sensors.slice(sensors.indexOf('data-view="pairing"'), sensors.indexOf("</section>", sensors.indexOf('data-view="pairing"')));
-  for (const fragment of ["ESP32へ電源を入れる", "PCまたはスマホ", "CITY-SENSOR-XXXX", "http://192.168.4.1/", "インターネットなし", "2.4GHz Wi-Fi", "Pairing Code", "ONLINE"]) assert(pairing.includes(fragment), fragment);
+  for (const fragment of ["USB", "Codex", "CITY-SENSOR-XXXX", "http://192.168.4.1/", "2.4GHz Wi-Fi", "Pairing Code", "ONLINE", "PCの常時接続は不要"]) assert(pairing.includes(fragment), fragment);
 });
 
-check("public guide teaches the Arduino workflow without sending beginners to a README", () => {
+check("public guide documents verified firmware, backup, USB provisioning, and limits", () => {
   const guide = sensors.slice(sensors.indexOf('data-view="guide"'), sensors.indexOf("</section>\n    </main>", sensors.indexOf('data-view="guide"')));
-  for (const fragment of ["Arduino IDE", "esp32 by Espressif Systems", "ArduinoJson 7.x", "SmartCitySensorDemo.ino", "config.h", "root_ca.h", "ESP32 Dev Module", "BOOT", "CITY-SENSOR-XXXX", "192.168.4.1", "ONLINE", "うまくいかないとき"]) assert(guide.includes(fragment), fragment);
+  for (const fragment of ["ESP32-WROOM-32", "4MB flash", "CH340", "Secure Boot", "SHA-256", "FreeRTOS", "GAIAファームウェア", "匿名のおためし参加", "USB", "CITY-SENSOR-XXXX", "ONLINE", "未検証"]) assert(guide.includes(fragment), fragment);
   assert.doesNotMatch(guide, />Starter Kit README</u);
   const script = read("sensors/sensor-platform.js");
   assert.match(script, /location\.hash === "#guide"\) showView\("guide"\)/u);
+});
+
+check("registration is public-only and terms are visible without login", () => {
+  assert.doesNotMatch(sensors, /name="isPublic" type="checkbox"/u);
+  assert.match(sensors, /name="isPublic" type="hidden" value="true"/u);
+  assert.match(sensors, /name="acceptTerms" type="checkbox" required/u);
+  for (const fragment of ["利用条件", "非公開登録はありません", "展示・教育・試作用途", "秘密情報を表示・共有しない"]) assert(sensors.includes(fragment), fragment);
+  assert.match(read("sensors/sensor-platform.js"), /"map", "guide", "terms"/u);
 });
 
 check("registration uses canonical region selectors and the shared Natural Earth map", () => {

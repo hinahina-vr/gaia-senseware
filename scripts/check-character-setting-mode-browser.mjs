@@ -13,14 +13,19 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "E:/CodexData/temp/gaia-character-profile-browser");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const viewports = [
+const allViewports = [
   { name: "pc-1440", width: 1440, height: 900, mobile: false },
   { name: "pc-4k", width: 3840, height: 2160, mobile: false },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
   { name: "reduced-motion", width: 1440, height: 900, mobile: false, reduced: true },
 ];
+const viewports = process.env.GAIA_VIEWPORT
+  ? allViewports.filter(({ name }) => name === process.env.GAIA_VIEWPORT)
+  : allViewports;
+if (viewports.length === 0) throw new Error(`Unknown GAIA_VIEWPORT: ${process.env.GAIA_VIEWPORT}`);
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
+const normalizeAnimatedText = (value) => value?.replaceAll("\u00a0", " ");
 
 const attachDiagnostics = (page, name) => {
   page.on("console", (message) => {
@@ -62,7 +67,9 @@ const inspect = (page) => page.evaluate(() => {
     oldCompactProfiles: document.querySelectorAll(".character-book-hero-profile").length,
     current: document.querySelector("#character-book-current")?.textContent.trim(),
     title: document.querySelector("#character-book-page-title")?.textContent.replace(/\s+/gu, " ").trim(),
-    code: document.querySelector("#character-book-code")?.textContent.trim(),
+    tagline: document.querySelector("#character-book-tagline")?.textContent.trim(),
+    fullName: document.querySelector("#character-book-full-name")?.textContent.trim(),
+    reading: document.querySelector("#character-book-reading")?.textContent.trim(),
     profile: document.querySelector("#character-book-profile")?.textContent.trim(),
     profileLines: document.querySelectorAll("#character-book-profile > span").length,
     profileShadow: document.querySelector("#character-book-profile")
@@ -112,10 +119,12 @@ try {
     assert.equal(initial.profiles, 0, viewport.name + ": duplicate lower profiles remain");
     assert.equal(initial.oldCompactProfiles, 0, viewport.name + ": old compact hero profile remains");
     assert.equal(initial.current, "01", viewport.name + ": Amane is not the opening character");
-    assert.equal(initial.title, "あめ / アマネ", viewport.name + ": opening profile title is incorrect");
+    assert.equal(initial.title, "あめ｜雨宮 周あめみや あまね", viewport.name + ": opening profile title is incorrect");
     assert.match(initial.imageSource, /amane-calm-07-v2\.png/u, viewport.name + ": opening character art is incorrect");
-    assert.equal(initial.code, "AMANE / INFRASTRUCTURE / ELECTRICAL");
-    assert.equal(initial.profile, "水色のショートボブと眠そうな目元が特徴の大学2年生。普段は無口で省エネ運転だが、配線やハードウェアの話になると途端にスイッチが入る。電気工事士・電験三種の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。");
+    assert.equal(initial.tagline, "20,000ルーメンを背負う電工少女");
+    assert.equal(normalizeAnimatedText(initial.fullName), "雨宮 周");
+    assert.equal(normalizeAnimatedText(initial.reading), "あめみや あまね");
+    assert.equal(initial.profile, "水色のショートボブと眠そうな目元が特徴の大学2年生。普段は無口で省エネ運転だが、配線やハードウェアの話になると途端にスイッチが入る。電気工事士・電気主任技術者の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。");
     assert.equal(initial.profileLines, 3, viewport.name + ": Amane profile is not split at sentence endings");
     assert.notEqual(initial.profileShadow, "none", viewport.name + ": profile lacks contrast shadow");
     assert.equal(initial.quote, "「信号線とは違うの。一本飛んだら、本当に終わるよ」");
@@ -139,8 +148,10 @@ try {
       && document.querySelector("#character-book-current")?.textContent.trim() === "02"
       && /mizuha-calm-07-v2\.png/u.test(document.querySelector("#character-book-image")?.currentSrc || ""));
     const mizuha = await inspect(page);
-    assert.equal(mizuha.title, "みず / ミズハ", viewport.name + ": Mizuha profile did not update");
-    assert.equal(mizuha.code, "MIZUHA / NARRATIVE / EARTH SCIENCE");
+    assert.equal(mizuha.title, "みず｜青野 瑞葉あおの みずは", viewport.name + ": Mizuha profile did not update");
+    assert.equal(mizuha.tagline, "星の呼吸を言葉にする語り部");
+    assert.equal(normalizeAnimatedText(mizuha.fullName), "青野 瑞葉");
+    assert.equal(normalizeAnimatedText(mizuha.reading), "あおの みずは");
     assert.equal(mizuha.profile, "海色の長い髪とおっとりした丁寧語が印象的な大学2年生。地球の歴史や生き物の共進化に関心を持ち、システム全体のナラティブと概念設計を担当する。穏やかな見た目の一方で、データの出典や数字の正確さ、観測条件の厳密さには決して妥協しない。");
     assert.equal(mizuha.profileLines, 3, viewport.name + ": Mizuha profile is not split at sentence endings");
     assert.equal(mizuha.quote, "「46億年、ずっと変わり続けている星ですから」");
@@ -150,11 +161,14 @@ try {
     await page.waitForFunction(() => document.querySelector("#character-book-layer")?.dataset.characterId === "sakuya"
       && document.querySelector("#character-book-current")?.textContent.trim() === "03");
     const sakuya = await inspect(page);
-    assert.equal(sakuya.title, "saku / サクヤ", viewport.name + ": keyboard character change failed");
+    assert.equal(sakuya.title, "saku｜木下 咲弥きのした さくや", viewport.name + ": keyboard character change failed");
+    assert.equal(sakuya.tagline, "海を隔てて世界を繋ぐアーキテクト");
+    assert.equal(normalizeAnimatedText(sakuya.fullName), "木下 咲弥");
+    assert.equal(normalizeAnimatedText(sakuya.reading), "きのした さくや");
     assert.match(sakuya.imageSource, /sakuya-calm-07-v1\.png/u, viewport.name + ": Sakuya art did not load");
     assert.equal(sakuya.profile, "海外からオンラインで参加している、サークル『惑星の放課後』のプロデューサー兼システムアーキテクト。普段のチャットでは無駄口を叩かないが、要件定義やデータ構造の議論では圧倒的な速度と解像度で仕様を組み上げる。プロジェクトの骨格を支える名付け親。");
     assert.equal(sakuya.profileLines, 3, viewport.name + ": Sakuya profile is not split at sentence endings");
-    assert.equal(sakuya.quote, "「まだ気づいてないだけでしょ。世界はこんなにも満ちてるよ」");
+    assert.equal(sakuya.quote, "「まだ気づいてないだけでしょ。世界は満ちてるよ」");
 
     await page.locator("#character-book-master").scrollIntoViewIfNeeded();
     await page.waitForTimeout(viewport.reduced ? 50 : 220);

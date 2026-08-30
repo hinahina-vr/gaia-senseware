@@ -31,6 +31,7 @@ uint64_t pendingSequence = 0;
 bool setupMode = false;
 unsigned long reprovisionPressedAt = 0;
 uint8_t wifiReconnectFailures = 0;
+String usbProvisionBuffer;
 
 void clearPendingPayload() {
   preferences.remove("pending");
@@ -150,6 +151,78 @@ void startSetupMode() {
   Serial.println("Wi-Fi password and Pairing Code are never printed.");
 }
 
+void handleUsbProvisioning() {
+  while (Serial.available() > 0) {
+    const char input = static_cast<char>(Serial.read());
+    if (input == '\r') continue;
+    if (input != '\n') {
+      if (usbProvisionBuffer.length() < 384) usbProvisionBuffer += input;
+      else usbProvisionBuffer = "";
+      continue;
+    }
+
+    JsonDocument request;
+    const DeserializationError error = deserializeJson(request, usbProvisionBuffer);
+    usbProvisionBuffer = "";
+    if (error) {
+      Serial.println("USB_PROVISION_ERROR: invalid request; secrets were not printed.");
+      continue;
+    }
+
+    const String command = request["command"] | "";
+    if (command == "GAIA_USB_SCAN") {
+      WiFi.mode(WIFI_AP_STA);
+      const int16_t networkCount = WiFi.scanNetworks(false, true);
+      JsonDocument response;
+      response["type"] = "GAIA_USB_SCAN_RESULT";
+      JsonArray networks = response["networks"].to<JsonArray>();
+      const int16_t resultLimit = networkCount > 24 ? 24 : networkCount;
+      for (int16_t index = 0; index < resultLimit; ++index) {
+        if (WiFi.SSID(index).length() == 0) continue;
+        JsonObject network = networks.add<JsonObject>();
+        network["ssid"] = WiFi.SSID(index);
+        network["rssi"] = WiFi.RSSI(index);
+        network["authMode"] = static_cast<int>(WiFi.encryptionType(index));
+      }
+      serializeJson(response, Serial);
+      Serial.println();
+      WiFi.scanDelete();
+      continue;
+    }
+
+    if (command != "GAIA_USB_PROVISION") {
+      Serial.println("USB_PROVISION_ERROR: invalid request; secrets were not printed.");
+      continue;
+    }
+
+    const String submittedSsid = request["ssid"] | "";
+    const String submittedPassword = request["password"] | "";
+    String submittedPairing = request["pairingCode"] | "";
+    submittedPairing.toUpperCase();
+    const bool pairingRequired = deviceId.length() == 0 || deviceToken.length() == 0;
+    const bool codeShape = submittedPairing.length() == 9 && submittedPairing[4] == '-';
+    if (submittedSsid.length() == 0 || submittedSsid.length() > 32 || submittedPassword.length() < 8 ||
+        submittedPassword.length() > 63 || (pairingRequired && !codeShape) ||
+        (!pairingRequired && submittedPairing.length() > 0 && !codeShape)) {
+      Serial.println("USB_PROVISION_ERROR: invalid field length or code shape; secrets were not printed.");
+      continue;
+    }
+
+    const size_t savedSsid = preferences.putString("wifiSsid", submittedSsid);
+    const size_t savedPassword = preferences.putString("wifiPass", submittedPassword);
+    const size_t savedPairing = submittedPairing.length() > 0 ? preferences.putString("pairCode", submittedPairing) : 1;
+    if (savedSsid != submittedSsid.length() || savedPassword != submittedPassword.length() ||
+        (submittedPairing.length() > 0 && savedPairing != submittedPairing.length())) {
+      Serial.println("USB_PROVISION_ERROR: NVS write failed; secrets were not printed.");
+      continue;
+    }
+
+    Serial.println("USB_PROVISION_OK: credentials saved without printing them; restarting.");
+    delay(300);
+    ESP.restart();
+  }
+}
+
 bool readSensors(SensorValues& values) {
 #if USE_MOCK_SENSOR
   const float phase = static_cast<float>(millis() % 60000UL) / 60000.0f;
@@ -163,8 +236,29 @@ bool readSensors(SensorValues& values) {
 #endif
 }
 
+void reportTargetNetworkVisibility() {
+  const int16_t networkCount = WiFi.scanNetworks(false, true);
+  int matches = 0;
+  int strongestRssi = -127;
+  int authMode = -1;
+  if (networkCount > 0) {
+    for (int index = 0; index < networkCount; ++index) {
+      if (WiFi.SSID(index) != wifiSsid) continue;
+      ++matches;
+      if (WiFi.RSSI(index) > strongestRssi) {
+        strongestRssi = WiFi.RSSI(index);
+        authMode = static_cast<int>(WiFi.encryptionType(index));
+      }
+    }
+  }
+  WiFi.scanDelete();
+  Serial.printf("Target Wi-Fi scan: found=%s, matches=%d, strongestRssi=%d dBm, authMode=%d; SSID is not printed.\n",
+                matches > 0 ? "yes" : "no", matches, strongestRssi, authMode);
+}
+
 bool connectWiFi() {
   WiFi.mode(WIFI_STA);
+  reportTargetNetworkVisibility();
   WiFi.begin(wifiSsid.c_str(), wifiPassword.c_str());
   Serial.print("Connecting to Wi-Fi");
   const unsigned long deadline = millis() + 30000UL;
@@ -177,7 +271,8 @@ bool connectWiFi() {
   }
   Serial.println();
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Wi-Fi connection failed. Credentials are never printed.");
+    Serial.printf("Wi-Fi connection failed with status=%d. Credentials are never printed.\n",
+                  static_cast<int>(WiFi.status()));
     return false;
   }
   Serial.println("Wi-Fi connected.");
@@ -197,7 +292,7 @@ bool httpsPost(const String& url, const String& body, const String& authorizatio
   if (!http.begin(client, url)) return false;
   http.addHeader("Content-Type", "application/json");
   if (authorization.length() > 0) http.addHeader("Authorization", authorization);
-  status = http.POST(reinterpret_cast<const uint8_t*>(body.c_str()), body.length());
+  status = http.POST(body);
   if (status > 0 && status < 500) responseBody = http.getString();
   http.end();
   return status > 0;
@@ -370,6 +465,7 @@ void setup() {
 
 void loop() {
   if (setupMode) {
+    handleUsbProvisioning();
     dnsServer.processNextRequest();
     setupServer.handleClient();
     delay(2);

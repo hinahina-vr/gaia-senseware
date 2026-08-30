@@ -186,6 +186,14 @@ try {
     const response = await webFetch("/api/web/v1/devices/pairing", auth, { method: "POST", includeCsrf: false, body: deviceDraft() });
     assert.equal(response.status, 403);
   });
+  await test("private sensor registration is rejected server-side", async () => {
+    const response = await webFetch("/api/web/v1/devices/pairing", auth, {
+      method: "POST",
+      body: { ...deviceDraft(), isPublic: false },
+    });
+    assert.equal(response.status, 400);
+    assert.equal((await response.json()).error.code, "PUBLIC_SENSOR_REQUIRED");
+  });
   await test("ISO 3166-1 country master has 249 valid unique codes and foreign keys", async () => {
     assert.equal(await scalar("SELECT COUNT(*) FROM countries"), "249");
     assert.equal(await scalar("SELECT COUNT(DISTINCT code) FROM countries"), "249");
@@ -404,11 +412,22 @@ function deviceDraft() {
     municipalityCode: "142085",
     admin1Code: null,
     localityName: null,
+    isPublic: true,
+    publicLatitude: 35.3,
+    publicLongitude: 139.6,
   };
 }
 
 function legacyDeviceDraft() {
-  return { name: "旧クライアント", countryCode: "JP", admin1Code: "JP-14", localityName: "逗子市" };
+  return {
+    name: "旧クライアント",
+    countryCode: "JP",
+    admin1Code: "JP-14",
+    localityName: "逗子市",
+    isPublic: true,
+    publicLatitude: 35.3,
+    publicLongitude: 139.6,
+  };
 }
 
 async function createLocalSession(userId) {

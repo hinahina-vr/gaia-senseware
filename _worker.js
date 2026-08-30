@@ -15807,11 +15807,13 @@ var validateDeviceDraft = /* @__PURE__ */ __name((value) => {
   if (municipality && legacyLocalityName && legacyLocalityName !== municipality.name) {
     throw new ApiError(400, "REGION_FIELD_CONFLICT", "localityName conflicts with municipalityCode.");
   }
-  const isPublic = value.isPublic === true;
-  if (value.isPublic !== void 0 && typeof value.isPublic !== "boolean") throw new ApiError(400, "INVALID_PUBLIC_LOCATION", "isPublic must be boolean.");
+  if (value.isPublic !== true) {
+    throw new ApiError(400, "PUBLIC_SENSOR_REQUIRED", "GAIA SENSEWARE sensors must be published with an approximate location.");
+  }
+  const isPublic = true;
   const publicLatitude = coordinate(value.publicLatitude, "publicLatitude", -90, 90);
   const publicLongitude = coordinate(value.publicLongitude, "publicLongitude", -180, 180);
-  if (isPublic && (publicLatitude === null || publicLongitude === null)) {
+  if (publicLatitude === null || publicLongitude === null) {
     throw new ApiError(400, "PUBLIC_LOCATION_REQUIRED", "Select an approximate public map location.");
   }
   return {
@@ -15822,8 +15824,8 @@ var validateDeviceDraft = /* @__PURE__ */ __name((value) => {
     admin1Code: subdivisionCode ?? legacyAdmin1Code,
     localityName: municipality?.name ?? legacyLocalityName,
     isPublic,
-    publicLatitude: isPublic ? publicLatitude : null,
-    publicLongitude: isPublic ? publicLongitude : null
+    publicLatitude,
+    publicLongitude
   };
 }, "validateDeviceDraft");
 var validateProfileDraft = /* @__PURE__ */ __name((value) => {
@@ -15943,7 +15945,7 @@ var createPairing = /* @__PURE__ */ __name(async (request, env, user) => {
     draft.localityName,
     draft.publicLatitude,
     draft.publicLongitude,
-    draft.isPublic ? 1 : 0,
+    1,
     expiresAt,
     now.toISOString()
   ).run();
@@ -15973,7 +15975,7 @@ var pairDevice = /* @__PURE__ */ __name(async (request, env) => {
          public_latitude, public_longitude, is_public, location_precision, created_at, updated_at)
        SELECT ?1, ?2, ?3, user_id, device_name, ?4, country_code, subdivision_code,
          municipality_code, admin1_code, locality_name,
-         public_latitude, public_longitude, is_public,
+         public_latitude, public_longitude, 1,
          CASE WHEN municipality_code IS NOT NULL OR locality_name IS NOT NULL THEN 'LOCALITY'
               WHEN subdivision_code IS NOT NULL OR admin1_code IS NOT NULL THEN 'ADMIN1' ELSE 'COUNTRY' END,
          ?5, ?5
@@ -16105,7 +16107,7 @@ var updateDevice = /* @__PURE__ */ __name(async (request, env, user, deviceId) =
     draft.municipalityCode,
     draft.admin1Code,
     draft.localityName,
-    draft.isPublic ? 1 : 0,
+    1,
     draft.publicLatitude,
     draft.publicLongitude,
     (/* @__PURE__ */ new Date()).toISOString(),

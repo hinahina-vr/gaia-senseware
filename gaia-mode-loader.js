@@ -5,7 +5,7 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-ja-wrap-polish-1",
+        "./styles.css?v=gaia-title-return-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
@@ -18,7 +18,7 @@
         "./data-ledger.js?v=gaia-ovation-featured-source-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-ovation-aurora-1",
-        "./app.js?v=gaia-blue-glass-map-1",
+        "./app.js?v=gaia-title-return-1",
         "./map-ui-grid-polish.js?v=gaia-panel-order-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
@@ -30,7 +30,7 @@
     story: {
       templates: ["gaia-template-story"],
       styles: [
-        "./styles.css?v=gaia-ja-wrap-polish-1",
+        "./styles.css?v=gaia-title-return-1",
         "./scene-transition.css?v=gaia-52",
         "./novel-mode.css?v=gaia-mobile-story-control-height-1",
         "./true-end.css?v=gaia-apeironcene-exit-3",
@@ -52,7 +52,7 @@
     gx: {
       templates: ["gaia-template-gx"],
       styles: [
-        "./styles.css?v=gaia-ja-wrap-polish-1",
+        "./styles.css?v=gaia-title-return-1",
         "./scene-transition.css?v=gaia-52",
         "./gx-mode.css?v=gaia-gx-feature-card-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
@@ -66,7 +66,7 @@
     space: {
       templates: ["gaia-template-space"],
       styles: [
-        "./styles.css?v=gaia-ja-wrap-polish-1",
+        "./styles.css?v=gaia-title-return-1",
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
         "./mode-exit.css?v=gaia-story-control-center-2",
@@ -81,7 +81,7 @@
     sound: {
       templates: ["gaia-template-sound"],
       styles: [
-        "./styles.css?v=gaia-ja-wrap-polish-1",
+        "./styles.css?v=gaia-title-return-1",
         "./sound-mode.css?v=gaia-sound-full-scene-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
@@ -90,11 +90,11 @@
     character: {
       templates: ["gaia-template-character"],
       styles: [
-        "./styles.css?v=gaia-ja-wrap-polish-1",
-        "./character-mode.css?v=gaia-character-profile-layout-2",
+        "./styles.css?v=gaia-title-return-1",
+        "./character-mode.css?v=gaia-character-motion-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./character-mode.js?v=gaia-character-profile-paragraphs-1"],
+      scripts: ["./character-mode.js?v=gaia-character-motion-1"],
     },
     tour: {
       templates: [],

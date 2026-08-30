@@ -1,9 +1,25 @@
 # SmartCitySensorDemo
 
+実機確認済みの対象は **ESP32-WROOM-32 / ESP32-D0WD-V3 revision 3.1 / 4MB flash / CH340** です。ESP32-S2 / S3 / C3 / C6、WROVER、4MB以外のflashは未検証です。
+
+書き込み前にchip、revision、flash容量、Secure Boot、flash encryptionを確認し、現在のflash全体をバックアップしてください。4MB機ならバックアップが4,194,304 bytesであることとSHA-256を確認し、復元コマンドと一緒に保管します。保護機能や構成の不一致がある場合は消去・書き込みを止めてください。
+
 1. `config.example.h` を `config.h` へコピーします。
 2. `root_ca.example.h` を `root_ca.h` へコピーし、production API domainのchainに合うRoot CAか必ず照合します。
-3. ArduinoJson 7.xを導入し、ESP32 / ESP32-S3へ書き込みます。
-4. `CITY-SENSOR-XXXX`へ接続し、`http://192.168.4.1/` のSetup画面へWi-Fiと一回限りのPairing Codeを入力します。
+3. ArduinoJson 7.xを導入し、対応を確認したESP32へ書き込みます。
+4. 通常は115200 baudのUSB Serialへ1行JSONでWi-FiとPairing Codeを渡します。`CITY-SENSOR-XXXX` と `http://192.168.4.1/` はUSB設定が使えない場合の代替です。
+
+USB設定コマンド（秘密を含むため履歴・ログへ保存しないこと）:
+
+```json
+{"command":"GAIA_USB_PROVISION","ssid":"...","password":"...","pairingCode":"ABCD-EFGH"}
+```
+
+周辺Wi-Fi一覧をUSBへ返す診断コマンド:
+
+```json
+{"command":"GAIA_USB_SCAN"}
+```
 
 Wi-Fi、Device ID、Device Token、seqはPreferences/NVSへ保存されます。Pairing成功後、Pairing CodeはNVSから消去して再利用しません。Token・Wi-Fi password・Pairing CodeはSerialへ表示しません。`setInsecure()`は禁止です。
 

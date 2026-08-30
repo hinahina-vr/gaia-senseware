@@ -110,6 +110,7 @@ const boot = async () => {
     if (error.status === 401) {
       if (location.hash === "#map") showView("map");
       else if (location.hash === "#guide") showView("guide");
+      else if (location.hash === "#terms") showView("terms");
       else showView("login");
     }
     else {
@@ -301,7 +302,7 @@ const renderDetail = ({ device, latest }, telemetry) => {
     locationForm.elements.countryCode.value = device.countryCode;
     locationForm.elements.admin1Code.value = device.admin1Code || "";
     locationForm.elements.localityName.value = device.localityName || "";
-    locationForm.elements.isPublic.checked = Boolean(device.isPublic);
+    locationForm.elements.isPublic.value = "true";
     syncPickerViewport(locationForm, device.countryCode);
     setPickerLocation(locationForm, device.publicLatitude, device.publicLongitude);
     syncPickerEnabled(locationForm);
@@ -361,6 +362,7 @@ const showDevices = async () => {
 const routeFromHash = () => {
   if (location.hash === "#map") showView("map");
   else if (location.hash === "#guide") showView("guide");
+  else if (location.hash === "#terms") showView("terms");
   else if (!authenticated) showView("login");
   else if (location.hash === "#profile" && sessionUser?.accountKind !== "trial") showView("profile");
   else if (location.hash.startsWith("#device=")) openDetail(decodeURIComponent(location.hash.slice(8)));
@@ -415,7 +417,7 @@ document.querySelectorAll("[data-action='map']").forEach((button) => button.addE
 document.querySelectorAll("[data-nav]").forEach((link) => link.addEventListener("click", (event) => {
   event.preventDefault();
   const destination = link.dataset.nav;
-  if (!new Set(["map", "guide"]).has(destination) && !authenticated) { showView("login"); history.replaceState(null, "", "#login"); return; }
+  if (!new Set(["map", "guide", "terms"]).has(destination) && !authenticated) { showView("login"); history.replaceState(null, "", "#login"); return; }
   if (destination === "profile" && sessionUser?.accountKind === "trial") { void showDevices(); return; }
   if (destination === "devices") showDevices();
   else { showView(destination); history.replaceState(null, "", `#${destination}`); }
@@ -537,7 +539,7 @@ function formDevice(form) {
     municipalityCode,
     admin1Code: subdivisionCode ? null : String(data.get("admin1Code") || "").trim() || null,
     localityName: municipalityCode ? null : String(data.get("localityName") || "").trim() || null,
-    isPublic: data.get("isPublic") === "on",
+    isPublic: true,
     publicLatitude: numberOrNull(data.get("publicLatitude")),
     publicLongitude: numberOrNull(data.get("publicLongitude")),
   };
@@ -641,9 +643,7 @@ function initLocationPickers() {
   document.querySelectorAll(".sensor-public-location").forEach((fieldset) => {
     const form = fieldset.closest("form");
     const picker = fieldset.querySelector("[data-location-picker]");
-    fieldset.querySelector("input[name='isPublic']").addEventListener("change", () => syncPickerEnabled(form));
     picker.addEventListener("pointerdown", (event) => {
-      if (!form.elements.isPublic.checked) return;
       const rect = picker.getBoundingClientRect();
       const view = mapViewFor(picker);
       setPickerLocation(
@@ -653,7 +653,7 @@ function initLocationPickers() {
       );
     });
     picker.addEventListener("keydown", (event) => {
-      if (!form.elements.isPublic.checked || !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
       event.preventDefault();
       const view = mapViewFor(picker);
       const latitude = numberOrNull(form.elements.publicLatitude.value) ?? ((view.north + view.south) / 2);
@@ -681,7 +681,7 @@ function syncPickerViewport(form, countryCode, { ensureLocation = false } = {}) 
   const longitude = numberOrNull(form.elements.publicLongitude.value);
   const outsideView = latitude !== null && longitude !== null
     && (latitude < view.south || latitude > view.north || longitude < view.west || longitude > view.east);
-  if (ensureLocation && form.elements.isPublic.checked && (latitude === null || longitude === null || outsideView)) {
+  if (ensureLocation && (latitude === null || longitude === null || outsideView)) {
     setPickerLocation(form, (view.north + view.south) / 2, (view.east + view.west) / 2);
   } else {
     setPickerLocation(form, latitude, longitude);
@@ -694,10 +694,9 @@ function mapViewFor(surface) {
 }
 
 function syncPickerEnabled(form) {
-  const enabled = form.elements.isPublic.checked;
   const picker = form.querySelector("[data-location-picker]");
-  picker.toggleAttribute("aria-disabled", !enabled);
-  if (enabled && numberOrNull(form.elements.publicLatitude.value) === null) setPickerLocation(form, 35.7, 139.7);
+  picker.removeAttribute("aria-disabled");
+  if (numberOrNull(form.elements.publicLatitude.value) === null) setPickerLocation(form, 35.7, 139.7);
 }
 
 function setPickerLocation(form, rawLatitude, rawLongitude) {

@@ -76,7 +76,7 @@ export const createPairing = async (request: Request, env: Env, user: Authentica
     draft.localityName,
     draft.publicLatitude,
     draft.publicLongitude,
-    draft.isPublic ? 1 : 0,
+    1,
     expiresAt,
     now.toISOString(),
   ).run();
@@ -107,7 +107,7 @@ export const pairDevice = async (request: Request, env: Env): Promise<Response> 
          public_latitude, public_longitude, is_public, location_precision, created_at, updated_at)
        SELECT ?1, ?2, ?3, user_id, device_name, ?4, country_code, subdivision_code,
          municipality_code, admin1_code, locality_name,
-         public_latitude, public_longitude, is_public,
+         public_latitude, public_longitude, 1,
          CASE WHEN municipality_code IS NOT NULL OR locality_name IS NOT NULL THEN 'LOCALITY'
               WHEN subdivision_code IS NOT NULL OR admin1_code IS NOT NULL THEN 'ADMIN1' ELSE 'COUNTRY' END,
          ?5, ?5
@@ -257,7 +257,7 @@ export const updateDevice = async (
      WHERE device_id = ?11 AND owner_user_id = ?12 AND status = 'ACTIVE' AND deleted_at IS NULL`,
   ).bind(
     draft.name, draft.countryCode, draft.subdivisionCode, draft.municipalityCode,
-    draft.admin1Code, draft.localityName, draft.isPublic ? 1 : 0,
+    draft.admin1Code, draft.localityName, 1,
     draft.publicLatitude, draft.publicLongitude,
     new Date().toISOString(), deviceId, user.id,
   ).run();

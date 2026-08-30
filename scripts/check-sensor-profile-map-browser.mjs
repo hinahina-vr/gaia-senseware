@@ -105,7 +105,7 @@ try {
     await page.locator("#device-form select[name='subdivisionCode']").selectOption("JP-13");
     await page.waitForFunction(() => !document.querySelector("#device-form select[name='municipalityCode']")?.disabled);
     await page.locator("#device-form select[name='municipalityCode']").selectOption("131130");
-    await page.locator("#device-form input[name='isPublic']").check();
+    assert.equal(await page.locator("#device-form input[name='isPublic']").inputValue(), "true");
     const picker = page.locator("#device-form [data-location-picker]");
     const box = await picker.boundingBox();
     assert(box);
@@ -124,6 +124,7 @@ try {
     assert.notEqual(picked.longitude, "");
     assert(Number(picked.latitude) >= 20 && Number(picked.latitude) <= 48);
     assert(Number(picked.longitude) >= 122 && Number(picked.longitude) <= 154);
+    await page.locator("#device-form input[name='acceptTerms']").check();
     await page.locator("#device-form button[type='submit']").click();
     await page.locator("[data-view='pairing']").waitFor({ state: "visible" });
     const qa = await (await fetch(new URL("/__qa/report", baseUrl))).json();

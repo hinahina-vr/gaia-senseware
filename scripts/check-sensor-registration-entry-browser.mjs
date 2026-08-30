@@ -71,9 +71,9 @@ try {
     });
     assert.equal(entrance.labels[0], "世界を読む");
     assert.equal(entrance.sensorIndex, 1);
-    assert.equal(entrance.label, "センサーを登録");
-    assert.equal(entrance.description, "地球の観測データを送る");
-    assert.equal(entrance.enter, "センサーを登録");
+    assert.equal(entrance.label, "ESP32で地球に参加");
+    assert.equal(entrance.description, "実物の観測点を、地球の感覚器へ。");
+    assert.equal(entrance.enter, "観測点を追加");
     assert.equal(entrance.href, "./sensors/");
     assert.equal(entrance.visible, true);
     assert.equal(entrance.overflowX, false);
@@ -101,7 +101,8 @@ try {
     assert.match(login.cta, /Googleで続ける/u);
     assert.equal(login.previewVisible, true);
     assert.equal(login.steps.length, 4);
-    assert(login.steps[3].includes("CITY-SENSOR-XXXX"));
+    assert(login.steps[3].includes("USB"));
+    assert(login.steps[3].includes("ONLINE"));
     assert.equal(login.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-login.png`), fullPage: true });
 
@@ -110,20 +111,21 @@ try {
     const guide = await page.evaluate(() => {
       const view = document.querySelector("[data-view='guide']");
       const steps = [...view.querySelectorAll(".sensor-guide-path > li")];
-      const downloads = [...view.querySelectorAll(".sensor-code-downloads a")];
+      const downloads = [...view.querySelectorAll(".sensor-developer-links a[download]")];
       return {
         steps: steps.map((step) => step.textContent.replace(/\s+/gu, " ").trim()),
         downloads: downloads.map((link) => ({ name: link.getAttribute("download"), href: link.getAttribute("href") })),
-        visible: steps.length === 7 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
+        visible: steps.length === 6 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
+        content: view.textContent.replace(/\s+/gu, " ").trim(),
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
     assert.equal(guide.visible, true);
-    assert.equal(guide.downloads.length, 3);
-    assert.deepEqual(guide.downloads.map(({ name }) => name), ["SmartCitySensorDemo.ino", "config.h", "root_ca.h"]);
-    assert(guide.steps.join(" ").includes("esp32 by Espressif Systems"));
-    assert(guide.steps.join(" ").includes("ArduinoJson 7.x"));
-    assert(guide.steps.join(" ").includes("BOOT"));
+    assert.equal(guide.downloads.length, 1);
+    assert.deepEqual(guide.downloads.map(({ name }) => name), ["SmartCitySensorDemo.ino"]);
+    assert(guide.content.includes("ESP32-WROOM-32"));
+    assert(guide.content.includes("SHA-256"));
+    assert(guide.content.includes("USB"));
     assert.equal(guide.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-guide.png`), fullPage: true });
 
@@ -148,6 +150,7 @@ try {
     await page.locator("#device-form select[name='subdivisionCode']").selectOption("JP-13");
     await page.waitForFunction(() => !document.querySelector("#device-form select[name='municipalityCode']")?.disabled);
     await page.locator("#device-form select[name='municipalityCode']").selectOption("131130");
+    await page.locator("#device-form input[name='acceptTerms']").check();
     await page.locator("#device-form button[type='submit']").click();
     await page.locator("[data-view='pairing']").waitFor({ state: "visible" });
     const pairing = await page.evaluate(() => {
@@ -156,14 +159,15 @@ try {
       return {
         code: document.querySelector("#pairing-code")?.textContent.trim(),
         steps: steps.map((step) => step.textContent.replace(/\s+/gu, " ").trim()),
-        instructionsVisible: steps.length === 6 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
+        instructionsVisible: steps.length === 4 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
+        content: view.textContent.replace(/\s+/gu, " ").trim(),
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
     assert.equal(pairing.code, "H7K2-PQ9M");
     assert.equal(pairing.instructionsVisible, true);
-    assert(pairing.steps.join(" ").includes("CITY-SENSOR-XXXX"));
-    assert(pairing.steps.join(" ").includes("http://192.168.4.1/"));
+    assert(pairing.content.includes("CITY-SENSOR-XXXX"));
+    assert(pairing.content.includes("http://192.168.4.1/"));
     assert(pairing.steps.join(" ").includes("Wi-Fi"));
     assert(pairing.steps.join(" ").includes("Pairing Code"));
     assert.equal(pairing.overflowX, false);
@@ -173,6 +177,7 @@ try {
     assert.equal(qa.lastPairingDraft.municipalityCode, "131130");
     assert.equal(qa.lastPairingDraft.admin1Code, null);
     assert.equal(qa.lastPairingDraft.localityName, null);
+    assert.equal(qa.lastPairingDraft.isPublic, true);
     await page.screenshot({ path: path.join(outputDir, `${label}-pairing.png`), fullPage: true });
     report.scans.push({ viewport: label, entrance, login, guide, pairing, regionDraft: qa.lastPairingDraft, passed: true });
     await context.close();

@@ -7,10 +7,10 @@
     <link rel="icon" href="data:," />
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-cross-platform-fonts-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-public-sensors-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=2" defer></script>
-    <script src="./sensor-platform.js?v=6" type="module"></script>
+    <script src="./sensor-platform.js?v=7" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -29,6 +29,7 @@
           <a href="#devices" data-nav="devices">マイセンサー</a>
           <a href="#profile" data-nav="profile" id="profile-nav">プロフィール</a>
           <a href="#guide" data-nav="guide">接続ガイド</a>
+          <a href="#terms" data-nav="terms">利用条件</a>
           <button class="sensor-nav-logout" id="sensor-logout" type="button" hidden>ログアウト</button>
           <a href="../">地図へ戻る</a>
         </nav>
@@ -56,7 +57,7 @@
           <div><p>PUBLIC SIGNALS / APPROXIMATE LOCATION</p><h1>みんなのセンサー</h1></div>
           <button class="sensor-secondary" id="refresh-map" type="button">地図を更新</button>
         </header>
-        <p class="sensor-map-lead">公開を選んだセンサーだけを、約10km単位の位置で表示します。正確な住所や自治体コードは公開しません。</p>
+        <p class="sensor-map-lead">GAIA SENSEWAREへ登録したセンサーを、約10km単位の位置で表示します。正確な住所や自治体コードは公開しません。</p>
         <div class="sensor-map-console">
           <div class="sensor-world-map" id="public-sensor-map" role="region" aria-label="公開センサーの世界地図">
             <div class="sensor-map-hud sensor-map-hud-top" aria-hidden="true"><span>LIVE OBSERVATION FIELD</span><span id="public-sensor-count">000 NODES</span></div>
@@ -75,7 +76,7 @@
       <section class="sensor-view sensor-login" data-view="login">
         <div class="sensor-kicker">YOUR SENSOR / PLANETARY SIGNAL</div>
         <h1>測ることから、<br />地球へ参加する。</h1>
-        <p>国と地域コードを選び、自分のESP32を登録します。GPSや住所は使いません。温度・湿度・PM2.5など、あなたが測った値だけをHTTPSで届けます。</p>
+        <p>Google登録なしのおためし参加でも、自分のESP32を登録してPairing Codeを発行できます。登録した観測点は約10km単位で公開され、ESP32は設定後、PCをつながずHTTPSで観測値を届けます。</p>
         <div class="sensor-login-actions">
           <button class="sensor-primary" id="google-login" type="button">
             <span aria-hidden="true">G</span>Googleで続ける
@@ -90,13 +91,13 @@
           <p><b>おためし</b> Google連携なし・自動生成名で8時間利用できます。ログアウトすると、登録したセンサーと観測データも削除します。</p>
         </aside>
         <button class="sensor-secondary sensor-public-map-link" type="button" data-action="map">ログインせず地図を見る</button>
-        <small>どちらもGPS・住所は使いません。機能上必要な地域コード、センサー名、観測値だけを保存します。</small>
+        <small>GPS・住所は使いません。登録センサーはすべて、センサー名・観測値・約10km単位の位置を公開します。</small>
         <a class="sensor-guide-cta" href="#guide" data-nav="guide"><span>ESP32が初めてでも大丈夫</span><strong>コードの準備から順番に見る <b aria-hidden="true">→</b></strong></a>
         <ol class="sensor-register-preview" aria-label="ESP32登録の4ステップ">
-          <li><span>01</span><p><strong>ESP32を準備</strong>Arduino IDEとUSBデータケーブルを用意します。</p></li>
-          <li><span>02</span><p><strong>コードを書き込む</strong>配布する3ファイルを同じフォルダへ入れてアップロードします。</p></li>
-          <li><span>03</span><p><strong>Webで端末を追加</strong>国・地域と名前を登録し、Pairing Codeを取得します。</p></li>
-          <li><span>04</span><p><strong>Wi-Fiを設定</strong><code>CITY-SENSOR-XXXX</code>を開き、コードと2.4GHz Wi-Fiを入力します。</p></li>
+          <li><span>01</span><p><strong>対応確認とバックアップ</strong>USB接続し、機種確認後に4MBフラッシュ全体を保存します。</p></li>
+          <li><span>02</span><p><strong>GAIAファームウェアを書き込む</strong>検証済みファームウェアをUSBから書き込みます。</p></li>
+          <li><span>03</span><p><strong>Webで公開観測点を追加</strong>匿名参加でもPairing Codeを発行できます。</p></li>
+          <li><span>04</span><p><strong>USBで設定して完了</strong>Wi-Fi情報とコードをESP32へ渡し、ONLINEを確認します。</p></li>
         </ol>
       </section>
 
@@ -154,12 +155,14 @@
             <p class="sensor-region-note" data-region-note>地域はISOの正式コードで保存します。住所は入力・保存しません。</p>
           </div>
           <fieldset class="sensor-public-location">
-            <label class="sensor-check"><input name="isPublic" type="checkbox" />このセンサーを「みんなのセンサー」に表示する</label>
-            <p id="add-location-help">公開する場合だけ、地図を選んで約10km単位の位置を保存します。矢印キーでも移動できます。GPS・住所は取得も公開もしません。</p>
+            <input name="isPublic" type="hidden" value="true" />
+            <p class="sensor-public-required"><strong>公開観測点として登録されます</strong>「みんなのセンサー」に約10km単位で表示されます。非公開登録はありません。</p>
+            <p id="add-location-help">地図を選んで公開するおおよその位置を指定します。矢印キーでも移動できます。GPS・住所は取得も公開もしません。</p>
             <div class="sensor-location-picker" data-location-picker="add" tabindex="0" role="group" aria-label="公開するおおよその位置を地図から選択" aria-describedby="add-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
             <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
             <output data-location-output="add">位置は未選択です</output>
           </fieldset>
+          <label class="sensor-check sensor-agreement"><input name="acceptTerms" type="checkbox" required /> <span><a href="#terms" data-nav="terms">利用条件・安全上の注意</a>を確認し、公開位置、ファームウェア上書き、自己管理のネットワークを使うことに同意します。</span></label>
           <button class="sensor-primary" type="submit">登録開始 <b aria-hidden="true">→</b></button>
         </form>
       </section>
@@ -168,18 +171,17 @@
         <button class="sensor-back" type="button" data-action="devices">← マイセンサー</button>
         <div class="sensor-kicker">ONE-TIME PAIRING</div>
         <h1>ESP32にコードを入力</h1>
-        <p>Web側の登録はできました。次はESP32を自宅・会場のWi-Fiへつなぎます。このコードは10分間・一回だけ使えます。</p>
+        <p>Web側の登録はできました。次はUSBでWi-Fi情報とPairing CodeをESP32へ渡します。このコードは10分間・一回だけ使えます。</p>
         <aside class="sensor-pairing-help"><strong>まだESP32へコードを書き込んでいない場合</strong><span>この画面は閉じず、<a href="./#guide" target="_blank" rel="noopener">書き込みガイドを別タブで開いて</a>先に準備してください。10分を過ぎたら、センサーを削除して新しいコードを発行します。</span></aside>
         <output id="pairing-code" aria-label="Pairing Code">—</output>
         <p id="pairing-expiry">有効期限を確認しています。</p>
-        <ol class="sensor-setup-steps" aria-label="Setup APへの入力手順">
-          <li><span>01</span><p><strong>ESP32へ電源を入れる</strong>書き込み済みのESP32をUSBにつなぎ、30秒ほど待ちます。</p></li>
-          <li><span>02</span><p><strong>設定用Wi-Fiを選ぶ</strong>PCまたはスマホのWi-Fi設定で <code>CITY-SENSOR-XXXX</code> を選びます。「インターネットなし」と出ても正常です。</p></li>
-          <li><span>03</span><p><strong>設定画面を開く</strong>接続したままChromeやSafariで <a href="http://192.168.4.1/" target="_blank" rel="noopener">http://192.168.4.1/</a> を開きます。</p></li>
-          <li><span>04</span><p><strong>3項目を入力する</strong>普段使う<b>2.4GHz Wi-Fi名</b>、そのパスワード、上のPairing Codeを入力します。</p></li>
-          <li><span>05</span><p><strong>「接続して登録」を押す</strong>ESP32が再起動します。PC・スマホは普段のWi-Fiへ戻してください。</p></li>
-          <li><span>06</span><p><strong>Webで確認する</strong>1分ほど待ってから下のボタンを押し、センサーが <b>ONLINE</b> になれば完了です。</p></li>
+        <ol class="sensor-setup-steps" aria-label="USBでの設定手順">
+          <li><span>01</span><p><strong>ESP32をUSBにつないだままにする</strong>GAIAファームウェアを書き込んだPCで、Codexへ「このESP32をUSBでGAIAへ登録して」と依頼します。</p></li>
+          <li><span>02</span><p><strong>Wi-Fi情報をPC上で入力する</strong>Codexの案内に従って2.4GHz Wi-Fi名・パスワードを入力します。秘密は会話やログへ表示させないでください。</p></li>
+          <li><span>03</span><p><strong>Pairing Codeを渡す</strong>上のコードをUSB経由でESP32へ送ります。設定後はPCの常時接続は不要です。</p></li>
+          <li><span>04</span><p><strong>Webで確認する</strong>1分ほど待って下のボタンを押し、センサーが <b>ONLINE</b> なら完了です。</p></li>
         </ol>
+        <details class="sensor-developer-links"><summary>USB設定が使えない場合：設定用Wi-Fi</summary><div><p><code>CITY-SENSOR-XXXX</code>へ接続し、<a href="http://192.168.4.1/" target="_blank" rel="noopener">http://192.168.4.1/</a> で2.4GHz Wi-Fi名・パスワード・Pairing Codeを入力します。</p></div></details>
         <div class="sensor-pair-actions">
           <button class="sensor-secondary" id="copy-pairing" type="button">コードをコピー</button>
           <button class="sensor-primary" id="pairing-complete" type="button">マイセンサーで接続を確認</button>
@@ -203,7 +205,7 @@
           <ol id="history-list"></ol>
         </div>
         <form class="sensor-location-form" id="location-form">
-          <h2>地域と公開設定を変更</h2>
+          <h2>地域と公開位置を変更</h2>
           <input name="name" type="hidden" />
           <label>国 *<select name="countryCode" required></select></label>
           <div class="sensor-region-grid" data-region-fields>
@@ -213,13 +215,14 @@
             <p class="sensor-region-note" data-region-note>既存の地域情報は保持されます。正式コードを選ぶと正規化されます。</p>
           </div>
           <fieldset class="sensor-public-location">
-            <label class="sensor-check"><input name="isPublic" type="checkbox" />このセンサーを「みんなのセンサー」に表示する</label>
+            <input name="isPublic" type="hidden" value="true" />
+            <p class="sensor-public-required"><strong>この観測点は公開です</strong>非公開には変更できません。公開位置は約10km単位です。</p>
             <p id="detail-location-help">公開位置は約10km単位です。矢印キーでも移動できます。正確な住所やGPSは保存しません。</p>
             <div class="sensor-location-picker" data-location-picker="detail" tabindex="0" role="group" aria-label="公開するおおよその位置を地図から選択" aria-describedby="detail-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
             <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
             <output data-location-output="detail">位置は未選択です</output>
           </fieldset>
-          <button class="sensor-secondary" type="submit">地域と公開設定を保存</button>
+          <button class="sensor-secondary" type="submit">地域と公開位置を保存</button>
         </form>
         <button class="sensor-danger" id="revoke-device" type="button">センサーを削除</button>
       </section>
@@ -246,48 +249,51 @@
       </section>
 
       <section class="sensor-view sensor-guide" data-view="guide" id="guide" hidden>
-        <div class="sensor-kicker">ESP32 / FIRST CONNECTION</div>
-        <h1>はじめてでも、<br />ここだけ見ればつながります。</h1>
-        <p class="sensor-guide-lead">コードを書いたことがなくても大丈夫です。上から順に進めてください。最初は実センサーなしでも、ESP32がつくるテスト値で接続を確認できます。</p>
+        <div class="sensor-kicker">ESP32 / VERIFIED CONNECTION</div>
+        <h1>実物の観測点を、<br />地球の感覚器にする。</h1>
+        <p class="sensor-guide-lead">GAIA SENSEWAREはWeb展示だけではありません。ESP32用ファームウェアを実際に配布し、匿名のおためし参加でもPairing Codeを発行できます。設定後のESP32はPCを常時つながず、観測値をHTTPSで直接送ります。</p>
 
         <section class="sensor-guide-section" aria-labelledby="sensor-kit-title">
-          <div class="sensor-guide-heading"><span>PREPARE</span><h2 id="sensor-kit-title">用意するもの</h2></div>
+          <div class="sensor-guide-heading"><span>COMPATIBILITY</span><h2 id="sensor-kit-title">実機確認済みの構成</h2></div>
           <ul class="sensor-kit-list">
-            <li><b>ESP32 / ESP32-S3</b><span>一般的な開発ボードでOK</span></li>
+            <li><b>ESP32-WROOM-32</b><span>ESP32-D0WD-V3 / revision 3.1</span></li>
+            <li><b>4MB flash</b><span>CH340 USBシリアル搭載機で検証</span></li>
             <li><b>USBデータケーブル</b><span>充電専用ケーブルは不可</span></li>
-            <li><b>Windows / Mac</b><span>Arduino IDEを書き込めるPC</span></li>
-            <li><b>2.4GHz Wi-Fi</b><span>SSIDとパスワードを確認</span></li>
+            <li><b>Windows PC</b><span>CodexからUSB書き込み・設定を実施</span></li>
+            <li><b>2.4GHz Wi-Fi</b><span>ESP32がインターネットへ接続できる回線</span></li>
           </ul>
+          <p class="sensor-guide-note"><b>未検証：</b>ESP32-S2 / S3 / C3 / C6、WROVER、4MB以外のフラッシュ、Secure Bootまたはフラッシュ暗号化が有効な機器。外見が似ていても自動的に対応とはみなしません。</p>
         </section>
 
-        <ol class="sensor-guide-path" aria-label="ESP32を接続する7ステップ">
+        <section class="sensor-guide-section" aria-labelledby="firmware-title">
+          <div class="sensor-guide-heading"><span>WHAT IS FIRMWARE?</span><h2 id="firmware-title">ファームウェアとは？</h2></div>
+          <p class="sensor-guide-lead">ESP32はPCのような固定OSへ後からアプリを追加する機器ではありません。FreeRTOS、ESP-IDF／Arduinoの処理、Wi-Fi・HTTPS通信、GAIAアプリをひとまとめにしたファームウェアをフラッシュへ書き込み、その全体で動きます。そのため、書き込み前には現在の4MB全体をバックアップします。</p>
+        </section>
+
+        <ol class="sensor-guide-path" aria-label="ESP32を接続する6ステップ">
           <li>
             <span>01</span>
-            <div><strong>Arduino IDEをPCへ入れる</strong><p><a href="https://www.arduino.cc/en/software" target="_blank" rel="noopener">Arduino公式サイト</a>からArduino IDE 2をインストールして起動します。</p></div>
+            <div><strong>USBで機種と保護状態を確認</strong><p>ESP32をデータ対応USBケーブルでPCへ接続します。チップ、revision、フラッシュ容量、Secure Boot、フラッシュ暗号化を確認します。不一致や保護機能が見つかった場合は書き込み前に止めます。</p></div>
           </li>
           <li>
             <span>02</span>
-            <div><strong>ESP32とArduinoJsonを追加する</strong><p>Arduino IDEの「ファイル → 基本設定 → 追加のボードマネージャのURL」に次のURLを貼ります。</p><code class="sensor-copy-line">https://espressif.github.io/arduino-esp32/package_esp32_index.json</code><p>次に左側の<b>ボードマネージャ</b>で「esp32」を検索し、<b>esp32 by Espressif Systems</b>をインストールします。左側の<b>ライブラリマネージャ</b>では「ArduinoJson」を検索し、<b>ArduinoJson 7.x</b>をインストールします。</p></div>
+            <div><strong>現在のフラッシュを丸ごと保存</strong><p>4MB全体を読み出し、ファイルサイズとSHA-256を確認して保管します。元のファームウェアへ戻すときに必要です。バックアップ完了前は消去・書き込みをしません。</p></div>
           </li>
           <li>
             <span>03</span>
-            <div><strong>スターターコード3ファイルを保存する</strong><p>下の3つをダウンロードし、PCに <code>SmartCitySensorDemo</code> というフォルダを作って、3ファイルともその中へ移動します。ファイル名は変えません。</p><div class="sensor-code-downloads"><a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino" download="SmartCitySensorDemo.ino"><small>1 / MAIN</small>SmartCitySensorDemo.ino</a><a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/config.example.h" download="config.h"><small>2 / CONFIG</small>config.h</a><a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/root_ca.example.h" download="root_ca.h"><small>3 / HTTPS</small>root_ca.h</a></div><p class="sensor-guide-note"><b>コードの中身はまだ変更しなくてOK。</b>最初はテスト用の温度・湿度・PM2.5が自動で送られます。</p></div>
+            <div><strong>検証済みGAIAファームウェアを書き込む</strong><p>Codexへ下の依頼文を送り、対応確認・バックアップ・SHA-256確認・書き込み・起動確認をまとめて依頼します。</p><code class="sensor-copy-line">このESP32をGAIA SENSEWAREへ登録して。対応確認→全容量バックアップ→SHA-256確認→検証済みファームウェア書き込み→USB設定の順で進め、秘密は会話やログへ表示しないで。</code></div>
           </li>
           <li>
             <span>04</span>
-            <div><strong>ESP32へ書き込む</strong><p><code>SmartCitySensorDemo.ino</code>をArduino IDEで開き、ESP32をUSBでPCへつなぎます。「ツール → ボード」で自分の機種を選び、分からなければ<b>ESP32 Dev Module</b>を選択。「ツール → ポート」で新しく現れたCOM/USBポートを選び、左上の<b>→（アップロード）</b>を押します。</p><p class="sensor-guide-note">「Connecting...」で止まる場合は、ESP32の<b>BOOT</b>ボタンを押したままアップロードし、書き込みが始まったら離してください。ポートが出ない場合は、別のUSBケーブルを試します。</p></div>
+            <div><strong>公開観測点とPairing Codeを作る</strong><p><a href="#login">名前・メールなしでおためし</a>、またはGoogle連携で参加します。「マイセンサー → センサーを追加」で名前・地域・約10km単位の公開位置を指定するとPairing Codeが発行されます。</p></div>
           </li>
           <li>
             <span>05</span>
-            <div><strong>このWebでPairing Codeを発行する</strong><p>書き込みが終わったらESP32はUSBにつないだままにします。<a href="#login">参加方法を選び</a>、「マイセンサー → センサーを追加」で名前と地域を登録すると、9文字のPairing Codeが表示されます。</p></div>
+            <div><strong>Wi-Fi情報とコードをUSBで渡す</strong><p>Codexの案内で2.4GHz Wi-Fi情報とPairing CodeをUSBからESP32へ設定します。Wi-Fi情報はESP32内に保存され、GAIAのサーバーへは送信しません。USBが使えない場合のみ、設定用Wi-Fi <code>CITY-SENSOR-XXXX</code> と <code>192.168.4.1</code> を使います。</p></div>
           </li>
           <li>
             <span>06</span>
-            <div><strong>ESP32へWi-Fiとコードを教える</strong><p>PCまたはスマホのWi-Fi設定から <code>CITY-SENSOR-XXXX</code> を選びます。「インターネットなし」は正常です。その接続のままブラウザで <a href="http://192.168.4.1/" target="_blank" rel="noopener">http://192.168.4.1/</a> を開き、<b>2.4GHz Wi-Fi名・Wi-Fiパスワード・Pairing Code</b>を入力して「接続して登録」を押します。</p></div>
-          </li>
-          <li>
-            <span>07</span>
-            <div><strong>ONLINEを確認して完了</strong><p>ESP32が再起動したら、PC・スマホを普段のWi-Fiへ戻します。約1分後に「マイセンサー」を開き、ONLINEと測定値が見えれば登録完了です。</p></div>
+            <div><strong>ONLINEを確認してUSBを外す</strong><p>「マイセンサー」でONLINEと観測値を確認します。以後はESP32へ電源を供給すれば、PCを常時つながなくてもWi-Fi経由でHTTPS送信します。</p></div>
           </li>
         </ol>
 
@@ -300,7 +306,23 @@
         </section>
 
         <div class="sensor-guide-finish"><span>NEXT</span><strong>準備ができたらWeb側の登録へ</strong><a href="#login">参加方法を選ぶ →</a></div>
-        <details class="sensor-developer-links"><summary>開発者向け資料</summary><div><a href="../smartcity-sensor-starter-kit/openapi.yaml">OpenAPI 3.1</a><a href="../smartcity-sensor-starter-kit/curl-examples.sh">curl examples</a></div></details>
+        <details class="sensor-developer-links"><summary>開発者向け：ソースからビルドする</summary><div><a href="../smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino" download="SmartCitySensorDemo.ino">Arduinoスターターソース</a><a href="../smartcity-sensor-starter-kit/openapi.yaml">OpenAPI 3.1</a><a href="../smartcity-sensor-starter-kit/curl-examples.sh">curl examples</a><p>ArduinoはESP32とは別の機種名ではなく、ここではESP32用ファームウェアを構成・ビルドする開発環境です。通常参加者はこの手順を使う必要はありません。</p></div></details>
+      </section>
+
+      <section class="sensor-view sensor-guide sensor-terms" data-view="terms" id="terms" hidden>
+        <div class="sensor-kicker">PARTICIPATION TERMS / SAFETY</div>
+        <h1>利用条件と、<br />書き込み前の注意。</h1>
+        <p class="sensor-guide-lead">安全に参加するための実務上の条件です。登録を始める前に確認してください。</p>
+        <div class="sensor-terms-grid">
+          <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>PUBLIC</span><h2>登録内容は公開されます</h2></div><p>すべての登録センサーは「みんなのセンサー」に表示されます。センサー名、観測値、国・地域、約10km単位に丸めた位置が公開対象です。正確な住所、GPS座標、Wi-Fi情報、Device Tokenは公開しません。</p></section>
+          <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>OWNERSHIP</span><h2>自分が管理できる機器と回線を使う</h2></div><p>所有者または管理者から許可を得たESP32、USB接続PC、2.4GHz Wi-Fiだけを使ってください。施設・学校・職場など第三者のネットワークでは、その管理規則に従ってください。</p></section>
+          <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>BACKUP</span><h2>上書き前に全フラッシュを保存する</h2></div><p>ファームウェア書き込みは現在の内容を上書きします。容量全体のバックアップ、ファイルサイズ、SHA-256を確認し、復元手順と一緒に保管してください。ただし機器差、故障、保護設定により復元を保証できない場合があります。</p></section>
+          <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>STOP</span><h2>不一致や保護機能があれば止める</h2></div><p>対応機種・フラッシュ容量が違う、Secure Boot／フラッシュ暗号化が有効、既存機能を失う影響が不明、書き込みエラーが続く場合は、消去や再試行を重ねず停止してください。</p></section>
+          <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>SECRETS</span><h2>秘密情報を表示・共有しない</h2></div><p>Wi-Fiパスワード、Device Token、セッションCookieは会話、画面共有、ログ、Gitへ出さないでください。Wi-Fi情報はESP32内へ保存されます。物理的に機器へ触れられる人による読み出しリスクも考慮してください。</p></section>
+          <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>NON-CRITICAL</span><h2>展示・教育・試作用途です</h2></div><p>生命、安全、医療、防災、設備制御、法定監視、事業継続など、停止や誤差が重大な損害につながる用途には使わないでください。通信、サービス継続、観測値の正確性を保証するものではありません。</p></section>
+          <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>DATA</span><h2>データの扱い</h2></div><p>実測値と模擬値を混同しないでください。おためし参加は8時間以内で、ログアウトすると登録センサーと観測データを削除します。通常参加でも「マイセンサー」から端末を削除すると、そのTokenでの送信を停止できます。</p></section>
+        </div>
+        <div class="sensor-guide-finish"><span>READY</span><strong>条件を確認したら参加へ</strong><a href="#login">参加方法を選ぶ →</a></div>
       </section>
     </main>
 
