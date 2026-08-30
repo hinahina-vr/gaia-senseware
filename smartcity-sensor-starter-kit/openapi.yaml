@@ -55,6 +55,7 @@ paths:
       description: >-
         seqはDeviceごとに単調増加。同じseq・同じ内容の再送は200、同じseq・異なる内容または
         最大seqより小さい未登録seqは409。同じBearer TokenでもpathのDevice IDが異なれば401。
+        新しい測定値の保存はDeviceごとに60秒に1件までで、上限超過はRetry-After付きの429。
       security:
         - deviceBearer: []
       parameters:
@@ -101,6 +102,16 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429':
+          description: 同じDeviceから60秒以内に新しい測定値がすでに保存されている。
+          headers:
+            Retry-After:
+              description: 次の新規測定値を受け付けるまでの秒数。
+              schema: { type: integer, minimum: 1, maximum: 60 }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example: { error: { code: TELEMETRY_RATE_LIMITED, message: A device may submit at most one new telemetry record per 60 seconds. } }
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '415': { $ref: '#/components/responses/UnsupportedMediaType' }
 components:

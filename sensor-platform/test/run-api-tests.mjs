@@ -304,6 +304,16 @@ try {
     assert.match(await query(`SELECT COUNT(*) AS telemetry_count FROM telemetry WHERE device_id = '${deviceId}'`), /telemetry_count.*1/su);
     assert.equal(await scalar(`SELECT observed_at FROM telemetry WHERE device_id = '${deviceId}' AND seq = 1`), new Date(starterObservedAt).toISOString());
   });
+  await test("new telemetry is limited to one stored record per device per minute", async () => {
+    const beforeLastSeen = await scalar(`SELECT last_seen_at FROM devices WHERE device_id = '${deviceId}'`);
+    const limited = await telemetryFetch(deviceId, deviceToken, 2);
+    assert.equal(limited.status, 429);
+    assert.equal((await limited.json()).error.code, "TELEMETRY_RATE_LIMITED");
+    assert.match(limited.headers.get("Retry-After") ?? "", /^(?:[1-9]|[1-5][0-9]|60)$/u);
+    assert.equal(await scalar(`SELECT last_seq FROM devices WHERE device_id = '${deviceId}'`), "1");
+    assert.equal(await scalar(`SELECT COUNT(*) FROM telemetry WHERE device_id = '${deviceId}' AND seq = 2`), "0");
+    assert.equal(await scalar(`SELECT last_seen_at FROM devices WHERE device_id = '${deviceId}'`), beforeLastSeen);
+  });
   await test("same seq with different payload is rejected", async () => {
     const response = await fetch(`${origin}/api/v1/devices/${deviceId}/telemetry`, {
       method: "POST",
@@ -314,6 +324,7 @@ try {
     assert.equal((await response.json()).error.code, "SEQUENCE_CONFLICT");
   });
   await test("lower unused seq is stale and does not update last_seen", async () => {
+    await openTelemetryWindow(deviceId);
     assert.equal((await telemetryFetch(deviceId, deviceToken, 3)).status, 202);
     const before = await scalar(`SELECT last_seen_at FROM devices WHERE device_id = '${deviceId}'`);
     await delay(20);
@@ -324,6 +335,7 @@ try {
     assert.equal(after, before);
   });
   await test("concurrent next sequences only advance monotonically", async () => {
+    await openTelemetryWindow(deviceId);
     const responses = await Promise.all([
       telemetryFetch(deviceId, deviceToken, 4),
       telemetryFetch(deviceId, deviceToken, 4),
@@ -470,6 +482,10 @@ function telemetryFetch(id, token, seq, observedAt) {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ seq, ...(observedAt ? { observedAt } : {}), data: { temperature: 21.4, humidity: 58.2, pm25: 9.1 } }),
   });
+}
+
+async function openTelemetryWindow(id) {
+  await execute(`UPDATE devices SET last_seen_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-61 seconds') WHERE device_id = '${id}'`);
 }
 
 async function execute(sql) {

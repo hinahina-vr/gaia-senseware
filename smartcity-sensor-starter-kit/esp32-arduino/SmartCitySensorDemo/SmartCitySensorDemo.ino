@@ -410,7 +410,7 @@ bool sendTelemetry(const SensorValues& values) {
       Serial.printf("Telemetry accepted; next seq=%llu.\n", sequenceNumber);
       return true;
     }
-    if (status == 401 || status == 409) {
+    if (status == 401 || status == 409 || status == 429) {
       Serial.printf("Telemetry rejected with HTTP %d; not retrying this payload.\n", status);
       return false;
     }

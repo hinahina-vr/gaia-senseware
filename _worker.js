@@ -16176,7 +16176,9 @@ var acceptTelemetry = /* @__PURE__ */ __name(async (request, env, deviceId) => {
     throw new ApiError(401, "INVALID_DEVICE_TOKEN", "Device authentication failed.");
   }
   const telemetry = validateTelemetry(await readJson(request, 12 * 1024));
-  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const nowDate = /* @__PURE__ */ new Date();
+  const now = nowDate.toISOString();
+  const rateLimitCutoff = new Date(nowDate.getTime() - TELEMETRY_MIN_INTERVAL_MS).toISOString();
   const canonicalData = Object.fromEntries(Object.entries(telemetry.data).sort(([left], [right]) => left.localeCompare(right)));
   const payload = JSON.stringify(canonicalData);
   const payloadHash = await sha256Hex(JSON.stringify({ observedAt: telemetry.observedAt, data: canonicalData }));
@@ -16186,8 +16188,9 @@ var acceptTelemetry = /* @__PURE__ */ __name(async (request, env, deviceId) => {
        SET last_seq = ?1, last_payload_hash = ?2, last_seen_at = ?3, updated_at = ?3
        WHERE device_id = ?4 AND status = 'ACTIVE' AND deleted_at IS NULL
          AND (last_seq IS NULL OR ?1 > last_seq)
-       RETURNING device_id`
-    ).bind(telemetry.seq, payloadHash, now, deviceId),
+         AND (last_seen_at IS NULL OR last_seen_at <= ?5)
+        RETURNING device_id`
+    ).bind(telemetry.seq, payloadHash, now, deviceId, rateLimitCutoff),
     env.DB.prepare(
       `INSERT INTO telemetry
         (id, device_id, seq, observed_at, received_at, payload_hash, payload_json, created_at)
@@ -16203,19 +16206,40 @@ var acceptTelemetry = /* @__PURE__ */ __name(async (request, env, deviceId) => {
   if (claimed && created) return json({ accepted: true, duplicate: false, receivedAt: now }, 202);
   if (claimed !== created) throw new ApiError(409, "SEQUENCE_RACE", "Telemetry sequence could not be committed.");
   const existing = await env.DB.prepare(
-    "SELECT payload_hash AS payloadHash FROM telemetry WHERE device_id = ?1 AND seq = ?2"
+    "SELECT payload_hash AS payloadHash, received_at AS receivedAt FROM telemetry WHERE device_id = ?1 AND seq = ?2"
   ).bind(deviceId, telemetry.seq).first();
-  if (!existing) throw new ApiError(409, "STALE_SEQUENCE", "seq is lower than the device's latest accepted sequence.");
-  if (!await timingSafeHexEqual(payloadHash, existing.payloadHash)) {
-    throw new ApiError(409, "SEQUENCE_CONFLICT", "This seq was already used with different telemetry content.");
+  if (existing) {
+    if (!await timingSafeHexEqual(payloadHash, existing.payloadHash)) {
+      throw new ApiError(409, "SEQUENCE_CONFLICT", "This seq was already used with different telemetry content.");
+    }
+    return json({ accepted: true, duplicate: true, receivedAt: existing.receivedAt }, 200);
   }
-  await env.DB.prepare(
-    `UPDATE devices SET last_seen_at = ?1, updated_at = ?1
-     WHERE device_id = ?2 AND last_seq = ?3 AND last_payload_hash = ?4
-       AND status = 'ACTIVE' AND deleted_at IS NULL`
-  ).bind(now, deviceId, telemetry.seq, payloadHash).run();
-  return json({ accepted: true, duplicate: true, receivedAt: now }, 200);
+  const current = await env.DB.prepare(
+    `SELECT last_seq AS lastSeq, last_seen_at AS lastSeenAt, status
+     FROM devices WHERE device_id = ?1 AND deleted_at IS NULL`
+  ).bind(deviceId).first();
+  if (!current || current.status !== "ACTIVE") throw new ApiError(401, "INVALID_DEVICE_TOKEN", "Device authentication failed.");
+  if (current.lastSeq !== null && telemetry.seq <= current.lastSeq) {
+    throw new ApiError(409, "STALE_SEQUENCE", "seq is lower than the device's latest accepted sequence.");
+  }
+  const retryAfterSeconds = telemetryRetryAfterSeconds(current.lastSeenAt, nowDate.getTime());
+  if (retryAfterSeconds !== null) {
+    return json(
+      { error: { code: "TELEMETRY_RATE_LIMITED", message: "A device may submit at most one new telemetry record per 60 seconds." } },
+      429,
+      { "Retry-After": String(retryAfterSeconds) }
+    );
+  }
+  throw new ApiError(409, "SEQUENCE_RACE", "Telemetry sequence could not be committed.");
 }, "acceptTelemetry");
+var telemetryRetryAfterSeconds = /* @__PURE__ */ __name((lastSeenAt, nowMs) => {
+  if (!lastSeenAt) return null;
+  const lastSeenMs = Date.parse(lastSeenAt);
+  if (!Number.isFinite(lastSeenMs)) return null;
+  const remainingMs = lastSeenMs + TELEMETRY_MIN_INTERVAL_MS - nowMs;
+  return remainingMs > 0 ? Math.max(1, Math.ceil(remainingMs / 1e3)) : null;
+}, "telemetryRetryAfterSeconds");
+var TELEMETRY_MIN_INTERVAL_MS = 6e4;
 var listDevices = /* @__PURE__ */ __name(async (env, user) => {
   const threshold = onlineThreshold(env);
   const result = await env.DB.prepare(
