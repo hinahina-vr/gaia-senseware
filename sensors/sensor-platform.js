@@ -33,6 +33,9 @@ const profileAvatarInput = document.querySelector("#profile-avatar-input");
 const publicSensorCount = document.querySelector("#public-sensor-count");
 const pollIntervalMs = 2_000;
 const naturalEarthUrl = "../data/natural-earth-50m-land.geojson?v=gaia-27";
+const japanPrefectureUrl = "../data/japan-prefectures.topojson?v=gaia-1";
+const publicMapMinZoom = 1;
+const publicMapMaxZoom = 96;
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
 const worldMapView = Object.freeze({ west: -180, east: 180, south: -90, north: 90, key: "WORLD" });
 const countryMapViews = Object.freeze({
@@ -64,6 +67,9 @@ const mapViewports = new WeakMap();
 const mapRenderers = new WeakMap();
 const publicMapCamera = { longitude: 139.7, latitude: 36, zoom: 4.2 };
 let publicMapDrag = null;
+let publicMapDragFrame = 0;
+let publicMapWheelFrame = 0;
+let publicMapWheel = null;
 let countries = [];
 let devices = [];
 let selectedDevice = null;
@@ -264,40 +270,79 @@ const selectPublicSensor = (sensor, marker) => {
 
 function initPublicMapNavigation() {
   resetPublicMapView(false);
-  publicMapZoomIn?.addEventListener("click", () => zoomPublicMapBy(1.45));
-  publicMapZoomOut?.addEventListener("click", () => zoomPublicMapBy(1 / 1.45));
+  publicMapZoomIn?.addEventListener("click", () => zoomPublicMapBy(1.6));
+  publicMapZoomOut?.addEventListener("click", () => zoomPublicMapBy(1 / 1.6));
   publicMapReset?.addEventListener("click", () => resetPublicMapView());
   publicSensorMap.addEventListener("wheel", (event) => {
     event.preventDefault();
-    zoomPublicMapBy(Math.exp(-clamp(event.deltaY, -240, 240) * (event.ctrlKey ? .006 : .0024)), event.clientX, event.clientY);
+    const factor = Math.exp(-clamp(event.deltaY, -240, 240) * (event.ctrlKey ? .008 : .0036));
+    if (!publicMapWheel) publicMapWheel = { factor: 1, clientX: event.clientX, clientY: event.clientY };
+    publicMapWheel.factor = clamp(publicMapWheel.factor * factor, .2, 5);
+    publicMapWheel.clientX = event.clientX;
+    publicMapWheel.clientY = event.clientY;
+    if (publicMapWheelFrame) return;
+    publicMapWheelFrame = requestAnimationFrame(() => {
+      publicMapWheelFrame = 0;
+      const pending = publicMapWheel;
+      publicMapWheel = null;
+      if (pending) zoomPublicMapBy(pending.factor, pending.clientX, pending.clientY);
+    });
   }, { passive: false });
+  publicSensorMap.addEventListener("dblclick", (event) => {
+    if (event.target.closest("button, a")) return;
+    event.preventDefault();
+    zoomPublicMapBy(2, event.clientX, event.clientY);
+  });
   publicSensorMap.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 || event.target.closest("button, a")) return;
-    publicMapDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    event.preventDefault();
+    publicMapDrag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      deltaX: 0,
+      deltaY: 0,
+    };
     publicSensorMap.setPointerCapture(event.pointerId);
     publicSensorMap.classList.add("is-dragging");
   });
   publicSensorMap.addEventListener("pointermove", (event) => {
     if (!publicMapDrag || publicMapDrag.pointerId !== event.pointerId) return;
-    panPublicMap(event.clientX - publicMapDrag.x, event.clientY - publicMapDrag.y);
-    publicMapDrag.x = event.clientX;
-    publicMapDrag.y = event.clientY;
+    publicMapDrag.deltaX = event.clientX - publicMapDrag.startX;
+    publicMapDrag.deltaY = event.clientY - publicMapDrag.startY;
+    queuePublicMapDragPreview();
   });
-  const release = (event) => {
+  const release = (event, commit = true) => {
     if (!publicMapDrag || publicMapDrag.pointerId !== event.pointerId) return;
+    const { deltaX, deltaY } = publicMapDrag;
     publicMapDrag = null;
+    if (publicMapDragFrame) cancelAnimationFrame(publicMapDragFrame);
+    publicMapDragFrame = 0;
+    publicSensorMap.style.removeProperty("--sensor-map-drag-x");
+    publicSensorMap.style.removeProperty("--sensor-map-drag-y");
     publicSensorMap.classList.remove("is-dragging");
+    if (commit && (Math.abs(deltaX) > .5 || Math.abs(deltaY) > .5)) panPublicMap(deltaX, deltaY);
   };
   publicSensorMap.addEventListener("pointerup", release);
-  publicSensorMap.addEventListener("pointercancel", release);
+  publicSensorMap.addEventListener("pointercancel", (event) => release(event, false));
   publicSensorMap.addEventListener("keydown", (event) => {
-    if (["+", "="].includes(event.key)) { event.preventDefault(); zoomPublicMapBy(1.45); return; }
-    if (event.key === "-") { event.preventDefault(); zoomPublicMapBy(1 / 1.45); return; }
+    if (["+", "="].includes(event.key)) { event.preventDefault(); zoomPublicMapBy(1.6); return; }
+    if (event.key === "-") { event.preventDefault(); zoomPublicMapBy(1 / 1.6); return; }
     if (event.key === "Home") { event.preventDefault(); resetPublicMapView(); return; }
     const moves = { ArrowLeft: [80, 0], ArrowRight: [-80, 0], ArrowUp: [0, 80], ArrowDown: [0, -80] };
     if (moves[event.key]) { event.preventDefault(); panPublicMap(...moves[event.key]); }
   });
   window.addEventListener("resize", updatePublicMapViewport, { passive: true });
+}
+
+function queuePublicMapDragPreview() {
+  if (publicMapDragFrame) return;
+  publicMapDragFrame = requestAnimationFrame(() => {
+    publicMapDragFrame = 0;
+    if (!publicMapDrag) return;
+    publicSensorMap.style.setProperty("--sensor-map-drag-x", `${publicMapDrag.deltaX}px`);
+    publicSensorMap.style.setProperty("--sensor-map-drag-y", `${publicMapDrag.deltaY}px`);
+  });
 }
 
 function resetPublicMapView(render = true) {
@@ -333,7 +378,7 @@ function updatePublicMapViewport() {
   positionPublicSensorMarkers();
   if (publicMapZoomOutput) publicMapZoomOutput.value = `${publicMapCamera.zoom.toFixed(1)}×`;
   const basis = publicSensorMap.querySelector("[data-map-basis]");
-  if (basis) basis.textContent = `JAPAN CENTER / ZOOM ${publicMapCamera.zoom.toFixed(1)}× / NATURAL EARTH 1:50m`;
+  if (basis) basis.textContent = `JAPAN CENTER / ZOOM ${publicMapCamera.zoom.toFixed(1)}× / NE 1:50m / 境界: 地球地図日本`;
 }
 
 function positionPublicSensorMarkers() {
@@ -356,7 +401,7 @@ function zoomPublicMapBy(factor, clientX, clientY) {
   const yRatio = Number.isFinite(clientY) ? clamp((clientY - rect.top) / Math.max(rect.height, 1), 0, 1) : .5;
   const anchorLongitude = before.west + xRatio * (before.east - before.west);
   const anchorLatitude = before.north - yRatio * (before.north - before.south);
-  publicMapCamera.zoom = clamp(publicMapCamera.zoom * factor, 1, 12);
+  publicMapCamera.zoom = clamp(publicMapCamera.zoom * factor, publicMapMinZoom, publicMapMaxZoom);
   const after = publicMapView();
   publicMapCamera.longitude += anchorLongitude - (after.west + xRatio * (after.east - after.west));
   publicMapCamera.latitude += anchorLatitude - (after.north - yRatio * (after.north - after.south));
@@ -447,8 +492,14 @@ const renderDetail = ({ device, latest }, telemetry) => {
     locationForm.elements.admin1Code.value = device.admin1Code || "";
     locationForm.elements.localityName.value = device.localityName || "";
     locationForm.elements.isPublic.value = "true";
+    locationForm.dataset.savedRegion = regionSelectionKey(
+      device.countryCode,
+      device.subdivisionCode,
+      device.municipalityCode,
+    );
     syncPickerViewport(locationForm, device.countryCode);
     setPickerLocation(locationForm, device.publicLatitude, device.publicLongitude);
+    locationForm.querySelector("[data-location-picker]").dataset.regionPlot = "stored";
     syncPickerEnabled(locationForm);
     void populateRegionFields(locationForm, {
       subdivisionCode: device.subdivisionCode || "",
@@ -584,7 +635,7 @@ deviceForm.addEventListener("submit", async (event) => {
   const submit = deviceForm.querySelector("button[type='submit']");
   submit.disabled = true;
   try {
-    const body = formDevice(deviceForm);
+    const body = await formDeviceForSubmission(deviceForm);
     const response = await api("../api/web/v1/devices/pairing", { method: "POST", body });
     pairingCode.value = response.pairingCode;
     pairingCode.textContent = response.pairingCode;
@@ -604,12 +655,20 @@ document.querySelector("#refresh-detail").addEventListener("click", () => refres
 locationForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!selectedDevice) return;
+  const submit = locationForm.querySelector("button[type='submit']");
+  submit.disabled = true;
   try {
-    const response = await api(`../api/web/v1/devices/${encodeURIComponent(selectedDevice.deviceId)}`, { method: "PATCH", body: formDevice(locationForm) });
+    const response = await api(`../api/web/v1/devices/${encodeURIComponent(selectedDevice.deviceId)}`, {
+      method: "PATCH",
+      body: await formDeviceForSubmission(locationForm),
+    });
     selectedDevice = response.device;
+    locationForm.dataset.savedRegion = formRegionSelectionKey(locationForm);
+    locationForm.querySelector("[data-location-picker]").dataset.regionPlot = "stored";
     showStatus("地域を更新しました。");
-    await refreshDetail({ quiet: true });
+    await Promise.all([refreshDetail({ quiet: true }), loadPublicSensors()]);
   } catch (error) { showStatus(error.message, "error"); }
+  finally { submit.disabled = false; }
 });
 
 profileForm.addEventListener("submit", async (event) => {
@@ -909,6 +968,28 @@ function selectionBoundsFor(view) {
   };
 }
 
+async function formDeviceForSubmission(form) {
+  const picker = form.querySelector("[data-location-picker]");
+  const regionChanged = form.dataset.savedRegion !== undefined
+    && form.dataset.savedRegion !== formRegionSelectionKey(form);
+  if (picker?.dataset.regionPlot === "loading" || (regionChanged && picker?.dataset.regionPlot !== "manual")) {
+    await plotSelectedRegion(form);
+  }
+  return formDevice(form);
+}
+
+function formRegionSelectionKey(form) {
+  return regionSelectionKey(
+    form.elements.countryCode.value,
+    form.elements.subdivisionCode.value,
+    form.elements.municipalityCode.value,
+  );
+}
+
+function regionSelectionKey(countryCode, subdivisionCode, municipalityCode) {
+  return [countryCode, subdivisionCode, municipalityCode].map((value) => String(value || "").trim()).join(":");
+}
+
 function syncPickerEnabled(form) {
   const picker = form.querySelector("[data-location-picker]");
   picker.removeAttribute("aria-disabled");
@@ -937,11 +1018,17 @@ async function mountMapSurfaces() {
   const surfaces = [...document.querySelectorAll(".sensor-world-map, .sensor-location-picker")];
   surfaces.forEach((surface) => { surface.dataset.basemap = "loading"; });
   try {
-    const response = await fetch(naturalEarthUrl);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const geometry = extractLandRings(await response.json());
-    if (geometry.length < 1_000) throw new Error("land geometry is incomplete");
-    surfaces.forEach((surface) => mountMapCanvas(surface, geometry));
+    const [landResponse, prefectureLines] = await Promise.all([
+      fetch(naturalEarthUrl),
+      fetch(japanPrefectureUrl)
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
+        .then(extractSharedTopologyArcs)
+        .catch(() => []),
+    ]);
+    if (!landResponse.ok) throw new Error(`HTTP ${landResponse.status}`);
+    const landRings = prepareMapLines(extractLandRings(await landResponse.json()));
+    if (landRings.length < 1_000) throw new Error("land geometry is incomplete");
+    surfaces.forEach((surface) => mountMapCanvas(surface, landRings, prefectureLines));
   } catch {
     surfaces.forEach((surface) => {
       surface.dataset.basemap = "unavailable";
@@ -949,6 +1036,38 @@ async function mountMapSurfaces() {
       if (basis) basis.textContent = "BASEMAP / UNAVAILABLE";
     });
   }
+}
+
+function extractSharedTopologyArcs(topology) {
+  if (topology?.type !== "Topology" || !Array.isArray(topology.arcs)) return [];
+  const referenceCounts = new Uint16Array(topology.arcs.length);
+  const visitArcReferences = (value) => {
+    if (Array.isArray(value)) { value.forEach(visitArcReferences); return; }
+    if (!Number.isInteger(value)) return;
+    const index = value < 0 ? ~value : value;
+    if (index >= 0 && index < referenceCounts.length) referenceCounts[index] += 1;
+  };
+  Object.values(topology.objects ?? {}).forEach((object) => {
+    if (object?.type === "GeometryCollection") object.geometries?.forEach((geometry) => visitArcReferences(geometry.arcs));
+    else visitArcReferences(object?.arcs);
+  });
+
+  const scale = topology.transform?.scale ?? [1, 1];
+  const translate = topology.transform?.translate ?? [0, 0];
+  const sharedArcs = [];
+  topology.arcs.forEach((arc, index) => {
+    if (referenceCounts[index] < 2 || !Array.isArray(arc)) return;
+    let x = 0;
+    let y = 0;
+    const points = [];
+    arc.forEach((delta) => {
+      x += Number(delta?.[0]) || 0;
+      y += Number(delta?.[1]) || 0;
+      points.push([x * scale[0] + translate[0], y * scale[1] + translate[1]]);
+    });
+    if (points.length > 1) sharedArcs.push(points);
+  });
+  return prepareMapLines(sharedArcs);
 }
 
 function extractLandRings(geojson) {
@@ -961,12 +1080,34 @@ function extractLandRings(geojson) {
   return rings;
 }
 
-function mountMapCanvas(surface, rings) {
+function prepareMapLines(lines) {
+  return lines.map((line) => {
+    const points = [];
+    let west = Infinity;
+    let east = -Infinity;
+    let south = Infinity;
+    let north = -Infinity;
+    for (const coordinate of line ?? []) {
+      const longitude = Number(coordinate?.[0]);
+      const latitude = Number(coordinate?.[1]);
+      if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) continue;
+      points.push([longitude, latitude]);
+      west = Math.min(west, longitude);
+      east = Math.max(east, longitude);
+      south = Math.min(south, latitude);
+      north = Math.max(north, latitude);
+    }
+    return { points, west, east, south, north };
+  }).filter((line) => line.points.length > 1);
+}
+
+function mountMapCanvas(surface, landRings, prefectureLines) {
   const canvas = document.createElement("canvas");
   canvas.className = "sensor-map-canvas";
   canvas.setAttribute("aria-hidden", "true");
   surface.prepend(canvas);
-  const render = () => renderMapCanvas(canvas, rings, mapViewFor(surface));
+  surface.dataset.prefectureBoundaries = String(prefectureLines.length);
+  const render = () => renderMapCanvas(canvas, landRings, prefectureLines, mapViewFor(surface));
   mapRenderers.set(surface, render);
   if (typeof ResizeObserver === "function") {
     const observer = new ResizeObserver(render);
@@ -979,16 +1120,21 @@ function mountMapCanvas(surface, rings) {
   render();
 }
 
-function renderMapCanvas(canvas, rings, view = worldMapView) {
+function renderMapCanvas(canvas, landRings, prefectureLines, view = worldMapView) {
   const { width, height } = canvas.parentElement.getBoundingClientRect();
   if (width < 1 || height < 1) return;
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = Math.round(width * pixelRatio);
-  canvas.height = Math.round(height * pixelRatio);
-  const context = canvas.getContext("2d");
+  const canvasWidth = Math.round(width * pixelRatio);
+  const canvasHeight = Math.round(height * pixelRatio);
+  if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+  }
+  const context = canvas.getContext("2d", { alpha: true, desynchronized: true });
   if (!context) return;
-  context.scale(pixelRatio, pixelRatio);
-  context.clearRect(0, 0, width, height);
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.save();
   context.strokeStyle = "rgba(126, 230, 214, .16)";
   context.lineWidth = 1;
@@ -1007,13 +1153,11 @@ function renderMapCanvas(canvas, rings, view = worldMapView) {
   context.restore();
 
   const land = new Path2D();
-  for (const ring of rings) {
+  for (const ring of landRings) {
+    if (ring.east < view.west || ring.west > view.east || ring.north < view.south || ring.south > view.north) continue;
     let started = false;
     let previousLongitude = null;
-    for (const coordinate of ring) {
-      const longitude = Number(coordinate?.[0]);
-      const latitude = Number(coordinate?.[1]);
-      if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) continue;
+    for (const [longitude, latitude] of ring.points) {
       const x = ((longitude - view.west) / (view.east - view.west)) * width;
       const y = ((view.north - latitude) / (view.north - view.south)) * height;
       if (!started || (previousLongitude !== null && Math.abs(longitude - previousLongitude) > 180)) {
@@ -1029,8 +1173,25 @@ function renderMapCanvas(canvas, rings, view = worldMapView) {
   context.strokeStyle = "rgba(137, 244, 216, .72)";
   context.lineWidth = Math.max(.65, width / 1_900);
   context.shadowColor = "rgba(86, 255, 223, .2)";
-  context.shadowBlur = 5;
+  context.shadowBlur = width > 2_200 ? 0 : 5;
   context.stroke(land);
+
+  const prefectures = new Path2D();
+  for (const line of prefectureLines) {
+    if (line.east < view.west || line.west > view.east || line.north < view.south || line.south > view.north) continue;
+    let started = false;
+    for (const [longitude, latitude] of line.points) {
+      const x = ((longitude - view.west) / (view.east - view.west)) * width;
+      const y = ((view.north - latitude) / (view.north - view.south)) * height;
+      if (!started) { prefectures.moveTo(x, y); started = true; }
+      else prefectures.lineTo(x, y);
+    }
+  }
+  context.strokeStyle = "rgba(213, 255, 244, .58)";
+  context.lineWidth = Math.max(.7, Math.min(1.35, width / 1_700));
+  context.shadowColor = "rgba(119, 255, 225, .28)";
+  context.shadowBlur = width > 2_200 ? 0 : 3;
+  context.stroke(prefectures);
 }
 
 async function normalizeAvatar(file) {

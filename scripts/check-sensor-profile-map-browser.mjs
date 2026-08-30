@@ -154,8 +154,21 @@ try {
     assert.equal(edited.lastDeviceDraft.admin1Code, null);
     assert.equal(edited.lastDeviceDraft.localityName, null);
     assert.match(await page.locator("#detail-location").textContent(), /神奈川県.*JP-14.*逗子市.*142085/u);
+
+    await page.locator("#location-form select[name='subdivisionCode']").selectOption("JP-47");
+    await page.locator("#location-form button[type='submit']").click();
+    await page.waitForFunction(() => document.querySelector("#sensor-status")?.textContent === "地域を更新しました。");
+    const okinawa = await (await fetch(new URL("/__qa/report", baseUrl))).json();
+    assert.equal(okinawa.lastDeviceDraft.subdivisionCode, "JP-47");
+    assert.equal(okinawa.lastDeviceDraft.municipalityCode, null);
+    assert.equal(okinawa.lastDeviceDraft.publicLatitude, 26.2);
+    assert.equal(okinawa.lastDeviceDraft.publicLongitude, 127.7);
+    await page.locator("[data-nav='map']").click();
+    await page.locator("[data-view='map']").waitFor({ state: "visible" });
+    assert.equal(await page.locator(".sensor-map-marker").getAttribute("data-latitude"), "26.2");
+    assert.equal(await page.locator(".sensor-map-marker").getAttribute("data-longitude"), "127.7");
     await page.screenshot({ path: path.join(outputDir, `${label}-device-detail.png`), fullPage: true });
-    report.scans.push({ viewport: label, publicMap: { ...publicMap, visibleText: undefined }, picked, profile: qa.profile, editedRegion: edited.lastDeviceDraft, passed: true });
+    report.scans.push({ viewport: label, publicMap: { ...publicMap, visibleText: undefined }, picked, profile: qa.profile, editedRegion: edited.lastDeviceDraft, okinawaRegion: okinawa.lastDeviceDraft, passed: true });
     await context.close();
   }
   assert.equal(report.expectedAuth401.length, viewports.length);

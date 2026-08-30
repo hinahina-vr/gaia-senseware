@@ -84,8 +84,8 @@ async function handleApi(request, response, url) {
   if (url.pathname === "/api/public/v1/sensors" && request.method === "GET") {
     return sendJson(response, 200, { sensors: [{
       id: "sensor_browserqa", sensorName: "ベランダ環境センサー", state: "ONLINE", lastSeenAt: new Date().toISOString(),
-       location: { latitude: 35.7, longitude: 139.7, precision: "APPROXIMATE_0_1_DEGREE" },
-       region: { countryCode: "JP", subdivisionCode: "JP-13", subdivisionName: "東京都" },
+       location: { latitude: device.publicLatitude, longitude: device.publicLongitude, precision: "APPROXIMATE_0_1_DEGREE" },
+       region: { countryCode: device.countryCode, subdivisionCode: device.subdivisionCode, subdivisionName: device.subdivisionName },
       owner: { displayName: profile.displayName, avatarUrl: profile.avatarUrl, xUrl: profile.xUrl, githubUrl: profile.githubUrl, instagramUrl: profile.instagramUrl },
     }] });
   }
@@ -136,12 +136,22 @@ async function handleApi(request, response, url) {
     const countryCode = url.searchParams.get("countryCode");
     const subdivisionCode = url.searchParams.get("subdivisionCode");
     const subdivisions = countryCode === "JP"
-      ? [{ code: "JP-13", name: "東京都" }, { code: "JP-14", name: "神奈川県" }]
+      ? [{ code: "JP-13", name: "東京都" }, { code: "JP-14", name: "神奈川県" }, { code: "JP-47", name: "沖縄県" }]
       : countryCode === "US" ? [{ code: "US-CA", name: "California" }] : [];
     const municipalities = subdivisionCode === "JP-13"
       ? [{ code: "131130", name: "渋谷区" }]
       : subdivisionCode === "JP-14" ? [{ code: "142085", name: "逗子市" }] : [];
     return sendJson(response, 200, { version: "qa", subdivisions, municipalities });
+  }
+  if (url.pathname === "/api/web/v1/region-location" && request.method === "GET") {
+    const municipalityCode = url.searchParams.get("municipalityCode");
+    const locations = {
+      "131130": { latitude: 35.7, longitude: 139.7 },
+      "142085": { latitude: 35.3, longitude: 139.6 },
+    };
+    const location = locations[municipalityCode];
+    if (!location) return sendJson(response, 404, { error: { code: "REGION_LOCATION_UNAVAILABLE", message: "Region location is unavailable." } });
+    return sendJson(response, 200, { location: { ...location, precision: "MUNICIPALITY_CENTRE" } });
   }
   if (url.pathname === "/api/web/v1/profile" && request.method === "GET") return sendJson(response, 200, { profile });
   if (url.pathname === "/api/web/v1/profile" && request.method === "PATCH") {
@@ -182,7 +192,7 @@ async function handleApi(request, response, url) {
   if (request.method === "PATCH") {
     const body = await readJson(request);
     lastDeviceDraft = body;
-    const subdivisionNames = { "JP-13": "東京都", "JP-14": "神奈川県", "US-CA": "California" };
+    const subdivisionNames = { "JP-13": "東京都", "JP-14": "神奈川県", "JP-47": "沖縄県", "US-CA": "California" };
     const municipalityNames = { "131130": "渋谷区", "142085": "逗子市" };
     device = {
       ...device,
