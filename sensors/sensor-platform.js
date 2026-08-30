@@ -37,6 +37,7 @@ const japanPrefectureUrl = "../data/japan-prefectures.topojson?v=gaia-1";
 const publicMapMinZoom = 1;
 const publicMapMaxZoom = 96;
 const publicMapLongitudeScale = Math.cos(36 * Math.PI / 180);
+const publicMapHome = Object.freeze({ longitude: 137.5, latitude: 36, zoom: 4.2 });
 const publicMapOverscanRatio = .22;
 const publicMapDragRebaseRatio = .18;
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
@@ -68,7 +69,7 @@ const regionPlotVersions = new WeakMap();
 const mapObservers = [];
 const mapViewports = new WeakMap();
 const mapRenderers = new WeakMap();
-const publicMapCamera = { longitude: 139.7, latitude: 36, zoom: 4.2 };
+const publicMapCamera = { ...publicMapHome };
 let publicMapDrag = null;
 let publicMapDragFrame = 0;
 let publicMapWheelFrame = 0;
@@ -369,9 +370,7 @@ function queuePublicMapDragPreview() {
 }
 
 function resetPublicMapView(render = true) {
-  publicMapCamera.longitude = 139.7;
-  publicMapCamera.latitude = 36;
-  publicMapCamera.zoom = 4.2;
+  Object.assign(publicMapCamera, publicMapHome);
   if (render) updatePublicMapViewport();
 }
 
@@ -382,7 +381,7 @@ function publicMapView() {
   const verticalSpan = Math.min(180, 180 / publicMapCamera.zoom);
   const horizontalSpan = Math.min(360, verticalSpan * (width / height) / publicMapLongitudeScale);
   publicMapCamera.latitude = clamp(publicMapCamera.latitude, -90 + verticalSpan / 2, 90 - verticalSpan / 2);
-  publicMapCamera.longitude = clamp(publicMapCamera.longitude, -180 + horizontalSpan / 2, 180 - horizontalSpan / 2);
+  publicMapCamera.longitude = normalizeLongitude(publicMapCamera.longitude);
   return {
     west: publicMapCamera.longitude - horizontalSpan / 2,
     east: publicMapCamera.longitude + horizontalSpan / 2,
@@ -408,7 +407,7 @@ function positionPublicSensorMarkers() {
   publicSensorMarkers.querySelectorAll(".sensor-map-marker").forEach((marker) => {
     const longitude = Number(marker.dataset.longitude);
     const latitude = Number(marker.dataset.latitude);
-    const left = longitudeToPercent(longitude, view);
+    const left = longitudeToPercent(longitudeNearestToView(longitude, view), view);
     const top = latitudeToPercent(latitude, view);
     marker.style.left = `${left}%`;
     marker.style.top = `${top}%`;
@@ -1190,19 +1189,22 @@ function renderMapCanvas(canvas, countryLines, prefectureLines, view = worldMapV
 
   const land = new Path2D();
   for (const ring of countryLines) {
-    if (ring.east < view.west || ring.west > view.east || ring.north < view.south || ring.south > view.north) continue;
-    let started = false;
-    let previousLongitude = null;
-    for (const [longitude, latitude] of ring.points) {
-      const x = ((longitude - view.west) / (view.east - view.west)) * width;
-      const y = ((view.north - latitude) / (view.north - view.south)) * height;
-      if (!started || (previousLongitude !== null && Math.abs(longitude - previousLongitude) > 180)) {
-        land.moveTo(x, y);
-        started = true;
-      } else land.lineTo(x, y);
-      previousLongitude = longitude;
+    for (const longitudeOffset of mapLongitudeOffsets(view)) {
+      if (ring.east + longitudeOffset < view.west || ring.west + longitudeOffset > view.east || ring.north < view.south || ring.south > view.north) continue;
+      let started = false;
+      let previousLongitude = null;
+      for (const [longitude, latitude] of ring.points) {
+        const shiftedLongitude = longitude + longitudeOffset;
+        const x = ((shiftedLongitude - view.west) / (view.east - view.west)) * width;
+        const y = ((view.north - latitude) / (view.north - view.south)) * height;
+        if (!started || (previousLongitude !== null && Math.abs(longitude - previousLongitude) > 180)) {
+          land.moveTo(x, y);
+          started = true;
+        } else land.lineTo(x, y);
+        previousLongitude = longitude;
+      }
+      if (started) land.closePath();
     }
-    if (started) land.closePath();
   }
   context.fillStyle = "rgba(30, 103, 99, .34)";
   context.fill(land, "evenodd");
@@ -1214,13 +1216,15 @@ function renderMapCanvas(canvas, countryLines, prefectureLines, view = worldMapV
 
   const prefectures = new Path2D();
   for (const line of prefectureLines) {
-    if (line.east < view.west || line.west > view.east || line.north < view.south || line.south > view.north) continue;
-    let started = false;
-    for (const [longitude, latitude] of line.points) {
-      const x = ((longitude - view.west) / (view.east - view.west)) * width;
-      const y = ((view.north - latitude) / (view.north - view.south)) * height;
-      if (!started) { prefectures.moveTo(x, y); started = true; }
-      else prefectures.lineTo(x, y);
+    for (const longitudeOffset of mapLongitudeOffsets(view)) {
+      if (line.east + longitudeOffset < view.west || line.west + longitudeOffset > view.east || line.north < view.south || line.south > view.north) continue;
+      let started = false;
+      for (const [longitude, latitude] of line.points) {
+        const x = ((longitude + longitudeOffset - view.west) / (view.east - view.west)) * width;
+        const y = ((view.north - latitude) / (view.north - view.south)) * height;
+        if (!started) { prefectures.moveTo(x, y); started = true; }
+        else prefectures.lineTo(x, y);
+      }
     }
   }
   context.strokeStyle = "rgba(213, 255, 244, .58)";
@@ -1248,6 +1252,12 @@ async function normalizeAvatar(file) {
 
 function numberOrNull(value) { const number = Number(value); return value === null || value === "" || !Number.isFinite(number) ? null : number; }
 function clamp(value, minimum, maximum) { return Math.max(minimum, Math.min(maximum, value)); }
+function normalizeLongitude(longitude) { return ((Number(longitude) + 180) % 360 + 360) % 360 - 180; }
+function mapLongitudeOffsets(view) { return view.key === "PUBLIC" ? [-360, 0, 360] : [0]; }
+function longitudeNearestToView(longitude, view) {
+  const viewCenter = (view.west + view.east) / 2;
+  return Number(longitude) + 360 * Math.round((viewCenter - Number(longitude)) / 360);
+}
 function longitudeToPercent(longitude, view = worldMapView) { return ((Number(longitude) - view.west) / (view.east - view.west)) * 100; }
 function latitudeToPercent(latitude, view = worldMapView) { return ((view.north - Number(latitude)) / (view.north - view.south)) * 100; }
 
