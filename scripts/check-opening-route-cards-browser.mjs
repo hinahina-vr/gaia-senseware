@@ -14,6 +14,7 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const allViewports = [
   { name: "pc-1440", width: 1440, height: 900 },
+  { name: "pc-reference-1456x746", width: 1456, height: 746 },
   { name: "pc-4k", width: 3840, height: 2160 },
   { name: "mobile-280", width: 280, height: 653, mobile: true },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
@@ -84,6 +85,7 @@ try {
     const readGuide = () => page.evaluate(() => {
       const guide = document.querySelector("#gaia-opening-route-guide");
       const bubble = guide.querySelector(".gaia-opening-route-guide-bubble");
+      const title = guide.querySelector("[data-route-guide-title]");
       const shade = guide.querySelector(".gaia-opening-route-guide-shade");
       const target = document.querySelector(".gaia-opening-route.is-route-guide-target");
       const menu = document.querySelector("#gaia-opening-final-menu");
@@ -91,10 +93,14 @@ try {
         step: guide.dataset.step,
         targetId: target?.id,
         activeId: document.activeElement?.id,
-        title: guide.querySelector("[data-route-guide-title]")?.textContent.trim(),
+        title: title?.textContent.trim() || "",
+        titleHidden: title?.hidden,
         copy: guide.querySelector("[data-route-guide-copy]")?.textContent.trim(),
+        kickerCount: guide.querySelectorAll("[data-route-guide-kicker]").length,
         hint: guide.querySelector("[data-route-guide-hint-action]")?.textContent.trim(),
         buttonCount: guide.querySelectorAll("button").length,
+        bubbleTransitionProperty: getComputedStyle(bubble).transitionProperty,
+        bubbleTransitionDuration: getComputedStyle(bubble).transitionDuration,
         bubbleRect: bubble.getBoundingClientRect().toJSON(),
         targetRect: target.getBoundingClientRect().toJSON(),
         shadeRect: shade.getBoundingClientRect().toJSON(),
@@ -110,10 +116,18 @@ try {
     assert.equal(guideSteps[0].step, "1");
     assert.equal(guideSteps[0].targetId, "gaia-opening-route-story");
     assert.equal(guideSteps[0].activeId, "gaia-opening-route-guide");
+    assert.equal(guideSteps[0].title, "");
+    assert.equal(guideSteps[0].titleHidden, true, `${viewport.name}: first route guide title is still visible`);
+    assert.equal(guideSteps[0].copy, "ビジュアルノベル風のストーリーを読みながら、インタラクティブに展示の世界を楽しめます。");
+    assert.equal(guideSteps[0].kickerCount, 0, `${viewport.name}: route guide still contains category kickers`);
     assert.equal(guideSteps[0].buttonCount, 0, `${viewport.name}: route guide still contains operation buttons`);
     assert.equal(guideSteps[0].hint, "次へ");
+    if (!viewport.reduced) {
+      assert(guideSteps[0].bubbleTransitionProperty.split(",").map((value) => value.trim()).includes("opacity"), `${viewport.name}: route guide does not fade with opacity`);
+      assert(Number.parseFloat(guideSteps[0].bubbleTransitionDuration) >= 0.4, `${viewport.name}: route guide fade-in is too short`);
+    }
     assert(guideSteps[0].revealCompleteAt - guideSteps[0].revealStartedAt >= (viewport.reduced ? 0 : 650), `${viewport.name}: guide hold started before the menu reveal settled`);
-    assert(guideSteps[0].openedAt - guideSteps[0].revealCompleteAt >= 900, `${viewport.name}: guide opened less than about one second after the complete menu reveal`);
+    assert(guideSteps[0].openedAt - guideSteps[0].revealCompleteAt >= 1900, `${viewport.name}: guide opened less than about two seconds after the complete menu reveal`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-guide.png`), animations: "disabled" });
 
     await page.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
@@ -122,6 +136,9 @@ try {
     const clickAdvancedGuide = await readGuide();
     assert.equal(clickAdvancedGuide.targetId, "gaia-opening-route-other", `${viewport.name}: click did not advance the guide`);
     assert.equal(clickAdvancedGuide.activeId, "gaia-opening-route-guide");
+    assert.equal(clickAdvancedGuide.title, "データを探索する");
+    assert.equal(clickAdvancedGuide.titleHidden, false);
+    assert.equal(clickAdvancedGuide.copy, "気候変動や観測ポイントを、インタラクティブな地図上で探索・分析できます。");
     guideSteps.push(clickAdvancedGuide);
 
     await page.keyboard.press("Enter");
@@ -130,6 +147,9 @@ try {
     const keyboardAdvancedGuide = await readGuide();
     assert.equal(keyboardAdvancedGuide.targetId, "gaia-opening-tour-link", `${viewport.name}: Enter did not advance the guide`);
     assert.equal(keyboardAdvancedGuide.activeId, "gaia-opening-route-guide");
+    assert.equal(keyboardAdvancedGuide.title, "30秒ガイド");
+    assert.equal(keyboardAdvancedGuide.titleHidden, false);
+    assert.equal(keyboardAdvancedGuide.copy, "初めての方向けに、基本的な見どころと操作の流れを短く紹介します。");
     assert.equal(keyboardAdvancedGuide.hint, "案内を終える");
     guideSteps.push(keyboardAdvancedGuide);
 
@@ -176,9 +196,12 @@ try {
         replayRect: readRect(document.querySelector("#gaia-opening-route-guide-replay")),
         replayLabel: document.querySelector("#gaia-opening-route-guide-replay strong")?.textContent.trim(),
         replayEnglish: document.querySelector("#gaia-opening-route-guide-replay small")?.textContent.trim(),
+        finalCopyRect: readRect(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-copy")),
         logoSrc: document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo")?.currentSrc,
         logoAlt: document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo")?.alt,
         logoRect: readRect(document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo")),
+        poemRect: readRect(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong")),
+        poemTextAlign: getComputedStyle(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong")).textAlign,
         finalBackground: getComputedStyle(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-photo")).backgroundImage,
         forbiddenTaglinePresent: document.querySelector(".gaia-vn-panel-final").textContent.includes("感じ、記録し、未来を選ぶ"),
         cards,
@@ -195,6 +218,21 @@ try {
     assert.match(layout.logoSrc, /brand-logo-dark-surface-(?:590|1180)\.webp$/u, `${viewport.name}: final screen does not use the default logo`);
     assert.equal(layout.logoAlt, "惑星の放課後 — GAIA SENSATION");
     assert(layout.logoRect.left >= 0 && layout.logoRect.top >= 0 && layout.logoRect.right <= viewport.width + 1 && layout.logoRect.bottom <= viewport.height + 1, `${viewport.name}: final logo escaped the viewport`);
+    const expectedGatewayAxis = viewport.width >= 961 && viewport.height >= 521
+      ? Math.min(viewport.width * 0.63, viewport.width - Math.min(460, viewport.width * 0.44) - 18)
+      : viewport.width / 2;
+    const logoAxis = (layout.logoRect.left + layout.logoRect.right) / 2;
+    const menuAxis = (layout.menuRect.left + layout.menuRect.right) / 2;
+    assert(Math.abs(logoAxis - expectedGatewayAxis) <= 2, `${viewport.name}: final logo is not on the intended right-side axis`);
+    assert(Math.abs(menuAxis - logoAxis) <= 2, `${viewport.name}: route buttons are not centered under the logo`);
+    const minimumLogoWidth = viewport.height <= 430
+      ? viewport.height
+      : (viewport.width >= 961 ? Math.min(900, viewport.width * 0.62) : viewport.width * 0.7);
+    assert(layout.logoRect.width >= minimumLogoWidth, `${viewport.name}: final logo does not use enough horizontal space`);
+    assert.equal(layout.poemTextAlign, "center", `${viewport.name}: final poem is not center-aligned`);
+    if (layout.poemRect.width > 0) {
+      assert(Math.abs((layout.poemRect.left + layout.poemRect.right) / 2 - logoAxis) <= 2, `${viewport.name}: final poem block is not centered on the logo axis`);
+    }
     assert.match(layout.finalBackground, /opening-final-observatory-keyvisual-v4(?:-960)?\.webp/u, `${viewport.name}: generated final background is not active`);
     assert.equal(layout.forbiddenTaglinePresent, false, `${viewport.name}: removed final-screen tagline returned`);
     assert.equal(layout.cards.length, 3, `${viewport.name}: route card count changed`);

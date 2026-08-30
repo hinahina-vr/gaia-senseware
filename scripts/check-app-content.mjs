@@ -52,7 +52,9 @@ assert.equal(indexHtml.includes('id="character-book-layer"'), true, "Standalone 
 assert.equal(indexHtml.includes("VISUAL MEMORY ARCHIVE"), true, "Immersive character archive heading is missing");
 assert.equal(indexHtml.includes('id="character-book-webgl"'), true, "Immersive character setting atmosphere is missing");
 assert.equal((indexHtml.match(/data-character-select=/gu) || []).length, 3, "Character setting selector must expose all three characters");
-assert.equal((indexHtml.match(/data-character-profile=/gu) || []).length, 3, "Character setting profiles must expose all three characters");
+assert.equal((indexHtml.match(/data-character-profile=/gu) || []).length, 0, "Duplicate lower character profiles must remain removed");
+assert.equal(indexHtml.includes('class="character-book-hero-detail"'), true, "Switchable hero character detail is missing");
+assert.equal(indexHtml.includes('id="character-book-profile"'), true, "Switchable hero character profile is missing");
 assert.equal(indexHtml.includes("01-three-ecologies-character-master.png"), true, "Character master sheet is missing");
 assert.equal(modeLoader.includes('interceptClick("[data-character-gallery-open]", "character")'), true, "Character viewer is not lazy-loaded");
 assert.equal(indexHtml.includes("このデータの出典を表示する"), false, "Old open-data button copy remains");

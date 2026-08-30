@@ -18,9 +18,12 @@
     panel.classList.add("map-grid-polish", `map-grid-${role}`);
   });
 
-  const applyLayout = ({ desktop, bankTop, dataTop, dataHeight }) => {
+  const applyLayout = ({ desktop, bankTop, dataTop, bankHeight, dataHeight }) => {
     document.body.classList.toggle("map-grid-desktop", desktop);
     if (!desktop) return;
+    if (Number.isFinite(bankHeight)) {
+      document.documentElement.style.setProperty("--map-grid-bank-height", `${Math.ceil(bankHeight)}px`);
+    }
     if (Number.isFinite(dataHeight)) {
       document.documentElement.style.setProperty("--map-grid-data-height", `${Math.ceil(dataHeight)}px`);
     }
@@ -51,7 +54,7 @@
     }
     const bankTop = top + introHeight + gap;
     const dataTop = bankTop + bankHeight + gap;
-    requestAnimationFrame(() => applyLayout({ desktop, bankTop, dataTop, dataHeight }));
+    requestAnimationFrame(() => applyLayout({ desktop, bankTop, dataTop, bankHeight, dataHeight }));
   };
 
   const schedule = () => {

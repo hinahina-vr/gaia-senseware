@@ -4,6 +4,7 @@
   --map-grid-rail: clamp(390px, 28vw, 530px);
   --map-grid-route-height: 50px;
   --map-grid-route-stack: var(--map-grid-route-height);
+  --map-grid-bank-height: 320px;
   --map-grid-data-height: 250px;
   --map-grid-panel-bg: linear-gradient(145deg, rgba(5, 16, 27, 0.91), rgba(8, 25, 36, 0.82));
   --map-grid-panel-line: rgba(142, 224, 216, 0.3);
@@ -154,6 +155,22 @@ body.map-grid-desktop .map-grid-intro {
   pointer-events: none !important;
 }
 
+/* The permanent map title is type only: no card, border, blur, or glow panel. */
+body.map-grid-desktop .japan-layer .map-grid-intro,
+.japan-layer .japan-heading {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.map-grid-desktop .map-grid-intro::before,
+body.map-grid-desktop .map-grid-intro::after {
+  display: none !important;
+  content: none !important;
+}
+
 body.map-grid-desktop .map-grid-intro .japan-kicker {
   margin: 0 !important;
   white-space: nowrap;
@@ -165,6 +182,103 @@ body.map-grid-desktop .map-grid-intro #japan-title {
   letter-spacing: -0.035em !important;
   line-height: 1.12 !important;
   white-space: nowrap !important;
+}
+
+.map-title-transition {
+  position: absolute;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  visibility: hidden;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.map-title-transition::before {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: clamp(132px, 19vh, 220px);
+  border-block: 1px solid rgba(139, 222, 255, 0.14);
+  content: "";
+  background:
+    linear-gradient(90deg, transparent, rgba(57, 144, 191, 0.08) 18%, rgba(9, 23, 40, 0.76) 50%, rgba(57, 144, 191, 0.08) 82%, transparent),
+    rgba(1, 7, 15, 0.5);
+  box-shadow: 0 0 80px rgba(0, 5, 14, 0.38);
+  transform: translateY(-50%) scaleX(0.08);
+  transform-origin: center;
+}
+
+.map-title-transition span {
+  padding-inline: clamp(24px, 6vw, 120px);
+  color: #dcf8ff;
+  font: 500 clamp(34px, 4.8vw, 72px)/1.15 var(--font-ja);
+  letter-spacing: -0.035em;
+  text-align: center;
+  text-shadow:
+    0 0 22px rgba(123, 220, 255, 0.46),
+    0 0 58px rgba(65, 143, 255, 0.24);
+  white-space: nowrap;
+}
+
+.japan-layer.is-map-title-transitioning .map-title-transition {
+  visibility: visible;
+  animation: map-title-separator-crossfade 1500ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+}
+
+.japan-layer.is-map-title-transitioning .map-title-transition::before {
+  animation: map-title-separator-band 1500ms cubic-bezier(0.16, 0.82, 0.22, 1) both;
+}
+
+.japan-layer.is-map-title-transitioning .map-title-transition span {
+  animation: map-title-separator-type 1500ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+}
+
+.japan-layer.is-map-title-transitioning #japan-title {
+  animation: map-title-return-home 1500ms ease both;
+}
+
+@keyframes map-title-separator-crossfade {
+  0% { opacity: 0; background: rgba(0, 5, 12, 0); }
+  16%, 62% { opacity: 1; background: rgba(0, 5, 12, 0.28); }
+  100% { opacity: 0; background: rgba(0, 5, 12, 0); }
+}
+
+@keyframes map-title-separator-band {
+  0% { opacity: 0; transform: translateY(-50%) scaleX(0.08); filter: blur(8px); }
+  18% { opacity: 1; transform: translateY(-50%) scaleX(1.02); filter: blur(0); }
+  58% { opacity: 1; transform: translateY(-50%) scaleX(1); filter: blur(0); }
+  100% { opacity: 0; transform: translateY(-50%) scaleX(0.88); filter: blur(3px); }
+}
+
+@keyframes map-title-separator-type {
+  0%, 8% { opacity: 0; transform: translateY(14px) scale(0.975); filter: blur(7px); }
+  22%, 60% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: translateY(-12px) scale(1.015); filter: blur(4px); }
+}
+
+@keyframes map-title-return-home {
+  0%, 56% { opacity: 0; }
+  78%, 100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .japan-layer.is-map-title-transitioning .map-title-transition,
+  .japan-layer.is-map-title-transitioning .map-title-transition::before,
+  .japan-layer.is-map-title-transitioning .map-title-transition span,
+  .japan-layer.is-map-title-transitioning #japan-title {
+    animation-duration: 460ms !important;
+  }
+
+  .japan-layer.is-map-title-transitioning .map-title-transition::before,
+  .japan-layer.is-map-title-transitioning .map-title-transition span {
+    filter: none !important;
+  }
 }
 
 body.map-grid-desktop .map-grid-intro #japan-description {
@@ -182,8 +296,7 @@ body.map-grid-desktop .map-grid-data {
 body.map-grid-desktop .map-grid-bank {
   top: auto !important;
   bottom: calc(
-    var(--map-grid-gutter) + var(--map-grid-route-stack) +
-    var(--map-grid-data-height) + var(--map-grid-gap) + var(--map-grid-gap)
+    var(--map-grid-gutter) + var(--map-grid-route-stack) + var(--map-grid-gap)
   ) !important;
   border-left-color: rgba(142, 224, 216, 0.48) !important;
 }
@@ -191,7 +304,8 @@ body.map-grid-desktop .map-grid-bank {
 body.map-grid-desktop .map-grid-data {
   top: auto !important;
   bottom: calc(
-    var(--map-grid-gutter) + var(--map-grid-route-stack) + var(--map-grid-gap)
+    var(--map-grid-gutter) + var(--map-grid-route-stack) +
+    var(--map-grid-bank-height) + var(--map-grid-gap) + var(--map-grid-gap)
   ) !important;
   border-left: 2px solid rgba(119, 190, 236, 0.52) !important;
 }

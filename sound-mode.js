@@ -87,11 +87,11 @@
       signal: "SOURCE SAVE",
     },
     moonreopen: {
-      number: "TRACK 10 / RELOAD MEMORY",
-      title: "月下、もう一度ひらく（未使用曲）",
-      description: "保存された選択と空白を、優劣をつけずに読み直す場面の音楽。",
+      number: "TRACK 10 / BLUE GLASS TIDE",
+      title: "青硝子の潮汐",
+      description: "青いガラスのような潮の揺らぎが、夜の観測記録を静かにひらく音楽。",
       planet: "PLANET 10",
-      signal: "REOPENED MEMORY",
+      signal: "BLUE GLASS TIDE",
     },
     ending: {
       number: "TRACK 11 / ENDING THEME",

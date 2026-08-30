@@ -83,7 +83,7 @@
     },
     {
       "path": "assets/audio/moonlit-reopen.mp3",
-      "sha256": "95fa0b46ce36ac092435774bda6574809dc35e7ad68267703fb08c726829fa2d",
+      "sha256": "7aa6fbab93030c89fbd454649d658d261cbb4fea087cc7aa66d641a5636787ce",
       "generationService": "Suno AI",
       "generationDate": null,
       "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",

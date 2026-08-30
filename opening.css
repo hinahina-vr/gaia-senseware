@@ -879,20 +879,21 @@ body.gaia-opening-active .novel-layer {
 .gaia-vn-work-title {
   width: min(72vw, 1000px);
   max-width: none;
+  margin-inline: auto;
 }
 
 .gaia-vn-work-logo {
   display: block;
   width: 100%;
   height: auto;
-  margin: -3% 0 -4%;
+  margin: -3% auto -4%;
   filter: drop-shadow(0 0 18px rgba(var(--opening-blue), 0.16));
 }
 
 .gaia-vn-final-choice > strong {
   display: block;
   inline-size: 100%;
-  margin: 31px 0 0;
+  margin: 31px auto 0;
   color: rgba(var(--opening-paper), 0.84);
   font-family: var(--font-ja);
   font-size: clamp(17px, 1.8vw, 25px);
@@ -900,6 +901,7 @@ body.gaia-opening-active .novel-layer {
   letter-spacing: 0.05em;
   line-height: 1.8;
   overflow-wrap: normal;
+  text-align: center;
   text-wrap: balance;
   word-break: normal;
   writing-mode: horizontal-tb;
@@ -4969,7 +4971,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   background: transparent;
   box-shadow: 0 0 0 200vmax rgba(0, 7, 24, 0.78);
   pointer-events: none;
-  transition: opacity 240ms ease;
+  transition: opacity 360ms ease;
 }
 
 .gaia-opening-route-guide.is-visible .gaia-opening-route-guide-shade { opacity: 1; }
@@ -4998,7 +5000,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   pointer-events: auto;
   cursor: pointer;
   transform: translateY(8px) scale(0.985);
-  transition: opacity 210ms ease, transform 260ms cubic-bezier(0.2, 0.76, 0.2, 1);
+  transition: opacity 420ms ease, transform 480ms cubic-bezier(0.2, 0.76, 0.2, 1);
 }
 
 .gaia-opening-route-guide.is-visible .gaia-opening-route-guide-bubble {
@@ -5048,11 +5050,14 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   font-style: normal;
 }
 
-.gaia-opening-route-guide-bubble > p {
+.gaia-opening-route-guide-bubble [data-route-guide-copy] {
   margin: 0;
-  color: #8cecff;
-  font: 800 10px/1.35 var(--font-ja);
-  letter-spacing: 0.12em;
+  font-family: var(--font-ja);
+  color: rgba(231, 249, 255, 0.9);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  line-height: 1.65;
 }
 
 .gaia-opening-route-guide-bubble > h2 {
@@ -5064,14 +5069,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   letter-spacing: 0.035em;
   line-height: 1.42;
   text-shadow: 0 2px 16px rgba(0, 16, 70, 0.56);
-}
-
-.gaia-opening-route-guide-bubble > h2 + p {
-  color: rgba(231, 249, 255, 0.9);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.025em;
-  line-height: 1.65;
 }
 
 .gaia-opening-route-guide-hint {
@@ -5139,7 +5136,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 
   .gaia-opening-route-guide-bubble > h2 { font-size: 18px; }
-  .gaia-opening-route-guide-bubble > h2 + p { font-size: 12px; line-height: 1.55; }
+  .gaia-opening-route-guide-bubble [data-route-guide-copy] { font-size: 12px; line-height: 1.55; }
   .gaia-opening-route-guide-hint { min-height: 22px; font-size: 10px; }
 }
 
@@ -5612,4 +5609,61 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   }
 
   .gaia-vn-panel-final .gaia-opening-route-symbol { width: 34px; height: 34px; }
+}
+
+/* Keep the live title lockup on one axis, but anchor that axis in the open
+   lower-right sky rather than centering the whole gateway in the viewport. */
+.gaia-vn-panel-final .gaia-vn-work-title { margin-inline: auto; }
+.gaia-vn-panel-final .gaia-vn-work-logo { margin-inline: auto; }
+.gaia-vn-panel-final .gaia-vn-final-choice > strong,
+.gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-choice > strong {
+  margin-right: auto;
+  margin-left: auto;
+  text-align: center;
+}
+
+@media (min-width: 961px) and (min-height: 521px) {
+  .gaia-vn-panel-final .gaia-vn-final-copy,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
+    right: auto;
+    left: min(63%, calc(100% - min(460px, 44vw) - 18px));
+    width: min(920px, 88vw);
+    text-align: center;
+    transform: translateX(-50%);
+  }
+
+  .gaia-vn-panel-final .gaia-vn-work-title { width: 100%; }
+
+  .gaia-vn-panel-final .gaia-opening-final-menu,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+    width: min(920px, 100%);
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .gaia-opening.is-active .gaia-vn-panel-final .gaia-vn-final-copy {
+    animation-name: opening-copy-final-centered;
+  }
+}
+
+@keyframes opening-copy-final-centered {
+  from { opacity: 0; filter: blur(5px); transform: translateX(calc(-50% - 18px)); }
+  to { opacity: 1; filter: blur(0); transform: translateX(-50%); }
+}
+
+@media (max-height: 430px) and (orientation: landscape) {
+  .gaia-vn-panel-final .gaia-vn-final-copy,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
+    right: max(34px, env(safe-area-inset-right));
+    left: max(34px, env(safe-area-inset-left));
+    width: auto;
+  }
+
+  .gaia-vn-panel-final .gaia-vn-work-title { width: min(82vw, 102vh, 470px); }
+
+  .gaia-vn-panel-final .gaia-opening-final-menu,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
+    margin-right: auto;
+    margin-left: auto;
+  }
 }

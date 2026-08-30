@@ -8,43 +8,49 @@
   const portrait = (filename) => "/assets/characters/" + filename + "?v=" + assetVersion;
   const characters = Object.freeze([
     {
-      id: "mizuha",
-      roman: "MIZUHA",
-      native: "みずは",
-      code: "ECOLOGY / BODY",
-      copy: "海と身体の変化を読み、観測値を人の感覚へつなぎ直す。",
-      domain: "生態・身体",
-      tool: "水滴標本・フィールドノート",
-      role: "観測設計",
-      tone: "61, 153, 186",
-      src: portrait("mizuha-calm-07-v2.png"),
-      alt: "深い水色の長い髪と青いワンピース姿のみずは",
-    },
-    {
       id: "amane",
       roman: "AMANE",
-      native: "あめ",
-      code: "SOCIETY / TECHNOLOGY",
-      copy: "センサーと公開データを、人が触れられる確かな体験へ組み上げる。",
-      domain: "社会・技術",
-      tool: "レコーダー・計測器",
-      role: "システム実装",
+      native: "あめ / アマネ",
+      code: "AMANE / INFRASTRUCTURE / ELECTRICAL",
+      copy: "現場の物理的な信号を捉え、回路とセンサーで確実に具現化する。",
+      quote: "「信号線とは違うの。一本飛んだら、本当に終わるよ」",
+      profile: "水色のショートボブと眠そうな目元が特徴の大学2年生。普段は無口で省エネ運転だが、配線やハードウェアの話になると途端にスイッチが入る。電気工事士・電験三種の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。",
+      domain: "電力工学・施設設備",
+      role: "実装・検証（PoC）",
+      tool: "テスター・計測機器・配線工具",
       tone: "107, 168, 221",
       src: portrait("amane-calm-07-v2.png"),
-      alt: "淡い空色の短い髪と白いワンピース姿のあめ",
+      alt: "水色のショートボブと眠そうな目元が特徴のあめ（アマネ）",
+    },
+    {
+      id: "mizuha",
+      roman: "MIZUHA",
+      native: "みず / ミズハ",
+      code: "MIZUHA / NARRATIVE / EARTH SCIENCE",
+      copy: "生命と地球の共進化をたどり、観測された変化を言葉にする。",
+      quote: "「46億年、ずっと変わり続けている星ですから」",
+      profile: "海色の長い髪とおっとりした丁寧語が印象的な大学2年生。地球の歴史や生き物の共進化に関心を持ち、システム全体のナラティブと概念設計を担当する。穏やかな見た目の一方で、データの出典や数字の正確さ、観測条件の厳密さには決して妥協しない。",
+      domain: "地球科学・生命史",
+      role: "概念設計・ナラティブ",
+      tool: "フィールドノート・観測記録",
+      tone: "61, 153, 186",
+      src: portrait("mizuha-calm-07-v2.png"),
+      alt: "海色の長い髪とおっとりした表情のみず（ミズハ）",
     },
     {
       id: "sakuya",
       roman: "SAKUYA",
-      native: "saku",
-      code: "MIND / CULTURE",
-      copy: "機能と物語をひとつの流れに編み、観客が参加する入口をつくる。",
-      domain: "精神・文化",
-      tool: "カメラ・編集ノート",
-      role: "構成・制作統括",
+      native: "saku / サクヤ",
+      code: "SAKUYA / ARCHITECTURE / SYSTEM",
+      copy: "遠隔から全体を俯瞰し、無数の観測データを束ねる構造を組む。",
+      quote: "「まだ気づいてないだけでしょ。世界はこんなにも満ちてるよ」",
+      profile: "海外からオンラインで参加している、サークル『惑星の放課後』のプロデューサー兼システムアーキテクト。普段のチャットでは無駄口を叩かないが、要件定義やデータ構造の議論では圧倒的な速度と解像度で仕様を組み上げる。プロジェクトの骨格を支える名付け親。",
+      domain: "情報工学・統計学",
+      role: "プロデュース・全体統括",
+      tool: "チャットツール・仕様設計書",
       tone: "184, 129, 117",
       src: portrait("sakuya-calm-07-v1.png"),
-      alt: "灰桜色の髪とカメラを持ったsaku",
+      alt: "海外からオンラインで参加するsaku（サクヤ）",
     },
   ]);
 
@@ -300,15 +306,12 @@
   const closeButton = layer.querySelector("#character-book-close");
   const closeButtons = Array.from(layer.querySelectorAll("[data-character-close]"));
   const selectors = Array.from(layer.querySelectorAll("[data-character-select]"));
-  const profileCards = Array.from(layer.querySelectorAll("[data-character-profile]"));
   const heroImage = layer.querySelector("#character-book-image");
-  const roman = layer.querySelector("#character-book-roman");
+  const heroDetail = layer.querySelector(".character-book-hero-detail");
   const native = layer.querySelector("#character-book-native");
   const code = layer.querySelector("#character-book-code");
-  const copy = layer.querySelector("#character-book-character-copy");
-  const domain = layer.querySelector("#character-book-domain");
-  const tool = layer.querySelector("#character-book-tool");
-  const role = layer.querySelector("#character-book-role");
+  const profile = layer.querySelector("#character-book-profile");
+  const quote = layer.querySelector("#character-book-quote");
   const current = layer.querySelector("#character-book-current");
   const atmosphere = createAtmosphere(canvas);
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -353,13 +356,17 @@
     selectors.forEach((button) => button.setAttribute("aria-current", String(button.dataset.characterSelect === character.id)));
 
     const commit = () => {
-      if (roman) roman.textContent = character.roman;
       if (native) native.textContent = character.native;
       if (code) code.textContent = character.code;
-      if (copy) copy.textContent = character.copy;
-      if (domain) domain.textContent = character.domain;
-      if (tool) tool.textContent = character.tool;
-      if (role) role.textContent = character.role;
+      if (profile) {
+        const sentences = character.profile.match(/[^。]+。?/gu)?.filter(Boolean) || [character.profile];
+        profile.replaceChildren(...sentences.map((sentence) => {
+          const line = document.createElement("span");
+          line.textContent = sentence;
+          return line;
+        }));
+      }
+      if (quote) quote.textContent = character.quote;
       if (current) current.textContent = String(nextIndex + 1).padStart(2, "0");
       if (heroImage instanceof HTMLImageElement) {
         heroImage.src = character.src;
@@ -367,12 +374,20 @@
       }
       layer.dataset.imageState = "ready";
       window.clearTimeout(switchTimer);
-      switchTimer = window.setTimeout(() => heroImage?.classList.remove("is-switching"), 420);
+      switchTimer = window.setTimeout(() => {
+        heroImage?.classList.remove("is-switching");
+        heroDetail?.classList.remove("is-switching");
+        quote?.classList.remove("is-switching");
+      }, 420);
     };
     if (heroImage instanceof HTMLElement && !reducedMotion.matches) {
       heroImage.classList.remove("is-switching");
+      heroDetail?.classList.remove("is-switching");
+      quote?.classList.remove("is-switching");
       void heroImage.offsetWidth;
       heroImage.classList.add("is-switching");
+      heroDetail?.classList.add("is-switching");
+      quote?.classList.add("is-switching");
       window.setTimeout(commit, 80);
     } else {
       commit();
@@ -427,13 +442,6 @@
   selectors.forEach((button) => {
     button.addEventListener("click", () => selectCharacter(button.dataset.characterSelect));
   });
-  profileCards.forEach((card) => {
-    card.addEventListener("click", (event) => {
-      if (event.target instanceof Element && event.target.closest("a, button")) return;
-      selectCharacter(card.dataset.characterProfile);
-      layer.querySelector("#character-book-hero")?.scrollIntoView({ behavior: reducedMotion.matches ? "auto" : "smooth" });
-    });
-  });
   layer.addEventListener("pointermove", (event) => atmosphere.setPointer(event), { passive: true });
   scroller?.addEventListener("scroll", () => {
     if (!(scroller instanceof HTMLElement)) return;
@@ -441,13 +449,6 @@
     atmosphere.setDepth(scroller.scrollTop / heroHeight);
     layer.classList.toggle("has-scrolled", scroller.scrollTop > 30);
   }, { passive: true });
-
-  const observer = "IntersectionObserver" in window
-    ? new IntersectionObserver((entries) => {
-        entries.forEach((entry) => entry.target.classList.toggle("is-visible", entry.isIntersecting));
-      }, { root: scroller, threshold: 0.18 })
-    : null;
-  profileCards.forEach((card) => observer?.observe(card));
 
   document.addEventListener("keydown", (event) => {
     if (!openState) return;

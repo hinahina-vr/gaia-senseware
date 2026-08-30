@@ -1534,3 +1534,70 @@ body.gaia-statistics-open > :is(.gaia-audio-dock, .scene-transition) {
   .gaia-statistics-controls { padding: 6px 0; }
   .gaia-statistics-stage { padding-top: 6px; }
 }
+
+/* Expanded drawers must always expose a clear route back to the chart. */
+.gaia-statistics-panel-back { display: none; }
+
+.gaia-statistics-values[open],
+.gaia-statistics-records[open],
+.gaia-statistics-insights-panel[open] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.gaia-statistics-values[open] > summary,
+.gaia-statistics-records[open] > summary,
+.gaia-statistics-insights-panel[open] > summary {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  padding-right: 160px;
+}
+
+.gaia-statistics-values[open] > .gaia-statistics-panel-back,
+.gaia-statistics-records[open] > .gaia-statistics-panel-back,
+.gaia-statistics-insights-panel[open] > .gaia-statistics-panel-back {
+  display: inline-flex;
+  position: absolute;
+  z-index: 2;
+  top: 3px;
+  right: 8px;
+  align-items: center;
+  min-height: 28px;
+  margin: 0;
+  padding: 5px 11px;
+  border: 1px solid rgba(126, 222, 255, 0.42);
+  border-radius: 4px;
+  color: #dff8ff;
+  background: linear-gradient(110deg, rgba(15, 76, 116, 0.78), rgba(9, 39, 72, 0.82));
+  font: 650 9px/1.2 var(--font-ja);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.gaia-statistics-panel-back:is(:hover, :focus-visible) {
+  border-color: rgba(141, 235, 255, 0.86);
+  outline: none;
+  background: linear-gradient(110deg, rgba(22, 104, 150, 0.9), rgba(12, 54, 92, 0.9));
+  box-shadow: 0 0 18px rgba(89, 209, 255, 0.25);
+  transform: translateX(-2px);
+}
+
+.gaia-statistics-values[open] > .gaia-statistics-values-scroll,
+.gaia-statistics-records[open] > .gaia-statistics-records-scroll,
+.gaia-statistics-insights-panel[open] > .gaia-statistics-insights {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+@media (max-width: 520px) {
+  .gaia-statistics-values[open] > .gaia-statistics-panel-back,
+  .gaia-statistics-records[open] > .gaia-statistics-panel-back,
+  .gaia-statistics-insights-panel[open] > .gaia-statistics-panel-back {
+    min-height: 26px;
+    right: 5px;
+    padding-inline: 7px;
+    font-size: 8px;
+  }
+}

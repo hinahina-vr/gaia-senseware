@@ -176,6 +176,12 @@ try {
     assert.match(await page.locator(".gaia-statistics-insight").nth(1).textContent(), /データから見えたこと/u);
     assert.match(await page.locator(".gaia-statistics-insight").nth(2).textContent(), /ここからは言えないこと/u);
     assert.match(await page.locator(".gaia-statistics-insight").nth(3).textContent(), /次に確かめる/u);
+    await page.locator(".gaia-statistics-insights-panel").evaluate((element) => { element.open = true; });
+    const chartReturnButton = page.locator(".gaia-statistics-insights-panel > .gaia-statistics-panel-back");
+    assert.equal(await chartReturnButton.isVisible(), true, `${viewport.name}: expanded explanation has no visible chart return`);
+    await chartReturnButton.click();
+    assert.equal(await page.locator(".gaia-statistics-insights-panel").evaluate((element) => element.open), false, `${viewport.name}: chart return did not close the explanation`);
+    await page.waitForFunction(() => document.activeElement === document.querySelector("#gaia-statistics-canvas"));
     const canvas = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({ width: element.width, height: element.height, rect: element.getBoundingClientRect().toJSON() }));
     assert.ok(canvas.width > 300 && canvas.height > (viewport.name === "pc" ? 140 : 90), `${viewport.name}: canvas is not rendered`);
     const labVisual = await page.locator("#gaia-statistics-lab").evaluate((element) => {

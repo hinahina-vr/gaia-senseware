@@ -88,6 +88,8 @@ if (!lab || !openButton) {
     recordSortHeaders: [...document.querySelectorAll(".gaia-statistics-records thead th[data-record-sort]")],
     recordSortButtons: [...document.querySelectorAll(".gaia-statistics-records [data-record-sort-action]")],
     insights: q("#gaia-statistics-insights"),
+    detailPanels: [...document.querySelectorAll(".gaia-statistics-stage > details")],
+    panelBackButtons: [...document.querySelectorAll(".gaia-statistics-panel-back")],
   };
   const chartTooltip = document.createElement("output");
   chartTooltip.className = "gaia-statistics-chart-tooltip";
@@ -1486,6 +1488,22 @@ if (!lab || !openButton) {
   ui.canvas.addEventListener("keydown", updateChartTooltipFromKeyboard);
   ui.canvas.addEventListener("focus", () => { if (state.chartTargets.length) showChartTargetByIndex(Math.max(0, state.chartKeyboardIndex)); });
   ui.canvas.addEventListener("blur", hideChartTooltip);
+
+  const returnToChart = (button) => {
+    const panel = button.closest("details");
+    if (!(panel instanceof HTMLDetailsElement)) return;
+    panel.open = false;
+    requestAnimationFrame(() => ui.canvas.focus({ preventScroll: true }));
+    window.dispatchEvent(new CustomEvent("gaia:statistics-chart-return", { detail: { panel: panel.className } }));
+  };
+
+  ui.detailPanels.forEach((panel) => panel.addEventListener("toggle", () => {
+    if (!panel.open) return;
+    ui.detailPanels.forEach((candidate) => {
+      if (candidate !== panel) candidate.open = false;
+    });
+  }));
+  ui.panelBackButtons.forEach((button) => button.addEventListener("click", () => returnToChart(button)));
 
   const render = () => {
     const dataset = currentDataset(); const method = METHOD_LOOKUP.get(state.methodId) || METHOD_LOOKUP.get("summary");

@@ -180,21 +180,17 @@
   const routeGuideSteps = [
     {
       target: finalStoryButton,
-      kicker: "STORY / 物語",
-      title: "ふたりの物語から始める",
-      copy: "登場人物の視点を通して、人間と地球のこれからをたどります。",
+      copy: "ビジュアルノベル風のストーリーを読みながら、インタラクティブに展示の世界を楽しめます。",
     },
     {
       target: finalOtherButton,
-      kicker: "DATA / 地図",
-      title: "地球のデータを探索する",
-      copy: "地図の光や流れに触れて、観測された地球の今を見ます。",
+      title: "データを探索する",
+      copy: "気候変動や観測ポイントを、インタラクティブな地図上で探索・分析できます。",
     },
     {
       target: finalTourButton,
-      kicker: "GUIDE / 30秒",
-      title: "見どころと操作を短く知る",
-      copy: "展示の基本操作を、30秒で実画面に沿って案内します。",
+      title: "30秒ガイド",
+      copy: "初めての方向けに、基本的な見どころと操作の流れを短く紹介します。",
     },
   ].filter((step) => step.target instanceof HTMLButtonElement);
   const routeGuideLayer = document.createElement("section");
@@ -205,15 +201,14 @@
   routeGuideLayer.setAttribute("aria-hidden", "true");
   routeGuideLayer.setAttribute("role", "dialog");
   routeGuideLayer.setAttribute("aria-modal", "false");
-  routeGuideLayer.setAttribute("aria-labelledby", "gaia-opening-route-guide-title");
+  routeGuideLayer.setAttribute("aria-label", "入口ガイド");
   routeGuideLayer.setAttribute("aria-describedby", "gaia-opening-route-guide-copy gaia-opening-route-guide-hint");
   routeGuideLayer.tabIndex = 0;
   routeGuideLayer.innerHTML = `
     <div class="gaia-opening-route-guide-shade" aria-hidden="true"></div>
     <article class="gaia-opening-route-guide-bubble" aria-live="polite" aria-atomic="true">
       <div class="gaia-opening-route-guide-index"><span>入口ガイド</span><b><i data-route-guide-step>1</i> / ${routeGuideSteps.length}</b></div>
-      <p data-route-guide-kicker></p>
-      <h2 id="gaia-opening-route-guide-title" data-route-guide-title></h2>
+      <h2 data-route-guide-title hidden></h2>
       <p id="gaia-opening-route-guide-copy" data-route-guide-copy></p>
       <span class="gaia-opening-route-guide-hint" id="gaia-opening-route-guide-hint"><b>CLICK / TAP</b><span data-route-guide-hint-action>次へ</span></span>
     </article>`;
@@ -222,7 +217,7 @@
   const routeGuideShade = routeGuideLayer.querySelector(".gaia-opening-route-guide-shade");
   const routeGuideBubble = routeGuideLayer.querySelector(".gaia-opening-route-guide-bubble");
   const ROUTE_MENU_REVEAL_SETTLE_MS = reducedMotion ? 0 : 700;
-  const ROUTE_GUIDE_POST_REVEAL_HOLD_MS = 1000;
+  const ROUTE_GUIDE_POST_REVEAL_HOLD_MS = 2000;
   let routeGuideActive = false;
   let routeGuideIndex = 0;
   let routeGuidePositionFrame = 0;
@@ -304,8 +299,9 @@
     const step = routeGuideSteps[routeGuideIndex];
     step.target.classList.add("is-route-guide-target");
     routeGuideLayer.querySelector("[data-route-guide-step]").textContent = String(routeGuideIndex + 1);
-    routeGuideLayer.querySelector("[data-route-guide-kicker]").textContent = step.kicker;
-    routeGuideLayer.querySelector("[data-route-guide-title]").textContent = step.title;
+    const title = routeGuideLayer.querySelector("[data-route-guide-title]");
+    title.textContent = step.title || "";
+    title.hidden = !step.title;
     routeGuideLayer.querySelector("[data-route-guide-copy]").textContent = step.copy;
     routeGuideLayer.querySelector("[data-route-guide-hint-action]").textContent = routeGuideIndex === routeGuideSteps.length - 1
       ? "案内を終える"

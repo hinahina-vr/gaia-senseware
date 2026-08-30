@@ -818,7 +818,6 @@
       return false;
     }
   };
-  const isTitleUnlocked = () => Boolean(window.GaiaTrueEnd?.isReached?.());
   const readSessionStorage = (key) => {
     try { return window.sessionStorage.getItem(key); } catch { return null; }
   };
@@ -1413,38 +1412,6 @@
     elements.close.hidden = false;
     syncSectionSkipControl();
     renderGalleryControls();
-  };
-
-  const showTitle = () => {
-    if (!isTitleUnlocked()) {
-      elements.titleScreen.hidden = true;
-      layer.classList.remove("is-title");
-      return false;
-    }
-    hasStarted = false;
-    resetFastForward();
-    clearScriptDebug();
-    hideSpecialSurfaces();
-    delete layer.dataset.runtimeTransition;
-    layer.classList.add("is-title");
-    elements.titleScreen.hidden = false;
-    elements.runtime.hidden = true;
-    elements.restart.hidden = true;
-    if (elements.fastForward) elements.fastForward.hidden = true;
-    setSceneJumpAvailability(false);
-    elements.saveButton.hidden = true;
-    elements.loadButton.hidden = true;
-    elements.logButton.hidden = true;
-    elements.configButton.hidden = true;
-    elements.auto.hidden = true;
-    elements.galleryButton.hidden = true;
-    elements.close.hidden = false;
-    syncSectionSkipControl();
-    closeGallery({ restoreFocus: false });
-    renderGalleryControls();
-    elements.resume.hidden = !getStoredProgress() && !getManualSaves().some(Boolean);
-    requestAnimationFrame(() => elements.start.focus({ preventScroll: true }));
-    return true;
   };
 
   const currentStep = () => stepMap.get(state.stepId) || null;
@@ -4521,7 +4488,7 @@
     state.archivesUnlocked = true;
     saveProgress();
     requestStoryTrack("story", 1.1);
-    if (!showTitle()) closeNovelNow();
+    closeNovelNow();
   };
 
   function renderCurrentStep() {
@@ -5607,7 +5574,7 @@
     elements.close.hidden = true;
   };
 
-  function openNovel(event = null) {
+  function openNovel(event = null, { resumeStored = true } = {}) {
     event?.preventDefault?.();
     previousFocus = document.activeElement;
     suppressBaseInterface();
@@ -5621,21 +5588,17 @@
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("novel-open");
     document.body.classList.remove("gaia-route-handoff");
-    if (isTitleUnlocked()) {
-      showTitle();
-    } else {
-      prepareFreshRuntime();
-      void resumeWithoutTitle();
-    }
+    prepareFreshRuntime();
+    if (resumeStored) void resumeWithoutTitle();
     requestAnimationFrame(() => layer.classList.add("is-open"));
     if (window.location.hash !== "#story" && !/\/story\/?$/i.test(window.location.pathname)) {
       history.replaceState(null, "", "#story");
     }
   }
   const openTrueEnd = (event = null) => {
-    openNovel(event);
+    openNovel(event, { resumeStored: false });
     showRuntime();
-    if (!launchTrueEnd()) showTitle();
+    if (!launchTrueEnd()) void resumeWithoutTitle();
   };
   function closeNovelNow() {
     clearTimers();
@@ -6095,8 +6058,7 @@
   renderManualSlots();
   renderEves();
   renderGalleryControls();
-  if (isTitleUnlocked()) showTitle();
-  else prepareFreshRuntime();
+  prepareFreshRuntime();
   const directStoryRoute = /\/story\/?$/i.test(window.location.pathname);
   if (directStoryRoute) {
     const opening = document.querySelector("#gaia-opening");

@@ -33,6 +33,16 @@ const expectedLiveCopies = [
   "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。",
 ];
 
+const focusModeButton = async (page, locator, expectedCopy = null) => {
+  await page.keyboard.press("Tab");
+  await locator.focus();
+  await page.waitForFunction(() => document.activeElement?.matches?.(".map-mode-button:focus-visible"));
+  await page.waitForFunction(() => document.querySelector("#map-mode-preview")?.classList.contains("is-open"));
+  if (expectedCopy) {
+    await page.waitForFunction((copy) => document.querySelector("#map-mode-preview-copy")?.textContent === copy, expectedCopy);
+  }
+};
+
 try {
   for (const viewport of [
     { name: "pc", width: 1440, height: 900 },
@@ -76,6 +86,9 @@ try {
     if (viewport.name === "mobile") await page.locator("#map-mobile-bank-toggle").click();
     await page.waitForFunction(() => [...document.querySelectorAll("#japan-mode-list .map-mode-button")]
       .every((button) => button.getClientRects().length > 0));
+    await page.locator("#japan-close").focus();
+    await page.waitForFunction(() => !document.querySelector("#map-mode-preview")?.classList.contains("is-open"));
+    assert.equal(await page.locator("#map-mode-preview").getAttribute("aria-hidden"), "true", `${viewport.name}: preview is sticky without button intent`);
 
     const scan = await page.evaluate(() => {
       const bank = document.querySelector(".map-mode-bank");
@@ -110,16 +123,48 @@ try {
     }
 
     for (const index of expectedCopies.keys()) {
-      await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(index).focus();
+      await focusModeButton(page, page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(index), expectedCopies[index]);
       assert.equal(await page.locator("#map-mode-preview-copy").textContent(), expectedCopies[index], `${viewport.name}: MAP ${index + 1} copy`);
       assert.equal(await page.locator("#map-mode-preview-number").textContent(), `${String(index + 1).padStart(2, "0")} / ${expectedCodes[index]}`);
     }
+
+    const mouseSelection = page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(1);
+    if (viewport.name === "mobile") await mouseSelection.tap();
+    else await mouseSelection.click();
+    await page.waitForFunction(() => document.querySelector("#japan-mode-list .map-mode-button:nth-child(2)")?.getAttribute("aria-current") === "true");
+    const buttonTransition = await mouseSelection.evaluate((button) => ({
+      animationName: getComputedStyle(button).animationName,
+      transitionDuration: getComputedStyle(button).transitionDuration,
+    }));
+    assert(buttonTransition.animationName.includes("map-mode-button-selected"), `${viewport.name}: selected button has no transition animation`);
+    assert.notEqual(buttonTransition.transitionDuration, "0s", `${viewport.name}: button transitions are disabled`);
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    });
+    if (viewport.name !== "mobile") await page.mouse.move(viewport.width - 4, viewport.height - 4);
+    await page.waitForFunction(() => !document.querySelector("#map-mode-preview")?.classList.contains("is-open"));
+    await page.waitForFunction(() => {
+      const preview = document.querySelector("#map-mode-preview");
+      if (!(preview instanceof HTMLElement)) return false;
+      const style = getComputedStyle(preview);
+      return Number(style.opacity) <= 0.01 && style.visibility === "hidden";
+    });
+    const dismissedPreview = await page.locator("#map-mode-preview").evaluate((preview) => ({
+      ariaHidden: preview.getAttribute("aria-hidden"),
+      opacity: Number(getComputedStyle(preview).opacity),
+      visibility: getComputedStyle(preview).visibility,
+      transitionDuration: getComputedStyle(preview).transitionDuration,
+    }));
+    assert.equal(dismissedPreview.ariaHidden, "true", `${viewport.name}: preview remains exposed after intent leaves`);
+    assert(dismissedPreview.opacity <= 0.01, `${viewport.name}: preview did not fade out`);
+    assert.equal(dismissedPreview.visibility, "hidden", `${viewport.name}: preview remains visible`);
+    assert.notEqual(dismissedPreview.transitionDuration, "0s", `${viewport.name}: preview has no transition`);
 
     await page.locator("#map-light-overlay-open").click();
     await page.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden);
     assert.match(await page.locator("#map-light-overlay").textContent(), /地図の番号とは対応しません。/u);
     for (const index of expectedCopies.keys()) {
-      await page.locator("#abstract-mode-list .map-mode-button").nth(index).focus();
+      await focusModeButton(page, page.locator("#abstract-mode-list .map-mode-button").nth(index), expectedCopies[index]);
       assert.equal(await page.locator("#map-mode-preview-copy").textContent(), expectedCopies[index], `${viewport.name}: LIGHT ${index + 1} copy`);
       assert.equal(await page.locator("#map-mode-preview-number").textContent(), `${String(index + 1).padStart(2, "0")} / ${expectedCodes[index]}`);
     }
@@ -170,7 +215,7 @@ try {
     if (viewport.name === "mobile") await page.locator("#map-mobile-bank-toggle").click();
 
     for (const [index, copy] of expectedLiveCopies.entries()) {
-      await page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").nth(index).focus();
+      await focusModeButton(page, page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").nth(index), copy);
       assert.equal(await page.locator("#map-mode-preview-copy").textContent(), copy, `${viewport.name}: LIVE ${index + 9} copy`);
     }
 
@@ -205,8 +250,7 @@ try {
     }, `${viewport.name}: MAP and LIGHT selections are not independent`);
 
     await page.locator("#map-light-overlay-open").click();
-    await page.locator("#abstract-mode-list .map-mode-button").nth(2).focus();
-    await page.waitForFunction(() => document.querySelector("#map-mode-preview")?.classList.contains("is-open"));
+    await focusModeButton(page, page.locator("#abstract-mode-list .map-mode-button").nth(2), expectedCopies[2]);
 
     const screenshot = path.join(outputDir, `${viewport.name}-unified-world-bank.png`);
     await page.screenshot({ path: screenshot, fullPage: false });

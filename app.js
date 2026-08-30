@@ -205,6 +205,8 @@
   const mapScopeKicker = document.querySelector("#map-scope-kicker");
   const mapScopeNote = document.querySelector("#map-scope-note");
   const japanTitle = document.querySelector("#japan-title");
+  const mapTitleTransition = document.querySelector("#map-title-transition");
+  const mapTitleTransitionText = document.querySelector("#map-title-transition-text");
   const japanDescription = document.querySelector("#japan-description");
   const mapMobileHeadingToggle = document.querySelector("#map-mobile-heading-toggle");
   const japanModeBank = document.querySelector(".map-mode-bank");
@@ -235,6 +237,7 @@
   const japanObservationCopy = document.querySelector("#japan-observation-copy");
   const mapGuideTitle = document.querySelector("#map-guide-title");
   const mapReadingGuide = document.querySelector("#map-reading-guide");
+  const mapReadingGuideBody = mapReadingGuide?.querySelector(".map-reading-guide-body");
   const mapGuideSubject = document.querySelector("#map-guide-subject");
   const mapGuideReading = document.querySelector("#map-guide-reading");
   const mapGuideAction = document.querySelector("#map-guide-action");
@@ -356,6 +359,7 @@
   };
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const supportsHover = window.matchMedia("(hover: hover)").matches;
   const usesCompactMapUi = () => window.innerWidth <= 720 || (window.innerHeight <= 520 && coarsePointer);
   const resolveMapOverlayQuality = () => {
     const memory = Number(navigator.deviceMemory) || 0;
@@ -608,7 +612,14 @@
 
       float radial = length(uv * vec2(0.72, 1.0));
       float vignette = smoothstep(1.78, 0.4, radial);
-      float grain = hash21(gl_FragCoord.xy + floor(uTime * 18.0)) - 0.5;
+      float grainTime = uTime * 12.0;
+      float grainFrame = floor(grainTime);
+      float grainBlend = smoothstep(0.0, 1.0, fract(grainTime));
+      float grain = mix(
+        hash21(gl_FragCoord.xy + grainFrame),
+        hash21(gl_FragCoord.xy + grainFrame + 1.0),
+        grainBlend
+      ) - 0.5;
       color *= mix(0.48, 1.0, vignette);
       color += grain * 0.008;
       color = color / (vec3(1.0) + color * 0.42);
@@ -749,6 +760,9 @@
   let introSelectedPath = null;
   let introRestoreFocus = false;
   let introCloseTimer = 0;
+  let introStoryRevealStartTimer = 0;
+  let introStoryRevealCommitTimer = 0;
+  let introApeironceneRevealed = false;
   let introRevealGeneration = 0;
   let introScrambleGeneration = 0;
   const introRevealTimers = new Set();
@@ -757,7 +771,8 @@
   let japanRestoreFocus = true;
   let japanCloseTimer = 0;
   let japanTilesDirty = true;
-  let lastJapanOverlayRenderAt = -Infinity;
+  let nextJapanOverlayRenderAt = 0;
+  let lastJapanOverlayTargetFps = 60;
   let lastBackgroundRenderAt = -Infinity;
   let nextShaderRenderAt = 0;
   let lastShaderTargetFps = 60;
@@ -4397,15 +4412,93 @@
     });
   };
 
+  const MAP_GUIDE_SCRAMBLE_ALPHABET = Array.from(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/:.-+◇○△□惑星地球観測光風海森",
+  );
+  let mapGuideScrambleGeneration = 0;
+  let mapGuideAnimationTimer = 0;
+
+  const revealMapGuideText = (target, finalText, duration, delay, generation) => {
+    const characters = Array.from(finalText);
+    const startedAt = performance.now() + delay;
+    const draw = (now) => {
+      if (generation !== mapGuideScrambleGeneration) return;
+      if (now < startedAt) {
+        requestAnimationFrame(draw);
+        return;
+      }
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = 1 - (1 - progress) ** 3;
+      const settledCount = Math.floor(characters.length * eased);
+      target.textContent = characters.map((character, index) => {
+        if (index < settledCount || /[\s、。・「」『』（）()／/:：—–!?！？]/u.test(character)) {
+          return character;
+        }
+        return MAP_GUIDE_SCRAMBLE_ALPHABET[
+          Math.floor(Math.random() * MAP_GUIDE_SCRAMBLE_ALPHABET.length)
+        ];
+      }).join("");
+      if (progress < 1) requestAnimationFrame(draw);
+      else target.textContent = finalText;
+    };
+    requestAnimationFrame(draw);
+  };
+
+  const animateMapReadingGuide = (guide) => {
+    if (!guide || !mapReadingGuide) return;
+    const texts = [
+      [mapGuideTitle, guide.title || modes[modeToIndex].titleJa, 420, 40],
+      [mapGuideSubject, guide.subject, 560, 90],
+      [mapGuideReading, guide.reading, 620, 130],
+      [mapGuideAction, guide.action, 680, 170],
+    ];
+    mapGuideScrambleGeneration += 1;
+    const generation = mapGuideScrambleGeneration;
+    window.clearTimeout(mapGuideAnimationTimer);
+    mapReadingGuide.classList.remove("is-mode-entering");
+    if (reducedMotion) {
+      texts.forEach(([target, finalText]) => { target.textContent = finalText; });
+      mapReadingGuideBody?.setAttribute("aria-busy", "false");
+      return;
+    }
+    void mapReadingGuide.offsetWidth;
+    mapReadingGuide.classList.add("is-mode-entering");
+    mapReadingGuideBody?.setAttribute("aria-busy", "true");
+    texts.forEach(([target, finalText, duration, delay]) => {
+      revealMapGuideText(target, finalText, duration, delay, generation);
+    });
+    mapGuideAnimationTimer = window.setTimeout(() => {
+      if (generation !== mapGuideScrambleGeneration) return;
+      texts.forEach(([target, finalText]) => { target.textContent = finalText; });
+      mapReadingGuide.classList.remove("is-mode-entering");
+      mapReadingGuideBody?.setAttribute("aria-busy", "false");
+      mapGuideAnimationTimer = 0;
+    }, 900);
+  };
+
+  let mapTitleTransitionTimer = 0;
+  const cancelMapTitleTransition = () => {
+    window.clearTimeout(mapTitleTransitionTimer);
+    mapTitleTransitionTimer = 0;
+    japanLayer.classList.remove("is-map-title-transitioning");
+  };
+
+  const animateMapTitleTransition = (title) => {
+    if (!mapTitleTransition || !mapTitleTransitionText || !japanIsOpen) return;
+    cancelMapTitleTransition();
+    mapTitleTransitionText.textContent = title;
+    void mapTitleTransition.offsetWidth;
+    japanLayer.classList.add("is-map-title-transitioning");
+    mapTitleTransitionTimer = window.setTimeout(() => {
+      mapTitleTransitionTimer = 0;
+      japanLayer.classList.remove("is-map-title-transitioning");
+    }, reducedMotion ? 460 : 1500);
+  };
+
   const updateMapObservationNarrative = () => {
     const signalMode = getActiveSignalMode();
     const guide = MAP_READING_GUIDES[getThemeIndex()];
-    if (guide) {
-      mapGuideTitle.textContent = guide.title || modes[modeToIndex].titleJa;
-      mapGuideSubject.textContent = guide.subject;
-      mapGuideReading.textContent = guide.reading;
-      mapGuideAction.textContent = guide.action;
-    }
+    if (guide) animateMapReadingGuide(guide);
     if (!isTheme(5)) {
       if (signalMode?.id === "breathing-earth") {
         japanObservationKicker.textContent = "CO₂ TIMELINE / 1958 → 2050 / 60 SEC LOOP";
@@ -6082,7 +6175,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanModeNumber.textContent = formatModeNumber(mapModeIndex);
     japanModeTitle.textContent = selectedMapMode.titleJa;
     japanModeBank.dataset.activeMode = formatModeNumber(mapModeIndex);
+    const mapTitleChanged = japanTitle.textContent !== mode.titleJa;
     japanTitle.textContent = mode.titleJa;
+    if (mapTitleChanged) animateMapTitleTransition(mode.titleJa);
     document.querySelector('meta[name="theme-color"]').setAttribute("content", "#03070d");
 
     modeButtons.forEach((button, index) => {
@@ -6122,8 +6217,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     window.dispatchEvent(new CustomEvent("gaia:japan-mode-change"));
   };
 
-  const syncIntroStoryReturn = () => {
-    if (!(introStoryReturn instanceof HTMLButtonElement)) return;
+  const readIntroStoryDestination = () => {
     let mainEndingComplete = false;
     let apeironceneComplete = false;
     let apeironcenePending = false;
@@ -6139,14 +6233,74 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     } catch {
       // Storage is optional; the ordinary story route remains available.
     }
-    const continueToApeironcene = apeironcenePending || (mainEndingComplete && !apeironceneComplete);
-    const label = continueToApeironcene ? "星々の放課後 ～APEIRONCENE～" : "物語へ戻る";
-    introStoryReturn.dataset.storyDestination = continueToApeironcene ? "apeironcene" : "story";
-    introStoryReturn.querySelector("strong")?.replaceChildren(label);
+    return apeironcenePending || (mainEndingComplete && !apeironceneComplete)
+      ? "apeironcene"
+      : "story";
+  };
+
+  const clearIntroStoryRevealTimers = () => {
+    window.clearTimeout(introStoryRevealStartTimer);
+    window.clearTimeout(introStoryRevealCommitTimer);
+    introStoryRevealStartTimer = 0;
+    introStoryRevealCommitTimer = 0;
+  };
+
+  const renderIntroStoryDestination = (destination) => {
+    const isApeironcene = destination === "apeironcene";
+    introStoryReturn.dataset.storyDestination = destination;
+    introStoryReturn.querySelector("span")?.replaceChildren(isApeironcene ? "TRUE END / UNLOCKED" : "MAIN STORY");
+    introStoryReturn.querySelector("strong")?.replaceChildren(
+      isApeironcene ? "星々の放課後 ～APEIRONCENE～" : "物語へ戻る",
+    );
     introStoryReturn.setAttribute(
       "aria-label",
-      continueToApeironcene ? "星々の放課後 APEIRONCENEへ進む" : "物語のタイトルメニューへ戻る",
+      isApeironcene ? "星々の放課後 APEIRONCENEへ進む" : "物語へ戻る",
     );
+  };
+
+  const syncIntroStoryReturn = () => {
+    if (!(introStoryReturn instanceof HTMLButtonElement)) return;
+    const destination = readIntroStoryDestination();
+    if (destination !== "apeironcene") {
+      clearIntroStoryRevealTimers();
+      introApeironceneRevealed = false;
+      introStoryReturn.classList.remove("is-apeironcene-awakening", "is-apeironcene");
+      renderIntroStoryDestination("story");
+      return;
+    }
+    if (introApeironceneRevealed) {
+      clearIntroStoryRevealTimers();
+      introStoryReturn.classList.remove("is-apeironcene-awakening");
+      introStoryReturn.classList.add("is-apeironcene");
+      renderIntroStoryDestination("apeironcene");
+      return;
+    }
+
+    introStoryReturn.classList.remove("is-apeironcene-awakening", "is-apeironcene");
+    renderIntroStoryDestination("story");
+    if (!introIsOpen || introLayer.hidden || introLayer.getAttribute("aria-hidden") !== "false") return;
+    if (introStoryRevealStartTimer || introStoryRevealCommitTimer) return;
+
+    const revealStartDelay = reducedMotion ? 220 : 680;
+    const revealCommitDelay = reducedMotion ? 460 : 1420;
+    introStoryRevealStartTimer = window.setTimeout(() => {
+      introStoryRevealStartTimer = 0;
+      if (!introIsOpen || readIntroStoryDestination() !== "apeironcene") return;
+      introStoryReturn.classList.add("is-apeironcene-awakening");
+      window.dispatchEvent(new CustomEvent("gaia:apeironcene-entry-reveal-start"));
+    }, revealStartDelay);
+    introStoryRevealCommitTimer = window.setTimeout(() => {
+      introStoryRevealCommitTimer = 0;
+      if (!introIsOpen || readIntroStoryDestination() !== "apeironcene") {
+        introStoryReturn.classList.remove("is-apeironcene-awakening");
+        return;
+      }
+      introApeironceneRevealed = true;
+      renderIntroStoryDestination("apeironcene");
+      introStoryReturn.classList.remove("is-apeironcene-awakening");
+      introStoryReturn.classList.add("is-apeironcene");
+      window.dispatchEvent(new CustomEvent("gaia:apeironcene-entry-revealed"));
+    }, revealCommitDelay);
   };
 
   window.addEventListener("gaia:story-progression-change", syncIntroStoryReturn);
@@ -6252,12 +6406,13 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const buttonRect = button?.getBoundingClientRect?.();
     let left = bankRect.left;
     let top = Math.max(12, bankRect.top - tooltipHeight - 8);
+    let placement = "right";
     if (!mobile && buttonRect) {
       const rightCandidate = buttonRect.right + 10;
       const leftCandidate = buttonRect.left - width - 10;
-      left = rightCandidate + width <= innerWidth - 12
-        ? rightCandidate
-        : Math.max(12, leftCandidate);
+      const opensRight = rightCandidate + width <= innerWidth - 12;
+      left = opensRight ? rightCandidate : Math.max(12, leftCandidate);
+      placement = opensRight ? "right" : "left";
       top = Math.max(12, Math.min(
         buttonRect.top + (buttonRect.height - tooltipHeight) / 2,
         innerHeight - tooltipHeight - 12,
@@ -6268,6 +6423,13 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }
     tooltip.style.left = `${Math.round(left)}px`;
     tooltip.style.top = `${Math.round(top)}px`;
+    tooltip.dataset.placement = placement;
+    if (buttonRect && !mobile) {
+      const anchorY = Math.max(18, Math.min(tooltipHeight - 18, buttonRect.top + buttonRect.height / 2 - top));
+      tooltip.style.setProperty("--map-tooltip-anchor-y", `${Math.round(anchorY)}px`);
+    } else {
+      tooltip.style.removeProperty("--map-tooltip-anchor-y");
+    }
   };
 
   const scheduleMapModeTooltipPosition = (tooltip, button = mapModePreviewAnchor) => {
@@ -6327,6 +6489,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       mapModePreviewAnchor = null;
     }
     mapModePreview.classList.toggle("is-open", Boolean(open));
+    mapModePreview.setAttribute("aria-hidden", String(!open));
     if (open && lightOverlayPanel) {
       mapModePreview.style.removeProperty("width");
       mapModePreview.style.removeProperty("left");
@@ -6342,6 +6505,17 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   };
 
   const closeMapModePreview = () => setMapModePreviewOpen(false);
+  const syncMapModePreviewIntent = (scope) => {
+    requestAnimationFrame(() => {
+      const keyboardButton = scope?.querySelector?.(".map-mode-button:focus-visible");
+      const hoverButton = supportsHover
+        ? scope?.querySelector?.(".map-mode-button:hover")
+        : null;
+      const button = keyboardButton || hoverButton;
+      if (button) setMapModePreviewOpen(true, button);
+      else closeMapModePreview();
+    });
+  };
 
   let mapLightOverlayRestoreFocus = null;
   const setMapLightOverlayOpen = (open, { restoreFocus = true } = {}) => {
@@ -6443,18 +6617,13 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     setMapLightOverlayOpen(false);
   });
   mapLightOverlay?.addEventListener("pointerover", (event) => {
-    if (mapLightOverlay.contains(document.activeElement)
-      && document.activeElement?.matches?.(".map-mode-button")) return;
+    if (!supportsHover) return;
     const button = event.target.closest?.(".map-mode-button");
     if (button) setMapModePreviewOpen(true, button);
   });
-  mapLightOverlay?.addEventListener("focusin", (event) => {
-    const button = event.target.closest?.(".map-mode-button");
-    if (button) setMapModePreviewOpen(true, button);
-  });
-  mapLightOverlay?.addEventListener("focusout", (event) => {
-    if (!mapLightOverlay.contains(event.relatedTarget)) closeMapModePreview();
-  });
+  mapLightOverlay?.addEventListener("pointerout", () => syncMapModePreviewIntent(mapLightOverlay));
+  mapLightOverlay?.addEventListener("focusin", () => syncMapModePreviewIntent(mapLightOverlay));
+  mapLightOverlay?.addEventListener("focusout", () => syncMapModePreviewIntent(mapLightOverlay));
   mapMobileLegendToggle?.addEventListener("click", () => {
     const expand = mapMobileLegendToggle.getAttribute("aria-expanded") !== "true";
     if (expand) {
@@ -6470,27 +6639,19 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     setMobileMapBankExpanded(false);
     setMobileMapLegendExpanded(false);
   });
-  japanModeBank.addEventListener("pointerleave", () => {
-    if (!japanModeBank.contains(document.activeElement)) closeMapModePreview();
-  });
   japanModeBank.addEventListener("pointerover", (event) => {
-    if (japanModeBank.contains(document.activeElement)
-      && document.activeElement?.matches?.(".map-mode-button")) return;
+    if (!supportsHover) return;
     const button = event.target.closest?.(".map-mode-button");
     if (button) setMapModePreviewOpen(true, button);
   });
-  japanModeBank.addEventListener("focusin", (event) => {
-    const button = event.target.closest?.(".map-mode-button");
-    if (button) setMapModePreviewOpen(true, button);
-  });
-  japanModeBank.addEventListener("focusout", (event) => {
-    if (!japanModeBank.contains(event.relatedTarget)) closeMapModePreview();
-  });
+  japanModeBank.addEventListener("pointerout", () => syncMapModePreviewIntent(japanModeBank));
+  japanModeBank.addEventListener("focusin", () => syncMapModePreviewIntent(japanModeBank));
+  japanModeBank.addEventListener("focusout", () => syncMapModePreviewIntent(japanModeBank));
   japanModeBank.addEventListener("click", (event) => {
     const button = event.target.closest?.(".map-mode-button");
     if (!button) return;
     if (button.dataset.liveExhibit) setMapSurface("map", { focusMode: false });
-    setMapModePreviewOpen(true, button);
+    syncMapModePreviewIntent(japanModeBank);
   }, true);
   window.addEventListener("gaia:live-exhibit-mounted", () => {
     japanModeList.querySelectorAll("[data-live-exhibit]").forEach((button) => {
@@ -7146,7 +7307,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const usesExplorationSoundtrack = !document.body.classList.contains("novel-open")
       && !experience.classList.contains("gx-story-open");
     if (usesExplorationSoundtrack) {
-      void window.GaiaOpeningAudio?.switchTrack?.("mapambient", 0.6);
+      void window.GaiaOpeningAudio?.switchTrack?.("moonreopen", 0.6);
     }
     if (sourceIsOpen) {
       closeSource({ restoreFocus: false, updateHash: false });
@@ -7237,6 +7398,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     closeJapanData({ restoreFocus: false });
     closeJapanPoi();
     setMapLightOverlayOpen(false, { restoreFocus: false });
+    cancelMapTitleTransition();
     setLightCanvasMounted(false);
     cancelEarthViewAnimation("map-closed");
     japanIsOpen = false;
@@ -7847,12 +8009,23 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }
 
     if (japanIsOpen) {
-      const mapFrameInterval = reducedMotion ? 1000 / 15 : 1000 / lodTarget;
-      if (now - lastJapanOverlayRenderAt < mapFrameInterval) {
-        animationFrame = requestAnimationFrame(render);
-        return;
+      const mapTargetFps = reducedMotion ? 15 : lodTarget >= 45 ? 60 : lodTarget;
+      if (mapTargetFps < 60) {
+        if (mapTargetFps !== lastJapanOverlayTargetFps) {
+          lastJapanOverlayTargetFps = mapTargetFps;
+          nextJapanOverlayRenderAt = now;
+        }
+        if (now + 0.5 < nextJapanOverlayRenderAt) {
+          animationFrame = requestAnimationFrame(render);
+          return;
+        }
+        const mapFrameInterval = 1000 / mapTargetFps;
+        do nextJapanOverlayRenderAt += mapFrameInterval;
+        while (nextJapanOverlayRenderAt <= now);
+      } else {
+        lastJapanOverlayTargetFps = mapTargetFps;
+        nextJapanOverlayRenderAt = now;
       }
-      lastJapanOverlayRenderAt = now;
     }
 
     resize();

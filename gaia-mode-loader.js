@@ -5,12 +5,12 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-six-fixes-1",
+        "./styles.css?v=gaia-ja-wrap-polish-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-unified-world-bank-1",
-        "./statistics-lab.css?v=gaia-statistics-simple-workspace-1",
+        "./map-ui-grid-polish.css?v=gaia-map-title-separator-1",
+        "./statistics-lab.css?v=gaia-statistics-chart-return-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
@@ -18,19 +18,19 @@
         "./data-ledger.js?v=gaia-ovation-featured-source-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-ovation-aurora-1",
-        "./app.js?v=gaia-map-panel-collision-1",
-        "./map-ui-grid-polish.js?v=gaia-mobile-exhibit-hud-5",
+        "./app.js?v=gaia-blue-glass-map-1",
+        "./map-ui-grid-polish.js?v=gaia-panel-order-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
       modules: [
         "./src/exploration/index.js?v=gaia-budget-devices-1",
-        "./statistics-lab.js?v=gaia-statistics-simple-workspace-1",
+        "./statistics-lab.js?v=gaia-statistics-chart-return-1",
       ],
     },
     story: {
       templates: ["gaia-template-story"],
       styles: [
-        "./styles.css?v=gaia-six-fixes-1",
+        "./styles.css?v=gaia-ja-wrap-polish-1",
         "./scene-transition.css?v=gaia-52",
         "./novel-mode.css?v=gaia-mobile-story-control-height-1",
         "./true-end.css?v=gaia-apeironcene-exit-3",
@@ -45,14 +45,14 @@
         "./novel-background-cues.js?v=gaia-amane-no-plug-1",
         "./novel-back-half-cues.js?v=gaia-finale-sunset-1",
         "./novel-temporal.js?v=gaia-temporal-1",
-        "./novel-mode.js?v=gaia-story-return-cycle-1",
+        "./novel-mode.js?v=gaia-story-direct-runtime-1",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-budget-devices-1"],
     },
     gx: {
       templates: ["gaia-template-gx"],
       styles: [
-        "./styles.css?v=gaia-six-fixes-1",
+        "./styles.css?v=gaia-ja-wrap-polish-1",
         "./scene-transition.css?v=gaia-52",
         "./gx-mode.css?v=gaia-gx-feature-card-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
@@ -66,7 +66,7 @@
     space: {
       templates: ["gaia-template-space"],
       styles: [
-        "./styles.css?v=gaia-six-fixes-1",
+        "./styles.css?v=gaia-ja-wrap-polish-1",
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
         "./mode-exit.css?v=gaia-story-control-center-2",
@@ -81,20 +81,20 @@
     sound: {
       templates: ["gaia-template-sound"],
       styles: [
-        "./styles.css?v=gaia-six-fixes-1",
-        "./sound-mode.css?v=gaia-spectrum-characters-1",
+        "./styles.css?v=gaia-ja-wrap-polish-1",
+        "./sound-mode.css?v=gaia-sound-full-scene-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-mode.js?v=gaia-spectrum-characters-1"],
+      scripts: ["./sound-mode.js?v=gaia-blue-glass-tide-1"],
     },
     character: {
       templates: ["gaia-template-character"],
       styles: [
-        "./styles.css?v=gaia-six-fixes-1",
-        "./character-mode.css?v=gaia-character-profile-1",
+        "./styles.css?v=gaia-ja-wrap-polish-1",
+        "./character-mode.css?v=gaia-character-profile-layout-2",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./character-mode.js?v=gaia-character-profile-1"],
+      scripts: ["./character-mode.js?v=gaia-character-profile-paragraphs-1"],
     },
     tour: {
       templates: [],

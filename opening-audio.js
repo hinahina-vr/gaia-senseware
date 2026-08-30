@@ -12,7 +12,7 @@
     moonbook: "./assets/audio/moonlit-observation-notebook.mp3",
     senseware: "./assets/audio/moonlit-source-save.mp3",
     mapambient: "./assets/audio/gaia-map-ambient-harp-felt-piano.wav",
-    moonreopen: "./assets/audio/moonlit-reopen.mp3",
+    moonreopen: "./assets/audio/moonlit-reopen.mp3?v=gaia-blue-glass-tide-1",
     ending: "./assets/audio/after-school-afterglow.mp3",
     trueend: "./assets/audio/sensory-horizon.wav",
   });

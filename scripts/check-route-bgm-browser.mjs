@@ -16,7 +16,8 @@ const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
 ];
-const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const targetOrigin = new URL(baseUrl).origin;
+const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [], networkAccessDenied: [] };
 const browser = await chromium.launch({
   headless: true,
   executablePath,
@@ -67,8 +68,17 @@ try {
       await devtools.send("Emulation.setCPUThrottlingRate", { rate: 4 });
     }
     const audioResponses = [];
-    page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
+    page.on("console", (message) => {
+      if (message.type() !== "error") return;
+      if (message.text().includes("ERR_NETWORK_ACCESS_DENIED")) return;
+      report.consoleErrors.push(`${viewport.name}: ${message.text()}`);
+    });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
+    page.on("requestfailed", (request) => {
+      if (request.failure()?.errorText?.includes("ERR_NETWORK_ACCESS_DENIED")) {
+        report.networkAccessDenied.push({ viewport: viewport.name, url: request.url() });
+      }
+    });
     page.on("response", (response) => {
       if (/\/assets\/audio\//u.test(response.url())) audioResponses.push({ url: response.url(), status: response.status() });
       if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`);
@@ -103,17 +113,17 @@ try {
     const mapPath = page.locator('[data-intro-path="map"]');
     if (viewport.mobile) await mapPath.tap();
     else await mapPath.click();
-    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "mapambient", null, { timeout: 10_000 });
+    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "moonreopen", null, { timeout: 10_000 });
     await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 10_000 });
-    if (!audioResponses.some(({ url, status }) => url.includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(status))) {
-      await page.waitForResponse((response) => response.url().includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(response.status()), { timeout: 10_000 });
+    if (!audioResponses.some(({ url, status }) => url.includes("moonlit-reopen.mp3") && [200, 206].includes(status))) {
+      await page.waitForResponse((response) => response.url().includes("moonlit-reopen.mp3") && [200, 206].includes(response.status()), { timeout: 10_000 });
     }
-    assert(audioResponses.some(({ url, status }) => url.includes("gaia-map-ambient-harp-felt-piano.wav") && [200, 206].includes(status)), `${viewport.name}: transparent map ambience was not requested by the map`);
+    assert(audioResponses.some(({ url, status }) => url.includes("moonlit-reopen.mp3") && [200, 206].includes(status)), `${viewport.name}: Blue Glass Tide was not requested by the map`);
     const nativeRouteSourceCalls = await page.evaluate(() => globalThis.__gaiaMediaElementSourceCalls);
     assert.equal(nativeRouteSourceCalls, 0, `${viewport.name}: ordinary route BGM was forced through Web Audio`);
     await page.waitForFunction(() => {
       const state = globalThis.GaiaOpeningAudio?.getPlaybackState?.();
-      return state?.track === "mapambient" && state.playing;
+      return state?.track === "moonreopen" && state.playing;
     }, null, { timeout: 10_000 });
     const continuityBefore = await page.evaluate(() => {
       globalThis.__gaiaAudioContinuity = { waiting: 0, stalled: 0, errors: 0 };
@@ -132,9 +142,9 @@ try {
     await page.screenshot({ path: screenshot, animations: "disabled" });
 
     await page.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "mapambient");
+    await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "moonreopen");
     const directTrack = await page.evaluate(() => globalThis.GaiaOpeningAudio.getState().track);
-    assert.equal(directTrack, "mapambient", `${viewport.name}: direct map routes do not use the map ambience`);
+    assert.equal(directTrack, "moonreopen", `${viewport.name}: direct map routes do not use Blue Glass Tide`);
     const directRouteSourceCalls = await page.evaluate(() => globalThis.__gaiaMediaElementSourceCalls);
     assert.equal(directRouteSourceCalls, 0, `${viewport.name}: direct map BGM was forced through Web Audio`);
     report.scans.push({ viewport, routeSwitchMs, destination, directTrack, nativeRouteSourceCalls, directRouteSourceCalls, playbackAdvance, continuityEvents: continuity.events, audioResponses, screenshot, passed: true });
@@ -144,6 +154,11 @@ try {
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);
   assert.deepEqual(report.responses404, []);
+  assert.equal(
+    report.networkAccessDenied.some(({ url }) => url.startsWith(`${targetOrigin}/assets/audio/`)),
+    false,
+    `A required local audio request was denied: ${JSON.stringify(report.networkAccessDenied)}`,
+  );
   report.status = "passed";
   console.log(`Route BGM checks passed: ${report.scans.length} viewports.`);
 } catch (error) {

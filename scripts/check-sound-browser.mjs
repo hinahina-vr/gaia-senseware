@@ -21,7 +21,7 @@ const expectedTracks = [
   ["snowafter", "雪火、軌道の外へ（未使用曲）"],
   ["moonbook", "月明かりの観測ノート"],
   ["senseware", "GAIA SENSEWARE"],
-  ["moonreopen", "月下、もう一度ひらく（未使用曲）"],
+  ["moonreopen", "青硝子の潮汐"],
   ["ending", "AfterSchool,AfterGlow"],
   ["trueend", "Sensory Horizon"],
 ];
@@ -118,6 +118,8 @@ try {
       eqAnalysis: eq?.dataset.audioAnalysis || "",
       characterSceneLoaded: characterScene instanceof HTMLImageElement && characterScene.complete && characterScene.naturalWidth > 0,
       characterSceneOpacity: Number.parseFloat(getComputedStyle(characterScene).opacity || "0"),
+      characterSceneFit: getComputedStyle(characterScene).objectFit,
+      characterSceneMask: getComputedStyle(characterScene).maskImage,
     };
   });
   assert(
@@ -134,10 +136,11 @@ try {
   );
   assert(desktopVisualizer.eqRenderer === "canvas2d" && desktopVisualizer.eqAnalysis === "web-audio-fft-32-band", `desktop real EQ overlay failed: ${JSON.stringify(desktopVisualizer)}`);
   assert(desktopVisualizer.characterSceneLoaded && desktopVisualizer.characterSceneOpacity > 0.5, `sound-mode characters are not visible: ${JSON.stringify(desktopVisualizer)}`);
+  assert(desktopVisualizer.characterSceneFit === "contain" && desktopVisualizer.characterSceneMask === "none", `sound-mode background is not fully visible: ${JSON.stringify(desktopVisualizer)}`);
   assert(await page.locator("[data-sound-track]").count() === 12, "sound archive does not contain 12 unique tracks");
   assert((await page.locator(".sound-track-heading strong").innerText()) === "12 TRACKS", "track count heading is stale");
   const unusedTrackIds = await page.locator("[data-sound-track]", { hasText: "（未使用曲）" }).evaluateAll((nodes) => nodes.map((node) => node.dataset.soundTrack));
-  assert(JSON.stringify(unusedTrackIds) === JSON.stringify(["snowafter", "moonreopen"]), `unused track labels are incorrect: ${JSON.stringify(unusedTrackIds)}`);
+  assert(JSON.stringify(unusedTrackIds) === JSON.stringify(["snowafter"]), `unused track labels are incorrect: ${JSON.stringify(unusedTrackIds)}`);
 
   const panelGeometry = await page.locator(".sound-track-panel").evaluate((panel) => {
     const rect = panel.getBoundingClientRect();
@@ -223,12 +226,15 @@ try {
     digitalGridCount: document.querySelectorAll(".sound-layer-grid, .sound-spectral-grid").length,
     eqRenderer: document.querySelector("#sound-eq-visualizer")?.dataset.renderer || "",
     characterSceneLoaded: document.querySelector(".sound-character-scene")?.complete && document.querySelector(".sound-character-scene")?.naturalWidth > 0,
+    characterSceneFit: getComputedStyle(document.querySelector(".sound-character-scene")).objectFit,
+    characterSceneMask: getComputedStyle(document.querySelector(".sound-character-scene")).maskImage,
     nowPlayingTop: document.querySelector(".sound-now-playing").getBoundingClientRect().top,
     visualizerTop: document.querySelector("#sound-visualizer").getBoundingClientRect().top,
   }));
   assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "aurora-silk-installation" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.digitalGridCount === 0 && mobileGeometry.nowPlayingTop < mobileGeometry.visualizerTop, `mobile player was not raised above the WebGL aurora installation: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.eqRenderer === "canvas2d" && mobileGeometry.characterSceneLoaded, `mobile EQ or characters are missing: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.characterSceneFit === "contain" && mobileGeometry.characterSceneMask === "none", `mobile sound background is not fully visible: ${JSON.stringify(mobileGeometry)}`);
   assertControlDesign(await readControlDesign(mobile), "mobile");
   await mobile.screenshot({ path: path.join(outputDir, "sound-mobile.png"), fullPage: false });
   const lastTrack = mobile.locator('[data-sound-track="trueend"]');
