@@ -76,8 +76,9 @@ try {
   });
   await test("migrations are sequential and safe to reapply", async () => {
     assert.match(migrationReapplyOutput, /No migrations to apply/u);
-    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "6");
+    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "7");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name = 'account_kind'"), "1");
+    assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('devices') WHERE name = 'is_demo'"), "1");
     assert.equal(await scalar("SELECT COUNT(*) FROM user_identities WHERE email IS NOT NULL OR email_verified <> 0"), "0");
   });
   await test("OIDC flow cookie binds callback to the starting browser", async () => {
@@ -130,7 +131,17 @@ try {
   await test("public sensor endpoint is available without a session", async () => {
     const response = await fetch(`${origin}/api/public/v1/sensors`);
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { sensors: [] });
+    const body = await response.json();
+    assert.equal(body.sensors.length, 4);
+    assert(body.sensors.every((sensor) => sensor.isDemo === true));
+    assert.deepEqual(body.sensors.map((sensor) => sensor.sensorName).sort(), ["sakuセンサー", "あめセンサー", "みずセンサー", "青猫センサー"].sort());
+    assert.match(body.sensors.find((sensor) => sensor.sensorName === "青猫センサー").owner.avatarUrl, /slack-symbol-blue-apple-v1\.svg$/u);
+    assert.deepEqual(Object.fromEntries(body.sensors.map((sensor) => [sensor.sensorName, [sensor.demoLocationLabel, sensor.location.latitude, sensor.location.longitude]])), {
+      "あめセンサー": ["島本町", 34.9, 135.7],
+      "sakuセンサー": ["深セン", 22.5, 114.1],
+      "みずセンサー": ["余市町", 43, 140.8],
+      "青猫センサー": ["秋葉原", 35.7, 139.8],
+    });
   });
   await test("owner profile stores display name and optional social profile URLs", async () => {
     const update = await webFetch("/api/web/v1/profile", auth, {
@@ -373,13 +384,15 @@ try {
     const publicResponse = await fetch(`${origin}/api/public/v1/sensors`);
     assert.equal(publicResponse.status, 200);
     const publicBody = await publicResponse.json();
-    assert.equal(publicBody.sensors.length, 1);
-    assert.equal(publicBody.sensors[0].location.latitude, 35.3);
-    assert.equal(publicBody.sensors[0].location.longitude, 139.6);
-    assert.deepEqual(publicBody.sensors[0].region, { countryCode: "JP", subdivisionCode: "JP-14", subdivisionName: "神奈川県" });
-    assert.equal(publicBody.sensors[0].owner.displayName, "青猫センサー");
-    assert.equal(publicBody.sensors[0].owner.xUrl, "https://x.com/bluecat_sensor");
-    assert.equal(Object.hasOwn(publicBody.sensors[0], "lastSeenAt"), false);
+    assert.equal(publicBody.sensors.length, 5);
+    const registeredSensor = publicBody.sensors.find((sensor) => sensor.isDemo === false);
+    assert(registeredSensor);
+    assert.equal(registeredSensor.location.latitude, 35.3);
+    assert.equal(registeredSensor.location.longitude, 139.6);
+    assert.deepEqual(registeredSensor.region, { countryCode: "JP", subdivisionCode: "JP-14", subdivisionName: "神奈川県" });
+    assert.equal(registeredSensor.owner.displayName, "青猫センサー");
+    assert.equal(registeredSensor.owner.xUrl, "https://x.com/bluecat_sensor");
+    assert.equal(Object.hasOwn(registeredSensor, "lastSeenAt"), false);
     const publicJson = JSON.stringify(publicBody);
     assert.doesNotMatch(publicJson, /user_test_owner|@|localityName|municipality|142085|逗子市/u);
     const forbidden = await webFetch(`/api/web/v1/devices/${deviceId}`, otherAuth, {

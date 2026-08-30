@@ -208,6 +208,7 @@ const loadPublicSensors = async () => {
 const renderPublicSensors = () => {
   publicSensorMarkers.replaceChildren();
   publicSensorList.replaceChildren();
+  let initialSelection = null;
   const onlineCount = publicSensors.filter((sensor) => sensor.state === "ONLINE").length;
   const offlineCount = publicSensors.length - onlineCount;
   publicSensorCount.textContent = `${String(publicSensors.length).padStart(3, "0")} NODES · ${onlineCount} ONLINE · ${offlineCount} OFFLINE`;
@@ -218,7 +219,7 @@ const renderPublicSensors = () => {
     );
     return;
   }
-  publicSensors.forEach((sensor, index) => {
+  publicSensors.forEach((sensor) => {
     const marker = document.createElement("button");
     marker.type = "button";
     marker.className = "sensor-map-marker";
@@ -245,8 +246,9 @@ const renderPublicSensors = () => {
     card.append(text);
     card.addEventListener("click", () => { selectPublicSensor(sensor, marker); publicSensorMap.scrollIntoView({ behavior: "smooth", block: "center" }); });
     publicSensorList.append(card);
-    if (index === 0) selectPublicSensor(sensor, marker);
+    if (!initialSelection && !sensor.isDemo) initialSelection = { sensor, marker };
   });
+  if (initialSelection) selectPublicSensor(initialSelection.sensor, initialSelection.marker);
   positionPublicSensorMarkers();
 };
 
@@ -275,7 +277,16 @@ const selectPublicSensor = (sensor, marker) => {
   const note = document.createElement("p");
   const region = [sensor.region?.subdivisionName, sensor.region?.subdivisionCode].filter(Boolean).join(" / ") || sensor.region?.countryCode || "地域非公開";
   note.textContent = `${region} · 公開位置は0.1度単位へ丸めています。自治体コードと住所は公開しません。`;
-  publicSensorDetail.append(consoleLabel, owner, note, social);
+  const content = [consoleLabel, owner];
+  if (sensor.isDemo) {
+    const disclosure = document.createElement("p");
+    disclosure.className = "sensor-demo-disclosure";
+    const demoRegion = [sensor.region?.subdivisionName, sensor.demoLocationLabel].filter(Boolean).join("・");
+    disclosure.textContent = `ネタバレ：これは${demoRegion ? `${demoRegion}に置いた` : "展示用の"}ダミーセンサーです。実機から送信された観測データではありません。`;
+    content.push(disclosure);
+  }
+  content.push(note, social);
+  publicSensorDetail.append(...content);
 };
 
 function initPublicMapNavigation() {

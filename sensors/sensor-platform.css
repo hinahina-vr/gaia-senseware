@@ -315,6 +315,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-map-owner h2 { margin: 5px 0 0; font-family: var(--font-ja); font-size: clamp(14px, 1vw, 17px); font-weight: 560; letter-spacing: .045em; line-height: 1.45; overflow-wrap: anywhere; }
 .sensor-map-owner small { color: var(--mint); }
 .sensor-map-card > p { margin: 20px 0 0; color: var(--muted); font-family: var(--font-ja); font-size: 10px; letter-spacing: .04em; line-height: 1.85; }
+.sensor-map-card > .sensor-demo-disclosure { padding: 11px 13px; border: 1px solid rgba(255, 213, 128, .5); color: #ffe2a6; background: rgba(86, 57, 13, .3); font-weight: 700; }
 .sensor-map-socials { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; }
 .sensor-map-socials a { min-height: 44px; padding: 13px 14px; border: 1px solid var(--line); color: var(--mint); font: 700 10px/1 Consolas, monospace; text-decoration: none; }
 .sensor-public-list { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 20px; }

@@ -16088,6 +16088,12 @@ var SENSOR_RANGES = {
 };
 
 // src/devices.ts
+var campusChatAvatarUrls = Object.freeze({
+  "campus-chat-bluecat": "/assets/visuals-07/slack-symbol-blue-apple-v1.svg",
+  "campus-chat-mizu": "/assets/visuals-07/slack-avatar-mizuha-v2.webp",
+  "campus-chat-saku": "/assets/visuals-07/slack-avatar-sakuya-flower-v3.webp",
+  "campus-chat-ame": "/assets/visuals-07/slack-avatar-amane-v2.webp"
+});
 var listCountries = /* @__PURE__ */ __name(async (env) => {
   const result = await env.DB.prepare(
     "SELECT code, name_en AS nameEn, name_local AS nameLocal FROM countries WHERE enabled = 1 ORDER BY COALESCE(name_local, name_en)"
@@ -16349,9 +16355,10 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
        d.subdivision_code AS subdivisionCode, d.public_latitude AS latitude,
        d.public_longitude AS longitude,
        CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
+       d.is_demo AS isDemo, CASE WHEN d.is_demo = 1 THEN d.locality_name ELSE NULL END AS demoLocationLabel,
        u.public_id AS ownerPublicId, u.display_name AS ownerDisplayName,
        CASE WHEN u.avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
-       u.avatar_updated_at AS avatarUpdatedAt,
+       u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
        u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl
      FROM devices d JOIN users u ON u.id = d.owner_user_id
      WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
@@ -16369,9 +16376,11 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
         subdivisionName: row.subdivisionCode ? getSubdivision(row.subdivisionCode)?.name ?? null : null
       },
       state: row.state,
+      isDemo: row.isDemo === 1,
+      demoLocationLabel: row.demoLocationLabel,
       owner: {
         displayName: row.ownerDisplayName,
-        avatarUrl: row.hasAvatar === 1 ? `/api/public/v1/profiles/${encodeURIComponent(row.ownerPublicId)}/avatar?v=${encodeURIComponent(row.avatarUpdatedAt ?? "1")}` : null,
+        avatarUrl: row.avatarKey && campusChatAvatarUrls[row.avatarKey] ? campusChatAvatarUrls[row.avatarKey] : row.hasAvatar === 1 ? `/api/public/v1/profiles/${encodeURIComponent(row.ownerPublicId)}/avatar?v=${encodeURIComponent(row.avatarUpdatedAt ?? "1")}` : null,
         xUrl: row.xUrl,
         githubUrl: row.githubUrl,
         instagramUrl: row.instagramUrl
