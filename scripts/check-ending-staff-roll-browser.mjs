@@ -398,28 +398,32 @@ try {
     );
     initial.titleToCreditTiming = titleToCreditTiming;
     [
-      "原案・企画・制作",
-      "シナリオ",
-      "WEBデザイン・開発",
-      "制作支援",
-      "PRODUCTION SUPPORT",
-      "OpenAI Codex",
+      "企画・原案",
+      "ORIGINAL CONCEPT & PLANNING",
+      "監督・世界観設定・シナリオ",
+      "DIRECTOR, WORLD DESIGN & SCENARIO",
+      "デザイン・システムアーキテクチャ",
+      "DESIGN & ARCHITECTURE",
       "キャラクター原案",
       "ORIGINAL CHARACTER CONCEPT",
-      "キャラクターデザイン",
-      "OpenAI ImageGen",
-      "背景美術",
+      "AIアシスタンス",
+      "AI GENERATION & ASSISTANCE",
+      "OpenAI Codex (Code Implementation)",
+      "OpenAI ImageGen (Visual Assets)",
+      "Suno AI (Theme Songs Composition)",
       "音楽",
       "オープニングテーマ",
       "『Planet Forecast - Hope』",
       "エンディングテーマ",
       "『AfterSchool, AfterGlow』",
-      "by Suno AI",
+      "学術的着想",
+      "ACADEMIC INSPIRATION",
       "ZEN大学『共創地球論』",
       "ZEN大学『人新世の人類学』",
       "ZEN大学『統計学入門』",
       "ZEN大学『リテラシーと応用のための物語理論』",
-      "参照データ",
+      "観測データ",
+      "DATA SOURCES",
       "JAXA / NASA / NOAA",
       "気象庁 ほか",
       "物語は、ここからも続いていく。",
@@ -433,7 +437,7 @@ try {
     assert.equal(initial.text.includes("DEVELOPMENT SUPPORT"), false, `${viewport.name}: obsolete DEVELOPMENT SUPPORT credit remains`);
     assert.equal(initial.text.includes("データ提供"), false, `${viewport.name}: obsolete データ提供 credit remains`);
     assert.equal(initial.text.includes("HTML / CSS / JavaScript"), false, `${viewport.name}: implementation note remains in staff credits`);
-    assert.equal(initial.creditRows.length, 10, `${viewport.name}: unexpected staff credit row count`);
+    assert.equal(initial.creditRows.length, 8, `${viewport.name}: unexpected staff credit row count`);
     initial.creditRows.forEach((row) => {
       assert.equal(row.textAlign, "center", `${viewport.name}: ${row.role} is not center aligned`);
       assert(row.rowCenterDelta <= 1, `${viewport.name}: ${row.role} row is off center by ${row.rowCenterDelta}px`);
@@ -443,13 +447,18 @@ try {
     });
     const originalCharacterCredit = initial.creditRows.find((row) => row.role === "ORIGINAL CHARACTER CONCEPT");
     assert.deepEqual(originalCharacterCredit?.names, ["ひなひな"], `${viewport.name}: original character concept credit is incorrect`);
-    const characterDesignCredit = initial.creditRows.find((row) => row.role === "CHARACTER DESIGN");
-    assert.deepEqual(characterDesignCredit?.names, ["OpenAI ImageGen"], `${viewport.name}: character design credit is incorrect`);
+    const aiCredit = initial.creditRows.find((row) => row.role === "AI GENERATION & ASSISTANCE");
+    assert.deepEqual(aiCredit?.names, [
+      "OpenAI Codex (Code Implementation)",
+      "OpenAI ImageGen (Visual Assets)",
+      "Suno AI (Theme Songs Composition)",
+    ], `${viewport.name}: AI assistance credit is incorrect`);
+    assert.deepEqual(aiCredit?.nameLines, [1, 1, 1], `${viewport.name}: an AI assistance credit wrapped onto multiple lines`);
+    assert.equal(aiCredit?.nameOverflow, false, `${viewport.name}: AI assistance text overflows the credit width`);
     const musicCredit = initial.creditRows.find((row) => row.role === "MUSIC");
     assert.deepEqual(musicCredit?.names, [
       "オープニングテーマ『Planet Forecast - Hope』",
       "エンディングテーマ『AfterSchool, AfterGlow』",
-      "by Suno AI",
     ], `${viewport.name}: music credit wording or order is incorrect`);
     assert.equal(musicCredit?.nameOverflow, false, `${viewport.name}: music credit overflows horizontally`);
     assert.deepEqual(musicCredit?.musicTracks.map(({ label, title }) => ({ label, title })), [
@@ -460,7 +469,7 @@ try {
       assert.equal(track.titleLines, 1, `${viewport.name}: ${track.title} wrapped inside its title line`);
       assert.equal(track.titleOverflow, false, `${viewport.name}: ${track.title} does not fit the credit width`);
     });
-    const academicCredit = initial.creditRows.find((row) => row.role === "ACADEMIC REFERENCE");
+    const academicCredit = initial.creditRows.find((row) => row.role === "ACADEMIC INSPIRATION");
     assert.deepEqual(academicCredit?.nameLines, [1, 1, 1, 1], `${viewport.name}: a reference lecture wrapped onto multiple lines`);
     assert.equal(academicCredit?.nameOverflow, false, `${viewport.name}: reference lecture text overflows the credit width`);
     assert.equal(initial.overflowX, 0);
@@ -697,7 +706,7 @@ try {
         };
       });
       assert(["revealing", "complete"].includes(trueEndExit.phase), `${viewport.name}: GAIA page appeared without the black-to-clear fade`);
-      assert.equal(trueEndExit.label, "物語へ戻る", `${viewport.name}: GAIA story button did not reset after APEIRONCENE`);
+      assert.equal(trueEndExit.label, "物語をはじめる", `${viewport.name}: GAIA story button did not reset after APEIRONCENE`);
       assert.equal(trueEndExit.destination, "story", `${viewport.name}: completed APEIRONCENE remained the story destination`);
       assert.equal(trueEndExit.novelHidden, true, `${viewport.name}: APEIRONCENE layer remained active after exit`);
     }

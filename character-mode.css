@@ -921,7 +921,37 @@ body.character-mode-open .experience > :is(#gaia-canvas, .abstract-mode-backgrou
     opacity: 0.68;
   }
   .character-book-hero-halo { top: 19%; width: 84vw; }
-  .character-book-hero-quote { top: 9%; right: 33%; padding: 13px 8px; font-size: 12px; }
+  .character-book-hero-quote {
+    top: -12%;
+    right: auto;
+    left: -36vw;
+    box-sizing: border-box;
+    width: calc(100vw - 36px);
+    padding: 12px 16px 14px 18px;
+    border: 1px solid rgba(var(--character-accent-rgb), 0.5);
+    border-left: 3px solid rgba(var(--character-accent-rgb), 0.94);
+    color: rgba(243, 252, 255, 0.96);
+    background:
+      linear-gradient(105deg, rgba(5, 28, 47, 0.94), rgba(10, 48, 67, 0.84)),
+      rgba(3, 21, 38, 0.92);
+    box-shadow: 0 14px 34px rgba(0, 12, 29, 0.3), inset 0 1px rgba(255, 255, 255, 0.08);
+    font-size: clamp(12px, 3.25vw, 14px);
+    letter-spacing: 0.055em;
+    line-height: 1.7;
+    white-space: normal;
+    text-wrap: balance;
+    text-shadow: 0 2px 12px rgba(0, 8, 22, 0.54);
+    text-orientation: mixed;
+    writing-mode: horizontal-tb;
+  }
+  .character-book-hero-quote::before {
+    display: block;
+    margin-bottom: 4px;
+    color: rgba(var(--character-accent-rgb), 0.88);
+    content: "KEY LINE";
+    font: 700 7px/1 Consolas, "Courier New", monospace;
+    letter-spacing: 0.2em;
+  }
   .character-book-hero-figure figcaption { display: none; }
   .character-book-scroll-cue { display: none; }
   .character-book-wave { height: 76px; }

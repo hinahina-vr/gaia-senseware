@@ -300,6 +300,7 @@
   const OVATION_AURORA_REFRESH_MS = 5 * 60 * 1000;
   const NATURAL_EARTH_LAND_DATA = "./data/natural-earth-50m-land.geojson?v=gaia-27";
   const NATURAL_EARTH_COUNTRY_DATA = "./data/natural-earth-50m-countries.geojson?v=gaia-1";
+  const JAPAN_PREFECTURE_DATA = "./data/japan-prefectures.topojson?v=gaia-prefecture-boundaries-1";
 
   const MAP_READING_GUIDES = [
     {
@@ -772,6 +773,9 @@
   let japanRestoreFocus = true;
   let japanCloseTimer = 0;
   let japanTilesDirty = true;
+  let mapPlotRevealStartedAt = performance.now();
+  let mapPlotRevealGeneration = 0;
+  let mapPlotRevealReason = "initial";
   let nextJapanOverlayRenderAt = 0;
   let lastJapanOverlayTargetFps = 60;
   let lastBackgroundRenderAt = -Infinity;
@@ -814,7 +818,12 @@
   let naturalEarthCountryState = "loading";
   let naturalEarthCountryError = null;
   let naturalEarthCountryRings = new Map();
+  let naturalEarthCountryBoundaryRings = [];
   const naturalEarthCountryPathCache = new Map();
+  let japanPrefectureBoundaryState = "loading";
+  let japanPrefectureBoundaryError = null;
+  let japanPrefectureBoundaryArcs = [];
+  const japanPrefectureBoundaryPathCache = new Map();
   let signalTimePosition = 100;
   let co2TimelineStartedAt = performance.now();
   let co2TimelinePausedUntil = 0;
@@ -873,6 +882,46 @@
   };
 
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+  const MAP_PLOT_REVEAL_LEAD_MS = 110;
+  const MAP_PLOT_REVEAL_SPREAD_MS = 980;
+  const MAP_PLOT_REVEAL_DURATION_MS = 520;
+  const restartMapPlotReveal = (reason = "mode-change") => {
+    mapPlotRevealStartedAt = performance.now();
+    mapPlotRevealGeneration += 1;
+    mapPlotRevealReason = reason;
+    japanOverlay.dataset.plotRevealState = reducedMotion ? "complete" : "running";
+    japanOverlay.dataset.plotRevealReason = reason;
+    japanOverlay.dataset.plotRevealGeneration = String(mapPlotRevealGeneration);
+    japanOverlay.dataset.plotRevealProgress = reducedMotion ? "1.000" : "0.000";
+  };
+  const getMapPlotReveal = (index, count, now) => {
+    if (reducedMotion) return { progress: 1, alpha: 1, scale: 1 };
+    const safeCount = Math.max(1, count);
+    const order = safeCount === 1 ? 0 : index / (safeCount - 1);
+    const delay = MAP_PLOT_REVEAL_LEAD_MS + order * MAP_PLOT_REVEAL_SPREAD_MS;
+    const progress = clamp((now - mapPlotRevealStartedAt - delay) / MAP_PLOT_REVEAL_DURATION_MS, 0, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const bounce = Math.sin(progress * Math.PI) * (1 - progress) * 0.24;
+    return {
+      progress,
+      alpha: clamp(progress * 2.4, 0, 1),
+      scale: 0.14 + eased * 0.86 + bounce,
+    };
+  };
+  const applyMapPlotReveal = (ctx, point, reveal) => {
+    ctx.globalAlpha *= reveal.alpha;
+    ctx.translate(point.x, point.y);
+    ctx.scale(reveal.scale, reveal.scale);
+    ctx.translate(-point.x, -point.y);
+  };
+  const syncMapPlotRevealState = (now) => {
+    const total = MAP_PLOT_REVEAL_LEAD_MS + MAP_PLOT_REVEAL_SPREAD_MS + MAP_PLOT_REVEAL_DURATION_MS;
+    const progress = reducedMotion ? 1 : clamp((now - mapPlotRevealStartedAt) / total, 0, 1);
+    japanOverlay.dataset.plotRevealState = progress >= 1 ? "complete" : "running";
+    japanOverlay.dataset.plotRevealReason = mapPlotRevealReason;
+    japanOverlay.dataset.plotRevealGeneration = String(mapPlotRevealGeneration);
+    japanOverlay.dataset.plotRevealProgress = progress.toFixed(3);
+  };
   const getGlobalEarthquakeImpactRadiusKm = (magnitude) => {
     const value = clamp(Number(magnitude) || GLOBAL_EARTHQUAKE_MIN_MAGNITUDE, 7, GLOBAL_EARTHQUAKE_MAX_MAGNITUDE);
     // USGS PP 1074 gives approximate perceptibility distances of 400 km at M7
@@ -1337,6 +1386,62 @@
     return path;
   };
 
+  const getNaturalEarthCountryBoundaryGeographicPath = () => {
+    if (naturalEarthCountryState !== "ready" || typeof Path2D === "undefined") return null;
+    const cacheKey = "earth-country-boundaries";
+    if (naturalEarthCountryPathCache.has(cacheKey)) return naturalEarthCountryPathCache.get(cacheKey);
+    const path = new Path2D();
+    for (const ring of naturalEarthCountryBoundaryRings) {
+      if (ring.length < 3) continue;
+      ring.forEach(([longitude, latitude], pointIndex) => {
+        const x = longitude + 180;
+        const y = 90 - latitude;
+        if (pointIndex === 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
+      });
+      path.closePath();
+    }
+    naturalEarthCountryPathCache.set(cacheKey, path);
+    return path;
+  };
+
+  const getJapanPrefectureBoundaryGeographicPath = () => {
+    if (japanPrefectureBoundaryState !== "ready" || typeof Path2D === "undefined") return null;
+    const cacheKey = "earth-prefecture-boundaries";
+    if (japanPrefectureBoundaryPathCache.has(cacheKey)) {
+      return japanPrefectureBoundaryPathCache.get(cacheKey);
+    }
+    const path = new Path2D();
+    for (const arc of japanPrefectureBoundaryArcs) {
+      arc.forEach(([longitude, latitude], pointIndex) => {
+        const x = longitude + 180;
+        const y = 90 - latitude;
+        if (pointIndex === 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
+      });
+    }
+    japanPrefectureBoundaryPathCache.set(cacheKey, path);
+    return path;
+  };
+
+  const getJapanPrefectureBoundaryMercatorPath = (zoom) => {
+    if (japanPrefectureBoundaryState !== "ready" || typeof Path2D === "undefined") return null;
+    const cacheKey = `mercator-prefecture-boundaries-${zoom}`;
+    if (japanPrefectureBoundaryPathCache.has(cacheKey)) {
+      return japanPrefectureBoundaryPathCache.get(cacheKey);
+    }
+    const path = new Path2D();
+    for (const arc of japanPrefectureBoundaryArcs) {
+      arc.forEach(([longitude, latitude], pointIndex) => {
+        const point = lonLatToWorld(longitude, latitude, zoom);
+        if (pointIndex === 0) path.moveTo(point.x, point.y);
+        else path.lineTo(point.x, point.y);
+      });
+    }
+    japanPrefectureBoundaryPathCache.set(cacheKey, path);
+    return path;
+  };
+
   const drawRenewableCountryChoropleth = (ctx, rect, rows, selectedIso3) => {
     if (mapScope !== "earth" || naturalEarthCountryState !== "ready") return 0;
     const projection = japanView.earthProjection || getEarthProjection(rect);
@@ -1421,10 +1526,16 @@
 
   const updateMapBasisNote = () => {
     if (naturalEarthLandState === "ready") {
+      const boundariesReady = naturalEarthCountryState === "ready"
+        && japanPrefectureBoundaryState === "ready";
       mapScopeNote.innerHTML =
         mapScope === "earth"
-          ? "BASEMAP / NATURAL EARTH 1:50m<br />LOCAL GEOJSON · WGS84 GEOGRAPHIC · ONE WORLD"
-          : "BASEMAP / NATURAL EARTH 1:50m<br />LOCAL GEOJSON · WGS84 → WEB MERCATOR";
+          ? `BASEMAP / NATURAL EARTH 1:50m<br />${boundariesReady
+            ? "COUNTRY BORDERS · PREFECTURES / GLOBAL MAP JAPAN"
+            : "LOCAL BOUNDARY VECTORS LOADING"}`
+          : `BASEMAP / NATURAL EARTH 1:50m<br />${boundariesReady
+            ? "PREFECTURES / GLOBAL MAP JAPAN"
+            : "LOCAL BOUNDARY VECTORS LOADING"}`;
       return;
     }
     if (naturalEarthLandState === "error") {
@@ -1444,6 +1555,16 @@
         .map((copy) => copy.x.toFixed(2))
         .join(",");
       const geographicPath = getNaturalEarthGeographicPath();
+      const countryBoundaryPath = getNaturalEarthCountryBoundaryGeographicPath();
+      const prefectureBoundaryPath = getJapanPrefectureBoundaryGeographicPath();
+      const prefectureBoundaryOpacity = clamp((japanView.earthZoom - 1.65) / 0.8, 0, 1);
+      const showPrefectureBoundaries = Boolean(prefectureBoundaryPath && prefectureBoundaryOpacity > 0);
+      japanOverlay.dataset.worldBoundaryLayer = countryBoundaryPath ? "country" : naturalEarthCountryState;
+      japanOverlay.dataset.worldBoundaryRingCount = String(naturalEarthCountryBoundaryRings.length);
+      japanOverlay.dataset.prefectureBoundaryLayer = showPrefectureBoundaries
+        ? "prefecture"
+        : japanPrefectureBoundaryState === "ready" ? "hidden-global" : japanPrefectureBoundaryState;
+      japanOverlay.dataset.prefectureBoundaryArcCount = String(japanPrefectureBoundaryArcs.length);
 
       ctx.save();
       ctx.beginPath();
@@ -1503,6 +1624,30 @@
         }
       }
 
+      if (countryBoundaryPath) {
+        for (const copy of worldCopies) {
+          ctx.save();
+          ctx.translate(copy.x, copy.y);
+          ctx.scale(scale, scale);
+          ctx.strokeStyle = "rgba(194, 241, 229, 0.48)";
+          ctx.lineWidth = 0.58 / scale;
+          ctx.stroke(countryBoundaryPath);
+          ctx.restore();
+        }
+      }
+
+      if (showPrefectureBoundaries) {
+        for (const copy of worldCopies) {
+          ctx.save();
+          ctx.translate(copy.x, copy.y);
+          ctx.scale(scale, scale);
+          ctx.strokeStyle = `rgba(226, 255, 246, ${0.42 + prefectureBoundaryOpacity * 0.42})`;
+          ctx.lineWidth = (0.72 + prefectureBoundaryOpacity * 0.22) / scale;
+          ctx.stroke(prefectureBoundaryPath);
+          ctx.restore();
+        }
+      }
+
       if (rect.width >= 760) {
         for (const landmass of SIMPLE_WORLD_LANDMASSES) {
           const labelX = originX + earthLongitudeToMapX(landmass.labelAt[0]) * scale;
@@ -1535,6 +1680,13 @@
     const lastRepeat = Math.ceil((left + rect.width) / worldSize) + 1;
     const northY = lonLatToWorld(0, 80).y - top;
     const southY = lonLatToWorld(0, -80).y - top;
+    const prefectureBoundaryPath = getJapanPrefectureBoundaryMercatorPath(japanView.zoom);
+    japanOverlay.dataset.worldBoundaryLayer = "hidden-japan";
+    japanOverlay.dataset.worldBoundaryRingCount = String(naturalEarthCountryBoundaryRings.length);
+    japanOverlay.dataset.prefectureBoundaryLayer = prefectureBoundaryPath
+      ? "prefecture"
+      : japanPrefectureBoundaryState;
+    japanOverlay.dataset.prefectureBoundaryArcCount = String(japanPrefectureBoundaryArcs.length);
 
     ctx.save();
     ctx.beginPath();
@@ -1566,6 +1718,15 @@
     for (let repeat = firstRepeat; repeat <= lastRepeat; repeat += 1) {
       const repeatOffset = repeat * worldSize;
       renderReferenceLand(ctx, repeatOffset, left, top);
+
+      if (prefectureBoundaryPath) {
+        ctx.save();
+        ctx.translate(repeatOffset - left, -top);
+        ctx.strokeStyle = "rgba(226, 255, 246, 0.82)";
+        ctx.lineWidth = japanView.zoom >= 4 ? 0.95 : 0.78;
+        ctx.stroke(prefectureBoundaryPath);
+        ctx.restore();
+      }
 
       if (japanView.zoom >= 2 && rect.width >= 760) {
         for (const landmass of SIMPLE_WORLD_LANDMASSES) {
@@ -1600,13 +1761,17 @@
   };
 
   const renderCachedReferenceWorldModel = (ctx, rect, left, top) => {
-    if (!referenceWorldContext) {
+    if (!referenceWorldContext || referenceWorldContext.isContextLost?.()) {
+      japanOverlay.dataset.referenceWorldCache = "direct-fallback";
       renderReferenceWorldModel(ctx, rect, left, top);
       return;
     }
 
-    const width = Math.max(1, Math.ceil(rect.width));
-    const height = Math.max(1, Math.ceil(rect.height));
+    const logicalWidth = Math.max(1, Math.ceil(rect.width));
+    const logicalHeight = Math.max(1, Math.ceil(rect.height));
+    const cacheScale = Math.min(1, 2048 / logicalWidth, 2048 / logicalHeight);
+    const width = Math.max(1, Math.ceil(logicalWidth * cacheScale));
+    const height = Math.max(1, Math.ceil(logicalHeight * cacheScale));
     const projection = mapScope === "earth"
       ? japanView.earthProjection || getEarthProjection(rect)
       : null;
@@ -1614,6 +1779,13 @@
       mapScope,
       naturalEarthLandState,
       naturalEarthLandRings.length,
+      naturalEarthCountryState,
+      naturalEarthCountryBoundaryRings.length,
+      japanPrefectureBoundaryState,
+      japanPrefectureBoundaryArcs.length,
+      logicalWidth,
+      logicalHeight,
+      Math.round(cacheScale * 1000),
       width,
       height,
       japanView.zoom,
@@ -1631,11 +1803,24 @@
       }
       referenceWorldContext.setTransform(1, 0, 0, 1, 0, 0);
       referenceWorldContext.clearRect(0, 0, width, height);
-      renderReferenceWorldModel(referenceWorldContext, { width, height }, left, top);
+      referenceWorldContext.setTransform(cacheScale, 0, 0, cacheScale, 0, 0);
+      renderReferenceWorldModel(referenceWorldContext, {
+        width: logicalWidth,
+        height: logicalHeight,
+      }, left, top);
+      referenceWorldContext.setTransform(1, 0, 0, 1, 0, 0);
       referenceWorldCacheKey = cacheKey;
     }
 
-    ctx.drawImage(referenceWorldCanvas, 0, 0, rect.width, rect.height);
+    japanOverlay.dataset.referenceWorldCache = "ready";
+    japanOverlay.dataset.referenceWorldRenderScale = cacheScale.toFixed(4);
+    japanOverlay.dataset.referenceWorldBackingSize = `${width}x${height}`;
+    ctx.drawImage(referenceWorldCanvas, 0, 0, width, height, 0, 0, rect.width, rect.height);
+  };
+
+  const invalidateReferenceWorldCache = () => {
+    referenceWorldCacheKey = "";
+    japanTilesDirty = true;
   };
 
   const japanScreenToLonLat = (x, y, left, top) => {
@@ -3069,6 +3254,7 @@
   const renderMapInstallationEffect = (ctx, rect, nodePoints, now) => {
     const signalMode = getActiveSignalMode();
     if (!signalMode) return;
+    syncMapPlotRevealState(now);
     const { left, top } = getJapanViewport();
     const time = reducedMotion ? 1.8 : now / 1000;
     const rgb = modes[modeToIndex].rgb;
@@ -3277,6 +3463,11 @@
     } else if (signalMode.id === "forest-cloud-engine") {
       const sequence = getMapSequenceState(signalMode);
       const precipitationRows = signalMode.signals.precipitation || [];
+      const visibleRainIndexes = precipitationRows
+        .map((row, index) => ({ index, point: pointFor(row) }))
+        .filter(({ point }) => visible(point))
+        .map(({ index }) => index);
+      const rainRevealOrder = new Map(visibleRainIndexes.map((index, order) => [index, order]));
       const brazilRain = precipitationRows.find((row) => row.id === "brazil");
       japanOverlay.dataset.forestRainCircleRange = `${FOREST_RAIN_MIN_RADIUS}-${FOREST_RAIN_MAX_RADIUS}px radius`;
       japanOverlay.dataset.forestRainBrazil = brazilRain
@@ -3286,11 +3477,18 @@
       const drawRainCircle = (row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
+        const reveal = getMapPlotReveal(
+          rainRevealOrder.get(index) ?? index,
+          Math.max(1, visibleRainIndexes.length),
+          now,
+        );
+        if (reveal.progress <= 0) return;
         const precipitationMmDay = Number(row.precipitationMmDay) || 0;
         const rain = clamp(precipitationMmDay / FOREST_RAIN_REFERENCE_MAX_MM_DAY, 0, 1);
         const radius = getForestRainRadius(precipitationMmDay);
         const selected = index === sequence?.selectedIndex;
         ctx.save();
+        applyMapPlotReveal(ctx, point, reveal);
         ctx.beginPath();
         ctx.arc(point.x, point.y, radius + 4, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(0,18,35,${selected ? 0.82 : 0.62})`;
@@ -3392,9 +3590,12 @@
         : -1;
       points.forEach(({ row, index, point }) => {
         if (!visible(point)) return;
+        const reveal = getMapPlotReveal(index, points.length, now);
+        if (reveal.progress <= 0) return;
         const active = stageKey === "records" && index === activeRecordIndex;
         const radius = stageKey === "sampling" ? 4.2 : active ? 4.8 : 2.4;
         ctx.save();
+        applyMapPlotReveal(ctx, point, reveal);
         ctx.beginPath();
         ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = stageKey === "relations"
@@ -3549,6 +3750,8 @@
       orderedRows.forEach(({ row, index }) => {
         const point = pointFor(row);
         if (!visible(point, selectedRadius + 20)) return;
+        const reveal = getMapPlotReveal(index, rows.length, now);
+        if (reveal.progress <= 0) return;
         const rate = clamp(row.recyclePercent / 100, 0, 1);
         const selected = index === selectedIndex;
         const imputed = row.valueStatus === "IMPUTED";
@@ -3557,7 +3760,8 @@
         const endAngle = startAngle + rate * Math.PI * 2;
 
         ctx.save();
-        ctx.globalAlpha = imputed && !selected ? 0.72 : 1;
+        applyMapPlotReveal(ctx, point, reveal);
+        ctx.globalAlpha *= imputed && !selected ? 0.72 : 1;
         ctx.shadowColor = selected ? "rgba(118,255,194,.52)" : "rgba(34,224,153,.22)";
         ctx.shadowBlur = selected ? 22 : 8;
         ctx.beginPath();
@@ -3640,6 +3844,10 @@
       emissionRows.forEach((row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
+        const reveal = getMapPlotReveal(index, emissionRows.length, now);
+        if (reveal.progress <= 0) return;
+        ctx.save();
+        applyMapPlotReveal(ctx, point, reveal);
         const load = clamp(Math.log10(Math.max(1, row.emissionsMtCo2e)) / 4, 0, 1);
         const selected = index === sequence?.selectedIndex;
         const radius = 5 + load * (selected ? 48 : 25);
@@ -3842,6 +4050,7 @@
             "rgba(216,255,232,.98)",
           );
         }
+        ctx.restore();
       });
 
       if (state && rows.length) {
@@ -4007,6 +4216,30 @@
       }
     }
 
+    const revealRows = getModeDataPois()
+      .slice(0, 48)
+      .map((row) => ({ row, point: pointFor(row) }))
+      .filter(({ point }) => visible(point, 36));
+    japanOverlay.dataset.plotRevealCount = String(revealRows.length);
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    revealRows.forEach(({ point }, index) => {
+      const reveal = getMapPlotReveal(index, revealRows.length, now);
+      if (reveal.progress <= 0 || reveal.progress >= 1) return;
+      const ringProgress = clamp(reveal.progress * 1.18, 0, 1);
+      const ringRadius = 4 + ringProgress * 28;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, ringRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(170,255,229,${(1 - ringProgress) * 0.72})`;
+      ctx.lineWidth = 1.6 - ringProgress * 0.8;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 2.2 + reveal.scale * 2.8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(220,255,246,${Math.sin(reveal.progress * Math.PI) * 0.76})`;
+      ctx.fill();
+    });
+    ctx.restore();
+
     ctx.restore();
   };
 
@@ -4095,6 +4328,10 @@
         ) {
           return;
         }
+        const reveal = getMapPlotReveal(index, japanHistoryEvents.length, now);
+        if (reveal.progress <= 0) return;
+        ctx.save();
+        applyMapPlotReveal(ctx, point, reveal);
 
         const isSelected = selectedJapanPoi?.type === "history" && selectedJapanPoi.event.id === event.id;
         const phase = reducedMotion ? 0.4 : 0.5 + Math.sin(now * 0.0012 + index * 0.9) * 0.5;
@@ -4117,6 +4354,7 @@
           point.x + radius + 6,
           point.y - 6,
         );
+        ctx.restore();
       });
     }
 
@@ -4129,6 +4367,10 @@
       ) {
         return;
       }
+      const reveal = getMapPlotReveal(index, nodePoints.length, now);
+      if (reveal.progress <= 0) return;
+      ctx.save();
+      applyMapPlotReveal(ctx, node, reveal);
 
       const phase = now * 0.0014 + index * 0.83;
       const pulse = 0.5 + Math.sin(phase) * 0.5;
@@ -4146,6 +4388,7 @@
       if (mapScope === "earth" || japanView.zoom >= JAPAN_ZOOM || index % 2 === 0) {
         ctx.fillText(node.name, node.x + 10, node.y - 7);
       }
+      ctx.restore();
     });
 
     const pulseLifetime = reducedMotion ? 6500 : 4200;
@@ -4231,7 +4474,11 @@
   };
 
   window.addEventListener("gaia:live-exhibit-change", () => {
+    if (japanIsOpen) restartMapPlotReveal("exhibit-change");
     renderJapanOverlay(performance.now());
+  });
+  window.addEventListener("gaia:signals-ready", () => {
+    if (japanIsOpen) restartMapPlotReveal("data-ready");
   });
 
   const addJapanPulse = (clientX, clientY) => {
@@ -4539,6 +4786,7 @@
   };
 
   const setJapanDataLayer = (layer) => {
+    const previousLayer = japanDataLayer;
     japanDataLayer = layer === "snapshot" ? "snapshot" : "history";
     if (japanDataLayer === "snapshot") globalEarthquakeWaveYear = "";
     japanHistoryLayerButton.setAttribute(
@@ -4552,6 +4800,7 @@
     closeJapanPoi();
     updateMapObservationNarrative();
     japanMapStatus.textContent = getJapanObservationStatus();
+    if (japanIsOpen && previousLayer !== japanDataLayer) restartMapPlotReveal("layer-change");
   };
 
   const setMapScope = (_scope = "earth", { resetLayer = true } = {}) => {
@@ -5848,18 +6097,24 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       if (!response.ok) throw new Error(`Natural Earth countries ${response.status}`);
       const geojson = await response.json();
       const countryRings = new Map();
+      const boundaryRings = [];
 
       for (const feature of geojson.features || []) {
         const { geometry, properties = {} } = feature;
         if (!geometry) continue;
-        const iso3 = [properties.ADM0_A3, properties.ISO_A3, properties.SOV_A3, properties.BRK_A3, properties.WB_A3]
-          .find((code) => typeof code === "string" && /^[A-Z]{3}$/.test(code) && code !== "-99");
-        if (!iso3) continue;
         const polygons = geometry.type === "Polygon"
           ? [geometry.coordinates]
           : geometry.type === "MultiPolygon"
             ? geometry.coordinates
             : [];
+        for (const polygon of polygons) {
+          for (const ring of polygon) {
+            if (Array.isArray(ring) && ring.length >= 3) boundaryRings.push(ring);
+          }
+        }
+        const iso3 = [properties.ADM0_A3, properties.ISO_A3, properties.SOV_A3, properties.BRK_A3, properties.WB_A3]
+          .find((code) => typeof code === "string" && /^[A-Z]{3}$/.test(code) && code !== "-99");
+        if (!iso3) continue;
         const rings = countryRings.get(iso3) || [];
         for (const polygon of polygons) {
           for (const ring of polygon) {
@@ -5872,13 +6127,83 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       if (countryRings.size < 200) {
         throw new Error(`Natural Earth country geometry incomplete (${countryRings.size} countries)`);
       }
+      if (boundaryRings.length < 400) {
+        throw new Error(`Natural Earth boundary geometry incomplete (${boundaryRings.length} rings)`);
+      }
       naturalEarthCountryRings = countryRings;
+      naturalEarthCountryBoundaryRings = boundaryRings;
       naturalEarthCountryPathCache.clear();
       naturalEarthCountryState = "ready";
+      referenceWorldCacheKey = "";
+      japanTilesDirty = true;
+      updateMapBasisNote();
     } catch (error) {
       console.error(error);
       naturalEarthCountryError = error instanceof Error ? error.message : String(error);
       naturalEarthCountryState = "error";
+      referenceWorldCacheKey = "";
+      updateMapBasisNote();
+    }
+  };
+
+  const loadJapanPrefectureBoundaries = async () => {
+    try {
+      japanPrefectureBoundaryState = "loading";
+      japanPrefectureBoundaryError = null;
+      updateMapBasisNote();
+      const response = await fetch(JAPAN_PREFECTURE_DATA, { cache: "force-cache" });
+      if (!response.ok) throw new Error(`Japan prefectures ${response.status}`);
+      const topology = await response.json();
+      const geometries = topology?.objects?.japan?.geometries || [];
+      const topologyArcs = topology?.arcs || [];
+      const scale = topology?.transform?.scale;
+      const translate = topology?.transform?.translate;
+      if (topology?.type !== "Topology" || geometries.length !== 47
+        || !Array.isArray(scale) || !Array.isArray(translate)) {
+        throw new Error("Japan prefecture topology is incomplete");
+      }
+
+      const referencedArcIndexes = new Set();
+      const collectArcIndexes = (value) => {
+        if (Number.isInteger(value)) {
+          referencedArcIndexes.add(value < 0 ? ~value : value);
+          return;
+        }
+        if (Array.isArray(value)) value.forEach(collectArcIndexes);
+      };
+      geometries.forEach(({ arcs }) => collectArcIndexes(arcs));
+
+      const decodedArcs = [];
+      for (const arcIndex of referencedArcIndexes) {
+        const rawArc = topologyArcs[arcIndex];
+        if (!Array.isArray(rawArc) || rawArc.length < 2) continue;
+        let x = 0;
+        let y = 0;
+        const arc = rawArc.map(([deltaX, deltaY]) => {
+          x += deltaX;
+          y += deltaY;
+          return [x * scale[0] + translate[0], y * scale[1] + translate[1]];
+        });
+        if (arc.every(([longitude, latitude]) => Number.isFinite(longitude) && Number.isFinite(latitude))) {
+          decodedArcs.push(arc);
+        }
+      }
+      if (decodedArcs.length < 1000) {
+        throw new Error(`Japan prefecture boundary geometry incomplete (${decodedArcs.length} arcs)`);
+      }
+
+      japanPrefectureBoundaryArcs = decodedArcs;
+      japanPrefectureBoundaryPathCache.clear();
+      japanPrefectureBoundaryState = "ready";
+      referenceWorldCacheKey = "";
+      japanTilesDirty = true;
+      updateMapBasisNote();
+    } catch (error) {
+      console.error(error);
+      japanPrefectureBoundaryError = error instanceof Error ? error.message : String(error);
+      japanPrefectureBoundaryState = "error";
+      referenceWorldCacheKey = "";
+      updateMapBasisNote();
     }
   };
 
@@ -6316,6 +6641,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const normalizedIndex = (index + MODE_COUNT) % MODE_COUNT;
     if (normalizedIndex === modeToIndex) {
       if (japanIsOpen) {
+        restartMapPlotReveal("mode-reselect");
         restartCo2Timeline(0);
         if (isTheme(5, normalizedIndex)) setJapanDataLayer("snapshot");
         animateEarthViewForMode(normalizedIndex);
@@ -6334,6 +6660,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }
     updateModeInterface();
     if (japanIsOpen) {
+      restartMapPlotReveal("mode-change");
       restartCo2Timeline(0);
       if (isTheme(5, normalizedIndex)) setJapanDataLayer("snapshot");
       animateEarthViewForMode(normalizedIndex);
@@ -7364,6 +7691,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     updateJapanDataInterface();
     void loadJapanHistory();
     void loadJapanEarthquakes();
+    restartMapPlotReveal("map-open");
 
     if (updateHash) {
       updateJapanHash(true);
@@ -8161,6 +8489,16 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   );
 
   window.addEventListener("resize", resize, { passive: true });
+  window.addEventListener("focus", invalidateReferenceWorldCache, { passive: true });
+  window.addEventListener("pageshow", invalidateReferenceWorldCache, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) invalidateReferenceWorldCache();
+  });
+  referenceWorldCanvas.addEventListener("contextlost", (event) => {
+    event.preventDefault();
+    invalidateReferenceWorldCache();
+  });
+  referenceWorldCanvas.addEventListener("contextrestored", invalidateReferenceWorldCache);
 
   clearSession();
   setMapScope("earth");
@@ -8185,6 +8523,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   loadOvationAuroraForecast();
   loadNaturalEarthLand();
   loadNaturalEarthCountries();
+  loadJapanPrefectureBoundaries();
 
   if (window.location.hash === "#source") {
     openSource({ updateHash: false });

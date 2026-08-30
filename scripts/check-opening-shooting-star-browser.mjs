@@ -43,9 +43,11 @@ const scanViewport = async (viewport) => {
   await page.locator("#gaia-opening-route-story").waitFor({ state: "visible", timeout: 20_000 });
   await page.waitForFunction(() => globalThis.__gaiaShootingStarEvents.length >= 1, null, { timeout: 8_000 });
   const first = await page.evaluate(() => globalThis.__gaiaShootingStarEvents[0]);
-  assert(first.startX >= viewport.width * 0.86, `${viewport.name}: shooting star did not start at the right edge`);
+  assert(first.startX >= viewport.width * 0.23, `${viewport.name}: shooting star started too close to the left edge`);
+  assert(first.startX <= viewport.width * 0.49, `${viewport.name}: shooting star entered the character-side half of the screen`);
   assert(first.startY <= viewport.height * 0.2, `${viewport.name}: shooting star did not start near the top edge`);
   assert(first.dx < 0 && first.dy > 0, `${viewport.name}: shooting star did not travel down and left`);
+  assert(first.startX + first.dx < first.startX, `${viewport.name}: shooting star trajectory escaped toward the character side`);
   assert(first.duration >= 880 && first.duration <= 1180, `${viewport.name}: shooting star duration is outside the intended range`);
   assert(first.perspective >= 0.035 && first.perspective <= 0.065, `${viewport.name}: shooting star perspective model is outside its calibrated range`);
   assert(first.gravity >= first.travel * 0.022 && first.gravity <= first.travel * 0.035, `${viewport.name}: shooting star atmospheric drop is outside its calibrated range`);

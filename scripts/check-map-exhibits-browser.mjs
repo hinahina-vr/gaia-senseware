@@ -256,6 +256,33 @@ try {
           && legend?.getClientRects().length > 0
           && overlay?.dataset.forestMask === "ready";
       });
+      await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(2).evaluate((button) => button.click());
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.plotRevealState === "running"
+          && /^mode-(?:change|reselect)$/u.test(overlay.dataset.plotRevealReason || "")
+          && Number(overlay.dataset.plotRevealCount) >= 6;
+      });
+      const revealStart = await page.locator("#japan-overlay").evaluate((overlay) => ({
+        state: overlay.dataset.plotRevealState || "",
+        reason: overlay.dataset.plotRevealReason || "",
+        generation: Number(overlay.dataset.plotRevealGeneration),
+        progress: Number(overlay.dataset.plotRevealProgress),
+        count: Number(overlay.dataset.plotRevealCount),
+      }));
+      await page.waitForTimeout(420);
+      const revealMiddle = await page.locator("#japan-overlay").evaluate((overlay) => ({
+        state: overlay.dataset.plotRevealState || "",
+        progress: Number(overlay.dataset.plotRevealProgress),
+        count: Number(overlay.dataset.plotRevealCount),
+      }));
+      assert.equal(revealMiddle.state, "running");
+      assert(revealStart.generation > 0 && revealStart.progress < revealMiddle.progress && revealMiddle.progress < 1, `plots did not reveal progressively: ${JSON.stringify({ revealStart, revealMiddle })}`);
+      assert(revealMiddle.count >= 6, `not enough plotted objects participate in the reveal: ${JSON.stringify(revealMiddle)}`);
+      const revealScreenshot = path.join(outputDir, `${viewport.name}-forest-map-reveal-mid.png`);
+      await page.screenshot({ path: revealScreenshot });
+      scan.screenshots.push(revealScreenshot);
+      await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.plotRevealState === "complete", null, { timeout: 4_000 });
       const legend = await page.evaluate(() => ({
         title: document.querySelector("[data-signal-encoding-legend-title]")?.textContent.trim() || "",
         body: document.querySelector("[data-signal-encoding-legend]")?.textContent.replace(/\s+/gu, " ").trim() || "",

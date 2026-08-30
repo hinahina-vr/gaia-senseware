@@ -217,12 +217,10 @@
     },
     {
       target: finalOtherButton,
-      title: "データを探索する",
       copy: "気候変動や観測ポイントを、インタラクティブな地図上で探索・分析できます。",
     },
     {
       target: finalTourButton,
-      title: "30秒ガイド",
       copy: "初めての方向けに、基本的な見どころと操作の流れを短く紹介します。",
     },
   ].filter((step) => step.target instanceof HTMLButtonElement);
@@ -240,7 +238,7 @@
   routeGuideLayer.innerHTML = `
     <div class="gaia-opening-route-guide-shade" aria-hidden="true"></div>
     <article class="gaia-opening-route-guide-bubble" aria-live="polite" aria-atomic="true">
-      <div class="gaia-opening-route-guide-index"><span>入口ガイド</span><b><i data-route-guide-step>1</i> / ${routeGuideSteps.length}</b></div>
+      <div class="gaia-opening-route-guide-index"><b><i data-route-guide-step>1</i> / ${routeGuideSteps.length}</b></div>
       <h2 data-route-guide-title hidden></h2>
       <p id="gaia-opening-route-guide-copy" data-route-guide-copy></p>
       <span class="gaia-opening-route-guide-hint" id="gaia-opening-route-guide-hint"><b>CLICK / TAP</b><span data-route-guide-hint-action>次へ</span></span>
@@ -249,8 +247,7 @@
 
   const routeGuideShade = routeGuideLayer.querySelector(".gaia-opening-route-guide-shade");
   const routeGuideBubble = routeGuideLayer.querySelector(".gaia-opening-route-guide-bubble");
-  const ROUTE_MENU_REVEAL_SETTLE_MS = reducedMotion ? 0 : 700;
-  const ROUTE_GUIDE_POST_REVEAL_HOLD_MS = 2000;
+  const ROUTE_GUIDE_AUTO_DELAY_MS = 2000;
   let routeGuideActive = false;
   let routeGuideIndex = 0;
   let routeGuidePositionFrame = 0;
@@ -365,8 +362,9 @@
     window.clearTimeout(routeGuideStartTimer);
     routeGuideStartTimer = window.setTimeout(() => {
       finalMenu.dataset.revealCompleteAt = performance.now().toFixed(3);
-      routeGuideStartTimer = window.setTimeout(openRouteGuide, ROUTE_GUIDE_POST_REVEAL_HOLD_MS);
-    }, ROUTE_MENU_REVEAL_SETTLE_MS);
+      routeGuideStartTimer = 0;
+      openRouteGuide();
+    }, ROUTE_GUIDE_AUTO_DELAY_MS);
   };
 
   const advanceRouteGuide = () => {

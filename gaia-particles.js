@@ -122,13 +122,13 @@
 
     const launchShootingStar = (time) => {
       const angle = random(0.42, 0.56);
-      const travel = Math.max(360, Math.min(width * 0.58, height * 1.08));
+      const travel = Math.max(240, Math.min(width * 0.42, height * 0.86));
       const directionX = -Math.cos(angle);
       const directionY = Math.sin(angle);
       const shootingStar = {
         startedAt: time,
         duration: random(880, 1180),
-        startX: random(width * 0.88, width * 1.025),
+        startX: random(width * 0.24, width * 0.48),
         startY: random(height * 0.035, height * 0.17),
         dx: directionX * travel,
         dy: directionY * travel,

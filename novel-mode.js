@@ -4210,25 +4210,30 @@
     const credits = document.createElement("dl");
     credits.className = "novel-staff-roll-credits";
     [
-      { role: "原案・企画・制作", department: "ORIGINAL CONCEPT / DIRECTION / PRODUCTION", names: ["ひなひな"] },
-      { role: "シナリオ", department: "SCENARIO", names: ["ひなひな"] },
-      { role: "WEBデザイン・開発", department: "WEB DESIGN / DEVELOPMENT", names: ["ひなひな"] },
-      { role: "制作支援", department: "PRODUCTION SUPPORT", names: ["OpenAI Codex"] },
+      { role: "企画・原案", department: "ORIGINAL CONCEPT & PLANNING", names: ["ひなひな"] },
+      { role: "監督・世界観設定・シナリオ", department: "DIRECTOR, WORLD DESIGN & SCENARIO", names: ["ひなひな"] },
+      { role: "デザイン・システムアーキテクチャ", department: "DESIGN & ARCHITECTURE", names: ["ひなひな"] },
       { role: "キャラクター原案", department: "ORIGINAL CHARACTER CONCEPT", names: ["ひなひな"] },
-      { role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["OpenAI ImageGen"] },
-      { role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] },
+      {
+        role: "AIアシスタンス",
+        department: "AI GENERATION & ASSISTANCE",
+        names: [
+          "OpenAI Codex (Code Implementation)",
+          "OpenAI ImageGen (Visual Assets)",
+          "Suno AI (Theme Songs Composition)",
+        ],
+      },
       {
         role: "音楽",
         department: "MUSIC",
         names: [
           { label: "オープニングテーマ", title: "『Planet Forecast - Hope』" },
           { label: "エンディングテーマ", title: "『AfterSchool, AfterGlow』" },
-          "by Suno AI",
         ],
       },
       {
-        role: "参照講義",
-        department: "ACADEMIC REFERENCE",
+        role: "学術的着想",
+        department: "ACADEMIC INSPIRATION",
         names: [
           "ZEN大学『共創地球論』",
           "ZEN大学『人新世の人類学』",
@@ -4236,7 +4241,7 @@
           "ZEN大学『リテラシーと応用のための物語理論』",
         ],
       },
-      { role: "参照データ", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] },
+      { role: "観測データ", department: "DATA SOURCES", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] },
     ].forEach(({ role, department, names, note = "" }) => {
       const row = document.createElement("div");
       row.className = "novel-staff-roll-credit";

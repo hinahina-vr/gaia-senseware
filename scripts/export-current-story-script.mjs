@@ -20,25 +20,30 @@ const staffRoll = Object.freeze({
   title: "惑星の放課後",
   subtitle: "GAIA SENSATION",
   credits: Object.freeze([
-    Object.freeze({ role: "原案・企画・制作", department: "ORIGINAL CONCEPT / DIRECTION / PRODUCTION", names: ["ひなひな"] }),
-    Object.freeze({ role: "シナリオ", department: "SCENARIO", names: ["ひなひな"] }),
-    Object.freeze({ role: "WEBデザイン・開発", department: "WEB DESIGN / DEVELOPMENT", names: ["ひなひな"] }),
-    Object.freeze({ role: "制作支援", department: "PRODUCTION SUPPORT", names: ["OpenAI Codex"] }),
+    Object.freeze({ role: "企画・原案", department: "ORIGINAL CONCEPT & PLANNING", names: ["ひなひな"] }),
+    Object.freeze({ role: "監督・世界観設定・シナリオ", department: "DIRECTOR, WORLD DESIGN & SCENARIO", names: ["ひなひな"] }),
+    Object.freeze({ role: "デザイン・システムアーキテクチャ", department: "DESIGN & ARCHITECTURE", names: ["ひなひな"] }),
     Object.freeze({ role: "キャラクター原案", department: "ORIGINAL CHARACTER CONCEPT", names: ["ひなひな"] }),
-    Object.freeze({ role: "キャラクターデザイン", department: "CHARACTER DESIGN", names: ["OpenAI ImageGen"] }),
-    Object.freeze({ role: "背景美術", department: "BACKGROUND ART", names: ["OpenAI ImageGen"] }),
+    Object.freeze({
+      role: "AIアシスタンス",
+      department: "AI GENERATION & ASSISTANCE",
+      names: [
+        "OpenAI Codex (Code Implementation)",
+        "OpenAI ImageGen (Visual Assets)",
+        "Suno AI (Theme Songs Composition)",
+      ],
+    }),
     Object.freeze({
       role: "音楽",
       department: "MUSIC",
       names: [
         "オープニングテーマ『Planet Forecast - Hope』",
         "エンディングテーマ『AfterSchool, AfterGlow』",
-        "by Suno AI",
       ],
     }),
     Object.freeze({
-      role: "参照講義",
-      department: "ACADEMIC REFERENCE",
+      role: "学術的着想",
+      department: "ACADEMIC INSPIRATION",
       names: [
         "ZEN大学『共創地球論』",
         "ZEN大学『人新世の人類学』",
@@ -46,7 +51,7 @@ const staffRoll = Object.freeze({
         "ZEN大学『リテラシーと応用のための物語理論』",
       ],
     }),
-    Object.freeze({ role: "参照データ", department: "OPEN DATA", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] }),
+    Object.freeze({ role: "観測データ", department: "DATA SOURCES", names: ["JAXA / NASA / NOAA", "気象庁 ほか"] }),
   ]),
   closingLead: "その選択の中に、今日から私たちもいる。",
   closingLine: "物語は、ここからも続いていく。",

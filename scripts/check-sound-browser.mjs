@@ -93,7 +93,8 @@ try {
   const switchRuntimeSource = audioRuntimeSource.match(/const switchTrack = async[\s\S]*?const getState =/u)?.[0] || "";
   assert(!startRuntimeSource.includes("enableAnalysis") && !switchRuntimeSource.includes("enableAnalysis"), "ordinary BGM playback is still forced through Web Audio analysis");
   assert(/uniform float bass;/u.test(visualRuntimeSource) && /uniform float mid;/u.test(visualRuntimeSource) && /uniform float high;/u.test(visualRuntimeSource), "three real audio bands are not connected to the shader");
-  assert(/createSpectrumOverlay/u.test(visualRuntimeSource) && /web-audio-fft-32-band/u.test(visualRuntimeSource), "the real 32-band EQ overlay is missing");
+  assert(!/equalizerRuntime|equalizerCanvas/u.test(visualRuntimeSource), "the detached EQ visualizer is still wired into the sound mode");
+  assert(/signalCore/u.test(visualRuntimeSource) && /bassBloom/u.test(visualRuntimeSource) && /dustLift/u.test(visualRuntimeSource), "the full-screen WebGL field does not expose distinct mid, bass, and high responses");
   assert(/auroraSilk/u.test(visualRuntimeSource) && /earthCenter/u.test(visualRuntimeSource) && /horizon/u.test(visualRuntimeSource) && /powderLayer/u.test(visualRuntimeSource), "the aurora, Earth, light powder, and water mirror are incomplete");
   assert(!/gl\.LINES|spectral-weave/u.test(visualRuntimeSource), "legacy line geometry remains in the visualizer");
   assert(!/sound-layer-grid|sound-spectral-grid/u.test(visualStyleSource), "digital grid styling remains in the sound installation");
@@ -101,30 +102,36 @@ try {
   await page.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
   await page.waitForFunction(() => !["", "pending"].includes(document.querySelector("#sound-visualizer")?.dataset.renderer || "pending"));
   const desktopVisualizer = await page.locator("#sound-visualizer").evaluate((canvas) => {
-    const eq = document.querySelector("#sound-eq-visualizer");
     const characterScene = document.querySelector(".sound-character-scene");
+    const close = document.querySelector("#sound-close");
     const rect = canvas.getBoundingClientRect();
+    const sceneRect = characterScene?.getBoundingClientRect();
+    const closeRect = close?.getBoundingClientRect();
     return {
       renderer: canvas.dataset.renderer,
       visualizer: canvas.dataset.visualizer,
+      presentation: canvas.dataset.presentation,
       audioAnalysis: canvas.dataset.audioAnalysis,
       width: rect.width,
       height: rect.height,
+      rect: rect.toJSON(),
       legacyPlanetCount: document.querySelectorAll(".sound-planet, .sound-orbit").length,
       analysisLabel: document.querySelector("#sound-analysis-state")?.textContent || "",
       analysisTitle: document.querySelector("#sound-analysis-state")?.getAttribute("title") || "",
       digitalGridCount: document.querySelectorAll(".sound-layer-grid, .sound-spectral-grid").length,
-      eqRenderer: eq?.dataset.renderer || "",
-      eqAnalysis: eq?.dataset.audioAnalysis || "",
+      eqCount: document.querySelectorAll("#sound-eq-visualizer, .sound-eq-visualizer").length,
       characterSceneLoaded: characterScene instanceof HTMLImageElement && characterScene.complete && characterScene.naturalWidth > 0,
       characterSceneOpacity: Number.parseFloat(getComputedStyle(characterScene).opacity || "0"),
       characterSceneFit: getComputedStyle(characterScene).objectFit,
       characterSceneMask: getComputedStyle(characterScene).maskImage,
+      characterSceneRect: sceneRect?.toJSON(),
+      closeRect: closeRect?.toJSON(),
     };
   });
   assert(
     desktopVisualizer.renderer === "webgl"
-      && desktopVisualizer.visualizer === "aurora-silk-installation"
+      && desktopVisualizer.visualizer === "full-field-audio-ink"
+      && desktopVisualizer.presentation === "full-screen-webgl"
       && desktopVisualizer.audioAnalysis === "web-audio-fft-three-band"
       && desktopVisualizer.width > 300
       && desktopVisualizer.height > 280
@@ -134,9 +141,12 @@ try {
       && desktopVisualizer.analysisTitle.includes("Web Audio FFT"),
     `desktop WebGL aurora installation failed: ${JSON.stringify(desktopVisualizer)}`,
   );
-  assert(desktopVisualizer.eqRenderer === "canvas2d" && desktopVisualizer.eqAnalysis === "web-audio-fft-32-band", `desktop real EQ overlay failed: ${JSON.stringify(desktopVisualizer)}`);
+  assert(desktopVisualizer.eqCount === 0, `the detached desktop EQ visualizer is still present: ${JSON.stringify(desktopVisualizer)}`);
+  assert(desktopVisualizer.rect.left <= 0 && desktopVisualizer.rect.top <= 0 && desktopVisualizer.rect.right >= 2048 && desktopVisualizer.rect.bottom >= 1114, `desktop WebGL is not full-screen: ${JSON.stringify(desktopVisualizer)}`);
   assert(desktopVisualizer.characterSceneLoaded && desktopVisualizer.characterSceneOpacity > 0.5, `sound-mode characters are not visible: ${JSON.stringify(desktopVisualizer)}`);
-  assert(desktopVisualizer.characterSceneFit === "contain" && desktopVisualizer.characterSceneMask === "none", `sound-mode background is not fully visible: ${JSON.stringify(desktopVisualizer)}`);
+  assert(desktopVisualizer.characterSceneFit === "cover" && desktopVisualizer.characterSceneMask === "none", `sound-mode background is not full-screen: ${JSON.stringify(desktopVisualizer)}`);
+  assert(desktopVisualizer.characterSceneRect.left <= 0 && desktopVisualizer.characterSceneRect.top <= 0 && desktopVisualizer.characterSceneRect.right >= 2048 && desktopVisualizer.characterSceneRect.bottom >= 1114, `sound-mode background does not cover the viewport: ${JSON.stringify(desktopVisualizer)}`);
+  assert(desktopVisualizer.closeRect.left <= 32 && desktopVisualizer.closeRect.top <= 32, `sound-mode return is not at the upper-left: ${JSON.stringify(desktopVisualizer)}`);
   assert(await page.locator("[data-sound-track]").count() === 12, "sound archive does not contain 12 unique tracks");
   assert((await page.locator(".sound-track-heading strong").innerText()) === "12 TRACKS", "track count heading is stale");
   const unusedTrackIds = await page.locator("[data-sound-track]", { hasText: "（未使用曲）" }).evaluateAll((nodes) => nodes.map((node) => node.dataset.soundTrack));
@@ -157,7 +167,7 @@ try {
     await button.scrollIntoViewIfNeeded();
     await button.click();
     await page.waitForFunction((track) => globalThis.GaiaOpeningAudio?.getState?.().track === track, id, { timeout: 10000 });
-    await page.waitForFunction(() => (globalThis.GaiaOpeningAudio?.getPlaybackState?.().duration || 0) > 0, null, { timeout: 10000 });
+    await page.waitForFunction(() => (globalThis.GaiaOpeningAudio?.getPlaybackState?.().duration || 0) > 0, null, { timeout: 10_000 });
     const state = await page.evaluate(() => globalThis.GaiaOpeningAudio.getPlaybackState());
     const renderedTitle = await page.locator("#sound-track-title").innerText();
     assert(renderedTitle === title, `${id} rendered the wrong title: ${renderedTitle}`);
@@ -192,15 +202,7 @@ try {
     energy: Number(canvas.dataset.energy),
   }));
   assert(Object.values(shaderBands).some((value) => value > 0.001), `real analysis does not reach the shader: ${JSON.stringify(shaderBands)}`);
-  await page.waitForFunction(() => Number(document.querySelector("#sound-eq-visualizer")?.dataset.maximumBand) > 0.01, null, { timeout: 10_000 });
-  const eqFrame = await page.locator("#sound-eq-visualizer").evaluate((canvas) => ({
-    active: canvas.dataset.analysisActive,
-    maximum: Number(canvas.dataset.maximumBand),
-    renderer: canvas.dataset.renderer,
-  }));
-  assert(eqFrame.active === "true" && eqFrame.maximum > 0.01 && eqFrame.renderer === "canvas2d", `real spectrum does not reach the EQ overlay: ${JSON.stringify(eqFrame)}`);
   report.shaderBands = shaderBands;
-  report.eqFrame = eqFrame;
   report.analysisFrame = analysisFrame;
   await page.locator('[data-sound-track="ending"]').click();
   await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 10000 });
@@ -222,19 +224,26 @@ try {
     layoutScrolls: document.querySelector(".sound-layout").scrollHeight > document.querySelector(".sound-layout").clientHeight + 1,
     renderer: document.querySelector("#sound-visualizer")?.dataset.renderer || "",
     visualizer: document.querySelector("#sound-visualizer")?.dataset.visualizer || "",
+    presentation: document.querySelector("#sound-visualizer")?.dataset.presentation || "",
     legacyPlanetCount: document.querySelectorAll(".sound-planet, .sound-orbit").length,
     digitalGridCount: document.querySelectorAll(".sound-layer-grid, .sound-spectral-grid").length,
-    eqRenderer: document.querySelector("#sound-eq-visualizer")?.dataset.renderer || "",
+    eqCount: document.querySelectorAll("#sound-eq-visualizer, .sound-eq-visualizer").length,
     characterSceneLoaded: document.querySelector(".sound-character-scene")?.complete && document.querySelector(".sound-character-scene")?.naturalWidth > 0,
     characterSceneFit: getComputedStyle(document.querySelector(".sound-character-scene")).objectFit,
     characterSceneMask: getComputedStyle(document.querySelector(".sound-character-scene")).maskImage,
+    characterSceneRect: document.querySelector(".sound-character-scene").getBoundingClientRect().toJSON(),
+    closeRect: document.querySelector("#sound-close").getBoundingClientRect().toJSON(),
     nowPlayingTop: document.querySelector(".sound-now-playing").getBoundingClientRect().top,
     visualizerTop: document.querySelector("#sound-visualizer").getBoundingClientRect().top,
+    visualizerRect: document.querySelector("#sound-visualizer").getBoundingClientRect().toJSON(),
   }));
   assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "aurora-silk-installation" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.digitalGridCount === 0 && mobileGeometry.nowPlayingTop < mobileGeometry.visualizerTop, `mobile player was not raised above the WebGL aurora installation: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.eqRenderer === "canvas2d" && mobileGeometry.characterSceneLoaded, `mobile EQ or characters are missing: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.characterSceneFit === "contain" && mobileGeometry.characterSceneMask === "none", `mobile sound background is not fully visible: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "full-field-audio-ink" && mobileGeometry.presentation === "full-screen-webgl" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.digitalGridCount === 0, `mobile WebGL audio field failed: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.visualizerRect.left <= 0 && mobileGeometry.visualizerRect.top <= 0 && mobileGeometry.visualizerRect.right >= 390 && mobileGeometry.visualizerRect.bottom >= 844, `mobile WebGL is not full-screen: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.eqCount === 0 && mobileGeometry.characterSceneLoaded, `the mobile EQ remains or the characters are missing: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.characterSceneFit === "cover" && mobileGeometry.characterSceneMask === "none", `mobile sound background is not full-screen: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.characterSceneRect.left <= 0 && mobileGeometry.characterSceneRect.top <= 0 && mobileGeometry.characterSceneRect.right >= 390 && mobileGeometry.characterSceneRect.bottom >= 844, `mobile sound background does not cover the viewport: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.closeRect.left <= 20 && mobileGeometry.closeRect.top <= 20, `mobile sound return is not at the upper-left: ${JSON.stringify(mobileGeometry)}`);
   assertControlDesign(await readControlDesign(mobile), "mobile");
   await mobile.screenshot({ path: path.join(outputDir, "sound-mobile.png"), fullPage: false });
   const lastTrack = mobile.locator('[data-sound-track="trueend"]');

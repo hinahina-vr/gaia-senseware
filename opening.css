@@ -5226,7 +5226,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 .gaia-opening-route-guide-index {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   color: rgba(181, 238, 255, 0.76);
   font: 700 9px/1.2 Consolas, "Courier New", monospace;
   letter-spacing: 0.13em;
@@ -5681,25 +5681,47 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
 /* The gateway is a quiet title-page menu, not a dashboard. */
 .gaia-vn-panel-final .gaia-opening-route-grid {
-  gap: 0;
-  border-top: 1px solid rgba(var(--opening-paper), 0.22);
-  border-bottom: 1px solid rgba(var(--opening-paper), 0.15);
+  gap: clamp(10px, 0.9vw, 16px);
+  padding: 1px 0;
+  border: 0;
 }
 
 .gaia-vn-panel-final .gaia-opening-route,
 .gaia-vn-panel-final .gaia-opening-route--other {
   min-height: 104px;
   padding: 19px 20px;
-  border: 0;
-  border-radius: 0;
-  background: linear-gradient(115deg, rgb(7, 39, 73) 0%, rgb(5, 30, 59) 56%, rgb(3, 21, 45) 100%);
-  box-shadow: inset 0 1px 0 rgba(225, 250, 255, 0.1);
+  border: 1px solid rgba(var(--route-accent), 0.42);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(var(--route-accent), 0.18), transparent 42%),
+    linear-gradient(132deg, rgb(7 34 61 / 0.98), rgb(3 18 42 / 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(235, 253, 255, 0.13),
+    inset 0 2px 0 rgba(var(--route-accent), 0.2),
+    0 12px 30px rgba(0, 7, 28, 0.32);
   backdrop-filter: none;
-  transition: opacity 420ms ease, color 220ms ease, background-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+  transition: opacity 420ms ease, color 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease, transform 220ms ease;
 }
 
-.gaia-vn-panel-final .gaia-opening-route + .gaia-opening-route {
-  border-left: 1px solid rgba(var(--opening-paper), 0.12);
+.gaia-vn-panel-final .gaia-opening-route--story {
+  --route-accent: 105, 232, 214;
+  background:
+    radial-gradient(circle at 88% 14%, rgb(105 232 214 / 0.2), transparent 42%),
+    linear-gradient(132deg, rgb(7 55 69 / 0.98), rgb(3 27 49 / 0.98));
+}
+
+.gaia-vn-panel-final .gaia-opening-route--other {
+  --route-accent: 112, 176, 255;
+  background:
+    radial-gradient(circle at 88% 14%, rgb(112 176 255 / 0.22), transparent 42%),
+    linear-gradient(132deg, rgb(12 45 91 / 0.98), rgb(5 24 55 / 0.98));
+}
+
+.gaia-vn-panel-final .gaia-opening-route--tour {
+  --route-accent: 194, 148, 255;
+  background:
+    radial-gradient(circle at 88% 14%, rgb(194 148 255 / 0.24), transparent 42%),
+    linear-gradient(132deg, rgb(39 33 88 / 0.98), rgb(16 20 57 / 0.98));
 }
 
 .gaia-vn-panel-final .gaia-opening-route-index,
@@ -5740,12 +5762,73 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   transform: translateY(-2px);
 }
 
+.gaia-vn-panel-final .gaia-opening-final-menu.is-visible .gaia-opening-route--story:hover,
+.gaia-vn-panel-final .gaia-opening-final-menu.is-visible .gaia-opening-route--story:focus-visible {
+  background:
+    radial-gradient(circle at 86% 18%, rgb(105 232 214 / 0.3), transparent 48%),
+    linear-gradient(132deg, rgb(9 72 82 / 0.995), rgb(4 34 56 / 0.995));
+}
+
+.gaia-vn-panel-final .gaia-opening-final-menu.is-visible .gaia-opening-route--other:hover,
+.gaia-vn-panel-final .gaia-opening-final-menu.is-visible .gaia-opening-route--other:focus-visible {
+  background:
+    radial-gradient(circle at 86% 18%, rgb(112 176 255 / 0.32), transparent 48%),
+    linear-gradient(132deg, rgb(18 57 111 / 0.995), rgb(7 29 65 / 0.995));
+}
+
+.gaia-vn-panel-final .gaia-opening-final-menu.is-visible .gaia-opening-route--tour:hover,
+.gaia-vn-panel-final .gaia-opening-final-menu.is-visible .gaia-opening-route--tour:focus-visible {
+  background:
+    radial-gradient(circle at 86% 18%, rgb(194 148 255 / 0.34), transparent 48%),
+    linear-gradient(132deg, rgb(53 42 109 / 0.995), rgb(21 24 66 / 0.995));
+}
+
 .gaia-vn-panel-final .gaia-opening-route:hover .gaia-opening-route-symbol,
 .gaia-vn-panel-final .gaia-opening-route:focus-visible .gaia-opening-route-symbol {
   border-color: transparent;
   background: transparent;
   box-shadow: none;
   transform: translateY(-1px);
+}
+
+.gaia-vn-panel-final .gaia-opening-route::before {
+  position: absolute;
+  z-index: 1;
+  top: -62%;
+  bottom: -62%;
+  left: -30%;
+  display: block;
+  width: 14%;
+  content: "";
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--route-accent), 0.18) 22%,
+    rgba(249, 255, 255, 0.96) 50%,
+    rgba(var(--route-accent), 0.24) 76%,
+    transparent 100%
+  );
+  filter: blur(0.2px) drop-shadow(0 0 10px rgba(var(--route-accent), 0.78));
+  mix-blend-mode: screen;
+  pointer-events: none;
+  transform: skewX(-19deg);
+}
+
+.gaia-vn-panel-final .gaia-opening-route:hover::before,
+.gaia-vn-panel-final .gaia-opening-route:focus-visible::before {
+  animation: opening-route-focus-flash 520ms cubic-bezier(0.18, 0.72, 0.24, 1) both;
+}
+
+@keyframes opening-route-focus-flash {
+  0% { left: -30%; opacity: 0; }
+  16% { opacity: 0.92; }
+  58% { opacity: 0.72; }
+  100% { left: 124%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaia-vn-panel-final .gaia-opening-route::before { display: none; }
 }
 
 .gaia-opening.is-route-guide-active .gaia-opening-final-menu.is-visible .gaia-opening-route.is-route-guide-target {
@@ -5780,11 +5863,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   .gaia-vn-panel-final .gaia-opening-route,
   .gaia-vn-panel-final .gaia-opening-route--other {
     min-height: 70px;
-    border-top: 1px solid rgba(var(--opening-paper), 0.16);
-  }
-
-  .gaia-vn-panel-final .gaia-opening-route + .gaia-opening-route {
-    border-left: 0;
+    border: 1px solid rgba(var(--route-accent), 0.42);
   }
 }
 
@@ -5819,6 +5898,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 @media (min-width: 961px) and (min-height: 521px) {
   .gaia-vn-panel-final .gaia-vn-final-copy,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
+    bottom: clamp(310px, 35vh, 760px);
     right: auto;
     left: max(26%, calc(min(460px, 44vw) + 18px));
     width: min(920px, 88vw);
@@ -5829,12 +5909,12 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   .gaia-vn-panel-final .gaia-vn-work-title { width: 100%; }
 
   .gaia-vn-panel-final .gaia-vn-work-title {
-    margin-bottom: -90px;
+    margin-bottom: -40px;
   }
 
   .gaia-vn-panel-final .gaia-opening-final-menu,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-opening-final-menu {
-    margin-top: 96px;
+    margin-top: 56px;
   }
 
   .gaia-vn-panel-final .gaia-opening-route-grid { grid-row: 1; }
@@ -5874,6 +5954,13 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 
   .gaia-opening.is-active .gaia-vn-panel-final .gaia-vn-final-copy {
     animation-name: opening-copy-final-centered;
+  }
+}
+
+@media (min-width: 961px) and (min-height: 1200px) {
+  .gaia-vn-panel-final .gaia-vn-final-copy,
+  .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
+    bottom: min(43.5vh, 940px);
   }
 }
 

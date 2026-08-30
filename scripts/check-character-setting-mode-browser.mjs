@@ -54,6 +54,7 @@ const inspect = (page) => page.evaluate(() => {
     layerRect: rect(layer),
     heroRect: rect(hero),
     imageRect: rect(image),
+    quoteRect: rect(quote),
     canvasRect: rect(canvas),
     webglState: canvas?.dataset.webglState || "missing",
     webglRendered: canvas?.dataset.webglRendered || "false",
@@ -144,11 +145,15 @@ try {
     assert.equal(initial.tagline, "20,000ルーメンを背負う電工少女");
     assert.equal(normalizeAnimatedText(initial.fullName), "雨宮 周");
     assert.equal(normalizeAnimatedText(initial.reading), "あめみや あまね");
-    assert.equal(initial.profile, "水色のショートボブと眠そうな目元が特徴の大学2年生。普段は無口で省エネ運転だが、配線やハードウェアの話になると途端にスイッチが入る。電気工事士・電気主任技術者の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。");
+    assert.equal(initial.profile, "水色のショートボブと眠そうな目元が特徴の大学2年生。普段は無口で省エネ運転だが、電気やエネルギーの話になると途端にスイッチが入る。電気工事士・電気主任技術者の資格を持ち、現場の機材設営から安全管理までを一手に担う実践派。");
     assert.equal(initial.profileLines, 3, viewport.name + ": Amane profile is not split at sentence endings");
     assert.notEqual(initial.profileShadow, "none", viewport.name + ": profile lacks contrast shadow");
     assert.equal(initial.quote, "「信号線とは違うの。一本飛んだら、本当に終わるよ」");
-    assert.equal(initial.quoteWritingMode, "vertical-rl", viewport.name + ": character quote is not vertical");
+    assert.equal(
+      initial.quoteWritingMode,
+      viewport.mobile ? "horizontal-tb" : "vertical-rl",
+      viewport.name + ": character quote orientation is incorrect",
+    );
     assert.equal(initial.statusRows, 0, viewport.name + ": FIELD / ROLE / TOOLS remain in the hero");
     assert(initial.imageAlt.length >= 10, viewport.name + ": hero character alt text is missing");
     assert.equal(initial.webglState, "ready", viewport.name + ": WebGL atmosphere did not initialize");
@@ -159,6 +164,13 @@ try {
     assert(initial.heroRect.height >= viewport.height * 0.9, viewport.name + ": hero does not occupy the viewport");
     assert(initial.scrollHeight > initial.clientHeight * 1.4, viewport.name + ": character reference document is missing");
     assert.equal(initial.overflowX, 0, viewport.name + ": page has horizontal overflow");
+    if (viewport.mobile) {
+      assert(
+        initial.quoteRect.bottom <= initial.imageRect.top + initial.imageRect.height * 0.08,
+        viewport.name + ": key line overlaps the visible character art "
+          + JSON.stringify({ quote: initial.quoteRect, image: initial.imageRect }),
+      );
+    }
     if (!viewport.mobile) assert(initial.leadOverflow <= 1, viewport.name + ": one-line lead is clipped");
 
     await page.screenshot({ path: path.join(outputDir, viewport.name + "-character-hero.png"), fullPage: false });

@@ -9683,14 +9683,16 @@ body:has(#novel-gallery-panel:not([hidden])) .gaia-audio-dock {
   display: block;
 }
 
-.novel-staff-roll-credit[data-credit-role="ACADEMIC REFERENCE"] dd {
+.novel-staff-roll-credit[data-credit-role="ACADEMIC INSPIRATION"] dd,
+.novel-staff-roll-credit[data-credit-role="AI GENERATION & ASSISTANCE"] dd {
   gap: 8px;
   font-size: clamp(13px, 1.45vw, 21px);
   letter-spacing: 0.025em;
   text-indent: 0.025em;
 }
 
-.novel-staff-roll-credit[data-credit-role="ACADEMIC REFERENCE"] .novel-staff-roll-credit-name {
+.novel-staff-roll-credit[data-credit-role="ACADEMIC INSPIRATION"] .novel-staff-roll-credit-name,
+.novel-staff-roll-credit[data-credit-role="AI GENERATION & ASSISTANCE"] .novel-staff-roll-credit-name {
   max-width: 100%;
   white-space: nowrap;
 }
@@ -10193,7 +10195,8 @@ body:has(#novel-layer[data-true-end-transition-phase]:not([data-true-end-transit
     font-size: clamp(16px, 4.8vw, 20px);
   }
 
-  .novel-staff-roll-credit[data-credit-role="ACADEMIC REFERENCE"] dd {
+  .novel-staff-roll-credit[data-credit-role="ACADEMIC INSPIRATION"] dd,
+  .novel-staff-roll-credit[data-credit-role="AI GENERATION & ASSISTANCE"] dd {
     gap: 6px;
     font-size: clamp(10px, 2.75vw, 12.5px);
     letter-spacing: 0;

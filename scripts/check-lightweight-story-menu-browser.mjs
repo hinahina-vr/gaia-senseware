@@ -233,12 +233,12 @@ const assertCards = (scan, viewport) => {
   assert.equal(scan.landingMetaCount, 0, `${viewport.name}: obsolete landing metadata remains`);
   assert.equal(scan.landingEyebrowCount, 0, `${viewport.name}: obsolete landing eyebrow remains`);
   assert.equal(scan.cardCount, 4);
-  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを地球につなぐ", "キャラクター設定", "音楽を鑑賞する"]);
-  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "実物の観測点を、地球の感覚器へ。", "三人の役割と関係。", "物語の音楽へ。"]);
+  assert.deepEqual(scan.cards.map((card) => card.title), ["世界を読む", "センサーを地球につなぐ", "キャラクター資料", "音楽を鑑賞する"]);
+  assert.deepEqual(scan.cards.map((card) => card.copy), ["変化を地図へ。", "実物の観測点を、地球の感覚器へ。", "物語に登場する三人を知る。", "物語の音楽へ。"]);
   for (const property of ["titleFontSize", "titleFontWeight", "titleLetterSpacing", "titleLineHeight"]) {
     assert.equal(new Set(scan.cards.map((card) => card[property])).size, 1, `${viewport.name}: card ${property} values are not unified`);
   }
-  assert.equal(scan.cards.find((card) => card.title === "キャラクター設定")?.copyLineCount, 1, `${viewport.name}: character copy is not one line`);
+  assert.equal(scan.cards.find((card) => card.title === "キャラクター資料")?.copyLineCount, 1, `${viewport.name}: character copy is not one line`);
   assert.equal(scan.cards.some((card) => card.path === "space" || card.title === "宇宙から見る"), false);
   assert.equal(scan.cards.some((card) => card.path === "abstract" || card.title === "光に触れる"), false);
   assert(scan.cards.every((card) => card.glyphVisible && card.focusable && card.rect.width > 0 && card.rect.height >= 90));
@@ -380,8 +380,8 @@ const scanCharacterFile = async (page, viewport) => {
   }));
   assert(jumpCopy.visible);
   assert.match(jumpCopy.text, /CHARACTER FILE/u);
-  assert.match(jumpCopy.text, /キャラクター設定/u);
-  assert.doesNotMatch(jumpCopy.text, /キャラクター設定資料/u);
+  assert.match(jumpCopy.text, /キャラクター資料/u);
+  assert.doesNotMatch(jumpCopy.text, /キャラクター設定/u);
   assert.equal(jumpCopy.controls, "character-book-layer");
   assert.equal(jumpCopy.hasPopup, "dialog");
   assert.equal(jumpCopy.inMainGrid, true);

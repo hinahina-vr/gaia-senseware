@@ -95,6 +95,7 @@ try {
         activeId: document.activeElement?.id,
         title: title?.textContent.trim() || "",
         titleHidden: title?.hidden,
+        indexLabelCount: guide.querySelectorAll(".gaia-opening-route-guide-index > span").length,
         copy: guide.querySelector("[data-route-guide-copy]")?.textContent.trim(),
         kickerCount: guide.querySelectorAll("[data-route-guide-kicker]").length,
         hint: guide.querySelector("[data-route-guide-hint-action]")?.textContent.trim(),
@@ -118,6 +119,7 @@ try {
     assert.equal(guideSteps[0].activeId, "gaia-opening-route-guide");
     assert.equal(guideSteps[0].title, "");
     assert.equal(guideSteps[0].titleHidden, true, `${viewport.name}: first route guide title is still visible`);
+    assert.equal(guideSteps[0].indexLabelCount, 0, `${viewport.name}: removed route-guide heading returned`);
     assert.equal(guideSteps[0].copy, "ビジュアルノベル風のストーリーを読みながら、インタラクティブに展示の世界を楽しめます。");
     assert.equal(guideSteps[0].kickerCount, 0, `${viewport.name}: route guide still contains category kickers`);
     assert.equal(guideSteps[0].buttonCount, 0, `${viewport.name}: route guide still contains operation buttons`);
@@ -126,8 +128,10 @@ try {
       assert(guideSteps[0].bubbleTransitionProperty.split(",").map((value) => value.trim()).includes("opacity"), `${viewport.name}: route guide does not fade with opacity`);
       assert(Number.parseFloat(guideSteps[0].bubbleTransitionDuration) >= 0.4, `${viewport.name}: route guide fade-in is too short`);
     }
-    assert(guideSteps[0].revealCompleteAt - guideSteps[0].revealStartedAt >= (viewport.reduced ? 0 : 650), `${viewport.name}: guide hold started before the menu reveal settled`);
-    assert(guideSteps[0].openedAt - guideSteps[0].revealCompleteAt >= 1900, `${viewport.name}: guide opened less than about two seconds after the complete menu reveal`);
+    const automaticGuideDelay = guideSteps[0].openedAt - guideSteps[0].revealStartedAt;
+    assert(automaticGuideDelay >= 1900, `${viewport.name}: guide opened before the two-second title-screen delay`);
+    assert(automaticGuideDelay <= 2600, `${viewport.name}: guide did not open about two seconds after the title screen appeared`);
+    assert(Math.abs(guideSteps[0].openedAt - guideSteps[0].revealCompleteAt) <= 20, `${viewport.name}: guide timing marker drifted from its automatic opening`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-guide.png`), animations: "disabled" });
 
     await page.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
@@ -136,8 +140,8 @@ try {
     const clickAdvancedGuide = await readGuide();
     assert.equal(clickAdvancedGuide.targetId, "gaia-opening-route-other", `${viewport.name}: click did not advance the guide`);
     assert.equal(clickAdvancedGuide.activeId, "gaia-opening-route-guide");
-    assert.equal(clickAdvancedGuide.title, "データを探索する");
-    assert.equal(clickAdvancedGuide.titleHidden, false);
+    assert.equal(clickAdvancedGuide.title, "");
+    assert.equal(clickAdvancedGuide.titleHidden, true);
     assert.equal(clickAdvancedGuide.copy, "気候変動や観測ポイントを、インタラクティブな地図上で探索・分析できます。");
     guideSteps.push(clickAdvancedGuide);
 
@@ -147,8 +151,8 @@ try {
     const keyboardAdvancedGuide = await readGuide();
     assert.equal(keyboardAdvancedGuide.targetId, "gaia-opening-tour-link", `${viewport.name}: Enter did not advance the guide`);
     assert.equal(keyboardAdvancedGuide.activeId, "gaia-opening-route-guide");
-    assert.equal(keyboardAdvancedGuide.title, "30秒ガイド");
-    assert.equal(keyboardAdvancedGuide.titleHidden, false);
+    assert.equal(keyboardAdvancedGuide.title, "");
+    assert.equal(keyboardAdvancedGuide.titleHidden, true);
     assert.equal(keyboardAdvancedGuide.copy, "初めての方向けに、基本的な見どころと操作の流れを短く紹介します。");
     assert.equal(keyboardAdvancedGuide.hint, "案内を終える");
     guideSteps.push(keyboardAdvancedGuide);
@@ -163,6 +167,7 @@ try {
     assert.equal(replayedGuide.targetId, "gaia-opening-route-story", `${viewport.name}: replay targets the wrong route`);
     assert.equal(replayedGuide.buttonCount, 0, `${viewport.name}: replayed guide restored removed buttons`);
     for (const guideStep of [...guideSteps, replayedGuide]) {
+      assert.equal(guideStep.indexLabelCount, 0, `${viewport.name}: a route-guide heading returned`);
       assert(Math.abs(guideStep.targetRect.left - guideStep.shadeRect.left) <= 0.5, `${viewport.name}: spotlight left edge is offset from ${guideStep.targetId}`);
       assert(Math.abs(guideStep.targetRect.top - guideStep.shadeRect.top) <= 0.5, `${viewport.name}: spotlight top edge is offset from ${guideStep.targetId}`);
       assert(Math.abs(guideStep.targetRect.width - guideStep.shadeRect.width) <= 0.5, `${viewport.name}: spotlight width does not match ${guideStep.targetId}`);
@@ -175,11 +180,37 @@ try {
     const repeatedGuide = await readGuide();
     assert.equal(repeatedGuide.step, "1", `${viewport.name}: returning to the title did not restart the guide`);
     assert(repeatedGuide.openedAt > replayedGuide.openedAt, `${viewport.name}: returning to the title did not open a fresh guide`);
+    const repeatedGuideDelay = repeatedGuide.openedAt - repeatedGuide.revealStartedAt;
+    assert(repeatedGuideDelay >= 1900 && repeatedGuideDelay <= 2600, `${viewport.name}: returning to the title did not reopen the guide after about two seconds`);
     await page.keyboard.press("Escape");
     await page.locator("#gaia-opening-route-story").focus();
 
-    const layout = await page.evaluate(() => {
+    const layout = await page.evaluate(async () => {
       const readRect = (element) => element?.getBoundingClientRect().toJSON();
+      const logo = document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo");
+      if (logo instanceof HTMLImageElement && !logo.complete) await logo.decode();
+      const logoRect = logo?.getBoundingClientRect();
+      let logoVisibleBottom = logoRect?.bottom ?? 0;
+      if (logo instanceof HTMLImageElement && logo.naturalWidth > 0 && logo.naturalHeight > 0 && logoRect) {
+        const canvas = document.createElement("canvas");
+        canvas.width = logo.naturalWidth;
+        canvas.height = logo.naturalHeight;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.drawImage(logo, 0, 0);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let alphaBottom = -1;
+        for (let y = canvas.height - 1; y >= 0 && alphaBottom < 0; y -= 1) {
+          for (let x = 0; x < canvas.width; x += 1) {
+            if (pixels[(y * canvas.width + x) * 4 + 3] > 8) {
+              alphaBottom = y;
+              break;
+            }
+          }
+        }
+        if (alphaBottom >= 0) logoVisibleBottom = logoRect.top + ((alphaBottom + 1) / canvas.height) * logoRect.height;
+      }
+      const poem = document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong");
+      const poemRect = poem?.getBoundingClientRect();
       const cards = Array.from(document.querySelectorAll(".gaia-opening-route-grid .gaia-opening-route"), (card) => ({
         id: card.id,
         index: card.querySelector(".gaia-opening-route-index")?.textContent.trim(),
@@ -196,6 +227,9 @@ try {
         glintDisplay: getComputedStyle(card, "::after").display,
         glintAnimationName: getComputedStyle(card, "::after").animationName,
         glintAnimationDuration: getComputedStyle(card, "::after").animationDuration,
+        focusFlashDisplay: getComputedStyle(card, "::before").display,
+        focusFlashAnimationName: getComputedStyle(card, "::before").animationName,
+        focusFlashAnimationDuration: getComputedStyle(card, "::before").animationDuration,
       }));
       return {
         menuRect: readRect(document.querySelector("#gaia-opening-final-menu")),
@@ -205,10 +239,12 @@ try {
         finalCopyRect: readRect(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-copy")),
         logoSrc: document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo")?.currentSrc,
         logoAlt: document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo")?.alt,
-        logoRect: readRect(document.querySelector(".gaia-vn-panel-final .gaia-vn-work-logo")),
-        poemRect: readRect(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong")),
-        poemTextAlign: getComputedStyle(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong")).textAlign,
-        poemLetterSpacing: Number.parseFloat(getComputedStyle(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-choice > strong")).letterSpacing),
+        logoRect: readRect(logo),
+        logoVisibleBottom,
+        poemRect: readRect(poem),
+        poemLineHeight: Number.parseFloat(getComputedStyle(poem).lineHeight),
+        poemTextAlign: getComputedStyle(poem).textAlign,
+        poemLetterSpacing: Number.parseFloat(getComputedStyle(poem).letterSpacing),
         finalBackground: getComputedStyle(document.querySelector(".gaia-vn-panel-final .gaia-vn-final-photo")).backgroundImage,
         forbiddenTaglinePresent: document.querySelector(".gaia-vn-panel-final").textContent.includes("感じ、記録し、未来を選ぶ"),
         cards,
@@ -225,6 +261,10 @@ try {
     assert.match(layout.logoSrc, /brand-logo-dark-surface-(?:590|1180)\.webp$/u, `${viewport.name}: final screen does not use the default logo`);
     assert.equal(layout.logoAlt, "惑星の放課後 — GAIA SENSATION");
     assert(layout.logoRect.left >= 0 && layout.logoRect.top >= 0 && layout.logoRect.right <= viewport.width + 1 && layout.logoRect.bottom <= viewport.height + 1, `${viewport.name}: final logo escaped the viewport`);
+    if (viewport.name === "pc-4k") {
+      assert(layout.logoRect.top <= viewport.height * 0.35, `${viewport.name}: final logo did not reach the instructed upper position`);
+      assert(layout.menuRect.bottom <= viewport.height * 0.62, `${viewport.name}: route buttons remain too low`);
+    }
     const expectedGatewayAxis = viewport.width >= 961 && viewport.height >= 521
       ? Math.max(viewport.width * 0.26, Math.min(460, viewport.width * 0.44) + 18)
       : viewport.width / 2;
@@ -240,10 +280,12 @@ try {
     assert(layout.poemLetterSpacing >= 1.5, `${viewport.name}: final poem characters are still cramped`);
     if (layout.poemRect.width > 0) {
       assert(Math.abs((layout.poemRect.left + layout.poemRect.right) / 2 - logoAxis) <= 2, `${viewport.name}: final poem block is not centered on the logo axis`);
+      assert(layout.poemRect.top - layout.logoVisibleBottom >= layout.poemLineHeight, `${viewport.name}: final poem is less than one line below the visible logo`);
     }
     assert.match(layout.finalBackground, /opening-final-observatory-keyvisual-v4(?:-960)?\.webp/u, `${viewport.name}: generated final background is not active`);
     assert.equal(layout.forbiddenTaglinePresent, false, `${viewport.name}: removed final-screen tagline returned`);
     assert.equal(layout.cards.length, 3, `${viewport.name}: route card count changed`);
+    assert.equal(new Set(layout.cards.map(({ backgroundImage }) => backgroundImage)).size, 3, `${viewport.name}: the three independent routes are not color-distinguished`);
     assert.deepEqual(layout.cards.map(({ index }) => index), ["01 / STORY", "02 / DATA", "03 / GUIDE"]);
     assert.deepEqual(layout.cards.map(({ label }) => label), ["物語を始める", "データを探索する", "30秒ガイド"]);
     assert.deepEqual(layout.cards.map(({ english }) => english), ["STORY EXPERIENCE", "DATA EXPLORATION", "30 SEC QUICK TOUR"]);
@@ -258,10 +300,11 @@ try {
       if (!viewport.reduced && card.id === "gaia-opening-route-story") {
         assert.equal(card.glintAnimationName, "opening-choice-glint", `${viewport.name}: focused-card glint did not run`);
         assert.equal(card.glintAnimationDuration, "0.24s", `${viewport.name}: focused-card glint is not three times faster`);
+        assert.equal(card.focusFlashDisplay, "block", `${viewport.name}: focused-card reflection layer is hidden`);
+        assert.equal(card.focusFlashAnimationName, "opening-route-focus-flash", `${viewport.name}: focused-card reflection did not run`);
+        assert.equal(card.focusFlashAnimationDuration, "0.52s", `${viewport.name}: focused-card reflection is mistimed`);
       }
-      if (card.id === "gaia-opening-route-story") {
-        assert.match(card.backgroundImage, /rgb\(14, 62, 101\)/u, `${viewport.name}: focused card is still transparent`);
-      }
+      if (viewport.reduced) assert.equal(card.focusFlashDisplay, "none", `${viewport.name}: reduced-motion focus flash remains visible`);
       assert.equal(overlapArea(card.labelRect, card.symbolRect), 0, `${viewport.name}: ${card.id} label overlaps its icon`);
       assert(Math.abs((card.iconRect.left + card.iconRect.right - card.symbolRect.left - card.symbolRect.right) / 2) <= 0.75, `${viewport.name}: ${card.id} icon is not horizontally centered`);
       assert(Math.abs((card.iconRect.top + card.iconRect.bottom - card.symbolRect.top - card.symbolRect.bottom) / 2) <= 1.25, `${viewport.name}: ${card.id} icon is not vertically centered`);
