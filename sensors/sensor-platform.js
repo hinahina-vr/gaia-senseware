@@ -204,7 +204,9 @@ const loadPublicSensors = async () => {
 const renderPublicSensors = () => {
   publicSensorMarkers.replaceChildren();
   publicSensorList.replaceChildren();
-  publicSensorCount.textContent = `${String(publicSensors.length).padStart(3, "0")} NODES`;
+  const onlineCount = publicSensors.filter((sensor) => sensor.state === "ONLINE").length;
+  const offlineCount = publicSensors.length - onlineCount;
+  publicSensorCount.textContent = `${String(publicSensors.length).padStart(3, "0")} NODES · ${onlineCount} ONLINE · ${offlineCount} OFFLINE`;
   if (!publicSensors.length) {
     publicSensorDetail.replaceChildren(
       Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SIGNAL STATUS" }),
@@ -219,8 +221,12 @@ const renderPublicSensors = () => {
     marker.dataset.longitude = String(sensor.location.longitude);
     marker.dataset.latitude = String(sensor.location.latitude);
     marker.dataset.state = sensor.state;
-    marker.setAttribute("aria-label", `${sensor.owner.displayName}さんの${sensor.sensorName}`);
+    marker.setAttribute("aria-label", `${sensor.owner.displayName}さんの${sensor.sensorName}、${sensor.state}`);
     marker.append(avatarElement(sensor.owner, "span"));
+    marker.append(Object.assign(document.createElement("span"), {
+      className: "sensor-map-marker-state",
+      textContent: sensor.state,
+    }));
     marker.addEventListener("click", () => selectPublicSensor(sensor, marker));
     publicSensorMarkers.append(marker);
 
