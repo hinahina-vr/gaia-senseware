@@ -953,6 +953,58 @@
       "publicationStatus": "public"
     },
     {
+      "path": "assets/guide-previews/character.jpg",
+      "sha256": "1ce5dbca63f7edb968aeb7d1598541bfed4059249863f4de32cbdbf5a9ee8c5c",
+      "generationService": "未特定（元台帳参照）",
+      "generationDate": null,
+      "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
+      "firstRepositoryEvidenceAt": "2026-08-31T16:03:03+09:00",
+      "processing": "採用ファイル。個別の加工履歴は元台帳を参照",
+      "sourceLedger": "assets/ILLUSTRATION-V8.md",
+      "officialTermsUrl": null,
+      "accountPlan": "確認していない",
+      "publicationStatus": "public"
+    },
+    {
+      "path": "assets/guide-previews/map.jpg",
+      "sha256": "f68be41525966d3431e936b15955050902bc03ac161f7bdba43e0276e3f8d919",
+      "generationService": "未特定（元台帳参照）",
+      "generationDate": null,
+      "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
+      "firstRepositoryEvidenceAt": "2026-08-31T16:03:03+09:00",
+      "processing": "採用ファイル。個別の加工履歴は元台帳を参照",
+      "sourceLedger": "assets/ILLUSTRATION-V8.md",
+      "officialTermsUrl": null,
+      "accountPlan": "確認していない",
+      "publicationStatus": "public"
+    },
+    {
+      "path": "assets/guide-previews/sensor.jpg",
+      "sha256": "80b4bdb64d3e573995c63274578a6bbefd42f694a7c78529cb631a91697b55de",
+      "generationService": "未特定（元台帳参照）",
+      "generationDate": null,
+      "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
+      "firstRepositoryEvidenceAt": "2026-08-31T16:03:03+09:00",
+      "processing": "採用ファイル。個別の加工履歴は元台帳を参照",
+      "sourceLedger": "assets/ILLUSTRATION-V8.md",
+      "officialTermsUrl": null,
+      "accountPlan": "確認していない",
+      "publicationStatus": "public"
+    },
+    {
+      "path": "assets/guide-previews/sound.jpg",
+      "sha256": "627876a9cb1483384defe00d075246cc5927a1857dc64b8458f6e9748f2ecacf",
+      "generationService": "未特定（元台帳参照）",
+      "generationDate": null,
+      "generationDateUnknownReason": "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
+      "firstRepositoryEvidenceAt": "2026-08-31T16:03:03+09:00",
+      "processing": "採用ファイル。個別の加工履歴は元台帳を参照",
+      "sourceLedger": "assets/ILLUSTRATION-V8.md",
+      "officialTermsUrl": null,
+      "accountPlan": "確認していない",
+      "publicationStatus": "public"
+    },
+    {
       "path": "assets/modes/mode-abstract-chibi-v3.png",
       "sha256": "f7265f42609af662bc5f99bff8ba0829197e246a33bd9e6ca3a05387c301c72b",
       "generationService": "未特定（元台帳参照）",
