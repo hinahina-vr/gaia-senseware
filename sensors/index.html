@@ -10,7 +10,7 @@
     <script>document.documentElement.dataset.sensorView = location.hash.startsWith("#map") ? "map" : "login";</script>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
     <link rel="stylesheet" href="../mode-entry-guide.css?v=gaia-mode-entry-guide-1" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-planetary-presence-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-guide-layout-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=3" defer></script>
     <script src="../mode-entry-guide.js?v=gaia-mode-entry-guide-1" defer></script>
@@ -387,9 +387,24 @@
       </section>
 
       <section class="sensor-view sensor-guide" data-view="guide" id="guide" hidden>
-        <div class="sensor-kicker">ESP32 / VERIFIED CONNECTION</div>
-        <h1>ESP32で環境データを測る。</h1>
-        <p class="sensor-guide-lead">GAIA SENSEWAREはWeb展示だけではありません。ESP32用ファームウェアを実際に配布し、匿名のおためし参加でもPairing Codeを発行できます。設定後のESP32はPCを常時つながず、観測値をHTTPSで直接送ります。</p>
+        <header class="sensor-guide-hero">
+          <div class="sensor-guide-hero-copy">
+            <div class="sensor-kicker">ESP32 / VERIFIED CONNECTION</div>
+            <h1>ESP32で環境を測る</h1>
+            <p class="sensor-guide-lead">検証済みファームウェアを書き込み、匿名のおためし参加でも観測点を登録できます。設定後はPCを常時つながず、ESP32からHTTPSで観測値を送信します。</p>
+            <div class="sensor-guide-badges" aria-label="このガイドでできること">
+              <span><b>実機検証済み</b>ESP32-WROOM-32</span>
+              <span><b>復元に備える</b>4MB全体を保存</span>
+              <span><b>設定後は単体動作</b>Wi-FiからHTTPS送信</span>
+            </div>
+          </div>
+          <nav class="sensor-guide-jump" aria-label="接続ガイド内の移動">
+            <p>START HERE</p>
+            <a href="#sensor-kit-title"><span>01</span><strong>対応機器を確認</strong><small>機種・容量・接続方法</small></a>
+            <a href="#sensor-connect-path"><span>02</span><strong>書き込み手順を見る</strong><small>確認からONLINEまで</small></a>
+            <a href="#sensor-trouble-title"><span>03</span><strong>困ったとき</strong><small>接続・コード・OFFLINE</small></a>
+          </nav>
+        </header>
 
         <section class="sensor-guide-section" aria-labelledby="sensor-kit-title">
           <div class="sensor-guide-heading"><span>COMPATIBILITY</span><h2 id="sensor-kit-title">実機確認済みの構成</h2></div>
@@ -408,7 +423,7 @@
           <p class="sensor-guide-lead">ESP32はPCのような固定OSへ後からアプリを追加する機器ではありません。FreeRTOS、ESP-IDF／Arduinoの処理、Wi-Fi・HTTPS通信、GAIAアプリをひとまとめにしたファームウェアをフラッシュへ書き込み、その全体で動きます。そのため、書き込み前には現在の4MB全体をバックアップします。</p>
         </section>
 
-        <ol class="sensor-guide-path" aria-label="ESP32を接続する6ステップ">
+        <ol class="sensor-guide-path" id="sensor-connect-path" aria-label="ESP32を接続する6ステップ">
           <li>
             <span>01</span>
             <div><strong>USBで機種と保護状態を確認</strong><p>ESP32をデータ対応USBケーブルでPCへ接続します。チップ、revision、フラッシュ容量、Secure Boot、フラッシュ暗号化を確認します。不一致や保護機能が見つかった場合は書き込み前に止めます。</p></div>
@@ -462,7 +477,7 @@
 
       <section class="sensor-view sensor-guide sensor-terms" data-view="terms" id="terms" hidden>
         <div class="sensor-kicker">PARTICIPATION TERMS / SAFETY</div>
-        <h1>利用条件と、<br />書き込み前の注意。</h1>
+        <h1>利用条件と書き込み前の注意</h1>
         <p class="sensor-guide-lead">安全に参加するための実務上の条件です。登録を始める前に確認してください。</p>
         <div class="sensor-terms-grid">
           <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>PUBLIC</span><h2>登録内容は公開されます</h2></div><p>すべての登録センサーは「みんなのセンサー」に表示されます。センサー名、観測値、国・地域、約10km単位に丸めた位置が公開対象です。正確な住所、GPS座標、Wi-Fi情報、Device Tokenは公開しません。</p></section>

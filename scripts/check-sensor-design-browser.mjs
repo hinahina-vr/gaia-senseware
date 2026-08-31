@@ -41,11 +41,11 @@ try {
       const body = getComputedStyle(document.body);
       const heading = document.querySelector(".sensor-login h1");
       const headingStyle = getComputedStyle(heading);
-      const brandStyle = getComputedStyle(document.querySelector(".sensor-brand span"));
+      const backStyle = getComputedStyle(document.querySelector(".sensor-home-back"));
       const navStyle = getComputedStyle(document.querySelector(".sensor-topbar nav a"));
       const buttonStyle = getComputedStyle(document.querySelector("#google-login"));
       const topbar = document.querySelector(".sensor-topbar").getBoundingClientRect();
-      const audio = document.querySelector("#sensor-audio-toggle").getBoundingClientRect();
+      const audio = document.querySelector("#gaia-audio-dock").getBoundingClientRect();
       const nav = [...document.querySelectorAll(".sensor-topbar nav a")].map((element) => {
         const rect = element.getBoundingClientRect();
         return { text: element.textContent.trim(), left: rect.left, right: rect.right, height: rect.height };
@@ -55,7 +55,7 @@ try {
       return {
         bodyFont: body.fontFamily,
         headingFont: headingStyle.fontFamily,
-        brandFont: brandStyle.fontFamily,
+        backFont: backStyle.fontFamily,
         navFont: navStyle.fontFamily,
         buttonFont: buttonStyle.fontFamily,
         headingHeight: heading.getBoundingClientRect().height,
@@ -69,7 +69,7 @@ try {
     });
     assert.match(login.bodyFont, /Arial Narrow/u);
     assert.match(login.headingFont, /Yu Mincho/u);
-    assert.match(login.brandFont, /Georgia/u);
+    assert.match(login.backFont, /Yu Mincho/u);
     assert.match(login.navFont, /Yu Mincho/u);
     assert.match(login.buttonFont, /Yu Mincho/u);
     assert.equal(login.animationName, "sensor-enter");
@@ -84,11 +84,11 @@ try {
 
     await page.goto(new URL("/sensors/#map", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.locator("[data-view='map']").waitFor({ state: "visible" });
-    await page.locator(".sensor-map-marker").waitFor({ state: "visible" });
+    await page.locator(".sensor-map-marker").first().waitFor({ state: "visible" });
     await page.waitForTimeout(750);
     const publicMap = await page.evaluate(() => ({
       headingFont: getComputedStyle(document.querySelector(".sensor-page-head h1")).fontFamily,
-      markerSize: Math.min(...[...document.querySelectorAll(".sensor-map-marker")].map((marker) => marker.getBoundingClientRect().width)),
+      markerSize: Math.min(...[...document.querySelectorAll(".sensor-map-marker")].map((marker) => Number.parseFloat(getComputedStyle(marker).width))),
       socialLinkTargets: [...document.querySelectorAll(".sensor-map-socials a")].map((link) => link.getBoundingClientRect().height),
       overflowX: document.documentElement.scrollWidth > innerWidth + 1,
     }));
@@ -101,16 +101,51 @@ try {
     await page.goto(new URL("/sensors/?authenticated=1#guide", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.locator("[data-view='guide']").waitFor({ state: "visible" });
     await page.waitForTimeout(750);
-    const guide = await page.evaluate(() => ({
-      headingFont: getComputedStyle(document.querySelector(".sensor-guide h1")).fontFamily,
-      linkTargets: [...document.querySelectorAll(".sensor-guide-links a")].map((link) => link.getBoundingClientRect().height),
-      overflowX: document.documentElement.scrollWidth > innerWidth + 1,
-    }));
+    const guide = await page.evaluate(() => {
+      const title = document.querySelector(".sensor-guide-hero h1");
+      const titleStyle = getComputedStyle(title);
+      const titleRect = title.getBoundingClientRect();
+      const heroRect = document.querySelector(".sensor-guide-hero").getBoundingClientRect();
+      return {
+        title: title.textContent.trim(),
+        headingFont: titleStyle.fontFamily,
+        titleLines: Math.round(titleRect.height / Number.parseFloat(titleStyle.lineHeight)),
+        titleContained: titleRect.left >= heroRect.left - 1 && titleRect.right <= heroRect.right + 1,
+        jumpCount: document.querySelectorAll(".sensor-guide-jump a").length,
+        linkTargets: [...document.querySelectorAll("[data-view='guide'] .sensor-guide-jump a, [data-view='guide'] .sensor-guide-finish a")].map((link) => link.getBoundingClientRect().height),
+        kitColumns: getComputedStyle(document.querySelector(".sensor-kit-list")).gridTemplateColumns.trim().split(/\s+/u).length,
+        pathColumns: getComputedStyle(document.querySelector(".sensor-guide-path")).gridTemplateColumns.trim().split(/\s+/u).length,
+        overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+      };
+    });
+    assert.equal(guide.title, "ESP32で環境を測る");
     assert.match(guide.headingFont, /Yu Mincho/u);
+    assert.equal(guide.titleLines, 1);
+    assert.equal(guide.titleContained, true);
+    assert.equal(guide.jumpCount, 3);
     assert(guide.linkTargets.every((height) => height >= 44));
+    assert.equal(guide.kitColumns, viewport.width === 390 ? 2 : 5);
+    assert.equal(guide.pathColumns, viewport.width === 390 ? 1 : 2);
     assert.equal(guide.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-guide.png`), fullPage: true });
-    report.scans.push({ viewport: label, login, publicMap, guide, passed: true });
+
+    await page.goto(new URL("/sensors/?authenticated=1#terms", baseUrl).href, { waitUntil: "domcontentloaded" });
+    await page.locator("[data-view='terms']").waitFor({ state: "visible" });
+    await page.waitForTimeout(300);
+    const terms = await page.evaluate(() => {
+      const title = document.querySelector(".sensor-terms > h1");
+      const style = getComputedStyle(title);
+      return {
+        title: title.textContent.trim(),
+        titleLines: Math.round(title.getBoundingClientRect().height / Number.parseFloat(style.lineHeight)),
+        overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+      };
+    });
+    assert.equal(terms.title, "利用条件と書き込み前の注意");
+    assert.equal(terms.titleLines, 1);
+    assert.equal(terms.overflowX, false);
+    await page.screenshot({ path: path.join(outputDir, `${label}-terms.png`), fullPage: true });
+    report.scans.push({ viewport: label, login, publicMap, guide, terms, passed: true });
     await context.close();
   }
   assert.equal(report.expectedAuth401.length, viewports.length);
