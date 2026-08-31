@@ -97,6 +97,7 @@ let publicMapPinch = null;
 let publicMapPinchFrame = 0;
 let publicMapWheelFrame = 0;
 let publicMapWheel = null;
+let publicMapViewportFrame = 0;
 let publicMapFocusFrame = 0;
 let publicMapFocusToken = 0;
 let publicMapHoverTimer = 0;
@@ -158,7 +159,7 @@ const showView = (name) => {
     if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "smooth" });
   });
   if (name === "map") {
-    requestAnimationFrame(updatePublicMapViewport);
+    queuePublicMapViewportUpdate();
     publicMapPollTimer = window.setInterval(() => {
       void loadPublicSensors({ preserveSelection: true, quiet: true }).catch(() => {});
     }, publicMapPollIntervalMs);
@@ -257,7 +258,7 @@ const loadPublicSensors = async ({ preserveSelection = true, quiet = false } = {
   publicNetworkStats = response.stats ?? { observationPackets: 0, payloadBytes: 0 };
   if (!preserveSelection) selectedPublicSensorId = null;
   renderPublicSensors();
-  if (!quiet && views.get("map") && !views.get("map").hidden) updatePublicMapViewport();
+  if (!quiet && views.get("map") && !views.get("map").hidden) queuePublicMapViewportUpdate();
 };
 
 const renderPublicSensors = () => {
@@ -283,7 +284,7 @@ const renderPublicSensors = () => {
       Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SIGNAL STATUS" }),
       Object.assign(document.createElement("p"), { textContent: "公開中のセンサーはまだありません。最初の信号を待っています。" }),
     );
-    applyPublicSensorFilters();
+    applyPublicSensorFilters({ deferLayout: true });
     return;
   }
   let initialSelection = null;
@@ -358,7 +359,7 @@ const renderPublicSensors = () => {
       requestAnimationFrame(() => focusPublicSensor(initialSelection.sensor, { minimumZoom: publicMapFocusMinZoom }));
     }
   }
-  applyPublicSensorFilters();
+  applyPublicSensorFilters({ deferLayout: true });
 };
 
 function initPublicSensorDirectory() {
@@ -406,7 +407,7 @@ function initPublicSensorDirectory() {
   });
 }
 
-function applyPublicSensorFilters() {
+function applyPublicSensorFilters({ deferLayout = false } = {}) {
   const query = normalizePublicSensorSearch(publicSensorQueryText);
   let visibleCount = 0;
   let selectedVisible = !selectedPublicSensorId;
@@ -436,7 +437,8 @@ function applyPublicSensorFilters() {
   if (publicSensorResults) publicSensorResults.value = `${visibleCount} / ${publicSensors.length}件`;
   if (publicMapDirectoryCount) publicMapDirectoryCount.textContent = String(publicSensors.length);
   if (publicSensorEmpty) publicSensorEmpty.hidden = visibleCount !== 0;
-  positionPublicSensorMarkers();
+  if (deferLayout) queuePublicMapViewportUpdate();
+  else positionPublicSensorMarkers();
 }
 
 function normalizePublicSensorSearch(value) {
@@ -1078,7 +1080,7 @@ function initPublicMapNavigation() {
     const moves = { ArrowLeft: [80, 0], ArrowRight: [-80, 0], ArrowUp: [0, 80], ArrowDown: [0, -80] };
     if (moves[event.key]) { event.preventDefault(); panPublicMap(...moves[event.key]); }
   });
-  window.addEventListener("resize", updatePublicMapViewport, { passive: true });
+  window.addEventListener("resize", queuePublicMapViewportUpdate, { passive: true });
 }
 
 function cancelPublicMapFocus() {
@@ -1192,6 +1194,14 @@ function updatePublicMapViewport() {
   if (publicMapZoomOutput) publicMapZoomOutput.value = `${publicMapCamera.zoom.toFixed(1)}×`;
   const basis = publicSensorMap.querySelector("[data-map-basis]");
   if (basis) basis.textContent = `JAPAN CENTER / ZOOM ${publicMapCamera.zoom.toFixed(1)}× / NE 1:50m / 境界: 地球地図日本`;
+}
+
+function queuePublicMapViewportUpdate() {
+  if (publicMapViewportFrame) return;
+  publicMapViewportFrame = requestAnimationFrame(() => {
+    publicMapViewportFrame = 0;
+    updatePublicMapViewport();
+  });
 }
 
 function positionPublicSensorMarkers() {
