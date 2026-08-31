@@ -422,7 +422,9 @@ try {
   await spaceEntryPage.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden, null, { timeout: 20_000 });
   await spaceEntryPage.locator("#abstract-mode-list .map-mode-button").first().click();
   await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit") && getComputedStyle(document.querySelector("#gaia-canvas")).visibility === "visible", null, { timeout: 20_000 });
-  await spaceEntryPage.evaluate(() => document.querySelector("#space-button")?.click());
+  await spaceEntryPage.evaluate(() => {
+    window.dispatchEvent(new CustomEvent("gaia:space-open-at-mode", { detail: { index: 0 } }));
+  });
   await spaceEntryPage.waitForFunction(() => document.body.classList.contains("gaia-space-preparing"), null, { timeout: 30_000 });
   assert.equal(await spaceEntryPage.locator("#gaia-canvas").evaluate((canvas) => getComputedStyle(canvas).visibility), "hidden", "space loading must suppress the abstract WebGL base before awaiting its snapshot");
   await startBaseExposureProbe(spaceEntryPage);
