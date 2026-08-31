@@ -765,7 +765,8 @@ try {
   assert.equal(await tourPage.evaluate(() => document.querySelector("#gaia-guided-tour")?.contains(document.activeElement)), true);
   assert.equal(await tourPage.locator("#gaia-canvas").evaluate((canvas) => getComputedStyle(canvas).visibility), "hidden", "direct #tour entry must suppress the abstract WebGL base");
   assert.equal(await tourPage.evaluate(() => document.body.classList.contains("gaia-route-handoff")), false, "direct #tour handoff shield must release only after the guide owns the viewport");
-  for (const pattern of [/\.mp3$/u, /opening-mizuha/u, /opening-amane/u, /open-data-archive-bg/u, /opening-final-night/u, /space-(?:signals|mode|scenes)/u]) {
+  assert(tourRequests.some((resource) => /moonlit-source-save\.mp3$/u.test(resource)), "tour must request the SENSEWARE soundtrack");
+  for (const pattern of [/satellite-forecast-hope\.mp3$/u, /opening-mizuha/u, /opening-amane/u, /open-data-archive-bg/u, /opening-final-night/u, /space-(?:signals|mode|scenes)/u]) {
     assert.equal(tourRequests.some((resource) => pattern.test(resource)), false, `tour requested opening asset: ${pattern}`);
   }
   const initialOperationGuide = await tourPage.evaluate(() => ({
