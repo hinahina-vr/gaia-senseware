@@ -299,7 +299,10 @@ const renderPublicSensors = () => {
       className: "sensor-map-marker-state",
       textContent: [publicSensorStateLabel(sensor), primaryMetric?.compact].filter(Boolean).join(" · "),
     }));
-    marker.addEventListener("click", () => selectPublicSensor(sensor, marker, { historyMode: "push" }));
+    marker.addEventListener("click", () => {
+      selectPublicSensor(sensor, marker, { historyMode: "push" });
+      focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom });
+    });
     publicSensorMarkers.append(marker);
 
     const card = document.createElement("button");

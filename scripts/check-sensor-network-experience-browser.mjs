@@ -187,6 +187,16 @@ try {
     } else {
       const ameMarker = page.locator(".sensor-map-marker", { hasText: "DEMO LIVE" }).filter({ has: page.locator("img[src*='amane']") });
       await ameMarker.click();
+      await page.waitForTimeout(650);
+      const markerFocusDelta = await page.evaluate(() => {
+        const map = document.querySelector("#public-sensor-map").getBoundingClientRect();
+        const marker = document.querySelector(".sensor-map-marker[aria-current='true']").getBoundingClientRect();
+        return {
+          x: Math.abs(marker.left + marker.width / 2 - (map.left + map.width / 2)),
+          y: Math.abs(marker.top + marker.height / 2 - (map.top + map.height / 2)),
+        };
+      });
+      assert(markerFocusDelta.x < 5 && markerFocusDelta.y < 5, `selected map marker was not centred: ${JSON.stringify(markerFocusDelta)}`);
       assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
       assert.equal(await page.locator(".sensor-observation-hud").isVisible(), false);
       await page.locator(".sensor-map-card-expand").click();
