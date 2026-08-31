@@ -20,9 +20,9 @@ for (const id of ["novel-log-title", "novel-log-view-heard", "novel-log-view-scr
 assert.match(runtimeSource, /buildFullScriptMarkdown/u);
 assert.match(runtimeSource, /scriptArchiveStepCount/u);
 assert.match(runtimeSource, /GAIA_TRUE_END_STORY/u);
-assert.match(loaderSource, /novel-mode\.js\?v=gaia-staff-credits-1/u);
-assert.match(loaderSource, /novel-mode\.css\?v=gaia-staff-credits-1/u);
-assert.match(htmlSource, /gaia-mode-loader\.js\?v=gaia-character-energy-copy-1/u);
+assert.match(loaderSource, /novel-mode\.js\?v=gaia-dialogue-fallback-1/u);
+assert.match(loaderSource, /novel-mode\.css\?v=gaia-dialogue-fallback-1/u);
+assert.match(htmlSource, /gaia-mode-loader\.js\?v=gaia-mode-entry-guide-1/u);
 
 delete globalThis.GAIA_NOVEL_STORY;
 delete globalThis.GAIA_TRUE_END_STORY;

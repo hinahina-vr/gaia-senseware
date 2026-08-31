@@ -33,7 +33,7 @@ assert.match(html, /id="gx-modal-skip"[\s\S]{0,240}aria-label="GXモーダルを
 assert.match(gx, /elements\.modalSkip\.setAttribute\([\s\S]*?GXモーダルをスキップして\$\{returnTo === "novel" \? "ストーリー" : "入口"\}へ戻る/u);
 assert.doesNotMatch(html, /id="gx-era-transition-skip"/u);
 assert.match(loader, /gx-mode\.js\?v=gaia-gx-back-header-drop-1/u);
-assert.match(loader, /novel-mode\.js\?v=gaia-staff-credits-1/u);
+assert.match(loader, /novel-mode\.js\?v=gaia-dialogue-fallback-1/u);
 assert.match(loader, /gx-mode\.css\?v=gaia-gx-mobile-gesture-pass-through-1/u);
 assert.match(gx, /const CLOSE_TRANSITION_MS = reducedMotion \? 0 : 340;/u);
 assert.match(gx, /if \(isOpen \|\| isClosing\) return;/u);
