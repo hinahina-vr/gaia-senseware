@@ -154,7 +154,9 @@ const showView = (name) => {
   document.querySelectorAll("[data-nav]").forEach((link) => {
     link.toggleAttribute("aria-current", link.dataset.nav === name);
   });
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  requestAnimationFrame(() => {
+    if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "smooth" });
+  });
   if (name === "map") {
     requestAnimationFrame(updatePublicMapViewport);
     publicMapPollTimer = window.setInterval(() => {
@@ -522,7 +524,9 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   if (!marker) return;
   publicSensorDetail.hidden = false;
   publicSensorDetail.dataset.expanded = "false";
-  publicSensorDetail.scrollTop = 0;
+  requestAnimationFrame(() => {
+    if (selectedPublicSensorId === sensor.id) publicSensorDetail.scrollTop = 0;
+  });
   setPublicSensorDirectoryOpen(false);
   selectedPublicSensorId = sensor.id;
   publicSensorSelectionDismissed = false;
