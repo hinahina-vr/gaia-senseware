@@ -64,10 +64,10 @@
   vertical-align: 0.18em;
   -webkit-text-fill-color: #8be8ff;
   text-shadow:
-    -1px -1px 0 rgba(0, 10, 22, 0.95),
-    1px 1px 0 rgba(0, 10, 22, 0.95),
-    0 2px 6px rgba(0, 4, 14, 0.95),
-    0 0 14px rgba(87, 218, 255, 0.5);
+    -1px -1px 0 rgba(0, 10, 22, 0.42),
+    1px 1px 0 rgba(0, 10, 22, 0.42),
+    0 2px 4px rgba(0, 4, 14, 0.36),
+    0 0 12px rgba(87, 218, 255, 0.32);
 }
 
 @supports ((background-clip: text) or (-webkit-background-clip: text)) {
@@ -84,8 +84,8 @@
     color: transparent;
     -webkit-text-fill-color: transparent;
     filter:
-      drop-shadow(0 4px 1px rgba(0, 5, 16, 0.88))
-      drop-shadow(0 8px 7px rgba(0, 4, 14, 0.58));
+      drop-shadow(0 2px 1px rgba(0, 5, 16, 0.38))
+      drop-shadow(0 4px 4px rgba(0, 4, 14, 0.22));
   }
 }
 
@@ -1427,4 +1427,797 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 .experience.japan-open .japan-layer .map-mode-bank > .map-mode-bank-heading,
 .experience.japan-open .japan-layer .map-mode-bank > .map-mode-bank-guide {
   display: none !important;
+}
+
+/* Unified map command dock ------------------------------------------------
+   Wide screens keep the map as the canvas and consolidate every primary
+   action into one low, instrument-like rail. Secondary choices open upward. */
+.map-command-dock,
+.map-dock-bank-trigger,
+.map-dock-action {
+  box-sizing: border-box;
+}
+
+.map-dock-bank-trigger,
+.map-dock-action {
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.map-dock-bank-popover {
+  min-width: 0;
+}
+
+@media (min-width: 901px) {
+  :root {
+    --map-command-dock-height: clamp(76px, 8.65vh, 116px);
+  }
+
+  body.map-grid-desktop .map-command-dock {
+    position: fixed;
+    z-index: 90;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns:
+      minmax(170px, 1.17fr)
+      minmax(510px, 5.34fr)
+      minmax(210px, 1.75fr)
+      minmax(118px, 0.93fr)
+      minmax(108px, 0.81fr);
+    gap: 0;
+    height: var(--map-command-dock-height);
+    padding: 9px clamp(10px, 0.8vw, 20px) 11px;
+    color: rgba(233, 250, 252, 0.9);
+    border-top: 1px solid rgba(115, 205, 226, 0.25);
+    background:
+      linear-gradient(90deg, rgba(6, 29, 46, 0.98), rgba(3, 17, 35, 0.985) 54%, rgba(7, 24, 43, 0.98)),
+      #041426;
+    box-shadow:
+      0 -18px 46px rgba(0, 7, 20, 0.38),
+      inset 0 1px rgba(182, 240, 248, 0.035);
+    backdrop-filter: blur(18px) saturate(112%);
+    -webkit-backdrop-filter: blur(18px) saturate(112%);
+    isolation: isolate;
+  }
+
+  body.map-grid-desktop .map-command-dock::before {
+    position: absolute;
+    z-index: -1;
+    inset: 9px clamp(10px, 0.8vw, 20px) 11px;
+    border: 1px solid rgba(106, 205, 220, 0.22);
+    border-radius: 5px;
+    content: "";
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(8, 32, 51, 0.58), rgba(2, 14, 29, 0.34));
+  }
+
+  body.map-grid-desktop .japan-layer #japan-title::before {
+    display: none;
+  }
+
+  body.map-grid-desktop .map-command-dock > :is(.map-mode-bank, .signal-console-map, .map-reading-guide, .map-dock-action) {
+    min-width: 0;
+    height: 100%;
+    border: 0 !important;
+    border-right: 1px solid rgba(113, 207, 221, 0.18) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body.map-grid-desktop .map-command-dock > :last-child {
+    border-right: 0 !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-grid-polish,
+  body.map-grid-desktop .map-command-dock .map-grid-bank,
+  body.map-grid-desktop .map-command-dock .map-grid-data {
+    position: relative !important;
+    z-index: auto !important;
+    inset: auto !important;
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-mode-bank {
+    padding: 0 clamp(12px, 1.05vw, 22px) !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-mobile-bank-toggle,
+  body.map-grid-desktop .map-command-dock .map-mode-bank-heading,
+  body.map-grid-desktop .map-command-dock .map-mode-bank-guide {
+    display: none !important;
+  }
+
+  body.map-grid-desktop .map-dock-bank-trigger {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    text-align: left;
+  }
+
+  .map-dock-bank-copy {
+    display: grid;
+    gap: clamp(7px, 0.62vh, 10px);
+    min-width: 0;
+  }
+
+  .map-dock-bank-copy > small,
+  .map-command-dock .signal-console-heading > span,
+  .map-command-dock .signal-console-map label > span,
+  .map-command-dock .map-reading-guide summary > span,
+  .map-dock-action small {
+    color: rgba(118, 222, 236, 0.78);
+    font: 700 clamp(7px, 0.37vw, 9px)/1 Consolas, "Courier New", monospace;
+    letter-spacing: 0.13em;
+    white-space: nowrap;
+  }
+
+  .map-dock-bank-copy > small b {
+    margin-left: 4px;
+    color: rgba(180, 234, 242, 0.52);
+    font-weight: 600;
+  }
+
+  .map-dock-bank-copy > span {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    min-width: 0;
+  }
+
+  .map-dock-bank-copy em {
+    color: #8deaff;
+    font: 650 clamp(18px, 1.3vw, 28px)/1 Consolas, "Courier New", monospace;
+    font-style: normal;
+  }
+
+  .map-dock-bank-copy strong {
+    overflow: hidden;
+    color: #effcff;
+    font: 600 clamp(13px, 0.95vw, 21px)/1.2 var(--font-ja);
+    letter-spacing: 0.035em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .map-dock-bank-trigger > i {
+    position: relative;
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-right: 1px solid rgba(180, 235, 244, 0.72);
+    border-bottom: 1px solid rgba(180, 235, 244, 0.72);
+    transform: rotate(45deg) translateY(-3px);
+    transition: transform 180ms ease;
+  }
+
+  .map-mode-bank.is-dock-bank-expanded .map-dock-bank-trigger > i {
+    transform: rotate(225deg) translate(-2px, -1px);
+  }
+
+  body.map-grid-desktop .map-dock-bank-trigger:is(:hover, :focus-visible) {
+    outline: none;
+  }
+
+  body.map-grid-desktop .map-dock-bank-trigger:is(:hover, :focus-visible) .map-dock-bank-copy strong {
+    color: #fff;
+    text-shadow: 0 0 14px rgba(111, 225, 245, 0.32);
+  }
+
+  body.map-grid-desktop .map-dock-bank-popover {
+    position: absolute;
+    z-index: 8;
+    bottom: calc(100% + 18px);
+    left: -1px;
+    display: grid;
+    gap: 10px;
+    width: min(480px, calc(100vw - 28px));
+    padding: 16px;
+    border: 1px solid rgba(123, 219, 230, 0.38);
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 100% 0, rgba(76, 188, 218, 0.14), transparent 42%),
+      linear-gradient(145deg, rgba(4, 25, 40, 0.985), rgba(2, 14, 28, 0.985));
+    box-shadow: 0 -20px 54px rgba(0, 5, 17, 0.56), inset 0 1px rgba(220, 251, 255, 0.04);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity 180ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 240ms;
+  }
+
+  body.map-grid-desktop .map-mode-bank.is-dock-bank-expanded .map-dock-bank-popover {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition: opacity 180ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
+  }
+
+  body.map-grid-desktop .map-dock-bank-popover .map-mode-groups {
+    display: grid !important;
+  }
+
+  body.map-grid-desktop .map-dock-bank-popover .map-mode-group {
+    display: grid;
+    gap: 10px;
+  }
+
+  body.map-grid-desktop .map-dock-bank-popover .map-mode-group-label {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    margin: 0;
+  }
+
+  body.map-grid-desktop .map-dock-bank-popover .map-mode-list {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(46px, 1fr));
+    gap: 6px;
+  }
+
+  body.map-grid-desktop .map-dock-bank-popover .map-mode-button {
+    min-height: 38px;
+  }
+
+  body.map-grid-desktop .map-dock-bank-popover .map-light-overlay-open {
+    position: relative !important;
+    inset: auto !important;
+    display: grid !important;
+    width: 100% !important;
+    min-height: 48px;
+    margin: 0 !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .signal-console-map {
+    display: grid !important;
+    grid-template-columns: minmax(190px, 1.08fr) minmax(380px, 2.92fr) !important;
+    gap: 0 !important;
+    align-items: stretch;
+    padding: 0 !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .signal-console-heading {
+    display: grid;
+    gap: 8px;
+    align-content: center;
+    min-width: 0;
+    margin: 0;
+    padding: 0 clamp(12px, 1.05vw, 22px);
+  }
+
+  body.map-grid-desktop .map-command-dock .signal-console-heading > strong {
+    overflow: hidden;
+    color: rgba(242, 252, 255, 0.92);
+    font: 600 clamp(10px, 0.64vw, 14px)/1.35 Consolas, "Courier New", monospace;
+    letter-spacing: 0.01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.map-grid-desktop .map-command-dock .signal-console-map > label {
+    display: grid !important;
+    grid-template-columns: minmax(136px, 0.82fr) minmax(250px, 2.18fr);
+    grid-template-rows: auto minmax(28px, 1fr) auto;
+    gap: 4px 0;
+    align-items: center;
+    min-width: 0;
+    margin: 0;
+    border-left: 1px solid rgba(113, 207, 221, 0.18);
+  }
+
+  body.map-grid-desktop .map-command-dock .signal-console-map label > [data-signal-time-label] {
+    grid-row: 1;
+    grid-column: 2;
+    overflow: hidden;
+    padding: 0 clamp(12px, 0.9vw, 18px);
+    text-overflow: ellipsis;
+  }
+
+  .map-dock-year {
+    grid-row: 1 / 4;
+    grid-column: 1;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) 24px;
+    gap: clamp(3px, 0.35vw, 8px);
+    align-items: center;
+    min-width: 0;
+    height: 100%;
+    padding: 0 clamp(8px, 0.6vw, 14px);
+    border-right: 1px solid rgba(113, 207, 221, 0.18);
+    color: #dff8ff;
+  }
+
+  .map-dock-year > span {
+    display: flex;
+    gap: 4px;
+    align-items: baseline;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .map-dock-year > button {
+    display: grid;
+    width: 24px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    color: rgba(169, 225, 239, 0.64);
+    background: transparent;
+    place-items: center;
+    font: 300 clamp(22px, 1.5vw, 32px)/1 Consolas, monospace;
+    cursor: pointer;
+  }
+
+  .map-dock-year > button:is(:hover, :focus-visible) {
+    color: #eaffff;
+    outline: none;
+    text-shadow: 0 0 12px rgba(117, 223, 255, 0.42);
+  }
+
+  .map-dock-year b {
+    font: 350 clamp(31px, 2.55vw, 56px)/0.88 Consolas, "Courier New", monospace;
+    letter-spacing: -0.07em;
+    text-shadow: 0 0 16px rgba(107, 211, 255, 0.24);
+  }
+
+  .map-dock-year.has-step b {
+    font-size: clamp(27px, 2vw, 44px);
+    letter-spacing: -0.035em;
+  }
+
+  .map-dock-year small {
+    color: rgba(223, 246, 250, 0.72);
+    font: 600 clamp(7px, 0.34vw, 9px)/1 var(--font-ja);
+  }
+
+  body.map-grid-desktop .map-command-dock [data-signal-time-output] {
+    grid-row: 1;
+    grid-column: 2;
+    overflow: hidden;
+    color: rgba(179, 226, 237, 0.58);
+    padding: 0 clamp(12px, 0.9vw, 18px);
+    font: 650 clamp(7px, 0.34vw, 9px)/1 Consolas, "Courier New", monospace;
+    letter-spacing: 0.06em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.map-grid-desktop .map-command-dock [data-signal-time] {
+    grid-row: 2;
+    grid-column: 2;
+    width: calc(100% - clamp(24px, 1.8vw, 36px));
+    min-width: 0;
+    height: 24px;
+    margin: 0 clamp(12px, 0.9vw, 18px);
+    accent-color: #83e7ff;
+    background: transparent;
+  }
+
+  body.map-grid-desktop .map-command-dock [data-signal-time]::-webkit-slider-runnable-track {
+    height: 3px;
+    border: 0;
+    background:
+      repeating-linear-gradient(90deg, rgba(130, 211, 230, 0.5) 0 1px, transparent 1px calc(100% / 18)),
+      linear-gradient(90deg, rgba(116, 204, 226, 0.3), rgba(142, 222, 240, 0.62));
+  }
+
+  body.map-grid-desktop .map-command-dock [data-signal-time]::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+    border: 1px solid rgba(217, 251, 255, 0.78);
+    border-radius: 50%;
+    background: #8eeaff;
+    box-shadow: 0 0 12px rgba(103, 220, 255, 0.54);
+    -webkit-appearance: none;
+  }
+
+  .map-dock-timeline-scale {
+    grid-row: 3;
+    grid-column: 2;
+    display: flex;
+    justify-content: space-between;
+    min-width: 0;
+    padding: 0 clamp(12px, 0.9vw, 18px);
+    color: rgba(183, 225, 235, 0.7);
+    font: 600 clamp(6px, 0.32vw, 8px)/1 Consolas, "Courier New", monospace;
+    letter-spacing: 0.02em;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-mobile-legend-toggle {
+    display: none !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide {
+    display: block !important;
+    position: relative !important;
+    z-index: 3 !important;
+    inset: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 14px !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide > summary {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr;
+    gap: 7px 12px;
+    align-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    cursor: pointer;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide > summary > span {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide > summary > strong {
+    grid-row: 2;
+    grid-column: 1;
+    align-self: center;
+    overflow: hidden;
+    color: #f0fcff;
+    font: 600 clamp(11px, 0.92vw, 15px)/1.3 var(--font-ja);
+    letter-spacing: 0.025em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide > summary > i {
+    position: relative !important;
+    inset: auto !important;
+    grid-row: 1 / 3;
+    grid-column: 2;
+    justify-self: end;
+    align-self: center;
+    width: 20px !important;
+    height: 16px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    transform: none !important;
+  }
+
+  body.map-grid-desktop .map-mode-bank.is-dock-bank-expanded > .map-mode-preview {
+    display: none !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide > summary > i::before,
+  body.map-grid-desktop .map-command-dock .map-reading-guide > summary > i::after {
+    position: absolute;
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    border-top: 1px solid rgba(133, 226, 238, 0.8);
+    border-right: 1px solid rgba(133, 226, 238, 0.8);
+    content: "";
+    background: transparent;
+    transform: rotate(45deg);
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide > summary > i::before { left: 1px; }
+  body.map-grid-desktop .map-command-dock .map-reading-guide > summary > i::after { left: 8px; }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide[open] > summary > i {
+    transform: rotate(180deg) !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide-body {
+    position: absolute !important;
+    z-index: 10;
+    right: 0;
+    bottom: calc(100% + 18px);
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    width: min(760px, calc(100vw - 28px));
+    max-height: min(50vh, 420px);
+    padding: 16px 18px !important;
+    overflow: auto;
+    border: 1px solid rgba(123, 219, 230, 0.38);
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 100% 0, rgba(77, 184, 212, 0.12), transparent 42%),
+      linear-gradient(145deg, rgba(4, 25, 40, 0.985), rgba(2, 14, 28, 0.985));
+    box-shadow: 0 -20px 54px rgba(0, 5, 17, 0.56);
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide-body > section {
+    min-width: 0;
+    padding: 0 16px;
+    border-right: 1px solid rgba(111, 205, 219, 0.14);
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide-body > section:first-child { padding-left: 0; }
+  body.map-grid-desktop .map-command-dock .map-reading-guide-body > section:last-child { padding-right: 0; border-right: 0; }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide-body h3 {
+    margin: 0 0 8px;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide-body p {
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.65;
+  }
+
+  body.map-grid-desktop .map-dock-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+    height: calc(100% - 14px) !important;
+    margin: 7px 5px !important;
+    padding: 0 clamp(10px, 0.8vw, 16px);
+    text-align: left;
+    transition: background-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .map-dock-action > span {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .map-dock-action strong {
+    overflow: hidden;
+    color: rgba(239, 252, 255, 0.9);
+    font: 650 clamp(11px, 0.72vw, 16px)/1.2 var(--font-ja);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .map-dock-action > i {
+    display: grid;
+    flex: 0 0 auto;
+    width: clamp(32px, 2.15vw, 46px);
+    height: clamp(32px, 2.15vw, 46px);
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    place-items: center;
+    font: 400 17px/1 sans-serif;
+    font-style: normal;
+  }
+
+  .map-dock-action--source {
+    color: #73efd0;
+    border: 1px solid rgba(91, 232, 196, 0.66) !important;
+    border-radius: 4px !important;
+    background: linear-gradient(115deg, rgba(21, 126, 101, 0.32), rgba(4, 48, 48, 0.5)) !important;
+    box-shadow: inset 3px 0 #73efd0, 0 0 18px rgba(82, 239, 199, 0.1) !important;
+  }
+
+  .map-dock-action--statistics {
+    color: #db91ff;
+    border: 1px solid rgba(205, 115, 244, 0.68) !important;
+    border-radius: 4px !important;
+    background: linear-gradient(115deg, rgba(105, 55, 154, 0.44), rgba(46, 26, 84, 0.56)) !important;
+    box-shadow: inset 3px 0 #db91ff, 0 0 18px rgba(218, 126, 255, 0.11) !important;
+  }
+
+  .map-dock-action--source strong { color: #91f7dc; }
+  .map-dock-action--statistics strong { color: #e6b5ff; }
+
+  .map-dock-action:is(:hover, :focus-visible) {
+    outline: none;
+    background: rgba(92, 200, 220, 0.08) !important;
+  }
+
+  .map-dock-action--source:is(:hover, :focus-visible) { box-shadow: inset 3px 0 #91ffdf, 0 0 22px rgba(82, 239, 199, 0.12) !important; }
+  .map-dock-action--statistics:is(:hover, :focus-visible) { box-shadow: inset 3px 0 #edb5ff, 0 0 22px rgba(218, 126, 255, 0.12) !important; }
+
+  body.map-grid-desktop .map-grid-intro > .japan-data-button {
+    display: none !important;
+  }
+
+  body.map-grid-desktop .japan-map-actions {
+    z-index: 94;
+  }
+
+  body.map-grid-desktop .japan-map-actions .japan-close {
+    width: clamp(82px, 4.8vw, 120px);
+    min-height: clamp(50px, 4.8vh, 64px);
+    padding-inline: clamp(14px, 1vw, 22px);
+    border-radius: 10px;
+    font-size: clamp(11px, 0.62vw, 14px);
+  }
+
+  body.map-grid-desktop .signal-encoding-legend-dock {
+    width: clamp(390px, 19.2vw, 480px) !important;
+  }
+
+  body.map-grid-desktop .signal-encoding-legend-title {
+    min-height: 36px;
+    padding-right: 126px !important;
+  }
+
+  body.map-grid-desktop .signal-encoding-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    padding-block: 8px 10px !important;
+  }
+
+  body.map-grid-desktop [data-gaia-mode-guide-replay="map"] {
+    z-index: 512 !important;
+    top: max(18px, env(safe-area-inset-top));
+    right: max(76px, calc(env(safe-area-inset-right) + 66px));
+    min-height: 36px;
+    padding: 4px 10px 4px 8px;
+    border: 0;
+    border-left: 1px solid rgba(125, 207, 229, 0.16);
+    border-radius: 0;
+    color: rgba(193, 230, 239, 0.72);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.map-grid-desktop [data-gaia-mode-guide-replay="map"] > span {
+    width: 24px;
+    height: 24px;
+    border-color: rgba(122, 225, 255, 0.42);
+    color: rgba(168, 239, 255, 0.74);
+    font-size: 11px;
+  }
+
+  body.map-grid-desktop [data-gaia-mode-guide-replay="map"] > strong {
+    font: 650 8px/1 var(--font-ja);
+    letter-spacing: 0.08em;
+  }
+
+  body.map-grid-desktop .japan-credits {
+    bottom: calc(var(--map-command-dock-height) + 5px) !important;
+  }
+
+  body.map-grid-desktop .japan-layer:has(.map-command-dock) .co2-timeline-display {
+    display: none !important;
+  }
+
+  body.map-grid-desktop .gaia-live-exhibit-readout {
+    bottom: calc(var(--map-command-dock-height) + 12px) !important;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-command-dock > .map-mode-bank {
+    grid-column: 1 / 4;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-command-dock > :is(.signal-console-map, .map-reading-guide) {
+    display: none !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  body.map-grid-desktop .map-command-dock {
+    grid-template-columns: minmax(150px, 1.2fr) minmax(430px, 4.7fr) minmax(170px, 1.55fr) 104px 104px;
+  }
+
+  body.map-grid-desktop .map-command-dock .signal-console-map {
+    grid-template-columns: minmax(150px, 0.95fr) minmax(270px, 1.9fr) !important;
+  }
+
+  body.map-grid-desktop .map-command-dock .signal-console-map > label {
+    grid-template-columns: minmax(92px, 0.62fr) minmax(170px, 1.35fr);
+  }
+
+  body.map-grid-desktop .map-dock-year {
+    grid-template-columns: 16px minmax(0, 1fr) 16px;
+    padding-inline: 5px;
+  }
+
+  body.map-grid-desktop .map-dock-year > button {
+    width: 16px;
+  }
+
+  body.map-grid-desktop .map-dock-year b {
+    font-size: clamp(25px, 3vw, 34px);
+  }
+
+  body.map-grid-desktop .map-dock-timeline-scale span:nth-child(even) {
+    display: none;
+  }
+
+  body.map-grid-desktop .map-dock-action {
+    padding-inline: 9px;
+  }
+
+  body.map-grid-desktop .map-dock-action > i {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 900px) {
+  .map-command-dock {
+    display: contents;
+  }
+
+  .map-dock-timeline-scale {
+    display: none !important;
+  }
+
+  .map-command-dock > .map-dock-action {
+    display: none !important;
+  }
+
+  .map-dock-bank-popover {
+    display: contents;
+  }
+
+  .experience.japan-open .map-mode-bank > .map-dock-bank-trigger {
+    grid-row: 1;
+    grid-column: 1;
+    display: flex;
+    min-width: 0;
+    height: 48px;
+    padding: 0 8px;
+    text-align: left;
+    pointer-events: none;
+  }
+
+  .experience.japan-open .map-dock-bank-copy {
+    gap: 4px;
+  }
+
+  .experience.japan-open .map-dock-bank-copy > small {
+    color: rgba(var(--map-accent-rgb), 0.68);
+    font: 700 6px/1 Consolas, monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .experience.japan-open .map-dock-bank-copy > small b,
+  .experience.japan-open .map-dock-bank-trigger > i {
+    display: none;
+  }
+
+  .experience.japan-open .map-dock-bank-copy > span {
+    display: flex;
+    gap: 7px;
+    align-items: baseline;
+    min-width: 0;
+  }
+
+  .experience.japan-open .map-dock-bank-copy em {
+    color: var(--map-accent);
+    font: 700 14px/1 Consolas, monospace;
+    font-style: normal;
+  }
+
+  .experience.japan-open .map-dock-bank-copy strong {
+    overflow: hidden;
+    color: rgba(247, 255, 252, 0.93);
+    font: 650 11px/1.25 var(--font-ja);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .map-dock-year {
+    display: none;
+  }
 }

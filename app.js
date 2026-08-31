@@ -3845,6 +3845,12 @@
       const sequence = getMapSequenceState(signalMode);
       const nightLightsDimmed = now < anthropocenePeelUntil;
       drawNightLightsLayer(nightLightsImage, nightLightsDimmed);
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = nightLightsDimmed ? 1 : 0.88;
+      renderCachedReferenceWorldModel(ctx, rect, left, top);
+      ctx.restore();
+      japanOverlay.dataset.nightLightsBoundaryOverlay = "coast-and-country";
       const emissionRows = signalMode.signals.emissions || [];
       japanOverlay.dataset.emissionsCircleCount = String(emissionRows.length);
       japanOverlay.dataset.emissionsEncoding = "country-total-log-area";
@@ -7629,6 +7635,13 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (!japanDataIsOpen) {
       return;
     }
+    if (japanDataPanel.contains(document.activeElement)) {
+      if (restoreFocus) {
+        japanDataButton.focus({ preventScroll: true });
+      } else {
+        document.activeElement?.blur?.();
+      }
+    }
     japanDataIsOpen = false;
     japanDataPanel.inert = true;
     japanDataPanel.setAttribute("aria-hidden", "true");
@@ -7636,7 +7649,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanDataScrim.tabIndex = -1;
     japanDataButton.setAttribute("aria-expanded", "false");
     japanLayer.classList.remove("japan-data-open");
-    if (restoreFocus) {
+    if (restoreFocus && document.activeElement !== japanDataButton) {
       japanDataButton.focus({ preventScroll: true });
     }
   };
