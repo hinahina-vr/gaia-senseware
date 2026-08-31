@@ -322,6 +322,9 @@ const renderPublicSensors = () => {
     card.addEventListener("click", () => {
       selectPublicSensor(sensor, marker);
       focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom });
+      if (matchMedia("(max-width: 760px)").matches) {
+        requestAnimationFrame(() => publicSensorDetail?.querySelector(".sensor-map-card-expand")?.focus({ preventScroll: true }));
+      }
     });
     publicSensorList.append(card);
     if (sensor.id === selectedPublicSensorId) initialSelection = { sensor, marker };
@@ -357,14 +360,13 @@ function initPublicSensorDirectory() {
     const editing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement;
     if (event.key === "/" && !editing) {
       event.preventDefault();
-      setPublicSensorDirectoryOpen(true);
-      publicSensorQuery?.focus();
+      setPublicSensorDirectoryOpen(true, { focus: true });
       return;
     }
     if (event.key !== "Escape") return;
     if (publicSensorDirectory?.dataset.open === "true") {
       event.preventDefault();
-      setPublicSensorDirectoryOpen(false);
+      setPublicSensorDirectoryOpen(false, { focus: true });
     } else if (publicSensorQueryText) {
       event.preventDefault();
       publicSensorQueryText = "";
@@ -431,7 +433,10 @@ function setPublicSensorDirectoryOpen(open, { focus = false } = {}) {
       setPublicSensorDetailExpanded(false);
     }
   }
-  if (focus) requestAnimationFrame(() => publicSensorQuery?.focus({ preventScroll: true }));
+  if (focus) {
+    if (open) requestAnimationFrame(() => publicSensorQuery?.focus({ preventScroll: true }));
+    else publicMapDirectoryToggle.focus({ preventScroll: true });
+  }
 }
 
 function setPublicSensorDetailExpanded(expanded, { focus = false } = {}) {

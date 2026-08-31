@@ -975,12 +975,12 @@ body:has(.sensor-public-map:not([hidden])) .sensor-shell {
   .sensor-map-navigation {
     top: 208px;
     right: 16px;
-    grid-template-columns: repeat(2, 42px);
+    grid-template-columns: repeat(2, 44px);
   }
-  .sensor-map-navigation button { min-height: 42px; }
+  .sensor-map-navigation button { min-height: 44px; }
   .sensor-map-navigation .sensor-map-directory-toggle {
     display: grid;
-    min-height: 38px;
+    min-height: 44px;
     grid-column: 1 / -1;
     grid-template-columns: minmax(0,1fr) auto;
     gap: 8px;
@@ -993,7 +993,7 @@ body:has(.sensor-public-map:not([hidden])) .sensor-shell {
   .sensor-map-directory-toggle[aria-expanded="true"] { border-color: rgba(var(--mint-rgb),.72); background: rgba(var(--mint-rgb),.14); }
   .sensor-global-sync {
     top: 208px;
-    right: 112px;
+    right: 124px;
     left: 16px;
     width: auto;
     padding: 10px 12px 9px;

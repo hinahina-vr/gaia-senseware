@@ -88,6 +88,11 @@ try {
         return { width: rect.width, height: rect.height };
       }));
       assert(detailActionSizes.every(({ width, height }) => width >= 44 && height >= 44), `mobile detail action is too small: ${JSON.stringify(detailActionSizes)}`);
+      const mapActionSizes = await page.locator("#public-map-zoom-in,#public-map-zoom-out,#public-map-reset,#public-map-directory-toggle").evaluateAll((buttons) => buttons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { id: button.id, width: rect.width, height: rect.height };
+      }));
+      assert(mapActionSizes.every(({ width, height }) => width >= 44 && height >= 44), `mobile map action is too small: ${JSON.stringify(mapActionSizes)}`);
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-summary.png`), fullPage: false });
       const map = page.locator("#public-sensor-map");
       const mapBox = await map.boundingBox();
@@ -111,6 +116,14 @@ try {
       assert.equal(await page.locator("#public-sensor-directory").isVisible(), false);
       assert.equal(await page.locator("#public-sensor-detail").isVisible(), true);
       assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "public-map-directory-toggle");
+      await page.locator("#public-map-directory-toggle").click();
+      const firstDirectoryCard = page.locator(".sensor-public-card").first();
+      await firstDirectoryCard.focus();
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(80);
+      assert.equal(await page.locator("#public-sensor-directory").isVisible(), false);
+      assert.equal(await page.locator(".sensor-map-card-expand").evaluate((button) => document.activeElement === button), true);
     }
 
     if (viewport.width > 760) {
