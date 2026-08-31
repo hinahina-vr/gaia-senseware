@@ -1,3 +1,5 @@
+import { initSensorSenseField } from "./sensor-field.js?v=gaia-sensor-belonging-1";
+
 const views = new Map(Array.from(document.querySelectorAll("[data-view]"), (element) => [element.dataset.view, element]));
 const statusRegion = document.querySelector("#sensor-status");
 const loginButton = document.querySelector("#google-login");
@@ -190,6 +192,9 @@ const boot = async () => {
   showView(publicView || "loading");
   initPublicMapNavigation();
   initPublicSensorDirectory();
+  initSensorSenseField(publicSensorMap, {
+    onParticipate: () => { location.hash = authenticated ? "#devices" : "#login"; },
+  });
   void mountMapSurfaces();
   initLocationPickers();
   initRegionFields();
@@ -522,6 +527,7 @@ function clearPublicSensorSelection({ hideDetail = false, historyMode = null } =
   publicSensorSelectionDismissed = true;
   if (historyMode) setPublicSensorHash(null, { replace: historyMode === "replace" });
   document.querySelectorAll(".sensor-map-marker[aria-current], .sensor-public-card[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
+  publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-focus", { detail: { sensorId: null } }));
   if (!publicSensorDetail) return;
   setPublicSensorDetailExpanded(false);
   publicSensorDetail.hidden = hideDetail;
@@ -549,6 +555,9 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   document.querySelectorAll(".sensor-public-card[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
   marker.setAttribute("aria-current", "true");
   publicSensorList.querySelector(`[data-sensor-id="${CSS.escape(sensor.id)}"]`)?.setAttribute("aria-current", "true");
+  publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-focus", {
+    detail: { sensorId: sensor.id },
+  }));
   publicSensorDetail.replaceChildren();
   const consoleLabel = Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SELECTED SIGNAL" });
   const toolbar = document.createElement("header");
@@ -832,11 +841,17 @@ function createPublicOracle(sensor) {
     receipt.textContent = "NODE HANDSHAKE... 直近の観測ログを受信中";
     oracleDepthBoost = Math.min(12, oracleDepthBoost + 1.5);
     renderPublicNetworkStats();
+    publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-sense", {
+      detail: { sensorId: sensor.id, phase: "receiving" },
+    }));
     window.setTimeout(() => {
       if (!receipt.isConnected) return;
       receipt.textContent = generatePublicOracle(sensor);
       receipt.classList.add("is-received");
       button.disabled = false;
+      publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-sense", {
+        detail: { sensorId: sensor.id, phase: "received" },
+      }));
     }, 520);
   });
   section.append(button, receipt);
@@ -1277,6 +1292,21 @@ function positionPublicSensorMarkers() {
   }
   renderPublicMarkerTethers(entries, width, height);
   renderPublicResonanceNetwork();
+  publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-field", {
+    detail: {
+      nodes: entries.map((entry) => {
+        const sensor = publicSensors.find((candidate) => candidate.id === entry.marker.dataset.sensorId);
+        return {
+          id: entry.marker.dataset.sensorId,
+          name: sensor?.sensorName || "観測点",
+          x: clamp((entry.baseX + (entry.offsetX || 0)) / width, 0, 1),
+          y: clamp((entry.baseY + (entry.offsetY || 0)) / height, 0, 1),
+          activity: Number.parseFloat(entry.marker.style.getPropertyValue("--sensor-activity")) || .35,
+          selected: entry.marker.hasAttribute("aria-current"),
+        };
+      }),
+    },
+  }));
 }
 
 function renderPublicMarkerTethers(entries, width, height) {

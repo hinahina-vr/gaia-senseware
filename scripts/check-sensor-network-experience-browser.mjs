@@ -48,10 +48,24 @@ try {
     await page.goto(new URL("/sensors/#map", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.locator("[data-view='map']").waitFor({ state: "visible" });
     await page.locator(".sensor-map-marker").first().waitFor({ state: "visible" });
+    await page.locator(".sensor-sense-field").waitFor({ state: "visible" });
+    await page.locator(".sensor-belonging").waitFor({ state: "visible" });
     await page.waitForTimeout(900);
     const layoutShiftScore = await page.evaluate(() => window.__gaiaLayoutShiftScore);
     assert(layoutShiftScore <= .1, `initial map layout shift is too high: ${layoutShiftScore}`);
     assert.equal(await page.locator(".sensor-map-marker").count(), 5);
+    assert.equal(
+      Number(await page.locator(".sensor-sense-field").getAttribute("data-node-count")),
+      await page.locator(".sensor-map-marker:visible").count(),
+    );
+    assert.match(await page.locator(".sensor-sense-field").getAttribute("data-renderer"), /^(webgl|2d)$/u);
+    assert(Number(await page.locator(".sensor-sense-field").getAttribute("data-render-pixels")) <= 905_000);
+    assert.match(await page.locator(".sensor-belonging").textContent(), /あなたの感覚が、地球の現在とつながる/u);
+    const belongingAction = await page.locator(".sensor-belonging-join").evaluate((button) => {
+      const rect = button.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    });
+    assert(belongingAction.width >= 44 && belongingAction.height >= 44, `participation action is too small: ${JSON.stringify(belongingAction)}`);
     assert.equal(await page.locator(".sensor-public-card").count(), 5);
     assert.equal(await page.locator("#public-sensor-results").textContent(), "5 / 5件");
     assert((await page.locator(".sensor-resonance-link").count()) >= 3);
@@ -218,11 +232,16 @@ try {
       await page.locator(".sensor-map-card-expand").click();
     }
     assert.match(await page.locator("#public-sensor-detail").textContent(), /ダミーセンサー/u);
+    assert.equal(await page.locator(".sensor-belonging").getAttribute("data-state"), "selected");
+    assert.match(await page.locator(".sensor-belonging p").textContent(), /「いま」に触れています/u);
     assert.match(await page.locator("#public-sensor-detail").textContent(), /電界変動/u);
     const depthBefore = await page.locator("#public-depth-value").textContent();
     await page.locator(".sensor-oracle-trigger").click();
     await page.locator(".sensor-oracle-receipt.is-received").waitFor({ state: "visible" });
     assert.match(await page.locator(".sensor-oracle-receipt").textContent(), /SIMULATION LOG/u);
+    assert.equal(await page.locator(".sensor-belonging").getAttribute("data-state"), "received");
+    assert.match(await page.locator(".sensor-belonging p").textContent(), /あなたの感覚へ届きました/u);
+    assert(Number(await page.locator(".sensor-sense-field").getAttribute("data-pulse-count")) >= 3);
     assert.notEqual(await page.locator("#public-depth-value").textContent(), depthBefore);
 
     const scan = await page.evaluate(() => ({
@@ -231,6 +250,8 @@ try {
       packets: document.querySelector("#public-packet-count")?.textContent,
       resonanceLinks: document.querySelectorAll(".sensor-resonance-link").length,
       selected: document.querySelector("#public-sensor-detail h2")?.textContent,
+      senseRenderer: document.querySelector(".sensor-sense-field")?.dataset.renderer,
+      sensePixels: Number(document.querySelector(".sensor-sense-field")?.dataset.renderPixels),
       overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       cardWithinViewport: (() => {
         const rect = document.querySelector("#public-sensor-detail").getBoundingClientRect();
@@ -250,6 +271,7 @@ try {
   const widePage = await wideContext.newPage();
   await widePage.goto(new URL("/sensors/#map", baseUrl).href, { waitUntil: "domcontentloaded" });
   await widePage.locator(".sensor-map-canvas--overscan").waitFor({ state: "visible" });
+  await widePage.locator(".sensor-sense-field").waitFor({ state: "visible" });
   const canvasBudget = await widePage.locator(".sensor-map-canvas--overscan").evaluate((canvas) => ({
     pixels: canvas.width * canvas.height,
     declaredPixels: Number(canvas.dataset.renderPixels),
@@ -258,7 +280,17 @@ try {
   assert(canvasBudget.pixels <= 12_100_000, `4K map canvas exceeds its pixel budget: ${canvasBudget.pixels}`);
   assert.equal(canvasBudget.pixels, canvasBudget.declaredPixels);
   assert(canvasBudget.renderScale > 0 && canvasBudget.renderScale <= 1);
-  report.scans.push({ viewport: "pc-3840", ...canvasBudget, passed: true });
+  const senseBudget = await widePage.locator(".sensor-sense-field").evaluate((canvas) => ({
+    pixels: canvas.width * canvas.height,
+    declaredPixels: Number(canvas.dataset.renderPixels),
+    motion: canvas.dataset.motion,
+    renderer: canvas.dataset.renderer,
+  }));
+  assert(senseBudget.pixels <= 905_000, `4K sense field exceeds its pixel budget: ${senseBudget.pixels}`);
+  assert.equal(senseBudget.pixels, senseBudget.declaredPixels);
+  assert.equal(senseBudget.motion, "static");
+  assert.match(senseBudget.renderer, /^(webgl|2d)$/u);
+  report.scans.push({ viewport: "pc-3840", ...canvasBudget, senseBudget, passed: true });
   await wideContext.close();
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);
