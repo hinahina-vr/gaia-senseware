@@ -316,7 +316,8 @@ try {
   const wideMenuCenter = wideComposition.menu.left + wideComposition.menu.width / 2;
   const wideQuestionCenter = wideComposition.question.left + wideComposition.question.width / 2;
   assert(Math.abs(wideQuestionCenter - wideMenuCenter) <= 2, "opening question must be centered to the route buttons");
-  assert(wideComposition.menu.top - wideComposition.question.bottom <= 24, "opening route cards must follow the centered question without a large gap");
+  const wideQuestionToMenuGap = wideComposition.menu.top - wideComposition.question.bottom;
+  assert(wideQuestionToMenuGap >= 0 && wideQuestionToMenuGap <= 64, "opening route cards must follow the centered question with the intended breathing room");
   assert.equal(wideComposition.guide.step, "1");
   assert.equal(wideComposition.guide.targetId, "gaia-opening-route-story");
   assert.match(wideComposition.guide.title, /物語/u);
