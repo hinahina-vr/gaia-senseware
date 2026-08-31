@@ -7,11 +7,12 @@
     <link rel="icon" href="data:," />
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
+    <script>document.documentElement.dataset.sensorView = location.hash.startsWith("#map") ? "map" : "login";</script>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-narrow-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-map-perf-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=3" defer></script>
-    <script src="./sensor-platform.js?v=gaia-sensor-marker-focus-2" type="module"></script>
+    <script src="./sensor-platform.js?v=gaia-sensor-map-perf-1" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -65,7 +66,7 @@
       <noscript>このセンサープラットフォームにはJavaScriptが必要です。</noscript>
       <section class="sensor-status" id="sensor-status" role="status" aria-live="polite" hidden></section>
 
-      <section class="sensor-view sensor-public-map" data-view="map" id="map" hidden>
+      <section class="sensor-view sensor-public-map" data-view="map" id="map">
         <header class="sensor-page-head">
           <div><p>PUBLIC SIGNALS / APPROXIMATE LOCATION</p><h1>みんなのセンサー</h1></div>
           <button class="sensor-secondary" id="refresh-map" type="button" data-compact-label="更新">地図を更新</button>

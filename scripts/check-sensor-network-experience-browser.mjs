@@ -29,6 +29,14 @@ try {
       permissions: ["clipboard-read", "clipboard-write"],
     });
     const page = await context.newPage();
+    await page.addInitScript(() => {
+      window.__gaiaLayoutShiftScore = 0;
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (!entry.hadRecentInput) window.__gaiaLayoutShiftScore += entry.value;
+        }
+      }).observe({ type: "layout-shift", buffered: true });
+    });
     page.on("console", (message) => {
       if (message.type() !== "error") return;
       const text = message.text();
@@ -41,6 +49,8 @@ try {
     await page.locator("[data-view='map']").waitFor({ state: "visible" });
     await page.locator(".sensor-map-marker").first().waitFor({ state: "visible" });
     await page.waitForTimeout(900);
+    const layoutShiftScore = await page.evaluate(() => window.__gaiaLayoutShiftScore);
+    assert(layoutShiftScore <= .1, `initial map layout shift is too high: ${layoutShiftScore}`);
     assert.equal(await page.locator(".sensor-map-marker").count(), 5);
     assert.equal(await page.locator(".sensor-public-card").count(), 5);
     assert.equal(await page.locator("#public-sensor-results").textContent(), "5 / 5件");
@@ -227,6 +237,7 @@ try {
         return rect.left >= -1 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight + 1;
       })(),
     }));
+    scan.layoutShiftScore = layoutShiftScore;
     assert.equal(scan.overflowX, false);
     assert.equal(scan.cardWithinViewport, true);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-network.png`), fullPage: false });

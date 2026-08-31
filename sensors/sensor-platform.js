@@ -144,6 +144,7 @@ const api = async (path, options = {}) => {
 };
 
 const showView = (name) => {
+  document.documentElement.dataset.sensorView = name;
   if (participationDialog?.open && name !== "login") participationDialog.close();
   window.clearInterval(pollTimer);
   pollTimer = 0;
@@ -171,7 +172,14 @@ const showStatus = (message, kind = "info") => {
 };
 
 const boot = async () => {
-  showView("loading");
+  const publicView = location.hash.startsWith("#map")
+    ? "map"
+    : location.hash === "#guide"
+      ? "guide"
+      : location.hash === "#terms"
+        ? "terms"
+        : null;
+  showView(publicView || "loading");
   initPublicMapNavigation();
   initPublicSensorDirectory();
   void mountMapSurfaces();

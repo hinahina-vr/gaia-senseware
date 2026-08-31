@@ -114,6 +114,8 @@ button, a { touch-action: manipulation; }
 
 .sensor-shell { position: relative; z-index: 2; width: min(1840px, calc(100% - 8vw)); min-height: calc(100vh - 72px); margin: 0 auto; padding: clamp(48px, 7vh, 82px) 0 80px; }
 .sensor-view { animation: sensor-enter .62s cubic-bezier(.2,.72,.24,1) both; }
+html[data-sensor-view="map"] .sensor-view:not(.sensor-public-map):not([hidden]),
+html[data-sensor-view]:not([data-sensor-view="map"]) .sensor-public-map:not([hidden]) { display: none !important; }
 .sensor-view[hidden] { display: none !important; }
 .sensor-empty[hidden] { display: none !important; }
 .sensor-kicker, .sensor-page-head > div > p:first-child, .sensor-detail-head p, .sensor-history header p { margin: 0 0 12px; color: var(--mint); font: 700 9px/1 var(--font-console); letter-spacing: .22em; }
@@ -296,6 +298,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-map-markers { position: absolute; z-index: 3; inset: 0; }
 .sensor-map-canvas, .sensor-world-grid, .sensor-resonance-network, .sensor-marker-tethers, .sensor-map-markers { transform: translate3d(var(--sensor-map-drag-x, 0), var(--sensor-map-drag-y, 0), 0); }
 .sensor-world-map.is-dragging :is(.sensor-map-canvas, .sensor-world-grid, .sensor-resonance-network, .sensor-marker-tethers, .sensor-map-markers) { will-change: transform; }
+.sensor-world-map.is-dragging :is(.sensor-resonance-link, .sensor-marker-tether) { filter: none; animation-play-state: paused; }
+.sensor-world-map.is-dragging .sensor-map-marker[data-active="true"]::before { animation-play-state: paused; }
 .sensor-resonance-link { opacity: calc(var(--resonance-strength, .4) * .72); fill: none; stroke: rgba(var(--mint-rgb),.74); stroke-width: 1.1px; stroke-dasharray: .035 .06; filter: drop-shadow(0 0 5px rgba(var(--mint-rgb),.5)); animation: sensor-resonance-flow 2.8s linear infinite; animation-delay: var(--resonance-delay, 0s); }
 .sensor-resonance-link[data-demo] { stroke: rgba(154,196,255,.66); }
 @keyframes sensor-resonance-flow { to { stroke-dashoffset: -.19; } }
@@ -583,11 +587,11 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
 }
 
 @keyframes sensor-scene-arrive {
-  from { opacity: 0; filter: brightness(.42) saturate(.5) blur(5px); transform: scale(1.035); }
+  from { opacity: 0; transform: scale(1.035); }
 }
 @keyframes sensor-orbit { to { transform: rotate(1turn); } }
 
-@keyframes sensor-enter { from { opacity: 0; filter: blur(3px); transform: translateY(12px); } to { opacity: 1; filter: blur(0); transform: translateY(0); } }
+@keyframes sensor-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes sensor-pulse { 50% { opacity: .25; transform: scale(.7); } }
 
 @media (max-width: 1050px) {
@@ -705,21 +709,21 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
 }
 
 /* Public sensor map: the map is the stage, matching the full-screen Earth exhibit. */
-body:has(.sensor-public-map:not([hidden])) {
+html[data-sensor-view="map"] body {
   overflow: hidden;
   background: #02090c;
   user-select: none;
   -webkit-user-select: none;
 }
-body:has(.sensor-public-map:not([hidden])) img { -webkit-user-drag: none; }
-body:has(.sensor-public-map:not([hidden])) .sensor-atmosphere { display: none; }
-body:has(.sensor-public-map:not([hidden])) .sensor-topbar {
+html[data-sensor-view="map"] body img { -webkit-user-drag: none; }
+html[data-sensor-view="map"] body .sensor-atmosphere { display: none; }
+html[data-sensor-view="map"] body .sensor-topbar {
   position: fixed;
   width: 100%;
   border-bottom-color: rgba(var(--mint-rgb),.16);
   background: linear-gradient(180deg, rgba(1,8,13,.96), rgba(1,8,13,.68));
 }
-body:has(.sensor-public-map:not([hidden])) .sensor-shell {
+html[data-sensor-view="map"] body .sensor-shell {
   width: 100%;
   height: 100dvh;
   min-height: 0;
@@ -926,14 +930,14 @@ body:has(.sensor-public-map:not([hidden])) .sensor-shell {
 }
 
 @media (max-width: 760px) {
-  body:has(.sensor-public-map:not([hidden])) .sensor-topbar {
+  html[data-sensor-view="map"] body .sensor-topbar {
     min-height: 104px;
     padding: 9px 15px 7px;
     gap: 2px;
     background: rgba(1,8,13,.92);
   }
-  body:has(.sensor-public-map:not([hidden])) .sensor-home-back { margin-right: 64px; }
-  body:has(.sensor-public-map:not([hidden])) .sensor-topbar nav {
+  html[data-sensor-view="map"] body .sensor-home-back { margin-right: 64px; }
+  html[data-sensor-view="map"] body .sensor-topbar nav {
     display: flex;
     overflow-x: auto;
     width: 100%;
@@ -943,9 +947,9 @@ body:has(.sensor-public-map:not([hidden])) .sensor-shell {
     overscroll-behavior-inline: contain;
     scrollbar-width: none;
   }
-  body:has(.sensor-public-map:not([hidden])) .sensor-topbar nav::-webkit-scrollbar { display: none; }
-  body:has(.sensor-public-map:not([hidden])) .sensor-topbar nav a,
-  body:has(.sensor-public-map:not([hidden])) .sensor-nav-logout {
+  html[data-sensor-view="map"] body .sensor-topbar nav::-webkit-scrollbar { display: none; }
+  html[data-sensor-view="map"] body .sensor-topbar nav a,
+  html[data-sensor-view="map"] body .sensor-nav-logout {
     display: grid;
     flex: 0 0 auto;
     min-height: 36px;
