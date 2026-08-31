@@ -353,7 +353,6 @@
   let backgroundStates = [];
   let switchTimer = 0;
   let switchGeneration = 0;
-  let characterModeGuideTimer = 0;
   let displayedCharacterId = null;
   let displayedExpressionId = null;
   let expressionHoverReady = true;
@@ -589,15 +588,9 @@
       layer.classList.add("is-open");
       closeButton?.focus({ preventScroll: true });
     });
-    window.clearTimeout(characterModeGuideTimer);
-    characterModeGuideTimer = window.setTimeout(() => {
-      void window.GaiaModeEntryGuide?.open?.("character");
-    }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 620);
   };
   const close = ({ updateHash = true } = {}) => {
     if (!openState) return;
-    window.clearTimeout(characterModeGuideTimer);
-    window.GaiaModeEntryGuide?.close?.("character", { restoreFocus: false });
     openState = false;
     layer.classList.remove("is-open");
     layer.setAttribute("aria-hidden", "true");
@@ -673,28 +666,5 @@
     heroImage.addEventListener("error", () => { layer.dataset.imageState = "error"; });
     if (heroImage.complete && heroImage.naturalWidth > 0) markReady();
   }
-  window.GaiaModeEntryGuide?.register?.("character", {
-    version: "v1",
-    kicker: "CHARACTER / 操作ガイド",
-    available: () => openState && !layer.hidden,
-    steps: [
-      {
-        target: ".character-book-selector",
-        title: "三人を切り替える",
-        copy: "丸いポートレートを選ぶと、あめ・みず・sakuのプロフィールと立ち絵が切り替わります。",
-      },
-      {
-        target: "#character-book-expression-list",
-        title: "表情を見る",
-        copy: "表情のサムネイルを選ぶと、通常・微笑み・驚きなどの差分を立ち絵で確認できます。",
-      },
-      {
-        target: ".character-book-scroll-cue",
-        title: "設定資料へ進む",
-        copy: "下へスクロールすると、三人の役割と観測道具をまとめた基準設定画を見られます。",
-      },
-    ],
-  });
-  window.GaiaModeEntryGuide?.mountReplay?.("character", layer, { label: "人物ガイド" });
   if (window.location.hash === "#character") window.setTimeout(() => open(null), 0);
 })();

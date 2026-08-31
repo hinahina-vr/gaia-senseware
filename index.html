@@ -914,7 +914,7 @@
                   <p>地球の変化を描き出す。</p>
                   <span class="intro-path-enter">WORLD MAP <b aria-hidden="true">→</b></span>
                 </button>
-                <a class="intro-path-card intro-path-card--sensor" href="./sensors/#esp32" data-sensor-platform-link data-intro-guide="sensor">
+                <a class="intro-path-card intro-path-card--sensor" href="./sensors/#map" data-sensor-platform-link data-intro-guide="sensor">
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
                   <span class="intro-border-glint" aria-hidden="true"></span>
                   <span class="intro-path-index">02 / SENSOR</span>
@@ -925,9 +925,9 @@
                       <circle cx="32" cy="22" r="3"></circle>
                     </svg>
                   </span>
-                  <strong>センサーを地球につなぐ</strong>
-                  <p>実物の観測点を、地球の感覚器へ。</p>
-                  <span class="intro-path-enter">観測点を追加 <b aria-hidden="true">→</b></span>
+                  <strong>みんなのセンサー</strong>
+                  <p>ユーザー参加型センシング</p>
+                  <span class="intro-path-enter">センサー地図 <b aria-hidden="true">→</b></span>
                 </a>
                 <button
                   class="intro-path-card intro-path-card--character"
@@ -1508,7 +1508,7 @@
             <span class="japan-live-dot" aria-hidden="true"></span>
             <span id="map-scope-kicker">Planetary lens / Open map</span>
           </p>
-          <h2 id="japan-title" aria-live="polite">地球の一呼吸</h2>
+          <h2 id="japan-title" data-exhibit-number="01" aria-label="01 地球の一呼吸" aria-live="polite">地球の一呼吸</h2>
           <button
             class="map-mobile-heading-toggle"
             id="map-mobile-heading-toggle"
@@ -1530,7 +1530,7 @@
             aria-expanded="false"
             aria-controls="japan-data-panel"
           >
-            <span class="japan-data-button-copy">データの出典を表示する</span>
+            <span class="japan-data-button-copy"><small aria-hidden="true">OPEN DATA / SOURCE</small><span>データの出典を表示する</span></span>
             <span class="japan-data-button-symbol" aria-hidden="true">↗</span>
           </button>
           <button
@@ -1540,7 +1540,7 @@
             aria-haspopup="dialog"
             aria-controls="gaia-statistics-lab"
           >
-            <span class="japan-data-button-copy">データを統計分析する</span>
+            <span class="japan-data-button-copy"><small aria-hidden="true">STATISTICS / ANALYSIS</small><span>データを統計分析する</span></span>
             <span class="japan-data-button-symbol" aria-hidden="true">＋</span>
           </button>
         </header>
@@ -1842,14 +1842,23 @@
                 <h2 id="gaia-statistics-title">統計で読む</h2>
                 <p id="gaia-statistics-context">現在の展示データを引き継いでいます。</p>
               </div>
-              <button class="gaia-statistics-close" id="gaia-statistics-close" type="button" aria-label="統計解析ラボを閉じる">×</button>
+              <div class="gaia-statistics-header-actions">
+                <button class="gaia-statistics-menu-toggle" id="gaia-statistics-menu-toggle" type="button" aria-expanded="false" aria-controls="gaia-statistics-controls">
+                  <span>解析メニュー</span><b aria-hidden="true">☷</b>
+                </button>
+                <button class="gaia-statistics-close" id="gaia-statistics-close" type="button" aria-label="統計解析ラボを閉じる">×</button>
+              </div>
             </header>
 
             <div class="gaia-statistics-body">
-              <aside class="gaia-statistics-controls" aria-label="解析条件">
+              <button class="gaia-statistics-menu-scrim" id="gaia-statistics-menu-scrim" type="button" tabindex="-1" aria-label="解析メニューを閉じる"></button>
+              <aside class="gaia-statistics-controls" id="gaia-statistics-controls" aria-label="解析条件" aria-hidden="true" inert>
+                <header class="gaia-statistics-controls-header">
+                  <div><span>ANALYSIS MENU</span><strong>解析メニュー</strong></div>
+                  <button id="gaia-statistics-menu-close" type="button" aria-label="解析メニューを閉じる">×</button>
+                </header>
                 <section>
-                  <p class="gaia-statistics-control-label">データ</p>
-                  <select id="gaia-statistics-dataset" aria-label="解析するデータセット"></select>
+                  <p class="gaia-statistics-control-label">データ区分</p>
                   <div class="gaia-statistics-provenance" aria-label="使用するデータ区分">
                     <span>SOURCE</span>
                     <label><input id="gaia-statistics-derived" type="checkbox" /> 補完・派生値も含める</label>

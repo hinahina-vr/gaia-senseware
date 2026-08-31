@@ -51,9 +51,23 @@
 /* Keep the map's changing exhibit title luminous against every map layer. */
 .japan-layer #japan-title {
   color: #c9f4ff;
+  text-shadow: 0 0 16px rgba(111, 218, 255, 0.22);
+}
+
+.japan-layer #japan-title::before {
+  display: inline-block;
+  margin-right: 0.58em;
+  color: #8be8ff;
+  content: attr(data-exhibit-number);
+  font: 700 0.5em/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.12em;
+  vertical-align: 0.18em;
+  -webkit-text-fill-color: #8be8ff;
   text-shadow:
-    0 0 18px rgba(111, 218, 255, 0.28),
-    0 0 42px rgba(72, 145, 255, 0.16);
+    -1px -1px 0 rgba(0, 10, 22, 0.95),
+    1px 1px 0 rgba(0, 10, 22, 0.95),
+    0 2px 6px rgba(0, 4, 14, 0.95),
+    0 0 14px rgba(87, 218, 255, 0.5);
 }
 
 @supports ((background-clip: text) or (-webkit-background-clip: text)) {
@@ -69,7 +83,9 @@
     -webkit-background-clip: text;
     color: transparent;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 14px rgba(94, 199, 255, 0.3));
+    filter:
+      drop-shadow(0 4px 1px rgba(0, 5, 16, 0.88))
+      drop-shadow(0 8px 7px rgba(0, 4, 14, 0.58));
   }
 }
 
@@ -1405,4 +1421,10 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
       0 18px 42px rgba(0, 5, 15, 0.3),
       inset 0 1px rgba(225, 250, 255, 0.035);
   }
+}
+
+/* Final responsive override: the current number and title live in #japan-title. */
+.experience.japan-open .japan-layer .map-mode-bank > .map-mode-bank-heading,
+.experience.japan-open .japan-layer .map-mode-bank > .map-mode-bank-guide {
+  display: none !important;
 }

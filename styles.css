@@ -3743,16 +3743,31 @@ button {
 }
 
 .japan-data-button-symbol {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
   font-family: Consolas, "Courier New", monospace;
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.16em;
+  opacity: 0.9;
 }
 
 .japan-data-button-copy {
+  display: grid;
+  gap: 4px;
   font-family: var(--font-ja);
   font-size: 13px;
   letter-spacing: 0.045em;
+}
+
+.japan-data-button-copy > small {
+  font: 700 7px/1 Consolas, "Courier New", monospace;
+  letter-spacing: 0.18em;
+  opacity: 0.78;
 }
 
 .japan-data-button:hover,

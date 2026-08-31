@@ -513,7 +513,7 @@
 
 .character-book-hero-figure {
   position: absolute;
-  z-index: 4;
+  z-index: 8;
   right: clamp(20px, 4vw, 72px);
   bottom: clamp(18px, 3vh, 38px);
   width: min(45vw, 720px);
@@ -614,8 +614,8 @@
 
 .character-book-scroll-cue {
   position: absolute;
-  z-index: 7;
-  bottom: 54px;
+  z-index: 9;
+  bottom: calc(clamp(72px, 10vw, 150px) + 18px);
   left: 50%;
   display: grid;
   place-items: center;
@@ -860,7 +860,7 @@ body.character-mode-open .experience > :is(#gaia-canvas, .abstract-mode-backgrou
     font-size: clamp(24px, 1.18vw, 34px);
   }
   .character-book-hero-figure figcaption { font-size: clamp(13px, 0.58vw, 17px); }
-  .character-book-scroll-cue { bottom: clamp(72px, 5vh, 110px); }
+  .character-book-scroll-cue { bottom: calc(clamp(72px, 10vw, 150px) + clamp(18px, 1.5vh, 28px)); }
 }
 
 @media (max-width: 980px) {

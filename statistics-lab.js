@@ -44,8 +44,11 @@ if (!lab || !openButton) {
   document.body.append(lab);
   const ui = {
     close: q("#gaia-statistics-close"),
+    menuToggle: q("#gaia-statistics-menu-toggle"),
+    menuClose: q("#gaia-statistics-menu-close"),
+    menuScrim: q("#gaia-statistics-menu-scrim"),
+    controls: q("#gaia-statistics-controls"),
     context: q("#gaia-statistics-context"),
-    dataset: q("#gaia-statistics-dataset"),
     derived: q("#gaia-statistics-derived"),
     recordFilter: q("#gaia-statistics-record-filter"),
     filterClear: q("#gaia-statistics-filter-clear"),
@@ -1574,38 +1577,46 @@ if (!lab || !openButton) {
     ui.lectures.replaceChildren(); METHOD_GROUPS.forEach((group) => { const option = document.createElement("option"); option.value = group.id; option.textContent = `${group.id}　${group.name}`; ui.lectures.append(option); }); ui.lectures.value = state.lectureId;
   };
 
-  const renderDatasetOptions = () => {
-    ui.dataset.replaceChildren();
-    state.datasets.forEach((dataset) => { const option = document.createElement("option"); option.value = dataset.id; option.textContent = `${MODE_TITLES[dataset.modeId]?.split(" / ")[0] || dataset.modeId} — ${dataset.title}`; ui.dataset.append(option); });
-    ui.dataset.value = state.datasetId;
-  };
-
   const setDataset = (id, chooseDefault = false) => {
     const dataset = state.datasets.find((candidate) => candidate.id === id) || state.datasets[0]; if (!dataset) return;
     const supportsDerived = dataset.provenance.some((kind) => kind !== "SOURCE");
     if (!supportsDerived) state.includeDerived = false;
     if (state.datasetId !== dataset.id) state.selectedRecordId = "";
-    state.datasetId = dataset.id; state.modeId = dataset.modeId; ui.dataset.value = dataset.id; ui.derived.checked = state.includeDerived; ui.derived.disabled = !supportsDerived;
+    state.datasetId = dataset.id; state.modeId = dataset.modeId; ui.derived.checked = state.includeDerived; ui.derived.disabled = !supportsDerived;
     ui.context.textContent = `${MODE_TITLES[dataset.modeId] || dataset.modeId} — ${dataset.title}`;
     if (chooseDefault) { const method = DEFAULT_METHOD[dataset.modeId] || "summary"; const group = METHOD_LOOKUP.get(method).group; state.lectureId = group.id; state.methodId = method; renderLectures(); renderMethods(); }
     render();
   };
 
-  const focusables = () => [...lab.querySelectorAll("button:not([disabled]), select:not([disabled]), input:not([disabled]), details > summary, [tabindex]:not([tabindex='-1'])")].filter((element) => !element.hidden && element.getClientRects().length);
-  const trapFocus = (event) => { if (!state.open) return; if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); close(); return; } if (event.key !== "Tab") return; const list = focusables(); if (!list.length) return; const first = list[0]; const last = list.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } };
+  const setMenuOpen = (open, { restoreFocus = false } = {}) => {
+    const shouldOpen = Boolean(open);
+    lab.classList.toggle("is-menu-open", shouldOpen);
+    ui.menuToggle.setAttribute("aria-expanded", String(shouldOpen));
+    ui.controls.toggleAttribute("inert", !shouldOpen);
+    ui.controls.setAttribute("aria-hidden", String(!shouldOpen));
+    if (shouldOpen) setTimeout(() => {
+      if (lab.classList.contains("is-menu-open")) ui.menuClose.focus({ preventScroll: true });
+    }, 0);
+    else if (restoreFocus) ui.menuToggle.focus({ preventScroll: true });
+  };
+
+  const focusables = () => [...lab.querySelectorAll("button:not([disabled]), select:not([disabled]), input:not([disabled]), details > summary, [tabindex]:not([tabindex='-1'])")]
+    .filter((element) => !element.hidden && !element.closest("[inert]") && element.getClientRects().length);
+  const trapFocus = (event) => { if (!state.open) return; if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); if (lab.classList.contains("is-menu-open")) setMenuOpen(false, { restoreFocus: true }); else close(); return; } if (event.key !== "Tab") return; const list = focusables(); if (!list.length) return; const first = list[0]; const last = list.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } };
 
   const ensureReady = async () => {
     if (state.snapshot) return;
     const adapter = globalThis.GaiaMapObservationAdapter;
     if (!adapter?.waitSignalsReady) throw new Error("地図データの準備が完了していません。");
-    state.snapshot = await adapter.waitSignalsReady(); state.datasets = buildDatasets(state.snapshot); renderDatasetOptions(); renderLectures(); renderMethods();
+    state.snapshot = await adapter.waitSignalsReady(); state.datasets = buildDatasets(state.snapshot); renderLectures(); renderMethods();
   };
 
   const open = async ({ modeId, datasetId } = {}) => {
     state.returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : openButton; ui.status.textContent = "LOADING DATA";
-    lab.hidden = false; lab.setAttribute("aria-hidden", "false"); document.body.classList.add("gaia-statistics-open"); state.open = true; document.addEventListener("keydown", trapFocus, true);
+    lab.hidden = false; lab.setAttribute("aria-hidden", "false"); document.body.classList.add("gaia-statistics-open"); state.open = true; setMenuOpen(false); document.addEventListener("keydown", trapFocus, true);
     try {
       await ensureReady();
+      if (!state.open) return;
       const adapterState = globalThis.GaiaMapObservationAdapter?.getState?.(); const inferredMode = modeId || state.snapshot?.modes?.[adapterState?.modeIndex]?.id || state.modeId;
       const preferred = datasetId || state.datasets.find((dataset) => dataset.modeId === inferredMode)?.id || state.datasets[0]?.id;
       setDataset(preferred, true); ui.close.focus(); window.dispatchEvent(new CustomEvent("gaia:statistics-open", { detail: { modeId: inferredMode, datasetId: preferred } }));
@@ -1615,13 +1626,15 @@ if (!lab || !openButton) {
   };
 
   const close = () => {
-    if (!state.open) return; cancelAnimationFrame(state.animation); state.open = false; lab.hidden = true; lab.setAttribute("aria-hidden", "true"); document.body.classList.remove("gaia-statistics-open"); document.removeEventListener("keydown", trapFocus, true); state.returnFocus?.focus?.(); window.dispatchEvent(new CustomEvent("gaia:statistics-close", { detail: { modeId: state.modeId, datasetId: state.datasetId } }));
+    if (!state.open) return; cancelAnimationFrame(state.animation); state.open = false; setMenuOpen(false); lab.hidden = true; lab.setAttribute("aria-hidden", "true"); document.body.classList.remove("gaia-statistics-open"); document.removeEventListener("keydown", trapFocus, true); state.returnFocus?.focus?.(); window.dispatchEvent(new CustomEvent("gaia:statistics-close", { detail: { modeId: state.modeId, datasetId: state.datasetId } }));
   };
 
   [openButton, ...document.querySelectorAll("[data-gaia-statistics-open]")].forEach((button) => button.addEventListener("click", () => void open()));
   ui.close.addEventListener("click", close);
+  ui.menuToggle.addEventListener("click", () => setMenuOpen(!lab.classList.contains("is-menu-open"), { restoreFocus: true }));
+  ui.menuClose.addEventListener("click", () => setMenuOpen(false, { restoreFocus: true }));
+  ui.menuScrim.addEventListener("click", () => setMenuOpen(false, { restoreFocus: true }));
   lab.addEventListener("pointerdown", (event) => { if (event.target === lab) close(); });
-  ui.dataset.addEventListener("change", () => setDataset(ui.dataset.value, false));
   ui.lectures.addEventListener("change", () => selectLecture(ui.lectures.value));
   ui.derived.addEventListener("change", () => { state.includeDerived = ui.derived.checked; render(); });
   ui.recordSortButtons.forEach((button) => button.addEventListener("click", () => sortRecords(button.dataset.recordSortAction)));

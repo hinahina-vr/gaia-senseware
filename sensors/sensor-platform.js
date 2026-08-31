@@ -266,7 +266,7 @@ const boot = async () => {
       else showView("login");
     }
     else {
-      showView("login");
+      showView(publicView || "login");
       showStatus(error.message, "error");
     }
   }

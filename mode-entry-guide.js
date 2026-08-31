@@ -23,19 +23,11 @@
       </header>
       <h2 id="gaia-mode-entry-guide-title" data-mode-guide-title></h2>
       <p id="gaia-mode-entry-guide-copy" data-mode-guide-copy></p>
-      <nav aria-label="操作ガイドの移動">
-        <button type="button" data-mode-guide-action="previous">戻る</button>
-        <button type="button" data-mode-guide-action="close">閉じる</button>
-        <button class="is-primary" type="button" data-mode-guide-action="next">次へ</button>
-      </nav>
     </article>`;
   document.body.append(layer);
 
   const spotlight = layer.querySelector(".gaia-mode-entry-guide-spotlight");
   const card = layer.querySelector(".gaia-mode-entry-guide-card");
-  const previousButton = layer.querySelector("[data-mode-guide-action='previous']");
-  const closeButton = layer.querySelector("[data-mode-guide-action='close']");
-  const nextButton = layer.querySelector("[data-mode-guide-action='next']");
   let activeId = null;
   let activeConfig = null;
   let activeSteps = [];
@@ -59,6 +51,15 @@
   const clamp = (minimum, maximum, value) => Math.max(minimum, Math.min(maximum, value));
   const overlapArea = (first, second) => Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left))
     * Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+  const resolveAvoidRects = (step) => {
+    const sources = [activeConfig?.avoid, step?.avoid].flat().filter(Boolean);
+    return sources.flatMap((source) => {
+      const resolved = typeof source === "function" ? source() : source;
+      if (typeof resolved === "string") return Array.from(document.querySelectorAll(resolved));
+      if (resolved instanceof Element) return [resolved];
+      return [];
+    }).filter(isVisible).map((element) => element.getBoundingClientRect());
+  };
 
   const clearTarget = () => {
     activeTarget?.classList.remove("is-gaia-mode-guide-target");
@@ -90,16 +91,23 @@
     const height = Math.min(cardRect.height, innerHeight - inset * 2);
     const centerX = target.left + target.width / 2;
     const centerY = target.top + target.height / 2;
+    const avoidRects = resolveAvoidRects(activeSteps[activeIndex]);
     const candidates = [
       { placement: "below", left: centerX - width / 2, top: target.bottom + gap, priority: 0 },
       { placement: "above", left: centerX - width / 2, top: target.top - height - gap, priority: 1 },
       { placement: "right", left: target.right + gap, top: centerY - height / 2, priority: 2 },
       { placement: "left", left: target.left - width - gap, top: centerY - height / 2, priority: 3 },
+      { placement: "above-left", left: inset, top: target.top - height - gap, priority: 4 },
+      { placement: "above-right", left: innerWidth - inset - width, top: target.top - height - gap, priority: 5 },
+      { placement: "below-left", left: inset, top: target.bottom + gap, priority: 6 },
+      { placement: "below-right", left: innerWidth - inset - width, top: target.bottom + gap, priority: 7 },
     ].map((candidate) => {
       const left = clamp(inset, Math.max(inset, innerWidth - inset - width), candidate.left);
       const top = clamp(inset, Math.max(inset, innerHeight - inset - height), candidate.top);
       const bounds = { left, top, right: left + width, bottom: top + height };
-      return { ...candidate, ...bounds, score: overlapArea(bounds, target) * 100 + candidate.priority };
+      const targetOverlap = overlapArea(bounds, target);
+      const avoidedOverlap = avoidRects.reduce((sum, avoidRect) => sum + overlapArea(bounds, avoidRect), 0);
+      return { ...candidate, ...bounds, score: targetOverlap * 1000 + avoidedOverlap * 100 + candidate.priority };
     }).sort((first, second) => first.score - second.score)[0];
 
     card.style.left = `${Math.round(candidates.left)}px`;
@@ -142,8 +150,6 @@
     layer.querySelector("[data-mode-guide-total]").textContent = String(activeSteps.length);
     layer.querySelector("[data-mode-guide-title]").textContent = step.title;
     layer.querySelector("[data-mode-guide-copy]").textContent = step.copy;
-    previousButton.disabled = activeIndex === 0;
-    nextButton.textContent = activeIndex === activeSteps.length - 1 ? "案内を終える" : "次へ";
     delete card.dataset.positioned;
 
     const rect = activeTarget.getBoundingClientRect();
@@ -211,7 +217,7 @@
       if (activeId !== id) return;
       layer.classList.add("is-visible");
       setStep(0);
-      nextButton.focus({ preventScroll: true });
+      layer.focus({ preventScroll: true });
     });
     return true;
   };
@@ -242,11 +248,21 @@
     return button;
   };
 
-  previousButton.addEventListener("click", () => setStep(activeIndex - 1, -1));
-  closeButton.addEventListener("click", () => close());
-  nextButton.addEventListener("click", () => {
+  const advance = () => {
     if (activeIndex >= activeSteps.length - 1) close();
     else setStep(activeIndex + 1, 1);
+  };
+  layer.addEventListener("click", (event) => {
+    if (!activeId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    advance();
+  });
+  layer.addEventListener("keydown", (event) => {
+    if (!activeId || (event.key !== "Enter" && event.key !== " ")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    advance();
   });
   document.addEventListener("keydown", (event) => {
     if (!activeId || event.key !== "Escape") return;

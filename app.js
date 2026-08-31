@@ -45,7 +45,13 @@
   };
 
   const triggerButtonGlint = (button, point = null) => {
-    if (!(button instanceof HTMLButtonElement) || button.disabled || button.matches(".novel-interaction-open, #novel-log-close")) {
+    if (
+      !(button instanceof HTMLButtonElement)
+      || button.disabled
+      || button.matches(
+        ".novel-interaction-open, #novel-log-close, .character-book-selector button, .character-book-expression-list button",
+      )
+    ) {
       stopButtonGlint();
       return;
     }
@@ -4808,7 +4814,11 @@
     mapScope = "earth";
     japanLayer.dataset.mapScope = mapScope;
     mapScopeKicker.textContent = "Planetary lens / Open map";
-    japanTitle.textContent = modes[modeToIndex]?.titleJa || "地球の一呼吸";
+    const mapHeadingNumber = formatModeNumber(mapModeIndex);
+    const mapHeadingTitle = modes[modeToIndex]?.titleJa || "地球の一呼吸";
+    japanTitle.dataset.exhibitNumber = mapHeadingNumber;
+    japanTitle.textContent = mapHeadingTitle;
+    japanTitle.setAttribute("aria-label", `${mapHeadingNumber} ${mapHeadingTitle}`);
     japanDescription.textContent =
       "水、熱、生きもの、大地の動きは国境で止まりません。世界の観測記録を一枚の地図に重ねています。";
     updateMapBasisNote();
@@ -6502,9 +6512,13 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanModeNumber.textContent = formatModeNumber(mapModeIndex);
     japanModeTitle.textContent = selectedMapMode.titleJa;
     japanModeBank.dataset.activeMode = formatModeNumber(mapModeIndex);
-    const mapTitleChanged = japanTitle.textContent !== mode.titleJa;
+    const mapHeadingNumber = formatModeNumber(mapModeIndex);
+    const mapTitleChanged = japanTitle.textContent !== mode.titleJa
+      || japanTitle.dataset.exhibitNumber !== mapHeadingNumber;
+    japanTitle.dataset.exhibitNumber = mapHeadingNumber;
     japanTitle.textContent = mode.titleJa;
-    if (mapTitleChanged) animateMapTitleTransition(mode.titleJa);
+    japanTitle.setAttribute("aria-label", `${mapHeadingNumber} ${mode.titleJa}`);
+    if (mapTitleChanged) animateMapTitleTransition(`${mapHeadingNumber}　${mode.titleJa}`);
     document.querySelector('meta[name="theme-color"]').setAttribute("content", "#03070d");
 
     modeButtons.forEach((button, index) => {
@@ -7770,8 +7784,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
     }) || null;
   window.GaiaModeEntryGuide?.register?.("map", {
-    version: "v1",
+    version: "v2",
     kicker: "WORLD MAP / 操作ガイド",
+    avoid: "#map-reading-guide",
     available: () => japanIsOpen && !japanLayer.hidden,
     steps: [
       {
@@ -7793,6 +7808,11 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
         target: () => firstVisibleMapGuideTarget("#japan-data-button", "#map-mobile-heading-toggle"),
         title: "データの出典を確認する",
         copy: "表示中の数値がどの公開データから来たか、実測・補完・試算の区分まで確認できます。",
+      },
+      {
+        target: () => firstVisibleMapGuideTarget("#gaia-statistics-button", "#gaia-statistics-button-mobile"),
+        title: "データを詳しく分析する",
+        copy: "統計解析ラボでは、表示中のデータをチャート・数値一覧・元データ・解説の四つの視点から調べられます。",
       },
     ],
   });

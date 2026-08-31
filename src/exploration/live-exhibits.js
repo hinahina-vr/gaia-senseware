@@ -796,7 +796,10 @@ const applyHeading = () => {
   layer.style.setProperty("--map-accent-rgb", exhibit.rgb);
   document.querySelector("#japan-mode-number").textContent = exhibit.number;
   document.querySelector("#japan-mode-title").textContent = exhibit.shortTitle;
-  document.querySelector("#japan-title").textContent = exhibit.shortTitle;
+  const mapTitle = document.querySelector("#japan-title");
+  mapTitle.dataset.exhibitNumber = exhibit.number;
+  mapTitle.textContent = exhibit.shortTitle;
+  mapTitle.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}`);
   buttons.forEach((button, index) => button.setAttribute("aria-current", String(index === activeIndex)));
   document.querySelectorAll("#japan-mode-list .map-mode-button:not([data-live-exhibit])").forEach((button) => button.setAttribute("aria-current", "false"));
 };
@@ -848,7 +851,10 @@ const deactivate = ({ number, title } = {}) => {
   if (restored) {
     document.querySelector("#japan-mode-number").textContent = restored.number;
     document.querySelector("#japan-mode-title").textContent = restored.title;
-    document.querySelector("#japan-title").textContent = restored.title;
+    const mapTitle = document.querySelector("#japan-title");
+    mapTitle.dataset.exhibitNumber = restored.number;
+    mapTitle.textContent = restored.title;
+    mapTitle.setAttribute("aria-label", `${restored.number} ${restored.title}`);
   }
   savedHeading = null;
   dispatchEvent(new CustomEvent("gaia:live-exhibit-change", { detail: { index: -1, id: null } }));
