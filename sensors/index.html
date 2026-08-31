@@ -8,10 +8,10 @@
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-finder-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-touch-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=3" defer></script>
-    <script src="./sensor-platform.js?v=gaia-sensor-finder-1" type="module"></script>
+    <script src="./sensor-platform.js?v=gaia-sensor-touch-1" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -73,9 +73,10 @@
         <p class="sensor-map-lead">登録したセンサーを約10km単位のグリッドに表示しています。<br />正確な設置場所を表示しているわけではありません。</p>
         <div class="sensor-map-console">
           <div class="sensor-world-map" id="public-sensor-map" role="region" tabindex="0" aria-label="日本を中心に拡大・移動できる公開センサー地図">
-            <div class="sensor-map-hud sensor-map-hud-top" aria-hidden="true"><span>DRAG / WHEEL / +/-</span><span id="public-sensor-count">000 NODES</span></div>
+            <div class="sensor-map-hud sensor-map-hud-top" aria-hidden="true"><span>DRAG / PINCH / WHEEL / +/-</span><span id="public-sensor-count">000 NODES</span></div>
             <div class="sensor-world-grid" aria-hidden="true"></div>
             <svg class="sensor-resonance-network" id="public-sensor-network" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <svg class="sensor-marker-tethers" id="public-sensor-tethers" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div class="sensor-map-markers" id="public-sensor-markers"></div>
             <section class="sensor-global-sync" aria-label="GAIA分散観測ネットワークの現在値">
               <header><span>GLOBAL GAIA SYNC</span><strong id="public-sync-rate">00.0%</strong></header>

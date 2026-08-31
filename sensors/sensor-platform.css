@@ -291,16 +291,18 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-map-canvas--overscan { inset: auto; top: -22%; left: -22%; width: 144%; height: 144%; }
 .sensor-world-grid { position: absolute; z-index: 1; inset: 0; background: linear-gradient(120deg, transparent 42%, rgba(var(--mint-rgb),.05) 43%, transparent 44%); pointer-events: none; }
 .sensor-resonance-network { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.sensor-marker-tethers { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.sensor-marker-tether { stroke: rgba(190,244,233,.46); stroke-width: 1px; stroke-dasharray: 2 3; filter: drop-shadow(0 0 3px rgba(var(--mint-rgb),.28)); }
 .sensor-map-markers { position: absolute; z-index: 3; inset: 0; }
-.sensor-map-canvas, .sensor-world-grid, .sensor-resonance-network, .sensor-map-markers { transform: translate3d(var(--sensor-map-drag-x, 0), var(--sensor-map-drag-y, 0), 0); }
-.sensor-world-map.is-dragging :is(.sensor-map-canvas, .sensor-world-grid, .sensor-resonance-network, .sensor-map-markers) { will-change: transform; }
+.sensor-map-canvas, .sensor-world-grid, .sensor-resonance-network, .sensor-marker-tethers, .sensor-map-markers { transform: translate3d(var(--sensor-map-drag-x, 0), var(--sensor-map-drag-y, 0), 0); }
+.sensor-world-map.is-dragging :is(.sensor-map-canvas, .sensor-world-grid, .sensor-resonance-network, .sensor-marker-tethers, .sensor-map-markers) { will-change: transform; }
 .sensor-resonance-link { opacity: calc(var(--resonance-strength, .4) * .72); fill: none; stroke: rgba(var(--mint-rgb),.74); stroke-width: 1.1px; stroke-dasharray: .035 .06; filter: drop-shadow(0 0 5px rgba(var(--mint-rgb),.5)); animation: sensor-resonance-flow 2.8s linear infinite; animation-delay: var(--resonance-delay, 0s); }
 .sensor-resonance-link[data-demo] { stroke: rgba(154,196,255,.66); }
 @keyframes sensor-resonance-flow { to { stroke-dashoffset: -.19; } }
 .sensor-map-hud { position: absolute; z-index: 3; display: flex; right: 13px; left: 13px; justify-content: space-between; color: rgba(214,255,247,.7); font: 700 8px/1 Consolas, monospace; letter-spacing: .16em; pointer-events: none; }
 .sensor-map-hud-top { top: 14px; }
 .sensor-map-basis { position: absolute; z-index: 3; right: 12px; bottom: 10px; padding: 5px 7px; color: rgba(187,237,228,.58); background: rgba(2,12,18,.72); font: 700 7px/1 Consolas, monospace; letter-spacing: .12em; pointer-events: none; }
-.sensor-map-marker { --signal-rgb: 255,154,154; --sensor-accent-rgb: var(--mint-rgb); --sensor-activity: .5; --sensor-glow: 24px; --sensor-pulse-duration: 2.5s; --sensor-pulse-scale: 1.55; position: absolute; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%; color: var(--ink); background: rgba(4,22,29,.8); box-shadow: 0 0 0 1px rgba(var(--sensor-accent-rgb),.82), 0 0 var(--sensor-glow) rgba(var(--sensor-accent-rgb),.3); cursor: pointer; transform: translate(-50%, -50%); }
+.sensor-map-marker { --signal-rgb: 255,154,154; --sensor-accent-rgb: var(--mint-rgb); --sensor-activity: .5; --sensor-glow: 24px; --sensor-pulse-duration: 2.5s; --sensor-pulse-scale: 1.55; position: absolute; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%; color: var(--ink); background: rgba(4,22,29,.8); box-shadow: 0 0 0 1px rgba(var(--sensor-accent-rgb),.82), 0 0 var(--sensor-glow) rgba(var(--sensor-accent-rgb),.3); cursor: pointer; transform: translate(calc(-50% + var(--sensor-marker-offset-x, 0px)), calc(-50% + var(--sensor-marker-offset-y, 0px))); }
 .sensor-map-marker[data-sensor-type="ame"] { --sensor-accent-rgb: 255,191,101; }
 .sensor-map-marker[data-sensor-type="mizu"] { --sensor-accent-rgb: 92,208,255; }
 .sensor-map-marker[data-sensor-type="saku"] { --sensor-accent-rgb: 201,146,255; }
@@ -313,7 +315,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-map-marker[data-state="OFFLINE"] .sensor-owner-avatar { filter: grayscale(.78); opacity: .7; }
 .sensor-map-marker[data-active="true"][data-state="OFFLINE"] .sensor-owner-avatar { filter: none; opacity: 1; }
 .sensor-map-marker[aria-current="true"] { z-index: 4; box-shadow: 0 0 0 3px rgb(var(--sensor-accent-rgb)), 0 0 34px rgba(var(--sensor-accent-rgb),.55); }
-.sensor-map-marker:is(:hover, :focus-visible) { transform: translate(-50%, -50%); }
+.sensor-map-marker:is(:hover, :focus-visible) { transform: translate(calc(-50% + var(--sensor-marker-offset-x, 0px)), calc(-50% + var(--sensor-marker-offset-y, 0px))); }
 .sensor-map-marker .sensor-owner-avatar { transition: transform 180ms ease; }
 .sensor-map-marker:is(:hover, :focus-visible) .sensor-owner-avatar { transform: scale(1.06); }
 @keyframes sensor-node-radar { 0% { opacity: .76; transform: scale(.84); } 72%,100% { opacity: 0; transform: scale(var(--sensor-pulse-scale)); } }

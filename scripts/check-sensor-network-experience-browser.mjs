@@ -46,6 +46,25 @@ try {
     assert.equal(await page.locator(".sensor-sparkline polyline").count(), 3);
 
     if (viewport.width > 760) {
+      const collided = page.locator(".sensor-map-marker[data-collision-group]");
+      assert((await collided.count()) >= 2);
+      const collisionGroup = await collided.first().getAttribute("data-collision-group");
+      const collisionPair = page.locator(`.sensor-map-marker[data-collision-group="${collisionGroup}"]`);
+      const collisionLayout = await collisionPair.evaluateAll((markers) => {
+        const centres = markers.map((marker) => {
+          const rect = marker.getBoundingClientRect();
+          return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        });
+        return { centres, distance: Math.hypot(centres[1].x - centres[0].x, centres[1].y - centres[0].y) };
+      });
+      assert(collisionLayout.distance >= 48, `collided markers remain too close: ${collisionLayout.distance}`);
+      assert((await page.locator(".sensor-marker-tether").count()) >= 2);
+      await collided.first().hover();
+      const hoveredCentre = await collided.first().evaluate((marker) => {
+        const rect = marker.getBoundingClientRect();
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      });
+      assert(Math.hypot(hoveredCentre.x - collisionLayout.centres[0].x, hoveredCentre.y - collisionLayout.centres[0].y) < .5);
       assert.equal(await page.locator("#public-sensor-directory").isVisible(), true);
       await page.locator("#public-sensor-query").fill("大阪");
       assert.equal(await page.locator(".sensor-public-card:visible").count(), 1);
@@ -59,6 +78,21 @@ try {
     } else {
       const topbarHeight = await page.locator(".sensor-topbar").evaluate((element) => element.getBoundingClientRect().height);
       assert(topbarHeight <= 110, `mobile map topbar is too tall: ${topbarHeight}`);
+      const map = page.locator("#public-sensor-map");
+      const mapBox = await map.boundingBox();
+      const centreX = mapBox.x + mapBox.width / 2;
+      const centreY = mapBox.y + mapBox.height / 2;
+      const zoomBeforePinch = await page.locator("#public-map-zoom").evaluate((output) => Number.parseFloat(output.value));
+      await map.dispatchEvent("pointerdown", { pointerId: 41, pointerType: "touch", button: 0, buttons: 1, clientX: centreX - 42, clientY: centreY });
+      await map.dispatchEvent("pointerdown", { pointerId: 42, pointerType: "touch", button: 0, buttons: 1, clientX: centreX + 42, clientY: centreY });
+      await map.dispatchEvent("pointermove", { pointerId: 41, pointerType: "touch", button: -1, buttons: 1, clientX: centreX - 86, clientY: centreY });
+      await map.dispatchEvent("pointermove", { pointerId: 42, pointerType: "touch", button: -1, buttons: 1, clientX: centreX + 86, clientY: centreY });
+      await page.waitForTimeout(80);
+      const zoomAfterPinch = await page.locator("#public-map-zoom").evaluate((output) => Number.parseFloat(output.value));
+      assert(zoomAfterPinch > zoomBeforePinch * 1.45, `pinch did not zoom enough: ${zoomBeforePinch} -> ${zoomAfterPinch}`);
+      assert.equal(await map.getAttribute("data-gesture"), "pinch");
+      await map.dispatchEvent("pointerup", { pointerId: 41, pointerType: "touch", button: 0, buttons: 0, clientX: centreX - 86, clientY: centreY });
+      await map.dispatchEvent("pointerup", { pointerId: 42, pointerType: "touch", button: 0, buttons: 0, clientX: centreX + 86, clientY: centreY });
       await page.locator("#public-map-directory-toggle").click();
       assert.equal(await page.locator("#public-sensor-directory").isVisible(), true);
       assert.equal(await page.locator("#public-map-directory-toggle").getAttribute("aria-expanded"), "true");
@@ -86,6 +120,8 @@ try {
       await page.locator("#refresh-map").click();
       await page.waitForTimeout(250);
       assert.equal(await page.locator("#public-sensor-detail").isVisible(), false);
+      assert.equal(await page.locator("#refresh-map").textContent(), "更新しました");
+      assert.equal(await page.locator("#sensor-status").isVisible(), false);
     }
 
     if (viewport.width > 760) {

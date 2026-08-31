@@ -21,6 +21,7 @@ const historyChart = document.querySelector("#history-chart");
 const latestMetrics = document.querySelector("#latest-metrics");
 const publicSensorMap = document.querySelector("#public-sensor-map");
 const publicSensorNetwork = document.querySelector("#public-sensor-network");
+const publicSensorTethers = document.querySelector("#public-sensor-tethers");
 const publicSensorMarkers = document.querySelector("#public-sensor-markers");
 const publicSensorList = document.querySelector("#public-sensor-list");
 const publicSensorDetail = document.querySelector("#public-sensor-detail");
@@ -30,6 +31,7 @@ const publicSensorResults = document.querySelector("#public-sensor-results");
 const publicSensorEmpty = document.querySelector("#public-sensor-empty");
 const publicMapDirectoryToggle = document.querySelector("#public-map-directory-toggle");
 const publicMapDirectoryCount = document.querySelector("#public-map-directory-count");
+const publicMapRefresh = document.querySelector("#refresh-map");
 const publicMapZoomIn = document.querySelector("#public-map-zoom-in");
 const publicMapZoomOut = document.querySelector("#public-map-zoom-out");
 const publicMapReset = document.querySelector("#public-map-reset");
@@ -56,6 +58,7 @@ const publicMapDragRebaseRatio = .18;
 const publicMapFocusMinZoom = 7.2;
 const publicMapPollIntervalMs = 60_000;
 const publicMapCanvasPixelBudget = 12_000_000;
+const publicMapMarkerCollisionDistance = 56;
 const resonanceDistanceKm = 1_800;
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
 const worldMapView = Object.freeze({ west: -180, east: 180, south: -90, north: 90, key: "WORLD" });
@@ -87,8 +90,11 @@ const mapObservers = [];
 const mapViewports = new WeakMap();
 const mapRenderers = new WeakMap();
 const publicMapCamera = { ...publicMapHome };
+const publicMapPointers = new Map();
 let publicMapDrag = null;
 let publicMapDragFrame = 0;
+let publicMapPinch = null;
+let publicMapPinchFrame = 0;
 let publicMapWheelFrame = 0;
 let publicMapWheel = null;
 let publicMapFocusFrame = 0;
@@ -769,16 +775,19 @@ function publicSensorDistanceKm(left, right) {
 function renderPublicResonanceNetwork() {
   if (!publicSensorNetwork) return;
   const namespace = "http://www.w3.org/2000/svg";
+  const markerBounds = publicSensorMarkers.getBoundingClientRect();
+  const markerWidth = Math.max(markerBounds.width, 1);
+  const markerHeight = Math.max(markerBounds.height, 1);
   const markerById = new Map([...publicSensorMarkers.querySelectorAll(".sensor-map-marker")].map((marker) => [marker.dataset.sensorId, marker]));
   const paths = [];
   publicResonancePairs.forEach((pair, index) => {
     const from = markerById.get(pair.from.id);
     const to = markerById.get(pair.to.id);
     if (!from || !to || from.hidden || to.hidden) return;
-    const x1 = Number.parseFloat(from.style.left);
-    const y1 = Number.parseFloat(from.style.top);
-    const x2 = Number.parseFloat(to.style.left);
-    const y2 = Number.parseFloat(to.style.top);
+    const x1 = Number.parseFloat(from.style.left) + markerOffset(from, "x") / markerWidth * 100;
+    const y1 = Number.parseFloat(from.style.top) + markerOffset(from, "y") / markerHeight * 100;
+    const x2 = Number.parseFloat(to.style.left) + markerOffset(to, "x") / markerWidth * 100;
+    const y2 = Number.parseFloat(to.style.top) + markerOffset(to, "y") / markerHeight * 100;
     if (![x1, y1, x2, y2].every(Number.isFinite)) return;
     const bend = ((hashPublicSensorId(`${pair.from.id}:${pair.to.id}`) % 11) - 5) * .35;
     const midpointX = (x1 + x2) / 2 - (y2 - y1) * .025 + bend;
@@ -794,6 +803,10 @@ function renderPublicResonanceNetwork() {
     paths.push(path);
   });
   publicSensorNetwork.replaceChildren(...paths);
+}
+
+function markerOffset(marker, axis) {
+  return Number.parseFloat(marker.style.getPropertyValue(`--sensor-marker-offset-${axis}`)) || 0;
 }
 
 function renderPublicNetworkStats() {
@@ -889,32 +902,45 @@ function initPublicMapNavigation() {
   publicSensorMap.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 || event.target.closest("button, a")) return;
     event.preventDefault();
-    publicMapDrag = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      deltaX: 0,
-      deltaY: 0,
-    };
-    publicSensorMap.setPointerCapture(event.pointerId);
+    cancelPublicMapFocus();
+    publicMapPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    try { publicSensorMap.setPointerCapture(event.pointerId); } catch {}
     publicSensorMap.classList.add("is-dragging");
+    if (publicMapPointers.size >= 2) {
+      finishPublicMapDrag(true);
+      startPublicMapPinch();
+      return;
+    }
+    publicMapDrag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, deltaX: 0, deltaY: 0 };
   });
   publicSensorMap.addEventListener("pointermove", (event) => {
+    if (!publicMapPointers.has(event.pointerId)) return;
+    publicMapPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (publicMapPointers.size >= 2) {
+      queuePublicMapPinch();
+      return;
+    }
     if (!publicMapDrag || publicMapDrag.pointerId !== event.pointerId) return;
     publicMapDrag.deltaX = event.clientX - publicMapDrag.startX;
     publicMapDrag.deltaY = event.clientY - publicMapDrag.startY;
     queuePublicMapDragPreview();
   });
   const release = (event, commit = true) => {
-    if (!publicMapDrag || publicMapDrag.pointerId !== event.pointerId) return;
-    const { deltaX, deltaY } = publicMapDrag;
-    publicMapDrag = null;
-    if (publicMapDragFrame) cancelAnimationFrame(publicMapDragFrame);
-    publicMapDragFrame = 0;
-    publicSensorMap.style.removeProperty("--sensor-map-drag-x");
-    publicSensorMap.style.removeProperty("--sensor-map-drag-y");
-    publicSensorMap.classList.remove("is-dragging");
-    if (commit && (Math.abs(deltaX) > .5 || Math.abs(deltaY) > .5)) panPublicMap(deltaX, deltaY);
+    if (!publicMapPointers.has(event.pointerId)) return;
+    const wasPinching = Boolean(publicMapPinch);
+    publicMapPointers.delete(event.pointerId);
+    if (wasPinching) {
+      stopPublicMapPinch();
+      const remaining = [...publicMapPointers.entries()][0];
+      if (remaining) {
+        const [pointerId, point] = remaining;
+        publicMapDrag = { pointerId, startX: point.x, startY: point.y, deltaX: 0, deltaY: 0 };
+        publicSensorMap.classList.add("is-dragging");
+      } else publicSensorMap.classList.remove("is-dragging");
+      return;
+    }
+    if (publicMapDrag?.pointerId === event.pointerId) finishPublicMapDrag(commit);
+    if (!publicMapPointers.size) publicSensorMap.classList.remove("is-dragging");
   };
   publicSensorMap.addEventListener("pointerup", release);
   publicSensorMap.addEventListener("pointercancel", (event) => release(event, false));
@@ -926,6 +952,62 @@ function initPublicMapNavigation() {
     if (moves[event.key]) { event.preventDefault(); panPublicMap(...moves[event.key]); }
   });
   window.addEventListener("resize", updatePublicMapViewport, { passive: true });
+}
+
+function cancelPublicMapFocus() {
+  publicMapFocusToken += 1;
+  if (publicMapFocusFrame) cancelAnimationFrame(publicMapFocusFrame);
+  publicMapFocusFrame = 0;
+}
+
+function finishPublicMapDrag(commit = true) {
+  if (!publicMapDrag) return;
+  const { deltaX, deltaY } = publicMapDrag;
+  publicMapDrag = null;
+  if (publicMapDragFrame) cancelAnimationFrame(publicMapDragFrame);
+  publicMapDragFrame = 0;
+  publicSensorMap.style.removeProperty("--sensor-map-drag-x");
+  publicSensorMap.style.removeProperty("--sensor-map-drag-y");
+  if (commit && (Math.abs(deltaX) > .5 || Math.abs(deltaY) > .5)) panPublicMap(deltaX, deltaY);
+}
+
+function startPublicMapPinch() {
+  const geometry = publicMapPinchGeometry();
+  if (!geometry) return;
+  publicMapPinch = geometry;
+  publicSensorMap.dataset.gesture = "pinch";
+}
+
+function stopPublicMapPinch() {
+  if (publicMapPinchFrame) cancelAnimationFrame(publicMapPinchFrame);
+  publicMapPinchFrame = 0;
+  publicMapPinch = null;
+  delete publicSensorMap.dataset.gesture;
+}
+
+function publicMapPinchGeometry() {
+  const points = [...publicMapPointers.values()].slice(0, 2);
+  if (points.length < 2) return null;
+  const [first, second] = points;
+  return {
+    distance: Math.max(Math.hypot(second.x - first.x, second.y - first.y), 1),
+    clientX: (first.x + second.x) / 2,
+    clientY: (first.y + second.y) / 2,
+  };
+}
+
+function queuePublicMapPinch() {
+  if (!publicMapPinch || publicMapPinchFrame) return;
+  publicMapPinchFrame = requestAnimationFrame(() => {
+    publicMapPinchFrame = 0;
+    const current = publicMapPinchGeometry();
+    if (!current || !publicMapPinch) return;
+    const previous = publicMapPinch;
+    publicMapPinch = current;
+    panPublicMap(current.clientX - previous.clientX, current.clientY - previous.clientY, false);
+    zoomPublicMapBy(clamp(current.distance / previous.distance, .5, 2), current.clientX, current.clientY, false);
+    updatePublicMapViewport();
+  });
 }
 
 function queuePublicMapDragPreview() {
@@ -987,6 +1069,10 @@ function updatePublicMapViewport() {
 
 function positionPublicSensorMarkers() {
   const view = mapViewFor(publicSensorMap);
+  const bounds = publicSensorMarkers.getBoundingClientRect();
+  const width = Math.max(bounds.width, 1);
+  const height = Math.max(bounds.height, 1);
+  const entries = [];
   publicSensorMarkers.querySelectorAll(".sensor-map-marker").forEach((marker) => {
     const longitude = Number(marker.dataset.longitude);
     const latitude = Number(marker.dataset.latitude);
@@ -994,12 +1080,72 @@ function positionPublicSensorMarkers() {
     const top = latitudeToPercent(latitude, view);
     marker.style.left = `${left}%`;
     marker.style.top = `${top}%`;
+    marker.style.setProperty("--sensor-marker-offset-x", "0px");
+    marker.style.setProperty("--sensor-marker-offset-y", "0px");
+    delete marker.dataset.collisionGroup;
+    marker.removeAttribute("aria-description");
     marker.hidden = marker.dataset.filtered === "true" || left < -3 || left > 103 || top < -3 || top > 103;
+    if (!marker.hidden) entries.push({ marker, baseX: left / 100 * width, baseY: top / 100 * height });
   });
+  const remaining = new Set(entries);
+  while (remaining.size) {
+    const seed = remaining.values().next().value;
+    remaining.delete(seed);
+    const group = [seed];
+    for (let cursor = 0; cursor < group.length; cursor += 1) {
+      const current = group[cursor];
+      for (const candidate of [...remaining]) {
+        if (Math.hypot(candidate.baseX - current.baseX, candidate.baseY - current.baseY) > publicMapMarkerCollisionDistance) continue;
+        remaining.delete(candidate);
+        group.push(candidate);
+      }
+    }
+    if (group.length < 2) continue;
+    group.sort((left, right) => String(left.marker.dataset.sensorId).localeCompare(String(right.marker.dataset.sensorId)));
+    const groupId = group.map((entry) => entry.marker.dataset.sensorId).join(":");
+    const centreX = group.reduce((sum, entry) => sum + entry.baseX, 0) / group.length;
+    const centreY = group.reduce((sum, entry) => sum + entry.baseY, 0) / group.length;
+    const baseAngle = hashPublicSensorId(groupId) % 360 * Math.PI / 180;
+    group.forEach((entry, index) => {
+      const ringIndex = Math.floor(index / 8);
+      const ringStart = ringIndex * 8;
+      const ringCount = Math.min(8, group.length - ringStart);
+      const position = index - ringStart;
+      const radius = group.length === 2 ? 29 : 34 + ringIndex * 54 + Math.max(0, ringCount - 3) * 3;
+      const angle = baseAngle + position / ringCount * Math.PI * 2;
+      const edge = 32;
+      const targetX = clamp(centreX + Math.cos(angle) * radius, edge, width - edge);
+      const targetY = clamp(centreY + Math.sin(angle) * radius, edge, height - edge);
+      entry.offsetX = targetX - entry.baseX;
+      entry.offsetY = targetY - entry.baseY;
+      entry.marker.style.setProperty("--sensor-marker-offset-x", `${entry.offsetX.toFixed(1)}px`);
+      entry.marker.style.setProperty("--sensor-marker-offset-y", `${entry.offsetY.toFixed(1)}px`);
+      entry.marker.dataset.collisionGroup = groupId;
+      entry.marker.setAttribute("aria-description", "同じ地域の観測点と重ならないよう、座標を示す線付きで表示しています。");
+    });
+  }
+  renderPublicMarkerTethers(entries, width, height);
   renderPublicResonanceNetwork();
 }
 
-function zoomPublicMapBy(factor, clientX, clientY) {
+function renderPublicMarkerTethers(entries, width, height) {
+  if (!publicSensorTethers) return;
+  const namespace = "http://www.w3.org/2000/svg";
+  const lines = entries.filter((entry) => entry.marker.dataset.collisionGroup).map((entry) => {
+    const line = document.createElementNS(namespace, "line");
+    line.classList.add("sensor-marker-tether");
+    line.dataset.sensorId = entry.marker.dataset.sensorId;
+    line.setAttribute("x1", String(entry.baseX / width * 100));
+    line.setAttribute("y1", String(entry.baseY / height * 100));
+    line.setAttribute("x2", String((entry.baseX + entry.offsetX) / width * 100));
+    line.setAttribute("y2", String((entry.baseY + entry.offsetY) / height * 100));
+    line.setAttribute("vector-effect", "non-scaling-stroke");
+    return line;
+  });
+  publicSensorTethers.replaceChildren(...lines);
+}
+
+function zoomPublicMapBy(factor, clientX, clientY, render = true) {
   const rect = publicSensorMap.getBoundingClientRect();
   const before = publicMapView();
   const xRatio = Number.isFinite(clientX) ? clamp((clientX - rect.left) / Math.max(rect.width, 1), 0, 1) : .5;
@@ -1010,15 +1156,15 @@ function zoomPublicMapBy(factor, clientX, clientY) {
   const after = publicMapView();
   publicMapCamera.longitude += anchorLongitude - (after.west + xRatio * (after.east - after.west));
   publicMapCamera.latitude += anchorLatitude - (after.north - yRatio * (after.north - after.south));
-  updatePublicMapViewport();
+  if (render) updatePublicMapViewport();
 }
 
-function panPublicMap(deltaX, deltaY) {
+function panPublicMap(deltaX, deltaY, render = true) {
   const rect = publicSensorMap.getBoundingClientRect();
   const view = publicMapView();
   publicMapCamera.longitude -= (deltaX / Math.max(rect.width, 1)) * (view.east - view.west);
   publicMapCamera.latitude += (deltaY / Math.max(rect.height, 1)) * (view.north - view.south);
-  updatePublicMapViewport();
+  if (render) updatePublicMapViewport();
 }
 
 const avatarElement = (owner, tagName = "span") => {
@@ -1230,9 +1376,23 @@ document.querySelectorAll("[data-nav]").forEach((link) => link.addEventListener(
   if (destination === "devices") showDevices();
   else { showView(destination); history.replaceState(null, "", `#${destination}`); }
 }));
-document.querySelector("#refresh-map").addEventListener("click", async () => {
-  try { await loadPublicSensors(); showStatus("公開センサーを更新しました。"); }
-  catch (error) { showStatus(error.message, "error"); }
+publicMapRefresh.addEventListener("click", async () => {
+  publicMapRefresh.disabled = true;
+  publicMapRefresh.setAttribute("aria-busy", "true");
+  publicMapRefresh.textContent = "更新中…";
+  try {
+    await loadPublicSensors();
+    publicMapRefresh.textContent = "更新しました";
+    window.setTimeout(() => {
+      if (publicMapRefresh.textContent === "更新しました") publicMapRefresh.textContent = "地図を更新";
+    }, 1_800);
+  } catch (error) {
+    publicMapRefresh.textContent = "地図を更新";
+    showStatus(error.message, "error");
+  } finally {
+    publicMapRefresh.disabled = false;
+    publicMapRefresh.removeAttribute("aria-busy");
+  }
 });
 
 deviceForm.addEventListener("submit", async (event) => {
