@@ -980,7 +980,12 @@ try {
   assert(resizingExposure.safe || resizingExposure.opacity <= .05, "tour card is visibly clipped while returning from rotation");
   await tourPage.waitForTimeout(700);
   await tourPage.screenshot({ path: path.join(outputDir, "tour-mobile.png"), animations: "disabled" });
+  await tourPage.locator("[data-tour-action='exit']").focus();
   await tourPage.keyboard.press("Escape");
+  if (await tourPage.evaluate(() => GaiaGuidedTour.getState().active)) {
+    assert.equal(await tourPage.evaluate(() => GaiaModeEntryGuide?.getState?.().active), false, "Escape must close the nested mode guide first");
+    await tourPage.keyboard.press("Escape");
+  }
   await tourPage.waitForFunction(() => GaiaGuidedTour.getState().active === false);
   await tourPage.waitForTimeout(80);
   const exitLayout = await tourPage.evaluate(() => {
