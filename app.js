@@ -7895,7 +7895,11 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const below = targetRect.bottom + gap;
     const above = targetRect.top - bubbleRect.height - gap;
     const placeBelow = below + bubbleRect.height <= innerHeight - viewportInset;
-    const top = placeBelow ? below : Math.max(viewportInset, above);
+    const preferredTop = placeBelow ? below : above;
+    const top = Math.max(
+      viewportInset,
+      Math.min(innerHeight - bubbleRect.height - viewportInset, preferredTop),
+    );
     const arrowLeft = Math.max(24, Math.min(bubbleRect.width - 24, targetRect.left + targetRect.width / 2 - left));
     introEntryGuideBubble.style.left = `${Math.round(left)}px`;
     introEntryGuideBubble.style.top = `${Math.round(top)}px`;
@@ -7907,6 +7911,20 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     introEntryGuidePositionFrame = requestAnimationFrame(() => {
       introEntryGuidePositionFrame = requestAnimationFrame(positionIntroEntryGuide);
     });
+  };
+  const reflowIntroEntryGuide = () => {
+    if (introEntryGuideActive) {
+      const target = introEntryGuideSteps[introEntryGuideIndex]?.target;
+      if (target instanceof HTMLElement) {
+        const targetRect = target.getBoundingClientRect();
+        if (targetRect.top < 12 || targetRect.bottom > innerHeight - 12) {
+          target.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+        }
+      }
+    }
+    scheduleIntroEntryGuidePosition();
+    window.clearTimeout(introEntryGuideSettleTimer);
+    introEntryGuideSettleTimer = window.setTimeout(scheduleIntroEntryGuidePosition, reducedMotion ? 0 : 120);
   };
   const setIntroEntryGuideStep = (nextIndex) => {
     if (!introEntryGuideActive || introEntryGuideSteps.length === 0) return;
@@ -8004,7 +8022,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     openIntroEntryGuide();
   });
   introLayer.addEventListener("scroll", scheduleIntroEntryGuidePosition, { passive: true });
-  window.addEventListener("resize", scheduleIntroEntryGuidePosition, { passive: true });
+  window.addEventListener("resize", reflowIntroEntryGuide, { passive: true });
   globalThis.GaiaIntroEntryGuide = Object.freeze({
     open: openIntroEntryGuide,
     close: closeIntroEntryGuide,
