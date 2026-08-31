@@ -701,7 +701,7 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
 /* Public sensor map: the map is the stage, matching the full-screen Earth exhibit. */
@@ -1031,8 +1031,9 @@ body:has(.sensor-public-map:not([hidden])) .sensor-shell {
   }
   .sensor-public-map:not([hidden]) .sensor-map-card-toolbar { margin-bottom: 10px; padding-top: 3px; }
   .sensor-public-map:not([hidden]) .sensor-map-card-expand { display: block; }
+  .sensor-public-map:not([hidden]) .sensor-map-card-toolbar button { min-width: 44px; min-height: 44px; padding: 9px 10px; font-size: 9px; }
   .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] {
-    max-height: 124px;
+    max-height: 140px;
     padding: 12px 13px 13px;
     overflow: hidden;
     background: linear-gradient(145deg, rgba(2,13,19,.96), rgba(2,12,20,.88));

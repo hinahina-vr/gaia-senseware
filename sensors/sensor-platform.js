@@ -422,9 +422,14 @@ function setPublicSensorDirectoryOpen(open, { focus = false } = {}) {
   if (!publicSensorDirectory || !publicMapDirectoryToggle) return;
   publicSensorDirectory.dataset.open = String(open);
   publicMapDirectoryToggle.setAttribute("aria-expanded", String(open));
-  if (open && matchMedia("(max-width: 760px)").matches) {
-    setPublicSensorDetailExpanded(false);
-    publicSensorDetail.hidden = true;
+  if (matchMedia("(max-width: 760px)").matches) {
+    if (open) {
+      setPublicSensorDetailExpanded(false);
+      publicSensorDetail.hidden = true;
+    } else if (selectedPublicSensorId) {
+      publicSensorDetail.hidden = false;
+      setPublicSensorDetailExpanded(false);
+    }
   }
   if (focus) requestAnimationFrame(() => publicSensorQuery?.focus({ preventScroll: true }));
 }

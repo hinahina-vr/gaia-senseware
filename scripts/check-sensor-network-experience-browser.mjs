@@ -80,9 +80,14 @@ try {
       assert(topbarHeight <= 110, `mobile map topbar is too tall: ${topbarHeight}`);
       assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
       const compactCardHeight = await page.locator("#public-sensor-detail").evaluate((element) => element.getBoundingClientRect().height);
-      assert(compactCardHeight <= 130, `mobile sensor summary is too tall: ${compactCardHeight}`);
+      assert(compactCardHeight <= 146, `mobile sensor summary is too tall: ${compactCardHeight}`);
       assert.equal(await page.locator(".sensor-map-card-expand").isVisible(), true);
       assert.equal(await page.locator(".sensor-observation-hud").isVisible(), false);
+      const detailActionSizes = await page.locator(".sensor-map-card-actions button").evaluateAll((buttons) => buttons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      }));
+      assert(detailActionSizes.every(({ width, height }) => width >= 44 && height >= 44), `mobile detail action is too small: ${JSON.stringify(detailActionSizes)}`);
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-summary.png`), fullPage: false });
       const map = page.locator("#public-sensor-map");
       const mapBox = await map.boundingBox();
@@ -104,6 +109,8 @@ try {
       assert.equal(await page.locator("#public-map-directory-toggle").getAttribute("aria-expanded"), "true");
       await page.keyboard.press("Escape");
       assert.equal(await page.locator("#public-sensor-directory").isVisible(), false);
+      assert.equal(await page.locator("#public-sensor-detail").isVisible(), true);
+      assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
     }
 
     if (viewport.width > 760) {
