@@ -416,6 +416,9 @@ try {
   await spaceEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
   await spaceEntryPage.locator("#gaia-opening-route-other").click();
   await spaceEntryPage.waitForFunction(() => document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
+  await spaceEntryPage.waitForFunction(() => globalThis.GaiaIntroEntryGuide?.getState?.().active === true, null, { timeout: 30_000 });
+  await spaceEntryPage.evaluate(() => globalThis.GaiaIntroEntryGuide.close({ restoreFocus: false }));
+  await spaceEntryPage.waitForTimeout(500);
   await spaceEntryPage.locator("[data-intro-path='map']").click();
   await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false" && !document.body.classList.contains("scene-transitioning"), null, { timeout: 20_000 });
   await spaceEntryPage.locator("#map-light-overlay-open").click();
