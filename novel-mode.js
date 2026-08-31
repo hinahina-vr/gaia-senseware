@@ -2544,7 +2544,21 @@
           high = middle - 1;
         }
       }
-      if (!maximum) throw new Error(`VN phrase token exceeds one page: ${value.slice(0, 80)}`);
+      const usedGlyphFallback = !maximum;
+      if (usedGlyphFallback) {
+        low = 1;
+        high = glyphs.length;
+        while (low <= high) {
+          const middle = Math.floor((low + high) / 2);
+          if (dialoguePageMetrics(glyphs.slice(0, middle).join("")).fits) {
+            maximum = middle;
+            low = middle + 1;
+          } else {
+            high = middle - 1;
+          }
+        }
+      }
+      if (!maximum) throw new Error(`VN glyph exceeds one page: ${value.slice(0, 80)}`);
       const sentenceOffsets = new Set();
       const safeOffsets = new Set();
       const sentenceMarks = new Set(["\u3002", "\uff01", "\uff1f", "!", "?"]);
@@ -2568,8 +2582,8 @@
         .sort((left, right) => right - left)[0];
       const tokenBoundarySet = new Set(tokenOffsets);
       const tokenBoundaryOffsets = (offsets) => new Set([...offsets].filter((offset) => tokenBoundarySet.has(offset)));
-      return fittingOffset(tokenBoundaryOffsets(sentenceOffsets))
-        || fittingOffset(tokenBoundaryOffsets(safeOffsets))
+      return fittingOffset(usedGlyphFallback ? sentenceOffsets : tokenBoundaryOffsets(sentenceOffsets))
+        || fittingOffset(usedGlyphFallback ? safeOffsets : tokenBoundaryOffsets(safeOffsets))
         || fittingOffset(tokenBoundarySet, preferredMinimumLines)
         || maximum;
     };

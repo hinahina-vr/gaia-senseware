@@ -25,7 +25,10 @@ assert(textSteps.length > 0, `no text steps matched ${stepFilter || "the story"}
 
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
-  { name: "mobile-390", width: 390, height: 844 },
+  { name: "pc-low-1366", width: 1366, height: 600 },
+  { name: "mobile-390", width: 390, height: 844, mobile: true },
+  { name: "mobile-320", width: 320, height: 568, mobile: true },
+  { name: "mobile-landscape-568", width: 568, height: 320, mobile: true },
 ].filter((viewport) => !viewportFilter || viewport.name === viewportFilter);
 assert(viewports.length > 0, `unknown viewport filter: ${viewportFilter}`);
 
@@ -117,7 +120,12 @@ const analyzeStep = (step, pagination) => {
 const browser = await chromium.launch({ headless: true, executablePath, args: ["--no-first-run", "--disable-background-networking"] });
 try {
   for (const viewport of viewports) {
-    const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, reducedMotion: "reduce" });
+    const context = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+      reducedMotion: "reduce",
+      hasTouch: Boolean(viewport.mobile),
+      isMobile: Boolean(viewport.mobile),
+    });
     const page = await context.newPage();
     page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
@@ -140,10 +148,14 @@ try {
       baseState.stepId,
       { timeout: 5_000 },
     ).then(() => true, () => false);
-    if (!resumed && await page.locator("#novel-resume-button").isVisible()) {
+    if (!resumed) {
+      await page.evaluate(() => globalThis.GaiaNovel.open());
+      await page.locator("#novel-resume-button").waitFor({ state: "visible", timeout: 15_000 });
       await page.locator("#novel-resume-button").click();
-      await page.locator("#novel-save-panel").waitFor({ state: "visible" });
-      await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+      await page.waitForTimeout(80);
+      if (await page.locator("#novel-save-panel").isVisible()) {
+        await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+      }
     }
     await page.waitForFunction((expectedStepId) => {
       const layer = document.querySelector("#novel-layer");
@@ -164,7 +176,7 @@ try {
       pagination: globalThis.GaiaNovel.inspectDialoguePagination(step.text),
     })), textSteps);
     let mobileBoundaryRegression = null;
-    if (viewport.name === "mobile-390") {
+    if (viewport.name === "mobile-390" && !stepFilter) {
       const regressionStep = textSteps.find((step) => step.id === "festival_concept_001");
       assert(regressionStep, "missing festival_concept_001 pagination regression step");
       await page.setViewportSize({ width: 280, height: 700 });
@@ -212,12 +224,51 @@ try {
       const pagination = byId.get(step.id);
       return analyzeStep(step, pagination).map((error) => ({ id: step.id, error, pagination }));
     });
+    let runtimeFlow = null;
+    if (textSteps.length === 1) {
+      const step = textSteps[0];
+      const pagination = byId.get(step.id);
+      const storyIndex = allSteps.findIndex((candidate) => candidate.id === step.id);
+      const nextStep = allSteps[storyIndex + 1];
+      assert(nextStep, `${step.id}: no next step is available for the runtime progression check`);
+      const visiblePages = [];
+      for (let pageIndex = 1; pageIndex <= pagination.pages.length; pageIndex += 1) {
+        await page.locator("#novel-continue.is-visible").waitFor({ state: "visible", timeout: 15_000 });
+        const state = await page.evaluate(() => {
+          const text = document.querySelector("#novel-text");
+          return {
+            stepId: document.querySelector("#novel-layer")?.dataset.stepId,
+            pageIndex: Number(text?.dataset.pageIndex),
+            pageCount: Number(text?.dataset.pageCount),
+            text: text?.getAttribute("aria-label") || text?.textContent || "",
+          };
+        });
+        assert.equal(state.stepId, step.id, `${step.id}: runtime advanced before its final page`);
+        assert.equal(state.pageIndex, pageIndex, `${step.id}: expected runtime page ${pageIndex}, got ${state.pageIndex}`);
+        assert.equal(state.pageCount, pagination.pages.length, `${step.id}: inspection and runtime page counts differ`);
+        visiblePages.push(state.text);
+        const box = await page.locator("#novel-dialogue").boundingBox();
+        assert(box, `${step.id}: dialogue hit target is unavailable`);
+        const point = { x: box.x + (box.width / 2), y: box.y + (box.height / 2) };
+        if (viewport.mobile) await page.touchscreen.tap(point.x, point.y);
+        else await page.mouse.click(point.x, point.y);
+        if (pageIndex < pagination.pages.length) {
+          await page.waitForFunction((expected) => Number(document.querySelector("#novel-text")?.dataset.pageIndex) === expected, pageIndex + 1);
+        }
+      }
+      await page.waitForFunction((id) => document.querySelector("#novel-layer")?.dataset.stepId !== id, step.id, { timeout: 15_000 });
+      const reachedStepId = await page.locator("#novel-layer").getAttribute("data-step-id");
+      assert.equal(reachedStepId, nextStep.id, `${step.id}: runtime did not advance to the next story step`);
+      assert.equal(visiblePages.join(""), step.text, `${step.id}: runtime pages did not preserve the full source text`);
+      runtimeFlow = { input: viewport.mobile ? "touch" : "mouse", pageCount: visiblePages.length, reachedStepId };
+    }
     report.viewports[viewport.name] = {
       viewport,
       audited: results.length,
       multiPage: results.filter((result) => result.pagination.pages.length > 1).length,
       failures,
       mobileBoundaryRegression,
+      runtimeFlow,
     };
     await context.close();
   }

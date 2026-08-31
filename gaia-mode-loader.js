@@ -32,7 +32,7 @@
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
         "./scene-transition.css?v=gaia-52",
-        "./novel-mode.css?v=gaia-staff-credits-1",
+        "./novel-mode.css?v=gaia-dialogue-fallback-1",
         "./true-end.css?v=gaia-apeironcene-exit-3",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
@@ -45,7 +45,7 @@
         "./novel-background-cues.js?v=gaia-amane-no-plug-1",
         "./novel-back-half-cues.js?v=gaia-finale-sunset-1",
         "./novel-temporal.js?v=gaia-temporal-1",
-        "./novel-mode.js?v=gaia-staff-credits-1",
+        "./novel-mode.js?v=gaia-dialogue-fallback-1",
       ],
       modules: ["./src/exploration/lod-governor.js?v=gaia-budget-devices-1"],
     },

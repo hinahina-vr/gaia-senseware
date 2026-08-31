@@ -8513,15 +8513,20 @@ body.gx-story-open .novel-cast {
 
 @media (max-height: 650px) and (min-width: 601px) {
   .novel-layer:has(.novel-dialogue:not([hidden])):not(.is-slack):not(.is-evidence):not(.is-reflection):not(.is-result) {
-    --novel-say-height: 170px;
+    --novel-say-height: 220px;
   }
 
   .novel-dialogue {
-    padding-top: 88px !important;
+    padding-top: 54px !important;
+    padding-bottom: 30px !important;
   }
 
   .novel-speaker {
-    top: 46px !important;
+    top: 12px !important;
+  }
+
+  .novel-text {
+    transform: none;
   }
 }
 

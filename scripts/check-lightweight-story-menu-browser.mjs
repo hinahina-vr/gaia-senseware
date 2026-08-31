@@ -25,6 +25,7 @@ const viewports = [
   { name: "mobile-390", width: 390, height: 844, mobile: true, action: "Space" },
   { name: "mobile-landscape-568", width: 568, height: 320, mobile: true, action: "click" },
   { name: "mobile-320", width: 320, height: 568, mobile: true, action: "click" },
+  { name: "pc-low-1366x600", width: 1366, height: 600, action: "click" },
 ];
 const report = {
   status: "running",
@@ -929,7 +930,7 @@ const scanIntroductionSequence = async (viewport) => {
 };
 
 const scanRepeatAndBack = async () => {
-  for (const viewport of viewports.filter(({ name }) => ["pc-1440", "mobile-390", "mobile-320"].includes(name))) {
+  for (const viewport of viewports.filter(({ name }) => ["pc-1440", "pc-low-1366x600", "mobile-390", "mobile-320", "mobile-landscape-568"].includes(name))) {
   const { context, page } = await createPage(viewport, `${viewport.name}-repeat-back`);
   await openIntro(page);
   await page.evaluate(() => history.pushState({ qa: true }, "", "#explore"));
