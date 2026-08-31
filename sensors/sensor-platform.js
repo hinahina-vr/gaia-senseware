@@ -171,6 +171,7 @@ const showView = (name) => {
       void loadPublicSensors({ preserveSelection: true, quiet: true }).catch(() => {});
     }, publicMapPollIntervalMs);
   }
+  window.dispatchEvent(new CustomEvent("gaia:sensor-view-changed", { detail: { name } }));
 };
 
 const showStatus = (message, kind = "info") => {
@@ -1681,6 +1682,48 @@ document.querySelector("#revoke-device").addEventListener("click", async () => {
 window.addEventListener("hashchange", () => {
   routeFromHash();
   if (location.hash.startsWith("#map")) restorePublicSensorSelectionFromHash();
+});
+const firstVisibleSensorGuideTarget = (...selectors) => selectors
+  .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+  .find((element) => element instanceof HTMLElement && !element.closest("[hidden], [inert]") && element.getClientRects().length > 0)
+  || null;
+let sensorModeGuideTimer = 0;
+window.GaiaModeEntryGuide?.register?.("sensor", {
+  version: "v1",
+  kicker: "SENSOR / 操作ガイド",
+  prepare: () => {
+    const current = document.documentElement.dataset.sensorView;
+    if (current !== "login" && current !== "devices") showView(authenticated ? "devices" : "login");
+  },
+  available: () => ["login", "devices"].includes(document.documentElement.dataset.sensorView),
+  steps: [
+    {
+      target: () => firstVisibleSensorGuideTarget(".sensor-login-actions", "[data-view='devices'] [data-action='show-add']"),
+      title: "観測への参加を始める",
+      copy: "初めてならGoogleまたは匿名のおためしを選び、登録済みなら「センサーを追加する」から新しい観測点を作成します。",
+    },
+    {
+      target: () => firstVisibleSensorGuideTarget(".sensor-login-utility [data-action='map']", "[data-nav='map']"),
+      title: "公開中の観測点を見る",
+      copy: "参加前でも公開地図を見られます。観測点を選ぶと、地域・最新値・つながりを確認できます。",
+    },
+    {
+      target: () => firstVisibleSensorGuideTarget(".sensor-guide-cta", "[data-nav='guide']"),
+      title: "接続手順を確認する",
+      copy: "ESP32のバックアップ、ファームウェア書き込み、Wi-Fi設定までを接続ガイドで順番に確認できます。",
+    },
+  ],
+});
+window.GaiaModeEntryGuide?.mountReplay?.("sensor", document.body, { label: "センサーガイド" });
+window.addEventListener("gaia:sensor-view-changed", (event) => {
+  window.clearTimeout(sensorModeGuideTimer);
+  if (!["login", "devices"].includes(event.detail?.name)) {
+    window.GaiaModeEntryGuide?.close?.("sensor", { restoreFocus: false });
+    return;
+  }
+  sensorModeGuideTimer = window.setTimeout(() => {
+    void window.GaiaModeEntryGuide?.open?.("sensor");
+  }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 650);
 });
 void boot();
 

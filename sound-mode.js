@@ -111,6 +111,7 @@
   let isOpen = false;
   let isScrubbing = false;
   let animationFrame = 0;
+  let soundModeGuideTimer = 0;
   let lastFocused = null;
   let visualizerRuntime = null;
   let visualizerState = {
@@ -668,10 +669,16 @@
     });
     cancelAnimationFrame(animationFrame);
     animationFrame = requestAnimationFrame(tick);
+    window.clearTimeout(soundModeGuideTimer);
+    soundModeGuideTimer = window.setTimeout(() => {
+      void window.GaiaModeEntryGuide?.open?.("sound");
+    }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 620);
   };
 
   const close = ({ updateHash = true } = {}) => {
     if (!isOpen) return;
+    window.clearTimeout(soundModeGuideTimer);
+    window.GaiaModeEntryGuide?.close?.("sound", { restoreFocus: false });
     isOpen = false;
     layer.classList.remove("is-open");
     layer.setAttribute("aria-hidden", "true");
@@ -763,6 +770,34 @@
     }
   });
 
+  window.GaiaModeEntryGuide?.register?.("sound", {
+    version: "v1",
+    kicker: "SOUND ARCHIVE / 操作ガイド",
+    available: () => isOpen && !layer.hidden,
+    steps: [
+      {
+        target: ".sound-track-panel",
+        title: "曲を選ぶ",
+        copy: "左のトラック一覧から曲を選ぶと、タイトル・解説・背景の光景がその曲に合わせて切り替わります。",
+      },
+      {
+        target: "#sound-play",
+        title: "再生・一時停止する",
+        copy: "中央の再生ボタンで音楽を始めます。もう一度押すと一時停止できます。",
+      },
+      {
+        target: "#sound-progress",
+        title: "聴きたい位置へ移動する",
+        copy: "再生位置のバーを動かすと、曲の好きなところへ移動できます。",
+      },
+      {
+        target: "#sound-volume",
+        title: "音量を調整する",
+        copy: "音量バーでサウンドアーカイブの出力を調整できます。設定は共通のBGM音量にも反映されます。",
+      },
+    ],
+  });
+  window.GaiaModeEntryGuide?.mountReplay?.("sound", layer, { label: "音楽ガイド" });
   render();
   if (window.location.hash === "#sound") {
     if (document.readyState === "loading") {

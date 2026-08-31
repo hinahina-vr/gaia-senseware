@@ -168,12 +168,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-route-gateway-up-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-data-entry-guide-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-opening-shooting-star-left-1" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-blue-glass-tide-1" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-title-guide-auto-2" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-gx-mobile-gesture-pass-through-1" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-title-return-direct-2" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-mode-entry-guide-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
@@ -340,7 +340,7 @@
               <div class="gaia-vn-final-choice">
                 <strong data-opening-focus>人間と地球は、どんな次の関係を選べるだろう。</strong>
                 <div class="gaia-opening-final-menu" id="gaia-opening-final-menu" role="group" aria-label="体験の入口" hidden>
-                  <button class="gaia-opening-route-guide-replay" id="gaia-opening-route-guide-replay" type="button" aria-label="3つの入口を順番に案内する" aria-controls="gaia-opening-route-guide">
+                  <button class="gaia-opening-route-guide-replay" id="gaia-opening-route-guide-replay" type="button" aria-label="2つの入口を順番に案内する" aria-controls="gaia-opening-route-guide">
                     <span aria-hidden="true">?</span>
                     <strong>入口ガイド</strong>
                     <small aria-hidden="true">CHOICE GUIDE</small>
@@ -370,19 +370,6 @@
                         <svg class="gaia-opening-route-icon" viewBox="0 0 64 64">
                           <path d="m32 10 22 12-22 12L10 22Z" />
                           <path d="m13 32 19 10 19-10M13 42l19 10 19-10" />
-                        </svg>
-                      </span>
-                    </button>
-                    <button class="gaia-opening-route gaia-opening-route--tour" id="gaia-opening-tour-link" type="button" aria-label="30秒ガイドを始める">
-                      <span class="gaia-opening-route-copy">
-                        <small class="gaia-opening-route-index" aria-hidden="true">03 / GUIDE</small>
-                        <strong>30秒ガイド</strong>
-                        <span class="gaia-opening-route-en" lang="en" aria-hidden="true">30 SEC QUICK TOUR</span>
-                      </span>
-                      <span class="gaia-opening-route-symbol" aria-hidden="true">
-                        <svg class="gaia-opening-route-icon" viewBox="0 0 64 64">
-                          <circle cx="32" cy="34" r="20" />
-                          <path d="M32 14V8M24 8h16M32 34V22M32 34l10-7" />
                         </svg>
                       </span>
                     </button>
@@ -904,10 +891,15 @@
               <div class="intro-exploration-heading">
                 <p>FREE EXPLORATION / SELECT A LENS</p>
                 <h3>観測モードを選ぶ</h3>
+                <button class="intro-entry-guide-replay" id="intro-entry-guide-replay" type="button" aria-label="4つのデータ入口を順番に案内する" aria-controls="intro-entry-guide">
+                  <span aria-hidden="true">?</span>
+                  <strong>入口ガイド</strong>
+                  <small aria-hidden="true">CHOICE GUIDE</small>
+                </button>
               </div>
 
               <div class="intro-path-grid" id="intro-path-grid" aria-label="観測モードを選ぶ">
-                <button class="intro-path-card" type="button" data-intro-path="map">
+                <button class="intro-path-card" type="button" data-intro-path="map" data-intro-guide="map">
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
                   <span class="intro-border-glint" aria-hidden="true"></span>
                   <span class="intro-path-index">01 / MAP</span>
@@ -922,7 +914,7 @@
                   <p>地球の変化を描き出す。</p>
                   <span class="intro-path-enter">WORLD MAP <b aria-hidden="true">→</b></span>
                 </button>
-                <a class="intro-path-card intro-path-card--sensor" href="./sensors/#esp32" data-sensor-platform-link>
+                <a class="intro-path-card intro-path-card--sensor" href="./sensors/#esp32" data-sensor-platform-link data-intro-guide="sensor">
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
                   <span class="intro-border-glint" aria-hidden="true"></span>
                   <span class="intro-path-index">02 / SENSOR</span>
@@ -942,6 +934,7 @@
                   id="intro-character-jump"
                   type="button"
                   data-character-gallery-open
+                  data-intro-guide="character"
                   aria-label="三人の観測者を開く"
                   aria-haspopup="dialog"
                   aria-controls="character-book-layer"
@@ -960,7 +953,7 @@
                   <p>物語に登場する三人を知る。</p>
                   <span class="intro-path-enter">CHARACTER FILE <b aria-hidden="true">→</b></span>
                 </button>
-                <button class="intro-path-card intro-path-card--sound" type="button" data-sound-gallery-open aria-haspopup="dialog" aria-controls="sound-layer">
+                <button class="intro-path-card intro-path-card--sound" type="button" data-sound-gallery-open data-intro-guide="sound" aria-haspopup="dialog" aria-controls="sound-layer">
                   <span class="intro-card-reveal-fx" aria-hidden="true"></span>
                   <span class="intro-border-glint" aria-hidden="true"></span>
                   <span class="intro-path-index">04 / SOUND</span>

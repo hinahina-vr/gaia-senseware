@@ -4973,7 +4973,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 }
 
 .gaia-vn-panel-final .gaia-opening-route-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   border: 0;
 }
@@ -5898,7 +5898,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 @media (min-width: 961px) and (min-height: 521px) {
   .gaia-vn-panel-final .gaia-vn-final-copy,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
-    bottom: clamp(310px, 35vh, 760px);
+    bottom: clamp(236px, 26.5vh, 670px);
     right: auto;
     left: max(26%, calc(min(460px, 44vw) + 18px));
     width: min(920px, 88vw);
@@ -5960,7 +5960,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 @media (min-width: 961px) and (min-height: 1200px) {
   .gaia-vn-panel-final .gaia-vn-final-copy,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
-    bottom: min(43.5vh, 940px);
+    bottom: min(35vh, 756px);
   }
 }
 
@@ -5972,6 +5972,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
 @media (max-height: 430px) and (orientation: landscape) {
   .gaia-vn-panel-final .gaia-vn-final-copy,
   .gaia-opening.is-menu-ready .gaia-vn-panel-final .gaia-vn-final-copy {
+    bottom: max(18px, calc(62px - 10vh), env(safe-area-inset-bottom));
     right: max(34px, env(safe-area-inset-right));
     left: max(34px, env(safe-area-inset-left));
     width: auto;

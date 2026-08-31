@@ -5,7 +5,8 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-title-meta-removed-1",
+        "./styles.css?v=gaia-data-entry-guide-previews-1",
+        "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
@@ -14,11 +15,12 @@
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
+        "./mode-entry-guide.js?v=gaia-mode-entry-guide-1",
         "./scene-transition.js?v=gaia-66",
         "./data-ledger.js?v=gaia-ovation-featured-source-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-ovation-aurora-1",
-        "./app.js?v=gaia-map-preview-scroll-1",
+        "./app.js?v=gaia-mode-entry-guide-1",
         "./map-ui-grid-polish.js?v=gaia-panel-order-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
@@ -82,19 +84,27 @@
       templates: ["gaia-template-sound"],
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
+        "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
         "./sound-mode.css?v=gaia-sound-webgl-spectrum-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-mode.js?v=gaia-sound-webgl-spectrum-1"],
+      scripts: [
+        "./mode-entry-guide.js?v=gaia-mode-entry-guide-1",
+        "./sound-mode.js?v=gaia-mode-entry-guide-1",
+      ],
     },
     character: {
       templates: ["gaia-template-character"],
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
+        "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
         "./character-mode.css?v=gaia-character-mobile-key-line-2",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./character-mode.js?v=gaia-character-energy-copy-1"],
+      scripts: [
+        "./mode-entry-guide.js?v=gaia-mode-entry-guide-1",
+        "./character-mode.js?v=gaia-mode-entry-guide-1",
+      ],
     },
     tour: {
       templates: [],

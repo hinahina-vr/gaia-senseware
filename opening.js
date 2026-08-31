@@ -21,7 +21,6 @@
   const finalMenu = document.querySelector("#gaia-opening-final-menu");
   const finalStoryButton = document.querySelector("#gaia-opening-route-story");
   const finalOtherButton = document.querySelector("#gaia-opening-route-other");
-  const finalTourButton = document.querySelector("#gaia-opening-tour-link");
   const routeGuideReplay = document.querySelector("#gaia-opening-route-guide-replay");
   const soundModal = document.querySelector("#gaia-opening-sound-modal");
   const soundDialog = soundModal?.querySelector(".gaia-opening-sound-dialog");
@@ -54,6 +53,25 @@
     window.location.hash,
   );
   const directSensewareDestination = ["#top", "#earth", "#concept", "#tour"].includes(window.location.hash);
+  const TITLE_RETURN_RESUME_KEY = "gaia:title-return-resume";
+  const rememberTitleReturn = () => {
+    try {
+      sessionStorage.setItem(TITLE_RETURN_RESUME_KEY, "1");
+    } catch (_error) {
+      // Navigation still works when storage is unavailable; only the fast
+      // return to the final title menu is skipped.
+    }
+  };
+  const takeTitleReturn = () => {
+    try {
+      const requested = sessionStorage.getItem(TITLE_RETURN_RESUME_KEY) === "1";
+      sessionStorage.removeItem(TITLE_RETURN_RESUME_KEY);
+      return requested;
+    } catch (_error) {
+      return false;
+    }
+  };
+  const resumeAtTitleMenu = !directDestination && takeTitleReturn();
 
   const syncAudioControls = (state = window.GaiaOpeningAudio?.getState?.()) => {
     const volume = Math.round(Math.max(0, Math.min(1, state?.volume ?? 0.1)) * 100);
@@ -204,6 +222,11 @@
       window.addEventListener("gaia:app-ready", signalInitialViewReady, { once: true });
       window.setTimeout(signalInitialViewReady, 12000);
     }
+    window.addEventListener("gaia:return-to-title", () => {
+      rememberTitleReturn();
+      const titleUrl = `${window.location.pathname}${window.location.search}`;
+      window.location.replace(titleUrl);
+    }, { once: true });
     return;
   }
 
@@ -218,10 +241,6 @@
     {
       target: finalOtherButton,
       copy: "気候変動や観測ポイントを、インタラクティブな地図上で探索・分析できます。",
-    },
-    {
-      target: finalTourButton,
-      copy: "初めての方向けに、基本的な見どころと操作の流れを短く紹介します。",
     },
   ].filter((step) => step.target instanceof HTMLButtonElement);
   const routeGuideLayer = document.createElement("section");
@@ -396,7 +415,7 @@
 
   const OPENING_TIME_SCALE = 1.275;
   const openingMs = (value) => Math.round(value * OPENING_TIME_SCALE);
-  // The final title panel starts here. Reveal its three destinations with the
+  // The final title panel starts here. Reveal its two destinations with the
   // title itself instead of leaving a several-second title-only dead zone.
   const FINAL_MENU_REVEAL_DELAY = openingMs(13100);
   const EXIT_DURATION = Math.round(1080 * 0.85);
@@ -817,7 +836,6 @@
     finalMenu?.setAttribute("aria-busy", "true");
     if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = true;
     if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = true;
-    if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = true;
     if (routeGuideReplay instanceof HTMLButtonElement) routeGuideReplay.disabled = true;
     performance.mark(`gaia:${destination}-route-load-request`);
     const routeReady = destination === "tour"
@@ -863,7 +881,6 @@
       }
       if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = false;
       if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = false;
-      if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = false;
       if (routeGuideReplay instanceof HTMLButtonElement) routeGuideReplay.disabled = false;
       return;
     }
@@ -965,7 +982,6 @@
     }
     if (finalStoryButton instanceof HTMLButtonElement) finalStoryButton.disabled = false;
     if (finalOtherButton instanceof HTMLButtonElement) finalOtherButton.disabled = false;
-    if (finalTourButton instanceof HTMLButtonElement) finalTourButton.disabled = false;
     if (routeGuideReplay instanceof HTMLButtonElement) routeGuideReplay.disabled = false;
     particleSystem.start();
     void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0.2);
@@ -1083,7 +1099,6 @@
   skipButton?.addEventListener("click", skipToFinalMenu);
   finalStoryButton?.addEventListener("click", () => void finish("story"));
   finalOtherButton?.addEventListener("click", () => void finish("menu"));
-  finalTourButton?.addEventListener("click", () => void finish("tour"));
   soundOnButton?.addEventListener("click", () => void confirmSoundSetup(true));
   soundOffButton?.addEventListener("click", () => void confirmSoundSetup(false));
   soundModal?.addEventListener("keydown", (event) => {
@@ -1124,5 +1139,15 @@
     particleSystem.stop();
   });
 
-  showSoundModal();
+  if (resumeAtTitleMenu) {
+    soundSetupConfirmed = true;
+    opening.classList.remove("is-awaiting-sound");
+    closeSoundModalImmediately();
+    particleSystem.start();
+    void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0.2);
+    requestAnimationFrame(showReducedMotionMenu);
+    signalInitialViewReady();
+  } else {
+    showSoundModal();
+  }
 })();

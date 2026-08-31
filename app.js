@@ -176,6 +176,7 @@
   const introPathButtons = Array.from(document.querySelectorAll("[data-intro-path]"));
   const introStoryReturn = document.querySelector(".intro-story-return[data-primary-action=\"true\"]");
   const introTitleReturn = document.querySelector("#intro-title-return");
+  const introEntryGuideReplay = document.querySelector("#intro-entry-guide-replay");
   const introScrollCue = document.querySelector("#intro-lp-scroll");
   const introAfterfold = document.querySelector(".intro-lp-afterfold");
   const introGxFeature = document.querySelector("#intro-gx-feature");
@@ -7721,6 +7722,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (!japanIsOpen) {
       return;
     }
+    window.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false });
     const usesExplorationSoundtrack = !document.body.classList.contains("novel-open")
       && !experience.classList.contains("gx-story-open");
     if (usesExplorationSoundtrack) {
@@ -7758,6 +7760,261 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }, closeDelay);
   };
 
+  let mapModeGuideTimer = 0;
+  const firstVisibleMapGuideTarget = (...selectors) => selectors
+    .map((selector) => document.querySelector(selector))
+    .find((element) => {
+      if (!(element instanceof HTMLElement)) return false;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+    }) || null;
+  window.GaiaModeEntryGuide?.register?.("map", {
+    version: "v1",
+    kicker: "WORLD MAP / 操作ガイド",
+    available: () => japanIsOpen && !japanLayer.hidden,
+    steps: [
+      {
+        target: "#japan-map",
+        title: "地図を動かす",
+        copy: "ドラッグで移動し、ホイールやピンチで拡大できます。気になる地点や光を押すと、その場所の観測情報が開きます。",
+      },
+      {
+        target: "[data-signal-time]",
+        title: "年代をたどる",
+        copy: "青い年代スライダーを動かすと、過去から未来試算まで、地図の色と観測値が連動して変わります。",
+      },
+      {
+        target: () => firstVisibleMapGuideTarget("#japan-mode-list", "#map-mobile-bank-toggle"),
+        title: "地図展示を切り替える",
+        copy: "番号を選ぶと、CO₂、海流、森林、地震など12種類の観測展示へ切り替えられます。",
+      },
+      {
+        target: () => firstVisibleMapGuideTarget("#japan-data-button", "#map-mobile-heading-toggle"),
+        title: "データの出典を確認する",
+        copy: "表示中の数値がどの公開データから来たか、実測・補完・試算の区分まで確認できます。",
+      },
+    ],
+  });
+  window.GaiaModeEntryGuide?.mountReplay?.("map", japanLayer, { label: "地図ガイド" });
+  const scheduleMapModeGuide = () => {
+    window.clearTimeout(mapModeGuideTimer);
+    mapModeGuideTimer = window.setTimeout(() => {
+      void window.GaiaModeEntryGuide?.open?.("map");
+    }, reducedMotion ? 80 : 650);
+  };
+  window.addEventListener("gaia:japan-open", scheduleMapModeGuide);
+  if (japanIsOpen) scheduleMapModeGuide();
+
+  const introEntryGuideSteps = Object.freeze([
+    {
+      target: document.querySelector("[data-intro-guide='map']"),
+      copy: "世界の公開観測データを地図に重ね、地点・年代・変化をたどれます。",
+      preview: "./assets/guide-previews/map.jpg",
+      previewAlt: "地球の一呼吸を表示した世界観測マップの画面",
+      previewLabel: "WORLD MAP / SCREEN PREVIEW",
+    },
+    {
+      target: document.querySelector("[data-intro-guide='sensor']"),
+      copy: "実物のセンサーをつなぎ、自分の観測点を地球の感覚器として追加できます。",
+      preview: "./assets/guide-previews/sensor.jpg",
+      previewAlt: "センサー登録の参加方法を選ぶ画面",
+      previewLabel: "SENSOR / SCREEN PREVIEW",
+    },
+    {
+      target: document.querySelector("[data-intro-guide='character']"),
+      copy: "物語に登場する三人の設定やビジュアル資料を確認できます。",
+      preview: "./assets/guide-previews/character.jpg",
+      previewAlt: "雨宮周のプロフィールを表示したキャラクター設定画面",
+      previewLabel: "CHARACTER / SCREEN PREVIEW",
+    },
+    {
+      target: document.querySelector("[data-intro-guide='sound']"),
+      copy: "作品の音楽を一覧で再生し、シーンを支えるサウンドを鑑賞できます。",
+      preview: "./assets/guide-previews/sound.jpg",
+      previewAlt: "収録曲一覧と再生パネルを表示したサウンド鑑賞画面",
+      previewLabel: "SOUND ARCHIVE / SCREEN PREVIEW",
+    },
+  ].filter(({ target }) => target instanceof Element));
+  const introEntryGuide = document.createElement("section");
+  introEntryGuide.className = "intro-entry-guide";
+  introEntryGuide.id = "intro-entry-guide";
+  introEntryGuide.hidden = true;
+  introEntryGuide.inert = true;
+  introEntryGuide.tabIndex = 0;
+  introEntryGuide.setAttribute("role", "dialog");
+  introEntryGuide.setAttribute("aria-modal", "false");
+  introEntryGuide.setAttribute("aria-label", "データ入口ガイド");
+  introEntryGuide.setAttribute("aria-describedby", "intro-entry-guide-copy intro-entry-guide-hint");
+  introEntryGuide.innerHTML = `
+    <div class="intro-entry-guide-shade" aria-hidden="true"></div>
+    <article class="intro-entry-guide-bubble" aria-live="polite" aria-atomic="true">
+      <div class="intro-entry-guide-index"><b><i data-intro-entry-guide-step>1</i> / ${introEntryGuideSteps.length}</b></div>
+      <figure class="intro-entry-guide-preview">
+        <img data-intro-entry-guide-preview alt="" />
+        <figcaption data-intro-entry-guide-preview-label></figcaption>
+      </figure>
+      <p id="intro-entry-guide-copy" data-intro-entry-guide-copy></p>
+      <span class="intro-entry-guide-hint" id="intro-entry-guide-hint"><b>CLICK / TAP</b><span data-intro-entry-guide-action>次へ</span></span>
+    </article>`;
+  introLayer.append(introEntryGuide);
+
+  const introEntryGuideShade = introEntryGuide.querySelector(".intro-entry-guide-shade");
+  const introEntryGuideBubble = introEntryGuide.querySelector(".intro-entry-guide-bubble");
+  const introEntryGuidePreview = introEntryGuide.querySelector(".intro-entry-guide-preview");
+  const introEntryGuidePreviewImage = introEntryGuide.querySelector("[data-intro-entry-guide-preview]");
+  const introEntryGuidePreviewLabel = introEntryGuide.querySelector("[data-intro-entry-guide-preview-label]");
+  let introEntryGuideActive = false;
+  let introEntryGuideIndex = 0;
+  let introEntryGuidePositionFrame = 0;
+  let introEntryGuideStartTimer = 0;
+  let introEntryGuideSettleTimer = 0;
+
+  const clearIntroEntryGuideTarget = () => {
+    introEntryGuideSteps.forEach(({ target }) => target.classList.remove("is-intro-entry-guide-target"));
+  };
+  const positionIntroEntryGuide = () => {
+    introEntryGuidePositionFrame = 0;
+    if (!introEntryGuideActive || !(introEntryGuideBubble instanceof HTMLElement)) return;
+    const target = introEntryGuideSteps[introEntryGuideIndex]?.target;
+    if (!(target instanceof HTMLElement) || target.getClientRects().length === 0) return;
+    const targetRect = target.getBoundingClientRect();
+    if (introEntryGuideShade instanceof HTMLElement) {
+      introEntryGuideShade.style.setProperty("--intro-guide-focus-left", `${targetRect.left}px`);
+      introEntryGuideShade.style.setProperty("--intro-guide-focus-top", `${targetRect.top}px`);
+      introEntryGuideShade.style.setProperty("--intro-guide-focus-width", `${targetRect.width}px`);
+      introEntryGuideShade.style.setProperty("--intro-guide-focus-height", `${targetRect.height}px`);
+      introEntryGuideShade.style.setProperty("--intro-guide-focus-radius", getComputedStyle(target).borderRadius || "0px");
+    }
+    const bubbleRect = introEntryGuideBubble.getBoundingClientRect();
+    const compactLandscape = innerHeight <= 430 && innerWidth > innerHeight;
+    const viewportInset = compactLandscape ? 8 : 12;
+    const gap = compactLandscape ? 8 : 12;
+    const preferredLeft = targetRect.left + targetRect.width / 2 - bubbleRect.width / 2;
+    const left = Math.max(viewportInset, Math.min(innerWidth - bubbleRect.width - viewportInset, preferredLeft));
+    const below = targetRect.bottom + gap;
+    const above = targetRect.top - bubbleRect.height - gap;
+    const placeBelow = below + bubbleRect.height <= innerHeight - viewportInset;
+    const top = placeBelow ? below : Math.max(viewportInset, above);
+    const arrowLeft = Math.max(24, Math.min(bubbleRect.width - 24, targetRect.left + targetRect.width / 2 - left));
+    introEntryGuideBubble.style.left = `${Math.round(left)}px`;
+    introEntryGuideBubble.style.top = `${Math.round(top)}px`;
+    introEntryGuideBubble.style.setProperty("--intro-guide-arrow-left", `${Math.round(arrowLeft)}px`);
+    introEntryGuideBubble.dataset.placement = placeBelow ? "below" : "above";
+  };
+  const scheduleIntroEntryGuidePosition = () => {
+    cancelAnimationFrame(introEntryGuidePositionFrame);
+    introEntryGuidePositionFrame = requestAnimationFrame(() => {
+      introEntryGuidePositionFrame = requestAnimationFrame(positionIntroEntryGuide);
+    });
+  };
+  const setIntroEntryGuideStep = (nextIndex) => {
+    if (!introEntryGuideActive || introEntryGuideSteps.length === 0) return;
+    introEntryGuideIndex = Math.max(0, Math.min(introEntryGuideSteps.length - 1, nextIndex));
+    clearIntroEntryGuideTarget();
+    const step = introEntryGuideSteps[introEntryGuideIndex];
+    step.target.classList.add("is-intro-entry-guide-target");
+    introEntryGuide.querySelector("[data-intro-entry-guide-step]").textContent = String(introEntryGuideIndex + 1);
+    introEntryGuide.querySelector("[data-intro-entry-guide-copy]").textContent = step.copy;
+    if (introEntryGuidePreviewImage instanceof HTMLImageElement) {
+      introEntryGuidePreviewImage.src = step.preview;
+      introEntryGuidePreviewImage.alt = step.previewAlt;
+    }
+    if (introEntryGuidePreviewLabel instanceof HTMLElement) {
+      introEntryGuidePreviewLabel.textContent = step.previewLabel;
+    }
+    if (introEntryGuidePreview instanceof HTMLElement) {
+      introEntryGuidePreview.hidden = !step.preview;
+    }
+    introEntryGuide.querySelector("[data-intro-entry-guide-action]").textContent = introEntryGuideIndex === introEntryGuideSteps.length - 1
+      ? "案内を終える"
+      : "次へ";
+    introEntryGuide.dataset.step = String(introEntryGuideIndex + 1);
+    const targetRect = step.target.getBoundingClientRect();
+    if (targetRect.top < 12 || targetRect.bottom > innerHeight - 12) {
+      step.target.scrollIntoView({ block: "center", inline: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
+    }
+    scheduleIntroEntryGuidePosition();
+    window.clearTimeout(introEntryGuideSettleTimer);
+    introEntryGuideSettleTimer = window.setTimeout(scheduleIntroEntryGuidePosition, reducedMotion ? 0 : 420);
+  };
+  const closeIntroEntryGuide = ({ restoreFocus = true } = {}) => {
+    window.clearTimeout(introEntryGuideStartTimer);
+    window.clearTimeout(introEntryGuideSettleTimer);
+    introEntryGuideStartTimer = 0;
+    introEntryGuideSettleTimer = 0;
+    if (!introEntryGuideActive) return;
+    introEntryGuideActive = false;
+    clearIntroEntryGuideTarget();
+    introLayer.classList.remove("is-intro-entry-guide-active");
+    introEntryGuide.classList.remove("is-visible");
+    introEntryGuide.inert = true;
+    introEntryGuide.setAttribute("aria-hidden", "true");
+    window.setTimeout(() => {
+      if (!introEntryGuideActive) introEntryGuide.hidden = true;
+    }, reducedMotion ? 0 : 180);
+    if (restoreFocus) introEntryGuideReplay?.focus({ preventScroll: true });
+  };
+  const openIntroEntryGuide = () => {
+    if (introEntryGuideActive || introEntryGuideSteps.length === 0 || !introIsOpen || introStage !== "path") return;
+    introEntryGuideActive = true;
+    introEntryGuide.hidden = false;
+    introEntryGuide.inert = false;
+    introEntryGuide.setAttribute("aria-hidden", "false");
+    introLayer.classList.add("is-intro-entry-guide-active");
+    requestAnimationFrame(() => {
+      introEntryGuide.classList.add("is-visible");
+      setIntroEntryGuideStep(0);
+      introEntryGuide.focus({ preventScroll: true });
+    });
+  };
+  const scheduleIntroEntryGuide = (delay = 900) => {
+    window.clearTimeout(introEntryGuideStartTimer);
+    introEntryGuideStartTimer = window.setTimeout(() => {
+      introEntryGuideStartTimer = 0;
+      openIntroEntryGuide();
+    }, reducedMotion ? 80 : delay);
+  };
+  const advanceIntroEntryGuide = () => {
+    if (!introEntryGuideActive) return;
+    if (introEntryGuideIndex >= introEntryGuideSteps.length - 1) closeIntroEntryGuide();
+    else setIntroEntryGuideStep(introEntryGuideIndex + 1);
+  };
+  introEntryGuide.addEventListener("click", (event) => {
+    if (!introEntryGuideActive) return;
+    event.preventDefault();
+    advanceIntroEntryGuide();
+  });
+  introEntryGuide.addEventListener("keydown", (event) => {
+    if (!introEntryGuideActive) return;
+    event.stopPropagation();
+    if (event.key === "Escape") { event.preventDefault(); closeIntroEntryGuide(); }
+    else if (event.key === "Enter" || event.key === " ") { event.preventDefault(); advanceIntroEntryGuide(); }
+    else if (event.key === "Tab") { event.preventDefault(); introEntryGuide.focus({ preventScroll: true }); }
+  });
+  introLayer.addEventListener("keydown", (event) => {
+    if (!introEntryGuideActive || event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeIntroEntryGuide();
+  }, true);
+  introEntryGuideReplay?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openIntroEntryGuide();
+  });
+  introLayer.addEventListener("scroll", scheduleIntroEntryGuidePosition, { passive: true });
+  window.addEventListener("resize", scheduleIntroEntryGuidePosition, { passive: true });
+  globalThis.GaiaIntroEntryGuide = Object.freeze({
+    open: openIntroEntryGuide,
+    close: closeIntroEntryGuide,
+    getState: () => ({
+      active: introEntryGuideActive,
+      index: introEntryGuideIndex,
+      target: introEntryGuideSteps[introEntryGuideIndex]?.target?.dataset.introGuide || null,
+    }),
+  });
+
   const openIntro = ({ restoreFocusOnClose = true } = {}) => {
     if (introIsOpen) {
       return;
@@ -7792,6 +8049,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   };
 
   const closeIntro = ({ restoreFocus = introRestoreFocus } = {}) => {
+    closeIntroEntryGuide({ restoreFocus: false });
     if (!introIsOpen) {
       return;
     }
@@ -8045,14 +8303,16 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     fallbackControl?.focus({ preventScroll: true });
   }, true);
 
-  window.addEventListener("gaia:opening-complete", () => {
+  window.addEventListener("gaia:opening-complete", (event) => {
+    if (event.detail?.destination !== "menu") return;
     const hasDirectDestination =
       ["#source", "#concept", "#world", "#earth", "#japan", "#data", "#story"].includes(
         window.location.hash,
       ) || new URLSearchParams(window.location.search).has("space");
     if (hasDirectDestination) return;
     openIntro({ restoreFocusOnClose: false });
-  }, { once: true });
+    scheduleIntroEntryGuide();
+  });
 
   window.addEventListener("gaia:return-to-intro", () => {
     startRendering();
