@@ -102,6 +102,7 @@ let publicMapFocusFrame = 0;
 let publicMapFocusToken = 0;
 let publicMapHoverTimer = 0;
 let publicMapPollTimer = 0;
+let publicSensorDetailNeedsScrollReset = false;
 let publicSensorFilter = "ALL";
 let publicSensorQueryText = "";
 let countries = [];
@@ -118,6 +119,10 @@ let authenticated = false;
 let sessionUser = null;
 let pollTimer = 0;
 let statusTimer = 0;
+
+publicSensorDetail?.addEventListener("scroll", () => {
+  publicSensorDetailNeedsScrollReset = publicSensorDetail.scrollTop > 0;
+}, { passive: true });
 
 const api = async (path, options = {}) => {
   const { body: requestBody, rawBody, ...requestOptions } = options;
@@ -505,7 +510,10 @@ function setPublicSensorDetailExpanded(expanded, { focus = false } = {}) {
     toggle.textContent = expanded ? "たたむ" : "詳細を見る";
     if (focus) toggle.focus({ preventScroll: true });
   }
-  if (!expanded) publicSensorDetail.scrollTop = 0;
+  if (!expanded && publicSensorDetailNeedsScrollReset) {
+    publicSensorDetailNeedsScrollReset = false;
+    requestAnimationFrame(() => { publicSensorDetail.scrollTop = 0; });
+  }
 }
 
 function clearPublicSensorSelection({ hideDetail = false, historyMode = null } = {}) {
@@ -526,9 +534,12 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   if (!marker) return;
   publicSensorDetail.hidden = false;
   publicSensorDetail.dataset.expanded = "false";
-  requestAnimationFrame(() => {
-    if (selectedPublicSensorId === sensor.id) publicSensorDetail.scrollTop = 0;
-  });
+  if (publicSensorDetailNeedsScrollReset) {
+    publicSensorDetailNeedsScrollReset = false;
+    requestAnimationFrame(() => {
+      if (selectedPublicSensorId === sensor.id) publicSensorDetail.scrollTop = 0;
+    });
+  }
   setPublicSensorDirectoryOpen(false);
   selectedPublicSensorId = sensor.id;
   publicSensorSelectionDismissed = false;
