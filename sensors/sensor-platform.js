@@ -370,6 +370,9 @@ function initPublicSensorDirectory() {
       publicSensorQueryText = "";
       if (publicSensorQuery) publicSensorQuery.value = "";
       applyPublicSensorFilters();
+    } else if (publicSensorDetail?.dataset.expanded === "true" && matchMedia("(max-width: 760px)").matches) {
+      event.preventDefault();
+      setPublicSensorDetailExpanded(false, { focus: true });
     } else if (selectedPublicSensorId) {
       event.preventDefault();
       clearPublicSensorSelection({ hideDetail: true });
@@ -419,8 +422,23 @@ function setPublicSensorDirectoryOpen(open, { focus = false } = {}) {
   if (!publicSensorDirectory || !publicMapDirectoryToggle) return;
   publicSensorDirectory.dataset.open = String(open);
   publicMapDirectoryToggle.setAttribute("aria-expanded", String(open));
-  if (open && matchMedia("(max-width: 760px)").matches) publicSensorDetail.hidden = true;
+  if (open && matchMedia("(max-width: 760px)").matches) {
+    setPublicSensorDetailExpanded(false);
+    publicSensorDetail.hidden = true;
+  }
   if (focus) requestAnimationFrame(() => publicSensorQuery?.focus({ preventScroll: true }));
+}
+
+function setPublicSensorDetailExpanded(expanded, { focus = false } = {}) {
+  if (!publicSensorDetail) return;
+  publicSensorDetail.dataset.expanded = String(expanded);
+  const toggle = publicSensorDetail.querySelector(".sensor-map-card-expand");
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.textContent = expanded ? "たたむ" : "詳細を見る";
+    if (focus) toggle.focus({ preventScroll: true });
+  }
+  if (!expanded) publicSensorDetail.scrollTop = 0;
 }
 
 function clearPublicSensorSelection({ hideDetail = false } = {}) {
@@ -428,6 +446,7 @@ function clearPublicSensorSelection({ hideDetail = false } = {}) {
   publicSensorSelectionDismissed = true;
   document.querySelectorAll(".sensor-map-marker[aria-current], .sensor-public-card[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
   if (!publicSensorDetail) return;
+  setPublicSensorDetailExpanded(false);
   publicSensorDetail.hidden = hideDetail;
   publicSensorDetail.replaceChildren(
     Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SELECTED SIGNAL" }),
@@ -438,6 +457,8 @@ function clearPublicSensorSelection({ hideDetail = false } = {}) {
 const selectPublicSensor = (sensor, marker) => {
   if (!marker) return;
   publicSensorDetail.hidden = false;
+  publicSensorDetail.dataset.expanded = "false";
+  publicSensorDetail.scrollTop = 0;
   setPublicSensorDirectoryOpen(false);
   selectedPublicSensorId = sensor.id;
   publicSensorSelectionDismissed = false;
@@ -449,13 +470,23 @@ const selectPublicSensor = (sensor, marker) => {
   const consoleLabel = Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SELECTED SIGNAL" });
   const toolbar = document.createElement("header");
   toolbar.className = "sensor-map-card-toolbar";
+  const actions = document.createElement("span");
+  actions.className = "sensor-map-card-actions";
+  const expand = Object.assign(document.createElement("button"), { type: "button", className: "sensor-map-card-expand", textContent: "詳細を見る" });
+  expand.setAttribute("aria-controls", "public-sensor-detail");
+  expand.setAttribute("aria-expanded", "false");
+  expand.addEventListener("click", () => {
+    setPublicSensorDetailExpanded(publicSensorDetail.dataset.expanded !== "true");
+  });
   const close = Object.assign(document.createElement("button"), { type: "button", textContent: "閉じる" });
+  close.className = "sensor-map-card-close";
   close.setAttribute("aria-label", "選択中のセンサー詳細を閉じる");
   close.addEventListener("click", () => {
     clearPublicSensorSelection({ hideDetail: true });
     publicSensorMap?.focus({ preventScroll: true });
   });
-  toolbar.append(consoleLabel, close);
+  actions.append(expand, close);
+  toolbar.append(consoleLabel, actions);
   const owner = document.createElement("div");
   owner.className = "sensor-map-owner";
   owner.append(avatarElement(sensor.owner, "span"));

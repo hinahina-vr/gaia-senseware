@@ -326,6 +326,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-console-label { display: block; margin-bottom: 22px; color: var(--mint); font: 700 8px/1 Consolas, monospace; letter-spacing: .18em; }
 .sensor-map-card-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
 .sensor-map-card-toolbar .sensor-console-label { margin: 0; }
+.sensor-map-card-actions { display: flex; gap: 6px; align-items: center; }
+.sensor-map-card-expand { display: none; }
 .sensor-map-card-toolbar button { min-height: 32px; padding: 7px 9px; border: 1px solid rgba(var(--mint-rgb),.24); color: rgba(220,244,241,.72); background: rgba(var(--mint-rgb),.05); font: 600 8px/1 var(--font-ja); letter-spacing: .08em; cursor: pointer; }
 .sensor-map-card-toolbar button:is(:hover,:focus-visible) { border-color: rgba(var(--mint-rgb),.7); color: var(--ink); outline: none; background: rgba(var(--mint-rgb),.12); }
 .sensor-map-owner { display: grid; grid-template-columns: 58px minmax(0,1fr) auto; gap: 16px; align-items: center; }
@@ -1008,10 +1010,45 @@ body:has(.sensor-public-map:not([hidden])) .sensor-shell {
     bottom: 58px;
     left: 16px;
     width: auto;
-    max-height: 34dvh;
+    max-height: min(52dvh, 480px);
     margin: 0;
-    padding: 16px;
+    padding: 16px 16px 18px;
+    overflow-y: auto;
+    border-radius: 14px 14px 4px 4px;
+    transition: max-height 220ms cubic-bezier(.22,.64,.35,1), padding 220ms ease, background 220ms ease;
   }
+  .sensor-public-map:not([hidden]) .sensor-map-card::after {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 34px;
+    height: 3px;
+    border-radius: 4px;
+    content: "";
+    background: rgba(var(--mint-rgb),.38);
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+  .sensor-public-map:not([hidden]) .sensor-map-card-toolbar { margin-bottom: 10px; padding-top: 3px; }
+  .sensor-public-map:not([hidden]) .sensor-map-card-expand { display: block; }
+  .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] {
+    max-height: 124px;
+    padding: 12px 13px 13px;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(2,13,19,.96), rgba(2,12,20,.88));
+  }
+  .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] > :not(.sensor-map-card-toolbar):not(.sensor-map-owner) { display: none; }
+  .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] .sensor-map-owner {
+    grid-template-columns: 42px minmax(0,1fr) auto;
+    gap: 10px;
+  }
+  .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] .sensor-map-owner > .sensor-owner-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+  .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] .sensor-map-owner > .sensor-state { grid-column: auto; }
+  .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] .sensor-map-owner h2 { margin-top: 2px; font-size: 13px; }
   .sensor-public-map:not([hidden]) .sensor-console-label { margin-bottom: 12px; }
   .sensor-public-map:not([hidden]) .sensor-map-card > p { margin-top: 12px; }
   .sensor-metric-hud-grid strong { font-size: 11px; }

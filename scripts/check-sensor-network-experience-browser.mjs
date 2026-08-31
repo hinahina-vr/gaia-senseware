@@ -78,6 +78,12 @@ try {
     } else {
       const topbarHeight = await page.locator(".sensor-topbar").evaluate((element) => element.getBoundingClientRect().height);
       assert(topbarHeight <= 110, `mobile map topbar is too tall: ${topbarHeight}`);
+      assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
+      const compactCardHeight = await page.locator("#public-sensor-detail").evaluate((element) => element.getBoundingClientRect().height);
+      assert(compactCardHeight <= 130, `mobile sensor summary is too tall: ${compactCardHeight}`);
+      assert.equal(await page.locator(".sensor-map-card-expand").isVisible(), true);
+      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), false);
+      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-summary.png`), fullPage: false });
       const map = page.locator("#public-sensor-map");
       const mapBox = await map.boundingBox();
       const centreX = mapBox.x + mapBox.width / 2;
@@ -114,8 +120,9 @@ try {
       });
       assert(focusDelta.x < 5 && focusDelta.y < 5);
       assert.match(await page.locator("#public-sensor-detail").textContent(), /識理層シンクロ率/u);
-      assert.equal(await page.locator(".sensor-map-card-toolbar button").isVisible(), true);
-      await page.locator(".sensor-map-card-toolbar button").click();
+      assert.equal(await page.locator(".sensor-map-card-expand").isVisible(), false);
+      assert.equal(await page.locator(".sensor-map-card-close").isVisible(), true);
+      await page.locator(".sensor-map-card-close").click();
       assert.equal(await page.locator("#public-sensor-detail").isVisible(), false);
       await page.locator("#refresh-map").click();
       await page.waitForTimeout(250);
@@ -130,6 +137,15 @@ try {
     } else {
       const ameMarker = page.locator(".sensor-map-marker", { hasText: "DEMO LIVE" }).filter({ has: page.locator("img[src*='amane']") });
       await ameMarker.click();
+      assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
+      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), false);
+      await page.locator(".sensor-map-card-expand").click();
+      assert.equal(await page.locator(".sensor-map-card-expand").getAttribute("aria-expanded"), "true");
+      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), true);
+      await page.keyboard.press("Escape");
+      assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
+      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), false);
+      await page.locator(".sensor-map-card-expand").click();
     }
     assert.match(await page.locator("#public-sensor-detail").textContent(), /ダミーセンサー/u);
     assert.match(await page.locator("#public-sensor-detail").textContent(), /電界変動/u);
