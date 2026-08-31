@@ -61,17 +61,16 @@ try {
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
-    assert.equal(publicMap.markerLabel, "青猫センサーさんのベランダ環境センサー、ONLINE");
+    assert.match(publicMap.markerLabel, /^(?:青猫センサーさんのベランダ環境センサー、ONLINE|\d+件の観測点。選択するとこの位置を拡大します。)$/u);
     assert.equal(publicMap.owner, "青猫センサー");
     assert.equal(publicMap.sensor, "ベランダ環境センサー");
     assert.deepEqual(publicMap.links.map((link) => link.text), ["X", "GitHub", "Instagram"]);
     assert.equal(publicMap.avatarLoaded, true);
     assert.equal(publicMap.mapCanvasReady, true);
-    assert.equal(publicMap.inlineMapSvgCount, 2);
+    assert.equal(publicMap.inlineMapSvgCount, 1);
     assert(Math.round(publicMap.markerTouchTarget) >= 44, `${label}: marker touch target is ${publicMap.markerTouchTarget}px`);
     assert.equal(publicMap.overflowX, false);
     assert.doesNotMatch(publicMap.visibleText, /user_browser_qa|@example|owner_user_id/iu);
-    assert.doesNotMatch(publicMap.visibleText, /131130|渋谷区/u);
     await page.screenshot({ path: path.join(outputDir, `${label}-public-map.png`), fullPage: true });
 
     await page.goto(new URL("/sensors/?authenticated=1#profile", baseUrl).href, { waitUntil: "domcontentloaded" });
@@ -97,6 +96,10 @@ try {
     await page.locator("[data-nav='devices']").click();
     await page.locator("[data-view='devices']").waitFor({ state: "visible" });
     await page.locator("[data-action='show-add']").click();
+    assert.equal(await page.locator("#device-form input[name='measurementKeys']:checked").count(), 3);
+    await page.locator("#device-form input[name='measurementKeys'][value='water_temperature']").check();
+    await page.locator("#device-form input[name='measurementKeys'][value='ph']").check();
+    await page.locator("#device-form input[name='measurementKeys'][value='turbidity']").check();
     await page.locator("#device-form input[name='name']").fill("校庭ESP32");
     await page.locator("#device-form select[name='countryCode']").selectOption("JP");
     await page.waitForFunction(() => document.querySelector("#device-form [data-location-picker]")?.dataset.mapView === "JP");
@@ -105,10 +108,10 @@ try {
     await page.waitForFunction(() => !document.querySelector("#device-form select[name='subdivisionCode']")?.disabled);
     await page.locator("#device-form select[name='subdivisionCode']").selectOption("JP-13");
     await page.waitForFunction(() => !document.querySelector("#device-form select[name='municipalityCode']")?.disabled);
-    assert.match(await page.locator("#device-form [data-location-output]").textContent(), /都道府県庁所在地 35\.7, 139\.7/u);
+    assert.match(await page.locator("#device-form [data-location-output]").textContent(), /都道府県庁所在地 35\.68944, 139\.69167/u);
     await page.locator("#device-form select[name='municipalityCode']").selectOption("131130");
     await page.waitForFunction(() => document.querySelector("#device-form [data-location-picker]")?.dataset.regionPlot === "ready");
-    assert.match(await page.locator("#device-form [data-location-output]").textContent(), /本庁所在地 35\.7, 139\.7/u);
+    assert.match(await page.locator("#device-form [data-location-output]").textContent(), /本庁所在地 35\.70000, 139\.70000/u);
     assert.equal(await page.locator("#device-form input[name='isPublic']").inputValue(), "true");
     const picker = page.locator("#device-form [data-location-picker]");
     const box = await picker.boundingBox();
@@ -119,7 +122,7 @@ try {
     const beforeKeyboard = Number(await page.locator("#device-form input[name='publicLongitude']").inputValue());
     await picker.focus();
     await page.keyboard.press("ArrowRight");
-    assert.equal(Number(await page.locator("#device-form input[name='publicLongitude']").inputValue()), Math.min(180, beforeKeyboard + 1));
+    assert(Math.abs(Number(await page.locator("#device-form input[name='publicLongitude']").inputValue()) - Math.min(180, beforeKeyboard + .01)) < 1e-9);
     const picked = await page.evaluate(() => ({
       latitude: document.querySelector("#device-form input[name='publicLatitude']")?.value,
       longitude: document.querySelector("#device-form input[name='publicLongitude']")?.value,
@@ -141,9 +144,11 @@ try {
     assert.equal(qa.lastPairingDraft.isPublic, true);
     assert.equal(qa.lastPairingDraft.publicLatitude, Number(picked.latitude));
     assert.equal(qa.lastPairingDraft.publicLongitude, Number(picked.longitude));
+    assert.deepEqual(qa.lastPairingDraft.measurementKeys, ["temperature", "humidity", "pm25", "water_temperature", "ph", "turbidity"]);
     await page.locator("#pairing-complete").click();
     await page.locator(".sensor-device-card button").click();
     await page.locator("[data-view='detail']").waitFor({ state: "visible" });
+    assert.equal(await page.locator("#location-form input[name='measurementKeys']:checked").count(), 6);
     await page.waitForFunction(() => document.querySelector("#location-form select[name='subdivisionCode']")?.value === "JP-13");
     assert.equal(await page.locator("#location-form select[name='municipalityCode']").inputValue(), "131130");
     await page.locator("#location-form select[name='subdivisionCode']").selectOption("JP-14");
@@ -151,9 +156,9 @@ try {
     assert.equal(await page.locator("#location-form select[name='municipalityCode'] option[value='131130']").count(), 0);
     await page.locator("#location-form select[name='municipalityCode']").selectOption("142085");
     await page.waitForFunction(() => document.querySelector("#location-form [data-location-picker]")?.dataset.regionPlot === "ready");
-    assert.match(await page.locator("#location-form [data-location-output]").textContent(), /本庁所在地 35\.3, 139\.6/u);
+    assert.match(await page.locator("#location-form [data-location-output]").textContent(), /本庁所在地 35\.30000, 139\.60000/u);
     await page.locator("#location-form button[type='submit']").click();
-    await page.waitForFunction(() => document.querySelector("#sensor-status")?.textContent === "地域を更新しました。");
+    await page.waitForFunction(() => document.querySelector("#sensor-status")?.textContent === "計測項目・地域・公開位置を更新しました。");
     const edited = await (await fetch(new URL("/__qa/report", baseUrl))).json();
     assert.equal(edited.lastDeviceDraft.subdivisionCode, "JP-14");
     assert.equal(edited.lastDeviceDraft.municipalityCode, "142085");
@@ -162,21 +167,38 @@ try {
     assert.match(await page.locator("#detail-location").textContent(), /神奈川県.*JP-14.*逗子市.*142085/u);
 
     await page.locator("#location-form select[name='subdivisionCode']").selectOption("JP-47");
-    assert.match(await page.locator("#location-form [data-location-output]").textContent(), /都道府県庁所在地 26\.2, 127\.7/u);
+    await page.waitForFunction(() => document.querySelector("#location-form [data-location-picker]")?.dataset.regionPlot === "ready");
+    assert.match(await page.locator("#location-form [data-location-output]").textContent(), /都道府県庁所在地 26\.21240, 127\.68090/u);
     await page.locator("#location-form button[type='submit']").click();
-    await page.waitForFunction(() => document.querySelector("#sensor-status")?.textContent === "地域を更新しました。");
+    await page.waitForFunction(() => document.querySelector("#sensor-status")?.textContent === "計測項目・地域・公開位置を更新しました。");
     const okinawa = await (await fetch(new URL("/__qa/report", baseUrl))).json();
     assert.equal(okinawa.lastDeviceDraft.subdivisionCode, "JP-47");
     assert.equal(okinawa.lastDeviceDraft.municipalityCode, null);
-    assert.equal(okinawa.lastDeviceDraft.publicLatitude, 26.2);
-    assert.equal(okinawa.lastDeviceDraft.publicLongitude, 127.7);
+    assert.equal(okinawa.lastDeviceDraft.publicLatitude, 26.2124);
+    assert.equal(okinawa.lastDeviceDraft.publicLongitude, 127.6809);
     await page.locator("[data-nav='map']").click();
     await page.locator("[data-view='map']").waitFor({ state: "visible" });
     const updatedMarker = page.locator(".sensor-map-marker[data-sensor-id='sensor_browserqa']");
-    assert.equal(await updatedMarker.getAttribute("data-latitude"), "26.2");
-    assert.equal(await updatedMarker.getAttribute("data-longitude"), "127.7");
+    assert.equal(await updatedMarker.getAttribute("data-latitude"), "26.2124");
+    assert.equal(await updatedMarker.getAttribute("data-longitude"), "127.6809");
+    const mapEditButton = page.locator(".sensor-public-location-action button");
+    if (!(await mapEditButton.isVisible())) await page.locator(".sensor-map-card-expand").click();
+    await mapEditButton.click();
+    await page.locator("#public-map-location-editor").waitFor({ state: "visible" });
+    assert.equal(await page.locator("#public-sensor-map").getAttribute("data-location-editing"), "true");
+    const publicMapBox = await page.locator("#public-sensor-map").boundingBox();
+    assert(publicMapBox);
+    await page.mouse.click(publicMapBox.x + publicMapBox.width * .2, publicMapBox.y + publicMapBox.height * .78);
+    const editedCoordinates = (await page.locator("#public-map-location-output").textContent()).split(",").map((value) => Number(value.trim()));
+    assert(editedCoordinates.every(Number.isFinite));
+    await page.locator("#public-map-location-save").click();
+    await page.waitForFunction(() => document.querySelector("#sensor-status")?.textContent === "公開POIを更新しました。");
+    const mapEdited = await (await fetch(new URL("/__qa/report", baseUrl))).json();
+    assert.equal(mapEdited.lastDeviceDraft.publicLatitude, editedCoordinates[0]);
+    assert.equal(mapEdited.lastDeviceDraft.publicLongitude, editedCoordinates[1]);
+    assert.equal(await page.locator("#public-map-location-editor").isVisible(), false);
     await page.screenshot({ path: path.join(outputDir, `${label}-device-detail.png`), fullPage: true });
-    report.scans.push({ viewport: label, publicMap: { ...publicMap, visibleText: undefined }, picked, profile: qa.profile, editedRegion: edited.lastDeviceDraft, okinawaRegion: okinawa.lastDeviceDraft, passed: true });
+    report.scans.push({ viewport: label, publicMap: { ...publicMap, visibleText: undefined }, picked, profile: qa.profile, editedRegion: edited.lastDeviceDraft, okinawaRegion: okinawa.lastDeviceDraft, mapEdited: mapEdited.lastDeviceDraft, passed: true });
     await context.close();
   }
   assert.equal(report.expectedAuth401.length, viewports.length);

@@ -1,4 +1,5 @@
 import { ApiError, isRecord, optionalString, requireExactKeys, requireString } from "./http";
+import { getMeasurementDefinition } from "./measurements";
 import { getMunicipality, getSubdivision, hasValidMunicipalityCheckDigit } from "./regions";
 
 export type PairRequest = { pairingCode: string };
@@ -12,6 +13,7 @@ export type DeviceDraft = {
   isPublic: boolean;
   publicLatitude: number | null;
   publicLongitude: number | null;
+  measurementKeys: string[] | null;
 };
 export type ProfileDraft = { displayName: string; xUrl: string | null; githubUrl: string | null; instagramUrl: string | null };
 export type TelemetryInput = {
@@ -32,7 +34,7 @@ export const validatePairRequest = (value: unknown): PairRequest => {
 
 export const validateDeviceDraft = (value: unknown): DeviceDraft => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_BODY", "Request body must be an object.");
-  requireExactKeys(value, ["name", "countryCode", "subdivisionCode", "municipalityCode", "admin1Code", "localityName", "isPublic", "publicLatitude", "publicLongitude"]);
+  requireExactKeys(value, ["name", "countryCode", "subdivisionCode", "municipalityCode", "admin1Code", "localityName", "isPublic", "publicLatitude", "publicLongitude", "measurementKeys"]);
   const name = requireString(value.name, "name", 1, 80);
   const countryCode = requireString(value.countryCode, "countryCode", 2, 2).normalize("NFKC").toUpperCase();
   if (!/^[A-Z]{2}$/u.test(countryCode)) throw new ApiError(400, "INVALID_COUNTRY", "countryCode must be ISO 3166-1 alpha-2.");
@@ -86,7 +88,23 @@ export const validateDeviceDraft = (value: unknown): DeviceDraft => {
     isPublic,
     publicLatitude,
     publicLongitude,
+    measurementKeys: validateMeasurementKeys(value.measurementKeys),
   };
+};
+
+const validateMeasurementKeys = (value: unknown): string[] | null => {
+  if (value === undefined || value === null) return null;
+  if (!Array.isArray(value) || value.length < 1 || value.length > 16) {
+    throw new ApiError(400, "INVALID_MEASUREMENT_KEYS", "measurementKeys must contain between 1 and 16 catalog keys.");
+  }
+  const keys: string[] = [];
+  for (const candidate of value) {
+    if (typeof candidate !== "string" || !getMeasurementDefinition(candidate)) {
+      throw new ApiError(400, "INVALID_MEASUREMENT_KEY", `Unsupported measurement key: ${String(candidate)}.`);
+    }
+    if (!keys.includes(candidate)) keys.push(candidate);
+  }
+  return keys;
 };
 
 export const validateProfileDraft = (value: unknown): ProfileDraft => {
@@ -105,7 +123,7 @@ const coordinate = (value: unknown, field: string, minimum: number, maximum: num
   if (typeof value !== "number" || !Number.isFinite(value) || value < minimum || value > maximum) {
     throw new ApiError(400, "INVALID_PUBLIC_LOCATION", `${field} is outside the accepted range.`);
   }
-  return Math.round(value * 10) / 10;
+  return Math.round(value * 100_000) / 100_000;
 };
 
 const socialUrl = (value: unknown, field: string, hosts: readonly string[]): string | null => {
@@ -153,23 +171,14 @@ export const validateTelemetry = (value: unknown): TelemetryInput => {
     if (typeof measurement !== "number" || !Number.isFinite(measurement)) {
       throw new ApiError(400, "INVALID_SENSOR_VALUE", `${key} must be a finite number.`);
     }
-    const range = SENSOR_RANGES[key];
-    if (range && (measurement < range[0] || measurement > range[1])) {
-      throw new ApiError(400, "SENSOR_VALUE_OUT_OF_RANGE", `${key} is outside the accepted demo range.`);
+    const definition = getMeasurementDefinition(key);
+    if (!definition) {
+      throw new ApiError(400, "UNSUPPORTED_SENSOR_KEY", `${key} is not registered in the GAIA measurement catalog.`);
     }
-    if (!range && Math.abs(measurement) > 1_000_000) {
-      throw new ApiError(400, "SENSOR_VALUE_OUT_OF_RANGE", `${key} is outside the accepted numeric range.`);
+    if (measurement < definition.minimum || measurement > definition.maximum) {
+      throw new ApiError(400, "SENSOR_VALUE_OUT_OF_RANGE", `${key} is outside the accepted catalog range.`);
     }
     data[key] = measurement;
   }
   return { seq: value.seq as number, observedAt: observedAt === null ? null : new Date(observedAt).toISOString(), data };
-};
-
-const SENSOR_RANGES: Readonly<Record<string, readonly [number, number]>> = {
-  temperature: [-80, 100],
-  humidity: [0, 100],
-  pm25: [0, 5000],
-  pm10: [0, 5000],
-  voc: [0, 100000],
-  nox: [0, 100000],
 };

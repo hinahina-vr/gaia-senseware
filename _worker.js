@@ -8822,6 +8822,100 @@ var requireAuthConfiguration = /* @__PURE__ */ __name((env) => {
   }
 }, "requireAuthConfiguration");
 
+// src/measurements.ts
+var MEASUREMENT_CATEGORIES = Object.freeze([
+  { id: "atmosphere", labelJa: "\u5927\u6C17\u30FB\u7A7A\u6C17\u8CEA", labelEn: "AIR", descriptionJa: "\u6C17\u6E29\u3001\u6E7F\u5EA6\u3001\u7C92\u5B50\u3001\u30AC\u30B9\u3001\u6C17\u5727\u3092\u89B3\u6E2C\u3057\u307E\u3059\u3002" },
+  { id: "weather", labelJa: "\u6C17\u8C61\u30FB\u5149\u30FB\u97F3", labelEn: "WEATHER / LIGHT / SOUND", descriptionJa: "\u96E8\u3001\u98A8\u3001\u65E5\u5C04\u3001\u7D2B\u5916\u7DDA\u3001\u7167\u5EA6\u3001\u9A12\u97F3\u3092\u89B3\u6E2C\u3057\u307E\u3059\u3002" },
+  { id: "water", labelJa: "\u6C34\u30FB\u6C34\u8CEA", labelEn: "WATER", descriptionJa: "\u6C34\u6E29\u3001pH\u3001\u6FC1\u5EA6\u3001\u6EB6\u5B58\u9178\u7D20\u3001\u6C34\u4F4D\u3001\u6D41\u91CF\u306A\u3069\u3092\u89B3\u6E2C\u3057\u307E\u3059\u3002" },
+  { id: "soil", labelJa: "\u571F\u58CC\u30FB\u690D\u7269", labelEn: "SOIL / PLANT", descriptionJa: "\u571F\u306E\u6E29\u6E7F\u5EA6\u3001EC\u3001pH\u3001\u8449\u9762\u306E\u6FE1\u308C\u3092\u89B3\u6E2C\u3057\u307E\u3059\u3002" },
+  { id: "motion", labelJa: "\u52D5\u304D\u30FB\u8DDD\u96E2\u30FB\u78C1\u6C17", labelEn: "MOTION / POSITION", descriptionJa: "\u52A0\u901F\u5EA6\u3001\u89D2\u901F\u5EA6\u3001\u78C1\u5834\u3001\u632F\u52D5\u3001\u8DDD\u96E2\u3001\u901A\u904E\u6570\u3092\u89B3\u6E2C\u3057\u307E\u3059\u3002" },
+  { id: "energy", labelJa: "\u96FB\u6C17\u30FB\u88C5\u7F6E\u72B6\u614B", labelEn: "ENERGY / DEVICE", descriptionJa: "\u96FB\u5727\u3001\u96FB\u6D41\u3001\u96FB\u529B\u3001\u96FB\u6C60\u6B8B\u91CF\u3001\u7121\u7DDA\u5F37\u5EA6\u3092\u89B3\u6E2C\u3057\u307E\u3059\u3002" },
+  { id: "radiation", labelJa: "\u653E\u5C04\u7DDA\u30FB\u96FB\u78C1\u74B0\u5883", labelEn: "RADIATION / EM", descriptionJa: "\u7DDA\u91CF\u7387\u3001\u96FB\u754C\u3001\u96FB\u6CE2\u30CE\u30A4\u30BA\u306A\u3069\u3092\u89B3\u6E2C\u3057\u307E\u3059\u3002" }
+]);
+var measurement = /* @__PURE__ */ __name((key, category, labelJa, labelEn, unit, digits, minimum, maximum, interfaces, exampleSensors, noteJa) => ({ key, category, labelJa, labelEn, unit, digits, minimum, maximum, interfaces, exampleSensors, ...noteJa ? { noteJa } : {} }), "measurement");
+var MEASUREMENT_CATALOG = Object.freeze([
+  measurement("temperature", "atmosphere", "\u6C17\u6E29", "Air temperature", "\xB0C", 1, -80, 100, ["I2C", "1-Wire", "UART"], ["BME280", "SHT31/SHT4x", "DS18B20"]),
+  measurement("humidity", "atmosphere", "\u76F8\u5BFE\u6E7F\u5EA6", "Relative humidity", "%RH", 1, 0, 100, ["I2C", "UART"], ["BME280", "SHT31/SHT4x", "AHT20"]),
+  measurement("pressure", "atmosphere", "\u6C17\u5727", "Atmospheric pressure", "hPa", 1, 300, 1200, ["I2C", "SPI"], ["BMP280", "BME280", "BMP390"]),
+  measurement("pm1", "atmosphere", "PM1.0", "PM1.0", "\xB5g/m\xB3", 1, 0, 5e3, ["UART", "I2C"], ["PMS5003/PMSA003", "SPS30"]),
+  measurement("pm25", "atmosphere", "PM2.5", "PM2.5", "\xB5g/m\xB3", 1, 0, 5e3, ["UART", "I2C"], ["PMS5003/PMSA003", "SPS30"]),
+  measurement("pm10", "atmosphere", "PM10", "PM10", "\xB5g/m\xB3", 1, 0, 5e3, ["UART", "I2C"], ["PMS5003/PMSA003", "SPS30"]),
+  measurement("co2", "atmosphere", "CO\u2082\u6FC3\u5EA6", "Carbon dioxide", "ppm", 0, 0, 1e5, ["I2C", "UART", "PWM"], ["SCD30/SCD4x", "MH-Z19B"]),
+  measurement("tvoc", "atmosphere", "\u7DCFVOC", "Total VOC", "ppb", 0, 0, 1e5, ["I2C"], ["SGP30/SGP40", "BME680/BME688"]),
+  measurement("voc", "atmosphere", "VOC", "Volatile organic compounds", "ppb", 0, 0, 1e5, ["I2C", "ADC"], ["SGP40", "BME688", "\u30AC\u30B9\u30BB\u30F3\u30B5\u30FC\uFF0B\u4FE1\u53F7\u8ABF\u6574\u56DE\u8DEF"]),
+  measurement("nox", "atmosphere", "NOx\u6307\u6A19", "NOx index", "index", 1, 0, 1e5, ["I2C"], ["SGP41"]),
+  measurement("no2", "atmosphere", "\u4E8C\u9178\u5316\u7A92\u7D20", "Nitrogen dioxide", "ppb", 1, 0, 2e4, ["ADC", "UART"], ["\u96FB\u6C17\u5316\u5B66\u5F0FNO\u2082\u30BB\u30F3\u30B5\u30FC\uFF0BAFE"]),
+  measurement("co", "atmosphere", "\u4E00\u9178\u5316\u70AD\u7D20", "Carbon monoxide", "ppm", 2, 0, 1e4, ["ADC", "UART"], ["\u96FB\u6C17\u5316\u5B66\u5F0FCO\u30BB\u30F3\u30B5\u30FC\uFF0BAFE"]),
+  measurement("o3", "atmosphere", "\u30AA\u30BE\u30F3", "Ozone", "ppb", 1, 0, 2e4, ["ADC", "UART"], ["\u96FB\u6C17\u5316\u5B66\u5F0FO\u2083\u30BB\u30F3\u30B5\u30FC\uFF0BAFE"]),
+  measurement("so2", "atmosphere", "\u4E8C\u9178\u5316\u786B\u9EC4", "Sulfur dioxide", "ppb", 1, 0, 2e4, ["ADC", "UART"], ["\u96FB\u6C17\u5316\u5B66\u5F0FSO\u2082\u30BB\u30F3\u30B5\u30FC\uFF0BAFE"]),
+  measurement("nh3", "atmosphere", "\u30A2\u30F3\u30E2\u30CB\u30A2", "Ammonia", "ppm", 2, 0, 1e4, ["ADC", "UART"], ["\u96FB\u6C17\u5316\u5B66\u5F0FNH\u2083\u30BB\u30F3\u30B5\u30FC\uFF0BAFE"]),
+  measurement("h2s", "atmosphere", "\u786B\u5316\u6C34\u7D20", "Hydrogen sulfide", "ppm", 2, 0, 1e4, ["ADC", "UART"], ["\u96FB\u6C17\u5316\u5B66\u5F0FH\u2082S\u30BB\u30F3\u30B5\u30FC\uFF0BAFE"]),
+  measurement("formaldehyde", "atmosphere", "\u30DB\u30EB\u30E0\u30A2\u30EB\u30C7\u30D2\u30C9", "Formaldehyde", "mg/m\xB3", 3, 0, 100, ["UART", "ADC"], ["HCHO\u30BB\u30F3\u30B5\u30FC\u30E2\u30B8\u30E5\u30FC\u30EB"]),
+  measurement("rainfall", "weather", "\u7A4D\u7B97\u96E8\u91CF", "Accumulated rainfall", "mm", 1, 0, 1e5, ["Pulse", "GPIO"], ["\u8EE2\u5012\u307E\u3059\u578B\u96E8\u91CF\u8A08"]),
+  measurement("rainfall_rate", "weather", "\u964D\u96E8\u5F37\u5EA6", "Rainfall rate", "mm/h", 1, 0, 2e3, ["Pulse", "GPIO"], ["\u8EE2\u5012\u307E\u3059\u578B\u96E8\u91CF\u8A08"]),
+  measurement("wind_speed", "weather", "\u98A8\u901F", "Wind speed", "m/s", 1, 0, 150, ["Pulse", "ADC", "RS-485"], ["\u30AB\u30C3\u30D7\u5F0F\u98A8\u901F\u8A08", "\u8D85\u97F3\u6CE2\u98A8\u901F\u8A08"]),
+  measurement("wind_direction", "weather", "\u98A8\u5411", "Wind direction", "\xB0", 0, 0, 360, ["ADC", "I2C", "RS-485"], ["\u98A8\u5411\u30D9\u30FC\u30F3", "\u8D85\u97F3\u6CE2\u98A8\u5411\u98A8\u901F\u8A08"]),
+  measurement("illuminance", "weather", "\u7167\u5EA6", "Illuminance", "lx", 0, 0, 1e6, ["I2C", "ADC"], ["BH1750", "VEML7700", "TSL2591"]),
+  measurement("uv_index", "weather", "UV\u6307\u6570", "UV index", "index", 1, 0, 30, ["I2C", "ADC"], ["VEML6075", "LTR390"]),
+  measurement("solar_irradiance", "weather", "\u65E5\u5C04\u91CF", "Solar irradiance", "W/m\xB2", 1, 0, 2500, ["ADC", "RS-485"], ["\u65E5\u5C04\u8A08\uFF0B\u4FE1\u53F7\u5909\u63DB\u5668"]),
+  measurement("noise_db", "weather", "\u9A12\u97F3\u30EC\u30D9\u30EB", "Sound pressure level", "dB", 1, 0, 180, ["I2S", "ADC"], ["I2S MEMS\u30DE\u30A4\u30AF", "\u9A12\u97F3\u8A08\u30E2\u30B8\u30E5\u30FC\u30EB"], "\u6821\u6B63\u3057\u306A\u3044\u5024\u306F\u6CD5\u5B9A\u9A12\u97F3\u6E2C\u5B9A\u306B\u306F\u4F7F\u7528\u3067\u304D\u307E\u305B\u3093\u3002"),
+  measurement("lightning_distance", "weather", "\u96F7\u63A8\u5B9A\u8DDD\u96E2", "Lightning distance", "km", 0, 0, 1e3, ["SPI", "I2C"], ["AS3935"]),
+  measurement("water_temperature", "water", "\u6C34\u6E29", "Water temperature", "\xB0C", 1, -20, 120, ["1-Wire", "I2C", "RS-485"], ["\u9632\u6C34DS18B20", "PT100/PT1000\uFF0B\u5909\u63DB\u5668"]),
+  measurement("ph", "water", "pH", "pH", "pH", 2, 0, 14, ["ADC", "I2C", "UART", "RS-485"], ["pH\u96FB\u6975\uFF0B\u7D76\u7E01\u5BFE\u5FDC\u30A4\u30F3\u30BF\u30FC\u30D5\u30A7\u30FC\u30B9"]),
+  measurement("conductivity", "water", "\u96FB\u6C17\u4F1D\u5C0E\u7387", "Electrical conductivity", "\xB5S/cm", 0, 0, 2e5, ["I2C", "UART", "RS-485", "ADC"], ["EC\u30D7\u30ED\u30FC\u30D6\uFF0B\u30A4\u30F3\u30BF\u30FC\u30D5\u30A7\u30FC\u30B9"]),
+  measurement("tds", "water", "\u6EB6\u89E3\u6027\u7269\u8CEA\u6FC3\u5EA6", "Total dissolved solids", "ppm", 0, 0, 1e5, ["ADC", "UART", "RS-485"], ["TDS\u30D7\u30ED\u30FC\u30D6\uFF0B\u30A4\u30F3\u30BF\u30FC\u30D5\u30A7\u30FC\u30B9"]),
+  measurement("turbidity", "water", "\u6FC1\u5EA6", "Turbidity", "NTU", 1, 0, 1e4, ["ADC", "UART", "RS-485"], ["\u5149\u5B66\u5F0F\u6FC1\u5EA6\u30BB\u30F3\u30B5\u30FC"]),
+  measurement("dissolved_oxygen", "water", "\u6EB6\u5B58\u9178\u7D20", "Dissolved oxygen", "mg/L", 2, 0, 100, ["I2C", "UART", "RS-485", "ADC"], ["DO\u30D7\u30ED\u30FC\u30D6\uFF0B\u30A4\u30F3\u30BF\u30FC\u30D5\u30A7\u30FC\u30B9"]),
+  measurement("orp", "water", "\u9178\u5316\u9084\u5143\u96FB\u4F4D", "Oxidation-reduction potential", "mV", 0, -2e3, 2e3, ["ADC", "I2C", "UART"], ["ORP\u96FB\u6975\uFF0B\u9AD8\u30A4\u30F3\u30D4\u30FC\u30C0\u30F3\u30B9AFE"]),
+  measurement("salinity", "water", "\u5869\u5206", "Salinity", "PSU", 2, 0, 100, ["UART", "RS-485", "I2C"], ["\u5869\u5206\u30FBEC\u30D7\u30ED\u30FC\u30D6"]),
+  measurement("water_level", "water", "\u6C34\u4F4D", "Water level", "cm", 1, -1e4, 1e5, ["ADC", "I2C", "UART", "RS-485"], ["\u5727\u529B\u5F0F\u6C34\u4F4D\u8A08", "\u8D85\u97F3\u6CE2\u8DDD\u96E2\u8A08", "\u30D5\u30ED\u30FC\u30C8"]),
+  measurement("groundwater_level", "water", "\u5730\u4E0B\u6C34\u4F4D", "Groundwater level", "m", 2, -1e4, 1e4, ["ADC", "RS-485"], ["\u6295\u8FBC\u5F0F\u6C34\u4F4D\u8A08"]),
+  measurement("flow_rate", "water", "\u6D41\u91CF", "Flow rate", "L/min", 2, 0, 1e5, ["Pulse", "UART", "RS-485"], ["\u30DB\u30FC\u30EB\u5F0F\u6D41\u91CF\u30BB\u30F3\u30B5\u30FC", "\u96FB\u78C1\u6D41\u91CF\u8A08"]),
+  measurement("water_pressure", "water", "\u6C34\u5727", "Water pressure", "kPa", 1, -100, 1e5, ["ADC", "I2C", "RS-485"], ["\u5727\u529B\u30C8\u30E9\u30F3\u30B9\u30C7\u30E5\u30FC\u30B5\u30FC"]),
+  measurement("nitrate", "water", "\u785D\u9178\u614B\u7A92\u7D20", "Nitrate", "mg/L", 2, 0, 1e4, ["UART", "RS-485", "I2C"], ["\u30A4\u30AA\u30F3\u9078\u629E\u96FB\u6975\uFF0B\u8A08\u6E2C\u56DE\u8DEF"]),
+  measurement("ammonium", "water", "\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0", "Ammonium", "mg/L", 2, 0, 1e4, ["UART", "RS-485", "I2C"], ["\u30A4\u30AA\u30F3\u9078\u629E\u96FB\u6975\uFF0B\u8A08\u6E2C\u56DE\u8DEF"]),
+  measurement("soil_temperature", "soil", "\u5730\u6E29", "Soil temperature", "\xB0C", 1, -50, 100, ["1-Wire", "I2C", "RS-485"], ["\u9632\u6C34DS18B20", "\u571F\u58CC\u6E29\u5EA6\u30D7\u30ED\u30FC\u30D6"]),
+  measurement("soil_moisture", "soil", "\u571F\u58CC\u542B\u6C34\u7387", "Soil moisture", "%", 1, 0, 100, ["ADC", "I2C", "RS-485"], ["\u9759\u96FB\u5BB9\u91CF\u5F0F\u571F\u58CC\u6C34\u5206\u30BB\u30F3\u30B5\u30FC"]),
+  measurement("soil_ec", "soil", "\u571F\u58CCEC", "Soil electrical conductivity", "\xB5S/cm", 0, 0, 2e5, ["RS-485", "UART", "ADC"], ["\u571F\u58CCEC\u30D7\u30ED\u30FC\u30D6"]),
+  measurement("soil_ph", "soil", "\u571F\u58CCpH", "Soil pH", "pH", 2, 0, 14, ["RS-485", "UART", "ADC"], ["\u571F\u58CCpH\u30D7\u30ED\u30FC\u30D6"]),
+  measurement("leaf_wetness", "soil", "\u8449\u9762\u6FE1\u308C", "Leaf wetness", "%", 1, 0, 100, ["ADC", "I2C"], ["\u8449\u9762\u6FE1\u308C\u30BB\u30F3\u30B5\u30FC"]),
+  measurement("acceleration_x", "motion", "X\u8EF8\u52A0\u901F\u5EA6", "X acceleration", "m/s\xB2", 2, -1e3, 1e3, ["I2C", "SPI"], ["MPU6050", "LIS3DH", "ICM-20948"]),
+  measurement("acceleration_y", "motion", "Y\u8EF8\u52A0\u901F\u5EA6", "Y acceleration", "m/s\xB2", 2, -1e3, 1e3, ["I2C", "SPI"], ["MPU6050", "LIS3DH", "ICM-20948"]),
+  measurement("acceleration_z", "motion", "Z\u8EF8\u52A0\u901F\u5EA6", "Z acceleration", "m/s\xB2", 2, -1e3, 1e3, ["I2C", "SPI"], ["MPU6050", "LIS3DH", "ICM-20948"]),
+  measurement("gyro_x", "motion", "X\u8EF8\u89D2\u901F\u5EA6", "X angular velocity", "\xB0/s", 1, -2e4, 2e4, ["I2C", "SPI"], ["MPU6050", "ICM-20948"]),
+  measurement("gyro_y", "motion", "Y\u8EF8\u89D2\u901F\u5EA6", "Y angular velocity", "\xB0/s", 1, -2e4, 2e4, ["I2C", "SPI"], ["MPU6050", "ICM-20948"]),
+  measurement("gyro_z", "motion", "Z\u8EF8\u89D2\u901F\u5EA6", "Z angular velocity", "\xB0/s", 1, -2e4, 2e4, ["I2C", "SPI"], ["MPU6050", "ICM-20948"]),
+  measurement("magnetic_x", "motion", "X\u8EF8\u78C1\u675F\u5BC6\u5EA6", "X magnetic flux density", "\xB5T", 2, -5e4, 5e4, ["I2C", "SPI"], ["LIS3MDL", "MMC5603", "ICM-20948"]),
+  measurement("magnetic_y", "motion", "Y\u8EF8\u78C1\u675F\u5BC6\u5EA6", "Y magnetic flux density", "\xB5T", 2, -5e4, 5e4, ["I2C", "SPI"], ["LIS3MDL", "MMC5603", "ICM-20948"]),
+  measurement("magnetic_z", "motion", "Z\u8EF8\u78C1\u675F\u5BC6\u5EA6", "Z magnetic flux density", "\xB5T", 2, -5e4, 5e4, ["I2C", "SPI"], ["LIS3MDL", "MMC5603", "ICM-20948"]),
+  measurement("geomagnetic", "motion", "\u5730\u78C1\u6C17\u5909\u52D5", "Geomagnetic variation", "\xB5T", 2, -5e4, 5e4, ["I2C", "SPI"], ["LIS3MDL", "MMC5603"]),
+  measurement("distance", "motion", "\u8DDD\u96E2", "Distance", "cm", 1, 0, 1e6, ["GPIO", "I2C", "UART"], ["HC-SR04\uFF083.3V\u30EC\u30D9\u30EB\u5909\u63DB\u5FC5\u9808\uFF09", "VL53L0X/VL53L1X"]),
+  measurement("vibration_rms", "motion", "\u632F\u52D5RMS", "Vibration RMS", "m/s\xB2", 3, 0, 1e3, ["I2C", "SPI", "ADC"], ["\u52A0\u901F\u5EA6\u30BB\u30F3\u30B5\u30FC"]),
+  measurement("occupancy", "motion", "\u5728\u5BA4\u30FB\u691C\u77E5\u72B6\u614B", "Occupancy", "0/1", 0, 0, 1, ["GPIO", "UART"], ["PIR", "mmWave\u30EC\u30FC\u30C0\u30FC"]),
+  measurement("pulse_count", "motion", "\u30D1\u30EB\u30B9\u6570", "Pulse count", "count", 0, 0, 1e9, ["Pulse", "GPIO"], ["\u63A5\u70B9\u5165\u529B", "\u56DE\u8EE2\u30FB\u901A\u904E\u30AB\u30A6\u30F3\u30BF\u30FC"]),
+  measurement("voltage", "energy", "\u96FB\u5727", "Voltage", "V", 3, -1e5, 1e5, ["I2C", "ADC", "UART", "RS-485"], ["INA219/INA226", "\u7D76\u7E01\u8A08\u6E2C\u30E2\u30B8\u30E5\u30FC\u30EB"]),
+  measurement("current", "energy", "\u96FB\u6D41", "Current", "A", 3, -1e5, 1e5, ["I2C", "ADC", "UART", "RS-485"], ["INA219/INA226", "\u30DB\u30FC\u30EB\u96FB\u6D41\u30BB\u30F3\u30B5\u30FC"]),
+  measurement("power", "energy", "\u96FB\u529B", "Power", "W", 2, -1e6, 1e6, ["I2C", "UART", "RS-485"], ["INA219/INA226", "\u96FB\u529B\u8A08\u30E2\u30B8\u30E5\u30FC\u30EB"]),
+  measurement("energy", "energy", "\u7A4D\u7B97\u96FB\u529B\u91CF", "Energy", "Wh", 1, 0, 1e12, ["UART", "RS-485"], ["\u96FB\u529B\u91CF\u8A08\u30E2\u30B8\u30E5\u30FC\u30EB"], "\u5546\u7528\u96FB\u6E90\u306E\u8A08\u6E2C\u306F\u611F\u96FB\u30FB\u706B\u707D\u9632\u6B62\u306E\u305F\u3081\u6709\u8CC7\u683C\u8005\u3068\u7D76\u7E01\u6E08\u307F\u88FD\u54C1\u3092\u4F7F\u7528\u3057\u3066\u304F\u3060\u3055\u3044\u3002"),
+  measurement("battery_voltage", "energy", "\u96FB\u6C60\u96FB\u5727", "Battery voltage", "V", 3, 0, 1e3, ["ADC", "I2C"], ["\u5206\u5727\u56DE\u8DEF", "\u71C3\u6599\u8A08IC"]),
+  measurement("battery_percent", "energy", "\u96FB\u6C60\u6B8B\u91CF", "Battery charge", "%", 0, 0, 100, ["I2C", "ADC"], ["MAX17048/MAX1704x", "\u71C3\u6599\u8A08IC"]),
+  measurement("rssi", "energy", "Wi-Fi\u53D7\u4FE1\u5F37\u5EA6", "Wi-Fi RSSI", "dBm", 0, -127, 0, ["ESP32 internal"], ["WiFi.RSSI()"]),
+  measurement("radiation_dose_rate", "radiation", "\u653E\u5C04\u7DDA\u91CF\u7387", "Radiation dose rate", "\xB5Sv/h", 3, 0, 1e6, ["Pulse", "UART"], ["\u30AC\u30A4\u30AC\u30FC\u8A08\u6570\u7BA1\uFF0B\u9AD8\u96FB\u5727\u30E2\u30B8\u30E5\u30FC\u30EB"], "\u9AD8\u96FB\u5727\u56DE\u8DEF\u3068\u6821\u6B63\u304C\u5FC5\u8981\u3067\u3059\u3002\u5B89\u5168\u76E3\u8996\u30FB\u7DDA\u91CF\u7BA1\u7406\u306B\u306F\u4F7F\u7528\u3067\u304D\u307E\u305B\u3093\u3002"),
+  measurement("electric_field", "radiation", "\u96FB\u754C\u5F37\u5EA6", "Electric field strength", "kV/m", 3, -1e6, 1e6, ["ADC", "UART", "RS-485"], ["\u96FB\u754C\u30BB\u30F3\u30B5\u30FC\uFF0B\u7D76\u7E01\u30A4\u30F3\u30BF\u30FC\u30D5\u30A7\u30FC\u30B9"]),
+  measurement("radio_noise", "radiation", "\u96FB\u6CE2\u30CE\u30A4\u30BA", "Radio noise", "dBm", 1, -200, 100, ["SPI", "UART", "I2C"], ["RF\u691C\u6CE2\u5668", "\u53D7\u4FE1\u30E2\u30B8\u30E5\u30FC\u30EB"])
+]);
+var measurementCatalogByKey = new Map(
+  MEASUREMENT_CATALOG.map((definition) => [definition.key, definition])
+);
+var getMeasurementDefinition = /* @__PURE__ */ __name((key) => measurementCatalogByKey.get(key) ?? null, "getMeasurementDefinition");
+var listMeasurementTypes = /* @__PURE__ */ __name(() => json({
+  version: 1,
+  maximumMeasurementsPerPacket: 16,
+  categories: MEASUREMENT_CATEGORIES,
+  measurements: MEASUREMENT_CATALOG,
+  disclaimerJa: "\u63B2\u8F09\u30E2\u30B8\u30E5\u30FC\u30EB\u306F\u63A5\u7D9A\u4F8B\u3067\u3059\u3002ESP32-WROOM-32\u3068\u306E\u500B\u5225\u52D5\u4F5C\u3001\u7CBE\u5EA6\u3001\u9632\u6C34\u3001\u96FB\u5727\u3001\u7D76\u7E01\u3001\u6821\u6B63\u3092\u4FDD\u8A3C\u3059\u308B\u3082\u306E\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002ADC\u30FB5V\u30FBRS-485\u30FB\u5546\u7528\u96FB\u6E90\u30FB\u85AC\u6DB2\u30D7\u30ED\u30FC\u30D6\u306F\u9069\u5207\u306A\u5909\u63DB\u30FB\u7D76\u7E01\u56DE\u8DEF\u304C\u5FC5\u8981\u3067\u3059\u3002"
+}), "listMeasurementTypes");
+
 // src/region-code-data.ts
 var REGION_DATA_VERSION = "cldr-48.2.0+jlis-2026-08-14";
 var SUBDIVISION_RECORDS = [
@@ -15788,55 +15882,6 @@ var JAPAN_MUNICIPALITY_RECORDS = [
 ];
 
 // src/regions.ts
-var JAPAN_PREFECTURAL_OFFICES = /* @__PURE__ */ new Map([
-  ["JP-01", [43.1, 141.4]],
-  ["JP-02", [40.8, 140.7]],
-  ["JP-03", [39.7, 141.2]],
-  ["JP-04", [38.3, 140.9]],
-  ["JP-05", [39.7, 140.1]],
-  ["JP-06", [38.2, 140.4]],
-  ["JP-07", [37.8, 140.5]],
-  ["JP-08", [36.3, 140.4]],
-  ["JP-09", [36.6, 139.9]],
-  ["JP-10", [36.4, 139.1]],
-  ["JP-11", [35.9, 139.6]],
-  ["JP-12", [35.6, 140.1]],
-  ["JP-13", [35.7, 139.7]],
-  ["JP-14", [35.4, 139.6]],
-  ["JP-15", [37.9, 139]],
-  ["JP-16", [36.7, 137.2]],
-  ["JP-17", [36.6, 136.6]],
-  ["JP-18", [36.1, 136.2]],
-  ["JP-19", [35.7, 138.6]],
-  ["JP-20", [36.7, 138.2]],
-  ["JP-21", [35.4, 136.7]],
-  ["JP-22", [35, 138.4]],
-  ["JP-23", [35.2, 136.9]],
-  ["JP-24", [34.7, 136.5]],
-  ["JP-25", [35, 135.9]],
-  ["JP-26", [35, 135.8]],
-  ["JP-27", [34.7, 135.5]],
-  ["JP-28", [34.7, 135.2]],
-  ["JP-29", [34.7, 135.8]],
-  ["JP-30", [34.2, 135.2]],
-  ["JP-31", [35.5, 134.2]],
-  ["JP-32", [35.5, 133.1]],
-  ["JP-33", [34.7, 133.9]],
-  ["JP-34", [34.4, 132.5]],
-  ["JP-35", [34.2, 131.5]],
-  ["JP-36", [34.1, 134.6]],
-  ["JP-37", [34.3, 134]],
-  ["JP-38", [33.8, 132.8]],
-  ["JP-39", [33.6, 133.5]],
-  ["JP-40", [33.6, 130.4]],
-  ["JP-41", [33.3, 130.3]],
-  ["JP-42", [32.8, 129.9]],
-  ["JP-43", [32.8, 130.7]],
-  ["JP-44", [33.2, 131.6]],
-  ["JP-45", [31.9, 131.4]],
-  ["JP-46", [31.6, 130.6]],
-  ["JP-47", [26.2, 127.7]]
-]);
 var subdivisionsByCountry = /* @__PURE__ */ new Map();
 var subdivisionsByCode = /* @__PURE__ */ new Map();
 for (const [code, countryCode, name] of SUBDIVISION_RECORDS) {
@@ -15871,41 +15916,49 @@ var listRegions = /* @__PURE__ */ __name((url) => {
   const municipalities = countryCode === "JP" && subdivisionCode ? municipalitiesBySubdivision.get(subdivisionCode) ?? [] : [];
   return json({ version: REGION_DATA_VERSION, subdivisions, municipalities });
 }, "listRegions");
-var locateRegion = /* @__PURE__ */ __name(async (url) => {
+var locateRegion = /* @__PURE__ */ __name(async (url, env) => {
   const countryCode = (url.searchParams.get("countryCode") ?? "").normalize("NFKC").toUpperCase();
   const subdivisionCode = (url.searchParams.get("subdivisionCode") ?? "").normalize("NFKC").toUpperCase();
   const municipalityCode = (url.searchParams.get("municipalityCode") ?? "").normalize("NFKC");
+  return json({ location: await resolveRegionOfficeLocation(env, countryCode, subdivisionCode, municipalityCode || null) });
+}, "locateRegion");
+var resolveRegionOfficeLocation = /* @__PURE__ */ __name(async (env, countryCode, subdivisionCode, municipalityCode) => {
   if (countryCode !== "JP") throw new ApiError(400, "UNSUPPORTED_REGION_LOCATION", "Region plotting currently supports Japan.");
   const subdivision = subdivisionsByCode.get(subdivisionCode);
-  const prefecturalOffice = JAPAN_PREFECTURAL_OFFICES.get(subdivisionCode);
-  if (!subdivision || !subdivisionCode.startsWith("JP-") || !prefecturalOffice) {
+  if (!subdivision || !subdivisionCode.startsWith("JP-")) {
     throw new ApiError(400, "INVALID_SUBDIVISION", "A current Japanese subdivisionCode is required.");
   }
-  if (!municipalityCode) {
-    return json({
-      location: { latitude: prefecturalOffice[0], longitude: prefecturalOffice[1], precision: "PREFECTURAL_GOVERNMENT_OFFICE" }
-    });
-  }
-  const municipality = municipalitiesByCode.get(municipalityCode);
-  if (!municipality || municipality.subdivisionCode !== subdivisionCode) {
+  const municipality = municipalityCode ? municipalitiesByCode.get(municipalityCode) : null;
+  if (municipalityCode && (!municipality || municipality.subdivisionCode !== subdivisionCode)) {
     throw new ApiError(400, "INVALID_MUNICIPALITY", "municipalityCode must belong to subdivisionCode.");
   }
-  const coordinates = await locateMunicipalMainOffice(subdivision.name, municipality.name);
-  if (!coordinates) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location was not found.");
-  return json({
-    location: {
-      latitude: roundPublicCoordinate(coordinates.latitude),
-      longitude: roundPublicCoordinate(coordinates.longitude),
-      precision: "MUNICIPAL_MAIN_OFFICE"
-    }
-  });
-}, "locateRegion");
-var locateMunicipalMainOffice = /* @__PURE__ */ __name(async (subdivisionName, municipalityName) => {
+  const regionKey = municipalityCode ? `JP:MUNICIPALITY:${municipalityCode}` : `JP:PREFECTURE:${subdivisionCode}`;
+  const cached = await env.DB.prepare(
+    "SELECT latitude, longitude, precision FROM region_office_locations WHERE region_key = ?1"
+  ).bind(regionKey).first();
+  if (cached) return cached;
+  const precision = municipalityCode ? "MUNICIPAL_MAIN_OFFICE" : "PREFECTURAL_GOVERNMENT_OFFICE";
+  const queries = municipality ? municipalityOfficeQueries(subdivision.name, municipality.name) : [`${subdivision.name}\u5E81\u672C\u5E81\u820E`, `${subdivision.name}\u5E81`];
+  const coordinates = await locateGovernmentOffice(queries);
+  if (!coordinates) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The selected government office location was not found.");
+  const location = { ...coordinates, precision };
+  await env.DB.prepare(
+    `INSERT INTO region_office_locations
+       (region_key, country_code, subdivision_code, municipality_code, latitude, longitude, precision, source, updated_at)
+     VALUES (?1, 'JP', ?2, ?3, ?4, ?5, ?6, 'GSI_ADDRESS_SEARCH', ?7)
+     ON CONFLICT(region_key) DO UPDATE SET latitude = excluded.latitude, longitude = excluded.longitude,
+       precision = excluded.precision, updated_at = excluded.updated_at`
+  ).bind(regionKey, subdivisionCode, municipalityCode, location.latitude, location.longitude, precision, (/* @__PURE__ */ new Date()).toISOString()).run();
+  return location;
+}, "resolveRegionOfficeLocation");
+var municipalityOfficeQueries = /* @__PURE__ */ __name((subdivisionName, municipalityName) => {
   const officeName = /[町村]$/u.test(municipalityName) ? "\u5F79\u5834" : "\u5F79\u6240";
-  const queries = [
+  return [
     `${subdivisionName}${municipalityName}${officeName}\u672C\u5E81\u820E`,
     `${subdivisionName}${municipalityName}${officeName}`
   ];
+}, "municipalityOfficeQueries");
+var locateGovernmentOffice = /* @__PURE__ */ __name(async (queries) => {
   for (const query of queries) {
     const upstream = new URL("https://msearch.gsi.go.jp/address-search/AddressSearch");
     upstream.searchParams.set("q", query);
@@ -15923,7 +15976,7 @@ var locateMunicipalMainOffice = /* @__PURE__ */ __name(async (subdivisionName, m
     if (coordinates) return coordinates;
   }
   return null;
-}, "locateMunicipalMainOffice");
+}, "locateGovernmentOffice");
 var readCoordinates = /* @__PURE__ */ __name((payload) => {
   if (!Array.isArray(payload)) return null;
   for (const feature of payload) {
@@ -15940,7 +15993,6 @@ var readCoordinates = /* @__PURE__ */ __name((payload) => {
   }
   return null;
 }, "readCoordinates");
-var roundPublicCoordinate = /* @__PURE__ */ __name((value) => Math.round(value * 10) / 10, "roundPublicCoordinate");
 var getSubdivision = /* @__PURE__ */ __name((code) => subdivisionsByCode.get(code) ?? null, "getSubdivision");
 var getMunicipality = /* @__PURE__ */ __name((code) => municipalitiesByCode.get(code) ?? null, "getMunicipality");
 var hasValidMunicipalityCheckDigit = /* @__PURE__ */ __name((code) => {
@@ -15962,7 +16014,7 @@ var validatePairRequest = /* @__PURE__ */ __name((value) => {
 }, "validatePairRequest");
 var validateDeviceDraft = /* @__PURE__ */ __name((value) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_BODY", "Request body must be an object.");
-  requireExactKeys(value, ["name", "countryCode", "subdivisionCode", "municipalityCode", "admin1Code", "localityName", "isPublic", "publicLatitude", "publicLongitude"]);
+  requireExactKeys(value, ["name", "countryCode", "subdivisionCode", "municipalityCode", "admin1Code", "localityName", "isPublic", "publicLatitude", "publicLongitude", "measurementKeys"]);
   const name = requireString(value.name, "name", 1, 80);
   const countryCode = requireString(value.countryCode, "countryCode", 2, 2).normalize("NFKC").toUpperCase();
   if (!/^[A-Z]{2}$/u.test(countryCode)) throw new ApiError(400, "INVALID_COUNTRY", "countryCode must be ISO 3166-1 alpha-2.");
@@ -16015,9 +16067,24 @@ var validateDeviceDraft = /* @__PURE__ */ __name((value) => {
     localityName: municipality?.name ?? legacyLocalityName,
     isPublic,
     publicLatitude,
-    publicLongitude
+    publicLongitude,
+    measurementKeys: validateMeasurementKeys(value.measurementKeys)
   };
 }, "validateDeviceDraft");
+var validateMeasurementKeys = /* @__PURE__ */ __name((value) => {
+  if (value === void 0 || value === null) return null;
+  if (!Array.isArray(value) || value.length < 1 || value.length > 16) {
+    throw new ApiError(400, "INVALID_MEASUREMENT_KEYS", "measurementKeys must contain between 1 and 16 catalog keys.");
+  }
+  const keys = [];
+  for (const candidate of value) {
+    if (typeof candidate !== "string" || !getMeasurementDefinition(candidate)) {
+      throw new ApiError(400, "INVALID_MEASUREMENT_KEY", `Unsupported measurement key: ${String(candidate)}.`);
+    }
+    if (!keys.includes(candidate)) keys.push(candidate);
+  }
+  return keys;
+}, "validateMeasurementKeys");
 var validateProfileDraft = /* @__PURE__ */ __name((value) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_BODY", "Request body must be an object.");
   requireExactKeys(value, ["displayName", "xUrl", "githubUrl", "instagramUrl"]);
@@ -16033,7 +16100,7 @@ var coordinate = /* @__PURE__ */ __name((value, field, minimum, maximum) => {
   if (typeof value !== "number" || !Number.isFinite(value) || value < minimum || value > maximum) {
     throw new ApiError(400, "INVALID_PUBLIC_LOCATION", `${field} is outside the accepted range.`);
   }
-  return Math.round(value * 10) / 10;
+  return Math.round(value * 1e5) / 1e5;
 }, "coordinate");
 var socialUrl = /* @__PURE__ */ __name((value, field, hosts) => {
   const raw = optionalString(value, field, 240);
@@ -16078,30 +16145,22 @@ var validateTelemetry = /* @__PURE__ */ __name((value) => {
     throw new ApiError(400, "INVALID_SENSOR_DATA", "data must contain between 1 and 16 measurements.");
   }
   const data = {};
-  for (const [key, measurement] of entries) {
+  for (const [key, measurement2] of entries) {
     if (!/^[a-z][a-z0-9_]{0,31}$/u.test(key)) throw new ApiError(400, "INVALID_SENSOR_KEY", `Invalid sensor key: ${key}.`);
-    if (typeof measurement !== "number" || !Number.isFinite(measurement)) {
+    if (typeof measurement2 !== "number" || !Number.isFinite(measurement2)) {
       throw new ApiError(400, "INVALID_SENSOR_VALUE", `${key} must be a finite number.`);
     }
-    const range = SENSOR_RANGES[key];
-    if (range && (measurement < range[0] || measurement > range[1])) {
-      throw new ApiError(400, "SENSOR_VALUE_OUT_OF_RANGE", `${key} is outside the accepted demo range.`);
+    const definition = getMeasurementDefinition(key);
+    if (!definition) {
+      throw new ApiError(400, "UNSUPPORTED_SENSOR_KEY", `${key} is not registered in the GAIA measurement catalog.`);
     }
-    if (!range && Math.abs(measurement) > 1e6) {
-      throw new ApiError(400, "SENSOR_VALUE_OUT_OF_RANGE", `${key} is outside the accepted numeric range.`);
+    if (measurement2 < definition.minimum || measurement2 > definition.maximum) {
+      throw new ApiError(400, "SENSOR_VALUE_OUT_OF_RANGE", `${key} is outside the accepted catalog range.`);
     }
-    data[key] = measurement;
+    data[key] = measurement2;
   }
   return { seq: value.seq, observedAt: observedAt === null ? null : new Date(observedAt).toISOString(), data };
 }, "validateTelemetry");
-var SENSOR_RANGES = {
-  temperature: [-80, 100],
-  humidity: [0, 100],
-  pm25: [0, 5e3],
-  pm10: [0, 5e3],
-  voc: [0, 1e5],
-  nox: [0, 1e5]
-};
 
 // src/devices.ts
 var campusChatAvatarUrls = Object.freeze({
@@ -16127,8 +16186,8 @@ var createPairing = /* @__PURE__ */ __name(async (request, env, user) => {
   await env.DB.prepare(
     `INSERT INTO device_pairing_codes
       (id, code_hash, user_id, device_name, country_code, subdivision_code, municipality_code,
-       admin1_code, locality_name, public_latitude, public_longitude, is_public, expires_at, created_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)`
+       admin1_code, locality_name, public_latitude, public_longitude, is_public, measurement_keys_json, expires_at, created_at)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)`
   ).bind(
     crypto.randomUUID(),
     await hmacHex(env.PAIRING_CODE_PEPPER, code),
@@ -16142,6 +16201,7 @@ var createPairing = /* @__PURE__ */ __name(async (request, env, user) => {
     draft.publicLatitude,
     draft.publicLongitude,
     1,
+    JSON.stringify(draft.measurementKeys ?? []),
     expiresAt,
     now.toISOString()
   ).run();
@@ -16162,16 +16222,16 @@ var pairDevice = /* @__PURE__ */ __name(async (request, env) => {
        WHERE code_hash = ?2 AND used_at IS NULL AND expires_at > ?1
        RETURNING id, user_id, device_name, country_code, subdivision_code, municipality_code,
          admin1_code, locality_name,
-         public_latitude, public_longitude, is_public`
+         public_latitude, public_longitude, is_public, measurement_keys_json`
     ).bind(now, codeHash, databaseId),
     env.DB.prepare(
       `INSERT INTO devices
         (id, public_id, device_id, owner_user_id, name, token_hash, country_code, subdivision_code,
          municipality_code, admin1_code, locality_name,
-         public_latitude, public_longitude, is_public, location_precision, created_at, updated_at)
+         public_latitude, public_longitude, is_public, measurement_keys_json, location_precision, created_at, updated_at)
        SELECT ?1, ?2, ?3, user_id, device_name, ?4, country_code, subdivision_code,
          municipality_code, admin1_code, locality_name,
-         public_latitude, public_longitude, 1,
+         public_latitude, public_longitude, 1, measurement_keys_json,
          CASE WHEN municipality_code IS NOT NULL OR locality_name IS NOT NULL THEN 'LOCALITY'
               WHEN subdivision_code IS NOT NULL OR admin1_code IS NOT NULL THEN 'ADMIN1' ELSE 'COUNTRY' END,
          ?5, ?5
@@ -16191,7 +16251,7 @@ var acceptTelemetry = /* @__PURE__ */ __name(async (request, env, deviceId) => {
   const tokenMatch = /^Bearer ([A-Za-z0-9_-]{40,128})$/u.exec(authorization);
   if (!tokenMatch?.[1]) throw new ApiError(401, "INVALID_DEVICE_TOKEN", "Device authentication failed.");
   const device = await env.DB.prepare(
-    "SELECT token_hash, status FROM devices WHERE device_id = ?1 AND deleted_at IS NULL"
+    "SELECT token_hash, status, measurement_keys_json AS measurementKeysJson FROM devices WHERE device_id = ?1 AND deleted_at IS NULL"
   ).bind(deviceId).first();
   const providedHash = await hmacHex(env.DEVICE_TOKEN_PEPPER, tokenMatch[1]);
   if (!device || device.status !== "ACTIVE" || !await timingSafeHexEqual(providedHash, device.token_hash)) {
@@ -16202,17 +16262,18 @@ var acceptTelemetry = /* @__PURE__ */ __name(async (request, env, deviceId) => {
   const now = nowDate.toISOString();
   const rateLimitCutoff = new Date(nowDate.getTime() - TELEMETRY_MIN_INTERVAL_MS).toISOString();
   const canonicalData = Object.fromEntries(Object.entries(telemetry.data).sort(([left], [right]) => left.localeCompare(right)));
+  const measurementKeysJson = JSON.stringify(mergeMeasurementKeys(device.measurementKeysJson, Object.keys(canonicalData)));
   const payload = JSON.stringify(canonicalData);
   const payloadHash = await sha256Hex(JSON.stringify({ observedAt: telemetry.observedAt, data: canonicalData }));
   const results = await env.DB.batch([
     env.DB.prepare(
       `UPDATE devices
-       SET last_seq = ?1, last_payload_hash = ?2, last_seen_at = ?3, updated_at = ?3
-       WHERE device_id = ?4 AND status = 'ACTIVE' AND deleted_at IS NULL
+       SET last_seq = ?1, last_payload_hash = ?2, last_seen_at = ?3, updated_at = ?3, measurement_keys_json = ?4
+       WHERE device_id = ?5 AND status = 'ACTIVE' AND deleted_at IS NULL
          AND (last_seq IS NULL OR ?1 > last_seq)
-         AND (last_seen_at IS NULL OR last_seen_at <= ?5)
+         AND (last_seen_at IS NULL OR last_seen_at <= ?6)
         RETURNING device_id`
-    ).bind(telemetry.seq, payloadHash, now, deviceId, rateLimitCutoff),
+    ).bind(telemetry.seq, payloadHash, now, measurementKeysJson, deviceId, rateLimitCutoff),
     env.DB.prepare(
       `INSERT INTO telemetry
         (id, device_id, seq, observed_at, received_at, payload_hash, payload_json, created_at)
@@ -16265,14 +16326,15 @@ var TELEMETRY_MIN_INTERVAL_MS = 6e4;
 var listDevices = /* @__PURE__ */ __name(async (env, user) => {
   const threshold = onlineThreshold(env);
   const result = await env.DB.prepare(
-    `SELECT d.device_id AS deviceId, d.name, d.country_code AS countryCode,
+    `SELECT d.device_id AS deviceId, d.public_id AS publicId, d.name, d.country_code AS countryCode,
        COALESCE(c.name_local, c.name_en) AS countryName,
        d.subdivision_code AS subdivisionCode, d.municipality_code AS municipalityCode,
        d.admin1_code AS admin1Code,
        d.locality_name AS localityName,
        CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
        d.last_seen_at AS lastSeenAt, d.created_at AS createdAt, d.is_public AS isPublic,
-       d.public_latitude AS publicLatitude, d.public_longitude AS publicLongitude
+       d.public_latitude AS publicLatitude, d.public_longitude AS publicLongitude,
+       d.measurement_keys_json AS measurementKeysJson
      FROM devices d JOIN countries c ON c.code = d.country_code
      WHERE d.owner_user_id = ?2 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
      ORDER BY d.created_at DESC`
@@ -16316,10 +16378,11 @@ var updateDevice = /* @__PURE__ */ __name(async (request, env, user, deviceId) =
   const result = await env.DB.prepare(
     `UPDATE devices SET name = ?1, country_code = ?2, subdivision_code = ?3, municipality_code = ?4,
        admin1_code = ?5, locality_name = ?6, is_public = ?7, public_latitude = ?8, public_longitude = ?9,
+       measurement_keys_json = COALESCE(?10, measurement_keys_json),
        location_precision = CASE WHEN ?4 IS NOT NULL OR ?6 IS NOT NULL THEN 'LOCALITY'
          WHEN ?3 IS NOT NULL OR ?5 IS NOT NULL THEN 'ADMIN1' ELSE 'COUNTRY' END,
-       updated_at = ?10
-     WHERE device_id = ?11 AND owner_user_id = ?12 AND status = 'ACTIVE' AND deleted_at IS NULL`
+       updated_at = ?11
+     WHERE device_id = ?12 AND owner_user_id = ?13 AND status = 'ACTIVE' AND deleted_at IS NULL`
   ).bind(
     draft.name,
     draft.countryCode,
@@ -16330,6 +16393,7 @@ var updateDevice = /* @__PURE__ */ __name(async (request, env, user, deviceId) =
     1,
     draft.publicLatitude,
     draft.publicLongitude,
+    draft.measurementKeys === null ? null : JSON.stringify(draft.measurementKeys),
     (/* @__PURE__ */ new Date()).toISOString(),
     deviceId,
     user.id
@@ -16350,14 +16414,15 @@ var revokeDevice = /* @__PURE__ */ __name(async (request, env, user, deviceId) =
 var ownedDevice = /* @__PURE__ */ __name(async (env, userId, deviceId) => {
   const threshold = onlineThreshold(env);
   const device = await env.DB.prepare(
-    `SELECT d.device_id AS deviceId, d.name, d.country_code AS countryCode,
+    `SELECT d.device_id AS deviceId, d.public_id AS publicId, d.name, d.country_code AS countryCode,
        COALESCE(c.name_local, c.name_en) AS countryName,
        d.subdivision_code AS subdivisionCode, d.municipality_code AS municipalityCode,
        d.admin1_code AS admin1Code,
        d.locality_name AS localityName,
        CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
        d.last_seen_at AS lastSeenAt, d.created_at AS createdAt, d.is_public AS isPublic,
-       d.public_latitude AS publicLatitude, d.public_longitude AS publicLongitude
+       d.public_latitude AS publicLatitude, d.public_longitude AS publicLongitude,
+       d.measurement_keys_json AS measurementKeysJson
      FROM devices d JOIN countries c ON c.code = d.country_code
      WHERE d.device_id = ?2 AND d.owner_user_id = ?3 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL`
   ).bind(`-${threshold} seconds`, deviceId, userId).first();
@@ -16369,7 +16434,7 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
   const [sensorResult, observationResult, sensorStatsResult, networkStatsResult] = await env.DB.batch([
     env.DB.prepare(
       `SELECT d.public_id AS id, d.name AS sensorName, d.country_code AS countryCode,
-         d.subdivision_code AS subdivisionCode, d.public_latitude AS latitude,
+         d.subdivision_code AS subdivisionCode, d.municipality_code AS municipalityCode, d.public_latitude AS latitude,
          d.public_longitude AS longitude,
          CASE WHEN datetime(d.last_seen_at) >= datetime('now', ?1) THEN 'ONLINE' ELSE 'OFFLINE' END AS state,
          d.is_demo AS isDemo, CASE WHEN d.is_demo = 1 THEN d.locality_name ELSE NULL END AS demoLocationLabel,
@@ -16377,6 +16442,7 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
          CASE WHEN u.avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
          u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
          u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl,
+         d.measurement_keys_json AS measurementKeysJson,
          COUNT(DISTINCT CASE WHEN r.kind = 'LIKE' THEN r.user_id END) AS likeCount
        FROM devices d JOIN users u ON u.id = d.owner_user_id
        LEFT JOIN sensor_relationships r ON r.device_id = d.id
@@ -16439,11 +16505,17 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
     sensors: sensorRows.map((row) => ({
       id: row.id,
       sensorName: row.sensorName,
-      location: { latitude: row.latitude, longitude: row.longitude, precision: "APPROXIMATE_0_1_DEGREE" },
+      location: {
+        latitude: row.latitude,
+        longitude: row.longitude,
+        precision: "PUBLIC_REFERENCE_POINT"
+      },
       region: {
         countryCode: row.countryCode,
         subdivisionCode: row.subdivisionCode,
-        subdivisionName: row.subdivisionCode ? getSubdivision(row.subdivisionCode)?.name ?? null : null
+        subdivisionName: row.subdivisionCode ? getSubdivision(row.subdivisionCode)?.name ?? null : null,
+        municipalityCode: row.municipalityCode,
+        municipalityName: row.municipalityCode ? getMunicipality(row.municipalityCode)?.name ?? null : null
       },
       state: row.state,
       isDemo: row.isDemo === 1,
@@ -16451,6 +16523,7 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
       observations: observationsBySensor.get(row.id) ?? [],
       observationCount: statsBySensor.get(row.id)?.observationCount ?? 0,
       observationSpanSeconds: statsBySensor.get(row.id)?.observationSpanSeconds ?? 0,
+      measurementKeys: parseMeasurementKeysJson(row.measurementKeysJson),
       likeCount: Number(row.likeCount) || 0,
       owner: {
         displayName: row.ownerDisplayName,
@@ -16479,11 +16552,21 @@ var serializeTelemetry = /* @__PURE__ */ __name((row) => ({
   data: JSON.parse(row.payloadJson)
 }), "serializeTelemetry");
 var serializeDevice = /* @__PURE__ */ __name((device) => ({
-  ...device,
+  ...Object.fromEntries(Object.entries(device).filter(([key]) => key !== "measurementKeysJson")),
+  measurementKeys: parseMeasurementKeysJson(device.measurementKeysJson),
   subdivisionName: device.subdivisionCode ? getSubdivision(device.subdivisionCode)?.name ?? null : null,
   municipalityName: device.municipalityCode ? getMunicipality(device.municipalityCode)?.name ?? null : null,
   isPublic: device.isPublic === 1
 }), "serializeDevice");
+var parseMeasurementKeysJson = /* @__PURE__ */ __name((value) => {
+  try {
+    const parsed = JSON.parse(value ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((key) => typeof key === "string") : [];
+  } catch {
+    return [];
+  }
+}, "parseMeasurementKeysJson");
+var mergeMeasurementKeys = /* @__PURE__ */ __name((stored, observed) => [.../* @__PURE__ */ new Set([...parseMeasurementKeysJson(stored), ...observed])].slice(0, 16), "mergeMeasurementKeys");
 var parseLimit = /* @__PURE__ */ __name((value) => {
   if (value === null) return 100;
   const limit = Number(value);
@@ -16731,6 +16814,7 @@ var route = /* @__PURE__ */ __name(async (request, env, url) => {
   if (request.method === "POST" && url.pathname === "/api/web/v1/logout") return logout(request, env);
   if (request.method === "POST" && url.pathname === "/api/v1/device/pair") return pairDevice(request, env);
   if (request.method === "GET" && url.pathname === "/api/public/v1/sensors") return listPublicSensors(env);
+  if (request.method === "GET" && url.pathname === "/api/public/v1/measurement-types") return listMeasurementTypes();
   const publicAvatarMatch = PUBLIC_AVATAR_PATTERN.exec(url.pathname);
   if (request.method === "GET" && publicAvatarMatch?.[1]) return getPublicAvatar(env, publicAvatarMatch[1]);
   const telemetryMatch = TELEMETRY_PATTERN.exec(url.pathname);
@@ -16741,7 +16825,7 @@ var route = /* @__PURE__ */ __name(async (request, env, url) => {
   }
   const user = await getAuthenticatedUser(request, env);
   if (request.method === "GET" && url.pathname === "/api/web/v1/regions") return listRegions(url);
-  if (request.method === "GET" && url.pathname === "/api/web/v1/region-location") return locateRegion(url);
+  if (request.method === "GET" && url.pathname === "/api/web/v1/region-location") return locateRegion(url, env);
   if (request.method === "GET" && url.pathname === "/api/web/v1/profile") return getProfile(env, user);
   if (request.method === "PATCH" && url.pathname === "/api/web/v1/profile") return updateProfile(request, env, user);
   if (request.method === "PUT" && url.pathname === "/api/web/v1/profile/avatar") return uploadAvatar(request, env, user);

@@ -10,11 +10,11 @@
     <script>document.documentElement.dataset.sensorView = location.hash.startsWith("#map") ? "map" : "login";</script>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
     <link rel="stylesheet" href="../mode-entry-guide.css?v=gaia-mode-entry-guide-1" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-guide-layout-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-map-command-redesign-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=3" defer></script>
     <script src="../mode-entry-guide.js?v=gaia-mode-entry-guide-1" defer></script>
-    <script src="./sensor-platform.js?v=gaia-region-office-location-1" type="module"></script>
+    <script src="./sensor-platform.js?v=gaia-map-command-redesign-1" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -24,6 +24,7 @@
     </div>
     <header class="sensor-topbar">
       <a class="sensor-home-back mode-exit-control" href="../#top" aria-label="GAIA SENSEWAREのトップページへ戻る">戻る</a>
+      <strong class="sensor-map-brand" aria-hidden="true">みんなのセンサー</strong>
       <div class="sensor-topbar-actions">
         <nav aria-label="センサープラットフォーム">
           <a href="#map" data-nav="map">みんなのセンサー</a>
@@ -34,6 +35,16 @@
           <button class="sensor-nav-logout" id="sensor-logout" type="button" hidden>ログアウト</button>
           <a href="../#world">地図へ戻る</a>
         </nav>
+        <section class="sensor-global-sync" aria-label="GAIA分散観測ネットワークの現在値">
+          <header><span>GAIA SYNC</span><strong id="public-sync-rate">00.0%</strong></header>
+          <div class="sensor-sync-stats">
+            <span>ACTIVE <b id="public-active-nodes">0</b></span>
+            <span>PACKETS <b id="public-packet-count">0</b></span>
+            <span>DATA <b id="public-data-volume">0 B</b></span>
+          </div>
+          <div class="sensor-depth-track"><i id="public-depth-fill"></i></div>
+          <footer><span>OBSERVATION DEPTH</span><b id="public-depth-value">0%</b></footer>
+        </section>
         <aside class="gaia-audio-dock" id="gaia-audio-dock" aria-label="BGM操作" hidden>
           <button
             id="gaia-audio-toggle"
@@ -70,34 +81,31 @@
 
       <section class="sensor-view sensor-public-map" data-view="map" id="map">
         <header class="sensor-page-head">
-          <div><p>PUBLIC SIGNALS / APPROXIMATE LOCATION</p><h1>みんなのセンサー</h1></div>
-          <button class="sensor-secondary" id="refresh-map" type="button" data-compact-label="更新">地図を更新</button>
+          <div><p>PUBLIC SIGNALS / USER-PLACED POI</p><h1>みんなのセンサー</h1></div>
         </header>
-        <p class="sensor-map-lead">登録したセンサーを約10km単位のグリッドに表示しています。<br />正確な設置場所を表示しているわけではありません。</p>
+        <p class="sensor-map-lead">登録したセンサーを、参加者が選んだ公開POIへ表示しています。<br />役所位置を初期表示しますが、POIは地図上で自由に動かせます。</p>
         <div class="sensor-map-console">
           <div class="sensor-world-map" id="public-sensor-map" role="region" tabindex="0" aria-label="日本を中心に拡大・移動できる公開センサー地図">
             <div class="sensor-map-hud sensor-map-hud-top" aria-hidden="true"><span>DRAG / PINCH / WHEEL / +/-</span><span id="public-sensor-count">000 NODES</span></div>
             <div class="sensor-world-grid" aria-hidden="true"></div>
             <svg class="sensor-resonance-network" id="public-sensor-network" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
-            <svg class="sensor-marker-tethers" id="public-sensor-tethers" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div class="sensor-map-markers" id="public-sensor-markers"></div>
-            <section class="sensor-global-sync" aria-label="GAIA分散観測ネットワークの現在値">
-              <header><span>GLOBAL GAIA SYNC</span><strong id="public-sync-rate">00.0%</strong></header>
-              <div class="sensor-sync-stats">
-                <span>ACTIVE NODES <b id="public-active-nodes">0</b></span>
-                <span>OBS PACKETS <b id="public-packet-count">0</b></span>
-                <span>DATA <b id="public-data-volume">0 B</b></span>
-              </div>
-              <div class="sensor-depth-track"><i id="public-depth-fill"></i></div>
-              <footer><span>APEIRONCENE OBSERVATION DEPTH</span><b id="public-depth-value">0%</b></footer>
-            </section>
+            <button class="sensor-secondary" id="refresh-map" type="button" aria-label="公開地図を更新"><span aria-hidden="true">↻</span><span>地図を更新</span></button>
             <div class="sensor-map-navigation" aria-label="地図の表示範囲">
               <button id="public-map-zoom-in" type="button" aria-label="地図を拡大">＋</button>
               <button id="public-map-zoom-out" type="button" aria-label="地図を縮小">−</button>
               <button id="public-map-reset" type="button">日本</button>
               <output id="public-map-zoom" aria-live="polite">4.2×</output>
-              <button class="sensor-map-directory-toggle" id="public-map-directory-toggle" type="button" aria-expanded="false" aria-controls="public-sensor-directory"><span>観測点一覧</span><b id="public-map-directory-count">0</b></button>
             </div>
+            <button class="sensor-map-directory-toggle" id="public-map-directory-toggle" type="button" aria-expanded="false" aria-controls="public-sensor-directory"><span>観測点一覧</span><b id="public-map-directory-count">0</b></button>
+            <section class="sensor-map-location-editor" id="public-map-location-editor" aria-labelledby="public-map-location-title" hidden>
+              <small>PUBLIC POI EDIT</small>
+              <strong id="public-map-location-title">公開位置を編集</strong>
+              <p>地図をクリックするか、選択中のアイコンをドラッグして移動します。地図自体の移動・拡大もできます。</p>
+              <output id="public-map-location-output">—</output>
+              <p class="sensor-map-location-warning">ここで選んだ座標は公開されます。自宅や実機の正確な位置を公開したくない場合は、少し離して置いてください。</p>
+              <div><button class="sensor-secondary" id="public-map-location-cancel" type="button">取り消す</button><button class="sensor-primary" id="public-map-location-save" type="button">この位置を公開</button></div>
+            </section>
             <div class="sensor-map-basis" data-map-basis aria-hidden="true">JAPAN CENTER / NATURAL EARTH 1:50m</div>
           </div>
           <aside class="sensor-map-card" id="public-sensor-detail" aria-live="polite">
@@ -160,7 +168,7 @@
           <p class="sensor-dialog-lead">登録操作は短く、判断に必要な説明はここへまとめています。</p>
           <div class="sensor-participation-grid">
             <article><span>ACCOUNT</span><h3>名前・メールは保存しません</h3><p>Google利用時は再ログイン用の識別子だけを保存します。おためし参加は8時間利用でき、途中でGoogle登録するとセンサーと履歴を引き継げます。</p></article>
-            <article><span>PUBLIC</span><h3>観測点は公開されます</h3><p>センサー名・観測値・約10km単位の位置を公開します。GPS・正確な住所・市区町村コードは公開しません。非公開登録はありません。</p></article>
+            <article><span>PUBLIC</span><h3>観測点は公開されます</h3><p>センサー名・観測値・選択した都道府県／市区町村と、地図で選んだ公開POIを公開します。GPS・実際の設置住所は取得しません。非公開登録はありません。</p></article>
             <article><span>FIRMWARE</span><h3>現在のプログラムを上書きします</h3><p>ESP32にはGAIA用処理を含む一体のファームウェアを書き込みます。先にフラッシュ全体をバックアップし、対応機種と復元手順を確認してください。</p></article>
             <article><span>NETWORK</span><h3>通信環境は参加者が管理します</h3><p>設定には自分で管理する2.4GHz Wi-Fiを使います。設定後はESP32がインターネット経由でHTTPS送信し、PCの常時接続は不要です。</p></article>
           </div>
@@ -285,6 +293,11 @@
         </aside>
         <form id="device-form">
           <label>センサー名 *<input name="name" required maxlength="80" autocomplete="off" placeholder="ベランダ環境センサー" /></label>
+          <fieldset class="sensor-measurement-selection">
+            <legend>このESP32で測るもの *</legend>
+            <p>大気・水質・土壌・気象などから最大16項目を選べます。実際に届いた標準キーも自動的に反映されます。</p>
+            <div data-measurement-picker="add"><p>計測項目マスターを読み込んでいます。</p></div>
+          </fieldset>
           <label>国 *<select name="countryCode" required><option value="">選択してください</option></select></label>
           <div class="sensor-region-grid" data-region-fields>
             <label>都道府県・州・省 <small>任意 / ISO 3166-2</small><select name="subdivisionCode" autocomplete="address-level1" disabled><option value="">国を選択してください</option></select></label>
@@ -294,9 +307,9 @@
           </div>
           <fieldset class="sensor-public-location">
             <input name="isPublic" type="hidden" value="true" />
-            <p class="sensor-public-required"><strong>公開観測点として登録されます</strong>「みんなのセンサー」に約10km単位で表示されます。非公開登録はありません。</p>
-            <p id="add-location-help">都道府県だけなら都道府県庁所在地、市区町村まで選ぶと本庁所在地を地図へ自動表示します。地図や矢印キーで位置を調整できます。GPS・住所は取得も公開もしません。</p>
-            <div class="sensor-location-picker" data-location-picker="add" tabindex="0" role="group" aria-label="公開するおおよその位置を地図から選択" aria-describedby="add-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
+            <p class="sensor-public-required"><strong>公開観測点として登録されます</strong>市区町村なら本庁所在地、都道府県だけなら都道府県庁所在地を初期表示します。非公開登録はありません。</p>
+            <p id="add-location-help">小地図をクリックして公開POIを調整できます。登録後は「みんなのセンサー」の大地図でも動かせます。GPS・実際の設置住所は取得しません。</p>
+            <div class="sensor-location-picker" data-location-picker="add" tabindex="0" role="group" aria-label="公開POIを地図から選択" aria-describedby="add-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
             <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
             <output data-location-output="add">位置は未選択です</output>
           </fieldset>
@@ -343,8 +356,13 @@
           <ol id="history-list"></ol>
         </div>
         <form class="sensor-location-form" id="location-form">
-          <h2>地域と公開位置を変更</h2>
+          <h2>計測項目・地域・公開位置を変更</h2>
           <input name="name" type="hidden" />
+          <fieldset class="sensor-measurement-selection">
+            <legend>このESP32で測るもの</legend>
+            <p>ファームウェアへ実装した項目を最大16個選びます。受信済みの標準キーは自動追加されます。</p>
+            <div data-measurement-picker="detail"><p>計測項目マスターを読み込んでいます。</p></div>
+          </fieldset>
           <label>国 *<select name="countryCode" required></select></label>
           <div class="sensor-region-grid" data-region-fields>
             <label>都道府県・州・省 <small>任意 / ISO 3166-2</small><select name="subdivisionCode" autocomplete="address-level1" disabled><option value="">国を選択してください</option></select></label>
@@ -354,13 +372,13 @@
           </div>
           <fieldset class="sensor-public-location">
             <input name="isPublic" type="hidden" value="true" />
-            <p class="sensor-public-required"><strong>この観測点は公開です</strong>非公開には変更できません。公開位置は約10km単位です。</p>
-            <p id="detail-location-help">都道府県だけなら都道府県庁所在地、市区町村まで選ぶと本庁所在地を地図へ自動表示します。地図や矢印キーで調整できます。正確な住所やGPSは保存しません。</p>
-            <div class="sensor-location-picker" data-location-picker="detail" tabindex="0" role="group" aria-label="公開するおおよその位置を地図から選択" aria-describedby="detail-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
+            <p class="sensor-public-required"><strong>この観測点は公開です</strong>非公開には変更できません。役所位置は地域を変えたときの初期位置です。</p>
+            <p id="detail-location-help">小地図で公開POIを調整できます。「みんなのセンサー」の大地図からも動かせます。GPS・実際の設置住所は保存しません。</p>
+            <div class="sensor-location-picker" data-location-picker="detail" tabindex="0" role="group" aria-label="公開POIを地図から選択" aria-describedby="detail-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
             <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
             <output data-location-output="detail">位置は未選択です</output>
           </fieldset>
-          <button class="sensor-secondary" type="submit">地域と公開位置を保存</button>
+          <button class="sensor-secondary" type="submit">計測項目・地域・公開位置を保存</button>
         </form>
         <button class="sensor-danger" id="revoke-device" type="button">センサーを削除</button>
       </section>
@@ -401,8 +419,9 @@
           <nav class="sensor-guide-jump" aria-label="接続ガイド内の移動">
             <p>START HERE</p>
             <a href="#sensor-kit-title"><span>01</span><strong>対応機器を確認</strong><small>機種・容量・接続方法</small></a>
-            <a href="#sensor-connect-path"><span>02</span><strong>書き込み手順を見る</strong><small>確認からONLINEまで</small></a>
-            <a href="#sensor-trouble-title"><span>03</span><strong>困ったとき</strong><small>接続・コード・OFFLINE</small></a>
+            <a href="#measurement-catalog-title"><span>02</span><strong>測れるものを探す</strong><small>大気・水・土壌ほか</small></a>
+            <a href="#sensor-connect-path"><span>03</span><strong>書き込み手順を見る</strong><small>確認からONLINEまで</small></a>
+            <a href="#sensor-trouble-title"><span>04</span><strong>困ったとき</strong><small>接続・コード・OFFLINE</small></a>
           </nav>
         </header>
 
@@ -416,6 +435,15 @@
             <li><b>2.4GHz Wi-Fi</b><span>ESP32がインターネットへ接続できる回線</span></li>
           </ul>
           <p class="sensor-guide-note"><b>未検証：</b>ESP32-S2 / S3 / C3 / C6、WROVER、4MB以外のフラッシュ、Secure Bootまたはフラッシュ暗号化が有効な機器。外見が似ていても自動的に対応とはみなしません。</p>
+        </section>
+
+        <section class="sensor-guide-section sensor-measurement-catalog" aria-labelledby="measurement-catalog-title">
+          <div class="sensor-guide-heading"><span>MEASUREMENT CATALOG</span><h2 id="measurement-catalog-title">ESP32で観測できるもの</h2></div>
+          <p class="sensor-guide-lead">GAIAの標準キー、単位、受理範囲、接続方式、代表的なセンサーモジュールを一つのマスターで管理します。1台から一度に送れるのは最大16項目です。</p>
+          <div class="sensor-measurement-summary" id="measurement-catalog-summary" aria-live="polite">計測項目マスターを読み込んでいます。</div>
+          <div class="sensor-measurement-groups" id="measurement-catalog-groups"></div>
+          <p class="sensor-guide-note" id="measurement-catalog-disclaimer">モジュール名は接続候補の例です。電圧・防水・校正・絶縁を個別に確認してください。</p>
+          <p class="sensor-measurement-source">機械可読マスター：<code>/api/public/v1/measurement-types</code> ／ Worker定義：<code>sensor-platform/src/measurements.ts</code></p>
         </section>
 
         <section class="sensor-guide-section" aria-labelledby="firmware-title">
@@ -451,7 +479,7 @@
           </li>
           <li>
             <span>04</span>
-            <div><strong>公開観測点とPairing Codeを作る</strong><p><a href="#login">名前・メールなしでおためし</a>、またはGoogle連携で参加します。「マイセンサー → センサーを追加」で名前・地域・約10km単位の公開位置を指定するとPairing Codeが発行されます。</p></div>
+            <div><strong>公開観測点とPairing Codeを作る</strong><p><a href="#login">名前・メールなしでおためし</a>、またはGoogle連携で参加します。「マイセンサー → センサーを追加」で名前・地域を選ぶと、役所位置を初期値にした公開POIとPairing Codeが作られます。</p></div>
           </li>
           <li>
             <span>05</span>
@@ -480,7 +508,7 @@
         <h1>利用条件と書き込み前の注意</h1>
         <p class="sensor-guide-lead">安全に参加するための実務上の条件です。登録を始める前に確認してください。</p>
         <div class="sensor-terms-grid">
-          <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>PUBLIC</span><h2>登録内容は公開されます</h2></div><p>すべての登録センサーは「みんなのセンサー」に表示されます。センサー名、観測値、国・地域、約10km単位に丸めた位置が公開対象です。正確な住所、GPS座標、Wi-Fi情報、Device Tokenは公開しません。</p></section>
+          <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>PUBLIC</span><h2>登録内容は公開されます</h2></div><p>すべての登録センサーは「みんなのセンサー」に表示されます。センサー名、観測値、選択した都道府県／市区町村、地図で選んだ公開POIが公開対象です。役所位置は初期値で、所有者は大地図から動かせます。実際の設置住所、GPS、Wi-Fi情報、Device Tokenは取得・公開しません。</p></section>
           <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>OWNERSHIP</span><h2>自分が管理できる機器と回線を使う</h2></div><p>所有者または管理者から許可を得たESP32、USB接続PC、2.4GHz Wi-Fiだけを使ってください。施設・学校・職場など第三者のネットワークでは、その管理規則に従ってください。</p></section>
           <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>BACKUP</span><h2>上書き前に全フラッシュを保存する</h2></div><p>ファームウェア書き込みは現在の内容を上書きします。容量全体のバックアップ、ファイルサイズ、SHA-256を確認し、復元手順と一緒に保管してください。ただし機器差、故障、保護設定により復元を保証できない場合があります。</p></section>
           <section class="sensor-guide-section"><div class="sensor-guide-heading"><span>STOP</span><h2>不一致や保護機能があれば止める</h2></div><p>対応機種・フラッシュ容量が違う、Secure Boot／フラッシュ暗号化が有効、既存機能を失う影響が不明、書き込みエラーが続く場合は、消去や再試行を重ねず停止してください。</p></section>

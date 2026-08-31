@@ -15,6 +15,7 @@ const auth = read("sensor-platform/src/auth.ts");
 const devices = read("sensor-platform/src/devices.ts");
 const profiles = read("sensor-platform/src/profiles.ts");
 const validation = read("sensor-platform/src/validation.ts");
+const measurements = read("sensor-platform/src/measurements.ts");
 const regions = read("sensor-platform/src/regions.ts");
 const regionData = read("sensor-platform/src/region-code-data.ts");
 const migration1 = read("sensor-platform/migrations/0001_initial.sql");
@@ -22,6 +23,8 @@ const migration2 = read("sensor-platform/migrations/0002_iso_3166_1_alpha2.sql")
 const migration3 = read("sensor-platform/migrations/0003_public_sensor_profiles.sql");
 const migration4 = read("sensor-platform/migrations/0004_d1_profile_avatars.sql");
 const migration5 = read("sensor-platform/migrations/0005_region_codes.sql");
+const migration9 = read("sensor-platform/migrations/0009_region_office_locations.sql");
+const migration10 = read("sensor-platform/migrations/0010_measurement_catalog.sql");
 const wrangler = read("sensor-platform/wrangler.jsonc");
 const rootWrangler = read("wrangler.jsonc");
 const openapi = read("smartcity-sensor-starter-kit/openapi.yaml");
@@ -42,15 +45,14 @@ check("SPA exposes required views and web operations", () => {
   for (const fragment of ["public-sensor-map", "profile-avatar-input", "xUrl", "githubUrl", "instagramUrl", "publicLatitude", "publicLongitude", "subdivisionCode", "municipalityCode"]) assert(sensorHtml.includes(fragment), fragment);
 });
 
-check("public profile and map expose only opted-in approximate ownership", () => {
+check("public profile and map expose only opted-in public POI ownership", () => {
   for (const fragment of ["listPublicSensors", "is_public = 1", "public_latitude", "public_longitude", "ownerDisplayName", "avatarUrl", "xUrl", "githubUrl", "instagramUrl"]) assert(devices.includes(fragment), fragment);
   for (const fragment of ["/api/public/v1/sensors", "PUBLIC_AVATAR_PATTERN", "/api/web/v1/profile", "/api/web/v1/profile/avatar"]) assert(worker.includes(fragment), fragment);
   assert.doesNotMatch(devices.slice(devices.indexOf("export const listPublicSensors")), /email|owner_user_id AS|ownerUserId/iu);
   assert.doesNotMatch(devices.slice(devices.indexOf("export const listPublicSensors")), /lastSeenAt/iu);
   const publicHandler = devices.slice(devices.indexOf("export const listPublicSensors"), devices.indexOf("const serializeTelemetry"));
-  assert.doesNotMatch(publicHandler, /municipality_code|locality_name/iu);
-  assert.match(publicHandler, /subdivisionCode/u);
-  assert.match(validation, /Math\.round\(value \* 10\) \/ 10/u);
+  assert.match(publicHandler, /subdivisionCode|municipalityCode/u);
+  assert.match(validation, /Math\.round\(value \* 100_000\) \/ 100_000/u);
   assert.match(validation, /PUBLIC_LOCATION_REQUIRED/u);
 });
 
@@ -120,6 +122,18 @@ check("D1 region migration is additive and preserves legacy location columns", (
   }
   for (const legacy of ["admin1_code", "locality_name", "location_precision"]) assert(migration1.includes(legacy), legacy);
   assert.doesNotMatch(migration5, /DROP|RENAME|DELETE/iu);
+  assert.match(migration9, /CREATE TABLE IF NOT EXISTS region_office_locations/u);
+  assert.doesNotMatch(migration9, /DROP|RENAME|DELETE/iu);
+});
+
+check("measurement catalog is the shared API UI and ESP32 contract", () => {
+  for (const category of ["atmosphere", "weather", "water", "soil", "motion", "energy", "radiation"]) assert(measurements.includes(`id: "${category}"`), category);
+  for (const key of ["temperature", "pm25", "water_temperature", "ph", "conductivity", "turbidity", "dissolved_oxygen", "water_level", "soil_moisture", "wind_speed", "voltage", "radiation_dose_rate"]) assert(measurements.includes(`measurement("${key}"`), key);
+  assert.match(worker, /\/api\/public\/v1\/measurement-types/u);
+  assert.match(validation, /getMeasurementDefinition/u);
+  assert.match(sensorJs, /loadMeasurementCatalog/u);
+  assert.match(starter, /addMeasurement\(values, "water_temperature"/u);
+  assert.match(migration10, /measurement_keys_json/u);
 });
 
 check("wrangler config has D1, generated Env and compatibility without R2", () => {
