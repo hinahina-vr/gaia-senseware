@@ -109,7 +109,7 @@ let selectedDevice = null;
 let publicSensors = [];
 let publicNetworkStats = { observationPackets: 0, payloadBytes: 0 };
 let publicResonancePairs = [];
-let selectedPublicSensorId = null;
+let selectedPublicSensorId = publicSensorIdFromHash();
 let publicSensorSelectionDismissed = false;
 let oracleDepthBoost = 0;
 let currentProfile = null;
@@ -192,7 +192,7 @@ const boot = async () => {
     sessionUser = null;
     syncAccountUi();
     if (error.status === 401) {
-      if (location.hash === "#map") showView("map");
+      if (location.hash.startsWith("#map")) showView("map");
       else if (location.hash === "#guide") showView("guide");
       else if (location.hash === "#terms") showView("terms");
       else showView("login");
@@ -253,6 +253,8 @@ const loadPublicSensors = async ({ preserveSelection = true, quiet = false } = {
 const renderPublicSensors = () => {
   publicSensorMarkers.replaceChildren();
   publicSensorList.replaceChildren();
+  const linkedSensorId = publicSensorIdFromHash();
+  let linkedSensorFound = !linkedSensorId;
   publicSensors.forEach((sensor) => {
     sensor.visualType = publicSensorType(sensor);
     sensor.visualObservations = publicObservationsFor(sensor);
@@ -265,6 +267,7 @@ const renderPublicSensors = () => {
   renderPublicNetworkStats();
   if (!publicSensors.length) {
     selectedPublicSensorId = null;
+    if (linkedSensorId) setPublicSensorHash(null, { replace: true });
     publicSensorNetwork?.replaceChildren();
     publicSensorDetail.replaceChildren(
       Object.assign(document.createElement("small"), { className: "sensor-console-label", textContent: "SIGNAL STATUS" }),
@@ -296,7 +299,7 @@ const renderPublicSensors = () => {
       className: "sensor-map-marker-state",
       textContent: [publicSensorStateLabel(sensor), primaryMetric?.compact].filter(Boolean).join(" · "),
     }));
-    marker.addEventListener("click", () => selectPublicSensor(sensor, marker));
+    marker.addEventListener("click", () => selectPublicSensor(sensor, marker, { historyMode: "push" }));
     publicSensorMarkers.append(marker);
 
     const card = document.createElement("button");
@@ -320,13 +323,14 @@ const renderPublicSensors = () => {
     card.addEventListener("pointerleave", () => window.clearTimeout(publicMapHoverTimer));
     card.addEventListener("focus", () => focusPublicSensor(sensor, { minimumZoom: 5.2 }));
     card.addEventListener("click", () => {
-      selectPublicSensor(sensor, marker);
+      selectPublicSensor(sensor, marker, { historyMode: "push" });
       focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom });
       if (matchMedia("(max-width: 760px)").matches) {
         requestAnimationFrame(() => publicSensorDetail?.querySelector(".sensor-map-card-expand")?.focus({ preventScroll: true }));
       }
     });
     publicSensorList.append(card);
+    if (sensor.id === linkedSensorId) linkedSensorFound = true;
     if (sensor.id === selectedPublicSensorId) initialSelection = { sensor, marker };
     else if (!initialSelection && !selectedPublicSensorId && !publicSensorSelectionDismissed && !sensor.isDemo) initialSelection = { sensor, marker };
   });
@@ -334,7 +338,13 @@ const renderPublicSensors = () => {
     const sensor = publicSensors[0];
     initialSelection = { sensor, marker: publicSensorMarkers.querySelector(`[data-sensor-id="${CSS.escape(sensor.id)}"]`) };
   }
-  if (initialSelection) selectPublicSensor(initialSelection.sensor, initialSelection.marker);
+  if (linkedSensorId && !linkedSensorFound) setPublicSensorHash(null, { replace: true });
+  if (initialSelection) {
+    selectPublicSensor(initialSelection.sensor, initialSelection.marker);
+    if (linkedSensorId === initialSelection.sensor.id) {
+      requestAnimationFrame(() => focusPublicSensor(initialSelection.sensor, { minimumZoom: publicMapFocusMinZoom }));
+    }
+  }
   applyPublicSensorFilters();
 };
 
@@ -377,7 +387,7 @@ function initPublicSensorDirectory() {
       setPublicSensorDetailExpanded(false, { focus: true });
     } else if (selectedPublicSensorId) {
       event.preventDefault();
-      clearPublicSensorSelection({ hideDetail: true });
+      clearPublicSensorSelection({ hideDetail: true, historyMode: "push" });
       publicSensorMap?.focus({ preventScroll: true });
     }
   });
@@ -409,7 +419,7 @@ function applyPublicSensorFilters() {
     if (marker) marker.dataset.filtered = String(!visible);
     if (card) card.hidden = !visible;
   });
-  if (!selectedVisible) clearPublicSensorSelection({ hideDetail: true });
+  if (!selectedVisible) clearPublicSensorSelection({ hideDetail: true, historyMode: "replace" });
   if (publicSensorResults) publicSensorResults.value = `${visibleCount} / ${publicSensors.length}件`;
   if (publicMapDirectoryCount) publicMapDirectoryCount.textContent = String(publicSensors.length);
   if (publicSensorEmpty) publicSensorEmpty.hidden = visibleCount !== 0;
@@ -418,6 +428,38 @@ function applyPublicSensorFilters() {
 
 function normalizePublicSensorSearch(value) {
   return String(value || "").normalize("NFKC").toLocaleLowerCase("ja").replace(/\s+/gu, " ").trim();
+}
+
+function publicSensorIdFromHash() {
+  const prefix = "#map/sensor=";
+  if (!location.hash.startsWith(prefix)) return null;
+  try {
+    return decodeURIComponent(location.hash.slice(prefix.length)) || null;
+  } catch {
+    return null;
+  }
+}
+
+function setPublicSensorHash(sensorId, { replace = false } = {}) {
+  const nextHash = sensorId ? `#map/sensor=${encodeURIComponent(sensorId)}` : "#map";
+  if (location.hash === nextHash) return;
+  history[replace ? "replaceState" : "pushState"](null, "", nextHash);
+}
+
+function restorePublicSensorSelectionFromHash() {
+  const sensorId = publicSensorIdFromHash();
+  if (!sensorId) {
+    if (selectedPublicSensorId) clearPublicSensorSelection({ hideDetail: true });
+    return;
+  }
+  const sensor = publicSensors.find((candidate) => candidate.id === sensorId);
+  const marker = publicSensorMarkers?.querySelector(`[data-sensor-id="${CSS.escape(sensorId)}"]`);
+  if (!sensor || !marker) {
+    setPublicSensorHash(null, { replace: true });
+    return;
+  }
+  selectPublicSensor(sensor, marker);
+  focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom });
 }
 
 function setPublicSensorDirectoryOpen(open, { focus = false } = {}) {
@@ -451,9 +493,10 @@ function setPublicSensorDetailExpanded(expanded, { focus = false } = {}) {
   if (!expanded) publicSensorDetail.scrollTop = 0;
 }
 
-function clearPublicSensorSelection({ hideDetail = false } = {}) {
+function clearPublicSensorSelection({ hideDetail = false, historyMode = null } = {}) {
   selectedPublicSensorId = null;
   publicSensorSelectionDismissed = true;
+  if (historyMode) setPublicSensorHash(null, { replace: historyMode === "replace" });
   document.querySelectorAll(".sensor-map-marker[aria-current], .sensor-public-card[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
   if (!publicSensorDetail) return;
   setPublicSensorDetailExpanded(false);
@@ -464,7 +507,7 @@ function clearPublicSensorSelection({ hideDetail = false } = {}) {
   );
 }
 
-const selectPublicSensor = (sensor, marker) => {
+const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   if (!marker) return;
   publicSensorDetail.hidden = false;
   publicSensorDetail.dataset.expanded = "false";
@@ -472,6 +515,7 @@ const selectPublicSensor = (sensor, marker) => {
   setPublicSensorDirectoryOpen(false);
   selectedPublicSensorId = sensor.id;
   publicSensorSelectionDismissed = false;
+  if (historyMode) setPublicSensorHash(sensor.id, { replace: historyMode === "replace" });
   document.querySelectorAll(".sensor-map-marker[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
   document.querySelectorAll(".sensor-public-card[aria-current]").forEach((element) => element.removeAttribute("aria-current"));
   marker.setAttribute("aria-current", "true");
@@ -488,14 +532,26 @@ const selectPublicSensor = (sensor, marker) => {
   expand.addEventListener("click", () => {
     setPublicSensorDetailExpanded(publicSensorDetail.dataset.expanded !== "true");
   });
+  const share = Object.assign(document.createElement("button"), { type: "button", className: "sensor-map-card-share", textContent: "共有" });
+  share.setAttribute("aria-label", `${sensor.sensorName}の共有リンクをコピー`);
+  share.addEventListener("click", async () => {
+    setPublicSensorHash(sensor.id, { replace: true });
+    try {
+      await navigator.clipboard.writeText(location.href);
+      share.textContent = "コピー済み";
+      window.setTimeout(() => { share.textContent = "共有"; }, 1_600);
+    } catch {
+      showStatus("アドレスバーのURLをコピーしてください。", "error");
+    }
+  });
   const close = Object.assign(document.createElement("button"), { type: "button", textContent: "閉じる" });
   close.className = "sensor-map-card-close";
   close.setAttribute("aria-label", "選択中のセンサー詳細を閉じる");
   close.addEventListener("click", () => {
-    clearPublicSensorSelection({ hideDetail: true });
+    clearPublicSensorSelection({ hideDetail: true, historyMode: "push" });
     publicSensorMap?.focus({ preventScroll: true });
   });
-  actions.append(expand, close);
+  actions.append(expand, share, close);
   toolbar.append(consoleLabel, actions);
   const owner = document.createElement("div");
   owner.className = "sensor-map-owner";
@@ -1347,7 +1403,7 @@ const showDevices = async () => {
 };
 
 const routeFromHash = () => {
-  if (location.hash === "#map") showView("map");
+  if (location.hash.startsWith("#map")) showView("map");
   else if (location.hash === "#guide") showView("guide");
   else if (location.hash === "#terms") showView("terms");
   else if (!authenticated) showView("login");
@@ -1532,7 +1588,10 @@ document.querySelector("#revoke-device").addEventListener("click", async () => {
   } catch (error) { showStatus(error.message, "error"); }
 });
 
-window.addEventListener("hashchange", routeFromHash);
+window.addEventListener("hashchange", () => {
+  routeFromHash();
+  if (location.hash.startsWith("#map")) restorePublicSensorSelectionFromHash();
+});
 void boot();
 
 function syncAccountUi() {

@@ -22,7 +22,11 @@ const browser = await chromium.launch({ headless: true, executablePath });
 try {
   for (const viewport of viewports) {
     await fetch(new URL("/__qa/reset", baseUrl), { method: "POST" });
-    const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
+    const context = await browser.newContext({
+      viewport,
+      reducedMotion: "no-preference",
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
     const page = await context.newPage();
     page.on("console", (message) => {
       if (message.type() !== "error") return;
@@ -130,6 +134,16 @@ try {
       const sakuCard = page.locator(".sensor-public-card", { hasText: "sakuセンサー" });
       await sakuCard.click();
       await page.waitForTimeout(650);
+      const sakuId = await sakuCard.getAttribute("data-sensor-id");
+      assert.equal(new URL(page.url()).hash, `#map/sensor=${encodeURIComponent(sakuId)}`);
+      await page.goBack();
+      await page.waitForFunction(() => location.hash === "#map");
+      assert.equal(await page.locator("#public-sensor-detail").isVisible(), false);
+      await page.goForward();
+      await page.waitForFunction((sensorId) => location.hash === `#map/sensor=${encodeURIComponent(sensorId)}`, sakuId);
+      await page.locator("#public-sensor-detail").waitFor({ state: "visible" });
+      assert.equal(await page.locator(".sensor-map-marker[aria-current='true']").getAttribute("data-sensor-id"), sakuId);
+      await page.waitForTimeout(650);
       const focusDelta = await page.evaluate(() => {
         const map = document.querySelector("#public-sensor-map").getBoundingClientRect();
         const marker = document.querySelector(".sensor-map-marker[aria-current='true']").getBoundingClientRect();
@@ -141,7 +155,17 @@ try {
       assert(focusDelta.x < 5 && focusDelta.y < 5);
       assert.match(await page.locator("#public-sensor-detail").textContent(), /識理層シンクロ率/u);
       assert.equal(await page.locator(".sensor-map-card-expand").isVisible(), false);
+      assert.equal(await page.locator(".sensor-map-card-share").isVisible(), true);
       assert.equal(await page.locator(".sensor-map-card-close").isVisible(), true);
+      const shareUrl = page.url();
+      await page.locator(".sensor-map-card-share").click();
+      assert.equal(await page.evaluate(() => navigator.clipboard.readText()), shareUrl);
+      assert.equal(await page.locator(".sensor-map-card-share").textContent(), "コピー済み");
+      const deepLinkPage = await context.newPage();
+      await deepLinkPage.goto(new URL(`/sensors/#map/sensor=${encodeURIComponent(sakuId)}`, baseUrl).href, { waitUntil: "domcontentloaded" });
+      await deepLinkPage.locator(`.sensor-map-marker[data-sensor-id="${sakuId}"][aria-current="true"]`).waitFor({ state: "visible" });
+      assert.equal(await deepLinkPage.locator("#public-sensor-detail h2").textContent(), "sakuセンサー");
+      await deepLinkPage.close();
       await page.locator(".sensor-map-card-close").click();
       assert.equal(await page.locator("#public-sensor-detail").isVisible(), false);
       await page.locator("#refresh-map").click();
