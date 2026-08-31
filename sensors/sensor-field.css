@@ -1,5 +1,6 @@
 .sensor-sense-field[hidden],
-.sensor-belonging[hidden] { display: none !important; }
+.sensor-belonging[hidden],
+.sensor-presence-node[hidden] { display: none !important; }
 
 .sensor-sense-field {
   position: absolute;
@@ -14,6 +15,42 @@
 }
 
 .sensor-world-map.is-dragging .sensor-sense-field { will-change: transform; }
+
+.sensor-presence-node {
+  position: absolute;
+  z-index: 6;
+  top: 78%;
+  left: 50%;
+  display: grid;
+  width: 54px;
+  height: 54px;
+  pointer-events: none;
+  transform: translate(-50%,-50%);
+  place-items: center;
+  filter: drop-shadow(0 0 18px rgba(170,255,205,.28));
+}
+
+.sensor-presence-node::before,
+.sensor-presence-node::after {
+  position: absolute;
+  border: 1px solid rgba(192,255,211,.56);
+  border-radius: 50%;
+  content: "";
+  inset: 6px;
+  animation: sensor-presence-ring 3.4s ease-out infinite;
+}
+
+.sensor-presence-node::after { animation-delay: -1.7s; }
+.sensor-presence-node i { width: 12px; height: 12px; border: 2px solid rgba(230,255,218,.92); border-radius: 50%; background: rgba(98,244,205,.82); box-shadow: 0 0 0 5px rgba(88,238,210,.1), 0 0 20px rgba(139,255,198,.72); }
+.sensor-presence-node small { position: absolute; top: calc(100% + 3px); left: 50%; padding: 4px 7px; border: 1px solid rgba(174,255,207,.34); color: #d9ffc8; background: rgba(1,13,20,.82); transform: translateX(-50%); white-space: nowrap; font: 700 6px/1 var(--font-console); letter-spacing: .14em; }
+.sensor-presence-node[data-state="responding"] i,
+.sensor-presence-node[data-state="received"] i { background: #d8ffb8; box-shadow: 0 0 0 6px rgba(197,255,174,.12), 0 0 28px rgba(196,255,177,.86); }
+.sensor-presence-node[data-state="owned"] i { border-color: #c8e9ff; background: #73b9ff; box-shadow: 0 0 0 5px rgba(99,173,255,.12), 0 0 24px rgba(91,178,255,.68); }
+
+@keyframes sensor-presence-ring {
+  0% { opacity: .72; transform: scale(.45); }
+  78%, 100% { opacity: 0; transform: scale(1.7); }
+}
 
 .sensor-belonging {
   position: absolute;
@@ -40,7 +77,10 @@
 .sensor-belonging[data-state="selected"],
 .sensor-belonging[data-state="sensing"],
 .sensor-belonging[data-state="received"],
-.sensor-belonging[data-state="touched"] {
+.sensor-belonging[data-state="touched"],
+.sensor-belonging[data-state="present"],
+.sensor-belonging[data-state="responding"],
+.sensor-belonging[data-state="owned"] {
   border-color: rgba(var(--mint-rgb),.56);
   background: linear-gradient(110deg, rgba(7,34,38,.94), rgba(7,20,38,.78));
   box-shadow: 0 18px 64px rgba(0,0,0,.3), 0 0 32px rgba(var(--mint-rgb),.09), inset 0 1px rgba(255,255,255,.055);
@@ -86,29 +126,58 @@
   letter-spacing: .045em;
 }
 
+.sensor-belonging-identity {
+  display: inline-flex;
+  width: max-content;
+  margin-top: 5px;
+  padding: 3px 6px;
+  border: 1px solid rgba(115,185,255,.3);
+  color: #a8d6ff;
+  background: rgba(70,137,210,.08);
+  font: 700 6px/1 var(--font-console);
+  letter-spacing: .14em;
+}
+
+.sensor-belonging-actions { display: flex; align-items: center; gap: 6px; }
+
+.sensor-belonging-sense,
 .sensor-belonging-join {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  min-width: 178px;
+  gap: 12px;
   min-height: 48px;
-  padding: 10px 12px 10px 14px;
+  padding: 10px 10px 10px 13px;
   border: 1px solid rgba(var(--mint-rgb),.32);
   color: rgba(237,252,250,.9);
   background: rgba(var(--mint-rgb),.08);
   cursor: pointer;
-  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 }
 
+.sensor-belonging-sense { min-width: 146px; background: linear-gradient(110deg, rgba(var(--mint-rgb),.16), rgba(139,255,188,.08)); }
+.sensor-belonging-sense span,
 .sensor-belonging-join span { font: 650 9px/1.45 var(--font-ja); letter-spacing: .07em; }
+.sensor-belonging-sense b,
+.sensor-belonging-join b { display: grid; width: 24px; height: 24px; border-radius: 50%; place-items: center; font: 800 14px/1 var(--font-console); }
+.sensor-belonging-sense b { border: 1px solid rgba(213,255,190,.56); color: #d9ffc8; background: rgba(151,255,181,.08); box-shadow: inset 0 0 12px rgba(147,255,192,.08); }
+
+.sensor-belonging-join {
+  width: 48px;
+  min-width: 48px;
+  padding: 0;
+  justify-content: center;
+}
+
+.sensor-belonging-join span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .sensor-belonging-join b { display: grid; width: 24px; height: 24px; border-radius: 50%; color: #031612; background: var(--mint); font: 800 14px/1 var(--font-console); place-items: center; }
+.sensor-belonging-sense:is(:hover,:focus-visible),
 .sensor-belonging-join:is(:hover,:focus-visible) { border-color: rgba(var(--mint-rgb),.82); background: rgba(var(--mint-rgb),.16); outline: none; transform: translateY(-1px); }
+.sensor-belonging-sense:focus-visible,
 .sensor-belonging-join:focus-visible { box-shadow: 0 0 0 2px rgba(2,9,14,.9), 0 0 0 4px rgba(var(--mint-rgb),.6); }
 
 @media (max-width: 1280px) {
-  .sensor-belonging { width: min(500px, calc(100vw - 820px)); min-width: 390px; }
-  .sensor-belonging-join { min-width: 148px; }
+  .sensor-belonging { width: min(520px, calc(100vw - 800px)); min-width: 420px; }
 }
 
 @media (max-width: 980px) {
@@ -120,18 +189,20 @@
     min-width: 340px;
     transform: none;
   }
-  .sensor-belonging-join { min-width: 48px; width: 48px; padding: 0; justify-content: center; }
-  .sensor-belonging-join span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .sensor-belonging-sense { min-width: 48px; width: 48px; padding: 0; justify-content: center; }
+  .sensor-belonging-sense span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 }
 
 @media (max-width: 760px) {
   .sensor-sense-field { opacity: .82; }
+  .sensor-presence-node { top: 286px; width: 46px; height: 46px; }
+  .sensor-presence-node small { font-size: 5px; }
   .sensor-belonging {
     top: 326px;
     right: 116px;
     bottom: auto;
     left: 16px;
-    grid-template-columns: 30px minmax(0,1fr) 44px;
+    grid-template-columns: 30px minmax(0,1fr) auto;
     gap: 9px;
     width: auto;
     min-width: 0;
@@ -143,16 +214,23 @@
   .sensor-belonging p { overflow: hidden; font-size: 0; line-height: 1.45; white-space: nowrap; }
   .sensor-belonging p::after { content: attr(data-short); font-size: 8px; }
   .sensor-belonging small { margin-bottom: 3px; font-size: 5px; }
+  .sensor-belonging-identity { display: none; }
+  .sensor-belonging-actions { gap: 4px; }
+  .sensor-belonging-sense,
   .sensor-belonging-join { min-width: 44px; width: 44px; min-height: 44px; height: 44px; }
 }
 
 @media (max-width: 350px) {
-  .sensor-belonging { top: 318px; right: 74px; }
+  .sensor-belonging { top: 318px; right: 116px; }
   .sensor-belonging-signal { display: none; }
-  .sensor-belonging { grid-template-columns: minmax(0,1fr) 44px; }
+  .sensor-belonging { grid-template-columns: minmax(0,1fr) auto; }
+  .sensor-presence-node { top: 278px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sensor-belonging,
+  .sensor-belonging-sense,
   .sensor-belonging-join { transition: none; }
+  .sensor-presence-node::before,
+  .sensor-presence-node::after { animation: none; opacity: .26; }
 }

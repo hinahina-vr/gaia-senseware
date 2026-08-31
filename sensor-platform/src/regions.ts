@@ -3,7 +3,7 @@ import { JAPAN_MUNICIPALITY_RECORDS, REGION_DATA_VERSION, SUBDIVISION_RECORDS } 
 
 export type RegionOption = { code: string; name: string };
 
-const JAPAN_PREFECTURE_CENTRES = new Map<string, readonly [latitude: number, longitude: number]>([
+const JAPAN_PREFECTURAL_OFFICES = new Map<string, readonly [latitude: number, longitude: number]>([
   ["JP-01", [43.1, 141.4]], ["JP-02", [40.8, 140.7]], ["JP-03", [39.7, 141.2]], ["JP-04", [38.3, 140.9]],
   ["JP-05", [39.7, 140.1]], ["JP-06", [38.2, 140.4]], ["JP-07", [37.8, 140.5]], ["JP-08", [36.3, 140.4]],
   ["JP-09", [36.6, 139.9]], ["JP-10", [36.4, 139.1]], ["JP-11", [35.9, 139.6]], ["JP-12", [35.6, 140.1]],
@@ -63,41 +63,56 @@ export const locateRegion = async (url: URL): Promise<Response> => {
   const municipalityCode = (url.searchParams.get("municipalityCode") ?? "").normalize("NFKC");
   if (countryCode !== "JP") throw new ApiError(400, "UNSUPPORTED_REGION_LOCATION", "Region plotting currently supports Japan.");
   const subdivision = subdivisionsByCode.get(subdivisionCode);
-  const prefectureCentre = JAPAN_PREFECTURE_CENTRES.get(subdivisionCode);
-  if (!subdivision || !subdivisionCode.startsWith("JP-") || !prefectureCentre) {
+  const prefecturalOffice = JAPAN_PREFECTURAL_OFFICES.get(subdivisionCode);
+  if (!subdivision || !subdivisionCode.startsWith("JP-") || !prefecturalOffice) {
     throw new ApiError(400, "INVALID_SUBDIVISION", "A current Japanese subdivisionCode is required.");
   }
   if (!municipalityCode) {
     return json({
-      location: { latitude: prefectureCentre[0], longitude: prefectureCentre[1], precision: "PREFECTURE_CENTRE" },
+      location: { latitude: prefecturalOffice[0], longitude: prefecturalOffice[1], precision: "PREFECTURAL_GOVERNMENT_OFFICE" },
     });
   }
   const municipality = municipalitiesByCode.get(municipalityCode);
   if (!municipality || municipality.subdivisionCode !== subdivisionCode) {
     throw new ApiError(400, "INVALID_MUNICIPALITY", "municipalityCode must belong to subdivisionCode.");
   }
-  const query = `${subdivision.name}${municipality.name}`;
-  const upstream = new URL("https://msearch.gsi.go.jp/address-search/AddressSearch");
-  upstream.searchParams.set("q", query);
-  let response: Response;
-  try {
-    response = await fetch(upstream, { headers: { Accept: "application/json" } });
-  } catch {
-    throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location could not be resolved.");
-  }
-  if (!response.ok) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location could not be resolved.");
-  const declaredLength = Number(response.headers.get("Content-Length") ?? 0);
-  if (declaredLength > 64 * 1024) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location response was too large.");
-  const payload: unknown = await response.json().catch(() => null);
-  const coordinates = readCoordinates(payload);
+  const coordinates = await locateMunicipalMainOffice(subdivision.name, municipality.name);
   if (!coordinates) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location was not found.");
   return json({
     location: {
       latitude: roundPublicCoordinate(coordinates.latitude),
       longitude: roundPublicCoordinate(coordinates.longitude),
-      precision: "APPROXIMATE_0_1_DEGREE",
+      precision: "MUNICIPAL_MAIN_OFFICE",
     },
   });
+};
+
+const locateMunicipalMainOffice = async (
+  subdivisionName: string,
+  municipalityName: string,
+): Promise<{ latitude: number; longitude: number } | null> => {
+  const officeName = /[町村]$/u.test(municipalityName) ? "役場" : "役所";
+  const queries = [
+    `${subdivisionName}${municipalityName}${officeName}本庁舎`,
+    `${subdivisionName}${municipalityName}${officeName}`,
+  ];
+  for (const query of queries) {
+    const upstream = new URL("https://msearch.gsi.go.jp/address-search/AddressSearch");
+    upstream.searchParams.set("q", query);
+    let response: Response;
+    try {
+      response = await fetch(upstream, { headers: { Accept: "application/json" } });
+    } catch {
+      continue;
+    }
+    if (!response.ok) continue;
+    const declaredLength = Number(response.headers.get("Content-Length") ?? 0);
+    if (declaredLength > 64 * 1024) continue;
+    const payload: unknown = await response.json().catch(() => null);
+    const coordinates = readCoordinates(payload);
+    if (coordinates) return coordinates;
+  }
+  return null;
 };
 
 const readCoordinates = (payload: unknown): { latitude: number; longitude: number } | null => {

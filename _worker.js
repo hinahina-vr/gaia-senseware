@@ -8742,6 +8742,11 @@ var mergeTrialUserIntoGoogle = /* @__PURE__ */ __name(async (db, trialUserId, go
     return;
   }
   await db.batch([
+    db.prepare(
+      `INSERT OR IGNORE INTO sensor_relationships (user_id, device_id, kind, created_at)
+       SELECT ?1, device_id, kind, created_at FROM sensor_relationships WHERE user_id = ?2`
+    ).bind(googleUserId, trialUserId),
+    db.prepare("DELETE FROM sensor_relationships WHERE user_id = ?1").bind(trialUserId),
     db.prepare("UPDATE devices SET owner_user_id = ?1, updated_at = ?2 WHERE owner_user_id = ?3").bind(googleUserId, now, trialUserId),
     db.prepare("UPDATE device_pairing_codes SET user_id = ?1 WHERE user_id = ?2").bind(googleUserId, trialUserId),
     db.prepare("DELETE FROM sessions WHERE user_id = ?1").bind(trialUserId),
@@ -15783,7 +15788,7 @@ var JAPAN_MUNICIPALITY_RECORDS = [
 ];
 
 // src/regions.ts
-var JAPAN_PREFECTURE_CENTRES = /* @__PURE__ */ new Map([
+var JAPAN_PREFECTURAL_OFFICES = /* @__PURE__ */ new Map([
   ["JP-01", [43.1, 141.4]],
   ["JP-02", [40.8, 140.7]],
   ["JP-03", [39.7, 141.2]],
@@ -15872,42 +15877,53 @@ var locateRegion = /* @__PURE__ */ __name(async (url) => {
   const municipalityCode = (url.searchParams.get("municipalityCode") ?? "").normalize("NFKC");
   if (countryCode !== "JP") throw new ApiError(400, "UNSUPPORTED_REGION_LOCATION", "Region plotting currently supports Japan.");
   const subdivision = subdivisionsByCode.get(subdivisionCode);
-  const prefectureCentre = JAPAN_PREFECTURE_CENTRES.get(subdivisionCode);
-  if (!subdivision || !subdivisionCode.startsWith("JP-") || !prefectureCentre) {
+  const prefecturalOffice = JAPAN_PREFECTURAL_OFFICES.get(subdivisionCode);
+  if (!subdivision || !subdivisionCode.startsWith("JP-") || !prefecturalOffice) {
     throw new ApiError(400, "INVALID_SUBDIVISION", "A current Japanese subdivisionCode is required.");
   }
   if (!municipalityCode) {
     return json({
-      location: { latitude: prefectureCentre[0], longitude: prefectureCentre[1], precision: "PREFECTURE_CENTRE" }
+      location: { latitude: prefecturalOffice[0], longitude: prefecturalOffice[1], precision: "PREFECTURAL_GOVERNMENT_OFFICE" }
     });
   }
   const municipality = municipalitiesByCode.get(municipalityCode);
   if (!municipality || municipality.subdivisionCode !== subdivisionCode) {
     throw new ApiError(400, "INVALID_MUNICIPALITY", "municipalityCode must belong to subdivisionCode.");
   }
-  const query = `${subdivision.name}${municipality.name}`;
-  const upstream = new URL("https://msearch.gsi.go.jp/address-search/AddressSearch");
-  upstream.searchParams.set("q", query);
-  let response;
-  try {
-    response = await fetch(upstream, { headers: { Accept: "application/json" } });
-  } catch {
-    throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location could not be resolved.");
-  }
-  if (!response.ok) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location could not be resolved.");
-  const declaredLength = Number(response.headers.get("Content-Length") ?? 0);
-  if (declaredLength > 64 * 1024) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location response was too large.");
-  const payload = await response.json().catch(() => null);
-  const coordinates = readCoordinates(payload);
+  const coordinates = await locateMunicipalMainOffice(subdivision.name, municipality.name);
   if (!coordinates) throw new ApiError(502, "REGION_LOCATION_UNAVAILABLE", "The municipality location was not found.");
   return json({
     location: {
       latitude: roundPublicCoordinate(coordinates.latitude),
       longitude: roundPublicCoordinate(coordinates.longitude),
-      precision: "APPROXIMATE_0_1_DEGREE"
+      precision: "MUNICIPAL_MAIN_OFFICE"
     }
   });
 }, "locateRegion");
+var locateMunicipalMainOffice = /* @__PURE__ */ __name(async (subdivisionName, municipalityName) => {
+  const officeName = /[町村]$/u.test(municipalityName) ? "\u5F79\u5834" : "\u5F79\u6240";
+  const queries = [
+    `${subdivisionName}${municipalityName}${officeName}\u672C\u5E81\u820E`,
+    `${subdivisionName}${municipalityName}${officeName}`
+  ];
+  for (const query of queries) {
+    const upstream = new URL("https://msearch.gsi.go.jp/address-search/AddressSearch");
+    upstream.searchParams.set("q", query);
+    let response;
+    try {
+      response = await fetch(upstream, { headers: { Accept: "application/json" } });
+    } catch {
+      continue;
+    }
+    if (!response.ok) continue;
+    const declaredLength = Number(response.headers.get("Content-Length") ?? 0);
+    if (declaredLength > 64 * 1024) continue;
+    const payload = await response.json().catch(() => null);
+    const coordinates = readCoordinates(payload);
+    if (coordinates) return coordinates;
+  }
+  return null;
+}, "locateMunicipalMainOffice");
 var readCoordinates = /* @__PURE__ */ __name((payload) => {
   if (!Array.isArray(payload)) return null;
   for (const feature of payload) {
@@ -16360,10 +16376,13 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
          u.public_id AS ownerPublicId, u.display_name AS ownerDisplayName,
          CASE WHEN u.avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
          u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
-         u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl
+         u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl,
+         COUNT(DISTINCT CASE WHEN r.kind = 'LIKE' THEN r.user_id END) AS likeCount
        FROM devices d JOIN users u ON u.id = d.owner_user_id
+       LEFT JOIN sensor_relationships r ON r.device_id = d.id
        WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
          AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
+       GROUP BY d.id
        ORDER BY d.created_at DESC LIMIT 500`
     ).bind(`-${threshold} seconds`),
     env.DB.prepare(
@@ -16432,6 +16451,7 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
       observations: observationsBySensor.get(row.id) ?? [],
       observationCount: statsBySensor.get(row.id)?.observationCount ?? 0,
       observationSpanSeconds: statsBySensor.get(row.id)?.observationSpanSeconds ?? 0,
+      likeCount: Number(row.likeCount) || 0,
       owner: {
         displayName: row.ownerDisplayName,
         avatarUrl: row.avatarKey && campusChatAvatarUrls[row.avatarKey] ? campusChatAvatarUrls[row.avatarKey] : row.hasAvatar === 1 ? `/api/public/v1/profiles/${encodeURIComponent(row.ownerPublicId)}/avatar?v=${encodeURIComponent(row.avatarUpdatedAt ?? "1")}` : null,
@@ -16617,12 +16637,71 @@ var sanitizePng = /* @__PURE__ */ __name((source) => {
 }, "sanitizePng");
 var readUint32 = /* @__PURE__ */ __name((source, offset) => (source[offset] ?? 0) * 16777216 + ((source[offset + 1] ?? 0) << 16) + ((source[offset + 2] ?? 0) << 8) + (source[offset + 3] ?? 0) >>> 0, "readUint32");
 
+// src/social.ts
+var listSensorRelationships = /* @__PURE__ */ __name(async (env, user) => {
+  const result = await env.DB.prepare(
+    `SELECT d.public_id AS sensorId,
+       MAX(CASE WHEN r.kind = 'FAVORITE' THEN 1 ELSE 0 END) AS favorite,
+       MAX(CASE WHEN r.kind = 'LIKE' THEN 1 ELSE 0 END) AS liked
+     FROM sensor_relationships r
+     JOIN devices d ON d.id = r.device_id
+     WHERE r.user_id = ?1 AND d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+     GROUP BY d.public_id
+     ORDER BY MAX(r.created_at) DESC`
+  ).bind(user.id).all();
+  return json({
+    sensors: result.results.map((row) => ({
+      sensorId: row.sensorId,
+      favorite: row.favorite === 1,
+      liked: row.liked === 1
+    }))
+  });
+}, "listSensorRelationships");
+var setSensorRelationship = /* @__PURE__ */ __name(async (request, env, user, sensorId, kind, enabled) => {
+  await requireCsrf(request, user);
+  const sensor = await env.DB.prepare(
+    `SELECT id FROM devices
+     WHERE public_id = ?1 AND is_public = 1 AND status = 'ACTIVE' AND deleted_at IS NULL`
+  ).bind(sensorId).first();
+  if (!sensor) throw new ApiError(404, "PUBLIC_SENSOR_NOT_FOUND", "Public sensor was not found.");
+  if (enabled) {
+    await env.DB.prepare(
+      `INSERT OR IGNORE INTO sensor_relationships (user_id, device_id, kind, created_at)
+       VALUES (?1, ?2, ?3, ?4)`
+    ).bind(user.id, sensor.id, kind, (/* @__PURE__ */ new Date()).toISOString()).run();
+  } else {
+    await env.DB.prepare(
+      "DELETE FROM sensor_relationships WHERE user_id = ?1 AND device_id = ?2 AND kind = ?3"
+    ).bind(user.id, sensor.id, kind).run();
+  }
+  return json({ social: await sensorSocial(env, user.id, sensorId) });
+}, "setSensorRelationship");
+var sensorSocial = /* @__PURE__ */ __name(async (env, userId, sensorId) => {
+  const row = await env.DB.prepare(
+    `SELECT d.public_id AS sensorId,
+       COALESCE(MAX(CASE WHEN r.user_id = ?1 AND r.kind = 'FAVORITE' THEN 1 ELSE 0 END), 0) AS favorite,
+       COALESCE(MAX(CASE WHEN r.user_id = ?1 AND r.kind = 'LIKE' THEN 1 ELSE 0 END), 0) AS liked,
+       COUNT(DISTINCT CASE WHEN r.kind = 'LIKE' THEN r.user_id END) AS likeCount
+     FROM devices d LEFT JOIN sensor_relationships r ON r.device_id = d.id
+     WHERE d.public_id = ?2 AND d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+     GROUP BY d.public_id`
+  ).bind(userId, sensorId).first();
+  if (!row) throw new ApiError(404, "PUBLIC_SENSOR_NOT_FOUND", "Public sensor was not found.");
+  return {
+    sensorId: row.sensorId,
+    favorite: row.favorite === 1,
+    liked: row.liked === 1,
+    likeCount: Number(row.likeCount) || 0
+  };
+}, "sensorSocial");
+
 // src/index.ts
 var DEVICE_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)$/u;
 var LATEST_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)\/latest$/u;
 var HISTORY_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)\/telemetry$/u;
 var TELEMETRY_PATTERN = /^\/api\/v1\/devices\/(dev_[a-z0-9]+)\/telemetry$/u;
 var PUBLIC_AVATAR_PATTERN = /^\/api\/public\/v1\/profiles\/(usr_[a-z0-9]+)\/avatar$/u;
+var SENSOR_RELATIONSHIP_PATTERN = /^\/api\/web\/v1\/sensors\/(sensor_[a-z0-9_]+)\/(favorite|like)$/u;
 var index_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -16669,6 +16748,18 @@ var route = /* @__PURE__ */ __name(async (request, env, url) => {
   if (request.method === "DELETE" && url.pathname === "/api/web/v1/profile/avatar") return deleteAvatar(request, env, user);
   if (request.method === "GET" && url.pathname === "/api/web/v1/devices") return listDevices(env, user);
   if (request.method === "POST" && url.pathname === "/api/web/v1/devices/pairing") return createPairing(request, env, user);
+  if (request.method === "GET" && url.pathname === "/api/web/v1/social") return listSensorRelationships(env, user);
+  const relationshipMatch = SENSOR_RELATIONSHIP_PATTERN.exec(url.pathname);
+  if ((request.method === "PUT" || request.method === "DELETE") && relationshipMatch?.[1] && relationshipMatch[2]) {
+    return setSensorRelationship(
+      request,
+      env,
+      user,
+      relationshipMatch[1],
+      relationshipMatch[2] === "favorite" ? "FAVORITE" : "LIKE",
+      request.method === "PUT"
+    );
+  }
   const latestMatch = LATEST_PATTERN.exec(url.pathname);
   if (request.method === "GET" && latestMatch?.[1]) return getLatest(env, user, latestMatch[1]);
   const historyMatch = HISTORY_PATTERN.exec(url.pathname);

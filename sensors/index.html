@@ -10,11 +10,11 @@
     <script>document.documentElement.dataset.sensorView = location.hash.startsWith("#map") ? "map" : "login";</script>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
     <link rel="stylesheet" href="../mode-entry-guide.css?v=gaia-mode-entry-guide-1" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-mobile-auth-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-planetary-presence-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=3" defer></script>
     <script src="../mode-entry-guide.js?v=gaia-mode-entry-guide-1" defer></script>
-    <script src="./sensor-platform.js?v=gaia-sensor-belonging-1" type="module"></script>
+    <script src="./sensor-platform.js?v=gaia-region-office-location-1" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -110,6 +110,7 @@
             <div class="sensor-map-filters" role="group" aria-label="センサーの状態で絞り込む">
               <button type="button" data-public-filter="ALL" aria-pressed="true">すべて</button>
               <button type="button" data-public-filter="ONLINE" aria-pressed="false">稼働中</button>
+              <button type="button" data-public-filter="FAVORITE" aria-pressed="false">お気に入り</button>
               <button type="button" data-public-filter="DEMO" aria-pressed="false">展示</button>
               <button type="button" data-public-filter="OFFLINE" aria-pressed="false">停止</button>
             </div>
@@ -172,6 +173,71 @@
         </form>
       </dialog>
 
+      <dialog class="sensor-analysis-dialog" id="sensor-analysis-dialog" aria-labelledby="sensor-analysis-title">
+        <div class="sensor-analysis-shell">
+          <button class="sensor-dialog-close" id="sensor-analysis-close" type="button" aria-label="センサー分析を閉じる">×</button>
+          <p class="sensor-kicker">SENSOR ANALYSIS / PRIVATE BYOK</p>
+          <header class="sensor-analysis-head">
+            <div><h2 id="sensor-analysis-title">センサーを分析</h2><p id="sensor-analysis-target">観測データを読み込んでいます。</p></div>
+            <span id="sensor-analysis-badge">LOCAL</span>
+          </header>
+          <section class="sensor-analysis-local" aria-labelledby="sensor-analysis-local-title">
+            <div class="sensor-analysis-section-head"><span>01</span><div><h3 id="sensor-analysis-local-title">数値分析</h3><p>AIを使わず、このブラウザ内で集計します。</p></div></div>
+            <div class="sensor-analysis-stats" id="sensor-analysis-stats"></div>
+            <p class="sensor-analysis-summary" id="sensor-analysis-summary"></p>
+          </section>
+          <section class="sensor-analysis-ai" aria-labelledby="sensor-analysis-ai-title">
+            <div class="sensor-analysis-section-head"><span>02</span><div><h3 id="sensor-analysis-ai-title">AIへ質問</h3><p>APIキーはGAIAへ送らず、選択したAPIへブラウザから直接送信します。</p></div></div>
+            <form id="sensor-ai-form">
+              <div class="sensor-ai-provider-grid">
+                <label>APIサービス<select name="provider" id="sensor-ai-provider">
+                  <option value="openrouter">OpenRouter</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="xai">xAI</option>
+                  <option value="gemini">Google Gemini</option>
+                  <option value="anthropic">Anthropic</option>
+                  <option value="mistral">Mistral AI</option>
+                  <option value="groq">Groq</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="together">Together AI</option>
+                  <option value="fireworks">Fireworks AI</option>
+                  <option value="cerebras">Cerebras</option>
+                  <option value="perplexity">Perplexity</option>
+                  <option value="cohere">Cohere</option>
+                  <option value="custom">任意エンドポイント</option>
+                </select></label>
+                <label>モデル<input name="model" id="sensor-ai-model" maxlength="160" autocomplete="off" spellcheck="false" /></label>
+              </div>
+              <label>エンドポイント<input name="endpoint" id="sensor-ai-endpoint" type="url" maxlength="500" autocomplete="off" spellcheck="false" /></label>
+              <label>APIキー<input name="apiKey" id="sensor-ai-key" type="password" maxlength="500" autocomplete="off" spellcheck="false" placeholder="このブラウザ内だけで使用" /></label>
+              <label class="sensor-ai-remember"><input name="rememberKey" type="checkbox" />この端末に暗号化せず保存する <small>共有PCでは選ばないでください</small></label>
+              <label>データについて聞く<textarea name="question" maxlength="1200" rows="3" placeholder="例：この24時間で目立つ変化と、次に確認すべきことは？" required></textarea></label>
+              <div class="sensor-ai-actions"><button class="sensor-primary" type="submit">このデータをAIに尋ねる</button><button class="sensor-secondary" id="sensor-ai-clear-key" type="button">保存したキーを削除</button></div>
+            </form>
+            <p class="sensor-ai-security">送信先は上のエンドポイントだけです。プロバイダー側のCORS設定によりブラウザ直結が拒否される場合は、任意エンドポイントへCORS対応ゲートウェイを指定できます。</p>
+            <output class="sensor-ai-answer" id="sensor-ai-answer" aria-live="polite">質問すると、ここに回答が表示されます。</output>
+          </section>
+        </div>
+      </dialog>
+
+      <dialog class="sensor-participation-dialog sensor-public-profile-dialog" id="public-owner-profile" aria-labelledby="public-owner-profile-name">
+        <form method="dialog">
+          <button class="sensor-dialog-close" value="close" aria-label="公開プロフィールを閉じる">×</button>
+          <p class="sensor-kicker">PUBLIC PARTICIPANT PROFILE</p>
+          <div class="sensor-public-profile-head">
+            <div class="sensor-public-profile-avatar" id="public-owner-profile-avatar" aria-hidden="true"></div>
+            <div>
+              <small>この観測点を届けている人</small>
+              <h2 id="public-owner-profile-name">公開プロフィール</h2>
+              <p id="public-owner-profile-sensor"></p>
+            </div>
+          </div>
+          <p class="sensor-public-profile-note" id="public-owner-profile-note"></p>
+          <nav class="sensor-public-profile-links" id="public-owner-profile-links" aria-label="公開プロフィールのリンク"></nav>
+          <button class="sensor-primary sensor-public-profile-back" value="close">地図へ戻る</button>
+        </form>
+      </dialog>
+
       <section class="sensor-view" data-view="loading" hidden aria-busy="true">
         <div class="sensor-loading-mark" aria-hidden="true"><i></i><i></i><i></i></div>
         <p>センサーの記録を読み込んでいます。</p>
@@ -229,7 +295,7 @@
           <fieldset class="sensor-public-location">
             <input name="isPublic" type="hidden" value="true" />
             <p class="sensor-public-required"><strong>公開観測点として登録されます</strong>「みんなのセンサー」に約10km単位で表示されます。非公開登録はありません。</p>
-            <p id="add-location-help">都道府県・市区町村を選ぶと、おおよその位置を地図へ自動表示します。地図や矢印キーで位置を調整できます。GPS・住所は取得も公開もしません。</p>
+            <p id="add-location-help">都道府県だけなら都道府県庁所在地、市区町村まで選ぶと本庁所在地を地図へ自動表示します。地図や矢印キーで位置を調整できます。GPS・住所は取得も公開もしません。</p>
             <div class="sensor-location-picker" data-location-picker="add" tabindex="0" role="group" aria-label="公開するおおよその位置を地図から選択" aria-describedby="add-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
             <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
             <output data-location-output="add">位置は未選択です</output>
@@ -272,7 +338,7 @@
           <p><span>最終更新</span><strong id="detail-updated">—</strong></p>
         </div>
         <div class="sensor-history">
-          <header><div><p>HISTORY</p><h2>最近の記録</h2></div><button class="sensor-secondary" id="refresh-detail" type="button">更新</button></header>
+          <header><div><p>HISTORY</p><h2>最近の記録</h2></div><div class="sensor-detail-tools"><button class="sensor-secondary" id="analyze-detail" type="button">分析・AI質問</button><button class="sensor-secondary" id="refresh-detail" type="button">更新</button></div></header>
           <div class="sensor-chart" id="history-chart" role="img" aria-label="温度の履歴グラフ"></div>
           <ol id="history-list"></ol>
         </div>
@@ -289,7 +355,7 @@
           <fieldset class="sensor-public-location">
             <input name="isPublic" type="hidden" value="true" />
             <p class="sensor-public-required"><strong>この観測点は公開です</strong>非公開には変更できません。公開位置は約10km単位です。</p>
-            <p id="detail-location-help">都道府県・市区町村を変えると、おおよその位置を地図へ自動表示します。地図や矢印キーで調整できます。正確な住所やGPSは保存しません。</p>
+            <p id="detail-location-help">都道府県だけなら都道府県庁所在地、市区町村まで選ぶと本庁所在地を地図へ自動表示します。地図や矢印キーで調整できます。正確な住所やGPSは保存しません。</p>
             <div class="sensor-location-picker" data-location-picker="detail" tabindex="0" role="group" aria-label="公開するおおよその位置を地図から選択" aria-describedby="detail-location-help"><div class="sensor-map-basis" data-map-basis aria-hidden="true">BASEMAP / NATURAL EARTH 1:50m</div></div>
             <input name="publicLatitude" type="hidden" /><input name="publicLongitude" type="hidden" />
             <output data-location-output="detail">位置は未選択です</output>

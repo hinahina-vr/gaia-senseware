@@ -1,4 +1,4 @@
-import { initSensorSenseField } from "./sensor-field.js?v=gaia-sensor-belonging-1";
+import { initSensorSenseField } from "./sensor-field.js?v=gaia-sensor-planetary-presence-1";
 
 const views = new Map(Array.from(document.querySelectorAll("[data-view]"), (element) => [element.dataset.view, element]));
 const statusRegion = document.querySelector("#sensor-status");
@@ -6,6 +6,25 @@ const loginButton = document.querySelector("#google-login");
 const trialLoginButton = document.querySelector("#trial-login");
 const participationInfoOpen = document.querySelector("#participation-info-open");
 const participationDialog = document.querySelector("#participation-info");
+const publicOwnerProfileDialog = document.querySelector("#public-owner-profile");
+const publicOwnerProfileAvatar = document.querySelector("#public-owner-profile-avatar");
+const publicOwnerProfileName = document.querySelector("#public-owner-profile-name");
+const publicOwnerProfileSensor = document.querySelector("#public-owner-profile-sensor");
+const publicOwnerProfileNote = document.querySelector("#public-owner-profile-note");
+const publicOwnerProfileLinks = document.querySelector("#public-owner-profile-links");
+const analysisDialog = document.querySelector("#sensor-analysis-dialog");
+const analysisClose = document.querySelector("#sensor-analysis-close");
+const analysisTarget = document.querySelector("#sensor-analysis-target");
+const analysisBadge = document.querySelector("#sensor-analysis-badge");
+const analysisStats = document.querySelector("#sensor-analysis-stats");
+const analysisSummary = document.querySelector("#sensor-analysis-summary");
+const aiForm = document.querySelector("#sensor-ai-form");
+const aiProvider = document.querySelector("#sensor-ai-provider");
+const aiModel = document.querySelector("#sensor-ai-model");
+const aiEndpoint = document.querySelector("#sensor-ai-endpoint");
+const aiKey = document.querySelector("#sensor-ai-key");
+const aiAnswer = document.querySelector("#sensor-ai-answer");
+const aiClearKey = document.querySelector("#sensor-ai-clear-key");
 const logoutButton = document.querySelector("#sensor-logout");
 const profileNav = document.querySelector("#profile-nav");
 const accountNote = document.querySelector("#sensor-account-note");
@@ -48,6 +67,7 @@ const profileForm = document.querySelector("#profile-form");
 const profileAvatarPreview = document.querySelector("#profile-avatar-preview");
 const profileAvatarInput = document.querySelector("#profile-avatar-input");
 const publicSensorCount = document.querySelector("#public-sensor-count");
+const analyzeDetailButton = document.querySelector("#analyze-detail");
 const pollIntervalMs = 2_000;
 const naturalEarthCountriesUrl = "../data/natural-earth-50m-countries.geojson?v=gaia-1";
 const japanPrefectureUrl = "../data/japan-prefectures.topojson?v=gaia-1";
@@ -62,6 +82,25 @@ const publicMapPollIntervalMs = 60_000;
 const publicMapCanvasPixelBudget = 12_000_000;
 const publicMapMarkerCollisionDistance = 56;
 const resonanceDistanceKm = 1_800;
+const aiConfigStorageKey = "gaia-senseware-ai-config-v1";
+const aiKeyStorageKey = "gaia-senseware-ai-key-v1";
+const aiSessionKeyStorageKey = "gaia-senseware-ai-session-key-v1";
+const aiProviderPresets = Object.freeze({
+  openrouter: { label: "OpenRouter", adapter: "openai", endpoint: "https://openrouter.ai/api/v1/chat/completions", model: "openai/gpt-4.1-mini" },
+  openai: { label: "OpenAI", adapter: "openai", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4.1-mini" },
+  xai: { label: "xAI", adapter: "openai", endpoint: "https://api.x.ai/v1/chat/completions", model: "grok-3-mini" },
+  gemini: { label: "Google Gemini", adapter: "gemini", endpoint: "https://generativelanguage.googleapis.com/v1beta", model: "gemini-2.5-flash" },
+  anthropic: { label: "Anthropic", adapter: "anthropic", endpoint: "https://api.anthropic.com/v1/messages", model: "claude-sonnet-4-20250514" },
+  mistral: { label: "Mistral AI", adapter: "openai", endpoint: "https://api.mistral.ai/v1/chat/completions", model: "mistral-small-latest" },
+  groq: { label: "Groq", adapter: "openai", endpoint: "https://api.groq.com/openai/v1/chat/completions", model: "llama-3.3-70b-versatile" },
+  deepseek: { label: "DeepSeek", adapter: "openai", endpoint: "https://api.deepseek.com/chat/completions", model: "deepseek-chat" },
+  together: { label: "Together AI", adapter: "openai", endpoint: "https://api.together.xyz/v1/chat/completions", model: "meta-llama/Llama-3.3-70B-Instruct-Turbo" },
+  fireworks: { label: "Fireworks AI", adapter: "openai", endpoint: "https://api.fireworks.ai/inference/v1/chat/completions", model: "accounts/fireworks/models/llama-v3p3-70b-instruct" },
+  cerebras: { label: "Cerebras", adapter: "openai", endpoint: "https://api.cerebras.ai/v1/chat/completions", model: "llama-3.3-70b" },
+  perplexity: { label: "Perplexity", adapter: "openai", endpoint: "https://api.perplexity.ai/chat/completions", model: "sonar" },
+  cohere: { label: "Cohere", adapter: "cohere", endpoint: "https://api.cohere.com/v2/chat", model: "command-a-03-2025" },
+  custom: { label: "任意エンドポイント", adapter: "openai", endpoint: "", model: "" },
+});
 const regionNames = typeof Intl.DisplayNames === "function" ? new Intl.DisplayNames(["ja"], { type: "region" }) : null;
 const worldMapView = Object.freeze({ west: -180, east: 180, south: -90, north: 90, key: "WORLD" });
 const countryMapViews = Object.freeze({
@@ -71,7 +110,7 @@ const countryMapViews = Object.freeze({
     key: "JP",
   }),
 });
-const japanPrefectureCentres = Object.freeze({
+const japanPrefecturalOffices = Object.freeze({
   "JP-01": [43.1,141.4], "JP-02": [40.8,140.7], "JP-03": [39.7,141.2], "JP-04": [38.3,140.9],
   "JP-05": [39.7,140.1], "JP-06": [38.2,140.4], "JP-07": [37.8,140.5], "JP-08": [36.3,140.4],
   "JP-09": [36.6,139.9], "JP-10": [36.4,139.1], "JP-11": [35.9,139.6], "JP-12": [35.6,140.1],
@@ -111,12 +150,17 @@ let countries = [];
 let devices = [];
 let selectedDevice = null;
 let publicSensors = [];
+let socialBySensor = new Map();
 let publicNetworkStats = { observationPackets: 0, payloadBytes: 0 };
 let publicResonancePairs = [];
 let selectedPublicSensorId = publicSensorIdFromHash();
 let publicSensorSelectionDismissed = false;
 let oracleDepthBoost = 0;
 let currentProfile = null;
+let analysisContext = null;
+let selectedDeviceTelemetry = [];
+let customAiEndpoint = "";
+let customAiModel = "";
 let authenticated = false;
 let sessionUser = null;
 let pollTimer = 0;
@@ -191,6 +235,7 @@ const boot = async () => {
         ? "terms"
         : null;
   showView(publicView || "loading");
+  restoreAiConfiguration();
   initPublicMapNavigation();
   initPublicSensorDirectory();
   initSensorSenseField(publicSensorMap, {
@@ -205,13 +250,14 @@ const boot = async () => {
     authenticated = true;
     sessionUser = session.user;
     syncAccountUi();
-    const accountLoads = [loadCountries(), loadDevices()];
+    const accountLoads = [loadCountries(), loadDevices(), loadSocial()];
     if (sessionUser.accountKind !== "trial") accountLoads.push(loadProfile());
     await Promise.all(accountLoads);
     routeFromHash();
   } catch (error) {
     authenticated = false;
     sessionUser = null;
+    socialBySensor = new Map();
     syncAccountUi();
     if (error.status === 401) {
       if (location.hash.startsWith("#map")) showView("map");
@@ -261,6 +307,12 @@ const loadDevices = async () => {
     card.dataset.deviceId = device.deviceId;
     deviceList.append(fragment);
   });
+  publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-identity", {
+    detail: {
+      deviceCount: devices.length,
+      onlineCount: devices.filter((device) => device.state === "ONLINE").length,
+    },
+  }));
 };
 
 const loadPublicSensors = async ({ preserveSelection = true, quiet = false } = {}) => {
@@ -270,6 +322,15 @@ const loadPublicSensors = async ({ preserveSelection = true, quiet = false } = {
   if (!preserveSelection) selectedPublicSensorId = null;
   renderPublicSensors();
   if (!quiet && views.get("map") && !views.get("map").hidden) queuePublicMapViewportUpdate();
+};
+
+const loadSocial = async () => {
+  const response = await api("../api/web/v1/social");
+  socialBySensor = new Map((response.sensors ?? []).map((social) => [social.sensorId, {
+    favorite: social.favorite === true,
+    liked: social.liked === true,
+  }]));
+  if (publicSensors.length) renderPublicSensors();
 };
 
 const renderPublicSensors = () => {
@@ -381,6 +442,12 @@ function initPublicSensorDirectory() {
   });
   document.querySelectorAll("[data-public-filter]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (button.dataset.publicFilter === "FAVORITE" && !authenticated) {
+        showStatus("お気に入りを使うには、Googleまたはおためし参加でログインしてください。", "error");
+        showView("login");
+        history.replaceState(null, "", "#login");
+        return;
+      }
       publicSensorFilter = button.dataset.publicFilter || "ALL";
       document.querySelectorAll("[data-public-filter]").forEach((option) => {
         option.setAttribute("aria-pressed", String(option === button));
@@ -393,6 +460,7 @@ function initPublicSensorDirectory() {
   });
   document.addEventListener("keydown", (event) => {
     if (views.get("map")?.hidden) return;
+    if (publicOwnerProfileDialog?.open || analysisDialog?.open) return;
     const editing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement;
     if (event.key === "/" && !editing) {
       event.preventDefault();
@@ -427,7 +495,8 @@ function applyPublicSensorFilters({ deferLayout = false } = {}) {
     const stateMatches = publicSensorFilter === "ALL"
       || (publicSensorFilter === "DEMO" && sensor.isDemo)
       || (publicSensorFilter === "ONLINE" && !sensor.isDemo && sensor.state === "ONLINE")
-      || (publicSensorFilter === "OFFLINE" && !sensor.isDemo && sensor.state !== "ONLINE");
+      || (publicSensorFilter === "OFFLINE" && !sensor.isDemo && sensor.state !== "ONLINE")
+      || (publicSensorFilter === "FAVORITE" && socialBySensor.get(sensor.id)?.favorite === true);
     const searchText = normalizePublicSensorSearch([
       sensor.sensorName,
       sensor.owner?.displayName,
@@ -594,7 +663,17 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   toolbar.append(consoleLabel, actions);
   const owner = document.createElement("div");
   owner.className = "sensor-map-owner";
-  owner.append(avatarElement(sensor.owner, "span"));
+  const ownerProfile = Object.assign(document.createElement("button"), {
+    type: "button",
+    className: "sensor-owner-profile-trigger",
+    title: `${sensor.owner.displayName}さんのプロフィールを見る`,
+  });
+  ownerProfile.setAttribute("aria-label", `${sensor.owner.displayName}さんの公開プロフィールを見る`);
+  ownerProfile.setAttribute("aria-haspopup", "dialog");
+  ownerProfile.setAttribute("aria-controls", "public-owner-profile");
+  ownerProfile.append(avatarElement(sensor.owner, "span"));
+  ownerProfile.addEventListener("click", () => openPublicOwnerProfile(sensor));
+  owner.append(ownerProfile);
   const heading = document.createElement("div");
   heading.append(Object.assign(document.createElement("small"), { textContent: sensor.owner.displayName }));
   heading.append(Object.assign(document.createElement("h2"), { textContent: sensor.sensorName }));
@@ -612,7 +691,7 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   const note = document.createElement("p");
   const region = [sensor.region?.subdivisionName, sensor.region?.subdivisionCode].filter(Boolean).join(" / ") || sensor.region?.countryCode || "地域非公開";
   note.textContent = `${region} · 公開位置は0.1度単位へ丸めています。自治体コードと住所は公開しません。`;
-  const content = [toolbar, owner, createPublicMetricHud(sensor), createPublicNodeMeta(sensor), createPublicOracle(sensor)];
+  const content = [toolbar, owner, createPublicRelationshipBar(sensor), createPublicMetricHud(sensor), createPublicNodeMeta(sensor), createPublicOracle(sensor)];
   if (sensor.isDemo) {
     const disclosure = document.createElement("p");
     disclosure.className = "sensor-demo-disclosure";
@@ -624,6 +703,103 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   if (social.childElementCount) content.push(social);
   publicSensorDetail.append(...content);
 };
+
+function createPublicRelationshipBar(sensor) {
+  const bar = document.createElement("div");
+  bar.className = "sensor-relationship-bar";
+  const favorite = Object.assign(document.createElement("button"), { type: "button" });
+  favorite.dataset.relationship = "favorite";
+  const like = Object.assign(document.createElement("button"), { type: "button" });
+  like.dataset.relationship = "like";
+  const analyze = Object.assign(document.createElement("button"), {
+    type: "button",
+    className: "sensor-analyze-trigger",
+    textContent: "分析・AI質問",
+  });
+  const refresh = () => {
+    const social = socialBySensor.get(sensor.id) ?? { favorite: false, liked: false };
+    favorite.setAttribute("aria-pressed", String(social.favorite));
+    favorite.textContent = `${social.favorite ? "★" : "☆"} お気に入り`;
+    like.setAttribute("aria-pressed", String(social.liked));
+    like.textContent = `${social.liked ? "♥" : "♡"} 応援 ${Number(sensor.likeCount || 0).toLocaleString("ja-JP")}`;
+  };
+  favorite.addEventListener("click", () => togglePublicRelationship(sensor, "favorite", favorite, refresh));
+  like.addEventListener("click", () => togglePublicRelationship(sensor, "like", like, refresh));
+  analyze.addEventListener("click", () => openSensorAnalysis({
+    id: sensor.id,
+    name: sensor.sensorName,
+    region: [sensor.region?.subdivisionName, sensor.region?.countryCode].filter(Boolean).join(" / "),
+    observations: sensor.visualObservations,
+    isDemo: sensor.isDemo,
+    source: "public",
+  }));
+  refresh();
+  bar.append(favorite, like, analyze);
+  return bar;
+}
+
+async function togglePublicRelationship(sensor, kind, button, refresh) {
+  if (!authenticated) {
+    showStatus("お気に入り・応援を使うにはログインしてください。", "error");
+    showView("login");
+    history.replaceState(null, "", "#login");
+    return;
+  }
+  const current = socialBySensor.get(sensor.id) ?? { favorite: false, liked: false };
+  const enabled = kind === "favorite" ? !current.favorite : !current.liked;
+  button.disabled = true;
+  try {
+    const response = await api(`../api/web/v1/sensors/${encodeURIComponent(sensor.id)}/${kind}`, {
+      method: enabled ? "PUT" : "DELETE",
+    });
+    socialBySensor.set(sensor.id, {
+      favorite: response.social.favorite === true,
+      liked: response.social.liked === true,
+    });
+    sensor.likeCount = Number(response.social.likeCount) || 0;
+    refresh();
+    if (kind === "like" && enabled) {
+      publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-presence", {
+        detail: { sensorId: sensor.id, phase: "responding", strength: 1.28 },
+      }));
+    }
+    if (publicSensorFilter === "FAVORITE") applyPublicSensorFilters();
+    showStatus(kind === "favorite"
+      ? (enabled ? "お気に入りへ保存しました。" : "お気に入りから外しました。")
+      : (enabled ? "この観測点を応援しました。" : "応援を取り消しました。"));
+  } catch (error) {
+    showStatus(error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function openPublicOwnerProfile(sensor) {
+  if (!publicOwnerProfileDialog) return;
+  const owner = sensor.owner ?? {};
+  const region = [sensor.region?.subdivisionName, sensor.region?.countryCode].filter(Boolean).join(" / ") || "地域非公開";
+  publicOwnerProfileAvatar.replaceChildren(avatarElement(owner, "span"));
+  publicOwnerProfileName.textContent = owner.displayName || "GAIA参加者";
+  publicOwnerProfileSensor.textContent = `${sensor.sensorName}を地球の観測点として公開しています。`;
+  publicOwnerProfileNote.textContent = sensor.isDemo
+    ? `${region}に配置した展示用ダミーセンサーのプロフィールです。実機の観測者ではありません。`
+    : `${region}から、約10km単位の公開位置と観測値を届けています。正確な設置場所は公開していません。`;
+  publicOwnerProfileLinks.replaceChildren();
+  [["X", owner.xUrl], ["GitHub", owner.githubUrl], ["Instagram", owner.instagramUrl]].forEach(([label, url]) => {
+    if (!url) return;
+    publicOwnerProfileLinks.append(Object.assign(document.createElement("a"), {
+      href: url,
+      textContent: label,
+      target: "_blank",
+      rel: "noopener noreferrer",
+    }));
+  });
+  if (!publicOwnerProfileLinks.childElementCount) {
+    publicOwnerProfileLinks.append(Object.assign(document.createElement("p"), { textContent: "SNSリンクは登録されていません。" }));
+  }
+  if (publicOwnerProfileDialog.open) publicOwnerProfileDialog.close();
+  publicOwnerProfileDialog.showModal();
+}
 
 function publicSensorType(sensor) {
   const source = `${sensor.id} ${sensor.sensorName} ${sensor.owner?.displayName}`.toLowerCase();
@@ -1408,6 +1584,7 @@ const refreshDetail = async ({ quiet = false } = {}) => {
 };
 
 const renderDetail = ({ device, latest }, telemetry) => {
+  selectedDeviceTelemetry = Array.isArray(telemetry) ? telemetry : [];
   document.querySelector("#detail-id").textContent = device.deviceId;
   document.querySelector("#detail-name").textContent = device.name;
   const state = document.querySelector("#detail-state");
@@ -1440,6 +1617,321 @@ const renderDetail = ({ device, latest }, telemetry) => {
     });
   }
 };
+
+function openSensorAnalysis(context) {
+  if (!analysisDialog || !analysisStats || !analysisSummary) return;
+  const observations = (Array.isArray(context.observations) ? context.observations : [])
+    .slice(0, 120)
+    .map((observation) => ({
+      data: sanitizePublicMeasurements(observation?.data),
+      observedAt: validIsoTimestamp(observation?.observedAt),
+      receivedAt: validIsoTimestamp(observation?.receivedAt),
+    }))
+    .filter((observation) => Object.keys(observation.data).length);
+  analysisContext = { ...context, observations };
+  const report = analyzeSensorObservations(observations);
+  analysisTarget.textContent = `${context.name} · ${context.region || "地域情報なし"} · ${observations.length}件`;
+  analysisBadge.textContent = context.isDemo ? "DEMO DATA" : "LOCAL ANALYSIS";
+  analysisBadge.dataset.demo = String(context.isDemo === true);
+  renderSensorAnalysisReport(report);
+  aiAnswer.textContent = "質問すると、ここに回答が表示されます。";
+  aiAnswer.dataset.state = "idle";
+  if (analysisDialog.open) analysisDialog.close();
+  analysisDialog.showModal();
+}
+
+function validIsoTimestamp(value) {
+  if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return null;
+  return new Date(value).toISOString();
+}
+
+function analyzeSensorObservations(observations) {
+  const chronological = observations.slice().reverse();
+  const metricKeys = [...new Set(chronological.flatMap((observation) => Object.keys(observation.data)))];
+  const metrics = metricKeys.map((key) => {
+    const values = chronological.map((observation) => Number(observation.data[key])).filter(Number.isFinite);
+    if (!values.length) return null;
+    const latest = values.at(-1);
+    const oldest = values[0];
+    const minimum = Math.min(...values);
+    const maximum = Math.max(...values);
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const delta = latest - oldest;
+    const tolerance = Math.max((maximum - minimum) * .08, Math.abs(average) * .005, .001);
+    const trend = Math.abs(delta) <= tolerance ? "stable" : delta > 0 ? "rising" : "falling";
+    return { key, count: values.length, latest, oldest, minimum, maximum, average, delta, trend };
+  }).filter(Boolean);
+  const times = observations.flatMap((observation) => [observation.observedAt, observation.receivedAt]).filter(Boolean).map(Date.parse).filter(Number.isFinite);
+  return {
+    sampleCount: observations.length,
+    metricCount: metrics.length,
+    metrics,
+    firstAt: times.length ? new Date(Math.min(...times)).toISOString() : null,
+    lastAt: times.length ? new Date(Math.max(...times)).toISOString() : null,
+  };
+}
+
+function renderSensorAnalysisReport(report) {
+  analysisStats.replaceChildren();
+  if (!report.metrics.length) {
+    analysisStats.append(Object.assign(document.createElement("p"), { textContent: "数値データがまだありません。" }));
+    analysisSummary.textContent = "観測値が届くと、平均・範囲・変化方向を自動集計します。";
+    return;
+  }
+  report.metrics.slice(0, 8).forEach((item) => {
+    const metadata = publicMetricMetadata[item.key] ?? { label: item.key, unit: "", digits: 2 };
+    const article = document.createElement("article");
+    article.dataset.trend = item.trend;
+    article.append(
+      Object.assign(document.createElement("small"), { textContent: metadata.label }),
+      Object.assign(document.createElement("strong"), { textContent: analysisValue(item.latest, metadata) }),
+      Object.assign(document.createElement("span"), { textContent: `平均 ${analysisValue(item.average, metadata)} · 範囲 ${analysisValue(item.minimum, metadata)}–${analysisValue(item.maximum, metadata)}` }),
+      Object.assign(document.createElement("b"), { textContent: analysisTrendLabel(item.trend, item.delta, metadata) }),
+    );
+    analysisStats.append(article);
+  });
+  const notable = report.metrics
+    .filter((item) => item.trend !== "stable")
+    .sort((left, right) => Math.abs(right.delta / (Math.abs(right.average) || 1)) - Math.abs(left.delta / (Math.abs(left.average) || 1)))
+    .slice(0, 2)
+    .map((item) => `${publicMetricMetadata[item.key]?.label ?? item.key}は${item.trend === "rising" ? "上昇" : "低下"}`);
+  const period = report.firstAt && report.lastAt ? `（${formatAnalysisPeriod(report.firstAt, report.lastAt)}）` : "";
+  analysisSummary.textContent = `${report.sampleCount}件${period}から${report.metricCount}項目を集計。${notable.length ? `${notable.join("、")}しています。` : "大きな方向変化は見られません。"}`;
+}
+
+function analysisValue(value, metadata) {
+  const digits = Number.isInteger(metadata.digits) ? metadata.digits : 2;
+  return `${Number(value).toLocaleString("ja-JP", { maximumFractionDigits: digits, minimumFractionDigits: digits })}${metadata.unit ? ` ${metadata.unit}` : ""}`;
+}
+
+function analysisTrendLabel(trend, delta, metadata) {
+  const arrow = trend === "rising" ? "↗" : trend === "falling" ? "↘" : "→";
+  const label = trend === "rising" ? "上昇" : trend === "falling" ? "低下" : "横ばい";
+  return `${arrow} ${label} ${trend === "stable" ? "" : analysisValue(Math.abs(delta), metadata)}`.trim();
+}
+
+function formatAnalysisPeriod(firstAt, lastAt) {
+  const seconds = Math.max(0, (Date.parse(lastAt) - Date.parse(firstAt)) / 1000);
+  return formatPublicDuration(seconds);
+}
+
+function restoreAiConfiguration() {
+  if (!aiForm || !aiProvider || !aiEndpoint || !aiModel || !aiKey) return;
+  const saved = parseStoredJson(storageRead(localStorage, aiConfigStorageKey));
+  const provider = saved && Object.hasOwn(aiProviderPresets, saved.provider) ? saved.provider : "openrouter";
+  aiProvider.value = provider;
+  const preset = aiProviderPresets[provider];
+  aiEndpoint.value = typeof saved?.endpoint === "string" ? saved.endpoint : preset.endpoint;
+  aiModel.value = typeof saved?.model === "string" ? saved.model : preset.model;
+  if (provider === "custom") {
+    customAiEndpoint = aiEndpoint.value;
+    customAiModel = aiModel.value;
+  }
+  const persistentKey = storageRead(localStorage, aiKeyStorageKey);
+  const sessionKey = storageRead(sessionStorage, aiSessionKeyStorageKey);
+  aiKey.value = persistentKey || sessionKey || "";
+  aiForm.elements.rememberKey.checked = Boolean(persistentKey);
+}
+
+function parseStoredJson(value) {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function storageRead(storage, key) {
+  try { return storage.getItem(key) || ""; } catch { return ""; }
+}
+
+function storageWrite(storage, key, value) {
+  try { storage.setItem(key, value); return true; } catch { return false; }
+}
+
+function storageRemove(storage, key) {
+  try { storage.removeItem(key); } catch { /* Storage may be disabled by browser policy. */ }
+}
+
+function selectAiProvider(provider) {
+  const preset = aiProviderPresets[provider] ?? aiProviderPresets.custom;
+  if (provider === "custom") {
+    aiEndpoint.value = customAiEndpoint;
+    aiModel.value = customAiModel;
+  } else {
+    aiEndpoint.value = preset.endpoint;
+    aiModel.value = preset.model;
+  }
+}
+
+function saveAiConfiguration({ provider, endpoint, model, apiKey, rememberKey }) {
+  storageWrite(localStorage, aiConfigStorageKey, JSON.stringify({ provider, endpoint, model }));
+  if (rememberKey) {
+    storageWrite(localStorage, aiKeyStorageKey, apiKey);
+    storageRemove(sessionStorage, aiSessionKeyStorageKey);
+  } else {
+    storageRemove(localStorage, aiKeyStorageKey);
+    storageWrite(sessionStorage, aiSessionKeyStorageKey, apiKey);
+  }
+}
+
+async function askSensorAi(event) {
+  event.preventDefault();
+  if (!analysisContext) {
+    showStatus("先に分析するセンサーを選んでください。", "error");
+    return;
+  }
+  const formData = new FormData(aiForm);
+  const provider = String(formData.get("provider") || "custom");
+  const preset = aiProviderPresets[provider] ?? aiProviderPresets.custom;
+  const endpoint = String(formData.get("endpoint") || "").trim();
+  const model = String(formData.get("model") || "").trim();
+  const apiKey = String(formData.get("apiKey") || "").trim();
+  const question = String(formData.get("question") || "").trim();
+  const rememberKey = formData.get("rememberKey") === "on";
+  const submit = aiForm.querySelector("button[type='submit']");
+  try {
+    if (!apiKey) throw new Error("APIキーを入力してください。");
+    if (!model) throw new Error("モデル名を入力してください。");
+    if (!question) throw new Error("質問を入力してください。");
+    const requestUrl = validatedAiEndpoint(endpoint, model, preset.adapter);
+    saveAiConfiguration({ provider, endpoint, model, apiKey, rememberKey });
+    if (provider === "custom") {
+      customAiEndpoint = endpoint;
+      customAiModel = model;
+    }
+    submit.disabled = true;
+    aiAnswer.dataset.state = "loading";
+    aiAnswer.textContent = `${preset.label}へ質問を送信しています…`;
+    const answer = await fetchAiAnswer({ requestUrl, preset, model, apiKey, question });
+    aiAnswer.dataset.state = "complete";
+    aiAnswer.textContent = answer;
+  } catch (error) {
+    aiAnswer.dataset.state = "error";
+    aiAnswer.textContent = error instanceof Error ? error.message : "AIへの質問に失敗しました。";
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+function validatedAiEndpoint(endpoint, model, adapter) {
+  if (!endpoint) throw new Error("エンドポイントを入力してください。");
+  let resolved = endpoint.replaceAll("{model}", encodeURIComponent(model));
+  if (adapter === "gemini" && !/:generateContent(?:\?|$)/u.test(resolved)) {
+    resolved = `${resolved.replace(/\/+$/u, "")}/models/${encodeURIComponent(model)}:generateContent`;
+  }
+  let url;
+  try { url = new URL(resolved); } catch { throw new Error("エンドポイントURLが正しくありません。"); }
+  const localEndpoint = new Set(["localhost", "127.0.0.1", "::1"]).has(url.hostname);
+  const localPage = new Set(["localhost", "127.0.0.1", "::1"]).has(location.hostname);
+  if (url.protocol !== "https:" && !(localPage && localEndpoint && url.protocol === "http:")) {
+    throw new Error("APIキーを保護するため、HTTPSエンドポイントだけを使用できます。");
+  }
+  if (url.username || url.password) throw new Error("認証情報をURLへ埋め込まないでください。");
+  if (url.origin === location.origin) throw new Error("APIキーをGAIAへ誤送信しないよう、GAIA自身のURLは指定できません。");
+  return url.toString();
+}
+
+async function fetchAiAnswer({ requestUrl, preset, model, apiKey, question }) {
+  const prompt = buildSensorAiPrompt(question);
+  const { headers, body } = buildAiRequest(preset.adapter, model, apiKey, prompt);
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 45_000);
+  try {
+    const response = await fetch(requestUrl, {
+      method: "POST",
+      mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
+      referrerPolicy: "no-referrer",
+      headers,
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      const providerMessage = extractAiError(payload);
+      throw new Error(`APIが${response.status}を返しました${providerMessage ? `：${providerMessage}` : "。"}`);
+    }
+    const answer = extractAiText(payload, preset.adapter);
+    if (!answer) throw new Error("APIの応答から回答文を読み取れませんでした。モデルまたは互換形式を確認してください。");
+    return answer;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw new Error("API応答が45秒以内に返りませんでした。");
+    if (error instanceof TypeError) throw new Error("APIへ接続できません。URL、CORS許可、ブラウザ拡張の遮断を確認してください。");
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+function buildSensorAiPrompt(question) {
+  const report = analyzeSensorObservations(analysisContext.observations);
+  const dataset = {
+    sensor: {
+      name: analysisContext.name,
+      region: analysisContext.region || null,
+      isDemo: analysisContext.isDemo === true,
+      source: analysisContext.source,
+    },
+    summary: {
+      sampleCount: report.sampleCount,
+      firstAt: report.firstAt,
+      lastAt: report.lastAt,
+      metrics: report.metrics,
+    },
+    samplesNewestFirst: analysisContext.observations.slice(0, 48),
+  };
+  const system = "あなたは環境センサーの分析支援者です。提示データだけを根拠に日本語で答え、実測・模擬の区別、欠測、短い観測期間、不確実性を明示してください。医療・防災・安全判断を断定せず、追加確認を具体的に提案してください。";
+  const user = `質問：${question}\n\nセンサーデータ(JSON)：\n${JSON.stringify(dataset)}`;
+  return { system, user };
+}
+
+function buildAiRequest(adapter, model, apiKey, prompt) {
+  if (adapter === "gemini") return {
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: {
+      systemInstruction: { parts: [{ text: prompt.system }] },
+      contents: [{ role: "user", parts: [{ text: prompt.user }] }],
+      generationConfig: { temperature: .2, maxOutputTokens: 1200 },
+    },
+  };
+  if (adapter === "anthropic") return {
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: { model, system: prompt.system, messages: [{ role: "user", content: prompt.user }], max_tokens: 1200, temperature: .2 },
+  };
+  if (adapter === "cohere") return {
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: { model, messages: [{ role: "system", content: prompt.system }, { role: "user", content: prompt.user }], temperature: .2, max_tokens: 1200 },
+  };
+  return {
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: { model, messages: [{ role: "system", content: prompt.system }, { role: "user", content: prompt.user }], temperature: .2, max_tokens: 1200 },
+  };
+}
+
+function extractAiText(payload, adapter) {
+  if (!payload || typeof payload !== "object") return "";
+  if (adapter === "gemini") return payload.candidates?.[0]?.content?.parts?.map((part) => part?.text).filter(Boolean).join("\n").trim() || "";
+  if (adapter === "anthropic") return payload.content?.map((part) => part?.text).filter(Boolean).join("\n").trim() || "";
+  if (adapter === "cohere") return payload.message?.content?.map((part) => part?.text).filter(Boolean).join("\n").trim() || "";
+  const content = payload.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content.trim();
+  if (Array.isArray(content)) return content.map((part) => part?.text || part?.content).filter(Boolean).join("\n").trim();
+  return "";
+}
+
+function extractAiError(payload) {
+  const value = payload?.error?.message ?? payload?.message ?? payload?.error;
+  return typeof value === "string" ? value.replace(/\s+/gu, " ").slice(0, 240) : "";
+}
 
 const renderHistory = (telemetry) => {
   historyList.replaceChildren();
@@ -1502,6 +1994,29 @@ participationInfoOpen?.addEventListener("click", () => participationDialog?.show
 participationDialog?.addEventListener("click", (event) => {
   if (event.target === participationDialog) participationDialog.close();
 });
+publicOwnerProfileDialog?.addEventListener("click", (event) => {
+  if (event.target === publicOwnerProfileDialog) publicOwnerProfileDialog.close();
+});
+analysisClose?.addEventListener("click", () => analysisDialog?.close());
+analysisDialog?.addEventListener("click", (event) => {
+  if (event.target === analysisDialog) analysisDialog.close();
+});
+aiProvider?.addEventListener("change", () => selectAiProvider(aiProvider.value));
+aiEndpoint?.addEventListener("input", () => {
+  if (aiProvider.value === "custom") customAiEndpoint = aiEndpoint.value;
+});
+aiModel?.addEventListener("input", () => {
+  if (aiProvider.value === "custom") customAiModel = aiModel.value;
+});
+aiForm?.addEventListener("submit", askSensorAi);
+aiClearKey?.addEventListener("click", () => {
+  storageRemove(localStorage, aiKeyStorageKey);
+  storageRemove(sessionStorage, aiSessionKeyStorageKey);
+  aiKey.value = "";
+  aiForm.elements.rememberKey.checked = false;
+  aiAnswer.dataset.state = "idle";
+  aiAnswer.textContent = "この端末に保存されたAPIキーを削除しました。";
+});
 upgradeGoogleButton.addEventListener("click", () => {
   upgradeGoogleButton.disabled = true;
   location.assign("../api/auth/google/start?returnTo=%2Fsensors%2F");
@@ -1514,7 +2029,7 @@ trialLoginButton.addEventListener("click", async () => {
     authenticated = true;
     sessionUser = session.user;
     syncAccountUi();
-    await Promise.all([loadCountries(), loadDevices()]);
+    await Promise.all([loadCountries(), loadDevices(), loadSocial()]);
     history.replaceState(null, "", "#devices");
     showView("devices");
     showStatus("匿名のおためし利用を開始しました。");
@@ -1535,7 +2050,10 @@ logoutButton.addEventListener("click", async () => {
     sessionUser = null;
     devices = [];
     selectedDevice = null;
+    selectedDeviceTelemetry = [];
     currentProfile = null;
+    socialBySensor = new Map();
+    publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-identity", { detail: { deviceCount: 0, onlineCount: 0 } }));
     syncAccountUi();
     history.replaceState(null, "", "#login");
     showView("login");
@@ -1604,6 +2122,17 @@ document.querySelector("#copy-pairing").addEventListener("click", async () => {
 });
 document.querySelector("#pairing-complete").addEventListener("click", showDevices);
 document.querySelector("#refresh-detail").addEventListener("click", () => refreshDetail());
+analyzeDetailButton?.addEventListener("click", () => {
+  if (!selectedDevice) return;
+  openSensorAnalysis({
+    id: selectedDevice.deviceId,
+    name: selectedDevice.name,
+    region: locationLabel(selectedDevice),
+    observations: selectedDeviceTelemetry,
+    isDemo: false,
+    source: "owner",
+  });
+});
 
 locationForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -1859,8 +2388,8 @@ async function plotSelectedRegion(form) {
     picker.dataset.regionPlot = "ready";
     return;
   }
-  const prefectureCentre = japanPrefectureCentres[subdivisionCode];
-  if (prefectureCentre) setPickerLocation(form, prefectureCentre[0], prefectureCentre[1]);
+  const prefecturalOffice = japanPrefecturalOffices[subdivisionCode];
+  if (prefecturalOffice) setPickerLocation(form, prefecturalOffice[0], prefecturalOffice[1], { basis: "prefectural-office" });
   if (!municipalityCode) {
     picker.dataset.regionPlot = "ready";
     return;
@@ -1874,11 +2403,19 @@ async function plotSelectedRegion(form) {
   try {
     const response = await regionLocationCache.get(cacheKey);
     if (regionPlotVersions.get(form) !== version) return;
-    setPickerLocation(form, response.location.latitude, response.location.longitude);
+    setPickerLocation(form, response.location.latitude, response.location.longitude, { basis: "municipal-main-office" });
     picker.dataset.regionPlot = "ready";
   } catch {
     regionLocationCache.delete(cacheKey);
-    if (regionPlotVersions.get(form) === version) picker.dataset.regionPlot = "fallback";
+    if (regionPlotVersions.get(form) === version) {
+      picker.dataset.regionPlot = "fallback";
+      setPickerLocation(
+        form,
+        prefecturalOffice?.[0] ?? null,
+        prefecturalOffice?.[1] ?? null,
+        { basis: "prefectural-office-fallback" },
+      );
+    }
   }
 }
 
@@ -1994,12 +2531,14 @@ function syncPickerEnabled(form) {
   if (numberOrNull(form.elements.publicLatitude.value) === null) setPickerLocation(form, 35.7, 139.7);
 }
 
-function setPickerLocation(form, rawLatitude, rawLongitude) {
+function setPickerLocation(form, rawLatitude, rawLongitude, { basis = "" } = {}) {
   const latitude = rawLatitude === null || rawLatitude === undefined ? null : Math.max(-90, Math.min(90, Math.round(Number(rawLatitude) * 10) / 10));
   const longitude = rawLongitude === null || rawLongitude === undefined ? null : Math.max(-180, Math.min(180, Math.round(Number(rawLongitude) * 10) / 10));
   form.elements.publicLatitude.value = latitude ?? "";
   form.elements.publicLongitude.value = longitude ?? "";
   const picker = form.querySelector("[data-location-picker]");
+  if (basis) picker.dataset.locationBasis = basis;
+  else delete picker.dataset.locationBasis;
   picker.querySelector(".sensor-picker-pin")?.remove();
   const output = form.querySelector("[data-location-output]");
   if (latitude === null || longitude === null) { output.textContent = "位置は未選択です"; return; }
@@ -2009,7 +2548,12 @@ function setPickerLocation(form, rawLatitude, rawLongitude) {
   pin.style.left = `${longitudeToPercent(longitude, view)}%`;
   pin.style.top = `${latitudeToPercent(latitude, view)}%`;
   picker.append(pin);
-  output.textContent = `公開位置 ${latitude.toFixed(1)}, ${longitude.toFixed(1)}（約10km単位）`;
+  const basisLabel = {
+    "prefectural-office": "都道府県庁所在地",
+    "municipal-main-office": "本庁所在地",
+    "prefectural-office-fallback": "本庁所在地を取得できないため都道府県庁所在地",
+  }[basis] || "公開位置";
+  output.textContent = `${basisLabel} ${latitude.toFixed(1)}, ${longitude.toFixed(1)}（約10km単位）`;
 }
 
 async function mountMapSurfaces() {

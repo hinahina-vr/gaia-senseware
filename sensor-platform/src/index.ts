@@ -15,12 +15,14 @@ import {
 import { ApiError, clearCookie, errorResponse, json } from "./http";
 import { deleteAvatar, getProfile, getPublicAvatar, updateProfile, uploadAvatar } from "./profiles";
 import { listRegions, locateRegion } from "./regions";
+import { listSensorRelationships, setSensorRelationship } from "./social";
 
 const DEVICE_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)$/u;
 const LATEST_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)\/latest$/u;
 const HISTORY_PATTERN = /^\/api\/web\/v1\/devices\/(dev_[a-z0-9]+)\/telemetry$/u;
 const TELEMETRY_PATTERN = /^\/api\/v1\/devices\/(dev_[a-z0-9]+)\/telemetry$/u;
 const PUBLIC_AVATAR_PATTERN = /^\/api\/public\/v1\/profiles\/(usr_[a-z0-9]+)\/avatar$/u;
+const SENSOR_RELATIONSHIP_PATTERN = /^\/api\/web\/v1\/sensors\/(sensor_[a-z0-9_]+)\/(favorite|like)$/u;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -71,6 +73,19 @@ const route = async (request: Request, env: Env, url: URL): Promise<Response> =>
   if (request.method === "DELETE" && url.pathname === "/api/web/v1/profile/avatar") return deleteAvatar(request, env, user);
   if (request.method === "GET" && url.pathname === "/api/web/v1/devices") return listDevices(env, user);
   if (request.method === "POST" && url.pathname === "/api/web/v1/devices/pairing") return createPairing(request, env, user);
+  if (request.method === "GET" && url.pathname === "/api/web/v1/social") return listSensorRelationships(env, user);
+
+  const relationshipMatch = SENSOR_RELATIONSHIP_PATTERN.exec(url.pathname);
+  if ((request.method === "PUT" || request.method === "DELETE") && relationshipMatch?.[1] && relationshipMatch[2]) {
+    return setSensorRelationship(
+      request,
+      env,
+      user,
+      relationshipMatch[1],
+      relationshipMatch[2] === "favorite" ? "FAVORITE" : "LIKE",
+      request.method === "PUT",
+    );
+  }
 
   const latestMatch = LATEST_PATTERN.exec(url.pathname);
   if (request.method === "GET" && latestMatch?.[1]) return getLatest(env, user, latestMatch[1]);

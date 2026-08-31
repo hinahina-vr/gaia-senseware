@@ -12,6 +12,8 @@ let avatarUploaded = false;
 let sessionKind = null;
 let lastPairingDraft = null;
 let lastDeviceDraft = null;
+const favoriteSensors = new Set();
+const likedSensors = new Set();
 const initialProfile = () => ({
   publicId: "usr_browserqa",
   displayName: "青猫センサー",
@@ -45,7 +47,13 @@ const requests = [];
 
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url || "/", `http://${request.headers.host}`);
-  requests.push({ method: request.method, path: url.pathname, at: new Date().toISOString() });
+  requests.push({
+    method: request.method,
+    path: url.pathname,
+    at: new Date().toISOString(),
+    authorizationPresent: Boolean(request.headers.authorization),
+    apiKeyPresent: Boolean(request.headers["x-api-key"] || request.headers["x-goog-api-key"]),
+  });
   try {
     if (url.pathname === "/__qa/report") return sendJson(response, 200, { requests, latestPolls, avatarUploaded, lastPairingDraft, lastDeviceDraft, profile });
     if (url.pathname === "/__qa/reset" && request.method === "POST") {
@@ -57,6 +65,8 @@ const server = http.createServer(async (request, response) => {
       sessionKind = null;
       lastPairingDraft = null;
       lastDeviceDraft = null;
+      favoriteSensors.clear();
+      likedSensors.clear();
       profile = initialProfile();
       device = initialDevice();
       return sendJson(response, 200, { ok: true });
@@ -138,6 +148,35 @@ async function handleApi(request, response, url) {
       : subdivisionCode === "JP-14" ? [{ code: "142085", name: "逗子市" }] : [];
     return sendJson(response, 200, { version: "qa", subdivisions, municipalities });
   }
+  if (url.pathname === "/api/web/v1/social" && request.method === "GET") {
+    const accountKind = referer.includes("authenticated=1") ? "google" : sessionKind;
+    if (!accountKind) return sendJson(response, 401, { error: { code: "AUTHENTICATION_REQUIRED", message: "Login is required." } });
+    const sensorIds = new Set([...favoriteSensors, ...likedSensors]);
+    return sendJson(response, 200, {
+      sensors: [...sensorIds].map((sensorId) => ({
+        sensorId,
+        favorite: favoriteSensors.has(sensorId),
+        liked: likedSensors.has(sensorId),
+      })),
+    });
+  }
+  const socialMatch = url.pathname.match(/^\/api\/web\/v1\/sensors\/(sensor_[a-z0-9_]+)\/(favorite|like)$/u);
+  if (socialMatch && (request.method === "PUT" || request.method === "DELETE")) {
+    const accountKind = referer.includes("authenticated=1") ? "google" : sessionKind;
+    if (!accountKind) return sendJson(response, 401, { error: { code: "AUTHENTICATION_REQUIRED", message: "Login is required." } });
+    const [, sensorId, relationship] = socialMatch;
+    const target = relationship === "favorite" ? favoriteSensors : likedSensors;
+    if (request.method === "PUT") target.add(sensorId);
+    else target.delete(sensorId);
+    return sendJson(response, 200, {
+      social: {
+        sensorId,
+        favorite: favoriteSensors.has(sensorId),
+        liked: likedSensors.has(sensorId),
+        likeCount: likedSensors.has(sensorId) ? 1 : 0,
+      },
+    });
+  }
   if (url.pathname === "/api/web/v1/region-location" && request.method === "GET") {
     const municipalityCode = url.searchParams.get("municipalityCode");
     const locations = {
@@ -146,7 +185,7 @@ async function handleApi(request, response, url) {
     };
     const location = locations[municipalityCode];
     if (!location) return sendJson(response, 404, { error: { code: "REGION_LOCATION_UNAVAILABLE", message: "Region location is unavailable." } });
-    return sendJson(response, 200, { location: { ...location, precision: "MUNICIPALITY_CENTRE" } });
+    return sendJson(response, 200, { location: { ...location, precision: "MUNICIPAL_MAIN_OFFICE" } });
   }
   if (url.pathname === "/api/web/v1/profile" && request.method === "GET") return sendJson(response, 200, { profile });
   if (url.pathname === "/api/web/v1/profile" && request.method === "PATCH") {
@@ -219,7 +258,7 @@ function qaPublicSensorPayload() {
     pm25: Number((8.4 + Math.sin(index * .41 + .7) * 1.7).toFixed(1)),
   } }));
   const demo = (id, sensorName, displayName, avatarUrl, latitude, longitude, countryCode, subdivisionCode, subdivisionName, demoLocationLabel) => ({
-    id, sensorName, state: "OFFLINE", isDemo: true, demoLocationLabel,
+    id, sensorName, state: "OFFLINE", isDemo: true, demoLocationLabel, likeCount: likedSensors.has(id) ? 1 : 0,
     location: { latitude, longitude, precision: "APPROXIMATE_0_1_DEGREE" },
     region: { countryCode, subdivisionCode, subdivisionName },
     observations: [], observationCount: 0, observationSpanSeconds: 0,
@@ -229,7 +268,7 @@ function qaPublicSensorPayload() {
     generatedAt: new Date().toISOString(),
     stats: { observationPackets: 245, payloadBytes: 17_860 },
     sensors: [{
-      id: "sensor_browserqa", sensorName: "ベランダ環境センサー", state: "ONLINE", isDemo: false, demoLocationLabel: null,
+      id: "sensor_browserqa", sensorName: "ベランダ環境センサー", state: "ONLINE", isDemo: false, demoLocationLabel: null, likeCount: likedSensors.has("sensor_browserqa") ? 1 : 0,
       location: { latitude: device.publicLatitude, longitude: device.publicLongitude, precision: "APPROXIMATE_0_1_DEGREE" },
       region: { countryCode: device.countryCode, subdivisionCode: device.subdivisionCode, subdivisionName: device.subdivisionName },
       observations, observationCount: 245, observationSpanSeconds: 72_000,

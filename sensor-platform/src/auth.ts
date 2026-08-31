@@ -359,6 +359,11 @@ const mergeTrialUserIntoGoogle = async (
     return;
   }
   await db.batch([
+    db.prepare(
+      `INSERT OR IGNORE INTO sensor_relationships (user_id, device_id, kind, created_at)
+       SELECT ?1, device_id, kind, created_at FROM sensor_relationships WHERE user_id = ?2`,
+    ).bind(googleUserId, trialUserId),
+    db.prepare("DELETE FROM sensor_relationships WHERE user_id = ?1").bind(trialUserId),
     db.prepare("UPDATE devices SET owner_user_id = ?1, updated_at = ?2 WHERE owner_user_id = ?3")
       .bind(googleUserId, now, trialUserId),
     db.prepare("UPDATE device_pairing_codes SET user_id = ?1 WHERE user_id = ?2")

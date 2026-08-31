@@ -10,7 +10,8 @@ const root = new URL("..", import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u
 const nodePath = process.env.GAIA_NODE_PATH || process.execPath;
 const wranglerPath = process.env.GAIA_WRANGLER_PATH || path.join(root, "node_modules", "wrangler", "bin", "wrangler.js");
 if (!fs.existsSync(wranglerPath)) throw new Error(`Wrangler entrypoint was not found: ${wranglerPath}`);
-const origin = "http://127.0.0.1:8791";
+const port = process.env.GAIA_SENSOR_TEST_PORT || "8794";
+const origin = `http://127.0.0.1:${port}`;
 const testStateRoot = process.env.GAIA_SENSOR_TEST_STATE_ROOT || path.join(root, ".wrangler");
 fs.mkdirSync(testStateRoot, { recursive: true });
 const persistPath = path.join(testStateRoot, `api-test-state-${process.pid}`);
@@ -38,7 +39,7 @@ await command(["d1", "execute", "gaia-senseware-sensors-local", "--local", `--pe
 
 const server = spawn(nodePath, [
   wranglerPath,
-  "dev", "--local", "--port", "8791", `--persist-to=${persistPath}`,
+  "dev", "--local", "--port", port, `--persist-to=${persistPath}`,
   ...Object.entries(testSecrets).flatMap(([name, value]) => ["--var", `${name}:${value}`]),
   "--var", `PUBLIC_ORIGIN:${origin}`,
   "--var", `WEB_ORIGIN:${origin}`,
@@ -78,9 +79,10 @@ try {
   });
   await test("migrations are sequential and safe to reapply", async () => {
     assert.match(migrationReapplyOutput, /No migrations to apply/u);
-    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "7");
+    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "8");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name = 'account_kind'"), "1");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('devices') WHERE name = 'is_demo'"), "1");
+    assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('sensor_relationships') WHERE name IN ('user_id','device_id','kind','created_at')"), "4");
     assert.equal(await scalar("SELECT COUNT(*) FROM user_identities WHERE email IS NOT NULL OR email_verified <> 0"), "0");
   });
   await test("OIDC flow cookie binds callback to the starting browser", async () => {
@@ -118,6 +120,8 @@ try {
     assert.equal(await scalar(`SELECT COUNT(*) FROM user_identities WHERE user_id = '${startedBody.user.id}'`), "0");
     assert.equal((await webFetch("/api/web/v1/devices", trialAuth)).status, 200);
     assert.equal((await webFetch("/api/web/v1/devices/pairing", trialAuth, { method: "POST", body: deviceDraft() })).status, 201);
+    assert.equal((await webFetch("/api/web/v1/sensors/sensor_demo_bluecat/favorite", trialAuth, { method: "PUT" })).status, 200);
+    assert.equal(await scalar(`SELECT COUNT(*) FROM sensor_relationships WHERE user_id = '${startedBody.user.id}'`), "1");
     const noCsrf = await webFetch("/api/web/v1/logout", trialAuth, { method: "POST", includeCsrf: false });
     assert.equal(noCsrf.status, 403);
     const logoutResponse = await webFetch("/api/web/v1/logout", trialAuth, { method: "POST" });
@@ -125,6 +129,7 @@ try {
     assert.deepEqual(await logoutResponse.json(), { ok: true, accountDeleted: true });
     assert.equal(await scalar(`SELECT COUNT(*) FROM users WHERE id = '${startedBody.user.id}'`), "0");
     assert.equal(await scalar(`SELECT COUNT(*) FROM device_pairing_codes WHERE user_id = '${startedBody.user.id}'`), "0");
+    assert.equal(await scalar(`SELECT COUNT(*) FROM sensor_relationships WHERE user_id = '${startedBody.user.id}'`), "0");
     assert.match(logoutResponse.headers.get("set-cookie") ?? "", /__Host-gaia_sensor_session=.*Max-Age=0/u);
   });
 
@@ -139,6 +144,7 @@ try {
     assert.deepEqual(body.stats, { observationPackets: 0, payloadBytes: 0 });
     assert(body.sensors.every((sensor) => sensor.isDemo === true));
     assert(body.sensors.every((sensor) => Array.isArray(sensor.observations) && sensor.observations.length === 0));
+    assert(body.sensors.every((sensor) => sensor.likeCount === 0));
     assert.deepEqual(body.sensors.map((sensor) => sensor.sensorName).sort(), ["sakuセンサー", "あめセンサー", "みずセンサー", "青猫センサー"].sort());
     assert.match(body.sensors.find((sensor) => sensor.sensorName === "青猫センサー").owner.avatarUrl, /slack-symbol-blue-apple-v1\.svg$/u);
     assert.deepEqual(Object.fromEntries(body.sensors.map((sensor) => [sensor.sensorName, [sensor.demoLocationLabel, sensor.location.latitude, sensor.location.longitude]])), {
@@ -147,6 +153,29 @@ try {
       "みずセンサー": ["余市町", 43, 140.8],
       "青猫センサー": ["秋葉原", 35.7, 139.8],
     });
+  });
+  await test("authenticated participants can favorite and like public sensors with CSRF and idempotent counts", async () => {
+    const sensorId = "sensor_demo_bluecat";
+    const empty = await webFetch("/api/web/v1/social", auth);
+    assert.equal(empty.status, 200);
+    assert.deepEqual((await empty.json()).sensors, []);
+    const missingCsrf = await webFetch(`/api/web/v1/sensors/${sensorId}/like`, auth, { method: "PUT", includeCsrf: false });
+    assert.equal(missingCsrf.status, 403);
+    const favorite = await webFetch(`/api/web/v1/sensors/${sensorId}/favorite`, auth, { method: "PUT" });
+    assert.equal(favorite.status, 200);
+    assert.equal((await favorite.json()).social.favorite, true);
+    const firstLike = await webFetch(`/api/web/v1/sensors/${sensorId}/like`, auth, { method: "PUT" });
+    assert.deepEqual((await firstLike.json()).social, { sensorId, favorite: true, liked: true, likeCount: 1 });
+    const repeatedLike = await webFetch(`/api/web/v1/sensors/${sensorId}/like`, auth, { method: "PUT" });
+    assert.equal((await repeatedLike.json()).social.likeCount, 1);
+    const secondLike = await webFetch(`/api/web/v1/sensors/${sensorId}/like`, otherAuth, { method: "PUT" });
+    assert.equal((await secondLike.json()).social.likeCount, 2);
+    const publicBody = await (await fetch(`${origin}/api/public/v1/sensors`)).json();
+    assert.equal(publicBody.sensors.find((sensor) => sensor.id === sensorId).likeCount, 2);
+    const social = await (await webFetch("/api/web/v1/social", auth)).json();
+    assert.deepEqual(social.sensors, [{ sensorId, favorite: true, liked: true }]);
+    assert.equal((await webFetch(`/api/web/v1/sensors/${sensorId}/like`, auth, { method: "DELETE" })).status, 200);
+    assert.equal((await webFetch(`/api/web/v1/sensors/${sensorId}/favorite`, auth, { method: "DELETE" })).status, 200);
   });
   await test("owner profile stores display name and optional social profile URLs", async () => {
     const update = await webFetch("/api/web/v1/profile", auth, {
@@ -229,6 +258,11 @@ try {
     assert.equal(japanBody.subdivisions.length, 47);
     assert.deepEqual(japanBody.subdivisions.find(({ code }) => code === "JP-14"), { code: "JP-14", name: "神奈川県" });
     assert.deepEqual(japanBody.municipalities.find(({ code }) => code === "142085"), { code: "142085", name: "逗子市" });
+    const okinawaOffice = await webFetch("/api/web/v1/region-location?countryCode=JP&subdivisionCode=JP-47", auth);
+    assert.equal(okinawaOffice.status, 200);
+    assert.deepEqual(await okinawaOffice.json(), {
+      location: { latitude: 26.2, longitude: 127.7, precision: "PREFECTURAL_GOVERNMENT_OFFICE" },
+    });
     const unitedStates = await webFetch("/api/web/v1/regions?countryCode=US", auth);
     assert.equal(unitedStates.status, 200);
     assert((await unitedStates.json()).subdivisions.some(({ code }) => code === "US-CA"));
@@ -430,7 +464,7 @@ async function test(name, run) {
 }
 
 async function waitForServer() {
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  for (let attempt = 0; attempt < 360; attempt += 1) {
     try {
       const response = await fetch(`${origin}/api/health`);
       if (response.ok) return;

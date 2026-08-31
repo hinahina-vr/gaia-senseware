@@ -105,7 +105,10 @@ try {
     await page.waitForFunction(() => !document.querySelector("#device-form select[name='subdivisionCode']")?.disabled);
     await page.locator("#device-form select[name='subdivisionCode']").selectOption("JP-13");
     await page.waitForFunction(() => !document.querySelector("#device-form select[name='municipalityCode']")?.disabled);
+    assert.match(await page.locator("#device-form [data-location-output]").textContent(), /都道府県庁所在地 35\.7, 139\.7/u);
     await page.locator("#device-form select[name='municipalityCode']").selectOption("131130");
+    await page.waitForFunction(() => document.querySelector("#device-form [data-location-picker]")?.dataset.regionPlot === "ready");
+    assert.match(await page.locator("#device-form [data-location-output]").textContent(), /本庁所在地 35\.7, 139\.7/u);
     assert.equal(await page.locator("#device-form input[name='isPublic']").inputValue(), "true");
     const picker = page.locator("#device-form [data-location-picker]");
     const box = await picker.boundingBox();
@@ -147,6 +150,8 @@ try {
     await page.waitForFunction(() => !document.querySelector("#location-form select[name='municipalityCode']")?.disabled);
     assert.equal(await page.locator("#location-form select[name='municipalityCode'] option[value='131130']").count(), 0);
     await page.locator("#location-form select[name='municipalityCode']").selectOption("142085");
+    await page.waitForFunction(() => document.querySelector("#location-form [data-location-picker]")?.dataset.regionPlot === "ready");
+    assert.match(await page.locator("#location-form [data-location-output]").textContent(), /本庁所在地 35\.3, 139\.6/u);
     await page.locator("#location-form button[type='submit']").click();
     await page.waitForFunction(() => document.querySelector("#sensor-status")?.textContent === "地域を更新しました。");
     const edited = await (await fetch(new URL("/__qa/report", baseUrl))).json();
@@ -157,6 +162,7 @@ try {
     assert.match(await page.locator("#detail-location").textContent(), /神奈川県.*JP-14.*逗子市.*142085/u);
 
     await page.locator("#location-form select[name='subdivisionCode']").selectOption("JP-47");
+    assert.match(await page.locator("#location-form [data-location-output]").textContent(), /都道府県庁所在地 26\.2, 127\.7/u);
     await page.locator("#location-form button[type='submit']").click();
     await page.waitForFunction(() => document.querySelector("#sensor-status")?.textContent === "地域を更新しました。");
     const okinawa = await (await fetch(new URL("/__qa/report", baseUrl))).json();

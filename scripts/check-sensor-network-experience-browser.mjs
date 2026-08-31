@@ -232,6 +232,19 @@ try {
       await page.locator(".sensor-map-card-expand").click();
     }
     assert.match(await page.locator("#public-sensor-detail").textContent(), /ダミーセンサー/u);
+    const profileTrigger = page.locator(".sensor-owner-profile-trigger");
+    assert.equal(await profileTrigger.getAttribute("aria-haspopup"), "dialog");
+    const profileTriggerBox = await profileTrigger.boundingBox();
+    assert(profileTriggerBox.width >= 44 && profileTriggerBox.height >= 44, `profile trigger is too small: ${JSON.stringify(profileTriggerBox)}`);
+    await profileTrigger.click();
+    await page.locator("#public-owner-profile").waitFor({ state: "visible" });
+    assert.match(await page.locator("#public-owner-profile-name").textContent(), /あめ/u);
+    assert.match(await page.locator("#public-owner-profile-note").textContent(), /展示用ダミーセンサー/u);
+    assert.match(await page.locator("#public-owner-profile-links").textContent(), /SNSリンクは登録されていません/u);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-profile.png`), fullPage: false });
+    await page.keyboard.press("Escape");
+    await page.locator("#public-owner-profile").waitFor({ state: "hidden" });
+    assert.equal(await profileTrigger.evaluate((button) => button === document.activeElement), true);
     assert.equal(await page.locator(".sensor-belonging").getAttribute("data-state"), "selected");
     assert.match(await page.locator(".sensor-belonging p").textContent(), /「いま」に触れています/u);
     assert.match(await page.locator("#public-sensor-detail").textContent(), /電界変動/u);

@@ -70,6 +70,7 @@ type PublicSensorRow = {
   xUrl: string | null;
   githubUrl: string | null;
   instagramUrl: string | null;
+  likeCount: number;
 };
 
 type PublicObservationRow = { sensorId: string; payloadJson: string };
@@ -371,10 +372,13 @@ export const listPublicSensors = async (env: Env): Promise<Response> => {
          u.public_id AS ownerPublicId, u.display_name AS ownerDisplayName,
          CASE WHEN u.avatar_png IS NULL THEN 0 ELSE 1 END AS hasAvatar,
          u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
-         u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl
+         u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl,
+         COUNT(DISTINCT CASE WHEN r.kind = 'LIKE' THEN r.user_id END) AS likeCount
        FROM devices d JOIN users u ON u.id = d.owner_user_id
+       LEFT JOIN sensor_relationships r ON r.device_id = d.id
        WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
          AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
+       GROUP BY d.id
        ORDER BY d.created_at DESC LIMIT 500`,
     ).bind(`-${threshold} seconds`),
     env.DB.prepare(
@@ -443,6 +447,7 @@ export const listPublicSensors = async (env: Env): Promise<Response> => {
       observations: observationsBySensor.get(row.id) ?? [],
       observationCount: statsBySensor.get(row.id)?.observationCount ?? 0,
       observationSpanSeconds: statsBySensor.get(row.id)?.observationSpanSeconds ?? 0,
+      likeCount: Number(row.likeCount) || 0,
       owner: {
         displayName: row.ownerDisplayName,
         avatarUrl: row.avatarKey && campusChatAvatarUrls[row.avatarKey]
