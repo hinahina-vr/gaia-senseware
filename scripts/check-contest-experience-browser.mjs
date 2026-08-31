@@ -236,14 +236,8 @@ try {
   await storyEntryPage.locator("#gaia-opening-sound-modal").waitFor({ state: "hidden", timeout: 20_000 });
   await storyEntryPage.locator("#gaia-opening-skip").click();
   await storyEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
-  assert.equal(await storyEntryPage.locator("#gaia-opening-final-menu .gaia-opening-route").count(), 3);
-  const openingTourCard = storyEntryPage.locator("#gaia-opening-tour-link");
-  assert.equal(await openingTourCard.isVisible(), true, "60-second guide route card must be visible beside the other choices");
-  assert.equal(await openingTourCard.evaluate((element) => element.tagName), "BUTTON");
-  assert.equal(await openingTourCard.evaluate((element) => element.classList.contains("gaia-opening-route")), true);
-  assert.match(await openingTourCard.textContent(), /30秒ガイド/u);
-  const openingTourCardBox = await openingTourCard.boundingBox();
-  assert(openingTourCardBox && openingTourCardBox.width >= 180 && openingTourCardBox.height >= 70, "60-second guide must render as a full route card");
+  assert.equal(await storyEntryPage.locator("#gaia-opening-final-menu .gaia-opening-route").count(), 2);
+  assert.equal(await storyEntryPage.locator("#gaia-opening-tour-link").count(), 0, "the 30-second guide must not remain on the title screen");
   await storyEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-pc.png"), animations: "disabled" });
   await startBaseExposureProbe(storyEntryPage);
   await storyEntryPage.locator("#gaia-opening-route-story").click();
@@ -352,12 +346,6 @@ try {
   await assertWideGuideAlignment();
   await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-route-guide-data-wide.png"), animations: "disabled" });
   await wideEntryPage.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
-  await wideEntryPage.waitForFunction(() => document.querySelector(".gaia-opening-route-guide")?.dataset.step === "3");
-  await wideEntryPage.waitForTimeout(100);
-  assert.equal(await wideEntryPage.locator(".gaia-opening-route.is-route-guide-target").getAttribute("id"), "gaia-opening-tour-link");
-  await assertWideGuideAlignment();
-  await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-route-guide-tour-wide.png"), animations: "disabled" });
-  await wideEntryPage.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
   await wideEntryPage.waitForSelector(".gaia-opening-route-guide", { state: "hidden", timeout: 20_000 });
   await wideEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-wide.png"), animations: "disabled" });
   report.entry.wideComposition = "passed";
@@ -384,17 +372,14 @@ try {
       documentWidth: document.documentElement.scrollWidth,
       grid: serialize(grid),
       cards: cards.map(serialize),
-      guide: serialize(document.querySelector("#gaia-opening-tour-link")),
     };
   });
-  assert.equal(mobileGuideCardLayout.cards.length, 3);
+  assert.equal(mobileGuideCardLayout.cards.length, 2);
   assert(mobileGuideCardLayout.documentWidth <= mobileGuideCardLayout.viewport.width, "mobile opening cards caused horizontal overflow");
   assert(mobileGuideCardLayout.cards.every((card) => (
     card.left >= 0 && card.right <= mobileGuideCardLayout.viewport.width
       && card.top >= 0 && card.bottom <= mobileGuideCardLayout.viewport.height
   )), "mobile opening cards must remain inside the viewport");
-  assert(mobileGuideCardLayout.guide.width >= mobileGuideCardLayout.grid.width - 2, "mobile guide must remain a full-width route card");
-  assert(mobileGuideCardLayout.guide.height >= 70, "mobile guide route card must retain a button-sized hit target");
   await mobileEntryPage.screenshot({ path: path.join(outputDir, "opening-restored-mobile.png"), animations: "disabled" });
   report.entry.mobileGuideCard = "passed";
   await mobileEntryContext.close();
@@ -409,15 +394,15 @@ try {
   await guideEntryPage.locator("#gaia-opening-skip").click();
   await guideEntryPage.waitForSelector("#gaia-opening-final-menu.is-visible", { timeout: 20_000 });
   await startBaseExposureProbe(guideEntryPage);
-  await guideEntryPage.locator("#gaia-opening-tour-link").click();
-  await guideEntryPage.waitForFunction(() => globalThis.GaiaGuidedTour?.getState?.().active === true, null, { timeout: 30_000 });
+  await guideEntryPage.locator("#gaia-opening-route-other").click();
+  await guideEntryPage.waitForFunction(() => globalThis.GaiaIntroEntryGuide?.getState?.().active === true, null, { timeout: 30_000 });
   await guideEntryPage.waitForTimeout(500);
   const forbiddenBaseExposure = await stopBaseExposureProbe(guideEntryPage);
-  assert.deepEqual(forbiddenBaseExposure, [], "Breathing Earth base must never enter the paint tree during the opening-to-guide handoff");
-  assert.equal(await guideEntryPage.locator("#gaia-canvas").evaluate((canvas) => getComputedStyle(canvas).visibility), "hidden", "guided tour must keep the abstract WebGL base suppressed");
-  assert.equal(await guideEntryPage.evaluate(() => location.hash), "#tour");
-  await guideEntryPage.screenshot({ path: path.join(outputDir, "opening-tour-no-breathing-frame.png"), animations: "disabled" });
-  await guideEntryPage.evaluate(() => globalThis.GaiaGuidedTour.exit());
+  assert.deepEqual(forbiddenBaseExposure, [], "Breathing Earth base must never enter the paint tree during the opening-to-data-guide handoff");
+  assert.equal(await guideEntryPage.locator("[data-intro-guide]").count(), 4);
+  assert.equal(await guideEntryPage.evaluate(() => location.hash), "#top");
+  await guideEntryPage.screenshot({ path: path.join(outputDir, "opening-data-entry-guide.png"), animations: "disabled" });
+  await guideEntryPage.evaluate(() => globalThis.GaiaIntroEntryGuide.close());
   report.entry.noBreathingEarthFlash = "passed";
   report.entry.guideCard = "passed";
   await guideEntryContext.close();
