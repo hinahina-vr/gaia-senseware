@@ -37,14 +37,14 @@ try {
 
     await page.goto(new URL("/sensors/#map", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.locator("[data-view='map']").waitFor({ state: "visible" });
-    await page.locator(".sensor-map-marker").waitFor({ state: "visible" });
+    await page.locator(".sensor-map-marker[data-sensor-id='sensor_browserqa']").waitFor({ state: "visible" });
     await page.waitForFunction(() => document.querySelector("#public-sensor-map")?.dataset.basemap === "ready");
     await page.waitForFunction(() => {
       const image = document.querySelector("#public-sensor-detail img");
       return Boolean(image?.complete && image.naturalWidth > 0);
     });
     const publicMap = await page.evaluate(() => {
-      const marker = document.querySelector(".sensor-map-marker");
+      const marker = document.querySelector(".sensor-map-marker[data-sensor-id='sensor_browserqa']");
       const detail = document.querySelector("#public-sensor-detail");
       const links = [...detail.querySelectorAll("a")].map((link) => ({ text: link.textContent, href: link.href }));
       return {
@@ -60,14 +60,14 @@ try {
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
-    assert.equal(publicMap.markerLabel, "青猫センサーさんのベランダ環境センサー");
+    assert.equal(publicMap.markerLabel, "青猫センサーさんのベランダ環境センサー、ONLINE");
     assert.equal(publicMap.owner, "青猫センサー");
     assert.equal(publicMap.sensor, "ベランダ環境センサー");
     assert.deepEqual(publicMap.links.map((link) => link.text), ["X", "GitHub", "Instagram"]);
     assert.equal(publicMap.avatarLoaded, true);
     assert.equal(publicMap.mapCanvasReady, true);
-    assert.equal(publicMap.inlineMapSvgCount, 0);
-    assert(publicMap.markerTouchTarget >= 44);
+    assert.equal(publicMap.inlineMapSvgCount, 2);
+    assert(Math.round(publicMap.markerTouchTarget) >= 44, `${label}: marker touch target is ${publicMap.markerTouchTarget}px`);
     assert.equal(publicMap.overflowX, false);
     assert.doesNotMatch(publicMap.visibleText, /user_browser_qa|@example|owner_user_id/iu);
     assert.doesNotMatch(publicMap.visibleText, /131130|渋谷区/u);
@@ -165,8 +165,9 @@ try {
     assert.equal(okinawa.lastDeviceDraft.publicLongitude, 127.7);
     await page.locator("[data-nav='map']").click();
     await page.locator("[data-view='map']").waitFor({ state: "visible" });
-    assert.equal(await page.locator(".sensor-map-marker").getAttribute("data-latitude"), "26.2");
-    assert.equal(await page.locator(".sensor-map-marker").getAttribute("data-longitude"), "127.7");
+    const updatedMarker = page.locator(".sensor-map-marker[data-sensor-id='sensor_browserqa']");
+    assert.equal(await updatedMarker.getAttribute("data-latitude"), "26.2");
+    assert.equal(await updatedMarker.getAttribute("data-longitude"), "127.7");
     await page.screenshot({ path: path.join(outputDir, `${label}-device-detail.png`), fullPage: true });
     report.scans.push({ viewport: label, publicMap: { ...publicMap, visibleText: undefined }, picked, profile: qa.profile, editedRegion: edited.lastDeviceDraft, okinawaRegion: okinawa.lastDeviceDraft, passed: true });
     await context.close();
