@@ -15,6 +15,7 @@ fs.mkdirSync(outputDir, { recursive: true });
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
+  { name: "mobile-320", width: 320, height: 568 },
 ];
 const report = { status: "running", scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
@@ -82,6 +83,11 @@ try {
     } else {
       const topbarHeight = await page.locator(".sensor-topbar").evaluate((element) => element.getBoundingClientRect().height);
       assert(topbarHeight <= 110, `mobile map topbar is too tall: ${topbarHeight}`);
+      const refreshBounds = await page.locator("#refresh-map").evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        return { left: rect.left, right: rect.right, width: rect.width, height: rect.height };
+      });
+      assert(refreshBounds.left >= 0 && refreshBounds.right <= viewport.width, `mobile refresh action is clipped: ${JSON.stringify(refreshBounds)}`);
       assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
       const compactCardHeight = await page.locator("#public-sensor-detail").evaluate((element) => element.getBoundingClientRect().height);
       assert(compactCardHeight <= 146, `mobile sensor summary is too tall: ${compactCardHeight}`);

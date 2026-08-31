@@ -1075,3 +1075,37 @@ body:has(.sensor-public-map:not([hidden])) .sensor-shell {
   .sensor-public-map:not([hidden]) .sensor-map-hud-top { right: 16px; bottom: 18px; left: 16px; }
   .sensor-public-map:not([hidden]) .sensor-map-basis { right: 16px; bottom: 38px; }
 }
+
+@media (max-width: 350px) {
+  .sensor-public-map:not([hidden]) .sensor-page-head > div {
+    width: 100%;
+    min-width: 0;
+    padding-right: 72px;
+  }
+  .sensor-public-map:not([hidden]) .sensor-page-head > div > p {
+    max-width: calc(100% - 58px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sensor-public-map:not([hidden]) .sensor-page-head h1 {
+    overflow: hidden;
+    font-size: 20px;
+    letter-spacing: .025em;
+    text-overflow: ellipsis;
+  }
+  .sensor-public-map:not([hidden]) .sensor-page-head .sensor-secondary {
+    position: absolute;
+    top: 9px;
+    right: 9px;
+    width: 58px;
+    min-width: 58px;
+    padding-inline: 5px;
+    font-size: 0;
+  }
+  .sensor-public-map:not([hidden]) .sensor-page-head .sensor-secondary::before {
+    content: attr(data-compact-label);
+    font: 700 9px/1 var(--font-ja);
+    letter-spacing: .08em;
+  }
+}

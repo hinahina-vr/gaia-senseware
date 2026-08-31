@@ -8,10 +8,10 @@
     <meta name="description" content="自分のESP32センサーをGAIA SENSEWAREへ接続する参加型センサープラットフォーム。" />
     <title>センサーで参加 — GAIA SENSEWARE</title>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-focus-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-sensor-narrow-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=3" defer></script>
-    <script src="./sensor-platform.js?v=gaia-sensor-share-1" type="module"></script>
+    <script src="./sensor-platform.js?v=gaia-sensor-narrow-1" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -68,7 +68,7 @@
       <section class="sensor-view sensor-public-map" data-view="map" id="map" hidden>
         <header class="sensor-page-head">
           <div><p>PUBLIC SIGNALS / APPROXIMATE LOCATION</p><h1>みんなのセンサー</h1></div>
-          <button class="sensor-secondary" id="refresh-map" type="button">地図を更新</button>
+          <button class="sensor-secondary" id="refresh-map" type="button" data-compact-label="更新">地図を更新</button>
         </header>
         <p class="sensor-map-lead">登録したセンサーを約10km単位のグリッドに表示しています。<br />正確な設置場所を表示しているわけではありません。</p>
         <div class="sensor-map-console">

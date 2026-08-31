@@ -1476,14 +1476,20 @@ document.querySelectorAll("[data-nav]").forEach((link) => link.addEventListener(
 publicMapRefresh.addEventListener("click", async () => {
   publicMapRefresh.disabled = true;
   publicMapRefresh.setAttribute("aria-busy", "true");
+  publicMapRefresh.dataset.compactLabel = "更新中";
   publicMapRefresh.textContent = "更新中…";
   try {
     await loadPublicSensors();
+    publicMapRefresh.dataset.compactLabel = "完了";
     publicMapRefresh.textContent = "更新しました";
     window.setTimeout(() => {
-      if (publicMapRefresh.textContent === "更新しました") publicMapRefresh.textContent = "地図を更新";
+      if (publicMapRefresh.textContent === "更新しました") {
+        publicMapRefresh.dataset.compactLabel = "更新";
+        publicMapRefresh.textContent = "地図を更新";
+      }
     }, 1_800);
   } catch (error) {
+    publicMapRefresh.dataset.compactLabel = "更新";
     publicMapRefresh.textContent = "地図を更新";
     showStatus(error.message, "error");
   } finally {
