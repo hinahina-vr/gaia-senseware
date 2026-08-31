@@ -963,6 +963,10 @@ body.character-mode-open .experience > :is(#gaia-canvas, .abstract-mode-backgrou
   .character-book-footer button { width: 100%; }
 }
 
+@media (max-width: 350px) {
+  .character-book-hero-quote { top: -20%; }
+}
+
 @media (max-height: 660px) and (orientation: landscape) {
   .character-book-hero { min-height: 700px; }
   .character-book-header { min-height: 58px; padding-top: 8px; }

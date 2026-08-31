@@ -15,6 +15,7 @@ fs.mkdirSync(outputDir, { recursive: true });
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
+  { name: "mobile-320", width: 320, height: 568 },
 ];
 const report = { status: "running", viewports, scans: [], consoleErrors: [], expectedAuth401: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });

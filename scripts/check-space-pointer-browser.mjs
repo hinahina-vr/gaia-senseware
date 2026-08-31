@@ -52,7 +52,19 @@ try {
   page.on("pageerror", (error) => report.pageErrors.push(error.message));
   page.on("response", (response) => { if (response.status() === 404) report.responses404.push(response.url()); });
 
-  await page.goto(new URL("/?space=1&debug=1", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => typeof globalThis.GaiaModeLoader?.load === "function");
+  await page.evaluate(async () => {
+    await globalThis.GaiaModeLoader.load("space");
+    const opening = document.querySelector("#gaia-opening");
+    if (opening) {
+      opening.hidden = true;
+      opening.inert = true;
+      opening.setAttribute("aria-hidden", "true");
+    }
+    document.body.classList.remove("gaia-opening-active");
+    globalThis.GaiaSpace.open(0);
+  });
   await page.waitForFunction(() => document.body.classList.contains("space-mode-open") && !document.querySelector("#space-layer")?.hidden);
   await page.addStyleTag({ content: "#gaia-opening { display: none !important; }" });
   const canvas = page.locator("#space-canvas");
@@ -125,6 +137,16 @@ try {
   assert(mobileLayout.close.right <= mobileLayout.viewport.width, "mobile close overflows the viewport");
   report.layouts.push(mobileLayout);
   await page.screenshot({ path: path.join(outputDir, "space-back-top-left-mobile.png"), animations: "disabled" });
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.waitForTimeout(160);
+  const narrowMobileLayout = await readLayout("mobile-320");
+  assert(narrowMobileLayout.close.left <= 16, `mobile-320 close is not left aligned: ${narrowMobileLayout.close.left}`);
+  assert(narrowMobileLayout.close.top <= 16, `mobile-320 close is not top aligned: ${narrowMobileLayout.close.top}`);
+  assert(narrowMobileLayout.close.right < narrowMobileLayout.viewport.width / 2, "mobile-320 close stayed on the right");
+  assert(narrowMobileLayout.header.top >= narrowMobileLayout.close.bottom + 8, "mobile-320 header overlaps the close button");
+  assert(narrowMobileLayout.close.right <= narrowMobileLayout.viewport.width, "mobile-320 close overflows the viewport");
+  report.layouts.push(narrowMobileLayout);
 
   assert.deepEqual(report.consoleErrors, []);
   assert.deepEqual(report.pageErrors, []);

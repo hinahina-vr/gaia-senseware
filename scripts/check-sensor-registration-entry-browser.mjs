@@ -17,6 +17,7 @@ const viewports = [
   { name: "wide-2048", width: 2048, height: 1114 },
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
+  { name: "mobile-320", width: 320, height: 568 },
 ];
 const report = { status: "running", viewports, scans: [], consoleErrors: [], expectedAuth401: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
@@ -69,7 +70,7 @@ try {
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
-    assert.equal(entrance.labels[0], "世界を読む");
+    assert.equal(entrance.labels[0], "世界を観測する");
     assert.equal(entrance.sensorIndex, 1);
     assert.equal(entrance.label, "センサーを地球につなぐ");
     assert.equal(entrance.description, "実物の観測点を、地球の感覚器へ。");
@@ -86,11 +87,11 @@ try {
     }
 
     await sensorCard.click();
-    await page.waitForURL(/\/sensors\/$/u);
+    await page.waitForURL((url) => url.pathname.endsWith("/sensors/") && url.hash === "#esp32");
     await page.locator("[data-view='login']").waitFor({ state: "visible" });
     const login = await page.evaluate(() => {
       const view = document.querySelector("[data-view='login']");
-      const steps = [...view.querySelectorAll(".sensor-register-preview li")];
+      const steps = [...view.querySelectorAll(".sensor-login-flow li")];
       return {
         cta: document.querySelector("#google-login")?.textContent.replace(/\s+/gu, " ").trim(),
         steps: steps.map((step) => step.textContent.replace(/\s+/gu, " ").trim()),
@@ -101,8 +102,8 @@ try {
     assert.match(login.cta, /Googleで続ける/u);
     assert.equal(login.previewVisible, true);
     assert.equal(login.steps.length, 4);
+    assert(login.steps[0].includes("バックアップ"));
     assert(login.steps[3].includes("USB"));
-    assert(login.steps[3].includes("ONLINE"));
     assert.equal(login.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-login.png`), fullPage: true });
 
@@ -111,18 +112,18 @@ try {
     const guide = await page.evaluate(() => {
       const view = document.querySelector("[data-view='guide']");
       const steps = [...view.querySelectorAll(".sensor-guide-path > li")];
-      const downloads = [...view.querySelectorAll(".sensor-developer-links a[download]")];
+      const sourceLinks = [...view.querySelectorAll(".sensor-firmware-source a")];
       return {
         steps: steps.map((step) => step.textContent.replace(/\s+/gu, " ").trim()),
-        downloads: downloads.map((link) => ({ name: link.getAttribute("download"), href: link.getAttribute("href") })),
+        sourceLinks: sourceLinks.map((link) => ({ text: link.textContent.replace(/\s+/gu, " ").trim(), href: link.getAttribute("href") })),
         visible: steps.length === 6 && steps.every((step) => { const rect = step.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }),
         content: view.textContent.replace(/\s+/gu, " ").trim(),
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
     assert.equal(guide.visible, true);
-    assert.equal(guide.downloads.length, 1);
-    assert.deepEqual(guide.downloads.map(({ name }) => name), ["SmartCitySensorDemo.ino"]);
+    assert.equal(guide.sourceLinks.length, 2);
+    assert(guide.sourceLinks.every(({ href }) => href.includes("de7e661dbccb151a963d755f5772db53e7d419f9")));
     assert(guide.content.includes("ESP32-WROOM-32"));
     assert(guide.content.includes("SHA-256"));
     assert(guide.content.includes("USB"));

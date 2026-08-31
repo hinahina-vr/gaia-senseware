@@ -16,6 +16,7 @@ const qaMode = ["127.0.0.1", "localhost"].includes(new URL(baseUrl).hostname);
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
+  { name: "mobile-320", width: 320, height: 568 },
 ];
 const report = { status: "running", mode: qaMode ? "local-qa" : "production-smoke", scans: [], consoleErrors: [], expectedAuth401: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
@@ -42,17 +43,36 @@ try {
       return {
         google: buttons[0]?.textContent.replace(/\s+/gu, " ").trim(),
         trial: buttons[1]?.textContent.replace(/\s+/gu, " ").trim(),
-        privacy: document.querySelector(".sensor-privacy-note")?.textContent.replace(/\s+/gu, " ").trim(),
         buttonHeights: buttons.map((button) => button.getBoundingClientRect().height),
+        infoButtonHeight: document.querySelector("#participation-info-open")?.getBoundingClientRect().height,
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
     assert.match(login.google, /Googleで続ける/u);
     assert.match(login.trial, /名前・メールなしでおためし/u);
-    assert.match(login.privacy, /名前・メールアドレスは要求・保存せず/u);
-    assert.match(login.privacy, /ログアウトすると、登録したセンサーと観測データも削除/u);
     assert(login.buttonHeights.every((height) => height >= 44));
+    assert(Math.round(login.infoButtonHeight) >= 42);
     assert.equal(login.overflowX, false);
+    await page.locator("#participation-info-open").click();
+    await page.locator("#participation-info").waitFor({ state: "visible" });
+    const participation = await page.evaluate(() => ({
+      text: document.querySelector("#participation-info")?.textContent.replace(/\s+/gu, " ").trim(),
+      overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+    }));
+    assert.match(participation.text, /名前・メールは保存しません/u);
+    assert.match(participation.text, /観測点は公開されます/u);
+    assert.match(participation.text, /現在のプログラムを上書きします/u);
+    await page.locator("#participation-info [data-participation-route][data-nav='terms']").click();
+    await page.locator("#participation-info").waitFor({ state: "hidden", timeout: 2_000 });
+    await page.locator("[data-view='terms']").waitFor({ state: "visible" });
+    assert.equal(new URL(page.url()).hash, "#terms");
+    await page.locator("[data-nav='devices']").click();
+    await page.locator("[data-view='login']").waitFor({ state: "visible" });
+    await page.locator("#participation-info-open").click();
+    await page.locator("#participation-info").waitFor({ state: "visible" });
+    await page.locator("#participation-info .sensor-dialog-actions button").click();
+    await page.locator("#participation-info").waitFor({ state: "hidden" });
+    assert.equal(participation.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-login.png`), fullPage: true });
 
     await page.locator("#trial-login").click();
@@ -111,7 +131,7 @@ try {
     } else {
       assert.equal(google.maintained, true);
     }
-    report.scans.push({ viewport: label, login, trial, google, trialStarts, logouts, passed: true });
+    report.scans.push({ viewport: label, login, participation, trial, google, trialStarts, logouts, passed: true });
     await context.close();
   }
   assert.equal(report.expectedAuth401.length, viewports.length);

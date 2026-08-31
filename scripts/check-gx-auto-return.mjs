@@ -34,7 +34,7 @@ assert.match(gx, /elements\.modalSkip\.setAttribute\([\s\S]*?GXモーダルを�
 assert.doesNotMatch(html, /id="gx-era-transition-skip"/u);
 assert.match(loader, /gx-mode\.js\?v=gaia-gx-back-header-drop-1/u);
 assert.match(loader, /novel-mode\.js\?v=gaia-staff-credits-1/u);
-assert.match(loader, /gx-mode\.css\?v=gaia-gx-back-header-drop-1/u);
+assert.match(loader, /gx-mode\.css\?v=gaia-gx-mobile-gesture-pass-through-1/u);
 assert.match(gx, /const CLOSE_TRANSITION_MS = reducedMotion \? 0 : 340;/u);
 assert.match(gx, /if \(isOpen \|\| isClosing\) return;/u);
 assert.match(gx, /closeTransitionTimer = window\.setTimeout\(\(\) => \{[\s\S]*?document\.body\.classList\.remove\("gx-story-open"\);/u);
@@ -42,5 +42,7 @@ assert.match(gxStyles, /\.gx-era-transition strong \{[\s\S]*?font-size: clamp\(1
 assert.match(gxStyles, /\.gx-modal-skip \{[\s\S]*?top: max\(24px,[\s\S]*?left: clamp\(22px,[\s\S]*?min-height: 48px;/u);
 assert.match(gxStyles, /@media \(min-width: 1600px\) \{[\s\S]*?\.gx-layer\[data-return-to="novel"\] \.gx-story-card h3 \{[\s\S]*?white-space: nowrap;/u);
 assert.match(gxStyles, /body\.gx-story-open \.gx-layer\[data-return-to="novel"\]\[data-phase="gaia-transformation"\] \.gx-story-card \{\s*width: min\(54%, 720px\);/u);
+assert.match(gxStyles, /body\.gx-story-open #gx-layer\[data-return-to="novel"\] \.gx-story-card \{\s*pointer-events: none;\s*touch-action: none;/u);
+assert.match(gxStyles, /body\.gx-story-open #gx-layer\[data-return-to="novel"\] \.gx-mobile-info-toggle \{\s*pointer-events: auto;/u);
 
 console.log(JSON.stringify({ status: "passed", behavior: "gx-modal-skip-and-return" }, null, 2));

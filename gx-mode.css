@@ -2973,4 +2973,20 @@ body.gx-story-open .gx-layer[data-return-to="novel"] .gx-secondary-controls {
   body.gx-story-open #gx-layer[data-return-to="novel"] .gx-header {
     top: max(76px, calc(env(safe-area-inset-top) + 70px));
   }
+
+  /* The collapsed record card overlaps the compact planet. Let gestures pass
+     through its read-only copy while keeping the disclosure control usable. */
+  body.gx-story-open #gx-layer[data-return-to="novel"] .gx-story-card {
+    pointer-events: none;
+    touch-action: none;
+  }
+
+  body.gx-story-open #gx-layer[data-return-to="novel"] .gx-mobile-info-toggle {
+    pointer-events: auto;
+  }
+
+  body.gx-story-open #gx-layer[data-return-to="novel"] .gx-story-card[data-mobile-info-open="true"] {
+    pointer-events: auto;
+    touch-action: pan-y;
+  }
 }

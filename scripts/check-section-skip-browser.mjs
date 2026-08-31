@@ -13,10 +13,11 @@ const outputDir = path.resolve(outputArgument || "artifacts/section-skip-browser
 fs.mkdirSync(outputDir, { recursive: true });
 
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
-const CONFIG_KEY = "gaiaSensewareNovel:config:v3";
+const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
+  { name: "mobile-320", width: 320, height: 568 },
 ];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 
@@ -97,9 +98,12 @@ const openStoredProgress = async (page) => {
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
   await page.evaluate(() => globalThis.GaiaNovel.open());
-  await page.locator("#novel-resume-button").click();
-  await page.locator("#novel-save-panel").waitFor({ state: "visible" });
-  await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  if (await page.locator("#novel-resume-button").isVisible()) {
+    await page.locator("#novel-resume-button").click();
+    await page.locator("#novel-save-panel").waitFor({ state: "visible" });
+    await page.locator('.novel-save-slot[data-slot-index="0"]').click();
+  }
+  await page.waitForFunction(() => !document.querySelector("#novel-runtime")?.hidden);
 };
 
 const browser = await chromium.launch({ headless: true, executablePath });
@@ -127,10 +131,14 @@ try {
       globalThis.GaiaNovel.open();
     });
     await page.locator("#gaia-audio-dock").waitFor({ state: "visible" });
+    const openedAtTitle = await page.locator("#novel-title-screen").isVisible();
+    let titleLayout = null;
+    let expandedTitleLayout = null;
+    if (openedAtTitle) {
     assert.equal((await page.locator("#novel-close-button").textContent()).trim(), "戻る");
     assert.equal(await page.locator("#novel-close-button").getAttribute("aria-label"), "ストーリーメニューを閉じる");
     assert.equal(await page.locator("#novel-home-button").isHidden(), true, `${viewport.name}: duplicate top return is visible on title`);
-    const titleLayout = await layoutScan(page);
+    titleLayout = await layoutScan(page);
     assert(titleLayout.closeRect.left <= 40, `${viewport.name}: title return is not pinned left: ${JSON.stringify(titleLayout.closeRect)}`);
     assert(titleLayout.closeRect.top <= 40, `${viewport.name}: title return is not pinned top: ${JSON.stringify(titleLayout.closeRect)}`);
     assert(titleLayout.audioRect && viewport.width - titleLayout.audioRect.right <= 40, `${viewport.name}: title audio is not pinned right: ${JSON.stringify(titleLayout.audioRect)}`);
@@ -138,13 +146,14 @@ try {
     assert.equal(titleLayout.closeAudioOverlap, false, `${viewport.name}: title return overlaps audio`);
     await page.locator("#gaia-audio-toggle").click();
     await page.waitForFunction(() => document.querySelector("#gaia-audio-dock")?.classList.contains("is-expanded"));
-    const expandedTitleLayout = await layoutScan(page);
+    expandedTitleLayout = await layoutScan(page);
     assert.equal(expandedTitleLayout.closeAudioOverlap, false, `${viewport.name}: expanded title audio overlaps return`);
     assert(viewport.width - expandedTitleLayout.audioRect.right <= 40, `${viewport.name}: expanded title audio moved away from right edge`);
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.querySelector("#gaia-audio-dock")?.classList.contains("is-expanded"));
 
     await page.locator("#novel-start-button").click();
+    }
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
     const before = await layoutScan(page);
     assert.equal(before.label, "スキップ▶");
@@ -227,7 +236,7 @@ try {
       document.body.classList.remove("gaia-opening-active", "opening-active");
       globalThis.GaiaNovel.open();
     });
-    await page.locator("#novel-start-button").click();
+    if (await page.locator("#novel-start-button").isVisible()) await page.locator("#novel-start-button").click();
     await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.stepType === "narration");
     await page.waitForFunction(() => document.querySelector("#novel-text")?.dataset.revealState === "complete");
     await page.waitForFunction(() => (

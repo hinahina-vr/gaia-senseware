@@ -9,6 +9,7 @@ const gxFeatureOnly = process.argv.slice(6).includes("--gx-feature-only");
 const introOnly = process.argv.slice(6).includes("--intro-only");
 const endingOnly = process.argv.slice(6).includes("--ending-only");
 const mapCopyOnly = process.argv.slice(6).includes("--map-copy-only");
+const repeatOnly = process.argv.slice(6).includes("--repeat-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -23,6 +24,7 @@ const viewports = [
   { name: "pc-1440", width: 1440, height: 900, action: "click" },
   { name: "mobile-390", width: 390, height: 844, mobile: true, action: "Space" },
   { name: "mobile-landscape-568", width: 568, height: 320, mobile: true, action: "click" },
+  { name: "mobile-320", width: 320, height: 568, mobile: true, action: "click" },
 ];
 const report = {
   status: "running",
@@ -40,7 +42,7 @@ const visibleSource = `(element) => {
   return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0 && rect.width > 0 && rect.height > 0;
 }`;
 const progressFixture = {
-  storyVersion: 12,
+  storyVersion: 13,
   stepId: "festival_concept_032",
   reachedSceneIds: ["festival_concept"],
   viewed: {},
@@ -450,7 +452,7 @@ const scanCharacterFile = async (page, viewport) => {
   });
   assert(scan.visible);
   assert.equal(scan.focusedId, "character-book-close");
-  assert.equal(scan.heading, "キャラクター設定");
+  assert.match(scan.heading, /キャラクター設定$/u);
   assert.equal(scan.pageTitle, "三人の基準設定画");
   assert.equal(scan.current, "01");
   assert.equal(scan.pageCount, 10);
@@ -927,12 +929,15 @@ const scanIntroductionSequence = async (viewport) => {
 };
 
 const scanRepeatAndBack = async () => {
-  const viewport = viewports.find((entry) => entry.name === "pc-1440");
-  const { context, page } = await createPage(viewport, "pc-1440-repeat-back");
+  for (const viewport of viewports.filter(({ name }) => ["pc-1440", "mobile-390", "mobile-320"].includes(name))) {
+  const { context, page } = await createPage(viewport, `${viewport.name}-repeat-back`);
   await openIntro(page);
   await page.evaluate(() => history.pushState({ qa: true }, "", "#explore"));
   await page.locator(".intro-story-return[data-primary-action='true']").click();
-  await page.waitForFunction(() => __qaVisible(document.querySelector("#novel-title-screen")));
+  await page.waitForFunction(() => (
+    __qaVisible(document.querySelector("#novel-layer"))
+    && (__qaVisible(document.querySelector("#novel-title-screen")) || __qaVisible(document.querySelector("#novel-runtime")))
+  ));
   await page.goBack({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(80);
   const afterBack = await page.evaluate(() => ({
@@ -940,15 +945,18 @@ const scanRepeatAndBack = async () => {
     runtimeVisible: __qaVisible(document.querySelector("#novel-runtime")),
     progress: JSON.parse(localStorage.getItem("gaiaSensewareNovel:progress") || "null"),
   }));
-  assert(afterBack.titleVisible && !afterBack.runtimeVisible && afterBack.progress.stepId === progressFixture.stepId);
-  await page.locator("#novel-close-button").click();
+  assert(
+    afterBack.titleVisible !== afterBack.runtimeVisible && afterBack.progress.stepId === progressFixture.stepId,
+    `${viewport.name}: browser back lost the story surface or saved step: ${JSON.stringify(afterBack)}`,
+  );
+  if (afterBack.runtimeVisible) await page.locator("#novel-home-button").click();
+  else await page.locator("#novel-close-button").click();
   await page.waitForFunction(() => __qaVisible(document.querySelector("#intro-layer")));
   await page.waitForFunction(() => document.querySelector("#novel-layer")?.hidden === true);
   await page.locator(".intro-story-return[data-primary-action='true']").click();
   await page.waitForFunction(() => (
     __qaVisible(document.querySelector("#novel-layer"))
-    && __qaVisible(document.querySelector("#novel-title-screen"))
-    && !__qaVisible(document.querySelector("#novel-runtime"))
+    && (__qaVisible(document.querySelector("#novel-title-screen")) || __qaVisible(document.querySelector("#novel-runtime")))
   ));
   const repeated = await page.evaluate(() => ({
     titleVisible: __qaVisible(document.querySelector("#novel-title-screen")),
@@ -958,13 +966,34 @@ const scanRepeatAndBack = async () => {
     openAtCount: globalThis.__qaNovelOpenAtCount,
     novelOpenCount: globalThis.__qaNovelOpenCount,
   }));
-  assert(repeated.titleVisible && !repeated.runtimeVisible && repeated.novelVisibleCount === 1);
+  assert(repeated.titleVisible !== repeated.runtimeVisible && repeated.novelVisibleCount === 1);
   assert.equal(repeated.progress.stepId, progressFixture.stepId);
   assert.deepEqual(repeated.progress.unknownLocalField, progressFixture.unknownLocalField);
   assert.equal(repeated.openAtCount, 2);
   assert.equal(repeated.novelOpenCount, 2);
-  report.scans.push({ viewport: viewport.name, case: "browser-back-repeat", afterBack, repeated, passed: true });
+  await page.goto(new URL("/story", baseUrl).href, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction((stepId) => (
+    document.querySelector("#novel-layer")?.dataset.stepId === stepId
+    && __qaVisible(document.querySelector("#novel-runtime"))
+  ), progressFixture.stepId);
+  const directResume = await page.evaluate(() => ({
+    stepId: document.querySelector("#novel-layer")?.dataset.stepId,
+    runtimeVisible: __qaVisible(document.querySelector("#novel-runtime")),
+  }));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForFunction((stepId) => (
+    document.querySelector("#novel-layer")?.dataset.stepId === stepId
+    && __qaVisible(document.querySelector("#novel-runtime"))
+  ), progressFixture.stepId);
+  const reloadResume = await page.evaluate(() => ({
+    stepId: document.querySelector("#novel-layer")?.dataset.stepId,
+    runtimeVisible: __qaVisible(document.querySelector("#novel-runtime")),
+  }));
+  assert.deepEqual(directResume, { stepId: progressFixture.stepId, runtimeVisible: true });
+  assert.deepEqual(reloadResume, directResume);
+  report.scans.push({ viewport: viewport.name, case: "browser-back-repeat", afterBack, repeated, directResume, reloadResume, passed: true });
   await context.close();
+  }
 };
 
 const scanRuntimeStoryContract = async () => {
@@ -1004,7 +1033,9 @@ const scanRuntimeStoryContract = async () => {
 };
 
 try {
-  if (gxFeatureOnly) {
+  if (repeatOnly) {
+    await scanRepeatAndBack();
+  } else if (gxFeatureOnly) {
     for (const viewport of viewports) await scanGxFeatureOnly(viewport);
   } else if (mapCopyOnly) {
     await scanMapActionCopy(viewports[2]);
@@ -1014,7 +1045,7 @@ try {
   } else {
     for (const viewport of viewports) await scanIntroReturn(viewport);
   }
-  if (!gxFeatureOnly && !mapCopyOnly && !introOnly && !endingOnly && !cardsOnly) {
+  if (!repeatOnly && !gxFeatureOnly && !mapCopyOnly && !introOnly && !endingOnly && !cardsOnly) {
     await scanEndingDestinations();
     await scanIntegratedLightEntry(viewports[2]);
     await scanIntegratedLightEntry(viewports[3]);

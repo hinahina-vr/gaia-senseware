@@ -20,6 +20,11 @@ const routes = [
 ];
 const requestedHash = process.env.GAIA_HASH_ROUTE || "";
 const selectedRoutes = requestedHash ? routes.filter(({ hash }) => hash === requestedHash) : routes;
+const viewports = [
+  { name: "pc-1440", width: 1440, height: 900 },
+  { name: "mobile-390", width: 390, height: 844, mobile: true },
+  { name: "mobile-320", width: 320, height: 568, mobile: true },
+];
 if (requestedHash && selectedRoutes.length === 0 && requestedHash !== "#esp32") {
   throw new Error(`Unknown GAIA_HASH_ROUTE: ${requestedHash}`);
 }
@@ -28,11 +33,12 @@ const browser = await chromium.launch({ headless: true, executablePath });
 
 try {
   for (const route of selectedRoutes) {
-    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    for (const viewport of viewports) {
+    const context = await browser.newContext({ viewport, hasTouch: Boolean(viewport.mobile), isMobile: Boolean(viewport.mobile) });
     const page = await context.newPage();
-    page.on("pageerror", (error) => report.pageErrors.push(`${route.hash}: ${error.message}`));
+    page.on("pageerror", (error) => report.pageErrors.push(`${route.hash}/${viewport.name}: ${error.message}`));
     page.on("response", (response) => {
-      if (response.status() === 404) report.responses404.push(`${route.hash}: ${response.url()}`);
+      if (response.status() === 404) report.responses404.push(`${route.hash}/${viewport.name}: ${response.url()}`);
     });
     await page.goto(new URL(`/${route.hash}`, baseUrl).href, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.locator(route.selector).waitFor({ state: "visible", timeout: 20_000 });
@@ -49,28 +55,31 @@ try {
       }));
       assert.deepEqual(storyAction, { label: "物語をはじめる", ariaLabel: "物語をはじめる", arrowCount: 0 });
     }
-    await page.screenshot({ path: path.join(outputDir, `${route.hash.slice(1)}.png`) });
+    await page.screenshot({ path: path.join(outputDir, `${route.hash.slice(1)}-${viewport.name}.png`) });
     if (route.close) {
       await page.locator(route.close).click();
       await page.locator(route.selector).waitFor({ state: "hidden", timeout: 8_000 });
       await page.locator("#intro-layer").waitFor({ state: "visible", timeout: 8_000 });
       assert.equal(new URL(page.url()).hash, "#top", `${route.hash}: back control did not return to #top`);
     }
-    report.routes.push({ ...route, url: page.url(), passed: true });
+    report.routes.push({ ...route, viewport: viewport.name, url: page.url(), passed: true });
     await context.close();
+    }
   }
 
   if (!requestedHash || requestedHash === "#esp32") {
-  const sensorContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  for (const viewport of viewports) {
+  const sensorContext = await browser.newContext({ viewport, hasTouch: Boolean(viewport.mobile), isMobile: Boolean(viewport.mobile) });
   const sensorPage = await sensorContext.newPage();
-  sensorPage.on("pageerror", (error) => report.pageErrors.push(`#esp32: ${error.message}`));
+  sensorPage.on("pageerror", (error) => report.pageErrors.push(`#esp32/${viewport.name}: ${error.message}`));
   await sensorPage.goto(new URL("/#esp32", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 30_000 });
   await sensorPage.waitForFunction(() => /\/sensors\/$/u.test(window.location.pathname) && window.location.hash === "#esp32");
   assert.match(await sensorPage.title(), /GAIA SENSEWARE/u);
   await sensorPage.locator(".sensor-topbar").waitFor({ state: "visible", timeout: 10_000 });
-  await sensorPage.screenshot({ path: path.join(outputDir, "esp32.png") });
-  report.routes.push({ hash: "#esp32", url: sensorPage.url(), passed: true });
+  await sensorPage.screenshot({ path: path.join(outputDir, `esp32-${viewport.name}.png`) });
+  report.routes.push({ hash: "#esp32", viewport: viewport.name, url: sensorPage.url(), passed: true });
   await sensorContext.close();
+  }
   }
 
   assert.deepEqual(report.pageErrors, []);

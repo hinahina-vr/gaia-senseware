@@ -6822,6 +6822,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       mapModePreview.style.removeProperty("width");
       mapModePreview.style.removeProperty("left");
       mapModePreview.style.removeProperty("top");
+      if (usesCompactMapUi()) {
+        requestAnimationFrame(() => mapModePreview.scrollIntoView({ block: "nearest", inline: "nearest" }));
+      }
     } else if (open && usesCompactMapUi()) {
       mapModePreview.style.removeProperty("width");
       mapModePreview.style.removeProperty("left");

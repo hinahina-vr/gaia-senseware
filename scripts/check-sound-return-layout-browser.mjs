@@ -19,6 +19,7 @@ const viewports = [
   { name: "pc-4k", width: 3840, height: 2088 },
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
+  { name: "mobile-320", width: 320, height: 568, mobile: true },
 ];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });

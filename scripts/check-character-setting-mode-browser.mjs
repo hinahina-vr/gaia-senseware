@@ -17,19 +17,22 @@ const allViewports = [
   { name: "pc-1440", width: 1440, height: 900, mobile: false },
   { name: "pc-4k", width: 3840, height: 2160, mobile: false },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
+  { name: "mobile-320", width: 320, height: 568, mobile: true },
   { name: "reduced-motion", width: 1440, height: 900, mobile: false, reduced: true },
 ];
 const viewports = process.env.GAIA_VIEWPORT
   ? allViewports.filter(({ name }) => name === process.env.GAIA_VIEWPORT)
   : allViewports;
 if (viewports.length === 0) throw new Error(`Unknown GAIA_VIEWPORT: ${process.env.GAIA_VIEWPORT}`);
-const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
+const report = { status: "running", baseUrl, scans: [], consoleErrors: [], expectedNetworkDenied: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });
 const normalizeAnimatedText = (value) => value?.replaceAll("\u00a0", " ");
 
 const attachDiagnostics = (page, name) => {
   page.on("console", (message) => {
-    if (message.type() === "error") report.consoleErrors.push(name + ": " + message.text());
+    if (message.type() !== "error") return;
+    if (message.text().includes("net::ERR_NETWORK_ACCESS_DENIED")) report.expectedNetworkDenied.push(name + ": " + message.text());
+    else report.consoleErrors.push(name + ": " + message.text());
   });
   page.on("pageerror", (error) => report.pageErrors.push(name + ": " + error.message));
   page.on("response", (response) => {

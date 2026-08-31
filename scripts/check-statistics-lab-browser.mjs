@@ -14,7 +14,7 @@ const browser = await chromium.launch({ headless: true, executablePath, args: ["
 const report = { consoleErrors: [], pageErrors: [], responses404: [], scans: [] };
 
 const boot = async (viewport) => {
-  const context = await browser.newContext({ viewport, colorScheme: "dark", reducedMotion: viewport.name === "mobile" ? "reduce" : "no-preference" });
+  const context = await browser.newContext({ viewport, colorScheme: "dark", reducedMotion: viewport.mobile ? "reduce" : "no-preference" });
   await context.addInitScript(() => window.localStorage.removeItem("gaia-statistics-saved-views:v1"));
   const page = await context.newPage();
   page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
@@ -31,7 +31,11 @@ const boot = async (viewport) => {
 };
 
 try {
-  for (const viewport of [{ name: "pc", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) {
+  for (const viewport of [
+    { name: "pc", width: 1440, height: 900 },
+    { name: "mobile", width: 390, height: 844, mobile: true },
+    { name: "mobile-320", width: 320, height: 568, mobile: true },
+  ]) {
     const { context, page } = await boot(viewport);
     const mapStateBefore = await page.evaluate(() => ({
       adapter: (({ modeIndex, mapOpen }) => ({ modeIndex, mapOpen }))(window.GaiaMapObservationAdapter.getState()),
@@ -39,7 +43,7 @@ try {
       offsetX: document.querySelector("#japan-overlay")?.dataset.earthOffsetX,
       offsetY: document.querySelector("#japan-overlay")?.dataset.earthOffsetY,
     }));
-    const trigger = viewport.name === "mobile" ? page.locator("#gaia-statistics-button-mobile") : page.locator("#gaia-statistics-button");
+    const trigger = viewport.mobile ? page.locator("#gaia-statistics-button-mobile") : page.locator("#gaia-statistics-button");
     assert.equal(await trigger.isVisible(), true, `${viewport.name}: statistics entry button is not visible on the map`);
     await trigger.click();
     await page.waitForFunction(() => window.GaiaStatisticsLab?.getState().exportReady === true);
@@ -210,7 +214,10 @@ try {
     assert.equal(await page.locator(".gaia-statistics-insights-panel").evaluate((element) => element.open), false, `${viewport.name}: chart return did not close the explanation`);
     await page.waitForFunction(() => document.activeElement === document.querySelector("#gaia-statistics-canvas"));
     const canvas = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({ width: element.width, height: element.height, rect: element.getBoundingClientRect().toJSON() }));
-    assert.ok(canvas.width > 300 && canvas.height > (viewport.name === "pc" ? 140 : 90), `${viewport.name}: canvas is not rendered`);
+    assert.ok(
+      canvas.width > Math.min(300, viewport.width * 0.75) && canvas.height > (viewport.name === "pc" ? 140 : 90),
+      `${viewport.name}: canvas is not rendered: ${JSON.stringify(canvas)}`,
+    );
     const labVisual = await page.locator("#gaia-statistics-lab").evaluate((element) => {
       const style = getComputedStyle(element);
       const top = document.elementFromPoint(innerWidth / 2, innerHeight / 2);

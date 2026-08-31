@@ -18,7 +18,7 @@
         "./data-ledger.js?v=gaia-ovation-featured-source-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-ovation-aurora-1",
-        "./app.js?v=gaia-map-boundaries-cache-1",
+        "./app.js?v=gaia-map-preview-scroll-1",
         "./map-ui-grid-polish.js?v=gaia-panel-order-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
@@ -54,7 +54,7 @@
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
         "./scene-transition.css?v=gaia-52",
-        "./gx-mode.css?v=gaia-gx-back-header-drop-1",
+        "./gx-mode.css?v=gaia-gx-mobile-gesture-pass-through-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
@@ -91,7 +91,7 @@
       templates: ["gaia-template-character"],
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
-        "./character-mode.css?v=gaia-character-mobile-key-line-1",
+        "./character-mode.css?v=gaia-character-mobile-key-line-2",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: ["./character-mode.js?v=gaia-character-energy-copy-1"],
