@@ -297,6 +297,7 @@ const renderPublicSensors = () => {
     const marker = document.createElement("button");
     marker.type = "button";
     marker.className = "sensor-map-marker";
+    marker.hidden = true;
     marker.dataset.sensorId = sensor.id;
     marker.dataset.sensorType = sensor.visualType;
     marker.dataset.longitude = String(sensor.location.longitude);
@@ -1210,8 +1211,10 @@ function updatePublicMapViewport() {
 function queuePublicMapViewportUpdate() {
   if (publicMapViewportFrame) return;
   publicMapViewportFrame = requestAnimationFrame(() => {
-    publicMapViewportFrame = 0;
-    updatePublicMapViewport();
+    publicMapViewportFrame = requestAnimationFrame(() => {
+      publicMapViewportFrame = 0;
+      updatePublicMapViewport();
+    });
   });
 }
 
