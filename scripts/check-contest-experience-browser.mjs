@@ -669,12 +669,12 @@ try {
   assert(live4kVisualContract.actionFont >= 11 && live4kVisualContract.actionFont <= 13, `4K action is not compact: ${live4kVisualContract.actionFont}px`);
   assert.equal(live4kVisualContract.bankButtonFont, live4kVisualContract.standardBankButtonFont, "live exhibit bank controls no longer match exhibits 01–08");
   assert(live4kVisualContract.anchorFont >= 17, `4K map anchor remains too small: ${live4kVisualContract.anchorFont}px`);
-  assert(live4kVisualContract.symbolWidth >= 40 && live4kVisualContract.symbolWidth <= 44 && live4kVisualContract.symbolCount === 4, "4K visual transformation symbols are not compact");
+  assert(live4kVisualContract.symbolWidth >= 40 && live4kVisualContract.symbolWidth <= 44 && live4kVisualContract.symbolCount === 3, "4K visual transformation symbols are not compact");
   assert(live4kVisualContract.explanationVisible && live4kVisualContract.explanationFont >= 12, "4K exhibit explanation is missing or unreadable");
   assert.match(live4kVisualContract.feedState, /NEAR REAL TIME|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, "4K live/snapshot state is ambiguous");
   assert.equal(live4kVisualContract.hiddenDetails, true, "long explanations must remain assistive-only");
   assert.equal(live4kVisualContract.visibleParagraphCards, false, "paragraph explanation cards remain visible");
-  assert.deepEqual(live4kVisualContract.stageLabels, ["観測", "地図", "光", "音"]);
+  assert.deepEqual(live4kVisualContract.stageLabels, ["観測", "地図", "光"]);
   assert(live4kVisualContract.stageCues.every((value) => value.length >= 2), "visual transformation cues are incomplete");
   const live4kScreenshot = path.join(outputDir, "live-exhibit-09-4k.png");
   await live4kPage.screenshot({ path: live4kScreenshot, animations: "disabled" });
