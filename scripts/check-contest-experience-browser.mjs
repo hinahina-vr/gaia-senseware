@@ -1232,7 +1232,7 @@ try {
   report.resilience.contextLoss = contextLossTriggered ? "passed" : "extension-unavailable";
   report.resilience.lifecycle = lifecycle;
   const lodResult = await lifecyclePage.evaluate(() => {
-    const governor = new globalThis.GaiaFrameBudgetGovernorClass({ autoStart: false, now: () => 20_000 });
+    const governor = new globalThis.GaiaFrameBudgetGovernorClass({ autoStart: false, initialLevel: "high", now: () => 20_000 });
     const feed = (duration, periods) => {
       for (let index = 0; index < periods; index += 1) governor.__testFeedWindow(Array.from({ length: 120 }, () => duration));
     };
