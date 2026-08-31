@@ -367,13 +367,15 @@
     }
 
     const previousTrack = activeTrack;
-    const previousPlayer = ensureAudio(previousTrack);
+    const previousPlayer = players.get(previousTrack) || null;
     const nextPlayer = ensureAudio(track);
     const shouldResume = playbackRequested && !muted;
 
     if (!shouldResume) {
-      previousPlayer.pause();
-      previousPlayer.currentTime = 0;
+      if (previousPlayer) {
+        previousPlayer.pause();
+        previousPlayer.currentTime = 0;
+      }
       activeTrack = track;
       audio = nextPlayer;
       nextPlayer.currentTime = 0;
@@ -385,8 +387,10 @@
 
     const activateNextPlayer = async () => {
       if (serial !== switchSerial) return;
-      previousPlayer.pause();
-      previousPlayer.currentTime = 0;
+      if (previousPlayer) {
+        previousPlayer.pause();
+        previousPlayer.currentTime = 0;
+      }
       activeTrack = track;
       audio = nextPlayer;
       nextPlayer.currentTime = 0;
@@ -401,20 +405,25 @@
         fadeTo(effectiveVolume(), TRACK_SWITCH_FADE_IN_SECONDS, emitState);
         emitState();
       } catch {
-        activeTrack = previousTrack;
-        audio = previousPlayer;
-        try {
-          await previousPlayer.play();
-          fadeTo(effectiveVolume(), 0.3, emitState);
-        } catch {
+        if (!previousPlayer) {
           muted = true;
           playbackRequested = false;
+        } else {
+          activeTrack = previousTrack;
+          audio = previousPlayer;
+          try {
+            await previousPlayer.play();
+            fadeTo(effectiveVolume(), 0.3, emitState);
+          } catch {
+            muted = true;
+            playbackRequested = false;
+          }
         }
         emitState();
       }
     };
 
-    if (!previousPlayer.paused && previousPlayer.volume > 0.001) {
+    if (previousPlayer && !previousPlayer.paused && previousPlayer.volume > 0.001) {
       fadeTo(0, switchFadeOutSeconds, () => { void activateNextPlayer(); });
     } else {
       void activateNextPlayer();
