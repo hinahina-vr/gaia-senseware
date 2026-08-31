@@ -301,6 +301,7 @@ try {
       guide: {
         step: guide.dataset.step,
         title: guide.querySelector("[data-route-guide-title]").textContent,
+        copy: guide.querySelector("[data-route-guide-copy]").textContent,
         shadeOpacity: Number.parseFloat(getComputedStyle(guide.querySelector(".gaia-opening-route-guide-shade")).opacity),
         bubble: serialize(bubbleRect),
         target: serialize(targetRect),
@@ -320,7 +321,8 @@ try {
   assert(wideQuestionToMenuGap >= 0 && wideQuestionToMenuGap <= 64, "opening route cards must follow the centered question with the intended breathing room");
   assert.equal(wideComposition.guide.step, "1");
   assert.equal(wideComposition.guide.targetId, "gaia-opening-route-story");
-  assert.match(wideComposition.guide.title, /物語/u);
+  assert.equal(wideComposition.guide.title.trim(), "");
+  assert.match(wideComposition.guide.copy, /ビジュアルノベル|ストーリー/u);
   assert(wideComposition.guide.shadeOpacity >= 0.95, "first-visit route guide must darken the background");
   assert(wideComposition.guide.cardOpacities[0] >= 0.95 && wideComposition.guide.cardOpacities.slice(1).every((opacity) => opacity <= 0.35), "route guide must brighten only its current target");
   const guideTargetGap = Math.min(
