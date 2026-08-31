@@ -12,6 +12,7 @@ The sensor platform stores canonical region identifiers in addition to its legac
 - ISO, [ISO 3166 country and subdivision codes](https://www.iso.org/iso-3166-country-codes.html). ISO defines an alpha-2 country code and a subdivision code formed from that alpha-2 prefix, a separator, and up to three alphanumeric characters.
 - Unicode CLDR 48.2, [`cldr-subdivisions-full`](https://www.npmjs.com/package/cldr-subdivisions-full) and [`cldr-core`](https://www.npmjs.com/package/cldr-core). The generated registry uses English display names and only codes reachable from CLDR's current subdivision containment data. The Unicode license applies to this derived data.
 - J-LIS, [全国地方公共団体コード](https://www.j-lis.go.jp/spd/code-address/cms_1750514.html) and its 47 prefectural municipality pages. J-LIS documents the six-digit format: two prefecture digits, three municipality digits, and one modulus-11 check digit maintained by the Ministry of Internal Affairs and Communications.
+- Geospatial Information Authority of Japan (GSI), address search results for prefectural government and municipal main offices. These public office coordinates are cached as the initial POI when a Japanese region is selected.
 
 The check digit is calculated from the first five digits with weights 6, 5, 4, 3, and 2. The implementation is equivalent to `(11 - (weightedSum % 11)) % 10`.
 
@@ -19,7 +20,9 @@ Run `node scripts/build-region-code-data.mjs` from the repository root to refres
 
 ## Public/private boundary
 
-Authenticated owner responses contain canonical subdivision and municipality identifiers so owners can review and edit their registration. Public sensor responses may contain the country and subdivision only. They never expose `municipality_code`, `locality_name`, the owner's private profile data, or device telemetry history. Public coordinates remain explicitly opt-in and rounded to 0.1 degree before storage.
+Authenticated owner responses contain the opaque public sensor ID plus canonical subdivision and municipality identifiers so owners can review and edit their registration. Public sensor responses may contain the selected country, subdivision, municipality, and user-placed public POI. The office coordinate is only an initial value: the owner can move the POI on the public map, and coordinates are stored to five decimal places.
+
+The public POI is deliberately public and must not be treated as a private installation coordinate. The UI warns owners to move it away from a home or device when they do not want to disclose an exact position. GAIA SENSEWARE does not request browser geolocation or store a street address, Wi-Fi credentials, session cookies, Device Tokens, the owner's private identity data, or public telemetry timestamps in this endpoint.
 
 ## Unicode CLDR license notice
 

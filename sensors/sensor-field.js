@@ -1,7 +1,7 @@
 const MAX_FIELD_NODES = 12;
 const FIELD_PIXEL_BUDGET = 900_000;
 const FIELD_FRAME_INTERVAL = 42;
-const fieldStylesheetHref = new URL("./sensor-field.css?v=gaia-sensor-planetary-presence-1", import.meta.url).href;
+const fieldStylesheetHref = new URL("./sensor-field.css?v=gaia-map-command-redesign-1", import.meta.url).href;
 let fieldStylesReady = Promise.resolve();
 
 if (!document.querySelector("link[data-sensor-field-styles]")) {
@@ -201,7 +201,7 @@ export function initSensorSenseField(map, { onParticipate } = {}) {
       belonging.message.textContent = "あなたの感覚が観測の波と重なりました。あなたも、この星を感じている一部です。";
       belonging.message.dataset.short = "あなたも、この星を感じている一部。";
     }
-    belonging.senseLabel.textContent = "もう一度感じる";
+    belonging.senseLabel.textContent = "もっと探る";
   };
 
   const engagePresence = ({ phase = "present", strength = 1.05, source = "sense", sensorId = null } = {}) => {
@@ -390,9 +390,9 @@ function createBelongingPanel(onParticipate) {
   const senseButton = document.createElement("button");
   senseButton.type = "button";
   senseButton.className = "sensor-belonging-sense";
-  senseButton.setAttribute("aria-label", "この星の観測の場を感じる");
+  senseButton.setAttribute("aria-label", "観測のつながりをもっと探る");
   const senseLabel = document.createElement("span");
-  senseLabel.textContent = "この星を感じる";
+  senseLabel.textContent = "もっと探る";
   const senseIcon = document.createElement("b");
   senseIcon.setAttribute("aria-hidden", "true");
   senseIcon.textContent = "◎";

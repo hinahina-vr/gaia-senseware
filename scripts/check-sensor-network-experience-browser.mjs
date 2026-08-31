@@ -53,11 +53,11 @@ try {
     await page.waitForTimeout(900);
     const layoutShiftScore = await page.evaluate(() => window.__gaiaLayoutShiftScore);
     assert(layoutShiftScore <= .1, `initial map layout shift is too high: ${layoutShiftScore}`);
-    assert.equal(await page.locator(".sensor-map-marker").count(), 5);
-    assert.equal(
-      Number(await page.locator(".sensor-sense-field").getAttribute("data-node-count")),
-      await page.locator(".sensor-map-marker:visible").count(),
-    );
+    const totalMarkerCount = await page.locator(".sensor-map-marker").count();
+    const visibleMarkerCount = await page.locator(".sensor-map-marker:visible").count();
+    const senseNodeCount = Number(await page.locator(".sensor-sense-field").getAttribute("data-node-count"));
+    assert.equal(totalMarkerCount, 5);
+    assert(senseNodeCount >= visibleMarkerCount && senseNodeCount <= totalMarkerCount, `sense field node count is inconsistent: ${JSON.stringify({ senseNodeCount, visibleMarkerCount, totalMarkerCount })}`);
     assert.match(await page.locator(".sensor-sense-field").getAttribute("data-renderer"), /^(webgl|2d)$/u);
     assert(Number(await page.locator(".sensor-sense-field").getAttribute("data-render-pixels")) <= 905_000);
     assert.match(await page.locator(".sensor-belonging").textContent(), /あなたの感覚が、地球の現在とつながる/u);
@@ -68,32 +68,52 @@ try {
     assert(belongingAction.width >= 44 && belongingAction.height >= 44, `participation action is too small: ${JSON.stringify(belongingAction)}`);
     assert.equal(await page.locator(".sensor-public-card").count(), 5);
     assert.equal(await page.locator("#public-sensor-results").textContent(), "5 / 5件");
-    assert((await page.locator(".sensor-resonance-link").count()) >= 3);
+    const resonanceLinkCount = await page.locator(".sensor-resonance-link").count();
+    if (viewport.width > 760) assert(resonanceLinkCount >= 2);
     assert.match(await page.locator("#public-sync-rate").textContent(), /^\d{2}\.\d%$/u);
     assert.notEqual(await page.locator("#public-sync-rate").textContent(), "00.0%");
     assert.equal(await page.locator(".sensor-metric-hud-grid article").count(), 3);
     assert.equal(await page.locator(".sensor-sparkline polyline").count(), 3);
+    const markerSizes = await page.locator(".sensor-map-marker:visible").evaluateAll((markers) => markers.map((marker) => {
+      const hit = marker.getBoundingClientRect();
+      const avatar = marker.querySelector(".sensor-owner-avatar").getBoundingClientRect();
+      return { hitWidth: hit.width, hitHeight: hit.height, avatarWidth: avatar.width, avatarHeight: avatar.height };
+    }));
+    assert(markerSizes.every(({ hitWidth, hitHeight }) => hitWidth >= 44 && hitHeight >= 44), `map marker hit target is too small: ${JSON.stringify(markerSizes)}`);
+    assert(markerSizes.every(({ avatarWidth, avatarHeight }) => avatarWidth <= 36.5 && avatarHeight <= 36.5), `map marker avatar is too large: ${JSON.stringify(markerSizes)}`);
 
     if (viewport.width > 760) {
-      const collided = page.locator(".sensor-map-marker[data-collision-group]");
-      assert((await collided.count()) >= 2);
-      const collisionGroup = await collided.first().getAttribute("data-collision-group");
-      const collisionPair = page.locator(`.sensor-map-marker[data-collision-group="${collisionGroup}"]`);
-      const collisionLayout = await collisionPair.evaluateAll((markers) => {
-        const centres = markers.map((marker) => {
-          const rect = marker.getBoundingClientRect();
-          return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        });
-        return { centres, distance: Math.hypot(centres[1].x - centres[0].x, centres[1].y - centres[0].y) };
-      });
-      assert(collisionLayout.distance >= 48, `collided markers remain too close: ${collisionLayout.distance}`);
-      assert((await page.locator(".sensor-marker-tether").count()) >= 2);
-      await collided.first().hover();
-      const hoveredCentre = await collided.first().evaluate((marker) => {
+      const cluster = page.locator(".sensor-map-marker[data-cluster-size]").first();
+      await cluster.waitFor({ state: "visible" });
+      const clusterSize = Number(await cluster.getAttribute("data-cluster-size"));
+      assert(clusterSize >= 2);
+      assert.equal(await cluster.locator(".sensor-map-marker-cluster-count").textContent(), clusterSize === 2 ? "②" : String(clusterSize));
+      assert((await page.locator(".sensor-map-marker[data-cluster-member][hidden]").count()) >= 1);
+      assert.equal(await page.locator("#public-sensor-tethers,.sensor-marker-tether").count(), 0);
+      const clusterSensorId = await cluster.getAttribute("data-sensor-id");
+      const clusterCentre = await cluster.evaluate((marker) => {
         const rect = marker.getBoundingClientRect();
         return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
       });
-      assert(Math.hypot(hoveredCentre.x - collisionLayout.centres[0].x, hoveredCentre.y - collisionLayout.centres[0].y) < .5);
+      await cluster.hover();
+      const hoveredCentre = await cluster.evaluate((marker) => {
+        const rect = marker.getBoundingClientRect();
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      });
+      assert(Math.hypot(hoveredCentre.x - clusterCentre.x, hoveredCentre.y - clusterCentre.y) < .5);
+      const zoomBeforeCluster = await page.locator("#public-map-zoom").evaluate((output) => Number.parseFloat(output.value));
+      await cluster.click();
+      await page.waitForTimeout(120);
+      const zoomAfterCluster = await page.locator("#public-map-zoom").evaluate((output) => Number.parseFloat(output.value));
+      assert(zoomAfterCluster > zoomBeforeCluster, `cluster click did not zoom: ${zoomBeforeCluster} -> ${zoomAfterCluster}`);
+      const anchoredMarker = page.locator(`.sensor-map-marker[data-sensor-id="${clusterSensorId}"]`);
+      await anchoredMarker.waitFor({ state: "visible" });
+      const anchoredCentre = await anchoredMarker.evaluate((marker) => {
+        const rect = marker.getBoundingClientRect();
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      });
+      assert(Math.hypot(anchoredCentre.x - clusterCentre.x, anchoredCentre.y - clusterCentre.y) < 2, `cluster anchor moved during zoom: ${JSON.stringify({ clusterCentre, anchoredCentre })}`);
+      assert.equal(await anchoredMarker.evaluate((marker) => marker.style.getPropertyValue("--sensor-marker-offset-x")), "");
       assert.equal(await page.locator("#public-sensor-directory").isVisible(), true);
       await page.locator("#public-sensor-query").fill("大阪");
       assert.equal(await page.locator(".sensor-public-card:visible").count(), 1);

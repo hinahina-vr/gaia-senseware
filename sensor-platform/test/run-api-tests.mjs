@@ -79,9 +79,11 @@ try {
   });
   await test("migrations are sequential and safe to reapply", async () => {
     assert.match(migrationReapplyOutput, /No migrations to apply/u);
-    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "8");
+    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "10");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name = 'account_kind'"), "1");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('devices') WHERE name = 'is_demo'"), "1");
+    assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('devices') WHERE name = 'measurement_keys_json'"), "1");
+    assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('device_pairing_codes') WHERE name = 'measurement_keys_json'"), "1");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('sensor_relationships') WHERE name IN ('user_id','device_id','kind','created_at')"), "4");
     assert.equal(await scalar("SELECT COUNT(*) FROM user_identities WHERE email IS NOT NULL OR email_verified <> 0"), "0");
   });
@@ -153,6 +155,23 @@ try {
       "みずセンサー": ["余市町", 43, 140.8],
       "青猫センサー": ["秋葉原", 35.7, 139.8],
     });
+  });
+  await test("public measurement catalog covers air water soil weather motion energy and radiation", async () => {
+    const response = await fetch(`${origin}/api/public/v1/measurement-types`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.maximumMeasurementsPerPacket, 16);
+    assert(body.measurements.length >= 55);
+    for (const category of ["atmosphere", "weather", "water", "soil", "motion", "energy", "radiation"]) {
+      assert(body.categories.some((entry) => entry.id === category), category);
+    }
+    for (const key of ["temperature", "pm25", "water_temperature", "ph", "conductivity", "turbidity", "dissolved_oxygen", "water_level", "soil_moisture", "wind_speed", "voltage", "radiation_dose_rate"]) {
+      const definition = body.measurements.find((entry) => entry.key === key);
+      assert(definition, key);
+      assert.equal(typeof definition.unit, "string");
+      assert(definition.interfaces.length > 0);
+      assert(definition.exampleSensors.length > 0);
+    }
   });
   await test("authenticated participants can favorite and like public sensors with CSRF and idempotent counts", async () => {
     const sensorId = "sensor_demo_bluecat";
@@ -261,7 +280,7 @@ try {
     const okinawaOffice = await webFetch("/api/web/v1/region-location?countryCode=JP&subdivisionCode=JP-47", auth);
     assert.equal(okinawaOffice.status, 200);
     assert.deepEqual(await okinawaOffice.json(), {
-      location: { latitude: 26.2, longitude: 127.7, precision: "PREFECTURAL_GOVERNMENT_OFFICE" },
+      location: { latitude: 26.2124, longitude: 127.6809, precision: "PREFECTURAL_GOVERNMENT_OFFICE" },
     });
     const unitedStates = await webFetch("/api/web/v1/regions?countryCode=US", auth);
     assert.equal(unitedStates.status, 200);
@@ -343,6 +362,20 @@ try {
       body: JSON.stringify({ seq: 1, data: { temperature: 21 }, extra: true }),
     });
     assert.equal(response.status, 400);
+    const unknownKey = await fetch(`${origin}/api/v1/devices/${deviceId}/telemetry`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${deviceToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ seq: 1, data: { made_up_sensor: 21 } }),
+    });
+    assert.equal(unknownKey.status, 400);
+    assert.equal((await unknownKey.json()).error.code, "UNSUPPORTED_SENSOR_KEY");
+    const impossiblePh = await fetch(`${origin}/api/v1/devices/${deviceId}/telemetry`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${deviceToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ seq: 1, data: { ph: 22 } }),
+    });
+    assert.equal(impossiblePh.status, 400);
+    assert.equal((await impossiblePh.json()).error.code, "SENSOR_VALUE_OUT_OF_RANGE");
   });
   await test("Arduino seconds-only RFC3339 payload is canonicalized and idempotent", async () => {
     const starterObservedAt = new Date().toISOString().replace(/\.\d{3}Z$/u, "Z");
@@ -402,6 +435,7 @@ try {
     assert.equal(ownerDevice.subdivisionName, "神奈川県");
     assert.equal(ownerDevice.municipalityCode, "142085");
     assert.equal(ownerDevice.municipalityName, "逗子市");
+    assert.match(ownerDevice.publicId, /^sensor_/u);
     assert.equal((await webFetch(`/api/web/v1/devices/${deviceId}/telemetry?limit=10`, auth)).status, 200);
     assert.equal((await webFetch(`/api/web/v1/devices/${deviceId}`, otherAuth)).status, 404);
     assert.equal((await webFetch(`/api/web/v1/devices/${deviceId}/latest`, otherAuth)).status, 404);
@@ -416,7 +450,7 @@ try {
   await test("location update owner-only then logical revoke stops token", async () => {
     const update = await webFetch(`/api/web/v1/devices/${deviceId}`, auth, {
       method: "PATCH",
-      body: { ...deviceDraft(), isPublic: true, publicLatitude: 35.294, publicLongitude: 139.581 },
+      body: { ...deviceDraft(), isPublic: true, publicLatitude: 35.294163, publicLongitude: 139.581274 },
     });
     assert.equal(update.status, 200);
     assert.equal((await update.json()).device.isPublic, true);
@@ -426,20 +460,34 @@ try {
     assert.equal(publicBody.sensors.length, 5);
     const registeredSensor = publicBody.sensors.find((sensor) => sensor.isDemo === false);
     assert(registeredSensor);
-    assert.equal(registeredSensor.location.latitude, 35.3);
-    assert.equal(registeredSensor.location.longitude, 139.6);
-    assert.deepEqual(registeredSensor.region, { countryCode: "JP", subdivisionCode: "JP-14", subdivisionName: "神奈川県" });
+    assert.equal(registeredSensor.location.latitude, 35.29416);
+    assert.equal(registeredSensor.location.longitude, 139.58127);
+    assert.equal(registeredSensor.location.precision, "PUBLIC_REFERENCE_POINT");
+    assert.deepEqual(registeredSensor.region, {
+      countryCode: "JP",
+      subdivisionCode: "JP-14",
+      subdivisionName: "神奈川県",
+      municipalityCode: "142085",
+      municipalityName: "逗子市",
+    });
     assert.equal(registeredSensor.owner.displayName, "青猫センサー");
     assert.equal(registeredSensor.owner.xUrl, "https://x.com/bluecat_sensor");
     assert.equal(Object.hasOwn(registeredSensor, "lastSeenAt"), false);
     assert(registeredSensor.observationCount >= 1);
     assert(registeredSensor.observationSpanSeconds >= 0);
     assert(registeredSensor.observations.length >= 1 && registeredSensor.observations.length <= 12);
-    assert.deepEqual(registeredSensor.observations[0].data, { humidity: 58.2, pm25: 9.1, temperature: 21.4 });
+    assert.deepEqual(registeredSensor.observations[0].data, {
+      humidity: 58.2,
+      ph: 7.18,
+      pm25: 9.1,
+      temperature: 21.4,
+      turbidity: 2.7,
+      water_temperature: 18.4,
+    });
     assert(publicBody.stats.observationPackets >= registeredSensor.observationCount);
     assert(publicBody.stats.payloadBytes > 0);
     const publicJson = JSON.stringify(publicBody);
-    assert.doesNotMatch(publicJson, /user_test_owner|@|lastSeenAt|receivedAt|observedAt|localityName|municipality|142085|逗子市/u);
+    assert.doesNotMatch(publicJson, /user_test_owner|@|lastSeenAt|receivedAt|observedAt|localityName/u);
     const forbidden = await webFetch(`/api/web/v1/devices/${deviceId}`, otherAuth, {
       method: "PATCH",
       body: deviceDraft(),
@@ -485,6 +533,7 @@ function deviceDraft() {
     isPublic: true,
     publicLatitude: 35.3,
     publicLongitude: 139.6,
+    measurementKeys: ["temperature", "humidity", "pm25", "water_temperature", "ph", "turbidity"],
   };
 }
 
@@ -538,7 +587,7 @@ function telemetryFetch(id, token, seq, observedAt) {
   return fetch(`${origin}/api/v1/devices/${id}/telemetry`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ seq, ...(observedAt ? { observedAt } : {}), data: { temperature: 21.4, humidity: 58.2, pm25: 9.1 } }),
+    body: JSON.stringify({ seq, ...(observedAt ? { observedAt } : {}), data: { temperature: 21.4, humidity: 58.2, pm25: 9.1, water_temperature: 18.4, ph: 7.18, turbidity: 2.7 } }),
   });
 }
 

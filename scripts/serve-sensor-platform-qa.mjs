@@ -26,6 +26,7 @@ let profile = initialProfile();
 const avatarPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X4u1WQAAAABJRU5ErkJggg==", "base64");
 const initialDevice = () => ({
   deviceId: "dev_browser_qa",
+  publicId: "sensor_browserqa",
   name: "ベランダ環境センサー",
   countryCode: "JP",
   countryName: "日本",
@@ -41,6 +42,7 @@ const initialDevice = () => ({
   isPublic: true,
   publicLatitude: 35.7,
   publicLongitude: 139.7,
+  measurementKeys: ["temperature", "humidity", "pm25", "water_temperature", "ph", "turbidity"],
 });
 let device = initialDevice();
 const requests = [];
@@ -93,6 +95,9 @@ async function handleApi(request, response, url) {
   if (referer.includes("error=1")) return sendJson(response, 500, { error: { code: "QA_ERROR", message: "QA用の通信エラーです。" } });
   if (url.pathname === "/api/public/v1/sensors" && request.method === "GET") {
     return sendJson(response, 200, qaPublicSensorPayload());
+  }
+  if (url.pathname === "/api/public/v1/measurement-types" && request.method === "GET") {
+    return sendJson(response, 200, qaMeasurementCatalog());
   }
   if (url.pathname === "/api/public/v1/profiles/usr_browserqa/avatar" && request.method === "GET") {
     response.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
@@ -178,14 +183,20 @@ async function handleApi(request, response, url) {
     });
   }
   if (url.pathname === "/api/web/v1/region-location" && request.method === "GET") {
+    const subdivisionCode = url.searchParams.get("subdivisionCode");
     const municipalityCode = url.searchParams.get("municipalityCode");
     const locations = {
       "131130": { latitude: 35.7, longitude: 139.7 },
       "142085": { latitude: 35.3, longitude: 139.6 },
     };
-    const location = locations[municipalityCode];
+    const prefecturalLocations = {
+      "JP-13": { latitude: 35.68944, longitude: 139.69167 },
+      "JP-14": { latitude: 35.44778, longitude: 139.6425 },
+      "JP-47": { latitude: 26.2124, longitude: 127.6809 },
+    };
+    const location = municipalityCode ? locations[municipalityCode] : prefecturalLocations[subdivisionCode];
     if (!location) return sendJson(response, 404, { error: { code: "REGION_LOCATION_UNAVAILABLE", message: "Region location is unavailable." } });
-    return sendJson(response, 200, { location: { ...location, precision: "MUNICIPAL_MAIN_OFFICE" } });
+    return sendJson(response, 200, { location: { ...location, precision: municipalityCode ? "MUNICIPAL_MAIN_OFFICE" : "PREFECTURAL_GOVERNMENT_OFFICE" } });
   }
   if (url.pathname === "/api/web/v1/profile" && request.method === "GET") return sendJson(response, 200, { profile });
   if (url.pathname === "/api/web/v1/profile" && request.method === "PATCH") {
@@ -249,7 +260,30 @@ async function handleApi(request, response, url) {
 }
 
 function telemetry(seq) {
-  return { seq, observedAt: new Date(Date.now() - (4 - seq) * 10000).toISOString(), receivedAt: new Date().toISOString(), data: { temperature: 24 + seq / 10, humidity: 58.2, pm25: 9.1 } };
+  return { seq, observedAt: new Date(Date.now() - (4 - seq) * 10000).toISOString(), receivedAt: new Date().toISOString(), data: { temperature: 24 + seq / 10, humidity: 58.2, pm25: 9.1, water_temperature: 18.4, ph: 7.18, turbidity: 2.7 } };
+}
+function qaMeasurementCatalog() {
+  const categories = [
+    { id: "atmosphere", labelJa: "大気・空気質", labelEn: "AIR", descriptionJa: "気温、湿度、粒子、ガス、気圧を観測します。" },
+    { id: "water", labelJa: "水・水質", labelEn: "WATER", descriptionJa: "水温、pH、濁度、溶存酸素、水位、流量などを観測します。" },
+    { id: "soil", labelJa: "土壌・植物", labelEn: "SOIL / PLANT", descriptionJa: "土の温湿度、EC、pHを観測します。" },
+  ];
+  const entry = (key, category, labelJa, labelEn, unit, digits, interfaces, exampleSensors) => ({ key, category, labelJa, labelEn, unit, digits, minimum: -1000000, maximum: 1000000, interfaces, exampleSensors });
+  return {
+    version: 1,
+    maximumMeasurementsPerPacket: 16,
+    categories,
+    measurements: [
+      entry("temperature", "atmosphere", "気温", "Air temperature", "°C", 1, ["I2C"], ["BME280"]),
+      entry("humidity", "atmosphere", "相対湿度", "Relative humidity", "%RH", 1, ["I2C"], ["SHT31"]),
+      entry("pm25", "atmosphere", "PM2.5", "PM2.5", "µg/m³", 1, ["UART"], ["PMS5003"]),
+      entry("water_temperature", "water", "水温", "Water temperature", "°C", 1, ["1-Wire"], ["防水DS18B20"]),
+      entry("ph", "water", "pH", "pH", "pH", 2, ["ADC"], ["pH電極＋インターフェース"]),
+      entry("turbidity", "water", "濁度", "Turbidity", "NTU", 1, ["ADC"], ["光学式濁度センサー"]),
+      entry("soil_moisture", "soil", "土壌含水率", "Soil moisture", "%", 1, ["ADC"], ["静電容量式土壌水分センサー"]),
+    ],
+    disclaimerJa: "QA用マスターです。実機では電圧・防水・校正・絶縁を確認してください。",
+  };
 }
 function qaPublicSensorPayload() {
   const observations = Array.from({ length: 12 }, (_, index) => ({ data: {
@@ -259,7 +293,7 @@ function qaPublicSensorPayload() {
   } }));
   const demo = (id, sensorName, displayName, avatarUrl, latitude, longitude, countryCode, subdivisionCode, subdivisionName, demoLocationLabel) => ({
     id, sensorName, state: "OFFLINE", isDemo: true, demoLocationLabel, likeCount: likedSensors.has(id) ? 1 : 0,
-    location: { latitude, longitude, precision: "APPROXIMATE_0_1_DEGREE" },
+    location: { latitude, longitude, precision: "PUBLIC_REFERENCE_POINT" },
     region: { countryCode, subdivisionCode, subdivisionName },
     observations: [], observationCount: 0, observationSpanSeconds: 0,
     owner: { displayName, avatarUrl, xUrl: null, githubUrl: null, instagramUrl: null },
@@ -269,9 +303,10 @@ function qaPublicSensorPayload() {
     stats: { observationPackets: 245, payloadBytes: 17_860 },
     sensors: [{
       id: "sensor_browserqa", sensorName: "ベランダ環境センサー", state: "ONLINE", isDemo: false, demoLocationLabel: null, likeCount: likedSensors.has("sensor_browserqa") ? 1 : 0,
-      location: { latitude: device.publicLatitude, longitude: device.publicLongitude, precision: "APPROXIMATE_0_1_DEGREE" },
-      region: { countryCode: device.countryCode, subdivisionCode: device.subdivisionCode, subdivisionName: device.subdivisionName },
+      location: { latitude: device.publicLatitude, longitude: device.publicLongitude, precision: "PUBLIC_REFERENCE_POINT" },
+      region: { countryCode: device.countryCode, subdivisionCode: device.subdivisionCode, subdivisionName: device.subdivisionName, municipalityCode: device.municipalityCode, municipalityName: device.municipalityName },
       observations, observationCount: 245, observationSpanSeconds: 72_000,
+      measurementKeys: device.measurementKeys,
       owner: { displayName: profile.displayName, avatarUrl: profile.avatarUrl, xUrl: profile.xUrl, githubUrl: profile.githubUrl, instagramUrl: profile.instagramUrl },
     },
     demo("sensor_demo_bluecat", "青猫センサー", "青猫", "/assets/visuals-07/slack-symbol-blue-apple-v1.svg", 35.7, 139.8, "JP", "JP-13", "東京都", "秋葉原"),

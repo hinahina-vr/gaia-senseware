@@ -11,11 +11,21 @@
 #include "config.h"
 #include "root_ca.h"
 
-struct SensorValues {
-  float temperature;
-  float humidity;
-  float pm25;
+struct SensorMeasurement {
+  const char* key;
+  float value;
 };
+
+struct SensorValues {
+  SensorMeasurement measurements[16];
+  size_t count;
+};
+
+bool addMeasurement(SensorValues& values, const char* key, float value) {
+  if (values.count >= 16 || key == nullptr || key[0] == '\0' || !isfinite(value)) return false;
+  values.measurements[values.count++] = {key, value};
+  return true;
+}
 
 Preferences preferences;
 DNSServer dnsServer;
@@ -226,12 +236,15 @@ void handleUsbProvisioning() {
 bool readSensors(SensorValues& values) {
 #if USE_MOCK_SENSOR
   const float phase = static_cast<float>(millis() % 60000UL) / 60000.0f;
-  values.temperature = 24.0f + sinf(phase * TWO_PI) * 1.8f;
-  values.humidity = 58.0f + cosf(phase * TWO_PI) * 5.0f;
-  values.pm25 = 8.0f + sinf(phase * TWO_PI * 0.6f) * 2.0f;
-  return true;
+  return addMeasurement(values, "temperature", 24.0f + sinf(phase * TWO_PI) * 1.8f)
+      && addMeasurement(values, "humidity", 58.0f + cosf(phase * TWO_PI) * 5.0f)
+      && addMeasurement(values, "pm25", 8.0f + sinf(phase * TWO_PI * 0.6f) * 2.0f);
 #else
-  // Replace only this function with your sensor implementation.
+  // Replace only this function. Add 1 to 16 keys from
+  // /api/public/v1/measurement-types, for example:
+  // return addMeasurement(values, "water_temperature", waterCelsius)
+  //     && addMeasurement(values, "ph", waterPh)
+  //     && addMeasurement(values, "turbidity", turbidityNtu);
   return false;
 #endif
 }
@@ -367,13 +380,16 @@ bool loadPendingPayload() {
 }
 
 bool persistPendingPayload(const SensorValues& values) {
+  if (values.count == 0 || values.count > 16) return false;
   JsonDocument payload;
   payload["seq"] = sequenceNumber;
   const String observedAt = isoTimestampIfSynchronized();
   if (observedAt.length() > 0) payload["observedAt"] = observedAt;
-  payload["data"]["temperature"] = roundf(values.temperature * 10.0f) / 10.0f;
-  payload["data"]["humidity"] = roundf(values.humidity * 10.0f) / 10.0f;
-  payload["data"]["pm25"] = roundf(values.pm25 * 10.0f) / 10.0f;
+  JsonObject data = payload["data"].to<JsonObject>();
+  for (size_t index = 0; index < values.count; ++index) {
+    const SensorMeasurement& measurement = values.measurements[index];
+    data[measurement.key] = roundf(measurement.value * 1000.0f) / 1000.0f;
+  }
   String body;
   serializeJson(payload, body);
   JsonDocument envelope;

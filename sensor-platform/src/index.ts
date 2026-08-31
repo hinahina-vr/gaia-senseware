@@ -13,6 +13,7 @@ import {
   updateDevice,
 } from "./devices";
 import { ApiError, clearCookie, errorResponse, json } from "./http";
+import { listMeasurementTypes } from "./measurements";
 import { deleteAvatar, getProfile, getPublicAvatar, updateProfile, uploadAvatar } from "./profiles";
 import { listRegions, locateRegion } from "./regions";
 import { listSensorRelationships, setSensorRelationship } from "./social";
@@ -54,6 +55,7 @@ const route = async (request: Request, env: Env, url: URL): Promise<Response> =>
   if (request.method === "POST" && url.pathname === "/api/web/v1/logout") return logout(request, env);
   if (request.method === "POST" && url.pathname === "/api/v1/device/pair") return pairDevice(request, env);
   if (request.method === "GET" && url.pathname === "/api/public/v1/sensors") return listPublicSensors(env);
+  if (request.method === "GET" && url.pathname === "/api/public/v1/measurement-types") return listMeasurementTypes();
   const publicAvatarMatch = PUBLIC_AVATAR_PATTERN.exec(url.pathname);
   if (request.method === "GET" && publicAvatarMatch?.[1]) return getPublicAvatar(env, publicAvatarMatch[1]);
 
@@ -66,7 +68,7 @@ const route = async (request: Request, env: Env, url: URL): Promise<Response> =>
   }
   const user = await getAuthenticatedUser(request, env);
   if (request.method === "GET" && url.pathname === "/api/web/v1/regions") return listRegions(url);
-  if (request.method === "GET" && url.pathname === "/api/web/v1/region-location") return locateRegion(url);
+  if (request.method === "GET" && url.pathname === "/api/web/v1/region-location") return locateRegion(url, env);
   if (request.method === "GET" && url.pathname === "/api/web/v1/profile") return getProfile(env, user);
   if (request.method === "PATCH" && url.pathname === "/api/web/v1/profile") return updateProfile(request, env, user);
   if (request.method === "PUT" && url.pathname === "/api/web/v1/profile/avatar") return uploadAvatar(request, env, user);

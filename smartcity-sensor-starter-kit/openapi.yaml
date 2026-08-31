@@ -56,6 +56,7 @@ paths:
         seqはDeviceごとに単調増加。同じseq・同じ内容の再送は200、同じseq・異なる内容または
         最大seqより小さい未登録seqは409。同じBearer TokenでもpathのDevice IDが異なれば401。
         新しい測定値の保存はDeviceごとに60秒に1件までで、上限超過はRetry-After付きの429。
+        dataのキー、単位、受理範囲はGET /api/public/v1/measurement-typesの計測マスターに従う。
       security:
         - deviceBearer: []
       parameters:
@@ -77,6 +78,9 @@ paths:
                 temperature: 28.1
                 humidity: 67.2
                 pm25: 12.8
+                water_temperature: 18.4
+                ph: 7.18
+                turbidity: 2.7
       responses:
         '202':
           description: 新しいseqを保存した。
@@ -150,7 +154,7 @@ components:
           minProperties: 1
           maxProperties: 16
           propertyNames: { pattern: '^[a-z][a-z0-9_]{0,31}$' }
-          additionalProperties: { type: number, minimum: -1000000, maximum: 1000000 }
+          additionalProperties: { type: number, description: キーごとの範囲は公開計測マスターを参照。未登録キーは400。 }
           properties:
             temperature: { type: number, minimum: -80, maximum: 100, description: Celsius }
             humidity: { type: number, minimum: 0, maximum: 100, description: Percent }
@@ -158,6 +162,13 @@ components:
             pm10: { type: number, minimum: 0, maximum: 5000, description: µg/m³ }
             voc: { type: number, minimum: 0, maximum: 100000, description: Sensor-specific ppb/index }
             nox: { type: number, minimum: 0, maximum: 100000, description: Sensor-specific ppb/index }
+            water_temperature: { type: number, minimum: -20, maximum: 120, description: °C }
+            ph: { type: number, minimum: 0, maximum: 14, description: pH }
+            conductivity: { type: number, minimum: 0, maximum: 200000, description: µS/cm }
+            turbidity: { type: number, minimum: 0, maximum: 10000, description: NTU }
+            dissolved_oxygen: { type: number, minimum: 0, maximum: 100, description: mg/L }
+            water_level: { type: number, minimum: -10000, maximum: 100000, description: cm }
+            flow_rate: { type: number, minimum: 0, maximum: 100000, description: L/min }
     TelemetryAccepted:
       type: object
       additionalProperties: false

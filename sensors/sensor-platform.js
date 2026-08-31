@@ -1,4 +1,4 @@
-import { initSensorSenseField } from "./sensor-field.js?v=gaia-sensor-planetary-presence-1";
+import { initSensorSenseField } from "./sensor-field.js?v=gaia-map-command-redesign-1";
 
 const views = new Map(Array.from(document.querySelectorAll("[data-view]"), (element) => [element.dataset.view, element]));
 const statusRegion = document.querySelector("#sensor-status");
@@ -40,9 +40,11 @@ const cardTemplate = document.querySelector("#device-card-template");
 const historyList = document.querySelector("#history-list");
 const historyChart = document.querySelector("#history-chart");
 const latestMetrics = document.querySelector("#latest-metrics");
+const measurementCatalogSummary = document.querySelector("#measurement-catalog-summary");
+const measurementCatalogGroups = document.querySelector("#measurement-catalog-groups");
+const measurementCatalogDisclaimer = document.querySelector("#measurement-catalog-disclaimer");
 const publicSensorMap = document.querySelector("#public-sensor-map");
 const publicSensorNetwork = document.querySelector("#public-sensor-network");
-const publicSensorTethers = document.querySelector("#public-sensor-tethers");
 const publicSensorMarkers = document.querySelector("#public-sensor-markers");
 const publicSensorList = document.querySelector("#public-sensor-list");
 const publicSensorDetail = document.querySelector("#public-sensor-detail");
@@ -57,6 +59,11 @@ const publicMapZoomIn = document.querySelector("#public-map-zoom-in");
 const publicMapZoomOut = document.querySelector("#public-map-zoom-out");
 const publicMapReset = document.querySelector("#public-map-reset");
 const publicMapZoomOutput = document.querySelector("#public-map-zoom");
+const publicMapLocationEditor = document.querySelector("#public-map-location-editor");
+const publicMapLocationTitle = document.querySelector("#public-map-location-title");
+const publicMapLocationOutput = document.querySelector("#public-map-location-output");
+const publicMapLocationCancel = document.querySelector("#public-map-location-cancel");
+const publicMapLocationSave = document.querySelector("#public-map-location-save");
 const publicSyncRate = document.querySelector("#public-sync-rate");
 const publicActiveNodes = document.querySelector("#public-active-nodes");
 const publicPacketCount = document.querySelector("#public-packet-count");
@@ -80,7 +87,7 @@ const publicMapDragRebaseRatio = .18;
 const publicMapFocusMinZoom = 7.2;
 const publicMapPollIntervalMs = 60_000;
 const publicMapCanvasPixelBudget = 12_000_000;
-const publicMapMarkerCollisionDistance = 56;
+const publicMapMarkerCollisionDistance = 50;
 const resonanceDistanceKm = 1_800;
 const aiConfigStorageKey = "gaia-senseware-ai-config-v1";
 const aiKeyStorageKey = "gaia-senseware-ai-key-v1";
@@ -110,20 +117,6 @@ const countryMapViews = Object.freeze({
     key: "JP",
   }),
 });
-const japanPrefecturalOffices = Object.freeze({
-  "JP-01": [43.1,141.4], "JP-02": [40.8,140.7], "JP-03": [39.7,141.2], "JP-04": [38.3,140.9],
-  "JP-05": [39.7,140.1], "JP-06": [38.2,140.4], "JP-07": [37.8,140.5], "JP-08": [36.3,140.4],
-  "JP-09": [36.6,139.9], "JP-10": [36.4,139.1], "JP-11": [35.9,139.6], "JP-12": [35.6,140.1],
-  "JP-13": [35.7,139.7], "JP-14": [35.4,139.6], "JP-15": [37.9,139.0], "JP-16": [36.7,137.2],
-  "JP-17": [36.6,136.6], "JP-18": [36.1,136.2], "JP-19": [35.7,138.6], "JP-20": [36.7,138.2],
-  "JP-21": [35.4,136.7], "JP-22": [35.0,138.4], "JP-23": [35.2,136.9], "JP-24": [34.7,136.5],
-  "JP-25": [35.0,135.9], "JP-26": [35.0,135.8], "JP-27": [34.7,135.5], "JP-28": [34.7,135.2],
-  "JP-29": [34.7,135.8], "JP-30": [34.2,135.2], "JP-31": [35.5,134.2], "JP-32": [35.5,133.1],
-  "JP-33": [34.7,133.9], "JP-34": [34.4,132.5], "JP-35": [34.2,131.5], "JP-36": [34.1,134.6],
-  "JP-37": [34.3,134.0], "JP-38": [33.8,132.8], "JP-39": [33.6,133.5], "JP-40": [33.6,130.4],
-  "JP-41": [33.3,130.3], "JP-42": [32.8,129.9], "JP-43": [32.8,130.7], "JP-44": [33.2,131.6],
-  "JP-45": [31.9,131.4], "JP-46": [31.6,130.6], "JP-47": [26.2,127.7],
-});
 const regionCache = new Map();
 const regionLocationCache = new Map();
 const regionPlotVersions = new WeakMap();
@@ -143,6 +136,8 @@ let publicMapFocusFrame = 0;
 let publicMapFocusToken = 0;
 let publicMapHoverTimer = 0;
 let publicMapPollTimer = 0;
+let publicMarkerDrag = null;
+let publicMarkerDragFrame = 0;
 let publicSensorDetailNeedsScrollReset = false;
 let publicSensorFilter = "ALL";
 let publicSensorQueryText = "";
@@ -165,10 +160,16 @@ let authenticated = false;
 let sessionUser = null;
 let pollTimer = 0;
 let statusTimer = 0;
+let publicLocationEdit = null;
+let measurementCategories = [];
+let measurementCatalog = new Map();
 
 publicSensorDetail?.addEventListener("scroll", () => {
   publicSensorDetailNeedsScrollReset = publicSensorDetail.scrollTop > 0;
 }, { passive: true });
+
+publicMapLocationCancel?.addEventListener("click", () => closePublicLocationEditor());
+publicMapLocationSave?.addEventListener("click", () => { void savePublicLocationEdit(); });
 
 const api = async (path, options = {}) => {
   const { body: requestBody, rawBody, ...requestOptions } = options;
@@ -196,6 +197,7 @@ const api = async (path, options = {}) => {
 };
 
 const showView = (name) => {
+  if (name !== "map" && publicLocationEdit) closePublicLocationEditor();
   document.documentElement.dataset.sensorView = name;
   if (participationDialog?.open && name !== "login") participationDialog.close();
   window.clearInterval(pollTimer);
@@ -244,6 +246,7 @@ const boot = async () => {
   void mountMapSurfaces();
   initLocationPickers();
   initRegionFields();
+  await loadMeasurementCatalog().catch((error) => showStatus(error.message, "error"));
   await loadPublicSensors().catch((error) => showStatus(error.message, "error"));
   try {
     const session = await api("../api/web/v1/session");
@@ -313,6 +316,111 @@ const loadDevices = async () => {
       onlineCount: devices.filter((device) => device.state === "ONLINE").length,
     },
   }));
+  if (publicSensors.length) renderPublicSensors();
+};
+
+const loadMeasurementCatalog = async () => {
+  const response = await api("../api/public/v1/measurement-types");
+  measurementCategories = Array.isArray(response.categories) ? response.categories : [];
+  const definitions = Array.isArray(response.measurements) ? response.measurements : [];
+  measurementCatalog = new Map(definitions.map((definition) => [definition.key, definition]));
+  renderMeasurementPickers();
+  renderMeasurementCatalog(response);
+};
+
+const renderMeasurementPickers = () => {
+  document.querySelectorAll("[data-measurement-picker]").forEach((container) => {
+    const existing = new Set(Array.from(container.querySelectorAll("input[name='measurementKeys']:checked"), (input) => input.value));
+    if (!existing.size && container.dataset.measurementPicker === "add") {
+      ["temperature", "humidity", "pm25"].forEach((key) => existing.add(key));
+    }
+    container.classList.add("sensor-measurement-picker");
+    container.replaceChildren();
+    measurementCategories.forEach((category, categoryIndex) => {
+      const definitions = [...measurementCatalog.values()].filter((definition) => definition.category === category.id);
+      if (!definitions.length) return;
+      const details = document.createElement("details");
+      details.dataset.measurementCategory = category.id;
+      details.open = categoryIndex === 0 || category.id === "water";
+      const summary = document.createElement("summary");
+      summary.append(
+        Object.assign(document.createElement("b"), { textContent: category.labelJa }),
+        Object.assign(document.createElement("span"), { textContent: `${definitions.length} TYPES` }),
+      );
+      const options = document.createElement("div");
+      options.className = "sensor-measurement-options";
+      definitions.forEach((definition) => {
+        const label = document.createElement("label");
+        label.className = "sensor-measurement-option";
+        const input = Object.assign(document.createElement("input"), {
+          type: "checkbox",
+          name: "measurementKeys",
+          value: definition.key,
+          checked: existing.has(definition.key),
+        });
+        const copy = document.createElement("span");
+        copy.append(
+          Object.assign(document.createElement("b"), { textContent: definition.labelJa }),
+          Object.assign(document.createElement("small"), { textContent: `${definition.key} · ${definition.unit}` }),
+        );
+        label.append(input, copy);
+        options.append(label);
+      });
+      details.append(summary, options);
+      container.append(details);
+    });
+    const limit = Object.assign(document.createElement("p"), { className: "sensor-measurement-limit" });
+    container.append(limit);
+    const sync = () => {
+      const checked = [...container.querySelectorAll("input[name='measurementKeys']:checked")];
+      const inputs = [...container.querySelectorAll("input[name='measurementKeys']")];
+      inputs.forEach((input) => { input.disabled = !input.checked && checked.length >= 16; });
+      limit.textContent = `${String(checked.length).padStart(2, "0")} / 16 SELECTED`;
+    };
+    container.addEventListener("change", sync);
+    sync();
+  });
+};
+
+const renderMeasurementCatalog = (response) => {
+  if (measurementCatalogSummary) measurementCatalogSummary.textContent = `${measurementCatalog.size} STANDARD MEASUREMENTS / ${measurementCategories.length} FIELDS`;
+  if (measurementCatalogDisclaimer && response.disclaimerJa) measurementCatalogDisclaimer.textContent = response.disclaimerJa;
+  if (!measurementCatalogGroups) return;
+  measurementCatalogGroups.replaceChildren();
+  measurementCategories.forEach((category) => {
+    const definitions = [...measurementCatalog.values()].filter((definition) => definition.category === category.id);
+    if (!definitions.length) return;
+    const details = document.createElement("details");
+    details.className = "sensor-measurement-group";
+    details.open = category.id === "water";
+    const summary = document.createElement("summary");
+    summary.append(
+      Object.assign(document.createElement("strong"), { textContent: category.labelJa }),
+      Object.assign(document.createElement("b"), { textContent: `${definitions.length}` }),
+      Object.assign(document.createElement("small"), { textContent: category.descriptionJa }),
+    );
+    const list = document.createElement("div");
+    list.className = "sensor-measurement-list";
+    definitions.forEach((definition) => {
+      const article = document.createElement("article");
+      article.className = "sensor-measurement-item";
+      const header = document.createElement("header");
+      header.append(
+        Object.assign(document.createElement("strong"), { textContent: `${definition.labelJa} / ${definition.unit}` }),
+        Object.assign(document.createElement("code"), { textContent: definition.key }),
+      );
+      const description = document.createElement("p");
+      description.append(
+        Object.assign(document.createElement("b"), { textContent: "接続 " }),
+        document.createTextNode(`${definition.interfaces.join("・")} ／ 例：${definition.exampleSensors.join("、")}`),
+      );
+      article.append(header, description);
+      if (definition.noteJa) article.append(Object.assign(document.createElement("p"), { className: "sensor-measurement-note", textContent: definition.noteJa }));
+      list.append(article);
+    });
+    details.append(summary, list);
+    measurementCatalogGroups.append(details);
+  });
 };
 
 const loadPublicSensors = async ({ preserveSelection = true, quiet = false } = {}) => {
@@ -376,14 +484,32 @@ const renderPublicSensors = () => {
     marker.style.setProperty("--sensor-glow", `${Math.round(13 + activity * 22)}px`);
     marker.style.setProperty("--sensor-pulse-duration", `${(3.1 - activity * 1.2).toFixed(2)}s`);
     marker.style.setProperty("--sensor-pulse-scale", String(1.32 + activity * .5));
-    marker.setAttribute("aria-label", `${sensor.owner.displayName}さんの${sensor.sensorName}、${publicSensorStateLabel(sensor)}`);
+    const markerLabel = `${sensor.owner.displayName}さんの${sensor.sensorName}、${publicSensorStateLabel(sensor)}`;
+    marker.dataset.baseAriaLabel = markerLabel;
+    marker.setAttribute("aria-label", markerLabel);
     marker.append(avatarElement(sensor.owner, "span"));
+    marker.append(Object.assign(document.createElement("span"), {
+      className: "sensor-map-marker-cluster-count",
+      hidden: true,
+    }));
     const primaryMetric = publicPrimaryMetric(sensor);
+    const markerStateLabel = [publicSensorStateLabel(sensor), primaryMetric?.compact].filter(Boolean).join(" · ");
+    marker.dataset.baseStateLabel = markerStateLabel;
     marker.append(Object.assign(document.createElement("span"), {
       className: "sensor-map-marker-state",
-      textContent: [publicSensorStateLabel(sensor), primaryMetric?.compact].filter(Boolean).join(" · "),
+      textContent: markerStateLabel,
     }));
-    marker.addEventListener("click", () => {
+    marker.addEventListener("pointerdown", (event) => startPublicLocationMarkerDrag(event, sensor, marker));
+    marker.addEventListener("pointermove", (event) => movePublicLocationMarkerDrag(event));
+    marker.addEventListener("pointerup", (event) => finishPublicLocationMarkerDrag(event));
+    marker.addEventListener("pointercancel", (event) => finishPublicLocationMarkerDrag(event, false));
+    marker.addEventListener("click", (event) => {
+      if (marker.dataset.skipLocationClick === "true") {
+        delete marker.dataset.skipLocationClick;
+        event.stopPropagation();
+        return;
+      }
+      if (activatePublicSensorCluster(marker)) return;
       selectPublicSensor(sensor, marker, { historyMode: "push" });
       focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom });
     });
@@ -468,7 +594,10 @@ function initPublicSensorDirectory() {
       return;
     }
     if (event.key !== "Escape") return;
-    if (publicSensorDirectory?.dataset.open === "true") {
+    if (publicLocationEdit) {
+      event.preventDefault();
+      closePublicLocationEditor();
+    } else if (publicSensorDirectory?.dataset.open === "true") {
       event.preventDefault();
       setPublicSensorDirectoryOpen(false, { focus: true });
     } else if (publicSensorQueryText) {
@@ -503,6 +632,8 @@ function applyPublicSensorFilters({ deferLayout = false } = {}) {
       sensor.region?.countryCode,
       sensor.region?.subdivisionCode,
       sensor.region?.subdivisionName,
+      sensor.region?.municipalityCode,
+      sensor.region?.municipalityName,
       sensor.demoLocationLabel,
       publicSensorStateLabel(sensor),
     ].filter(Boolean).join(" "));
@@ -689,8 +820,8 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
     social.append(link);
   });
   const note = document.createElement("p");
-  const region = [sensor.region?.subdivisionName, sensor.region?.subdivisionCode].filter(Boolean).join(" / ") || sensor.region?.countryCode || "地域非公開";
-  note.textContent = `${region} · 公開位置は0.1度単位へ丸めています。自治体コードと住所は公開しません。`;
+  const region = [sensor.region?.subdivisionName, sensor.region?.municipalityName].filter(Boolean).join(" / ") || sensor.region?.countryCode || "地域未設定";
+  note.textContent = `${region} · POIは参加者が地図上で選んだ公開位置です。実際の設置場所を示すとは限りません。`;
   const content = [toolbar, owner, createPublicRelationshipBar(sensor), createPublicMetricHud(sensor), createPublicNodeMeta(sensor), createPublicOracle(sensor)];
   if (sensor.isDemo) {
     const disclosure = document.createElement("p");
@@ -700,9 +831,172 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
     content.push(disclosure);
   }
   content.push(note);
+  const ownedDevice = ownedDeviceForPublicSensor(sensor);
+  if (ownedDevice) content.push(createPublicLocationEditAction(sensor, ownedDevice));
   if (social.childElementCount) content.push(social);
   publicSensorDetail.append(...content);
 };
+
+function ownedDeviceForPublicSensor(sensor) {
+  if (!authenticated || !sensor?.id) return null;
+  return devices.find((device) => device.publicId === sensor.id) ?? null;
+}
+
+function createPublicLocationEditAction(sensor, device) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "sensor-public-location-action";
+  const button = Object.assign(document.createElement("button"), {
+    type: "button",
+    className: "sensor-secondary",
+    textContent: "このPOIを大地図で動かす",
+  });
+  button.addEventListener("click", () => openPublicLocationEditor(sensor, device));
+  wrapper.append(button);
+  return wrapper;
+}
+
+function openPublicLocationEditor(sensor, device) {
+  if (!sensor?.location || !device || !publicMapLocationEditor) return;
+  publicLocationEdit = {
+    sensorId: sensor.id,
+    deviceId: device.deviceId,
+    sensorName: sensor.sensorName,
+    latitude: roundPublicLocationCoordinate(sensor.location.latitude),
+    longitude: roundPublicLocationCoordinate(sensor.location.longitude),
+  };
+  publicMapLocationEditor.hidden = false;
+  publicSensorMap.dataset.locationEditing = "true";
+  setPublicSensorDirectoryOpen(false);
+  publicSensorDetail.hidden = true;
+  updatePublicLocationEditor();
+  positionPublicSensorMarkers();
+  publicSensorMap.focus({ preventScroll: true });
+  showStatus("地図をクリックするか、アイコンをドラッグして公開POIを動かしてください。");
+}
+
+function closePublicLocationEditor() {
+  publicLocationEdit = null;
+  publicMarkerDrag = null;
+  if (publicMarkerDragFrame) cancelAnimationFrame(publicMarkerDragFrame);
+  publicMarkerDragFrame = 0;
+  publicMapLocationEditor.hidden = true;
+  delete publicSensorMap.dataset.locationEditing;
+  publicSensorMap.classList.remove("is-location-dragging");
+  if (selectedPublicSensorId) publicSensorDetail.hidden = false;
+  positionPublicSensorMarkers();
+}
+
+function updatePublicLocationEditor() {
+  if (!publicLocationEdit) return;
+  if (publicMapLocationTitle) publicMapLocationTitle.textContent = `${publicLocationEdit.sensorName}の公開POI`;
+  if (publicMapLocationOutput) {
+    publicMapLocationOutput.value = `${publicLocationEdit.latitude.toFixed(5)}, ${publicLocationEdit.longitude.toFixed(5)}`;
+  }
+}
+
+function setPublicLocationEditPoint(latitude, longitude) {
+  if (!publicLocationEdit) return;
+  publicLocationEdit.latitude = roundPublicLocationCoordinate(clamp(Number(latitude), -90, 90));
+  publicLocationEdit.longitude = roundPublicLocationCoordinate(normalizeLongitude(Number(longitude)));
+  updatePublicLocationEditor();
+  positionPublicSensorMarkers();
+}
+
+function setPublicLocationEditPointFromClient(clientX, clientY) {
+  if (!publicLocationEdit) return;
+  const point = publicMapCoordinateAtClient(clientX, clientY);
+  setPublicLocationEditPoint(point.latitude, point.longitude);
+}
+
+function publicMapCoordinateAtClient(clientX, clientY) {
+  const rect = publicSensorMap.getBoundingClientRect();
+  const view = publicMapView();
+  const xRatio = clamp((clientX - rect.left) / Math.max(rect.width, 1), 0, 1);
+  const yRatio = clamp((clientY - rect.top) / Math.max(rect.height, 1), 0, 1);
+  return {
+    latitude: view.north - yRatio * (view.north - view.south),
+    longitude: normalizeLongitude(view.west + xRatio * (view.east - view.west)),
+  };
+}
+
+function startPublicLocationMarkerDrag(event, sensor, marker) {
+  if (event.button !== 0 || publicLocationEdit?.sensorId !== sensor.id) return;
+  event.preventDefault();
+  event.stopPropagation();
+  publicMarkerDrag = { pointerId: event.pointerId, marker, clientX: event.clientX, clientY: event.clientY, moved: false };
+  try { marker.setPointerCapture(event.pointerId); } catch {}
+  publicSensorMap.classList.add("is-location-dragging");
+}
+
+function movePublicLocationMarkerDrag(event) {
+  if (!publicMarkerDrag || publicMarkerDrag.pointerId !== event.pointerId) return;
+  event.preventDefault();
+  event.stopPropagation();
+  publicMarkerDrag.clientX = event.clientX;
+  publicMarkerDrag.clientY = event.clientY;
+  publicMarkerDrag.moved = true;
+  if (publicMarkerDragFrame) return;
+  publicMarkerDragFrame = requestAnimationFrame(() => {
+    publicMarkerDragFrame = 0;
+    if (publicMarkerDrag) setPublicLocationEditPointFromClient(publicMarkerDrag.clientX, publicMarkerDrag.clientY);
+  });
+}
+
+function finishPublicLocationMarkerDrag(event, commit = true) {
+  if (!publicMarkerDrag || publicMarkerDrag.pointerId !== event.pointerId) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const { marker, moved } = publicMarkerDrag;
+  if (publicMarkerDragFrame) cancelAnimationFrame(publicMarkerDragFrame);
+  publicMarkerDragFrame = 0;
+  if (commit) setPublicLocationEditPointFromClient(event.clientX, event.clientY);
+  publicMarkerDrag = null;
+  publicSensorMap.classList.remove("is-location-dragging");
+  if (moved) marker.dataset.skipLocationClick = "true";
+}
+
+async function savePublicLocationEdit() {
+  if (!publicLocationEdit || !publicMapLocationSave) return;
+  const edit = { ...publicLocationEdit };
+  const device = devices.find((candidate) => candidate.deviceId === edit.deviceId && candidate.publicId === edit.sensorId);
+  if (!device) {
+    showStatus("この観測点の編集権限を確認できませんでした。", "error");
+    closePublicLocationEditor();
+    return;
+  }
+  publicMapLocationSave.disabled = true;
+  try {
+    const body = {
+      name: device.name,
+      countryCode: device.countryCode,
+      subdivisionCode: device.subdivisionCode,
+      municipalityCode: device.municipalityCode,
+      admin1Code: device.subdivisionCode ? null : device.admin1Code,
+      localityName: device.municipalityCode ? null : device.localityName,
+      isPublic: true,
+      publicLatitude: edit.latitude,
+      publicLongitude: edit.longitude,
+      measurementKeys: device.measurementKeys,
+    };
+    const response = await api(`../api/web/v1/devices/${encodeURIComponent(device.deviceId)}`, { method: "PATCH", body });
+    devices = devices.map((candidate) => candidate.deviceId === device.deviceId ? response.device : candidate);
+    if (selectedDevice?.deviceId === device.deviceId) selectedDevice = response.device;
+    const sensor = publicSensors.find((candidate) => candidate.id === edit.sensorId);
+    if (sensor) sensor.location = { latitude: edit.latitude, longitude: edit.longitude, precision: "PUBLIC_REFERENCE_POINT" };
+    closePublicLocationEditor();
+    renderPublicSensors();
+    showStatus("公開POIを更新しました。");
+    void loadPublicSensors({ preserveSelection: true, quiet: true }).catch((error) => showStatus(error.message, "error"));
+  } catch (error) {
+    showStatus(error.message, "error");
+  } finally {
+    publicMapLocationSave.disabled = false;
+  }
+}
+
+function roundPublicLocationCoordinate(value) {
+  return Math.round(Number(value) * 100_000) / 100_000;
+}
 
 function createPublicRelationshipBar(sensor) {
   const bar = document.createElement("div");
@@ -728,7 +1022,7 @@ function createPublicRelationshipBar(sensor) {
   analyze.addEventListener("click", () => openSensorAnalysis({
     id: sensor.id,
     name: sensor.sensorName,
-    region: [sensor.region?.subdivisionName, sensor.region?.countryCode].filter(Boolean).join(" / "),
+    region: [sensor.region?.subdivisionName, sensor.region?.municipalityName, sensor.region?.countryCode].filter(Boolean).join(" / "),
     observations: sensor.visualObservations,
     isDemo: sensor.isDemo,
     source: "public",
@@ -777,13 +1071,13 @@ async function togglePublicRelationship(sensor, kind, button, refresh) {
 function openPublicOwnerProfile(sensor) {
   if (!publicOwnerProfileDialog) return;
   const owner = sensor.owner ?? {};
-  const region = [sensor.region?.subdivisionName, sensor.region?.countryCode].filter(Boolean).join(" / ") || "地域非公開";
+  const region = [sensor.region?.subdivisionName, sensor.region?.municipalityName, sensor.region?.countryCode].filter(Boolean).join(" / ") || "地域未設定";
   publicOwnerProfileAvatar.replaceChildren(avatarElement(owner, "span"));
   publicOwnerProfileName.textContent = owner.displayName || "GAIA参加者";
   publicOwnerProfileSensor.textContent = `${sensor.sensorName}を地球の観測点として公開しています。`;
   publicOwnerProfileNote.textContent = sensor.isDemo
     ? `${region}に配置した展示用ダミーセンサーのプロフィールです。実機の観測者ではありません。`
-    : `${region}から、約10km単位の公開位置と観測値を届けています。正確な設置場所は公開していません。`;
+    : `${region}で、参加者が地図上に置いた公開POIから観測値を届けています。実際の設置場所を示すとは限りません。`;
   publicOwnerProfileLinks.replaceChildren();
   [["X", owner.xUrl], ["GitHub", owner.githubUrl], ["Instagram", owner.instagramUrl]].forEach(([label, url]) => {
     if (!url) return;
@@ -872,7 +1166,7 @@ function rounded(value, digits = 1) {
   return Math.round(value * factor) / factor;
 }
 
-const publicMetricMetadata = Object.freeze({
+const fallbackMetricMetadata = Object.freeze({
   temperature: { label: "気温", console: "TEMP", unit: "°C", digits: 1 },
   humidity: { label: "湿度", console: "HUM", unit: "%", digits: 1 },
   pm25: { label: "PM2.5", console: "PM2.5", unit: "µg/m³", digits: 1 },
@@ -888,6 +1182,17 @@ const publicMetricMetadata = Object.freeze({
   sync_rate: { label: "識理層シンクロ率", console: "SYNC", unit: "%", digits: 1 },
 });
 
+function metricDefinition(key) {
+  const registered = measurementCatalog.get(key);
+  if (registered) return {
+    label: registered.labelJa,
+    console: String(registered.labelEn || key).toUpperCase(),
+    unit: registered.unit,
+    digits: registered.digits,
+  };
+  return fallbackMetricMetadata[key] ?? { label: key, console: key.toUpperCase(), unit: "", digits: 2 };
+}
+
 function publicMetricDefinitions(sensor) {
   const latest = sensor.visualObservations?.[0]?.data ?? {};
   const preferred = sensor.visualType === "ame"
@@ -898,7 +1203,7 @@ function publicMetricDefinitions(sensor) {
         ? ["spatial_noise", "illuminance", "sync_rate"]
         : ["temperature", "humidity", "pm25", "pressure", "illuminance", "rssi", "geomagnetic"];
   const orderedKeys = [...preferred.filter((key) => key in latest), ...Object.keys(latest).filter((key) => !preferred.includes(key))];
-  return orderedKeys.slice(0, 6).map((key) => ({ key, ...(publicMetricMetadata[key] ?? { label: key, console: key.toUpperCase(), unit: "", digits: 2 }) }));
+  return orderedKeys.slice(0, 6).map((key) => ({ key, ...metricDefinition(key) }));
 }
 
 function formatPublicMetric(definition, value, compact = false) {
@@ -1093,19 +1398,16 @@ function publicSensorDistanceKm(left, right) {
 function renderPublicResonanceNetwork() {
   if (!publicSensorNetwork) return;
   const namespace = "http://www.w3.org/2000/svg";
-  const markerBounds = publicSensorMarkers.getBoundingClientRect();
-  const markerWidth = Math.max(markerBounds.width, 1);
-  const markerHeight = Math.max(markerBounds.height, 1);
   const markerById = new Map([...publicSensorMarkers.querySelectorAll(".sensor-map-marker")].map((marker) => [marker.dataset.sensorId, marker]));
   const paths = [];
   publicResonancePairs.forEach((pair, index) => {
     const from = markerById.get(pair.from.id);
     const to = markerById.get(pair.to.id);
     if (!from || !to || from.hidden || to.hidden) return;
-    const x1 = Number.parseFloat(from.style.left) + markerOffset(from, "x") / markerWidth * 100;
-    const y1 = Number.parseFloat(from.style.top) + markerOffset(from, "y") / markerHeight * 100;
-    const x2 = Number.parseFloat(to.style.left) + markerOffset(to, "x") / markerWidth * 100;
-    const y2 = Number.parseFloat(to.style.top) + markerOffset(to, "y") / markerHeight * 100;
+    const x1 = Number.parseFloat(from.style.left);
+    const y1 = Number.parseFloat(from.style.top);
+    const x2 = Number.parseFloat(to.style.left);
+    const y2 = Number.parseFloat(to.style.top);
     if (![x1, y1, x2, y2].every(Number.isFinite)) return;
     const bend = ((hashPublicSensorId(`${pair.from.id}:${pair.to.id}`) % 11) - 5) * .35;
     const midpointX = (x1 + x2) / 2 - (y2 - y1) * .025 + bend;
@@ -1121,10 +1423,6 @@ function renderPublicResonanceNetwork() {
     paths.push(path);
   });
   publicSensorNetwork.replaceChildren(...paths);
-}
-
-function markerOffset(marker, axis) {
-  return Number.parseFloat(marker.style.getPropertyValue(`--sensor-marker-offset-${axis}`)) || 0;
 }
 
 function renderPublicNetworkStats() {
@@ -1244,7 +1542,7 @@ function initPublicMapNavigation() {
       startPublicMapPinch();
       return;
     }
-    publicMapDrag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, deltaX: 0, deltaY: 0 };
+    publicMapDrag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, deltaX: 0, deltaY: 0, moved: false };
   });
   publicSensorMap.addEventListener("pointermove", (event) => {
     if (!publicMapPointers.has(event.pointerId)) return;
@@ -1256,6 +1554,7 @@ function initPublicMapNavigation() {
     if (!publicMapDrag || publicMapDrag.pointerId !== event.pointerId) return;
     publicMapDrag.deltaX = event.clientX - publicMapDrag.startX;
     publicMapDrag.deltaY = event.clientY - publicMapDrag.startY;
+    if (Math.hypot(publicMapDrag.deltaX, publicMapDrag.deltaY) > 6) publicMapDrag.moved = true;
     queuePublicMapDragPreview();
   });
   const release = (event, commit = true) => {
@@ -1267,17 +1566,25 @@ function initPublicMapNavigation() {
       const remaining = [...publicMapPointers.entries()][0];
       if (remaining) {
         const [pointerId, point] = remaining;
-        publicMapDrag = { pointerId, startX: point.x, startY: point.y, deltaX: 0, deltaY: 0 };
+        publicMapDrag = { pointerId, startX: point.x, startY: point.y, deltaX: 0, deltaY: 0, moved: true };
         publicSensorMap.classList.add("is-dragging");
       } else publicSensorMap.classList.remove("is-dragging");
       return;
     }
+    const placePublicPoi = commit && Boolean(publicLocationEdit) && publicMapDrag?.pointerId === event.pointerId && !publicMapDrag.moved;
     if (publicMapDrag?.pointerId === event.pointerId) finishPublicMapDrag(commit);
     if (!publicMapPointers.size) publicSensorMap.classList.remove("is-dragging");
+    if (placePublicPoi) setPublicLocationEditPointFromClient(event.clientX, event.clientY);
   };
   publicSensorMap.addEventListener("pointerup", release);
   publicSensorMap.addEventListener("pointercancel", (event) => release(event, false));
   publicSensorMap.addEventListener("keydown", (event) => {
+    if (event.target !== publicSensorMap) return;
+    if (publicLocationEdit && ["Enter", " "].includes(event.key)) {
+      event.preventDefault();
+      setPublicLocationEditPoint(publicMapCamera.latitude, publicMapCamera.longitude);
+      return;
+    }
     if (["+", "="].includes(event.key)) { event.preventDefault(); zoomPublicMapBy(1.6); return; }
     if (event.key === "-") { event.preventDefault(); zoomPublicMapBy(1 / 1.6); return; }
     if (event.key === "Home") { event.preventDefault(); resetPublicMapView(); return; }
@@ -1417,20 +1724,31 @@ function positionPublicSensorMarkers() {
   const height = Math.max(bounds.height, 1);
   const entries = [];
   publicSensorMarkers.querySelectorAll(".sensor-map-marker").forEach((marker) => {
-    const longitude = Number(marker.dataset.longitude);
-    const latitude = Number(marker.dataset.latitude);
+    const editing = publicLocationEdit?.sensorId === marker.dataset.sensorId;
+    const longitude = editing ? publicLocationEdit.longitude : Number(marker.dataset.longitude);
+    const latitude = editing ? publicLocationEdit.latitude : Number(marker.dataset.latitude);
     const left = longitudeToPercent(longitudeNearestToView(longitude, view), view);
     const top = latitudeToPercent(latitude, view);
     marker.style.left = `${left}%`;
     marker.style.top = `${top}%`;
-    marker.style.setProperty("--sensor-marker-offset-x", "0px");
-    marker.style.setProperty("--sensor-marker-offset-y", "0px");
-    delete marker.dataset.collisionGroup;
+    delete marker.dataset.clusterGroup;
+    delete marker.dataset.clusterMember;
+    delete marker.dataset.clusterMembers;
+    delete marker.dataset.clusterSize;
+    marker.dataset.locationEditing = String(editing);
+    const clusterCount = marker.querySelector(".sensor-map-marker-cluster-count");
+    if (clusterCount) {
+      clusterCount.hidden = true;
+      clusterCount.textContent = "";
+    }
+    const state = marker.querySelector(".sensor-map-marker-state");
+    if (state) state.textContent = editing ? "MOVE POI" : marker.dataset.baseStateLabel || "";
+    if (marker.dataset.baseAriaLabel) marker.setAttribute("aria-label", marker.dataset.baseAriaLabel);
     marker.removeAttribute("aria-description");
-    marker.hidden = marker.dataset.filtered === "true" || left < -3 || left > 103 || top < -3 || top > 103;
-    if (!marker.hidden) entries.push({ marker, baseX: left / 100 * width, baseY: top / 100 * height });
+    marker.hidden = (!editing && marker.dataset.filtered === "true") || left < -3 || left > 103 || top < -3 || top > 103;
+    if (!marker.hidden) entries.push({ marker, baseX: left / 100 * width, baseY: top / 100 * height, editing });
   });
-  const remaining = new Set(entries);
+  const remaining = new Set(entries.filter((entry) => !entry.editing));
   while (remaining.size) {
     const seed = remaining.values().next().value;
     remaining.delete(seed);
@@ -1446,28 +1764,28 @@ function positionPublicSensorMarkers() {
     if (group.length < 2) continue;
     group.sort((left, right) => String(left.marker.dataset.sensorId).localeCompare(String(right.marker.dataset.sensorId)));
     const groupId = group.map((entry) => entry.marker.dataset.sensorId).join(":");
-    const centreX = group.reduce((sum, entry) => sum + entry.baseX, 0) / group.length;
-    const centreY = group.reduce((sum, entry) => sum + entry.baseY, 0) / group.length;
-    const baseAngle = hashPublicSensorId(groupId) % 360 * Math.PI / 180;
-    group.forEach((entry, index) => {
-      const ringIndex = Math.floor(index / 8);
-      const ringStart = ringIndex * 8;
-      const ringCount = Math.min(8, group.length - ringStart);
-      const position = index - ringStart;
-      const radius = group.length === 2 ? 29 : 34 + ringIndex * 54 + Math.max(0, ringCount - 3) * 3;
-      const angle = baseAngle + position / ringCount * Math.PI * 2;
-      const edge = 32;
-      const targetX = clamp(centreX + Math.cos(angle) * radius, edge, width - edge);
-      const targetY = clamp(centreY + Math.sin(angle) * radius, edge, height - edge);
-      entry.offsetX = targetX - entry.baseX;
-      entry.offsetY = targetY - entry.baseY;
-      entry.marker.style.setProperty("--sensor-marker-offset-x", `${entry.offsetX.toFixed(1)}px`);
-      entry.marker.style.setProperty("--sensor-marker-offset-y", `${entry.offsetY.toFixed(1)}px`);
-      entry.marker.dataset.collisionGroup = groupId;
-      entry.marker.setAttribute("aria-description", "同じ地域の観測点と重ならないよう、座標を示す線付きで表示しています。");
+    const representative = group.find((entry) => entry.marker.dataset.sensorId === selectedPublicSensorId) || group[0];
+    const clusterLabel = formatPublicSensorClusterCount(group.length);
+    const memberIds = group.map((entry) => entry.marker.dataset.sensorId);
+    group.forEach((entry) => {
+      entry.marker.dataset.clusterGroup = groupId;
+      if (entry !== representative) {
+        entry.marker.dataset.clusterMember = representative.marker.dataset.sensorId;
+        entry.marker.hidden = true;
+      }
     });
+    representative.marker.dataset.clusterSize = String(group.length);
+    representative.marker.dataset.clusterMembers = memberIds.join(",");
+    representative.marker.setAttribute("aria-label", `${group.length}件の観測点。選択するとこの位置を拡大します。`);
+    representative.marker.setAttribute("aria-description", "この縮尺で重なる観測点を、実座標から動かさずひとつにまとめています。");
+    const clusterCount = representative.marker.querySelector(".sensor-map-marker-cluster-count");
+    if (clusterCount) {
+      clusterCount.hidden = false;
+      clusterCount.textContent = clusterLabel;
+    }
+    const state = representative.marker.querySelector(".sensor-map-marker-state");
+    if (state) state.textContent = `${group.length} NODES`;
   }
-  renderPublicMarkerTethers(entries, width, height);
   renderPublicResonanceNetwork();
   publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-field", {
     detail: {
@@ -1486,21 +1804,21 @@ function positionPublicSensorMarkers() {
   }));
 }
 
-function renderPublicMarkerTethers(entries, width, height) {
-  if (!publicSensorTethers) return;
-  const namespace = "http://www.w3.org/2000/svg";
-  const lines = entries.filter((entry) => entry.marker.dataset.collisionGroup).map((entry) => {
-    const line = document.createElementNS(namespace, "line");
-    line.classList.add("sensor-marker-tether");
-    line.dataset.sensorId = entry.marker.dataset.sensorId;
-    line.setAttribute("x1", String(entry.baseX / width * 100));
-    line.setAttribute("y1", String(entry.baseY / height * 100));
-    line.setAttribute("x2", String((entry.baseX + entry.offsetX) / width * 100));
-    line.setAttribute("y2", String((entry.baseY + entry.offsetY) / height * 100));
-    line.setAttribute("vector-effect", "non-scaling-stroke");
-    return line;
-  });
-  publicSensorTethers.replaceChildren(...lines);
+function formatPublicSensorClusterCount(count) {
+  const circled = ["", "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳"];
+  return circled[count] || String(count);
+}
+
+function activatePublicSensorCluster(marker) {
+  const clusterSize = Number(marker?.dataset.clusterSize) || 0;
+  if (clusterSize < 2) return false;
+  if (publicMapCamera.zoom >= publicMapMaxZoom - .05) {
+    setPublicSensorDirectoryOpen(true, { focus: true });
+    return true;
+  }
+  const bounds = marker.getBoundingClientRect();
+  zoomPublicMapBy(1.8, bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+  return true;
 }
 
 function zoomPublicMapBy(factor, clientX, clientY, render = true) {
@@ -1602,13 +1920,16 @@ const renderDetail = ({ device, latest }, telemetry) => {
     locationForm.elements.admin1Code.value = device.admin1Code || "";
     locationForm.elements.localityName.value = device.localityName || "";
     locationForm.elements.isPublic.value = "true";
+    setMeasurementSelection(locationForm, device.measurementKeys);
     locationForm.dataset.savedRegion = regionSelectionKey(
       device.countryCode,
       device.subdivisionCode,
       device.municipalityCode,
     );
     syncPickerViewport(locationForm, device.countryCode);
-    setPickerLocation(locationForm, device.publicLatitude, device.publicLongitude);
+    setPickerLocation(locationForm, device.publicLatitude, device.publicLongitude, {
+      basis: "stored",
+    });
     locationForm.querySelector("[data-location-picker]").dataset.regionPlot = "stored";
     syncPickerEnabled(locationForm);
     void populateRegionFields(locationForm, {
@@ -1942,22 +2263,32 @@ const renderHistory = (telemetry) => {
     item.append(Object.assign(document.createElement("span"), { textContent: values }));
     historyList.append(item);
   });
-  const chartValues = telemetry.slice().reverse().map((entry) => Number(entry.data.temperature)).filter(Number.isFinite);
+  const chartKey = preferredHistoryKey(telemetry);
+  const definition = chartKey ? metricDefinition(chartKey) : null;
+  const chartValues = chartKey ? telemetry.slice().reverse().map((entry) => Number(entry.data[chartKey])).filter(Number.isFinite) : [];
   historyChart.replaceChildren();
   if (!chartValues.length) {
-    historyChart.textContent = "温度の履歴が届くとグラフを表示します。";
+    historyChart.textContent = "観測値の履歴が届くとグラフを表示します。";
+    historyChart.setAttribute("aria-label", "観測値の履歴グラフ");
     return;
   }
+  historyChart.setAttribute("aria-label", `${definition.label}の履歴グラフ`);
   const minimum = Math.min(...chartValues);
   const maximum = Math.max(...chartValues);
   chartValues.forEach((value) => {
     const bar = document.createElement("i");
     const normalized = maximum === minimum ? 55 : 15 + ((value - minimum) / (maximum - minimum)) * 80;
     bar.style.setProperty("--height", `${normalized}%`);
-    bar.title = `${value} ℃`;
+    bar.title = `${value} ${definition.unit}`.trim();
     historyChart.append(bar);
   });
 };
+
+function preferredHistoryKey(telemetry) {
+  const present = new Set(telemetry.flatMap((entry) => Object.keys(entry.data || {})));
+  return ["temperature", "water_temperature", "ph", "turbidity", "dissolved_oxygen", "soil_moisture", "rainfall_rate", ...present]
+    .find((key) => present.has(key)) || null;
+}
 
 const metric = (key, value) => {
   const article = document.createElement("article");
@@ -2147,7 +2478,7 @@ locationForm.addEventListener("submit", async (event) => {
     selectedDevice = response.device;
     locationForm.dataset.savedRegion = formRegionSelectionKey(locationForm);
     locationForm.querySelector("[data-location-picker]").dataset.regionPlot = "stored";
-    showStatus("地域を更新しました。");
+    showStatus("計測項目・地域・公開位置を更新しました。");
     await Promise.all([refreshDetail({ quiet: true }), loadPublicSensors()]);
   } catch (error) { showStatus(error.message, "error"); }
   finally { submit.disabled = false; }
@@ -2272,6 +2603,8 @@ function formDevice(form) {
   const data = new FormData(form);
   const subdivisionCode = String(data.get("subdivisionCode") || "").trim() || null;
   const municipalityCode = String(data.get("municipalityCode") || "").trim() || null;
+  const measurementKeys = data.getAll("measurementKeys").map((key) => String(key));
+  if (measurementKeys.length < 1 || measurementKeys.length > 16) throw new Error("測る項目を1〜16個選んでください。");
   return {
     name: String(data.get("name") || "").trim(),
     countryCode: String(data.get("countryCode") || "").trim(),
@@ -2282,7 +2615,24 @@ function formDevice(form) {
     isPublic: true,
     publicLatitude: numberOrNull(data.get("publicLatitude")),
     publicLongitude: numberOrNull(data.get("publicLongitude")),
+    measurementKeys,
   };
+}
+
+function setMeasurementSelection(form, keys) {
+  const selected = new Set(Array.isArray(keys) ? keys : []);
+  const container = form.querySelector("[data-measurement-picker]");
+  if (!container) return;
+  container.querySelectorAll("input[name='measurementKeys']").forEach((input) => {
+    input.checked = selected.has(input.value);
+    input.disabled = false;
+  });
+  const checked = [...container.querySelectorAll("input[name='measurementKeys']:checked")];
+  container.querySelectorAll("input[name='measurementKeys']").forEach((input) => {
+    input.disabled = !input.checked && checked.length >= 16;
+  });
+  const limit = container.querySelector(".sensor-measurement-limit");
+  if (limit) limit.textContent = `${String(checked.length).padStart(2, "0")} / 16 SELECTED`;
 }
 
 function initRegionFields() {
@@ -2333,7 +2683,8 @@ async function populateRegionFields(form, selection = {}) {
   try {
     const base = await loadRegions(countryCode);
     if (form.dataset.regionRequest !== requestKey) return;
-    replaceOptions(subdivisionSelect, "指定しない", base.subdivisions);
+    subdivisionSelect.required = countryCode === "JP";
+    replaceOptions(subdivisionSelect, countryCode === "JP" ? "都道府県を選択" : "指定しない", base.subdivisions);
     subdivisionSelect.disabled = base.subdivisions.length === 0;
     subdivisionSelect.value = requestedSubdivision;
     if (requestedSubdivision && !subdivisionSelect.value) appendCurrentOption(subdivisionSelect, requestedSubdivision);
@@ -2351,7 +2702,7 @@ async function populateRegionFields(form, selection = {}) {
     note.textContent = legacy
       ? `既存の地域表記「${[form.elements.admin1Code.value, form.elements.localityName.value].filter(Boolean).join(" / ")}」を保持中です。正式コードを選ぶと正規化されます。`
       : countryCode === "JP"
-        ? "都道府県はISO 3166-2、市区町村は検査数字を含むJ-LISの6桁コードで保存します。住所は保存しません。"
+        ? "都道府県は必須、市区町村は任意です。役所位置を初期表示し、公開POIは地図上で自由に調整できます。実際の設置住所は保存しません。"
         : "地域は国コードを含む完全なISO 3166-2コードで保存します。住所は保存しません。";
   } catch (error) {
     if (form.dataset.regionRequest !== requestKey) return;
@@ -2381,18 +2732,12 @@ async function plotSelectedRegion(form) {
   const picker = form.querySelector("[data-location-picker]");
   if (countryCode !== "JP") {
     picker.dataset.regionPlot = "idle";
-    return;
+    return true;
   }
   if (!subdivisionCode) {
-    setPickerLocation(form, 35.7, 139.7);
-    picker.dataset.regionPlot = "ready";
-    return;
-  }
-  const prefecturalOffice = japanPrefecturalOffices[subdivisionCode];
-  if (prefecturalOffice) setPickerLocation(form, prefecturalOffice[0], prefecturalOffice[1], { basis: "prefectural-office" });
-  if (!municipalityCode) {
-    picker.dataset.regionPlot = "ready";
-    return;
+    setPickerLocation(form, null, null);
+    picker.dataset.regionPlot = "waiting";
+    return false;
   }
   picker.dataset.regionPlot = "loading";
   const query = new URLSearchParams({ countryCode, subdivisionCode, municipalityCode });
@@ -2403,19 +2748,19 @@ async function plotSelectedRegion(form) {
   try {
     const response = await regionLocationCache.get(cacheKey);
     if (regionPlotVersions.get(form) !== version) return;
-    setPickerLocation(form, response.location.latitude, response.location.longitude, { basis: "municipal-main-office" });
+    const basis = response.location.precision === "MUNICIPAL_MAIN_OFFICE" ? "municipal-main-office" : "prefectural-office";
+    setPickerLocation(form, response.location.latitude, response.location.longitude, { basis });
     picker.dataset.regionPlot = "ready";
+    return true;
   } catch {
     regionLocationCache.delete(cacheKey);
     if (regionPlotVersions.get(form) === version) {
       picker.dataset.regionPlot = "fallback";
-      setPickerLocation(
-        form,
-        prefecturalOffice?.[0] ?? null,
-        prefecturalOffice?.[1] ?? null,
-        { basis: "prefectural-office-fallback" },
-      );
+      setPickerLocation(form, null, null);
+      const output = form.querySelector("[data-location-output]");
+      if (output) output.textContent = "役所の公開座標を取得できません。もう一度地域を選択してください。";
     }
+    return false;
   }
 }
 
@@ -2458,10 +2803,11 @@ function initLocationPickers() {
       const bounds = selectionBoundsFor(view);
       const latitude = numberOrNull(form.elements.publicLatitude.value) ?? ((view.north + view.south) / 2);
       const longitude = numberOrNull(form.elements.publicLongitude.value) ?? ((view.east + view.west) / 2);
+      const step = event.shiftKey ? .1 : .01;
       setPickerLocation(
         form,
-        clamp(latitude + (event.key === "ArrowUp" ? 1 : event.key === "ArrowDown" ? -1 : 0), bounds.south, bounds.north),
-        clamp(longitude + (event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0), bounds.west, bounds.east),
+        clamp(latitude + (event.key === "ArrowUp" ? step : event.key === "ArrowDown" ? -step : 0), bounds.south, bounds.north),
+        clamp(longitude + (event.key === "ArrowRight" ? step : event.key === "ArrowLeft" ? -step : 0), bounds.west, bounds.east),
       );
     });
     syncPickerViewport(form, form.elements.countryCode.value);
@@ -2527,13 +2873,16 @@ function regionSelectionKey(countryCode, subdivisionCode, municipalityCode) {
 
 function syncPickerEnabled(form) {
   const picker = form.querySelector("[data-location-picker]");
+  picker.dataset.locationLocked = "false";
   picker.removeAttribute("aria-disabled");
-  if (numberOrNull(form.elements.publicLatitude.value) === null) setPickerLocation(form, 35.7, 139.7);
+  picker.tabIndex = 0;
+  if (form.elements.countryCode.value !== "JP" && numberOrNull(form.elements.publicLatitude.value) === null) setPickerLocation(form, 0, 0);
 }
 
 function setPickerLocation(form, rawLatitude, rawLongitude, { basis = "" } = {}) {
-  const latitude = rawLatitude === null || rawLatitude === undefined ? null : Math.max(-90, Math.min(90, Math.round(Number(rawLatitude) * 10) / 10));
-  const longitude = rawLongitude === null || rawLongitude === undefined ? null : Math.max(-180, Math.min(180, Math.round(Number(rawLongitude) * 10) / 10));
+  const precisionFactor = 100_000;
+  const latitude = rawLatitude === null || rawLatitude === undefined ? null : Math.max(-90, Math.min(90, Math.round(Number(rawLatitude) * precisionFactor) / precisionFactor));
+  const longitude = rawLongitude === null || rawLongitude === undefined ? null : Math.max(-180, Math.min(180, Math.round(Number(rawLongitude) * precisionFactor) / precisionFactor));
   form.elements.publicLatitude.value = latitude ?? "";
   form.elements.publicLongitude.value = longitude ?? "";
   const picker = form.querySelector("[data-location-picker]");
@@ -2551,9 +2900,9 @@ function setPickerLocation(form, rawLatitude, rawLongitude, { basis = "" } = {})
   const basisLabel = {
     "prefectural-office": "都道府県庁所在地",
     "municipal-main-office": "本庁所在地",
-    "prefectural-office-fallback": "本庁所在地を取得できないため都道府県庁所在地",
-  }[basis] || "公開位置";
-  output.textContent = `${basisLabel} ${latitude.toFixed(1)}, ${longitude.toFixed(1)}（約10km単位）`;
+    "stored": "現在の公開位置",
+  }[basis] || "公開POI";
+  output.textContent = `${basisLabel} ${latitude.toFixed(5)}, ${longitude.toFixed(5)}（公開）`;
 }
 
 async function mountMapSurfaces() {
@@ -2805,5 +3154,5 @@ function locationLabel(device) {
 }
 function formatValue(value) { return Number.isFinite(Number(value)) ? Number(value).toLocaleString("ja-JP", { maximumFractionDigits: 2 }) : "—"; }
 function formatRelative(iso) { const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000)); return seconds < 60 ? `${seconds}秒前` : seconds < 3600 ? `${Math.floor(seconds / 60)}分前` : new Date(iso).toLocaleString("ja-JP"); }
-function labelFor(key) { return ({ temperature: "温度", humidity: "湿度", pm25: "PM2.5", pm10: "PM10", voc: "VOC", nox: "NOx" })[key] || key; }
-function unitFor(key) { return ({ temperature: "℃", humidity: "%", pm25: "µg/m³", pm10: "µg/m³", voc: "ppb", nox: "ppb" })[key] || ""; }
+function labelFor(key) { return metricDefinition(key).label; }
+function unitFor(key) { return metricDefinition(key).unit; }
