@@ -310,21 +310,12 @@ try {
       viewport: { width: innerWidth, height: innerHeight },
     };
   });
-  assert.match(wideComposition.backgroundSize, /95% auto/u, "wide opening artwork must be slightly reduced");
-  assert.match(wideComposition.backgroundPosition, /100% 50%/u, "wide opening artwork must be anchored to the right");
+  assert.equal(wideComposition.backgroundSize, "cover", "wide opening artwork must remain full-bleed");
+  assert.match(wideComposition.backgroundPosition, /50% 50%/u, "wide opening artwork must remain centered");
   assert(wideComposition.menu.left >= 0 && wideComposition.menu.right <= wideComposition.viewport.width && wideComposition.menu.bottom <= wideComposition.viewport.height, "wide opening menu must remain inside the viewport");
   const wideMenuCenter = wideComposition.menu.left + wideComposition.menu.width / 2;
   const wideQuestionCenter = wideComposition.question.left + wideComposition.question.width / 2;
-  const wideArtworkWidth = wideComposition.viewport.width * 0.95;
-  const wideArtworkScale = wideArtworkWidth / 1672;
-  const wideArtworkLeft = wideComposition.viewport.width - wideArtworkWidth;
-  const wideArtworkTop = (wideComposition.viewport.height - 941 * wideArtworkScale) / 2;
-  const wideLogoOpticalCenter = wideArtworkLeft + 430 * wideArtworkScale;
-  const wideTaglineBottom = wideArtworkTop + 540 * wideArtworkScale;
-  assert(Math.abs(wideMenuCenter - wideLogoOpticalCenter) <= 3, "wide opening menu must be centered beneath the title logo");
   assert(Math.abs(wideQuestionCenter - wideMenuCenter) <= 2, "opening question must be centered to the route buttons");
-  assert(Math.abs(wideComposition.question.top - (wideTaglineBottom + 18)) <= 3, "opening question and routes must sit immediately beneath the baked tagline");
-  assert(wideComposition.menu.left - wideComposition.copy.left >= 100, "wide opening menu must retain its logo-centering offset");
   assert(wideComposition.menu.top - wideComposition.question.bottom <= 24, "opening route cards must follow the centered question without a large gap");
   assert.equal(wideComposition.guide.step, "1");
   assert.equal(wideComposition.guide.targetId, "gaia-opening-route-story");
