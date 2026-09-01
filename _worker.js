@@ -20762,9 +20762,33 @@ __name(fromUrl, "fromUrl");
 // src/live-senseware.ts
 var HAWAII_BBOX = [-156.2, 18.8, -154.7, 20.3];
 var HAWAII_CENTER = { lat: 19.55, lon: -155.45 };
-var TOKYO_BBOX = [139.4, 35.45, 139.95, 35.9];
-var TOKYO_CENTER = { lat: 35.6762, lon: 139.6503 };
-var TRANSFORM_VERSION = "live-senseware-v2-open-meteo";
+var CITY_LOCATIONS = Object.freeze({
+  tokyo: Object.freeze({ id: "tokyo", name: "\u6771\u4EAC", lat: 35.6762, lon: 139.6503 }),
+  sapporo: Object.freeze({ id: "sapporo", name: "\u672D\u5E4C", lat: 43.0618, lon: 141.3545 }),
+  sendai: Object.freeze({ id: "sendai", name: "\u4ED9\u53F0", lat: 38.2682, lon: 140.8694 }),
+  saitama: Object.freeze({ id: "saitama", name: "\u3055\u3044\u305F\u307E", lat: 35.8617, lon: 139.6455 }),
+  chiba: Object.freeze({ id: "chiba", name: "\u5343\u8449", lat: 35.6074, lon: 140.1065 }),
+  yokohama: Object.freeze({ id: "yokohama", name: "\u6A2A\u6D5C", lat: 35.4437, lon: 139.638 }),
+  kawasaki: Object.freeze({ id: "kawasaki", name: "\u5DDD\u5D0E", lat: 35.5308, lon: 139.7029 }),
+  sagamihara: Object.freeze({ id: "sagamihara", name: "\u76F8\u6A21\u539F", lat: 35.5715, lon: 139.3732 }),
+  niigata: Object.freeze({ id: "niigata", name: "\u65B0\u6F5F", lat: 37.9161, lon: 139.0364 }),
+  shizuoka: Object.freeze({ id: "shizuoka", name: "\u9759\u5CA1", lat: 34.9756, lon: 138.3828 }),
+  hamamatsu: Object.freeze({ id: "hamamatsu", name: "\u6D5C\u677E", lat: 34.7108, lon: 137.7261 }),
+  nagoya: Object.freeze({ id: "nagoya", name: "\u540D\u53E4\u5C4B", lat: 35.1815, lon: 136.9066 }),
+  kyoto: Object.freeze({ id: "kyoto", name: "\u4EAC\u90FD", lat: 35.0116, lon: 135.7681 }),
+  osaka: Object.freeze({ id: "osaka", name: "\u5927\u962A", lat: 34.6937, lon: 135.5023 }),
+  sakai: Object.freeze({ id: "sakai", name: "\u583A", lat: 34.5733, lon: 135.4828 }),
+  kobe: Object.freeze({ id: "kobe", name: "\u795E\u6238", lat: 34.6901, lon: 135.1955 }),
+  okayama: Object.freeze({ id: "okayama", name: "\u5CA1\u5C71", lat: 34.6551, lon: 133.9195 }),
+  hiroshima: Object.freeze({ id: "hiroshima", name: "\u5E83\u5CF6", lat: 34.3853, lon: 132.4553 }),
+  kitakyushu: Object.freeze({ id: "kitakyushu", name: "\u5317\u4E5D\u5DDE", lat: 33.8834, lon: 130.8751 }),
+  fukuoka: Object.freeze({ id: "fukuoka", name: "\u798F\u5CA1", lat: 33.5904, lon: 130.4017 }),
+  kumamoto: Object.freeze({ id: "kumamoto", name: "\u718A\u672C", lat: 32.8031, lon: 130.7079 })
+});
+var DEFAULT_CITY = CITY_LOCATIONS.tokyo;
+var cityBbox = /* @__PURE__ */ __name((city) => [city.lon - 0.3, city.lat - 0.25, city.lon + 0.3, city.lat + 0.25], "cityBbox");
+var resolveObservationCity = /* @__PURE__ */ __name((value) => CITY_LOCATIONS[value] || DEFAULT_CITY, "resolveObservationCity");
+var TRANSFORM_VERSION = "live-senseware-v3-japan-cities";
 var STREAM_LIFETIME_MS = 10 * 60 * 1e3;
 var STREAM_REFRESH_MS = 5 * 60 * 1e3;
 var HEARTBEAT_MS = 15e3;
@@ -20916,11 +20940,11 @@ var numericOrNull = /* @__PURE__ */ __name((value) => {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }, "numericOrNull");
-var loadOpenMeteoWeather = /* @__PURE__ */ __name(async (headers) => {
+var loadOpenMeteoWeather = /* @__PURE__ */ __name(async (headers, city) => {
   const sourceUrl = new URL("https://api.open-meteo.com/v1/forecast");
   sourceUrl.search = new URLSearchParams({
-    latitude: String(TOKYO_CENTER.lat),
-    longitude: String(TOKYO_CENTER.lon),
+    latitude: String(city.lat),
+    longitude: String(city.lon),
     current: "temperature_2m,precipitation,cloud_cover,wind_speed_10m",
     wind_speed_unit: "ms",
     timezone: "GMT",
@@ -20940,13 +20964,13 @@ var loadOpenMeteoWeather = /* @__PURE__ */ __name(async (headers) => {
   return {
     event: {
       schemaVersion: 1,
-      eventId: `open-meteo:tokyo-weather:${observedAt}`,
+      eventId: `open-meteo:${city.id}-weather:${observedAt}`,
       provider: "open-meteo",
-      datasetId: "Open-Meteo Best Match / Tokyo current weather",
+      datasetId: `Open-Meteo Best Match / ${city.name} current weather`,
       status: "near-real-time",
       observedAt,
       retrievedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      location: { label: "Open-Meteo / \u6771\u4EAC", ...TOKYO_CENTER, bbox: TOKYO_BBOX },
+      location: { label: `Open-Meteo / ${city.name}`, lat: city.lat, lon: city.lon, bbox: cityBbox(city) },
       measurements: [
         { key: "weatherWindSpeed", value: wind, unit: "m/s", quality: wind === null ? "missing" : "estimated", sourceKind: "MODEL" },
         { key: "weatherTemperature", value: temperature, unit: "\u2103", quality: temperature === null ? "missing" : "estimated", sourceKind: "MODEL" },
@@ -20958,11 +20982,11 @@ var loadOpenMeteoWeather = /* @__PURE__ */ __name(async (headers) => {
     ...sourceHeaders(response)
   };
 }, "loadOpenMeteoWeather");
-var loadOpenMeteoAir = /* @__PURE__ */ __name(async (headers) => {
+var loadOpenMeteoAir = /* @__PURE__ */ __name(async (headers, city) => {
   const sourceUrl = new URL("https://air-quality-api.open-meteo.com/v1/air-quality");
   sourceUrl.search = new URLSearchParams({
-    latitude: String(TOKYO_CENTER.lat),
-    longitude: String(TOKYO_CENTER.lon),
+    latitude: String(city.lat),
+    longitude: String(city.lon),
     current: "carbon_dioxide,pm2_5",
     timezone: "GMT",
     forecast_days: "1"
@@ -20979,13 +21003,13 @@ var loadOpenMeteoAir = /* @__PURE__ */ __name(async (headers) => {
   return {
     event: {
       schemaVersion: 1,
-      eventId: `open-meteo:tokyo-cams:${observedAt}`,
+      eventId: `open-meteo:${city.id}-cams:${observedAt}`,
       provider: "open-meteo",
       datasetId: "Open-Meteo / CAMS global atmosphere forecast",
       status: "latest-published",
       observedAt,
       retrievedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      location: { label: "CAMS\u30E2\u30C7\u30EB / \u6771\u4EAC\u683C\u5B50", ...TOKYO_CENTER, bbox: TOKYO_BBOX },
+      location: { label: `CAMS\u30E2\u30C7\u30EB / ${city.name}\u683C\u5B50`, lat: city.lat, lon: city.lon, bbox: cityBbox(city) },
       measurements: [
         { key: "forecastCo2", value: co2, unit: "ppm", quality: co2 === null ? "missing" : "estimated", sourceKind: "MODEL" },
         { key: "pm25", value: pm25, unit: "\xB5g/m\xB3", quality: pm25 === null ? "missing" : "estimated", sourceKind: "MODEL" }
@@ -21116,12 +21140,13 @@ var fallbackSnapshot = /* @__PURE__ */ __name(async (request, env, reason) => {
   return { schemaVersion: 1, source: "snapshot", generatedAt: payload.generatedAt, bbox: payload.bbox, events: payload.events, fallbackReason: reason };
 }, "fallbackSnapshot");
 var liveSnapshot = /* @__PURE__ */ __name(async (request, env, ctx) => {
+  const city = resolveObservationCity(new URL(request.url).searchParams.get("city"));
   if (env.LIVE_SENSEWARE_ENABLED !== "true") return fallbackSnapshot(request, env, "LIVE_SENSEWARE_ENABLED is not true");
   const definitions = [
     { cacheKey: "noaa-ndbc", ttlMs: 5 * 60 * 1e3, load: loadNdbc },
     { cacheKey: "noaa-co2", ttlMs: 60 * 60 * 1e3, load: loadCo2 },
-    { cacheKey: "open-meteo-tokyo-weather-v1", ttlMs: 30 * 60 * 1e3, load: loadOpenMeteoWeather },
-    { cacheKey: "open-meteo-tokyo-air-v1", ttlMs: 3 * 60 * 60 * 1e3, load: loadOpenMeteoAir }
+    { cacheKey: `open-meteo-${city.id}-weather-v1`, ttlMs: 30 * 60 * 1e3, load: /* @__PURE__ */ __name((headers) => loadOpenMeteoWeather(headers, city), "load") },
+    { cacheKey: `open-meteo-${city.id}-air-v1`, ttlMs: 3 * 60 * 60 * 1e3, load: /* @__PURE__ */ __name((headers) => loadOpenMeteoAir(headers, city), "load") }
   ];
   if (env.LIVE_SENSEWARE_JAXA_ENABLED === "true") {
     definitions.push({ cacheKey: "jaxa-gsmap", ttlMs: 6 * 60 * 60 * 1e3, load: loadJaxa });
@@ -21147,7 +21172,7 @@ var liveSnapshot = /* @__PURE__ */ __name(async (request, env, ctx) => {
       events.push({ ...event, fallbackReason: disabledReasons.get(identity) || errors.join("; ") || "provider snapshot fallback" });
     }
   }
-  return { schemaVersion: 1, source: "live", generatedAt: (/* @__PURE__ */ new Date()).toISOString(), bbox: HAWAII_BBOX, events, errors: errors.length ? errors : void 0 };
+  return { schemaVersion: 1, source: "live", generatedAt: (/* @__PURE__ */ new Date()).toISOString(), bbox: cityBbox(city), events, errors: errors.length ? errors : void 0 };
 }, "liveSnapshot");
 var sseLine = /* @__PURE__ */ __name((event, data, id) => `${id ? `id: ${id}
 ` : ""}event: ${event}
