@@ -35,11 +35,30 @@
   pointer-events: none;
 }
 
+.sound-layer-background::before,
 .sound-layer-background::after {
   position: absolute;
-  z-index: 2;
   inset: 0;
   content: "";
+  pointer-events: none;
+}
+
+.sound-layer-background::before {
+  z-index: 2;
+  opacity: 0;
+  transform: scale(0.88);
+  background:
+    radial-gradient(ellipse 58% 22% at 50% 52%, rgba(221, 231, 255, 0.56), rgba(132, 84, 255, 0.18) 44%, transparent 76%),
+    radial-gradient(ellipse 34% 56% at 54% 48%, rgba(88, 242, 211, 0.22), transparent 74%);
+  filter: blur(26px);
+}
+
+.sound-layer[data-playing="true"] .sound-layer-background::before {
+  animation: sound-visualizer-focus 1.65s cubic-bezier(0.16, 0.82, 0.22, 1) both;
+}
+
+.sound-layer-background::after {
+  z-index: 3;
   background:
     linear-gradient(90deg, rgba(2, 3, 15, 0.72) 0%, rgba(3, 4, 18, 0.42) 26%, rgba(3, 4, 18, 0.08) 60%, rgba(3, 4, 18, 0.02) 100%),
     linear-gradient(180deg, rgba(2, 3, 15, 0.32) 0%, rgba(2, 3, 15, 0.02) 36%, rgba(2, 3, 15, 0.16) 100%);
@@ -242,25 +261,30 @@
   height: 100%;
   opacity: 0;
   visibility: hidden;
-  transform: translate3d(0, 5%, 0) scale(1.018);
-  clip-path: inset(100% 0 0 0);
+  transform: scale(1.075);
   pointer-events: none;
   mix-blend-mode: screen;
   -webkit-mask-image: none;
   mask-image: none;
-  filter: saturate(1.38) contrast(1.16) brightness(1.08);
+  filter: blur(28px) saturate(1.72) contrast(0.86) brightness(1.72);
   transition:
-    opacity 780ms ease,
-    transform 980ms cubic-bezier(0.16, 0.82, 0.22, 1),
-    clip-path 980ms cubic-bezier(0.16, 0.82, 0.22, 1),
-    visibility 0s linear 980ms;
+    opacity 1.05s cubic-bezier(0.18, 0.68, 0.22, 1),
+    transform 1.7s cubic-bezier(0.16, 0.82, 0.22, 1),
+    filter 1.45s cubic-bezier(0.16, 0.82, 0.22, 1),
+    visibility 0s linear 1.45s;
+}
+
+@keyframes sound-visualizer-focus {
+  0% { opacity: 0; transform: scale(0.86); filter: blur(34px); }
+  34% { opacity: 0.46; transform: scale(1.02); filter: blur(19px); }
+  100% { opacity: 0.035; transform: scale(1.42); filter: blur(46px); }
 }
 
 .sound-layer[data-playing="true"] .sound-visualizer {
   opacity: 0.96;
   visibility: visible;
-  transform: translate3d(0, 0, 0) scale(1);
-  clip-path: inset(0 0 0 0);
+  transform: scale(1);
+  filter: blur(0) saturate(1.42) contrast(1.2) brightness(1.06);
   transition-delay: 0s;
 }
 
@@ -281,13 +305,15 @@
   mask-image: none;
   transform: scale(1);
   transition:
-    opacity 820ms ease,
-    transform 1100ms cubic-bezier(0.16, 0.82, 0.22, 1);
+    opacity 1.15s ease,
+    transform 1.55s cubic-bezier(0.16, 0.82, 0.22, 1),
+    filter 1.2s ease;
 }
 
 .sound-layer[data-playing="true"] .sound-character-scene {
   opacity: 0;
-  transform: scale(1.025);
+  transform: scale(1.035);
+  filter: saturate(0.86) brightness(0.5) contrast(1.12) blur(8px);
 }
 
 .sound-now-playing { grid-area: info; align-self: start; }
@@ -646,6 +672,7 @@ body.gaia-opening-active .gaia-audio-gallery-open {
 @media (prefers-reduced-motion: reduce) {
   .sound-layer,
   .sound-layer::before,
+  .sound-layer-background::before,
   .sound-visualizer,
   .sound-character-scene {
     animation: none !important;

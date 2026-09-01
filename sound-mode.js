@@ -131,7 +131,12 @@
     if (!(canvas instanceof HTMLCanvasElement)) return null;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const smoothedBands = new Float32Array(3);
+    const previousSpectrum = new Float32Array(32);
     let smoothedEnergy = 0;
+    let smoothedPulse = 0;
+    let smoothedFlux = 0;
+    let smoothedWave = 0;
+    let previousBass = 0;
     let automaticGain = 1;
     let lastDrawAt = -Infinity;
     let gl = null;
@@ -157,9 +162,10 @@
       uniform float mid;
       uniform float high;
       uniform float energy;
+      uniform float pulse;
+      uniform float flux;
+      uniform float wave;
       uniform float playing;
-
-      const float PI = 3.141592653589793;
 
       float hash21(vec2 p) {
         p = fract(p * vec2(123.34, 456.21));
@@ -200,70 +206,65 @@
         vec2 p = vec2(uv.x * aspect, uv.y) * scale + vec2(drift, -drift * 0.37);
         vec2 cell = floor(p);
         vec2 local = fract(p) - 0.5;
-        vec2 offset = (hash22(cell) - 0.5) * 0.66;
+        vec2 offset = (hash22(cell) - 0.5) * 0.72;
         float seed = hash21(cell + 31.7);
-        float dust = exp(-dot(local - offset, local - offset) * 280.0);
+        float dust = exp(-dot(local - offset, local - offset) * 320.0);
         return dust * smoothstep(threshold, 1.0, seed);
       }
 
-      vec3 auroraSilk(vec2 uv) {
+      vec3 spectrumPalette(float t) {
+        vec3 violet = vec3(0.31, 0.08, 0.73);
+        vec3 rose = vec3(0.94, 0.18, 0.59);
+        vec3 gold = vec3(1.0, 0.62, 0.23);
+        vec3 mint = vec3(0.15, 0.91, 0.64);
+        vec3 cyan = vec3(0.22, 0.72, 1.0);
+        vec3 color = mix(violet, rose, smoothstep(0.0, 0.32, t));
+        color = mix(color, gold, smoothstep(0.26, 0.52, t));
+        color = mix(color, mint, smoothstep(0.48, 0.76, t));
+        return mix(color, cyan, smoothstep(0.72, 1.0, t));
+      }
+
+      vec3 spectralRibbons(vec2 uv) {
         float aspect = resolution.x / max(1.0, resolution.y);
-        vec2 p = vec2((uv.x - 0.5) * aspect, uv.y);
-        float motion = time * (0.022 + mid * 0.055);
-        float breath = 0.84 + 0.045 * sin(time * 0.3) + bass * 0.5 + energy * 0.32;
-        float warp = fbm(vec2(p.x * 0.72 - motion, p.y * 1.42 + motion * 0.6));
-        float fine = fbm(vec2(p.x * 1.38 + motion * 0.7, p.y * 2.2 - motion));
-        float twist = (warp - 0.5) * (0.14 + mid * 0.28);
-        float sweep = sin(p.x * 0.74 + motion * 1.24) * (0.095 + mid * 0.11) + p.x * 0.025;
-        float lift = sin(p.x * 1.36 + motion * 2.2) * (0.065 + mid * 0.1);
-        float fold = 0.72 + 0.28 * sin(p.x * 5.2 - p.y * 3.1 + fine * 4.4 + motion * 2.0);
+        vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
+        float motion = time * (0.38 + mid * 1.65 + flux * 2.8);
+        float coarseNoise = fbm(vec2(p.x * 0.68 - motion * 0.11, p.y * 1.9 + wave * 0.8));
+        float fineNoise = fbm(vec2(p.x * 1.8 + motion * 0.16, p.y * 4.2 - motion * 0.13));
+        vec3 field = vec3(0.0);
+        float signalCore = 0.0;
 
-        float c1 = 0.56 + sweep + lift + twist;
-        float c2 = 0.47 - sweep * 0.7 - sin(p.x * 1.06 - motion * 1.7) * 0.1 - twist * 0.72;
-        float c3 = 0.65 + sweep * 0.46 + sin(p.x * 0.82 + motion) * 0.09 + twist * 0.48;
-        float c4 = 0.39 - sweep * 0.34 + sin(p.x * 1.7 + motion * 1.35) * 0.08 - twist * 0.38;
-        float c5 = 0.75 - sweep * 0.5 - sin(p.x * 1.22 - motion * 1.15) * 0.07 + twist * 0.26;
+        for (int index = 0; index < 7; index += 1) {
+          float fi = float(index);
+          float bandPosition = -0.38 + fi * 0.126;
+          float phase = fi * 1.37 + wave * (1.2 + fi * 0.18);
+          float primary = sin(p.x * (1.18 + fi * 0.19) + motion * (0.72 + fi * 0.09) + phase);
+          float secondary = sin(p.x * (3.1 + fi * 0.31) - motion * (1.05 + fi * 0.07) - phase * 0.6);
+          float tremor = sin(p.x * (8.0 + fi * 0.72) + motion * 2.4 + fi) * flux;
+          float bend = primary * (0.045 + mid * 0.19 + pulse * 0.065)
+            + secondary * (0.018 + mid * 0.06 + flux * 0.09)
+            + tremor * 0.035
+            + (coarseNoise - 0.5) * (0.04 + mid * 0.12)
+            + (fineNoise - 0.5) * high * 0.028;
+          float center = bandPosition + bend + wave * (fi - 3.0) * 0.012;
+          float distanceToBand = abs(p.y - center);
+          float width = 0.052 + bass * 0.065 + pulse * 0.035 + fi * 0.0015;
+          float glow = exp(-pow(distanceToBand / width, 2.0));
+          float silk = exp(-pow(distanceToBand / (0.015 + mid * 0.012 + pulse * 0.007), 2.0));
+          float filament = exp(-pow(distanceToBand / (0.0045 + high * 0.004), 2.0));
+          float palettePosition = fi / 6.0 + 0.035 * sin(motion * 0.2 + fi);
+          vec3 bandColor = spectrumPalette(fract(palettePosition));
+          float fold = 0.62 + 0.38 * sin(p.x * 5.6 + fineNoise * 5.0 + motion + fi * 0.8);
+          field += bandColor * glow * (0.18 + energy * 0.42 + bass * 0.18) * (0.74 + fold * 0.26);
+          field += mix(bandColor, vec3(0.84, 0.96, 1.0), 0.35) * silk * (0.18 + mid * 0.62 + flux * 0.72);
+          field += vec3(0.76, 1.0, 0.95) * filament * (0.04 + high * 0.74 + flux * 1.1);
+          signalCore = max(signalCore, filament);
+        }
 
-        float m1 = exp(-pow(abs(p.y - c1) / (0.086 + mid * 0.045 + bass * 0.02), 2.0));
-        float m2 = exp(-pow(abs(p.y - c2) / (0.097 + mid * 0.042 + bass * 0.018), 2.0));
-        float m3 = exp(-pow(abs(p.y - c3) / (0.074 + mid * 0.04 + bass * 0.015), 2.0));
-        float m4 = exp(-pow(abs(p.y - c4) / (0.079 + mid * 0.022), 2.0));
-        float m5 = exp(-pow(abs(p.y - c5) / (0.063 + mid * 0.023), 2.0));
-        float s1 = exp(-pow(abs(p.y - c1) / (0.022 + mid * 0.012), 2.0));
-        float s2 = exp(-pow(abs(p.y - c2) / (0.026 + mid * 0.011), 2.0));
-        float s3 = exp(-pow(abs(p.y - c3) / (0.018 + mid * 0.01), 2.0));
-        float s4 = exp(-pow(abs(p.y - c4) / (0.021 + mid * 0.009), 2.0));
-        float s5 = exp(-pow(abs(p.y - c5) / (0.016 + mid * 0.008), 2.0));
-
-        vec3 indigo = vec3(0.055, 0.025, 0.20);
-        vec3 violet = vec3(0.39, 0.12, 0.66);
-        vec3 magenta = vec3(0.82, 0.16, 0.48);
-        vec3 gold = vec3(1.0, 0.63, 0.24);
-        vec3 emerald = vec3(0.22, 0.78, 0.56);
-        vec3 celadon = vec3(0.28, 0.77, 0.82);
-
-        vec3 color = vec3(0.0);
-        color += mix(indigo, violet, 0.72 + 0.18 * fine) * m1 * (0.48 + 0.28 * fold);
-        color += mix(violet, magenta, 0.46 + 0.24 * warp) * m2 * (0.44 + 0.24 * (1.0 - fold));
-        color += mix(magenta, gold, 0.28 + 0.26 * fine) * m3 * (0.32 + 0.22 * fold);
-        color += mix(emerald, celadon, 0.52 + 0.3 * warp) * m4 * (0.46 + 0.25 * (1.0 - fold));
-        color += mix(gold, celadon, 0.22 + 0.36 * fine) * m5 * (0.27 + 0.18 * fold);
-        float silkGrain = 0.54 + 0.46 * smoothstep(0.2, 0.8, fine + sin(p.x * 3.7 + motion) * 0.1);
-        color += mix(violet, vec3(0.82, 0.67, 1.0), fine) * s1 * silkGrain * 0.22;
-        color += mix(magenta, gold, warp * 0.5) * s2 * (1.0 - silkGrain * 0.35) * 0.18;
-        color += mix(gold, vec3(1.0, 0.84, 0.62), fine) * s3 * silkGrain * 0.16;
-        color += mix(emerald, celadon, fine) * s4 * silkGrain * 0.2;
-        color += mix(celadon, violet, warp * 0.36) * s5 * (0.7 + fold * 0.3) * 0.17;
-
-        float signalCore = max(max(s1, s2), max(s3, max(s4, s5)));
-        vec3 signalColor = mix(vec3(0.35, 1.0, 0.88), vec3(0.96, 0.35, 1.0), smoothstep(-0.8, 0.9, p.x));
-        color += signalColor * signalCore * (0.16 + energy * 1.05 + high * 0.38);
-        color *= 1.04 + mid * 0.36;
-
-        float overlap = m1 * m2 + m2 * m3 + m3 * m5 + m1 * m4;
-        color += mix(vec3(0.68, 0.53, 1.0), vec3(0.64, 1.0, 0.89), fine) * overlap * 0.16;
-        float edgeFade = smoothstep(-0.92, -0.52, p.x) * smoothstep(1.02, 0.58, p.x);
-        return color * breath * edgeFade;
+        float edgeFade = smoothstep(-1.18, -0.72, p.x) * smoothstep(1.18, 0.72, p.x);
+        float bassBloom = (bass * 0.88 + pulse * 0.72) * exp(-dot(p * vec2(0.58, 1.1), p * vec2(0.58, 1.1)) * 1.7);
+        field += mix(vec3(0.36, 0.05, 0.78), vec3(0.02, 0.78, 0.68), uv.x) * bassBloom;
+        field += vec3(0.72, 0.92, 1.0) * signalCore * flux * 0.8;
+        return field * edgeFade;
       }
 
       void main() {
@@ -271,82 +272,36 @@
         float aspect = resolution.x / max(1.0, resolution.y);
         vec2 centered = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
 
-        vec3 deepIndigo = vec3(0.006, 0.008, 0.035);
-        vec3 midnight = vec3(0.012, 0.015, 0.072);
+        vec3 deepIndigo = vec3(0.003, 0.005, 0.028);
+        vec3 midnight = vec3(0.014, 0.012, 0.075);
         vec3 color = mix(deepIndigo, midnight, smoothstep(0.0, 1.0, uv.y));
-        float nebula = fbm(centered * vec2(0.68, 1.12) + vec2(time * 0.006, -time * 0.004));
-        color += vec3(0.055, 0.02, 0.105) * smoothstep(0.5, 0.93, nebula) * 0.42;
+        float nebula = fbm(centered * vec2(0.82, 1.34) + vec2(time * (0.018 + mid * 0.04), -time * 0.012));
+        color += mix(vec3(0.08, 0.015, 0.16), vec3(0.015, 0.11, 0.15), uv.x) * smoothstep(0.46, 0.91, nebula) * (0.3 + energy * 0.42);
 
-        vec3 silk = auroraSilk(uv);
-        float horizon = 0.285;
-        if (uv.y < horizon + 0.03) {
-          float rippleField = fbm(vec2(uv.x * 6.0 + time * 0.025, uv.y * 19.0 - time * 0.032));
-          float ripple = (rippleField - 0.5) * (0.014 + bass * 0.014);
-          vec2 reflectedUv = vec2(uv.x + ripple, horizon + (horizon - uv.y) * 0.78);
-          vec3 reflectedSilk = auroraSilk(reflectedUv);
-          float depthFade = smoothstep(0.0, horizon, uv.y);
-          float waterBreath = 0.52 + bass * 0.36 + energy * 0.18 + 0.035 * sin(time * 0.38);
-          vec3 water = reflectedSilk * waterBreath * mix(0.28, 0.9, depthFade);
-          water += vec3(0.06, 0.11, 0.2) * smoothstep(0.38, 0.9, rippleField) * (0.08 + bass * 0.13);
-          vec3 sky = color + silk;
-          vec3 waterScene = color * 0.42 + water;
-          float waterMask = 1.0 - smoothstep(horizon - 0.04, horizon + 0.025, uv.y);
-          color = mix(sky, waterScene, waterMask);
-        } else {
-          color += silk;
-        }
+        vec3 ribbons = spectralRibbons(uv);
+        float interference = 0.5 + 0.5 * sin((centered.x + wave * 0.32) * (14.0 + high * 18.0) + time * (1.2 + flux * 4.0));
+        ribbons *= 0.82 + interference * high * 0.42;
+        color += ribbons;
 
-        float silverDust = powderLayer(uv, 31.0, time * 0.018, 0.92);
-        float goldDust = powderLayer(uv + vec2(0.13, 0.07), 43.0, -time * 0.013, 0.95);
-        float nearDust = powderLayer(uv + vec2(-0.21, 0.17), 19.0, time * 0.009, 0.94);
-        float dustLift = 0.12 + high * 1.62 + energy * 0.38;
-        color += vec3(0.82, 0.9, 1.0) * silverDust * dustLift;
-        color += vec3(1.0, 0.69, 0.31) * goldDust * dustLift * 0.9;
-        color += vec3(0.55, 0.96, 0.82) * nearDust * (0.1 + high * 0.56);
+        float silverDust = powderLayer(uv, 31.0, time * (0.06 + high * 0.18), 0.91);
+        float goldDust = powderLayer(uv + vec2(0.13, 0.07), 45.0, -time * (0.04 + flux * 0.22), 0.945);
+        float nearDust = powderLayer(uv + vec2(-0.21, 0.17), 19.0, time * (0.028 + energy * 0.12), 0.93);
+        float dustLift = 0.08 + high * 1.9 + flux * 2.4 + pulse * 0.45;
+        color += vec3(0.82, 0.92, 1.0) * silverDust * dustLift;
+        color += vec3(1.0, 0.67, 0.3) * goldDust * dustLift * 0.84;
+        color += vec3(0.46, 1.0, 0.82) * nearDust * (0.08 + high * 0.72 + flux * 0.62);
 
-        vec2 earthCenter = vec2(0.79, 0.78);
-        vec2 earthPoint = vec2((uv.x - earthCenter.x) * aspect, uv.y - earthCenter.y);
-        float earthRadius = 0.145;
-        float earthDistance = length(earthPoint);
-        vec2 spherePoint = earthPoint / earthRadius;
-        float sphereZ = sqrt(max(0.0, 1.0 - dot(spherePoint, spherePoint)));
-        vec3 normal = normalize(vec3(spherePoint, sphereZ));
-        float longitude = atan(normal.x, max(0.001, normal.z)) / PI;
-        float latitude = asin(clamp(normal.y, -1.0, 1.0)) / PI;
-        float landMap = fbm(vec2(longitude * 4.2 + 2.0, latitude * 6.4 - time * 0.003));
-        float coast = smoothstep(0.50, 0.59, landMap + valueNoise(vec2(longitude * 11.0, latitude * 9.0)) * 0.12);
-        float cloudMap = fbm(vec2(longitude * 7.0 - time * 0.012, latitude * 12.0 + 9.0));
-        float clouds = smoothstep(0.57, 0.76, cloudMap) * 0.72;
-        float daylight = max(0.0, dot(normal, normalize(vec3(-0.72, 0.38, 0.92))));
-        float nightGlow = pow(max(0.0, dot(normal, normalize(vec3(-0.75, -0.18, 0.65)))), 3.0);
-        vec3 ocean = mix(vec3(0.006, 0.025, 0.095), vec3(0.025, 0.20, 0.34), daylight);
-        vec3 land = mix(vec3(0.035, 0.085, 0.09), vec3(0.20, 0.34, 0.22), daylight);
-        vec3 earthSurface = mix(ocean, land, coast);
-        earthSurface += clouds * vec3(0.62, 0.72, 0.75) * (0.2 + daylight * 0.58);
-        earthSurface += vec3(0.75, 0.43, 0.15) * nightGlow * coast * 0.13;
-        earthSurface *= 0.22 + daylight * 0.9;
-        float earthDisc = 1.0 - smoothstep(earthRadius - 0.002, earthRadius + 0.002, earthDistance);
-        color = mix(color, earthSurface, earthDisc);
+        float pulseVeil = exp(-pow((centered.y - sin(centered.x * 1.8 + time * 0.8) * 0.12) / (0.34 + bass * 0.18), 2.0));
+        color += mix(vec3(0.29, 0.03, 0.58), vec3(0.02, 0.48, 0.53), uv.x) * pulseVeil * pulse * 0.48;
 
-        float rimDistance = abs(earthDistance - earthRadius);
-        float atmosphere = exp(-rimDistance * 115.0) * smoothstep(earthRadius + 0.03, earthRadius - 0.012, earthDistance);
-        float outerHalo = exp(-max(0.0, earthDistance - earthRadius) * 38.0) * smoothstep(earthRadius + 0.09, earthRadius, earthDistance);
-        float polarVeil = smoothstep(0.25, 0.82, abs(spherePoint.y)) * (0.46 + 0.54 * sin(longitude * 19.0 + time * 0.22));
-        color += vec3(0.18, 0.62, 0.92) * atmosphere * (0.4 + 0.6 * daylight);
-        color += mix(vec3(0.18, 0.8, 0.58), vec3(0.56, 0.3, 0.9), polarVeil) * atmosphere * polarVeil * 0.46;
-        color += vec3(0.12, 0.34, 0.62) * outerHalo * 0.16;
-
-        float bassBloom = (bass * 0.82 + energy * 0.24) * exp(-dot(centered - vec2(-0.12, -0.04), centered - vec2(-0.12, -0.04)) * 1.65);
-        color += mix(vec3(0.42, 0.06, 0.68), vec3(0.04, 0.72, 0.58), uv.x) * bassBloom;
-
-        float vignette = smoothstep(1.08, 0.2, length(centered * vec2(0.82, 1.03)));
-        color *= 0.54 + 0.46 * vignette;
+        float vignette = smoothstep(1.16, 0.18, length(centered * vec2(0.76, 1.0)));
+        color *= 0.5 + 0.5 * vignette;
         float grain = hash21(gl_FragCoord.xy + fract(time) * 71.0) - 0.5;
-        color += grain * 0.008;
+        color += grain * (0.006 + high * 0.005);
         float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-        color = mix(vec3(luminance), color, 1.22 + energy * 0.18);
-        color = 1.0 - exp(-max(color, vec3(0.0)) * (1.38 + energy * 0.82));
-        color = pow(color, vec3(0.9));
+        color = mix(vec3(luminance), color, 1.26 + energy * 0.24 + flux * 0.18);
+        color = 1.0 - exp(-max(color, vec3(0.0)) * (1.42 + energy * 1.1 + pulse * 0.54));
+        color = pow(color, vec3(0.88));
         gl_FragColor = vec4(color, 1.0);
       }
     `;
@@ -401,6 +356,9 @@
         mid: gl.getUniformLocation(program, "mid"),
         high: gl.getUniformLocation(program, "high"),
         energy: gl.getUniformLocation(program, "energy"),
+        pulse: gl.getUniformLocation(program, "pulse"),
+        flux: gl.getUniformLocation(program, "flux"),
+        wave: gl.getUniformLocation(program, "wave"),
         playing: gl.getUniformLocation(program, "playing"),
       };
       gl.disable(gl.BLEND);
@@ -408,7 +366,8 @@
       canvas.dataset.renderer = "webgl";
       canvas.dataset.visualizer = "full-field-audio-ink";
       canvas.dataset.presentation = "full-screen-webgl";
-      canvas.dataset.audioAnalysis = "web-audio-fft-three-band";
+      canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
+      canvas.dataset.reactivity = "bass-mid-high-transient-wave";
       return true;
     };
 
@@ -417,7 +376,8 @@
       canvas.dataset.renderer = fallback ? "canvas2d" : "unavailable";
       canvas.dataset.visualizer = "full-field-audio-ink";
       canvas.dataset.presentation = "full-screen-webgl";
-      canvas.dataset.audioAnalysis = "web-audio-fft-three-band";
+      canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
+      canvas.dataset.reactivity = "bass-mid-high-transient-wave";
       return Boolean(fallback);
     };
 
@@ -441,21 +401,51 @@
       const targetGain = active
         ? Math.max(1, Math.min(4.4, 0.13 / Math.max(0.012, state.rms || 0)))
         : 1;
-      automaticGain += (targetGain - automaticGain) * 0.025;
+      automaticGain += (targetGain - automaticGain) * (active ? 0.045 : 0.025);
       for (let index = 0; index < 3; index += 1) {
         const raw = active ? Math.min(1, Math.max(0, (state.bands?.[index] || 0) * automaticGain * 1.05)) : 0;
-        const shaped = Math.pow(raw, 0.82);
-        smoothedBands[index] = easeBand(smoothedBands[index], shaped, reduced ? 0.04 : 0.11, reduced ? 0.02 : 0.04);
+        const shaped = Math.pow(raw, 0.72);
+        smoothedBands[index] = easeBand(smoothedBands[index], shaped, reduced ? 0.08 : 0.34, reduced ? 0.04 : 0.095);
       }
       const activeEnergy = active
-        ? Math.min(1, (state.rms || 0) * automaticGain * 2.2 + smoothedBands[0] * 0.28 + smoothedBands[1] * 0.16)
+        ? Math.min(1, (state.rms || 0) * automaticGain * 2.8 + smoothedBands[0] * 0.32 + smoothedBands[1] * 0.2)
         : 0;
-      smoothedEnergy = easeBand(smoothedEnergy, activeEnergy, reduced ? 0.03 : 0.085, reduced ? 0.015 : 0.032);
+      smoothedEnergy = easeBand(smoothedEnergy, activeEnergy, reduced ? 0.07 : 0.3, reduced ? 0.035 : 0.085);
+
+      const spectrum = active && Array.isArray(state.spectrum) ? state.spectrum : [];
+      let spectralFlux = 0;
+      for (let index = 0; index < previousSpectrum.length; index += 1) {
+        const sample = Math.max(0, Math.min(1, spectrum[index] || 0));
+        spectralFlux += Math.max(0, sample - previousSpectrum[index]);
+        previousSpectrum[index] += (sample - previousSpectrum[index]) * (sample > previousSpectrum[index] ? 0.72 : 0.18);
+      }
+      spectralFlux = Math.min(1, spectralFlux * automaticGain * 0.62);
+      smoothedFlux = easeBand(smoothedFlux, spectralFlux, reduced ? 0.12 : 0.54, reduced ? 0.055 : 0.12);
+
+      const waveform = active && Array.isArray(state.waveform) ? state.waveform : [];
+      let waveProjection = 0;
+      for (let index = 0; index < waveform.length; index += 1) {
+        waveProjection += (waveform[index] || 0) * Math.sin(index * 0.71 + 0.4);
+      }
+      const projectedWave = waveform.length > 0
+        ? Math.max(-1, Math.min(1, waveProjection / Math.sqrt(waveform.length) * 1.9))
+        : 0;
+      smoothedWave += (projectedWave - smoothedWave) * (reduced ? 0.08 : 0.31);
+
+      const bassAttack = Math.max(0, smoothedBands[0] - previousBass);
+      previousBass = smoothedBands[0];
+      const pulseTarget = active
+        ? Math.min(1, bassAttack * 4.8 + smoothedFlux * 1.65 + (state.peak || 0) * automaticGain * 0.34)
+        : 0;
+      smoothedPulse = easeBand(smoothedPulse, pulseTarget, reduced ? 0.14 : 0.68, reduced ? 0.05 : 0.105);
       canvas.dataset.analysisActive = String(active);
       canvas.dataset.bass = smoothedBands[0].toFixed(3);
       canvas.dataset.mid = smoothedBands[1].toFixed(3);
       canvas.dataset.high = smoothedBands[2].toFixed(3);
       canvas.dataset.energy = smoothedEnergy.toFixed(3);
+      canvas.dataset.pulse = smoothedPulse.toFixed(3);
+      canvas.dataset.flux = smoothedFlux.toFixed(3);
+      canvas.dataset.wave = smoothedWave.toFixed(3);
     };
 
     const drawFallback = (state, now) => {
@@ -463,7 +453,7 @@
       updateAudioState(state);
       const width = canvas.width;
       const height = canvas.height;
-      const t = now * 0.0001;
+      const t = now * 0.001;
       const background = fallback.createLinearGradient(0, 0, 0, height);
       background.addColorStop(0, "#080828");
       background.addColorStop(0.58, "#100b31");
@@ -476,15 +466,15 @@
       fallback.save();
       fallback.globalCompositeOperation = "screen";
       palette.forEach((color, index) => {
-        const phase = t * (0.9 + index * 0.13) + index * 1.7;
-        const y = height * (0.42 + index * 0.065 + Math.sin(phase) * (0.03 + smoothedBands[1] * 0.035));
+        const phase = t * (0.34 + smoothedBands[1] * 1.4 + index * 0.045) + index * 1.7 + smoothedWave * 2.2;
+        const y = height * (0.29 + index * 0.075 + Math.sin(phase) * (0.035 + smoothedBands[1] * 0.14 + smoothedPulse * 0.045));
         fallback.beginPath();
         fallback.moveTo(-width * 0.12, y + height * 0.13);
-        fallback.bezierCurveTo(width * 0.22, y - height * (0.12 + smoothedBands[1] * 0.08), width * 0.55, y + height * 0.16, width * 1.12, y - height * 0.06);
+        fallback.bezierCurveTo(width * 0.22, y - height * (0.11 + smoothedBands[1] * 0.16), width * 0.55, y + height * (0.12 + smoothedWave * 0.08), width * 1.12, y - height * (0.04 + smoothedFlux * 0.08));
         fallback.lineTo(width * 1.12, y + height * 0.13);
         fallback.bezierCurveTo(width * 0.62, y + height * 0.23, width * 0.25, y + height * 0.01, -width * 0.12, y + height * 0.25);
         fallback.closePath();
-        fallback.globalAlpha = 0.13 + smoothedEnergy * 0.08;
+        fallback.globalAlpha = 0.12 + smoothedEnergy * 0.28 + smoothedPulse * 0.16;
         fallback.shadowColor = color;
         fallback.shadowBlur = height * 0.08;
         fallback.fillStyle = color;
@@ -498,34 +488,12 @@
       fallback.fillStyle = water;
       fallback.fillRect(0, height * 0.7, width, height * 0.3);
 
-      const earthX = width * 0.79;
-      const earthY = height * 0.22;
-      const earthRadius = Math.min(width, height) * 0.14;
-      const earth = fallback.createRadialGradient(
-        earthX - earthRadius * 0.34,
-        earthY - earthRadius * 0.3,
-        earthRadius * 0.08,
-        earthX,
-        earthY,
-        earthRadius,
-      );
-      earth.addColorStop(0, "#467e9a");
-      earth.addColorStop(0.55, "#153f64");
-      earth.addColorStop(1, "#03081d");
-      fallback.shadowColor = "rgba(74, 186, 222, .56)";
-      fallback.shadowBlur = earthRadius * 0.35;
-      fallback.fillStyle = earth;
-      fallback.beginPath();
-      fallback.arc(earthX, earthY, earthRadius, 0, Math.PI * 2);
-      fallback.fill();
-      fallback.shadowBlur = 0;
-
       fallback.globalCompositeOperation = "screen";
       for (let index = 0; index < 42; index += 1) {
         const x = (Math.sin(index * 91.17 + t * 0.7) * 0.5 + 0.5) * width;
         const y = (Math.sin(index * 37.73 - t * 0.41) * 0.5 + 0.5) * height * 0.72;
         const size = 0.5 + (index % 5) * 0.24 + smoothedBands[2] * 1.8;
-        fallback.globalAlpha = 0.12 + smoothedBands[2] * 0.42;
+        fallback.globalAlpha = 0.08 + smoothedBands[2] * 0.62 + smoothedFlux * 0.54;
         fallback.fillStyle = index % 3 ? "#e7eef5" : "#f2c477";
         fallback.beginPath();
         fallback.arc(x, y, size, 0, Math.PI * 2);
@@ -552,11 +520,14 @@
       gl.enableVertexAttribArray(positionAttribute);
       gl.vertexAttribPointer(positionAttribute, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
-      gl.uniform1f(uniforms.time, now * 0.001 * (reduced ? 0.12 : 0.48));
+      gl.uniform1f(uniforms.time, now * 0.001 * (reduced ? 0.18 : 0.78));
       gl.uniform1f(uniforms.bass, smoothedBands[0]);
       gl.uniform1f(uniforms.mid, smoothedBands[1]);
       gl.uniform1f(uniforms.high, smoothedBands[2]);
       gl.uniform1f(uniforms.energy, smoothedEnergy);
+      gl.uniform1f(uniforms.pulse, smoothedPulse);
+      gl.uniform1f(uniforms.flux, smoothedFlux);
+      gl.uniform1f(uniforms.wave, smoothedWave);
       gl.uniform1f(uniforms.playing, state.playing ? 1 : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     };

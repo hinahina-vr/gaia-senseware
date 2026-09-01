@@ -4603,7 +4603,7 @@ body.map-grid-desktop .map-mode-bank.map-grid-polish {
   height: 100%;
   pointer-events: none;
   mix-blend-mode: screen;
-  opacity: 0.96;
+  opacity: 0.72;
 }
 
 .gaia-live-exhibit-canvas[hidden],
@@ -4895,14 +4895,16 @@ body.map-grid-desktop .map-mode-bank.map-grid-polish {
 
 .japan-layer.is-live-exhibit .japan-map-shade { opacity: 0.14; }
 .japan-layer.is-live-exhibit .japan-overlay {
-  opacity: 0.58;
+  z-index: 4;
+  opacity: 0.92;
   visibility: visible;
   filter:
-    saturate(0.9)
-    brightness(1.35)
-    contrast(1.1)
-    drop-shadow(0 0 7px rgba(var(--map-accent-rgb), 0.34));
+    saturate(0.82)
+    brightness(1.48)
+    contrast(1.18)
+    drop-shadow(0 0 8px rgba(var(--map-accent-rgb), 0.48));
 }
+.japan-layer.is-live-exhibit .japan-tiles { opacity: 0.82; }
 .japan-layer.is-live-exhibit .japan-map { cursor: crosshair; }
 .japan-layer.is-live-exhibit :is(.japan-observation, .signal-console-map, .map-reading-guide, .japan-layer-switch) {
   opacity: 0;

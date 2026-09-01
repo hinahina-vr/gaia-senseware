@@ -5,7 +5,7 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-gentle-entry-guide-2",
+        "./styles.css?v=gaia-live-map-base-1",
         "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
@@ -84,10 +84,10 @@
       templates: ["gaia-template-sound"],
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
-        "./sound-mode.css?v=gaia-sound-playback-reveal-1",
+        "./sound-mode.css?v=gaia-sound-reactive-ribbons-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-mode.js?v=gaia-sound-playback-reveal-1"],
+      scripts: ["./sound-mode.js?v=gaia-sound-reactive-ribbons-1"],
     },
     character: {
       templates: ["gaia-template-character"],
