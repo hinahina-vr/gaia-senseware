@@ -1028,7 +1028,7 @@ const select = (index) => {
   renderReadout();
   lastRenderedAt = 0;
   draw(performance.now(), true);
-  if (enteringLiveDeck) requestAnimationFrame(focusSelectedCity);
+  requestAnimationFrame(focusSelectedCity);
   dispatchEvent(new CustomEvent("gaia:live-exhibit-change", { detail: { index, id: exhibit.id } }));
 };
 

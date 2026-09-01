@@ -146,6 +146,7 @@ try {
     screenshots.push(screenshot);
   }
 
+  await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
   await page.locator('#japan-mode-list [data-live-exhibit="wind-field"]').evaluate((button) => button.click());
   await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
   const poiBeforeWheel = await page.evaluate(() => {
@@ -157,7 +158,14 @@ try {
       zoom: Number(overlay?.dataset.earthZoom),
     };
   });
-  await page.mouse.move(90, 120);
+  const mapBox = await page.locator("#japan-map").boundingBox();
+  assert(mapBox, "live map bounds were unavailable");
+  const wheelPoint = { x: mapBox.x + mapBox.width * 0.62, y: mapBox.y + mapBox.height * 0.34 };
+  await page.mouse.move(wheelPoint.x, wheelPoint.y);
+  const wheelTarget = await page.evaluate(({ x, y }) => {
+    const element = document.elementFromPoint(x, y);
+    return { id: element?.id || "", className: element?.className || "", tagName: element?.tagName || "" };
+  }, wheelPoint);
   await page.mouse.wheel(0, -180);
   await page.waitForTimeout(180);
   const poiAfterWheel = await page.evaluate(() => {
@@ -169,11 +177,10 @@ try {
       zoom: Number(overlay?.dataset.earthZoom),
     };
   });
-  assert(poiAfterWheel.zoom > poiBeforeWheel.zoom, `wheel did not zoom the live map: ${JSON.stringify({ poiBeforeWheel, poiAfterWheel })}`);
+  assert(poiAfterWheel.zoom > poiBeforeWheel.zoom, `wheel did not zoom the live map: ${JSON.stringify({ mapBox, wheelPoint, wheelTarget, poiBeforeWheel, poiAfterWheel })}`);
   assert(Math.abs(poiAfterWheel.x - poiBeforeWheel.x) <= 0.002, `POI moved horizontally during wheel zoom: ${JSON.stringify({ poiBeforeWheel, poiAfterWheel })}`);
   assert(Math.abs(poiAfterWheel.y - poiBeforeWheel.y) <= 0.002, `POI moved vertically during wheel zoom: ${JSON.stringify({ poiBeforeWheel, poiAfterWheel })}`);
 
-  await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
   await page.locator("[data-live-deck-source]").click();
   await page.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");
   await page.locator("#japan-data-close").click();
