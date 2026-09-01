@@ -87,6 +87,8 @@ const publicMapOverscanRatio = .22;
 const publicMapDragRebaseRatio = .18;
 const publicMapFocusMinZoom = 7.2;
 const publicMapPoiFocusDurationMs = 720;
+const publicUiDismissDurationMs = 190;
+const publicMapReturnDurationMs = 360;
 const publicMapPollIntervalMs = 60_000;
 const publicMapCanvasPixelBudget = 12_000_000;
 const publicMapMarkerCollisionDistance = 50;
@@ -136,6 +138,9 @@ let publicMapWheel = null;
 let publicMapViewportFrame = 0;
 let publicMapFocusFrame = 0;
 let publicMapFocusToken = 0;
+let publicSensorDismissTimer = 0;
+let publicOwnerProfileDismissTimer = 0;
+let publicMapReturnTimer = 0;
 let publicMapHoverTimer = 0;
 let publicMapPollTimer = 0;
 let publicMarkerDrag = null;
@@ -615,8 +620,7 @@ function initPublicSensorDirectory() {
       setPublicSensorDetailExpanded(false, { focus: true });
     } else if (selectedPublicSensorId) {
       event.preventDefault();
-      clearPublicSensorSelection({ hideDetail: true, historyMode: "push" });
-      publicSensorMap?.focus({ preventScroll: true });
+      dismissPublicSensorSelection({ historyMode: "push", focusMap: true });
     }
   });
 }
@@ -681,7 +685,7 @@ function setPublicSensorHash(sensorId, { replace = false } = {}) {
 function restorePublicSensorSelectionFromHash() {
   const sensorId = publicSensorIdFromHash();
   if (!sensorId) {
-    if (selectedPublicSensorId) clearPublicSensorSelection({ hideDetail: true });
+    if (selectedPublicSensorId) dismissPublicSensorSelection();
     return;
   }
   const sensor = publicSensors.find((candidate) => candidate.id === sensorId);
@@ -731,6 +735,9 @@ function setPublicSensorDetailExpanded(expanded, { focus = false } = {}) {
 }
 
 function clearPublicSensorSelection({ hideDetail = false, historyMode = null } = {}) {
+  window.clearTimeout(publicSensorDismissTimer);
+  publicSensorDismissTimer = 0;
+  publicSensorDetail?.removeAttribute("data-closing");
   selectedPublicSensorId = null;
   publicSensorSelectionDismissed = true;
   if (historyMode) setPublicSensorHash(null, { replace: historyMode === "replace" });
@@ -745,8 +752,41 @@ function clearPublicSensorSelection({ hideDetail = false, historyMode = null } =
   );
 }
 
+function animatePublicMapReturn() {
+  if (!publicSensorMap || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  window.clearTimeout(publicMapReturnTimer);
+  publicSensorMap.classList.remove("is-returning");
+  void publicSensorMap.offsetWidth;
+  publicSensorMap.dataset.uiReturn = "fade-in";
+  publicSensorMap.classList.add("is-returning");
+  publicMapReturnTimer = window.setTimeout(() => {
+    publicMapReturnTimer = 0;
+    publicSensorMap.classList.remove("is-returning");
+    publicSensorMap.dataset.uiReturn = "idle";
+  }, publicMapReturnDurationMs);
+}
+
+function dismissPublicSensorSelection({ historyMode = null, focusMap = false } = {}) {
+  if (!selectedPublicSensorId || publicSensorDetail?.dataset.closing === "true") return;
+  const finish = () => {
+    publicSensorDismissTimer = 0;
+    clearPublicSensorSelection({ hideDetail: true, historyMode });
+    animatePublicMapReturn();
+    if (focusMap) publicSensorMap?.focus({ preventScroll: true });
+  };
+  if (!publicSensorDetail || publicSensorDetail.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    finish();
+    return;
+  }
+  publicSensorDetail.dataset.closing = "true";
+  publicSensorDismissTimer = window.setTimeout(finish, publicUiDismissDurationMs);
+}
+
 const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   if (!marker) return;
+  window.clearTimeout(publicSensorDismissTimer);
+  publicSensorDismissTimer = 0;
+  publicSensorDetail.removeAttribute("data-closing");
   publicSensorDetail.hidden = false;
   publicSensorDetail.dataset.expanded = "false";
   if (publicSensorDetailNeedsScrollReset) {
@@ -794,8 +834,7 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   close.className = "sensor-map-card-close";
   close.setAttribute("aria-label", "選択中のセンサー詳細を閉じる");
   close.addEventListener("click", () => {
-    clearPublicSensorSelection({ hideDetail: true, historyMode: "push" });
-    publicSensorMap?.focus({ preventScroll: true });
+    dismissPublicSensorSelection({ historyMode: "push", focusMap: true });
   });
   actions.append(expand, share, close);
   toolbar.append(consoleLabel, actions);
@@ -1077,6 +1116,9 @@ async function togglePublicRelationship(sensor, kind, button, refresh) {
 
 function openPublicOwnerProfile(sensor) {
   if (!publicOwnerProfileDialog) return;
+  window.clearTimeout(publicOwnerProfileDismissTimer);
+  publicOwnerProfileDismissTimer = 0;
+  publicOwnerProfileDialog.removeAttribute("data-closing");
   const owner = sensor.owner ?? {};
   const region = [sensor.region?.subdivisionName, sensor.region?.municipalityName, sensor.region?.countryCode].filter(Boolean).join(" / ") || "地域未設定";
   publicOwnerProfileAvatar.replaceChildren(avatarElement(owner, "span"));
@@ -1100,6 +1142,22 @@ function openPublicOwnerProfile(sensor) {
   }
   if (publicOwnerProfileDialog.open) publicOwnerProfileDialog.close();
   publicOwnerProfileDialog.showModal();
+}
+
+function dismissPublicOwnerProfile() {
+  if (!publicOwnerProfileDialog?.open || publicOwnerProfileDialog.dataset.closing === "true") return;
+  const finish = () => {
+    publicOwnerProfileDismissTimer = 0;
+    publicOwnerProfileDialog.removeAttribute("data-closing");
+    publicOwnerProfileDialog.close();
+    animatePublicMapReturn();
+  };
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    finish();
+    return;
+  }
+  publicOwnerProfileDialog.dataset.closing = "true";
+  publicOwnerProfileDismissTimer = window.setTimeout(finish, publicUiDismissDurationMs);
 }
 
 function publicSensorType(sensor) {
@@ -1256,8 +1314,10 @@ function createPublicMetricHud(sensor) {
   definitions.forEach((definition) => {
     const card = document.createElement("article");
     const latest = sensor.visualObservations[0]?.data?.[definition.key];
+    const label = Object.assign(document.createElement("small"), { textContent: definition.label, title: `${definition.label}（${definition.console}）` });
+    label.dataset.console = definition.console;
     card.append(
-      Object.assign(document.createElement("small"), { textContent: `${definition.label} / ${definition.console}`, title: `${definition.label}（${definition.console}）` }),
+      label,
       Object.assign(document.createElement("strong"), { textContent: formatPublicMetric(definition, latest) }),
       createPublicSparkline(sensor.visualObservations, definition.key),
     );
@@ -2327,7 +2387,17 @@ participationDialog?.addEventListener("click", (event) => {
   if (event.target === participationDialog) participationDialog.close();
 });
 publicOwnerProfileDialog?.addEventListener("click", (event) => {
-  if (event.target === publicOwnerProfileDialog) publicOwnerProfileDialog.close();
+  const dismissButton = event.target instanceof Element ? event.target.closest("button[value='close']") : null;
+  if (dismissButton && publicOwnerProfileDialog.contains(dismissButton)) {
+    event.preventDefault();
+    dismissPublicOwnerProfile();
+  } else if (event.target === publicOwnerProfileDialog) {
+    dismissPublicOwnerProfile();
+  }
+});
+publicOwnerProfileDialog?.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  dismissPublicOwnerProfile();
 });
 analysisClose?.addEventListener("click", () => analysisDialog?.close());
 analysisDialog?.addEventListener("click", (event) => {
