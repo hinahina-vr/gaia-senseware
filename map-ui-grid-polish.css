@@ -29,6 +29,10 @@
   display: none !important;
 }
 
+.map-dock-bank-step {
+  display: none;
+}
+
 @media (min-width: 901px) {
   /* Match every exhibit header to the title-only live-exhibit treatment used
      by 09: the changing Japanese title is the sole visual heading. */
@@ -1131,17 +1135,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     transform: none;
   }
 
-  .experience.japan-open .map-light-overlay-panel .map-mode-preview.is-open {
-    position: static;
-    display: grid !important;
-    width: 100% !important;
-    margin: 16px 0 0;
-    padding: 0;
-    opacity: 1;
-    visibility: visible;
-    transform: none;
-  }
-
   .experience.japan-open .japan-layer :is(.japan-map-note, .japan-credits) {
     display: none !important;
   }
@@ -1561,8 +1554,43 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     height: 100%;
     margin-right: calc(0px - var(--map-dock-bank-inline-inset));
     margin-left: calc(0px - var(--map-dock-bank-inline-inset));
-    padding: 0 var(--map-dock-bank-inline-inset);
+    padding: 0 calc(var(--map-dock-bank-inline-inset) + 28px);
     text-align: left;
+  }
+
+  body.map-grid-desktop .map-dock-bank-step {
+    position: absolute;
+    z-index: 4;
+    top: 50%;
+    display: grid;
+    width: 34px;
+    height: 48px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    color: rgba(221, 247, 252, 0.62);
+    background: rgba(4, 23, 38, 0.18);
+    cursor: pointer;
+    font: 300 28px/1 Georgia, serif;
+    transform: translateY(-50%);
+    transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  }
+
+  body.map-grid-desktop .map-dock-bank-step--previous {
+    left: 2px;
+  }
+
+  body.map-grid-desktop .map-dock-bank-step--next {
+    right: 2px;
+  }
+
+  body.map-grid-desktop .map-dock-bank-step:is(:hover, :focus-visible) {
+    color: #fff;
+    outline: 0;
+    background: rgba(104, 220, 238, 0.1);
+    box-shadow: 0 0 18px rgba(94, 219, 239, 0.16);
+    text-shadow: 0 0 12px rgba(111, 225, 245, 0.56);
   }
 
   .map-dock-bank-copy {
@@ -1688,15 +1716,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   body.map-grid-desktop .map-dock-bank-popover .map-mode-button {
     min-height: 38px;
-  }
-
-  body.map-grid-desktop .map-dock-bank-popover .map-light-overlay-open {
-    position: relative !important;
-    inset: auto !important;
-    display: grid !important;
-    width: 100% !important;
-    min-height: 48px;
-    margin: 0 !important;
   }
 
   body.map-grid-desktop .map-command-dock .signal-console-map {
@@ -1956,7 +1975,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   body.map-grid-desktop .map-command-dock .map-reading-guide > summary > i::before { left: 1px; }
   body.map-grid-desktop .map-command-dock .map-reading-guide > summary > i::after { left: 8px; }
 
-  body.map-grid-desktop .map-command-dock .map-reading-guide[open] > summary > i {
+  body.map-grid-desktop .map-command-dock .map-reading-guide.is-dock-guide-visible > summary > i {
     transform: rotate(180deg) !important;
   }
 
@@ -1968,21 +1987,68 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
-    width: min(760px, calc(100vw - 28px));
-    max-height: min(50vh, 420px);
-    padding: 16px 18px !important;
-    overflow: auto;
+    width: min(1160px, calc(100vw - 64px));
+    max-height: min(58vh, 520px);
+    padding: clamp(22px, 1.6vw, 30px) clamp(24px, 2vw, 36px) !important;
+    overflow: hidden auto;
     border: 1px solid rgba(123, 219, 230, 0.38);
-    border-radius: 8px;
+    border-radius: 14px;
     background:
       radial-gradient(circle at 100% 0, rgba(77, 184, 212, 0.12), transparent 42%),
       linear-gradient(145deg, rgba(4, 25, 40, 0.985), rgba(2, 14, 28, 0.985));
-    box-shadow: 0 -20px 54px rgba(0, 5, 17, 0.56);
+    box-shadow: 0 -24px 70px rgba(0, 5, 17, 0.62), inset 0 1px rgba(225, 255, 255, 0.07);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    filter: blur(4px) brightness(1.08);
+    transform: translateY(14px) scale(0.985);
+    transform-origin: center bottom;
+    transition:
+      opacity 280ms ease,
+      filter 320ms ease,
+      transform 360ms cubic-bezier(0.16, 0.82, 0.22, 1),
+      visibility 0s linear 320ms;
+    isolation: isolate;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide.is-dock-guide-visible[open] .map-reading-guide-body {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    filter: none;
+    transform: translateY(0) scale(1);
+    transition-delay: 0s;
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide-body::before {
+    position: absolute;
+    z-index: 0;
+    top: -35%;
+    bottom: -35%;
+    left: -24%;
+    width: 19%;
+    content: "";
+    background: linear-gradient(90deg, transparent, rgba(181, 249, 255, 0.2), rgba(255, 255, 255, 0.34), transparent);
+    opacity: 0;
+    pointer-events: none;
+    transform: skewX(-17deg) translateX(-140%);
+  }
+
+  body.map-grid-desktop .map-command-dock .map-reading-guide.is-dock-guide-visible .map-reading-guide-body::before {
+    animation: map-dock-guide-glint 760ms 60ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+  }
+
+  @keyframes map-dock-guide-glint {
+    0% { opacity: 0; transform: skewX(-17deg) translateX(-140%); }
+    24% { opacity: 0.8; }
+    100% { opacity: 0; transform: skewX(-17deg) translateX(760%); }
   }
 
   body.map-grid-desktop .map-command-dock .map-reading-guide-body > section {
+    position: relative;
+    z-index: 1;
     min-width: 0;
-    padding: 0 16px;
+    padding: 0 clamp(20px, 2vw, 34px);
     border-right: 1px solid rgba(111, 205, 219, 0.14);
   }
 
@@ -1990,13 +2056,28 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   body.map-grid-desktop .map-command-dock .map-reading-guide-body > section:last-child { padding-right: 0; border-right: 0; }
 
   body.map-grid-desktop .map-command-dock .map-reading-guide-body h3 {
-    margin: 0 0 8px;
+    margin: 0 0 12px;
+    font-size: clamp(16px, 1.02vw, 19px);
+    line-height: 1.55;
   }
 
   body.map-grid-desktop .map-command-dock .map-reading-guide-body p {
     margin: 0;
-    font-size: 10px;
-    line-height: 1.65;
+    color: rgba(238, 249, 248, 0.88);
+    font-size: clamp(15px, 1vw, 18px);
+    font-weight: 500;
+    line-height: 1.75;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.map-grid-desktop .map-command-dock .map-reading-guide-body {
+      filter: none;
+      transition-duration: 1ms;
+    }
+
+    body.map-grid-desktop .map-command-dock .map-reading-guide.is-dock-guide-visible .map-reading-guide-body::before {
+      animation: none;
+    }
   }
 
   body.map-grid-desktop .map-dock-action {
@@ -2411,7 +2492,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     bottom: 0 !important;
     left: 12px !important;
     display: grid;
-    grid-template-columns: 1.02fr 1.04fr 1.16fr 1.5fr 1.72fr 1.18fr;
+    grid-template-columns: 1.12fr 1.08fr 1.22fr 1.58fr 1.2fr;
     width: auto !important;
     height: clamp(132px, 14.5vh, 174px);
     max-height: none !important;
@@ -2481,7 +2562,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     .gaia-live-deck-location,
     .gaia-live-exhibit-primary,
     .gaia-live-deck-wave,
-    .gaia-live-deck-modes,
     .gaia-live-deck-actions
   ) {
     align-self: stretch;
@@ -2501,12 +2581,12 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   .gaia-live-deck-chapter > div {
     display: grid;
-    grid-template-columns: 24px auto minmax(0, 1fr) 24px;
+    grid-template-columns: 24px minmax(0, 1fr) 24px;
     gap: 8px;
     align-items: center;
   }
 
-  .gaia-live-deck-chapter button {
+  .gaia-live-deck-chapter [data-live-deck-step] {
     display: grid;
     width: 24px;
     height: 34px;
@@ -2519,20 +2599,57 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     font: 300 25px/1 Georgia, serif;
   }
 
-  .gaia-live-deck-chapter button:is(:hover, :focus-visible) {
+  .gaia-live-deck-chapter [data-live-deck-step]:is(:hover, :focus-visible) {
     color: rgb(var(--map-accent-rgb));
     outline: 0;
     text-shadow: 0 0 14px rgba(var(--map-accent-rgb), 0.72);
   }
 
-  .gaia-live-deck-chapter span {
+  .gaia-live-deck-selector-toggle {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 10px;
+    gap: 9px;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 0 5px;
+    border: 0;
+    border-radius: 4px;
+    text-align: left;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .gaia-live-deck-selector-toggle:is(:hover, :focus-visible, [aria-expanded="true"]) {
+    outline: 0;
+    background: rgba(var(--map-accent-rgb), 0.055);
+    box-shadow: inset 0 0 0 1px rgba(var(--map-accent-rgb), 0.15);
+  }
+
+  .gaia-live-deck-selector-toggle > i {
+    width: 7px;
+    height: 7px;
+    border-right: 1px solid rgba(var(--map-accent-rgb), 0.74);
+    border-bottom: 1px solid rgba(var(--map-accent-rgb), 0.74);
+    transform: rotate(45deg) translate(-2px, 2px);
+    transition: transform 180ms ease;
+  }
+
+  .gaia-live-deck-selector-toggle[aria-expanded="true"] > i {
+    transform: rotate(225deg) translate(-1px, -1px);
+  }
+
+  .gaia-live-deck-selector-toggle span {
     color: rgb(var(--map-accent-rgb));
     font: 600 clamp(22px, 1.55vw, 34px)/1 Consolas, monospace;
     letter-spacing: -0.045em;
     text-shadow: 0 0 20px rgba(var(--map-accent-rgb), 0.34);
   }
 
-  .gaia-live-deck-chapter strong {
+  .gaia-live-deck-selector-toggle strong {
     overflow: hidden;
     color: rgba(248, 255, 255, 0.96);
     font: 560 clamp(15px, 1vw, 22px)/1.2 var(--font-ja);
@@ -2638,6 +2755,19 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     white-space: nowrap;
   }
 
+  .gaia-live-deck-wave footer time {
+    min-width: 0;
+    flex: 1 1 auto;
+    color: rgba(232, 252, 255, 0.94);
+    font: 750 clamp(12px, 0.55vw, 18px)/1.15 Consolas, monospace;
+    letter-spacing: 0.035em;
+    text-shadow: 0 0 14px rgba(var(--map-accent-rgb), 0.28);
+  }
+
+  .gaia-live-deck-wave footer b {
+    flex: 0 1 auto;
+  }
+
   .gaia-live-deck-wave header strong {
     color: rgb(var(--map-accent-rgb));
   }
@@ -2666,10 +2796,37 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 
   .gaia-live-deck-modes {
+    position: absolute;
+    z-index: 7;
+    bottom: calc(100% + 12px);
+    left: clamp(86px, 7vw, 132px);
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: clamp(4px, 0.38vw, 9px);
+    gap: clamp(7px, 0.55vw, 12px);
     align-items: center;
+    width: min(720px, calc(100% - clamp(172px, 14vw, 264px)));
+    padding: 14px 18px;
+    border: 1px solid rgba(var(--map-accent-rgb), 0.4);
+    border-radius: 10px;
+    background:
+      radial-gradient(circle at 50% 120%, rgba(var(--map-accent-rgb), 0.15), transparent 54%),
+      linear-gradient(145deg, rgba(4, 27, 40, 0.985), rgba(1, 13, 25, 0.985));
+    box-shadow: 0 -20px 58px rgba(0, 5, 15, 0.52), inset 0 1px rgba(230, 255, 255, 0.06);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(9px) scale(0.985);
+    transform-origin: bottom left;
+    transition: opacity 170ms ease, transform 230ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 230ms;
+    backdrop-filter: blur(18px) saturate(1.2);
+  }
+
+  .gaia-live-exhibit-readout.is-chapter-selector-open .gaia-live-deck-modes {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    transition: opacity 170ms ease, transform 230ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
   }
 
   .gaia-live-deck-modes button {
@@ -2815,20 +2972,17 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
 @media (min-width: 901px) and (max-width: 1499px) {
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout {
-    grid-template-columns: 1.42fr 1.32fr 1.62fr 1fr;
+    grid-template-columns: 1.08fr 1.42fr 1.62fr 1fr;
   }
 
-  body.map-grid-desktop .japan-layer.is-live-exhibit :is(
-    .gaia-live-deck-chapter,
-    .gaia-live-deck-location
-  ) {
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-location {
     display: none;
   }
 }
 
 @media (min-width: 901px) and (max-width: 1120px) {
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout {
-    grid-template-columns: 1.08fr 1.38fr 1.64fr 1fr;
+    grid-template-columns: 1.18fr 1.34fr 1.55fr 1fr;
   }
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary {

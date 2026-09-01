@@ -87,6 +87,7 @@ try {
   await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 20_000 });
   assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—14");
   assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 14);
+  assert.equal(await page.locator(".gaia-live-city-picker option").count(), 21);
 
   const fallbackKeys = await page.evaluate(async () => {
     const payload = await fetch("./data/live-observation-fallback-v1.json").then((response) => response.json());
@@ -113,6 +114,7 @@ try {
         const rect = element?.getBoundingClientRect();
         return rect && rect.width > 0 ? { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left, width: rect.width } : null;
       })(),
+      feedTimeFontSize: Number.parseFloat(getComputedStyle(document.querySelector("[data-live-exhibit-feed-time]")).fontSize),
       layerState: (() => {
         const element = document.querySelector(".japan-layer");
         return { className: element?.className || "", hidden: element?.hasAttribute("hidden") || false };
@@ -127,6 +129,8 @@ try {
     assert.equal(state.anchorLatitude, 35.6762);
     assert.equal(state.anchorLongitude, 139.6503);
     assert.equal(state.deckModeCount, 6);
+    assert(state.feedTimeFontSize >= 12, `${contract.id}: live timestamp is too small ${JSON.stringify(state)}`);
+    assert.equal(await page.locator(".gaia-live-deck-location > p").textContent(), "MODEL / JAPAN · 21 CITIES");
     assert(state.deckRect && state.deckRect.left >= 0 && state.deckRect.right <= 1440, `${contract.id}: deck leaves the viewport`);
     if (state.guideRect) assert(state.guideRect.bottom <= state.deckRect.top + 1, `${contract.id}: guide overlaps deck ${JSON.stringify(state)}`);
     assert.match(await page.locator("[data-live-anchor-source]").textContent(), /MODEL GRID/u);

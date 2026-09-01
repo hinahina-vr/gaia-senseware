@@ -226,17 +226,11 @@
   const mapMobileHeadingToggle = document.querySelector("#map-mobile-heading-toggle");
   const japanModeBank = document.querySelector(".map-mode-bank");
   const mapMobileBankToggle = document.querySelector("#map-mobile-bank-toggle");
-  const mapLightOverlayOpen = document.querySelector("#map-light-overlay-open");
-  const mapLightOverlay = document.querySelector("#map-light-overlay");
-  const mapLightOverlayClose = document.querySelector("#map-light-overlay-close");
-  const mapLightOverlayScrim = document.querySelector(".map-light-overlay-scrim");
-  const mapLightOverlayDisable = document.querySelector("#map-light-overlay-disable");
   const mapModePreview = document.querySelector("#map-mode-preview");
   const mapModePreviewNumber = document.querySelector("#map-mode-preview-number");
   const mapModePreviewLabel = document.querySelector("#map-mode-preview-label");
   const mapModePreviewCopy = document.querySelector("#map-mode-preview-copy");
   const japanModeList = document.querySelector("#japan-mode-list");
-  const abstractModeList = document.querySelector("#abstract-mode-list");
   const japanModeNumber = document.querySelector("#japan-mode-number");
   const japanModeTitle = document.querySelector("#japan-mode-title");
   const japanClose = document.querySelector("#japan-close");
@@ -287,6 +281,8 @@
   const CIRCULATION_TIMELINE_HOURS = 24 * 14;
   const CIRCULATION_TIMELINE_STEPS = 112;
   const MODE_SEQUENCE_DURATION_MS = 48000;
+  const ECOLOGIES_SEQUENCE_DURATION_MS = MODE_SEQUENCE_DURATION_MS * 2;
+  const ECOLOGIES_SELECTION_TRANSITION_MS = 920;
   const MODE_SEQUENCE_STEPS = 96;
   const MAP_TILE_SIZE = 256;
   const JAPAN_ZOOM = 5;
@@ -294,6 +290,11 @@
   const EARTH_ZOOM = 2;
   const EARTH_MOBILE_ZOOM = 1;
   const EARTH_INITIAL_CENTER_LONGITUDE = 138;
+  const BLUE_CIRCULATION_FOCUS = Object.freeze({
+    label: "tokyo",
+    lon: 139.6503,
+    lat: 35.6762,
+  });
   const EARTH_RADIUS_KM = 6371;
   const P_WAVE_SPEED_KM_S = 7;
   const S_WAVE_SPEED_KM_S = 4;
@@ -759,7 +760,6 @@
   const introModeButtons = [];
   const conceptModeButtons = [];
   const japanModeButtons = [];
-  const abstractModeButtons = [];
   const japanTileElements = new Map();
   const japanPulses = [];
   let japanEarthquakes = [];
@@ -793,9 +793,14 @@
   let mapPlotRevealStartedAt = performance.now();
   let mapPlotRevealGeneration = 0;
   let mapPlotRevealReason = "initial";
+  const ecologiesSelectionTransition = {
+    generation: -1,
+    currentIso3: "",
+    previousIso3: "",
+    changedAt: performance.now(),
+  };
   let nextJapanOverlayRenderAt = 0;
   let lastJapanOverlayTargetFps = 60;
-  let lastBackgroundRenderAt = -Infinity;
   let nextShaderRenderAt = 0;
   let lastShaderTargetFps = 60;
   let japanTileErrors = 0;
@@ -809,7 +814,6 @@
   let storyMapAivaBackdrop = null;
   let storyMapAivaRuntime = null;
   let mapScope = "earth";
-  let mapSurface = "map";
   let japanDataUpdatedAt = null;
   let japanHistoryUpdatedAt = null;
   let selectedJapanPoi = null;
@@ -867,11 +871,7 @@
   let modeFromIndex = initialModeIndex;
   let modeToIndex = initialModeIndex;
   let mapModeIndex = initialModeIndex;
-  let lightModeIndex = initialModeIndex;
-  let lightModeFromIndex = initialModeIndex;
-  let lightModeToIndex = initialModeIndex;
   let transitionStartedAt = performance.now();
-  let lightTransitionStartedAt = transitionStartedAt;
   const getThemeIndex = (index = modeToIndex) => index;
   const isTheme = (themeIndex, index = modeToIndex) => getThemeIndex(index) === themeIndex;
   const japanView = {
@@ -899,6 +899,36 @@
   };
 
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+  const getEcologiesSelectionTransition = (rows, selected, now) => {
+    const nextIso3 = selected?.iso3 || "";
+    if (
+      ecologiesSelectionTransition.generation !== mapPlotRevealGeneration
+      || !ecologiesSelectionTransition.currentIso3
+    ) {
+      ecologiesSelectionTransition.generation = mapPlotRevealGeneration;
+      ecologiesSelectionTransition.currentIso3 = nextIso3;
+      ecologiesSelectionTransition.previousIso3 = "";
+      ecologiesSelectionTransition.changedAt = now - ECOLOGIES_SELECTION_TRANSITION_MS;
+    } else if (nextIso3 && nextIso3 !== ecologiesSelectionTransition.currentIso3) {
+      ecologiesSelectionTransition.previousIso3 = ecologiesSelectionTransition.currentIso3;
+      ecologiesSelectionTransition.currentIso3 = nextIso3;
+      ecologiesSelectionTransition.changedAt = now;
+    }
+
+    const linearProgress = reducedMotion
+      ? 1
+      : clamp((now - ecologiesSelectionTransition.changedAt) / ECOLOGIES_SELECTION_TRANSITION_MS, 0, 1);
+    const progress = linearProgress * linearProgress * (3 - 2 * linearProgress);
+    const previousIso3 = linearProgress < 1 ? ecologiesSelectionTransition.previousIso3 : "";
+    if (linearProgress >= 1) ecologiesSelectionTransition.previousIso3 = "";
+    return {
+      progress,
+      currentIso3: ecologiesSelectionTransition.currentIso3,
+      previousIso3,
+      current: rows.find((row) => row.iso3 === ecologiesSelectionTransition.currentIso3) || selected,
+      previous: rows.find((row) => row.iso3 === previousIso3) || null,
+    };
+  };
   const MAP_PLOT_REVEAL_LEAD_MS = 110;
   const MAP_PLOT_REVEAL_SPREAD_MS = 980;
   const MAP_PLOT_REVEAL_DURATION_MS = 520;
@@ -1037,11 +1067,17 @@
     };
     const japanX = projection.originX + earthLongitudeToMapX(138) * projection.scale;
     const japanY = projection.originY + (90 - 36) * projection.scale;
+    const tokyoX = projection.originX
+      + earthLongitudeToMapX(BLUE_CIRCULATION_FOCUS.lon) * projection.scale;
+    const tokyoY = projection.originY
+      + (90 - BLUE_CIRCULATION_FOCUS.lat) * projection.scale;
     japanOverlay.dataset.earthZoom = zoom.toFixed(4);
     japanOverlay.dataset.earthOffsetX = japanView.earthOffsetX.toFixed(2);
     japanOverlay.dataset.earthOffsetY = japanView.earthOffsetY.toFixed(2);
     japanOverlay.dataset.japanScreenX = japanX.toFixed(2);
     japanOverlay.dataset.japanScreenY = japanY.toFixed(2);
+    japanOverlay.dataset.tokyoScreenX = tokyoX.toFixed(2);
+    japanOverlay.dataset.tokyoScreenY = tokyoY.toFixed(2);
     return projection;
   };
 
@@ -1055,20 +1091,26 @@
 
   const getEarthViewTarget = (index, rect) => {
     const focusJapan = modes[index]?.id === "blue-circulation";
-    const zoom = focusJapan ? (rect.width <= 720 ? 2.7 : 3) : 1;
+    const zoom = focusJapan ? (rect.width <= 720 ? 3.35 : 4.15) : 1;
     if (!focusJapan) return { focus: "global", zoom, offsetX: 0, offsetY: 0 };
 
     const baseScale = Math.max(0.1, Math.max(rect.width / 360, rect.height / 180));
     const scale = baseScale * zoom;
     const width = 360 * scale;
     const height = 180 * scale;
-    const targetX = rect.width * (rect.width <= 720 ? 0.5 : 0.68);
-    const targetY = rect.height * 0.48;
+    const targetX = rect.width * 0.5;
+    const targetY = rect.height * 0.46;
     return {
-      focus: "japan",
+      focus: BLUE_CIRCULATION_FOCUS.label,
       zoom,
-      offsetX: targetX - ((rect.width - width) / 2 + earthLongitudeToMapX(138) * scale),
-      offsetY: targetY - ((rect.height - height) / 2 + (90 - 36) * scale),
+      offsetX: targetX - (
+        (rect.width - width) / 2
+        + earthLongitudeToMapX(BLUE_CIRCULATION_FOCUS.lon) * scale
+      ),
+      offsetY: targetY - (
+        (rect.height - height) / 2
+        + (90 - BLUE_CIRCULATION_FOCUS.lat) * scale
+      ),
     };
   };
 
@@ -3340,7 +3382,13 @@
     const stroke = (alpha) => `rgba(${rgb}, ${alpha})`;
     const pointFor = (row) => japanWorldToScreen(row.lon, row.lat, left, top);
     const visible = (point, margin = 45) => point.x > -margin && point.x < rect.width + margin && point.y > -margin && point.y < rect.height + margin;
-    const drawSelectionLabel = (point, primary, secondary, color = "rgba(210,255,242,.96)") => {
+    const drawSelectionLabel = (
+      point,
+      primary,
+      secondary,
+      color = "rgba(210,255,242,.96)",
+      motion = {},
+    ) => {
       ctx.save();
       ctx.globalCompositeOperation = "source-over";
       ctx.textAlign = "left";
@@ -3356,16 +3404,24 @@
         rect.width - textWidth - 12,
       );
       const y = clamp(point.y - 30, 12, rect.height - 58);
+      const alpha = clamp(Number(motion.alpha ?? 1), 0, 1);
+      const scale = clamp(Number(motion.scale ?? 1), 0.9, 1.05);
+      const offsetY = Number(motion.offsetY) || 0;
+      ctx.globalAlpha *= alpha;
+      ctx.translate(x + textWidth / 2, y + 23 + offsetY);
+      ctx.scale(scale, scale);
+      const drawX = -textWidth / 2;
+      const drawY = -23;
       ctx.fillStyle = "rgba(2,13,18,.88)";
-      ctx.fillRect(x, y, textWidth, 46);
+      ctx.fillRect(drawX, drawY, textWidth, 46);
       ctx.strokeStyle = color.replace(/\.96\)$/u, ".52)");
       ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, textWidth, 46);
+      ctx.strokeRect(drawX, drawY, textWidth, 46);
       ctx.fillStyle = color;
-      ctx.fillText(primary, x + 10, y + 18, textWidth - 20);
+      ctx.fillText(primary, drawX + 10, drawY + 18, textWidth - 20);
       ctx.fillStyle = "rgba(222,241,240,.76)";
       ctx.font = '8px Consolas, "Courier New", monospace';
-      ctx.fillText(secondary, x + 10, y + 34, textWidth - 20);
+      ctx.fillText(secondary, drawX + 10, drawY + 34, textWidth - 20);
       ctx.restore();
     };
     delete japanOverlay.dataset.auxiliaryPanelId;
@@ -3481,48 +3537,102 @@
     } else if (signalMode.id === "blue-circulation") {
       const state = getBlueCirculationState(signalMode);
       const longitudeCopies = [0];
-      const pulse = reducedMotion ? 0.72 : 0.66 + Math.sin(time * 3.1) * 0.22;
+      const pulse = reducedMotion ? 0.68 : 0.62 + Math.sin(time * 1.15) * 0.12;
+      const arrowStride = rect.width <= 720 ? 6 : 5;
+      japanOverlay.dataset.currentVisualLanguage = "immersive-streamlines";
+      japanOverlay.dataset.currentArrowStride = String(arrowStride);
 
-      for (const row of state?.currents || []) {
+      for (const [currentIndex, row] of (state?.currents || []).entries()) {
         const speed = Math.hypot(row.uMs, row.vMs);
+        if (speed < 0.001) continue;
         const destination = getAdvectedCurrentPosition(row, state.horizonHours);
         for (const longitudeCopy of longitudeCopies) {
           const point = pointFor({ lon: row.lon + longitudeCopy, lat: row.lat });
           if (!visible(point, 80)) continue;
           const end = pointFor({ lon: destination.lon + longitudeCopy, lat: destination.lat });
-          const radius = 20 + clamp(speed / 1.5, 0, 1) * 26;
-          const field = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
-          field.addColorStop(0, getCurrentSpeedColor(speed, 0.34));
-          field.addColorStop(0.42, getCurrentSpeedColor(speed, 0.16));
-          field.addColorStop(1, getCurrentSpeedColor(speed, 0));
-          ctx.fillStyle = field;
-          ctx.fillRect(point.x - radius, point.y - radius, radius * 2, radius * 2);
+          const speedUnit = clamp(speed / 1.5, 0, 1);
+          const directionX = row.uMs / speed;
+          const directionY = -row.vMs / speed;
+          const normalX = -directionY;
+          const normalY = directionX;
+          const strandLength = 18 + speedUnit * 28;
+          const bend = Math.sin(row.lon * 0.17 + row.lat * 0.11 + time * 0.2) * (3 + speedUnit * 6);
+          const strandStart = {
+            x: point.x - directionX * strandLength * 0.56,
+            y: point.y - directionY * strandLength * 0.56,
+          };
+          const strandEnd = {
+            x: point.x + directionX * strandLength * 0.44,
+            y: point.y + directionY * strandLength * 0.44,
+          };
+          const strandControl = {
+            x: point.x + normalX * bend,
+            y: point.y + normalY * bend,
+          };
+
+          ctx.beginPath();
+          ctx.moveTo(strandStart.x, strandStart.y);
+          ctx.quadraticCurveTo(strandControl.x, strandControl.y, strandEnd.x, strandEnd.y);
+          ctx.strokeStyle = getCurrentSpeedColor(speed, 0.035 + speedUnit * 0.045);
+          ctx.lineWidth = 3 + speedUnit * 2.5;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(strandStart.x, strandStart.y);
+          ctx.quadraticCurveTo(strandControl.x, strandControl.y, strandEnd.x, strandEnd.y);
+          ctx.strokeStyle = getCurrentSpeedColor(speed, 0.12 + speedUnit * 0.12);
+          ctx.lineWidth = 0.5 + speedUnit * 0.65;
+          ctx.stroke();
+
+          const pearlProgress = reducedMotion
+            ? 0.58
+            : (time * (0.055 + speedUnit * 0.04) + currentIndex * 0.173) % 1;
+          const inversePearlProgress = 1 - pearlProgress;
+          const pearlX = inversePearlProgress * inversePearlProgress * strandStart.x
+            + 2 * inversePearlProgress * pearlProgress * strandControl.x
+            + pearlProgress * pearlProgress * strandEnd.x;
+          const pearlY = inversePearlProgress * inversePearlProgress * strandStart.y
+            + 2 * inversePearlProgress * pearlProgress * strandControl.y
+            + pearlProgress * pearlProgress * strandEnd.y;
+          ctx.beginPath();
+          ctx.arc(pearlX, pearlY, 0.8 + speedUnit * 1.15, 0, Math.PI * 2);
+          ctx.fillStyle = getCurrentSpeedColor(speed, 0.26 + speedUnit * 0.2);
+          ctx.fill();
 
           if (state.horizonHours > 0.25) {
+            const distanceX = end.x - point.x;
+            const distanceY = end.y - point.y;
+            const distance = Math.hypot(distanceX, distanceY);
+            const advectionBend = Math.min(38, distance * 0.18)
+              * Math.sin(row.lon * 0.13 - row.lat * 0.09);
+            const advectionControlX = (point.x + end.x) * 0.5 + normalX * advectionBend;
+            const advectionControlY = (point.y + end.y) * 0.5 + normalY * advectionBend;
             ctx.beginPath();
             ctx.moveTo(point.x, point.y);
-            ctx.lineTo(end.x, end.y);
-            ctx.strokeStyle = getCurrentSpeedColor(speed, 0.4 + clamp(speed / 1.5, 0, 1) * 0.42);
-            ctx.lineWidth = 0.8 + clamp(speed / 1.5, 0, 1) * 1.8;
+            ctx.quadraticCurveTo(advectionControlX, advectionControlY, end.x, end.y);
+            ctx.strokeStyle = getCurrentSpeedColor(speed, 0.2 + speedUnit * 0.42);
+            ctx.lineWidth = 0.65 + speedUnit * 1.25;
             ctx.stroke();
             ctx.beginPath();
-            ctx.arc(end.x, end.y, 1.8 + speed * 1.35, 0, Math.PI * 2);
+            ctx.arc(end.x, end.y, 1.25 + speed * 0.8, 0, Math.PI * 2);
             ctx.fillStyle = getCurrentSpeedColor(speed, pulse);
             ctx.fill();
           }
-          drawVectorArrow(
-            ctx,
-            point.x,
-            point.y,
-            row.uMs,
-            row.vMs,
-            getCurrentSpeedColor(speed, 0.74),
-            45,
-          );
+          if (currentIndex % arrowStride === 0 || speed >= 0.9) {
+            drawVectorArrow(
+              ctx,
+              point.x,
+              point.y,
+              row.uMs,
+              row.vMs,
+              getCurrentSpeedColor(speed, 0.25 + speedUnit * 0.2),
+              20,
+            );
+          }
         }
       }
-      for (const row of signalMode.signals.climate || []) {
+      for (const [windIndex, row] of (signalMode.signals.climate || []).entries()) {
         if (!Number.isFinite(row.windSpeedMs)) continue;
+        if (windIndex % (rect.width <= 720 ? 8 : 7) !== 0) continue;
         for (const longitudeCopy of longitudeCopies) {
           const point = pointFor({ lon: row.lon + longitudeCopy, lat: row.lat });
           if (!visible(point)) continue;
@@ -3533,8 +3643,8 @@
             point.y,
             Math.cos(angle) * row.windSpeedMs,
             -Math.sin(angle) * row.windSpeedMs,
-            "rgba(255,255,255,.66)",
-            5,
+            "rgba(235,250,255,.15)",
+            2.8,
           );
         }
       }
@@ -4068,6 +4178,9 @@
       const state = getMapSequenceState(signalMode);
       const rows = state?.rows || [];
       const selected = state?.selected;
+      const selectionTransition = getEcologiesSelectionTransition(rows, selected, now);
+      const currentSelectionWeight = selectionTransition.previousIso3 ? selectionTransition.progress : 1;
+      const previousSelectionWeight = selectionTransition.previousIso3 ? 1 - selectionTransition.progress : 0;
       drawGlobalRaster(landCoverImage, 0.16, { forestOnly: true });
       japanOverlay.dataset.ecologiesPlot = "paired-country-scatter";
       japanOverlay.dataset.ecologiesPairCount = String(rows.length);
@@ -4076,6 +4189,9 @@
         : "";
       japanOverlay.dataset.ecologiesSelectedCountry = selected?.country || "";
       japanOverlay.dataset.ecologiesCultureCount = String(signalMode.signals.culture?.length || 0);
+      japanOverlay.dataset.ecologiesCountryDisplayMs = String(Math.round(ECOLOGIES_SEQUENCE_DURATION_MS / Math.max(1, rows.length)));
+      japanOverlay.dataset.ecologiesSelectionTransitionMs = String(ECOLOGIES_SELECTION_TRANSITION_MS);
+      japanOverlay.dataset.ecologiesSelectionTransitionProgress = selectionTransition.progress.toFixed(3);
 
       (signalMode.signals.culture || []).forEach((row, index) => {
         const point = pointFor(row);
@@ -4095,47 +4211,61 @@
       rows.forEach((row) => {
         const point = pointFor(row);
         if (!visible(point)) return;
-        const isSelected = row.iso3 === selected?.iso3;
-        const outerRadius = isSelected ? 22 : 12;
-        const innerRadius = isSelected ? 15 : 7;
+        const selectionWeight = row.iso3 === selectionTransition.currentIso3
+          ? currentSelectionWeight
+          : row.iso3 === selectionTransition.previousIso3
+            ? previousSelectionWeight
+            : 0;
+        const outerRadius = 12 + selectionWeight * 10;
+        const innerRadius = 7 + selectionWeight * 8;
         const start = -Math.PI / 2;
         ctx.lineCap = "round";
         ctx.beginPath();
         ctx.arc(point.x, point.y, outerRadius, 0, Math.PI * 2);
         ctx.strokeStyle = "rgba(86,181,255,.12)";
-        ctx.lineWidth = isSelected ? 5 : 3;
+        ctx.lineWidth = 3 + selectionWeight * 2;
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(point.x, point.y, outerRadius, start, start + Math.PI * 2 * clamp(row.urbanPercent / 100, 0, 1));
-        ctx.strokeStyle = isSelected ? "rgba(92,203,255,.98)" : "rgba(86,181,255,.72)";
+        ctx.strokeStyle = `rgba(92,203,255,${0.72 + selectionWeight * 0.26})`;
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(point.x, point.y, innerRadius, 0, Math.PI * 2);
         ctx.strokeStyle = "rgba(92,242,145,.12)";
-        ctx.lineWidth = isSelected ? 5 : 3;
+        ctx.lineWidth = 3 + selectionWeight * 2;
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(point.x, point.y, innerRadius, start, start + Math.PI * 2 * clamp(row.forestPercent / 100, 0, 1));
-        ctx.strokeStyle = isSelected ? "rgba(104,255,164,.98)" : "rgba(92,242,145,.72)";
+        ctx.strokeStyle = `rgba(104,255,164,${0.72 + selectionWeight * 0.26})`;
         ctx.stroke();
         const residualStrength = clamp(Math.abs(row.residualPercent) / 35, 0.15, 1);
         ctx.beginPath();
-        ctx.arc(point.x, point.y, isSelected ? 5 : 2.5, 0, Math.PI * 2);
+        ctx.arc(point.x, point.y, 2.5 + selectionWeight * 2.5, 0, Math.PI * 2);
         ctx.fillStyle = row.residualPercent >= 0
           ? `rgba(122,255,174,${0.28 + residualStrength * 0.62})`
           : `rgba(255,174,112,${0.28 + residualStrength * 0.62})`;
         ctx.fill();
         ctx.lineCap = "butt";
-        if (isSelected) {
-          drawSelectionLabel(
-            { x: point.x + 26, y: point.y },
-            `${row.country} / FOREST ${row.forestPercent.toFixed(1)}%`,
-            `URBAN ${row.urbanPercent.toFixed(1)}% · 回帰線との差 ${row.residualPercent >= 0 ? "+" : ""}${row.residualPercent.toFixed(1)}pt`,
-            "rgba(216,255,232,.98)",
-          );
-        }
-        ctx.restore();
       });
+
+      const drawEcologiesSelectionLabel = (row, alpha, outgoing = false) => {
+        if (!row || alpha <= 0.01) return;
+        const point = pointFor(row);
+        if (!visible(point)) return;
+        drawSelectionLabel(
+          { x: point.x + 26, y: point.y },
+          `${row.country} / FOREST ${row.forestPercent.toFixed(1)}%`,
+          `URBAN ${row.urbanPercent.toFixed(1)}% · 回帰線との差 ${row.residualPercent >= 0 ? "+" : ""}${row.residualPercent.toFixed(1)}pt`,
+          "rgba(216,255,232,.98)",
+          {
+            alpha,
+            offsetY: outgoing ? -8 * (1 - alpha) : 10 * (1 - alpha),
+            scale: outgoing ? 0.98 + alpha * 0.02 : 0.97 + alpha * 0.03,
+          },
+        );
+      };
+      drawEcologiesSelectionLabel(selectionTransition.previous, previousSelectionWeight, true);
+      drawEcologiesSelectionLabel(selectionTransition.current, currentSelectionWeight);
 
       if (state && rows.length) {
         const compact = rect.width < 680;
@@ -5845,7 +5975,9 @@
         ? CIRCULATION_TIMELINE_DURATION_MS
         : id === "rhythm-of-disaster"
           ? GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS
-        : MODE_SEQUENCE_DURATION_MS;
+          : id === "three-ecologies"
+            ? ECOLOGIES_SEQUENCE_DURATION_MS
+            : MODE_SEQUENCE_DURATION_MS;
     return storyModeDetour?.kind === "map01" && storyModeDetour.phase !== "temperature-anomaly"
       ? baseDuration / STORY_MAP_TIMELINE_SPEED
       : baseDuration;
@@ -6617,10 +6749,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanModeButtons.forEach((button, index) => {
       button.setAttribute("aria-current", index === mapModeIndex ? "true" : "false");
     });
-    abstractModeButtons.forEach((button, index) => {
-      button.setAttribute("aria-current", index === lightModeIndex ? "true" : "false");
-      button.tabIndex = index === lightModeIndex ? 0 : -1;
-    });
     updateIntroSelection();
 
     renderSource();
@@ -6879,7 +7007,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   syncMapModePreviewContainer();
 
   const getMapModePreviewContent = (button) => {
-    const surface = button?.dataset.mapPreviewSurface === "light" ? "light" : "map";
     if (button?.dataset.liveExhibit) {
       const exhibit = globalThis.GaiaLiveExhibits?.definitions?.find(({ id }) => id === button.dataset.liveExhibit);
       if (!exhibit) return null;
@@ -6889,8 +7016,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
         copy: exhibit.caption,
       };
     }
-    const list = surface === "light" ? abstractModeButtons : japanModeButtons;
-    const index = list.indexOf(button);
+    const index = japanModeButtons.indexOf(button);
     const choice = INTRO_MODE_CHOICES[index];
     if (!choice) return null;
     return {
@@ -6901,16 +7027,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   };
 
   const setMapModePreviewOpen = (open, button = null) => {
-    const lightOverlayPanel = button?.closest?.("#map-light-overlay")
-      ?.querySelector?.(".map-light-overlay-panel");
     if (open) {
       const content = getMapModePreviewContent(button);
       if (!content) return;
-      if (lightOverlayPanel && mapModePreview.parentElement !== lightOverlayPanel) {
-        lightOverlayPanel.append(mapModePreview);
-      } else if (!lightOverlayPanel && mapModePreview.closest("#map-light-overlay")) {
-        syncMapModePreviewContainer();
-      }
       mapModePreviewAnchor = button;
       mapModePreviewNumber.textContent = content.number;
       mapModePreviewLabel.textContent = content.label;
@@ -6920,14 +7039,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }
     mapModePreview.classList.toggle("is-open", Boolean(open));
     mapModePreview.setAttribute("aria-hidden", String(!open));
-    if (open && lightOverlayPanel) {
-      mapModePreview.style.removeProperty("width");
-      mapModePreview.style.removeProperty("left");
-      mapModePreview.style.removeProperty("top");
-      if (usesCompactMapUi()) {
-        requestAnimationFrame(() => mapModePreview.scrollIntoView({ block: "nearest", inline: "nearest" }));
-      }
-    } else if (open && usesCompactMapUi()) {
+    if (open && usesCompactMapUi()) {
       mapModePreview.style.removeProperty("width");
       mapModePreview.style.removeProperty("left");
       mapModePreview.style.removeProperty("top");
@@ -6950,35 +7062,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     });
   };
 
-  let mapLightOverlayRestoreFocus = null;
-  const setMapLightOverlayOpen = (open, { restoreFocus = true } = {}) => {
-    const shouldOpen = Boolean(open);
-    if (shouldOpen) {
-      mapLightOverlayRestoreFocus = document.activeElement;
-      mapLightOverlay.hidden = false;
-      mapLightOverlayOpen.setAttribute("aria-expanded", "true");
-      setMobileMapBankExpanded(false);
-      closeMapModePreview();
-      requestAnimationFrame(() => {
-        if (mapLightOverlay.hidden || mapLightOverlay.contains(document.activeElement)) return;
-        const current = abstractModeButtons[lightModeIndex] || abstractModeButtons[0];
-        (current || mapLightOverlayClose)?.focus({ preventScroll: true });
-      });
-      return;
-    }
-    mapLightOverlay.hidden = true;
-    mapLightOverlayOpen.setAttribute("aria-expanded", "false");
-    closeMapModePreview();
-    syncMapModePreviewContainer();
-    if (restoreFocus) {
-      const target = mapLightOverlayRestoreFocus?.isConnected
-        ? mapLightOverlayRestoreFocus
-        : mapLightOverlayOpen;
-      requestAnimationFrame(() => target?.focus({ preventScroll: true }));
-    }
-    mapLightOverlayRestoreFocus = null;
-  };
-
   const setLightCanvasMounted = (mounted) => {
     if (mounted) {
       if (canvas.parentElement !== japanLayer) japanMap.after(canvas);
@@ -6988,47 +7071,22 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     canvasHomeParent.insertBefore(canvas, canvasHomeNextSibling);
   };
 
-  const setMapSurface = (surface, { focusMode = true } = {}) => {
-    const nextSurface = surface === "light" ? "light" : "map";
-    if (nextSurface === "light" && japanLayer.classList.contains("is-live-exhibit")) {
-      globalThis.GaiaLiveExhibits?.deactivate?.({
-        number: formatModeNumber(modeToIndex),
-        title: modes[modeToIndex].titleJa,
-      });
+  const MAP_LIGHT_OPACITIES = Object.freeze([0.09, 0.34, 0.14, 0.13, 0.15, 0.18, 0.14, 0.17]);
+  const syncIntegratedMapLight = () => {
+    const active = japanIsOpen && !japanLayer.classList.contains("is-live-exhibit");
+    japanLayer.classList.toggle("has-integrated-map-light", active);
+    japanModeBank.dataset.mapSurface = "map";
+    japanModeBank.dataset.lightIntegration = active ? "mode-matched" : "off";
+    if (active) {
+      const modeNumber = formatModeNumber(mapModeIndex);
+      japanLayer.style.setProperty("--map-light-opacity", String(MAP_LIGHT_OPACITIES[mapModeIndex] ?? 0.15));
+      canvas.dataset.integratedMapMode = modeNumber;
+      setLightCanvasMounted(true);
+    } else {
+      japanLayer.style.removeProperty("--map-light-opacity");
+      delete canvas.dataset.integratedMapMode;
+      setLightCanvasMounted(false);
     }
-    mapSurface = nextSurface;
-    const lightIsActive = nextSurface === "light";
-    japanLayer.classList.toggle("is-abstract-exhibit", lightIsActive);
-    japanModeBank.dataset.mapSurface = nextSurface;
-    setLightCanvasMounted(lightIsActive);
-    mapLightOverlayOpen.setAttribute("aria-pressed", String(lightIsActive));
-    mapLightOverlayOpen.querySelector("strong")?.replaceChildren(lightIsActive ? "光を変更する" : "光を重ねる");
-    mapLightOverlayOpen.querySelector("small")?.replaceChildren(lightIsActive
-      ? `LIGHT ${formatModeNumber(lightModeIndex)} / 地図番号とは独立`
-      : "地図番号とは独立");
-    mapScopeKicker.textContent = lightIsActive
-      ? "Planetary lens / Light overlay"
-      : "Planetary lens / Open map";
-    closeMapModePreview();
-    if (!lightIsActive) selectMode(mapModeIndex);
-    updateModeInterface();
-    if (focusMode) {
-      requestAnimationFrame(() => {
-        if (lightIsActive) {
-          mapLightOverlayOpen.focus({ preventScroll: true });
-        } else {
-          japanModeButtons[mapModeIndex]?.focus({ preventScroll: true });
-        }
-      });
-    }
-    window.dispatchEvent(new CustomEvent("gaia:map-surface-change", {
-      detail: {
-        surface: nextSurface,
-        index: lightIsActive ? lightModeIndex : mapModeIndex,
-        mapIndex: mapModeIndex,
-        lightIndex: lightModeIndex,
-      },
-    }));
   };
 
   mapMobileHeadingToggle?.addEventListener("click", () => {
@@ -7037,26 +7095,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   mapMobileBankToggle?.addEventListener("click", () => {
     setMobileMapBankExpanded(mapMobileBankToggle.getAttribute("aria-expanded") !== "true");
   });
-  mapLightOverlayOpen?.addEventListener("click", () => setMapLightOverlayOpen(true));
-  mapLightOverlayClose?.addEventListener("click", () => setMapLightOverlayOpen(false));
-  mapLightOverlayScrim?.addEventListener("click", () => setMapLightOverlayOpen(false));
-  mapLightOverlayDisable?.addEventListener("click", () => {
-    setMapSurface("map", { focusMode: false });
-    setMapLightOverlayOpen(false);
-  });
-  mapLightOverlay?.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") return;
-    event.preventDefault();
-    setMapLightOverlayOpen(false);
-  });
-  mapLightOverlay?.addEventListener("pointerover", (event) => {
-    if (!supportsHover) return;
-    const button = event.target.closest?.(".map-mode-button");
-    if (button) setMapModePreviewOpen(true, button);
-  });
-  mapLightOverlay?.addEventListener("pointerout", () => syncMapModePreviewIntent(mapLightOverlay));
-  mapLightOverlay?.addEventListener("focusin", () => syncMapModePreviewIntent(mapLightOverlay));
-  mapLightOverlay?.addEventListener("focusout", () => syncMapModePreviewIntent(mapLightOverlay));
   mapMobileLegendToggle?.addEventListener("click", () => {
     const expand = mapMobileLegendToggle.getAttribute("aria-expanded") !== "true";
     if (expand) {
@@ -7083,7 +7121,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   japanModeBank.addEventListener("click", (event) => {
     const button = event.target.closest?.(".map-mode-button");
     if (!button) return;
-    if (button.dataset.liveExhibit) setMapSurface("map", { focusMode: false });
     syncMapModePreviewIntent(japanModeBank);
   }, true);
   window.addEventListener("gaia:live-exhibit-mounted", () => {
@@ -7096,6 +7133,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (event.detail?.id) {
       setMobileMapBankExpanded(false, { restoreFocus: true });
     }
+    syncIntegratedMapLight();
   });
   let compactMapUiWasActive = usesCompactMapUi();
   window.addEventListener("resize", () => {
@@ -7184,34 +7222,11 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanModeButton.addEventListener("click", () => {
       mapModeIndex = index;
       selectMode(mapModeIndex);
-      if (mapSurface === "light") updateModeInterface();
+      syncIntegratedMapLight();
       setMobileMapBankExpanded(false, { restoreFocus: true });
     });
     japanModeButtons.push(japanModeButton);
     japanModeList.append(japanModeButton);
-
-    const abstractModeButton = document.createElement("button");
-    abstractModeButton.className = "map-mode-button map-mode-button--light";
-    abstractModeButton.type = "button";
-    abstractModeButton.textContent = formatModeNumber(index);
-    abstractModeButton.setAttribute(
-      "aria-label",
-      `${formatModeNumber(index)} 独立した${introChoice.label}の光展示へ切り替える`,
-    );
-    abstractModeButton.dataset.mapPreviewSurface = "light";
-    abstractModeButton.setAttribute("aria-describedby", "map-mode-preview");
-    abstractModeButton.setAttribute("aria-current", index === lightModeIndex ? "true" : "false");
-    abstractModeButton.tabIndex = index === lightModeIndex ? 0 : -1;
-    abstractModeButton.addEventListener("click", () => {
-      lightModeFromIndex = lightModeToIndex;
-      lightModeIndex = index;
-      lightModeToIndex = index;
-      lightTransitionStartedAt = performance.now();
-      setMapSurface("light", { focusMode: false });
-      setMapLightOverlayOpen(false);
-    });
-    abstractModeButtons.push(abstractModeButton);
-    abstractModeList.append(abstractModeButton);
   });
 
   introPathButtons.forEach((button) => {
@@ -7770,7 +7785,6 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     japanButton.setAttribute("aria-pressed", "true");
     japanButton.title = "Close map";
     experience.classList.add("japan-open");
-    setMapSurface("map", { focusMode: false });
     setEarthControlsDisabled(true);
     japanTilesDirty = true;
     nextAutoAt = performance.now() + AUTO_INTERVAL;
@@ -7787,6 +7801,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       mapModeIndex = requestedMode - 1;
       selectMode(mapModeIndex);
     }
+    syncIntegratedMapLight();
     setMapScope("earth");
     restartCo2Timeline(
       Number.isFinite(requestedTimelinePosition)
@@ -7839,11 +7854,10 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
     closeJapanData({ restoreFocus: false });
     closeJapanPoi();
-    setMapLightOverlayOpen(false, { restoreFocus: false });
     cancelMapTitleTransition();
-    setLightCanvasMounted(false);
     cancelEarthViewAnimation("map-closed");
     japanIsOpen = false;
+    syncIntegratedMapLight();
     japanLayer.classList.add("is-closing");
     japanLayer.setAttribute("aria-hidden", "true");
     japanLayer.inert = true;
@@ -8784,27 +8798,13 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       nextAutoAt = now + AUTO_INTERVAL;
     }
 
-    if (japanIsOpen && mapSurface !== "light") {
-      const backgroundFrameInterval = reducedMotion ? 1000 : 200;
-      if (now - lastBackgroundRenderAt < backgroundFrameInterval) {
-        animationFrame = requestAnimationFrame(render);
-        return;
-      }
-      lastBackgroundRenderAt = now;
-    }
-
     const elapsed = Math.max(0, (now - startTime - hiddenDuration) / 1000);
     const timeScale = reducedMotion ? 0.32 : 1;
     const transitionDuration = reducedMotion ? 30 : TRANSITION_DURATION;
-    const lightOverlayIsVisible = japanIsOpen && mapSurface === "light";
-    const shaderModeFromIndex = lightOverlayIsVisible ? lightModeFromIndex : modeFromIndex;
-    const shaderModeToIndex = lightOverlayIsVisible ? lightModeToIndex : modeToIndex;
-    const shaderTransitionStartedAt = lightOverlayIsVisible ? lightTransitionStartedAt : transitionStartedAt;
-    const transition = clamp((now - shaderTransitionStartedAt) / transitionDuration, 0, 1);
+    const transition = clamp((now - transitionStartedAt) / transitionDuration, 0, 1);
 
     if (transition >= 1) {
-      if (lightOverlayIsVisible) lightModeFromIndex = lightModeToIndex;
-      else modeFromIndex = modeToIndex;
+      modeFromIndex = modeToIndex;
     }
 
     pointer.energy *= pointer.down ? 0.985 : 0.955;
@@ -8836,10 +8836,10 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const trailActive = pointer.down || trail.some((point) => point.strength > 0.001 && now - point.bornAt < 3_100);
     gl.uniform1f(uniforms.trailActive, trailActive ? 1 : 0);
     gl.uniform1fv(uniforms.modeMemory, modeMemory);
-    gl.uniform1i(uniforms.modeFrom, shaderModeFromIndex);
-    gl.uniform1i(uniforms.modeTo, shaderModeToIndex);
+    gl.uniform1i(uniforms.modeFrom, modeFromIndex);
+    gl.uniform1i(uniforms.modeTo, modeToIndex);
     gl.uniform1f(uniforms.transition, transition);
-    const signalVector = getShaderSignalVector(shaderModeToIndex);
+    const signalVector = getShaderSignalVector(modeToIndex);
     gl.uniform4f(uniforms.signal, signalVector[0], signalVector[1], signalVector[2], signalVector[3]);
     gl.uniform1fv(uniforms.sourceSignals, getSourceSignalVector());
     gl.drawArrays(gl.TRIANGLES, 0, 3);

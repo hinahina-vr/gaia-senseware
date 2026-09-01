@@ -10,6 +10,7 @@ const introOnly = process.argv.slice(6).includes("--intro-only");
 const endingOnly = process.argv.slice(6).includes("--ending-only");
 const mapCopyOnly = process.argv.slice(6).includes("--map-copy-only");
 const repeatOnly = process.argv.slice(6).includes("--repeat-only");
+const integratedLightOnly = process.argv.slice(6).includes("--integrated-light-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -87,6 +88,7 @@ const createPage = async (viewport, label) => {
   });
   await page.addInitScript((source) => {
     globalThis.__qaVisible = eval(source);
+    sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
     globalThis.__qaNovelOpenAtCount = 0;
     globalThis.__qaNovelOpenCount = 0;
     globalThis.__qaSpaceOpenAtCount = 0;
@@ -124,6 +126,7 @@ const openIntro = async (page, { progressOverrides = {}, apeironceneComplete = f
     opening.setAttribute("aria-hidden", "true");
     document.body.classList.remove("gaia-opening-active");
     window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
+    document.querySelector("#intro-button")?.click();
   }, { overrides: progressOverrides, trueEndComplete: apeironceneComplete });
   await page.waitForFunction(() => __qaVisible(document.querySelector("#intro-layer")));
   await page.waitForFunction(() => [...document.querySelectorAll(".intro-path-card")]
@@ -578,57 +581,32 @@ const scanIntegratedLightEntry = async (viewport) => {
   assert.equal(await page.locator('[data-intro-path="abstract"]').count(), 0);
   await page.locator('[data-intro-path="map"]').click();
   await page.waitForFunction(() => __qaVisible(document.querySelector("#japan-layer")));
-  if (viewport.mobile) await page.locator("#map-mobile-bank-toggle").click();
-  await page.locator("#map-light-overlay-open").click();
-  await page.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden);
-  await page.locator("#abstract-mode-list .map-mode-button").first().click();
-  await page.waitForFunction(() => (
-    document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit")
-    && __qaVisible(document.querySelector("#gaia-canvas"))
-    && __qaVisible(document.querySelector("#japan-map"))
-    && document.querySelector("#gaia-canvas")?.parentElement?.id === "japan-layer"
-  ));
-  await page.locator("#map-light-overlay-open").click();
-  await page.locator("#abstract-mode-list .map-mode-button").nth(6).click();
-  await page.waitForFunction(() => document.querySelector("#abstract-mode-list .map-mode-button:nth-child(7)")?.getAttribute("aria-current") === "true");
-  await page.locator("#map-light-overlay-open").click();
-  await page.locator("#abstract-mode-list .map-mode-button").nth(6).focus();
-  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector("#map-mode-preview")).opacity) >= 0.99);
-  const lightOverlay = await page.evaluate(() => ({
-    visible: __qaVisible(document.querySelector("#map-light-overlay")),
-    relationshipCopy: document.querySelector("#map-light-overlay")?.textContent.replace(/\s+/gu, " ").trim(),
-    tooltipText: document.querySelector("#map-mode-preview")?.textContent.replace(/\s+/gu, " ").trim(),
-  }));
-  assert(lightOverlay.visible);
-  assert.match(lightOverlay.relationshipCopy, /地図の番号とは対応しません。/u);
-  assert.match(lightOverlay.tooltipText, /^07 \/ ECOLOGIES 暮らしの声/u);
-  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-independent-light-overlay.png`) });
-  await page.locator("#map-light-overlay-close").click();
-  await page.waitForFunction(() => document.querySelector("#map-light-overlay")?.hidden === true);
-  const mapPoint = await page.evaluate(() => {
-    for (let y = 18; y < innerHeight - 18; y += 18) {
-      for (let x = 18; x < innerWidth - 18; x += 18) {
-        if (document.elementFromPoint(x, y)?.closest?.("#japan-map")) return { x, y };
-      }
+  assert.equal(await page.locator("#map-light-overlay, #abstract-mode-list").count(), 0);
+  for (let index = 0; index < 8; index += 1) {
+    if (viewport.mobile && await page.locator("#map-mobile-bank-toggle").getAttribute("aria-expanded") !== "true") {
+      await page.locator("#map-mobile-bank-toggle").click();
     }
-    return null;
-  });
-  assert(mapPoint, "light overlay blocks the underlying map interaction surface");
+    const number = String(index + 1).padStart(2, "0");
+    await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(index).evaluate((button) => button.click());
+    await page.waitForFunction((expected) => (
+      document.querySelector("#japan-layer")?.classList.contains("has-integrated-map-light")
+      && document.querySelector("#gaia-canvas")?.dataset.integratedMapMode === expected
+      && document.querySelector("#gaia-canvas")?.parentElement?.id === "japan-layer"
+    ), number);
+  }
   const integrated = await page.evaluate(() => ({
     introVisible: __qaVisible(document.querySelector("#intro-layer")),
     mapLayerVisible: __qaVisible(document.querySelector("#japan-layer")),
     activeSurface: document.querySelector(".map-mode-bank")?.dataset.mapSurface,
-    abstractClass: document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"),
+    lightIntegration: document.querySelector(".map-mode-bank")?.dataset.lightIntegration,
+    integratedClass: document.querySelector("#japan-layer")?.classList.contains("has-integrated-map-light"),
     mapVisible: __qaVisible(document.querySelector("#japan-map")),
     canvasVisible: __qaVisible(document.querySelector("#gaia-canvas")),
     canvasPointerEvents: getComputedStyle(document.querySelector("#gaia-canvas")).pointerEvents,
     mapChoiceCount: document.querySelectorAll("#japan-mode-list .map-mode-button").length,
     currentMapChoice: document.querySelector("#japan-mode-list .map-mode-button[aria-current='true']")?.textContent.trim(),
     mapChoiceListDisplay: getComputedStyle(document.querySelector("#japan-mode-list")).display,
-    lightChoiceListVisible: __qaVisible(document.querySelector("#abstract-mode-list")),
-    lightChoiceListDisplay: getComputedStyle(document.querySelector("#abstract-mode-list")).display,
-    lightChoiceCount: document.querySelectorAll("#abstract-mode-list .map-mode-button").length,
-    currentLightChoice: document.querySelector("#abstract-mode-list .map-mode-button[aria-current='true']")?.textContent.trim(),
+    integratedMode: document.querySelector("#gaia-canvas")?.dataset.integratedMapMode,
     heading: document.querySelector("#japan-mode-title")?.textContent.trim(),
     bankKicker: document.querySelector("#map-mode-bank-kicker")?.textContent.trim(),
     bankGuide: document.querySelector("#map-mode-bank-guide")?.textContent.trim(),
@@ -638,18 +616,16 @@ const scanIntegratedLightEntry = async (viewport) => {
     canvasParent: document.querySelector("#gaia-canvas")?.parentElement?.id,
     overflowX: document.documentElement.scrollWidth > innerWidth + 1,
   }));
-  assert(!integrated.introVisible && integrated.mapLayerVisible && integrated.abstractClass);
-  assert.equal(integrated.activeSurface, "light");
+  assert(!integrated.introVisible && integrated.mapLayerVisible && integrated.integratedClass);
+  assert.equal(integrated.activeSurface, "map");
+  assert.equal(integrated.lightIntegration, "mode-matched");
   assert(integrated.mapVisible && integrated.canvasVisible && integrated.canvasPointerEvents === "none");
   assert.equal(integrated.canvasParent, "japan-layer");
   assert.equal(integrated.mapChoiceCount, 14);
-  assert.equal(integrated.currentMapChoice, "01");
-  assert.equal(integrated.lightChoiceListVisible, false);
+  assert.equal(integrated.currentMapChoice, "08");
+  assert.equal(integrated.integratedMode, "08");
   assert.equal(integrated.mapChoiceListDisplay, "grid");
-  assert.equal(integrated.lightChoiceListDisplay, "grid");
-  assert.equal(integrated.lightChoiceCount, 8);
-  assert.equal(integrated.currentLightChoice, "07");
-  assert.equal(integrated.heading, "地球の一呼吸");
+  assert.equal(integrated.heading, "人工物の共生化");
   assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—14");
   assert.equal(integrated.bankGuide, "見たい地図展示を選んでください");
   assert.equal(integrated.tooltipVisible, false);
@@ -657,21 +633,7 @@ const scanIntegratedLightEntry = async (viewport) => {
   assert.equal(integrated.spaceOpenAtCount, 0);
   assert.equal(integrated.overflowX, false);
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-integrated-light-entry.png`) });
-  await page.locator("#map-light-overlay-open").click();
-  await page.locator("#map-light-overlay-disable").click();
-  await page.waitForFunction(() => (
-    !document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit")
-    && __qaVisible(document.querySelector("#japan-map"))
-    && document.querySelector("#gaia-canvas")?.parentElement?.classList.contains("experience")
-  ));
-  const restored = await page.evaluate(() => ({
-    mapChoiceCount: document.querySelectorAll("#japan-mode-list .map-mode-button").length,
-    activeSurface: document.querySelector(".map-mode-bank")?.dataset.mapSurface,
-    mapVisible: __qaVisible(document.querySelector("#japan-map")),
-  }));
-  assert.equal(restored.mapChoiceCount, 14);
-  assert.deepEqual(restored, { mapChoiceCount: 14, activeSurface: "map", mapVisible: true });
-  report.scans.push({ viewport: viewport.name, case: "independent-light-overlay", lightOverlay, integrated, restored, passed: true });
+  report.scans.push({ viewport: viewport.name, case: "mode-matched-light-integration", integrated, passed: true });
   await context.close();
 };
 
@@ -1041,12 +1003,15 @@ try {
   } else if (mapCopyOnly) {
     await scanMapActionCopy(viewports[2]);
     await scanMapActionCopy(viewports[3]);
+  } else if (integratedLightOnly) {
+    await scanIntegratedLightEntry(viewports[2]);
+    await scanIntegratedLightEntry(viewports[3]);
   } else if (endingOnly) {
     await scanEndingDestinations();
   } else {
     for (const viewport of viewports) await scanIntroReturn(viewport);
   }
-  if (!repeatOnly && !gxFeatureOnly && !mapCopyOnly && !introOnly && !endingOnly && !cardsOnly) {
+  if (!repeatOnly && !gxFeatureOnly && !mapCopyOnly && !integratedLightOnly && !introOnly && !endingOnly && !cardsOnly) {
     await scanEndingDestinations();
     await scanIntegratedLightEntry(viewports[2]);
     await scanIntegratedLightEntry(viewports[3]);

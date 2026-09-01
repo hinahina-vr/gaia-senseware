@@ -82,7 +82,6 @@ const boot = async (viewport) => {
   await page.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
   await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 14, null, { timeout: 30_000 });
-  await page.waitForFunction(() => document.querySelectorAll("#abstract-mode-list .map-mode-button").length === 8, null, { timeout: 30_000 });
   await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true", null, { timeout: 30_000 });
   return { context, page };
 };
@@ -119,34 +118,9 @@ const selectMapMode = async (page, index) => {
       { timeout: 15_000 },
     );
   } else {
-    await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.hidden !== false, null, { timeout: 15_000 });
-  }
-  await page.waitForTimeout(180);
-  return number;
-};
-
-const selectLightMode = async (page, index) => {
-  await ensureBankExpanded(page);
-  await page.locator("#map-light-overlay-open").click();
-  await page.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden, null, { timeout: 15_000 });
-  const button = page.locator("#abstract-mode-list .map-mode-button").nth(index);
-  const number = String(index + 1).padStart(2, "0");
-  await button.click({ force: true });
-  await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit"), null, { timeout: 15_000 });
-  try {
-    await page.waitForFunction(
-      (expected) => document.querySelector("#abstract-mode-list .map-mode-button[aria-current='true']")?.textContent?.trim() === expected,
-      number,
-      { timeout: 1_200 },
-    );
-  } catch {
-    report.selectionFallbacks.push(`light-${number}`);
-    await button.evaluate((element) => element.click());
-    await page.waitForFunction(
-      (expected) => document.querySelector("#abstract-mode-list .map-mode-button[aria-current='true']")?.textContent?.trim() === expected,
-      number,
-      { timeout: 15_000 },
-    );
+    await page.waitForFunction((expected) => document.querySelector("#gaia-live-exhibit-canvas")?.hidden !== false
+      && document.querySelector("#japan-layer")?.classList.contains("has-integrated-map-light")
+      && document.querySelector("#gaia-canvas")?.dataset.integratedMapMode === expected, number, { timeout: 15_000 });
   }
   await page.waitForTimeout(180);
   return number;
@@ -262,7 +236,7 @@ try {
       0,
       `${viewport.name}: retired LIVE receipt remains`,
     );
-    const scan = { viewport, map: [], light: [], optionalUi: [], liveInteractions: [] };
+    const scan = { viewport, map: [], optionalUi: [], liveInteractions: [] };
     for (let index = 0; index < 14; index += 1) {
       const number = await selectMapMode(page, index);
       const metrics = await measureLayout(page, "map", number);
@@ -366,20 +340,13 @@ try {
         await page.waitForFunction(() => !document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-mobile-expanded"));
       }
     }
-    for (let index = 0; index < 8; index += 1) {
-      const number = await selectLightMode(page, index);
-      const metrics = await measureLayout(page, "light", number);
-      const screenshot = path.join(outputDir, `${viewport.name}-light-${number}.png`);
-      await page.screenshot({ path: screenshot, animations: "disabled" });
-      scan.light.push({ screenshot, ...metrics });
-    }
     report.unhandledRejections.push(...(await page.evaluate(() => globalThis.__gaiaAuditUnhandledRejections || [])).map((message) => `${viewport.name}: ${message}`));
     report.scans.push(scan);
     await context.close();
-    console.log(`AUDITED ${viewport.name}: 14 map + 8 light exhibits`);
+    console.log(`AUDITED ${viewport.name}: 14 map exhibits with integrated light on 01—08`);
   }
   assert.equal(report.scans.length, selectedViewports.length);
-  assert(report.scans.every((scan) => scan.map.length === 14 && scan.light.length === 8));
+  assert(report.scans.every((scan) => scan.map.length === 14));
   report.status = "passed";
 } catch (error) {
   report.status = "failed";

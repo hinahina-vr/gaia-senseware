@@ -421,10 +421,9 @@ try {
   await spaceEntryPage.waitForTimeout(500);
   await spaceEntryPage.locator("[data-intro-path='map']").click();
   await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false" && !document.body.classList.contains("scene-transitioning"), null, { timeout: 20_000 });
-  await spaceEntryPage.locator("#map-light-overlay-open").click();
-  await spaceEntryPage.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden, null, { timeout: 20_000 });
-  await spaceEntryPage.locator("#abstract-mode-list .map-mode-button").first().click();
-  await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-abstract-exhibit") && getComputedStyle(document.querySelector("#gaia-canvas")).visibility === "visible", null, { timeout: 20_000 });
+  await spaceEntryPage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("has-integrated-map-light")
+    && document.querySelector("#gaia-canvas")?.dataset.integratedMapMode === "01"
+    && getComputedStyle(document.querySelector("#gaia-canvas")).visibility === "visible", null, { timeout: 20_000 });
   await spaceEntryPage.evaluate(() => {
     window.dispatchEvent(new CustomEvent("gaia:space-open-at-mode", { detail: { index: 0 } }));
   });

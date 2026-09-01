@@ -4225,212 +4225,6 @@ button {
   letter-spacing: 0.08em;
 }
 
-.map-light-overlay-open {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 12px;
-  width: 100%;
-  min-height: 52px;
-  margin-top: 12px;
-  padding: 9px 11px;
-  border: 1px solid rgba(158, 196, 255, 0.24);
-  border-radius: 3px;
-  color: rgba(235, 247, 255, 0.92);
-  background: linear-gradient(120deg, rgba(38, 85, 125, 0.24), rgba(45, 43, 101, 0.2));
-  cursor: pointer;
-  text-align: left;
-}
-
-.map-light-overlay-open span {
-  grid-column: 1 / -1;
-  color: rgba(151, 211, 255, 0.76);
-  font: 700 7px/1.2 Consolas, "Courier New", monospace;
-  letter-spacing: 0.14em;
-}
-
-.map-light-overlay-open strong {
-  font: 650 12px/1.35 var(--font-ja);
-  letter-spacing: 0.06em;
-}
-
-.map-light-overlay-open small {
-  align-self: center;
-  color: rgba(214, 231, 244, 0.58);
-  font: 500 8px/1.3 var(--font-ja);
-}
-
-.map-light-overlay-open:hover,
-.map-light-overlay-open:focus-visible,
-.map-light-overlay-open[aria-expanded="true"] {
-  border-color: rgba(162, 218, 255, 0.58);
-  background: linear-gradient(120deg, rgba(44, 111, 151, 0.34), rgba(75, 59, 139, 0.3));
-  outline: none;
-}
-
-.map-light-overlay[hidden] { display: none; }
-
-.map-light-overlay {
-  position: fixed;
-  z-index: 1200;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
-  pointer-events: auto;
-}
-
-.map-light-overlay-scrim {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: rgba(1, 7, 18, 0.72);
-  cursor: default;
-  backdrop-filter: blur(10px) saturate(0.78);
-}
-
-.map-light-overlay-panel {
-  position: relative;
-  z-index: 1;
-  width: min(620px, calc(100vw - 36px));
-  padding: clamp(20px, 3vw, 30px);
-  border: 1px solid rgba(151, 218, 255, 0.38);
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at 88% 12%, rgba(96, 162, 255, 0.16), transparent 36%),
-    linear-gradient(135deg, rgba(4, 18, 34, 0.98), rgba(9, 13, 36, 0.98));
-  box-shadow: 0 28px 90px rgba(0, 3, 18, 0.52), inset 0 1px rgba(230, 249, 255, 0.1);
-}
-
-.map-light-overlay-panel > header {
-  display: flex;
-  gap: 22px;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 22px;
-}
-
-.map-light-overlay-panel > header p {
-  margin: 0 0 8px;
-  color: rgba(147, 214, 255, 0.76);
-  font: 700 8px/1.2 Consolas, "Courier New", monospace;
-  letter-spacing: 0.17em;
-}
-
-.map-light-overlay-panel h2 {
-  margin: 0;
-  color: rgba(247, 252, 255, 0.96);
-  font: 550 clamp(25px, 3vw, 34px)/1.25 var(--font-ja);
-  letter-spacing: 0.06em;
-}
-
-.map-light-overlay-panel header span {
-  display: block;
-  margin-top: 8px;
-  color: rgba(218, 234, 245, 0.66);
-  font: 500 12px/1.6 var(--font-ja);
-}
-
-.map-light-overlay-close {
-  display: grid;
-  flex: 0 0 auto;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  padding: 0;
-  border: 1px solid rgba(167, 221, 255, 0.36);
-  border-radius: 50%;
-  color: rgba(238, 250, 255, 0.9);
-  background: rgba(7, 30, 52, 0.68);
-  cursor: pointer;
-  font: 400 25px/1 Arial, sans-serif;
-}
-
-.map-light-overlay-close:hover,
-.map-light-overlay-close:focus-visible {
-  border-color: rgba(180, 231, 255, 0.78);
-  background: rgba(16, 58, 87, 0.82);
-  outline: none;
-}
-
-.map-light-overlay .map-mode-list--light {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.map-light-overlay .map-mode-button {
-  min-height: 58px;
-  border-color: rgba(151, 201, 255, 0.24);
-  color: rgba(224, 239, 255, 0.76);
-  background: linear-gradient(140deg, rgba(25, 64, 99, 0.42), rgba(39, 38, 88, 0.42));
-  font-size: 11px;
-}
-
-.map-light-overlay .map-mode-button:hover,
-.map-light-overlay .map-mode-button:focus-visible,
-.map-light-overlay .map-mode-button[aria-current="true"] {
-  border-color: rgba(164, 224, 255, 0.72);
-  background: linear-gradient(140deg, rgba(39, 104, 142, 0.58), rgba(72, 57, 134, 0.54));
-  box-shadow: 0 0 28px rgba(114, 192, 255, 0.18), inset 0 1px rgba(236, 251, 255, 0.18);
-}
-
-.map-light-overlay-disable {
-  width: 100%;
-  min-height: 42px;
-  margin-top: 14px;
-  border: 1px solid rgba(193, 217, 232, 0.18);
-  border-radius: 3px;
-  color: rgba(220, 235, 244, 0.68);
-  background: rgba(4, 14, 25, 0.56);
-  cursor: pointer;
-  font: 600 11px/1.4 var(--font-ja);
-  letter-spacing: 0.08em;
-}
-
-.map-light-overlay-disable:hover,
-.map-light-overlay-disable:focus-visible {
-  border-color: rgba(191, 226, 247, 0.5);
-  color: rgba(245, 252, 255, 0.94);
-  background: rgba(16, 42, 61, 0.72);
-  outline: none;
-}
-
-.map-light-overlay-panel .map-mode-preview {
-  position: static;
-  width: 100% !important;
-  max-height: none;
-  margin-top: 16px;
-  overflow: visible;
-  transform: none;
-}
-
-.map-light-overlay-panel .map-mode-preview::before,
-.map-light-overlay-panel .map-mode-preview::after {
-  display: none;
-}
-
-@media (max-width: 520px) {
-  .map-light-overlay {
-    place-items: end center;
-    padding: 12px;
-  }
-
-  .map-light-overlay-panel {
-    width: 100%;
-    max-height: calc(100dvh - 24px);
-    padding: 20px 16px max(20px, env(safe-area-inset-bottom));
-    overflow: auto;
-    border-radius: 12px;
-  }
-
-  .map-light-overlay-panel > header { margin-bottom: 18px; }
-  .map-light-overlay-panel h2 { font-size: 27px; }
-  .map-light-overlay .map-mode-list--light { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .map-light-overlay .map-mode-button { min-height: 54px; }
-}
-
 .map-mode-button[data-live-exhibit] {
   border-color: rgba(255, 208, 111, 0.24);
   color: rgba(255, 229, 174, 0.72);
@@ -7209,18 +7003,8 @@ h1 {
   line-height: 1.7;
 }
 
-.map-mode-list--light {
-  grid-template-columns: repeat(5, 1fr);
-}
-
 .map-mode-list[hidden] {
   display: none !important;
-}
-
-.map-mode-button--light {
-  min-height: 34px;
-  border-color: rgba(149, 181, 255, 0.22);
-  background: linear-gradient(135deg, rgba(105, 197, 255, 0.08), rgba(172, 132, 255, 0.1));
 }
 
 .error-panel-actions {
@@ -9192,50 +8976,27 @@ h1 {
   }
 }
 
-/* Light works are optional, non-interactive WebGL veils over the selected map.
-   Their numbering and selection state remain independent from MAP 01—14. */
-.japan-layer.is-abstract-exhibit > #gaia-canvas {
+/* MAP 01—08 share their matching WebGL light language with the data map.
+   The veil stays subtle and non-interactive so geography and controls remain primary. */
+.japan-layer.has-integrated-map-light > #gaia-canvas {
   position: absolute;
   z-index: 2;
   inset: 0;
   visibility: visible !important;
-  opacity: 0.34 !important;
+  opacity: var(--map-light-opacity, 0.15) !important;
   pointer-events: none !important;
   mix-blend-mode: screen;
-  filter: saturate(0.72) contrast(0.9);
-  -webkit-mask-image: radial-gradient(ellipse 82% 76% at 54% 48%, #000 22%, rgba(0, 0, 0, 0.9) 62%, transparent 100%);
-  mask-image: radial-gradient(ellipse 82% 76% at 54% 48%, #000 22%, rgba(0, 0, 0, 0.9) 62%, transparent 100%);
+  filter: saturate(0.66) brightness(0.88) contrast(0.86);
+  -webkit-mask-image: radial-gradient(ellipse 88% 82% at 52% 46%, #000 14%, rgba(0, 0, 0, 0.86) 62%, transparent 100%);
+  mask-image: radial-gradient(ellipse 88% 82% at 52% 46%, #000 14%, rgba(0, 0, 0, 0.86) 62%, transparent 100%);
 }
 
-.japan-layer.is-abstract-exhibit {
-  background: #02090c;
-}
-
-.japan-layer.is-abstract-exhibit .japan-heading,
-.japan-layer.is-abstract-exhibit .map-mode-bank,
-.japan-layer.is-abstract-exhibit .japan-map-actions,
-.japan-layer.is-abstract-exhibit .japan-data-button,
-.japan-layer.is-abstract-exhibit .gaia-statistics-button,
-.japan-layer.is-abstract-exhibit .japan-data-scrim,
-.japan-layer.is-abstract-exhibit .japan-data-panel,
-.japan-layer.is-abstract-exhibit .map-mode-light-tooltip,
-.japan-layer.is-abstract-exhibit .japan-map {
-  pointer-events: auto;
-}
-
-.japan-layer.is-abstract-exhibit .japan-heading {
-  background:
-    linear-gradient(110deg, rgba(2, 9, 13, 0.88), rgba(2, 12, 18, 0.64) 72%, rgba(2, 12, 18, 0.28));
-}
-
-.japan-layer.is-abstract-exhibit .japan-heading #japan-description {
-  display: none;
-}
-
-.japan-layer.is-abstract-exhibit .map-mode-bank {
-  background:
-    radial-gradient(circle at 100% 0, rgba(var(--map-accent-rgb), 0.12), transparent 54%),
-    rgba(2, 11, 14, 0.62);
+/* MAP 02 lets the current field breathe across the sea while coastlines and
+   observation marks stay readable above it. */
+.japan-layer.has-integrated-map-light > #gaia-canvas[data-integrated-map-mode="02"] {
+  filter: saturate(1.08) brightness(1.04) contrast(0.94);
+  -webkit-mask-image: radial-gradient(ellipse 96% 90% at 50% 44%, #000 18%, rgba(0, 0, 0, 0.92) 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 96% 90% at 50% 44%, #000 18%, rgba(0, 0, 0, 0.92) 72%, transparent 100%);
 }
 
 :is(
@@ -9246,7 +9007,7 @@ h1 {
   body.space-mode-open,
   body.gx-open,
   body.sound-mode-open
-) .japan-layer.is-abstract-exhibit > #gaia-canvas {
+) .japan-layer.has-integrated-map-light > #gaia-canvas {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;

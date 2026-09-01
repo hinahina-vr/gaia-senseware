@@ -41,8 +41,8 @@ assert.deepEqual(Object.keys(content.INTRO_PATHS), ["abstract", "map", "novel", 
 assert.equal(indexHtml.includes('data-intro-path="abstract"'), false, "Abstract exhibit must not remain a separate entrance card");
 assert.equal(indexHtml.includes('class="map-surface-switch"'), false, "Obsolete MAP/LIGHT toggle remains in the world-reading bank");
 assert.equal(indexHtml.includes('class="map-mode-groups"'), true, "MAP-only exhibit bank is missing");
-assert.equal(indexHtml.includes('id="map-light-overlay"'), true, "Independent light overlay picker is missing");
-assert.equal(indexHtml.includes('id="abstract-mode-list"'), true, "Eight-choice light overlay bank is missing");
+assert.equal(indexHtml.includes('id="map-light-overlay"'), false, "Independent light overlay picker must remain retired");
+assert.equal(indexHtml.includes('id="abstract-mode-list"'), false, "Duplicate light mode bank must remain retired");
 assert.equal(indexHtml.includes('id="map-mode-preview"'), true, "Restored focus explanation preview is missing");
 assert.equal(indexHtml.includes("SCROLL</b><small>他の展示を見る"), true, "Updated exhibit scroll label is missing");
 assert.equal(indexHtml.includes('id="intro-character-jump"'), true, "Character settings menu button is missing");

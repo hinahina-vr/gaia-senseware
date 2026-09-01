@@ -38,6 +38,17 @@
       </span>
       <i aria-hidden="true"></i>
     `;
+    const makeBankStep = (direction, label, glyph) => {
+      const button = document.createElement("button");
+      button.className = `map-dock-bank-step map-dock-bank-step--${direction < 0 ? "previous" : "next"}`;
+      button.type = "button";
+      button.dataset.mapDockModeStep = String(direction);
+      button.setAttribute("aria-label", label);
+      button.textContent = glyph;
+      return button;
+    };
+    const bankPrevious = makeBankStep(-1, "一つ前の地図展示へ", "‹");
+    const bankNext = makeBankStep(1, "一つ次の地図展示へ", "›");
 
     const bankPopover = document.createElement("div");
     bankPopover.className = "map-dock-bank-popover";
@@ -47,7 +58,7 @@
     const lightButton = panels.bank.querySelector("#map-light-overlay-open");
     if (modeGroups) bankPopover.append(modeGroups);
     if (lightButton) bankPopover.append(lightButton);
-    panels.bank.prepend(bankTrigger);
+    panels.bank.prepend(bankPrevious, bankTrigger, bankNext);
     panels.bank.append(bankPopover);
 
     const year = document.createElement("div");
@@ -107,6 +118,23 @@
       bankTrigger.querySelector("[data-map-dock-number]").textContent = number;
       bankTrigger.querySelector("[data-map-dock-title]").textContent = title;
       bankTrigger.setAttribute("aria-label", `${number} ${title}。展示一覧を開く`);
+      const modeButtons = [...panels.bank.querySelectorAll(".map-mode-button")];
+      const activeButtonIndex = modeButtons.findIndex((button) => button.getAttribute("aria-current") === "true");
+      const describeStep = (direction) => {
+        if (activeButtonIndex < 0 || modeButtons.length < 2) return direction < 0 ? "一つ前の地図展示へ" : "一つ次の地図展示へ";
+        const target = modeButtons[(activeButtonIndex + direction + modeButtons.length) % modeButtons.length];
+        return `${direction < 0 ? "前" : "次"}の展示、${target.getAttribute("aria-label") || target.textContent?.trim() || "地図展示"}`;
+      };
+      bankPrevious.setAttribute("aria-label", describeStep(-1));
+      bankNext.setAttribute("aria-label", describeStep(1));
+    };
+
+    const stepBankMode = (direction) => {
+      const modeButtons = [...panels.bank.querySelectorAll(".map-mode-button")];
+      if (!modeButtons.length) return;
+      const activeButtonIndex = modeButtons.findIndex((button) => button.getAttribute("aria-current") === "true");
+      const baseIndex = activeButtonIndex >= 0 ? activeButtonIndex : 0;
+      modeButtons[(baseIndex + direction + modeButtons.length) % modeButtons.length]?.click();
     };
 
     const getTimelineRange = () => {
@@ -189,8 +217,57 @@
     };
 
     bankTrigger.addEventListener("click", () => setBankOpen(bankTrigger.getAttribute("aria-expanded") !== "true"));
+    [bankPrevious, bankNext].forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setBankOpen(false);
+        stepBankMode(Number(button.dataset.mapDockModeStep) || 0);
+      });
+    });
+
+    const guideSummary = guide.querySelector(":scope > summary");
+    let guideDismissTimer = 0;
+    const setGuideVisible = (visible, { immediate = false } = {}) => {
+      window.clearTimeout(guideDismissTimer);
+      guideDismissTimer = 0;
+      if (visible && innerWidth >= DESKTOP_MIN) {
+        setBankOpen(false);
+        guide.open = true;
+        guide.classList.add("is-dock-guide-visible");
+        return;
+      }
+      guide.classList.remove("is-dock-guide-visible");
+      const finish = () => {
+        if (guide.classList.contains("is-dock-guide-visible")) return;
+        guide.open = false;
+        guideDismissTimer = 0;
+      };
+      if (immediate || innerWidth < DESKTOP_MIN) finish();
+      else guideDismissTimer = window.setTimeout(finish, 320);
+    };
+    const settleGuideIntent = () => requestAnimationFrame(() => {
+      if (innerWidth < DESKTOP_MIN) return;
+      const stillTargeted = guide.matches(":hover") || guide.contains(document.activeElement);
+      if (!stillTargeted) setGuideVisible(false);
+    });
+
+    guideSummary?.addEventListener("click", (event) => {
+      if (innerWidth < DESKTOP_MIN) return;
+      event.preventDefault();
+      setGuideVisible(true);
+    });
+    guide.addEventListener("pointerenter", () => {
+      if (innerWidth >= DESKTOP_MIN) setGuideVisible(true);
+    });
+    guide.addEventListener("pointerleave", settleGuideIntent);
+    guide.addEventListener("focusin", () => {
+      if (innerWidth >= DESKTOP_MIN) setGuideVisible(true);
+    });
+    guide.addEventListener("focusout", settleGuideIntent);
     guide.addEventListener("toggle", () => {
       if (guide.open && innerWidth >= DESKTOP_MIN) setBankOpen(false);
+      if (!guide.open) guide.classList.remove("is-dock-guide-visible");
     });
     panels.bank.addEventListener("click", (event) => {
       if (event.target.closest?.(".map-mode-button")) setBankOpen(false);
@@ -216,7 +293,11 @@
     if (sourceButton) new MutationObserver(() => {
       sourceProxy.setAttribute("aria-expanded", sourceButton.getAttribute("aria-expanded") || "false");
     }).observe(sourceButton, { attributes: true, attributeFilter: ["aria-expanded"] });
-    addEventListener("resize", () => { if (innerWidth < DESKTOP_MIN) setBankOpen(false); }, { passive: true });
+    addEventListener("resize", () => {
+      if (innerWidth >= DESKTOP_MIN) return;
+      setBankOpen(false);
+      setGuideVisible(false, { immediate: true });
+    }, { passive: true });
     addEventListener("gaia:japan-mode-change", () => requestAnimationFrame(() => { syncBankHeading(); syncTimelineScale(); syncYear(); }));
     addEventListener("gaia:live-exhibit-change", () => requestAnimationFrame(() => { syncBankHeading(); syncTimelineScale(); syncYear(); }));
     syncBankHeading();

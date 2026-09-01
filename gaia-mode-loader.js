@@ -10,7 +10,7 @@
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-live-metric-fit-1",
+        "./map-ui-grid-polish.css?v=gaia-focus-guide-1",
         "./statistics-lab.css?v=gaia-statistics-insight-workspace-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
@@ -21,7 +21,7 @@
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-ovation-aurora-1",
         "./app.js?v=gaia-poi-anchor-1",
-        "./map-ui-grid-polish.js?v=gaia-live-deck-3",
+        "./map-ui-grid-polish.js?v=gaia-focus-guide-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
       modules: [

@@ -43,6 +43,8 @@ const readMapState = (page) => page.evaluate(() => {
     offsetY: Number(overlay?.dataset.earthOffsetY),
     japanX: Number(overlay?.dataset.japanScreenX),
     japanY: Number(overlay?.dataset.japanScreenY),
+    tokyoX: Number(overlay?.dataset.tokyoScreenX),
+    tokyoY: Number(overlay?.dataset.tokyoScreenY),
     animation: overlay?.dataset.viewAnimation || "",
     target: overlay?.dataset.viewTarget || "",
     vectorCopies: overlay?.dataset.vectorWorldCopies || "",
@@ -169,6 +171,10 @@ const closeDataCard = async (page) => {
 const boot = async (viewport) => {
   const context = await browser.newContext({ viewport, colorScheme: "dark", reducedMotion: "no-preference" });
   const page = await context.newPage();
+  await page.addInitScript(() => {
+    localStorage.setItem("gaia-senseware-bgm-volume", "0");
+    sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
+  });
   const label = viewport.name;
   page.on("console", (message) => {
     if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`);
@@ -272,6 +278,32 @@ try {
         `pc: map guide heading has no top breathing room: ${JSON.stringify(guideHeadingSpacing)}`,
       );
       scan.guideHeadingSpacing = guideHeadingSpacing;
+
+      const guide = page.locator(".map-command-dock .map-reading-guide");
+      const guideSummary = guide.locator(":scope > summary");
+      const guideBody = guide.locator(".map-reading-guide-body");
+      assert.equal(await guideBody.isVisible(), false, "pc: map guide explanation is visible without focus intent");
+      await guideSummary.focus();
+      await page.waitForFunction(() => document.querySelector(".map-command-dock .map-reading-guide")?.classList.contains("is-dock-guide-visible"));
+      await page.waitForTimeout(380);
+      const guideReadability = await guideBody.evaluate((body) => ({
+        visible: body.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }),
+        width: body.getBoundingClientRect().width,
+        copyFontSize: Number.parseFloat(getComputedStyle(body.querySelector("p")).fontSize),
+        copyLineHeight: Number.parseFloat(getComputedStyle(body.querySelector("p")).lineHeight),
+      }));
+      assert.equal(guideReadability.visible, true, `pc: focused map guide is hidden: ${JSON.stringify(guideReadability)}`);
+      assert.ok(guideReadability.width >= 900, `pc: focused map guide is too narrow: ${JSON.stringify(guideReadability)}`);
+      assert.ok(guideReadability.copyFontSize >= 15, `pc: focused map guide copy remains too small: ${JSON.stringify(guideReadability)}`);
+      assert.ok(guideReadability.copyLineHeight >= guideReadability.copyFontSize * 1.7, `pc: focused map guide lines are cramped: ${JSON.stringify(guideReadability)}`);
+      const guideScreenshot = path.join(outputDir, "pc-map-guide-focus.png");
+      await page.screenshot({ path: guideScreenshot, animations: "disabled" });
+      scan.screenshots.push(guideScreenshot);
+      await page.locator("#japan-close").focus();
+      await page.waitForFunction(() => !document.querySelector(".map-command-dock .map-reading-guide")?.classList.contains("is-dock-guide-visible"));
+      await page.waitForTimeout(340);
+      assert.equal(await guideBody.isVisible(), false, "pc: map guide explanation remains after focus leaves");
+      scan.guideReadability = guideReadability;
     }
 
     if (glintOnly) {
@@ -283,7 +315,38 @@ try {
 
     if (countryReadoutOnly) {
       await selectMode(page, 6, "三つの生態系");
+      await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
       await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.ecologiesPlot === "paired-country-scatter");
+      await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.ecologiesSelectionTransitionProgress) >= 0.999);
+      const initialAnimationState = await page.locator("#japan-overlay").evaluate((element) => ({
+        country: element.dataset.ecologiesSelectedCountry,
+        countryDisplayMs: Number(element.dataset.ecologiesCountryDisplayMs),
+        transitionMs: Number(element.dataset.ecologiesSelectionTransitionMs),
+      }));
+      assert.ok(
+        initialAnimationState.countryDisplayMs >= 3000 && initialAnimationState.countryDisplayMs <= 3200,
+        `${viewport.name}: country display is not approximately doubled: ${JSON.stringify(initialAnimationState)}`,
+      );
+      assert.equal(initialAnimationState.transitionMs, 920, `${viewport.name}: country transition duration`);
+      await page.evaluate(() => globalThis.GaiaMapObservationAdapter.setSignalTime(8));
+      await page.waitForFunction((country) => {
+        const overlay = document.querySelector("#japan-overlay");
+        const progress = Number(overlay?.dataset.ecologiesSelectionTransitionProgress);
+        return overlay?.dataset.ecologiesSelectedCountry !== country && progress >= 0 && progress < 0.5;
+      }, initialAnimationState.country);
+      await page.waitForTimeout(260);
+      const midTransition = await page.locator("#japan-overlay").evaluate((element) => ({
+        country: element.dataset.ecologiesSelectedCountry,
+        progress: Number(element.dataset.ecologiesSelectionTransitionProgress),
+      }));
+      assert.notEqual(midTransition.country, initialAnimationState.country, `${viewport.name}: country did not advance`);
+      assert.ok(
+        midTransition.progress > 0 && midTransition.progress < 1,
+        `${viewport.name}: label did not animate between countries: ${JSON.stringify(midTransition)}`,
+      );
+      const transitionScreenshot = path.join(outputDir, `${viewport.name}-07-country-readout-transition.png`);
+      await page.screenshot({ path: transitionScreenshot, fullPage: false });
+      await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.ecologiesSelectionTransitionProgress) >= 0.999);
       const countryReadout = await page.locator("#japan-layer [data-signal-value]").first().evaluate((element) => ({
         lines: element.innerText.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean),
         hasLocation: element.classList.contains("has-location"),
@@ -294,7 +357,7 @@ try {
       assert.equal(countryReadout.lines.length, 2, `${viewport.name}: country and metrics are not split into two lines: ${JSON.stringify(countryReadout)}`);
       assert.equal(countryReadout.lines[0], await page.locator("#japan-overlay").getAttribute("data-ecologies-selected-country"));
       assert.match(countryReadout.lines[1], /^FOREST \d+\.\d% \/ URBAN \d+\.\d%$/u);
-      scan.countryReadout = countryReadout;
+      scan.countryReadout = { ...countryReadout, initialAnimationState, midTransition, transitionScreenshot };
       report.scans.push(scan);
       await context.close();
       console.log(`PASS ${viewport.name}`);
@@ -514,9 +577,23 @@ try {
       `${viewport.name}: zoom did not animate smoothly (${JSON.stringify(zoomIn.map(({ zoom, animation, target }) => ({ zoom, animation, target })))})`,
     );
     assert(zoomIn.every((sample, index) => index === 0 || sample.zoom + 0.01 >= zoomIn[index - 1].zoom), `${viewport.name}: zoom-in is not monotonic`);
-    assert(finalJapan.zoom >= (viewport.name === "mobile" ? 2.65 : 2.95));
-    assert(Math.abs(finalJapan.japanX - finalJapan.rect.width * (viewport.name === "mobile" ? 0.5 : 0.68)) <= 24);
-    assert(Math.abs(finalJapan.japanY - finalJapan.rect.height * 0.48) <= 24);
+    assert.equal(finalJapan.target, "tokyo");
+    assert(finalJapan.zoom >= (viewport.name === "mobile" ? 3.3 : 4.1));
+    assert(Math.abs(finalJapan.tokyoX - finalJapan.rect.width * 0.5) <= 24);
+    assert(Math.abs(finalJapan.tokyoY - finalJapan.rect.height * 0.46) <= 24);
+    const circulationVisual = await page.locator("#japan-overlay").evaluate((overlay) => ({
+      language: overlay.dataset.currentVisualLanguage,
+      arrowStride: Number(overlay.dataset.currentArrowStride),
+      integratedMode: document.querySelector("#gaia-canvas")?.dataset.integratedMapMode,
+      integratedOpacity: getComputedStyle(document.querySelector("#japan-layer"))
+        .getPropertyValue("--map-light-opacity")
+        .trim(),
+    }));
+    assert.equal(circulationVisual.language, "immersive-streamlines");
+    assert(circulationVisual.arrowStride >= 3);
+    assert.equal(circulationVisual.integratedMode, "02");
+    assert.equal(circulationVisual.integratedOpacity, "0.34");
+    scan.circulationVisual = circulationVisual;
     const zoomScreenshot = path.join(outputDir, `${viewport.name}-02-japan-zoom.png`);
     await page.screenshot({ path: zoomScreenshot });
     scan.screenshots.push(zoomScreenshot);

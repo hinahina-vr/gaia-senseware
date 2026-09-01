@@ -380,29 +380,80 @@ vec3 modeBreathingEarth(vec2 p, float t, vec2 response, float memory) {
       rgb: "99, 227, 255",
       source: `
 vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
-  vec2 q = rot(-0.22) * p;
-  float drift = fbm(q * 1.45 + vec2(t * 0.035, -t * 0.02));
-  q += vec2(drift - 0.5, noise(q * 2.2 + t * 0.04) - 0.5) * 0.22;
-  q += uVelocity * response.x * 0.045;
-  float currentA = lineGlow(
-    sin(q.y * 7.0 + q.x * 1.7 + drift * 3.2 - t * 0.46),
-    0.035
+  float slowTime = t * 0.062;
+  vec2 q = p;
+  float basin = fbm(q * 0.58 + vec2(-slowTime * 0.08, slowTime * 0.035));
+  float waterWarp = fbm(q * 1.08 + vec2(slowTime * 0.13, -slowTime * 0.09));
+  q += vec2((basin - 0.5) * 0.15, (waterWarp - 0.5) * 0.34);
+  q += uVelocity * response.x * 0.018;
+
+  // One broad current carries several translucent filaments instead of a
+  // vector-grid texture. The two frequencies separate, meet and separate
+  // again slowly, like light seen through moving deep water.
+  float currentAxis = -0.06
+    + sin((p.x + 0.3) * 0.95 - slowTime * 0.18) * 0.33
+    + sin(p.x * 3.4 + slowTime * 0.25) * 0.045
+    + (waterWarp - 0.5) * 0.16;
+  float meander = p.y - currentAxis;
+  float kuroshioRibbon = exp(-abs(meander) / 0.082);
+  float ribbonAura = exp(-abs(meander) / 0.36);
+  float silkPhase = meander * 43.0
+    + fbm(q * 2.05 + vec2(-slowTime * 0.16, slowTime * 0.08)) * 3.8;
+  float silk = pow(0.5 + 0.5 * cos(silkPhase), 14.0);
+  float undertow = pow(
+    0.5 + 0.5 * cos(meander * 22.0 - waterWarp * 2.4 + slowTime * 0.42),
+    7.0
   );
-  float currentB = lineGlow(
-    sin(q.y * 12.0 - q.x * 2.4 - drift * 2.0 + t * 0.28),
-    0.022
+  float travelingPearl = 0.34 + 0.66 * pow(
+    0.5 + 0.5 * sin(q.x * 6.4 - slowTime * 3.1 + waterWarp * 5.0),
+    4.0
   );
-  vec2 gyrePoint = vec2(sin(t * 0.13) * 0.34, cos(t * 0.11) * 0.2);
-  float gyre = lineGlow(
-    sin(length(q - gyrePoint) * 17.0 - t * 0.8),
-    0.034
-  ) * exp(-length(q - gyrePoint) * 0.72);
-  float density = currentA * 0.55 + currentB * 0.32 + gyre * 0.42
-    + response.x * 0.78 + response.y * 0.24;
-  vec3 background = baseGradient(p, vec3(0.0, 0.12, 0.2));
-  vec3 water = mix(vec3(0.02, 0.3, 0.48), vec3(0.45, 0.95, 1.0), drift);
-  return background + water * density
-    + vec3(0.15, 0.46, 0.7) * memory * currentA * 0.22;
+
+  vec2 eddyPointA = p - vec2(0.62, 0.12);
+  float eddyRadiusA = length(eddyPointA);
+  float eddyAngleA = atan(eddyPointA.y, eddyPointA.x);
+  float eddyA = pow(
+    0.5 + 0.5 * cos(eddyRadiusA * 18.0 - eddyAngleA * 2.0 - slowTime * 1.8),
+    10.0
+  ) * exp(-eddyRadiusA * 2.15);
+
+  vec2 eddyPointB = p - vec2(1.18, -0.36);
+  float eddyRadiusB = length(eddyPointB);
+  float eddyAngleB = atan(eddyPointB.y, eddyPointB.x);
+  float eddyB = pow(
+    0.5 + 0.5 * cos(eddyRadiusB * 21.0 + eddyAngleB * 2.4 + slowTime * 1.35),
+    12.0
+  ) * exp(-eddyRadiusB * 2.65);
+
+  float suspendedLight = smoothstep(
+    0.86,
+    1.0,
+    noise(q * 20.0 + vec2(-slowTime * 0.7, slowTime * 0.22))
+  ) * ribbonAura;
+  float oceanPresence = 0.28 + 0.72 * smoothstep(-0.82, 0.26, p.x);
+  float density = ribbonAura * 0.16
+    + ribbonAura * (silk * 0.82 + undertow * 0.3) * travelingPearl * oceanPresence
+    + kuroshioRibbon * 0.2
+    + eddyA * 0.32
+    + eddyB * 0.28
+    + suspendedLight * 0.34
+    + response.x * 0.62
+    + response.y * 0.18;
+
+  vec3 background = baseGradient(p, vec3(0.002, 0.065, 0.135));
+  vec3 deepWater = mix(
+    vec3(0.015, 0.16, 0.34),
+    vec3(0.13, 0.72, 0.86),
+    smoothstep(0.16, 0.84, waterWarp)
+  );
+  vec3 pearl = vec3(0.62, 0.96, 1.0)
+    * (silk * ribbonAura + kuroshioRibbon * 0.22)
+    * travelingPearl
+    * oceanPresence;
+  return background
+    + deepWater * density
+    + pearl * 0.42
+    + vec3(0.06, 0.3, 0.54) * ribbonAura * (0.08 + memory * 0.13);
 }
 `.trim(),
     },

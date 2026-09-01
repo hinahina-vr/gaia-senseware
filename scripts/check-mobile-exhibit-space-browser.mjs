@@ -125,49 +125,35 @@ const expandBank = async (page) => {
   }
 };
 
-const selectExhibit = async (page, surface, index) => {
+const selectExhibit = async (page, index) => {
   await expandBank(page);
-  if (surface === "light") {
-    await page.locator("#map-light-overlay-open").click();
-    await page.waitForFunction(() => !document.querySelector("#map-light-overlay")?.hidden);
-  }
-  const list = surface === "light" ? "#abstract-mode-list" : "#japan-mode-list";
-  const button = surface === "light"
-    ? page.locator(`${list} .map-mode-button`).nth(index)
-    : index >= 8
-      ? page.locator(`${list} .map-mode-button[data-live-exhibit]`).nth(index - 8)
-      : page.locator(`${list} .map-mode-button:not([data-live-exhibit])`).nth(index);
+  const list = "#japan-mode-list";
+  const button = index >= 8
+    ? page.locator(`${list} .map-mode-button[data-live-exhibit]`).nth(index - 8)
+    : page.locator(`${list} .map-mode-button:not([data-live-exhibit])`).nth(index);
   await button.evaluate((element) => element.click());
   try {
-    await page.waitForFunction((expected) => {
-      const active = document.querySelector(".map-mode-bank")?.dataset.mapSurface || "map";
-      return active === expected;
-    }, surface);
+    await page.waitForFunction(() => (document.querySelector(".map-mode-bank")?.dataset.mapSurface || "map") === "map");
   } catch (error) {
-    const debug = await page.evaluate(({ expectedSurface, selector, itemIndex }) => ({
-      expectedSurface,
+    const debug = await page.evaluate(({ selector, itemIndex }) => ({
       activeSurface: document.querySelector(".map-mode-bank")?.dataset.mapSurface || "map",
       experienceClasses: document.querySelector(".experience")?.className || "",
       layerClasses: document.querySelector("#japan-layer")?.className || "",
       layerHidden: document.querySelector("#japan-layer")?.getAttribute("aria-hidden") || "",
       selectedButton: document.querySelectorAll(`${selector} .map-mode-button`)[itemIndex]?.outerHTML || "",
-    }), { expectedSurface: surface, selector: list, itemIndex: index });
+    }), { selector: list, itemIndex: index });
     throw new Error(`Exhibit surface did not switch: ${JSON.stringify(debug)}`, { cause: error });
   }
   const expected = String(index + 1).padStart(2, "0");
-  if (surface === "map" && index >= 8) {
+  if (index >= 8) {
     await page.waitForFunction((number) => document.querySelector(".japan-layer")?.classList.contains("is-live-exhibit")
       && document.querySelector("#japan-mode-number")?.textContent?.trim() === number, expected);
     await page.waitForFunction(() => document.querySelector(".gaia-live-exhibit-readout")?.getClientRects().length > 0);
-  } else if (surface === "light") {
-    await page.waitForFunction((number) => document.querySelector("#abstract-mode-list .map-mode-button[aria-current='true']")?.textContent?.trim() === number
-      && document.querySelector(".map-mode-bank")?.dataset.mapSurface === "light"
-      && document.querySelector("#japan-map")?.getClientRects().length > 0
-      && document.querySelector("#gaia-canvas")?.parentElement?.id === "japan-layer", expected);
   } else {
-    await page.waitForFunction(({ number, expectedSurface }) => document.querySelector("#japan-mode-number")?.textContent?.trim() === number
-      && document.querySelector(".map-mode-bank")?.dataset.mapSurface === expectedSurface, { number: expected, expectedSurface: surface });
-    if (surface === "map" && index === 0) {
+    await page.waitForFunction((number) => document.querySelector("#japan-mode-number")?.textContent?.trim() === number
+      && document.querySelector(".map-mode-bank")?.dataset.lightIntegration === "mode-matched"
+      && document.querySelector("#gaia-canvas")?.dataset.integratedMapMode === number, expected);
+    if (index === 0) {
       await page.waitForFunction(() => !document.querySelector(".signal-console-map [data-signal-value]")?.textContent?.includes("LOADING"));
     }
   }
@@ -228,7 +214,7 @@ const inspect = (page) => page.evaluate(() => {
     surface: document.querySelector(".map-mode-bank")?.dataset.mapSurface || "",
     mode: document.querySelector("#japan-mode-number")?.textContent?.trim() || "",
     isLive: document.querySelector(".japan-layer")?.classList.contains("is-live-exhibit") || false,
-    isAbstract: document.querySelector(".japan-layer")?.classList.contains("is-abstract-exhibit") || false,
+    hasIntegratedLight: document.querySelector(".japan-layer")?.classList.contains("has-integrated-map-light") || false,
     bankExpanded: toggle ? toggle.getAttribute("aria-expanded") === "true" : true,
     infoExpanded: document.querySelector("#map-mobile-heading-toggle")?.getAttribute("aria-expanded") === "true",
     liveExpanded: liveToggle?.getAttribute("aria-expanded") === "true",
@@ -293,7 +279,7 @@ try {
   for (const viewport of selectedViewports) {
     const { context, page } = await boot(viewport);
     for (let index = 0; index < 14; index += 1) {
-      await selectExhibit(page, "map", index);
+      await selectExhibit(page, index);
       const label = `map-${String(index + 1).padStart(2, "0")}`;
       const scan = await inspect(page);
       review(viewport, label, scan);
@@ -342,24 +328,6 @@ try {
           () => page.locator("#gaia-live-mobile-toggle").click(),
           () => page.locator("#gaia-live-mobile-toggle").click(),
           { require: ["readout"] },
-        );
-      }
-    }
-    for (let index = 0; index < 8; index += 1) {
-      await selectExhibit(page, "light", index);
-      const label = `light-${String(index + 1).padStart(2, "0")}`;
-      const scan = await inspect(page);
-      review(viewport, label, scan);
-      report.scans.push({ viewport: viewport.name, label, ...scan });
-      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${label}.png`), animations: "disabled" });
-      if (index === 0) {
-        await captureDrawer(
-          page,
-          viewport,
-          "drawer-light-bank",
-          () => page.locator("#map-mobile-bank-toggle").click(),
-          () => page.locator("#map-mobile-bank-toggle").click(),
-          { require: ["bank"] },
         );
       }
     }
