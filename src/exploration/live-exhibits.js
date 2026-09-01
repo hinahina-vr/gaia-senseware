@@ -105,6 +105,31 @@ const EXHIBITS = Object.freeze([
   }),
 ]);
 
+const OBSERVATION_CITIES = Object.freeze([
+  ["tokyo", "東京", 35.6762, 139.6503],
+  ["sapporo", "札幌", 43.0618, 141.3545],
+  ["sendai", "仙台", 38.2682, 140.8694],
+  ["saitama", "さいたま", 35.8617, 139.6455],
+  ["chiba", "千葉", 35.6074, 140.1065],
+  ["yokohama", "横浜", 35.4437, 139.638],
+  ["kawasaki", "川崎", 35.5308, 139.7029],
+  ["sagamihara", "相模原", 35.5715, 139.3732],
+  ["niigata", "新潟", 37.9161, 139.0364],
+  ["shizuoka", "静岡", 34.9756, 138.3828],
+  ["hamamatsu", "浜松", 34.7108, 137.7261],
+  ["nagoya", "名古屋", 35.1815, 136.9066],
+  ["kyoto", "京都", 35.0116, 135.7681],
+  ["osaka", "大阪", 34.6937, 135.5023],
+  ["sakai", "堺", 34.5733, 135.4828],
+  ["kobe", "神戸", 34.6901, 135.1955],
+  ["okayama", "岡山", 34.6551, 133.9195],
+  ["hiroshima", "広島", 34.3853, 132.4553],
+  ["kitakyushu", "北九州", 33.8834, 130.8751],
+  ["fukuoka", "福岡", 33.5904, 130.4017],
+  ["kumamoto", "熊本", 32.8031, 130.7079],
+].map(([id, name, lat, lon]) => Object.freeze({ id, name, lat, lon })));
+const CITY_BY_ID = new Map(OBSERVATION_CITIES.map((city) => [city.id, city]));
+
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const EXHIBIT_COLORS = new Map(EXHIBITS.map((exhibit) => [
   exhibit.id,
@@ -119,11 +144,14 @@ let webglRenderer = null;
 let readout = null;
 let mobileReadoutToggle = null;
 let anchorMarker = null;
+let cityPicker = null;
+let mapControls = null;
 let buttons = [];
 let deckModeButtons = [];
 let frame = 0;
 let lastRenderedAt = 0;
 let savedHeading = null;
+let selectedCityId = globalThis.GaiaLiveData?.getCity?.() || "tokyo";
 const LIGHT_TOUCH_CAPACITY = 8;
 let lightTouches = [];
 let lightPointer = { x: 0.5, y: 0.5, active: 0, energy: 0, down: false, lastX: 0.5, lastY: 0.5 };
@@ -164,15 +192,46 @@ const currentMeasurement = (exhibit) => currentState().measurements?.[exhibit.ke
 const profile = () => globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || { dprCap: 1, particleRatio: 0.65, level: "medium" };
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
+const selectedCity = () => CITY_BY_ID.get(selectedCityId) || OBSERVATION_CITIES[0];
+const cityForLocation = (location) => OBSERVATION_CITIES.find((city) => (
+  Math.abs(city.lat - Number(location?.lat)) < 0.08 && Math.abs(city.lon - Number(location?.lon)) < 0.08
+)) || selectedCity();
+
+const focusSelectedCity = () => {
+  const city = selectedCity();
+  globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
+    lon: city.lon,
+    lat: city.lat,
+    zoom: innerWidth <= 720 ? 4.25 : 3.65,
+    targetX: 0.5,
+    targetY: innerWidth <= 720 ? 0.39 : 0.43,
+    label: `city-${city.id}`,
+  });
+};
+
+const zoomAroundSelectedPoi = (factor) => {
+  const exhibit = EXHIBITS[activeIndex];
+  if (!exhibit) return false;
+  const location = observationLocation(exhibit, currentMeasurement(exhibit));
+  return globalThis.GaiaMapObservationAdapter?.zoomEarthAtLocation?.({
+    lon: location.lon,
+    lat: location.lat,
+    factor,
+    targetX: 0.5,
+    targetY: innerWidth <= 720 ? 0.39 : 0.43,
+  }) || false;
+};
 
 const observationLocation = (exhibit, measurement) => {
   const location = measurement?.location;
   const lon = Number(location?.lon);
   const lat = Number(location?.lat);
+  const fallbackCity = selectedCity();
+  const isAirModel = ["forecastCo2", "pm25"].includes(exhibit.key);
   return {
-    lon: Number.isFinite(lon) ? lon : exhibit.location.lon,
-    lat: Number.isFinite(lat) ? lat : exhibit.location.lat,
-    label: location?.label || exhibit.location.label,
+    lon: Number.isFinite(lon) ? lon : fallbackCity.lon,
+    lat: Number.isFinite(lat) ? lat : fallbackCity.lat,
+    label: location?.label || (isAirModel ? `CAMSモデル / ${fallbackCity.name}格子` : `Open-Meteo / ${fallbackCity.name}`),
   };
 };
 
@@ -823,6 +882,7 @@ const draw = (timestamp = performance.now(), force = false) => {
   lightPointer.energy *= lightPointer.down ? 0.992 : 0.965;
   canvas.dataset.anchorLongitude = String(location.lon);
   canvas.dataset.anchorLatitude = String(location.lat);
+  canvas.dataset.observationCity = selectedCityId;
   canvas.dataset.anchorNormalizedX = anchor.normalized[0].toFixed(4);
   canvas.dataset.anchorNormalizedY = anchor.normalized[1].toFixed(4);
   canvas.dataset.signalStrength = strength.toFixed(4);
@@ -867,6 +927,7 @@ const renderReadout = () => {
   const missing = !measurement || !Number.isFinite(Number(measurement.value));
   const strength = missing ? exhibit.fallback : clamp01(measurement.normalized);
   const location = observationLocation(exhibit, measurement);
+  const locationCity = cityForLocation(location);
   const status = STATUS_LABELS[measurement?.status] || (state.connected ? "NEAR REAL TIME" : "SNAPSHOT");
   const savedMeasurement = measurement?.status === "snapshot";
   const modelMeasurement = measurement?.sourceKind === "MODEL";
@@ -886,7 +947,7 @@ const renderReadout = () => {
   exhibitTitle.querySelector("[data-live-exhibit-title-ja]").textContent = titleJa;
   exhibitTitle.querySelector("[data-live-exhibit-title-en]").textContent = titleEn;
   readout.querySelector("[data-live-exhibit-value]").textContent = formatValue(measurement);
-  readout.querySelector("[data-live-exhibit-caption]").textContent = exhibit.caption;
+  readout.querySelector("[data-live-exhibit-caption]").textContent = exhibit.caption.replaceAll("東京", locationCity.name);
   readout.querySelector("[data-live-exhibit-feed-state]").textContent = feedState;
   readout.querySelector("[data-live-exhibit-feed-time]").textContent = `データ時刻 ${observedAt}`;
   readout.querySelector("[data-live-exhibit-feed-copy]").textContent = state.connected && !savedMeasurement
@@ -897,7 +958,7 @@ const renderReadout = () => {
   readout.querySelector("[data-live-exhibit-level]").textContent = missing ? "欠測 / STANDBY" : `${Math.round(strength * 100)}% SIGNAL`;
   readout.querySelector("[data-live-exhibit-scale]").textContent = exhibit.scaleLabel;
   readout.querySelector("[data-live-stage-signal]").textContent = missing ? "STANDBY" : formatValue(measurement);
-  readout.querySelector("[data-live-stage-location]").textContent = "TOKYO";
+  readout.querySelector("[data-live-stage-location]").textContent = locationCity.name;
   readout.querySelector("[data-live-stage-coordinates]").textContent = `${Math.abs(location.lat).toFixed(1)}°${location.lat >= 0 ? "N" : "S"}`;
   readout.querySelector("[data-live-stage-visual]").textContent = exhibit.visualCue;
   readout.querySelector("[data-live-exhibit-input]").textContent = missing
@@ -914,6 +975,11 @@ const renderReadout = () => {
   readout.querySelector("[data-live-deck-location]").textContent = location.label;
   readout.querySelector("[data-live-deck-coordinates]").textContent = `${Math.abs(location.lat).toFixed(4)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(4)}°${location.lon >= 0 ? "E" : "W"}`;
   readout.querySelector("[data-live-deck-source-name]").textContent = measurement?.provider?.toUpperCase() || "SOURCE";
+  if (cityPicker) {
+    cityPicker.dataset.city = selectedCityId;
+    cityPicker.querySelector("select").value = selectedCityId;
+    cityPicker.querySelector("[data-live-city-caption]").textContent = `${locationCity.name} · ${Math.abs(location.lat).toFixed(3)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(3)}°${location.lon >= 0 ? "E" : "W"}`;
+  }
   readout.querySelectorAll("[data-live-wave-bar]").forEach((bar, index) => {
     const phase = (index + 1) * (0.54 + activeIndex * 0.07);
     const harmonic = Math.abs(Math.sin(phase) * 0.58 + Math.sin(phase * 0.37 + activeIndex) * 0.26);
@@ -939,7 +1005,8 @@ const applyHeading = () => {
 
 const select = (index) => {
   if (!EXHIBITS[index]) return;
-  if (activeIndex < 0) {
+  const enteringLiveDeck = activeIndex < 0;
+  if (enteringLiveDeck) {
     savedHeading = {
       number: document.querySelector("#japan-mode-number")?.textContent || "01",
       title: document.querySelector("#japan-mode-title")?.textContent || "地球の一呼吸",
@@ -954,11 +1021,14 @@ const select = (index) => {
   canvas.dataset.lightTouchCount = "0";
   canvas.hidden = false;
   readout.hidden = false;
+  cityPicker.hidden = false;
+  mapControls.hidden = false;
   setMobileReadoutExpanded(false);
   applyHeading();
   renderReadout();
   lastRenderedAt = 0;
   draw(performance.now(), true);
+  if (enteringLiveDeck) requestAnimationFrame(focusSelectedCity);
   dispatchEvent(new CustomEvent("gaia:live-exhibit-change", { detail: { index, id: exhibit.id } }));
 };
 
@@ -975,6 +1045,8 @@ const deactivate = ({ number, title } = {}) => {
   delete layer.dataset.liveExhibit;
   canvas.hidden = true;
   readout.hidden = true;
+  if (cityPicker) cityPicker.hidden = true;
+  if (mapControls) mapControls.hidden = true;
   setMobileReadoutExpanded(false);
   if (anchorMarker) anchorMarker.hidden = true;
   buttons.forEach((button) => button.setAttribute("aria-current", "false"));
@@ -1014,6 +1086,28 @@ const mount = () => {
   anchorMarker.setAttribute("aria-hidden", "true");
   anchorMarker.innerHTML = `<i></i><span><b data-live-anchor-source>MODEL GRID</b><strong data-live-anchor-label>TOKYO</strong><small data-live-anchor-coordinates>35.676°N / 139.650°E</small></span>`;
   map.append(anchorMarker);
+  cityPicker = document.createElement("aside");
+  cityPicker.className = "gaia-live-city-picker";
+  cityPicker.hidden = true;
+  cityPicker.innerHTML = `
+    <label>
+      <span>OBSERVATION CITY / JAPAN</span>
+      <select aria-label="観測都市を選ぶ">${OBSERVATION_CITIES.map((city) => `<option value="${city.id}">${city.name}</option>`).join("")}</select>
+      <small data-live-city-caption>東京 · 35.676°N / 139.650°E</small>
+    </label>
+  `;
+  cityPicker.querySelector("select").value = selectedCityId;
+  layer.append(cityPicker);
+  mapControls = document.createElement("nav");
+  mapControls.className = "gaia-live-map-controls";
+  mapControls.hidden = true;
+  mapControls.setAttribute("aria-label", "地図の拡大と現在都市");
+  mapControls.innerHTML = `
+    <button type="button" data-live-map-zoom="1.35" aria-label="地図を拡大する">＋</button>
+    <button type="button" data-live-map-zoom="0.74" aria-label="地図を縮小する">−</button>
+    <button type="button" data-live-map-focus aria-label="選択中の都市を中央に戻す"><span>◎</span><strong>都市へ戻る</strong></button>
+  `;
+  layer.append(mapControls);
   webglRenderer = createWebGLRenderer(canvas);
   if (webglRenderer) {
     canvas.dataset.renderEngine = "webgl-aiva-field";
@@ -1056,6 +1150,7 @@ const mount = () => {
   readout.setAttribute("aria-live", "polite");
   const liveWaveBars = Array.from({ length: 34 }, (_, index) => `<i data-live-wave-bar style="--live-wave-index:${index}"></i>`).join("");
   readout.innerHTML = `
+    <button type="button" class="gaia-live-deck-return" data-live-deck-standard><span>MAP 01—08</span><strong>通常展示へ戻る</strong></button>
     <div class="gaia-live-deck-chapter">
       <p>CHAPTER / LIVE MAP</p>
       <div>
@@ -1143,6 +1238,11 @@ const mount = () => {
   readout.querySelectorAll("[data-live-deck-step]").forEach((button) => {
     button.addEventListener("click", () => select((activeIndex + Number(button.dataset.liveDeckStep) + EXHIBITS.length) % EXHIBITS.length));
   });
+  readout.querySelector("[data-live-deck-standard]")?.addEventListener("click", () => {
+    const modeIndex = globalThis.GaiaMapObservationAdapter?.getState?.().modeIndex ?? 0;
+    deactivate();
+    globalThis.GaiaMapObservationAdapter?.selectMode?.(modeIndex);
+  });
   readout.querySelector("[data-live-deck-source]")?.addEventListener("click", () => document.querySelector("#japan-data-button")?.click());
   readout.querySelector("[data-live-deck-analysis]")?.addEventListener("click", () => document.querySelector("#gaia-statistics-button")?.click());
   mobileReadoutToggle = readout.querySelector("#gaia-live-mobile-toggle");
@@ -1150,6 +1250,32 @@ const mount = () => {
     setMobileReadoutExpanded(mobileReadoutToggle.getAttribute("aria-expanded") !== "true");
   });
   dispatchEvent(new CustomEvent("gaia:live-exhibit-mounted"));
+
+  cityPicker.querySelector("select")?.addEventListener("change", (event) => {
+    const nextCity = CITY_BY_ID.get(event.currentTarget.value);
+    if (!nextCity) return;
+    selectedCityId = nextCity.id;
+    cityPicker.dataset.state = "loading";
+    cityPicker.querySelector("[data-live-city-caption]").textContent = `${nextCity.name} · データを取得中`;
+    focusSelectedCity();
+    renderReadout();
+    draw(performance.now(), true);
+    void globalThis.GaiaLiveData?.selectCity?.(nextCity.id);
+  });
+  mapControls.querySelectorAll("[data-live-map-zoom]").forEach((button) => {
+    button.addEventListener("click", () => zoomAroundSelectedPoi(Number(button.dataset.liveMapZoom)));
+  });
+  mapControls.querySelector("[data-live-map-focus]")?.addEventListener("click", focusSelectedCity);
+
+  map.addEventListener("wheel", (event) => {
+    if (activeIndex < 0) return;
+    const delta = Math.max(-240, Math.min(240, Number(event.deltaY) || 0));
+    const factor = Math.exp(-delta * (event.ctrlKey ? 0.006 : 0.0024));
+    if (!zoomAroundSelectedPoi(factor)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    draw(performance.now(), true);
+  }, { capture: true, passive: false });
 
   readout.querySelector("[data-live-light-touch]")?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -1167,30 +1293,21 @@ const mount = () => {
 
   map.addEventListener("pointerdown", (event) => {
     if (activeIndex < 0) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    map.setPointerCapture?.(event.pointerId);
     lightPointer.down = true;
     updateLightPointer(event, { touch: true });
   }, { capture: true });
   map.addEventListener("pointermove", (event) => {
     if (activeIndex < 0) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
     updateLightPointer(event);
   }, { capture: true });
   map.addEventListener("pointerup", (event) => {
     if (activeIndex < 0) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
     updateLightPointer(event);
     lightPointer.down = false;
     if (event.pointerType !== "mouse") lightPointer.active = 0;
-    if (map.hasPointerCapture?.(event.pointerId)) map.releasePointerCapture(event.pointerId);
   }, { capture: true });
   map.addEventListener("pointercancel", (event) => {
     if (activeIndex < 0) return;
-    event.stopImmediatePropagation();
     lightPointer.down = false;
     lightPointer.active = 0;
   }, { capture: true });
@@ -1236,6 +1353,14 @@ const mount = () => {
   addEventListener("gaia:live-update", () => {
     renderReadout();
     if (activeIndex >= 0 && !frame) draw();
+  });
+  addEventListener("gaia:live-city-change", (event) => {
+    if (CITY_BY_ID.has(event.detail?.city)) selectedCityId = event.detail.city;
+    if (cityPicker) cityPicker.dataset.state = event.detail?.state || "ready";
+    if (activeIndex >= 0) {
+      renderReadout();
+      draw(performance.now(), true);
+    }
   });
   addEventListener("gaia:japan-mode-change", () => {
     if (activeIndex < 0) return;

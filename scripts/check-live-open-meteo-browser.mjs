@@ -146,6 +146,33 @@ try {
     screenshots.push(screenshot);
   }
 
+  await page.locator('#japan-mode-list [data-live-exhibit="wind-field"]').evaluate((button) => button.click());
+  await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
+  const poiBeforeWheel = await page.evaluate(() => {
+    const canvas = document.querySelector("#gaia-live-exhibit-canvas");
+    const overlay = document.querySelector("#japan-overlay");
+    return {
+      x: Number(canvas?.dataset.anchorNormalizedX),
+      y: Number(canvas?.dataset.anchorNormalizedY),
+      zoom: Number(overlay?.dataset.earthZoom),
+    };
+  });
+  await page.mouse.move(90, 120);
+  await page.mouse.wheel(0, -180);
+  await page.waitForTimeout(180);
+  const poiAfterWheel = await page.evaluate(() => {
+    const canvas = document.querySelector("#gaia-live-exhibit-canvas");
+    const overlay = document.querySelector("#japan-overlay");
+    return {
+      x: Number(canvas?.dataset.anchorNormalizedX),
+      y: Number(canvas?.dataset.anchorNormalizedY),
+      zoom: Number(overlay?.dataset.earthZoom),
+    };
+  });
+  assert(poiAfterWheel.zoom > poiBeforeWheel.zoom, `wheel did not zoom the live map: ${JSON.stringify({ poiBeforeWheel, poiAfterWheel })}`);
+  assert(Math.abs(poiAfterWheel.x - poiBeforeWheel.x) <= 0.002, `POI moved horizontally during wheel zoom: ${JSON.stringify({ poiBeforeWheel, poiAfterWheel })}`);
+  assert(Math.abs(poiAfterWheel.y - poiBeforeWheel.y) <= 0.002, `POI moved vertically during wheel zoom: ${JSON.stringify({ poiBeforeWheel, poiAfterWheel })}`);
+
   await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
   await page.locator("[data-live-deck-source]").click();
   await page.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");
@@ -170,6 +197,25 @@ try {
   const wideScreenshot = path.join(output, "live-09-wide.png");
   await page.screenshot({ path: wideScreenshot, animations: "disabled" });
   screenshots.push(wideScreenshot);
+
+  await page.locator('#japan-mode-list [data-live-exhibit="pm25-haze"]').evaluate((button) => button.click());
+  await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "5");
+  const wideMetricLayout = await page.evaluate(() => {
+    const title = document.querySelector("[data-live-exhibit-title-ja]")?.getBoundingClientRect();
+    const value = document.querySelector("[data-live-exhibit-value]")?.getBoundingClientRect();
+    const titleElement = document.querySelector("[data-live-exhibit-title-ja]");
+    return {
+      title: title ? { top: title.top, right: title.right, bottom: title.bottom, left: title.left, height: title.height } : null,
+      value: value ? { top: value.top, right: value.right, bottom: value.bottom, left: value.left } : null,
+      whiteSpace: titleElement ? getComputedStyle(titleElement).whiteSpace : "",
+    };
+  });
+  assert.equal(wideMetricLayout.whiteSpace, "nowrap");
+  assert(wideMetricLayout.title && wideMetricLayout.title.height < 45, `wide title wrapped: ${JSON.stringify(wideMetricLayout)}`);
+  assert(wideMetricLayout.value && wideMetricLayout.title.right <= wideMetricLayout.value.left + 1, `wide title overlaps value: ${JSON.stringify(wideMetricLayout)}`);
+  const wideMetricScreenshot = path.join(output, "live-14-wide.png");
+  await page.screenshot({ path: wideMetricScreenshot, animations: "disabled" });
+  screenshots.push(wideMetricScreenshot);
   await context.close();
 
   const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

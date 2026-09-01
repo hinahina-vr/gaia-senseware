@@ -1463,11 +1463,11 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     left: 0;
     display: grid;
     grid-template-columns:
-      minmax(170px, 1.17fr)
-      minmax(510px, 5.34fr)
-      minmax(210px, 1.75fr)
-      minmax(118px, 0.93fr)
-      minmax(108px, 0.81fr);
+      minmax(350px, 1.7fr)
+      minmax(450px, 4.7fr)
+      minmax(200px, 1.6fr)
+      minmax(112px, 0.9fr)
+      minmax(104px, 0.8fr);
     gap: 0;
     height: var(--map-command-dock-height);
     padding: 9px clamp(10px, 0.8vw, 20px) 11px;
@@ -1715,20 +1715,27 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   body.map-grid-desktop .map-command-dock .signal-console-map > label {
     display: grid !important;
     grid-template-columns: minmax(136px, 0.82fr) minmax(250px, 2.18fr);
-    grid-template-rows: auto minmax(28px, 1fr) auto;
-    gap: 4px 0;
+    grid-template-rows: minmax(18px, auto) minmax(30px, 1fr) minmax(12px, auto);
+    gap: 6px 0;
     align-items: center;
     min-width: 0;
     margin: 0;
+    padding-block: 10px 8px;
     border-left: 1px solid rgba(113, 207, 221, 0.18);
+    box-sizing: border-box;
   }
 
   body.map-grid-desktop .map-command-dock .signal-console-map label > [data-signal-time-label] {
     grid-row: 1;
     grid-column: 2;
+    align-self: start;
+    justify-self: start;
     overflow: hidden;
+    max-width: 48%;
     padding: 0 clamp(12px, 0.9vw, 18px);
+    line-height: 1.2;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .map-dock-year {
@@ -1791,7 +1798,10 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   body.map-grid-desktop .map-command-dock [data-signal-time-output] {
     grid-row: 1;
     grid-column: 2;
+    align-self: start;
+    justify-self: end;
     overflow: hidden;
+    max-width: 52%;
     color: rgba(179, 226, 237, 0.58);
     padding: 0 clamp(12px, 0.9vw, 18px);
     font: 650 clamp(7px, 0.34vw, 9px)/1 Consolas, "Courier New", monospace;
@@ -1803,6 +1813,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   body.map-grid-desktop .map-command-dock [data-signal-time] {
     grid-row: 2;
     grid-column: 2;
+    align-self: center;
     width: calc(100% - clamp(24px, 1.8vw, 36px));
     min-width: 0;
     height: 24px;
@@ -1833,6 +1844,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   .map-dock-timeline-scale {
     grid-row: 3;
     grid-column: 2;
+    align-self: end;
     display: flex;
     justify-content: space-between;
     min-width: 0;
@@ -2115,7 +2127,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
 @media (min-width: 901px) and (max-width: 1180px) {
   body.map-grid-desktop .map-command-dock {
-    grid-template-columns: minmax(150px, 1.2fr) minmax(430px, 4.7fr) minmax(170px, 1.55fr) 104px 104px;
+    grid-template-columns: minmax(240px, 1.45fr) minmax(340px, 3.9fr) minmax(130px, 1.25fr) 80px 80px;
   }
 
   body.map-grid-desktop .map-command-dock .signal-console-map {
@@ -2232,6 +2244,135 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   box-sizing: border-box;
 }
 
+.gaia-live-city-picker,
+.gaia-live-map-controls {
+  position: fixed;
+  z-index: 14;
+}
+
+.gaia-live-city-picker[hidden],
+.gaia-live-map-controls[hidden] {
+  display: none !important;
+}
+
+.gaia-live-city-picker {
+  top: max(86px, calc(env(safe-area-inset-top) + 72px));
+  left: max(18px, env(safe-area-inset-left));
+  width: min(248px, calc(100vw - 36px));
+  padding: 11px 13px 10px;
+  border: 1px solid rgba(var(--map-accent-rgb), 0.3);
+  border-radius: 13px;
+  color: rgba(238, 255, 255, 0.94);
+  background:
+    radial-gradient(circle at 100% 0, rgba(var(--map-accent-rgb), 0.13), transparent 46%),
+    rgba(1, 15, 25, 0.9);
+  box-shadow: 0 16px 46px rgba(0, 4, 12, 0.34), inset 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.gaia-live-city-picker label {
+  display: grid;
+  gap: 7px;
+}
+
+.gaia-live-city-picker span,
+.gaia-live-city-picker small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gaia-live-city-picker span {
+  color: rgb(var(--map-accent-rgb));
+  font: 700 7px/1 Consolas, monospace;
+  letter-spacing: 0.16em;
+}
+
+.gaia-live-city-picker select {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 34px 5px 10px;
+  border: 1px solid rgba(var(--map-accent-rgb), 0.28);
+  border-radius: 8px;
+  color: #f3ffff;
+  background: rgba(3, 26, 38, 0.96);
+  font: 560 13px/1.2 var(--font-ja);
+  cursor: pointer;
+}
+
+.gaia-live-city-picker select:focus-visible {
+  border-color: rgba(var(--map-accent-rgb), 0.82);
+  outline: 2px solid rgba(var(--map-accent-rgb), 0.24);
+  outline-offset: 2px;
+}
+
+.gaia-live-city-picker small {
+  color: rgba(205, 234, 239, 0.62);
+  font: 650 7px/1.2 Consolas, monospace;
+  letter-spacing: 0.05em;
+}
+
+.gaia-live-city-picker[data-state="loading"] small {
+  color: rgb(var(--map-accent-rgb));
+  animation: gaia-live-city-loading 1.2s ease-in-out infinite alternate;
+}
+
+.gaia-live-map-controls {
+  top: 50%;
+  right: max(18px, env(safe-area-inset-right));
+  display: grid;
+  gap: 6px;
+  translate: 0 -50%;
+}
+
+.gaia-live-map-controls button {
+  display: grid;
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(var(--map-accent-rgb), 0.32);
+  border-radius: 50%;
+  color: rgba(235, 255, 255, 0.88);
+  background: rgba(2, 19, 29, 0.88);
+  box-shadow: 0 9px 30px rgba(0, 5, 14, 0.3);
+  font: 400 20px/1 Consolas, monospace;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+}
+
+.gaia-live-map-controls button:is(:hover, :focus-visible) {
+  border-color: rgb(var(--map-accent-rgb));
+  color: #fff;
+  outline: 0;
+  box-shadow: 0 0 22px rgba(var(--map-accent-rgb), 0.24);
+}
+
+.gaia-live-map-controls [data-live-map-focus] {
+  width: auto;
+  min-width: 42px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-family: var(--font-ja);
+}
+
+.gaia-live-map-controls [data-live-map-focus] strong {
+  display: none;
+}
+
+.japan-layer.is-live-exhibit .japan-map {
+  cursor: grab;
+}
+
+.japan-layer.is-live-exhibit .japan-map.is-dragging {
+  cursor: grabbing;
+}
+
+@keyframes gaia-live-city-loading {
+  from { opacity: 0.46; }
+  to { opacity: 1; }
+}
+
 .gaia-live-deck-chapter > p,
 .gaia-live-deck-location > p,
 .gaia-live-deck-wave header > span {
@@ -2279,6 +2420,42 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     background: linear-gradient(90deg, transparent, rgba(var(--map-accent-rgb), 0.82), transparent);
     box-shadow: 0 0 24px rgba(var(--map-accent-rgb), 0.52);
     pointer-events: none;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-return {
+    position: absolute;
+    top: -43px;
+    left: 22px;
+    display: flex;
+    height: 34px;
+    gap: 9px;
+    align-items: center;
+    padding: 0 13px;
+    border: 1px solid rgba(var(--map-accent-rgb), 0.34);
+    border-radius: 999px;
+    color: rgba(231, 252, 255, 0.76);
+    background: rgba(2, 18, 29, 0.9);
+    box-shadow: 0 8px 28px rgba(0, 5, 14, 0.32);
+    cursor: pointer;
+    backdrop-filter: blur(14px);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-return span {
+    color: rgb(var(--map-accent-rgb));
+    font: 700 7px/1 Consolas, monospace;
+    letter-spacing: 0.12em;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-return strong {
+    font: 560 10px/1 var(--font-ja);
+    letter-spacing: 0.04em;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-return:is(:hover, :focus-visible) {
+    border-color: rgb(var(--map-accent-rgb));
+    color: #fff;
+    outline: 0;
+    box-shadow: 0 0 24px rgba(var(--map-accent-rgb), 0.18);
   }
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout > :is(
@@ -2372,10 +2549,14 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary {
     display: grid;
-    grid-template-columns: minmax(0, 0.9fr) auto;
+    grid-template-columns: minmax(9.5em, 0.9fr) minmax(0, auto);
     gap: 10px;
     align-content: center;
     align-items: end;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary > div {
+    min-width: 0;
   }
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary p {
@@ -2385,9 +2566,17 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary h3 {
     display: grid;
+    min-width: 0;
     gap: 6px;
     font-size: clamp(21px, 1.45vw, 31px);
-    white-space: normal;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary h3 > * {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary h3 small {
@@ -2397,7 +2586,8 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary > strong {
     align-self: center;
-    font-size: clamp(34px, 2.55vw, 58px);
+    min-width: 0;
+    font-size: clamp(30px, 2vw, 48px);
     line-height: 0.96;
   }
 
@@ -2640,6 +2830,59 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 }
 
 @media (max-width: 900px) {
+  .gaia-live-city-picker {
+    top: max(70px, calc(env(safe-area-inset-top) + 58px));
+    left: max(10px, env(safe-area-inset-left));
+    width: min(190px, calc(100vw - 78px));
+    padding: 8px 9px;
+  }
+
+  .gaia-live-city-picker span {
+    display: none;
+  }
+
+  .gaia-live-city-picker select {
+    min-height: 32px;
+    font-size: 12px;
+  }
+
+  .gaia-live-map-controls {
+    top: max(70px, calc(env(safe-area-inset-top) + 58px));
+    right: max(10px, env(safe-area-inset-right));
+    grid-template-columns: repeat(3, auto);
+    translate: 0;
+  }
+
+  .gaia-live-map-controls button {
+    width: 34px;
+    min-height: 34px;
+    font-size: 16px;
+  }
+
+  .gaia-live-deck-return {
+    position: fixed;
+    z-index: 16;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(104px, calc(env(safe-area-inset-bottom) + 92px));
+    display: grid;
+    min-width: 42px;
+    min-height: 42px;
+    padding: 7px 9px;
+    border: 1px solid rgba(var(--map-accent-rgb), 0.38);
+    border-radius: 11px;
+    color: #efffff;
+    background: rgba(2, 18, 29, 0.92);
+  }
+
+  .gaia-live-deck-return span {
+    color: rgb(var(--map-accent-rgb));
+    font: 700 6px/1 Consolas, monospace;
+  }
+
+  .gaia-live-deck-return strong {
+    font: 560 8px/1.2 var(--font-ja);
+  }
+
   .gaia-live-exhibit-readout > :is(
     .gaia-live-deck-chapter,
     .gaia-live-deck-location,

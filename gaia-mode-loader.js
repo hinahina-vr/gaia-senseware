@@ -10,7 +10,7 @@
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-live-deck-3",
+        "./map-ui-grid-polish.css?v=gaia-live-metric-fit-1",
         "./statistics-lab.css?v=gaia-statistics-insight-workspace-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
@@ -20,12 +20,12 @@
         "./data-ledger.js?v=gaia-live-model-ledger-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-ovation-aurora-1",
-        "./app.js?v=gaia-gentle-entry-guide-1",
+        "./app.js?v=gaia-poi-anchor-1",
         "./map-ui-grid-polish.js?v=gaia-live-deck-3",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
       modules: [
-        "./src/exploration/index.js?v=gaia-live-deck-3",
+        "./src/exploration/index.js?v=gaia-poi-anchor-1",
         "./statistics-lab.js?v=gaia-statistics-insight-workspace-1",
       ],
     },
@@ -112,6 +112,59 @@
   const assetPromises = new Map();
   const groupPromises = new Map();
   const loadedGroups = new Set();
+  const characterPreloader = document.querySelector("#gaia-character-preloader");
+  const characterPreloaderStatus = characterPreloader?.querySelector("[data-character-preloader-status]");
+  let characterPreloaderShownAt = 0;
+
+  const setCharacterPreloader = (visible, { error = false } = {}) => {
+    if (!(characterPreloader instanceof HTMLElement)) return;
+    window.clearTimeout(Number(characterPreloader.dataset.hideTimer) || 0);
+    if (visible) {
+      characterPreloaderShownAt = performance.now();
+      characterPreloader.hidden = false;
+      characterPreloader.classList.toggle("is-error", error);
+      characterPreloader.setAttribute("aria-hidden", "false");
+      if (characterPreloaderStatus) characterPreloaderStatus.textContent = error
+        ? "PORTRAIT DATA / RETRY AVAILABLE"
+        : "PORTRAIT DATA / CONNECTING";
+      requestAnimationFrame(() => characterPreloader.classList.add("is-visible"));
+      return;
+    }
+    const delay = Math.max(0, 420 - (performance.now() - characterPreloaderShownAt));
+    const timer = window.setTimeout(() => {
+      characterPreloader.classList.remove("is-visible");
+      characterPreloader.setAttribute("aria-hidden", "true");
+      const hideTimer = window.setTimeout(() => {
+        if (!characterPreloader.classList.contains("is-visible")) characterPreloader.hidden = true;
+      }, 430);
+      characterPreloader.dataset.hideTimer = String(hideTimer);
+    }, delay);
+    characterPreloader.dataset.hideTimer = String(timer);
+  };
+
+  const waitForCharacterReady = () => new Promise((resolve) => {
+    const layer = document.querySelector("#character-book-layer");
+    if (!(layer instanceof HTMLElement)) {
+      resolve();
+      return;
+    }
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      observer.disconnect();
+      window.clearTimeout(timeout);
+      resolve();
+    };
+    const ready = () => layer.classList.contains("is-open")
+      && ["ready", "error"].includes(layer.dataset.imageState || "");
+    const observer = new MutationObserver(() => {
+      if (ready()) finish();
+    });
+    const timeout = window.setTimeout(finish, 8000);
+    observer.observe(layer, { attributes: true, attributeFilter: ["class", "data-image-state"] });
+    if (ready()) finish();
+  });
 
   const mountTemplate = (id) => {
     const template = document.getElementById(id);
@@ -215,13 +268,19 @@
       if (trigger.dataset.gaiaLazyPending === "true") return;
       trigger.dataset.gaiaLazyPending = "true";
       trigger.setAttribute("aria-busy", "true");
+      if (group === "character") setCharacterPreloader(true);
       void load(group).then(() => {
         delete trigger.dataset.gaiaLazyPending;
         trigger.removeAttribute("aria-busy");
         trigger.click();
+        if (group === "character") void waitForCharacterReady().then(() => setCharacterPreloader(false));
       }).catch(() => {
         delete trigger.dataset.gaiaLazyPending;
         trigger.removeAttribute("aria-busy");
+        if (group === "character") {
+          setCharacterPreloader(true, { error: true });
+          window.setTimeout(() => setCharacterPreloader(false), 1200);
+        }
       });
     }, true);
   };
@@ -247,6 +306,14 @@
   interceptEvent("gaia:novel-open-at-mode", () => "story");
   interceptEvent("gaia:story-mode-open", () => "exploration");
   interceptEvent("gaia:return-to-intro", () => "exploration");
+
+  const warmCharacterArchive = (event) => {
+    if (loadedGroups.has("character")) return;
+    const trigger = event.target instanceof Element ? event.target.closest("[data-character-gallery-open]") : null;
+    if (trigger) void load("character").catch(() => {});
+  };
+  document.addEventListener("pointerover", warmCharacterArchive, { passive: true });
+  document.addEventListener("focusin", warmCharacterArchive);
 
   globalThis.GaiaModeLoader = Object.freeze({
     load,

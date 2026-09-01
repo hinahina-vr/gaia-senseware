@@ -168,14 +168,23 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-title-button-clean-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-character-preloader-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-opening-shooting-star-left-1" defer fetchpriority="high"></script>
-    <script src="./opening-audio.js?v=gaia-direct-route-audio-1" defer fetchpriority="high"></script>
+    <script src="./opening-audio.js?v=gaia-navigation-roundtrip-2" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-title-return-direct-2" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-sound-reactive-ribbons-1" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-audio-return-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-character-preloader-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
+    <div class="gaia-character-preloader" id="gaia-character-preloader" role="status" aria-live="polite" aria-hidden="true" hidden>
+      <div class="gaia-character-preloader__field" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="gaia-character-preloader__shell">
+        <p>CHARACTER ARCHIVE / LINK 03</p>
+        <strong>三人の観測記録をひらいています</strong>
+        <div class="gaia-character-preloader__rail" aria-hidden="true"><i></i></div>
+        <span data-character-preloader-status>PORTRAIT DATA / CONNECTING</span>
+      </div>
+    </div>
     <div class="gaia-boot" id="gaia-boot" role="status" aria-live="polite" aria-label="GAIA SENSATIONを起動しています">
       <div class="gaia-boot__shell">
         <div class="gaia-boot__copy">

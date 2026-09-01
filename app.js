@@ -457,6 +457,9 @@
       waitSignalsReady: () => Promise.reject(new Error("WebGL2 unavailable")),
       selectMode: () => false,
       setSignalTime: () => 0,
+      focusEarthLocation: () => false,
+      zoomEarthBy: () => false,
+      zoomEarthAtLocation: () => false,
       openMap: () => false,
       closeMap: () => false,
       showIntro: () => { errorPanel.hidden = false; },
@@ -1080,12 +1083,10 @@
     japanTilesDirty = true;
   };
 
-  const animateEarthViewForMode = (index = modeToIndex) => {
+  const animateEarthViewToTarget = (target, rect = japanMap.getBoundingClientRect()) => {
     if (!japanIsOpen || mapScope !== "earth") return;
-    const rect = japanMap.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) return;
     cancelEarthViewAnimation("replaced");
-    const target = getEarthViewTarget(index, rect);
     const start = {
       zoom: japanView.earthZoom,
       offsetX: japanView.earthOffsetX,
@@ -1095,7 +1096,7 @@
     japanOverlay.dataset.viewAnimation = reducedMotion ? "idle" : "running";
     if (reducedMotion) {
       applyEarthViewState(target, rect);
-      return;
+      return true;
     }
 
     const duration = 1150;
@@ -1133,6 +1134,33 @@
       }
     };
     scheduleStep(step);
+    return true;
+  };
+
+  const animateEarthViewForMode = (index = modeToIndex) => {
+    const rect = japanMap.getBoundingClientRect();
+    return animateEarthViewToTarget(getEarthViewTarget(index, rect), rect);
+  };
+
+  const focusEarthLocation = ({ lon, lat, zoom = 3.65, targetX = 0.5, targetY = 0.43, label = "location" } = {}) => {
+    const longitude = Number(lon);
+    const latitude = Number(lat);
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude) || !japanIsOpen || mapScope !== "earth") return false;
+    const rect = japanMap.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return false;
+    const resolvedZoom = clamp(Number(zoom) || 3.65, 1, 8);
+    const baseScale = Math.max(0.1, Math.max(rect.width / 360, rect.height / 180));
+    const scale = baseScale * resolvedZoom;
+    const width = 360 * scale;
+    const height = 180 * scale;
+    return animateEarthViewToTarget({
+      focus: String(label || "location"),
+      zoom: resolvedZoom,
+      offsetX: rect.width * clamp(Number(targetX) || 0.5, 0.2, 0.8)
+        - ((rect.width - width) / 2 + earthLongitudeToMapX(longitude) * scale),
+      offsetY: rect.height * clamp(Number(targetY) || 0.43, 0.2, 0.8)
+        - ((rect.height - height) / 2 + (90 - clamp(latitude, -85, 85)) * scale),
+    }, rect);
   };
 
   const setEarthZoom = (nextZoom, clientX, clientY) => {
@@ -1159,6 +1187,42 @@
       anchorY - mapY * nextScale - (rect.height - nextHeight) / 2;
     japanView.earthProjection = getEarthProjection(rect);
     japanTilesDirty = true;
+  };
+
+  const zoomEarthBy = (factor = 1) => {
+    if (!japanIsOpen || mapScope !== "earth") return false;
+    const multiplier = Number(factor);
+    if (!Number.isFinite(multiplier) || multiplier <= 0) return false;
+    cancelEarthViewAnimation("control-zoom");
+    const rect = japanMap.getBoundingClientRect();
+    setEarthZoom(japanView.earthZoom * multiplier, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return true;
+  };
+
+  const zoomEarthAtLocation = ({ lon, lat, factor = 1, targetX = 0.5, targetY = 0.43 } = {}) => {
+    if (!japanIsOpen || mapScope !== "earth") return false;
+    const longitude = Number(lon);
+    const latitude = Number(lat);
+    const multiplier = Number(factor);
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude) || !Number.isFinite(multiplier) || multiplier <= 0) return false;
+    cancelEarthViewAnimation("location-zoom");
+    const rect = japanMap.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return false;
+    const nextZoom = clamp(japanView.earthZoom * multiplier, 1, 8);
+    const baseScale = Math.max(0.1, Math.max(rect.width / 360, rect.height / 180));
+    const nextScale = baseScale * nextZoom;
+    const nextWidth = 360 * nextScale;
+    const nextHeight = 180 * nextScale;
+    const anchorX = rect.width * clamp(Number(targetX) || 0.5, 0.2, 0.8);
+    const anchorY = rect.height * clamp(Number(targetY) || 0.43, 0.2, 0.8);
+    japanView.earthZoom = nextZoom;
+    japanView.earthOffsetX = anchorX
+      - ((rect.width - nextWidth) / 2 + earthLongitudeToMapX(longitude) * nextScale);
+    japanView.earthOffsetY = anchorY
+      - ((rect.height - nextHeight) / 2 + (90 - clamp(latitude, -85, 85)) * nextScale);
+    japanView.earthProjection = getEarthProjection(rect);
+    japanTilesDirty = true;
+    return true;
   };
 
   const resetJapanView = () => {
@@ -8189,6 +8253,9 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
       updateSignalInterface();
       return signalTimePosition;
     },
+    focusEarthLocation,
+    zoomEarthBy,
+    zoomEarthAtLocation,
     openMap: () => {
       if (!japanIsOpen) openJapan({ updateHash: false, restoreFocusOnClose: false, respectUrlMode: false });
     },

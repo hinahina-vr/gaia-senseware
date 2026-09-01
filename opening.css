@@ -5984,3 +5984,109 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     margin-left: auto;
   }
 }
+/* Character archive lazy-load feedback ----------------------------------- */
+.gaia-character-preloader {
+  --character-loader-rgb: 111, 221, 239;
+  position: fixed;
+  z-index: 12000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(24px, 6vw, 80px);
+  color: #effcff;
+  background:
+    radial-gradient(circle at 68% 34%, rgba(91, 194, 226, 0.16), transparent 30%),
+    radial-gradient(circle at 28% 72%, rgba(119, 236, 214, 0.1), transparent 34%),
+    rgba(1, 9, 17, 0.94);
+  backdrop-filter: blur(18px) saturate(1.12);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 420ms ease, visibility 420ms step-end;
+  isolation: isolate;
+}
+
+.gaia-character-preloader[hidden] { display: none; }
+.gaia-character-preloader.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 220ms ease, visibility 0ms step-start;
+}
+
+.gaia-character-preloader__field {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(var(--character-loader-rgb), 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--character-loader-rgb), 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 72% 66% at center, #000 18%, transparent 82%);
+}
+
+.gaia-character-preloader__field i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(150px, 21vw, 360px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(var(--character-loader-rgb), 0.13);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(calc(0.48 + var(--loader-ring, 0)));
+  animation: gaia-character-loader-ring 2.8s ease-out infinite;
+}
+.gaia-character-preloader__field i:nth-child(2) { --loader-ring: 0.34; animation-delay: -0.9s; }
+.gaia-character-preloader__field i:nth-child(3) { --loader-ring: 0.68; animation-delay: -1.8s; }
+
+.gaia-character-preloader__shell {
+  width: min(620px, 100%);
+  text-align: center;
+}
+.gaia-character-preloader__shell p,
+.gaia-character-preloader__shell span {
+  margin: 0;
+  color: rgba(var(--character-loader-rgb), 0.68);
+  font: 700 clamp(8px, 0.7vw, 11px)/1.4 Consolas, "Courier New", monospace;
+  letter-spacing: 0.2em;
+}
+.gaia-character-preloader__shell strong {
+  display: block;
+  margin-top: 18px;
+  font: 500 clamp(19px, 2vw, 32px)/1.55 "Yu Mincho", "Hiragino Mincho ProN", serif;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 30px rgba(var(--character-loader-rgb), 0.2);
+}
+.gaia-character-preloader__rail {
+  height: 1px;
+  margin: clamp(30px, 5vh, 52px) 0 16px;
+  overflow: hidden;
+  background: rgba(var(--character-loader-rgb), 0.13);
+}
+.gaia-character-preloader__rail i {
+  display: block;
+  width: 38%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgb(var(--character-loader-rgb)), transparent);
+  box-shadow: 0 0 18px rgba(var(--character-loader-rgb), 0.56);
+  animation: gaia-character-loader-rail 1.35s ease-in-out infinite;
+}
+.gaia-character-preloader.is-error { --character-loader-rgb: 255, 164, 139; }
+
+@keyframes gaia-character-loader-ring {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.42); }
+  28% { opacity: 0.8; }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+}
+@keyframes gaia-character-loader-rail {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(270%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaia-character-preloader__field i,
+  .gaia-character-preloader__rail i { animation: none; }
+  .gaia-character-preloader__field i { opacity: 0.34; }
+  .gaia-character-preloader__rail i { width: 100%; opacity: 0.55; }
+}

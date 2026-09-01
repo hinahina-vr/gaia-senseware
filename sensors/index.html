@@ -10,9 +10,9 @@
     <script>document.documentElement.dataset.sensorView = location.hash.startsWith("#map") ? "map" : "login";</script>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
     <link rel="stylesheet" href="../mode-entry-guide.css?v=gaia-mode-entry-guide-1" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-map-readability-return-1" />
-    <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
-    <script src="./sensor-audio.js?v=3" defer></script>
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-map-readability-roundtrip-2" />
+    <script src="../opening-audio.js?v=gaia-navigation-roundtrip-2" defer></script>
+    <script src="./sensor-audio.js?v=gaia-sensor-crossfade-1" defer></script>
     <script src="../mode-entry-guide.js?v=gaia-mode-entry-guide-1" defer></script>
     <script src="./sensor-platform.js?v=gaia-map-readability-return-1" type="module"></script>
   </head>
@@ -23,7 +23,7 @@
       <i></i><i></i><i></i>
     </div>
     <header class="sensor-topbar">
-      <a class="sensor-home-back mode-exit-control" href="../#top" aria-label="GAIA SENSEWAREのトップページへ戻る">戻る</a>
+      <a class="sensor-home-back mode-exit-control" href="../#top" data-gaia-audio-transition="senseware" aria-label="GAIA SENSEWAREのトップページへ戻る">戻る</a>
       <strong class="sensor-map-brand" aria-hidden="true">みんなのセンサー</strong>
       <div class="sensor-topbar-actions">
         <nav aria-label="センサープラットフォーム">
@@ -33,7 +33,7 @@
           <a href="#guide" data-nav="guide">接続ガイド</a>
           <a href="#terms" data-nav="terms">利用条件</a>
           <button class="sensor-nav-logout" id="sensor-logout" type="button" hidden>ログアウト</button>
-          <a href="../#world">地図へ戻る</a>
+          <a href="../#world" data-gaia-audio-transition="mapambient">地図へ戻る</a>
         </nav>
         <section class="sensor-global-sync" aria-label="GAIA分散観測ネットワークの現在値">
           <header><span>GAIA SYNC</span><strong id="public-sync-rate">00.0%</strong></header>

@@ -22,8 +22,10 @@ await test("Live Senseware uses free-plan provider gates and five-minute stream 
   assert.match(source, /LIVE_SENSEWARE_JAXA_ENABLED === "true"/u);
   assert.match(source, /JAXA live disabled for free-plan CPU safety/u);
   assert.match(source, /LIVE_SENSEWARE_ESA_ENABLED === "true" && env\.CDSE_CLIENT_ID && env\.CDSE_CLIENT_SECRET/u);
-  assert.match(source, /open-meteo-tokyo-weather-v1[\s\S]*30 \* 60 \* 1_000/u);
-  assert.match(source, /open-meteo-tokyo-air-v1[\s\S]*3 \* 60 \* 60 \* 1_000/u);
+  assert.match(source, /open-meteo-\$\{city\.id\}-weather-v1[\s\S]*30 \* 60 \* 1_000/u);
+  assert.match(source, /open-meteo-\$\{city\.id\}-air-v1[\s\S]*3 \* 60 \* 60 \* 1_000/u);
+  assert.match(source, /resolveObservationCity\(new URL\(request\.url\)\.searchParams\.get\("city"\)\)/u);
+  assert.equal((source.match(/Object\.freeze\(\{ id: "[a-z-]+", name: "[^"]+", lat:/gu) || []).length, 21);
   assert.match(source, /current: "temperature_2m,precipitation,cloud_cover,wind_speed_10m"/u);
   assert.match(source, /current: "carbon_dioxide,pm2_5"/u);
   assert.match(source, /refresh = setInterval\(\(\) => void emitSnapshot\(\), STREAM_REFRESH_MS\)/u);

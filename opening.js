@@ -214,8 +214,15 @@
     document.body.classList.add("gaia-route-handoff");
     opening.hidden = true;
     document.body.classList.remove("gaia-opening-active");
-    if (directMapAmbientDestination) void window.GaiaOpeningAudio?.switchTrack?.("mapambient", 0);
-    else if (directSensewareDestination) void window.GaiaOpeningAudio?.switchTrack?.("senseware", 0);
+    const destinationTrack = directMapAmbientDestination
+      ? "mapambient"
+      : (directSensewareDestination ? "senseware" : null);
+    void (async () => {
+      const restored = await window.GaiaOpeningAudio?.restoreNavigationState?.(destinationTrack);
+      if (!restored?.restored && destinationTrack) {
+        await window.GaiaOpeningAudio?.switchTrack?.(destinationTrack, 0);
+      }
+    })();
     revealAudioDock();
     if (document.documentElement.dataset.gaiaAppReady === "true") signalInitialViewReady();
     else {

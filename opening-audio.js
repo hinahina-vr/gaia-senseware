@@ -10,6 +10,7 @@
     snowfire: "./assets/audio/snowfire-signal.mp3",
     snowafter: "./assets/audio/snowfire-afterimage.mp3",
     moonbook: "./assets/audio/moonlit-observation-notebook.mp3",
+    sensorfield: "./assets/audio/moonlit-observation-notebook.mp3",
     senseware: "./assets/audio/moonlit-source-save.mp3",
     mapambient: "./assets/audio/gaia-map-ambient-harp-felt-piano.wav",
     moonreopen: "./assets/audio/moonlit-reopen.mp3?v=gaia-blue-glass-tide-1",
@@ -35,6 +36,7 @@
   let mixGain = 1;
   let muted = true;
   let navigationStatePersisted = false;
+  let navigationTransitionPending = false;
   let analysisContext = null;
   let analysisNode = null;
   let analysisBins = null;
@@ -473,7 +475,42 @@
     }
   };
 
-  const restoreNavigationState = async () => {
+  const transitionToPage = (track, destination, fadeOutSeconds = 0.65, fadeInSeconds = 1.2) => {
+    if (!TRACKS[track] || navigationTransitionPending) return false;
+    navigationTransitionPending = true;
+    const shouldResume = playbackRequested && !muted;
+    const currentPlayer = audio;
+    void preloadTrack(track);
+
+    const navigate = () => {
+      currentPlayer?.pause();
+      try {
+        window.sessionStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify({
+          savedAt: Date.now(),
+          track,
+          currentTime: 0,
+          volume: preferredVolume,
+          muted,
+          playing: false,
+          playbackRequested: shouldResume,
+          fadeInSeconds,
+        }));
+        navigationStatePersisted = true;
+      } catch {
+        // Navigation still proceeds when storage is unavailable.
+      }
+      window.location.assign(destination);
+    };
+
+    if (shouldResume && currentPlayer && !currentPlayer.paused && currentPlayer.volume > 0.001) {
+      fadeTo(0, fadeOutSeconds, navigate);
+    } else {
+      navigate();
+    }
+    return true;
+  };
+
+  const restoreNavigationState = async (destinationTrack = null) => {
     let snapshot = null;
     try {
       snapshot = JSON.parse(window.sessionStorage.getItem(NAVIGATION_STATE_KEY) || "null");
@@ -486,15 +523,19 @@
       return { restored: false, playing: false, blocked: false };
     }
 
-    activeTrack = snapshot.track;
+    const restoredTrack = TRACKS[destinationTrack] ? destinationTrack : snapshot.track;
+    const changedTrackForDestination = restoredTrack !== snapshot.track;
+    activeTrack = restoredTrack;
     audio = ensureAudio(activeTrack);
     preferredVolume = Math.max(0, Math.min(1, Number(snapshot.volume) || 0));
     muted = Boolean(snapshot.muted);
     playbackRequested = Boolean(snapshot.playbackRequested || snapshot.playing) && !muted;
-    const navigationElapsedSeconds = snapshot.playing && !muted
+    const navigationElapsedSeconds = snapshot.playing && !muted && !changedTrackForDestination
       ? Math.max(0, Math.min(NAVIGATION_STATE_MAX_AGE_MS, Date.now() - Number(snapshot.savedAt || 0))) / 1000
       : 0;
-    const resumeAt = Math.max(0, Number(snapshot.currentTime) || 0) + navigationElapsedSeconds;
+    const resumeAt = changedTrackForDestination
+      ? 0
+      : Math.max(0, Number(snapshot.currentTime) || 0) + navigationElapsedSeconds;
     const applyResumeTime = () => {
       try {
         audio.currentTime = Number.isFinite(audio.duration) && audio.duration > 0 ? resumeAt % audio.duration : resumeAt;
@@ -515,7 +556,9 @@
     try {
       await audio.play();
       applyResumeTime();
-      audio.volume = effectiveVolume();
+      const fadeInSeconds = Math.max(0, Number(snapshot.fadeInSeconds) || (changedTrackForDestination ? 0.8 : 0));
+      if (fadeInSeconds > 0) fadeTo(effectiveVolume(), fadeInSeconds, emitState);
+      else audio.volume = effectiveVolume();
       emitState();
       return { restored: true, playing: true, blocked: false };
     } catch {
@@ -549,6 +592,34 @@
     const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;
     if (!(anchor instanceof HTMLAnchorElement)) return;
     const destination = new URL(anchor.href, document.baseURI);
+    const isPrimaryNavigation = event.button === 0
+      && !event.metaKey
+      && !event.ctrlKey
+      && !event.shiftKey
+      && !event.altKey
+      && !anchor.download
+      && (!anchor.target || anchor.target === "_self");
+    const transitionTrack = anchor.dataset.gaiaAudioTransition;
+    if (
+      isPrimaryNavigation
+      && TRACKS[transitionTrack]
+      && destination.origin === location.origin
+      && destination.pathname !== location.pathname
+    ) {
+      event.preventDefault();
+      transitionToPage(transitionTrack, destination.href);
+      return;
+    }
+    if (
+      isPrimaryNavigation
+      && anchor.matches("[data-sensor-platform-link]")
+      && destination.origin === location.origin
+      && destination.pathname !== location.pathname
+    ) {
+      event.preventDefault();
+      transitionToPage("sensorfield", destination.href);
+      return;
+    }
     if (destination.origin === location.origin && destination.pathname !== location.pathname) persistNavigationState();
   }, { capture: true });
   window.addEventListener("pagehide", persistNavigationState);
@@ -570,5 +641,6 @@
     seek,
     persistNavigationState,
     restoreNavigationState,
+    transitionToPage,
   });
 })();

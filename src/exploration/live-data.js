@@ -7,6 +7,8 @@ const store = createGaiaStore({ events: [], measurements: {}, connected: false, 
 let eventSource = null;
 let retryIndex = 0;
 let retryTimer = 0;
+let activeCity = "tokyo";
+let loadGeneration = 0;
 
 const permitsLiveEndpoint = () => location.protocol === "https:" || new URLSearchParams(location.search).get("live") === "1";
 const publish = (events, source, connected = store.getState().connected) => {
@@ -21,14 +23,23 @@ const readJson = async (url) => {
   return response.json();
 };
 
+const liveEndpoint = (pathname) => {
+  const endpoint = new URL(pathname, location.origin);
+  endpoint.searchParams.set("city", activeCity);
+  return endpoint;
+};
+
 const loadSnapshot = async () => {
+  const generation = ++loadGeneration;
   try {
-    const payload = await readJson(permitsLiveEndpoint() ? "/api/live/v1/snapshot" : FALLBACK_URL);
+    const payload = await readJson(permitsLiveEndpoint() ? liveEndpoint("/api/live/v1/snapshot") : FALLBACK_URL);
+    if (generation !== loadGeneration) return payload;
     publish(payload.events || [], payload.source || (permitsLiveEndpoint() ? "live" : "snapshot"), false);
     return payload;
   } catch (error) {
     console.warn("Live snapshot unavailable; using the versioned snapshot.", error);
     const payload = await readJson(FALLBACK_URL);
+    if (generation !== loadGeneration) return payload;
     publish(payload.events || [], "snapshot", false);
     return payload;
   }
@@ -65,7 +76,7 @@ const mergeProvider = (providerEvent) => {
 const connectStream = async () => {
   if (eventSource || document.hidden || !permitsLiveEndpoint()) return;
   const lastEventId = store.getState().lastEventId;
-  const endpoint = new URL("/api/live/v1/stream", location.origin);
+  const endpoint = liveEndpoint("/api/live/v1/stream");
   if (lastEventId) endpoint.searchParams.set("lastEventId", lastEventId);
   eventSource = new EventSource(endpoint);
   eventSource.addEventListener("open", () => {
@@ -90,6 +101,21 @@ const connectStream = async () => {
   eventSource.onerror = scheduleReconnect;
 };
 
+const selectCity = async (city) => {
+  const requested = String(city || "").trim().toLowerCase();
+  if (!/^[a-z0-9-]{2,32}$/u.test(requested)) return false;
+  if (requested === activeCity) return true;
+  closeStream();
+  activeCity = requested;
+  store.setState({ lastEventId: "", connected: false });
+  publish([], "loading", false);
+  globalThis.dispatchEvent(new CustomEvent("gaia:live-city-change", { detail: { city: activeCity, state: "loading" } }));
+  const snapshot = await loadSnapshot();
+  if (snapshot.source !== "snapshot") await connectStream();
+  globalThis.dispatchEvent(new CustomEvent("gaia:live-city-change", { detail: { city: activeCity, state: "ready" } }));
+  return true;
+};
+
 const mount = async () => {
   const snapshot = await loadSnapshot();
   if (snapshot.source !== "snapshot") await connectStream();
@@ -107,6 +133,8 @@ globalThis.GaiaLiveData = Object.freeze({
   refresh: loadSnapshot,
   reconnect: connectStream,
   close: closeStream,
+  selectCity,
+  getCity: () => activeCity,
   getState: store.getState,
 });
 
