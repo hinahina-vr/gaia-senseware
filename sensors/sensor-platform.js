@@ -1250,7 +1250,7 @@ function createPublicMetricHud(sensor) {
     const card = document.createElement("article");
     const latest = sensor.visualObservations[0]?.data?.[definition.key];
     card.append(
-      Object.assign(document.createElement("small"), { textContent: `${definition.console} · ${definition.label}`, title: definition.label }),
+      Object.assign(document.createElement("small"), { textContent: `${definition.label} / ${definition.console}`, title: `${definition.label}（${definition.console}）` }),
       Object.assign(document.createElement("strong"), { textContent: formatPublicMetric(definition, latest) }),
       createPublicSparkline(sensor.visualObservations, definition.key),
     );
