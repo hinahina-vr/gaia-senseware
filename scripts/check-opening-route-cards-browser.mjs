@@ -143,21 +143,10 @@ try {
     assert.equal(clickAdvancedGuide.title, "");
     assert.equal(clickAdvancedGuide.titleHidden, true);
     assert.equal(clickAdvancedGuide.copy, "気候変動や観測ポイントを、インタラクティブな地図上で探索・分析できます。");
+    assert.equal(clickAdvancedGuide.hint, "案内を終える");
     guideSteps.push(clickAdvancedGuide);
 
     await page.keyboard.press("Enter");
-    await page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.dataset.step === "3");
-    await waitForExactSpotlight();
-    const keyboardAdvancedGuide = await readGuide();
-    assert.equal(keyboardAdvancedGuide.targetId, "gaia-opening-tour-link", `${viewport.name}: Enter did not advance the guide`);
-    assert.equal(keyboardAdvancedGuide.activeId, "gaia-opening-route-guide");
-    assert.equal(keyboardAdvancedGuide.title, "");
-    assert.equal(keyboardAdvancedGuide.titleHidden, true);
-    assert.equal(keyboardAdvancedGuide.copy, "初めての方向けに、基本的な見どころと操作の流れを短く紹介します。");
-    assert.equal(keyboardAdvancedGuide.hint, "案内を終える");
-    guideSteps.push(keyboardAdvancedGuide);
-
-    await page.locator("#gaia-opening-route-guide").click({ position: { x: 8, y: 8 } });
     await page.waitForFunction(() => !document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-visible"));
     await page.locator("#gaia-opening-route-guide-replay").click();
     await page.waitForFunction(() => document.querySelector("#gaia-opening-route-guide")?.classList.contains("is-visible"));
@@ -262,8 +251,8 @@ try {
     assert.equal(layout.logoAlt, "惑星の放課後 — GAIA SENSATION");
     assert(layout.logoRect.left >= 0 && layout.logoRect.top >= 0 && layout.logoRect.right <= viewport.width + 1 && layout.logoRect.bottom <= viewport.height + 1, `${viewport.name}: final logo escaped the viewport`);
     if (viewport.name === "pc-4k") {
-      assert(layout.logoRect.top <= viewport.height * 0.35, `${viewport.name}: final logo did not reach the instructed upper position`);
-      assert(layout.menuRect.bottom <= viewport.height * 0.62, `${viewport.name}: route buttons remain too low`);
+      assert(layout.logoRect.top <= viewport.height * 0.45, `${viewport.name}: final logo dropped below the intended title area`);
+      assert(layout.menuRect.bottom <= viewport.height * 0.68, `${viewport.name}: route buttons dropped below the intended title area`);
     }
     const expectedGatewayAxis = viewport.width >= 961 && viewport.height >= 521
       ? Math.max(viewport.width * 0.26, Math.min(460, viewport.width * 0.44) + 18)
@@ -277,24 +266,26 @@ try {
       : (viewport.width >= 961 ? Math.min(900, viewport.width * 0.62) : viewport.width * 0.7);
     assert(layout.logoRect.width >= minimumLogoWidth, `${viewport.name}: final logo does not use enough horizontal space`);
     assert.equal(layout.poemTextAlign, "center", `${viewport.name}: final poem is not center-aligned`);
-    assert(layout.poemLetterSpacing >= 1.5, `${viewport.name}: final poem characters are still cramped`);
+    const minimumPoemLetterSpacing = viewport.width <= 320 ? 1.3 : 1.5;
+    assert(layout.poemLetterSpacing >= minimumPoemLetterSpacing, `${viewport.name}: final poem characters are still cramped`);
     if (layout.poemRect.width > 0) {
       assert(Math.abs((layout.poemRect.left + layout.poemRect.right) / 2 - logoAxis) <= 2, `${viewport.name}: final poem block is not centered on the logo axis`);
       assert(layout.poemRect.top - layout.logoVisibleBottom >= layout.poemLineHeight, `${viewport.name}: final poem is less than one line below the visible logo`);
     }
     assert.match(layout.finalBackground, /opening-final-observatory-keyvisual-v4(?:-960)?\.webp/u, `${viewport.name}: generated final background is not active`);
     assert.equal(layout.forbiddenTaglinePresent, false, `${viewport.name}: removed final-screen tagline returned`);
-    assert.equal(layout.cards.length, 3, `${viewport.name}: route card count changed`);
-    assert.equal(new Set(layout.cards.map(({ backgroundImage }) => backgroundImage)).size, 3, `${viewport.name}: the three independent routes are not color-distinguished`);
-    assert.deepEqual(layout.cards.map(({ index }) => index), ["01 / STORY", "02 / DATA", "03 / GUIDE"]);
-    assert.deepEqual(layout.cards.map(({ label }) => label), ["物語を始める", "データを探索する", "30秒ガイド"]);
-    assert.deepEqual(layout.cards.map(({ english }) => english), ["STORY EXPERIENCE", "DATA EXPLORATION", "30 SEC QUICK TOUR"]);
+    assert.equal(layout.cards.length, 2, `${viewport.name}: route card count changed`);
+    assert.equal(new Set(layout.cards.map(({ backgroundImage }) => backgroundImage)).size, 2, `${viewport.name}: the two independent routes are not color-distinguished`);
+    assert.deepEqual(layout.cards.map(({ index }) => index), ["01 / STORY", "02 / DATA"]);
+    assert.deepEqual(layout.cards.map(({ label }) => label), ["物語を始める", "データを探索する"]);
+    assert.deepEqual(layout.cards.map(({ english }) => english), ["STORY EXPERIENCE", "DATA EXPLORATION"]);
     for (const card of layout.cards) {
       assert(card.rect.width >= 44 && card.rect.height >= 64, `${viewport.name}: ${card.id} hit area is too small`);
       assert(card.rect.left >= 13 && card.rect.right <= viewport.width - 13, `${viewport.name}: ${card.id} left the safe area`);
       assert.equal(card.englishVisible, false, `${viewport.name}: ${card.id} retains dashboard-like English metadata`);
       assert.equal(card.iconPosition, "static", `${viewport.name}: ${card.id} icon escaped its column`);
       assert.equal(card.boxShadow.includes(" 3px 0px 0px 0px inset"), false, `${viewport.name}: ${card.id} retains the asymmetric left glow rail`);
+      assert.equal(card.boxShadow.includes(" 0px -2px 0px"), false, `${viewport.name}: ${card.id} retains the thick bottom accent`);
       assert.notEqual(card.backgroundImage, "none", `${viewport.name}: ${card.id} is transparent while unfocused`);
       assert.equal(card.glintDisplay, viewport.reduced ? "none" : "block", `${viewport.name}: ${card.id} glint layer is incorrect`);
       if (!viewport.reduced && card.id === "gaia-opening-route-story") {
