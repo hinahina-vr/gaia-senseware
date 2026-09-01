@@ -249,7 +249,12 @@ try {
     if (viewport.width > 760) {
       const sakuCard = page.locator(".sensor-public-card", { hasText: "sakuセンサー" });
       await sakuCard.click();
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-easing"), "ease-out-quint");
+      await page.waitForTimeout(100);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
       await page.waitForTimeout(650);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "idle");
       const sakuId = await sakuCard.getAttribute("data-sensor-id");
       assert.equal(new URL(page.url()).hash, `#map/sensor=${encodeURIComponent(sakuId)}`);
       await page.goBack();
@@ -294,7 +299,12 @@ try {
     } else {
       const ameMarker = page.locator(".sensor-map-marker", { hasText: "DEMO LIVE" }).filter({ has: page.locator("img[src*='amane']") });
       await ameMarker.click();
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-easing"), "ease-out-quint");
+      await page.waitForTimeout(100);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
       await page.waitForTimeout(650);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "idle");
       const markerFocusDelta = await page.evaluate(() => {
         const map = document.querySelector("#public-sensor-map").getBoundingClientRect();
         const marker = document.querySelector(".sensor-map-marker[aria-current='true']").getBoundingClientRect();
