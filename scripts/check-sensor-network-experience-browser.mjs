@@ -61,7 +61,7 @@ try {
     assert.match(await page.locator(".sensor-sense-field").getAttribute("data-renderer"), /^(webgl|2d)$/u);
     assert(Number(await page.locator(".sensor-sense-field").getAttribute("data-render-pixels")) <= 905_000);
     assert.match(await page.locator(".sensor-belonging").textContent(), /あなたの感覚が、地球の現在とつながる/u);
-    const belongingAction = await page.locator(".sensor-belonging-join").evaluate((button) => {
+    const belongingAction = await page.locator(".sensor-belonging-join:visible,.sensor-belonging-sense:visible").first().evaluate((button) => {
       const rect = button.getBoundingClientRect();
       return { width: rect.width, height: rect.height };
     });
@@ -74,6 +74,32 @@ try {
     assert.notEqual(await page.locator("#public-sync-rate").textContent(), "00.0%");
     assert.equal(await page.locator(".sensor-metric-hud-grid article").count(), 3);
     assert.equal(await page.locator(".sensor-sparkline polyline").count(), 3);
+    const readability = await page.evaluate(() => {
+      const fontSize = (selector) => Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
+      const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
+      const sync = rect(".sensor-global-sync");
+      const guide = rect(".gaia-mode-entry-guide-replay");
+      const audio = rect(".gaia-audio-dock");
+      return {
+        syncLabel: fontSize(".sensor-global-sync header span"),
+        syncStatLabel: fontSize(".sensor-sync-stats span"),
+        syncStatValue: fontSize(".sensor-sync-stats b"),
+        relationship: fontSize(".sensor-relationship-bar button"),
+        metricLabel: fontSize(".sensor-metric-hud-grid small"),
+        metricValue: fontSize(".sensor-metric-hud-grid strong"),
+        guideWidth: guide.width,
+        toolbarHeight: rect(".sensor-map-card-expand").height,
+        topbarOverlap: Math.max(0, Math.min(sync.right, guide.right) - Math.max(sync.left, guide.left)),
+        utilityOverlap: Math.max(0, Math.min(audio.right, guide.right) - Math.max(audio.left, guide.left)),
+      };
+    });
+    if (viewport.width > 760) {
+      assert(readability.syncLabel >= 9 && readability.syncStatLabel >= 8 && readability.syncStatValue >= 13, `topbar type is too small: ${JSON.stringify(readability)}`);
+      assert(readability.relationship >= 10 && readability.metricLabel >= 8 && readability.metricValue >= 14, `sensor card type is too small: ${JSON.stringify(readability)}`);
+      assert(readability.guideWidth >= 44 && readability.toolbarHeight >= 36, `map controls are too small: ${JSON.stringify(readability)}`);
+      assert.equal(readability.topbarOverlap, 0, `guide control overlaps network stats: ${JSON.stringify(readability)}`);
+      assert.equal(readability.utilityOverlap, 0, `guide and audio controls overlap: ${JSON.stringify(readability)}`);
+    }
     const markerSizes = await page.locator(".sensor-map-marker:visible").evaluateAll((markers) => markers.map((marker) => {
       const hit = marker.getBoundingClientRect();
       const avatar = marker.querySelector(".sensor-owner-avatar").getBoundingClientRect();
@@ -83,6 +109,8 @@ try {
     assert(markerSizes.every(({ avatarWidth, avatarHeight }) => avatarWidth <= 36.5 && avatarHeight <= 36.5), `map marker avatar is too large: ${JSON.stringify(markerSizes)}`);
 
     if (viewport.width > 760) {
+      const cardClose = page.locator(".sensor-map-card-close");
+      if (await cardClose.isVisible()) await cardClose.click();
       const cluster = page.locator(".sensor-map-marker[data-cluster-size]").first();
       await cluster.waitFor({ state: "visible" });
       const clusterSize = Number(await cluster.getAttribute("data-cluster-size"));
@@ -91,16 +119,26 @@ try {
       assert((await page.locator(".sensor-map-marker[data-cluster-member][hidden]").count()) >= 1);
       assert.equal(await page.locator("#public-sensor-tethers,.sensor-marker-tether").count(), 0);
       const clusterSensorId = await cluster.getAttribute("data-sensor-id");
+      const clusterAnchorBeforeHover = await cluster.evaluate((marker) => ({
+        left: marker.style.left,
+        top: marker.style.top,
+        transform: getComputedStyle(marker).transform,
+      }));
+      await cluster.hover();
+      const clusterAnchorAfterHover = await cluster.evaluate((marker) => ({
+        left: marker.style.left,
+        top: marker.style.top,
+        transform: getComputedStyle(marker).transform,
+      }));
+      assert.deepEqual(clusterAnchorAfterHover, clusterAnchorBeforeHover);
       const clusterCentre = await cluster.evaluate((marker) => {
         const rect = marker.getBoundingClientRect();
-        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        const mapRect = marker.closest(".sensor-world-map")?.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width / 2 - (mapRect?.left || 0),
+          y: rect.top + rect.height / 2 - (mapRect?.top || 0),
+        };
       });
-      await cluster.hover();
-      const hoveredCentre = await cluster.evaluate((marker) => {
-        const rect = marker.getBoundingClientRect();
-        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      });
-      assert(Math.hypot(hoveredCentre.x - clusterCentre.x, hoveredCentre.y - clusterCentre.y) < .5);
       const zoomBeforeCluster = await page.locator("#public-map-zoom").evaluate((output) => Number.parseFloat(output.value));
       await cluster.click();
       await page.waitForTimeout(120);
@@ -110,10 +148,15 @@ try {
       await anchoredMarker.waitFor({ state: "visible" });
       const anchoredCentre = await anchoredMarker.evaluate((marker) => {
         const rect = marker.getBoundingClientRect();
-        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        const mapRect = marker.closest(".sensor-world-map")?.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width / 2 - (mapRect?.left || 0),
+          y: rect.top + rect.height / 2 - (mapRect?.top || 0),
+        };
       });
       assert(Math.hypot(anchoredCentre.x - clusterCentre.x, anchoredCentre.y - clusterCentre.y) < 2, `cluster anchor moved during zoom: ${JSON.stringify({ clusterCentre, anchoredCentre })}`);
       assert.equal(await anchoredMarker.evaluate((marker) => marker.style.getPropertyValue("--sensor-marker-offset-x")), "");
+      if (!await page.locator("#public-sensor-directory").isVisible()) await page.locator("#public-map-directory-toggle").click();
       assert.equal(await page.locator("#public-sensor-directory").isVisible(), true);
       await page.locator("#public-sensor-query").fill("大阪");
       assert.equal(await page.locator(".sensor-public-card:visible").count(), 1);
@@ -204,13 +247,9 @@ try {
       });
       assert(focusDelta.x < 5 && focusDelta.y < 5);
       assert.match(await page.locator("#public-sensor-detail").textContent(), /識理層シンクロ率/u);
-      assert.equal(await page.locator(".sensor-map-card-expand").isVisible(), false);
-      assert.equal(await page.locator(".sensor-map-card-share").isVisible(), true);
+      assert.equal(await page.locator(".sensor-map-card-expand").isVisible(), true);
+      assert.equal(await page.locator(".sensor-map-card-share").isVisible(), false);
       assert.equal(await page.locator(".sensor-map-card-close").isVisible(), true);
-      const shareUrl = page.url();
-      await page.locator(".sensor-map-card-share").click();
-      assert.equal(await page.evaluate(() => navigator.clipboard.readText()), shareUrl);
-      assert.equal(await page.locator(".sensor-map-card-share").textContent(), "コピー済み");
       const deepLinkPage = await context.newPage();
       await deepLinkPage.goto(new URL(`/sensors/#map/sensor=${encodeURIComponent(sakuId)}`, baseUrl).href, { waitUntil: "domcontentloaded" });
       await deepLinkPage.locator(`.sensor-map-marker[data-sensor-id="${sakuId}"][aria-current="true"]`).waitFor({ state: "visible" });
@@ -226,6 +265,7 @@ try {
     }
 
     if (viewport.width > 760) {
+      if (!await page.locator("#public-sensor-directory").isVisible()) await page.locator("#public-map-directory-toggle").click();
       await page.locator(".sensor-public-card", { hasText: "あめセンサー" }).click();
       await page.waitForTimeout(650);
     } else {
@@ -269,6 +309,7 @@ try {
     assert.match(await page.locator(".sensor-belonging p").textContent(), /「いま」に触れています/u);
     assert.match(await page.locator("#public-sensor-detail").textContent(), /電界変動/u);
     const depthBefore = await page.locator("#public-depth-value").textContent();
+    if (!await page.locator(".sensor-oracle-trigger").isVisible()) await page.locator(".sensor-map-card-expand").click();
     await page.locator(".sensor-oracle-trigger").click();
     await page.locator(".sensor-oracle-receipt.is-received").waitFor({ state: "visible" });
     assert.match(await page.locator(".sensor-oracle-receipt").textContent(), /SIMULATION LOG/u);
