@@ -5,7 +5,7 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-data-entry-guide-previews-1",
+        "./styles.css?v=gaia-gentle-entry-guide-2",
         "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
@@ -20,7 +20,7 @@
         "./data-ledger.js?v=gaia-live-model-ledger-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-ovation-aurora-1",
-        "./app.js?v=gaia-live-deck-3",
+        "./app.js?v=gaia-gentle-entry-guide-1",
         "./map-ui-grid-polish.js?v=gaia-live-deck-3",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
@@ -84,14 +84,10 @@
       templates: ["gaia-template-sound"],
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
-        "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
-        "./sound-mode.css?v=gaia-sound-webgl-spectrum-1",
+        "./sound-mode.css?v=gaia-sound-playback-reveal-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: [
-        "./mode-entry-guide.js?v=gaia-live-deck-3",
-        "./sound-mode.js?v=gaia-mode-entry-guide-1",
-      ],
+      scripts: ["./sound-mode.js?v=gaia-sound-playback-reveal-1"],
     },
     character: {
       templates: ["gaia-template-character"],

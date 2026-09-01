@@ -122,7 +122,7 @@ try {
     assert.match(guide.headingFont, /Yu Mincho/u);
     assert.equal(guide.titleLines, 1);
     assert.equal(guide.titleContained, true);
-    assert.equal(guide.jumpCount, 3);
+    assert.equal(guide.jumpCount, 4);
     assert(guide.linkTargets.every((height) => height >= 44));
     assert.equal(guide.kitColumns, viewport.width === 390 ? 2 : 5);
     assert.equal(guide.pathColumns, viewport.width === 390 ? 1 : 2);

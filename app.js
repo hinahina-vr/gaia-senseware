@@ -8014,9 +8014,12 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     introEntryGuide.setAttribute("aria-hidden", "false");
     introLayer.classList.add("is-intro-entry-guide-active");
     requestAnimationFrame(() => {
-      introEntryGuide.classList.add("is-visible");
       setIntroEntryGuideStep(0);
-      introEntryGuide.focus({ preventScroll: true });
+      positionIntroEntryGuide();
+      requestAnimationFrame(() => {
+        introEntryGuide.classList.add("is-visible");
+        introEntryGuide.focus({ preventScroll: true });
+      });
     });
   };
   const scheduleIntroEntryGuide = (delay = 900) => {

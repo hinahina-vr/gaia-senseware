@@ -14,9 +14,6 @@
   const trackNumber = document.querySelector("#sound-track-number");
   const trackTitle = document.querySelector("#sound-track-title");
   const description = document.querySelector("#sound-mode-description");
-  const planetNumber = document.querySelector("#sound-planet-number");
-  const planetSignal = document.querySelector("#sound-planet-signal");
-  const analysisState = document.querySelector("#sound-analysis-state");
   const visualizerCanvas = document.querySelector("#sound-visualizer");
   const trackButtons = Array.from(document.querySelectorAll("[data-sound-track]"));
   const openButtons = Array.from(document.querySelectorAll("[data-sound-gallery-open]"));
@@ -111,7 +108,6 @@
   let isOpen = false;
   let isScrubbing = false;
   let animationFrame = 0;
-  let soundModeGuideTimer = 0;
   let lastFocused = null;
   let visualizerRuntime = null;
   let visualizerState = {
@@ -619,16 +615,6 @@
     if (trackNumber) trackNumber.textContent = metadata.number;
     if (trackTitle) trackTitle.textContent = metadata.title;
     if (description) description.textContent = metadata.description;
-    if (planetNumber) planetNumber.textContent = metadata.planet;
-    if (planetSignal) planetSignal.textContent = metadata.signal;
-    if (analysisState) {
-      analysisState.textContent = analysis?.active
-        ? "音の呼吸を解析中"
-        : (analysis?.supported ? "静かな光の呼吸" : "光の余韻");
-      analysisState.title = analysis?.active
-        ? `Web Audio FFT ${analysis.fftSize || 512} / 低・中・高域を実測中`
-        : (analysis?.supported ? "Web Audio FFT 待機中" : "音声解析を利用できないためアンビエント表示中");
-    }
     if (currentTime) currentTime.textContent = formatTime(elapsed);
     if (duration) duration.textContent = formatTime(trackDuration);
     if (volume instanceof HTMLInputElement) volume.value = String(volumePercent);
@@ -657,6 +643,7 @@
     }
     isOpen = true;
     lastFocused = document.activeElement;
+    void getAudio()?.setMuted?.(true);
     layer.hidden = false;
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("sound-mode-open");
@@ -669,16 +656,10 @@
     });
     cancelAnimationFrame(animationFrame);
     animationFrame = requestAnimationFrame(tick);
-    window.clearTimeout(soundModeGuideTimer);
-    soundModeGuideTimer = window.setTimeout(() => {
-      void window.GaiaModeEntryGuide?.open?.("sound");
-    }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 620);
   };
 
   const close = ({ updateHash = true } = {}) => {
     if (!isOpen) return;
-    window.clearTimeout(soundModeGuideTimer);
-    window.GaiaModeEntryGuide?.close?.("sound", { restoreFocus: false });
     isOpen = false;
     layer.classList.remove("is-open");
     layer.setAttribute("aria-hidden", "true");
@@ -770,34 +751,6 @@
     }
   });
 
-  window.GaiaModeEntryGuide?.register?.("sound", {
-    version: "v1",
-    kicker: "SOUND ARCHIVE / 操作ガイド",
-    available: () => isOpen && !layer.hidden,
-    steps: [
-      {
-        target: ".sound-track-panel",
-        title: "曲を選ぶ",
-        copy: "左のトラック一覧から曲を選ぶと、タイトル・解説・背景の光景がその曲に合わせて切り替わります。",
-      },
-      {
-        target: "#sound-play",
-        title: "再生・一時停止する",
-        copy: "中央の再生ボタンで音楽を始めます。もう一度押すと一時停止できます。",
-      },
-      {
-        target: "#sound-progress",
-        title: "聴きたい位置へ移動する",
-        copy: "再生位置のバーを動かすと、曲の好きなところへ移動できます。",
-      },
-      {
-        target: "#sound-volume",
-        title: "音量を調整する",
-        copy: "音量バーでサウンドアーカイブの出力を調整できます。設定は共通のBGM音量にも反映されます。",
-      },
-    ],
-  });
-  window.GaiaModeEntryGuide?.mountReplay?.("sound", layer, { label: "音楽ガイド" });
   render();
   if (window.location.hash === "#sound") {
     if (document.readyState === "loading") {

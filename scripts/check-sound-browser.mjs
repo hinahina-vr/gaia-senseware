@@ -116,8 +116,11 @@ try {
       height: rect.height,
       rect: rect.toJSON(),
       legacyPlanetCount: document.querySelectorAll(".sound-planet, .sound-orbit").length,
-      analysisLabel: document.querySelector("#sound-analysis-state")?.textContent || "",
-      analysisTitle: document.querySelector("#sound-analysis-state")?.getAttribute("title") || "",
+      planetariumCount: document.querySelectorAll(".sound-planetarium, .sound-analysis-badge, .sound-planet-caption").length,
+      guideCount: document.querySelectorAll("[data-gaia-mode-guide-replay='sound'], #gaia-mode-entry-guide[data-mode='sound']").length,
+      visualizerOpacity: Number.parseFloat(getComputedStyle(canvas).opacity || "0"),
+      visualizerVisibility: getComputedStyle(canvas).visibility,
+      visualizerClip: getComputedStyle(canvas).clipPath,
       digitalGridCount: document.querySelectorAll(".sound-layer-grid, .sound-spectral-grid").length,
       eqCount: document.querySelectorAll("#sound-eq-visualizer, .sound-eq-visualizer").length,
       characterSceneLoaded: characterScene instanceof HTMLImageElement && characterScene.complete && characterScene.naturalWidth > 0,
@@ -136,13 +139,16 @@ try {
       && desktopVisualizer.width > 300
       && desktopVisualizer.height > 280
       && desktopVisualizer.legacyPlanetCount === 0
+      && desktopVisualizer.planetariumCount === 0
+      && desktopVisualizer.guideCount === 0
       && desktopVisualizer.digitalGridCount === 0
-      && desktopVisualizer.analysisLabel.includes("光")
-      && desktopVisualizer.analysisTitle.includes("Web Audio FFT"),
+      && desktopVisualizer.visualizerOpacity === 0
+      && desktopVisualizer.visualizerVisibility === "hidden"
+      && desktopVisualizer.visualizerClip.includes("100%"),
     `desktop WebGL aurora installation failed: ${JSON.stringify(desktopVisualizer)}`,
   );
   assert(desktopVisualizer.eqCount === 0, `the detached desktop EQ visualizer is still present: ${JSON.stringify(desktopVisualizer)}`);
-  assert(desktopVisualizer.rect.left <= 0 && desktopVisualizer.rect.top <= 0 && desktopVisualizer.rect.right >= 2048 && desktopVisualizer.rect.bottom >= 1114, `desktop WebGL is not full-screen: ${JSON.stringify(desktopVisualizer)}`);
+  assert(desktopVisualizer.width >= 2048 && desktopVisualizer.height >= 1114, `desktop WebGL field is not viewport-sized: ${JSON.stringify(desktopVisualizer)}`);
   assert(desktopVisualizer.characterSceneLoaded && desktopVisualizer.characterSceneOpacity > 0.5, `sound-mode characters are not visible: ${JSON.stringify(desktopVisualizer)}`);
   assert(desktopVisualizer.characterSceneFit === "cover" && desktopVisualizer.characterSceneMask === "none", `sound-mode background is not full-screen: ${JSON.stringify(desktopVisualizer)}`);
   assert(desktopVisualizer.characterSceneRect.left <= 0 && desktopVisualizer.characterSceneRect.top <= 0 && desktopVisualizer.characterSceneRect.right >= 2048 && desktopVisualizer.characterSceneRect.bottom >= 1114, `sound-mode background does not cover the viewport: ${JSON.stringify(desktopVisualizer)}`);
@@ -161,6 +167,7 @@ try {
   });
   assert(panelGeometry.scrolls && panelGeometry.withinViewport, `desktop track list must scroll inside the viewport: ${JSON.stringify(panelGeometry)}`);
   assertControlDesign(await readControlDesign(page), "desktop");
+  await page.screenshot({ path: path.join(outputDir, "sound-desktop-idle.png"), fullPage: true });
 
   for (const [id, title] of expectedTracks) {
     const button = page.locator(`[data-sound-track="${id}"]`);
@@ -207,8 +214,25 @@ try {
   await page.locator('[data-sound-track="ending"]').click();
   await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 10000 });
   await page.evaluate(() => globalThis.GaiaOpeningAudio.seek(24));
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1100);
+  const playingAppearance = await page.evaluate(() => ({
+    playing: document.querySelector("#sound-layer")?.dataset.playing,
+    visualizerOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#sound-visualizer")).opacity || "0"),
+    visualizerVisibility: getComputedStyle(document.querySelector("#sound-visualizer")).visibility,
+    visualizerRect: document.querySelector("#sound-visualizer").getBoundingClientRect().toJSON(),
+    sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "1"),
+  }));
+  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.9 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity === 0, `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop.png"), fullPage: true });
+  await page.locator("#sound-play").click();
+  await page.waitForFunction(() => document.querySelector("#sound-layer")?.dataset.playing === "false");
+  await page.waitForTimeout(1100);
+  const stoppedAppearance = await page.evaluate(() => ({
+    visualizerOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#sound-visualizer")).opacity || "1"),
+    visualizerVisibility: getComputedStyle(document.querySelector("#sound-visualizer")).visibility,
+    sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "0"),
+  }));
+  assert(stoppedAppearance.visualizerOpacity === 0 && stoppedAppearance.visualizerVisibility === "hidden" && stoppedAppearance.sceneOpacity > 0.8, `playback reverse transition failed: ${JSON.stringify(stoppedAppearance)}`);
   await context.close();
 
   context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
@@ -226,6 +250,10 @@ try {
     visualizer: document.querySelector("#sound-visualizer")?.dataset.visualizer || "",
     presentation: document.querySelector("#sound-visualizer")?.dataset.presentation || "",
     legacyPlanetCount: document.querySelectorAll(".sound-planet, .sound-orbit").length,
+    planetariumCount: document.querySelectorAll(".sound-planetarium, .sound-analysis-badge, .sound-planet-caption").length,
+    guideCount: document.querySelectorAll("[data-gaia-mode-guide-replay='sound'], #gaia-mode-entry-guide[data-mode='sound']").length,
+    visualizerOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#sound-visualizer")).opacity || "0"),
+    sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "0"),
     digitalGridCount: document.querySelectorAll(".sound-layer-grid, .sound-spectral-grid").length,
     eqCount: document.querySelectorAll("#sound-eq-visualizer, .sound-eq-visualizer").length,
     characterSceneLoaded: document.querySelector(".sound-character-scene")?.complete && document.querySelector(".sound-character-scene")?.naturalWidth > 0,
@@ -238,9 +266,10 @@ try {
     visualizerRect: document.querySelector("#sound-visualizer").getBoundingClientRect().toJSON(),
   }));
   assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "full-field-audio-ink" && mobileGeometry.presentation === "full-screen-webgl" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.digitalGridCount === 0, `mobile WebGL audio field failed: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.visualizerRect.left <= 0 && mobileGeometry.visualizerRect.top <= 0 && mobileGeometry.visualizerRect.right >= 390 && mobileGeometry.visualizerRect.bottom >= 844, `mobile WebGL is not full-screen: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "full-field-audio-ink" && mobileGeometry.presentation === "full-screen-webgl" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.planetariumCount === 0 && mobileGeometry.guideCount === 0 && mobileGeometry.digitalGridCount === 0, `mobile WebGL audio field failed: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.visualizerRect.width >= 390 && mobileGeometry.visualizerRect.height >= 844, `mobile WebGL field is not viewport-sized: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.eqCount === 0 && mobileGeometry.characterSceneLoaded, `the mobile EQ remains or the characters are missing: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.visualizerOpacity === 0 && mobileGeometry.sceneOpacity > 0.8, `mobile sound mode did not open on the background-only state: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.characterSceneFit === "cover" && mobileGeometry.characterSceneMask === "none", `mobile sound background is not full-screen: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.characterSceneRect.left <= 0 && mobileGeometry.characterSceneRect.top <= 0 && mobileGeometry.characterSceneRect.right >= 390 && mobileGeometry.characterSceneRect.bottom >= 844, `mobile sound background does not cover the viewport: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.closeRect.left <= 20 && mobileGeometry.closeRect.top <= 20, `mobile sound return is not at the upper-left: ${JSON.stringify(mobileGeometry)}`);

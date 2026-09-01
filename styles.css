@@ -9418,7 +9418,7 @@ h1 {
     0 0 32px rgba(87, 205, 255, 0.58);
   opacity: 0;
   pointer-events: none;
-  transition: top 220ms ease, left 220ms ease, width 220ms ease, height 220ms ease, opacity 420ms ease;
+  transition: top 480ms cubic-bezier(0.22, 0.61, 0.36, 1), left 480ms cubic-bezier(0.22, 0.61, 0.36, 1), width 480ms cubic-bezier(0.22, 0.61, 0.36, 1), height 480ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 620ms ease;
 }
 
 .intro-entry-guide-bubble {
@@ -9437,14 +9437,19 @@ h1 {
     radial-gradient(circle at 88% 0%, rgba(101, 198, 255, 0.18), transparent 42%),
     linear-gradient(145deg, rgba(5, 39, 68, 0.98), rgba(4, 21, 48, 0.98));
   box-shadow: 0 18px 46px rgba(0, 4, 20, 0.48), inset 0 1px rgba(255, 255, 255, 0.08);
+  filter: blur(2px);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(7px);
-  transition: opacity 420ms ease, transform 420ms cubic-bezier(0.2, 0.78, 0.2, 1), top 220ms ease, left 220ms ease;
+  transform: translateY(2px) scale(0.994);
+  transform-origin: 50% 42%;
+  transition: opacity 620ms ease, filter 680ms ease, transform 720ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .intro-entry-guide.is-visible :is(.intro-entry-guide-shade, .intro-entry-guide-bubble) { opacity: 1; }
-.intro-entry-guide.is-visible .intro-entry-guide-bubble { transform: none; }
+.intro-entry-guide.is-visible .intro-entry-guide-bubble {
+  filter: blur(0);
+  transform: translateY(0) scale(1);
+}
 
 .intro-entry-guide-bubble::before {
   position: absolute;

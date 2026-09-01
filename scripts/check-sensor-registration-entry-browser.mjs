@@ -51,7 +51,7 @@ try {
     await page.evaluate(() => {
       document.querySelector("#gaia-opening")?.setAttribute("hidden", "");
       document.body.classList.remove("gaia-opening-active");
-      window.dispatchEvent(new CustomEvent("gaia:opening-complete"));
+      window.dispatchEvent(new CustomEvent("gaia:opening-complete", { detail: { destination: "menu" } }));
     });
     const sensorCard = page.locator("[data-sensor-platform-link]");
     await sensorCard.waitFor({ state: "visible" });
@@ -72,10 +72,10 @@ try {
     });
     assert.equal(entrance.labels[0], "世界を観測する");
     assert.equal(entrance.sensorIndex, 1);
-    assert.equal(entrance.label, "センサーを地球につなぐ");
-    assert.equal(entrance.description, "実物の観測点を、地球の感覚器へ。");
-    assert.equal(entrance.enter, "観測点を追加");
-    assert.equal(entrance.href, "./sensors/#esp32");
+    assert.equal(entrance.label, "みんなのセンサー");
+    assert.equal(entrance.description, "ユーザー参加型センシング");
+    assert.equal(entrance.enter, "センサー地図");
+    assert.equal(entrance.href, "./sensors/#map");
     assert.equal(entrance.visible, true);
     assert.equal(entrance.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-entrance.png`), fullPage: true });
@@ -86,8 +86,15 @@ try {
       continue;
     }
 
+    const entryGuide = page.locator("#intro-entry-guide.is-visible");
+    if (await entryGuide.count()) {
+      await page.keyboard.press("Escape");
+      await entryGuide.waitFor({ state: "hidden" });
+    }
     await sensorCard.click();
-    await page.waitForURL((url) => url.pathname.endsWith("/sensors/") && url.hash === "#esp32");
+    await page.waitForURL((url) => url.pathname.endsWith("/sensors/") && url.hash === "#map");
+    await page.locator("[data-view='map']").waitFor({ state: "visible" });
+    await page.goto(new URL("/sensors/#esp32", baseUrl).href, { waitUntil: "domcontentloaded" });
     await page.locator("[data-view='login']").waitFor({ state: "visible" });
     const login = await page.evaluate(() => {
       const view = document.querySelector("[data-view='login']");
