@@ -87,6 +87,8 @@ try {
         relationship: fontSize(".sensor-relationship-bar button"),
         metricLabel: fontSize(".sensor-metric-hud-grid small"),
         metricValue: fontSize(".sensor-metric-hud-grid strong"),
+        metricLabelsComplete: Array.from(document.querySelectorAll(".sensor-metric-hud-grid small")).every((label) => label.textContent.trim() && label.dataset.console && !label.textContent.includes("…")),
+        state: fontSize(".sensor-state"),
         guideWidth: guide.width,
         toolbarHeight: rect(".sensor-map-card-expand").height,
         topbarOverlap: Math.max(0, Math.min(sync.right, guide.right) - Math.max(sync.left, guide.left)),
@@ -95,7 +97,8 @@ try {
     });
     if (viewport.width > 760) {
       assert(readability.syncLabel >= 9 && readability.syncStatLabel >= 8 && readability.syncStatValue >= 13, `topbar type is too small: ${JSON.stringify(readability)}`);
-      assert(readability.relationship >= 10 && readability.metricLabel >= 8 && readability.metricValue >= 14, `sensor card type is too small: ${JSON.stringify(readability)}`);
+      assert(readability.relationship >= 11 && readability.metricLabel >= 9 && readability.metricValue >= 16 && readability.state >= 10, `sensor card type is too small: ${JSON.stringify(readability)}`);
+      assert.equal(readability.metricLabelsComplete, true, `sensor metric labels are incomplete: ${JSON.stringify(readability)}`);
       assert(readability.guideWidth >= 44 && readability.toolbarHeight >= 36, `map controls are too small: ${JSON.stringify(readability)}`);
       assert.equal(readability.topbarOverlap, 0, `guide control overlaps network stats: ${JSON.stringify(readability)}`);
       assert.equal(readability.utilityOverlap, 0, `guide and audio controls overlap: ${JSON.stringify(readability)}`);
@@ -249,12 +252,19 @@ try {
     if (viewport.width > 760) {
       const sakuCard = page.locator(".sensor-public-card", { hasText: "sakuセンサー" });
       await sakuCard.click();
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-easing"), "ease-out-quint");
+      await page.waitForTimeout(100);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
       await page.waitForTimeout(650);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "idle");
       const sakuId = await sakuCard.getAttribute("data-sensor-id");
       assert.equal(new URL(page.url()).hash, `#map/sensor=${encodeURIComponent(sakuId)}`);
       await page.goBack();
       await page.waitForFunction(() => location.hash === "#map");
-      assert.equal(await page.locator("#public-sensor-detail").isVisible(), false);
+      assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-closing"), "true");
+      await page.locator("#public-sensor-detail").waitFor({ state: "hidden" });
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-ui-return"), "fade-in");
       await page.goForward();
       await page.waitForFunction((sensorId) => location.hash === `#map/sensor=${encodeURIComponent(sensorId)}`, sakuId);
       await page.locator("#public-sensor-detail").waitFor({ state: "visible" });
@@ -279,7 +289,9 @@ try {
       assert.equal(await deepLinkPage.locator("#public-sensor-detail h2").textContent(), "sakuセンサー");
       await deepLinkPage.close();
       await page.locator(".sensor-map-card-close").click();
-      assert.equal(await page.locator("#public-sensor-detail").isVisible(), false);
+      assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-closing"), "true");
+      await page.locator("#public-sensor-detail").waitFor({ state: "hidden" });
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-ui-return"), "fade-in");
       await page.locator("#refresh-map").click();
       await page.waitForTimeout(250);
       assert.equal(await page.locator("#public-sensor-detail").isVisible(), false);
@@ -294,7 +306,12 @@ try {
     } else {
       const ameMarker = page.locator(".sensor-map-marker", { hasText: "DEMO LIVE" }).filter({ has: page.locator("img[src*='amane']") });
       await ameMarker.click();
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-easing"), "ease-out-quint");
+      await page.waitForTimeout(100);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
       await page.waitForTimeout(650);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "idle");
       const markerFocusDelta = await page.evaluate(() => {
         const map = document.querySelector("#public-sensor-map").getBoundingClientRect();
         const marker = document.querySelector(".sensor-map-marker[aria-current='true']").getBoundingClientRect();
@@ -321,12 +338,17 @@ try {
     assert(profileTriggerBox.width >= 44 && profileTriggerBox.height >= 44, `profile trigger is too small: ${JSON.stringify(profileTriggerBox)}`);
     await profileTrigger.click();
     await page.locator("#public-owner-profile").waitFor({ state: "visible" });
+    await page.waitForTimeout(260);
     assert.match(await page.locator("#public-owner-profile-name").textContent(), /あめ/u);
     assert.match(await page.locator("#public-owner-profile-note").textContent(), /展示用ダミーセンサー/u);
     assert.match(await page.locator("#public-owner-profile-links").textContent(), /SNSリンクは登録されていません/u);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-profile.png`), fullPage: false });
-    await page.keyboard.press("Escape");
+    if (viewport.width > 760) await page.locator("#public-owner-profile .sensor-dialog-close").click();
+    else if (viewport.width > 350) await page.locator("#public-owner-profile .sensor-public-profile-back").click();
+    else await page.keyboard.press("Escape");
+    assert.equal(await page.locator("#public-owner-profile").getAttribute("data-closing"), "true");
     await page.locator("#public-owner-profile").waitFor({ state: "hidden" });
+    assert.equal(await page.locator("#public-sensor-map").getAttribute("data-ui-return"), "fade-in");
     assert.equal(await profileTrigger.evaluate((button) => button === document.activeElement), true);
     assert.equal(await page.locator(".sensor-belonging").getAttribute("data-state"), "selected");
     assert.match(await page.locator(".sensor-belonging p").textContent(), /「いま」に触れています/u);
