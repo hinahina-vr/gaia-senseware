@@ -5,13 +5,13 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-live-map-base-1",
+        "./styles.css?v=gaia-live-map-base-2",
         "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-human-history-1",
-        "./statistics-lab.css?v=gaia-statistics-insight-workspace-1",
+        "./map-ui-grid-polish.css?v=gaia-human-history-2",
+        "./statistics-lab.css?v=gaia-statistics-insight-workspace-2",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
@@ -19,14 +19,14 @@
         "./scene-transition.js?v=gaia-66",
         "./data-ledger.js?v=gaia-live-model-ledger-1",
         "./data-journey.js?v=gaia-01",
-        "./app-content.js?v=gaia-human-history-1",
-        "./app.js?v=gaia-human-history-1",
-        "./map-ui-grid-polish.js?v=gaia-human-history-1",
+        "./app-content.js?v=gaia-human-history-2",
+        "./app.js?v=gaia-human-history-2",
+        "./map-ui-grid-polish.js?v=gaia-human-history-2",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
       modules: [
-        "./src/exploration/index.js?v=gaia-human-history-1",
-        "./statistics-lab.js?v=gaia-statistics-insight-workspace-1",
+        "./src/exploration/index.js?v=gaia-human-history-2",
+        "./statistics-lab.js?v=gaia-statistics-insight-workspace-2",
       ],
     },
     story: {
