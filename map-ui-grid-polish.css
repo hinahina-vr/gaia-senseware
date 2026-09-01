@@ -2221,3 +2221,473 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     display: none;
   }
 }
+
+/* Live maps 09–14 use one continuous planetary instrument deck. */
+.gaia-live-deck-chapter,
+.gaia-live-deck-location,
+.gaia-live-deck-wave,
+.gaia-live-deck-modes,
+.gaia-live-deck-actions {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.gaia-live-deck-chapter > p,
+.gaia-live-deck-location > p,
+.gaia-live-deck-wave header > span {
+  margin: 0;
+  color: rgba(var(--map-accent-rgb), 0.68);
+  font: 700 7px/1 Consolas, monospace;
+  letter-spacing: 0.16em;
+}
+
+@media (min-width: 901px) {
+  body.map-grid-desktop .japan-layer.is-live-exhibit .map-command-dock {
+    display: none !important;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout {
+    z-index: 12;
+    right: 12px !important;
+    bottom: 0 !important;
+    left: 12px !important;
+    display: grid;
+    grid-template-columns: 1.02fr 1.04fr 1.16fr 1.5fr 1.72fr 1.18fr;
+    width: auto !important;
+    height: clamp(132px, 14.5vh, 174px);
+    max-height: none !important;
+    padding: 14px clamp(10px, 1vw, 22px) 12px;
+    overflow: visible !important;
+    border: 1px solid rgba(var(--map-accent-rgb), 0.34);
+    border-bottom: 0;
+    border-left-width: 1px;
+    border-radius: 42px 42px 0 0;
+    background:
+      radial-gradient(ellipse at 50% -45%, rgba(var(--map-accent-rgb), 0.16), transparent 54%),
+      linear-gradient(180deg, rgba(5, 28, 40, 0.92), rgba(0, 10, 19, 0.985) 72%);
+    box-shadow: 0 -18px 70px rgba(0, 5, 14, 0.52), inset 0 1px rgba(235, 255, 255, 0.08);
+    backdrop-filter: blur(24px) saturate(1.24);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout::before {
+    position: absolute;
+    top: -1px;
+    right: 8%;
+    left: 8%;
+    height: 1px;
+    content: "";
+    background: linear-gradient(90deg, transparent, rgba(var(--map-accent-rgb), 0.82), transparent);
+    box-shadow: 0 0 24px rgba(var(--map-accent-rgb), 0.52);
+    pointer-events: none;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout > :is(
+    .gaia-live-deck-chapter,
+    .gaia-live-deck-location,
+    .gaia-live-exhibit-primary,
+    .gaia-live-deck-wave,
+    .gaia-live-deck-modes,
+    .gaia-live-deck-actions
+  ) {
+    align-self: stretch;
+    padding: 2px clamp(9px, 0.8vw, 18px);
+    border-right: 1px solid rgba(var(--map-accent-rgb), 0.16);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout > .gaia-live-deck-actions {
+    border-right: 0;
+  }
+
+  .gaia-live-deck-chapter {
+    display: grid;
+    align-content: center;
+    gap: 14px;
+  }
+
+  .gaia-live-deck-chapter > div {
+    display: grid;
+    grid-template-columns: 24px auto minmax(0, 1fr) 24px;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .gaia-live-deck-chapter button {
+    display: grid;
+    width: 24px;
+    height: 34px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    color: rgba(237, 255, 255, 0.72);
+    background: transparent;
+    cursor: pointer;
+    font: 300 25px/1 Georgia, serif;
+  }
+
+  .gaia-live-deck-chapter button:is(:hover, :focus-visible) {
+    color: rgb(var(--map-accent-rgb));
+    outline: 0;
+    text-shadow: 0 0 14px rgba(var(--map-accent-rgb), 0.72);
+  }
+
+  .gaia-live-deck-chapter span {
+    color: rgb(var(--map-accent-rgb));
+    font: 600 clamp(22px, 1.55vw, 34px)/1 Consolas, monospace;
+    letter-spacing: -0.045em;
+    text-shadow: 0 0 20px rgba(var(--map-accent-rgb), 0.34);
+  }
+
+  .gaia-live-deck-chapter strong {
+    overflow: hidden;
+    color: rgba(248, 255, 255, 0.96);
+    font: 560 clamp(15px, 1vw, 22px)/1.2 var(--font-ja);
+    letter-spacing: 0.04em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gaia-live-deck-location {
+    display: grid;
+    align-content: center;
+    gap: 11px;
+  }
+
+  .gaia-live-deck-location strong {
+    overflow: hidden;
+    color: rgba(244, 255, 255, 0.91);
+    font: 560 clamp(12px, 0.78vw, 17px)/1.25 var(--font-ja);
+    letter-spacing: 0.035em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gaia-live-deck-location small {
+    overflow: hidden;
+    color: rgba(205, 234, 239, 0.62);
+    font: 650 clamp(7px, 0.45vw, 10px)/1.2 Consolas, monospace;
+    letter-spacing: 0.07em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) auto;
+    gap: 10px;
+    align-content: center;
+    align-items: end;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary p {
+    margin-bottom: 9px;
+    font-size: clamp(7px, 0.42vw, 9px);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary h3 {
+    display: grid;
+    gap: 6px;
+    font-size: clamp(21px, 1.45vw, 31px);
+    white-space: normal;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary h3 small {
+    margin-left: 0;
+    font-size: 0.36em;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary > strong {
+    align-self: center;
+    font-size: clamp(34px, 2.55vw, 58px);
+    line-height: 0.96;
+  }
+
+  .gaia-live-deck-wave {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 8px;
+    align-content: center;
+  }
+
+  .gaia-live-deck-wave header,
+  .gaia-live-deck-wave footer {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .gaia-live-deck-wave header strong,
+  .gaia-live-deck-wave footer :is(time, b) {
+    overflow: hidden;
+    color: rgba(218, 244, 248, 0.64);
+    font: 650 7px/1.2 Consolas, monospace;
+    letter-spacing: 0.07em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gaia-live-deck-wave header strong {
+    color: rgb(var(--map-accent-rgb));
+  }
+
+  .gaia-live-deck-waveform {
+    display: flex;
+    height: 38px;
+    gap: 2px;
+    align-items: center;
+    overflow: hidden;
+    border-block: 1px solid rgba(var(--map-accent-rgb), 0.08);
+    background: linear-gradient(90deg, transparent, rgba(var(--map-accent-rgb), 0.035), transparent);
+  }
+
+  .gaia-live-deck-waveform i {
+    width: 2px;
+    height: calc(3px + var(--live-wave, 0.2) * 30px);
+    flex: 1 1 auto;
+    max-width: 4px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(var(--map-accent-rgb), 0.18), rgb(var(--map-accent-rgb)), rgba(var(--map-accent-rgb), 0.18));
+    box-shadow: 0 0 8px rgba(var(--map-accent-rgb), 0.22);
+    transform-origin: center;
+    animation: gaia-live-deck-wave 2.8s ease-in-out infinite alternate;
+    animation-delay: calc(var(--live-wave-index) * -70ms);
+  }
+
+  .gaia-live-deck-modes {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: clamp(4px, 0.38vw, 9px);
+    align-items: center;
+  }
+
+  .gaia-live-deck-modes button {
+    position: relative;
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    padding: 2px;
+    place-items: center;
+    border: 0;
+    color: rgba(206, 232, 236, 0.42);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .gaia-live-deck-modes button small {
+    color: inherit;
+    font: 700 6px/1 Consolas, monospace;
+    letter-spacing: 0.12em;
+  }
+
+  .gaia-live-deck-modes button i {
+    display: grid;
+    width: clamp(28px, 2.1vw, 42px);
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font: 600 clamp(10px, 0.64vw, 14px)/1 Consolas, monospace;
+    font-style: normal;
+    background: rgba(1, 12, 20, 0.58);
+  }
+
+  .gaia-live-deck-modes button strong {
+    overflow: hidden;
+    max-width: 100%;
+    color: inherit;
+    font: 560 clamp(7px, 0.48vw, 10px)/1.15 var(--font-ja);
+    letter-spacing: 0.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gaia-live-deck-modes button:is(:hover, :focus-visible, [aria-current="true"]) {
+    color: rgb(var(--map-accent-rgb));
+    outline: 0;
+    text-shadow: 0 0 12px rgba(var(--map-accent-rgb), 0.66);
+  }
+
+  .gaia-live-deck-modes button[aria-current="true"] i {
+    background: radial-gradient(circle, rgba(var(--map-accent-rgb), 0.3), rgba(1, 12, 20, 0.78) 70%);
+    box-shadow: 0 0 22px rgba(var(--map-accent-rgb), 0.42), inset 0 0 16px rgba(var(--map-accent-rgb), 0.18);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-actions.gaia-live-exhibit-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    align-items: center;
+    margin: 0;
+    padding-block: 8px;
+    border-top: 0;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-actions > button {
+    display: grid;
+    min-width: 0;
+    min-height: 68px;
+    height: 100%;
+    margin: 0;
+    padding: 8px 5px;
+    place-items: center;
+    border: 1px solid rgba(var(--map-accent-rgb), 0.16);
+    border-radius: 12px;
+    color: rgba(224, 246, 248, 0.64);
+    background: rgba(var(--map-accent-rgb), 0.035);
+    cursor: pointer;
+  }
+
+  .gaia-live-deck-action span,
+  .gaia-live-deck-action strong {
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gaia-live-deck-action span {
+    color: rgba(var(--map-accent-rgb), 0.64);
+    font: 700 6px/1 Consolas, monospace;
+    letter-spacing: 0.11em;
+  }
+
+  .gaia-live-deck-action strong {
+    font: 560 8px/1.15 var(--font-ja);
+  }
+
+  .gaia-live-deck-action > i {
+    color: rgb(var(--map-accent-rgb));
+    font: 400 17px/1 Georgia, serif;
+    font-style: normal;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-actions .gaia-live-exhibit-touch-hint {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    justify-items: center;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-actions .gaia-live-exhibit-touch-hint > i {
+    width: 19px;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-actions .gaia-live-exhibit-touch-hint b {
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-actions .gaia-live-exhibit-touch-hint span {
+    display: none;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-deck-actions > button:is(:hover, :focus-visible) {
+    border-color: rgba(var(--map-accent-rgb), 0.72);
+    color: #fff;
+    background: rgba(var(--map-accent-rgb), 0.12);
+    outline: 0;
+    box-shadow: 0 0 24px rgba(var(--map-accent-rgb), 0.1);
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout > :is(
+    .gaia-live-mobile-toggle,
+    .gaia-live-exhibit-signal,
+    .gaia-live-exhibit-details
+  ) {
+    display: none !important;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .japan-credits {
+    bottom: calc(clamp(132px, 14.5vh, 174px) + 6px) !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1499px) {
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout {
+    grid-template-columns: 1.42fr 1.32fr 1.62fr 1fr;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit :is(
+    .gaia-live-deck-chapter,
+    .gaia-live-deck-location
+  ) {
+    display: none;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1120px) {
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-readout {
+    grid-template-columns: 1.08fr 1.38fr 1.64fr 1fr;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    align-items: start;
+  }
+
+  body.map-grid-desktop .japan-layer.is-live-exhibit .gaia-live-exhibit-primary > strong {
+    align-self: start;
+    font-size: clamp(30px, 3.5vw, 42px);
+  }
+
+  .gaia-live-deck-modes button strong {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .gaia-live-exhibit-readout > :is(
+    .gaia-live-deck-chapter,
+    .gaia-live-deck-location,
+    .gaia-live-deck-wave,
+    .gaia-live-deck-modes
+  ) {
+    display: none !important;
+  }
+
+  .gaia-live-deck-actions .gaia-live-deck-action {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 8px;
+    align-items: center;
+    text-align: left;
+  }
+
+  .gaia-live-deck-action span {
+    color: rgba(var(--map-accent-rgb), 0.7);
+    font: 700 6px/1 Consolas, monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .gaia-live-deck-action strong {
+    color: rgba(245, 255, 255, 0.92);
+    font: 560 9px/1.2 var(--font-ja);
+  }
+
+  .gaia-live-deck-action i {
+    grid-row: 1 / 3;
+    grid-column: 2;
+    color: rgb(var(--map-accent-rgb));
+    font-style: normal;
+  }
+
+  .gaia-live-deck-actions [data-live-deck-source] { order: 1; }
+  .gaia-live-deck-actions [data-live-deck-analysis] { order: 2; }
+  .gaia-live-deck-actions .gaia-live-exhibit-touch-hint {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}
+
+@keyframes gaia-live-deck-wave {
+  from { transform: scaleY(0.72); opacity: 0.58; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaia-live-deck-waveform i { animation: none; }
+}

@@ -92,6 +92,10 @@
     const centerX = target.left + target.width / 2;
     const centerY = target.top + target.height / 2;
     const avoidRects = resolveAvoidRects(activeSteps[activeIndex]);
+    const bottomBarrier = avoidRects
+      .filter((rect) => rect.width >= innerWidth * 0.55 && rect.bottom >= innerHeight - inset * 2)
+      .reduce((top, rect) => Math.min(top, rect.top), innerHeight - inset);
+    const maximumTop = Math.max(inset, Math.min(innerHeight - inset - height, bottomBarrier - gap - height));
     const candidates = [
       { placement: "below", left: centerX - width / 2, top: target.bottom + gap, priority: 0 },
       { placement: "above", left: centerX - width / 2, top: target.top - height - gap, priority: 1 },
@@ -103,7 +107,7 @@
       { placement: "below-right", left: innerWidth - inset - width, top: target.bottom + gap, priority: 7 },
     ].map((candidate) => {
       const left = clamp(inset, Math.max(inset, innerWidth - inset - width), candidate.left);
-      const top = clamp(inset, Math.max(inset, innerHeight - inset - height), candidate.top);
+      const top = clamp(inset, maximumTop, candidate.top);
       const bounds = { left, top, right: left + width, bottom: top + height };
       const targetOverlap = overlapArea(bounds, target);
       const avoidedOverlap = avoidRects.reduce((sum, avoidRect) => sum + overlapArea(bounds, avoidRect), 0);

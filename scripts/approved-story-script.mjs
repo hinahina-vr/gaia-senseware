@@ -128,9 +128,9 @@ const assertUniqueIds = (scenes, label) => {
 
 export const readApprovedStoryScript = () => {
   const bytes = fs.readFileSync(approvedStoryPath);
-  const digest = crypto.createHash("sha256").update(bytes).digest("hex");
-  if (digest !== EXPECTED_SHA256) throw new Error("story/APPROVED_SCRIPT_2026-08-24.mdが承認済み入力と一致しません");
   const source = bytes.toString("utf8").replace(/\r\n?/gu, "\n");
+  const digest = crypto.createHash("sha256").update(source, "utf8").digest("hex");
+  if (digest !== EXPECTED_SHA256) throw new Error("story/APPROVED_SCRIPT_2026-08-24.mdが承認済み入力と一致しません");
   const mainScenes = parseScenes(source, {
     startMarker: "# PART I｜本編",
     endMarker: "# PART II｜スタッフロールと分岐",

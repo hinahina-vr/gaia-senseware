@@ -642,7 +642,7 @@ const scanIntegratedLightEntry = async (viewport) => {
   assert.equal(integrated.activeSurface, "light");
   assert(integrated.mapVisible && integrated.canvasVisible && integrated.canvasPointerEvents === "none");
   assert.equal(integrated.canvasParent, "japan-layer");
-  assert.equal(integrated.mapChoiceCount, 12);
+  assert.equal(integrated.mapChoiceCount, 14);
   assert.equal(integrated.currentMapChoice, "01");
   assert.equal(integrated.lightChoiceListVisible, false);
   assert.equal(integrated.mapChoiceListDisplay, "grid");
@@ -650,7 +650,7 @@ const scanIntegratedLightEntry = async (viewport) => {
   assert.equal(integrated.lightChoiceCount, 8);
   assert.equal(integrated.currentLightChoice, "07");
   assert.equal(integrated.heading, "地球の一呼吸");
-  assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—12");
+  assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—14");
   assert.equal(integrated.bankGuide, "見たい地図展示を選んでください");
   assert.equal(integrated.tooltipVisible, false);
   assert.equal(integrated.novelOpenAtCount, 0);
@@ -669,8 +669,8 @@ const scanIntegratedLightEntry = async (viewport) => {
     activeSurface: document.querySelector(".map-mode-bank")?.dataset.mapSurface,
     mapVisible: __qaVisible(document.querySelector("#japan-map")),
   }));
-  assert.equal(restored.mapChoiceCount, 12);
-  assert.deepEqual(restored, { mapChoiceCount: 12, activeSurface: "map", mapVisible: true });
+  assert.equal(restored.mapChoiceCount, 14);
+  assert.deepEqual(restored, { mapChoiceCount: 14, activeSurface: "map", mapVisible: true });
   report.scans.push({ viewport: viewport.name, case: "independent-light-overlay", lightOverlay, integrated, restored, passed: true });
   await context.close();
 };

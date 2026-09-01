@@ -3659,6 +3659,20 @@
       "sourceUrl": "https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/Data/S5PL2.html",
       "termsUrl": "https://dataspace.copernicus.eu/terms-and-conditions",
       "retrievalPolicy": "live: 30 minutes; 72-hour quality-masked bbox mean; versioned snapshot fallback"
+    },
+    {
+      "provider": "Open-Meteo",
+      "datasetId": "Best Match / Tokyo current weather",
+      "sourceUrl": "https://open-meteo.com/en/docs",
+      "termsUrl": "https://open-meteo.com/en/pricing",
+      "retrievalPolicy": "model: 30-minute Cloudflare cache; 5-minute refresh check; versioned snapshot fallback"
+    },
+    {
+      "provider": "Open-Meteo / CAMS",
+      "datasetId": "Global greenhouse gas and air-quality forecast / Tokyo grid",
+      "sourceUrl": "https://open-meteo.com/en/docs/air-quality-api",
+      "termsUrl": "https://open-meteo.com/en/pricing",
+      "retrievalPolicy": "model: 3-hour Cloudflare cache; 5-minute refresh check; versioned snapshot fallback"
     }
   ]
 }

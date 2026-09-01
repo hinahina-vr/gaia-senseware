@@ -7799,7 +7799,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   window.GaiaModeEntryGuide?.register?.("map", {
     version: "v2",
     kicker: "WORLD MAP / 操作ガイド",
-    avoid: "#map-reading-guide",
+    avoid: "#map-reading-guide, .gaia-live-exhibit-readout",
     available: () => japanIsOpen && !japanLayer.hidden,
     steps: [
       {
@@ -7813,17 +7813,17 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
         copy: "青い年代スライダーを動かすと、過去から未来試算まで、地図の色と観測値が連動して変わります。",
       },
       {
-        target: () => firstVisibleMapGuideTarget("#japan-mode-list", "#map-mobile-bank-toggle"),
+        target: () => firstVisibleMapGuideTarget(".gaia-live-deck-modes", "#japan-mode-list", "#map-mobile-bank-toggle"),
         title: "地図展示を切り替える",
-        copy: "番号を選ぶと、CO₂、海流、森林、地震など12種類の観測展示へ切り替えられます。",
+        copy: "番号や計器アイコンを選ぶと、CO₂、海流、森林、気温、雲など14種類の観測展示へ切り替えられます。",
       },
       {
-        target: () => firstVisibleMapGuideTarget("#japan-data-button", "#map-mobile-heading-toggle"),
+        target: () => firstVisibleMapGuideTarget("[data-live-deck-source]", "#japan-data-button", "#map-mobile-heading-toggle"),
         title: "データの出典を確認する",
         copy: "表示中の数値がどの公開データから来たか、実測・補完・試算の区分まで確認できます。",
       },
       {
-        target: () => firstVisibleMapGuideTarget("#gaia-statistics-button", "#gaia-statistics-button-mobile"),
+        target: () => firstVisibleMapGuideTarget("[data-live-deck-analysis]", "#gaia-statistics-button", "#gaia-statistics-button-mobile"),
         title: "データを詳しく分析する",
         copy: "統計解析ラボでは、表示中のデータをチャート・数値一覧・元データ・解説の四つの視点から調べられます。",
       },

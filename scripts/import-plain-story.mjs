@@ -354,11 +354,12 @@ output.push("## 今回の反映チェックリスト\n\n- 提供された本編�
 
 const rendered = `${output.join("\n\n---\n\n")}\n`;
 const rawCopy = `${source}\n`;
+const normalizeLineEndings = (value) => value.replace(/\r\n?/gu, "\n");
 if (checkOnly) {
-  if (!fs.existsSync(outputPath) || fs.readFileSync(outputPath, "utf8") !== rendered) {
+  if (!fs.existsSync(outputPath) || normalizeLineEndings(fs.readFileSync(outputPath, "utf8")) !== rendered) {
     throw new Error(`${path.relative(projectRoot, outputPath)} が提供台本からの変換結果と一致しません`);
   }
-  if (!fs.existsSync(rawCopyPath) || fs.readFileSync(rawCopyPath, "utf8") !== rawCopy) {
+  if (!fs.existsSync(rawCopyPath) || normalizeLineEndings(fs.readFileSync(rawCopyPath, "utf8")) !== rawCopy) {
     throw new Error(`${path.relative(projectRoot, rawCopyPath)} が提供台本と一致しません`);
   }
   console.log(`approved user script ok: ${mainScenes.reduce((count, scene) => count + scene.entries.length, 0)} main / ${trueEndScenes.reduce((count, scene) => count + scene.entries.length, 0)} APEIRONCENE entries`);

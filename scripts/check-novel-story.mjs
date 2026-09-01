@@ -16,7 +16,7 @@ const expectedSceneCounts = [72, 43, 46, 50, 79, 82];
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
 
 const canonBytes = fs.readFileSync(canonPath);
-const retainedBytes = fs.readFileSync(retainedPath);
+const retainedBytes = Buffer.from(fs.readFileSync(retainedPath, "utf8").replace(/\r\n?/gu, "\n"), "utf8");
 assert.equal(sha256(canonBytes), expectedFreezeHash, "story/物語台本.mdがfreeze入力と一致しません");
 assert.ok(canonBytes.equals(retainedBytes), "repo保持版がfreeze正本と一致しません");
 

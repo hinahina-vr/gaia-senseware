@@ -76,7 +76,7 @@ const boot = async (viewport) => {
   await page.waitForFunction(() => typeof globalThis.GaiaModeLoader?.load === "function");
   await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
   await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
-  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 12);
+  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 14);
   await page.evaluate(() => {
     for (const selector of ["#gaia-opening", "#intro-layer", "#novel-layer", "#true-end-layer"]) {
       const layer = document.querySelector(selector);
@@ -292,7 +292,7 @@ const captureDrawer = async (page, viewport, label, open, close, options = {}) =
 try {
   for (const viewport of selectedViewports) {
     const { context, page } = await boot(viewport);
-    for (let index = 0; index < 12; index += 1) {
+    for (let index = 0; index < 14; index += 1) {
       await selectExhibit(page, "map", index);
       const label = `map-${String(index + 1).padStart(2, "0")}`;
       const scan = await inspect(page);

@@ -226,7 +226,7 @@ for (const scene of trueEnd.scenes) {
 const output = `${lines.join("\n").trimEnd()}\n`;
 if (checkOnly) {
   if (!fs.existsSync(outputPath)) throw new Error("story/現行統合台本.mdがありません。npm run story:exportを実行してください");
-  const current = fs.readFileSync(outputPath, "utf8");
+  const current = fs.readFileSync(outputPath, "utf8").replace(/\r\n?/gu, "\n");
   if (current !== output) throw new Error("story/現行統合台本.mdが現行実行データと一致しません。実行ソースへ修正を反映後、npm run story:exportで再生成してください");
   console.log(`current story script ok: ${mainStepCount} main + ${trueEndStepCount} APEIRONCENE steps`);
 } else {

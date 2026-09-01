@@ -137,7 +137,7 @@ assert.match(appSource, /cancelEarthViewAnimation\("user-keyboard"\)/u);
 assert.match(appSource, /dataset\.japanScreenX/u);
 
 assert.match(html, /地球観測データの8つの展示/u);
-assert.match(html, /INSTALLATION BANK \/ MAP 01—12/u);
+assert.match(html, /INSTALLATION BANK \/ MAP 01—14/u);
 assert.match(html, /LIGHT INSTALLATION \/ OVERLAY/u);
 assert.match(html, /地図の番号とは対応しません。好きな光を独立して重ねられます。/u);
 assert.match(html, /8つの観測展示/u);
@@ -160,10 +160,12 @@ assert.doesNotMatch(liveDataSource, /ensureSpaceReceipt|data-gaia-live-receipt|g
 assert.doesNotMatch(stylesSource, /gaia-live-receipt|gaia-live-sound-controls/u);
 assert.doesNotMatch(mapGridStylesSource, /gaia-live-receipt/u);
 const liveContracts = [
-  ["09", "wind-field", "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。"],
-  ["10", "carbon-pulse", "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。"],
-  ["11", "rain-chorus", "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。"],
-  ["12", "no2-veil", "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。"],
+  ["09", "wind-field", "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。"],
+  ["10", "carbon-pulse", "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。"],
+  ["11", "rain-chorus", "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。"],
+  ["12", "temperature-field", "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。"],
+  ["13", "cloud-drift", "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。"],
+  ["14", "pm25-haze", "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。"],
 ];
 for (const [number, id, caption] of liveContracts) {
   assert.match(liveExhibitsSource, new RegExp(`id: "${id}"[\\s\\S]*number: "${number}"`, "u"));
@@ -171,10 +173,9 @@ for (const [number, id, caption] of liveContracts) {
 }
 assert.match(liveExhibitsSource, /getContext\("webgl"[\s\S]*WEBGL_FRAGMENT_SOURCE/u);
 assert.match(liveExhibitsSource, /visualLanguage = "continuous-signal-field"/u);
-assert.match(liveExhibitsSource, /vec3 windField[\s\S]*vec3 carbonField[\s\S]*vec3 rainField[\s\S]*vec3 no2Field/u);
-assert.match(liveExhibitsSource, /location: Object\.freeze\(\{ lon: -155\.056, lat: 19\.73, label: "NDBC ILOH1 \/ ハワイ島東岸" \}\)/u);
-assert.match(liveExhibitsSource, /location: Object\.freeze\(\{ lon: -155\.576, lat: 19\.536, label: "Mauna Loa Observatory \/ ハワイ島" \}\)/u);
-assert.match(liveExhibitsSource, /location: Object\.freeze\(\{ lon: -155\.45, lat: 19\.55, label: "JAXA GSMaP \/ ハワイ固定範囲" \}\)/u);
+assert.match(liveExhibitsSource, /vec3 windField[\s\S]*vec3 carbonField[\s\S]*vec3 rainField[\s\S]*vec3 temperatureField[\s\S]*vec3 cloudField[\s\S]*vec3 no2Field/u);
+assert.match(liveExhibitsSource, /location: Object\.freeze\(\{ lon: 139\.6503, lat: 35\.6762, label: "Open-Meteo \/ 東京" \}\)/u);
+assert.match(liveExhibitsSource, /location: Object\.freeze\(\{ lon: 139\.6503, lat: 35\.6762, label: "CAMSモデル \/ 東京格子" \}\)/u);
 assert.match(liveExhibitsSource, /const observationLocation = \(exhibit, measurement\)[\s\S]*measurement\?\.location[\s\S]*projectSceneAnchor\(location\)/u);
 assert.match(liveTransformsSource, /location: event\.location \? \{ \.\.\.event\.location \} : null/u);
 assert.match(liveExhibitsSource, /windField[\s\S]*signalSpace - u_anchor[\s\S]*velocity = 0\.72 \+ u_strength \* 2\.1[\s\S]*density = mix\(7\.0, 18\.0, u_strength\)/u);
@@ -198,18 +199,20 @@ assert.match(stylesSource, /\.gaia-live-exhibit-primary > strong[\s\S]*font: 500
 assert.match(stylesSource, /\.gaia-live-exhibit-path::after[\s\S]*gaia-live-data-travel/u);
 assert.match(stylesSource, /\.gaia-live-exhibit-explanation[\s\S]*gaia-live-exhibit-summary/u);
 assert.match(liveExhibitsSource, /SAVED SNAPSHOT \/ 保存データを再現中/u);
-assert.match(liveExhibitsSource, /NEAR REAL TIME \/ 5分ごとに更新/u);
+assert.match(liveExhibitsSource, /NEAR REAL TIME \/ 5分ごとに再確認/u);
 assert.match(liveExhibitsSource, /混在状態を明示します/u);
 assert.doesNotMatch(mapGridStylesSource, /\.japan-layer\.is-live-exhibit \.map-grid-bank[\s\S]{0,320}width: clamp\(400px, 22vw, 720px\)/u);
 assert.doesNotMatch(liveExhibitsSource, /fillRect\(x - 2, y - 1/u, "wind field must not render sperm-like particle heads");
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-command-dock-2/u);
-assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-command-dock-2/u);
-assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-command-dock-2/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-live-deck-3/u);
+assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-live-deck-3/u);
+assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-live-deck-3/u);
 assert.match(modeLoaderSource, /app-content\.js\?v=gaia-ovation-aurora-1/u);
-assert.match(modeLoaderSource, /app\.js\?v=gaia-anthropocene-boundaries-1/u);
+assert.match(modeLoaderSource, /app\.js\?v=gaia-live-deck-3/u);
+assert.match(modeLoaderSource, /mode-entry-guide\.js\?v=gaia-live-deck-3/u);
+assert.match(appSource, /avoid: "#map-reading-guide, \.gaia-live-exhibit-readout"/u);
 assert.match(modeLoaderSource, /particles-v9\.js\?v=gaia-light-surface-fps-1/u);
 assert.match(appSource, /const mapExhibitIsVisible = japanIsOpen\s*&& !japanLayer\.classList\.contains\("is-live-exhibit"\)/u);
 assert.match(appSource, /const setLightCanvasMounted = \(mounted\)[\s\S]*japanMap\.after\(canvas\)/u);
@@ -220,7 +223,7 @@ assert.doesNotMatch(appSource, /lastJapanOverlayRenderAt/u);
 assert.match(appSource, /float grainBlend = smoothstep\(0\.0, 1\.0, fract\(grainTime\)\)/u);
 assert.match(particlesSource, /const installationIsOpen = \(\) => Boolean\(document\.querySelector\("\.experience\.japan-open"\)\)/u);
 assert.match(particlesSource, /&& !installationIsOpen\(\)/u);
-assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-budget-devices-1/u);
+assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-live-deck-3/u);
 assert.match(html, /id="japan-title" data-exhibit-number="01" aria-label="01 地球の一呼吸" aria-live="polite">地球の一呼吸<\/h2>/u);
 assert.match(html, /id="map-title-transition"[\s\S]{0,120}id="map-title-transition-text"/u);
 assert.match(html, /class="japan-map-actions"[\s\S]{0,320}id="japan-close"/u);

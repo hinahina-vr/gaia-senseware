@@ -4,6 +4,12 @@ const RANGES = Object.freeze({
   co2: [280, 650],
   precipitation: [0, 30],
   no2: [0, 0.0003],
+  weatherWindSpeed: [0, 45],
+  weatherTemperature: [-20, 45],
+  weatherPrecipitation: [0, 30],
+  cloudCover: [0, 100],
+  forecastCo2: [280, 650],
+  pm25: [0, 150],
 });
 
 export const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
@@ -34,11 +40,11 @@ export const collectMeasurements = (events = []) => {
 };
 
 export const toSoundParameters = (measurements = {}) => {
-  const wind = measurements.windSpeed?.normalized;
-  const temperature = measurements.airTemperature?.normalized;
-  const co2 = measurements.co2?.normalized;
-  const precipitation = measurements.precipitation?.normalized;
-  const no2 = measurements.no2?.normalized;
+  const wind = measurements.weatherWindSpeed?.normalized ?? measurements.windSpeed?.normalized;
+  const temperature = measurements.weatherTemperature?.normalized ?? measurements.airTemperature?.normalized;
+  const co2 = measurements.forecastCo2?.normalized ?? measurements.co2?.normalized;
+  const precipitation = measurements.weatherPrecipitation?.normalized ?? measurements.precipitation?.normalized;
+  const no2 = measurements.pm25?.normalized ?? measurements.no2?.normalized;
   return Object.freeze({
     noiseGain: wind == null ? null : 0.004 + wind * 0.045,
     noiseCutoff: wind == null ? null : 260 + wind * 2_600,

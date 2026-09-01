@@ -76,7 +76,7 @@ const serialized = JSON.stringify(story, null, 2);
 const output = `// Generated from story/APPROVED_SCRIPT_2026-08-24.md by scripts/build-true-end-story.mjs. Do not edit by hand.\n(() => {\n  "use strict";\n\n  const freezeScene = (scene) => Object.freeze({\n    ...scene,\n    steps: Object.freeze(scene.steps.map((step, index) => Object.freeze({\n      ...step,\n      id: \`beyond_\${scene.number}_\${String(index + 1).padStart(3, "0")}\`,\n      sceneId: scene.id,\n      sceneTitle: scene.title,\n      type: "beyond",\n      recordType: "BEYOND",\n      ...(step.speaker === "system" ? { speakerLabel: "AIVA" } : {}),\n    }))),\n  });\n\n  const source = ${serialized};\n  globalThis.GAIA_TRUE_END_STORY = Object.freeze({\n    ...source,\n    language: Object.freeze(source.language),\n    scenes: Object.freeze(source.scenes.map(freezeScene)),\n    finale: Object.freeze({\n      ...source.finale,\n      readout: Object.freeze(source.finale.readout),\n    }),\n  });\n})();\n`;
 
 if (checkOnly) {
-  if (!fs.existsSync(outputPath) || fs.readFileSync(outputPath, "utf8") !== output) {
+  if (!fs.existsSync(outputPath) || fs.readFileSync(outputPath, "utf8").replace(/\r\n?/gu, "\n") !== output) {
     throw new Error("true-end-data.jsが承認済み台本と一致しません。npm run data:novelを実行してください");
   }
   console.log(`approved true-end story ok: ${scenes.length} scenes / ${scenes.flatMap((scene) => scene.steps).length} messages`);

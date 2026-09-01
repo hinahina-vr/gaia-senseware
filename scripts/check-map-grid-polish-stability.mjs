@@ -15,7 +15,7 @@ const checks = [
   ["desktop dock is fixed to the bottom", /body\.map-grid-desktop \.map-command-dock[\s\S]*position: fixed[\s\S]*bottom: 0/.test(styles)],
   ["mobile keeps the legacy flow", /@media \(max-width: 900px\)[\s\S]*\.map-command-dock\s*{\s*display: contents/.test(styles)],
   ["live exhibits collapse irrelevant dock cells", /is-live-exhibit \.map-command-dock > :is\(\.signal-console-map, \.map-reading-guide\)[\s\S]*display: none !important/.test(styles)],
-  ["command dock assets use the current cache key", ["map-ui-grid-polish.css?v=gaia-command-dock-2", "map-ui-grid-polish.js?v=gaia-command-dock-2"].every((asset) => loader.includes(asset))],
+  ["command dock assets use the current cache key", ["map-ui-grid-polish.css?v=gaia-live-deck-3", "map-ui-grid-polish.js?v=gaia-live-deck-3"].every((asset) => loader.includes(asset))],
   ["browser checker samples the exact map panel", /#japan-layer > \.signal-console-map/.test(browserChecker)],
   ["browser checker requires 1200 samples", /polishTrace\.frames >= 1200/.test(browserChecker)],
   ["browser checker rejects marker churn", /markerMutations, 0/.test(browserChecker)],

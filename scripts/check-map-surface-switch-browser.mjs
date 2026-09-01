@@ -28,10 +28,12 @@ const expectedCopies = [
 ];
 const expectedCodes = ["AIR", "OCEAN", "FOREST", "RECYCLING", "CITY", "QUAKE", "ECOLOGIES", "ENERGY"];
 const expectedLiveCopies = [
-  "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。",
-  "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。",
-  "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。",
-  "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。",
+  "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。",
+  "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。",
+  "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。",
+  "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。",
+  "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。",
+  "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。",
 ];
 
 const focusModeButton = async (page, locator, expectedCopy = null) => {
@@ -76,12 +78,12 @@ try {
     await page.waitForFunction(() => typeof window.GaiaModeLoader?.load === "function");
     await page.evaluate(() => window.GaiaModeLoader.load("exploration"));
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
-    await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 12);
+    await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 14);
     await page.evaluate(() => window.GaiaMapObservationAdapter.openMap());
     await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
 
     assert.equal(await page.locator(".map-surface-switch").count(), 0, `${viewport.name}: obsolete MAP/LIGHT toggle remains`);
-    assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 12, `${viewport.name}: MAP button count`);
+    assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 14, `${viewport.name}: MAP button count`);
     assert.equal(await page.locator("#abstract-mode-list .map-mode-button").count(), 8, `${viewport.name}: LIGHT button count`);
     assert.equal(await page.locator("#map-light-overlay").isHidden(), true, `${viewport.name}: independent light overlay starts open`);
 
@@ -105,7 +107,7 @@ try {
       };
     });
     assert.deepEqual(scan.groupLabels, ["MAP地図"], `${viewport.name}: the main bank must contain only map choices`);
-    assert.equal(scan.visibleButtons, 12, `${viewport.name}: not all map buttons are visible together`);
+    assert.equal(scan.visibleButtons, 14, `${viewport.name}: not all map buttons are visible together`);
     assert.ok(scan.buttonHeights.every((height) => height >= (viewport.isMobile ? 44 : 30)), `${viewport.name}: button target is too short`);
     assert.ok(scan.horizontalOverflow <= 1, `${viewport.name}: bank overflows horizontally by ${scan.horizontalOverflow}px`);
     const headingScan = await page.locator("#japan-layer .japan-heading").evaluate((heading) => {

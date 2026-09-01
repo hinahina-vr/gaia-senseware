@@ -20678,7 +20678,9 @@ __name(fromUrl, "fromUrl");
 // src/live-senseware.ts
 var HAWAII_BBOX = [-156.2, 18.8, -154.7, 20.3];
 var HAWAII_CENTER = { lat: 19.55, lon: -155.45 };
-var TRANSFORM_VERSION = "live-senseware-v1";
+var TOKYO_BBOX = [139.4, 35.45, 139.95, 35.9];
+var TOKYO_CENTER = { lat: 35.6762, lon: 139.6503 };
+var TRANSFORM_VERSION = "live-senseware-v2-open-meteo";
 var STREAM_LIFETIME_MS = 10 * 60 * 1e3;
 var STREAM_REFRESH_MS = 5 * 60 * 1e3;
 var HEARTBEAT_MS = 15e3;
@@ -20818,6 +20820,97 @@ var loadCo2 = /* @__PURE__ */ __name(async (headers) => {
     ...sourceHeaders(response)
   };
 }, "loadCo2");
+var openMeteoObservedAt = /* @__PURE__ */ __name((value) => {
+  if (!value) throw new Error("Open-Meteo current time missing");
+  const normalized = /(?:Z|[+-]\d{2}:?\d{2})$/u.test(value) ? value : `${value}Z`;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) throw new Error("Open-Meteo current time malformed");
+  return date.toISOString();
+}, "openMeteoObservedAt");
+var numericOrNull = /* @__PURE__ */ __name((value) => {
+  if (value === null || value === void 0 || value === "") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}, "numericOrNull");
+var loadOpenMeteoWeather = /* @__PURE__ */ __name(async (headers) => {
+  const sourceUrl = new URL("https://api.open-meteo.com/v1/forecast");
+  sourceUrl.search = new URLSearchParams({
+    latitude: String(TOKYO_CENTER.lat),
+    longitude: String(TOKYO_CENTER.lon),
+    current: "temperature_2m,precipitation,cloud_cover,wind_speed_10m",
+    wind_speed_unit: "ms",
+    timezone: "GMT",
+    forecast_days: "1"
+  }).toString();
+  const response = await fetchWithTimeout(sourceUrl, { headers });
+  if (response.status === 304) throw new Error("Open-Meteo weather 304 not-modified");
+  if (!response.ok) throw new Error(`Open-Meteo weather ${response.status}`);
+  const current = (await response.json()).current;
+  if (!current) throw new Error("Open-Meteo weather current missing");
+  const observedAt = openMeteoObservedAt(current.time);
+  const wind = numericOrNull(current.wind_speed_10m);
+  const temperature = numericOrNull(current.temperature_2m);
+  const precipitation = numericOrNull(current.precipitation);
+  const cloudCover = numericOrNull(current.cloud_cover);
+  if ([wind, temperature, precipitation, cloudCover].every((value) => value === null)) throw new Error("Open-Meteo weather values missing");
+  return {
+    event: {
+      schemaVersion: 1,
+      eventId: `open-meteo:tokyo-weather:${observedAt}`,
+      provider: "open-meteo",
+      datasetId: "Open-Meteo Best Match / Tokyo current weather",
+      status: "near-real-time",
+      observedAt,
+      retrievedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      location: { label: "Open-Meteo / \u6771\u4EAC", ...TOKYO_CENTER, bbox: TOKYO_BBOX },
+      measurements: [
+        { key: "weatherWindSpeed", value: wind, unit: "m/s", quality: wind === null ? "missing" : "estimated", sourceKind: "MODEL" },
+        { key: "weatherTemperature", value: temperature, unit: "\u2103", quality: temperature === null ? "missing" : "estimated", sourceKind: "MODEL" },
+        { key: "weatherPrecipitation", value: precipitation, unit: "mm", quality: precipitation === null ? "missing" : "estimated", sourceKind: "MODEL" },
+        { key: "cloudCover", value: cloudCover, unit: "%", quality: cloudCover === null ? "missing" : "estimated", sourceKind: "MODEL" }
+      ],
+      provenance: { sourceUrl: sourceUrl.href, licenseUrl: "https://open-meteo.com/en/pricing", transformVersion: TRANSFORM_VERSION }
+    },
+    ...sourceHeaders(response)
+  };
+}, "loadOpenMeteoWeather");
+var loadOpenMeteoAir = /* @__PURE__ */ __name(async (headers) => {
+  const sourceUrl = new URL("https://air-quality-api.open-meteo.com/v1/air-quality");
+  sourceUrl.search = new URLSearchParams({
+    latitude: String(TOKYO_CENTER.lat),
+    longitude: String(TOKYO_CENTER.lon),
+    current: "carbon_dioxide,pm2_5",
+    timezone: "GMT",
+    forecast_days: "1"
+  }).toString();
+  const response = await fetchWithTimeout(sourceUrl, { headers });
+  if (response.status === 304) throw new Error("Open-Meteo air quality 304 not-modified");
+  if (!response.ok) throw new Error(`Open-Meteo air quality ${response.status}`);
+  const current = (await response.json()).current;
+  if (!current) throw new Error("Open-Meteo air quality current missing");
+  const observedAt = openMeteoObservedAt(current.time);
+  const co2 = numericOrNull(current.carbon_dioxide);
+  const pm25 = numericOrNull(current.pm2_5);
+  if (co2 === null && pm25 === null) throw new Error("Open-Meteo air quality values missing");
+  return {
+    event: {
+      schemaVersion: 1,
+      eventId: `open-meteo:tokyo-cams:${observedAt}`,
+      provider: "open-meteo",
+      datasetId: "Open-Meteo / CAMS global atmosphere forecast",
+      status: "latest-published",
+      observedAt,
+      retrievedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      location: { label: "CAMS\u30E2\u30C7\u30EB / \u6771\u4EAC\u683C\u5B50", ...TOKYO_CENTER, bbox: TOKYO_BBOX },
+      measurements: [
+        { key: "forecastCo2", value: co2, unit: "ppm", quality: co2 === null ? "missing" : "estimated", sourceKind: "MODEL" },
+        { key: "pm25", value: pm25, unit: "\xB5g/m\xB3", quality: pm25 === null ? "missing" : "estimated", sourceKind: "MODEL" }
+      ],
+      provenance: { sourceUrl: sourceUrl.href, licenseUrl: "https://open-meteo.com/en/pricing", transformVersion: TRANSFORM_VERSION }
+    },
+    ...sourceHeaders(response)
+  };
+}, "loadOpenMeteoAir");
 var latestLink = /* @__PURE__ */ __name((catalog, pattern) => catalog.links?.map((link) => link.href || "").filter((href) => pattern.test(href)).sort().at(-1), "latestLink");
 var loadJaxa = /* @__PURE__ */ __name(async (headers) => {
   const collectionUrl = "https://s3.ap-northeast-1.wasabisys.com/je-pds/cog/v1/JAXA.EORC_GSMaP_standard.Gauge.00Z-23Z.v6_daily/collection.json";
@@ -20927,7 +21020,10 @@ var loadEsa = /* @__PURE__ */ __name(async (env) => {
     }
   };
 }, "loadEsa");
-var eventIdentity = /* @__PURE__ */ __name((event) => `${event.provider}:${event.datasetId.includes("CO2") ? "co2" : "main"}`, "eventIdentity");
+var eventIdentity = /* @__PURE__ */ __name((event) => {
+  if (event.provider === "open-meteo") return `${event.provider}:${event.datasetId.includes("CAMS") ? "air" : "weather"}`;
+  return `${event.provider}:${event.datasetId.includes("CO2") ? "co2" : "main"}`;
+}, "eventIdentity");
 var fallbackSnapshot = /* @__PURE__ */ __name(async (request, env, reason) => {
   const fallbackUrl = new URL("/data/live-observation-fallback-v1.json", request.url);
   const response = await env.ASSETS.fetch(new Request(fallbackUrl, { headers: { Accept: "application/json" } }));
@@ -20939,7 +21035,9 @@ var liveSnapshot = /* @__PURE__ */ __name(async (request, env, ctx) => {
   if (env.LIVE_SENSEWARE_ENABLED !== "true") return fallbackSnapshot(request, env, "LIVE_SENSEWARE_ENABLED is not true");
   const definitions = [
     { cacheKey: "noaa-ndbc", ttlMs: 5 * 60 * 1e3, load: loadNdbc },
-    { cacheKey: "noaa-co2", ttlMs: 60 * 60 * 1e3, load: loadCo2 }
+    { cacheKey: "noaa-co2", ttlMs: 60 * 60 * 1e3, load: loadCo2 },
+    { cacheKey: "open-meteo-tokyo-weather-v1", ttlMs: 30 * 60 * 1e3, load: loadOpenMeteoWeather },
+    { cacheKey: "open-meteo-tokyo-air-v1", ttlMs: 3 * 60 * 60 * 1e3, load: loadOpenMeteoAir }
   ];
   if (env.LIVE_SENSEWARE_JAXA_ENABLED === "true") {
     definitions.push({ cacheKey: "jaxa-gsmap", ttlMs: 6 * 60 * 60 * 1e3, load: loadJaxa });
@@ -20955,7 +21053,9 @@ var liveSnapshot = /* @__PURE__ */ __name(async (request, env, ctx) => {
   const available = new Set(events.map(eventIdentity));
   const disabledReasons = /* @__PURE__ */ new Map([
     ["jaxa:main", env.LIVE_SENSEWARE_JAXA_ENABLED === "true" ? "JAXA upstream unavailable" : "JAXA live disabled for free-plan CPU safety"],
-    ["esa:main", env.LIVE_SENSEWARE_ESA_ENABLED !== "true" ? "ESA live disabled" : !env.CDSE_CLIENT_ID || !env.CDSE_CLIENT_SECRET ? "ESA credentials unavailable" : "ESA upstream unavailable"]
+    ["esa:main", env.LIVE_SENSEWARE_ESA_ENABLED !== "true" ? "ESA live disabled" : !env.CDSE_CLIENT_ID || !env.CDSE_CLIENT_SECRET ? "ESA credentials unavailable" : "ESA upstream unavailable"],
+    ["open-meteo:weather", "Open-Meteo weather upstream unavailable"],
+    ["open-meteo:air", "Open-Meteo CAMS upstream unavailable"]
   ]);
   for (const event of fallback.events) {
     const identity = eventIdentity(event);

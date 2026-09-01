@@ -54,6 +54,38 @@
       "location": { "label": "Hawaii fixed bbox", "lat": 19.55, "lon": -155.45, "bbox": [-156.2, 18.8, -154.7, 20.3] },
       "measurements": [{ "key": "no2", "value": null, "unit": "mol/m2", "quality": "missing", "sourceKind": "SOURCE" }],
       "provenance": { "sourceUrl": "https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/Data/S5PL2.html", "licenseUrl": "https://dataspace.copernicus.eu/terms-and-conditions", "transformVersion": "live-senseware-v1" }
+    },
+    {
+      "schemaVersion": 1,
+      "eventId": "open-meteo:tokyo-weather:snapshot-v1",
+      "provider": "open-meteo",
+      "datasetId": "Open-Meteo Best Match / Tokyo current weather",
+      "status": "snapshot",
+      "observedAt": "2026-08-31T23:45:00Z",
+      "retrievedAt": "2026-09-01T00:00:00Z",
+      "location": { "label": "Open-Meteo / 東京", "lat": 35.6762, "lon": 139.6503, "bbox": [139.4, 35.45, 139.95, 35.9] },
+      "measurements": [
+        { "key": "weatherWindSpeed", "value": 3.2, "unit": "m/s", "quality": "estimated", "sourceKind": "MODEL" },
+        { "key": "weatherTemperature", "value": 29.8, "unit": "℃", "quality": "estimated", "sourceKind": "MODEL" },
+        { "key": "weatherPrecipitation", "value": 0, "unit": "mm", "quality": "estimated", "sourceKind": "MODEL" },
+        { "key": "cloudCover", "value": 63, "unit": "%", "quality": "estimated", "sourceKind": "MODEL" }
+      ],
+      "provenance": { "sourceUrl": "https://open-meteo.com/en/docs", "licenseUrl": "https://open-meteo.com/en/pricing", "transformVersion": "live-senseware-v2-open-meteo" }
+    },
+    {
+      "schemaVersion": 1,
+      "eventId": "open-meteo:tokyo-cams:snapshot-v1",
+      "provider": "open-meteo",
+      "datasetId": "Open-Meteo / CAMS global atmosphere forecast",
+      "status": "snapshot",
+      "observedAt": "2026-08-31T21:00:00Z",
+      "retrievedAt": "2026-09-01T00:00:00Z",
+      "location": { "label": "CAMSモデル / 東京格子", "lat": 35.6762, "lon": 139.6503, "bbox": [139.4, 35.45, 139.95, 35.9] },
+      "measurements": [
+        { "key": "forecastCo2", "value": 423.1, "unit": "ppm", "quality": "estimated", "sourceKind": "MODEL" },
+        { "key": "pm25", "value": 11.2, "unit": "µg/m³", "quality": "estimated", "sourceKind": "MODEL" }
+      ],
+      "provenance": { "sourceUrl": "https://open-meteo.com/en/docs/air-quality-api", "licenseUrl": "https://open-meteo.com/en/pricing", "transformVersion": "live-senseware-v2-open-meteo" }
     }
   ]
 }

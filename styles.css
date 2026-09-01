@@ -9191,7 +9191,7 @@ h1 {
 }
 
 /* Light works are optional, non-interactive WebGL veils over the selected map.
-   Their numbering and selection state remain independent from MAP 01—12. */
+   Their numbering and selection state remain independent from MAP 01—14. */
 .japan-layer.is-abstract-exhibit > #gaia-canvas {
   position: absolute;
   z-index: 2;

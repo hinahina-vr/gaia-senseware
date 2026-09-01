@@ -116,12 +116,15 @@
         noaa: "NOAA",
         jaxa: "JAXA Earth Observation Research Center",
         esa: "ESA / Copernicus Data Space Ecosystem",
+        "open-meteo": "Open-Meteo / CAMS",
       };
       const provider = providerNames[event?.provider] || event?.provider?.toUpperCase() || "公開データ提供元";
       const location = event?.location;
       const bbox = Array.isArray(location?.bbox) ? ` / bbox ${location.bbox.join(", ")}` : "";
       const status = event?.status?.toUpperCase() || "DATA MISSING";
       const savedEvent = event?.status === "snapshot";
+      const modelData = measurement?.sourceKind === "MODEL";
+      const dataKind = modelData ? "モデル" : "観測";
       const dataset = {
         id: event?.datasetId || `${exhibit.id}-source-missing`,
         kind: measurement?.sourceKind || "SOURCE",
@@ -129,12 +132,12 @@
         organisation: provider,
         transformation: exhibit.caption,
         retrievedAt: event?.retrievedAt,
-        period: event?.observedAt ? `観測時刻 ${displayJptDateTime(event.observedAt)}` : "観測時刻なし",
+        period: event?.observedAt ? `データ時刻 ${displayJptDateTime(event.observedAt)}` : "データ時刻なし",
         unit: measurement?.unit || "—",
-        resolution: `${location?.label || exhibit.location?.label || "ハワイ固定観測範囲"}${bbox}`,
+        resolution: `${location?.label || exhibit.location?.label || "公開データ対象範囲"}${bbox}`,
         caveat: state?.connected && !savedEvent
           ? "公開APIへ接続中です。5分ごとに再取得し、提供元の更新周期と公開遅延をそのまま表示へ反映します。"
-          : `${status}。現在は保存済み観測値を再現しており、現在時刻の実況値ではありません。`,
+          : `${status}。現在は保存済み${dataKind}値を再現しており、現在時刻の実況値ではありません。`,
         url: event?.provenance?.sourceUrl || "./data/live-observation-fallback-v1.json",
         termsUrl: event?.provenance?.licenseUrl,
         preview: [{
@@ -149,8 +152,8 @@
       };
       elements.title.textContent = `${exhibit.number} ${exhibit.shortTitle}`;
       elements.question.textContent = "";
-      elements.act.textContent = `LIVE SENSEWARE / ${state?.connected ? "NEAR REAL TIME · 5 MIN REFRESH" : state?.source === "live" ? "LATEST API · RECONNECTING" : "SAVED SNAPSHOT"}`;
-      elements.state.textContent = event ? `1種類のデータを使用 / ${status}` : "この観測の出典情報を取得できませんでした";
+      elements.act.textContent = `LIVE SENSEWARE / ${state?.connected ? modelData ? "LATEST MODEL · 5 MIN RECHECK" : "NEAR REAL TIME · 5 MIN REFRESH" : state?.source === "live" ? "LATEST API · RECONNECTING" : modelData ? "SAVED MODEL SNAPSHOT" : "SAVED SNAPSHOT"}`;
+      elements.state.textContent = event ? `1種類の${dataKind}データを使用 / ${status}` : "このデータの出典情報を取得できませんでした";
       elements.updated.textContent = `取得日時：${displayJptDateTime(event?.retrievedAt)}`;
       elements.historyState.hidden = true;
       elements.historyUpdated.hidden = true;

@@ -22,6 +22,10 @@ await test("Live Senseware uses free-plan provider gates and five-minute stream 
   assert.match(source, /LIVE_SENSEWARE_JAXA_ENABLED === "true"/u);
   assert.match(source, /JAXA live disabled for free-plan CPU safety/u);
   assert.match(source, /LIVE_SENSEWARE_ESA_ENABLED === "true" && env\.CDSE_CLIENT_ID && env\.CDSE_CLIENT_SECRET/u);
+  assert.match(source, /open-meteo-tokyo-weather-v1[\s\S]*30 \* 60 \* 1_000/u);
+  assert.match(source, /open-meteo-tokyo-air-v1[\s\S]*3 \* 60 \* 60 \* 1_000/u);
+  assert.match(source, /current: "temperature_2m,precipitation,cloud_cover,wind_speed_10m"/u);
+  assert.match(source, /current: "carbon_dioxide,pm2_5"/u);
   assert.match(source, /refresh = setInterval\(\(\) => void emitSnapshot\(\), STREAM_REFRESH_MS\)/u);
   assert.match(productionConfig, /"LIVE_SENSEWARE_ENABLED": "true"/u);
   assert.match(productionConfig, /"LIVE_SENSEWARE_JAXA_ENABLED": "false"/u);
@@ -119,7 +123,7 @@ try {
     const payload = await response.json();
     assert.equal(payload.source, "snapshot");
     assert.match(payload.fallbackReason, /LIVE_SENSEWARE_ENABLED/u);
-    assert.deepEqual([...new Set(payload.events.map((event) => event.provider))].sort(), ["esa", "jaxa", "noaa"]);
+    assert.deepEqual([...new Set(payload.events.map((event) => event.provider))].sort(), ["esa", "jaxa", "noaa", "open-meteo"]);
     assert(payload.events.every((event) => event.status === "snapshot"));
   });
   await test("Live Senseware SSE emits normalized snapshot and provider events", async () => {

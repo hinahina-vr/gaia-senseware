@@ -2,7 +2,7 @@ import { toSoundParameters } from "./transforms.js";
 
 const MODE_PROFILES = Object.freeze({
   "wind-field": Object.freeze({
-    key: "windSpeed",
+    key: "weatherWindSpeed",
     root: 146.83,
     chord: [0, 4, 7, 14],
     scale: [0, 2, 4, 7, 9, 14],
@@ -12,7 +12,7 @@ const MODE_PROFILES = Object.freeze({
     mapping: "風速 → テンポ・高域・風の粒子音",
   }),
   "carbon-pulse": Object.freeze({
-    key: "co2",
+    key: "forecastCo2",
     root: 130.81,
     chord: [0, 4, 7, 11],
     scale: [0, 2, 4, 7, 9, 11],
@@ -22,7 +22,7 @@ const MODE_PROFILES = Object.freeze({
     mapping: "CO₂ → 和音の呼吸周期・微細なピッチ変化",
   }),
   "rain-chorus": Object.freeze({
-    key: "precipitation",
+    key: "weatherPrecipitation",
     root: 110,
     chord: [0, 3, 7, 10],
     scale: [0, 3, 5, 7, 10, 12],
@@ -31,15 +31,35 @@ const MODE_PROFILES = Object.freeze({
     noteLength: 0.72,
     mapping: "降水量 → 音符密度・残響・水滴の明るさ",
   }),
-  "no2-veil": Object.freeze({
-    key: "no2",
+  "temperature-field": Object.freeze({
+    key: "weatherTemperature",
+    root: 164.81,
+    chord: [0, 4, 7, 12],
+    scale: [0, 2, 4, 7, 9, 12],
+    tempo: [48, 106],
+    fallback: 0.58,
+    noteLength: 1.5,
+    mapping: "気温 → 音域・明るさ・等温線の周期",
+  }),
+  "cloud-drift": Object.freeze({
+    key: "cloudCover",
+    root: 123.47,
+    chord: [0, 5, 7, 10],
+    scale: [0, 2, 5, 7, 10, 12],
+    tempo: [34, 70],
+    fallback: 0.45,
+    noteLength: 3.2,
+    mapping: "雲量 → 音の密度・帯域・残響",
+  }),
+  "pm25-haze": Object.freeze({
+    key: "pm25",
     root: 146.83,
     chord: [0, 5, 7, 12],
     scale: [0, 2, 5, 7, 9, 12],
     tempo: [38, 82],
     fallback: 0.16,
     noteLength: 2.1,
-    mapping: "NO₂ → 共鳴・高域の薄膜 / 欠測時は走査待機音",
+    mapping: "PM2.5 → 共鳴・高域の霞 / 欠測時は走査待機音",
   }),
 });
 
@@ -261,19 +281,19 @@ class ProceduralAudio {
     this.nodes.padOscillators.forEach((voice, index) => {
       const frequency = chord[index % chord.length] / (index === 3 ? 2 : 1);
       this.setTarget(voice.oscillator.frequency, frequency, 1.4);
-      const modeGain = this.focus === "rain-chorus" ? 0.72 : this.focus === "no2-veil" && missing ? 0.54 : 1;
+      const modeGain = this.focus === "rain-chorus" ? 0.72 : this.focus === "pm25-haze" && missing ? 0.54 : 1;
       this.setTarget(voice.gain.gain, voice.gainValue * modeGain, 0.9);
     });
 
-    const brightness = this.focus === "wind-field" ? 1_000 : this.focus === "rain-chorus" ? 720 : 520;
+    const brightness = this.focus === "wind-field" ? 1_000 : this.focus === "rain-chorus" ? 720 : this.focus === "temperature-field" ? 920 : this.focus === "cloud-drift" ? 420 : 520;
     this.setTarget(this.nodes.padFilter.frequency, brightness + level * 2_300, 1.2);
-    this.setTarget(this.nodes.padFilter.Q, this.focus === "no2-veil" ? (this.parameters.resonance ?? 0.9) : 0.72 + level * 0.8, 1.2);
+    this.setTarget(this.nodes.padFilter.Q, this.focus === "pm25-haze" ? (this.parameters.resonance ?? 0.9) : 0.72 + level * 0.8, 1.2);
     this.setTarget(this.nodes.breath.frequency, this.focus === "carbon-pulse" ? (this.parameters.lfoFrequency ?? 0.06) : tempo / 240, 1.4);
     this.setTarget(this.nodes.breathDepth.gain, 0.018 + level * 0.026, 1.2);
     const windNoise = this.focus === "wind-field" ? 0.006 + level * 0.038 : this.focus === "rain-chorus" ? 0.002 + level * 0.009 : 0.0015;
-    this.setTarget(this.nodes.noiseGain.gain, missing && this.focus === "no2-veil" ? 0.0008 : windNoise, 1.1);
+    this.setTarget(this.nodes.noiseGain.gain, missing && this.focus === "pm25-haze" ? 0.0008 : windNoise, 1.1);
     this.setTarget(this.nodes.noiseFilter.frequency, this.parameters.noiseCutoff ?? 360 + level * 1_900, 1.1);
-    this.setTarget(this.nodes.noiseFilter.Q, this.focus === "no2-veil" ? 1.2 + level * 4 : 0.7 + level, 1.1);
+    this.setTarget(this.nodes.noiseFilter.Q, this.focus === "pm25-haze" ? 1.2 + level * 4 : 0.7 + level, 1.1);
     if ("pan" in this.nodes.noisePan) this.setTarget(this.nodes.noisePan.pan, this.focus === "wind-field" ? -0.28 + level * 0.56 : 0, 1.4);
     this.setTarget(this.nodes.wet.gain, this.focus === "rain-chorus" ? 0.32 + level * 0.24 : this.focus === "carbon-pulse" ? 0.38 : 0.26 + level * 0.12, 1.1);
   }

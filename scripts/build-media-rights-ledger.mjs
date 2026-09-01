@@ -78,6 +78,8 @@ const sources = [
   { provider: "NOAA GML", datasetId: "Mauna Loa hourly CO2", sourceUrl: "https://erddap.gml.noaa.gov/erddap/tabledap/greenhouse_gases_co2_insitu_hourly_averages_surface.html", termsUrl: "https://gml.noaa.gov/ccgg/about/co2_measurements.html", retrievalPolicy: "latest published: 1 hour; versioned snapshot fallback" },
   { provider: "JAXA Earth API", datasetId: "JAXA.EORC_GSMaP_standard.Gauge.00Z-23Z.v6_daily", sourceUrl: "https://data.earth.jaxa.jp/en/", termsUrl: "https://data.earth.jaxa.jp/en/terms-of-use/", retrievalPolicy: "live: 6 hours; fixed Hawaii bbox mean; versioned snapshot fallback" },
   { provider: "ESA / Copernicus Data Space", datasetId: "Sentinel-5P L2 NO2 NRTI", sourceUrl: "https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/Data/S5PL2.html", termsUrl: "https://dataspace.copernicus.eu/terms-and-conditions", retrievalPolicy: "live: 30 minutes; 72-hour quality-masked bbox mean; versioned snapshot fallback" },
+  { provider: "Open-Meteo", datasetId: "Best Match / Tokyo current weather", sourceUrl: "https://open-meteo.com/en/docs", termsUrl: "https://open-meteo.com/en/pricing", retrievalPolicy: "model: 30-minute Cloudflare cache; 5-minute refresh check; versioned snapshot fallback" },
+  { provider: "Open-Meteo / CAMS", datasetId: "Global greenhouse gas and air-quality forecast / Tokyo grid", sourceUrl: "https://open-meteo.com/en/docs/air-quality-api", termsUrl: "https://open-meteo.com/en/pricing", retrievalPolicy: "model: 3-hour Cloudflare cache; 5-minute refresh check; versioned snapshot fallback" },
 ];
 
 const payload = { schemaVersion: 1, generatedBy: "scripts/build-media-rights-ledger.mjs", accountPlanDisclosure: "生成サービスの利用プランは確認していない", assets, sources };

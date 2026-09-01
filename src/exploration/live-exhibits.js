@@ -6,64 +6,102 @@ const EXHIBITS = Object.freeze([
     number: "09",
     title: "風脈 — WIND FIELD",
     shortTitle: "風脈",
-    key: "windSpeed",
+    key: "weatherWindSpeed",
     accent: "#79f7ff",
     rgb: "121, 247, 255",
     fallback: 0.14,
-    caption: "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。",
+    caption: "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。",
     signalLabel: "風速",
     scaleLabel: "0—45 m/sを0—100%へ正規化",
-    location: Object.freeze({ lon: -155.056, lat: 19.73, label: "NDBC ILOH1 / ハワイ島東岸" }),
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "Open-Meteo / 東京" }),
     visualCue: "流線",
     visualMap: "風速が高いほど、流線の本数・移動速度・光量が増えます。",
+    refreshCopy: "天気モデルはCloudflareで最大30分キャッシュし、5分ごとに公開値の更新を再確認します。",
   }),
   Object.freeze({
     id: "carbon-pulse",
     number: "10",
     title: "炭素の呼吸 — CARBON PULSE",
     shortTitle: "炭素の呼吸",
-    key: "co2",
+    key: "forecastCo2",
     accent: "#ffd06f",
     rgb: "255, 208, 111",
     fallback: 0.4,
-    caption: "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。",
+    caption: "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。",
     signalLabel: "CO₂濃度",
     scaleLabel: "280—650 ppmを0—100%へ正規化",
-    location: Object.freeze({ lon: -155.576, lat: 19.536, label: "Mauna Loa Observatory / ハワイ島" }),
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "CAMSモデル / 東京格子" }),
     visualCue: "光環",
     visualMap: "CO₂濃度が高いほど、光環の呼吸が速まり、余韻が広がります。",
+    refreshCopy: "CO₂は実測点ではなくCAMS全球モデルの予測値です。最大3時間キャッシュします。",
   }),
   Object.freeze({
     id: "rain-chorus",
     number: "11",
     title: "雨の記憶 — RAIN CHORUS",
     shortTitle: "雨の記憶",
-    key: "precipitation",
+    key: "weatherPrecipitation",
     accent: "#82bfff",
     rgb: "130, 191, 255",
     fallback: 0.08,
-    caption: "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。",
-    signalLabel: "領域平均降水量",
+    caption: "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。",
+    signalLabel: "降水量",
     scaleLabel: "0—30 mm/hrを0—100%へ正規化",
-    location: Object.freeze({ lon: -155.45, lat: 19.55, label: "JAXA GSMaP / ハワイ固定範囲" }),
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "Open-Meteo / 東京" }),
     visualCue: "雨と波紋",
     visualMap: "降水量が多いほど、雨線と水面の波紋が密に発生します。",
+    refreshCopy: "天気モデルはCloudflareで最大30分キャッシュし、5分ごとに公開値の更新を再確認します。",
   }),
   Object.freeze({
-    id: "no2-veil",
+    id: "temperature-field",
     number: "12",
-    title: "大気の痕跡 — NO₂ VEIL",
-    shortTitle: "大気の痕跡",
-    key: "no2",
+    title: "熱の輪郭 — TEMPERATURE FIELD",
+    shortTitle: "熱の輪郭",
+    key: "weatherTemperature",
+    accent: "#ff9b69",
+    rgb: "255, 155, 105",
+    fallback: 0.58,
+    caption: "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。",
+    signalLabel: "地上2m気温",
+    scaleLabel: "−20—45 ℃を0—100%へ正規化",
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "Open-Meteo / 東京" }),
+    visualCue: "等温線",
+    visualMap: "気温が高いほど、等温線が橙から白へ変わり、熱の揺らぎが強くなります。",
+    refreshCopy: "天気モデルはCloudflareで最大30分キャッシュし、5分ごとに公開値の更新を再確認します。",
+  }),
+  Object.freeze({
+    id: "cloud-drift",
+    number: "13",
+    title: "雲の層 — CLOUD DRIFT",
+    shortTitle: "雲の層",
+    key: "cloudCover",
+    accent: "#c8e8ff",
+    rgb: "200, 232, 255",
+    fallback: 0.45,
+    caption: "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。",
+    signalLabel: "総雲量",
+    scaleLabel: "0—100%を光の遮蔽率へ変換",
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "Open-Meteo / 東京" }),
+    visualCue: "雲粒",
+    visualMap: "雲量が多いほど、雲粒が厚く重なり、地図へ落ちる光が柔らかくなります。",
+    refreshCopy: "天気モデルはCloudflareで最大30分キャッシュし、5分ごとに公開値の更新を再確認します。",
+  }),
+  Object.freeze({
+    id: "pm25-haze",
+    number: "14",
+    title: "微粒子の霞 — PM2.5 HAZE",
+    shortTitle: "微粒子の霞",
+    key: "pm25",
     accent: "#d49bff",
     rgb: "212, 155, 255",
-    fallback: 0.16,
-    caption: "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。",
-    signalLabel: "NO₂鉛直カラム",
-    scaleLabel: "0—0.0003 mol/m²を0—100%へ正規化",
-    location: Object.freeze({ lon: -155.45, lat: 19.55, label: "Sentinel-5P / ハワイ固定範囲" }),
-    visualCue: "大気の膜",
-    visualMap: "NO₂が高いほど薄膜の明度と揺らぎが増え、欠測時は走査線だけが残ります。",
+    fallback: 0.12,
+    caption: "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。",
+    signalLabel: "PM2.5濃度",
+    scaleLabel: "0—150 µg/m³を0—100%へ正規化",
+    location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "CAMSモデル / 東京格子" }),
+    visualCue: "粒子と霞",
+    visualMap: "PM2.5が高いほど粒子密度と霞の明度が増えます。値はCAMSモデル予測です。",
+    refreshCopy: "PM2.5は実測点ではなくCAMS全球モデルの予測値です。最大3時間キャッシュします。",
   }),
 ]);
 
@@ -82,6 +120,7 @@ let readout = null;
 let mobileReadoutToggle = null;
 let anchorMarker = null;
 let buttons = [];
+let deckModeButtons = [];
 let frame = 0;
 let lastRenderedAt = 0;
 let savedHeading = null;
@@ -99,8 +138,8 @@ const setMobileReadoutExpanded = (expanded) => {
 
 const formatValue = (measurement) => {
   if (!measurement || !Number.isFinite(Number(measurement.value))) return "欠測";
-  const digits = measurement.key === "no2" ? 7 : measurement.key === "co2" ? 2 : 3;
-  const unit = measurement.key === "co2" ? "ppm" : measurement.unit || "";
+  const digits = measurement.key === "weatherPrecipitation" ? 2 : 1;
+  const unit = measurement.unit || "";
   return `${Number(measurement.value).toLocaleString("ja-JP", { maximumFractionDigits: digits })} ${unit}`.trim();
 };
 
@@ -367,6 +406,33 @@ const WEBGL_FRAGMENT_SOURCE = `
     return mix(deepWater, rainLight, clamp(rainLines * 0.82 + ripple * 0.56 + fieldB * 0.2, 0.0, 1.0));
   }
 
+  vec3 temperatureField(vec2 p, vec2 signalSpace, float fieldA, float fieldB, float phase, out float energy) {
+    vec2 heatSpace = signalSpace - u_anchor;
+    float contourA = softLine(abs(sin((heatSpace.y + fieldA * 0.18) * 8.0 - phase * 0.32)), 0.085);
+    float contourB = softLine(abs(sin((heatSpace.x * 0.55 - heatSpace.y + fieldB * 0.22) * 11.0 + phase * 0.21)), 0.06);
+    float thermalLift = smoothstep(0.36, 0.9, fbm(vec2(heatSpace.x * 2.1, heatSpace.y * 1.4 - phase * (0.12 + u_strength * 0.2))));
+    float sourceHeat = exp(-8.0 * dot(heatSpace * vec2(0.86, 1.0), heatSpace * vec2(0.86, 1.0)));
+    energy = contourA * 0.42 + contourB * 0.24 + thermalLift * (0.18 + u_strength * 0.28) + sourceHeat * 0.7;
+    vec3 cold = vec3(0.18, 0.66, 1.0);
+    vec3 warm = vec3(1.0, 0.38, 0.12);
+    vec3 whiteHeat = vec3(1.0, 0.91, 0.68);
+    return mix(mix(cold, warm, smoothstep(0.18, 0.76, u_strength)), whiteHeat, clamp(sourceHeat + contourA * 0.22, 0.0, 1.0));
+  }
+
+  vec3 cloudField(vec2 p, vec2 signalSpace, float fieldA, float fieldB, float phase, out float energy) {
+    vec2 cloudSpace = signalSpace * vec2(0.88, 1.28) + vec2(-phase * 0.055, phase * 0.012);
+    float broadCloud = fbm(cloudSpace * 1.12 + vec2(fieldA * 0.34, fieldB * 0.18));
+    float fineCloud = fbm(cloudSpace * 2.36 - vec2(fieldB, fieldA) * 0.28);
+    float threshold = mix(0.72, 0.38, u_strength);
+    float cloudMass = smoothstep(threshold, threshold + 0.2, broadCloud * 0.72 + fineCloud * 0.38);
+    float rim = softLine(abs((broadCloud * 0.72 + fineCloud * 0.38) - threshold), 0.045);
+    float opening = exp(-5.0 * dot((signalSpace - u_anchor) * vec2(0.78, 1.0), (signalSpace - u_anchor) * vec2(0.78, 1.0)));
+    energy = cloudMass * (0.34 + u_strength * 0.52) + rim * 0.22 + opening * (1.0 - u_strength) * 0.18;
+    vec3 shadowCloud = vec3(0.21, 0.43, 0.62);
+    vec3 daylight = vec3(0.78, 0.94, 1.0);
+    return mix(shadowCloud, daylight, clamp(fineCloud + rim * 0.46, 0.0, 1.0));
+  }
+
   vec3 no2Field(vec2 p, vec2 signalSpace, float fieldA, float fieldB, float phase, out float energy) {
     vec2 veilSpace = rotate2d(0.16) * signalSpace;
     veilSpace += vec2(fieldA - 0.5, fieldB - 0.5) * 0.2;
@@ -395,6 +461,8 @@ const WEBGL_FRAGMENT_SOURCE = `
     if (u_mode < 0.5) fieldColor = windField(p, signalSpace, fieldA, fieldB, phase, energy);
     else if (u_mode < 1.5) fieldColor = carbonField(p, signalSpace, fieldA, fieldB, phase, energy);
     else if (u_mode < 2.5) fieldColor = rainField(p, signalSpace, fieldA, fieldB, phase, energy);
+    else if (u_mode < 3.5) fieldColor = temperatureField(p, signalSpace, fieldA, fieldB, phase, energy);
+    else if (u_mode < 4.5) fieldColor = cloudField(p, signalSpace, fieldA, fieldB, phase, energy);
     else fieldColor = no2Field(p, signalSpace, fieldA, fieldB, phase, energy);
 
     float touchBloom = 0.0;
@@ -612,6 +680,57 @@ const drawRain = (width, height, time, strength, ratio, anchor) => {
   }
 };
 
+const drawTemperature = (width, height, time, strength, ratio, anchor) => {
+  const x = anchor[0] * width;
+  const y = anchor[1] * height;
+  const red = Math.round(82 + strength * 173);
+  const green = Math.round(184 - strength * 52);
+  const blue = Math.round(255 - strength * 150);
+  const glow = context.createRadialGradient(x, y, 0, x, y, Math.min(width, height) * 0.56);
+  glow.addColorStop(0, `rgba(${red},${green},${blue},${0.18 + strength * 0.16})`);
+  glow.addColorStop(0.48, `rgba(${red},${green},${blue},.07)`);
+  glow.addColorStop(1, `rgba(${red},${green},${blue},0)`);
+  context.fillStyle = glow;
+  context.fillRect(0, 0, width, height);
+  context.globalCompositeOperation = "screen";
+  const bands = Math.max(8, Math.round(16 * ratio));
+  for (let band = 0; band < bands; band += 1) {
+    const points = [];
+    const base = height * (0.14 + band / bands * 0.72);
+    for (let step = 0; step <= 54; step += 1) {
+      const pointX = step / 54 * width;
+      const pointY = base + Math.sin(step * 0.31 + band * 0.62 - time * (0.14 + strength * 0.28)) * (12 + strength * 48);
+      points.push([pointX, pointY]);
+    }
+    line(points, `rgba(${red},${green},${blue},${0.08 + strength * 0.15})`, band % 4 === 0 ? 1.8 : 0.75);
+  }
+};
+
+const drawCloud = (width, height, time, strength, ratio, anchor) => {
+  const count = Math.max(12, Math.round((24 + strength * 48) * ratio));
+  context.globalCompositeOperation = "screen";
+  for (let index = 0; index < count; index += 1) {
+    const seedX = (index * 0.61803398875) % 1;
+    const seedY = (index * 0.41421356237) % 1;
+    const x = ((seedX * width + time * (8 + strength * 18) + index * 13) % (width + 260)) - 130;
+    const y = height * (0.14 + seedY * 0.68) + Math.sin(time * 0.12 + index) * 20;
+    const radius = 44 + (index % 7) * 13 + strength * 72;
+    const cloud = context.createRadialGradient(x, y, 0, x, y, radius);
+    cloud.addColorStop(0, `rgba(222,244,255,${0.08 + strength * 0.16})`);
+    cloud.addColorStop(0.48, `rgba(160,211,239,${0.04 + strength * 0.08})`);
+    cloud.addColorStop(1, "rgba(120,178,210,0)");
+    context.fillStyle = cloud;
+    context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  }
+  const anchorX = anchor[0] * width;
+  const anchorY = anchor[1] * height;
+  const opening = context.createRadialGradient(anchorX, anchorY, 0, anchorX, anchorY, 110);
+  opening.addColorStop(0, `rgba(232,251,255,${0.3 * (1 - strength)})`);
+  opening.addColorStop(1, "rgba(200,232,255,0)");
+  context.fillStyle = opening;
+  context.fillRect(anchorX - 120, anchorY - 120, 240, 240);
+};
+
 const drawNo2 = (width, height, time, strength, ratio, missing) => {
   const bands = Math.max(8, Math.round(18 * ratio));
   context.globalCompositeOperation = "screen";
@@ -676,7 +795,7 @@ const updateAnchorMarker = (exhibit, location, anchor) => {
   anchorMarker.style.left = `${(x * 100).toFixed(3)}%`;
   anchorMarker.style.top = `${(y * 100).toFixed(3)}%`;
   anchorMarker.dataset.exhibit = exhibit.id;
-  anchorMarker.querySelector("[data-live-anchor-source]").textContent = exhibit.number === "10" ? "OBSERVATORY" : "OBSERVATION AREA";
+  anchorMarker.querySelector("[data-live-anchor-source]").textContent = "MODEL GRID";
   anchorMarker.querySelector("[data-live-anchor-label]").textContent = location.label;
   anchorMarker.querySelector("[data-live-anchor-coordinates]").textContent = `${Math.abs(location.lat).toFixed(3)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(3)}°${location.lon >= 0 ? "E" : "W"}`;
 };
@@ -731,6 +850,8 @@ const draw = (timestamp = performance.now(), force = false) => {
     if (exhibit.id === "wind-field") drawWind(width, height, time, strength, particleRatio, anchor.normalized);
     else if (exhibit.id === "carbon-pulse") drawCarbon(width, height, time, strength, particleRatio, anchor.normalized);
     else if (exhibit.id === "rain-chorus") drawRain(width, height, time, strength, particleRatio, anchor.normalized);
+    else if (exhibit.id === "temperature-field") drawTemperature(width, height, time, strength, particleRatio, anchor.normalized);
+    else if (exhibit.id === "cloud-drift") drawCloud(width, height, time, strength, particleRatio, anchor.normalized);
     else drawNo2(width, height, time, strength, particleRatio, missing);
     drawLightTouch(width, height, timestamp, exhibit.rgb);
     context.globalCompositeOperation = "source-over";
@@ -748,8 +869,9 @@ const renderReadout = () => {
   const location = observationLocation(exhibit, measurement);
   const status = STATUS_LABELS[measurement?.status] || (state.connected ? "NEAR REAL TIME" : "SNAPSHOT");
   const savedMeasurement = measurement?.status === "snapshot";
+  const modelMeasurement = measurement?.sourceKind === "MODEL";
   const feedState = state.connected && !savedMeasurement
-    ? "NEAR REAL TIME / 5分ごとに更新"
+    ? modelMeasurement ? "LATEST MODEL / 5分ごとに再確認" : "NEAR REAL TIME / 5分ごとに再確認"
     : state.source === "live"
       ? "LATEST API SNAPSHOT / 再接続中"
       : "SAVED SNAPSHOT / 保存データを再現中";
@@ -766,16 +888,16 @@ const renderReadout = () => {
   readout.querySelector("[data-live-exhibit-value]").textContent = formatValue(measurement);
   readout.querySelector("[data-live-exhibit-caption]").textContent = exhibit.caption;
   readout.querySelector("[data-live-exhibit-feed-state]").textContent = feedState;
-  readout.querySelector("[data-live-exhibit-feed-time]").textContent = `観測時刻 ${observedAt}`;
+  readout.querySelector("[data-live-exhibit-feed-time]").textContent = `データ時刻 ${observedAt}`;
   readout.querySelector("[data-live-exhibit-feed-copy]").textContent = state.connected && !savedMeasurement
-    ? "公開APIの最新公開値に接続中です。5分ごとの更新時に、数値と光へ同じ変換を反映します。"
+    ? exhibit.refreshCopy
     : state.source === "live"
-      ? "この項目は保存済み観測値です。ライブ取得できた項目だけを5分ごとに更新し、混在状態を明示します。"
-      : "現在は保存済み観測データの再現です。準リアルタイム接続時も、取得できない項目はこの状態を明示します。";
+      ? `この項目は保存済み${modelMeasurement ? "モデル" : "観測"}値です。ライブ取得できた項目だけを5分ごとに更新し、混在状態を明示します。`
+      : `現在は保存済み${modelMeasurement ? "モデル" : "観測"}データの再現です。準リアルタイム接続時も、取得できない項目はこの状態を明示します。`;
   readout.querySelector("[data-live-exhibit-level]").textContent = missing ? "欠測 / STANDBY" : `${Math.round(strength * 100)}% SIGNAL`;
   readout.querySelector("[data-live-exhibit-scale]").textContent = exhibit.scaleLabel;
   readout.querySelector("[data-live-stage-signal]").textContent = missing ? "STANDBY" : formatValue(measurement);
-  readout.querySelector("[data-live-stage-location]").textContent = "HAWAIʻI";
+  readout.querySelector("[data-live-stage-location]").textContent = "TOKYO";
   readout.querySelector("[data-live-stage-coordinates]").textContent = `${Math.abs(location.lat).toFixed(1)}°${location.lat >= 0 ? "N" : "S"}`;
   readout.querySelector("[data-live-stage-visual]").textContent = exhibit.visualCue;
   readout.querySelector("[data-live-exhibit-input]").textContent = missing
@@ -787,6 +909,16 @@ const renderReadout = () => {
     ? `${measurement.provider?.toUpperCase() || "SOURCE"} · ${measurement.datasetId || "PUBLIC DATA"}`
     : "SOURCE DATA MISSING · VISUAL SCAN STANDBY";
   readout.querySelector("[data-live-exhibit-time]").textContent = observedAt;
+  readout.querySelector("[data-live-deck-number]").textContent = exhibit.number;
+  readout.querySelector("[data-live-deck-title]").textContent = exhibit.shortTitle;
+  readout.querySelector("[data-live-deck-location]").textContent = location.label;
+  readout.querySelector("[data-live-deck-coordinates]").textContent = `${Math.abs(location.lat).toFixed(4)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(4)}°${location.lon >= 0 ? "E" : "W"}`;
+  readout.querySelector("[data-live-deck-source-name]").textContent = measurement?.provider?.toUpperCase() || "SOURCE";
+  readout.querySelectorAll("[data-live-wave-bar]").forEach((bar, index) => {
+    const phase = (index + 1) * (0.54 + activeIndex * 0.07);
+    const harmonic = Math.abs(Math.sin(phase) * 0.58 + Math.sin(phase * 0.37 + activeIndex) * 0.26);
+    bar.style.setProperty("--live-wave", String(Math.min(1, 0.12 + harmonic * (0.42 + strength * 0.72))));
+  });
 };
 
 const applyHeading = () => {
@@ -801,6 +933,7 @@ const applyHeading = () => {
   mapTitle.textContent = exhibit.shortTitle;
   mapTitle.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}`);
   buttons.forEach((button, index) => button.setAttribute("aria-current", String(index === activeIndex)));
+  deckModeButtons.forEach((button, index) => button.setAttribute("aria-current", String(index === activeIndex)));
   document.querySelectorAll("#japan-mode-list .map-mode-button:not([data-live-exhibit])").forEach((button) => button.setAttribute("aria-current", "false"));
 };
 
@@ -879,7 +1012,7 @@ const mount = () => {
   anchorMarker.className = "gaia-live-exhibit-anchor";
   anchorMarker.hidden = true;
   anchorMarker.setAttribute("aria-hidden", "true");
-  anchorMarker.innerHTML = `<i></i><span><b data-live-anchor-source>OBSERVATION AREA</b><strong data-live-anchor-label>HAWAII</strong><small data-live-anchor-coordinates>19.550°N / 155.450°W</small></span>`;
+  anchorMarker.innerHTML = `<i></i><span><b data-live-anchor-source>MODEL GRID</b><strong data-live-anchor-label>TOKYO</strong><small data-live-anchor-coordinates>35.676°N / 139.650°E</small></span>`;
   map.append(anchorMarker);
   webglRenderer = createWebGLRenderer(canvas);
   if (webglRenderer) {
@@ -921,7 +1054,22 @@ const mount = () => {
   readout.className = "gaia-live-exhibit-readout";
   readout.hidden = true;
   readout.setAttribute("aria-live", "polite");
+  const liveWaveBars = Array.from({ length: 34 }, (_, index) => `<i data-live-wave-bar style="--live-wave-index:${index}"></i>`).join("");
   readout.innerHTML = `
+    <div class="gaia-live-deck-chapter">
+      <p>CHAPTER / LIVE MAP</p>
+      <div>
+        <button type="button" data-live-deck-step="-1" aria-label="一つ前のライブ展示へ">‹</button>
+        <span data-live-deck-number>09</span>
+        <strong data-live-deck-title>風脈</strong>
+        <button type="button" data-live-deck-step="1" aria-label="一つ次のライブ展示へ">›</button>
+      </div>
+    </div>
+    <div class="gaia-live-deck-location">
+      <p>MODEL / TOKYO</p>
+      <strong data-live-deck-location>Open-Meteo / 東京</strong>
+      <small data-live-deck-coordinates>35.6762°N / 139.6503°E</small>
+    </div>
     <div class="gaia-live-exhibit-primary">
       <div>
         <p data-live-exhibit-kicker></p>
@@ -932,21 +1080,27 @@ const mount = () => {
       </div>
       <strong data-live-exhibit-value></strong>
     </div>
+    <section class="gaia-live-deck-wave" aria-label="ライブデータの更新状態">
+      <header><span>LIVE WAVE / 15 MIN</span><strong data-live-exhibit-feed-state></strong></header>
+      <div class="gaia-live-deck-waveform" aria-hidden="true">${liveWaveBars}</div>
+      <footer><time data-live-exhibit-feed-time></time><b data-live-exhibit-level>0% SIGNAL</b></footer>
+    </section>
+    <nav class="gaia-live-deck-modes" aria-label="ライブ展示を選ぶ"></nav>
+    <div class="gaia-live-deck-actions gaia-live-exhibit-actions">
+      <button type="button" class="gaia-live-deck-action" data-live-deck-source aria-label="データの出典を表示する"><span>SOURCE</span><strong data-live-deck-source-name>OPEN-METEO</strong><i aria-hidden="true">↗</i></button>
+      <button class="gaia-live-exhibit-touch-hint" type="button" data-live-light-touch aria-label="地図の光へ触れる"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></button>
+      <button type="button" class="gaia-live-deck-action" data-live-deck-analysis aria-label="現在の展示データを統計分析する"><span>ANALYSIS</span><strong>統計分析</strong><i aria-hidden="true">＋</i></button>
+    </div>
     <button class="gaia-live-mobile-toggle" id="gaia-live-mobile-toggle" type="button" aria-expanded="false" aria-controls="gaia-live-exhibit-details">
       <span>DETAIL</span><strong>詳細</strong><i aria-hidden="true"></i>
     </button>
     <div class="gaia-live-exhibit-signal" aria-label="観測値の変換強度">
       <span><i></i></span>
-      <b data-live-exhibit-level>0% SIGNAL</b>
       <small data-live-exhibit-scale></small>
     </div>
     <div class="gaia-live-exhibit-details" id="gaia-live-exhibit-details">
     <section class="gaia-live-exhibit-explanation" aria-label="展示の説明と観測状態">
       <p class="gaia-live-exhibit-summary" data-live-exhibit-caption></p>
-      <div class="gaia-live-exhibit-freshness">
-        <strong data-live-exhibit-feed-state></strong>
-        <time data-live-exhibit-feed-time></time>
-      </div>
       <p data-live-exhibit-feed-copy></p>
     </section>
     <ol class="gaia-live-exhibit-path" aria-label="観測データから光への変換経路">
@@ -959,7 +1113,7 @@ const mount = () => {
       <li data-live-stage="locate">
         <span>02</span>
         <i class="gaia-live-stage-symbol" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="27" r="9"/><path d="M32 5c-13 0-23 10-23 23 0 17 23 31 23 31s23-14 23-31C55 15 45 5 32 5Z"/></svg></i>
-        <b>地図</b><em data-live-stage-location>HAWAIʻI</em><small data-live-stage-coordinates>19.7°N</small>
+        <b>地図</b><em data-live-stage-location>TOKYO</em><small data-live-stage-coordinates>35.7°N</small>
         <p class="gaia-live-exhibit-a11y" data-live-exhibit-location></p>
       </li>
       <li data-live-stage="visualize">
@@ -969,13 +1123,28 @@ const mount = () => {
         <p class="gaia-live-exhibit-a11y" data-live-exhibit-visual-map></p>
       </li>
     </ol>
-    <div class="gaia-live-exhibit-actions">
-      <button class="gaia-live-exhibit-touch-hint" type="button" data-live-light-touch aria-label="地図の光へ触れる"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></button>
-    </div>
     <footer><span data-live-exhibit-source></span><time data-live-exhibit-time></time></footer>
     </div>
   `;
   layer.append(readout);
+  const deckModes = readout.querySelector(".gaia-live-deck-modes");
+  const deckModeGlyphs = ["≋", "CO₂", "◇", "°", "☁", "⁙"];
+  deckModeButtons = EXHIBITS.map((exhibit, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.liveDeckMode = exhibit.id;
+    button.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}へ切り替える`);
+    button.setAttribute("aria-current", "false");
+    button.innerHTML = `<small>${exhibit.number}</small><i aria-hidden="true">${deckModeGlyphs[index]}</i><strong>${exhibit.shortTitle}</strong>`;
+    button.addEventListener("click", () => select(index));
+    deckModes.append(button);
+    return button;
+  });
+  readout.querySelectorAll("[data-live-deck-step]").forEach((button) => {
+    button.addEventListener("click", () => select((activeIndex + Number(button.dataset.liveDeckStep) + EXHIBITS.length) % EXHIBITS.length));
+  });
+  readout.querySelector("[data-live-deck-source]")?.addEventListener("click", () => document.querySelector("#japan-data-button")?.click());
+  readout.querySelector("[data-live-deck-analysis]")?.addEventListener("click", () => document.querySelector("#gaia-statistics-button")?.click());
   mobileReadoutToggle = readout.querySelector("#gaia-live-mobile-toggle");
   mobileReadoutToggle?.addEventListener("click", () => {
     setMobileReadoutExpanded(mobileReadoutToggle.getAttribute("aria-expanded") !== "true");

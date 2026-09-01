@@ -478,7 +478,7 @@ try {
   assert.equal(await directPage.evaluate(() => typeof globalThis.GaiaObservationNotebook), "undefined", "retired observation notebook runtime was loaded");
   assert.equal(await directPage.evaluate(() => performance.getEntriesByType("resource").some(({ name }) => /observation-notebook/u.test(name))), false, "retired observation notebook assets were requested");
   assert.equal(await directPage.locator("#japan-layer").count(), 1, "history/reload must not duplicate the exploration UI");
-  await directPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 4, null, { timeout: 15_000 });
+  await directPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 15_000 });
   const standardExhibitNumbers = await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").allTextContents();
   assert.deepEqual(standardExhibitNumbers.map((value) => value.trim()), ["01", "02", "03", "04", "05", "06", "07", "08"]);
   assert.equal(await directPage.getByText(/ミツバチ/u).count(), 0, "retired bee exhibit remains visible");
@@ -486,10 +486,12 @@ try {
   await directPage.screenshot({ path: bankScreenshot, fullPage: false });
   report.entry.mapBankScreenshot = bankScreenshot;
   const liveExhibitContracts = new Map([
-    ["09", { id: "wind-field", key: "windSpeed", title: "風脈", caption: "NOAAの風速を、ハワイ島を横切る流線の密度と速さへ変換します。", longitude: -155.056, latitude: 19.73, anchor: /NDBC ILOH1/u }],
-    ["10", { id: "carbon-pulse", key: "co2", title: "炭素の呼吸", caption: "Mauna LoaのCO₂公開値を、島から広がる光環と呼吸周期へ変換します。", longitude: -155.576, latitude: 19.536, anchor: /Mauna Loa/u }],
-    ["11", { id: "rain-chorus", key: "precipitation", title: "雨の記憶", caption: "JAXA GSMaPの領域平均降水量を、雨線と水面の波紋密度へ変換します。", longitude: -155.45, latitude: 19.55, anchor: /Hawaii fixed bbox mean|JAXA GSMaP/u }],
-    ["12", { id: "no2-veil", key: "no2", title: "大気の痕跡", caption: "Sentinel-5P NO₂をスペクトルの薄膜へ変換。欠測時は走査待機を明示します。", longitude: -155.45, latitude: 19.55, anchor: /Hawaii fixed bbox|Sentinel-5P/u }],
+    ["09", { id: "wind-field", key: "weatherWindSpeed", title: "風脈", caption: "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
+    ["10", { id: "carbon-pulse", key: "forecastCo2", title: "炭素の呼吸", caption: "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /CAMSモデル/u }],
+    ["11", { id: "rain-chorus", key: "weatherPrecipitation", title: "雨の記憶", caption: "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
+    ["12", { id: "temperature-field", key: "weatherTemperature", title: "熱の輪郭", caption: "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
+    ["13", { id: "cloud-drift", key: "cloudCover", title: "雲の層", caption: "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
+    ["14", { id: "pm25-haze", key: "pm25", title: "微粒子の霞", caption: "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /CAMSモデル/u }],
   ]);
   let liveExhibitIndex = 0;
   for (const [number, contract] of liveExhibitContracts) {
@@ -502,7 +504,7 @@ try {
     assert.equal(await directPage.locator("[data-live-exhibit-caption]").isVisible(), true, `${number}: exhibit explanation is not visible`);
     assert.equal(await directPage.locator("[data-live-exhibit-feed-state]").isVisible(), true, `${number}: live/snapshot state is not visible`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-state]").textContent(), /NEAR REAL TIME|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, `${number}: live/snapshot state is ambiguous`);
-    if (number !== "12") assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /JPT$/u, `${number}: observation time is not labelled JPT`);
+    assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /JPT$/u, `${number}: data time is not labelled JPT`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-copy]").textContent(), /自動更新|5分ごと|保存済み観測/u, `${number}: realtime behavior is not explained`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-touch-hint").isVisible(), true, `${number}: integrated light-touch hint hidden`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-path li").count(), 3, `${number}: observation-to-light path must have three stages`);
@@ -535,7 +537,7 @@ try {
     }));
     assert.equal(liveGeography.anchorLongitude, contract.longitude, `${number}: observation longitude contract changed`);
     assert.equal(liveGeography.anchorLatitude, contract.latitude, `${number}: observation latitude contract changed`);
-    assert(liveGeography.anchorX >= 0 && liveGeography.anchorX <= 1 && liveGeography.anchorY >= 0 && liveGeography.anchorY <= 1, `${number}: Hawaii anchor is outside the visible map`);
+    assert(liveGeography.anchorX >= 0 && liveGeography.anchorX <= 1 && liveGeography.anchorY >= 0 && liveGeography.anchorY <= 1, `${number}: Tokyo anchor is outside the visible map`);
     assert(liveGeography.signalStrength >= 0 && liveGeography.signalStrength <= 1, `${number}: normalized signal strength is invalid`);
     assert.equal(liveGeography.signalKey, contract.key, `${number}: visual field is not bound to its measurement key`);
     assert.equal(liveGeography.lightTouchIntegration, "abstract-light-touch");
@@ -546,8 +548,8 @@ try {
       await directPage.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");
       assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^09 風脈/u, "09: live source panel shows a standard exhibit ledger");
       assert.match(await directPage.locator("#data-ledger-updated").textContent(), /JPT$/u, "09: source retrieval time is not labelled JPT");
-      assert.match(await directPage.locator("#data-ledger-sources").textContent(), /NOAA|NDBC/u, "09: source provider is absent from the ledger");
-      assert.match(await directPage.locator("#data-ledger-sources a").first().getAttribute("href"), /ndbc\.noaa\.gov/u, "09: official source link is missing");
+      assert.match(await directPage.locator("#data-ledger-sources").textContent(), /OPEN-METEO/u, "09: source provider is absent from the ledger");
+      assert.match(await directPage.locator("#data-ledger-sources a").first().getAttribute("href"), /open-meteo\.com/u, "09: official source link is missing");
       await directPage.locator("#japan-data-close").click();
     }
     assert.equal(await directPage.locator("[data-live-light-touch]").evaluate((node) => node instanceof HTMLButtonElement), true, `${number}: light interaction is not a real button`);
@@ -634,7 +636,7 @@ try {
   const live4kPage = await live4kContext.newPage();
   monitor(live4kPage, "live-4k");
   await live4kPage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await live4kPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 4, null, { timeout: 30_000 });
+  await live4kPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 30_000 });
   await live4kPage.locator("#japan-mode-list [data-live-exhibit]", { hasText: "09" }).click();
   await live4kPage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
   const live4kVisualContract = await live4kPage.evaluate(() => {
@@ -701,7 +703,7 @@ try {
   const liveMobilePage = await liveMobileContext.newPage();
   monitor(liveMobilePage, "live-mobile");
   await liveMobilePage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await liveMobilePage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 4, null, { timeout: 30_000 });
+  await liveMobilePage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 30_000 });
   await liveMobilePage.locator("#map-mobile-bank-toggle").click();
   await liveMobilePage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-bank-expanded"));
   await liveMobilePage.locator("#japan-mode-list [data-live-exhibit]", { hasText: "10" }).click();
