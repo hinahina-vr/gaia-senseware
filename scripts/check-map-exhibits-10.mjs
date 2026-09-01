@@ -283,7 +283,7 @@ assert.match(appSource, /resetMobileMapUi\(\);/u);
 assert.match(mapGridStylesSource, /Mobile exhibit HUD[\s\S]*is-mobile-heading-expanded[\s\S]*is-mobile-bank-expanded/u);
 assert.match(liveExhibitsSource, /id="gaia-live-mobile-toggle"[\s\S]*gaia-live-exhibit-details/u);
 assert.match(stylesSource, /\.signal-encoding-legend-title[\s\S]*font-size: 12px/u);
-assert.match(stylesSource, /\.japan-layer\.is-live-exhibit \.japan-overlay \{[\s\S]*opacity: 0\.58;[\s\S]*visibility: visible;/u);
+assert.match(stylesSource, /\.japan-layer\.is-live-exhibit \.japan-overlay \{[\s\S]*opacity: 0\.92;[\s\S]*visibility: visible;/u);
 assert.match(stylesSource, /\.gaia-live-exhibit-readout \{[\s\S]*width: min\(590px, calc\(100vw - 520px\)\);[\s\S]*max-height: min\(440px/u);
 assert.doesNotMatch(mapGridStylesSource, /\.japan-layer\.is-live-exhibit \.japan-heading \.japan-data-button[\s\S]{0,80}display: none/u);
 assert.match(appSource, /dataLedger\.updateLiveExhibit\(liveExhibit/u);
