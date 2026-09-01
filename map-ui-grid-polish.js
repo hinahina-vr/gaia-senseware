@@ -33,7 +33,7 @@
     bankTrigger.setAttribute("aria-controls", "map-dock-bank-popover");
     bankTrigger.innerHTML = `
       <span class="map-dock-bank-copy">
-        <small>CHAPTER / MAP <b>MAP-01–14</b></small>
+        <small>CHAPTER / MAP <b>MAP-01–15</b></small>
         <span><em data-map-dock-number>01</em><strong data-map-dock-title>地球の一呼吸</strong></span>
       </span>
       <i aria-hidden="true"></i>

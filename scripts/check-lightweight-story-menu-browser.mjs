@@ -621,12 +621,12 @@ const scanIntegratedLightEntry = async (viewport) => {
   assert.equal(integrated.lightIntegration, "mode-matched");
   assert(integrated.mapVisible && integrated.canvasVisible && integrated.canvasPointerEvents === "none");
   assert.equal(integrated.canvasParent, "japan-layer");
-  assert.equal(integrated.mapChoiceCount, 14);
+  assert.equal(integrated.mapChoiceCount, 15);
   assert.equal(integrated.currentMapChoice, "08");
   assert.equal(integrated.integratedMode, "08");
   assert.equal(integrated.mapChoiceListDisplay, "grid");
   assert.equal(integrated.heading, "人工物の共生化");
-  assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—14");
+  assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—15");
   assert.equal(integrated.bankGuide, "見たい地図展示を選んでください");
   assert.equal(integrated.tooltipVisible, false);
   assert.equal(integrated.novelOpenAtCount, 0);

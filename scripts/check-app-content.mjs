@@ -34,8 +34,8 @@ const requiredKeys = [
 assert.ok(content, "GaiaAppContent was not published on window");
 assert.ok(Object.isFrozen(content), "GaiaAppContent must be frozen");
 assert.deepEqual(Object.keys(content), requiredKeys);
-assert.equal(content.modes.length, 8, "Earth mode catalog must contain 8 exhibits");
-assert.equal(content.INTRO_MODE_CHOICES.length, 8, "Entrance catalog must contain 8 choices");
+assert.equal(content.modes.length, 9, "Earth mode catalog must contain 9 exhibits");
+assert.equal(content.INTRO_MODE_CHOICES.length, 9, "Entrance catalog must contain 9 choices");
 assert.equal(content.SPACE_MODE_CHOICES.length, 10, "Space catalog must contain 10 choices");
 assert.deepEqual(Object.keys(content.INTRO_PATHS), ["abstract", "map", "novel", "space"], "Abstract exhibit must remain routable");
 assert.equal(indexHtml.includes('data-intro-path="abstract"'), false, "Abstract exhibit must not remain a separate entrance card");

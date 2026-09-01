@@ -33,7 +33,7 @@ const attachDiagnostics = (page, viewport) => {
 
 const bypassOpening = async (page) => {
   await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
-  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 8);
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
   await page.evaluate(() => {
     const opening = document.querySelector("#gaia-opening");
     if (opening) {

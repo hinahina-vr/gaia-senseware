@@ -177,7 +177,7 @@ const observationScan = async (viewport, baseUrl, phase) => {
   await page.screenshot({ path: path.join(outputDir, `${phase}-${viewport.name}-intro.png`) });
   if (phase === "candidate" && viewport.mobile) {
     assert(data.actions.every((item) => item.rect.width >= 44 && item.rect.height >= 44 && item.hit));
-    assert.equal(data.modes.length, 8); assert(data.modes.every((item) => item.rect.width >= 44 && item.rect.height >= 44 && item.hit));
+    assert.equal(data.modes.length, 9); assert(data.modes.every((item) => item.rect.width >= 44 && item.rect.height >= 44 && item.hit));
     assert(data.modeList.width <= viewport.width - 24 + 1); assert.equal(data.keyboardMode, "true");
     assert(data.concept.height >= 44); assert(data.intro.height >= 44); assert.equal(data.conceptOpened, "false");
     assert(data.introCards.length === 4 && data.introCards.every((item) => parseFloat(item.title) >= 15 && parseFloat(item.body) >= 11));

@@ -469,12 +469,12 @@ try {
   await directPage.screenshot({ path: bankScreenshot, fullPage: false });
   report.entry.mapBankScreenshot = bankScreenshot;
   const liveExhibitContracts = new Map([
-    ["09", { id: "wind-field", key: "weatherWindSpeed", title: "風脈", caption: "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
-    ["10", { id: "carbon-pulse", key: "forecastCo2", title: "炭素の呼吸", caption: "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /CAMSモデル/u }],
-    ["11", { id: "rain-chorus", key: "weatherPrecipitation", title: "雨の記憶", caption: "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
-    ["12", { id: "temperature-field", key: "weatherTemperature", title: "熱の輪郭", caption: "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
-    ["13", { id: "cloud-drift", key: "cloudCover", title: "雲の層", caption: "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
-    ["14", { id: "pm25-haze", key: "pm25", title: "微粒子の霞", caption: "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /CAMSモデル/u }],
+    ["10", { id: "wind-field", key: "weatherWindSpeed", title: "風脈", caption: "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
+    ["11", { id: "carbon-pulse", key: "forecastCo2", title: "炭素の呼吸", caption: "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /CAMSモデル/u }],
+    ["12", { id: "rain-chorus", key: "weatherPrecipitation", title: "雨の記憶", caption: "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
+    ["13", { id: "temperature-field", key: "weatherTemperature", title: "熱の輪郭", caption: "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
+    ["14", { id: "cloud-drift", key: "cloudCover", title: "雲の層", caption: "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
+    ["15", { id: "pm25-haze", key: "pm25", title: "微粒子の霞", caption: "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /CAMSモデル/u }],
   ]);
   let liveExhibitIndex = 0;
   for (const [number, contract] of liveExhibitContracts) {
@@ -526,10 +526,10 @@ try {
     assert.equal(liveGeography.lightTouchIntegration, "abstract-light-touch");
     if (number === "09") {
       const openData = directPage.locator("#japan-data-button");
-      assert.equal(await openData.isVisible(), true, "09: OPEN DATA must use the same visible action as exhibits 01–08");
+      assert.equal(await openData.isVisible(), true, "10: OPEN DATA must use the same visible action as exhibits 01–09");
       await openData.click();
       await directPage.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");
-      assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^09 風脈/u, "09: live source panel shows a standard exhibit ledger");
+      assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^10 風脈/u, "10: live source panel shows a standard exhibit ledger");
       assert.match(await directPage.locator("#data-ledger-updated").textContent(), /JPT$/u, "09: source retrieval time is not labelled JPT");
       assert.match(await directPage.locator("#data-ledger-sources").textContent(), /OPEN-METEO/u, "09: source provider is absent from the ledger");
       assert.match(await directPage.locator("#data-ledger-sources a").first().getAttribute("href"), /open-meteo\.com/u, "09: official source link is missing");
@@ -620,7 +620,7 @@ try {
   monitor(live4kPage, "live-4k");
   await live4kPage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await live4kPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 30_000 });
-  await live4kPage.locator("#japan-mode-list [data-live-exhibit]", { hasText: "09" }).click();
+  await live4kPage.locator("#japan-mode-list [data-live-exhibit]", { hasText: "10" }).click();
   await live4kPage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
   const live4kVisualContract = await live4kPage.evaluate(() => {
     const fontSize = (selector) => Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
@@ -668,7 +668,7 @@ try {
   assert(live4kVisualContract.valueFont >= 40 && live4kVisualContract.valueFont <= 44, `4K live value is not compact: ${live4kVisualContract.valueFont}px`);
   assert(live4kVisualContract.stageCueFont >= 10 && live4kVisualContract.stageCueFont <= 12, `4K stage cue is not compact: ${live4kVisualContract.stageCueFont}px`);
   assert(live4kVisualContract.actionFont >= 11 && live4kVisualContract.actionFont <= 13, `4K action is not compact: ${live4kVisualContract.actionFont}px`);
-  assert.equal(live4kVisualContract.bankButtonFont, live4kVisualContract.standardBankButtonFont, "live exhibit bank controls no longer match exhibits 01–08");
+  assert.equal(live4kVisualContract.bankButtonFont, live4kVisualContract.standardBankButtonFont, "live exhibit bank controls no longer match exhibits 01–09");
   assert(live4kVisualContract.anchorFont >= 17, `4K map anchor remains too small: ${live4kVisualContract.anchorFont}px`);
   assert(live4kVisualContract.symbolWidth >= 40 && live4kVisualContract.symbolWidth <= 44 && live4kVisualContract.symbolCount === 3, "4K visual transformation symbols are not compact");
   assert(live4kVisualContract.explanationVisible && live4kVisualContract.explanationFont >= 12, "4K exhibit explanation is missing or unreadable");

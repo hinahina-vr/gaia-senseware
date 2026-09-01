@@ -40,7 +40,7 @@ try {
 
     await page.goto(new URL("/?mode=1#earth", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
-    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 8);
+    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
     await page.evaluate(() => {
       document.body.classList.remove("gaia-opening-active", "opening-active", "intro-open");
       window.dispatchEvent(new CustomEvent("gaia:opening-complete"));

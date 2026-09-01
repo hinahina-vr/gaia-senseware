@@ -81,7 +81,7 @@ const boot = async (viewport) => {
   await attachDiagnostics(page, viewport.name);
   await page.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false", null, { timeout: 30_000 });
-  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 14, null, { timeout: 30_000 });
+  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 15, null, { timeout: 30_000 });
   await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true", null, { timeout: 30_000 });
   return { context, page };
 };
@@ -111,10 +111,10 @@ const selectMapMode = async (page, index) => {
       { timeout: 15_000 },
     );
   }
-  if (index >= 8) {
+  if (index >= 9) {
     await page.waitForFunction(
       (expected) => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === String(expected),
-      index - 8,
+      index - 9,
       { timeout: 15_000 },
     );
   } else {
@@ -237,13 +237,13 @@ try {
       `${viewport.name}: retired LIVE receipt remains`,
     );
     const scan = { viewport, map: [], optionalUi: [], liveInteractions: [] };
-    for (let index = 0; index < 14; index += 1) {
+    for (let index = 0; index < 15; index += 1) {
       const number = await selectMapMode(page, index);
       const metrics = await measureLayout(page, "map", number);
       const screenshot = path.join(outputDir, `${viewport.name}-map-${number}.png`);
       await page.screenshot({ path: screenshot, animations: "disabled" });
       scan.map.push({ screenshot, ...metrics });
-      if (index >= 8) {
+      if (index >= 9) {
         const canvas = page.locator("#gaia-live-exhibit-canvas");
         const touchButton = page.locator("[data-live-light-touch]");
         const beforeButtonTouch = Number(await canvas.getAttribute("data-light-touch-count") || 0);
@@ -308,7 +308,7 @@ try {
         await bankToggle.click();
         await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-bank-expanded"));
         const visibleMapButtons = page.locator("#japan-mode-list .map-mode-button:visible");
-        assert.equal(await visibleMapButtons.count(), 14);
+        assert.equal(await visibleMapButtons.count(), 15);
         const bankScreenshot = path.join(outputDir, `${viewport.name}-optional-bank-open.png`);
         await page.screenshot({ path: bankScreenshot, animations: "disabled" });
         scan.optionalUi.push({ control: "bank", screenshot: bankScreenshot });
@@ -343,10 +343,10 @@ try {
     report.unhandledRejections.push(...(await page.evaluate(() => globalThis.__gaiaAuditUnhandledRejections || [])).map((message) => `${viewport.name}: ${message}`));
     report.scans.push(scan);
     await context.close();
-    console.log(`AUDITED ${viewport.name}: 14 map exhibits with integrated light on 01—08`);
+    console.log(`AUDITED ${viewport.name}: 15 map exhibits with integrated light on 01—09`);
   }
   assert.equal(report.scans.length, selectedViewports.length);
-  assert(report.scans.every((scan) => scan.map.length === 14));
+  assert(report.scans.every((scan) => scan.map.length === 15));
   report.status = "passed";
 } catch (error) {
   report.status = "failed";

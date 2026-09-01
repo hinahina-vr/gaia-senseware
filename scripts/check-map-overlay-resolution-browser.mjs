@@ -103,7 +103,7 @@ try {
     await page.goto(new URL("/?mode=1", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90000 });
     await page.waitForFunction(() => typeof window.GaiaModeLoader?.load === "function");
     await page.evaluate(() => window.GaiaModeLoader.load("exploration"));
-    await page.waitForFunction(() => window.GaiaAppContent?.modes?.length === 8);
+    await page.waitForFunction(() => window.GaiaAppContent?.modes?.length === 9);
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
     await page.evaluate(() => {
       document.body.classList.remove("gaia-opening-active");

@@ -59,12 +59,12 @@ const errors = [];
 const responses404 = [];
 
 const contracts = [
-  { id: "wind-field", key: "weatherWindSpeed", number: "09", title: "風脈" },
-  { id: "carbon-pulse", key: "forecastCo2", number: "10", title: "炭素の呼吸" },
-  { id: "rain-chorus", key: "weatherPrecipitation", number: "11", title: "雨の記憶" },
-  { id: "temperature-field", key: "weatherTemperature", number: "12", title: "熱の輪郭" },
-  { id: "cloud-drift", key: "cloudCover", number: "13", title: "雲の層" },
-  { id: "pm25-haze", key: "pm25", number: "14", title: "微粒子の霞" },
+  { id: "wind-field", key: "weatherWindSpeed", number: "10", title: "風脈" },
+  { id: "carbon-pulse", key: "forecastCo2", number: "11", title: "炭素の呼吸" },
+  { id: "rain-chorus", key: "weatherPrecipitation", number: "12", title: "雨の記憶" },
+  { id: "temperature-field", key: "weatherTemperature", number: "13", title: "熱の輪郭" },
+  { id: "cloud-drift", key: "cloudCover", number: "14", title: "雲の層" },
+  { id: "pm25-haze", key: "pm25", number: "15", title: "微粒子の霞" },
 ];
 
 const monitor = (page) => {
@@ -85,8 +85,8 @@ try {
   await page.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter), null, { timeout: 30_000 });
   await page.evaluate(() => { location.hash = "#japan"; });
   await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 20_000 });
-  assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—14");
-  assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 14);
+  assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—15");
+  assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 15);
   assert.equal(await page.locator(".gaia-live-city-picker option").count(), 21);
 
   const fallbackKeys = await page.evaluate(async () => {
@@ -153,7 +153,9 @@ try {
   await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
   await page.locator('#japan-mode-list [data-live-exhibit="wind-field"]').evaluate((button) => button.click());
   await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
-  await page.locator('[data-live-deck-mode="wind-field"]').hover();
+  await page.locator(".gaia-live-deck-selector-toggle").click();
+  await page.waitForFunction(() => document.querySelector(".gaia-live-deck-selector-toggle")?.getAttribute("aria-expanded") === "true");
+  await page.locator('[data-live-deck-mode="wind-field"]:visible').hover();
   await page.waitForFunction(() => document.querySelector(".gaia-global-button-glint")?.classList.contains("is-active"));
   const circularGlint = await page.evaluate(() => {
     const button = document.querySelector('[data-live-deck-mode="wind-field"]');
@@ -237,7 +239,7 @@ try {
   assert.equal(wideLayout.locationVisible, true);
   assert(wideLayout.deckWidth >= 3700, `wide deck is too narrow: ${wideLayout.deckWidth}px`);
   assert(wideLayout.overflow <= 1, `wide horizontal overflow: ${wideLayout.overflow}px`);
-  const wideScreenshot = path.join(output, "live-09-wide.png");
+  const wideScreenshot = path.join(output, "live-10-wide.png");
   await page.screenshot({ path: wideScreenshot, animations: "disabled" });
   screenshots.push(wideScreenshot);
 
@@ -277,7 +279,7 @@ try {
   }));
   assert(mobileLayout.bodyOverflow <= 1, `mobile horizontal overflow: ${mobileLayout.bodyOverflow}px`);
   assert.equal(mobileLayout.readoutVisible, true);
-  assert.equal(mobileLayout.buttonCount, 14);
+  assert.equal(mobileLayout.buttonCount, 15);
   const mobileScreenshot = path.join(output, "live-14-mobile.png");
   await mobilePage.screenshot({ path: mobileScreenshot, animations: "disabled" });
   await mobileContext.close();

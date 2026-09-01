@@ -76,7 +76,7 @@ const boot = async (viewport) => {
   await page.waitForFunction(() => typeof globalThis.GaiaModeLoader?.load === "function");
   await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
   await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
-  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 14);
+  await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 15);
   await page.evaluate(() => {
     for (const selector of ["#gaia-opening", "#intro-layer", "#novel-layer", "#true-end-layer"]) {
       const layer = document.querySelector(selector);
@@ -128,8 +128,8 @@ const expandBank = async (page) => {
 const selectExhibit = async (page, index) => {
   await expandBank(page);
   const list = "#japan-mode-list";
-  const button = index >= 8
-    ? page.locator(`${list} .map-mode-button[data-live-exhibit]`).nth(index - 8)
+  const button = index >= 9
+    ? page.locator(`${list} .map-mode-button[data-live-exhibit]`).nth(index - 9)
     : page.locator(`${list} .map-mode-button:not([data-live-exhibit])`).nth(index);
   await button.evaluate((element) => element.click());
   try {
@@ -145,7 +145,7 @@ const selectExhibit = async (page, index) => {
     throw new Error(`Exhibit surface did not switch: ${JSON.stringify(debug)}`, { cause: error });
   }
   const expected = String(index + 1).padStart(2, "0");
-  if (index >= 8) {
+  if (index >= 9) {
     await page.waitForFunction((number) => document.querySelector(".japan-layer")?.classList.contains("is-live-exhibit")
       && document.querySelector("#japan-mode-number")?.textContent?.trim() === number, expected);
     await page.waitForFunction(() => document.querySelector(".gaia-live-exhibit-readout")?.getClientRects().length > 0);
@@ -278,7 +278,7 @@ const captureDrawer = async (page, viewport, label, open, close, options = {}) =
 try {
   for (const viewport of selectedViewports) {
     const { context, page } = await boot(viewport);
-    for (let index = 0; index < 14; index += 1) {
+    for (let index = 0; index < 15; index += 1) {
       await selectExhibit(page, index);
       const label = `map-${String(index + 1).padStart(2, "0")}`;
       const scan = await inspect(page);

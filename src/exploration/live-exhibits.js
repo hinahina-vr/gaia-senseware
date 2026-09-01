@@ -3,7 +3,7 @@ import { STATUS_LABELS } from "./transforms.js";
 const EXHIBITS = Object.freeze([
   Object.freeze({
     id: "wind-field",
-    number: "09",
+    number: "10",
     title: "風脈 — WIND FIELD",
     shortTitle: "風脈",
     key: "weatherWindSpeed",
@@ -20,7 +20,7 @@ const EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "carbon-pulse",
-    number: "10",
+    number: "11",
     title: "炭素の呼吸 — CARBON PULSE",
     shortTitle: "炭素の呼吸",
     key: "forecastCo2",
@@ -37,7 +37,7 @@ const EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "rain-chorus",
-    number: "11",
+    number: "12",
     title: "雨の記憶 — RAIN CHORUS",
     shortTitle: "雨の記憶",
     key: "weatherPrecipitation",
@@ -54,7 +54,7 @@ const EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "temperature-field",
-    number: "12",
+    number: "13",
     title: "熱の輪郭 — TEMPERATURE FIELD",
     shortTitle: "熱の輪郭",
     key: "weatherTemperature",
@@ -71,7 +71,7 @@ const EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "cloud-drift",
-    number: "13",
+    number: "14",
     title: "雲の層 — CLOUD DRIFT",
     shortTitle: "雲の層",
     key: "cloudCover",
@@ -88,7 +88,7 @@ const EXHIBITS = Object.freeze([
   }),
   Object.freeze({
     id: "pm25-haze",
-    number: "14",
+    number: "15",
     title: "微粒子の霞 — PM2.5 HAZE",
     shortTitle: "微粒子の霞",
     key: "pm25",
@@ -1165,13 +1165,13 @@ const mount = () => {
   readout.setAttribute("aria-live", "polite");
   const liveWaveBars = Array.from({ length: 34 }, (_, index) => `<i data-live-wave-bar style="--live-wave-index:${index}"></i>`).join("");
   readout.innerHTML = `
-    <button type="button" class="gaia-live-deck-return" data-live-deck-standard><span>MAP 01—08</span><strong>通常展示へ戻る</strong></button>
+    <button type="button" class="gaia-live-deck-return" data-live-deck-standard><span>MAP 01—09</span><strong>通常展示へ戻る</strong></button>
     <div class="gaia-live-deck-chapter">
       <p>CHAPTER / LIVE MAP</p>
       <div>
         <button type="button" data-live-deck-step="-1" aria-label="一つ前のライブ展示へ">‹</button>
-        <button class="gaia-live-deck-selector-toggle" type="button" aria-expanded="false" aria-controls="gaia-live-deck-modes" aria-label="09 風脈。ライブ展示一覧を開く">
-          <span data-live-deck-number>09</span>
+        <button class="gaia-live-deck-selector-toggle" type="button" aria-expanded="false" aria-controls="gaia-live-deck-modes" aria-label="10 風脈。ライブ展示一覧を開く">
+          <span data-live-deck-number>10</span>
           <strong data-live-deck-title>風脈</strong>
           <i aria-hidden="true"></i>
         </button>

@@ -68,7 +68,7 @@ try {
   await page.evaluate(() => GaiaMapObservationAdapter.selectMode(3));
   await page.waitForFunction(() => document.querySelector("#japan-title")?.textContent?.trim() === "再資源化率を比べる");
   assert.equal(await page.locator("#japan-mode-title").textContent(), "再資源化率を比べる");
-  const liveTitles = [["09", "風脈"], ["10", "炭素の呼吸"], ["11", "雨の記憶"], ["12", "大気の痕跡"]];
+  const liveTitles = [["10", "風脈"], ["11", "炭素の呼吸"], ["12", "雨の記憶"], ["13", "大気の痕跡"]];
   for (const [number, title] of liveTitles) {
     await page.locator("#japan-mode-list [data-live-exhibit]", { hasText: number }).click();
     await page.waitForFunction((expected) => document.querySelector("#japan-title")?.textContent?.trim() === expected, title);

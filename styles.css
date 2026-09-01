@@ -8976,7 +8976,7 @@ h1 {
   }
 }
 
-/* MAP 01—08 share their matching WebGL light language with the data map.
+/* MAP 01—09 share their matching WebGL light language with the data map.
    The veil stays subtle and non-interactive so geography and controls remain primary. */
 .japan-layer.has-integrated-map-light > #gaia-canvas {
   position: absolute;

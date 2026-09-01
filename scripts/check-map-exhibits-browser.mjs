@@ -9,6 +9,8 @@ const panOnly = process.argv.slice(6).includes("--pan-only");
 const legendOnly = process.argv.slice(6).includes("--legend-only");
 const glintOnly = process.argv.slice(6).includes("--glint-only");
 const countryReadoutOnly = process.argv.slice(6).includes("--country-readout-only");
+const populationOnly = process.argv.slice(6).includes("--population-only");
+const highResolutionOnly = process.argv.slice(6).includes("--high-resolution-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -17,10 +19,12 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/map-exhibits-10");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const viewports = [
-  { name: "pc", width: 1440, height: 900 },
-  { name: "mobile", width: 390, height: 844 },
-];
+const viewports = highResolutionOnly
+  ? [{ name: "high-resolution", width: 3840, height: 2088 }]
+  : [
+      { name: "pc", width: 1440, height: 900 },
+      { name: "mobile", width: 390, height: 844 },
+    ];
 const report = { status: "running", baseUrl, consoleErrors: [], pageErrors: [], responses404: [], scans: [] };
 const browser = await chromium.launch({
   headless: true,
@@ -168,13 +172,89 @@ const closeDataCard = async (page) => {
   await page.waitForFunction(() => document.querySelector("#japan-poi-card")?.getAttribute("aria-hidden") === "true");
 };
 
-const boot = async (viewport) => {
+const readMapRenderHealth = (page) => page.locator("#japan-overlay").evaluate((overlay) => {
+  const sample = document.createElement("canvas");
+  sample.width = 192;
+  sample.height = 108;
+  const sampleContext = sample.getContext("2d", { willReadFrequently: true });
+  sampleContext.drawImage(overlay, 0, 0, sample.width, sample.height);
+  const pixels = sampleContext.getImageData(0, 0, sample.width, sample.height).data;
+  let nonTransparent = 0;
+  let visibleColor = 0;
+  let cyanLinePixels = 0;
+  for (let pixelIndex = 0; pixelIndex < pixels.length; pixelIndex += 4) {
+    const red = pixels[pixelIndex];
+    const green = pixels[pixelIndex + 1];
+    const blue = pixels[pixelIndex + 2];
+    if (pixels[pixelIndex + 3] > 2) nonTransparent += 1;
+    if (red + green + blue > 36) visibleColor += 1;
+    if (
+      green >= 78
+      && blue >= 72
+      && green - red >= 20
+      && blue - red >= 20
+      && Math.abs(green - blue) <= 55
+    ) {
+      cyanLinePixels += 1;
+    }
+  }
+  const style = getComputedStyle(overlay);
+  return {
+    canvasHeight: overlay.height,
+    canvasWidth: overlay.width,
+    cssHeight: overlay.getBoundingClientRect().height,
+    cssWidth: overlay.getBoundingClientRect().width,
+    cyanLinePixels,
+    devicePixelRatio: overlay.dataset.devicePixelRatio,
+    nonTransparent,
+    opacity: style.opacity,
+    renderPixelRatio: overlay.dataset.renderPixelRatio,
+    renderQuality: overlay.dataset.renderQuality,
+    renderLoopMode: overlay.dataset.renderLoopMode,
+    referenceWorldCache: overlay.dataset.referenceWorldCache,
+    visibleColor,
+    visibility: style.visibility,
+    worldBoundaryLayer: overlay.dataset.worldBoundaryLayer,
+    worldBoundaryRingCount: Number(overlay.dataset.worldBoundaryRingCount),
+  };
+});
+
+const waitForReferenceMap = (page) => page.waitForFunction(() => {
+  const overlay = document.querySelector("#japan-overlay");
+  return overlay?.dataset.referenceWorldCache === "ready"
+    && overlay.dataset.worldBoundaryLayer === "country"
+    && Number(overlay.dataset.worldBoundaryRingCount) >= 400;
+});
+
+const assertReferenceMapVisible = (renderState, label) => {
+  assert.equal(renderState.referenceWorldCache, "ready", `${label}: reference map cache is not ready`);
+  assert.equal(renderState.worldBoundaryLayer, "country", `${label}: country boundaries are unavailable`);
+  assert.ok(renderState.worldBoundaryRingCount >= 400, `${label}: boundary geometry is incomplete`);
+  assert.ok(
+    renderState.cyanLinePixels >= 650,
+    `${label}: coastline/country line signature disappeared ${JSON.stringify(renderState)}`,
+  );
+};
+
+const boot = async (viewport, { startStatic = false, boundaryDelayMs = 0 } = {}) => {
   const context = await browser.newContext({ viewport, colorScheme: "dark", reducedMotion: "no-preference" });
   const page = await context.newPage();
-  await page.addInitScript(() => {
+  if (boundaryDelayMs > 0) {
+    await page.route("**/data/natural-earth-50m-*.geojson*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, boundaryDelayMs));
+      await route.continue();
+    });
+  }
+  await page.addInitScript(({ shouldStartStatic }) => {
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
     sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
-  });
+    if (shouldStartStatic) {
+      window.addEventListener("gaia:app-ready", () => {
+        globalThis.GaiaFrameBudgetGovernor?.setLevel?.("static", "browser-test-early-static");
+        document.documentElement.dataset.earlyStaticTest = "armed";
+      }, { once: true });
+    }
+  }, { shouldStartStatic: startStatic });
   const label = viewport.name;
   page.on("console", (message) => {
     if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`);
@@ -186,11 +266,11 @@ const boot = async (viewport) => {
   await page.goto(new URL("/?mode=1", baseUrl).href, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => typeof window.GaiaModeLoader?.load === "function");
   await page.evaluate(() => window.GaiaModeLoader.load("exploration"));
-  await page.waitForFunction(() => window.GaiaAppContent?.modes?.length === 8);
-  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 8);
+  await page.waitForFunction(() => window.GaiaAppContent?.modes?.length === 9);
+  await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
   await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
-  assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").count(), 8);
-  assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").last().locator("span").nth(1).innerText(), "08");
+  assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").count(), 9);
+  assert.equal(await page.locator("#intro-mode-list .intro-mode-choice").last().locator("span").nth(1).innerText(), "09");
   await page.evaluate(() => {
     document.body.classList.remove("gaia-opening-active");
     for (const selector of ["#gaia-opening", "#intro-layer", "#novel-layer", "#true-end-layer"]) {
@@ -222,8 +302,8 @@ const boot = async (viewport) => {
     && !document.body.classList.contains("scene-transitioning"));
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("gaia:opening-complete")));
   await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) >= 1);
-  assert.equal(await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").count(), 8);
-  assert.equal(await page.locator("#concept-mode-list .concept-mode-button").count(), 8);
+  assert.equal(await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").count(), 9);
+  assert.equal(await page.locator("#concept-mode-list .concept-mode-button").count(), 9);
   assert.equal(await page.locator("#error-panel").isHidden(), true);
   return { context, page };
 };
@@ -232,6 +312,127 @@ try {
   for (const viewport of viewports) {
     const { context, page } = await boot(viewport);
     const scan = { viewport, clicks: {}, screenshots: [], zoom: {} };
+
+    if (highResolutionOnly) {
+      await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
+      const renderCases = [
+        { index: 5, title: "地球からのメッセージ" },
+        { index: 6, title: "三つの生態系" },
+        { index: 7, title: "人工物の共生化" },
+        { index: 8, title: "人口のうねり" },
+        { index: 5, title: "地球からのメッセージ", staticFallback: true },
+        { index: 6, title: "三つの生態系", staticFallback: true },
+        { index: 7, title: "人工物の共生化", staticFallback: true },
+      ];
+      for (const { index, title, staticFallback = false } of renderCases) {
+        if (staticFallback) {
+          await page.evaluate(() => globalThis.GaiaFrameBudgetGovernor?.setLevel?.("static", "browser-test"));
+        }
+        await selectMode(page, index, title);
+        await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+        if (staticFallback) {
+          await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.renderLoopMode === "static-fallback");
+        }
+        await waitForReferenceMap(page);
+        await page.waitForTimeout(700);
+        const renderState = await readMapRenderHealth(page);
+        assert(renderState.nonTransparent > 1000, `${title}: map canvas is blank ${JSON.stringify(renderState)}`);
+        assertReferenceMapVisible(renderState, `${title}${staticFallback ? " / static" : ""}`);
+        const stateKey = `${staticFallback ? "staticMode" : "mode"}${String(index + 1).padStart(2, "0")}`;
+        scan[stateKey] = renderState;
+        const screenshot = path.join(
+          outputDir,
+          `high-resolution-${staticFallback ? "static-" : ""}${String(index + 1).padStart(2, "0")}.png`,
+        );
+        await page.screenshot({ path: screenshot });
+        scan.screenshots.push(screenshot);
+      }
+      await context.close();
+
+      const earlyStaticViewport = { ...viewport, name: `${viewport.name}-early-static` };
+      const earlyStatic = await boot(earlyStaticViewport, {
+        startStatic: true,
+        boundaryDelayMs: 2200,
+      });
+      await earlyStatic.page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
+      await earlyStatic.page.waitForFunction(() => (
+        document.documentElement.dataset.earlyStaticTest === "armed"
+        && document.querySelector("#japan-overlay")?.dataset.renderLoopMode === "static-fallback"
+      ));
+      await selectMode(earlyStatic.page, 6, "三つの生態系");
+      await waitForReferenceMap(earlyStatic.page);
+      await earlyStatic.page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+      await earlyStatic.page.waitForTimeout(700);
+      scan.earlyStaticLoaded = await readMapRenderHealth(earlyStatic.page);
+      assertReferenceMapVisible(scan.earlyStaticLoaded, "early static / delayed boundary load");
+
+      scan.afterCanvasClear = await earlyStatic.page.locator("#japan-overlay").evaluate((overlay) => {
+        overlay.width = overlay.width;
+        const sample = document.createElement("canvas");
+        sample.width = 24;
+        sample.height = 14;
+        const context2d = sample.getContext("2d", { willReadFrequently: true });
+        context2d.drawImage(overlay, 0, 0, sample.width, sample.height);
+        return context2d.getImageData(0, 0, sample.width, sample.height).data
+          .some((channel, index) => index % 4 !== 3 && channel > 0);
+      });
+      assert.equal(scan.afterCanvasClear, false, "canvas clear simulation did not clear the rendered map");
+      await earlyStatic.page.waitForTimeout(800);
+      scan.afterCanvasRecovery = await readMapRenderHealth(earlyStatic.page);
+      assertReferenceMapVisible(scan.afterCanvasRecovery, "early static / canvas recovery");
+
+      for (const { index, title } of [
+        { index: 5, title: "地球からのメッセージ" },
+        { index: 7, title: "人工物の共生化" },
+        { index: 6, title: "三つの生態系" },
+      ]) {
+        await selectMode(earlyStatic.page, index, title);
+        await earlyStatic.page.waitForTimeout(90);
+      }
+      await earlyStatic.page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+      await earlyStatic.page.waitForTimeout(800);
+      scan.afterRapidSwitch = await readMapRenderHealth(earlyStatic.page);
+      assertReferenceMapVisible(scan.afterRapidSwitch, "early static / rapid exhibit switching");
+
+      await earlyStatic.page.setViewportSize({ width: 2560, height: 1440 });
+      await earlyStatic.page.waitForTimeout(700);
+      await earlyStatic.page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await earlyStatic.page.waitForTimeout(800);
+      scan.afterResize = await readMapRenderHealth(earlyStatic.page);
+      assertReferenceMapVisible(scan.afterResize, "early static / 4K resize recovery");
+      const recoveryScreenshot = path.join(outputDir, "high-resolution-early-static-recovery.png");
+      await earlyStatic.page.screenshot({ path: recoveryScreenshot });
+      scan.screenshots.push(recoveryScreenshot);
+      await earlyStatic.context.close();
+
+      report.scans.push(scan);
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
+    if (populationOnly) {
+      await selectMode(page, 8, "人口のうねり");
+      const populationSlider = page.locator("#japan-layer [data-signal-time]").first();
+      await populationSlider.press("End");
+      await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.populationSelectedYear === "2025");
+      await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.plotRevealState === "complete");
+      await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+      await page.waitForTimeout(400);
+      scan.population = await page.locator("#japan-overlay").evaluate((element) => ({
+        count: Number(element.dataset.populationCircleCount),
+        selectedScreenX: Number(element.dataset.populationSelectedScreenX),
+        selectedScreenY: Number(element.dataset.populationSelectedScreenY),
+        visibleCount: Number(element.dataset.populationVisibleCircleCount),
+        year: element.dataset.populationSelectedYear,
+      }));
+      const screenshot = path.join(outputDir, `${viewport.name}-09-population-direct.png`);
+      await page.screenshot({ path: screenshot });
+      scan.screenshots.push(screenshot);
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
 
     if (viewport.name === "pc") {
       const chapterGlintBounds = await page.evaluate(() => {
@@ -304,6 +505,63 @@ try {
       await page.waitForTimeout(340);
       assert.equal(await guideBody.isVisible(), false, "pc: map guide explanation remains after focus leaves");
       scan.guideReadability = guideReadability;
+
+      await selectMode(page, 3, "再資源化率を比べる");
+      await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.recyclingEncoding === "fixed-diameter-pie");
+      await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+      const poiHoverPoint = await findClickableDataPoint(page, "nothing-is-waste");
+      assert(poiHoverPoint, "pc: no recycling POI was available for hover verification");
+      await page.mouse.move(poiHoverPoint.clientX, poiHoverPoint.clientY);
+      await page.waitForFunction(() => (
+        document.querySelector("#japan-map")?.classList.contains("has-poi-hover")
+        && document.querySelector("#japan-poi-preview")?.getAttribute("aria-hidden") === "false"
+        && Number(document.querySelector("#japan-overlay")?.dataset.hoveredPoiProgress) >= 0.999
+      ));
+      const poiHover = await page.evaluate(() => {
+        const map = document.querySelector("#japan-map");
+        const preview = document.querySelector("#japan-poi-preview");
+        const overlay = document.querySelector("#japan-overlay");
+        const rect = preview.getBoundingClientRect();
+        return {
+          cursor: getComputedStyle(map).cursor,
+          title: document.querySelector("#japan-poi-preview-title")?.textContent || "",
+          meta: document.querySelector("#japan-poi-preview-meta")?.textContent || "",
+          action: preview.querySelector(".japan-poi-preview-action")?.textContent?.replace(/\s+/gu, " ").trim() || "",
+          pointerEvents: getComputedStyle(preview).pointerEvents,
+          scale: Number(overlay.dataset.hoveredPoiScale),
+          progress: Number(overlay.dataset.hoveredPoiProgress),
+          rect: rect.toJSON(),
+          viewport: { width: innerWidth, height: innerHeight },
+        };
+      });
+      const expectedPoiTitle = poiHoverPoint.row.name || poiHoverPoint.row.country || poiHoverPoint.row.iso3;
+      assert.equal(poiHover.cursor, "pointer", `pc: POI cursor is not clickable: ${JSON.stringify(poiHover)}`);
+      assert.equal(poiHover.pointerEvents, "none", "pc: preview intercepts the map pointer");
+      assert.equal(poiHover.title, expectedPoiTitle, `pc: POI preview title is unclear: ${JSON.stringify(poiHover)}`);
+      assert.match(poiHover.meta, new RegExp(`${poiHoverPoint.row.recyclePercent.toFixed(1).replace(".", "\\.")}%`, "u"));
+      assert.match(poiHover.action, /クリックで詳しく見る/u);
+      assert.ok(poiHover.scale >= 1.15 && poiHover.progress >= 0.999, `pc: POI did not animate to its enlarged focus state: ${JSON.stringify(poiHover)}`);
+      assert.ok(
+        poiHover.rect.left >= 0
+          && poiHover.rect.top >= 0
+          && poiHover.rect.right <= poiHover.viewport.width
+          && poiHover.rect.bottom <= poiHover.viewport.height,
+        `pc: POI preview is clipped: ${JSON.stringify(poiHover)}`,
+      );
+      const poiHoverScreenshot = path.join(outputDir, "pc-poi-hover-preview.png");
+      await page.screenshot({ path: poiHoverScreenshot });
+      scan.screenshots.push(poiHoverScreenshot);
+      scan.poiHover = poiHover;
+
+      await page.mouse.click(poiHoverPoint.clientX, poiHoverPoint.clientY);
+      await page.waitForFunction(() => document.querySelector("#japan-poi-card")?.getAttribute("aria-hidden") === "false");
+      assert.match(await page.locator("#japan-poi-meta").textContent(), /%/u, "pc: clicking a focused POI did not open its detail card");
+      assert.equal(await page.locator("#japan-poi-preview").getAttribute("aria-hidden"), "true", "pc: hover preview remained over the detail card");
+      await closeDataCard(page);
+      await page.locator("#japan-close").hover();
+      await page.waitForFunction(() => !document.querySelector("#japan-map")?.classList.contains("has-poi-hover"));
+      assert.equal(await page.locator("#japan-overlay").getAttribute("data-hovered-poi-key"), null, "pc: POI focus state remained after pointer exit");
+      await selectMode(page, 0, "地球の一呼吸");
     }
 
     if (glintOnly) {
@@ -791,6 +1049,14 @@ try {
 
     await selectMode(page, 4, "人類世の傷跡");
     await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.nightLightsLayer === "visible");
+    await slider.press("Home");
+    await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.emissionsSelectedYear === "1945");
+    const historicalEmissionCount = Number(await page.locator("#japan-overlay").getAttribute("data-emissions-circle-count"));
+    assert.ok(historicalEmissionCount >= 20 && historicalEmissionCount < 31);
+    const historicalEmissionReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
+    assert.match(historicalEmissionReadout, /1945.*Mt CO₂/u);
+    await slider.press("End");
+    await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.emissionsSelectedYear === "2023");
     const anthropoceneEncoding = await page.locator("#japan-overlay").evaluate((element) => ({
       lightLayer: element.dataset.nightLightsLayer,
       source: element.dataset.nightLightsSource,
@@ -798,6 +1064,8 @@ try {
       display: element.dataset.nightLightsDisplay,
       emissionCount: Number(element.dataset.emissionsCircleCount),
       emissionEncoding: element.dataset.emissionsEncoding,
+      selectedYear: element.dataset.emissionsSelectedYear,
+      nightLightsReferenceYear: element.dataset.nightLightsReferenceYear,
     }));
     assert.deepEqual(anthropoceneEncoding, {
       lightLayer: "visible",
@@ -806,10 +1074,14 @@ try {
       display: "glow-plus-radiance-core",
       emissionCount: 31,
       emissionEncoding: "country-total-log-area",
+      selectedYear: "2023",
+      nightLightsReferenceYear: "2016",
     });
     await waitForMapGuide(page);
     const anthropoceneGuide = await page.locator("#map-guide-reading").textContent();
-    assert.match(anthropoceneGuide, /白い発光.*夜間光画素.*赤い円.*国全体/u);
+    assert.match(anthropoceneGuide, /赤い円.*化石燃料由来CO₂.*白い発光.*2016.*固定/u);
+    await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+    await page.waitForTimeout(400);
     const nightLightsScreenshot = path.join(outputDir, `${viewport.name}-05-night-lights-visible.png`);
     await page.screenshot({ path: nightLightsScreenshot });
     scan.screenshots.push(nightLightsScreenshot);
@@ -960,6 +1232,35 @@ try {
     const renewableScreenshot = path.join(outputDir, `${viewport.name}-08-renewable-country-choropleth.png`);
     await page.screenshot({ path: renewableScreenshot });
     scan.screenshots.push(renewableScreenshot);
+
+    await selectMode(page, 8, "人口のうねり");
+    await slider.press("Home");
+    await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.populationSelectedYear === "1960");
+    const populationStart = await page.locator("#japan-overlay").evaluate((element) => ({
+      year: element.dataset.populationSelectedYear,
+      count: Number(element.dataset.populationCircleCount),
+      visibleCount: Number(element.dataset.populationVisibleCircleCount),
+      encoding: element.dataset.populationEncoding,
+    }));
+    assert.equal(populationStart.year, "1960");
+    assert.equal(populationStart.count, 31);
+    assert(
+      populationStart.visibleCount >= (viewport.name === "pc" ? 26 : 8),
+      `population circles left the global viewport: ${JSON.stringify(populationStart)}`,
+    );
+    assert.equal(populationStart.encoding, "circle-area-proportional-to-population");
+    await slider.press("End");
+    await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.populationSelectedYear === "2025");
+    const populationReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
+    assert.match(populationReadout, /2025.*人/u);
+    await waitForMapGuide(page);
+    const populationGuide = await page.locator("#map-guide-reading").textContent();
+    assert.match(populationGuide, /円の面積.*人口に比例.*人口密度ではありません/u);
+    await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+    await page.waitForTimeout(400);
+    const populationScreenshot = path.join(outputDir, `${viewport.name}-09-population-timeline.png`);
+    await page.screenshot({ path: populationScreenshot });
+    scan.screenshots.push(populationScreenshot);
 
     scan.final = await readMapState(page);
     report.scans.push(scan);

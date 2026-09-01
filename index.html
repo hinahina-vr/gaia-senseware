@@ -173,7 +173,7 @@
     <script src="./opening-audio.js?v=gaia-navigation-roundtrip-2" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-audio-return-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-character-preloader-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-human-history-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-character-preloader" id="gaia-character-preloader" role="status" aria-live="polite" aria-hidden="true" hidden>
@@ -844,7 +844,7 @@
       <canvas
         id="gaia-canvas"
         tabindex="0"
-        aria-label="指やマウスで動きを変えながら見る、地球観測データの8つの展示"
+        aria-label="指やマウスで動きを変えながら見る、地球観測データの9つの展示"
       >
         お使いのブラウザはCanvasに対応していません。
       </canvas>
@@ -1056,7 +1056,7 @@
 
             <h2 id="intro-sense-title">どの感覚に、<br />触れますか？</h2>
             <p class="intro-lead" id="intro-sense-lead">
-              意味と操作が直接つながる8つの観測展示から、最初に見る入口を選んでください。
+              意味と操作が直接つながる9つの観測展示から、最初に見る入口を選んでください。
             </p>
 
             <p class="intro-selection-prompt" id="intro-selection-prompt">最初に触れる感覚器を選ぶ</p>
@@ -1087,7 +1087,7 @@
                   戻る
                 </button>
               </div>
-              <p id="intro-path-note">選んだ展示は、あとから01〜08のバンクで切り替えられます。</p>
+              <p id="intro-path-note">選んだ展示は、あとから01〜09のバンクで切り替えられます。</p>
             </div>
           </section>
         </div>
@@ -1111,7 +1111,7 @@
             <div
               class="architecture-scene"
               role="img"
-              aria-label="地球と宇宙の公開記録をローカルJSONへ保存し、SOURCE、DERIVED、SCENARIOを分けて、8つの感覚器展示と四つの体験へ変換する作品構成図"
+              aria-label="地球と宇宙の公開記録をローカルJSONへ保存し、SOURCE、DERIVED、SCENARIOを分けて、9つの感覚器展示と四つの体験へ変換する作品構成図"
             >
               <img
                 class="architecture-scene-art"
@@ -1148,10 +1148,10 @@
 
               <section class="architecture-node architecture-node-senses">
                 <p><span>04</span> 数字を感覚へ</p>
-                <h3>8つの観測展示</h3>
-                <ol aria-label="8つの感覚器展示">
+                <h3>9つの観測展示</h3>
+                <ol aria-label="9つの感覚器展示">
                   <li>01</li><li>02</li><li>03</li><li>04</li><li>05</li>
-                  <li>06</li><li>07</li><li>08</li>
+                  <li>06</li><li>07</li><li>08</li><li>09</li>
                 </ol>
               </section>
 
@@ -1351,7 +1351,7 @@
                   MODISは地表を森林、草地、都市、水面などに分けたデータです。VIIRSは宇宙から見える夜の明かりを記録します。
                   夜の明るさと排出量は、同じ数字ではありません。
                 </p>
-                <p class="data-source-use"><strong>展示では</strong> 土地の種類を背景に、夜の明かりを白く重ねます。温室効果ガス排出量は別のデータを使い、赤い円で示します。</p>
+                <p class="data-source-use"><strong>展示では</strong> 土地の種類を背景に、夜の明かりを白く重ねます。化石燃料由来CO₂は別の年次データを使い、赤い円で示します。夜間光は2016年固定です。</p>
                 <div class="data-source-links"><a href="https://modis.gsfc.nasa.gov/data/dataprod/mod12.php" target="_blank" rel="noopener">MODIS ↗</a><a href="https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/VIIRS_Night_Lights.json" target="_blank" rel="noopener">VIIRS ↗</a></div>
               </article>
 
@@ -1392,15 +1392,15 @@
               </article>
 
               <article class="data-source-card">
-                <div class="data-source-card-head"><span>07 / SOCIETY</span><em>使用：感覚器05・07・08</em></div>
-                <h4>EDGAR / World Bank</h4>
-                <p class="data-source-name">人間活動の排出量と、都市・電力の統計</p>
+                <div class="data-source-card-head"><span>07 / SOCIETY</span><em>使用：感覚器05・07・08・09</em></div>
+                <h4>Global Carbon Project / World Bank</h4>
+                <p class="data-source-name">化石燃料由来CO₂と、都市・電力・人口の統計</p>
                 <p>
-                  EDGARは、国や産業ごとの温室効果ガス排出量をまとめたデータベースです。
-                  World Bankからは、都市で暮らす人の割合や、電力に占める再生可能エネルギーの割合を使います。
+                  Global Carbon Projectからは1945年以降の国別化石燃料由来CO₂を使います。
+                  World Bankからは、都市で暮らす人の割合、再生可能電力の割合、1960年以降の総人口を使います。
                 </p>
-                <p class="data-source-use"><strong>展示では</strong> 排出量と都市人口は国を示す目印で表示し、再生可能電力は31か国の国土を暗い青から明るい水色へ塗り分けます。</p>
-                <div class="data-source-links"><a href="https://edgar.jrc.ec.europa.eu/emissions_data_and_maps" target="_blank" rel="noopener">EDGAR ↗</a><a href="https://data.worldbank.org/indicator/SP.URB.TOTL.IN.ZS" target="_blank" rel="noopener">都市人口 ↗</a><a href="https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS" target="_blank" rel="noopener">再エネ比率 ↗</a></div>
+                <p class="data-source-use"><strong>展示では</strong> CO₂と人口を年ごとの比較円にし、再生可能電力は31か国の国土を暗い青から明るい水色へ塗り分けます。</p>
+                <div class="data-source-links"><a href="https://doi.org/10.5281/zenodo.13981696" target="_blank" rel="noopener">GCP化石CO₂ ↗</a><a href="https://data.worldbank.org/indicator/SP.URB.TOTL.IN.ZS" target="_blank" rel="noopener">都市人口 ↗</a><a href="https://data.worldbank.org/indicator/EG.ELC.RNEW.ZS" target="_blank" rel="noopener">再エネ比率 ↗</a><a href="https://data.worldbank.org/indicator/SP.POP.TOTL" target="_blank" rel="noopener">総人口 ↗</a></div>
               </article>
 
               <article class="data-source-card">
@@ -1673,7 +1673,7 @@
           LOCAL VECTOR LOADING
         </p>
 
-        <section class="map-mode-bank" data-active-mode="01" data-map-surface="map" aria-label="地図の14展示を選ぶ">
+        <section class="map-mode-bank" data-active-mode="01" data-map-surface="map" aria-label="地図の15展示を選ぶ">
           <button
             class="map-mobile-bank-toggle"
             id="map-mobile-bank-toggle"
@@ -1686,7 +1686,7 @@
             <i aria-hidden="true"></i>
           </button>
           <div class="map-mode-bank-heading">
-            <p id="map-mode-bank-kicker">INSTALLATION BANK / MAP 01—14</p>
+            <p id="map-mode-bank-kicker">INSTALLATION BANK / MAP 01—15</p>
             <div>
               <span id="japan-mode-number">01</span>
               <strong id="japan-mode-title">地球の一呼吸</strong>
@@ -1718,6 +1718,21 @@
             <strong id="live-layer-label">世界 M7.5+</strong>
           </button>
         </div>
+
+        <aside
+          class="japan-poi-preview"
+          id="japan-poi-preview"
+          role="tooltip"
+          aria-hidden="true"
+        >
+          <p class="japan-poi-preview-kicker" id="japan-poi-preview-kicker">INTERACTIVE POI</p>
+          <strong class="japan-poi-preview-title" id="japan-poi-preview-title"></strong>
+          <p class="japan-poi-preview-meta" id="japan-poi-preview-meta"></p>
+          <p class="japan-poi-preview-action">
+            <span aria-hidden="true">↗</span>
+            クリックで詳しく見る
+          </p>
+        </aside>
 
         <article
           class="japan-poi-card"
@@ -2785,7 +2800,7 @@
       >
         <header class="concept-header">
           <div>
-            <p class="concept-kicker">PLANETARY SENSE ORGAN <span id="concept-number">01 / 08</span></p>
+            <p class="concept-kicker">PLANETARY SENSE ORGAN <span id="concept-number">01 / 09</span></p>
             <h2 id="concept-title">地球の一呼吸</h2>
             <p class="concept-title-en" id="concept-title-en">Breathing Earth</p>
           </div>
@@ -2832,7 +2847,7 @@
             <span aria-hidden="true">←</span>
             <span>PREVIOUS</span>
           </button>
-          <span id="concept-position">01 / 08</span>
+          <span id="concept-position">01 / 09</span>
           <button id="concept-next" type="button" aria-label="次の演出の解説">
             <span>NEXT</span>
             <span aria-hidden="true">→</span>

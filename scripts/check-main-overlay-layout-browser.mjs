@@ -33,9 +33,9 @@ try {
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.evaluate(() => globalThis.GaiaModeLoader.load("exploration"));
-    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 8);
+    await page.waitForFunction(() => document.querySelectorAll("#mode-list .mode-button").length === 9);
     const modeCount = await page.locator("#mode-list .mode-button").count();
-    assert.equal(modeCount, 8, `${viewport.name}: mode button count`);
+    assert.equal(modeCount, 9, `${viewport.name}: mode button count`);
     await page.evaluate(() => {
       const opening = document.querySelector("#gaia-opening");
       if (opening) {

@@ -264,10 +264,14 @@
   const japanPoiType = document.querySelector("#japan-poi-type");
   const japanPoiMeta = document.querySelector("#japan-poi-meta");
   const japanPoiSource = document.querySelector("#japan-poi-source");
+  const japanPoiPreview = document.querySelector("#japan-poi-preview");
+  const japanPoiPreviewKicker = document.querySelector("#japan-poi-preview-kicker");
+  const japanPoiPreviewTitle = document.querySelector("#japan-poi-preview-title");
+  const japanPoiPreviewMeta = document.querySelector("#japan-poi-preview-meta");
   const dataLedger = window.GaiaDataLedger.create();
 
   const TRAIL_COUNT = 16;
-  const MODE_COUNT = 8;
+  const MODE_COUNT = 9;
   const TRANSITION_DURATION = 1500;
   const AUTO_INTERVAL = 18000;
   const CO2_TIMELINE_START_YEAR = 1958;
@@ -309,7 +313,7 @@
   const GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS =
     GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS * GLOBAL_EARTHQUAKE_YEAR_COUNT;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
-  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-ovation-aurora-1";
+  const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-human-history-1";
   const OVATION_AURORA_LIVE_DATA = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json";
   const OVATION_AURORA_FALLBACK_DATA = "./data/ovation-aurora-snapshot.json?v=gaia-ovation-aurora-1";
   const OVATION_AURORA_REFRESH_MS = 5 * 60 * 1000;
@@ -343,10 +347,10 @@
       action: "円グラフを押すと現在値を表示します。スライダーを右へ動かすと、現在値以上の『自分で決める改善目標』が黄色い外周に出ます。これは予測や公的目標ではありません。",
     },
     {
-      title: "夜の光と国別排出量は、どこで重なるのか？",
-      subject: "NASA VIIRSが2016年に捉えた夜間光を、衛星画像の位置のまま白く発光させ、国ごとの温室効果ガス排出量を赤い円で重ねます。",
-      reading: "白い発光は都市周辺の夜間光画素です。赤い円は国全体の排出量で、円の中心が排出源という意味ではありません。明るさから排出量を計算してもいません。",
-      action: "地図を0.65秒以上長押しすると、白い夜間光だけが6秒間薄れます。赤い国別排出量が別の層であることを確認できます。",
+      title: "化石燃料由来CO₂は、1945年からどこで増えたのか？",
+      subject: "Global Carbon Projectの国別化石燃料由来CO₂を1945〜2023年で送り、NASA VIIRS 2016の夜間光を固定参照として重ねます。",
+      reading: "赤い円は選択年の国全体の化石燃料由来CO₂です。白い発光は2016年固定で、過去の夜間光ではありません。円の中心も排出源ではありません。",
+      action: "スライダーで年を動かし、円を押して一つの国を追えます。地図を0.65秒以上長押しすると、白い夜間光だけが6秒間薄れます。",
     },
     {
       title: "大地震は、年ごとに世界のどこで起きたのか？",
@@ -365,6 +369,12 @@
       subject: "31か国の電力に占める再生可能エネルギー比率を、国土の青い濃淡で直接比べる地図です。",
       reading: "暗い青ほど比率が低く、明るい水色ほど高い国です。黄色い輪と緑の矢印は選択国の代表地点の日射・風で、国の青色とは別の自然条件です。",
       action: "スライダーで比率の低い国から高い国へ移動するか、青く塗られた国の代表点を押して現在値を読めます。二地点を結ぶ仮想線は廃止しました。",
+    },
+    {
+      title: "人口の重心は、1960年からどこへ動いたのか？",
+      subject: "世界銀行の国別人口を1960〜2025年で送り、同じ31か国を毎年同じ尺度で比べます。",
+      reading: "琥珀色の円は選択年の国別人口です。円の面積が人口に比例します。国の代表位置に置いた比較円で、都市位置や人口密度ではありません。",
+      action: "スライダーで年を動かし、円を押して選んだ国の人口を年ごとに追えます。人口の多さを豊かさや環境負荷へは変換しません。",
     },
   ];
   const JMA_HISTORY_DATA = "./data/jma-intensity-history.json";
@@ -427,6 +437,8 @@
   const ovationAuroraRawContext = ovationAuroraRawCanvas.getContext("2d");
   const referenceWorldCanvas = document.createElement("canvas");
   const referenceWorldContext = referenceWorldCanvas.getContext("2d");
+  const japanPoiFocusCanvas = document.createElement("canvas");
+  const japanPoiFocusContext = japanPoiFocusCanvas.getContext("2d");
   let gosatHeatmapCacheKey = "";
   let referenceWorldCacheKey = "";
   const gosatImputedIndexCache = new WeakMap();
@@ -614,7 +626,8 @@
       if (mode == 4) return modeAnthropoceneScar(p, t, response, uModeMemory[4]);
       if (mode == 5) return modeRhythmOfDisaster(p, t, response, uModeMemory[5]);
       if (mode == 6) return modeThreeEcologies(p, t, response, uModeMemory[6]);
-      return modeEarthOrgan(p, t, response, uModeMemory[7]);
+      if (mode == 7) return modeEarthOrgan(p, t, response, uModeMemory[7]);
+      return modePopulationTide(p, t, response, uModeMemory[8]);
     }
 
     void main() {
@@ -801,6 +814,7 @@
   };
   let nextJapanOverlayRenderAt = 0;
   let lastJapanOverlayTargetFps = 60;
+  const STATIC_MAP_FRAME_INTERVAL_MS = 500;
   let nextShaderRenderAt = 0;
   let lastShaderTargetFps = 60;
   let japanTileErrors = 0;
@@ -817,6 +831,9 @@
   let japanDataUpdatedAt = null;
   let japanHistoryUpdatedAt = null;
   let selectedJapanPoi = null;
+  let hoveredJapanPoi = null;
+  let hoveredJapanPoiKey = "";
+  let hoveredJapanPoiStartedAt = 0;
   let japanWaveReplay = null;
   let gaiaSnapshot = null;
   let gaiaSnapshotError = null;
@@ -855,6 +872,8 @@
     ? requestedSourceTab
     : "visual";
   let anthropocenePeelUntil = 0;
+  let anthropoceneSelectedIso3 = "JPN";
+  let populationSelectedIso3 = "JPN";
   let wasteSelectedIndex = 0;
   let globalEarthquakeWaveYear = "";
   let globalEarthquakeWaveStartedAt = 0;
@@ -1019,6 +1038,13 @@
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return "—";
     return numeric.toLocaleString("ja-JP", { maximumFractionDigits });
+  };
+  const formatPopulationCompact = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return "—";
+    if (numeric >= 1_000_000_000) return `${(numeric / 1_000_000_000).toFixed(1)}B`;
+    if (numeric >= 1_000_000) return `${Math.round(numeric / 1_000_000)}M`;
+    return formatObservationNumber(numeric, 0);
   };
   const lonLatToWorld = (lon, lat, zoom = japanView.zoom) => {
     const worldSize = MAP_TILE_SIZE * 2 ** zoom;
@@ -2973,23 +2999,36 @@
 
     if (signalMode.id === "anthropocene-scar") {
       const rows = signals.emissions || [];
-      const index = getSequenceIndex(rows.length);
-      const row = rows[index];
-      if (!row) return null;
+      const years = [...new Set(rows.map((row) => Number(row.year)).filter(Number.isFinite))]
+        .sort((a, b) => a - b);
+      const yearIndex = getSequenceIndex(years.length);
+      const selectedYear = years[yearIndex];
+      const yearRows = rows.filter((row) => Number(row.year) === selectedYear);
+      const selected = yearRows.find((row) => row.iso3 === anthropoceneSelectedIso3)
+        || yearRows.find((row) => row.iso3 === "JPN")
+        || yearRows[0];
+      if (!selected) return null;
+      const selectedIndex = yearRows.indexOf(selected);
+      const totalMtCo2 = yearRows.reduce((sum, row) => sum + Number(row.emissionsMtCo2 || 0), 0);
       return {
         kind: "anthropocene",
-        phaseLabel: `COUNTRY VALUE / ${String(index + 1).padStart(2, "0")} OF ${String(rows.length).padStart(2, "0")}`,
-        yearLabel: String(row.year),
-        valueLabel: `${row.country} · ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e` ,
-        methodLabel: "EDGAR COUNTRY LOAD ≠ VIIRS NIGHT-LIGHT RADIANCE",
-        timeLabel: `国別最新値 / AUTO 01→${String(rows.length).padStart(2, "0")}`,
-        selectedIndex: index,
-        selected: row,
+        phaseLabel: `FOSSIL CO₂ HISTORY / ${String(yearIndex + 1).padStart(2, "0")} OF ${String(years.length).padStart(2, "0")}`,
+        yearLabel: String(selectedYear),
+        valueLabel: `${selected.country} · ${selected.emissionsMtCo2.toFixed(1)} Mt CO₂`,
+        methodLabel: `GCP COUNTRY TOTAL / ${yearRows.length} COUNTRIES · VIIRS LIGHTS FIXED AT 2016`,
+        timeLabel: `年 / ${years[0]} → ${years.at(-1)}`,
+        selectedIndex,
+        selected,
+        selectedYear,
+        yearIndex,
+        years,
+        yearRows,
+        totalMtCo2,
         legend: [
-          "赤い円 / 国別排出",
-          "白い発光 / 夜間光",
+          "赤い円 / 年別化石CO₂",
+          "白い発光 / 2016固定",
           "長押し / 6秒比較",
-          "重要 / 別の尺度",
+          "重要 / 夜間光は時系列外",
         ],
       };
     }
@@ -3079,6 +3118,42 @@
           "明るさ / 比率",
           "黄円 / 日射条件",
           "緑矢印 / 風条件",
+        ],
+      };
+    }
+
+    if (signalMode.id === "population-tide") {
+      const rows = signals.population || [];
+      const years = [...new Set(rows.map((row) => Number(row.year)).filter(Number.isFinite))]
+        .sort((a, b) => a - b);
+      const yearIndex = getSequenceIndex(years.length);
+      const selectedYear = years[yearIndex];
+      const yearRows = rows.filter((row) => Number(row.year) === selectedYear);
+      const selected = yearRows.find((row) => row.iso3 === populationSelectedIso3)
+        || yearRows.find((row) => row.iso3 === "JPN")
+        || yearRows[0];
+      if (!selected) return null;
+      const selectedIndex = yearRows.indexOf(selected);
+      const totalPopulation = yearRows.reduce((sum, row) => sum + Number(row.population || 0), 0);
+      return {
+        kind: "population",
+        phaseLabel: `POPULATION HISTORY / ${String(yearIndex + 1).padStart(2, "0")} OF ${String(years.length).padStart(2, "0")}`,
+        yearLabel: String(selectedYear),
+        valueLabel: `${selected.country} · ${formatObservationNumber(selected.population, 0)} 人`,
+        methodLabel: `WORLD BANK / ${yearRows.length} COUNTRIES · CIRCLE AREA = POPULATION`,
+        timeLabel: `年 / ${years[0]} → ${years.at(-1)}`,
+        selectedIndex,
+        selected,
+        selectedYear,
+        yearIndex,
+        years,
+        yearRows,
+        totalPopulation,
+        legend: [
+          "琥珀円 / 国別人口",
+          "面積 / 人口に比例",
+          "中心点 / 国の代表位置",
+          "重要 / 人口密度ではない",
         ],
       };
     }
@@ -3324,12 +3399,13 @@
       });
     }
     if (signalMode.id === "anthropocene-scar") {
-      return (signals.emissions || []).map((row) => ({
+      const state = getMapSequenceState(signalMode);
+      return (state?.yearRows || []).map((row) => ({
         ...row,
         kind: "sequence-poi",
         lon: row.lon,
         lat: row.lat,
-        meta: `${row.year} / ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e / excl. LULUCF`,
+        meta: `${row.year} / ${row.emissionsMtCo2.toFixed(1)} Mt CO₂ / fossil + cement`,
       }));
     }
     if (signalMode.id === "rhythm-of-disaster") {
@@ -3366,6 +3442,16 @@
         lon: row.lon,
         lat: row.lat,
         meta: `${row.year || "—"} / RENEWABLE ${row.renewablePercent.toFixed(1)}% OF ELECTRICITY`,
+      }));
+    }
+    if (signalMode.id === "population-tide") {
+      const state = getMapSequenceState(signalMode);
+      return (state?.yearRows || []).map((row) => ({
+        ...row,
+        kind: "sequence-poi",
+        lon: row.lon,
+        lat: row.lat,
+        meta: `${row.year} / ${formatObservationNumber(row.population, 0)} 人 / World Bank`,
       }));
     }
     return [];
@@ -4032,9 +4118,11 @@
       renderCachedReferenceWorldModel(ctx, rect, left, top);
       ctx.restore();
       japanOverlay.dataset.nightLightsBoundaryOverlay = "coast-and-country";
-      const emissionRows = signalMode.signals.emissions || [];
+      const emissionRows = sequence?.yearRows || [];
       japanOverlay.dataset.emissionsCircleCount = String(emissionRows.length);
       japanOverlay.dataset.emissionsEncoding = "country-total-log-area";
+      japanOverlay.dataset.emissionsSelectedYear = String(sequence?.selectedYear || "");
+      japanOverlay.dataset.nightLightsReferenceYear = "2016";
       emissionRows.forEach((row, index) => {
         const point = pointFor(row);
         if (!visible(point)) return;
@@ -4042,8 +4130,8 @@
         if (reveal.progress <= 0) return;
         ctx.save();
         applyMapPlotReveal(ctx, point, reveal);
-        const load = clamp(Math.log10(Math.max(1, row.emissionsMtCo2e)) / 4, 0, 1);
-        const selected = index === sequence?.selectedIndex;
+        const load = clamp(Math.log10(Math.max(1, row.emissionsMtCo2)) / 4.2, 0, 1);
+        const selected = row.iso3 === sequence?.selected?.iso3;
         const radius = 5 + load * (selected ? 48 : 25);
         ctx.beginPath();
         ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
@@ -4062,7 +4150,7 @@
           drawSelectionLabel(
             { x: point.x + radius + 7, y: point.y },
             row.country,
-            `COUNTRY TOTAL ${row.emissionsMtCo2e.toFixed(1)} Mt CO₂e · 点排出源ではない`,
+            `${row.year} · FOSSIL CO₂ ${row.emissionsMtCo2.toFixed(1)} Mt · 点排出源ではない`,
             "rgba(255,151,126,.96)",
           );
         }
@@ -4428,6 +4516,82 @@
         ctx.fillText("100%", gradientX + gradientWidth, gradientY + 27);
         ctx.restore();
       }
+    } else if (signalMode.id === "population-tide") {
+      const state = getMapSequenceState(signalMode);
+      const rows = state?.yearRows || [];
+      const selected = state?.selected;
+      const maximumPopulation = Math.max(1, ...rows.map((row) => Number(row.population || 0)));
+      const orderedRows = [...rows].sort((leftRow, rightRow) => {
+        const leftSelected = leftRow.iso3 === selected?.iso3;
+        const rightSelected = rightRow.iso3 === selected?.iso3;
+        if (leftSelected !== rightSelected) return Number(leftSelected) - Number(rightSelected);
+        return Number(rightRow.population || 0) - Number(leftRow.population || 0);
+      });
+      japanOverlay.dataset.populationCircleCount = String(rows.length);
+      japanOverlay.dataset.populationSelectedYear = String(state?.selectedYear || "");
+      japanOverlay.dataset.populationEncoding = "circle-area-proportional-to-population";
+      japanOverlay.dataset.populationSampleTotal = String(state?.totalPopulation || 0);
+      let visiblePopulationCircleCount = 0;
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      orderedRows.forEach((row, index) => {
+        const point = pointFor(row);
+        if (!visible(point, 64)) return;
+        visiblePopulationCircleCount += 1;
+        if (row.iso3 === selected?.iso3) {
+          japanOverlay.dataset.populationSelectedScreenX = point.x.toFixed(2);
+          japanOverlay.dataset.populationSelectedScreenY = point.y.toFixed(2);
+        }
+        const reveal = getMapPlotReveal(index, orderedRows.length, now);
+        if (reveal.progress <= 0) return;
+        const selectedRow = row.iso3 === selected?.iso3;
+        const radius = 5 + Math.sqrt(Math.max(0, row.population) / maximumPopulation) * 42;
+        const pulse = selectedRow && !reducedMotion ? 1 + Math.sin(time * 1.6) * 0.045 : 1;
+        ctx.save();
+        applyMapPlotReveal(ctx, point, reveal);
+        const gradient = ctx.createRadialGradient(
+          point.x - radius * 0.28,
+          point.y - radius * 0.32,
+          0,
+          point.x,
+          point.y,
+          radius * pulse,
+        );
+        gradient.addColorStop(0, selectedRow ? "rgba(255,251,214,1)" : "rgba(255,230,154,.84)");
+        gradient.addColorStop(0.42, selectedRow ? "rgba(255,183,86,.68)" : "rgba(255,164,76,.38)");
+        gradient.addColorStop(1, selectedRow ? "rgba(255,128,70,.06)" : "rgba(255,128,70,.025)");
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius * pulse, 0, Math.PI * 2);
+        ctx.strokeStyle = selectedRow ? "rgba(255,238,183,.98)" : "rgba(255,194,111,.76)";
+        ctx.lineWidth = selectedRow ? 2.2 : 1;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, selectedRow ? 4.8 : 2.6, 0, Math.PI * 2);
+        ctx.fillStyle = selectedRow ? "rgba(255,255,224,.98)" : "rgba(255,210,128,.86)";
+        ctx.fill();
+        if (!selectedRow && rect.width >= 760 && row.population >= maximumPopulation * 0.12) {
+          ctx.fillStyle = "rgba(255,246,209,.92)";
+          ctx.font = '700 9px Consolas, "Courier New", monospace';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(formatPopulationCompact(row.population), point.x, point.y - radius * 0.24);
+        }
+        if (selectedRow) {
+          drawSelectionLabel(
+            { x: point.x + radius + 8, y: point.y },
+            `${row.country} / ${row.year}`,
+            `${formatObservationNumber(row.population, 0)} 人 · 円の面積が人口に比例`,
+            "rgba(255,230,170,.98)",
+          );
+        }
+        ctx.restore();
+      });
+      ctx.restore();
+      japanOverlay.dataset.populationVisibleCircleCount = String(visiblePopulationCircleCount);
     }
 
     const revealRows = getModeDataPois()
@@ -4454,6 +4618,146 @@
     });
     ctx.restore();
 
+    ctx.restore();
+  };
+
+  const getJapanPoiCoordinates = (poi) => {
+    if (poi?.type === "data") return { lon: poi.record?.lon, lat: poi.record?.lat };
+    if (poi?.type === "history" || poi?.type === "earthquake") {
+      return { lon: poi.event?.longitude, lat: poi.event?.latitude };
+    }
+    return { lon: poi?.node?.lon, lat: poi?.node?.lat };
+  };
+
+  const getJapanPoiFocusRadius = (poi, rect) => {
+    const signalModeId = getActiveSignalMode()?.id;
+    if (poi?.type === "data" && signalModeId === "nothing-is-waste") {
+      const selectedRadius = clamp(rect.width / 34, 46, 62);
+      const baseRadius = clamp(rect.width / 78, 20, 29);
+      return (poi.index === wasteSelectedIndex ? selectedRadius : baseRadius) + 7;
+    }
+    if (poi?.type === "data" && signalModeId === "forest-cloud-engine") {
+      return Math.max(24, getForestRainRadius(poi.record?.precipitationMmDay) + 7);
+    }
+    if (poi?.type === "data" && signalModeId === "anthropocene-scar") {
+      const load = clamp(Math.log10(Math.max(1, poi.record?.emissionsMtCo2 || 1)) / 4.2, 0, 1);
+      const selected = poi.record?.iso3 === anthropoceneSelectedIso3;
+      return 12 + load * (selected ? 48 : 25);
+    }
+    if (poi?.type === "data" && signalModeId === "population-tide") {
+      const state = getMapSequenceState(getActiveSignalMode());
+      const maximumPopulation = Math.max(1, ...(state?.yearRows || []).map((row) => Number(row.population || 0)));
+      return 12 + Math.sqrt(Math.max(0, poi.record?.population || 0) / maximumPopulation) * 42;
+    }
+    if (poi?.type === "history" || poi?.type === "earthquake") return 22;
+    return 25;
+  };
+
+  const renderJapanPoiFocus = (ctx, rect, left, top, now, ratio) => {
+    if (!hoveredJapanPoi || selectedJapanPoi || japanLayer.classList.contains("is-live-exhibit")) {
+      return;
+    }
+    const coordinates = getJapanPoiCoordinates(hoveredJapanPoi);
+    if (!Number.isFinite(coordinates.lon) || !Number.isFinite(coordinates.lat)) return;
+    const point = japanWorldToScreen(coordinates.lon, coordinates.lat, left, top);
+    if (point.x < 0 || point.x > rect.width || point.y < 0 || point.y > rect.height) return;
+
+    const elapsed = Math.max(0, now - hoveredJapanPoiStartedAt);
+    const progress = reducedMotion ? 1 : clamp(elapsed / 320, 0, 1);
+    const eased = 1 - (1 - progress) ** 3;
+    const baseRadius = getJapanPoiFocusRadius(hoveredJapanPoi, rect);
+    const sourceRadius = baseRadius + 4;
+    const magnification = 1 + eased * 0.16;
+    const focusRadius = sourceRadius * magnification;
+    const pulse = reducedMotion ? 0.35 : 0.5 + Math.sin(now * 0.0042) * 0.5;
+
+    japanOverlay.dataset.hoveredPoiKey = hoveredJapanPoiKey;
+    japanOverlay.dataset.hoveredPoiProgress = progress.toFixed(3);
+    japanOverlay.dataset.hoveredPoiScale = magnification.toFixed(3);
+    japanOverlay.dataset.hoveredPoiScreenX = point.x.toFixed(2);
+    japanOverlay.dataset.hoveredPoiScreenY = point.y.toFixed(2);
+
+    const sourceLeft = (point.x - sourceRadius) * ratio;
+    const sourceTop = (point.y - sourceRadius) * ratio;
+    const sourceSize = sourceRadius * 2 * ratio;
+    if (
+      japanPoiFocusContext
+      && sourceLeft >= 0
+      && sourceTop >= 0
+      && sourceLeft + sourceSize <= japanOverlay.width
+      && sourceTop + sourceSize <= japanOverlay.height
+    ) {
+      const focusSize = Math.max(2, Math.ceil(sourceSize));
+      if (japanPoiFocusCanvas.width !== focusSize || japanPoiFocusCanvas.height !== focusSize) {
+        japanPoiFocusCanvas.width = focusSize;
+        japanPoiFocusCanvas.height = focusSize;
+      }
+      japanPoiFocusContext.setTransform(1, 0, 0, 1, 0, 0);
+      japanPoiFocusContext.clearRect(0, 0, focusSize, focusSize);
+      japanPoiFocusContext.drawImage(
+        japanOverlay,
+        sourceLeft,
+        sourceTop,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        focusSize,
+        focusSize,
+      );
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, focusRadius, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.globalAlpha = 0.96;
+      ctx.drawImage(
+        japanPoiFocusCanvas,
+        0,
+        0,
+        focusSize,
+        focusSize,
+        point.x - focusRadius,
+        point.y - focusRadius,
+        focusRadius * 2,
+        focusRadius * 2,
+      );
+      const lensLight = ctx.createRadialGradient(
+        point.x - focusRadius * 0.28,
+        point.y - focusRadius * 0.32,
+        0,
+        point.x,
+        point.y,
+        focusRadius,
+      );
+      lensLight.addColorStop(0, `rgba(222,255,247,${0.12 * eased})`);
+      lensLight.addColorStop(0.58, "rgba(118,246,213,0)");
+      lensLight.addColorStop(1, `rgba(78,220,194,${0.08 * eased})`);
+      ctx.fillStyle = lensLight;
+      ctx.fillRect(
+        point.x - focusRadius,
+        point.y - focusRadius,
+        focusRadius * 2,
+        focusRadius * 2,
+      );
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.shadowColor = "rgba(126,255,224,.72)";
+    ctx.shadowBlur = 12 + eased * 12;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, focusRadius + 1.5, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(190,255,238,${0.46 + eased * 0.34})`;
+    ctx.lineWidth = 1.2 + eased * 0.5;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, focusRadius + 6 + pulse * 7, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(104,244,209,${(0.2 + (1 - pulse) * 0.18) * eased})`;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
     ctx.restore();
   };
 
@@ -4572,7 +4876,7 @@
       });
     }
 
-    if (!isTheme(0) && !isTheme(9)) nodePoints.forEach((node, index) => {
+    if (!isTheme(0) && !isTheme(8) && !isTheme(9)) nodePoints.forEach((node, index) => {
       if (
         node.x < -40 ||
         node.x > rect.width + 40 ||
@@ -4613,7 +4917,7 @@
         japanPulses.splice(index, 1);
         continue;
       }
-      if (isTheme(9)) continue;
+      if (isTheme(8) || isTheme(9)) continue;
 
       const progress = clamp(age / pulseLifetime, 0, 1);
       const x = pulse.worldX - left;
@@ -4666,7 +4970,7 @@
 
     if (japanTileErrors === 0) {
       const latestPulse = japanPulses.at(-1);
-      if (isTheme(9) || !latestPulse) {
+      if (isTheme(8) || isTheme(9) || !latestPulse) {
         japanMapStatus.textContent = getJapanObservationStatus();
       } else if (now - latestPulse.bornAt < pulseLifetime * 0.24) {
         japanMapStatus.textContent = "QUESTION SENT / CONNECTING TO A LISTENING NODE";
@@ -4674,6 +4978,8 @@
         japanMapStatus.textContent = "CO-CREATION SIGNAL / RELATION TRACE ACTIVE";
       }
     }
+
+    renderJapanPoiFocus(ctx, rect, left, top, now, ratio);
 
     if (!reducedMotion) {
       const scanX = ((now * 0.032) % (rect.width + 240)) - 120;
@@ -4688,7 +4994,10 @@
   };
 
   window.addEventListener("gaia:live-exhibit-change", () => {
-    if (japanIsOpen) restartMapPlotReveal("exhibit-change");
+    if (japanIsOpen) {
+      clearJapanPoiHover();
+      restartMapPlotReveal("exhibit-change");
+    }
     renderJapanOverlay(performance.now());
   });
   window.addEventListener("gaia:signals-ready", () => {
@@ -4975,9 +5284,10 @@
           "forest-cloud-engine": ["FOREST × RAIN / FOREST MASK + 31 SITES", "緑は森林域、大きな水色円は31代表地点の平均降水量です。直径が大きいほど雨が多く、ブラジルのアマゾン付近は5.33 mm/dayです。円のない場所を雨量ゼロとは扱いません。"],
           "pollination-protocol": ["OBSERVATION ≠ DISTRIBUTION / 3 STEPS", "①黄色はGBIF観察点、②各国最大2件の標本制約、③場所のないGloBI花関係を非地理ネットワークで示します。点の空白はミツバチの不在ではありません。"],
           "nothing-is-waste": ["RECYCLING / CURRENT RATE + YOUR TARGET", "同じ大きさの円グラフで、緑は現在の再資源化率、橙はそれ以外です。実線は国連の公開値、破線は補完値。選択国の黄色い外周には、自分で決める改善目標を置けます。これは予測や公的目標ではありません。"],
-          "anthropocene-scar": ["VIIRS NIGHT LIGHTS × COUNTRY GHG", "白い発光はNASA VIIRS 2016の夜間光画素を地図上の位置へ投影したものです。赤い円は国別排出量で、円の中心が排出源という意味ではありません。"],
+          "anthropocene-scar": ["1945—2023 FOSSIL CO₂ × FIXED 2016 LIGHTS", "赤い円は選択年の国別化石燃料由来CO₂です。白い発光はNASA VIIRS 2016を固定した比較用レイヤーで、過去の夜間光ではありません。円の中心も排出源ではありません。"],
           "three-ecologies": ["FOREST × URBAN / 31 PAIRED COUNTRIES", "同じ31か国の森林率と都市人口率を二重円と散布図で比較します。回帰線と相関係数が全体傾向、選択国の中心色が傾向からの外れ方を示します。紫の世界遺産例は数値計算へ含めません。"],
           "earth-organ": ["RENEWABLE ELECTRICITY / 31 COUNTRY CHOROPLETH", "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。スライダーは低い国から高い国へ移動します。黄色の日射と緑の風は選択国の補足で、比率を決める因果表示ではありません。"],
+          "population-tide": ["1960—2025 POPULATION / 31 COUNTRIES", "琥珀色の円は選択年の国別人口です。円の面積が人口に比例します。国の代表位置へ置いた比較円で、都市の位置や人口密度ではありません。"],
         };
         const [kicker, copy] = narratives[signalMode.id] || [
           `ACT ${signalMode.act.number} / ${signalMode.act.en}`,
@@ -5063,6 +5373,137 @@
     }).format(date);
   };
 
+  const getJapanPoiKey = (poi) => {
+    if (poi?.type === "data") {
+      const recordKey = poi.record?.id
+        || poi.record?.iso3
+        || poi.record?.key
+        || poi.record?.name
+        || poi.record?.country
+        || `${poi.record?.lon}:${poi.record?.lat}`;
+      return `data:${getActiveSignalMode()?.id || modeToIndex}:${recordKey}:${poi.index}`;
+    }
+    if (poi?.type === "history") return `history:${poi.event?.id || poi.index}`;
+    if (poi?.type === "earthquake") return `earthquake:${poi.event?.id || poi.index}`;
+    return `node:${poi?.node?.id || poi?.node?.name || poi?.index}`;
+  };
+
+  const getJapanPoiPreviewContent = (poi) => {
+    if (poi.type === "data") {
+      const record = poi.record || {};
+      return {
+        kicker: `${formatModeNumber(modeToIndex)} / ${modes[modeToIndex].titleJa}`,
+        title: record.nameJa
+          || record.countryJa
+          || record.name
+          || record.country
+          || record.place
+          || record.species
+          || record.iso3
+          || "観測データ",
+        meta: record.meta || "この地点の観測値と出典を表示します。",
+      };
+    }
+    if (poi.type === "history") {
+      const event = poi.event;
+      return {
+        kicker: "JMA / HISTORICAL POI",
+        title: getJmaEventTitle(event),
+        meta: `${String(event.occurredAt).slice(0, 4)} / M${event.magnitude.toFixed(1)} / 最大震度 ${getMaximumIntensityText(event)}`,
+      };
+    }
+    if (poi.type === "earthquake") {
+      const event = poi.event;
+      return {
+        kicker: "USGS / EARTHQUAKE POI",
+        title: event.place,
+        meta: `M${event.magnitude.toFixed(1)} / 深さ ${Math.round(event.depthKm)} km / ${formatJapanEventTime(event.time)}`,
+      };
+    }
+    const node = poi.node;
+    return {
+      kicker: "MAP / LISTENING POI",
+      title: node.nameJa || node.name,
+      meta: `${node.name || "観測地点"} / ${node.lat.toFixed(2)}°N ${node.lon.toFixed(2)}°E`,
+    };
+  };
+
+  const positionJapanPoiPreview = (clientX, clientY) => {
+    const layerRect = japanLayer.getBoundingClientRect();
+    const width = Math.min(japanPoiPreview.offsetWidth || 330, layerRect.width - 36);
+    const height = Math.min(japanPoiPreview.offsetHeight || 150, layerRect.height - 36);
+    const localX = clientX - layerRect.left;
+    const localY = clientY - layerRect.top;
+    const left = clamp(
+      localX + width + 28 > layerRect.width ? localX - width - 24 : localX + 24,
+      18,
+      layerRect.width - width - 18,
+    );
+    const top = clamp(
+      localY - height - 20 >= 18 ? localY - height - 20 : localY + 24,
+      18,
+      layerRect.height - height - 18,
+    );
+    japanPoiPreview.style.left = `${left}px`;
+    japanPoiPreview.style.top = `${top}px`;
+  };
+
+  const clearJapanPoiHover = () => {
+    hoveredJapanPoi = null;
+    hoveredJapanPoiKey = "";
+    hoveredJapanPoiStartedAt = 0;
+    japanMap.classList.remove("has-poi-hover");
+    japanPoiPreview.classList.remove("is-visible");
+    japanPoiPreview.setAttribute("aria-hidden", "true");
+    delete japanOverlay.dataset.hoveredPoiKey;
+    delete japanOverlay.dataset.hoveredPoiProgress;
+    delete japanOverlay.dataset.hoveredPoiScale;
+    delete japanOverlay.dataset.hoveredPoiScreenX;
+    delete japanOverlay.dataset.hoveredPoiScreenY;
+  };
+
+  const showJapanPoiPreview = (poi, clientX, clientY) => {
+    const key = getJapanPoiKey(poi);
+    const changed = key !== hoveredJapanPoiKey;
+    hoveredJapanPoi = poi;
+    if (changed) {
+      hoveredJapanPoiKey = key;
+      hoveredJapanPoiStartedAt = performance.now();
+      const content = getJapanPoiPreviewContent(poi);
+      japanPoiPreviewKicker.textContent = content.kicker;
+      japanPoiPreviewTitle.textContent = content.title;
+      japanPoiPreviewMeta.textContent = content.meta;
+      japanPoiPreview.classList.remove("is-visible");
+      void japanPoiPreview.offsetWidth;
+    }
+    positionJapanPoiPreview(clientX, clientY);
+    japanMap.classList.add("has-poi-hover");
+    japanPoiPreview.setAttribute("aria-hidden", "false");
+    japanPoiPreview.classList.add("is-visible");
+  };
+
+  const updateJapanPoiHover = (event) => {
+    if (
+      !supportsHover
+      || event.pointerType === "touch"
+      || event.pointerType === "pen"
+      || selectedJapanPoi
+      || japanView.dragged
+      || japanLayer.classList.contains("is-live-exhibit")
+    ) {
+      clearJapanPoiHover();
+      return;
+    }
+    const poi = findJapanPoiAt(event.clientX, event.clientY, event.pointerType, {
+      allowGridFallback: false,
+    });
+    if (!poi) {
+      clearJapanPoiHover();
+      return;
+    }
+    showJapanPoiPreview(poi, event.clientX, event.clientY);
+  };
+
   const closeJapanPoi = ({ restoreFocus = false } = {}) => {
     window.clearTimeout(japanPoiRevealTimer);
     japanPoiRevealTimer = 0;
@@ -5124,10 +5565,11 @@
     "forest-cloud-engine": "nasa-power-precip",
     "pollination-protocol": "gbif",
     "nothing-is-waste": "un-sdg",
-    "anthropocene-scar": "edgar",
+    "anthropocene-scar": "gcp-fossil-co2",
     "rhythm-of-disaster": "usgs-earthquakes",
     "three-ecologies": "worldbank-forest",
     "earth-organ": "worldbank-renewable",
+    "population-tide": "worldbank-population",
   });
 
   const getJapanPoiSourceUrl = (poi) => {
@@ -5158,6 +5600,7 @@
   const openJapanPoi = (poi, clientX, clientY) => {
     window.clearTimeout(japanPoiRevealTimer);
     japanPoiRevealTimer = 0;
+    clearJapanPoiHover();
     selectedJapanPoi = poi;
     japanPoiCard.hidden = true;
     japanPoiCard.setAttribute("aria-hidden", "true");
@@ -5168,6 +5611,11 @@
       const activeSignalMode = getActiveSignalMode();
       if (activeSignalMode) {
         co2TimelineHeld = true;
+        if (activeSignalMode.id === "anthropocene-scar" && record.iso3) {
+          anthropoceneSelectedIso3 = record.iso3;
+        } else if (activeSignalMode.id === "population-tide" && record.iso3) {
+          populationSelectedIso3 = record.iso3;
+        }
         if (Number.isInteger(record.sequenceIndex) && record.sequenceLength > 0) {
           if (activeSignalMode.id === "nothing-is-waste") {
             wasteSelectedIndex = record.sequenceIndex;
@@ -5237,7 +5685,12 @@
     }
   };
 
-  const findJapanPoiAt = (clientX, clientY, pointerType = "") => {
+  const findJapanPoiAt = (
+    clientX,
+    clientY,
+    pointerType = "",
+    { allowGridFallback = true } = {},
+  ) => {
     const { rect, left, top } = getJapanViewport();
     const localX = clientX - rect.left;
     const localY = clientY - rect.top;
@@ -5255,9 +5708,15 @@
 
     getModeDataPois().forEach((record, index) => {
       const point = japanWorldToScreen(record.lon, record.lat, left, top);
-      const hitRadius = getActiveSignalMode()?.id === "forest-cloud-engine"
-        ? Math.max(hitRadii.node, getForestRainRadius(record.precipitationMmDay))
-        : hitRadii.node;
+      const signalModeId = getActiveSignalMode()?.id;
+      let hitRadius = hitRadii.node;
+      if (signalModeId === "forest-cloud-engine") {
+        hitRadius = Math.max(hitRadius, getForestRainRadius(record.precipitationMmDay));
+      } else if (signalModeId === "nothing-is-waste") {
+        hitRadius = record.sequenceIndex === wasteSelectedIndex
+          ? clamp(rect.width / 34, 46, 62) + 8
+          : clamp(rect.width / 78, 20, 29) + 8;
+      }
       considerCandidate({ type: "data", record, index }, point, hitRadius);
     });
 
@@ -5277,7 +5736,7 @@
       });
     }
 
-    if (!closest && modes[modeToIndex].id === "breathing-earth") {
+    if (!closest && allowGridFallback && modes[modeToIndex].id === "breathing-earth") {
       const signalMode = getActiveSignalMode();
       const location = japanScreenToLonLat(localX, localY, left, top);
       const record = signalMode
@@ -5591,10 +6050,10 @@
       const state = getMapSequenceState(signalMode);
       const emission = state?.selected;
       return {
-        output: state?.phaseLabel || "COUNTRY VALUE",
+        output: state?.phaseLabel || "FOSSIL CO₂ HISTORY",
         location: emission?.country || "—",
-        value: `${emission?.emissionsMtCo2e?.toFixed(1) || "—"} Mt CO₂e`,
-        note: "白い発光はNASA VIIRSの夜間光画素、赤い円は国ごとの排出量です。0.65秒以上長押しすると白だけが6秒間薄くなります。",
+        value: `${state?.selectedYear || "—"} / ${emission?.emissionsMtCo2?.toFixed(1) || "—"} Mt CO₂`,
+        note: "赤い円は選択年の化石燃料由来CO₂です。白い発光は2016年のNASA VIIRS夜間光を固定した参照で、過去の夜間光ではありません。",
         temporal: true,
       };
     }
@@ -5629,6 +6088,17 @@
         location: current?.country || "—",
         value: `再生可能電力 ${current?.renewablePercent?.toFixed(1) || "—"}%`,
         note: "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。黄色の日射と緑の風は選択国の補足で、現在の比率を決める因果表示ではありません。",
+        temporal: true,
+      };
+    }
+    if (signalMode.id === "population-tide") {
+      const state = getMapSequenceState(signalMode);
+      const population = state?.selected;
+      return {
+        output: state?.phaseLabel || "POPULATION HISTORY",
+        location: population?.country || "—",
+        value: `${state?.selectedYear || "—"} / ${formatObservationNumber(population?.population, 0)} 人`,
+        note: "琥珀色の円は選択年の国別人口で、面積が人口に比例します。国の代表位置へ置いた比較円で、都市位置や人口密度ではありません。",
         temporal: true,
       };
     }
@@ -5685,7 +6155,7 @@
     }
     if (signalMode.id === "anthropocene-scar") {
       const row = getMapSequenceState(signalMode)?.selected;
-      const emission = clamp(Math.log10(Math.max(1, row?.emissionsMtCo2e || 1)) / 4, 0, 1);
+      const emission = clamp(Math.log10(Math.max(1, row?.emissionsMtCo2 || 1)) / 4.2, 0, 1);
       return [emission, 0.78, anthropocenePeelUntil > performance.now() ? 0.05 : 0.8, 0.18];
     }
     if (signalMode.id === "rhythm-of-disaster") {
@@ -5714,6 +6184,20 @@
         clamp((row?.potential?.solarKwhM2Day || 0) / 7, 0, 1),
         clamp((row?.potential?.windSpeedMs || 0) / 10, 0, 1),
         1,
+      ];
+    }
+    if (signalMode.id === "population-tide") {
+      const state = getMapSequenceState(signalMode);
+      const selectedPopulation = Number(state?.selected?.population || 0);
+      const sampleTotal = Number(state?.totalPopulation || 1);
+      const timeProgress = state?.years?.length > 1
+        ? state.yearIndex / (state.years.length - 1)
+        : 0;
+      return [
+        clamp(Math.log10(Math.max(1, selectedPopulation)) / 10, 0, 1),
+        clamp(selectedPopulation / sampleTotal, 0, 1),
+        timeProgress,
+        0.58,
       ];
     }
     return [0.72, 0.48, pointer.energy, modeMemory[modeIndex]];
@@ -5756,7 +6240,10 @@
         observationMetric("scenario_recycle_percent", "もしもの再資源化率", sequence?.scenarioRecycle, "%"),
       );
     } else if (signalMode.id === "anthropocene-scar") {
-      metrics.push(observationMetric("emissions_mt_co2e", "温室効果ガス排出量", sequence?.selected?.emissionsMtCo2e, "Mt CO₂e"));
+      metrics.push(
+        observationMetric("fossil_co2_mt", "化石燃料由来CO₂", sequence?.selected?.emissionsMtCo2, "Mt CO₂"),
+        observationMetric("selected_year", "表示年", sequence?.selectedYear, "年"),
+      );
     } else if (signalMode.id === "rhythm-of-disaster") {
       metrics.push(
         observationMetric("event_count", "M7.5以上の地震", sequence?.yearEvents?.length, "件"),
@@ -5773,6 +6260,11 @@
         observationMetric("renewable_percent", "再生可能電力", sequence?.selected?.renewablePercent, "%"),
         observationMetric("solar_kwh_m2_day", "日射条件", sequence?.selected?.potential?.solarKwhM2Day, "kWh/m²/day"),
         observationMetric("wind_speed_ms", "風速条件", sequence?.selected?.potential?.windSpeedMs, "m/s"),
+      );
+    } else if (signalMode.id === "population-tide") {
+      metrics.push(
+        observationMetric("population", "人口", sequence?.selected?.population, "人"),
+        observationMetric("selected_year", "表示年", sequence?.selectedYear, "年"),
       );
     }
     const normalizedMetrics = metrics.filter(Boolean);
@@ -5825,7 +6317,7 @@
   };
 
   let sourceSignalSnapshot = null;
-  const sourceSignalVector = new Float32Array(8);
+  const sourceSignalVector = new Float32Array(MODE_COUNT);
   const getSourceSignalVector = () => {
     if (!gaiaSnapshot || sourceSignalSnapshot === gaiaSnapshot) return sourceSignalVector;
     const modeSignals = (id) => gaiaModeById.get(id)?.signals || {};
@@ -5840,16 +6332,18 @@
     const quake = modeSignals("rhythm-of-disaster");
     const ecologies = modeSignals("three-ecologies");
     const energy = modeSignals("earth-organ");
+    const population = modeSignals("population-tide");
     const latestCo2 = air.co2?.at(-1)?.deseasonalizedPpm || 315;
     sourceSignalVector.set([
       clamp((latestCo2 - 315) / 120, 0, 1),
       clamp(mean(currents.currents || [], (row) => Math.hypot(row.uMs, row.vMs)) / 0.7, 0, 1),
       clamp(mean(forest.precipitation || [], (row) => row.precipitationMmDay || 0) / 8, 0, 1),
       clamp(mean(waste.countryWaste || [], (row) => row.recyclePercent || 0) / 100, 0, 1),
-      clamp(mean(city.emissions || [], (row) => Math.log10(Math.max(1, row.emissionsMtCo2e || 1))) / 4, 0, 1),
+      clamp(mean(city.emissions || [], (row) => Math.log10(Math.max(1, row.emissionsMtCo2 || 1))) / 4.2, 0, 1),
       clamp((Math.max(...(quake.globalEvents || []).map((row) => row.magnitude || 7.5), 7.5) - 7.5) / 2, 0, 1),
       clamp(mean(ecologies.social || [], (row) => row.urbanPercent || 0) / 100, 0, 1),
       clamp(mean(energy.current || [], (row) => row.renewablePercent || 0) / 100, 0, 1),
+      clamp(mean(population.population || [], (row) => Math.log10(Math.max(1, row.population || 1))) / 10, 0, 1),
     ]);
     sourceSignalSnapshot = gaiaSnapshot;
     return sourceSignalVector;
@@ -6179,12 +6673,14 @@ drawOutline(country.valueStatus === "IMPUTED" ? "DASHED" : "SOLID");
 const target = mix(country.recyclePercent, 100, sliderPosition); // SCENARIO / visitor-defined
 drawOuterTargetRing(target); // never below the current baseline
 // This is not a forecast or an official policy target.`,
-    "anthropocene-scar": `const viirsGeographic = projectWebMercatorRasterToGeographic(viirsNightLights2016);
-drawRadianceGlow(viirsGeographic); // DISPLAY GAIN ONLY; pixel positions remain geographic
-
-for (const country of edgarCountryValues) {
-  drawEmissionRing(Math.log10(country.emissionsMtCo2e)); // COUNTRY VALUE
+    "anthropocene-scar": `const year = mix(1945, 2023, timelinePosition);
+const countryValues = gcpFossilCo2.filter(row => row.year === year);
+for (const country of countryValues) {
+  drawEmissionRing(Math.log10(country.emissionsMtCo2)); // COUNTRY VALUE / year snapshot
 }
+
+const viirsGeographic = projectWebMercatorRasterToGeographic(viirsNightLights2016);
+drawRadianceGlow(viirsGeographic); // FIXED 2016 REFERENCE; not historical night lights
 const nightLightOpacity = longPress ? 0.04 : 0.5;
 // Night-light radiance is never converted to emissions.`,
     "rhythm-of-disaster": `const years = groupByYear(usgsM75Since2000); // 2000–2026\nconst events = years[selectedYear]; // this year only; default view is global\nfor (const event of events) {\n  const feltRadiusKm = estimateFeltRadiusKm(event.magnitude); // M7.5 ≈ 500 km; M9.1 ≈ 2,000 km\n  const durationMs = scale(feltRadiusKm, 500, 2000, 7000, 15000);\n  drawSlowEstimatedFeltRing(event, feltRadiusKm, durationMs); // same start; magnitude-specific stop\n}\n// Estimated felt radius is not a ShakeMap, damage zone, or tsunami extent.\n// Only the optional JMA detail layer owns observed intensity:\nconst distanceKm = Math.hypot(greatCircleKm(epicenter, station), depthKm);\nconst pArrivalSec = distanceKm / 7.0;\nconst sArrivalSec = distanceKm / 4.0;\nif (elapsedSec >= sArrivalSec) drawObservedJmaIntensity(station.intensity);`,
@@ -6202,6 +6698,14 @@ drawCountryChoropleth(countries, { scale: "dark-blue 0% → cyan 100%" });
 const selected = countries.sort(byRenewableShare)[sequenceIndex];
 drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 // Solar and wind are context, not a causal model of the current electricity share.`,
+    "population-tide": `const year = mix(1960, 2025, timelinePosition);
+const countryValues = worldBankPopulation.filter(row => row.year === year);
+const maximum = Math.max(...countryValues.map(row => row.population));
+for (const country of countryValues) {
+  const radius = Math.sqrt(country.population / maximum) * maximumRadius;
+  drawPopulationCircle(country, radius); // circle area ∝ population
+}
+// Representative country points: not cities, population density, or environmental load.`,
   });
 
   const renderCodeLines = (text) => {
@@ -6869,6 +7373,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
 
   const selectMode = (index, { resetAutoTimer = true } = {}) => {
     const normalizedIndex = (index + MODE_COUNT) % MODE_COUNT;
+    if (japanIsOpen) clearJapanPoiHover();
     if (normalizedIndex === modeToIndex) {
       if (japanIsOpen) {
         restartMapPlotReveal("mode-reselect");
@@ -7071,7 +7576,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     canvasHomeParent.insertBefore(canvas, canvasHomeNextSibling);
   };
 
-  const MAP_LIGHT_OPACITIES = Object.freeze([0.09, 0.34, 0.14, 0.13, 0.15, 0.18, 0.14, 0.17]);
+  const MAP_LIGHT_OPACITIES = Object.freeze([0.09, 0.34, 0.14, 0.13, 0.15, 0.18, 0.14, 0.17, 0.15]);
   const syncIntegratedMapLight = () => {
     const active = japanIsOpen && !japanLayer.classList.contains("is-live-exhibit");
     japanLayer.classList.toggle("has-integrated-map-light", active);
@@ -7292,6 +7797,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     if (!japanIsOpen) {
       return;
     }
+    clearJapanPoiHover();
     cancelEarthViewAnimation("user-pointer");
     event.preventDefault();
     japanMap.setPointerCapture(event.pointerId);
@@ -7323,9 +7829,14 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   });
 
   japanMap.addEventListener("pointermove", (event) => {
-    if (!japanIsOpen || !japanView.pointers.has(event.pointerId)) {
+    if (!japanIsOpen) {
       return;
     }
+    if (!japanView.pointers.has(event.pointerId)) {
+      updateJapanPoiHover(event);
+      return;
+    }
+    clearJapanPoiHover();
     event.preventDefault();
     japanView.pointers.set(event.pointerId, {
       x: event.clientX,
@@ -7446,11 +7957,15 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
   japanMap.addEventListener("pointercancel", (event) =>
     releaseJapanPointer(event, false),
   );
+  japanMap.addEventListener("pointerleave", () => {
+    if (japanView.pointers.size === 0) clearJapanPoiHover();
+  });
 
   japanMap.addEventListener(
     "wheel",
     (event) => {
       if (!japanIsOpen || mapScope !== "earth") return;
+      clearJapanPoiHover();
       cancelEarthViewAnimation("user-wheel");
       event.preventDefault();
       const delta = clamp(event.deltaY, -240, 240);
@@ -7853,6 +8368,7 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     }
 
     closeJapanData({ restoreFocus: false });
+    clearJapanPoiHover();
     closeJapanPoi();
     cancelMapTitleTransition();
     cancelEarthViewAnimation("map-closed");
@@ -8741,7 +9257,21 @@ drawSelectedPotential(selected.solarKwhM2Day, selected.windSpeedMs);
     const lodProfile = globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || { targetFps: 60 };
     const lodTarget = lodProfile.targetFps ?? 60;
 
-    if (lodTarget === 0) return;
+    if (lodTarget === 0) {
+      const enteringStaticFallback = japanOverlay.dataset.renderLoopMode !== "static-fallback";
+      japanOverlay.dataset.renderLoopMode = "static-fallback";
+      if (
+        mapExhibitIsVisible
+        && (enteringStaticFallback || now + 0.5 >= nextJapanOverlayRenderAt)
+      ) {
+        renderJapanTiles();
+        renderJapanOverlay(now);
+        nextJapanOverlayRenderAt = now + STATIC_MAP_FRAME_INTERVAL_MS;
+      }
+      animationFrame = requestAnimationFrame(render);
+      return;
+    }
+    japanOverlay.dataset.renderLoopMode = "dynamic";
     if (!japanIsOpen && lodTarget < 60) {
       if (lodTarget !== lastShaderTargetFps) {
         lastShaderTargetFps = lodTarget;

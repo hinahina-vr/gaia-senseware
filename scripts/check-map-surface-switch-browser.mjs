@@ -81,12 +81,12 @@ try {
     await page.waitForFunction(() => typeof window.GaiaModeLoader?.load === "function");
     await page.evaluate(() => window.GaiaModeLoader.load("exploration"));
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
-    await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 14);
+    await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list .map-mode-button").length === 15);
     await page.evaluate(() => window.GaiaMapObservationAdapter.openMap());
     await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
 
     assert.equal(await page.locator(".map-surface-switch").count(), 0, `${viewport.name}: obsolete MAP/LIGHT toggle remains`);
-    assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 14, `${viewport.name}: MAP button count`);
+    assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 15, `${viewport.name}: MAP button count`);
     assert.equal(await page.locator("#abstract-mode-list").count(), 0, `${viewport.name}: duplicate LIGHT bank remains`);
     assert.equal(await page.locator("#map-light-overlay").count(), 0, `${viewport.name}: independent light overlay remains`);
 
@@ -131,7 +131,7 @@ try {
     });
     assert.deepEqual(scan.groupLabels, ["MAP地図"], `${viewport.name}: the main bank must contain only map choices`);
     if (!integrationOnly) {
-      assert.equal(scan.visibleButtons, 14, `${viewport.name}: not all map buttons are visible together`);
+      assert.equal(scan.visibleButtons, 15, `${viewport.name}: not all map buttons are visible together`);
       assert.ok(scan.buttonHeights.every((height) => height >= (viewport.isMobile ? 44 : 30)), `${viewport.name}: button target is too short`);
       assert.ok(scan.horizontalOverflow <= 1, `${viewport.name}: bank overflows horizontally by ${scan.horizontalOverflow}px`);
     }
@@ -302,7 +302,7 @@ try {
       canvasParent: "japan-layer",
       canvasOpacity: 0.17,
       canvasPointerEvents: "none",
-    }, `${viewport.name}: MAP 01—08 did not receive their matching integrated light`);
+    }, `${viewport.name}: MAP 01—09 did not receive their matching integrated light`);
 
     const screenshot = path.join(outputDir, `${viewport.name}-unified-world-bank.png`);
     await page.screenshot({ path: screenshot, fullPage: false });
@@ -315,7 +315,7 @@ try {
   assert.deepEqual(report.responses404, [], `404 responses: ${report.responses404.join("\n")}`);
   report.status = "passed";
   fs.writeFileSync(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
-  console.log(`GAIA integrated map-light browser checks passed: ${report.scans.length} viewports, 14 controls, restored focus copy.`);
+  console.log(`GAIA integrated map-light browser checks passed: ${report.scans.length} viewports, 15 controls, restored focus copy.`);
 } finally {
   await browser.close();
 }

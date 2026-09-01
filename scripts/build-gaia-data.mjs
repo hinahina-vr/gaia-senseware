@@ -45,6 +45,8 @@ const URLS = Object.freeze({
   mlitDid: "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-A16-2020.html",
   unesco: "https://whc.unesco.org/en/list/",
   worldBank: "https://api.worldbank.org/v2/country",
+  gcpFossilCo2:
+    "https://zenodo.org/records/13981696/files/GCB2024v17_MtCO2_flat.csv?download=1",
   gibsNightLights:
     "https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=VIIRS_Night_Lights&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=TRUE&WIDTH=1024&HEIGHT=1024&SRS=EPSG%3A3857&BBOX=-20037508.34,-20037508.34,20037508.34,20037508.34&TIME=2016-01-01",
   gibsLandCover:
@@ -610,13 +612,76 @@ const fetchWorldBankLatest = async (indicator, valueKey) => {
   }).filter(Boolean);
 };
 
+const fetchWorldBankSeries = async (indicator, valueKey, startYear = 1960) => {
+  const url = `${URLS.worldBank.replace(/\/country$/, "")}/en/indicator/${indicator}?downloadformat=csv`;
+  const archive = await fetchBuffer(url, { attempts: 2, timeout: 60_000 });
+  if (!archive) return [];
+  const entries = readZipEntries(archive);
+  const dataEntry = [...entries.entries()].find(([name]) => /^API_.+\.csv$/i.test(name) && !/Metadata_/i.test(name));
+  if (!dataEntry) return [];
+  const table = parseCsv(dataEntry[1].toString("utf8"));
+  const headerIndex = table.findIndex((row) => row[0] === "Country Name" && row[1] === "Country Code");
+  if (headerIndex < 0) return [];
+  const header = table[headerIndex];
+  const sitesByIso3 = new Map(climateSites.map((site) => [site.iso3, site]));
+  return table.slice(headerIndex + 1).flatMap((row) => {
+    const site = sitesByIso3.get(row[1]);
+    if (!site) return [];
+    return row.slice(4).map((rawValue, offset) => {
+      const year = Number(header[offset + 4]);
+      const value = numeric(rawValue);
+      if (!Number.isFinite(year) || year < startYear || value === null) return null;
+      return {
+        ...site,
+        country: row[0] || site.name,
+        year,
+        [valueKey]: value,
+      };
+    }).filter(Boolean);
+  }).sort((left, right) => left.year - right.year || left.iso3.localeCompare(right.iso3));
+};
+
+const parseGcpFossilCo2 = (text) => {
+  const table = parseCsv(text);
+  const header = table[0] || [];
+  const countryIndex = header.indexOf("Country");
+  const isoIndex = header.indexOf("ISO 3166-1 alpha-3");
+  const yearIndex = header.indexOf("Year");
+  const totalIndex = header.indexOf("Total");
+  if ([countryIndex, isoIndex, yearIndex, totalIndex].some((index) => index < 0)) return [];
+  const sitesByIso3 = new Map(climateSites.map((site) => [site.iso3, site]));
+  return table.slice(1).map((row) => {
+    const site = sitesByIso3.get(row[isoIndex]);
+    const year = Number(row[yearIndex]);
+    const emissionsMtCo2 = numeric(row[totalIndex]);
+    if (!site || year < 1945 || emissionsMtCo2 === null) return null;
+    return {
+      ...site,
+      country: row[countryIndex] || site.name,
+      year,
+      emissionsMtCo2,
+    };
+  }).filter(Boolean).sort((left, right) => left.year - right.year || left.iso3.localeCompare(right.iso3));
+};
+
 // Bulk CSV is faster and more stable than long multi-country Indicators API URLs.
-const [renewableRows, urbanRows, forestRows, globalEmissionsRows] = await Promise.all([
+const [renewableRows, urbanRows, forestRows, fetchedPopulationRows, gcpFossilText] = await Promise.all([
   fetchWorldBankLatest("EG.ELC.RNEW.ZS", "renewablePercent"),
   fetchWorldBankLatest("SP.URB.TOTL.IN.ZS", "urbanPercent"),
   fetchWorldBankLatest("AG.LND.FRST.ZS", "forestPercent"),
-  fetchWorldBankLatest("EN.GHG.ALL.MT.CE.AR5", "emissionsMtCo2e"),
+  fetchWorldBankSeries("SP.POP.TOTL", "population", 1960),
+  fetchText(URLS.gcpFossilCo2, { attempts: 2, timeout: 60_000 }),
 ]);
+const fetchedGcpFossilRows = parseGcpFossilCo2(gcpFossilText);
+const globalEmissionsRows = fetchedGcpFossilRows.length
+  ? fetchedGcpFossilRows
+  : previousSignalRows("anthropocene-scar", "emissions")
+    .filter((row) => Number.isFinite(Number(row.emissionsMtCo2)));
+const populationRows = fetchedPopulationRows.length
+  ? fetchedPopulationRows
+  : previousSignalRows("population-tide", "population");
+if (!globalEmissionsRows.length) throw new Error("GCP fossil CO₂ history is unavailable and no compatible snapshot exists");
+if (!populationRows.length) throw new Error("World Bank population history is unavailable and no compatible snapshot exists");
 
 const forestUrbanRows = urbanRows.map((urban) => {
   const forest = forestRows.find((row) => row.iso3 === urban.iso3);
@@ -828,12 +893,12 @@ const modes = [
   mode(
     "anthropocene-scar",
     { number: 2, title: "人間の影響を見る", en: "SEE HUMAN IMPACT" },
-    "夜の明かりと温室効果ガス排出量は、地図上でどう重なるでしょう。",
+    "1945年から国別の化石燃料由来CO₂は、どこで、いつ大きくなったでしょう。",
     [
-      source({ id: "edgar", organisation: "World Bank / European Commission JRC EDGAR", title: "Total GHG excluding LULUCF (AR5)", url: "https://data.worldbank.org/indicator/EN.GHG.ALL.MT.CE.AR5", period: `${Math.min(...globalEmissionsRows.map((row) => row.year))}–${Math.max(...globalEmissionsRows.map((row) => row.year))}`, unit: "Mt CO₂e", resolution: `${globalEmissionsRows.length} country values at representative coordinates`, transformation: "国全体の排出量が多いほど、赤い環を大きくしました。差が大きすぎるため、面積は対数という縮尺で調整しています。", caveat: "点の位置は国を示す目印で、排出源の場所ではありません。土地利用と森林による増減を除いた国全体の値です。", rows: globalEmissionsRows }),
-      source({ id: "nasa-gibs-night", organisation: "NASA GIBS", title: "VIIRS Night Lights / Black Marble", url: URLS.gibs, period: "2016 annual", unit: "rendered radiance", resolution: "1024×1024 Web Mercator snapshot", transformation: "公式GIBS WMSの全球画像をWeb Mercatorから地理投影へ変換し、画素位置を保った白い発光面として表示。視認性のため発光ゲインを加え、長押し後の6秒間だけ透明化", caveat: "夜間光は排出量そのものではない。明るさの強調は表示だけで、排出量への変換や数値解析には使わない。", rows: [{ layer: "VIIRS_Night_Lights", date: "2016-01-01", localAsset: "assets/data/viirs-night-lights-2016.png", displayed: true }] }),
+      source({ id: "gcp-fossil-co2", organisation: "Global Carbon Project / CICERO", title: "GCB2024 national fossil CO₂ emissions", url: "https://doi.org/10.5281/zenodo.13981696", period: `${Math.min(...globalEmissionsRows.map((row) => row.year))}–${Math.max(...globalEmissionsRows.map((row) => row.year))}`, unit: "Mt CO₂", resolution: `${globalEmissionsRows.length} annual country values / ${climateSites.length} selected countries`, transformation: "同じ31か国について年別のTotal列を取り出し、選択年だけを代表座標へ配置。値の差が大きいため、赤い円の半径は対数尺度で調整します。", caveat: "化石燃料燃焼・セメント等の国全体のCO₂です。土地利用変化やCO₂以外の温室効果ガスを含みません。点は国の目印で排出源ではありません。", rows: globalEmissionsRows }),
+      source({ id: "nasa-gibs-night", organisation: "NASA GIBS", title: "VIIRS Night Lights / Black Marble", url: URLS.gibs, period: "2016 annual / fixed reference", unit: "rendered radiance", resolution: "1024×1024 Web Mercator snapshot", transformation: "公式GIBS WMSの全球画像をWeb Mercatorから地理投影へ変換し、画素位置を保った白い発光面として表示。全年度で2016年画像を固定し、長押し後の6秒間だけ透明化", caveat: "1945〜2023年の夜間光時系列ではありません。夜間光は排出量へ変換せず、2016年の空間参照としてだけ使います。", rows: [{ layer: "VIIRS_Night_Lights", date: "2016-01-01", localAsset: "assets/data/viirs-night-lights-2016.png", displayed: true }] }),
     ],
-    { emissions: globalEmissionsRows, nightLightsRaster: "./assets/data/viirs-night-lights-2016.png", japanEmissions: emissionsRows, nightLights: urbanRows },
+    { emissions: globalEmissionsRows, nightLightsRaster: "./assets/data/viirs-night-lights-2016.png", nightLightsReferenceYear: 2016, japanEmissions: emissionsRows, nightLights: urbanRows },
   ),
   mode(
     "rhythm-of-disaster",
@@ -868,6 +933,15 @@ const modes = [
     ],
     { potential: powerRows, current: renewableRows },
   ),
+  mode(
+    "population-tide",
+    { number: 2, title: "人間の影響を見る", en: "SEE HUMAN IMPACT" },
+    "1960年から現在まで、世界の人口の重心はどの地域へ動いたでしょう。",
+    [
+      source({ id: "worldbank-population", organisation: "World Bank / United Nations Population Division", title: "Population, total (SP.POP.TOTL)", url: "https://data.worldbank.org/indicator/SP.POP.TOTL", period: `${Math.min(...populationRows.map((row) => row.year))}–${Math.max(...populationRows.map((row) => row.year))}`, unit: "people", resolution: `${populationRows.length} annual country values / ${climateSites.length} selected countries`, transformation: "同じ31か国を年ごとにそろえ、人口に比例する円面積へ変換します。スライダーは国ではなく年を切り替えます。", caveat: "点は国を示す代表位置で、都市位置や人口密度ではありません。人口の多さを豊かさ、排出量、環境負荷へ変換しません。", rows: populationRows }),
+    ],
+    { population: populationRows },
+  ),
 ];
 
 const output = enrichSnapshotWithStatistics({
@@ -887,4 +961,4 @@ await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify(output, null, 2)}\n`, "utf8");
 console.log(`Wrote ${modes.length} modes to ${outputPath}`);
 console.log(`GOSAT ${gosatFrames.length} frames, CO2 ${noaaRows.length}, GISTEMP ${gistempRows.length}, current ${currentRows.length}, POWER ${powerRows.length}, GloBI ${globiRows.length}, GBIF ${gbifRows.length}`);
-console.log(`UN waste ${globalWasteRows.length}, WB renewable ${renewableRows.length}, urban ${urbanRows.length}, GHG ${globalEmissionsRows.length}, USGS M7.5+ ${globalEarthquakeRows.length}`);
+console.log(`UN waste ${globalWasteRows.length}, WB renewable ${renewableRows.length}, urban ${urbanRows.length}, GCP fossil CO₂ ${globalEmissionsRows.length}, population ${populationRows.length}, USGS M7.5+ ${globalEarthquakeRows.length}`);
