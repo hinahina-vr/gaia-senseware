@@ -49,6 +49,7 @@ const publicSensorMarkers = document.querySelector("#public-sensor-markers");
 const publicSensorList = document.querySelector("#public-sensor-list");
 const publicSensorDetail = document.querySelector("#public-sensor-detail");
 const publicSensorDirectory = document.querySelector("#public-sensor-directory");
+const publicSensorDirectoryClose = document.querySelector("#public-sensor-directory-close");
 const publicSensorQuery = document.querySelector("#public-sensor-query");
 const publicSensorResults = document.querySelector("#public-sensor-results");
 const publicSensorEmpty = document.querySelector("#public-sensor-empty");
@@ -85,6 +86,7 @@ const publicMapHome = Object.freeze({ longitude: 137.5, latitude: 36, zoom: 4.2 
 const publicMapOverscanRatio = .22;
 const publicMapDragRebaseRatio = .18;
 const publicMapFocusMinZoom = 7.2;
+const publicMapPoiFocusDurationMs = 720;
 const publicMapPollIntervalMs = 60_000;
 const publicMapCanvasPixelBudget = 12_000_000;
 const publicMapMarkerCollisionDistance = 50;
@@ -511,7 +513,7 @@ const renderPublicSensors = () => {
       }
       if (activatePublicSensorCluster(marker)) return;
       selectPublicSensor(sensor, marker, { historyMode: "push" });
-      focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom });
+      focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom, duration: publicMapPoiFocusDurationMs });
     });
     publicSensorMarkers.append(marker);
 
@@ -537,7 +539,7 @@ const renderPublicSensors = () => {
     card.addEventListener("focus", () => focusPublicSensor(sensor, { minimumZoom: 5.2 }));
     card.addEventListener("click", () => {
       selectPublicSensor(sensor, marker, { historyMode: "push" });
-      focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom });
+      focusPublicSensor(sensor, { minimumZoom: publicMapFocusMinZoom, duration: publicMapPoiFocusDurationMs });
       if (matchMedia("(max-width: 760px)").matches) {
         requestAnimationFrame(() => publicSensorDetail?.querySelector(".sensor-map-card-expand")?.focus({ preventScroll: true }));
       }
@@ -583,6 +585,9 @@ function initPublicSensorDirectory() {
   });
   publicMapDirectoryToggle?.addEventListener("click", () => {
     setPublicSensorDirectoryOpen(publicSensorDirectory?.dataset.open !== "true", { focus: true });
+  });
+  publicSensorDirectoryClose?.addEventListener("click", () => {
+    setPublicSensorDirectoryOpen(false, { focus: true });
   });
   document.addEventListener("keydown", (event) => {
     if (views.get("map")?.hidden) return;
@@ -692,6 +697,8 @@ function restorePublicSensorSelectionFromHash() {
 function setPublicSensorDirectoryOpen(open, { focus = false } = {}) {
   if (!publicSensorDirectory || !publicMapDirectoryToggle) return;
   publicSensorDirectory.dataset.open = String(open);
+  publicSensorDirectory.setAttribute("aria-hidden", String(!open));
+  publicSensorDirectory.toggleAttribute("inert", !open);
   publicMapDirectoryToggle.setAttribute("aria-expanded", String(open));
   if (matchMedia("(max-width: 760px)").matches) {
     if (open) {
@@ -1451,18 +1458,11 @@ function formatPublicDataVolume(bytes) {
   return `${(bytes / 1_000_000_000).toFixed(3)} GB`;
 }
 
-function centerPublicSensorMarker(sensor) {
-  const marker = [...publicSensorMarkers.querySelectorAll(".sensor-map-marker")]
-    .find((candidate) => candidate.dataset.sensorId === sensor?.id);
-  if (!marker || marker.hidden) return;
-  const mapBounds = publicSensorMap.getBoundingClientRect();
-  const markerBounds = marker.getBoundingClientRect();
-  const deltaX = mapBounds.left + mapBounds.width / 2 - (markerBounds.left + markerBounds.width / 2);
-  const deltaY = mapBounds.top + mapBounds.height / 2 - (markerBounds.top + markerBounds.height / 2);
-  if (Math.abs(deltaX) > .5 || Math.abs(deltaY) > .5) panPublicMap(deltaX, deltaY);
+function easeOutQuint(progress) {
+  return 1 - (1 - progress) ** 5;
 }
 
-function focusPublicSensor(sensor, { minimumZoom = publicMapFocusMinZoom } = {}) {
+function focusPublicSensor(sensor, { minimumZoom = publicMapFocusMinZoom, duration = 460 } = {}) {
   window.clearTimeout(publicMapHoverTimer);
   if (!sensor?.location || !publicSensorMap) return;
   const from = { ...publicMapCamera };
@@ -1475,31 +1475,31 @@ function focusPublicSensor(sensor, { minimumZoom = publicMapFocusMinZoom } = {})
     zoom: Math.max(from.zoom, minimumZoom),
   };
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const animationDuration = clamp(Number(duration) || 460, 160, 1_200);
   const token = ++publicMapFocusToken;
   if (publicMapFocusFrame) cancelAnimationFrame(publicMapFocusFrame);
+  publicSensorMap.dataset.cameraEasing = "ease-out-quint";
   if (reducedMotion) {
     Object.assign(publicMapCamera, target);
     updatePublicMapViewport();
-    centerPublicSensorMarker(sensor);
+    publicSensorMap.dataset.cameraMotion = "idle";
     return;
   }
+  publicSensorMap.dataset.cameraMotion = "ease-out";
   const startedAt = performance.now();
-  let lastPaint = -Infinity;
   const animate = (now) => {
     if (token !== publicMapFocusToken) return;
-    const progress = clamp((now - startedAt) / 460, 0, 1);
-    const eased = 1 - (1 - progress) ** 3;
-    if (now - lastPaint >= 30 || progress === 1) {
-      publicMapCamera.longitude = from.longitude + (target.longitude - from.longitude) * eased;
-      publicMapCamera.latitude = from.latitude + (target.latitude - from.latitude) * eased;
-      publicMapCamera.zoom = from.zoom + (target.zoom - from.zoom) * eased;
-      updatePublicMapViewport();
-      lastPaint = now;
-    }
+    const progress = clamp((now - startedAt) / animationDuration, 0, 1);
+    const eased = easeOutQuint(progress);
+    publicMapCamera.longitude = from.longitude + (target.longitude - from.longitude) * eased;
+    publicMapCamera.latitude = from.latitude + (target.latitude - from.latitude) * eased;
+    publicMapCamera.zoom = from.zoom + (target.zoom - from.zoom) * eased;
+    updatePublicMapViewport();
     if (progress < 1) publicMapFocusFrame = requestAnimationFrame(animate);
     else {
       publicMapFocusFrame = 0;
-      centerPublicSensorMarker(sensor);
+      Object.assign(publicMapCamera, target);
+      publicSensorMap.dataset.cameraMotion = "idle";
     }
   };
   publicMapFocusFrame = requestAnimationFrame(animate);
@@ -1598,6 +1598,7 @@ function cancelPublicMapFocus() {
   publicMapFocusToken += 1;
   if (publicMapFocusFrame) cancelAnimationFrame(publicMapFocusFrame);
   publicMapFocusFrame = 0;
+  if (publicSensorMap) publicSensorMap.dataset.cameraMotion = "idle";
 }
 
 function finishPublicMapDrag(commit = true) {

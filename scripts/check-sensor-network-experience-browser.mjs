@@ -157,7 +157,22 @@ try {
       assert(Math.hypot(anchoredCentre.x - clusterCentre.x, anchoredCentre.y - clusterCentre.y) < 2, `cluster anchor moved during zoom: ${JSON.stringify({ clusterCentre, anchoredCentre })}`);
       assert.equal(await anchoredMarker.evaluate((marker) => marker.style.getPropertyValue("--sensor-marker-offset-x")), "");
       if (!await page.locator("#public-sensor-directory").isVisible()) await page.locator("#public-map-directory-toggle").click();
-      assert.equal(await page.locator("#public-sensor-directory").isVisible(), true);
+      await page.locator("#public-sensor-directory").waitFor({ state: "visible" });
+      await page.waitForTimeout(520);
+      const directoryGeometry = await page.evaluate(() => {
+        const drawer = document.querySelector("#public-sensor-directory").getBoundingClientRect();
+        const toggle = document.querySelector("#public-map-directory-toggle").getBoundingClientRect();
+        return {
+          drawer: { left: drawer.left, right: drawer.right, width: drawer.width },
+          toggle: { left: toggle.left, right: toggle.right, width: toggle.width },
+          viewportWidth: innerWidth,
+          focusedId: document.activeElement?.id,
+        };
+      });
+      assert(directoryGeometry.drawer.width >= 360, `desktop directory is too narrow: ${JSON.stringify(directoryGeometry)}`);
+      assert(Math.abs(directoryGeometry.drawer.right - directoryGeometry.viewportWidth) < 2, `desktop directory is not edge-aligned: ${JSON.stringify(directoryGeometry)}`);
+      assert(Math.abs(directoryGeometry.toggle.right - directoryGeometry.drawer.left) < 2, `directory toggle is not attached to the drawer: ${JSON.stringify(directoryGeometry)}`);
+      assert.equal(directoryGeometry.focusedId, "public-sensor-query");
       await page.locator("#public-sensor-query").fill("大阪");
       assert.equal(await page.locator(".sensor-public-card:visible").count(), 1);
       assert.equal(await page.locator(".sensor-map-marker:visible").count(), 1);
@@ -167,6 +182,12 @@ try {
       assert.equal(await page.locator(".sensor-public-card:visible").count(), 4);
       assert.equal(await page.locator("#public-sensor-results").textContent(), "4 / 5件");
       await page.locator("[data-public-filter='ALL']").click();
+      await page.locator("#public-sensor-directory-close").click();
+      await page.locator("#public-sensor-directory").waitFor({ state: "hidden" });
+      assert.equal(await page.locator("#public-map-directory-toggle").getAttribute("aria-expanded"), "false");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "public-map-directory-toggle");
+      await page.locator("#public-map-directory-toggle").click();
+      await page.locator("#public-sensor-directory").waitFor({ state: "visible" });
     } else {
       const topbarHeight = await page.locator(".sensor-topbar").evaluate((element) => element.getBoundingClientRect().height);
       assert(topbarHeight <= 110, `mobile map topbar is too tall: ${topbarHeight}`);
@@ -207,18 +228,20 @@ try {
       await map.dispatchEvent("pointerup", { pointerId: 41, pointerType: "touch", button: 0, buttons: 0, clientX: centreX - 86, clientY: centreY });
       await map.dispatchEvent("pointerup", { pointerId: 42, pointerType: "touch", button: 0, buttons: 0, clientX: centreX + 86, clientY: centreY });
       await page.locator("#public-map-directory-toggle").click();
-      assert.equal(await page.locator("#public-sensor-directory").isVisible(), true);
+      await page.locator("#public-sensor-directory").waitFor({ state: "visible" });
       assert.equal(await page.locator("#public-map-directory-toggle").getAttribute("aria-expanded"), "true");
       await page.keyboard.press("Escape");
+      await page.locator("#public-sensor-directory").waitFor({ state: "hidden" });
       assert.equal(await page.locator("#public-sensor-directory").isVisible(), false);
       assert.equal(await page.locator("#public-sensor-detail").isVisible(), true);
       assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
       assert.equal(await page.evaluate(() => document.activeElement?.id), "public-map-directory-toggle");
       await page.locator("#public-map-directory-toggle").click();
+      await page.locator("#public-sensor-directory").waitFor({ state: "visible" });
       const firstDirectoryCard = page.locator(".sensor-public-card").first();
       await firstDirectoryCard.focus();
       await page.keyboard.press("Enter");
-      await page.waitForTimeout(80);
+      await page.locator("#public-sensor-directory").waitFor({ state: "hidden" });
       assert.equal(await page.locator("#public-sensor-directory").isVisible(), false);
       assert.equal(await page.locator(".sensor-map-card-expand").evaluate((button) => document.activeElement === button), true);
     }
@@ -226,7 +249,12 @@ try {
     if (viewport.width > 760) {
       const sakuCard = page.locator(".sensor-public-card", { hasText: "sakuセンサー" });
       await sakuCard.click();
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-easing"), "ease-out-quint");
+      await page.waitForTimeout(100);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
       await page.waitForTimeout(650);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "idle");
       const sakuId = await sakuCard.getAttribute("data-sensor-id");
       assert.equal(new URL(page.url()).hash, `#map/sensor=${encodeURIComponent(sakuId)}`);
       await page.goBack();
@@ -271,7 +299,12 @@ try {
     } else {
       const ameMarker = page.locator(".sensor-map-marker", { hasText: "DEMO LIVE" }).filter({ has: page.locator("img[src*='amane']") });
       await ameMarker.click();
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-easing"), "ease-out-quint");
+      await page.waitForTimeout(100);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "ease-out");
       await page.waitForTimeout(650);
+      assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "idle");
       const markerFocusDelta = await page.evaluate(() => {
         const map = document.querySelector("#public-sensor-map").getBoundingClientRect();
         const marker = document.querySelector(".sensor-map-marker[aria-current='true']").getBoundingClientRect();
