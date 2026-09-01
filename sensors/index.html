@@ -10,11 +10,11 @@
     <script>document.documentElement.dataset.sensorView = location.hash.startsWith("#map") ? "map" : "login";</script>
     <link rel="stylesheet" href="../mode-exit.css?v=gaia-story-control-center-2" />
     <link rel="stylesheet" href="../mode-entry-guide.css?v=gaia-mode-entry-guide-1" />
-    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-map-readability-1" />
+    <link rel="stylesheet" href="./sensor-platform.css?v=gaia-map-directory-drawer-1" />
     <script src="../opening-audio.js?v=gaia-spectral-weave-1" defer></script>
     <script src="./sensor-audio.js?v=3" defer></script>
     <script src="../mode-entry-guide.js?v=gaia-mode-entry-guide-1" defer></script>
-    <script src="./sensor-platform.js?v=gaia-map-readability-1" type="module"></script>
+    <script src="./sensor-platform.js?v=gaia-map-directory-drawer-1" type="module"></script>
   </head>
   <body>
     <div class="sensor-atmosphere" aria-hidden="true">
@@ -112,8 +112,11 @@
             <small class="sensor-console-label">SELECTED SIGNAL</small>
             <p>地図上のアイコンを選んでください。</p>
           </aside>
-          <section class="sensor-map-directory" id="public-sensor-directory" data-open="false" aria-labelledby="public-sensor-directory-title">
-            <header><div><small>OBSERVATION NODES</small><strong id="public-sensor-directory-title">観測点を探す</strong></div><output id="public-sensor-results" aria-live="polite">0件</output></header>
+          <section class="sensor-map-directory" id="public-sensor-directory" data-open="false" aria-hidden="true" inert aria-labelledby="public-sensor-directory-title">
+            <header>
+              <div><small>OBSERVATION NODES</small><strong id="public-sensor-directory-title">観測点を探す</strong></div>
+              <div class="sensor-map-directory-meta"><output id="public-sensor-results" aria-live="polite">0件</output><button id="public-sensor-directory-close" type="button" aria-label="観測点一覧を閉じる">閉じる</button></div>
+            </header>
             <label class="sensor-map-search"><span>センサー名・参加者・地域</span><input id="public-sensor-query" type="search" inputmode="search" autocomplete="off" placeholder="名前や地域で検索" /></label>
             <div class="sensor-map-filters" role="group" aria-label="センサーの状態で絞り込む">
               <button type="button" data-public-filter="ALL" aria-pressed="true">すべて</button>

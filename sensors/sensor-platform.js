@@ -49,6 +49,7 @@ const publicSensorMarkers = document.querySelector("#public-sensor-markers");
 const publicSensorList = document.querySelector("#public-sensor-list");
 const publicSensorDetail = document.querySelector("#public-sensor-detail");
 const publicSensorDirectory = document.querySelector("#public-sensor-directory");
+const publicSensorDirectoryClose = document.querySelector("#public-sensor-directory-close");
 const publicSensorQuery = document.querySelector("#public-sensor-query");
 const publicSensorResults = document.querySelector("#public-sensor-results");
 const publicSensorEmpty = document.querySelector("#public-sensor-empty");
@@ -584,6 +585,9 @@ function initPublicSensorDirectory() {
   publicMapDirectoryToggle?.addEventListener("click", () => {
     setPublicSensorDirectoryOpen(publicSensorDirectory?.dataset.open !== "true", { focus: true });
   });
+  publicSensorDirectoryClose?.addEventListener("click", () => {
+    setPublicSensorDirectoryOpen(false, { focus: true });
+  });
   document.addEventListener("keydown", (event) => {
     if (views.get("map")?.hidden) return;
     if (publicOwnerProfileDialog?.open || analysisDialog?.open) return;
@@ -692,6 +696,8 @@ function restorePublicSensorSelectionFromHash() {
 function setPublicSensorDirectoryOpen(open, { focus = false } = {}) {
   if (!publicSensorDirectory || !publicMapDirectoryToggle) return;
   publicSensorDirectory.dataset.open = String(open);
+  publicSensorDirectory.setAttribute("aria-hidden", String(!open));
+  publicSensorDirectory.toggleAttribute("inert", !open);
   publicMapDirectoryToggle.setAttribute("aria-expanded", String(open));
   if (matchMedia("(max-width: 760px)").matches) {
     if (open) {
