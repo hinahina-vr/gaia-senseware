@@ -16281,11 +16281,12 @@ var acceptTelemetry = /* @__PURE__ */ __name(async (request, env, deviceId) => {
        FROM devices
        WHERE device_id = ?2 AND last_seq = ?3 AND last_payload_hash = ?6
          AND status = 'ACTIVE' AND deleted_at IS NULL
-         AND NOT EXISTS (SELECT 1 FROM telemetry WHERE device_id = ?2 AND seq = ?3)`
+         AND NOT EXISTS (SELECT 1 FROM telemetry WHERE device_id = ?2 AND seq = ?3)
+       RETURNING id`
     ).bind(crypto.randomUUID(), deviceId, telemetry.seq, telemetry.observedAt, now, payloadHash, payload)
   ]);
-  const claimed = (results[0]?.meta.changes ?? 0) === 1;
-  const created = (results[1]?.meta.changes ?? 0) === 1;
+  const claimed = (results[0]?.results?.length ?? 0) === 1;
+  const created = (results[1]?.results?.length ?? 0) === 1;
   if (claimed && created) return json({ accepted: true, duplicate: false, receivedAt: now }, 202);
   if (claimed !== created) throw new ApiError(409, "SEQUENCE_RACE", "Telemetry sequence could not be committed.");
   const existing = await env.DB.prepare(
@@ -16359,15 +16360,23 @@ var getHistory = /* @__PURE__ */ __name(async (env, user, deviceId, url) => {
   const from = parseDateQuery(url.searchParams.get("from"), "from");
   const to = parseDateQuery(url.searchParams.get("to"), "to");
   if (from && to && from > to) throw new ApiError(400, "INVALID_TIME_RANGE", "from must not be after to.");
+  const conditions = ["device_id = ?1"];
+  const bindings = [deviceId];
+  if (from) {
+    bindings.push(from);
+    conditions.push(`received_at >= ?${bindings.length}`);
+  }
+  if (to) {
+    bindings.push(to);
+    conditions.push(`received_at <= ?${bindings.length}`);
+  }
+  bindings.push(limit);
   const result = await env.DB.prepare(
-    `SELECT t.seq, t.observed_at AS observedAt, t.received_at AS receivedAt, t.payload_json AS payloadJson
-     FROM telemetry t
-     JOIN devices d ON d.device_id = t.device_id
-     WHERE t.device_id = ?1 AND d.owner_user_id = ?2 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
-       AND (?3 IS NULL OR t.received_at >= ?3)
-       AND (?4 IS NULL OR t.received_at <= ?4)
-     ORDER BY t.received_at DESC, t.seq DESC LIMIT ?5`
-  ).bind(deviceId, user.id, from, to, limit).all();
+    `SELECT seq, observed_at AS observedAt, received_at AS receivedAt, payload_json AS payloadJson
+     FROM telemetry
+     WHERE ${conditions.join(" AND ")}
+     ORDER BY received_at DESC, seq DESC LIMIT ?${bindings.length}`
+  ).bind(...bindings).all();
   return json({ deviceId, telemetry: result.results.map(serializeTelemetry) });
 }, "getHistory");
 var updateDevice = /* @__PURE__ */ __name(async (request, env, user, deviceId) => {
@@ -16431,7 +16440,7 @@ var ownedDevice = /* @__PURE__ */ __name(async (env, userId, deviceId) => {
 }, "ownedDevice");
 var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
   const threshold = onlineThreshold(env);
-  const [sensorResult, observationResult, sensorStatsResult, networkStatsResult] = await env.DB.batch([
+  const [sensorResult, networkStatsResult] = await env.DB.batch([
     env.DB.prepare(
       `SELECT d.public_id AS id, d.name AS sensorName, d.country_code AS countryCode,
          d.subdivision_code AS subdivisionCode, d.municipality_code AS municipalityCode, d.public_latitude AS latitude,
@@ -16443,59 +16452,31 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
          u.avatar_key AS avatarKey, u.avatar_updated_at AS avatarUpdatedAt,
          u.x_url AS xUrl, u.github_url AS githubUrl, u.instagram_url AS instagramUrl,
          d.measurement_keys_json AS measurementKeysJson,
-         COUNT(DISTINCT CASE WHEN r.kind = 'LIKE' THEN r.user_id END) AS likeCount
-       FROM devices d JOIN users u ON u.id = d.owner_user_id
-       LEFT JOIN sensor_relationships r ON r.device_id = d.id
+         COALESCE(social.like_count, 0) AS likeCount,
+         COALESCE(rollup.observation_count, 0) AS observationCount,
+         CASE WHEN COALESCE(rollup.observation_count, 0) < 2 THEN 0 ELSE CAST(
+           MAX(0, (julianday(rollup.last_received_at) - julianday(rollup.first_received_at)) * 86400)
+           AS INTEGER) END AS observationSpanSeconds,
+         COALESCE(rollup.recent_payloads_json, '[]') AS observationsJson
+       FROM devices d
+       JOIN users u ON u.id = d.owner_user_id
+       LEFT JOIN device_social_rollups social ON social.device_id = d.id
+       LEFT JOIN device_telemetry_rollups rollup ON rollup.device_id = d.device_id
        WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
          AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
-       GROUP BY d.id
        ORDER BY d.created_at DESC LIMIT 500`
     ).bind(`-${threshold} seconds`),
     env.DB.prepare(
-      `WITH ranked_public_telemetry AS (
-         SELECT d.public_id AS sensorId, t.payload_json AS payloadJson,
-           ROW_NUMBER() OVER (PARTITION BY t.device_id ORDER BY t.received_at DESC, t.seq DESC) AS observationRank
-         FROM telemetry t JOIN devices d ON d.device_id = t.device_id
-         WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
-           AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
-       )
-       SELECT sensorId, payloadJson FROM ranked_public_telemetry
-       WHERE observationRank <= 12 ORDER BY sensorId, observationRank`
-    ),
-    env.DB.prepare(
-      `SELECT d.public_id AS sensorId, COUNT(t.id) AS observationCount,
-         CASE WHEN COUNT(t.id) < 2 THEN 0 ELSE CAST(
-           MAX(0, (julianday(MAX(t.received_at)) - julianday(MIN(t.received_at))) * 86400)
-           AS INTEGER) END AS observationSpanSeconds
-       FROM devices d LEFT JOIN telemetry t ON t.device_id = d.device_id
-       WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
-         AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL
-       GROUP BY d.public_id`
-    ),
-    env.DB.prepare(
-      `SELECT COUNT(t.id) AS observationPackets,
-         COALESCE(SUM(length(t.payload_json)), 0) AS payloadBytes
-       FROM telemetry t JOIN devices d ON d.device_id = t.device_id
+      `SELECT COALESCE(SUM(rollup.observation_count), 0) AS observationPackets,
+         COALESCE(SUM(rollup.payload_bytes), 0) AS payloadBytes
+       FROM devices d
+       LEFT JOIN device_telemetry_rollups rollup ON rollup.device_id = d.device_id
        WHERE d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
          AND d.public_latitude IS NOT NULL AND d.public_longitude IS NOT NULL`
     )
   ]);
   const sensorRows = sensorResult?.results ?? [];
-  const observationRows = observationResult?.results ?? [];
-  const sensorStatsRows = sensorStatsResult?.results ?? [];
   const networkStats = networkStatsResult?.results?.[0] ?? { observationPackets: 0, payloadBytes: 0 };
-  const observationsBySensor = /* @__PURE__ */ new Map();
-  for (const row of observationRows) {
-    const data = parsePublicMeasurements(row.payloadJson);
-    if (!data) continue;
-    const observations = observationsBySensor.get(row.sensorId) ?? [];
-    observations.push({ data });
-    observationsBySensor.set(row.sensorId, observations);
-  }
-  const statsBySensor = new Map(sensorStatsRows.map((row) => [row.sensorId, {
-    observationCount: Number(row.observationCount) || 0,
-    observationSpanSeconds: Number(row.observationSpanSeconds) || 0
-  }]));
   return json({
     generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
     stats: {
@@ -16520,9 +16501,9 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
       state: row.state,
       isDemo: row.isDemo === 1,
       demoLocationLabel: row.demoLocationLabel,
-      observations: observationsBySensor.get(row.id) ?? [],
-      observationCount: statsBySensor.get(row.id)?.observationCount ?? 0,
-      observationSpanSeconds: statsBySensor.get(row.id)?.observationSpanSeconds ?? 0,
+      observations: parsePublicObservations(row.observationsJson),
+      observationCount: Number(row.observationCount) || 0,
+      observationSpanSeconds: Number(row.observationSpanSeconds) || 0,
       measurementKeys: parseMeasurementKeysJson(row.measurementKeysJson),
       likeCount: Number(row.likeCount) || 0,
       owner: {
@@ -16535,16 +16516,19 @@ var listPublicSensors = /* @__PURE__ */ __name(async (env) => {
     }))
   });
 }, "listPublicSensors");
-var parsePublicMeasurements = /* @__PURE__ */ __name((payloadJson) => {
+var parsePublicObservations = /* @__PURE__ */ __name((payloadJson) => {
   try {
     const parsed = JSON.parse(payloadJson);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-    const measurements = Object.entries(parsed).filter((entry) => typeof entry[1] === "number" && Number.isFinite(entry[1]));
-    return measurements.length ? Object.fromEntries(measurements) : null;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.slice(0, 12).flatMap((payload) => {
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
+      const measurements = Object.entries(payload).filter((entry) => typeof entry[1] === "number" && Number.isFinite(entry[1]));
+      return measurements.length ? [{ data: Object.fromEntries(measurements) }] : [];
+    });
   } catch {
-    return null;
+    return [];
   }
-}, "parsePublicMeasurements");
+}, "parsePublicObservations");
 var serializeTelemetry = /* @__PURE__ */ __name((row) => ({
   seq: row.seq,
   observedAt: row.observedAt,
@@ -16762,12 +16746,18 @@ var setSensorRelationship = /* @__PURE__ */ __name(async (request, env, user, se
 var sensorSocial = /* @__PURE__ */ __name(async (env, userId, sensorId) => {
   const row = await env.DB.prepare(
     `SELECT d.public_id AS sensorId,
-       COALESCE(MAX(CASE WHEN r.user_id = ?1 AND r.kind = 'FAVORITE' THEN 1 ELSE 0 END), 0) AS favorite,
-       COALESCE(MAX(CASE WHEN r.user_id = ?1 AND r.kind = 'LIKE' THEN 1 ELSE 0 END), 0) AS liked,
-       COUNT(DISTINCT CASE WHEN r.kind = 'LIKE' THEN r.user_id END) AS likeCount
-     FROM devices d LEFT JOIN sensor_relationships r ON r.device_id = d.id
-     WHERE d.public_id = ?2 AND d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
-     GROUP BY d.public_id`
+       EXISTS(
+         SELECT 1 FROM sensor_relationships
+         WHERE user_id = ?1 AND device_id = d.id AND kind = 'FAVORITE'
+       ) AS favorite,
+       EXISTS(
+         SELECT 1 FROM sensor_relationships
+         WHERE user_id = ?1 AND device_id = d.id AND kind = 'LIKE'
+       ) AS liked,
+       COALESCE(social.like_count, 0) AS likeCount
+     FROM devices d
+     LEFT JOIN device_social_rollups social ON social.device_id = d.id
+     WHERE d.public_id = ?2 AND d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL`
   ).bind(userId, sensorId).first();
   if (!row) throw new ApiError(404, "PUBLIC_SENSOR_NOT_FOUND", "Public sensor was not found.");
   return {

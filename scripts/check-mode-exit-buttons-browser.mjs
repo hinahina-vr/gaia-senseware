@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4202"] = process.argv.slice(2);
+const mapOnly = process.argv.slice(6).includes("--map-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module root and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -102,6 +103,12 @@ const inspectButton = async (page, selector, viewport, surface) => {
   assert.equal(parseFloat(data.arrowBorderWidth), 0, `${viewport}/${surface}: arrow retained its independent frame`);
   assert.equal(data.arrowBackground, "rgba(0, 0, 0, 0)", `${viewport}/${surface}: arrow retained a separate background`);
   assert.equal(data.overflowX, 0, `${viewport}/${surface}: horizontal overflow`);
+  if (surface === "map") {
+    const mobile = viewport.startsWith("mobile");
+    assert.match(data.background, /rgba?\((?:7, 42, 88|9, 52, 104)/u, `${viewport}/${surface}: return control is not using the story-mode navy glass`);
+    assert(Math.abs(data.rect.width - (mobile ? 46 : 78)) <= 0.5, `${viewport}/${surface}: width does not match the story return control`);
+    assert(Math.abs(data.rect.height - (mobile ? 46 : 44)) <= 0.5, `${viewport}/${surface}: height does not match the story return control`);
+  }
   await locator.hover();
   await page.waitForTimeout(240);
   const hover = await locator.evaluate((button) => {
@@ -124,16 +131,24 @@ try {
     attachDiagnostics(page, viewport.name);
 
     for (const surface of surfaces) {
+      if (mapOnly && surface.name !== "map") continue;
       await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded" });
       await bypassOpening(page);
       await page.evaluate((selector) => document.querySelector(selector)?.click(), surface.trigger);
       await page.locator(surface.ready).waitFor({ state: "visible", timeout: 15_000 });
       await page.waitForFunction(() => !window.GaiaSceneTransition?.running);
+      await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.(null, { restoreFocus: false }));
+      await page.waitForFunction(() => !globalThis.GaiaModeEntryGuide?.getState?.().active);
       await inspectButton(page, surface.selector, viewport.name, surface.name);
       await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${surface.name}.png`) });
       await page.locator(surface.selector).press("Enter");
       await page.locator(surface.ready).waitFor({ state: "hidden", timeout: 15_000 });
       report.scans.at(-1).keyboardActivated = true;
+    }
+
+    if (mapOnly) {
+      await context.close();
+      continue;
     }
 
     await page.goto(new URL("/#story", baseUrl).href, { waitUntil: "domcontentloaded" });
@@ -179,6 +194,7 @@ try {
       const skip = read("#novel-close-button");
       const audioDock = document.querySelector("#gaia-audio-dock");
       const audioRect = audioDock?.getBoundingClientRect();
+      const audioControlRect = document.querySelector("#gaia-audio-toggle")?.getBoundingClientRect();
       const audioStyle = audioDock ? getComputedStyle(audioDock) : null;
       const temporalText = document.querySelector(".novel-signal-caption strong");
       const temporalStyle = temporalText ? getComputedStyle(temporalText) : null;
@@ -192,6 +208,7 @@ try {
         audioRightGap: audioRect ? innerWidth - audioRect.right : null,
         audioVisible: Boolean(audioRect && audioRect.width > 0 && audioRect.height > 0),
         audioRect: audioRect?.toJSON() || null,
+        audioControlRect: audioControlRect?.toJSON() || null,
         audioComputedRight: audioStyle?.right || "",
         audioTransform: audioStyle?.transform || "",
         audioClassName: audioDock?.className || "",
@@ -217,9 +234,9 @@ try {
     assert(storyControls.audioRightGap <= (viewport.width <= 720 ? 8 : 12), `${viewport.name}: audio control is not anchored to the right edge (${JSON.stringify(storyControls)})`);
     if (viewport.width <= 720) {
       assert(Math.abs(storyControls.back.rect.width - storyControls.audioRect.width) <= 0.5, `${viewport.name}: back width differs from audio control`);
-      assert(Math.abs(storyControls.back.rect.height - storyControls.audioRect.height) <= 0.5, `${viewport.name}: back height differs from audio control`);
+      assert(Math.abs(storyControls.back.rect.height - storyControls.audioControlRect.height) <= 0.5, `${viewport.name}: back height differs from audio control`);
       assert(Math.abs(storyControls.skip.rect.width - storyControls.audioRect.width) <= 0.5, `${viewport.name}: skip width differs from audio control`);
-      assert(Math.abs(storyControls.skip.rect.height - storyControls.audioRect.height) <= 0.5, `${viewport.name}: skip height differs from audio control`);
+      assert(Math.abs(storyControls.skip.rect.height - storyControls.audioControlRect.height) <= 0.5, `${viewport.name}: skip height differs from audio control`);
     }
     assert(storyControls.temporalText.length > 0, `${viewport.name}: story date is missing`);
     assert.match(storyControls.temporalColor, /rgba?\((?:248, 253, 255|255, 255, 255)/u, `${viewport.name}: story date is not high-contrast`);

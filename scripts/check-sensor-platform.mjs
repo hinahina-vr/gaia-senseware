@@ -25,18 +25,19 @@ const migration4 = read("sensor-platform/migrations/0004_d1_profile_avatars.sql"
 const migration5 = read("sensor-platform/migrations/0005_region_codes.sql");
 const migration9 = read("sensor-platform/migrations/0009_region_office_locations.sql");
 const migration10 = read("sensor-platform/migrations/0010_measurement_catalog.sql");
+const migration11 = read("sensor-platform/migrations/0011_read_optimized_rollups.sql");
 const wrangler = read("sensor-platform/wrangler.jsonc");
 const rootWrangler = read("wrangler.jsonc");
 const openapi = read("smartcity-sensor-starter-kit/openapi.yaml");
 const curl = read("smartcity-sensor-starter-kit/curl-examples.sh");
 const starter = read("smartcity-sensor-starter-kit/esp32-arduino/SmartCitySensorDemo/SmartCitySensorDemo.ino");
 
-check("global nav inserts sensor immediately after map", () => {
+check("exhibit grid places sensors immediately after the map", () => {
   const map = index.indexOf('data-intro-path="map"');
   const sensor = index.indexOf("data-sensor-platform-link");
-  const space = index.indexOf('data-intro-path="space"');
-  assert(map >= 0 && map < sensor && sensor < space);
-  assert.match(index.slice(sensor, space), /<strong>センサーを登録<\/strong>[\s\S]*<p>地球の観測データを送る<\/p>/u);
+  const character = index.indexOf("data-character-gallery-open");
+  assert(map >= 0 && map < sensor && sensor < character);
+  assert.match(index.slice(sensor, character), /<strong>みんなのセンサー<\/strong>[\s\S]*<p>ユーザー参加型センシング<\/p>/u);
 });
 
 check("SPA exposes required views and web operations", () => {
@@ -64,9 +65,11 @@ check("canonical region codes are generated from pinned registries and validated
     assert(regions.includes(fragment) || validation.includes(fragment), fragment);
   }
   assert.match(worker, /\/api\/web\/v1\/regions/u);
-  assert.match(sensorJs, /natural-earth-50m-land\.geojson/u);
+  assert.match(sensorJs, /natural-earth-50m-countries\.geojson/u);
   assert.doesNotMatch(sensorJs, /mapSvg|<svg viewBox/u);
-  assert.doesNotMatch(sensorHtml.slice(sensorHtml.indexOf("public-sensor-map")), /<svg/iu);
+  const publicMapMarkup = sensorHtml.slice(sensorHtml.indexOf("public-sensor-map"), sensorHtml.indexOf("data-view=\"login\""));
+  assert.match(publicMapMarkup, /<svg class="sensor-resonance-network"/u);
+  assert.doesNotMatch(publicMapMarkup, /<path/iu);
 });
 
 check("profile stores sanitized PNG in D1 and accepts canonical optional social URLs", () => {
@@ -134,6 +137,24 @@ check("measurement catalog is the shared API UI and ESP32 contract", () => {
   assert.match(sensorJs, /loadMeasurementCatalog/u);
   assert.match(starter, /addMeasurement\(values, "water_temperature"/u);
   assert.match(migration10, /measurement_keys_json/u);
+});
+
+check("frequent public reads use bounded history and write-time rollups", () => {
+  for (const fragment of [
+    "idx_telemetry_device_received_seq",
+    "device_telemetry_rollups",
+    "recent_payloads_json",
+    "telemetry_rollup_after_insert",
+    "device_social_rollups",
+    "social_rollup_after_like_insert",
+    "social_rollup_after_like_delete",
+  ]) assert(migration11.includes(fragment), fragment);
+  assert.match(devices, /LEFT JOIN device_telemetry_rollups/u);
+  assert.match(devices, /LEFT JOIN device_social_rollups/u);
+  assert.match(devices, /rollup\.recent_payloads_json/u);
+  const publicReadHandler = devices.slice(devices.indexOf("export const listPublicSensors"), devices.indexOf("const parsePublicObservations"));
+  assert.doesNotMatch(publicReadHandler, /FROM telemetry/u);
+  assert.doesNotMatch(devices, /ROW_NUMBER\(\)|COUNT\(t\.id\)|SUM\(length\(t\.payload_json\)\)/u);
 });
 
 check("wrangler config has D1, generated Env and compatibility without R2", () => {

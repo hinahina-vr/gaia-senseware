@@ -9,12 +9,14 @@
   document.body.append(buttonGlint);
 
   let buttonGlintSource = null;
+  let buttonGlintTarget = null;
   let buttonGlintPoint = null;
   let buttonGlintFrame = 0;
 
   const stopButtonGlint = () => {
     buttonGlint.classList.remove("is-active");
     buttonGlintSource = null;
+    buttonGlintTarget = null;
     buttonGlintPoint = null;
     if (buttonGlintFrame) cancelAnimationFrame(buttonGlintFrame);
     buttonGlintFrame = 0;
@@ -23,8 +25,9 @@
   const validateButtonGlint = () => {
     buttonGlintFrame = 0;
     const button = buttonGlintSource;
-    if (!button || !buttonGlint.classList.contains("is-active")) return;
-    const bounds = button.getBoundingClientRect();
+    const target = buttonGlintTarget;
+    if (!button || !target || !buttonGlint.classList.contains("is-active")) return;
+    const bounds = target.getBoundingClientRect();
     const glintBounds = buttonGlint.getBoundingClientRect();
     const visible = typeof button.checkVisibility === "function"
       ? button.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
@@ -37,7 +40,7 @@
       && Math.abs(bounds.top - glintBounds.top) < 1
       && Math.abs(bounds.width - glintBounds.width) < 1
       && Math.abs(bounds.height - glintBounds.height) < 1;
-    if (!button.isConnected || button.disabled || !visible || !ownsPointer || !sameBounds) {
+    if (!button.isConnected || !target.isConnected || button.disabled || !visible || !ownsPointer || !sameBounds) {
       stopButtonGlint();
       return;
     }
@@ -56,13 +59,15 @@
       return;
     }
 
-    const bounds = button.getBoundingClientRect();
+    const target = button.querySelector("[data-gaia-glint-surface]") || button;
+    const bounds = target.getBoundingClientRect();
     if (bounds.width < 2 || bounds.height < 2) {
       stopButtonGlint();
       return;
     }
 
     const buttonStyle = getComputedStyle(button);
+    const targetStyle = getComputedStyle(target);
     const colorVariables = [
       "--button-accent-rgb",
       "--intro-rgb",
@@ -72,6 +77,7 @@
       "--space-accent-rgb",
       "--gx-rgb",
       "--accent-rgb",
+      "--map-accent-rgb",
     ];
     const glintColor = colorVariables
       .map((property) => buttonStyle.getPropertyValue(property).trim())
@@ -81,11 +87,12 @@
     buttonGlint.style.top = `${bounds.top}px`;
     buttonGlint.style.width = `${bounds.width}px`;
     buttonGlint.style.height = `${bounds.height}px`;
-    buttonGlint.style.borderRadius = buttonStyle.borderRadius;
+    buttonGlint.style.borderRadius = targetStyle.borderRadius;
     buttonGlint.style.setProperty("--gaia-button-glint-rgb", glintColor);
 
     stopButtonGlint();
     buttonGlintSource = button;
+    buttonGlintTarget = target;
     buttonGlintPoint = point;
     void buttonGlint.offsetWidth;
     buttonGlint.classList.add("is-active");
@@ -5422,7 +5429,8 @@
       const rain = state?.selected;
       return {
         output: state?.phaseLabel || "GLOBAL SAMPLE",
-        value: `降水量 ${rain?.precipitationMmDay?.toFixed(2) ?? "—"} mm/day / ${getForestRainSiteName(rain)}`,
+        location: getForestRainSiteName(rain),
+        value: `降水量 ${rain?.precipitationMmDay?.toFixed(2) ?? "—"} mm/day`,
         note: "大きな水色円が降水量、緑が森林域です。円の直径で雨量を比べ、地点間は推測で埋めません。相関係数や因果関係を示す図ではありません。",
         temporal: true,
       };
@@ -5441,6 +5449,7 @@
       const imputed = state?.selected?.valueStatus === "IMPUTED";
       return {
         output: state?.phaseLabel || "COUNTRY VALUE",
+        location: state?.selected?.country || "—",
         value: `現在 ${state?.sourceRecycle.toFixed(1) || "—"}% → 自分の目標 ${state?.scenarioRecycle.toFixed(1) || "—"}% (+${state?.scenarioIncrease.toFixed(1) || "0.0"}pt)`,
         note: imputed
           ? `${state?.selected?.country || "国"}には公式値がないため、近くの5か国の真ん中の値を置きました。破線の内円が補完値、黄色い外周は自分で決める改善目標です。予測ではありません。`
@@ -5453,7 +5462,8 @@
       const emission = state?.selected;
       return {
         output: state?.phaseLabel || "COUNTRY VALUE",
-        value: `${emission?.country || "—"} / ${emission?.emissionsMtCo2e?.toFixed(1) || "—"} Mt CO₂e`,
+        location: emission?.country || "—",
+        value: `${emission?.emissionsMtCo2e?.toFixed(1) || "—"} Mt CO₂e`,
         note: "白い発光はNASA VIIRSの夜間光画素、赤い円は国ごとの排出量です。0.65秒以上長押しすると白だけが6秒間薄くなります。",
         temporal: true,
       };
@@ -5471,8 +5481,9 @@
       const state = getMapSequenceState(signalMode);
       return {
         output: state?.phaseLabel || "FOREST × URBAN",
+        location: state?.selected?.country || "",
         value: state
-          ? `${state.selected.country} / FOREST ${state.selected.forestPercent.toFixed(1)}% / URBAN ${state.selected.urbanPercent.toFixed(1)}%`
+          ? `FOREST ${state.selected.forestPercent.toFixed(1)}% / URBAN ${state.selected.urbanPercent.toFixed(1)}%`
           : "NO PAIRED COUNTRY DATA",
         note: state
           ? `緑と青の二重円は同じ国の割合です。散布図の r ${state.correlation.toFixed(2)} は${state.correlationLabel}。紫の世界遺産例は相関計算へ含めません。`
@@ -5485,7 +5496,8 @@
       const current = state?.selected;
       return {
         output: state?.phaseLabel || "RENEWABLE ELECTRICITY",
-        value: `${current?.country || "—"} / 再生可能電力 ${current?.renewablePercent?.toFixed(1) || "—"}%`,
+        location: current?.country || "—",
+        value: `再生可能電力 ${current?.renewablePercent?.toFixed(1) || "—"}%`,
         note: "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。黄色の日射と緑の風は選択国の補足で、現在の比率を決める因果表示ではありません。",
         temporal: true,
       };
@@ -5760,9 +5772,14 @@
       consoleElement.querySelector("[data-signal-act]").textContent = signalMode
         ? `ACT ${signalMode.act.number} / ${signalMode.act.title}`
         : "DATA SNAPSHOT";
-      consoleElement.querySelector("[data-signal-value]").textContent = isStoryTemperatureInteraction
+      const signalValue = consoleElement.querySelector("[data-signal-value]");
+      const signalLocation = isStoryTemperatureInteraction ? "" : readout.location || "";
+      signalValue.textContent = isStoryTemperatureInteraction
         ? `${breathingState?.timeline?.referencePpm?.toFixed(1) || "—"} ppm / 気温偏差 ${breathingState?.temperature?.anomalyC?.toFixed(2) ?? "—"} ℃`
-        : readout.value;
+        : signalLocation
+          ? `${signalLocation}\n${readout.value}`
+          : readout.value;
+      signalValue.classList.toggle("has-location", Boolean(signalLocation));
       consoleElement.querySelector("[data-signal-time-output]").textContent = readout.output;
       consoleElement.querySelector("[data-signal-time-label]").textContent = showTimeline
         ? isStoryTemperatureInteraction

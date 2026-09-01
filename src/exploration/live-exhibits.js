@@ -1230,7 +1230,7 @@ const mount = () => {
     button.dataset.liveDeckMode = exhibit.id;
     button.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}へ切り替える`);
     button.setAttribute("aria-current", "false");
-    button.innerHTML = `<small>${exhibit.number}</small><i aria-hidden="true">${deckModeGlyphs[index]}</i><strong>${exhibit.shortTitle}</strong>`;
+    button.innerHTML = `<small>${exhibit.number}</small><i data-gaia-glint-surface aria-hidden="true">${deckModeGlyphs[index]}</i><strong>${exhibit.shortTitle}</strong>`;
     button.addEventListener("click", () => select(index));
     deckModes.append(button);
     return button;
@@ -1266,16 +1266,6 @@ const mount = () => {
     button.addEventListener("click", () => zoomAroundSelectedPoi(Number(button.dataset.liveMapZoom)));
   });
   mapControls.querySelector("[data-live-map-focus]")?.addEventListener("click", focusSelectedCity);
-
-  map.addEventListener("wheel", (event) => {
-    if (activeIndex < 0) return;
-    const delta = Math.max(-240, Math.min(240, Number(event.deltaY) || 0));
-    const factor = Math.exp(-delta * (event.ctrlKey ? 0.006 : 0.0024));
-    if (!zoomAroundSelectedPoi(factor)) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    draw(performance.now(), true);
-  }, { capture: true, passive: false });
 
   readout.querySelector("[data-live-light-touch]")?.addEventListener("click", (event) => {
     event.preventDefault();

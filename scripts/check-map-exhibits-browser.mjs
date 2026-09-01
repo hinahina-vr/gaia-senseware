@@ -7,6 +7,8 @@ const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4
 const recyclingOnly = process.argv.slice(6).includes("--recycling-only");
 const panOnly = process.argv.slice(6).includes("--pan-only");
 const legendOnly = process.argv.slice(6).includes("--legend-only");
+const glintOnly = process.argv.slice(6).includes("--glint-only");
+const countryReadoutOnly = process.argv.slice(6).includes("--country-readout-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -62,19 +64,33 @@ const sampleZoom = async (page, count = 9, interval = 150) => {
   return samples;
 };
 
+const waitForMapGuide = (page) => page.waitForFunction(() => (
+  document.querySelector("#map-reading-guide .map-reading-guide-body")?.getAttribute("aria-busy") === "false"
+));
+
 const selectMode = async (page, index, expectedTitle) => {
   const mobileBankToggle = page.locator("#map-mobile-bank-toggle");
   if (await mobileBankToggle.count()
     && await mobileBankToggle.isVisible()
     && await mobileBankToggle.getAttribute("aria-expanded") !== "true") {
-    await mobileBankToggle.click();
+    await mobileBankToggle.evaluate((button) => button.click());
   }
+  const previousGuideTitle = await page.locator("#map-guide-title").textContent();
+  const previousModeIndex = await page.evaluate(() => Array.from(document.querySelectorAll("#japan-mode-list .map-mode-button"))
+    .findIndex((button) => button.getAttribute("aria-current") === "true"));
   await page.locator("#japan-mode-list .map-mode-button").nth(index).evaluate((button) => button.click());
   await page.waitForFunction(
-    ({ number, title }) => document.querySelector("#japan-mode-number")?.textContent === number
+    ({ number, title, previousGuideTitle: previousGuide, requireGuideChange }) => document.querySelector("#japan-mode-number")?.textContent === number
       && document.querySelector("#japan-mode-title")?.textContent === title
-      && document.querySelector("#japan-title")?.textContent === title,
-    { number: String(index + 1).padStart(2, "0"), title: expectedTitle },
+      && document.querySelector("#japan-title")?.textContent === title
+      && Boolean(document.querySelector("#map-guide-title")?.textContent)
+      && (!requireGuideChange || document.querySelector("#map-guide-title")?.textContent !== previousGuide),
+    {
+      number: String(index + 1).padStart(2, "0"),
+      title: expectedTitle,
+      previousGuideTitle,
+      requireGuideChange: previousModeIndex !== index,
+    },
   );
   const observed = await page.evaluate(() => ({
     number: document.querySelector("#japan-mode-number")?.textContent || "",
@@ -211,6 +227,80 @@ try {
     const { context, page } = await boot(viewport);
     const scan = { viewport, clicks: {}, screenshots: [], zoom: {} };
 
+    if (viewport.name === "pc") {
+      const chapterGlintBounds = await page.evaluate(() => {
+        const bank = document.querySelector(".map-command-dock > .map-mode-bank")?.getBoundingClientRect();
+        const trigger = document.querySelector(".map-dock-bank-trigger")?.getBoundingClientRect();
+        if (!bank || !trigger) return null;
+        return {
+          bank: { left: bank.left, top: bank.top, right: bank.right, bottom: bank.bottom },
+          trigger: { left: trigger.left, top: trigger.top, right: trigger.right, bottom: trigger.bottom },
+        };
+      });
+      assert(chapterGlintBounds, "pc: map chapter trigger is unavailable");
+      for (const edge of ["left", "top", "right", "bottom"]) {
+        assert(
+          Math.abs(chapterGlintBounds.bank[edge] - chapterGlintBounds.trigger[edge]) < 1,
+          `pc: map chapter glint ${edge} edge is inset from its panel: ${JSON.stringify(chapterGlintBounds)}`,
+        );
+      }
+      await page.locator(".map-dock-bank-trigger").focus();
+      await page.waitForFunction(() => document.querySelector(".gaia-global-button-glint")?.classList.contains("is-active"));
+      const renderedGlintBounds = await page.locator(".gaia-global-button-glint").evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        return { left: bounds.left, top: bounds.top, right: bounds.right, bottom: bounds.bottom };
+      });
+      for (const edge of ["left", "top", "right", "bottom"]) {
+        assert(
+          Math.abs(chapterGlintBounds.bank[edge] - renderedGlintBounds[edge]) < 1,
+          `pc: rendered chapter glint ${edge} edge is misaligned: ${JSON.stringify({ chapterGlintBounds, renderedGlintBounds })}`,
+        );
+      }
+      scan.chapterGlintBounds = { ...chapterGlintBounds, rendered: renderedGlintBounds };
+
+      const guideHeadingSpacing = await page.locator(".map-command-dock .map-reading-guide > summary").evaluate((summary) => {
+        const label = summary.querySelector(":scope > span")?.getBoundingClientRect();
+        const bounds = summary.getBoundingClientRect();
+        return {
+          topInset: label ? label.top - bounds.top : -1,
+          summaryTop: bounds.top,
+          labelTop: label?.top ?? -1,
+        };
+      });
+      assert(
+        guideHeadingSpacing.topInset >= 6,
+        `pc: map guide heading has no top breathing room: ${JSON.stringify(guideHeadingSpacing)}`,
+      );
+      scan.guideHeadingSpacing = guideHeadingSpacing;
+    }
+
+    if (glintOnly) {
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
+    if (countryReadoutOnly) {
+      await selectMode(page, 6, "三つの生態系");
+      await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.ecologiesPlot === "paired-country-scatter");
+      const countryReadout = await page.locator("#japan-layer [data-signal-value]").first().evaluate((element) => ({
+        lines: element.innerText.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean),
+        hasLocation: element.classList.contains("has-location"),
+        whiteSpace: getComputedStyle(element).whiteSpace,
+      }));
+      assert.equal(countryReadout.hasLocation, true, `${viewport.name}: country readout is not marked as a location`);
+      assert.equal(countryReadout.whiteSpace, "pre-line", `${viewport.name}: country readout does not preserve its line break`);
+      assert.equal(countryReadout.lines.length, 2, `${viewport.name}: country and metrics are not split into two lines: ${JSON.stringify(countryReadout)}`);
+      assert.equal(countryReadout.lines[0], await page.locator("#japan-overlay").getAttribute("data-ecologies-selected-country"));
+      assert.match(countryReadout.lines[1], /^FOREST \d+\.\d% \/ URBAN \d+\.\d%$/u);
+      scan.countryReadout = countryReadout;
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
     if (recyclingOnly) {
       await selectMode(page, 3, "再資源化率を比べる");
       const slider = page.locator("#japan-layer [data-signal-time]").first();
@@ -314,6 +404,8 @@ try {
       }
       await page.waitForFunction(() => globalThis.GaiaGuidedTour.getState().running === false);
     }
+
+    await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
 
     await page.waitForFunction(() => {
       const overlay = document.querySelector("#japan-overlay");
@@ -430,6 +522,7 @@ try {
     scan.screenshots.push(zoomScreenshot);
 
     await page.waitForFunction(() => !document.querySelector("#japan-layer [data-signal-value]")?.textContent?.includes("LOADING"));
+    await waitForMapGuide(page);
     const circulationUi = await page.evaluate(() => ({
       title: document.querySelector("#japan-mode-title")?.textContent || "",
       guideTitle: document.querySelector("#map-guide-title")?.textContent || "",
@@ -529,6 +622,7 @@ try {
       && await mobileLegendToggle.isVisible()
       && await mobileLegendToggle.getAttribute("aria-expanded") !== "true";
     if (openedMobileLegend) await mobileLegendToggle.click();
+    await waitForMapGuide(page);
     const forestUi = await page.evaluate(() => ({
       guideTitle: document.querySelector("#map-guide-title")?.textContent || "",
       guideSubject: document.querySelector("#map-guide-subject")?.textContent || "",
@@ -584,6 +678,7 @@ try {
       targetRate: 19.6,
       targetIncrease: 0,
     });
+    await page.waitForFunction(() => /緑の扇形.*橙/u.test(document.querySelector("#map-guide-reading")?.textContent || ""));
     const recyclingGuide = await page.locator("#map-guide-reading").textContent();
     assert.match(recyclingGuide, /緑の扇形.*橙/u);
     scan.clicks.waste = await clickDataPoint(page, "nothing-is-waste");
@@ -635,6 +730,7 @@ try {
       emissionCount: 31,
       emissionEncoding: "country-total-log-area",
     });
+    await waitForMapGuide(page);
     const anthropoceneGuide = await page.locator("#map-guide-reading").textContent();
     assert.match(anthropoceneGuide, /白い発光.*夜間光画素.*赤い円.*国全体/u);
     const nightLightsScreenshot = path.join(outputDir, `${viewport.name}-05-night-lights-visible.png`);
@@ -745,6 +841,7 @@ try {
     assert.ok(ecologyState.correlation > 0.2 && ecologyState.correlation < 0.3);
     assert.ok(ecologyState.selectedCountry);
     assert.equal(ecologyState.cultureCount, 24);
+    await waitForMapGuide(page);
     const ecologyGuide = await page.locator("#map-guide-reading").textContent();
     assert.match(ecologyGuide, /散布図.*回帰線.*相関係数r/u);
     const ecologyReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
@@ -778,6 +875,7 @@ try {
     assert.ok(Number.isFinite(renewableState.selectedPercent));
     assert.equal(renewableState.connectionRemoved, "true");
     assert.equal(renewableState.geometryState, "ready");
+    await waitForMapGuide(page);
     const renewableGuide = await page.locator("#map-guide-reading").textContent();
     assert.match(renewableGuide, /暗い青.*明るい水色/u);
     const renewableReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();

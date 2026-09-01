@@ -773,11 +773,22 @@
               />
               <figcaption><span id="character-book-current">01</span> / 03</figcaption>
             </figure>
-            <a class="character-book-scroll-cue" href="#character-book-master"><span>SCROLL</span><i aria-hidden="true"></i></a>
+            <a class="character-book-scroll-cue" href="#character-book-cg"><span>STORY CG</span><i aria-hidden="true"></i></a>
             <div class="character-book-wave" aria-hidden="true"></div>
           </section>
 
           <main class="character-book-profiles" id="character-book-profiles">
+            <section class="character-book-cg" id="character-book-cg" aria-labelledby="character-book-cg-title">
+              <header class="character-book-cg-intro">
+                <p>MEMORY ARCHIVE / 06 FRAGMENTS</p>
+                <div>
+                  <h3 id="character-book-cg-title">記憶のアルバム</h3>
+                  <span>物語のなかで出会った六つの光景。絵に触れると、あの日の余韻がひらきます。</span>
+                </div>
+              </header>
+              <div class="character-book-cg-grid" id="character-book-cg-grid"></div>
+            </section>
+
             <section class="character-book-master" id="character-book-master">
               <div>
                 <p>SYSTEM REFERENCE / GX 01</p>
@@ -795,6 +806,37 @@
             <button type="button" data-character-close>GAIA SENSEWAREへ戻る</button>
           </footer>
         </div>
+
+        <section
+          class="character-book-cg-viewer"
+          id="character-book-cg-viewer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="character-book-cg-viewer-title"
+          aria-describedby="character-book-cg-viewer-poem"
+          aria-hidden="true"
+          hidden
+        >
+          <button class="character-book-cg-viewer-backdrop" type="button" data-character-cg-close tabindex="-1" aria-label="CGを閉じる"></button>
+          <div class="character-book-cg-viewer-sheet">
+            <header>
+              <p>STORY CG / <span id="character-book-cg-viewer-count">01 / 06</span></p>
+              <button class="character-book-cg-viewer-close" type="button" data-character-cg-close aria-label="CGを閉じる">閉じる</button>
+            </header>
+            <figure class="character-book-cg-viewer-figure">
+              <img id="character-book-cg-viewer-image" alt="" decoding="async" />
+            </figure>
+            <div class="character-book-cg-viewer-copy">
+              <p id="character-book-cg-viewer-chapter"></p>
+              <h3 id="character-book-cg-viewer-title"></h3>
+              <blockquote id="character-book-cg-viewer-poem"></blockquote>
+            </div>
+            <nav aria-label="CGを切り替える">
+              <button type="button" id="character-book-cg-viewer-previous" aria-label="前のCGへ"><span aria-hidden="true">←</span> PREV</button>
+              <button type="button" id="character-book-cg-viewer-next" aria-label="次のCGへ">NEXT <span aria-hidden="true">→</span></button>
+            </nav>
+          </div>
+        </section>
       </section>
       </template>
 

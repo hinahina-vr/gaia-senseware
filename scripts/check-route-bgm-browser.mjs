@@ -36,6 +36,7 @@ try {
       localStorage.clear();
       localStorage.setItem("gaia-senseware-bgm-volume", "0.2");
       localStorage.setItem("gaia:opening-route-guide:v3", "seen");
+      sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
       globalThis.__gaiaMediaElementSourceCalls = 0;
       globalThis.__gaiaAudioContinuity = { waiting: 0, stalled: 0, errors: 0 };
       const instrumentedMedia = new WeakSet();
@@ -110,6 +111,21 @@ try {
       introVisible: document.querySelector("#intro-layer")?.getAttribute("aria-hidden") === "false",
     }));
     assert.deepEqual(destination, { track: "senseware", openingHidden: true, introVisible: true });
+    await page.evaluate(() => globalThis.GaiaIntroEntryGuide?.close?.({ restoreFocus: false }));
+    const nativeRouteSourceCalls = await page.evaluate(() => globalThis.__gaiaMediaElementSourceCalls);
+    assert.equal(nativeRouteSourceCalls, 0, `${viewport.name}: ordinary route BGM was forced through Web Audio`);
+    const soundArchiveBefore = await page.evaluate(() => globalThis.GaiaOpeningAudio.getPlaybackState());
+    await page.locator('[data-intro-guide="sound"]').click();
+    await page.waitForFunction(() => document.body.classList.contains("sound-mode-open"), null, { timeout: 10_000 });
+    await page.waitForTimeout(400);
+    const soundArchiveAfter = await page.evaluate(() => globalThis.GaiaOpeningAudio.getPlaybackState());
+    assert.equal(soundArchiveAfter.track, soundArchiveBefore.track, `${viewport.name}: sound archive changed the current soundtrack on entry`);
+    assert.equal(soundArchiveAfter.muted, false, `${viewport.name}: sound archive muted the current soundtrack on entry`);
+    assert.equal(soundArchiveAfter.playing, true, `${viewport.name}: sound archive stopped the current soundtrack on entry`);
+    assert(Math.abs(soundArchiveAfter.volume - soundArchiveBefore.volume) < 0.001, `${viewport.name}: sound archive changed the BGM volume on entry`);
+    assert(soundArchiveAfter.currentTime > soundArchiveBefore.currentTime, `${viewport.name}: soundtrack timeline did not advance in the sound archive`);
+    await page.locator("#sound-close").click();
+    await page.waitForFunction(() => !document.body.classList.contains("sound-mode-open"), null, { timeout: 10_000 });
     const mapPath = page.locator('[data-intro-path="map"]');
     if (viewport.mobile) await mapPath.tap();
     else await mapPath.click();
@@ -119,8 +135,6 @@ try {
       await page.waitForResponse((response) => response.url().includes("moonlit-reopen.mp3") && [200, 206].includes(response.status()), { timeout: 10_000 });
     }
     assert(audioResponses.some(({ url, status }) => url.includes("moonlit-reopen.mp3") && [200, 206].includes(status)), `${viewport.name}: Blue Glass Tide was not requested by the map`);
-    const nativeRouteSourceCalls = await page.evaluate(() => globalThis.__gaiaMediaElementSourceCalls);
-    assert.equal(nativeRouteSourceCalls, 0, `${viewport.name}: ordinary route BGM was forced through Web Audio`);
     await page.waitForFunction(() => {
       const state = globalThis.GaiaOpeningAudio?.getPlaybackState?.();
       return state?.track === "moonreopen" && state.playing;
@@ -147,7 +161,7 @@ try {
     assert.equal(directTrack, "moonreopen", `${viewport.name}: direct map routes do not use Blue Glass Tide`);
     const directRouteSourceCalls = await page.evaluate(() => globalThis.__gaiaMediaElementSourceCalls);
     assert.equal(directRouteSourceCalls, 0, `${viewport.name}: direct map BGM was forced through Web Audio`);
-    report.scans.push({ viewport, routeSwitchMs, destination, directTrack, nativeRouteSourceCalls, directRouteSourceCalls, playbackAdvance, continuityEvents: continuity.events, audioResponses, screenshot, passed: true });
+    report.scans.push({ viewport, routeSwitchMs, destination, directTrack, nativeRouteSourceCalls, directRouteSourceCalls, playbackAdvance, soundArchiveBefore, soundArchiveAfter, continuityEvents: continuity.events, audioResponses, screenshot, passed: true });
     await context.close();
   }
 

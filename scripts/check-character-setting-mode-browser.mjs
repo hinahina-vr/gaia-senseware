@@ -93,6 +93,10 @@ const inspect = (page) => page.evaluate(() => {
     quote: quote?.textContent.trim(),
     quoteWritingMode: quote ? getComputedStyle(quote).writingMode : "missing",
     statusRows: document.querySelectorAll(".character-book-hero-detail dl").length,
+    cgCards: document.querySelectorAll("[data-character-cg-id]").length,
+    cgPoemLines: document.querySelectorAll(".character-book-cg-card-poem > span").length,
+    cgTitles: [...document.querySelectorAll(".character-book-cg-card-copy > strong")].map((element) => element.textContent.trim()),
+    cgAssets: [...document.querySelectorAll(".character-book-cg-card-visual img")].map((element) => element.getAttribute("src")),
     masterRect: rect(master),
     characterId: layer?.dataset.characterId,
     bodyMode: document.body.classList.contains("character-mode-open"),
@@ -158,6 +162,24 @@ try {
       viewport.name + ": character quote orientation is incorrect",
     );
     assert.equal(initial.statusRows, 0, viewport.name + ": FIELD / ROLE / TOOLS remain in the hero");
+    assert.equal(initial.cgCards, 6, viewport.name + ": story CG archive is incomplete");
+    assert.equal(initial.cgPoemLines, 12, viewport.name + ": every story CG does not have a two-line poem");
+    assert.deepEqual(initial.cgTitles, [
+      "はじめまして",
+      "振り向いた光",
+      "海色のまなざし",
+      "手のひらから始まる地球",
+      "ようこそ、同じ円へ",
+      "展示会の、その先へ",
+    ], viewport.name + ": story CG archive order is incorrect");
+    assert.deepEqual(initial.cgAssets.map((source) => source?.replace(/^.*\/assets/u, "assets").replace(/\?.*$/u, "")), [
+      "assets/visuals-07/event-cg-first-encounter-five-plane-v3.png",
+      "assets/visuals-07/event-cg-amane-closeup-five-plane-v4.png",
+      "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v3.png",
+      "assets/visuals-07/event-cg-esp32-collaboration-v2.png",
+      "assets/visuals-07/event-cg-circle-welcome-v2.png",
+      "assets/visuals-07/event-cg-exhibition-finale-sunset-v1.png",
+    ], viewport.name + ": story CG archive is not using the game assets");
     assert(initial.imageAlt.length >= 10, viewport.name + ": hero character alt text is missing");
     assert.equal(initial.webglState, "ready", viewport.name + ": WebGL atmosphere did not initialize");
     assert.equal(initial.webglRendered, "true", viewport.name + ": WebGL atmosphere did not render");
@@ -232,6 +254,86 @@ try {
     assert.equal(sakuya.expressions, 4, viewport.name + ": Sakuya expression selector is incomplete");
     assert.equal(sakuya.expressionId, "calm", viewport.name + ": Sakuya did not open with the calm expression");
 
+    await page.locator("#character-book-cg").evaluate((element) => element.scrollIntoView({ block: "start" }));
+    await page.waitForTimeout(viewport.reduced ? 30 : 180);
+    const galleryState = await page.locator("#character-book-cg").evaluate((element) => {
+      const cards = [...element.querySelectorAll(".character-book-cg-card")];
+      const rects = cards.map((card) => card.getBoundingClientRect().toJSON());
+      return {
+        width: element.getBoundingClientRect().width,
+        cardWidths: rects.map((rect) => rect.width),
+        overflowX: Math.max(0, element.scrollWidth - element.clientWidth),
+        firstAlt: cards[0]?.querySelector("img")?.alt,
+      };
+    });
+    assert(galleryState.width > 0, viewport.name + ": story CG archive collapsed");
+    assert(galleryState.cardWidths.every((width) => width > 0), viewport.name + ": story CG card collapsed");
+    assert.equal(galleryState.overflowX, 0, viewport.name + ": story CG archive has horizontal overflow");
+    assert.match(galleryState.firstAlt, /ミズハ.*アマネ/u, viewport.name + ": story CG alt text is missing");
+    await page.screenshot({ path: path.join(outputDir, viewport.name + "-character-cg-archive.png"), fullPage: false });
+
+    const firstCg = page.locator('[data-character-cg-id="first-encounter"]');
+    await firstCg.click();
+    await page.locator("#character-book-cg-viewer").waitFor({ state: "visible", timeout: 5000 });
+    await page.waitForFunction(() => {
+      const image = document.querySelector("#character-book-cg-viewer-image");
+      const viewer = document.querySelector("#character-book-cg-viewer");
+      return image?.complete && image.naturalWidth > 0
+        && viewer?.classList.contains("is-open")
+        && Number.parseFloat(getComputedStyle(viewer).opacity) > 0.9;
+    });
+    const firstCgViewer = await page.locator("#character-book-cg-viewer").evaluate((viewer) => ({
+      id: viewer.dataset.characterCgId,
+      ariaHidden: viewer.getAttribute("aria-hidden"),
+      title: viewer.querySelector("#character-book-cg-viewer-title")?.textContent.trim(),
+      chapter: viewer.querySelector("#character-book-cg-viewer-chapter")?.textContent.trim(),
+      count: viewer.querySelector("#character-book-cg-viewer-count")?.textContent.trim(),
+      poem: [...viewer.querySelectorAll("#character-book-cg-viewer-poem > span")].map((line) => line.textContent.trim()),
+      imageSource: viewer.querySelector("#character-book-cg-viewer-image")?.currentSrc,
+      imageAlt: viewer.querySelector("#character-book-cg-viewer-image")?.alt,
+      focusedClose: document.activeElement?.classList.contains("character-book-cg-viewer-close"),
+      viewerOpacity: getComputedStyle(viewer).opacity,
+      viewerRect: viewer.getBoundingClientRect().toJSON(),
+      sheetBackground: getComputedStyle(viewer.querySelector(".character-book-cg-viewer-sheet")).backgroundColor,
+      sheetRect: viewer.querySelector(".character-book-cg-viewer-sheet").getBoundingClientRect().toJSON(),
+      backdropBackground: getComputedStyle(viewer.querySelector(".character-book-cg-viewer-backdrop")).backgroundColor,
+    }));
+    assert.equal(firstCgViewer.id, "first-encounter", viewport.name + ": viewer opened the wrong CG");
+    assert.equal(firstCgViewer.ariaHidden, "false", viewport.name + ": viewer remains hidden from assistive technology");
+    assert.equal(firstCgViewer.title, "はじめまして", viewport.name + ": viewer title is incorrect");
+    assert.equal(firstCgViewer.chapter, "01｜海辺の屋外展示", viewport.name + ": viewer chapter is incorrect");
+    assert.equal(firstCgViewer.count, "01 / 06", viewport.name + ": viewer position is incorrect");
+    assert.deepEqual(firstCgViewer.poem, [
+      "まだ名前を知らないふたりが、海より先にこちらを見つけた。",
+      "秋の光は、出会いの輪郭だけをそっと残す。",
+    ], viewport.name + ": viewer poem is incorrect");
+    assert.match(firstCgViewer.imageSource, viewport.mobile
+      ? /event-cg-first-encounter-five-plane-mobile-v2\.png/u
+      : /event-cg-first-encounter-five-plane-v3\.png/u, viewport.name + ": viewer did not choose the correct CG asset");
+    assert.match(firstCgViewer.imageAlt, /ミズハ.*アマネ/u, viewport.name + ": viewer alt text is missing");
+    assert.equal(firstCgViewer.focusedClose, true, viewport.name + ": viewer did not receive keyboard focus");
+
+    await page.keyboard.press("ArrowRight");
+    await page.waitForFunction(() => document.querySelector("#character-book-cg-viewer")?.dataset.characterCgId === "amane-closeup");
+    await page.waitForFunction(() => !document.querySelector(".character-book-cg-viewer-sheet")?.classList.contains("is-turning")
+      && document.querySelector("#character-book-cg-viewer-image")?.complete
+      && document.querySelector("#character-book-cg-viewer-image")?.naturalWidth > 0);
+    const secondCgViewer = await page.locator("#character-book-cg-viewer").evaluate((viewer) => ({
+      title: viewer.querySelector("#character-book-cg-viewer-title")?.textContent.trim(),
+      count: viewer.querySelector("#character-book-cg-viewer-count")?.textContent.trim(),
+      poemLines: viewer.querySelectorAll("#character-book-cg-viewer-poem > span").length,
+      imageSource: viewer.querySelector("#character-book-cg-viewer-image")?.currentSrc,
+    }));
+    assert.equal(secondCgViewer.title, "振り向いた光", viewport.name + ": keyboard CG navigation failed");
+    assert.equal(secondCgViewer.count, "02 / 06", viewport.name + ": keyboard CG position did not update");
+    assert.equal(secondCgViewer.poemLines, 2, viewport.name + ": next CG poem is missing");
+    assert.match(secondCgViewer.imageSource, /event-cg-amane-closeup-five-plane-v4\.png/u, viewport.name + ": next CG asset is incorrect");
+    await page.screenshot({ path: path.join(outputDir, viewport.name + "-character-cg-viewer.png"), fullPage: false });
+    await page.keyboard.press("Escape");
+    await page.locator("#character-book-cg-viewer").waitFor({ state: "hidden", timeout: 5000 });
+    await page.waitForFunction(() => document.activeElement?.classList.contains("character-book-cg-card")
+      && document.activeElement?.dataset.characterCgId === "first-encounter");
+
     await page.locator("#character-book-master").scrollIntoViewIfNeeded();
     await page.waitForTimeout(viewport.reduced ? 50 : 220);
     const sectionState = await page.locator("#character-book-master").evaluate((element) => ({
@@ -245,7 +347,7 @@ try {
     await page.locator("#character-book-close").click();
     await page.locator("#character-book-layer").waitFor({ state: "hidden", timeout: 5000 });
     assert.equal(await page.evaluate(() => document.body.classList.contains("character-mode-open")), false);
-    report.scans.push({ viewport, initial, amaneExpression, mizuha, mizuhaExpression, sakuya, sectionState });
+    report.scans.push({ viewport, initial, amaneExpression, mizuha, mizuhaExpression, sakuya, galleryState, firstCgViewer, secondCgViewer, sectionState });
     await context.close();
   }
 

@@ -82,6 +82,7 @@ try {
   assert(visualRuntime.ok() && visualStyles.ok(), "aurora visualizer runtime is unavailable");
   const visualRuntimeSource = await visualRuntime.text();
   const visualStyleSource = await visualStyles.text();
+  assert(!visualRuntimeSource.includes("getAudio()?.setMuted?.(true)"), "opening the sound archive must not mute the current soundtrack");
   assert(/opening:\s*"\.\/assets\/audio\/satellite-forecast-hope\.mp3"/u.test(audioRuntimeSource), "Planet Forecast - Hope is not assigned to the opening");
   assert(/senseware:\s*"\.\/assets\/audio\/moonlit-source-save\.mp3"/u.test(audioRuntimeSource), "GAIA SENSEWARE is not assigned to its original system theme");
   assert(/mapambient:\s*"\.\/assets\/audio\/gaia-map-ambient-harp-felt-piano\.wav"/u.test(audioRuntimeSource), "the map exhibition is not assigned to the transparent harp and felt-piano ambience");
@@ -95,8 +96,9 @@ try {
   assert(/uniform float bass;/u.test(visualRuntimeSource) && /uniform float mid;/u.test(visualRuntimeSource) && /uniform float high;/u.test(visualRuntimeSource), "three real audio bands are not connected to the shader");
   assert(/uniform float pulse;/u.test(visualRuntimeSource) && /uniform float flux;/u.test(visualRuntimeSource) && /uniform float wave;/u.test(visualRuntimeSource), "transient, spectral-flux, and waveform motion are not connected to the shader");
   assert(!/equalizerRuntime|equalizerCanvas/u.test(visualRuntimeSource), "the detached EQ visualizer is still wired into the sound mode");
-  assert(/signalCore/u.test(visualRuntimeSource) && /bassBloom/u.test(visualRuntimeSource) && /dustLift/u.test(visualRuntimeSource), "the full-screen WebGL field does not expose distinct mid, bass, and high responses");
-  assert(/spectralRibbons/u.test(visualRuntimeSource) && /spectrumPalette/u.test(visualRuntimeSource) && /powderLayer/u.test(visualRuntimeSource), "the reactive ribbon, spectral palette, and light powder field are incomplete");
+  assert(/horizonGlow/u.test(visualRuntimeSource) && /breathingHalo/u.test(visualRuntimeSource) && /glimmerLift/u.test(visualRuntimeSource), "the calm WebGL field does not expose distinct bass, mid, and high responses");
+  assert(/auroraTide/u.test(visualRuntimeSource) && /dreamPalette/u.test(visualRuntimeSource) && /starlightLayer/u.test(visualRuntimeSource), "the immersive aurora tide, dream palette, and starlight field are incomplete");
+  assert(!/spectralRibbons|filament|tremor|interference/u.test(visualRuntimeSource), "the aggressive filament motion remains in the sound visualizer");
   assert(!/earthCenter|earthRadius|earthSurface|earthDisc|earthX|earthY/u.test(visualRuntimeSource), "Earth rendering remains in the WebGL or Canvas visualizer");
   assert(!/gl\.LINES|spectral-weave/u.test(visualRuntimeSource), "legacy line geometry remains in the visualizer");
   assert(!/sound-layer-grid|sound-spectral-grid/u.test(visualStyleSource), "digital grid styling remains in the sound installation");
@@ -115,6 +117,7 @@ try {
       presentation: canvas.dataset.presentation,
       audioAnalysis: canvas.dataset.audioAnalysis,
       reactivity: canvas.dataset.reactivity,
+      motionProfile: canvas.dataset.motionProfile,
       width: rect.width,
       height: rect.height,
       rect: rect.toJSON(),
@@ -139,7 +142,8 @@ try {
       && desktopVisualizer.visualizer === "full-field-audio-ink"
       && desktopVisualizer.presentation === "full-screen-webgl"
       && desktopVisualizer.audioAnalysis === "fft-spectrum-flux-waveform"
-      && desktopVisualizer.reactivity === "bass-mid-high-transient-wave"
+      && desktopVisualizer.reactivity === "smoothed-bass-breath-mid-drift-high-glimmer"
+      && desktopVisualizer.motionProfile === "slow-aurora-breath"
       && desktopVisualizer.width > 300
       && desktopVisualizer.height > 280
       && desktopVisualizer.legacyPlanetCount === 0
@@ -205,9 +209,7 @@ try {
     const canvas = document.querySelector("#sound-visualizer");
     return [canvas?.dataset.bass, canvas?.dataset.mid, canvas?.dataset.high]
       .some((value) => Number(value) > 0.001)
-      && Number(canvas?.dataset.pulse) > 0.001
-      && Number(canvas?.dataset.flux) > 0.001
-      && Math.abs(Number(canvas?.dataset.wave)) > 0.001;
+      && Number(canvas?.dataset.energy) > 0.001;
   }, null, { timeout: 10_000 });
   const shaderBands = await page.locator("#sound-visualizer").evaluate((canvas) => ({
     bass: Number(canvas.dataset.bass),
@@ -218,13 +220,20 @@ try {
     flux: Number(canvas.dataset.flux),
     wave: Number(canvas.dataset.wave),
   }));
-  assert(shaderBands.bass > 0.001 && shaderBands.mid > 0.001 && shaderBands.high > 0.001 && shaderBands.energy > 0.001 && shaderBands.pulse > 0.001 && shaderBands.flux > 0.001 && Math.abs(shaderBands.wave) > 0.001, `full audio analysis does not reach the shader: ${JSON.stringify(shaderBands)}`);
+  assert(
+    [shaderBands.bass, shaderBands.mid, shaderBands.high, shaderBands.energy, shaderBands.pulse, shaderBands.flux, shaderBands.wave].every(Number.isFinite)
+      && Math.max(shaderBands.bass, shaderBands.mid, shaderBands.high) > 0.001
+      && shaderBands.energy > 0.001
+      && shaderBands.pulse >= 0
+      && shaderBands.flux >= 0,
+    `smoothed audio analysis does not reach the shader: ${JSON.stringify(shaderBands)}`,
+  );
   report.shaderBands = shaderBands;
   report.analysisFrame = analysisFrame;
   await page.locator('[data-sound-track="ending"]').click();
   await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 10000 });
   await page.evaluate(() => globalThis.GaiaOpeningAudio.seek(24));
-  await page.waitForTimeout(1850);
+  await page.waitForTimeout(2600);
   const playingAppearance = await page.evaluate(() => ({
     playing: document.querySelector("#sound-layer")?.dataset.playing,
     visualizerOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#sound-visualizer")).opacity || "0"),
@@ -232,11 +241,11 @@ try {
     visualizerRect: document.querySelector("#sound-visualizer").getBoundingClientRect().toJSON(),
     sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "1"),
   }));
-  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.9 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity === 0, `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
+  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.82 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.05 && playingAppearance.sceneOpacity <= 0.15, `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop.png"), fullPage: true });
   await page.locator("#sound-play").click();
   await page.waitForFunction(() => document.querySelector("#sound-layer")?.dataset.playing === "false");
-  await page.waitForTimeout(1850);
+  await page.waitForTimeout(2600);
   const stoppedAppearance = await page.evaluate(() => ({
     visualizerOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#sound-visualizer")).opacity || "1"),
     visualizerVisibility: getComputedStyle(document.querySelector("#sound-visualizer")).visibility,

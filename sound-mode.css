@@ -54,7 +54,7 @@
 }
 
 .sound-layer[data-playing="true"] .sound-layer-background::before {
-  animation: sound-visualizer-focus 1.65s cubic-bezier(0.16, 0.82, 0.22, 1) both;
+  animation: sound-visualizer-focus 2.8s cubic-bezier(0.16, 0.82, 0.22, 1) both;
 }
 
 .sound-layer-background::after {
@@ -268,23 +268,23 @@
   mask-image: none;
   filter: blur(28px) saturate(1.72) contrast(0.86) brightness(1.72);
   transition:
-    opacity 1.05s cubic-bezier(0.18, 0.68, 0.22, 1),
-    transform 1.7s cubic-bezier(0.16, 0.82, 0.22, 1),
-    filter 1.45s cubic-bezier(0.16, 0.82, 0.22, 1),
-    visibility 0s linear 1.45s;
+    opacity 1.8s cubic-bezier(0.18, 0.68, 0.22, 1),
+    transform 2.6s cubic-bezier(0.16, 0.82, 0.22, 1),
+    filter 2.2s cubic-bezier(0.16, 0.82, 0.22, 1),
+    visibility 0s linear 2.2s;
 }
 
 @keyframes sound-visualizer-focus {
-  0% { opacity: 0; transform: scale(0.86); filter: blur(34px); }
-  34% { opacity: 0.46; transform: scale(1.02); filter: blur(19px); }
-  100% { opacity: 0.035; transform: scale(1.42); filter: blur(46px); }
+  0% { opacity: 0; transform: scale(0.94); filter: blur(38px); }
+  45% { opacity: 0.28; transform: scale(1); filter: blur(28px); }
+  100% { opacity: 0.08; transform: scale(1.12); filter: blur(42px); }
 }
 
 .sound-layer[data-playing="true"] .sound-visualizer {
-  opacity: 0.96;
+  opacity: 0.88;
   visibility: visible;
   transform: scale(1);
-  filter: blur(0) saturate(1.42) contrast(1.2) brightness(1.06);
+  filter: blur(0) saturate(1.08) contrast(1.03) brightness(0.96);
   transition-delay: 0s;
 }
 
@@ -305,15 +305,15 @@
   mask-image: none;
   transform: scale(1);
   transition:
-    opacity 1.15s ease,
-    transform 1.55s cubic-bezier(0.16, 0.82, 0.22, 1),
-    filter 1.2s ease;
+    opacity 1.8s ease,
+    transform 2.4s cubic-bezier(0.16, 0.82, 0.22, 1),
+    filter 2.1s ease;
 }
 
 .sound-layer[data-playing="true"] .sound-character-scene {
-  opacity: 0;
-  transform: scale(1.035);
-  filter: saturate(0.86) brightness(0.5) contrast(1.12) blur(8px);
+  opacity: 0.1;
+  transform: scale(1.018);
+  filter: saturate(0.76) brightness(0.42) contrast(1.04) blur(12px);
 }
 
 .sound-now-playing { grid-area: info; align-self: start; }

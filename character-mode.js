@@ -81,6 +81,79 @@
     },
   ]);
 
+  const storyCgs = Object.freeze([
+    {
+      id: "first-encounter",
+      title: "はじめまして",
+      chapter: "01｜海辺の屋外展示",
+      assetPath: "assets/visuals-07/event-cg-first-encounter-five-plane-v3.png",
+      mobileAssetPath: "assets/visuals-07/event-cg-first-encounter-five-plane-mobile-v2.png",
+      alt: "海辺の展示ブースで、ミズハとアマネに初めて出会う",
+      poem: [
+        "まだ名前を知らないふたりが、海より先にこちらを見つけた。",
+        "秋の光は、出会いの輪郭だけをそっと残す。",
+      ],
+    },
+    {
+      id: "amane-closeup",
+      title: "振り向いた光",
+      chapter: "01｜海辺の屋外展示",
+      assetPath: "assets/visuals-07/event-cg-amane-closeup-five-plane-v4.png",
+      alt: "展示機材へ手を添え、穏やかに振り向くアマネ",
+      poem: [
+        "指先に灯るのは、まだ誰のものでもない明日。",
+        "小さな電流が、遠い星の呼吸へつながっていく。",
+      ],
+    },
+    {
+      id: "mizuha-closeup",
+      title: "海色のまなざし",
+      chapter: "01｜海辺の屋外展示",
+      assetPath: "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v3.png",
+      alt: "タブレット越しにこちらを見つめるミズハ",
+      poem: [
+        "波の数を数えるように、あなたの声を待っている。",
+        "観測は、見つめ返された瞬間から物語になる。",
+      ],
+    },
+    {
+      id: "esp32-collaboration",
+      title: "手のひらから始まる地球",
+      chapter: "04｜ESP32プロトタイプ",
+      assetPath: "assets/visuals-07/event-cg-esp32-collaboration-v2.png",
+      mobileAssetPath: "assets/visuals-07/event-cg-esp32-collaboration-mobile-v1.png",
+      alt: "ESP32とセンサーを囲み、ミズハとアマネが試作を考える",
+      poem: [
+        "手のひらほどの基板に、地球の鼓動を預けてみる。",
+        "ふたりの距離ぶん、未来はやさしく配線される。",
+      ],
+    },
+    {
+      id: "circle-welcome",
+      title: "ようこそ、同じ円へ",
+      chapter: "05｜サークルへの招待",
+      assetPath: "assets/visuals-07/event-cg-circle-welcome-v2.png",
+      mobileAssetPath: "assets/visuals-07/event-cg-circle-welcome-mobile-v1.png",
+      alt: "秋晴れの展示ブースで、サークル加入を迎えるミズハとアマネ",
+      poem: [
+        "差し出された手の向こうに、知らなかった居場所がひらく。",
+        "円は閉じず、あなたの分だけ光をあけている。",
+      ],
+    },
+    {
+      id: "exhibition-finale",
+      title: "展示会の、その先へ",
+      chapter: "06｜はじめまして",
+      assetPath: "assets/visuals-07/event-cg-exhibition-finale-sunset-v1.png",
+      mobileAssetPath: "assets/visuals-07/event-cg-exhibition-finale-sunset-mobile-v1.png",
+      alt: "夕日の海沿いを歩きながら、ミズハとアマネがこちらを振り返る",
+      poem: [
+        "片づけられた祭りのあとも、海だけは光をしまわない。",
+        "振り返るふたりと、明日へ続く余白を歩く。",
+      ],
+    },
+  ].map((entry) => Object.freeze({ ...entry, poem: Object.freeze(entry.poem) })));
+
   const createAtmosphere = (canvas) => {
     const fallback = () => {
       if (canvas instanceof HTMLCanvasElement) canvas.dataset.webglState = "fallback";
@@ -344,8 +417,21 @@
   const expressionName = layer.querySelector("#character-book-expression-name");
   const quote = layer.querySelector("#character-book-quote");
   const current = layer.querySelector("#character-book-current");
+  const cgGrid = layer.querySelector("#character-book-cg-grid");
+  const cgViewer = layer.querySelector("#character-book-cg-viewer");
+  const cgViewerSheet = layer.querySelector(".character-book-cg-viewer-sheet");
+  const cgViewerFigure = layer.querySelector(".character-book-cg-viewer-figure");
+  const cgViewerImage = layer.querySelector("#character-book-cg-viewer-image");
+  const cgViewerChapter = layer.querySelector("#character-book-cg-viewer-chapter");
+  const cgViewerTitle = layer.querySelector("#character-book-cg-viewer-title");
+  const cgViewerPoem = layer.querySelector("#character-book-cg-viewer-poem");
+  const cgViewerCount = layer.querySelector("#character-book-cg-viewer-count");
+  const cgViewerPrevious = layer.querySelector("#character-book-cg-viewer-previous");
+  const cgViewerNext = layer.querySelector("#character-book-cg-viewer-next");
+  const cgViewerCloseButtons = Array.from(layer.querySelectorAll("[data-character-cg-close]"));
   const atmosphere = createAtmosphere(canvas);
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const compactCg = window.matchMedia("(max-width: 720px)");
 
   let currentIndex = 0;
   let openState = false;
@@ -356,6 +442,10 @@
   let displayedCharacterId = null;
   let displayedExpressionId = null;
   let expressionHoverReady = true;
+  let cgViewerOpen = false;
+  let currentCgIndex = 0;
+  let cgViewerPreviousFocus = null;
+  let cgViewerCloseTimer = 0;
 
   const imagePreloads = new Map();
   const ensureImagePreload = (src) => {
@@ -370,6 +460,135 @@
   const preloadCharacterExpressions = (character) => {
     character.expressions.forEach(({ src }) => ensureImagePreload(src));
   };
+
+  const cgAsset = (entry, compact = compactCg.matches) => (
+    "/" + (compact && entry.mobileAssetPath ? entry.mobileAssetPath : entry.assetPath) + "?v=gaia-character-cg-1"
+  );
+
+  const renderStoryCgs = () => {
+    if (!(cgGrid instanceof HTMLElement)) return;
+    const cards = storyCgs.map((entry, index) => {
+      const card = document.createElement("button");
+      const picture = document.createElement("picture");
+      const image = document.createElement("img");
+      const copy = document.createElement("span");
+      const meta = document.createElement("span");
+      const number = document.createElement("small");
+      const chapter = document.createElement("small");
+      const title = document.createElement("strong");
+      const poem = document.createElement("span");
+      card.type = "button";
+      card.className = "character-book-cg-card";
+      card.dataset.characterCgId = entry.id;
+      card.style.setProperty("--character-cg-order", String(index));
+      card.setAttribute("aria-label", `${entry.title}を大きく見る`);
+      picture.className = "character-book-cg-card-visual";
+      image.src = cgAsset(entry, false);
+      image.alt = entry.alt;
+      image.width = 1792;
+      image.height = 1008;
+      image.loading = index === 0 ? "eager" : "lazy";
+      image.decoding = "async";
+      picture.append(image);
+      copy.className = "character-book-cg-card-copy";
+      meta.className = "character-book-cg-card-meta";
+      number.textContent = `CG ${String(index + 1).padStart(2, "0")}`;
+      chapter.textContent = entry.chapter;
+      meta.append(number, chapter);
+      title.textContent = entry.title;
+      poem.className = "character-book-cg-card-poem";
+      entry.poem.forEach((line) => {
+        const poemLine = document.createElement("span");
+        poemLine.textContent = line;
+        poem.append(poemLine);
+      });
+      copy.append(meta, title, poem);
+      card.append(picture, copy);
+      card.addEventListener("click", () => openCgViewer(index, card));
+      return card;
+    });
+    cgGrid.replaceChildren(...cards);
+  };
+
+  const renderCgViewer = (index, { animate = false, direction = 1 } = {}) => {
+    const normalizedIndex = (index + storyCgs.length) % storyCgs.length;
+    const entry = storyCgs[normalizedIndex];
+    currentCgIndex = normalizedIndex;
+    if (cgViewer instanceof HTMLElement) cgViewer.dataset.characterCgId = entry.id;
+    if (cgViewerImage instanceof HTMLImageElement) {
+      cgViewerImage.src = cgAsset(entry);
+      cgViewerImage.alt = entry.alt;
+    }
+    if (cgViewerChapter) cgViewerChapter.textContent = entry.chapter;
+    if (cgViewerTitle) cgViewerTitle.textContent = entry.title;
+    if (cgViewerPoem) {
+      const lines = entry.poem.map((line) => {
+        const span = document.createElement("span");
+        span.textContent = line;
+        return span;
+      });
+      cgViewerPoem.replaceChildren(...lines);
+    }
+    if (cgViewerCount) {
+      cgViewerCount.textContent = `${String(normalizedIndex + 1).padStart(2, "0")} / ${String(storyCgs.length).padStart(2, "0")}`;
+    }
+    if (animate && !reducedMotion.matches && cgViewerSheet instanceof HTMLElement) {
+      cgViewerSheet.dataset.turnDirection = direction > 0 ? "next" : "previous";
+      cgViewerSheet.classList.remove("is-turning");
+      void cgViewerSheet.offsetWidth;
+      cgViewerSheet.classList.add("is-turning");
+      window.setTimeout(() => cgViewerSheet.classList.remove("is-turning"), 520);
+    }
+  };
+
+  const openCgViewer = (index, trigger = null) => {
+    if (!(cgViewer instanceof HTMLElement)) return;
+    window.clearTimeout(cgViewerCloseTimer);
+    cgViewerPreviousFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
+    renderCgViewer(index);
+    cgViewerOpen = true;
+    cgViewer.hidden = false;
+    cgViewer.inert = false;
+    cgViewer.setAttribute("aria-hidden", "false");
+    layer.classList.add("is-cg-viewing");
+    layer.querySelector(".character-book-cg-viewer-close")?.focus({ preventScroll: true });
+    requestAnimationFrame(() => {
+      cgViewer.classList.add("is-open");
+    });
+  };
+
+  const closeCgViewer = ({ restoreFocus = true, immediate = false } = {}) => {
+    if (!(cgViewer instanceof HTMLElement) || (!cgViewerOpen && cgViewer.hidden)) return;
+    window.clearTimeout(cgViewerCloseTimer);
+    cgViewerOpen = false;
+    cgViewer.classList.remove("is-open");
+    cgViewer.setAttribute("aria-hidden", "true");
+    layer.classList.remove("is-cg-viewing");
+    const finish = () => {
+      const focusTarget = restoreFocus && cgViewerPreviousFocus instanceof HTMLElement
+        ? cgViewerPreviousFocus
+        : null;
+      cgViewer.hidden = true;
+      cgViewer.inert = true;
+      if (cgViewerImage instanceof HTMLImageElement) {
+        cgViewerImage.removeAttribute("src");
+        cgViewerImage.alt = "";
+      }
+      cgViewerPreviousFocus = null;
+      if (focusTarget?.isConnected) requestAnimationFrame(() => {
+        if (!cgViewerOpen && focusTarget.isConnected) focusTarget.focus({ preventScroll: true });
+      });
+    };
+    if (immediate || reducedMotion.matches) finish();
+    else cgViewerCloseTimer = window.setTimeout(finish, 320);
+  };
+
+  const turnCgViewer = (offset) => {
+    if (!cgViewerOpen) return;
+    renderCgViewer(currentCgIndex + offset, { animate: true, direction: offset });
+  };
+
+  renderStoryCgs();
 
   const suspendBackground = () => {
     backgroundStates = [];
@@ -591,6 +810,7 @@
   };
   const close = ({ updateHash = true } = {}) => {
     if (!openState) return;
+    closeCgViewer({ restoreFocus: false, immediate: true });
     openState = false;
     layer.classList.remove("is-open");
     layer.setAttribute("aria-hidden", "true");
@@ -616,6 +836,12 @@
   });
   closeButton?.addEventListener("click", close);
   closeButtons.forEach((button) => button.addEventListener("click", close));
+  cgViewerCloseButtons.forEach((button) => button.addEventListener("click", () => closeCgViewer()));
+  cgViewerPrevious?.addEventListener("click", () => turnCgViewer(-1));
+  cgViewerNext?.addEventListener("click", () => turnCgViewer(1));
+  compactCg.addEventListener("change", () => {
+    if (cgViewerOpen) renderCgViewer(currentCgIndex);
+  });
   window.addEventListener("hashchange", () => {
     if (window.location.hash === "#character") open(null);
     else if (openState) close({ updateHash: false });
@@ -633,6 +859,32 @@
 
   document.addEventListener("keydown", (event) => {
     if (!openState) return;
+    if (cgViewerOpen) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeCgViewer();
+        return;
+      }
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        turnCgViewer(event.key === "ArrowRight" ? 1 : -1);
+        return;
+      }
+      if (event.key !== "Tab" || !(cgViewer instanceof HTMLElement)) return;
+      const viewerFocusable = Array.from(cgViewer.querySelectorAll('button:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+        .filter((element) => element instanceof HTMLElement && element.offsetParent !== null);
+      if (!viewerFocusable.length) return;
+      const viewerFirst = viewerFocusable[0];
+      const viewerLast = viewerFocusable[viewerFocusable.length - 1];
+      if (event.shiftKey && document.activeElement === viewerFirst) {
+        event.preventDefault();
+        viewerLast.focus();
+      } else if (!event.shiftKey && document.activeElement === viewerLast) {
+        event.preventDefault();
+        viewerFirst.focus();
+      }
+      return;
+    }
     if (event.key === "Escape") {
       event.preventDefault();
       close();

@@ -47,45 +47,48 @@ try {
     await page.goto(new URL("/sensors/?authenticated=1#map", baseUrl).href, { waitUntil: "domcontentloaded" });
     await socialLoaded;
     await page.locator(".sensor-map-marker[data-sensor-id='sensor_browserqa']").waitFor({ state: "visible" });
-    await page.locator(".sensor-map-marker[data-sensor-id='sensor_browserqa']").click();
+    await page.locator(".sensor-map-marker[data-sensor-id='sensor_browserqa']").dispatchEvent("click");
     await page.locator("#public-sensor-detail").waitFor({ state: "visible" });
     await page.waitForTimeout(700);
     const expand = page.locator(".sensor-map-card-expand");
     if (viewport.width <= 760 && await expand.isVisible()) await expand.click();
 
-    const favorite = page.locator("#public-sensor-detail [data-relationship='favorite']");
     const like = page.locator("#public-sensor-detail [data-relationship='like']");
-    await favorite.waitFor({ state: "visible" });
-    const favoriteResponse = page.waitForResponse((response) => response.url().endsWith("/favorite") && response.ok(), { timeout: 30_000 });
-    await favorite.dispatchEvent("click");
-    await favoriteResponse;
-    const favoriteState = await favorite.getAttribute("aria-pressed");
-    if (favoriteState !== "true") {
-      const diagnostic = await page.evaluate(() => ({
-        view: document.documentElement.dataset.sensorView,
-        hash: location.hash,
-        status: document.querySelector("#sensor-status")?.textContent,
-        statusState: document.querySelector("#sensor-status")?.dataset.state,
-        favorite: document.querySelector("#public-sensor-detail [data-relationship='favorite']")?.outerHTML,
-      }));
-      throw new Error(`favorite did not activate: ${JSON.stringify({ diagnostic, pageErrors: report.pageErrors, consoleErrors: report.consoleErrors })}`);
-    }
+    await like.waitFor({ state: "visible" });
+    assert.equal(await page.locator("#public-sensor-detail [data-relationship='favorite']").count(), 0);
+    assert.equal(await page.locator("[data-public-filter='FAVORITE']").count(), 0);
+    assert.doesNotMatch(await page.locator("#public-sensor-detail").textContent(), /お気に入り/u);
+    assert.equal((await like.textContent()).trim(), "♡");
     const likeResponse = page.waitForResponse((response) => response.url().endsWith("/like") && response.ok(), { timeout: 30_000 });
     await like.dispatchEvent("click");
     await likeResponse;
     await page.waitForFunction(() => document.querySelector("#public-sensor-detail [data-relationship='like']")?.getAttribute("aria-pressed") === "true");
     assert.equal(await like.getAttribute("aria-pressed"), "true");
-    assert.match(await like.textContent(), /応援\s+1/u);
-    if (viewport.width > 760) {
-      await page.locator("[data-public-filter='FAVORITE']").dispatchEvent("click");
-      assert.equal(await page.locator("#public-sensor-results").textContent(), "1 / 5件");
-      assert.equal(await page.locator(".sensor-public-card:visible").count(), 1);
-      await page.locator("[data-public-filter='ALL']").dispatchEvent("click");
-    }
-    const socialTarget = await favorite.boundingBox();
-    assert(socialTarget && socialTarget.width >= 44 && socialTarget.height >= 44, `favorite target is too small: ${JSON.stringify(socialTarget)}`);
+    assert.equal((await like.textContent()).trim(), "♥");
+    assert.match(await like.getAttribute("aria-label"), /応援を取り消す（現在1件）/u);
+    const relationshipLayout = await page.locator("#public-sensor-detail .sensor-relationship-bar").evaluate((bar) => {
+      const heart = bar.querySelector(".sensor-like-trigger").getBoundingClientRect();
+      const analyze = bar.querySelector(".sensor-analyze-trigger").getBoundingClientRect();
+      return {
+        controls: bar.querySelectorAll("button").length,
+        heartWidth: heart.width,
+        heartHeight: heart.height,
+        heartRadius: getComputedStyle(bar.querySelector(".sensor-like-trigger")).borderRadius,
+        analyzeWidth: analyze.width,
+      };
+    });
+    assert.equal(relationshipLayout.controls, 2);
+    assert(relationshipLayout.heartWidth >= 44 && relationshipLayout.heartHeight >= 44, `heart target is too small: ${JSON.stringify(relationshipLayout)}`);
+    assert(Math.abs(relationshipLayout.heartWidth - relationshipLayout.heartHeight) < .5, `heart target is not square: ${JSON.stringify(relationshipLayout)}`);
+    assert.equal(relationshipLayout.heartRadius, "50%");
+    assert(relationshipLayout.analyzeWidth > relationshipLayout.heartWidth * 2, `analysis action lacks visual priority: ${JSON.stringify(relationshipLayout)}`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-detail.png`), fullPage: false });
 
     await page.locator("#public-sensor-detail .sensor-analyze-trigger").dispatchEvent("click");
+    await page.waitForTimeout(100);
+    if (await page.locator("#sensor-analysis-dialog").isHidden()) {
+      throw new Error(`analysis dialog did not open: ${JSON.stringify({ pageErrors: report.pageErrors, consoleErrors: report.consoleErrors })}`);
+    }
     await page.locator("#sensor-analysis-dialog").waitFor({ state: "visible" });
     assert.match(await page.locator("#sensor-analysis-target").textContent(), /ベランダ環境センサー/u);
     assert((await page.locator("#sensor-analysis-stats article").count()) >= 3);
@@ -152,8 +155,8 @@ try {
     })), { local: null, session: null });
 
     const qaReport = await (await fetch(new URL("/__qa/report", baseUrl))).json();
-    assert(qaReport.requests.some((request) => request.method === "PUT" && request.path.endsWith("/favorite")));
     assert(qaReport.requests.some((request) => request.method === "PUT" && request.path.endsWith("/like")));
+    assert.equal(qaReport.requests.some((request) => request.path.endsWith("/favorite")), false);
     assert(qaReport.requests.every((request) => request.authorizationPresent === false && request.apiKeyPresent === false));
     assert.equal(JSON.stringify(qaReport).includes(testKey), false);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`), fullPage: false });

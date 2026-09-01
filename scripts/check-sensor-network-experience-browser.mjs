@@ -60,7 +60,10 @@ try {
     assert(senseNodeCount >= visibleMarkerCount && senseNodeCount <= totalMarkerCount, `sense field node count is inconsistent: ${JSON.stringify({ senseNodeCount, visibleMarkerCount, totalMarkerCount })}`);
     assert.match(await page.locator(".sensor-sense-field").getAttribute("data-renderer"), /^(webgl|2d)$/u);
     assert(Number(await page.locator(".sensor-sense-field").getAttribute("data-render-pixels")) <= 905_000);
-    assert.match(await page.locator(".sensor-belonging").textContent(), /あなたの感覚が、地球の現在とつながる/u);
+    assert.match(
+      await page.locator(".sensor-belonging").textContent(),
+      /(?:あなたの感覚が、地球の現在とつながる|「いま」に触れています)/u,
+    );
     const belongingAction = await page.locator(".sensor-belonging-join:visible,.sensor-belonging-sense:visible").first().evaluate((button) => {
       const rect = button.getBoundingClientRect();
       return { width: rect.width, height: rect.height };
@@ -68,10 +71,61 @@ try {
     assert(belongingAction.width >= 44 && belongingAction.height >= 44, `participation action is too small: ${JSON.stringify(belongingAction)}`);
     assert.equal(await page.locator(".sensor-public-card").count(), 5);
     assert.equal(await page.locator("#public-sensor-results").textContent(), "5 / 5件");
+    await page.waitForFunction(() => [...document.querySelectorAll(".sensor-owner-avatar img")]
+      .every((image) => image.complete && image.naturalWidth > 0));
+    const avatarPresentation = await page.evaluate(() => {
+      const inspect = (selector) => {
+        const element = document.querySelector(selector);
+        const rect = element?.getBoundingClientRect();
+        return element ? {
+          borderRadius: getComputedStyle(element).borderRadius,
+          width: rect.width,
+          height: rect.height,
+        } : null;
+      };
+      return {
+        marker: inspect(".sensor-map-marker .sensor-owner-avatar"),
+        directory: inspect(".sensor-public-card > .sensor-owner-avatar"),
+        detail: inspect(".sensor-owner-profile-trigger"),
+        brokenImages: [...document.querySelectorAll(".sensor-owner-avatar img")]
+          .filter((image) => !image.complete || image.naturalWidth === 0).length,
+      };
+    });
+    assert.equal(avatarPresentation.brokenImages, 0, `owner images are broken: ${JSON.stringify(avatarPresentation)}`);
+    for (const [surface, presentation] of Object.entries(avatarPresentation).filter(([key]) => key !== "brokenImages")) {
+      assert.equal(presentation?.borderRadius, "50%", `${surface} avatar is not circular: ${JSON.stringify(presentation)}`);
+      assert(Math.abs(presentation.width - presentation.height) < .5, `${surface} avatar is not square: ${JSON.stringify(presentation)}`);
+    }
+    const avatarFailureRecovery = await page.locator(".sensor-public-card > .sensor-owner-avatar").first().evaluate((avatar) => {
+      const image = avatar.querySelector("img");
+      image.dispatchEvent(new Event("error"));
+      const retrySource = image.src;
+      const retryState = avatar.dataset.avatarState;
+      image.dispatchEvent(new Event("error"));
+      return {
+        retrySource,
+        retryState,
+        fallbackState: avatar.dataset.avatarState,
+        fallbackText: avatar.textContent,
+        imageCount: avatar.querySelectorAll("img").length,
+      };
+    });
+    assert.match(avatarFailureRecovery.retrySource, /[?&]gaiaAvatarRetry=/u, `avatar retry did not bypass cache: ${JSON.stringify(avatarFailureRecovery)}`);
+    assert.equal(avatarFailureRecovery.retryState, "retrying", `avatar did not enter retry state: ${JSON.stringify(avatarFailureRecovery)}`);
+    assert.equal(avatarFailureRecovery.fallbackState, "fallback", `avatar did not recover with a fallback: ${JSON.stringify(avatarFailureRecovery)}`);
+    assert.equal(avatarFailureRecovery.imageCount, 0, `broken avatar image remains visible: ${JSON.stringify(avatarFailureRecovery)}`);
+    assert.equal(avatarFailureRecovery.fallbackText.length, 1, `avatar fallback initial is invalid: ${JSON.stringify(avatarFailureRecovery)}`);
     const resonanceLinkCount = await page.locator(".sensor-resonance-link").count();
     if (viewport.width > 760) assert(resonanceLinkCount >= 2);
     assert.match(await page.locator("#public-sync-rate").textContent(), /^\d{2}\.\d%$/u);
     assert.notEqual(await page.locator("#public-sync-rate").textContent(), "00.0%");
+    const syncExplanations = page.locator(".sensor-sync-metric[data-description]");
+    assert.equal(await syncExplanations.count(), 4);
+    if (viewport.width > 960) {
+      await syncExplanations.nth(2).focus();
+      assert.equal(await syncExplanations.nth(2).evaluate((element) => getComputedStyle(element, "::after").visibility), "visible");
+    }
+    assert.match(await syncExplanations.nth(2).getAttribute("data-description"), /累計件数/u);
     assert.equal(await page.locator(".sensor-metric-hud-grid article").count(), 3);
     assert.equal(await page.locator(".sensor-sparkline polyline").count(), 3);
     const readability = await page.evaluate(() => {
@@ -342,6 +396,7 @@ try {
     assert.match(await page.locator("#public-owner-profile-name").textContent(), /あめ/u);
     assert.match(await page.locator("#public-owner-profile-note").textContent(), /展示用ダミーセンサー/u);
     assert.match(await page.locator("#public-owner-profile-links").textContent(), /SNSリンクは登録されていません/u);
+    assert.equal(await page.locator("#public-owner-profile-avatar").evaluate((avatar) => getComputedStyle(avatar).borderRadius), "50%");
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-profile.png`), fullPage: false });
     if (viewport.width > 760) await page.locator("#public-owner-profile .sensor-dialog-close").click();
     else if (viewport.width > 350) await page.locator("#public-owner-profile .sensor-public-profile-back").click();

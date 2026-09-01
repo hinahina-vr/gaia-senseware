@@ -149,18 +149,55 @@ try {
   await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
   await page.locator('#japan-mode-list [data-live-exhibit="wind-field"]').evaluate((button) => button.click());
   await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
-  const poiBeforeWheel = await page.evaluate(() => {
-    const canvas = document.querySelector("#gaia-live-exhibit-canvas");
-    const overlay = document.querySelector("#japan-overlay");
+  await page.locator('[data-live-deck-mode="wind-field"]').hover();
+  await page.waitForFunction(() => document.querySelector(".gaia-global-button-glint")?.classList.contains("is-active"));
+  const circularGlint = await page.evaluate(() => {
+    const button = document.querySelector('[data-live-deck-mode="wind-field"]');
+    const icon = button?.querySelector("[data-gaia-glint-surface]");
+    const glint = document.querySelector(".gaia-global-button-glint");
+    const buttonRect = button?.getBoundingClientRect();
+    const iconRect = icon?.getBoundingClientRect();
+    const glintRect = glint?.getBoundingClientRect();
     return {
-      x: Number(canvas?.dataset.anchorNormalizedX),
-      y: Number(canvas?.dataset.anchorNormalizedY),
-      zoom: Number(overlay?.dataset.earthZoom),
+      buttonHeight: buttonRect?.height,
+      borderRadius: getComputedStyle(glint).borderRadius,
+      heightDelta: Math.abs((glintRect?.height || 0) - (iconRect?.height || 0)),
+      leftDelta: Math.abs((glintRect?.left || 0) - (iconRect?.left || 0)),
+      topDelta: Math.abs((glintRect?.top || 0) - (iconRect?.top || 0)),
+      widthDelta: Math.abs((glintRect?.width || 0) - (iconRect?.width || 0)),
     };
   });
+  assert.match(circularGlint.borderRadius, /50%/u, `live mode glint was not circular: ${JSON.stringify(circularGlint)}`);
+  assert(circularGlint.buttonHeight > 0 && circularGlint.heightDelta < 1 && circularGlint.widthDelta < 1, `live mode glint did not match its icon: ${JSON.stringify(circularGlint)}`);
+  assert(circularGlint.leftDelta < 1 && circularGlint.topDelta < 1, `live mode glint was misaligned: ${JSON.stringify(circularGlint)}`);
   const mapBox = await page.locator("#japan-map").boundingBox();
   assert(mapBox, "live map bounds were unavailable");
   const wheelPoint = { x: mapBox.x + mapBox.width * 0.62, y: mapBox.y + mapBox.height * 0.34 };
+  const readWheelState = (point) => page.evaluate(({ x, y }) => {
+    const map = document.querySelector("#japan-map");
+    const canvas = document.querySelector("#gaia-live-exhibit-canvas");
+    const overlay = document.querySelector("#japan-overlay");
+    const rect = map?.getBoundingClientRect();
+    const zoom = Number(overlay?.dataset.earthZoom);
+    const offsetX = Number(overlay?.dataset.earthOffsetX);
+    const offsetY = Number(overlay?.dataset.earthOffsetY);
+    const baseScale = Math.max(rect.width / 360, rect.height / 180);
+    const scale = baseScale * zoom;
+    const worldWidth = 360 * scale;
+    const worldHeight = 180 * scale;
+    const originX = (rect.width - worldWidth) / 2 + offsetX;
+    const originY = (rect.height - worldHeight) / 2 + offsetY;
+    return {
+      poiX: Number(canvas?.dataset.anchorNormalizedX),
+      poiY: Number(canvas?.dataset.anchorNormalizedY),
+      mapX: (x - rect.left - originX) / scale,
+      mapY: (y - rect.top - originY) / scale,
+      scale,
+      zoom,
+      scrollY,
+    };
+  }, point);
+  const beforeWheel = await readWheelState(wheelPoint);
   await page.mouse.move(wheelPoint.x, wheelPoint.y);
   const wheelTarget = await page.evaluate(({ x, y }) => {
     const element = document.elementFromPoint(x, y);
@@ -168,18 +205,13 @@ try {
   }, wheelPoint);
   await page.mouse.wheel(0, -180);
   await page.waitForTimeout(180);
-  const poiAfterWheel = await page.evaluate(() => {
-    const canvas = document.querySelector("#gaia-live-exhibit-canvas");
-    const overlay = document.querySelector("#japan-overlay");
-    return {
-      x: Number(canvas?.dataset.anchorNormalizedX),
-      y: Number(canvas?.dataset.anchorNormalizedY),
-      zoom: Number(overlay?.dataset.earthZoom),
-    };
-  });
-  assert(poiAfterWheel.zoom > poiBeforeWheel.zoom, `wheel did not zoom the live map: ${JSON.stringify({ mapBox, wheelPoint, wheelTarget, poiBeforeWheel, poiAfterWheel })}`);
-  assert(Math.abs(poiAfterWheel.x - poiBeforeWheel.x) <= 0.002, `POI moved horizontally during wheel zoom: ${JSON.stringify({ poiBeforeWheel, poiAfterWheel })}`);
-  assert(Math.abs(poiAfterWheel.y - poiBeforeWheel.y) <= 0.002, `POI moved vertically during wheel zoom: ${JSON.stringify({ poiBeforeWheel, poiAfterWheel })}`);
+  const afterWheel = await readWheelState(wheelPoint);
+  const cursorDriftPx = Math.hypot(afterWheel.mapX - beforeWheel.mapX, afterWheel.mapY - beforeWheel.mapY) * afterWheel.scale;
+  const poiMovement = Math.hypot(afterWheel.poiX - beforeWheel.poiX, afterWheel.poiY - beforeWheel.poiY);
+  assert(afterWheel.zoom > beforeWheel.zoom, `wheel did not zoom the live map: ${JSON.stringify({ mapBox, wheelPoint, wheelTarget, beforeWheel, afterWheel })}`);
+  assert(cursorDriftPx <= 0.75, `wheel zoom drifted away from the cursor: ${JSON.stringify({ cursorDriftPx, beforeWheel, afterWheel })}`);
+  assert(poiMovement >= 0.005, `wheel zoom remained pinned to the selected POI: ${JSON.stringify({ poiMovement, beforeWheel, afterWheel })}`);
+  assert.equal(afterWheel.scrollY, beforeWheel.scrollY, `wheel scrolled the page: ${JSON.stringify({ beforeWheel, afterWheel })}`);
 
   await page.locator("[data-live-deck-source]").click();
   await page.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");

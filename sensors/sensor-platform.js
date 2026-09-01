@@ -575,12 +575,6 @@ function initPublicSensorDirectory() {
   });
   document.querySelectorAll("[data-public-filter]").forEach((button) => {
     button.addEventListener("click", () => {
-      if (button.dataset.publicFilter === "FAVORITE" && !authenticated) {
-        showStatus("お気に入りを使うには、Googleまたはおためし参加でログインしてください。", "error");
-        showView("login");
-        history.replaceState(null, "", "#login");
-        return;
-      }
       publicSensorFilter = button.dataset.publicFilter || "ALL";
       document.querySelectorAll("[data-public-filter]").forEach((option) => {
         option.setAttribute("aria-pressed", String(option === button));
@@ -633,8 +627,7 @@ function applyPublicSensorFilters({ deferLayout = false } = {}) {
     const stateMatches = publicSensorFilter === "ALL"
       || (publicSensorFilter === "DEMO" && sensor.isDemo)
       || (publicSensorFilter === "ONLINE" && !sensor.isDemo && sensor.state === "ONLINE")
-      || (publicSensorFilter === "OFFLINE" && !sensor.isDemo && sensor.state !== "ONLINE")
-      || (publicSensorFilter === "FAVORITE" && socialBySensor.get(sensor.id)?.favorite === true);
+      || (publicSensorFilter === "OFFLINE" && !sensor.isDemo && sensor.state !== "ONLINE");
     const searchText = normalizePublicSensorSearch([
       sensor.sensorName,
       sensor.owner?.displayName,
@@ -1047,9 +1040,10 @@ function roundPublicLocationCoordinate(value) {
 function createPublicRelationshipBar(sensor) {
   const bar = document.createElement("div");
   bar.className = "sensor-relationship-bar";
-  const favorite = Object.assign(document.createElement("button"), { type: "button" });
-  favorite.dataset.relationship = "favorite";
-  const like = Object.assign(document.createElement("button"), { type: "button" });
+  const like = Object.assign(document.createElement("button"), {
+    type: "button",
+    className: "sensor-like-trigger",
+  });
   like.dataset.relationship = "like";
   const analyze = Object.assign(document.createElement("button"), {
     type: "button",
@@ -1058,13 +1052,13 @@ function createPublicRelationshipBar(sensor) {
   });
   const refresh = () => {
     const social = socialBySensor.get(sensor.id) ?? { favorite: false, liked: false };
-    favorite.setAttribute("aria-pressed", String(social.favorite));
-    favorite.textContent = `${social.favorite ? "★" : "☆"} お気に入り`;
+    const likeCount = Number(sensor.likeCount || 0).toLocaleString("ja-JP");
     like.setAttribute("aria-pressed", String(social.liked));
-    like.textContent = `${social.liked ? "♥" : "♡"} 応援 ${Number(sensor.likeCount || 0).toLocaleString("ja-JP")}`;
+    like.setAttribute("aria-label", social.liked ? `応援を取り消す（現在${likeCount}件）` : `この観測点を応援する（現在${likeCount}件）`);
+    like.title = social.liked ? `応援済み · ${likeCount}` : `応援する · ${likeCount}`;
+    like.textContent = social.liked ? "♥" : "♡";
   };
-  favorite.addEventListener("click", () => togglePublicRelationship(sensor, "favorite", favorite, refresh));
-  like.addEventListener("click", () => togglePublicRelationship(sensor, "like", like, refresh));
+  like.addEventListener("click", () => togglePublicLike(sensor, like, refresh));
   analyze.addEventListener("click", () => openSensorAnalysis({
     id: sensor.id,
     name: sensor.sensorName,
@@ -1074,22 +1068,22 @@ function createPublicRelationshipBar(sensor) {
     source: "public",
   }));
   refresh();
-  bar.append(favorite, like, analyze);
+  bar.append(like, analyze);
   return bar;
 }
 
-async function togglePublicRelationship(sensor, kind, button, refresh) {
+async function togglePublicLike(sensor, button, refresh) {
   if (!authenticated) {
-    showStatus("お気に入り・応援を使うにはログインしてください。", "error");
+    showStatus("応援するには、Googleまたはおためし参加でログインしてください。", "error");
     showView("login");
     history.replaceState(null, "", "#login");
     return;
   }
   const current = socialBySensor.get(sensor.id) ?? { favorite: false, liked: false };
-  const enabled = kind === "favorite" ? !current.favorite : !current.liked;
+  const enabled = !current.liked;
   button.disabled = true;
   try {
-    const response = await api(`../api/web/v1/sensors/${encodeURIComponent(sensor.id)}/${kind}`, {
+    const response = await api(`../api/web/v1/sensors/${encodeURIComponent(sensor.id)}/like`, {
       method: enabled ? "PUT" : "DELETE",
     });
     socialBySensor.set(sensor.id, {
@@ -1098,15 +1092,12 @@ async function togglePublicRelationship(sensor, kind, button, refresh) {
     });
     sensor.likeCount = Number(response.social.likeCount) || 0;
     refresh();
-    if (kind === "like" && enabled) {
+    if (enabled) {
       publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-presence", {
         detail: { sensorId: sensor.id, phase: "responding", strength: 1.28 },
       }));
     }
-    if (publicSensorFilter === "FAVORITE") applyPublicSensorFilters();
-    showStatus(kind === "favorite"
-      ? (enabled ? "お気に入りへ保存しました。" : "お気に入りから外しました。")
-      : (enabled ? "この観測点を応援しました。" : "応援を取り消しました。"));
+    showStatus(enabled ? "この観測点を応援しました。" : "応援を取り消しました。");
   } catch (error) {
     showStatus(error.message, "error");
   } finally {
@@ -1904,11 +1895,49 @@ function panPublicMap(deltaX, deltaY, render = true) {
   if (render) updatePublicMapViewport();
 }
 
+const avatarInitial = (owner) => Array.from(owner?.displayName || "?")[0] || "?";
+
+const showAvatarFallback = (wrapper, owner) => {
+  wrapper.replaceChildren();
+  wrapper.textContent = avatarInitial(owner);
+  wrapper.dataset.avatarState = "fallback";
+};
+
+const mountAvatar = (wrapper, owner, { loading = "eager" } = {}) => {
+  wrapper.replaceChildren();
+  if (!owner?.avatarUrl) {
+    showAvatarFallback(wrapper, owner);
+    return;
+  }
+  const image = Object.assign(document.createElement("img"), {
+    src: owner.avatarUrl,
+    alt: "",
+    loading,
+    decoding: "async",
+  });
+  let retried = false;
+  wrapper.dataset.avatarState = "loading";
+  image.addEventListener("load", () => {
+    if (image.isConnected) wrapper.dataset.avatarState = "ready";
+  });
+  image.addEventListener("error", () => {
+    if (!retried) {
+      retried = true;
+      wrapper.dataset.avatarState = "retrying";
+      const retryUrl = new URL(owner.avatarUrl, document.baseURI);
+      retryUrl.searchParams.set("gaiaAvatarRetry", Date.now().toString(36));
+      image.src = retryUrl.href;
+      return;
+    }
+    showAvatarFallback(wrapper, owner);
+  });
+  wrapper.append(image);
+};
+
 const avatarElement = (owner, tagName = "span") => {
   const wrapper = document.createElement(tagName);
   wrapper.className = "sensor-owner-avatar";
-  if (owner.avatarUrl) wrapper.append(Object.assign(document.createElement("img"), { src: owner.avatarUrl, alt: "", loading: "lazy", decoding: "async" }));
-  else wrapper.textContent = Array.from(owner.displayName || "?")[0] || "?";
+  mountAvatar(wrapper, owner);
   return wrapper;
 };
 
@@ -1923,9 +1952,7 @@ const loadProfile = async () => {
 };
 
 const renderProfileAvatar = () => {
-  profileAvatarPreview.replaceChildren();
-  if (currentProfile?.avatarUrl) profileAvatarPreview.append(Object.assign(document.createElement("img"), { src: currentProfile.avatarUrl, alt: "" }));
-  else profileAvatarPreview.append(Object.assign(document.createElement("span"), { textContent: Array.from(currentProfile?.displayName || "?")[0] || "?" }));
+  mountAvatar(profileAvatarPreview, currentProfile);
   document.querySelector("#profile-avatar-delete").disabled = !currentProfile?.avatarUrl;
 };
 
@@ -2061,7 +2088,7 @@ function renderSensorAnalysisReport(report) {
     return;
   }
   report.metrics.slice(0, 8).forEach((item) => {
-    const metadata = publicMetricMetadata[item.key] ?? { label: item.key, unit: "", digits: 2 };
+    const metadata = fallbackMetricMetadata[item.key] ?? { label: item.key, unit: "", digits: 2 };
     const article = document.createElement("article");
     article.dataset.trend = item.trend;
     article.append(
@@ -2076,7 +2103,7 @@ function renderSensorAnalysisReport(report) {
     .filter((item) => item.trend !== "stable")
     .sort((left, right) => Math.abs(right.delta / (Math.abs(right.average) || 1)) - Math.abs(left.delta / (Math.abs(left.average) || 1)))
     .slice(0, 2)
-    .map((item) => `${publicMetricMetadata[item.key]?.label ?? item.key}は${item.trend === "rising" ? "上昇" : "低下"}`);
+    .map((item) => `${fallbackMetricMetadata[item.key]?.label ?? item.key}は${item.trend === "rising" ? "上昇" : "低下"}`);
   const period = report.firstAt && report.lastAt ? `（${formatAnalysisPeriod(report.firstAt, report.lastAt)}）` : "";
   analysisSummary.textContent = `${report.sampleCount}件${period}から${report.metricCount}項目を集計。${notable.length ? `${notable.join("、")}しています。` : "大きな方向変化は見られません。"}`;
 }

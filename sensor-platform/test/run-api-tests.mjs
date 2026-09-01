@@ -79,12 +79,15 @@ try {
   });
   await test("migrations are sequential and safe to reapply", async () => {
     assert.match(migrationReapplyOutput, /No migrations to apply/u);
-    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "10");
+    assert.equal(await scalar("SELECT COUNT(*) FROM d1_migrations"), "11");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name = 'account_kind'"), "1");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('devices') WHERE name = 'is_demo'"), "1");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('devices') WHERE name = 'measurement_keys_json'"), "1");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('device_pairing_codes') WHERE name = 'measurement_keys_json'"), "1");
     assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('sensor_relationships') WHERE name IN ('user_id','device_id','kind','created_at')"), "4");
+    assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('device_telemetry_rollups')"), "7");
+    assert.equal(await scalar("SELECT COUNT(*) FROM pragma_table_info('device_social_rollups')"), "3");
+    assert.equal(await scalar("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name IN ('telemetry_rollup_after_insert','social_rollup_after_like_insert','social_rollup_after_like_delete')"), "3");
     assert.equal(await scalar("SELECT COUNT(*) FROM user_identities WHERE email IS NOT NULL OR email_verified <> 0"), "0");
   });
   await test("OIDC flow cookie binds callback to the starting browser", async () => {
@@ -185,15 +188,18 @@ try {
     assert.equal((await favorite.json()).social.favorite, true);
     const firstLike = await webFetch(`/api/web/v1/sensors/${sensorId}/like`, auth, { method: "PUT" });
     assert.deepEqual((await firstLike.json()).social, { sensorId, favorite: true, liked: true, likeCount: 1 });
+    assert.equal(await scalar("SELECT like_count FROM device_social_rollups WHERE device_id = 'device_demo_bluecat'"), "1");
     const repeatedLike = await webFetch(`/api/web/v1/sensors/${sensorId}/like`, auth, { method: "PUT" });
     assert.equal((await repeatedLike.json()).social.likeCount, 1);
     const secondLike = await webFetch(`/api/web/v1/sensors/${sensorId}/like`, otherAuth, { method: "PUT" });
     assert.equal((await secondLike.json()).social.likeCount, 2);
+    assert.equal(await scalar("SELECT like_count FROM device_social_rollups WHERE device_id = 'device_demo_bluecat'"), "2");
     const publicBody = await (await fetch(`${origin}/api/public/v1/sensors`)).json();
     assert.equal(publicBody.sensors.find((sensor) => sensor.id === sensorId).likeCount, 2);
     const social = await (await webFetch("/api/web/v1/social", auth)).json();
     assert.deepEqual(social.sensors, [{ sensorId, favorite: true, liked: true }]);
     assert.equal((await webFetch(`/api/web/v1/sensors/${sensorId}/like`, auth, { method: "DELETE" })).status, 200);
+    assert.equal(await scalar("SELECT like_count FROM device_social_rollups WHERE device_id = 'device_demo_bluecat'"), "1");
     assert.equal((await webFetch(`/api/web/v1/sensors/${sensorId}/favorite`, auth, { method: "DELETE" })).status, 200);
   });
   await test("owner profile stores display name and optional social profile URLs", async () => {
@@ -385,6 +391,11 @@ try {
     assert.equal(second.status, 200);
     assert.equal((await second.json()).duplicate, true);
     assert.match(await query(`SELECT COUNT(*) AS telemetry_count FROM telemetry WHERE device_id = '${deviceId}'`), /telemetry_count.*1/su);
+    assert.equal(await scalar(`SELECT observation_count FROM device_telemetry_rollups WHERE device_id = '${deviceId}'`), "1");
+    assert.equal(
+      await scalar(`SELECT payload_bytes FROM device_telemetry_rollups WHERE device_id = '${deviceId}'`),
+      await scalar(`SELECT SUM(length(payload_json)) FROM telemetry WHERE device_id = '${deviceId}'`),
+    );
     assert.equal(await scalar(`SELECT observed_at FROM telemetry WHERE device_id = '${deviceId}' AND seq = 1`), new Date(starterObservedAt).toISOString());
   });
   await test("new telemetry is limited to one stored record per device per minute", async () => {
@@ -426,6 +437,8 @@ try {
     assert.deepEqual(responses.map((response) => response.status).sort(), [200, 202]);
     assert.equal(await scalar(`SELECT last_seq FROM devices WHERE device_id = '${deviceId}'`), "4");
     assert.equal(await scalar(`SELECT COUNT(*) FROM telemetry WHERE device_id = '${deviceId}' AND seq = 4`), "1");
+    assert.equal(await scalar(`SELECT observation_count FROM device_telemetry_rollups WHERE device_id = '${deviceId}'`), "3");
+    assert.equal(await scalar(`SELECT json_array_length(recent_payloads_json) FROM device_telemetry_rollups WHERE device_id = '${deviceId}'`), "3");
   });
   await test("owner latest/history and other user isolation", async () => {
     const latest = await webFetch(`/api/web/v1/devices/${deviceId}/latest`, auth);

@@ -617,6 +617,11 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     white-space: nowrap;
   }
 
+  .experience.japan-open .signal-console-map .signal-console-heading strong.has-location {
+    text-overflow: clip;
+    white-space: pre-line;
+  }
+
   .experience.japan-open .signal-console-map .signal-encoding-legend {
     display: none;
   }
@@ -834,6 +839,11 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     text-align: right;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .experience.japan-open .signal-console-map .signal-console-heading strong.has-location {
+    text-overflow: clip;
+    white-space: pre-line;
   }
 
   .experience.japan-open .signal-console-map label {
@@ -1532,7 +1542,8 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 
   body.map-grid-desktop .map-command-dock .map-mode-bank {
-    padding: 0 clamp(12px, 1.05vw, 22px) !important;
+    --map-dock-bank-inline-inset: clamp(12px, 1.05vw, 22px);
+    padding: 0 var(--map-dock-bank-inline-inset) !important;
   }
 
   body.map-grid-desktop .map-command-dock .map-mobile-bank-toggle,
@@ -1546,9 +1557,11 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     gap: 12px;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
+    width: calc(100% + var(--map-dock-bank-inline-inset) + var(--map-dock-bank-inline-inset));
     height: 100%;
-    padding: 0;
+    margin-right: calc(0px - var(--map-dock-bank-inline-inset));
+    margin-left: calc(0px - var(--map-dock-bank-inline-inset));
+    padding: 0 var(--map-dock-bank-inline-inset);
     text-align: left;
   }
 
@@ -1710,6 +1723,11 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     letter-spacing: 0.01em;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  body.map-grid-desktop .map-command-dock .signal-console-heading > strong.has-location {
+    text-overflow: clip;
+    white-space: pre-line;
   }
 
   body.map-grid-desktop .map-command-dock .signal-console-map > label {
@@ -1880,7 +1898,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     width: 100%;
     height: 100%;
     min-height: 0 !important;
-    padding: 0 !important;
+    padding: 7px 0 5px !important;
     border: 0 !important;
     background: transparent !important;
     cursor: pointer;

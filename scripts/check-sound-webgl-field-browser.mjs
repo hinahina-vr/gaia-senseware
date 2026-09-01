@@ -38,7 +38,8 @@ for (const viewport of [
     const canvas = document.querySelector("#sound-visualizer");
     return canvas?.dataset.analysisActive === "true"
       && [canvas.dataset.bass, canvas.dataset.mid, canvas.dataset.high].some((value) => Number(value) > 0.005)
-      && Number(canvas.dataset.energy) > 0.005;
+      && Number(canvas.dataset.energy) > 0.005
+      && Number.parseFloat(getComputedStyle(canvas).opacity || "0") >= 0.82;
   }, null, { timeout: 15_000 });
 
   const scan = await page.locator("#sound-visualizer").evaluate((canvas) => {
@@ -49,6 +50,8 @@ for (const viewport of [
       renderer: canvas.dataset.renderer,
       visualizer: canvas.dataset.visualizer,
       presentation: canvas.dataset.presentation,
+      reactivity: canvas.dataset.reactivity,
+      motionProfile: canvas.dataset.motionProfile,
       shaderError: canvas.dataset.shaderError || "",
       bass: Number(canvas.dataset.bass),
       mid: Number(canvas.dataset.mid),
@@ -62,9 +65,10 @@ for (const viewport of [
 
   assert(scan.renderer === "webgl" && !scan.shaderError, `${viewport.name}: WebGL shader failed: ${JSON.stringify(scan)}`);
   assert(scan.visualizer === "full-field-audio-ink" && scan.presentation === "full-screen-webgl", `${viewport.name}: wrong visualizer mode: ${JSON.stringify(scan)}`);
+  assert(scan.reactivity === "smoothed-bass-breath-mid-drift-high-glimmer" && scan.motionProfile === "slow-aurora-breath", `${viewport.name}: visualizer motion is not using the calm profile: ${JSON.stringify(scan)}`);
   assert(scan.eqCount === 0, `${viewport.name}: detached EQ visualizer remains`);
   assert(scan.rect.left <= 0 && scan.rect.top <= 0 && scan.rect.right >= viewport.width && scan.rect.bottom >= viewport.height, `${viewport.name}: WebGL field is not full-screen: ${JSON.stringify(scan)}`);
-  assert(scan.opacity >= 0.9 && scan.filter.includes("saturate") && scan.filter.includes("contrast"), `${viewport.name}: WebGL field remains faint: ${JSON.stringify(scan)}`);
+  assert(scan.opacity >= 0.82 && scan.filter.includes("saturate") && scan.filter.includes("contrast"), `${viewport.name}: WebGL field remains faint: ${JSON.stringify(scan)}`);
   assert(scan.energy > 0.005 && Math.max(scan.bass, scan.mid, scan.high) > 0.005, `${viewport.name}: audio analysis is not reaching WebGL: ${JSON.stringify(scan)}`);
   assert(errors.length === 0, `${viewport.name}: browser errors: ${errors.join(" | ")}`);
 

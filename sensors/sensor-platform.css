@@ -340,7 +340,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-map-card-toolbar button { min-height: 32px; padding: 7px 9px; border: 1px solid rgba(var(--mint-rgb),.24); color: rgba(220,244,241,.72); background: rgba(var(--mint-rgb),.05); font: 600 8px/1 var(--font-ja); letter-spacing: .08em; cursor: pointer; }
 .sensor-map-card-toolbar button:is(:hover,:focus-visible) { border-color: rgba(var(--mint-rgb),.7); color: var(--ink); outline: none; background: rgba(var(--mint-rgb),.12); }
 .sensor-map-owner { display: grid; grid-template-columns: 58px minmax(0,1fr) auto; gap: 16px; align-items: center; }
-.sensor-map-owner > :is(.sensor-owner-avatar, .sensor-owner-profile-trigger) { width: 58px; height: 58px; border-radius: 16px; }
+.sensor-map-owner > :is(.sensor-owner-avatar, .sensor-owner-profile-trigger) { width: 58px; height: 58px; border-radius: 50%; }
 .sensor-owner-profile-trigger { position: relative; display: grid; padding: 0; border: 1px solid rgba(var(--mint-rgb),.34); color: inherit; background: transparent; box-shadow: 0 0 0 rgba(var(--mint-rgb),0); cursor: pointer; place-items: center; transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
 .sensor-owner-profile-trigger .sensor-owner-avatar { border-radius: inherit; }
 .sensor-owner-profile-trigger::after { position: absolute; right: -7px; bottom: -7px; padding: 3px 5px; border: 1px solid rgba(var(--mint-rgb),.5); color: var(--mint); background: rgba(2,13,20,.94); content: "PROFILE"; font: 700 5px/1 var(--font-console); letter-spacing: .11em; }
@@ -353,11 +353,11 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-public-location-action { margin-top: 14px; }
 .sensor-public-location-action button { width: 100%; min-height: 44px; }
 .sensor-state[data-state="DEMO"] { color: #ffd58e; }
-.sensor-observation-hud { margin-top: 16px; border: 1px solid rgba(var(--mint-rgb),.2); background: rgba(3,18,26,.62); }
+.sensor-observation-hud { margin-top: 16px; overflow: hidden; border: 1px solid rgba(var(--mint-rgb),.2); border-radius: 12px; background: linear-gradient(145deg,rgba(3,20,28,.74),rgba(2,14,22,.58)); }
 .sensor-observation-hud > header { display: flex; justify-content: space-between; gap: 10px; padding: 10px 11px; border-bottom: 1px solid rgba(var(--mint-rgb),.16); color: var(--mint); font: 700 8px/1.4 var(--font-ui-ja); letter-spacing: .09em; }
 .sensor-observation-hud > header b { color: rgba(219,242,244,.54); font-weight: 600; }
 .sensor-metric-hud-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
-.sensor-metric-hud-grid article { min-width: 0; padding: 11px 10px 9px; border-right: 1px solid rgba(var(--mint-rgb),.12); }
+.sensor-metric-hud-grid article { min-width: 0; padding: 11px 10px 9px; border-right: 1px solid rgba(var(--mint-rgb),.12); background: linear-gradient(180deg,rgba(var(--mint-rgb),.025),transparent); }
 .sensor-metric-hud-grid article:last-child { border-right: 0; }
 .sensor-metric-hud-grid small, .sensor-metric-hud-grid strong { display: block; }
 .sensor-metric-hud-grid small { min-height: 29px; color: #d9efec; font: 750 9px/1.25 var(--font-ui-ja); letter-spacing: .035em; }
@@ -388,7 +388,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-public-profile-dialog { width: min(620px,calc(100vw - 36px)); }
 .sensor-public-profile-dialog form { padding: clamp(26px,5vw,48px); }
 .sensor-public-profile-head { display: grid; grid-template-columns: 112px minmax(0,1fr); gap: 24px; align-items: center; margin-top: 22px; }
-.sensor-public-profile-avatar { width: 112px; height: 112px; border: 1px solid rgba(var(--mint-rgb),.46); border-radius: 28px; box-shadow: 0 0 34px rgba(var(--mint-rgb),.12); }
+.sensor-public-profile-avatar { width: 112px; height: 112px; border: 1px solid rgba(var(--mint-rgb),.46); border-radius: 50%; box-shadow: 0 0 34px rgba(var(--mint-rgb),.12); }
 .sensor-public-profile-avatar .sensor-owner-avatar { border-radius: inherit; font-size: 34px; }
 .sensor-public-profile-head small { color: var(--mint); font: 700 8px/1.4 var(--font-console); letter-spacing: .16em; }
 .sensor-public-profile-dialog .sensor-public-profile-head h2 { margin-top: 10px; font-size: clamp(24px,4vw,38px); }
@@ -428,7 +428,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 .sensor-map-directory-toggle { display: none; }
 .sensor-public-card { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 12px; align-items: center; min-height: 68px; padding: 11px; border: 1px solid var(--line); color: var(--ink); text-align: left; background: rgba(6,24,33,.72); cursor: pointer; }
 .sensor-public-card[hidden] { display: none !important; }
-.sensor-public-card > .sensor-owner-avatar { width: 42px; height: 42px; border-radius: 12px; }
+.sensor-public-card > .sensor-owner-avatar { width: 42px; height: 42px; border-radius: 50%; }
 .sensor-public-card strong, .sensor-public-card small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sensor-public-card strong { font-size: 12px; }
 .sensor-public-card small { margin-top: 5px; color: var(--muted); font-size: 9px; }
@@ -513,7 +513,7 @@ select:disabled, input:disabled { color: rgba(233,251,248,.38); cursor: not-allo
 .sensor-profile-layout { display: grid; grid-template-columns: minmax(260px,.85fr) minmax(320px,1.15fr); gap: 40px; margin-top: 34px; }
 .sensor-profile-layout form { margin-top: 0; }
 .sensor-avatar-panel { position: relative; align-content: start; display: grid; gap: 16px; padding: 24px; border: 1px solid var(--line); background: var(--panel); }
-.sensor-avatar-preview { display: grid; overflow: hidden; width: 152px; height: 152px; border: 1px solid rgba(var(--mint-rgb),.5); border-radius: 36px; color: #05221a; background: var(--mint); font: 800 48px/1 Consolas, monospace; place-items: center; }
+.sensor-avatar-preview { display: grid; overflow: hidden; width: 152px; height: 152px; border: 1px solid rgba(var(--mint-rgb),.5); border-radius: 50%; color: #05221a; background: var(--mint); font: 800 48px/1 Consolas, monospace; place-items: center; }
 .sensor-avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
 .sensor-avatar-panel h2 { margin: 0; font-family: var(--font-ja); font-size: 18px; font-weight: 560; letter-spacing: .07em; }
 .sensor-avatar-panel p { color: var(--muted); font-family: var(--font-ja); font-size: 10px; letter-spacing: .04em; line-height: 1.85; }
@@ -774,7 +774,7 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
   .sensor-map-card { position: relative; inset: auto; width: 100%; max-height: none; margin-top: 8px; padding: 18px; }
   .sensor-map-marker { width: 44px; height: 44px; }
   .sensor-map-owner { grid-template-columns: 48px minmax(0,1fr); }
-  .sensor-map-owner > :is(.sensor-owner-avatar, .sensor-owner-profile-trigger) { width: 48px; height: 48px; border-radius: 13px; }
+  .sensor-map-owner > :is(.sensor-owner-avatar, .sensor-owner-profile-trigger) { width: 48px; height: 48px; border-radius: 50%; }
   .sensor-map-owner > .sensor-state { grid-column: 1 / -1; }
   .sensor-map-card > p, .sensor-map-socials { margin-left: 0; }
   .sensor-region-grid { grid-template-columns: 1fr; gap: 15px; padding: 14px; }
@@ -797,7 +797,7 @@ body:has(.sensor-profile:not([hidden])) .sensor-atmosphere-visual {
   .sensor-location-picker { min-height: 120px; }
   .sensor-profile-layout { grid-template-columns: 1fr; gap: 24px; }
   .sensor-avatar-panel { grid-template-columns: 112px minmax(0,1fr); }
-  .sensor-avatar-preview { grid-row: span 2; width: 112px; height: 112px; border-radius: 28px; }
+  .sensor-avatar-preview { grid-row: span 2; width: 112px; height: 112px; border-radius: 50%; }
   .sensor-avatar-panel .sensor-file-button, .sensor-avatar-panel .sensor-danger { grid-column: 1 / -1; }
   .sensor-kit-list { grid-template-columns: 1fr 1fr; }
   .sensor-measurement-groups { grid-template-columns: 1fr; }
@@ -967,6 +967,33 @@ html[data-sensor-view="map"] body .sensor-shell {
 .sensor-depth-track i { display: block; width: 0; height: 100%; background: linear-gradient(90deg,#7df2d3,#8ecfff,#ca9aff); box-shadow: 0 0 10px rgba(var(--mint-rgb),.68); transition: width 500ms cubic-bezier(.2,.72,.2,1); }
 .sensor-global-sync footer { margin-top: 6px; color: rgba(199,226,226,.46); font-size: 6px; letter-spacing: .1em; }
 .sensor-global-sync footer b { color: rgba(220,245,242,.72); font-size: 7px; }
+.sensor-sync-metric { position: relative; cursor: help; pointer-events: auto; }
+.sensor-sync-metric::after {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 14px);
+  left: 0;
+  width: max-content;
+  max-width: min(220px,calc(100vw - 32px));
+  padding: 9px 11px;
+  border: 1px solid rgba(var(--mint-rgb),.32);
+  border-left: 2px solid rgba(var(--mint-rgb),.88);
+  color: rgba(237,250,248,.9);
+  background: rgba(2,14,20,.97);
+  box-shadow: 0 12px 34px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.04);
+  content: attr(data-description);
+  font: 500 10px/1.65 var(--font-ja);
+  letter-spacing: .035em;
+  white-space: normal;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  translate: 0 -4px;
+  transition: opacity 140ms ease, translate 180ms ease, visibility 140ms step-end;
+}
+.sensor-sync-stats .sensor-sync-metric:last-child::after { right: 0; left: auto; }
+.sensor-sync-metric:is(:hover, :focus)::after { visibility: visible; opacity: 1; translate: 0; transition: opacity 140ms ease, translate 180ms ease, visibility 0s; }
+.sensor-sync-metric:focus-visible { outline: 1px solid rgba(var(--mint-rgb),.7); outline-offset: 5px; }
 .sensor-map-navigation {
   position: absolute;
   z-index: 7;
@@ -1201,12 +1228,18 @@ html[data-sensor-view="map"] body .sensor-shell {
   .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] .sensor-map-owner > :is(.sensor-owner-avatar, .sensor-owner-profile-trigger) {
     width: 44px;
     height: 44px;
-    border-radius: 12px;
+    border-radius: 50%;
   }
   .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] .sensor-map-owner > .sensor-state { grid-column: auto; }
   .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] .sensor-map-owner h2 { margin-top: 2px; font-size: 13px; }
+  .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="true"] .sensor-map-owner {
+    padding: 10px;
+    border: 1px solid rgba(var(--mint-rgb),.1);
+    border-radius: 14px;
+    background: linear-gradient(105deg,rgba(var(--mint-rgb),.055),rgba(8,29,40,.18));
+  }
   .sensor-public-profile-head { grid-template-columns: 76px minmax(0,1fr); gap: 16px; }
-  .sensor-public-profile-avatar { width: 76px; height: 76px; border-radius: 20px; }
+  .sensor-public-profile-avatar { width: 76px; height: 76px; border-radius: 50%; }
   .sensor-public-profile-dialog .sensor-public-profile-head h2 { font-size: 24px; }
   .sensor-public-map:not([hidden]) .sensor-console-label { margin-bottom: 12px; }
   .sensor-public-map:not([hidden]) .sensor-map-card > p { margin-top: 12px; }
@@ -1270,16 +1303,17 @@ html[data-sensor-view="map"] body .sensor-shell {
 
 .sensor-relationship-bar {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.35fr;
-  gap: 7px;
-  margin-top: 15px;
+  grid-template-columns: 48px minmax(0,1fr);
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
 }
 
 .sensor-relationship-bar button {
-  min-height: 44px;
-  padding: 10px 11px;
+  min-height: 48px;
+  padding: 11px 16px;
   border: 1px solid rgba(var(--mint-rgb),.28);
-  border-radius: 999px;
+  border-radius: 14px;
   color: rgba(225,248,244,.82);
   background: rgba(var(--mint-rgb),.055);
   font: 700 11px/1.25 var(--font-ui-ja);
@@ -1298,14 +1332,50 @@ html[data-sensor-view="map"] body .sensor-shell {
 }
 
 .sensor-relationship-bar button[aria-pressed="true"] {
-  border-color: rgba(var(--mint-rgb),.82);
-  color: #03130f;
-  background: rgb(var(--mint-rgb));
+  border-color: rgba(255,142,168,.72);
+  color: #ff91aa;
+  background: rgba(255,102,139,.13);
+  box-shadow: 0 0 22px rgba(255,102,139,.14);
+}
+
+.sensor-relationship-bar .sensor-like-trigger {
+  display: grid;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  color: rgba(231,248,246,.82);
+  background: radial-gradient(circle at 50% 38%,rgba(var(--mint-rgb),.1),rgba(2,14,21,.42));
+  font: 400 24px/1 var(--font-ja);
+  letter-spacing: 0;
+  place-items: center;
+}
+
+.sensor-relationship-bar .sensor-like-trigger:is(:hover,:focus-visible) {
+  border-color: rgba(255,150,174,.66);
+  color: #ff9ab1;
+  background: rgba(255,102,139,.09);
+  box-shadow: 0 0 26px rgba(255,102,139,.12);
 }
 
 .sensor-relationship-bar .sensor-analyze-trigger {
+  position: relative;
+  padding-right: 42px;
   color: var(--mint);
+  text-align: left;
   background: linear-gradient(110deg, rgba(var(--mint-rgb),.15), rgba(80,139,255,.1));
+}
+
+.sensor-relationship-bar .sensor-analyze-trigger::after {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  color: rgba(var(--mint-rgb),.72);
+  content: "↗";
+  font: 400 16px/1 var(--font-console);
+  transform: translateY(-50%);
 }
 
 .sensor-analysis-dialog {
@@ -1375,8 +1445,7 @@ html[data-sensor-view="map"] body .sensor-shell {
 .sensor-detail-tools { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; }
 
 @media (max-width: 760px) {
-  .sensor-relationship-bar { grid-template-columns: 1fr 1fr; }
-  .sensor-relationship-bar .sensor-analyze-trigger { grid-column: 1 / -1; }
+  .sensor-relationship-bar { grid-template-columns: 48px minmax(0,1fr); }
   .sensor-analysis-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
   .sensor-analysis-shell { padding: 22px 15px 28px; }
   .sensor-analysis-head { display: grid; gap: 14px; }
@@ -1481,7 +1550,7 @@ html[data-sensor-view="map"] body .sensor-shell {
     color: rgba(222,246,242,.76);
     background: rgba(2,14,20,.36);
     box-shadow: none;
-    pointer-events: none;
+    pointer-events: auto;
     transform: none;
     grid-template-columns: 102px minmax(0,1fr);
     gap: 16px;
@@ -1637,9 +1706,10 @@ html[data-sensor-view="map"] body .sensor-shell {
     min-height: 0;
     max-height: min(56dvh,510px);
     padding: 16px;
-    border-radius: 11px;
-    background: linear-gradient(145deg,rgba(2,13,19,.98),rgba(3,18,27,.93));
-    box-shadow: 0 22px 70px rgba(0,0,0,.38),0 0 28px rgba(var(--mint-rgb),.06),inset 0 1px rgba(255,255,255,.045);
+    border-color: rgba(var(--mint-rgb),.34);
+    border-radius: 18px;
+    background: linear-gradient(145deg,rgba(2,13,19,.985),rgba(3,20,29,.94));
+    box-shadow: 0 24px 76px rgba(0,0,0,.44),0 0 34px rgba(var(--mint-rgb),.07),inset 0 1px rgba(255,255,255,.055);
   }
   .sensor-public-map:not([hidden]) .sensor-map-card::before { left: 14px; width: 64px; }
   .sensor-public-map:not([hidden]) .sensor-map-card-toolbar { margin-bottom: 11px; }
@@ -1679,11 +1749,15 @@ html[data-sensor-view="map"] body .sensor-shell {
   .sensor-public-map:not([hidden]) .sensor-map-owner {
     grid-template-columns: 48px minmax(0,1fr) auto;
     gap: 11px;
+    padding: 10px;
+    border: 1px solid rgba(var(--mint-rgb),.1);
+    border-radius: 14px;
+    background: linear-gradient(105deg,rgba(var(--mint-rgb),.055),rgba(8,29,40,.18));
   }
   .sensor-public-map:not([hidden]) .sensor-map-owner > :is(.sensor-owner-avatar,.sensor-owner-profile-trigger) {
     width: 48px;
     height: 48px;
-    border-radius: 13px;
+    border-radius: 50%;
   }
   .sensor-public-map:not([hidden]) .sensor-console-label { color: #94f3df; font-size: 10px; }
   .sensor-public-map:not([hidden]) .sensor-map-owner h2 { color: #f3fffc; font-size: 17px; }
@@ -1697,6 +1771,8 @@ html[data-sensor-view="map"] body .sensor-shell {
   .sensor-public-map:not([hidden]) .sensor-sparkline { display: none; }
   .sensor-public-map:not([hidden]) .sensor-relationship-bar { gap: 5px; margin-top: 10px; }
   .sensor-public-map:not([hidden]) .sensor-relationship-bar button { min-height: 42px; padding: 8px 9px; color: rgba(238,253,249,.9); font-size: 11px; }
+  .sensor-public-map:not([hidden]) .sensor-relationship-bar .sensor-like-trigger { padding: 0; color: rgba(231,248,246,.82); font-size: 24px; }
+  .sensor-public-map:not([hidden]) .sensor-relationship-bar .sensor-like-trigger[aria-pressed="true"] { color: #ff91aa; }
   .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] > p:not(.sensor-demo-disclosure),
   .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] > :is(.sensor-node-meta,.sensor-oracle,.sensor-public-location-action,.sensor-map-socials) { display: none; }
   .sensor-public-map:not([hidden]) .sensor-map-card[data-expanded="false"] .sensor-demo-disclosure {
@@ -1940,7 +2016,7 @@ html[data-sensor-view="map"] body .sensor-shell {
   width: 52px;
   height: 52px;
   border: 1px solid rgba(255,255,255,.18);
-  border-radius: 15px;
+  border-radius: 50%;
   box-shadow: 0 8px 22px rgba(0,0,0,.18);
 }
 .sensor-map-directory .sensor-public-card strong { font-size: 12px; letter-spacing: .02em; }

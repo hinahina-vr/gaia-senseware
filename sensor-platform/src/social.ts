@@ -68,12 +68,18 @@ const sensorSocial = async (env: Env, userId: string, sensorId: string): Promise
 }> => {
   const row = await env.DB.prepare(
     `SELECT d.public_id AS sensorId,
-       COALESCE(MAX(CASE WHEN r.user_id = ?1 AND r.kind = 'FAVORITE' THEN 1 ELSE 0 END), 0) AS favorite,
-       COALESCE(MAX(CASE WHEN r.user_id = ?1 AND r.kind = 'LIKE' THEN 1 ELSE 0 END), 0) AS liked,
-       COUNT(DISTINCT CASE WHEN r.kind = 'LIKE' THEN r.user_id END) AS likeCount
-     FROM devices d LEFT JOIN sensor_relationships r ON r.device_id = d.id
-     WHERE d.public_id = ?2 AND d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
-     GROUP BY d.public_id`,
+       EXISTS(
+         SELECT 1 FROM sensor_relationships
+         WHERE user_id = ?1 AND device_id = d.id AND kind = 'FAVORITE'
+       ) AS favorite,
+       EXISTS(
+         SELECT 1 FROM sensor_relationships
+         WHERE user_id = ?1 AND device_id = d.id AND kind = 'LIKE'
+       ) AS liked,
+       COALESCE(social.like_count, 0) AS likeCount
+     FROM devices d
+     LEFT JOIN device_social_rollups social ON social.device_id = d.id
+     WHERE d.public_id = ?2 AND d.is_public = 1 AND d.status = 'ACTIVE' AND d.deleted_at IS NULL`,
   ).bind(userId, sensorId).first<SensorSocialRow>();
   if (!row) throw new ApiError(404, "PUBLIC_SENSOR_NOT_FOUND", "Public sensor was not found.");
   return {

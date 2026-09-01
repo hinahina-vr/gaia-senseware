@@ -201,69 +201,62 @@
         return sum;
       }
 
-      float powderLayer(vec2 uv, float scale, float drift, float threshold) {
+      float starlightLayer(vec2 uv, float scale, float drift, float threshold) {
         float aspect = resolution.x / max(1.0, resolution.y);
         vec2 p = vec2(uv.x * aspect, uv.y) * scale + vec2(drift, -drift * 0.37);
         vec2 cell = floor(p);
         vec2 local = fract(p) - 0.5;
-        vec2 offset = (hash22(cell) - 0.5) * 0.72;
+        vec2 offset = (hash22(cell) - 0.5) * 0.58;
         float seed = hash21(cell + 31.7);
-        float dust = exp(-dot(local - offset, local - offset) * 320.0);
-        return dust * smoothstep(threshold, 1.0, seed);
+        float glow = exp(-dot(local - offset, local - offset) * 145.0);
+        return glow * smoothstep(threshold, 1.0, seed);
       }
 
-      vec3 spectrumPalette(float t) {
-        vec3 violet = vec3(0.31, 0.08, 0.73);
-        vec3 rose = vec3(0.94, 0.18, 0.59);
-        vec3 gold = vec3(1.0, 0.62, 0.23);
-        vec3 mint = vec3(0.15, 0.91, 0.64);
-        vec3 cyan = vec3(0.22, 0.72, 1.0);
-        vec3 color = mix(violet, rose, smoothstep(0.0, 0.32, t));
-        color = mix(color, gold, smoothstep(0.26, 0.52, t));
-        color = mix(color, mint, smoothstep(0.48, 0.76, t));
-        return mix(color, cyan, smoothstep(0.72, 1.0, t));
+      vec3 dreamPalette(float t) {
+        vec3 indigo = vec3(0.12, 0.12, 0.38);
+        vec3 lavender = vec3(0.38, 0.24, 0.58);
+        vec3 moonRose = vec3(0.56, 0.31, 0.47);
+        vec3 mistGold = vec3(0.62, 0.49, 0.31);
+        vec3 seaGlass = vec3(0.18, 0.48, 0.47);
+        vec3 moonBlue = vec3(0.20, 0.38, 0.62);
+        vec3 color = mix(indigo, lavender, smoothstep(0.0, 0.24, t));
+        color = mix(color, moonRose, smoothstep(0.18, 0.42, t));
+        color = mix(color, mistGold, smoothstep(0.38, 0.58, t));
+        color = mix(color, seaGlass, smoothstep(0.54, 0.78, t));
+        return mix(color, moonBlue, smoothstep(0.74, 1.0, t));
       }
 
-      vec3 spectralRibbons(vec2 uv) {
+      vec3 auroraTide(vec2 uv) {
         float aspect = resolution.x / max(1.0, resolution.y);
         vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
-        float motion = time * (0.38 + mid * 1.65 + flux * 2.8);
-        float coarseNoise = fbm(vec2(p.x * 0.68 - motion * 0.11, p.y * 1.9 + wave * 0.8));
-        float fineNoise = fbm(vec2(p.x * 1.8 + motion * 0.16, p.y * 4.2 - motion * 0.13));
-        vec3 field = vec3(0.0);
-        float signalCore = 0.0;
+        float drift = time * (0.085 + mid * 0.025);
+        float breath = 0.5 + 0.5 * sin(time * 0.24 + bass * 0.45);
+        float upperNoise = fbm(vec2(p.x * 0.52 - drift * 0.24, p.y * 0.78 + drift * 0.08));
+        float lowerNoise = fbm(vec2(p.x * 0.38 + drift * 0.16 + 4.3, p.y * 0.64 - drift * 0.06 + 1.7));
+        float upperCenter = 0.10
+          + sin(p.x * 0.62 + drift + 0.6) * (0.075 + mid * 0.022)
+          + (upperNoise - 0.5) * 0.16
+          + wave * 0.018;
+        float lowerCenter = -0.20
+          + sin(p.x * 0.48 - drift * 0.72 + 2.4) * (0.09 + mid * 0.018)
+          + (lowerNoise - 0.5) * 0.14
+          - wave * 0.014;
+        float upperWidth = 0.24 + bass * 0.025 + breath * 0.012;
+        float lowerWidth = 0.30 + bass * 0.02 + (1.0 - breath) * 0.012;
+        float upperVeil = exp(-pow(abs(p.y - upperCenter) / upperWidth, 2.0));
+        float lowerVeil = exp(-pow(abs(p.y - lowerCenter) / lowerWidth, 2.0));
+        float overlap = sqrt(max(0.0, upperVeil * lowerVeil));
+        float paletteDrift = fract(uv.x * 0.42 + uv.y * 0.08 + time * 0.006 + flux * 0.015);
+        vec3 upperColor = dreamPalette(paletteDrift);
+        vec3 lowerColor = dreamPalette(fract(paletteDrift + 0.36));
+        vec3 field = upperColor * upperVeil * (0.14 + energy * 0.15);
+        field += lowerColor * lowerVeil * (0.11 + energy * 0.12);
+        field += mix(upperColor, lowerColor, 0.5) * overlap * (0.08 + mid * 0.08);
 
-        for (int index = 0; index < 7; index += 1) {
-          float fi = float(index);
-          float bandPosition = -0.38 + fi * 0.126;
-          float phase = fi * 1.37 + wave * (1.2 + fi * 0.18);
-          float primary = sin(p.x * (1.18 + fi * 0.19) + motion * (0.72 + fi * 0.09) + phase);
-          float secondary = sin(p.x * (3.1 + fi * 0.31) - motion * (1.05 + fi * 0.07) - phase * 0.6);
-          float tremor = sin(p.x * (8.0 + fi * 0.72) + motion * 2.4 + fi) * flux;
-          float bend = primary * (0.045 + mid * 0.19 + pulse * 0.065)
-            + secondary * (0.018 + mid * 0.06 + flux * 0.09)
-            + tremor * 0.035
-            + (coarseNoise - 0.5) * (0.04 + mid * 0.12)
-            + (fineNoise - 0.5) * high * 0.028;
-          float center = bandPosition + bend + wave * (fi - 3.0) * 0.012;
-          float distanceToBand = abs(p.y - center);
-          float width = 0.052 + bass * 0.065 + pulse * 0.035 + fi * 0.0015;
-          float glow = exp(-pow(distanceToBand / width, 2.0));
-          float silk = exp(-pow(distanceToBand / (0.015 + mid * 0.012 + pulse * 0.007), 2.0));
-          float filament = exp(-pow(distanceToBand / (0.0045 + high * 0.004), 2.0));
-          float palettePosition = fi / 6.0 + 0.035 * sin(motion * 0.2 + fi);
-          vec3 bandColor = spectrumPalette(fract(palettePosition));
-          float fold = 0.62 + 0.38 * sin(p.x * 5.6 + fineNoise * 5.0 + motion + fi * 0.8);
-          field += bandColor * glow * (0.18 + energy * 0.42 + bass * 0.18) * (0.74 + fold * 0.26);
-          field += mix(bandColor, vec3(0.84, 0.96, 1.0), 0.35) * silk * (0.18 + mid * 0.62 + flux * 0.72);
-          field += vec3(0.76, 1.0, 0.95) * filament * (0.04 + high * 0.74 + flux * 1.1);
-          signalCore = max(signalCore, filament);
-        }
-
-        float edgeFade = smoothstep(-1.18, -0.72, p.x) * smoothstep(1.18, 0.72, p.x);
-        float bassBloom = (bass * 0.88 + pulse * 0.72) * exp(-dot(p * vec2(0.58, 1.1), p * vec2(0.58, 1.1)) * 1.7);
-        field += mix(vec3(0.36, 0.05, 0.78), vec3(0.02, 0.78, 0.68), uv.x) * bassBloom;
-        field += vec3(0.72, 0.92, 1.0) * signalCore * flux * 0.8;
+        float horizonGlow = exp(-dot(p * vec2(0.52, 0.82), p * vec2(0.52, 0.82)) * 1.55);
+        field += mix(vec3(0.20, 0.15, 0.42), vec3(0.08, 0.40, 0.40), uv.x)
+          * horizonGlow * (0.055 + energy * 0.08 + pulse * 0.03);
+        float edgeFade = smoothstep(0.0, 0.12, uv.x) * (1.0 - smoothstep(0.88, 1.0, uv.x));
         return field * edgeFade;
       }
 
@@ -272,36 +265,32 @@
         float aspect = resolution.x / max(1.0, resolution.y);
         vec2 centered = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
 
-        vec3 deepIndigo = vec3(0.003, 0.005, 0.028);
-        vec3 midnight = vec3(0.014, 0.012, 0.075);
+        vec3 deepIndigo = vec3(0.004, 0.007, 0.026);
+        vec3 midnight = vec3(0.012, 0.022, 0.062);
         vec3 color = mix(deepIndigo, midnight, smoothstep(0.0, 1.0, uv.y));
-        float nebula = fbm(centered * vec2(0.82, 1.34) + vec2(time * (0.018 + mid * 0.04), -time * 0.012));
-        color += mix(vec3(0.08, 0.015, 0.16), vec3(0.015, 0.11, 0.15), uv.x) * smoothstep(0.46, 0.91, nebula) * (0.3 + energy * 0.42);
+        float nebula = fbm(centered * vec2(0.62, 0.88) + vec2(time * 0.006, -time * 0.004));
+        color += mix(vec3(0.055, 0.025, 0.11), vec3(0.018, 0.09, 0.105), uv.x)
+          * smoothstep(0.42, 0.88, nebula) * (0.16 + energy * 0.12);
+        color += auroraTide(uv);
 
-        vec3 ribbons = spectralRibbons(uv);
-        float interference = 0.5 + 0.5 * sin((centered.x + wave * 0.32) * (14.0 + high * 18.0) + time * (1.2 + flux * 4.0));
-        ribbons *= 0.82 + interference * high * 0.42;
-        color += ribbons;
+        float silverGlint = starlightLayer(uv, 17.0, time * 0.008, 0.965);
+        float warmGlint = starlightLayer(uv + vec2(0.17, 0.09), 11.0, -time * 0.005, 0.978);
+        float glimmerLift = 0.025 + high * 0.24 + flux * 0.08;
+        color += vec3(0.72, 0.84, 0.92) * silverGlint * glimmerLift;
+        color += vec3(0.82, 0.68, 0.48) * warmGlint * glimmerLift * 0.64;
 
-        float silverDust = powderLayer(uv, 31.0, time * (0.06 + high * 0.18), 0.91);
-        float goldDust = powderLayer(uv + vec2(0.13, 0.07), 45.0, -time * (0.04 + flux * 0.22), 0.945);
-        float nearDust = powderLayer(uv + vec2(-0.21, 0.17), 19.0, time * (0.028 + energy * 0.12), 0.93);
-        float dustLift = 0.08 + high * 1.9 + flux * 2.4 + pulse * 0.45;
-        color += vec3(0.82, 0.92, 1.0) * silverDust * dustLift;
-        color += vec3(1.0, 0.67, 0.3) * goldDust * dustLift * 0.84;
-        color += vec3(0.46, 1.0, 0.82) * nearDust * (0.08 + high * 0.72 + flux * 0.62);
-
-        float pulseVeil = exp(-pow((centered.y - sin(centered.x * 1.8 + time * 0.8) * 0.12) / (0.34 + bass * 0.18), 2.0));
-        color += mix(vec3(0.29, 0.03, 0.58), vec3(0.02, 0.48, 0.53), uv.x) * pulseVeil * pulse * 0.48;
+        float breathingHalo = exp(-pow((centered.y + 0.14) / (0.42 + bass * 0.04), 2.0));
+        color += mix(vec3(0.14, 0.10, 0.28), vec3(0.06, 0.28, 0.30), uv.x)
+          * breathingHalo * (0.035 + energy * 0.06 + pulse * 0.025);
 
         float vignette = smoothstep(1.16, 0.18, length(centered * vec2(0.76, 1.0)));
-        color *= 0.5 + 0.5 * vignette;
+        color *= 0.58 + 0.42 * vignette;
         float grain = hash21(gl_FragCoord.xy + fract(time) * 71.0) - 0.5;
-        color += grain * (0.006 + high * 0.005);
+        color += grain * 0.0015;
         float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-        color = mix(vec3(luminance), color, 1.26 + energy * 0.24 + flux * 0.18);
-        color = 1.0 - exp(-max(color, vec3(0.0)) * (1.42 + energy * 1.1 + pulse * 0.54));
-        color = pow(color, vec3(0.88));
+        color = mix(vec3(luminance), color, 1.03 + energy * 0.06);
+        color = 1.0 - exp(-max(color, vec3(0.0)) * (1.05 + energy * 0.18 + bass * 0.06));
+        color = pow(color, vec3(0.94));
         gl_FragColor = vec4(color, 1.0);
       }
     `;
@@ -367,7 +356,8 @@
       canvas.dataset.visualizer = "full-field-audio-ink";
       canvas.dataset.presentation = "full-screen-webgl";
       canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
-      canvas.dataset.reactivity = "bass-mid-high-transient-wave";
+      canvas.dataset.reactivity = "smoothed-bass-breath-mid-drift-high-glimmer";
+      canvas.dataset.motionProfile = "slow-aurora-breath";
       return true;
     };
 
@@ -377,7 +367,8 @@
       canvas.dataset.visualizer = "full-field-audio-ink";
       canvas.dataset.presentation = "full-screen-webgl";
       canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
-      canvas.dataset.reactivity = "bass-mid-high-transient-wave";
+      canvas.dataset.reactivity = "smoothed-bass-breath-mid-drift-high-glimmer";
+      canvas.dataset.motionProfile = "slow-aurora-breath";
       return Boolean(fallback);
     };
 
@@ -399,28 +390,28 @@
     const updateAudioState = (state) => {
       const active = Boolean(state.analysisActive);
       const targetGain = active
-        ? Math.max(1, Math.min(4.4, 0.13 / Math.max(0.012, state.rms || 0)))
+        ? Math.max(1, Math.min(3.2, 0.11 / Math.max(0.015, state.rms || 0)))
         : 1;
-      automaticGain += (targetGain - automaticGain) * (active ? 0.045 : 0.025);
+      automaticGain += (targetGain - automaticGain) * (active ? 0.018 : 0.012);
       for (let index = 0; index < 3; index += 1) {
-        const raw = active ? Math.min(1, Math.max(0, (state.bands?.[index] || 0) * automaticGain * 1.05)) : 0;
-        const shaped = Math.pow(raw, 0.72);
-        smoothedBands[index] = easeBand(smoothedBands[index], shaped, reduced ? 0.08 : 0.34, reduced ? 0.04 : 0.095);
+        const raw = active ? Math.min(1, Math.max(0, (state.bands?.[index] || 0) * automaticGain * 0.84)) : 0;
+        const shaped = Math.pow(raw, 0.92);
+        smoothedBands[index] = easeBand(smoothedBands[index], shaped, reduced ? 0.045 : 0.07, reduced ? 0.018 : 0.025);
       }
       const activeEnergy = active
-        ? Math.min(1, (state.rms || 0) * automaticGain * 2.8 + smoothedBands[0] * 0.32 + smoothedBands[1] * 0.2)
+        ? Math.min(1, (state.rms || 0) * automaticGain * 1.9 + smoothedBands[0] * 0.2 + smoothedBands[1] * 0.12)
         : 0;
-      smoothedEnergy = easeBand(smoothedEnergy, activeEnergy, reduced ? 0.07 : 0.3, reduced ? 0.035 : 0.085);
+      smoothedEnergy = easeBand(smoothedEnergy, activeEnergy, reduced ? 0.038 : 0.06, reduced ? 0.016 : 0.022);
 
       const spectrum = active && Array.isArray(state.spectrum) ? state.spectrum : [];
       let spectralFlux = 0;
       for (let index = 0; index < previousSpectrum.length; index += 1) {
         const sample = Math.max(0, Math.min(1, spectrum[index] || 0));
         spectralFlux += Math.max(0, sample - previousSpectrum[index]);
-        previousSpectrum[index] += (sample - previousSpectrum[index]) * (sample > previousSpectrum[index] ? 0.72 : 0.18);
+        previousSpectrum[index] += (sample - previousSpectrum[index]) * (sample > previousSpectrum[index] ? 0.38 : 0.08);
       }
-      spectralFlux = Math.min(1, spectralFlux * automaticGain * 0.62);
-      smoothedFlux = easeBand(smoothedFlux, spectralFlux, reduced ? 0.12 : 0.54, reduced ? 0.055 : 0.12);
+      spectralFlux = Math.min(1, spectralFlux * automaticGain * 0.18);
+      smoothedFlux = easeBand(smoothedFlux, spectralFlux, reduced ? 0.045 : 0.07, reduced ? 0.014 : 0.018);
 
       const waveform = active && Array.isArray(state.waveform) ? state.waveform : [];
       let waveProjection = 0;
@@ -428,16 +419,16 @@
         waveProjection += (waveform[index] || 0) * Math.sin(index * 0.71 + 0.4);
       }
       const projectedWave = waveform.length > 0
-        ? Math.max(-1, Math.min(1, waveProjection / Math.sqrt(waveform.length) * 1.9))
+        ? Math.max(-1, Math.min(1, waveProjection / Math.sqrt(waveform.length) * 0.72))
         : 0;
-      smoothedWave += (projectedWave - smoothedWave) * (reduced ? 0.08 : 0.31);
+      smoothedWave += (projectedWave - smoothedWave) * (reduced ? 0.028 : 0.045);
 
       const bassAttack = Math.max(0, smoothedBands[0] - previousBass);
       previousBass = smoothedBands[0];
       const pulseTarget = active
-        ? Math.min(1, bassAttack * 4.8 + smoothedFlux * 1.65 + (state.peak || 0) * automaticGain * 0.34)
+        ? Math.min(1, bassAttack * 1.25 + smoothedFlux * 0.32 + (state.peak || 0) * automaticGain * 0.08)
         : 0;
-      smoothedPulse = easeBand(smoothedPulse, pulseTarget, reduced ? 0.14 : 0.68, reduced ? 0.05 : 0.105);
+      smoothedPulse = easeBand(smoothedPulse, pulseTarget, reduced ? 0.045 : 0.08, reduced ? 0.016 : 0.02);
       canvas.dataset.analysisActive = String(active);
       canvas.dataset.bass = smoothedBands[0].toFixed(3);
       canvas.dataset.mid = smoothedBands[1].toFixed(3);
@@ -462,21 +453,21 @@
       fallback.fillStyle = background;
       fallback.fillRect(0, 0, width, height);
 
-      const palette = ["#6130ba", "#cf3d91", "#f0a548", "#4fc99b", "#52c6d4"];
+      const palette = ["#302c74", "#72538a", "#92706f", "#4b817b"];
       fallback.save();
       fallback.globalCompositeOperation = "screen";
       palette.forEach((color, index) => {
-        const phase = t * (0.34 + smoothedBands[1] * 1.4 + index * 0.045) + index * 1.7 + smoothedWave * 2.2;
-        const y = height * (0.29 + index * 0.075 + Math.sin(phase) * (0.035 + smoothedBands[1] * 0.14 + smoothedPulse * 0.045));
+        const phase = t * (0.025 + smoothedBands[1] * 0.035) + index * 1.45 + smoothedWave * 0.18;
+        const y = height * (0.25 + index * 0.12 + Math.sin(phase) * (0.02 + smoothedBands[1] * 0.025));
         fallback.beginPath();
-        fallback.moveTo(-width * 0.12, y + height * 0.13);
-        fallback.bezierCurveTo(width * 0.22, y - height * (0.11 + smoothedBands[1] * 0.16), width * 0.55, y + height * (0.12 + smoothedWave * 0.08), width * 1.12, y - height * (0.04 + smoothedFlux * 0.08));
-        fallback.lineTo(width * 1.12, y + height * 0.13);
-        fallback.bezierCurveTo(width * 0.62, y + height * 0.23, width * 0.25, y + height * 0.01, -width * 0.12, y + height * 0.25);
+        fallback.moveTo(-width * 0.12, y + height * 0.18);
+        fallback.bezierCurveTo(width * 0.22, y - height * (0.045 + smoothedBands[1] * 0.035), width * 0.58, y + height * (0.055 + smoothedWave * 0.018), width * 1.12, y - height * 0.025);
+        fallback.lineTo(width * 1.12, y + height * 0.24);
+        fallback.bezierCurveTo(width * 0.62, y + height * 0.30, width * 0.24, y + height * 0.13, -width * 0.12, y + height * 0.34);
         fallback.closePath();
-        fallback.globalAlpha = 0.12 + smoothedEnergy * 0.28 + smoothedPulse * 0.16;
+        fallback.globalAlpha = 0.1 + smoothedEnergy * 0.12 + smoothedPulse * 0.03;
         fallback.shadowColor = color;
-        fallback.shadowBlur = height * 0.08;
+        fallback.shadowBlur = height * 0.13;
         fallback.fillStyle = color;
         fallback.fill();
       });
@@ -489,12 +480,14 @@
       fallback.fillRect(0, height * 0.7, width, height * 0.3);
 
       fallback.globalCompositeOperation = "screen";
-      for (let index = 0; index < 42; index += 1) {
-        const x = (Math.sin(index * 91.17 + t * 0.7) * 0.5 + 0.5) * width;
-        const y = (Math.sin(index * 37.73 - t * 0.41) * 0.5 + 0.5) * height * 0.72;
-        const size = 0.5 + (index % 5) * 0.24 + smoothedBands[2] * 1.8;
-        fallback.globalAlpha = 0.08 + smoothedBands[2] * 0.62 + smoothedFlux * 0.54;
-        fallback.fillStyle = index % 3 ? "#e7eef5" : "#f2c477";
+      for (let index = 0; index < 18; index += 1) {
+        const x = (Math.sin(index * 91.17 + t * 0.05) * 0.5 + 0.5) * width;
+        const y = (Math.sin(index * 37.73 - t * 0.03) * 0.5 + 0.5) * height * 0.72;
+        const size = 0.7 + (index % 4) * 0.18 + smoothedBands[2] * 0.45;
+        fallback.globalAlpha = 0.025 + smoothedBands[2] * 0.18 + smoothedFlux * 0.05;
+        fallback.fillStyle = index % 3 ? "#dbe8ee" : "#d9bd8c";
+        fallback.shadowColor = fallback.fillStyle;
+        fallback.shadowBlur = 10;
         fallback.beginPath();
         fallback.arc(x, y, size, 0, Math.PI * 2);
         fallback.fill();
@@ -520,7 +513,7 @@
       gl.enableVertexAttribArray(positionAttribute);
       gl.vertexAttribPointer(positionAttribute, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
-      gl.uniform1f(uniforms.time, now * 0.001 * (reduced ? 0.18 : 0.78));
+      gl.uniform1f(uniforms.time, now * 0.001 * (reduced ? 0.08 : 0.22));
       gl.uniform1f(uniforms.bass, smoothedBands[0]);
       gl.uniform1f(uniforms.mid, smoothedBands[1]);
       gl.uniform1f(uniforms.high, smoothedBands[2]);
@@ -614,7 +607,6 @@
     }
     isOpen = true;
     lastFocused = document.activeElement;
-    void getAudio()?.setMuted?.(true);
     layer.hidden = false;
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("sound-mode-open");
