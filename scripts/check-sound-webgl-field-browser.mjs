@@ -31,7 +31,13 @@ for (const viewport of [
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
 
   await page.goto(routeUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await page.locator("#sound-layer").waitFor({ state: "visible", timeout: 15_000 });
+  await page.waitForFunction(() => {
+    const layer = document.querySelector("#sound-layer");
+    return layer instanceof HTMLElement
+      && !layer.hidden
+      && layer.getAttribute("aria-hidden") === "false"
+      && layer.classList.contains("is-open");
+  }, null, { timeout: 75_000 });
   await page.waitForFunction(() => document.querySelector("#sound-visualizer")?.dataset.renderer === "webgl", null, { timeout: 15_000 });
   await page.locator('[data-sound-track="opening"]').click();
   await page.waitForFunction(() => {
@@ -52,6 +58,8 @@ for (const viewport of [
       presentation: canvas.dataset.presentation,
       reactivity: canvas.dataset.reactivity,
       motionProfile: canvas.dataset.motionProfile,
+      formLanguage: canvas.dataset.formLanguage,
+      palette: canvas.dataset.palette,
       shaderError: canvas.dataset.shaderError || "",
       bass: Number(canvas.dataset.bass),
       mid: Number(canvas.dataset.mid),
@@ -64,8 +72,8 @@ for (const viewport of [
   });
 
   assert(scan.renderer === "webgl" && !scan.shaderError, `${viewport.name}: WebGL shader failed: ${JSON.stringify(scan)}`);
-  assert(scan.visualizer === "full-field-audio-ink" && scan.presentation === "full-screen-webgl", `${viewport.name}: wrong visualizer mode: ${JSON.stringify(scan)}`);
-  assert(scan.reactivity === "smoothed-bass-breath-mid-drift-high-glimmer" && scan.motionProfile === "slow-aurora-breath", `${viewport.name}: visualizer motion is not using the calm profile: ${JSON.stringify(scan)}`);
+  assert(scan.visualizer === "audio-reactive-silk-tide" && scan.presentation === "full-screen-webgl", `${viewport.name}: wrong visualizer mode: ${JSON.stringify(scan)}`);
+  assert(scan.reactivity === "bass-bloom-mid-curl-high-shimmer-flux-spark" && scan.motionProfile === "layered-curl-warped-veils" && scan.formLanguage === "soft-feathered-veils-no-core" && scan.palette === "wisteria-sky-mint-sakura-apricot", `${viewport.name}: visualizer is not using the layered silk-tide profile: ${JSON.stringify(scan)}`);
   assert(scan.eqCount === 0, `${viewport.name}: detached EQ visualizer remains`);
   assert(scan.rect.left <= 0 && scan.rect.top <= 0 && scan.rect.right >= viewport.width && scan.rect.bottom >= viewport.height, `${viewport.name}: WebGL field is not full-screen: ${JSON.stringify(scan)}`);
   assert(scan.opacity >= 0.82 && scan.filter.includes("saturate") && scan.filter.includes("contrast"), `${viewport.name}: WebGL field remains faint: ${JSON.stringify(scan)}`);

@@ -11,6 +11,7 @@ const glintOnly = process.argv.slice(6).includes("--glint-only");
 const countryReadoutOnly = process.argv.slice(6).includes("--country-readout-only");
 const populationOnly = process.argv.slice(6).includes("--population-only");
 const highResolutionOnly = process.argv.slice(6).includes("--high-resolution-only");
+const map06CrossModeOnly = process.argv.slice(6).includes("--map06-cross-mode-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -19,7 +20,7 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/map-exhibits-10");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const viewports = highResolutionOnly
+const viewports = highResolutionOnly || map06CrossModeOnly
   ? [{ name: "high-resolution", width: 3840, height: 2088 }]
   : [
       { name: "pc", width: 1440, height: 900 },
@@ -108,6 +109,29 @@ const selectMode = async (page, index, expectedTitle) => {
     observed,
     { number: String(index + 1).padStart(2, "0"), title: expectedTitle, current: index },
     `mode ${index + 1} did not respond to a real button click`,
+  );
+};
+
+const selectLiveMode = async (page, index, expectedTitle) => {
+  const liveIndex = index - 9;
+  const button = page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").nth(liveIndex);
+  await button.evaluate((element) => element.click());
+  await page.waitForFunction(
+    ({ number, title, expectedLiveIndex }) => {
+      const liveButtons = Array.from(document.querySelectorAll(
+        "#japan-mode-list .map-mode-button[data-live-exhibit]",
+      ));
+      return document.querySelector("#japan-mode-number")?.textContent === number
+        && document.querySelector("#japan-mode-title")?.textContent === title
+        && document.querySelector("#japan-title")?.textContent === title
+        && document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit")
+        && liveButtons.findIndex((candidate) => candidate.getAttribute("aria-current") === "true") === expectedLiveIndex;
+    },
+    {
+      number: String(index + 1).padStart(2, "0"),
+      title: expectedTitle,
+      expectedLiveIndex: liveIndex,
+    },
   );
 };
 
@@ -251,6 +275,11 @@ const readMapRenderHealth = (page) => page.locator("#japan-overlay").evaluate((o
     visibility: style.visibility,
     worldBoundaryLayer: overlay.dataset.worldBoundaryLayer,
     worldBoundaryRingCount: Number(overlay.dataset.worldBoundaryRingCount),
+    activeNumber: document.querySelector("#japan-mode-number")?.textContent || "",
+    activeTitle: document.querySelector("#japan-mode-title")?.textContent || "",
+    liveBackdrop: overlay.dataset.liveBackdrop || "",
+    liveExhibit: document.querySelector("#japan-layer")?.dataset.liveExhibit || "",
+    liveMode: document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit") || false,
   };
 });
 
@@ -261,12 +290,12 @@ const waitForReferenceMap = (page) => page.waitForFunction(() => {
     && Number(overlay.dataset.worldBoundaryRingCount) >= 400;
 });
 
-const assertReferenceMapVisible = (renderState, label) => {
+const assertReferenceMapVisible = (renderState, label, { minimumCyanLinePixels = 650 } = {}) => {
   assert.equal(renderState.referenceWorldCache, "ready", `${label}: reference map cache is not ready`);
   assert.equal(renderState.worldBoundaryLayer, "country", `${label}: country boundaries are unavailable`);
   assert.ok(renderState.worldBoundaryRingCount >= 400, `${label}: boundary geometry is incomplete`);
   assert.ok(
-    renderState.cyanLinePixels >= 650,
+    renderState.cyanLinePixels >= minimumCyanLinePixels,
     `${label}: coastline/country line signature disappeared ${JSON.stringify(renderState)}`,
   );
 };
@@ -347,6 +376,94 @@ try {
   for (const viewport of viewports) {
     const { context, page } = await boot(viewport);
     const scan = { viewport, clicks: {}, screenshots: [], zoom: {} };
+
+    if (map06CrossModeOnly) {
+      await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
+      scan.loader = await page.locator('script[src*="gaia-mode-loader.js"]').getAttribute("src");
+      assert.match(
+        scan.loader || "",
+        /gaia-mode-loader\.js\?v=gaia-sound-silk-tide-1/u,
+        `${viewport.name}: stale exploration loader cache key`,
+      );
+
+      const standardModes = [
+        "地球の一呼吸",
+        "海流が14日続いたら",
+        "森林と降水量を重ねる",
+        "再資源化率を比べる",
+        "人類世の傷跡",
+        "地球からのメッセージ",
+        "三つの生態系",
+        "人工物の共生化",
+        "人口のうねり",
+      ];
+      const liveModes = ["風脈", "炭素の呼吸", "雨の記憶", "熱の輪郭", "雲の層"];
+      const modeTitles = [...standardModes, ...liveModes];
+
+      // The original failure accumulated an unbalanced canvas state in 05, then
+      // first appeared on 06 and persisted on 07. Soak 05 before entering 06.
+      await selectMode(page, 4, standardModes[4]);
+      await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.plotRevealState === "complete");
+      await page.waitForTimeout(1200);
+      await selectMode(page, 5, standardModes[5]);
+      await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+      await waitForReferenceMap(page);
+      await page.waitForTimeout(500);
+      scan.entry06 = await readMapRenderHealth(page);
+      assert.equal(scan.entry06.activeNumber, "06");
+      assert.equal(scan.entry06.liveMode, false);
+      assert.equal(scan.entry06.liveBackdrop, "standard-mode");
+      assert.ok(scan.entry06.nonTransparent > 1000, `05 → 06: map canvas is blank ${JSON.stringify(scan.entry06)}`);
+      assertReferenceMapVisible(scan.entry06, "05 → 06 entry");
+      const entryScreenshot = path.join(outputDir, `${viewport.name}-05-to-06-entry.png`);
+      await page.screenshot({ path: entryScreenshot });
+      scan.screenshots.push(entryScreenshot);
+
+      scan.crossMode = [];
+      for (const [index, title] of modeTitles.entries()) {
+        if (index < standardModes.length) await selectMode(page, index, title);
+        else await selectLiveMode(page, index, title);
+        await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+        await waitForReferenceMap(page);
+        await page.waitForTimeout(320);
+        const renderState = await readMapRenderHealth(page);
+        const number = String(index + 1).padStart(2, "0");
+        assert.equal(renderState.activeNumber, number, `${number}: active chapter number drifted`);
+        assert.equal(renderState.activeTitle, title, `${number}: active chapter title drifted`);
+        assert.equal(renderState.liveMode, index >= standardModes.length, `${number}: live/standard layer state leaked`);
+        assert.equal(
+          renderState.liveBackdrop,
+          index >= standardModes.length ? "reference-map-only" : "standard-mode",
+          `${number}: reference map backdrop state is wrong`,
+        );
+        assert.ok(renderState.nonTransparent > 1000, `${number}: map canvas is blank ${JSON.stringify(renderState)}`);
+        assertReferenceMapVisible(renderState, `06 → ${number}`, {
+          minimumCyanLinePixels: index === 1 || index >= standardModes.length ? 180 : 650,
+        });
+        const screenshot = path.join(outputDir, `${viewport.name}-from-06-to-${number}.png`);
+        await page.screenshot({ path: screenshot });
+        scan.screenshots.push(screenshot);
+        scan.crossMode.push({ number, title, renderState, screenshot });
+      }
+
+      // A live exhibit must not leave the standard map in the live-only state.
+      await selectMode(page, 6, standardModes[6]);
+      await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+      await waitForReferenceMap(page);
+      await page.waitForTimeout(320);
+      scan.returnTo07 = await readMapRenderHealth(page);
+      assert.equal(scan.returnTo07.liveMode, false, "14 → 07: live exhibit class leaked");
+      assert.equal(scan.returnTo07.liveBackdrop, "standard-mode", "14 → 07: live backdrop leaked");
+      assertReferenceMapVisible(scan.returnTo07, "14 → 07 return");
+      const returnScreenshot = path.join(outputDir, `${viewport.name}-14-to-07-return.png`);
+      await page.screenshot({ path: returnScreenshot });
+      scan.screenshots.push(returnScreenshot);
+
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
 
     if (highResolutionOnly) {
       await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));

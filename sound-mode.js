@@ -216,16 +216,18 @@
         return glow * smoothstep(threshold, 1.0, seed);
       }
 
-      vec3 vividPalette(float t) {
-        vec3 violet = vec3(0.43, 0.10, 0.96);
-        vec3 rose = vec3(0.98, 0.20, 0.62);
-        vec3 amber = vec3(1.00, 0.62, 0.16);
-        vec3 mint = vec3(0.04, 0.94, 0.63);
-        vec3 cyan = vec3(0.02, 0.68, 1.00);
-        vec3 color = mix(violet, rose, smoothstep(0.0, 0.23, t));
-        color = mix(color, amber, smoothstep(0.20, 0.43, t));
-        color = mix(color, mint, smoothstep(0.40, 0.68, t));
-        return mix(color, cyan, smoothstep(0.65, 1.0, t));
+      vec3 dreamPalette(float t) {
+        t = fract(t);
+        vec3 wisteria = vec3(0.64, 0.24, 1.00);
+        vec3 sky = vec3(0.08, 0.72, 1.00);
+        vec3 mint = vec3(0.05, 0.95, 0.73);
+        vec3 apricot = vec3(1.00, 0.57, 0.22);
+        vec3 sakura = vec3(1.00, 0.24, 0.66);
+        vec3 color = mix(wisteria, sky, smoothstep(0.00, 0.24, t));
+        color = mix(color, mint, smoothstep(0.20, 0.45, t));
+        color = mix(color, apricot, smoothstep(0.42, 0.70, t));
+        color = mix(color, sakura, smoothstep(0.67, 0.88, t));
+        return mix(color, wisteria, smoothstep(0.86, 1.00, t));
       }
 
       vec2 rotateFlow(vec2 p, float angle) {
@@ -234,20 +236,20 @@
         return mat2(cosine, -sine, sine, cosine) * p;
       }
 
-      float currentBody(float distanceToCenter, float width) {
-        return 1.0 - smoothstep(width * 0.16, width, distanceToCenter);
+      vec2 curlWarp(vec2 p, float seed) {
+        float drift = time * 0.026;
+        vec2 domain = p * vec2(0.92, 1.14);
+        float warpX = fbm(domain + vec2(seed * 1.31 + drift, seed * 0.43));
+        float warpY = fbm(domain.yx + vec2(seed * 0.67 - drift, seed * 1.73));
+        vec2 curl = vec2(warpY - 0.5, 0.5 - warpX);
+        float response = 0.72 + meanderResponse * 0.78 + mid * 0.34;
+        p += curl * vec2(0.28, 0.25) * response;
+        p.x += sin(p.y * 1.86 - time * 0.075 + seed) * (0.085 + meanderResponse * 0.072);
+        p.y += cos(p.x * 1.54 + time * 0.052 - seed * 0.71) * (0.062 + mid * 0.068);
+        return p;
       }
 
-      float currentCore(float distanceToCenter, float width) {
-        return exp(-pow(distanceToCenter / max(0.001, width * 0.22), 2.0));
-      }
-
-      float currentContour(float distanceToCenter, float width) {
-        float normalizedDistance = distanceToCenter / max(0.001, width);
-        return exp(-pow((normalizedDistance - 0.70) / 0.13, 2.0));
-      }
-
-      vec3 currentRibbon(
+      vec4 currentRibbon(
         vec2 p,
         float seed,
         float baseY,
@@ -259,58 +261,94 @@
         float strength
       ) {
         vec2 q = rotateFlow(p, angle);
-        float travel = time * (0.32 + mid * 0.055) * (0.76 + seed * 0.035);
-        float responsePhase = meanderResponse * (0.42 + seed * 0.018);
-        float slowFold = sin(q.x * frequency + travel + seed + responsePhase) * amplitude;
-        float crossFold = sin(q.x * (frequency * 2.37) - travel * 0.72 + seed * 2.1) * amplitude * 0.34;
-        float fieldWarp = fbm(vec2(q.x * 0.72 + seed * 1.7, time * 0.028 + seed * 0.93));
+        q = curlWarp(q, seed);
+        float travel = time * (0.24 + mid * 0.28 + meanderResponse * 0.24) * (0.82 + seed * 0.017);
+        float macroFold = sin(q.x * frequency + travel + seed) * amplitude;
+        macroFold += sin(q.x * (frequency * 0.43) - travel * 0.54 + seed * 2.13) * amplitude * 0.78;
+        macroFold += cos(q.x * (frequency * 0.19) + travel * 0.31 - seed * 0.84) * amplitude * 0.54;
+        float riverDrift = fbm(vec2(q.x * 0.31 - travel * 0.045 + seed, seed * 0.71 + time * 0.011));
+        float audioCurl = sin(q.x * frequency * 1.58 - travel * 1.26 + seed * 3.17)
+          * amplitude * (mid * 0.45 + meanderResponse * 0.58);
         float center = baseY
-          + slowFold
-          + crossFold
-          + (fieldWarp - 0.5) * amplitude * (1.10 + mid * 0.40 + meanderResponse * 0.72)
-          + wave * 0.024 * sin(seed * 1.91)
-          + flux * 0.018 * cos(seed * 2.37);
+          + macroFold
+          + (riverDrift - 0.5) * amplitude * 2.35
+          + audioCurl
+          + wave * 0.040 * sin(seed * 1.91)
+          + flux * 0.030 * cos(seed * 2.37);
 
-        float widthField = fbm(vec2(q.x * 1.34 - travel * 0.18 + seed * 3.2, time * 0.022 + seed));
-        float densityField = fbm(vec2(q.x * 0.84 + travel * 0.15 + seed * 2.4, time * 0.018 - seed * 0.61));
-        float fineDensity = fbm(vec2(q.x * 2.65 - travel * 0.22 - seed, time * 0.034 + seed * 1.3));
-        float densityVeil = 0.12 + 0.88 * smoothstep(0.28, 0.72, densityField * 0.70 + fineDensity * 0.30 + densityResponse * 0.22);
+        float widthField = fbm(vec2(q.x * 0.54 - travel * 0.075 + seed * 2.2, seed * 0.87 + time * 0.013));
+        float widthRipple = fbm(vec2(q.x * 1.48 + seed, q.y * 0.16 - time * 0.019));
+        float densityField = fbm(vec2(q.x * 0.38 + travel * 0.055 + seed * 2.4, time * 0.012 - seed * 0.61));
+        float fineDensity = fbm(vec2(q.x * 1.72 - travel * 0.14 - seed, time * 0.026 + seed * 1.3));
+        float densityVeil = 0.06 + 0.94 * smoothstep(
+          0.40,
+          0.74,
+          densityField * 0.72 + fineDensity * 0.28 + densityResponse * 0.18
+        );
+        float brushGrain = 0.62 + 0.38 * smoothstep(
+          0.25,
+          0.78,
+          fbm(vec2(q.x * 2.16 - travel * 0.18 + seed * 0.43, q.y * 0.44 + seed))
+        );
         float localWidth = baseWidth
-          * (0.54 + widthField * 0.94)
-          * (1.0 + bass * 0.12 + densityResponse * (0.42 + strength * 0.18));
-        float distanceToCenter = abs(q.y - center);
-        float body = currentBody(distanceToCenter, localWidth);
-        float core = currentCore(distanceToCenter, localWidth);
-        float contour = currentContour(distanceToCenter, localWidth);
-        float flowTexture = smoothstep(0.43, 0.78, fbm(vec2(q.x * 3.4 - travel * 0.44 + seed, q.y * 1.9 + seed * 0.73)));
+          * (0.36 + widthField * 0.92 + widthRipple * 0.34)
+          * (1.0 + bass * 0.30 + densityResponse * (0.36 + strength * 0.12));
+        float signedDistance = q.y - center;
+        float sideWidthA = localWidth * (0.58 + widthRipple * 0.58);
+        float sideWidthB = localWidth * (0.76 + widthField * 0.52);
+        float asymmetricWidth = mix(sideWidthA, sideWidthB, step(0.0, signedDistance));
+        float normalizedDistance = abs(signedDistance) / max(0.001, asymmetricWidth);
+        float featheredBody = exp(-pow(normalizedDistance, 1.78) * 2.18);
+        float translucentEdge = exp(-pow(normalizedDistance, 2.72) * 1.18);
+        float pigment = fbm(vec2(q.x * 1.64 - travel * 0.22 + seed, q.y * 0.68 + seed * 0.73));
+        float shimmer = smoothstep(
+          0.54,
+          0.88,
+          fbm(vec2(q.x * 3.10 - travel * 0.52 + seed, q.y * 1.26 - time * 0.025))
+        );
 
-        float colorPhase = fract(hue + q.x * 0.115 + time * 0.010 + meanderResponse * 0.20 + causticResponse * 0.18);
-        vec3 flowColor = vividPalette(colorPhase);
-        vec3 paleCore = mix(flowColor, vec3(0.84, 0.98, 1.0), 0.15 + high * 0.12);
-        float bodyLift = strength * (0.22 + energy * 0.34 + bass * 0.10 + densityResponse * 0.64);
-        float coreLift = strength * (0.14 + mid * 0.24 + meanderResponse * 0.24 + causticResponse * 0.88);
-        vec3 ribbon = flowColor * body * densityVeil * bodyLift;
-        ribbon += paleCore * core * densityVeil * coreLift;
-        ribbon += flowColor * contour * densityVeil * (0.04 + meanderResponse * 0.14 + causticResponse * 0.10) * strength;
-        ribbon += flowColor * body * flowTexture * densityVeil * (0.03 + causticResponse * 0.42) * strength;
-        return ribbon;
+        float colorPhase = fract(
+          hue + q.x * 0.074 + time * 0.012 + pigment * 0.19
+          + meanderResponse * 0.15 + causticResponse * 0.11
+        );
+        vec3 firstDye = dreamPalette(colorPhase);
+        vec3 secondDye = dreamPalette(colorPhase + 0.14 + sin(q.x * 0.62 + seed) * 0.055);
+        float crossDye = smoothstep(-0.92, 0.92, (q.y - center) / max(0.001, localWidth));
+        vec3 dye = mix(firstDye, secondDye, clamp(crossDye * 0.56 + pigment * 0.44, 0.0, 1.0));
+        dye *= 0.78 + pigment * 0.48;
+        dye += dreamPalette(colorPhase + 0.34) * shimmer
+          * (0.035 + high * 0.17 + causticResponse * 0.24);
+
+        float presence = 0.30 + playing * 0.70;
+        float alpha = featheredBody * densityVeil * brushGrain * strength * presence
+          * (0.28 + energy * 0.40 + bass * 0.16 + densityResponse * 0.56);
+        alpha += translucentEdge * densityVeil * strength * presence
+          * (0.018 + meanderResponse * 0.034 + causticResponse * 0.028);
+        return vec4(dye, clamp(alpha, 0.0, 0.88));
+      }
+
+      void compositeVeil(inout vec3 field, vec4 veil) {
+        vec3 layerColor = clamp(veil.rgb * veil.a, 0.0, 0.90);
+        field = 1.0 - (1.0 - field) * (1.0 - layerColor);
       }
 
       vec3 braidedCurrentField(vec2 uv) {
         float aspect = resolution.x / max(1.0, resolution.y);
         vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
         vec3 field = vec3(0.0);
-        field += currentRibbon(p, 1.1,  0.10,  0.07, 0.115, 0.145, 1.72, 0.03, 1.00);
-        field += currentRibbon(p, 2.7, -0.15, -0.11, 0.086, 0.125, 2.18, 0.43, 0.90);
-        field += currentRibbon(p, 4.2,  0.29, -0.18, 0.057, 0.098, 2.92, 0.69, 0.76);
-        field += currentRibbon(p, 5.8, -0.34,  0.15, 0.044, 0.088, 3.36, 0.21, 0.66);
-        field += currentRibbon(p, 7.3,  0.00, -0.24, 0.031, 0.066, 4.28, 0.55, 0.58);
-        field += currentRibbon(p, 8.9,  0.19,  0.26, 0.024, 0.052, 5.12, 0.84, 0.50);
+        compositeVeil(field, currentRibbon(p, 1.1,  0.04,  0.08, 0.150, 0.345, 1.30, 0.02, 0.92));
+        compositeVeil(field, currentRibbon(p, 2.7, -0.20, -0.22, 0.110, 0.298, 1.64, 0.39, 0.86));
+        compositeVeil(field, currentRibbon(p, 4.2,  0.26,  0.30, 0.085, 0.252, 2.06, 0.67, 0.79));
+        compositeVeil(field, currentRibbon(p, 5.8, -0.34,  0.43, 0.065, 0.208, 2.56, 0.19, 0.71));
+        compositeVeil(field, currentRibbon(p, 7.3,  0.01, -0.48, 0.050, 0.174, 3.12, 0.53, 0.64));
+        compositeVeil(field, currentRibbon(p, 8.9,  0.23,  0.55, 0.042, 0.142, 3.72, 0.82, 0.57));
+        compositeVeil(field, currentRibbon(p, 10.4, -0.09, -0.62, 0.035, 0.116, 4.38, 0.31, 0.50));
+        compositeVeil(field, currentRibbon(p, 12.1,  0.37,  0.37, 0.030, 0.094, 5.08, 0.73, 0.43));
 
-        vec2 poolCenter = p - vec2(sin(time * 0.11) * 0.24, cos(time * 0.09) * 0.10 - 0.03);
-        float bassPool = exp(-dot(poolCenter * vec2(0.72, 1.18), poolCenter * vec2(0.72, 1.18)) * (2.4 - bass * 0.65));
+        vec2 poolCenter = p - vec2(sin(time * 0.078) * 0.28, cos(time * 0.064) * 0.13 - 0.02);
+        float bassPool = exp(-dot(poolCenter * vec2(0.66, 1.08), poolCenter * vec2(0.66, 1.08)) * (2.0 - bass * 0.48));
         field += mix(vec3(0.20, 0.055, 0.55), vec3(0.00, 0.44, 0.48), uv.x)
-          * bassPool * (0.025 + bass * 0.095 + pulse * 0.085);
+          * bassPool * (0.020 + bass * 0.070 + pulse * 0.085);
         float edgeFade = smoothstep(0.0, 0.07, uv.x) * (1.0 - smoothstep(0.93, 1.0, uv.x));
         return field * edgeFade;
       }
@@ -320,28 +358,28 @@
         float aspect = resolution.x / max(1.0, resolution.y);
         vec2 centered = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
 
-        vec3 deepIndigo = vec3(0.003, 0.006, 0.022);
-        vec3 midnight = vec3(0.010, 0.022, 0.056);
+        vec3 deepIndigo = vec3(0.004, 0.008, 0.030);
+        vec3 midnight = vec3(0.012, 0.030, 0.074);
         vec3 color = mix(deepIndigo, midnight, smoothstep(0.0, 1.0, uv.y));
         float nebula = fbm(centered * vec2(0.62, 0.88) + vec2(time * 0.006, -time * 0.004));
-        color += mix(vec3(0.07, 0.018, 0.16), vec3(0.008, 0.13, 0.15), uv.x)
-          * smoothstep(0.50, 0.84, nebula) * (0.10 + energy * 0.22);
+        color += mix(vec3(0.09, 0.035, 0.18), vec3(0.018, 0.14, 0.17), uv.x)
+          * smoothstep(0.44, 0.84, nebula) * (0.11 + energy * 0.20);
         color += braidedCurrentField(uv);
 
         float cyanPrism = starlightLayer(uv, 16.0, time * 0.009, 0.958);
         float goldPrism = starlightLayer(uv + vec2(0.17, 0.09), 10.0, -time * 0.006, 0.972);
-        float prismLift = 0.035 + causticResponse * 1.18;
-        color += vec3(0.48, 0.92, 1.00) * cyanPrism * prismLift;
-        color += vec3(1.00, 0.65, 0.25) * goldPrism * prismLift * 0.74;
+        float prismLift = 0.026 + high * 0.34 + causticResponse * 0.92;
+        color += vec3(0.58, 0.90, 1.00) * cyanPrism * prismLift;
+        color += vec3(1.00, 0.77, 0.48) * goldPrism * prismLift * 0.68;
 
         float vignette = smoothstep(1.16, 0.18, length(centered * vec2(0.76, 1.0)));
         color *= 0.66 + 0.34 * vignette;
         float grain = hash21(gl_FragCoord.xy + fract(time) * 71.0) - 0.5;
         color += grain * 0.0012;
         float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-        color = mix(vec3(luminance), color, 1.16 + high * 0.18);
-        color = 1.0 - exp(-max(color, vec3(0.0)) * (1.36 + energy * 0.42 + bass * 0.14 + flux * 0.18));
-        color = pow(color, vec3(0.89));
+        color = mix(vec3(luminance), color, 1.12 + high * 0.16);
+        color = 1.0 - exp(-max(color, vec3(0.0)) * (1.22 + energy * 0.36 + bass * 0.10 + flux * 0.16));
+        color = pow(color, vec3(0.92));
         gl_FragColor = vec4(color, 1.0);
       }
     `;
@@ -407,22 +445,26 @@
       gl.disable(gl.BLEND);
       gl.disable(gl.DEPTH_TEST);
       canvas.dataset.renderer = "webgl";
-      canvas.dataset.visualizer = "full-field-audio-ink";
+      canvas.dataset.visualizer = "audio-reactive-silk-tide";
       canvas.dataset.presentation = "full-screen-webgl";
       canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
-      canvas.dataset.reactivity = "adaptive-bass-density-mid-meander-high-caustics-flux-surge";
-      canvas.dataset.motionProfile = "multi-scale-braided-currents";
+      canvas.dataset.reactivity = "bass-bloom-mid-curl-high-shimmer-flux-spark";
+      canvas.dataset.motionProfile = "layered-curl-warped-veils";
+      canvas.dataset.formLanguage = "soft-feathered-veils-no-core";
+      canvas.dataset.palette = "wisteria-sky-mint-sakura-apricot";
       return true;
     };
 
     const initFallback = () => {
       fallback = canvas.getContext("2d");
       canvas.dataset.renderer = fallback ? "canvas2d" : "unavailable";
-      canvas.dataset.visualizer = "full-field-audio-ink";
+      canvas.dataset.visualizer = "audio-reactive-silk-tide";
       canvas.dataset.presentation = "full-screen-webgl";
       canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
-      canvas.dataset.reactivity = "adaptive-bass-density-mid-meander-high-caustics-flux-surge";
-      canvas.dataset.motionProfile = "multi-scale-braided-currents";
+      canvas.dataset.reactivity = "bass-bloom-mid-curl-high-shimmer-flux-spark";
+      canvas.dataset.motionProfile = "layered-curl-warped-veils";
+      canvas.dataset.formLanguage = "soft-feathered-veils-no-core";
+      canvas.dataset.palette = "wisteria-sky-mint-sakura-apricot";
       return Boolean(fallback);
     };
 
@@ -452,13 +494,13 @@
       for (let index = 0; index < 3; index += 1) {
         const boosted = active ? Math.max(0, (state.bands?.[index] || 0) * automaticGain) : 0;
         const compressed = boosted / (0.52 + boosted);
-        const shaped = Math.pow(Math.min(0.94, compressed), 0.84);
-        smoothedBands[index] = easeBand(smoothedBands[index], shaped, reduced ? 0.13 : 0.24, reduced ? 0.045 : 0.08);
+        const shaped = Math.pow(Math.min(0.96, compressed), 0.78);
+        smoothedBands[index] = easeBand(smoothedBands[index], shaped, reduced ? 0.16 : 0.34, reduced ? 0.055 : 0.12);
       }
       const activeEnergy = active
         ? Math.min(1, (state.rms || 0) * automaticGain * 2.7 + smoothedBands[0] * 0.32 + smoothedBands[1] * 0.20)
         : 0;
-      smoothedEnergy = easeBand(smoothedEnergy, activeEnergy, reduced ? 0.085 : 0.14, reduced ? 0.030 : 0.045);
+      smoothedEnergy = easeBand(smoothedEnergy, activeEnergy, reduced ? 0.11 : 0.20, reduced ? 0.040 : 0.065);
 
       const spectrum = active && Array.isArray(state.spectrum) ? state.spectrum : [];
       let spectralFlux = 0;
@@ -468,7 +510,7 @@
         previousSpectrum[index] += (sample - previousSpectrum[index]) * (sample > previousSpectrum[index] ? 0.38 : 0.08);
       }
       spectralFlux = Math.min(1, spectralFlux * automaticGain * 0.32);
-      smoothedFlux = easeBand(smoothedFlux, spectralFlux, reduced ? 0.13 : 0.24, reduced ? 0.035 : 0.06);
+      smoothedFlux = easeBand(smoothedFlux, spectralFlux, reduced ? 0.16 : 0.32, reduced ? 0.045 : 0.09);
 
       const waveform = active && Array.isArray(state.waveform) ? state.waveform : [];
       let waveProjection = 0;
@@ -485,10 +527,10 @@
       const pulseTarget = active
         ? Math.min(1, bassAttack * 2.2 + smoothedFlux * 0.55 + (state.peak || 0) * automaticGain * 0.16)
         : 0;
-      smoothedPulse = easeBand(smoothedPulse, pulseTarget, reduced ? 0.12 : 0.24, reduced ? 0.025 : 0.04);
-      visualResponses[0] = Math.min(1, smoothedBands[0] * 0.35 + smoothedEnergy * 0.25 + smoothedPulse * 0.80);
-      visualResponses[1] = Math.min(1, smoothedBands[1] * 0.80 + smoothedFlux * 0.65 + Math.abs(smoothedWave) * 0.20);
-      visualResponses[2] = Math.min(1, smoothedBands[2] * 0.95 + smoothedFlux * 1.05);
+      smoothedPulse = easeBand(smoothedPulse, pulseTarget, reduced ? 0.16 : 0.34, reduced ? 0.035 : 0.065);
+      visualResponses[0] = Math.min(1, smoothedBands[0] * 0.62 + smoothedEnergy * 0.42 + smoothedPulse * 0.92);
+      visualResponses[1] = Math.min(1, smoothedBands[1] * 0.94 + smoothedFlux * 0.82 + Math.abs(smoothedWave) * 0.34);
+      visualResponses[2] = Math.min(1, smoothedBands[2] * 1.18 + smoothedFlux * 1.32);
       canvas.dataset.analysisActive = String(active);
       canvas.dataset.bass = smoothedBands[0].toFixed(3);
       canvas.dataset.mid = smoothedBands[1].toFixed(3);
@@ -576,7 +618,7 @@
       gl.enableVertexAttribArray(positionAttribute);
       gl.vertexAttribPointer(positionAttribute, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
-      gl.uniform1f(uniforms.time, now * 0.001 * (reduced ? 0.12 : 0.36));
+      gl.uniform1f(uniforms.time, now * 0.001 * (reduced ? 0.14 : 0.52));
       gl.uniform1f(uniforms.bass, smoothedBands[0]);
       gl.uniform1f(uniforms.mid, smoothedBands[1]);
       gl.uniform1f(uniforms.high, smoothedBands[2]);
@@ -676,7 +718,6 @@
     layer.hidden = false;
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("sound-mode-open");
-    void getAudio()?.enableAnalysis?.();
     visualizerRuntime ||= createSoundVisualizer(visualizerCanvas);
     render();
     requestAnimationFrame(() => {
@@ -707,12 +748,14 @@
   const togglePlayback = async () => {
     const api = getAudio();
     if (!api) return;
+    const analysisReady = api.enableAnalysis?.();
     const state = api.getState();
     if (state.playing && !state.muted) {
       await api.setMuted(true);
     } else {
       await api.start(state.volume);
     }
+    await analysisReady;
     render();
   };
 
@@ -737,9 +780,11 @@
       const track = button.dataset.soundTrack;
       if (!tracks[track]) return;
       const api = getAudio();
+      const analysisReady = api?.enableAnalysis?.();
       await api?.switchTrack?.(track, 0.35);
       const state = api?.getState?.();
       if (state?.muted || !state?.playing) await api?.start?.(state?.volume);
+      await analysisReady;
       render();
     });
   });
@@ -782,10 +827,6 @@
 
   render();
   if (window.location.hash === "#sound") {
-    if (document.readyState === "loading") {
-      window.addEventListener("load", () => requestAnimationFrame(open), { once: true });
-    } else {
-      requestAnimationFrame(open);
-    }
+    open();
   }
 })();

@@ -98,15 +98,22 @@ try {
   assert(/uniform float densityResponse;/u.test(visualRuntimeSource) && /uniform float meanderResponse;/u.test(visualRuntimeSource) && /uniform float causticResponse;/u.test(visualRuntimeSource), "the three mapped visual response channels are not connected to the shader");
   assert(!/equalizerRuntime|equalizerCanvas/u.test(visualRuntimeSource), "the detached EQ visualizer is still wired into the sound mode");
   assert(/bassPool/u.test(visualRuntimeSource) && /densityVeil/u.test(visualRuntimeSource) && /prismLift/u.test(visualRuntimeSource), "the WebGL current field does not expose distinct bass, mid, and high responses");
-  assert(/braidedCurrentField/u.test(visualRuntimeSource) && /vividPalette/u.test(visualRuntimeSource) && /currentCore/u.test(visualRuntimeSource) && /currentContour/u.test(visualRuntimeSource), "the braided current field lacks its body, core, or contour layers");
-  assert((visualRuntimeSource.match(/field \+= currentRibbon\(p,/gu) || []).length >= 6, "the current field does not contain enough differently sized intertwined bands");
+  assert(/braidedCurrentField/u.test(visualRuntimeSource) && /dreamPalette/u.test(visualRuntimeSource) && /curlWarp/u.test(visualRuntimeSource) && /featheredBody/u.test(visualRuntimeSource) && /translucentEdge/u.test(visualRuntimeSource) && /compositeVeil/u.test(visualRuntimeSource), "the silk-tide field lacks curl warping, feathering, or translucent layering");
+  assert((visualRuntimeSource.match(/compositeVeil\(field, currentRibbon\(p,/gu) || []).length >= 8, "the silk-tide field does not contain enough differently sized intertwined veils");
+  assert(!/currentCore|currentContour|paleCore/u.test(visualRuntimeSource), "tube-like cores or vessel contours remain in the sound visualizer");
   assert(!/upperCenter|lowerCenter|upperWidth|lowerWidth/u.test(visualRuntimeSource), "the former two straight slab bands remain in the shader");
   assert(!/spectralRibbons|filament|tremor|interference/u.test(visualRuntimeSource), "the aggressive filament motion remains in the sound visualizer");
   assert(!/earthCenter|earthRadius|earthSurface|earthDisc|earthX|earthY/u.test(visualRuntimeSource), "Earth rendering remains in the WebGL or Canvas visualizer");
   assert(!/gl\.LINES|spectral-weave/u.test(visualRuntimeSource), "legacy line geometry remains in the visualizer");
   assert(!/sound-layer-grid|sound-spectral-grid/u.test(visualStyleSource), "digital grid styling remains in the sound installation");
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
-  await page.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
+  await page.waitForFunction(() => {
+    const layer = document.querySelector("#sound-layer");
+    return layer instanceof HTMLElement
+      && !layer.hidden
+      && layer.getAttribute("aria-hidden") === "false"
+      && layer.classList.contains("is-open");
+  }, null, { timeout: 75000 });
   await page.waitForFunction(() => !["", "pending"].includes(document.querySelector("#sound-visualizer")?.dataset.renderer || "pending"));
   const desktopVisualizer = await page.locator("#sound-visualizer").evaluate((canvas) => {
     const characterScene = document.querySelector(".sound-character-scene");
@@ -121,6 +128,8 @@ try {
       audioAnalysis: canvas.dataset.audioAnalysis,
       reactivity: canvas.dataset.reactivity,
       motionProfile: canvas.dataset.motionProfile,
+      formLanguage: canvas.dataset.formLanguage,
+      palette: canvas.dataset.palette,
       width: rect.width,
       height: rect.height,
       rect: rect.toJSON(),
@@ -142,11 +151,13 @@ try {
   });
   assert(
     desktopVisualizer.renderer === "webgl"
-      && desktopVisualizer.visualizer === "full-field-audio-ink"
+      && desktopVisualizer.visualizer === "audio-reactive-silk-tide"
       && desktopVisualizer.presentation === "full-screen-webgl"
       && desktopVisualizer.audioAnalysis === "fft-spectrum-flux-waveform"
-      && desktopVisualizer.reactivity === "adaptive-bass-density-mid-meander-high-caustics-flux-surge"
-      && desktopVisualizer.motionProfile === "multi-scale-braided-currents"
+      && desktopVisualizer.reactivity === "bass-bloom-mid-curl-high-shimmer-flux-spark"
+      && desktopVisualizer.motionProfile === "layered-curl-warped-veils"
+      && desktopVisualizer.formLanguage === "soft-feathered-veils-no-core"
+      && desktopVisualizer.palette === "wisteria-sky-mint-sakura-apricot"
       && desktopVisualizer.width > 300
       && desktopVisualizer.height > 280
       && desktopVisualizer.legacyPlanetCount === 0
@@ -165,7 +176,7 @@ try {
   assert(desktopVisualizer.characterSceneRect.left <= 0 && desktopVisualizer.characterSceneRect.top <= 0 && desktopVisualizer.characterSceneRect.right >= 2048 && desktopVisualizer.characterSceneRect.bottom >= 1114, `sound-mode background does not cover the viewport: ${JSON.stringify(desktopVisualizer)}`);
   assert(desktopVisualizer.closeRect.left <= 32 && desktopVisualizer.closeRect.top <= 32, `sound-mode return is not at the upper-left: ${JSON.stringify(desktopVisualizer)}`);
   assert(await page.locator("[data-sound-track]").count() === 12, "sound archive does not contain 12 unique tracks");
-  assert((await page.locator(".sound-track-heading strong").innerText()) === "12 TRACKS", "track count heading is stale");
+  assert((await page.locator(".sound-track-heading strong").textContent())?.trim() === "12 TRACKS", "track count heading is stale");
   const unusedTrackIds = await page.locator("[data-sound-track]", { hasText: "（未使用曲）" }).evaluateAll((nodes) => nodes.map((node) => node.dataset.soundTrack));
   assert(JSON.stringify(unusedTrackIds) === JSON.stringify(["snowafter"]), `unused track labels are incorrect: ${JSON.stringify(unusedTrackIds)}`);
 
@@ -233,6 +244,7 @@ try {
   );
   report.shaderBands = shaderBands;
   report.analysisFrame = analysisFrame;
+  await page.evaluate(() => window.scrollTo({ left: 0, top: 0, behavior: "instant" }));
   await page.locator('[data-sound-track="ending"]').click();
   await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 10000 });
   await page.evaluate(() => globalThis.GaiaOpeningAudio.seek(24));
@@ -246,7 +258,7 @@ try {
     sceneFilter: getComputedStyle(document.querySelector(".sound-character-scene")).filter,
     visualizerFilter: getComputedStyle(document.querySelector("#sound-visualizer")).filter,
   }));
-  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.98 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.4 && playingAppearance.sceneOpacity <= 0.5 && !playingAppearance.sceneFilter.includes("blur") && playingAppearance.visualizerFilter.includes("saturate(1.3)") && playingAppearance.visualizerFilter.includes("contrast(1.2)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
+  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.98 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.4 && playingAppearance.sceneOpacity <= 0.5 && !playingAppearance.sceneFilter.includes("blur") && playingAppearance.visualizerFilter.includes("saturate(1.22)") && playingAppearance.visualizerFilter.includes("contrast(1.08)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop.png"), fullPage: true });
   const reactiveRange = await page.evaluate(async () => {
     const samples = [];
@@ -293,7 +305,13 @@ try {
   mobile.setDefaultNavigationTimeout(90_000);
   attachDiagnostics(mobile);
   await mobile.goto(routeUrl, { waitUntil: "domcontentloaded" });
-  await mobile.locator("#sound-layer").waitFor({ state: "visible", timeout: 15000 });
+  await mobile.waitForFunction(() => {
+    const layer = document.querySelector("#sound-layer");
+    return layer instanceof HTMLElement
+      && !layer.hidden
+      && layer.getAttribute("aria-hidden") === "false"
+      && layer.classList.contains("is-open");
+  }, null, { timeout: 75000 });
   await mobile.waitForFunction(() => !["", "pending"].includes(document.querySelector("#sound-visualizer")?.dataset.renderer || "pending"));
   const mobileGeometry = await mobile.evaluate(() => ({
     count: document.querySelectorAll("[data-sound-track]").length,
@@ -319,7 +337,7 @@ try {
     visualizerRect: document.querySelector("#sound-visualizer").getBoundingClientRect().toJSON(),
   }));
   assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "full-field-audio-ink" && mobileGeometry.presentation === "full-screen-webgl" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.planetariumCount === 0 && mobileGeometry.guideCount === 0 && mobileGeometry.digitalGridCount === 0, `mobile WebGL audio field failed: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "audio-reactive-silk-tide" && mobileGeometry.presentation === "full-screen-webgl" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.planetariumCount === 0 && mobileGeometry.guideCount === 0 && mobileGeometry.digitalGridCount === 0, `mobile WebGL audio field failed: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.visualizerRect.width >= 390 && mobileGeometry.visualizerRect.height >= 844, `mobile WebGL field is not viewport-sized: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.eqCount === 0 && mobileGeometry.characterSceneLoaded, `the mobile EQ remains or the characters are missing: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.visualizerOpacity === 0 && mobileGeometry.sceneOpacity > 0.8, `mobile sound mode did not open on the background-only state: ${JSON.stringify(mobileGeometry)}`);

@@ -84,10 +84,10 @@
       templates: ["gaia-template-sound"],
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
-        "./sound-mode.css?v=gaia-sound-braided-currents-4",
+        "./sound-mode.css?v=gaia-sound-silk-tide-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-mode.js?v=gaia-sound-braided-currents-4"],
+      scripts: ["./sound-mode.js?v=gaia-sound-silk-tide-1"],
     },
     character: {
       templates: ["gaia-template-character"],
@@ -330,7 +330,7 @@
     } else if (hash === "#world") {
       await load("exploration");
     } else if (hash === "#sound") {
-      await Promise.all([load("exploration"), load("sound")]);
+      await load("sound");
     } else if (hash === "#character") {
       await Promise.all([load("exploration"), load("character")]);
     } else if (hash === "#tour") {
