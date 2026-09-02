@@ -245,7 +245,7 @@ try {
   report.shaderBands = shaderBands;
   report.analysisFrame = analysisFrame;
   await page.evaluate(() => window.scrollTo({ left: 0, top: 0, behavior: "instant" }));
-  await page.locator('[data-sound-track="ending"]').click();
+  await page.locator('[data-sound-track="ending"]').evaluate((button) => button.click());
   await page.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 10000 });
   await page.evaluate(() => globalThis.GaiaOpeningAudio.seek(24));
   await page.waitForTimeout(2600);
