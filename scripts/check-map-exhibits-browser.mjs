@@ -145,6 +145,11 @@ const findClickableDataPoint = async (page, modeId) => page.evaluate(async (requ
 }, modeId);
 
 const clickDataPoint = async (page, modeId) => {
+  await page.waitForFunction(() => {
+    const overlay = document.querySelector("#japan-overlay");
+    return overlay?.dataset.plotRevealWaitsForSeparator === "false"
+      && performance.now() >= Number(overlay.dataset.plotRevealFirstVisibleAt || 0);
+  });
   const point = await findClickableDataPoint(page, modeId);
   assert(point, `${modeId}: no uncovered data point is clickable`);
   await page.mouse.click(point.clientX, point.clientY);
@@ -509,6 +514,11 @@ try {
       await selectMode(page, 3, "再資源化率を比べる");
       await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.recyclingEncoding === "fixed-diameter-pie");
       await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.plotRevealState === "running"
+          && Number(overlay.dataset.plotRevealProgress) > 0.08;
+      });
       const poiHoverPoint = await findClickableDataPoint(page, "nothing-is-waste");
       assert(poiHoverPoint, "pc: no recycling POI was available for hover verification");
       await page.mouse.move(poiHoverPoint.clientX, poiHoverPoint.clientY);
@@ -624,28 +634,40 @@ try {
 
     if (recyclingOnly) {
       await selectMode(page, 3, "再資源化率を比べる");
+      await waitForMapGuide(page);
       const slider = page.locator("#japan-layer [data-signal-time]").first();
       const initial = await page.locator("#japan-overlay").evaluate((element) => ({
         current: Number(element.dataset.recyclingSelectedRate),
-        target: Number(element.dataset.recyclingScenarioRate),
-        increase: Number(element.dataset.recyclingScenarioIncrease),
+        index: Number(element.dataset.recyclingSelectedIndex),
+        status: element.dataset.recyclingSelectedStatus,
+        hasScenarioRate: Object.hasOwn(element.dataset, "recyclingScenarioRate"),
       }));
-      assert.equal(initial.target, initial.current, `${viewport.name}: initial target is below or above the current baseline`);
-      assert.equal(initial.increase, 0, `${viewport.name}: initial target should start at +0 points`);
-      assert.match(await page.locator("#map-guide-action").textContent(), /自分で決める改善目標.*予測や公的目標ではありません/u);
-      assert.doesNotMatch(await page.locator("#japan-layer").innerText(), /もしも/u);
-      assert.match(await page.locator("#japan-layer [data-signal-time-label]").first().textContent(), /自分の改善目標/u);
+      assert.equal(initial.index, 0, `${viewport.name}: initial country index`);
+      assert.equal(initial.status, "official", `${viewport.name}: initial country status`);
+      assert.equal(initial.hasScenarioRate, false, `${viewport.name}: visitor scenario dataset remains`);
+      assert.match(await page.locator("#map-guide-action").textContent(), /左右ボタンかスライダーで31の国・地域/u);
+      assert.doesNotMatch(await page.locator("#japan-layer").innerText(), /自分の目標|改善目標|黄色い外周|もしも/u);
+      assert.match(await page.locator("#japan-layer [data-signal-time-label]").first().textContent(), /国・地域.*01→31/u);
+      assert.equal(await slider.getAttribute("min"), "0");
+      assert.equal(await slider.getAttribute("max"), "30");
+      assert.equal(await slider.getAttribute("step"), "1");
       await slider.press("End");
-      await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.recyclingScenarioRate) === 100);
-      const targetText = await page.locator("#japan-layer [data-signal-value]").first().innerText();
-      assert.match(targetText, /自分の目標 100\.0%/u);
+      await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.recyclingSelectedIndex) === 30);
+      const selectedText = await page.locator("#japan-layer [data-signal-value]").first().innerText();
+      assert.match(selectedText, /再資源化率 \d+\.\d% \/ (?:国連公式値|補完値)/u);
+      assert.match(await slider.getAttribute("aria-valuetext"), /31番目.*再資源化率.*(?:国連公式値|補完値)/u);
+      if (viewport.name === "pc") {
+        await page.locator('[data-map-dock-year-step="-1"]').click();
+        await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.recyclingSelectedIndex) === 29);
+        await page.waitForFunction(() => document.querySelector("[data-map-dock-year]")?.textContent === "30");
+      }
       const settledPosition = Number(await slider.inputValue());
       await page.waitForTimeout(2_000);
-      assert.equal(Number(await slider.inputValue()), settledPosition, `${viewport.name}: manual target resumed automatic motion`);
-      const screenshot = path.join(outputDir, `${viewport.name}-04-recycling-target-clear.png`);
+      assert.equal(Number(await slider.inputValue()), settledPosition, `${viewport.name}: country selection resumed automatic motion`);
+      const screenshot = path.join(outputDir, `${viewport.name}-04-recycling-country-selector.png`);
       await page.screenshot({ path: screenshot });
       scan.screenshots.push(screenshot);
-      scan.recyclingTarget = { initial, target: 100, manual: true };
+      scan.recyclingCountrySelector = { initial, selectedIndex: settledPosition, manual: true };
       report.scans.push(scan);
       await context.close();
       console.log(`PASS ${viewport.name}`);
@@ -653,26 +675,52 @@ try {
     }
 
     if (legendOnly) {
-      await selectMode(page, 2, "森林と降水量を重ねる");
-      const mobileLegendToggle = page.locator("#map-mobile-legend-toggle");
-      if (await mobileLegendToggle.isVisible()) {
-        await mobileLegendToggle.click();
-        await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-legend-expanded"));
-      }
-      await page.waitForFunction(() => {
-        const title = document.querySelector("[data-signal-encoding-legend-title]");
-        const legend = document.querySelector("[data-signal-encoding-legend]");
-        const overlay = document.querySelector("#japan-overlay");
-        return title?.getClientRects().length > 0
-          && legend?.getClientRects().length > 0
-          && overlay?.dataset.forestMask === "ready";
-      });
+      await selectMode(page, 0, "地球の一呼吸");
+      await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
       await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(2).evaluate((button) => button.click());
       await page.waitForFunction(() => {
         const overlay = document.querySelector("#japan-overlay");
-        return overlay?.dataset.plotRevealState === "running"
-          && /^mode-(?:change|reselect)$/u.test(overlay.dataset.plotRevealReason || "")
+        return document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning")
+          && overlay?.dataset.plotRevealState === "waiting-for-separator"
+          && overlay?.dataset.plotRevealWaitsForSeparator === "true"
           && Number(overlay.dataset.plotRevealCount) >= 6;
+      });
+      const separatorStart = await page.locator("#japan-overlay").evaluate((overlay) => ({
+        separatorVisible: document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"),
+        separatorState: overlay.dataset.titleSeparatorState || "",
+        separatorEndsAt: Number(overlay.dataset.titleSeparatorEndsAt),
+        revealState: overlay.dataset.plotRevealState || "",
+        revealProgress: Number(overlay.dataset.plotRevealProgress),
+        revealScheduledAt: Number(overlay.dataset.plotRevealScheduledAt),
+        firstPoiVisibleAt: Number(overlay.dataset.plotRevealFirstVisibleAt),
+        count: Number(overlay.dataset.plotRevealCount),
+      }));
+      assert.equal(separatorStart.separatorVisible, true);
+      assert.equal(separatorStart.separatorState, "running");
+      assert.equal(separatorStart.revealState, "waiting-for-separator");
+      assert.equal(separatorStart.revealProgress, 0);
+      assert(separatorStart.revealScheduledAt >= separatorStart.separatorEndsAt - 1);
+      assert(separatorStart.firstPoiVisibleAt > separatorStart.separatorEndsAt);
+      await page.waitForTimeout(520);
+      const separatorMiddle = await page.locator("#japan-overlay").evaluate((overlay) => ({
+        separatorVisible: document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"),
+        revealState: overlay.dataset.plotRevealState || "",
+        revealProgress: Number(overlay.dataset.plotRevealProgress),
+      }));
+      assert.deepEqual(separatorMiddle, {
+        separatorVisible: true,
+        revealState: "waiting-for-separator",
+        revealProgress: 0,
+      }, `${viewport.name}: POIs started while the title separator was still visible`);
+      const separatorScreenshot = path.join(outputDir, `${viewport.name}-forest-separator-before-poi.png`);
+      await page.screenshot({ path: separatorScreenshot });
+      scan.screenshots.push(separatorScreenshot);
+      await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.titleSeparatorState === "complete"
+          && overlay?.dataset.plotRevealState === "running"
+          && overlay?.dataset.plotRevealWaitsForSeparator === "false";
       });
       const revealStart = await page.locator("#japan-overlay").evaluate((overlay) => ({
         state: overlay.dataset.plotRevealState || "",
@@ -680,7 +728,12 @@ try {
         generation: Number(overlay.dataset.plotRevealGeneration),
         progress: Number(overlay.dataset.plotRevealProgress),
         count: Number(overlay.dataset.plotRevealCount),
+        separatorCompletedAt: Number(overlay.dataset.titleSeparatorCompletedAt),
+        firstPoiVisibleAt: Number(overlay.dataset.plotRevealFirstVisibleAt),
       }));
+      assert(revealStart.firstPoiVisibleAt >= revealStart.separatorCompletedAt, `${viewport.name}: first POI precedes separator completion`);
+      assert(revealStart.progress < 0.25, `${viewport.name}: POI reveal skipped its entrance after separator`);
+
       await page.waitForTimeout(420);
       const revealMiddle = await page.locator("#japan-overlay").evaluate((overlay) => ({
         state: overlay.dataset.plotRevealState || "",
@@ -694,6 +747,19 @@ try {
       await page.screenshot({ path: revealScreenshot });
       scan.screenshots.push(revealScreenshot);
       await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.plotRevealState === "complete", null, { timeout: 4_000 });
+      const mobileLegendToggle = page.locator("#map-mobile-legend-toggle");
+      if (await mobileLegendToggle.isVisible()) {
+        await mobileLegendToggle.click();
+        await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-legend-expanded"));
+      }
+      await page.waitForFunction(() => {
+        const title = document.querySelector("[data-signal-encoding-legend-title]");
+        const legend = document.querySelector("[data-signal-encoding-legend]");
+        const overlay = document.querySelector("#japan-overlay");
+        return title?.getClientRects().length > 0
+          && legend?.getClientRects().length > 0
+          && overlay?.dataset.forestMask === "ready";
+      });
       const legend = await page.evaluate(() => ({
         title: document.querySelector("[data-signal-encoding-legend-title]")?.textContent.trim() || "",
         body: document.querySelector("[data-signal-encoding-legend]")?.textContent.replace(/\s+/gu, " ").trim() || "",
@@ -706,7 +772,7 @@ try {
       const screenshot = path.join(outputDir, `${viewport.name}-forest-map-legend.png`);
       await page.screenshot({ path: screenshot, animations: "disabled" });
       scan.screenshots.push(screenshot);
-      scan.legend = legend;
+      scan.legend = { ...legend, separatorStart, separatorMiddle, revealStart };
       report.scans.push(scan);
       await context.close();
       console.log(`PASS ${viewport.name}`);
@@ -873,7 +939,18 @@ try {
     const circulationVisual = await page.locator("#japan-overlay").evaluate((overlay) => ({
       language: overlay.dataset.currentVisualLanguage,
       arrowStride: Number(overlay.dataset.currentArrowStride),
+      layerOrder: overlay.dataset.layerOrder,
+      referenceMapCopies: overlay.dataset.vectorWorldCopies || "",
       integratedMode: document.querySelector("#gaia-canvas")?.dataset.integratedMapMode,
+      canvasParent: document.querySelector("#gaia-canvas")?.parentElement?.id,
+      canvasLayer: document.querySelector("#gaia-canvas")?.dataset.mapLayer,
+      canvasZIndex: Number(getComputedStyle(document.querySelector("#gaia-canvas")).zIndex),
+      overlayZIndex: Number(getComputedStyle(overlay).zIndex),
+      meanSpeedMs: Number(document.querySelector("#gaia-canvas")?.dataset.currentMeanSpeedMs),
+      maximumSpeedMs: Number(document.querySelector("#gaia-canvas")?.dataset.currentMaximumSpeedMs),
+      strength: Number(document.querySelector("#gaia-canvas")?.dataset.currentStrength),
+      vectorCount: Number(document.querySelector("#gaia-canvas")?.dataset.currentVectorCount),
+      renderedSampleCount: Number(document.querySelector("#gaia-canvas")?.dataset.currentRenderedSampleCount),
       integratedOpacity: getComputedStyle(document.querySelector("#japan-layer"))
         .getPropertyValue("--map-light-opacity")
         .trim(),
@@ -882,6 +959,16 @@ try {
     assert(circulationVisual.arrowStride >= 3);
     assert.equal(circulationVisual.integratedMode, "02");
     assert.equal(circulationVisual.integratedOpacity, "0.34");
+    assert.equal(circulationVisual.canvasParent, "japan-map");
+    assert.equal(circulationVisual.canvasLayer, "below-reference-map-and-poi");
+    assert.equal(circulationVisual.layerOrder, "reference-map-and-poi-above-webgl");
+    assert(circulationVisual.referenceMapCopies.length > 0, `${viewport.name}: reference map did not render above WebGL`);
+    assert(circulationVisual.overlayZIndex > circulationVisual.canvasZIndex, `${viewport.name}: WebGL covers the map/POI canvas`);
+    assert(circulationVisual.meanSpeedMs > 0, `${viewport.name}: mean current speed was not uploaded`);
+    assert(circulationVisual.maximumSpeedMs > circulationVisual.meanSpeedMs, `${viewport.name}: maximum current speed was not uploaded`);
+    assert(Math.abs(circulationVisual.strength - Math.min(1, circulationVisual.meanSpeedMs)) < 0.001);
+    assert(circulationVisual.vectorCount >= circulationVisual.renderedSampleCount);
+    assert(circulationVisual.renderedSampleCount > 0 && circulationVisual.renderedSampleCount <= 32);
     scan.circulationVisual = circulationVisual;
     const zoomScreenshot = path.join(outputDir, `${viewport.name}-02-japan-zoom.png`);
     await page.screenshot({ path: zoomScreenshot });
@@ -1025,6 +1112,7 @@ try {
     await closeDataCard(page);
 
     await selectMode(page, 3, "再資源化率を比べる");
+    await waitForMapGuide(page);
     await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.recyclingEncoding === "fixed-diameter-pie");
     const recyclingEncoding = await page.locator("#japan-overlay").evaluate((element) => ({
       encoding: element.dataset.recyclingEncoding,
@@ -1032,8 +1120,8 @@ try {
       officialCount: Number(element.dataset.recyclingOfficialCount),
       imputedCount: Number(element.dataset.recyclingImputedCount),
       selectedRate: Number(element.dataset.recyclingSelectedRate),
-      targetRate: Number(element.dataset.recyclingScenarioRate),
-      targetIncrease: Number(element.dataset.recyclingScenarioIncrease),
+      selectedIndex: Number(element.dataset.recyclingSelectedIndex),
+      selectedStatus: element.dataset.recyclingSelectedStatus,
     }));
     assert.deepEqual(recyclingEncoding, {
       encoding: "fixed-diameter-pie",
@@ -1041,8 +1129,8 @@ try {
       officialCount: 17,
       imputedCount: 14,
       selectedRate: 19.6,
-      targetRate: 19.6,
-      targetIncrease: 0,
+      selectedIndex: 0,
+      selectedStatus: "official",
     });
     await page.waitForFunction(() => /緑の扇形.*橙/u.test(document.querySelector("#map-guide-reading")?.textContent || ""));
     const recyclingGuide = await page.locator("#map-guide-reading").textContent();
@@ -1057,24 +1145,19 @@ try {
       selectedCurrentRate,
     );
     await closeDataCard(page);
-    const beforeScenario = await page.locator("#japan-layer [data-signal-value]").first().innerText();
+    const beforeCountryChange = await page.locator("#japan-layer [data-signal-value]").first().innerText();
     const slider = page.locator("#japan-layer [data-signal-time]").first();
     await slider.focus();
     await slider.press("End");
-    await page.waitForFunction(() => {
-      const overlay = document.querySelector("#japan-overlay");
-      return Number(overlay?.dataset.recyclingScenarioRate) > Number(overlay?.dataset.recyclingSelectedRate);
-    });
-    const afterScenario = await page.locator("#japan-layer [data-signal-value]").first().innerText();
-    assert.notEqual(afterScenario, beforeScenario);
-    assert.match(afterScenario, /自分の目標 100\.0% \(\+\d+\.\dpt\)/u);
-    const scenarioRate = Number(await page.locator("#japan-overlay").getAttribute("data-recycling-scenario-rate"));
-    const scenarioIncrease = Number(await page.locator("#japan-overlay").getAttribute("data-recycling-scenario-increase"));
-    assert.equal(scenarioRate, 100);
-    assert.ok(scenarioRate >= selectedCurrentRate);
-    assert.equal(scenarioIncrease, Number((100 - selectedCurrentRate).toFixed(1)));
-    assert.match(await slider.getAttribute("aria-valuetext"), /自分の改善目標 100\.0%.*プラス\d+\.\dポイント/u);
-    const wasteScreenshot = path.join(outputDir, `${viewport.name}-04-recycling-target.png`);
+    await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.recyclingSelectedIndex) === 30);
+    const afterCountryChange = await page.locator("#japan-layer [data-signal-value]").first().innerText();
+    assert.notEqual(afterCountryChange, beforeCountryChange);
+    assert.match(afterCountryChange, /再資源化率 \d+\.\d% \/ (?:国連公式値|補完値)/u);
+    assert.equal(await slider.getAttribute("max"), "30");
+    assert.match(await slider.getAttribute("aria-valuetext"), /31番目.*再資源化率.*(?:国連公式値|補完値)/u);
+    assert.equal(await page.locator("#japan-overlay").getAttribute("data-recycling-scenario-rate"), null);
+    assert.doesNotMatch(await page.locator("#japan-layer").innerText(), /自分の目標|改善目標|黄色い外周/u);
+    const wasteScreenshot = path.join(outputDir, `${viewport.name}-04-recycling-country-selector.png`);
     await page.screenshot({ path: wasteScreenshot });
     scan.screenshots.push(wasteScreenshot);
 

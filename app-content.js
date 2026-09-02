@@ -294,7 +294,7 @@
       label: "ごみ",
       cue: "再資源化率を比べる",
       code: "RECYCLING",
-      copy: "国ごとの現在値を比べ、選んだ国に自分の改善目標を置く。",
+      copy: "31の国・地域を切り替え、再資源化率の公式値と補完値を比べる。",
     },
     {
       label: "都市",
@@ -387,40 +387,42 @@ vec3 modeBreathingEarth(vec2 p, float t, vec2 response, float memory) {
       rgb: "99, 227, 255",
       source: `
 vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
-  float slowTime = t * 0.062;
+  // uSignal.x/y are the observed mean/maximum speed normalized from m/s.
+  // Each uCurrentSamples item is an on-screen observation: xy position,
+  // normalized speed and the measured u/v direction angle.
+  float currentEnergy = clamp(uSignal.x * 0.68 + uSignal.y * 0.32, 0.0, 1.0);
+  float slowTime = t * mix(0.026, 0.092, currentEnergy);
   vec2 q = p;
   float basin = fbm(q * 0.58 + vec2(-slowTime * 0.08, slowTime * 0.035));
   float waterWarp = fbm(q * 1.08 + vec2(slowTime * 0.13, -slowTime * 0.09));
-  q += vec2((basin - 0.5) * 0.15, (waterWarp - 0.5) * 0.34);
+  q += vec2((basin - 0.5) * 0.14, (waterWarp - 0.5) * 0.3);
   q += uVelocity * response.x * 0.018;
 
-  // One broad current carries several translucent filaments instead of a
-  // vector-grid texture. The two frequencies separate, meet and separate
-  // again slowly, like light seen through moving deep water.
+  // A broad, slow-moving body of water replaces a diagram-like vector grid.
   float currentAxis = -0.06
     + sin((p.x + 0.3) * 0.95 - slowTime * 0.18) * 0.33
     + sin(p.x * 3.4 + slowTime * 0.25) * 0.045
     + (waterWarp - 0.5) * 0.16;
   float meander = p.y - currentAxis;
-  float kuroshioRibbon = exp(-abs(meander) / 0.082);
-  float ribbonAura = exp(-abs(meander) / 0.36);
+  float kuroshioRibbon = exp(-abs(meander) / mix(0.105, 0.062, uSignal.y));
+  float ribbonAura = exp(-abs(meander) / mix(0.42, 0.3, currentEnergy));
   float silkPhase = meander * 43.0
     + fbm(q * 2.05 + vec2(-slowTime * 0.16, slowTime * 0.08)) * 3.8;
-  float silk = pow(0.5 + 0.5 * cos(silkPhase), 14.0);
+  float silk = pow(0.5 + 0.5 * cos(silkPhase), mix(10.0, 17.0, currentEnergy));
   float undertow = pow(
     0.5 + 0.5 * cos(meander * 22.0 - waterWarp * 2.4 + slowTime * 0.42),
     7.0
   );
   float travelingPearl = 0.34 + 0.66 * pow(
-    0.5 + 0.5 * sin(q.x * 6.4 - slowTime * 3.1 + waterWarp * 5.0),
-    4.0
+    0.5 + 0.5 * sin(q.x * 6.4 - slowTime * mix(2.2, 5.2, currentEnergy) + waterWarp * 5.0),
+    5.0
   );
 
   vec2 eddyPointA = p - vec2(0.62, 0.12);
   float eddyRadiusA = length(eddyPointA);
   float eddyAngleA = atan(eddyPointA.y, eddyPointA.x);
   float eddyA = pow(
-    0.5 + 0.5 * cos(eddyRadiusA * 18.0 - eddyAngleA * 2.0 - slowTime * 1.8),
+    0.5 + 0.5 * cos(eddyRadiusA * 18.0 - eddyAngleA * 2.0 - slowTime * mix(1.1, 2.4, currentEnergy)),
     10.0
   ) * exp(-eddyRadiusA * 2.15);
 
@@ -428,21 +430,51 @@ vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
   float eddyRadiusB = length(eddyPointB);
   float eddyAngleB = atan(eddyPointB.y, eddyPointB.x);
   float eddyB = pow(
-    0.5 + 0.5 * cos(eddyRadiusB * 21.0 + eddyAngleB * 2.4 + slowTime * 1.35),
+    0.5 + 0.5 * cos(eddyRadiusB * 21.0 + eddyAngleB * 2.4 + slowTime * mix(0.8, 1.8, currentEnergy)),
     12.0
   ) * exp(-eddyRadiusB * 2.65);
+
+  // Exact observation points shape the WebGL light. Faster measured currents
+  // become wider, brighter and move their pearls faster; slower points remain
+  // a dim underwater drift. The reference map and clickable POIs are a canvas
+  // layer above this shader, so this field can never erase them.
+  float observedFlow = 0.0;
+  float observedPearls = 0.0;
+  for (int i = 0; i < 32; i++) {
+    if (i >= uCurrentSampleCount) break;
+    vec4 observed = uCurrentSamples[i];
+    float measuredSpeed = clamp(observed.z, 0.0, 1.0);
+    vec2 local = rot(-observed.w) * (p - observed.xy);
+    float reach = mix(0.1, 0.26, measuredSpeed) * mix(0.78, 1.18, uSignal.w);
+    float width = mix(0.012, 0.047, measuredSpeed);
+    float envelope = exp(
+      -pow(local.x / max(reach, 0.01), 2.0)
+      -pow(local.y / max(width * 3.2, 0.01), 2.0)
+    );
+    float filament = exp(-abs(local.y) / max(width, 0.004));
+    float pearlPhase = local.x * mix(34.0, 20.0, measuredSpeed)
+      - slowTime * mix(2.0, 7.2, measuredSpeed)
+      + float(i) * 1.731;
+    float pearl = pow(0.5 + 0.5 * cos(pearlPhase), 18.0);
+    observedFlow += filament * envelope * mix(0.13, 0.82, measuredSpeed);
+    observedPearls += pearl * filament * envelope * mix(0.08, 1.0, measuredSpeed);
+  }
+  observedFlow = min(observedFlow, 1.5);
+  observedPearls = min(observedPearls, 1.35);
 
   float suspendedLight = smoothstep(
     0.86,
     1.0,
     noise(q * 20.0 + vec2(-slowTime * 0.7, slowTime * 0.22))
   ) * ribbonAura;
-  float oceanPresence = 0.28 + 0.72 * smoothstep(-0.82, 0.26, p.x);
-  float density = ribbonAura * 0.16
-    + ribbonAura * (silk * 0.82 + undertow * 0.3) * travelingPearl * oceanPresence
-    + kuroshioRibbon * 0.2
-    + eddyA * 0.32
-    + eddyB * 0.28
+  float oceanPresence = 0.24 + 0.76 * smoothstep(-0.82, 0.26, p.x);
+  float density = ribbonAura * mix(0.08, 0.16, currentEnergy)
+    + ribbonAura * (silk * 0.72 + undertow * 0.22) * travelingPearl * oceanPresence
+    + kuroshioRibbon * mix(0.08, 0.2, currentEnergy)
+    + eddyA * mix(0.14, 0.32, currentEnergy)
+    + eddyB * mix(0.12, 0.28, currentEnergy)
+    + observedFlow * 0.78
+    + observedPearls * 0.64
     + suspendedLight * 0.34
     + response.x * 0.62
     + response.y * 0.18;
@@ -457,9 +489,15 @@ vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
     * (silk * ribbonAura + kuroshioRibbon * 0.22)
     * travelingPearl
     * oceanPresence;
+  vec3 measuredLight = mix(
+    vec3(0.06, 0.38, 0.62),
+    vec3(0.56, 0.98, 0.9),
+    currentEnergy
+  ) * (observedFlow * 0.55 + observedPearls * 0.95);
   return background
     + deepWater * density
     + pearl * 0.42
+    + measuredLight
     + vec3(0.06, 0.3, 0.54) * ribbonAura * (0.08 + memory * 0.13);
 }
 `.trim(),
@@ -509,9 +547,9 @@ vec3 modeForestCloudEngine(vec2 p, float t, vec2 response, float memory) {
     },
     {
       id: "nothing-is-waste",
-      title: "Recycling: Current Rate & Your Target",
+      title: "Recycling: Country Values",
       titleJa: "再資源化率を比べる",
-      description: "国連SDG 12.5.1の都市ごみ再資源化率を、同じ大きさの円グラフで国ごとに比べます。緑は再資源化、橙はそれ以外。国を選ぶと、現在値を内円に残したまま、自分で決める改善目標を黄色い外周へ置けます。目標は予測や公的目標ではありません。",
+      description: "国連SDG 12.5.1の都市ごみ再資源化率を、同じ大きさの円グラフで31の国・地域ごとに比べます。緑は再資源化、橙はそれ以外。実線は国連公式値、破線は近隣5か国から計算した補完値です。",
       accent: "#b4ef6d",
       rgb: "180, 239, 109",
       source: `
@@ -778,10 +816,10 @@ vec3 modePopulationTide(vec2 p, float t, vec2 response, float memory) {
       seeing:
         "各円の緑が再資源化率、橙が再資源化として報告されなかった残りです。円の直径はすべて同じなので、緑の扇形が大きい国ほど再資源化率が高いと読めます。実線は国連の公開値、破線は近い5か国から補った値です。",
       touch:
-        "国の円グラフを押すと大きくなり、中央に現在値が出ます。スライダーを右へ動かすと、現在値以上の『自分で決める改善目標』が黄色い外周に出ます。これは予測やその国の公的目標ではなく、観客が置くSCENARIOです。",
+        "左右ボタンかスライダーで31の国・地域を一つずつ切り替えられます。国の円グラフを押して直接選ぶこともでき、再資源化率、報告年、国連公式値か補完値か、出典を確認できます。",
       context:
         "授業「自然界にはゴミもうんちも存在しない」では、ある生きものの不要物が次の生きものの材料になる循環を扱います。人の製品も、作るときから回収や修理まで考える必要があります。",
-      question: "緑より橙が大きい国はどこでしょう。現在の再資源化率から、自分の改善目標まで何ポイント必要でしょうか。",
+      question: "緑より橙が大きい国はどこでしょう。公式値と補完値を区別しながら、国ごとの差を比べてみましょう。",
     },
     "anthropocene-scar": {
       lead:
@@ -844,7 +882,7 @@ vec3 modePopulationTide(vec2 p, float t, vec2 response, float memory) {
     "breathing-earth": "地図の見方：色はCO₂濃度です。斜線のマスは、近くの8地点から計算した値です。1958〜2009年は後年の衛星地図を使った再構成、2026年以降は最近10年の傾向が続いた場合の試算です。",
     "blue-circulation": "地図の見方：色付きの矢印は海流で、青→水色→黄→橙の順に速くなります。点から伸びる線は、同じ海流が続くと仮定した0〜14日後の移動距離です。白い矢印は比較用の平均風で、距離計算には使いません。海の予報ではありません。",
     "forest-cloud-engine": "地図の見方：緑は2023年MODIS土地被覆から抜き出した森林域、大きな水色円は世界31代表地点の平均降水量です。直径が大きいほど雨が多く、雨の多い円にはmm/dayも直接表示します。ブラジルのアマゾン付近は5.33 mm/dayです。地点間は補間せず、相関係数や因果関係を示す図ではありません。",
-    "nothing-is-waste": "地図の見方：同じ大きさの円グラフの緑が再資源化率、橙がそれ以外です。実線は国連の公開値、破線は近い5か国から計算した補完値。選択国の黄色い外周は、自分で決める改善目標です。予測や公的目標ではありません。",
+    "nothing-is-waste": "地図の見方：同じ大きさの円グラフの緑が再資源化率、橙がそれ以外です。実線は国連の公式値、破線は近隣5か国から計算した補完値です。左右ボタンとスライダーで31の国・地域を切り替え、報告年とデータ区分を確認できます。",
     "anthropocene-scar": "地図の見方：赤い円は1945〜2023年の国別化石燃料由来CO₂で、スライダーは年を動かします。白い発光は2016年のNASA VIIRS夜間光を固定した比較用レイヤーです。過去の夜間光ではありません。0.65秒以上長押しすると白だけが6秒間薄くなります。",
     "rhythm-of-disaster": "地図の見方：初期表示は世界です。2000〜2026年を年度ごとに切り替え、その年のUSGS M7.5以上だけを表示します。年度切替時に全震源の輪が一斉に始まり、約7〜15秒かけてM7.5約500km〜M9.1約2,000kmの推定可感半径まで広がります。実際の震度分布・被害・津波範囲ではなく、日本の実測震度は別層です。",
     "three-ecologies": "地図の見方：同じ31か国の森林面積率を緑の内円、都市人口率を青の外円で重ねます。散布図の横軸は都市、縦軸は森林で、回帰線と相関係数rが全体傾向を示します。スライダーは都市人口率の低い国から高い国へ比較対象を移します。紫の世界遺産例は相関計算へ含めません。",

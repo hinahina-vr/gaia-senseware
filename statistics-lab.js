@@ -79,9 +79,6 @@ if (!lab || !openButton) {
     takeawayBody: q("#gaia-statistics-takeaway-body"),
     takeawayEvidence: q("#gaia-statistics-takeaway-evidence"),
     takeawayCaveat: q("#gaia-statistics-takeaway-caveat"),
-    exportCsv: q("#gaia-statistics-export-csv"),
-    exportJson: q("#gaia-statistics-export-json"),
-    exportPng: q("#gaia-statistics-export-png"),
     canvas: q("#gaia-statistics-canvas"),
     visual: q("#gaia-statistics-visual"),
     metrics: q("#gaia-statistics-metrics"),
@@ -215,7 +212,6 @@ if (!lab || !openButton) {
     chartKeyboardIndex: -1,
     animation: 0,
     renderToken: 0,
-    exportReady: false,
   };
 
   const finite = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
@@ -321,11 +317,6 @@ if (!lab || !openButton) {
   const customInsight = ({ headline, meaning, evidence = [], interpretation, limitations, nextActions, provenance }) => ({ headline, meaning, evidence, interpretation, limitations, nextActions, provenance });
   const customResult = ({ kind = "custom", metrics = [], chart = { type: "summary" }, insight, formula = "" }) => ({ kind, metrics, chart, insight, formula });
 
-  const setExportsEnabled = (enabled) => {
-    state.exportReady = Boolean(enabled);
-    [ui.exportCsv, ui.exportJson, ui.exportPng].forEach((button) => { if (button) button.disabled = !state.exportReady; });
-  };
-
   const primaryMetricFor = (result) => {
     const metrics = (result.metrics || []).filter((metric) => Number.isFinite(Number(metric?.[1])));
     const preferred = metrics.find(([label]) => /平均|中央値|相関|傾き|R²|推定|確率|オッズ比|効果量|F$|χ²/u.test(label));
@@ -393,118 +384,6 @@ if (!lab || !openButton) {
     }
     ui.segmentCompare.replaceChildren(comparisonLabel, comparisonValue, comparisonNote);
   };
-
-  const normalizedExportValue = (value) => {
-    if (value instanceof Date) return value.toISOString();
-    if (Array.isArray(value) || (value && typeof value === "object")) return JSON.stringify(value);
-    return value ?? "";
-  };
-
-  const exportColumnsFor = (rows) => {
-    const preferred = ["id", "label", "value", "x", "y", "paired", "category", "group", "provenance"];
-    const keys = new Set(rows.flatMap((row) => Object.keys(row).filter((key) => typeof row[key] !== "function")));
-    return [...preferred.filter((key) => keys.has(key)), ...[...keys].filter((key) => !preferred.includes(key)).sort()];
-  };
-
-  const csvCell = (value) => {
-    let text = String(normalizedExportValue(value));
-    if (/^[=+\-@]/u.test(text) && typeof value !== "number") text = `'${text}`;
-    return `"${text.replaceAll('"', '""')}"`;
-  };
-
-  const exportBaseName = () => {
-    const date = new Date().toISOString().slice(0, 10);
-    return `gaia-${currentDataset()?.id || "statistics"}-${state.methodId}-${date}`.replace(/[^a-z0-9._-]+/giu, "-");
-  };
-
-  const createExportReport = () => {
-    const dataset = currentDataset();
-    const method = METHOD_LOOKUP.get(state.methodId);
-    const rows = rowsFor(dataset);
-    return {
-      schemaVersion: "gaia-statistics-report/v1",
-      exportedAt: new Date().toISOString(),
-      processing: "browser-local",
-      filter: { includeDerived: state.includeDerived, provenance: state.includeDerived ? dataset.provenance : ["SOURCE"], query: state.recordQuery },
-      dataset: {
-        id: dataset.id,
-        modeId: dataset.modeId,
-        title: dataset.title,
-        unit: dataset.unit,
-        periodStart: dataset.periodStart || null,
-        periodEnd: dataset.periodEnd || null,
-        usedRows: rows.length,
-        totalRows: dataset.rows.length,
-      },
-      method: { id: state.methodId, lectureId: method?.group.id || null, label: method?.label || state.methodId },
-      metrics: (state.result?.metrics || []).map(([label, value, unit]) => ({ label, value: Number.isFinite(value) ? value : normalizedExportValue(value), unit: unit || "" })),
-      formula: state.result?.formula || "",
-      insight: state.result?.insight || null,
-      rows: rows.map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, normalizedExportValue(value)]))),
-    };
-  };
-
-  const downloadBlob = (blob, filename, kind) => {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.hidden = true;
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-    window.dispatchEvent(new CustomEvent("gaia:statistics-export", { detail: { kind, filename, datasetId: state.datasetId, methodId: state.methodId } }));
-  };
-
-  const exportCsv = () => {
-    if (!state.exportReady) return false;
-    const dataset = currentDataset();
-    const rows = rowsFor(dataset);
-    const columns = exportColumnsFor(rows);
-    const headers = ["dataset_id", "mode_id", "method_id", ...columns];
-    const csvRows = [headers.map(csvCell).join(",")];
-    rows.forEach((row) => csvRows.push([dataset.id, dataset.modeId, state.methodId, ...columns.map((column) => row[column])].map(csvCell).join(",")));
-    downloadBlob(new Blob([`\uFEFF${csvRows.join("\r\n")}\r\n`], { type: "text/csv;charset=utf-8" }), `${exportBaseName()}.csv`, "csv");
-    return true;
-  };
-
-  const exportJson = () => {
-    if (!state.exportReady) return false;
-    downloadBlob(new Blob([`${JSON.stringify(createExportReport(), null, 2)}\n`], { type: "application/json" }), `${exportBaseName()}.json`, "json");
-    return true;
-  };
-
-  const exportPng = () => new Promise((resolve) => {
-    if (!state.exportReady) { resolve(false); return; }
-    const source = ui.canvas;
-    const ratio = Math.max(1, source.width / Math.max(1, source.getBoundingClientRect().width));
-    const headerHeight = Math.round(74 * ratio);
-    const footerHeight = Math.round(42 * ratio);
-    const canvas = document.createElement("canvas");
-    canvas.width = source.width;
-    canvas.height = source.height + headerHeight + footerHeight;
-    const context = canvas.getContext("2d");
-    context.fillStyle = "#031025";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = "#83e7ff";
-    context.font = `700 ${Math.round(10 * ratio)}px Consolas, monospace`;
-    context.fillText("GAIA STATISTICS LAB / LOCAL ANALYSIS", Math.round(22 * ratio), Math.round(24 * ratio));
-    context.fillStyle = "#edfaff";
-    context.font = `600 ${Math.round(18 * ratio)}px sans-serif`;
-    context.fillText(`${currentDataset().title} — ${METHOD_LOOKUP.get(state.methodId)?.label || state.methodId}`, Math.round(22 * ratio), Math.round(52 * ratio));
-    context.drawImage(source, 0, headerHeight);
-    context.strokeStyle = "rgba(131,231,255,.32)";
-    context.beginPath(); context.moveTo(Math.round(22 * ratio), canvas.height - footerHeight); context.lineTo(canvas.width - Math.round(22 * ratio), canvas.height - footerHeight); context.stroke();
-    context.fillStyle = "rgba(218,243,255,.68)";
-    context.font = `600 ${Math.round(9 * ratio)}px Consolas, monospace`;
-    context.fillText(ui.filterSummary.textContent, Math.round(22 * ratio), canvas.height - Math.round(16 * ratio));
-    canvas.toBlob((blob) => {
-      if (!blob) { resolve(false); return; }
-      downloadBlob(blob, `${exportBaseName()}.png`, "png");
-      resolve(true);
-    }, "image/png");
-  });
 
   const readSavedViews = () => {
     try {
@@ -1545,7 +1424,7 @@ if (!lab || !openButton) {
   const render = () => {
     const dataset = currentDataset(); const method = METHOD_LOOKUP.get(state.methodId) || METHOD_LOOKUP.get("summary");
     if (!dataset || !method) return;
-    ui.number.textContent = `${method.group.id} / ${method.group.name.toUpperCase()}`; ui.title.textContent = method.label; ui.copy.textContent = method.copy; ui.status.textContent = "CALCULATING"; setExportsEnabled(false);
+    ui.number.textContent = `${method.group.id} / ${method.group.name.toUpperCase()}`; ui.title.textContent = method.label; ui.copy.textContent = method.copy; ui.status.textContent = "CALCULATING";
     const token = ++state.renderToken;
     requestAnimationFrame(async () => {
       if (token !== state.renderToken) return;
@@ -1553,11 +1432,11 @@ if (!lab || !openButton) {
         const result = await runAnalysis(method.id, dataset);
         if (token !== state.renderToken) return;
         state.result = result;
-        renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true);
+        renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset);
         ui.status.textContent = result.kind === "not-applicable" ? "条件不足" : `${rowsFor(dataset).length}件`;
       } catch (error) {
         console.error("GAIA Statistics Lab analysis failed", error);
-        const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset); setExportsEnabled(true); ui.status.textContent = "条件不足";
+        const result = notApplicable("計算条件を満たさないため数値的結論を表示しません。", ["01 要約統計"]); state.result = result; renderMetrics(result, dataset); renderRecords(dataset); renderBusinessSummary(result, dataset); renderTakeaway(result); renderInsights(result); drawChart(result, dataset); ui.status.textContent = "条件不足";
       }
     });
   };
@@ -1649,9 +1528,6 @@ if (!lab || !openButton) {
   ui.viewSave.addEventListener("click", saveCurrentView);
   ui.viewApply.addEventListener("click", applySavedView);
   ui.viewDelete.addEventListener("click", deleteSavedView);
-  ui.exportCsv.addEventListener("click", exportCsv);
-  ui.exportJson.addEventListener("click", exportJson);
-  ui.exportPng.addEventListener("click", () => void exportPng());
   new ResizeObserver(() => { if (state.open && state.result) drawChart(state.result, currentDataset()); }).observe(ui.visual);
 
   state.savedViews = readSavedViews();
@@ -1660,12 +1536,8 @@ if (!lab || !openButton) {
   globalThis.GaiaStatisticsLab = Object.freeze({
     open,
     close,
-    getState: () => ({ open: state.open, modeId: state.modeId, datasetId: state.datasetId, lectureId: state.lectureId, methodId: state.methodId, includeDerived: state.includeDerived, recordQuery: state.recordQuery, recordSortKey: state.recordSortKey, recordSortDirection: state.recordSortDirection, selectedRecordId: state.selectedRecordId, savedViewCount: state.savedViews.length, exportReady: state.exportReady }),
+    getState: () => ({ open: state.open, modeId: state.modeId, datasetId: state.datasetId, lectureId: state.lectureId, methodId: state.methodId, includeDerived: state.includeDerived, recordQuery: state.recordQuery, recordSortKey: state.recordSortKey, recordSortDirection: state.recordSortDirection, selectedRecordId: state.selectedRecordId, savedViewCount: state.savedViews.length, analysisReady: Boolean(state.result) }),
     run: (methodId, datasetId = state.datasetId) => runAnalysis(methodId, state.datasets.find((dataset) => dataset.id === datasetId) || currentDataset()),
-    createExportReport,
-    exportCsv,
-    exportJson,
-    exportPng,
   });
   window.dispatchEvent(new CustomEvent("gaia:statistics-lab-ready"));
 }

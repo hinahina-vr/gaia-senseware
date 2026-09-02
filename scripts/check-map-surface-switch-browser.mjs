@@ -22,7 +22,7 @@ const expectedCopies = [
   "CO₂が季節ごとに上下しながら、長い目では増えてきた様子を見る。",
   "ある一日の海流が変わらないと仮定し、0〜14日後の移動距離をたどる。白い風矢印は比較用です。",
   "森林だけを緑で強調し、31地点の雨量と同じ場所で見比べる。",
-  "国ごとの現在値を比べ、選んだ国に自分の改善目標を置く。",
+  "31の国・地域を切り替え、再資源化率の公式値と補完値を比べる。",
   "宇宙から見た夜の明かりと、国ごとの排出量を見比べる。",
   "世界の大地震と、日本各地で実際に記録された揺れをたどる。",
   "同じ国の森林率と都市人口率を組にし、全体傾向と例外を見る。",
@@ -248,7 +248,7 @@ try {
     await page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").first().evaluate((button) => button.click());
     await page.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit")
       && !document.querySelector("#japan-layer")?.classList.contains("has-integrated-map-light")
-      && document.querySelector("#gaia-canvas")?.parentElement?.id !== "japan-layer");
+      && document.querySelector("#gaia-canvas")?.parentElement?.id !== "japan-map");
 
     if (viewport.name === "pc") {
       const liveSelectorToggle = page.locator(".gaia-live-deck-selector-toggle");
@@ -258,11 +258,26 @@ try {
       await liveSelectorToggle.click();
       await page.waitForFunction(() => document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-chapter-selector-open"));
       assert.equal(await page.locator(".gaia-live-deck-modes").isVisible(), true, "pc: live selector did not open");
+      assert.equal(await page.locator(".gaia-live-deck-modes button").count(), 15, "pc: live selector must expose every map chapter");
       await page.waitForTimeout(700);
       await page.screenshot({ path: path.join(outputDir, "pc-live-chapter-selector-open.png"), fullPage: false });
-      await page.locator(".gaia-live-deck-modes button").nth(1).click();
-      await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "10"
+      await page.locator(".gaia-live-deck-modes button").nth(13).click();
+      await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "14"
+        && document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit")
         && !document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-chapter-selector-open"));
+      await liveSelectorToggle.click();
+      await page.locator(".gaia-live-deck-modes button").nth(1).click();
+      await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "02"
+        && !document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit")
+        && !document.querySelector(".gaia-live-exhibit-readout")?.classList.contains("is-chapter-selector-open"));
+      await page.locator("#japan-mode-list .map-mode-button[data-live-exhibit]").first().evaluate((button) => button.click());
+      const liveChapterSteps = page.locator(".gaia-live-deck-chapter [data-live-deck-step]");
+      await liveChapterSteps.first().click();
+      await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "09"
+        && !document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit"));
+      await page.locator(".map-dock-bank-step--next").click();
+      await page.waitForFunction(() => document.querySelector("#japan-mode-number")?.textContent?.trim() === "10"
+        && document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit"));
     }
 
     for (const index of expectedCopies.keys()) {
@@ -272,7 +287,7 @@ try {
       const expected = String(index + 1).padStart(2, "0");
       await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(index).evaluate((button) => button.click());
       await page.waitForFunction((number) => document.querySelector("#japan-layer")?.classList.contains("has-integrated-map-light")
-        && document.querySelector("#gaia-canvas")?.parentElement?.id === "japan-layer"
+        && document.querySelector("#gaia-canvas")?.parentElement?.id === "japan-map"
         && document.querySelector("#gaia-canvas")?.dataset.integratedMapMode === number
         && document.querySelector("#japan-mode-number")?.textContent?.trim() === number, expected);
       if (captureIntegratedModes) {
@@ -299,7 +314,7 @@ try {
       currentMap: "08",
       integratedMode: "08",
       mapVisible: true,
-      canvasParent: "japan-layer",
+      canvasParent: "japan-map",
       canvasOpacity: 0.17,
       canvasPointerEvents: "none",
     }, `${viewport.name}: MAP 01—09 did not receive their matching integrated light`);

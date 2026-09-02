@@ -96,8 +96,8 @@ try {
   assert(/uniform float bass;/u.test(visualRuntimeSource) && /uniform float mid;/u.test(visualRuntimeSource) && /uniform float high;/u.test(visualRuntimeSource), "three real audio bands are not connected to the shader");
   assert(/uniform float pulse;/u.test(visualRuntimeSource) && /uniform float flux;/u.test(visualRuntimeSource) && /uniform float wave;/u.test(visualRuntimeSource), "transient, spectral-flux, and waveform motion are not connected to the shader");
   assert(!/equalizerRuntime|equalizerCanvas/u.test(visualRuntimeSource), "the detached EQ visualizer is still wired into the sound mode");
-  assert(/horizonGlow/u.test(visualRuntimeSource) && /breathingHalo/u.test(visualRuntimeSource) && /glimmerLift/u.test(visualRuntimeSource), "the calm WebGL field does not expose distinct bass, mid, and high responses");
-  assert(/auroraTide/u.test(visualRuntimeSource) && /dreamPalette/u.test(visualRuntimeSource) && /starlightLayer/u.test(visualRuntimeSource), "the immersive aurora tide, dream palette, and starlight field are incomplete");
+  assert(/bassBloom/u.test(visualRuntimeSource) && /breathingHalo/u.test(visualRuntimeSource) && /prismLift/u.test(visualRuntimeSource), "the vivid WebGL field does not expose distinct bass, mid, and high responses");
+  assert(/auroraTide/u.test(visualRuntimeSource) && /vividPalette/u.test(visualRuntimeSource) && /ribbonCore/u.test(visualRuntimeSource) && /ribbonContour/u.test(visualRuntimeSource), "the immersive aurora tide lacks the vivid body, core, or contour layers");
   assert(!/spectralRibbons|filament|tremor|interference/u.test(visualRuntimeSource), "the aggressive filament motion remains in the sound visualizer");
   assert(!/earthCenter|earthRadius|earthSurface|earthDisc|earthX|earthY/u.test(visualRuntimeSource), "Earth rendering remains in the WebGL or Canvas visualizer");
   assert(!/gl\.LINES|spectral-weave/u.test(visualRuntimeSource), "legacy line geometry remains in the visualizer");
@@ -142,8 +142,8 @@ try {
       && desktopVisualizer.visualizer === "full-field-audio-ink"
       && desktopVisualizer.presentation === "full-screen-webgl"
       && desktopVisualizer.audioAnalysis === "fft-spectrum-flux-waveform"
-      && desktopVisualizer.reactivity === "smoothed-bass-breath-mid-drift-high-glimmer"
-      && desktopVisualizer.motionProfile === "slow-aurora-breath"
+      && desktopVisualizer.reactivity === "fast-attack-slow-release-bass-bloom-mid-tide-high-prism"
+      && desktopVisualizer.motionProfile === "slow-vivid-aurora"
       && desktopVisualizer.width > 300
       && desktopVisualizer.height > 280
       && desktopVisualizer.legacyPlanetCount === 0
@@ -241,9 +241,34 @@ try {
     visualizerRect: document.querySelector("#sound-visualizer").getBoundingClientRect().toJSON(),
     sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "1"),
     sceneFilter: getComputedStyle(document.querySelector(".sound-character-scene")).filter,
+    visualizerFilter: getComputedStyle(document.querySelector("#sound-visualizer")).filter,
   }));
-  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.9 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.28 && playingAppearance.sceneOpacity <= 0.42 && playingAppearance.sceneFilter.includes("blur(2px)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
+  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.98 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.4 && playingAppearance.sceneOpacity <= 0.5 && !playingAppearance.sceneFilter.includes("blur") && playingAppearance.visualizerFilter.includes("saturate(1.3)") && playingAppearance.visualizerFilter.includes("contrast(1.2)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop.png"), fullPage: true });
+  const reactiveRange = await page.evaluate(async () => {
+    const samples = [];
+    for (let index = 0; index < 18; index += 1) {
+      const canvas = document.querySelector("#sound-visualizer");
+      samples.push({
+        bass: Number(canvas?.dataset.bass || 0),
+        mid: Number(canvas?.dataset.mid || 0),
+        high: Number(canvas?.dataset.high || 0),
+        energy: Number(canvas?.dataset.energy || 0),
+        pulse: Number(canvas?.dataset.pulse || 0),
+        flux: Number(canvas?.dataset.flux || 0),
+        rawBass: Number(globalThis.GaiaOpeningAudio?.getAnalysisFrame?.().bands?.[0] || 0),
+        rawMid: Number(globalThis.GaiaOpeningAudio?.getAnalysisFrame?.().bands?.[1] || 0),
+      });
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    const range = (key) => {
+      const values = samples.map((sample) => sample[key]);
+      return { min: Math.min(...values), max: Math.max(...values), delta: Math.max(...values) - Math.min(...values) };
+    };
+    return { bass: range("bass"), mid: range("mid"), high: range("high"), energy: range("energy"), pulse: range("pulse"), flux: range("flux"), rawBass: range("rawBass"), rawMid: range("rawMid") };
+  });
+  assert(reactiveRange.bass.max >= 0.08 && reactiveRange.energy.max >= 0.08 && Math.max(reactiveRange.bass.delta, reactiveRange.energy.delta, reactiveRange.pulse.delta, reactiveRange.flux.delta) >= 0.01, `audio response is still visually inert: ${JSON.stringify(reactiveRange)}`);
+  report.reactiveRange = reactiveRange;
   await page.waitForTimeout(4000);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop-later.png"), fullPage: true });
   await page.locator("#sound-play").click();
@@ -309,7 +334,7 @@ try {
     visualizerVisibility: getComputedStyle(document.querySelector("#sound-visualizer")).visibility,
     sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "1"),
   }));
-  assert(mobilePlayingAppearance.playing === "true" && mobilePlayingAppearance.visualizerOpacity >= 0.9 && mobilePlayingAppearance.visualizerVisibility === "visible" && mobilePlayingAppearance.sceneOpacity >= 0.28 && mobilePlayingAppearance.sceneOpacity <= 0.42, `mobile playback reveal failed: ${JSON.stringify(mobilePlayingAppearance)}`);
+  assert(mobilePlayingAppearance.playing === "true" && mobilePlayingAppearance.visualizerOpacity >= 0.98 && mobilePlayingAppearance.visualizerVisibility === "visible" && mobilePlayingAppearance.sceneOpacity >= 0.4 && mobilePlayingAppearance.sceneOpacity <= 0.5, `mobile playback reveal failed: ${JSON.stringify(mobilePlayingAppearance)}`);
   await mobile.screenshot({ path: path.join(outputDir, "sound-mobile-playing.png"), fullPage: false });
   const lastTrack = mobile.locator('[data-sound-track="trueend"]');
   await lastTrack.scrollIntoViewIfNeeded();

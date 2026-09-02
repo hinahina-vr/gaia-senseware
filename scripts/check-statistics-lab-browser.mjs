@@ -15,7 +15,10 @@ const report = { consoleErrors: [], pageErrors: [], responses404: [], scans: [] 
 
 const boot = async (viewport) => {
   const context = await browser.newContext({ viewport, colorScheme: "dark", reducedMotion: viewport.mobile ? "reduce" : "no-preference" });
-  await context.addInitScript(() => window.localStorage.removeItem("gaia-statistics-saved-views:v1"));
+  await context.addInitScript(() => {
+    window.localStorage.removeItem("gaia-statistics-saved-views:v1");
+    window.sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
+  });
   const page = await context.newPage();
   page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
   page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
@@ -43,10 +46,29 @@ try {
       offsetX: document.querySelector("#japan-overlay")?.dataset.earthOffsetX,
       offsetY: document.querySelector("#japan-overlay")?.dataset.earthOffsetY,
     }));
-    const trigger = viewport.mobile ? page.locator("#gaia-statistics-button-mobile") : page.locator("#gaia-statistics-button");
+    const trigger = viewport.mobile ? page.locator("#gaia-statistics-button-mobile") : page.locator(".map-dock-action--statistics");
     assert.equal(await trigger.isVisible(), true, `${viewport.name}: statistics entry button is not visible on the map`);
     await trigger.click();
-    await page.waitForFunction(() => window.GaiaStatisticsLab?.getState().exportReady === true);
+    await page.waitForFunction(() => window.GaiaStatisticsLab?.getState().analysisReady === true);
+    const downloadSurface = await page.evaluate(() => ({
+      controls: document.querySelectorAll("#gaia-statistics-export-csv, #gaia-statistics-export-json, #gaia-statistics-export-png").length,
+      downloadAttributes: document.querySelectorAll("#gaia-statistics-lab [download]").length,
+      publicMethods: ["createExportReport", "exportCsv", "exportJson", "exportPng"].filter((name) => typeof window.GaiaStatisticsLab?.[name] === "function"),
+      notice: document.querySelector(".gaia-statistics-bi-context > small")?.textContent?.trim() || "",
+    }));
+    assert.deepEqual(downloadSurface.publicMethods, [], `${viewport.name}: removed download methods are still public`);
+    assert.equal(downloadSurface.controls, 0, `${viewport.name}: external-data download controls still exist`);
+    assert.equal(downloadSurface.downloadAttributes, 0, `${viewport.name}: a download attribute still exists in the statistics lab`);
+    assert.equal(downloadSurface.notice, "分析結果は画面内表示のみです", `${viewport.name}: screen-only notice is missing`);
+    await page.locator("#gaia-statistics-menu-toggle").click();
+    assert.equal(await page.locator("#gaia-statistics-controls").getAttribute("aria-hidden"), "false", `${viewport.name}: analysis menu did not open`);
+    await page.locator("#gaia-statistics-menu-close").click();
+    assert.equal(await page.locator("#gaia-statistics-controls").getAttribute("aria-hidden"), "true", `${viewport.name}: analysis menu did not close`);
+    const setControlValue = (selector, value, eventType = "change") => page.locator(selector).evaluate((element, detail) => {
+      element.value = detail.value;
+      element.dispatchEvent(new Event(detail.eventType, { bubbles: true }));
+    }, { value, eventType });
+    const setDatasetForTest = (datasetId) => page.evaluate((id) => window.GaiaStatisticsLab.open({ datasetId: id }), datasetId);
     const fixedFrame = await page.evaluate(() => {
       const geometry = (selector) => {
         const element = document.querySelector(selector);
@@ -64,26 +86,25 @@ try {
         body: geometry(".gaia-statistics-body"),
         stage: geometry(".gaia-statistics-stage"),
         layout: (() => {
-          const controls = document.querySelector(".gaia-statistics-controls").getBoundingClientRect();
+          const controlsElement = document.querySelector(".gaia-statistics-controls");
+          const controls = controlsElement.getBoundingClientRect();
           const stage = document.querySelector(".gaia-statistics-stage").getBoundingClientRect();
-          return { controls: controls.toJSON(), stage: stage.toJSON() };
+          return { controls: controls.toJSON(), controlsPosition: getComputedStyle(controlsElement).position, stage: stage.toJSON() };
         })(),
       };
     });
     assert.ok(fixedFrame.document.scrollHeight <= fixedFrame.document.clientHeight + 1 && fixedFrame.document.scrollY === 0, `${viewport.name}: background page still scrolls vertically`);
     assert.ok(fixedFrame.lab.scrollHeight <= fixedFrame.lab.clientHeight + 1, `${viewport.name}: modal backdrop still scrolls vertically`);
     if (viewport.name === "pc") {
-      for (const name of ["shell", "body", "stage"]) {
-        const geometry = fixedFrame[name];
-        assert.ok(geometry.scrollHeight <= geometry.clientHeight + 1 && geometry.scrollTop === 0, `pc: ${name} still scrolls vertically`);
-      }
-      assert.ok(fixedFrame.layout.controls.right <= fixedFrame.layout.stage.left + 1, "pc: conditions are not arranged in a familiar left sidebar");
+      assert.ok(fixedFrame.shell.scrollHeight <= fixedFrame.shell.clientHeight + 1 && fixedFrame.shell.scrollTop === 0, "pc: shell still scrolls vertically");
+      assert.equal(fixedFrame.body.overflowY, "hidden", "pc: chart-first workspace does not contain overflow");
+      assert.equal(fixedFrame.layout.controlsPosition, "fixed", "pc: analysis conditions are not mounted in the settings drawer");
     } else {
       assert.match(fixedFrame.shell.overflowY, /^(?:auto|scroll)$/u, "mobile: the statistics workspace is not independently scrollable");
-      assert.ok(fixedFrame.layout.controls.bottom <= fixedFrame.layout.stage.top + 1, "mobile: conditions are not arranged above the results");
+      assert.equal(fixedFrame.layout.controlsPosition, "fixed", "mobile: analysis conditions are not mounted in the settings drawer");
     }
-    await page.locator("#gaia-statistics-dataset").selectOption("co2-trend");
-    await page.locator("#gaia-statistics-lectures").selectOption("01");
+    await setDatasetForTest("co2-trend");
+    await setControlValue("#gaia-statistics-lectures", "01");
     await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING"
       && document.querySelector("#gaia-statistics-canvas")?.dataset.axisX === "CO₂ (ppm)");
     const co2Chart = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({
@@ -91,7 +112,7 @@ try {
       axisY: element.dataset.axisY,
       domainX: element.dataset.domainX?.split(",").map(Number),
       pointCount: Number(element.dataset.pointCount),
-      selectedDataset: document.querySelector("#gaia-statistics-dataset")?.selectedOptions[0]?.textContent,
+      selectedDataset: document.querySelector("#gaia-statistics-context")?.textContent || "",
     }));
     assert.equal(co2Chart.axisX, "CO₂ (ppm)", `${viewport.name}: histogram x-axis label is wrong`);
     assert.equal(co2Chart.axisY, "観測数", `${viewport.name}: histogram y-axis label is wrong`);
@@ -106,7 +127,6 @@ try {
       quality: element.dataset.quality,
       primary: document.querySelector("#gaia-statistics-kpi-primary")?.textContent || "",
       filter: document.querySelector("#gaia-statistics-filter-summary")?.textContent || "",
-      enabledExports: [...document.querySelectorAll(".gaia-statistics-bi-actions button")].filter((button) => !button.disabled).length,
     }));
     assert.deepEqual(
       { usedRows: co2BusinessSummary.usedRows, totalRows: co2BusinessSummary.totalRows, sourceRows: co2BusinessSummary.sourceRows, quality: co2BusinessSummary.quality },
@@ -116,7 +136,6 @@ try {
     assert.equal(co2BusinessSummary.coverage, 1, `${viewport.name}: CO2 coverage KPI is wrong`);
     assert.ok(co2BusinessSummary.primary && co2BusinessSummary.primary !== "—", `${viewport.name}: primary KPI is empty`);
     assert.match(co2BusinessSummary.filter, /SOURCE ONLY.*2016-08–2026-07.*BROWSER LOCAL/u, `${viewport.name}: filter lineage is not visible`);
-    assert.equal(co2BusinessSummary.enabledExports, 3, `${viewport.name}: BI exports are not ready after analysis`);
     const takeaway = await page.locator("#gaia-statistics-takeaway").evaluate((element) => ({
       visible: Boolean(element.offsetWidth || element.offsetHeight || element.getClientRects().length),
       state: element.dataset.state,
@@ -137,19 +156,25 @@ try {
     assert.equal(await page.locator("#gaia-statistics-records-body tr").count(), 120, `${viewport.name}: accessible CO2 record table is incomplete`);
     assert.equal(await page.locator("#gaia-statistics-record-x-heading").textContent(), "観測月", `${viewport.name}: record table X heading is wrong`);
     assert.equal(await page.locator("#gaia-statistics-record-y-heading").textContent(), "CO₂", `${viewport.name}: record table Y heading is wrong`);
-    await page.locator("#gaia-statistics-canvas").focus();
-    await page.keyboard.press("ArrowRight");
-    const keyboardChart = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({
-      index: Number(element.dataset.keyboardIndex),
-      describedBy: element.getAttribute("aria-describedby") || "",
-      label: element.getAttribute("aria-label") || "",
-      tooltipVisible: !document.querySelector(".gaia-statistics-chart-tooltip")?.hidden,
-    }));
+    await page.locator('#gaia-statistics-methods [data-method="summary"]').evaluate((element) => element.click());
+    await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
+    await page.waitForTimeout(620);
+    const keyboardChart = await page.locator("#gaia-statistics-canvas").evaluate((element) => {
+      element.focus();
+      element.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+      const state = {
+        index: Number(element.dataset.keyboardIndex),
+        describedBy: element.getAttribute("aria-describedby") || "",
+        label: element.getAttribute("aria-label") || "",
+        tooltipVisible: !document.querySelector(".gaia-statistics-chart-tooltip")?.hidden,
+      };
+      element.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      return state;
+    });
     assert.equal(keyboardChart.index, 1, `${viewport.name}: keyboard chart navigation did not advance`);
     assert.match(keyboardChart.describedBy, /gaia-statistics-chart-help.*gaia-statistics-chart-tooltip/u, `${viewport.name}: keyboard tooltip is not described accessibly`);
     assert.match(keyboardChart.label, /120点.*矢印キー/u, `${viewport.name}: canvas does not disclose keyboard navigation`);
     assert.equal(keyboardChart.tooltipVisible, true, `${viewport.name}: keyboard chart tooltip is hidden`);
-    await page.keyboard.press("Enter");
     await page.waitForFunction(() => document.querySelector(".gaia-statistics-records")?.open
       && document.querySelectorAll("#gaia-statistics-records-body tr[data-selected='true']").length === 1);
     const drilledRecord = await page.locator("#gaia-statistics-records-body tr[data-selected='true']").evaluate((element) => ({
@@ -163,42 +188,10 @@ try {
     assert.match(drilledRecord.announcement, new RegExp(drilledRecord.label, "u"), `${viewport.name}: chart drill-through is not announced`);
     assert.equal((await page.evaluate(() => window.GaiaStatisticsLab.getState())).selectedRecordId, drilledRecord.id, `${viewport.name}: drilled record state is not traceable`);
     await page.locator(".gaia-statistics-records").evaluate((element) => { element.open = false; });
-    await page.locator("#gaia-statistics-canvas").focus();
-    const exportReport = await page.evaluate(() => window.GaiaStatisticsLab.createExportReport());
-    assert.equal(exportReport.schemaVersion, "gaia-statistics-report/v1", `${viewport.name}: report schema version missing`);
-    assert.equal(exportReport.processing, "browser-local", `${viewport.name}: local-processing disclosure missing`);
-    assert.equal(exportReport.rows.length, 120, `${viewport.name}: JSON report does not contain the filtered rows`);
-    if (viewport.name === "pc") {
-      const csvDownloadPromise = page.waitForEvent("download");
-      await page.locator("#gaia-statistics-export-csv").click();
-      const csvDownload = await csvDownloadPromise;
-      assert.match(csvDownload.suggestedFilename(), /^gaia-co2-trend-summary-\d{4}-\d{2}-\d{2}\.csv$/u, "pc: CSV export filename is not traceable");
-      const csvPath = path.join(outputDir, "pc-co2-export.csv");
-      await csvDownload.saveAs(csvPath);
-      const csvSource = fs.readFileSync(csvPath, "utf8");
-      assert.match(csvSource, /"dataset_id","mode_id","method_id","id","label","value"/u, "pc: CSV export headers are not BI-ready");
-      assert.equal(csvSource.trim().split(/\r?\n/u).length, 121, "pc: CSV export row count is wrong");
-
-      const pngDownloadPromise = page.waitForEvent("download");
-      await page.locator("#gaia-statistics-export-png").click();
-      const pngDownload = await pngDownloadPromise;
-      assert.match(pngDownload.suggestedFilename(), /^gaia-co2-trend-summary-\d{4}-\d{2}-\d{2}\.png$/u, "pc: PNG export filename is not traceable");
-      await pngDownload.saveAs(path.join(outputDir, "pc-co2-chart-export.png"));
-      const box = await page.locator("#gaia-statistics-canvas").boundingBox();
-      let tooltipVisible = false;
-      for (let yi = 1; yi <= 9 && !tooltipVisible; yi += 1) {
-        for (let xi = 1; xi <= 13 && !tooltipVisible; xi += 1) {
-          await page.mouse.move(box.x + box.width * xi / 14, box.y + box.height * yi / 10);
-          tooltipVisible = await page.locator(".gaia-statistics-chart-tooltip").isVisible();
-        }
-      }
-      assert.equal(tooltipVisible, true, "pc: hovering chart points does not reveal a tooltip");
-      assert.match(await page.locator(".gaia-statistics-chart-tooltip").innerText(), /20\d{2}-\d{2}[\s\S]*ppm[\s\S]*SOURCE/u);
-    }
     await page.locator("#gaia-statistics-visual").screenshot({
-      path: path.join(outputDir, `${viewport.name}-co2-chart${viewport.name === "pc" ? "-tooltip" : ""}.png`),
+      path: path.join(outputDir, `${viewport.name}-co2-chart.png`),
     });
-    await page.locator("#gaia-statistics-dataset").selectOption("rainfall");
+    await setDatasetForTest("rainfall");
     await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
     assert.equal(await page.locator("#gaia-statistics-lab").getAttribute("aria-hidden"), "false");
     assert.equal(await page.locator("#gaia-statistics-lectures option").count(), 15);
@@ -243,21 +236,21 @@ try {
     assert.match(specialized.pollination.insight.interpretation, /23相互作用.*62標本/u);
 
     for (let lecture = 0; lecture < 15; lecture += 1) {
-      await page.locator("#gaia-statistics-lectures").selectOption(String(lecture + 1).padStart(2, "0"));
+      await setControlValue("#gaia-statistics-lectures", String(lecture + 1).padStart(2, "0"));
       await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
       assert.equal(await page.locator(".gaia-statistics-insight").count(), 4, `${viewport.name}: lecture ${lecture + 1} insight cards`);
       const cards = await page.locator(".gaia-statistics-insight").allTextContents();
       cards.forEach((text, index) => assert.ok(text.trim().length > 18, `${viewport.name}: lecture ${lecture + 1}, card ${index + 1} empty`));
       const methodButtons = page.locator("#gaia-statistics-methods button");
       for (let method = 1; method < await methodButtons.count(); method += 1) {
-        await methodButtons.nth(method).click();
+        await methodButtons.nth(method).evaluate((element) => element.click());
         await page.waitForFunction(() => document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
         assert.equal(await page.locator(".gaia-statistics-insight").count(), 4);
       }
     }
 
-    await page.locator("#gaia-statistics-dataset").selectOption("waste");
-    await page.locator("#gaia-statistics-lectures").selectOption("01");
+    await setDatasetForTest("waste");
+    await setControlValue("#gaia-statistics-lectures", "01");
     await page.waitForFunction(() => document.querySelectorAll("#gaia-statistics-metrics tr").length >= 6
       && document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
     const readMean = () => page.evaluate(() => [...document.querySelectorAll("#gaia-statistics-metrics tr")]
@@ -295,7 +288,7 @@ try {
     const descendingLabels = await page.locator("#gaia-statistics-records-body th strong").allTextContents();
     assert.equal(descendingLabels.every((label, index) => index === 0 || descendingLabels[index - 1].localeCompare(label, "ja-JP", { numeric: true, sensitivity: "base" }) >= 0), true, `${viewport.name}: records are not sorted descending`);
 
-    await page.locator("#gaia-statistics-record-filter").fill("Canada");
+    await setControlValue("#gaia-statistics-record-filter", "Canada", "input");
     await page.waitForFunction(() => Number(document.querySelector("#gaia-statistics-kpis")?.dataset.usedRows) === 1
       && window.GaiaStatisticsLab?.getState().recordQuery === "Canada");
     assert.equal(await page.locator("#gaia-statistics-records-body tr").count(), 1, `${viewport.name}: record query did not filter the audit table`);
@@ -311,9 +304,7 @@ try {
     assert.ok(Number.isFinite(segmentComparison.segmentMean) && Number.isFinite(segmentComparison.baselineMean), `${viewport.name}: segment means are not traceable`);
     assert.ok(Math.abs(segmentComparison.delta - (segmentComparison.segmentMean - segmentComparison.baselineMean)) < 1e-10, `${viewport.name}: segment delta is inconsistent`);
     assert.match(segmentComparison.text, /表示中平均.*全31行/u, `${viewport.name}: segment comparison does not disclose its baseline`);
-    const filteredReport = await page.evaluate(() => window.GaiaStatisticsLab.createExportReport());
-    assert.equal(filteredReport.filter.query, "Canada", `${viewport.name}: JSON report omitted the record query`);
-    assert.equal(filteredReport.rows.length, 1, `${viewport.name}: JSON report ignored the record query`);
+    assert.equal((await page.evaluate(() => window.GaiaStatisticsLab.getState())).recordQuery, "Canada", `${viewport.name}: filtered analysis state omitted the record query`);
 
     assert.equal(await page.locator(".gaia-statistics-saved-panel").isVisible(), false, `${viewport.name}: saved-view controls should not clutter the primary workspace`);
     await page.locator("#gaia-statistics-view-save").evaluate((element) => element.click());
@@ -326,7 +317,7 @@ try {
     assert.equal(savedStorage[0].recordSortKey, "label", `${viewport.name}: saved view omitted the record sort key`);
     assert.equal(savedStorage[0].recordSortDirection, "descending", `${viewport.name}: saved view omitted the record sort direction`);
 
-    await page.locator("#gaia-statistics-dataset").selectOption("co2-trend");
+    await setDatasetForTest("co2-trend");
     await page.waitForFunction(() => window.GaiaStatisticsLab?.getState().datasetId === "co2-trend"
       && document.querySelector("#gaia-statistics-status")?.textContent !== "CALCULATING");
     await page.locator("#gaia-statistics-saved-view").evaluate((element, value) => {
@@ -350,7 +341,7 @@ try {
     await page.locator("#gaia-statistics-view-delete").evaluate((element) => element.click());
     assert.equal(await page.locator("#gaia-statistics-saved-view option").count(), 1, `${viewport.name}: deleted view remains in the selector`);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("gaia-statistics-saved-views:v1") || "[]").length), 0, `${viewport.name}: deleted view remains in local storage`);
-    await page.locator("#gaia-statistics-filter-clear").click();
+    await page.locator("#gaia-statistics-filter-clear").evaluate((element) => element.click());
     await page.waitForFunction(() => Number(document.querySelector("#gaia-statistics-kpis")?.dataset.usedRows) === 31
       && window.GaiaStatisticsLab?.getState().recordQuery === "");
     assert.equal(await page.locator("#gaia-statistics-records-body tr").count(), 31, `${viewport.name}: clearing the record query did not restore all rows`);
@@ -384,6 +375,9 @@ try {
       offsetY: document.querySelector("#japan-overlay")?.dataset.earthOffsetY,
     }));
     assert.deepEqual(mapStateAfter, mapStateBefore, `${viewport.name}: map state changed while the statistics popup was open`);
+    await trigger.click();
+    await page.waitForFunction(() => window.GaiaStatisticsLab?.getState().open === true);
+    await page.keyboard.press("Escape");
     assert.equal(await trigger.evaluate((element) => element === document.activeElement), true, `${viewport.name}: keyboard focus did not return to the trigger`);
     await context.close();
   }

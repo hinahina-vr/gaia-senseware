@@ -71,8 +71,8 @@ assert.equal(content.modes.some(({ id }) => id === "pollination-protocol"), fals
 assert.doesNotMatch(appContentSource, /pollination-protocol|ミツバチ|GloBI|GBIF/u);
 assert.equal(content.modes[3].titleJa, "再資源化率を比べる");
 assert.match(content.modeConcepts["nothing-is-waste"].seeing, /緑.*橙.*直径はすべて同じ/u);
-assert.match(content.modeConcepts["nothing-is-waste"].touch, /自分で決める改善目標.*予測や.*公的目標/u);
-assert.match(appSource, /sourceRecycle \+ \(signalTimePosition \/ 100\) \* \(100 - sourceRecycle\)/u);
+assert.match(content.modeConcepts["nothing-is-waste"].touch, /左右ボタン.*スライダー.*31.*公式値か補完値/u);
+assert.doesNotMatch(appSource, /scenarioRecycle|scenarioIncrease|drawOuterTargetRing/u);
 assert.match(appSource, /signalMode\.id === "nothing-is-waste" \|\|[\s\S]*co2TimelineHeld/u);
 assert.match(content.modes[4].description, /1945〜2023年.*VIIRS 2016.*固定参照/u);
 assert.match(content.modeConcepts["anthropocene-scar"].seeing, /国全体の化石燃料由来CO₂.*2016年/u);
@@ -244,8 +244,12 @@ assert.doesNotMatch(stylesSource, /\.intro-entry-guide-bubble \{[\s\S]{0,1200}tr
 assert.match(appSource, /avoid: "#map-reading-guide, \.gaia-live-exhibit-readout"/u);
 assert.match(modeLoaderSource, /particles-v9\.js\?v=gaia-light-surface-fps-1/u);
 assert.match(appSource, /const mapExhibitIsVisible = japanIsOpen\s*&& !japanLayer\.classList\.contains\("is-live-exhibit"\)/u);
-assert.match(appSource, /const setLightCanvasMounted = \(mounted\)[\s\S]*japanMap\.after\(canvas\)/u);
+assert.match(appSource, /const setLightCanvasMounted = \(mounted\)[\s\S]*japanOverlay\.before\(canvas\)[\s\S]*below-reference-map-and-poi/u);
 assert.match(appSource, /const syncIntegratedMapLight = \(\) =>[\s\S]*has-integrated-map-light[\s\S]*mode-matched/u);
+assert.match(appSource, /uniform vec4 uCurrentSamples\[\$\{CURRENT_FIELD_SAMPLE_LIMIT\}\][\s\S]*uniform int uCurrentSampleCount/u);
+assert.match(appSource, /getCurrentFieldUniformData[\s\S]*Math\.hypot\(row\.uMs, row\.vMs\)[\s\S]*Math\.atan2\(row\.vMs, row\.uMs\)/u);
+assert.match(appSource, /gl\.uniform4fv\(uniforms\.currentSamples, currentField\.data\)[\s\S]*gl\.uniform1i\(uniforms\.currentSampleCount, currentField\.count\)/u);
+assert.match(appContentSource, /uCurrentSamples\[i\][\s\S]*measuredSpeed[\s\S]*observedFlow[\s\S]*observedPearls/u);
 assert.match(appSource, /const mapTargetFps = reducedMotion \? 15 : lodTarget >= 45 \? 60 : lodTarget/u);
 assert.match(appSource, /do nextJapanOverlayRenderAt \+= mapFrameInterval;\s*while \(nextJapanOverlayRenderAt <= now\)/u);
 assert.doesNotMatch(appSource, /lastJapanOverlayRenderAt/u);
@@ -262,6 +266,11 @@ assert.match(appSource, /renderJapanPoiFocus\(ctx, rect, left, top, now, ratio\)
 assert.match(appSource, /japanTitle\.textContent = mode\.titleJa;/u);
 assert.match(appSource, /const animateMapTitleTransition = \(title\) =>/u);
 assert.match(appSource, /japanLayer\.classList\.add\("is-map-title-transitioning"\)/u);
+assert.match(appSource, /const MAP_TITLE_SEPARATOR_DURATION_MS = 1500;[\s\S]*const restartMapPlotReveal = \(reason = "mode-change"\)[\s\S]*waiting-for-separator/u);
+assert.match(appSource, /mapPlotRevealBlockedUntil = separatorStartedAt \+ separatorDuration[\s\S]*titleSeparatorEndsAt/u);
+assert.match(appSource, /if \(now < mapPlotRevealStartedAt\) return \{ progress: 0, alpha: 0, scale: 0\.14 \};/u);
+assert.match(appSource, /const firstPoiVisibleAt = mapPlotRevealStartedAt \+ \(reducedMotion \? 0 : MAP_PLOT_REVEAL_LEAD_MS\);[\s\S]*return null/u);
+assert.match(appSource, /signalMode\.id === "blue-circulation"[\s\S]*getMapPlotReveal\(currentIndex, state\.currents\.length, now\)[\s\S]*applyMapPlotReveal\(ctx, point, reveal\)/u);
 assert.match(appSource, /tier: "native", ratioCap: 3, maxPixels: 9000000/u);
 assert.match(appSource, /dataset\.renderPixelRatio/u);
 assert.match(mapGridStylesSource, /--map-grid-bank-height: 320px/u);
@@ -289,7 +298,7 @@ assert.doesNotMatch(html, /id="map-light-overlay"|id="abstract-mode-list"|id="ma
 assert.doesNotMatch(appSource, /mapModePreview(?:Surface|Title|Lead|Note)/u);
 assert.doesNotMatch(appSource, /setMapSurface|is-abstract-exhibit|abstractModeButton|abstractModeList/u);
 assert.match(appSource, /getMapModePreviewContent[\s\S]*INTRO_MODE_CHOICES\[index\][\s\S]*choice\.copy/u);
-assert.match(stylesSource, /\.japan-layer\.has-integrated-map-light > #gaia-canvas[\s\S]*pointer-events: none !important[\s\S]*mix-blend-mode: screen/u);
+assert.match(stylesSource, /\.japan-layer\.has-integrated-map-light \.japan-map > #gaia-canvas[\s\S]*z-index: 1[\s\S]*pointer-events: none !important[\s\S]*mix-blend-mode: screen/u);
 assert.match(mapGridStylesSource, /\.japan-layer \.japan-heading \.japan-kicker[\s\S]{0,100}display: none !important/u);
 assert.match(mapGridStylesSource, /\.japan-layer #japan-description[\s\S]{0,320}clip-path: inset\(50%\)/u);
 assert.match(mapGridStylesSource, /body\.map-grid-desktop \.japan-layer \.map-grid-intro #japan-title[\s\S]{0,100}justify-self: center/u);

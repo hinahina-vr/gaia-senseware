@@ -4,9 +4,10 @@ import { fileURLToPath } from "node:url";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const projectDirectory = resolve(scriptDirectory, "..");
-const [html, ledgerSource, snapshotText] = await Promise.all([
+const [html, ledgerSource, statisticsLabSource, snapshotText] = await Promise.all([
   readFile(resolve(projectDirectory, "index.html"), "utf8"),
   readFile(resolve(projectDirectory, "data-ledger.js"), "utf8"),
+  readFile(resolve(projectDirectory, "statistics-lab.js"), "utf8"),
   readFile(resolve(projectDirectory, "data", "gaia-signals.json"), "utf8"),
 ]);
 
@@ -15,6 +16,24 @@ const requiredIds = [...ledgerSource.matchAll(/getRequiredElement\("([^\"]+)"\)/
 );
 const missingIds = requiredIds.filter((id) => !html.includes(`id="${id}"`));
 if (missingIds.length) throw new Error(`Missing data-ledger DOM ids: ${missingIds.join(", ")}`);
+
+const removedDownloadMarkers = [
+  "gaia-statistics-export-csv",
+  "gaia-statistics-export-json",
+  "gaia-statistics-export-png",
+  "createExportReport",
+  "downloadBlob",
+  "exportCsv",
+  "exportJson",
+  "exportPng",
+];
+const remainingDownloadMarkers = removedDownloadMarkers.filter((marker) => html.includes(marker) || statisticsLabSource.includes(marker));
+if (remainingDownloadMarkers.length) {
+  throw new Error(`Statistics external-data download functionality returned: ${remainingDownloadMarkers.join(", ")}`);
+}
+if (!html.includes("分析結果は画面内表示のみです")) {
+  throw new Error("Statistics screen-only disclosure is missing");
+}
 
 const snapshot = JSON.parse(snapshotText);
 const breathing = snapshot.modes.find((mode) => mode.id === "breathing-earth");
@@ -57,5 +76,5 @@ if (imputedWaste.some((row) => row.donorIso3?.length !== 5)) {
 console.log(
   `Statistics check passed: ${breathing.signals.gosat.frames.length} complete GOSAT frames; ` +
     `${sourceWaste.length} SOURCE + ${imputedWaste.length} IMPUTED waste regions; ` +
-    `OLS beta1=${forecast.slopePpmYear} ppm/year.`,
+    `OLS beta1=${forecast.slopePpmYear} ppm/year; file export disabled.`,
 );

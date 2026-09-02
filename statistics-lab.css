@@ -524,7 +524,7 @@ body.map-grid-desktop .map-grid-intro > .gaia-statistics-button {
 .gaia-statistics-kpis p,
 .gaia-statistics-kpis strong,
 .gaia-statistics-kpis small,
-.gaia-statistics-bi-actions p {
+.gaia-statistics-bi-context p {
   overflow: hidden;
   margin: 0;
   text-overflow: ellipsis;
@@ -557,61 +557,26 @@ body.map-grid-desktop .map-grid-intro > .gaia-statistics-button {
   color: var(--stat-gold);
 }
 
-.gaia-statistics-bi-actions {
+.gaia-statistics-bi-context {
   display: grid;
-  grid-template-rows: auto 1fr;
+  align-content: center;
+  gap: 7px;
   width: 166px;
   padding: 9px;
   border: 1px solid rgba(115, 211, 255, 0.2);
   background: rgba(3, 17, 35, 0.72);
 }
 
-.gaia-statistics-bi-actions > p {
-  margin-bottom: 8px;
+.gaia-statistics-bi-context > p {
+  margin: 0;
   color: rgba(159, 210, 231, 0.58);
   font: 650 6px/1.25 Consolas, monospace;
   letter-spacing: 0.07em;
 }
 
-.gaia-statistics-bi-actions > div {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
-}
-
-.gaia-statistics-bi-actions button {
-  display: grid;
-  place-content: center;
-  gap: 4px;
-  min-width: 0;
-  padding: 6px 3px;
-  border: 1px solid rgba(126, 222, 255, 0.3);
-  border-radius: 3px;
-  color: #dff8ff;
-  background: linear-gradient(145deg, rgba(18, 60, 93, 0.76), rgba(5, 27, 53, 0.82));
-  cursor: pointer;
-}
-
-.gaia-statistics-bi-actions button:is(:hover, :focus-visible) {
-  border-color: var(--stat-line-strong);
-  outline: 2px solid rgba(126, 222, 255, 0.14);
-  background: linear-gradient(145deg, rgba(25, 93, 135, 0.9), rgba(8, 43, 79, 0.9));
-}
-
-.gaia-statistics-bi-actions button:disabled {
-  opacity: 0.36;
-  cursor: wait;
-}
-
-.gaia-statistics-bi-actions button span {
-  font: 750 9px/1 Consolas, monospace;
-  letter-spacing: 0.08em;
-}
-
-.gaia-statistics-bi-actions button small {
+.gaia-statistics-bi-context > small {
   color: rgba(159, 210, 231, 0.62);
-  font: 650 6px/1 Consolas, monospace;
-  letter-spacing: 0.08em;
+  font: 600 8px/1.45 var(--font-ja);
 }
 
 .gaia-statistics-visual {
@@ -1005,9 +970,7 @@ body.gaia-statistics-open > :is(.gaia-audio-dock, .scene-transition) {
   .gaia-statistics-methods button { flex: 0 0 auto; white-space: nowrap; }
   .gaia-statistics-stage { padding: 17px 0 32px; overflow: visible; }
   .gaia-statistics-bi-strip { grid-template-columns: 1fr; }
-  .gaia-statistics-bi-actions { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 1fr; gap: 12px; align-items: center; width: auto; }
-  .gaia-statistics-bi-actions > p { margin-bottom: 0; }
-  .gaia-statistics-bi-actions > div { width: min(190px, 46vw); }
+  .gaia-statistics-bi-context { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; width: auto; }
 }
 
 @media (max-width: 620px) {
@@ -1023,8 +986,7 @@ body.gaia-statistics-open > :is(.gaia-audio-dock, .scene-transition) {
   .gaia-statistics-kpis article:nth-child(3) { border-left: 0; border-top: 1px solid rgba(115, 211, 255, 0.14); }
   .gaia-statistics-kpis article:nth-child(4) { border-top: 1px solid rgba(115, 211, 255, 0.14); }
   .gaia-statistics-kpis strong { font-size: 17px; }
-  .gaia-statistics-bi-actions { grid-template-columns: 1fr; gap: 8px; }
-  .gaia-statistics-bi-actions > div { width: 100%; }
+  .gaia-statistics-bi-context { grid-template-columns: 1fr; gap: 5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1188,20 +1150,12 @@ body.gaia-statistics-open > :is(.gaia-audio-dock, .scene-transition) {
   .gaia-statistics-kpis article:nth-child(3) { border-left: 1px solid rgba(115, 211, 255, 0.14); }
   .gaia-statistics-kpis strong { font-size: 12px; }
   .gaia-statistics-kpis small { display: none; }
-  .gaia-statistics-bi-actions {
-    display: block;
-    width: auto;
-    padding: 4px;
+  .gaia-statistics-bi-context {
+    width: min(124px, 34vw);
+    padding: 5px 7px;
   }
-  .gaia-statistics-bi-actions > p { display: none; }
-  .gaia-statistics-bi-actions > div {
-    display: grid;
-    grid-template-columns: 1fr;
-    width: auto;
-    height: 100%;
-  }
-  .gaia-statistics-bi-actions button { min-width: 34px; min-height: 0; padding: 2px; }
-  .gaia-statistics-bi-actions button small { display: none; }
+  .gaia-statistics-bi-context > p { display: none; }
+  .gaia-statistics-bi-context > small { font-size: 7px; line-height: 1.35; }
 
   .gaia-statistics-visual { height: auto; min-height: 96px; }
   .gaia-statistics-values summary,
@@ -1427,28 +1381,15 @@ body.gaia-statistics-open > :is(.gaia-audio-dock, .scene-transition) {
 .gaia-statistics-kpis strong { font-size: clamp(15px, 1.2vw, 19px); }
 .gaia-statistics-kpis small { font-size: 7px; }
 
-.gaia-statistics-bi-actions {
-  display: block;
-  width: auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
+.gaia-statistics-bi-context {
+  display: grid;
+  align-content: center;
+  width: 180px;
+  min-height: 57px;
+  padding: 8px 10px;
+  border: 1px solid rgba(115, 211, 255, 0.14);
+  background: rgba(7, 27, 49, 0.46);
 }
-
-.gaia-statistics-bi-actions > p { display: none; }
-
-.gaia-statistics-bi-actions > div {
-  height: 100%;
-  gap: 4px;
-}
-
-.gaia-statistics-bi-actions button {
-  min-width: 42px;
-  padding: 5px;
-  background: rgba(7, 29, 53, 0.68);
-}
-
-.gaia-statistics-bi-actions button small { display: none; }
 
 .gaia-statistics-visual {
   grid-column: 1 / -1;
@@ -1919,16 +1860,10 @@ body.gaia-statistics-open > :is(.gaia-audio-dock, .scene-transition) {
   .gaia-statistics-kpis strong { font-size: clamp(17px, 1.35vw, 22px); }
   .gaia-statistics-kpis small { font-size: 8px; }
 
-  .gaia-statistics-bi-actions {
-    display: flex;
-    align-items: stretch;
-  }
-
-  .gaia-statistics-bi-actions > div { min-height: 64px; }
-
-  .gaia-statistics-bi-actions button {
-    min-width: 50px;
-    border-radius: 8px;
+  .gaia-statistics-bi-context {
+    width: 210px;
+    min-height: 64px;
+    border-radius: 10px;
   }
 
   .gaia-statistics-visual {

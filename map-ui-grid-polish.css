@@ -2333,7 +2333,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 }
 
-/* Live maps 10–15 use one continuous planetary instrument deck. */
+/* All map chapters remain reachable from the live planetary instrument deck. */
 .gaia-live-deck-chapter,
 .gaia-live-deck-location,
 .gaia-live-deck-wave,
@@ -2945,10 +2945,10 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     bottom: calc(100% + 12px);
     left: clamp(86px, 7vw, 132px);
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: clamp(7px, 0.55vw, 12px);
-    align-items: center;
-    width: min(720px, calc(100% - clamp(172px, 14vw, 264px)));
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    gap: clamp(14px, 1.2vw, 24px);
+    align-items: start;
+    width: min(900px, calc(100% - clamp(172px, 14vw, 264px)));
     padding: 14px 18px;
     border: 1px solid rgba(var(--map-accent-rgb), 0.4);
     border-radius: 10px;
@@ -2963,6 +2963,30 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     transform-origin: bottom left;
     transition: opacity 170ms ease, transform 230ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 230ms;
     backdrop-filter: blur(18px) saturate(1.2);
+  }
+
+  .gaia-live-deck-mode-group {
+    display: grid;
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .gaia-live-deck-mode-group > p {
+    margin: 0;
+    color: rgba(var(--map-accent-rgb), 0.68);
+    font: 700 7px/1 Consolas, monospace;
+    letter-spacing: 0.14em;
+  }
+
+  .gaia-live-deck-mode-group > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(7px, 0.55vw, 12px);
+    align-items: start;
+  }
+
+  .gaia-live-deck-mode-group[data-live-deck-group="archive"] > div {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .gaia-live-exhibit-readout.is-chapter-selector-open .gaia-live-deck-modes {

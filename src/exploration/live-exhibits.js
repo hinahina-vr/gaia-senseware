@@ -170,7 +170,10 @@ const setChapterSelectorOpen = (open, { restoreFocus = false } = {}) => {
   readout?.classList.toggle("is-chapter-selector-open", shouldOpen);
   chapterSelectorToggle?.setAttribute("aria-expanded", String(shouldOpen));
   if (shouldOpen) {
-    requestAnimationFrame(() => deckModeButtons[activeIndex]?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => (
+      deckModeButtons.find((button) => button.getAttribute("aria-current") === "true")
+      || deckModeButtons[0]
+    )?.focus({ preventScroll: true }));
   } else if (restoreFocus) {
     chapterSelectorToggle?.focus({ preventScroll: true });
   }
@@ -1012,8 +1015,19 @@ const applyHeading = () => {
   mapTitle.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}`);
   chapterSelectorToggle?.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}。ライブ展示一覧を開く`);
   buttons.forEach((button, index) => button.setAttribute("aria-current", String(index === activeIndex)));
-  deckModeButtons.forEach((button, index) => button.setAttribute("aria-current", String(index === activeIndex)));
+  deckModeButtons.forEach((button) => button.setAttribute("aria-current", String(
+    button.dataset.liveDeckKind === "live"
+    && Number(button.dataset.liveDeckIndex) === activeIndex
+  )));
   document.querySelectorAll("#japan-mode-list .map-mode-button:not([data-live-exhibit])").forEach((button) => button.setAttribute("aria-current", "false"));
+  const modeButtons = [...document.querySelectorAll("#japan-mode-list .map-mode-button")];
+  const activeButtonIndex = modeButtons.findIndex((button) => button.getAttribute("aria-current") === "true");
+  readout?.querySelectorAll("[data-live-deck-step]").forEach((button) => {
+    if (activeButtonIndex < 0 || modeButtons.length < 2) return;
+    const direction = Number(button.dataset.liveDeckStep) || 0;
+    const target = modeButtons[(activeButtonIndex + direction + modeButtons.length) % modeButtons.length];
+    button.setAttribute("aria-label", `${direction < 0 ? "前" : "次"}の展示、${target.getAttribute("aria-label") || target.textContent?.trim() || "地図展示"}`);
+  });
 };
 
 const select = (index) => {
@@ -1198,7 +1212,7 @@ const mount = () => {
       <div class="gaia-live-deck-waveform" aria-hidden="true">${liveWaveBars}</div>
       <footer><time data-live-exhibit-feed-time></time><b data-live-exhibit-level>0% SIGNAL</b></footer>
     </section>
-    <nav class="gaia-live-deck-modes" id="gaia-live-deck-modes" aria-label="ライブ展示を選ぶ"></nav>
+    <nav class="gaia-live-deck-modes" id="gaia-live-deck-modes" aria-label="すべての地図展示から選ぶ"></nav>
     <div class="gaia-live-deck-actions gaia-live-exhibit-actions">
       <button type="button" class="gaia-live-deck-action" data-live-deck-source aria-label="データの出典を表示する"><span>SOURCE</span><strong data-live-deck-source-name>OPEN-METEO</strong><i aria-hidden="true">↗</i></button>
       <button class="gaia-live-exhibit-touch-hint" type="button" data-live-light-touch aria-label="地図の光へ触れる"><i aria-hidden="true"></i><b>光に触れる</b><span>TOUCH / DRAG</span></button>
@@ -1242,25 +1256,68 @@ const mount = () => {
   layer.append(readout);
   const deckModes = readout.querySelector(".gaia-live-deck-modes");
   chapterSelectorToggle = readout.querySelector(".gaia-live-deck-selector-toggle");
+  const standardModes = globalThis.GaiaAppContent?.modes || [];
+  const standardModeGlyphs = ["01", "02", "03", "04", "05", "06", "07", "08", "09"];
   const deckModeGlyphs = ["≋", "CO₂", "◇", "°", "☁", "⁙"];
-  deckModeButtons = EXHIBITS.map((exhibit, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.liveDeckMode = exhibit.id;
-    button.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}へ切り替える`);
-    button.setAttribute("aria-current", "false");
-    button.innerHTML = `<small>${exhibit.number}</small><i data-gaia-glint-surface aria-hidden="true">${deckModeGlyphs[index]}</i><strong>${exhibit.shortTitle}</strong>`;
-    button.addEventListener("click", () => {
-      select(index);
-      setChapterSelectorOpen(false, { restoreFocus: true });
+  const deckGroups = [
+    {
+      id: "archive",
+      label: `DATA MAP / 01—${String(standardModes.length).padStart(2, "0")}`,
+      chapters: standardModes.map((mode, index) => ({
+        kind: "standard",
+        index,
+        number: String(index + 1).padStart(2, "0"),
+        title: mode.titleJa,
+        glyph: standardModeGlyphs[index] || String(index + 1).padStart(2, "0"),
+      })),
+    },
+    {
+      id: "live",
+      label: `LIVE MAP / ${EXHIBITS[0]?.number || "—"}—${EXHIBITS.at(-1)?.number || "—"}`,
+      chapters: EXHIBITS.map((exhibit, index) => ({
+        kind: "live",
+        index,
+        number: exhibit.number,
+        title: exhibit.shortTitle,
+        glyph: deckModeGlyphs[index],
+      })),
+    },
+  ];
+  deckModeButtons = deckGroups.flatMap((group) => {
+    const section = document.createElement("section");
+    section.className = "gaia-live-deck-mode-group";
+    section.dataset.liveDeckGroup = group.id;
+    section.innerHTML = `<p>${group.label}</p><div></div>`;
+    const grid = section.querySelector("div");
+    const groupButtons = group.chapters.map((chapter) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.liveDeckKind = chapter.kind;
+      button.dataset.liveDeckIndex = String(chapter.index);
+      button.setAttribute("aria-label", `${chapter.number} ${chapter.title}へ切り替える`);
+      button.setAttribute("aria-current", "false");
+      button.innerHTML = `<small>${chapter.number}</small><i data-gaia-glint-surface aria-hidden="true">${chapter.glyph}</i><strong>${chapter.title}</strong>`;
+      button.addEventListener("click", () => {
+        if (chapter.kind === "live") {
+          select(chapter.index);
+        } else {
+          list.querySelectorAll(".map-mode-button:not([data-live-exhibit])")[chapter.index]?.click();
+        }
+        setChapterSelectorOpen(false, { restoreFocus: chapter.kind === "live" });
+      });
+      grid.append(button);
+      return button;
     });
-    deckModes.append(button);
-    return button;
+    deckModes.append(section);
+    return groupButtons;
   });
   readout.querySelectorAll("[data-live-deck-step]").forEach((button) => {
     button.addEventListener("click", () => {
       setChapterSelectorOpen(false);
-      select((activeIndex + Number(button.dataset.liveDeckStep) + EXHIBITS.length) % EXHIBITS.length);
+      const modeButtons = [...list.querySelectorAll(".map-mode-button")];
+      const activeButtonIndex = modeButtons.findIndex((candidate) => candidate.getAttribute("aria-current") === "true");
+      if (activeButtonIndex < 0 || !modeButtons.length) return;
+      modeButtons[(activeButtonIndex + Number(button.dataset.liveDeckStep) + modeButtons.length) % modeButtons.length]?.click();
     });
   });
   chapterSelectorToggle?.addEventListener("click", () => {

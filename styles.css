@@ -3578,6 +3578,7 @@ button {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  isolation: isolate;
   background:
     radial-gradient(circle at 58% 46%, rgba(43, 119, 114, 0.18), transparent 36%),
     linear-gradient(135deg, #02080b, #041116 58%, #02070a);
@@ -8978,9 +8979,9 @@ h1 {
 
 /* MAP 01—09 share their matching WebGL light language with the data map.
    The veil stays subtle and non-interactive so geography and controls remain primary. */
-.japan-layer.has-integrated-map-light > #gaia-canvas {
+.japan-layer.has-integrated-map-light .japan-map > #gaia-canvas {
   position: absolute;
-  z-index: 2;
+  z-index: 1;
   inset: 0;
   visibility: visible !important;
   opacity: var(--map-light-opacity, 0.15) !important;
@@ -8993,7 +8994,7 @@ h1 {
 
 /* MAP 02 lets the current field breathe across the sea while coastlines and
    observation marks stay readable above it. */
-.japan-layer.has-integrated-map-light > #gaia-canvas[data-integrated-map-mode="02"] {
+.japan-layer.has-integrated-map-light .japan-map > #gaia-canvas[data-integrated-map-mode="02"] {
   filter: saturate(1.08) brightness(1.04) contrast(0.94);
   -webkit-mask-image: radial-gradient(ellipse 96% 90% at 50% 44%, #000 18%, rgba(0, 0, 0, 0.92) 72%, transparent 100%);
   mask-image: radial-gradient(ellipse 96% 90% at 50% 44%, #000 18%, rgba(0, 0, 0, 0.92) 72%, transparent 100%);
@@ -9007,7 +9008,7 @@ h1 {
   body.space-mode-open,
   body.gx-open,
   body.sound-mode-open
-) .japan-layer.has-integrated-map-light > #gaia-canvas {
+) .japan-layer.has-integrated-map-light .japan-map > #gaia-canvas {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;

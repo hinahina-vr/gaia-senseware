@@ -46,11 +46,9 @@
 .sound-layer-background::before {
   z-index: 2;
   opacity: 0;
-  transform: scale(0.88);
-  background:
-    radial-gradient(ellipse 58% 22% at 50% 52%, rgba(221, 231, 255, 0.56), rgba(132, 84, 255, 0.18) 44%, transparent 76%),
-    radial-gradient(ellipse 34% 56% at 54% 48%, rgba(88, 242, 211, 0.22), transparent 74%);
-  filter: blur(26px);
+  transform: scale(0.96);
+  background: none;
+  filter: none;
 }
 
 .sound-layer[data-playing="true"] .sound-layer-background::before {
@@ -275,16 +273,16 @@
 }
 
 @keyframes sound-visualizer-focus {
-  0% { opacity: 0; transform: scale(0.94); filter: blur(38px); }
-  45% { opacity: 0.32; transform: scale(1); filter: blur(26px); }
-  100% { opacity: 0.12; transform: scale(1.1); filter: blur(38px); }
+  0% { opacity: 0; transform: scale(0.96); filter: blur(12px); }
+  42% { opacity: 0.13; transform: scale(1); filter: blur(6px); }
+  100% { opacity: 0.04; transform: scale(1.04); filter: blur(10px); }
 }
 
 .sound-layer[data-playing="true"] .sound-visualizer {
-  opacity: 0.94;
+  opacity: 1;
   visibility: visible;
   transform: scale(1);
-  filter: blur(0) saturate(1.16) contrast(1.08) brightness(1.08);
+  filter: blur(0) saturate(1.30) contrast(1.20) brightness(1.02);
   transition-delay: 0s;
 }
 
@@ -311,9 +309,9 @@
 }
 
 .sound-layer[data-playing="true"] .sound-character-scene {
-  opacity: 0.34;
+  opacity: 0.44;
   transform: scale(1.008);
-  filter: saturate(0.86) brightness(0.58) contrast(1.03) blur(2px);
+  filter: saturate(0.92) brightness(0.52) contrast(1.16);
 }
 
 .sound-now-playing { grid-area: info; align-self: start; }
