@@ -146,7 +146,8 @@ let mobileReadoutToggle = null;
 let chapterSelectorToggle = null;
 let anchorMarker = null;
 let cityPicker = null;
-let mapControls = null;
+let cityMarkersLayer = null;
+let cityMarkerButtons = [];
 let buttons = [];
 let deckModeButtons = [];
 let frame = 0;
@@ -224,19 +225,6 @@ const focusSelectedCity = () => {
   });
 };
 
-const zoomAroundSelectedPoi = (factor) => {
-  const exhibit = EXHIBITS[activeIndex];
-  if (!exhibit) return false;
-  const location = observationLocation(exhibit, currentMeasurement(exhibit));
-  return globalThis.GaiaMapObservationAdapter?.zoomEarthAtLocation?.({
-    lon: location.lon,
-    lat: location.lat,
-    factor,
-    targetX: 0.5,
-    targetY: innerWidth <= 720 ? 0.39 : 0.43,
-  }) || false;
-};
-
 const observationLocation = (exhibit, measurement) => {
   const location = measurement?.location;
   const lon = Number(location?.lon);
@@ -250,9 +238,9 @@ const observationLocation = (exhibit, measurement) => {
   };
 };
 
-const projectSceneAnchor = (location) => {
+const getLiveMapProjection = () => {
   const rect = canvas?.getBoundingClientRect();
-  if (!rect?.width || !rect?.height) return { scene: [0.4, 0.12], normalized: [0.7, 0.42] };
+  if (!rect?.width || !rect?.height) return null;
   const overlay = document.querySelector("#japan-overlay");
   const zoom = Math.max(1, Number(overlay?.dataset.earthZoom) || 1);
   const offsetX = Number(overlay?.dataset.earthOffsetX) || 0;
@@ -262,6 +250,12 @@ const projectSceneAnchor = (location) => {
   const worldHeight = 180 * scale;
   const originX = (rect.width - worldWidth) / 2 + offsetX;
   const originY = (rect.height - worldHeight) / 2 + offsetY;
+  return { rect, scale, originX, originY };
+};
+
+const projectSceneAnchor = (location, projection = getLiveMapProjection()) => {
+  if (!projection) return { scene: [0.4, 0.12], normalized: [0.7, 0.42] };
+  const { rect, scale, originX, originY } = projection;
   const mapLongitude = wrapLongitude(location.lon - 138) + 180;
   const screenX = originX + mapLongitude * scale;
   const screenY = originY + (90 - location.lat) * scale;
@@ -273,6 +267,21 @@ const projectSceneAnchor = (location) => {
       (rect.height - screenY * 2) / minimumDimension,
     ],
   };
+};
+
+const updateCityMarkers = (projection) => {
+  if (!cityMarkersLayer || !projection) return;
+  cityMarkerButtons.forEach((button) => {
+    const city = CITY_BY_ID.get(button.dataset.liveCityMarker);
+    if (!city) return;
+    const [x, y] = projectSceneAnchor(city, projection).normalized;
+    const onScreen = x >= -0.02 && x <= 1.02 && y >= -0.04 && y <= 1.04;
+    button.hidden = !onScreen;
+    button.style.left = `${(x * 100).toFixed(3)}%`;
+    button.style.top = `${(y * 100).toFixed(3)}%`;
+    button.setAttribute("aria-current", String(city.id === selectedCityId));
+  });
+  cityMarkersLayer.dataset.visibleCount = String(cityMarkerButtons.filter((button) => !button.hidden).length);
 };
 
 const lightTouchUniform = (timestamp) => {
@@ -892,7 +901,8 @@ const draw = (timestamp = performance.now(), force = false) => {
   const { width, height } = resizeCanvas();
   const time = reducedMotion ? 2.4 : timestamp / 1000;
   const location = observationLocation(exhibit, measurement);
-  const anchor = projectSceneAnchor(location);
+  const projection = getLiveMapProjection();
+  const anchor = projectSceneAnchor(location, projection);
   const touches = lightTouchUniform(timestamp);
   lightPointer.energy *= lightPointer.down ? 0.992 : 0.965;
   canvas.dataset.anchorLongitude = String(location.lon);
@@ -902,6 +912,7 @@ const draw = (timestamp = performance.now(), force = false) => {
   canvas.dataset.anchorNormalizedY = anchor.normalized[1].toFixed(4);
   canvas.dataset.signalStrength = strength.toFixed(4);
   canvas.dataset.signalKey = exhibit.key;
+  updateCityMarkers(projection);
   updateAnchorMarker(exhibit, location, anchor);
   if (webglRenderer) {
     webglRenderer.render({
@@ -1030,6 +1041,25 @@ const applyHeading = () => {
   });
 };
 
+const selectObservationCity = (cityId) => {
+  const nextCity = CITY_BY_ID.get(cityId);
+  if (!nextCity) return false;
+  selectedCityId = nextCity.id;
+  if (cityPicker) {
+    cityPicker.dataset.state = "loading";
+    cityPicker.querySelector("select").value = nextCity.id;
+    cityPicker.querySelector("[data-live-city-caption]").textContent = `${nextCity.name} · データを取得中`;
+  }
+  cityMarkerButtons.forEach((button) => {
+    button.setAttribute("aria-current", String(button.dataset.liveCityMarker === nextCity.id));
+  });
+  focusSelectedCity();
+  renderReadout();
+  draw(performance.now(), true);
+  void globalThis.GaiaLiveData?.selectCity?.(nextCity.id);
+  return true;
+};
+
 const select = (index) => {
   if (!EXHIBITS[index]) return;
   setChapterSelectorOpen(false);
@@ -1050,7 +1080,7 @@ const select = (index) => {
   canvas.hidden = false;
   readout.hidden = false;
   cityPicker.hidden = false;
-  mapControls.hidden = false;
+  cityMarkersLayer.hidden = false;
   setMobileReadoutExpanded(false);
   applyHeading();
   renderReadout();
@@ -1075,7 +1105,7 @@ const deactivate = ({ number, title } = {}) => {
   canvas.hidden = true;
   readout.hidden = true;
   if (cityPicker) cityPicker.hidden = true;
-  if (mapControls) mapControls.hidden = true;
+  if (cityMarkersLayer) cityMarkersLayer.hidden = true;
   setMobileReadoutExpanded(false);
   if (anchorMarker) anchorMarker.hidden = true;
   buttons.forEach((button) => button.setAttribute("aria-current", "false"));
@@ -1109,6 +1139,28 @@ const mount = () => {
   canvas.dataset.lightTouchIntegration = "abstract-light-touch";
   canvas.dataset.lightTouchCount = "0";
   map.append(canvas);
+  cityMarkersLayer = document.createElement("div");
+  cityMarkersLayer.className = "gaia-live-city-markers";
+  cityMarkersLayer.hidden = true;
+  cityMarkersLayer.setAttribute("aria-label", "ライブ観測都市");
+  cityMarkerButtons = OBSERVATION_CITIES.map((city) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "gaia-live-city-marker";
+    button.dataset.liveCityMarker = city.id;
+    button.setAttribute("aria-label", `${city.name}の観測データを表示`);
+    button.setAttribute("aria-current", String(city.id === selectedCityId));
+    button.innerHTML = `<i aria-hidden="true"></i><span>${city.name}</span>`;
+    button.addEventListener("pointerdown", (event) => event.stopPropagation());
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      selectObservationCity(city.id);
+    });
+    cityMarkersLayer.append(button);
+    return button;
+  });
+  map.append(cityMarkersLayer);
   anchorMarker = document.createElement("div");
   anchorMarker.className = "gaia-live-exhibit-anchor";
   anchorMarker.hidden = true;
@@ -1127,16 +1179,6 @@ const mount = () => {
   `;
   cityPicker.querySelector("select").value = selectedCityId;
   layer.append(cityPicker);
-  mapControls = document.createElement("nav");
-  mapControls.className = "gaia-live-map-controls";
-  mapControls.hidden = true;
-  mapControls.setAttribute("aria-label", "地図の拡大と現在都市");
-  mapControls.innerHTML = `
-    <button type="button" data-live-map-zoom="1.35" aria-label="地図を拡大する">＋</button>
-    <button type="button" data-live-map-zoom="0.74" aria-label="地図を縮小する">−</button>
-    <button type="button" data-live-map-focus aria-label="選択中の都市を中央に戻す"><span>◎</span><strong>都市へ戻る</strong></button>
-  `;
-  layer.append(mapControls);
   webglRenderer = createWebGLRenderer(canvas);
   if (webglRenderer) {
     canvas.dataset.renderEngine = "webgl-aiva-field";
@@ -1347,20 +1389,8 @@ const mount = () => {
   dispatchEvent(new CustomEvent("gaia:live-exhibit-mounted"));
 
   cityPicker.querySelector("select")?.addEventListener("change", (event) => {
-    const nextCity = CITY_BY_ID.get(event.currentTarget.value);
-    if (!nextCity) return;
-    selectedCityId = nextCity.id;
-    cityPicker.dataset.state = "loading";
-    cityPicker.querySelector("[data-live-city-caption]").textContent = `${nextCity.name} · データを取得中`;
-    focusSelectedCity();
-    renderReadout();
-    draw(performance.now(), true);
-    void globalThis.GaiaLiveData?.selectCity?.(nextCity.id);
+    selectObservationCity(event.currentTarget.value);
   });
-  mapControls.querySelectorAll("[data-live-map-zoom]").forEach((button) => {
-    button.addEventListener("click", () => zoomAroundSelectedPoi(Number(button.dataset.liveMapZoom)));
-  });
-  mapControls.querySelector("[data-live-map-focus]")?.addEventListener("click", focusSelectedCity);
 
   readout.querySelector("[data-live-light-touch]")?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -1378,6 +1408,7 @@ const mount = () => {
 
   map.addEventListener("pointerdown", (event) => {
     if (activeIndex < 0) return;
+    if (event.target instanceof Element && event.target.closest(".gaia-live-city-marker")) return;
     lightPointer.down = true;
     updateLightPointer(event, { touch: true });
   }, { capture: true });

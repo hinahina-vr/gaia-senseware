@@ -216,6 +216,10 @@
   const japanMap = document.querySelector("#japan-map");
   const japanTiles = document.querySelector("#japan-tiles");
   const japanOverlay = document.querySelector("#japan-overlay");
+  const mapZoomControls = document.querySelector("#gaia-map-zoom-controls");
+  const mapZoomIn = document.querySelector("#gaia-map-zoom-in");
+  const mapZoomOut = document.querySelector("#gaia-map-zoom-out");
+  const mapZoomReset = document.querySelector("#gaia-map-zoom-reset");
   const japanMapStatus = document.querySelector("#japan-map-status");
   const mapScopeKicker = document.querySelector("#map-scope-kicker");
   const mapScopeNote = document.querySelector("#map-scope-note");
@@ -1139,6 +1143,12 @@
     japanOverlay.dataset.japanScreenY = japanY.toFixed(2);
     japanOverlay.dataset.tokyoScreenX = tokyoX.toFixed(2);
     japanOverlay.dataset.tokyoScreenY = tokyoY.toFixed(2);
+    mapZoomControls.dataset.zoom = zoom.toFixed(2);
+    mapZoomIn.disabled = zoom >= 7.995;
+    mapZoomOut.disabled = zoom <= 1.005;
+    mapZoomReset.disabled = zoom <= 1.005
+      && Math.abs(japanView.earthOffsetX) < 0.5
+      && Math.abs(japanView.earthOffsetY) < 0.5;
     return projection;
   };
 
@@ -3513,38 +3523,52 @@
       ctx.save();
       ctx.globalCompositeOperation = "source-over";
       ctx.textAlign = "left";
-      ctx.font = '600 10px "Noto Sans JP", sans-serif';
-      const maximumWidth = Math.min(280, rect.width - 24);
-      const textWidth = Math.min(
-        maximumWidth,
-        Math.max(ctx.measureText(primary).width, ctx.measureText(secondary).width) + 22,
-      );
+      const prominent = motion.prominent === true;
+      const primaryFontPx = prominent ? (rect.width < 600 ? 14 : 16) : 10;
+      const secondaryFontPx = prominent ? (rect.width < 600 ? 10 : 11) : 8;
+      const horizontalPadding = prominent ? 16 : 10;
+      const cardHeight = prominent ? (rect.width < 600 ? 62 : 68) : 46;
+      ctx.font = `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
+      const primaryWidth = ctx.measureText(primary).width;
+      ctx.font = `600 ${secondaryFontPx}px Consolas, "Courier New", monospace`;
+      const secondaryWidth = ctx.measureText(secondary).width;
+      const maximumWidth = Math.min(prominent ? 440 : 280, rect.width - (prominent ? 32 : 24));
+      const naturalWidth = Math.max(primaryWidth, secondaryWidth) + horizontalPadding * 2;
+      const textWidth = prominent
+        ? Math.min(maximumWidth, Math.max(Math.min(360, maximumWidth), naturalWidth))
+        : Math.min(maximumWidth, naturalWidth);
+      const pointGap = prominent ? 24 : 16;
       const x = clamp(
-        point.x + 16 + textWidth > rect.width ? point.x - textWidth - 16 : point.x + 16,
-        12,
-        rect.width - textWidth - 12,
+        point.x + pointGap + textWidth > rect.width ? point.x - textWidth - pointGap : point.x + pointGap,
+        prominent ? 16 : 12,
+        rect.width - textWidth - (prominent ? 16 : 12),
       );
-      const y = clamp(point.y - 30, 12, rect.height - 58);
+      const y = clamp(point.y - cardHeight / 2, prominent ? 16 : 12, rect.height - cardHeight - (prominent ? 16 : 12));
       const alpha = clamp(Number(motion.alpha ?? 1), 0, 1);
       const scale = clamp(Number(motion.scale ?? 1), 0.9, 1.05);
       const offsetY = Number(motion.offsetY) || 0;
       ctx.globalAlpha *= alpha;
-      ctx.translate(x + textWidth / 2, y + 23 + offsetY);
+      ctx.translate(x + textWidth / 2, y + cardHeight / 2 + offsetY);
       ctx.scale(scale, scale);
       const drawX = -textWidth / 2;
-      const drawY = -23;
-      ctx.fillStyle = "rgba(2,13,18,.88)";
-      ctx.fillRect(drawX, drawY, textWidth, 46);
+      const drawY = -cardHeight / 2;
+      ctx.fillStyle = prominent ? "rgba(2,13,18,.94)" : "rgba(2,13,18,.88)";
+      ctx.fillRect(drawX, drawY, textWidth, cardHeight);
       ctx.strokeStyle = color.replace(/\.96\)$/u, ".52)");
-      ctx.lineWidth = 1;
-      ctx.strokeRect(drawX, drawY, textWidth, 46);
+      ctx.lineWidth = prominent ? 1.5 : 1;
+      ctx.strokeRect(drawX, drawY, textWidth, cardHeight);
       ctx.fillStyle = color;
-      ctx.fillText(primary, drawX + 10, drawY + 18, textWidth - 20);
+      ctx.font = `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
+      ctx.fillText(primary, drawX + horizontalPadding, drawY + (prominent ? 27 : 18), textWidth - horizontalPadding * 2);
       ctx.fillStyle = "rgba(222,241,240,.76)";
-      ctx.font = '8px Consolas, "Courier New", monospace';
-      ctx.fillText(secondary, drawX + 10, drawY + 34, textWidth - 20);
+      ctx.font = `600 ${secondaryFontPx}px Consolas, "Courier New", monospace`;
+      ctx.fillText(secondary, drawX + horizontalPadding, drawY + (prominent ? 51 : 34), textWidth - horizontalPadding * 2);
       ctx.restore();
+      return { x, y: y + offsetY, width: textWidth, height: cardHeight, primaryFontPx, secondaryFontPx };
     };
+    delete japanOverlay.dataset.earthquakeSelectionLabelWidthPx;
+    delete japanOverlay.dataset.earthquakeSelectionLabelHeightPx;
+    delete japanOverlay.dataset.earthquakeSelectionPrimaryFontPx;
     delete japanOverlay.dataset.auxiliaryPanelId;
     delete japanOverlay.dataset.auxiliaryPanelScreenLeft;
     delete japanOverlay.dataset.auxiliaryPanelScreenTop;
@@ -4314,7 +4338,9 @@
             });
           }
 
-          const sourceRadius = 3.5 + magnitudeScale * 4.5;
+          const sourceRadius = strongest
+            ? 7 + magnitudeScale * 9
+            : 4.5 + magnitudeScale * 5.5;
           ctx.beginPath();
           ctx.arc(point.x, point.y, sourceRadius, 0, Math.PI * 2);
           ctx.fillStyle = strongest ? "rgba(255,232,151,.98)" : "rgba(255,151,89,.9)";
@@ -4326,7 +4352,7 @@
           ctx.stroke();
 
           ctx.fillStyle = "rgba(255,224,173,.88)";
-          ctx.font = '700 8px Consolas, "Courier New", monospace';
+          ctx.font = `700 ${strongest ? 11 : 9}px Consolas, "Courier New", monospace`;
           ctx.fillText(`M${event.magnitude.toFixed(1)}`, point.x + sourceRadius + 5, point.y - 5);
         });
 
@@ -4334,12 +4360,16 @@
         if (strongest) {
           const point = pointFor({ lon: strongest.longitude, lat: strongest.latitude });
           if (visible(point, 80)) {
-            drawSelectionLabel(
+            const labelBounds = drawSelectionLabel(
               { x: point.x + 14, y: point.y },
               `${selectedYear} / ${yearEvents.length} EVENTS`,
               `MAX M${strongest.magnitude.toFixed(1)} · 推定可感半径 約${strongestImpactRadiusKm.toLocaleString("ja-JP")} km`,
               "rgba(255,203,126,.96)",
+              { prominent: true },
             );
+            japanOverlay.dataset.earthquakeSelectionLabelWidthPx = labelBounds.width.toFixed(1);
+            japanOverlay.dataset.earthquakeSelectionLabelHeightPx = labelBounds.height.toFixed(1);
+            japanOverlay.dataset.earthquakeSelectionPrimaryFontPx = String(labelBounds.primaryFontPx);
           }
         }
       }
@@ -8148,7 +8178,7 @@ for (const country of countryValues) {
     "[contenteditable='true']",
   ].join(",")));
 
-  japanLayer.addEventListener(
+  japanMap.addEventListener(
     "wheel",
     (event) => {
       if (!japanIsOpen || mapScope !== "earth") return;
@@ -8169,6 +8199,13 @@ for (const country of countryValues) {
     },
     { capture: true, passive: false },
   );
+
+  mapZoomIn.addEventListener("click", () => zoomEarthBy(1.35));
+  mapZoomOut.addEventListener("click", () => zoomEarthBy(1 / 1.35));
+  mapZoomReset.addEventListener("click", () => {
+    resetJapanView();
+    japanMap.focus({ preventScroll: true });
+  });
 
   japanMap.addEventListener("keydown", (event) => {
     const movement = event.shiftKey ? 110 : 46;
@@ -8602,15 +8639,15 @@ for (const country of countryValues) {
       return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
     }) || null;
   window.GaiaModeEntryGuide?.register?.("map", {
-    version: "v2",
+    version: "v3",
     kicker: "WORLD MAP / 操作ガイド",
-    avoid: "#map-reading-guide, .gaia-live-exhibit-readout",
+    avoid: ".gaia-live-exhibit-readout",
     available: () => japanIsOpen && !japanLayer.hidden,
     steps: [
       {
-        target: "#japan-map",
-        title: "地図を動かす",
-        copy: "ドラッグで移動し、ホイールやピンチで拡大できます。気になる地点や光を押すと、その場所の観測情報が開きます。",
+        target: () => firstVisibleMapGuideTarget(".map-dock-bank-trigger", ".gaia-live-deck-modes", "#japan-mode-list", "#map-mobile-bank-toggle"),
+        title: "展示を選ぶ",
+        copy: "左右の切替か中央の展示名を押して、15種類の地図展示を選べます。",
       },
       {
         target: "[data-signal-time]",
@@ -8618,17 +8655,17 @@ for (const country of countryValues) {
         copy: "青い年代スライダーを動かすと、過去から未来試算まで、地図の色と観測値が連動して変わります。",
       },
       {
-        target: () => firstVisibleMapGuideTarget(".gaia-live-deck-modes", "#japan-mode-list", "#map-mobile-bank-toggle"),
-        title: "地図展示を切り替える",
-        copy: "番号や計器アイコンを選ぶと、CO₂、海流、森林、気温、雲など14種類の観測展示へ切り替えられます。",
+        target: "#map-reading-guide",
+        title: "問いを読む",
+        copy: "この地図で何を見比べるのか、色や記号をどう読むのかを簡単に確認できます。",
       },
       {
-        target: () => firstVisibleMapGuideTarget("[data-live-deck-source]", "#japan-data-button", "#map-mobile-heading-toggle"),
+        target: () => firstVisibleMapGuideTarget(".map-dock-action--source", "[data-live-deck-source]", "#japan-data-button", "#map-mobile-heading-toggle"),
         title: "データの出典を確認する",
         copy: "表示中の数値がどの公開データから来たか、実測・補完・試算の区分まで確認できます。",
       },
       {
-        target: () => firstVisibleMapGuideTarget("[data-live-deck-analysis]", "#gaia-statistics-button", "#gaia-statistics-button-mobile"),
+        target: () => firstVisibleMapGuideTarget(".map-dock-action--statistics", "[data-live-deck-analysis]", "#gaia-statistics-button", "#gaia-statistics-button-mobile"),
         title: "データを詳しく分析する",
         copy: "統計解析ラボでは、表示中のデータをチャート・数値一覧・元データ・解説の四つの視点から調べられます。",
       },
@@ -9501,8 +9538,10 @@ for (const country of countryValues) {
   };
 
   const render = (now) => {
-    const mapExhibitIsVisible = japanIsOpen
-      && !japanLayer.classList.contains("is-live-exhibit");
+    // The geographic base must keep following the shared projection in every
+    // chapter. Live chapters render their own data canvas, but the coastlines
+    // still need to redraw after wheel, pinch, drag, and control-button input.
+    const mapSurfaceIsVisible = japanIsOpen;
     const lodProfile = globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || { targetFps: 60 };
     const lodTarget = lodProfile.targetFps ?? 60;
 
@@ -9510,7 +9549,7 @@ for (const country of countryValues) {
       const enteringStaticFallback = japanOverlay.dataset.renderLoopMode !== "static-fallback";
       japanOverlay.dataset.renderLoopMode = "static-fallback";
       if (
-        mapExhibitIsVisible
+        mapSurfaceIsVisible
         && (enteringStaticFallback || now + 0.5 >= nextJapanOverlayRenderAt)
       ) {
         renderJapanTiles();
@@ -9563,7 +9602,7 @@ for (const country of countryValues) {
 
     resize();
     updateCo2TimelineAnimation(now);
-    if (mapExhibitIsVisible) {
+    if (mapSurfaceIsVisible) {
       renderJapanTiles();
       renderJapanOverlay(now);
     }

@@ -17,7 +17,7 @@ const boot = async (viewport) => {
   const context = await browser.newContext({ viewport, colorScheme: "dark", reducedMotion: viewport.mobile ? "reduce" : "no-preference" });
   await context.addInitScript(() => {
     window.localStorage.removeItem("gaia-statistics-saved-views:v1");
-    window.sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
+    window.sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
   });
   const page = await context.newPage();
   page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });

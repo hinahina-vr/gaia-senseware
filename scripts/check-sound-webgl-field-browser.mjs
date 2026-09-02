@@ -60,6 +60,10 @@ for (const viewport of [
       motionProfile: canvas.dataset.motionProfile,
       formLanguage: canvas.dataset.formLanguage,
       palette: canvas.dataset.palette,
+      dragControl: canvas.dataset.dragControl,
+      geometryPoints: Number(canvas.dataset.geometryPoints || 0),
+      webglFrame: Number(canvas.dataset.webglFrame || 0),
+      webglError: Number(canvas.dataset.webglError || 0),
       shaderError: canvas.dataset.shaderError || "",
       bass: Number(canvas.dataset.bass),
       mid: Number(canvas.dataset.mid),
@@ -72,13 +76,33 @@ for (const viewport of [
   });
 
   assert(scan.renderer === "webgl" && !scan.shaderError, `${viewport.name}: WebGL shader failed: ${JSON.stringify(scan)}`);
-  assert(scan.visualizer === "audio-reactive-silk-tide" && scan.presentation === "full-screen-webgl", `${viewport.name}: wrong visualizer mode: ${JSON.stringify(scan)}`);
-  assert(scan.reactivity === "bass-bloom-mid-curl-high-shimmer-flux-spark" && scan.motionProfile === "layered-curl-warped-veils" && scan.formLanguage === "soft-feathered-veils-no-core" && scan.palette === "wisteria-sky-mint-sakura-apricot", `${viewport.name}: visualizer is not using the layered silk-tide profile: ${JSON.stringify(scan)}`);
+  assert(scan.webglError === 0, `${viewport.name}: WebGL reported an error: ${JSON.stringify(scan)}`);
+  assert(scan.visualizer === "audio-reactive-crystal-universe" && scan.presentation === "full-screen-webgl", `${viewport.name}: wrong visualizer mode: ${JSON.stringify(scan)}`);
+  assert(scan.reactivity === "audio-color-particle-size-density-and-spark" && scan.motionProfile === "single-direction-infinite-led-drift" && scan.formLanguage === "crystalline-perspective-light-field" && scan.palette === "sapphire-lagoon-orchid-amber-track-palettes" && scan.dragControl === "left-pointer-view-pan" && scan.geometryPoints >= 10000 && scan.webglFrame > 0, `${viewport.name}: visualizer is not using the crystal-universe profile: ${JSON.stringify(scan)}`);
   assert(scan.eqCount === 0, `${viewport.name}: detached EQ visualizer remains`);
   assert(scan.rect.left <= 0 && scan.rect.top <= 0 && scan.rect.right >= viewport.width && scan.rect.bottom >= viewport.height, `${viewport.name}: WebGL field is not full-screen: ${JSON.stringify(scan)}`);
   assert(scan.opacity >= 0.82 && scan.filter.includes("saturate") && scan.filter.includes("contrast"), `${viewport.name}: WebGL field remains faint: ${JSON.stringify(scan)}`);
   assert(scan.energy > 0.005 && Math.max(scan.bass, scan.mid, scan.high) > 0.005, `${viewport.name}: audio analysis is not reaching WebGL: ${JSON.stringify(scan)}`);
   assert(errors.length === 0, `${viewport.name}: browser errors: ${errors.join(" | ")}`);
+
+  const firstFrame = scan.webglFrame;
+  await page.waitForTimeout(800);
+  const laterFrame = await page.locator("#sound-visualizer").evaluate((canvas) => Number(canvas.dataset.webglFrame || 0));
+  const minimumFrames = viewport.name === "mobile" ? 12 : 20;
+  assert(laterFrame - firstFrame >= minimumFrames, `${viewport.name}: WebGL animation stalled (${firstFrame} -> ${laterFrame})`);
+
+  if (viewport.name === "desktop") {
+    await page.screenshot({ path: path.join(outputDir, "desktop-before-drag.png"), fullPage: false });
+    const beforeDrag = await page.locator("#sound-visualizer").evaluate((canvas) => ({ x: Number(canvas.dataset.viewX), y: Number(canvas.dataset.viewY) }));
+    await page.mouse.move(1470, 780);
+    await page.mouse.down({ button: "left" });
+    await page.mouse.move(1680, 670, { steps: 12 });
+    await page.mouse.up({ button: "left" });
+    await page.waitForTimeout(300);
+    const afterDrag = await page.locator("#sound-visualizer").evaluate((canvas) => ({ x: Number(canvas.dataset.viewX), y: Number(canvas.dataset.viewY), dragging: canvas.dataset.dragging }));
+    assert(afterDrag.x > beforeDrag.x + 0.08 && afterDrag.y > beforeDrag.y + 0.05 && afterDrag.dragging === "false", `desktop: left-drag did not move the WebGL view: ${JSON.stringify({ beforeDrag, afterDrag })}`);
+    await page.screenshot({ path: path.join(outputDir, "desktop-after-drag.png"), fullPage: false });
+  }
 
   await page.screenshot({ path: path.join(outputDir, `${viewport.name}-sound-webgl-field.png`), fullPage: false });
   await context.close();

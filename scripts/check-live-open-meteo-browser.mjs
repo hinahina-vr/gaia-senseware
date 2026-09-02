@@ -86,9 +86,38 @@ try {
   await page.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter), null, { timeout: 30_000 });
   await page.evaluate(() => { location.hash = "#japan"; });
   await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 20_000 });
+  await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
   assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—15");
   assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 15);
   assert.equal(await page.locator(".gaia-live-city-picker option").count(), 21);
+  assert.equal(await page.locator(".gaia-live-city-marker").count(), 21);
+
+  for (const button of await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").all()) {
+    await button.evaluate((element) => element.click());
+    const controls = await page.locator("#gaia-map-zoom-controls").evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        buttonCount: element.querySelectorAll("button").length,
+        height: rect.height,
+        visible: rect.width > 0 && rect.height > 0 && getComputedStyle(element).visibility !== "hidden",
+      };
+    });
+    assert.equal(controls.visible, true, "shared zoom controls disappeared in a standard map chapter");
+    assert.equal(controls.buttonCount, 3, "standard map chapter did not use the shared zoom controls");
+    await page.waitForTimeout(40);
+    const zoomBeforeControl = Number(await page.locator("#japan-overlay").getAttribute("data-earth-zoom"));
+    await page.locator("#gaia-map-zoom-in").evaluate((element) => element.click());
+    await page.waitForFunction((zoom) => Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) > zoom + 0.05, zoomBeforeControl);
+    if (!(await page.locator("#gaia-map-zoom-reset").isDisabled())) {
+      await page.locator("#gaia-map-zoom-reset").evaluate((element) => element.click());
+      await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) <= 1.01);
+    }
+  }
+  const desktopZoomButtonSizes = await page.locator("#gaia-map-zoom-controls button").evaluateAll((elements) => elements.map((element) => {
+    const rect = element.getBoundingClientRect();
+    return { width: rect.width, height: rect.height };
+  }));
+  assert(desktopZoomButtonSizes.every(({ width, height }) => width >= 48 && height >= 48), `zoom controls are too small: ${JSON.stringify(desktopZoomButtonSizes)}`);
 
   const fallbackKeys = await page.evaluate(async () => {
     const payload = await fetch("./data/live-observation-fallback-v1.json").then((response) => response.json());
@@ -101,11 +130,12 @@ try {
     const contract = contracts[index];
     await page.locator(`#japan-mode-list [data-live-exhibit="${contract.id}"]`).evaluate((button) => button.click());
     await page.waitForFunction((mode) => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === String(mode), index);
+    await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
     await page.waitForFunction(() => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglFrame || 0) > 0);
     const state = await page.locator("#gaia-live-exhibit-canvas").evaluate((canvas) => ({
       anchorLatitude: Number(canvas.dataset.anchorLatitude),
       anchorLongitude: Number(canvas.dataset.anchorLongitude),
-      deckModeCount: document.querySelectorAll(".gaia-live-deck-modes [data-live-deck-mode]").length,
+      deckModeCount: document.querySelectorAll('.gaia-live-deck-modes [data-live-deck-kind="live"]').length,
       deckRect: (() => {
         const rect = document.querySelector(".gaia-live-exhibit-readout")?.getBoundingClientRect();
         return rect ? { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left, width: rect.width } : null;
@@ -130,10 +160,10 @@ try {
     assert.equal(state.anchorLatitude, 35.6762);
     assert.equal(state.anchorLongitude, 139.6503);
     assert.equal(state.deckModeCount, 6);
+    assert.equal(await page.locator("#gaia-map-zoom-controls").isVisible(), true, `${contract.id}: shared zoom controls disappeared`);
     assert(state.feedTimeFontSize >= 12, `${contract.id}: live timestamp is too small ${JSON.stringify(state)}`);
     assert.equal(await page.locator(".gaia-live-deck-location > p").textContent(), "MODEL / JAPAN · 21 CITIES");
     assert(state.deckRect && state.deckRect.left >= 0 && state.deckRect.right <= 1440, `${contract.id}: deck leaves the viewport`);
-    if (state.guideRect) assert(state.guideRect.bottom <= state.deckRect.top + 1, `${contract.id}: guide overlaps deck ${JSON.stringify(state)}`);
     assert.match(await page.locator("[data-live-anchor-source]").textContent(), /MODEL GRID/u);
     assert.match(await page.locator("[data-live-exhibit-source]").textContent(), /OPEN-METEO/u);
     assert.match(await page.locator("[data-live-exhibit-feed-copy]").textContent(), /モデル|キャッシュ/u);
@@ -154,29 +184,10 @@ try {
   await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
   await page.locator('#japan-mode-list [data-live-exhibit="wind-field"]').evaluate((button) => button.click());
   await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
-  await page.locator(".gaia-live-deck-selector-toggle").click();
-  await page.waitForFunction(() => document.querySelector(".gaia-live-deck-selector-toggle")?.getAttribute("aria-expanded") === "true");
-  await page.locator('[data-live-deck-mode="wind-field"]:visible').hover();
-  await page.waitForFunction(() => document.querySelector(".gaia-global-button-glint")?.classList.contains("is-active"));
-  const circularGlint = await page.evaluate(() => {
-    const button = document.querySelector('[data-live-deck-mode="wind-field"]');
-    const icon = button?.querySelector("[data-gaia-glint-surface]");
-    const glint = document.querySelector(".gaia-global-button-glint");
-    const buttonRect = button?.getBoundingClientRect();
-    const iconRect = icon?.getBoundingClientRect();
-    const glintRect = glint?.getBoundingClientRect();
-    return {
-      buttonHeight: buttonRect?.height,
-      borderRadius: getComputedStyle(glint).borderRadius,
-      heightDelta: Math.abs((glintRect?.height || 0) - (iconRect?.height || 0)),
-      leftDelta: Math.abs((glintRect?.left || 0) - (iconRect?.left || 0)),
-      topDelta: Math.abs((glintRect?.top || 0) - (iconRect?.top || 0)),
-      widthDelta: Math.abs((glintRect?.width || 0) - (iconRect?.width || 0)),
-    };
-  });
-  assert.match(circularGlint.borderRadius, /50%/u, `live mode glint was not circular: ${JSON.stringify(circularGlint)}`);
-  assert(circularGlint.buttonHeight > 0 && circularGlint.heightDelta < 1 && circularGlint.widthDelta < 1, `live mode glint did not match its icon: ${JSON.stringify(circularGlint)}`);
-  assert(circularGlint.leftDelta < 1 && circularGlint.topDelta < 1, `live mode glint was misaligned: ${JSON.stringify(circularGlint)}`);
+  await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.viewAnimation !== "running");
+  assert.equal(await page.locator("#gaia-map-zoom-controls").isVisible(), true, "shared zoom controls disappeared in MAP10");
+  assert.equal(await page.locator(".gaia-live-city-marker").count(), 21);
+  assert(Number(await page.locator(".gaia-live-city-markers").getAttribute("data-visible-count")) > 1, "MAP10 only exposed one observation city");
   const mapBox = await page.locator("#japan-map").boundingBox();
   assert(mapBox, "live map bounds were unavailable");
   const wheelPoint = { x: mapBox.x + mapBox.width * 0.62, y: mapBox.y + mapBox.height * 0.34 };
@@ -194,7 +205,24 @@ try {
     const worldHeight = 180 * scale;
     const originX = (rect.width - worldWidth) / 2 + offsetX;
     const originY = (rect.height - worldHeight) / 2 + offsetY;
+    let mapPixelSignature = 2166136261;
+    const context = overlay?.getContext("2d");
+    if (context && overlay.width > 0 && overlay.height > 0) {
+      const pixels = context.getImageData(0, 0, overlay.width, overlay.height).data;
+      const stepX = Math.max(1, Math.floor(overlay.width / 40));
+      const stepY = Math.max(1, Math.floor(overlay.height / 24));
+      for (let sampleY = 0; sampleY < overlay.height; sampleY += stepY) {
+        for (let sampleX = 0; sampleX < overlay.width; sampleX += stepX) {
+          const index = (sampleY * overlay.width + sampleX) * 4;
+          mapPixelSignature = Math.imul(mapPixelSignature ^ pixels[index], 16777619);
+          mapPixelSignature = Math.imul(mapPixelSignature ^ pixels[index + 1], 16777619);
+          mapPixelSignature = Math.imul(mapPixelSignature ^ pixels[index + 2], 16777619);
+          mapPixelSignature = Math.imul(mapPixelSignature ^ pixels[index + 3], 16777619);
+        }
+      }
+    }
     return {
+      mapPixelSignature: mapPixelSignature >>> 0,
       poiX: Number(canvas?.dataset.anchorNormalizedX),
       poiY: Number(canvas?.dataset.anchorNormalizedY),
       mapX: (x - rect.left - originX) / scale,
@@ -216,6 +244,7 @@ try {
   const cursorDriftPx = Math.hypot(afterWheel.mapX - beforeWheel.mapX, afterWheel.mapY - beforeWheel.mapY) * afterWheel.scale;
   const poiMovement = Math.hypot(afterWheel.poiX - beforeWheel.poiX, afterWheel.poiY - beforeWheel.poiY);
   assert(afterWheel.zoom > beforeWheel.zoom, `wheel did not zoom the live map: ${JSON.stringify({ mapBox, wheelPoint, wheelTarget, beforeWheel, afterWheel })}`);
+  assert.notEqual(afterWheel.mapPixelSignature, beforeWheel.mapPixelSignature, `wheel changed projection numbers but not the visible map pixels: ${JSON.stringify({ beforeWheel, afterWheel })}`);
   assert(cursorDriftPx <= 0.75, `wheel zoom drifted away from the cursor: ${JSON.stringify({ cursorDriftPx, beforeWheel, afterWheel })}`);
   assert(poiMovement >= 0.005, `wheel zoom remained pinned to the selected POI: ${JSON.stringify({ poiMovement, beforeWheel, afterWheel })}`);
   assert.equal(afterWheel.scrollY, beforeWheel.scrollY, `wheel scrolled the page: ${JSON.stringify({ beforeWheel, afterWheel })}`);
@@ -230,6 +259,7 @@ try {
   await page.setViewportSize({ width: 3840, height: 2160 });
   await page.locator('#japan-mode-list [data-live-exhibit="wind-field"]').evaluate((button) => button.click());
   await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
+  await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.viewAnimation !== "running");
   const wideLayout = await page.evaluate(() => ({
     chapterVisible: document.querySelector(".gaia-live-deck-chapter")?.getBoundingClientRect().width > 0,
     deckWidth: document.querySelector(".gaia-live-exhibit-readout")?.getBoundingClientRect().width || 0,
@@ -240,9 +270,34 @@ try {
   assert.equal(wideLayout.locationVisible, true);
   assert(wideLayout.deckWidth >= 3700, `wide deck is too narrow: ${wideLayout.deckWidth}px`);
   assert(wideLayout.overflow <= 1, `wide horizontal overflow: ${wideLayout.overflow}px`);
-  const wideScreenshot = path.join(output, "live-10-wide.png");
-  await page.screenshot({ path: wideScreenshot, animations: "disabled" });
-  screenshots.push(wideScreenshot);
+  await page.locator("#gaia-map-zoom-reset").click();
+  await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) <= 1.01);
+  await page.waitForTimeout(180);
+  const zoomBeforeScreenshot = path.join(output, "map-10-zoom-before-4k.png");
+  await page.screenshot({ path: zoomBeforeScreenshot, animations: "disabled" });
+  const wideMapBox = await page.locator("#japan-map").boundingBox();
+  assert(wideMapBox, "4K live map bounds were unavailable");
+  const wideAnchor = await page.locator("#gaia-live-exhibit-canvas").evaluate((canvas) => ({
+    x: Number(canvas.dataset.anchorNormalizedX),
+    y: Number(canvas.dataset.anchorNormalizedY),
+  }));
+  const wideWheelPoint = {
+    x: wideMapBox.x + wideMapBox.width * wideAnchor.x,
+    y: wideMapBox.y + wideMapBox.height * wideAnchor.y,
+  };
+  await page.mouse.move(wideWheelPoint.x, wideWheelPoint.y);
+  await page.mouse.wheel(0, -240);
+  await page.mouse.wheel(0, -240);
+  await page.waitForFunction(() => Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) >= 3);
+  await page.waitForTimeout(260);
+  const zoomAfterScreenshot = path.join(output, "map-10-zoom-after-4k.png");
+  await page.screenshot({ path: zoomAfterScreenshot, animations: "disabled" });
+  screenshots.push(zoomBeforeScreenshot, zoomAfterScreenshot);
+
+  await page.locator('[data-live-city-marker="osaka"]').evaluate((button) => button.click());
+  await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity === "osaka");
+  await page.waitForFunction(() => Math.abs(Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.anchorLatitude) - 34.6937) < 0.01);
+  assert.match(await page.locator(".gaia-live-city-picker select").inputValue(), /osaka/u);
 
   await page.locator('#japan-mode-list [data-live-exhibit="pm25-haze"]').evaluate((button) => button.click());
   await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "5");

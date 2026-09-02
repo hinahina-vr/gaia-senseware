@@ -36,7 +36,7 @@ try {
       localStorage.clear();
       localStorage.setItem("gaia-senseware-bgm-volume", "0.2");
       localStorage.setItem("gaia:opening-route-guide:v3", "seen");
-      sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
+      sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
       globalThis.__gaiaMediaElementSourceCalls = 0;
       globalThis.__gaiaAudioContinuity = { waiting: 0, stalled: 0, errors: 0 };
       const instrumentedMedia = new WeakSet();

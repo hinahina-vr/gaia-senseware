@@ -21,7 +21,7 @@ const checks = [
   ["desktop map guide uses a readable fade and glint", /map-dock-guide-glint/.test(styles) && /font-size: clamp\(15px, 1vw, 18px\)/.test(styles)],
   ["map POIs advertise hover interactivity", /\.japan-map\.has-poi-hover:not\(\.is-dragging\)[\s\S]*cursor: pointer/.test(styles)],
   ["map POI preview has a restrained focus transition", /\.japan-poi-preview\.is-visible/.test(styles) && /japan-poi-preview-glint/.test(styles)],
-  ["command dock assets use the current cache key", ["map-ui-grid-polish.css?v=gaia-human-history-2", "map-ui-grid-polish.js?v=gaia-human-history-2"].every((asset) => loader.includes(asset))],
+  ["command dock assets use the current cache key", ["map-ui-grid-polish.css?v=gaia-shared-map-zoom-1", "map-ui-grid-polish.js?v=gaia-human-history-2"].every((asset) => loader.includes(asset))],
   ["browser checker samples the exact map panel", /#japan-layer > \.signal-console-map/.test(browserChecker)],
   ["browser checker requires 1200 samples", /polishTrace\.frames >= 1200/.test(browserChecker)],
   ["browser checker rejects marker churn", /markerMutations, 0/.test(browserChecker)],

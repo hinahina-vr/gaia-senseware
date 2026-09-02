@@ -64,7 +64,7 @@ try {
     await context.addInitScript(() => {
       localStorage.setItem("gaia-senseware-bgm-volume", "0");
       localStorage.setItem("gaiaSensewareTourSeen:v1", "true");
-      sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
+      sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
     });
     const page = await context.newPage();
     page.on("console", (message) => {

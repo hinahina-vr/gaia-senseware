@@ -88,7 +88,7 @@ const createPage = async (viewport, label) => {
   });
   await page.addInitScript((source) => {
     globalThis.__qaVisible = eval(source);
-    sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
+    sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
     globalThis.__qaNovelOpenAtCount = 0;
     globalThis.__qaNovelOpenCount = 0;
     globalThis.__qaSpaceOpenAtCount = 0;

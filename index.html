@@ -173,7 +173,7 @@
     <script src="./opening-audio.js?v=gaia-navigation-roundtrip-2" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
     <script src="./opening.js?v=gaia-audio-return-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-sound-silk-tide-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-map-guide-left-to-right-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-character-preloader" id="gaia-character-preloader" role="status" aria-live="polite" aria-hidden="true" hidden>
@@ -1530,6 +1530,12 @@
           <canvas class="japan-overlay" id="japan-overlay" aria-hidden="true"></canvas>
           <div class="japan-map-shade" aria-hidden="true"></div>
         </div>
+
+        <nav class="gaia-map-zoom-controls" id="gaia-map-zoom-controls" aria-label="地図の拡大縮小">
+          <button id="gaia-map-zoom-in" type="button" aria-label="地図を拡大">＋</button>
+          <button id="gaia-map-zoom-out" type="button" aria-label="地図を縮小">−</button>
+          <button id="gaia-map-zoom-reset" type="button" aria-label="地図を全体表示へ戻す">◎</button>
+        </nav>
 
         <button
           class="story-map-modal-skip"

@@ -12,6 +12,8 @@ const countryReadoutOnly = process.argv.slice(6).includes("--country-readout-onl
 const populationOnly = process.argv.slice(6).includes("--population-only");
 const highResolutionOnly = process.argv.slice(6).includes("--high-resolution-only");
 const map06CrossModeOnly = process.argv.slice(6).includes("--map06-cross-mode-only");
+const earthquakeOnly = process.argv.slice(6).includes("--earthquake-only");
+const guideOrderOnly = process.argv.slice(6).includes("--guide-order-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -20,7 +22,9 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/map-exhibits-10");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const viewports = highResolutionOnly || map06CrossModeOnly
+const viewports = guideOrderOnly
+  ? [{ name: "pc-guide", width: 1440, height: 900 }]
+  : highResolutionOnly || map06CrossModeOnly
   ? [{ name: "high-resolution", width: 3840, height: 2088 }]
   : [
       { name: "pc", width: 1440, height: 900 },
@@ -311,7 +315,7 @@ const boot = async (viewport, { startStatic = false, boundaryDelayMs = 0 } = {})
   }
   await page.addInitScript(({ shouldStartStatic }) => {
     localStorage.setItem("gaia-senseware-bgm-volume", "0");
-    sessionStorage.setItem("gaia:mode-entry-guide:map:v2", "seen");
+    sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
     if (shouldStartStatic) {
       window.addEventListener("gaia:app-ready", () => {
         globalThis.GaiaFrameBudgetGovernor?.setLevel?.("static", "browser-test-early-static");
@@ -377,12 +381,91 @@ try {
     const { context, page } = await boot(viewport);
     const scan = { viewport, clicks: {}, screenshots: [], zoom: {} };
 
+    if (guideOrderOnly) {
+      await page.evaluate(() => globalThis.GaiaModeEntryGuide?.open?.("map", { force: true }));
+      await page.waitForFunction(() => globalThis.GaiaModeEntryGuide?.getState?.().active === true);
+      scan.guideSteps = [];
+      for (let index = 0; index < 5; index += 1) {
+        await page.waitForFunction((stepIndex) => globalThis.GaiaModeEntryGuide?.getState?.().index === stepIndex, index);
+        await page.waitForFunction((stepNumber) => (
+          Number(document.querySelector("[data-mode-guide-step]")?.textContent || 0) === stepNumber
+          && Boolean(document.querySelector("[data-mode-guide-title]")?.textContent?.trim())
+        ), index + 1);
+        await page.waitForTimeout(420);
+        const step = await page.evaluate(() => {
+          const target = document.querySelector(".is-gaia-mode-guide-target");
+          const rect = target?.getBoundingClientRect();
+          return {
+            title: document.querySelector("[data-mode-guide-title]")?.textContent?.trim() || "",
+            current: Number(document.querySelector("[data-mode-guide-step]")?.textContent || 0),
+            total: Number(document.querySelector("[data-mode-guide-total]")?.textContent || 0),
+            centerX: rect ? rect.left + rect.width / 2 : -1,
+            targetClass: target?.className || target?.id || "",
+          };
+        });
+        scan.guideSteps.push(step);
+        if (index === 0 || index === 4) {
+          const screenshot = path.join(outputDir, `pc-guide-${String(index + 1).padStart(2, "0")}.png`);
+          await page.screenshot({ path: screenshot });
+          scan.screenshots.push(screenshot);
+        }
+        if (index < 4) await page.locator("#gaia-mode-entry-guide").click({ position: { x: 8, y: 8 } });
+      }
+      assert.deepEqual(scan.guideSteps.map((step) => step.title), [
+        "展示を選ぶ",
+        "年代をたどる",
+        "問いを読む",
+        "データの出典を確認する",
+        "データを詳しく分析する",
+      ]);
+      assert(scan.guideSteps.every((step) => step.total === 5), `guide does not expose all five left-to-right steps: ${JSON.stringify(scan.guideSteps)}`);
+      for (let index = 1; index < scan.guideSteps.length; index += 1) {
+        assert(scan.guideSteps[index].centerX >= scan.guideSteps[index - 1].centerX - 2, `guide moved back to the left: ${JSON.stringify(scan.guideSteps)}`);
+      }
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
+    if (earthquakeOnly) {
+      await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
+      await selectMode(page, 5, "地球からのメッセージ");
+      await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.earthquakeYear === "2000");
+      const earthquakeSlider = page.locator("#japan-layer [data-signal-time]").first();
+      await earthquakeSlider.evaluate((element) => {
+        element.value = String(((4 + 0.1) / 27) * 100);
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.earthquakeYear === "2004");
+      await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+      await waitForReferenceMap(page);
+      await page.waitForTimeout(500);
+      scan.earthquakeLabel = await page.locator("#japan-overlay").evaluate((element) => ({
+        width: Number(element.dataset.earthquakeSelectionLabelWidthPx),
+        height: Number(element.dataset.earthquakeSelectionLabelHeightPx),
+        primaryFont: Number(element.dataset.earthquakeSelectionPrimaryFontPx),
+        eventCount: Number(element.dataset.earthquakeYearEventCount),
+      }));
+      assert.equal(scan.earthquakeLabel.eventCount, 3);
+      assert.ok(scan.earthquakeLabel.width >= Math.min(340, viewport.width - 32), `earthquake label remains too narrow: ${JSON.stringify(scan.earthquakeLabel)}`);
+      assert.ok(scan.earthquakeLabel.height >= 62, `earthquake label remains too short: ${JSON.stringify(scan.earthquakeLabel)}`);
+      assert.ok(scan.earthquakeLabel.primaryFont >= (viewport.width < 600 ? 14 : 16), `earthquake label text remains too small: ${JSON.stringify(scan.earthquakeLabel)}`);
+      const screenshot = path.join(outputDir, `${viewport.name}-06-readable-earthquake-card.png`);
+      await page.screenshot({ path: screenshot });
+      scan.screenshots.push(screenshot);
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
     if (map06CrossModeOnly) {
       await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
       scan.loader = await page.locator('script[src*="gaia-mode-loader.js"]').getAttribute("src");
       assert.match(
         scan.loader || "",
-        /gaia-mode-loader\.js\?v=gaia-sound-silk-tide-1/u,
+        /gaia-mode-loader\.js\?v=gaia-map-guide-left-to-right-1/u,
         `${viewport.name}: stale exploration loader cache key`,
       );
 
@@ -1522,6 +1605,14 @@ try {
     assert.ok(earthquakeWave.maxRadiusX >= earthquakeWave.maxRadius);
     const earthquakeReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
     assert.match(earthquakeReadout, /2004.*3 EVENTS.*MAX M9\.1/u);
+    const earthquakeLabel = await page.locator("#japan-overlay").evaluate((element) => ({
+      width: Number(element.dataset.earthquakeSelectionLabelWidthPx),
+      height: Number(element.dataset.earthquakeSelectionLabelHeightPx),
+      primaryFont: Number(element.dataset.earthquakeSelectionPrimaryFontPx),
+    }));
+    assert.ok(earthquakeLabel.width >= Math.min(340, viewport.width - 32), `earthquake label remains too narrow: ${JSON.stringify(earthquakeLabel)}`);
+    assert.ok(earthquakeLabel.height >= 62, `earthquake label remains too short: ${JSON.stringify(earthquakeLabel)}`);
+    assert.ok(earthquakeLabel.primaryFont >= (viewport.width < 600 ? 14 : 16), `earthquake label text remains too small: ${JSON.stringify(earthquakeLabel)}`);
     const earthquakeScreenshot = path.join(outputDir, `${viewport.name}-06-yearly-synchronized-waves.png`);
     await page.screenshot({ path: earthquakeScreenshot });
     scan.screenshots.push(earthquakeScreenshot);

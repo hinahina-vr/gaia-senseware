@@ -29,18 +29,29 @@ const liveEndpoint = (pathname) => {
   return endpoint;
 };
 
+const fallbackEventsForActiveCity = (payload) => (
+  // The bundled emergency snapshot is explicitly a Tokyo snapshot. Reusing
+  // those measurements after another city is selected would falsely relabel
+  // Tokyo data as local data, so other cities stay in the honest missing-data
+  // state until their live model response arrives.
+  activeCity === "tokyo" ? (payload.events || []) : []
+);
+
 const loadSnapshot = async () => {
   const generation = ++loadGeneration;
   try {
     const payload = await readJson(permitsLiveEndpoint() ? liveEndpoint("/api/live/v1/snapshot") : FALLBACK_URL);
     if (generation !== loadGeneration) return payload;
-    publish(payload.events || [], payload.source || (permitsLiveEndpoint() ? "live" : "snapshot"), false);
+    const events = payload.source === "snapshot" || !permitsLiveEndpoint()
+      ? fallbackEventsForActiveCity(payload)
+      : (payload.events || []);
+    publish(events, payload.source || (permitsLiveEndpoint() ? "live" : "snapshot"), false);
     return payload;
   } catch (error) {
     console.warn("Live snapshot unavailable; using the versioned snapshot.", error);
     const payload = await readJson(FALLBACK_URL);
     if (generation !== loadGeneration) return payload;
-    publish(payload.events || [], "snapshot", false);
+    publish(fallbackEventsForActiveCity(payload), "snapshot", false);
     return payload;
   }
 };

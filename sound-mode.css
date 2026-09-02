@@ -26,6 +26,22 @@
   transform: scale(1);
 }
 
+.sound-layer[data-playing="true"] {
+  cursor: grab;
+}
+
+.sound-layer[data-playing="true"] button,
+.sound-layer[data-playing="true"] input,
+.sound-layer[data-playing="true"] label,
+.sound-layer[data-playing="true"] a {
+  cursor: pointer;
+}
+
+.sound-layer.is-dragging-visualizer {
+  cursor: grabbing;
+  user-select: none;
+}
+
 .sound-layer-background {
   position: absolute;
   inset: 0;
@@ -47,12 +63,20 @@
   z-index: 2;
   opacity: 0;
   transform: scale(0.96);
-  background: none;
+  background:
+    radial-gradient(circle at 54% 49%, rgba(77, 199, 255, 0.16) 0, rgba(27, 91, 174, 0.065) 23%, transparent 58%),
+    radial-gradient(ellipse 72% 50% at 54% 50%, transparent 44%, rgba(0, 4, 22, 0.48) 100%);
   filter: none;
 }
 
 .sound-layer[data-playing="true"] .sound-layer-background::before {
   animation: sound-visualizer-focus 2.8s cubic-bezier(0.16, 0.82, 0.22, 1) both;
+}
+
+.sound-layer[data-playing="true"] .sound-layer-background::after {
+  background:
+    linear-gradient(90deg, rgba(1, 3, 16, 0.76) 0%, rgba(2, 8, 24, 0.46) 27%, rgba(2, 7, 22, 0.08) 58%, rgba(1, 3, 15, 0.15) 100%),
+    radial-gradient(ellipse 78% 76% at 56% 50%, transparent 42%, rgba(0, 2, 15, 0.5) 100%);
 }
 
 .sound-layer-background::after {
@@ -264,7 +288,7 @@
   mix-blend-mode: screen;
   -webkit-mask-image: none;
   mask-image: none;
-  filter: blur(28px) saturate(1.72) contrast(0.86) brightness(1.72);
+  filter: blur(16px) saturate(1.52) contrast(0.92) brightness(1.38);
   transition:
     opacity 1.8s cubic-bezier(0.18, 0.68, 0.22, 1),
     transform 2.6s cubic-bezier(0.16, 0.82, 0.22, 1),
@@ -282,7 +306,7 @@
   opacity: 1;
   visibility: visible;
   transform: scale(1);
-  filter: blur(0) saturate(1.22) contrast(1.08) brightness(1.06);
+  filter: blur(0) saturate(1.38) contrast(1.14) brightness(1.04);
   transition-delay: 0s;
 }
 
@@ -309,9 +333,9 @@
 }
 
 .sound-layer[data-playing="true"] .sound-character-scene {
-  opacity: 0.44;
+  opacity: 0.26;
   transform: scale(1.008);
-  filter: saturate(0.92) brightness(0.52) contrast(1.16);
+  filter: saturate(0.76) brightness(0.43) contrast(1.2);
 }
 
 .sound-now-playing { grid-area: info; align-self: start; }

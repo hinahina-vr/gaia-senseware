@@ -97,15 +97,22 @@ try {
   assert(/uniform float pulse;/u.test(visualRuntimeSource) && /uniform float flux;/u.test(visualRuntimeSource) && /uniform float wave;/u.test(visualRuntimeSource), "transient, spectral-flux, and waveform motion are not connected to the shader");
   assert(/uniform float densityResponse;/u.test(visualRuntimeSource) && /uniform float meanderResponse;/u.test(visualRuntimeSource) && /uniform float causticResponse;/u.test(visualRuntimeSource), "the three mapped visual response channels are not connected to the shader");
   assert(!/equalizerRuntime|equalizerCanvas/u.test(visualRuntimeSource), "the detached EQ visualizer is still wired into the sound mode");
-  assert(/bassPool/u.test(visualRuntimeSource) && /densityVeil/u.test(visualRuntimeSource) && /prismLift/u.test(visualRuntimeSource), "the WebGL current field does not expose distinct bass, mid, and high responses");
-  assert(/braidedCurrentField/u.test(visualRuntimeSource) && /dreamPalette/u.test(visualRuntimeSource) && /curlWarp/u.test(visualRuntimeSource) && /featheredBody/u.test(visualRuntimeSource) && /translucentEdge/u.test(visualRuntimeSource) && /compositeVeil/u.test(visualRuntimeSource), "the silk-tide field lacks curl warping, feathering, or translucent layering");
-  assert((visualRuntimeSource.match(/compositeVeil\(field, currentRibbon\(p,/gu) || []).length >= 8, "the silk-tide field does not contain enough differently sized intertwined veils");
+  assert(/lightColor = mix\(lightColor, vec3\(0\.03, 0\.22, 1\.0\), bass/u.test(visualRuntimeSource)
+    && /lightColor = mix\(lightColor, vec3\(0\.00, 0\.96, 0\.67\), mid/u.test(visualRuntimeSource)
+    && /audioSize = 1\.0 \+ high/u.test(visualRuntimeSource), "the crystal field does not expose distinct bass, mid, and high color/particle responses");
+  assert(/Repeating luminous planes/u.test(visualRuntimeSource)
+    && /Hanging light strands/u.test(visualRuntimeSource)
+    && /Faceted diamonds and X-shaped braces/u.test(visualRuntimeSource)
+    && /Sparse motes/u.test(visualRuntimeSource), "the crystal installation is missing a depth layer or particle class");
   assert(!/currentCore|currentContour|paleCore/u.test(visualRuntimeSource), "tube-like cores or vessel contours remain in the sound visualizer");
   assert(!/upperCenter|lowerCenter|upperWidth|lowerWidth/u.test(visualRuntimeSource), "the former two straight slab bands remain in the shader");
   assert(!/spectralRibbons|filament|tremor|interference/u.test(visualRuntimeSource), "the aggressive filament motion remains in the sound visualizer");
   assert(!/earthCenter|earthRadius|earthSurface|earthDisc|earthX|earthY/u.test(visualRuntimeSource), "Earth rendering remains in the WebGL or Canvas visualizer");
   assert(!/gl\.LINES|spectral-weave/u.test(visualRuntimeSource), "legacy line geometry remains in the visualizer");
   assert(!/sound-layer-grid|sound-spectral-grid/u.test(visualStyleSource), "digital grid styling remains in the sound installation");
+  assert(/float travelSpeed = mix\(0\.10, 0\.58, playing\);/u.test(visualRuntimeSource), "crystal field no longer uses one-way constant travel");
+  assert(/float focalLength = 1\.28;/u.test(visualRuntimeSource), "audio is changing the camera focal length again");
+  assert(!/bassBreath|room \*=|focalLength\s*=\s*[^;]*(?:bass|pulse|energy)/u.test(visualRuntimeSource), "audio-driven whole-field scaling returned");
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => {
     const layer = document.querySelector("#sound-layer");
@@ -130,6 +137,7 @@ try {
       motionProfile: canvas.dataset.motionProfile,
       formLanguage: canvas.dataset.formLanguage,
       palette: canvas.dataset.palette,
+      geometryPoints: Number(canvas.dataset.geometryPoints || 0),
       width: rect.width,
       height: rect.height,
       rect: rect.toJSON(),
@@ -151,13 +159,14 @@ try {
   });
   assert(
     desktopVisualizer.renderer === "webgl"
-      && desktopVisualizer.visualizer === "audio-reactive-silk-tide"
+      && desktopVisualizer.visualizer === "audio-reactive-crystal-universe"
       && desktopVisualizer.presentation === "full-screen-webgl"
       && desktopVisualizer.audioAnalysis === "fft-spectrum-flux-waveform"
-      && desktopVisualizer.reactivity === "bass-bloom-mid-curl-high-shimmer-flux-spark"
-      && desktopVisualizer.motionProfile === "layered-curl-warped-veils"
-      && desktopVisualizer.formLanguage === "soft-feathered-veils-no-core"
-      && desktopVisualizer.palette === "wisteria-sky-mint-sakura-apricot"
+      && desktopVisualizer.reactivity === "audio-color-particle-size-density-and-spark"
+      && desktopVisualizer.motionProfile === "single-direction-infinite-led-drift"
+      && desktopVisualizer.formLanguage === "crystalline-perspective-light-field"
+      && desktopVisualizer.palette === "sapphire-lagoon-orchid-amber-track-palettes"
+      && desktopVisualizer.geometryPoints >= 10000
       && desktopVisualizer.width > 300
       && desktopVisualizer.height > 280
       && desktopVisualizer.legacyPlanetCount === 0
@@ -167,7 +176,7 @@ try {
       && desktopVisualizer.visualizerOpacity === 0
       && desktopVisualizer.visualizerVisibility === "hidden"
       && desktopVisualizer.visualizerFilter.includes("blur"),
-    `desktop WebGL aurora installation failed: ${JSON.stringify(desktopVisualizer)}`,
+    `desktop WebGL crystal-universe installation failed: ${JSON.stringify(desktopVisualizer)}`,
   );
   assert(desktopVisualizer.eqCount === 0, `the detached desktop EQ visualizer is still present: ${JSON.stringify(desktopVisualizer)}`);
   assert(desktopVisualizer.width >= 2048 && desktopVisualizer.height >= 1114, `desktop WebGL field is not viewport-sized: ${JSON.stringify(desktopVisualizer)}`);
@@ -258,7 +267,7 @@ try {
     sceneFilter: getComputedStyle(document.querySelector(".sound-character-scene")).filter,
     visualizerFilter: getComputedStyle(document.querySelector("#sound-visualizer")).filter,
   }));
-  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.98 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.4 && playingAppearance.sceneOpacity <= 0.5 && !playingAppearance.sceneFilter.includes("blur") && playingAppearance.visualizerFilter.includes("saturate(1.22)") && playingAppearance.visualizerFilter.includes("contrast(1.08)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
+  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.98 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.2 && playingAppearance.sceneOpacity <= 0.32 && !playingAppearance.sceneFilter.includes("blur") && playingAppearance.visualizerFilter.includes("saturate(1.38)") && playingAppearance.visualizerFilter.includes("contrast(1.14)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop.png"), fullPage: true });
   const reactiveRange = await page.evaluate(async () => {
     const samples = [];
@@ -337,7 +346,7 @@ try {
     visualizerRect: document.querySelector("#sound-visualizer").getBoundingClientRect().toJSON(),
   }));
   assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "audio-reactive-silk-tide" && mobileGeometry.presentation === "full-screen-webgl" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.planetariumCount === 0 && mobileGeometry.guideCount === 0 && mobileGeometry.digitalGridCount === 0, `mobile WebGL audio field failed: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "audio-reactive-crystal-universe" && mobileGeometry.presentation === "full-screen-webgl" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.planetariumCount === 0 && mobileGeometry.guideCount === 0 && mobileGeometry.digitalGridCount === 0, `mobile WebGL audio field failed: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.visualizerRect.width >= 390 && mobileGeometry.visualizerRect.height >= 844, `mobile WebGL field is not viewport-sized: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.eqCount === 0 && mobileGeometry.characterSceneLoaded, `the mobile EQ remains or the characters are missing: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.visualizerOpacity === 0 && mobileGeometry.sceneOpacity > 0.8, `mobile sound mode did not open on the background-only state: ${JSON.stringify(mobileGeometry)}`);
@@ -358,7 +367,7 @@ try {
     visualizerVisibility: getComputedStyle(document.querySelector("#sound-visualizer")).visibility,
     sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "1"),
   }));
-  assert(mobilePlayingAppearance.playing === "true" && mobilePlayingAppearance.visualizerOpacity >= 0.98 && mobilePlayingAppearance.visualizerVisibility === "visible" && mobilePlayingAppearance.sceneOpacity >= 0.4 && mobilePlayingAppearance.sceneOpacity <= 0.5, `mobile playback reveal failed: ${JSON.stringify(mobilePlayingAppearance)}`);
+  assert(mobilePlayingAppearance.playing === "true" && mobilePlayingAppearance.visualizerOpacity >= 0.98 && mobilePlayingAppearance.visualizerVisibility === "visible" && mobilePlayingAppearance.sceneOpacity >= 0.2 && mobilePlayingAppearance.sceneOpacity <= 0.32, `mobile playback reveal failed: ${JSON.stringify(mobilePlayingAppearance)}`);
   await mobile.screenshot({ path: path.join(outputDir, "sound-mobile-playing.png"), fullPage: false });
   const lastTrack = mobile.locator('[data-sound-track="trueend"]');
   await lastTrack.scrollIntoViewIfNeeded();
