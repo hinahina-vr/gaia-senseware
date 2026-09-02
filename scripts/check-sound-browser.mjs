@@ -95,9 +95,12 @@ try {
   assert(!startRuntimeSource.includes("enableAnalysis") && !switchRuntimeSource.includes("enableAnalysis"), "ordinary BGM playback is still forced through Web Audio analysis");
   assert(/uniform float bass;/u.test(visualRuntimeSource) && /uniform float mid;/u.test(visualRuntimeSource) && /uniform float high;/u.test(visualRuntimeSource), "three real audio bands are not connected to the shader");
   assert(/uniform float pulse;/u.test(visualRuntimeSource) && /uniform float flux;/u.test(visualRuntimeSource) && /uniform float wave;/u.test(visualRuntimeSource), "transient, spectral-flux, and waveform motion are not connected to the shader");
+  assert(/uniform float densityResponse;/u.test(visualRuntimeSource) && /uniform float meanderResponse;/u.test(visualRuntimeSource) && /uniform float causticResponse;/u.test(visualRuntimeSource), "the three mapped visual response channels are not connected to the shader");
   assert(!/equalizerRuntime|equalizerCanvas/u.test(visualRuntimeSource), "the detached EQ visualizer is still wired into the sound mode");
-  assert(/bassBloom/u.test(visualRuntimeSource) && /breathingHalo/u.test(visualRuntimeSource) && /prismLift/u.test(visualRuntimeSource), "the vivid WebGL field does not expose distinct bass, mid, and high responses");
-  assert(/auroraTide/u.test(visualRuntimeSource) && /vividPalette/u.test(visualRuntimeSource) && /ribbonCore/u.test(visualRuntimeSource) && /ribbonContour/u.test(visualRuntimeSource), "the immersive aurora tide lacks the vivid body, core, or contour layers");
+  assert(/bassPool/u.test(visualRuntimeSource) && /densityVeil/u.test(visualRuntimeSource) && /prismLift/u.test(visualRuntimeSource), "the WebGL current field does not expose distinct bass, mid, and high responses");
+  assert(/braidedCurrentField/u.test(visualRuntimeSource) && /vividPalette/u.test(visualRuntimeSource) && /currentCore/u.test(visualRuntimeSource) && /currentContour/u.test(visualRuntimeSource), "the braided current field lacks its body, core, or contour layers");
+  assert((visualRuntimeSource.match(/field \+= currentRibbon\(p,/gu) || []).length >= 6, "the current field does not contain enough differently sized intertwined bands");
+  assert(!/upperCenter|lowerCenter|upperWidth|lowerWidth/u.test(visualRuntimeSource), "the former two straight slab bands remain in the shader");
   assert(!/spectralRibbons|filament|tremor|interference/u.test(visualRuntimeSource), "the aggressive filament motion remains in the sound visualizer");
   assert(!/earthCenter|earthRadius|earthSurface|earthDisc|earthX|earthY/u.test(visualRuntimeSource), "Earth rendering remains in the WebGL or Canvas visualizer");
   assert(!/gl\.LINES|spectral-weave/u.test(visualRuntimeSource), "legacy line geometry remains in the visualizer");
@@ -142,8 +145,8 @@ try {
       && desktopVisualizer.visualizer === "full-field-audio-ink"
       && desktopVisualizer.presentation === "full-screen-webgl"
       && desktopVisualizer.audioAnalysis === "fft-spectrum-flux-waveform"
-      && desktopVisualizer.reactivity === "fast-attack-slow-release-bass-bloom-mid-tide-high-prism"
-      && desktopVisualizer.motionProfile === "slow-vivid-aurora"
+      && desktopVisualizer.reactivity === "adaptive-bass-density-mid-meander-high-caustics-flux-surge"
+      && desktopVisualizer.motionProfile === "multi-scale-braided-currents"
       && desktopVisualizer.width > 300
       && desktopVisualizer.height > 280
       && desktopVisualizer.legacyPlanetCount === 0
@@ -256,6 +259,9 @@ try {
         energy: Number(canvas?.dataset.energy || 0),
         pulse: Number(canvas?.dataset.pulse || 0),
         flux: Number(canvas?.dataset.flux || 0),
+        densityResponse: Number(canvas?.dataset.densityResponse || 0),
+        meanderResponse: Number(canvas?.dataset.meanderResponse || 0),
+        causticResponse: Number(canvas?.dataset.causticResponse || 0),
         rawBass: Number(globalThis.GaiaOpeningAudio?.getAnalysisFrame?.().bands?.[0] || 0),
         rawMid: Number(globalThis.GaiaOpeningAudio?.getAnalysisFrame?.().bands?.[1] || 0),
       });
@@ -265,9 +271,9 @@ try {
       const values = samples.map((sample) => sample[key]);
       return { min: Math.min(...values), max: Math.max(...values), delta: Math.max(...values) - Math.min(...values) };
     };
-    return { bass: range("bass"), mid: range("mid"), high: range("high"), energy: range("energy"), pulse: range("pulse"), flux: range("flux"), rawBass: range("rawBass"), rawMid: range("rawMid") };
+    return { bass: range("bass"), mid: range("mid"), high: range("high"), energy: range("energy"), pulse: range("pulse"), flux: range("flux"), densityResponse: range("densityResponse"), meanderResponse: range("meanderResponse"), causticResponse: range("causticResponse"), rawBass: range("rawBass"), rawMid: range("rawMid") };
   });
-  assert(reactiveRange.bass.max >= 0.08 && reactiveRange.energy.max >= 0.08 && Math.max(reactiveRange.bass.delta, reactiveRange.energy.delta, reactiveRange.pulse.delta, reactiveRange.flux.delta) >= 0.01, `audio response is still visually inert: ${JSON.stringify(reactiveRange)}`);
+  assert(reactiveRange.bass.max >= 0.08 && reactiveRange.energy.max >= 0.08 && reactiveRange.densityResponse.max >= 0.20 && reactiveRange.meanderResponse.max >= 0.20 && reactiveRange.causticResponse.max >= 0.10 && reactiveRange.densityResponse.delta >= 0.015 && reactiveRange.meanderResponse.delta >= 0.035 && reactiveRange.causticResponse.delta >= 0.06, `audio response is still visually inert: ${JSON.stringify(reactiveRange)}`);
   report.reactiveRange = reactiveRange;
   await page.waitForTimeout(4000);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop-later.png"), fullPage: true });

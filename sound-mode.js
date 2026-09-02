@@ -131,6 +131,7 @@
     if (!(canvas instanceof HTMLCanvasElement)) return null;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const smoothedBands = new Float32Array(3);
+    const visualResponses = new Float32Array(3);
     const previousSpectrum = new Float32Array(32);
     let smoothedEnergy = 0;
     let smoothedPulse = 0;
@@ -165,6 +166,9 @@
       uniform float pulse;
       uniform float flux;
       uniform float wave;
+      uniform float densityResponse;
+      uniform float meanderResponse;
+      uniform float causticResponse;
       uniform float playing;
 
       float hash21(vec2 p) {
@@ -224,64 +228,89 @@
         return mix(color, cyan, smoothstep(0.65, 1.0, t));
       }
 
-      float ribbonBody(float distanceToCenter, float width) {
-        return 1.0 - smoothstep(width * 0.30, width, distanceToCenter);
+      vec2 rotateFlow(vec2 p, float angle) {
+        float cosine = cos(angle);
+        float sine = sin(angle);
+        return mat2(cosine, -sine, sine, cosine) * p;
       }
 
-      float ribbonCore(float distanceToCenter, float width) {
-        return exp(-pow(distanceToCenter / max(0.001, width * 0.24), 2.0));
+      float currentBody(float distanceToCenter, float width) {
+        return 1.0 - smoothstep(width * 0.16, width, distanceToCenter);
       }
 
-      float ribbonContour(float distanceToCenter, float width) {
+      float currentCore(float distanceToCenter, float width) {
+        return exp(-pow(distanceToCenter / max(0.001, width * 0.22), 2.0));
+      }
+
+      float currentContour(float distanceToCenter, float width) {
         float normalizedDistance = distanceToCenter / max(0.001, width);
-        return exp(-pow((normalizedDistance - 0.62) / 0.16, 2.0));
+        return exp(-pow((normalizedDistance - 0.70) / 0.13, 2.0));
       }
 
-      vec3 auroraTide(vec2 uv) {
+      vec3 currentRibbon(
+        vec2 p,
+        float seed,
+        float baseY,
+        float angle,
+        float baseWidth,
+        float amplitude,
+        float frequency,
+        float hue,
+        float strength
+      ) {
+        vec2 q = rotateFlow(p, angle);
+        float travel = time * (0.32 + mid * 0.055) * (0.76 + seed * 0.035);
+        float responsePhase = meanderResponse * (0.42 + seed * 0.018);
+        float slowFold = sin(q.x * frequency + travel + seed + responsePhase) * amplitude;
+        float crossFold = sin(q.x * (frequency * 2.37) - travel * 0.72 + seed * 2.1) * amplitude * 0.34;
+        float fieldWarp = fbm(vec2(q.x * 0.72 + seed * 1.7, time * 0.028 + seed * 0.93));
+        float center = baseY
+          + slowFold
+          + crossFold
+          + (fieldWarp - 0.5) * amplitude * (1.10 + mid * 0.40 + meanderResponse * 0.72)
+          + wave * 0.024 * sin(seed * 1.91)
+          + flux * 0.018 * cos(seed * 2.37);
+
+        float widthField = fbm(vec2(q.x * 1.34 - travel * 0.18 + seed * 3.2, time * 0.022 + seed));
+        float densityField = fbm(vec2(q.x * 0.84 + travel * 0.15 + seed * 2.4, time * 0.018 - seed * 0.61));
+        float fineDensity = fbm(vec2(q.x * 2.65 - travel * 0.22 - seed, time * 0.034 + seed * 1.3));
+        float densityVeil = 0.12 + 0.88 * smoothstep(0.28, 0.72, densityField * 0.70 + fineDensity * 0.30 + densityResponse * 0.22);
+        float localWidth = baseWidth
+          * (0.54 + widthField * 0.94)
+          * (1.0 + bass * 0.12 + densityResponse * (0.42 + strength * 0.18));
+        float distanceToCenter = abs(q.y - center);
+        float body = currentBody(distanceToCenter, localWidth);
+        float core = currentCore(distanceToCenter, localWidth);
+        float contour = currentContour(distanceToCenter, localWidth);
+        float flowTexture = smoothstep(0.43, 0.78, fbm(vec2(q.x * 3.4 - travel * 0.44 + seed, q.y * 1.9 + seed * 0.73)));
+
+        float colorPhase = fract(hue + q.x * 0.115 + time * 0.010 + meanderResponse * 0.20 + causticResponse * 0.18);
+        vec3 flowColor = vividPalette(colorPhase);
+        vec3 paleCore = mix(flowColor, vec3(0.84, 0.98, 1.0), 0.15 + high * 0.12);
+        float bodyLift = strength * (0.22 + energy * 0.34 + bass * 0.10 + densityResponse * 0.64);
+        float coreLift = strength * (0.14 + mid * 0.24 + meanderResponse * 0.24 + causticResponse * 0.88);
+        vec3 ribbon = flowColor * body * densityVeil * bodyLift;
+        ribbon += paleCore * core * densityVeil * coreLift;
+        ribbon += flowColor * contour * densityVeil * (0.04 + meanderResponse * 0.14 + causticResponse * 0.10) * strength;
+        ribbon += flowColor * body * flowTexture * densityVeil * (0.03 + causticResponse * 0.42) * strength;
+        return ribbon;
+      }
+
+      vec3 braidedCurrentField(vec2 uv) {
         float aspect = resolution.x / max(1.0, resolution.y);
         vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
-        float drift = time * (0.055 + mid * 0.04);
-        float breath = 0.5 + 0.5 * sin(time * 0.20 + bass * 0.9);
-        float upperNoise = fbm(vec2(p.x * 0.56 - drift * 0.18, p.y * 0.72 + drift * 0.05));
-        float lowerNoise = fbm(vec2(p.x * 0.42 + drift * 0.13 + 4.3, p.y * 0.62 - drift * 0.04 + 1.7));
-        float upperCenter = 0.12
-          + sin(p.x * 2.05 + drift + 0.6) * (0.055 + mid * 0.035)
-          + sin(p.x * 0.72 - drift * 0.38) * 0.025
-          + (upperNoise - 0.5) * (0.055 + mid * 0.025)
-          + wave * 0.018
-          + flux * 0.012;
-        float lowerCenter = -0.17
-          + sin(p.x * 1.68 - drift * 0.72 + 2.4) * (0.06 + mid * 0.032)
-          + sin(p.x * 0.60 + drift * 0.31) * 0.022
-          + (lowerNoise - 0.5) * (0.052 + mid * 0.022)
-          - wave * 0.016
-          - flux * 0.010;
-        float bassSpread = bass * 0.042 + energy * 0.018 + pulse * 0.026;
-        float upperWidth = 0.072 + bassSpread + breath * 0.008;
-        float lowerWidth = 0.088 + bassSpread * 0.88 + (1.0 - breath) * 0.008;
-        float upperDistance = abs(p.y - upperCenter);
-        float lowerDistance = abs(p.y - lowerCenter);
-        float upperBody = ribbonBody(upperDistance, upperWidth);
-        float lowerBody = ribbonBody(lowerDistance, lowerWidth);
-        float upperCore = ribbonCore(upperDistance, upperWidth);
-        float lowerCore = ribbonCore(lowerDistance, lowerWidth);
-        float upperContour = ribbonContour(upperDistance, upperWidth);
-        float lowerContour = ribbonContour(lowerDistance, lowerWidth);
-        float paletteDrift = fract(uv.x * 0.48 + uv.y * 0.06 + time * 0.008 + mid * 0.08 + flux * 0.16);
-        vec3 upperColor = vividPalette(paletteDrift);
-        vec3 lowerColor = vividPalette(fract(paletteDrift + 0.43 + high * 0.08));
-        float bodyLift = 0.27 + energy * 0.72 + bass * 0.18 + pulse * 0.18;
-        float coreLift = 0.22 + mid * 0.66 + pulse * 0.62 + flux * 0.36;
-        vec3 field = upperColor * upperBody * bodyLift;
-        field += lowerColor * lowerBody * (bodyLift * 0.88);
-        field += mix(upperColor, vec3(0.80, 0.98, 1.0), 0.18) * upperCore * coreLift;
-        field += mix(lowerColor, vec3(1.0, 0.88, 0.70), 0.14) * lowerCore * (coreLift * 0.84);
-        field += upperColor * upperContour * (0.075 + mid * 0.20);
-        field += lowerColor * lowerContour * (0.065 + mid * 0.18);
+        vec3 field = vec3(0.0);
+        field += currentRibbon(p, 1.1,  0.10,  0.07, 0.115, 0.145, 1.72, 0.03, 1.00);
+        field += currentRibbon(p, 2.7, -0.15, -0.11, 0.086, 0.125, 2.18, 0.43, 0.90);
+        field += currentRibbon(p, 4.2,  0.29, -0.18, 0.057, 0.098, 2.92, 0.69, 0.76);
+        field += currentRibbon(p, 5.8, -0.34,  0.15, 0.044, 0.088, 3.36, 0.21, 0.66);
+        field += currentRibbon(p, 7.3,  0.00, -0.24, 0.031, 0.066, 4.28, 0.55, 0.58);
+        field += currentRibbon(p, 8.9,  0.19,  0.26, 0.024, 0.052, 5.12, 0.84, 0.50);
 
-        float bassBloom = exp(-dot(p * vec2(0.58, 0.82), p * vec2(0.58, 0.82)) * (2.6 - bass * 0.8));
-        field += mix(vec3(0.23, 0.06, 0.72), vec3(0.00, 0.62, 0.72), uv.x)
-          * bassBloom * (0.06 + bass * 0.24 + pulse * 0.10);
+        vec2 poolCenter = p - vec2(sin(time * 0.11) * 0.24, cos(time * 0.09) * 0.10 - 0.03);
+        float bassPool = exp(-dot(poolCenter * vec2(0.72, 1.18), poolCenter * vec2(0.72, 1.18)) * (2.4 - bass * 0.65));
+        field += mix(vec3(0.20, 0.055, 0.55), vec3(0.00, 0.44, 0.48), uv.x)
+          * bassPool * (0.025 + bass * 0.095 + pulse * 0.085);
         float edgeFade = smoothstep(0.0, 0.07, uv.x) * (1.0 - smoothstep(0.93, 1.0, uv.x));
         return field * edgeFade;
       }
@@ -297,17 +326,13 @@
         float nebula = fbm(centered * vec2(0.62, 0.88) + vec2(time * 0.006, -time * 0.004));
         color += mix(vec3(0.07, 0.018, 0.16), vec3(0.008, 0.13, 0.15), uv.x)
           * smoothstep(0.50, 0.84, nebula) * (0.10 + energy * 0.22);
-        color += auroraTide(uv);
+        color += braidedCurrentField(uv);
 
         float cyanPrism = starlightLayer(uv, 16.0, time * 0.009, 0.958);
         float goldPrism = starlightLayer(uv + vec2(0.17, 0.09), 10.0, -time * 0.006, 0.972);
-        float prismLift = 0.045 + high * 0.72 + flux * 0.50;
+        float prismLift = 0.035 + causticResponse * 1.18;
         color += vec3(0.48, 0.92, 1.00) * cyanPrism * prismLift;
         color += vec3(1.00, 0.65, 0.25) * goldPrism * prismLift * 0.74;
-
-        float breathingHalo = exp(-pow((centered.y + 0.10) / (0.32 + bass * 0.14), 2.0));
-        color += mix(vec3(0.24, 0.06, 0.48), vec3(0.00, 0.36, 0.42), uv.x)
-          * breathingHalo * (0.035 + bass * 0.10 + pulse * 0.07);
 
         float vignette = smoothstep(1.16, 0.18, length(centered * vec2(0.76, 1.0)));
         color *= 0.66 + 0.34 * vignette;
@@ -374,6 +399,9 @@
         pulse: gl.getUniformLocation(program, "pulse"),
         flux: gl.getUniformLocation(program, "flux"),
         wave: gl.getUniformLocation(program, "wave"),
+        densityResponse: gl.getUniformLocation(program, "densityResponse"),
+        meanderResponse: gl.getUniformLocation(program, "meanderResponse"),
+        causticResponse: gl.getUniformLocation(program, "causticResponse"),
         playing: gl.getUniformLocation(program, "playing"),
       };
       gl.disable(gl.BLEND);
@@ -382,8 +410,8 @@
       canvas.dataset.visualizer = "full-field-audio-ink";
       canvas.dataset.presentation = "full-screen-webgl";
       canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
-      canvas.dataset.reactivity = "fast-attack-slow-release-bass-bloom-mid-tide-high-prism";
-      canvas.dataset.motionProfile = "slow-vivid-aurora";
+      canvas.dataset.reactivity = "adaptive-bass-density-mid-meander-high-caustics-flux-surge";
+      canvas.dataset.motionProfile = "multi-scale-braided-currents";
       return true;
     };
 
@@ -393,8 +421,8 @@
       canvas.dataset.visualizer = "full-field-audio-ink";
       canvas.dataset.presentation = "full-screen-webgl";
       canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
-      canvas.dataset.reactivity = "fast-attack-slow-release-bass-bloom-mid-tide-high-prism";
-      canvas.dataset.motionProfile = "slow-vivid-aurora";
+      canvas.dataset.reactivity = "adaptive-bass-density-mid-meander-high-caustics-flux-surge";
+      canvas.dataset.motionProfile = "multi-scale-braided-currents";
       return Boolean(fallback);
     };
 
@@ -415,16 +443,17 @@
 
     const updateAudioState = (state) => {
       const active = Boolean(state.analysisActive);
+      const strongestBand = active ? Math.max(0, ...(state.bands || [0, 0, 0])) : 0;
       const targetGain = active
-        ? Math.max(1, Math.min(3.4, 0.12 / Math.max(0.020, state.rms || 0)))
+        ? Math.max(1, Math.min(3.2, 0.48 / Math.max(0.08, strongestBand)))
         : 1;
-      const gainEase = targetGain < automaticGain ? 0.22 : (active ? 0.045 : 0.018);
+      const gainEase = targetGain < automaticGain ? 0.12 : (active ? 0.04 : 0.018);
       automaticGain += (targetGain - automaticGain) * gainEase;
       for (let index = 0; index < 3; index += 1) {
         const boosted = active ? Math.max(0, (state.bands?.[index] || 0) * automaticGain) : 0;
         const compressed = boosted / (0.52 + boosted);
         const shaped = Math.pow(Math.min(0.94, compressed), 0.84);
-        smoothedBands[index] = easeBand(smoothedBands[index], shaped, reduced ? 0.10 : 0.18, reduced ? 0.035 : 0.055);
+        smoothedBands[index] = easeBand(smoothedBands[index], shaped, reduced ? 0.13 : 0.24, reduced ? 0.045 : 0.08);
       }
       const activeEnergy = active
         ? Math.min(1, (state.rms || 0) * automaticGain * 2.7 + smoothedBands[0] * 0.32 + smoothedBands[1] * 0.20)
@@ -439,7 +468,7 @@
         previousSpectrum[index] += (sample - previousSpectrum[index]) * (sample > previousSpectrum[index] ? 0.38 : 0.08);
       }
       spectralFlux = Math.min(1, spectralFlux * automaticGain * 0.32);
-      smoothedFlux = easeBand(smoothedFlux, spectralFlux, reduced ? 0.10 : 0.20, reduced ? 0.025 : 0.04);
+      smoothedFlux = easeBand(smoothedFlux, spectralFlux, reduced ? 0.13 : 0.24, reduced ? 0.035 : 0.06);
 
       const waveform = active && Array.isArray(state.waveform) ? state.waveform : [];
       let waveProjection = 0;
@@ -457,6 +486,9 @@
         ? Math.min(1, bassAttack * 2.2 + smoothedFlux * 0.55 + (state.peak || 0) * automaticGain * 0.16)
         : 0;
       smoothedPulse = easeBand(smoothedPulse, pulseTarget, reduced ? 0.12 : 0.24, reduced ? 0.025 : 0.04);
+      visualResponses[0] = Math.min(1, smoothedBands[0] * 0.35 + smoothedEnergy * 0.25 + smoothedPulse * 0.80);
+      visualResponses[1] = Math.min(1, smoothedBands[1] * 0.80 + smoothedFlux * 0.65 + Math.abs(smoothedWave) * 0.20);
+      visualResponses[2] = Math.min(1, smoothedBands[2] * 0.95 + smoothedFlux * 1.05);
       canvas.dataset.analysisActive = String(active);
       canvas.dataset.bass = smoothedBands[0].toFixed(3);
       canvas.dataset.mid = smoothedBands[1].toFixed(3);
@@ -465,6 +497,9 @@
       canvas.dataset.pulse = smoothedPulse.toFixed(3);
       canvas.dataset.flux = smoothedFlux.toFixed(3);
       canvas.dataset.wave = smoothedWave.toFixed(3);
+      canvas.dataset.densityResponse = visualResponses[0].toFixed(3);
+      canvas.dataset.meanderResponse = visualResponses[1].toFixed(3);
+      canvas.dataset.causticResponse = visualResponses[2].toFixed(3);
     };
 
     const drawFallback = (state, now) => {
@@ -541,7 +576,7 @@
       gl.enableVertexAttribArray(positionAttribute);
       gl.vertexAttribPointer(positionAttribute, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
-      gl.uniform1f(uniforms.time, now * 0.001 * (reduced ? 0.08 : 0.22));
+      gl.uniform1f(uniforms.time, now * 0.001 * (reduced ? 0.12 : 0.36));
       gl.uniform1f(uniforms.bass, smoothedBands[0]);
       gl.uniform1f(uniforms.mid, smoothedBands[1]);
       gl.uniform1f(uniforms.high, smoothedBands[2]);
@@ -549,6 +584,9 @@
       gl.uniform1f(uniforms.pulse, smoothedPulse);
       gl.uniform1f(uniforms.flux, smoothedFlux);
       gl.uniform1f(uniforms.wave, smoothedWave);
+      gl.uniform1f(uniforms.densityResponse, visualResponses[0]);
+      gl.uniform1f(uniforms.meanderResponse, visualResponses[1]);
+      gl.uniform1f(uniforms.causticResponse, visualResponses[2]);
       gl.uniform1f(uniforms.playing, state.playing ? 1 : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     };
