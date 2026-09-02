@@ -400,188 +400,96 @@ float currentBrushBristles(float signedDistance, float halfWidth, float phase) {
 }
 
 vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
-  // The observation timeline changes the advection distance only. This ambient
-  // pigment clock always advances, so a stationary day selection still has a
-  // continuous hand-painted current moving inside each broad brush stroke.
-  float currentEnergy = clamp(uSignal.x * 0.62 + uSignal.y * 0.38, 0.0, 1.0);
-  float contourTime = t * 0.045;
-  float pigmentTime = t * mix(0.72, 1.32, currentEnergy);
-  vec2 q = p + uVelocity * response.x * 0.012;
-  float basin = fbm(q * 0.52 + vec2(-contourTime * 0.12, contourTime * 0.05));
-  float waterWarp = fbm(q * 1.18 + vec2(contourTime * 0.16, -contourTime * 0.1));
-  float edgeGrain = fbm(vec2(
-    q.x * 4.2 - pigmentTime * 0.055,
-    q.y * 6.4 + basin * 1.7
-  ));
+  // Every uploaded NOAA POI owns exactly one stroke. There are no decorative
+  // full-screen ribbons here: the image is the data points painting the sea.
+  // The date slider changes the calculated displacement only; pigment keeps
+  // flowing inside the fixed brush shapes even while that slider is held.
+  float currentEnergy = clamp(uSignal.x * 0.58 + uSignal.y * 0.42, 0.0, 1.0);
+  float contourTime = t * 0.055;
+  float pigmentTime = t * mix(0.78, 1.5, currentEnergy);
+  float waterPaper = fbm(p * 1.35 + vec2(contourTime * 0.08, -contourTime * 0.045));
+  float waterGrain = fbm(p * 6.4 + vec2(-pigmentTime * 0.035, pigmentTime * 0.018));
+  vec3 poiInk = vec3(0.0);
+  vec3 poiLight = vec3(0.0);
+  float poiCoverage = 0.0;
 
-  // One muscular Kuroshio stroke is crossed by two smaller sweeps. Their
-  // contours drift very slowly; the animated pigment travels much faster
-  // inside them, avoiding the stepped motion of moving line segments.
-  float mainAxis = -0.08
-    + sin((q.x + 0.24) * 1.24 - contourTime * 0.42) * 0.37
-    + sin(q.x * 2.92 + contourTime * 0.24) * 0.068
-    + (basin - 0.5) * 0.11;
-  float mainDistance = q.y - mainAxis;
-  float mainWidth = mix(0.22, 0.34, currentEnergy)
-    * (0.88 + 0.18 * sin(q.x * 1.46 - contourTime * 0.3));
-  float mainTaper = smoothstep(-1.62, -1.02, q.x)
-    * (1.0 - smoothstep(1.2, 1.78, q.x));
-  float mainBody = currentBrushBody(
-    mainDistance,
-    mainWidth * mix(0.38, 1.0, mainTaper),
-    edgeGrain
-  ) * smoothstep(0.0, 0.24, mainTaper);
-
-  vec2 upperPoint = rot(-0.27) * (q - vec2(0.14, 0.34));
-  float upperAxis = sin(upperPoint.x * 1.62 + contourTime * 0.31) * 0.13
-    + sin(upperPoint.x * 4.1 - contourTime * 0.18) * 0.022;
-  float upperDistance = upperPoint.y - upperAxis;
-  float upperWidth = mix(0.055, 0.105, uSignal.y)
-    * (0.82 + 0.22 * sin(upperPoint.x * 2.1 + 1.3));
-  float upperRoughness = 0.5 + 0.5 * sin(upperPoint.x * 5.7 + waterWarp * 3.8);
-  float upperTaper = smoothstep(-1.2, -0.62, upperPoint.x)
-    * (1.0 - smoothstep(1.28, 1.72, upperPoint.x));
-  float upperBody = currentBrushBody(
-    upperDistance,
-    upperWidth * mix(0.34, 1.0, upperTaper),
-    upperRoughness
-  ) * smoothstep(0.0, 0.2, upperTaper);
-
-  vec2 lowerPoint = rot(0.2) * (q - vec2(-0.1, -0.46));
-  float lowerAxis = sin(lowerPoint.x * 1.18 - contourTime * 0.24) * 0.16
-    + (waterWarp - 0.5) * 0.07;
-  float lowerDistance = lowerPoint.y - lowerAxis;
-  float lowerWidth = mix(0.075, 0.14, currentEnergy)
-    * (0.86 + 0.18 * cos(lowerPoint.x * 1.8 - 0.6));
-  float lowerTaper = smoothstep(-1.7, -1.04, lowerPoint.x)
-    * (1.0 - smoothstep(0.92, 1.48, lowerPoint.x));
-  float lowerBody = currentBrushBody(
-    lowerDistance,
-    lowerWidth * mix(0.34, 1.0, lowerTaper),
-    1.0 - edgeGrain
-  ) * smoothstep(0.0, 0.22, lowerTaper);
-
-  float mainBristles = currentBrushBristles(
-    mainDistance,
-    mainWidth,
-    q.x * 2.1 - pigmentTime * 1.28 + basin * 5.2
-  ) * mainBody;
-  float upperBristles = currentBrushBristles(
-    upperDistance,
-    upperWidth,
-    upperPoint.x * 2.7 - pigmentTime * 1.64 + waterWarp * 4.1
-  ) * upperBody;
-  float lowerBristles = currentBrushBristles(
-    lowerDistance,
-    lowerWidth,
-    lowerPoint.x * 1.8 - pigmentTime * 0.96 + basin * 3.6
-  ) * lowerBody;
-
-  float mainTravel = 0.5 + 0.5 * sin(
-    q.x * 4.4 - pigmentTime * mix(2.2, 3.5, currentEnergy) + basin * 5.6
-  );
-  float upperTravel = 0.5 + 0.5 * sin(
-    upperPoint.x * 6.1 - pigmentTime * mix(2.9, 4.5, uSignal.y) + waterWarp * 4.8
-  );
-  float lowerTravel = 0.5 + 0.5 * cos(
-    lowerPoint.x * 3.7 - pigmentTime * mix(1.7, 2.8, currentEnergy) + basin * 4.2
-  );
-  float dryBrush = smoothstep(
-    0.24,
-    0.78,
-    fbm(vec2(q.x * 9.5 - pigmentTime * 0.28, q.y * 8.2 + basin * 2.2))
-  );
-
-  // Exact NOAA observation points feed curved local brush deposits. Measured
-  // sqrt(u^2 + v^2) controls their reach, thickness, pigment speed and lustre.
-  float observedInk = 0.0;
-  float observedLustre = 0.0;
-  for (int i = 0; i < 32; i++) {
+  for (int i = 0; i < 96; i++) {
     if (i >= uCurrentSampleCount) break;
     vec4 observed = uCurrentSamples[i];
     float measuredSpeed = clamp(observed.z, 0.0, 1.0);
     vec2 local = rot(-observed.w) * (p - observed.xy);
-    float reach = mix(0.12, 0.31, measuredSpeed);
-    float width = mix(0.014, 0.052, measuredSpeed);
-    float localCurve = sin(
-      local.x * mix(7.0, 11.0, measuredSpeed)
-        + float(i) * 1.17
-        + contourTime * 0.38
-    ) * width * 0.72;
-    float localDistance = local.y - localCurve;
-    float envelope = exp(
-      -pow(local.x / max(reach, 0.01), 2.0)
-      -pow(localDistance / max(width * 3.7, 0.01), 2.0)
+    float pointPhase = fract(sin(float(i) * 91.731 + 0.37) * 43758.5453);
+    float backReach = mix(0.018, 0.035, measuredSpeed);
+    float forwardReach = mix(0.13, 0.34, measuredSpeed);
+    float strokeProgress = (local.x + backReach) / (forwardReach + backReach);
+    float longitudinal = smoothstep(-0.015, 0.055, strokeProgress)
+      * (1.0 - smoothstep(0.72, 1.02, strokeProgress));
+    float pressure = pow(max(0.0, sin(clamp(strokeProgress, 0.0, 1.0) * 3.14159265)), 0.38);
+    pressure *= mix(0.7, 1.08, 0.5 + 0.5 * sin(strokeProgress * 8.0 + pointPhase * 6.283));
+    float width = mix(0.018, 0.052, measuredSpeed);
+    float curl = sin(
+      strokeProgress * mix(4.6, 7.2, pointPhase)
+        + pointPhase * 6.283
+        + contourTime * mix(0.22, 0.48, measuredSpeed)
+    ) * width * mix(0.55, 1.22, pointPhase);
+    curl += sin(strokeProgress * 13.0 - pointPhase * 4.7) * width * 0.16;
+    curl *= smoothstep(0.0, 0.2, strokeProgress)
+      * (1.0 - smoothstep(0.8, 1.05, strokeProgress));
+    float localDistance = local.y - curl;
+    float roughness = 0.5 + 0.5 * sin(
+      local.x * mix(34.0, 52.0, pointPhase)
+        + local.y * 21.0
+        + float(i) * 2.37
     );
-    float roughness = 0.5 + 0.5 * sin(local.x * 28.0 + float(i) * 2.37);
-    float stroke = currentBrushBody(localDistance, width * 1.8, roughness) * envelope;
-    float travelingPigment = 0.5 + 0.5 * cos(
-      local.x * mix(25.0, 14.0, measuredSpeed)
-        - pigmentTime * mix(2.8, 6.4, measuredSpeed)
-        + float(i) * 1.731
-    );
+    float stroke = currentBrushBody(
+      localDistance,
+      width * max(0.14, pressure),
+      roughness
+    ) * longitudinal;
     float bristle = currentBrushBristles(
       localDistance,
-      width * 1.8,
-      local.x * 7.0 - pigmentTime * 0.9 + float(i)
+      width * max(0.28, pressure),
+      strokeProgress * 8.0 - pigmentTime * 0.92 + float(i) * 0.71
+    ) * stroke;
+    float travelingPigment = 0.5 + 0.5 * sin(
+      strokeProgress * mix(13.0, 8.0, measuredSpeed)
+        - pigmentTime * mix(2.5, 5.8, measuredSpeed)
+        + pointPhase * 9.0
     );
-    observedInk += stroke * mix(0.12, 0.78, measuredSpeed);
-    observedLustre += stroke * (bristle * 0.48 + travelingPigment * 0.7)
-      * mix(0.08, 0.92, measuredSpeed);
+    float wetPulse = pow(0.5 + 0.5 * cos(
+      strokeProgress * 18.0
+        - pigmentTime * mix(3.4, 7.2, measuredSpeed)
+        + float(i) * 1.13
+    ), 5.0);
+    float dryGap = smoothstep(0.34, 0.78, waterGrain + roughness * 0.22);
+    float deposit = stroke * mix(0.58, 1.08, dryGap);
+
+    vec3 slowInk = vec3(0.16, 0.25, 0.92);
+    vec3 middleInk = vec3(0.04, 0.9, 1.05);
+    vec3 fastInk = vec3(1.15, 0.5, 0.12);
+    vec3 speedInk = mix(slowInk, middleInk, smoothstep(0.08, 0.58, measuredSpeed));
+    speedInk = mix(speedInk, fastInk, smoothstep(0.62, 0.96, measuredSpeed));
+    vec3 movingInk = mix(speedInk * 0.52, speedInk * 1.22, travelingPigment);
+    vec3 pearlInk = mix(vec3(0.42, 0.9, 1.16), vec3(1.24, 0.9, 0.42), measuredSpeed);
+    poiInk += movingInk * deposit * mix(0.62, 1.08, measuredSpeed);
+    poiLight += pearlInk * (bristle * 0.32 + wetPulse * stroke * 0.7);
+    poiCoverage += stroke;
+
+    // A small source bloom is registered exactly at the clickable POI above.
+    float sourceRadius = mix(0.012, 0.022, measuredSpeed);
+    float sourceBloom = exp(-dot(local, local) / max(sourceRadius * sourceRadius, 0.00001));
+    poiLight += pearlInk * sourceBloom * (0.28 + measuredSpeed * 0.42);
   }
-  observedInk = min(observedInk, 1.45);
-  observedLustre = min(observedLustre, 1.35);
 
-  float brushBody = mainBody * (0.36 + dryBrush * 0.72)
-    + upperBody * 0.78
-    + lowerBody * 0.72;
-  float brushFibers = mainBristles * (0.34 + mainTravel * 0.66)
-    + upperBristles * (0.26 + upperTravel * 0.74)
-    + lowerBristles * (0.3 + lowerTravel * 0.7);
-
-  vec3 background = baseGradient(p, vec3(0.002, 0.052, 0.11));
-  vec3 mainInk = mix(
-    vec3(0.025, 0.28, 0.62),
-    vec3(0.12, 1.08, 0.98),
-    smoothstep(0.08, 0.92, mainTravel)
-  );
-  vec3 upperInk = mix(
-    vec3(0.12, 0.34, 0.82),
-    vec3(0.48, 0.98, 1.18),
-    smoothstep(0.12, 0.88, upperTravel)
-  );
-  vec3 lowerInk = mix(
-    vec3(0.02, 0.31, 0.34),
-    vec3(0.2, 0.9, 0.67),
-    smoothstep(0.16, 0.84, lowerTravel)
-  );
-  float mainWetEdge = max(
-    0.0,
-    currentBrushBody(mainDistance, mainWidth * 1.02, edgeGrain)
-      - currentBrushBody(mainDistance, mainWidth * 0.76, edgeGrain)
-  ) * mainTaper;
-  vec3 layeredInk = mainInk * mainBody * (0.58 + dryBrush * 0.7)
-    + upperInk * upperBody * 0.78
-    + lowerInk * lowerBody * 0.7
-    + vec3(0.12, 0.92, 1.04) * mainWetEdge * (0.3 + mainTravel * 0.45);
-  vec3 fiberLight = mix(
-    vec3(0.18, 0.66, 0.88),
-    vec3(0.72, 1.0, 0.9),
-    currentEnergy
-  ) * brushFibers;
-  vec3 measuredLight = mix(
-    vec3(0.04, 0.38, 0.66),
-    vec3(0.54, 1.0, 0.86),
-    uSignal.y
-  ) * (observedInk * 0.46 + observedLustre * 0.72);
-
+  vec3 background = baseGradient(p, vec3(0.001, 0.035, 0.08));
+  background += mix(vec3(0.0, 0.025, 0.07), vec3(0.0, 0.09, 0.13), waterPaper) * 0.32;
+  vec3 paintedSea = min(poiInk, vec3(1.72)) + min(poiLight, vec3(1.35));
+  float softCoverage = min(poiCoverage, 2.0);
   return background
-    + layeredInk
-    + fiberLight * 0.34
-    + measuredLight
-    + vec3(0.03, 0.2, 0.34) * brushBody * (0.08 + memory * 0.1)
-    + vec3(0.18, 0.72, 0.78) * response.x * 0.28
-    + vec3(0.5, 0.9, 1.0) * response.y * 0.12;
+    + paintedSea
+    + vec3(0.02, 0.16, 0.26) * softCoverage * (0.08 + memory * 0.08)
+    + vec3(0.22, 0.82, 0.9) * response.x * 0.18
+    + vec3(0.72, 0.9, 1.0) * response.y * 0.08;
 }
 `.trim(),
     },

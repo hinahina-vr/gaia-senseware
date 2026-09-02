@@ -271,7 +271,10 @@
   const dataLedger = window.GaiaDataLedger.create();
 
   const TRAIL_COUNT = 16;
-  const CURRENT_FIELD_SAMPLE_LIMIT = 32;
+  // NOAA's MAP02 snapshot currently contains 79 POIs. Keep enough uniform
+  // capacity for every visible point so the GPU never silently drops a brush
+  // because it happened to be slower than another observation.
+  const CURRENT_FIELD_SAMPLE_LIMIT = 96;
   const MODE_COUNT = 9;
   const TRANSITION_DURATION = 1500;
   const AUTO_INTERVAL = 18000;
@@ -3657,6 +3660,8 @@
       const longitudeCopies = [0];
       const pulse = reducedMotion ? 0.68 : 0.62 + Math.sin(time * 1.15) * 0.12;
       const arrowStride = rect.width <= 720 ? 6 : 5;
+      let currentVisiblePoiCount = 0;
+      let currentPoiMarkerCount = 0;
       japanOverlay.dataset.currentVisualLanguage = "calligraphic-current-brush";
       japanOverlay.dataset.currentArrowStride = String(arrowStride);
 
@@ -3669,6 +3674,7 @@
         for (const longitudeCopy of longitudeCopies) {
           const point = pointFor({ lon: row.lon + longitudeCopy, lat: row.lat });
           if (!visible(point, 80)) continue;
+          currentVisiblePoiCount += 1;
           ctx.save();
           applyMapPlotReveal(ctx, point, reveal);
           const end = pointFor({ lon: destination.lon + longitudeCopy, lat: destination.lat });
@@ -3750,9 +3756,41 @@
               20,
             );
           }
+          const markerRadius = 3.4 + speedUnit * 2.8;
+          const markerPulse = reducedMotion ? 1 : 1 + Math.sin(time * 1.6 + currentIndex * 0.73) * 0.08;
+          const markerGlow = ctx.createRadialGradient(
+            point.x,
+            point.y,
+            0,
+            point.x,
+            point.y,
+            markerRadius * 3.2,
+          );
+          markerGlow.addColorStop(0, getCurrentSpeedColor(speed, 0.98));
+          markerGlow.addColorStop(0.34, getCurrentSpeedColor(speed, 0.48));
+          markerGlow.addColorStop(1, getCurrentSpeedColor(speed, 0));
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, markerRadius * 3.2 * markerPulse, 0, Math.PI * 2);
+          ctx.fillStyle = markerGlow;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, markerRadius * markerPulse, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(3,20,34,.9)";
+          ctx.fill();
+          ctx.strokeStyle = getCurrentSpeedColor(speed, 0.96);
+          ctx.lineWidth = 1.25;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, Math.max(1.2, markerRadius * 0.32), 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(234,255,255,.98)";
+          ctx.fill();
+          currentPoiMarkerCount += 1;
           ctx.restore();
         }
       }
+      japanOverlay.dataset.currentVisiblePoiCount = String(currentVisiblePoiCount);
+      japanOverlay.dataset.currentPoiMarkerCount = String(currentPoiMarkerCount);
+      japanOverlay.dataset.currentPoiMarkerStyle = "luminous-ring-above-data-brush";
       for (const [windIndex, row] of (signalMode.signals.climate || []).entries()) {
         if (!Number.isFinite(row.windSpeedMs)) continue;
         if (windIndex % (rect.width <= 720 ? 8 : 7) !== 0) continue;
@@ -6202,7 +6240,7 @@
       canvas.dataset.currentMaximumSpeedMs = (state?.maximumSpeedMs || 0).toFixed(4);
       canvas.dataset.currentStrength = meanStrength.toFixed(4);
       canvas.dataset.currentVectorCount = String(state?.vectorCount || 0);
-      canvas.dataset.currentBrushLanguage = "broad-ink-with-moving-pigment";
+      canvas.dataset.currentBrushLanguage = "one-data-anchored-brush-per-visible-poi";
       canvas.dataset.currentAmbientMotion = "continuous-timeline-independent-gradient";
       return [meanStrength, peakStrength, sampleDensity, horizonUnit];
     }
@@ -7689,14 +7727,23 @@ for (const country of countryValues) {
       japanLayer.style.setProperty("--map-light-opacity", String(MAP_LIGHT_OPACITIES[mapModeIndex] ?? 0.15));
       canvas.dataset.integratedMapMode = modeNumber;
       japanOverlay.dataset.layerOrder = "reference-map-and-poi-above-webgl";
-      if (modeNumber !== "02") {
+        if (modeNumber !== "02") {
         delete canvas.dataset.currentMeanSpeedMs;
         delete canvas.dataset.currentMaximumSpeedMs;
         delete canvas.dataset.currentStrength;
-        delete canvas.dataset.currentVectorCount;
-        delete canvas.dataset.currentRenderedSampleCount;
-        delete canvas.dataset.currentBrushLanguage;
-        delete canvas.dataset.currentAmbientMotion;
+          delete canvas.dataset.currentVectorCount;
+          delete canvas.dataset.currentVisiblePoiCount;
+          delete canvas.dataset.currentRevealedPoiCount;
+          delete canvas.dataset.currentRenderedSampleCount;
+          delete canvas.dataset.currentBrushStrokeCount;
+          delete canvas.dataset.currentOneStrokePerPoi;
+          delete canvas.dataset.currentAllVisiblePoiPainted;
+          delete canvas.dataset.currentSampleSelection;
+          delete canvas.dataset.currentBrushLanguage;
+          delete canvas.dataset.currentAmbientMotion;
+          delete japanOverlay.dataset.currentVisiblePoiCount;
+          delete japanOverlay.dataset.currentPoiMarkerCount;
+          delete japanOverlay.dataset.currentPoiMarkerStyle;
       }
       setLightCanvasMounted(true);
     } else {
@@ -7706,9 +7753,18 @@ for (const country of countryValues) {
       delete canvas.dataset.currentMaximumSpeedMs;
       delete canvas.dataset.currentStrength;
       delete canvas.dataset.currentVectorCount;
+      delete canvas.dataset.currentVisiblePoiCount;
+      delete canvas.dataset.currentRevealedPoiCount;
       delete canvas.dataset.currentRenderedSampleCount;
+      delete canvas.dataset.currentBrushStrokeCount;
+      delete canvas.dataset.currentOneStrokePerPoi;
+      delete canvas.dataset.currentAllVisiblePoiPainted;
+      delete canvas.dataset.currentSampleSelection;
       delete canvas.dataset.currentBrushLanguage;
       delete canvas.dataset.currentAmbientMotion;
+      delete japanOverlay.dataset.currentVisiblePoiCount;
+      delete japanOverlay.dataset.currentPoiMarkerCount;
+      delete japanOverlay.dataset.currentPoiMarkerStyle;
       delete japanOverlay.dataset.layerOrder;
       setLightCanvasMounted(false);
     }
@@ -9397,25 +9453,35 @@ for (const country of countryValues) {
       || japanLayer.classList.contains("is-live-exhibit")
       || getActiveSignalMode()?.id !== "blue-circulation"
     ) {
+      delete canvas.dataset.currentVisiblePoiCount;
+      delete canvas.dataset.currentRevealedPoiCount;
       delete canvas.dataset.currentRenderedSampleCount;
+      delete canvas.dataset.currentBrushStrokeCount;
+      delete canvas.dataset.currentOneStrokePerPoi;
+      delete canvas.dataset.currentAllVisiblePoiPainted;
+      delete canvas.dataset.currentSampleSelection;
       return { count: 0, data: currentFieldData };
     }
     const rect = japanMap.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) return { count: 0, data: currentFieldData };
     const { left, top } = getJapanViewport();
-    const samples = (getActiveSignalMode()?.signals?.currents || [])
-      .map((row) => {
+    const currentRows = getActiveSignalMode()?.signals?.currents || [];
+    const visibleSamples = currentRows
+      .map((row, index) => {
         const point = japanWorldToScreen(row.lon, row.lat, left, top);
-        return { row, point, speed: Math.hypot(row.uMs, row.vMs) };
+        return { row, index, point, speed: Math.hypot(row.uMs, row.vMs) };
       })
       .filter(({ point }) => (
         point.x > -80
         && point.x < rect.width + 80
         && point.y > -80
         && point.y < rect.height + 80
-      ))
-      .sort((a, b) => b.speed - a.speed)
-      .slice(0, CURRENT_FIELD_SAMPLE_LIMIT);
+      ));
+    const now = performance.now();
+    const revealedSamples = visibleSamples.filter(({ index }) => (
+      getMapPlotReveal(index, currentRows.length, now).progress > 0
+    ));
+    const samples = revealedSamples.slice(0, CURRENT_FIELD_SAMPLE_LIMIT);
 
     samples.forEach(({ row, point, speed }, index) => {
       const offset = index * 4;
@@ -9424,7 +9490,13 @@ for (const country of countryValues) {
       currentFieldData[offset + 2] = clamp(speed / 1.5, 0, 1);
       currentFieldData[offset + 3] = Math.atan2(row.vMs, row.uMs);
     });
+    canvas.dataset.currentVisiblePoiCount = String(visibleSamples.length);
+    canvas.dataset.currentRevealedPoiCount = String(revealedSamples.length);
     canvas.dataset.currentRenderedSampleCount = String(samples.length);
+    canvas.dataset.currentBrushStrokeCount = String(samples.length);
+    canvas.dataset.currentOneStrokePerPoi = String(samples.length === revealedSamples.length);
+    canvas.dataset.currentAllVisiblePoiPainted = String(samples.length === visibleSamples.length);
+    canvas.dataset.currentSampleSelection = "all-visible-poi-stable-order";
     return { count: samples.length, data: currentFieldData };
   };
 

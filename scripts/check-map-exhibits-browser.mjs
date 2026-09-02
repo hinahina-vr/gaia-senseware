@@ -1083,6 +1083,14 @@ try {
     assert(finalJapan.zoom >= (viewport.name === "mobile" ? 3.3 : 4.1));
     assert(Math.abs(finalJapan.tokyoX - finalJapan.rect.width * 0.5) <= 24);
     assert(Math.abs(finalJapan.tokyoY - finalJapan.rect.height * 0.46) <= 24);
+    await page.waitForFunction(() => {
+      const canvas = document.querySelector("#gaia-canvas");
+      const overlay = document.querySelector("#japan-overlay");
+      return canvas?.dataset.currentAllVisiblePoiPainted === "true"
+        && Number(canvas?.dataset.currentVisiblePoiCount) > 0
+        && Number(overlay?.dataset.currentPoiMarkerCount)
+          === Number(canvas?.dataset.currentVisiblePoiCount);
+    });
     const circulationVisual = await page.locator("#japan-overlay").evaluate((overlay) => ({
       language: overlay.dataset.currentVisualLanguage,
       arrowStride: Number(overlay.dataset.currentArrowStride),
@@ -1097,10 +1105,19 @@ try {
       maximumSpeedMs: Number(document.querySelector("#gaia-canvas")?.dataset.currentMaximumSpeedMs),
       strength: Number(document.querySelector("#gaia-canvas")?.dataset.currentStrength),
       vectorCount: Number(document.querySelector("#gaia-canvas")?.dataset.currentVectorCount),
+      visiblePoiCount: Number(document.querySelector("#gaia-canvas")?.dataset.currentVisiblePoiCount),
+      revealedPoiCount: Number(document.querySelector("#gaia-canvas")?.dataset.currentRevealedPoiCount),
       renderedSampleCount: Number(document.querySelector("#gaia-canvas")?.dataset.currentRenderedSampleCount),
+      brushStrokeCount: Number(document.querySelector("#gaia-canvas")?.dataset.currentBrushStrokeCount),
+      oneStrokePerPoi: document.querySelector("#gaia-canvas")?.dataset.currentOneStrokePerPoi,
+      allVisiblePoiPainted: document.querySelector("#gaia-canvas")?.dataset.currentAllVisiblePoiPainted,
+      sampleSelection: document.querySelector("#gaia-canvas")?.dataset.currentSampleSelection,
       brushLanguage: document.querySelector("#gaia-canvas")?.dataset.currentBrushLanguage,
       ambientMotion: document.querySelector("#gaia-canvas")?.dataset.currentAmbientMotion,
       ambientPhase: Number(document.querySelector("#gaia-canvas")?.dataset.currentAmbientPhase),
+      overlayVisiblePoiCount: Number(overlay.dataset.currentVisiblePoiCount),
+      poiMarkerCount: Number(overlay.dataset.currentPoiMarkerCount),
+      poiMarkerStyle: overlay.dataset.currentPoiMarkerStyle,
       integratedOpacity: getComputedStyle(document.querySelector("#japan-layer"))
         .getPropertyValue("--map-light-opacity")
         .trim(),
@@ -1109,7 +1126,7 @@ try {
     assert(circulationVisual.arrowStride >= 3);
     assert.equal(circulationVisual.integratedMode, "02");
     assert.equal(circulationVisual.integratedOpacity, "0.72");
-    assert.equal(circulationVisual.brushLanguage, "broad-ink-with-moving-pigment");
+    assert.equal(circulationVisual.brushLanguage, "one-data-anchored-brush-per-visible-poi");
     assert.equal(circulationVisual.ambientMotion, "continuous-timeline-independent-gradient");
     assert(Number.isFinite(circulationVisual.ambientPhase));
     assert.equal(circulationVisual.canvasParent, "japan-map");
@@ -1120,8 +1137,17 @@ try {
     assert(circulationVisual.meanSpeedMs > 0, `${viewport.name}: mean current speed was not uploaded`);
     assert(circulationVisual.maximumSpeedMs > circulationVisual.meanSpeedMs, `${viewport.name}: maximum current speed was not uploaded`);
     assert(Math.abs(circulationVisual.strength - Math.min(1, circulationVisual.meanSpeedMs)) < 0.001);
-    assert(circulationVisual.vectorCount >= circulationVisual.renderedSampleCount);
-    assert(circulationVisual.renderedSampleCount > 0 && circulationVisual.renderedSampleCount <= 32);
+    assert(circulationVisual.vectorCount >= circulationVisual.visiblePoiCount);
+    assert(circulationVisual.visiblePoiCount > 0 && circulationVisual.visiblePoiCount <= 96);
+    assert.equal(circulationVisual.revealedPoiCount, circulationVisual.visiblePoiCount);
+    assert.equal(circulationVisual.renderedSampleCount, circulationVisual.visiblePoiCount);
+    assert.equal(circulationVisual.brushStrokeCount, circulationVisual.visiblePoiCount);
+    assert.equal(circulationVisual.overlayVisiblePoiCount, circulationVisual.visiblePoiCount);
+    assert.equal(circulationVisual.poiMarkerCount, circulationVisual.visiblePoiCount);
+    assert.equal(circulationVisual.oneStrokePerPoi, "true");
+    assert.equal(circulationVisual.allVisiblePoiPainted, "true");
+    assert.equal(circulationVisual.sampleSelection, "all-visible-poi-stable-order");
+    assert.equal(circulationVisual.poiMarkerStyle, "luminous-ring-above-data-brush");
     scan.circulationVisual = circulationVisual;
     const zoomScreenshot = path.join(outputDir, `${viewport.name}-02-japan-zoom.png`);
     await page.screenshot({ path: zoomScreenshot });
