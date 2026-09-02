@@ -7961,19 +7961,37 @@ for (const country of countryValues) {
     if (japanView.pointers.size === 0) clearJapanPoiHover();
   });
 
-  japanMap.addEventListener(
+  const shouldPreserveMapUiWheel = (target) => target instanceof Element && Boolean(target.closest([
+    "#japan-data-panel",
+    "#gaia-statistics-lab",
+    ".gaia-live-exhibit-readout",
+    "#japan-mode-list",
+    "input",
+    "select",
+    "textarea",
+    "[contenteditable='true']",
+  ].join(",")));
+
+  japanLayer.addEventListener(
     "wheel",
     (event) => {
       if (!japanIsOpen || mapScope !== "earth") return;
+      if (shouldPreserveMapUiWheel(event.target)) return;
       clearJapanPoiHover();
       cancelEarthViewAnimation("user-wheel");
       event.preventDefault();
-      const delta = clamp(event.deltaY, -240, 240);
+      const deltaUnit = event.deltaMode === 1
+        ? 18
+        : event.deltaMode === 2
+          ? Math.max(1, japanMap.getBoundingClientRect().height)
+          : 1;
+      const delta = clamp(event.deltaY * deltaUnit, -240, 240);
+      if (Math.abs(delta) < 0.01) return;
       const factor = Math.exp(-delta * (event.ctrlKey ? 0.006 : 0.0024));
       setEarthZoom(japanView.earthZoom * factor, event.clientX, event.clientY);
       closeJapanPoi();
     },
-    { passive: false },
+    { capture: true, passive: false },
   );
 
   japanMap.addEventListener("keydown", (event) => {

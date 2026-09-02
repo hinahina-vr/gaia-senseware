@@ -240,9 +240,12 @@ try {
     visualizerVisibility: getComputedStyle(document.querySelector("#sound-visualizer")).visibility,
     visualizerRect: document.querySelector("#sound-visualizer").getBoundingClientRect().toJSON(),
     sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "1"),
+    sceneFilter: getComputedStyle(document.querySelector(".sound-character-scene")).filter,
   }));
-  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.82 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.05 && playingAppearance.sceneOpacity <= 0.15, `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
+  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.9 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.28 && playingAppearance.sceneOpacity <= 0.42 && playingAppearance.sceneFilter.includes("blur(2px)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop.png"), fullPage: true });
+  await page.waitForTimeout(4000);
+  await page.screenshot({ path: path.join(outputDir, "sound-desktop-later.png"), fullPage: true });
   await page.locator("#sound-play").click();
   await page.waitForFunction(() => document.querySelector("#sound-layer")?.dataset.playing === "false");
   await page.waitForTimeout(2600);
@@ -294,6 +297,20 @@ try {
   assert(mobileGeometry.closeRect.left <= 20 && mobileGeometry.closeRect.top <= 20, `mobile sound return is not at the upper-left: ${JSON.stringify(mobileGeometry)}`);
   assertControlDesign(await readControlDesign(mobile), "mobile");
   await mobile.screenshot({ path: path.join(outputDir, "sound-mobile.png"), fullPage: false });
+  await mobile.locator('[data-sound-track="ending"]').scrollIntoViewIfNeeded();
+  await mobile.locator('[data-sound-track="ending"]').click();
+  await mobile.waitForFunction(() => globalThis.GaiaOpeningAudio?.getState?.().track === "ending", null, { timeout: 10_000 });
+  await mobile.waitForFunction(() => (globalThis.GaiaOpeningAudio?.getPlaybackState?.().duration || 0) > 0, null, { timeout: 10_000 });
+  await mobile.evaluate(() => globalThis.GaiaOpeningAudio.seek(24));
+  await mobile.waitForTimeout(1600);
+  const mobilePlayingAppearance = await mobile.evaluate(() => ({
+    playing: document.querySelector("#sound-layer")?.dataset.playing,
+    visualizerOpacity: Number.parseFloat(getComputedStyle(document.querySelector("#sound-visualizer")).opacity || "0"),
+    visualizerVisibility: getComputedStyle(document.querySelector("#sound-visualizer")).visibility,
+    sceneOpacity: Number.parseFloat(getComputedStyle(document.querySelector(".sound-character-scene")).opacity || "1"),
+  }));
+  assert(mobilePlayingAppearance.playing === "true" && mobilePlayingAppearance.visualizerOpacity >= 0.9 && mobilePlayingAppearance.visualizerVisibility === "visible" && mobilePlayingAppearance.sceneOpacity >= 0.28 && mobilePlayingAppearance.sceneOpacity <= 0.42, `mobile playback reveal failed: ${JSON.stringify(mobilePlayingAppearance)}`);
+  await mobile.screenshot({ path: path.join(outputDir, "sound-mobile-playing.png"), fullPage: false });
   const lastTrack = mobile.locator('[data-sound-track="trueend"]');
   await lastTrack.scrollIntoViewIfNeeded();
   await lastTrack.click();

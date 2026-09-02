@@ -276,15 +276,15 @@
 
 @keyframes sound-visualizer-focus {
   0% { opacity: 0; transform: scale(0.94); filter: blur(38px); }
-  45% { opacity: 0.28; transform: scale(1); filter: blur(28px); }
-  100% { opacity: 0.08; transform: scale(1.12); filter: blur(42px); }
+  45% { opacity: 0.32; transform: scale(1); filter: blur(26px); }
+  100% { opacity: 0.12; transform: scale(1.1); filter: blur(38px); }
 }
 
 .sound-layer[data-playing="true"] .sound-visualizer {
-  opacity: 0.88;
+  opacity: 0.94;
   visibility: visible;
   transform: scale(1);
-  filter: blur(0) saturate(1.08) contrast(1.03) brightness(0.96);
+  filter: blur(0) saturate(1.16) contrast(1.08) brightness(1.08);
   transition-delay: 0s;
 }
 
@@ -311,9 +311,9 @@
 }
 
 .sound-layer[data-playing="true"] .sound-character-scene {
-  opacity: 0.1;
-  transform: scale(1.018);
-  filter: saturate(0.76) brightness(0.42) contrast(1.04) blur(12px);
+  opacity: 0.34;
+  transform: scale(1.008);
+  filter: saturate(0.86) brightness(0.58) contrast(1.03) blur(2px);
 }
 
 .sound-now-playing { grid-area: info; align-self: start; }

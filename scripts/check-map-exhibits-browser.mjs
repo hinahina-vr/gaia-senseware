@@ -780,13 +780,43 @@ try {
     scan.gosatPan = { before: panBefore, after: panAfter, coastlineDelta, gosatDelta };
     if (panOnly) {
       const zoomBefore = await readMapState(page);
-      await page.locator("#japan-map").dispatchEvent("wheel", {
-        bubbles: true,
-        cancelable: true,
-        clientX: zoomBefore.rect.left + zoomBefore.rect.width * 0.72,
-        clientY: zoomBefore.rect.top + zoomBefore.rect.height * 0.44,
-        deltaY: -180,
+      const wheelTarget = await page.evaluate(() => {
+        for (const selector of ["#map-signal-encoding-legend-dock", "#map-reading-guide"]) {
+          const element = document.querySelector(selector);
+          const rect = element?.getBoundingClientRect();
+          if (!rect?.width || !rect.height) continue;
+          for (let row = 1; row <= 4; row += 1) {
+            for (let column = 1; column <= 4; column += 1) {
+              const x = rect.left + rect.width * column / 5;
+              const y = rect.top + rect.height * row / 5;
+              const hit = document.elementFromPoint(x, y);
+              if (hit?.closest?.(selector)) {
+                return { x, y, hit: hit.id || hit.className || hit.tagName || "", selector };
+              }
+            }
+          }
+        }
+        const map = document.querySelector("#japan-map");
+        const mapRect = map?.getBoundingClientRect();
+        if (!mapRect?.width) return null;
+        for (let row = 1; row <= 8; row += 1) {
+          for (let column = 1; column <= 8; column += 1) {
+            const x = mapRect.left + mapRect.width * column / 9;
+            const y = mapRect.top + mapRect.height * row / 9;
+            if (document.elementFromPoint(x, y)?.closest?.("#japan-map")) {
+              return { x, y, hit: "#japan-map", selector: "#japan-map" };
+            }
+          }
+        }
+        return null;
       });
+      assert(wheelTarget, `${viewport.name}: no wheel regression target was available`);
+      if (viewport.name === "pc") {
+        assert.notEqual(wheelTarget.selector, "#japan-map", `${viewport.name}: non-map overlay was not covered by wheel regression`);
+      }
+      const scrollBefore = await page.evaluate(() => scrollY);
+      await page.mouse.move(wheelTarget.x, wheelTarget.y);
+      await page.mouse.wheel(0, -180);
       await page.waitForFunction((previousKey) => {
         const overlay = document.querySelector("#japan-overlay");
         return overlay?.dataset.gosatProjectionKey !== previousKey
@@ -795,12 +825,13 @@ try {
       }, zoomBefore.gosatProjectionKey);
       const zoomAfter = await readMapState(page);
       assert(zoomAfter.zoom > zoomBefore.zoom + 0.1, `${viewport.name}: wheel did not zoom the map`);
+      assert.equal(await page.evaluate(() => scrollY), scrollBefore, `${viewport.name}: wheel scrolled the page instead of the map`);
       assert(Math.abs(zoomAfter.gosatAnchorX - zoomAfter.japanX) <= 0.1, `${viewport.name}: GOSAT data separated from the coastline after zoom`);
       assert(Math.abs(zoomAfter.gosatAnchorY - zoomAfter.japanY) <= 0.1, `${viewport.name}: GOSAT data separated vertically after zoom`);
       const zoomScreenshot = path.join(outputDir, `${viewport.name}-01-gosat-zoom-aligned.png`);
       await page.screenshot({ path: zoomScreenshot });
       scan.screenshots.push(zoomScreenshot);
-      scan.gosatZoom = { before: zoomBefore, after: zoomAfter };
+      scan.gosatZoom = { before: zoomBefore, after: zoomAfter, wheelTarget };
 
       const resizeBefore = await readMapState(page);
       await page.setViewportSize({ width: viewport.width + 16, height: viewport.height + 12 });

@@ -213,12 +213,12 @@
       }
 
       vec3 dreamPalette(float t) {
-        vec3 indigo = vec3(0.12, 0.12, 0.38);
-        vec3 lavender = vec3(0.38, 0.24, 0.58);
-        vec3 moonRose = vec3(0.56, 0.31, 0.47);
-        vec3 mistGold = vec3(0.62, 0.49, 0.31);
-        vec3 seaGlass = vec3(0.18, 0.48, 0.47);
-        vec3 moonBlue = vec3(0.20, 0.38, 0.62);
+        vec3 indigo = vec3(0.20, 0.18, 0.52);
+        vec3 lavender = vec3(0.52, 0.34, 0.76);
+        vec3 moonRose = vec3(0.68, 0.38, 0.56);
+        vec3 mistGold = vec3(0.76, 0.58, 0.34);
+        vec3 seaGlass = vec3(0.20, 0.62, 0.57);
+        vec3 moonBlue = vec3(0.25, 0.47, 0.78);
         vec3 color = mix(indigo, lavender, smoothstep(0.0, 0.24, t));
         color = mix(color, moonRose, smoothstep(0.18, 0.42, t));
         color = mix(color, mistGold, smoothstep(0.38, 0.58, t));
@@ -233,29 +233,33 @@
         float breath = 0.5 + 0.5 * sin(time * 0.24 + bass * 0.45);
         float upperNoise = fbm(vec2(p.x * 0.52 - drift * 0.24, p.y * 0.78 + drift * 0.08));
         float lowerNoise = fbm(vec2(p.x * 0.38 + drift * 0.16 + 4.3, p.y * 0.64 - drift * 0.06 + 1.7));
-        float upperCenter = 0.10
-          + sin(p.x * 0.62 + drift + 0.6) * (0.075 + mid * 0.022)
-          + (upperNoise - 0.5) * 0.16
-          + wave * 0.018;
-        float lowerCenter = -0.20
-          + sin(p.x * 0.48 - drift * 0.72 + 2.4) * (0.09 + mid * 0.018)
-          + (lowerNoise - 0.5) * 0.14
-          - wave * 0.014;
-        float upperWidth = 0.24 + bass * 0.025 + breath * 0.012;
-        float lowerWidth = 0.30 + bass * 0.02 + (1.0 - breath) * 0.012;
-        float upperVeil = exp(-pow(abs(p.y - upperCenter) / upperWidth, 2.0));
-        float lowerVeil = exp(-pow(abs(p.y - lowerCenter) / lowerWidth, 2.0));
+        float upperCenter = 0.13
+          + sin(p.x * 0.58 + drift + 0.6) * (0.065 + mid * 0.016)
+          + (upperNoise - 0.5) * 0.10
+          + wave * 0.012;
+        float lowerCenter = -0.18
+          + sin(p.x * 0.44 - drift * 0.68 + 2.4) * (0.075 + mid * 0.014)
+          + (lowerNoise - 0.5) * 0.09
+          - wave * 0.010;
+        float upperWidth = 0.13 + bass * 0.018 + breath * 0.008;
+        float lowerWidth = 0.16 + bass * 0.016 + (1.0 - breath) * 0.008;
+        float upperVeil = exp(-pow(abs(p.y - upperCenter) / upperWidth, 2.35));
+        float lowerVeil = exp(-pow(abs(p.y - lowerCenter) / lowerWidth, 2.25));
+        float upperHeart = exp(-pow(abs(p.y - upperCenter) / (upperWidth * 0.44), 2.0));
+        float lowerHeart = exp(-pow(abs(p.y - lowerCenter) / (lowerWidth * 0.48), 2.0));
         float overlap = sqrt(max(0.0, upperVeil * lowerVeil));
         float paletteDrift = fract(uv.x * 0.42 + uv.y * 0.08 + time * 0.006 + flux * 0.015);
         vec3 upperColor = dreamPalette(paletteDrift);
         vec3 lowerColor = dreamPalette(fract(paletteDrift + 0.36));
-        vec3 field = upperColor * upperVeil * (0.14 + energy * 0.15);
-        field += lowerColor * lowerVeil * (0.11 + energy * 0.12);
-        field += mix(upperColor, lowerColor, 0.5) * overlap * (0.08 + mid * 0.08);
+        vec3 field = upperColor * upperVeil * (0.30 + energy * 0.17);
+        field += upperColor * upperHeart * (0.12 + mid * 0.08);
+        field += lowerColor * lowerVeil * (0.25 + energy * 0.14);
+        field += lowerColor * lowerHeart * (0.10 + mid * 0.07);
+        field += mix(upperColor, lowerColor, 0.5) * overlap * (0.045 + mid * 0.045);
 
         float horizonGlow = exp(-dot(p * vec2(0.52, 0.82), p * vec2(0.52, 0.82)) * 1.55);
         field += mix(vec3(0.20, 0.15, 0.42), vec3(0.08, 0.40, 0.40), uv.x)
-          * horizonGlow * (0.055 + energy * 0.08 + pulse * 0.03);
+          * horizonGlow * (0.08 + energy * 0.09 + pulse * 0.025);
         float edgeFade = smoothstep(0.0, 0.12, uv.x) * (1.0 - smoothstep(0.88, 1.0, uv.x));
         return field * edgeFade;
       }
@@ -289,8 +293,8 @@
         color += grain * 0.0015;
         float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
         color = mix(vec3(luminance), color, 1.03 + energy * 0.06);
-        color = 1.0 - exp(-max(color, vec3(0.0)) * (1.05 + energy * 0.18 + bass * 0.06));
-        color = pow(color, vec3(0.94));
+        color = 1.0 - exp(-max(color, vec3(0.0)) * (1.30 + energy * 0.20 + bass * 0.06));
+        color = pow(color, vec3(0.91));
         gl_FragColor = vec4(color, 1.0);
       }
     `;

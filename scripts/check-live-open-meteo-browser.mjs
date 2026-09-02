@@ -14,6 +14,7 @@ const option = (name) => {
 };
 const browserPath = option("--browser");
 if (!browserPath) throw new Error("--browser is required");
+const baseUrl = option("--base-url");
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = path.resolve(option("--output") || "artifacts/live-open-meteo-browser");
@@ -30,7 +31,7 @@ const mime = new Map([
   [".woff2", "font/woff2"],
 ]);
 
-const server = http.createServer((request, response) => {
+const server = baseUrl ? null : http.createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url || "/", "http://127.0.0.1").pathname);
   const relative = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
   const file = path.resolve(root, relative);
@@ -52,8 +53,8 @@ const server = http.createServer((request, response) => {
   }
 });
 
-await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-const origin = `http://127.0.0.1:${server.address().port}`;
+if (server) await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+const origin = baseUrl?.replace(/\/$/u, "") || `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ executablePath: browserPath, headless: true });
 const errors = [];
 const responses404 = [];
@@ -289,5 +290,5 @@ try {
   console.log(JSON.stringify({ status: "passed", exhibits: contracts.length, screenshots: [...screenshots, mobileScreenshot] }));
 } finally {
   await browser.close();
-  await new Promise((resolve) => server.close(resolve));
+  if (server) await new Promise((resolve) => server.close(resolve));
 }

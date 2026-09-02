@@ -84,10 +84,10 @@
       templates: ["gaia-template-sound"],
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
-        "./sound-mode.css?v=gaia-sound-reactive-ribbons-1",
+        "./sound-mode.css?v=gaia-sound-reactive-ribbons-2",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-mode.js?v=gaia-sound-reactive-ribbons-1"],
+      scripts: ["./sound-mode.js?v=gaia-sound-reactive-ribbons-2"],
     },
     character: {
       templates: ["gaia-template-character"],
