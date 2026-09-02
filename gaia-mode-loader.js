@@ -5,7 +5,7 @@
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-live-map-base-2",
+        "./styles.css?v=gaia-map-brush-flow-1",
         "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
@@ -19,8 +19,8 @@
         "./scene-transition.js?v=gaia-66",
         "./data-ledger.js?v=gaia-live-model-ledger-1",
         "./data-journey.js?v=gaia-01",
-        "./app-content.js?v=gaia-human-history-2",
-        "./app.js?v=gaia-human-history-2",
+        "./app-content.js?v=gaia-map-brush-flow-1",
+        "./app.js?v=gaia-map-poi-history-1",
         "./map-ui-grid-polish.js?v=gaia-human-history-2",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],

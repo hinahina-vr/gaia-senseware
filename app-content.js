@@ -386,119 +386,202 @@ vec3 modeBreathingEarth(vec2 p, float t, vec2 response, float memory) {
       accent: "#63e3ff",
       rgb: "99, 227, 255",
       source: `
+float currentBrushBody(float signedDistance, float halfWidth, float roughness) {
+  float roughWidth = halfWidth * mix(0.82, 1.16, roughness);
+  float edge = abs(signedDistance) / max(roughWidth, 0.001);
+  return 1.0 - smoothstep(0.8, 1.025, edge);
+}
+
+float currentBrushBristles(float signedDistance, float halfWidth, float phase) {
+  float across = signedDistance / max(halfWidth, 0.001);
+  float broadFibers = pow(0.5 + 0.5 * cos(across * 5.6 + phase), 3.4);
+  float fineFibers = pow(0.5 + 0.5 * cos(across * 17.0 - phase * 0.47), 9.0);
+  return broadFibers * 0.76 + fineFibers * 0.24;
+}
+
 vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
-  // uSignal.x/y are the observed mean/maximum speed normalized from m/s.
-  // Each uCurrentSamples item is an on-screen observation: xy position,
-  // normalized speed and the measured u/v direction angle.
-  float currentEnergy = clamp(uSignal.x * 0.68 + uSignal.y * 0.32, 0.0, 1.0);
-  float slowTime = t * mix(0.026, 0.092, currentEnergy);
-  vec2 q = p;
-  float basin = fbm(q * 0.58 + vec2(-slowTime * 0.08, slowTime * 0.035));
-  float waterWarp = fbm(q * 1.08 + vec2(slowTime * 0.13, -slowTime * 0.09));
-  q += vec2((basin - 0.5) * 0.14, (waterWarp - 0.5) * 0.3);
-  q += uVelocity * response.x * 0.018;
+  // The observation timeline changes the advection distance only. This ambient
+  // pigment clock always advances, so a stationary day selection still has a
+  // continuous hand-painted current moving inside each broad brush stroke.
+  float currentEnergy = clamp(uSignal.x * 0.62 + uSignal.y * 0.38, 0.0, 1.0);
+  float contourTime = t * 0.045;
+  float pigmentTime = t * mix(0.72, 1.32, currentEnergy);
+  vec2 q = p + uVelocity * response.x * 0.012;
+  float basin = fbm(q * 0.52 + vec2(-contourTime * 0.12, contourTime * 0.05));
+  float waterWarp = fbm(q * 1.18 + vec2(contourTime * 0.16, -contourTime * 0.1));
+  float edgeGrain = fbm(vec2(
+    q.x * 4.2 - pigmentTime * 0.055,
+    q.y * 6.4 + basin * 1.7
+  ));
 
-  // A broad, slow-moving body of water replaces a diagram-like vector grid.
-  float currentAxis = -0.06
-    + sin((p.x + 0.3) * 0.95 - slowTime * 0.18) * 0.33
-    + sin(p.x * 3.4 + slowTime * 0.25) * 0.045
-    + (waterWarp - 0.5) * 0.16;
-  float meander = p.y - currentAxis;
-  float kuroshioRibbon = exp(-abs(meander) / mix(0.105, 0.062, uSignal.y));
-  float ribbonAura = exp(-abs(meander) / mix(0.42, 0.3, currentEnergy));
-  float silkPhase = meander * 43.0
-    + fbm(q * 2.05 + vec2(-slowTime * 0.16, slowTime * 0.08)) * 3.8;
-  float silk = pow(0.5 + 0.5 * cos(silkPhase), mix(10.0, 17.0, currentEnergy));
-  float undertow = pow(
-    0.5 + 0.5 * cos(meander * 22.0 - waterWarp * 2.4 + slowTime * 0.42),
-    7.0
+  // One muscular Kuroshio stroke is crossed by two smaller sweeps. Their
+  // contours drift very slowly; the animated pigment travels much faster
+  // inside them, avoiding the stepped motion of moving line segments.
+  float mainAxis = -0.08
+    + sin((q.x + 0.24) * 1.24 - contourTime * 0.42) * 0.37
+    + sin(q.x * 2.92 + contourTime * 0.24) * 0.068
+    + (basin - 0.5) * 0.11;
+  float mainDistance = q.y - mainAxis;
+  float mainWidth = mix(0.22, 0.34, currentEnergy)
+    * (0.88 + 0.18 * sin(q.x * 1.46 - contourTime * 0.3));
+  float mainTaper = smoothstep(-1.62, -1.02, q.x)
+    * (1.0 - smoothstep(1.2, 1.78, q.x));
+  float mainBody = currentBrushBody(
+    mainDistance,
+    mainWidth * mix(0.38, 1.0, mainTaper),
+    edgeGrain
+  ) * smoothstep(0.0, 0.24, mainTaper);
+
+  vec2 upperPoint = rot(-0.27) * (q - vec2(0.14, 0.34));
+  float upperAxis = sin(upperPoint.x * 1.62 + contourTime * 0.31) * 0.13
+    + sin(upperPoint.x * 4.1 - contourTime * 0.18) * 0.022;
+  float upperDistance = upperPoint.y - upperAxis;
+  float upperWidth = mix(0.055, 0.105, uSignal.y)
+    * (0.82 + 0.22 * sin(upperPoint.x * 2.1 + 1.3));
+  float upperRoughness = 0.5 + 0.5 * sin(upperPoint.x * 5.7 + waterWarp * 3.8);
+  float upperTaper = smoothstep(-1.2, -0.62, upperPoint.x)
+    * (1.0 - smoothstep(1.28, 1.72, upperPoint.x));
+  float upperBody = currentBrushBody(
+    upperDistance,
+    upperWidth * mix(0.34, 1.0, upperTaper),
+    upperRoughness
+  ) * smoothstep(0.0, 0.2, upperTaper);
+
+  vec2 lowerPoint = rot(0.2) * (q - vec2(-0.1, -0.46));
+  float lowerAxis = sin(lowerPoint.x * 1.18 - contourTime * 0.24) * 0.16
+    + (waterWarp - 0.5) * 0.07;
+  float lowerDistance = lowerPoint.y - lowerAxis;
+  float lowerWidth = mix(0.075, 0.14, currentEnergy)
+    * (0.86 + 0.18 * cos(lowerPoint.x * 1.8 - 0.6));
+  float lowerTaper = smoothstep(-1.7, -1.04, lowerPoint.x)
+    * (1.0 - smoothstep(0.92, 1.48, lowerPoint.x));
+  float lowerBody = currentBrushBody(
+    lowerDistance,
+    lowerWidth * mix(0.34, 1.0, lowerTaper),
+    1.0 - edgeGrain
+  ) * smoothstep(0.0, 0.22, lowerTaper);
+
+  float mainBristles = currentBrushBristles(
+    mainDistance,
+    mainWidth,
+    q.x * 2.1 - pigmentTime * 1.28 + basin * 5.2
+  ) * mainBody;
+  float upperBristles = currentBrushBristles(
+    upperDistance,
+    upperWidth,
+    upperPoint.x * 2.7 - pigmentTime * 1.64 + waterWarp * 4.1
+  ) * upperBody;
+  float lowerBristles = currentBrushBristles(
+    lowerDistance,
+    lowerWidth,
+    lowerPoint.x * 1.8 - pigmentTime * 0.96 + basin * 3.6
+  ) * lowerBody;
+
+  float mainTravel = 0.5 + 0.5 * sin(
+    q.x * 4.4 - pigmentTime * mix(2.2, 3.5, currentEnergy) + basin * 5.6
   );
-  float travelingPearl = 0.34 + 0.66 * pow(
-    0.5 + 0.5 * sin(q.x * 6.4 - slowTime * mix(2.2, 5.2, currentEnergy) + waterWarp * 5.0),
-    5.0
+  float upperTravel = 0.5 + 0.5 * sin(
+    upperPoint.x * 6.1 - pigmentTime * mix(2.9, 4.5, uSignal.y) + waterWarp * 4.8
+  );
+  float lowerTravel = 0.5 + 0.5 * cos(
+    lowerPoint.x * 3.7 - pigmentTime * mix(1.7, 2.8, currentEnergy) + basin * 4.2
+  );
+  float dryBrush = smoothstep(
+    0.24,
+    0.78,
+    fbm(vec2(q.x * 9.5 - pigmentTime * 0.28, q.y * 8.2 + basin * 2.2))
   );
 
-  vec2 eddyPointA = p - vec2(0.62, 0.12);
-  float eddyRadiusA = length(eddyPointA);
-  float eddyAngleA = atan(eddyPointA.y, eddyPointA.x);
-  float eddyA = pow(
-    0.5 + 0.5 * cos(eddyRadiusA * 18.0 - eddyAngleA * 2.0 - slowTime * mix(1.1, 2.4, currentEnergy)),
-    10.0
-  ) * exp(-eddyRadiusA * 2.15);
-
-  vec2 eddyPointB = p - vec2(1.18, -0.36);
-  float eddyRadiusB = length(eddyPointB);
-  float eddyAngleB = atan(eddyPointB.y, eddyPointB.x);
-  float eddyB = pow(
-    0.5 + 0.5 * cos(eddyRadiusB * 21.0 + eddyAngleB * 2.4 + slowTime * mix(0.8, 1.8, currentEnergy)),
-    12.0
-  ) * exp(-eddyRadiusB * 2.65);
-
-  // Exact observation points shape the WebGL light. Faster measured currents
-  // become wider, brighter and move their pearls faster; slower points remain
-  // a dim underwater drift. The reference map and clickable POIs are a canvas
-  // layer above this shader, so this field can never erase them.
-  float observedFlow = 0.0;
-  float observedPearls = 0.0;
+  // Exact NOAA observation points feed curved local brush deposits. Measured
+  // sqrt(u^2 + v^2) controls their reach, thickness, pigment speed and lustre.
+  float observedInk = 0.0;
+  float observedLustre = 0.0;
   for (int i = 0; i < 32; i++) {
     if (i >= uCurrentSampleCount) break;
     vec4 observed = uCurrentSamples[i];
     float measuredSpeed = clamp(observed.z, 0.0, 1.0);
     vec2 local = rot(-observed.w) * (p - observed.xy);
-    float reach = mix(0.1, 0.26, measuredSpeed) * mix(0.78, 1.18, uSignal.w);
-    float width = mix(0.012, 0.047, measuredSpeed);
+    float reach = mix(0.12, 0.31, measuredSpeed);
+    float width = mix(0.014, 0.052, measuredSpeed);
+    float localCurve = sin(
+      local.x * mix(7.0, 11.0, measuredSpeed)
+        + float(i) * 1.17
+        + contourTime * 0.38
+    ) * width * 0.72;
+    float localDistance = local.y - localCurve;
     float envelope = exp(
       -pow(local.x / max(reach, 0.01), 2.0)
-      -pow(local.y / max(width * 3.2, 0.01), 2.0)
+      -pow(localDistance / max(width * 3.7, 0.01), 2.0)
     );
-    float filament = exp(-abs(local.y) / max(width, 0.004));
-    float pearlPhase = local.x * mix(34.0, 20.0, measuredSpeed)
-      - slowTime * mix(2.0, 7.2, measuredSpeed)
-      + float(i) * 1.731;
-    float pearl = pow(0.5 + 0.5 * cos(pearlPhase), 18.0);
-    observedFlow += filament * envelope * mix(0.13, 0.82, measuredSpeed);
-    observedPearls += pearl * filament * envelope * mix(0.08, 1.0, measuredSpeed);
+    float roughness = 0.5 + 0.5 * sin(local.x * 28.0 + float(i) * 2.37);
+    float stroke = currentBrushBody(localDistance, width * 1.8, roughness) * envelope;
+    float travelingPigment = 0.5 + 0.5 * cos(
+      local.x * mix(25.0, 14.0, measuredSpeed)
+        - pigmentTime * mix(2.8, 6.4, measuredSpeed)
+        + float(i) * 1.731
+    );
+    float bristle = currentBrushBristles(
+      localDistance,
+      width * 1.8,
+      local.x * 7.0 - pigmentTime * 0.9 + float(i)
+    );
+    observedInk += stroke * mix(0.12, 0.78, measuredSpeed);
+    observedLustre += stroke * (bristle * 0.48 + travelingPigment * 0.7)
+      * mix(0.08, 0.92, measuredSpeed);
   }
-  observedFlow = min(observedFlow, 1.5);
-  observedPearls = min(observedPearls, 1.35);
+  observedInk = min(observedInk, 1.45);
+  observedLustre = min(observedLustre, 1.35);
 
-  float suspendedLight = smoothstep(
-    0.86,
-    1.0,
-    noise(q * 20.0 + vec2(-slowTime * 0.7, slowTime * 0.22))
-  ) * ribbonAura;
-  float oceanPresence = 0.24 + 0.76 * smoothstep(-0.82, 0.26, p.x);
-  float density = ribbonAura * mix(0.08, 0.16, currentEnergy)
-    + ribbonAura * (silk * 0.72 + undertow * 0.22) * travelingPearl * oceanPresence
-    + kuroshioRibbon * mix(0.08, 0.2, currentEnergy)
-    + eddyA * mix(0.14, 0.32, currentEnergy)
-    + eddyB * mix(0.12, 0.28, currentEnergy)
-    + observedFlow * 0.78
-    + observedPearls * 0.64
-    + suspendedLight * 0.34
-    + response.x * 0.62
-    + response.y * 0.18;
+  float brushBody = mainBody * (0.36 + dryBrush * 0.72)
+    + upperBody * 0.78
+    + lowerBody * 0.72;
+  float brushFibers = mainBristles * (0.34 + mainTravel * 0.66)
+    + upperBristles * (0.26 + upperTravel * 0.74)
+    + lowerBristles * (0.3 + lowerTravel * 0.7);
 
-  vec3 background = baseGradient(p, vec3(0.002, 0.065, 0.135));
-  vec3 deepWater = mix(
-    vec3(0.015, 0.16, 0.34),
-    vec3(0.13, 0.72, 0.86),
-    smoothstep(0.16, 0.84, waterWarp)
+  vec3 background = baseGradient(p, vec3(0.002, 0.052, 0.11));
+  vec3 mainInk = mix(
+    vec3(0.025, 0.28, 0.62),
+    vec3(0.12, 1.08, 0.98),
+    smoothstep(0.08, 0.92, mainTravel)
   );
-  vec3 pearl = vec3(0.62, 0.96, 1.0)
-    * (silk * ribbonAura + kuroshioRibbon * 0.22)
-    * travelingPearl
-    * oceanPresence;
-  vec3 measuredLight = mix(
-    vec3(0.06, 0.38, 0.62),
-    vec3(0.56, 0.98, 0.9),
+  vec3 upperInk = mix(
+    vec3(0.12, 0.34, 0.82),
+    vec3(0.48, 0.98, 1.18),
+    smoothstep(0.12, 0.88, upperTravel)
+  );
+  vec3 lowerInk = mix(
+    vec3(0.02, 0.31, 0.34),
+    vec3(0.2, 0.9, 0.67),
+    smoothstep(0.16, 0.84, lowerTravel)
+  );
+  float mainWetEdge = max(
+    0.0,
+    currentBrushBody(mainDistance, mainWidth * 1.02, edgeGrain)
+      - currentBrushBody(mainDistance, mainWidth * 0.76, edgeGrain)
+  ) * mainTaper;
+  vec3 layeredInk = mainInk * mainBody * (0.58 + dryBrush * 0.7)
+    + upperInk * upperBody * 0.78
+    + lowerInk * lowerBody * 0.7
+    + vec3(0.12, 0.92, 1.04) * mainWetEdge * (0.3 + mainTravel * 0.45);
+  vec3 fiberLight = mix(
+    vec3(0.18, 0.66, 0.88),
+    vec3(0.72, 1.0, 0.9),
     currentEnergy
-  ) * (observedFlow * 0.55 + observedPearls * 0.95);
+  ) * brushFibers;
+  vec3 measuredLight = mix(
+    vec3(0.04, 0.38, 0.66),
+    vec3(0.54, 1.0, 0.86),
+    uSignal.y
+  ) * (observedInk * 0.46 + observedLustre * 0.72);
+
   return background
-    + deepWater * density
-    + pearl * 0.42
+    + layeredInk
+    + fiberLight * 0.34
     + measuredLight
-    + vec3(0.06, 0.3, 0.54) * ribbonAura * (0.08 + memory * 0.13);
+    + vec3(0.03, 0.2, 0.34) * brushBody * (0.08 + memory * 0.1)
+    + vec3(0.18, 0.72, 0.78) * response.x * 0.28
+    + vec3(0.5, 0.9, 1.0) * response.y * 0.12;
 }
 `.trim(),
     },

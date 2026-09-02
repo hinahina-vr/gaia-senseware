@@ -111,6 +111,36 @@ const selectMode = async (page, index, expectedTitle) => {
   );
 };
 
+const readAnthropoceneSnapshot = async (page) => page.locator("#japan-overlay").evaluate((element) => {
+  const pixels = element.getContext("2d", { willReadFrequently: true })
+    .getImageData(0, 0, element.width, element.height)
+    .data;
+  let redPixelCount = 0;
+  let redPixelEnergy = 0;
+  for (let index = 0; index < pixels.length; index += 4) {
+    const red = pixels[index];
+    const green = pixels[index + 1];
+    const blue = pixels[index + 2];
+    if (red > 70 && red > green * 1.25 && red > blue * 1.15) {
+      redPixelCount += 1;
+      redPixelEnergy += red - Math.max(green, blue);
+    }
+  }
+  return {
+    year: Number(element.dataset.emissionsSelectedYear),
+    countryCount: Number(element.dataset.emissionsCircleCount),
+    visibleCircleCount: Number(element.dataset.emissionsVisibleCircleCount),
+    radiusSum: Number(element.dataset.emissionsRadiusSum),
+    maximumRadius: Number(element.dataset.emissionsMaximumRadius),
+    totalMtCo2: Number(element.dataset.emissionsTotalMtCo2),
+    selectedCountryMtCo2: Number(element.dataset.emissionsSelectedCountryMtCo2),
+    scaleMtCo2: Number(element.dataset.emissionsScaleMtCo2),
+    encoding: element.dataset.emissionsEncoding,
+    redPixelCount,
+    redPixelEnergy,
+  };
+});
+
 const findClickableDataPoint = async (page, modeId) => page.evaluate(async (requestedModeId) => {
   const snapshot = await fetch("./data/gaia-signals.json").then((response) => response.json());
   const mode = snapshot.modes.find((entry) => entry.id === requestedModeId);
@@ -951,14 +981,20 @@ try {
       strength: Number(document.querySelector("#gaia-canvas")?.dataset.currentStrength),
       vectorCount: Number(document.querySelector("#gaia-canvas")?.dataset.currentVectorCount),
       renderedSampleCount: Number(document.querySelector("#gaia-canvas")?.dataset.currentRenderedSampleCount),
+      brushLanguage: document.querySelector("#gaia-canvas")?.dataset.currentBrushLanguage,
+      ambientMotion: document.querySelector("#gaia-canvas")?.dataset.currentAmbientMotion,
+      ambientPhase: Number(document.querySelector("#gaia-canvas")?.dataset.currentAmbientPhase),
       integratedOpacity: getComputedStyle(document.querySelector("#japan-layer"))
         .getPropertyValue("--map-light-opacity")
         .trim(),
     }));
-    assert.equal(circulationVisual.language, "immersive-streamlines");
+    assert.equal(circulationVisual.language, "calligraphic-current-brush");
     assert(circulationVisual.arrowStride >= 3);
     assert.equal(circulationVisual.integratedMode, "02");
-    assert.equal(circulationVisual.integratedOpacity, "0.34");
+    assert.equal(circulationVisual.integratedOpacity, "0.72");
+    assert.equal(circulationVisual.brushLanguage, "broad-ink-with-moving-pigment");
+    assert.equal(circulationVisual.ambientMotion, "continuous-timeline-independent-gradient");
+    assert(Number.isFinite(circulationVisual.ambientPhase));
     assert.equal(circulationVisual.canvasParent, "japan-map");
     assert.equal(circulationVisual.canvasLayer, "below-reference-map-and-poi");
     assert.equal(circulationVisual.layerOrder, "reference-map-and-poi-above-webgl");
@@ -973,6 +1009,39 @@ try {
     const zoomScreenshot = path.join(outputDir, `${viewport.name}-02-japan-zoom.png`);
     await page.screenshot({ path: zoomScreenshot });
     scan.screenshots.push(zoomScreenshot);
+
+    const circulationTimeline = page.locator("#japan-layer [data-signal-time]").first();
+    await circulationTimeline.focus();
+    await circulationTimeline.press("Home");
+    const heldTimelineValue = await circulationTimeline.inputValue();
+    const brushBeforePath = path.join(outputDir, `${viewport.name}-02-brush-ambient-before.png`);
+    const brushAfterPath = path.join(outputDir, `${viewport.name}-02-brush-ambient-after.png`);
+    const brushBefore = await page.locator("#gaia-canvas").screenshot({ path: brushBeforePath });
+    const ambientPhaseSamples = [];
+    for (let sampleIndex = 0; sampleIndex < 14; sampleIndex += 1) {
+      ambientPhaseSamples.push(await page.locator("#gaia-canvas").evaluate((element) => (
+        Number(element.dataset.currentAmbientPhase)
+      )));
+      await page.waitForTimeout(55);
+    }
+    await page.waitForTimeout(500);
+    const brushAfter = await page.locator("#gaia-canvas").screenshot({ path: brushAfterPath });
+    const settledTimelineValue = await circulationTimeline.inputValue();
+    const ambientPhaseDeltas = ambientPhaseSamples.slice(1).map((value, index) => (
+      value - ambientPhaseSamples[index]
+    ));
+    assert.equal(settledTimelineValue, heldTimelineValue, `${viewport.name}: brush animation advanced the observation timeline`);
+    assert(new Set(ambientPhaseSamples.map((value) => value.toFixed(3))).size >= 8, `${viewport.name}: ambient pigment phase is stepping or stalled`);
+    assert(ambientPhaseDeltas.every((delta) => delta >= 0 && delta < 0.14), `${viewport.name}: ambient pigment phase jumped: ${JSON.stringify(ambientPhaseDeltas)}`);
+    assert.equal(brushBefore.equals(brushAfter), false, `${viewport.name}: fixed-timeline brush pixels did not animate`);
+    scan.circulationAmbientBrush = {
+      heldTimelineValue,
+      phaseStart: ambientPhaseSamples[0],
+      phaseEnd: ambientPhaseSamples.at(-1),
+      uniquePhaseSamples: new Set(ambientPhaseSamples.map((value) => value.toFixed(3))).size,
+      pixelFrameChanged: true,
+    };
+    scan.screenshots.push(brushBeforePath, brushAfterPath);
 
     await page.waitForFunction(() => !document.querySelector("#japan-layer [data-signal-value]")?.textContent?.includes("LOADING"));
     await waitForMapGuide(page);
@@ -1163,14 +1232,34 @@ try {
 
     await selectMode(page, 4, "人類世の傷跡");
     await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.nightLightsLayer === "visible");
-    await slider.press("Home");
+    await slider.evaluate((input) => {
+      input.value = input.min;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
     await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.emissionsSelectedYear === "1945");
-    const historicalEmissionCount = Number(await page.locator("#japan-overlay").getAttribute("data-emissions-circle-count"));
-    assert.ok(historicalEmissionCount >= 20 && historicalEmissionCount < 31);
-    const historicalEmissionReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
+    await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
+    await page.waitForTimeout(1800);
+    const historicalEmissions = await readAnthropoceneSnapshot(page);
+    assert.ok(historicalEmissions.countryCount >= 20 && historicalEmissions.countryCount < 31);
+    assert.equal(historicalEmissions.encoding, "country-total-fixed-sqrt-area");
+    assert.equal(historicalEmissions.scaleMtCo2, 12000);
+    const historicalEmissionReadout = await page.locator("#japan-layer [data-signal-value]").evaluateAll((elements) => (
+      elements.find((element) => element.offsetParent !== null)?.textContent || ""
+    ));
     assert.match(historicalEmissionReadout, /1945.*Mt CO₂/u);
-    await slider.press("End");
+    const historicalEmissionsScreenshot = path.join(outputDir, `${viewport.name}-05-emissions-1945.png`);
+    await page.screenshot({ path: historicalEmissionsScreenshot });
+    scan.screenshots.push(historicalEmissionsScreenshot);
+    await slider.evaluate((input) => {
+      input.value = input.max;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
     await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.emissionsSelectedYear === "2023");
+    await page.waitForTimeout(1800);
+    const modernEmissions = await readAnthropoceneSnapshot(page);
+    const modernEmissionsScreenshot = path.join(outputDir, `${viewport.name}-05-emissions-2023.png`);
+    await page.screenshot({ path: modernEmissionsScreenshot });
+    scan.screenshots.push(modernEmissionsScreenshot);
     const anthropoceneEncoding = await page.locator("#japan-overlay").evaluate((element) => ({
       lightLayer: element.dataset.nightLightsLayer,
       source: element.dataset.nightLightsSource,
@@ -1187,15 +1276,33 @@ try {
       projection: "web-mercator-to-geographic",
       display: "glow-plus-radiance-core",
       emissionCount: 31,
-      emissionEncoding: "country-total-log-area",
+      emissionEncoding: "country-total-fixed-sqrt-area",
       selectedYear: "2023",
       nightLightsReferenceYear: "2016",
     });
+    assert.equal(modernEmissions.year, 2023);
+    assert.equal(modernEmissions.countryCount, 31);
+    assert.equal(modernEmissions.encoding, "country-total-fixed-sqrt-area");
+    assert.equal(modernEmissions.scaleMtCo2, 12000);
+    assert.ok(modernEmissions.visibleCircleCount > historicalEmissions.visibleCircleCount);
+    assert.ok(modernEmissions.radiusSum > historicalEmissions.radiusSum * 2);
+    assert.ok(modernEmissions.totalMtCo2 > historicalEmissions.totalMtCo2 * 7);
+    assert.ok(modernEmissions.maximumRadius > historicalEmissions.maximumRadius * 1.8);
+    assert.ok(
+      modernEmissions.redPixelCount > historicalEmissions.redPixelCount * 1.4,
+      `red POI pixel count must increase: ${JSON.stringify({ historicalEmissions, modernEmissions })}`,
+    );
+    assert.ok(
+      modernEmissions.redPixelEnergy > historicalEmissions.redPixelEnergy * 1.4,
+      `red POI energy must increase: ${JSON.stringify({ historicalEmissions, modernEmissions })}`,
+    );
+    scan.anthropoceneTimelineComparison = {
+      historical: historicalEmissions,
+      modern: modernEmissions,
+    };
     await waitForMapGuide(page);
     const anthropoceneGuide = await page.locator("#map-guide-reading").textContent();
-    assert.match(anthropoceneGuide, /赤い円.*化石燃料由来CO₂.*白い発光.*2016.*固定/u);
-    await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
-    await page.waitForTimeout(400);
+    assert.match(anthropoceneGuide, /赤い円.*固定尺度.*円面積.*排出量.*白い発光.*2016.*固定/u);
     const nightLightsScreenshot = path.join(outputDir, `${viewport.name}-05-night-lights-visible.png`);
     await page.screenshot({ path: nightLightsScreenshot });
     scan.screenshots.push(nightLightsScreenshot);

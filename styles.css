@@ -8995,7 +8995,7 @@ h1 {
 /* MAP 02 lets the current field breathe across the sea while coastlines and
    observation marks stay readable above it. */
 .japan-layer.has-integrated-map-light .japan-map > #gaia-canvas[data-integrated-map-mode="02"] {
-  filter: saturate(1.08) brightness(1.04) contrast(0.94);
+  filter: saturate(1.56) brightness(1.12) contrast(1.18);
   -webkit-mask-image: radial-gradient(ellipse 96% 90% at 50% 44%, #000 18%, rgba(0, 0, 0, 0.92) 72%, transparent 100%);
   mask-image: radial-gradient(ellipse 96% 90% at 50% 44%, #000 18%, rgba(0, 0, 0, 0.92) 72%, transparent 100%);
 }
