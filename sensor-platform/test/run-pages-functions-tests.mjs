@@ -30,6 +30,11 @@ await test("Live Senseware uses free-plan provider gates and five-minute stream 
   assert(source.indexOf("sapporo: Object.freeze") < source.indexOf("aomori: Object.freeze"));
   assert(source.indexOf("aomori: Object.freeze") < source.indexOf("naha: Object.freeze"));
   assert.match(source, /current: "temperature_2m,precipitation,cloud_cover,wind_speed_10m"/u);
+  assert.match(source, /WIND_FIELD_TTL_MS = 5 \* 60 \* 1_000/u);
+  assert.match(source, /latitude: cities\.map\(\(city\) => city\.lat\)\.join\(","\)/u);
+  assert.match(source, /longitude: cities\.map\(\(city\) => city\.lon\)\.join\(","\)/u);
+  assert.match(source, /current: "wind_speed_10m"/u);
+  assert.match(source, /\/api\/live\/v1\/wind-field/u);
   assert.match(source, /current: "carbon_dioxide,pm2_5"/u);
   assert.match(source, /refresh = setInterval\(\(\) => void emitSnapshot\(\), STREAM_REFRESH_MS\)/u);
   assert.match(productionConfig, /"LIVE_SENSEWARE_ENABLED": "true"/u);
@@ -130,6 +135,17 @@ try {
     assert.match(payload.fallbackReason, /LIVE_SENSEWARE_ENABLED/u);
     assert.deepEqual([...new Set(payload.events.map((event) => event.provider))].sort(), ["esa", "jaxa", "noaa", "open-meteo"]);
     assert(payload.events.every((event) => event.status === "snapshot"));
+  });
+  await test("prefecture wind field stays D1-free and marks all values missing while live providers are disabled", async () => {
+    const response = await fetch(`${origin}/api/live/v1/wind-field`);
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.source, "unavailable");
+    assert.equal(payload.points.length, 47);
+    assert(payload.points.every((point) => point.windSpeed === null && point.quality === "missing"));
+    assert.equal(payload.points[0].id, "sapporo");
+    assert.equal(payload.points.at(-1).id, "naha");
+    assert.match(payload.fallbackReason, /LIVE_SENSEWARE_ENABLED/u);
   });
   await test("Live Senseware SSE emits normalized snapshot and provider events", async () => {
     const controller = new AbortController();

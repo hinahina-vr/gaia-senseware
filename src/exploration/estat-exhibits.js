@@ -1,4 +1,4 @@
-import { OBSERVATION_CITIES } from "./live-exhibits.js?v=gaia-japan-focus-3";
+import { OBSERVATION_CITIES } from "./live-exhibits.js?v=gaia-wind-brush-1";
 import { ESTAT_PREFECTURE_SNAPSHOT } from "./estat-prefecture-data.js";
 
 const SERIES_URL = new URL("../../data/estat-prefecture-series.json", import.meta.url);

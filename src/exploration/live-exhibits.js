@@ -10,13 +10,13 @@ const EXHIBITS = Object.freeze([
     accent: "#79f7ff",
     rgb: "121, 247, 255",
     fallback: 0.14,
-    caption: "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。",
+    caption: "Open-Meteoの47都道府県代表都市の風速モデル値を、各地点から立ち上がる筆触の色・太さ・密度へ変換します。",
     signalLabel: "風速",
-    scaleLabel: "0—45 m/sを0—100%へ正規化",
+    scaleLabel: "0—15+ m/sを青—赤の筆触へ変換",
     location: Object.freeze({ lon: 139.6503, lat: 35.6762, label: "Open-Meteo / 東京" }),
-    visualCue: "流線",
-    visualMap: "風速が高いほど、流線の本数・移動速度・光量が増えます。",
-    refreshCopy: "天気モデルはCloudflareで最大30分キャッシュし、5分ごとに公開値の更新を再確認します。",
+    visualCue: "風速筆",
+    visualMap: "風速が高いほど筆触が太く、青緑から黄・橙・赤へ変わります。筆の向きは風向を示しません。",
+    refreshCopy: "47地点をOpen-Meteoから一括取得し、Cloudflare Cache APIで5分キャッシュします。D1は使用しません。",
   }),
   Object.freeze({
     id: "carbon-pulse",
@@ -196,6 +196,7 @@ let frame = 0;
 let lastRenderedAt = 0;
 let savedHeading = null;
 let selectedCityId = globalThis.GaiaLiveData?.getCity?.() || OBSERVATION_CITIES[0].id;
+let windFieldSnapshot = globalThis.GaiaLiveData?.getWindField?.() || { source: "unavailable", points: [] };
 let poiAutoplayEnabled = !reducedMotion;
 let poiAutoplayTimer = 0;
 let poiTransitionTimer = 0;
@@ -251,8 +252,27 @@ const formatJptDateTime = (value) => {
 
 const currentState = () => globalThis.GaiaLiveData?.getState?.() || { measurements: {}, source: "snapshot", connected: false };
 const currentMeasurement = (exhibit) => currentState().measurements?.[exhibit.key] || null;
+const currentWindField = () => windFieldSnapshot;
 const profile = () => globalThis.GaiaFrameBudgetGovernor?.getProfile?.() || { dprCap: 1, particleRatio: 0.65, level: "medium" };
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
+const WIND_FIELD_REFERENCE_MS = 15;
+const WIND_COLOR_STOPS = Object.freeze([
+  [0, [52, 112, 255]],
+  [0.22, [38, 209, 236]],
+  [0.42, [62, 226, 145]],
+  [0.62, [244, 222, 70]],
+  [0.8, [255, 129, 36]],
+  [1, [255, 43, 67]],
+]);
+const windStrength = (value) => Number.isFinite(Number(value)) ? clamp01(Number(value) / WIND_FIELD_REFERENCE_MS) : null;
+const windColor = (strength) => {
+  const value = clamp01(Number(strength) || 0);
+  const upperIndex = Math.max(1, WIND_COLOR_STOPS.findIndex(([stop]) => stop >= value));
+  const [lowerStop, lowerColor] = WIND_COLOR_STOPS[upperIndex - 1];
+  const [upperStop, upperColor] = WIND_COLOR_STOPS[upperIndex];
+  const mix = upperStop === lowerStop ? 0 : (value - lowerStop) / (upperStop - lowerStop);
+  return lowerColor.map((channel, index) => Math.round(channel + (upperColor[index] - channel) * mix));
+};
 const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
 const selectedCity = () => CITY_BY_ID.get(selectedCityId) || OBSERVATION_CITIES[0];
 const cityForLocation = (location) => OBSERVATION_CITIES.find((city) => (
@@ -320,6 +340,7 @@ const projectSceneAnchor = (location, projection = getLiveMapProjection()) => {
 
 const updateCityMarkers = (projection) => {
   if (!cityMarkersLayer || !projection) return;
+  const fieldById = new Map((currentWindField().points || []).map((point) => [point.id, point]));
   cityMarkerButtons.forEach((button) => {
     const city = CITY_BY_ID.get(button.dataset.liveCityMarker);
     if (!city) return;
@@ -329,8 +350,51 @@ const updateCityMarkers = (projection) => {
     button.style.left = `${(x * 100).toFixed(3)}%`;
     button.style.top = `${(y * 100).toFixed(3)}%`;
     button.setAttribute("aria-current", String(city.id === selectedCityId));
+    const wind = fieldById.get(city.id);
+    const strength = windStrength(wind?.windSpeed);
+    if (activeIndex === 0 && strength !== null) {
+      const rgb = windColor(strength);
+      button.dataset.windSpeed = Number(wind.windSpeed).toFixed(1);
+      button.style.setProperty("--live-wind-level", strength.toFixed(4));
+      button.style.setProperty("--live-wind-rgb", rgb.join(","));
+      button.style.setProperty("--live-wind-halo-alpha", (0.08 + strength * 0.12).toFixed(3));
+      button.style.setProperty("--live-wind-glow-alpha", (0.46 + strength * 0.4).toFixed(3));
+      button.setAttribute("aria-label", `${city.code} ${city.name}、風速${Number(wind.windSpeed).toFixed(1)} m/sのモデル値を表示`);
+    } else {
+      delete button.dataset.windSpeed;
+      button.style.removeProperty("--live-wind-level");
+      button.style.removeProperty("--live-wind-rgb");
+      button.style.removeProperty("--live-wind-halo-alpha");
+      button.style.removeProperty("--live-wind-glow-alpha");
+      button.setAttribute("aria-label", `${city.code} ${city.name}の観測データを表示`);
+    }
   });
   cityMarkersLayer.dataset.visibleCount = String(cityMarkerButtons.filter((button) => !button.hidden).length);
+};
+
+const projectWindPoints = (projection, selectedMeasurement) => {
+  if (activeIndex !== 0 || !projection) return [];
+  const field = currentWindField();
+  const fieldById = new Map((field.points || []).map((point) => [point.id, point]));
+  if (!fieldById.has(selectedCityId) && Number.isFinite(Number(selectedMeasurement?.value))) {
+    const city = selectedCity();
+    fieldById.set(city.id, { id: city.id, lat: city.lat, lon: city.lon, windSpeed: Number(selectedMeasurement.value) });
+  }
+  return OBSERVATION_CITIES.flatMap((city, index) => {
+    const point = fieldById.get(city.id);
+    const strength = windStrength(point?.windSpeed);
+    if (strength === null) return [];
+    const projected = projectSceneAnchor(city, projection).normalized;
+    if (projected[0] < -0.12 || projected[0] > 1.12 || projected[1] < -0.12 || projected[1] > 1.12) return [];
+    return [{
+      x: projected[0],
+      y: projected[1],
+      strength,
+      seed: (index * 0.61803398875) % 1,
+      selected: city.id === selectedCityId ? 1 : 0,
+      windSpeed: Number(point.windSpeed),
+    }];
+  }).sort((left, right) => left.selected - right.selected);
 };
 
 const lightTouchUniform = (timestamp) => {
@@ -616,6 +680,87 @@ const WEBGL_FRAGMENT_SOURCE = `
   }
 `;
 
+const WEBGL_WIND_BRUSH_VERTEX_SOURCE = `
+  attribute vec2 a_anchor;
+  attribute vec2 a_corner;
+  attribute float a_strength;
+  attribute float a_seed;
+  attribute float a_selected;
+  uniform vec2 u_resolution;
+  varying vec2 v_local;
+  varying float v_strength;
+  varying float v_seed;
+  varying float v_selected;
+
+  void main() {
+    float pressure = pow(clamp(a_strength, 0.0, 1.0), 0.68);
+    vec2 size = vec2(mix(34.0, 112.0, pressure), mix(18.0, 54.0, pressure));
+    size *= mix(1.0, 1.32, a_selected);
+    vec2 clipAnchor = vec2(a_anchor.x * 2.0 - 1.0, 1.0 - a_anchor.y * 2.0);
+    vec2 clipOffset = a_corner * size * 2.0 / max(u_resolution, vec2(1.0));
+    gl_Position = vec4(clipAnchor + clipOffset, 0.0, 1.0);
+    v_local = a_corner;
+    v_strength = a_strength;
+    v_seed = a_seed;
+    v_selected = a_selected;
+  }
+`;
+
+const WEBGL_WIND_BRUSH_FRAGMENT_SOURCE = `
+  varying vec2 v_local;
+  varying float v_strength;
+  varying float v_seed;
+  varying float v_selected;
+  uniform float u_time;
+
+  float hash21(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 34.45);
+    return fract(p.x * p.y);
+  }
+
+  vec3 windPalette(float value) {
+    vec3 blue = vec3(0.20, 0.44, 1.0);
+    vec3 cyan = vec3(0.11, 0.86, 0.94);
+    vec3 green = vec3(0.24, 0.90, 0.57);
+    vec3 yellow = vec3(0.98, 0.86, 0.22);
+    vec3 orange = vec3(1.0, 0.43, 0.10);
+    vec3 red = vec3(1.0, 0.10, 0.18);
+    vec3 color = mix(blue, cyan, smoothstep(0.0, 0.22, value));
+    color = mix(color, green, smoothstep(0.22, 0.42, value));
+    color = mix(color, yellow, smoothstep(0.42, 0.62, value));
+    color = mix(color, orange, smoothstep(0.62, 0.80, value));
+    return mix(color, red, smoothstep(0.80, 1.0, value));
+  }
+
+  void main() {
+    float time = u_time * 0.34;
+    float taper = pow(max(0.0, 1.0 - pow(abs(v_local.x), 1.7)), 0.62);
+    float firstWave = sin(v_local.x * 3.15 + v_seed * 12.0 + time) * 0.18;
+    float secondWave = sin(v_local.x * 7.2 - v_seed * 7.0 - time * 0.62) * 0.055;
+    float center = (firstWave + secondWave) * (0.5 + v_strength * 0.5) * taper;
+    float width = mix(0.075, 0.24, pow(v_strength, 0.72)) * (0.28 + taper * 0.72);
+    float distanceToStroke = abs(v_local.y - center);
+    float body = 1.0 - smoothstep(width * 0.48, width * 1.34, distanceToStroke);
+    float bristleCoordinate = (v_local.y - center) * mix(58.0, 94.0, v_strength)
+      + sin(v_local.x * 17.0 + v_seed * 19.0 - time * 1.4) * 1.7;
+    float bristles = 0.58 + 0.42 * smoothstep(-0.22, 0.82, sin(bristleCoordinate));
+    float dryPigment = smoothstep(0.17, 0.84, hash21(floor(vec2(
+      (v_local.x + 1.0) * 32.0,
+      (v_local.y + 1.0) * 46.0
+    )) + vec2(v_seed * 31.0, floor(time * 1.3))));
+    float brokenEdge = mix(0.48, 1.0, dryPigment) * bristles;
+    float halo = exp(-pow(distanceToStroke / max(0.045, width * 2.45), 2.0)) * taper;
+    float alpha = body * brokenEdge * (0.42 + v_strength * 0.48)
+      + halo * (0.035 + v_strength * 0.12 + v_selected * 0.07);
+    if (alpha < 0.012) discard;
+    vec3 color = windPalette(v_strength);
+    vec3 pigmentLight = mix(color, vec3(1.0, 0.95, 0.78), 0.18 + body * 0.14);
+    pigmentLight *= 0.82 + bristles * 0.34 + v_selected * 0.16;
+    gl_FragColor = vec4(pigmentLight, min(alpha, 0.9));
+  }
+`;
+
 const createWebGLRenderer = (targetCanvas) => {
   let gl;
   try {
@@ -640,36 +785,53 @@ const createWebGLRenderer = (targetCanvas) => {
     gl.deleteShader(shader);
     return null;
   };
-  const vertex = compile(gl.VERTEX_SHADER, WEBGL_VERTEX_SOURCE);
-  const fragment = compile(gl.FRAGMENT_SHADER, `precision ${highPrecision ? "highp" : "mediump"} float;\n${WEBGL_FRAGMENT_SOURCE}`);
-  if (!vertex || !fragment) return null;
-  const program = gl.createProgram();
-  gl.attachShader(program, vertex);
-  gl.attachShader(program, fragment);
-  gl.linkProgram(program);
-  gl.deleteShader(vertex);
-  gl.deleteShader(fragment);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    gl.deleteProgram(program);
+  const link = (vertexSource, fragmentSource) => {
+    const vertex = compile(gl.VERTEX_SHADER, vertexSource);
+    const fragment = compile(gl.FRAGMENT_SHADER, `precision ${highPrecision ? "highp" : "mediump"} float;\n${fragmentSource}`);
+    if (!vertex || !fragment) return null;
+    const nextProgram = gl.createProgram();
+    gl.attachShader(nextProgram, vertex);
+    gl.attachShader(nextProgram, fragment);
+    gl.linkProgram(nextProgram);
+    gl.deleteShader(vertex);
+    gl.deleteShader(fragment);
+    if (gl.getProgramParameter(nextProgram, gl.LINK_STATUS)) return nextProgram;
+    gl.deleteProgram(nextProgram);
+    return null;
+  };
+  const program = link(WEBGL_VERTEX_SOURCE, WEBGL_FRAGMENT_SOURCE);
+  const windBrushProgram = link(WEBGL_WIND_BRUSH_VERTEX_SOURCE, WEBGL_WIND_BRUSH_FRAGMENT_SOURCE);
+  if (!program || !windBrushProgram) {
+    if (program) gl.deleteProgram(program);
+    if (windBrushProgram) gl.deleteProgram(windBrushProgram);
     return null;
   }
   const buffer = gl.createBuffer();
+  const windBrushBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  gl.useProgram(program);
   const position = gl.getAttribLocation(program, "a_position");
-  gl.enableVertexAttribArray(position);
-  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
   const uniforms = Object.fromEntries([
     "u_resolution", "u_time", "u_mode", "u_strength", "u_missing", "u_accent", "u_anchor", "u_pointer",
   ].map((name) => [name, gl.getUniformLocation(program, name)]));
   uniforms.u_touches = gl.getUniformLocation(program, "u_touches[0]");
+  const windBrushAttributes = Object.fromEntries([
+    "a_anchor", "a_corner", "a_strength", "a_seed", "a_selected",
+  ].map((name) => [name, gl.getAttribLocation(windBrushProgram, name)]));
+  const windBrushUniforms = {
+    resolution: gl.getUniformLocation(windBrushProgram, "u_resolution"),
+    time: gl.getUniformLocation(windBrushProgram, "u_time"),
+  };
+  const windBrushCorners = [[-1, -1], [1, -1], [-1, 1], [-1, 1], [1, -1], [1, 1]];
   let renderCount = 0;
   return Object.freeze({
     gl,
     resize(width, height) { gl.viewport(0, 0, width, height); },
-    render({ time, mode, strength, missing, accent, anchor, pointer, touches }) {
+    render({ time, mode, strength, missing, accent, anchor, pointer, touches, windPoints = [], windFieldSource = "unavailable" }) {
       gl.useProgram(program);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.enableVertexAttribArray(position);
+      gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.uniform2f(uniforms.u_resolution, targetCanvas.width, targetCanvas.height);
@@ -682,16 +844,47 @@ const createWebGLRenderer = (targetCanvas) => {
       gl.uniform4f(uniforms.u_pointer, pointer.x, pointer.y, pointer.active, pointer.energy);
       gl.uniform4fv(uniforms.u_touches, touches);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (mode < 0.5 && windPoints.length) {
+        const brushVertices = new Float32Array(windPoints.flatMap((point) => windBrushCorners.flatMap(([cornerX, cornerY]) => [
+          point.x, point.y, cornerX, cornerY, point.strength, point.seed, point.selected,
+        ])));
+        gl.useProgram(windBrushProgram);
+        gl.bindBuffer(gl.ARRAY_BUFFER, windBrushBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, brushVertices, gl.DYNAMIC_DRAW);
+        const stride = 7 * Float32Array.BYTES_PER_ELEMENT;
+        const bindAttribute = (attribute, size, offset) => {
+          gl.enableVertexAttribArray(attribute);
+          gl.vertexAttribPointer(attribute, size, gl.FLOAT, false, stride, offset * Float32Array.BYTES_PER_ELEMENT);
+        };
+        bindAttribute(windBrushAttributes.a_anchor, 2, 0);
+        bindAttribute(windBrushAttributes.a_corner, 2, 2);
+        bindAttribute(windBrushAttributes.a_strength, 1, 4);
+        bindAttribute(windBrushAttributes.a_seed, 1, 5);
+        bindAttribute(windBrushAttributes.a_selected, 1, 6);
+        gl.uniform2f(windBrushUniforms.resolution, targetCanvas.width, targetCanvas.height);
+        gl.uniform1f(windBrushUniforms.time, time);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.drawArrays(gl.TRIANGLES, 0, windPoints.length * windBrushCorners.length);
+        gl.disable(gl.BLEND);
+      }
       renderCount += 1;
       targetCanvas.dataset.webglFrame = String(renderCount);
       targetCanvas.dataset.webglMode = String(mode);
       targetCanvas.dataset.webglStrength = strength.toFixed(4);
       targetCanvas.dataset.anchorSceneX = anchor[0].toFixed(4);
       targetCanvas.dataset.anchorSceneY = anchor[1].toFixed(4);
+      targetCanvas.dataset.windFieldCount = String(windPoints.length);
+      targetCanvas.dataset.windFieldSource = windFieldSource;
+      const windSpeeds = windPoints.map((point) => point.windSpeed).filter(Number.isFinite);
+      targetCanvas.dataset.windFieldMin = windSpeeds.length ? Math.min(...windSpeeds).toFixed(1) : "";
+      targetCanvas.dataset.windFieldMax = windSpeeds.length ? Math.max(...windSpeeds).toFixed(1) : "";
     },
     destroy() {
       gl.deleteBuffer(buffer);
+      gl.deleteBuffer(windBrushBuffer);
       gl.deleteProgram(program);
+      gl.deleteProgram(windBrushProgram);
     },
   });
 };
@@ -952,6 +1145,8 @@ const draw = (timestamp = performance.now(), force = false) => {
   const location = observationLocation(exhibit, measurement);
   const projection = getLiveMapProjection();
   const anchor = projectSceneAnchor(location, projection);
+  const windPoints = projectWindPoints(projection, measurement);
+  const windField = currentWindField();
   const touches = lightTouchUniform(timestamp);
   lightPointer.energy *= lightPointer.down ? 0.992 : 0.965;
   canvas.dataset.anchorLongitude = String(location.lon);
@@ -973,6 +1168,8 @@ const draw = (timestamp = performance.now(), force = false) => {
       anchor: anchor.scene,
       pointer: lightPointer,
       touches,
+      windPoints,
+      windFieldSource: windField.source || "unavailable",
     });
   } else if (context) {
     context.clearRect(0, 0, width, height);
@@ -1050,8 +1247,15 @@ const renderReadout = () => {
   readout.querySelector("[data-live-deck-location]").textContent = location.label;
   readout.querySelector("[data-live-deck-coordinates]").textContent = `${Math.abs(location.lat).toFixed(4)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(4)}°${location.lon >= 0 ? "E" : "W"}`;
   readout.querySelector("[data-live-deck-source-name]").textContent = measurement?.provider?.toUpperCase() || "SOURCE";
+  const cityIndex = Math.max(0, OBSERVATION_CITIES.findIndex((city) => city.id === selectedCityId));
+  readout.querySelectorAll("[data-live-poi-step]").forEach((button) => {
+    const direction = Number(button.dataset.livePoiStep) || 0;
+    const target = OBSERVATION_CITIES[(cityIndex + direction + OBSERVATION_CITIES.length) % OBSERVATION_CITIES.length];
+    button.setAttribute("aria-label", `${direction < 0 ? "前" : "次"}の観測地点、${target.code} ${target.name}へ送る`);
+  });
   if (cityPicker) {
     cityPicker.dataset.city = selectedCityId;
+    cityPicker.dataset.windFieldActive = String(activeIndex === 0);
     cityPicker.querySelector("select").value = selectedCityId;
     cityPicker.querySelector("[data-live-city-caption]").textContent = `${locationCity.code} ${locationCity.name} · ${Math.abs(location.lat).toFixed(3)}°${location.lat >= 0 ? "N" : "S"} / ${Math.abs(location.lon).toFixed(3)}°${location.lon >= 0 ? "E" : "W"}`;
   }
@@ -1088,6 +1292,32 @@ const applyHeading = () => {
     const target = modeButtons[(activeButtonIndex + direction + modeButtons.length) % modeButtons.length];
     button.setAttribute("aria-label", `${direction < 0 ? "前" : "次"}の展示、${target.getAttribute("aria-label") || target.textContent?.trim() || "地図展示"}`);
   });
+  const legend = document.querySelector("[data-signal-encoding-legend]");
+  const legendTitle = document.querySelector("[data-signal-encoding-legend-title]");
+  const mobileLegendToggle = document.querySelector("#map-mobile-legend-toggle");
+  if (legend) {
+    const labels = exhibit.id === "wind-field"
+      ? [
+        "色 / 10m風速（青→赤）",
+        "暗い地点 / 取得値なし",
+        "筆の太さ・明度 / 風速に比例",
+        "筆の向き / 風向ではない",
+      ]
+      : [
+        `色と光 / ${exhibit.visualCue}`,
+        "待機表示 / 取得値なし",
+        `強さ / ${exhibit.scaleLabel}`,
+        "発生点 / 都道府県代表都市",
+      ];
+    ["heatmap", "nodata", "estimate", "resolution"].forEach((key, index) => {
+      const item = legend.querySelector(`[data-encoding-label="${key}"]`);
+      if (item?.lastChild) item.lastChild.textContent = labels[index];
+    });
+    legend.dataset.mode = `live-${exhibit.id}`;
+    legend.hidden = false;
+    if (legendTitle) legendTitle.hidden = false;
+    if (mobileLegendToggle) mobileLegendToggle.hidden = false;
+  }
 };
 
 const clearPoiAutoplayTimer = () => {
@@ -1261,6 +1491,7 @@ const select = (index) => {
     schedulePoiAutoplay();
   }
   dispatchEvent(new CustomEvent("gaia:live-exhibit-change", { detail: { index, id: exhibit.id } }));
+  queueMicrotask(applyHeading);
 };
 
 const deactivate = ({ number, title } = {}) => {
@@ -1356,8 +1587,13 @@ const mount = () => {
   cityPicker.innerHTML = `
     <label>
       <span>OBSERVATION RELAY / PREFECTURE 01—47</span>
-      <select aria-label="都道府県の観測地点を選ぶ">${OBSERVATION_CITIES.map((city) => `<option value="${city.id}">${city.code} ${city.name}</option>`).join("")}</select>
+      <div class="gaia-live-city-picker-controls">
+        <button type="button" data-live-poi-step="-1" aria-label="前の観測地点へ">←</button>
+        <select aria-label="都道府県の観測地点を選ぶ">${OBSERVATION_CITIES.map((city) => `<option value="${city.id}">${city.code} ${city.name}</option>`).join("")}</select>
+        <button type="button" data-live-poi-step="1" aria-label="次の観測地点へ">→</button>
+      </div>
       <small data-live-city-caption>01 北海道 / 札幌 · 43.062°N / 141.355°E</small>
+      <span class="gaia-live-wind-scale" aria-label="風速の色。弱い風は青、強い風は赤"><b>0</b><i aria-hidden="true"></i><b>15+ m/s</b></span>
     </label>
   `;
   cityPicker.querySelector("select").value = selectedCityId;
@@ -1419,7 +1655,11 @@ const mount = () => {
     </div>
     <div class="gaia-live-deck-location">
       <p>MODEL / JAPAN · 47 PREFECTURES</p>
-      <strong data-live-deck-location>Open-Meteo / 東京</strong>
+      <div class="gaia-live-deck-location-control">
+        <button type="button" data-live-poi-step="-1" aria-label="前の観測地点へ">←</button>
+        <strong data-live-deck-location>Open-Meteo / 東京</strong>
+        <button type="button" data-live-poi-step="1" aria-label="次の観測地点へ">→</button>
+      </div>
       <small data-live-deck-coordinates>35.6762°N / 139.6503°E</small>
     </div>
     <div class="gaia-live-exhibit-primary">
@@ -1574,6 +1814,18 @@ const mount = () => {
   cityPicker.querySelector("select")?.addEventListener("change", (event) => {
     selectObservationCity(event.currentTarget.value, { source: "manual" });
   });
+  [cityPicker, readout].forEach((container) => {
+    container?.querySelectorAll("[data-live-poi-step]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const currentIndex = Math.max(0, OBSERVATION_CITIES.findIndex((city) => city.id === selectedCityId));
+        const direction = Number(button.dataset.livePoiStep) || 0;
+        const target = OBSERVATION_CITIES[(currentIndex + direction + OBSERVATION_CITIES.length) % OBSERVATION_CITIES.length];
+        selectObservationCity(target.id, { source: "manual" });
+      });
+    });
+  });
 
   readout.querySelector("[data-live-light-touch]")?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -1652,6 +1904,13 @@ const mount = () => {
   addEventListener("gaia:live-update", () => {
     renderReadout();
     if (activeIndex >= 0 && !frame) draw();
+  });
+  addEventListener("gaia:live-wind-field", (event) => {
+    windFieldSnapshot = event.detail || { source: "unavailable", points: [] };
+    if (activeIndex >= 0) {
+      renderReadout();
+      draw(performance.now(), true);
+    }
   });
   addEventListener("gaia:live-city-change", (event) => {
     if (CITY_BY_ID.has(event.detail?.city)) selectedCityId = event.detail.city;

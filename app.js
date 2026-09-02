@@ -320,6 +320,8 @@
   const GLOBAL_EARTHQUAKE_YEAR_DWELL_MS = 4600;
   const GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS = 220;
   const GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS = 460;
+  const GLOBAL_EARTHQUAKE_EVENT_EXIT_STAGGER_MS = 140;
+  const GLOBAL_EARTHQUAKE_EVENT_DISAPPEAR_MS = 320;
   const GLOBAL_EARTHQUAKE_RING_DELAY_MS = 90;
   const GLOBAL_EARTHQUAKE_YEAR_COUNT = 27;
   const ANTHROPOCENE_EMISSIONS_SCALE_MT = 12000;
@@ -835,6 +837,11 @@
     generation: -1,
     currentYear: "",
     currentEvents: [],
+    pendingYear: "",
+    pendingEvents: [],
+    phase: "enter",
+    exitStartReveals: [],
+    exitOrderIndices: [],
     changedAt: performance.now(),
   };
   let nextJapanOverlayRenderAt = 0;
@@ -976,6 +983,39 @@
     String(a?.occurredAt || "").localeCompare(String(b?.occurredAt || ""))
     || String(a?.id || "").localeCompare(String(b?.id || ""))
   );
+  const getEarthquakeStaggerDuration = (eventCount, staggerMs, animationMs) => Math.max(
+    animationMs,
+    Math.max(0, eventCount - 1) * staggerMs + animationMs,
+  );
+  const getEarthquakeEnterReveals = (events, changedAt, now) => {
+    const durationMs = getEarthquakeStaggerDuration(
+      events.length,
+      GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS,
+      GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS,
+    );
+    const eventReveals = events.map((event, index) => {
+      const localElapsedMs = reducedMotion
+        ? durationMs
+        : now - changedAt - index * GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS;
+      const progress = reducedMotion
+        ? 1
+        : clamp(localElapsedMs / GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS, 0, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const bounce = Math.sin(progress * Math.PI) * (1 - progress) * 0.2;
+      return {
+        event,
+        index,
+        phase: "enter",
+        progress,
+        alpha: clamp(progress * 2.35, 0, 1),
+        scale: 0.14 + eased * 0.86 + bounce,
+        waveElapsedMs: reducedMotion
+          ? GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS
+          : Math.max(0, localElapsedMs - GLOBAL_EARTHQUAKE_RING_DELAY_MS),
+      };
+    });
+    return { durationMs, eventReveals };
+  };
   const getEarthquakeYearTransition = (selectedYear, yearEvents, now) => {
     const nextYear = String(selectedYear || "");
     const nextEvents = Array.isArray(yearEvents)
@@ -988,54 +1028,124 @@
       earthquakeYearTransition.generation = mapPlotRevealGeneration;
       earthquakeYearTransition.currentYear = nextYear;
       earthquakeYearTransition.currentEvents = nextEvents;
+      earthquakeYearTransition.pendingYear = "";
+      earthquakeYearTransition.pendingEvents = [];
+      earthquakeYearTransition.phase = "enter";
+      earthquakeYearTransition.exitStartReveals = [];
+      earthquakeYearTransition.exitOrderIndices = [];
       earthquakeYearTransition.changedAt = Math.max(now, mapPlotRevealStartedAt);
-    } else if (nextYear && nextYear !== earthquakeYearTransition.currentYear) {
-      earthquakeYearTransition.currentYear = nextYear;
-      earthquakeYearTransition.currentEvents = nextEvents;
+    } else if (earthquakeYearTransition.phase === "exit") {
+      const exitDurationMs = getEarthquakeStaggerDuration(
+        earthquakeYearTransition.exitOrderIndices.length,
+        GLOBAL_EARTHQUAKE_EVENT_EXIT_STAGGER_MS,
+        GLOBAL_EARTHQUAKE_EVENT_DISAPPEAR_MS,
+      );
+      if (now - earthquakeYearTransition.changedAt >= exitDurationMs) {
+        earthquakeYearTransition.currentYear = earthquakeYearTransition.pendingYear;
+        earthquakeYearTransition.currentEvents = earthquakeYearTransition.pendingEvents;
+        earthquakeYearTransition.pendingYear = "";
+        earthquakeYearTransition.pendingEvents = [];
+        earthquakeYearTransition.phase = "enter";
+        earthquakeYearTransition.exitStartReveals = [];
+        earthquakeYearTransition.exitOrderIndices = [];
+        earthquakeYearTransition.changedAt += exitDurationMs;
+      }
+    }
+
+    if (
+      nextYear
+      && nextYear !== earthquakeYearTransition.currentYear
+      && earthquakeYearTransition.phase !== "exit"
+    ) {
+      const outgoing = getEarthquakeEnterReveals(
+        earthquakeYearTransition.currentEvents,
+        earthquakeYearTransition.changedAt,
+        now,
+      ).eventReveals;
+      earthquakeYearTransition.pendingYear = nextYear;
+      earthquakeYearTransition.pendingEvents = nextEvents;
+      earthquakeYearTransition.phase = "exit";
+      earthquakeYearTransition.exitStartReveals = outgoing;
+      earthquakeYearTransition.exitOrderIndices = outgoing
+        .filter(({ alpha }) => alpha > 0.01)
+        .map(({ index }) => index)
+        .reverse();
       earthquakeYearTransition.changedAt = now;
-    } else {
+    } else if (
+      earthquakeYearTransition.phase === "exit"
+      && nextYear === earthquakeYearTransition.currentYear
+    ) {
+      earthquakeYearTransition.pendingYear = "";
+      earthquakeYearTransition.pendingEvents = [];
+      earthquakeYearTransition.phase = "enter";
+      earthquakeYearTransition.exitStartReveals = [];
+      earthquakeYearTransition.exitOrderIndices = [];
+      earthquakeYearTransition.changedAt = now - getEarthquakeStaggerDuration(
+        earthquakeYearTransition.currentEvents.length,
+        GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS,
+        GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS,
+      );
+    } else if (earthquakeYearTransition.phase === "exit") {
+      earthquakeYearTransition.pendingYear = nextYear;
+      earthquakeYearTransition.pendingEvents = nextEvents;
+    } else if (nextYear === earthquakeYearTransition.currentYear) {
       earthquakeYearTransition.currentEvents = nextEvents;
     }
 
     const eventCount = earthquakeYearTransition.currentEvents.length;
-    const durationMs = Math.max(
-      GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS,
-      Math.max(0, eventCount - 1) * GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS
-        + GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS,
-    );
     const elapsedMs = Math.max(0, now - earthquakeYearTransition.changedAt);
-    const eventReveals = earthquakeYearTransition.currentEvents.map((event, index) => {
-      const localElapsedMs = reducedMotion
-        ? durationMs
-        : now - earthquakeYearTransition.changedAt - index * GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS;
-      const progress = reducedMotion
-        ? 1
-        : clamp(localElapsedMs / GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS, 0, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const bounce = Math.sin(progress * Math.PI) * (1 - progress) * 0.2;
-      return {
-        event,
-        index,
-        progress,
-        alpha: clamp(progress * 2.35, 0, 1),
-        scale: 0.14 + eased * 0.86 + bounce,
-        waveElapsedMs: reducedMotion
-          ? GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS
-          : Math.max(0, localElapsedMs - GLOBAL_EARTHQUAKE_RING_DELAY_MS),
-      };
-    });
-    const visibleEventCount = eventReveals.filter(({ progress }) => progress > 0).length;
-    const activeReveal = visibleEventCount > 0 ? eventReveals[visibleEventCount - 1] : null;
+    let durationMs;
+    let eventReveals;
+    if (earthquakeYearTransition.phase === "exit") {
+      durationMs = getEarthquakeStaggerDuration(
+        earthquakeYearTransition.exitOrderIndices.length,
+        GLOBAL_EARTHQUAKE_EVENT_EXIT_STAGGER_MS,
+        GLOBAL_EARTHQUAKE_EVENT_DISAPPEAR_MS,
+      );
+      eventReveals = earthquakeYearTransition.exitStartReveals.map((startReveal) => {
+        const exitRank = earthquakeYearTransition.exitOrderIndices.indexOf(startReveal.index);
+        const localElapsedMs = exitRank < 0
+          ? GLOBAL_EARTHQUAKE_EVENT_DISAPPEAR_MS
+          : reducedMotion
+            ? durationMs
+            : elapsedMs - exitRank * GLOBAL_EARTHQUAKE_EVENT_EXIT_STAGGER_MS;
+        const progress = clamp(localElapsedMs / GLOBAL_EARTHQUAKE_EVENT_DISAPPEAR_MS, 0, 1);
+        const eased = progress * progress * (3 - 2 * progress);
+        return {
+          ...startReveal,
+          phase: "exit",
+          progress,
+          alpha: startReveal.alpha * (1 - eased),
+          scale: startReveal.scale * (1 - eased * 0.72),
+          waveElapsedMs: Math.max(startReveal.waveElapsedMs, GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS),
+        };
+      });
+    } else {
+      const entering = getEarthquakeEnterReveals(
+        earthquakeYearTransition.currentEvents,
+        earthquakeYearTransition.changedAt,
+        now,
+      );
+      durationMs = entering.durationMs;
+      eventReveals = entering.eventReveals;
+    }
+    const visibleEventCount = eventReveals.filter(({ alpha }) => alpha > 0.01).length;
+    const activeReveal = earthquakeYearTransition.phase === "exit"
+      ? eventReveals.find(({ progress }) => progress > 0 && progress < 1) || null
+      : [...eventReveals].reverse().find(({ alpha }) => alpha > 0.01) || null;
     const activeEvent = activeReveal?.event || null;
     return {
       progress: reducedMotion ? 1 : clamp(elapsedMs / durationMs, 0, 1),
       durationMs,
+      phase: earthquakeYearTransition.phase,
+      targetYear: earthquakeYearTransition.pendingYear || earthquakeYearTransition.currentYear,
       visibleEventCount,
       activeEvent,
       activeReveal,
       eventReveals,
       currentYear: earthquakeYearTransition.currentYear,
       currentEvents: earthquakeYearTransition.currentEvents,
+      exitOrderIndices: [...earthquakeYearTransition.exitOrderIndices],
     };
   };
   const MAP_TITLE_SEPARATOR_DURATION_MS = 1500;
@@ -3164,7 +3274,7 @@
         phaseLabel: `USGS YEARLY M7.5+ / ${String(index + 1).padStart(2, "0")} OF ${String(years.length).padStart(2, "0")}`,
         yearLabel: year,
         valueLabel: `${yearEvents.length} EVENTS · MAX M${strongest.magnitude.toFixed(1)}`,
-        methodLabel: "YEAR SNAPSHOT / CHRONOLOGICAL POP-IN + ESTIMATED FELT RINGS",
+        methodLabel: "YEAR SNAPSHOT / CHRONOLOGICAL POP-IN + POP-OUT",
         timeLabel: `年次自動再生 / ${years[0]} → ${years.at(-1)} · 約${(
           GLOBAL_EARTHQUAKE_YEAR_DWELL_MS / 1000
         ).toFixed(1)}秒/年`,
@@ -3603,16 +3713,25 @@
       ctx.globalCompositeOperation = "source-over";
       ctx.textAlign = "left";
       const prominent = motion.prominent === true;
+      const compactProminent = prominent && motion.compactProminent === true;
       const compact = rect.width < 600;
       const expansive = rect.width >= 2400;
-      const primaryFontPx = prominent
+      const primaryFontPx = compactProminent
+        ? (compact ? 15 : 18)
+        : prominent
         ? (compact ? 18 : (expansive ? 32 : 20))
         : (compact ? 16 : (expansive ? 30 : 18));
-      const secondaryFontPx = prominent
+      const secondaryFontPx = compactProminent
+        ? (compact ? 10 : 12)
+        : prominent
         ? (compact ? 14 : (expansive ? 22 : 15))
         : (compact ? 12 : (expansive ? 20 : 13));
-      const horizontalPadding = expansive ? (prominent ? 28 : 26) : (prominent ? 20 : 18);
-      const cardHeight = prominent
+      const horizontalPadding = compactProminent
+        ? (compact ? 12 : 16)
+        : expansive ? (prominent ? 28 : 26) : (prominent ? 20 : 18);
+      const cardHeight = compactProminent
+        ? (compact ? 58 : 66)
+        : prominent
         ? (compact ? 80 : (expansive ? 120 : 86))
         : (compact ? 68 : (expansive ? 106 : 72));
       ctx.font = `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
@@ -3620,11 +3739,13 @@
       ctx.font = `600 ${secondaryFontPx}px Consolas, "Courier New", monospace`;
       const secondaryWidth = ctx.measureText(secondary).width;
       const maximumWidth = Math.min(
-        prominent ? (expansive ? 900 : 620) : (expansive ? 760 : 520),
+        compactProminent ? 520 : prominent ? (expansive ? 900 : 620) : (expansive ? 760 : 520),
         rect.width - (prominent ? 32 : 24),
       );
       const naturalWidth = Math.max(primaryWidth, secondaryWidth) + horizontalPadding * 2;
-      const textWidth = prominent
+      const textWidth = compactProminent
+        ? Math.min(maximumWidth, Math.max(Math.min(compact ? 300 : 400, maximumWidth), naturalWidth))
+        : prominent
         ? Math.min(maximumWidth, Math.max(Math.min(expansive ? 640 : 460, maximumWidth), naturalWidth))
         : Math.min(maximumWidth, Math.max(Math.min(expansive ? 520 : 340, maximumWidth), naturalWidth));
       const pointGap = prominent ? 24 : 16;
@@ -3637,22 +3758,82 @@
       const alpha = clamp(Number(motion.alpha ?? 1), 0, 1);
       const scale = clamp(Number(motion.scale ?? 1), 0.9, 1.05);
       const offsetY = Number(motion.offsetY) || 0;
+      const anchor = motion.anchor || point;
+      const cardCenterX = x + textWidth / 2;
+      const cardCenterY = y + cardHeight / 2 + offsetY;
       ctx.globalAlpha *= alpha;
-      ctx.translate(x + textWidth / 2, y + cardHeight / 2 + offsetY);
+      ctx.translate(cardCenterX, cardCenterY);
       ctx.scale(scale, scale);
       const drawX = -textWidth / 2;
       const drawY = -cardHeight / 2;
-      ctx.fillStyle = prominent ? "rgba(2,13,18,.94)" : "rgba(2,13,18,.88)";
-      ctx.fillRect(drawX, drawY, textWidth, cardHeight);
-      ctx.strokeStyle = color.replace(/\.96\)$/u, ".52)");
+      const drawRight = drawX + textWidth;
+      const drawBottom = drawY + cardHeight;
+      const anchorLocalX = (anchor.x - cardCenterX) / scale;
+      const anchorLocalY = (anchor.y - cardCenterY) / scale;
+      const tailOnLeft = anchorLocalX <= 0;
+      const cornerRadius = compactProminent ? 8 : prominent ? 11 : 10;
+      const tailHalfHeight = compactProminent ? 5.5 : prominent ? 8 : 7;
+      const tailBaseY = clamp(
+        anchorLocalY,
+        drawY + cornerRadius + tailHalfHeight + 2,
+        drawBottom - cornerRadius - tailHalfHeight - 2,
+      );
+      const tailTipX = tailOnLeft
+        ? Math.min(anchorLocalX, drawX - 8)
+        : Math.max(anchorLocalX, drawRight + 8);
+      const tailTipY = clamp(anchorLocalY, drawY + 5, drawBottom - 5);
+      const traceSpeechBubble = () => {
+        ctx.beginPath();
+        ctx.moveTo(drawX + cornerRadius, drawY);
+        ctx.lineTo(drawRight - cornerRadius, drawY);
+        ctx.quadraticCurveTo(drawRight, drawY, drawRight, drawY + cornerRadius);
+        if (!tailOnLeft) {
+          ctx.lineTo(drawRight, tailBaseY - tailHalfHeight);
+          ctx.lineTo(tailTipX, tailTipY);
+          ctx.lineTo(drawRight, tailBaseY + tailHalfHeight);
+        }
+        ctx.lineTo(drawRight, drawBottom - cornerRadius);
+        ctx.quadraticCurveTo(drawRight, drawBottom, drawRight - cornerRadius, drawBottom);
+        ctx.lineTo(drawX + cornerRadius, drawBottom);
+        ctx.quadraticCurveTo(drawX, drawBottom, drawX, drawBottom - cornerRadius);
+        if (tailOnLeft) {
+          ctx.lineTo(drawX, tailBaseY + tailHalfHeight);
+          ctx.lineTo(tailTipX, tailTipY);
+          ctx.lineTo(drawX, tailBaseY - tailHalfHeight);
+        }
+        ctx.lineTo(drawX, drawY + cornerRadius);
+        ctx.quadraticCurveTo(drawX, drawY, drawX + cornerRadius, drawY);
+        ctx.closePath();
+      };
+      const bubbleFill = ctx.createLinearGradient(drawX, drawY, drawRight, drawBottom);
+      bubbleFill.addColorStop(0, prominent ? "rgba(2,13,18,.97)" : "rgba(2,16,22,.94)");
+      bubbleFill.addColorStop(0.72, prominent ? "rgba(3,18,24,.95)" : "rgba(3,19,25,.9)");
+      bubbleFill.addColorStop(1, `rgba(${rgb}, ${prominent ? 0.13 : 0.1})`);
+      traceSpeechBubble();
+      ctx.fillStyle = bubbleFill;
+      ctx.shadowColor = `rgba(${rgb}, ${prominent ? 0.22 : 0.16})`;
+      ctx.shadowBlur = compact ? 10 : prominent ? 19 : 15;
+      ctx.shadowOffsetY = 4;
+      ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      traceSpeechBubble();
+      ctx.strokeStyle = color.replace(/,\s*(?:0?\.)?\d+\)$/u, ",.58)");
       ctx.lineWidth = prominent ? 1.5 : 1;
-      ctx.strokeRect(drawX, drawY, textWidth, cardHeight);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(drawX + cornerRadius + 5, drawY + 1.5);
+      ctx.lineTo(drawRight - cornerRadius - 5, drawY + 1.5);
+      ctx.strokeStyle = `rgba(${rgb}, ${prominent ? 0.2 : 0.14})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
       ctx.fillStyle = color;
       ctx.font = `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
       ctx.fillText(
         primary,
         drawX + horizontalPadding,
-        drawY + (prominent ? (compact ? 32 : (expansive ? 46 : 35)) : (compact ? 28 : (expansive ? 42 : 30))),
+        drawY + (compactProminent ? (compact ? 23 : 27) : prominent ? (compact ? 32 : (expansive ? 46 : 35)) : (compact ? 28 : (expansive ? 42 : 30))),
         textWidth - horizontalPadding * 2,
       );
       ctx.fillStyle = "rgba(222,241,240,.76)";
@@ -3660,7 +3841,7 @@
       ctx.fillText(
         secondary,
         drawX + horizontalPadding,
-        drawY + (prominent ? (compact ? 64 : (expansive ? 94 : 69)) : (compact ? 55 : (expansive ? 83 : 59))),
+        drawY + (compactProminent ? (compact ? 46 : 52) : prominent ? (compact ? 64 : (expansive ? 94 : 69)) : (compact ? 55 : (expansive ? 83 : 59))),
         textWidth - horizontalPadding * 2,
       );
       ctx.restore();
@@ -3668,15 +3849,32 @@
       japanOverlay.dataset.selectionLabelHeightPx = String(cardHeight);
       japanOverlay.dataset.selectionLabelPrimaryFontPx = String(primaryFontPx);
       japanOverlay.dataset.selectionLabelSecondaryFontPx = String(secondaryFontPx);
-      return { x, y: y + offsetY, width: textWidth, height: cardHeight, primaryFontPx, secondaryFontPx };
+      japanOverlay.dataset.selectionLabelShape = "speech-bubble";
+      japanOverlay.dataset.selectionLabelTailSide = tailOnLeft ? "left" : "right";
+      japanOverlay.dataset.selectionLabelTailLengthPx = Math.abs(tailTipX - (tailOnLeft ? drawX : drawRight)).toFixed(1);
+      japanOverlay.dataset.selectionLabelCornerRadiusPx = String(cornerRadius);
+      return {
+        x,
+        y: y + offsetY,
+        width: textWidth,
+        height: cardHeight,
+        primaryFontPx,
+        secondaryFontPx,
+        tailSide: tailOnLeft ? "left" : "right",
+      };
     };
     delete japanOverlay.dataset.selectionLabelWidthPx;
     delete japanOverlay.dataset.selectionLabelHeightPx;
     delete japanOverlay.dataset.selectionLabelPrimaryFontPx;
     delete japanOverlay.dataset.selectionLabelSecondaryFontPx;
+    delete japanOverlay.dataset.selectionLabelShape;
+    delete japanOverlay.dataset.selectionLabelTailSide;
+    delete japanOverlay.dataset.selectionLabelTailLengthPx;
+    delete japanOverlay.dataset.selectionLabelCornerRadiusPx;
     delete japanOverlay.dataset.earthquakeSelectionLabelWidthPx;
     delete japanOverlay.dataset.earthquakeSelectionLabelHeightPx;
     delete japanOverlay.dataset.earthquakeSelectionPrimaryFontPx;
+    delete japanOverlay.dataset.earthquakeSelectionLabelProfile;
     delete japanOverlay.dataset.auxiliaryPanelId;
     delete japanOverlay.dataset.auxiliaryPanelScreenLeft;
     delete japanOverlay.dataset.auxiliaryPanelScreenTop;
@@ -4297,6 +4495,7 @@
               ? `補完値 ${row.recyclePercent.toFixed(1)}% / 近隣5か国 ${row.donorIso3?.join("・") || "参照"}`
               : `国連公式値 ${row.recyclePercent.toFixed(1)}% / ${row.year || "報告年不明"}`,
             "rgba(138,255,202,.96)",
+            { anchor: point },
           );
         }
         ctx.restore();
@@ -4367,6 +4566,7 @@
             row.country,
             `${row.year} · FOSSIL CO₂ ${row.emissionsMtCo2.toFixed(1)} Mt · 点排出源ではない`,
             "rgba(255,151,126,.96)",
+            { anchor: point },
           );
         }
         ctx.restore();
@@ -4379,8 +4579,14 @@
         japanOverlay.dataset.earthquakeLayer = "japan-history";
       } else {
         const yearTransition = getEarthquakeYearTransition(selectedYear, yearEvents, now);
+        const displayedYear = yearTransition.currentYear;
+        const displayedEvents = yearTransition.currentEvents;
+        const strongest = displayedEvents.reduce(
+          (current, event) => !current || event.magnitude > current.magnitude ? event : current,
+          null,
+        );
         const earthProjection = japanView.earthProjection || getEarthProjection(rect);
-        const strongestMagnitude = sequence?.selected?.magnitude || GLOBAL_EARTHQUAKE_MIN_MAGNITUDE;
+        const strongestMagnitude = strongest?.magnitude || GLOBAL_EARTHQUAKE_MIN_MAGNITUDE;
         const strongestImpactRadiusKm = getGlobalEarthquakeImpactRadiusKm(strongestMagnitude);
         const strongestDurationMs = getGlobalEarthquakeWaveDurationMs(strongestImpactRadiusKm);
         const waveProgress = yearTransition.eventReveals.reduce((maximum, reveal) => {
@@ -4389,13 +4595,13 @@
           return Math.max(maximum, clamp(reveal.waveElapsedMs / eventDurationMs, 0, 1));
         }, 0);
         const strongestImpactEllipse = getGlobalEarthquakeImpactEllipse(
-          sequence?.selected || { latitude: 0 },
+          strongest || { latitude: 0 },
           strongestImpactRadiusKm,
           earthProjection,
         );
         japanOverlay.dataset.earthquakeLayer = "world-year";
-        japanOverlay.dataset.earthquakeYear = selectedYear;
-        japanOverlay.dataset.earthquakeYearEventCount = String(yearEvents.length);
+        japanOverlay.dataset.earthquakeYear = displayedYear;
+        japanOverlay.dataset.earthquakeYearEventCount = String(displayedEvents.length);
         japanOverlay.dataset.earthquakeTotalEventCount = String(signalMode.signals.globalEvents?.length || 0);
         japanOverlay.dataset.earthquakeWaveSync = "chronological-sequential-distance-limited";
         japanOverlay.dataset.earthquakeWaveModel = "usgs-estimated-felt-radius";
@@ -4406,18 +4612,26 @@
         japanOverlay.dataset.earthquakeWaveDurationMaxMs = strongestDurationMs.toFixed(0);
         japanOverlay.dataset.earthquakeTimelinePlayback = "auto-loop";
         japanOverlay.dataset.earthquakeYearDwellMs = String(GLOBAL_EARTHQUAKE_YEAR_DWELL_MS);
-        japanOverlay.dataset.earthquakeYearTransitionMode = "chronological-pop";
+        japanOverlay.dataset.earthquakeYearTransitionMode = "chronological-pop-in-out";
+        japanOverlay.dataset.earthquakeYearTransitionPhase = yearTransition.phase;
         japanOverlay.dataset.earthquakeYearTransitionMs = String(yearTransition.durationMs);
         japanOverlay.dataset.earthquakeYearTransitionProgress = yearTransition.progress.toFixed(3);
-        japanOverlay.dataset.earthquakeYearTransitionTo = yearTransition.currentYear;
+        japanOverlay.dataset.earthquakeYearTransitionTo = yearTransition.targetYear;
         japanOverlay.dataset.earthquakeRevealOrder = "occurred-at-ascending";
-        japanOverlay.dataset.earthquakeOrderedEventTimes = yearTransition.currentEvents
+        japanOverlay.dataset.earthquakeExitOrder = "occurred-at-descending";
+        japanOverlay.dataset.earthquakeOrderedEventTimes = displayedEvents
           .map((event) => event.occurredAt || "")
+          .join(",");
+        japanOverlay.dataset.earthquakeExitOrderedEventTimes = yearTransition.exitOrderIndices
+          .map((index) => displayedEvents[index]?.occurredAt || "")
+          .filter(Boolean)
           .join(",");
         japanOverlay.dataset.earthquakeEventStaggerMs = String(GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS);
         japanOverlay.dataset.earthquakeEventAppearMs = String(GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS);
+        japanOverlay.dataset.earthquakeEventExitStaggerMs = String(GLOBAL_EARTHQUAKE_EVENT_EXIT_STAGGER_MS);
+        japanOverlay.dataset.earthquakeEventDisappearMs = String(GLOBAL_EARTHQUAKE_EVENT_DISAPPEAR_MS);
         japanOverlay.dataset.earthquakeVisibleEventCount = String(yearTransition.visibleEventCount);
-        japanOverlay.dataset.earthquakeActiveEventIndex = String(yearTransition.visibleEventCount - 1);
+        japanOverlay.dataset.earthquakeActiveEventIndex = String(yearTransition.activeReveal?.index ?? -1);
         japanOverlay.dataset.earthquakeActiveEventOccurredAt = yearTransition.activeEvent?.occurredAt || "";
         japanOverlay.dataset.earthquakeActiveEventProgress = (yearTransition.activeReveal?.progress || 0).toFixed(3);
         japanOverlay.dataset.earthquakeSelectionLabelWidthPx = "0";
@@ -4428,7 +4642,7 @@
           reveal = null,
           strongest = false,
         } = {}) => {
-          if (reveal && reveal.progress <= 0) return;
+          if (reveal && reveal.alpha <= 0.01) return;
           const point = pointFor({ lon: event.longitude, lat: event.latitude });
           const magnitudeScale = clamp(
             (event.magnitude - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE) /
@@ -4517,26 +4731,29 @@
 
         yearTransition.eventReveals.forEach((reveal) => drawEarthquakeEvent(reveal.event, {
           reveal,
-          strongest: reveal.event.id === sequence?.selected?.id,
+          strongest: reveal.event.id === strongest?.id,
         }));
 
-        const strongest = sequence?.selected;
         const strongestReveal = yearTransition.eventReveals.find(({ event }) => event.id === strongest?.id);
-        if (strongest && strongestReveal?.progress > 0.42) {
+        const strongestLabelAlpha = strongestReveal?.phase === "exit"
+          ? strongestReveal.alpha
+          : clamp(((strongestReveal?.progress || 0) - 0.42) / 0.58, 0, 1);
+        if (strongest && strongestLabelAlpha > 0.01) {
           ctx.save();
-          ctx.globalAlpha *= clamp((strongestReveal.progress - 0.42) / 0.58, 0, 1);
+          ctx.globalAlpha *= strongestLabelAlpha;
           const point = pointFor({ lon: strongest.longitude, lat: strongest.latitude });
           if (visible(point, 80)) {
             const labelBounds = drawSelectionLabel(
               { x: point.x + 14, y: point.y },
-              `${selectedYear} / ${yearEvents.length} EVENTS`,
+              `${displayedYear} / ${displayedEvents.length} EVENTS`,
               `MAX M${strongest.magnitude.toFixed(1)} · 推定可感半径 約${strongestImpactRadiusKm.toLocaleString("ja-JP")} km`,
               "rgba(255,203,126,.96)",
-              { prominent: true },
+              { prominent: true, compactProminent: true, anchor: point },
             );
             japanOverlay.dataset.earthquakeSelectionLabelWidthPx = labelBounds.width.toFixed(1);
             japanOverlay.dataset.earthquakeSelectionLabelHeightPx = labelBounds.height.toFixed(1);
             japanOverlay.dataset.earthquakeSelectionPrimaryFontPx = String(labelBounds.primaryFontPx);
+            japanOverlay.dataset.earthquakeSelectionLabelProfile = "half-scale-compact";
           }
           ctx.restore();
         }
@@ -4631,6 +4848,7 @@
             alpha,
             offsetY: outgoing ? -8 * (1 - alpha) : 10 * (1 - alpha),
             scale: outgoing ? 0.98 + alpha * 0.02 : 0.97 + alpha * 0.03,
+            anchor: point,
           },
         );
       };
@@ -4745,6 +4963,7 @@
             `${selected.country} / RENEWABLE ${selected.renewablePercent.toFixed(1)}%`,
             `SOLAR ${potential.solarKwhM2Day.toFixed(2)} · WIND ${potential.windSpeedMs.toFixed(2)}`,
             "rgba(224,255,249,.98)",
+            { anchor: point },
           );
         }
       }
@@ -4868,6 +5087,7 @@
             `${row.country} / ${row.year}`,
             `${formatObservationNumber(row.population, 0)} 人 · 円の面積が人口に比例`,
             "rgba(255,230,170,.98)",
+            { anchor: point },
           );
         }
         ctx.restore();
@@ -6758,7 +6978,8 @@
       consoleElement.classList.toggle("is-static", !readout.temporal);
     });
     if (mapSignalEncodingLegend) {
-      const showEncodingLegend = Boolean(timelineState);
+      const liveExhibitId = japanLayer.dataset.liveExhibit || "";
+      const showEncodingLegend = Boolean(timelineState || liveExhibitId);
       if (mapSignalEncodingLegendTitle) mapSignalEncodingLegendTitle.hidden = !showEncodingLegend;
       mapSignalEncodingLegend.hidden = !showEncodingLegend;
       if (mapMobileLegendToggle) {
@@ -6768,14 +6989,29 @@
           japanLayer.classList.remove("is-mobile-legend-expanded");
         }
       }
-      mapSignalEncodingLegend.dataset.mode = timelineState?.kind || "co2";
+      mapSignalEncodingLegend.dataset.mode = liveExhibitId ? `live-${liveExhibitId}` : timelineState?.kind || "co2";
       if (showEncodingLegend) {
         const setEncodingLabel = (key, value) => {
           const element = mapSignalEncodingLegend.querySelector(`[data-encoding-label="${key}"]`);
           if (element) element.lastChild.textContent = value;
         };
 
-        if (sequenceState) {
+        if (liveExhibitId) {
+          const labels = liveExhibitId === "wind-field"
+            ? [
+              "色 / 10m風速（青→赤）",
+              "暗い地点 / 取得値なし",
+              "筆の太さ・明度 / 風速に比例",
+              "筆の向き / 風向ではない",
+            ]
+            : [
+              "色と光 / 選択中のライブ指標",
+              "待機表示 / 取得値なし",
+              "密度・明度 / 値に比例",
+              "発生点 / 都道府県代表都市",
+            ];
+          ["heatmap", "nodata", "estimate", "resolution"].forEach((key, index) => setEncodingLabel(key, labels[index]));
+        } else if (sequenceState) {
           const keys = ["heatmap", "nodata", "estimate", "resolution"];
           sequenceState.legend.forEach((label, index) => setEncodingLabel(keys[index], label));
         } else if (isCirculationTimeline) {
@@ -6891,6 +7127,11 @@
     earthquakeYearTransition.generation = -1;
     earthquakeYearTransition.currentYear = "";
     earthquakeYearTransition.currentEvents = [];
+    earthquakeYearTransition.pendingYear = "";
+    earthquakeYearTransition.pendingEvents = [];
+    earthquakeYearTransition.phase = "enter";
+    earthquakeYearTransition.exitStartReveals = [];
+    earthquakeYearTransition.exitOrderIndices = [];
     gosatHeatmapCacheKey = "";
     updateSignalInterface();
   };
@@ -9700,6 +9941,7 @@ for (const country of countryValues) {
       delete canvas.dataset.currentOneStrokePerPoi;
       delete canvas.dataset.currentAllVisiblePoiPainted;
       delete canvas.dataset.currentSampleSelection;
+      delete canvas.dataset.currentDirectionTransform;
       return { count: 0, data: currentFieldData };
     }
     const rect = japanMap.getBoundingClientRect();
@@ -9737,6 +9979,7 @@ for (const country of countryValues) {
     canvas.dataset.currentOneStrokePerPoi = String(samples.length === revealedSamples.length);
     canvas.dataset.currentAllVisiblePoiPainted = String(samples.length === visibleSamples.length);
     canvas.dataset.currentSampleSelection = "all-visible-poi-stable-order";
+    canvas.dataset.currentDirectionTransform = "noaa-east-north-to-gl-local-positive-rotation";
     return { count: samples.length, data: currentFieldData };
   };
 

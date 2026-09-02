@@ -85,12 +85,14 @@ assert.match(appSource, /emissionsEncoding = "country-total-fixed-sqrt-area"/u);
 assert.match(appSource, /emissionRows\.forEach[\s\S]{0,2600}applyMapPlotReveal[\s\S]{0,2600}ctx\.restore\(\);\s*\}\);/u);
 assert.match(content.modes[5].description, /発生日時順.*一つずつ.*点に続いて輪.*可感半径/u);
 assert.match(content.modeConcepts["rhythm-of-disaster"].seeing, /発生日時の早い地震から順.*M7\.5.*約500km.*M9\.1.*約2,000km.*別年度の点は表示しません/u);
-assert.match(content.modeDataNarratives["rhythm-of-disaster"], /初期表示は世界.*約4\.6秒.*自動再生.*発生日時の早い順.*順番に/u);
+assert.match(content.modeDataNarratives["rhythm-of-disaster"], /初期表示は世界.*約4\.6秒.*自動再生.*発生日時の早い順.*逆順に一つずつ収束.*発生日時順/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_WAVE_MIN_DURATION_MS = 2200/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS = 3600/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_YEAR_DWELL_MS = 4600/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS = 220/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS = 460/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_EXIT_STAGGER_MS = 140/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_DISAPPEAR_MS = 320/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_RING_DELAY_MS = 90/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_YEAR_COUNT = 27/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS/u);
@@ -99,6 +101,11 @@ assert.match(appSource, /earthquakeWaveSync = "chronological-sequential-distance
 assert.match(appSource, /earthquakeWaveModel = "usgs-estimated-felt-radius"/u);
 assert.match(appSource, /earthquakeTimelinePlayback = "auto-loop"/u);
 assert.match(appSource, /earthquakeRevealOrder = "occurred-at-ascending"/u);
+assert.match(appSource, /earthquakeExitOrder = "occurred-at-descending"/u);
+assert.match(appSource, /earthquakeExitOrderedEventTimes = yearTransition\.exitOrderIndices/u);
+assert.match(appSource, /earthquakeYearTransitionMode = "chronological-pop-in-out"/u);
+assert.match(appSource, /compactProminent: true/u);
+assert.match(appSource, /earthquakeSelectionLabelProfile = "half-scale-compact"/u);
 assert.match(appSource, /getEarthquakeYearTransition/u);
 assert.match(appSource, /reducedMotionStillAdvances = signalMode\?\.id === "rhythm-of-disaster"/u);
 assert.match(appSource, /setJapanDataLayer\("snapshot"\)/u);
@@ -204,7 +211,7 @@ assert.doesNotMatch(liveDataSource, /ensureSpaceReceipt|data-gaia-live-receipt|g
 assert.doesNotMatch(stylesSource, /gaia-live-receipt|gaia-live-sound-controls/u);
 assert.doesNotMatch(mapGridStylesSource, /gaia-live-receipt/u);
 const liveContracts = [
-  ["10", "wind-field", "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。"],
+  ["10", "wind-field", "Open-Meteoの47都道府県代表都市の風速モデル値を、各地点から立ち上がる筆触の色・太さ・密度へ変換します。"],
   ["11", "carbon-pulse", "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。"],
   ["12", "rain-chorus", "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。"],
   ["13", "temperature-field", "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。"],
@@ -216,6 +223,12 @@ for (const [number, id, caption] of liveContracts) {
   assert(liveExhibitsSource.includes(`caption: "${caption}"`), `${number}: explanatory contract changed`);
 }
 assert.match(liveExhibitsSource, /getContext\("webgl"[\s\S]*WEBGL_FRAGMENT_SOURCE/u);
+assert.match(liveExhibitsSource, /WEBGL_WIND_BRUSH_VERTEX_SOURCE[\s\S]*WEBGL_WIND_BRUSH_FRAGMENT_SOURCE/u);
+assert.match(liveExhibitsSource, /vec3 windPalette[\s\S]*blue[\s\S]*cyan[\s\S]*green[\s\S]*yellow[\s\S]*orange[\s\S]*red/u);
+assert.match(liveExhibitsSource, /gl\.drawArrays\(gl\.TRIANGLES, 0, windPoints\.length \* windBrushCorners\.length\)/u);
+assert.match(liveExhibitsSource, /data-live-poi-step="-1"[\s\S]*data-live-poi-step="1"/u);
+assert.match(liveDataSource, /\/api\/live\/v1\/wind-field/u);
+assert.match(liveDataSource, /gaia:live-wind-field/u);
 assert.match(liveExhibitsSource, /visualLanguage = "continuous-signal-field"/u);
 assert.match(liveExhibitsSource, /vec3 windField[\s\S]*vec3 carbonField[\s\S]*vec3 rainField[\s\S]*vec3 temperatureField[\s\S]*vec3 cloudField[\s\S]*vec3 no2Field/u);
 assert.match(liveExhibitsSource, /location: Object\.freeze\(\{ lon: 139\.6503, lat: 35\.6762, label: "Open-Meteo \/ 東京" \}\)/u);
@@ -252,11 +265,11 @@ assert.doesNotMatch(liveExhibitsSource, /fillRect\(x - 2, y - 1/u, "wind field m
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-japan-focus-3/u);
-assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-shared-map-zoom-1/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-map-speech-bubble-1/u);
+assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-wind-brush-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-human-history-2/u);
-assert.match(modeLoaderSource, /app-content\.js\?v=gaia-map-poi-brush-2/u);
-assert.match(modeLoaderSource, /app\.js\?v=gaia-map-guide-left-to-right-1/u);
+assert.match(modeLoaderSource, /app-content\.js\?v=gaia-earthquake-popout-1/u);
+assert.match(modeLoaderSource, /app\.js\?v=gaia-map-speech-bubble-1/u);
 assert.match(modeLoaderSource, /styles\.css\?v=gaia-map-brush-flow-1/u);
 assert.match(modeLoaderSource, /mode-entry-guide\.js\?v=gaia-live-deck-3/u);
 assert.match(appSource, /setIntroEntryGuideStep\(0\);\s*positionIntroEntryGuide\(\);\s*requestAnimationFrame\(\(\) => \{\s*introEntryGuide\.classList\.add\("is-visible"\)/u);
@@ -276,6 +289,9 @@ assert.match(appSource, /uniform vec4 uCurrentSamples\[\$\{CURRENT_FIELD_SAMPLE_
 assert.match(appSource, /getCurrentFieldUniformData[\s\S]*Math\.hypot\(row\.uMs, row\.vMs\)[\s\S]*Math\.atan2\(row\.vMs, row\.uMs\)/u);
 assert.match(appSource, /gl\.uniform4fv\(uniforms\.currentSamples, currentField\.data\)[\s\S]*gl\.uniform1i\(uniforms\.currentSampleCount, currentField\.count\)/u);
 assert.match(appContentSource, /uCurrentSamples\[i\][\s\S]*measuredSpeed[\s\S]*poiInk[\s\S]*sourceBloom/u);
+assert.match(appContentSource, /vec2 local = rot\(observed\.w\) \* \(p - observed\.xy\)/u);
+assert.doesNotMatch(appContentSource, /vec2 local = rot\(-observed\.w\) \* \(p - observed\.xy\)/u);
+assert.match(appSource, /currentDirectionTransform = "noaa-east-north-to-gl-local-positive-rotation"/u);
 assert.match(appSource, /CURRENT_FIELD_SAMPLE_LIMIT = 96/u);
 assert.match(appSource, /currentSampleSelection = "all-visible-poi-stable-order"/u);
 assert.doesNotMatch(appSource, /\.sort\(\(a, b\) => b\.speed - a\.speed\)/u);
@@ -286,7 +302,7 @@ assert.doesNotMatch(appSource, /lastJapanOverlayRenderAt/u);
 assert.match(appSource, /float grainBlend = smoothstep\(0\.0, 1\.0, fract\(grainTime\)\)/u);
 assert.match(particlesSource, /const installationIsOpen = \(\) => Boolean\(document\.querySelector\("\.experience\.japan-open"\)\)/u);
 assert.match(particlesSource, /&& !installationIsOpen\(\)/u);
-assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-japan-focus-3/u);
+assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-wind-brush-1/u);
 assert.match(html, /id="japan-title" data-exhibit-number="01" aria-label="01 地球の一呼吸" aria-live="polite">地球の一呼吸<\/h2>/u);
 assert.match(html, /id="map-title-transition"[\s\S]{0,120}id="map-title-transition-text"/u);
 assert.match(html, /class="japan-map-actions"[\s\S]{0,320}id="japan-close"/u);
@@ -305,6 +321,12 @@ assert.match(appSource, /compact \? 16 : \(expansive \? 30 : 18\)/u);
 assert.match(appSource, /compact \? 12 : \(expansive \? 20 : 13\)/u);
 assert.match(appSource, /Math\.min\(expansive \? 520 : 340, maximumWidth\)/u);
 assert.match(appSource, /dataset\.selectionLabelSecondaryFontPx/u);
+assert.match(appSource, /const traceSpeechBubble = \(\) =>/u);
+assert.match(appSource, /dataset\.selectionLabelShape = "speech-bubble"/u);
+assert.match(appSource, /dataset\.selectionLabelTailSide = tailOnLeft \? "left" : "right"/u);
+assert.match(appSource, /dataset\.selectionLabelTailLengthPx/u);
+assert.match(appSource, /\{ prominent: true, compactProminent: true, anchor: point \}/u);
+assert.match(appSource, /scale: outgoing \? 0\.98 \+ alpha \* 0\.02 : 0\.97 \+ alpha \* 0\.03,\s*anchor: point/u);
 assert.match(appSource, /signalMode\.id === "blue-circulation"[\s\S]*getMapPlotReveal\(currentIndex, state\.currents\.length, now\)[\s\S]*applyMapPlotReveal\(ctx, point, reveal\)/u);
 assert.match(appSource, /tier: "native", ratioCap: 3, maxPixels: 9000000/u);
 assert.match(appSource, /dataset\.renderPixelRatio/u);

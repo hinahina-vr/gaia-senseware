@@ -148,6 +148,63 @@ try {
   const hokkaidoScreenshot = path.join(output, "map-10-prefecture-01-hokkaido.png");
   await page.screenshot({ path: hokkaidoScreenshot });
 
+  await page.evaluate(() => {
+    globalThis.GaiaLiveExhibits.pausePoiAutoplay();
+    const points = globalThis.GaiaLiveExhibits.observationPoints.map((city, index) => ({
+      id: city.id,
+      name: city.name,
+      lat: city.lat,
+      lon: city.lon,
+      windSpeed: 0.5 + index * 0.4,
+      observedAt: "2026-09-03T00:00:00.000Z",
+      quality: "estimated",
+    }));
+    dispatchEvent(new CustomEvent("gaia:live-wind-field", { detail: {
+      schemaVersion: 1,
+      source: "browser-fixture",
+      generatedAt: "2026-09-03T00:00:00.000Z",
+      points,
+    } }));
+  });
+  await page.waitForFunction(() => Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.windFieldCount || 0) >= 3);
+  const windFieldState = await page.evaluate(() => ({
+    count: Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.windFieldCount),
+    min: Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.windFieldMin),
+    max: Number(document.querySelector("#gaia-live-exhibit-canvas")?.dataset.windFieldMax),
+    source: document.querySelector("#gaia-live-exhibit-canvas")?.dataset.windFieldSource,
+    arrowCount: document.querySelectorAll("[data-live-poi-step]").length,
+    lowColor: getComputedStyle(document.querySelector('[data-live-city-marker="sapporo"] > i')).backgroundColor,
+    highColor: getComputedStyle(document.querySelector('[data-live-city-marker="naha"] > i')).backgroundColor,
+    nahaSpeed: document.querySelector('[data-live-city-marker="naha"]')?.dataset.windSpeed,
+    legend: [...document.querySelectorAll("[data-signal-encoding-legend] dt")].map((item) => item.textContent.trim()),
+  }));
+  assert(windFieldState.count >= 3, `too few visible WebGL wind brushes: ${JSON.stringify(windFieldState)}`);
+  assert(windFieldState.max > windFieldState.min, `wind strengths were flattened: ${JSON.stringify(windFieldState)}`);
+  assert.equal(windFieldState.source, "browser-fixture");
+  assert.equal(windFieldState.arrowCount, 4);
+  assert.notEqual(windFieldState.lowColor, windFieldState.highColor);
+  assert.equal(windFieldState.nahaSpeed, "18.9");
+  assert.deepEqual(windFieldState.legend, [
+    "色 / 10m風速（青→赤）",
+    "暗い地点 / 取得値なし",
+    "筆の太さ・明度 / 風速に比例",
+    "筆の向き / 風向ではない",
+  ]);
+  const windFieldScreenshot = path.join(output, "map-10-prefecture-wind-brush-field.png");
+  await page.waitForTimeout(360);
+  await page.screenshot({ path: windFieldScreenshot });
+
+  await page.locator('.gaia-live-city-picker [data-live-poi-step="1"]').click();
+  await page.waitForFunction(() => (
+    document.querySelector(".japan-layer")?.dataset.livePoiTransition === "settled"
+    && document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity === "aomori"
+  ));
+  await page.locator('.gaia-live-city-picker [data-live-poi-step="-1"]').click();
+  await page.waitForFunction(() => (
+    document.querySelector(".japan-layer")?.dataset.livePoiTransition === "settled"
+    && document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity === "sapporo"
+  ));
+
   await page.evaluate(() => globalThis.GaiaLiveExhibits.resumePoiAutoplay());
   await page.waitForFunction(() => {
     const layer = document.querySelector(".japan-layer");
@@ -183,7 +240,7 @@ try {
   await page.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.observationCity === "sapporo");
   await page.evaluate(() => globalThis.GaiaLiveExhibits.pausePoiAutoplay());
 
-  const screenshots = [hokkaidoScreenshot, transitionScreenshot, aomoriScreenshot];
+  const screenshots = [hokkaidoScreenshot, windFieldScreenshot, transitionScreenshot, aomoriScreenshot];
   for (let index = 0; index < contracts.length; index += 1) {
     const contract = contracts[index];
     await page.locator(`#japan-mode-list [data-live-exhibit="${contract.id}"]`).evaluate((button) => button.click());

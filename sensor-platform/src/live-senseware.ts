@@ -55,10 +55,12 @@ type ObservationCity = (typeof CITY_LOCATIONS)[keyof typeof CITY_LOCATIONS];
 const DEFAULT_CITY = CITY_LOCATIONS.sapporo;
 const cityBbox = (city: ObservationCity): readonly number[] => [city.lon - 0.3, city.lat - 0.25, city.lon + 0.3, city.lat + 0.25];
 const resolveObservationCity = (value: string | null): ObservationCity => CITY_LOCATIONS[value as keyof typeof CITY_LOCATIONS] || DEFAULT_CITY;
-const TRANSFORM_VERSION = "live-senseware-v4-japan-prefectures";
+const TRANSFORM_VERSION = "live-senseware-v5-japan-wind-field";
 const STREAM_LIFETIME_MS = 10 * 60 * 1_000;
 const STREAM_REFRESH_MS = 5 * 60 * 1_000;
 const HEARTBEAT_MS = 15_000;
+const WIND_FIELD_TTL_MS = 5 * 60 * 1_000;
+const WIND_FIELD_CACHE_KEY = "open-meteo-japan-wind-field-v1";
 
 type Provider = "noaa" | "jaxa" | "esa" | "open-meteo";
 type LiveStatus = "near-real-time" | "latest-published" | "stale" | "snapshot";
@@ -102,6 +104,31 @@ interface CachedEvent {
   upstreamLastModified?: string;
 }
 
+interface LiveWindPoint {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  windSpeed: number | null;
+  observedAt: string | null;
+  quality: "estimated" | "missing";
+}
+
+interface LiveWindField {
+  schemaVersion: 1;
+  source: "open-meteo" | "stale-cache" | "unavailable";
+  generatedAt: string;
+  points: LiveWindPoint[];
+  provenance: { sourceUrl: string; licenseUrl: string; transformVersion: string };
+  fallbackReason?: string;
+}
+
+interface CachedWindField {
+  field: LiveWindField;
+  upstreamEtag?: string;
+  upstreamLastModified?: string;
+}
+
 interface ProviderDefinition {
   cacheKey: string;
   ttlMs: number;
@@ -129,7 +156,7 @@ const sourceHeaders = (response: Response): Pick<CachedEvent, "upstreamEtag" | "
   upstreamLastModified: response.headers.get("Last-Modified") || undefined,
 });
 
-const conditionalHeaders = (cached?: CachedEvent): Headers => {
+const conditionalHeaders = (cached?: { upstreamEtag?: string; upstreamLastModified?: string }): Headers => {
   const headers = new Headers({ Accept: "application/json,text/plain;q=0.9,*/*;q=0.5" });
   if (cached?.upstreamEtag) headers.set("If-None-Match", cached.upstreamEtag);
   if (cached?.upstreamLastModified) headers.set("If-Modified-Since", cached.upstreamLastModified);
@@ -139,22 +166,25 @@ const conditionalHeaders = (cached?: CachedEvent): Headers => {
 const cacheRequest = (key: string): Request => new Request(`https://gaia-live-cache.invalid/${encodeURIComponent(key)}`);
 const liveCache = (): Cache => (caches as CacheStorage & { default: Cache }).default;
 
-const readCached = async (key: string): Promise<CachedEvent | undefined> => {
+const readCacheJson = async <Payload>(key: string): Promise<Payload | undefined> => {
   const response = await liveCache().match(cacheRequest(key));
   if (!response) return undefined;
   try {
-    return await response.json<CachedEvent>();
+    return await response.json<Payload>();
   } catch {
     return undefined;
   }
 };
 
-const writeCached = async (key: string, cached: CachedEvent): Promise<void> => {
-  const response = new Response(JSON.stringify(cached), {
+const writeCacheJson = async (key: string, payload: unknown): Promise<void> => {
+  const response = new Response(JSON.stringify(payload), {
     headers: { "Cache-Control": "public, max-age=604800", "Content-Type": "application/json" },
   });
   await liveCache().put(cacheRequest(key), response);
 };
+
+const readCached = (key: string): Promise<CachedEvent | undefined> => readCacheJson<CachedEvent>(key);
+const writeCached = (key: string, cached: CachedEvent): Promise<void> => writeCacheJson(key, cached);
 
 const eventAge = (event: LiveObservationEvent): number => Date.now() - Date.parse(event.retrievedAt);
 
@@ -270,6 +300,8 @@ interface OpenMeteoCurrent {
 }
 
 interface OpenMeteoPayload {
+  latitude?: number;
+  longitude?: number;
   current?: OpenMeteoCurrent;
 }
 
@@ -328,6 +360,97 @@ const loadOpenMeteoWeather = async (headers: Headers, city: ObservationCity): Pr
     },
     ...sourceHeaders(response),
   };
+};
+
+const emptyWindField = (reason: string): LiveWindField => ({
+  schemaVersion: 1,
+  source: "unavailable",
+  generatedAt: new Date().toISOString(),
+  points: Object.values(CITY_LOCATIONS).map((city) => ({
+    id: city.id,
+    name: city.name,
+    lat: city.lat,
+    lon: city.lon,
+    windSpeed: null,
+    observedAt: null,
+    quality: "missing",
+  })),
+  provenance: {
+    sourceUrl: "https://api.open-meteo.com/v1/forecast",
+    licenseUrl: "https://open-meteo.com/en/pricing",
+    transformVersion: TRANSFORM_VERSION,
+  },
+  fallbackReason: reason,
+});
+
+const loadOpenMeteoWindField = async (headers: Headers): Promise<CachedWindField> => {
+  const cities = Object.values(CITY_LOCATIONS);
+  const sourceUrl = new URL("https://api.open-meteo.com/v1/forecast");
+  sourceUrl.search = new URLSearchParams({
+    latitude: cities.map((city) => city.lat).join(","),
+    longitude: cities.map((city) => city.lon).join(","),
+    current: "wind_speed_10m",
+    wind_speed_unit: "ms",
+    timezone: "GMT",
+    forecast_days: "1",
+  }).toString();
+  const response = await fetchWithTimeout(sourceUrl, { headers });
+  if (response.status === 304) throw new Error("Open-Meteo wind field 304 not-modified");
+  if (!response.ok) throw new Error(`Open-Meteo wind field ${response.status}`);
+  const payload = await response.json<OpenMeteoPayload | OpenMeteoPayload[]>();
+  const locations = Array.isArray(payload) ? payload : [payload];
+  if (locations.length !== cities.length) throw new Error(`Open-Meteo wind field expected ${cities.length} locations, received ${locations.length}`);
+  const points = cities.map((city, index): LiveWindPoint => {
+    const current = locations[index]?.current;
+    const windSpeed = numericOrNull(current?.wind_speed_10m);
+    let observedAt: string | null = null;
+    try {
+      observedAt = openMeteoObservedAt(current?.time);
+    } catch {}
+    return {
+      id: city.id,
+      name: city.name,
+      lat: city.lat,
+      lon: city.lon,
+      windSpeed,
+      observedAt,
+      quality: windSpeed === null ? "missing" : "estimated",
+    };
+  });
+  if (!points.some((point) => point.windSpeed !== null)) throw new Error("Open-Meteo wind field values missing");
+  return {
+    field: {
+      schemaVersion: 1,
+      source: "open-meteo",
+      generatedAt: new Date().toISOString(),
+      points,
+      provenance: {
+        sourceUrl: sourceUrl.href,
+        licenseUrl: "https://open-meteo.com/en/pricing",
+        transformVersion: TRANSFORM_VERSION,
+      },
+    },
+    ...sourceHeaders(response),
+  };
+};
+
+const liveWindField = async (env: LiveEnv, ctx: ExecutionContext): Promise<LiveWindField> => {
+  const cached = await readCacheJson<CachedWindField>(WIND_FIELD_CACHE_KEY);
+  const cachedAge = cached ? Date.now() - Date.parse(cached.field.generatedAt) : Number.POSITIVE_INFINITY;
+  if (cached && cachedAge < WIND_FIELD_TTL_MS) return cached.field;
+  if (env.LIVE_SENSEWARE_ENABLED !== "true") {
+    if (!cached) return emptyWindField("LIVE_SENSEWARE_ENABLED is not true");
+    return { ...cached.field, source: "stale-cache", fallbackReason: "LIVE_SENSEWARE_ENABLED is not true" };
+  }
+  try {
+    const fresh = await loadOpenMeteoWindField(conditionalHeaders(cached));
+    ctx.waitUntil(writeCacheJson(WIND_FIELD_CACHE_KEY, fresh));
+    return fresh.field;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Open-Meteo wind field unavailable";
+    if (cached) return { ...cached.field, source: "stale-cache", fallbackReason: reason };
+    return emptyWindField(reason);
+  }
 };
 
 const loadOpenMeteoAir = async (headers: Headers, city: ObservationCity): Promise<CachedEvent> => {
@@ -603,9 +726,15 @@ const streamResponse = (request: Request, env: LiveEnv, ctx: ExecutionContext): 
 
 export const handleLiveSenseware = async (request: Request, env: LiveEnv, ctx: ExecutionContext): Promise<Response | null> => {
   const url = new URL(request.url);
-  if (url.pathname !== "/api/live/v1/snapshot" && url.pathname !== "/api/live/v1/stream") return null;
+  if (!["/api/live/v1/snapshot", "/api/live/v1/stream", "/api/live/v1/wind-field"].includes(url.pathname)) return null;
   if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method Not Allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
   if (url.pathname.endsWith("/stream")) return request.method === "HEAD" ? new Response(null, { headers: { "Content-Type": "text/event-stream; charset=utf-8" } }) : streamResponse(request, env, ctx);
+  if (url.pathname.endsWith("/wind-field")) {
+    const field = await liveWindField(env, ctx);
+    return new Response(request.method === "HEAD" ? null : JSON.stringify(field), {
+      headers: { ...jsonHeaders, "Cache-Control": "public, max-age=60, stale-while-revalidate=240" },
+    });
+  }
   const snapshot = await liveSnapshot(request, env, ctx);
   const body = request.method === "HEAD" ? null : JSON.stringify(snapshot);
   return new Response(body, { headers: jsonHeaders });

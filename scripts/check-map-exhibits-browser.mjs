@@ -14,6 +14,8 @@ const highResolutionOnly = process.argv.slice(6).includes("--high-resolution-onl
 const map06CrossModeOnly = process.argv.slice(6).includes("--map06-cross-mode-only");
 const earthquakeOnly = process.argv.slice(6).includes("--earthquake-only");
 const guideOrderOnly = process.argv.slice(6).includes("--guide-order-only");
+const circulationOnly = process.argv.slice(6).includes("--circulation-only");
+const bubbleOnly = process.argv.slice(6).includes("--bubble-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -428,6 +430,73 @@ try {
       continue;
     }
 
+    if (bubbleOnly) {
+      await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
+      if (viewport.width < 600) {
+        await selectMode(page, 4, "人類世の傷跡");
+      } else {
+        await selectMode(page, 2, "森林と降水量を重ねる");
+      }
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.selectionLabelShape === "speech-bubble"
+          && Number(overlay.dataset.selectionLabelTailLengthPx) >= 8;
+      });
+      await page.waitForTimeout(500);
+      scan.selectionBubble = await page.locator("#japan-overlay").evaluate((element) => ({
+        shape: element.dataset.selectionLabelShape,
+        tailSide: element.dataset.selectionLabelTailSide,
+        tailLength: Number(element.dataset.selectionLabelTailLengthPx),
+        cornerRadius: Number(element.dataset.selectionLabelCornerRadiusPx),
+        width: Number(element.dataset.selectionLabelWidthPx),
+        height: Number(element.dataset.selectionLabelHeightPx),
+      }));
+      assert.equal(scan.selectionBubble.shape, "speech-bubble");
+      assert.match(scan.selectionBubble.tailSide, /^(left|right)$/u);
+      assert.ok(scan.selectionBubble.tailLength >= 8, `bubble tail is missing: ${JSON.stringify(scan.selectionBubble)}`);
+      assert.ok(scan.selectionBubble.cornerRadius >= 8, `bubble corners are too square: ${JSON.stringify(scan.selectionBubble)}`);
+      assert.ok(scan.selectionBubble.width > 0 && scan.selectionBubble.height > 0);
+      const screenshot = path.join(outputDir, `${viewport.name}-03-selection-speech-bubble.png`);
+      await page.locator("#japan-map").screenshot({ path: screenshot });
+      scan.screenshots.push(screenshot);
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
+    if (circulationOnly) {
+      await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
+      await selectMode(page, 1, "海流が14日続いたら");
+      await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.viewAnimation === "idle");
+      await page.waitForFunction(() => {
+        const canvas = document.querySelector("#gaia-canvas");
+        const overlay = document.querySelector("#japan-overlay");
+        return canvas?.dataset.currentAllVisiblePoiPainted === "true"
+          && canvas.dataset.currentDirectionTransform === "noaa-east-north-to-gl-local-positive-rotation"
+          && Number(canvas.dataset.currentVisiblePoiCount) > 0
+          && Number(overlay?.dataset.currentPoiMarkerCount) === Number(canvas.dataset.currentVisiblePoiCount);
+      });
+      await page.waitForTimeout(800);
+      scan.circulationDirection = await page.evaluate(() => ({
+        transform: document.querySelector("#gaia-canvas")?.dataset.currentDirectionTransform,
+        renderedSamples: Number(document.querySelector("#gaia-canvas")?.dataset.currentRenderedSampleCount),
+        markerCount: Number(document.querySelector("#japan-overlay")?.dataset.currentPoiMarkerCount),
+        title: document.querySelector("#japan-title")?.textContent || "",
+      }));
+      assert.equal(scan.circulationDirection.transform, "noaa-east-north-to-gl-local-positive-rotation");
+      assert(scan.circulationDirection.renderedSamples > 0);
+      assert.equal(scan.circulationDirection.markerCount, scan.circulationDirection.renderedSamples);
+      assert.equal(scan.circulationDirection.title, "海流が14日続いたら");
+      const screenshot = path.join(outputDir, `${viewport.name}-02-current-direction-aligned.png`);
+      await page.screenshot({ path: screenshot });
+      scan.screenshots.push(screenshot);
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
     if (earthquakeOnly) {
       await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
       await selectMode(page, 5, "地球からのメッセージ");
@@ -448,6 +517,7 @@ try {
         orderedTimes: (element.dataset.earthquakeOrderedEventTimes || "").split(",").filter(Boolean),
         order: element.dataset.earthquakeRevealOrder,
         mode: element.dataset.earthquakeYearTransitionMode,
+        phase: element.dataset.earthquakeYearTransitionPhase,
         staggerMs: Number(element.dataset.earthquakeEventStaggerMs),
         appearMs: Number(element.dataset.earthquakeEventAppearMs),
       }));
@@ -462,7 +532,8 @@ try {
         "initial earthquake sequence is not chronological",
       );
       assert.equal(scan.earthquakeInitialFirst.order, "occurred-at-ascending");
-      assert.equal(scan.earthquakeInitialFirst.mode, "chronological-pop");
+      assert.equal(scan.earthquakeInitialFirst.mode, "chronological-pop-in-out");
+      assert.equal(scan.earthquakeInitialFirst.phase, "enter");
       assert.equal(scan.earthquakeInitialFirst.staggerMs, 220);
       assert.equal(scan.earthquakeInitialFirst.appearMs, 460);
       const initialFirstScreenshot = path.join(outputDir, `${viewport.name}-06-initial-2000-first-event.png`);
@@ -534,6 +605,51 @@ try {
         element.value = String(((4 + 0.1) / 27) * 100);
         element.dispatchEvent(new Event("input", { bubbles: true }));
       });
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.earthquakeYearTransitionPhase === "exit"
+          && overlay.dataset.earthquakeYearTransitionTo === "2004"
+          && Number(overlay.dataset.earthquakeActiveEventProgress) > 0.18;
+      });
+      scan.earthquakeSequentialExit = await page.locator("#japan-overlay").evaluate((element) => ({
+        displayedYear: element.dataset.earthquakeYear,
+        targetYear: element.dataset.earthquakeYearTransitionTo,
+        phase: element.dataset.earthquakeYearTransitionPhase,
+        order: element.dataset.earthquakeExitOrder,
+        staggerMs: Number(element.dataset.earthquakeEventExitStaggerMs),
+        disappearMs: Number(element.dataset.earthquakeEventDisappearMs),
+        visible: Number(element.dataset.earthquakeVisibleEventCount),
+        orderedTimes: (element.dataset.earthquakeExitOrderedEventTimes || "").split(",").filter(Boolean),
+      }));
+      assert.equal(scan.earthquakeSequentialExit.displayedYear, "2001");
+      assert.equal(scan.earthquakeSequentialExit.targetYear, "2004");
+      assert.equal(scan.earthquakeSequentialExit.phase, "exit");
+      assert.equal(scan.earthquakeSequentialExit.order, "occurred-at-descending");
+      assert.equal(scan.earthquakeSequentialExit.staggerMs, 140);
+      assert.equal(scan.earthquakeSequentialExit.disappearMs, 320);
+      assert.deepEqual(
+        scan.earthquakeSequentialExit.orderedTimes,
+        [...scan.earthquakeSequentialExit.orderedTimes].sort().reverse(),
+        "earthquake fade-out is not reverse chronological",
+      );
+      const sequentialExitScreenshot = path.join(outputDir, `${viewport.name}-06-sequential-pop-out.png`);
+      await page.screenshot({ path: sequentialExitScreenshot });
+      scan.screenshots.push(sequentialExitScreenshot);
+      const exitVisibleCounts = [];
+      for (let sampleIndex = 0; sampleIndex < 12; sampleIndex += 1) {
+        const exitSample = await page.locator("#japan-overlay").evaluate((element) => ({
+          phase: element.dataset.earthquakeYearTransitionPhase,
+          visible: Number(element.dataset.earthquakeVisibleEventCount),
+        }));
+        if (exitSample.phase !== "exit") break;
+        exitVisibleCounts.push(exitSample.visible);
+        await page.waitForTimeout(70);
+      }
+      const exitCountDeltas = exitVisibleCounts.slice(1).map((count, index) => count - exitVisibleCounts[index]);
+      assert(new Set(exitVisibleCounts).size >= 3, `earthquake POIs did not disappear in visible steps: ${JSON.stringify(exitVisibleCounts)}`);
+      assert(exitCountDeltas.every((delta) => delta === 0 || delta === -1), `earthquake POIs disappeared together: ${JSON.stringify(exitVisibleCounts)}`);
+      assert(exitVisibleCounts.at(-1) < exitVisibleCounts[0], `earthquake POI count did not decrease: ${JSON.stringify(exitVisibleCounts)}`);
+      scan.earthquakeSequentialExit.visibleCountSamples = exitVisibleCounts;
       await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.earthquakeYear === "2004");
       await page.waitForFunction(
         () => {
@@ -579,12 +695,15 @@ try {
         width: Number(element.dataset.earthquakeSelectionLabelWidthPx),
         height: Number(element.dataset.earthquakeSelectionLabelHeightPx),
         primaryFont: Number(element.dataset.earthquakeSelectionPrimaryFontPx),
+        profile: element.dataset.earthquakeSelectionLabelProfile,
         eventCount: Number(element.dataset.earthquakeYearEventCount),
       }));
       assert.equal(scan.earthquakeLabel.eventCount, 3);
-      assert.ok(scan.earthquakeLabel.width >= Math.min(340, viewport.width - 32), `earthquake label remains too narrow: ${JSON.stringify(scan.earthquakeLabel)}`);
-      assert.ok(scan.earthquakeLabel.height >= 62, `earthquake label remains too short: ${JSON.stringify(scan.earthquakeLabel)}`);
-      assert.ok(scan.earthquakeLabel.primaryFont >= (viewport.width < 600 ? 14 : 16), `earthquake label text remains too small: ${JSON.stringify(scan.earthquakeLabel)}`);
+      assert.equal(scan.earthquakeLabel.profile, "half-scale-compact");
+      assert.ok(scan.earthquakeLabel.width >= Math.min(300, viewport.width - 32), `earthquake label became too narrow: ${JSON.stringify(scan.earthquakeLabel)}`);
+      assert.ok(scan.earthquakeLabel.width <= Math.min(520, viewport.width - 24), `earthquake label remains oversized: ${JSON.stringify(scan.earthquakeLabel)}`);
+      assert.ok(scan.earthquakeLabel.height >= 54 && scan.earthquakeLabel.height <= 68, `earthquake label height is not compact: ${JSON.stringify(scan.earthquakeLabel)}`);
+      assert.equal(scan.earthquakeLabel.primaryFont, viewport.width < 600 ? 15 : 18);
       const screenshot = path.join(outputDir, `${viewport.name}-06-readable-earthquake-card.png`);
       await page.screenshot({ path: screenshot });
       scan.screenshots.push(screenshot);
@@ -599,7 +718,7 @@ try {
       scan.loader = await page.locator('script[src*="gaia-mode-loader.js"]').getAttribute("src");
       assert.match(
         scan.loader || "",
-        /gaia-mode-loader\.js\?v=gaia-japan-focus-3/u,
+        /gaia-mode-loader\.js\?v=gaia-map-speech-bubble-1/u,
         `${viewport.name}: stale exploration loader cache key`,
       );
 
@@ -1329,6 +1448,7 @@ try {
       oneStrokePerPoi: document.querySelector("#gaia-canvas")?.dataset.currentOneStrokePerPoi,
       allVisiblePoiPainted: document.querySelector("#gaia-canvas")?.dataset.currentAllVisiblePoiPainted,
       sampleSelection: document.querySelector("#gaia-canvas")?.dataset.currentSampleSelection,
+      directionTransform: document.querySelector("#gaia-canvas")?.dataset.currentDirectionTransform,
       brushLanguage: document.querySelector("#gaia-canvas")?.dataset.currentBrushLanguage,
       ambientMotion: document.querySelector("#gaia-canvas")?.dataset.currentAmbientMotion,
       ambientPhase: Number(document.querySelector("#gaia-canvas")?.dataset.currentAmbientPhase),
@@ -1364,6 +1484,7 @@ try {
     assert.equal(circulationVisual.oneStrokePerPoi, "true");
     assert.equal(circulationVisual.allVisiblePoiPainted, "true");
     assert.equal(circulationVisual.sampleSelection, "all-visible-poi-stable-order");
+    assert.equal(circulationVisual.directionTransform, "noaa-east-north-to-gl-local-positive-rotation");
     assert.equal(circulationVisual.poiMarkerStyle, "luminous-ring-above-data-brush");
     scan.circulationVisual = circulationVisual;
     const zoomScreenshot = path.join(outputDir, `${viewport.name}-02-japan-zoom.png`);
@@ -1743,10 +1864,13 @@ try {
       width: Number(element.dataset.earthquakeSelectionLabelWidthPx),
       height: Number(element.dataset.earthquakeSelectionLabelHeightPx),
       primaryFont: Number(element.dataset.earthquakeSelectionPrimaryFontPx),
+      profile: element.dataset.earthquakeSelectionLabelProfile,
     }));
-    assert.ok(earthquakeLabel.width >= Math.min(340, viewport.width - 32), `earthquake label remains too narrow: ${JSON.stringify(earthquakeLabel)}`);
-    assert.ok(earthquakeLabel.height >= 62, `earthquake label remains too short: ${JSON.stringify(earthquakeLabel)}`);
-    assert.ok(earthquakeLabel.primaryFont >= (viewport.width < 600 ? 14 : 16), `earthquake label text remains too small: ${JSON.stringify(earthquakeLabel)}`);
+    assert.equal(earthquakeLabel.profile, "half-scale-compact");
+    assert.ok(earthquakeLabel.width >= Math.min(300, viewport.width - 32), `earthquake label became too narrow: ${JSON.stringify(earthquakeLabel)}`);
+    assert.ok(earthquakeLabel.width <= Math.min(520, viewport.width - 24), `earthquake label remains oversized: ${JSON.stringify(earthquakeLabel)}`);
+    assert.ok(earthquakeLabel.height >= 54 && earthquakeLabel.height <= 68, `earthquake label height is not compact: ${JSON.stringify(earthquakeLabel)}`);
+    assert.equal(earthquakeLabel.primaryFont, viewport.width < 600 ? 15 : 18);
     const earthquakeScreenshot = path.join(outputDir, `${viewport.name}-06-yearly-synchronized-waves.png`);
     await page.screenshot({ path: earthquakeScreenshot });
     scan.screenshots.push(earthquakeScreenshot);

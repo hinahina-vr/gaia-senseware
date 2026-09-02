@@ -3,12 +3,15 @@ import { collectMeasurements } from "./transforms.js";
 
 const FALLBACK_URL = "./data/live-observation-fallback-v1.json";
 const RETRY_DELAYS = [1_000, 2_000, 5_000, 10_000, 30_000];
+const WIND_FIELD_REFRESH_MS = 5 * 60 * 1_000;
 const store = createGaiaStore({ events: [], measurements: {}, connected: false, source: "snapshot", lastEventId: "" });
 let eventSource = null;
 let retryIndex = 0;
 let retryTimer = 0;
 let activeCity = "sapporo";
 let loadGeneration = 0;
+let windFieldRefreshTimer = 0;
+let windField = Object.freeze({ schemaVersion: 1, source: "unavailable", generatedAt: "", points: [] });
 
 const permitsLiveEndpoint = () => location.protocol === "https:" || new URLSearchParams(location.search).get("live") === "1";
 const publish = (events, source, connected = store.getState().connected) => {
@@ -27,6 +30,34 @@ const liveEndpoint = (pathname) => {
   const endpoint = new URL(pathname, location.origin);
   endpoint.searchParams.set("city", activeCity);
   return endpoint;
+};
+
+const publishWindField = (payload) => {
+  const points = Array.isArray(payload?.points) ? payload.points : [];
+  windField = Object.freeze({ ...payload, points: Object.freeze(points.map((point) => Object.freeze({ ...point }))) });
+  globalThis.dispatchEvent(new CustomEvent("gaia:live-wind-field", { detail: windField }));
+  return windField;
+};
+
+const loadWindField = async () => {
+  if (!permitsLiveEndpoint()) {
+    return publishWindField({ schemaVersion: 1, source: "unavailable", generatedAt: "", points: [] });
+  }
+  try {
+    return publishWindField(await readJson(new URL("/api/live/v1/wind-field", location.origin)));
+  } catch (error) {
+    console.warn("Live wind field unavailable; per-prefecture wind brushes are paused.", error);
+    return publishWindField({ schemaVersion: 1, source: "unavailable", generatedAt: new Date().toISOString(), points: [] });
+  }
+};
+
+const scheduleWindFieldRefresh = () => {
+  clearInterval(windFieldRefreshTimer);
+  windFieldRefreshTimer = 0;
+  if (!permitsLiveEndpoint()) return;
+  windFieldRefreshTimer = window.setInterval(() => {
+    if (!document.hidden) void loadWindField();
+  }, WIND_FIELD_REFRESH_MS);
 };
 
 const fallbackEventsForActiveCity = (payload) => (
@@ -128,25 +159,28 @@ const selectCity = async (city) => {
 };
 
 const mount = async () => {
-  const snapshot = await loadSnapshot();
+  const [snapshot] = await Promise.all([loadSnapshot(), loadWindField()]);
   if (snapshot.source !== "snapshot") await connectStream();
+  scheduleWindFieldRefresh();
 };
 
 document.addEventListener("visibilitychange", async () => {
   if (document.hidden) closeStream();
   else {
-    const snapshot = await loadSnapshot();
+    const [snapshot] = await Promise.all([loadSnapshot(), loadWindField()]);
     if (snapshot.source !== "snapshot") await connectStream();
   }
 });
 globalThis.GaiaLiveData = Object.freeze({
   mount,
   refresh: loadSnapshot,
+  refreshWindField: loadWindField,
   reconnect: connectStream,
   close: closeStream,
   selectCity,
   getCity: () => activeCity,
   getState: store.getState,
+  getWindField: () => windField,
 });
 
 export { mount };
