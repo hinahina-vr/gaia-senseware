@@ -432,12 +432,146 @@ try {
       await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
       await selectMode(page, 5, "地球からのメッセージ");
       await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.earthquakeYear === "2000");
+      await page.waitForFunction(
+        () => {
+          const overlay = document.querySelector("#japan-overlay");
+          return Number(overlay?.dataset.earthquakeVisibleEventCount) === 1
+            && Number(overlay?.dataset.earthquakeActiveEventProgress) >= 0.25;
+        },
+      );
+      scan.earthquakeInitialFirst = await page.locator("#japan-overlay").evaluate((element) => ({
+        year: element.dataset.earthquakeYear,
+        total: Number(element.dataset.earthquakeYearEventCount),
+        visible: Number(element.dataset.earthquakeVisibleEventCount),
+        activeIndex: Number(element.dataset.earthquakeActiveEventIndex),
+        activeOccurredAt: element.dataset.earthquakeActiveEventOccurredAt,
+        orderedTimes: (element.dataset.earthquakeOrderedEventTimes || "").split(",").filter(Boolean),
+        order: element.dataset.earthquakeRevealOrder,
+        mode: element.dataset.earthquakeYearTransitionMode,
+        staggerMs: Number(element.dataset.earthquakeEventStaggerMs),
+        appearMs: Number(element.dataset.earthquakeEventAppearMs),
+      }));
+      assert.equal(scan.earthquakeInitialFirst.year, "2000");
+      assert.equal(scan.earthquakeInitialFirst.total, 7);
+      assert.equal(scan.earthquakeInitialFirst.visible, 1);
+      assert.equal(scan.earthquakeInitialFirst.activeIndex, 0);
+      assert.equal(scan.earthquakeInitialFirst.activeOccurredAt, scan.earthquakeInitialFirst.orderedTimes[0]);
+      assert.deepEqual(
+        scan.earthquakeInitialFirst.orderedTimes,
+        [...scan.earthquakeInitialFirst.orderedTimes].sort(),
+        "initial earthquake sequence is not chronological",
+      );
+      assert.equal(scan.earthquakeInitialFirst.order, "occurred-at-ascending");
+      assert.equal(scan.earthquakeInitialFirst.mode, "chronological-pop");
+      assert.equal(scan.earthquakeInitialFirst.staggerMs, 220);
+      assert.equal(scan.earthquakeInitialFirst.appearMs, 460);
+      const initialFirstScreenshot = path.join(outputDir, `${viewport.name}-06-initial-2000-first-event.png`);
+      await page.screenshot({ path: initialFirstScreenshot });
+      scan.screenshots.push(initialFirstScreenshot);
+      await page.waitForFunction(
+        () => Number(document.querySelector("#japan-overlay")?.dataset.earthquakeVisibleEventCount) >= 4,
+      );
+      const initialSequenceScreenshot = path.join(outputDir, `${viewport.name}-06-initial-2000-sequence.png`);
+      await page.screenshot({ path: initialSequenceScreenshot });
+      scan.screenshots.push(initialSequenceScreenshot);
+      await page.waitForFunction(
+        () => Number(document.querySelector("#japan-overlay")?.dataset.earthquakeVisibleEventCount) === 7
+          && Number(document.querySelector("#japan-overlay")?.dataset.earthquakeYearTransitionProgress) >= 0.999,
+      );
+      const initialSettledScreenshot = path.join(outputDir, `${viewport.name}-06-initial-2000-settled.png`);
+      await page.screenshot({ path: initialSettledScreenshot });
+      scan.screenshots.push(initialSettledScreenshot);
+      const automaticStartedAt = Date.now();
+      await page.waitForFunction(
+        () => document.querySelector("#japan-overlay")?.dataset.earthquakeYear === "2001",
+        null,
+        { timeout: 6500 },
+      );
+      scan.earthquakeAutomaticAdvanceMs = Date.now() - automaticStartedAt;
+      assert.ok(
+        scan.earthquakeAutomaticAdvanceMs < 6500,
+        `earthquake year did not auto-advance promptly: ${scan.earthquakeAutomaticAdvanceMs}ms`,
+      );
+      await page.waitForFunction(
+        () => {
+          const overlay = document.querySelector("#japan-overlay");
+          return Number(overlay?.dataset.earthquakeVisibleEventCount) === 1
+            && Number(overlay?.dataset.earthquakeActiveEventProgress) >= 0.25;
+        },
+      );
+      scan.earthquakeAutoTransition = await page.locator("#japan-overlay").evaluate((element) => ({
+        playback: element.dataset.earthquakeTimelinePlayback,
+        dwellMs: Number(element.dataset.earthquakeYearDwellMs),
+        transitionMs: Number(element.dataset.earthquakeYearTransitionMs),
+        progress: Number(element.dataset.earthquakeYearTransitionProgress),
+        to: element.dataset.earthquakeYearTransitionTo,
+        visible: Number(element.dataset.earthquakeVisibleEventCount),
+        activeIndex: Number(element.dataset.earthquakeActiveEventIndex),
+        activeOccurredAt: element.dataset.earthquakeActiveEventOccurredAt,
+        orderedTimes: (element.dataset.earthquakeOrderedEventTimes || "").split(",").filter(Boolean),
+        displayKey: document.querySelector("#co2-timeline-display")?.dataset.timeTransitionKey,
+      }));
+      assert.equal(scan.earthquakeAutoTransition.playback, "auto-loop");
+      assert.equal(scan.earthquakeAutoTransition.dwellMs, 4600);
+      assert.equal(scan.earthquakeAutoTransition.transitionMs, 1780);
+      assert.equal(scan.earthquakeAutoTransition.to, "2001");
+      assert.equal(scan.earthquakeAutoTransition.visible, 1);
+      assert.equal(scan.earthquakeAutoTransition.activeIndex, 0);
+      assert.equal(scan.earthquakeAutoTransition.activeOccurredAt, scan.earthquakeAutoTransition.orderedTimes[0]);
+      assert.ok(scan.earthquakeAutoTransition.progress > 0 && scan.earthquakeAutoTransition.progress < 1);
+      assert.equal(scan.earthquakeAutoTransition.displayKey, "rhythm-of-disaster:2001");
+      const autoTransitionScreenshot = path.join(outputDir, `${viewport.name}-06-auto-2001-first-event.png`);
+      await page.screenshot({ path: autoTransitionScreenshot });
+      scan.screenshots.push(autoTransitionScreenshot);
+      await page.waitForFunction(
+        () => Number(document.querySelector("#japan-overlay")?.dataset.earthquakeVisibleEventCount) >= 4,
+      );
+      const autoSequenceScreenshot = path.join(outputDir, `${viewport.name}-06-auto-2001-sequence.png`);
+      await page.screenshot({ path: autoSequenceScreenshot });
+      scan.screenshots.push(autoSequenceScreenshot);
       const earthquakeSlider = page.locator("#japan-layer [data-signal-time]").first();
       await earthquakeSlider.evaluate((element) => {
         element.value = String(((4 + 0.1) / 27) * 100);
         element.dispatchEvent(new Event("input", { bubbles: true }));
       });
       await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.earthquakeYear === "2004");
+      await page.waitForFunction(
+        () => {
+          const overlay = document.querySelector("#japan-overlay");
+          return Number(overlay?.dataset.earthquakeVisibleEventCount) === 1
+            && Number(overlay?.dataset.earthquakeActiveEventProgress) >= 0.25;
+        },
+      );
+      scan.earthquakeManualFirst = await page.locator("#japan-overlay").evaluate((element) => ({
+        visible: Number(element.dataset.earthquakeVisibleEventCount),
+        activeIndex: Number(element.dataset.earthquakeActiveEventIndex),
+        activeOccurredAt: element.dataset.earthquakeActiveEventOccurredAt,
+        orderedTimes: (element.dataset.earthquakeOrderedEventTimes || "").split(",").filter(Boolean),
+      }));
+      assert.equal(scan.earthquakeManualFirst.visible, 1);
+      assert.equal(scan.earthquakeManualFirst.activeIndex, 0);
+      assert.equal(scan.earthquakeManualFirst.activeOccurredAt, scan.earthquakeManualFirst.orderedTimes[0]);
+      const manualFirstScreenshot = path.join(outputDir, `${viewport.name}-06-manual-2004-first-event.png`);
+      await page.screenshot({ path: manualFirstScreenshot });
+      scan.screenshots.push(manualFirstScreenshot);
+      await page.waitForFunction(
+        () => {
+          const overlay = document.querySelector("#japan-overlay");
+          return overlay?.dataset.earthquakeYear === "2004"
+            && Number(overlay.dataset.earthquakeVisibleEventCount) >= 2;
+        },
+      );
+      const manualSequenceScreenshot = path.join(outputDir, `${viewport.name}-06-manual-2004-sequence.png`);
+      await page.screenshot({ path: manualSequenceScreenshot });
+      scan.screenshots.push(manualSequenceScreenshot);
+      await page.waitForFunction(
+        () => {
+          const overlay = document.querySelector("#japan-overlay");
+          return overlay?.dataset.earthquakeYear === "2004"
+            && Number(overlay.dataset.earthquakeVisibleEventCount) === 3
+            && Number(overlay.dataset.earthquakeSelectionPrimaryFontPx) > 0;
+        },
+      );
       await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
       await waitForReferenceMap(page);
       await page.waitForTimeout(500);
@@ -465,7 +599,7 @@ try {
       scan.loader = await page.locator('script[src*="gaia-mode-loader.js"]').getAttribute("src");
       assert.match(
         scan.loader || "",
-        /gaia-mode-loader\.js\?v=gaia-map-guide-left-to-right-1/u,
+        /gaia-mode-loader\.js\?v=gaia-japan-focus-3/u,
         `${viewport.name}: stale exploration loader cache key`,
       );
 
@@ -1569,7 +1703,7 @@ try {
       year: "2000",
       eventCount: 7,
       totalCount: undefined,
-      sync: "annual-simultaneous-distance-limited",
+      sync: "chronological-sequential-distance-limited",
       model: "usgs-estimated-felt-radius",
       target: "global",
       zoom: 1,
@@ -1596,10 +1730,10 @@ try {
     assert.equal(earthquakeWave.year, "2004");
     assert.equal(earthquakeWave.eventCount, 3);
     assert.ok(earthquakeWave.progress > waveStart);
-    assert.ok(earthquakeWave.progress < 0.08, `earthquake wave expanded too quickly: ${earthquakeWave.progress}`);
+    assert.ok(earthquakeWave.progress < 0.2, `earthquake wave expanded too quickly: ${earthquakeWave.progress}`);
     assert.equal(earthquakeWave.model, "usgs-estimated-felt-radius");
     assert.equal(earthquakeWave.maxRadiusKm, 2000);
-    assert.equal(earthquakeWave.durationMs, 15000);
+    assert.equal(earthquakeWave.durationMs, 3600);
     assert.ok(earthquakeWave.maxRadius > 40);
     assert.ok(earthquakeWave.maxRadius < viewport.width * 0.25);
     assert.ok(earthquakeWave.maxRadiusX >= earthquakeWave.maxRadius);
@@ -1619,7 +1753,7 @@ try {
     await page.waitForFunction(
       () => Number(document.querySelector("#japan-overlay")?.dataset.earthquakeWaveProgress) >= 0.999,
       null,
-      { timeout: 16000 },
+      { timeout: 5000 },
     );
     const earthquakeSettledScreenshot = path.join(outputDir, `${viewport.name}-06-estimated-felt-radius-settled.png`);
     await page.screenshot({ path: earthquakeSettledScreenshot });

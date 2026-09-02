@@ -51,6 +51,7 @@ const focusModeButton = async (page, locator, expectedCopy = null) => {
 try {
   for (const viewport of [
     { name: "pc", width: 1440, height: 900 },
+    { name: "4k", width: 3840, height: 2088 },
     { name: "tablet", width: 768, height: 900 },
     { name: "mobile", width: 390, height: 844, isMobile: true },
     { name: "mobile-320", width: 320, height: 568, isMobile: true },
@@ -129,6 +130,7 @@ try {
         ),
       };
     });
+    const modeLabelTypography = [];
     assert.deepEqual(scan.groupLabels, ["MAP地図"], `${viewport.name}: the main bank must contain only map choices`);
     if (!integrationOnly) {
       assert.equal(scan.visibleButtons, 15, `${viewport.name}: not all map buttons are visible together`);
@@ -291,7 +293,29 @@ try {
         && document.querySelector("#gaia-canvas")?.dataset.integratedMapMode === number
         && document.querySelector("#japan-mode-number")?.textContent?.trim() === number, expected);
       if (captureIntegratedModes) {
-        await page.waitForTimeout(1700);
+        // The title separator runs first, then POIs reveal across 1.61 seconds.
+        // Capture only after the complete entrance so late-order selected POIs
+        // (notably Japan in MAP 05) cannot disappear from visual evidence.
+        await page.waitForTimeout(3300);
+        // MAP 03–08 share this country/event label. The active selection can be
+        // outside a narrow viewport, so validate it whenever it is actually drawn.
+        if (index >= 2) {
+          const labelTypography = await page.locator("#japan-overlay").evaluate((element) => ({
+            width: Number(element.dataset.selectionLabelWidthPx),
+            height: Number(element.dataset.selectionLabelHeightPx),
+            primaryFont: Number(element.dataset.selectionLabelPrimaryFontPx),
+            secondaryFont: Number(element.dataset.selectionLabelSecondaryFontPx),
+          }));
+          if (labelTypography.primaryFont > 0) {
+            const compact = viewport.width < 600;
+            const expansive = viewport.width >= 2400;
+            assert.ok(labelTypography.width >= Math.min(expansive ? 520 : 340, viewport.width - 24), `${viewport.name} MAP ${expected}: selection label remains too narrow: ${JSON.stringify(labelTypography)}`);
+            assert.ok(labelTypography.height >= (compact ? 68 : (expansive ? 106 : 72)), `${viewport.name} MAP ${expected}: selection label remains too short: ${JSON.stringify(labelTypography)}`);
+            assert.ok(labelTypography.primaryFont >= (compact ? 16 : (expansive ? 30 : 18)), `${viewport.name} MAP ${expected}: primary label remains too small: ${JSON.stringify(labelTypography)}`);
+            assert.ok(labelTypography.secondaryFont >= (compact ? 12 : (expansive ? 20 : 13)), `${viewport.name} MAP ${expected}: secondary label remains too small: ${JSON.stringify(labelTypography)}`);
+            modeLabelTypography.push({ mode: expected, ...labelTypography });
+          }
+        }
         await page.screenshot({ path: path.join(outputDir, `${viewport.name}-map-${expected}-integrated-light.png`), fullPage: false });
       }
     }
@@ -321,7 +345,7 @@ try {
 
     const screenshot = path.join(outputDir, `${viewport.name}-unified-world-bank.png`);
     await page.screenshot({ path: screenshot, fullPage: false });
-    report.scans.push({ viewport, screenshot, ...scan });
+    report.scans.push({ viewport, screenshot, modeLabelTypography, ...scan });
     await context.close();
   }
 

@@ -11,6 +11,7 @@
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-shared-map-zoom-1",
+        "./estat-exhibits.css?v=gaia-estat-nature-2",
         "./statistics-lab.css?v=gaia-statistics-insight-workspace-2",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
@@ -25,7 +26,7 @@
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
       modules: [
-        "./src/exploration/index.js?v=gaia-shared-map-zoom-1",
+        "./src/exploration/index.js?v=gaia-japan-focus-3",
         "./statistics-lab.js?v=gaia-statistics-insight-workspace-2",
       ],
     },
@@ -84,10 +85,10 @@
       templates: ["gaia-template-sound"],
       styles: [
         "./styles.css?v=gaia-title-meta-removed-1",
-        "./sound-mode.css?v=gaia-sound-crystal-universe-3",
+        "./sound-mode.css?v=gaia-sound-deep-galaxy-orbit-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
-      scripts: ["./sound-mode.js?v=gaia-sound-crystal-universe-3"],
+      scripts: ["./sound-mode.js?v=gaia-sound-deep-galaxy-orbit-1"],
     },
     character: {
       templates: ["gaia-template-character"],

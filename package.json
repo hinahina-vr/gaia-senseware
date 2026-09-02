@@ -14,6 +14,7 @@
     "check:user-script": "node scripts/import-plain-story.mjs story/USER_SCRIPT_2026-08-24.txt story/APPROVED_SCRIPT_2026-08-24.md --check",
     "check:main-overlay": "node --check scripts/check-main-overlay-layout-browser.mjs",
     "check:map-overlay": "node --check scripts/check-map-overlay-layout-browser.mjs",
+    "check:estat-map": "node --check src/exploration/estat-prefecture-data.js && node --check src/exploration/estat-exhibits.js && node --check scripts/check-estat-exhibits-browser.mjs && node scripts/check-estat-prefecture-series.mjs",
     "check:ovation-aurora": "node --check scripts/check-ovation-aurora-browser.mjs",
     "check:statistics-lab": "node --check statistics-lab-core.js && node --check statistics-lab.js && node --check statistics-lab-worker.js && node --check scripts/check-statistics-lab-browser.mjs && node scripts/check-statistics-lab.mjs",
     "audio:trueend": "node scripts/build-true-end-score.mjs",

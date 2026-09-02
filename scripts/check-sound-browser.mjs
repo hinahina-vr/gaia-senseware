@@ -97,22 +97,41 @@ try {
   assert(/uniform float pulse;/u.test(visualRuntimeSource) && /uniform float flux;/u.test(visualRuntimeSource) && /uniform float wave;/u.test(visualRuntimeSource), "transient, spectral-flux, and waveform motion are not connected to the shader");
   assert(/uniform float densityResponse;/u.test(visualRuntimeSource) && /uniform float meanderResponse;/u.test(visualRuntimeSource) && /uniform float causticResponse;/u.test(visualRuntimeSource), "the three mapped visual response channels are not connected to the shader");
   assert(!/equalizerRuntime|equalizerCanvas/u.test(visualRuntimeSource), "the detached EQ visualizer is still wired into the sound mode");
-  assert(/lightColor = mix\(lightColor, vec3\(0\.03, 0\.22, 1\.0\), bass/u.test(visualRuntimeSource)
-    && /lightColor = mix\(lightColor, vec3\(0\.00, 0\.96, 0\.67\), mid/u.test(visualRuntimeSource)
-    && /audioSize = 1\.0 \+ high/u.test(visualRuntimeSource), "the crystal field does not expose distinct bass, mid, and high color/particle responses");
-  assert(/Repeating luminous planes/u.test(visualRuntimeSource)
-    && /Hanging light strands/u.test(visualRuntimeSource)
-    && /Faceted diamonds and X-shaped braces/u.test(visualRuntimeSource)
-    && /Sparse motes/u.test(visualRuntimeSource), "the crystal installation is missing a depth layer or particle class");
+  assert(/attribute float tone;/u.test(visualRuntimeSource)
+    && /uniform vec4 timbreLow;/u.test(visualRuntimeSource)
+    && /uniform vec4 timbreHigh;/u.test(visualRuntimeSource)
+    && /float sampleTimbre\(float selector\)/u.test(visualRuntimeSource)
+    && /float localTimbre = sampleTimbre\(tone\);/u.test(visualRuntimeSource)
+    && /float spectralEdge = max/u.test(visualRuntimeSource), "the 32-bin FFT is not mapped into local per-object timbre responses");
+  assert(/stellarPalette/u.test(visualRuntimeSource)
+    && /oStar = vec3\(0\.46, 0\.58, 1\.18\)/u.test(visualRuntimeSource)
+    && /gStar = vec3\(1\.00, 0\.92, 0\.78\)/u.test(visualRuntimeSource)
+    && /mStar = vec3\(1\.16, 0\.36, 0\.20\)/u.test(visualRuntimeSource)
+    && /hydrogenAlpha/u.test(visualRuntimeSource)
+    && /oxygenThree/u.test(visualRuntimeSource), "stellar temperature classes or physical nebula emission colours are missing");
+  assert(/attribute float temperature;/u.test(visualRuntimeSource)
+    && /const clusterTemperature =/u.test(visualRuntimeSource)
+    && /float localHue = fract\(temperature/u.test(visualRuntimeSource)
+    && !/float localHue =[^;]*tone/u.test(visualRuntimeSource), "stellar colour is still coupled to FFT-bin ownership, so equal colours would flash together");
+  assert(/broad 3D star volume/u.test(visualRuntimeSource)
+    && /logarithmic arms/u.test(visualRuntimeSource)
+    && /gaseous knots/u.test(visualRuntimeSource)
+    && /Compact star nurseries/u.test(visualRuntimeSource)
+    && /Fine dust/u.test(visualRuntimeSource), "the galaxy installation is missing a depth layer or particle class");
   assert(!/currentCore|currentContour|paleCore/u.test(visualRuntimeSource), "tube-like cores or vessel contours remain in the sound visualizer");
   assert(!/upperCenter|lowerCenter|upperWidth|lowerWidth/u.test(visualRuntimeSource), "the former two straight slab bands remain in the shader");
   assert(!/spectralRibbons|filament|tremor|interference/u.test(visualRuntimeSource), "the aggressive filament motion remains in the sound visualizer");
   assert(!/earthCenter|earthRadius|earthSurface|earthDisc|earthX|earthY/u.test(visualRuntimeSource), "Earth rendering remains in the WebGL or Canvas visualizer");
   assert(!/gl\.LINES|spectral-weave/u.test(visualRuntimeSource), "legacy line geometry remains in the visualizer");
   assert(!/sound-layer-grid|sound-spectral-grid/u.test(visualStyleSource), "digital grid styling remains in the sound installation");
-  assert(/float travelSpeed = mix\(0\.10, 0\.58, playing\);/u.test(visualRuntimeSource), "crystal field no longer uses one-way constant travel");
-  assert(/float focalLength = 1\.28;/u.test(visualRuntimeSource), "audio is changing the camera focal length again");
+  assert(/float travelSpeed = mix\(0\.035, 0\.16, playing\);/u.test(visualRuntimeSource), "galaxy field no longer uses slow one-way constant travel");
+  assert(/reduced \? 0\.16 : 2\.08/u.test(visualRuntimeSource), "normal galaxy time is not accelerated to exactly four times the previous 0.52 rate");
+  assert(/float focalLength = 1\.34;/u.test(visualRuntimeSource), "audio is changing the camera focal length again");
+  assert(/uniform vec2 viewRotation;/u.test(visualRuntimeSource)
+    && /yawCos/u.test(visualRuntimeSource)
+    && /pitchCos/u.test(visualRuntimeSource), "left-drag no longer rotates the galaxy in three dimensions");
   assert(!/bassBreath|room \*=|focalLength\s*=\s*[^;]*(?:bass|pulse|energy)/u.test(visualRuntimeSource), "audio-driven whole-field scaling returned");
+  assert(!/lightColor \*=\s*[^;]*energy|0\.78 \+ energy/u.test(visualRuntimeSource), "overall energy is illuminating the whole galaxy again");
   await page.goto(routeUrl, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => {
     const layer = document.querySelector("#sound-layer");
@@ -137,6 +156,9 @@ try {
       motionProfile: canvas.dataset.motionProfile,
       formLanguage: canvas.dataset.formLanguage,
       palette: canvas.dataset.palette,
+      illumination: canvas.dataset.illumination,
+      motionRate: canvas.dataset.motionRate,
+      timbreBins: canvas.dataset.timbreBins,
       geometryPoints: Number(canvas.dataset.geometryPoints || 0),
       width: rect.width,
       height: rect.height,
@@ -159,14 +181,17 @@ try {
   });
   assert(
     desktopVisualizer.renderer === "webgl"
-      && desktopVisualizer.visualizer === "audio-reactive-crystal-universe"
+      && desktopVisualizer.visualizer === "audio-reactive-deep-galaxy"
       && desktopVisualizer.presentation === "full-screen-webgl"
       && desktopVisualizer.audioAnalysis === "fft-spectrum-flux-waveform"
-      && desktopVisualizer.reactivity === "audio-color-particle-size-density-and-spark"
-      && desktopVisualizer.motionProfile === "single-direction-infinite-led-drift"
-      && desktopVisualizer.formLanguage === "crystalline-perspective-light-field"
-      && desktopVisualizer.palette === "sapphire-lagoon-orchid-amber-track-palettes"
-      && desktopVisualizer.geometryPoints >= 10000
+      && desktopVisualizer.reactivity === "fft8-local-timbre-regions"
+      && desktopVisualizer.motionProfile === "fourfold-single-direction-galactic-drift"
+      && desktopVisualizer.formLanguage === "spiral-nebula-starfield"
+      && desktopVisualizer.palette === "stellar-obafgkm-and-emission-nebulae"
+      && desktopVisualizer.illumination === "per-cluster-spectral-bin"
+      && desktopVisualizer.motionRate === "4x"
+      && desktopVisualizer.timbreBins === "8"
+      && desktopVisualizer.geometryPoints >= 19000
       && desktopVisualizer.width > 300
       && desktopVisualizer.height > 280
       && desktopVisualizer.legacyPlanetCount === 0
@@ -176,7 +201,7 @@ try {
       && desktopVisualizer.visualizerOpacity === 0
       && desktopVisualizer.visualizerVisibility === "hidden"
       && desktopVisualizer.visualizerFilter.includes("blur"),
-    `desktop WebGL crystal-universe installation failed: ${JSON.stringify(desktopVisualizer)}`,
+    `desktop WebGL deep-galaxy installation failed: ${JSON.stringify(desktopVisualizer)}`,
   );
   assert(desktopVisualizer.eqCount === 0, `the detached desktop EQ visualizer is still present: ${JSON.stringify(desktopVisualizer)}`);
   assert(desktopVisualizer.width >= 2048 && desktopVisualizer.height >= 1114, `desktop WebGL field is not viewport-sized: ${JSON.stringify(desktopVisualizer)}`);
@@ -267,7 +292,7 @@ try {
     sceneFilter: getComputedStyle(document.querySelector(".sound-character-scene")).filter,
     visualizerFilter: getComputedStyle(document.querySelector("#sound-visualizer")).filter,
   }));
-  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.98 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.2 && playingAppearance.sceneOpacity <= 0.32 && !playingAppearance.sceneFilter.includes("blur") && playingAppearance.visualizerFilter.includes("saturate(1.38)") && playingAppearance.visualizerFilter.includes("contrast(1.14)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
+  assert(playingAppearance.playing === "true" && playingAppearance.visualizerOpacity >= 0.98 && playingAppearance.visualizerVisibility === "visible" && playingAppearance.visualizerRect.left <= 0 && playingAppearance.visualizerRect.top <= 0 && playingAppearance.visualizerRect.right >= 2048 && playingAppearance.visualizerRect.bottom >= 1114 && playingAppearance.sceneOpacity >= 0.2 && playingAppearance.sceneOpacity <= 0.32 && !playingAppearance.sceneFilter.includes("blur") && playingAppearance.visualizerFilter.includes("saturate(1.2)") && playingAppearance.visualizerFilter.includes("contrast(1.08)"), `playback reveal failed: ${JSON.stringify(playingAppearance)}`);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop.png"), fullPage: true });
   const reactiveRange = await page.evaluate(async () => {
     const samples = [];
@@ -283,6 +308,7 @@ try {
         densityResponse: Number(canvas?.dataset.densityResponse || 0),
         meanderResponse: Number(canvas?.dataset.meanderResponse || 0),
         causticResponse: Number(canvas?.dataset.causticResponse || 0),
+        timbre: String(canvas?.dataset.timbreProfile || "").split(",").map(Number),
         rawBass: Number(globalThis.GaiaOpeningAudio?.getAnalysisFrame?.().bands?.[0] || 0),
         rawMid: Number(globalThis.GaiaOpeningAudio?.getAnalysisFrame?.().bands?.[1] || 0),
       });
@@ -292,9 +318,14 @@ try {
       const values = samples.map((sample) => sample[key]);
       return { min: Math.min(...values), max: Math.max(...values), delta: Math.max(...values) - Math.min(...values) };
     };
-    return { bass: range("bass"), mid: range("mid"), high: range("high"), energy: range("energy"), pulse: range("pulse"), flux: range("flux"), densityResponse: range("densityResponse"), meanderResponse: range("meanderResponse"), causticResponse: range("causticResponse"), rawBass: range("rawBass"), rawMid: range("rawMid") };
+    const timbreRanges = Array.from({ length: 8 }, (_, bin) => {
+      const values = samples.map((sample) => Number(sample.timbre[bin] || 0));
+      return { min: Math.min(...values), max: Math.max(...values), delta: Math.max(...values) - Math.min(...values) };
+    });
+    const timbreSpread = Math.max(...samples.map((sample) => Math.max(...sample.timbre) - Math.min(...sample.timbre)));
+    return { bass: range("bass"), mid: range("mid"), high: range("high"), energy: range("energy"), pulse: range("pulse"), flux: range("flux"), densityResponse: range("densityResponse"), meanderResponse: range("meanderResponse"), causticResponse: range("causticResponse"), rawBass: range("rawBass"), rawMid: range("rawMid"), timbreRanges, timbreSpread };
   });
-  assert(reactiveRange.bass.max >= 0.08 && reactiveRange.energy.max >= 0.08 && reactiveRange.densityResponse.max >= 0.20 && reactiveRange.meanderResponse.max >= 0.20 && reactiveRange.causticResponse.max >= 0.10 && reactiveRange.densityResponse.delta >= 0.015 && reactiveRange.meanderResponse.delta >= 0.035 && reactiveRange.causticResponse.delta >= 0.06, `audio response is still visually inert: ${JSON.stringify(reactiveRange)}`);
+  assert(reactiveRange.bass.max >= 0.08 && reactiveRange.energy.max >= 0.08 && reactiveRange.densityResponse.max >= 0.20 && reactiveRange.meanderResponse.max >= 0.20 && reactiveRange.causticResponse.max >= 0.10 && reactiveRange.densityResponse.delta >= 0.015 && reactiveRange.meanderResponse.delta >= 0.035 && reactiveRange.causticResponse.delta >= 0.06 && reactiveRange.timbreSpread >= 0.10 && reactiveRange.timbreRanges.filter((range) => range.delta >= 0.012).length >= 3, `audio response is not locally differentiated across timbre bins: ${JSON.stringify(reactiveRange)}`);
   report.reactiveRange = reactiveRange;
   await page.waitForTimeout(4000);
   await page.screenshot({ path: path.join(outputDir, "sound-desktop-later.png"), fullPage: true });
@@ -346,7 +377,7 @@ try {
     visualizerRect: document.querySelector("#sound-visualizer").getBoundingClientRect().toJSON(),
   }));
   assert(mobileGeometry.count === 12 && !mobileGeometry.horizontalOverflow && mobileGeometry.layoutScrolls, `mobile sound archive layout failed: ${JSON.stringify(mobileGeometry)}`);
-  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "audio-reactive-crystal-universe" && mobileGeometry.presentation === "full-screen-webgl" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.planetariumCount === 0 && mobileGeometry.guideCount === 0 && mobileGeometry.digitalGridCount === 0, `mobile WebGL audio field failed: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.renderer === "webgl" && mobileGeometry.visualizer === "audio-reactive-deep-galaxy" && mobileGeometry.presentation === "full-screen-webgl" && mobileGeometry.legacyPlanetCount === 0 && mobileGeometry.planetariumCount === 0 && mobileGeometry.guideCount === 0 && mobileGeometry.digitalGridCount === 0, `mobile WebGL audio field failed: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.visualizerRect.width >= 390 && mobileGeometry.visualizerRect.height >= 844, `mobile WebGL field is not viewport-sized: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.eqCount === 0 && mobileGeometry.characterSceneLoaded, `the mobile EQ remains or the characters are missing: ${JSON.stringify(mobileGeometry)}`);
   assert(mobileGeometry.visualizerOpacity === 0 && mobileGeometry.sceneOpacity > 0.8, `mobile sound mode did not open on the background-only state: ${JSON.stringify(mobileGeometry)}`);

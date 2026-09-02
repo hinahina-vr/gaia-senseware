@@ -60,7 +60,13 @@ for (const viewport of [
       motionProfile: canvas.dataset.motionProfile,
       formLanguage: canvas.dataset.formLanguage,
       palette: canvas.dataset.palette,
+      illumination: canvas.dataset.illumination,
+      motionRate: canvas.dataset.motionRate,
+      timbreBins: canvas.dataset.timbreBins,
+      timbreProfile: String(canvas.dataset.timbreProfile || "").split(",").map(Number),
       dragControl: canvas.dataset.dragControl,
+      viewYaw: Number(canvas.dataset.viewYaw || 0),
+      viewPitch: Number(canvas.dataset.viewPitch || 0),
       geometryPoints: Number(canvas.dataset.geometryPoints || 0),
       webglFrame: Number(canvas.dataset.webglFrame || 0),
       webglError: Number(canvas.dataset.webglError || 0),
@@ -77,8 +83,8 @@ for (const viewport of [
 
   assert(scan.renderer === "webgl" && !scan.shaderError, `${viewport.name}: WebGL shader failed: ${JSON.stringify(scan)}`);
   assert(scan.webglError === 0, `${viewport.name}: WebGL reported an error: ${JSON.stringify(scan)}`);
-  assert(scan.visualizer === "audio-reactive-crystal-universe" && scan.presentation === "full-screen-webgl", `${viewport.name}: wrong visualizer mode: ${JSON.stringify(scan)}`);
-  assert(scan.reactivity === "audio-color-particle-size-density-and-spark" && scan.motionProfile === "single-direction-infinite-led-drift" && scan.formLanguage === "crystalline-perspective-light-field" && scan.palette === "sapphire-lagoon-orchid-amber-track-palettes" && scan.dragControl === "left-pointer-view-pan" && scan.geometryPoints >= 10000 && scan.webglFrame > 0, `${viewport.name}: visualizer is not using the crystal-universe profile: ${JSON.stringify(scan)}`);
+  assert(scan.visualizer === "audio-reactive-deep-galaxy" && scan.presentation === "full-screen-webgl", `${viewport.name}: wrong visualizer mode: ${JSON.stringify(scan)}`);
+  assert(scan.reactivity === "fft8-local-timbre-regions" && scan.motionProfile === "fourfold-single-direction-galactic-drift" && scan.formLanguage === "spiral-nebula-starfield" && scan.palette === "stellar-obafgkm-and-emission-nebulae" && scan.illumination === "per-cluster-spectral-bin" && scan.motionRate === "4x" && scan.timbreBins === "8" && scan.timbreProfile.length === 8 && Math.max(...scan.timbreProfile) - Math.min(...scan.timbreProfile) >= 0.01 && scan.dragControl === "left-pointer-orbit-3d" && scan.geometryPoints >= 19000 && scan.webglFrame > 0, `${viewport.name}: visualizer is not using locally differentiated stellar-colour timbre regions: ${JSON.stringify(scan)}`);
   assert(scan.eqCount === 0, `${viewport.name}: detached EQ visualizer remains`);
   assert(scan.rect.left <= 0 && scan.rect.top <= 0 && scan.rect.right >= viewport.width && scan.rect.bottom >= viewport.height, `${viewport.name}: WebGL field is not full-screen: ${JSON.stringify(scan)}`);
   assert(scan.opacity >= 0.82 && scan.filter.includes("saturate") && scan.filter.includes("contrast"), `${viewport.name}: WebGL field remains faint: ${JSON.stringify(scan)}`);
@@ -93,14 +99,14 @@ for (const viewport of [
 
   if (viewport.name === "desktop") {
     await page.screenshot({ path: path.join(outputDir, "desktop-before-drag.png"), fullPage: false });
-    const beforeDrag = await page.locator("#sound-visualizer").evaluate((canvas) => ({ x: Number(canvas.dataset.viewX), y: Number(canvas.dataset.viewY) }));
+    const beforeDrag = await page.locator("#sound-visualizer").evaluate((canvas) => ({ yaw: Number(canvas.dataset.viewYaw), pitch: Number(canvas.dataset.viewPitch) }));
     await page.mouse.move(1470, 780);
     await page.mouse.down({ button: "left" });
     await page.mouse.move(1680, 670, { steps: 12 });
     await page.mouse.up({ button: "left" });
     await page.waitForTimeout(300);
-    const afterDrag = await page.locator("#sound-visualizer").evaluate((canvas) => ({ x: Number(canvas.dataset.viewX), y: Number(canvas.dataset.viewY), dragging: canvas.dataset.dragging }));
-    assert(afterDrag.x > beforeDrag.x + 0.08 && afterDrag.y > beforeDrag.y + 0.05 && afterDrag.dragging === "false", `desktop: left-drag did not move the WebGL view: ${JSON.stringify({ beforeDrag, afterDrag })}`);
+    const afterDrag = await page.locator("#sound-visualizer").evaluate((canvas) => ({ yaw: Number(canvas.dataset.viewYaw), pitch: Number(canvas.dataset.viewPitch), dragging: canvas.dataset.dragging }));
+    assert(afterDrag.yaw > beforeDrag.yaw + 0.07 && afterDrag.pitch > beforeDrag.pitch + 0.04 && afterDrag.dragging === "false", `desktop: left-drag did not rotate the WebGL view in 3D: ${JSON.stringify({ beforeDrag, afterDrag })}`);
     await page.screenshot({ path: path.join(outputDir, "desktop-after-drag.png"), fullPage: false });
   }
 

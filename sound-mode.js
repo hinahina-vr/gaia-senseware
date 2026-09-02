@@ -131,6 +131,7 @@
     if (!(canvas instanceof HTMLCanvasElement)) return null;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const smoothedBands = new Float32Array(3);
+    const smoothedTimbreBins = new Float32Array(8);
     const visualResponses = new Float32Array(3);
     const previousSpectrum = new Float32Array(32);
     let smoothedEnergy = 0;
@@ -149,8 +150,8 @@
     let fallback = null;
     let renderedFrames = 0;
     let visualStartedAt = performance.now();
-    const viewOffset = new Float32Array(2);
-    const targetViewOffset = new Float32Array(2);
+    const viewRotation = new Float32Array(2);
+    const targetViewRotation = new Float32Array(2);
     let dragPointerId = null;
     let dragX = 0;
     let dragY = 0;
@@ -162,13 +163,14 @@
       attribute float seed;
       attribute float kind;
       attribute float pointSize;
+      attribute float tone;
+      attribute float temperature;
 
       uniform vec2 resolution;
       uniform float time;
       uniform float bass;
       uniform float mid;
       uniform float high;
-      uniform float energy;
       uniform float pulse;
       uniform float flux;
       uniform float wave;
@@ -177,61 +179,156 @@
       uniform float causticResponse;
       uniform float playing;
       uniform float trackHue;
-      uniform vec2 viewOffset;
+      uniform vec2 viewRotation;
+      uniform vec4 timbreLow;
+      uniform vec4 timbreHigh;
 
       varying vec3 lightColor;
       varying float lightAlpha;
       varying float lightKind;
       varying float sparkle;
+      varying float bandActivity;
 
-      vec3 palette(float phase) {
-        float cycle = fract(phase);
-        vec3 sapphire = vec3(0.025, 0.18, 0.92);
-        vec3 lagoon = vec3(0.00, 0.86, 0.72);
-        vec3 orchid = vec3(0.66, 0.16, 0.96);
-        vec3 amber = vec3(1.00, 0.49, 0.08);
-        if (cycle < 0.25) return mix(sapphire, lagoon, cycle * 4.0);
-        if (cycle < 0.50) return mix(lagoon, orchid, (cycle - 0.25) * 4.0);
-        if (cycle < 0.75) return mix(orchid, amber, (cycle - 0.50) * 4.0);
-        return mix(amber, sapphire, (cycle - 0.75) * 4.0);
+      vec3 stellarPalette(float phase) {
+        float spectralClass = fract(phase) * 7.0;
+        // Approximate visible colours of the O, B, A, F, G, K and M stellar
+        // temperature classes. Most stars remain close to white; temperature
+        // is expressed as a restrained warm/cool bias instead of neon colour.
+        vec3 oStar = vec3(0.46, 0.58, 1.18);
+        vec3 bStar = vec3(0.58, 0.69, 1.12);
+        vec3 aStar = vec3(0.73, 0.81, 1.06);
+        vec3 fStar = vec3(0.97, 0.97, 1.00);
+        vec3 gStar = vec3(1.00, 0.92, 0.78);
+        vec3 kStar = vec3(1.08, 0.68, 0.36);
+        vec3 mStar = vec3(1.16, 0.36, 0.20);
+        if (spectralClass < 1.0) return mix(oStar, bStar, spectralClass);
+        if (spectralClass < 2.0) return mix(bStar, aStar, spectralClass - 1.0);
+        if (spectralClass < 3.0) return mix(aStar, fStar, spectralClass - 2.0);
+        if (spectralClass < 4.0) return mix(fStar, gStar, spectralClass - 3.0);
+        if (spectralClass < 5.0) return mix(gStar, kStar, spectralClass - 4.0);
+        if (spectralClass < 6.0) return mix(kStar, mStar, spectralClass - 5.0);
+        return mStar;
+      }
+
+      vec3 nebulaPalette(float phase) {
+        float emissionClass = fract(phase) * 4.0;
+        vec3 hydrogenAlpha = vec3(0.68, 0.07, 0.14);
+        vec3 oxygenThree = vec3(0.08, 0.58, 0.55);
+        vec3 reflectionBlue = vec3(0.20, 0.36, 0.78);
+        vec3 sulphurGold = vec3(0.82, 0.46, 0.14);
+        if (emissionClass < 1.0) return mix(hydrogenAlpha, oxygenThree, emissionClass);
+        if (emissionClass < 2.0) return mix(oxygenThree, reflectionBlue, emissionClass - 1.0);
+        if (emissionClass < 3.0) return mix(reflectionBlue, sulphurGold, emissionClass - 2.0);
+        return mix(sulphurGold, hydrogenAlpha, emissionClass - 3.0);
+      }
+
+      float sampleTimbre(float selector) {
+        float cursor = fract(selector) * 8.0;
+        float blend = fract(cursor);
+        if (cursor < 1.0) return mix(timbreLow.x, timbreLow.y, blend);
+        if (cursor < 2.0) return mix(timbreLow.y, timbreLow.z, blend);
+        if (cursor < 3.0) return mix(timbreLow.z, timbreLow.w, blend);
+        if (cursor < 4.0) return mix(timbreLow.w, timbreHigh.x, blend);
+        if (cursor < 5.0) return mix(timbreHigh.x, timbreHigh.y, blend);
+        if (cursor < 6.0) return mix(timbreHigh.y, timbreHigh.z, blend);
+        if (cursor < 7.0) return mix(timbreHigh.z, timbreHigh.w, blend);
+        return mix(timbreHigh.w, timbreLow.x, blend);
       }
 
       void main() {
-        float travelSpeed = mix(0.10, 0.58, playing);
-        // Every point on a plane shares the same depth velocity. Randomizing
-        // this per point turns the installation into an unstructured starfield
-        // and destroys the crystal braces after only a few frames.
-        float depth = mod(-position.z - time * travelSpeed, 56.0) + 1.8;
-        vec2 room = position.xy;
-        float focalLength = 1.28;
-        vec2 projected = room * focalLength / max(1.1, depth);
+        float travelSpeed = mix(0.035, 0.16, playing);
+        float depth = mod(-position.z - time * travelSpeed, 66.0) + 2.8;
+        vec3 world = vec3(position.xy, -depth);
+        float yawCos = cos(viewRotation.x);
+        float yawSin = sin(viewRotation.x);
+        world = vec3(
+          yawCos * world.x + yawSin * world.z,
+          world.y,
+          -yawSin * world.x + yawCos * world.z
+        );
+        float pitchCos = cos(viewRotation.y);
+        float pitchSin = sin(viewRotation.y);
+        world = vec3(
+          world.x,
+          pitchCos * world.y - pitchSin * world.z,
+          pitchSin * world.y + pitchCos * world.z
+        );
+        float cameraDepth = -world.z;
+        float visible = step(0.9, cameraDepth);
+        float focalLength = 1.34;
+        vec2 projected = world.xy * focalLength / max(0.9, cameraDepth);
         float aspect = resolution.x / max(1.0, resolution.y);
         projected.x /= aspect;
-        projected += viewOffset;
-        gl_Position = vec4(projected, 0.0, 1.0);
+        gl_Position = visible > 0.5 ? vec4(projected, 0.0, 1.0) : vec4(3.0, 3.0, 0.0, 1.0);
 
-        float depthPulse = exp(-pow(fract(depth * 0.064 - time * 0.10) - 0.5, 2.0) * 42.0);
-        float twinkle = 0.54 + 0.46 * sin(time * (1.1 + seed * 2.2) + seed * 47.0 + depth * 0.16);
+        float depthPulse = exp(-pow(fract(depth * 0.048 - time * 0.035) - 0.5, 2.0) * 48.0);
+        float twinkle = 0.58 + 0.42 * sin(time * (0.42 + seed * 0.82) + seed * 47.0 + depth * 0.11);
         twinkle = max(0.0, twinkle);
-        float perspectiveSize = pointSize * (108.0 / max(2.2, depth));
+        float fieldClass = 1.0 - step(0.5, kind);
+        float armClass = step(0.5, kind) * (1.0 - step(1.5, kind));
+        float nebulaClass = step(1.5, kind) * (1.0 - step(2.5, kind));
+        float nurseryClass = step(2.5, kind) * (1.0 - step(3.5, kind));
+        float dustClass = step(3.5, kind);
+        // The FFT is split into eight timbre bins. Each arm segment, cloud and
+        // nursery owns a different bin, so equal-coloured objects do not flash
+        // together just because one broad bass/mid/high value moved.
+        float localTimbre = sampleTimbre(tone);
+        float neighbourTimbre = sampleTimbre(tone + 0.137);
+        float spectralEdge = max(0.0, localTimbre - neighbourTimbre * 0.62);
+        float spatialPhase = 0.5 + 0.5 * sin(tone * 51.0 + seed * 19.0 + depth * 0.083 + wave * tone * 1.2);
+        float localGate = mix(0.28, 1.0, smoothstep(0.18, 0.88, spatialPhase));
+        float localActivity = clamp((localTimbre * (1.02 + pulse * 0.14) + spectralEdge * 0.74) * localGate, 0.0, 1.58);
+        float materialAffinity = fieldClass * 0.56
+          + armClass * (0.62 + mid * 0.10 + meanderResponse * 0.08)
+          + nebulaClass * (0.64 + bass * 0.10 + densityResponse * 0.08)
+          + nurseryClass * (0.72 + high * 0.20)
+          + dustClass * (0.52 + causticResponse * 0.18);
+        bandActivity = 0.035 + localActivity * materialAffinity;
+
+        float perspectiveSize = pointSize * (112.0 / max(2.2, cameraDepth));
         float pixelScale = clamp(resolution.y / 900.0, 0.82, 1.55);
-        float audioSize = 1.0 + high * 0.16 + pulse * 0.12 + depthPulse * flux * 0.34;
-        float dustScale = kind > 3.5 ? 0.54 : 1.0;
-        gl_PointSize = clamp(perspectiveSize * pixelScale * audioSize * dustScale, 1.15, 62.0);
+        float audioSize = 1.0
+          + localActivity * (
+            nebulaClass * (0.08 + bass * 0.08)
+            + armClass * (0.04 + mid * 0.05)
+            + nurseryClass * (0.12 + high * 0.16)
+            + dustClass * (0.04 + high * 0.07)
+          );
+        float classScale = dustClass > 0.5 ? 0.48 : (nebulaClass > 0.5 ? 1.62 : 1.0);
+        gl_PointSize = clamp(perspectiveSize * pixelScale * audioSize * classScale, 1.05, 190.0);
 
         float nearFade = smoothstep(1.9, 4.5, depth);
-        float farFade = 1.0 - smoothstep(43.0, 57.2, depth);
-        float classLift = kind > 3.5 ? 0.27 : 0.92 + kind * 0.075;
-        lightAlpha = nearFade * farFade * classLift
-          * (0.74 + energy * 0.62 + high * twinkle * 0.52 + causticResponse * 0.34);
-        lightAlpha *= 0.28 + playing * 0.72;
-        sparkle = twinkle * (0.22 + high * 0.78 + causticResponse * 0.54) + depthPulse * flux;
+        float farFade = 1.0 - smoothstep(52.0, 68.0, depth);
+        float classLift = fieldClass * 0.52
+          + armClass * 0.72
+          + nebulaClass * 0.15
+          + nurseryClass * 0.86
+          + dustClass * 0.20;
+        float dustReveal = dustClass > 0.5
+          ? smoothstep(0.78 - localActivity * 0.32, 0.98, seed)
+          : 1.0;
+        lightAlpha = visible * nearFade * farFade * classLift * dustReveal
+          * (0.30 + bandActivity * 0.86);
+        lightAlpha *= 0.42 + playing * 0.58;
+        sparkle = twinkle * (
+          fieldClass * (0.08 + localActivity * 0.16)
+          + armClass * (0.06 + localActivity * 0.11)
+          + nebulaClass * (0.035 + localActivity * 0.05)
+          + nurseryClass * (0.12 + localActivity * 0.68)
+          + dustClass * (0.05 + localActivity * 0.38)
+        ) + depthPulse * flux * localGate * (nurseryClass + dustClass * 0.45);
         lightKind = kind;
-        lightColor = palette(trackHue + kind * 0.13 + seed * 0.07 + depth * 0.0025 + mid * 0.17 + high * 0.06);
-        lightColor = mix(lightColor, vec3(0.03, 0.22, 1.0), bass * 0.24);
-        lightColor = mix(lightColor, vec3(0.00, 0.96, 0.67), mid * 0.22);
-        lightColor = mix(lightColor, vec3(0.80, 0.18, 1.0), high * 0.28);
-        lightColor *= 0.92 + energy * 0.34;
+        // Temperature colour and audio-bin ownership are intentionally
+        // independent. Two stars with the same colour can therefore listen to
+        // different spectral components and never have to flash in unison.
+        float localHue = fract(temperature * 0.88 + trackHue * 0.08 + seed * 0.02);
+        vec3 starRestingColor = stellarPalette(localHue);
+        vec3 starActiveColor = pow(stellarPalette(localHue + spectralEdge * 0.018), vec3(1.42));
+        vec3 gasColor = nebulaPalette(fract(temperature * 0.73 + seed * 0.05));
+        vec3 restingColor = mix(starRestingColor * 0.68, gasColor * 0.34, nebulaClass);
+        vec3 activeColor = mix(starActiveColor, gasColor * 0.88, nebulaClass);
+        lightColor = mix(restingColor, activeColor, clamp(0.24 + localActivity * 0.48, 0.0, 0.92));
+        lightColor *= 0.76 + bandActivity * 0.42;
       }
     `;
 
@@ -242,21 +339,26 @@
       varying float lightAlpha;
       varying float lightKind;
       varying float sparkle;
+      varying float bandActivity;
 
       void main() {
         vec2 point = gl_PointCoord - 0.5;
         float radius = length(point) * 2.0;
         if (radius > 1.0) discard;
-        float halo = exp(-radius * radius * 2.65) * (1.0 - smoothstep(0.72, 1.0, radius));
-        float pearl = 1.0 - smoothstep(0.05, 0.24, radius);
+        float angle = atan(point.y, point.x);
+        float halo = exp(-radius * radius * 2.45) * (1.0 - smoothstep(0.76, 1.0, radius));
+        float pearl = 1.0 - smoothstep(0.045, 0.19, radius);
         float cross = (
-          exp(-abs(point.x) * 28.0) + exp(-abs(point.y) * 28.0)
-        ) * exp(-radius * 2.2) * (0.08 + sparkle * 0.12);
+          exp(-abs(point.x) * 34.0) + exp(-abs(point.y) * 34.0)
+        ) * exp(-radius * 2.6) * (0.045 + sparkle * 0.075);
         float faceted = 0.93 + 0.07 * cos(atan(point.y, point.x) * (4.0 + mod(lightKind, 3.0)));
-        float alpha = (halo * (0.48 + sparkle * 0.28) + pearl * 0.98 + cross)
-          * lightAlpha * faceted;
-        vec3 color = lightColor * (0.84 + halo * 1.08 + sparkle * 0.42);
-        color += lightColor * pearl * (0.46 + sparkle * 0.18);
+        float nebulaClass = step(1.5, lightKind) * (1.0 - step(2.5, lightKind));
+        float cloudGrain = 0.72 + 0.28 * sin(angle * 5.0 + radius * 16.0 + sparkle * 2.0);
+        float nebulaAlpha = halo * halo * cloudGrain * (0.38 + bandActivity * 0.18);
+        float starAlpha = halo * (0.45 + sparkle * 0.24) + pearl * 0.92 + cross;
+        float alpha = mix(starAlpha, nebulaAlpha, nebulaClass) * lightAlpha * faceted;
+        vec3 color = lightColor * mix(0.84 + halo * 1.02 + sparkle * 0.34, 0.54 + halo * 1.18, nebulaClass);
+        color += lightColor * pearl * (0.38 + sparkle * 0.12) * (1.0 - nebulaClass);
         color = min(color, vec3(2.4));
         gl_FragColor = vec4(color, clamp(alpha, 0.0, 1.0));
       }
@@ -282,88 +384,106 @@
         randomState ^= randomState + Math.imul(randomState ^ (randomState >>> 7), randomState | 61);
         return ((randomState ^ (randomState >>> 14)) >>> 0) / 4294967296;
       };
-      const push = (x, y, z, kind, size = 1) => {
-        points.push(x, y, z, random(), kind, size);
+      const push = (x, y, z, kind, size = 1, tone = random(), temperature = random()) => {
+        points.push(
+          x,
+          y,
+          z,
+          random(),
+          kind,
+          size,
+          Math.max(0, Math.min(0.999, tone)),
+          Math.max(0, Math.min(0.999, temperature)),
+        );
       };
-      const segment = (from, to, spacing, kind, size) => {
-        const dx = to[0] - from[0];
-        const dy = to[1] - from[1];
-        const dz = to[2] - from[2];
-        const length = Math.hypot(dx, dy, dz);
-        const steps = Math.max(1, Math.ceil(length / spacing));
-        for (let step = 0; step <= steps; step += 1) {
-          const amount = step / steps;
+      // A broad 3D star volume keeps the frame populated while the camera
+      // rotates. The distribution widens with depth, like looking through a
+      // real galactic field rather than at a flat particle curtain.
+      for (let index = 0; index < 7200; index += 1) {
+        const z = -2.8 - random() * 65.8;
+        const depthSpread = 8 + (-z / 66) * 21;
+        const angle = random() * Math.PI * 2;
+        const radius = Math.sqrt(random()) * depthSpread;
+        push(
+          Math.cos(angle) * radius,
+          Math.sin(angle) * radius * 0.62,
+          z,
+          random() > 0.82 ? 3 : 0,
+          0.38 + Math.pow(random(), 2.2) * 1.72,
+        );
+      }
+
+      // Four loose logarithmic arms. Every arm has a different depth and
+      // thickness, so a left-drag exposes genuine parallax between layers.
+      const armCount = 4;
+      for (let arm = 0; arm < armCount; arm += 1) {
+        for (let index = 0; index < 1450; index += 1) {
+          const radius = 1.1 + Math.pow(random(), 0.72) * 17.5;
+          const angle = arm / armCount * Math.PI * 2 + radius * 0.52 + (random() - 0.5) * (0.34 + radius * 0.018);
+          const thickness = 0.24 + radius * 0.045;
+          const x = Math.cos(angle) * radius + (random() - 0.5) * thickness;
+          const y = Math.sin(angle) * radius * 0.54 + (random() - 0.5) * thickness * 0.72;
+          const z = -3.2 - random() * 65.0 + Math.sin(angle * 1.7) * 1.8;
+          const tone = (arm * 0.19 + radius * 0.041) % 1;
+          const temperature = (arm * 0.27 + radius * 0.073 + 0.31) % 1;
+          push(x, y, z, 1, 0.52 + random() * 1.26, tone, temperature);
+        }
+      }
+
+      // Coloured gaseous knots sit inside the arms. Large, soft point sprites
+      // overlap into painterly nebulae without introducing a costly texture.
+      for (let index = 0; index < 1500; index += 1) {
+        const arm = index % armCount;
+        const radius = 2.4 + Math.pow(random(), 0.78) * 15.5;
+        const angle = arm / armCount * Math.PI * 2 + radius * 0.52 + (random() - 0.5) * 0.52;
+        const cloud = 0.5 + radius * 0.07;
+        push(
+          Math.cos(angle) * radius + (random() - 0.5) * cloud,
+          Math.sin(angle) * radius * 0.54 + (random() - 0.5) * cloud * 0.72,
+          -4.0 - random() * 63.0,
+          2,
+          7.0 + random() * 11.0,
+          (arm * 0.23 + radius * 0.037) % 1,
+          (arm * 0.31 + radius * 0.089 + 0.17) % 1,
+        );
+      }
+
+      // Compact star nurseries form occasional bright constellations instead
+      // of an evenly filled screen.
+      for (let cluster = 0; cluster < 24; cluster += 1) {
+        const centerAngle = random() * Math.PI * 2;
+        const centerRadius = 3 + random() * 16;
+        const centerX = Math.cos(centerAngle) * centerRadius;
+        const centerY = Math.sin(centerAngle) * centerRadius * 0.55;
+        const centerZ = -5 - random() * 60;
+        const clusterTone = 0.02 + random() * 0.96;
+        const clusterTemperature = 0.02 + random() * 0.96;
+        for (let index = 0; index < 68; index += 1) {
+          const spread = Math.pow(random(), 2.4) * 1.65;
+          const angle = random() * Math.PI * 2;
           push(
-            from[0] + dx * amount,
-            from[1] + dy * amount,
-            from[2] + dz * amount,
-            kind,
-            size * (0.86 + random() * 0.34),
+            centerX + Math.cos(angle) * spread,
+            centerY + Math.sin(angle) * spread * 0.72,
+            centerZ + (random() - 0.5) * 2.8,
+            3,
+            0.7 + random() * 1.75,
+            clusterTone + (random() - 0.5) * 0.018,
+            clusterTemperature + (random() - 0.5) * 0.012,
           );
         }
-      };
-
-      for (let z = -2.5; z >= -55; z -= 1.5) {
-        push(0, 0, z, 4, 1.5);
       }
 
-      // The room shell is made from actual 3D point strings. Perspective is
-      // handled in the vertex shader, so the lattice keeps a stable vanishing
-      // point without a fragment-shader raymarch at 4K.
-      for (let z = -2.2; z >= -56; z -= 1.34) {
-        for (let x = -12; x <= 12.01; x += 0.74) {
-          push(x, -6.2, z, 0, 0.88);
-          push(x, 6.2, z, 0, 0.88);
-        }
-        for (let y = -6.2; y <= 6.21; y += 0.72) {
-          push(-12, y, z, 0, 0.88);
-          push(12, y, z, 0, 0.88);
-        }
-      }
-
-      // Repeating luminous planes create the dense mirrored chambers visible
-      // in the reference while leaving enough darkness between structures.
-      [-8.5, -15.5, -24, -34.5, -47].forEach((z, planeIndex) => {
-        for (let x = -10.5; x <= 10.51; x += 0.78) {
-          for (let y = -5.4; y <= 5.41; y += 0.78) {
-            push(x, y, z, 1, 0.78 + (planeIndex % 2) * 0.12);
-          }
-        }
-      });
-
-      // Hanging light strands make the near field feel physical rather than
-      // like a flat wallpaper. Each strand has its own depth and point rhythm.
-      for (let x = -11.2; x <= 11.21; x += 0.64) {
-        const z = -5.5 - random() * 46;
-        const stagger = random() * 0.24;
-        for (let y = -6.1 + stagger; y <= 6.1; y += 0.29 + random() * 0.025) {
-          push(x, y, z, 2, 1.02 + random() * 0.22);
-        }
-      }
-
-      // Faceted diamonds and X-shaped braces form crystalline architecture.
-      [-10.5, -20.5, -32.5, -45].forEach((z, depthIndex) => {
-        for (let x = -9; x <= 9.01; x += 4.5) {
-          for (let y = -4.4; y <= 4.41; y += 2.95) {
-            const width = 2.05 + depthIndex * 0.06;
-            const height = 1.28 + (depthIndex % 2) * 0.16;
-            segment([x - width, y, z], [x, y + height, z], 0.20, 3, 1.18);
-            segment([x, y + height, z], [x + width, y, z], 0.20, 3, 1.18);
-            segment([x + width, y, z], [x, y - height, z], 0.20, 3, 1.18);
-            segment([x, y - height, z], [x - width, y, z], 0.20, 3, 1.18);
-            segment([x - width, y - height, z], [x + width, y + height, z], 0.24, 3, 0.96);
-            segment([x - width, y + height, z], [x + width, y - height, z], 0.24, 3, 0.96);
-          }
-        }
-      });
-
-      // Sparse motes catch high-frequency detail and stop the regular matrix
-      // from becoming sterile. Their motion is intentionally much smaller.
-      for (let index = 0; index < 1400; index += 1) {
-        const x = (random() * 2 - 1) * 12.5;
-        const y = (random() * 2 - 1) * 6.6;
-        const z = -2.2 - random() * 53.8;
-        push(x, y, z, 4, 0.52 + random() * 0.88);
+      // Fine dust is the only population whose visible density follows audio.
+      for (let index = 0; index < 3600; index += 1) {
+        const z = -2.8 - random() * 65.5;
+        const spread = 9 + (-z / 66) * 18;
+        push(
+          (random() * 2 - 1) * spread,
+          (random() * 2 - 1) * spread * 0.58,
+          z,
+          4,
+          0.34 + random() * 0.72,
+        );
       }
       return new Float32Array(points);
     };
@@ -392,7 +512,7 @@
       }
 
       const geometry = createPointGeometry();
-      pointCount = geometry.length / 6;
+      pointCount = geometry.length / 8;
       pointBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, geometry, gl.STATIC_DRAW);
@@ -401,6 +521,8 @@
         seed: gl.getAttribLocation(program, "seed"),
         kind: gl.getAttribLocation(program, "kind"),
         pointSize: gl.getAttribLocation(program, "pointSize"),
+        tone: gl.getAttribLocation(program, "tone"),
+        temperature: gl.getAttribLocation(program, "temperature"),
       };
       canvas.dataset.attributeLocations = Object.values(attributes).join(",");
       uniforms = {
@@ -409,7 +531,6 @@
         bass: gl.getUniformLocation(program, "bass"),
         mid: gl.getUniformLocation(program, "mid"),
         high: gl.getUniformLocation(program, "high"),
-        energy: gl.getUniformLocation(program, "energy"),
         pulse: gl.getUniformLocation(program, "pulse"),
         flux: gl.getUniformLocation(program, "flux"),
         wave: gl.getUniformLocation(program, "wave"),
@@ -418,21 +539,26 @@
         causticResponse: gl.getUniformLocation(program, "causticResponse"),
         playing: gl.getUniformLocation(program, "playing"),
         trackHue: gl.getUniformLocation(program, "trackHue"),
-        viewOffset: gl.getUniformLocation(program, "viewOffset"),
+        viewRotation: gl.getUniformLocation(program, "viewRotation"),
+        timbreLow: gl.getUniformLocation(program, "timbreLow"),
+        timbreHigh: gl.getUniformLocation(program, "timbreHigh"),
       };
       gl.enable(gl.BLEND);
       gl.blendEquation(gl.FUNC_ADD);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
       gl.disable(gl.DEPTH_TEST);
       canvas.dataset.renderer = "webgl";
-      canvas.dataset.visualizer = "audio-reactive-crystal-universe";
+      canvas.dataset.visualizer = "audio-reactive-deep-galaxy";
       canvas.dataset.presentation = "full-screen-webgl";
       canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
-      canvas.dataset.reactivity = "audio-color-particle-size-density-and-spark";
-      canvas.dataset.motionProfile = "single-direction-infinite-led-drift";
-      canvas.dataset.formLanguage = "crystalline-perspective-light-field";
-      canvas.dataset.palette = "sapphire-lagoon-orchid-amber-track-palettes";
-      canvas.dataset.dragControl = "left-pointer-view-pan";
+      canvas.dataset.reactivity = "fft8-local-timbre-regions";
+      canvas.dataset.motionProfile = "fourfold-single-direction-galactic-drift";
+      canvas.dataset.formLanguage = "spiral-nebula-starfield";
+      canvas.dataset.palette = "stellar-obafgkm-and-emission-nebulae";
+      canvas.dataset.illumination = "per-cluster-spectral-bin";
+      canvas.dataset.timbreBins = "8";
+      canvas.dataset.motionRate = "4x";
+      canvas.dataset.dragControl = "left-pointer-orbit-3d";
       canvas.dataset.geometryPoints = String(pointCount);
       return true;
     };
@@ -440,14 +566,17 @@
     const initFallback = () => {
       fallback = canvas.getContext("2d");
       canvas.dataset.renderer = fallback ? "canvas2d" : "unavailable";
-      canvas.dataset.visualizer = "audio-reactive-crystal-universe";
+      canvas.dataset.visualizer = "audio-reactive-deep-galaxy";
       canvas.dataset.presentation = "full-screen-webgl";
       canvas.dataset.audioAnalysis = "fft-spectrum-flux-waveform";
-      canvas.dataset.reactivity = "audio-color-particle-size-density-and-spark";
-      canvas.dataset.motionProfile = "single-direction-infinite-led-drift";
-      canvas.dataset.formLanguage = "crystalline-perspective-light-field";
-      canvas.dataset.palette = "sapphire-lagoon-orchid-amber-track-palettes";
-      canvas.dataset.dragControl = "left-pointer-view-pan";
+      canvas.dataset.reactivity = "fft8-local-timbre-regions";
+      canvas.dataset.motionProfile = "fourfold-single-direction-galactic-drift";
+      canvas.dataset.formLanguage = "spiral-nebula-starfield";
+      canvas.dataset.palette = "stellar-obafgkm-and-emission-nebulae";
+      canvas.dataset.illumination = "per-cluster-spectral-bin";
+      canvas.dataset.timbreBins = "8";
+      canvas.dataset.motionRate = "4x";
+      canvas.dataset.dragControl = "left-pointer-orbit-3d";
       return Boolean(fallback);
     };
 
@@ -486,6 +615,23 @@
       smoothedEnergy = easeBand(smoothedEnergy, activeEnergy, reduced ? 0.11 : 0.20, reduced ? 0.040 : 0.065);
 
       const spectrum = active && Array.isArray(state.spectrum) ? state.spectrum : [];
+      for (let bin = 0; bin < smoothedTimbreBins.length; bin += 1) {
+        let squaredEnergy = 0;
+        for (let offset = 0; offset < 4; offset += 1) {
+          const sample = Math.max(0, Math.min(1, spectrum[bin * 4 + offset] || 0));
+          squaredEnergy += sample * sample;
+        }
+        const rootMeanSquare = Math.sqrt(squaredEnergy / 4);
+        const boosted = active ? rootMeanSquare * automaticGain * 1.45 : 0;
+        const compressed = boosted / (0.34 + boosted);
+        const shaped = Math.pow(Math.min(0.98, compressed), 0.82);
+        smoothedTimbreBins[bin] = easeBand(
+          smoothedTimbreBins[bin],
+          shaped,
+          reduced ? 0.14 : 0.38,
+          reduced ? 0.035 : 0.085,
+        );
+      }
       let spectralFlux = 0;
       for (let index = 0; index < previousSpectrum.length; index += 1) {
         const sample = Math.max(0, Math.min(1, spectrum[index] || 0));
@@ -525,6 +671,12 @@
       canvas.dataset.densityResponse = visualResponses[0].toFixed(3);
       canvas.dataset.meanderResponse = visualResponses[1].toFixed(3);
       canvas.dataset.causticResponse = visualResponses[2].toFixed(3);
+      canvas.dataset.timbreProfile = Array.from(smoothedTimbreBins, (value) => value.toFixed(3)).join(",");
+      let dominantTimbre = 0;
+      for (let index = 1; index < smoothedTimbreBins.length; index += 1) {
+        if (smoothedTimbreBins[index] > smoothedTimbreBins[dominantTimbre]) dominantTimbre = index;
+      }
+      canvas.dataset.dominantTimbre = String(dominantTimbre);
     };
 
     const drawFallback = (state, now) => {
@@ -532,11 +684,11 @@
       updateAudioState(state);
       const width = canvas.width;
       const height = canvas.height;
-      const t = (now - visualStartedAt) * 0.001;
+      const t = (now - visualStartedAt) * 0.001 * (reduced ? 0.16 : 2.08);
       const centerX = width * (0.5 + Math.sin(t * 0.12) * 0.012);
       const centerY = height * (0.5 + Math.cos(t * 0.10) * 0.01);
       const background = fallback.createRadialGradient(centerX, centerY, 0, centerX, centerY, width * 0.72);
-      background.addColorStop(0, `rgba(10, 74, 122, ${0.18 + smoothedEnergy * 0.12})`);
+      background.addColorStop(0, "rgba(10, 74, 122, .18)");
       background.addColorStop(0.35, "rgba(3, 17, 48, .2)");
       background.addColorStop(1, "rgba(0, 2, 16, .05)");
       fallback.globalCompositeOperation = "source-over";
@@ -545,12 +697,16 @@
 
       fallback.save();
       fallback.globalCompositeOperation = "screen";
+      const zoneColors = ["#9bb0ff", "#aabfff", "#cad7ff", "#f8f7ff", "#fff4ea", "#ffd2a1", "#ff8c52", "#9adbd7"];
       for (let depth = 0; depth < 15; depth += 1) {
         const travel = (depth / 15 + t * (0.018 + smoothedBands[1] * 0.025)) % 1;
+        const zone = depth % smoothedTimbreBins.length;
+        const zoneResponse = smoothedTimbreBins[zone];
         const scale = 0.04 + travel * travel * 1.05;
         const halfW = width * scale;
         const halfH = height * scale * 0.58;
-        fallback.strokeStyle = `rgba(90, 205, 255, ${0.025 + travel * 0.11 + smoothedEnergy * 0.07})`;
+        fallback.strokeStyle = zoneColors[zone];
+        fallback.globalAlpha = 0.025 + travel * 0.09 + zoneResponse * 0.12;
         fallback.lineWidth = 0.6 + travel * 1.1;
         fallback.strokeRect(centerX - halfW, centerY - halfH, halfW * 2, halfH * 2);
         const columns = 12;
@@ -560,9 +716,9 @@
             const x = centerX - halfW + (column / columns) * halfW * 2;
             const y = centerY - halfH + (row / rows) * halfH * 2;
             const shimmer = 0.42 + 0.58 * Math.sin(t * 1.7 + depth * 1.9 + column * 2.3 + row);
-            const size = 0.45 + travel * 2.2 + smoothedBands[0] * 1.6 + Math.max(0, shimmer) * smoothedBands[2];
-            fallback.globalAlpha = 0.08 + travel * 0.28 + smoothedEnergy * 0.18;
-            fallback.fillStyle = shimmer > 0.82 ? "#f3fdff" : "#4fc8ff";
+            const size = 0.45 + travel * 2.2 + zoneResponse * (zone >= 5 ? 1.5 : 1.15);
+            fallback.globalAlpha = 0.06 + travel * 0.20 + zoneResponse * 0.30 * Math.max(0.24, shimmer);
+            fallback.fillStyle = zoneColors[zone];
             fallback.shadowColor = fallback.fillStyle;
             fallback.shadowBlur = 5 + size * 4;
             fallback.beginPath();
@@ -591,7 +747,7 @@
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(program);
       gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-      const stride = 6 * Float32Array.BYTES_PER_ELEMENT;
+      const stride = 8 * Float32Array.BYTES_PER_ELEMENT;
       gl.enableVertexAttribArray(attributes.position);
       gl.vertexAttribPointer(attributes.position, 3, gl.FLOAT, false, stride, 0);
       gl.enableVertexAttribArray(attributes.seed);
@@ -600,12 +756,15 @@
       gl.vertexAttribPointer(attributes.kind, 1, gl.FLOAT, false, stride, 4 * Float32Array.BYTES_PER_ELEMENT);
       gl.enableVertexAttribArray(attributes.pointSize);
       gl.vertexAttribPointer(attributes.pointSize, 1, gl.FLOAT, false, stride, 5 * Float32Array.BYTES_PER_ELEMENT);
+      gl.enableVertexAttribArray(attributes.tone);
+      gl.vertexAttribPointer(attributes.tone, 1, gl.FLOAT, false, stride, 6 * Float32Array.BYTES_PER_ELEMENT);
+      gl.enableVertexAttribArray(attributes.temperature);
+      gl.vertexAttribPointer(attributes.temperature, 1, gl.FLOAT, false, stride, 7 * Float32Array.BYTES_PER_ELEMENT);
       gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
-      gl.uniform1f(uniforms.time, (now - visualStartedAt) * 0.001 * (reduced ? 0.22 : 0.74));
+      gl.uniform1f(uniforms.time, (now - visualStartedAt) * 0.001 * (reduced ? 0.16 : 2.08));
       gl.uniform1f(uniforms.bass, smoothedBands[0]);
       gl.uniform1f(uniforms.mid, smoothedBands[1]);
       gl.uniform1f(uniforms.high, smoothedBands[2]);
-      gl.uniform1f(uniforms.energy, smoothedEnergy);
       gl.uniform1f(uniforms.pulse, smoothedPulse);
       gl.uniform1f(uniforms.flux, smoothedFlux);
       gl.uniform1f(uniforms.wave, smoothedWave);
@@ -615,17 +774,19 @@
       gl.uniform1f(uniforms.playing, state.playing ? 1 : 0);
       const trackIndex = Math.max(0, Object.keys(tracks).indexOf(state.track));
       gl.uniform1f(uniforms.trackHue, trackIndex / Math.max(1, Object.keys(tracks).length - 1));
-      viewOffset[0] += (targetViewOffset[0] - viewOffset[0]) * 0.2;
-      viewOffset[1] += (targetViewOffset[1] - viewOffset[1]) * 0.2;
-      gl.uniform2f(uniforms.viewOffset, viewOffset[0], viewOffset[1]);
+      gl.uniform4f(uniforms.timbreLow, smoothedTimbreBins[0], smoothedTimbreBins[1], smoothedTimbreBins[2], smoothedTimbreBins[3]);
+      gl.uniform4f(uniforms.timbreHigh, smoothedTimbreBins[4], smoothedTimbreBins[5], smoothedTimbreBins[6], smoothedTimbreBins[7]);
+      viewRotation[0] += (targetViewRotation[0] - viewRotation[0]) * 0.13;
+      viewRotation[1] += (targetViewRotation[1] - viewRotation[1]) * 0.13;
+      gl.uniform2f(uniforms.viewRotation, viewRotation[0], viewRotation[1]);
       gl.drawArrays(gl.POINTS, 0, pointCount);
       if (renderedFrames === 0) {
         canvas.dataset.webglError = String(gl.getError());
       }
       renderedFrames += 1;
       canvas.dataset.webglFrame = String(renderedFrames);
-      canvas.dataset.viewX = viewOffset[0].toFixed(4);
-      canvas.dataset.viewY = viewOffset[1].toFixed(4);
+      canvas.dataset.viewYaw = viewRotation[0].toFixed(4);
+      canvas.dataset.viewPitch = viewRotation[1].toFixed(4);
     };
 
     const finishDrag = (event) => {
@@ -653,8 +814,8 @@
       const deltaY = event.clientY - dragY;
       dragX = event.clientX;
       dragY = event.clientY;
-      targetViewOffset[0] = Math.max(-0.62, Math.min(0.62, targetViewOffset[0] + deltaX / Math.max(480, innerWidth) * 1.55));
-      targetViewOffset[1] = Math.max(-0.46, Math.min(0.46, targetViewOffset[1] - deltaY / Math.max(360, innerHeight) * 1.55));
+      targetViewRotation[0] = Math.max(-0.42, Math.min(0.42, targetViewRotation[0] + deltaX / Math.max(480, innerWidth) * 1.22));
+      targetViewRotation[1] = Math.max(-0.30, Math.min(0.30, targetViewRotation[1] - deltaY / Math.max(360, innerHeight) * 0.94));
       event.preventDefault();
     });
     layer.addEventListener("pointerup", finishDrag);

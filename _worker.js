@@ -20753,32 +20753,58 @@ __name(fromUrl, "fromUrl");
 var HAWAII_BBOX = [-156.2, 18.8, -154.7, 20.3];
 var HAWAII_CENTER = { lat: 19.55, lon: -155.45 };
 var CITY_LOCATIONS = Object.freeze({
-  tokyo: Object.freeze({ id: "tokyo", name: "\u6771\u4EAC", lat: 35.6762, lon: 139.6503 }),
-  sapporo: Object.freeze({ id: "sapporo", name: "\u672D\u5E4C", lat: 43.0618, lon: 141.3545 }),
-  sendai: Object.freeze({ id: "sendai", name: "\u4ED9\u53F0", lat: 38.2682, lon: 140.8694 }),
-  saitama: Object.freeze({ id: "saitama", name: "\u3055\u3044\u305F\u307E", lat: 35.8617, lon: 139.6455 }),
-  chiba: Object.freeze({ id: "chiba", name: "\u5343\u8449", lat: 35.6074, lon: 140.1065 }),
-  yokohama: Object.freeze({ id: "yokohama", name: "\u6A2A\u6D5C", lat: 35.4437, lon: 139.638 }),
-  kawasaki: Object.freeze({ id: "kawasaki", name: "\u5DDD\u5D0E", lat: 35.5308, lon: 139.7029 }),
-  sagamihara: Object.freeze({ id: "sagamihara", name: "\u76F8\u6A21\u539F", lat: 35.5715, lon: 139.3732 }),
-  niigata: Object.freeze({ id: "niigata", name: "\u65B0\u6F5F", lat: 37.9161, lon: 139.0364 }),
-  shizuoka: Object.freeze({ id: "shizuoka", name: "\u9759\u5CA1", lat: 34.9756, lon: 138.3828 }),
-  hamamatsu: Object.freeze({ id: "hamamatsu", name: "\u6D5C\u677E", lat: 34.7108, lon: 137.7261 }),
-  nagoya: Object.freeze({ id: "nagoya", name: "\u540D\u53E4\u5C4B", lat: 35.1815, lon: 136.9066 }),
-  kyoto: Object.freeze({ id: "kyoto", name: "\u4EAC\u90FD", lat: 35.0116, lon: 135.7681 }),
-  osaka: Object.freeze({ id: "osaka", name: "\u5927\u962A", lat: 34.6937, lon: 135.5023 }),
-  sakai: Object.freeze({ id: "sakai", name: "\u583A", lat: 34.5733, lon: 135.4828 }),
-  kobe: Object.freeze({ id: "kobe", name: "\u795E\u6238", lat: 34.6901, lon: 135.1955 }),
-  okayama: Object.freeze({ id: "okayama", name: "\u5CA1\u5C71", lat: 34.6551, lon: 133.9195 }),
-  hiroshima: Object.freeze({ id: "hiroshima", name: "\u5E83\u5CF6", lat: 34.3853, lon: 132.4553 }),
-  kitakyushu: Object.freeze({ id: "kitakyushu", name: "\u5317\u4E5D\u5DDE", lat: 33.8834, lon: 130.8751 }),
-  fukuoka: Object.freeze({ id: "fukuoka", name: "\u798F\u5CA1", lat: 33.5904, lon: 130.4017 }),
-  kumamoto: Object.freeze({ id: "kumamoto", name: "\u718A\u672C", lat: 32.8031, lon: 130.7079 })
+  sapporo: Object.freeze({ id: "sapporo", name: "\u5317\u6D77\u9053\u30FB\u672D\u5E4C", lat: 43.0618, lon: 141.3545 }),
+  aomori: Object.freeze({ id: "aomori", name: "\u9752\u68EE\u770C\u30FB\u9752\u68EE", lat: 40.8244, lon: 140.74 }),
+  morioka: Object.freeze({ id: "morioka", name: "\u5CA9\u624B\u770C\u30FB\u76DB\u5CA1", lat: 39.7036, lon: 141.1527 }),
+  sendai: Object.freeze({ id: "sendai", name: "\u5BAE\u57CE\u770C\u30FB\u4ED9\u53F0", lat: 38.2682, lon: 140.8694 }),
+  akita: Object.freeze({ id: "akita", name: "\u79CB\u7530\u770C\u30FB\u79CB\u7530", lat: 39.7186, lon: 140.1024 }),
+  yamagata: Object.freeze({ id: "yamagata", name: "\u5C71\u5F62\u770C\u30FB\u5C71\u5F62", lat: 38.2404, lon: 140.3633 }),
+  fukushima: Object.freeze({ id: "fukushima", name: "\u798F\u5CF6\u770C\u30FB\u798F\u5CF6", lat: 37.7503, lon: 140.4676 }),
+  mito: Object.freeze({ id: "mito", name: "\u8328\u57CE\u770C\u30FB\u6C34\u6238", lat: 36.3418, lon: 140.4468 }),
+  utsunomiya: Object.freeze({ id: "utsunomiya", name: "\u6803\u6728\u770C\u30FB\u5B87\u90FD\u5BAE", lat: 36.5658, lon: 139.8836 }),
+  maebashi: Object.freeze({ id: "maebashi", name: "\u7FA4\u99AC\u770C\u30FB\u524D\u6A4B", lat: 36.3911, lon: 139.0608 }),
+  saitama: Object.freeze({ id: "saitama", name: "\u57FC\u7389\u770C\u30FB\u3055\u3044\u305F\u307E", lat: 35.8569, lon: 139.6489 }),
+  chiba: Object.freeze({ id: "chiba", name: "\u5343\u8449\u770C\u30FB\u5343\u8449", lat: 35.6074, lon: 140.1065 }),
+  tokyo: Object.freeze({ id: "tokyo", name: "\u6771\u4EAC\u90FD\u30FB\u6771\u4EAC", lat: 35.6762, lon: 139.6503 }),
+  yokohama: Object.freeze({ id: "yokohama", name: "\u795E\u5948\u5DDD\u770C\u30FB\u6A2A\u6D5C", lat: 35.4437, lon: 139.638 }),
+  niigata: Object.freeze({ id: "niigata", name: "\u65B0\u6F5F\u770C\u30FB\u65B0\u6F5F", lat: 37.9026, lon: 139.0232 }),
+  toyama: Object.freeze({ id: "toyama", name: "\u5BCC\u5C71\u770C\u30FB\u5BCC\u5C71", lat: 36.6953, lon: 137.2113 }),
+  kanazawa: Object.freeze({ id: "kanazawa", name: "\u77F3\u5DDD\u770C\u30FB\u91D1\u6CA2", lat: 36.5613, lon: 136.6562 }),
+  fukui: Object.freeze({ id: "fukui", name: "\u798F\u4E95\u770C\u30FB\u798F\u4E95", lat: 36.0652, lon: 136.2216 }),
+  kofu: Object.freeze({ id: "kofu", name: "\u5C71\u68A8\u770C\u30FB\u7532\u5E9C", lat: 35.6642, lon: 138.5684 }),
+  nagano: Object.freeze({ id: "nagano", name: "\u9577\u91CE\u770C\u30FB\u9577\u91CE", lat: 36.6513, lon: 138.181 }),
+  gifu: Object.freeze({ id: "gifu", name: "\u5C90\u961C\u770C\u30FB\u5C90\u961C", lat: 35.4233, lon: 136.7606 }),
+  shizuoka: Object.freeze({ id: "shizuoka", name: "\u9759\u5CA1\u770C\u30FB\u9759\u5CA1", lat: 34.9756, lon: 138.3828 }),
+  nagoya: Object.freeze({ id: "nagoya", name: "\u611B\u77E5\u770C\u30FB\u540D\u53E4\u5C4B", lat: 35.1815, lon: 136.9066 }),
+  tsu: Object.freeze({ id: "tsu", name: "\u4E09\u91CD\u770C\u30FB\u6D25", lat: 34.7303, lon: 136.5086 }),
+  otsu: Object.freeze({ id: "otsu", name: "\u6ECB\u8CC0\u770C\u30FB\u5927\u6D25", lat: 35.0179, lon: 135.8546 }),
+  kyoto: Object.freeze({ id: "kyoto", name: "\u4EAC\u90FD\u5E9C\u30FB\u4EAC\u90FD", lat: 35.0116, lon: 135.7681 }),
+  osaka: Object.freeze({ id: "osaka", name: "\u5927\u962A\u5E9C\u30FB\u5927\u962A", lat: 34.6937, lon: 135.5023 }),
+  kobe: Object.freeze({ id: "kobe", name: "\u5175\u5EAB\u770C\u30FB\u795E\u6238", lat: 34.6901, lon: 135.1955 }),
+  nara: Object.freeze({ id: "nara", name: "\u5948\u826F\u770C\u30FB\u5948\u826F", lat: 34.6851, lon: 135.8048 }),
+  wakayama: Object.freeze({ id: "wakayama", name: "\u548C\u6B4C\u5C71\u770C\u30FB\u548C\u6B4C\u5C71", lat: 34.226, lon: 135.1675 }),
+  tottori: Object.freeze({ id: "tottori", name: "\u9CE5\u53D6\u770C\u30FB\u9CE5\u53D6", lat: 35.5011, lon: 134.2351 }),
+  matsue: Object.freeze({ id: "matsue", name: "\u5CF6\u6839\u770C\u30FB\u677E\u6C5F", lat: 35.4681, lon: 133.0484 }),
+  okayama: Object.freeze({ id: "okayama", name: "\u5CA1\u5C71\u770C\u30FB\u5CA1\u5C71", lat: 34.6618, lon: 133.9344 }),
+  hiroshima: Object.freeze({ id: "hiroshima", name: "\u5E83\u5CF6\u770C\u30FB\u5E83\u5CF6", lat: 34.3853, lon: 132.4553 }),
+  yamaguchi: Object.freeze({ id: "yamaguchi", name: "\u5C71\u53E3\u770C\u30FB\u5C71\u53E3", lat: 34.1859, lon: 131.4714 }),
+  tokushima: Object.freeze({ id: "tokushima", name: "\u5FB3\u5CF6\u770C\u30FB\u5FB3\u5CF6", lat: 34.0703, lon: 134.5548 }),
+  takamatsu: Object.freeze({ id: "takamatsu", name: "\u9999\u5DDD\u770C\u30FB\u9AD8\u677E", lat: 34.3428, lon: 134.0466 }),
+  matsuyama: Object.freeze({ id: "matsuyama", name: "\u611B\u5A9B\u770C\u30FB\u677E\u5C71", lat: 33.8392, lon: 132.7657 }),
+  kochi: Object.freeze({ id: "kochi", name: "\u9AD8\u77E5\u770C\u30FB\u9AD8\u77E5", lat: 33.5597, lon: 133.5311 }),
+  fukuoka: Object.freeze({ id: "fukuoka", name: "\u798F\u5CA1\u770C\u30FB\u798F\u5CA1", lat: 33.5904, lon: 130.4017 }),
+  saga: Object.freeze({ id: "saga", name: "\u4F50\u8CC0\u770C\u30FB\u4F50\u8CC0", lat: 33.2635, lon: 130.3009 }),
+  nagasaki: Object.freeze({ id: "nagasaki", name: "\u9577\u5D0E\u770C\u30FB\u9577\u5D0E", lat: 32.7503, lon: 129.8777 }),
+  kumamoto: Object.freeze({ id: "kumamoto", name: "\u718A\u672C\u770C\u30FB\u718A\u672C", lat: 32.8031, lon: 130.7079 }),
+  oita: Object.freeze({ id: "oita", name: "\u5927\u5206\u770C\u30FB\u5927\u5206", lat: 33.2382, lon: 131.6126 }),
+  miyazaki: Object.freeze({ id: "miyazaki", name: "\u5BAE\u5D0E\u770C\u30FB\u5BAE\u5D0E", lat: 31.9077, lon: 131.4202 }),
+  kagoshima: Object.freeze({ id: "kagoshima", name: "\u9E7F\u5150\u5CF6\u770C\u30FB\u9E7F\u5150\u5CF6", lat: 31.5966, lon: 130.5571 }),
+  naha: Object.freeze({ id: "naha", name: "\u6C96\u7E04\u770C\u30FB\u90A3\u8987", lat: 26.2124, lon: 127.6809 })
 });
-var DEFAULT_CITY = CITY_LOCATIONS.tokyo;
+var DEFAULT_CITY = CITY_LOCATIONS.sapporo;
 var cityBbox = /* @__PURE__ */ __name((city) => [city.lon - 0.3, city.lat - 0.25, city.lon + 0.3, city.lat + 0.25], "cityBbox");
 var resolveObservationCity = /* @__PURE__ */ __name((value) => CITY_LOCATIONS[value] || DEFAULT_CITY, "resolveObservationCity");
-var TRANSFORM_VERSION = "live-senseware-v3-japan-cities";
+var TRANSFORM_VERSION = "live-senseware-v4-japan-prefectures";
 var STREAM_LIFETIME_MS = 10 * 60 * 1e3;
 var STREAM_REFRESH_MS = 5 * 60 * 1e3;
 var HEARTBEAT_MS = 15e3;

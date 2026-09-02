@@ -25,7 +25,10 @@ await test("Live Senseware uses free-plan provider gates and five-minute stream 
   assert.match(source, /open-meteo-\$\{city\.id\}-weather-v1[\s\S]*30 \* 60 \* 1_000/u);
   assert.match(source, /open-meteo-\$\{city\.id\}-air-v1[\s\S]*3 \* 60 \* 60 \* 1_000/u);
   assert.match(source, /resolveObservationCity\(new URL\(request\.url\)\.searchParams\.get\("city"\)\)/u);
-  assert.equal((source.match(/Object\.freeze\(\{ id: "[a-z-]+", name: "[^"]+", lat:/gu) || []).length, 21);
+  assert.equal((source.match(/Object\.freeze\(\{ id: "[a-z-]+", name: "[^"]+", lat:/gu) || []).length, 47);
+  assert.match(source, /const DEFAULT_CITY = CITY_LOCATIONS\.sapporo/u);
+  assert(source.indexOf("sapporo: Object.freeze") < source.indexOf("aomori: Object.freeze"));
+  assert(source.indexOf("aomori: Object.freeze") < source.indexOf("naha: Object.freeze"));
   assert.match(source, /current: "temperature_2m,precipitation,cloud_cover,wind_speed_10m"/u);
   assert.match(source, /current: "carbon_dioxide,pm2_5"/u);
   assert.match(source, /refresh = setInterval\(\(\) => void emitSnapshot\(\), STREAM_REFRESH_MS\)/u);

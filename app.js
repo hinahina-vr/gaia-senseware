@@ -315,13 +315,17 @@
   const GLOBAL_EARTHQUAKE_MAX_MAGNITUDE = 9.1;
   const GLOBAL_EARTHQUAKE_MIN_IMPACT_RADIUS_KM = 500;
   const GLOBAL_EARTHQUAKE_MAX_IMPACT_RADIUS_KM = 2000;
-  const GLOBAL_EARTHQUAKE_WAVE_MIN_DURATION_MS = 7000;
-  const GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS = 15000;
+  const GLOBAL_EARTHQUAKE_WAVE_MIN_DURATION_MS = 2200;
+  const GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS = 3600;
+  const GLOBAL_EARTHQUAKE_YEAR_DWELL_MS = 4600;
+  const GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS = 220;
+  const GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS = 460;
+  const GLOBAL_EARTHQUAKE_RING_DELAY_MS = 90;
   const GLOBAL_EARTHQUAKE_YEAR_COUNT = 27;
   const ANTHROPOCENE_EMISSIONS_SCALE_MT = 12000;
   const ANTHROPOCENE_VISIBLE_RADIUS_PX = 4;
   const GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS =
-    GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS * GLOBAL_EARTHQUAKE_YEAR_COUNT;
+    GLOBAL_EARTHQUAKE_YEAR_DWELL_MS * GLOBAL_EARTHQUAKE_YEAR_COUNT;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
   const GAIA_SIGNALS_DATA = "./data/gaia-signals.json?v=gaia-human-history-1";
   const OVATION_AURORA_LIVE_DATA = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json";
@@ -366,7 +370,7 @@
       title: "大地震は、年ごとに世界のどこで起きたのか？",
       subject: "世界表示を基準に、USGSが記録した2000〜2026年のM7.5以上を年度ごとに切り替えます。別年度の震源は同時表示しません。",
       reading: "橙の点がその年の震源です。年度が変わるたび全点から輪がゆっくり広がり、Magnitudeから見積もった可感半径の目安で止まります。M7.5は約500km、M9.1は約2,000kmです。",
-      action: "スライダーで年度を切り替えるか、震源を押して日付・深さ・Magnitudeを読めます。輪は推定可感半径で、実際の震度分布・被害範囲・津波範囲ではありません。日本の実測震度は別層です。",
+      action: "2000〜2026年を約4.6秒ずつ自動再生します。スライダーで年度を切り替えるか、震源を押して日付・深さ・Magnitudeを読めます。輪は推定可感半径で、実際の震度分布・被害範囲・津波範囲ではありません。日本の実測震度は別層です。",
     },
     {
       title: "都市化が進むほど、森林は減るのか？",
@@ -827,6 +831,12 @@
     previousIso3: "",
     changedAt: performance.now(),
   };
+  const earthquakeYearTransition = {
+    generation: -1,
+    currentYear: "",
+    currentEvents: [],
+    changedAt: performance.now(),
+  };
   let nextJapanOverlayRenderAt = 0;
   let lastJapanOverlayTargetFps = 60;
   const STATIC_MAP_FRAME_INTERVAL_MS = 500;
@@ -890,8 +900,7 @@
   let anthropoceneSelectedIso3 = "JPN";
   let populationSelectedIso3 = "JPN";
   let wasteSelectedIndex = 0;
-  let globalEarthquakeWaveYear = "";
-  let globalEarthquakeWaveStartedAt = 0;
+  let timelineDisplayTransitionKey = "";
   let japanPoiRevealTimer = 0;
   let japanDeepLinkHandled = false;
   let earthViewAnimationFrame = 0;
@@ -961,6 +970,72 @@
       previousIso3,
       current: rows.find((row) => row.iso3 === ecologiesSelectionTransition.currentIso3) || selected,
       previous: rows.find((row) => row.iso3 === previousIso3) || null,
+    };
+  };
+  const compareEarthquakeOccurrence = (a, b) => (
+    String(a?.occurredAt || "").localeCompare(String(b?.occurredAt || ""))
+    || String(a?.id || "").localeCompare(String(b?.id || ""))
+  );
+  const getEarthquakeYearTransition = (selectedYear, yearEvents, now) => {
+    const nextYear = String(selectedYear || "");
+    const nextEvents = Array.isArray(yearEvents)
+      ? [...yearEvents].sort(compareEarthquakeOccurrence)
+      : [];
+    if (
+      earthquakeYearTransition.generation !== mapPlotRevealGeneration
+      || !earthquakeYearTransition.currentYear
+    ) {
+      earthquakeYearTransition.generation = mapPlotRevealGeneration;
+      earthquakeYearTransition.currentYear = nextYear;
+      earthquakeYearTransition.currentEvents = nextEvents;
+      earthquakeYearTransition.changedAt = Math.max(now, mapPlotRevealStartedAt);
+    } else if (nextYear && nextYear !== earthquakeYearTransition.currentYear) {
+      earthquakeYearTransition.currentYear = nextYear;
+      earthquakeYearTransition.currentEvents = nextEvents;
+      earthquakeYearTransition.changedAt = now;
+    } else {
+      earthquakeYearTransition.currentEvents = nextEvents;
+    }
+
+    const eventCount = earthquakeYearTransition.currentEvents.length;
+    const durationMs = Math.max(
+      GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS,
+      Math.max(0, eventCount - 1) * GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS
+        + GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS,
+    );
+    const elapsedMs = Math.max(0, now - earthquakeYearTransition.changedAt);
+    const eventReveals = earthquakeYearTransition.currentEvents.map((event, index) => {
+      const localElapsedMs = reducedMotion
+        ? durationMs
+        : now - earthquakeYearTransition.changedAt - index * GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS;
+      const progress = reducedMotion
+        ? 1
+        : clamp(localElapsedMs / GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS, 0, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const bounce = Math.sin(progress * Math.PI) * (1 - progress) * 0.2;
+      return {
+        event,
+        index,
+        progress,
+        alpha: clamp(progress * 2.35, 0, 1),
+        scale: 0.14 + eased * 0.86 + bounce,
+        waveElapsedMs: reducedMotion
+          ? GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS
+          : Math.max(0, localElapsedMs - GLOBAL_EARTHQUAKE_RING_DELAY_MS),
+      };
+    });
+    const visibleEventCount = eventReveals.filter(({ progress }) => progress > 0).length;
+    const activeReveal = visibleEventCount > 0 ? eventReveals[visibleEventCount - 1] : null;
+    const activeEvent = activeReveal?.event || null;
+    return {
+      progress: reducedMotion ? 1 : clamp(elapsedMs / durationMs, 0, 1),
+      durationMs,
+      visibleEventCount,
+      activeEvent,
+      activeReveal,
+      eventReveals,
+      currentYear: earthquakeYearTransition.currentYear,
+      currentEvents: earthquakeYearTransition.currentEvents,
     };
   };
   const MAP_TITLE_SEPARATOR_DURATION_MS = 1500;
@@ -3076,7 +3151,9 @@
         .sort((a, b) => Number(a) - Number(b));
       const index = getSequenceIndex(years.length);
       const year = years[index];
-      const yearEvents = rows.filter((row) => String(row.occurredAt || "").startsWith(year));
+      const yearEvents = rows
+        .filter((row) => String(row.occurredAt || "").startsWith(year))
+        .sort(compareEarthquakeOccurrence);
       const strongest = yearEvents.reduce(
         (current, row) => !current || row.magnitude > current.magnitude ? row : current,
         null,
@@ -3087,8 +3164,10 @@
         phaseLabel: `USGS YEARLY M7.5+ / ${String(index + 1).padStart(2, "0")} OF ${String(years.length).padStart(2, "0")}`,
         yearLabel: year,
         valueLabel: `${yearEvents.length} EVENTS · MAX M${strongest.magnitude.toFixed(1)}`,
-        methodLabel: "YEAR SNAPSHOT / SLOW ESTIMATED FELT RINGS",
-        timeLabel: `年度 / ${years[0]} → ${years.at(-1)}`,
+        methodLabel: "YEAR SNAPSHOT / CHRONOLOGICAL POP-IN + ESTIMATED FELT RINGS",
+        timeLabel: `年次自動再生 / ${years[0]} → ${years.at(-1)} · 約${(
+          GLOBAL_EARTHQUAKE_YEAR_DWELL_MS / 1000
+        ).toFixed(1)}秒/年`,
         selectedIndex: index,
         selected: strongest,
         selectedYear: year,
@@ -3524,19 +3603,30 @@
       ctx.globalCompositeOperation = "source-over";
       ctx.textAlign = "left";
       const prominent = motion.prominent === true;
-      const primaryFontPx = prominent ? (rect.width < 600 ? 14 : 16) : 10;
-      const secondaryFontPx = prominent ? (rect.width < 600 ? 10 : 11) : 8;
-      const horizontalPadding = prominent ? 16 : 10;
-      const cardHeight = prominent ? (rect.width < 600 ? 62 : 68) : 46;
+      const compact = rect.width < 600;
+      const expansive = rect.width >= 2400;
+      const primaryFontPx = prominent
+        ? (compact ? 18 : (expansive ? 32 : 20))
+        : (compact ? 16 : (expansive ? 30 : 18));
+      const secondaryFontPx = prominent
+        ? (compact ? 14 : (expansive ? 22 : 15))
+        : (compact ? 12 : (expansive ? 20 : 13));
+      const horizontalPadding = expansive ? (prominent ? 28 : 26) : (prominent ? 20 : 18);
+      const cardHeight = prominent
+        ? (compact ? 80 : (expansive ? 120 : 86))
+        : (compact ? 68 : (expansive ? 106 : 72));
       ctx.font = `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
       const primaryWidth = ctx.measureText(primary).width;
       ctx.font = `600 ${secondaryFontPx}px Consolas, "Courier New", monospace`;
       const secondaryWidth = ctx.measureText(secondary).width;
-      const maximumWidth = Math.min(prominent ? 440 : 280, rect.width - (prominent ? 32 : 24));
+      const maximumWidth = Math.min(
+        prominent ? (expansive ? 900 : 620) : (expansive ? 760 : 520),
+        rect.width - (prominent ? 32 : 24),
+      );
       const naturalWidth = Math.max(primaryWidth, secondaryWidth) + horizontalPadding * 2;
       const textWidth = prominent
-        ? Math.min(maximumWidth, Math.max(Math.min(360, maximumWidth), naturalWidth))
-        : Math.min(maximumWidth, naturalWidth);
+        ? Math.min(maximumWidth, Math.max(Math.min(expansive ? 640 : 460, maximumWidth), naturalWidth))
+        : Math.min(maximumWidth, Math.max(Math.min(expansive ? 520 : 340, maximumWidth), naturalWidth));
       const pointGap = prominent ? 24 : 16;
       const x = clamp(
         point.x + pointGap + textWidth > rect.width ? point.x - textWidth - pointGap : point.x + pointGap,
@@ -3559,13 +3649,31 @@
       ctx.strokeRect(drawX, drawY, textWidth, cardHeight);
       ctx.fillStyle = color;
       ctx.font = `700 ${primaryFontPx}px "Noto Sans JP", sans-serif`;
-      ctx.fillText(primary, drawX + horizontalPadding, drawY + (prominent ? 27 : 18), textWidth - horizontalPadding * 2);
+      ctx.fillText(
+        primary,
+        drawX + horizontalPadding,
+        drawY + (prominent ? (compact ? 32 : (expansive ? 46 : 35)) : (compact ? 28 : (expansive ? 42 : 30))),
+        textWidth - horizontalPadding * 2,
+      );
       ctx.fillStyle = "rgba(222,241,240,.76)";
       ctx.font = `600 ${secondaryFontPx}px Consolas, "Courier New", monospace`;
-      ctx.fillText(secondary, drawX + horizontalPadding, drawY + (prominent ? 51 : 34), textWidth - horizontalPadding * 2);
+      ctx.fillText(
+        secondary,
+        drawX + horizontalPadding,
+        drawY + (prominent ? (compact ? 64 : (expansive ? 94 : 69)) : (compact ? 55 : (expansive ? 83 : 59))),
+        textWidth - horizontalPadding * 2,
+      );
       ctx.restore();
+      japanOverlay.dataset.selectionLabelWidthPx = textWidth.toFixed(1);
+      japanOverlay.dataset.selectionLabelHeightPx = String(cardHeight);
+      japanOverlay.dataset.selectionLabelPrimaryFontPx = String(primaryFontPx);
+      japanOverlay.dataset.selectionLabelSecondaryFontPx = String(secondaryFontPx);
       return { x, y: y + offsetY, width: textWidth, height: cardHeight, primaryFontPx, secondaryFontPx };
     };
+    delete japanOverlay.dataset.selectionLabelWidthPx;
+    delete japanOverlay.dataset.selectionLabelHeightPx;
+    delete japanOverlay.dataset.selectionLabelPrimaryFontPx;
+    delete japanOverlay.dataset.selectionLabelSecondaryFontPx;
     delete japanOverlay.dataset.earthquakeSelectionLabelWidthPx;
     delete japanOverlay.dataset.earthquakeSelectionLabelHeightPx;
     delete japanOverlay.dataset.earthquakeSelectionPrimaryFontPx;
@@ -4270,18 +4378,16 @@
       if (japanDataLayer === "history") {
         japanOverlay.dataset.earthquakeLayer = "japan-history";
       } else {
-        if (globalEarthquakeWaveYear !== selectedYear) {
-          globalEarthquakeWaveYear = selectedYear;
-          globalEarthquakeWaveStartedAt = now;
-        }
-        const elapsedWaveMs = Math.max(0, now - globalEarthquakeWaveStartedAt);
+        const yearTransition = getEarthquakeYearTransition(selectedYear, yearEvents, now);
         const earthProjection = japanView.earthProjection || getEarthProjection(rect);
         const strongestMagnitude = sequence?.selected?.magnitude || GLOBAL_EARTHQUAKE_MIN_MAGNITUDE;
         const strongestImpactRadiusKm = getGlobalEarthquakeImpactRadiusKm(strongestMagnitude);
         const strongestDurationMs = getGlobalEarthquakeWaveDurationMs(strongestImpactRadiusKm);
-        const waveProgress = reducedMotion
-          ? 1
-          : clamp(elapsedWaveMs / strongestDurationMs, 0, 1);
+        const waveProgress = yearTransition.eventReveals.reduce((maximum, reveal) => {
+          const eventImpactRadiusKm = getGlobalEarthquakeImpactRadiusKm(reveal.event.magnitude);
+          const eventDurationMs = getGlobalEarthquakeWaveDurationMs(eventImpactRadiusKm);
+          return Math.max(maximum, clamp(reveal.waveElapsedMs / eventDurationMs, 0, 1));
+        }, 0);
         const strongestImpactEllipse = getGlobalEarthquakeImpactEllipse(
           sequence?.selected || { latitude: 0 },
           strongestImpactRadiusKm,
@@ -4291,15 +4397,38 @@
         japanOverlay.dataset.earthquakeYear = selectedYear;
         japanOverlay.dataset.earthquakeYearEventCount = String(yearEvents.length);
         japanOverlay.dataset.earthquakeTotalEventCount = String(signalMode.signals.globalEvents?.length || 0);
-        japanOverlay.dataset.earthquakeWaveSync = "annual-simultaneous-distance-limited";
+        japanOverlay.dataset.earthquakeWaveSync = "chronological-sequential-distance-limited";
         japanOverlay.dataset.earthquakeWaveModel = "usgs-estimated-felt-radius";
         japanOverlay.dataset.earthquakeWaveProgress = waveProgress.toFixed(3);
         japanOverlay.dataset.earthquakeWaveRadiusMaxKm = strongestImpactRadiusKm.toFixed(0);
         japanOverlay.dataset.earthquakeWaveRadiusMaxPx = strongestImpactEllipse.y.toFixed(1);
         japanOverlay.dataset.earthquakeWaveRadiusMaxXPx = strongestImpactEllipse.x.toFixed(1);
         japanOverlay.dataset.earthquakeWaveDurationMaxMs = strongestDurationMs.toFixed(0);
+        japanOverlay.dataset.earthquakeTimelinePlayback = "auto-loop";
+        japanOverlay.dataset.earthquakeYearDwellMs = String(GLOBAL_EARTHQUAKE_YEAR_DWELL_MS);
+        japanOverlay.dataset.earthquakeYearTransitionMode = "chronological-pop";
+        japanOverlay.dataset.earthquakeYearTransitionMs = String(yearTransition.durationMs);
+        japanOverlay.dataset.earthquakeYearTransitionProgress = yearTransition.progress.toFixed(3);
+        japanOverlay.dataset.earthquakeYearTransitionTo = yearTransition.currentYear;
+        japanOverlay.dataset.earthquakeRevealOrder = "occurred-at-ascending";
+        japanOverlay.dataset.earthquakeOrderedEventTimes = yearTransition.currentEvents
+          .map((event) => event.occurredAt || "")
+          .join(",");
+        japanOverlay.dataset.earthquakeEventStaggerMs = String(GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS);
+        japanOverlay.dataset.earthquakeEventAppearMs = String(GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS);
+        japanOverlay.dataset.earthquakeVisibleEventCount = String(yearTransition.visibleEventCount);
+        japanOverlay.dataset.earthquakeActiveEventIndex = String(yearTransition.visibleEventCount - 1);
+        japanOverlay.dataset.earthquakeActiveEventOccurredAt = yearTransition.activeEvent?.occurredAt || "";
+        japanOverlay.dataset.earthquakeActiveEventProgress = (yearTransition.activeReveal?.progress || 0).toFixed(3);
+        japanOverlay.dataset.earthquakeSelectionLabelWidthPx = "0";
+        japanOverlay.dataset.earthquakeSelectionLabelHeightPx = "0";
+        japanOverlay.dataset.earthquakeSelectionPrimaryFontPx = "0";
 
-        yearEvents.forEach((event) => {
+        const drawEarthquakeEvent = (event, {
+          reveal = null,
+          strongest = false,
+        } = {}) => {
+          if (reveal && reveal.progress <= 0) return;
           const point = pointFor({ lon: event.longitude, lat: event.latitude });
           const magnitudeScale = clamp(
             (event.magnitude - GLOBAL_EARTHQUAKE_MIN_MAGNITUDE) /
@@ -4309,14 +4438,23 @@
           );
           const impactRadiusKm = getGlobalEarthquakeImpactRadiusKm(event.magnitude);
           const eventDurationMs = getGlobalEarthquakeWaveDurationMs(impactRadiusKm);
-          const eventProgress = reducedMotion ? 1 : clamp(elapsedWaveMs / eventDurationMs, 0, 1);
+          const eventProgress = reducedMotion
+            ? 1
+            : clamp((reveal?.waveElapsedMs || 0) / eventDurationMs, 0, 1);
           const easedProgress = eventProgress * eventProgress * (3 - 2 * eventProgress);
           const targetEllipse = getGlobalEarthquakeImpactEllipse(event, impactRadiusKm, earthProjection);
           const radiusX = targetEllipse.x * easedProgress;
           const radiusY = targetEllipse.y * easedProgress;
           const waveOpacity = 0.88 - eventProgress * 0.56;
-          const strongest = event.id === sequence?.selected?.id;
           if (!visible(point, Math.max(targetEllipse.x, targetEllipse.y) + 12)) return;
+
+          const appearance = reveal?.alpha ?? 1;
+          const scale = reveal?.scale ?? 1;
+          ctx.save();
+          ctx.globalAlpha *= clamp(appearance, 0, 1);
+          ctx.translate(point.x, point.y);
+          ctx.scale(scale, scale);
+          ctx.translate(-point.x, -point.y);
 
           if (radiusX > 2 && radiusY > 2) {
             [1, 0.72, 0.44].forEach((ringScale, ringIndex) => {
@@ -4341,6 +4479,26 @@
           const sourceRadius = strongest
             ? 7 + magnitudeScale * 9
             : 4.5 + magnitudeScale * 5.5;
+          const popStrength = reveal && reveal.progress < 1
+            ? Math.sin(reveal.progress * Math.PI)
+            : 0;
+          if (popStrength > 0.01) {
+            ctx.save();
+            ctx.shadowColor = "rgba(255,198,104,.94)";
+            ctx.shadowBlur = 12 + popStrength * 14;
+            ctx.beginPath();
+            ctx.arc(
+              point.x,
+              point.y,
+              sourceRadius + 4 + reveal.progress * (10 + magnitudeScale * 8),
+              0,
+              Math.PI * 2,
+            );
+            ctx.strokeStyle = `rgba(255,218,139,${popStrength * 0.72})`;
+            ctx.lineWidth = 1.4 + popStrength * 1.8;
+            ctx.stroke();
+            ctx.restore();
+          }
           ctx.beginPath();
           ctx.arc(point.x, point.y, sourceRadius, 0, Math.PI * 2);
           ctx.fillStyle = strongest ? "rgba(255,232,151,.98)" : "rgba(255,151,89,.9)";
@@ -4354,10 +4512,19 @@
           ctx.fillStyle = "rgba(255,224,173,.88)";
           ctx.font = `700 ${strongest ? 11 : 9}px Consolas, "Courier New", monospace`;
           ctx.fillText(`M${event.magnitude.toFixed(1)}`, point.x + sourceRadius + 5, point.y - 5);
-        });
+          ctx.restore();
+        };
+
+        yearTransition.eventReveals.forEach((reveal) => drawEarthquakeEvent(reveal.event, {
+          reveal,
+          strongest: reveal.event.id === sequence?.selected?.id,
+        }));
 
         const strongest = sequence?.selected;
-        if (strongest) {
+        const strongestReveal = yearTransition.eventReveals.find(({ event }) => event.id === strongest?.id);
+        if (strongest && strongestReveal?.progress > 0.42) {
+          ctx.save();
+          ctx.globalAlpha *= clamp((strongestReveal.progress - 0.42) / 0.58, 0, 1);
           const point = pointFor({ lon: strongest.longitude, lat: strongest.latitude });
           if (visible(point, 80)) {
             const labelBounds = drawSelectionLabel(
@@ -4371,6 +4538,7 @@
             japanOverlay.dataset.earthquakeSelectionLabelHeightPx = labelBounds.height.toFixed(1);
             japanOverlay.dataset.earthquakeSelectionPrimaryFontPx = String(labelBounds.primaryFontPx);
           }
+          ctx.restore();
         }
       }
       ctx.fillStyle = "rgba(255,190,108,.74)";
@@ -5437,7 +5605,6 @@
   const setJapanDataLayer = (layer) => {
     const previousLayer = japanDataLayer;
     japanDataLayer = layer === "snapshot" ? "snapshot" : "history";
-    if (japanDataLayer === "snapshot") globalEarthquakeWaveYear = "";
     japanHistoryLayerButton.setAttribute(
       "aria-pressed",
       japanDataLayer === "history" ? "true" : "false",
@@ -6192,7 +6359,7 @@
       return {
         output: state?.phaseLabel || "USGS GLOBAL HISTORY",
         value: state ? `${state.selectedYear} / ${state.yearEvents.length} EVENTS / MAX M${state.selected.magnitude.toFixed(1)}` : "NO YEAR",
-        note: "この年度の震源だけを世界表示します。輪は約7〜15秒かけて広がり、Magnitudeから見積もった可感半径で止まります。実際の震度・被害・津波範囲ではありません。",
+        note: "この年度の震源だけを発生日時順に世界表示します。各点に続く輪は約2.2〜3.6秒で広がり、Magnitudeから見積もった可感半径で止まります。実際の震度・被害・津波範囲ではありません。",
         temporal: true,
       };
     }
@@ -6517,7 +6684,9 @@
       const timelineTransport = isWasteCountrySelector
         ? "MANUAL SELECT"
         : reducedMotion
-        ? "STATIC"
+        ? signalMode?.id === "rhythm-of-disaster"
+          ? "AUTO · REDUCED FX"
+          : "STATIC"
         : co2TimelineHeld || performance.now() < co2TimelinePausedUntil
           ? "PAUSED"
           : "AUTO";
@@ -6531,6 +6700,16 @@
             ? `${timelineState.referencePpm.toFixed(1)} ppm · 幅 ${timelineState.lower95Ppm.toFixed(1)}–${timelineState.upper95Ppm.toFixed(1)}`
             : `${timelineState.referencePpm.toFixed(1)} ppm`;
       co2TimelineMethod.textContent = timelineState.methodLabel;
+      const transitionKey = `${signalMode?.id || "unknown"}:${timelineState.yearLabel}`;
+      if (signalMode?.id === "rhythm-of-disaster" && transitionKey !== timelineDisplayTransitionKey) {
+        timelineDisplayTransitionKey = transitionKey;
+        co2TimelineDisplay.dataset.timeTransitionKey = transitionKey;
+        co2TimelineDisplay.classList.remove("is-time-changing");
+        if (!reducedMotion) {
+          void co2TimelineDisplay.offsetWidth;
+          co2TimelineDisplay.classList.add("is-time-changing");
+        }
+      }
     }
     const activeSignalConsoles = storyModeDetour && japanIsOpen
       ? signalConsoles.filter((consoleElement) => consoleElement.classList.contains("signal-console-map"))
@@ -6709,7 +6888,9 @@
     co2TimelinePausedUntil = 0;
     co2TimelineLastStep = -1;
     co2TimelineHeld = false;
-    globalEarthquakeWaveYear = "";
+    earthquakeYearTransition.generation = -1;
+    earthquakeYearTransition.currentYear = "";
+    earthquakeYearTransition.currentEvents = [];
     gosatHeatmapCacheKey = "";
     updateSignalInterface();
   };
@@ -6717,8 +6898,9 @@
   const updateCo2TimelineAnimation = (now) => {
     const signalMode = getActiveSignalMode();
     const isTimelineMode = Boolean(signalMode);
+    const reducedMotionStillAdvances = signalMode?.id === "rhythm-of-disaster";
     if (
-      reducedMotion ||
+      (reducedMotion && !reducedMotionStillAdvances) ||
       !japanIsOpen ||
       !isTimelineMode ||
       signalMode.id === "nothing-is-waste" ||
@@ -6839,7 +7021,7 @@ const viirsGeographic = projectWebMercatorRasterToGeographic(viirsNightLights201
 drawRadianceGlow(viirsGeographic); // FIXED 2016 REFERENCE; not historical night lights
 const nightLightOpacity = longPress ? 0.04 : 0.5;
 // Night-light radiance is never converted to emissions.`,
-    "rhythm-of-disaster": `const years = groupByYear(usgsM75Since2000); // 2000–2026\nconst events = years[selectedYear]; // this year only; default view is global\nfor (const event of events) {\n  const feltRadiusKm = estimateFeltRadiusKm(event.magnitude); // M7.5 ≈ 500 km; M9.1 ≈ 2,000 km\n  const durationMs = scale(feltRadiusKm, 500, 2000, 7000, 15000);\n  drawSlowEstimatedFeltRing(event, feltRadiusKm, durationMs); // same start; magnitude-specific stop\n}\n// Estimated felt radius is not a ShakeMap, damage zone, or tsunami extent.\n// Only the optional JMA detail layer owns observed intensity:\nconst distanceKm = Math.hypot(greatCircleKm(epicenter, station), depthKm);\nconst pArrivalSec = distanceKm / 7.0;\nconst sArrivalSec = distanceKm / 4.0;\nif (elapsedSec >= sArrivalSec) drawObservedJmaIntensity(station.intensity);`,
+    "rhythm-of-disaster": `const years = groupByYear(usgsM75Since2000); // 2000–2026\nconst events = years[selectedYear].sort(byOccurredAt); // this year only; default view is global\nfor (const [index, event] of events.entries()) {\n  await delay(index * 220); // reveal chronologically, one epicenter at a time\n  const feltRadiusKm = estimateFeltRadiusKm(event.magnitude); // M7.5 ≈ 500 km; M9.1 ≈ 2,000 km\n  const durationMs = scale(feltRadiusKm, 500, 2000, 2200, 3600);\n  drawEstimatedFeltRing(event, feltRadiusKm, durationMs);\n}\n// Estimated felt radius is not a ShakeMap, damage zone, or tsunami extent.\n// Only the optional JMA detail layer owns observed intensity:\nconst distanceKm = Math.hypot(greatCircleKm(epicenter, station), depthKm);\nconst pArrivalSec = distanceKm / 7.0;\nconst sArrivalSec = distanceKm / 4.0;\nif (elapsedSec >= sArrivalSec) drawObservedJmaIntensity(station.intensity);`,
     "three-ecologies": `const paired = joinByIso3(countryForestPercent, countryUrbanPercent); // same countries only
 const relation = pearson(paired.map(row => [row.urbanPercent, row.forestPercent]));
 const trend = linearRegression(paired); // display the tendency and each residual
@@ -7123,7 +7305,7 @@ for (const country of countryValues) {
       if (japanIsOpen) {
         co2TimelineHeld = storyModeDetour?.phase === "temperature-anomaly";
         const manualPauseMs = activeSignalMode?.id === "rhythm-of-disaster"
-          ? GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS + 1000
+          ? GLOBAL_EARTHQUAKE_YEAR_DWELL_MS
           : CO2_TIMELINE_MANUAL_PAUSE_MS;
         co2TimelinePausedUntil = performance.now() + manualPauseMs;
         co2TimelineLastStep = -1;
@@ -7678,6 +7860,15 @@ for (const country of countryValues) {
   syncMapModePreviewContainer();
 
   const getMapModePreviewContent = (button) => {
+    if (button?.dataset.estatExhibit) {
+      const exhibit = globalThis.GaiaEstatExhibits?.definitions?.find(({ id }) => id === button.dataset.estatExhibit);
+      if (!exhibit) return null;
+      return {
+        number: `${exhibit.number} / e-Stat MONTHLY`,
+        label: exhibit.shortTitle,
+        copy: exhibit.caption,
+      };
+    }
     if (button?.dataset.liveExhibit) {
       const exhibit = globalThis.GaiaLiveExhibits?.definitions?.find(({ id }) => id === button.dataset.liveExhibit);
       if (!exhibit) return null;
@@ -7748,7 +7939,9 @@ for (const country of countryValues) {
 
   const MAP_LIGHT_OPACITIES = Object.freeze([0.09, 0.72, 0.14, 0.13, 0.15, 0.18, 0.14, 0.17, 0.15]);
   const syncIntegratedMapLight = () => {
-    const active = japanIsOpen && !japanLayer.classList.contains("is-live-exhibit");
+    const active = japanIsOpen
+      && !japanLayer.classList.contains("is-live-exhibit")
+      && !japanLayer.classList.contains("is-estat-exhibit");
     japanLayer.classList.toggle("has-integrated-map-light", active);
     japanModeBank.dataset.mapSurface = "map";
     japanModeBank.dataset.lightIntegration = active ? "mode-matched" : "off";
@@ -7845,6 +8038,16 @@ for (const country of countryValues) {
       setMobileMapBankExpanded(false, { restoreFocus: true });
     }
     syncIntegratedMapLight();
+  });
+  window.addEventListener("gaia:estat-exhibit-change", (event) => {
+    if (event.detail?.id) setMobileMapBankExpanded(false, { restoreFocus: true });
+    syncIntegratedMapLight();
+  });
+  window.addEventListener("gaia:estat-exhibit-mounted", () => {
+    japanModeBank.querySelectorAll("[data-estat-exhibit]").forEach((button) => {
+      button.dataset.mapPreviewSurface = "map";
+      button.setAttribute("aria-describedby", "map-mode-preview");
+    });
   });
   let compactMapUiWasActive = usesCompactMapUi();
   window.addEventListener("resize", () => {
@@ -8647,7 +8850,7 @@ for (const country of countryValues) {
       {
         target: () => firstVisibleMapGuideTarget(".map-dock-bank-trigger", ".gaia-live-deck-modes", "#japan-mode-list", "#map-mobile-bank-toggle"),
         title: "展示を選ぶ",
-        copy: "左右の切替か中央の展示名を押して、15種類の地図展示を選べます。",
+        copy: "左右の切替か中央の展示名を押して、世界15展示と日本・都道府県3展示を選べます。",
       },
       {
         target: "[data-signal-time]",

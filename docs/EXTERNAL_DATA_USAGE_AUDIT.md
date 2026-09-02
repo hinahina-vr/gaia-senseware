@@ -1,7 +1,7 @@
 # 外部データ利用・二次加工・ダウンロード監査レポート
 
 - 監査対象: GAIA SENSEWARE
-- 監査日: 2026-09-02（日本時間）
+- 監査日: 2026-09-03（日本時間）
 - 監査対象リビジョン: 本レポートと同時に公開するコミット
 - 対象範囲: 展示、ライブ表示、地図、統計ラボ、センサー登録で取得・同梱・参照する外部データ
 - 対象外: 画像生成物、キャラクターCG、音源、フォント、npm依存パッケージ（別途メディア／ソフトウェア監査の対象）
@@ -66,6 +66,23 @@
 | World Bank WDI: Renewable electricity | 最新の再生可能電力比率を31か国で抽出し、POWERの自然条件と比較・回帰 | 同梱JSON、画面内分析 | **可**。CC BY 4.0の帰属、原提供元、変更表示が必要 |
 | World Bank WDI: Population, total | 1960年以降の国別人口を時系列表示 | 同梱JSON、統計ラボへの将来連携対象 | **可**。CC BY 4.0の帰属、原提供元UN Population Division、変更表示が必要 |
 
+### 3.1 日本・47都道府県展示16〜25
+
+| 展示／e-Stat統計 | 収録範囲と二次加工 | 公開／ダウンロード面 | 判定と条件 |
+|---|---|---|---|
+| 16 人の潮目／総務省「住民基本台帳人口移動報告」月報 | 2026年2〜6月、47都道府県の転入超過数。JIS X 0401順に抽出し、正負・絶対値を流向、色、環の長さへ変換 | `data/estat-prefecture-series.json` を表示用スナップショットとして配信。サイト内のデータ書き出し機能は設けない | **可**。e-Statおよび統計名を出典表示し、「加工して作成」であることを明示する |
+| 17 旅の灯／観光庁「宿泊旅行統計調査」第2次速報 | 2026年2〜6月、47都道府県の延べ宿泊者数。値を灯の面積、光量、余韻へ変換 | 同上 | **可**。出典・加工表示を維持し、速報値を確定値と誤認させない |
+| 18 住まいの芽吹き／国土交通省「建築着工統計調査（住宅着工統計）」 | 2026年2〜6月、47都道府県の新設住宅着工戸数。値を光柱の高さ、太さ、枝分かれへ変換 | 同上 | **可**。出典・加工表示を維持する |
+| 19 空の体温／総務省統計局「統計でみる都道府県のすがた」B 自然環境 `#B02101` | 2020〜2024年、47都道府県の年平均気温。全期間共通尺度で熱の光環へ変換 | 同上 | **可**。e-Stat、統計名、指標コード、加工表示を維持する |
+| 20 夏の頂／同 `#B02102` | 2020〜2024年、月平均日最高気温の年内最高値。単日の最高気温ではないことを明記して陽炎へ変換 | 同上 | **可**。指標の定義を省略せず表示する |
+| 21 冬の底／同 `#B02103` | 2020〜2024年、月平均日最低気温の年内最低値。低いほど強い氷晶として反転尺度で描画 | 同上 | **可**。反転尺度の加工を説明し、単日の最低気温と誤認させない |
+| 22 湿りの膜／同 `#B02201` | 2020〜2024年、年平均相対湿度。水膜の広がりへ変換。公式表の欠測1セルは補完しない | 同上 | **可**。欠測を0扱いせず「欠測」と表示する |
+| 23 光の貯金／同 `#B02401` | 2020〜2024年、年間日照時間。光条の長さと密度へ変換。公式表の欠測1セルは補完しない | 同上 | **可**。出典・加工・欠測表示を維持する |
+| 24 雨の器／同 `#B02402` | 2020〜2024年、年間降水量。雨筋と波紋へ変換。公式表の欠測2セルは補完しない | 同上 | **可**。出典・加工・欠測表示を維持する |
+| 25 雨の足跡／同 `#B02303` | 2020〜2024年、年間雨日数。波紋の層へ変換。公式表の欠測1セルは補完しない | 同上 | **可**。降水量と雨日数を混同せず、欠測表示を維持する |
+
+10統計は、月次3展示と自然環境の年次7展示に分け、都道府県を網羅し期間内の変化が視覚的に現れる指標として選定した。年次7展示は「統計でみる都道府県のすがた」2022〜2026年版のB表をつなぎ、各表の指標年度2020〜2024年を採用した。ブラウザからe-Stat APIへ接続せず、取得・検証済みの公式Excelを表示用JSONへ加工している。表示時のe-Stat APIキー、D1読み取り、外部APIリクエストは発生しない。e-Stat利用規約は、出典と編集・加工の明示を条件に複製、公衆送信、翻案、商用利用を認め、数値データや簡単な表・グラフは著作権の対象外としている。
+
 ## 4. 宇宙展示の外部データ一覧
 
 `data/space-signals.json` は閲覧時に外部APIへ接続せず、取得済みスナップショットを配信する。したがって、このJSONの公開はデータの再配布に当たる。
@@ -120,6 +137,7 @@ Cloudflare Pagesの公開ルートにある次のファイルは、画面にダ�
 - `data/jma-intensity-history.json`
 - `data/japan-earthquakes-fallback.json`
 - `data/live-observation-fallback-v1.json`
+- `data/estat-prefecture-series.json`
 - `data/ovation-aurora-snapshot.json`
 - `data/natural-earth-50m-land.geojson`
 - `data/natural-earth-50m-countries.geojson`
@@ -201,6 +219,9 @@ P0とP1を完了し、再監査で差分がないことを確認した後は、�
 - [OpenStreetMap Standard Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/)
 - [Unicode License v3](https://www.unicode.org/license.txt)
 - [J-LIS リンク・著作権について](https://www.j-lis.go.jp/cms_1142.html)
+- [e-Stat 利用規約](https://www.e-stat.go.jp/terms-of-use)
+- [e-Stat API 3.0 利用ガイド](https://www.e-stat.go.jp/api/api-info/e-stat-manual3-0)
+- [e-Stat「統計でみる都道府県のすがた2026」B 自然環境](https://www.e-stat.go.jp/stat-search/files?cycle=0&layout=datalist&lid=000001477298&month=0&page=1&stat_infid=000040412523&tclass1=000001240737&tclass2val=0&toukei=00200502&tstat=000001240736&year=20260)
 
 ## 12. 監査した実装箇所
 
@@ -211,4 +232,5 @@ P0とP1を完了し、再監査で差分がないことを確認した後は、�
 - `app.js`, `space-mode.js`, `data-ledger.js`: 表示、地図、出典UI
 - `statistics-lab.js`: ブラウザ内の分析・画面表示（ファイル書き出しなし）
 - `scripts/build-region-code-data.mjs`, `sensor-platform/src/region-code-data.ts`: CLDR・J-LIS地域コード
+- `src/exploration/estat-exhibits.js`, `src/exploration/estat-prefecture-data.js`, `data/estat-prefecture-series.json`: e-Stat都道府県月次・年次自然環境展示と表示用スナップショット
 - `data/japan-prefectures-NOTICE.md`, `docs/REGION-CODE-SOURCES.md`: 地図・コードの既存出典記録

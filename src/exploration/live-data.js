@@ -7,7 +7,7 @@ const store = createGaiaStore({ events: [], measurements: {}, connected: false, 
 let eventSource = null;
 let retryIndex = 0;
 let retryTimer = 0;
-let activeCity = "tokyo";
+let activeCity = "sapporo";
 let loadGeneration = 0;
 
 const permitsLiveEndpoint = () => location.protocol === "https:" || new URLSearchParams(location.search).get("live") === "1";
