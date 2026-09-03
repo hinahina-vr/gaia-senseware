@@ -8794,6 +8794,15 @@ for (const country of countryValues) {
   syncMapModePreviewContainer();
 
   const getMapModePreviewContent = (button) => {
+    if (button?.dataset.planetExhibit) {
+      const exhibit = globalThis.GaiaPlanetSignals?.definitions?.find(({ id }) => id === button.dataset.planetExhibit);
+      if (!exhibit) return null;
+      return {
+        number: `${exhibit.number} / ${exhibit.signalLabel}`,
+        label: exhibit.shortTitle,
+        copy: exhibit.caption,
+      };
+    }
     if (button?.dataset.firmsExhibit) {
       const exhibit = globalThis.GaiaFirmsExhibit?.definition;
       if (!exhibit || exhibit.id !== button.dataset.firmsExhibit) return null;

@@ -66,9 +66,9 @@ try {
   const desktop = await desktopContext.newPage();
   monitor(desktop);
   await openMap(desktop);
-  assert.equal(await desktop.locator(".map-mode-bank").getAttribute("aria-label"), "地図の26展示を選ぶ");
-  assert.equal(await desktop.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—26");
-  assert.equal(await desktop.locator("#japan-firms-mode-list .map-mode-button").count(), 1);
+  assert.equal(await desktop.locator(".map-mode-bank").getAttribute("aria-label"), "地図の31展示を選ぶ");
+  assert.equal(await desktop.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—31");
+  assert.equal(await desktop.locator("#japan-firms-mode-list .map-mode-button").count(), 6);
   await selectFirms(desktop);
   const initial = await evidence(desktop);
   await desktop.waitForTimeout(3_000);

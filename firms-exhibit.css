@@ -4,7 +4,7 @@
 }
 
 .map-mode-group-firms .map-mode-list {
-  grid-template-columns: minmax(44px, 72px);
+  grid-template-columns: repeat(6, minmax(36px, 1fr));
 }
 
 .map-mode-button[data-firms-exhibit] {

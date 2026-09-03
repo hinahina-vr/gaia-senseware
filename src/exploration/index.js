@@ -3,6 +3,7 @@ import { mount } from "./live-data.js?v=gaia-wind-brush-1";
 import "./live-exhibits.js?v=gaia-wind-brush-1";
 import "./estat-exhibits.js?v=gaia-estat-start-zoom-1";
 import "./firms-exhibit.js?v=gaia-firms-active-fire-1";
+import "./planet-signals-exhibit.js?v=gaia-planet-signals-1";
 
 globalThis.GaiaExploration = Object.freeze({ governor, live: globalThis.GaiaLiveData });
 void mount().catch((error) => console.error(error));

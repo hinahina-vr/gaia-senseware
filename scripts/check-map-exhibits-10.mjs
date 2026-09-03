@@ -228,8 +228,8 @@ assert.doesNotMatch(appContentSource, /float travelingPearl|float observedPearls
 assert.match(stylesSource, /data-integrated-map-mode="02"/u);
 
 assert.match(html, /地球観測データの9つの展示/u);
-assert.match(html, /INSTALLATION BANK \/ MAP 01—26/u);
-assert.match(html, /aria-label="地図の26展示を選ぶ"/u);
+assert.match(html, /INSTALLATION BANK \/ MAP 01—31/u);
+assert.match(html, /aria-label="地図の31展示を選ぶ"/u);
 assert.match(html, /9つの観測展示/u);
 assert.match(html, /01 \/ 09/u);
 assert.doesNotMatch(html, /japan-instruction|DRAG \/ ZOOM|点を押して読む/u);
@@ -344,8 +344,9 @@ assert.doesNotMatch(appSource, /lastJapanOverlayRenderAt/u);
 assert.match(appSource, /float grainBlend = smoothstep\(0\.0, 1\.0, fract\(grainTime\)\)/u);
 assert.match(particlesSource, /const installationIsOpen = \(\) => Boolean\(document\.querySelector\("\.experience\.japan-open"\)\)/u);
 assert.match(particlesSource, /&& !installationIsOpen\(\)/u);
-assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-firms-active-fire-1/u);
+assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-planet-signals-1/u);
 assert.match(modeLoaderSource, /firms-exhibit\.css\?v=gaia-firms-active-fire-1/u);
+assert.match(modeLoaderSource, /planet-signals-exhibit\.css\?v=gaia-planet-signals-1/u);
 assert.match(html, /id="japan-title" data-exhibit-number="01" aria-label="01 地球の一呼吸" aria-live="polite">地球の一呼吸<\/h2>/u);
 assert.match(html, /id="map-title-transition"[\s\S]{0,120}id="map-title-transition-text"/u);
 assert.match(html, /class="japan-map-actions"[\s\S]{0,320}id="japan-close"/u);

@@ -478,6 +478,7 @@ const renderSnapshot = () => {
 const select = async () => {
   globalThis.GaiaLiveExhibits?.deactivate?.();
   globalThis.GaiaEstatExhibits?.deactivate?.();
+  globalThis.GaiaPlanetSignals?.deactivate?.();
   if (!active) {
     savedHeading = {
       number: document.querySelector("#japan-mode-number")?.textContent || "01",
