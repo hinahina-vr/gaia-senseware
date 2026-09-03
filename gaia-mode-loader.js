@@ -12,6 +12,7 @@
         "./data-journey.css?v=gaia-04",
         "./map-ui-grid-polish.css?v=gaia-no-bank-chevron-1",
         "./estat-exhibits.css?v=gaia-estat-readable-comparison-1",
+        "./firms-exhibit.css?v=gaia-firms-active-fire-1",
         "./statistics-lab.css?v=gaia-estat-source-analysis-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
@@ -26,7 +27,7 @@
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
       modules: [
-        "./src/exploration/index.js?v=gaia-estat-start-zoom-1",
+        "./src/exploration/index.js?v=gaia-firms-active-fire-1",
         "./statistics-lab.js?v=gaia-estat-source-analysis-1",
       ],
     },

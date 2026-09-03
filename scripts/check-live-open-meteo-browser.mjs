@@ -87,7 +87,7 @@ try {
   await page.evaluate(() => { location.hash = "#japan"; });
   await page.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 20_000 });
   await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
-  assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—25");
+  assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—26");
   assert.equal(await page.locator("#japan-mode-list .map-mode-button").count(), 15);
   assert.equal(await page.locator("#japan-estat-mode-list .map-mode-button").count(), 10);
   assert.equal(await page.locator(".gaia-live-city-picker option").count(), 47);

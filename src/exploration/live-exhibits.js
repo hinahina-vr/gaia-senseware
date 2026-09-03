@@ -1453,6 +1453,7 @@ const selectObservationCity = (cityId, {
 
 const select = (index) => {
   if (!EXHIBITS[index]) return;
+  globalThis.GaiaFirmsExhibit?.deactivate?.();
   setChapterSelectorOpen(false);
   const enteringLiveDeck = activeIndex < 0;
   if (enteringLiveDeck) {

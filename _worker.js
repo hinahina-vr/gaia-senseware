@@ -20810,6 +20810,15 @@ var STREAM_REFRESH_MS = 5 * 60 * 1e3;
 var HEARTBEAT_MS = 15e3;
 var WIND_FIELD_TTL_MS = 5 * 60 * 1e3;
 var WIND_FIELD_CACHE_KEY = "open-meteo-japan-wind-field-v1";
+var FIRMS_SOURCE_URL = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/modis-c6.1/csv/MODIS_C6_1_Global_24h.csv";
+var FIRMS_SOURCE_PAGE = "https://firms.modaps.eosdis.nasa.gov/active_fire/";
+var FIRMS_CACHE_KEY = "nasa-firms-modis-global-24h-v1";
+var FIRMS_TTL_MS = 15 * 60 * 1e3;
+var FIRMS_MAX_SOURCE_BYTES = 4e6;
+var FIRMS_MAX_POINTS = 1600;
+var FIRMS_CONFIDENCE_MIN = 60;
+var FIRMS_SPATIAL_BIN_DEGREES = 2.5;
+var FIRMS_TIME_BIN_MINUTES = 60;
 var jsonHeaders = Object.freeze({
   "Cache-Control": "no-store",
   "Content-Type": "application/json; charset=utf-8",
@@ -20853,6 +20862,121 @@ var writeCacheJson = /* @__PURE__ */ __name(async (key, payload) => {
 }, "writeCacheJson");
 var readCached = /* @__PURE__ */ __name((key) => readCacheJson(key), "readCached");
 var writeCached = /* @__PURE__ */ __name((key, cached) => writeCacheJson(key, cached), "writeCached");
+var firmsPointScore = /* @__PURE__ */ __name((point) => Math.log1p(point.frp) * (0.55 + point.confidence / 200) + (point.daynight === "N" ? 0.04 : 0), "firmsPointScore");
+var firmsAcquiredAt = /* @__PURE__ */ __name((date, time) => {
+  const digits = String(time || "").padStart(4, "0");
+  const value = `${date}T${digits.slice(0, 2)}:${digits.slice(2)}:00Z`;
+  return Number.isFinite(Date.parse(value)) ? value : "";
+}, "firmsAcquiredAt");
+var compactFirmsCsv = /* @__PURE__ */ __name((csv) => {
+  const lines = csv.trim().split(/\r?\n/u);
+  const header = lines.shift()?.split(",") || [];
+  const columns = new Map(header.map((name, index) => [name.trim(), index]));
+  const indexOf = /* @__PURE__ */ __name((name) => {
+    const index = columns.get(name);
+    if (index === void 0) throw new Error(`FIRMS column missing: ${name}`);
+    return index;
+  }, "indexOf");
+  const latitudeIndex = indexOf("latitude");
+  const longitudeIndex = indexOf("longitude");
+  const brightnessIndex = indexOf("brightness");
+  const dateIndex = indexOf("acq_date");
+  const timeIndex = indexOf("acq_time");
+  const satelliteIndex = indexOf("satellite");
+  const confidenceIndex = indexOf("confidence");
+  const frpIndex = indexOf("frp");
+  const daynightIndex = indexOf("daynight");
+  const bins = /* @__PURE__ */ new Map();
+  let detected = 0;
+  for (const line of lines) {
+    if (!line) continue;
+    const cells = line.split(",");
+    const lat = Number(cells[latitudeIndex]);
+    const lon = Number(cells[longitudeIndex]);
+    const brightness = Number(cells[brightnessIndex]);
+    const frp = Number(cells[frpIndex]);
+    const confidence = Number(cells[confidenceIndex]);
+    const acquiredAt = firmsAcquiredAt(cells[dateIndex] || "", cells[timeIndex] || "");
+    const daynight = cells[daynightIndex] === "N" ? "N" : "D";
+    if (!(lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) || !Number.isFinite(brightness) || !(frp >= 0) || confidence < FIRMS_CONFIDENCE_MIN || !acquiredAt) continue;
+    detected += 1;
+    const point = {
+      id: `${cells[satelliteIndex] || "M"}:${acquiredAt}:${lat.toFixed(5)}:${lon.toFixed(5)}`,
+      lat: Number(lat.toFixed(5)),
+      lon: Number(lon.toFixed(5)),
+      brightness: Number(brightness.toFixed(2)),
+      frp: Number(frp.toFixed(2)),
+      confidence: Math.round(confidence),
+      daynight,
+      acquiredAt,
+      satellite: cells[satelliteIndex] || "MODIS"
+    };
+    const minutes = Math.floor(Date.parse(acquiredAt) / 6e4 / FIRMS_TIME_BIN_MINUTES);
+    const key = `${Math.floor((lon + 180) / FIRMS_SPATIAL_BIN_DEGREES)}:${Math.floor((lat + 90) / FIRMS_SPATIAL_BIN_DEGREES)}:${minutes}`;
+    const previous = bins.get(key);
+    if (!previous || firmsPointScore(point) > firmsPointScore(previous)) bins.set(key, point);
+  }
+  const points = [...bins.values()].sort((left, right) => firmsPointScore(right) - firmsPointScore(left)).slice(0, FIRMS_MAX_POINTS).sort((left, right) => left.acquiredAt.localeCompare(right.acquiredAt) || left.id.localeCompare(right.id));
+  if (!points.length) throw new Error("FIRMS feed contains no usable detections");
+  return {
+    points,
+    summary: {
+      detected,
+      displayed: points.length,
+      maxFrp: Number(Math.max(...points.map((point) => point.frp)).toFixed(2)),
+      totalFrp: Number(points.reduce((sum2, point) => sum2 + point.frp, 0).toFixed(2)),
+      nightShare: Number((points.filter((point) => point.daynight === "N").length / points.length).toFixed(4)),
+      highConfidenceShare: Number((points.filter((point) => point.confidence >= 80).length / points.length).toFixed(4)),
+      start: points[0]?.acquiredAt || "",
+      end: points.at(-1)?.acquiredAt || ""
+    }
+  };
+}, "compactFirmsCsv");
+var freshFirmsSnapshot = /* @__PURE__ */ __name(async (cached) => {
+  const headers = conditionalHeaders(cached);
+  headers.set("Accept", "text/csv");
+  const response = await fetchWithTimeout(FIRMS_SOURCE_URL, { headers }, 15e3);
+  if (response.status === 304 && cached) {
+    return { ...cached, retrievedAt: (/* @__PURE__ */ new Date()).toISOString(), snapshot: { ...cached.snapshot, source: "nasa-firms-modis", fallbackReason: void 0 } };
+  }
+  if (!response.ok) throw new Error(`NASA FIRMS ${response.status}`);
+  const contentLength = Number(response.headers.get("Content-Length"));
+  if (Number.isFinite(contentLength) && contentLength > FIRMS_MAX_SOURCE_BYTES) {
+    throw new Error(`NASA FIRMS response exceeds ${FIRMS_MAX_SOURCE_BYTES} bytes`);
+  }
+  const csv = await response.text();
+  if (new TextEncoder().encode(csv).byteLength > FIRMS_MAX_SOURCE_BYTES) {
+    throw new Error(`NASA FIRMS response exceeds ${FIRMS_MAX_SOURCE_BYTES} bytes`);
+  }
+  const generatedAt = (/* @__PURE__ */ new Date()).toISOString();
+  const compacted = compactFirmsCsv(csv);
+  return {
+    snapshot: {
+      schemaVersion: 1,
+      source: "nasa-firms-modis",
+      generatedAt,
+      ...compacted,
+      provenance: {
+        provider: "NASA LANCE FIRMS",
+        dataset: "MODIS Collection 6.1 NRT Global 24h",
+        sourceUrl: FIRMS_SOURCE_URL,
+        sourcePage: FIRMS_SOURCE_PAGE,
+        resolution: "1 km nominal",
+        transformVersion: "firms-global-fire-v1",
+        filters: {
+          confidenceMin: FIRMS_CONFIDENCE_MIN,
+          spatialBinDegrees: FIRMS_SPATIAL_BIN_DEGREES,
+          timeBinMinutes: FIRMS_TIME_BIN_MINUTES,
+          maxPoints: FIRMS_MAX_POINTS,
+          method: "highest FRP-weighted confidence detection per space-time bin"
+        }
+      }
+    },
+    retrievedAt: generatedAt,
+    upstreamEtag: response.headers.get("ETag") || void 0,
+    upstreamLastModified: response.headers.get("Last-Modified") || void 0
+  };
+}, "freshFirmsSnapshot");
 var eventAge = /* @__PURE__ */ __name((event) => Date.now() - Date.parse(event.retrievedAt), "eventAge");
 var withStaleStatus = /* @__PURE__ */ __name((cached, reason) => ({
   ...cached.event,
@@ -21248,6 +21372,31 @@ var fallbackSnapshot = /* @__PURE__ */ __name(async (request, env, reason) => {
   const payload = await response.json();
   return { schemaVersion: 1, source: "snapshot", generatedAt: payload.generatedAt, bbox: payload.bbox, events: payload.events, fallbackReason: reason };
 }, "fallbackSnapshot");
+var fallbackFirmsSnapshot = /* @__PURE__ */ __name(async (request, env, reason) => {
+  const fallbackUrl = new URL("/data/firms-active-fire-snapshot.json", request.url);
+  const response = await env.ASSETS.fetch(new Request(fallbackUrl, { headers: { Accept: "application/json" } }));
+  if (!response.ok) throw new Error(`Versioned FIRMS snapshot ${response.status}`);
+  const payload = await response.json();
+  return { ...payload, source: "snapshot", fallbackReason: reason };
+}, "fallbackFirmsSnapshot");
+var liveFirmsSnapshot = /* @__PURE__ */ __name(async (request, env, ctx) => {
+  const cached = await readCacheJson(FIRMS_CACHE_KEY);
+  const cacheAge = cached ? Date.now() - Date.parse(cached.retrievedAt) : Number.POSITIVE_INFINITY;
+  if (cached && cacheAge < FIRMS_TTL_MS) return cached.snapshot;
+  if (env.LIVE_SENSEWARE_ENABLED !== "true") {
+    if (cached) return { ...cached.snapshot, source: "stale-cache", fallbackReason: "LIVE_SENSEWARE_ENABLED is not true" };
+    return fallbackFirmsSnapshot(request, env, "LIVE_SENSEWARE_ENABLED is not true");
+  }
+  try {
+    const fresh = await freshFirmsSnapshot(cached);
+    ctx.waitUntil(writeCacheJson(FIRMS_CACHE_KEY, fresh));
+    return fresh.snapshot;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "NASA FIRMS upstream failure";
+    if (cached) return { ...cached.snapshot, source: "stale-cache", fallbackReason: reason };
+    return fallbackFirmsSnapshot(request, env, reason);
+  }
+}, "liveFirmsSnapshot");
 var liveSnapshot = /* @__PURE__ */ __name(async (request, env, ctx) => {
   const city = resolveObservationCity(new URL(request.url).searchParams.get("city"));
   if (env.LIVE_SENSEWARE_ENABLED !== "true") return fallbackSnapshot(request, env, "LIVE_SENSEWARE_ENABLED is not true");
@@ -21358,9 +21507,15 @@ var streamResponse = /* @__PURE__ */ __name((request, env, ctx) => {
 }, "streamResponse");
 var handleLiveSenseware = /* @__PURE__ */ __name(async (request, env, ctx) => {
   const url = new URL(request.url);
-  if (!["/api/live/v1/snapshot", "/api/live/v1/stream", "/api/live/v1/wind-field"].includes(url.pathname)) return null;
+  if (!["/api/live/v1/snapshot", "/api/live/v1/stream", "/api/live/v1/wind-field", "/api/live/v1/firms"].includes(url.pathname)) return null;
   if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method Not Allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
   if (url.pathname.endsWith("/stream")) return request.method === "HEAD" ? new Response(null, { headers: { "Content-Type": "text/event-stream; charset=utf-8" } }) : streamResponse(request, env, ctx);
+  if (url.pathname.endsWith("/firms")) {
+    const snapshot2 = await liveFirmsSnapshot(request, env, ctx);
+    return new Response(request.method === "HEAD" ? null : JSON.stringify(snapshot2), {
+      headers: { ...jsonHeaders, "Cache-Control": "public, max-age=60, stale-while-revalidate=840" }
+    });
+  }
   if (url.pathname.endsWith("/wind-field")) {
     const field = await liveWindField(env, ctx);
     return new Response(request.method === "HEAD" ? null : JSON.stringify(field), {

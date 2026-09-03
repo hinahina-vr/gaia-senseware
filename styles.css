@@ -6778,7 +6778,12 @@ h1 {
 }
 
 .signal-encoding-legend[data-mode="earthquake"] [data-encoding-mark="heatmap"] {
-  background: radial-gradient(circle, #fff 0 12%, #75eaff 16% 34%, #ff9f56 38% 54%, transparent 58%);
+  width: 16px !important;
+  height: 16px !important;
+  background:
+    linear-gradient(45deg, transparent 37%, #ff2b33 38% 62%, transparent 63%),
+    linear-gradient(-45deg, transparent 37%, #ff2b33 38% 62%, transparent 63%);
+  filter: drop-shadow(0 0 3px rgba(255, 33, 45, 0.86));
 }
 
 .signal-encoding-legend[data-mode="ecologies"] [data-encoding-mark="heatmap"] {

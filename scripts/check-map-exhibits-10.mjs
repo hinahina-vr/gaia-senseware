@@ -66,7 +66,7 @@ assert.match(content.modeConcepts["forest-cloud-engine"].seeing, /森林域/u);
 assert.match(content.modeConcepts["forest-cloud-engine"].touch, /大きな水色円.*代表地点名・平均降水量/u);
 assert.match(appSource, /const FOREST_RAIN_MIN_RADIUS = 10;/u);
 assert.match(appSource, /const FOREST_RAIN_MAX_RADIUS = 54;/u);
-assert.match(appSource, /BRA \/ AMAZON/u);
+assert.match(appSource, /row\.id === "brazil" \? "ブラジル" : getCountryNameJa\(row\)/u);
 assert.equal(content.modes.some(({ id }) => id === "pollination-protocol"), false);
 assert.doesNotMatch(appContentSource, /pollination-protocol|ミツバチ|GloBI|GBIF/u);
 assert.equal(content.modes[3].titleJa, "再資源化率を比べる");
@@ -86,19 +86,27 @@ assert.match(appSource, /const drawAnthropoceneCountryChoropleth/u);
 assert.match(appSource, /emissionsEncoding = "country-fixed-log-color"/u);
 assert.match(appSource, /emissionsGeometry = "natural-earth-country-choropleth"/u);
 assert.match(appSource, /emissionsHitSurface = "country-regions"/u);
-assert.match(content.modes[5].description, /発生日時順.*一つずつ.*点に続いて輪.*可感半径/u);
-assert.match(content.modeConcepts["rhythm-of-disaster"].seeing, /発生日時の早い地震から順.*M7\.5.*約500km.*M9\.1.*約2,000km.*別年度の点は表示しません/u);
-assert.match(content.modeDataNarratives["rhythm-of-disaster"], /初期表示は世界.*約4\.6秒.*自動再生.*発生日時の早い順.*逆順に一つずつ収束.*発生日時順/u);
+assert.match(appSource, /化石燃料由来CO₂ \$\{selected\.emissionsMtCo2\.toFixed\(1\)\} Mt/u);
+assert.doesNotMatch(appSource, /国全体の色|FOSSIL CO₂ \$\{selected\.emissionsMtCo2/u);
+assert.match(content.modes[5].description, /発生日時順.*カメラで追い.*移動完了後2秒静止.*赤い×.*一つずつ.*×に続く輪.*可感半径/u);
+assert.match(content.modeConcepts["rhythm-of-disaster"].seeing, /発生日時の早い地震から順.*M7\.5.*約500km.*M9\.1.*約2,000km.*別年度の震源は表示しません/u);
+assert.match(content.modeDataNarratives["rhythm-of-disaster"], /初期表示は世界.*発生日時の早い順.*カメラで追い.*移動完了後2秒静止.*地震件数に合わせて変わり.*世界表示へ戻/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_WAVE_MIN_DURATION_MS = 2200/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_WAVE_MAX_DURATION_MS = 3600/u);
-assert.match(appSource, /GLOBAL_EARTHQUAKE_YEAR_DWELL_MS = 4600/u);
-assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS = 220/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_APPEAR_MS = 460/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_EXIT_STAGGER_MS = 140/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_DISAPPEAR_MS = 320/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_RING_DELAY_MS = 90/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_CAMERA_FLY_MS = 480/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_HOLD_MS = 2000/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_EVENT_STAGGER_MS =[\s\S]*GLOBAL_EARTHQUAKE_CAMERA_FLY_MS \+ GLOBAL_EARTHQUAKE_EVENT_HOLD_MS/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_CAMERA_RETURN_DELAY_MS =[\s\S]*GLOBAL_EARTHQUAKE_EVENT_HOLD_MS/u);
+assert.match(appSource, /GLOBAL_EARTHQUAKE_CAMERA_RETURN_MS = 620/u);
+assert.match(appSource, /earthquakeCameraMode = "chronological-epicenter-flyover"/u);
+assert.match(appSource, /syncEarthquakeCameraSequence/u);
 assert.match(appSource, /GLOBAL_EARTHQUAKE_YEAR_COUNT = 27/u);
-assert.match(appSource, /GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS/u);
+assert.match(appSource, /getGlobalEarthquakePlaybackSchedule/u);
+assert.match(appSource, /earthquakeSchedule\.entries\.find/u);
 assert.match(appSource, /getGlobalEarthquakeImpactRadiusKm/u);
 assert.match(appSource, /earthquakeWaveSync = "chronological-sequential-distance-limited"/u);
 assert.match(appSource, /earthquakeWaveModel = "usgs-estimated-felt-radius"/u);
@@ -107,8 +115,17 @@ assert.match(appSource, /earthquakeRevealOrder = "occurred-at-ascending"/u);
 assert.match(appSource, /earthquakeExitOrder = "occurred-at-descending"/u);
 assert.match(appSource, /earthquakeExitOrderedEventTimes = yearTransition\.exitOrderIndices/u);
 assert.match(appSource, /earthquakeYearTransitionMode = "chronological-pop-in-out"/u);
-assert.match(appSource, /compactProminent: true/u);
-assert.match(appSource, /earthquakeSelectionLabelProfile = "half-scale-compact"/u);
+assert.match(appSource, /compactProminent: true, anchor: point, allowDuringPlotReveal: true/u);
+assert.match(appSource, /earthquakeYearSummary = "hidden"/u);
+assert.doesNotMatch(appSource, /`\$\{displayedYear\} \/ \$\{displayedEvents\.length\} EVENTS`/u);
+assert.doesNotMatch(appSource, /cameraSequence\.activeIndex \+ 1\)\.padStart/u);
+assert.match(appSource, /earthquakeWaveProjection = "equirectangular-geodesic-distance"/u);
+assert.match(appSource, /earthquakeMarkerStyle = "red-heavy-cross"/u);
+assert.match(appSource, /earthquakeMarkerColor = "rgb\(255,43,51\)"/u);
+assert.match(appSource, /traceEpicenterCross\(sourceRadius\)/u);
+assert.match(appSource, /activeCameraLabelVisible && event === activeCameraReveal\.event/u);
+assert.match(appSource, /"suppressed-while-callout-visible"/u);
+assert.match(appSource, /"赤い× \/ この年の震源"/u);
 assert.match(appSource, /getEarthquakeYearTransition/u);
 assert.match(appSource, /reducedMotionStillAdvances = signalMode\?\.id === "rhythm-of-disaster"/u);
 assert.match(appSource, /setJapanDataLayer\("snapshot"\)/u);
@@ -136,6 +153,9 @@ assert.match(content.modeConcepts["earth-organ"].touch, /低い国から高い�
 assert.match(content.modeDataNarratives["earth-organ"], /31か国の国土.*0%.*100%/u);
 assert.match(appSource, /const drawRenewableCountryChoropleth/u);
 assert.match(appSource, /renewableCountryFillCount/u);
+assert.match(appSource, /再生可能電力 \/ \$\{String\(rows\.length\)\}か国中/u);
+assert.match(appSource, /selectionPrimary = `\$\{selected\.countryJa \|\| selected\.country\} \/ 再生可能電力/u);
+assert.match(appSource, /selectionSecondary = `日射 .*kWh\/㎡\/日 · 風速 .*m\/s`/u);
 assert.match(appSource, /energyConnectionRemoved = "true"/u);
 assert.doesNotMatch(appSource, /selectedEnergyRegions|SCENARIO \/ DISTRIBUTED LINK|scenarioLinks\.push/u);
 const earthOrganData = gaiaData.modes.find(({ id }) => id === "earth-organ");
@@ -146,6 +166,19 @@ assert.equal(earthOrganData.datasets.some(({ id }) => id === "distributed-link-s
 assert.equal(content.modes[8].id, "population-tide");
 assert.match(content.modes[8].description, /1960〜2025年.*円の面積.*人口/u);
 assert.match(content.modeConcepts["population-tide"].touch, /1960〜2025年.*年だけを動か/u);
+assert.match(appSource, /const drawQuantitativeLegendPanel/u);
+for (const legendId of [
+  "co2-concentration",
+  "ocean-current-speed",
+  "precipitation",
+  "recycling-rate",
+  "fossil-co2",
+  "earthquake-magnitude",
+  "population",
+]) {
+  assert.match(appSource, new RegExp(`id: "${legendId}"`), `${legendId}: quantitative legend is missing`);
+}
+assert.match(appSource, /title: "マグニチュード \/ この年最大"/u);
 const anthropoceneData = gaiaData.modes.find(({ id }) => id === "anthropocene-scar");
 assert.equal(Math.min(...anthropoceneData.signals.emissions.map(({ year }) => year)), 1945);
 assert.equal(Math.max(...anthropoceneData.signals.emissions.map(({ year }) => year)), 2023);
@@ -169,7 +202,8 @@ assert.match(appSource, /dataset\.rasterWorldCopies/u);
 assert.match(appSource, /const getForestGeographicRaster/u);
 assert.match(appSource, /forestOnly: true/u);
 assert.match(appSource, /const animateEarthViewForMode/u);
-assert.match(appSource, /duration = 1150/u);
+assert.match(appSource, /durationMs = 1150/u);
+assert.match(appSource, /const duration = clamp\(Number\(durationMs\) \|\| 1150/u);
 assert.match(appSource, /const frameDelta = clamp\(now - previousFrameAt, 0, 64\)/u);
 assert.match(appSource, /cancelEarthViewAnimation\("user-pointer"\)/u);
 assert.match(appSource, /cancelEarthViewAnimation\("user-wheel"\)/u);
@@ -194,8 +228,8 @@ assert.doesNotMatch(appContentSource, /float travelingPearl|float observedPearls
 assert.match(stylesSource, /data-integrated-map-mode="02"/u);
 
 assert.match(html, /地球観測データの9つの展示/u);
-assert.match(html, /INSTALLATION BANK \/ MAP 01—25/u);
-assert.match(html, /aria-label="地図の25展示を選ぶ"/u);
+assert.match(html, /INSTALLATION BANK \/ MAP 01—26/u);
+assert.match(html, /aria-label="地図の26展示を選ぶ"/u);
 assert.match(html, /9つの観測展示/u);
 assert.match(html, /01 \/ 09/u);
 assert.doesNotMatch(html, /japan-instruction|DRAG \/ ZOOM|点を押して読む/u);
@@ -308,7 +342,8 @@ assert.doesNotMatch(appSource, /lastJapanOverlayRenderAt/u);
 assert.match(appSource, /float grainBlend = smoothstep\(0\.0, 1\.0, fract\(grainTime\)\)/u);
 assert.match(particlesSource, /const installationIsOpen = \(\) => Boolean\(document\.querySelector\("\.experience\.japan-open"\)\)/u);
 assert.match(particlesSource, /&& !installationIsOpen\(\)/u);
-assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-estat-start-zoom-1/u);
+assert.match(modeLoaderSource, /src\/exploration\/index\.js\?v=gaia-firms-active-fire-1/u);
+assert.match(modeLoaderSource, /firms-exhibit\.css\?v=gaia-firms-active-fire-1/u);
 assert.match(html, /id="japan-title" data-exhibit-number="01" aria-label="01 地球の一呼吸" aria-live="polite">地球の一呼吸<\/h2>/u);
 assert.match(html, /id="map-title-transition"[\s\S]{0,120}id="map-title-transition-text"/u);
 assert.match(html, /class="japan-map-actions"[\s\S]{0,320}id="japan-close"/u);
@@ -331,7 +366,7 @@ assert.match(appSource, /const traceSpeechBubble = \(\) =>/u);
 assert.match(appSource, /dataset\.selectionLabelShape = "speech-bubble"/u);
 assert.match(appSource, /dataset\.selectionLabelTailSide = tailOnLeft \? "left" : "right"/u);
 assert.match(appSource, /dataset\.selectionLabelTailLengthPx/u);
-assert.match(appSource, /\{ prominent: true, compactProminent: true, anchor: point \}/u);
+assert.match(appSource, /\{ prominent: true, compactProminent: true, anchor: point, allowDuringPlotReveal: true \}/u);
 assert.match(appSource, /scale: outgoing \? 0\.98 \+ alpha \* 0\.02 : 0\.97 \+ alpha \* 0\.03,\s*anchor: point/u);
 assert.match(appSource, /signalMode\.id === "blue-circulation"[\s\S]*getMapPlotReveal\(currentIndex, state\.currents\.length, now\)[\s\S]*applyMapPlotReveal\(ctx, point, reveal\)/u);
 assert.match(appSource, /tier: "native", ratioCap: 3, maxPixels: 9000000/u);
@@ -386,7 +421,7 @@ assert.match(stylesSource, /\.gaia-live-exhibit-readout \{[\s\S]*width: min\(590
 assert.doesNotMatch(mapGridStylesSource, /\.japan-layer\.is-live-exhibit \.japan-heading \.japan-data-button[\s\S]{0,80}display: none/u);
 assert.match(appSource, /dataLedger\.updateLiveExhibit\(liveExhibit/u);
 assert.match(liveExhibitsSource, /timeZone: "Asia\/Tokyo"[\s\S]*JPT/u);
-assert.match(appSource, /renderCachedReferenceWorldModel\(ctx, rect, left, top\);[\s\S]*liveBackdropOnly[\s\S]*reference-map-only[\s\S]*if \(liveBackdropOnly\) \{[\s\S]*ctx\.restore\(\);[\s\S]*return;/u);
+assert.match(appSource, /renderCachedReferenceWorldModel\(ctx, rect, left, top\);[\s\S]*referenceBackdropOnly = liveBackdropOnly \|\| estatBackdropOnly[\s\S]*estat-reference-map-only[\s\S]*if \(referenceBackdropOnly\) \{[\s\S]*ctx\.restore\(\);[\s\S]*return;/u);
 assert.match(appSource, /signalMode\.id === "anthropocene-scar"[\s\S]{0,700}drawNightLightsLayer\(nightLightsImage, nightLightsDimmed\);[\s\S]{0,320}renderCachedReferenceWorldModel\(ctx, rect, left, top\);/u);
 assert.match(appSource, /addEventListener\("gaia:live-exhibit-change"[\s\S]*renderJapanOverlay\(performance\.now\(\)\)/u);
 assert.doesNotMatch(html, /gaia-remix-20/u);

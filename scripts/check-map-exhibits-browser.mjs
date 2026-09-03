@@ -17,6 +17,8 @@ const guideOrderOnly = process.argv.slice(6).includes("--guide-order-only");
 const circulationOnly = process.argv.slice(6).includes("--circulation-only");
 const bubbleOnly = process.argv.slice(6).includes("--bubble-only");
 const anthropoceneOnly = process.argv.slice(6).includes("--anthropocene-only");
+const renewableRevealOnly = process.argv.slice(6).includes("--renewable-reveal-only");
+const quantitativeLegendsOnly = process.argv.slice(6).includes("--quantitative-legends-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -390,6 +392,78 @@ try {
     const { context, page } = await boot(viewport);
     const scan = { viewport, clicks: {}, screenshots: [], zoom: {} };
 
+    if (quantitativeLegendsOnly) {
+      const expectations = [
+        { index: 0, title: "地球の一呼吸", id: "co2-concentration" },
+        { index: 1, title: "海流が14日続いたら", id: "ocean-current-speed" },
+        { index: 2, title: "森林と降水量を重ねる", id: "precipitation" },
+        { index: 3, title: "再資源化率を比べる", id: "recycling-rate" },
+        { index: 4, title: "人類世の傷跡", id: "fossil-co2" },
+        { index: 5, title: "地球からのメッセージ", id: "earthquake-magnitude" },
+        { index: 8, title: "人口のうねり", id: "population" },
+      ];
+      scan.quantitativeLegends = [];
+      for (const expectation of expectations) {
+        await selectMode(page, expectation.index, expectation.title);
+        await page.waitForFunction(({ id }) => {
+          const overlay = document.querySelector("#japan-overlay");
+          const progress = Number(overlay?.dataset.quantitativeLegendProgress);
+          return !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning")
+            && overlay?.dataset.quantitativeLegendId === id
+            && overlay.dataset.auxiliaryPanelId === `quantitative-${id}`
+            && Number.isFinite(progress)
+            && progress >= 0
+            && progress <= 1;
+        }, { id: expectation.id }, { timeout: 12_000 });
+        const observed = await page.locator("#japan-overlay").evaluate((overlay) => ({
+          id: overlay.dataset.quantitativeLegendId || "",
+          title: overlay.dataset.quantitativeLegendTitle || "",
+          current: overlay.dataset.quantitativeLegendCurrent || "",
+          minimum: overlay.dataset.quantitativeLegendMinimum || "",
+          maximum: overlay.dataset.quantitativeLegendMaximum || "",
+          progress: Number(overlay.dataset.quantitativeLegendProgress),
+          panelId: overlay.dataset.auxiliaryPanelId || "",
+          left: Number(overlay.dataset.auxiliaryPanelScreenLeft),
+          top: Number(overlay.dataset.auxiliaryPanelScreenTop),
+          right: Number(overlay.dataset.auxiliaryPanelScreenRight),
+          bottom: Number(overlay.dataset.auxiliaryPanelScreenBottom),
+          legendClearance: overlay.dataset.auxiliaryPanelLegendClearance || "",
+          map: document.querySelector("#japan-map")?.getBoundingClientRect().toJSON(),
+        }));
+        assert.equal(observed.id, expectation.id);
+        assert(observed.title.length >= 4, `${viewport.name}/${expectation.id}: legend title is empty`);
+        assert(observed.current.length >= 3, `${viewport.name}/${expectation.id}: current value is empty`);
+        assert(observed.minimum.length >= 2 && observed.maximum.length >= 2, `${viewport.name}/${expectation.id}: range labels are empty`);
+        assert(observed.left >= observed.map.left - 1 && observed.right <= observed.map.right + 1, `${viewport.name}/${expectation.id}: panel left the map horizontally`);
+        assert(observed.top >= observed.map.top - 1 && observed.bottom <= observed.map.bottom + 1, `${viewport.name}/${expectation.id}: panel left the map vertically`);
+        if (viewport.width < 680) {
+          assert(observed.top >= observed.map.top + 220, `${viewport.name}/${expectation.id}: panel is hidden behind the mobile title/timeline controls`);
+        }
+        if (observed.legendClearance !== "legend-hidden") {
+          assert(Number(observed.legendClearance) >= 10, `${viewport.name}/${expectation.id}: panel overlaps the map encoding legend`);
+        }
+        const screenshot = path.join(outputDir, `${viewport.name}-${String(expectation.index + 1).padStart(2, "0")}-${expectation.id}-legend.png`);
+        await page.screenshot({ path: screenshot });
+        scan.screenshots.push(screenshot);
+        scan.quantitativeLegends.push(observed);
+      }
+      for (const reference of [
+        { index: 6, title: "三つの生態系", panelId: "three-ecologies-scatter" },
+        { index: 7, title: "人工物の共生化", panelId: "earth-organ-scale" },
+      ]) {
+        await selectMode(page, reference.index, reference.title);
+        await page.waitForFunction((panelId) => (
+          !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning")
+          && document.querySelector("#japan-overlay")?.dataset.auxiliaryPanelId === panelId
+        ), reference.panelId, { timeout: 12_000 });
+        assert.equal(await page.locator("#japan-overlay").getAttribute("data-quantitative-legend-id"), null);
+      }
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
     if (guideOrderOnly) {
       await page.evaluate(() => globalThis.GaiaModeEntryGuide?.open?.("map", { force: true }));
       await page.waitForFunction(() => globalThis.GaiaModeEntryGuide?.getState?.().active === true);
@@ -564,8 +638,8 @@ try {
       await page.screenshot({ path: modernScreenshot });
       scan.screenshots.push(modernScreenshot);
       scan.clicks.anthropocene = await clickDataPoint(page, "anthropocene-scar");
-      assert.match(scan.clicks.anthropocene.card.type, /人類世の傷跡 \/ DATA POI/u);
-      assert.match(scan.clicks.anthropocene.card.meta, /2023.*Mt CO₂.*fossil \+ cement/u);
+      assert.match(scan.clicks.anthropocene.card.type, /人類世の傷跡 \/ 観測データ/u);
+      assert.match(scan.clicks.anthropocene.card.meta, /2023年.*Mt CO₂.*化石燃料・セメント由来/u);
       scan.anthropoceneTimelineComparison = { historical, modern };
       report.scans.push(scan);
       await context.close();
@@ -596,6 +670,17 @@ try {
         phase: element.dataset.earthquakeYearTransitionPhase,
         staggerMs: Number(element.dataset.earthquakeEventStaggerMs),
         appearMs: Number(element.dataset.earthquakeEventAppearMs),
+        cameraMode: element.dataset.earthquakeCameraMode,
+        cameraState: element.dataset.earthquakeCameraState,
+        cameraEventIndex: Number(element.dataset.earthquakeCameraEventIndex),
+        cameraOccurredAt: element.dataset.earthquakeCameraEventOccurredAt,
+        cameraFlyMs: Number(element.dataset.earthquakeCameraFlyMs),
+        cameraHoldMs: Number(element.dataset.earthquakeCameraHoldMs),
+        eventHoldMs: Number(element.dataset.earthquakeEventHoldMs),
+        cameraReturnDelayMs: Number(element.dataset.earthquakeCameraReturnDelayMs),
+        cameraReturnMs: Number(element.dataset.earthquakeCameraReturnMs),
+        viewTarget: element.dataset.viewTarget,
+        zoom: Number(element.dataset.earthZoom),
       }));
       assert.equal(scan.earthquakeInitialFirst.year, "2000");
       assert.equal(scan.earthquakeInitialFirst.total, 7);
@@ -610,33 +695,97 @@ try {
       assert.equal(scan.earthquakeInitialFirst.order, "occurred-at-ascending");
       assert.equal(scan.earthquakeInitialFirst.mode, "chronological-pop-in-out");
       assert.equal(scan.earthquakeInitialFirst.phase, "enter");
-      assert.equal(scan.earthquakeInitialFirst.staggerMs, 220);
+      assert.equal(scan.earthquakeInitialFirst.staggerMs, 2480);
       assert.equal(scan.earthquakeInitialFirst.appearMs, 460);
+      assert.equal(scan.earthquakeInitialFirst.cameraMode, "chronological-epicenter-flyover");
+      assert.equal(scan.earthquakeInitialFirst.cameraState, "following-epicenter");
+      assert.equal(scan.earthquakeInitialFirst.cameraEventIndex, 0);
+      assert.equal(scan.earthquakeInitialFirst.cameraOccurredAt, scan.earthquakeInitialFirst.orderedTimes[0]);
+      assert.equal(scan.earthquakeInitialFirst.cameraFlyMs, 480);
+      assert.equal(scan.earthquakeInitialFirst.cameraHoldMs, 2000);
+      assert.equal(scan.earthquakeInitialFirst.eventHoldMs, 2000);
+      assert.equal(scan.earthquakeInitialFirst.cameraReturnDelayMs, 2020);
+      assert.equal(scan.earthquakeInitialFirst.cameraReturnMs, 620);
+      assert.equal(scan.earthquakeInitialFirst.viewTarget, "earthquake-2000-1");
+      assert.ok(scan.earthquakeInitialFirst.zoom > 1.01, `earthquake camera did not start zooming: ${scan.earthquakeInitialFirst.zoom}`);
+      await page.waitForFunction(
+        () => document.querySelector("#japan-overlay")?.dataset.viewAnimation === "idle"
+          && Number(document.querySelector("#japan-overlay")?.dataset.earthquakeCameraEventIndex) === 0,
+      );
+      await page.waitForTimeout(1650);
+      scan.earthquakeInitialHold = await page.locator("#japan-overlay").evaluate((element) => ({
+        eventIndex: Number(element.dataset.earthquakeCameraEventIndex),
+        viewTarget: element.dataset.viewTarget,
+        viewAnimation: element.dataset.viewAnimation,
+      }));
+      assert.equal(scan.earthquakeInitialHold.eventIndex, 0, "first epicenter did not stay after camera arrival");
+      assert.equal(scan.earthquakeInitialHold.viewTarget, "earthquake-2000-1");
+      assert.equal(scan.earthquakeInitialHold.viewAnimation, "idle");
       const initialFirstScreenshot = path.join(outputDir, `${viewport.name}-06-initial-2000-first-event.png`);
       await page.screenshot({ path: initialFirstScreenshot });
       scan.screenshots.push(initialFirstScreenshot);
       await page.waitForFunction(
         () => Number(document.querySelector("#japan-overlay")?.dataset.earthquakeVisibleEventCount) >= 4,
       );
+      await page.waitForFunction(
+        () => Number(document.querySelector("#japan-overlay")?.dataset.earthquakeCameraEventIndex) >= 3
+          && Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) > 2,
+      );
       const initialSequenceScreenshot = path.join(outputDir, `${viewport.name}-06-initial-2000-sequence.png`);
       await page.screenshot({ path: initialSequenceScreenshot });
       scan.screenshots.push(initialSequenceScreenshot);
       await page.waitForFunction(
         () => Number(document.querySelector("#japan-overlay")?.dataset.earthquakeVisibleEventCount) === 7
-          && Number(document.querySelector("#japan-overlay")?.dataset.earthquakeYearTransitionProgress) >= 0.999,
+          && Number(document.querySelector("#japan-overlay")?.dataset.earthquakeYearTransitionProgress) >= 0.999
+          && Number(document.querySelector("#japan-overlay")?.dataset.earthquakeCameraEventIndex) === 6
+          && document.querySelector("#japan-overlay")?.dataset.viewAnimation === "idle",
+      );
+      scan.earthquakeFinalEpicenter = await page.locator("#japan-overlay").evaluate((element) => ({
+        state: element.dataset.earthquakeCameraState,
+        eventIndex: Number(element.dataset.earthquakeCameraEventIndex),
+        screenX: Number(element.dataset.earthquakeCameraEventScreenX),
+        screenY: Number(element.dataset.earthquakeCameraEventScreenY),
+        targetX: Number(element.dataset.earthquakeCameraTargetX),
+        targetY: Number(element.dataset.earthquakeCameraTargetY),
+        zoom: Number(element.dataset.earthZoom),
+      }));
+      assert.equal(scan.earthquakeFinalEpicenter.state, "following-epicenter");
+      assert.equal(scan.earthquakeFinalEpicenter.eventIndex, 6);
+      assert.ok(scan.earthquakeFinalEpicenter.zoom > 2.2);
+      assert.ok(
+        Math.hypot(
+          scan.earthquakeFinalEpicenter.screenX - scan.earthquakeFinalEpicenter.targetX,
+          scan.earthquakeFinalEpicenter.screenY - scan.earthquakeFinalEpicenter.targetY,
+        ) < 3,
+        `final epicenter is not centered: ${JSON.stringify(scan.earthquakeFinalEpicenter)}`,
       );
       const initialSettledScreenshot = path.join(outputDir, `${viewport.name}-06-initial-2000-settled.png`);
       await page.screenshot({ path: initialSettledScreenshot });
       scan.screenshots.push(initialSettledScreenshot);
+      await page.waitForFunction(
+        () => document.querySelector("#japan-overlay")?.dataset.earthquakeCameraState === "global-overview"
+          && Number(document.querySelector("#japan-overlay")?.dataset.earthZoom) <= 1.01,
+      );
+      scan.earthquakeInitialOverview = await page.locator("#japan-overlay").evaluate((element) => ({
+        state: element.dataset.earthquakeCameraState,
+        zoom: Number(element.dataset.earthZoom),
+        viewTarget: element.dataset.viewTarget,
+      }));
+      assert.equal(scan.earthquakeInitialOverview.state, "global-overview");
+      assert.ok(scan.earthquakeInitialOverview.zoom <= 1.01);
+      assert.equal(scan.earthquakeInitialOverview.viewTarget, "global");
+      const initialOverviewScreenshot = path.join(outputDir, `${viewport.name}-06-initial-2000-global-overview.png`);
+      await page.screenshot({ path: initialOverviewScreenshot });
+      scan.screenshots.push(initialOverviewScreenshot);
       const automaticStartedAt = Date.now();
       await page.waitForFunction(
         () => document.querySelector("#japan-overlay")?.dataset.earthquakeYear === "2001",
         null,
-        { timeout: 6500 },
+        { timeout: 9000 },
       );
       scan.earthquakeAutomaticAdvanceMs = Date.now() - automaticStartedAt;
       assert.ok(
-        scan.earthquakeAutomaticAdvanceMs < 6500,
+        scan.earthquakeAutomaticAdvanceMs < 9000,
         `earthquake year did not auto-advance promptly: ${scan.earthquakeAutomaticAdvanceMs}ms`,
       );
       await page.waitForFunction(
@@ -659,8 +808,8 @@ try {
         displayKey: document.querySelector("#co2-timeline-display")?.dataset.timeTransitionKey,
       }));
       assert.equal(scan.earthquakeAutoTransition.playback, "auto-loop");
-      assert.equal(scan.earthquakeAutoTransition.dwellMs, 4600);
-      assert.equal(scan.earthquakeAutoTransition.transitionMs, 1780);
+      assert.equal(scan.earthquakeAutoTransition.dwellMs, 19340);
+      assert.equal(scan.earthquakeAutoTransition.transitionMs, 15340);
       assert.equal(scan.earthquakeAutoTransition.to, "2001");
       assert.equal(scan.earthquakeAutoTransition.visible, 1);
       assert.equal(scan.earthquakeAutoTransition.activeIndex, 0);
@@ -734,15 +883,31 @@ try {
             && Number(overlay?.dataset.earthquakeActiveEventProgress) >= 0.25;
         },
       );
+      await page.waitForFunction(() => /^2004\/\d{2}\/\d{2} · M\d\.\d$/u.test(
+        document.querySelector("#japan-overlay")?.dataset.earthquakeActiveLabelPrimary || "",
+      ));
       scan.earthquakeManualFirst = await page.locator("#japan-overlay").evaluate((element) => ({
         visible: Number(element.dataset.earthquakeVisibleEventCount),
         activeIndex: Number(element.dataset.earthquakeActiveEventIndex),
         activeOccurredAt: element.dataset.earthquakeActiveEventOccurredAt,
+        activeLabelPrimary: element.dataset.earthquakeActiveLabelPrimary,
+        projection: element.dataset.earthquakeWaveProjection,
+        markerStyle: element.dataset.earthquakeMarkerStyle,
+        markerColor: element.dataset.earthquakeMarkerColor,
+        markerLineWidth: Number(element.dataset.earthquakeMarkerMaxLineWidthPx),
+        activeMagnitudeLabel: element.dataset.earthquakeActiveMagnitudeLabel,
         orderedTimes: (element.dataset.earthquakeOrderedEventTimes || "").split(",").filter(Boolean),
       }));
       assert.equal(scan.earthquakeManualFirst.visible, 1);
       assert.equal(scan.earthquakeManualFirst.activeIndex, 0);
       assert.equal(scan.earthquakeManualFirst.activeOccurredAt, scan.earthquakeManualFirst.orderedTimes[0]);
+      assert.match(scan.earthquakeManualFirst.activeLabelPrimary, /^2004\/\d{2}\/\d{2} · M\d\.\d$/u);
+      assert.doesNotMatch(scan.earthquakeManualFirst.activeLabelPrimary, /^\d{2} \/ \d{2}/u);
+      assert.equal(scan.earthquakeManualFirst.projection, "equirectangular-geodesic-distance");
+      assert.equal(scan.earthquakeManualFirst.markerStyle, "red-heavy-cross");
+      assert.equal(scan.earthquakeManualFirst.markerColor, "rgb(255,43,51)");
+      assert.ok(scan.earthquakeManualFirst.markerLineWidth >= (viewport.width >= 2400 ? 7 : 4));
+      assert.equal(scan.earthquakeManualFirst.activeMagnitudeLabel, "suppressed-while-callout-visible");
       const manualFirstScreenshot = path.join(outputDir, `${viewport.name}-06-manual-2004-first-event.png`);
       await page.screenshot({ path: manualFirstScreenshot });
       scan.screenshots.push(manualFirstScreenshot);
@@ -761,26 +926,27 @@ try {
           const overlay = document.querySelector("#japan-overlay");
           return overlay?.dataset.earthquakeYear === "2004"
             && Number(overlay.dataset.earthquakeVisibleEventCount) === 3
-            && Number(overlay.dataset.earthquakeSelectionPrimaryFontPx) > 0;
+            && overlay.dataset.earthquakeYearSummary === "hidden";
         },
       );
       await page.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"));
       await waitForReferenceMap(page);
       await page.waitForTimeout(500);
-      scan.earthquakeLabel = await page.locator("#japan-overlay").evaluate((element) => ({
+      scan.earthquakeYearSummary = await page.locator("#japan-overlay").evaluate((element) => ({
+        status: element.dataset.earthquakeYearSummary,
         width: Number(element.dataset.earthquakeSelectionLabelWidthPx),
         height: Number(element.dataset.earthquakeSelectionLabelHeightPx),
         primaryFont: Number(element.dataset.earthquakeSelectionPrimaryFontPx),
         profile: element.dataset.earthquakeSelectionLabelProfile,
         eventCount: Number(element.dataset.earthquakeYearEventCount),
       }));
-      assert.equal(scan.earthquakeLabel.eventCount, 3);
-      assert.equal(scan.earthquakeLabel.profile, "half-scale-compact");
-      assert.ok(scan.earthquakeLabel.width >= Math.min(300, viewport.width - 32), `earthquake label became too narrow: ${JSON.stringify(scan.earthquakeLabel)}`);
-      assert.ok(scan.earthquakeLabel.width <= Math.min(520, viewport.width - 24), `earthquake label remains oversized: ${JSON.stringify(scan.earthquakeLabel)}`);
-      assert.ok(scan.earthquakeLabel.height >= 54 && scan.earthquakeLabel.height <= 68, `earthquake label height is not compact: ${JSON.stringify(scan.earthquakeLabel)}`);
-      assert.equal(scan.earthquakeLabel.primaryFont, viewport.width < 600 ? 15 : 18);
-      const screenshot = path.join(outputDir, `${viewport.name}-06-readable-earthquake-card.png`);
+      assert.equal(scan.earthquakeYearSummary.eventCount, 3);
+      assert.equal(scan.earthquakeYearSummary.status, "hidden");
+      assert.equal(scan.earthquakeYearSummary.profile, undefined);
+      assert.equal(scan.earthquakeYearSummary.width, 0);
+      assert.equal(scan.earthquakeYearSummary.height, 0);
+      assert.equal(scan.earthquakeYearSummary.primaryFont, 0);
+      const screenshot = path.join(outputDir, `${viewport.name}-06-no-earthquake-year-summary.png`);
       await page.screenshot({ path: screenshot });
       scan.screenshots.push(screenshot);
       report.scans.push(scan);
@@ -1103,7 +1269,13 @@ try {
           viewport: { width: innerWidth, height: innerHeight },
         };
       });
-      const expectedPoiTitle = poiHoverPoint.row.name || poiHoverPoint.row.country || poiHoverPoint.row.iso3;
+      const poiCountryCode = String(poiHoverPoint.row.iso2 || poiHoverPoint.row.countryCode || "").toUpperCase();
+      const expectedPoiTitle = poiHoverPoint.row.nameJa
+        || poiHoverPoint.row.countryJa
+        || (/^[A-Z]{2}$/u.test(poiCountryCode) ? new Intl.DisplayNames(["ja"], { type: "region" }).of(poiCountryCode) : "")
+        || poiHoverPoint.row.name
+        || poiHoverPoint.row.country
+        || poiHoverPoint.row.iso3;
       assert.equal(poiHover.cursor, "pointer", `pc: POI cursor is not clickable: ${JSON.stringify(poiHover)}`);
       assert.equal(poiHover.pointerEvents, "none", "pc: preview intercepts the map pointer");
       assert.equal(poiHover.title, expectedPoiTitle, `pc: POI preview title is unclear: ${JSON.stringify(poiHover)}`);
@@ -1183,7 +1355,7 @@ try {
       assert.equal(countryReadout.whiteSpace, "pre-line", `${viewport.name}: country readout does not preserve its line break`);
       assert.equal(countryReadout.lines.length, 2, `${viewport.name}: country and metrics are not split into two lines: ${JSON.stringify(countryReadout)}`);
       assert.equal(countryReadout.lines[0], await page.locator("#japan-overlay").getAttribute("data-ecologies-selected-country"));
-      assert.match(countryReadout.lines[1], /^FOREST \d+\.\d% \/ URBAN \d+\.\d%$/u);
+      assert.match(countryReadout.lines[1], /^森林率 \d+\.\d% \/ 都市人口率 \d+\.\d%$/u);
       scan.countryReadout = { ...countryReadout, initialAnimationState, midTransition, transitionScreenshot };
       report.scans.push(scan);
       await context.close();
@@ -1227,6 +1399,100 @@ try {
       await page.screenshot({ path: screenshot });
       scan.screenshots.push(screenshot);
       scan.recyclingCountrySelector = { initial, selectedIndex: settledPosition, manual: true };
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
+    if (renewableRevealOnly) {
+      await selectMode(page, 0, "地球の一呼吸");
+      await page.waitForFunction(() => (
+        !document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning")
+        && document.querySelector("#japan-overlay")?.dataset.plotRevealState === "complete"
+      ));
+      await page.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").nth(7).evaluate((button) => button.click());
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning")
+          && overlay?.dataset.titleSeparatorState === "running"
+          && overlay?.dataset.plotRevealState === "waiting-for-separator"
+          && overlay?.dataset.countryGeometryState === "ready"
+          && Number(overlay.dataset.renewableCountryFillCount) === 0
+          && overlay.dataset.renewableSelectedPoiVisible === "false"
+          && overlay.dataset.renewableSelectionLabelVisible === "false";
+      });
+      await page.waitForTimeout(360);
+      const separator = await page.locator("#japan-overlay").evaluate((overlay) => ({
+        titleVisible: document.querySelector("#japan-layer")?.classList.contains("is-map-title-transitioning"),
+        titleState: overlay.dataset.titleSeparatorState,
+        plotState: overlay.dataset.plotRevealState,
+        fills: Number(overlay.dataset.renewableCountryFillCount),
+        visibleFills: Number(overlay.dataset.renewableVisibleCountryFillCount),
+        selectedPoiVisible: overlay.dataset.renewableSelectedPoiVisible,
+        labelVisible: overlay.dataset.renewableSelectionLabelVisible,
+        titleEndsAt: Number(overlay.dataset.titleSeparatorEndsAt),
+        firstPoiAt: Number(overlay.dataset.plotRevealFirstVisibleAt),
+        allPoisAt: Number(overlay.dataset.plotRevealCompletedAt),
+      }));
+      assert.equal(separator.titleVisible, true, `${viewport.name}: title separator ended before the hold-frame assertion`);
+      assert.equal(separator.fills, 0, `${viewport.name}: renewable countries appeared during title transition`);
+      assert.equal(separator.visibleFills, 0, `${viewport.name}: renewable countries became visible during title transition`);
+      assert.equal(separator.selectedPoiVisible, "false", `${viewport.name}: selected renewable POI appeared during title transition`);
+      assert.equal(separator.labelVisible, "false", `${viewport.name}: renewable bubble appeared during title transition`);
+      assert(separator.firstPoiAt > separator.titleEndsAt, `${viewport.name}: first renewable POI is not scheduled after the title`);
+      assert(separator.allPoisAt > separator.firstPoiAt, `${viewport.name}: renewable bubble has no all-POI completion gate`);
+      const separatorScreenshot = path.join(outputDir, `${viewport.name}-08-title-before-pois.png`);
+      await page.screenshot({ path: separatorScreenshot });
+      scan.screenshots.push(separatorScreenshot);
+
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        const fills = Number(overlay?.dataset.renewableVisibleCountryFillCount);
+        return overlay?.dataset.titleSeparatorState === "complete"
+          && overlay?.dataset.plotRevealState === "running"
+          && fills > 0
+          && fills < 31;
+      });
+      const midReveal = await page.locator("#japan-overlay").evaluate((overlay) => ({
+        state: overlay.dataset.plotRevealState,
+        fills: Number(overlay.dataset.renewableCountryFillCount),
+        visibleFills: Number(overlay.dataset.renewableVisibleCountryFillCount),
+        selectedPoiVisible: overlay.dataset.renewableSelectedPoiVisible,
+        labelVisible: overlay.dataset.renewableSelectionLabelVisible,
+      }));
+      assert.equal(midReveal.labelVisible, "false", `${viewport.name}: renewable bubble appeared before every country POI`);
+      const midScreenshot = path.join(outputDir, `${viewport.name}-08-pois-revealing-before-bubble.png`);
+      await page.screenshot({ path: midScreenshot });
+      scan.screenshots.push(midScreenshot);
+
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.plotRevealState === "complete"
+          && Number(overlay.dataset.renewableCountryFillCount) === 31
+          && Number(overlay.dataset.renewableVisibleCountryFillCount) === 31
+          && overlay.dataset.renewableSelectedPoiVisible === "true"
+          && overlay.dataset.renewableSelectionLabelVisible === "true";
+      }, null, { timeout: 5_000 });
+      const complete = await page.locator("#japan-overlay").evaluate((overlay) => ({
+        state: overlay.dataset.plotRevealState,
+        fills: Number(overlay.dataset.renewableCountryFillCount),
+        visibleFills: Number(overlay.dataset.renewableVisibleCountryFillCount),
+        selectedPoiVisible: overlay.dataset.renewableSelectedPoiVisible,
+        labelVisible: overlay.dataset.renewableSelectionLabelVisible,
+        labelPrimary: overlay.dataset.renewableSelectionLabelPrimary,
+        labelSecondary: overlay.dataset.renewableSelectionLabelSecondary,
+      }));
+      assert.match(complete.labelPrimary || "", /再生可能電力 \d+\.\d%/u);
+      assert.doesNotMatch(complete.labelPrimary || "", /RENEWABLE/u);
+      assert.match(complete.labelSecondary || "", /^日射 .* kWh\/㎡\/日 · 風速 .* m\/s$/u);
+      const localizedReadout = await page.locator("#japan-layer [data-signal-value]").innerText();
+      assert.doesNotMatch(localizedReadout, /^(?:Bangladesh|Saudi Arabia|Argentina|Australia)\b/u);
+      assert.match(localizedReadout, /再生可能電力 \d+\.\d%/u);
+      const completeScreenshot = path.join(outputDir, `${viewport.name}-08-all-pois-then-bubble.png`);
+      await page.screenshot({ path: completeScreenshot });
+      scan.screenshots.push(completeScreenshot);
+      scan.renewableReveal = { separator, midReveal, complete };
       report.scans.push(scan);
       await context.close();
       console.log(`PASS ${viewport.name}`);
@@ -1631,7 +1897,7 @@ try {
     assert.equal(circulationUi.legendSupplementCount, 0);
     await page.locator("#map-reading-guide").evaluate((element) => { element.open = false; });
     scan.clicks.circulation = await clickDataPoint(page, "blue-circulation");
-    assert.match(scan.clicks.circulation.card.type, /海流が14日続いたら \/ DATA POI/u);
+    assert.match(scan.clicks.circulation.card.type, /海流が14日続いたら \/ 観測データ/u);
     assert.match(scan.clicks.circulation.card.meta, /海流 \d+\.\d+ m\/s \/ (北|北東|東|南東|南|南西|西|北西)方向/u);
     assert.equal(scan.clicks.circulation.card.sourceLabel, "元データを確認する ↗");
     assert.match(scan.clicks.circulation.card.sourceHref, /^https:\/\/coastwatch\.noaa\.gov\//u);
@@ -1723,11 +1989,11 @@ try {
     assert.match(forestUi.legend, /大きな水色円\s*\/\s*降水量/u);
     assert.equal(forestUi.legendSupplementCount, 0);
     assert.equal(forestUi.circleRange, "10-54px radius");
-    assert.equal(forestUi.brazilRain, "5.33 mm/day");
+    assert.equal(forestUi.brazilRain, "5.33 mm/日");
     if (openedMobileLegend) await mobileLegendToggle.click();
     await page.locator("#map-reading-guide").evaluate((element) => { element.open = false; });
     scan.clicks.forest = await clickDataPoint(page, "forest-cloud-engine");
-    assert.match(scan.clicks.forest.card.type, /森林と降水量を重ねる \/ DATA POI/u);
+    assert.match(scan.clicks.forest.card.type, /森林と降水量を重ねる \/ 観測データ/u);
     assert.match(scan.clicks.forest.card.meta, /mm\/day/u);
     assert.match(scan.clicks.forest.card.sourceHref, /^https:\/\/power\.larc\.nasa\.gov\//u);
     const forestScreenshot = path.join(outputDir, `${viewport.name}-03-forest-rain.png`);
@@ -1760,7 +2026,7 @@ try {
     const recyclingGuide = await page.locator("#map-guide-reading").textContent();
     assert.match(recyclingGuide, /緑の扇形.*橙/u);
     scan.clicks.waste = await clickDataPoint(page, "nothing-is-waste");
-    assert.match(scan.clicks.waste.card.type, /再資源化率を比べる \/ DATA POI/u);
+    assert.match(scan.clicks.waste.card.type, /再資源化率を比べる \/ 観測データ/u);
     assert.match(scan.clicks.waste.card.meta, /%/u);
     assert.match(scan.clicks.waste.card.sourceHref, /^https:\/\/unstats\.un\.org\//u);
     const selectedCurrentRate = Number(scan.clicks.waste.point.row.recyclePercent.toFixed(1));
@@ -1900,7 +2166,7 @@ try {
       totalCount: undefined,
       sync: "chronological-sequential-distance-limited",
       model: "usgs-estimated-felt-radius",
-      target: "global",
+      target: "earthquake-2000-1",
       zoom: 1,
     });
     assert.ok(earthquakeInitial.totalCount >= 142);
@@ -1921,6 +2187,9 @@ try {
       maxRadius: Number(element.dataset.earthquakeWaveRadiusMaxPx),
       maxRadiusX: Number(element.dataset.earthquakeWaveRadiusMaxXPx),
       durationMs: Number(element.dataset.earthquakeWaveDurationMaxMs),
+      cameraMode: element.dataset.earthquakeCameraMode,
+      cameraState: element.dataset.earthquakeCameraState,
+      cameraZoom: Number(element.dataset.earthZoom),
     }));
     assert.equal(earthquakeWave.year, "2004");
     assert.equal(earthquakeWave.eventCount, 3);
@@ -1930,27 +2199,31 @@ try {
     assert.equal(earthquakeWave.maxRadiusKm, 2000);
     assert.equal(earthquakeWave.durationMs, 3600);
     assert.ok(earthquakeWave.maxRadius > 40);
-    assert.ok(earthquakeWave.maxRadius < viewport.width * 0.25);
+    assert.equal(earthquakeWave.cameraMode, "chronological-epicenter-flyover");
+    assert.equal(earthquakeWave.cameraState, "following-epicenter");
+    assert.ok(earthquakeWave.cameraZoom > 1);
+    assert.ok(earthquakeWave.maxRadius < viewport.width * 0.65);
     assert.ok(earthquakeWave.maxRadiusX >= earthquakeWave.maxRadius);
     const earthquakeReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
-    assert.match(earthquakeReadout, /2004.*3 EVENTS.*MAX M9\.1/u);
+    assert.match(earthquakeReadout, /2004年.*3件.*最大 M9\.1/u);
     await page.waitForFunction(() => {
       const overlay = document.querySelector("#japan-overlay");
       return overlay?.dataset.earthquakeYear === "2004"
         && Number(overlay.dataset.earthquakeVisibleEventCount) === 3
-        && Number(overlay.dataset.earthquakeSelectionPrimaryFontPx) > 0;
+        && overlay.dataset.earthquakeYearSummary === "hidden";
     });
-    const earthquakeLabel = await page.locator("#japan-overlay").evaluate((element) => ({
+    const earthquakeYearSummary = await page.locator("#japan-overlay").evaluate((element) => ({
+      status: element.dataset.earthquakeYearSummary,
       width: Number(element.dataset.earthquakeSelectionLabelWidthPx),
       height: Number(element.dataset.earthquakeSelectionLabelHeightPx),
       primaryFont: Number(element.dataset.earthquakeSelectionPrimaryFontPx),
       profile: element.dataset.earthquakeSelectionLabelProfile,
     }));
-    assert.equal(earthquakeLabel.profile, "half-scale-compact");
-    assert.ok(earthquakeLabel.width >= Math.min(300, viewport.width - 32), `earthquake label became too narrow: ${JSON.stringify(earthquakeLabel)}`);
-    assert.ok(earthquakeLabel.width <= Math.min(520, viewport.width - 24), `earthquake label remains oversized: ${JSON.stringify(earthquakeLabel)}`);
-    assert.ok(earthquakeLabel.height >= 54 && earthquakeLabel.height <= 68, `earthquake label height is not compact: ${JSON.stringify(earthquakeLabel)}`);
-    assert.equal(earthquakeLabel.primaryFont, viewport.width < 600 ? 15 : 18);
+    assert.equal(earthquakeYearSummary.status, "hidden");
+    assert.equal(earthquakeYearSummary.profile, undefined);
+    assert.equal(earthquakeYearSummary.width, 0);
+    assert.equal(earthquakeYearSummary.height, 0);
+    assert.equal(earthquakeYearSummary.primaryFont, 0);
     const earthquakeScreenshot = path.join(outputDir, `${viewport.name}-06-yearly-synchronized-waves.png`);
     await page.screenshot({ path: earthquakeScreenshot });
     scan.screenshots.push(earthquakeScreenshot);
@@ -1987,7 +2260,7 @@ try {
     const ecologyGuide = await page.locator("#map-guide-reading").textContent();
     assert.match(ecologyGuide, /散布図.*回帰線.*相関係数r/u);
     const ecologyReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
-    assert.match(ecologyReadout, /FOREST.*URBAN/u);
+    assert.match(ecologyReadout, /森林率.*都市人口率/u);
     const ecologyScreenshot = path.join(outputDir, `${viewport.name}-07-forest-urban-correlation.png`);
     await page.screenshot({ path: ecologyScreenshot });
     scan.screenshots.push(ecologyScreenshot);

@@ -8,10 +8,27 @@ const POI_MS = 3600;
 const TRANSITION_MS = 920;
 const PRIMARY_VALUE_COUNT_MS = 760;
 const PRIMARY_VALUE_COUNT_STEPS = 32;
+const LONG_TERM_TEMPERATURE_PERIOD_MS = 1050;
 const DESKTOP_START_ZOOM = 6;
 const MOBILE_START_ZOOM = 4.25;
-const PREFECTURE_REGION_EXHIBITS = new Set(["19", "20", "21", "22"]);
+const ESTAT_WEBGL_HUB_COUNT = 8;
+const ESTAT_WEBGL_ANCHOR_TRANSITION_MS = 1400;
+const PREFECTURE_REGION_EXHIBITS = new Set(["19", "20", "21", "22", "23", "24", "25"]);
+const LONG_TERM_TEMPERATURE_KEYS = new Set(["averageTemperature", "summerHigh", "winterLow"]);
 const NATURAL_ENVIRONMENT_SOURCE = "https://www.e-stat.go.jp/stat-search/files?cycle=0&layout=datalist&lid=000001477298&month=0&page=1&stat_infid=000040412523&tclass1=000001240737&tclass2val=0&toukei=00200502&tstat=000001240736&year=20260";
+const JMA_TEMPERATURE_HISTORY_SOURCE = "https://www.data.jma.go.jp/stats/etrn/index.php";
+const ESTAT_WEBGL_THEMES = Object.freeze({
+  migration: Object.freeze({ index: 0, visual: "tidal-migration-currents" }),
+  lodging: Object.freeze({ index: 1, visual: "continuous-travel-filaments" }),
+  housing: Object.freeze({ index: 2, visual: "rising-blueprint-seeds" }),
+  averageTemperature: Object.freeze({ index: 3, visual: "thermal-convection-veils" }),
+  summerHigh: Object.freeze({ index: 4, visual: "summer-heat-shimmer" }),
+  winterLow: Object.freeze({ index: 5, visual: "drifting-frost-crystals" }),
+  relativeHumidity: Object.freeze({ index: 6, visual: "low-cloud-vapor" }),
+  sunshineHours: Object.freeze({ index: 7, visual: "sunbeam-dust-field" }),
+  precipitation: Object.freeze({ index: 8, visual: "continuous-rain-streaks" }),
+  rainyDays: Object.freeze({ index: 9, visual: "asynchronous-rain-ripples" }),
+});
 
 const EXHIBITS = Object.freeze([
   Object.freeze({
@@ -74,12 +91,14 @@ const EXHIBITS = Object.freeze([
     accent: "#ff9a72",
     secondary: "#ffdf82",
     caption: "47都道府県の年平均気温を、県境に沿う色の温度差として描きます。",
-    guide: "青から赤へ進むほど高温。年を送ると、同じ県の空気の変化を色で追えます。",
+    guide: "1955〜2025年を同じ色尺度で再生します。長期傾向には都市化や観測環境の変化も含まれます。",
     frequency: "年次",
+    provider: "気象庁",
+    longTerm: true,
     visual: "thermal",
     scaleMode: "range",
-    sourceName: "統計でみる都道府県のすがた / B 自然環境",
-    source: NATURAL_ENVIRONMENT_SOURCE,
+    sourceName: "過去の気象データ検索 / 年ごとの値",
+    source: JMA_TEMPERATURE_HISTORY_SOURCE,
   }),
   Object.freeze({
     id: "estat-summer-high",
@@ -89,16 +108,18 @@ const EXHIBITS = Object.freeze([
     key: "summerHigh",
     unit: "℃",
     decimals: 1,
-    valueLabel: "月平均日最高気温の最高値",
+    valueLabel: "日最高気温の年平均",
     accent: "#ff765f",
     secondary: "#ffd76d",
-    caption: "一年でもっとも暑い月の平均的な日最高気温を、県境ごとの熱色へ変換します。",
-    guide: "紫から赤・黄へ進むほど高温。単日の最高気温ではなく、月平均値の年内最高です。",
+    caption: "毎日の最高気温を一年で平均した値を、1955年から県境ごとの熱色で追います。",
+    guide: "紫から赤・黄へ進むほど高温。単日の記録ではなく、日最高気温の年平均です。",
     frequency: "年次",
+    provider: "気象庁",
+    longTerm: true,
     visual: "heat",
     scaleMode: "range",
-    sourceName: "統計でみる都道府県のすがた / B 自然環境",
-    source: NATURAL_ENVIRONMENT_SOURCE,
+    sourceName: "過去の気象データ検索 / 年ごとの値・詳細（気温）",
+    source: JMA_TEMPERATURE_HISTORY_SOURCE,
   }),
   Object.freeze({
     id: "estat-winter-low",
@@ -108,16 +129,18 @@ const EXHIBITS = Object.freeze([
     key: "winterLow",
     unit: "℃",
     decimals: 1,
-    valueLabel: "月平均日最低気温の最低値",
+    valueLabel: "日最低気温の年平均",
     accent: "#83d8ff",
     secondary: "#c9b8ff",
-    caption: "一年でもっとも寒い月の平均的な日最低気温を、県境ごとの冷色で示します。",
-    guide: "濃青から水色・白へ進むほど低温。単日の最低気温ではなく、月平均値の年内最低です。",
+    caption: "毎日の最低気温を一年で平均した値を、1955年から県境ごとの冷色で追います。",
+    guide: "濃青から水色・白へ進むほど低温。単日の記録ではなく、日最低気温の年平均です。",
     frequency: "年次",
+    provider: "気象庁",
+    longTerm: true,
     visual: "frost",
     scaleMode: "cold",
-    sourceName: "統計でみる都道府県のすがた / B 自然環境",
-    source: NATURAL_ENVIRONMENT_SOURCE,
+    sourceName: "過去の気象データ検索 / 年ごとの値・詳細（気温）",
+    source: JMA_TEMPERATURE_HISTORY_SOURCE,
   }),
   Object.freeze({
     id: "estat-relative-humidity",
@@ -199,6 +222,14 @@ let layer;
 let map;
 let canvas;
 let context;
+let atmosphereWebglCanvas;
+let atmosphereGl;
+let atmosphereWebglProgram;
+let atmosphereWebglPositionBuffer;
+let atmosphereWebglLocations;
+let atmosphereAnchorPreviousIndex = 0;
+let atmosphereAnchorChangedAt = 0;
+let atmosphereWebglLastRenderAt = 0;
 let markerLayer;
 let markerButtons = [];
 let prefectureRegionLayer;
@@ -438,11 +469,11 @@ const loadSeries = () => {
   if (seriesPromise) return seriesPromise;
   seriesPromise = fetch(SERIES_URL)
     .then((response) => {
-      if (!response.ok) throw new Error(`e-Stat series HTTP ${response.status}`);
+      if (!response.ok) throw new Error(`official statistics series HTTP ${response.status}`);
       return response.json();
     })
     .then((candidate) => {
-      if (!validateSeries(candidate)) throw new Error("e-Stat series failed validation");
+      if (!validateSeries(candidate)) throw new Error("official statistics series failed validation");
       series = candidate;
       return series;
     })
@@ -490,6 +521,24 @@ const valuesFor = (index = periodIndex) => {
 };
 
 const selectedValue = () => valuesFor()[selectedIndex];
+const periodDurationFor = (exhibit = currentExhibit()) => (
+  LONG_TERM_TEMPERATURE_KEYS.has(exhibit.key) ? LONG_TERM_TEMPERATURE_PERIOD_MS : PERIOD_MS
+);
+const temperatureStationFor = (index = selectedIndex) => (
+  series?.temperatureHistorySource?.stations?.[index] || null
+);
+const selectedTemperatureTrendPerDecade = (exhibit = currentExhibit()) => {
+  if (!LONG_TERM_TEMPERATURE_KEYS.has(exhibit.key)) return null;
+  const points = periodsFor(exhibit)
+    .map((period, index) => ({ year: Number(period), value: valuesFor(index)[selectedIndex] }))
+    .filter(({ year, value }) => Number.isFinite(year) && Number.isFinite(value));
+  if (points.length < 2) return null;
+  const meanYear = points.reduce((sum, point) => sum + point.year, 0) / points.length;
+  const meanValue = points.reduce((sum, point) => sum + point.value, 0) / points.length;
+  const numerator = points.reduce((sum, point) => sum + (point.year - meanYear) * (point.value - meanValue), 0);
+  const denominator = points.reduce((sum, point) => sum + (point.year - meanYear) ** 2, 0);
+  return denominator > 0 ? (numerator / denominator) * 10 : null;
+};
 const valueRangeFor = (exhibit) => {
   if (!scaleMaxima.has(exhibit.key)) {
     const allValues = periodsFor(exhibit)
@@ -530,6 +579,395 @@ const syncCanvas = () => {
   return rect;
 };
 
+const compileAtmosphereShader = (type, source) => {
+  const shader = atmosphereGl.createShader(type);
+  atmosphereGl.shaderSource(shader, source);
+  atmosphereGl.compileShader(shader);
+  if (!atmosphereGl.getShaderParameter(shader, atmosphereGl.COMPILE_STATUS)) {
+    const message = atmosphereGl.getShaderInfoLog(shader) || "unknown shader error";
+    atmosphereGl.deleteShader(shader);
+    throw new Error(`e-Stat atmosphere WebGL shader: ${message}`);
+  }
+  return shader;
+};
+
+const initializeAtmosphereWebgl = () => {
+  if (!atmosphereWebglCanvas || atmosphereWebglProgram) return Boolean(atmosphereWebglProgram);
+  atmosphereGl = atmosphereWebglCanvas.getContext("webgl2", {
+    alpha: true,
+    antialias: false,
+    depth: false,
+    stencil: false,
+    premultipliedAlpha: false,
+    powerPreference: "high-performance",
+  });
+  if (!atmosphereGl) {
+    atmosphereWebglCanvas.dataset.estatWebglState = "fallback-2d";
+    return false;
+  }
+
+  const vertexSource = `#version 300 es
+    in vec2 a_position;
+    void main() {
+      gl_Position = vec4(a_position, 0.0, 1.0);
+    }
+  `;
+  const fragmentSource = `#version 300 es
+    precision highp float;
+    #define HUB_COUNT ${ESTAT_WEBGL_HUB_COUNT}
+    uniform vec2 u_resolution;
+    uniform float u_time;
+    uniform vec2 u_anchor;
+    uniform vec2 u_hubs[HUB_COUNT];
+    uniform float u_strengths[HUB_COUNT];
+    uniform int u_hub_count;
+    uniform int u_theme;
+    uniform vec3 u_accent;
+    uniform vec3 u_secondary;
+    uniform float u_field_strength;
+    out vec4 out_color;
+
+    float hash21(vec2 point) {
+      point = fract(point * vec2(123.34, 345.45));
+      point += dot(point, point + 34.345);
+      return fract(point.x * point.y);
+    }
+
+    float value_noise(vec2 point) {
+      vec2 cell = floor(point);
+      vec2 local = fract(point);
+      local = local * local * (3.0 - 2.0 * local);
+      return mix(
+        mix(hash21(cell), hash21(cell + vec2(1.0, 0.0)), local.x),
+        mix(hash21(cell + vec2(0.0, 1.0)), hash21(cell + vec2(1.0)), local.x),
+        local.y
+      );
+    }
+
+    float mist_noise(vec2 point) {
+      float sum = 0.0;
+      float amplitude = 0.5;
+      for (int octave = 0; octave < 4; octave += 1) {
+        sum += value_noise(point) * amplitude;
+        point = mat2(1.62, 1.18, -1.18, 1.62) * point + 0.17;
+        amplitude *= 0.48;
+      }
+      return sum;
+    }
+
+    vec2 aspect_point(vec2 point) {
+      return (point - 0.5) * vec2(u_resolution.x / u_resolution.y, 1.0);
+    }
+
+    vec2 curved_route(vec2 start, vec2 end, float amount, float side) {
+      vec2 delta = end - start;
+      vec2 normal = normalize(vec2(-delta.y, delta.x) + vec2(0.00001));
+      float brush_curve = sin(amount * 3.14159265)
+        + sin(amount * 6.2831853) * 0.18;
+      return mix(start, end, amount) + normal * brush_curve * side;
+    }
+
+    float grid_line(float value) {
+      float edge = min(fract(value), 1.0 - fract(value));
+      return exp(-edge * 105.0);
+    }
+
+    void main() {
+      vec2 uv = gl_FragCoord.xy / u_resolution;
+      vec2 point = aspect_point(uv);
+      vec2 anchor = aspect_point(u_anchor);
+      float time = u_time;
+      vec3 accumulated = vec3(0.0);
+      float coverage = 0.0;
+
+      // The base haze only translates through space. No global time multiplier means no full-screen flash.
+      float haze = mist_noise(point * 3.15 + vec2(time * 0.006, -time * 0.003));
+      float haze_mask = smoothstep(0.61, 0.94, haze) * 0.052;
+      accumulated += mix(u_accent, u_secondary, clamp(uv.x * 0.72 + haze * 0.2, 0.0, 1.0)) * haze_mask * 0.36;
+      coverage += haze_mask * 0.2;
+      float field_strength = mix(0.72, 1.06, clamp(u_field_strength, 0.0, 1.0));
+
+      if (u_theme == 0) {
+        float drift = mist_noise(point * 2.15 + vec2(time * 0.011, -time * 0.004));
+        float incoming = pow(0.5 + 0.5 * sin(point.y * 31.0 + point.x * 5.0 + drift * 4.2 - time * 0.12), 18.0);
+        float outgoing = pow(0.5 + 0.5 * sin(point.y * 23.0 - point.x * 7.0 - drift * 3.4 + time * 0.085), 22.0);
+        accumulated += (u_accent * incoming + u_secondary * outgoing * 0.62) * 0.12 * field_strength;
+        coverage += (incoming + outgoing * 0.6) * 0.045;
+      } else if (u_theme == 1) {
+        for (int index = 0; index < HUB_COUNT; index += 1) {
+          if (index >= u_hub_count) break;
+          vec2 hub = aspect_point(u_hubs[index]);
+          vec2 span = hub - anchor;
+          float span_squared = max(dot(span, span), 0.00001);
+          float route_position = clamp(dot(point - anchor, span) / span_squared, 0.0, 1.0);
+          float side = (mod(float(index), 2.0) < 1.0 ? -1.0 : 1.0)
+            * (0.023 + float(index % 3) * 0.007);
+          vec2 nearest = curved_route(anchor, hub, route_position, side);
+          float distance_to_route = length(point - nearest);
+          float strength = 0.38 + u_strengths[index] * 0.62;
+          float route_core = exp(-distance_to_route * 260.0) * strength;
+          float route_halo = exp(-distance_to_route * 82.0) * strength;
+          float filament = 0.76 + 0.24 * sin(route_position * 24.0 - time * 0.34 + float(index) * 2.17);
+          vec3 route_color = mix(u_accent, u_secondary, u_strengths[index]);
+          accumulated += route_color * (route_core * 0.62 + route_halo * 0.15) * filament;
+          coverage += route_core * 0.26 + route_halo * 0.1;
+
+          float traveller_position = fract(time * (0.022 + float(index % 3) * 0.003) + float(index) * 0.137);
+          vec2 traveller = curved_route(anchor, hub, traveller_position, side);
+          float traveller_distance = length(point - traveller);
+          float traveller_glow = exp(-traveller_distance * 155.0) * strength;
+          accumulated += mix(u_accent, u_secondary, float(index) / float(HUB_COUNT)) * traveller_glow * 0.54;
+          coverage += traveller_glow * 0.32;
+
+          float hub_distance = length(point - hub);
+          float independent_breath = 0.88 + 0.12 * sin(time * 0.27 + float(index) * 2.399);
+          float hub_glow = exp(-hub_distance * 92.0) * strength * independent_breath;
+          accumulated += u_accent * hub_glow * 0.3;
+          coverage += hub_glow * 0.18;
+        }
+        float anchor_distance = length(point - anchor);
+        float anchor_glow = exp(-anchor_distance * 76.0);
+        accumulated += mix(u_accent, vec3(1.0), 0.26) * anchor_glow * 0.24;
+        coverage += anchor_glow * 0.16;
+      } else if (u_theme == 2) {
+        vec2 blueprint = point * vec2(17.0, 13.0) + vec2(time * 0.003, -time * 0.002);
+        float grid = max(grid_line(blueprint.x), grid_line(blueprint.y));
+        vec2 cell = floor(blueprint);
+        vec2 local = fract(blueprint);
+        float seed = hash21(cell);
+        vec2 sprout = vec2(0.18 + seed * 0.64, fract(seed * 2.7 + time * (0.018 + seed * 0.008)));
+        float spark = exp(-length((local - sprout) * vec2(1.0, 1.8)) * 64.0);
+        accumulated += u_accent * grid * 0.035 + u_secondary * spark * 0.2 * field_strength;
+        coverage += grid * 0.018 + spark * 0.08;
+      } else if (u_theme == 3) {
+        float convection = mist_noise(point * 2.35 + vec2(time * 0.009, time * 0.004));
+        float veil = pow(0.5 + 0.5 * sin(point.x * 9.0 + point.y * 5.5 + convection * 5.2 - time * 0.055), 6.0);
+        vec3 thermal = mix(u_secondary, u_accent, smoothstep(0.35, 0.78, convection));
+        accumulated += thermal * veil * 0.105 * field_strength;
+        coverage += veil * 0.04;
+      } else if (u_theme == 4) {
+        float distortion = mist_noise(point * 3.1 + vec2(-time * 0.006, time * 0.012));
+        float shimmer = pow(0.5 + 0.5 * sin(point.x * 27.0 + point.y * 2.8 + distortion * 4.5 - time * 0.16), 19.0);
+        float rising = smoothstep(-0.72, 0.56, point.y) * (0.55 + distortion * 0.45);
+        accumulated += mix(u_accent, u_secondary, uv.y) * shimmer * rising * 0.115 * field_strength;
+        coverage += shimmer * rising * 0.045;
+      } else if (u_theme == 5) {
+        vec2 frost_grid = point * vec2(17.0, 13.0);
+        vec2 frost_cell = floor(frost_grid);
+        vec2 frost_local = fract(frost_grid);
+        float frost_seed = hash21(frost_cell);
+        vec2 crystal = vec2(0.14 + frost_seed * 0.72, fract(frost_seed * 3.1 - time * (0.012 + frost_seed * 0.007)));
+        vec2 crystal_delta = frost_local - crystal;
+        float crystal_core = exp(-length(crystal_delta) * 72.0);
+        float crystal_arms = exp(-min(abs(crystal_delta.x), abs(crystal_delta.y)) * 120.0)
+          * exp(-length(crystal_delta) * 18.0);
+        float cold_veil = pow(0.5 + 0.5 * sin(point.y * 18.0 - point.x * 3.0 + time * 0.045), 20.0);
+        accumulated += u_accent * crystal_core * 0.24 + u_secondary * crystal_arms * 0.045 + u_accent * cold_veil * 0.04;
+        coverage += crystal_core * 0.09 + crystal_arms * 0.02 + cold_veil * 0.015;
+      } else if (u_theme == 6) {
+        float vapor = mist_noise(point * 2.65 + vec2(time * 0.014, time * 0.002));
+        float fog = smoothstep(0.5, 0.82, vapor + sin(point.y * 13.0 + time * 0.035) * 0.08);
+        float ribbon = pow(0.5 + 0.5 * sin(point.y * 16.0 + point.x * 1.4 + vapor * 3.7 - time * 0.045), 10.0);
+        accumulated += mix(u_secondary, u_accent, vapor) * (fog * 0.05 + ribbon * 0.045) * field_strength;
+        coverage += fog * 0.025 + ribbon * 0.018;
+      } else if (u_theme == 7) {
+        vec2 sun = aspect_point(vec2(0.18, 1.06));
+        vec2 ray_delta = point - sun;
+        float ray_angle = atan(ray_delta.y, ray_delta.x);
+        float ray_noise = mist_noise(point * 2.5 + vec2(time * 0.004, 0.0));
+        float ray = pow(0.5 + 0.5 * sin(ray_angle * 46.0 + ray_noise * 2.2), 15.0);
+        float ray_falloff = exp(-length(ray_delta) * 0.72);
+        vec2 dust_grid = point * vec2(24.0, 17.0);
+        vec2 dust_cell = floor(dust_grid);
+        vec2 dust_local = fract(dust_grid);
+        float dust_seed = hash21(dust_cell);
+        vec2 dust_position = vec2(dust_seed, fract(dust_seed * 2.3 + time * (0.006 + dust_seed * 0.004)));
+        float dust = exp(-length(dust_local - dust_position) * 86.0);
+        accumulated += u_accent * ray * ray_falloff * 0.07 + u_secondary * dust * 0.18;
+        coverage += ray * ray_falloff * 0.025 + dust * 0.055;
+      } else if (u_theme == 8) {
+        vec2 rain_grid = point * vec2(29.0, 12.0);
+        vec2 rain_cell = floor(rain_grid);
+        vec2 rain_local = fract(rain_grid);
+        float rain_seed = hash21(rain_cell);
+        float rain_y = fract(rain_seed * 2.7 - time * (0.08 + rain_seed * 0.035));
+        float rain_dy = min(abs(rain_local.y - rain_y), 1.0 - abs(rain_local.y - rain_y));
+        float rain_dx = abs(rain_local.x - (0.16 + rain_seed * 0.68) + rain_dy * 0.28);
+        float streak = exp(-rain_dx * 95.0) * exp(-rain_dy * 17.0);
+        float rain_bank = smoothstep(0.42, 0.82, mist_noise(point * 2.0 + vec2(time * 0.007, 0.0)));
+        accumulated += mix(u_secondary, u_accent, rain_seed) * streak * rain_bank * 0.2 * field_strength;
+        coverage += streak * rain_bank * 0.07;
+      } else {
+        vec2 ripple_grid = point * vec2(13.0, 10.0);
+        vec2 ripple_cell = floor(ripple_grid);
+        vec2 ripple_local = fract(ripple_grid) - 0.5;
+        float ripple_seed = hash21(ripple_cell);
+        float ripple_phase = fract(time * (0.028 + ripple_seed * 0.018) + ripple_seed * 3.7);
+        float ripple_radius = ripple_phase * 0.62;
+        float ripple = exp(-abs(length(ripple_local) - ripple_radius) * 92.0) * (1.0 - ripple_phase);
+        float drop = exp(-length(ripple_local) * 82.0) * smoothstep(0.08, 0.0, ripple_phase);
+        accumulated += mix(u_accent, u_secondary, ripple_seed) * (ripple * 0.13 + drop * 0.18) * field_strength;
+        coverage += ripple * 0.05 + drop * 0.07;
+      }
+
+      float vignette = 1.0 - smoothstep(0.22, 1.04, length(point * vec2(0.84, 1.0)));
+      float output_alpha = u_theme == 1
+        ? clamp(coverage * vignette, 0.0, 0.58)
+        : clamp((0.48 + coverage * 0.42) * vignette, 0.0, 0.66);
+      out_color = vec4(accumulated * vignette, output_alpha);
+    }
+  `;
+
+  try {
+    const vertex = compileAtmosphereShader(atmosphereGl.VERTEX_SHADER, vertexSource);
+    const fragment = compileAtmosphereShader(atmosphereGl.FRAGMENT_SHADER, fragmentSource);
+    const program = atmosphereGl.createProgram();
+    atmosphereGl.attachShader(program, vertex);
+    atmosphereGl.attachShader(program, fragment);
+    atmosphereGl.linkProgram(program);
+    atmosphereGl.deleteShader(vertex);
+    atmosphereGl.deleteShader(fragment);
+    if (!atmosphereGl.getProgramParameter(program, atmosphereGl.LINK_STATUS)) {
+      throw new Error(atmosphereGl.getProgramInfoLog(program) || "unknown program error");
+    }
+    atmosphereWebglProgram = program;
+    atmosphereWebglPositionBuffer = atmosphereGl.createBuffer();
+    atmosphereGl.bindBuffer(atmosphereGl.ARRAY_BUFFER, atmosphereWebglPositionBuffer);
+    atmosphereGl.bufferData(
+      atmosphereGl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      atmosphereGl.STATIC_DRAW,
+    );
+    atmosphereWebglLocations = {
+      position: atmosphereGl.getAttribLocation(program, "a_position"),
+      resolution: atmosphereGl.getUniformLocation(program, "u_resolution"),
+      time: atmosphereGl.getUniformLocation(program, "u_time"),
+      anchor: atmosphereGl.getUniformLocation(program, "u_anchor"),
+      hubs: atmosphereGl.getUniformLocation(program, "u_hubs[0]"),
+      strengths: atmosphereGl.getUniformLocation(program, "u_strengths[0]"),
+      hubCount: atmosphereGl.getUniformLocation(program, "u_hub_count"),
+      theme: atmosphereGl.getUniformLocation(program, "u_theme"),
+      accent: atmosphereGl.getUniformLocation(program, "u_accent"),
+      secondary: atmosphereGl.getUniformLocation(program, "u_secondary"),
+      fieldStrength: atmosphereGl.getUniformLocation(program, "u_field_strength"),
+    };
+    atmosphereWebglCanvas.dataset.estatWebglState = "active";
+    atmosphereWebglCanvas.dataset.estatWebglFlashCadence = "none";
+    return true;
+  } catch (error) {
+    console.warn(error);
+    atmosphereWebglProgram = null;
+    atmosphereWebglCanvas.dataset.estatWebglState = "fallback-2d";
+    return false;
+  }
+};
+
+const colorComponents = (hex) => {
+  const match = String(hex || "").match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/iu);
+  if (!match) return [0.5, 0.8, 1];
+  return match.slice(1).map((component) => Number.parseInt(component, 16) / 255);
+};
+
+const renderAtmosphereWebgl = (timestamp, currentProjection, values) => {
+  if (!atmosphereWebglCanvas) return;
+  const exhibit = currentExhibit();
+  const theme = ESTAT_WEBGL_THEMES[exhibit.key];
+  if (!theme) {
+    atmosphereWebglCanvas.hidden = true;
+    return;
+  }
+  atmosphereWebglCanvas.hidden = false;
+  if (!initializeAtmosphereWebgl()) return;
+  const rect = currentProjection.rect;
+  const dpr = Math.min(devicePixelRatio || 1, 1.15);
+  const targetWidth = Math.max(1, rect.width * dpr);
+  const targetHeight = Math.max(1, rect.height * dpr);
+  const maximumPixels = 1_600_000;
+  const resolutionScale = Math.min(1, Math.sqrt(maximumPixels / (targetWidth * targetHeight)));
+  const width = Math.max(1, Math.round(targetWidth * resolutionScale));
+  const height = Math.max(1, Math.round(targetHeight * resolutionScale));
+  const resized = atmosphereWebglCanvas.width !== width || atmosphereWebglCanvas.height !== height;
+  const selectedCode = String(selectedIndex + 1).padStart(2, "0");
+  const selectionChanged = atmosphereWebglCanvas.dataset.estatWebglSelectedCode !== selectedCode;
+  const themeChanged = atmosphereWebglCanvas.dataset.estatWebglTheme !== exhibit.key;
+  if (!resized && !selectionChanged && !themeChanged && timestamp - atmosphereWebglLastRenderAt < 1000 / 30) return;
+  atmosphereWebglLastRenderAt = timestamp;
+  if (resized) {
+    atmosphereWebglCanvas.width = width;
+    atmosphereWebglCanvas.height = height;
+  }
+
+  const projectNormalized = (index) => {
+    const [x, y] = project(OBSERVATION_CITIES[index], currentProjection);
+    return [clamp01(x / rect.width), clamp01(1 - y / rect.height)];
+  };
+  const transition = ease((timestamp - atmosphereAnchorChangedAt) / ESTAT_WEBGL_ANCHOR_TRANSITION_MS);
+  const from = projectNormalized(atmosphereAnchorPreviousIndex);
+  const to = projectNormalized(selectedIndex);
+  const anchor = [
+    from[0] + (to[0] - from[0]) * transition,
+    from[1] + (to[1] - from[1]) * transition,
+  ];
+  const hubs = values
+    .map((value, index) => ({ value, index, strength: normalizedValue(value, exhibit) }))
+    .filter(({ value, index }) => Number.isFinite(value) && index !== selectedIndex)
+    .sort((left, right) => right.strength - left.strength)
+    .slice(0, ESTAT_WEBGL_HUB_COUNT);
+  const hubPoints = new Float32Array(ESTAT_WEBGL_HUB_COUNT * 2);
+  const hubStrengths = new Float32Array(ESTAT_WEBGL_HUB_COUNT);
+  hubs.forEach((hub, index) => {
+    hubPoints.set(projectNormalized(hub.index), index * 2);
+    hubStrengths[index] = hub.strength;
+  });
+  const normalizedValues = values
+    .filter(Number.isFinite)
+    .map((value) => normalizedValue(value, exhibit));
+  const fieldStrength = normalizedValues.length
+    ? normalizedValues.reduce((sum, value) => sum + value, 0) / normalizedValues.length
+    : 0.5;
+  const accent = colorComponents(exhibit.accent);
+  const secondary = colorComponents(exhibit.secondary);
+
+  atmosphereGl.viewport(0, 0, width, height);
+  atmosphereGl.clearColor(0, 0, 0, 0);
+  atmosphereGl.clear(atmosphereGl.COLOR_BUFFER_BIT);
+  atmosphereGl.useProgram(atmosphereWebglProgram);
+  atmosphereGl.bindBuffer(atmosphereGl.ARRAY_BUFFER, atmosphereWebglPositionBuffer);
+  atmosphereGl.enableVertexAttribArray(atmosphereWebglLocations.position);
+  atmosphereGl.vertexAttribPointer(atmosphereWebglLocations.position, 2, atmosphereGl.FLOAT, false, 0, 0);
+  atmosphereGl.uniform2f(atmosphereWebglLocations.resolution, width, height);
+  const reducedMotion = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  atmosphereGl.uniform1f(atmosphereWebglLocations.time, reducedMotion ? 0 : timestamp / 1000);
+  atmosphereGl.uniform2f(atmosphereWebglLocations.anchor, anchor[0], anchor[1]);
+  atmosphereGl.uniform2fv(atmosphereWebglLocations.hubs, hubPoints);
+  atmosphereGl.uniform1fv(atmosphereWebglLocations.strengths, hubStrengths);
+  atmosphereGl.uniform1i(atmosphereWebglLocations.hubCount, hubs.length);
+  atmosphereGl.uniform1i(atmosphereWebglLocations.theme, theme.index);
+  atmosphereGl.uniform3fv(atmosphereWebglLocations.accent, accent);
+  atmosphereGl.uniform3fv(atmosphereWebglLocations.secondary, secondary);
+  atmosphereGl.uniform1f(atmosphereWebglLocations.fieldStrength, fieldStrength);
+  atmosphereGl.drawArrays(atmosphereGl.TRIANGLES, 0, 6);
+  atmosphereWebglCanvas.dataset.estatWebglHubCount = String(hubs.length);
+  atmosphereWebglCanvas.dataset.estatWebglAnchorProgress = transition.toFixed(3);
+  atmosphereWebglCanvas.dataset.estatWebglSelectedCode = selectedCode;
+  atmosphereWebglCanvas.dataset.estatWebglResolutionScale = resolutionScale.toFixed(3);
+  atmosphereWebglCanvas.dataset.estatWebglTargetFps = "30";
+  atmosphereWebglCanvas.dataset.estatWebglTheme = exhibit.key;
+  atmosphereWebglCanvas.dataset.estatWebglVisual = theme.visual;
+  atmosphereWebglCanvas.dataset.estatWebglMotion = "spatial-continuous-non-pulsing";
+  atmosphereWebglCanvas.dataset.estatWebglFieldStrength = fieldStrength.toFixed(3);
+  layer.dataset.estatAmbientVisual = theme.visual;
+  layer.dataset.estatAmbientMotion = "spatial-continuous-non-pulsing";
+  layer.dataset.estatAmbientFlashCadence = "none";
+  if (exhibit.key === "lodging") {
+    layer.dataset.estatLodgingVisual = "webgl-continuous-route-field";
+    layer.dataset.estatLodgingFlashCadence = "none";
+  } else {
+    delete layer.dataset.estatLodgingVisual;
+    delete layer.dataset.estatLodgingFlashCadence;
+  }
+};
+
 const drawMigration = (x, y, value, strength, selected, time) => {
   const positive = value >= 0;
   const color = positive ? "101,245,223" : "255,130,120";
@@ -556,8 +994,8 @@ const drawMigration = (x, y, value, strength, selected, time) => {
 };
 
 const drawLodging = (x, y, strength, selected, time) => {
-  const pulse = 0.5 + 0.5 * Math.sin(time * 0.0012 + x * 0.04);
-  const radius = 4 + strength * 18 + (selected ? pulse * 4 : 0);
+  const independentBreath = 0.96 + Math.sin(time * 0.00034 + x * 0.027 + y * 0.019) * 0.04;
+  const radius = (4 + strength * 18 + (selected ? 1.5 : 0)) * independentBreath;
   const gradient = context.createRadialGradient(x, y, 0, x, y, radius * 2.2);
   gradient.addColorStop(0, `rgba(255,238,170,${0.65 + strength * 0.3})`);
   gradient.addColorStop(0.35, `rgba(255,184,102,${0.28 + strength * 0.25})`);
@@ -569,7 +1007,7 @@ const drawLodging = (x, y, strength, selected, time) => {
   context.strokeStyle = `rgba(255,215,125,${0.24 + strength * 0.6})`;
   context.lineWidth = 1 + strength * 2;
   for (let petal = 0; petal < 3; petal += 1) {
-    const angle = time * 0.00018 + petal * Math.PI * 2 / 3;
+    const angle = time * 0.0001 + petal * Math.PI * 2 / 3 + x * 0.002;
     context.beginPath();
     context.arc(x + Math.cos(angle) * radius * 0.4, y + Math.sin(angle) * radius * 0.4, radius * (0.65 + petal * 0.08), angle, angle + 1.8);
     context.stroke();
@@ -668,7 +1106,11 @@ const drawPrefectureHeatmap = (currentProjection, values, exhibit, timestamp) =>
       valueCount += 1;
       const color = interpolatePalette(palette, ratio);
       const selected = shape.index === selectedIndex;
-      context.fillStyle = `rgba(${color.join(",")},${selected ? 0.92 : 0.64 + ratio * 0.2})`;
+      const ordinaryAlpha = 0.64 + ratio * 0.2;
+      const selectedAlpha = exhibit.key === "lodging"
+        ? Math.min(0.86, ordinaryAlpha + 0.07)
+        : 0.92;
+      context.fillStyle = `rgba(${color.join(",")},${selected ? selectedAlpha : ordinaryAlpha})`;
     }
     context.fill(shape.path, "evenodd");
     context.strokeStyle = shape.index === selectedIndex
@@ -680,12 +1122,15 @@ const drawPrefectureHeatmap = (currentProjection, values, exhibit, timestamp) =>
 
   const selectedShape = prefectureShapes[selectedIndex];
   if (selectedShape) {
-    const shimmer = 0.72 + Math.sin(timestamp * 0.0022) * 0.16;
+    const lodging = exhibit.key === "lodging";
+    const shimmer = lodging
+      ? 0.68 + Math.sin(timestamp * 0.00038 + selectedIndex * 0.73) * 0.035
+      : 0.72 + Math.sin(timestamp * 0.0022) * 0.16;
     context.save();
     context.shadowColor = `rgba(255,255,238,${shimmer})`;
-    context.shadowBlur = 8;
+    context.shadowBlur = lodging ? 3 : 8;
     context.strokeStyle = `rgba(255,255,245,${0.66 + shimmer * 0.16})`;
-    context.lineWidth = 2.45 / currentProjection.scale;
+    context.lineWidth = (lodging ? 1.72 : 2.45) / currentProjection.scale;
     context.stroke(selectedShape.path);
     context.restore();
   }
@@ -944,6 +1389,7 @@ const draw = (timestamp = performance.now()) => {
   });
   const exhibit = currentExhibit();
   drawPrefectureHeatmap(currentProjection, values, exhibit, timestamp);
+  renderAtmosphereWebgl(timestamp, currentProjection, values);
   if (usesPrefectureRegions(exhibit)) {
     updatePrefectureRegions(currentProjection, values);
   } else {
@@ -954,7 +1400,9 @@ const draw = (timestamp = performance.now()) => {
       if (!Number.isFinite(value)) return;
       const strength = normalizedValue(value, exhibit);
       context.save();
-      context.globalAlpha = index === selectedIndex ? 0.92 : 0.2;
+      context.globalAlpha = exhibit.key === "lodging"
+        ? (index === selectedIndex ? 0.78 : 0.26)
+        : (index === selectedIndex ? 0.92 : 0.2);
       if (exhibit.key === "migration") drawMigration(x, y, value, strength, index === selectedIndex, timestamp);
       else if (exhibit.key === "lodging") drawLodging(x, y, strength, index === selectedIndex, timestamp);
       else if (exhibit.key === "housing") drawHousing(x, y, strength, index === selectedIndex, timestamp);
@@ -976,10 +1424,18 @@ const renderReadout = () => {
   const value = selectedValue();
   const previousValues = valuesFor(Math.max(0, periodIndex - 1));
   const previousValue = previousValues[selectedIndex];
-  const delta = periodIndex > 0 && Number.isFinite(value) && Number.isFinite(previousValue) ? value - previousValue : null;
+  const longTermTemperature = LONG_TERM_TEMPERATURE_KEYS.has(exhibit.key);
+  const baselineYear = periods[0];
+  const baselineValue = valuesFor(0)[selectedIndex];
+  const comparisonValue = longTermTemperature ? baselineValue : previousValue;
+  const delta = periodIndex > 0 && Number.isFinite(value) && Number.isFinite(comparisonValue)
+    ? value - comparisonValue
+    : null;
+  const trendPerDecade = selectedTemperatureTrendPerDecade(exhibit);
   const ordered = values.filter(Number.isFinite).sort((a, b) => b - a);
   const rank = Number.isFinite(value) ? ordered.indexOf(value) + 1 : null;
   const city = OBSERVATION_CITIES[selectedIndex];
+  const temperatureStation = temperatureStationFor(selectedIndex);
   const period = currentPeriod();
   layer.style.setProperty("--estat-accent", exhibit.accent);
   layer.style.setProperty("--estat-secondary", exhibit.secondary);
@@ -991,21 +1447,31 @@ const renderReadout = () => {
   readout.querySelector("[data-estat-number]").textContent = exhibit.number;
   readout.querySelector("[data-estat-title]").textContent = exhibit.shortTitle;
   readout.querySelector("[data-estat-place]").textContent = `${city.code} ${city.prefecture}`;
-  readout.querySelector("[data-estat-city]").textContent = city.city;
+  readout.querySelector("[data-estat-city]").textContent = temperatureStation?.station || city.city;
   readout.querySelector("[data-estat-value-label]").textContent = exhibit.valueLabel;
   readout.querySelector("[data-estat-unit]").textContent = exhibit.unit;
   animatePrimaryValue(value, exhibit);
   readout.querySelector("[data-estat-period]").textContent = period.replace("-", " / ");
   readout.querySelector("[data-estat-rank]").textContent = rank ? `${rank} / ${ordered.length}` : "欠測";
   readout.querySelector("[data-estat-delta]").textContent = delta === null ? (periodIndex === 0 ? "起点" : "比較不可") : `${formatNumber(delta, true, exhibit.decimals || 0)} ${exhibit.unit}`;
-  readout.querySelector("[data-estat-frequency]").textContent = `e-Stat · ${exhibit.frequency.toUpperCase()}`;
-  readout.querySelector("[data-estat-delta-label]").childNodes[0].nodeValue = exhibit.frequency === "年次" ? "前年差" : "前月差";
+  readout.querySelector("[data-estat-frequency]").textContent = `${exhibit.provider || "e-Stat"} · ${exhibit.frequency.toUpperCase()}`;
+  readout.querySelector(".gaia-estat-comparison span:first-child").childNodes[0].nodeValue = longTermTemperature ? "47地点順位" : "都道府県順位";
+  readout.querySelector("[data-estat-delta-label]").childNodes[0].nodeValue = longTermTemperature
+    ? `${baselineYear}年差`
+    : exhibit.frequency === "年次" ? "前年差" : "前月差";
   readout.querySelector("[data-estat-caption]").textContent = exhibit.caption;
-  readout.querySelector("[data-estat-guide]").textContent = exhibit.guide;
+  readout.querySelector("[data-estat-guide]").textContent = longTermTemperature && Number.isFinite(trendPerDecade)
+    ? `${exhibit.guide} ${temperatureStation?.station || city.city}の線形傾向は10年あたり${formatNumber(trendPerDecade, true, 2)}℃。`
+    : exhibit.guide;
+  readout.dataset.estatCoverageStart = periods[0] || "";
+  readout.dataset.estatCoverageEnd = periods.at(-1) || "";
+  readout.dataset.estatPeriodCount = String(periods.length);
+  readout.dataset.estatTrendPerDecade = Number.isFinite(trendPerDecade) ? trendPerDecade.toFixed(4) : "";
+  readout.dataset.estatObservationStation = temperatureStation?.station || city.city;
   const sourceAction = readout.querySelector("[data-estat-source-action]");
-  sourceAction.href = exhibit.source;
-  sourceAction.title = `${exhibit.sourceName}をe-Statで確認`;
-  sourceAction.setAttribute("aria-label", `${exhibit.sourceName}の元データをe-Statで確認する（新しいタブ）`);
+  sourceAction.href = temperatureStation?.url || exhibit.source;
+  sourceAction.title = `${exhibit.sourceName}を${exhibit.provider || "e-Stat"}で確認`;
+  sourceAction.setAttribute("aria-label", `${exhibit.sourceName}の元データを${exhibit.provider || "e-Stat"}で確認する（新しいタブ）`);
   const range = valueRangeFor(exhibit);
   const palette = paletteFor(exhibit);
   heatLegend.style.setProperty("--estat-heat-gradient", paletteCss(palette));
@@ -1017,14 +1483,23 @@ const renderReadout = () => {
   slider.value = String(periodIndex);
   slider.setAttribute("aria-valuetext", period);
   slider.setAttribute("aria-label", exhibit.frequency === "年次" ? "表示年を選ぶ" : "表示月を選ぶ");
-  readout.querySelector("[data-estat-months]").innerHTML = periods.map((entry, index) => `<i class="${index === periodIndex ? "is-current" : ""}"><span>${exhibit.frequency === "年次" ? entry : entry.slice(5)}</span></i>`).join("");
+  const timelineTicks = readout.querySelector("[data-estat-months]");
+  timelineTicks.classList.toggle("is-long-term", longTermTemperature);
+  timelineTicks.innerHTML = periods.map((entry, index) => {
+    const showLongTermLabel = !longTermTemperature
+      || index === 0
+      || index === periods.length - 1
+      || Number(entry) % 10 === 0;
+    const label = exhibit.frequency === "年次" ? (showLongTermLabel ? entry : "") : entry.slice(5);
+    return `<i class="${index === periodIndex ? "is-current" : ""}"><span>${label}</span></i>`;
+  }).join("");
   readout.querySelector("[data-estat-step='-1']")?.setAttribute(
     "aria-label",
-    activeIndex === 0 ? "前の展示、15へ" : "前のe-Stat展示",
+    activeIndex === 0 ? "前の展示、15へ" : "前の日本統計展示",
   );
   readout.querySelector("[data-estat-step='1']")?.setAttribute(
     "aria-label",
-    activeIndex === EXHIBITS.length - 1 ? "次の展示、01へ" : "次のe-Stat展示",
+    activeIndex === EXHIBITS.length - 1 ? "次の展示、01へ" : "次の日本統計展示",
   );
   markerButtons.forEach((button, index) => {
     const markerValue = values[index];
@@ -1037,6 +1512,39 @@ const statisticsDataset = () => {
   const exhibit = currentExhibit();
   const period = currentPeriod();
   const values = valuesFor();
+  const temperatureStation = temperatureStationFor(selectedIndex);
+  if (LONG_TERM_TEMPERATURE_KEYS.has(exhibit.key)) {
+    const periods = periodsFor(exhibit);
+    const city = OBSERVATION_CITIES[selectedIndex];
+    return {
+      id: `estat-prefecture-${exhibit.key}`,
+      modeId: "estat-prefecture",
+      title: `${exhibit.number} ${exhibit.shortTitle} — ${city.prefecture}・${temperatureStation?.station || city.city}（${periods[0]}〜${periods.at(-1)}）`,
+      rows: periods.map((year, index) => {
+        const value = valuesFor(index)[selectedIndex];
+        return {
+          id: year,
+          label: year,
+          x: Number(year),
+          y: Number.isFinite(value) ? value : Number.NaN,
+          value: Number.isFinite(value) ? value : Number.NaN,
+          prefecture: city.prefecture,
+          city: temperatureStation?.station || city.city,
+          period: year,
+          provenance: "SOURCE",
+        };
+      }).filter((row) => Number.isFinite(row.value)),
+      unit: exhibit.unit,
+      xLabel: "年",
+      yLabel: exhibit.valueLabel,
+      defaultMethod: "regression",
+      provenance: ["SOURCE"],
+      periodStart: periods[0],
+      periodEnd: periods.at(-1),
+      sourceUrl: temperatureStation?.url || exhibit.source,
+      sourceName: exhibit.sourceName,
+    };
+  }
   return {
     id: `estat-prefecture-${exhibit.key}`,
     modeId: "estat-prefecture",
@@ -1100,6 +1608,8 @@ const selectPrefecture = (index, { auto = false } = {}) => {
   }
   const previous = markerButtons[selectedIndex];
   const previousIndex = selectedIndex;
+  atmosphereAnchorPreviousIndex = selectedIndex;
+  atmosphereAnchorChangedAt = performance.now();
   selectedIndex = requested;
   previous?.classList.add("is-departing");
   window.setTimeout(() => previous?.classList.remove("is-departing"), 520);
@@ -1124,13 +1634,14 @@ const setPeriod = (index, { auto = false } = {}) => {
   const length = periods.length;
   const requested = ((Number(index) || 0) % length + length) % length;
   if (requested === periodIndex && auto) {
-    nextMonthAt = performance.now() + PERIOD_MS;
+    nextMonthAt = performance.now() + periodDurationFor();
     return;
   }
   previousPeriodIndex = periodIndex;
   periodIndex = requested;
   transitionStartedAt = performance.now();
-  nextMonthAt = transitionStartedAt + (auto ? PERIOD_MS : PERIOD_MS * 2);
+  const duration = periodDurationFor();
+  nextMonthAt = transitionStartedAt + (auto ? duration : duration * 2);
   layer.dataset.estatPeriodTransition = "active";
   window.setTimeout(() => {
     if (layer) layer.dataset.estatPeriodTransition = "settled";
@@ -1158,6 +1669,7 @@ const stepExhibit = (direction) => {
 const select = async (index) => {
   const requested = Math.max(0, Math.min(EXHIBITS.length - 1, Number(index) || 0));
   globalThis.GaiaLiveExhibits?.deactivate?.();
+  globalThis.GaiaFirmsExhibit?.deactivate?.();
   if (activeIndex < 0) {
     savedHeading = {
       number: document.querySelector("#japan-mode-number")?.textContent || "01",
@@ -1179,13 +1691,16 @@ const select = async (index) => {
   prefectureRegionLayer.toggleAttribute("hidden", !regionMode);
   hidePrefectureRegionTooltip();
   heatLegend.hidden = false;
+  if (atmosphereWebglCanvas) atmosphereWebglCanvas.hidden = false;
   readout.hidden = false;
   buttons.forEach((button, buttonIndex) => button.setAttribute("aria-current", String(buttonIndex === activeIndex)));
   document.querySelectorAll(".map-mode-button:not([data-estat-exhibit])").forEach((button) => button.setAttribute("aria-current", "false"));
   applyHeading();
   renderReadout();
-  nextMonthAt = performance.now() + PERIOD_MS;
+  nextMonthAt = performance.now() + periodDurationFor();
   nextPoiAt = performance.now() + POI_MS;
+  atmosphereAnchorPreviousIndex = selectedIndex;
+  atmosphereAnchorChangedAt = performance.now() - ESTAT_WEBGL_ANCHOR_TRANSITION_MS;
   globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
     lon: 137.4,
     lat: 36.2,
@@ -1214,7 +1729,13 @@ const deactivate = () => {
   delete layer.dataset.estatFrequency;
   delete layer.dataset.estatPoiDisplay;
   delete layer.dataset.estatPeriodTransition;
+  delete layer.dataset.estatLodgingVisual;
+  delete layer.dataset.estatLodgingFlashCadence;
+  delete layer.dataset.estatAmbientVisual;
+  delete layer.dataset.estatAmbientMotion;
+  delete layer.dataset.estatAmbientFlashCadence;
   canvas.hidden = true;
+  if (atmosphereWebglCanvas) atmosphereWebglCanvas.hidden = true;
   markerLayer.hidden = true;
   prefectureRegionLayer.setAttribute("hidden", "");
   hidePrefectureRegionTooltip();
@@ -1247,10 +1768,27 @@ const mount = () => {
   context = canvas.getContext("2d", { alpha: true });
   map.append(canvas);
 
+  atmosphereWebglCanvas = document.createElement("canvas");
+  atmosphereWebglCanvas.id = "gaia-estat-atmosphere-webgl";
+  atmosphereWebglCanvas.className = "gaia-estat-webgl";
+  atmosphereWebglCanvas.hidden = true;
+  atmosphereWebglCanvas.setAttribute("aria-hidden", "true");
+  atmosphereWebglCanvas.addEventListener("webglcontextlost", (event) => {
+    event.preventDefault();
+    atmosphereWebglCanvas.dataset.estatWebglState = "context-lost";
+  });
+  atmosphereWebglCanvas.addEventListener("webglcontextrestored", () => {
+    atmosphereWebglProgram = null;
+    atmosphereWebglPositionBuffer = null;
+    atmosphereWebglLocations = null;
+    initializeAtmosphereWebgl();
+  });
+  map.append(atmosphereWebglCanvas);
+
   markerLayer = document.createElement("div");
   markerLayer.className = "gaia-estat-markers";
   markerLayer.hidden = true;
-  markerLayer.setAttribute("aria-label", "e-Stat 47都道府県データ地点");
+  markerLayer.setAttribute("aria-label", "公的統計 47都道府県データ地点");
   markerButtons = OBSERVATION_CITIES.map((city, index) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -1271,7 +1809,7 @@ const mount = () => {
   prefectureRegionLayer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   prefectureRegionLayer.classList.add("gaia-estat-prefecture-regions");
   prefectureRegionLayer.setAttribute("hidden", "");
-  prefectureRegionLayer.setAttribute("aria-label", "e-Stat 47都道府県データ領域");
+  prefectureRegionLayer.setAttribute("aria-label", "公的統計 47都道府県データ領域");
   prefectureRegionGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
   prefectureRegionLayer.append(prefectureRegionGroup);
   map.append(prefectureRegionLayer);
@@ -1301,8 +1839,8 @@ const mount = () => {
   readout.innerHTML = `
     <button class="gaia-estat-return" type="button" data-estat-return><span>MAP 01—15</span><strong>地球展示へ戻る</strong></button>
     <div class="gaia-estat-chapter">
-      <p>JAPAN / e-Stat · MONTHLY + ANNUAL</p>
-      <div><button type="button" data-estat-step="-1" aria-label="前のe-Stat展示">‹</button><span><b data-estat-number>16</b><strong data-estat-title>人の潮目</strong></span><button type="button" data-estat-step="1" aria-label="次のe-Stat展示">›</button></div>
+      <p>JAPAN / OFFICIAL DATA · MONTHLY + 71-YEAR CLIMATE</p>
+      <div><button type="button" data-estat-step="-1" aria-label="前の日本統計展示">‹</button><span><b data-estat-number>16</b><strong data-estat-title>人の潮目</strong></span><button type="button" data-estat-step="1" aria-label="次の日本統計展示">›</button></div>
     </div>
     <div class="gaia-estat-place"><p>47 PREFECTURES / AUTO RELAY</p><strong data-estat-place>01 北海道</strong><small data-estat-city>札幌</small></div>
     <div class="gaia-estat-primary"><p data-estat-value-label>転入超過</p><strong data-estat-value>—</strong><span data-estat-unit>人</span></div>
@@ -1327,7 +1865,7 @@ const mount = () => {
     button.textContent = exhibit.number;
     button.dataset.estatExhibit = exhibit.id;
     button.dataset.mapPreviewSurface = "map";
-    button.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}、e-Stat都道府県展示へ切り替える`);
+    button.setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}、日本の公的統計展示へ切り替える`);
     button.setAttribute("aria-describedby", "map-mode-preview");
     button.setAttribute("aria-current", "false");
     button.addEventListener("click", () => { void select(index); });

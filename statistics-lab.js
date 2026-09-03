@@ -114,7 +114,7 @@ if (!lab || !openButton) {
     "rhythm-of-disaster": "Rhythm of Disaster / 地震の時間",
     "three-ecologies": "Three Ecologies / 生態・社会・文化",
     "earth-organ": "Earth Organ / 再生可能エネルギー",
-    "estat-prefecture": "e-Stat / 47都道府県",
+    "estat-prefecture": "公的統計 / 47都道府県",
   };
 
   const METHOD_GROUPS = [
@@ -1465,7 +1465,7 @@ if (!lab || !openButton) {
     if (state.datasetId !== dataset.id) state.selectedRecordId = "";
     state.datasetId = dataset.id; state.modeId = dataset.modeId; ui.derived.checked = state.includeDerived; ui.derived.disabled = !supportsDerived;
     ui.context.textContent = `${MODE_TITLES[dataset.modeId] || dataset.modeId} — ${dataset.title}`;
-    if (chooseDefault) { const method = DEFAULT_METHOD[dataset.modeId] || "summary"; const group = METHOD_LOOKUP.get(method).group; state.lectureId = group.id; state.methodId = method; renderLectures(); renderMethods(); }
+    if (chooseDefault) { const method = dataset.defaultMethod || DEFAULT_METHOD[dataset.modeId] || "summary"; const group = METHOD_LOOKUP.get(method).group; state.lectureId = group.id; state.methodId = method; renderLectures(); renderMethods(); }
     render();
   };
 

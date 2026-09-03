@@ -326,7 +326,7 @@ try {
       }
       if (index === 2) {
         assert.equal(scan.forestRainCircleRange, "10-54px radius", `${viewport.name}/03: rain-circle scale is stale`);
-        assert.equal(scan.forestRainBrazil, "5.33 mm/day", `${viewport.name}/03: Brazil rain point is missing`);
+        assert.equal(scan.forestRainBrazil, "5.33 mm/日", `${viewport.name}/03: Brazil rain point is missing`);
       } else if (index === 6) {
         assert.equal(scan.ecologiesPlot, "paired-country-scatter", `${viewport.name}/07: paired scatter plot is missing`);
         assert.equal(scan.ecologiesPairCount, "31", `${viewport.name}/07: paired-country count is stale`);

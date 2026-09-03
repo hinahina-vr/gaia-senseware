@@ -626,7 +626,7 @@ const scanIntegratedLightEntry = async (viewport) => {
   assert.equal(integrated.integratedMode, "08");
   assert.equal(integrated.mapChoiceListDisplay, "grid");
   assert.equal(integrated.heading, "人工物の共生化");
-  assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—25");
+  assert.equal(integrated.bankKicker, "INSTALLATION BANK / MAP 01—26");
   assert.equal(integrated.bankGuide, "見たい地図展示を選んでください");
   assert.equal(integrated.tooltipVisible, false);
   assert.equal(integrated.novelOpenAtCount, 0);

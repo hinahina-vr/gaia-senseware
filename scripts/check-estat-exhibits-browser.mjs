@@ -7,6 +7,7 @@ const browserPath = process.argv[2] || "C:/Program Files/Google/Chrome/Applicati
 const baseUrl = (process.argv[3] || "http://127.0.0.1:4198").replace(/\/$/u, "");
 const outputDir = path.resolve(process.argv[4] || "artifacts/estat-exhibits");
 const ovationSnapshot = fs.readFileSync(path.resolve("data/ovation-aurora-snapshot.json"), "utf8");
+const prefectureSeries = JSON.parse(fs.readFileSync(path.resolve("data/estat-prefecture-series.json"), "utf8"));
 fs.mkdirSync(outputDir, { recursive: true });
 
 const browser = await chromium.launch({
@@ -76,14 +77,16 @@ const colorDistance = (left, right) => (
 ) / Math.max(1, left.red + left.green + left.blue);
 
 const snapshots = [];
+const atmosphereWebglEvidence = [];
+let lodgingWebglEvidence = null;
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   monitor(page);
   await openMap(page);
 
-  assert.equal(await page.locator(".map-mode-bank").getAttribute("aria-label"), "地図の25展示を選ぶ");
-  assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—25");
+  assert.equal(await page.locator(".map-mode-bank").getAttribute("aria-label"), "地図の26展示を選ぶ");
+  assert.equal(await page.locator("#map-mode-bank-kicker").textContent(), "INSTALLATION BANK / MAP 01—26");
   assert.equal(await page.locator(".map-dock-bank-trigger > i").count(), 0, "obsolete downward bank chevron was still present");
   assert.equal(await page.locator("#japan-estat-mode-list .map-mode-button").count(), 10);
   assert.equal(await page.locator(".gaia-estat-marker").count(), 47);
@@ -97,16 +100,16 @@ try {
   await page.locator(".map-dock-bank-trigger").evaluate((button) => button.click());
 
   const contracts = [
-    { number: "16", title: "人の潮目", key: "migration" },
-    { number: "17", title: "旅の灯", key: "lodging" },
-    { number: "18", title: "住まいの芽吹き", key: "housing" },
-    { number: "19", title: "空の体温", key: "averageTemperature", regions: true },
-    { number: "20", title: "夏の頂", key: "summerHigh", regions: true },
-    { number: "21", title: "冬の底", key: "winterLow", regions: true },
-    { number: "22", title: "湿りの膜", key: "relativeHumidity", regions: true },
-    { number: "23", title: "光の貯金", key: "sunshineHours" },
-    { number: "24", title: "雨の器", key: "precipitation" },
-    { number: "25", title: "雨の足跡", key: "rainyDays" },
+    { number: "16", title: "人の潮目", key: "migration", visual: "tidal-migration-currents" },
+    { number: "17", title: "旅の灯", key: "lodging", visual: "continuous-travel-filaments" },
+    { number: "18", title: "住まいの芽吹き", key: "housing", visual: "rising-blueprint-seeds" },
+    { number: "19", title: "空の体温", key: "averageTemperature", visual: "thermal-convection-veils", regions: true },
+    { number: "20", title: "夏の頂", key: "summerHigh", visual: "summer-heat-shimmer", regions: true },
+    { number: "21", title: "冬の底", key: "winterLow", visual: "drifting-frost-crystals", regions: true },
+    { number: "22", title: "湿りの膜", key: "relativeHumidity", visual: "low-cloud-vapor", regions: true },
+    { number: "23", title: "光の貯金", key: "sunshineHours", visual: "sunbeam-dust-field", regions: true },
+    { number: "24", title: "雨の器", key: "precipitation", visual: "continuous-rain-streaks", regions: true },
+    { number: "25", title: "雨の足跡", key: "rainyDays", visual: "asynchronous-rain-ripples", regions: true },
   ];
   for (let index = 0; index < contracts.length; index += 1) {
     const contract = contracts[index];
@@ -127,7 +130,7 @@ try {
     } else {
       assert.equal(await page.locator(".gaia-estat-markers").getAttribute("hidden"), null, `${contract.key} hid its point POIs`);
       assert.equal(await page.locator(".gaia-estat-marker:not([hidden])").count() > 30, true);
-      assert.notEqual(await page.locator(".gaia-estat-prefecture-regions").getAttribute("hidden"), null, `${contract.key} exposed prefecture regions outside 19-22`);
+      assert.notEqual(await page.locator(".gaia-estat-prefecture-regions").getAttribute("hidden"), null, `${contract.key} exposed prefecture regions outside 19-25`);
     }
     assert.ok(Number(await page.locator("#japan-overlay").getAttribute("data-earth-zoom")) >= 5.95, `${contract.key} did not open at the requested Japan-focused size`);
     const evidence = await canvasEvidence(page);
@@ -136,8 +139,77 @@ try {
     assert.equal(evidence.shapeCount, 47, `${contract.key} did not load all 47 prefecture shapes`);
     assert.ok(evidence.valueCount >= 45, `${contract.key} colored too few prefectures`);
     assert.equal(evidence.valueCount + evidence.missingCount, 47, `${contract.key} did not account for all prefectures`);
-    if (contract.number === "19") {
-      const aomoriPoint = await page.locator(".gaia-estat-prefecture-region[data-estat-prefecture='02']").evaluate((region) => {
+    await page.waitForFunction(({ key, visual }) => {
+      const webglCanvas = document.querySelector("#gaia-estat-atmosphere-webgl");
+      return webglCanvas?.dataset.estatWebglState === "active"
+        && webglCanvas.dataset.estatWebglTheme === key
+        && webglCanvas.dataset.estatWebglVisual === visual;
+    }, contract, { timeout: 8_000 });
+    const ambientEvidence = await page.locator("#gaia-estat-atmosphere-webgl").evaluate((webglCanvas) => ({
+      hidden: webglCanvas.hidden,
+      state: webglCanvas.dataset.estatWebglState,
+      theme: webglCanvas.dataset.estatWebglTheme,
+      visual: webglCanvas.dataset.estatWebglVisual,
+      motion: webglCanvas.dataset.estatWebglMotion,
+      flashCadence: webglCanvas.dataset.estatWebglFlashCadence,
+      hubCount: Number(webglCanvas.dataset.estatWebglHubCount),
+      fieldStrength: Number(webglCanvas.dataset.estatWebglFieldStrength),
+      width: webglCanvas.width,
+      height: webglCanvas.height,
+      resolutionScale: Number(webglCanvas.dataset.estatWebglResolutionScale),
+      targetFps: Number(webglCanvas.dataset.estatWebglTargetFps),
+      blendMode: getComputedStyle(webglCanvas).mixBlendMode,
+      layerVisual: document.querySelector("#japan-layer")?.dataset.estatAmbientVisual,
+      layerMotion: document.querySelector("#japan-layer")?.dataset.estatAmbientMotion,
+      layerFlashCadence: document.querySelector("#japan-layer")?.dataset.estatAmbientFlashCadence,
+      hasWebgl2: Boolean(webglCanvas.getContext("webgl2")),
+    }));
+    assert.equal(ambientEvidence.hidden, false);
+    assert.equal(ambientEvidence.state, "active");
+    assert.equal(ambientEvidence.theme, contract.key);
+    assert.equal(ambientEvidence.visual, contract.visual);
+    assert.equal(ambientEvidence.layerVisual, contract.visual);
+    assert.equal(ambientEvidence.motion, "spatial-continuous-non-pulsing");
+    assert.equal(ambientEvidence.layerMotion, "spatial-continuous-non-pulsing");
+    assert.equal(ambientEvidence.flashCadence, "none");
+    assert.equal(ambientEvidence.layerFlashCadence, "none");
+    assert.equal(ambientEvidence.hubCount, 8);
+    assert.equal(ambientEvidence.hasWebgl2, true);
+    assert.equal(ambientEvidence.blendMode, "screen");
+    assert.ok(ambientEvidence.fieldStrength > 0 && ambientEvidence.fieldStrength <= 1);
+    assert.ok(ambientEvidence.resolutionScale > 0 && ambientEvidence.resolutionScale <= 1);
+    assert.equal(ambientEvidence.targetFps, 30);
+    atmosphereWebglEvidence.push({ number: contract.number, ...ambientEvidence });
+    if (contract.key === "lodging") {
+      lodgingWebglEvidence = await page.locator("#gaia-estat-atmosphere-webgl").evaluate((webglCanvas) => ({
+        layerVisual: document.querySelector("#japan-layer")?.dataset.estatLodgingVisual,
+        layerFlashCadence: document.querySelector("#japan-layer")?.dataset.estatLodgingFlashCadence,
+      }));
+      assert.equal(lodgingWebglEvidence.layerVisual, "webgl-continuous-route-field");
+      assert.equal(lodgingWebglEvidence.layerFlashCadence, "none");
+      assert.equal(
+        await page.locator("#japan-overlay").getAttribute("data-live-backdrop"),
+        "estat-reference-map-only",
+        "the previous MAP 01-09 effect was still rendering underneath the e-Stat exhibit",
+      );
+      await page.evaluate(() => globalThis.GaiaEstatExhibits.selectPrefecture(1));
+      await page.waitForFunction(() => {
+        const progress = Number(document.querySelector("#gaia-estat-atmosphere-webgl")?.dataset.estatWebglAnchorProgress);
+        return progress > 0.01 && progress < 0.99;
+      });
+      const arrivalAnimation = await page.locator(".gaia-estat-marker[data-estat-prefecture='02']").evaluate((marker) => getComputedStyle(marker).animationName);
+      assert.equal(arrivalAnimation, "estat-lodging-poi-arrive", "lodging retained the bright generic POI flash");
+      await page.waitForTimeout(1500);
+      assert.equal(Number(await page.locator("#gaia-estat-atmosphere-webgl").getAttribute("data-estat-webgl-anchor-progress")), 1);
+      await page.evaluate(() => globalThis.GaiaEstatExhibits.setPeriod(1));
+      await page.waitForTimeout(80);
+      const canvasAnimationName = await page.locator("#gaia-estat-canvas").evaluate((estatCanvas) => getComputedStyle(estatCanvas).animationName);
+      assert.equal(canvasAnimationName, "none", "the full-map period shimmer still flashed the dark background");
+      lodgingWebglEvidence.canvasAnimationName = canvasAnimationName;
+    }
+    if (contract.regions) {
+      const regionCode = "02";
+      const regionPoint = await page.locator(`.gaia-estat-prefecture-region[data-estat-prefecture='${regionCode}']`).evaluate((region) => {
         const bounds = region.getBBox();
         const matrix = region.getScreenCTM();
         const point = new DOMPoint();
@@ -150,10 +222,10 @@ try {
         }
         return null;
       });
-      assert.ok(aomoriPoint, "Aomori prefecture region had no interactive interior point");
-      await page.mouse.click(aomoriPoint.x, aomoriPoint.y);
-      assert.equal(await page.locator(".gaia-estat-readout").getAttribute("data-estat-selected-code"), "02");
-      assert.equal(await page.locator(".gaia-estat-prefecture-region[data-estat-prefecture='02']").getAttribute("aria-current"), "true");
+      assert.ok(regionPoint, `${contract.key} prefecture region ${regionCode} had no interactive interior point`);
+      await page.mouse.click(regionPoint.x, regionPoint.y);
+      assert.equal(await page.locator(".gaia-estat-readout").getAttribute("data-estat-selected-code"), regionCode);
+      assert.equal(await page.locator(`.gaia-estat-prefecture-region[data-estat-prefecture='${regionCode}']`).getAttribute("aria-current"), "true");
       await page.waitForTimeout(340);
     }
     snapshots.push({ ...contract, ...evidence });
@@ -223,10 +295,12 @@ try {
   await page.evaluate(() => globalThis.GaiaEstatExhibits.selectPrefecture(46));
   await page.waitForTimeout(250);
   assert.equal(await page.locator(".gaia-estat-readout").getAttribute("data-estat-selected-code"), "47");
-  assert.equal(await page.locator(".gaia-estat-marker[aria-current='true']").getAttribute("data-estat-prefecture"), "47");
+  assert.equal(await page.locator(".gaia-estat-prefecture-region[aria-current='true']").getAttribute("data-estat-prefecture"), "47");
+  assert.notEqual(await page.locator(".gaia-estat-markers").getAttribute("hidden"), null, "rainfall still exposed point POIs");
 
   await page.evaluate(async () => {
     await globalThis.GaiaEstatExhibits.select(5);
+    globalThis.GaiaEstatExhibits.setPeriod(70);
     globalThis.GaiaEstatExhibits.selectPrefecture(0);
   });
   await page.waitForFunction(() => {
@@ -274,7 +348,13 @@ try {
     samples.push({ ...settled, direction: "none", progress: 1, state: "settled" });
     return samples;
   };
+  const pinCounterYear = async () => {
+    await page.evaluate(() => globalThis.GaiaEstatExhibits.setPeriod(70));
+    await page.waitForFunction(() => document.querySelector(".gaia-estat-readout")?.dataset.estatValueCountState === "settled");
+  };
+  await pinCounterYear();
   const countUpSamples = await collectCountTransition(46, "up", "pc-21-value-count-up.png");
+  await pinCounterYear();
   const countDownSamples = await collectCountTransition(0, "down", "pc-21-value-count-down.png");
   const assertCountDirection = (samples, direction) => {
     const values = samples.map(({ current }) => current).filter(Number.isFinite);
@@ -290,8 +370,8 @@ try {
   };
   assertCountDirection(countUpSamples, "up");
   assertCountDirection(countDownSamples, "down");
-  assert.equal(countUpSamples.at(-1).text, "16.1");
-  assert.equal(countDownSamples.at(-1).text, "-5.3");
+  assert.equal(countUpSamples.at(-1).text, prefectureSeries.winterLow["2025"][46].toFixed(1));
+  assert.equal(countDownSamples.at(-1).text, prefectureSeries.winterLow["2025"][0].toFixed(1));
   const valueCountEvidence = { countUpSamples, countDownSamples };
 
   const zoomBefore = Number(await page.locator("#japan-overlay").getAttribute("data-earth-zoom"));
@@ -306,9 +386,39 @@ try {
   await openMap(widePage);
   await widePage.locator("#japan-estat-mode-list .map-mode-button").nth(3).evaluate((button) => button.click());
   await widePage.waitForFunction(() => document.querySelector(".gaia-estat-readout")?.dataset.estatExhibit === "averageTemperature");
-  await widePage.waitForTimeout(1100);
   await widePage.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.viewAnimation === "idle", null, { timeout: 8_000 });
+  await widePage.evaluate(() => {
+    globalThis.GaiaEstatExhibits.selectPrefecture(0);
+    globalThis.GaiaEstatExhibits.setPeriod(0);
+  });
+  await widePage.waitForTimeout(1050);
   assert.equal(Number(await widePage.locator("#japan-overlay").getAttribute("data-earth-zoom")), 6, "desktop e-Stat exhibit did not start at zoom 6");
+  const temperature1955 = await canvasEvidence(widePage);
+  await widePage.screenshot({ path: path.join(outputDir, "wide-19-1955.png"), fullPage: true });
+  await widePage.evaluate(() => globalThis.GaiaEstatExhibits.setPeriod(70));
+  await widePage.waitForTimeout(1050);
+  const temperature2025 = await canvasEvidence(widePage);
+  const climateReadout = await widePage.locator(".gaia-estat-readout").evaluate((readout) => ({
+    period: readout.dataset.estatPeriod,
+    coverageStart: readout.dataset.estatCoverageStart,
+    coverageEnd: readout.dataset.estatCoverageEnd,
+    periodCount: Number(readout.dataset.estatPeriodCount),
+    trendPerDecade: Number(readout.dataset.estatTrendPerDecade),
+    station: readout.dataset.estatObservationStation,
+  }));
+  assert.deepEqual(climateReadout, {
+    period: "2025",
+    coverageStart: "1955",
+    coverageEnd: "2025",
+    periodCount: 71,
+    trendPerDecade: climateReadout.trendPerDecade,
+    station: "札幌",
+  });
+  assert.ok(climateReadout.trendPerDecade > 0, `Sapporo trend did not show long-term warming: ${JSON.stringify(climateReadout)}`);
+  assert.ok(colorDistance(temperature1955, temperature2025) > 0.002, "1955 and 2025 temperature choropleths were visually indistinguishable");
+  assert.equal(await widePage.locator("[data-estat-month]").getAttribute("max"), "70");
+  assert.equal(await widePage.locator("strong[data-estat-frequency]").textContent(), "気象庁 · 年次");
+  assert.match(await widePage.locator("[data-estat-delta-label]").textContent(), /1955年差/u);
   const wideBox = await widePage.locator(".gaia-estat-readout").boundingBox();
   assert.ok(wideBox && wideBox.height < 190, `wide readout wrapped into an extra row: ${JSON.stringify(wideBox)}`);
   const wideReadoutType = await widePage.locator(".gaia-estat-readout").evaluate((readout) => {
@@ -346,7 +456,7 @@ try {
   const analysisAction = widePage.locator("[data-estat-analysis]");
   assert.equal(await sourceAction.isVisible(), true, "e-Stat source action was hidden on desktop");
   assert.equal(await analysisAction.isVisible(), true, "e-Stat analysis action was hidden on desktop");
-  assert.match(await sourceAction.getAttribute("href"), /^https:\/\/www\.e-stat\.go\.jp\//u);
+  assert.match(await sourceAction.getAttribute("href"), /^https:\/\/www\.data\.jma\.go\.jp\//u);
   assert.equal(await sourceAction.getAttribute("download"), null, "source action unexpectedly restored a download");
   await widePage.screenshot({ path: path.join(outputDir, "wide-19-source-analysis.png"), fullPage: true });
   await widePage.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
@@ -363,9 +473,12 @@ try {
     recordCount: document.querySelectorAll("#gaia-statistics-records-body tr").length,
     status: document.querySelector("#gaia-statistics-status")?.textContent || "",
   }));
-  assert.match(analysisEvidence.context, /e-Stat \/ 47都道府県/u);
+  assert.match(analysisEvidence.context, /公的統計 \/ 47都道府県/u);
   assert.match(analysisEvidence.context, /19 空の体温/u);
-  assert.equal(analysisEvidence.recordCount, 47, "statistics lab did not receive all prefectures");
+  assert.match(analysisEvidence.context, /1955〜2025/u);
+  assert.equal(analysisEvidence.recordCount, 71, "statistics lab did not receive the full 71-year temperature series");
+  assert.equal(analysisEvidence.state.analysisReady, true, "long-term temperature analysis was not ready");
+  assert.equal(analysisEvidence.state.methodId, "regression", "long-term temperature analysis did not open on regression");
   await widePage.waitForTimeout(900);
   const analysisChart = await widePage.locator("#gaia-statistics-canvas").evaluate((canvas) => {
     const context = canvas.getContext("2d", { willReadFrequently: true });
@@ -399,6 +512,10 @@ try {
   await mobilePage.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
   await mobilePage.waitForTimeout(1100);
   await mobilePage.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.viewAnimation === "idle", null, { timeout: 8_000 });
+  await mobilePage.waitForFunction(() => document.querySelector("#gaia-estat-atmosphere-webgl")?.dataset.estatWebglState === "active");
+  assert.equal(await mobilePage.locator("#gaia-estat-atmosphere-webgl").getAttribute("data-estat-webgl-theme"), "lodging");
+  assert.equal(await mobilePage.locator("#gaia-estat-atmosphere-webgl").getAttribute("data-estat-webgl-flash-cadence"), "none");
+  assert.equal(await mobilePage.locator("#gaia-estat-atmosphere-webgl").getAttribute("hidden"), null);
   assert.equal(Number(await mobilePage.locator("#japan-overlay").getAttribute("data-earth-zoom")), 4.25, "mobile e-Stat exhibit start zoom regressed");
   const mobileBox = await mobilePage.locator(".gaia-estat-readout").boundingBox();
   assert.ok(mobileBox && mobileBox.x >= 0 && mobileBox.y >= 0 && mobileBox.x + mobileBox.width <= 390.5 && mobileBox.y + mobileBox.height <= 844.5);
@@ -420,7 +537,7 @@ try {
 
   assert.deepEqual(errors, []);
   assert.deepEqual(responses404, []);
-  const report = { status: "passed", baseUrl, snapshots, autoplayState, autoplayPoiCodes, annualAutoplay, monthEvidence: { february, march }, annualEvidence: { rainfall2020, rainfall2024 }, valueCountEvidence, analysisEvidence, wideReadoutType, mobileChapterType, mobileUnitSize, errors, responses404 };
+  const report = { status: "passed", baseUrl, snapshots, atmosphereWebglEvidence, lodgingWebglEvidence, autoplayState, autoplayPoiCodes, annualAutoplay, monthEvidence: { february, march }, annualEvidence: { rainfall2020, rainfall2024 }, climateEvidence: { temperature1955, temperature2025, climateReadout }, valueCountEvidence, analysisEvidence, wideReadoutType, mobileChapterType, mobileUnitSize, errors, responses404 };
   fs.writeFileSync(path.join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
   console.log(JSON.stringify(report, null, 2));
 } finally {

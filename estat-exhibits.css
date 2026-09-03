@@ -33,7 +33,21 @@
   mix-blend-mode: normal;
 }
 
+.gaia-estat-webgl {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.88;
+  filter: saturate(1.12) contrast(1.04);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
 .gaia-estat-canvas[hidden],
+.gaia-estat-webgl[hidden],
 .gaia-estat-markers[hidden],
 .gaia-estat-prefecture-regions[hidden],
 .gaia-estat-prefecture-tooltip[hidden],
@@ -195,6 +209,17 @@
   animation: estat-poi-arrive 900ms cubic-bezier(0.16, 0.82, 0.18, 1) both;
 }
 
+.japan-layer[data-estat-exhibit="lodging"] .gaia-estat-marker.is-arriving {
+  animation: estat-lodging-poi-arrive 1100ms cubic-bezier(0.18, 0.76, 0.2, 1) both;
+}
+
+.japan-layer[data-estat-exhibit="lodging"] .gaia-estat-marker[aria-current="true"] > i {
+  transform: scale(1.24);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--estat-accent, #ffd36e) 9%, transparent),
+    0 0 18px color-mix(in srgb, var(--estat-accent, #ffd36e) 54%, transparent);
+}
+
 .gaia-estat-prefecture-regions {
   position: absolute;
   z-index: 6;
@@ -297,6 +322,12 @@
   100% { opacity: 1; filter: none; transform: translate(-50%, -50%) scale(1); }
 }
 
+@keyframes estat-lodging-poi-arrive {
+  0% { opacity: 0.42; transform: translate(-50%, -50%) scale(0.76); }
+  55% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.08); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
 .gaia-estat-readout {
   --estat-accent: #65f5df;
   --estat-secondary: #ff8278;
@@ -306,7 +337,7 @@
   bottom: 10px;
   left: 12px;
   display: grid;
-  grid-template-columns: minmax(120px, 0.65fr) minmax(170px, 0.9fr) minmax(140px, 0.8fr) minmax(180px, 0.9fr) minmax(250px, 1.45fr) minmax(125px, 0.7fr) minmax(190px, 1fr) minmax(250px, 1.35fr);
+  grid-template-columns: minmax(120px, 0.65fr) minmax(230px, 1.1fr) minmax(140px, 0.8fr) minmax(180px, 0.9fr) minmax(250px, 1.45fr) minmax(125px, 0.7fr) minmax(190px, 1fr) minmax(250px, 1.35fr);
   min-height: 116px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--estat-accent) 32%, transparent);
@@ -452,6 +483,11 @@
   gap: 5px;
 }
 
+.gaia-estat-timeline > div.is-long-term {
+  grid-template-columns: repeat(71, minmax(0, 1fr));
+  gap: 1px;
+}
+
 .gaia-estat-timeline i {
   position: relative;
   display: block;
@@ -467,7 +503,7 @@
   transform: scaleY(1.65);
 }
 
-.gaia-estat-timeline i span { position: absolute; top: 7px; left: 50%; color: rgba(219, 242, 240, 0.38); font: 700 7px/1 Consolas, monospace; transform: translateX(-50%); }
+.gaia-estat-timeline i span { position: absolute; top: 7px; left: 50%; color: rgba(219, 242, 240, 0.5); font: 700 9px/1 Consolas, monospace; transform: translateX(-50%); }
 .gaia-estat-comparison { grid-template-columns: 1fr 1fr; gap: 8px; }
 .gaia-estat-comparison span {
   display: grid;
@@ -557,14 +593,6 @@
   opacity: 0.025 !important;
   filter: saturate(0.25) brightness(0.52) contrast(0.72);
 }
-.japan-layer[data-estat-period-transition="active"] .gaia-estat-canvas { animation: estat-period-shimmer 920ms ease both; }
-
-@keyframes estat-period-shimmer {
-  0% { opacity: 0.42; filter: saturate(0.7) brightness(0.7); }
-  46% { opacity: 1; filter: saturate(1.5) brightness(1.32); }
-  100% { opacity: 1; filter: none; }
-}
-
 @media (max-width: 1500px) {
   .gaia-estat-readout {
     grid-template-columns: 0.95fr 0.85fr 0.9fr 1.45fr 0.72fr 1.35fr;
@@ -617,8 +645,9 @@
 @media (prefers-reduced-motion: reduce) {
   .gaia-estat-marker,
   .gaia-estat-marker > i,
-  .gaia-estat-marker > span,
-  .gaia-estat-canvas,
+    .gaia-estat-marker > span,
+    .gaia-estat-canvas,
+    .gaia-estat-webgl,
   .gaia-estat-primary > strong.is-counting {
     animation: none !important;
     transition-duration: 1ms !important;

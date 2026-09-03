@@ -68,20 +68,28 @@
 
 ### 3.1 日本・47都道府県展示16〜25
 
-| 展示／e-Stat統計 | 収録範囲と二次加工 | 公開／ダウンロード面 | 判定と条件 |
+| 展示／公的統計 | 収録範囲と二次加工 | 公開／ダウンロード面 | 判定と条件 |
 |---|---|---|---|
 | 16 人の潮目／総務省「住民基本台帳人口移動報告」月報 | 2026年2〜6月、47都道府県の転入超過数。JIS X 0401順に抽出し、正負・絶対値を流向、色、環の長さへ変換 | `data/estat-prefecture-series.json` を表示用スナップショットとして配信。サイト内のデータ書き出し機能は設けない | **可**。e-Statおよび統計名を出典表示し、「加工して作成」であることを明示する |
 | 17 旅の灯／観光庁「宿泊旅行統計調査」第2次速報 | 2026年2〜6月、47都道府県の延べ宿泊者数。値を灯の面積、光量、余韻へ変換 | 同上 | **可**。出典・加工表示を維持し、速報値を確定値と誤認させない |
 | 18 住まいの芽吹き／国土交通省「建築着工統計調査（住宅着工統計）」 | 2026年2〜6月、47都道府県の新設住宅着工戸数。値を光柱の高さ、太さ、枝分かれへ変換 | 同上 | **可**。出典・加工表示を維持する |
-| 19 空の体温／総務省統計局「統計でみる都道府県のすがた」B 自然環境 `#B02101` | 2020〜2024年、47都道府県の年平均気温。全期間共通尺度で熱の光環へ変換 | 同上 | **可**。e-Stat、統計名、指標コード、加工表示を維持する |
-| 20 夏の頂／同 `#B02102` | 2020〜2024年、月平均日最高気温の年内最高値。単日の最高気温ではないことを明記して陽炎へ変換 | 同上 | **可**。指標の定義を省略せず表示する |
-| 21 冬の底／同 `#B02103` | 2020〜2024年、月平均日最低気温の年内最低値。低いほど強い氷晶として反転尺度で描画 | 同上 | **可**。反転尺度の加工を説明し、単日の最低気温と誤認させない |
+| 19 空の体温／気象庁「過去の気象データ検索・年ごとの値」 | 1955〜2025年、47都道府県の代表気象台・測候所における年平均気温。71年間共通尺度で熱の光環へ変換 | `data/estat-prefecture-series.json` を表示用スナップショットとして配信。地点ごとの公式年次表へリンク | **可**。気象庁を出典表示し、観測点移転・観測方法・都市化の影響を含む系列であることを明記する |
+| 20 夏の頂／同「日最高気温の年平均」 | 1955〜2025年、毎日の日最高気温を年単位で平均した値。単日の最高記録ではないことを明記して陽炎へ変換 | 同上 | **可**。指標の定義と観測地点を省略せず表示する |
+| 21 冬の底／同「日最低気温の年平均」 | 1955〜2025年、毎日の日最低気温を年単位で平均した値。低いほど強い氷晶として反転尺度で描画 | 同上 | **可**。反転尺度の加工を説明し、単日の最低記録と誤認させない |
 | 22 湿りの膜／同 `#B02201` | 2020〜2024年、年平均相対湿度。水膜の広がりへ変換。公式表の欠測1セルは補完しない | 同上 | **可**。欠測を0扱いせず「欠測」と表示する |
 | 23 光の貯金／同 `#B02401` | 2020〜2024年、年間日照時間。光条の長さと密度へ変換。公式表の欠測1セルは補完しない | 同上 | **可**。出典・加工・欠測表示を維持する |
 | 24 雨の器／同 `#B02402` | 2020〜2024年、年間降水量。雨筋と波紋へ変換。公式表の欠測2セルは補完しない | 同上 | **可**。出典・加工・欠測表示を維持する |
 | 25 雨の足跡／同 `#B02303` | 2020〜2024年、年間雨日数。波紋の層へ変換。公式表の欠測1セルは補完しない | 同上 | **可**。降水量と雨日数を混同せず、欠測表示を維持する |
 
-10統計は、月次3展示と自然環境の年次7展示に分け、都道府県を網羅し期間内の変化が視覚的に現れる指標として選定した。年次7展示は「統計でみる都道府県のすがた」2022〜2026年版のB表をつなぎ、各表の指標年度2020〜2024年を採用した。ブラウザからe-Stat APIへ接続せず、取得・検証済みの公式Excelを表示用JSONへ加工している。表示時のe-Stat APIキー、D1読み取り、外部APIリクエストは発生しない。e-Stat利用規約は、出典と編集・加工の明示を条件に複製、公衆送信、翻案、商用利用を認め、数値データや簡単な表・グラフは著作権の対象外としている。
+10統計は、e-Statの月次3展示、自然環境の年次4展示、気象庁の長期気温3展示に分け、都道府県を網羅し期間内の変化が視覚的に現れる指標として選定した。長期気温は1955〜2025年の71年分を採用し、長期系列を確保できない県庁所在地については同一都道府県内の熊谷、銚子、彦根、下関を代表観測点とした。これは各地点で観測された気温の推移であり、都市化や観測環境の変化を除去した地球温暖化の寄与推定ではない。残る年次4展示は「統計でみる都道府県のすがた」2022〜2026年版のB表をつなぎ、各表の指標年度2020〜2024年を採用した。ブラウザから外部APIへ接続せず、取得・検証済みの公式データを表示用JSONへ加工している。表示時のe-Stat APIキー、D1読み取り、外部APIリクエストは発生しない。
+
+### 3.2 全球展示26「燃える惑星」
+
+| 展示／データ | 収録範囲と二次加工 | 公開／ダウンロード面 | 判定と条件 |
+|---|---|---|---|
+| NASA LANCE FIRMS / MODIS Collection 6.1 NRT Global 24h | 全球の直近24時間の火災・熱異常検知から信頼度60以上を抽出。2.5度・1時間の時空間セルごとにFRPと信頼度を加味した代表点を残し、最大1,600点へ制限。観測時刻を点灯順、FRPを粒径、信頼度を透明度、昼夜フラグを炎色へ変換 | 本番はWorkerで15分論理キャッシュし、失敗時は `data/firms-active-fire-snapshot.json` を配信。スナップショットには緯度経度、brightness、FRP、confidence、daynight、観測時刻、衛星識別子を収録 | **可**。NASA LANCE FIRMSを明示し、火災境界ではなく衛星の熱異常代表点であること、NRTデータであること、抽出・間引き済みであることを表示する。NASAの承認を示唆せず、出典URL・データセット名・加工内容を維持する |
+
+MODISの公称空間分解能は1 kmであり、点の光環は焼失面積や火災範囲を表さない。誤認を防ぐため画面内にこの注意を常設し、「森林火災」だけに限定せず「火災・熱異常」と表記する。API応答は4 MBを上限に検査し、ブラウザへ渡す点数を制限する。FIRMSの公開24時間CSVをWorkerが取得するため、認証キーをクライアントへ配布しない。
 
 ## 4. 宇宙展示の外部データ一覧
 
@@ -138,6 +146,7 @@ Cloudflare Pagesの公開ルートにある次のファイルは、画面にダ�
 - `data/japan-earthquakes-fallback.json`
 - `data/live-observation-fallback-v1.json`
 - `data/estat-prefecture-series.json`
+- `data/firms-active-fire-snapshot.json`
 - `data/ovation-aurora-snapshot.json`
 - `data/natural-earth-50m-land.geojson`
 - `data/natural-earth-50m-countries.geojson`
@@ -222,6 +231,9 @@ P0とP1を完了し、再監査で差分がないことを確認した後は、�
 - [e-Stat 利用規約](https://www.e-stat.go.jp/terms-of-use)
 - [e-Stat API 3.0 利用ガイド](https://www.e-stat.go.jp/api/api-info/e-stat-manual3-0)
 - [e-Stat「統計でみる都道府県のすがた2026」B 自然環境](https://www.e-stat.go.jp/stat-search/files?cycle=0&layout=datalist&lid=000001477298&month=0&page=1&stat_infid=000040412523&tclass1=000001240737&tclass2val=0&toukei=00200502&tstat=000001240736&year=20260)
+- [気象庁「過去の気象データ検索・年ごとの値（詳細）」](https://www.data.jma.go.jp/stats/etrn/index.php)
+- [NASA FIRMS Active Fire Data](https://firms.modaps.eosdis.nasa.gov/active_fire/)
+- [NASA FIRMS MODIS Fire / Hotspot field descriptions](https://firms.modaps.eosdis.nasa.gov/content/descriptions/FIRMS_MODIS_Firehotspots.html)
 
 ## 12. 監査した実装箇所
 
@@ -232,5 +244,6 @@ P0とP1を完了し、再監査で差分がないことを確認した後は、�
 - `app.js`, `space-mode.js`, `data-ledger.js`: 表示、地図、出典UI
 - `statistics-lab.js`: ブラウザ内の分析・画面表示（ファイル書き出しなし）
 - `scripts/build-region-code-data.mjs`, `sensor-platform/src/region-code-data.ts`: CLDR・J-LIS地域コード
-- `src/exploration/estat-exhibits.js`, `src/exploration/estat-prefecture-data.js`, `data/estat-prefecture-series.json`: e-Stat都道府県月次・年次自然環境展示と表示用スナップショット
+- `scripts/build-jma-prefecture-temperature-history.mjs`, `src/exploration/estat-exhibits.js`, `src/exploration/estat-prefecture-data.js`, `data/estat-prefecture-series.json`: e-Stat都道府県月次・年次自然環境展示、気象庁71年気温系列、表示用スナップショット
+- `scripts/build-firms-active-fire-snapshot.mjs`, `src/exploration/firms-exhibit.js`, `sensor-platform/src/live-senseware.ts`, `data/firms-active-fire-snapshot.json`: FIRMS取得、時空間サンプリング、15分キャッシュ、WebGL火災展示
 - `data/japan-prefectures-NOTICE.md`, `docs/REGION-CODE-SOURCES.md`: 地図・コードの既存出典記録

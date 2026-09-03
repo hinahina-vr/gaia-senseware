@@ -35,6 +35,10 @@ await test("Live Senseware uses free-plan provider gates and five-minute stream 
   assert.match(source, /longitude: cities\.map\(\(city\) => city\.lon\)\.join\(","\)/u);
   assert.match(source, /current: "wind_speed_10m"/u);
   assert.match(source, /\/api\/live\/v1\/wind-field/u);
+  assert.match(source, /FIRMS_SOURCE_URL = "https:\/\/firms\.modaps\.eosdis\.nasa\.gov\/data\/active_fire\/modis-c6\.1\/csv\/MODIS_C6_1_Global_24h\.csv"/u);
+  assert.match(source, /FIRMS_MAX_SOURCE_BYTES = 4_000_000/u);
+  assert.match(source, /FIRMS_CONFIDENCE_MIN = 60/u);
+  assert.match(source, /\/api\/live\/v1\/firms/u);
   assert.match(source, /current: "carbon_dioxide,pm2_5"/u);
   assert.match(source, /refresh = setInterval\(\(\) => void emitSnapshot\(\), STREAM_REFRESH_MS\)/u);
   assert.match(productionConfig, /"LIVE_SENSEWARE_ENABLED": "true"/u);
@@ -146,6 +150,18 @@ try {
     assert.equal(payload.points[0].id, "sapporo");
     assert.equal(payload.points.at(-1).id, "naha");
     assert.match(payload.fallbackReason, /LIVE_SENSEWARE_ENABLED/u);
+  });
+  await test("NASA FIRMS endpoint serves the versioned global fire snapshot while live providers are disabled", async () => {
+    const response = await fetch(`${origin}/api/live/v1/firms`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("cache-control") ?? "", /stale-while-revalidate/u);
+    const payload = await response.json();
+    assert.equal(payload.source, "snapshot");
+    assert.match(payload.fallbackReason, /LIVE_SENSEWARE_ENABLED/u);
+    assert.match(payload.provenance.provider, /NASA.+FIRMS/u);
+    assert(payload.points.length > 100 && payload.points.length <= 1_600);
+    assert.equal(payload.summary.displayed, payload.points.length);
+    assert(payload.points.every((point) => point.confidence >= 60));
   });
   await test("Live Senseware SSE emits normalized snapshot and provider events", async () => {
     const controller = new AbortController();

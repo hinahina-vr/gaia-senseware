@@ -61,6 +61,15 @@ const STREAM_REFRESH_MS = 5 * 60 * 1_000;
 const HEARTBEAT_MS = 15_000;
 const WIND_FIELD_TTL_MS = 5 * 60 * 1_000;
 const WIND_FIELD_CACHE_KEY = "open-meteo-japan-wind-field-v1";
+const FIRMS_SOURCE_URL = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/modis-c6.1/csv/MODIS_C6_1_Global_24h.csv";
+const FIRMS_SOURCE_PAGE = "https://firms.modaps.eosdis.nasa.gov/active_fire/";
+const FIRMS_CACHE_KEY = "nasa-firms-modis-global-24h-v1";
+const FIRMS_TTL_MS = 15 * 60 * 1_000;
+const FIRMS_MAX_SOURCE_BYTES = 4_000_000;
+const FIRMS_MAX_POINTS = 1_600;
+const FIRMS_CONFIDENCE_MIN = 60;
+const FIRMS_SPATIAL_BIN_DEGREES = 2.5;
+const FIRMS_TIME_BIN_MINUTES = 60;
 
 type Provider = "noaa" | "jaxa" | "esa" | "open-meteo";
 type LiveStatus = "near-real-time" | "latest-published" | "stale" | "snapshot";
@@ -129,6 +138,52 @@ interface CachedWindField {
   upstreamLastModified?: string;
 }
 
+interface FirmsFirePoint {
+  id: string;
+  lat: number;
+  lon: number;
+  brightness: number;
+  frp: number;
+  confidence: number;
+  daynight: "D" | "N";
+  acquiredAt: string;
+  satellite: string;
+}
+
+interface FirmsFireSnapshot {
+  schemaVersion: 1;
+  source: "nasa-firms-modis" | "stale-cache" | "snapshot";
+  generatedAt: string;
+  points: FirmsFirePoint[];
+  summary: {
+    detected: number;
+    displayed: number;
+    maxFrp: number;
+    totalFrp: number;
+    nightShare: number;
+    highConfidenceShare: number;
+    start: string;
+    end: string;
+  };
+  provenance: {
+    provider: string;
+    dataset: string;
+    sourceUrl: string;
+    sourcePage: string;
+    resolution: string;
+    transformVersion: string;
+    filters: Record<string, string | number>;
+  };
+  fallbackReason?: string;
+}
+
+interface CachedFirmsFireSnapshot {
+  snapshot: FirmsFireSnapshot;
+  retrievedAt: string;
+  upstreamEtag?: string;
+  upstreamLastModified?: string;
+}
+
 interface ProviderDefinition {
   cacheKey: string;
   ttlMs: number;
@@ -185,6 +240,133 @@ const writeCacheJson = async (key: string, payload: unknown): Promise<void> => {
 
 const readCached = (key: string): Promise<CachedEvent | undefined> => readCacheJson<CachedEvent>(key);
 const writeCached = (key: string, cached: CachedEvent): Promise<void> => writeCacheJson(key, cached);
+
+const firmsPointScore = (point: FirmsFirePoint): number => Math.log1p(point.frp)
+  * (0.55 + point.confidence / 200)
+  + (point.daynight === "N" ? 0.04 : 0);
+
+const firmsAcquiredAt = (date: string, time: string): string => {
+  const digits = String(time || "").padStart(4, "0");
+  const value = `${date}T${digits.slice(0, 2)}:${digits.slice(2)}:00Z`;
+  return Number.isFinite(Date.parse(value)) ? value : "";
+};
+
+const compactFirmsCsv = (csv: string): Pick<FirmsFireSnapshot, "points" | "summary"> => {
+  const lines = csv.trim().split(/\r?\n/u);
+  const header = lines.shift()?.split(",") || [];
+  const columns = new Map(header.map((name, index) => [name.trim(), index]));
+  const indexOf = (name: string): number => {
+    const index = columns.get(name);
+    if (index === undefined) throw new Error(`FIRMS column missing: ${name}`);
+    return index;
+  };
+  const latitudeIndex = indexOf("latitude");
+  const longitudeIndex = indexOf("longitude");
+  const brightnessIndex = indexOf("brightness");
+  const dateIndex = indexOf("acq_date");
+  const timeIndex = indexOf("acq_time");
+  const satelliteIndex = indexOf("satellite");
+  const confidenceIndex = indexOf("confidence");
+  const frpIndex = indexOf("frp");
+  const daynightIndex = indexOf("daynight");
+  const bins = new Map<string, FirmsFirePoint>();
+  let detected = 0;
+
+  for (const line of lines) {
+    if (!line) continue;
+    const cells = line.split(",");
+    const lat = Number(cells[latitudeIndex]);
+    const lon = Number(cells[longitudeIndex]);
+    const brightness = Number(cells[brightnessIndex]);
+    const frp = Number(cells[frpIndex]);
+    const confidence = Number(cells[confidenceIndex]);
+    const acquiredAt = firmsAcquiredAt(cells[dateIndex] || "", cells[timeIndex] || "");
+    const daynight: "D" | "N" = cells[daynightIndex] === "N" ? "N" : "D";
+    if (!(lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)
+      || !Number.isFinite(brightness) || !(frp >= 0) || confidence < FIRMS_CONFIDENCE_MIN || !acquiredAt) continue;
+    detected += 1;
+    const point: FirmsFirePoint = {
+      id: `${cells[satelliteIndex] || "M"}:${acquiredAt}:${lat.toFixed(5)}:${lon.toFixed(5)}`,
+      lat: Number(lat.toFixed(5)),
+      lon: Number(lon.toFixed(5)),
+      brightness: Number(brightness.toFixed(2)),
+      frp: Number(frp.toFixed(2)),
+      confidence: Math.round(confidence),
+      daynight,
+      acquiredAt,
+      satellite: cells[satelliteIndex] || "MODIS",
+    };
+    const minutes = Math.floor(Date.parse(acquiredAt) / 60_000 / FIRMS_TIME_BIN_MINUTES);
+    const key = `${Math.floor((lon + 180) / FIRMS_SPATIAL_BIN_DEGREES)}:${Math.floor((lat + 90) / FIRMS_SPATIAL_BIN_DEGREES)}:${minutes}`;
+    const previous = bins.get(key);
+    if (!previous || firmsPointScore(point) > firmsPointScore(previous)) bins.set(key, point);
+  }
+
+  const points = [...bins.values()]
+    .sort((left, right) => firmsPointScore(right) - firmsPointScore(left))
+    .slice(0, FIRMS_MAX_POINTS)
+    .sort((left, right) => left.acquiredAt.localeCompare(right.acquiredAt) || left.id.localeCompare(right.id));
+  if (!points.length) throw new Error("FIRMS feed contains no usable detections");
+  return {
+    points,
+    summary: {
+      detected,
+      displayed: points.length,
+      maxFrp: Number(Math.max(...points.map((point) => point.frp)).toFixed(2)),
+      totalFrp: Number(points.reduce((sum, point) => sum + point.frp, 0).toFixed(2)),
+      nightShare: Number((points.filter((point) => point.daynight === "N").length / points.length).toFixed(4)),
+      highConfidenceShare: Number((points.filter((point) => point.confidence >= 80).length / points.length).toFixed(4)),
+      start: points[0]?.acquiredAt || "",
+      end: points.at(-1)?.acquiredAt || "",
+    },
+  };
+};
+
+const freshFirmsSnapshot = async (cached?: CachedFirmsFireSnapshot): Promise<CachedFirmsFireSnapshot> => {
+  const headers = conditionalHeaders(cached);
+  headers.set("Accept", "text/csv");
+  const response = await fetchWithTimeout(FIRMS_SOURCE_URL, { headers }, 15_000);
+  if (response.status === 304 && cached) {
+    return { ...cached, retrievedAt: new Date().toISOString(), snapshot: { ...cached.snapshot, source: "nasa-firms-modis", fallbackReason: undefined } };
+  }
+  if (!response.ok) throw new Error(`NASA FIRMS ${response.status}`);
+  const contentLength = Number(response.headers.get("Content-Length"));
+  if (Number.isFinite(contentLength) && contentLength > FIRMS_MAX_SOURCE_BYTES) {
+    throw new Error(`NASA FIRMS response exceeds ${FIRMS_MAX_SOURCE_BYTES} bytes`);
+  }
+  const csv = await response.text();
+  if (new TextEncoder().encode(csv).byteLength > FIRMS_MAX_SOURCE_BYTES) {
+    throw new Error(`NASA FIRMS response exceeds ${FIRMS_MAX_SOURCE_BYTES} bytes`);
+  }
+  const generatedAt = new Date().toISOString();
+  const compacted = compactFirmsCsv(csv);
+  return {
+    snapshot: {
+      schemaVersion: 1,
+      source: "nasa-firms-modis",
+      generatedAt,
+      ...compacted,
+      provenance: {
+        provider: "NASA LANCE FIRMS",
+        dataset: "MODIS Collection 6.1 NRT Global 24h",
+        sourceUrl: FIRMS_SOURCE_URL,
+        sourcePage: FIRMS_SOURCE_PAGE,
+        resolution: "1 km nominal",
+        transformVersion: "firms-global-fire-v1",
+        filters: {
+          confidenceMin: FIRMS_CONFIDENCE_MIN,
+          spatialBinDegrees: FIRMS_SPATIAL_BIN_DEGREES,
+          timeBinMinutes: FIRMS_TIME_BIN_MINUTES,
+          maxPoints: FIRMS_MAX_POINTS,
+          method: "highest FRP-weighted confidence detection per space-time bin",
+        },
+      },
+    },
+    retrievedAt: generatedAt,
+    upstreamEtag: response.headers.get("ETag") || undefined,
+    upstreamLastModified: response.headers.get("Last-Modified") || undefined,
+  };
+};
 
 const eventAge = (event: LiveObservationEvent): number => Date.now() - Date.parse(event.retrievedAt);
 
@@ -622,6 +804,33 @@ const fallbackSnapshot = async (request: Request, env: LiveEnv, reason: string):
   return { schemaVersion: 1, source: "snapshot", generatedAt: payload.generatedAt, bbox: payload.bbox, events: payload.events, fallbackReason: reason };
 };
 
+const fallbackFirmsSnapshot = async (request: Request, env: LiveEnv, reason: string): Promise<FirmsFireSnapshot> => {
+  const fallbackUrl = new URL("/data/firms-active-fire-snapshot.json", request.url);
+  const response = await env.ASSETS.fetch(new Request(fallbackUrl, { headers: { Accept: "application/json" } }));
+  if (!response.ok) throw new Error(`Versioned FIRMS snapshot ${response.status}`);
+  const payload = await response.json<FirmsFireSnapshot>();
+  return { ...payload, source: "snapshot", fallbackReason: reason };
+};
+
+const liveFirmsSnapshot = async (request: Request, env: LiveEnv, ctx: ExecutionContext): Promise<FirmsFireSnapshot> => {
+  const cached = await readCacheJson<CachedFirmsFireSnapshot>(FIRMS_CACHE_KEY);
+  const cacheAge = cached ? Date.now() - Date.parse(cached.retrievedAt) : Number.POSITIVE_INFINITY;
+  if (cached && cacheAge < FIRMS_TTL_MS) return cached.snapshot;
+  if (env.LIVE_SENSEWARE_ENABLED !== "true") {
+    if (cached) return { ...cached.snapshot, source: "stale-cache", fallbackReason: "LIVE_SENSEWARE_ENABLED is not true" };
+    return fallbackFirmsSnapshot(request, env, "LIVE_SENSEWARE_ENABLED is not true");
+  }
+  try {
+    const fresh = await freshFirmsSnapshot(cached);
+    ctx.waitUntil(writeCacheJson(FIRMS_CACHE_KEY, fresh));
+    return fresh.snapshot;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "NASA FIRMS upstream failure";
+    if (cached) return { ...cached.snapshot, source: "stale-cache", fallbackReason: reason };
+    return fallbackFirmsSnapshot(request, env, reason);
+  }
+};
+
 const liveSnapshot = async (request: Request, env: LiveEnv, ctx: ExecutionContext): Promise<{ schemaVersion: 1; source: "live" | "snapshot"; generatedAt?: string; bbox?: readonly number[]; events: LiveObservationEvent[]; errors?: string[]; fallbackReason?: string }> => {
   const city = resolveObservationCity(new URL(request.url).searchParams.get("city"));
   if (env.LIVE_SENSEWARE_ENABLED !== "true") return fallbackSnapshot(request, env, "LIVE_SENSEWARE_ENABLED is not true");
@@ -726,9 +935,15 @@ const streamResponse = (request: Request, env: LiveEnv, ctx: ExecutionContext): 
 
 export const handleLiveSenseware = async (request: Request, env: LiveEnv, ctx: ExecutionContext): Promise<Response | null> => {
   const url = new URL(request.url);
-  if (!["/api/live/v1/snapshot", "/api/live/v1/stream", "/api/live/v1/wind-field"].includes(url.pathname)) return null;
+  if (!["/api/live/v1/snapshot", "/api/live/v1/stream", "/api/live/v1/wind-field", "/api/live/v1/firms"].includes(url.pathname)) return null;
   if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method Not Allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
   if (url.pathname.endsWith("/stream")) return request.method === "HEAD" ? new Response(null, { headers: { "Content-Type": "text/event-stream; charset=utf-8" } }) : streamResponse(request, env, ctx);
+  if (url.pathname.endsWith("/firms")) {
+    const snapshot = await liveFirmsSnapshot(request, env, ctx);
+    return new Response(request.method === "HEAD" ? null : JSON.stringify(snapshot), {
+      headers: { ...jsonHeaders, "Cache-Control": "public, max-age=60, stale-while-revalidate=840" },
+    });
+  }
   if (url.pathname.endsWith("/wind-field")) {
     const field = await liveWindField(env, ctx);
     return new Response(request.method === "HEAD" ? null : JSON.stringify(field), {
