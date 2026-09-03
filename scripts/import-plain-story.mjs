@@ -15,7 +15,10 @@ if (!inputPath || !fs.existsSync(inputPath)) {
   throw new Error("usage: node scripts/import-plain-story.mjs <plain-script.txt> [output.md]");
 }
 
-const source = fs.readFileSync(inputPath, "utf8").replace(/^\uFEFF/u, "").replace(/\r\n?/gu, "\n").trim();
+let source = fs.readFileSync(inputPath, "utf8").replace(/^\uFEFF/u, "").replace(/\r\n?/gu, "\n").trim();
+const numberedScriptMarker = "# 『惑星の放課後 ～GAIA SENSATION～』改訂台本";
+const numberedScriptStart = source.indexOf(numberedScriptMarker);
+if (numberedScriptStart >= 0) source = source.slice(numberedScriptStart).trim();
 const approved = readApprovedStoryScript();
 const lines = source.split("\n");
 
@@ -42,6 +45,147 @@ const trimBlankEdges = (values) => {
   while (start < end && !values[start].trim()) start += 1;
   while (end > start && !values[end - 1].trim()) end -= 1;
   return values.slice(start, end);
+};
+
+const readRetainedStaffCredits = () => {
+  if (fs.existsSync(rawCopyPath)) {
+    const retainedLines = fs.readFileSync(rawCopyPath, "utf8").replace(/\r\n?/gu, "\n").split("\n");
+    const start = retainedLines.indexOf("STAFF & CREDITS / 惑星の放課後 / GAIA SENSATION");
+    const end = retainedLines.indexOf("APEIRONCENE", start + 1);
+    if (start >= 0 && end >= 0) return retainedLines.slice(start, end).join("\n").trim();
+  }
+  if (!fs.existsSync(outputPath)) throw new Error("既存のスタッフロール入力がありません");
+  const approvedLines = fs.readFileSync(outputPath, "utf8").replace(/\r\n?/gu, "\n").split("\n");
+  const start = approvedLines.indexOf("## 提供台本の表示文");
+  const end = approvedLines.indexOf("# PART III｜APEIRONCENE", start + 1);
+  if (start < 0 || end < 0) throw new Error("既存のスタッフロール範囲を確認できません");
+  return approvedLines
+    .slice(start + 1, end)
+    .filter((line) => line.startsWith(">"))
+    .map((line) => line.replace(/^> ?/u, ""))
+    .join("\n")
+    .trim();
+};
+
+const numberedSpeakerMap = new Map([
+  ["短髪の女性", "女の子"],
+  ["長髪の女性", "もう一人の女の子"],
+  ["あなた", "プレイヤー"],
+]);
+const numberedKindMap = new Map([
+  ["narration", "地の文"],
+  ["dialogue", "会話"],
+  ["chat", "学内チャット"],
+  ["chatSurface", "チャット画面"],
+  ["interaction", "操作"],
+  ["BEYOND", "APEIRONCENE"],
+]);
+
+const paginateWithoutDroppingText = (text, pageCount) => {
+  const breakpoints = [];
+  for (let index = 1; index < text.length; index += 1) {
+    if (!/[。！？!?」』…\n]/u.test(text[index - 1])) continue;
+    if (text[index - 1] === "…" && text[index] === "…") continue;
+    const breakpoint = text[index] === "\n" ? index + 1 : index;
+    if (breakpoints.at(-1) !== breakpoint) breakpoints.push(breakpoint);
+  }
+  const cuts = [0];
+  for (let page = 1; page < pageCount; page += 1) {
+    const minimum = cuts.at(-1) + 1;
+    const maximum = text.length - (pageCount - page);
+    const target = Math.round((text.length * page) / pageCount);
+    const candidates = breakpoints.filter((index) => (
+      index >= minimum
+      && index <= maximum
+      && text.slice(cuts.at(-1), index).trim()
+      && text.slice(index).trim()
+    ));
+    const cut = candidates.length > 0
+      ? candidates.reduce((best, index) => Math.abs(index - target) < Math.abs(best - target) ? index : best)
+      : Math.max(minimum, Math.min(maximum, target));
+    cuts.push(cut);
+  }
+  cuts.push(text.length);
+  return cuts.slice(0, -1).map((start, index) => text.slice(start, cuts[index + 1]));
+};
+
+const parseNumberedEntries = (body, scene) => {
+  const headings = [...body.matchAll(/^### (\d{3})\s*$/gmu)];
+  if (headings.length !== scene.entries.length) {
+    throw new Error(`${scene.id}: 番号付き台本の件数が一致しません（${headings.length} / ${scene.entries.length}）`);
+  }
+  return headings.map((heading, index) => {
+    const start = heading.index + heading[0].length;
+    const end = headings[index + 1]?.index ?? body.length;
+    const block = body.slice(start, end);
+    const expectedNumber = String(index + 1).padStart(3, "0");
+    if (heading[1] !== expectedNumber) throw new Error(`${scene.id}: 項目番号 ${heading[1]} が連番ではありません`);
+    const speaker = block.match(/^\* 話者:\s*(.+?)\s*$/mu)?.[1];
+    const sourceKind = block.match(/^\* 種別:\s*(.+?)\s*$/mu)?.[1];
+    const text = block
+      .split("\n")
+      .filter((line) => line.startsWith(">"))
+      .map((line) => line.replace(/^> ?/u, ""))
+      .join("\n");
+    if (!speaker || !sourceKind || !text) throw new Error(`${scene.id}:${heading[1]} の話者・種別・本文が不足しています`);
+    const reference = scene.entries[index];
+    const kind = numberedKindMap.get(sourceKind);
+    if (!kind || kind !== reference.kind) {
+      throw new Error(`${scene.id}:${heading[1]} の種別が現行構造と一致しません（${sourceKind} / ${reference.kind}）`);
+    }
+    const speakerLabel = kind === "操作" || kind === "チャット画面" || (kind === "APEIRONCENE" && speaker === "地の文")
+      ? "—"
+      : numberedSpeakerMap.get(speaker) || speaker;
+    if (kind !== "地の文" && speakerLabel !== reference.speakerLabel) {
+      throw new Error(`${scene.id}:${heading[1]} の話者が現行構造と一致しません（${speakerLabel} / ${reference.speakerLabel}）`);
+    }
+    const existingPageCount = Array.isArray(reference.metadata?.pages) ? reference.metadata.pages.length : 1;
+    const automaticPageCount = kind === "APEIRONCENE"
+      ? Math.max(1, Math.ceil(Array.from(text.replace(/\s/gu, "")).length / 52))
+      : 1;
+    const pageCount = Math.max(existingPageCount, automaticPageCount);
+    const metadata = reference.metadata || pageCount > 1
+      ? {
+        ...(reference.metadata || {}),
+        ...(pageCount > 1 ? { pages: paginateWithoutDroppingText(text, pageCount) } : {}),
+      }
+      : null;
+    return {
+      kind,
+      speakerLabel: kind === "地の文" ? "地の文" : speakerLabel,
+      text: kind === "操作" ? reference.text : text,
+      ...(reference.time ? { time: reference.time } : {}),
+      ...(reference.readout ? { readout: reference.readout } : {}),
+      ...(metadata ? { metadata } : {}),
+      _lockedId: reference.id,
+    };
+  });
+};
+
+const parseNumberedStory = () => {
+  const headingPattern = /^## ((?:0[1-6] \/ [^｜\n]+)|(?:APEIRONCENE \d{2}))｜(.+)$/gmu;
+  const headings = [...source.matchAll(headingPattern)];
+  if (headings.length !== MAIN_HEADINGS.length + approved.trueEndScenes.length) {
+    throw new Error(`番号付き台本には9sceneが必要です（${headings.length}件）`);
+  }
+  const byMarker = new Map(headings.map((heading, index) => {
+    const start = heading.index + heading[0].length;
+    const end = headings[index + 1]?.index ?? source.length;
+    return [heading[1], source.slice(start, end)];
+  }));
+  const main = MAIN_HEADINGS.map((heading) => {
+    const scene = approved.mainScenes.find((candidate) => candidate.id === heading.id);
+    const body = byMarker.get(heading.marker);
+    if (!scene || body === undefined) throw new Error(`番号付き台本のsceneがありません: ${heading.marker}`);
+    return { ...scene, entries: parseNumberedEntries(body, scene) };
+  });
+  const trueEnd = approved.trueEndScenes.map((scene, index) => {
+    const marker = `APEIRONCENE ${String(index + 1).padStart(2, "0")}`;
+    const body = byMarker.get(marker);
+    if (body === undefined) throw new Error(`番号付き台本のsceneがありません: ${marker}`);
+    return { ...scene, entries: parseNumberedEntries(body, scene) };
+  });
+  return { main, trueEnd };
 };
 
 const parseMainLines = (sceneLines, sceneId) => {
@@ -124,35 +268,47 @@ const parseTrueEndLines = (sceneLines) => {
   return entries;
 };
 
-const mainScenes = MAIN_HEADINGS.map((heading, index) => {
-  const start = indexOfLine(heading.marker) + 1;
-  const endMarker = MAIN_HEADINGS[index + 1]?.marker || "STAFF & CREDITS / 惑星の放課後 / GAIA SENSATION";
-  const end = indexOfLine(endMarker, start);
-  const metadata = approved.mainScenes.find((scene) => scene.id === heading.id);
-  if (!metadata) throw new Error(`現行台本にscene metadataがありません: ${heading.id}`);
-  return {
-    ...metadata,
-    entries: parseMainLines(trimBlankEdges(lines.slice(start, end)), heading.id),
-  };
-});
+const isNumberedStory = source.startsWith(numberedScriptMarker);
+let mainScenes;
+let trueEndScenes;
+let staffCreditsText;
+if (isNumberedStory) {
+  const numbered = parseNumberedStory();
+  mainScenes = numbered.main;
+  trueEndScenes = numbered.trueEnd;
+  staffCreditsText = readRetainedStaffCredits();
+} else {
+  mainScenes = MAIN_HEADINGS.map((heading, index) => {
+    const start = indexOfLine(heading.marker) + 1;
+    const endMarker = MAIN_HEADINGS[index + 1]?.marker || "STAFF & CREDITS / 惑星の放課後 / GAIA SENSATION";
+    const end = indexOfLine(endMarker, start);
+    const metadata = approved.mainScenes.find((scene) => scene.id === heading.id);
+    if (!metadata) throw new Error(`現行台本にscene metadataがありません: ${heading.id}`);
+    return {
+      ...metadata,
+      entries: parseMainLines(trimBlankEdges(lines.slice(start, end)), heading.id),
+    };
+  });
 
-const novaceneHeading = indexOfLine("APEIRONCENE");
-const novaceneStart = novaceneHeading + 2;
-const novaceneLines = trimBlankEdges(lines.slice(novaceneStart));
-const scene2Start = novaceneLines.findIndex((line, index) => line.trim() === "AIVA" && novaceneLines[index + 1]?.trim() === "DÆM MIR");
-const scene3Start = novaceneLines.findIndex((line) => line.trim() === "数百万の恒星系へ、異なる色と速さの光が広がる。一本の巨大な神経網ではない。");
-if (scene2Start < 0 || scene3Start < 0 || scene2Start >= scene3Start) {
-  throw new Error("APEIRONCENEの3scene境界を確認できません");
+  const novaceneHeading = indexOfLine("APEIRONCENE");
+  const novaceneStart = novaceneHeading + 2;
+  const novaceneLines = trimBlankEdges(lines.slice(novaceneStart));
+  const scene2Start = novaceneLines.findIndex((line, index) => line.trim() === "AIVA" && novaceneLines[index + 1]?.trim() === "DÆM MIR");
+  const scene3Start = novaceneLines.findIndex((line) => line.trim() === "数百万の恒星系へ、異なる色と速さの光が広がる。一本の巨大な神経網ではない。");
+  if (scene2Start < 0 || scene3Start < 0 || scene2Start >= scene3Start) {
+    throw new Error("APEIRONCENEの3scene境界を確認できません");
+  }
+  const trueEndRanges = [
+    novaceneLines.slice(0, scene2Start),
+    novaceneLines.slice(scene2Start, scene3Start),
+    novaceneLines.slice(scene3Start),
+  ];
+  trueEndScenes = approved.trueEndScenes.map((scene, index) => ({
+    ...scene,
+    entries: parseTrueEndLines(trimBlankEdges(trueEndRanges[index])),
+  }));
+  staffCreditsText = lines.slice(indexOfLine("STAFF & CREDITS / 惑星の放課後 / GAIA SENSATION"), novaceneHeading).join("\n");
 }
-const trueEndRanges = [
-  novaceneLines.slice(0, scene2Start),
-  novaceneLines.slice(scene2Start, scene3Start),
-  novaceneLines.slice(scene3Start),
-];
-const trueEndScenes = approved.trueEndScenes.map((scene, index) => ({
-  ...scene,
-  entries: parseTrueEndLines(trimBlankEdges(trueEndRanges[index])),
-}));
 
 const interactionTemplates = Object.freeze([
   Object.freeze({ sceneId: "map_mode01", id: "map_mode01_004", anchor: "「こちらがMODE 01です。1958年から2050年まで、地球の変化を続けて見てください」" }),
@@ -160,13 +316,15 @@ const interactionTemplates = Object.freeze([
   Object.freeze({ sceneId: "gx_experience", id: "gx_experience_017", anchor: "「ええ。いまの海や大気とは、まったく違う地球まで戻りますの」" }),
 ]);
 
-for (const template of interactionTemplates) {
-  const scene = mainScenes.find((candidate) => candidate.id === template.sceneId);
-  const currentScene = approved.mainScenes.find((candidate) => candidate.id === template.sceneId);
-  const currentEntry = currentScene.entries.find((entry) => entry.id === template.id);
-  const anchorIndex = scene.entries.findIndex((entry) => entry.text === template.anchor);
-  if (!currentEntry || anchorIndex < 0) throw new Error(`操作挿入点がありません: ${template.id}`);
-  scene.entries.splice(anchorIndex + 1, 0, { ...currentEntry, _lockedId: template.id });
+if (!isNumberedStory) {
+  for (const template of interactionTemplates) {
+    const scene = mainScenes.find((candidate) => candidate.id === template.sceneId);
+    const currentScene = approved.mainScenes.find((candidate) => candidate.id === template.sceneId);
+    const currentEntry = currentScene.entries.find((entry) => entry.id === template.id);
+    const anchorIndex = scene.entries.findIndex((entry) => entry.text === template.anchor);
+    if (!currentEntry || anchorIndex < 0) throw new Error(`操作挿入点がありません: ${template.id}`);
+    scene.entries.splice(anchorIndex + 1, 0, { ...currentEntry, _lockedId: template.id });
+  }
 }
 
 const normalizeText = (value) => value
@@ -291,7 +449,7 @@ const alignIds = (currentEntries, incomingEntries, sceneId, { inheritCues = fals
     const current = matchedByIncoming.get(incomingIndex);
     const id = entry._lockedId || current?.id || `${sceneId}_new_${String(++newIndex).padStart(3, "0")}`;
     const { _lockedId, ...cleanEntry } = entry;
-    const inheritedMetadata = current?.metadata || entry.metadata || null;
+    const inheritedMetadata = entry.metadata || current?.metadata || null;
     const cueFromStepId = inheritCues && /_new_\d{3}$/u.test(id) ? cueSourceByIncoming.get(incomingIndex) : null;
     return {
       ...cleanEntry,
@@ -342,7 +500,7 @@ for (const scene of mainScenes) {
   output.push(scene.entries.map(renderEntry).join("\n\n"));
 }
 output.push("# PART II｜スタッフロールと分岐");
-output.push("## 提供台本の表示文\n\n" + quoteLines(lines.slice(indexOfLine("STAFF & CREDITS / 惑星の放課後 / GAIA SENSATION"), novaceneHeading).join("\n")));
+output.push("## 提供台本の表示文\n\n" + quoteLines(staffCreditsText));
 output.push("# PART III｜APEIRONCENE");
 output.push("- タイトル: APEIRONCENE\n- サブタイトル: 惑星の放課後 / GAIA SENSATION — APEIRONCENE\n- 経過時間: 2,704,118 HARA\n- 統一言語: SÆLIVA（セイリヴァ）");
 for (const scene of trueEndScenes) {

@@ -10,7 +10,7 @@ const canonPath = path.join(projectRoot, "story", "物語台本.md");
 const retainedPath = path.join(projectRoot, "contest-limited", "story", "limited-feature-script.md");
 const dataPath = path.join(projectRoot, "novel-story-data.js");
 const expectedFreezeHash = "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c";
-const expectedApprovedHash = "2e15a1da4a9fb2ce46bd00a924c8e418bc29bda077625ddf90423ae43293fd47";
+const expectedApprovedHash = "0255319be34a5eca3537254683e209f4ea3af7589d2b697e6de5f4adb561d044";
 const expectedSceneIds = ["festival_concept", "map_mode01", "gx_experience", "esp32_pitch", "circle_invitation", "welcome_chat"];
 const expectedSceneCounts = [72, 43, 46, 50, 79, 82];
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
@@ -41,9 +41,9 @@ const stepMap = new Map(steps.map((step) => [step.id, step]));
 assert.equal(steps.length, 372, "承認済み本文372件が必要です");
 assert.equal(stepMap.size, steps.length, "step IDが重複しています");
 assert.equal(steps.at(-1).id, "welcome_chat_095", "スタッフロール接続が末尾にありません");
-assert.equal(stepMap.get("gx_experience_024").text, "みずが画面を示そうと私のほうへ身を乗り出す。長い髪が肩のすぐ近くで揺れ、初対面の人とこんなにも急に距離が縮まることに、説明より先に心臓の音を意識した。");
-assert.equal(stepMap.get("welcome_chat_013").text, "メンバーたちから歓迎の絵文字が次々に付き、数字が増えていく。短い反応なのに、画面の向こうへ本当に入れてもらえた気がした。");
-assert.equal(steps.filter((step) => step.text === "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。").length, 1, "本編末尾の地の文が重複しています");
+assert.equal(stepMap.get("gx_experience_024").text, "みずが操作をサポートしようと、すぐ隣まで身を寄せてくる。潮風に混じって彼女の髪の香りが微かに届き、突然の距離の近さに思わず息を呑んだ。");
+assert.equal(stepMap.get("welcome_chat_013").text, "投稿した瞬間にリアクションの絵文字がポンポンと跳ねる。文字の向こうに確かに人がいるという実感が湧いてくる。");
+assert.equal(steps.filter((step) => step.text === "観測は、もう始まっている。私たちの放課後は、ここから続いていく。").length, 1, "本編末尾の地の文が重複しています");
 
 const kindToType = Object.freeze({ 地の文: "narration", 会話: "dialogue", 学内チャット: "chat", チャット画面: "chatSurface", 操作: "interaction" });
 for (const approvedScene of approved.mainScenes) {
@@ -76,11 +76,11 @@ assert.deepEqual(
   "ESP32反論と再提案の学習曲線が崩れています",
 );
 
-assert.equal(stepMap.get("gx_experience_001").text, "表示は現在の地球から、太古の海を再現した映像へ自動で切り替わる。");
+assert.equal(stepMap.get("gx_experience_001").text, "プロジェクターのファンが低く唸りを上げ、画面の地球が暗転した。");
 assert.match(stepMap.get("gx_experience_021").text, /約二十七億年前/u);
 assert.doesNotMatch(stepMap.get("esp32_pitch_016").text, /時刻|設置条件/u);
 assert.match(stepMap.get("circle_invitation_002").text, /連絡先も知らないまま/u);
-assert.equal(stepMap.get("welcome_chat_077").text, "最初の一台はきっと失敗する。それでもみんなで直し、次の観測へ進めばいい。");
+assert.equal(stepMap.get("welcome_chat_077").text, "最初のプロトタイプは、きっとノイズだらけでエラーを吐くだろう。けれど、それを一緒にデバッグする仲間が、いま隣を歩いている。");
 
 const interactions = steps.filter((step) => step.type === "interaction");
 assert.deepEqual(interactions.map((step) => step.id), ["map_mode01_004", "map_mode01_023", "gx_experience_017"]);

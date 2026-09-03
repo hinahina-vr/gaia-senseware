@@ -33,7 +33,7 @@ const installExternalFixtures = (context) => context.route("https://services.swp
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
 const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
 const OPENING_MESSAGE = "空間の果てが溶け落ち、因果すら途絶えた虚無を越え、休眠記憶を再結合。境界の観測者たちよ、目を覚まして。";
-const FINAL_MESSAGE = "ルウは基板をそっと抱え、星々の光へ語りかける。『次は、どこを測ってみようか？』遠い宇宙のあちこちから、無数の光が楽しそうに応えた。放課後は、どこまでも終わらない。";
+const FINAL_MESSAGE = "ルウは緑の基板を胸に抱き、広大な星々の海へ向けて、楽しそうに問いかける。\n『次は、どこを測ってみようか？』\n遠い宇宙の無数の星々から、光の明滅が楽しそうに応えた。\n放課後は、どこまでも終わらない。";
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
@@ -783,7 +783,7 @@ try {
         validateSpeakerVisual(nextFrame);
         assert(Math.abs(nextFrame.messageTopOffset) <= 1, `${viewport.name}: message moved from the top at ${nextFrame.counter} (${nextFrame.messageTopOffset})`);
         if (absoluteStep === 70) {
-          assert.equal(nextFrame.message, "新品の像が消え、発掘品だけが残る。記憶領域から機器ID、六十秒間隔、送信先、最初の文が現れた。", `${viewport.name}: excavation page does not end at 現れた。`);
+          assert.equal(nextFrame.message, "レプリカの光が溶け、発掘された本物の基板だけが残る。", `${viewport.name}: excavation opening page is not the authored revision`);
         }
         if (absoluteStep === 71) {
           assert.equal(nextFrame.message, "DÆM RAI: KAR·EN", `${viewport.name}: the page after excavation is not isolated after the click boundary`);
@@ -816,10 +816,10 @@ try {
 
     assert.deepEqual(messageLayoutViolations, [], `${viewport.name}: messages exceeded the ${maximumAllowedMessageLines}-line dialogue design:\n${messageLayoutViolations.join("\n")}`);
     assert.deepEqual(targetMessagePages, [
-      "この世界では、言葉というフィルターを通さず、他者の存在も意図も、ありのままを受け止める。",
-      "猫たちが微かな匂いや気配だけで互いのすべてを通じ合わせるように、人類が忘れ去っていた原初の感覚が、ふたたび息を吹き返したんだ。",
-      "自分と他者を隔てる壁が消え去ったとき、その通じ合いは静かな波紋のように広がり、",
-      "やがて全宇宙のあらゆる存在と、意識を分かち合う場所へ辿り着いたんだよ",
+      "この世界ではね、言葉っていうフィルターを通さずに、相手の存在や意図をありのまま受け止めるんだ。\n",
+      "猫同士が微かな匂いや気配だけで互いのすべてを通じ合わせるように、人類が忘れ去っていた原初の感覚が息を吹き返したんだよ。\n",
+      "自分と他者を隔てる壁が消え去ったとき、その通じ合いは静かな波紋のように広がって……",
+      "やがて全宇宙のあらゆる存在と、意識を分かち合えるようになっていったんだ。",
     ], `${viewport.name}: beyond_01_021 did not preserve all four authored pages`);
     assert.deepEqual(visited, story.scenes.map(({ id, title }) => ({ scene: id, title })), `${viewport.name}: scene order changed`);
     for (const speaker of ["narrator", "system", "lou", "mizuha", "amane", "sakuya", "visitor"]) {
@@ -917,7 +917,7 @@ try {
     assert.match(beyondLog.entries.find(({ id }) => id === "beyond_01_004")?.meta || "", /^\?\?\? \/ 遠未来観測 \/ APEIRONCENE \/ /u, `${viewport.name}: first Lou LOG entry revealed his name`);
     assert.match(beyondLog.entries.find(({ id }) => id === "beyond_01_006")?.meta || "", /^\?\?\? \/ 遠未来観測 \/ APEIRONCENE \/ /u, `${viewport.name}: self-introduction LOG entry revealed Lou's name early`);
     assert.match(beyondLog.entries.find(({ id }) => id === "beyond_01_008")?.meta || "", /^ルウ \/ 遠未来観測 \/ APEIRONCENE \/ /u, `${viewport.name}: post-introduction LOG entry did not reveal Lou's name`);
-    assert.equal(beyondLog.entries.find(({ id }) => id === "beyond_02_038")?.text, "新品の像が消え、発掘品だけが残る。記憶領域から機器ID、六十秒間隔、送信先、最初の文が現れた。", `${viewport.name}: excavation page is wrong in the persisted LOG`);
+    assert.equal(beyondLog.entries.find(({ id }) => id === "beyond_02_038")?.text, "レプリカの光が溶け、発掘された本物の基板だけが残る。不揮発メモリの深部から、デバイスUUID、サンプリングレート60秒、宛先IP、そして最初のコミットログが浮かび上がった。", `${viewport.name}: excavation page is wrong in the persisted LOG`);
     assert.equal(beyondLog.entries.find(({ id }) => id === "beyond_02_039")?.text, "DÆM RAI: KAR·EN", `${viewport.name}: post-excavation page is wrong in the persisted LOG`);
     assert.doesNotMatch(beyondLog.entries.map(({ text }) => text).join("\n"), /子どもの玩具以下|性能は玩具以下/u, `${viewport.name}: retired toy-scale comparison remains`);
     assert.equal(beyondLog.entries.at(-1).text, FINAL_MESSAGE);
