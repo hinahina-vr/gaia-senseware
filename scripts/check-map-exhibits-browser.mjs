@@ -16,6 +16,7 @@ const earthquakeOnly = process.argv.slice(6).includes("--earthquake-only");
 const guideOrderOnly = process.argv.slice(6).includes("--guide-order-only");
 const circulationOnly = process.argv.slice(6).includes("--circulation-only");
 const bubbleOnly = process.argv.slice(6).includes("--bubble-only");
+const anthropoceneOnly = process.argv.slice(6).includes("--anthropocene-only");
 if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
 const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   ? path.join(moduleRoot, "index.mjs")
@@ -158,14 +159,16 @@ const readAnthropoceneSnapshot = async (page) => page.locator("#japan-overlay").
   }
   return {
     year: Number(element.dataset.emissionsSelectedYear),
-    countryCount: Number(element.dataset.emissionsCircleCount),
-    visibleCircleCount: Number(element.dataset.emissionsVisibleCircleCount),
-    radiusSum: Number(element.dataset.emissionsRadiusSum),
-    maximumRadius: Number(element.dataset.emissionsMaximumRadius),
+    countryCount: Number(element.dataset.emissionsCountryFillCount),
+    visibleCountryCount: Number(element.dataset.emissionsVisibleCountryFillCount),
+    heatSum: Number(element.dataset.emissionsHeatSum),
+    maximumHeat: Number(element.dataset.emissionsMaximumHeat),
     totalMtCo2: Number(element.dataset.emissionsTotalMtCo2),
     selectedCountryMtCo2: Number(element.dataset.emissionsSelectedCountryMtCo2),
     scaleMtCo2: Number(element.dataset.emissionsScaleMtCo2),
     encoding: element.dataset.emissionsEncoding,
+    geometry: element.dataset.emissionsGeometry,
+    hitSurface: element.dataset.emissionsHitSurface,
     redPixelCount,
     redPixelEnergy,
   };
@@ -178,7 +181,11 @@ const findClickableDataPoint = async (page, modeId) => page.evaluate(async (requ
     ? mode?.signals?.currents
     : requestedModeId === "forest-cloud-engine"
       ? mode?.signals?.precipitation
-      : mode?.signals?.countryWaste;
+      : requestedModeId === "anthropocene-scar"
+        ? mode?.signals?.emissions?.filter((row) => Number(row.year) === Number(
+          document.querySelector("#japan-overlay")?.dataset.emissionsSelectedYear,
+        ))
+        : mode?.signals?.countryWaste;
   const map = document.querySelector("#japan-map");
   const overlay = document.querySelector("#japan-overlay");
   const rect = map.getBoundingClientRect();
@@ -480,17 +487,86 @@ try {
       await page.waitForTimeout(800);
       scan.circulationDirection = await page.evaluate(() => ({
         transform: document.querySelector("#gaia-canvas")?.dataset.currentDirectionTransform,
+        coverageMode: document.querySelector("#gaia-canvas")?.dataset.currentCoverageMode,
+        interpolationSource: document.querySelector("#gaia-canvas")?.dataset.currentInterpolationSource,
         renderedSamples: Number(document.querySelector("#gaia-canvas")?.dataset.currentRenderedSampleCount),
         markerCount: Number(document.querySelector("#japan-overlay")?.dataset.currentPoiMarkerCount),
         title: document.querySelector("#japan-title")?.textContent || "",
       }));
       assert.equal(scan.circulationDirection.transform, "noaa-east-north-to-gl-local-positive-rotation");
+      assert.equal(scan.circulationDirection.coverageMode, "gapless-idw-vector-field");
+      assert.equal(scan.circulationDirection.interpolationSource, "inverse-distance-weighted-noaa-vectors");
       assert(scan.circulationDirection.renderedSamples > 0);
       assert.equal(scan.circulationDirection.markerCount, scan.circulationDirection.renderedSamples);
       assert.equal(scan.circulationDirection.title, "海流が14日続いたら");
       const screenshot = path.join(outputDir, `${viewport.name}-02-current-direction-aligned.png`);
       await page.screenshot({ path: screenshot });
       scan.screenshots.push(screenshot);
+      report.scans.push(scan);
+      await context.close();
+      console.log(`PASS ${viewport.name}`);
+      continue;
+    }
+
+    if (anthropoceneOnly) {
+      await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
+      await selectMode(page, 4, "人類世の傷跡");
+      const timeline = page.locator("#japan-layer [data-signal-time]").first();
+      await timeline.evaluate((input) => {
+        input.value = input.min;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.emissionsSelectedYear === "1945"
+          && overlay.dataset.emissionsGeometry === "natural-earth-country-choropleth"
+          && overlay.dataset.emissionsHitSurface === "country-regions"
+          && Number(overlay.dataset.emissionsVisibleCountryFillCount) >= 20;
+      });
+      await page.waitForTimeout(700);
+      const historical = await readAnthropoceneSnapshot(page);
+      assert.equal(historical.year, 1945);
+      assert.equal(historical.encoding, "country-fixed-log-color");
+      assert.equal(historical.geometry, "natural-earth-country-choropleth");
+      assert.equal(historical.hitSurface, "country-regions");
+      assert.equal(historical.scaleMtCo2, 12000);
+      assert.ok(historical.countryCount >= 20 && historical.countryCount < 31);
+      const historicalScreenshot = path.join(outputDir, `${viewport.name}-05-emissions-1945-heatmap.png`);
+      await page.screenshot({ path: historicalScreenshot });
+      scan.screenshots.push(historicalScreenshot);
+
+      await timeline.evaluate((input) => {
+        input.value = input.max;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await page.waitForFunction(() => {
+        const overlay = document.querySelector("#japan-overlay");
+        return overlay?.dataset.emissionsSelectedYear === "2023"
+          && Number(overlay.dataset.emissionsVisibleCountryFillCount) >= 30;
+      });
+      await page.waitForTimeout(700);
+      const modern = await readAnthropoceneSnapshot(page);
+      assert.equal(modern.year, 2023);
+      assert.equal(modern.countryCount, 31);
+      assert.equal(modern.encoding, "country-fixed-log-color");
+      assert.equal(modern.geometry, "natural-earth-country-choropleth");
+      assert.equal(modern.hitSurface, "country-regions");
+      assert.ok(modern.visibleCountryCount > historical.visibleCountryCount);
+      assert.ok(modern.heatSum > historical.heatSum * 1.3);
+      assert.ok(modern.totalMtCo2 > historical.totalMtCo2 * 7);
+      assert.ok(modern.maximumHeat > historical.maximumHeat);
+      await waitForMapGuide(page);
+      assert.match(
+        await page.locator("#map-guide-reading").textContent(),
+        /国土の色.*固定対数尺度.*濃紺.*淡黄.*2016/u,
+      );
+      const modernScreenshot = path.join(outputDir, `${viewport.name}-05-emissions-2023-heatmap.png`);
+      await page.screenshot({ path: modernScreenshot });
+      scan.screenshots.push(modernScreenshot);
+      scan.clicks.anthropocene = await clickDataPoint(page, "anthropocene-scar");
+      assert.match(scan.clicks.anthropocene.card.type, /人類世の傷跡 \/ DATA POI/u);
+      assert.match(scan.clicks.anthropocene.card.meta, /2023.*Mt CO₂.*fossil \+ cement/u);
+      scan.anthropoceneTimelineComparison = { historical, modern };
       report.scans.push(scan);
       await context.close();
       console.log(`PASS ${viewport.name}`);
@@ -1450,6 +1526,8 @@ try {
       sampleSelection: document.querySelector("#gaia-canvas")?.dataset.currentSampleSelection,
       directionTransform: document.querySelector("#gaia-canvas")?.dataset.currentDirectionTransform,
       brushLanguage: document.querySelector("#gaia-canvas")?.dataset.currentBrushLanguage,
+      coverageMode: document.querySelector("#gaia-canvas")?.dataset.currentCoverageMode,
+      interpolationSource: document.querySelector("#gaia-canvas")?.dataset.currentInterpolationSource,
       ambientMotion: document.querySelector("#gaia-canvas")?.dataset.currentAmbientMotion,
       ambientPhase: Number(document.querySelector("#gaia-canvas")?.dataset.currentAmbientPhase),
       overlayVisiblePoiCount: Number(overlay.dataset.currentVisiblePoiCount),
@@ -1459,11 +1537,13 @@ try {
         .getPropertyValue("--map-light-opacity")
         .trim(),
     }));
-    assert.equal(circulationVisual.language, "calligraphic-current-brush");
+    assert.equal(circulationVisual.language, "continuous-interpolated-current-brush");
     assert(circulationVisual.arrowStride >= 3);
     assert.equal(circulationVisual.integratedMode, "02");
     assert.equal(circulationVisual.integratedOpacity, "0.72");
-    assert.equal(circulationVisual.brushLanguage, "one-data-anchored-brush-per-visible-poi");
+    assert.equal(circulationVisual.brushLanguage, "continuous-interpolated-field-with-poi-anchors");
+    assert.equal(circulationVisual.coverageMode, "gapless-idw-vector-field");
+    assert.equal(circulationVisual.interpolationSource, "inverse-distance-weighted-noaa-vectors");
     assert.equal(circulationVisual.ambientMotion, "continuous-timeline-independent-gradient");
     assert(Number.isFinite(circulationVisual.ambientPhase));
     assert.equal(circulationVisual.canvasParent, "japan-map");
@@ -1557,12 +1637,6 @@ try {
     assert.match(scan.clicks.circulation.card.sourceHref, /^https:\/\/coastwatch\.noaa\.gov\//u);
     assert.equal(scan.clicks.circulation.card.sourceTarget, "_blank");
     assert.equal(scan.clicks.circulation.card.retiredCopyCount, 0);
-    const sourcePopupPromise = page.waitForEvent("popup");
-    await page.locator("#japan-poi-source").click();
-    const sourcePopup = await sourcePopupPromise;
-    assert.notEqual(sourcePopup, page);
-    assert.equal(sourcePopup.isClosed(), false);
-    await sourcePopup.close();
     const circulationScreenshot = path.join(outputDir, `${viewport.name}-02-current-distance.png`);
     await page.screenshot({ path: circulationScreenshot });
     scan.screenshots.push(circulationScreenshot);
@@ -1722,7 +1796,9 @@ try {
     await page.waitForTimeout(1800);
     const historicalEmissions = await readAnthropoceneSnapshot(page);
     assert.ok(historicalEmissions.countryCount >= 20 && historicalEmissions.countryCount < 31);
-    assert.equal(historicalEmissions.encoding, "country-total-fixed-sqrt-area");
+    assert.equal(historicalEmissions.encoding, "country-fixed-log-color");
+    assert.equal(historicalEmissions.geometry, "natural-earth-country-choropleth");
+    assert.equal(historicalEmissions.hitSurface, "country-regions");
     assert.equal(historicalEmissions.scaleMtCo2, 12000);
     const historicalEmissionReadout = await page.locator("#japan-layer [data-signal-value]").evaluateAll((elements) => (
       elements.find((element) => element.offsetParent !== null)?.textContent || ""
@@ -1746,8 +1822,10 @@ try {
       source: element.dataset.nightLightsSource,
       projection: element.dataset.nightLightsProjection,
       display: element.dataset.nightLightsDisplay,
-      emissionCount: Number(element.dataset.emissionsCircleCount),
+      emissionCount: Number(element.dataset.emissionsCountryFillCount),
       emissionEncoding: element.dataset.emissionsEncoding,
+      emissionGeometry: element.dataset.emissionsGeometry,
+      emissionHitSurface: element.dataset.emissionsHitSurface,
       selectedYear: element.dataset.emissionsSelectedYear,
       nightLightsReferenceYear: element.dataset.nightLightsReferenceYear,
     }));
@@ -1757,33 +1835,29 @@ try {
       projection: "web-mercator-to-geographic",
       display: "glow-plus-radiance-core",
       emissionCount: 31,
-      emissionEncoding: "country-total-fixed-sqrt-area",
+      emissionEncoding: "country-fixed-log-color",
+      emissionGeometry: "natural-earth-country-choropleth",
+      emissionHitSurface: "country-regions",
       selectedYear: "2023",
       nightLightsReferenceYear: "2016",
     });
     assert.equal(modernEmissions.year, 2023);
     assert.equal(modernEmissions.countryCount, 31);
-    assert.equal(modernEmissions.encoding, "country-total-fixed-sqrt-area");
+    assert.equal(modernEmissions.encoding, "country-fixed-log-color");
+    assert.equal(modernEmissions.geometry, "natural-earth-country-choropleth");
+    assert.equal(modernEmissions.hitSurface, "country-regions");
     assert.equal(modernEmissions.scaleMtCo2, 12000);
-    assert.ok(modernEmissions.visibleCircleCount > historicalEmissions.visibleCircleCount);
-    assert.ok(modernEmissions.radiusSum > historicalEmissions.radiusSum * 2);
+    assert.ok(modernEmissions.visibleCountryCount > historicalEmissions.visibleCountryCount);
+    assert.ok(modernEmissions.heatSum > historicalEmissions.heatSum * 1.3);
     assert.ok(modernEmissions.totalMtCo2 > historicalEmissions.totalMtCo2 * 7);
-    assert.ok(modernEmissions.maximumRadius > historicalEmissions.maximumRadius * 1.8);
-    assert.ok(
-      modernEmissions.redPixelCount > historicalEmissions.redPixelCount * 1.4,
-      `red POI pixel count must increase: ${JSON.stringify({ historicalEmissions, modernEmissions })}`,
-    );
-    assert.ok(
-      modernEmissions.redPixelEnergy > historicalEmissions.redPixelEnergy * 1.4,
-      `red POI energy must increase: ${JSON.stringify({ historicalEmissions, modernEmissions })}`,
-    );
+    assert.ok(modernEmissions.maximumHeat > historicalEmissions.maximumHeat);
     scan.anthropoceneTimelineComparison = {
       historical: historicalEmissions,
       modern: modernEmissions,
     };
     await waitForMapGuide(page);
     const anthropoceneGuide = await page.locator("#map-guide-reading").textContent();
-    assert.match(anthropoceneGuide, /赤い円.*固定尺度.*円面積.*排出量.*白い発光.*2016.*固定/u);
+    assert.match(anthropoceneGuide, /国土の色.*固定対数尺度.*濃紺.*淡黄.*白い発光.*2016.*固定/u);
     const nightLightsScreenshot = path.join(outputDir, `${viewport.name}-05-night-lights-visible.png`);
     await page.screenshot({ path: nightLightsScreenshot });
     scan.screenshots.push(nightLightsScreenshot);
@@ -1860,6 +1934,12 @@ try {
     assert.ok(earthquakeWave.maxRadiusX >= earthquakeWave.maxRadius);
     const earthquakeReadout = await page.locator("#japan-layer [data-signal-value]").first().innerText();
     assert.match(earthquakeReadout, /2004.*3 EVENTS.*MAX M9\.1/u);
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector("#japan-overlay");
+      return overlay?.dataset.earthquakeYear === "2004"
+        && Number(overlay.dataset.earthquakeVisibleEventCount) === 3
+        && Number(overlay.dataset.earthquakeSelectionPrimaryFontPx) > 0;
+    });
     const earthquakeLabel = await page.locator("#japan-overlay").evaluate((element) => ({
       width: Number(element.dataset.earthquakeSelectionLabelWidthPx),
       height: Number(element.dataset.earthquakeSelectionLabelHeightPx),

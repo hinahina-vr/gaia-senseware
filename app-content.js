@@ -400,8 +400,9 @@ float currentBrushBristles(float signedDistance, float halfWidth, float phase) {
 }
 
 vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
-  // Every uploaded NOAA POI owns exactly one stroke. There are no decorative
-  // full-screen ribbons here: the image is the data points painting the sea.
+  // Every uploaded NOAA POI still owns a measured brush stroke. A continuous
+  // inverse-distance field underneath blends the observed vectors between
+  // points, so the sea reads as one current rather than isolated brush marks.
   // The date slider changes the calculated displacement only; pigment keeps
   // flowing inside the fixed brush shapes even while that slider is held.
   float currentEnergy = clamp(uSignal.x * 0.58 + uSignal.y * 0.42, 0.0, 1.0);
@@ -412,21 +413,33 @@ vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
   vec3 poiInk = vec3(0.0);
   vec3 poiLight = vec3(0.0);
   float poiCoverage = 0.0;
+  vec2 blendedDirection = vec2(0.0);
+  float blendedSpeed = 0.0;
+  float blendedWeight = 0.0;
+  float nearestObservation = 99.0;
 
   for (int i = 0; i < 96; i++) {
     if (i >= uCurrentSampleCount) break;
     vec4 observed = uCurrentSamples[i];
     float measuredSpeed = clamp(observed.z, 0.0, 1.0);
+    vec2 observationDelta = p - observed.xy;
+    float observationDistance = length(observationDelta);
+    float interpolationWeight = 1.0 / (0.035 + observationDistance * observationDistance * 9.0);
+    interpolationWeight *= mix(0.72, 1.16, measuredSpeed);
+    blendedDirection += vec2(cos(observed.w), sin(observed.w)) * interpolationWeight;
+    blendedSpeed += measuredSpeed * interpolationWeight;
+    blendedWeight += interpolationWeight;
+    nearestObservation = min(nearestObservation, observationDistance);
     // rot(a) is the world-to-local matrix in GLSL column-major order.
     // Passing the observed angle directly makes local +X follow the same
     // east/north vector as the canvas strand and its advected destination.
     vec2 local = rot(observed.w) * (p - observed.xy);
     float pointPhase = fract(sin(float(i) * 91.731 + 0.37) * 43758.5453);
-    float backReach = mix(0.018, 0.035, measuredSpeed);
-    float forwardReach = mix(0.13, 0.34, measuredSpeed);
+    float backReach = mix(0.06, 0.11, measuredSpeed);
+    float forwardReach = mix(0.42, 0.78, measuredSpeed);
     float strokeProgress = (local.x + backReach) / (forwardReach + backReach);
     float longitudinal = smoothstep(-0.015, 0.055, strokeProgress)
-      * (1.0 - smoothstep(0.72, 1.02, strokeProgress));
+      * (1.0 - smoothstep(0.88, 1.02, strokeProgress));
     float pressure = pow(max(0.0, sin(clamp(strokeProgress, 0.0, 1.0) * 3.14159265)), 0.38);
     pressure *= mix(0.7, 1.08, 0.5 + 0.5 * sin(strokeProgress * 8.0 + pointPhase * 6.283));
     float width = mix(0.018, 0.052, measuredSpeed);
@@ -484,9 +497,58 @@ vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
     poiLight += pearlInk * sourceBloom * (0.28 + measuredSpeed * 0.42);
   }
 
+  // Broad, overlapping wet-ink lanes are oriented by the locally blended
+  // NOAA vectors. The low-opacity wash has no hard zero between neighbouring
+  // observations; the two brighter lane scales preserve calligraphic rhythm.
+  float localSpeed = blendedSpeed / max(blendedWeight, 0.0001);
+  vec2 flowDirection = normalize(blendedDirection + vec2(0.0001, 0.0));
+  vec2 flowNormal = vec2(-flowDirection.y, flowDirection.x);
+  float fieldPresence = 1.0 - smoothstep(0.18, 0.72, nearestObservation);
+  float slowWarp = fbm(
+    p * 1.45
+      + flowDirection * pigmentTime * 0.032
+      + vec2(-contourTime * 0.12, contourTime * 0.08)
+  ) - 0.5;
+  float fineWarp = fbm(
+    p * 3.1
+      - flowDirection * pigmentTime * 0.047
+      + vec2(contourTime * 0.08, -contourTime * 0.05)
+  ) - 0.5;
+  float acrossFlow = dot(p, flowNormal) + slowWarp * 0.2 + fineWarp * 0.045;
+  float alongFlow = dot(p, flowDirection);
+  float broadLane = pow(0.5 + 0.5 * cos(acrossFlow * 9.0 + slowWarp * 2.8), 1.45);
+  float middleLane = pow(0.5 + 0.5 * cos(acrossFlow * 19.0 - fineWarp * 3.2), 3.2);
+  float fieldBristles = pow(0.5 + 0.5 * cos(acrossFlow * 52.0 + waterGrain * 5.4), 8.0);
+  float fieldPigment = 0.62 + 0.38 * sin(
+    alongFlow * mix(8.0, 13.0, localSpeed)
+      - pigmentTime * mix(1.6, 3.8, localSpeed)
+      + slowWarp * 4.0
+  );
+  float continuousCoverage = fieldPresence * (
+    0.28
+      + broadLane * 0.52
+      + middleLane * 0.24
+      + fieldBristles * 0.1
+  );
+  vec3 fieldSlowInk = vec3(0.10, 0.22, 0.78);
+  vec3 fieldMiddleInk = vec3(0.02, 0.72, 0.96);
+  vec3 fieldFastInk = vec3(1.02, 0.44, 0.13);
+  vec3 fieldInk = mix(fieldSlowInk, fieldMiddleInk, smoothstep(0.08, 0.58, localSpeed));
+  fieldInk = mix(fieldInk, fieldFastInk, smoothstep(0.62, 0.96, localSpeed));
+  vec3 continuousSea = fieldInk
+    * continuousCoverage
+    * mix(0.54, 1.0, fieldPigment)
+    * mix(0.82, 1.26, localSpeed);
+  vec3 continuousLight = mix(vec3(0.12, 0.62, 0.92), vec3(1.08, 0.72, 0.28), localSpeed)
+    * fieldPresence
+    * (broadLane * 0.08 + middleLane * 0.11 + fieldBristles * 0.055);
+
   vec3 background = baseGradient(p, vec3(0.001, 0.035, 0.08));
   background += mix(vec3(0.0, 0.025, 0.07), vec3(0.0, 0.09, 0.13), waterPaper) * 0.32;
-  vec3 paintedSea = min(poiInk, vec3(1.72)) + min(poiLight, vec3(1.35));
+  vec3 paintedSea = continuousSea
+    + continuousLight
+    + min(poiInk, vec3(1.72)) * 0.48
+    + min(poiLight, vec3(1.35)) * 0.7;
   float softCoverage = min(poiCoverage, 2.0);
   return background
     + paintedSea
@@ -577,7 +639,7 @@ vec3 modeNothingIsWaste(vec2 p, float t, vec2 response, float memory) {
       id: "anthropocene-scar",
       title: "Anthropocene Scar",
       titleJa: "人類世の傷跡",
-      description: "Global Carbon Projectの国別化石燃料由来CO₂を1945〜2023年の時系列で送り、NASA VIIRS 2016の夜間光を固定参照として重ねます。夜間光は過去へ遡らず、排出量へも変換しません。",
+      description: "Global Carbon Projectの国別化石燃料由来CO₂を1945〜2023年の国別ヒートマップで送り、NASA VIIRS 2016の夜間光を固定参照として重ねます。夜間光は過去へ遡らず、排出量へも変換しません。",
       accent: "#ff8a67",
       rgb: "255, 138, 103",
       source: `
@@ -819,12 +881,12 @@ vec3 modePopulationTide(vec2 p, float t, vec2 response, float memory) {
       lead:
         "1945年からの化石燃料由来CO₂を一年ずつ送り、人間活動の大きさがどの地域で膨らんだかを追います。2016年の夜間光は現在に近い空間参照として固定します。",
       seeing:
-        "赤い円は選択年度の国全体の化石燃料由来CO₂です。白い発光はNASA VIIRSが2016年に捉えた夜間光で、選択年度に合わせて変化する資料ではありません。円の中心も排出源の場所ではありません。",
+        "国土の色は選択年度の国全体の化石燃料由来CO₂です。全年度共通の固定対数尺度で、濃紺から紫・赤・橙・淡黄へ明るくなるほど排出量が大きくなります。白い発光はNASA VIIRSが2016年に捉えた夜間光で、選択年度に合わせて変化する資料ではありません。",
       touch:
-        "スライダーと左右ボタンで1945〜2023年を動かせます。国の円を押すとその国を選んだまま年を追えます。地図を0.65秒以上長押しすると夜間光だけが6秒間薄くなります。",
+        "スライダーと左右ボタンで1945〜2023年を動かせます。色の付いた国土を押すとその国を選んだまま年を追えます。地図を0.65秒以上長押しすると夜間光だけが6秒間薄くなります。",
       context:
         "授業「人類世3.0」では、産業革命以降、人の活動が地球規模に大きくなったことを扱います。ただし排出量も、その影響を受ける大きさも、地域や人によって同じではありません。",
-      question: "1945年から2023年へ進めたとき、どの地域の赤い円が早く、どの地域が遅れて大きくなりましたか。",
+      question: "1945年から2023年へ進めたとき、どの国の色が早く明るくなり、どの国は遅れて変わりましたか。",
     },
     "rhythm-of-disaster": {
       lead:
@@ -877,7 +939,7 @@ vec3 modePopulationTide(vec2 p, float t, vec2 response, float memory) {
     "blue-circulation": "地図の見方：色付きの矢印は海流で、青→水色→黄→橙の順に速くなります。点から伸びる線は、同じ海流が続くと仮定した0〜14日後の移動距離です。白い矢印は比較用の平均風で、距離計算には使いません。海の予報ではありません。",
     "forest-cloud-engine": "地図の見方：緑は2023年MODIS土地被覆から抜き出した森林域、大きな水色円は世界31代表地点の平均降水量です。直径が大きいほど雨が多く、雨の多い円にはmm/dayも直接表示します。ブラジルのアマゾン付近は5.33 mm/dayです。地点間は補間せず、相関係数や因果関係を示す図ではありません。",
     "nothing-is-waste": "地図の見方：同じ大きさの円グラフの緑が再資源化率、橙がそれ以外です。実線は国連の公式値、破線は近隣5か国から計算した補完値です。左右ボタンとスライダーで31の国・地域を切り替え、報告年とデータ区分を確認できます。",
-    "anthropocene-scar": "地図の見方：赤い円は1945〜2023年の国別化石燃料由来CO₂で、スライダーは年を動かします。白い発光は2016年のNASA VIIRS夜間光を固定した比較用レイヤーです。過去の夜間光ではありません。0.65秒以上長押しすると白だけが6秒間薄くなります。",
+    "anthropocene-scar": "地図の見方：1945〜2023年の国別化石燃料由来CO₂を国土の色で示します。全年度共通の固定対数尺度で、濃紺→紫→赤→橙→淡黄ほど排出量が大きくなります。白い発光は2016年のNASA VIIRS夜間光を固定した比較用レイヤーで、過去の夜間光ではありません。0.65秒以上長押しすると白だけが6秒間薄くなります。",
     "rhythm-of-disaster": "地図の見方：初期表示は世界です。2000〜2026年を約4.6秒ずつ自動再生し、その年のUSGS M7.5以上を発生日時の早い順に一つずつ表示します。年度切替時は旧年の震源が逆順に一つずつ収束してから、新年の点と推定可感半径の輪が発生日時順に立ち上がります。実際の震度分布・被害・津波範囲ではなく、日本の実測震度は別層です。",
     "three-ecologies": "地図の見方：同じ31か国の森林面積率を緑の内円、都市人口率を青の外円で重ねます。散布図の横軸は都市、縦軸は森林で、回帰線と相関係数rが全体傾向を示します。スライダーは都市人口率の低い国から高い国へ比較対象を移します。紫の世界遺産例は相関計算へ含めません。",
     "earth-organ": "地図の見方：31か国の国土を、電力に占める再生可能エネルギーの割合で塗ります。暗い青は0%に近く、明るい水色は100%に近い比率です。スライダーは低い国から高い国へ移動します。黄色の日射円と緑の風矢印は選択国の補足で、現在の比率を説明する因果モデルではありません。",

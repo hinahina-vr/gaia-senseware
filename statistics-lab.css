@@ -596,6 +596,8 @@ body.map-grid-desktop .map-grid-intro > .gaia-statistics-button {
 }
 
 #gaia-statistics-canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;

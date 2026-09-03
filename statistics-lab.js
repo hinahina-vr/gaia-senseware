@@ -114,6 +114,7 @@ if (!lab || !openButton) {
     "rhythm-of-disaster": "Rhythm of Disaster / 地震の時間",
     "three-ecologies": "Three Ecologies / 生態・社会・文化",
     "earth-organ": "Earth Organ / 再生可能エネルギー",
+    "estat-prefecture": "e-Stat / 47都道府県",
   };
 
   const METHOD_GROUPS = [
@@ -185,6 +186,7 @@ if (!lab || !openButton) {
     "rhythm-of-disaster": "discrete",
     "three-ecologies": "scatter",
     "earth-organ": "multiple",
+    "estat-prefecture": "summary",
   };
   const SAVED_VIEWS_STORAGE_KEY = "gaia-statistics-saved-views:v1";
   const MAX_SAVED_VIEWS = 8;
@@ -1490,14 +1492,40 @@ if (!lab || !openButton) {
     state.snapshot = await adapter.waitSignalsReady(); state.datasets = buildDatasets(state.snapshot); renderLectures(); renderMethods();
   };
 
-  const open = async ({ modeId, datasetId } = {}) => {
+  const installExternalDataset = (dataset) => {
+    if (!dataset || typeof dataset !== "object" || !Array.isArray(dataset.rows) || !dataset.id) return null;
+    const rows = dataset.rows.filter((row) => row && Number.isFinite(Number(row.value))).map((row, index) => ({
+      ...row,
+      id: String(row.id ?? index),
+      label: String(row.label ?? row.id ?? index),
+      value: Number(row.value),
+      provenance: row.provenance || "SOURCE",
+    }));
+    if (!rows.length) return null;
+    const normalized = {
+      ...dataset,
+      id: String(dataset.id),
+      modeId: String(dataset.modeId || "estat-prefecture"),
+      title: String(dataset.title || "外部データセット"),
+      unit: String(dataset.unit || ""),
+      provenance: Array.isArray(dataset.provenance) && dataset.provenance.length ? dataset.provenance : ["SOURCE"],
+      rows,
+    };
+    const existingIndex = state.datasets.findIndex((candidate) => candidate.id === normalized.id);
+    if (existingIndex >= 0) state.datasets.splice(existingIndex, 1, normalized);
+    else state.datasets.push(normalized);
+    return normalized;
+  };
+
+  const open = async ({ modeId, datasetId, dataset } = {}) => {
     state.returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : openButton; ui.status.textContent = "LOADING DATA";
     lab.hidden = false; lab.setAttribute("aria-hidden", "false"); document.body.classList.add("gaia-statistics-open"); state.open = true; setMenuOpen(false); document.addEventListener("keydown", trapFocus, true);
     try {
       await ensureReady();
       if (!state.open) return;
-      const adapterState = globalThis.GaiaMapObservationAdapter?.getState?.(); const inferredMode = modeId || state.snapshot?.modes?.[adapterState?.modeIndex]?.id || state.modeId;
-      const preferred = datasetId || state.datasets.find((dataset) => dataset.modeId === inferredMode)?.id || state.datasets[0]?.id;
+      const externalDataset = installExternalDataset(dataset);
+      const adapterState = globalThis.GaiaMapObservationAdapter?.getState?.(); const inferredMode = modeId || externalDataset?.modeId || state.snapshot?.modes?.[adapterState?.modeIndex]?.id || state.modeId;
+      const preferred = externalDataset?.id || datasetId || state.datasets.find((candidate) => candidate.modeId === inferredMode)?.id || state.datasets[0]?.id;
       setDataset(preferred, true); ui.close.focus(); window.dispatchEvent(new CustomEvent("gaia:statistics-open", { detail: { modeId: inferredMode, datasetId: preferred } }));
     } catch (error) {
       console.error(error); ui.status.textContent = "DATA UNAVAILABLE"; ui.context.textContent = "保存スナップショットを読み込めませんでした。地図を開き直して再試行してください。";

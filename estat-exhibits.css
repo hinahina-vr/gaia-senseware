@@ -30,13 +30,59 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
 }
 
 .gaia-estat-canvas[hidden],
 .gaia-estat-markers[hidden],
+.gaia-estat-prefecture-regions[hidden],
+.gaia-estat-prefecture-tooltip[hidden],
+.gaia-estat-heat-legend[hidden],
 .gaia-estat-readout[hidden] {
   display: none !important;
+}
+
+.gaia-estat-heat-legend {
+  --estat-heat-gradient: linear-gradient(90deg, #2a4ab2, #2aafce, #65daad, #f8d564, #cd365b);
+  position: absolute;
+  z-index: 7;
+  top: max(118px, calc(env(safe-area-inset-top) + 82px));
+  left: 18px;
+  display: grid;
+  width: min(246px, calc(100vw - 36px));
+  gap: 7px;
+  padding: 11px 13px 10px;
+  border: 1px solid color-mix(in srgb, var(--estat-accent, #65f5df) 35%, transparent);
+  border-radius: 5px 15px 5px 5px;
+  color: rgba(235, 255, 250, 0.86);
+  background: rgba(0, 14, 23, 0.82);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px) saturate(1.2);
+  pointer-events: none;
+}
+
+.gaia-estat-heat-legend strong {
+  font: 750 9px/1.2 Consolas, var(--font-ja);
+  letter-spacing: 0.08em;
+}
+
+.gaia-estat-heat-legend > i {
+  display: block;
+  height: 8px;
+  border: 1px solid rgba(230, 255, 249, 0.38);
+  border-radius: 999px;
+  background: var(--estat-heat-gradient);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--estat-accent, #65f5df) 24%, transparent);
+}
+
+.gaia-estat-heat-legend > span {
+  display: flex;
+  justify-content: space-between;
+  color: rgba(225, 247, 243, 0.68);
+}
+
+.gaia-estat-heat-legend small {
+  font: 700 9px/1 Consolas, var(--font-ja);
 }
 
 .gaia-estat-markers {
@@ -149,6 +195,98 @@
   animation: estat-poi-arrive 900ms cubic-bezier(0.16, 0.82, 0.18, 1) both;
 }
 
+.gaia-estat-prefecture-regions {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.gaia-estat-prefecture-region {
+  fill: rgba(255, 255, 255, 0.001);
+  stroke: transparent;
+  stroke-width: 1.4px;
+  vector-effect: non-scaling-stroke;
+  pointer-events: all;
+  cursor: pointer;
+  outline: none;
+  transition: fill 260ms ease, stroke 220ms ease, filter 260ms ease;
+}
+
+.gaia-estat-prefecture-region:is(:hover, :focus-visible) {
+  fill: color-mix(in srgb, var(--estat-accent, #65f5df) 24%, transparent);
+  stroke: color-mix(in srgb, var(--estat-accent, #65f5df) 88%, white);
+  stroke-width: 2.2px;
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--estat-accent, #65f5df) 86%, transparent));
+}
+
+.gaia-estat-prefecture-region[aria-current="true"] {
+  fill: color-mix(in srgb, var(--estat-secondary, #ffdf82) 16%, transparent);
+  stroke: rgba(255, 255, 238, 0.98);
+  stroke-width: 2.4px;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--estat-accent, #65f5df) 72%, transparent));
+}
+
+.gaia-estat-prefecture-tooltip {
+  position: absolute;
+  z-index: 8;
+  display: grid;
+  min-width: 132px;
+  gap: 6px;
+  padding: 10px 13px 9px;
+  border: 1px solid color-mix(in srgb, var(--estat-accent, #65f5df) 62%, transparent);
+  border-radius: 5px 15px 15px 15px;
+  color: #f4fffc;
+  background: rgba(0, 13, 22, 0.94);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38), 0 0 20px color-mix(in srgb, var(--estat-accent, #65f5df) 18%, transparent);
+  backdrop-filter: blur(12px) saturate(1.25);
+  pointer-events: none;
+  transform: translate(14px, calc(-100% - 14px));
+  animation: estat-region-tooltip-in 260ms cubic-bezier(0.18, 0.82, 0.18, 1) both;
+}
+
+.gaia-estat-prefecture-tooltip::before {
+  position: absolute;
+  bottom: -7px;
+  left: 13px;
+  width: 12px;
+  height: 12px;
+  border-right: 1px solid color-mix(in srgb, var(--estat-accent, #65f5df) 62%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--estat-accent, #65f5df) 62%, transparent);
+  background: rgba(0, 13, 22, 0.94);
+  content: "";
+  transform: rotate(45deg);
+}
+
+.gaia-estat-prefecture-tooltip > span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.gaia-estat-prefecture-tooltip small {
+  color: var(--estat-accent, #65f5df);
+  font: 800 9px/1 Consolas, monospace;
+}
+
+.gaia-estat-prefecture-tooltip strong {
+  font: 750 13px/1.15 var(--font-ja);
+}
+
+.gaia-estat-prefecture-tooltip > b {
+  color: #fff;
+  font: 750 15px/1.1 Consolas, var(--font-ja);
+}
+
+@keyframes estat-region-tooltip-in {
+  from { opacity: 0; filter: blur(4px); transform: translate(14px, calc(-100% - 6px)) scale(0.94); }
+  to { opacity: 1; filter: none; transform: translate(14px, calc(-100% - 14px)) scale(1); }
+}
+
 @keyframes estat-poi-depart {
   to { opacity: 0.28; filter: blur(2px); transform: translate(-50%, -50%) scale(0.55); }
 }
@@ -168,7 +306,7 @@
   bottom: 10px;
   left: 12px;
   display: grid;
-  grid-template-columns: minmax(120px, 0.65fr) minmax(170px, 0.9fr) minmax(140px, 0.8fr) minmax(180px, 0.9fr) minmax(250px, 1.45fr) minmax(125px, 0.7fr) minmax(210px, 1.1fr) minmax(90px, 0.55fr);
+  grid-template-columns: minmax(120px, 0.65fr) minmax(170px, 0.9fr) minmax(140px, 0.8fr) minmax(180px, 0.9fr) minmax(250px, 1.45fr) minmax(125px, 0.7fr) minmax(190px, 1fr) minmax(250px, 1.35fr);
   min-height: 116px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--estat-accent) 32%, transparent);
@@ -205,11 +343,11 @@
 .gaia-estat-place > p,
 .gaia-estat-primary > p,
 .gaia-estat-timeline header,
-.gaia-estat-comparison span,
-.gaia-estat-source {
+  .gaia-estat-comparison span,
+  .gaia-estat-action small {
   margin: 0;
   color: color-mix(in srgb, var(--estat-accent) 75%, #a9c2c6);
-  font: 750 8px/1.2 Consolas, "Courier New", monospace;
+  font: 750 clamp(10px, 0.58vw, 14px)/1.2 Consolas, "Courier New", monospace;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -247,19 +385,56 @@
   cursor: pointer;
 }
 
-.gaia-estat-chapter span { display: flex; align-items: baseline; gap: 8px; }
-.gaia-estat-chapter b { color: var(--estat-accent); font: 800 21px/1 Consolas, monospace; }
-.gaia-estat-chapter strong { overflow: hidden; font: 650 17px/1.2 var(--font-ja); text-overflow: ellipsis; white-space: nowrap; }
-.gaia-estat-place strong { font: 650 16px/1.2 var(--font-ja); }
-.gaia-estat-place small { color: rgba(211, 239, 236, 0.58); font: 700 9px/1 Consolas, var(--font-ja); }
+.gaia-estat-chapter span { display: flex; align-items: baseline; gap: 9px; }
+.gaia-estat-chapter b { color: var(--estat-accent); font: 800 clamp(26px, 1.3vw, 32px)/1 Consolas, monospace; }
+.gaia-estat-chapter strong { overflow: hidden; font: 650 clamp(21px, 1.1vw, 28px)/1.2 var(--font-ja); text-overflow: ellipsis; white-space: nowrap; }
+.gaia-estat-place strong { font: 650 clamp(20px, 1.05vw, 26px)/1.2 var(--font-ja); }
+.gaia-estat-place small { color: rgba(211, 239, 236, 0.64); font: 700 clamp(12px, 0.62vw, 15px)/1 Consolas, var(--font-ja); }
 
 .gaia-estat-primary {
   grid-template-columns: auto min-content;
+  overflow: hidden;
 }
 
 .gaia-estat-primary > p { grid-column: 1 / -1; }
-.gaia-estat-primary > strong { color: #fff; font: 500 clamp(28px, 2.2vw, 46px)/0.94 Consolas, var(--font-ja); text-shadow: 0 0 25px color-mix(in srgb, var(--estat-accent) 36%, transparent); }
-.gaia-estat-primary > span { align-self: end; padding-bottom: 4px; color: rgba(225, 250, 245, 0.68); font: 650 11px/1 var(--font-ja); }
+.gaia-estat-primary > strong {
+  min-width: 3.2ch;
+  color: #fff;
+  font: 500 clamp(28px, 2.2vw, 46px)/0.94 Consolas, var(--font-ja);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  text-shadow: 0 0 25px color-mix(in srgb, var(--estat-accent) 36%, transparent);
+  transform-origin: center;
+}
+
+.gaia-estat-primary > strong.is-counting {
+  color: color-mix(in srgb, var(--estat-accent) 76%, white);
+  will-change: transform, filter, opacity;
+}
+
+.gaia-estat-primary > strong.is-counting-up {
+  animation: gaia-estat-count-up 96ms steps(2, end) infinite;
+}
+
+.gaia-estat-primary > strong.is-counting-down {
+  animation: gaia-estat-count-down 96ms steps(2, end) infinite;
+}
+
+@keyframes gaia-estat-count-up {
+  from { opacity: 0.72; filter: blur(0.65px); transform: translateY(2px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(-1px); }
+}
+
+@keyframes gaia-estat-count-down {
+  from { opacity: 0.72; filter: blur(0.65px); transform: translateY(-2px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(1px); }
+}
+.gaia-estat-primary > span {
+  align-self: end;
+  padding-bottom: 4px;
+  color: rgba(225, 250, 245, 0.76);
+  font: 650 clamp(15px, 0.85vw, 20px)/1 var(--font-ja);
+}
 .gaia-estat-timeline header { display: flex; justify-content: space-between; gap: 8px; }
 .gaia-estat-timeline header b { color: #fff; }
 
@@ -293,24 +468,77 @@
 }
 
 .gaia-estat-timeline i span { position: absolute; top: 7px; left: 50%; color: rgba(219, 242, 240, 0.38); font: 700 7px/1 Consolas, monospace; transform: translateX(-50%); }
-.gaia-estat-comparison { grid-template-columns: 1fr 1fr; gap: 12px; }
-.gaia-estat-comparison span { display: grid; gap: 7px; }
-.gaia-estat-comparison strong { color: #fff; font: 700 13px/1.2 Consolas, var(--font-ja); letter-spacing: 0; text-transform: none; }
+.gaia-estat-comparison { grid-template-columns: 1fr 1fr; gap: 8px; }
+.gaia-estat-comparison span {
+  display: grid;
+  gap: 8px;
+  font-size: clamp(12px, 0.68vw, 16px);
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+}
+.gaia-estat-comparison strong {
+  color: #fff;
+  font: 700 clamp(18px, 1vw, 23px)/1.15 Consolas, var(--font-ja);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
 .gaia-estat-copy { gap: 5px; }
 .gaia-estat-copy p { margin: 0; color: rgba(235, 255, 250, 0.82); font: 600 12px/1.55 var(--font-ja); }
 .gaia-estat-copy small { color: rgba(211, 238, 235, 0.54); font: 500 9px/1.5 var(--font-ja); }
 
-.gaia-estat-source {
+.gaia-estat-actions {
   display: grid;
-  align-content: center;
-  justify-items: center;
-  color: var(--estat-accent);
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
+  grid-template-columns: 1fr 1fr;
+  padding: 7px !important;
 }
 
-.gaia-estat-source::after { content: "↗"; margin-top: 10px; color: #fff; font-size: 17px; }
+.gaia-estat-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 11px;
+  border: 1px solid transparent;
+  color: #e9fffb;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.gaia-estat-action > span { display: grid; gap: 6px; min-width: 0; }
+.gaia-estat-action small { color: currentColor; }
+.gaia-estat-action strong {
+  overflow: hidden;
+  color: rgba(242, 255, 252, 0.94);
+  font: 650 clamp(10px, 0.66vw, 14px)/1.25 var(--font-ja);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gaia-estat-action > i {
+  display: grid;
+  width: clamp(28px, 1.9vw, 38px);
+  height: clamp(28px, 1.9vw, 38px);
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  place-items: center;
+  font: 400 15px/1 sans-serif;
+  font-style: normal;
+}
+.gaia-estat-action--source {
+  color: #79f4d4;
+  background: linear-gradient(115deg, rgba(21, 126, 101, 0.31), rgba(4, 48, 48, 0.5));
+  box-shadow: inset 3px 0 #73efd0;
+}
+.gaia-estat-action--analysis {
+  color: #db91ff;
+  background: linear-gradient(115deg, rgba(105, 55, 154, 0.42), rgba(46, 26, 84, 0.56));
+  box-shadow: inset 3px 0 #db91ff;
+}
+.gaia-estat-action:is(:hover, :focus-visible) { z-index: 1; outline: none; filter: brightness(1.16); transform: translateY(-1px); }
 
 .japan-layer.is-estat-exhibit :is(
   .japan-observation,
@@ -325,6 +553,10 @@
 }
 
 .japan-layer.is-estat-exhibit .japan-map { padding-bottom: 128px; }
+.japan-layer.is-estat-exhibit.has-integrated-map-light .japan-map > #gaia-canvas {
+  opacity: 0.025 !important;
+  filter: saturate(0.25) brightness(0.52) contrast(0.72);
+}
 .japan-layer[data-estat-period-transition="active"] .gaia-estat-canvas { animation: estat-period-shimmer 920ms ease both; }
 
 @keyframes estat-period-shimmer {
@@ -335,18 +567,17 @@
 
 @media (max-width: 1500px) {
   .gaia-estat-readout {
-    grid-template-columns: 0.7fr 0.95fr 0.85fr 1fr 1.5fr 0.75fr;
+    grid-template-columns: 0.95fr 0.85fr 0.9fr 1.45fr 0.72fr 1.35fr;
   }
-  .gaia-estat-copy,
-  .gaia-estat-source { display: none; }
+  .gaia-estat-return,
+  .gaia-estat-copy { display: none; }
 }
 
 @media (max-width: 1100px) {
   .gaia-estat-readout {
-    grid-template-columns: 0.7fr 1fr 0.9fr 1.1fr 1.55fr;
+    grid-template-columns: 1fr 0.9fr 1.1fr 1.5fr 1.45fr;
   }
-  .gaia-estat-comparison,
-  .gaia-estat-source { display: none; }
+  .gaia-estat-comparison { display: none; }
 }
 
 @media (max-width: 720px) {
@@ -356,29 +587,39 @@
     bottom: max(7px, env(safe-area-inset-bottom));
     left: 8px;
     grid-template-columns: 1fr 1fr;
-    min-height: 154px;
+    min-height: 218px;
     border-radius: 15px 15px 4px 4px;
   }
   .gaia-estat-readout > * { padding: 12px; }
   .gaia-estat-return,
   .gaia-estat-place,
   .gaia-estat-copy,
-  .gaia-estat-comparison,
-  .gaia-estat-source { display: none; }
+  .gaia-estat-comparison { display: none; }
   .gaia-estat-chapter { grid-column: 1; grid-row: 1; }
   .gaia-estat-primary { grid-column: 2; grid-row: 1; }
   .gaia-estat-timeline { grid-column: 1 / -1; grid-row: 2; }
-  .gaia-estat-chapter strong { font-size: 14px; }
+  .gaia-estat-actions { grid-column: 1 / -1; grid-row: 3; min-height: 64px; padding: 5px !important; }
+  .gaia-estat-action { padding: 8px 10px; }
+  .gaia-estat-action strong { font-size: 11px; }
+  .gaia-estat-chapter b { font-size: 23px; }
+  .gaia-estat-chapter strong { font-size: 16px; }
   .gaia-estat-primary > strong { font-size: clamp(26px, 9vw, 38px); }
   .gaia-estat-marker > span { font-size: 9px; }
-  .japan-layer.is-estat-exhibit .japan-map { padding-bottom: 165px; }
+  .gaia-estat-heat-legend {
+    top: max(132px, calc(env(safe-area-inset-top) + 106px));
+    left: 8px;
+    width: min(192px, calc(100vw - 16px));
+    padding: 9px 10px 8px;
+  }
+  .japan-layer.is-estat-exhibit .japan-map { padding-bottom: 230px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .gaia-estat-marker,
   .gaia-estat-marker > i,
   .gaia-estat-marker > span,
-  .gaia-estat-canvas {
+  .gaia-estat-canvas,
+  .gaia-estat-primary > strong.is-counting {
     animation: none !important;
     transition-duration: 1ms !important;
   }

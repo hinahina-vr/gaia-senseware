@@ -2,9 +2,15 @@ import { OBSERVATION_CITIES } from "./live-exhibits.js?v=gaia-wind-brush-1";
 import { ESTAT_PREFECTURE_SNAPSHOT } from "./estat-prefecture-data.js";
 
 const SERIES_URL = new URL("../../data/estat-prefecture-series.json", import.meta.url);
+const PREFECTURE_TOPOLOGY_URL = new URL("../../data/japan-prefectures.topojson?v=gaia-estat-choropleth-1", import.meta.url);
 const PERIOD_MS = 6200;
 const POI_MS = 3600;
 const TRANSITION_MS = 920;
+const PRIMARY_VALUE_COUNT_MS = 760;
+const PRIMARY_VALUE_COUNT_STEPS = 32;
+const DESKTOP_START_ZOOM = 6;
+const MOBILE_START_ZOOM = 4.25;
+const PREFECTURE_REGION_EXHIBITS = new Set(["19", "20", "21", "22"]);
 const NATURAL_ENVIRONMENT_SOURCE = "https://www.e-stat.go.jp/stat-search/files?cycle=0&layout=datalist&lid=000001477298&month=0&page=1&stat_infid=000040412523&tclass1=000001240737&tclass2val=0&toukei=00200502&tstat=000001240736&year=20260";
 
 const EXHIBITS = Object.freeze([
@@ -67,8 +73,8 @@ const EXHIBITS = Object.freeze([
     valueLabel: "年平均気温",
     accent: "#ff9a72",
     secondary: "#ffdf82",
-    caption: "47都道府県の年平均気温を、列島を包む熱の呼吸として描きます。",
-    guide: "光環の厚みと暖色の密度が気温。年を送ると、同じ場所の空気の変化を追えます。",
+    caption: "47都道府県の年平均気温を、県境に沿う色の温度差として描きます。",
+    guide: "青から赤へ進むほど高温。年を送ると、同じ県の空気の変化を色で追えます。",
     frequency: "年次",
     visual: "thermal",
     scaleMode: "range",
@@ -86,8 +92,8 @@ const EXHIBITS = Object.freeze([
     valueLabel: "月平均日最高気温の最高値",
     accent: "#ff765f",
     secondary: "#ffd76d",
-    caption: "一年でもっとも暑い月の平均的な日最高気温を、ほどける陽炎へ変換します。",
-    guide: "大きく鋭い光ほど値が高い地点。単日の最高気温ではなく、月平均値の年内最高です。",
+    caption: "一年でもっとも暑い月の平均的な日最高気温を、県境ごとの熱色へ変換します。",
+    guide: "紫から赤・黄へ進むほど高温。単日の最高気温ではなく、月平均値の年内最高です。",
     frequency: "年次",
     visual: "heat",
     scaleMode: "range",
@@ -105,8 +111,8 @@ const EXHIBITS = Object.freeze([
     valueLabel: "月平均日最低気温の最低値",
     accent: "#83d8ff",
     secondary: "#c9b8ff",
-    caption: "一年でもっとも寒い月の平均的な日最低気温を、静かな氷晶の深さで示します。",
-    guide: "大きい氷晶ほど低温。単日の最低気温ではなく、月平均値の年内最低です。",
+    caption: "一年でもっとも寒い月の平均的な日最低気温を、県境ごとの冷色で示します。",
+    guide: "濃青から水色・白へ進むほど低温。単日の最低気温ではなく、月平均値の年内最低です。",
     frequency: "年次",
     visual: "frost",
     scaleMode: "cold",
@@ -123,8 +129,8 @@ const EXHIBITS = Object.freeze([
     valueLabel: "年平均相対湿度",
     accent: "#79f0dc",
     secondary: "#7bb7ff",
-    caption: "年平均相対湿度を、土地の上で重なり合う水の膜として可視化します。",
-    guide: "膜が大きく幾重にも見えるほど湿度が高い地点。欠測は推定せず、そのまま示します。",
+    caption: "年平均相対湿度を、県境に沿って重なり合う水の色として可視化します。",
+    guide: "藍から青緑へ進むほど湿度が高い県。欠測は推定せず、鈍い灰青で示します。",
     frequency: "年次",
     visual: "humidity",
     scaleMode: "range",
@@ -195,6 +201,11 @@ let canvas;
 let context;
 let markerLayer;
 let markerButtons = [];
+let prefectureRegionLayer;
+let prefectureRegionGroup;
+let prefectureRegionPaths = [];
+let prefectureRegionTooltip;
+let heatLegend;
 let readout;
 let buttons = [];
 let activeIndex = -1;
@@ -207,8 +218,14 @@ let nextMonthAt = 0;
 let nextPoiAt = 0;
 let series;
 let seriesPromise;
+let prefectureShapes = [];
+let prefectureShapesPromise;
 let savedHeading;
 const scaleMaxima = new Map();
+let primaryValueAnimationFrame = 0;
+let primaryValueDisplayed = Number.NaN;
+let primaryValueTarget = Number.NaN;
+let primaryValueExhibitKey = "";
 
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const ease = (value) => 1 - ((1 - clamp01(value)) ** 3);
@@ -220,6 +237,168 @@ const formatNumber = (value, signed = false, decimals = 0) => {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   })}`;
+};
+
+const settlePrimaryValue = (element, value, exhibit, state = "settled") => {
+  const signed = exhibit.key === "migration";
+  const decimals = exhibit.decimals || 0;
+  element.textContent = formatNumber(value, signed, decimals);
+  element.classList.remove("is-counting", "is-counting-up", "is-counting-down");
+  readout?.removeAttribute("aria-busy");
+  readout.dataset.estatValueCountState = state;
+  readout.dataset.estatValueCountDirection = "none";
+  readout.dataset.estatValueCountProgress = "1.000";
+  readout.dataset.estatValueCountCurrent = Number.isFinite(value) ? String(value) : "missing";
+  primaryValueDisplayed = value;
+  primaryValueTarget = value;
+  primaryValueExhibitKey = exhibit.key;
+};
+
+const animatePrimaryValue = (value, exhibit) => {
+  const element = readout?.querySelector("[data-estat-value]");
+  if (!(element instanceof HTMLElement)) return;
+  cancelAnimationFrame(primaryValueAnimationFrame);
+  primaryValueAnimationFrame = 0;
+  if (!Number.isFinite(value)) {
+    settlePrimaryValue(element, Number.NaN, exhibit, "missing");
+    return;
+  }
+
+  const target = Number(value);
+  const sameExhibit = primaryValueExhibitKey === exhibit.key;
+  const start = sameExhibit && Number.isFinite(primaryValueDisplayed)
+    ? primaryValueDisplayed
+    : 0;
+  const precision = 10 ** -(exhibit.decimals || 0);
+  const reducedMotion = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  if (reducedMotion || Math.abs(target - start) < precision * 0.5) {
+    settlePrimaryValue(element, target, exhibit);
+    return;
+  }
+
+  const direction = target > start ? "up" : "down";
+  const startedAt = performance.now();
+  primaryValueTarget = target;
+  primaryValueExhibitKey = exhibit.key;
+  element.classList.remove("is-counting-up", "is-counting-down");
+  element.classList.add("is-counting", `is-counting-${direction}`);
+  readout.setAttribute("aria-busy", "true");
+  readout.dataset.estatValueCountState = "counting";
+  readout.dataset.estatValueCountDirection = direction;
+  readout.dataset.estatValueCountStart = String(start);
+  readout.dataset.estatValueCountTarget = String(target);
+  readout.dataset.estatValueCountSteps = String(PRIMARY_VALUE_COUNT_STEPS);
+
+  const tick = (timestamp) => {
+    if (!readout || activeIndex < 0 || primaryValueTarget !== target || primaryValueExhibitKey !== exhibit.key) return;
+    const rawProgress = clamp01((timestamp - startedAt) / PRIMARY_VALUE_COUNT_MS);
+    const steppedProgress = rawProgress >= 1
+      ? 1
+      : Math.floor(ease(rawProgress) * PRIMARY_VALUE_COUNT_STEPS) / PRIMARY_VALUE_COUNT_STEPS;
+    const current = start + (target - start) * steppedProgress;
+    primaryValueDisplayed = current;
+    element.textContent = formatNumber(current, exhibit.key === "migration", exhibit.decimals || 0);
+    readout.dataset.estatValueCountProgress = rawProgress.toFixed(3);
+    readout.dataset.estatValueCountCurrent = String(current);
+    if (rawProgress >= 1) {
+      primaryValueAnimationFrame = 0;
+      settlePrimaryValue(element, target, exhibit);
+      return;
+    }
+    primaryValueAnimationFrame = requestAnimationFrame(tick);
+  };
+  primaryValueAnimationFrame = requestAnimationFrame(tick);
+};
+
+const stitchTopologyRing = (arcReferences, decodedArcs) => {
+  const ring = [];
+  arcReferences.forEach((reference, referenceIndex) => {
+    const arcIndex = reference < 0 ? ~reference : reference;
+    const source = decodedArcs[arcIndex] || [];
+    const points = reference < 0 ? [...source].reverse() : source;
+    ring.push(...(referenceIndex === 0 ? points : points.slice(1)));
+  });
+  return ring;
+};
+
+const topologyGeometryPolygons = (geometry, decodedArcs) => {
+  const polygons = geometry.type === "Polygon" ? [geometry.arcs] : geometry.arcs;
+  return polygons.map((polygon) => polygon.map((ring) => stitchTopologyRing(ring, decodedArcs)));
+};
+
+const worldPoint = ([longitude, latitude]) => [
+  wrapLongitude(longitude - 138) + 180,
+  90 - latitude,
+];
+
+const svgPathForPolygons = (polygons) => polygons.map((polygon) => polygon.map((ring) => (
+  ring.map((point, pointIndex) => {
+    const [x, y] = worldPoint(point);
+    return `${pointIndex === 0 ? "M" : "L"}${x.toFixed(4)} ${y.toFixed(4)}`;
+  }).join(" ") + " Z"
+)).join(" ")).join(" ");
+
+const loadPrefectureShapes = () => {
+  if (prefectureShapes.length === 47) return Promise.resolve(prefectureShapes);
+  if (prefectureShapesPromise) return prefectureShapesPromise;
+  prefectureShapesPromise = fetch(PREFECTURE_TOPOLOGY_URL, { cache: "force-cache" })
+    .then((response) => {
+      if (!response.ok) throw new Error(`Japan prefecture topology HTTP ${response.status}`);
+      return response.json();
+    })
+    .then((topology) => {
+      const geometries = topology?.objects?.japan?.geometries || [];
+      const topologyArcs = topology?.arcs || [];
+      const scale = topology?.transform?.scale;
+      const translate = topology?.transform?.translate;
+      if (topology?.type !== "Topology" || geometries.length !== 47
+        || !Array.isArray(scale) || !Array.isArray(translate)) {
+        throw new Error("Japan prefecture topology is incomplete");
+      }
+      const decodedArcs = topologyArcs.map((rawArc) => {
+        let x = 0;
+        let y = 0;
+        return rawArc.map(([deltaX, deltaY]) => {
+          x += deltaX;
+          y += deltaY;
+          return [x * scale[0] + translate[0], y * scale[1] + translate[1]];
+        });
+      });
+      const shapes = geometries.map((geometry) => {
+        const code = String(geometry.properties?.id || "").padStart(2, "0");
+        const path = new Path2D();
+        const polygons = topologyGeometryPolygons(geometry, decodedArcs);
+        polygons.forEach((polygon) => {
+          polygon.forEach((ring) => {
+            ring.forEach(([longitude, latitude], pointIndex) => {
+              const [x, y] = worldPoint([longitude, latitude]);
+              if (pointIndex === 0) path.moveTo(x, y);
+              else path.lineTo(x, y);
+            });
+            path.closePath();
+          });
+        });
+        return {
+          code,
+          index: Number(code) - 1,
+          name: geometry.properties?.nam_ja || code,
+          path,
+          svgPath: svgPathForPolygons(polygons),
+        };
+      }).sort((left, right) => left.index - right.index);
+      if (shapes.length !== 47 || shapes.some(({ index }) => index < 0 || index >= 47)) {
+        throw new Error("Japan prefecture topology could not be indexed by prefecture code");
+      }
+      prefectureShapes = shapes;
+      syncPrefectureRegionPaths();
+      return prefectureShapes;
+    })
+    .catch((error) => {
+      console.error(error);
+      prefectureShapes = [];
+      return prefectureShapes;
+    });
+  return prefectureShapesPromise;
 };
 
 const fallbackSeries = () => {
@@ -302,6 +481,7 @@ const project = (location, currentProjection) => {
 };
 
 const currentExhibit = () => EXHIBITS[activeIndex] || EXHIBITS[0];
+const usesPrefectureRegions = (exhibit = currentExhibit()) => PREFECTURE_REGION_EXHIBITS.has(exhibit.number);
 const currentPeriod = () => periodsFor()[periodIndex] || ESTAT_PREFECTURE_SNAPSHOT.period;
 const valuesFor = (index = periodIndex) => {
   const exhibit = currentExhibit();
@@ -310,8 +490,7 @@ const valuesFor = (index = periodIndex) => {
 };
 
 const selectedValue = () => valuesFor()[selectedIndex];
-const normalizedValue = (value, exhibit) => {
-  if (!Number.isFinite(value)) return 0;
+const valueRangeFor = (exhibit) => {
   if (!scaleMaxima.has(exhibit.key)) {
     const allValues = periodsFor(exhibit)
       .flatMap((period) => series?.[exhibit.key]?.[period] || [])
@@ -322,7 +501,12 @@ const normalizedValue = (value, exhibit) => {
       absolute: Math.max(1, ...allValues.map((entry) => Math.abs(entry))),
     });
   }
-  const range = scaleMaxima.get(exhibit.key) || { minimum: 0, maximum: 1, absolute: 1 };
+  return scaleMaxima.get(exhibit.key) || { minimum: 0, maximum: 1, absolute: 1 };
+};
+
+const normalizedValue = (value, exhibit) => {
+  if (!Number.isFinite(value)) return 0;
+  const range = valueRangeFor(exhibit);
   if (exhibit.key === "migration") return Math.sqrt(Math.abs(value) / range.absolute);
   if (exhibit.scaleMode === "cold") {
     return 0.12 + Math.sqrt(clamp01((range.maximum - value) / Math.max(0.001, range.maximum - range.minimum))) * 0.88;
@@ -420,6 +604,97 @@ const drawHousing = (x, y, strength, selected, time) => {
 const rgb = (hex) => {
   const value = Number.parseInt(hex.slice(1), 16);
   return `${value >> 16},${(value >> 8) & 255},${value & 255}`;
+};
+
+const HEATMAP_PALETTES = Object.freeze({
+  migration: [[0, [225, 79, 94]], [0.48, [77, 48, 103]], [0.52, [25, 86, 112]], [1, [55, 239, 202]]],
+  lodging: [[0, [53, 41, 102]], [0.38, [167, 71, 149]], [0.72, [247, 139, 115]], [1, [255, 226, 115]]],
+  housing: [[0, [36, 62, 116]], [0.42, [57, 164, 187]], [0.72, [118, 224, 183]], [1, [223, 244, 124]]],
+  thermal: [[0, [42, 74, 178]], [0.3, [42, 175, 206]], [0.54, [101, 218, 173]], [0.74, [248, 213, 100]], [0.88, [246, 130, 78]], [1, [205, 54, 91]]],
+  heat: [[0, [60, 69, 163]], [0.42, [223, 83, 123]], [0.72, [255, 142, 76]], [1, [255, 229, 113]]],
+  frost: [[0, [35, 52, 131]], [0.36, [68, 120, 210]], [0.68, [117, 220, 236]], [1, [229, 246, 255]]],
+  humidity: [[0, [45, 63, 135]], [0.38, [50, 135, 190]], [0.7, [70, 209, 192]], [1, [180, 247, 191]]],
+  sunshine: [[0, [62, 64, 139]], [0.44, [219, 100, 120]], [0.74, [255, 167, 83]], [1, [255, 236, 141]]],
+  rainfall: [[0, [48, 49, 135]], [0.42, [51, 102, 190]], [0.72, [54, 190, 221]], [1, [146, 245, 222]]],
+  "rain-days": [[0, [62, 55, 139]], [0.42, [92, 105, 211]], [0.72, [92, 195, 220]], [1, [135, 241, 207]]],
+});
+
+const paletteFor = (exhibit) => HEATMAP_PALETTES[exhibit.key]
+  || HEATMAP_PALETTES[exhibit.visual]
+  || HEATMAP_PALETTES.thermal;
+
+const heatmapRatio = (value, exhibit) => {
+  if (!Number.isFinite(value)) return null;
+  const range = valueRangeFor(exhibit);
+  if (exhibit.key === "migration") return clamp01(0.5 + value / (range.absolute * 2));
+  if (exhibit.scaleMode === "cold") {
+    return clamp01((range.maximum - value) / Math.max(0.001, range.maximum - range.minimum));
+  }
+  return clamp01((value - range.minimum) / Math.max(0.001, range.maximum - range.minimum));
+};
+
+const interpolatePalette = (palette, ratio) => {
+  const clamped = clamp01(ratio);
+  const upperIndex = palette.findIndex(([stop]) => stop >= clamped);
+  if (upperIndex <= 0) return palette[0][1];
+  const [upperStop, upperColor] = palette[upperIndex];
+  const [lowerStop, lowerColor] = palette[upperIndex - 1];
+  const mix = (clamped - lowerStop) / Math.max(0.0001, upperStop - lowerStop);
+  return lowerColor.map((channel, index) => Math.round(channel + (upperColor[index] - channel) * mix));
+};
+
+const paletteCss = (palette) => `linear-gradient(90deg, ${palette
+  .map(([stop, color]) => `rgb(${color.join(" ")}) ${Math.round(stop * 100)}%`)
+  .join(", ")})`;
+
+const drawPrefectureHeatmap = (currentProjection, values, exhibit, timestamp) => {
+  if (prefectureShapes.length !== 47) {
+    canvas.dataset.estatHeatmap = "loading";
+    return;
+  }
+  const palette = paletteFor(exhibit);
+  let valueCount = 0;
+  let missingCount = 0;
+  context.save();
+  context.translate(currentProjection.originX, currentProjection.originY);
+  context.scale(currentProjection.scale, currentProjection.scale);
+  prefectureShapes.forEach((shape) => {
+    const value = values[shape.index];
+    const ratio = heatmapRatio(value, exhibit);
+    if (ratio === null) {
+      missingCount += 1;
+      context.fillStyle = "rgba(46,61,78,0.72)";
+    } else {
+      valueCount += 1;
+      const color = interpolatePalette(palette, ratio);
+      const selected = shape.index === selectedIndex;
+      context.fillStyle = `rgba(${color.join(",")},${selected ? 0.92 : 0.64 + ratio * 0.2})`;
+    }
+    context.fill(shape.path, "evenodd");
+    context.strokeStyle = shape.index === selectedIndex
+      ? "rgba(247,255,250,0.98)"
+      : "rgba(220,255,246,0.5)";
+    context.lineWidth = (shape.index === selectedIndex ? 2.25 : 0.72) / currentProjection.scale;
+    context.stroke(shape.path);
+  });
+
+  const selectedShape = prefectureShapes[selectedIndex];
+  if (selectedShape) {
+    const shimmer = 0.72 + Math.sin(timestamp * 0.0022) * 0.16;
+    context.save();
+    context.shadowColor = `rgba(255,255,238,${shimmer})`;
+    context.shadowBlur = 8;
+    context.strokeStyle = `rgba(255,255,245,${0.66 + shimmer * 0.16})`;
+    context.lineWidth = 2.45 / currentProjection.scale;
+    context.stroke(selectedShape.path);
+    context.restore();
+  }
+  context.restore();
+  canvas.dataset.estatHeatmap = "prefecture-choropleth";
+  canvas.dataset.estatHeatmapShapeCount = String(prefectureShapes.length);
+  canvas.dataset.estatHeatmapValueCount = String(valueCount);
+  canvas.dataset.estatHeatmapMissingCount = String(missingCount);
+  canvas.dataset.estatHeatmapSelectedCode = String(selectedIndex + 1).padStart(2, "0");
 };
 
 const drawNature = (x, y, strength, selected, time, exhibit, index) => {
@@ -538,6 +813,81 @@ const drawNature = (x, y, strength, selected, time, exhibit, index) => {
   context.restore();
 };
 
+const hidePrefectureRegionTooltip = () => {
+  if (prefectureRegionTooltip) prefectureRegionTooltip.hidden = true;
+};
+
+const showPrefectureRegionTooltip = (index, event) => {
+  if (!prefectureRegionTooltip || !usesPrefectureRegions()) return;
+  const city = OBSERVATION_CITIES[index];
+  const exhibit = currentExhibit();
+  const value = valuesFor()[index];
+  const mapRect = map.getBoundingClientRect();
+  let x = Number(event?.clientX) - mapRect.left;
+  let y = Number(event?.clientY) - mapRect.top;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    const currentProjection = projection();
+    [x, y] = currentProjection ? project(city, currentProjection) : [mapRect.width / 2, mapRect.height / 2];
+  }
+  prefectureRegionTooltip.querySelector("small").textContent = city.code;
+  prefectureRegionTooltip.querySelector("strong").textContent = city.prefecture;
+  prefectureRegionTooltip.querySelector("b").textContent = `${formatNumber(value, false, exhibit.decimals || 0)} ${Number.isFinite(value) ? exhibit.unit : ""}`.trim();
+  prefectureRegionTooltip.style.left = `${Math.max(84, Math.min(mapRect.width - 84, x))}px`;
+  prefectureRegionTooltip.style.top = `${Math.max(78, Math.min(mapRect.height - 136, y))}px`;
+  prefectureRegionTooltip.hidden = false;
+};
+
+const syncPrefectureRegionPaths = () => {
+  if (!prefectureRegionGroup || prefectureShapes.length !== 47 || prefectureRegionPaths.length === 47) return;
+  prefectureRegionGroup.replaceChildren();
+  prefectureRegionPaths = prefectureShapes.map((shape) => {
+    const region = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    region.classList.add("gaia-estat-prefecture-region");
+    region.dataset.estatPrefecture = shape.code;
+    region.setAttribute("d", shape.svgPath);
+    region.setAttribute("fill-rule", "evenodd");
+    region.setAttribute("clip-rule", "evenodd");
+    region.setAttribute("role", "button");
+    region.setAttribute("tabindex", "0");
+    region.setAttribute("aria-current", "false");
+    region.addEventListener("pointerdown", (event) => event.stopPropagation());
+    region.addEventListener("pointerenter", (event) => showPrefectureRegionTooltip(shape.index, event));
+    region.addEventListener("pointermove", (event) => showPrefectureRegionTooltip(shape.index, event));
+    region.addEventListener("pointerleave", hidePrefectureRegionTooltip);
+    region.addEventListener("focus", (event) => showPrefectureRegionTooltip(shape.index, event));
+    region.addEventListener("blur", hidePrefectureRegionTooltip);
+    region.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      selectPrefecture(shape.index);
+      showPrefectureRegionTooltip(shape.index, event);
+    });
+    region.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectPrefecture(shape.index);
+        showPrefectureRegionTooltip(shape.index, event);
+      }
+    });
+    prefectureRegionGroup.append(region);
+    return region;
+  });
+};
+
+const updatePrefectureRegions = (currentProjection, interpolatedValues) => {
+  syncPrefectureRegionPaths();
+  if (!prefectureRegionLayer || !prefectureRegionGroup) return;
+  const { rect, scale, originX, originY } = currentProjection;
+  prefectureRegionLayer.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
+  prefectureRegionGroup.setAttribute("transform", `translate(${originX} ${originY}) scale(${scale})`);
+  prefectureRegionPaths.forEach((region, index) => {
+    const value = interpolatedValues[index];
+    const city = OBSERVATION_CITIES[index];
+    region.setAttribute("aria-current", String(index === selectedIndex));
+    region.setAttribute("aria-label", `${city.code} ${city.prefecture}、${currentExhibit().valueLabel} ${formatNumber(value, false, currentExhibit().decimals || 0)} ${Number.isFinite(value) ? currentExhibit().unit : "欠測"}`);
+  });
+};
+
 const updateMarkers = (currentProjection, interpolatedValues) => {
   markerButtons.forEach((button, index) => {
     const city = OBSERVATION_CITIES[index];
@@ -571,6 +921,18 @@ const draw = (timestamp = performance.now()) => {
     return;
   }
   context.clearRect(0, 0, rect.width, rect.height);
+  const backdrop = context.createRadialGradient(
+    rect.width * 0.55,
+    rect.height * 0.46,
+    Math.min(rect.width, rect.height) * 0.08,
+    rect.width * 0.55,
+    rect.height * 0.46,
+    Math.max(rect.width, rect.height) * 0.74,
+  );
+  backdrop.addColorStop(0, "rgba(3,25,37,0.92)");
+  backdrop.addColorStop(1, "rgba(0,9,17,0.97)");
+  context.fillStyle = backdrop;
+  context.fillRect(0, 0, rect.width, rect.height);
   const progress = ease((timestamp - transitionStartedAt) / TRANSITION_MS);
   const from = valuesFor(previousPeriodIndex);
   const to = valuesFor(periodIndex);
@@ -580,18 +942,26 @@ const draw = (timestamp = performance.now()) => {
     if (!Number.isFinite(previous)) return value;
     return previous + (value - previous) * progress;
   });
-  updateMarkers(currentProjection, values);
   const exhibit = currentExhibit();
-  values.forEach((value, index) => {
-    const [x, y] = project(OBSERVATION_CITIES[index], currentProjection);
-    if (x < -60 || x > rect.width + 60 || y < -60 || y > rect.height + 60) return;
-    if (!Number.isFinite(value)) return;
-    const strength = normalizedValue(value, exhibit);
-    if (exhibit.key === "migration") drawMigration(x, y, value, strength, index === selectedIndex, timestamp);
-    else if (exhibit.key === "lodging") drawLodging(x, y, strength, index === selectedIndex, timestamp);
-    else if (exhibit.key === "housing") drawHousing(x, y, strength, index === selectedIndex, timestamp);
-    else drawNature(x, y, strength, index === selectedIndex, timestamp, exhibit, index);
-  });
+  drawPrefectureHeatmap(currentProjection, values, exhibit, timestamp);
+  if (usesPrefectureRegions(exhibit)) {
+    updatePrefectureRegions(currentProjection, values);
+  } else {
+    updateMarkers(currentProjection, values);
+    values.forEach((value, index) => {
+      const [x, y] = project(OBSERVATION_CITIES[index], currentProjection);
+      if (x < -60 || x > rect.width + 60 || y < -60 || y > rect.height + 60) return;
+      if (!Number.isFinite(value)) return;
+      const strength = normalizedValue(value, exhibit);
+      context.save();
+      context.globalAlpha = index === selectedIndex ? 0.92 : 0.2;
+      if (exhibit.key === "migration") drawMigration(x, y, value, strength, index === selectedIndex, timestamp);
+      else if (exhibit.key === "lodging") drawLodging(x, y, strength, index === selectedIndex, timestamp);
+      else if (exhibit.key === "housing") drawHousing(x, y, strength, index === selectedIndex, timestamp);
+      else drawNature(x, y, strength, index === selectedIndex, timestamp, exhibit, index);
+      context.restore();
+    });
+  }
   const periods = periodsFor();
   if (timestamp >= nextMonthAt && periods.length > 1) setPeriod((periodIndex + 1) % periods.length, { auto: true });
   if (timestamp >= nextPoiAt) selectPrefecture((selectedIndex + 1) % OBSERVATION_CITIES.length, { auto: true });
@@ -623,8 +993,8 @@ const renderReadout = () => {
   readout.querySelector("[data-estat-place]").textContent = `${city.code} ${city.prefecture}`;
   readout.querySelector("[data-estat-city]").textContent = city.city;
   readout.querySelector("[data-estat-value-label]").textContent = exhibit.valueLabel;
-  readout.querySelector("[data-estat-value]").textContent = formatNumber(value, exhibit.key === "migration", exhibit.decimals || 0);
   readout.querySelector("[data-estat-unit]").textContent = exhibit.unit;
+  animatePrimaryValue(value, exhibit);
   readout.querySelector("[data-estat-period]").textContent = period.replace("-", " / ");
   readout.querySelector("[data-estat-rank]").textContent = rank ? `${rank} / ${ordered.length}` : "欠測";
   readout.querySelector("[data-estat-delta]").textContent = delta === null ? (periodIndex === 0 ? "起点" : "比較不可") : `${formatNumber(delta, true, exhibit.decimals || 0)} ${exhibit.unit}`;
@@ -632,18 +1002,80 @@ const renderReadout = () => {
   readout.querySelector("[data-estat-delta-label]").childNodes[0].nodeValue = exhibit.frequency === "年次" ? "前年差" : "前月差";
   readout.querySelector("[data-estat-caption]").textContent = exhibit.caption;
   readout.querySelector("[data-estat-guide]").textContent = exhibit.guide;
-  readout.querySelector("[data-estat-source]").textContent = exhibit.sourceName;
-  readout.querySelector("[data-estat-source]").href = exhibit.source;
+  const sourceAction = readout.querySelector("[data-estat-source-action]");
+  sourceAction.href = exhibit.source;
+  sourceAction.title = `${exhibit.sourceName}をe-Statで確認`;
+  sourceAction.setAttribute("aria-label", `${exhibit.sourceName}の元データをe-Statで確認する（新しいタブ）`);
+  const range = valueRangeFor(exhibit);
+  const palette = paletteFor(exhibit);
+  heatLegend.style.setProperty("--estat-heat-gradient", paletteCss(palette));
+  heatLegend.querySelector("[data-estat-heat-title]").textContent = `47都道府県 / ${exhibit.valueLabel}`;
+  heatLegend.querySelector("[data-estat-heat-min]").textContent = `${formatNumber(range.minimum, exhibit.key === "migration", exhibit.decimals || 0)}${exhibit.unit}`;
+  heatLegend.querySelector("[data-estat-heat-max]").textContent = `${formatNumber(range.maximum, exhibit.key === "migration", exhibit.decimals || 0)}${exhibit.unit}`;
   const slider = readout.querySelector("[data-estat-month]");
   slider.max = String(periods.length - 1);
   slider.value = String(periodIndex);
   slider.setAttribute("aria-valuetext", period);
   slider.setAttribute("aria-label", exhibit.frequency === "年次" ? "表示年を選ぶ" : "表示月を選ぶ");
   readout.querySelector("[data-estat-months]").innerHTML = periods.map((entry, index) => `<i class="${index === periodIndex ? "is-current" : ""}"><span>${exhibit.frequency === "年次" ? entry : entry.slice(5)}</span></i>`).join("");
+  readout.querySelector("[data-estat-step='-1']")?.setAttribute(
+    "aria-label",
+    activeIndex === 0 ? "前の展示、15へ" : "前のe-Stat展示",
+  );
+  readout.querySelector("[data-estat-step='1']")?.setAttribute(
+    "aria-label",
+    activeIndex === EXHIBITS.length - 1 ? "次の展示、01へ" : "次のe-Stat展示",
+  );
   markerButtons.forEach((button, index) => {
     const markerValue = values[index];
     button.setAttribute("aria-label", `${OBSERVATION_CITIES[index].code} ${OBSERVATION_CITIES[index].prefecture}、${exhibit.valueLabel} ${formatNumber(markerValue, exhibit.key === "migration", exhibit.decimals || 0)} ${Number.isFinite(markerValue) ? exhibit.unit : ""}`.trim());
   });
+};
+
+const statisticsDataset = () => {
+  if (!series || activeIndex < 0) return null;
+  const exhibit = currentExhibit();
+  const period = currentPeriod();
+  const values = valuesFor();
+  return {
+    id: `estat-prefecture-${exhibit.key}`,
+    modeId: "estat-prefecture",
+    title: `${exhibit.number} ${exhibit.shortTitle} — ${exhibit.valueLabel}（${period}）`,
+    rows: OBSERVATION_CITIES.map((city, index) => {
+      const value = values[index];
+      return {
+        id: city.code,
+        label: `${city.code} ${city.prefecture}`,
+        x: Number(city.code),
+        y: Number.isFinite(value) ? value : Number.NaN,
+        value: Number.isFinite(value) ? value : Number.NaN,
+        prefecture: city.prefecture,
+        city: city.city,
+        period,
+        provenance: "SOURCE",
+      };
+    }).filter((row) => Number.isFinite(row.value)),
+    unit: exhibit.unit,
+    xLabel: "都道府県コード",
+    yLabel: exhibit.valueLabel,
+    provenance: ["SOURCE"],
+    periodStart: period,
+    periodEnd: period,
+    sourceUrl: exhibit.source,
+    sourceName: exhibit.sourceName,
+  };
+};
+
+const openStatistics = () => {
+  const dataset = statisticsDataset();
+  if (!dataset) return;
+  const open = () => void globalThis.GaiaStatisticsLab?.open?.({
+    modeId: dataset.modeId,
+    datasetId: dataset.id,
+    dataset,
+  });
+  if (globalThis.GaiaStatisticsLab?.open) open();
+  else addEventListener("gaia:statistics-lab-ready", open, { once: true });
 };
 
 const applyHeading = () => {
@@ -708,6 +1140,21 @@ const setPeriod = (index, { auto = false } = {}) => {
 
 const setMonth = setPeriod;
 
+const stepExhibit = (direction) => {
+  const step = Math.sign(Number(direction) || 0);
+  if (!step || activeIndex < 0) return;
+  const earthButtons = [...document.querySelectorAll("#japan-mode-list .map-mode-button")];
+  if (step > 0 && activeIndex === EXHIBITS.length - 1) {
+    earthButtons[0]?.click();
+    return;
+  }
+  if (step < 0 && activeIndex === 0) {
+    earthButtons.at(-1)?.click();
+    return;
+  }
+  void select(activeIndex + step);
+};
+
 const select = async (index) => {
   const requested = Math.max(0, Math.min(EXHIBITS.length - 1, Number(index) || 0));
   globalThis.GaiaLiveExhibits?.deactivate?.();
@@ -718,15 +1165,20 @@ const select = async (index) => {
     };
   }
   activeIndex = requested;
-  await loadSeries();
+  await Promise.all([loadSeries(), loadPrefectureShapes()]);
+  const regionMode = usesPrefectureRegions();
   periodIndex = 0;
   previousPeriodIndex = 0;
   transitionStartedAt = performance.now();
   layer.classList.add("is-estat-exhibit");
   layer.dataset.estatExhibit = currentExhibit().key;
   layer.dataset.estatFrequency = currentExhibit().frequency;
+  layer.dataset.estatPoiDisplay = regionMode ? "prefecture-regions" : "point-markers";
   canvas.hidden = false;
-  markerLayer.hidden = false;
+  markerLayer.hidden = regionMode;
+  prefectureRegionLayer.toggleAttribute("hidden", !regionMode);
+  hidePrefectureRegionTooltip();
+  heatLegend.hidden = false;
   readout.hidden = false;
   buttons.forEach((button, buttonIndex) => button.setAttribute("aria-current", String(buttonIndex === activeIndex)));
   document.querySelectorAll(".map-mode-button:not([data-estat-exhibit])").forEach((button) => button.setAttribute("aria-current", "false"));
@@ -737,7 +1189,7 @@ const select = async (index) => {
   globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
     lon: 137.4,
     lat: 36.2,
-    zoom: innerWidth <= 720 ? 4.25 : 4.45,
+    zoom: innerWidth <= 720 ? MOBILE_START_ZOOM : DESKTOP_START_ZOOM,
     targetX: 0.51,
     targetY: innerWidth <= 720 ? 0.42 : 0.44,
     label: "estat-japan-47-prefectures",
@@ -751,13 +1203,22 @@ const deactivate = () => {
   if (activeIndex < 0) return;
   activeIndex = -1;
   cancelAnimationFrame(frame);
+  cancelAnimationFrame(primaryValueAnimationFrame);
   frame = 0;
+  primaryValueAnimationFrame = 0;
+  primaryValueDisplayed = Number.NaN;
+  primaryValueTarget = Number.NaN;
+  primaryValueExhibitKey = "";
   layer.classList.remove("is-estat-exhibit");
   delete layer.dataset.estatExhibit;
   delete layer.dataset.estatFrequency;
+  delete layer.dataset.estatPoiDisplay;
   delete layer.dataset.estatPeriodTransition;
   canvas.hidden = true;
   markerLayer.hidden = true;
+  prefectureRegionLayer.setAttribute("hidden", "");
+  hidePrefectureRegionTooltip();
+  heatLegend.hidden = true;
   readout.hidden = true;
   buttons.forEach((button) => button.setAttribute("aria-current", "false"));
   if (savedHeading) {
@@ -807,6 +1268,32 @@ const mount = () => {
   });
   map.append(markerLayer);
 
+  prefectureRegionLayer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  prefectureRegionLayer.classList.add("gaia-estat-prefecture-regions");
+  prefectureRegionLayer.setAttribute("hidden", "");
+  prefectureRegionLayer.setAttribute("aria-label", "e-Stat 47都道府県データ領域");
+  prefectureRegionGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  prefectureRegionLayer.append(prefectureRegionGroup);
+  map.append(prefectureRegionLayer);
+
+  prefectureRegionTooltip = document.createElement("div");
+  prefectureRegionTooltip.className = "gaia-estat-prefecture-tooltip";
+  prefectureRegionTooltip.hidden = true;
+  prefectureRegionTooltip.innerHTML = "<span><small>01</small><strong>北海道</strong></span><b>—</b>";
+  map.append(prefectureRegionTooltip);
+  syncPrefectureRegionPaths();
+
+  heatLegend = document.createElement("section");
+  heatLegend.className = "gaia-estat-heat-legend";
+  heatLegend.hidden = true;
+  heatLegend.setAttribute("aria-label", "都道府県ヒートマップの色凡例");
+  heatLegend.innerHTML = `
+    <strong data-estat-heat-title>47都道府県 / 観測値</strong>
+    <i aria-hidden="true"></i>
+    <span><small data-estat-heat-min>低</small><small data-estat-heat-max>高</small></span>
+  `;
+  map.append(heatLegend);
+
   readout = document.createElement("section");
   readout.className = "gaia-estat-readout";
   readout.hidden = true;
@@ -826,7 +1313,10 @@ const mount = () => {
     </div>
     <div class="gaia-estat-comparison"><span>都道府県順位<strong data-estat-rank>—</strong></span><span data-estat-delta-label>前月差<strong data-estat-delta>—</strong></span></div>
     <div class="gaia-estat-copy"><p data-estat-caption></p><small data-estat-guide></small></div>
-    <a class="gaia-estat-source" data-estat-source href="https://www.e-stat.go.jp/" target="_blank" rel="noopener noreferrer">e-Stat</a>
+    <div class="gaia-estat-actions" aria-label="元データと統計分析">
+      <a class="gaia-estat-action gaia-estat-action--source" data-estat-source-action href="https://www.e-stat.go.jp/" target="_blank" rel="noopener noreferrer"><span><small>SOURCE</small><strong>元データを確認</strong></span><i aria-hidden="true">↗</i></a>
+      <button class="gaia-estat-action gaia-estat-action--analysis" type="button" data-estat-analysis><span><small>ANALYSIS</small><strong>統計分析</strong></span><i aria-hidden="true">＋</i></button>
+    </div>
   `;
   layer.append(readout);
 
@@ -852,16 +1342,17 @@ const mount = () => {
   }, { capture: true });
   readout.querySelector("[data-estat-return]")?.addEventListener("click", () => document.querySelector("#japan-mode-list .map-mode-button")?.click());
   readout.querySelectorAll("[data-estat-step]").forEach((button) => button.addEventListener("click", () => {
-    void select((activeIndex + Number(button.dataset.estatStep) + EXHIBITS.length) % EXHIBITS.length);
+    stepExhibit(button.dataset.estatStep);
   }));
   readout.querySelector("[data-estat-month]")?.addEventListener("input", (event) => setMonth(Number(event.currentTarget.value)));
+  readout.querySelector("[data-estat-analysis]")?.addEventListener("click", openStatistics);
   addEventListener("resize", () => { if (activeIndex >= 0) draw(performance.now()); }, { passive: true });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) cancelAnimationFrame(frame);
     else if (activeIndex >= 0) frame = requestAnimationFrame(draw);
   });
   dispatchEvent(new CustomEvent("gaia:estat-exhibit-mounted"));
-  void loadSeries();
+  void Promise.all([loadSeries(), loadPrefectureShapes()]);
 };
 
 if (globalThis.GaiaMapObservationAdapter) mount();
@@ -874,6 +1365,7 @@ globalThis.GaiaEstatExhibits = Object.freeze({
   setMonth,
   setPeriod,
   selectPrefecture,
+  getStatisticsDataset: statisticsDataset,
   getState: () => ({ activeIndex, selectedIndex, monthIndex: periodIndex, periodIndex, period: currentPeriod() }),
 });
 

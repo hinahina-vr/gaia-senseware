@@ -325,7 +325,6 @@
   const GLOBAL_EARTHQUAKE_RING_DELAY_MS = 90;
   const GLOBAL_EARTHQUAKE_YEAR_COUNT = 27;
   const ANTHROPOCENE_EMISSIONS_SCALE_MT = 12000;
-  const ANTHROPOCENE_VISIBLE_RADIUS_PX = 4;
   const GLOBAL_EARTHQUAKE_TIMELINE_DURATION_MS =
     GLOBAL_EARTHQUAKE_YEAR_DWELL_MS * GLOBAL_EARTHQUAKE_YEAR_COUNT;
   const JAPAN_HISTORY_CARD_DELAY = 8000;
@@ -365,8 +364,8 @@
     {
       title: "化石燃料由来CO₂は、1945年からどこで増えたのか？",
       subject: "Global Carbon Projectの国別化石燃料由来CO₂を1945〜2023年で送り、NASA VIIRS 2016の夜間光を固定参照として重ねます。",
-      reading: "赤い円は選択年の国全体の化石燃料由来CO₂です。全年度共通の固定尺度で円面積が排出量に比例するため、年を進めると増減が直接見えます。白い発光は2016年固定です。",
-      action: "スライダーで年を動かし、円を押して一つの国を追えます。地図を0.65秒以上長押しすると、白い夜間光だけが6秒間薄れます。",
+      reading: "国土の色は選択年の国全体の化石燃料由来CO₂です。全年度共通の固定対数尺度で、濃紺→紫→赤→橙→淡黄の順に排出量が多くなります。白い発光は2016年固定です。",
+      action: "スライダーで年を動かし、色の付いた国土を押して一つの国を追えます。地図を0.65秒以上長押しすると、白い夜間光だけが6秒間薄れます。",
     },
     {
       title: "大地震は、年ごとに世界のどこで起きたのか？",
@@ -445,6 +444,7 @@
     coarse: { history: 46, earthquake: 42, node: 44 },
   };
   const japanContext = japanOverlay.getContext("2d");
+  const countryHitTestContext = document.createElement("canvas").getContext("2d");
   const gosatHeatmapCanvas = document.createElement("canvas");
   const gosatHeatmapContext = gosatHeatmapCanvas.getContext("2d");
   const ovationAuroraCanvas = document.createElement("canvas");
@@ -1853,6 +1853,52 @@
     return filledCount;
   };
 
+  const drawAnthropoceneCountryChoropleth = (ctx, rect, rows, selectedIso3, now) => {
+    if (mapScope !== "earth" || naturalEarthCountryState !== "ready") {
+      return { filledCount: 0, visibleCount: 0, heatSum: 0, maximumHeat: 0 };
+    }
+    const projection = japanView.earthProjection || getEarthProjection(rect);
+    const { originX, originY, width, height, scale } = projection;
+    const worldCopies = getEarthWorldCopies(projection);
+    let filledCount = 0;
+    let visibleCount = 0;
+    let heatSum = 0;
+    let maximumHeat = 0;
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.beginPath();
+    ctx.rect(originX, originY, width, height);
+    ctx.clip();
+    rows.forEach((row, index) => {
+      const path = getNaturalEarthCountryGeographicPath(row.iso3);
+      if (!path) return;
+      const reveal = getMapPlotReveal(index, rows.length, now);
+      if (reveal.progress <= 0) return;
+      const heat = getAnthropoceneEmissionHeat(row.emissionsMtCo2);
+      const selected = row.iso3 === selectedIso3;
+      const [red, green, blue] = getAnthropoceneHeatColor(heat);
+      filledCount += 1;
+      visibleCount += reveal.alpha >= 0.12 ? 1 : 0;
+      heatSum += heat;
+      maximumHeat = Math.max(maximumHeat, heat);
+      for (const copy of worldCopies) {
+        ctx.save();
+        ctx.translate(copy.x, copy.y);
+        ctx.scale(scale, scale);
+        ctx.fillStyle = `rgba(${red},${green},${blue},${reveal.alpha * (0.4 + heat * 0.52)})`;
+        ctx.fill(path, "evenodd");
+        ctx.strokeStyle = selected
+          ? "rgba(255,242,178,.98)"
+          : `rgba(${Math.min(255, red + 30)},${Math.min(255, green + 20)},${Math.min(255, blue + 12)},${reveal.alpha * (0.22 + heat * 0.42)})`;
+        ctx.lineWidth = (selected ? 2.8 : 0.72) / scale;
+        ctx.stroke(path);
+        ctx.restore();
+      }
+    });
+    ctx.restore();
+    return { filledCount, visibleCount, heatSum, maximumHeat };
+  };
+
   const renderReferenceLand = (ctx, repeatOffset, left, top) => {
     const referencePath = getNaturalEarthLandPath(japanView.zoom);
     if (referencePath) {
@@ -3237,7 +3283,7 @@
         phaseLabel: `FOSSIL CO₂ HISTORY / ${String(yearIndex + 1).padStart(2, "0")} OF ${String(years.length).padStart(2, "0")}`,
         yearLabel: String(selectedYear),
         valueLabel: `${selected.country} · ${selected.emissionsMtCo2.toFixed(1)} Mt CO₂`,
-        methodLabel: `GCP COUNTRY TOTAL / ${yearRows.length} COUNTRIES · VIIRS LIGHTS FIXED AT 2016`,
+        methodLabel: `GCP COUNTRY TOTAL / ${yearRows.length} COUNTRIES · FIXED LOG COLOR SCALE`,
         timeLabel: `年 / ${years[0]} → ${years.at(-1)}`,
         selectedIndex,
         selected,
@@ -3247,10 +3293,10 @@
         yearRows,
         totalMtCo2,
         legend: [
-          "赤い円 / 年別化石CO₂",
+          "濃紺→淡黄 / 年別化石CO₂",
           "白い発光 / 2016固定",
           "長押し / 6秒比較",
-          "重要 / 夜間光は時系列外",
+          "色尺度 / 全年度共通・対数",
         ],
       };
     }
@@ -3387,13 +3433,34 @@
     return null;
   };
 
-  const getAnthropoceneEmissionUnit = (emissionsMtCo2) => (
-    Math.sqrt(clamp(Number(emissionsMtCo2 || 0) / ANTHROPOCENE_EMISSIONS_SCALE_MT, 0, 1))
+  const ANTHROPOCENE_HEAT_STOPS = Object.freeze([
+    { at: 0, color: [18, 30, 65] },
+    { at: 0.22, color: [58, 38, 105] },
+    { at: 0.45, color: [142, 43, 91] },
+    { at: 0.68, color: [226, 67, 58] },
+    { at: 0.84, color: [255, 132, 56] },
+    { at: 1, color: [255, 226, 142] },
+  ]);
+
+  const getAnthropoceneEmissionHeat = (emissionsMtCo2) => (
+    clamp(
+      Math.log1p(Math.max(0, Number(emissionsMtCo2 || 0)))
+        / Math.log1p(ANTHROPOCENE_EMISSIONS_SCALE_MT),
+      0,
+      1,
+    )
   );
 
-  const getAnthropoceneEmissionRadius = (emissionsMtCo2) => (
-    getAnthropoceneEmissionUnit(emissionsMtCo2) * 40
-  );
+  const getAnthropoceneHeatColor = (heat) => {
+    const value = clamp(heat, 0, 1);
+    const upperIndex = Math.max(1, ANTHROPOCENE_HEAT_STOPS.findIndex((stop) => stop.at >= value));
+    const lower = ANTHROPOCENE_HEAT_STOPS[upperIndex - 1];
+    const upper = ANTHROPOCENE_HEAT_STOPS[upperIndex];
+    const mix = clamp((value - lower.at) / Math.max(0.0001, upper.at - lower.at), 0, 1);
+    return lower.color.map((channel, index) => Math.round(
+      channel + (upper.color[index] - channel) * mix,
+    ));
+  };
 
   const getAdvectedCurrentPosition = (row, horizonHours) => {
     const elapsedSeconds = horizonHours * 3600;
@@ -3992,7 +4059,7 @@
       const arrowStride = rect.width <= 720 ? 6 : 5;
       let currentVisiblePoiCount = 0;
       let currentPoiMarkerCount = 0;
-      japanOverlay.dataset.currentVisualLanguage = "calligraphic-current-brush";
+      japanOverlay.dataset.currentVisualLanguage = "continuous-interpolated-current-brush";
       japanOverlay.dataset.currentArrowStride = String(arrowStride);
 
       for (const [currentIndex, row] of (state?.currents || []).entries()) {
@@ -4504,6 +4571,14 @@
     } else if (signalMode.id === "anthropocene-scar") {
       const sequence = getMapSequenceState(signalMode);
       const nightLightsDimmed = now < anthropocenePeelUntil;
+      const emissionRows = sequence?.yearRows || [];
+      const heatmap = drawAnthropoceneCountryChoropleth(
+        ctx,
+        rect,
+        emissionRows,
+        sequence?.selected?.iso3,
+        now,
+      );
       drawNightLightsLayer(nightLightsImage, nightLightsDimmed);
       ctx.save();
       ctx.globalCompositeOperation = "screen";
@@ -4511,66 +4586,37 @@
       renderCachedReferenceWorldModel(ctx, rect, left, top);
       ctx.restore();
       japanOverlay.dataset.nightLightsBoundaryOverlay = "coast-and-country";
-      const emissionRows = sequence?.yearRows || [];
-      const emissionRadii = emissionRows.map((row) => (
-        getAnthropoceneEmissionRadius(row.emissionsMtCo2)
-      ));
-      japanOverlay.dataset.emissionsCircleCount = String(emissionRows.length);
-      japanOverlay.dataset.emissionsVisibleCircleCount = String(
-        emissionRadii.filter((radius) => radius >= ANTHROPOCENE_VISIBLE_RADIUS_PX).length,
-      );
-      japanOverlay.dataset.emissionsRadiusSum = emissionRadii
-        .reduce((sum, radius) => sum + radius, 0)
-        .toFixed(3);
-      japanOverlay.dataset.emissionsMaximumRadius = Math.max(0, ...emissionRadii).toFixed(3);
+      japanOverlay.dataset.emissionsCountryFillCount = String(heatmap.filledCount);
+      japanOverlay.dataset.emissionsVisibleCountryFillCount = String(heatmap.visibleCount);
+      japanOverlay.dataset.emissionsHeatSum = heatmap.heatSum.toFixed(4);
+      japanOverlay.dataset.emissionsMaximumHeat = heatmap.maximumHeat.toFixed(4);
       japanOverlay.dataset.emissionsTotalMtCo2 = Number(sequence?.totalMtCo2 || 0).toFixed(3);
       japanOverlay.dataset.emissionsSelectedCountryMtCo2 = Number(
         sequence?.selected?.emissionsMtCo2 || 0,
       ).toFixed(3);
       japanOverlay.dataset.emissionsScaleMtCo2 = String(ANTHROPOCENE_EMISSIONS_SCALE_MT);
-      japanOverlay.dataset.emissionsEncoding = "country-total-fixed-sqrt-area";
+      japanOverlay.dataset.emissionsEncoding = "country-fixed-log-color";
+      japanOverlay.dataset.emissionsGeometry = "natural-earth-country-choropleth";
+      japanOverlay.dataset.emissionsHitSurface = "country-regions";
       japanOverlay.dataset.emissionsSelectedYear = String(sequence?.selectedYear || "");
       japanOverlay.dataset.nightLightsReferenceYear = "2016";
-      emissionRows.forEach((row, index) => {
-        const point = pointFor(row);
-        if (!visible(point)) return;
-        const reveal = getMapPlotReveal(index, emissionRows.length, now);
-        if (reveal.progress <= 0) return;
-        ctx.save();
-        applyMapPlotReveal(ctx, point, reveal);
-        const load = getAnthropoceneEmissionUnit(row.emissionsMtCo2);
-        const selected = row.iso3 === sequence?.selected?.iso3;
-        const radius = getAnthropoceneEmissionRadius(row.emissionsMtCo2);
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,57,42,${selected ? 0.3 : 0.08 + load * 0.34})`;
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255,104,70,${selected ? 0.98 : 0.28 + load * 0.68})`;
-        ctx.lineWidth = selected ? 2.6 : 0.9 + load * 1.1;
-        ctx.stroke();
-        if (radius >= ANTHROPOCENE_VISIBLE_RADIUS_PX) {
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, Math.max(1.5, radius * 0.23), 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,196,151,${selected ? 0.92 : 0.3 + load * 0.5})`;
-          ctx.fill();
-        }
-        if (selected) {
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, radius + 9 + Math.sin(time * 2.2) * 3, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(255,143,103,.42)";
-          ctx.stroke();
+      delete japanOverlay.dataset.emissionsCircleCount;
+      delete japanOverlay.dataset.emissionsVisibleCircleCount;
+      delete japanOverlay.dataset.emissionsRadiusSum;
+      delete japanOverlay.dataset.emissionsMaximumRadius;
+      const selected = sequence?.selected;
+      if (selected) {
+        const point = pointFor(selected);
+        if (visible(point)) {
           drawSelectionLabel(
-            { x: point.x + radius + 7, y: point.y },
-            row.country,
-            `${row.year} · FOSSIL CO₂ ${row.emissionsMtCo2.toFixed(1)} Mt · 点排出源ではない`,
-            "rgba(255,151,126,.96)",
+            { x: point.x + 18, y: point.y },
+            selected.country,
+            `${selected.year} · FOSSIL CO₂ ${selected.emissionsMtCo2.toFixed(1)} Mt · 国全体の色`,
+            "rgba(255,190,133,.98)",
             { anchor: point },
           );
         }
-        ctx.restore();
-      });
+      }
     } else if (signalMode.id === "rhythm-of-disaster") {
       const sequence = getMapSequenceState(signalMode);
       const selectedYear = sequence?.selectedYear || "";
@@ -5143,7 +5189,7 @@
     }
     if (poi?.type === "data" && signalModeId === "anthropocene-scar") {
       const selected = poi.record?.iso3 === anthropoceneSelectedIso3;
-      return getAnthropoceneEmissionRadius(poi.record?.emissionsMtCo2) + (selected ? 10 : 7);
+      return selected ? 34 : 26;
     }
     if (poi?.type === "data" && signalModeId === "population-tide") {
       const state = getMapSequenceState(getActiveSignalMode());
@@ -5797,7 +5843,7 @@
           "forest-cloud-engine": ["FOREST × RAIN / FOREST MASK + 31 SITES", "緑は森林域、大きな水色円は31代表地点の平均降水量です。直径が大きいほど雨が多く、ブラジルのアマゾン付近は5.33 mm/dayです。円のない場所を雨量ゼロとは扱いません。"],
           "pollination-protocol": ["OBSERVATION ≠ DISTRIBUTION / 3 STEPS", "①黄色はGBIF観察点、②各国最大2件の標本制約、③場所のないGloBI花関係を非地理ネットワークで示します。点の空白はミツバチの不在ではありません。"],
           "nothing-is-waste": ["RECYCLING / COUNTRY VALUES", "同じ大きさの円グラフで、緑は再資源化率、橙はそれ以外です。実線は国連の公式値、破線は近隣5か国からの補完値。左右ボタンとスライダーで31の国・地域を切り替えます。"],
-          "anthropocene-scar": ["1945—2023 FOSSIL CO₂ × FIXED 2016 LIGHTS", "赤い円は全年度共通の固定尺度で、面積が選択年の国別化石燃料由来CO₂に比例します。白い発光はNASA VIIRS 2016を固定した比較用レイヤーです。円の中心は排出源ではありません。"],
+          "anthropocene-scar": ["1945—2023 FOSSIL CO₂ CHOROPLETH × FIXED 2016 LIGHTS", "国土の濃紺→紫→赤→橙→淡黄は、選択年の国別化石燃料由来CO₂です。1945〜2023年で共通の固定対数尺度を使います。白い発光はNASA VIIRS 2016を固定した比較用レイヤーです。"],
           "three-ecologies": ["FOREST × URBAN / 31 PAIRED COUNTRIES", "同じ31か国の森林率と都市人口率を二重円と散布図で比較します。回帰線と相関係数が全体傾向、選択国の中心色が傾向からの外れ方を示します。紫の世界遺産例は数値計算へ含めません。"],
           "earth-organ": ["RENEWABLE ELECTRICITY / 31 COUNTRY CHOROPLETH", "国土の青が明るいほど、電力に占める再生可能エネルギーの割合が高い国です。スライダーは低い国から高い国へ移動します。黄色の日射と緑の風は選択国の補足で、比率を決める因果表示ではありません。"],
           "population-tide": ["1960—2025 POPULATION / 31 COUNTRIES", "琥珀色の円は選択年の国別人口です。円の面積が人口に比例します。国の代表位置へ置いた比較円で、都市の位置や人口密度ではありません。"],
@@ -6214,6 +6260,7 @@
     const touchLikePointer =
       coarsePointer || pointerType === "touch" || pointerType === "pen";
     const hitRadii = MAP_POI_HIT_RADII[touchLikePointer ? "coarse" : "fine"];
+    const signalModeId = getActiveSignalMode()?.id;
     let closest = null;
 
     const considerCandidate = (candidate, point, hitRadius) => {
@@ -6223,9 +6270,30 @@
       }
     };
 
-    getModeDataPois().forEach((record, index) => {
+    const modeDataPois = getModeDataPois();
+    if (
+      signalModeId === "anthropocene-scar"
+      && mapScope === "earth"
+      && naturalEarthCountryState === "ready"
+      && countryHitTestContext
+    ) {
+      const projection = japanView.earthProjection || getEarthProjection(rect);
+      const worldCopies = getEarthWorldCopies(projection);
+      for (const [index, record] of modeDataPois.entries()) {
+        const path = getNaturalEarthCountryGeographicPath(record.iso3);
+        if (!path) continue;
+        const countryHit = worldCopies.some((copy) => countryHitTestContext.isPointInPath(
+          path,
+          (localX - copy.x) / projection.scale,
+          (localY - copy.y) / projection.scale,
+          "evenodd",
+        ));
+        if (countryHit) return { type: "data", record, index, distance: 0 };
+      }
+    }
+
+    modeDataPois.forEach((record, index) => {
       const point = japanWorldToScreen(record.lon, record.lat, left, top);
-      const signalModeId = getActiveSignalMode()?.id;
       let hitRadius = hitRadii.node;
       if (signalModeId === "forest-cloud-engine") {
         hitRadius = Math.max(hitRadius, getForestRainRadius(record.precipitationMmDay));
@@ -6570,7 +6638,7 @@
         output: state?.phaseLabel || "FOSSIL CO₂ HISTORY",
         location: emission?.country || "—",
         value: `${state?.selectedYear || "—"} / ${emission?.emissionsMtCo2?.toFixed(1) || "—"} Mt CO₂`,
-        note: "赤い円は全年度共通の固定尺度で、円面積が選択年の化石燃料由来CO₂に比例します。白い発光は2016年のNASA VIIRS夜間光を固定した参照です。",
+        note: "国土の濃紺→紫→赤→橙→淡黄は、全年度共通の固定対数尺度で示す選択年の化石燃料由来CO₂です。白い発光は2016年のNASA VIIRS夜間光を固定した参照です。",
         temporal: true,
       };
     }
@@ -6657,7 +6725,9 @@
       canvas.dataset.currentMaximumSpeedMs = (state?.maximumSpeedMs || 0).toFixed(4);
       canvas.dataset.currentStrength = meanStrength.toFixed(4);
       canvas.dataset.currentVectorCount = String(state?.vectorCount || 0);
-      canvas.dataset.currentBrushLanguage = "one-data-anchored-brush-per-visible-poi";
+      canvas.dataset.currentBrushLanguage = "continuous-interpolated-field-with-poi-anchors";
+      canvas.dataset.currentCoverageMode = "gapless-idw-vector-field";
+      canvas.dataset.currentInterpolationSource = "inverse-distance-weighted-noaa-vectors";
       canvas.dataset.currentAmbientMotion = "continuous-timeline-independent-gradient";
       return [meanStrength, peakStrength, sampleDensity, horizonUnit];
     }
@@ -8204,6 +8274,8 @@ for (const country of countryValues) {
           delete canvas.dataset.currentAllVisiblePoiPainted;
           delete canvas.dataset.currentSampleSelection;
           delete canvas.dataset.currentBrushLanguage;
+          delete canvas.dataset.currentCoverageMode;
+          delete canvas.dataset.currentInterpolationSource;
           delete canvas.dataset.currentAmbientMotion;
           delete japanOverlay.dataset.currentVisiblePoiCount;
           delete japanOverlay.dataset.currentPoiMarkerCount;
@@ -8225,6 +8297,8 @@ for (const country of countryValues) {
       delete canvas.dataset.currentAllVisiblePoiPainted;
       delete canvas.dataset.currentSampleSelection;
       delete canvas.dataset.currentBrushLanguage;
+      delete canvas.dataset.currentCoverageMode;
+      delete canvas.dataset.currentInterpolationSource;
       delete canvas.dataset.currentAmbientMotion;
       delete japanOverlay.dataset.currentVisiblePoiCount;
       delete japanOverlay.dataset.currentPoiMarkerCount;
@@ -9942,6 +10016,8 @@ for (const country of countryValues) {
       delete canvas.dataset.currentAllVisiblePoiPainted;
       delete canvas.dataset.currentSampleSelection;
       delete canvas.dataset.currentDirectionTransform;
+      delete canvas.dataset.currentCoverageMode;
+      delete canvas.dataset.currentInterpolationSource;
       return { count: 0, data: currentFieldData };
     }
     const rect = japanMap.getBoundingClientRect();

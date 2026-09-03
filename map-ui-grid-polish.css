@@ -1638,21 +1638,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     white-space: nowrap;
   }
 
-  .map-dock-bank-trigger > i {
-    position: relative;
-    flex: 0 0 auto;
-    width: 10px;
-    height: 10px;
-    border-right: 1px solid rgba(180, 235, 244, 0.72);
-    border-bottom: 1px solid rgba(180, 235, 244, 0.72);
-    transform: rotate(45deg) translateY(-3px);
-    transition: transform 180ms ease;
-  }
-
-  .map-mode-bank.is-dock-bank-expanded .map-dock-bank-trigger > i {
-    transform: rotate(225deg) translate(-2px, -1px);
-  }
-
   body.map-grid-desktop .map-dock-bank-trigger:is(:hover, :focus-visible) {
     outline: none;
   }
@@ -2302,8 +2287,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     letter-spacing: 0.1em;
   }
 
-  .experience.japan-open .map-dock-bank-copy > small b,
-  .experience.japan-open .map-dock-bank-trigger > i {
+  .experience.japan-open .map-dock-bank-copy > small b {
     display: none;
   }
 
