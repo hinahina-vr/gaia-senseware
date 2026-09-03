@@ -624,12 +624,6 @@ body.gaia-opening-active .novel-layer {
   line-height: 1.9;
 }
 
-.gaia-vn-character-copy small {
-  color: rgba(var(--opening-paper), 0.34);
-  font: 500 7px/1.5 Consolas, "Courier New", monospace;
-  letter-spacing: 0.15em;
-}
-
 /* 03 / the unanswered third seat */
 .gaia-vn-panel-montage {
   color: rgb(var(--opening-paper));
@@ -1605,8 +1599,6 @@ body.gaia-opening-active .novel-layer {
   .gaia-vn-character-copy h2 { font-size: clamp(38px, 11vw, 54px); }
   .gaia-vn-character-copy strong { max-width: 88vw; margin-top: 14px; font-size: 12px; line-height: 1.85; }
   .gaia-vn-character-reply { margin-bottom: 11px; font-size: 10px; line-height: 1.75; }
-  .gaia-vn-character-copy small { font-size: 6px; }
-
   .gaia-vn-panel-montage {
     background-position: 64% center;
   }
@@ -2058,8 +2050,6 @@ body.gaia-opening-active .novel-layer {
   color: rgba(var(--opening-paper), 0.7);
   font-size: clamp(14px, 1.2vw, 18px);
 }
-
-.gaia-vn-character-copy small { color: rgba(var(--opening-mint), 0.48); }
 
 .gaia-vn-panel-montage {
   background:
@@ -4798,8 +4788,7 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   transform: translateY(-50%);
 }
 
-.gaia-vn-real-earth-copy > small,
-.gaia-vn-real-earth-copy > em {
+.gaia-vn-real-earth-copy > small {
   color: rgba(var(--opening-mint), 0.7);
   font: 650 9px/1.5 Consolas, "Courier New", monospace;
   font-style: normal;
@@ -4834,11 +4823,13 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
   text-shadow: 0 3px 22px rgba(0, 6, 19, 0.74);
 }
 
-.gaia-vn-real-earth-copy > em {
-  display: block;
-  margin-top: clamp(22px, 3.5vh, 38px);
-  color: rgba(var(--opening-mint), 0.48);
-  font-size: 8px;
+.gaia-vn-real-earth-copy .gaia-vn-real-earth-flow {
+  margin-top: clamp(14px, 2vh, 22px);
+  color: rgba(var(--opening-mint), 0.78);
+  font-size: clamp(11px, 0.9vw, 14px);
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  line-height: 1.6;
 }
 
 .gaia-vn-path-copy > p {
@@ -4909,9 +4900,10 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     line-height: 1.85;
   }
 
-  .gaia-vn-real-earth-copy > em {
-    margin-top: 18px;
-    font-size: 6.5px;
+  .gaia-vn-real-earth-copy .gaia-vn-real-earth-flow {
+    margin-top: 10px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
   }
 
   .gaia-vn-path-copy h2 {
@@ -4951,7 +4943,6 @@ body.gaia-opening-active .gaia-audio-dock.is-visible.is-expanded {
     line-height: 1.65;
   }
 
-  .gaia-vn-real-earth-copy > em { margin-top: 12px; }
 }
 
 /* Final gateway v2: the generated background is deliberately typography-free.

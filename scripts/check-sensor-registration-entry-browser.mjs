@@ -73,7 +73,7 @@ try {
     assert.equal(entrance.labels[0], "世界を観測する");
     assert.equal(entrance.sensorIndex, 1);
     assert.equal(entrance.label, "みんなのセンサー");
-    assert.equal(entrance.description, "ユーザー参加型センシング");
+    assert.equal(entrance.description, "あなたの端末をひとつのセンサーに");
     assert.equal(entrance.enter, "センサー地図");
     assert.equal(entrance.href, "./sensors/#map");
     assert.equal(entrance.visible, true);

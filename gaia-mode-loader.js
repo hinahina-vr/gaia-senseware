@@ -1,11 +1,13 @@
 (() => {
   "use strict";
 
+  const sharedStylesheet = "./styles.css?v=gaia-apeironcene-slow-spark-1";
+
   const groups = Object.freeze({
     exploration: {
       templates: ["gaia-template-exploration"],
       styles: [
-        "./styles.css?v=gaia-readable-poi-card-1",
+        sharedStylesheet,
         "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
@@ -22,7 +24,7 @@
         "./data-ledger.js?v=gaia-live-model-ledger-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-anthropocene-heatmap-1",
-        "./app.js?v=gaia-anthropocene-heatmap-1",
+        "./app.js?v=gaia-apeironcene-slow-spark-1",
         "./map-ui-grid-polish.js?v=gaia-no-bank-chevron-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
@@ -34,7 +36,7 @@
     story: {
       templates: ["gaia-template-story"],
       styles: [
-        "./styles.css?v=gaia-title-meta-removed-1",
+        sharedStylesheet,
         "./scene-transition.css?v=gaia-52",
         "./novel-mode.css?v=gaia-dialogue-fallback-1",
         "./true-end.css?v=gaia-apeironcene-exit-3",
@@ -42,8 +44,8 @@
       ],
       scripts: [
         "./scene-transition.js?v=gaia-66",
-        "./novel-story-data.js?v=gaia-log-comments-30-1",
-        "./true-end-data.js?v=gaia-finale-webgl-1",
+        "./novel-story-data.js?v=gaia-script-natural-copy-1",
+        "./true-end-data.js?v=gaia-finale-natural-copy-1",
         "./true-end-webgl.js?v=gaia-ambient-motion-1",
         "./true-end-mode.js?v=gaia-story-return-cycle-1",
         "./novel-background-cues.js?v=gaia-amane-no-plug-1",
@@ -56,7 +58,7 @@
     gx: {
       templates: ["gaia-template-gx"],
       styles: [
-        "./styles.css?v=gaia-title-meta-removed-1",
+        sharedStylesheet,
         "./scene-transition.css?v=gaia-52",
         "./gx-mode.css?v=gaia-gx-mobile-gesture-pass-through-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
@@ -70,7 +72,7 @@
     space: {
       templates: ["gaia-template-space"],
       styles: [
-        "./styles.css?v=gaia-title-meta-removed-1",
+        sharedStylesheet,
         "./scene-transition.css?v=gaia-52",
         "./space-mode.css?v=gaia-102",
         "./mode-exit.css?v=gaia-story-control-center-2",
@@ -84,8 +86,9 @@
     },
     sound: {
       templates: ["gaia-template-sound"],
+      parallel: true,
       styles: [
-        "./styles.css?v=gaia-title-meta-removed-1",
+        sharedStylesheet,
         "./sound-mode.css?v=gaia-sound-deep-galaxy-orbit-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
@@ -94,14 +97,14 @@
     character: {
       templates: ["gaia-template-character"],
       styles: [
-        "./styles.css?v=gaia-title-meta-removed-1",
+        sharedStylesheet,
         "./mode-entry-guide.css?v=gaia-mode-entry-guide-1",
-        "./character-mode.css?v=gaia-character-mobile-key-line-2",
+        "./character-mode.css?v=gaia-character-copy-natural-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
       ],
       scripts: [
         "./mode-entry-guide.js?v=gaia-live-deck-3",
-        "./character-mode.js?v=gaia-mode-entry-guide-1",
+        "./character-mode.js?v=gaia-character-copy-natural-1",
       ],
     },
     tour: {
@@ -244,9 +247,17 @@
     const promise = (async () => {
       performance.mark(`gaia:${name}-load-start`);
       group.templates.forEach(mountTemplate);
-      await Promise.all(group.styles.map(loadStyle));
-      await Promise.all((group.modules || []).map(loadModule));
-      for (const script of group.scripts) await loadScript(script);
+      if (group.parallel) {
+        await Promise.all([
+          ...group.styles.map(loadStyle),
+          ...(group.modules || []).map(loadModule),
+          ...group.scripts.map(loadScript),
+        ]);
+      } else {
+        await Promise.all(group.styles.map(loadStyle));
+        await Promise.all((group.modules || []).map(loadModule));
+        for (const script of group.scripts) await loadScript(script);
+      }
       await waitForGroupReady(name);
       loadedGroups.add(name);
       performance.mark(`gaia:${name}-load-end`);
@@ -316,6 +327,17 @@
   };
   document.addEventListener("pointerover", warmCharacterArchive, { passive: true });
   document.addEventListener("focusin", warmCharacterArchive);
+
+  const warmSoundArchive = (event) => {
+    if (loadedGroups.has("sound")) return;
+    const trigger = event.target instanceof Element ? event.target.closest("[data-sound-gallery-open]") : null;
+    if (trigger) void load("sound").catch(() => {});
+  };
+  document.addEventListener("pointerover", warmSoundArchive, { passive: true });
+  document.addEventListener("focusin", warmSoundArchive);
+  window.addEventListener("gaia:return-to-intro", () => {
+    void load("sound").catch(() => {});
+  });
 
   globalThis.GaiaModeLoader = Object.freeze({
     load,

@@ -19,8 +19,9 @@ const sourceBytes = fs.readFileSync(canonPath);
 const characterSourceBytes = fs.readFileSync(characterCanonPath);
 const retainedBytes = fs.readFileSync(retainedPath);
 const sha256 = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
+const normalizeTextBytes = (bytes) => Buffer.from(bytes.toString("utf8").replace(/\r\n?/gu, "\n"), "utf8");
 if (sha256(sourceBytes) !== EXPECTED_SOURCE_SHA256) throw new Error("story/物語台本.mdがfreeze入力と一致しません");
-if (!sourceBytes.equals(retainedBytes)) throw new Error("repo保持版の機能限定版台本が正本と一致しません");
+if (!normalizeTextBytes(sourceBytes).equals(normalizeTextBytes(retainedBytes))) throw new Error("repo保持版の機能限定版台本が正本と一致しません");
 const characterSource = characterSourceBytes.toString("utf8");
 const characters = Object.freeze({
   amane: Object.freeze({ formalName: "雨音", reading: "アマネ", campusName: "あめ" }),

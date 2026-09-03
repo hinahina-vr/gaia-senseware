@@ -13,7 +13,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const outputDir = path.resolve(outputArgument || "artifacts/log-comment-fixes-browser");
 fs.mkdirSync(outputDir, { recursive: true });
 const loaderSource = fs.readFileSync(path.join(projectRoot, "gaia-mode-loader.js"), "utf8");
-assert.match(loaderSource, /novel-story-data\.js\?v=gaia-log-comments-30-1/u,
+assert.match(loaderSource, /novel-story-data\.js\?v=gaia-script-natural-copy-1/u,
   "revised LOG script data must use a fresh cache key");
 
 delete globalThis.GAIA_NOVEL_STORY;
@@ -51,7 +51,7 @@ const expectedText = new Map([
   ["festival_concept_062", "二人の声に呼応するように、地球の表面から有機的な光の筋が芽吹き、網目のように増殖していった。大気、海、森、都市。バラバラに揺らいでいた現象が、脈打つ一本の系として結ばれていく。"],
   ["festival_concept_new_029", "揺らめく光の軌跡を見つめるみずの横顔には、自ら生み出したものへの自負と、相手に届いているかを測る静かな緊張が混ざり合っているようだった。"],
   ["festival_concept_066", "「数字だけじゃ気づきにくい変化を、地図や光、音へ変換しています。地球の感覚と、人間の感覚を重ね合わせるようにして、直感で感じ取ってもらいたいんです！」"],
-  ["festival_concept_new_031", "「地球の感覚と、人間の感覚を重ね合わせる」。まだ作りかけで調整中なのだと二人は照れくさそうに言っていたが、私の目には、それが途方もない可能性の塊に見えていた。完璧に整えられた完成品よりも、今まさに芽吹こうとしているアイデアの純度、つまり「制作者の願い」のほうが、ずっと強く胸を打つことがある。文字を追うのをやめ、ただ光と音の波に身を委ねてみる。それだけで、遠い海のうねりや大気の気配が、自分の呼吸と重なっていくような気がした。コンセプトの訴求力が、すでに理屈を超えて身体に届いている。"],
+  ["festival_concept_new_031", "「地球の感覚と、人間の感覚を重ね合わせる」。まだ作りかけだと二人は笑っていたけれど、私にはそれがとんでもないものに見えた。完成された綺麗な展示より、いま目の前で動いているアイデアの生々しさのほうが、ずっと強く胸に刺さる。画面の文字を追うのをやめて、光と音の揺らぎをぼんやり眺めてみる。遠い海の波や風の気配が、そのまま自分の呼吸に重なっていくようだった。"],
 ]);
 
 const expectedSpeakers = new Map([
@@ -69,8 +69,8 @@ const expectedSpeakers = new Map([
 
 const expectedAssets = new Map();
 
-assert.equal(allSteps.length, 373);
-assert.equal(new Set(allSteps.map((step) => step.id)).size, 373);
+assert.equal(allSteps.length, 372);
+assert.equal(new Set(allSteps.map((step) => step.id)).size, 372);
 assert.equal(expectedText.size, 29);
 assert.equal(story.sourceSha256, "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c");
 assert.deepEqual(story.requiredInteractions, ["map01", "gx"]);

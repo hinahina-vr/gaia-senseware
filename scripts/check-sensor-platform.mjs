@@ -37,7 +37,7 @@ check("exhibit grid places sensors immediately after the map", () => {
   const sensor = index.indexOf("data-sensor-platform-link");
   const character = index.indexOf("data-character-gallery-open");
   assert(map >= 0 && map < sensor && sensor < character);
-  assert.match(index.slice(sensor, character), /<strong>みんなのセンサー<\/strong>[\s\S]*<p>ユーザー参加型センシング<\/p>/u);
+  assert.match(index.slice(sensor, character), /<strong>みんなのセンサー<\/strong>[\s\S]*<p>あなたの端末をひとつのセンサーに<\/p>/u);
 });
 
 check("SPA exposes required views and web operations", () => {

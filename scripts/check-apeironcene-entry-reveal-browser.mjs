@@ -10,6 +10,7 @@ const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   : path.join(moduleRoot, "playwright", "index.mjs");
 const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/apeironcene-entry-reveal");
+const ovationSnapshot = fs.readFileSync(path.resolve("data/ovation-aurora-snapshot.json"), "utf8");
 fs.mkdirSync(outputDir, { recursive: true });
 
 const allViewports = [
@@ -28,8 +29,14 @@ try {
       isMobile: Boolean(viewport.mobile),
       reducedMotion: "no-preference",
     });
+    await context.route("https://services.swpc.noaa.gov/**", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: ovationSnapshot,
+    }));
     await context.addInitScript(() => {
       localStorage.clear();
+      sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
       localStorage.setItem("gaiaSensewareNovel:progress", JSON.stringify({
         storyVersion: 13,
@@ -63,6 +70,7 @@ try {
     await page.waitForFunction(() => document.documentElement.dataset.gaiaAppReady === "true");
     await page.waitForFunction(() => !document.documentElement.classList.contains("gaia-booting"));
     await page.waitForFunction(() => document.querySelector("#japan-layer")?.getAttribute("aria-hidden") === "false");
+    await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
     await page.evaluate(() => { globalThis.__apeironceneRevealQa.openedAt = performance.now(); });
     await page.locator("#japan-close").click();
     await page.waitForFunction(() => {
@@ -88,8 +96,26 @@ try {
     });
 
     await page.waitForFunction(() => document.querySelector(".intro-story-return")?.classList.contains("is-apeironcene-awakening"));
+    const awakeningFx = await page.evaluate(() => {
+      const button = document.querySelector(".intro-story-return[data-primary-action='true']");
+      const particles = getComputedStyle(button, "::after");
+      return {
+        impactDuration: getComputedStyle(button).animationDuration,
+        slashDuration: getComputedStyle(button, "::before").animationDuration,
+        particleDuration: particles.animationDuration,
+        titleDuration: getComputedStyle(button.querySelector("strong")).animationDuration,
+        particleLayers: (particles.backgroundImage.match(/radial-gradient/gu) || []).length,
+      };
+    });
+    assert.equal(awakeningFx.impactDuration, "2.6s");
+    assert.equal(awakeningFx.slashDuration, "2.5s");
+    assert.equal(awakeningFx.particleDuration, "2.6s");
+    assert.equal(awakeningFx.titleDuration, "2.2s");
+    assert(awakeningFx.particleLayers >= 48, `${viewport.name}: particle field is too sparse (${awakeningFx.particleLayers})`);
+    await page.waitForTimeout(1200);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-awakening.png`) });
     await page.waitForFunction(() => document.querySelector(".intro-story-return")?.classList.contains("is-apeironcene"));
+    await page.waitForTimeout(1500);
     const revealed = await page.evaluate(() => {
       const button = document.querySelector(".intro-story-return[data-primary-action='true']");
       const grid = document.querySelector("#intro-path-grid");
@@ -110,7 +136,7 @@ try {
         timing: { ...globalThis.__apeironceneRevealQa },
       };
     });
-    report.scans.push({ viewport: viewport.name, initial, revealed, passed: false });
+    report.scans.push({ viewport: viewport.name, initial, awakeningFx, revealed, passed: false });
     assert.equal(revealed.label, "星々の放課後 ～APEIRONCENE～");
     assert.equal(revealed.kicker, "TRUE END / UNLOCKED");
     assert.equal(revealed.destination, "apeironcene");
@@ -122,8 +148,8 @@ try {
     assert.equal(revealed.horizontalOverflow, 0);
     assert.equal(revealed.timing.starts, 1);
     assert.equal(revealed.timing.reveals, 1);
-    assert(revealed.timing.startAt - revealed.timing.openedAt >= 520);
-    assert(revealed.timing.revealedAt > revealed.timing.startAt);
+    assert(revealed.timing.startAt - revealed.timing.openedAt >= 1250);
+    assert(revealed.timing.revealedAt - revealed.timing.startAt >= 2400);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-revealed.png`) });
     report.scans.at(-1).passed = true;
     await context.close();

@@ -960,7 +960,7 @@ try {
       scan.loader = await page.locator('script[src*="gaia-mode-loader.js"]').getAttribute("src");
       assert.match(
         scan.loader || "",
-        /gaia-mode-loader\.js\?v=gaia-map-speech-bubble-1/u,
+        /gaia-mode-loader\.js\?v=gaia-apeironcene-slow-spark-1/u,
         `${viewport.name}: stale exploration loader cache key`,
       );
 

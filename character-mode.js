@@ -4,6 +4,7 @@
   const layer = document.querySelector("#character-book-layer");
   if (!(layer instanceof HTMLElement)) return;
 
+  const quoteRevealDelay = 620;
   const assetVersion = "gaia-character-expression-hover-1";
   const portrait = (filename) => "/assets/characters/" + filename + "?v=" + assetVersion;
   const expression = (id, label, filename, alt) => Object.freeze({ id, label, src: portrait(filename), alt });
@@ -90,66 +91,66 @@
       mobileAssetPath: "assets/visuals-07/event-cg-first-encounter-five-plane-mobile-v2.png",
       alt: "海辺の展示ブースで、ミズハとアマネに初めて出会う",
       poem: [
-        "まだ名前を知らないふたりが、海より先にこちらを見つけた。",
-        "秋の光は、出会いの輪郭だけをそっと残す。",
+        "海風の抜ける通りで、まだ名も知らないふたりが出会った。",
+        "やわらかな秋の光のなか、物語が静かに動き出す。",
       ],
     },
     {
       id: "amane-closeup",
-      title: "振り向いた光",
+      title: "手元のあかり",
       chapter: "01｜海辺の屋外展示",
       assetPath: "assets/visuals-07/event-cg-amane-closeup-five-plane-v4.png",
       alt: "展示機材へ手を添え、穏やかに振り向くアマネ",
       poem: [
-        "指先に灯るのは、まだ誰のものでもない明日。",
-        "小さな電流が、遠い星の呼吸へつながっていく。",
+        "暗幕のなか、そっと機器のスイッチを入れる。",
+        "小さなランプの灯りが、ふたりの手元を照らしだす。",
       ],
     },
     {
       id: "mizuha-closeup",
-      title: "海色のまなざし",
+      title: "澄んだまなざし",
       chapter: "01｜海辺の屋外展示",
       assetPath: "assets/visuals-07/event-cg-mizuha-closeup-five-plane-v3.png",
       alt: "タブレット越しにこちらを見つめるミズハ",
       poem: [
-        "波の数を数えるように、あなたの声を待っている。",
-        "観測は、見つめ返された瞬間から物語になる。",
+        "海の青を映したような瞳で、静かにこちらを見つめている。",
+        "言葉を交わす前の、少しだけ照れくさい一瞬。",
       ],
     },
     {
       id: "esp32-collaboration",
-      title: "手のひらから始まる地球",
+      title: "小さな設計図",
       chapter: "04｜ESP32プロトタイプ",
       assetPath: "assets/visuals-07/event-cg-esp32-collaboration-v2.png",
       mobileAssetPath: "assets/visuals-07/event-cg-esp32-collaboration-mobile-v1.png",
       alt: "ESP32とセンサーを囲み、ミズハとアマネが試作を考える",
       poem: [
-        "手のひらほどの基板に、地球の鼓動を預けてみる。",
-        "ふたりの距離ぶん、未来はやさしく配線される。",
+        "机の上に広げた小さな基板と、画面を覗き込む横顔。",
+        "並んで試行錯誤した時間が、ふたりの距離を縮めていく。",
       ],
     },
     {
       id: "circle-welcome",
-      title: "ようこそ、同じ円へ",
+      title: "輪のなかへ",
       chapter: "05｜サークルへの招待",
       assetPath: "assets/visuals-07/event-cg-circle-welcome-v2.png",
       mobileAssetPath: "assets/visuals-07/event-cg-circle-welcome-mobile-v1.png",
       alt: "秋晴れの展示ブースで、サークル加入を迎えるミズハとアマネ",
       poem: [
-        "差し出された手の向こうに、知らなかった居場所がひらく。",
-        "円は閉じず、あなたの分だけ光をあけている。",
+        "「おいでよ」と招くように、差し出された手。",
+        "気付けば、同じ景色を一緒に眺める仲間になっていた。",
       ],
     },
     {
       id: "exhibition-finale",
-      title: "展示会の、その先へ",
+      title: "夕暮れの帰り道",
       chapter: "06｜はじめまして",
       assetPath: "assets/visuals-07/event-cg-exhibition-finale-sunset-v1.png",
       mobileAssetPath: "assets/visuals-07/event-cg-exhibition-finale-sunset-mobile-v1.png",
       alt: "夕日の海沿いを歩きながら、ミズハとアマネがこちらを振り返る",
       poem: [
-        "片づけられた祭りのあとも、海だけは光をしまわない。",
-        "振り返るふたりと、明日へ続く余白を歩く。",
+        "展示の片づけを終えて、夕焼けに染まる海沿いを歩く。",
+        "楽しかった一日の終わりに、ふたりで次の約束をした。",
       ],
     },
   ].map((entry) => Object.freeze({ ...entry, poem: Object.freeze(entry.poem) })));
@@ -773,7 +774,7 @@
       setLetterText(reading, character.reading, 150);
       setLetterText(tagline, character.tagline, 0);
       setProfileText(character.profile);
-      setLetterText(quote, character.quote, 110);
+      setLetterText(quote, character.quote, quoteRevealDelay);
       if (current) current.textContent = String(nextIndex + 1).padStart(2, "0");
       displayedCharacterId = character.id;
       renderExpressions(character);

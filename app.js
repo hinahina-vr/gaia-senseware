@@ -8623,8 +8623,8 @@ for (const country of countryValues) {
     if (!introIsOpen || introLayer.hidden || introLayer.getAttribute("aria-hidden") !== "false") return;
     if (introStoryRevealStartTimer || introStoryRevealCommitTimer) return;
 
-    const revealStartDelay = reducedMotion ? 220 : 680;
-    const revealCommitDelay = reducedMotion ? 460 : 1420;
+    const revealStartDelay = reducedMotion ? 700 : 1400;
+    const revealCommitDelay = reducedMotion ? 900 : 4000;
     introStoryRevealStartTimer = window.setTimeout(() => {
       introStoryRevealStartTimer = 0;
       if (!introIsOpen || readIntroStoryDestination() !== "apeironcene") return;
@@ -10015,12 +10015,12 @@ for (const country of countryValues) {
       });
     });
   };
-  const scheduleIntroEntryGuide = (delay = 900) => {
+  const scheduleIntroEntryGuide = (delay = 2000) => {
     window.clearTimeout(introEntryGuideStartTimer);
     introEntryGuideStartTimer = window.setTimeout(() => {
       introEntryGuideStartTimer = 0;
       openIntroEntryGuide();
-    }, reducedMotion ? 80 : delay);
+    }, delay);
   };
   const advanceIntroEntryGuide = () => {
     if (!introEntryGuideActive) return;

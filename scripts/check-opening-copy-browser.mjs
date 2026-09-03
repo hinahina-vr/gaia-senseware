@@ -15,8 +15,8 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const expectedHeading = "「はじめまして。」";
 const expectedLines = [
-  "ディスプレイ越しには、何度も話していたはずなのに。",
-  "同じ空の下、同じ風に吹かれて会うのは――今日が、初めてだった。",
+  "画面越しにコードやデータをやりとりしていた、あの時間。",
+  "潮風が吹き抜けるこの場所で顔を合わせるのは、今日が初めてだった。",
 ];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
 const browser = await chromium.launch({ headless: true, executablePath });

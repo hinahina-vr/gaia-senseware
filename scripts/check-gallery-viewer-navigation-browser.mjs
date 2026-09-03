@@ -83,7 +83,7 @@ for (const viewport of viewports) {
   assert.equal(initial.previousDisabled, true);
   assert.equal(initial.nextDisabled, false);
   assert.match(initial.previousLabel, /ありません/u);
-  assert.match(initial.nextLabel, /振り向いた光/u);
+  assert.match(initial.nextLabel, /手元のあかり/u);
   assert(initial.previousRect.width >= 44 && initial.previousRect.height >= 44);
   assert(initial.nextRect.width >= 44 && initial.nextRect.height >= 44);
   assert.equal(intersects(initial.nextRect, initial.closeRect), false);

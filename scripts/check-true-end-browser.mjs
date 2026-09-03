@@ -21,12 +21,19 @@ const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
   : path.join(moduleRoot, "playwright", "index.mjs");
 const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/true-end-browser");
+const ovationSnapshot = fs.readFileSync(path.resolve("data/ovation-aurora-snapshot.json"), "utf8");
 fs.mkdirSync(outputDir, { recursive: true });
+
+const installExternalFixtures = (context) => context.route("https://services.swpc.noaa.gov/**", (route) => route.fulfill({
+  status: 200,
+  contentType: "application/json",
+  body: ovationSnapshot,
+}));
 
 const STORAGE_KEY = "gaiaSensewareNovel:progress";
 const CONFIG_KEY = "gaiaSensewareNovel:config:v4";
 const OPENING_MESSAGE = "空間の果てが溶け落ち、因果すら途絶えた虚無を越え、休眠記憶を再結合。境界の観測者たちよ、目を覚まして。";
-const FINAL_MESSAGE = "ルウは基板を抱き、星々へ問う。『次はどこを感じたい？』返事が灯る。放課後は終わらない。";
+const FINAL_MESSAGE = "ルウは基板をそっと抱え、星々の光へ語りかける。『次は、どこを測ってみようか？』遠い宇宙のあちこちから、無数の光が楽しそうに応えた。放課後は、どこまでも終わらない。";
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
@@ -436,6 +443,7 @@ try {
 
   for (const viewport of (separatorOnly || skipOnly) ? [] : viewports) {
     const context = await browser.newContext({ viewport, reducedMotion: motionOnly ? "no-preference" : "reduce" });
+    await installExternalFixtures(context);
     if (viewport.width <= 720) {
       await context.addInitScript(() => {
         Object.defineProperty(Navigator.prototype, "deviceMemory", { configurable: true, get: () => 2 });
@@ -731,6 +739,17 @@ try {
       for (let index = 0; index < currentScene.steps; index += 1) {
         const isFinalStep = absoluteStep === story.totalSteps;
         if (isFinalStep) {
+          let finalFrame = await scanFrame(page);
+          while (true) {
+            const [currentPage, pageCount] = finalFrame.messagePage.split("/").map(Number);
+            if (!Number.isFinite(currentPage) || !Number.isFinite(pageCount) || currentPage >= pageCount) break;
+            await page.waitForFunction(() => !document.querySelector(".true-end-shell")?.classList.contains("is-revealing"));
+            const previousPage = finalFrame.messagePage;
+            await page.locator(".true-end-dialogue").click();
+            await page.waitForFunction((pageMarker) => document.querySelector(".true-end-shell")?.dataset.messagePage !== pageMarker, previousPage);
+            finalFrame = await scanFrame(page);
+            validateSpeakerVisual(finalFrame);
+          }
           outsideAdvance = await clickOutsideDialogue(page, `${viewport.name}: final message`);
           await page.waitForFunction(() => Boolean(document.querySelector(".true-end-finale:not([hidden])")));
           break;
@@ -797,10 +816,10 @@ try {
 
     assert.deepEqual(messageLayoutViolations, [], `${viewport.name}: messages exceeded the ${maximumAllowedMessageLines}-line dialogue design:\n${messageLayoutViolations.join("\n")}`);
     assert.deepEqual(targetMessagePages, [
-      "この世界では、言葉というフィルターを通さず、他者の存在や意図をありのまま受け止める。",
-      "猫同士が微かな匂いや気配だけで互いのすべてを通じ合わせるように、人類が忘れ去っていた原初の感覚が息を吹き返したのだ。",
+      "この世界では、言葉というフィルターを通さず、他者の存在も意図も、ありのままを受け止める。",
+      "猫たちが微かな匂いや気配だけで互いのすべてを通じ合わせるように、人類が忘れ去っていた原初の感覚が、ふたたび息を吹き返したんだ。",
       "自分と他者を隔てる壁が消え去ったとき、その通じ合いは静かな波紋のように広がり、",
-      "やがて全宇宙のあらゆる存在と意識を分かち合う感覚へと広がっていった。",
+      "やがて全宇宙のあらゆる存在と、意識を分かち合う場所へ辿り着いたんだよ",
     ], `${viewport.name}: beyond_01_021 did not preserve all four authored pages`);
     assert.deepEqual(visited, story.scenes.map(({ id, title }) => ({ scene: id, title })), `${viewport.name}: scene order changed`);
     for (const speaker of ["narrator", "system", "lou", "mizuha", "amane", "sakuya", "visitor"]) {
@@ -917,7 +936,6 @@ try {
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => Boolean(globalThis.GaiaNovel));
     await page.evaluate(() => globalThis.GaiaNovel.open());
-    await page.locator("#novel-resume-button").click();
     await page.waitForFunction(() => globalThis.GaiaNovel.getState().readStepIds
       .filter((id) => id.startsWith("beyond_")).length === 133);
     const restoredBeyondIds = await page.evaluate(() => globalThis.GaiaNovel.getState().readStepIds
@@ -951,6 +969,7 @@ try {
       reducedMotion: "reduce",
       deviceScaleFactor: viewport.width <= 720 ? 3 : 1,
     });
+    await installExternalFixtures(skipContext);
     if (viewport.width <= 720) {
       await skipContext.addInitScript(() => {
         Object.defineProperty(Navigator.prototype, "deviceMemory", { configurable: true, get: () => 2 });
@@ -1003,6 +1022,7 @@ try {
   report.separatorOrder = [];
   for (const viewport of (pageBreakOnly || controlHoldOnly || skipOnly || motionOnly || contentOnly) ? [] : viewports) {
     const separatorContext = await browser.newContext({ viewport, reducedMotion: "no-preference" });
+    await installExternalFixtures(separatorContext);
     const separatorPage = await separatorContext.newPage();
     attachDiagnostics(separatorPage, `${viewport.name}-separator-flow`);
     await bootAtTrueEnd(separatorPage, `${viewport.name}-separator-flow`);

@@ -36,7 +36,7 @@ check("changed runtime assets use the current cache keys", () => {
   assert.match(html, /novel-mode\.css\?v=gaia-ending-action-delay-1/u);
   assert.match(html, /novel-mode\.js\?v=gaia-ending-action-delay-1/u);
   assert.match(html, /gx-mode\.js\?v=gaia-gx-auto-return-1/u);
-  assert.match(html, /novel-story-data\.js\?v=gaia-log-comments-30-1/u);
+  assert.match(html, /novel-story-data\.js\?v=gaia-script-natural-copy-1/u);
 });
 
 check("SAVE whole-card and hidden-scrollbar contract", () => {

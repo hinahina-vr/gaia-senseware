@@ -264,7 +264,7 @@ try {
       ? "event-cg-exhibition-finale-sunset-mobile-v1.png"
       : "event-cg-exhibition-finale-sunset-v1.png";
     assert(viewerGallery.image.includes(expectedGalleryImage));
-    assert.equal(viewerGallery.title, "展示会の、その先へ");
+    assert.equal(viewerGallery.title, "夕暮れの帰り道");
     assert.equal(viewerGallery.overflow, false);
     report.scans.push({ viewport, case: "cg-album", lockedGallery, completeGallery, viewerGallery, passed: true });
     await galleryPage.screenshot({ path: path.join(outputDir, `${galleryLabel}-viewer.png`) });

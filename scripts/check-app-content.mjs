@@ -9,6 +9,10 @@ const rootDirectory = path.resolve(scriptDirectory, "..");
 const source = await readFile(path.join(rootDirectory, "app-content.js"), "utf8");
 const indexHtml = await readFile(path.join(rootDirectory, "index.html"), "utf8");
 const modeLoader = await readFile(path.join(rootDirectory, "gaia-mode-loader.js"), "utf8");
+const openingRuntime = await readFile(path.join(rootDirectory, "opening.js"), "utf8");
+const characterRuntime = await readFile(path.join(rootDirectory, "character-mode.js"), "utf8");
+const characterStyles = await readFile(path.join(rootDirectory, "character-mode.css"), "utf8");
+const indexText = indexHtml.replace(/<[^>]*>/gu, "");
 const sandbox = { window: {} };
 
 vm.createContext(sandbox);
@@ -57,6 +61,50 @@ assert.equal(indexHtml.includes('class="character-book-hero-detail"'), true, "Sw
 assert.equal(indexHtml.includes('id="character-book-profile"'), true, "Switchable hero character profile is missing");
 assert.equal(indexHtml.includes("01-three-ecologies-character-master.png"), true, "Character master sheet is missing");
 assert.equal(modeLoader.includes('interceptClick("[data-character-gallery-open]", "character")'), true, "Character viewer is not lazy-loaded");
+assert.equal(modeLoader.includes('interceptClick("[data-sound-gallery-open]", "sound")'), true, "Sound archive is not lazy-loaded");
+assert.equal(modeLoader.includes('event.target.closest("[data-sound-gallery-open]")'), true, "Sound archive is not warmed on pointer or keyboard intent");
+assert.equal(openingRuntime.includes('GaiaModeLoader?.load?.("sound")'), true, "Sound archive is not warmed during the menu handoff");
+assert.equal((modeLoader.match(/\.\/styles\.css\?v=gaia-apeironcene-slow-spark-1/gu) || []).length, 1, "Shared UI styles must use one cache URL across mode groups");
+assert.match(modeLoader, /sound:\s*\{[\s\S]{0,120}parallel: true,/u, "Sound archive assets are not fetched in parallel");
+assert.equal((indexHtml.match(/sound-archive-bg-v2\.png\?v=gaia-sound-linked-ink-1/gu) || []).length, 2, "Sound archive background URLs must share one browser cache entry");
+assert.match(characterRuntime, /const quoteRevealDelay = 620;/u, "Character quote letter animation starts too early");
+assert.match(characterRuntime, /setLetterText\(quote, character\.quote, quoteRevealDelay\);/u, "Character quote does not use the delayed reveal");
+assert.match(characterStyles, /\.character-book-layer\.is-open \.character-book-hero-quote\s*\{[\s\S]*?transition-delay: 520ms;/u, "Character quote panel does not enter one beat after the hero");
+assert.equal((modeLoader.match(/gaia-character-copy-natural-1/gu) || []).length, 2, "Character page assets are not cache-busted together");
+[
+  "物語を彩った、六つの景色。絵をめくるたび、あの日の空気がよみがえります。",
+  "キャラクター設定資料",
+  "海風の抜ける通りで、まだ名も知らないふたりが出会った。",
+  "手元のあかり",
+  "澄んだまなざし",
+  "小さな設計図",
+  "輪のなかへ",
+  "夕暮れの帰り道",
+].forEach((copy) => {
+  assert.equal(indexHtml.includes(copy) || characterRuntime.includes(copy), true, `Revised character-page copy is missing: ${copy}`);
+});
+["余韻がひらきます", "輪郭だけをそっと残す", "未来はやさしく配線される"].forEach((copy) => {
+  assert.equal(indexHtml.includes(copy) || characterRuntime.includes(copy), false, `Superseded abstract copy remains: ${copy}`);
+});
+[
+  "PROLOGUE / 逗子海岸",
+  "画面越しにコードやデータをやりとりしていた、あの時間。",
+  "海も空も生き物も、ぜんぶ影響し合って今の地球になってるんだよ。",
+  "数値で見ると、地球が呼吸してるリズムがちゃんとわかるね。",
+  "手元の画面は、本物の地球とつながっている。",
+  "観測する ── 描画する ── 体感する",
+].forEach((copy) => {
+  assert.equal(indexText.includes(copy), true, `Revised opening copy is missing: ${copy}`);
+});
+[
+  ["世界を観測する", "地球のデータを光と色で描く"],
+  ["みんなのセンサー", "あなたの端末をひとつのセンサーに"],
+  ["登場人物の記録", "3人の役割と設定スケッチ"],
+  ["音楽を聴く", "放課後を彩る音楽のアーカイブ"],
+].forEach(([title, description]) => {
+  assert.equal(indexHtml.includes(`<strong>${title}</strong>`), true, `Navigation card title is missing: ${title}`);
+  assert.equal(indexHtml.includes(`<p>${description}</p>`), true, `Navigation card description is missing: ${description}`);
+});
 assert.equal(indexHtml.includes("このデータの出典を表示する"), false, "Old open-data button copy remains");
 assert.equal(indexHtml.includes("この展示を統計で読み解く"), false, "Old statistics button copy remains");
 

@@ -851,6 +851,12 @@
           await window.GaiaModeLoader?.load?.("tour");
         })()
       : Promise.resolve(window.GaiaModeLoader?.load?.(destination === "story" ? "story" : "exploration"));
+    // The sound archive used to begin fetching only after its card was pressed.
+    // Warm it during the menu handoff so the four-card entrance remains responsive
+    // without adding sound-mode work to the initial opening load.
+    if (destination === "menu") {
+      void Promise.resolve(window.GaiaModeLoader?.load?.("sound")).catch(() => {});
+    }
     const soundtrackReady = destination === "menu" || destination === "tour"
       ? Promise.resolve(window.GaiaOpeningAudio?.switchTrack?.("senseware", 0.25))
       : Promise.resolve(true);

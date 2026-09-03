@@ -139,10 +139,12 @@ try {
         mizuhaArt: getComputedStyle(document.querySelector(".gaia-vn-panel-minamo")).backgroundImage,
         amaneArt: getComputedStyle(document.querySelector(".gaia-vn-panel-sora")).backgroundImage,
         characterSpriteCount: document.querySelectorAll(".gaia-vn-character-focus, .gaia-vn-character-image").length,
+        characterDecorationCount: document.querySelectorAll(".gaia-vn-character-copy > small").length,
         realEarthLabel: document.querySelector(".gaia-vn-real-earth-copy > small")?.textContent.trim(),
         realEarthHeading: document.querySelector(".gaia-vn-real-earth-copy h2")?.textContent.trim(),
-        realEarthBody: document.querySelector(".gaia-vn-real-earth-copy p")?.textContent.trim(),
-        realEarthDecoration: document.querySelector(".gaia-vn-real-earth-copy > em")?.textContent.trim(),
+        realEarthBody: document.querySelector(".gaia-vn-real-earth-body")?.textContent.trim(),
+        realEarthFlow: document.querySelector(".gaia-vn-real-earth-flow")?.textContent.trim(),
+        hasRealEarthDecoration: Boolean(document.querySelector(".gaia-vn-real-earth-copy > em")),
         realEarthArt: getComputedStyle(document.querySelector(".gaia-vn-panel-real-earth")).backgroundImage,
         realEarthDuration: getComputedStyle(document.querySelector(".gaia-vn-panel-real-earth")).animationDuration,
         realEarthDelay: getComputedStyle(document.querySelector(".gaia-vn-panel-real-earth")).animationDelay,
@@ -160,13 +162,13 @@ try {
     });
     assert.deepEqual(opening.mizu, {
       meta: "01 MIZU / FEEL",
-      quote: "「海も、空も、生命も。互いに変え合って、今の地球になりましたの。」",
-      reply: "生命のつながりを、ひとつの地球として感じる。",
+      quote: "「海も空も生き物も、ぜんぶ影響し合って今の地球になってるんだよ。」",
+      reply: "複雑に絡み合う生態系のつながりを、直感的なビジュアルで受け止める。",
     });
     assert.deepEqual(opening.ame, {
       meta: "02 AME / MEASURE",
-      quote: "「こうして見ると、地球も生きてるみたいだね。」",
-      reply: "机の上の小さなセンサーから、地球の観測を始める。",
+      quote: "「数値で見ると、地球が呼吸してるリズムがちゃんとわかるね。」",
+      reply: "手元のマイコンとセンサーから、リアルタイムの地球データを追いかける。",
     });
     assert.deepEqual(opening.characterBands, ["MIZU　MIZU　MIZU", "AME　AME　AME　AME"]);
     assert.deepEqual(opening.montageNames, ["MIZU", "AME", "SAKUYA", "YOU"]);
@@ -174,10 +176,12 @@ try {
     assert.match(opening.mizuhaArt, viewport.mobile ? /opening-mizuha-keyvisual-portrait-v2(?:-720)?\.webp/u : /opening-mizuha-keyvisual-v1(?:-834)?\.webp/u);
     assert.match(opening.amaneArt, /opening-amane-keyvisual-v1(?:-834)?\.webp/u);
     assert.equal(opening.characterSpriteCount, 0);
+    assert.equal(opening.characterDecorationCount, 0);
     assert.equal(opening.realEarthLabel, "REAL EARTH / OPEN DATA");
-    assert.equal(opening.realEarthHeading, "この物語は、現実の地球につながっている。");
-    assert.equal(opening.realEarthBody, "実際に観測されたCO₂や気温などのオープンデータを、光・色・動きへ翻訳しています。");
-    assert.equal(opening.realEarthDecoration, "OBSERVE → TRANSLATE → FEEL");
+    assert.equal(opening.realEarthHeading, "手元の画面は、本物の地球とつながっている。");
+    assert.equal(opening.realEarthBody, "CO₂濃度や気温など、世界中で観測されている実際のオープンデータを取得。生の数値をシェーダープログラムによって、リアルタイムに光や波紋のグラフィックへと変換しています。");
+    assert.equal(opening.realEarthFlow, "観測する ── 描画する ── 体感する");
+    assert.equal(opening.hasRealEarthDecoration, false);
     assert.match(opening.realEarthArt, /open-data-archive-bg-v1(?:-834)?\.webp/u);
     assert.equal(opening.realEarthDuration, "4.08s");
     assert.equal(opening.realEarthDelay, "9.8175s");

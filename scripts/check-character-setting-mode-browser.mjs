@@ -166,11 +166,11 @@ try {
     assert.equal(initial.cgPoemLines, 12, viewport.name + ": every story CG does not have a two-line poem");
     assert.deepEqual(initial.cgTitles, [
       "はじめまして",
-      "振り向いた光",
-      "海色のまなざし",
-      "手のひらから始まる地球",
-      "ようこそ、同じ円へ",
-      "展示会の、その先へ",
+      "手元のあかり",
+      "澄んだまなざし",
+      "小さな設計図",
+      "輪のなかへ",
+      "夕暮れの帰り道",
     ], viewport.name + ": story CG archive order is incorrect");
     assert.deepEqual(initial.cgAssets.map((source) => source?.replace(/^.*\/assets/u, "assets").replace(/\?.*$/u, "")), [
       "assets/visuals-07/event-cg-first-encounter-five-plane-v3.png",
@@ -304,8 +304,8 @@ try {
     assert.equal(firstCgViewer.chapter, "01｜海辺の屋外展示", viewport.name + ": viewer chapter is incorrect");
     assert.equal(firstCgViewer.count, "01 / 06", viewport.name + ": viewer position is incorrect");
     assert.deepEqual(firstCgViewer.poem, [
-      "まだ名前を知らないふたりが、海より先にこちらを見つけた。",
-      "秋の光は、出会いの輪郭だけをそっと残す。",
+      "海風の抜ける通りで、まだ名も知らないふたりが出会った。",
+      "やわらかな秋の光のなか、物語が静かに動き出す。",
     ], viewport.name + ": viewer poem is incorrect");
     assert.match(firstCgViewer.imageSource, viewport.mobile
       ? /event-cg-first-encounter-five-plane-mobile-v2\.png/u
@@ -324,7 +324,7 @@ try {
       poemLines: viewer.querySelectorAll("#character-book-cg-viewer-poem > span").length,
       imageSource: viewer.querySelector("#character-book-cg-viewer-image")?.currentSrc,
     }));
-    assert.equal(secondCgViewer.title, "振り向いた光", viewport.name + ": keyboard CG navigation failed");
+    assert.equal(secondCgViewer.title, "手元のあかり", viewport.name + ": keyboard CG navigation failed");
     assert.equal(secondCgViewer.count, "02 / 06", viewport.name + ": keyboard CG position did not update");
     assert.equal(secondCgViewer.poemLines, 2, viewport.name + ": next CG poem is missing");
     assert.match(secondCgViewer.imageSource, /event-cg-amane-closeup-five-plane-v4\.png/u, viewport.name + ": next CG asset is incorrect");

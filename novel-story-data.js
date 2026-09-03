@@ -7,7 +7,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
   "estimatedDuration": "10〜12分",
   "sourceSha256": "27db292fbcfd2fc5130c9dcef8f33532ee0956abb559729347aa055dc5cd6b0c",
   "revisionId": "approved-script-20260824",
-  "approvedSourceSha256": "c31ff287372f73a70a49ace0272154ffff9dcaaedebbb5163ae5b652a5261c5a",
+  "approvedSourceSha256": "2e15a1da4a9fb2ce46bd00a924c8e418bc29bda077625ddf90423ae43293fd47",
   "characterSourceSha256": "4d4759fe93dd3ba15b2472c18a10d2f83c46f45ed934e577c070a02ffc49215e",
   "characters": {
     "amane": {
@@ -608,7 +608,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "festival_concept_new_031",
           "sceneId": "festival_concept",
           "type": "narration",
-          "text": "「地球の感覚と、人間の感覚を重ね合わせる」。まだ作りかけで調整中なのだと二人は照れくさそうに言っていたが、私の目には、それが途方もない可能性の塊に見えていた。完璧に整えられた完成品よりも、今まさに芽吹こうとしているアイデアの純度、つまり「制作者の願い」のほうが、ずっと強く胸を打つことがある。文字を追うのをやめ、ただ光と音の波に身を委ねてみる。それだけで、遠い海のうねりや大気の気配が、自分の呼吸と重なっていくような気がした。コンセプトの訴求力が、すでに理屈を超えて身体に届いている。",
+          "text": "「地球の感覚と、人間の感覚を重ね合わせる」。まだ作りかけだと二人は笑っていたけれど、私にはそれがとんでもないものに見えた。完成された綺麗な展示より、いま目の前で動いているアイデアの生々しさのほうが、ずっと強く胸に刺さる。画面の文字を追うのをやめて、光と音の揺らぎをぼんやり眺めてみる。遠い海の波や風の気配が、そのまま自分の呼吸に重なっていくようだった。",
           "speaker": "narrator",
           "cueFromStepId": "festival_concept_066"
         },
@@ -962,7 +962,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "type": "dialogue",
           "speaker": "amane",
           "speakerLabel": "あめ",
-          "text": "「将来はデータを自動更新し、統計解析や機械学習、深層学習、生成AIも使って予測を支援したいです。データサイエンスを知らない人でも、地球の変化と未来を考えられるシステムにしたいんです」"
+          "text": "「将来的には自動でデータを更新して、機械学習で先の変化も予測できるようにしたいんだよね。専門知識がなくても、触るだけで『これから地球がどうなるか』を直感で試せる仕組みにしたいんだ」"
         },
         {
           "id": "map_mode01_035",
@@ -1707,7 +1707,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "esp32_pitch_new_006",
           "sceneId": "esp32_pitch",
           "type": "dialogue",
-          "text": "「いいですね。広い範囲の観測と、手元の一点を分けて扱えます。違いを誤差で片づけず、観測条件までたどれます。通信が切れても、ほかの機能はそのままです」",
+          "text": "「それ、すごくいい。衛星の広域データと、机の上のデータをちゃんと切り分けて比較できるし、通信が切れたときのフォールバックも綺麗。条件さえ残せば、ただの誤差じゃなくて『その場所の記録』になるしね」",
           "speaker": "amane",
           "speakerLabel": "あめ",
           "cueFromStepId": "esp32_pitch_028"
@@ -2167,7 +2167,7 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "circle_invitation_new_013",
           "sceneId": "circle_invitation",
           "type": "narration",
-          "text": "居場所は、誰かから完成品として与えられるものではない。何かを一緒に試し、そのたびに互いが少しずつ変わる。その共進化の途中に、いつの間にか生まれるものなのかもしれない。",
+          "text": "居場所って、最初から用意されているものじゃないんだと思う。不格好でも手を動かして、一緒に失敗して、少しずつ直していく。その作業の途中に、いつの間にかできているものなのかもしれない。",
           "speaker": "narrator",
           "cueFromStepId": "circle_invitation_043"
         },
@@ -3155,8 +3155,8 @@ globalThis.GAIA_NOVEL_STORY = Object.freeze({
           "id": "welcome_chat_095",
           "sceneId": "welcome_chat",
           "type": "narration",
-          "text": "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。",
           "speaker": "narrator",
+          "text": "その選択の中に、今日から私たちもいる。物語は、ここからも続いていく。",
           "cueFromStepId": "welcome_chat_094"
         }
       ],
