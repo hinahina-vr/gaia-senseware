@@ -9813,7 +9813,7 @@ for (const country of countryValues) {
     version: "v3",
     kicker: "WORLD MAP / 操作ガイド",
     avoid: ".gaia-live-exhibit-readout",
-    available: () => japanIsOpen && !japanLayer.hidden,
+    available: () => japanIsOpen && !japanLayer.hidden && !document.body.classList.contains("gaia-tour-open"),
     steps: [
       {
         target: () => firstVisibleMapGuideTarget(".map-dock-bank-trigger", ".gaia-live-deck-modes", "#japan-mode-list", "#map-mobile-bank-toggle"),
@@ -9846,6 +9846,7 @@ for (const country of countryValues) {
   const scheduleMapModeGuide = () => {
     window.clearTimeout(mapModeGuideTimer);
     mapModeGuideTimer = window.setTimeout(() => {
+      if (document.body.classList.contains("gaia-tour-open")) return;
       void window.GaiaModeEntryGuide?.open?.("map");
     }, reducedMotion ? 80 : 650);
   };
