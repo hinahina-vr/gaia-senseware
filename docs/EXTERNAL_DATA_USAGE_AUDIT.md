@@ -1,7 +1,7 @@
 # 外部データ利用・二次加工・ダウンロード監査レポート
 
 - 監査対象: GAIA SENSEWARE
-- 監査日: 2026-09-03（日本時間）
+- 監査日: 2026-09-04（日本時間）
 - 監査対象リビジョン: 本レポートと同時に公開するコミット
 - 対象範囲: 展示、ライブ表示、地図、統計ラボ、センサー登録で取得・同梱・参照する外部データ
 - 対象外: 画像生成物、キャラクターCG、音源、フォント、npm依存パッケージ（別途メディア／ソフトウェア監査の対象）
@@ -40,7 +40,7 @@
 
 「二次加工」には、抽出、単位換算、色・座標への変換、補間、集計、相関・回帰、画像化を含む。「ダウンロード」には、画面上の保存ボタンだけでなく、公開サイトから静的JSON、GeoJSON、TopoJSON、PNGへ直接アクセスできる状態も含む。
 
-## 3. 展示01〜10の外部データ一覧
+## 3. MAP 01〜09と関連レイヤーの外部データ一覧
 
 | 展示／データ | このサイトでの利用・二次加工 | 公開／ダウンロード面 | 判定と条件 |
 |---|---|---|---|
@@ -115,16 +115,18 @@ MODISの公称空間分解能は1 kmであり、点の光環は焼失面積や�
 | NASA Exoplanet Archive | 近傍1000件から距離、半径、質量、温度等を抽出し、同心円・色・大きさへ変換 | **条件付可**。Archiveの標準Acknowledgment、DOI、各文献由来値の引用を公開物へ付す |
 | ISAS/JAXA DARTS Hayabusa2 LIDAR | Level 2時系列から高度・時刻等を抽出し、小惑星輪郭へ変換 | **可**。LIDAR BundleはCC BY 4.0。DOI `10.17597/isas.darts/hyb2-00500` とISAS/JAXA DARTSを帰属表示する |
 
-## 5. ライブ展示09〜12の外部データ一覧
+## 5. MAP 10〜15のPages APIと補助provider
 
-| データ | 取得・加工 | 判定と条件 |
+| データ | 現在の用途と取得・加工 | 判定と条件 |
 |---|---|---|
-| NOAA NDBC latest observations | ハワイ周辺の最寄り観測点を選択し、風速・風向・気温を表示。取得失敗時は同梱スナップショット | **可**。NOAA/NDBC出典、観測時刻、観測点、フォールバック状態を表示 |
-| NOAA GML Mauna Loa hourly CO₂ | ERDDAPの最新時別値を抽出。取得失敗時は同梱スナップショット | **可**。NOAA/GML出典、時刻、品質・速報性を表示 |
-| JAXA GSMaP daily precipitation | Hawaii bboxの降水量を集計。現在の本番フラグは無効だがフォールバック値を同梱 | **条件付可**。JAXAは利用・改変・派生物配布を認めるが出典表示が必要。商用利用は事前通知が必要 |
-| Copernicus Sentinel-5P L2 NO₂ NRTI | 72時間・品質マスク付きbbox平均。現在の本番フラグは無効だがフォールバック値を同梱 | **可**。Sentinelデータは自由・完全・オープン。公開・配布時は「Contains modified Copernicus Sentinel data [YEAR]」相当の通知を付す |
-| Open-Meteo weather | 21都市の現在天気を30分キャッシュで取得 | **条件付可**。データはCC BY 4.0で再配布可能だが、無料APIサービスは非商用・上限内に限定。商用運用は契約またはセルフホストが必要 |
-| Open-Meteo Air Quality / CAMS | CO₂・PM2.5等を3時間キャッシュで取得 | **条件付可**。上記に加え、Open-MeteoとCAMS／各元モデルの帰属を表示する |
+| Open-Meteo Forecast | MAP 10「風脈」は47都道府県代表都市の風速モデル値を5分キャッシュで取得。MAP 12〜14は選択都市（初期値は東京）の降水量、地上2m気温、総雲量を30分キャッシュで取得 | **条件付可**。Open-Meteoと元モデル提供者を表示し、モデル値を観測所の実測と誤認させない。無料APIの非商用条件と呼出上限を守る |
+| Open-Meteo Air Quality / CAMS | MAP 11「炭素の呼吸」と15「微粒子の霞」で、選択都市の格子CO₂予測値とPM2.5予測値を最大3時間キャッシュ。現在値を光環・呼吸周期・粒子密度へ変換 | **条件付可**。Open-MeteoとCAMS／各元モデルを表示し、モデルの格子値・予測値であることを維持する |
+| NOAA NDBC latest observations | Pages APIの補助providerとして風速・風向・気温を取得可能。現行MAP 10〜15のカード表示値には使用しない。取得失敗時はprovider単位の保存値へ切替 | **可**。将来表示へ使う場合はNOAA/NDBC、観測点、観測時刻、フォールバック状態を明示する |
+| NOAA GML Mauna Loa hourly CO₂ | Pages APIの補助providerとしてERDDAPの最新時別値を取得可能。現行MAP 10〜15のカード表示値には使用しない | **可**。将来表示へ使う場合はNOAA/GML、地点、時刻、速報性を明示する |
+| JAXA GSMaP daily precipitation | `LIVE_SENSEWARE_JAXA_ENABLED=true` の場合だけ補助providerとして取得。現行MAP 10〜15のカード表示値には使用せず、通常は無効 | **条件付可**。JAXA出典が必要。商用利用時は事前通知が必要 |
+| Copernicus Sentinel-5P L2 NO₂ NRTI | `LIVE_SENSEWARE_ESA_ENABLED=true` と認証情報がある場合だけ補助providerとして取得。現行MAP 10〜15のカード表示値には使用せず、通常は無効 | **可**。公開・配布時は「Contains modified Copernicus Sentinel data [YEAR]」相当の通知を付す |
+
+Pages APIは `/api/live/v1/snapshot`、`/stream`、`/wind-field` を使用する。画面には提供元、地点、JPTのデータ時刻、ライブ／保存値の状態を表示する。各providerの取得失敗は別providerの値で穴埋めせず、同じ項目・地点・単位のキャッシュまたは版管理スナップショットへ退避する。
 
 ## 6. 地図・地域コード・補助データ
 
@@ -254,7 +256,7 @@ P0とP1を完了し、再監査で差分がないことを確認した後は、�
 
 ## 12. 監査した実装箇所
 
-- `scripts/build-gaia-data.mjs`: 展示01〜10の取得・抽出・加工
+- `scripts/build-gaia-data.mjs`: MAP 01〜09と関連レイヤーの取得・抽出・加工
 - `data/gaia-signals.json`: 同梱データ、SOURCE／DERIVED／SCENARIO台帳
 - `scripts/build-space-data.mjs`, `data/space-signals.json`: 宇宙展示の取得とスナップショット
 - `sensor-platform/src/live-senseware.ts`, `data/live-observation-fallback-v1.json`: ライブ取得、キャッシュ、フォールバック
