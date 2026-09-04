@@ -182,10 +182,7 @@
     const gap = innerWidth <= 760 ? 12 : 16;
     const controlsBounds = controls.getBoundingClientRect();
     const safeTop = viewportInset;
-    const safeBottom = Math.max(safeTop + 140, Math.min(
-      innerHeight - viewportInset,
-      controlsBounds.height > 1 ? controlsBounds.top - gap : innerHeight - viewportInset,
-    ));
+    const safeBottom = innerHeight - viewportInset;
     const measured = card.getBoundingClientRect();
     const width = Math.min(measured.width, innerWidth - viewportInset * 2);
     const height = Math.min(measured.height, safeBottom - safeTop);
@@ -222,13 +219,17 @@
       const top = clamp(safeTop, maximumTop, candidate.top);
       const rect = { left, top, right: left + width, bottom: top + height };
       const overlapRatio = overlapArea(rect, target) / Math.max(1, width * height);
+      const controlsOverlapRatio = controlsBounds.height > 1
+        ? overlapArea(rect, controlsBounds) / Math.max(1, width * height)
+        : 0;
       const clampedDistance = Math.hypot(left - candidate.left, top - candidate.top);
       return {
         ...candidate,
         left,
         top,
         rect,
-        score: overlapRatio * 10000 + edgeDistance(rect, target) + clampedDistance * .7 + candidate.priority,
+        score: overlapRatio * 10000 + controlsOverlapRatio * 12000
+          + edgeDistance(rect, target) + clampedDistance * .7 + candidate.priority,
       };
     });
     const placement = candidates.sort((first, second) => first.score - second.score)[0];

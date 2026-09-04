@@ -12,7 +12,7 @@
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-no-bank-chevron-1",
+        "./map-ui-grid-polish.css?v=gaia-live-mobile-controls-1",
         "./estat-exhibits.css?v=gaia-estat-readable-comparison-1",
         "./firms-exhibit.css?v=gaia-firms-active-fire-1",
         "./planet-signals-exhibit.css?v=gaia-planet-signals-1",
@@ -25,7 +25,7 @@
         "./data-ledger.js?v=gaia-live-model-ledger-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-anthropocene-heatmap-1",
-        "./app.js?v=gaia-apeironcene-clustered-particles-1",
+        "./app.js?v=gaia-live-touch-isolation-1",
         "./map-ui-grid-polish.js?v=gaia-no-bank-chevron-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
@@ -110,8 +110,8 @@
     },
     tour: {
       templates: [],
-      styles: ["./guided-tour.css?v=gaia-tour-earth-only-1"],
-      scripts: ["./guided-tour.js?v=gaia-tour-earth-only-1"],
+      styles: ["./guided-tour.css?v=gaia-tour-target-layout-1"],
+      scripts: ["./guided-tour.js?v=gaia-tour-target-layout-1"],
     },
   });
 

@@ -304,11 +304,11 @@ assert.doesNotMatch(liveExhibitsSource, /fillRect\(x - 2, y - 1/u, "wind field m
 assert.doesNotMatch(html, /01—10|01〜10|10の観測展示|10番目の展示/u);
 assert.doesNotMatch(html, /01—20|01〜20|20の感覚器|20の展示|10テーマ・20演出/u);
 assert.doesNotMatch(html, /class="map-scope-switch"|MAP SCALE/u);
-assert.match(html, /gaia-mode-loader\.js\?v=gaia-apeironcene-clustered-particles-1/u);
-assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-no-bank-chevron-1/u);
+assert.match(html, /gaia-mode-loader\.js\?v=gaia-live-touch-isolation-1/u);
+assert.match(modeLoaderSource, /map-ui-grid-polish\.css\?v=gaia-live-mobile-controls-1/u);
 assert.match(modeLoaderSource, /map-ui-grid-polish\.js\?v=gaia-no-bank-chevron-1/u);
 assert.match(modeLoaderSource, /app-content\.js\?v=gaia-anthropocene-heatmap-1/u);
-assert.match(modeLoaderSource, /app\.js\?v=gaia-apeironcene-clustered-particles-1/u);
+assert.match(modeLoaderSource, /app\.js\?v=gaia-live-touch-isolation-1/u);
 assert.match(modeLoaderSource, /styles\.css\?v=gaia-apeironcene-clustered-particles-1/u);
 assert.match(modeLoaderSource, /mode-entry-guide\.js\?v=gaia-live-deck-3/u);
 assert.match(appSource, /setIntroEntryGuideStep\(0\);\s*positionIntroEntryGuide\(\);\s*requestAnimationFrame\(\(\) => \{\s*introEntryGuide\.classList\.add\("is-visible"\)/u);

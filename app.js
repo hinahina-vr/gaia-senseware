@@ -9170,7 +9170,7 @@ for (const country of countryValues) {
   resetButton.addEventListener("click", clearSession);
 
   japanMap.addEventListener("pointerdown", (event) => {
-    if (!japanIsOpen) {
+    if (!japanIsOpen || japanLayer.classList.contains("is-live-exhibit")) {
       return;
     }
     clearJapanPoiHover();

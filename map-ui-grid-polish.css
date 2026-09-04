@@ -3489,7 +3489,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     position: fixed;
     z-index: 16;
     right: max(12px, env(safe-area-inset-right));
-    bottom: max(104px, calc(env(safe-area-inset-bottom) + 92px));
+    bottom: max(264px, calc(env(safe-area-inset-bottom) + 252px));
     display: grid;
     min-width: 42px;
     min-height: 42px;
@@ -3498,6 +3498,10 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     border-radius: 11px;
     color: #efffff;
     background: rgba(2, 18, 29, 0.92);
+  }
+
+  .gaia-live-exhibit-readout.is-mobile-expanded > .gaia-live-deck-return {
+    display: none;
   }
 
   .gaia-live-deck-return span {

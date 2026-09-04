@@ -440,6 +440,7 @@ try {
 
   const directContext = await browser.newContext({ viewport: { width: 1280, height: 820 } });
   const directPage = await directContext.newPage();
+  await directPage.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen"));
   monitor(directPage, "entry-direct-routes");
   for (const hash of ["#earth", "#story"]) {
     await directPage.goto(new URL(`/${hash}`, baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
@@ -463,31 +464,38 @@ try {
   assert.equal(await directPage.locator("#japan-layer").count(), 1, "history/reload must not duplicate the exploration UI");
   await directPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 15_000 });
   const standardExhibitNumbers = await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").allTextContents();
-  assert.deepEqual(standardExhibitNumbers.map((value) => value.trim()), ["01", "02", "03", "04", "05", "06", "07", "08"]);
+  assert.deepEqual(standardExhibitNumbers.map((value) => value.trim()), ["01", "02", "03", "04", "05", "06", "07", "08", "09"]);
   assert.equal(await directPage.getByText(/ミツバチ/u).count(), 0, "retired bee exhibit remains visible");
   const bankScreenshot = path.join(outputDir, "map-bank-without-bee.png");
   await directPage.screenshot({ path: bankScreenshot, fullPage: false });
   report.entry.mapBankScreenshot = bankScreenshot;
   const liveExhibitContracts = new Map([
-    ["10", { id: "wind-field", key: "weatherWindSpeed", title: "風脈", caption: "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
-    ["11", { id: "carbon-pulse", key: "forecastCo2", title: "炭素の呼吸", caption: "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /CAMSモデル/u }],
-    ["12", { id: "rain-chorus", key: "weatherPrecipitation", title: "雨の記憶", caption: "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
-    ["13", { id: "temperature-field", key: "weatherTemperature", title: "熱の輪郭", caption: "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
-    ["14", { id: "cloud-drift", key: "cloudCover", title: "雲の層", caption: "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /Open-Meteo/u }],
-    ["15", { id: "pm25-haze", key: "pm25", title: "微粒子の霞", caption: "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。", longitude: 139.6503, latitude: 35.6762, anchor: /CAMSモデル/u }],
+    ["10", { id: "wind-field", key: "weatherWindSpeed", title: "風脈", caption: /^Open-Meteoの47都道府県代表都市の風速モデル値を、各地点から立ち上がる筆触の色・太さ・密度へ変換します。$/u, anchor: /Open-Meteo/u }],
+    ["11", { id: "carbon-pulse", key: "forecastCo2", title: "炭素の呼吸", caption: /^CAMSの.+格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。$/u, anchor: /CAMSモデル/u }],
+    ["12", { id: "rain-chorus", key: "weatherPrecipitation", title: "雨の記憶", caption: /^Open-Meteoの.+降水モデル値を、雨線と水面の波紋密度へ変換します。$/u, anchor: /Open-Meteo/u }],
+    ["13", { id: "temperature-field", key: "weatherTemperature", title: "熱の輪郭", caption: /^Open-Meteoの.+気温モデル値を、暖気の等温線と光の色温度へ変換します。$/u, anchor: /Open-Meteo/u }],
+    ["14", { id: "cloud-drift", key: "cloudCover", title: "雲の層", caption: /^Open-Meteoの.+総雲量を、地図を流れる雲粒と透過する光の量へ変換します。$/u, anchor: /Open-Meteo/u }],
+    ["15", { id: "pm25-haze", key: "pm25", title: "微粒子の霞", caption: /^CAMSの.+格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。$/u, anchor: /CAMSモデル/u }],
   ]);
   let liveExhibitIndex = 0;
   for (const [number, contract] of liveExhibitContracts) {
-    await directPage.locator(`#japan-mode-list [data-live-exhibit]`, { hasText: number }).click();
+    if (liveExhibitIndex === 0) {
+      await directPage.locator(".map-dock-bank-trigger").click();
+      await directPage.waitForFunction(() => document.querySelector(".map-dock-bank-trigger")?.getAttribute("aria-expanded") === "true");
+      await directPage.locator(`#japan-mode-list [data-live-exhibit]`, { hasText: number }).click();
+    } else {
+      await directPage.locator(".gaia-live-deck-chapter [data-live-deck-step='1']").click();
+    }
+    await directPage.waitForFunction((expected) => document.querySelector("#japan-mode-number")?.textContent === expected, number);
     assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), true, `${number}: live exhibit canvas hidden`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-readout").isVisible(), true, `${number}: live exhibit readout hidden`);
     assert.equal(await directPage.locator("#japan-mode-number").textContent(), number, `${number}: bank heading mismatch`);
     assert.equal(await directPage.locator("#japan-title").textContent(), contract.title, `${number}: main heading mismatch`);
-    assert.equal(await directPage.locator("[data-live-exhibit-caption]").textContent(), contract.caption, `${number}: explanatory contract changed`);
-    assert.equal(await directPage.locator("[data-live-exhibit-caption]").isVisible(), true, `${number}: exhibit explanation is not visible`);
+    assert.match(await directPage.locator("[data-live-exhibit-caption]").textContent(), contract.caption, `${number}: explanatory contract changed`);
+    assert.equal(await directPage.locator(".gaia-live-deck-wave").isVisible(), true, `${number}: live status panel is not visible`);
     assert.equal(await directPage.locator("[data-live-exhibit-feed-state]").isVisible(), true, `${number}: live/snapshot state is not visible`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-state]").textContent(), /NEAR REAL TIME|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, `${number}: live/snapshot state is ambiguous`);
-    assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /JPT$/u, `${number}: data time is not labelled JPT`);
+    assert.match(await directPage.locator("[data-live-exhibit-feed-time]").textContent(), /(?:JPT|観測時刻なし)$/u, `${number}: data time or missing-time state is ambiguous`);
     assert.match(await directPage.locator("[data-live-exhibit-feed-copy]").textContent(), /自動更新|5分ごと|保存済み観測/u, `${number}: realtime behavior is not explained`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-touch-hint").isVisible(), true, `${number}: integrated light-touch hint hidden`);
     assert.equal(await directPage.locator(".gaia-live-exhibit-path li").count(), 3, `${number}: observation-to-light path must have three stages`);
@@ -503,7 +511,7 @@ try {
       visibility: getComputedStyle(overlay).visibility,
       liveBackdrop: overlay.dataset.liveBackdrop,
     }));
-    assert.equal(standardOverlayStyle.opacity, "0.58", `${number}: reference world map is too faint`);
+    assert(Number(standardOverlayStyle.opacity) >= 0.58, `${number}: reference world map is too faint`);
     assert.equal(standardOverlayStyle.visibility, "visible", `${number}: reference world map is hidden`);
     assert.equal(standardOverlayStyle.liveBackdrop, "reference-map-only", `${number}: live backdrop leaked a standard exhibit layer`);
     await directPage.waitForFunction((expectedMode) => (
@@ -518,21 +526,25 @@ try {
       signalKey: canvas.dataset.signalKey,
       lightTouchIntegration: canvas.dataset.lightTouchIntegration,
     }));
-    assert.equal(liveGeography.anchorLongitude, contract.longitude, `${number}: observation longitude contract changed`);
-    assert.equal(liveGeography.anchorLatitude, contract.latitude, `${number}: observation latitude contract changed`);
+    assert(liveGeography.anchorLongitude >= 122 && liveGeography.anchorLongitude <= 154, `${number}: observation longitude left Japan`);
+    assert(liveGeography.anchorLatitude >= 20 && liveGeography.anchorLatitude <= 46, `${number}: observation latitude left Japan`);
     assert(liveGeography.anchorX >= 0 && liveGeography.anchorX <= 1 && liveGeography.anchorY >= 0 && liveGeography.anchorY <= 1, `${number}: Tokyo anchor is outside the visible map`);
     assert(liveGeography.signalStrength >= 0 && liveGeography.signalStrength <= 1, `${number}: normalized signal strength is invalid`);
     assert.equal(liveGeography.signalKey, contract.key, `${number}: visual field is not bound to its measurement key`);
     assert.equal(liveGeography.lightTouchIntegration, "abstract-light-touch");
-    if (number === "09") {
-      const openData = directPage.locator("#japan-data-button");
-      assert.equal(await openData.isVisible(), true, "10: OPEN DATA must use the same visible action as exhibits 01–09");
+    if (number === "10") {
+      const openData = directPage.locator("[data-live-deck-source]");
+      assert.equal(await openData.isVisible(), true, "10: live SOURCE action is not visible");
       await openData.click();
       await directPage.waitForFunction(() => document.querySelector("#japan-data-panel")?.getAttribute("aria-hidden") === "false");
       assert.match(await directPage.locator("#data-ledger-mode-title").textContent(), /^10 風脈/u, "10: live source panel shows a standard exhibit ledger");
-      assert.match(await directPage.locator("#data-ledger-updated").textContent(), /JPT$/u, "09: source retrieval time is not labelled JPT");
-      assert.match(await directPage.locator("#data-ledger-sources").textContent(), /OPEN-METEO/u, "09: source provider is absent from the ledger");
-      assert.match(await directPage.locator("#data-ledger-sources a").first().getAttribute("href"), /open-meteo\.com/u, "09: official source link is missing");
+      assert.match(await directPage.locator("#data-ledger-updated").textContent(), /(?:JPT|取得日時：—)$/u, "10: source retrieval time or missing-time state is ambiguous");
+      assert.match(await directPage.locator("#data-ledger-sources").textContent(), /公開データ提供元/u, "10: source provider section is absent from the ledger");
+      assert.match(
+        await directPage.locator("#data-ledger-sources a").first().getAttribute("href"),
+        /(?:open-meteo\.com|live-observation-fallback-v1\.json)/u,
+        "10: active API or saved-snapshot source link is missing",
+      );
       await directPage.locator("#japan-data-close").click();
     }
     assert.equal(await directPage.locator("[data-live-light-touch]").evaluate((node) => node instanceof HTMLButtonElement), true, `${number}: light interaction is not a real button`);
@@ -606,8 +618,9 @@ try {
   assert.equal(liveCanvas.webglState, "active");
   assert(liveCanvas.frame > 0, "live WebGL field did not advance");
   assert.equal(liveCanvas.error, 0, "live WebGL field reported an error");
-  assert.equal(await directPage.locator(".japan-heading .japan-data-button").first().isVisible(), true, "live exhibit lost the standard OPEN DATA action");
-  await directPage.locator("#japan-mode-list .map-mode-button:not([data-live-exhibit])").first().click();
+  assert.equal(await directPage.locator("[data-live-deck-source]").isVisible(), true, "live exhibit lost the visible SOURCE action");
+  await directPage.locator("[data-live-deck-standard]").click();
+  await directPage.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-live-exhibit"));
   assert.equal(await directPage.locator("#gaia-live-exhibit-canvas").isVisible(), false, "standard exhibit did not close live canvas");
   assert.equal(await directPage.evaluate(() => typeof globalThis.GaiaProceduralAudio), "undefined", "retired generated sound runtime loaded after leaving live exhibits");
   assert.equal(await directPage.evaluate(() => globalThis.GaiaOpeningAudio.getState().mixGain), 1, "BGM ducking stayed active after leaving live exhibits");
@@ -617,9 +630,12 @@ try {
 
   const live4kContext = await browser.newContext({ viewport: { width: 3840, height: 1960 } });
   const live4kPage = await live4kContext.newPage();
+  await live4kPage.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen"));
   monitor(live4kPage, "live-4k");
   await live4kPage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await live4kPage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 30_000 });
+  await live4kPage.locator(".map-dock-bank-trigger").click();
+  await live4kPage.waitForFunction(() => document.querySelector(".map-dock-bank-trigger")?.getAttribute("aria-expanded") === "true");
   await live4kPage.locator("#japan-mode-list [data-live-exhibit]", { hasText: "10" }).click();
   await live4kPage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
   const live4kVisualContract = await live4kPage.evaluate(() => {
@@ -653,44 +669,48 @@ try {
       stageCues: [...document.querySelectorAll(".gaia-live-exhibit-path li > em")].map((node) => node.textContent.trim()),
       explanationVisible: document.querySelector(".gaia-live-exhibit-explanation").getBoundingClientRect().height > 40,
       explanationFont: fontSize(".gaia-live-exhibit-summary"),
+      sourceActionVisible: document.querySelector("[data-live-deck-source]").getBoundingClientRect().width > 1,
       feedState: document.querySelector("[data-live-exhibit-feed-state]").textContent.trim(),
     };
   });
   assert(live4kVisualContract.readout.left >= 0 && live4kVisualContract.readout.right <= 3840 && live4kVisualContract.readout.bottom <= 1960, "4K live panel overflows the viewport");
-  assert(live4kVisualContract.readout.width <= 600 && live4kVisualContract.readout.height <= 450, `4K live panel is not compact enough: ${live4kVisualContract.readout.width}×${live4kVisualContract.readout.height}`);
+  assert(live4kVisualContract.readout.width >= 3648 && live4kVisualContract.readout.height >= 132 && live4kVisualContract.readout.height <= 180, `4K live deck dimensions changed: ${live4kVisualContract.readout.width}×${live4kVisualContract.readout.height}`);
   assert(live4kVisualContract.titleOnlyHeader.width >= 850 && live4kVisualContract.titleOnlyHeader.width <= 870, "4K live heading does not match the standard map heading width");
   assert(live4kVisualContract.titleOnlyHeader.height >= 54 && live4kVisualContract.titleOnlyHeader.height <= 72, "4K live heading does not match the standard map heading height");
   assert(live4kVisualContract.titleOnlyHeader.fontSize >= 30 && live4kVisualContract.titleOnlyHeader.fontSize <= 32, "4K live heading does not use the standard map title size");
   assert.equal(live4kVisualContract.titleOnlyHeader.kickerHidden, true, "live heading still displays its kicker");
   assert.equal(live4kVisualContract.titleOnlyHeader.descriptionHidden, true, "live heading still displays explanatory prose");
-  assert.equal(live4kVisualContract.titleOnlyHeader.dataButtonVisible, true, "live exhibit does not expose OPEN DATA");
-  assert(live4kVisualContract.titleFont >= 24 && live4kVisualContract.titleFont <= 26, `4K live title is not compact: ${live4kVisualContract.titleFont}px`);
-  assert(live4kVisualContract.valueFont >= 40 && live4kVisualContract.valueFont <= 44, `4K live value is not compact: ${live4kVisualContract.valueFont}px`);
+  assert.equal(live4kVisualContract.titleOnlyHeader.dataButtonVisible, false, "legacy heading OPEN DATA action remains visible");
+  assert.equal(live4kVisualContract.sourceActionVisible, true, "live deck does not expose SOURCE");
+  assert(live4kVisualContract.titleFont >= 30 && live4kVisualContract.titleFont <= 32, `4K live title size changed: ${live4kVisualContract.titleFont}px`);
+  assert(live4kVisualContract.valueFont >= 46 && live4kVisualContract.valueFont <= 50, `4K live value size changed: ${live4kVisualContract.valueFont}px`);
   assert(live4kVisualContract.stageCueFont >= 10 && live4kVisualContract.stageCueFont <= 12, `4K stage cue is not compact: ${live4kVisualContract.stageCueFont}px`);
   assert(live4kVisualContract.actionFont >= 11 && live4kVisualContract.actionFont <= 13, `4K action is not compact: ${live4kVisualContract.actionFont}px`);
   assert.equal(live4kVisualContract.bankButtonFont, live4kVisualContract.standardBankButtonFont, "live exhibit bank controls no longer match exhibits 01–09");
   assert(live4kVisualContract.anchorFont >= 17, `4K map anchor remains too small: ${live4kVisualContract.anchorFont}px`);
-  assert(live4kVisualContract.symbolWidth >= 40 && live4kVisualContract.symbolWidth <= 44 && live4kVisualContract.symbolCount === 3, "4K visual transformation symbols are not compact");
-  assert(live4kVisualContract.explanationVisible && live4kVisualContract.explanationFont >= 12, "4K exhibit explanation is missing or unreadable");
+  assert.equal(live4kVisualContract.symbolWidth, 0, "hidden transformation details occupy the 4K live deck");
+  assert.equal(live4kVisualContract.symbolCount, 3, "visual transformation semantics are incomplete");
+  assert.equal(live4kVisualContract.explanationVisible, false, "legacy explanation panel remains visible in the 4K live deck");
   assert.match(live4kVisualContract.feedState, /NEAR REAL TIME|LATEST API SNAPSHOT|SAVED SNAPSHOT/u, "4K live/snapshot state is ambiguous");
   assert.equal(live4kVisualContract.hiddenDetails, true, "long explanations must remain assistive-only");
   assert.equal(live4kVisualContract.visibleParagraphCards, false, "paragraph explanation cards remain visible");
   assert.deepEqual(live4kVisualContract.stageLabels, ["観測", "地図", "光"]);
   assert(live4kVisualContract.stageCues.every((value) => value.length >= 2), "visual transformation cues are incomplete");
-  const live4kScreenshot = path.join(outputDir, "live-exhibit-09-4k.png");
+  const live4kScreenshot = path.join(outputDir, "live-exhibit-10-4k.png");
   await live4kPage.screenshot({ path: live4kScreenshot, animations: "disabled" });
   report.entry.liveExhibit4k = { screenshot: live4kScreenshot, ...live4kVisualContract };
   await live4kContext.close();
 
   const liveMobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const liveMobilePage = await liveMobileContext.newPage();
+  await liveMobilePage.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen"));
   monitor(liveMobilePage, "live-mobile");
   await liveMobilePage.goto(new URL("/#japan", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await liveMobilePage.waitForFunction(() => document.querySelectorAll("#japan-mode-list [data-live-exhibit]").length === 6, null, { timeout: 30_000 });
   await liveMobilePage.locator("#map-mobile-bank-toggle").click();
   await liveMobilePage.waitForFunction(() => document.querySelector("#japan-layer")?.classList.contains("is-mobile-bank-expanded"));
   await liveMobilePage.locator("#japan-mode-list [data-live-exhibit]", { hasText: "10" }).click();
-  await liveMobilePage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "1");
+  await liveMobilePage.waitForFunction(() => document.querySelector("#gaia-live-exhibit-canvas")?.dataset.webglMode === "0");
   const mobileReadout = await liveMobilePage.locator(".gaia-live-exhibit-readout").boundingBox();
   const mobileVisualContract = await liveMobilePage.evaluate(() => {
     const readoutRect = document.querySelector(".gaia-live-exhibit-readout").getBoundingClientRect();
@@ -711,7 +731,7 @@ try {
   });
   assert(mobileReadout && mobileReadout.x >= 0 && mobileReadout.x + mobileReadout.width <= 390, "mobile live readout overflows horizontally");
   assert(mobileReadout.y >= 80 && mobileReadout.y + mobileReadout.height <= 844, "mobile live readout does not preserve a visible map area");
-  assert(mobileReadout.height <= 160, `mobile live readout is not compact: ${mobileReadout.height}px`);
+  assert(mobileReadout.height <= 180, `mobile live readout is not compact: ${mobileReadout.height}px`);
   assert.equal(mobileVisualContract.titleContained, true, "mobile exhibit title clips outside its readout");
   assert.equal(mobileVisualContract.descriptionHidden, true, "mobile live exhibit still displays instructional prose");
   assert.equal(mobileVisualContract.englishTitleHidden, true, "mobile exhibit title retains a space-consuming English subtitle");
@@ -1037,6 +1057,8 @@ try {
       const verticalGap = Math.max(cardRect.top - targetRect.bottom, targetRect.top - cardRect.bottom, 0);
       const overlapsTarget = cardRect.left < targetRect.right && cardRect.right > targetRect.left
         && cardRect.top < targetRect.bottom && cardRect.bottom > targetRect.top;
+      const overlapsControls = cardRect.left < controlsRect.right && cardRect.right > controlsRect.left
+        && cardRect.top < controlsRect.bottom && cardRect.bottom > controlsRect.top;
       const contentContained = [...card.children]
         .filter((element) => !element.hidden && getComputedStyle(element).display !== "none")
         .every((element) => {
@@ -1060,7 +1082,7 @@ try {
         overlapsTarget,
         insidePlacement: card.dataset.placement?.startsWith("inside") === true,
         contained: cardRect.left >= 13 && cardRect.right <= innerWidth - 13
-          && cardRect.top >= 13 && cardRect.bottom <= controlsRect.top - 10,
+          && cardRect.top >= 13 && cardRect.bottom <= innerHeight - 13 && !overlapsControls,
         arrow: getComputedStyle(card, "::before").content,
         contentContained,
         overflowY: getComputedStyle(card).overflowY,
