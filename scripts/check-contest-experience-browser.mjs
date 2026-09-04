@@ -1043,6 +1043,26 @@ try {
       return card?.dataset.positioned === "true" && target?.getClientRects().length > 0;
     }, null, { timeout: 30_000 });
     await clarityPage.waitForTimeout(900);
+    await clarityPage.waitForFunction(() => {
+      const card = document.querySelector(".gaia-tour-card");
+      const target = document.querySelector(".gaia-tour-highlight-target");
+      const controls = document.querySelector(".gaia-tour-controls");
+      if (!(card instanceof HTMLElement) || !(target instanceof HTMLElement) || !(controls instanceof HTMLElement)) return false;
+      const cardRect = card.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const controlsRect = controls.getBoundingClientRect();
+      const horizontalGap = Math.max(cardRect.left - targetRect.right, targetRect.left - cardRect.right, 0);
+      const verticalGap = Math.max(cardRect.top - targetRect.bottom, targetRect.top - cardRect.bottom, 0);
+      const overlapsTarget = cardRect.left < targetRect.right && cardRect.right > targetRect.left
+        && cardRect.top < targetRect.bottom && cardRect.bottom > targetRect.top;
+      const overlapsControls = cardRect.left < controlsRect.right && cardRect.right > controlsRect.left
+        && cardRect.top < controlsRect.bottom && cardRect.bottom > controlsRect.top;
+      const contained = cardRect.left >= 13 && cardRect.right <= innerWidth - 13
+        && cardRect.top >= 13 && cardRect.bottom <= innerHeight - 13 && !overlapsControls;
+      const nearTarget = Math.hypot(horizontalGap, verticalGap) <= 20
+        || (overlapsTarget && card.dataset.placement?.startsWith("inside") === true);
+      return contained && nearTarget;
+    }, null, { timeout: 4_000, polling: 100 });
     claritySteps.push(await clarityPage.evaluate(() => {
       const card = document.querySelector(".gaia-tour-card");
       const target = document.querySelector(".gaia-tour-highlight-target");
