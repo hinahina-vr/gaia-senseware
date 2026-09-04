@@ -120,6 +120,7 @@ try {
       const button = document.querySelector(".intro-story-return[data-primary-action='true']");
       const grid = document.querySelector("#intro-path-grid");
       const style = getComputedStyle(button);
+      const particles = getComputedStyle(button, "::after");
       const rect = button.getBoundingClientRect();
       const gridRect = grid.getBoundingClientRect();
       return {
@@ -130,6 +131,9 @@ try {
         backgroundImage: style.backgroundImage,
         boxShadow: style.boxShadow,
         animationName: style.animationName,
+        particleAnimationName: particles.animationName,
+        particleAnimationDuration: particles.animationDuration,
+        particleBackgroundSize: particles.backgroundSize,
         visualWidthDeltaFromGrid: Math.abs(rect.width - gridRect.width),
         layoutWidthDeltaFromGrid: Math.abs(button.offsetWidth - grid.offsetWidth),
         horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -144,6 +148,9 @@ try {
     assert(revealed.backgroundImage.includes("linear-gradient"));
     assert.notEqual(revealed.boxShadow, "none");
     assert(revealed.animationName.includes("intro-apeironcene-spectrum"));
+    assert(revealed.particleAnimationName.includes("intro-apeironcene-particle-rise"));
+    assert(revealed.particleAnimationDuration.includes("5.8s"));
+    assert(revealed.particleBackgroundSize.includes("50%"));
     assert(revealed.layoutWidthDeltaFromGrid <= 1, `${viewport.name}: action layout width delta ${revealed.layoutWidthDeltaFromGrid}px`);
     assert.equal(revealed.horizontalOverflow, 0);
     assert.equal(revealed.timing.starts, 1);

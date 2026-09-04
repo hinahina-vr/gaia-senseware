@@ -425,7 +425,8 @@
   // The final title panel starts here. Reveal its two destinations with the
   // title itself instead of leaving a several-second title-only dead zone.
   const FINAL_MENU_REVEAL_DELAY = openingMs(13100);
-  const EXIT_DURATION = Math.round(1080 * 0.85);
+  const EXIT_DURATION = openingMs(1440);
+  const STORY_FADE_IN_LEAD_MS = 720;
   const compactArtwork = (Number(navigator.deviceMemory) > 0 && Number(navigator.deviceMemory) <= 4)
     || (Number(navigator.hardwareConcurrency) > 0 && Number(navigator.hardwareConcurrency) <= 4);
   const portraitOpeningArtwork = window.matchMedia("(max-width: 720px)").matches;
@@ -851,6 +852,14 @@
           await window.GaiaModeLoader?.load?.("tour");
         })()
       : Promise.resolve(window.GaiaModeLoader?.load?.(destination === "story" ? "story" : "exploration"));
+    const destinationReady = destination === "story"
+      ? Promise.resolve(routeReady).then(async () => {
+          for (let frame = 0; frame < 120 && !window.GaiaNovel?.prepareEntry; frame += 1) {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+          }
+          return window.GaiaNovel?.prepareEntry?.({ fresh: true });
+        })
+      : routeReady;
     // The sound archive used to begin fetching only after its card was pressed.
     // Warm it during the menu handoff so the four-card entrance remains responsive
     // without adding sound-mode work to the initial opening load.
@@ -872,15 +881,37 @@
       finalMenu.inert = true;
       finalMenu.setAttribute("aria-hidden", "true");
     }
-    // Lazy route assets can finish before or after the opening dissolve. Hide
-    // the abstract WebGL base for that entire interval, not only after loading.
-    document.body.classList.add("gaia-route-handoff");
-    opening.classList.add("is-leaving");
-    const exitReady = new Promise((resolve) => {
-      exitTimer = window.setTimeout(resolve, EXIT_DURATION);
-    });
+    let storyOpenedDirectly = false;
     try {
-      await Promise.all([routeReady, exitReady, soundtrackReady]);
+      // Decode the first story background before beginning the outgoing fade.
+      // The opening artwork therefore remains the visible surface during slow
+      // loads instead of revealing a black or unpainted story layer.
+      if (destination === "story") await Promise.all([destinationReady, soundtrackReady]);
+      // Lazy route assets can finish before or after the opening dissolve. Hide
+      // the abstract WebGL base for that entire interval, not only after loading.
+      document.body.classList.add("gaia-route-handoff");
+      opening.classList.add("is-leaving");
+      const exitReady = new Promise((resolve) => {
+        exitTimer = window.setTimeout(resolve, EXIT_DURATION);
+      });
+      const storyOpenReady = destination === "story" && window.GaiaNovel?.open
+        ? new Promise((resolve, reject) => {
+            window.setTimeout(() => {
+              Promise.resolve(window.GaiaNovel.open(null, {
+                autoStartFresh: true,
+                deferOpenEvent: true,
+                entryPrepared: true,
+              })).then(resolve, reject);
+            }, Math.max(0, EXIT_DURATION - STORY_FADE_IN_LEAD_MS));
+          })
+        : Promise.resolve(false);
+      const [, , , openedStory] = await Promise.all([
+        destination === "story" ? Promise.resolve() : destinationReady,
+        exitReady,
+        destination === "story" ? Promise.resolve() : soundtrackReady,
+        storyOpenReady,
+      ]);
+      storyOpenedDirectly = Boolean(openedStory);
     } catch (error) {
       console.error(error);
       finished = false;
@@ -905,12 +936,35 @@
     }
     if (destination === "tour") history.replaceState(null, "", `${window.location.pathname}${window.location.search}#tour`);
     window.dispatchEvent(new CustomEvent("gaia:opening-complete", { detail: { destination } }));
+    if (storyOpenedDirectly) {
+      await new Promise((resolve) => {
+        let remainingFrames = 30;
+        const confirmStoryPaint = () => {
+          const novelLayer = document.querySelector("#novel-layer");
+          const style = novelLayer ? getComputedStyle(novelLayer) : null;
+          const ready = Boolean(
+            novelLayer
+            && !novelLayer.hidden
+            && style?.visibility === "visible"
+            && Number(style.opacity) > 0.98
+            && style.backgroundImage.includes("url("),
+          );
+          if (ready || remainingFrames <= 0) resolve();
+          else {
+            remainingFrames -= 1;
+            requestAnimationFrame(confirmStoryPaint);
+          }
+        };
+        requestAnimationFrame(confirmStoryPaint);
+      });
+      window.dispatchEvent(new CustomEvent("gaia:novel-open"));
+    }
     opening.hidden = true;
     opening.classList.remove("is-active", "is-leaving");
     document.body.classList.remove("gaia-opening-active");
     particleSystem.stop();
     revealAudioDock();
-    if (destination === "story") {
+    if (destination === "story" && !storyOpenedDirectly) {
       window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
         detail: { index: 0, source: "opening" },
       }));

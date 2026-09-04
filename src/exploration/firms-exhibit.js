@@ -58,13 +58,25 @@ const formatUtc = (value) => {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "—";
   return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
     timeZone: "UTC",
-  }).format(date).replace(" ", " / ");
+  }).format(date);
+};
+
+const formatAge = (value) => {
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return "更新間隔不明";
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
+  if (minutes < 2) return "観測から1分以内";
+  if (minutes < 60) return `観測から${minutes}分`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `観測から${hours}時間`;
+  return `観測から${Math.floor(hours / 24)}日`;
 };
 
 const validSnapshot = (payload) => payload?.schemaVersion === 1
@@ -473,6 +485,9 @@ const renderSnapshot = () => {
   readout.querySelector("[data-firms-status]").textContent = snapshot.source === "nasa-firms-modis" ? "LIVE CACHE" : "SAVED SNAPSHOT";
   legend.querySelector("[data-firms-legend-source]").textContent = snapshot.source === "nasa-firms-modis" ? "NASA更新" : "保存データ";
   legend.querySelector("[data-firms-legend-count]").textContent = `${formatNumber(snapshot.summary.detected)} 検知`;
+  legend.querySelector("[data-firms-latest]").textContent = `${formatUtc(snapshot.summary.end)} UTC`;
+  legend.querySelector("[data-firms-age]").textContent = formatAge(snapshot.summary.end);
+  readout.dataset.firmsLatestAt = snapshot.summary.end;
 };
 
 const select = async () => {
@@ -576,6 +591,7 @@ const mount = () => {
     <i aria-hidden="true"></i>
     <div><small>弱い</small><small>50 MW</small><small>200+ MW</small></div>
     <p><span><b class="is-day"></b>昼 / 金橙</span><span><b class="is-night"></b>夜 / 深紅</span><em data-firms-legend-count>—</em></p>
+    <div class="gaia-firms-data-time"><span>DATA LATEST</span><time data-firms-latest>読込中</time><small data-firms-age>—</small></div>
   `;
   map.append(legend);
 

@@ -84,6 +84,8 @@ try {
   assert(advancing.visible > initial.visible, "fire detections did not appear sequentially");
   assert.equal(await desktop.locator(".gaia-firms-legend").isVisible(), true);
   assert.equal(await desktop.locator(".gaia-firms-readout").isVisible(), true);
+  assert.match(await desktop.locator("[data-firms-latest]").textContent(), /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} UTC$/u);
+  assert.match(await desktop.locator("[data-firms-age]").textContent(), /^観測から/u);
   assert.equal(await desktop.locator(".gaia-live-city-marker:visible").count(), 0);
   assert.equal(await desktop.locator(".gaia-estat-marker:visible").count(), 0);
   assert.match(await desktop.locator(".gaia-firms-copy").innerText(), /火災の範囲ではなく.+熱異常/u);

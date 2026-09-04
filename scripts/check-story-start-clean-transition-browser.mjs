@@ -12,95 +12,113 @@ const { chromium } = await import(pathToFileURL(playwrightEntry).href);
 const outputDir = path.resolve(outputArgument || "artifacts/story-start-clean-transition-browser");
 fs.mkdirSync(outputDir, { recursive: true });
 
-const REACHED_KEY = "gaiaSensewareTrueEnd:reached:v1";
 const viewports = [
   { name: "pc-1440", width: 1440, height: 900 },
   { name: "mobile-390", width: 390, height: 844 },
 ];
-const baseInterfaceSelectors = [
-  "#novel-title-screen",
-  "#novel-layer.is-title .novel-topbar",
-  "#gaia-opening",
-  "#gaia-opening .gaia-vn-final-copy",
-  "#intro-layer",
-  "#intro-layer .intro-shell",
-  ".status",
-  "#guide",
-  "#mode-caption",
-  ".mode-nav",
-  ".actions",
-];
 const report = { status: "running", baseUrl, scans: [], consoleErrors: [], pageErrors: [], responses404: [] };
-
-const scanBaseInterface = (page, elapsed) => page.evaluate(({ selectors, elapsedMs }) => ({
-  elapsed: elapsedMs,
-  phase: document.querySelector("#novel-layer")?.dataset.runtimeTransition || "",
-  sceneTransitioning: document.body.classList.contains("scene-transitioning"),
-  nodes: selectors.map((selector) => {
-    const node = document.querySelector(selector);
-    const style = node ? getComputedStyle(node) : null;
-    const rect = node?.getBoundingClientRect();
-    return {
-      selector,
-      hidden: node?.hidden ?? null,
-      display: style?.display || "",
-      visibility: style?.visibility || "",
-      opacity: style?.opacity || "",
-      painted: Boolean(
-        node
-        && style?.display !== "none"
-        && style?.visibility !== "hidden"
-        && Number(style?.opacity || 1) > 0
-        && rect?.width > 0
-        && rect?.height > 0
-      ),
-    };
-  }),
-}), { selectors: baseInterfaceSelectors, elapsedMs: elapsed });
 
 const browser = await chromium.launch({ headless: true, executablePath });
 try {
   for (const viewport of viewports) {
     const context = await browser.newContext({ viewport, reducedMotion: "no-preference" });
-    await context.addInitScript(({ reachedKey }) => {
+    await context.addInitScript(() => {
       localStorage.clear();
-      localStorage.setItem(reachedKey, new Date().toISOString());
       localStorage.setItem("gaia-senseware-bgm-volume", "0");
       localStorage.setItem("gaiaSensewareNovel:config:v4", JSON.stringify({ messageSpeedPercent: 400, reducedMotion: false }));
-    }, { reachedKey: REACHED_KEY });
+    });
     const page = await context.newPage();
     page.on("console", (message) => { if (message.type() === "error") report.consoleErrors.push(`${viewport.name}: ${message.text()}`); });
     page.on("pageerror", (error) => report.pageErrors.push(`${viewport.name}: ${error.message}`));
     page.on("response", (response) => { if (response.status() === 404) report.responses404.push(`${viewport.name}: ${response.url()}`); });
 
     await page.goto(new URL("/", baseUrl).href, { waitUntil: "domcontentloaded", timeout: 90_000 });
-    await page.waitForFunction(() => Boolean(globalThis.GaiaNovel && !document.querySelector("#gaia-opening-sound-modal")?.hidden));
-    await page.locator("#gaia-opening-sound-on").click();
+    await page.locator("#gaia-opening-sound-off").waitFor({ state: "visible", timeout: 30_000 });
+    await page.locator("#gaia-opening-sound-off").click();
     await page.waitForFunction(() => !document.querySelector("#gaia-opening-skip")?.hidden);
     await page.locator("#gaia-opening-skip").click();
     await page.waitForFunction(() => !document.querySelector("#gaia-opening-final-menu")?.hidden);
-    await page.locator("#gaia-opening-route-story").click();
-    await page.waitForFunction(() => Boolean(
-      document.querySelector("#gaia-opening")?.hidden
-      && document.querySelector("#novel-layer")?.classList.contains("is-title")
-    ));
-    await page.locator("#novel-start-button").click();
-    await page.waitForFunction(() => document.body.classList.contains("scene-transitioning"));
 
-    const samples = [];
-    let elapsed = 0;
-    for (const delay of [0, 240, 520, 300, 400, 400]) {
-      if (delay) await page.waitForTimeout(delay);
-      elapsed += delay;
-      samples.push(await scanBaseInterface(page, elapsed));
-      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${elapsed}ms.png`) });
-    }
-    await page.waitForFunction(() => document.querySelector("#novel-layer")?.dataset.runtimeReveal === "revealed");
-    const leaked = samples.flatMap((sample) => sample.nodes
-      .filter((node) => node.painted)
-      .map((node) => `${sample.elapsed}ms ${node.selector}`));
-    assert.deepEqual(leaked, [], `${viewport.name}: base interface painted during story start: ${leaked.join(", ")}`);
-    report.scans.push({ viewport: viewport.name, samples, passed: true });
+    await page.evaluate(() => {
+      globalThis.__gaiaStoryEntryFrames = [];
+      const startedAt = performance.now();
+      const sample = () => {
+        const opening = document.querySelector("#gaia-opening");
+        const novel = document.querySelector("#novel-layer");
+        const runtime = document.querySelector("#novel-runtime");
+        const chapter = document.querySelector("#novel-chapter-card");
+        const openingStyle = opening ? getComputedStyle(opening) : null;
+        const novelStyle = novel ? getComputedStyle(novel) : null;
+        globalThis.__gaiaStoryEntryFrames.push({
+          elapsed: performance.now() - startedAt,
+          openingHidden: opening?.hidden ?? true,
+          openingOpacity: Number(openingStyle?.opacity || 0),
+          novelHidden: novel?.hidden ?? true,
+          novelOpacity: Number(novelStyle?.opacity || 0),
+          novelVisibility: novelStyle?.visibility || "",
+          novelOpenClass: novel?.classList.contains("is-open") || false,
+          novelTransitionDuration: novelStyle?.transitionDuration || "",
+          novelTransitionDelay: novelStyle?.transitionDelay || "",
+          backgroundImage: novelStyle?.backgroundImage || "",
+          entryTransition: novel?.dataset.entryTransition || "",
+          runtimeReveal: novel?.dataset.runtimeReveal || "",
+          stepType: novel?.dataset.stepType || "",
+          runtimeVisible: Boolean(runtime && !runtime.hidden),
+          chapterVisible: Boolean(chapter && !chapter.hidden),
+          bodyNovelOpen: document.body.classList.contains("novel-open"),
+        });
+        if (performance.now() - startedAt < 8_000) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+
+    await page.locator("#gaia-opening-route-story").click();
+    await page.waitForFunction(() => {
+      const novel = document.querySelector("#novel-layer");
+      return novel?.dataset.runtimeReveal === "revealed"
+        && novel?.dataset.entryTransition === "visible"
+        && novel.classList.contains("is-open");
+    }, null, { timeout: 30_000 });
+    await page.waitForTimeout(700);
+    const frames = await page.evaluate(() => globalThis.__gaiaStoryEntryFrames || []);
+    const outgoingFadeFrames = frames.filter((frame) => !frame.openingHidden && frame.openingOpacity > 0.05 && frame.openingOpacity < 0.95);
+    const incomingFadeFrames = frames.filter((frame) => !frame.novelHidden && frame.novelOpacity > 0.05 && frame.novelOpacity < 0.95);
+    const visibleNovelFrames = frames.filter((frame) => !frame.novelHidden && frame.novelOpacity > 0.01);
+    const compositedRevealFrames = outgoingFadeFrames.filter((frame) => !frame.novelHidden && frame.novelOpacity > 0.01);
+    const invalidNovelFrames = visibleNovelFrames.filter((frame) => (
+      !frame.backgroundImage.includes("url(")
+      || !frame.runtimeVisible
+      || !frame.chapterVisible
+      || frame.stepType !== "section-separator"
+    ));
+    const lastOutgoing = frames.findLast((frame) => !frame.openingHidden && frame.openingOpacity > 0.02);
+    const firstIncoming = visibleNovelFrames[0];
+    const uncoveredGapMs = Math.max(0, (firstIncoming?.elapsed || 0) - (lastOutgoing?.elapsed || 0));
+
+    report.scans.push({
+      viewport: viewport.name,
+      frameCount: frames.length,
+      outgoingFadeFrames: outgoingFadeFrames.length,
+      incomingFadeFrames: incomingFadeFrames.length,
+      compositedRevealFrames: compositedRevealFrames.length,
+      uncoveredGapMs,
+      lastOutgoing,
+      firstNovelMounted: frames.find((frame) => !frame.novelHidden),
+      firstNovelPreparing: frames.find((frame) => frame.entryTransition === "preparing"),
+      firstNovelPaintReady: frames.find((frame) => frame.entryTransition === "paint-ready"),
+      firstNovelOpenClass: frames.find((frame) => frame.novelOpenClass),
+      firstIncoming,
+      passed: false,
+    });
+
+    assert(outgoingFadeFrames.length >= 3, `${viewport.name}: opening did not fade out progressively`);
+    assert(incomingFadeFrames.length >= 3, `${viewport.name}: story did not fade in progressively`);
+    assert(compositedRevealFrames.length >= 3, `${viewport.name}: the prepared story did not fade in behind the outgoing artwork`);
+    assert(visibleNovelFrames.length > 0, `${viewport.name}: story layer never became visible`);
+    assert.deepEqual(invalidNovelFrames, [], `${viewport.name}: an unpainted or separator-less story frame became visible`);
+    assert(uncoveredGapMs <= 100, `${viewport.name}: blank handoff gap lasted ${uncoveredGapMs.toFixed(1)}ms`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-separator-ready.png`) });
+    report.scans.at(-1).passed = true;
     await context.close();
   }
 

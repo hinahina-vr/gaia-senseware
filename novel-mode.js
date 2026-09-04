@@ -61,9 +61,9 @@
     "#error-panel",
   ].join(",");
   const baseInterfaceRestore = new Map();
-  const suppressBaseInterface = () => {
+  const suppressBaseInterface = ({ preserveOpening = false } = {}) => {
     const opening = document.querySelector("#gaia-opening");
-    if (opening instanceof HTMLElement) {
+    if (!preserveOpening && opening instanceof HTMLElement) {
       opening.inert = true;
       opening.setAttribute("aria-hidden", "true");
       opening.hidden = true;
@@ -104,6 +104,8 @@
   const TEXT_PAGE_INDICATOR_SAFETY_PX = 12;
   const SECTION_SEPARATOR_MS = 2200;
   const SECTION_SEPARATOR_REDUCED_MOTION_MS = 2900;
+  const ENTRY_REVEAL_MS = 620;
+  const ENTRY_REVEAL_FALLBACK_MS = ENTRY_REVEAL_MS + 160;
   const BACKGROUND_RELEASE_MS = 820;
   const BACKGROUND_RELEASE_FALLBACK_MS = BACKGROUND_RELEASE_MS + 160;
   const FAST_FORWARD_HOLD_DELAY_MS = 180;
@@ -582,6 +584,7 @@
 
   let state = defaultState();
   let isOpen = false;
+  let novelEntryPending = null;
   let hasStarted = false;
   let runtimeRevealPending = false;
   let isRevealing = false;
@@ -1576,6 +1579,26 @@
     await nextPaint();
   };
 
+  const waitForEntryReveal = () => {
+    if (motionReduced()) return Promise.resolve();
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(fallbackTimer);
+        layer.removeEventListener("transitionend", handleTransitionEnd);
+        resolve();
+      };
+      const handleTransitionEnd = (event) => {
+        if (event.target !== layer || event.propertyName !== "opacity" || event.pseudoElement) return;
+        finish();
+      };
+      const fallbackTimer = window.setTimeout(finish, ENTRY_REVEAL_FALLBACK_MS);
+      layer.addEventListener("transitionend", handleTransitionEnd);
+    });
+  };
+
   const waitForBackgroundRelease = () => {
     if (motionReduced()) return Promise.resolve();
     return new Promise((resolve) => {
@@ -1604,6 +1627,23 @@
     layer.style.removeProperty("--novel-transition-background-repeat");
   };
 
+  const runtimePresentationForStep = (step) => {
+    const cue = backgroundCues?.forStep?.(step);
+    return cue?.assetPath
+      ? { image: `url("./${backgroundAssetForCue(cue)}")`, cueId: cue.id }
+      : backgroundPresentationForStep(step);
+  };
+
+  const preloadRuntimeStep = async (step) => {
+    if (!step) return null;
+    const presentation = runtimePresentationForStep(step);
+    await Promise.all([
+      preloadBackground(presentation.image),
+      preloadCharacterPortrait(step),
+    ]);
+    return presentation;
+  };
+
   const revealRuntimeForStep = async (step, reveal, { transition = false } = {}) => {
     const target = resolveVisibleStep(step?.id) || step;
     if (!target || runtimeRevealPending) return false;
@@ -1613,21 +1653,19 @@
     layer.setAttribute("aria-busy", "true");
     [elements.start, elements.resume].forEach((control) => { control.disabled = true; });
     try {
-      const cue = backgroundCues?.forStep?.(target);
-      const presentation = cue?.assetPath
-        ? { image: `url("./${backgroundAssetForCue(cue)}")`, cueId: cue.id }
-        : backgroundPresentationForStep(target);
-      await Promise.all([
-        preloadBackground(presentation.image),
-        preloadCharacterPortrait(target),
-      ]);
-      layer.dataset.sceneId = target.sceneId;
-      layer.dataset.stepId = target.id;
-      layer.dataset.stepType = target.type;
-      applyBackgroundCueForStep(target);
-      requestTrackForBackground(presentation);
-      layer.dataset.runtimeReveal = "paint-ready";
-      await nextPaint();
+      const presentation = await preloadRuntimeStep(target);
+      let presentationApplied = false;
+      const applyPresentationOnce = async () => {
+        if (presentationApplied) return;
+        presentationApplied = true;
+        layer.dataset.sceneId = target.sceneId;
+        layer.dataset.stepId = target.id;
+        layer.dataset.stepType = target.type;
+        applyBackgroundCueForStep(target);
+        requestTrackForBackground(presentation);
+        layer.dataset.runtimeReveal = "paint-ready";
+        await waitForBackgroundPaint();
+      };
       let revealed = false;
       const revealOnce = () => {
         if (revealed) return;
@@ -1637,16 +1675,19 @@
       if (transition && !motionReduced()) {
         layer.dataset.runtimeTransition = "covering";
         await runSceneTransition(async () => {
+          await applyPresentationOnce();
           revealOnce();
           layer.dataset.runtimeTransition = "revealing";
           await nextPaint();
         }, null, "novel");
         if (!revealed) {
+          await applyPresentationOnce();
           revealOnce();
           await nextPaint();
         }
         layer.dataset.runtimeTransition = "complete";
       } else {
+        await applyPresentationOnce();
         revealOnce();
         await nextPaint();
         layer.dataset.runtimeTransition = transition ? "reduced" : "none";
@@ -4703,7 +4744,7 @@
     autoTimer = window.setTimeout(advance, AUTO_DELAY_MS);
   }
 
-  const startNewSession = async () => {
+  const startNewSession = async ({ transition = true } = {}) => {
     exitDebugJumpSession();
     state = defaultState();
     state.sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -4711,7 +4752,7 @@
       renderEves();
       saveProgress();
       renderSectionSeparator();
-    }, { transition: true });
+    }, { transition });
   };
 
   const resumeStoredSession = async () => {
@@ -4729,14 +4770,14 @@
     });
   };
 
-  const resumeWithoutTitle = async () => {
+  const resumeWithoutTitle = async ({ transition = false } = {}) => {
     const stored = getStoredProgress();
     const latestManual = getManualSaves()
       .filter(Boolean)
       .sort((left, right) => right.savedAt - left.savedAt)[0]?.progress || null;
     const progress = stored || latestManual;
     if (!progress) {
-      await startNewSession();
+      await startNewSession({ transition });
       return;
     }
     exitDebugJumpSession();
@@ -4748,17 +4789,19 @@
     });
   };
 
-  const restartStory = () => {
+  const restartStory = async () => {
     exitDebugJumpSession();
     const sessionId = state.sessionId || `${Date.now().toString(36)}-restart`;
     state = defaultState();
     state.sessionId = sessionId;
     resetFastForward();
     closeConfig();
-    showRuntime();
-    renderEves();
-    saveProgress();
-    renderSectionSeparator();
+    await revealRuntimeForStep(currentStep(), () => {
+      showRuntime();
+      renderEves();
+      saveProgress();
+      renderSectionSeparator();
+    }, { transition: true });
   };
 
   const jumpToSceneStart = (sceneId, event = null) => {
@@ -5593,31 +5636,78 @@
     elements.close.hidden = true;
   };
 
-  function openNovel(event = null, { resumeStored = true } = {}) {
+  const storyEntryStep = ({ fresh = false } = {}) => {
+    if (fresh) return stepMap.get(defaultState().stepId) || null;
+    const latestManual = getManualSaves()
+      .filter(Boolean)
+      .sort((left, right) => right.savedAt - left.savedAt)[0]?.progress || null;
+    const progress = getStoredProgress() || latestManual || defaultState();
+    return resolveVisibleStep(progress.stepId) || stepMap.get(defaultState().stepId) || null;
+  };
+
+  const prepareStoryEntry = ({ fresh = false } = {}) => preloadRuntimeStep(storyEntryStep({ fresh }));
+
+  const revealPreparedNovelLayer = async () => {
+    layer.dataset.entryTransition = "paint-ready";
+    await waitForBackgroundPaint();
+    layer.style.setProperty("visibility", "visible");
+    layer.style.setProperty("opacity", "0");
+    layer.style.setProperty("transition", "none");
+    await nextPaint();
+    const revealComplete = waitForEntryReveal();
+    layer.style.removeProperty("opacity");
+    layer.style.removeProperty("transition");
+    layer.classList.add("is-open");
+    layer.dataset.entryTransition = "revealing";
+    await revealComplete;
+    await nextPaint();
+    layer.style.removeProperty("visibility");
+    layer.dataset.entryTransition = "visible";
+  };
+
+  function openNovel(event = null, {
+    resumeStored = true,
+    autoStartFresh = false,
+    deferReveal = false,
+    deferOpenEvent = false,
+    entryPrepared = false,
+  } = {}) {
     event?.preventDefault?.();
-    previousFocus = document.activeElement;
-    suppressBaseInterface();
-    particleSystem.start();
-    requestedStoryTrack = "story";
-    void window.GaiaOpeningAudio?.switchTrack?.("story", 0.16);
-    window.dispatchEvent(new CustomEvent("gaia:novel-open"));
-    isOpen = true;
-    setInteractionLifecycle("idle");
-    layer.hidden = false;
-    layer.setAttribute("aria-hidden", "false");
-    document.body.classList.add("novel-open");
-    document.body.classList.remove("gaia-route-handoff");
-    prepareFreshRuntime();
-    if (resumeStored) void resumeWithoutTitle();
-    requestAnimationFrame(() => layer.classList.add("is-open"));
-    if (window.location.hash !== "#story" && !/\/story\/?$/i.test(window.location.pathname)) {
-      history.replaceState(null, "", "#story");
-    }
+    if (novelEntryPending) return novelEntryPending;
+    novelEntryPending = (async () => {
+      if (!entryPrepared && (resumeStored || autoStartFresh)) await prepareStoryEntry({ fresh: autoStartFresh });
+      previousFocus = document.activeElement;
+      suppressBaseInterface({ preserveOpening: deferOpenEvent });
+      particleSystem.start();
+      requestedStoryTrack = "story";
+      void window.GaiaOpeningAudio?.switchTrack?.("story", 0.16);
+      if (!deferOpenEvent) window.dispatchEvent(new CustomEvent("gaia:novel-open"));
+      isOpen = true;
+      setInteractionLifecycle("idle");
+      layer.classList.remove("is-open");
+      layer.dataset.entryTransition = "preparing";
+      layer.hidden = false;
+      layer.setAttribute("aria-hidden", "false");
+      document.body.classList.add("novel-open");
+      document.body.classList.remove("gaia-route-handoff");
+      prepareFreshRuntime();
+      if (autoStartFresh) await startNewSession({ transition: false });
+      else if (resumeStored) await resumeWithoutTitle({ transition: false });
+      if (!deferReveal) await revealPreparedNovelLayer();
+      if (window.location.hash !== "#story" && !/\/story\/?$/i.test(window.location.pathname)) {
+        history.replaceState(null, "", "#story");
+      }
+      return true;
+    })().finally(() => {
+      novelEntryPending = null;
+    });
+    return novelEntryPending;
   }
-  const openTrueEnd = (event = null) => {
-    openNovel(event, { resumeStored: false });
+  const openTrueEnd = async (event = null) => {
+    await openNovel(event, { resumeStored: false, deferReveal: true });
     showRuntime();
-    if (!launchTrueEnd()) void resumeWithoutTitle();
+    if (!launchTrueEnd()) await resumeWithoutTitle({ transition: false });
+    await revealPreparedNovelLayer();
   };
   function closeNovelNow() {
     clearTimers();
@@ -5697,17 +5787,17 @@
   document.querySelectorAll("[data-novel-open]").forEach((button) => {
     button.addEventListener("click", (event) => runSceneTransition(() => openNovel(event, { autoStartFresh: true }), event));
   });
-  window.addEventListener("gaia:novel-open-at-mode", (event) => {
+  window.addEventListener("gaia:novel-open-at-mode", async (event) => {
     if (event.detail?.source === "opening") {
-      openNovel(null, { autoStartFresh: true });
+      await openNovel(null, { autoStartFresh: true });
       return;
     }
     if (event.detail?.source === "title-menu") {
-      openNovel(null, { autoStartFresh: true });
+      await openNovel(null, { autoStartFresh: true });
       return;
     }
     if (event.detail?.source === "apeironcene") {
-      openTrueEnd();
+      await openTrueEnd();
       return;
     }
     const index = Number(event.detail?.index);
@@ -5716,9 +5806,13 @@
     state = defaultState();
     if (target) state.stepId = target.steps[0].id;
     state.sessionId = `${Date.now().toString(36)}-entry`;
-    openNovel();
-    showRuntime();
-    renderSectionSeparator();
+    await preloadRuntimeStep(currentStep());
+    await openNovel(null, { resumeStored: false, deferReveal: true });
+    await revealRuntimeForStep(currentStep(), () => {
+      showRuntime();
+      renderSectionSeparator();
+    }, { transition: false });
+    await revealPreparedNovelLayer();
   });
 
   window.addEventListener("gaia:gx-story-progress", (event) => {
@@ -5995,6 +6089,7 @@
   globalThis.GaiaNovel = Object.freeze({
     open: openNovel,
     close: closeNovel,
+    prepareEntry: prepareStoryEntry,
     getState: () => structuredClone(state),
     scoreReflection: (ids) => scoreReflection(ids),
     getBackgroundCue: (stepId) => {

@@ -207,13 +207,25 @@ const formatUtc = (value) => {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "時刻不明";
   return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
     timeZone: "UTC",
-  }).format(date).replace(" ", " / ") + " UTC";
+  }).format(date) + " UTC";
+};
+
+const formatAge = (value) => {
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return "更新間隔不明";
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
+  if (minutes < 2) return "データ時点から1分以内";
+  if (minutes < 60) return `データ時点から${minutes}分`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `データ時点から${hours}時間`;
+  return `データ時点から${Math.floor(hours / 24)}日`;
 };
 
 const coordinateParams = (points) => ({
@@ -671,6 +683,8 @@ const renderReadout = (definition, data) => {
   legend.querySelector("[data-planet-legend-title]").textContent = definition.visualLabel;
   legend.querySelector("[data-planet-legend-count]").textContent = summary.count;
   legend.querySelector("[data-planet-legend-state]").textContent = data.sourceState;
+  legend.querySelector("[data-planet-data-time]").textContent = formatUtc(data.observedAt);
+  legend.querySelector("[data-planet-data-age]").textContent = formatAge(data.observedAt);
   canvas.dataset.planetExhibit = definition.id;
   canvas.dataset.planetSourceState = data.sourceState;
   canvas.dataset.planetPointCount = String(data.points.length);
@@ -784,6 +798,7 @@ const mount = () => {
     <header><strong data-planet-legend-title>LIVE PLANET SIGNAL</strong><span data-planet-legend-state>FETCHING</span></header>
     <i aria-hidden="true"></i>
     <p><span>暗い</span><span>観測値</span><span>明るい</span><em data-planet-legend-count>—</em></p>
+    <div class="gaia-planet-data-time"><span>DATA TIME</span><time data-planet-data-time>読込中</time><small data-planet-data-age>—</small></div>
   `;
   map.append(legend);
 
@@ -792,7 +807,6 @@ const mount = () => {
   readout.hidden = true;
   readout.setAttribute("aria-live", "polite");
   readout.innerHTML = `
-    <button class="gaia-planet-return" type="button" data-planet-return><span>MAP 01—26</span><strong>地球展示へ戻る</strong></button>
     <div class="gaia-planet-chapter">
       <p data-planet-kicker></p>
       <div><button type="button" data-planet-step="-1" aria-label="前の展示">‹</button><strong data-planet-title></strong><button type="button" data-planet-step="1" aria-label="次の展示">›</button></div>
@@ -828,7 +842,6 @@ const mount = () => {
     if (!(target instanceof HTMLButtonElement) || target.dataset.planetExhibit || activeIndex < 0) return;
     deactivate();
   }, { capture: true });
-  readout.querySelector("[data-planet-return]")?.addEventListener("click", () => document.querySelector("#japan-mode-list .map-mode-button")?.click());
   readout.querySelectorAll("[data-planet-step]").forEach((item) => item.addEventListener("click", () => step(item.dataset.planetStep)));
   addEventListener("resize", () => { if (activeIndex >= 0) lastRenderedAt = 0; }, { passive: true });
   document.addEventListener("visibilitychange", () => {

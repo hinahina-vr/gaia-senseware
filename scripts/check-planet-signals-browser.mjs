@@ -133,6 +133,9 @@ try {
   assert.match(await desktop.locator("#map-mode-firms-label").textContent(), /LIVE OPEN DATA[\s\S]*6つの観測信号/u);
   const desktopEvidence = [];
   for (let index = 0; index < 5; index += 1) desktopEvidence.push(await selectAndRead(desktop, index));
+  assert.equal(await desktop.locator("[data-planet-return]").count(), 0, "legacy return card should not be rendered");
+  assert.match(await desktop.locator("[data-planet-data-time]").textContent(), /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} UTC$/u);
+  assert.match(await desktop.locator("[data-planet-data-age]").textContent(), /^データ時点から/u);
   assert.deepEqual(desktopEvidence.map(({ id }) => id), [
     "global-wind-pressure",
     "global-ocean-pulse",

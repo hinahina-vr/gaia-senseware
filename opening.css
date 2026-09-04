@@ -52,7 +52,7 @@ html[data-gaia-artwork-quality="compact"] .gaia-opening {
    when visitors enter the free-exploration route. Keep its copy and controls
    out of the opening dissolve; otherwise the default "Breathing Earth" state
    reads like a broken intermediate screen through the fading artwork. */
-body.gaia-opening-active > .experience > :not(.gaia-opening):not(.gaia-audio-dock):not(template) {
+body.gaia-opening-active:not(.novel-open) > .experience > :not(.gaia-opening):not(.gaia-audio-dock):not(template) {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
@@ -61,7 +61,7 @@ body.gaia-opening-active > .experience > :not(.gaia-opening):not(.gaia-audio-doc
 /* A direct #story load initializes the novel layer before the opening sound
    gate has finished. Keep it out of Chromium's backdrop composition so a
    title-action border cannot leak through as an empty glowing rectangle. */
-body.gaia-opening-active .novel-layer {
+body.gaia-opening-active:not(.novel-open) .novel-layer {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;

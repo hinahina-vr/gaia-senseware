@@ -223,7 +223,7 @@
 }
 
 .intro-story-return::after {
-  inset: -24% -2%;
+  inset: -70% -2%;
   border-radius: inherit;
   background:
     radial-gradient(circle at 2% 64%, #fff 0 1.5px, rgba(136, 245, 255, 0.78) 1.6px 2.5px, transparent 3.7px),
@@ -275,11 +275,14 @@
     radial-gradient(circle at 88% 92%, rgba(215, 190, 255, 0.88) 0 0.8px, transparent 2.2px),
     radial-gradient(circle at 92% 56%, rgba(255, 231, 169, 0.86) 0 0.9px, transparent 2.4px),
     radial-gradient(circle at 96% 76%, rgba(119, 238, 255, 0.9) 0 0.8px, transparent 2.1px);
+  background-repeat: repeat-y;
+  background-size: 100% 50%;
   filter:
     drop-shadow(0 0 5px rgba(200, 252, 255, 0.98))
     drop-shadow(0 0 12px rgba(155, 201, 255, 0.62));
-  transform: translate3d(-2%, 10px, 0) scale(0.92);
-  transform-origin: center;
+  transform: translate3d(0, 0, 0);
+  transform-origin: center bottom;
+  will-change: transform, opacity, filter;
 }
 
 .intro-story-return > * {
@@ -349,8 +352,10 @@
 }
 
 .intro-story-return.is-apeironcene::after {
-  opacity: 0.78;
-  animation: intro-apeironcene-twinkle 5.4s ease-in-out infinite alternate;
+  opacity: 0.82;
+  animation:
+    intro-apeironcene-particle-rise 5.8s linear infinite,
+    intro-apeironcene-particle-shimmer 2.7s ease-in-out infinite alternate;
 }
 
 .intro-story-return.is-apeironcene span {
@@ -422,12 +427,12 @@
 }
 
 @keyframes intro-apeironcene-stars {
-  0% { opacity: 0; filter: blur(2px) brightness(1) drop-shadow(0 0 4px rgba(180, 246, 255, 0.6)); transform: translate3d(-2%, 10px, 0) scale(0.92); }
-  18% { opacity: 0.42; filter: blur(0.7px) brightness(1.5) drop-shadow(0 0 7px rgba(173, 242, 255, 0.82)); }
-  42% { opacity: 1; filter: blur(0) brightness(2.45) drop-shadow(0 0 10px rgba(206, 252, 255, 1)); transform: translate3d(-0.5%, -2px, 0) scale(1.01); }
-  66% { opacity: 0.72; filter: blur(0.2px) brightness(1.65) drop-shadow(0 0 8px rgba(190, 220, 255, 0.88)); }
-  82% { opacity: 1; filter: blur(0) brightness(2.8) drop-shadow(0 0 12px rgba(221, 255, 255, 1)); transform: translate3d(1%, -7px, 0) scale(1.055); }
-  100% { opacity: 0.22; filter: blur(1px) brightness(1.2) drop-shadow(0 0 5px rgba(175, 238, 255, 0.72)); transform: translate3d(2%, -12px, 0) scale(1.1); }
+  0% { opacity: 0; filter: blur(2px) brightness(1) drop-shadow(0 0 4px rgba(180, 246, 255, 0.6)); transform: translate3d(0, 42%, 0); }
+  18% { opacity: 0.48; filter: blur(0.7px) brightness(1.5) drop-shadow(0 0 7px rgba(173, 242, 255, 0.82)); transform: translate3d(-0.3%, 31%, 0); }
+  42% { opacity: 1; filter: blur(0) brightness(2.45) drop-shadow(0 0 10px rgba(206, 252, 255, 1)); transform: translate3d(0.4%, 6%, 0); }
+  66% { opacity: 0.76; filter: blur(0.2px) brightness(1.65) drop-shadow(0 0 8px rgba(190, 220, 255, 0.88)); transform: translate3d(-0.2%, -20%, 0); }
+  82% { opacity: 1; filter: blur(0) brightness(2.8) drop-shadow(0 0 12px rgba(221, 255, 255, 1)); transform: translate3d(0.5%, -37%, 0); }
+  100% { opacity: 0.18; filter: blur(1px) brightness(1.2) drop-shadow(0 0 5px rgba(175, 238, 255, 0.72)); transform: translate3d(0, -54%, 0); }
 }
 
 @keyframes intro-apeironcene-title-out {
@@ -453,9 +458,14 @@
   92% { opacity: 0; transform: translateX(760%) rotate(13deg); }
 }
 
-@keyframes intro-apeironcene-twinkle {
-  from { opacity: 0.42; filter: brightness(1) drop-shadow(0 0 5px rgba(178, 241, 255, 0.74)); transform: translate3d(-0.6%, 2px, 0) scale(0.98); }
-  to { opacity: 0.9; filter: brightness(1.65) drop-shadow(0 0 9px rgba(202, 249, 255, 0.94)); transform: translate3d(0.7%, -3px, 0) scale(1.025); }
+@keyframes intro-apeironcene-particle-rise {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -50%, 0); }
+}
+
+@keyframes intro-apeironcene-particle-shimmer {
+  from { opacity: 0.48; filter: brightness(1) drop-shadow(0 0 5px rgba(178, 241, 255, 0.74)); }
+  to { opacity: 0.94; filter: brightness(1.72) drop-shadow(0 0 10px rgba(202, 249, 255, 0.98)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

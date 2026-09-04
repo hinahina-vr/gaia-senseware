@@ -8374,7 +8374,7 @@ for (const country of countryValues) {
   const enterIntroSelection = (event = null) => {
     const selectedPath = introSelectedPath;
     if (!INTRO_PATHS[selectedPath]) return;
-    runSceneTransition(() => {
+    runSceneTransition(async () => {
       if (selectedPath === "abstract") {
         closeIntro();
         return;
@@ -8391,10 +8391,15 @@ for (const country of countryValues) {
         }));
         return;
       }
+      await window.GaiaModeLoader?.load?.("story");
       closeIntro({ restoreFocus: false });
-      window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
-        detail: { index: modeToIndex },
-      }));
+      if (window.GaiaNovel?.open) {
+        await window.GaiaNovel.open(null, { autoStartFresh: true });
+      } else {
+        window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
+          detail: { index: modeToIndex, source: "title-menu" },
+        }));
+      }
     }, selectedPath, event);
   };
 
@@ -9109,11 +9114,16 @@ for (const country of countryValues) {
       const path = button.dataset.introPath;
       if (path === "novel") {
         const source = button.dataset.storyDestination === "apeironcene" ? "apeironcene" : "title-menu";
-        runSceneTransition(() => {
+        runSceneTransition(async () => {
+          await window.GaiaModeLoader?.load?.("story");
           closeIntro({ restoreFocus: false });
-          window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
-            detail: { index: 0, source },
-          }));
+          if (source === "title-menu" && window.GaiaNovel?.open) {
+            await window.GaiaNovel.open(null, { autoStartFresh: true });
+          } else {
+            window.dispatchEvent(new CustomEvent("gaia:novel-open-at-mode", {
+              detail: { index: 0, source },
+            }));
+          }
         }, path, event);
         return;
       }
