@@ -16,8 +16,9 @@ production D1:
 
 1. `gaia-senseware-sensors` を作成済み
 2. UUID `6a386d6a-2858-4673-b396-6c340f9ea6d7` をroot `wrangler.jsonc` のD1 bindingへ設定済み
-3. remote migration `0001_initial.sql` から `0005_region_codes.sql` まで適用済み
-4. `0006_privacy_first_accounts.sql` はGoogle由来の保存済みname/emailを匿名名/NULLへ移行し、匿名おためしアカウント種別を追加する。Pages deployより先にremoteへ適用する
+3. 2026-09-04時点でremote migration `0001_initial.sql` から `0011_read_optimized_rollups.sql` まで適用済み。未適用migrationなしを確認済み
+4. `0006_privacy_first_accounts.sql` はGoogle由来の保存済みname/emailを匿名名/NULLへ移行し、匿名おためしアカウント種別を追加した
+5. `0011_read_optimized_rollups.sql` は公開地図APIがtelemetry全履歴を走査しないよう、telemetry・socialのtrigger同期集計表とindexを追加した。障害記録と容量計画は[../../docs/SENSOR_OPERATIONS.md](../../docs/SENSOR_OPERATIONS.md)を参照
 
 以後のschema変更は追加migrationとして適用し、既存migrationを書き換えません。
 

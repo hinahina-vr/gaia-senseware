@@ -30,6 +30,8 @@
 
 基本体験はHTML、CSS、JavaScript、WebGL 2、Canvas 2D、Web Audio API、ブラウザ標準APIで動作します。ブラウザへ外部JavaScriptランタイムライブラリを配信しません。TypeScriptとWranglerは、参加型センサーとPages APIの開発・検査にだけ使用します。
 
+参加型センサーのD1障害記録・負荷試算・復旧手順は[運用資料](SENSOR_OPERATIONS.md)、保存・公開・削除範囲は[プライバシー説明](../PRIVACY.md)、脆弱性報告と安全上の注意は[Security Policy](../SECURITY.md)に分けて公開しています。
+
 ## MAP 31展示とデータ経路
 
 | 番号 | 内容 | データの状態 |

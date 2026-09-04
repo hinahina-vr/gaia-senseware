@@ -188,6 +188,71 @@
   const introPathGrid = document.querySelector("#intro-path-grid");
   const introPathButtons = Array.from(document.querySelectorAll("[data-intro-path]"));
   const introStoryReturn = document.querySelector(".intro-story-return[data-primary-action=\"true\"]");
+  const createIntroApeironceneParticles = () => {
+    if (!(introStoryReturn instanceof HTMLButtonElement) || introStoryReturn.querySelector(".intro-apeironcene-particle-field")) return;
+
+    const field = document.createElement("i");
+    field.className = "intro-apeironcene-particle-field";
+    field.setAttribute("aria-hidden", "true");
+
+    // Keep the field deterministic for screenshots, but distribute particles in
+    // deliberately uneven shoals. Depth controls size, blur, speed and travel,
+    // so the lights no longer read as one flat layer moving in lockstep.
+    let seed = 0x7a31c4ef;
+    const random = () => {
+      seed = ((seed * 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+    const clusters = [
+      { center: 7.5, spread: 6.8, count: 34 },
+      { center: 35, spread: 5.6, count: 34 },
+      { center: 71.5, spread: 4.7, count: 18 },
+      { center: 96.5, spread: 3.8, count: 31 },
+    ];
+    const positions = clusters.flatMap(({ center, spread, count }) => (
+      Array.from({ length: count }, () => center + ((random() - 0.5) * spread * 2))
+    ));
+    positions.push(20 + random() * 2, 55 + random() * 2, 85 + random() * 2);
+
+    const fragment = document.createDocumentFragment();
+    positions.forEach((rawX, index) => {
+      const depthRoll = random();
+      const depth = depthRoll < 0.22 ? "near" : depthRoll < 0.62 ? "mid" : "far";
+      const particle = document.createElement("i");
+      const duration = depth === "near"
+        ? 4.8 + random() * 3.6
+        : depth === "mid"
+          ? 8 + random() * 6.5
+          : 14 + random() * 10;
+      const size = depth === "near"
+        ? 2.1 + random() * 2.2
+        : depth === "mid"
+          ? 1 + random() * 1.25
+          : 0.45 + random() * 0.72;
+      const driftScale = depth === "near" ? 1 : depth === "mid" ? 0.62 : 0.34;
+      const opacity = depth === "near"
+        ? 0.66 + random() * 0.32
+        : depth === "mid"
+          ? 0.38 + random() * 0.34
+          : 0.16 + random() * 0.24;
+
+      particle.className = `intro-apeironcene-particle intro-apeironcene-particle--${depth}`;
+      particle.style.setProperty("--particle-x", `${Math.min(99.7, Math.max(0.3, rawX)).toFixed(2)}%`);
+      particle.style.setProperty("--particle-y", `${(-8 + random() * 116).toFixed(2)}%`);
+      particle.style.setProperty("--particle-size", `${size.toFixed(2)}px`);
+      particle.style.setProperty("--particle-opacity", opacity.toFixed(3));
+      particle.style.setProperty("--particle-duration", `${duration.toFixed(2)}s`);
+      particle.style.setProperty("--particle-delay", `${(-random() * duration).toFixed(2)}s`);
+      particle.style.setProperty("--particle-drift", `${((random() - 0.5) * 88 * driftScale).toFixed(2)}px`);
+      particle.style.setProperty("--particle-twinkle", `${(1.7 + random() * 4.8).toFixed(2)}s`);
+      particle.style.setProperty("--particle-twinkle-delay", `${(-random() * 5.6).toFixed(2)}s`);
+      particle.dataset.particle = String(index + 1);
+      fragment.append(particle);
+    });
+
+    field.append(fragment);
+    introStoryReturn.prepend(field);
+  };
   const introTitleReturn = document.querySelector("#intro-title-return");
   const introEntryGuideReplay = document.querySelector("#intro-entry-guide-replay");
   const introScrollCue = document.querySelector("#intro-lp-scroll");
@@ -8615,6 +8680,7 @@ for (const country of countryValues) {
       renderIntroStoryDestination("story");
       return;
     }
+    createIntroApeironceneParticles();
     if (introApeironceneRevealed) {
       clearIntroStoryRevealTimers();
       introStoryReturn.classList.remove("is-apeironcene-awakening");

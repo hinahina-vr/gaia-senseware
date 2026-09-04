@@ -18,6 +18,9 @@
 
 | 資料 | 役割 |
 |---|---|
+| [SENSOR_OPERATIONS.md](SENSOR_OPERATIONS.md) | D1障害記録、現在のポーリング、容量試算、監視・停止・復旧 |
+| [../PRIVACY.md](../PRIVACY.md) | センサー参加で保存・公開する情報、外部送信、保存期間、削除方法 |
+| [../SECURITY.md](../SECURITY.md) | 脆弱性の非公開報告、安全対策、Secret失効、安全用途への注意 |
 | [SENSOR-MEASUREMENT-CATALOG.md](SENSOR-MEASUREMENT-CATALOG.md) | 参加型センサーの測定項目、単位、検証規則 |
 | [REGION-CODE-SOURCES.md](REGION-CODE-SOURCES.md) | 国・地域・自治体コードの出典とライセンス |
 | [NOVEL_MODE_IMPLEMENTATION_GUIDE.md](NOVEL_MODE_IMPLEMENTATION_GUIDE.md) | ノベルUIの実装上の補足。台本文言の正本ではない |
@@ -49,3 +52,4 @@
 3. データセット、取得方法、加工、配信範囲を変えたら、データ出典・ライセンス一覧と外部データ監査を同時に更新します。
 4. 画像・音声・フォントを追加または差し替えたら機械可読台帳を更新し、`npm run check:rights` を実行します。
 5. 応募前は `npm run check:contest` と `npm run check` を実行し、公開GitHubのコミットとCloudflare Pagesの配布物を一致させます。
+6. センサーの保存項目、公開範囲、ポーリング、rate limit、D1 schemaを変えたら、運用資料、プライバシー説明、Security Policy、画面内説明を同じ変更で更新します。

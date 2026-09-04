@@ -98,23 +98,25 @@ try {
     await page.waitForFunction(() => document.querySelector(".intro-story-return")?.classList.contains("is-apeironcene-awakening"));
     const awakeningFx = await page.evaluate(() => {
       const button = document.querySelector(".intro-story-return[data-primary-action='true']");
-      const particles = getComputedStyle(button, "::after");
-      const particleXPositions = [...particles.backgroundImage.matchAll(/circle at ([\d.]+)%/gu)]
-        .map((match) => Number(match[1]));
+      const particleHaze = getComputedStyle(button, "::after");
+      const particles = Array.from(button.querySelectorAll(".intro-apeironcene-particle"));
+      const particleXPositions = particles.map((particle) => (
+        Number.parseFloat(getComputedStyle(particle).getPropertyValue("--particle-x"))
+      ));
       return {
         impactDuration: getComputedStyle(button).animationDuration,
         slashDuration: getComputedStyle(button, "::before").animationDuration,
-        particleDuration: particles.animationDuration,
+        particleHazeDuration: particleHaze.animationDuration,
         titleDuration: getComputedStyle(button.querySelector("strong")).animationDuration,
-        particleLayers: (particles.backgroundImage.match(/radial-gradient/gu) || []).length,
+        particleCount: particles.length,
         particleXPositions,
       };
     });
     assert.equal(awakeningFx.impactDuration, "2.6s");
     assert.equal(awakeningFx.slashDuration, "2.5s");
-    assert.equal(awakeningFx.particleDuration, "2.6s");
+    assert.equal(awakeningFx.particleHazeDuration, "2.6s");
     assert.equal(awakeningFx.titleDuration, "2.2s");
-    assert(awakeningFx.particleLayers >= 48, `${viewport.name}: particle field is too sparse (${awakeningFx.particleLayers})`);
+    assert.equal(awakeningFx.particleCount, 120);
     const particleBuckets = Array.from({ length: 10 }, (_, index) => awakeningFx.particleXPositions
       .filter((position) => position >= index * 10 && position < (index + 1) * 10).length);
     const sortedParticleX = awakeningFx.particleXPositions.toSorted((a, b) => a - b);
@@ -131,7 +133,26 @@ try {
       const button = document.querySelector(".intro-story-return[data-primary-action='true']");
       const grid = document.querySelector("#intro-path-grid");
       const style = getComputedStyle(button);
-      const particles = getComputedStyle(button, "::after");
+      const particleHaze = getComputedStyle(button, "::after");
+      const particles = Array.from(button.querySelectorAll(".intro-apeironcene-particle"));
+      const particleStyles = particles.map((particle) => {
+        const particleStyle = getComputedStyle(particle);
+        return {
+          depth: ["near", "mid", "far"].find((name) => particle.classList.contains(`intro-apeironcene-particle--${name}`)),
+          duration: Number.parseFloat(particleStyle.getPropertyValue("--particle-duration")),
+          size: Number.parseFloat(particleStyle.getPropertyValue("--particle-size")),
+          x: Number.parseFloat(particleStyle.getPropertyValue("--particle-x")),
+          animationName: particleStyle.animationName,
+          animationPlayState: particleStyle.animationPlayState,
+        };
+      });
+      const particleDepthStats = Object.fromEntries(["near", "mid", "far"].map((depth) => {
+        const depthParticles = particleStyles.filter((particle) => particle.depth === depth);
+        return [depth, {
+          averageDuration: depthParticles.reduce((sum, particle) => sum + particle.duration, 0) / depthParticles.length,
+          averageSize: depthParticles.reduce((sum, particle) => sum + particle.size, 0) / depthParticles.length,
+        }];
+      }));
       const rect = button.getBoundingClientRect();
       const gridRect = grid.getBoundingClientRect();
       return {
@@ -142,9 +163,29 @@ try {
         backgroundImage: style.backgroundImage,
         boxShadow: style.boxShadow,
         animationName: style.animationName,
-        particleAnimationName: particles.animationName,
-        particleAnimationDuration: particles.animationDuration,
-        particleBackgroundSize: particles.backgroundSize,
+        particleHazeAnimationName: particleHaze.animationName,
+        particleCount: particles.length,
+        particleDepths: Object.fromEntries(["near", "mid", "far"].map((depth) => [
+          depth,
+          particleStyles.filter((particle) => particle.depth === depth).length,
+        ])),
+        particleDepthStats,
+        particleDurationRange: [
+          Math.min(...particleStyles.map((particle) => particle.duration)),
+          Math.max(...particleStyles.map((particle) => particle.duration)),
+        ],
+        particleUniqueDurations: new Set(particleStyles.map((particle) => particle.duration)).size,
+        particleSizeRange: [
+          Math.min(...particleStyles.map((particle) => particle.size)),
+          Math.max(...particleStyles.map((particle) => particle.size)),
+        ],
+        particleEmptyBands: [
+          particleStyles.filter(({ x }) => x > 15 && x < 19).length,
+          particleStyles.filter(({ x }) => x > 43 && x < 54).length,
+          particleStyles.filter(({ x }) => x > 79 && x < 84).length,
+        ],
+        particlesUseDepthRise: particleStyles.every(({ animationName }) => animationName.includes("intro-apeironcene-depth-rise")),
+        particlesAreRunning: particleStyles.every(({ animationPlayState }) => animationPlayState.split(", ").every((state) => state === "running")),
         visualWidthDeltaFromGrid: Math.abs(rect.width - gridRect.width),
         layoutWidthDeltaFromGrid: Math.abs(button.offsetWidth - grid.offsetWidth),
         horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -159,9 +200,19 @@ try {
     assert(revealed.backgroundImage.includes("linear-gradient"));
     assert.notEqual(revealed.boxShadow, "none");
     assert(revealed.animationName.includes("intro-apeironcene-spectrum"));
-    assert(revealed.particleAnimationName.includes("intro-apeironcene-particle-rise"));
-    assert(revealed.particleAnimationDuration.includes("5.8s"));
-    assert(revealed.particleBackgroundSize.includes("50%"));
+    assert(revealed.particleHazeAnimationName.includes("intro-apeironcene-nebula-drift"));
+    assert.equal(revealed.particleCount, 120);
+    assert(revealed.particleDepths.near > 0 && revealed.particleDepths.mid > 0 && revealed.particleDepths.far > 0);
+    assert(revealed.particleDurationRange[0] < 8 && revealed.particleDurationRange[1] > 14);
+    assert(revealed.particleUniqueDurations > 80);
+    assert(revealed.particleSizeRange[0] < 1 && revealed.particleSizeRange[1] > 3);
+    assert(revealed.particleDepthStats.near.averageSize > revealed.particleDepthStats.mid.averageSize);
+    assert(revealed.particleDepthStats.mid.averageSize > revealed.particleDepthStats.far.averageSize);
+    assert(revealed.particleDepthStats.near.averageDuration < revealed.particleDepthStats.mid.averageDuration);
+    assert(revealed.particleDepthStats.mid.averageDuration < revealed.particleDepthStats.far.averageDuration);
+    assert.deepEqual(revealed.particleEmptyBands, [0, 0, 0]);
+    assert.equal(revealed.particlesUseDepthRise, true);
+    assert.equal(revealed.particlesAreRunning, true);
     assert(revealed.layoutWidthDeltaFromGrid <= 1, `${viewport.name}: action layout width delta ${revealed.layoutWidthDeltaFromGrid}px`);
     assert.equal(revealed.horizontalOverflow, 0);
     assert.equal(revealed.timing.starts, 1);
@@ -169,6 +220,8 @@ try {
     assert(revealed.timing.startAt - revealed.timing.openedAt >= 1250);
     assert(revealed.timing.revealedAt - revealed.timing.startAt >= 2400);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-revealed.png`) });
+    await page.locator(".intro-story-return[data-primary-action='true']")
+      .screenshot({ path: path.join(outputDir, `${viewport.name}-revealed-card.png`) });
     report.scans.at(-1).passed = true;
     await context.close();
   }

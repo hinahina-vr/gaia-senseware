@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const sharedStylesheet = "./styles.css?v=gaia-apeironcene-clustered-particles-1";
+  const sharedStylesheet = "./styles.css?v=gaia-apeironcene-depth-particles-1";
 
   const groups = Object.freeze({
     exploration: {
@@ -25,7 +25,7 @@
         "./data-ledger.js?v=gaia-live-model-ledger-1",
         "./data-journey.js?v=gaia-01",
         "./app-content.js?v=gaia-anthropocene-heatmap-1",
-        "./app.js?v=gaia-guide-exclusion-1",
+        "./app.js?v=gaia-apeironcene-depth-particles-1",
         "./map-ui-grid-polish.js?v=gaia-no-bank-chevron-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],

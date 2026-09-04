@@ -11,6 +11,9 @@
 - コンテスト応募情報: [docs/CONTEST_2026_SUBMISSION.md](docs/CONTEST_2026_SUBMISSION.md)
 - 実行構成: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - データ出典・ライセンス一覧: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md)
+- センサー運用・D1容量計画: [docs/SENSOR_OPERATIONS.md](docs/SENSOR_OPERATIONS.md)
+- プライバシー: [PRIVACY.md](PRIVACY.md)
+- セキュリティ: [SECURITY.md](SECURITY.md)
 - ドキュメント索引: [docs/README.md](docs/README.md)
 
 ## 審査で最初に見る場所
@@ -101,6 +104,9 @@
 `/sensors/#map` は任意拡張です。端末センサーまたはESP32の計測をCloudflare Pages Functionsへ送り、D1へ保存して共有地図に表示します。センサーがなくてもMAP、STORY、CHARACTER、SOUND、GX、ORBITAL、TOURは最後まで利用できます。
 
 - 対応測定項目: [docs/SENSOR-MEASUREMENT-CATALOG.md](docs/SENSOR-MEASUREMENT-CATALOG.md)
+- 運用、D1障害記録、負荷試算: [docs/SENSOR_OPERATIONS.md](docs/SENSOR_OPERATIONS.md)
+- 保存・公開・削除範囲: [PRIVACY.md](PRIVACY.md)
+- 脆弱性報告と安全上の注意: [SECURITY.md](SECURITY.md)
 - APIとWorker実装: `sensor-platform/`
 - ブラウザUI: `sensors/`
 - 新規測定値はDeviceごとに60秒に1件までです。所有者詳細は表示中だけ最新値を30秒ごとに取得し、最大48件の履歴は初回表示と手動更新時だけ取得します。
