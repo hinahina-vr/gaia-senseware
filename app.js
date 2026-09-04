@@ -9744,6 +9744,7 @@ for (const country of countryValues) {
     requestAnimationFrame(() => {
       renderJapanTiles();
       animateEarthViewForMode(modeToIndex);
+      if (document.body.classList.contains("gaia-tour-open")) return;
       if (new URLSearchParams(window.location.search).get("panel") === "data") {
         openJapanData();
       } else if (focusModeBank) {
