@@ -182,7 +182,12 @@
     const gap = innerWidth <= 760 ? 12 : 16;
     const controlsBounds = controls.getBoundingClientRect();
     const safeTop = viewportInset;
-    const safeBottom = innerHeight - viewportInset;
+    const viewportBottom = innerHeight - viewportInset;
+    const controlsClearance = 8;
+    const reserveCompactControls = innerWidth <= 760 || innerHeight <= 430;
+    const safeBottom = reserveCompactControls && controlsBounds.height > 1 && controlsBounds.top > safeTop
+      ? Math.max(safeTop, Math.min(viewportBottom, controlsBounds.top - controlsClearance))
+      : viewportBottom;
     const measured = card.getBoundingClientRect();
     const width = Math.min(measured.width, innerWidth - viewportInset * 2);
     const height = Math.min(measured.height, safeBottom - safeTop);
@@ -655,6 +660,13 @@
     }
     syncToggle();
   });
+  const layoutResizeObserver = typeof ResizeObserver === "function"
+    ? new ResizeObserver(() => {
+      if (active) scheduleTargetCue();
+    })
+    : null;
+  layoutResizeObserver?.observe(card);
+  layoutResizeObserver?.observe(controls);
   window.addEventListener("resize", resetTargetLayout, { passive: true });
   window.addEventListener("scroll", scheduleTargetCue, { passive: true, capture: true });
   document.addEventListener("keydown", (event) => {

@@ -983,6 +983,7 @@ try {
       overflowY: getComputedStyle(cardElement).overflowY,
     };
   });
+  report.tour.rotatedLayout = rotatedLayout;
   assert(rotatedLayout.card.left >= 0 && rotatedLayout.card.right <= rotatedLayout.width, "rotated tour card cutoff");
   assert(rotatedLayout.card.bottom <= rotatedLayout.controls.top - 8, "rotated tour card overlaps the controls");
   assert(rotatedLayout.contentContained && !["auto", "scroll"].includes(rotatedLayout.overflowY), "rotated tour card exposes clipped content or a scrollbar");
@@ -1093,6 +1094,7 @@ try {
     await clarityPage.screenshot({ path: path.join(outputDir, `tour-clear-step-${expectedIndex + 1}-pc.png`), animations: "disabled" });
     if (expectedIndex < 2) await clarityPage.locator("[data-tour-action='next']").click();
   }
+  report.tour.clarity = claritySteps;
   assert.equal(claritySteps.length, 3);
   assert(claritySteps.every((step) => step.title.length <= 18 && step.action.length <= 24 && step.result.length <= 28), "tour does not keep each message to one concise idea");
   assert(claritySteps.every((step) => step.visibleCharacters <= 165), "tour card still requires too much reading");
@@ -1105,7 +1107,6 @@ try {
   assert(claritySteps.every((step) => step.proximity <= 20 || (step.overlapsTarget && step.insidePlacement)), "tour explanation is detached from a live UI target");
   assert(claritySteps.every((step) => step.arrow !== "none" && step.placement && step.placement !== "standalone"), "tour target bubble lacks an arrow or target placement");
   assert(claritySteps.every((step) => step.contentContained && !["auto", "scroll"].includes(step.overflowY)), "a tour step exposes clipped content or a card scrollbar");
-  report.tour.clarity = claritySteps;
   await clarityPage.screenshot({ path: path.join(outputDir, "tour-clear-step-03-final-pc.png"), animations: "disabled" });
   await clarityPage.evaluate(() => GaiaGuidedTour.exit());
   await clarityContext.close();
