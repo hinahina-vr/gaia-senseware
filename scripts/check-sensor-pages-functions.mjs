@@ -24,7 +24,11 @@ const pagesEntry = read("sensor-platform/src/pages-entry.ts");
 const buildScript = read("scripts/build-sensor-pages-worker.mjs");
 
 check("Pages routes invoke Functions for API and ranged audio", () => {
-  assert.deepEqual(routes, { version: 1, include: ["/api/*", "/assets/audio/*"], exclude: [] });
+  assert.equal(routes.version, 1);
+  assert.deepEqual(routes.exclude, []);
+  for (const functionPath of ["/api/*", "/assets/audio/*", "/.tmp-character-copy/*"]) {
+    assert.equal(routes.include.includes(functionPath), true);
+  }
   for (const staticPath of ["/story", "/sensors/", "/novel-mode.js", "/styles.css"]) {
     assert.equal(routes.include.includes(staticPath), false);
   }
@@ -35,6 +39,7 @@ check("advanced mode entrypoint delegates API and has one static fallback", () =
   assert.match(pagesEntry, /Accept-Ranges/u);
   assert.match(pagesEntry, /Content-Range/u);
   assert.match(pagesEntry, /status: 206/u);
+  assert.match(pagesEntry, /\/.tmp-character-copy\//u);
   assert.equal((entrypoint.match(/env\.ASSETS\.fetch\(request\)/gu) ?? []).length, 1);
   assert.doesNotMatch(entrypoint, /(?:from|import)\s*\(?["'][^"']+\.ts["']/u);
   assert.doesNotMatch(entrypoint, /sourceMappingURL/u);

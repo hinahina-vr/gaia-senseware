@@ -200,7 +200,7 @@ try {
       assert.equal(response.headers.has("x-request-id"), false);
     });
   }
-  for (const nonPublicPath of ["/README.md", "/docs/CONTEST_2026_SUBMISSION.md", "/scripts/check-contest-experience-browser.mjs", "/artifacts/gx-setting-bible/README.md"]) {
+  for (const nonPublicPath of ["/README.md", "/.tmp-character-copy/report.json", "/docs/CONTEST_2026_SUBMISSION.md", "/scripts/check-contest-experience-browser.mjs", "/artifacts/gx-setting-bible/README.md"]) {
     await test(`${nonPublicPath} is not public`, async () => {
       const response = await fetch(`${origin}${nonPublicPath}`);
       assert.equal(response.status, 404);

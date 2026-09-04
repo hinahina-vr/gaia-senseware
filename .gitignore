@@ -14,6 +14,7 @@ qa-*.png
 
 # Local visual QA artifacts and temporary working files.
 # The ten curated GX setting-bible sheets are public exhibition assets.
+/.tmp-character-copy/
 /artifacts/*
 !/artifacts/gx-setting-bible/
 /artifacts/gx-setting-bible/*

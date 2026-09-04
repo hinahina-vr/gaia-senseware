@@ -13,6 +13,7 @@
     "/wrangler.jsonc",
     "/.github/*",
     "/.tmp/*",
+    "/.tmp-character-copy/*",
     "/.wrangler/*",
     "/artifacts/*",
     "/contest-limited/*",

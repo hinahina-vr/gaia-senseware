@@ -19,6 +19,7 @@ const NON_PUBLIC_FILES = new Set([
 const NON_PUBLIC_PREFIXES = [
   "/.github/",
   "/.tmp/",
+  "/.tmp-character-copy/",
   "/.wrangler/",
   "/artifacts/",
   "/contest-limited/",
