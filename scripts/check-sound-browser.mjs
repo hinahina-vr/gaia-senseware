@@ -52,6 +52,7 @@ const readControlDesign = (page) => page.evaluate(() => {
     volumePattern: styleValue(volumeInput, "--sound-track-pattern"),
     seekBorderLeft: getComputedStyle(seek).borderLeftWidth,
     volumeBorderRight: getComputedStyle(volume).borderRightWidth,
+    signalRibbon: document.querySelector(".sound-player-signal")?.dataset.renderer || "",
     titleFont: getComputedStyle(title).fontFamily,
     volumeLabelFont: getComputedStyle(volumeLabel).fontFamily,
   };
@@ -63,7 +64,11 @@ const assertControlDesign = (design, label) => {
   assert(design.seekAccent && design.volumeAccent && design.seekAccent !== design.volumeAccent, `${label}: seek and volume accents are indistinguishable`);
   assert(design.seekAccent.toLowerCase() === "#efc879" && design.volumeAccent.toLowerCase() === "#8ce9cf", `${label}: seek and volume colors were not swapped`);
   assert(design.seekPattern === "dashed" && design.volumePattern === "solid", `${label}: dashed and solid track designs were not swapped`);
-  assert(design.seekBorderLeft === "3px" && design.volumeBorderRight === "3px", `${label}: control shapes are not visually separated`);
+  if (design.signalRibbon === "audio-waveform-ribbon") {
+    assert(design.seekBorderLeft === "0px" && design.volumeBorderRight === "0px", `${label}: signal-ribbon controls retain the former boxed borders`);
+  } else {
+    assert(design.seekBorderLeft === "3px" && design.volumeBorderRight === "3px", `${label}: control shapes are not visually separated`);
+  }
   assert(design.titleFont.includes("Yu Mincho") && design.titleFont.includes("Noto Serif CJK JP"), `${label}: title font stack does not preserve the PC-first serif fallback`);
   assert(design.volumeLabelFont.includes("Yu Gothic UI") && design.volumeLabelFont.includes("Noto Sans CJK JP"), `${label}: UI font stack does not preserve the PC-first sans-serif fallback`);
 };
@@ -116,7 +121,9 @@ try {
   assert(/broad 3D star volume/u.test(visualRuntimeSource)
     && /logarithmic arms/u.test(visualRuntimeSource)
     && /gaseous knots/u.test(visualRuntimeSource)
-    && /Compact star nurseries/u.test(visualRuntimeSource)
+    && /Loose stellar associations/u.test(visualRuntimeSource)
+    && /cluster < 12/u.test(visualRuntimeSource)
+    && /index < 30/u.test(visualRuntimeSource)
     && /Fine dust/u.test(visualRuntimeSource), "the galaxy installation is missing a depth layer or particle class");
   assert(!/currentCore|currentContour|paleCore/u.test(visualRuntimeSource), "tube-like cores or vessel contours remain in the sound visualizer");
   assert(!/upperCenter|lowerCenter|upperWidth|lowerWidth/u.test(visualRuntimeSource), "the former two straight slab bands remain in the shader");
@@ -217,11 +224,20 @@ try {
   const panelGeometry = await page.locator(".sound-track-panel").evaluate((panel) => {
     const rect = panel.getBoundingClientRect();
     return {
-      scrolls: panel.scrollHeight > panel.clientHeight + 1,
+      horizontalScrolls: panel.scrollWidth > panel.clientWidth + 1,
+      verticalScrolls: panel.scrollHeight > panel.clientHeight + 1,
+      signalRibbon: document.querySelector(".sound-player-signal")?.dataset.renderer || "",
+      signalRibbonWidth: document.querySelector(".sound-player-signal")?.getBoundingClientRect().width || 0,
       withinViewport: rect.top >= 0 && rect.bottom <= innerHeight,
     };
   });
-  assert(panelGeometry.scrolls && panelGeometry.withinViewport, `desktop track list must scroll inside the viewport: ${JSON.stringify(panelGeometry)}`);
+  assert(
+    !panelGeometry.verticalScrolls
+      && panelGeometry.withinViewport
+      && panelGeometry.signalRibbon === "audio-waveform-ribbon"
+      && panelGeometry.signalRibbonWidth > 500,
+    `desktop signal-ribbon archive layout failed: ${JSON.stringify(panelGeometry)}`,
+  );
   assertControlDesign(await readControlDesign(page), "desktop");
   await page.screenshot({ path: path.join(outputDir, "sound-desktop-idle.png"), fullPage: true });
 
