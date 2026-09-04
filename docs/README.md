@@ -9,6 +9,7 @@
 | [../README.md](../README.md) | 作品全体、31地図展示、各モード、起動・検査方法 |
 | [CONTEST_2026_SUBMISSION.md](CONTEST_2026_SUBMISSION.md) | コンテスト審査用のURL、確認順、技術・データ・権利の要約 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 遅延読込、データ経路、アダプター、イベント、フォールバック |
+| [DATA_SOURCES.md](DATA_SOURCES.md) | データ取得元、使用値、取得・加工方法、ライセンス、帰属表示、利用判定の一覧 |
 | [EXTERNAL_DATA_USAGE_AUDIT.md](EXTERNAL_DATA_USAGE_AUDIT.md) | 外部データの利用条件、加工、再配布、未解決事項 |
 | [MEDIA_RIGHTS_LEDGER.md](MEDIA_RIGHTS_LEDGER.md) | 画像・音声・フォント等の人間向け権利台帳 |
 | [media-rights-ledger.json](media-rights-ledger.json) | CIが検査する機械可読の権利台帳 |
@@ -45,6 +46,6 @@
 
 1. 展示数、モード名、直接URL、API経路を変えたら、ルートREADME、応募ガイド、アーキテクチャを同じ変更で更新します。
 2. 台詞を変えるときは[story/README.md](../story/README.md)の生成手順に従い、生成済みJavaScriptを直接編集しません。
-3. データセット、取得方法、加工、配信範囲を変えたら外部データ監査を更新します。
+3. データセット、取得方法、加工、配信範囲を変えたら、データ出典・ライセンス一覧と外部データ監査を同時に更新します。
 4. 画像・音声・フォントを追加または差し替えたら機械可読台帳を更新し、`npm run check:rights` を実行します。
 5. 応募前は `npm run check:contest` と `npm run check` を実行し、公開GitHubのコミットとCloudflare Pagesの配布物を一致させます。

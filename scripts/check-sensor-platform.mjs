@@ -100,6 +100,9 @@ check("telemetry is monotonic and idempotent", () => {
   assert.match(devices, /datetime\(d\.last_seen_at\) >= datetime\('now'/u);
   assert.match(validation, /RFC 3339 UTC timestamp/u);
   assert.match(validation, /new Date\(observedAt\)\.toISOString\(\)/u);
+  assert.match(devices, /TELEMETRY_MIN_INTERVAL_MS = 60_000/u);
+  assert.match(openapi, /Retry-After:[\s\S]{0,180}maximum: 60/u);
+  assert.doesNotMatch(openapi, /maximum: 300|5分に1件|per 5 minutes/u);
 });
 
 check("D1 schema has complete ISO alpha-2 master", () => {
@@ -155,6 +158,22 @@ check("frequent public reads use bounded history and write-time rollups", () => 
   const publicReadHandler = devices.slice(devices.indexOf("export const listPublicSensors"), devices.indexOf("const parsePublicObservations"));
   assert.doesNotMatch(publicReadHandler, /FROM telemetry/u);
   assert.doesNotMatch(devices, /ROW_NUMBER\(\)|COUNT\(t\.id\)|SUM\(length\(t\.payload_json\)\)/u);
+});
+
+check("owner detail polls only the latest value while visible", () => {
+  assert.match(sensorJs, /const detailLatestPollIntervalMs = 30_000;/u);
+  assert.doesNotMatch(sensorJs, /const pollIntervalMs = 2_000;/u);
+  const polling = sensorJs.slice(sensorJs.indexOf("const startDetailPolling"), sensorJs.indexOf("const startPublicMapPolling"));
+  assert.match(polling, /document\.visibilityState !== "visible"/u);
+  assert.match(polling, /refreshDetail\(\{ quiet: true, includeHistory: false \}\)/u);
+  const visibility = sensorJs.slice(sensorJs.indexOf('document.addEventListener("visibilitychange"'), sensorJs.indexOf("const showStatus"));
+  assert.match(visibility, /stopDetailPolling\(\)/u);
+  assert.match(visibility, /startDetailPolling\(\)/u);
+  const detailRefresh = sensorJs.slice(sensorJs.indexOf("const refreshDetail"), sensorJs.indexOf("const renderDetail"));
+  assert.match(detailRefresh, /includeHistory = true/u);
+  assert.match(detailRefresh, /includeHistory[\s\S]*telemetry\?limit=48[\s\S]*Promise\.resolve\(null\)/u);
+  assert.match(detailRefresh, /else renderLatestDetail\(latest\)/u);
+  assert.match(sensorJs, /#refresh-detail"\)\.addEventListener\("click", \(\) => refreshDetail\(\)\)/u);
 });
 
 check("wrangler config has D1, generated Env and compatibility without R2", () => {

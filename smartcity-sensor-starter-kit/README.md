@@ -31,6 +31,7 @@
 - 公開APIは `POST /api/v1/device/pair` と `POST /api/v1/devices/{deviceId}/telemetry` だけです。
 - 詳細は [openapi.yaml](./openapi.yaml)、ESP32なしの確認は [curl-examples.sh](./curl-examples.sh) を参照してください。
 - telemetry `seq` は単調増加。同一seq・同一内容は冪等再送、同一seq・異内容と後退seqは拒否されます。
+- 新規telemetryの保存はDeviceごとに60秒に1件までです。超過時は最大60秒の `Retry-After` を付けた429を返します。
 
 ## Arduino dependencies
 

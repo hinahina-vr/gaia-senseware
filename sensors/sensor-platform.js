@@ -76,7 +76,7 @@ const profileAvatarPreview = document.querySelector("#profile-avatar-preview");
 const profileAvatarInput = document.querySelector("#profile-avatar-input");
 const publicSensorCount = document.querySelector("#public-sensor-count");
 const analyzeDetailButton = document.querySelector("#analyze-detail");
-const pollIntervalMs = 2_000;
+const detailLatestPollIntervalMs = 30_000;
 const naturalEarthCountriesUrl = "../data/natural-earth-50m-countries.geojson?v=gaia-1";
 const japanPrefectureUrl = "../data/japan-prefectures.topojson?v=gaia-1";
 const publicMapMinZoom = 1;
@@ -166,6 +166,7 @@ let customAiModel = "";
 let authenticated = false;
 let sessionUser = null;
 let pollTimer = 0;
+let detailRefreshPromise = null;
 let statusTimer = 0;
 let publicLocationEdit = null;
 let measurementCategories = [];
@@ -203,14 +204,40 @@ const api = async (path, options = {}) => {
   return body;
 };
 
+const stopDetailPolling = () => {
+  window.clearInterval(pollTimer);
+  pollTimer = 0;
+};
+
+const stopPublicMapPolling = () => {
+  window.clearInterval(publicMapPollTimer);
+  publicMapPollTimer = 0;
+};
+
+const startDetailPolling = () => {
+  stopDetailPolling();
+  if (document.visibilityState !== "visible" || document.documentElement.dataset.sensorView !== "detail" || !selectedDevice) return;
+  pollTimer = window.setInterval(() => {
+    if (document.visibilityState !== "visible" || document.documentElement.dataset.sensorView !== "detail") return;
+    void refreshDetail({ quiet: true, includeHistory: false });
+  }, detailLatestPollIntervalMs);
+};
+
+const startPublicMapPolling = () => {
+  stopPublicMapPolling();
+  if (document.visibilityState !== "visible" || document.documentElement.dataset.sensorView !== "map") return;
+  publicMapPollTimer = window.setInterval(() => {
+    if (document.visibilityState !== "visible" || document.documentElement.dataset.sensorView !== "map") return;
+    void loadPublicSensors({ preserveSelection: true, quiet: true }).catch(() => {});
+  }, publicMapPollIntervalMs);
+};
+
 const showView = (name) => {
   if (name !== "map" && publicLocationEdit) closePublicLocationEditor();
   document.documentElement.dataset.sensorView = name;
   if (participationDialog?.open && name !== "login") participationDialog.close();
-  window.clearInterval(pollTimer);
-  pollTimer = 0;
-  window.clearInterval(publicMapPollTimer);
-  publicMapPollTimer = 0;
+  stopDetailPolling();
+  stopPublicMapPolling();
   for (const [key, element] of views) element.hidden = key !== name;
   document.querySelectorAll("[data-nav]").forEach((link) => {
     link.toggleAttribute("aria-current", link.dataset.nav === name);
@@ -220,12 +247,26 @@ const showView = (name) => {
   });
   if (name === "map") {
     queuePublicMapViewportUpdate();
-    publicMapPollTimer = window.setInterval(() => {
-      void loadPublicSensors({ preserveSelection: true, quiet: true }).catch(() => {});
-    }, publicMapPollIntervalMs);
+    startPublicMapPolling();
   }
   window.dispatchEvent(new CustomEvent("gaia:sensor-view-changed", { detail: { name } }));
 };
+
+document.addEventListener("visibilitychange", () => {
+  const view = document.documentElement.dataset.sensorView;
+  if (document.visibilityState !== "visible") {
+    stopDetailPolling();
+    stopPublicMapPolling();
+    return;
+  }
+  if (view === "detail" && selectedDevice) {
+    startDetailPolling();
+    void refreshDetail({ quiet: true, includeHistory: false });
+  } else if (view === "map") {
+    startPublicMapPolling();
+    void loadPublicSensors({ preserveSelection: true, quiet: true }).catch(() => {});
+  }
+});
 
 const showStatus = (message, kind = "info") => {
   window.clearTimeout(statusTimer);
@@ -1967,40 +2008,48 @@ const openDetail = async (deviceId) => {
     renderDetail(latest, historyResponse.telemetry);
     showView("detail");
     history.replaceState(null, "", `#device=${encodeURIComponent(deviceId)}`);
-    pollTimer = window.setInterval(() => refreshDetail({ quiet: true }), pollIntervalMs);
+    startDetailPolling();
   } catch (error) {
     showStatus(error.message, "error");
     await showDevices();
   }
 };
 
-const refreshDetail = async ({ quiet = false } = {}) => {
+const refreshDetail = async ({ quiet = false, includeHistory = true } = {}) => {
   if (!selectedDevice) return;
+  if (detailRefreshPromise) {
+    await detailRefreshPromise;
+    if (!includeHistory || !selectedDevice || document.documentElement.dataset.sensorView !== "detail") return;
+  }
+  const deviceId = selectedDevice.deviceId;
+  const task = (async () => {
+    try {
+      const [latest, historyResponse] = await Promise.all([
+        api(`../api/web/v1/devices/${encodeURIComponent(deviceId)}/latest`),
+        includeHistory
+          ? api(`../api/web/v1/devices/${encodeURIComponent(deviceId)}/telemetry?limit=48`)
+          : Promise.resolve(null),
+      ]);
+      if (selectedDevice?.deviceId !== deviceId || document.documentElement.dataset.sensorView !== "detail") return;
+      selectedDevice = latest.device;
+      if (historyResponse) renderDetail(latest, historyResponse.telemetry);
+      else renderLatestDetail(latest);
+      if (!quiet) showStatus("最新の測定値へ更新しました。");
+    } catch (error) {
+      if (!quiet) showStatus(error.message, "error");
+    }
+  })();
+  detailRefreshPromise = task;
   try {
-    const [latest, history] = await Promise.all([
-      api(`../api/web/v1/devices/${encodeURIComponent(selectedDevice.deviceId)}/latest`),
-      api(`../api/web/v1/devices/${encodeURIComponent(selectedDevice.deviceId)}/telemetry?limit=48`),
-    ]);
-    selectedDevice = latest.device;
-    renderDetail(latest, history.telemetry);
-    if (!quiet) showStatus("最新の測定値へ更新しました。");
-  } catch (error) {
-    if (!quiet) showStatus(error.message, "error");
+    await task;
+  } finally {
+    if (detailRefreshPromise === task) detailRefreshPromise = null;
   }
 };
 
 const renderDetail = ({ device, latest }, telemetry) => {
   selectedDeviceTelemetry = Array.isArray(telemetry) ? telemetry : [];
-  document.querySelector("#detail-id").textContent = device.deviceId;
-  document.querySelector("#detail-name").textContent = device.name;
-  const state = document.querySelector("#detail-state");
-  state.textContent = device.state;
-  state.dataset.state = device.state;
-  document.querySelector("#detail-location").textContent = locationLabel(device);
-  document.querySelector("#detail-updated").textContent = latest ? formatRelative(latest.receivedAt) : "まだデータがありません";
-  latestMetrics.replaceChildren();
-  if (!latest) latestMetrics.append(Object.assign(document.createElement("p"), { textContent: "最初のデータを待っています。" }));
-  else Object.entries(latest.data).slice(0, 6).forEach(([key, value]) => latestMetrics.append(metric(key, value)));
+  renderLatestDetail({ device, latest });
   renderHistory(telemetry);
   if (!locationForm.contains(document.activeElement)) {
     locationForm.elements.name.value = device.name;
@@ -2025,6 +2074,19 @@ const renderDetail = ({ device, latest }, telemetry) => {
       municipalityCode: device.municipalityCode || "",
     });
   }
+};
+
+const renderLatestDetail = ({ device, latest }) => {
+  document.querySelector("#detail-id").textContent = device.deviceId;
+  document.querySelector("#detail-name").textContent = device.name;
+  const state = document.querySelector("#detail-state");
+  state.textContent = device.state;
+  state.dataset.state = device.state;
+  document.querySelector("#detail-location").textContent = locationLabel(device);
+  document.querySelector("#detail-updated").textContent = latest ? formatRelative(latest.receivedAt) : "まだデータがありません";
+  latestMetrics.replaceChildren();
+  if (!latest) latestMetrics.append(Object.assign(document.createElement("p"), { textContent: "最初のデータを待っています。" }));
+  else Object.entries(latest.data).slice(0, 6).forEach(([key, value]) => latestMetrics.append(metric(key, value)));
 };
 
 function openSensorAnalysis(context) {
@@ -2577,7 +2639,7 @@ locationForm.addEventListener("submit", async (event) => {
     locationForm.dataset.savedRegion = formRegionSelectionKey(locationForm);
     locationForm.querySelector("[data-location-picker]").dataset.regionPlot = "stored";
     showStatus("計測項目・地域・公開位置を更新しました。");
-    await Promise.all([refreshDetail({ quiet: true }), loadPublicSensors()]);
+    await Promise.all([refreshDetail({ quiet: true, includeHistory: false }), loadPublicSensors()]);
   } catch (error) { showStatus(error.message, "error"); }
   finally { submit.disabled = false; }
 });

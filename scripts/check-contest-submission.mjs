@@ -19,6 +19,7 @@ const sensorsIndex = read("sensors/index.html");
 const sensorPlatform = read("sensors/sensor-platform.js");
 const openingCss = read("opening.css");
 const architecture = read("docs/ARCHITECTURE.md");
+const dataSources = read("docs/DATA_SOURCES.md");
 const packageJson = JSON.parse(read("package.json"));
 
 for (const required of [
@@ -41,6 +42,16 @@ for (const required of [
 
 assert.match(readme, /docs\/CONTEST_2026_SUBMISSION\.md/u);
 assert.match(readme, /docs\/ARCHITECTURE\.md/u);
+assert.match(readme, /docs\/DATA_SOURCES\.md/u);
+assert.match(guide, /DATA_SOURCES\.md/u);
+for (const required of [
+  "## 判定の読み方",
+  "**可**",
+  "**条件付可**",
+  "**要対応**",
+  "Open-Meteo Terms",
+  "NASA Earthdata Data Use and Citation Guidance",
+]) assert(dataSources.includes(required), `データ出典・ライセンス一覧に必須項目がありません: ${required}`);
 assert.match(readme, /docs\/screenshots\/contest-entry-pc\.png/u);
 assert.match(readme, /docs\/screenshots\/contest-tour-mobile\.png/u);
 assert.equal(fs.existsSync(path.join(root, "docs/screenshots/contest-entry-pc.png")), true);
@@ -83,4 +94,4 @@ assert.doesNotMatch(sensorPlatform, /GaiaObservation|観測ノート|gaia-observ
 assert.match(loader, /hash === "#tour"/u);
 assert.doesNotMatch(index, /<script[^>]+src="https?:\/\//iu, "外部ランタイムscriptを読み込んでいます");
 
-console.log(JSON.stringify({ status: "passed", guide: "docs/CONTEST_2026_SUBMISSION.md", architecture: "docs/ARCHITECTURE.md", workflow: ".github/workflows/contest-checks.yml", checks: 58 }, null, 2));
+console.log(JSON.stringify({ status: "passed", guide: "docs/CONTEST_2026_SUBMISSION.md", architecture: "docs/ARCHITECTURE.md", dataSources: "docs/DATA_SOURCES.md", workflow: ".github/workflows/contest-checks.yml", checks: 66 }, null, 2));

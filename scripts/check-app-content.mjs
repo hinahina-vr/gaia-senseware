@@ -64,7 +64,7 @@ assert.equal(modeLoader.includes('interceptClick("[data-character-gallery-open]"
 assert.equal(modeLoader.includes('interceptClick("[data-sound-gallery-open]", "sound")'), true, "Sound archive is not lazy-loaded");
 assert.equal(modeLoader.includes('event.target.closest("[data-sound-gallery-open]")'), true, "Sound archive is not warmed on pointer or keyboard intent");
 assert.equal(openingRuntime.includes('GaiaModeLoader?.load?.("sound")'), true, "Sound archive is not warmed during the menu handoff");
-assert.equal((modeLoader.match(/\.\/styles\.css\?v=gaia-apeironcene-slow-spark-1/gu) || []).length, 1, "Shared UI styles must use one cache URL across mode groups");
+assert.equal((modeLoader.match(/\.\/styles\.css\?v=gaia-apeironcene-clustered-particles-1/gu) || []).length, 1, "Shared UI styles must use one cache URL across mode groups");
 assert.match(modeLoader, /sound:\s*\{[\s\S]{0,120}parallel: true,/u, "Sound archive assets are not fetched in parallel");
 assert.equal((indexHtml.match(/sound-archive-bg-v2\.png\?v=gaia-sound-linked-ink-1/gu) || []).length, 2, "Sound archive background URLs must share one browser cache entry");
 assert.match(characterRuntime, /const quoteRevealDelay = 620;/u, "Character quote letter animation starts too early");

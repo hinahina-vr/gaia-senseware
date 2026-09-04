@@ -10,6 +10,7 @@
 - 30秒ガイド: <https://gaia-senseware.pages.dev/#tour>
 - コンテスト応募情報: [docs/CONTEST_2026_SUBMISSION.md](docs/CONTEST_2026_SUBMISSION.md)
 - 実行構成: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- データ出典・ライセンス一覧: [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md)
 - ドキュメント索引: [docs/README.md](docs/README.md)
 
 ## 審査で最初に見る場所
@@ -74,7 +75,7 @@
 
 各展示の `OPEN DATA` には、現在の演出に関係するデータだけを表示します。提供機関、公式URL、取得日、観測期間、単位、空間・時間解像度、加工内容、注意事項を確認できます。`CODE` は `VISUAL CODE / DATA TRANSFORM / RAW DATA` の3タブです。
 
-外部データの利用条件と未解決事項は[外部データ監査](docs/EXTERNAL_DATA_USAGE_AUDIT.md)、素材は[権利台帳](docs/MEDIA_RIGHTS_LEDGER.md)を正本として扱います。監査文書で `要対応` としたデータを、無条件に再利用可能とは案内していません。
+データセットごとの取得元、使用値、取得方法、加工、ライセンス、帰属表示、利用判定は[データ出典・ライセンス一覧](docs/DATA_SOURCES.md)にまとめています。法的・運用上の詳細と未解決事項は[外部データ監査](docs/EXTERNAL_DATA_USAGE_AUDIT.md)、画像・音声等は[権利台帳](docs/MEDIA_RIGHTS_LEDGER.md)を正本として扱います。監査文書で `要対応` としたデータを、無条件に利用・再配布可能とは案内していません。
 
 ## STORY
 
@@ -102,6 +103,7 @@
 - 対応測定項目: [docs/SENSOR-MEASUREMENT-CATALOG.md](docs/SENSOR-MEASUREMENT-CATALOG.md)
 - APIとWorker実装: `sensor-platform/`
 - ブラウザUI: `sensors/`
+- 新規測定値はDeviceごとに60秒に1件までです。所有者詳細は表示中だけ最新値を30秒ごとに取得し、最大48件の履歴は初回表示と手動更新時だけ取得します。
 
 ## 技術構成
 

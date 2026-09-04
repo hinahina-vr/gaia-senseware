@@ -115,7 +115,7 @@ npm --prefix sensor-platform run test:pages
 | 文化 | UNESCO World Heritage Centre | 三つの生態系の文化例 |
 | 地図 | Natural Earth 1:50m Land / Countries、国土地理院 | 世界地図、国境、都道府県境界 |
 
-公式URL、取得日時、期間、単位、解像度、加工、注意事項は作品内の `OPEN DATA` と[外部データ監査](EXTERNAL_DATA_USAGE_AUDIT.md)で確認できます。同監査の `要対応` 項目が残るため、全データを無条件に再配布可能とは表明していません。
+公式URL、取得日時、期間、単位、解像度、加工、ライセンス、帰属表示は作品内の `OPEN DATA` と[データ出典・ライセンス一覧](DATA_SOURCES.md)で確認できます。法的・運用上の詳細は[外部データ監査](EXTERNAL_DATA_USAGE_AUDIT.md)を正本とします。同監査の `要対応` 項目が残るため、全データを無条件に利用・再配布可能とは表明していません。
 
 ## 制作素材と権利表記
 

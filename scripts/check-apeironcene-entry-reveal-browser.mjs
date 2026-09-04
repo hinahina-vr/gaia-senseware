@@ -99,12 +99,15 @@ try {
     const awakeningFx = await page.evaluate(() => {
       const button = document.querySelector(".intro-story-return[data-primary-action='true']");
       const particles = getComputedStyle(button, "::after");
+      const particleXPositions = [...particles.backgroundImage.matchAll(/circle at ([\d.]+)%/gu)]
+        .map((match) => Number(match[1]));
       return {
         impactDuration: getComputedStyle(button).animationDuration,
         slashDuration: getComputedStyle(button, "::before").animationDuration,
         particleDuration: particles.animationDuration,
         titleDuration: getComputedStyle(button.querySelector("strong")).animationDuration,
         particleLayers: (particles.backgroundImage.match(/radial-gradient/gu) || []).length,
+        particleXPositions,
       };
     });
     assert.equal(awakeningFx.impactDuration, "2.6s");
@@ -112,6 +115,14 @@ try {
     assert.equal(awakeningFx.particleDuration, "2.6s");
     assert.equal(awakeningFx.titleDuration, "2.2s");
     assert(awakeningFx.particleLayers >= 48, `${viewport.name}: particle field is too sparse (${awakeningFx.particleLayers})`);
+    const particleBuckets = Array.from({ length: 10 }, (_, index) => awakeningFx.particleXPositions
+      .filter((position) => position >= index * 10 && position < (index + 1) * 10).length);
+    const sortedParticleX = awakeningFx.particleXPositions.toSorted((a, b) => a - b);
+    const widestParticleGap = Math.max(...sortedParticleX.slice(1)
+      .map((position, index) => position - sortedParticleX[index]));
+    assert(Math.max(...particleBuckets) >= 9, `${viewport.name}: particle field has no visibly dense cluster`);
+    assert(particleBuckets.filter((count) => count <= 1).length >= 3, `${viewport.name}: particle field has too few open regions`);
+    assert(widestParticleGap >= 10, `${viewport.name}: particle field lacks a strong density break (${widestParticleGap}%)`);
     await page.waitForTimeout(1200);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-awakening.png`) });
     await page.waitForFunction(() => document.querySelector(".intro-story-return")?.classList.contains("is-apeironcene"));
