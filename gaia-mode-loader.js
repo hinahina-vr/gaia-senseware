@@ -110,8 +110,8 @@
     },
     tour: {
       templates: [],
-      styles: ["./guided-tour.css?v=gaia-tour-controls-safe-area-1"],
-      scripts: ["./guided-tour.js?v=gaia-tour-controls-safe-area-1"],
+      styles: ["./guided-tour.css?v=gaia-tour-compact-safe-area-2"],
+      scripts: ["./guided-tour.js?v=gaia-tour-compact-safe-area-2"],
     },
   });
 

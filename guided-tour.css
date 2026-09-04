@@ -1000,6 +1000,8 @@ body.gaia-tour-open #japan-layer .japan-map-shade { opacity: .38; }
 
 @media (orientation: landscape) and (max-height: 430px) {
   .gaia-tour .gaia-tour-card {
+    top: auto !important;
+    bottom: max(75px, calc(env(safe-area-inset-bottom) + 68px)) !important;
     width: min(440px, calc(100vw - 20px));
     padding: 9px 11px;
   }
