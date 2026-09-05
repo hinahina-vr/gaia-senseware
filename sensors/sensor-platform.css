@@ -1840,18 +1840,6 @@ html[data-sensor-view="map"] body .sensor-shell {
     width: min(430px,34vw);
   }
 
-  html[data-sensor-view="map"] .sensor-belonging {
-    right: auto;
-    bottom: 32px;
-    left: 50%;
-    width: min(560px,calc(100vw - 820px));
-    min-width: 470px;
-    min-height: 66px;
-    transform: translateX(-50%);
-  }
-  html[data-sensor-view="map"] .sensor-belonging-join { display: none; }
-  html[data-sensor-view="map"] .sensor-belonging-sense { min-width: 132px; }
-
   .sensor-public-map:not([hidden]) .sensor-map-hud-top {
     right: 24px;
     bottom: 17px;
@@ -1878,7 +1866,6 @@ html[data-sensor-view="map"] body .sensor-shell {
   html[data-sensor-view="map"] body .sensor-topbar-actions { grid-template-columns: minmax(0,1fr) auto; }
   html[data-sensor-view="map"] body .sensor-topbar .sensor-global-sync { display: none; }
   .sensor-public-map:not([hidden]) .sensor-map-card { left: 42%; width: min(390px,43vw); }
-  html[data-sensor-view="map"] .sensor-belonging { width: 390px; min-width: 390px; }
 }
 
 @media (max-width: 760px) {

@@ -49,7 +49,7 @@ try {
     await page.locator("[data-view='map']").waitFor({ state: "visible" });
     await page.locator(".sensor-map-marker").first().waitFor({ state: "visible" });
     await page.locator(".sensor-sense-field").waitFor({ state: "visible" });
-    await page.locator(".sensor-belonging").waitFor({ state: "visible" });
+    assert.equal(await page.locator(".sensor-belonging, .sensor-presence-node").count(), 0);
     await page.waitForTimeout(900);
     const layoutShiftScore = await page.evaluate(() => window.__gaiaLayoutShiftScore);
     assert(layoutShiftScore <= .1, `initial map layout shift is too high: ${layoutShiftScore}`);
@@ -60,15 +60,6 @@ try {
     assert(senseNodeCount >= visibleMarkerCount && senseNodeCount <= totalMarkerCount, `sense field node count is inconsistent: ${JSON.stringify({ senseNodeCount, visibleMarkerCount, totalMarkerCount })}`);
     assert.match(await page.locator(".sensor-sense-field").getAttribute("data-renderer"), /^(webgl|2d)$/u);
     assert(Number(await page.locator(".sensor-sense-field").getAttribute("data-render-pixels")) <= 905_000);
-    assert.match(
-      await page.locator(".sensor-belonging").textContent(),
-      /(?:あなたの感覚が、地球の現在とつながる|「いま」に触れています)/u,
-    );
-    const belongingAction = await page.locator(".sensor-belonging-join:visible,.sensor-belonging-sense:visible").first().evaluate((button) => {
-      const rect = button.getBoundingClientRect();
-      return { width: rect.width, height: rect.height };
-    });
-    assert(belongingAction.width >= 44 && belongingAction.height >= 44, `participation action is too small: ${JSON.stringify(belongingAction)}`);
     assert.equal(await page.locator(".sensor-public-card").count(), 5);
     assert.equal(await page.locator("#public-sensor-results").textContent(), "5 / 5件");
     await page.waitForFunction(() => [...document.querySelectorAll(".sensor-owner-avatar img")]
@@ -408,16 +399,14 @@ try {
     await page.locator("#public-owner-profile").waitFor({ state: "hidden" });
     assert.equal(await page.locator("#public-sensor-map").getAttribute("data-ui-return"), "fade-in");
     assert.equal(await profileTrigger.evaluate((button) => button === document.activeElement), true);
-    assert.equal(await page.locator(".sensor-belonging").getAttribute("data-state"), "selected");
-    assert.match(await page.locator(".sensor-belonging p").textContent(), /「いま」に触れています/u);
+    assert.equal(await page.locator(".sensor-belonging, .sensor-presence-node").count(), 0);
     assert.match(await page.locator("#public-sensor-detail").textContent(), /電界変動/u);
     const depthBefore = await page.locator("#public-depth-value").textContent();
     if (!await page.locator(".sensor-oracle-trigger").isVisible()) await page.locator(".sensor-map-card-expand").click();
     await page.locator(".sensor-oracle-trigger").click();
     await page.locator(".sensor-oracle-receipt.is-received").waitFor({ state: "visible" });
     assert.match(await page.locator(".sensor-oracle-receipt").textContent(), /SIMULATION LOG/u);
-    assert.equal(await page.locator(".sensor-belonging").getAttribute("data-state"), "received");
-    assert.match(await page.locator(".sensor-belonging p").textContent(), /あなたの感覚へ届きました/u);
+    assert.equal(await page.locator(".sensor-belonging, .sensor-presence-node").count(), 0);
     assert(Number(await page.locator(".sensor-sense-field").getAttribute("data-pulse-count")) >= 3);
     assert.notEqual(await page.locator("#public-depth-value").textContent(), depthBefore);
 

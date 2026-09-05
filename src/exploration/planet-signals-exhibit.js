@@ -1,6 +1,6 @@
 import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-live-poi-1";
-import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-cloud-veil-1";
-import { createPoiArrival, drawPoiArrivals } from "./poi-arrival.js?v=gaia-planet-arrival-1";
+import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-satellite-clouds-1";
+import { createPoiArrival, drawPoiArrivals } from "./poi-arrival.js?v=gaia-luminous-veil-1";
 
 const GLOBAL_SAMPLE_COUNT = 240;
 const formatCoordinates = (point, digits = 1, separator = " ") =>
@@ -21,7 +21,7 @@ const DEFINITIONS = Object.freeze([
     signalLabel: "風速・風向・気圧",
     accent: "#63f3ff",
     rgb: "99, 243, 255",
-    caption: "全球の風を地点間で補間し、連続する流線で描きます。流れの形と動きは演出、点は元データです。",
+    caption: "風向と風速をもとに、淡い光がゆっくり流れます。光の形と動きは演出です。観測点を選ぶと、その場所の値を確認できます。",
     sourceName: "Open-Meteo Forecast API / DWD・ECMWFほか",
     sourcePage: "https://open-meteo.com/en/docs",
     sourceLabel: "Open-Meteoの仕様を見る",
@@ -72,7 +72,7 @@ const DEFINITIONS = Object.freeze([
     signalLabel: "雲量・短波放射",
     accent: "#ffd879",
     rgb: "255, 216, 121",
-    caption: "雲量を地点間で補間し、薄い雲のベールの濃淡に変換。日射で光を変えます。形・濃淡・動きは演出で、衛星画像ではありません。",
+    caption: "雲の形はNASAの参考画像です。雲量・日射に応じて濃淡を調整しています。現在の衛星画像ではありません。光る点から、その場所の数値を確認できます。",
     sourceName: "Open-Meteo Forecast API / DWD・ECMWFほか",
     sourcePage: "https://open-meteo.com/en/docs",
     sourceLabel: "Open-Meteoの仕様を見る",
@@ -452,6 +452,7 @@ const resizeCanvas = (rect) => {
 };
 
 const drawWind = (time, view, data, definition) => {
+  const light = getAnchorLight(definition);
   data.points.forEach((point, index) => {
     if (!poiOpacity(index)) return;
     context.save();
@@ -461,30 +462,17 @@ const drawWind = (time, view, data, definition) => {
     const dx = Math.sin(radians);
     const dy = -Math.cos(radians);
     const speed = clamp(point.windSpeed, 0.4, 18);
-    const reach = 28 + speed * 6.5;
-    const color = point.pressure < 1008 ? "151, 132, 255" : definition.rgb;
-    const laneCount = data.points.length >= 100 ? 4 : 13;
-    for (let lane = 0; lane < laneCount; lane += 1) {
-      const seed = hash(index * 43 + lane * 11);
-      const phase = fract(time * (0.035 + speed * 0.005) + seed);
-      const offset = (lane - (laneCount - 1) / 2) * 2.7;
-      const normalX = -dy * offset;
-      const normalY = dx * offset;
-      const x = center.x + dx * (phase - 0.5) * reach + normalX;
-      const y = center.y + dy * (phase - 0.5) * reach + normalY;
-      const length = 8 + speed * 1.9;
-      context.beginPath();
-      context.moveTo(x - dx * length, y - dy * length);
-      context.lineTo(x, y);
-      context.strokeStyle = `rgba(${color}, ${0.08 + (1 - phase) * 0.34})`;
-      context.lineWidth = 0.55 + clamp01(speed / 15) * 1.35;
-      context.stroke();
+    // The fallback uses the same detached light language, not line bundles.
+    for (let mote = 0; mote < 2; mote += 1) {
+      const phase = fract(time * (.035 + speed * .003) + hash(index * 43 + mote * 11));
+      const distance = (phase - .5) * (24 + speed * 3);
+      const x = center.x + dx * distance, y = center.y + dy * distance;
+      const size = 16 + speed;
+      context.globalAlpha = poiOpacity(index) * Math.sin(phase * Math.PI) ** 2 * .35;
+      context.drawImage(light, x - size / 2, y - size / 2, size, size);
     }
-    const twinkle = reducedMotion ? 0.72 : 0.48 + 0.32 * Math.sin(time * (0.8 + hash(index + 3) * 1.4) + index);
-    context.beginPath();
-    context.arc(center.x, center.y, 1.25 + clamp01(speed / 14) * 1.7, 0, Math.PI * 2);
-    context.fillStyle = `rgba(218, 255, 250, ${twinkle})`;
-    context.fill();
+    context.globalAlpha = poiOpacity(index) * .82;
+    context.drawImage(light, center.x - 10, center.y - 10, 20, 20);
     context.restore();
   });
 };
@@ -699,6 +687,7 @@ const draw = (timestamp = performance.now()) => {
     kind: definition.renderer, rgb: definition.rgb, sprite: getAnchorLight(definition) });
   canvas.dataset.planetArrivalPhase = poiArrival?.phase(timestamp) || "idle";
   canvas.dataset.planetArrivalEffect = definition.renderer;
+  canvas.dataset.planetArrivalStyle = definition.renderer === "quake" ? "seismic-ripples" : "scattered-light-bloom";
   canvas.dataset.planetArrivalActive = String(arrival.count);
   canvas.dataset.planetArrivalLimit = String(arrival.limit);
   canvas.dataset.planetArrivalIndices = arrival.indices.join(",");
@@ -766,11 +755,12 @@ const renderReadout = (definition, data) => {
   legend.querySelector("[data-planet-legend-count]").textContent = summary.count;
   const scaleLabels = { wind: ["弱い風", "強い風"], air: ["透明", "濃い霞"], cloud: ["切れ間", "濃い雲"], quake: ["小規模", "大規模"] };
   legend.querySelector("[data-planet-legend-low]").textContent = scaleLabels[definition.renderer][0];
-  legend.querySelector("[data-planet-legend-mid]").textContent = definition.renderer === "quake" ? "観測値" : "地点間を補間";
+  legend.querySelector("[data-planet-legend-mid]").textContent = definition.renderer === "quake" ? "観測値" : definition.renderer === "cloud" ? "雲量で濃淡を調整" : "地点間を補間";
   legend.querySelector("[data-planet-legend-high]").textContent = scaleLabels[definition.renderer][1];
   legend.querySelector("[data-planet-legend-state]").textContent = data.sourceState;
   legend.querySelector("[data-planet-data-time]").textContent = formatJst(data.observedAt);
   legend.querySelector("[data-planet-data-age]").textContent = formatAge(data.observedAt);
+  legend.querySelector("[data-planet-time-label]").textContent = definition.renderer === "cloud" ? "数値の時刻" : "DATA TIME";
   canvas.dataset.planetExhibit = definition.id;
   canvas.dataset.planetSourceState = data.sourceState;
   canvas.dataset.planetPointCount = String(data.points.length);
@@ -820,6 +810,7 @@ const select = async (index) => {
   readout.querySelector("[data-planet-unit]").textContent = "";
   legend.querySelector("[data-planet-legend-title]").textContent = definition.visualLabel;
   legend.querySelector("[data-planet-legend-state]").textContent = "FETCHING";
+  legend.querySelector("[data-cloud-image-credit]").hidden = definition.renderer !== "cloud";
   const data = await loadData(definition);
   if (activeIndex !== index || revision !== selectionRevision) return;
   currentData = data;
@@ -930,10 +921,15 @@ const mount = () => {
     <header><strong data-planet-legend-title>LIVE PLANET SIGNAL</strong><span data-planet-legend-state>FETCHING</span></header>
     <i aria-hidden="true"></i>
     <p><span data-planet-legend-low>薄い</span><span data-planet-legend-mid>地点間を補間</span><span data-planet-legend-high>濃い</span><em data-planet-legend-count>—</em></p>
-    <div class="gaia-planet-data-time"><span>DATA TIME</span><time data-planet-data-time>読込中</time><small data-planet-data-age>—</small></div>
+    <div class="gaia-planet-data-time"><span data-planet-time-label>DATA TIME</span><time data-planet-data-time>読込中</time><small data-planet-data-age>—</small></div>
+    <a class="gaia-planet-cloud-credit" data-cloud-image-credit href="https://visibleearth.nasa.gov/images/57747/blue-marble-clouds" target="_blank" rel="noopener noreferrer" hidden><span>雲の参考画像 · NASA Blue Marble ↗</span><small>2002年公開 · 現在の雲分布ではありません</small></a>
     <p class="gaia-planet-poi-key"><i aria-hidden="true"></i><span>観測点 · クリック／タップで詳細</span></p>
   `;
   map.append(legend);
+  atmosphereCanvas.addEventListener("gaia:cloud-reference-state", () => {
+    legend.querySelector("[data-cloud-image-credit] small").textContent = atmosphereCanvas.dataset.cloudTextureState === "unavailable"
+      ? "参考画像を読み込めません · 地点の数値は確認できます" : "2002年公開 · 現在の雲分布ではありません";
+  });
 
   readout = document.createElement("section");
   readout.className = "gaia-planet-signals-readout";

@@ -8,10 +8,11 @@ const output = path.resolve(outputArgument);
 fs.mkdirSync(output, { recursive: true });
 const report = { status: "running", scans: [], errors: [] };
 const live = process.argv.includes("--live");
+const missingImage = process.argv.includes("--missing-image");
 const ovation = fs.readFileSync("data/ovation-aurora-snapshot.json", "utf8");
 const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true });
 try {
-  for (const [width, overcast] of live ? [[1440, false]] : [[1440, false], [3840, false], [390, true]]) {
+  for (const [width, overcast] of live || missingImage ? [[1440, false]] : [[1440, false], [3840, false], [390, true]]) {
     const mobile = width < 720;
     const context = await browser.newContext({ viewport: { width, height: width === 3840 ? 2088 : mobile ? 844 : 900 },
       hasTouch: mobile, reducedMotion: "reduce" });
@@ -20,6 +21,7 @@ try {
       localStorage.setItem("gaia-senseware-bgm-muted", "true");
     });
     await context.route("https://services.swpc.noaa.gov/**", route => route.fulfill({ contentType: "application/json", body: ovation }));
+    if (missingImage) await context.route("**/nasa-blue-marble-clouds-2048.jpg", route => route.abort());
     if (!live) await context.route("https://api.open-meteo.com/**", route => {
       const params = new URL(route.request().url()).searchParams;
       const latitudes = params.get("latitude").split(",").map(Number);
@@ -43,8 +45,9 @@ try {
     });
     await page.waitForFunction(() => document.querySelector(".gaia-planet-signals-readout").dataset.loading !== "true");
     if (mobile) await page.evaluate(() => globalThis.GaiaMapObservationAdapter.focusEarthLocation({ lon: 138, lat: 0, zoom: 1, durationMs: 0 }));
-    await page.waitForFunction(() => document.querySelector("#gaia-planet-atmosphere-canvas").dataset.fieldState === "ready"
-      && Number(document.querySelector("#gaia-planet-signals-canvas").dataset.planetAnchorCount) > 0);
+    await page.waitForFunction(missing => document.querySelector("#gaia-planet-atmosphere-canvas").dataset.fieldState === "ready"
+      && document.querySelector("#gaia-planet-atmosphere-canvas").dataset.cloudTextureState === (missing ? "unavailable" : "ready")
+      && Number(document.querySelector("#gaia-planet-signals-canvas").dataset.planetAnchorCount) > 0, missingImage);
     await page.waitForTimeout(950);
     const scan = await page.evaluate(() => {
       const canvas = document.querySelector("#gaia-planet-signals-canvas");
@@ -84,15 +87,23 @@ try {
     assert(scan.aboveClouds && scan.dark === 0 && scan.light >= 3 && scan.soft > scan.light,
       `POIs need pearl cores and soft falloff, without dark target rings: ${JSON.stringify(scan)}`);
     assert(scan.cloudPixels <= (mobile ? 301000 : 762000), "Keep the existing GPU pixel budget");
-    assert.equal(scan.cloudStyle, "translucent-haze-veil");
-    await page.screenshot({ path: path.join(output, `${width}-clouds.png`) });
+    assert.equal(scan.cloudStyle, "satellite-reference-clouds");
+    const credit = page.locator("[data-cloud-image-credit]");
+    assert.equal(await credit.isVisible(), true);
+    assert.match(await credit.textContent(), missingImage ? /参考画像を読み込めません.*地点の数値は確認できます/ : /NASA Blue Marble.*2002年公開.*現在の雲分布ではありません/);
+    assert.match(await page.locator("[data-planet-caption]").textContent(), /現在の衛星画像ではありません/);
+    assert.equal(await page.locator("[data-planet-time-label]").textContent(), "数値の時刻");
+    assert.match(await page.locator("[data-planet-data-time]").textContent(), /JST/);
+    await page.screenshot({ path: path.join(output, `${width}-clouds.jpg`), type: "jpeg", quality: 85 });
     if (mobile) await page.touchscreen.tap(scan.point.x, scan.point.y);
     else await page.mouse.click(scan.point.x, scan.point.y);
     await page.locator("#japan-poi-card").waitFor({ state: "visible" });
     const meta = await page.locator("#japan-poi-meta").textContent();
     assert.match(meta, live ? /雲量 .*%.*短波放射 .* W\/m²/ : /雲量 .*%.*短波放射 512 W\/m²/);
     if (overcast) assert.match(meta, /雲量 100%/);
-    await page.screenshot({ path: path.join(output, `${width}-poi.png`) });
+    assert.match(meta, /Open-Meteo/);
+    assert.doesNotMatch(meta, /NASA/);
+    await page.screenshot({ path: path.join(output, `${width}-poi.jpg`), type: "jpeg", quality: 85 });
     await page.locator("#japan-poi-close").click();
     assert.equal(await page.locator("#japan-poi-card").isVisible(), false);
     report.scans.push({ ...scan, overcast, meta });

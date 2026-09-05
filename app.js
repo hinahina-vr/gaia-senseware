@@ -2508,12 +2508,17 @@
     return { filledCount, visibleCount, heatSum, maximumHeat };
   };
 
+  // The current field is already behind this canvas. An opaque land surface
+  // prevents its ribbons from showing through Japan, without covering sea POIs.
+  const currentMapHasOpaqueLand = () => canvas.dataset.integratedMapMode === "02";
+  const CURRENT_MAP_LAND_FILL = "#153d40";
+
   const renderReferenceLand = (ctx, repeatOffset, left, top) => {
     const referencePath = getNaturalEarthLandPath(japanView.zoom);
     if (referencePath) {
       ctx.save();
       ctx.translate(repeatOffset - left, -top);
-      ctx.fillStyle = "rgba(29, 86, 84, 0.2)";
+      ctx.fillStyle = currentMapHasOpaqueLand() ? CURRENT_MAP_LAND_FILL : "rgba(29, 86, 84, 0.2)";
       ctx.fill(referencePath, "evenodd");
       ctx.strokeStyle = "rgba(135, 244, 216, 0.56)";
       ctx.lineWidth = japanView.zoom >= 2 ? 1.05 : 0.78;
@@ -2532,7 +2537,7 @@
         else ctx.lineTo(x, y);
       });
       ctx.closePath();
-      ctx.fillStyle = "rgba(29, 86, 84, 0.2)";
+      ctx.fillStyle = currentMapHasOpaqueLand() ? CURRENT_MAP_LAND_FILL : "rgba(29, 86, 84, 0.2)";
       ctx.fill();
       ctx.strokeStyle = "rgba(135, 244, 216, 0.52)";
       ctx.lineWidth = japanView.zoom >= 2 ? 1.15 : 0.9;
@@ -2579,6 +2584,8 @@
 
   const renderReferenceWorldModel = (ctx, rect, left, top) => {
     if (mapScope === "earth") {
+      const warmStatMap = japanLayer.classList.contains("is-estat-exhibit");
+      const opaqueCurrentLand = currentMapHasOpaqueLand();
       const projection = japanView.earthProjection || getEarthProjection(rect);
       const { originX, originY, width, height, scale } = projection;
       const worldCopies = getEarthWorldCopies(projection);
@@ -2601,7 +2608,7 @@
       ctx.beginPath();
       ctx.rect(originX, originY, width, height);
       ctx.clip();
-      ctx.fillStyle = "rgba(7, 25, 43, 0.46)";
+      ctx.fillStyle = warmStatMap ? "rgba(27, 66, 69, 0.18)" : "rgba(7, 25, 43, 0.46)";
       ctx.fillRect(originX, originY, width, height);
 
       ctx.setLineDash([2, 9]);
@@ -2628,9 +2635,10 @@
           ctx.save();
           ctx.translate(copy.x, copy.y);
           ctx.scale(scale, scale);
-          ctx.fillStyle = "rgba(29, 86, 84, 0.28)";
+          ctx.fillStyle = opaqueCurrentLand ? CURRENT_MAP_LAND_FILL
+            : warmStatMap ? "rgba(116, 163, 140, 0.68)" : "rgba(29, 86, 84, 0.28)";
           ctx.fill(geographicPath, "evenodd");
-          ctx.strokeStyle = "rgba(135, 244, 216, 0.68)";
+          ctx.strokeStyle = warmStatMap ? "rgba(207, 226, 193, 0.74)" : "rgba(135, 244, 216, 0.68)";
           ctx.lineWidth = 1.05 / scale;
           ctx.stroke(geographicPath);
           ctx.restore();
@@ -2646,9 +2654,10 @@
               else ctx.lineTo(x, y);
             });
             ctx.closePath();
-            ctx.fillStyle = "rgba(29, 86, 84, 0.24)";
+            ctx.fillStyle = opaqueCurrentLand ? CURRENT_MAP_LAND_FILL
+              : warmStatMap ? "rgba(116, 163, 140, 0.64)" : "rgba(29, 86, 84, 0.24)";
             ctx.fill();
-            ctx.strokeStyle = "rgba(135, 244, 216, 0.58)";
+            ctx.strokeStyle = warmStatMap ? "rgba(207, 226, 193, 0.64)" : "rgba(135, 244, 216, 0.58)";
             ctx.lineWidth = 1;
             ctx.stroke();
           }
@@ -2660,7 +2669,7 @@
           ctx.save();
           ctx.translate(copy.x, copy.y);
           ctx.scale(scale, scale);
-          ctx.strokeStyle = "rgba(194, 241, 229, 0.48)";
+          ctx.strokeStyle = warmStatMap ? "rgba(206, 221, 184, 0.46)" : "rgba(194, 241, 229, 0.48)";
           ctx.lineWidth = 0.58 / scale;
           ctx.stroke(countryBoundaryPath);
           ctx.restore();
@@ -2792,6 +2801,7 @@
   };
 
   const renderCachedReferenceWorldModel = (ctx, rect, left, top) => {
+    japanOverlay.dataset.referenceLandSurface = currentMapHasOpaqueLand() ? "opaque-current-land" : "translucent";
     if (!referenceWorldContext || referenceWorldContext.isContextLost?.()) {
       japanOverlay.dataset.referenceWorldCache = "direct-fallback";
       renderReferenceWorldModel(ctx, rect, left, top);
@@ -2808,6 +2818,8 @@
       : null;
     const cacheKey = [
       mapScope,
+      japanLayer.classList.contains("is-estat-exhibit") ? "warm-stat-map" : "default-map",
+      currentMapHasOpaqueLand() ? "opaque-current-land" : "translucent-land",
       naturalEarthLandState,
       naturalEarthLandRings.length,
       naturalEarthCountryState,
@@ -2844,6 +2856,7 @@
     }
 
     japanOverlay.dataset.referenceWorldCache = "ready";
+    japanOverlay.dataset.referenceWorldPalette = japanLayer.classList.contains("is-estat-exhibit") ? "warm-sage" : "default";
     japanOverlay.dataset.referenceWorldRenderScale = cacheScale.toFixed(4);
     japanOverlay.dataset.referenceWorldBackingSize = `${width}x${height}`;
     ctx.drawImage(referenceWorldCanvas, 0, 0, width, height, 0, 0, rect.width, rect.height);

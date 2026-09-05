@@ -33,6 +33,16 @@
   mix-blend-mode: normal;
 }
 
+/* A sunlit, sage-toned context for the statistical maps, not a night map.
+   Data colors stay on their own layer, and navigation geometry is untouched. */
+.japan-layer.is-estat-exhibit .japan-map {
+  background:
+    radial-gradient(ellipse at 68% 26%, rgba(209, 181, 114, .17), transparent 66%),
+    linear-gradient(145deg, #21494c, #285454 58%, #1e4147);
+}
+.japan-layer.is-estat-exhibit .japan-map::before { opacity: .12; }
+.japan-layer.is-estat-exhibit .japan-map-shade { opacity: .12; }
+
 .gaia-estat-webgl {
   position: absolute;
   z-index: 5;

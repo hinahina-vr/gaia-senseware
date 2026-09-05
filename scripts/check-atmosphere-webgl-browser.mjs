@@ -11,7 +11,7 @@ try {
   await page.route("**/atmosphere-check", route => route.fulfill({ contentType: "text/html", body: "<!doctype html><html><head><link rel='icon' href='data:,'></head><body></body></html>" }));
   await page.goto(`${baseUrl}/atmosphere-check`);
   await page.evaluate(async () => {
-    const { createAtmosphereRenderer } = await import("/src/exploration/atmosphere-webgl.js?v=gaia-cloud-veil-1");
+    const { createAtmosphereRenderer } = await import("/src/exploration/atmosphere-webgl.js?v=gaia-satellite-clouds-1");
     const canvas = document.body.appendChild(document.createElement("canvas"));
     canvas.id = "test-field";
     globalThis.fieldRenderer = createAtmosphereRenderer(canvas);
@@ -25,7 +25,8 @@ try {
     }, { kind, cloud, aerosol, stamp });
     await page.waitForFunction(kind => {
       const d = document.querySelector("canvas").dataset;
-      return d.fieldState === "ready" && (kind !== "wind" || d.weaveState === "ready");
+      return d.fieldState === "ready" && (kind !== "wind" || d.windStyle === "luminous-drifting-veil")
+        && (kind !== "cloud" || d.cloudTextureState === "ready");
     }, kind, { timeout: 30000 });
     return page.evaluate(() => {
       const canvas = document.querySelector("canvas");
@@ -54,17 +55,20 @@ try {
   const overcast = await sample("cloud", 100);
   assert.equal(clear.alpha, 0, "Clear sky must have zero cloud opacity");
   assert.ok(partly.alpha > 0.05 && partly.alpha < overcast.alpha, "Cloud cover must increase visible thickness/coverage");
-  assert.ok(overcast.covered > 0.9, "Overcast must form a world-wide layer, not point sprites");
-  assert.ok(overcast.maxAlpha <= 0.425 && overcast.alpha < 0.4, "Even 100% cloud cover stays a thin translucent veil");
-  assert.ok(partly.moving && overcast.moving, "The soft cloud veil still drifts in normal motion mode");
+  assert.ok(overcast.covered > partly.covered && overcast.covered < .8, "Archived cloud shapes keep their clear gaps, not a uniform white blanket");
+  assert.ok(overcast.maxAlpha <= .465 && overcast.alpha < .2, "Even 100% cloud cover keeps the basemap visible");
+  assert.ok(partly.moving && overcast.moving, "The reference layer drifts gently in normal motion mode");
   const clean = await sample("air", 0, 0);
   const hazy = await sample("air", 0, 1);
   assert.equal(clean.alpha, 0, "Zero AOD means no haze");
   assert.ok(hazy.covered > 0.9 && hazy.alpha > 0.3, "AOD makes a continuous scattering layer");
-  // Cloud -> wind shares the source cache, but still needs to build the weave.
-  await sample("cloud", 50, 0.2, "shared-atmosphere");
+  // Wind and cloud now share the same source field, with no second weave build.
+  const shared = await sample("cloud", 50, 0.2, "shared-atmosphere");
   const wind = await sample("wind", 50, 0.2, "shared-atmosphere");
   assert.ok(wind.covered > 0.1, "Wind is a continuous field");
+  assert.ok(wind.maxAlpha <= .365, "The light veil cannot obscure the basemap");
+  assert.ok(wind.moving, "Normal motion must visibly drift");
+  assert.equal(wind.builds, shared.builds, "Wind uses the cached source vectors directly");
   const warm = await sample("cloud", 50, 0.2, "shared-atmosphere");
   assert.equal(warm.builds, wind.builds, "Mode changes reuse the field, no per-frame rebuild");
   for (const result of [clear, partly, overcast, clean, hazy, wind, warm]) {

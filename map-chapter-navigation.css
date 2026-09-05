@@ -1,0 +1,131 @@
+/* One screen-space navigation slot for all desktop exhibits (01–30).
+   Data panels can have different heights; neither their content nor their
+   loading state may move the previous / next click targets. */
+@media (min-width: 901px) {
+  :root {
+    --map-chapter-inset: clamp(10px, .8vw, 20px);
+    --map-chapter-width: clamp(270px, calc((100vw - 2 * var(--map-chapter-inset) - 2 * var(--map-dock-action-width)) / 5), 720px);
+    /* The standard dock has 20px padding plus its 1px top border. */
+    --map-chapter-height: calc(var(--map-command-dock-height) - 21px);
+  }
+
+  body.map-grid-desktop #japan-layer .map-command-dock {
+    grid-template-columns: var(--map-chapter-width) minmax(0, 3.4fr) minmax(0, 2.2fr) var(--map-dock-action-width) var(--map-dock-action-width);
+  }
+
+  body.map-grid-desktop #japan-layer :is(.gaia-live-exhibit-readout, .gaia-estat-readout, .gaia-firms-readout, .gaia-planet-signals-readout) {
+    left: calc(var(--map-chapter-inset) - 1px) !important;
+    right: calc(var(--map-chapter-inset) - 1px) !important;
+  }
+
+  body.map-grid-desktop #japan-layer.is-live-exhibit .gaia-live-exhibit-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, 1.08fr) minmax(0, 1.22fr) minmax(0, 1.58fr) minmax(0, 1.2fr);
+    padding: 14px 0 11px;
+  }
+
+  body.map-grid-desktop #japan-layer .gaia-estat-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, .8fr) minmax(0, .9fr) minmax(0, 1.45fr) minmax(0, .7fr) minmax(0, 1fr) minmax(0, 1.35fr);
+  }
+  body.map-grid-desktop #japan-layer .gaia-firms-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, .98fr) minmax(0, .8fr) minmax(0, 1.4fr) minmax(0, .82fr) minmax(0, 1.3fr) minmax(0, 1.25fr);
+  }
+  body.map-grid-desktop #japan-layer .gaia-planet-signals-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, .95fr) minmax(0, 1.15fr) minmax(0, 1.55fr) minmax(0, 1.15fr);
+  }
+
+  body.map-grid-desktop #japan-layer :is(.gaia-live-deck-chapter, .gaia-estat-chapter, .gaia-firms-chapter, .gaia-planet-chapter) {
+    position: relative;
+    align-self: end;
+    display: block;
+    box-sizing: border-box;
+    height: var(--map-chapter-height);
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+  }
+  body.map-grid-desktop #japan-layer :is(.gaia-live-deck-chapter, .gaia-estat-chapter, .gaia-firms-chapter, .gaia-planet-chapter) > div {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 100%;
+    padding: 0 50px;
+  }
+  body.map-grid-desktop #japan-layer :is(.gaia-live-deck-chapter, .gaia-firms-chapter, .gaia-planet-chapter) > div {
+    padding-top: 14px;
+  }
+  body.map-grid-desktop #japan-layer :is(.gaia-live-deck-chapter, .gaia-firms-chapter, .gaia-planet-chapter) > p {
+    position: absolute;
+    top: max(3px, calc(50% - 28px));
+    left: 50px;
+    right: 50px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  body.map-grid-desktop #japan-layer :is(.gaia-live-deck-selector-toggle, .gaia-estat-selector-toggle, .gaia-firms-chapter > div > span, .gaia-planet-chapter > div > strong) {
+    flex: 1;
+    min-width: 0;
+  }
+  body.map-grid-desktop #japan-layer .map-dock-bank-trigger { padding-inline: 50px; }
+
+  body.map-grid-desktop #japan-layer :is([data-map-dock-mode-step], [data-live-deck-step], [data-estat-step], [data-firms-step], [data-planet-step]) {
+    position: absolute;
+    z-index: 4;
+    top: 50%;
+    bottom: auto;
+    left: 2px;
+    right: auto;
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    width: 44px;
+    height: 48px;
+    min-width: 44px;
+    min-height: 48px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    font: 300 28px/1 Georgia, serif;
+    transform: translateY(-50%);
+    touch-action: manipulation;
+    user-select: none;
+    transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  }
+  body.map-grid-desktop #japan-layer :is([data-map-dock-mode-step="1"], [data-live-deck-step="1"], [data-estat-step="1"], [data-firms-step="1"], [data-planet-step="1"]) {
+    left: calc(var(--map-chapter-width) - 46px);
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1500px) {
+  body.map-grid-desktop #japan-layer .gaia-estat-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, .85fr) minmax(0, .9fr) minmax(0, 1.45fr) minmax(0, .72fr) minmax(0, 1.35fr);
+  }
+  body.map-grid-desktop #japan-layer .gaia-firms-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, 1fr) minmax(0, .85fr) minmax(0, 1.45fr) minmax(0, 1.25fr);
+  }
+}
+@media (min-width: 901px) and (max-width: 1499px) {
+  body.map-grid-desktop #japan-layer.is-live-exhibit .gaia-live-exhibit-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, 1.42fr) minmax(0, 1.62fr) minmax(0, 1fr);
+  }
+}
+@media (min-width: 901px) and (max-width: 1280px) {
+  :root { --map-chapter-width: clamp(200px, 22vw, 240px); }
+  body.map-grid-desktop #japan-layer .map-command-dock {
+    grid-template-columns: var(--map-chapter-width) minmax(0, 2.8fr) minmax(0, 1.65fr) 110px 110px;
+  }
+}
+@media (min-width: 901px) and (max-width: 1120px) {
+  body.map-grid-desktop #japan-layer .gaia-planet-signals-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, .9fr) minmax(0, 1.25fr) minmax(0, 1.25fr);
+  }
+}
+@media (min-width: 901px) and (max-width: 1100px) {
+  body.map-grid-desktop #japan-layer .gaia-estat-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, .9fr) minmax(0, 1.1fr) minmax(0, 1.5fr) minmax(0, 1.45fr);
+  }
+  body.map-grid-desktop #japan-layer .gaia-firms-readout {
+    grid-template-columns: var(--map-chapter-width) minmax(0, .9fr) minmax(0, 1.4fr) minmax(0, 1.3fr);
+  }
+}

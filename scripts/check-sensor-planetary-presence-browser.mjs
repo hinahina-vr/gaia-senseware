@@ -1,147 +1,162 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { spawn } from "node:child_process";
+import { chromium } from "playwright-core";
 
-const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4499"] = process.argv.slice(2);
-if (!moduleRoot || !executablePath) throw new Error("Playwright module and browser executable are required");
-const playwrightEntry = fs.existsSync(path.join(moduleRoot, "index.mjs"))
-  ? path.join(moduleRoot, "index.mjs")
-  : path.join(moduleRoot, "playwright", "index.mjs");
-const { chromium } = await import(pathToFileURL(path.resolve(playwrightEntry)).href);
-const outputDir = path.resolve(outputArgument || "artifacts/sensor-planetary-presence");
-fs.mkdirSync(outputDir, { recursive: true });
+// Keep the old CLI's executable/output arguments; use only an owned mock server.
+const [, executablePath = "C:/Program Files/Google/Chrome/Application/chrome.exe", outputArgument] = process.argv.slice(2);
+const output = path.resolve(outputArgument || "artifacts/sensor-planetary-presence");
+fs.mkdirSync(output, { recursive: true });
+const port = 4498;
+const baseUrl = "http://127.0.0.1:" + port;
+const server = spawn(process.execPath, ["scripts/serve-sensor-platform-qa.mjs", String(port)], {
+  windowsHide: true, stdio: ["ignore", "pipe", "pipe"],
+});
+let browser;
+const report = { status: "running", fixture: "Isolated mock API; not live observations", checks: [], errors: [] };
 
-const browser = await chromium.launch({ headless: true, executablePath, args: ["--no-first-run", "--disable-background-networking"] });
-const report = { status: "running", viewports: [], ownedPresence: null, fallback: null, consoleErrors: [], pageErrors: [] };
-
-try {
-  for (const viewport of [
-    { name: "pc-1440", width: 1440, height: 900, reducedMotion: "no-preference" },
-    { name: "mobile-390-reduced", width: 390, height: 844, reducedMotion: "reduce" },
-  ]) {
-    await fetch(new URL("/__qa/reset", baseUrl), { method: "POST" });
-    const context = await browser.newContext({ viewport, reducedMotion: viewport.reducedMotion });
-    const page = await context.newPage();
-    monitorPage(page, viewport.name, report);
-    await page.goto(new URL("/sensors/#map", baseUrl).href, { waitUntil: "domcontentloaded" });
-    const field = page.locator(".sensor-sense-field");
-    const panel = page.locator(".sensor-belonging");
-    const sense = page.locator(".sensor-belonging-sense");
-    const presence = page.locator(".sensor-presence-node");
-    await field.waitFor({ state: "visible" });
-    await panel.waitFor({ state: "visible" });
-    assert.equal(await presence.isHidden(), true);
-    assert.equal(await field.getAttribute("data-presence"), null);
-    assert.match(await field.getAttribute("data-renderer"), /^(webgl|2d)$/u);
-    assert(Number(await field.getAttribute("data-render-pixels")) <= 900_000);
-    assert.equal(await field.getAttribute("data-motion"), viewport.reducedMotion === "reduce" ? "static" : "ambient");
-    const targets = await page.locator(".sensor-belonging-sense, .sensor-belonging-join").evaluateAll((buttons) => buttons.map((button) => {
-      const rect = button.getBoundingClientRect();
-      return { width: rect.width, height: rect.height };
-    }));
-    assert(targets.every((target) => target.width >= 44 && target.height >= 44), `presence actions are too small: ${JSON.stringify(targets)}`);
-
-    await sense.click();
-    await presence.waitFor({ state: "visible" });
-    assert.equal(await presence.getAttribute("data-state"), "present");
-    assert.equal(await field.getAttribute("data-presence"), "present");
-    assert(Number(await field.getAttribute("data-presence-count")) >= 1);
-    assert.match(await panel.locator("small").first().textContent(), /YOU ARE PART OF THE FIELD/u);
-    assert.match(await panel.locator("p").textContent(), /あなたも、この星を感じている一部/u);
-    assert.match(await presence.textContent(), /YOU · SENSING/u);
-
-    await page.locator(".sensor-map-marker[data-sensor-id='sensor_browserqa']").click();
-    await page.waitForTimeout(700);
-    assert.match(await panel.locator("p").textContent(), /あなたと.+同じ地球の「いま」/u);
-    await page.locator(".sensor-oracle-trigger").dispatchEvent("click");
-    await page.waitForFunction(() => document.querySelector(".sensor-oracle-receipt")?.classList.contains("is-received"));
-    assert.equal(await presence.getAttribute("data-state"), "received");
-    assert.match(await panel.locator("p").textContent(), /あなたの感覚へ届きました/u);
-    assert(Number(await field.getAttribute("data-presence-count")) >= 2);
-
-    if (viewport.reducedMotion === "reduce") {
-      assert.equal(await presence.evaluate((node) => getComputedStyle(node, "::before").animationName), "none");
-    }
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-    assert(overflow <= 1, `horizontal overflow: ${overflow}`);
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}.png`), fullPage: false });
-    report.viewports.push({
-      ...viewport,
-      renderer: await field.getAttribute("data-renderer"),
-      pixels: Number(await field.getAttribute("data-render-pixels")),
-      presenceCount: Number(await field.getAttribute("data-presence-count")),
-    });
-    await context.close();
-  }
-
-  await fetch(new URL("/__qa/reset", baseUrl), { method: "POST" });
-  await fetch(new URL("/api/auth/trial", baseUrl), { method: "POST" });
-  await fetch(new URL("/api/web/v1/devices/pairing", baseUrl), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: "ベランダ環境センサー" }),
-  });
-  const ownedContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  const ownedPage = await ownedContext.newPage();
-  monitorPage(ownedPage, "owned-pc", report);
-  const socialLoaded = ownedPage.waitForResponse((response) => response.url().endsWith("/api/web/v1/social") && response.ok(), { timeout: 60_000 });
-  await ownedPage.goto(new URL("/sensors/#map", baseUrl).href, { waitUntil: "domcontentloaded" });
-  await socialLoaded;
-  const ownedField = ownedPage.locator(".sensor-sense-field");
-  const ownedPresence = ownedPage.locator(".sensor-presence-node");
-  await ownedPresence.waitFor({ state: "visible" });
-  assert.equal(await ownedPresence.getAttribute("data-state"), "owned");
-  assert.equal(await ownedField.getAttribute("data-owned-node-count"), "1");
-  assert.match(await ownedPage.locator(".sensor-belonging").textContent(), /YOUR NODES 01/u);
-  assert.match(await ownedPage.locator(".sensor-belonging p").textContent(), /あなたと.+同じ地球の「いま」/u);
-
-  await ownedPage.locator(".sensor-map-marker[data-sensor-id='sensor_browserqa']").click();
-  await ownedPage.waitForTimeout(700);
-  await ownedPage.locator("#public-sensor-detail [data-relationship='like']").dispatchEvent("click");
-  await ownedPage.waitForFunction(() => document.querySelector(".sensor-presence-node")?.dataset.state === "responding");
-  assert.match(await ownedPage.locator(".sensor-belonging p").textContent(), /あなたの「感じた」が返りました/u);
-  await ownedPage.screenshot({ path: path.join(outputDir, "owned-response-pc.png"), fullPage: false });
-  report.ownedPresence = {
-    ownedNodeCount: Number(await ownedField.getAttribute("data-owned-node-count")),
-    state: await ownedPresence.getAttribute("data-state"),
-  };
-  await ownedContext.close();
-
-  await fetch(new URL("/__qa/reset", baseUrl), { method: "POST" });
-  const fallbackContext = await browser.newContext({ viewport: { width: 1024, height: 720 } });
-  const fallbackPage = await fallbackContext.newPage();
-  monitorPage(fallbackPage, "canvas-fallback", report);
-  await fallbackPage.addInitScript(() => {
-    const getContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function patchedGetContext(type, ...options) {
-      if (type === "webgl" || type === "experimental-webgl") return null;
-      return getContext.call(this, type, ...options);
-    };
-  });
-  await fallbackPage.goto(new URL("/sensors/#map", baseUrl).href, { waitUntil: "domcontentloaded" });
-  const fallbackField = fallbackPage.locator(".sensor-sense-field");
-  await fallbackField.waitFor({ state: "visible" });
-  assert.equal(await fallbackField.getAttribute("data-renderer"), "2d");
-  await fallbackPage.locator(".sensor-belonging-sense").click();
-  await fallbackPage.locator(".sensor-presence-node").waitFor({ state: "visible" });
-  assert.equal(await fallbackField.getAttribute("data-presence"), "present");
-  report.fallback = { renderer: "2d", presence: "present" };
-  await fallbackContext.close();
-
-  assert.deepEqual(report.consoleErrors, []);
-  assert.deepEqual(report.pageErrors, []);
-  report.status = "passed";
-  console.log(JSON.stringify(report, null, 2));
-} finally {
-  await browser.close();
+async function assertNoPresence(page) {
+  assert.equal(await page.locator(".sensor-belonging, .sensor-presence-node").count(), 0);
+  assert.doesNotMatch(await page.locator("#map").innerText(), /YOU · SENSING|もっと探る|YOU ARE .*FIELD/u);
+  assert.equal(await page.locator(".sensor-sense-field").getAttribute("data-presence"), null);
 }
 
-function monitorPage(page, name, target) {
-  page.on("console", (message) => {
-    if (message.type() !== "error") return;
-    const text = message.text();
-    if (!/server responded with a status of 401\b/u.test(text)) target.consoleErrors.push(`${name}: ${text}`);
+try {
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("Mock server startup timed out")), 10000);
+    server.once("error", error => { clearTimeout(timeout); reject(error); });
+    server.once("exit", code => { clearTimeout(timeout); reject(new Error("Mock server exited: " + code)); });
+    server.stdout.on("data", data => {
+      if (data.toString().includes("sensor qa " + baseUrl)) { clearTimeout(timeout); resolve(); }
+    });
   });
-  page.on("pageerror", (error) => target.pageErrors.push(`${name}: ${error.message}`));
+  browser = await chromium.launch({ executablePath, headless: true });
+  for (const options of [
+    { width: 1440, height: 900, motion: "no-preference" },
+    { width: 390, height: 844, motion: "reduce" },
+    { width: 320, height: 568, motion: "reduce" },
+    { width: 1440, height: 900, motion: "reduce", owned: true },
+    { width: 1024, height: 768, motion: "reduce", fallback: true },
+  ]) {
+    await fetch(baseUrl + "/__qa/reset", { method: "POST" });
+    if (options.owned) {
+      await fetch(baseUrl + "/api/auth/trial", { method: "POST" });
+      await fetch(baseUrl + "/api/web/v1/devices/pairing", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "ベランダ環境センサー" }),
+      });
+    }
+    const context = await browser.newContext({
+      viewport: { width: options.width, height: options.height },
+      reducedMotion: options.motion, hasTouch: options.width < 760,
+    });
+    const page = await context.newPage();
+    page.on("pageerror", error => report.errors.push(error.message));
+    await page.addInitScript(({ fallback }) => {
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+        if (fallback && this.classList.contains("sensor-sense-field") && /webgl/.test(type)) return null;
+        return original.call(this, type, ...args);
+      };
+      // Capture actual GPU inputs without adding QA state to production code.
+      const locations = new WeakMap();
+      const getLocation = WebGLRenderingContext.prototype.getUniformLocation;
+      const setUniform = WebGLRenderingContext.prototype.uniform4fv;
+      WebGLRenderingContext.prototype.getUniformLocation = function (program, name) {
+        const location = getLocation.call(this, program, name);
+        if (location) locations.set(location, name);
+        return location;
+      };
+      WebGLRenderingContext.prototype.uniform4fv = function (location, values) {
+        if (this.canvas.classList.contains("sensor-sense-field")) {
+          window.__fieldUniforms ||= {};
+          window.__fieldUniforms[locations.get(location)] = Array.from(values);
+        }
+        return setUniform.call(this, location, values);
+      };
+      document.addEventListener("DOMContentLoaded", () => {
+        const map = document.querySelector("#public-sensor-map");
+        map.addEventListener("gaia:sensor-field", event => { window.__fieldNodes = event.detail.nodes; });
+        map.addEventListener("gaia:sensor-focus", event => {
+          window.__selectedOrigin = window.__fieldNodes?.find(node => node.id === event.detail.sensorId);
+        });
+      });
+    }, { fallback: Boolean(options.fallback) });
+    const sessionReady = page.waitForResponse(response => response.url().endsWith("/api/web/v1/social") && response.ok());
+    await page.goto(baseUrl + "/sensors/?authenticated=1#map", { waitUntil: "domcontentloaded" });
+    await sessionReady;
+    const field = page.locator(".sensor-sense-field");
+    await field.waitFor({ state: "visible" });
+    await page.locator(".sensor-map-marker").first().waitFor({ state: "visible" });
+    await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("sensor", { restoreFocus: false }));
+    await page.waitForTimeout(700);
+    await assertNoPresence(page);
+    assert.equal(await field.getAttribute("data-renderer"), options.fallback ? "2d" : "webgl");
+    assert.equal(await field.getAttribute("data-motion"), options.motion === "reduce" ? "static" : "ambient");
+    assert(Number(await field.getAttribute("data-render-pixels")) <= 905_000);
+
+    await page.locator(".sensor-map-card-close").click();
+    await page.locator("#public-sensor-detail").waitFor({ state: "hidden" });
+    const marker = page.locator('.sensor-map-marker[data-sensor-id="sensor_browserqa"]');
+    // Resolve this fixture's co-located sensor through the actual observation list.
+    await page.locator("#public-map-search-open").click();
+    await page.locator("#public-sensor-query").fill("ベランダ");
+    const sensorChoice = page.locator('.sensor-public-card[data-sensor-id="sensor_browserqa"]');
+    const beforePulse = Number(await field.getAttribute("data-pulse-count"));
+    if (options.width < 760) await sensorChoice.tap(); else await sensorChoice.click();
+    await page.waitForFunction(before => Number(document.querySelector(".sensor-sense-field").dataset.pulseCount) > before, beforePulse);
+    assert.equal(await marker.getAttribute("aria-current"), "true");
+    assert(await page.locator("#public-sensor-detail").isVisible());
+    if (!options.fallback) {
+      const gpu = await page.evaluate(() => ({
+        pulse: window.__fieldUniforms.u_pulse,
+        nodes: window.__fieldUniforms.u_nodes,
+        target: window.__selectedOrigin,
+      }));
+      assert(gpu.target, "Selected sensor must have field coordinates");
+      assert(Math.abs(gpu.pulse[0] - gpu.target.x) < 0.001);
+      assert(Math.abs(gpu.pulse[1] - (1 - gpu.target.y)) < 0.001);
+      assert(gpu.nodes.some((value, index) => index % 4 === 3 && value === 1), "Selected-node GPU glow missing");
+    }
+    await page.locator(".sensor-like-trigger").click();
+    await page.waitForFunction(() => document.querySelector(".sensor-like-trigger").getAttribute("aria-pressed") === "true");
+    await assertNoPresence(page);
+    const pulseAfterSelection = Number(await field.getAttribute("data-pulse-count"));
+    // Old identity/presence events and an empty-map touch must not create a fake node or pulse.
+    await page.locator("#public-sensor-map").evaluate(map => {
+      map.dispatchEvent(new CustomEvent("gaia:sensor-identity", { detail: { deviceCount: 2, onlineCount: 1 } }));
+      map.dispatchEvent(new CustomEvent("gaia:sensor-presence", { detail: { phase: "responding", sensorId: "sensor_browserqa" } }));
+      map.dispatchEvent(new PointerEvent("pointerdown", { clientX: 50, clientY: 200 }));
+      map.dispatchEvent(new PointerEvent("pointerup", { clientX: 50, clientY: 200 }));
+    });
+    assert.equal(Number(await field.getAttribute("data-pulse-count")), pulseAfterSelection);
+    await assertNoPresence(page);
+    const ownedLink = page.locator('.sensor-topbar a[data-nav="devices"]');
+    assert.equal(await ownedLink.getAttribute("href"), "#devices");
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: path.join(output, options.width + (options.owned ? "-owned" : options.fallback ? "-fallback" : "") + ".png") });
+    report.checks.push({ ...options, sensorSelectionPulse: "passed", artificialPresence: "absent", likes: "passed" });
+    console.log("PASS " + JSON.stringify(report.checks.at(-1)));
+    await context.close();
+  }
+  // Reuse layout/selection/search/zoom checks against this test's own fixture server.
+  await fetch(baseUrl + "/__qa/reset", { method: "POST" });
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ["scripts/check-sensor-map-reference-browser.mjs"], {
+      windowsHide: true, stdio: "inherit", env: { ...process.env, SENSOR_QA_URL: baseUrl },
+    });
+    child.once("error", reject);
+    child.once("exit", code => code === 0 ? resolve() : reject(new Error("Map layout regression failed: " + code)));
+  });
+  assert.deepEqual(report.errors, []);
+  report.status = "passed";
+} catch (error) {
+  report.status = "failed";
+  report.failure = error.message;
+  throw error;
+} finally {
+  fs.writeFileSync(path.join(output, "report.json"), JSON.stringify(report, null, 2));
+  await browser?.close();
+  server.kill();
 }

@@ -1,5 +1,3 @@
-import { buildCurrentWeave } from "../../current-flow-worker.js?v=gaia-atmosphere-1";
-
 const sphere = (lon, lat) => {
   const a = lon * Math.PI / 180, b = lat * Math.PI / 180, c = Math.cos(b);
   return [c * Math.cos(a), Math.sin(b), c * Math.sin(a)];
@@ -58,18 +56,8 @@ if (typeof self !== "undefined" && typeof document === "undefined") {
   self.onmessage = ({ data: { points, kind, key } }) => {
     const started = performance.now();
     const field = buildAtmosphereField(points, kind);
-    // Send clouds/haze immediately. Only wind needs streamline integration.
+    // The luminous veil uses the interpolated wind vectors directly. No dense
+    // streamline texture or second background build is needed.
     self.postMessage({ key, field, buildMs: performance.now() - started });
-    if (kind === "wind") {
-      const flow = new Float32Array(field.vector.length);
-      for (let i = 0; i < flow.length; i += 4) {
-        flow[i] = field.vector[i]; flow[i + 1] = field.vector[i + 1];
-        flow[i + 2] = field.sourceCount ? 1 : 0;
-        flow[i + 3] = Math.hypot(flow[i], flow[i + 1]);
-      }
-      const weave = buildCurrentWeave({ data: flow, width: field.width, height: field.height },
-        768, 384, null, { steps: 40, step: 0.5 });
-      self.postMessage({ key, weave, buildMs: performance.now() - started }, [weave.data.buffer]);
-    }
   };
 }

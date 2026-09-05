@@ -92,6 +92,7 @@ try {
       await page.waitForTimeout(300);
       const active = await canvas.evaluate(el => ({ ...el.dataset, pixels: el.width * el.height, events: getComputedStyle(el).pointerEvents }));
       assert.equal(active.planetArrivalEffect, kind);
+      assert.equal(active.planetArrivalStyle, kind === "quake" ? "seismic-ripples" : "scattered-light-bloom");
       assert.equal(active.planetArrivalPhase, reduced ? "reduced" : "entering");
       if (reduced) assert.equal(active.planetArrivalActive, "0");
       else assert(Number(active.planetArrivalActive) > 0 && Number(active.planetArrivalActive) <= Number(active.planetArrivalLimit));

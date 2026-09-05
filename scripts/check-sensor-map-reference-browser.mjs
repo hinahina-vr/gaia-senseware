@@ -11,7 +11,6 @@ const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google
 const report = { fixture: 'Local mock API, not live observations', scans: [], pageErrors: [] };
 try {
   for (const [width, height] of [[1672, 941], [1440, 900], [1024, 768], [390, 844], [320, 568]]) {
-    await fetch(`${baseUrl}/__qa/reset`, { method: 'POST' });
     const context = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce' });
     const page = await context.newPage();
     page.on('pageerror', e => report.pageErrors.push(e.message));
@@ -23,14 +22,14 @@ try {
     if (baseline) { await context.close(); continue; }
     const inspect = () => {
       const rect = s => document.querySelector(s).getBoundingClientRect().toJSON();
-      return { map: rect('#public-sensor-map'), card: rect('#public-sensor-detail'), metrics: rect('.sensor-observation-hud'), actions: rect('.sensor-relationship-bar'), sync: rect('.sensor-global-sync'), header: rect('.sensor-topbar'), belonging: rect('.sensor-belonging'), overflow: document.documentElement.scrollWidth > innerWidth };
+      return { map: rect('#public-sensor-map'), card: rect('#public-sensor-detail'), metrics: rect('.sensor-observation-hud'), actions: rect('.sensor-relationship-bar'), sync: rect('.sensor-global-sync'), header: rect('.sensor-topbar'), overflow: document.documentElement.scrollWidth > innerWidth };
     };
     const layout = await page.evaluate(inspect);
     assert(!layout.overflow, `${width}: horizontal overflow`);
     assert(layout.metrics.height > 0 && layout.metrics.bottom <= layout.actions.top + 1, `${width}: readings must precede actions`);
     assert(layout.card.left >= 0 && layout.card.right <= width && layout.card.bottom <= height, `${width}: card outside viewport`);
     assert(layout.actions.bottom <= layout.card.bottom - 4, `${width}: action row is clipped`);
-    assert(layout.card.bottom <= layout.belonging.top || layout.card.right <= layout.belonging.left || layout.card.left >= layout.belonging.right, `${width}: belonging overlaps card`);
+    assert.equal(await page.locator('.sensor-belonging, .sensor-presence-node').count(), 0, `${width}: decorative presence UI must not return`);
     assert(layout.sync.top >= layout.header.bottom - 1 && layout.sync.bottom <= layout.map.top + 1, `${width}: telemetry is not in a separate strip`);
     const targets = await page.locator('#public-map-search-open, #refresh-map, .sensor-map-navigation button, .sensor-map-card-expand, .sensor-map-card-close, .sensor-relationship-bar button').evaluateAll(nodes => nodes.map(n => ({ id: n.id || n.className, width: n.getBoundingClientRect().width, height: n.getBoundingClientRect().height })));
     assert(targets.every(r => r.width >= 44 && r.height >= 44), `${width}: small hit target ${JSON.stringify(targets)}`);

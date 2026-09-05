@@ -1005,6 +1005,19 @@
       "publicationStatus": "public"
     },
     {
+      "path": "assets/maps/nasa-blue-marble-clouds-2048.jpg",
+      "sha256": "daddaad84d7a33bbbc86cdda3f591099f57cee8607b7bcf3b67eb7e4f7a1c793",
+      "generationService": "NASA Goddard Space Flight Center / Reto Stöckli",
+      "generationDate": null,
+      "generationDateUnknownReason": "NASA公開日は2002-02-11。個別の撮影日・合成日は特定せず、公開日と観測時刻を区別する",
+      "firstRepositoryEvidenceAt": null,
+      "processing": "NASA公開JPEGを無加工で保存。描画時に輝度を雲形の透過マスクとして使用。濃淡・微小な移動は演出。現在の衛星画像ではなく参考画像として明記",
+      "sourceLedger": "assets/maps/NASA-CLOUDS-RIGHTS.md",
+      "officialTermsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "accountPlan": "適用外（NASA公開素材・利用条件は元台帳参照）",
+      "publicationStatus": "public"
+    },
+    {
       "path": "assets/modes/mode-abstract-chibi-v3.png",
       "sha256": "f7265f42609af662bc5f99bff8ba0829197e246a33bd9e6ca3a05387c301c72b",
       "generationService": "未特定（元台帳参照）",

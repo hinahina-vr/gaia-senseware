@@ -9,6 +9,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const jsonPath = path.join(root, "docs", "media-rights-ledger.json");
 const markdownPath = path.join(root, "docs", "MEDIA_RIGHTS_LEDGER.md");
 const checkOnly = process.argv.includes("--check");
+const nasaCloudFile = "assets/maps/nasa-blue-marble-clouds-2048.jpg";
+const nasaCloudCredit = "NASA Goddard Space Flight Center / Reto Stöckli";
 const mediaPattern = /\.(?:avif|gif|jpe?g|m4a|mp3|ogg|png|wav|webp)$/iu;
 
 const walk = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -27,6 +29,7 @@ for (const line of history.split(/\r?\n/u)) {
 }
 
 const ledgerFor = (relative) => {
+  if (relative === nasaCloudFile) return "assets/maps/NASA-CLOUDS-RIGHTS.md";
   if (relative === "assets/audio/gaia-map-ambient-harp-felt-piano.wav") return "scripts/build-map-ambient-score.mjs";
   if (/^assets\/audio\//u.test(relative)) return "README.md#credits";
   if (/^assets\/characters\//u.test(relative)) return "assets/characters/AMANE-STYLE-V3-RIGHTS.md";
@@ -35,6 +38,7 @@ const ledgerFor = (relative) => {
 };
 
 const serviceFor = (relative) => {
+  if (relative === nasaCloudFile) return nasaCloudCredit;
   if (relative === "assets/audio/gaia-map-ambient-harp-felt-piano.wav") return "In-repository procedural synthesis (Node.js)";
   if (/\.(?:m4a|mp3|ogg|wav)$/iu.test(relative)) return "Suno AI";
   if (/^assets\/(?:characters|visuals-07)\//u.test(relative)) return "OpenAI ImageGen";
@@ -42,6 +46,7 @@ const serviceFor = (relative) => {
 };
 
 const termsFor = (service) => {
+  if (service === nasaCloudCredit) return "https://www.nasa.gov/nasa-brand-center/images-and-media/";
   if (service === "OpenAI ImageGen") return "https://openai.com/policies/service-terms/";
   if (service === "Suno AI") return "https://suno.com/terms";
   return null;
@@ -49,10 +54,12 @@ const termsFor = (service) => {
 
 const processingFor = (relative) => relative === "assets/audio/gaia-map-ambient-harp-felt-piano.wav"
   ? "純粋なNode.jsによる決定的ステレオPCM合成。ハープ、フェルトピアノ、弦、低域ドローン、濾波ノイズ、拡散リバーブを生成"
+  : relative === nasaCloudFile ? "NASA公開JPEGを無加工で保存。描画時に輝度を雲形の透過マスクとして使用。濃淡・微小な移動は演出。現在の衛星画像ではなく参考画像として明記"
   : "採用ファイル。個別の加工履歴は元台帳を参照";
 
 const accountPlanFor = (service) => service === "In-repository procedural synthesis (Node.js)"
   ? "適用外（ローカル生成）"
+  : service === nasaCloudCredit ? "適用外（NASA公開素材・利用条件は元台帳参照）"
   : "確認していない";
 
 const assets = media.map((file) => {
@@ -63,7 +70,7 @@ const assets = media.map((file) => {
     sha256: createHash("sha256").update(fs.readFileSync(file)).digest("hex"),
     generationService: service,
     generationDate: null,
-    generationDateUnknownReason: "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
+    generationDateUnknownReason: relative === nasaCloudFile ? "NASA公開日は2002-02-11。個別の撮影日・合成日は特定せず、公開日と観測時刻を区別する" : "個別ファイル単位の生成日時を独立検証できないため、最初のリポジトリ証拠日を併記",
     firstRepositoryEvidenceAt: evidenceDates.get(relative) || null,
     processing: processingFor(relative),
     sourceLedger: ledgerFor(relative),

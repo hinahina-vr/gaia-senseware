@@ -1,4 +1,4 @@
-import { initSensorSenseField } from "./sensor-field.js?v=gaia-map-command-redesign-1";
+import { initSensorSenseField } from "./sensor-field.js?v=gaia-real-sensor-field-1";
 
 const views = new Map(Array.from(document.querySelectorAll("[data-view]"), (element) => [element.dataset.view, element]));
 const statusRegion = document.querySelector("#sensor-status");
@@ -301,9 +301,7 @@ const boot = async () => {
   restoreAiConfiguration();
   initPublicMapNavigation();
   initPublicSensorDirectory();
-  initSensorSenseField(publicSensorMap, {
-    onParticipate: () => { location.hash = authenticated ? "#devices" : "#login"; },
-  });
+  initSensorSenseField(publicSensorMap);
   void mountMapSurfaces();
   initLocationPickers();
   initRegionFields();
@@ -376,12 +374,6 @@ const loadDevices = async () => {
     card.dataset.deviceId = device.deviceId;
     deviceList.append(fragment);
   });
-  publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-identity", {
-    detail: {
-      deviceCount: devices.length,
-      onlineCount: devices.filter((device) => device.state === "ONLINE").length,
-    },
-  }));
   if (publicSensors.length) renderPublicSensors();
 };
 
@@ -1198,11 +1190,6 @@ async function togglePublicLike(sensor, button, refresh) {
     });
     sensor.likeCount = Number(response.social.likeCount) || 0;
     refresh();
-    if (enabled) {
-      publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-presence", {
-        detail: { sensorId: sensor.id, phase: "responding", strength: 1.28 },
-      }));
-    }
     showStatus(enabled ? "この観測点を応援しました。" : "応援を取り消しました。");
   } catch (error) {
     showStatus(error.message, "error");
@@ -2686,7 +2673,6 @@ logoutButton.addEventListener("click", async () => {
     selectedDeviceTelemetry = [];
     currentProfile = null;
     socialBySensor = new Map();
-    publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-identity", { detail: { deviceCount: 0, onlineCount: 0 } }));
     syncAccountUi();
     history.replaceState(null, "", "#login");
     showView("login");

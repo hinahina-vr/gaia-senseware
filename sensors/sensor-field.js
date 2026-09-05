@@ -1,7 +1,7 @@
 const MAX_FIELD_NODES = 12;
 const FIELD_PIXEL_BUDGET = 900_000;
 const FIELD_FRAME_INTERVAL = 42;
-const fieldStylesheetHref = new URL("./sensor-field.css?v=gaia-map-command-redesign-1", import.meta.url).href;
+const fieldStylesheetHref = new URL("./sensor-field.css?v=gaia-real-sensor-field-1", import.meta.url).href;
 let fieldStylesReady = Promise.resolve();
 
 if (!document.querySelector("link[data-sensor-field-styles]")) {
@@ -30,21 +30,12 @@ const fragmentShaderSource = [
   "uniform float u_node_count;",
   "uniform vec4 u_nodes[12];",
   "uniform vec4 u_pulse;",
-  "uniform vec4 u_presence;",
-  "float segmentDistance(vec2 point, vec2 start, vec2 end) {",
-  "  vec2 line = end - start;",
-  "  float projection = clamp(dot(point - start, line) / max(dot(line, line), 0.00001), 0.0, 1.0);",
-  "  return length(point - (start + line * projection));",
-  "}",
   "void main() {",
   "  vec2 uv = gl_FragCoord.xy / max(u_resolution, vec2(1.0));",
   "  float aspect = u_resolution.x / max(u_resolution.y, 1.0);",
   "  float field = 0.0;",
   "  float weave = 0.0;",
   "  float focus = 0.0;",
-  "  float presenceLink = 0.0;",
-  "  vec2 scaledUv = vec2(uv.x * aspect, uv.y);",
-  "  vec2 presencePoint = vec2(u_presence.x * aspect, u_presence.y);",
   "  for (int i = 0; i < 12; i++) {",
   "    if (float(i) >= u_node_count) break;",
   "    vec4 node = u_nodes[i];",
@@ -56,10 +47,6 @@ const fragmentShaderSource = [
   "    field += halo * (0.34 + node.z * 0.58);",
   "    weave += halo * wave * (0.18 + node.z * 0.22);",
   "    focus += halo * node.w;",
-  "    vec2 nodePoint = vec2(node.x * aspect, node.y);",
-  "    float linkDistance = segmentDistance(scaledUv, presencePoint, nodePoint);",
-  "    float linkWave = 0.55 + 0.45 * sin((distance(scaledUv, presencePoint) + distance(scaledUv, nodePoint)) * 54.0 - u_time * 1.35 + float(i));",
-  "    presenceLink += exp(-linkDistance * linkDistance * 1600.0) * linkWave * (0.24 + node.z * 0.38) * u_presence.w;",
   "  }",
   "  vec2 pulseDelta = uv - u_pulse.xy;",
   "  pulseDelta.x *= aspect;",
@@ -67,21 +54,13 @@ const fragmentShaderSource = [
   "  float pulseRadius = u_pulse.z * 0.18;",
   "  float pulseRing = 1.0 - smoothstep(0.0, 0.018, abs(pulseDistance - pulseRadius));",
   "  pulseRing *= exp(-u_pulse.z * 0.68) * u_pulse.w;",
-  "  vec2 presenceDelta = scaledUv - presencePoint;",
-  "  float presenceDistance = length(presenceDelta);",
-  "  float presenceCore = exp(-presenceDistance * presenceDistance * 220.0) * u_presence.w;",
-  "  float presenceRadius = 0.035 + mod(u_presence.z * 0.055, 0.19);",
-  "  float presenceRing = 1.0 - smoothstep(0.0, 0.012, abs(presenceDistance - presenceRadius));",
-  "  presenceRing *= exp(-mod(u_presence.z, 3.45) * 0.54) * u_presence.w;",
   "  float breath = 0.86 + 0.14 * sin(u_time * 0.46);",
-  "  float energy = field * breath + weave + pulseRing + presenceCore * 0.72 + presenceLink * 0.48 + presenceRing * 0.64;",
+  "  float energy = field * breath + weave + pulseRing;",
   "  vec3 mint = vec3(0.18, 0.92, 0.76);",
   "  vec3 blue = vec3(0.30, 0.63, 1.0);",
   "  vec3 violet = vec3(0.70, 0.43, 1.0);",
-  "  vec3 living = vec3(0.82, 1.0, 0.72);",
   "  vec3 colour = mix(mint, blue, clamp(weave * 1.8 + pulseRing * 0.5, 0.0, 1.0));",
   "  colour = mix(colour, violet, clamp(focus * 0.6, 0.0, 0.58));",
-  "  colour = mix(colour, living, clamp(presenceCore * 0.6 + presenceLink * 0.34 + presenceRing * 0.28, 0.0, 0.58));",
   "  float vignette = smoothstep(0.76, 0.18, distance(uv, vec2(0.5)));",
   "  float alpha = clamp(energy * 0.26 + focus * 0.10, 0.0, 0.39) * (0.74 + vignette * 0.26);",
   "  gl_FragColor = vec4(colour * (0.68 + pulseRing * 0.52) * alpha, alpha);",
@@ -90,7 +69,7 @@ const fragmentShaderSource = [
 
 const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
 
-export function initSensorSenseField(map, { onParticipate } = {}) {
+export function initSensorSenseField(map) {
   if (!map || map.querySelector(".sensor-sense-field")) return null;
 
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -101,23 +80,13 @@ export function initSensorSenseField(map, { onParticipate } = {}) {
   canvas.dataset.motion = reducedMotion.matches ? "static" : "ambient";
   map.prepend(canvas);
 
-  const belonging = createBelongingPanel(onParticipate);
-  belonging.root.hidden = true;
-  map.append(belonging.root);
-
-  const presenceNode = createPresenceNode();
-  map.append(presenceNode);
-
   let nodes = [];
   let selectedId = null;
   let visible = true;
   let frame = 0;
   let lastFrame = 0;
   let pulse = { x: 0.5, y: 0.5, startedAt: -99, strength: 0 };
-  let presence = { x: 0.5, y: 0.78, startedAt: -99, strength: 0, source: "none" };
   let pulseCount = 0;
-  let presenceCount = 0;
-  let ownedDeviceCount = 0;
   let destroyed = false;
   let renderer = createWebGlRenderer(canvas) || createCanvasRenderer(canvas);
   canvas.dataset.renderer = renderer.kind;
@@ -146,7 +115,6 @@ export function initSensorSenseField(map, { onParticipate } = {}) {
       nodes,
       time: now / 1000,
       pulse: [pulse.x, 1 - pulse.y, elapsed, pulse.strength],
-      presence: [presence.x, 1 - presence.y, Math.max(0, (now - presence.startedAt) / 1000), presence.strength],
     });
   };
 
@@ -182,69 +150,6 @@ export function initSensorSenseField(map, { onParticipate } = {}) {
     ensureAnimation();
   };
 
-  const setPresenceCopy = (phase, node = null) => {
-    belonging.root.dataset.state = phase;
-    if (phase === "owned") {
-      belonging.label.textContent = "YOUR SIGNAL IS IN THE FIELD";
-      belonging.message.textContent = `あなたの${ownedDeviceCount}つの観測点が、この星の感覚をつくっています。`;
-      belonging.message.dataset.short = `あなたの観測点 ${ownedDeviceCount} が参加中。`;
-    } else if (phase === "responding") {
-      belonging.label.textContent = "YOU RESPONDED TO THE FIELD";
-      belonging.message.textContent = `${node?.name || "この観測点"}へ、あなたの「感じた」が返りました。`;
-      belonging.message.dataset.short = "あなたの反応が観測点へ届いた。";
-    } else if (phase === "received") {
-      belonging.label.textContent = "YOU ARE PART OF THE FIELD";
-      belonging.message.textContent = "この場所の現在が、あなたの感覚へ届きました。あなたも観測の場に重なっています。";
-      belonging.message.dataset.short = "地球の「いま」とあなたが重なった。";
-    } else {
-      belonging.label.textContent = "YOU ARE PART OF THE FIELD";
-      belonging.message.textContent = "あなたの感覚が観測の波と重なりました。あなたも、この星を感じている一部です。";
-      belonging.message.dataset.short = "あなたも、この星を感じている一部。";
-    }
-    belonging.senseLabel.textContent = "もっと探る";
-  };
-
-  const engagePresence = ({ phase = "present", strength = 1.05, source = "sense", sensorId = null } = {}) => {
-    const selected = nodes.find((node) => node.id === sensorId) || nodes.find((node) => node.selected) || null;
-    presence = {
-      x: 0.5,
-      y: 0.78,
-      startedAt: performance.now(),
-      strength: clamp(strength, 0.18, 1.4),
-      source,
-    };
-    presenceCount += 1;
-    canvas.dataset.presence = phase;
-    canvas.dataset.presenceCount = String(presenceCount);
-    presenceNode.hidden = false;
-    presenceNode.dataset.state = phase;
-    presenceNode.querySelector("small").textContent = phase === "owned" ? `YOU · ${ownedDeviceCount} NODE${ownedDeviceCount === 1 ? "" : "S"}` : "YOU · SENSING";
-    setPresenceCopy(phase, selected);
-    triggerPulse(selected?.x ?? presence.x, selected?.y ?? presence.y, strength);
-    draw(performance.now());
-    ensureAnimation();
-  };
-
-  belonging.senseButton.addEventListener("click", () => engagePresence({ phase: "present", strength: 1.16 }));
-
-  const updateBelongingForSelection = (node) => {
-    if (!node) {
-      belonging.label.textContent = presence.strength > 0 ? "YOU ARE PART OF THE FIELD" : "YOU ARE WITHIN THE FIELD";
-      belonging.root.dataset.state = "ready";
-      belonging.message.textContent = presence.strength > 0
-        ? "あなたの感覚は、この観測の場に重なっています。"
-        : "観測点に触れる。あなたの感覚が、地球の現在とつながる。";
-      belonging.message.dataset.short = presence.strength > 0 ? "あなたも観測の場にいる。" : "触れると、地球の「いま」とつながる。";
-      return;
-    }
-    belonging.label.textContent = presence.strength > 0 ? "YOU ARE LISTENING WITH THE FIELD" : "YOU ARE WITHIN THE FIELD";
-    belonging.root.dataset.state = "selected";
-    belonging.message.textContent = presence.strength > 0
-      ? `あなたと${node.name}が、同じ地球の「いま」に触れています。`
-      : node.name + "の「いま」に触れています。";
-    belonging.message.dataset.short = presence.strength > 0 ? "あなたと観測点が「いま」を感じている。" : "この観測点の「いま」に触れています。";
-  };
-
   map.addEventListener("gaia:sensor-field", (event) => {
     nodes = (event.detail?.nodes || []).slice(0, MAX_FIELD_NODES).map((node) => ({
       ...node,
@@ -259,7 +164,6 @@ export function initSensorSenseField(map, { onParticipate } = {}) {
     selectedId = event.detail?.sensorId || null;
     nodes = nodes.map((node) => ({ ...node, selected: node.id === selectedId }));
     const selected = nodes.find((node) => node.selected);
-    updateBelongingForSelection(selected);
     if (selected) triggerPulse(selected.x, selected.y, 0.82);
     else draw(performance.now());
   });
@@ -267,49 +171,7 @@ export function initSensorSenseField(map, { onParticipate } = {}) {
   map.addEventListener("gaia:sensor-sense", (event) => {
     const selected = nodes.find((node) => node.id === event.detail?.sensorId);
     if (selected) triggerPulse(selected.x, selected.y, event.detail?.phase === "received" ? 1.35 : 1.05);
-    belonging.root.dataset.state = event.detail?.phase === "received" ? "received" : "sensing";
-    belonging.message.textContent = event.detail?.phase === "received"
-      ? "この場所の現在が、あなたの感覚へ届きました。"
-      : "観測の波を受け取っています。";
-    belonging.message.dataset.short = event.detail?.phase === "received"
-      ? "地球の「いま」が届きました。"
-      : "観測の波を受け取っています。";
-    if (event.detail?.phase === "received") {
-      engagePresence({ phase: "received", strength: 1.35, source: "received", sensorId: event.detail?.sensorId });
-    }
   });
-
-  map.addEventListener("gaia:sensor-presence", (event) => {
-    engagePresence({
-      phase: event.detail?.phase || "present",
-      strength: event.detail?.strength ?? 1.16,
-      source: "response",
-      sensorId: event.detail?.sensorId || null,
-    });
-  });
-
-  map.addEventListener("gaia:sensor-identity", (event) => {
-    ownedDeviceCount = Math.max(0, Number(event.detail?.deviceCount) || 0);
-    belonging.identity.hidden = ownedDeviceCount < 1;
-    belonging.identity.textContent = `YOUR NODES ${String(ownedDeviceCount).padStart(2, "0")}`;
-    canvas.dataset.ownedNodeCount = String(ownedDeviceCount);
-    if (ownedDeviceCount > 0) {
-      engagePresence({ phase: "owned", strength: 0.62, source: "owned" });
-    } else if (presence.source === "owned") {
-      presence = { x: 0.5, y: 0.78, startedAt: -99, strength: 0, source: "none" };
-      presenceNode.hidden = true;
-      canvas.dataset.presence = "none";
-      updateBelongingForSelection(nodes.find((node) => node.selected));
-      draw(performance.now());
-    }
-  });
-
-  map.addEventListener("pointerdown", (event) => {
-    if (event.target.closest("button, a")) return;
-    const rect = map.getBoundingClientRect();
-    triggerPulse((event.clientX - rect.left) / Math.max(rect.width, 1), (event.clientY - rect.top) / Math.max(rect.height, 1), 0.52);
-    engagePresence({ phase: "present", strength: 0.88, source: "touch" });
-  }, { passive: true });
 
   const resizeObserver = new ResizeObserver(syncSize);
   resizeObserver.observe(map);
@@ -339,7 +201,6 @@ export function initSensorSenseField(map, { onParticipate } = {}) {
   void fieldStylesReady.then(() => {
     if (destroyed) return;
     canvas.hidden = false;
-    belonging.root.hidden = false;
     syncSize();
     ensureAnimation();
   });
@@ -355,76 +216,8 @@ export function initSensorSenseField(map, { onParticipate } = {}) {
       reducedMotion.removeEventListener?.("change", onMotionChange);
       renderer.destroy();
       canvas.remove();
-      presenceNode.remove();
-      belonging.root.remove();
     },
   };
-}
-
-function createBelongingPanel(onParticipate) {
-  const root = document.createElement("aside");
-  root.className = "sensor-belonging";
-  root.dataset.state = "ready";
-  root.setAttribute("aria-label", "地球の観測へ参加");
-
-  const signal = document.createElement("span");
-  signal.className = "sensor-belonging-signal";
-  signal.setAttribute("aria-hidden", "true");
-  signal.append(document.createElement("i"), document.createElement("i"), document.createElement("i"));
-
-  const copy = document.createElement("div");
-  const label = document.createElement("small");
-  label.textContent = "YOU ARE WITHIN THE FIELD";
-  const message = document.createElement("p");
-  message.setAttribute("aria-live", "polite");
-  message.textContent = "観測点に触れる。あなたの感覚が、地球の現在とつながる。";
-  message.dataset.short = "触れると、地球の「いま」とつながる。";
-  const identity = document.createElement("span");
-  identity.className = "sensor-belonging-identity";
-  identity.hidden = true;
-  copy.append(label, message, identity);
-
-  const actions = document.createElement("div");
-  actions.className = "sensor-belonging-actions";
-
-  const senseButton = document.createElement("button");
-  senseButton.type = "button";
-  senseButton.className = "sensor-belonging-sense";
-  senseButton.setAttribute("aria-label", "観測のつながりをもっと探る");
-  const senseLabel = document.createElement("span");
-  senseLabel.textContent = "もっと探る";
-  const senseIcon = document.createElement("b");
-  senseIcon.setAttribute("aria-hidden", "true");
-  senseIcon.textContent = "◎";
-  senseButton.append(senseLabel, senseIcon);
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "sensor-belonging-join";
-  button.setAttribute("aria-label", "自分の観測点を地球へ加える");
-  const buttonLabel = document.createElement("span");
-  buttonLabel.textContent = "自分の観測点を加える";
-  const buttonIcon = document.createElement("b");
-  buttonIcon.setAttribute("aria-hidden", "true");
-  buttonIcon.textContent = "＋";
-  button.append(buttonLabel, buttonIcon);
-  button.addEventListener("click", () => {
-    root.dataset.state = "joining";
-    if (typeof onParticipate === "function") onParticipate();
-  });
-
-  actions.append(senseButton, button);
-  root.append(signal, copy, actions);
-  return { root, label, message, identity, senseButton, senseLabel };
-}
-
-function createPresenceNode() {
-  const node = document.createElement("span");
-  node.className = "sensor-presence-node";
-  node.hidden = true;
-  node.setAttribute("aria-hidden", "true");
-  node.append(document.createElement("i"), Object.assign(document.createElement("small"), { textContent: "YOU · SENSING" }));
-  return node;
 }
 
 function createShader(gl, type, source) {
@@ -470,7 +263,6 @@ function createWebGlRenderer(canvas) {
     count: gl.getUniformLocation(program, "u_node_count"),
     nodes: gl.getUniformLocation(program, "u_nodes"),
     pulse: gl.getUniformLocation(program, "u_pulse"),
-    presence: gl.getUniformLocation(program, "u_presence"),
   };
   const nodeUniforms = new Float32Array(MAX_FIELD_NODES * 4);
 
@@ -492,7 +284,6 @@ function createWebGlRenderer(canvas) {
       gl.uniform1f(locations.count, state.nodes.length);
       gl.uniform4fv(locations.nodes, nodeUniforms);
       gl.uniform4fv(locations.pulse, new Float32Array(state.pulse));
-      gl.uniform4fv(locations.presence, new Float32Array(state.presence));
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -525,28 +316,6 @@ function createCanvasRenderer(canvas) {
         context.fillStyle = gradient;
         context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
       });
-      if (state.presence[3] > 0) {
-        const presenceX = state.presence[0] * canvas.width;
-        const presenceY = (1 - state.presence[1]) * canvas.height;
-        context.save();
-        context.globalAlpha = Math.min(1, state.presence[3]);
-        state.nodes.forEach((node) => {
-          context.strokeStyle = "rgba(154,255,209,.11)";
-          context.lineWidth = Math.max(1, canvas.width / 1500);
-          context.beginPath();
-          context.moveTo(presenceX, presenceY);
-          context.lineTo(node.x * canvas.width, node.y * canvas.height);
-          context.stroke();
-        });
-        const radius = Math.max(42, Math.min(canvas.width, canvas.height) * 0.12);
-        const gradient = context.createRadialGradient(presenceX, presenceY, 0, presenceX, presenceY, radius);
-        gradient.addColorStop(0, "rgba(211,255,185,.26)");
-        gradient.addColorStop(0.45, "rgba(92,239,207,.1)");
-        gradient.addColorStop(1, "rgba(0,0,0,0)");
-        context.fillStyle = gradient;
-        context.fillRect(presenceX - radius, presenceY - radius, radius * 2, radius * 2);
-        context.restore();
-      }
       const age = state.pulse[2];
       if (age < 2.4 && state.pulse[3] > 0) {
         context.strokeStyle = "rgba(128,244,224," + Math.max(0, 0.28 - age * 0.1) + ")";

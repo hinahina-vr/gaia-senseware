@@ -100,7 +100,7 @@ const selectAndRead = async (page, index) => {
     await page.waitForFunction(index => {
       const canvas = document.querySelector("#gaia-planet-atmosphere-canvas");
       return canvas && !canvas.hidden && canvas.dataset.fieldState === "ready"
-        && (index !== 0 || canvas.dataset.weaveState === "ready");
+        && (index !== 0 || canvas.dataset.windStyle === "luminous-drifting-veil");
     }, index, { timeout: 30000 });
   }
   await page.waitForTimeout(1100); // Field fade-in and camera arrival.

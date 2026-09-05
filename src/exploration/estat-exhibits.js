@@ -57,9 +57,9 @@ const EXHIBITS = Object.freeze([
     unit: "人泊",
     valueLabel: "延べ宿泊者数",
     accent: "#ffd36e",
-    secondary: "#ff8ac7",
+    secondary: "#f4b58b",
     caption: "都道府県別の延べ宿泊者数を、列島に宿る灯と余韻の密度へ変換します。",
-    guide: "灯の大きさは延べ宿泊者数。月を送ると、季節ごとに旅の重心が移る様子が見えます。",
+    guide: "灯の大きさは延べ宿泊者数。線は選択中の県と宿泊者数の多い8県を結ぶ演出で、実際の移動経路や交流量ではありません。",
     frequency: "月次",
     sourceName: "宿泊旅行統計調査 / 第2次速報値",
     source: ESTAT_PREFECTURE_SNAPSHOT.sources.lodging,
@@ -1067,7 +1067,7 @@ const rgb = (hex) => {
 
 const HEATMAP_PALETTES = Object.freeze({
   migration: [[0, [225, 79, 94]], [0.48, [77, 48, 103]], [0.52, [25, 86, 112]], [1, [55, 239, 202]]],
-  lodging: [[0, [53, 41, 102]], [0.38, [167, 71, 149]], [0.72, [247, 139, 115]], [1, [255, 226, 115]]],
+  lodging: [[0, [124, 111, 89]], [0.38, [180, 139, 103]], [0.72, [232, 182, 126]], [1, [255, 231, 170]]],
   housing: [[0, [36, 62, 116]], [0.42, [57, 164, 187]], [0.72, [118, 224, 183]], [1, [223, 244, 124]]],
   thermal: [[0, [42, 74, 178]], [0.3, [42, 175, 206]], [0.54, [101, 218, 173]], [0.74, [248, 213, 100]], [0.88, [246, 130, 78]], [1, [205, 54, 91]]],
   heat: [[0, [60, 69, 163]], [0.42, [223, 83, 123]], [0.72, [255, 142, 76]], [1, [255, 229, 113]]],
@@ -1395,8 +1395,10 @@ const draw = (timestamp = performance.now()) => {
     rect.height * 0.46,
     Math.max(rect.width, rect.height) * 0.74,
   );
-  backdrop.addColorStop(0, "rgba(3,25,37,0.92)");
-  backdrop.addColorStop(1, "rgba(0,9,17,0.97)");
+  // A nearly opaque navy wash used to erase the surrounding continents.
+  // Keep the base geography visible under a light, warm atmospheric tint.
+  backdrop.addColorStop(0, "rgba(239,206,146,0.055)");
+  backdrop.addColorStop(1, "rgba(19,44,43,0.14)");
   context.fillStyle = backdrop;
   context.fillRect(0, 0, rect.width, rect.height);
   const progress = ease((timestamp - transitionStartedAt) / TRANSITION_MS);

@@ -41,7 +41,7 @@
 
 .gaia-planet-atmosphere-canvas[hidden] { display: none !important; }
 
-/* Data markers need their dark outline even over an opaque cloud bank. */
+/* Keep the pearl-light markers distinct above the translucent atmosphere. */
 .gaia-planet-signals-canvas[data-planet-engine="webgl2-continuous-atmosphere"] {
   mix-blend-mode: normal;
   opacity: 1;
@@ -141,6 +141,25 @@
   font: 600 9px/1.2 var(--font-ja);
   text-align: right;
 }
+
+.gaia-planet-cloud-credit {
+  display: grid;
+  gap: 4px;
+  padding: 8px 0 2px;
+  border-top: 1px solid rgba(var(--planet-rgb), .18);
+  color: #dce7e9;
+  font: 600 10px/1.4 var(--font-ja);
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.gaia-planet-cloud-credit small {
+  color: #a4b7bc;
+  font-size: 9px;
+}
+
+.gaia-planet-cloud-credit:is(:hover, :focus-visible) { color: #fff; text-decoration: underline; }
+.gaia-planet-cloud-credit[hidden] { display: none !important; }
 
 .gaia-planet-signals-legend .gaia-planet-poi-key {
   justify-content: flex-start;
