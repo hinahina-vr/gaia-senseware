@@ -1010,7 +1010,7 @@
       "generationService": "NASA Goddard Space Flight Center / Reto Stöckli",
       "generationDate": null,
       "generationDateUnknownReason": "NASA公開日は2002-02-11。個別の撮影日・合成日は特定せず、公開日と観測時刻を区別する",
-      "firstRepositoryEvidenceAt": null,
+      "firstRepositoryEvidenceAt": "2026-09-05T21:13:59+09:00",
       "processing": "NASA公開JPEGを無加工で保存。描画時に輝度を雲形の透過マスクとして使用。濃淡・微小な移動は演出。現在の衛星画像ではなく参考画像として明記",
       "sourceLedger": "assets/maps/NASA-CLOUDS-RIGHTS.md",
       "officialTermsUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
