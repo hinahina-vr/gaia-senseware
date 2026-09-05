@@ -1284,7 +1284,7 @@ const applyHeading = () => {
     && Number(button.dataset.liveDeckIndex) === activeIndex
   )));
   document.querySelectorAll("#japan-mode-list .map-mode-button:not([data-live-exhibit])").forEach((button) => button.setAttribute("aria-current", "false"));
-  const modeButtons = [...document.querySelectorAll("#japan-mode-list .map-mode-button")];
+  const modeButtons = [...document.querySelectorAll(".map-mode-bank .map-mode-button")];
   const activeButtonIndex = modeButtons.findIndex((button) => button.getAttribute("aria-current") === "true");
   readout?.querySelectorAll("[data-live-deck-step]").forEach((button) => {
     if (activeButtonIndex < 0 || modeButtons.length < 2) return;
@@ -1649,7 +1649,6 @@ const mount = () => {
         <button class="gaia-live-deck-selector-toggle" type="button" aria-expanded="false" aria-controls="gaia-live-deck-modes" aria-label="10 風脈。ライブ展示一覧を開く">
           <span data-live-deck-number>10</span>
           <strong data-live-deck-title>風脈</strong>
-          <i aria-hidden="true"></i>
         </button>
         <button type="button" data-live-deck-step="1" aria-label="一つ次のライブ展示へ">›</button>
       </div>
@@ -1780,7 +1779,7 @@ const mount = () => {
   readout.querySelectorAll("[data-live-deck-step]").forEach((button) => {
     button.addEventListener("click", () => {
       setChapterSelectorOpen(false);
-      const modeButtons = [...list.querySelectorAll(".map-mode-button")];
+      const modeButtons = [...document.querySelectorAll(".map-mode-bank .map-mode-button")];
       const activeButtonIndex = modeButtons.findIndex((candidate) => candidate.getAttribute("aria-current") === "true");
       if (activeButtonIndex < 0 || !modeButtons.length) return;
       modeButtons[(activeButtonIndex + Number(button.dataset.liveDeckStep) + modeButtons.length) % modeButtons.length]?.click();
@@ -1900,7 +1899,7 @@ const mount = () => {
     const index = standards.indexOf(button);
     const mode = globalThis.GaiaAppContent?.modes?.[index];
     deactivate({ number: String(index + 1).padStart(2, "0"), title: mode?.titleJa || button.getAttribute("aria-label") || "展示" });
-  });
+  }, { capture: true });
 
   addEventListener("gaia:live-update", () => {
     renderReadout();

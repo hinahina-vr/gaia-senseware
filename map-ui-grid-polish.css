@@ -980,6 +980,28 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     display: grid !important;
     grid-template-columns: 1fr;
     max-height: none;
+    padding: 4px 14px 10px;
+  }
+
+  .experience.japan-open .map-reading-guide-body section {
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px 0;
+  }
+
+  .experience.japan-open .map-reading-guide-body h3 {
+    color: #94c6c0;
+    font: 600 11.5px/1.8 var(--font-ui-ja);
+    letter-spacing: .02em;
+  }
+
+  .experience.japan-open .map-reading-guide-body p {
+    min-width: 0;
+    color: #dce8e9;
+    font: 400 13px/1.8 var(--font-ui-ja);
+    letter-spacing: .01em;
+    overflow-wrap: anywhere;
+    line-break: strict;
   }
 
   .experience.japan-open .map-mode-bank {
@@ -1456,6 +1478,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 @media (min-width: 901px) {
   :root {
     --map-command-dock-height: clamp(76px, 8.65vh, 116px);
+    --map-dock-action-width: clamp(148px, 10.6vw, 192px);
   }
 
   body.map-grid-desktop .map-command-dock {
@@ -1467,10 +1490,10 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     display: grid;
     grid-template-columns:
       minmax(240px, 1.4fr)
-      minmax(280px, 2.4fr)
-      minmax(320px, 3.2fr)
-      minmax(132px, 1.2fr)
-      minmax(132px, 1.2fr);
+      minmax(400px, 3.4fr)
+      minmax(230px, 2.2fr)
+      var(--map-dock-action-width)
+      var(--map-dock-action-width);
     gap: 0;
     height: var(--map-command-dock-height);
     padding: 9px clamp(10px, 0.8vw, 20px) 11px;
@@ -1705,7 +1728,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   body.map-grid-desktop .map-command-dock .signal-console-map {
     display: grid !important;
-    grid-template-columns: minmax(190px, 1.08fr) minmax(380px, 2.92fr) !important;
+    grid-template-columns: minmax(112px, 1.08fr) minmax(0, 2.92fr) !important;
     gap: 0 !important;
     align-items: stretch;
     padding: 0 !important;
@@ -1736,7 +1759,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   body.map-grid-desktop .map-command-dock .signal-console-map > label {
     display: grid !important;
-    grid-template-columns: minmax(136px, 0.82fr) minmax(250px, 2.18fr);
+    grid-template-columns: clamp(180px, 12vw, 340px) minmax(0, 1fr);
     grid-template-rows: minmax(18px, auto) minmax(30px, 1fr) minmax(12px, auto);
     gap: 6px 0;
     align-items: center;
@@ -1967,32 +1990,28 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   body.map-grid-desktop .map-command-dock .map-reading-guide-body {
     position: absolute !important;
     z-index: 10;
-    right: 0;
+    right: var(--map-guide-panel-offset, 0px);
     bottom: calc(100% + 18px);
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
-    width: min(1160px, calc(100vw - 64px));
+    width: var(--map-guide-panel-width, min(1160px, calc(100vw - 48px)));
     max-height: min(58vh, 520px);
-    padding: clamp(22px, 1.6vw, 30px) clamp(24px, 2vw, 36px) !important;
+    padding: clamp(22px, 1.6vw, 30px) clamp(22px, 1.8vw, 30px) !important;
     overflow: hidden auto;
-    border: 1px solid rgba(123, 219, 230, 0.38);
-    border-radius: 14px;
-    background:
-      radial-gradient(circle at 100% 0, rgba(77, 184, 212, 0.12), transparent 42%),
-      linear-gradient(145deg, rgba(4, 25, 40, 0.985), rgba(2, 14, 28, 0.985));
-    box-shadow: 0 -24px 70px rgba(0, 5, 17, 0.62), inset 0 1px rgba(225, 255, 255, 0.07);
+    border: 1px solid rgba(151, 198, 205, 0.28);
+    border-radius: 12px;
+    background: linear-gradient(115deg, #071d2b, #091824);
+    box-shadow: 0 -10px 32px rgba(0, 5, 17, 0.3), inset 0 1px rgba(225, 255, 255, 0.04);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    filter: blur(4px) brightness(1.08);
-    transform: translateY(14px) scale(0.985);
+    transform: translateY(6px);
     transform-origin: center bottom;
     transition:
-      opacity 280ms ease,
-      filter 320ms ease,
-      transform 360ms cubic-bezier(0.16, 0.82, 0.22, 1),
-      visibility 0s linear 320ms;
+      opacity 200ms ease,
+      transform 240ms cubic-bezier(0.16, 0.82, 0.22, 1),
+      visibility 0s linear 240ms;
     isolation: isolate;
   }
 
@@ -2001,57 +2020,41 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     visibility: visible;
     pointer-events: auto;
     filter: none;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     transition-delay: 0s;
-  }
-
-  body.map-grid-desktop .map-command-dock .map-reading-guide-body::before {
-    position: absolute;
-    z-index: 0;
-    top: -35%;
-    bottom: -35%;
-    left: -24%;
-    width: 19%;
-    content: "";
-    background: linear-gradient(90deg, transparent, rgba(181, 249, 255, 0.2), rgba(255, 255, 255, 0.34), transparent);
-    opacity: 0;
-    pointer-events: none;
-    transform: skewX(-17deg) translateX(-140%);
-  }
-
-  body.map-grid-desktop .map-command-dock .map-reading-guide.is-dock-guide-visible .map-reading-guide-body::before {
-    animation: map-dock-guide-glint 760ms 60ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
-  }
-
-  @keyframes map-dock-guide-glint {
-    0% { opacity: 0; transform: skewX(-17deg) translateX(-140%); }
-    24% { opacity: 0.8; }
-    100% { opacity: 0; transform: skewX(-17deg) translateX(760%); }
   }
 
   body.map-grid-desktop .map-command-dock .map-reading-guide-body > section {
     position: relative;
     z-index: 1;
     min-width: 0;
-    padding: 0 clamp(20px, 2vw, 34px);
-    border-right: 1px solid rgba(111, 205, 219, 0.14);
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 10px;
+    padding: 0 clamp(18px, 1.5vw, 24px);
+    border: 0;
+    border-right: 1px solid rgba(151, 198, 205, 0.14);
   }
 
   body.map-grid-desktop .map-command-dock .map-reading-guide-body > section:first-child { padding-left: 0; }
   body.map-grid-desktop .map-command-dock .map-reading-guide-body > section:last-child { padding-right: 0; border-right: 0; }
 
   body.map-grid-desktop .map-command-dock .map-reading-guide-body h3 {
-    margin: 0 0 12px;
-    font-size: clamp(16px, 1.02vw, 19px);
-    line-height: 1.55;
+    margin: 0;
+    color: #94c6c0;
+    font: 600 13px/1.85 var(--font-ui-ja);
+    letter-spacing: .06em;
+    white-space: nowrap;
   }
 
   body.map-grid-desktop .map-command-dock .map-reading-guide-body p {
     margin: 0;
-    color: rgba(238, 249, 248, 0.88);
-    font-size: clamp(15px, 1vw, 18px);
-    font-weight: 500;
-    line-height: 1.75;
+    min-width: 0;
+    color: #dce8e9;
+    font: 400 clamp(15px, .9vw, 16px)/1.85 var(--font-ui-ja);
+    letter-spacing: .02em;
+    overflow-wrap: anywhere;
+    line-break: strict;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -2060,21 +2063,18 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
       transition-duration: 1ms;
     }
 
-    body.map-grid-desktop .map-command-dock .map-reading-guide.is-dock-guide-visible .map-reading-guide-body::before {
-      animation: none;
-    }
   }
 
   body.map-grid-desktop .map-dock-action {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: clamp(8px, 0.7vw, 14px);
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
     align-items: center;
     min-width: 0;
     height: calc(100% - 12px) !important;
     margin: 6px 5px !important;
-    padding: 0 clamp(12px, 0.9vw, 20px);
+    padding: 0 clamp(9px, 0.7vw, 12px);
     overflow: hidden;
     text-align: left;
     isolation: isolate;
@@ -2124,25 +2124,19 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   .map-dock-action > i {
     display: grid;
     flex: 0 0 auto;
-    width: clamp(38px, 2.5vw, 52px);
-    height: clamp(38px, 2.5vw, 52px);
-    border: 1px solid rgba(238, 255, 255, 0.42);
-    border-radius: 14px;
+    width: clamp(32px, 2.15vw, 40px);
+    height: clamp(32px, 2.15vw, 40px);
     place-items: center;
     font-style: normal;
-    background:
-      radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.32), transparent 40%),
-      rgba(2, 19, 36, 0.3);
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.18), 0 8px 20px rgba(0, 7, 22, 0.2);
   }
 
   .map-dock-action > i svg {
-    width: 68%;
-    height: 68%;
+    width: 100%;
+    height: 100%;
     overflow: visible;
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.45;
+    stroke-width: 1.25;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
@@ -2154,8 +2148,12 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
 
   .map-dock-action > i .map-dock-icon-accent {
     stroke: rgba(255, 255, 255, 0.96);
-    stroke-width: 2;
+    stroke-width: 1.5;
   }
+
+  .map-dock-icon-secondary { opacity: .55; }
+  .map-dock-icon-ribbon { fill: rgba(225, 255, 245, .22); }
+  .map-dock-icon-bars { stroke: none; }
 
   body.map-grid-desktop .map-command-dock > .map-dock-action.map-dock-action--source {
     color: #b8fff0;
@@ -2296,17 +2294,19 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 }
 
-@media (min-width: 901px) and (max-width: 1180px) {
+@media (min-width: 901px) and (max-width: 1280px) {
   body.map-grid-desktop .map-command-dock {
-    grid-template-columns: minmax(170px, 1.15fr) minmax(200px, 2.1fr) minmax(230px, 2.65fr) minmax(115px, 1.1fr) minmax(115px, 1.1fr);
+    grid-template-columns: minmax(150px, 1.15fr) minmax(320px, 2.8fr) minmax(120px, 1.65fr) 144px 144px;
   }
 
   body.map-grid-desktop .map-command-dock .signal-console-map {
-    grid-template-columns: minmax(150px, 0.95fr) minmax(270px, 1.9fr) !important;
+    grid-template-columns: minmax(92px, 0.65fr) minmax(0, 2.2fr) !important;
   }
+}
 
+@media (min-width: 901px) and (max-width: 1180px) {
   body.map-grid-desktop .map-command-dock .signal-console-map > label {
-    grid-template-columns: minmax(92px, 0.62fr) minmax(170px, 1.35fr);
+    grid-template-columns: 144px minmax(0, 1fr);
   }
 
   body.map-grid-desktop .map-dock-year {
@@ -2331,9 +2331,8 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   }
 
   body.map-grid-desktop .map-dock-action > i {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
+    width: 30px;
+    height: 30px;
   }
 }
 
@@ -3112,7 +3111,7 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
   .gaia-live-deck-selector-toggle {
     position: relative;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) 10px;
+    grid-template-columns: auto minmax(0, 1fr);
     gap: 9px;
     align-items: center;
     width: 100%;
@@ -3131,19 +3130,6 @@ body.map-grid-desktop:has(.gaia-audio-dock.is-expanded) .signal-encoding-legend-
     outline: 0;
     background: rgba(var(--map-accent-rgb), 0.055);
     box-shadow: inset 0 0 0 1px rgba(var(--map-accent-rgb), 0.15);
-  }
-
-  .gaia-live-deck-selector-toggle > i {
-    width: 7px;
-    height: 7px;
-    border-right: 1px solid rgba(var(--map-accent-rgb), 0.74);
-    border-bottom: 1px solid rgba(var(--map-accent-rgb), 0.74);
-    transform: rotate(45deg) translate(-2px, 2px);
-    transition: transform 180ms ease;
-  }
-
-  .gaia-live-deck-selector-toggle[aria-expanded="true"] > i {
-    transform: rotate(225deg) translate(-1px, -1px);
   }
 
   .gaia-live-deck-selector-toggle span {

@@ -28,6 +28,7 @@ const requiredKeys = [
   "JMA_EVENT_TITLES",
   "INTRO_PATHS",
   "INTRO_MODE_CHOICES",
+  "MAP_MODE_DESCRIPTIONS",
   "SPACE_MODE_CHOICES",
   "modes",
   "modeConcepts",
@@ -40,6 +41,17 @@ assert.ok(Object.isFrozen(content), "GaiaAppContent must be frozen");
 assert.deepEqual(Object.keys(content), requiredKeys);
 assert.equal(content.modes.length, 9, "Earth mode catalog must contain 9 exhibits");
 assert.equal(content.INTRO_MODE_CHOICES.length, 9, "Entrance catalog must contain 9 choices");
+assert.ok(Object.isFrozen(content.MAP_MODE_DESCRIPTIONS), "Map picker copy must be frozen");
+assert.equal(Object.keys(content.MAP_MODE_DESCRIPTIONS).length, 30, "Every map needs a short picker description");
+for (const [id, copy] of Object.entries(content.MAP_MODE_DESCRIPTIONS)) {
+  assert.equal(typeof copy, "string", `${id}: map description must be text`);
+  assert.ok(copy.length >= 20 && copy.length <= 85, `${id}: keep picker descriptions concise`);
+  assert.doesNotMatch(copy, /へ変換します|正規化|[<>]/u, `${id}: avoid implementation language or markup in picker copy`);
+}
+assert.match(content.MAP_MODE_DESCRIPTIONS["blue-circulation"], /速さと向きを固定/u);
+assert.match(content.MAP_MODE_DESCRIPTIONS["estat-summer-high"], /最高気温を一年で平均/u);
+assert.match(content.MAP_MODE_DESCRIPTIONS["estat-winter-low"], /最低気温を一年で平均/u);
+assert.match(content.MAP_MODE_DESCRIPTIONS["global-cloud-radiance"], /衛星写真ではありません/u);
 assert.equal(content.SPACE_MODE_CHOICES.length, 10, "Space catalog must contain 10 choices");
 assert.deepEqual(Object.keys(content.INTRO_PATHS), ["abstract", "map", "novel", "space"], "Abstract exhibit must remain routable");
 assert.equal(indexHtml.includes('data-intro-path="abstract"'), false, "Abstract exhibit must not remain a separate entrance card");
@@ -64,7 +76,7 @@ assert.equal(modeLoader.includes('interceptClick("[data-character-gallery-open]"
 assert.equal(modeLoader.includes('interceptClick("[data-sound-gallery-open]", "sound")'), true, "Sound archive is not lazy-loaded");
 assert.equal(modeLoader.includes('event.target.closest("[data-sound-gallery-open]")'), true, "Sound archive is not warmed on pointer or keyboard intent");
 assert.equal(openingRuntime.includes('GaiaModeLoader?.load?.("sound")'), true, "Sound archive is not warmed during the menu handoff");
-assert.equal((modeLoader.match(/\.\/styles\.css\?v=gaia-apeironcene-depth-particles-1/gu) || []).length, 1, "Shared UI styles must use one cache URL across mode groups");
+assert.equal((modeLoader.match(/\.\/styles\.css\?v=[\w-]+/gu) || []).length, 1, "Shared UI styles must use one cache URL across mode groups");
 assert.match(modeLoader, /sound:\s*\{[\s\S]{0,120}parallel: true,/u, "Sound archive assets are not fetched in parallel");
 assert.equal((indexHtml.match(/sound-archive-bg-v2\.png\?v=gaia-sound-linked-ink-1/gu) || []).length, 2, "Sound archive background URLs must share one browser cache entry");
 assert.match(characterRuntime, /const quoteRevealDelay = 620;/u, "Character quote letter animation starts too early");
@@ -113,6 +125,7 @@ assert.equal(new Set(modeIds).size, modeIds.length, "Mode ids must be unique");
 assert.equal(modeIds.includes("pollination-protocol"), false, "Retired pollination exhibit remains routable");
 
 for (const id of modeIds) {
+  assert.ok(content.MAP_MODE_DESCRIPTIONS[id], `Missing map picker copy for ${id}`);
   assert.ok(content.modeConcepts[id], `Missing concept copy for ${id}`);
   assert.ok(content.modeDataNarratives[id], `Missing data narrative for ${id}`);
   assert.ok(content.lectureResumeLinks[id], `Missing lecture reference for ${id}`);

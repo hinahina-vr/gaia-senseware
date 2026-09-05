@@ -37,6 +37,7 @@ const openMap = async (page) => {
   await page.evaluate(() => { location.hash = "#japan"; });
   await page.waitForFunction(() => document.querySelectorAll("#japan-estat-mode-list [data-estat-exhibit]").length === 10, null, { timeout: 20_000 });
   await page.evaluate(() => globalThis.GaiaModeEntryGuide?.close?.("map", { restoreFocus: false }));
+  assert.equal(await page.locator("[data-estat-return]").count(), 0, "Removed return tile must not be mounted");
 };
 
 const canvasEvidence = (page) => page.locator("#gaia-estat-canvas").evaluate((canvas) => {
@@ -232,13 +233,14 @@ try {
     await page.screenshot({ path: path.join(outputDir, `pc-${contract.number}.png`), fullPage: true });
   }
 
-  assert.equal(await page.locator("[data-estat-step='1']").getAttribute("aria-label"), "次の展示、01へ");
+  assert.equal(await page.locator("[data-estat-step='1']").getAttribute("aria-label"), "次の展示、26へ");
   await page.locator("[data-estat-step='1']").evaluate((button) => button.click());
   await page.waitForFunction(() => (
     !document.querySelector("#japan-layer")?.classList.contains("is-estat-exhibit")
-    && document.querySelector("#japan-mode-number")?.textContent === "01"
+    && document.querySelector("#japan-layer")?.classList.contains("is-firms-exhibit")
+    && document.querySelector("#japan-mode-number")?.textContent === "26"
   ));
-  assert.equal(await page.locator("#japan-mode-title").textContent(), "地球の一呼吸");
+  assert.equal(await page.locator("#japan-mode-title").textContent(), "燃える惑星");
 
   await page.evaluate(async () => {
     await globalThis.GaiaEstatExhibits.select(0);

@@ -15,6 +15,7 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const allViewports = [
   { name: "pc-1440", width: 1440, height: 900 },
+  { name: "reference-1672", width: 1672, height: 941 },
   { name: "pc-4k", width: 3840, height: 2160 },
   { name: "mobile-360", width: 360, height: 800, mobile: true },
   { name: "mobile-390", width: 390, height: 844, mobile: true },
@@ -113,6 +114,13 @@ try {
         particleZIndex: Number.parseInt(getComputedStyle(document.querySelector("#gaia-opening-particles")).zIndex, 10),
         modalRect: readRect("#gaia-opening-sound-modal"),
         dialogRect: readRect(".gaia-opening-sound-dialog"),
+        dialogBackground: getComputedStyle(document.querySelector(".gaia-opening-sound-dialog")).backgroundColor,
+        dialogBorder: getComputedStyle(document.querySelector(".gaia-opening-sound-dialog")).borderWidth,
+        headerRect: readRect(".gaia-opening-sound-heading"),
+        volumeRect: readRect(".gaia-opening-setup-volume"),
+        flourishCount: document.querySelectorAll(".gaia-opening-sound-flourish[aria-hidden='true']").length,
+        iconRects: Array.from(document.querySelectorAll(".gaia-opening-sound-option-button .gaia-opening-sound-icon-shell"), (icon) => icon.getBoundingClientRect().toJSON()),
+        soundLabelRects: Array.from(document.querySelectorAll(".gaia-opening-sound-option-label"), (label) => label.getBoundingClientRect().toJSON()),
         scrimBackground: getComputedStyle(document.querySelector(".gaia-opening-sound-modal-scrim")).backgroundColor,
         modalPlaceItems: getComputedStyle(document.querySelector("#gaia-opening-sound-modal")).placeItems,
         choicesRect: readRect(".gaia-opening-sound-choices"),
@@ -128,7 +136,7 @@ try {
     assert.equal(initial.modalHiddenFromA11y, "false");
     assert.equal(initial.activeId, "gaia-opening-sound-on", `${viewport.name}: initial focus escaped the sound-on default`);
     assert.equal(initial.title, "サウンド設定");
-    assert.equal(initial.description, "サウンドのオン／オフはゲーム中でも変更できます。");
+    assert.equal(initial.description, "ゲーム中でも変更できます。");
     assert.equal(initial.soundEyebrows, 0, `${viewport.name}: redundant sound-setting eyebrow remains`);
     assert.equal(initial.soundCornerMeta, "none", `${viewport.name}: redundant GS / AUDIO label remains`);
     assert.equal(initial.languageVisible, true, `${viewport.name}: language selector is not on the first screen`);
@@ -154,11 +162,27 @@ try {
     assert(initial.modalRect.top >= -1 && initial.modalRect.bottom <= viewport.height + 1, `${viewport.name}: modal is outside the viewport vertically`);
     assert(initial.dialogRect.left >= -1 && initial.dialogRect.right <= viewport.width + 1, `${viewport.name}: sound dialog is outside the viewport`);
     assert(initial.dialogRect.top >= -1 && initial.dialogRect.bottom <= viewport.height + 1, `${viewport.name}: sound dialog is outside the viewport vertically`);
-    assert.equal(initial.scrimBackground, "rgba(0, 0, 0, 0.68)", `${viewport.name}: sound backdrop is not a uniform translucent blackout`);
+    assert.equal(initial.scrimBackground, "rgba(2, 11, 24, 0.68)", `${viewport.name}: sound backdrop lost its blue-hour tint`);
     const shortLandscape = viewport.width > viewport.height && viewport.height <= 430;
-    assert(shortLandscape ? initial.modalPlaceItems.startsWith("start") : initial.modalPlaceItems === "center", `${viewport.name}: sound dialog alignment is incorrect`);
+    assert.equal(initial.modalPlaceItems, "center", `${viewport.name}: sound dialog alignment is incorrect`);
     assert(Math.abs((initial.dialogRect.left + initial.dialogRect.right) / 2 - viewport.width / 2) <= 1, `${viewport.name}: sound dialog is not horizontally centered`);
-    if (!shortLandscape) assert(Math.abs((initial.dialogRect.top + initial.dialogRect.bottom) / 2 - viewport.height / 2) <= 6, `${viewport.name}: sound dialog is not vertically centered`);
+    if (shortLandscape) assert(Math.abs((initial.dialogRect.top + initial.dialogRect.bottom) / 2 - viewport.height / 2) <= 6, `${viewport.name}: short landscape setup is not centered`);
+    else assert((initial.dialogRect.top + initial.dialogRect.bottom) / 2 > viewport.height / 2, `${viewport.name}: game menu should sit below center, leaving the artwork visible`);
+    assert.equal(initial.dialogBackground, "rgba(0, 0, 0, 0)", `${viewport.name}: a large opaque settings panel returned`);
+    assert.equal(initial.dialogBorder, "0px");
+    assert(initial.dialogRect.width <= 440, `${viewport.name}: game setup is too wide`);
+    assert.equal(initial.flourishCount, 2);
+    assert(initial.soundOnRect.right < initial.soundOffRect.left, `${viewport.name}: sound choices must remain side by side`);
+    assert(initial.volumeRect.top >= initial.choicesRect.bottom, `${viewport.name}: volume overlaps the choices`);
+    for (let index = 0; index < 2; index++) {
+      const card = [initial.soundOnRect, initial.soundOffRect][index];
+      const icon = initial.iconRects[index];
+      const label = initial.soundLabelRects[index];
+      assert(icon.width >= 52 && Math.abs(icon.width - icon.height) < 1, `${viewport.name}: icon ring must be large and circular`);
+      assert(icon.bottom < label.top, `${viewport.name}: icon and label overlap`);
+      assert(label.left >= card.left && label.right <= card.right, `${viewport.name}: choice text overflows`);
+      assert(Math.abs((icon.left + icon.right) / 2 - (card.left + card.right) / 2) < 1, `${viewport.name}: icon is not centered in its card`);
+    }
     for (const rect of [initial.soundOnRect, initial.soundOffRect]) {
       assert(rect.width >= 44 && rect.height >= 44, `${viewport.name}: sound action hit area is smaller than 44px`);
     }

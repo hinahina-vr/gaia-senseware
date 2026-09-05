@@ -78,6 +78,14 @@ const createPage = async (viewport, label) => {
     isMobile: Boolean(viewport.mobile),
     reducedMotion: "reduce",
   });
+  if (endingOnly) {
+    // Ending navigation does not depend on the live aurora service.
+    await context.route("https://services.swpc.noaa.gov/**", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: fs.readFileSync(path.resolve("data/ovation-aurora-snapshot.json"), "utf8"),
+    }));
+  }
   const page = await context.newPage();
   page.on("console", (message) => {
     if (message.type() === "error") report.consoleErrors.push(`${label}: ${message.text()}`);
@@ -146,7 +154,7 @@ const scanEndingDestinations = async () => {
   assert.deepEqual(completedCta, {
     text: "物語をはじめる",
     destination: "story",
-    ariaLabel: "物語のタイトルメニューへ戻る",
+    ariaLabel: "物語をはじめる",
   });
   await completed.context.close();
 

@@ -44,7 +44,7 @@ check("pairing view presents USB first and Setup AP as fallback", () => {
 
 check("public guide documents verified firmware, backup, USB provisioning, and limits", () => {
   const guide = sensors.slice(sensors.indexOf('data-view="guide"'), sensors.indexOf("</section>\n    </main>", sensors.indexOf('data-view="guide"')));
-  for (const fragment of ["ESP32-WROOM-32", "4MB flash", "CH340", "Secure Boot", "SHA-256", "FreeRTOS", "GAIAファームウェア", "匿名のおためし参加", "USB", "CITY-SENSOR-XXXX", "ONLINE", "未検証"]) assert(guide.includes(fragment), fragment);
+  for (const fragment of ["ESP32-WROOM-32", "4MB flash", "CH340", "Secure Boot", "SHA-256", "模擬データ", "GAIAファームウェア", "匿名のおためし参加", "USB", "CITY-SENSOR-XXXX", "ONLINE", "未検証"]) assert(guide.includes(fragment), fragment);
   assert.doesNotMatch(guide, />Starter Kit README</u);
   const script = read("sensors/sensor-platform.js");
   assert.match(script, /location\.hash === "#guide"\) showView\("guide"\)/u);

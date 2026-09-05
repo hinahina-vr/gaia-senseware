@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import vm from "node:vm";
 
 const [moduleRoot, executablePath, outputArgument, baseUrl = "http://127.0.0.1:4173"] = process.argv.slice(2);
 const tooltipOnly = process.argv.slice(6).includes("--tooltip-only");
@@ -18,25 +19,14 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true, executablePath });
 const report = { consoleErrors: [], pageErrors: [], responses404: [], scans: [] };
-const expectedCopies = [
-  "CO₂が季節ごとに上下しながら、長い目では増えてきた様子を見る。",
-  "ある一日の海流が変わらないと仮定し、0〜14日後の移動距離をたどる。白い風矢印は比較用です。",
-  "森林だけを緑で強調し、31地点の雨量と同じ場所で見比べる。",
-  "31の国・地域を切り替え、再資源化率の公式値と補完値を比べる。",
-  "宇宙から見た夜の明かりと、国ごとの排出量を見比べる。",
-  "世界の大地震と、日本各地で実際に記録された揺れをたどる。",
-  "同じ国の森林率と都市人口率を組にし、全体傾向と例外を見る。",
-  "国土の青で再生可能電力比率を比べ、選択国の日差しと風を補足で見る。",
-];
+const contentContext = { window: {} };
+vm.runInNewContext(fs.readFileSync(new URL("../app-content.js", import.meta.url), "utf8"), contentContext);
+const mapContent = contentContext.window.GaiaAppContent;
+const expectedCopies = Array.from(mapContent.modes.slice(0, 8), ({ id }) => mapContent.MAP_MODE_DESCRIPTIONS[id]);
 const expectedCodes = ["AIR", "OCEAN", "FOREST", "RECYCLING", "CITY", "QUAKE", "ECOLOGIES", "ENERGY"];
 const expectedLiveCopies = [
-  "Open-Meteoの東京風速モデル値を、列島を横切る流線の密度と速さへ変換します。",
-  "CAMSの東京格子CO₂予測値を、都市から広がる光環と呼吸周期へ変換します。",
-  "Open-Meteoの東京降水モデル値を、雨線と水面の波紋密度へ変換します。",
-  "Open-Meteoの東京気温モデル値を、暖気の等温線と光の色温度へ変換します。",
-  "Open-Meteoの東京総雲量を、地図を流れる雲粒と透過する光の量へ変換します。",
-  "CAMSの東京格子PM2.5予測値を、浮遊粒子と大気の霞へ変換します。",
-];
+  "wind-field", "carbon-pulse", "rain-chorus", "temperature-field", "cloud-drift", "pm25-haze",
+].map((id) => mapContent.MAP_MODE_DESCRIPTIONS[id]);
 
 const focusModeButton = async (page, locator, expectedCopy = null) => {
   await page.keyboard.press("Tab");
@@ -255,6 +245,7 @@ try {
     if (viewport.name === "pc") {
       const liveSelectorToggle = page.locator(".gaia-live-deck-selector-toggle");
       assert.equal(await liveSelectorToggle.isVisible(), true, "pc: live chapter center control is hidden");
+      assert.equal(await liveSelectorToggle.locator("i").count(), 0, "pc: chapter title must not show a dropdown chevron");
       assert.equal(await liveSelectorToggle.getAttribute("aria-expanded"), "false");
       assert.equal(await page.locator(".gaia-live-deck-modes").isVisible(), false, "pc: live selector should start collapsed");
       await liveSelectorToggle.click();

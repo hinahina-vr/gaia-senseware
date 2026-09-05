@@ -205,7 +205,11 @@ try {
     assert.equal(await chartReturnButton.isVisible(), true, `${viewport.name}: expanded explanation has no visible chart return`);
     await chartReturnButton.click();
     assert.equal(await page.locator(".gaia-statistics-insights-panel").evaluate((element) => element.open), false, `${viewport.name}: chart return did not close the explanation`);
-    await page.waitForFunction(() => document.activeElement === document.querySelector("#gaia-statistics-canvas"));
+    await page.waitForFunction(() => document.activeElement === document.querySelector("#gaia-statistics-canvas"), null, { timeout: 5000 }).catch(async error => {
+      console.error(viewport.name, await page.evaluate(() => ({ active: document.activeElement.outerHTML.slice(0, 300), panels: [...document.querySelectorAll('.gaia-statistics-stage > details')].map(el => [el.className, el.open]), visual: document.querySelector('#gaia-statistics-visual').outerHTML.slice(0, 300) })));
+      await page.screenshot({ path: path.join(outputDir, `${viewport.name}-focus-failure.png`) });
+      throw error;
+    });
     const canvas = await page.locator("#gaia-statistics-canvas").evaluate((element) => ({ width: element.width, height: element.height, rect: element.getBoundingClientRect().toJSON() }));
     assert.ok(
       canvas.width > Math.min(300, viewport.width * 0.75) && canvas.height > (viewport.name === "pc" ? 140 : 90),

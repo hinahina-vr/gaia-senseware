@@ -385,20 +385,62 @@ button:focus-visible, a:focus-visible { outline: 2px solid rgba(var(--mint-rgb),
 @keyframes sensor-oracle-arrive { from { opacity: .3; filter: blur(3px); transform: translateY(4px); } to { opacity: 1; filter: none; transform: none; } }
 .sensor-map-socials { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; }
 .sensor-map-socials a { min-height: 44px; padding: 13px 14px; border: 1px solid var(--line); color: var(--mint); font: 700 10px/1 Consolas, monospace; text-decoration: none; }
-.sensor-public-profile-dialog { width: min(620px,calc(100vw - 36px)); }
-.sensor-public-profile-dialog form { padding: clamp(26px,5vw,48px); }
-.sensor-public-profile-head { display: grid; grid-template-columns: 112px minmax(0,1fr); gap: 24px; align-items: center; margin-top: 22px; }
-.sensor-public-profile-avatar { width: 112px; height: 112px; border: 1px solid rgba(var(--mint-rgb),.46); border-radius: 50%; box-shadow: 0 0 34px rgba(var(--mint-rgb),.12); }
-.sensor-public-profile-avatar .sensor-owner-avatar { border-radius: inherit; font-size: 34px; }
-.sensor-public-profile-head small { color: var(--mint); font: 700 8px/1.4 var(--font-console); letter-spacing: .16em; }
-.sensor-public-profile-dialog .sensor-public-profile-head h2 { margin-top: 10px; font-size: clamp(24px,4vw,38px); }
-.sensor-public-profile-head p { margin: 9px 0 0; color: rgba(226,239,244,.62); font: 520 11px/1.7 var(--font-ja); letter-spacing: .04em; }
-.sensor-public-profile-note { margin: 25px 0 0; padding: 16px 18px; border-left: 2px solid rgba(var(--mint-rgb),.62); color: rgba(229,240,245,.72); background: rgba(var(--mint-rgb),.055); font: 520 11px/1.85 var(--font-ja); letter-spacing: .04em; }
-.sensor-public-profile-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-.sensor-public-profile-links a { min-width: 92px; padding: 10px 14px; border: 1px solid rgba(var(--mint-rgb),.32); border-radius: 999px; color: var(--mint); text-align: center; text-decoration: none; font: 700 9px/1 var(--font-console); letter-spacing: .1em; }
-.sensor-public-profile-links a:is(:hover,:focus-visible) { border-color: var(--mint); color: var(--ink); outline: none; background: rgba(var(--mint-rgb),.1); }
-.sensor-public-profile-links p { margin: 0; color: rgba(226,239,244,.5); font: 520 10px/1.6 var(--font-ja); }
-.sensor-public-profile-back { width: 100%; margin-top: 24px; }
+.sensor-participation-dialog.sensor-public-profile-dialog {
+  width: min(560px,calc(100vw - 28px));
+  max-height: calc(100dvh - 32px);
+  border: 1px solid rgba(152,199,185,.25);
+  border-radius: 22px;
+  background: radial-gradient(ellipse at 0 0,rgba(87,151,132,.13),transparent 65%),linear-gradient(150deg,#102322,#071519 75%);
+  box-shadow: 0 32px 110px rgba(0,5,9,.65),inset 0 1px rgba(216,246,234,.055);
+  scrollbar-width: thin;
+  scrollbar-color: #345750 transparent;
+}
+.sensor-public-profile-dialog::backdrop { background: rgba(0,7,10,.64); backdrop-filter: blur(9px) saturate(.7); }
+.sensor-public-profile-dialog > form { padding: 24px 28px 20px; }
+.sensor-public-profile-dialog svg { display: block; flex-shrink: 0; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.sensor-public-profile-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sensor-public-profile-top p { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 12px; margin: 0; color: #c3d6ce; font: 500 12px/1.5 var(--font-ui-ja); }
+.sensor-public-profile-top p span { color: #739b91; font: 500 9px/1.5 var(--font-console); letter-spacing: .12em; }
+.sensor-public-profile-top .sensor-dialog-close { position: static; flex-shrink: 0; width: 44px; height: 44px; border: 1px solid rgba(164,202,190,.17); border-radius: 12px; color: #a5c0b6; background: rgba(178,222,206,.035); }
+.sensor-public-profile-top .sensor-dialog-close:is(:hover,:focus-visible) { border-color: #8db6a7; color: #e8f4ed; background: rgba(178,222,206,.1); }
+.sensor-public-profile-head { display: grid; grid-template-columns: 80px minmax(0,1fr); gap: 22px; align-items: center; margin-top: 23px; }
+.sensor-public-profile-avatar { width: 80px; height: 80px; padding: 4px; border: 1px solid rgba(153,212,188,.38); border-radius: 50%; background: rgba(121,177,154,.055); box-shadow: 0 0 0 5px rgba(134,193,167,.035); }
+.sensor-public-profile-avatar .sensor-owner-avatar { width: 100%; height: 100%; border-radius: inherit; font-size: 28px; }
+.sensor-public-profile-head small { color: #91b3a5; font: 500 11px/1.5 var(--font-ui-ja); letter-spacing: .05em; }
+.sensor-public-profile-dialog .sensor-public-profile-head h2 { margin: 5px 0 0; padding: 0; color: #eaf1eb; font-size: 28px; font-weight: 500; line-height: 1.4; letter-spacing: .035em; overflow-wrap: anywhere; }
+.sensor-public-profile-region { display: flex; align-items: flex-start; gap: 5px; margin: 8px 0 0; color: #9bb4ab; font: 400 12px/1.6 var(--font-ui-ja); overflow-wrap: anywhere; }
+.sensor-public-profile-dialog .sensor-public-profile-region svg { width: 14px; height: 17px; margin-top: 1px; color: #7eaa98; }
+.sensor-public-profile-observation { display: flex; align-items: center; gap: 13px; margin-top: 26px; padding: 15px 17px; border: 1px solid rgba(149,197,178,.16); border-radius: 12px; background: linear-gradient(110deg,rgba(141,198,174,.08),rgba(120,172,158,.025)); }
+.sensor-public-profile-node-icon { display: grid; flex: 0 0 36px; width: 36px; height: 36px; place-items: center; border-radius: 10px; color: #9ad7bb; background: rgba(138,204,174,.075); }
+.sensor-public-profile-observation > div { min-width: 0; }
+.sensor-public-profile-observation small { color: #90ab9f; font: 400 10px/1.5 var(--font-ui-ja); }
+.sensor-public-profile-observation p { margin: 4px 0 0; color: #d5e5da; font: 500 14px/1.5 var(--font-ui-ja); overflow-wrap: anywhere; }
+.sensor-public-profile-note { margin: 11px 2px 0; padding: 0; border: 0; color: #8fa9a0; background: none; font: 400 11px/1.75 var(--font-ui-ja); overflow-wrap: anywhere; }
+.sensor-public-profile-dialog[data-demo="true"] .sensor-public-profile-note { color: #c4b896; }
+.sensor-public-profile-social { margin-top: 24px; }
+.sensor-public-profile-social h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; color: #a0b8ad; font: 500 11px/1.5 var(--font-ui-ja); }
+.sensor-public-profile-social h3 span { color: #638a7e; font: 400 9px/1 var(--font-console); letter-spacing: .14em; }
+.sensor-public-profile-links { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin: 0; }
+.sensor-public-profile-links a { display: flex; align-items: center; gap: 9px; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid rgba(156,197,181,.18); border-radius: 10px; color: #ccdcd2; background: rgba(158,202,180,.025); text-decoration: none; font: 500 12px/1.4 var(--font-ui); transition: background 150ms ease,border-color 150ms ease,color 150ms ease; }
+.sensor-public-profile-links a:is(:hover,:focus-visible) { border-color: #81b29b; color: #edfff3; background: rgba(143,209,176,.09); }
+.sensor-public-profile-links a:focus-visible, .sensor-public-profile-dialog button:focus-visible { outline: 2px solid #afe7ca; outline-offset: 3px; }
+.sensor-public-profile-dialog .sensor-profile-social-icon { width: 18px; height: 18px; color: #99bbaa; }
+.sensor-public-profile-dialog .sensor-profile-link-arrow { width: 13px; height: 13px; margin-left: auto; color: #638b7c; }
+.sensor-public-profile-links p { grid-column: 1 / -1; margin: 0; padding: 13px 0; color: #8fa79e; font: 400 12px/1.6 var(--font-ui-ja); }
+.sensor-public-profile-footer { display: flex; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(155,195,179,.13); }
+.sensor-public-profile-back { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: auto; min-height: 44px; margin: 0; padding: 10px 16px; border: 1px solid rgba(142,198,171,.28); border-radius: 10px; color: #bfd8c9; background: rgba(131,190,158,.065); font: 500 12px/1.5 var(--font-ui-ja); cursor: pointer; }
+.sensor-public-profile-back:is(:hover,:focus-visible) { color: #effff5; border-color: #81b29b; background: rgba(143,209,176,.13); }
+.sensor-public-profile-dialog .sensor-public-profile-back svg { width: 17px; height: 17px; }
+@media (max-width: 560px) {
+  .sensor-public-profile-dialog > form { padding: 16px 20px; }
+  .sensor-public-profile-head { grid-template-columns: 64px minmax(0,1fr); gap: 16px; margin-top: 18px; }
+  .sensor-public-profile-avatar { width: 64px; height: 64px; padding: 3px; }
+  .sensor-public-profile-dialog .sensor-public-profile-head h2 { font-size: 22px; }
+  .sensor-public-profile-observation { margin-top: 22px; padding: 12px; }
+  .sensor-public-profile-links a { gap: 6px; padding: 10px 8px; font-size: 11px; }
+  .sensor-public-profile-dialog .sensor-profile-link-arrow { display: none; }
+  .sensor-public-profile-top p { display: grid; }
+}
 
 .sensor-participation-dialog[data-closing="true"] { pointer-events: none; animation: sensor-dialog-exit 190ms cubic-bezier(.4,0,1,1) both; }
 .sensor-participation-dialog[data-closing="true"]::backdrop { animation: sensor-dialog-backdrop-exit 190ms ease-in both; }
@@ -1238,9 +1280,6 @@ html[data-sensor-view="map"] body .sensor-shell {
     border-radius: 14px;
     background: linear-gradient(105deg,rgba(var(--mint-rgb),.055),rgba(8,29,40,.18));
   }
-  .sensor-public-profile-head { grid-template-columns: 76px minmax(0,1fr); gap: 16px; }
-  .sensor-public-profile-avatar { width: 76px; height: 76px; border-radius: 50%; }
-  .sensor-public-profile-dialog .sensor-public-profile-head h2 { font-size: 24px; }
   .sensor-public-map:not([hidden]) .sensor-console-label { margin-bottom: 12px; }
   .sensor-public-map:not([hidden]) .sensor-map-card > p { margin-top: 12px; }
   .sensor-metric-hud-grid strong { font-size: 14px; }
@@ -1358,6 +1397,21 @@ html[data-sensor-view="map"] body .sensor-shell {
   color: #ff9ab1;
   background: rgba(255,102,139,.09);
   box-shadow: 0 0 26px rgba(255,102,139,.12);
+}
+
+.sensor-like-trigger > svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sensor-like-trigger[aria-pressed="true"] > svg {
+  fill: currentColor;
 }
 
 .sensor-relationship-bar .sensor-analyze-trigger {

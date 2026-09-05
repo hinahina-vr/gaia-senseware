@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const sharedStylesheet = "./styles.css?v=gaia-apeironcene-depth-particles-1";
+  const sharedStylesheet = "./styles.css?v=gaia-guide-copy-three-lines-1";
 
   const groups = Object.freeze({
     exploration: {
@@ -12,26 +12,28 @@
         "./scene-transition.css?v=gaia-52",
         "./data-ledger.css?v=gaia-simple-source-list-1",
         "./data-journey.css?v=gaia-04",
-        "./map-ui-grid-polish.css?v=gaia-map-command-jade-1",
-        "./estat-exhibits.css?v=gaia-estat-readable-comparison-1",
-        "./firms-exhibit.css?v=gaia-firms-active-fire-1",
-        "./planet-signals-exhibit.css?v=gaia-planet-signals-2",
+        "./map-ui-grid-polish.css?v=gaia-dock-step-width-1",
+        "./estat-exhibits.css?v=gaia-estat-picker-1",
+        "./firms-exhibit.css?v=gaia-firms-no-return-1",
+        "./planet-signals-exhibit.css?v=gaia-poi-soft-light-1",
         "./statistics-lab.css?v=gaia-statistics-report-1",
+        "./statistics-workspace.css?v=gaia-statistics-workspace-1",
         "./mode-exit.css?v=gaia-story-control-center-2",
+        "./map-instrument-ui.css?v=gaia-poi-compact-card-1",
       ],
       scripts: [
         "./mode-entry-guide.js?v=gaia-live-deck-3",
         "./scene-transition.js?v=gaia-66",
         "./data-ledger.js?v=gaia-live-model-ledger-1",
         "./data-journey.js?v=gaia-01",
-        "./app-content.js?v=gaia-anthropocene-heatmap-1",
-        "./app.js?v=gaia-map-poi-isolation-1",
-        "./map-ui-grid-polish.js?v=gaia-map-command-jade-1",
+        "./app-content.js?v=gaia-map-preview-copy-1",
+        "./app.js?v=gaia-estat-picker-1",
+        "./map-ui-grid-polish.js?v=gaia-estat-picker-1",
         "./particles-v9.js?v=gaia-light-surface-fps-1",
       ],
       modules: [
-        "./src/exploration/index.js?v=gaia-planet-signals-2",
-        "./statistics-lab.js?v=gaia-statistics-report-1",
+        "./src/exploration/index.js?v=gaia-estat-picker-1",
+        "./statistics-lab.js?v=gaia-statistics-workspace-1",
       ],
     },
     story: {

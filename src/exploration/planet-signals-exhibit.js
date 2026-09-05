@@ -1,11 +1,15 @@
+import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-live-poi-1";
+import { createAtmosphereRenderer } from "./atmosphere-webgl.js?v=gaia-cloud-veil-1";
+import { createPoiArrival, drawPoiArrivals } from "./poi-arrival.js?v=gaia-planet-arrival-1";
+
 const GLOBAL_SAMPLE_COUNT = 240;
+const formatCoordinates = (point, digits = 1, separator = " ") =>
+  `${point.lat >= 0 ? "北緯" : "南緯"}${Math.abs(point.lat).toFixed(digits)}°${separator}${point.lon >= 0 ? "東経" : "西経"}${Math.abs(point.lon).toFixed(digits)}°`;
 const GLOBAL_OBSERVATION_POINTS = Object.freeze(Array.from({ length: GLOBAL_SAMPLE_COUNT }, (_, index) => {
   const latitudeRadians = Math.asin(-1 + (2 * (index + 0.5)) / GLOBAL_SAMPLE_COUNT);
   const lat = latitudeRadians * 180 / Math.PI;
   const lon = ((index * 137.50776405003785 + 180) % 360) - 180;
-  const northSouth = `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? "N" : "S"}`;
-  const eastWest = `${Math.abs(lon).toFixed(1)}°${lon >= 0 ? "E" : "W"}`;
-  return Object.freeze({ label: `${northSouth} ${eastWest}`, lat, lon });
+  return Object.freeze({ label: formatCoordinates({ lat, lon }), lat, lon });
 }));
 
 const DEFINITIONS = Object.freeze([
@@ -17,12 +21,12 @@ const DEFINITIONS = Object.freeze([
     signalLabel: "風速・風向・気圧",
     accent: "#63f3ff",
     rgb: "99, 243, 255",
-    caption: "全球240サンプル点の風速・風向・気圧を、各地点から伸びる細い光跡へ変換します。",
+    caption: "全球の風を地点間で補間し、連続する流線で描きます。流れの形と動きは演出、点は元データです。",
     sourceName: "Open-Meteo Forecast API / DWD・ECMWFほか",
     sourcePage: "https://open-meteo.com/en/docs",
     sourceLabel: "Open-Meteoの仕様を見る",
     primaryLabel: "平均風速",
-    visualLabel: "FLOW TRAILS / DIRECTION + SPEED",
+    visualLabel: "WIND FIELD / 風向と速さ",
     loader: "atmosphere",
     renderer: "wind",
   }),
@@ -34,12 +38,12 @@ const DEFINITIONS = Object.freeze([
     signalLabel: "PM2.5・光学的厚さ",
     accent: "#f3a3ff",
     rgb: "243, 163, 255",
-    caption: "全球240サンプル点の微粒子と光学的厚さを、にじむ光環と浮遊粒子へ変換します。",
+    caption: "微粒子と光学的厚さを地点間で補間し、濃淡のある霞として描きます。霞の形と動きは演出です。",
     sourceName: "Open-Meteo Air Quality API / CAMS",
     sourcePage: "https://open-meteo.com/en/docs/air-quality-api",
     sourceLabel: "Air Quality APIの仕様を見る",
     primaryLabel: "平均 PM2.5",
-    visualLabel: "AURA SCATTER / PM2.5 + AOD",
+    visualLabel: "ATMOSPHERIC HAZE / PM2.5・AOD",
     loader: "air",
     renderer: "air",
   }),
@@ -51,7 +55,7 @@ const DEFINITIONS = Object.freeze([
     signalLabel: "全規模・直近24時間",
     accent: "#ffbd68",
     rgb: "255, 189, 104",
-    caption: "USGSが公開する直近24時間の地震を、発生時刻と規模に応じた波紋で示します。",
+    caption: "USGSが公開する直近24時間の地震を、発生時刻と規模に応じた波紋で示します。登場順と広がる光は演出です。",
     sourceName: "USGS Earthquake Hazards Program",
     sourcePage: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php",
     sourceLabel: "USGS GeoJSON Feedを見る",
@@ -68,12 +72,12 @@ const DEFINITIONS = Object.freeze([
     signalLabel: "雲量・短波放射",
     accent: "#ffd879",
     rgb: "255, 216, 121",
-    caption: "全球240サンプル点の雲量と地表へ届く短波放射を、開閉する光の窓として描きます。",
+    caption: "雲量を地点間で補間し、薄い雲のベールの濃淡に変換。日射で光を変えます。形・濃淡・動きは演出で、衛星画像ではありません。",
     sourceName: "Open-Meteo Forecast API / DWD・ECMWFほか",
     sourcePage: "https://open-meteo.com/en/docs",
     sourceLabel: "Open-Meteoの仕様を見る",
     primaryLabel: "平均日射",
-    visualLabel: "LIGHT APERTURES / CLOUD + SHORTWAVE",
+    visualLabel: "CLOUD LAYER / 雲量と日射",
     loader: "atmosphere",
     renderer: "cloud",
   }),
@@ -82,7 +86,7 @@ const DEFINITIONS = Object.freeze([
 const OPEN_METEO_WEATHER = "https://api.open-meteo.com/v1/forecast";
 const OPEN_METEO_AIR = "https://air-quality-api.open-meteo.com/v1/air-quality";
 const USGS_DAY = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
-const CACHE_PREFIX = "gaia-planet-signals-v2:";
+const CACHE_PREFIX = "gaia-planet-signals-v3:";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const FRAME_INTERVAL_MS = 1000 / 30;
 const MAX_CANVAS_PIXELS = 1_500_000;
@@ -133,26 +137,36 @@ let layer;
 let map;
 let canvas;
 let context;
+let atmosphereCanvas;
+let atmosphereRenderer;
+let initializeAtmosphere;
 let readout;
 let legend;
 let buttons = [];
 let activeIndex = -1;
+let selectionRevision = 0;
 let currentData = null;
 let frame = 0;
 let lastRenderedAt = 0;
 let savedHeading = null;
+let anchorFocusKey = "";
+let anchorFocusChangedAt = 0;
+let poiArrival = null;
+let poiRenderedAt = 0;
+const poiOpacity = index => poiArrival?.opacity(index, poiRenderedAt) ?? 1;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 const clamp01 = (value) => clamp(value, 0, 1);
 const average = (values) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
 const mapLongitude = (longitude) => wrapLongitude(longitude - EARTH_INITIAL_CENTER_LONGITUDE) + 180;
-const asFinite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+const asFinite = (value, fallback = 0) => value !== null && value !== undefined && value !== ""
+  && Number.isFinite(Number(value)) ? Number(value) : fallback;
 const formatNumber = (value, decimals = 1) => Number(value).toLocaleString("ja-JP", {
   minimumFractionDigits: decimals,
   maximumFractionDigits: decimals,
 });
-const formatUtc = (value) => {
+const formatJst = (value) => {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "時刻不明";
   return new Intl.DateTimeFormat("ja-JP", {
@@ -162,8 +176,8 @@ const formatUtc = (value) => {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "UTC",
-  }).format(date) + " UTC";
+    timeZone: "Asia/Tokyo",
+  }).format(date) + " JST";
 };
 
 const formatAge = (value) => {
@@ -230,14 +244,14 @@ const loadAtmosphere = async () => {
     const current = rows[index]?.current || {};
     return {
       ...point,
-      windSpeed: asFinite(current.wind_speed_10m),
-      windDirection: asFinite(current.wind_direction_10m),
-      pressure: asFinite(current.surface_pressure),
-      cloud: asFinite(current.cloud_cover),
-      radiation: asFinite(current.shortwave_radiation),
+      windSpeed: asFinite(current.wind_speed_10m, NaN),
+      windDirection: asFinite(current.wind_direction_10m, NaN),
+      pressure: asFinite(current.surface_pressure, NaN),
+      cloud: asFinite(current.cloud_cover, NaN),
+      radiation: asFinite(current.shortwave_radiation, NaN),
     };
-  });
-  if (!points.some(({ windSpeed }) => windSpeed > 0)) throw new Error("Open-Meteo wind values are unavailable");
+  }).filter(p => [p.windSpeed, p.windDirection, p.pressure, p.cloud, p.radiation].every(Number.isFinite));
+  if (!points.length) throw new Error("Open-Meteo atmosphere values are unavailable");
   return { observedAt: rows.find(({ current }) => current?.time)?.current.time + "Z", points };
 };
 
@@ -252,11 +266,11 @@ const loadAir = async () => {
     const current = rows[index]?.current || {};
     return {
       ...point,
-      pm25: asFinite(current.pm2_5),
-      aerosol: asFinite(current.aerosol_optical_depth),
+      pm25: asFinite(current.pm2_5, NaN),
+      aerosol: asFinite(current.aerosol_optical_depth, NaN),
     };
-  });
-  if (!points.some(({ pm25 }) => pm25 > 0)) throw new Error("Open-Meteo air-quality values are unavailable");
+  }).filter(p => [p.pm25, p.aerosol].every(Number.isFinite));
+  if (!points.length) throw new Error("Open-Meteo air-quality values are unavailable");
   return { observedAt: rows.find(({ current }) => current?.time)?.current.time + "Z", points };
 };
 
@@ -378,6 +392,49 @@ const screenPoint = (point, view) => ({
   y: view.originY + (90 - point.lat) * view.scale,
 });
 
+const findPoiAt = (clientX, clientY, pointerType) => {
+  if (activeIndex < 0 || !currentData || !context) return null;
+  const hit = pickProjectedPoi(currentData.points, projection(), clientX, clientY, pointerType, (_, index) => poiOpacity(index) > .02);
+  if (!hit) return null;
+  const { point, index } = hit;
+  const definition = DEFINITIONS[activeIndex];
+  const metrics = definition.renderer === "wind"
+    ? [["風速", `${formatNumber(point.windSpeed)} m/s`], ["風向", `${formatNumber(point.windDirection, 0)}°`],
+      ["気圧", `${formatNumber(point.pressure)} hPa`], ["雲量", `${formatNumber(point.cloud, 0)}%`]]
+    : definition.renderer === "air"
+      ? [["PM2.5", `${formatNumber(point.pm25)} µg/m³`], ["光学的厚さ", formatNumber(point.aerosol, 2)]]
+      : definition.renderer === "cloud"
+        ? [["雲量", `${formatNumber(point.cloud, 0)}%`], ["短波放射", `${formatNumber(point.radiation, 0)} W/m²`]]
+        : [["規模", `M${formatNumber(point.magnitude)}`], ["深さ", `${formatNumber(point.depth)} km`]];
+  const values = metrics.map(([label, value]) => `${label} ${value}`).join(" / ");
+  const coordinates = formatCoordinates(point, 2, " / ");
+  // Build display text from coordinates so cached English labels also localize.
+  const title = definition.renderer === "quake" ? point.label : formatCoordinates(point);
+  const saved = currentData.sourceState === "SAVED VALUES";
+  const sourceState = saved ? "演出用サンプル値（ライブ観測ではありません）" : currentData.sourceState;
+  return {
+    type: "exhibit", index,
+    record: {
+      id: point.id || String(index), exhibitId: definition.id, lon: point.lon, lat: point.lat,
+      kicker: `${definition.number} / ${definition.shortTitle}`,
+      title,
+      preview: values,
+      meta: `${title} / ${values} / ${coordinates} / ${formatJst(point.time || currentData.observedAt)} / ${sourceState} / ${definition.sourceName}${definition.loader !== "earthquake" && !saved ? " / モデル値" : ""}`,
+      cardDetails: {
+        location: definition.renderer === "quake" ? point.label : "",
+        coordinates, metrics,
+        time: formatJst(point.time || currentData.observedAt),
+        state: sourceState,
+        source: definition.sourceName,
+        model: definition.loader !== "earthquake" && !saved ? "モデル値" : "",
+      },
+      url: definition.loader === "earthquake" && !saved
+        ? `https://earthquake.usgs.gov/earthquakes/eventpage/${encodeURIComponent(point.id)}`
+        : definition.sourcePage,
+    },
+  };
+};
+
 const resizeCanvas = (rect) => {
   const density = Math.min(devicePixelRatio || 1, 1.4);
   const targetWidth = rect.width * density;
@@ -396,6 +453,9 @@ const resizeCanvas = (rect) => {
 
 const drawWind = (time, view, data, definition) => {
   data.points.forEach((point, index) => {
+    if (!poiOpacity(index)) return;
+    context.save();
+    context.globalAlpha = poiOpacity(index);
     const center = screenPoint(point, view);
     const radians = (point.windDirection + 180) * Math.PI / 180;
     const dx = Math.sin(radians);
@@ -425,11 +485,15 @@ const drawWind = (time, view, data, definition) => {
     context.arc(center.x, center.y, 1.25 + clamp01(speed / 14) * 1.7, 0, Math.PI * 2);
     context.fillStyle = `rgba(218, 255, 250, ${twinkle})`;
     context.fill();
+    context.restore();
   });
 };
 
 const drawAir = (time, view, data, definition) => {
   data.points.forEach((point, index) => {
+    if (!poiOpacity(index)) return;
+    context.save();
+    context.globalAlpha = poiOpacity(index);
     const center = screenPoint(point, view);
     const density = clamp01(point.pm25 / 45);
     const haze = clamp01(point.aerosol / 0.6);
@@ -452,6 +516,7 @@ const drawAir = (time, view, data, definition) => {
     context.arc(center.x, center.y, 1.3 + density * 2.2, 0, Math.PI * 2);
     context.fillStyle = `rgba(255, 232, 250, ${0.36 + haze * 0.5})`;
     context.fill();
+    context.restore();
   });
 };
 
@@ -459,6 +524,9 @@ const drawQuakes = (time, view, data, definition) => {
   const now = Date.now();
   const ringCount = data.points.length > 240 ? 1 : data.points.length > 100 ? 2 : 3;
   data.points.forEach((point, index) => {
+    if (!poiOpacity(index)) return;
+    context.save();
+    context.globalAlpha = poiOpacity(index);
     const center = screenPoint(point, view);
     const magnitude = clamp(point.magnitude, 2.5, 8);
     const age = clamp01((now - point.time) / 86_400_000);
@@ -475,11 +543,15 @@ const drawQuakes = (time, view, data, definition) => {
     context.arc(center.x, center.y, 1.2 + magnitude * 0.45, 0, Math.PI * 2);
     context.fillStyle = `rgba(255, 241, 202, ${0.38 + magnitude * 0.055})`;
     context.fill();
+    context.restore();
   });
 };
 
 const drawCloud = (time, view, data, definition) => {
   data.points.forEach((point, index) => {
+    if (!poiOpacity(index)) return;
+    context.save();
+    context.globalAlpha = poiOpacity(index);
     const center = screenPoint(point, view);
     const cloud = clamp01(point.cloud / 100);
     const radiance = clamp01(point.radiation / 900);
@@ -503,33 +575,155 @@ const drawCloud = (time, view, data, definition) => {
     context.strokeStyle = `rgba(255, 231, 154, ${0.08 + openness * radiance * 0.32})`;
     context.lineWidth = 0.55 + radiance * 0.7;
     context.stroke();
+    context.restore();
   });
 };
 
 const RENDERERS = Object.freeze({ wind: drawWind, air: drawAir, quake: drawQuakes, cloud: drawCloud });
 
+// Reuse one small light texture per palette. No outlines, dark centres, or
+// per-frame blur: opacity falls continuously from a pearl core into the map.
+const anchorLights = new Map();
+const getAnchorLight = (definition) => {
+  if (anchorLights.has(definition.id)) return anchorLights.get(definition.id);
+  const light = document.createElement("canvas");
+  light.width = light.height = 96;
+  const brush = light.getContext("2d");
+  const pearl = definition.rgb.split(",").map(value => Math.round(Number(value) * .35 + 255 * .65)).join(", ");
+  const gradient = brush.createRadialGradient(48, 48, 0, 48, 48, 48);
+  gradient.addColorStop(0, "rgba(255, 255, 248, .96)");
+  gradient.addColorStop(.07, `rgba(${pearl}, .86)`);
+  gradient.addColorStop(.17, `rgba(${pearl}, .55)`);
+  gradient.addColorStop(.34, `rgba(${definition.rgb}, .18)`);
+  gradient.addColorStop(.6, `rgba(${definition.rgb}, .045)`);
+  gradient.addColorStop(1, `rgba(${definition.rgb}, 0)`);
+  brush.fillStyle = gradient;
+  brush.fillRect(0, 0, 96, 96);
+  anchorLights.set(definition.id, light);
+  return light;
+};
+
+const drawDataAnchors = (view, data, definition, timestamp) => {
+  const size = view.rect.width >= 2400 ? 1.6 : 1;
+  const radius = 10 * size;
+  const light = getAnchorLight(definition);
+  const centers = data.points.map((point, index) => ({ ...screenPoint(point, view), alpha: poiOpacity(index) }))
+    .filter(p => p.alpha > 0 && p.x >= 0 && p.y >= 0 && p.x <= view.rect.width && p.y <= view.rect.height);
+  context.save();
+  centers.forEach(p => {
+    context.globalAlpha = .82 * p.alpha;
+    context.drawImage(light, p.x - radius, p.y - radius, radius * 2, radius * 2);
+  });
+  context.restore();
+  canvas.dataset.planetAnchorStyle = "soft-pearl-light";
+  canvas.dataset.planetAnchorCount = String(centers.length);
+  canvas.dataset.planetAnchorRadius = radius.toFixed(2);
+  canvas.dataset.planetAnchorOuterRadius = radius.toFixed(2);
+
+  // Use the map's actual hover/selection, not another competing hit-test.
+  const interaction = globalThis.GaiaMapObservationAdapter?.getPoiInteraction?.();
+  const selected = interaction?.selected?.exhibitId === definition.id ? interaction.selected : null;
+  const hovered = interaction?.hovered?.exhibitId === definition.id ? interaction.hovered : null;
+  const focused = selected || hovered;
+  const state = selected ? "selected" : hovered ? "hovered" : "none";
+  const key = focused ? `${definition.id}:${state}:${focused.index}` : "";
+  if (key !== anchorFocusKey) { anchorFocusKey = key; anchorFocusChangedAt = timestamp; }
+  canvas.dataset.planetPoiFocusState = state;
+  canvas.dataset.planetFocusedPoiIndex = String(focused?.index ?? -1);
+  canvas.dataset.planetPoiConnector = "false";
+  canvas.dataset.planetPoiFocusRadius = "0";
+  const record = focused && data.points[focused.index];
+  if (!record) return;
+  const p = screenPoint(record, view);
+  if (p.x < 0 || p.y < 0 || p.x > view.rect.width || p.y > view.rect.height) return;
+  const progress = reducedMotion ? 1 : 1 - (1 - clamp01((timestamp - anchorFocusChangedAt) / 160)) ** 3;
+  const focusRadius = (selected ? 19 : 16) * size * (.85 + .15 * progress);
+  canvas.dataset.planetPoiFocusRadius = focusRadius.toFixed(2);
+  context.save();
+  context.globalAlpha = .4 + .6 * progress;
+  context.lineCap = "round";
+
+  const panel = document.querySelector(selected ? "#japan-poi-card" : ".japan-poi-preview");
+  if (panel && !panel.hidden && panel.getAttribute("aria-hidden") !== "true") {
+    const bounds = panel.getBoundingClientRect();
+    const end = { x: clamp(p.x, bounds.left - view.rect.left, bounds.right - view.rect.left),
+      y: clamp(p.y, bounds.top - view.rect.top, bounds.bottom - view.rect.top) };
+    const distance = Math.hypot(end.x - p.x, end.y - p.y);
+    if (distance > focusRadius) {
+      const start = focusRadius * .65 / distance;
+      context.beginPath();
+      context.moveTo(p.x + (end.x - p.x) * start, p.y + (end.y - p.y) * start);
+      context.lineTo(end.x, end.y);
+      context.strokeStyle = `rgba(${definition.rgb}, .45)`;
+      context.lineWidth = .8 * size;
+      context.stroke();
+      canvas.dataset.planetPoiConnector = "true";
+    }
+  }
+
+  context.drawImage(light, p.x - focusRadius, p.y - focusRadius, focusRadius * 2, focusRadius * 2);
+  context.restore();
+};
+
 const draw = (timestamp = performance.now()) => {
-  if (activeIndex < 0 || document.hidden || !currentData || !context) {
+  if (activeIndex < 0 || document.hidden || layer?.getAttribute("aria-hidden") === "true" || !currentData || !context) {
     frame = 0;
     return;
   }
-  if (timestamp - lastRenderedAt < FRAME_INTERVAL_MS) {
+  const interval = reducedMotion ? 1000 / 15 : FRAME_INTERVAL_MS;
+  if (timestamp + 0.5 < lastRenderedAt + interval) {
     frame = requestAnimationFrame(draw);
     return;
   }
-  lastRenderedAt = timestamp;
+  // Accumulate a deadline instead of rounding 33.3ms up to three vsyncs.
+  lastRenderedAt += Math.max(1, Math.floor((timestamp - lastRenderedAt) / interval)) * interval;
   const view = projection();
   if (!view) {
     frame = requestAnimationFrame(draw);
     return;
   }
   resizeCanvas(view.rect);
+  poiRenderedAt = timestamp;
   context.clearRect(0, 0, view.rect.width, view.rect.height);
   context.globalCompositeOperation = "lighter";
   const definition = DEFINITIONS[activeIndex];
-  RENDERERS[definition.renderer](timestamp / 1000, view, currentData, definition);
+  const volumetric = definition.renderer !== "quake" && atmosphereRenderer
+    && atmosphereCanvas.dataset.fieldState !== "unavailable"
+    && atmosphereRenderer.render(timestamp, view, reducedMotion);
+  atmosphereCanvas.hidden = !volumetric;
+  if (volumetric) {
+    context.globalCompositeOperation = "source-over";
+    drawDataAnchors(view, currentData, definition, timestamp);
+  } else RENDERERS[definition.renderer](reducedMotion ? 0 : timestamp / 1000, view, currentData, definition);
+  const arrival = drawPoiArrivals(context, poiArrival, { now: timestamp, view, project: screenPoint,
+    kind: definition.renderer, rgb: definition.rgb, sprite: getAnchorLight(definition) });
+  canvas.dataset.planetArrivalPhase = poiArrival?.phase(timestamp) || "idle";
+  canvas.dataset.planetArrivalEffect = definition.renderer;
+  canvas.dataset.planetArrivalActive = String(arrival.count);
+  canvas.dataset.planetArrivalLimit = String(arrival.limit);
+  canvas.dataset.planetArrivalIndices = arrival.indices.join(",");
+  canvas.dataset.planetArrivalVisible = String(currentData.points.reduce((total, _, index) => total + (poiOpacity(index) > .02 ? 1 : 0), 0));
+  canvas.dataset.planetEngine = volumetric ? "webgl2-continuous-atmosphere" : "canvas2d-particle-field";
   context.globalCompositeOperation = "source-over";
   canvas.dataset.planetFrame = String((Number(canvas.dataset.planetFrame) || 0) + 1);
+  frame = requestAnimationFrame(draw);
+};
+
+const pauseDrawing = () => {
+  cancelAnimationFrame(frame);
+  frame = 0;
+  atmosphereRenderer?.suspend();
+};
+
+const resumeDrawing = () => {
+  if (activeIndex < 0 || !currentData || document.hidden || layer?.getAttribute("aria-hidden") === "true") return;
+  const kind = DEFINITIONS[activeIndex].renderer;
+  if (kind !== "quake") {
+    if (!atmosphereRenderer) initializeAtmosphere();
+    atmosphereRenderer?.setData(kind, currentData);
+  }
+  cancelAnimationFrame(frame);
+  lastRenderedAt = 0;
   frame = requestAnimationFrame(draw);
 };
 
@@ -563,15 +757,19 @@ const renderReadout = (definition, data) => {
   readout.querySelector("[data-planet-secondary-b]").textContent = summary.secondary[1][1];
   readout.querySelector("[data-planet-caption]").textContent = definition.caption;
   readout.querySelector("[data-planet-state]").textContent = data.sourceState;
-  readout.querySelector("[data-planet-time]").textContent = formatUtc(data.observedAt);
+  readout.querySelector("[data-planet-time]").textContent = formatJst(data.observedAt);
   readout.querySelector("[data-planet-source]").textContent = definition.sourceName;
   const source = readout.querySelector("[data-planet-source-link]");
   source.href = definition.sourcePage;
   source.querySelector("strong").textContent = definition.sourceLabel;
   legend.querySelector("[data-planet-legend-title]").textContent = definition.visualLabel;
   legend.querySelector("[data-planet-legend-count]").textContent = summary.count;
+  const scaleLabels = { wind: ["弱い風", "強い風"], air: ["透明", "濃い霞"], cloud: ["切れ間", "濃い雲"], quake: ["小規模", "大規模"] };
+  legend.querySelector("[data-planet-legend-low]").textContent = scaleLabels[definition.renderer][0];
+  legend.querySelector("[data-planet-legend-mid]").textContent = definition.renderer === "quake" ? "観測値" : "地点間を補間";
+  legend.querySelector("[data-planet-legend-high]").textContent = scaleLabels[definition.renderer][1];
   legend.querySelector("[data-planet-legend-state]").textContent = data.sourceState;
-  legend.querySelector("[data-planet-data-time]").textContent = formatUtc(data.observedAt);
+  legend.querySelector("[data-planet-data-time]").textContent = formatJst(data.observedAt);
   legend.querySelector("[data-planet-data-age]").textContent = formatAge(data.observedAt);
   canvas.dataset.planetExhibit = definition.id;
   canvas.dataset.planetSourceState = data.sourceState;
@@ -582,6 +780,7 @@ const renderReadout = (definition, data) => {
 const select = async (index) => {
   const definition = DEFINITIONS[index];
   if (!definition || !layer) return;
+  const revision = ++selectionRevision;
   globalThis.GaiaLiveExhibits?.deactivate?.();
   globalThis.GaiaEstatExhibits?.deactivate?.();
   globalThis.GaiaFirmsExhibit?.deactivate?.();
@@ -593,6 +792,19 @@ const select = async (index) => {
   }
   activeIndex = index;
   currentData = null;
+  poiArrival = null;
+  canvas.dataset.planetArrivalPhase = "loading";
+  canvas.dataset.planetArrivalActive = "0";
+  canvas.dataset.planetArrivalVisible = "0";
+  canvas.dataset.planetArrivalIndices = "";
+  cancelAnimationFrame(frame);
+  anchorFocusKey = "";
+  canvas.dataset.planetPoiFocusState = "none";
+  canvas.dataset.planetFocusedPoiIndex = "-1";
+  canvas.dataset.planetPoiConnector = "false";
+  atmosphereCanvas.hidden = true;
+  globalThis.GaiaMapObservationAdapter?.closePoi?.();
+  if (context) context.clearRect(0, 0, canvas.width, canvas.height);
   layer.classList.add("is-firms-exhibit", "is-planet-signals-exhibit");
   layer.dataset.planetExhibit = definition.id;
   canvas.hidden = false;
@@ -609,10 +821,13 @@ const select = async (index) => {
   legend.querySelector("[data-planet-legend-title]").textContent = definition.visualLabel;
   legend.querySelector("[data-planet-legend-state]").textContent = "FETCHING";
   const data = await loadData(definition);
-  if (activeIndex !== index) return;
+  if (activeIndex !== index || revision !== selectionRevision) return;
   currentData = data;
+  poiRenderedAt = performance.now();
+  poiArrival = createPoiArrival(data.points, poiRenderedAt, reducedMotion);
   delete readout.dataset.loading;
   renderReadout(definition, data);
+  if (definition.renderer === "quake") atmosphereRenderer?.suspend();
   globalThis.GaiaMapObservationAdapter?.focusEarthLocation?.({
     lon: 0,
     lat: 0,
@@ -622,9 +837,7 @@ const select = async (index) => {
     durationMs: 900,
     label: definition.id,
   });
-  cancelAnimationFrame(frame);
-  lastRenderedAt = 0;
-  frame = requestAnimationFrame(draw);
+  resumeDrawing();
   dispatchEvent(new CustomEvent("gaia:planet-signals-change", { detail: { active: true, id: definition.id, sourceState: data.sourceState } }));
 };
 
@@ -632,12 +845,24 @@ const deactivate = () => {
   if (activeIndex < 0) return;
   const previous = DEFINITIONS[activeIndex];
   activeIndex = -1;
+  selectionRevision++;
   currentData = null;
+  poiArrival = null;
+  canvas.dataset.planetArrivalPhase = "idle";
+  canvas.dataset.planetArrivalActive = "0";
+  canvas.dataset.planetArrivalVisible = "0";
+  canvas.dataset.planetArrivalIndices = "";
   cancelAnimationFrame(frame);
   frame = 0;
+  anchorFocusKey = "";
+  canvas.dataset.planetPoiFocusState = "none";
+  canvas.dataset.planetFocusedPoiIndex = "-1";
+  canvas.dataset.planetPoiConnector = "false";
   layer.classList.remove("is-firms-exhibit", "is-planet-signals-exhibit");
   delete layer.dataset.planetExhibit;
   canvas.hidden = true;
+  atmosphereCanvas.hidden = true;
+  atmosphereRenderer?.suspend();
   legend.hidden = true;
   readout.hidden = true;
   buttons.forEach((item) => item.setAttribute("aria-current", "false"));
@@ -677,6 +902,26 @@ const mount = () => {
   if (!context) canvas.dataset.planetEngine = "unavailable";
   map.append(canvas);
 
+  atmosphereCanvas = document.createElement("canvas");
+  atmosphereCanvas.id = "gaia-planet-atmosphere-canvas";
+  atmosphereCanvas.className = "gaia-planet-atmosphere-canvas";
+  atmosphereCanvas.hidden = true;
+  atmosphereCanvas.setAttribute("aria-hidden", "true");
+  map.insertBefore(atmosphereCanvas, canvas);
+  initializeAtmosphere = () => {
+    try {
+      atmosphereRenderer = createAtmosphereRenderer(atmosphereCanvas);
+      if (activeIndex >= 0 && currentData && DEFINITIONS[activeIndex].renderer !== "quake") {
+        atmosphereRenderer?.setData(DEFINITIONS[activeIndex].renderer, currentData);
+      }
+    } catch (error) {
+      atmosphereRenderer = null;
+      atmosphereCanvas.dataset.fieldState = "unavailable";
+      console.warn("WebGL atmosphere unavailable; retaining data-point rendering.", error);
+    }
+  };
+  atmosphereCanvas.addEventListener("webglcontextrestored", initializeAtmosphere);
+
   legend = document.createElement("section");
   legend.className = "gaia-planet-signals-legend";
   legend.hidden = true;
@@ -684,8 +929,9 @@ const mount = () => {
   legend.innerHTML = `
     <header><strong data-planet-legend-title>LIVE PLANET SIGNAL</strong><span data-planet-legend-state>FETCHING</span></header>
     <i aria-hidden="true"></i>
-    <p><span>暗い</span><span>観測値</span><span>明るい</span><em data-planet-legend-count>—</em></p>
+    <p><span data-planet-legend-low>薄い</span><span data-planet-legend-mid>地点間を補間</span><span data-planet-legend-high>濃い</span><em data-planet-legend-count>—</em></p>
     <div class="gaia-planet-data-time"><span>DATA TIME</span><time data-planet-data-time>読込中</time><small data-planet-data-age>—</small></div>
+    <p class="gaia-planet-poi-key"><i aria-hidden="true"></i><span>観測点 · クリック／タップで詳細</span></p>
   `;
   map.append(legend);
 
@@ -731,9 +977,11 @@ const mount = () => {
   }, { capture: true });
   readout.querySelectorAll("[data-planet-step]").forEach((item) => item.addEventListener("click", () => step(item.dataset.planetStep)));
   addEventListener("resize", () => { if (activeIndex >= 0) lastRenderedAt = 0; }, { passive: true });
+  addEventListener("gaia:japan-close", pauseDrawing);
+  addEventListener("gaia:japan-open", resumeDrawing);
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) cancelAnimationFrame(frame);
-    else if (activeIndex >= 0) frame = requestAnimationFrame(draw);
+    if (document.hidden) pauseDrawing();
+    else resumeDrawing();
   });
   dispatchEvent(new CustomEvent("gaia:planet-signals-mounted"));
 };
@@ -745,6 +993,7 @@ globalThis.GaiaPlanetSignals = Object.freeze({
   definitions: DEFINITIONS,
   select,
   deactivate,
+  findPoiAt,
   getState: () => ({
     active: activeIndex >= 0,
     id: activeIndex >= 0 ? DEFINITIONS[activeIndex].id : null,

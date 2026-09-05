@@ -77,21 +77,36 @@
 
     const actionIcons = Object.freeze({
       source: `
-        <svg viewBox="0 0 32 32" role="presentation" focusable="false">
-          <ellipse cx="14" cy="7.5" rx="8.5" ry="3.5"></ellipse>
-          <path d="M5.5 7.5v6c0 1.95 3.8 3.5 8.5 3.5s8.5-1.55 8.5-3.5v-6"></path>
-          <path d="M5.5 13.5v6c0 1.95 3.8 3.5 8.5 3.5 1.2 0 2.34-.1 3.34-.3"></path>
-          <path class="map-dock-icon-accent" d="M21 21h6m0 0v-6m0 6-8 8"></path>
+        <svg viewBox="0 0 36 36" role="presentation" focusable="false">
+          <defs>
+            <linearGradient id="map-dock-source-paper" x2=".3" y2="1">
+              <stop stop-color="#e0fff6" stop-opacity=".3"/>
+              <stop offset="1" stop-color="#e0fff6" stop-opacity=".04"/>
+            </linearGradient>
+          </defs>
+          <path class="map-dock-icon-secondary" d="M8 9H6.5A2 2 0 0 0 4.5 11V29.5A2 2 0 0 0 6.5 31.5H23A2 2 0 0 0 25 29.5"/>
+          <rect x="9.5" y="4.5" width="21" height="23" rx="2.5" fill="url(#map-dock-source-paper)"/>
+          <path class="map-dock-icon-ribbon" d="M22 4.5V13L25 11L28 13V4.5"/>
+          <path class="map-dock-icon-accent" d="M14 17H25M14 21H21"/>
+          <path class="map-dock-icon-secondary" d="M14 9H17"/>
         </svg>
       `,
       statistics: `
-        <svg viewBox="0 0 32 32" role="presentation" focusable="false">
-          <path d="M5.5 5.5v21h21"></path>
-          <path class="map-dock-icon-accent" d="M8 21.5 13 16l4 2.5L24.5 9"></path>
-          <circle cx="8" cy="21.5" r="1.7"></circle>
-          <circle cx="13" cy="16" r="1.7"></circle>
-          <circle cx="17" cy="18.5" r="1.7"></circle>
-          <circle cx="24.5" cy="9" r="1.7"></circle>
+        <svg viewBox="0 0 36 36" role="presentation" focusable="false">
+          <defs>
+            <linearGradient id="map-dock-statistics-bars" x2="0" y2="1">
+              <stop stop-color="#f4dcff" stop-opacity=".65"/>
+              <stop offset="1" stop-color="#f4dcff" stop-opacity=".12"/>
+            </linearGradient>
+          </defs>
+          <g class="map-dock-icon-bars" fill="url(#map-dock-statistics-bars)">
+            <rect x="7" y="22" width="4" height="7" rx=".7"/>
+            <rect x="14.5" y="15" width="4" height="14" rx=".7"/>
+            <rect x="22" y="20" width="4" height="9" rx=".7"/>
+          </g>
+          <path class="map-dock-icon-secondary" d="M4.5 5.5V30.5H31.5"/>
+          <path class="map-dock-icon-accent" d="M6 19C11 19 11 7.5 17 7.5S24 18 31 18"/>
+          <circle cx="17" cy="7.5" r="1.6"/>
         </svg>
       `,
     });
@@ -99,7 +114,7 @@
       const button = document.createElement("button");
       button.className = className;
       button.type = "button";
-      button.innerHTML = `<span><small>${kicker}</small><strong>${label}</strong></span><i aria-hidden="true">${actionIcons[icon] || ""}</i>`;
+      button.innerHTML = `<i aria-hidden="true">${actionIcons[icon] || ""}</i><span><small>${kicker}</small><strong>${label}</strong></span>`;
       button.addEventListener("click", () => {
         guide.open = false;
         setBankOpen(false);
@@ -231,7 +246,9 @@
       if (shouldOpen) guide.open = false;
       panels.bank.classList.toggle("is-dock-bank-expanded", shouldOpen);
       bankTrigger.setAttribute("aria-expanded", String(shouldOpen));
-      if (shouldOpen) requestAnimationFrame(() => panels.bank.querySelector(".map-mode-button[aria-current='true']")?.focus({ preventScroll: true }));
+      if (shouldOpen) requestAnimationFrame(() => {
+        if (bankTrigger.getAttribute("aria-expanded") === "true") panels.bank.querySelector(".map-mode-button[aria-current='true']")?.focus({ preventScroll: true });
+      });
       else if (restoreFocus) bankTrigger.focus({ preventScroll: true });
     };
 
@@ -246,6 +263,17 @@
     });
 
     const guideSummary = guide.querySelector(":scope > summary");
+    const guideBody = guide.querySelector(".map-reading-guide-body");
+    const positionGuidePanel = () => {
+      if (innerWidth < DESKTOP_MIN || !guideBody) return;
+      const bounds = guide.getBoundingClientRect();
+      const width = Math.min(1160, innerWidth - 48);
+      const left = Math.max(24, Math.min(bounds.right - width, innerWidth - width - 24));
+      // Clamp the reading sheet to the viewport, including the narrow desktop
+      // breakpoint where the dock's explanation cell is left of centre.
+      guideBody.style.setProperty("--map-guide-panel-width", `${width}px`);
+      guideBody.style.setProperty("--map-guide-panel-offset", `${bounds.right - left - width}px`);
+    };
     let guideDismissTimer = 0;
     const setGuideVisible = (visible, { immediate = false } = {}) => {
       window.clearTimeout(guideDismissTimer);
@@ -253,6 +281,7 @@
       if (visible && innerWidth >= DESKTOP_MIN) {
         setBankOpen(false);
         guide.open = true;
+        positionGuidePanel();
         guide.classList.add("is-dock-guide-visible");
         return;
       }
@@ -292,7 +321,8 @@
       if (event.target.closest?.(".map-mode-button")) setBankOpen(false);
     });
     document.addEventListener("pointerdown", (event) => {
-      if (bankTrigger.getAttribute("aria-expanded") === "true" && !panels.bank.contains(event.target)) setBankOpen(false);
+      if (bankTrigger.getAttribute("aria-expanded") === "true" && !panels.bank.contains(event.target)
+        && !event.target.closest?.("[data-map-bank-toggle]")) setBankOpen(false);
     }, { capture: true });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && bankTrigger.getAttribute("aria-expanded") === "true") {
@@ -313,7 +343,10 @@
       sourceProxy.setAttribute("aria-expanded", sourceButton.getAttribute("aria-expanded") || "false");
     }).observe(sourceButton, { attributes: true, attributeFilter: ["aria-expanded"] });
     addEventListener("resize", () => {
-      if (innerWidth >= DESKTOP_MIN) return;
+      if (innerWidth >= DESKTOP_MIN) {
+        if (guide.open) requestAnimationFrame(positionGuidePanel);
+        return;
+      }
       setBankOpen(false);
       setGuideVisible(false, { immediate: true });
     }, { passive: true });

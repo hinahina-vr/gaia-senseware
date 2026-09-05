@@ -67,6 +67,10 @@ const mockLiveSources = async (page) => {
 };
 
 const openMap = async (page) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem("gaia:mode-entry-guide:map:v3", "seen");
+    localStorage.setItem("gaia-senseware-bgm-muted", "true");
+  });
   await mockLiveSources(page);
   await page.goto(`${baseUrl}/#earth`, { waitUntil: "domcontentloaded", timeout: 90_000 });
   await page.waitForFunction(() => Boolean(globalThis.GaiaMapObservationAdapter && globalThis.GaiaPlanetSignals), null, { timeout: 30_000 });
@@ -92,6 +96,14 @@ const selectAndRead = async (page, index) => {
     }));
     throw new Error(`${error.message}\n${JSON.stringify(state, null, 2)}`);
   }
+  if (index !== 2) {
+    await page.waitForFunction(index => {
+      const canvas = document.querySelector("#gaia-planet-atmosphere-canvas");
+      return canvas && !canvas.hidden && canvas.dataset.fieldState === "ready"
+        && (index !== 0 || canvas.dataset.weaveState === "ready");
+    }, index, { timeout: 30000 });
+  }
+  await page.waitForTimeout(1100); // Field fade-in and camera arrival.
   return page.locator("#gaia-planet-signals-canvas").evaluate((canvas) => ({
     id: canvas.dataset.planetExhibit,
     engine: canvas.dataset.planetEngine,
@@ -119,14 +131,17 @@ try {
   const desktopEvidence = [];
   for (let index = 0; index < 4; index += 1) {
     desktopEvidence.push(await selectAndRead(desktop, index));
+    await desktop.screenshot({ path: path.join(outputDir, `desktop-${27 + index}-atmosphere.png`), fullPage: true });
     if (index === 0) {
       assert.equal(await desktop.locator("#japan-poi-card").isVisible(), false, "base exhibit POI remained open over a live exhibit");
       await desktop.mouse.click(720, 430);
-      assert.equal(await desktop.locator("#japan-poi-card").isVisible(), false, "map tap opened an unrelated base exhibit POI");
+      if (await desktop.locator("#japan-poi-card").isVisible()) {
+        assert.match(await desktop.locator("#japan-poi-type").textContent(), /^27 \//u, "map tap opened an unrelated base exhibit POI");
+      }
     }
   }
   assert.equal(await desktop.locator("[data-planet-return]").count(), 0, "legacy return card should not be rendered");
-  assert.match(await desktop.locator("[data-planet-data-time]").textContent(), /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} UTC$/u);
+  assert.equal(await desktop.locator("[data-planet-data-time]").textContent(), "2026/09/04 09:00 JST");
   assert.match(await desktop.locator("[data-planet-data-age]").textContent(), /^データ時点から/u);
   assert.deepEqual(desktopEvidence.map(({ id }) => id), [
     "global-wind-pressure",
@@ -134,11 +149,53 @@ try {
     "usgs-earthquake-ripples",
     "global-cloud-radiance",
   ]);
-  assert(desktopEvidence.every(({ engine, source, width, height }) => (
-    engine === "canvas2d-particle-field" && /^LIVE/u.test(source) && width > 500 && height > 300
+  assert(desktopEvidence.every(({ engine, source, width, height }, index) => (
+    engine === (index === 2 ? "canvas2d-particle-field" : "webgl2-continuous-atmosphere")
+      && /^LIVE/u.test(source) && width > 500 && height > 300
   )));
   assert.deepEqual(desktopEvidence.map(({ points }) => points), [240, 240, 360, 240]);
   await desktop.screenshot({ path: path.join(outputDir, "desktop-30-cloud-radiance.png"), fullPage: true });
+  const performanceEvidence = await desktop.evaluate(async () => {
+    const canvas = document.querySelector("#gaia-planet-atmosphere-canvas");
+    const base = document.querySelector("#gaia-canvas");
+    const gl = canvas.getContext("webgl2"), baseGl = base.getContext("webgl2");
+    const render = gl.drawArrays, baseRender = baseGl.drawArrays;
+    const times = [], longTasks = [];
+    let baseDraws = 0;
+    const observer = new PerformanceObserver(list => longTasks.push(...list.getEntries().map(e => e.duration)));
+    observer.observe({ type: "longtask" });
+    gl.drawArrays = function(...args) { times.push(performance.now()); return render.apply(this, args); };
+    baseGl.drawArrays = function(...args) { baseDraws++; return baseRender.apply(this, args); };
+    const beforeBuilds = canvas.dataset.fieldBuilds;
+    try { await new Promise(resolve => setTimeout(resolve, 3000)); }
+    finally { gl.drawArrays = render; baseGl.drawArrays = baseRender; observer.disconnect(); }
+    const intervals = times.slice(1).map((time, i) => time - times[i]).sort((a, b) => a - b);
+    return { fps: (times.length - 1) * 1000 / (times.at(-1) - times[0]), draws: times.length,
+      p95FrameMs: intervals[Math.floor(intervals.length * .95)], longTasks, baseDraws,
+      pixelCount: canvas.width * canvas.height, extraBuilds: +canvas.dataset.fieldBuilds - +beforeBuilds,
+      glError: gl.getError(), baseSuppressed: base.dataset.renderSuppressed };
+  });
+  assert.equal(performanceEvidence.baseDraws, 0, "Hidden underlying shader must not consume GPU time");
+  assert.equal(performanceEvidence.extraBuilds, 0);
+  assert.equal(performanceEvidence.glError, 0);
+  assert.ok(performanceEvidence.pixelCount <= 762000);
+  await desktop.setViewportSize({ width: 3840, height: 2088 });
+  await desktop.waitForTimeout(700);
+  await desktop.screenshot({ path: path.join(outputDir, "4k-30-cloud-radiance.png"), fullPage: true });
+  assert.ok(await desktop.locator("#gaia-planet-atmosphere-canvas").evaluate(c => c.width * c.height <= 762000));
+  await desktop.locator("#japan-close").evaluate(el => el.click());
+  await desktop.waitForFunction(() => document.querySelector("#japan-layer").getAttribute("aria-hidden") === "true");
+  const closedDraws = await desktop.locator("#gaia-planet-atmosphere-canvas").getAttribute("data-draws");
+  await desktop.waitForTimeout(300);
+  assert.equal(await desktop.locator("#gaia-planet-atmosphere-canvas").getAttribute("data-draws"), closedDraws, "Closing the map must stop its GPU work");
+  await desktop.evaluate(() => { location.hash = "#world"; });
+  await desktop.waitForFunction(previous => +document.querySelector("#gaia-planet-atmosphere-canvas").dataset.draws > +previous, closedDraws);
+  // The previous map must resume and the atmospheric renderer must stop.
+  await desktop.evaluate(() => GaiaPlanetSignals.deactivate());
+  const stopped = await desktop.locator("#gaia-planet-atmosphere-canvas").getAttribute("data-draws");
+  await desktop.waitForTimeout(300);
+  assert.equal(await desktop.locator("#gaia-planet-atmosphere-canvas").getAttribute("data-draws"), stopped);
+  assert.equal(await desktop.locator("#gaia-canvas").getAttribute("data-render-suppressed"), null);
   await desktopContext.close();
 
   const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
@@ -157,11 +214,18 @@ try {
   assert.equal(mobileLayout.readoutVisible, true);
   assert.equal(mobileLayout.legendVisible, true);
   await mobile.screenshot({ path: path.join(outputDir, "mobile-28-aerosol-light.png"), fullPage: true });
+  await selectAndRead(mobile, 3);
+  await mobile.screenshot({ path: path.join(outputDir, "mobile-30-cloud-radiance.png"), fullPage: true });
+  assert.ok(await mobile.locator("#gaia-planet-atmosphere-canvas").evaluate(c => c.width * c.height <= 302000));
+  await selectAndRead(mobile, 0);
+  await mobile.screenshot({ path: path.join(outputDir, "mobile-27-wind.png"), fullPage: true });
   await mobileContext.close();
 
   assert.deepEqual(errors, []);
   assert.deepEqual(responses404, []);
-  console.log(JSON.stringify({ status: "passed", desktopEvidence, mobileEvidence, mobileLayout }, null, 2));
+  const report = { status: "passed", desktopEvidence, mobileEvidence, mobileLayout, performanceEvidence };
+  fs.writeFileSync(path.join(outputDir, "browser-check.json"), JSON.stringify(report, null, 2) + "\n");
+  console.log(JSON.stringify(report, null, 2));
 } finally {
   await browser.close();
 }

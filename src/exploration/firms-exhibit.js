@@ -1,3 +1,7 @@
+import { pickProjectedPoi } from "./poi-hit-test.js?v=gaia-live-poi-1";
+import { FIRE_REVEAL_EDGE, FIRE_COLUMN_LIFETIME, FIRE_COLUMN_LIMIT, FIRE_COLUMN_MOBILE_LIMIT,
+  fireSequence, inverseFireEase, FIRE_COLUMN_VERTEX, FIRE_COLUMN_FRAGMENT } from "./fire-ignition.js?v=gaia-fire-columns-1";
+
 const SNAPSHOT_URL = new URL("../../data/firms-active-fire-snapshot.json", import.meta.url);
 const LIVE_URL = "/api/live/v1/firms";
 const SOURCE_PAGE = "https://firms.modaps.eosdis.nasa.gov/active_fire/";
@@ -25,6 +29,11 @@ let map;
 let canvas;
 let gl;
 let fireProgram;
+let columnProgram;
+let columnBuffer;
+let columnPoints;
+let ignitionTimes;
+const columnValues = new Float32Array(FIRE_COLUMN_LIMIT * 7);
 let backgroundProgram;
 let fireBuffer;
 let backgroundBuffer;
@@ -41,6 +50,7 @@ let lastRenderedAt = 0;
 let playbackEnabled = true;
 let manualProgress = 0;
 let savedHeading;
+let renderedPlayback = null;
 
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 const wrapLongitude = (longitude) => ((longitude + 540) % 360) - 180;
@@ -151,7 +161,7 @@ const createProgram = (vertexSource, fragmentSource) => {
 };
 
 const initializeWebgl = () => {
-  if (gl && fireProgram && backgroundProgram) return true;
+  if (gl && fireProgram && columnProgram && backgroundProgram) return true;
   gl = canvas.getContext("webgl", { alpha: true, antialias: false, depth: false, premultipliedAlpha: true });
   if (!gl) {
     canvas.dataset.firmsEngine = "unavailable";
@@ -212,6 +222,7 @@ const initializeWebgl = () => {
       uniform float u_progress;
       uniform float u_extinguish;
       uniform float u_renderScale;
+      uniform float u_markerScale;
       varying float v_alpha;
       varying float v_heat;
       varying float v_night;
@@ -228,7 +239,7 @@ const initializeWebgl = () => {
         v_night = a_meta.y;
         v_seed = a_meta.z;
         gl_Position = v_alpha > 0.002 ? vec4(clip, 0.0, 1.0) : vec4(2.0, 2.0, 0.0, 1.0);
-        gl_PointSize = (4.0 + a_positionData.z * 17.0) * u_renderScale;
+        gl_PointSize = (7.0 + a_positionData.z * 20.0) * u_renderScale * u_markerScale;
       }
     `, `
       precision mediump float;
@@ -257,6 +268,10 @@ const initializeWebgl = () => {
         gl_FragColor = vec4(color * (0.88 + core * 0.65), alpha);
       }
     `);
+    columnProgram = createProgram(FIRE_COLUMN_VERTEX, FIRE_COLUMN_FRAGMENT);
+    columnBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, columnBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, columnValues.byteLength, gl.DYNAMIC_DRAW);
     fireBuffer = gl.createBuffer();
     backgroundBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, backgroundBuffer);
@@ -264,6 +279,8 @@ const initializeWebgl = () => {
     canvas.dataset.firmsEngine = "webgl-fire-particles";
     canvas.dataset.firmsFlashCadence = "none";
     canvas.dataset.firmsMotion = "spatial-continuous-non-pulsing";
+    canvas.dataset.firmsIgnition = "one-shot-fire-column";
+    canvas.dataset.firmsColumnLifetime = String(FIRE_COLUMN_LIFETIME);
     return true;
   } catch (error) {
     console.warn(error);
@@ -276,15 +293,21 @@ const uploadPoints = () => {
   if (!snapshot || !initializeWebgl()) return;
   const maxFrp = Math.max(1, snapshot.summary.maxFrp || 1);
   const values = new Float32Array(snapshot.points.length * 7);
+  columnPoints = new Float32Array(values.length);
+  ignitionTimes = new Float32Array(snapshot.points.length);
   snapshot.points.forEach((point, index) => {
     const offset = index * 7;
     values[offset] = earthLongitudeToMapX(point.lon);
     values[offset + 1] = point.lat;
     values[offset + 2] = clamp01(Math.log1p(point.frp) / Math.log1p(maxFrp));
-    values[offset + 3] = snapshot.points.length > 1 ? index / (snapshot.points.length - 1) : 0;
+    values[offset + 3] = fireSequence(index, snapshot.points.length);
     values[offset + 4] = clamp01((point.confidence - 60) / 40);
     values[offset + 5] = point.daynight === "N" ? 1 : 0;
     values[offset + 6] = ((Math.sin((point.lat + 91) * 12.9898 + (point.lon + 181) * 78.233) * 43758.5453) % 1 + 1) % 1;
+    // Start a short flare when the matching base marker first becomes visible.
+    ignitionTimes[index] = inverseFireEase(values[offset + 3] + FIRE_REVEAL_EDGE * .08) * REVEAL_MS / 1000;
+    columnPoints.set(values.subarray(offset, offset + 7), offset);
+    columnPoints[offset + 3] = ignitionTimes[index];
   });
   gl.bindBuffer(gl.ARRAY_BUFFER, fireBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, values, gl.STATIC_DRAW);
@@ -324,6 +347,31 @@ const resizeCanvas = (rect) => {
   canvas.dataset.firmsResolutionScale = resolutionScale.toFixed(3);
   canvas.dataset.firmsTargetFps = "30";
   return width / rect.width;
+};
+
+const findPoiAt = (clientX, clientY, pointerType) => {
+  if (!active || !snapshot || !renderedPlayback) return null;
+  const state = renderedPlayback;
+  const hit = pickProjectedPoi(snapshot.points, currentProjection(), clientX, clientY, pointerType, (point, index) => {
+    // Match the shader's reveal/expiry envelope, not every point in the feed.
+    const sequence = fireSequence(index, pointCount);
+    const appeared = ease((state.progress - sequence) / FIRE_REVEAL_EDGE);
+    const expired = state.extinguish < 0 ? 0 : ease((state.extinguish - sequence) / 0.045);
+    return appeared * (1 - expired) * (0.55 + clamp01((point.confidence - 60) / 40) * 0.45) > 0.002;
+  });
+  if (!hit) return null;
+  const { point, index } = hit;
+  const title = `緯度 ${point.lat.toFixed(2)}° / 経度 ${point.lon.toFixed(2)}°`;
+  const values = `火災放射パワー ${formatNumber(point.frp, 1)} MW / 信頼度 ${formatNumber(point.confidence)} / ${point.daynight === "N" ? "夜間" : "昼間"}検知`;
+  return {
+    type: "exhibit", index,
+    record: {
+      id: point.id || String(index), exhibitId: DEFINITION.id, lon: point.lon, lat: point.lat,
+      kicker: `${DEFINITION.number} / ${DEFINITION.shortTitle}`, title, preview: values,
+      meta: `${title} / ${values} / ${formatUtc(point.acquiredAt)} UTC / ${snapshot.source === "nasa-firms-modis" ? "LIVE CACHE" : "保存スナップショット"} / ${DEFINITION.sourceName}`,
+      url: SOURCE_PAGE,
+    },
+  };
 };
 
 const playbackState = (timestamp) => {
@@ -371,8 +419,59 @@ const drawFires = (timestamp, projection, state, renderScale) => {
   gl.uniform1f(gl.getUniformLocation(fireProgram, "u_progress"), state.progress);
   gl.uniform1f(gl.getUniformLocation(fireProgram, "u_extinguish"), state.extinguish);
   gl.uniform1f(gl.getUniformLocation(fireProgram, "u_renderScale"), renderScale);
+  gl.uniform1f(gl.getUniformLocation(fireProgram, "u_markerScale"), markerScale(projection));
   gl.uniform1f(gl.getUniformLocation(fireProgram, "u_time"), timestamp / 1000);
   gl.drawArrays(gl.POINTS, 0, pointCount);
+};
+
+const markerScale = (projection) => projection.rect.width >= 2400 ? 1.6 : projection.rect.width < 720 ? .85 : 1;
+
+const drawFireColumns = (timestamp, projection, state, renderScale) => {
+  const limit = projection.rect.width < 720 ? FIRE_COLUMN_MOBILE_LIMIT : FIRE_COLUMN_LIMIT;
+  canvas.dataset.firmsColumnLimit = String(limit);
+  canvas.dataset.firmsActiveColumns = "0";
+  if (!playbackEnabled || matchMedia("(prefers-reduced-motion: reduce)").matches
+    || !["igniting", "holding"].includes(state.phase)) return;
+  const clock = Math.max(0, (timestamp - cycleStartedAt - REVEAL_DELAY_MS) / 1000);
+  const scale = markerScale(projection);
+  const cellSize = 54 * scale;
+  const occupied = new Set();
+  let count = 0;
+  // Newest first. Only one large flame per screen-space cell; every underlying
+  // observation stays visible and pickable, including dense fire clusters.
+  for (let index = pointCount - 1; index >= 0 && count < limit; index--) {
+    const age = clock - ignitionTimes[index];
+    if (age < 0 || age > FIRE_COLUMN_LIFETIME) continue;
+    const offset = index * 7;
+    const x = projection.originX + columnPoints[offset] * projection.scale;
+    const y = projection.originY + (90 - columnPoints[offset + 1]) * projection.scale;
+    if (x < 0 || x > projection.rect.width || y < 0 || y > projection.rect.height) continue;
+    const cell = `${Math.floor(x / cellSize)}:${Math.floor(y / cellSize)}`;
+    if (occupied.has(cell)) continue;
+    occupied.add(cell);
+    columnValues.set(columnPoints.subarray(offset, offset + 7), count * 7);
+    count++;
+  }
+  canvas.dataset.firmsActiveColumns = String(count);
+  if (!count) return;
+  gl.enable(gl.BLEND);
+  gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(columnProgram);
+  gl.bindBuffer(gl.ARRAY_BUFFER, columnBuffer);
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, columnValues.subarray(0, count * 7));
+  const position = gl.getAttribLocation(columnProgram, "a_positionData");
+  const meta = gl.getAttribLocation(columnProgram, "a_meta");
+  gl.enableVertexAttribArray(position);
+  gl.vertexAttribPointer(position, 4, gl.FLOAT, false, 7 * 4, 0);
+  gl.enableVertexAttribArray(meta);
+  gl.vertexAttribPointer(meta, 3, gl.FLOAT, false, 7 * 4, 4 * 4);
+  gl.uniform2f(gl.getUniformLocation(columnProgram, "u_cssSize"), projection.rect.width, projection.rect.height);
+  gl.uniform2f(gl.getUniformLocation(columnProgram, "u_origin"), projection.originX, projection.originY);
+  gl.uniform1f(gl.getUniformLocation(columnProgram, "u_scale"), projection.scale);
+  gl.uniform1f(gl.getUniformLocation(columnProgram, "u_renderScale"), renderScale);
+  gl.uniform1f(gl.getUniformLocation(columnProgram, "u_markerScale"), scale);
+  gl.uniform1f(gl.getUniformLocation(columnProgram, "u_clock"), clock);
+  gl.drawArrays(gl.POINTS, 0, count);
 };
 
 const updateTimeline = (state) => {
@@ -418,8 +517,12 @@ const draw = (timestamp = performance.now()) => {
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   const state = playbackState(timestamp);
-  drawBackground(timestamp, canvas.width, canvas.height);
-  drawFires(timestamp, projection, state, renderScale);
+  const motionTime = playbackEnabled && !matchMedia("(prefers-reduced-motion: reduce)").matches ? timestamp - cycleStartedAt : 0;
+  drawBackground(motionTime, canvas.width, canvas.height);
+  drawFires(motionTime, projection, state, renderScale);
+  drawFireColumns(timestamp, projection, state, renderScale);
+  canvas.dataset.firmsFrame = String((Number(canvas.dataset.firmsFrame) || 0) + 1);
+  renderedPlayback = state;
   updateTimeline(state);
   frame = requestAnimationFrame(draw);
 };
@@ -501,6 +604,8 @@ const select = async () => {
     };
   }
   active = true;
+  renderedPlayback = null;
+  globalThis.GaiaMapObservationAdapter?.closePoi?.();
   layer.classList.add("is-firms-exhibit");
   layer.dataset.firmsExhibit = DEFINITION.id;
   canvas.hidden = false;
@@ -531,11 +636,13 @@ const select = async () => {
 const deactivate = () => {
   if (!active) return;
   active = false;
+  renderedPlayback = null;
   cancelAnimationFrame(frame);
   frame = 0;
   layer.classList.remove("is-firms-exhibit");
   delete layer.dataset.firmsExhibit;
   canvas.hidden = true;
+  canvas.dataset.firmsActiveColumns = "0";
   legend.hidden = true;
   readout.hidden = true;
   button.setAttribute("aria-current", "false");
@@ -550,8 +657,11 @@ const deactivate = () => {
 };
 
 const stepOutsideExhibit = (direction) => {
-  if (Number(direction) < 0) document.querySelector("#japan-estat-mode-list .map-mode-button:last-child")?.click();
-  else document.querySelector("#japan-mode-list .map-mode-button:first-child")?.click();
+  const step = Math.sign(Number(direction) || 0);
+  const exhibits = [...document.querySelectorAll(".map-mode-bank .map-mode-button")];
+  const index = exhibits.indexOf(button);
+  if (!step || index < 0) return;
+  exhibits[(index + step + exhibits.length) % exhibits.length]?.click();
 };
 
 const mount = () => {
@@ -600,10 +710,9 @@ const mount = () => {
   readout.hidden = true;
   readout.setAttribute("aria-live", "polite");
   readout.innerHTML = `
-    <button class="gaia-firms-return" type="button" data-firms-return><span>MAP 01—25</span><strong>地球展示へ戻る</strong></button>
     <div class="gaia-firms-chapter">
       <p>EARTH / NASA FIRMS · GLOBAL 24H</p>
-      <div><button type="button" data-firms-step="-1" aria-label="前の展示、25へ">‹</button><span><b>26</b><strong>燃える惑星</strong></span><button type="button" data-firms-step="1" aria-label="次の展示、01へ">›</button></div>
+      <div><button type="button" data-firms-step="-1" aria-label="前の展示、25へ">‹</button><span><b>26</b><strong>燃える惑星</strong></span><button type="button" data-firms-step="1" aria-label="次の展示、27 大気をなぞるへ">›</button></div>
     </div>
     <div class="gaia-firms-count"><p>OBSERVED / ACQUISITION-TIME RELAY</p><strong><b data-firms-visible>0</b><span> / <i data-firms-total>—</i> 表示点</span></strong><small data-firms-time>観測待機</small></div>
     <div class="gaia-firms-primary"><p>最大 火災放射パワー</p><strong data-firms-max-frp>—</strong><span>MW</span></div>
@@ -613,7 +722,7 @@ const mount = () => {
       <button type="button" data-firms-play aria-pressed="true">一時停止</button>
     </div>
     <div class="gaia-firms-quality"><span>夜間検知<strong data-firms-night-share>—</strong></span><span>信頼度80以上<strong data-firms-confidence-share>—</strong></span></div>
-    <div class="gaia-firms-copy"><p>${DEFINITION.caption}</p><small>円は火災の範囲ではなく、衛星が検知した熱異常の代表点です。信頼度60未満は除外し、FRPを粒径へ変換しています。</small></div>
+    <div class="gaia-firms-copy"><p>${DEFINITION.caption}</p><small>光点は火災の範囲ではなく、衛星が検知した熱異常の代表点です。火柱・火の粉は出現時の演出で、実際の炎の高さではありません。信頼度60未満は除外し、FRPを粒径へ変換しています。</small></div>
     <div class="gaia-firms-actions" aria-label="元データと統計分析">
       <a href="${SOURCE_PAGE}" target="_blank" rel="noopener noreferrer"><span><small>SOURCE</small><strong>NASA FIRMSを確認</strong></span><i aria-hidden="true">↗</i></a>
       <button type="button" data-firms-analysis><span><small>ANALYSIS</small><strong>火点を分析</strong></span><i aria-hidden="true">＋</i></button>
@@ -638,7 +747,6 @@ const mount = () => {
     if (!(target instanceof HTMLButtonElement) || target.dataset.firmsExhibit || !active) return;
     deactivate();
   }, { capture: true });
-  readout.querySelector("[data-firms-return]")?.addEventListener("click", () => document.querySelector("#japan-mode-list .map-mode-button")?.click());
   readout.querySelectorAll("[data-firms-step]").forEach((item) => item.addEventListener("click", () => stepOutsideExhibit(item.dataset.firmsStep)));
   readout.querySelector("[data-firms-progress]")?.addEventListener("input", (event) => {
     playbackEnabled = false;
@@ -646,8 +754,9 @@ const mount = () => {
     updateTimeline({ progress: manualProgress, extinguish: -1, phase: "scrub" });
   });
   readout.querySelector("[data-firms-play]")?.addEventListener("click", () => {
+    if (playbackEnabled) manualProgress = renderedPlayback?.progress ?? 0;
     playbackEnabled = !playbackEnabled;
-    if (playbackEnabled) cycleStartedAt = performance.now() - REVEAL_DELAY_MS - manualProgress * REVEAL_MS;
+    if (playbackEnabled) cycleStartedAt = performance.now() - REVEAL_DELAY_MS - inverseFireEase(manualProgress) * REVEAL_MS;
   });
   readout.querySelector("[data-firms-analysis]")?.addEventListener("click", openStatistics);
   addEventListener("resize", () => { if (active) lastRenderedAt = 0; }, { passive: true });
@@ -667,6 +776,7 @@ globalThis.GaiaFirmsExhibit = Object.freeze({
   select,
   deactivate,
   getStatisticsDataset: statisticsDataset,
+  findPoiAt,
   getState: () => ({ active, source: snapshot?.source || null, pointCount, playbackEnabled }),
 });
 

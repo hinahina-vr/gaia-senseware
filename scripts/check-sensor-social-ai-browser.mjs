@@ -58,13 +58,15 @@ try {
     assert.equal(await page.locator("#public-sensor-detail [data-relationship='favorite']").count(), 0);
     assert.equal(await page.locator("[data-public-filter='FAVORITE']").count(), 0);
     assert.doesNotMatch(await page.locator("#public-sensor-detail").textContent(), /お気に入り/u);
-    assert.equal((await like.textContent()).trim(), "♡");
+    assert.equal(await like.locator("svg[aria-hidden='true'] path").count(), 1);
+    assert.equal(await like.locator("svg").evaluate(icon => getComputedStyle(icon).fill), "none");
     const likeResponse = page.waitForResponse((response) => response.url().endsWith("/like") && response.ok(), { timeout: 30_000 });
     await like.dispatchEvent("click");
     await likeResponse;
     await page.waitForFunction(() => document.querySelector("#public-sensor-detail [data-relationship='like']")?.getAttribute("aria-pressed") === "true");
     assert.equal(await like.getAttribute("aria-pressed"), "true");
-    assert.equal((await like.textContent()).trim(), "♥");
+    assert.equal(await like.locator("svg[aria-hidden='true'] path").count(), 1);
+    assert.notEqual(await like.locator("svg").evaluate(icon => getComputedStyle(icon).fill), "none");
     assert.match(await like.getAttribute("aria-label"), /応援を取り消す（現在1件）/u);
     const relationshipLayout = await page.locator("#public-sensor-detail .sensor-relationship-bar").evaluate((bar) => {
       const heart = bar.querySelector(".sensor-like-trigger").getBoundingClientRect();

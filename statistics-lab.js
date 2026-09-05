@@ -95,6 +95,7 @@ if (!lab || !openButton) {
     insights: q("#gaia-statistics-insights"),
     detailPanels: [...document.querySelectorAll(".gaia-statistics-stage > details")],
     panelBackButtons: [...document.querySelectorAll(".gaia-statistics-panel-back")],
+    viewTabs: [...document.querySelectorAll("[data-stat-view]")],
   };
   const chartTooltip = document.createElement("output");
   chartTooltip.className = "gaia-statistics-chart-tooltip";
@@ -285,14 +286,14 @@ if (!lab || !openButton) {
         periodEnd: co2.at(-1)?.label,
         missingPeriods: co2MissingMonths,
       },
-      { id: "jma-co2", modeId: "breathing-earth", title: "JMA CO₂ 3観測所 共通期間", rows: jma, unit: "ppm", xLabel: "綾里", yLabel: "南鳥島", pairedLabel: "与那国島", provenance: ["SOURCE"] },
+      { id: "jma-co2", modeId: "breathing-earth", title: "JMA CO₂ 3観測所 共通期間", rows: jma, unit: "ppm", valueLabel: "綾里のCO₂", xLabel: "綾里", yLabel: "南鳥島", pairedLabel: "与那国島", provenance: ["SOURCE"] },
       { id: "wind-climate", modeId: "blue-circulation", title: "31地点の風速と気温", rows: climate, unit: "m/s", xLabel: "気温", yLabel: "風速", provenance: ["SOURCE"] },
       { id: "rainfall", modeId: "forest-cloud-engine", title: "31地点の平均降水量", rows: rainfall, unit: "mm/day", xLabel: "経度", yLabel: "降水量", provenance: ["SOURCE"] },
       { id: "pollination", modeId: "pollination-protocol", title: "送粉相互作用と記録方式", rows: [...interactions, ...occurrences], categoricalSets: [interactions, occurrences], unit: "件", provenance: ["SOURCE"] },
       { id: "waste", modeId: "nothing-is-waste", title: "31か国の再資源化率", rows: wasteRows, unit: "%", xLabel: "経度", yLabel: "再資源化率", provenance: ["SOURCE", "IMPUTED"] },
       { id: "emissions-urban", modeId: "anthropocene-scar", title: "都市化率と温室効果ガス排出", rows: emissionsUrban, unit: "MtCO₂e", xLabel: "都市化率", yLabel: "排出量", provenance: ["SOURCE"] },
       { id: "earthquakes", modeId: "rhythm-of-disaster", title: "M7以上地震の年別件数（2001–2025）", rows: yearly, gaps, unit: "件/年", xLabel: "年", yLabel: "発生件数", provenance: ["SOURCE", "DERIVED"] },
-      { id: "forest-urban", modeId: "three-ecologies", title: "31か国の森林率と都市化率", rows: forestUrban, unit: "%", xLabel: "森林率", yLabel: "都市化率", provenance: ["SOURCE"] },
+      { id: "forest-urban", modeId: "three-ecologies", title: "31か国の森林率と都市化率", rows: forestUrban, unit: "%", valueLabel: "森林率", xLabel: "森林率", yLabel: "都市化率", provenance: ["SOURCE"] },
       { id: "culture", modeId: "three-ecologies", title: "文化遺産カテゴリと地域", rows: culture, unit: "件", provenance: ["SOURCE"] },
       { id: "renewables", modeId: "earth-organ", title: "再生可能比率と自然条件", rows: renewables, unit: "%", xLabel: "太陽光ポテンシャル", yLabel: "再生可能比率", provenance: ["SOURCE"] },
     ];
@@ -958,7 +959,7 @@ if (!lab || !openButton) {
     const values = valuesFor(dataset);
     const pairRows = rows.filter((row) => Number.isFinite(row.x) && Number.isFinite(row.y));
     switch (methodId) {
-      case "summary": return analyzeSummary({ values, label: dataset.title, unit: dataset.unit, provenance: dataset.provenance });
+      case "summary": return analyzeSummary({ values, label: dataset.valueLabel || dataset.yLabel || dataset.title, unit: dataset.unit, provenance: dataset.provenance });
       case "scatter": return pairRows.length >= 3 ? analyzeCorrelation({ x: pairRows.map((row) => row.x), y: pairRows.map((row) => row.y), xLabel: dataset.xLabel, yLabel: dataset.yLabel, xUnit: dataset.xUnit || "", yUnit: dataset.unit, provenance: dataset.provenance }) : notApplicable("2変数の対応した有限値が3組以上必要です。", ["01 要約統計"]);
       case "moments": return analyzeMoments(dataset);
       case "discrete": return analyzeDiscrete(dataset);
@@ -990,20 +991,26 @@ if (!lab || !openButton) {
   const metricText = ([label, value, unit]) => `${label}: ${format(value)}${unit || ""}`;
   const renderTakeaway = (result) => {
     const insight = result.insight;
+    const stats = result.kind === "summary" ? result.stats : null;
     ui.takeawayEvidence.replaceChildren();
     ui.takeaway.dataset.state = insight ? "ready" : "empty";
     ui.takeawayHeadline.textContent = insight?.headline || "この条件では、まだ結論を表示できません。";
+    ui.takeaway.querySelector(".gaia-statistics-takeaway-copy > p").textContent = stats ? "この分布から" : "この分析から";
+    if (stats) ui.takeawayHeadline.textContent = stats.skewness > 0.5 ? "大きい値の側に、裾が伸びる。" : stats.skewness < -0.5 ? "小さい値の側に、裾が伸びる。" : "左右の偏りは、小さい。";
     ui.takeawayBody.textContent = insight?.interpretation || insight?.meaning || "データや分析方法を変えて、別の見方を試してください。";
+    if (stats) ui.takeawayBody.textContent = `観測値の半分は${format(stats.q1, 2)}〜${format(stats.q3, 2)}${currentDataset().unit || ""}の間にあります。平均だけでは見えない広がりを、棒の高さと下の点で確かめられます。`;
     ui.takeawayCaveat.textContent = insight?.limitations?.[0]
       ? `注意：${insight.limitations[0]}`
       : "注意：グラフだけで因果関係を判断せず、データの範囲と前提を確認してください。";
-    (insight?.evidence || []).slice(0, 3).forEach((metric) => {
+    const evidence = stats ? [["平均", stats.mean, currentDataset().unit], ["中央値", stats.median, currentDataset().unit], ["観測範囲", `${format(stats.minimum, 2)}–${format(stats.maximum, 2)}`, currentDataset().unit]] : (insight?.evidence || []).slice(0, 3);
+    evidence.forEach((metric) => {
       const button = document.createElement("button");
       button.type = "button";
       const label = document.createElement("span");
       label.textContent = metric[0] === "n" ? "観測数" : metric[0];
       const value = document.createElement("strong");
-      value.textContent = `${format(metric[1])}${metric[2] || ""}`;
+      value.textContent = format(metric[1], stats ? 2 : 3);
+      if (metric[2]) { const unit = document.createElement("small"); unit.textContent = ` ${metric[2]}`; value.append(unit); }
       button.append(label, value);
       button.title = "計算結果を開いて根拠を確認";
       button.addEventListener("click", () => {
@@ -1202,7 +1209,7 @@ if (!lab || !openButton) {
     title.textContent = target.label || "観測値";
     const values = document.createElement("span");
     if (["histogram", "distribution", "sampling"].includes(chart.type)) {
-      values.textContent = `${dataset.yLabel || "観測値"}: ${format(target.x, 2)}${chart.unit || dataset.unit || ""}`;
+      values.textContent = `${dataset.valueLabel || dataset.yLabel || "観測値"}: ${format(target.x, 2)}${chart.unit || dataset.unit || ""}`;
     } else {
       values.textContent = `${chart.xLabel || dataset.xLabel || "X"}: ${format(target.x, 2)}${chart.xUnit || dataset.xUnit || ""} / ${chart.yLabel || dataset.yLabel || "Y"}: ${format(target.y, 2)}${chart.yUnit || dataset.unit || ""}`;
     }
@@ -1250,7 +1257,8 @@ if (!lab || !openButton) {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     const { pad, width, height } = state.chartMeta;
-    if (x < pad.left || x > width - pad.right || y < pad.top || y > height - pad.bottom) return hideChartTooltip();
+    const hitBottom = height - pad.bottom + (state.chartMeta.chart.type === "histogram" ? 34 : 0);
+    if (x < pad.left || x > width - pad.right || y < pad.top || y > hitBottom) return hideChartTooltip();
     let nearest = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
     state.chartTargets.forEach((target) => {
@@ -1292,8 +1300,10 @@ if (!lab || !openButton) {
     if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
     if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
     const ctx = canvas.getContext("2d"); ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const width = rect.width; const height = rect.height; const pad = { left: width < 560 ? 53 : 66, right: 28, top: 38, bottom: 55 };
     const chart = result.chart || {};
+    const histogram = chart.type === "histogram" && Boolean(chart.stats);
+    const width = rect.width; const height = rect.height;
+    const pad = { left: width < 560 ? 42 : 52, right: width < 560 ? 14 : 20, top: histogram ? 94 : 48, bottom: histogram ? 86 : 56 };
     const points = chartPoints(result, dataset);
     ui.canvas.setAttribute("aria-label", `${dataset.title}の${METHOD_LOOKUP.get(state.methodId)?.label || "統計解析"}。${points.length}点。矢印キーでデータ点を確認し、Enterキーで監査レコードを開けます。`);
     const xs = points.map((point) => point.x); const ys = points.map((point) => point.y);
@@ -1321,35 +1331,38 @@ if (!lab || !openButton) {
       minY -= yMargin; maxY += yMargin;
     }
     maxY += Math.max(0.5, (maxY - minY) * 0.08);
+    // Counts use whole-number ticks; a count of 3.5 observations is not meaningful.
+    const yStep = frequencyChart ? Math.max(1, Math.ceil(maxY / 4)) : 0;
+    if (frequencyChart) maxY = yStep * 4;
     const xScale = (value) => pad.left + (value - minX) / (maxX - minX) * (width - pad.left - pad.right);
     const yScale = (value) => height - pad.bottom - (value - minY) / (maxY - minY) * (height - pad.top - pad.bottom);
-    const targets = new Map(points.map((point) => [point.id, { ...point, sx: xScale(point.x), sy: yScale(point.y) }]));
-    const starts = new Map(); targets.forEach((target, id) => starts.set(id, state.points.get(id) || { sx: width * 0.5, sy: height * 0.5, group: target.group }));
+    // A separate observation rug keeps the histogram's count axis unambiguous.
+    // Each mark retains its source record and full pointer/keyboard drill-through.
+    const targets = new Map(points.map((point, index) => [point.id, { ...point, sx: xScale(point.x), sy: histogram ? height - pad.bottom + 17 + (index % 3) * 5 : yScale(point.y) }]));
     state.chartMeta = { chart, dataset, width, height, pad };
-    cancelAnimationFrame(state.animation); const start = performance.now(); const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 560;
+    cancelAnimationFrame(state.animation); const start = performance.now(); const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 180;
     const paint = (now) => {
-      const t = Math.min(1, (now - start) / duration); const eased = 1 - (1 - t) ** 3;
+      const t = Math.min(1, (now - start) / duration);
       ctx.clearRect(0, 0, width, height);
       ctx.strokeStyle = "rgba(125,211,255,.12)"; ctx.lineWidth = 1;
-      const tickCount = width < 560 ? 4 : 5;
-      ctx.font = `${width < 560 ? 8 : 9}px Consolas`;
-      ctx.fillStyle = "rgba(218,243,255,.54)";
+      const tickCount = 4;
+      ctx.font = "11px 'Segoe UI', sans-serif";
+      ctx.fillStyle = "#91aab4";
       for (let i = 0; i <= tickCount; i += 1) {
         const ratio = i / tickCount;
         const x = pad.left + ratio * (width - pad.left - pad.right);
         const y = pad.top + ratio * (height - pad.top - pad.bottom);
-        ctx.strokeStyle = "rgba(125,211,255,.12)";
-        ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, height - pad.bottom); ctx.stroke();
+        ctx.strokeStyle = "rgba(163,193,201,.12)";
         ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(width - pad.right, y); ctx.stroke();
         const xValue = minX + ratio * (maxX - minX);
         const yValue = maxY - ratio * (maxY - minY);
         ctx.textAlign = "center";
-        ctx.fillText(dataset.xKind === "month" && !frequencyChart ? String(Math.round(xValue)) : format(xValue, Math.abs(maxX - minX) < 12 ? 1 : 0), x, height - pad.bottom + 18);
+        ctx.fillText(dataset.xKind === "month" && !frequencyChart ? String(Math.round(xValue)) : format(xValue, Math.abs(maxX - minX) < 12 ? 1 : 0), x, height - pad.bottom + (histogram ? 49 : 22));
         ctx.textAlign = "right";
-        ctx.fillText(format(yValue, Math.abs(maxY - minY) < 12 ? 1 : 0), pad.left - 8, y + 3);
+        ctx.fillText(format(yValue, frequencyChart ? 0 : Math.abs(maxY - minY) < 12 ? 1 : 0), pad.left - 8, y + 3);
       }
       const xAxisLabel = frequencyChart
-        ? `${dataset.yLabel || "観測値"}${chart.unit || dataset.unit ? ` (${chart.unit || dataset.unit})` : ""}`
+        ? `${dataset.valueLabel || dataset.yLabel || "観測値"}${chart.unit || dataset.unit ? ` (${chart.unit || dataset.unit})` : ""}`
         : (chart.xLabel || dataset.xLabel || "OBSERVATION");
       const yAxisLabel = frequencyChart ? "観測数" : (chart.yLabel || dataset.yLabel || dataset.unit || "VALUE");
       canvas.dataset.axisX = xAxisLabel;
@@ -1357,25 +1370,37 @@ if (!lab || !openButton) {
       canvas.dataset.domainX = `${minX},${maxX}`;
       canvas.dataset.domainY = `${minY},${maxY}`;
       canvas.dataset.pointCount = String(points.length);
-      ctx.fillStyle = "rgba(218,243,255,.72)"; ctx.font = "10px Consolas"; ctx.textAlign = "center"; ctx.fillText(xAxisLabel, pad.left + (width - pad.left - pad.right) / 2, height - 12); ctx.save(); ctx.translate(15, pad.top + (height - pad.top - pad.bottom) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(yAxisLabel, 0, 0); ctx.restore();
+      canvas.dataset.plotTop = String(pad.top);
+      canvas.dataset.plotBottom = String(height - pad.bottom);
+      canvas.dataset.observationLayout = histogram ? "rug" : "plot";
+      ctx.fillStyle = "#a3bdc3"; ctx.font = "11px 'Yu Gothic UI', sans-serif"; ctx.textAlign = "center"; ctx.fillText(xAxisLabel, pad.left + (width - pad.left - pad.right) / 2, height - 12);
+      ctx.textAlign = "left"; ctx.fillText(yAxisLabel, pad.left, pad.top - 12);
       if (["histogram", "distribution", "sampling"].includes(chart.type) && chart.bins?.length) {
-        ctx.fillStyle = "rgba(65, 148, 222, .13)";
-        ctx.strokeStyle = "rgba(117, 214, 255, .28)";
+        const barFill = ctx.createLinearGradient(0, pad.top, 0, height - pad.bottom);
+        barFill.addColorStop(0, "rgba(144,199,194,.58)"); barFill.addColorStop(1, "rgba(91,143,150,.22)");
+        ctx.fillStyle = barFill;
+        ctx.strokeStyle = "rgba(163,216,208,.64)";
         chart.bins.forEach((bin) => {
           const left = xScale(bin.x0);
           const right = xScale(bin.x1);
           const top = yScale(bin.count);
-          ctx.fillRect(left + 1, top, Math.max(1, right - left - 2), height - pad.bottom - top);
-          ctx.strokeRect(left + 1, top, Math.max(1, right - left - 2), height - pad.bottom - top);
+          ctx.fillRect(left + 2, top, Math.max(1, right - left - 4), height - pad.bottom - top);
+          ctx.beginPath(); ctx.moveTo(left + 2, top); ctx.lineTo(right - 2, top); ctx.stroke();
         });
       }
       if (chart.type === "histogram" && chart.stats) {
-        const boxY = pad.top + 8;
-        ctx.strokeStyle = "rgba(242, 213, 155, .88)";
-        ctx.lineWidth = 1.5;
+        const boxY = 44;
+        ctx.font = `${width < 560 ? 9 : 10}px 'Yu Gothic UI', sans-serif`;
+        ctx.fillStyle = "#aebdb9"; ctx.textAlign = "left";
+        ctx.fillText("箱：中央50%　線：中央値　両端：最小・最大", pad.left, 20);
+        ctx.strokeStyle = "#c7b78f";
+        ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(xScale(chart.stats.minimum), boxY); ctx.lineTo(xScale(chart.stats.maximum), boxY); ctx.stroke();
-        ctx.strokeRect(xScale(chart.stats.q1), boxY - 6, Math.max(2, xScale(chart.stats.q3) - xScale(chart.stats.q1)), 12);
-        ctx.beginPath(); ctx.moveTo(xScale(chart.stats.median), boxY - 8); ctx.lineTo(xScale(chart.stats.median), boxY + 8); ctx.stroke();
+        ctx.fillStyle = "#253537";
+        ctx.fillRect(xScale(chart.stats.q1), boxY - 7, Math.max(2, xScale(chart.stats.q3) - xScale(chart.stats.q1)), 14);
+        ctx.strokeRect(xScale(chart.stats.q1), boxY - 7, Math.max(2, xScale(chart.stats.q3) - xScale(chart.stats.q1)), 14);
+        [chart.stats.minimum, chart.stats.maximum, chart.stats.median].forEach(value => { ctx.beginPath(); ctx.moveTo(xScale(value), boxY - 7); ctx.lineTo(xScale(value), boxY + 7); ctx.stroke(); });
+        ctx.strokeStyle = "rgba(163,193,201,.12)"; ctx.beginPath(); ctx.moveTo(pad.left, 66); ctx.lineTo(width - pad.right, 66); ctx.stroke();
       }
       if (chart.type === "distribution" && chart.curve?.length) {
         ctx.strokeStyle = "rgba(242, 213,155,.86)";
@@ -1395,20 +1420,20 @@ if (!lab || !openButton) {
       if (chart.type === "discrete" && chart.expected) { ctx.strokeStyle = "rgba(242,213,155,.9)"; ctx.setLineDash([6, 5]); ctx.beginPath(); chart.expected.forEach((value, index) => { const x = xScale(index); const y = yScale(value); if (index) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]); }
       const liveTargets = [];
       targets.forEach((target, id) => {
-        const from = starts.get(id); const x = from.sx + (target.sx - from.sx) * eased; const y = from.sy + (target.sy - from.sy) * eased;
-        const colors = ["#82e8ff", "#679dff", "#94f2d8", "#f2d59b", "#b692ff"];
+        const x = target.sx; const y = target.sy;
+        const colors = ["#aedbd1", "#8baac7", "#a3c1ad", "#d1ba90", "#b6a7c8"];
         const densePlot = points.length >= 500;
-        const pointRadius = chart.type === "categorical" ? Math.min(12, 4 + Math.sqrt(Math.max(0, target.y))) : densePlot ? 2.15 : points.length >= 160 ? 3 : 4.2;
+        const pointRadius = histogram ? 2 : chart.type === "categorical" ? Math.min(12, 4 + Math.sqrt(Math.max(0, target.y))) : densePlot ? 1.6 : points.length >= 160 ? 2 : 3;
         ctx.fillStyle = colors[target.group % colors.length];
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = densePlot ? 0 : 7;
-        ctx.beginPath(); ctx.arc(x, y, pointRadius, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+        ctx.globalAlpha = (.4 + .6 * t) * (densePlot ? .55 : .86);
+        ctx.beginPath(); ctx.arc(x, y, pointRadius, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
         liveTargets.push({ ...target, sx: x, sy: y });
         if (t === 1) state.points.set(id, { sx: target.sx, sy: target.sy, group: target.group });
       });
       state.chartTargets = liveTargets;
       const sourceLabel = (result.insight?.provenance || dataset.provenance).every((kind) => kind === "SOURCE") ? "観測値" : "観測値＋補完値";
-      ctx.fillStyle = "rgba(226,247,255,.68)"; ctx.font = "10px var(--font-ja), sans-serif"; ctx.textAlign = "right"; ctx.fillText(`観測 ${format(points.length, 0)}件 / ${sourceLabel}`, width - pad.right, 18);
+      ctx.fillStyle = "#8ca6ae"; ctx.font = "10px 'Yu Gothic UI', sans-serif"; ctx.textAlign = "right";
+      ctx.fillText(`${format(points.length, 0)}件 / ${sourceLabel}${histogram ? " · 下の点から詳細" : ""}`, width - pad.right, histogram ? pad.top - 12 : 22);
       if (t < 1) state.animation = requestAnimationFrame(paint);
     };
     state.animation = requestAnimationFrame(paint);
@@ -1426,22 +1451,47 @@ if (!lab || !openButton) {
     const panel = button.closest("details");
     if (!(panel instanceof HTMLDetailsElement)) return;
     panel.open = false;
-    requestAnimationFrame(() => ui.canvas.focus({ preventScroll: true }));
+    syncResultView();
+    // Let native <details> finish removing its focused content before restoring focus.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (state.open && !ui.detailPanels.some(candidate => candidate.open)) ui.canvas.focus({ preventScroll: true });
+    }));
     window.dispatchEvent(new CustomEvent("gaia:statistics-chart-return", { detail: { panel: panel.className } }));
   };
 
-  ui.detailPanels.forEach((panel) => panel.addEventListener("toggle", () => {
-    if (!panel.open) return;
-    ui.detailPanels.forEach((candidate) => {
-      if (candidate !== panel) candidate.open = false;
+  const syncResultView = () => {
+    const active = ui.detailPanels.find(panel => panel.open)?.dataset.statPanel || "chart";
+    ui.viewTabs.forEach(tab => { const selected = tab.dataset.statView === active; tab.setAttribute("aria-selected", String(selected)); tab.tabIndex = selected ? 0 : -1; });
+    ui.visual.style.visibility = active === "chart" ? "visible" : "hidden";
+    ui.visual.toggleAttribute("inert", active !== "chart");
+    ui.visual.setAttribute("aria-hidden", String(active !== "chart"));
+  };
+  const selectResultView = (view) => {
+    ui.detailPanels.forEach(panel => { panel.open = panel.dataset.statPanel === view; });
+    syncResultView();
+  };
+  ui.viewTabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => selectResultView(tab.dataset.statView));
+    tab.addEventListener("keydown", event => {
+      let next;
+      if (event.key === "ArrowRight") next = (index + 1) % ui.viewTabs.length;
+      else if (event.key === "ArrowLeft") next = (index + ui.viewTabs.length - 1) % ui.viewTabs.length;
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = ui.viewTabs.length - 1;
+      else return;
+      event.preventDefault(); ui.viewTabs[next].focus(); selectResultView(ui.viewTabs[next].dataset.statView);
     });
+  });
+  ui.detailPanels.forEach((panel) => panel.addEventListener("toggle", () => {
+    if (panel.open) ui.detailPanels.forEach((candidate) => { if (candidate !== panel) candidate.open = false; });
+    syncResultView();
   }));
   ui.panelBackButtons.forEach((button) => button.addEventListener("click", () => returnToChart(button)));
 
   const render = () => {
     const dataset = currentDataset(); const method = METHOD_LOOKUP.get(state.methodId) || METHOD_LOOKUP.get("summary");
     if (!dataset || !method) return;
-    ui.number.textContent = `${method.group.id} / ${method.group.name}`; ui.title.textContent = method.label; ui.copy.textContent = method.copy; ui.status.textContent = "計算中";
+    ui.number.textContent = `${method.group.id} / ${method.group.name}`; ui.title.textContent = method.id === "summary" ? `${dataset.valueLabel || dataset.yLabel || "観測値"}の分布` : method.label; ui.copy.textContent = method.copy; ui.status.textContent = "計算中";
     const token = ++state.renderToken;
     requestAnimationFrame(async () => {
       if (token !== state.renderToken) return;

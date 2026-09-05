@@ -129,8 +129,8 @@ try {
       assert(Number.parseFloat(guideSteps[0].bubbleTransitionDuration) >= 0.4, `${viewport.name}: route guide fade-in is too short`);
     }
     const automaticGuideDelay = guideSteps[0].openedAt - guideSteps[0].revealStartedAt;
-    assert(automaticGuideDelay >= 1900, `${viewport.name}: guide opened before the two-second title-screen delay`);
-    assert(automaticGuideDelay <= 2600, `${viewport.name}: guide did not open about two seconds after the title screen appeared`);
+    assert(automaticGuideDelay >= 2900, `${viewport.name}: guide opened before the three-second title-screen delay`);
+    assert(automaticGuideDelay <= 3600, `${viewport.name}: guide did not open about three seconds after the title screen appeared`);
     assert(Math.abs(guideSteps[0].openedAt - guideSteps[0].revealCompleteAt) <= 20, `${viewport.name}: guide timing marker drifted from its automatic opening`);
     await page.screenshot({ path: path.join(outputDir, `${viewport.name}-guide.png`), animations: "disabled" });
 
@@ -170,7 +170,7 @@ try {
     assert.equal(repeatedGuide.step, "1", `${viewport.name}: returning to the title did not restart the guide`);
     assert(repeatedGuide.openedAt > replayedGuide.openedAt, `${viewport.name}: returning to the title did not open a fresh guide`);
     const repeatedGuideDelay = repeatedGuide.openedAt - repeatedGuide.revealStartedAt;
-    assert(repeatedGuideDelay >= 1900 && repeatedGuideDelay <= 2600, `${viewport.name}: returning to the title did not reopen the guide after about two seconds`);
+    assert(repeatedGuideDelay >= 2900 && repeatedGuideDelay <= 3600, `${viewport.name}: returning to the title did not reopen the guide after about three seconds`);
     await page.keyboard.press("Escape");
     await page.locator("#gaia-opening-route-story").focus();
 

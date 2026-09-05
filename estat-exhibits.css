@@ -337,7 +337,7 @@
   bottom: 10px;
   left: 12px;
   display: grid;
-  grid-template-columns: minmax(120px, 0.65fr) minmax(230px, 1.1fr) minmax(140px, 0.8fr) minmax(180px, 0.9fr) minmax(250px, 1.45fr) minmax(125px, 0.7fr) minmax(190px, 1fr) minmax(250px, 1.35fr);
+  grid-template-columns: minmax(230px, 1.1fr) minmax(140px, 0.8fr) minmax(180px, 0.9fr) minmax(250px, 1.45fr) minmax(125px, 0.7fr) minmax(190px, 1fr) minmax(250px, 1.35fr);
   min-height: 116px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--estat-accent) 32%, transparent);
@@ -358,19 +358,6 @@
 
 .gaia-estat-readout > :first-child { border-left: 0; }
 
-.gaia-estat-return {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: 7px;
-  border: 0;
-  color: rgba(220, 249, 243, 0.6);
-  background: transparent;
-  cursor: pointer;
-}
-
-.gaia-estat-return span,
-.gaia-estat-chapter > p,
 .gaia-estat-place > p,
 .gaia-estat-primary > p,
 .gaia-estat-timeline header,
@@ -382,9 +369,6 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-
-.gaia-estat-return strong { font: 650 13px/1.2 var(--font-ja); }
-.gaia-estat-return:hover { color: white; background: color-mix(in srgb, var(--estat-accent) 7%, transparent); }
 
 .gaia-estat-chapter,
 .gaia-estat-place,
@@ -404,7 +388,7 @@
   gap: 9px;
 }
 
-.gaia-estat-chapter button {
+.gaia-estat-chapter [data-estat-step] {
   width: 28px;
   height: 36px;
   padding: 0;
@@ -416,7 +400,29 @@
   cursor: pointer;
 }
 
-.gaia-estat-chapter span { display: flex; align-items: baseline; gap: 9px; }
+.gaia-estat-selector-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.gaia-estat-selector-toggle b { flex-shrink: 0; }
+.gaia-estat-selector-toggle:is(:hover, [aria-expanded="true"]) strong {
+  color: #fff;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--estat-accent) 40%, transparent);
+}
+.gaia-estat-selector-toggle:focus-visible {
+  outline: 1px solid var(--estat-accent);
+  outline-offset: 4px;
+}
 .gaia-estat-chapter b { color: var(--estat-accent); font: 800 clamp(26px, 1.3vw, 32px)/1 Consolas, monospace; }
 .gaia-estat-chapter strong { overflow: hidden; font: 650 clamp(21px, 1.1vw, 28px)/1.2 var(--font-ja); text-overflow: ellipsis; white-space: nowrap; }
 .gaia-estat-place strong { font: 650 clamp(20px, 1.05vw, 26px)/1.2 var(--font-ja); }
@@ -589,6 +595,24 @@
 }
 
 .japan-layer.is-estat-exhibit .japan-map { padding-bottom: 128px; }
+
+/* The shared picker stays available above the replacement statistics dock. */
+@media (min-width: 901px) {
+  body.map-grid-desktop .japan-layer.is-estat-exhibit .map-dock-bank-popover {
+    bottom: calc(100% + var(--estat-picker-lift, 56px));
+    max-height: calc(100dvh - var(--estat-readout-height, 116px) - 48px);
+    overflow-y: auto;
+  }
+}
+@media (max-width: 900px) {
+  .experience.japan-open .japan-layer.is-estat-exhibit.is-mobile-bank-expanded .map-mode-bank {
+    z-index: 100;
+    bottom: calc(var(--estat-readout-height, 218px) + 22px) !important;
+    max-height: min(58vh, calc(100dvh - var(--estat-readout-height, 218px) - 38px)) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+}
 .japan-layer.is-estat-exhibit.has-integrated-map-light .japan-map > #gaia-canvas {
   opacity: 0.025 !important;
   filter: saturate(0.25) brightness(0.52) contrast(0.72);
@@ -597,7 +621,6 @@
   .gaia-estat-readout {
     grid-template-columns: 0.95fr 0.85fr 0.9fr 1.45fr 0.72fr 1.35fr;
   }
-  .gaia-estat-return,
   .gaia-estat-copy { display: none; }
 }
 
@@ -619,7 +642,6 @@
     border-radius: 15px 15px 4px 4px;
   }
   .gaia-estat-readout > * { padding: 12px; }
-  .gaia-estat-return,
   .gaia-estat-place,
   .gaia-estat-copy,
   .gaia-estat-comparison { display: none; }

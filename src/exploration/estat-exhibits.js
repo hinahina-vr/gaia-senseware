@@ -1,5 +1,6 @@
-import { OBSERVATION_CITIES } from "./live-exhibits.js?v=gaia-wind-brush-1";
+import { OBSERVATION_CITIES } from "./live-exhibits.js?v=gaia-live-next-16-1";
 import { ESTAT_PREFECTURE_SNAPSHOT } from "./estat-prefecture-data.js";
+import { ESTAT_OCEAN_GLSL, createOceanMask } from "./estat-ocean.js?v=gaia-estat-ocean-1";
 
 const SERIES_URL = new URL("../../data/estat-prefecture-series.json", import.meta.url);
 const PREFECTURE_TOPOLOGY_URL = new URL("../../data/japan-prefectures.topojson?v=gaia-estat-choropleth-1", import.meta.url);
@@ -230,6 +231,7 @@ let atmosphereWebglLocations;
 let atmosphereAnchorPreviousIndex = 0;
 let atmosphereAnchorChangedAt = 0;
 let atmosphereWebglLastRenderAt = 0;
+let atmosphereOceanMask;
 let markerLayer;
 let markerButtons = [];
 let prefectureRegionLayer;
@@ -672,6 +674,8 @@ const initializeAtmosphereWebgl = () => {
       return exp(-edge * 105.0);
     }
 
+    ${ESTAT_OCEAN_GLSL}
+
     void main() {
       vec2 uv = gl_FragCoord.xy / u_resolution;
       vec2 point = aspect_point(uv);
@@ -811,10 +815,10 @@ const initializeAtmosphereWebgl = () => {
       }
 
       float vignette = 1.0 - smoothstep(0.22, 1.04, length(point * vec2(0.84, 1.0)));
-      float output_alpha = u_theme == 1
-        ? clamp(coverage * vignette, 0.0, 0.58)
-        : clamp((0.48 + coverage * 0.42) * vignette, 0.0, 0.66);
-      out_color = vec4(accumulated * vignette, output_alpha);
+      vec3 sea = ocean_silk(uv, time);
+      vec3 light = accumulated * vignette + sea;
+      float output_alpha = clamp(0.72 + coverage * 0.16, 0.0, 0.9);
+      out_color = vec4(light, output_alpha);
     }
   `;
 
@@ -850,7 +854,11 @@ const initializeAtmosphereWebgl = () => {
       accent: atmosphereGl.getUniformLocation(program, "u_accent"),
       secondary: atmosphereGl.getUniformLocation(program, "u_secondary"),
       fieldStrength: atmosphereGl.getUniformLocation(program, "u_field_strength"),
+      oceanLand: atmosphereGl.getUniformLocation(program, "u_ocean_land"),
+      oceanReady: atmosphereGl.getUniformLocation(program, "u_ocean_ready"),
+      geoView: atmosphereGl.getUniformLocation(program, "u_geo_view"),
     };
+    atmosphereOceanMask = createOceanMask(atmosphereGl);
     atmosphereWebglCanvas.dataset.estatWebglState = "active";
     atmosphereWebglCanvas.dataset.estatWebglFlashCadence = "none";
     return true;
@@ -878,11 +886,12 @@ const renderAtmosphereWebgl = (timestamp, currentProjection, values) => {
   }
   atmosphereWebglCanvas.hidden = false;
   if (!initializeAtmosphereWebgl()) return;
+  if (atmosphereGl.isContextLost()) return;
   const rect = currentProjection.rect;
   const dpr = Math.min(devicePixelRatio || 1, 1.15);
   const targetWidth = Math.max(1, rect.width * dpr);
   const targetHeight = Math.max(1, rect.height * dpr);
-  const maximumPixels = 1_600_000;
+  const maximumPixels = rect.width <= 720 ? 420_000 : 1_200_000;
   const resolutionScale = Math.min(1, Math.sqrt(maximumPixels / (targetWidth * targetHeight)));
   const width = Math.max(1, Math.round(targetWidth * resolutionScale));
   const height = Math.max(1, Math.round(targetHeight * resolutionScale));
@@ -946,6 +955,14 @@ const renderAtmosphereWebgl = (timestamp, currentProjection, values) => {
   atmosphereGl.uniform3fv(atmosphereWebglLocations.accent, accent);
   atmosphereGl.uniform3fv(atmosphereWebglLocations.secondary, secondary);
   atmosphereGl.uniform1f(atmosphereWebglLocations.fieldStrength, fieldStrength);
+  atmosphereGl.activeTexture(atmosphereGl.TEXTURE0);
+  atmosphereGl.bindTexture(atmosphereGl.TEXTURE_2D, atmosphereOceanMask.texture);
+  atmosphereGl.uniform1i(atmosphereWebglLocations.oceanLand, 0);
+  atmosphereGl.uniform1f(atmosphereWebglLocations.oceanReady, atmosphereOceanMask.ready ? 1 : 0);
+  atmosphereGl.uniform4f(atmosphereWebglLocations.geoView,
+    -42 - currentProjection.originX / currentProjection.scale,
+    90 + currentProjection.originY / currentProjection.scale,
+    rect.width / currentProjection.scale, rect.height / currentProjection.scale);
   atmosphereGl.drawArrays(atmosphereGl.TRIANGLES, 0, 6);
   atmosphereWebglCanvas.dataset.estatWebglHubCount = String(hubs.length);
   atmosphereWebglCanvas.dataset.estatWebglAnchorProgress = transition.toFixed(3);
@@ -956,6 +973,10 @@ const renderAtmosphereWebgl = (timestamp, currentProjection, values) => {
   atmosphereWebglCanvas.dataset.estatWebglVisual = theme.visual;
   atmosphereWebglCanvas.dataset.estatWebglMotion = "spatial-continuous-non-pulsing";
   atmosphereWebglCanvas.dataset.estatWebglFieldStrength = fieldStrength.toFixed(3);
+  atmosphereWebglCanvas.dataset.estatOceanStyle = "geographic-flowing-silk";
+  atmosphereWebglCanvas.dataset.estatOceanMask = atmosphereOceanMask.state;
+  atmosphereWebglCanvas.dataset.estatOceanTime = (reducedMotion ? 0 : timestamp / 1000).toFixed(3);
+  atmosphereWebglCanvas.dataset.estatOceanFrame = String(Number(atmosphereWebglCanvas.dataset.estatOceanFrame || 0) + 1);
   layer.dataset.estatAmbientVisual = theme.visual;
   layer.dataset.estatAmbientMotion = "spatial-continuous-non-pulsing";
   layer.dataset.estatAmbientFlashCadence = "none";
@@ -1446,6 +1467,7 @@ const renderReadout = () => {
   readout.dataset.estatSelectedCode = city.code;
   readout.querySelector("[data-estat-number]").textContent = exhibit.number;
   readout.querySelector("[data-estat-title]").textContent = exhibit.shortTitle;
+  readout.querySelector("[data-map-bank-toggle]").setAttribute("aria-label", `${exhibit.number} ${exhibit.shortTitle}。展示一覧を開く`);
   readout.querySelector("[data-estat-place]").textContent = `${city.code} ${city.prefecture}`;
   readout.querySelector("[data-estat-city]").textContent = temperatureStation?.station || city.city;
   readout.querySelector("[data-estat-value-label]").textContent = exhibit.valueLabel;
@@ -1459,7 +1481,7 @@ const renderReadout = () => {
   readout.querySelector("[data-estat-delta-label]").childNodes[0].nodeValue = longTermTemperature
     ? `${baselineYear}年差`
     : exhibit.frequency === "年次" ? "前年差" : "前月差";
-  readout.querySelector("[data-estat-caption]").textContent = exhibit.caption;
+  readout.querySelector("[data-estat-caption]").textContent = `${exhibit.caption} 海の光と流れは抽象演出で、実測海流や人の移動経路ではありません。`;
   readout.querySelector("[data-estat-guide]").textContent = longTermTemperature && Number.isFinite(trendPerDecade)
     ? `${exhibit.guide} ${temperatureStation?.station || city.city}の線形傾向は10年あたり${formatNumber(trendPerDecade, true, 2)}℃。`
     : exhibit.guide;
@@ -1499,7 +1521,7 @@ const renderReadout = () => {
   );
   readout.querySelector("[data-estat-step='1']")?.setAttribute(
     "aria-label",
-    activeIndex === EXHIBITS.length - 1 ? "次の展示、01へ" : "次の日本統計展示",
+    activeIndex === EXHIBITS.length - 1 ? "次の展示、26へ" : "次の日本統計展示",
   );
   markerButtons.forEach((button, index) => {
     const markerValue = values[index];
@@ -1656,7 +1678,7 @@ const stepExhibit = (direction) => {
   if (!step || activeIndex < 0) return;
   const earthButtons = [...document.querySelectorAll("#japan-mode-list .map-mode-button")];
   if (step > 0 && activeIndex === EXHIBITS.length - 1) {
-    earthButtons[0]?.click();
+    document.querySelector(".map-mode-bank .map-mode-button[data-firms-exhibit]")?.click();
     return;
   }
   if (step < 0 && activeIndex === 0) {
@@ -1775,6 +1797,7 @@ const mount = () => {
   atmosphereWebglCanvas.setAttribute("aria-hidden", "true");
   atmosphereWebglCanvas.addEventListener("webglcontextlost", (event) => {
     event.preventDefault();
+    atmosphereOceanMask?.dispose();
     atmosphereWebglCanvas.dataset.estatWebglState = "context-lost";
   });
   atmosphereWebglCanvas.addEventListener("webglcontextrestored", () => {
@@ -1837,10 +1860,8 @@ const mount = () => {
   readout.hidden = true;
   readout.setAttribute("aria-live", "polite");
   readout.innerHTML = `
-    <button class="gaia-estat-return" type="button" data-estat-return><span>MAP 01—15</span><strong>地球展示へ戻る</strong></button>
     <div class="gaia-estat-chapter">
-      <p>JAPAN / OFFICIAL DATA · MONTHLY + 71-YEAR CLIMATE</p>
-      <div><button type="button" data-estat-step="-1" aria-label="前の日本統計展示">‹</button><span><b data-estat-number>16</b><strong data-estat-title>人の潮目</strong></span><button type="button" data-estat-step="1" aria-label="次の日本統計展示">›</button></div>
+      <div><button type="button" data-estat-step="-1" aria-label="前の日本統計展示">‹</button><button type="button" class="gaia-estat-selector-toggle" data-map-bank-toggle aria-expanded="false" aria-controls="map-dock-bank-popover" aria-label="16 人の潮目。展示一覧を開く"><b data-estat-number>16</b><strong data-estat-title>人の潮目</strong></button><button type="button" data-estat-step="1" aria-label="次の日本統計展示">›</button></div>
     </div>
     <div class="gaia-estat-place"><p>47 PREFECTURES / AUTO RELAY</p><strong data-estat-place>01 北海道</strong><small data-estat-city>札幌</small></div>
     <div class="gaia-estat-primary"><p data-estat-value-label>転入超過</p><strong data-estat-value>—</strong><span data-estat-unit>人</span></div>
@@ -1857,6 +1878,52 @@ const mount = () => {
     </div>
   `;
   layer.append(readout);
+
+  // Reuse the canonical 01–30 picker, including its descriptions and routing.
+  // This title used to be a non-interactive span above a hidden command dock.
+  const selectorToggle = readout.querySelector("[data-map-bank-toggle]");
+  const pickerToggle = () => document.querySelector(innerWidth <= 900 ? "#map-mobile-bank-toggle" : ".map-dock-bank-trigger");
+  const pickerIsOpen = () => pickerToggle()?.getAttribute("aria-expanded") === "true";
+  const syncPicker = () => {
+    selectorToggle.setAttribute("aria-expanded", String(pickerIsOpen()));
+    selectorToggle.setAttribute("aria-controls", innerWidth <= 900 ? bank.id : "map-dock-bank-popover");
+    if (activeIndex < 0 || !pickerIsOpen()) return;
+    const height = readout.getBoundingClientRect().height;
+    layer.style.setProperty("--estat-readout-height", `${height}px`);
+    const lift = Math.max(18, bank.getBoundingClientRect().top - readout.getBoundingClientRect().top + 12);
+    layer.style.setProperty("--estat-picker-lift", `${lift}px`);
+  };
+  if (!bank.id) bank.id = "map-exhibit-bank";
+  selectorToggle.addEventListener("click", () => {
+    pickerToggle()?.click();
+    syncPicker();
+    if (!pickerIsOpen()) selectorToggle.focus({ preventScroll: true });
+  });
+  for (const toggle of document.querySelectorAll(".map-dock-bank-trigger, #map-mobile-bank-toggle")) {
+    new MutationObserver(syncPicker).observe(toggle, { attributes: true, attributeFilter: ["aria-expanded"] });
+  }
+  new ResizeObserver(syncPicker).observe(readout);
+  addEventListener("resize", syncPicker, { passive: true });
+  document.addEventListener("pointerdown", (event) => {
+    if (activeIndex < 0 || innerWidth > 900 || !pickerIsOpen()) return;
+    if (bank.contains(event.target) || selectorToggle.contains(event.target)) return;
+    pickerToggle()?.click();
+  }, { capture: true });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || activeIndex < 0 || !pickerIsOpen()) return;
+    // Close the picker before the map's Escape handler can leave the exhibit.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    pickerToggle()?.click();
+    selectorToggle.focus({ preventScroll: true });
+  }, { capture: true });
+  bank.addEventListener("click", (event) => {
+    if (!event.target.closest?.(".map-mode-button") || selectorToggle.getAttribute("aria-expanded") !== "true") return;
+    requestAnimationFrame(() => {
+      const focusTarget = activeIndex >= 0 ? selectorToggle : document.querySelector("#japan-close");
+      focusTarget?.focus({ preventScroll: true });
+    });
+  }, { capture: true });
 
   buttons = EXHIBITS.map((exhibit, index) => {
     const button = document.createElement("button");
@@ -1878,7 +1945,6 @@ const mount = () => {
     if (!(target instanceof HTMLButtonElement) || target.dataset.estatExhibit || activeIndex < 0) return;
     deactivate();
   }, { capture: true });
-  readout.querySelector("[data-estat-return]")?.addEventListener("click", () => document.querySelector("#japan-mode-list .map-mode-button")?.click());
   readout.querySelectorAll("[data-estat-step]").forEach((button) => button.addEventListener("click", () => {
     stepExhibit(button.dataset.estatStep);
   }));

@@ -142,7 +142,7 @@
   bottom: 10px;
   left: 12px;
   display: grid;
-  grid-template-columns: minmax(120px, 0.62fr) minmax(230px, 1.08fr) minmax(205px, 0.98fr) minmax(170px, 0.8fr) minmax(290px, 1.4fr) minmax(170px, 0.82fr) minmax(270px, 1.3fr) minmax(250px, 1.25fr);
+  grid-template-columns: minmax(230px, 1.08fr) minmax(205px, 0.98fr) minmax(170px, 0.8fr) minmax(290px, 1.4fr) minmax(170px, 0.82fr) minmax(270px, 1.3fr) minmax(250px, 1.25fr);
   min-height: 122px;
   overflow: hidden;
   border: 1px solid rgba(255, 117, 53, 0.34);
@@ -162,18 +162,6 @@
 }
 
 .gaia-firms-readout > :first-child { border-left: 0; }
-.gaia-firms-return {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: 7px;
-  border: 0;
-  color: rgba(244, 222, 206, 0.62);
-  background: transparent;
-  cursor: pointer;
-}
-.gaia-firms-return:hover { color: #fff; background: rgba(255, 97, 42, 0.08); }
-.gaia-firms-return span,
 .gaia-firms-chapter > p,
 .gaia-firms-count > p,
 .gaia-firms-primary > p,
@@ -186,7 +174,6 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.gaia-firms-return strong { font: 650 13px/1.2 var(--font-ja); }
 .gaia-firms-chapter,
 .gaia-firms-count,
 .gaia-firms-primary,
@@ -279,7 +266,6 @@
 
 @media (max-width: 1500px) {
   .gaia-firms-readout { grid-template-columns: 1.15fr 1fr 0.85fr 1.45fr 1.25fr; }
-  .gaia-firms-return,
   .gaia-firms-copy,
   .gaia-firms-quality { display: none; }
 }
@@ -310,7 +296,6 @@
     border-radius: 15px 15px 4px 4px;
   }
   .gaia-firms-readout > * { padding: 12px; }
-  .gaia-firms-return,
   .gaia-firms-count,
   .gaia-firms-copy,
   .gaia-firms-quality { display: none; }

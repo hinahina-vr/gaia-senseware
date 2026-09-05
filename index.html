@@ -168,12 +168,12 @@
         .gaia-boot__rail::before { width: 100%; opacity: 0.55; }
       }
     </style>
-    <link rel="preload" as="style" href="./opening.css?v=gaia-sound-setup-jade-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
+    <link rel="preload" as="style" href="./opening.css?v=gaia-sound-game-menu-1" data-gaia-critical-style onload="this.onload=null;this.rel='stylesheet';this.dataset.gaiaLoaded='true';window.__gaiaBootCheck?.()" onerror="this.dataset.gaiaLoaded='error';window.__gaiaBootCheck?.()" />
     <script src="./gaia-particles.js?v=gaia-opening-shooting-star-left-1" defer fetchpriority="high"></script>
     <script src="./opening-audio.js?v=gaia-navigation-roundtrip-2" defer fetchpriority="high"></script>
     <script src="./ui-sound.js?v=gaia-01" defer fetchpriority="high"></script>
-    <script src="./opening.js?v=gaia-sound-setup-jade-1" defer fetchpriority="high"></script>
-    <script src="./gaia-mode-loader.js?v=gaia-visual-release-20260905" defer fetchpriority="high"></script>
+    <script src="./opening.js?v=gaia-route-guide-delay-3s-1" defer fetchpriority="high"></script>
+    <script src="./gaia-mode-loader.js?v=gaia-estat-picker-1" defer fetchpriority="high"></script>
 </head>
   <body class="gaia-opening-active">
     <div class="gaia-character-preloader" id="gaia-character-preloader" role="status" aria-live="polite" aria-hidden="true" hidden>
@@ -401,8 +401,12 @@
           <div class="gaia-opening-sound-modal-scrim" aria-hidden="true"></div>
           <div class="gaia-opening-sound-dialog">
             <div class="gaia-opening-sound-heading">
-              <h2 id="gaia-opening-sound-title">サウンド設定</h2>
-              <span id="gaia-opening-sound-description">サウンドのオン／オフはゲーム中でも変更できます。</span>
+              <h2 id="gaia-opening-sound-title">
+                <svg class="gaia-opening-sound-flourish" viewBox="0 0 48 20" fill="none" aria-hidden="true"><path d="M3 10c8-8 14 8 24 0s14-2 18 0M3 10c8 8 14-8 24 0s14 2 18 0M12 10h26"/><path d="m4 6 4 4-4 4-3-4Z"/><circle cx="41" cy="10" r="1.4"/></svg>
+                <span>サウンド設定</span>
+                <svg class="gaia-opening-sound-flourish" viewBox="0 0 48 20" fill="none" aria-hidden="true"><path d="M3 10c8-8 14 8 24 0s14-2 18 0M3 10c8 8 14-8 24 0s14 2 18 0M12 10h26"/><path d="m4 6 4 4-4 4-3-4Z"/><circle cx="41" cy="10" r="1.4"/></svg>
+              </h2>
+              <span id="gaia-opening-sound-description">ゲーム中でも変更できます。</span>
             </div>
             <div class="gaia-opening-language" role="group" aria-label="表示言語を選ぶ">
               <div class="gaia-opening-language-options">
@@ -423,10 +427,9 @@
             <section class="gaia-opening-sound-choices" aria-label="サウンド設定">
               <div class="gaia-opening-sound-option gaia-opening-sound-option--on">
                 <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-on" type="button" aria-label="サウンドをオンにして始める" aria-pressed="true">
-                  <svg class="gaia-opening-sound-option-wave" viewBox="0 0 280 80" fill="none" aria-hidden="true">
-                    <path d="M0 44C28 44 31 28 54 28S79 57 103 57 137 13 163 13 195 50 219 50 252 35 280 35" />
-                    <path d="M0 48C32 48 41 36 66 36S105 63 131 63 170 25 198 25 241 43 280 43" />
-                    <path d="M0 40C34 40 44 50 77 50S127 30 157 30 208 56 237 56 264 46 280 46" />
+                  <svg class="gaia-opening-sound-option-wave" viewBox="0 0 280 80" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                    <path d="m0 45 13 4 7-11 8 26 9-51 9 43 7-12 8 7 8-18 7 27 8-14 9 6 8-9 8 9 10-3 10 4 9-6 9 3 9-4 10 3 10-10 8 12 9-25 9 28 8-14 9 19 11-63 10 63 9-20 9 16 11-6" />
+                    <path d="M0 52C31 21 45 70 68 48S105 57 136 51 168 33 194 48 244 70 280 37" />
                   </svg>
                   <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
                     <svg class="gaia-opening-sound-icon" viewBox="0 0 24 24">
@@ -437,12 +440,10 @@
                     </svg>
                   </span>
                   <span class="gaia-opening-sound-option-label">サウンドあり</span>
-                  <svg class="gaia-opening-sound-option-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
                 </button>
               </div>
               <div class="gaia-opening-sound-option gaia-opening-sound-option--off">
                 <button class="gaia-opening-sound-option-button" id="gaia-opening-sound-off" type="button" aria-label="サウンドをオフにして始める" aria-pressed="false">
-                  <svg class="gaia-opening-sound-option-wave" viewBox="0 0 280 80" fill="none" aria-hidden="true"><path d="M0 40h280" /></svg>
                   <span class="gaia-opening-sound-icon-shell" aria-hidden="true">
                     <svg class="gaia-opening-sound-icon" viewBox="0 0 24 24">
                       <path d="M4 9h4l5-4v14l-5-4H4z" />
@@ -450,7 +451,6 @@
                     </svg>
                   </span>
                   <span class="gaia-opening-sound-option-label">サウンドなし</span>
-                  <svg class="gaia-opening-sound-option-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
                 </button>
               </div>
             </section>
@@ -1000,8 +1000,8 @@
               </div>
 
               <button class="intro-story-return" type="button" data-intro-path="novel" data-primary-action="true" aria-label="物語をはじめる">
-                <span>MAIN STORY</span>
-                <strong>物語をはじめる</strong>
+                <span class="intro-story-kicker">MAIN STORY</span>
+                <strong class="intro-story-title">物語をはじめる</strong>
               </button>
 
               <button
@@ -1524,9 +1524,9 @@
         </div>
 
         <nav class="gaia-map-zoom-controls" id="gaia-map-zoom-controls" aria-label="地図の拡大縮小">
-          <button id="gaia-map-zoom-in" type="button" aria-label="地図を拡大">＋</button>
-          <button id="gaia-map-zoom-out" type="button" aria-label="地図を縮小">−</button>
-          <button id="gaia-map-zoom-reset" type="button" aria-label="地図を全体表示へ戻す">◎</button>
+          <button id="gaia-map-zoom-in" type="button" aria-label="地図を拡大"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button id="gaia-map-zoom-out" type="button" aria-label="地図を縮小"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <button id="gaia-map-zoom-reset" type="button" aria-label="地図を全体表示へ戻す"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/><circle cx="12" cy="12" r="3.5"/></svg></button>
         </nav>
 
         <button
@@ -1708,8 +1708,8 @@
           <aside class="map-mode-01-tooltip map-mode-preview" id="map-mode-preview" role="tooltip" aria-hidden="true">
             <div>
               <span id="map-mode-preview-number">01 / AIR</span>
-              <b id="map-mode-preview-label">空気の声</b>
-              <p id="map-mode-preview-copy">CO₂が季節ごとに上下しながら、長い目では増えてきた様子を見る。</p>
+              <b id="map-mode-preview-label">地球の一呼吸</b>
+              <p id="map-mode-preview-copy">季節で揺れながら、少しずつ増えてきたCO₂。1958年からの濃度の変化をたどります。</p>
             </div>
           </aside>
         </section>
@@ -1747,7 +1747,7 @@
           aria-hidden="true"
           hidden
         >
-          <button id="japan-poi-close" type="button" aria-label="地点の説明を閉じる">×</button>
+          <button id="japan-poi-close" type="button" aria-label="地点の説明を閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
           <p class="japan-poi-type" id="japan-poi-type">CURATED LISTENING NODE</p>
           <p class="japan-poi-meta" id="japan-poi-meta"></p>
           <a
@@ -1758,7 +1758,7 @@
             rel="noopener noreferrer"
           >
             <span>元データを確認する</span>
-            <span aria-hidden="true">↗</span>
+            <span class="japan-poi-source-icon" aria-hidden="true">↗<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M7 6h11v11"/></svg></span>
           </a>
         </article>
 
@@ -1881,15 +1881,15 @@
           <div class="gaia-statistics-shell">
             <header class="gaia-statistics-header">
               <div>
-                <p class="gaia-statistics-kicker">STATISTICS</p>
-                <h2 id="gaia-statistics-title">観測データを読む</h2>
+                <p class="gaia-statistics-kicker">OBSERVATION / DATA EXPLORER</p>
+                <h2 id="gaia-statistics-title">観測データ</h2>
                 <p id="gaia-statistics-context">現在の展示データを引き継いでいます。</p>
               </div>
               <div class="gaia-statistics-header-actions">
                 <button class="gaia-statistics-menu-toggle" id="gaia-statistics-menu-toggle" type="button" aria-expanded="false" aria-controls="gaia-statistics-controls">
-                  <span>解析メニュー</span><b aria-hidden="true">☷</b>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m4 0h3M4 17h3m4 0h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>分析を変える</span>
                 </button>
-                <button class="gaia-statistics-close" id="gaia-statistics-close" type="button" aria-label="統計解析ラボを閉じる">×</button>
+                <button class="gaia-statistics-close" id="gaia-statistics-close" type="button" aria-label="統計解析ラボを閉じる"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
               </div>
             </header>
 
@@ -1958,9 +1958,16 @@
                   <output id="gaia-statistics-status" aria-live="polite">準備中</output>
                 </header>
 
+                <div class="gaia-statistics-view-tabs" role="tablist" aria-label="分析結果の表示">
+                  <button id="stat-view-chart" type="button" role="tab" data-stat-view="chart" aria-selected="true" aria-controls="gaia-statistics-visual">グラフ</button>
+                  <button id="stat-view-values" type="button" role="tab" data-stat-view="values" aria-selected="false" aria-controls="stat-panel-values" tabindex="-1">数値の内訳</button>
+                  <button id="stat-view-records" type="button" role="tab" data-stat-view="records" aria-selected="false" aria-controls="stat-panel-records" tabindex="-1">観測データ</button>
+                  <button id="stat-view-insights" type="button" role="tab" data-stat-view="insights" aria-selected="false" aria-controls="stat-panel-insights" tabindex="-1">読み方</button>
+                </div>
+
                 <section class="gaia-statistics-takeaway" id="gaia-statistics-takeaway" aria-labelledby="gaia-statistics-takeaway-title" aria-live="polite">
                   <div class="gaia-statistics-takeaway-copy">
-                    <p>観測の要点 <span>この条件で確認できたこと</span></p>
+                    <p>この分布から</p>
                     <h4 id="gaia-statistics-takeaway-title">データを読み込んでいます</h4>
                     <p id="gaia-statistics-takeaway-body">分析が完了すると、ここに要点を短く表示します。</p>
                   </div>
@@ -1997,7 +2004,7 @@
                   </div>
                 </section>
 
-                <div class="gaia-statistics-visual" id="gaia-statistics-visual">
+                <div class="gaia-statistics-visual" id="gaia-statistics-visual" role="tabpanel" aria-labelledby="stat-view-chart">
                   <canvas
                     id="gaia-statistics-canvas"
                     tabindex="0"
@@ -2008,7 +2015,7 @@
                 </div>
                 <p class="gaia-statistics-visually-hidden" id="gaia-statistics-chart-help">グラフへフォーカスし、左右または上下の矢印キーでデータ点を順番に確認できます。Enterキーで対応する監査レコードを開きます。</p>
 
-                <details class="gaia-statistics-values">
+                <details class="gaia-statistics-values" id="stat-panel-values" data-stat-panel="values" role="tabpanel" aria-labelledby="stat-view-values">
                   <summary>計算の内訳</summary>
                   <button class="gaia-statistics-panel-back" type="button" aria-label="数値一覧を閉じてチャート表示に戻る">← チャート表示に戻る</button>
                   <div class="gaia-statistics-values-scroll">
@@ -2020,7 +2027,7 @@
                   </div>
                 </details>
 
-                <details class="gaia-statistics-records">
+                <details class="gaia-statistics-records" id="stat-panel-records" data-stat-panel="records" role="tabpanel" aria-labelledby="stat-view-records">
                   <summary>観測データ <output id="gaia-statistics-record-count">0件</output></summary>
                   <button class="gaia-statistics-panel-back" type="button" aria-label="元データを閉じてチャート表示に戻る">← チャート表示に戻る</button>
                   <div class="gaia-statistics-records-scroll">
@@ -2040,7 +2047,7 @@
                   <output class="gaia-statistics-visually-hidden" id="gaia-statistics-record-drill-status" aria-live="polite"></output>
                 </details>
 
-                <details class="gaia-statistics-insights-panel">
+                <details class="gaia-statistics-insights-panel" id="stat-panel-insights" data-stat-panel="insights" role="tabpanel" aria-labelledby="stat-view-insights">
                   <summary>読み方と限界</summary>
                   <button class="gaia-statistics-panel-back" type="button" aria-label="解説を閉じてチャート表示に戻る">← チャート表示に戻る</button>
                   <div class="gaia-statistics-insights" id="gaia-statistics-insights" aria-live="polite"></div>

@@ -328,6 +328,41 @@
     },
   ];
 
+  // Short descriptions for the map picker only. Titles come from the exhibit
+  // definitions; detailed source and interpretation notes stay with each map.
+  const MAP_MODE_DESCRIPTIONS = Object.freeze({
+    "breathing-earth": "季節で揺れながら、少しずつ増えてきたCO₂。1958年からの濃度の変化をたどります。",
+    "blue-circulation": "この日の海流が続いたら、14日でどこまで流れる？ 速さと向きを固定して、移動の道筋を描きます。",
+    "forest-cloud-engine": "森林の分布に、31地点の雨量を重ねました。森の多い場所には、雨も多いのでしょうか。",
+    "nothing-is-waste": "捨てたもののうち、どれだけが再び資源になるのか。31の国・地域の再資源化率を比べます。破線は補完した値です。",
+    "anthropocene-scar": "1945年からの、化石燃料によるCO₂排出の変化。国ごとの記録を、2016年の街の明かりと重ねます。",
+    "rhythm-of-disaster": "世界の大地震を、起きた順にたどります。震源に近づくと、発生日時とマグニチュードがわかります。",
+    "three-ecologies": "森が多い国と、都市に暮らす人が多い国。同じ31か国の二つの割合を重ね、違いを比べます。",
+    "earth-organ": "電気のうち、どれだけを再生可能エネルギーでまかなっているのか。31か国を比べる地図です。",
+    "population-tide": "1960年から、国ごとの人口はどう変わった？ 円の大きさで31か国の増え方・減り方を追います。",
+    "wind-field": "47の街で、風の強さはどれくらい違う？ 気象モデルの風速を、光の線の色と太さで描きます。",
+    "carbon-pulse": "選んだ街のCO₂濃度に合わせて、光の輪が広がります。濃度は大気モデルの予測値です。",
+    "rain-chorus": "雨が強ければ、雨粒も波紋もにぎやかに。選んだ街の降水量を、気象モデルの値から描きます。",
+    "temperature-field": "選んだ街の気温に合わせて、光の色と揺らぎが変わります。地上2mの気象モデル値を使っています。",
+    "cloud-drift": "選んだ街の空を、雲はどれくらい覆っている？ 気象モデルの雲量に合わせて、雲の重なりと光が変わります。",
+    "pm25-haze": "目には見えにくいPM2.5を、霞の濃さで表しました。選んだ街の大気モデルの予測値を使っています。",
+    "estat-migration": "入ってきた人と、出ていった人。その差を都道府県ごとに比べ、月ごとの人口移動を追います。",
+    "estat-lodging": "どの県に、どれだけの人が泊まったのか。宿泊の延べ人数を、月ごとに灯りの大きさで比べます。",
+    "estat-housing": "新しい住まいは、どこで建ち始めている？ 月ごとの住宅着工戸数を、都道府県別に並べます。",
+    "estat-average-temperature": "あなたの県は、昔より暖かくなった？ 1955年からの年平均気温を、年を送って見比べます。",
+    "estat-summer-high": "昼間の気温は、どれくらい変わってきたのか。毎日の最高気温を一年で平均した値です。猛暑日の最高記録ではありません。",
+    "estat-winter-low": "一日の冷え込みは、昔とどう違う？ 毎日の最低気温を一年で平均した値です。その年いちばんの寒さではありません。",
+    "estat-relative-humidity": "空気の湿り具合にも、土地ごとの違いがあります。年平均の相対湿度を、都道府県別に比べます。",
+    "estat-sunshine-hours": "一年のうち、日が差していた時間はどれくらい？ 都道府県ごとの年間日照時間をたどります。",
+    "estat-precipitation": "一年間に降った雨や雪を、水の量にすると。年間降水量で、地域ごとの違いや年ごとの増減がわかります。",
+    "estat-rainy-days": "雨の量ではなく、雨が降った日数を比べる地図です。同じ県でも、年によってどれくらい違うでしょう。",
+    "nasa-firms-active-fire": "衛星が捉えた火災や高温の地点が、観測時刻の順に灯ります。火柱の強さは、検知された熱の大きさを表しています。",
+    "global-wind-pressure": "世界の風が、光の筋になって流れます。地点を選ぶと、気象モデルの風速・風向・気圧を確認できます。",
+    "global-aerosol-light": "空気中の微粒子が多いところ、少ないところ。PM2.5と光の通りにくさを、淡い霞の濃淡で描きます。",
+    "usgs-earthquake-ripples": "直近24時間、世界のどこで地震が起きたのか。発生時刻と規模を、震源から広がる光でたどります。",
+    "global-cloud-radiance": "雲に覆われた空と、光が届く場所。雲量と日射のデータから薄い雲と明かりを描きます。衛星写真ではありません。",
+  });
+
   const SPACE_MODE_CHOICES = [
     { label: "太陽の閃光", cue: "フレア等級", code: "FLARE", copy: "2024年5月に記録された太陽フレアを、等級に応じて開く光として見る。" },
     { label: "太陽風の波", cue: "CME速度", code: "CME", copy: "太陽から放たれたプラズマの速度と広がりを、宇宙を横切る円弧として見る。" },
@@ -413,23 +448,11 @@ vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
   vec3 poiInk = vec3(0.0);
   vec3 poiLight = vec3(0.0);
   float poiCoverage = 0.0;
-  vec2 blendedDirection = vec2(0.0);
-  float blendedSpeed = 0.0;
-  float blendedWeight = 0.0;
-  float nearestObservation = 99.0;
 
   for (int i = 0; i < 96; i++) {
     if (i >= uCurrentSampleCount) break;
     vec4 observed = uCurrentSamples[i];
     float measuredSpeed = clamp(observed.z, 0.0, 1.0);
-    vec2 observationDelta = p - observed.xy;
-    float observationDistance = length(observationDelta);
-    float interpolationWeight = 1.0 / (0.035 + observationDistance * observationDistance * 9.0);
-    interpolationWeight *= mix(0.72, 1.16, measuredSpeed);
-    blendedDirection += vec2(cos(observed.w), sin(observed.w)) * interpolationWeight;
-    blendedSpeed += measuredSpeed * interpolationWeight;
-    blendedWeight += interpolationWeight;
-    nearestObservation = min(nearestObservation, observationDistance);
     // rot(a) is the world-to-local matrix in GLSL column-major order.
     // Passing the observed angle directly makes local +X follow the same
     // east/north vector as the canvas strand and its advected destination.
@@ -437,6 +460,9 @@ vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
     float pointPhase = fract(sin(float(i) * 91.731 + 0.37) * 43758.5453);
     float backReach = mix(0.06, 0.11, measuredSpeed);
     float forwardReach = mix(0.42, 0.78, measuredSpeed);
+    // Outside this conservative bound both the stroke and its source bloom
+    // are invisible. Keep the original paint, skip its costly trigonometry.
+    if (local.x < -backReach - 0.09 || local.x > forwardReach + 0.09 || abs(local.y) > 0.19) continue;
     float strokeProgress = (local.x + backReach) / (forwardReach + backReach);
     float longitudinal = smoothstep(-0.015, 0.055, strokeProgress)
       * (1.0 - smoothstep(0.88, 1.02, strokeProgress));
@@ -497,52 +523,25 @@ vec3 modeBlueCirculation(vec2 p, float t, vec2 response, float memory) {
     poiLight += pearlInk * sourceBloom * (0.28 + measuredSpeed * 0.42);
   }
 
-  // Broad, overlapping wet-ink lanes are oriented by the locally blended
-  // NOAA vectors. The low-opacity wash has no hard zero between neighbouring
-  // observations; the two brighter lane scales preserve calligraphic rhythm.
-  float localSpeed = blendedSpeed / max(blendedWeight, 0.0001);
-  vec2 flowDirection = normalize(blendedDirection + vec2(0.0001, 0.0));
-  vec2 flowNormal = vec2(-flowDirection.y, flowDirection.x);
-  float fieldPresence = 1.0 - smoothstep(0.18, 0.72, nearestObservation);
-  float slowWarp = fbm(
-    p * 1.45
-      + flowDirection * pigmentTime * 0.032
-      + vec2(-contourTime * 0.12, contourTime * 0.08)
-  ) - 0.5;
-  float fineWarp = fbm(
-    p * 3.1
-      - flowDirection * pigmentTime * 0.047
-      + vec2(contourTime * 0.08, -contourTime * 0.05)
-  ) - 0.5;
-  float acrossFlow = dot(p, flowNormal) + slowWarp * 0.2 + fineWarp * 0.045;
-  float alongFlow = dot(p, flowDirection);
-  float broadLane = pow(0.5 + 0.5 * cos(acrossFlow * 9.0 + slowWarp * 2.8), 1.45);
-  float middleLane = pow(0.5 + 0.5 * cos(acrossFlow * 19.0 - fineWarp * 3.2), 3.2);
-  float fieldBristles = pow(0.5 + 0.5 * cos(acrossFlow * 52.0 + waterGrain * 5.4), 8.0);
-  float fieldPigment = 0.62 + 0.38 * sin(
-    alongFlow * mix(8.0, 13.0, localSpeed)
-      - pigmentTime * mix(1.6, 3.8, localSpeed)
-      + slowWarp * 4.0
-  );
-  float continuousCoverage = fieldPresence * (
-    0.28
-      + broadLane * 0.52
-      + middleLane * 0.24
-      + fieldBristles * 0.1
-  );
-  vec3 fieldSlowInk = vec3(0.10, 0.22, 0.78);
-  vec3 fieldMiddleInk = vec3(0.02, 0.72, 0.96);
-  vec3 fieldFastInk = vec3(1.02, 0.44, 0.13);
-  vec3 fieldInk = mix(fieldSlowInk, fieldMiddleInk, smoothstep(0.08, 0.58, localSpeed));
-  fieldInk = mix(fieldInk, fieldFastInk, smoothstep(0.62, 0.96, localSpeed));
-  vec3 continuousSea = fieldInk
-    * continuousCoverage
-    * mix(0.54, 1.0, fieldPigment)
-    * mix(0.82, 1.26, localSpeed);
-  vec3 continuousLight = mix(vec3(0.12, 0.62, 0.92), vec3(1.08, 0.72, 0.28), localSpeed)
-    * fieldPresence
-    * (broadLane * 0.08 + middleLane * 0.11 + fieldBristles * 0.055);
-
+  // The underpainting follows integrated, interpolated u/v streamlines.
+  // Geography-anchored Fourier terms let pigment flow with two texture reads;
+  // no per-pixel all-POI interpolation and no per-frame particle simulation.
+  vec2 geo = uCurrentGeoView.xy + p * uCurrentGeoView.z;
+  vec2 fieldUv = (geo + vec2(180.0, 90.0)) / vec2(360.0, 180.0);
+  vec4 vectorField = texture(uCurrentVectorField, fieldUv);
+  vec4 weave = texture(uCurrentWeave, fieldUv);
+  float localSpeed = clamp(vectorField.a / 1.5, 0.0, 1.0);
+  float fieldPresence = weave.a * uCurrentWeaveReady;
+  float phase = t * 0.72;
+  float travelingWeave = (weave.g - 0.5) * cos(phase) - (weave.b - 0.5) * sin(phase);
+  float wetLanes = smoothstep(0.18, 0.84, weave.r + travelingWeave * 0.65);
+  float continuousCoverage = fieldPresence * (0.16 + wetLanes * 0.92);
+  vec3 fieldInk = mix(vec3(0.07, 0.22, 0.62), vec3(0.025, 0.62, 0.79),
+    smoothstep(0.04, 0.45, localSpeed));
+  fieldInk = mix(fieldInk, vec3(0.52, 0.83, 0.65), smoothstep(0.50, 0.96, localSpeed));
+  vec3 continuousSea = fieldInk * continuousCoverage;
+  vec3 continuousLight = vec3(0.12, 0.48, 0.62) * fieldPresence
+    * pow(max(0.0, wetLanes), 3.0) * 0.26;
   vec3 background = baseGradient(p, vec3(0.001, 0.035, 0.08));
   background += mix(vec3(0.0, 0.025, 0.07), vec3(0.0, 0.09, 0.13), waterPaper) * 0.32;
   vec3 paintedSea = continuousSea
@@ -676,7 +675,7 @@ vec3 modeAnthropoceneScar(vec2 p, float t, vec2 response, float memory) {
       id: "rhythm-of-disaster",
       title: "Message from Earth",
       titleJa: "地球からのメッセージ",
-      description: "USGSの世界M7.5以上を2000〜2026年まで自動で送り、各年の震源を発生日時順にカメラで追い、移動完了後2秒静止して赤い×で一つずつ表示します。年度の終わりは世界表示へ戻り、逆順に一つずつ消えてから次年度が立ち上がります。×に続く輪はMagnitudeから見積もった可感半径の目安で、実際の震度分布・被害範囲・津波範囲ではありません。気象庁の日本実測震度は別層です。",
+      description: "USGSの世界M7.5以上を2000〜2026年まで自動で送り、各年の震源を発生日時順にカメラで追い、到着の0.5秒後に赤い×を一つずつ表示します。その0.9秒後に日本時間の発生日時とMagnitudeの吹き出しが現れます。年度の終わりは世界表示へ戻り、旧年の震源が一斉にフェードアウトしてから次年度が立ち上がります。×に続く輪はMagnitudeから見積もった可感半径の目安で、実際の震度分布・被害範囲・津波範囲ではありません。気象庁の日本実測震度は別層です。",
       accent: "#ffb45f",
       rgb: "255, 180, 95",
       source: `
@@ -890,11 +889,11 @@ vec3 modePopulationTide(vec2 p, float t, vec2 response, float memory) {
     },
     "rhythm-of-disaster": {
       lead:
-        "世界の大地震を全部重ねず、2000〜2026年を地震件数に合わせて自動で送ります。発生した場所へ順番に寄り、到着後2秒静止してから次へ移ることで、年による震源の数と場所の違いを見ます。",
+        "世界の大地震を全部重ねず、2000〜2026年を地震件数に合わせて自動で送ります。発生した場所へ順番に寄り、×印と吹き出しを少しずつ遅らせて表示し、吹き出しが現れてから約2秒静止することで、年による震源の数と場所の違いを見ます。",
       seeing:
         "赤い×は選択年度にUSGSが記録したM7.5以上の震源だけです。発生日時の早い地震から順に×と輪が立ち上がり、M7.5は約500km、M9.1は約2,000kmの推定可感半径で止まります。別年度の震源は表示しません。",
       touch:
-        "年度は自動で進み、発生日時順に震源へ滑らかに移動して、発生日・地名・深さ・Magnitudeを表示します。最後は世界表示へ戻り、旧年の震源を逆順に一つずつ消してから次年度を再生します。地図を自分で動かすと、その年の自動追従だけ止まります。日本の震度6弱以上の実測記録は、左下の切替から別層で見られます。",
+        "年度は自動で進み、発生日時順に震源へイーズアウトで移動します。到着の0.5秒後に×印、その0.9秒後に日本時間の発生日時・位置・深さ・Magnitudeを表示します。最後は世界表示へ戻り、旧年の震源を一斉にフェードアウトしてから次年度を再生します。地図を自分で動かすと、その年の自動追従だけ止まります。日本の震度6弱以上の実測記録は、左下の切替から別層で見られます。",
       context:
         "授業では、地球の変動を止めるのではなく、変動に備えられる社会を考えます。輪はUSGSの距離目安とM9.1の広域可感記録から補間した学習用の推定です。実際の揺れは深さ・地盤・断層方向などで変わります。",
       question: "大地震が多い年と少ない年では、震源の分布と波の重なり方がどう違って見えましたか。",
@@ -940,7 +939,7 @@ vec3 modePopulationTide(vec2 p, float t, vec2 response, float memory) {
     "forest-cloud-engine": "地図の見方：緑は2023年MODIS土地被覆から抜き出した森林域、大きな水色円は世界31代表地点の平均降水量です。直径が大きいほど雨が多く、雨の多い円にはmm/dayも直接表示します。ブラジルのアマゾン付近は5.33 mm/dayです。地点間は補間せず、相関係数や因果関係を示す図ではありません。",
     "nothing-is-waste": "地図の見方：同じ大きさの円グラフの緑が再資源化率、橙がそれ以外です。実線は国連の公式値、破線は近隣5か国から計算した補完値です。左右ボタンとスライダーで31の国・地域を切り替え、報告年とデータ区分を確認できます。",
     "anthropocene-scar": "地図の見方：1945〜2023年の国別化石燃料由来CO₂を国土の色で示します。全年度共通の固定対数尺度で、濃紺→紫→赤→橙→淡黄ほど排出量が大きくなります。白い発光は2016年のNASA VIIRS夜間光を固定した比較用レイヤーで、過去の夜間光ではありません。0.65秒以上長押しすると白だけが6秒間薄くなります。",
-    "rhythm-of-disaster": "地図の見方：初期表示は世界です。2000〜2026年のUSGS M7.5以上を発生日時の早い順にカメラで追い、各震源への移動完了後2秒静止して地名・深さを表示します。年の再生時間は地震件数に合わせて変わり、最後は世界表示へ戻ってから次年を再生します。実際の震度分布・被害・津波範囲ではなく、日本の実測震度は別層です。",
+    "rhythm-of-disaster": "地図の見方：初期表示は世界です。2000〜2026年のUSGS M7.5以上を発生日時の早い順にカメラで追い、到着の0.5秒後に×印、さらに0.9秒後に日本時間の発生日時・位置・深さを表示します。年の再生時間は地震件数に合わせて変わり、最後は世界表示へ戻り、旧年の震源が一斉にフェードアウトしてから次年を再生します。実際の震度分布・被害・津波範囲ではなく、日本の実測震度は別層です。",
     "three-ecologies": "地図の見方：同じ31か国の森林面積率を緑の内円、都市人口率を青の外円で重ねます。散布図の横軸は都市、縦軸は森林で、回帰線と相関係数rが全体傾向を示します。スライダーは都市人口率の低い国から高い国へ比較対象を移します。紫の世界遺産例は相関計算へ含めません。",
     "earth-organ": "地図の見方：31か国の国土を、電力に占める再生可能エネルギーの割合で塗ります。暗い青は0%に近く、明るい水色は100%に近い比率です。スライダーは低い国から高い国へ移動します。黄色の日射円と緑の風矢印は選択国の補足で、現在の比率を説明する因果モデルではありません。",
     "population-tide": "地図の見方：1960〜2025年を一年ずつ切り替え、同じ31か国の人口を琥珀色の円で表示します。円の面積が人口に比例します。点は国を示す代表位置で、都市の場所や人口密度ではありません。",
@@ -967,6 +966,7 @@ vec3 modePopulationTide(vec2 p, float t, vec2 response, float memory) {
     JMA_EVENT_TITLES,
     INTRO_PATHS,
     INTRO_MODE_CHOICES,
+    MAP_MODE_DESCRIPTIONS,
     SPACE_MODE_CHOICES,
     modes,
     modeConcepts,

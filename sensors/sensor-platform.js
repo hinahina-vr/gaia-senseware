@@ -10,6 +10,7 @@ const publicOwnerProfileDialog = document.querySelector("#public-owner-profile")
 const publicOwnerProfileAvatar = document.querySelector("#public-owner-profile-avatar");
 const publicOwnerProfileName = document.querySelector("#public-owner-profile-name");
 const publicOwnerProfileSensor = document.querySelector("#public-owner-profile-sensor");
+const publicOwnerProfileRegion = document.querySelector("#public-owner-profile-region");
 const publicOwnerProfileNote = document.querySelector("#public-owner-profile-note");
 const publicOwnerProfileLinks = document.querySelector("#public-owner-profile-links");
 const analysisDialog = document.querySelector("#sensor-analysis-dialog");
@@ -43,6 +44,8 @@ const latestMetrics = document.querySelector("#latest-metrics");
 const measurementCatalogSummary = document.querySelector("#measurement-catalog-summary");
 const measurementCatalogGroups = document.querySelector("#measurement-catalog-groups");
 const measurementCatalogDisclaimer = document.querySelector("#measurement-catalog-disclaimer");
+const measurementCatalogSearch = document.querySelector("#measurement-catalog-search");
+const measurementCatalogEmpty = document.querySelector("#measurement-catalog-empty");
 const publicSensorMap = document.querySelector("#public-sensor-map");
 const publicSensorNetwork = document.querySelector("#public-sensor-network");
 const publicSensorMarkers = document.querySelector("#public-sensor-markers");
@@ -232,6 +235,12 @@ const startPublicMapPolling = () => {
   }, publicMapPollIntervalMs);
 };
 
+const guideAnchor = () => {
+  const anchorIds = ["sensor-kit-title", "measurement-catalog-title", "sensor-connect-path", "sensor-trouble-title"];
+  const id = location.hash.slice(1);
+  return anchorIds.includes(id) ? document.getElementById(id) : null;
+};
+
 const showView = (name) => {
   if (name !== "map" && publicLocationEdit) closePublicLocationEditor();
   document.documentElement.dataset.sensorView = name;
@@ -243,7 +252,11 @@ const showView = (name) => {
     link.toggleAttribute("aria-current", link.dataset.nav === name);
   });
   requestAnimationFrame(() => {
-    if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "smooth" });
+    if (document.documentElement.dataset.sensorView !== name) return;
+    const anchor = name === "guide" ? guideAnchor() : null;
+    const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth";
+    if (anchor) anchor.scrollIntoView({ block: "start", behavior });
+    else if (window.scrollY > 0) window.scrollTo({ top: 0, behavior });
   });
   if (name === "map") {
     queuePublicMapViewportUpdate();
@@ -279,7 +292,7 @@ const showStatus = (message, kind = "info") => {
 const boot = async () => {
   const publicView = location.hash.startsWith("#map")
     ? "map"
-    : location.hash === "#guide"
+    : location.hash === "#guide" || guideAnchor()
       ? "guide"
       : location.hash === "#terms"
         ? "terms"
@@ -294,7 +307,11 @@ const boot = async () => {
   void mountMapSurfaces();
   initLocationPickers();
   initRegionFields();
-  await loadMeasurementCatalog().catch((error) => showStatus(error.message, "error"));
+  await loadMeasurementCatalog().catch((error) => {
+    if (measurementCatalogSummary) measurementCatalogSummary.textContent = "項目を読み込めませんでした。再読み込みしてください。";
+    if (measurementCatalogSearch) measurementCatalogSearch.disabled = true;
+    showStatus(error.message, "error");
+  });
   await loadPublicSensors().catch((error) => showStatus(error.message, "error"));
   try {
     const session = await api("../api/web/v1/session");
@@ -313,6 +330,7 @@ const boot = async () => {
     if (error.status === 401) {
       if (location.hash.startsWith("#map")) showView("map");
       else if (location.hash === "#guide") showView("guide");
+      else if (guideAnchor()) showView("guide");
       else if (location.hash === "#terms") showView("terms");
       else showView("login");
     }
@@ -430,8 +448,38 @@ const renderMeasurementPickers = () => {
   });
 };
 
+const filterMeasurementCatalog = () => {
+  if (!measurementCatalogGroups) return;
+  const query = (measurementCatalogSearch?.value || "").normalize("NFKC").trim().toLocaleLowerCase();
+  let matches = 0;
+  let categories = 0;
+  measurementCatalogGroups.querySelectorAll(".sensor-measurement-group").forEach((group) => {
+    let count = 0;
+    group.querySelectorAll(".sensor-measurement-item").forEach((item) => {
+      item.hidden = Boolean(query) && !item.dataset.search.includes(query);
+      if (!item.hidden) count += 1;
+    });
+    if (query) {
+      if (!Object.hasOwn(group.dataset, "beforeSearchOpen")) group.dataset.beforeSearchOpen = String(group.open);
+      group.open = count > 0;
+    } else if (Object.hasOwn(group.dataset, "beforeSearchOpen")) {
+      group.open = group.dataset.beforeSearchOpen === "true";
+      delete group.dataset.beforeSearchOpen;
+    }
+    group.hidden = count === 0;
+    group.querySelector("summary b").textContent = `${count}項目`;
+    matches += count;
+    if (count) categories += 1;
+  });
+  if (measurementCatalogSummary) measurementCatalogSummary.textContent = query
+    ? `${measurementCatalog.size}項目中 ${matches}項目が一致`
+    : `${categories}つの分野 · ${matches}の観測項目`;
+  if (measurementCatalogEmpty) measurementCatalogEmpty.hidden = !query || matches > 0;
+};
+
+measurementCatalogSearch?.addEventListener("input", filterMeasurementCatalog);
+
 const renderMeasurementCatalog = (response) => {
-  if (measurementCatalogSummary) measurementCatalogSummary.textContent = `${measurementCatalog.size} STANDARD MEASUREMENTS / ${measurementCategories.length} FIELDS`;
   if (measurementCatalogDisclaimer && response.disclaimerJa) measurementCatalogDisclaimer.textContent = response.disclaimerJa;
   if (!measurementCatalogGroups) return;
   measurementCatalogGroups.replaceChildren();
@@ -440,35 +488,34 @@ const renderMeasurementCatalog = (response) => {
     if (!definitions.length) return;
     const details = document.createElement("details");
     details.className = "sensor-measurement-group";
-    details.open = category.id === "water";
     const summary = document.createElement("summary");
     summary.append(
       Object.assign(document.createElement("strong"), { textContent: category.labelJa }),
-      Object.assign(document.createElement("b"), { textContent: `${definitions.length}` }),
-      Object.assign(document.createElement("small"), { textContent: category.descriptionJa }),
+      Object.assign(document.createElement("b"), { textContent: `${definitions.length}項目` }),
+      Object.assign(document.createElement("small"), { textContent: `${definitions.slice(0, 4).map((definition) => definition.labelJa).join("・")}${definitions.length > 4 ? " ほか" : ""}` }),
     );
     const list = document.createElement("div");
     list.className = "sensor-measurement-list";
     definitions.forEach((definition) => {
       const article = document.createElement("article");
       article.className = "sensor-measurement-item";
+      article.dataset.search = [category.labelJa, definition.labelJa, definition.labelEn, definition.key, definition.unit, ...definition.interfaces, ...definition.exampleSensors].join(" ").normalize("NFKC").toLocaleLowerCase();
       const header = document.createElement("header");
       header.append(
         Object.assign(document.createElement("strong"), { textContent: `${definition.labelJa} / ${definition.unit}` }),
         Object.assign(document.createElement("code"), { textContent: definition.key }),
       );
-      const description = document.createElement("p");
-      description.append(
-        Object.assign(document.createElement("b"), { textContent: "接続 " }),
-        document.createTextNode(`${definition.interfaces.join("・")} ／ 例：${definition.exampleSensors.join("、")}`),
-      );
-      article.append(header, description);
+      const description = Object.assign(document.createElement("p"), { textContent: `接続方式：${definition.interfaces.join("・")}` });
+      const examples = Object.assign(document.createElement("p"), { textContent: `センサーの例：${definition.exampleSensors.join("、")}` });
+      article.append(header, description, examples);
       if (definition.noteJa) article.append(Object.assign(document.createElement("p"), { className: "sensor-measurement-note", textContent: definition.noteJa }));
       list.append(article);
     });
     details.append(summary, list);
     measurementCatalogGroups.append(details);
   });
+  if (measurementCatalogSearch) measurementCatalogSearch.disabled = false;
+  filterMeasurementCatalog();
 };
 
 const loadPublicSensors = async ({ preserveSelection = true, quiet = false } = {}) => {
@@ -490,6 +537,7 @@ const loadSocial = async () => {
 };
 
 const renderPublicSensors = () => {
+  const hadSelection = Boolean(selectedPublicSensorId);
   publicSensorMarkers.replaceChildren();
   publicSensorList.replaceChildren();
   const linkedSensorId = publicSensorIdFromHash();
@@ -604,12 +652,23 @@ const renderPublicSensors = () => {
     selectPublicSensor(initialSelection.sensor, initialSelection.marker);
     if (linkedSensorId === initialSelection.sensor.id) {
       requestAnimationFrame(() => focusPublicSensor(initialSelection.sensor, { minimumZoom: publicMapFocusMinZoom }));
+    } else if (!hadSelection && matchMedia("(max-width: 760px)").matches) {
+      requestAnimationFrame(() => focusPublicSensor(initialSelection.sensor, { minimumZoom: publicMapCamera.zoom }));
     }
   }
   applyPublicSensorFilters({ deferLayout: true });
 };
 
 function initPublicSensorDirectory() {
+  document.querySelector("#public-map-search-open")?.addEventListener("click", () => {
+    setPublicSensorDirectoryOpen(true, { focus: true });
+  });
+  // Reuse map updates and card resizing; the selection leader needs no animation loop.
+  if (typeof ResizeObserver === "function") {
+    const observer = new ResizeObserver(renderPublicSelectionLink);
+    observer.observe(publicSensorDetail);
+    mapObservers.push(observer);
+  }
   publicSensorQuery?.addEventListener("input", () => {
     publicSensorQueryText = publicSensorQuery.value;
     applyPublicSensorFilters();
@@ -738,6 +797,7 @@ function setPublicSensorDirectoryOpen(open, { focus = false } = {}) {
   publicSensorDirectory.setAttribute("aria-hidden", String(!open));
   publicSensorDirectory.toggleAttribute("inert", !open);
   publicMapDirectoryToggle.setAttribute("aria-expanded", String(open));
+  document.querySelector("#public-map-search-open")?.setAttribute("aria-expanded", String(open));
   if (matchMedia("(max-width: 760px)").matches) {
     if (open) {
       setPublicSensorDetailExpanded(false);
@@ -748,9 +808,12 @@ function setPublicSensorDirectoryOpen(open, { focus = false } = {}) {
     }
   }
   if (focus) {
-    if (open) requestAnimationFrame(() => publicSensorQuery?.focus({ preventScroll: true }));
+    if (open) requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (publicSensorDirectory.dataset.open === "true") publicSensorQuery?.focus({ preventScroll: true });
+    }));
     else publicMapDirectoryToggle.focus({ preventScroll: true });
   }
+  renderPublicSelectionLink();
 }
 
 function setPublicSensorDetailExpanded(expanded, { focus = false } = {}) {
@@ -902,12 +965,13 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   const note = document.createElement("p");
   const region = [sensor.region?.subdivisionName, sensor.region?.municipalityName].filter(Boolean).join(" / ") || sensor.region?.countryCode || "地域未設定";
   note.textContent = `${region} · POIは参加者が地図上で選んだ公開位置です。実際の設置場所を示すとは限りません。`;
-  const content = [toolbar, owner, createPublicRelationshipBar(sensor), createPublicMetricHud(sensor), createPublicNodeMeta(sensor), createPublicOracle(sensor)];
+  const content = [toolbar, owner, createPublicMetricHud(sensor), createPublicRelationshipBar(sensor), createPublicNodeMeta(sensor), createPublicOracle(sensor)];
   if (sensor.isDemo) {
     const disclosure = document.createElement("p");
     disclosure.className = "sensor-demo-disclosure";
     const demoRegion = [sensor.region?.subdivisionName, sensor.demoLocationLabel].filter(Boolean).join("・");
-    disclosure.textContent = `ネタバレ：これは${demoRegion ? `${demoRegion}に置いた` : "展示用の"}ダミーセンサーです。実機から送信された観測データではありません。`;
+    disclosure.textContent = "展示用のダミーセンサーです。実機の観測値ではありません。";
+    disclosure.title = demoRegion ? `${demoRegion}に置いた展示用センサー` : "展示用センサー";
     content.push(disclosure);
   }
   content.push(note);
@@ -915,6 +979,7 @@ const selectPublicSensor = (sensor, marker, { historyMode = null } = {}) => {
   if (ownedDevice) content.push(createPublicLocationEditAction(sensor, ownedDevice));
   if (social.childElementCount) content.push(social);
   publicSensorDetail.append(...content);
+  renderPublicSelectionLink();
 };
 
 function ownedDeviceForPublicSensor(sensor) {
@@ -1086,6 +1151,7 @@ function createPublicRelationshipBar(sensor) {
     className: "sensor-like-trigger",
   });
   like.dataset.relationship = "like";
+  like.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"/></svg>';
   const analyze = Object.assign(document.createElement("button"), {
     type: "button",
     className: "sensor-analyze-trigger",
@@ -1097,7 +1163,6 @@ function createPublicRelationshipBar(sensor) {
     like.setAttribute("aria-pressed", String(social.liked));
     like.setAttribute("aria-label", social.liked ? `応援を取り消す（現在${likeCount}件）` : `この観測点を応援する（現在${likeCount}件）`);
     like.title = social.liked ? `応援済み · ${likeCount}` : `応援する · ${likeCount}`;
-    like.textContent = social.liked ? "♥" : "♡";
   };
   like.addEventListener("click", () => togglePublicLike(sensor, like, refresh));
   analyze.addEventListener("click", () => openSensorAnalysis({
@@ -1155,19 +1220,35 @@ function openPublicOwnerProfile(sensor) {
   const region = [sensor.region?.subdivisionName, sensor.region?.municipalityName, sensor.region?.countryCode].filter(Boolean).join(" / ") || "地域未設定";
   publicOwnerProfileAvatar.replaceChildren(avatarElement(owner, "span"));
   publicOwnerProfileName.textContent = owner.displayName || "GAIA参加者";
-  publicOwnerProfileSensor.textContent = `${sensor.sensorName}を地球の観測点として公開しています。`;
+  publicOwnerProfileSensor.textContent = sensor.sensorName;
+  publicOwnerProfileRegion.textContent = region;
   publicOwnerProfileNote.textContent = sensor.isDemo
-    ? `${region}に配置した展示用ダミーセンサーのプロフィールです。実機の観測者ではありません。`
-    : `${region}で、参加者が地図上に置いた公開POIから観測値を届けています。実際の設置場所を示すとは限りません。`;
+    ? "展示用ダミーセンサーのプロフィールです。実機の観測者ではありません。"
+    : "地図の位置は参加者が設定した公開用の目安です。実際の設置場所とは異なる場合があります。";
+  publicOwnerProfileDialog.dataset.demo = String(Boolean(sensor.isDemo));
   publicOwnerProfileLinks.replaceChildren();
+  const linkIcons = {
+    X: '<path d="M4 3h4l12 18h-4L4 3Zm16 0L4 21"/>',
+    GitHub: '<path d="M9 19c-4.3 1.3-4.3-2.2-6-2.7m12 5v-3.4c0-1 .1-1.6-.5-2.2 3.2-.4 6.5-1.5 6.5-7a5.4 5.4 0 0 0-1.5-3.7c.2-.9.2-2.3-.2-3.3 0 0-1.2-.4-3.8 1.4a13 13 0 0 0-7 0C5.9 1.3 4.7 1.7 4.7 1.7c-.4 1-.4 2.4-.2 3.3A5.4 5.4 0 0 0 3 8.7c0 5.5 3.3 6.6 6.5 7-.5.5-.6 1.1-.5 2.2v3.4"/>',
+    Instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/>',
+  };
   [["X", owner.xUrl], ["GitHub", owner.githubUrl], ["Instagram", owner.instagramUrl]].forEach(([label, url]) => {
     if (!url) return;
-    publicOwnerProfileLinks.append(Object.assign(document.createElement("a"), {
+    const link = Object.assign(document.createElement("a"), {
       href: url,
-      textContent: label,
       target: "_blank",
       rel: "noopener noreferrer",
-    }));
+    });
+    link.setAttribute("aria-label", `${label}の公開プロフィールを開く（新しいタブ）`);
+    link.innerHTML = `<svg class="sensor-profile-social-icon" viewBox="0 0 24 24" aria-hidden="true">${linkIcons[label]}</svg>`;
+    link.append(Object.assign(document.createElement("span"), { textContent: label }));
+    const arrow = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    arrow.setAttribute("viewBox", "0 0 24 24");
+    arrow.setAttribute("class", "sensor-profile-link-arrow");
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.innerHTML = '<path d="M7 17 17 7M7 7h10v10"/>';
+    link.append(arrow);
+    publicOwnerProfileLinks.append(link);
   });
   if (!publicOwnerProfileLinks.childElementCount) {
     publicOwnerProfileLinks.append(Object.assign(document.createElement("p"), { textContent: "SNSリンクは登録されていません。" }));
@@ -1348,9 +1429,18 @@ function createPublicMetricHud(sensor) {
     const latest = sensor.visualObservations[0]?.data?.[definition.key];
     const label = Object.assign(document.createElement("small"), { textContent: definition.label, title: `${definition.label}（${definition.console}）` });
     label.dataset.console = definition.console;
+    const reading = document.createElement("strong");
+    const formatted = formatPublicMetric(definition, latest);
+    if (Number.isFinite(latest) && definition.unit) {
+      reading.append(
+        Object.assign(document.createElement("span"), { textContent: formatted.slice(0, -definition.unit.length).trim() }),
+        document.createTextNode(" "),
+        Object.assign(document.createElement("span"), { className: "sensor-reading-unit", textContent: definition.unit }),
+      );
+    } else reading.textContent = formatted;
     card.append(
       label,
-      Object.assign(document.createElement("strong"), { textContent: formatPublicMetric(definition, latest) }),
+      reading,
       createPublicSparkline(sensor.visualObservations, definition.key),
     );
     grid.append(card);
@@ -1566,6 +1656,19 @@ function focusPublicSensor(sensor, { minimumZoom = publicMapFocusMinZoom, durati
     latitude: clamp(Number(sensor.location.latitude), -85, 85),
     zoom: Math.max(from.zoom, minimumZoom),
   };
+  if (matchMedia("(max-width: 760px)").matches && !publicSensorDetail.hidden && publicSensorDetail.dataset.expanded !== "true") {
+    const mapBounds = publicSensorMap.getBoundingClientRect();
+    const cardBounds = publicSensorDetail.getBoundingClientRect();
+    const headingBounds = views.get("map").querySelector(".sensor-page-head").getBoundingClientRect();
+    const lead = views.get("map").querySelector(".sensor-map-lead");
+    const leadBounds = lead.getBoundingClientRect();
+    const clearTop = Math.max(headingBounds.bottom, leadBounds.height ? leadBounds.bottom : 0) + 26;
+    const clearBottom = cardBounds.top - 32;
+    const anchorY = clearBottom > clearTop ? (clearTop + clearBottom) / 2 : clearBottom;
+    const anchorRatio = clamp((anchorY - mapBounds.top) / Math.max(mapBounds.height, 1), .1, .5);
+    // Move the camera, not the data: keep the selected POI above the mobile sheet.
+    target.latitude += (anchorRatio - .5) * Math.min(180, 180 / target.zoom);
+  }
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const animationDuration = clamp(Number(duration) || 460, 160, 1_200);
   const token = ++publicMapFocusToken;
@@ -1880,6 +1983,7 @@ function positionPublicSensorMarkers() {
     if (state) state.textContent = `${group.length} NODES`;
   }
   renderPublicResonanceNetwork();
+  renderPublicSelectionLink();
   publicSensorMap?.dispatchEvent(new CustomEvent("gaia:sensor-field", {
     detail: {
       nodes: entries.map((entry) => {
@@ -1895,6 +1999,26 @@ function positionPublicSensorMarkers() {
       }),
     },
   }));
+}
+
+function renderPublicSelectionLink() {
+  const link = document.querySelector(".sensor-selection-link");
+  if (!link) return;
+  const marker = publicSensorMarkers?.querySelector('.sensor-map-marker[aria-current]:not([hidden])');
+  const show = marker && !publicSensorDetail?.hidden && selectedPublicSensorId && !publicLocationEdit
+    && publicSensorDirectory?.dataset.open !== "true" && !matchMedia("(max-width: 760px)").matches;
+  link.dataset.visible = String(Boolean(show));
+  if (!show) return;
+  const map = link.getBoundingClientRect();
+  const point = marker.getBoundingClientRect();
+  const card = publicSensorDetail.getBoundingClientRect();
+  const startX = point.x + point.width / 2 - map.x;
+  const startY = point.y + point.height / 2 - map.y;
+  // A leader identifies the selected node. It never repositions a public POI.
+  const endX = card.left - map.x;
+  const endY = Math.max(card.top + 40, Math.min(card.bottom - 40, point.y)) - map.y;
+  if (startX >= endX - 28) { link.dataset.visible = "false"; return; }
+  link.querySelector("path").setAttribute("d", `M ${startX + 24} ${startY} L ${endX} ${endY}`);
 }
 
 function formatPublicSensorClusterCount(count) {
@@ -2463,12 +2587,30 @@ const showDevices = async () => {
 const routeFromHash = () => {
   if (location.hash.startsWith("#map")) showView("map");
   else if (location.hash === "#guide") showView("guide");
+  else if (guideAnchor()) showView("guide");
   else if (location.hash === "#terms") showView("terms");
   else if (!authenticated) showView("login");
   else if (location.hash === "#profile" && sessionUser?.accountKind !== "trial") showView("profile");
   else if (location.hash.startsWith("#device=")) openDetail(decodeURIComponent(location.hash.slice(8)));
   else showView("devices");
 };
+
+document.querySelector("#sensor-guide-copy")?.addEventListener("click", async () => {
+  const text = document.querySelector("#sensor-guide-request-text");
+  const status = document.querySelector("#sensor-guide-copy-status");
+  if (!text || !status) return;
+  try {
+    await navigator.clipboard.writeText(text.textContent.trim());
+    status.textContent = "コピーしました。PCのCodexへ貼り付けてください。";
+  } catch {
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    status.textContent = "自動コピーが使えません。選択された依頼文を手動でコピーしてください。";
+  }
+});
 
 loginButton.addEventListener("click", () => { location.assign("../api/auth/google/start?returnTo=%2Fsensors%2F"); });
 participationInfoOpen?.addEventListener("click", () => participationDialog?.showModal());
@@ -2568,23 +2710,24 @@ document.querySelectorAll("[data-nav]").forEach((link) => link.addEventListener(
   else { showView(destination); history.replaceState(null, "", `#${destination}`); }
 }));
 publicMapRefresh.addEventListener("click", async () => {
+  const label = publicMapRefresh.querySelector("span");
   publicMapRefresh.disabled = true;
   publicMapRefresh.setAttribute("aria-busy", "true");
   publicMapRefresh.dataset.compactLabel = "更新中";
-  publicMapRefresh.textContent = "更新中…";
+  label.textContent = "更新中…";
   try {
     await loadPublicSensors();
     publicMapRefresh.dataset.compactLabel = "完了";
-    publicMapRefresh.textContent = "更新しました";
+    label.textContent = "更新しました";
     window.setTimeout(() => {
-      if (publicMapRefresh.textContent === "更新しました") {
+      if (label.textContent === "更新しました") {
         publicMapRefresh.dataset.compactLabel = "更新";
-        publicMapRefresh.textContent = "地図を更新";
+        label.textContent = "地図を更新";
       }
     }, 1_800);
   } catch (error) {
     publicMapRefresh.dataset.compactLabel = "更新";
-    publicMapRefresh.textContent = "地図を更新";
+    label.textContent = "地図を更新";
     showStatus(error.message, "error");
   } finally {
     publicMapRefresh.disabled = false;
@@ -3206,7 +3349,8 @@ function renderMapCanvas(canvas, countryLines, prefectureLines, view = worldMapV
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.save();
-  context.strokeStyle = "rgba(126, 230, 214, .16)";
+  const publicMap = canvas.parentElement === publicSensorMap;
+  context.strokeStyle = publicMap ? "rgba(126, 230, 214, .08)" : "rgba(126, 230, 214, .16)";
   context.lineWidth = 1;
   context.setLineDash([2, 7]);
   const span = view.east - view.west;
@@ -3241,12 +3385,12 @@ function renderMapCanvas(canvas, countryLines, prefectureLines, view = worldMapV
       if (started) land.closePath();
     }
   }
-  context.fillStyle = "rgba(30, 103, 99, .34)";
+  context.fillStyle = publicMap ? "rgba(13, 62, 53, .17)" : "rgba(30, 103, 99, .34)";
   context.fill(land, "evenodd");
-  context.strokeStyle = "rgba(137, 244, 216, .72)";
-  context.lineWidth = Math.max(.65, width / 1_900);
+  context.strokeStyle = publicMap ? "rgba(116, 225, 201, .65)" : "rgba(137, 244, 216, .72)";
+  context.lineWidth = publicMap ? .85 : Math.max(.65, width / 1_900);
   context.shadowColor = "rgba(86, 255, 223, .2)";
-  context.shadowBlur = width > 2_200 ? 0 : 5;
+  context.shadowBlur = publicMap || width > 2_200 ? 0 : 5;
   context.stroke(land);
 
   const prefectures = new Path2D();
@@ -3262,10 +3406,10 @@ function renderMapCanvas(canvas, countryLines, prefectureLines, view = worldMapV
       }
     }
   }
-  context.strokeStyle = "rgba(213, 255, 244, .58)";
-  context.lineWidth = Math.max(.7, Math.min(1.35, width / 1_700));
+  context.strokeStyle = publicMap ? "rgba(175, 231, 215, .36)" : "rgba(213, 255, 244, .58)";
+  context.lineWidth = publicMap ? .65 : Math.max(.7, Math.min(1.35, width / 1_700));
   context.shadowColor = "rgba(119, 255, 225, .28)";
-  context.shadowBlur = width > 2_200 ? 0 : 3;
+  context.shadowBlur = publicMap || width > 2_200 ? 0 : 3;
   context.stroke(prefectures);
 }
 

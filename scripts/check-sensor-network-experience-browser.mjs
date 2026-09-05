@@ -145,8 +145,8 @@ try {
         state: fontSize(".sensor-state"),
         guideWidth: guide.width,
         toolbarHeight: rect(".sensor-map-card-expand").height,
-        topbarOverlap: Math.max(0, Math.min(sync.right, guide.right) - Math.max(sync.left, guide.left)),
-        utilityOverlap: Math.max(0, Math.min(audio.right, guide.right) - Math.max(audio.left, guide.left)),
+        topbarOverlap: Math.max(0, Math.min(sync.right, guide.right) - Math.max(sync.left, guide.left)) * Math.max(0, Math.min(sync.bottom, guide.bottom) - Math.max(sync.top, guide.top)),
+        utilityOverlap: Math.max(0, Math.min(audio.right, guide.right) - Math.max(audio.left, guide.left)) * Math.max(0, Math.min(audio.bottom, guide.bottom) - Math.max(audio.top, guide.top)),
       };
     });
     if (viewport.width > 760) {
@@ -255,10 +255,10 @@ try {
       assert(refreshBounds.left >= 0 && refreshBounds.right <= viewport.width, `mobile refresh action is clipped: ${JSON.stringify(refreshBounds)}`);
       assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
       const compactCardHeight = await page.locator("#public-sensor-detail").evaluate((element) => element.getBoundingClientRect().height);
-      assert(compactCardHeight <= 146, `mobile sensor summary is too tall: ${compactCardHeight}`);
+      assert(compactCardHeight <= 260, `mobile readings and actions exceed their compact sheet budget: ${compactCardHeight}`);
       assert.equal(await page.locator(".sensor-map-card-expand").isVisible(), true);
-      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), false);
-      const detailActionSizes = await page.locator(".sensor-map-card-actions button").evaluateAll((buttons) => buttons.map((button) => {
+      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), true);
+      const detailActionSizes = await page.locator(".sensor-map-card-actions button:visible").evaluateAll((buttons) => buttons.map((button) => {
         const rect = button.getBoundingClientRect();
         return { width: rect.width, height: rect.height };
       }));
@@ -368,21 +368,24 @@ try {
       assert.equal(await page.locator("#public-sensor-map").getAttribute("data-camera-motion"), "idle");
       const markerFocusDelta = await page.evaluate(() => {
         const map = document.querySelector("#public-sensor-map").getBoundingClientRect();
-        const marker = document.querySelector(".sensor-map-marker[aria-current='true']").getBoundingClientRect();
+        const node = document.querySelector(".sensor-map-marker[aria-current='true']");
+        const marker = node.getBoundingClientRect();
+        const card = document.querySelector("#public-sensor-detail").getBoundingClientRect();
         return {
           x: Math.abs(marker.left + marker.width / 2 - (map.left + map.width / 2)),
-          y: Math.abs(marker.top + marker.height / 2 - (map.top + map.height / 2)),
+          aboveCard: marker.bottom < card.top,
+          hittable: node.contains(document.elementFromPoint(marker.left + marker.width / 2, marker.top + marker.height / 2)),
         };
       });
-      assert(markerFocusDelta.x < 5 && markerFocusDelta.y < 5, `selected map marker was not centred: ${JSON.stringify(markerFocusDelta)}`);
+      assert(markerFocusDelta.x < 5 && markerFocusDelta.aboveCard && markerFocusDelta.hittable, `selected POI must be centred in the unobscured mobile map: ${JSON.stringify(markerFocusDelta)}`);
       assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
-      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), false);
+      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), true);
       await page.locator(".sensor-map-card-expand").click();
       assert.equal(await page.locator(".sensor-map-card-expand").getAttribute("aria-expanded"), "true");
       assert.equal(await page.locator(".sensor-observation-hud").isVisible(), true);
       await page.keyboard.press("Escape");
       assert.equal(await page.locator("#public-sensor-detail").getAttribute("data-expanded"), "false");
-      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), false);
+      assert.equal(await page.locator(".sensor-observation-hud").isVisible(), true);
       await page.locator(".sensor-map-card-expand").click();
     }
     assert.match(await page.locator("#public-sensor-detail").textContent(), /ダミーセンサー/u);

@@ -118,14 +118,14 @@ try {
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
       };
     });
-    assert.equal(guide.title, "ESP32で環境を測る");
+    assert.equal(guide.title, "ESP32をつないで、観測をはじめる。");
     assert.match(guide.headingFont, /Yu Mincho/u);
-    assert.equal(guide.titleLines, 1);
+    assert.equal(guide.titleLines, 2);
     assert.equal(guide.titleContained, true);
-    assert.equal(guide.jumpCount, 3);
+    assert.equal(guide.jumpCount, 4);
     assert(guide.linkTargets.every((height) => height >= 44));
-    assert.equal(guide.kitColumns, viewport.width === 390 ? 2 : 5);
-    assert.equal(guide.pathColumns, viewport.width === 390 ? 1 : 2);
+    assert.equal(guide.kitColumns, viewport.width === 390 ? 2 : 4);
+    assert.equal(guide.pathColumns, 1);
     assert.equal(guide.overflowX, false);
     await page.screenshot({ path: path.join(outputDir, `${label}-guide.png`), fullPage: true });
 

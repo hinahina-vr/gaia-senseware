@@ -276,7 +276,7 @@
 
   const routeGuideShade = routeGuideLayer.querySelector(".gaia-opening-route-guide-shade");
   const routeGuideBubble = routeGuideLayer.querySelector(".gaia-opening-route-guide-bubble");
-  const ROUTE_GUIDE_AUTO_DELAY_MS = 2000;
+  const ROUTE_GUIDE_AUTO_DELAY_MS = 3000;
   let routeGuideActive = false;
   let routeGuideIndex = 0;
   let routeGuidePositionFrame = 0;

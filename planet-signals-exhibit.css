@@ -26,10 +26,28 @@
   width: 100%;
   height: 100%;
   opacity: 0.96;
-  filter: saturate(1.12) contrast(1.06);
   mix-blend-mode: screen;
   pointer-events: none;
 }
+
+.gaia-planet-atmosphere-canvas {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.gaia-planet-atmosphere-canvas[hidden] { display: none !important; }
+
+/* Data markers need their dark outline even over an opaque cloud bank. */
+.gaia-planet-signals-canvas[data-planet-engine="webgl2-continuous-atmosphere"] {
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
+.japan-layer.is-planet-signals-exhibit .japan-map > #gaia-canvas { visibility: hidden !important; }
 
 .gaia-planet-signals-canvas[hidden],
 .gaia-planet-signals-legend[hidden],
@@ -54,7 +72,7 @@
     radial-gradient(circle at 88% 12%, rgba(var(--planet-rgb), 0.13), transparent 42%),
     rgba(3, 12, 24, 0.88);
   box-shadow: 0 15px 38px rgba(0, 0, 0, 0.42), inset 0 1px rgba(233, 253, 255, 0.06);
-  backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: none;
   pointer-events: none;
 }
 
@@ -122,6 +140,22 @@
   color: rgba(218, 240, 246, 0.58);
   font: 600 9px/1.2 var(--font-ja);
   text-align: right;
+}
+
+.gaia-planet-signals-legend .gaia-planet-poi-key {
+  justify-content: flex-start;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(var(--planet-rgb), .18);
+  color: rgba(237, 251, 255, .86);
+  font: 600 10px/1.4 var(--font-ja);
+}
+
+.gaia-planet-poi-key > i {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle, #fffff4 0%, rgba(var(--planet-rgb), .55) 18%, rgba(var(--planet-rgb), .12) 42%, transparent 72%);
 }
 
 .gaia-planet-signals-readout {

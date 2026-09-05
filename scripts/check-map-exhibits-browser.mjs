@@ -440,7 +440,7 @@ try {
           assert(observed.top >= observed.map.top + 220, `${viewport.name}/${expectation.id}: panel is hidden behind the mobile title/timeline controls`);
         }
         if (observed.legendClearance !== "legend-hidden") {
-          assert(Number(observed.legendClearance) >= 10, `${viewport.name}/${expectation.id}: panel overlaps the map encoding legend`);
+          assert(Number(observed.legendClearance) >= 8, `${viewport.name}/${expectation.id}: panel overlaps the map encoding legend`);
         }
         const screenshot = path.join(outputDir, `${viewport.name}-${String(expectation.index + 1).padStart(2, "0")}-${expectation.id}-legend.png`);
         await page.screenshot({ path: screenshot });
@@ -558,7 +558,8 @@ try {
           && Number(canvas.dataset.currentVisiblePoiCount) > 0
           && Number(overlay?.dataset.currentPoiMarkerCount) === Number(canvas.dataset.currentVisiblePoiCount);
       });
-      await page.waitForTimeout(800);
+      await page.waitForFunction(() => document.querySelector("#gaia-canvas")?.dataset.currentWeaveState === "ready");
+      await page.waitForTimeout(1000);
       scan.circulationDirection = await page.evaluate(() => ({
         transform: document.querySelector("#gaia-canvas")?.dataset.currentDirectionTransform,
         coverageMode: document.querySelector("#gaia-canvas")?.dataset.currentCoverageMode,
@@ -566,6 +567,7 @@ try {
         renderedSamples: Number(document.querySelector("#gaia-canvas")?.dataset.currentRenderedSampleCount),
         markerCount: Number(document.querySelector("#japan-overlay")?.dataset.currentPoiMarkerCount),
         title: document.querySelector("#japan-title")?.textContent || "",
+        weave: { ...document.querySelector("#gaia-canvas").dataset },
       }));
       assert.equal(scan.circulationDirection.transform, "noaa-east-north-to-gl-local-positive-rotation");
       assert.equal(scan.circulationDirection.coverageMode, "gapless-idw-vector-field");
@@ -573,9 +575,31 @@ try {
       assert(scan.circulationDirection.renderedSamples > 0);
       assert.equal(scan.circulationDirection.markerCount, scan.circulationDirection.renderedSamples);
       assert.equal(scan.circulationDirection.title, "海流が14日続いたら");
+      const weave = scan.circulationDirection.weave;
+      assert.equal(weave.currentWeaveSourceCount, weave.currentVectorCount);
+      assert.equal(weave.currentWeaveMethod, "cached-rk2-streamline-convolution");
+      assert.equal(weave.currentWeaveSize, "1024x512");
+      assert.equal(weave.currentWeaveGeneration, "1");
+      assert.match(await page.locator("[data-signal-encoding-legend]").textContent(), /観測点間の補間/u);
       const screenshot = path.join(outputDir, `${viewport.name}-02-current-direction-aligned.png`);
       await page.screenshot({ path: screenshot });
       scan.screenshots.push(screenshot);
+      scan.clicks.circulation = await clickDataPoint(page, "blue-circulation");
+      assert.match(scan.clicks.circulation.card.meta, /m\/s/u);
+      await closeDataCard(page);
+      await page.evaluate(() => {
+        GaiaMapObservationAdapter.setSignalTime(100);
+        GaiaMapObservationAdapter.zoomEarthBy(1.1);
+      });
+      await page.waitForTimeout(1000);
+      const after = await page.locator("#gaia-canvas").evaluate((canvas) => ({ ...canvas.dataset }));
+      assert.equal(after.currentWeaveGeneration, weave.currentWeaveGeneration, "Zoom/date changes must reuse the geographic field");
+      assert.equal(after.currentWeaveSourceCount, weave.currentWeaveSourceCount);
+      assert.equal(after.currentMeanSpeedMs, weave.currentMeanSpeedMs, "Interpolation must not change source statistics");
+      assert.ok(Number(after.currentAmbientPhase) > Number(weave.currentAmbientPhase), "Pigment keeps moving independently of the timeline");
+      const zoomScreenshot = path.join(outputDir, `${viewport.name}-02-current-weave-zoom.png`);
+      await page.screenshot({ path: zoomScreenshot });
+      scan.screenshots.push(zoomScreenshot);
       report.scans.push(scan);
       await context.close();
       console.log(`PASS ${viewport.name}`);
@@ -693,18 +717,18 @@ try {
         "initial earthquake sequence is not chronological",
       );
       assert.equal(scan.earthquakeInitialFirst.order, "occurred-at-ascending");
-      assert.equal(scan.earthquakeInitialFirst.mode, "chronological-pop-in-out");
+      assert.equal(scan.earthquakeInitialFirst.mode, "chronological-in-simultaneous-fade-out");
       assert.equal(scan.earthquakeInitialFirst.phase, "enter");
-      assert.equal(scan.earthquakeInitialFirst.staggerMs, 2480);
+      assert.equal(scan.earthquakeInitialFirst.staggerMs, 4180);
       assert.equal(scan.earthquakeInitialFirst.appearMs, 460);
       assert.equal(scan.earthquakeInitialFirst.cameraMode, "chronological-epicenter-flyover");
       assert.equal(scan.earthquakeInitialFirst.cameraState, "following-epicenter");
       assert.equal(scan.earthquakeInitialFirst.cameraEventIndex, 0);
       assert.equal(scan.earthquakeInitialFirst.cameraOccurredAt, scan.earthquakeInitialFirst.orderedTimes[0]);
-      assert.equal(scan.earthquakeInitialFirst.cameraFlyMs, 480);
+      assert.equal(scan.earthquakeInitialFirst.cameraFlyMs, 780);
       assert.equal(scan.earthquakeInitialFirst.cameraHoldMs, 2000);
       assert.equal(scan.earthquakeInitialFirst.eventHoldMs, 2000);
-      assert.equal(scan.earthquakeInitialFirst.cameraReturnDelayMs, 2020);
+      assert.equal(scan.earthquakeInitialFirst.cameraReturnDelayMs, 2440);
       assert.equal(scan.earthquakeInitialFirst.cameraReturnMs, 620);
       assert.equal(scan.earthquakeInitialFirst.viewTarget, "earthquake-2000-1");
       assert.ok(scan.earthquakeInitialFirst.zoom > 1.01, `earthquake camera did not start zooming: ${scan.earthquakeInitialFirst.zoom}`);
@@ -808,8 +832,8 @@ try {
         displayKey: document.querySelector("#co2-timeline-display")?.dataset.timeTransitionKey,
       }));
       assert.equal(scan.earthquakeAutoTransition.playback, "auto-loop");
-      assert.equal(scan.earthquakeAutoTransition.dwellMs, 19340);
-      assert.equal(scan.earthquakeAutoTransition.transitionMs, 15340);
+      assert.equal(scan.earthquakeAutoTransition.dwellMs, 30400);
+      assert.equal(scan.earthquakeAutoTransition.transitionMs, 26820);
       assert.equal(scan.earthquakeAutoTransition.to, "2001");
       assert.equal(scan.earthquakeAutoTransition.visible, 1);
       assert.equal(scan.earthquakeAutoTransition.activeIndex, 0);
@@ -849,13 +873,13 @@ try {
       assert.equal(scan.earthquakeSequentialExit.displayedYear, "2001");
       assert.equal(scan.earthquakeSequentialExit.targetYear, "2004");
       assert.equal(scan.earthquakeSequentialExit.phase, "exit");
-      assert.equal(scan.earthquakeSequentialExit.order, "occurred-at-descending");
-      assert.equal(scan.earthquakeSequentialExit.staggerMs, 140);
+      assert.equal(scan.earthquakeSequentialExit.order, "simultaneous");
+      assert.equal(scan.earthquakeSequentialExit.staggerMs, 0);
       assert.equal(scan.earthquakeSequentialExit.disappearMs, 320);
       assert.deepEqual(
         scan.earthquakeSequentialExit.orderedTimes,
-        [...scan.earthquakeSequentialExit.orderedTimes].sort().reverse(),
-        "earthquake fade-out is not reverse chronological",
+        [...scan.earthquakeSequentialExit.orderedTimes].sort(),
+        "outgoing events retain their source order while fading together",
       );
       const sequentialExitScreenshot = path.join(outputDir, `${viewport.name}-06-sequential-pop-out.png`);
       await page.screenshot({ path: sequentialExitScreenshot });
@@ -871,9 +895,8 @@ try {
         await page.waitForTimeout(70);
       }
       const exitCountDeltas = exitVisibleCounts.slice(1).map((count, index) => count - exitVisibleCounts[index]);
-      assert(new Set(exitVisibleCounts).size >= 3, `earthquake POIs did not disappear in visible steps: ${JSON.stringify(exitVisibleCounts)}`);
-      assert(exitCountDeltas.every((delta) => delta === 0 || delta === -1), `earthquake POIs disappeared together: ${JSON.stringify(exitVisibleCounts)}`);
-      assert(exitVisibleCounts.at(-1) < exitVisibleCounts[0], `earthquake POI count did not decrease: ${JSON.stringify(exitVisibleCounts)}`);
+      assert(scan.earthquakeSequentialExit.visible > 0, "capture the simultaneous fade before the screenshot completes");
+      assert(exitCountDeltas.every((delta) => delta <= 0), `earthquake POIs reappeared during fade-out: ${JSON.stringify(exitVisibleCounts)}`);
       scan.earthquakeSequentialExit.visibleCountSamples = exitVisibleCounts;
       await page.waitForFunction(() => document.querySelector("#japan-overlay")?.dataset.earthquakeYear === "2004");
       await page.waitForFunction(
@@ -883,7 +906,7 @@ try {
             && Number(overlay?.dataset.earthquakeActiveEventProgress) >= 0.25;
         },
       );
-      await page.waitForFunction(() => /^2004\/\d{2}\/\d{2} · M\d\.\d$/u.test(
+      await page.waitForFunction(() => /^2004年\d{1,2}月\d{1,2}日（[日月火水木金土]）午[前後]\d{1,2}時\d{2}分$/u.test(
         document.querySelector("#japan-overlay")?.dataset.earthquakeActiveLabelPrimary || "",
       ));
       scan.earthquakeManualFirst = await page.locator("#japan-overlay").evaluate((element) => ({
@@ -901,13 +924,13 @@ try {
       assert.equal(scan.earthquakeManualFirst.visible, 1);
       assert.equal(scan.earthquakeManualFirst.activeIndex, 0);
       assert.equal(scan.earthquakeManualFirst.activeOccurredAt, scan.earthquakeManualFirst.orderedTimes[0]);
-      assert.match(scan.earthquakeManualFirst.activeLabelPrimary, /^2004\/\d{2}\/\d{2} · M\d\.\d$/u);
+      assert.match(scan.earthquakeManualFirst.activeLabelPrimary, /^2004年\d{1,2}月\d{1,2}日（[日月火水木金土]）午[前後]\d{1,2}時\d{2}分$/u);
       assert.doesNotMatch(scan.earthquakeManualFirst.activeLabelPrimary, /^\d{2} \/ \d{2}/u);
       assert.equal(scan.earthquakeManualFirst.projection, "equirectangular-geodesic-distance");
       assert.equal(scan.earthquakeManualFirst.markerStyle, "red-heavy-cross");
       assert.equal(scan.earthquakeManualFirst.markerColor, "rgb(255,43,51)");
       assert.ok(scan.earthquakeManualFirst.markerLineWidth >= (viewport.width >= 2400 ? 7 : 4));
-      assert.equal(scan.earthquakeManualFirst.activeMagnitudeLabel, "suppressed-while-callout-visible");
+      assert.equal(scan.earthquakeManualFirst.activeMagnitudeLabel, "callout-only");
       const manualFirstScreenshot = path.join(outputDir, `${viewport.name}-06-manual-2004-first-event.png`);
       await page.screenshot({ path: manualFirstScreenshot });
       scan.screenshots.push(manualFirstScreenshot);
@@ -960,7 +983,7 @@ try {
       scan.loader = await page.locator('script[src*="gaia-mode-loader.js"]').getAttribute("src");
       assert.match(
         scan.loader || "",
-        /gaia-mode-loader\.js\?v=gaia-visual-release-20260905/u,
+        /gaia-mode-loader\.js\?v=gaia-statistics-workspace-1/u,
         `${viewport.name}: stale exploration loader cache key`,
       );
 

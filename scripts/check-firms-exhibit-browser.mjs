@@ -93,6 +93,7 @@ try {
   assert(advancing.visible > initial.visible, "fire detections did not appear sequentially");
   assert.equal(await desktop.locator(".gaia-firms-legend").isVisible(), true);
   assert.equal(await desktop.locator(".gaia-firms-readout").isVisible(), true);
+  assert.equal(await desktop.locator("[data-firms-return], .gaia-firms-return").count(), 0, "Redundant return tile must be removed, not merely hidden");
   assert.match(await desktop.locator("[data-firms-latest]").textContent(), /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} UTC$/u);
   assert.match(await desktop.locator("[data-firms-age]").textContent(), /^観測から/u);
   assert.equal(await desktop.locator(".gaia-live-city-marker:visible").count(), 0);
@@ -108,6 +109,24 @@ try {
   assert.equal(scrubbed.phase, "scrub");
   assert(scrubbed.visible > scrubbed.points * 0.7);
   await desktop.screenshot({ path: path.join(outputDir, "desktop-26-active-fire.png"), fullPage: true });
+  await desktop.setViewportSize({ width: 3840, height: 2088 });
+  await desktop.waitForTimeout(200);
+  const wideLayout = await desktop.locator(".gaia-firms-readout").evaluate((element) => {
+    const children = [...element.children];
+    const bounds = element.getBoundingClientRect();
+    const first = children[0].getBoundingClientRect();
+    const last = children.at(-1).getBoundingClientRect();
+    return {
+      firstIsChapter: children[0].classList.contains("gaia-firms-chapter"),
+      columns: getComputedStyle(element).gridTemplateColumns.split(" ").length,
+      children: children.length,
+      noEmptyEnds: Math.abs(first.left - bounds.left) <= 2 && Math.abs(last.right - bounds.right) <= 2,
+      noOverflow: element.scrollWidth <= element.clientWidth + 1,
+    };
+  });
+  await desktop.locator(".gaia-firms-readout").screenshot({ path: path.join(outputDir, "4k-26-readout.png") });
+  assert.deepEqual(wideLayout, { firstIsChapter: true, columns: 7, children: 7, noEmptyEnds: true, noOverflow: true });
+  await desktop.setViewportSize({ width: 1440, height: 900 });
   await desktop.waitForFunction(() => Boolean(globalThis.GaiaStatisticsLab?.open && globalThis.GaiaFirmsExhibit?.getStatisticsDataset));
   await desktop.evaluate(() => {
     const dataset = globalThis.GaiaFirmsExhibit.getStatisticsDataset();
@@ -137,8 +156,8 @@ try {
   await desktop.screenshot({ path: path.join(outputDir, "desktop-26-analysis-report.png"), fullPage: true });
   await desktop.locator("#gaia-statistics-close").click();
   await desktop.locator("[data-firms-step='1']").click();
-  await desktop.waitForFunction(() => !document.querySelector("#japan-layer")?.classList.contains("is-firms-exhibit"));
-  assert.equal(await desktop.locator("#japan-mode-number").textContent(), "01");
+  await desktop.waitForFunction(() => !globalThis.GaiaFirmsExhibit.getState().active && document.querySelector("#japan-mode-number")?.textContent === "27");
+  assert.equal(await desktop.locator("#japan-mode-number").textContent(), "27");
   await desktopContext.close();
 
   const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
@@ -146,6 +165,7 @@ try {
   monitor(mobile);
   await openMap(mobile);
   await selectFirms(mobile);
+  assert.equal(await mobile.locator("[data-firms-return], .gaia-firms-return").count(), 0);
   await mobile.locator("[data-firms-progress]").evaluate((input) => {
     input.value = "700";
     input.dispatchEvent(new Event("input", { bubbles: true }));

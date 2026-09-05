@@ -25,6 +25,7 @@ try {
   for (const viewport of viewports) {
     await fetch(new URL("/__qa/reset", baseUrl), { method: "POST" });
     const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
+    await context.addInitScript(() => sessionStorage.setItem("gaia:mode-entry-guide:sensor:v1", "seen"));
     const page = await context.newPage();
     const label = viewport.name;
     page.on("console", (message) => {
@@ -55,7 +56,7 @@ try {
         links,
         avatarLoaded: Boolean(detail.querySelector("img")?.complete && detail.querySelector("img")?.naturalWidth),
         mapCanvasReady: Boolean(document.querySelector("#public-sensor-map .sensor-map-canvas")?.width > 100),
-        inlineMapSvgCount: document.querySelectorAll("#public-sensor-map svg").length,
+        inlineMapSvgCount: document.querySelectorAll("#public-sensor-map > svg").length,
         markerTouchTarget: Math.min(marker?.getBoundingClientRect().width ?? 0, marker?.getBoundingClientRect().height ?? 0),
         visibleText: document.body.innerText,
         overflowX: document.documentElement.scrollWidth > innerWidth + 1,
@@ -188,7 +189,19 @@ try {
     assert.equal(await page.locator("#public-sensor-map").getAttribute("data-location-editing"), "true");
     const publicMapBox = await page.locator("#public-sensor-map").boundingBox();
     assert(publicMapBox);
-    await page.mouse.click(publicMapBox.x + publicMapBox.width * .2, publicMapBox.y + publicMapBox.height * .78);
+    // Choose exposed map pixels; fixed screen fractions can hit the editor's
+    // cancel button after a responsive layout change.
+    const mapPoint = await page.locator("#public-sensor-map").evaluate(map => {
+      const r = map.getBoundingClientRect();
+      for (const yRatio of [.25, .4, .6, .15, .8]) for (const xRatio of [.2, .4, .6, .8]) {
+        const x = r.x + r.width * xRatio, y = r.y + r.height * yRatio;
+        const hit = document.elementFromPoint(x, y);
+        if (map.contains(hit) && !hit.closest('button,a,.sensor-map-location-editor,.sensor-belonging,.sensor-map-lead,.sensor-page-head')) return { x, y };
+      }
+      return null;
+    });
+    assert(mapPoint, 'no exposed map pixels for public POI editing');
+    await page.mouse.click(mapPoint.x, mapPoint.y);
     const editedCoordinates = (await page.locator("#public-map-location-output").textContent()).split(",").map((value) => Number(value.trim()));
     assert(editedCoordinates.every(Number.isFinite));
     await page.locator("#public-map-location-save").click();
